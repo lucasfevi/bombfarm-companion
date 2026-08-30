@@ -168,7 +168,8 @@ export function resolveItemKind(categoryCode: number | null, defId: string): Ite
 
 /**
  * A chest's `rarity` is 0 on the wire whatever tier it is; the tier lives in the id's tail
- * instead, so `chest_time_2` is the Raro time chest. Deriving it here rather than in a card means
+ * instead, so `chest_time_2` is the Raro time chest. `chest_hero_1` reads the same way — the
+ * market sells it as `Hero Cage (Act 1)`, and that act IS the tier: an Act 1 cage is Incomum. Deriving it here rather than in a card means
  * the border, the plate, the tier word and any future sort all agree without each one knowing the
  * convention.
  *
@@ -177,7 +178,7 @@ export function resolveItemKind(categoryCode: number | null, defId: string): Ite
  * the other three — same id shape, and the only values the corpus holds (`_3`, `_5`) are valid
  * rarity indices.
  */
-const TIERED_CHEST = /^chest_(?:time|gem|skill|key)_(\d)$/;
+const TIERED_CHEST = /^chest_(?:time|gem|skill|key|hero)_(\d)$/;
 
 export function chestRarityIdx(defId: string, wireRarity: number): number {
   const tail = TIERED_CHEST.exec(defId);
@@ -412,6 +413,14 @@ export type InventoryFilter = {
    */
   sets: readonly string[] | null;
   equippedOnly: boolean;
+  /**
+   * Only items the market is currently asking a price for.
+   *
+   * Unlike every other term here this is not a property of the item — it depends on a market
+   * snapshot the domain has no access to — so `filterInventoryView` takes the predicate. With no
+   * predicate nothing is priced, which is the truthful answer when there is no snapshot to ask.
+   */
+  pricedOnly: boolean;
 };
 
 export const EMPTY_INVENTORY_FILTER: InventoryFilter = {
@@ -421,6 +430,7 @@ export const EMPTY_INVENTORY_FILTER: InventoryFilter = {
   heroIds: [],
   sets: null,
   equippedOnly: false,
+  pricedOnly: false,
 };
 
 export function isEmptyInventoryFilter(filter: InventoryFilter): boolean {
@@ -430,7 +440,8 @@ export function isEmptyInventoryFilter(filter: InventoryFilter): boolean {
     filter.rarities.length === 0 &&
     filter.heroIds.length === 0 &&
     filter.sets === null &&
-    !filter.equippedOnly
+    !filter.equippedOnly &&
+    !filter.pricedOnly
   );
 }
 
@@ -453,6 +464,7 @@ export function filterInventoryView(
   view: InventoryView,
   filter: InventoryFilter,
   searchText: (item: InventoryViewItem) => string,
+  isPriced?: (item: InventoryViewItem) => boolean,
 ): InventoryView {
   if (isEmptyInventoryFilter(filter)) return view;
 
@@ -468,6 +480,7 @@ export function filterInventoryView(
     if (heroIds && (item.equippedBy === null || !heroIds.has(item.equippedBy))) return false;
     if (sets && !sets.has(item.set)) return false;
     if (filter.equippedOnly && !item.equipped) return false;
+    if (filter.pricedOnly && !(isPriced?.(item) ?? false)) return false;
     if (needles.length === 0) return true;
     const haystack = fold(searchText(item));
     return needles.every((needle) => haystack.includes(needle));
@@ -527,14 +540,21 @@ export function heroIdsInView(view: InventoryView): string[] {
   return ids;
 }
 
-export type InventorySortKey = 'rarity' | 'level' | 'value' | 'name' | 'count';
+export type InventorySortKey = 'rarity' | 'level' | 'value' | 'name' | 'count' | 'market';
 export type InventorySortDirection = 'asc' | 'desc';
 export type InventorySortTerm = { key: InventorySortKey; direction: InventorySortDirection };
 
 /** Most significant term first. */
 export type InventorySort = readonly InventorySortTerm[];
 
-export const INVENTORY_SORT_KEYS: readonly InventorySortKey[] = ['rarity', 'level', 'value', 'name', 'count'];
+export const INVENTORY_SORT_KEYS: readonly InventorySortKey[] = [
+  'rarity',
+  'level',
+  'value',
+  'name',
+  'count',
+  'market',
+];
 
 /**
  * Best-first, then newest-first within a tier — what a player scanning for an upgrade wants
@@ -579,6 +599,7 @@ function sortValue(entry: InventoryEntry, key: InventorySortKey): number {
     case 'count':
       return entry.count;
     case 'name':
+    case 'market':
       return 0;
   }
 }
@@ -595,10 +616,25 @@ export function sortInventoryView(
   view: InventoryView,
   sort: InventorySort,
   nameOf: (item: InventoryViewItem) => string,
+  marketValueOf?: (entry: InventoryEntry) => number | null,
 ): InventoryView {
   const compare = (a: InventoryEntry, b: InventoryEntry): number => {
     for (const term of sort) {
       const sign = term.direction === 'asc' ? 1 : -1;
+
+      if (term.key === 'market') {
+        const left = marketValueOf?.(a) ?? null;
+        const right = marketValueOf?.(b) ?? null;
+        // Unpriced entries sink to the bottom in BOTH directions. Letting the sign carry them
+        // would put the items the market says nothing about above every real price the moment a
+        // player asked for cheapest-first, which reads as the sort being broken.
+        if (left == null && right == null) continue;
+        if (left == null) return 1;
+        if (right == null) return -1;
+        if (left !== right) return sign * (left - right);
+        continue;
+      }
+
       const delta =
         term.key === 'name'
           ? nameOf(a.item).localeCompare(nameOf(b.item))

@@ -1,9 +1,11 @@
 'use client';
 
+import { useMemo } from 'react';
+
 import { peelSheetStages, type SheetStageRow } from '@bombfarm/domain/sheet-stages';
 import { SHEET_PANEL_KEYS } from '@bombfarm/domain/planner-constants';
 import { useAppLang } from '@/shared/context/app-lang';
-import { formatNumber } from '@/shared/lib/format-number';
+import { numberFormatterFor } from '@/shared/lib/format-number';
 import { usePlannerStore, selectAdvisorPipeline } from '@/shared/stores';
 import { DataTable, FieldRequired, Panel } from '@bombfarm/ui';
 import {
@@ -48,7 +50,8 @@ function formatOverCapCell(row: SheetStageRow, format: (n: number, d?: number) =
 }
 
 export function SheetTable() {
-  const { t } = useAppLang();
+  const { t, lang } = useAppLang();
+  const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
 
   const birth = usePlannerStore((state) => state.birth);
   const level = usePlannerStore((state) => state.level);
@@ -104,6 +107,14 @@ export function SheetTable() {
             <DataTable.Row>
               <DataTable.Header>{t.colStat}</DataTable.Header>
               <DataTable.Header align="right">{t.colSheetBirth}</DataTable.Header>
+              {/* `DataTable.Header` spreads `title` onto its own `<th>`, so these two are native
+                  tooltips the lint rule cannot see. A design-system Tooltip here costs ~8% more
+                  component renders across four measured planner scenarios — this table re-renders
+                  on every edit and each heading becomes a whole tooltip subtree — so they are
+                  tracked with the app's other native tooltips rather than converted here.
+
+                  The rule does not fire on them: it inspects lowercase DOM elements, and this is a
+                  capitalised component that happens to forward the prop. */}
               {deltaHeaders.map(({ key, label }) => (
                 <DataTable.Header key={key} align="right" title={label}>
                   <span className="min-w-0 truncate">{label}</span>
@@ -122,18 +133,18 @@ export function SheetTable() {
                 <DataTable.Row key={statKey}>
                   <DataTable.Cell className="truncate">{t.statShort[statKey]}</DataTable.Cell>
                   <DataTable.Cell align="right" numeric className={mutedClass}>
-                    {row ? formatStageCell(row.birth, formatNumber, false) : '—'}
+                    {row ? formatStageCell(row.birth, boundFormatNumber, false) : '—'}
                   </DataTable.Cell>
                   {STAGE_DELTA_KEYS.map((deltaKey) => (
                     <DataTable.Cell key={deltaKey} align="right" numeric className={mutedClass}>
-                      {row ? formatStageCell(row[deltaKey], formatNumber, true) : '—'}
+                      {row ? formatStageCell(row[deltaKey], boundFormatNumber, true) : '—'}
                     </DataTable.Cell>
                   ))}
                   <DataTable.Cell align="right" numeric>
-                    <b>{row ? formatStageCell(row.total, formatNumber, false) : '—'}</b>
+                    <b>{row ? formatStageCell(row.total, boundFormatNumber, false) : '—'}</b>
                   </DataTable.Cell>
                   <DataTable.Cell align="right" numeric className={mutedClass}>
-                    {row ? formatOverCapCell(row, formatNumber) : '—'}
+                    {row ? formatOverCapCell(row, boundFormatNumber) : '—'}
                   </DataTable.Cell>
                 </DataTable.Row>
               );

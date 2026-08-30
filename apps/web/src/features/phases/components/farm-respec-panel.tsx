@@ -87,7 +87,7 @@ export function FarmRespecPanel({ t, lang }: { t: Strings; lang: Lang }) {
             </h4>
             <FarmRespecHeroGrid result={panelState.result} heroes={heroes} lang={lang} t={t} />
           </div>
-          <FarmRespecFrontier t={t} result={panelState.result} />
+          <FarmRespecFrontier t={t} lang={lang} result={panelState.result} />
           <p className="m-0 text-[10px] text-muted" data-testid="farm-respec-diagnostics">
             {sub(t.farmRespecDiagnostics, {
               evaluations: String(panelState.result.evaluations),

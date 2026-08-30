@@ -33,6 +33,7 @@
     "@playwright/test": "^1.54.1",
     "@types/node": "^22.16.5",
     "eslint": "^9.31.0",
+    "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-tailwindcss": "^4.2.0",
     "globals": "^16.3.0",

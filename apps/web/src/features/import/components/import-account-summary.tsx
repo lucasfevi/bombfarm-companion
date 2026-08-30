@@ -55,31 +55,31 @@ export function ImportAccountSummary({
             <dl className={statListClass}>
               <div>
                 <dt>{t.treeDano}</dt>
-                <dd>×{formatNumber(accountData.tree.danoTotal, 3)}</dd>
+                <dd>×{formatNumber(accountData.tree.danoTotal, lang, 3)}</dd>
               </div>
               <div>
                 <dt>{t.treeCrit}</dt>
-                <dd>+{formatNumber(accountData.tree.critChance, 2)}%</dd>
+                <dd>+{formatNumber(accountData.tree.critChance, lang, 2)}%</dd>
               </div>
               <div>
                 <dt>{t.treeCritDmg}</dt>
-                <dd>+{formatNumber(accountData.tree.critDmg, 2)}%</dd>
+                <dd>+{formatNumber(accountData.tree.critDmg, lang, 2)}%</dd>
               </div>
               <div>
                 <dt>{t.treeSpeed}</dt>
-                <dd>+{formatNumber(accountData.tree.speed, 2)}%</dd>
+                <dd>+{formatNumber(accountData.tree.speed, lang, 2)}%</dd>
               </div>
               <div>
                 <dt>{t.treeEnergy}</dt>
-                <dd>+{formatNumber(accountData.tree.energy, 2)}%</dd>
+                <dd>+{formatNumber(accountData.tree.energy, lang, 2)}%</dd>
               </div>
               <div>
                 <dt>{t.treeTeamCoin}</dt>
-                <dd>+{formatNumber(accountData.tree.teamCoinPct ?? 0, 2)}%</dd>
+                <dd>+{formatNumber(accountData.tree.teamCoinPct ?? 0, lang, 2)}%</dd>
               </div>
               <div>
                 <dt>{t.treeXpMult}</dt>
-                <dd>×{formatNumber(accountData.tree.xpMult ?? 1, 2)}</dd>
+                <dd>×{formatNumber(accountData.tree.xpMult ?? 1, lang, 2)}</dd>
               </div>
             </dl>
           </section>

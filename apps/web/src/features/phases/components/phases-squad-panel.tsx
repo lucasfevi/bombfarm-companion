@@ -1,5 +1,7 @@
 'use client';
 
+import { useMemo } from 'react';
+
 import { Panel, StatList } from '@bombfarm/ui';
 import {
   panelHClass,
@@ -8,7 +10,7 @@ import {
 } from '@bombfarm/ui/panel-field.recipe';
 import { useAppLang } from '@/shared/context/app-lang';
 import { sub } from '@/shared/i18n';
-import { formatNumber } from '@/shared/lib/format-number';
+import { formatNumber, numberFormatterFor } from '@/shared/lib/format-number';
 import { formatClearTime } from '../model/phases-page';
 import type { HeroRecord } from '@/shared/lib/storage';
 import type { RosterDpsRow } from '@bombfarm/domain/roster-dps';
@@ -32,7 +34,8 @@ export function PhasesSquadPanel({
   clearSecs: number | null;
   onSelectHero: (h: HeroRecord) => void;
 }) {
-  const { t } = useAppLang();
+  const { t, lang } = useAppLang();
+  const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
 
   return (
     <Panel className="min-w-0">
@@ -47,7 +50,7 @@ export function PhasesSquadPanel({
           {
             id: 'squadDps',
             label: t.phasesSquadCombinedDps,
-            value: formatNumber(squadDps, 0),
+            value: formatNumber(squadDps, lang, 0),
           },
           {
             id: 'clear',
@@ -63,7 +66,7 @@ export function PhasesSquadPanel({
           heroesById={heroesById}
           activeHeroId={activeHeroId}
           t={t}
-          formatNumber={formatNumber}
+          formatNumber={boundFormatNumber}
           onSelectHero={onSelectHero}
         />
       ) : null}

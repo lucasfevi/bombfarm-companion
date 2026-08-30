@@ -1,9 +1,11 @@
 'use client';
 
+import { useMemo } from 'react';
+
 import { SHEET_PANEL_KEYS, type SheetPanelKey } from '@bombfarm/domain/planner-constants';
 import { BREAKDOWN_DERIVED_IDS, type PipelineFacts } from '@bombfarm/domain/stat-breakdown';
 import { useAppLang } from '@/shared/context/app-lang';
-import { formatNumber } from '@/shared/lib/format-number';
+import { numberFormatterFor } from '@/shared/lib/format-number';
 import { Panel } from '@bombfarm/ui';
 import { panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui/panel-field.recipe';
 import { EffectiveStatGroup } from './effective-stat-group';
@@ -20,7 +22,8 @@ function sheetKeysWithCombatDelta(facts: PipelineFacts): SheetPanelKey[] {
 }
 
 export function EffectiveStatsPanel({ facts }: { facts: PipelineFacts }) {
-  const { t } = useAppLang();
+  const { t, lang } = useAppLang();
+  const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
   const combatSheetKeys = sheetKeysWithCombatDelta(facts);
 
   return (
@@ -32,7 +35,7 @@ export function EffectiveStatsPanel({ facts }: { facts: PipelineFacts }) {
       {combatSheetKeys.length > 0 && (
         <EffectiveStatGroup
           t={t}
-          formatNumber={formatNumber}
+          formatNumber={boundFormatNumber}
           facts={facts}
           title={t.bdGroupSheet}
           ids={combatSheetKeys}
@@ -40,7 +43,7 @@ export function EffectiveStatsPanel({ facts }: { facts: PipelineFacts }) {
       )}
       <EffectiveStatGroup
         t={t}
-        formatNumber={formatNumber}
+        formatNumber={boundFormatNumber}
         facts={facts}
         title={t.bdGroupDerived}
         ids={BREAKDOWN_DERIVED_IDS}

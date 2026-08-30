@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CatalogView } from './reconcile.js';
-import { buildSnapshot, isMarketSnapshot, mergeEntries } from './snapshot.js';
+import { buildSnapshot, isMarketSnapshot, mergeEntries, readMarketSnapshot } from './snapshot.js';
 import type { MarketEntry } from './types.js';
 import { priceKey } from './types.js';
 
@@ -25,6 +25,8 @@ function entry(overrides: Partial<MarketEntry> & { hashName: string }): MarketEn
     rarityIdx: null,
     level: null,
     act: null,
+    lowestNative: {},
+    nativeQuotedUtc: null,
     lowestUsd: 1,
     listings: 1,
     iconUrl: null,
@@ -139,5 +141,91 @@ describe('isMarketSnapshot', () => {
     expect(isMarketSnapshot(snapshot)).toBe(true);
     expect(isMarketSnapshot({ ...snapshot, schemaVersion: 1 })).toBe(false);
     expect(isMarketSnapshot(null)).toBe(false);
+  });
+});
+
+describe('carrying native quotes across a rate-limited run', () => {
+  const prior = entry({
+    hashName: 'Gold Ring Lv 20 (Rare)',
+    lowestUsd: 2.8,
+    lowestNative: { BRL: 14.46 },
+    nativeQuotedUtc: '2026-08-29T12:00:00.000Z',
+  });
+
+  it('keeps the previous quote when this run took none and the price is unchanged', () => {
+    const fresh = entry({ hashName: 'Gold Ring Lv 20 (Rare)', lowestUsd: 2.8, lowestNative: {} });
+    const merged = mergeEntries([fresh], [prior], true)[0];
+
+    expect(merged?.lowestNative).toEqual({ BRL: 14.46 });
+    expect(merged?.nativeQuotedUtc).toBe('2026-08-29T12:00:00.000Z');
+  });
+
+  it('drops the previous quote once the price has moved under it', () => {
+    const fresh = entry({ hashName: 'Gold Ring Lv 20 (Rare)', lowestUsd: 1.1, lowestNative: {} });
+    const merged = mergeEntries([fresh], [prior], true)[0];
+
+    expect(merged?.lowestNative).toEqual({});
+    expect(merged?.nativeQuotedUtc).toBeNull();
+  });
+
+  it('prefers a quote taken by this run over the previous one', () => {
+    const fresh = entry({
+      hashName: 'Gold Ring Lv 20 (Rare)',
+      lowestUsd: 2.8,
+      lowestNative: { BRL: 15.2 },
+      nativeQuotedUtc: '2026-08-29T18:00:00.000Z',
+    });
+    const merged = mergeEntries([fresh], [prior], true)[0];
+
+    expect(merged?.lowestNative).toEqual({ BRL: 15.2 });
+    expect(merged?.nativeQuotedUtc).toBe('2026-08-29T18:00:00.000Z');
+  });
+});
+
+describe('readMarketSnapshot', () => {
+  const v2 = {
+    schemaVersion: 2,
+    generatedUtc: '2026-08-29T00:00:00.000Z',
+    appId: 4892010,
+    baseCurrency: 'USD',
+    fx: { USD: 1, BRL: 5 },
+    entries: [{ hashName: 'Ember Weapon', lowestUsd: 10, listings: 2 }],
+    index: { 'ember_arma#1': 0 },
+    alternates: {},
+    unlisted: [],
+    anomalies: [],
+    coverage: {},
+  };
+
+  it('gives a version 2 payload the fields the current shape requires', () => {
+    const read = readMarketSnapshot(v2);
+
+    expect(read?.schemaVersion).toBe(3);
+    expect(read?.nativeCurrencies).toEqual([]);
+    expect(read?.entries[0]?.lowestNative).toEqual({});
+    expect(read?.entries[0]?.nativeQuotedUtc).toBeNull();
+  });
+
+  it('leaves a version 3 payload alone', () => {
+    const v3 = {
+      ...v2,
+      schemaVersion: 3,
+      nativeCurrencies: ['BRL'],
+      entries: [
+        {
+          ...v2.entries[0],
+          lowestNative: { BRL: 52 },
+          nativeQuotedUtc: '2026-08-29T06:00:00.000Z',
+        },
+      ],
+    };
+
+    expect(readMarketSnapshot(v3)?.entries[0]?.lowestNative).toEqual({ BRL: 52 });
+    expect(readMarketSnapshot(v3)?.nativeCurrencies).toEqual(['BRL']);
+  });
+
+  it('is null for something that is not a snapshot at all', () => {
+    expect(readMarketSnapshot({ schemaVersion: 1 })).toBeNull();
+    expect(readMarketSnapshot(null)).toBeNull();
   });
 });

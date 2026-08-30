@@ -141,7 +141,7 @@ afterAll(() => {
 describe('REQUIRED_DIST_PACKAGES', () => {
   it('is the measured set each consumer needs built', () => {
     expect(REQUIRED_DIST_PACKAGES).toEqual({
-      '@bombfarm/desktop': ['contracts', 'domain', 'game-api', 'game-data', 'tap-runtime'],
+      '@bombfarm/desktop': ['contracts', 'domain', 'game-api', 'game-data', 'pricing', 'tap-runtime'],
       '@bombfarm/game-api': ['domain'],
       'tools/advice-change-key-coverage.test.mjs': ['domain'],
       'tools/derived-fixture-drift.test.mjs': ['domain', 'game-api'],
@@ -267,6 +267,7 @@ describe('missingDistPackages', () => {
       'domain',
       'game-api',
       'game-data',
+      'pricing',
       'tap-runtime',
     ]);
   });
@@ -282,6 +283,7 @@ describe('missingDistPackages', () => {
       'contracts',
       'game-api',
       'game-data',
+      'pricing',
       'tap-runtime',
     ]);
     // Same root, different key: game-api needs domain alone and is satisfied, and so does

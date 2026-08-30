@@ -21,12 +21,12 @@ function read(relativePath: string): string {
 
 describe('formatSignedGainPct', () => {
   it('a non-negative value renders byte-identical to the pre-farm-mode "+{n}%" string', () => {
-    expect(formatSignedGainPct(2.5)).toBe('+2.5%');
-    expect(formatSignedGainPct(0)).toBe('+0.0%');
+    expect(formatSignedGainPct(2.5, 'en')).toBe('+2.5%');
+    expect(formatSignedGainPct(0, 'en')).toBe('+0.0%');
   });
 
   it('a negative farm gain renders with a minus sign and the absolute magnitude', () => {
-    expect(formatSignedGainPct(-3.14159)).toBe('−3.1%');
+    expect(formatSignedGainPct(-3.14159, 'en')).toBe('−3.1%');
   });
 });
 

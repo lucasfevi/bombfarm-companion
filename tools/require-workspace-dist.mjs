@@ -19,12 +19,14 @@ export const PACKAGES_ROOT = join(here, '..', 'packages');
  * running the consumer alone:
  *
  * - `@bombfarm/desktop` (`pnpm vitest run --project '@bombfarm/desktop'`) — `contracts`, `domain`,
- *   `game-api`, `game-data`, `tap-runtime`. Measured for `tap-runtime` by moving its `dist/` aside:
- *   `runtime.test.ts` fails at collection with `Failed to resolve entry for package
- *   "@bombfarm/tap-runtime"`. Without all five the suite fails at collection; with only these four
- *   it is fully green (43 files / 653 tests) even when `ui` and `pricing` are unbuilt (re-confirmed
- *   for this extraction). Keep in sync with `apps/desktop`'s own `prebuild` script, which builds
- *   the same set plus `ui`, which the bundle needs but these tests do not.
+ *   `game-api`, `game-data`, `pricing`, `tap-runtime`. Measured for `tap-runtime` by moving its
+ *   `dist/` aside: `runtime.test.ts` fails at collection with `Failed to resolve entry for package
+ *   "@bombfarm/tap-runtime"`. `pricing` joined the list when the market-price service began
+ *   resolving `@bombfarm/pricing` through its `exports` map; moving its `dist/` aside fails
+ *   `market-service.test.ts` at collection the same way. Without all six the suite fails at
+ *   collection; with only these it is fully green even when `ui` is unbuilt. Keep in sync with
+ *   `apps/desktop`'s own `prebuild` script, which builds the same set plus `ui`, which the bundle
+ *   needs but these tests do not.
  * - `@bombfarm/game-api` (`pnpm vitest run --project '@bombfarm/game-api'`) — `domain` only.
  *   Removing `domain/dist` fails 5 of its 14 files at collection (`client`, `domain-edge`,
  *   `fingerprints`, `routes`, `shape`) — 203 tests drop to 131 with zero reported failures in the
@@ -56,7 +58,7 @@ export const PACKAGES_ROOT = join(here, '..', 'packages');
  * Re-measure when a project or guarded file gains an import of a new workspace package.
  */
 export const REQUIRED_DIST_PACKAGES = Object.freeze({
-  '@bombfarm/desktop': Object.freeze(['contracts', 'domain', 'game-api', 'game-data', 'tap-runtime']),
+  '@bombfarm/desktop': Object.freeze(['contracts', 'domain', 'game-api', 'game-data', 'pricing', 'tap-runtime']),
   '@bombfarm/game-api': Object.freeze(['domain']),
   'tools/advice-change-key-coverage.test.mjs': Object.freeze(['domain']),
   'tools/derived-fixture-drift.test.mjs': Object.freeze(['domain', 'game-api']),

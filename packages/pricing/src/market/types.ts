@@ -47,9 +47,10 @@ export interface MarketEntry {
   hashName: string;
   name: string;
   /**
-   * The stable identity an app looks a price up by. Equipment keys on its catalog def and
-   * rarity; everything else keys on its Steam category plus whichever facets actually
-   * distinguish it (a chest by level or act, a key by rarity, a skin by nothing).
+   * The stable identity an app looks a price up by, and the same one an owned copy produces.
+   * Equipment, gems, stones and chests key on a catalog def and rarity — the def read off a
+   * facet or an explicit table, never off the hash. A hero keys on its rarity alone. Only the
+   * skin still keys on its Steam category and hash, having no owned counterpart to match.
    */
   key: string;
   /** The catalog def, where the catalog has one. Null for chests, cages, skins and gems. */
@@ -65,9 +66,27 @@ export interface MarketEntry {
   /** Difficulty an act-scoped item belongs to (Hero Cage, Skill Stone Chest). */
   act: number | null;
   lowestUsd: number | null;
+  /**
+   * Lowest live listing in each currency Steam quoted itself, ISO code -> major units.
+   *
+   * Steam prices each region independently rather than converting, so a native quote is the
+   * number on the page this entry links to and a converted one is not: measured 2026-08-29,
+   * native BRL ran 0.6-1.2% above `lowestUsd` times the day's rate, per item and not uniformly.
+   *
+   * Sparse on purpose. `priceoverview` is the only endpoint that honours a currency and it
+   * under-reports, so an absent key means "not quoted", never "not listed" — `lowestUsd` remains
+   * the authority on whether anything is for sale.
+   */
+  lowestNative: Record<string, number | null>;
   listings: number;
   iconUrl: string | null;
   fetchedUtc: string;
+  /**
+   * When `lowestNative` was last read, which is not `fetchedUtc`. The quote pass runs after the
+   * enumeration and is the first thing a rate-limited run drops, so a fresh row can carry a
+   * native price from hours earlier; collapsing the two would date that price to this run.
+   */
+  nativeQuotedUtc: string | null;
 }
 
 export type AnomalyKind =
@@ -107,10 +126,16 @@ export interface MarketCoverage {
 }
 
 export interface MarketSnapshot {
-  schemaVersion: 2;
+  schemaVersion: 3;
   generatedUtc: string;
   appId: number;
   baseCurrency: 'USD';
+  /**
+   * Currencies this run asked Steam to quote directly, in the order it asked. Named here rather
+   * than inferred from the entries so that a run where every quote failed still says what it was
+   * trying to do, instead of reading as a snapshot that never wanted native prices.
+   */
+  nativeCurrencies: string[];
   /** ISO currency -> units per 1 USD. */
   fx: Record<string, number>;
   /** Every reconciled market row, catalog-matched or not. */
@@ -135,15 +160,29 @@ export function priceKey(defId: string, rarityIdx: number): string {
 }
 
 /**
- * The key for a market row the catalog has no def for — a chest, a hero cage, a skill stone, a
- * gem, a skin.
+ * The key for a market row nothing an owner holds can identify — today only the skin, which is a
+ * field on a hero rather than an inventory row at all.
  *
- * Keyed on the hash name rather than on the facets, because the facets do not identify these:
- * `Hero Cage (Act 1)` and `Skill Stone Chest (Act 1)` are both `category=chest, act=1` and
- * nothing else, so a facet-built key would have quietly merged two different items into one
- * price. A Steam hash never changes meaning, which makes it the only stable identity available
- * for an item the catalog does not describe.
+ * Keyed on the hash name because the facets do not separate these: `Hero Cage (Act 1)` and
+ * `Skill Stone Chest (Act 1)` are both `category=chest, act=1` and nothing else, so a key built
+ * from facets alone would merge two different items into one price. Those two are reached instead
+ * through an explicit hash-to-family table, which names them rather than deducing them; a Steam
+ * hash never changes meaning, which is what makes such a table safe.
  */
 export function categoryKey(category: string, hashName: string): string {
   return `${category}#${hashName}`;
+}
+
+/** The Steam category tag heroes are listed under. */
+export const HERO_CATEGORY = 'hero';
+
+/**
+ * The key for a tradable hero, which is its rarity and nothing else.
+ *
+ * A hero listing carries no set, slot, level or act — `Hero (Rare)` is the whole identity, and the
+ * rarity behind it comes off the facet rather than the name. So unlike the chests and gems, a
+ * hero needs no def: an owned hero the game marks tradable looks its price up by rarity alone.
+ */
+export function heroPriceKey(rarityIdx: number): string {
+  return categoryKey(HERO_CATEGORY, String(rarityIdx));
 }

@@ -32,6 +32,9 @@ importers:
       eslint:
         specifier: ^9.31.0
         version: 9.39.5(jiti@2.7.0)
+      eslint-plugin-react:
+        specifier: ^7.37.5
+        version: 7.37.5(eslint@9.39.5(jiti@2.7.0))
       eslint-plugin-react-hooks:
         specifier: ^5.2.0
         version: 5.2.0(eslint@9.39.5(jiti@2.7.0))
@@ -77,6 +80,9 @@ importers:
       '@bombfarm/game-data':
         specifier: workspace:*
         version: link:../../packages/game-data
+      '@bombfarm/pricing':
+        specifier: workspace:*
+        version: link:../../packages/pricing
       '@bombfarm/tap-runtime':
         specifier: workspace:*
         version: link:../../packages/tap-runtime
@@ -157,6 +163,9 @@ importers:
       '@bombfarm/game-art':
         specifier: workspace:*
         version: link:../../packages/game-art
+      '@bombfarm/pricing':
+        specifier: workspace:*
+        version: link:../../packages/pricing
       '@bombfarm/ui':
         specifier: workspace:*
         version: link:../../packages/ui

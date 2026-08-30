@@ -4,10 +4,21 @@ The game's items trade on the Steam Community Market. `@bombfarm/pricing` turns 
 one published JSON file so the planner and the desktop app can put a price on anything a player
 owns — equipment, gate keys, time parts, gems, chests, hero cages, skill stones and skins.
 
-The rule is the same one the wiki data follows: **no shipped app code talks to Steam.** One
-scheduled job, [`.github/workflows/market-prices.yml`](../.github/workflows/market-prices.yml),
-sweeps the market and publishes `market-prices.json`; the apps download that file. Steam sends no
-`Access-Control-Allow-Origin`, so a browser could not call it directly even if we wanted to.
+The rule is the same one the wiki data follows: **the sweep is the only thing that talks to
+Steam.** One scheduled job, [`.github/workflows/market-prices.yml`](../.github/workflows/market-prices.yml),
+walks the market and publishes `market-prices.json`; both apps download that file and price
+everything from it.
+
+**One deliberate exception: the desktop app's per-item refresh.** A player who wants this item's
+price now, rather than the snapshot's, gets one `priceoverview` call from the Electron main
+process — which is Node, so the browser's same-origin rule does not apply to it. It is one call
+for one item, it carries nothing about the account, and it never widens: everything else on both
+apps still comes from the published file.
+
+The web planner has no such affordance and cannot have one. Steam sends no
+`Access-Control-Allow-Origin`, so a browser cannot call it at all, and the planner is a static
+export with no server of its own to relay through. Its refresh re-downloads the snapshot, and the
+UI dates each price by the quote behind it so "now" is never implied.
 
 ## Enumerate first, then ask what things are
 
@@ -38,9 +49,43 @@ A full live run costs **4 calls to enumerate and about 30 to tag**. The earlier 
 facet combination and cost roughly 250, which Steam's per-IP tolerance on this endpoint cut off
 after six.
 
+## The price shown is the price on the page
+
+The number an app displays links straight to a Steam listing, so it has to be the number that
+listing shows. Two measurements from 2026-08-29 decide how that is done.
+
+**`search/render` ignores its own `currency` parameter.** Asked for BRL it answered `$3.65 USD` —
+the same figures as a dollar request, relabelled. So the enumeration can only ever produce USD,
+and no amount of parameter-tuning changes that.
+
+**`priceoverview` honours it.** The same item, the same minute: `$4.80` against `R$ 25,00`. Steam
+prices each region independently rather than converting, and it rounds to its own price points, so
+converting through a rate does not reproduce it — native BRL ran **0.6-1.2% above** the converted
+figure, varying per item.
+
+So a third pass asks `priceoverview` once per listed row, per currency, and stores the answer in
+the entry's `lowestNative`. `resolveKey` prefers it and reports `basis: 'native'`; with no quote it
+converts and reports `basis: 'converted'`, which is a UI's cue to mark the figure approximate.
+
+**The quote never overrides the enumeration on whether anything is listed.** This endpoint
+under-reports: `Gold Gloves (Legendary)` answered `{"success":true}` with no price in either
+currency while the search endpoint carried it at $14.99 with a live listing. An absent quote
+therefore means "not quoted", never "no supply".
+
+Coverage of a full pass: **42 of the 44 keys the index quotes**. Six of the eight raw misses are
+the pre-rename hashes that only ever appear as `alternates`. It costs one call per listed row at a
+**3.5s** spacing — the search pass's 1.5s is near double the rate this endpoint tolerates — and it
+is the first thing a rate-limited run drops, which is why a quote carries `nativeQuotedUtc` of its
+own rather than being dated by the run that published it.
+
+A quote is inherited across a run that could not take its own, but **only while `lowestUsd` is
+unchanged**. Once the book has visibly moved the old quote is known wrong: `Gold Ring Lv 20 (Rare)`
+went $2.80 to $1.10 inside one six-hour window, and an inherited `R$ 14,46` would have gone on
+being shown against a real `R$ 5,75`.
+
 ## What the file says
 
-`MarketSnapshot` (`schemaVersion: 2`) carries every row the market had, plus the reconciliation
+`MarketSnapshot` (`schemaVersion: 3`) carries every row the market had, plus the reconciliation
 against the committed catalog in both directions.
 
 Every entry has a `key`, and that is what an app prices by:
@@ -65,6 +110,8 @@ Alongside the entries:
 - `anomalies` — a facet tag or category nothing here can map. An unmapped tag makes items quietly
   lose their price, so it is recorded and raised as a run annotation rather than guessed at
 - `fx` — units per 1 USD, so a client converts without another network call
+- `nativeCurrencies` — what the quote pass asked Steam for, named here so a run where every quote
+  failed still says what it was trying to do
 
 Both apps resolve through `resolveItemPrice(item, snapshot, currency)` for an owned
 `InventoryItem`, or `resolveKey(key, …)` for anything else.
@@ -107,6 +154,8 @@ limits. A run that stops early is not thrown away:
   so they carry a null `kind` — they are still keyed, still priced, and deliberately do not warn.
 - **Gems have no `def_id`.** `inferKind` knows the `gem_` prefix but nothing says what follows it
   for an Emerald or an Aquamarine, so they key on their category and hash like the chests do.
+- **Whether a second native currency is worth its calls.** The pass is per-currency per row, so
+  each one added multiplies the expensive half of the sweep. BRL is the only one asked for today.
 - **Two rarity tags are still unwitnessed.** `uncommon`, `rare`, `epic` and `legendary` have been
   read off live listings; `common` and `mythic` complete the same series.
 

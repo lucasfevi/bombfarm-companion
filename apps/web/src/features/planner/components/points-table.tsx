@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { SHEET_PANEL_KEYS, ZERO_PTS, type SheetKey } from '@bombfarm/domain/planner-constants';
 import { optimizeBuild, reoptBudget } from '@bombfarm/domain/points-reopt';
 import { pointsExceedLevel } from '@bombfarm/domain/point-inference';
 import { sub } from '@/shared/i18n';
 import { useAppLang } from '@/shared/context/app-lang';
-import { formatNumber } from '@/shared/lib/format-number';
+import { numberFormatterFor } from '@/shared/lib/format-number';
 import { usePlannerStore, selectAdvisorPipeline } from '@/shared/stores';
 import { Button, DataTable, Panel } from '@bombfarm/ui';
 import {
@@ -33,7 +33,8 @@ import { hasApplicableGain } from '../model/points-preview-copy';
  * vector it just committed).
  */
 export function PointsTable() {
-  const { t } = useAppLang();
+  const { t, lang } = useAppLang();
+  const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
   const level = usePlannerStore((state) => state.level);
   const pts = usePlannerStore((state) => state.pts);
   const setPts = usePlannerStore((state) => state.setPts);
@@ -121,7 +122,7 @@ export function PointsTable() {
       <PointsResetAdvice
         t={t}
         resetAdvice={resetAdvice}
-        formatNumber={formatNumber}
+        formatNumber={boundFormatNumber}
         enabled={heroBattleAllowed}
       />
       <DataTable.Root>
@@ -157,7 +158,7 @@ export function PointsTable() {
                   preview: previewValueFor(key),
                 }}
                 onPts={handlePtsMutate}
-                formatNumber={formatNumber}
+                formatNumber={boundFormatNumber}
               />
             ))}
           </DataTable.Body>
@@ -168,7 +169,7 @@ export function PointsTable() {
         preview={preview}
         justApplied={justApplied}
         optimize={{ disabled: budget <= 0, disabledReason: budget <= 0 ? t.optimizeBuildNoBudgetReason : null }}
-        formatNumber={formatNumber}
+        formatNumber={boundFormatNumber}
         onOptimize={handleOptimize}
         onApply={handleApply}
         onClear={handleClear}

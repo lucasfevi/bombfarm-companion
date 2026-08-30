@@ -89,23 +89,43 @@ describe('the live market rows', () => {
     expect(entryFor(priceKey('time_part_incomum', 1))?.hashName).toBe('Time Part (Uncommon)');
   });
 
-  it('keys the chests, cages, gems, stones and skins the catalog has no def for', () => {
-    for (const [category, hashName] of [
-      ['chest', 'Item Chest (Lv 10)'],
-      ['chest', 'Item Chest (Lv 20)'],
-      ['chest', 'Hero Cage (Act 1)'],
-      ['chest', 'Skill Stone Chest (Act 1)'],
-      ['gem', 'Emerald Gem'],
-      ['stone', 'Skill Stone (Uncommon)'],
-      ['skin', 'Royal Sentinel Skin'],
-    ] as const) {
-      expect(entryFor(categoryKey(category, hashName))?.hashName).toBe(hashName);
+  it('still keys by hash the rows whose owned def cannot be known', () => {
+    // The skin is not an inventory row at all — it is a field on a hero — so nothing an item
+    // carries could ever look it up.
+    expect(entryFor(categoryKey('skin', 'Royal Sentinel Skin'))?.hashName).toBe(
+      'Royal Sentinel Skin',
+    );
+  });
+
+  it('reaches an act chest by the def an owned copy carries, act for act', () => {
+    // The act IS the tier: an Act 1 cage is `chest_hero_1`, which the inventory reads as rarity 1.
+    const cases: [string, number, string][] = [
+      ['chest_hero_1', 1, 'Hero Cage (Act 1)'],
+      ['chest_skill_1', 1, 'Skill Stone Chest (Act 1)'],
+    ];
+    for (const [defId, rarityIdx, hashName] of cases) {
+      expect(entryFor(priceKey(defId, rarityIdx))?.hashName).toBe(hashName);
+    }
+  });
+
+  it('gives the rows whose def IS knowable the key an owned copy looks up', () => {
+    // These were keyed by hash and so priced but unreachable: an inventory looks a price up by
+    // def and rarity, and nothing ever produced these hashes. 41 of 130 tradable items in a real
+    // save went unpriced for exactly this reason.
+    const cases: [string, number, string][] = [
+      ['chest_item_10', 0, 'Item Chest (Lv 10)'],
+      ['chest_item_20', 0, 'Item Chest (Lv 20)'],
+      ['gem_emerald', 2, 'Emerald Gem'],
+      ['skill_stone_incomum', 1, 'Skill Stone (Uncommon)'],
+    ];
+    for (const [defId, rarityIdx, hashName] of cases) {
+      expect(entryFor(priceKey(defId, rarityIdx))?.hashName).toBe(hashName);
     }
   });
 
   it('keeps two same-act chests apart, which a facet-built key would have merged', () => {
-    const cage = entryFor(categoryKey('chest', 'Hero Cage (Act 1)'));
-    const stoneChest = entryFor(categoryKey('chest', 'Skill Stone Chest (Act 1)'));
+    const cage = entryFor(priceKey('chest_hero_1', 1));
+    const stoneChest = entryFor(priceKey('chest_skill_1', 1));
 
     expect(cage?.act).toBe(1);
     expect(stoneChest?.act).toBe(1);
@@ -130,7 +150,7 @@ describe('the live market rows', () => {
 
   it('gives each row the item kind its category maps to, and none where there is none', () => {
     expect(entryFor(priceKey('ember_luva', 2))?.kind).toBe('equipment');
-    expect(entryFor(categoryKey('gem', 'Emerald Gem'))?.kind).toBe('gem');
+    expect(entryFor(priceKey('gem_emerald', 2))?.kind).toBe('gem');
     expect(entryFor(priceKey('map_key_raro', 2))?.kind).toBe('key');
     expect(entryFor(priceKey('time_part_epico', 3))?.kind).toBe('material');
     expect(entryFor(categoryKey('skin', 'Royal Sentinel Skin'))?.kind).toBeNull();

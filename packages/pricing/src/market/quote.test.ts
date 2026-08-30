@@ -1,0 +1,140 @@
+import { describe, expect, it, vi } from 'vitest';
+import { parseMoneyAmount, parsePriceOverview, priceOverviewUrl } from './endpoints.js';
+import { quoteNative, type QuoteFetchResult } from './quote.js';
+
+const APP_ID = 4892010;
+const noSleep = () => Promise.resolve();
+const at = (iso: string) => () => Date.parse(iso);
+
+function fetcherFrom(answers: Record<string, QuoteFetchResult>) {
+  const calls: string[] = [];
+  const fetchPriceOverview = vi.fn((url: string): Promise<QuoteFetchResult> => {
+    calls.push(url);
+    const hashName = decodeURIComponent(new URL(url).searchParams.get('market_hash_name') ?? '');
+    return Promise.resolve<QuoteFetchResult>(answers[hashName] ?? { ok: true, lowest: null });
+  });
+  return { calls, fetchPriceOverview };
+}
+
+describe('parseMoneyAmount', () => {
+  it('reads both separator conventions from the same function', () => {
+    expect(parseMoneyAmount('$4.80')).toBe(4.8);
+    expect(parseMoneyAmount('R$ 25,00')).toBe(25);
+    expect(parseMoneyAmount('R$ 1.234,56')).toBe(1234.56);
+    expect(parseMoneyAmount('$1,234.56')).toBe(1234.56);
+  });
+
+  it('treats a trailing group of exactly three digits as grouping, not a decimal', () => {
+    expect(parseMoneyAmount('R$ 1.234')).toBe(1234);
+    expect(parseMoneyAmount('1,500')).toBe(1500);
+    expect(parseMoneyAmount('R$ 0,17')).toBe(0.17);
+  });
+
+  it('is null for a string carrying no number', () => {
+    expect(parseMoneyAmount('')).toBeNull();
+    expect(parseMoneyAmount('R$')).toBeNull();
+  });
+});
+
+describe('parsePriceOverview', () => {
+  it('reads the lowest listing', () => {
+    expect(parsePriceOverview({ success: true, lowest_price: 'R$ 25,00' })).toBe(25);
+  });
+
+  it('is null when Steam succeeds without quoting a price', () => {
+    // Measured live: this is what a genuinely listed item can answer, so it cannot mean unlisted.
+    expect(parsePriceOverview({ success: true })).toBeNull();
+    expect(parsePriceOverview({ success: false, lowest_price: 'R$ 25,00' })).toBeNull();
+  });
+});
+
+describe('quoteNative', () => {
+  it('quotes each hash in each requested currency', async () => {
+    const { fetchPriceOverview } = fetcherFrom({
+      'Coal Boots Lv 30 (Rare)': { ok: true, lowest: 25 },
+    });
+
+    const result = await quoteNative(APP_ID, ['Coal Boots Lv 30 (Rare)'], ['BRL'], {
+      fetchPriceOverview,
+      sleep: noSleep,
+      now: at('2026-08-29T18:00:00.000Z'),
+    });
+
+    expect(result.quotes.get('Coal Boots Lv 30 (Rare)')).toEqual({ BRL: 25 });
+    expect(result.quotedUtc).toBe('2026-08-29T18:00:00.000Z');
+    expect(result.currencies).toEqual(['BRL']);
+    expect(result.complete).toBe(true);
+  });
+
+  it('asks the currency-honouring endpoint, not the search one', async () => {
+    const { calls, fetchPriceOverview } = fetcherFrom({});
+    await quoteNative(APP_ID, ['Gold Ring Lv 20 (Rare)'], ['BRL'], {
+      fetchPriceOverview,
+      sleep: noSleep,
+    });
+
+    expect(calls).toEqual([priceOverviewUrl(APP_ID, 'Gold Ring Lv 20 (Rare)', 'BRL')]);
+    expect(calls[0]).toContain('currency=7');
+  });
+
+  it('leaves an unquoted hash absent rather than recording it as zero or null', async () => {
+    const { fetchPriceOverview } = fetcherFrom({
+      'Gold Gloves (Legendary)': { ok: true, lowest: null },
+    });
+
+    const result = await quoteNative(APP_ID, ['Gold Gloves (Legendary)'], ['BRL'], {
+      fetchPriceOverview,
+      sleep: noSleep,
+    });
+
+    expect(result.quotes.has('Gold Gloves (Legendary)')).toBe(false);
+    expect(result.unquoted).toBe(1);
+    expect(result.complete).toBe(true);
+  });
+
+  it('backs off on a rate limit and then continues', async () => {
+    const waits: number[] = [];
+    let limited = false;
+    const fetchPriceOverview = vi.fn(() => {
+      if (!limited) {
+        limited = true;
+        return Promise.resolve<QuoteFetchResult>({ ok: false, rateLimited: true });
+      }
+      return Promise.resolve<QuoteFetchResult>({ ok: true, lowest: 12 });
+    });
+
+    const result = await quoteNative(APP_ID, ['Ember Ring Lv 10 (Rare)'], ['BRL'], {
+      fetchPriceOverview,
+      sleep: (ms) => {
+        waits.push(ms);
+        return Promise.resolve();
+      },
+      baseDelayMs: 100,
+    });
+
+    expect(waits[0]).toBe(200);
+    expect(result.quotes.get('Ember Ring Lv 10 (Rare)')).toEqual({ BRL: 12 });
+    expect(result.complete).toBe(true);
+  });
+
+  it('stops the pass once the quota is spent, keeping what it already quoted', async () => {
+    const quoted = 'Coal Boots Lv 30 (Rare)';
+    const fetchPriceOverview = vi.fn((url: string) => {
+      const hashName = decodeURIComponent(new URL(url).searchParams.get('market_hash_name') ?? '');
+      return Promise.resolve<QuoteFetchResult>(
+        hashName === quoted ? { ok: true, lowest: 25 } : { ok: false, rateLimited: true },
+      );
+    });
+
+    const result = await quoteNative(APP_ID, [quoted, 'Gold Ring Lv 20 (Rare)'], ['BRL'], {
+      fetchPriceOverview,
+      sleep: noSleep,
+      baseDelayMs: 1,
+      maxConsecutiveRateLimits: 3,
+    });
+
+    expect(result.complete).toBe(false);
+    expect(result.quotes.get(quoted)).toEqual({ BRL: 25 });
+    expect(result.anomalies.map((anomaly) => anomaly.kind)).toEqual(['rate-limited']);
+  });
+});

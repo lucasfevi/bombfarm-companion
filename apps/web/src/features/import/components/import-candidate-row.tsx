@@ -86,7 +86,7 @@ export function ImportCandidateRow({
         Lv{candidate.level}
       </DataTable.Cell>
       <DataTable.Cell align="right" numeric className={inactiveChrome}>
-        {formatNumber(candidate.power, 0)}
+        {formatNumber(candidate.power, lang, 0)}
       </DataTable.Cell>
       <DataTable.Cell className={cn('max-[720px]:hidden py-2', inactiveChrome)} nowrap={false} data-roster-wrap>
         <HeroGearIcons

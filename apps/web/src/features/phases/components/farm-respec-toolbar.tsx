@@ -1,5 +1,7 @@
 'use client';
 
+import type { Lang } from '@/shared/i18n';
+
 import { Button } from '@bombfarm/ui';
 import type { Strings } from '@/shared/i18n';
 import { selectFarmRespecGate, usePlannerStore } from '@/shared/stores';
@@ -13,7 +15,7 @@ import { FarmRespecHeadline } from './farm-respec-headline';
  * WITHOUT `useShallow` — the selector returns a stable identity on a cache hit, and the board's
  * own row selector already relies on that same contract.
  */
-export function FarmRespecToolbar({ t }: { t: Strings }) {
+export function FarmRespecToolbar({ t, lang }: { t: Strings; lang: Lang }) {
   const gate = usePlannerStore(selectFarmRespecGate);
   const status = usePlannerStore((state) => state.farmRespecStatus);
   const panelOpen = usePlannerStore((state) => state.farmRespecPanelOpen);
@@ -50,7 +52,7 @@ export function FarmRespecToolbar({ t }: { t: Strings }) {
       {degraded ? (
         <span className="text-[12px] text-muted">{t.farmRespecGateFailed}</span>
       ) : gate.result ? (
-        <FarmRespecHeadline t={t} result={gate.result} />
+        <FarmRespecHeadline t={t} lang={lang} result={gate.result} />
       ) : null}
     </div>
   );

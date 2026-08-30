@@ -35,7 +35,7 @@ export function FarmRankingRow({ row, lang, t, current, onActivate, ariaRowIndex
   const oneShotLabels = { yes: t.farmRankingOneShotYes, no: t.farmRankingOneShotNo };
   const oneShotTip = row.oneShot
     ? t.farmRankingOneShotTooltipYes
-    : sub(t.farmRankingOneShotTooltipNo, { htk: formatMitigationPct(row.expectedHtk) });
+    : sub(t.farmRankingOneShotTooltipNo, { htk: formatMitigationPct(row.expectedHtk, lang) });
   const gemApplies = dropAppliesOnPhase('gem', row.gate);
   const timeApplies = dropAppliesOnPhase('time', row.gate);
 
@@ -87,25 +87,25 @@ export function FarmRankingRow({ row, lang, t, current, onActivate, ariaRowIndex
         </span>
       </DataTable.Cell>
       <DataTable.Cell align="right" numeric>
-        {formatMitigationPct(row.mitigationPct)}%
+        {formatMitigationPct(row.mitigationPct, lang)}%
       </DataTable.Cell>
       <DataTable.Cell align="right" numeric data-testid={`farm-row-gold-${row.phase}`}>
-        {formatRatePerHour(row.goldPerHour)}
+        {formatRatePerHour(row.goldPerHour, lang)}
       </DataTable.Cell>
       <DataTable.Cell align="right" numeric>
-        {formatRatePerHour(row.chestsPerHour)}
+        {formatRatePerHour(row.chestsPerHour, lang)}
       </DataTable.Cell>
       <DataTable.Cell align="right" numeric>
-        {formatSignedRatePerHour(row.keysPerHour)}
+        {formatSignedRatePerHour(row.keysPerHour, lang)}
       </DataTable.Cell>
       <DataTable.Cell align="right" numeric className={cn(!gemApplies && statListMutedRowClass)}>
-        {gemApplies ? formatRatePerHour(row.gemsPerHour) : '—'}
+        {gemApplies ? formatRatePerHour(row.gemsPerHour, lang) : '—'}
       </DataTable.Cell>
       <DataTable.Cell align="right" numeric className={cn(!timeApplies && statListMutedRowClass)}>
-        {timeApplies ? formatRatePerHour(row.timePiecesPerHour) : '—'}
+        {timeApplies ? formatRatePerHour(row.timePiecesPerHour, lang) : '—'}
       </DataTable.Cell>
       <DataTable.Cell align="right" numeric>
-        {formatRatePerHour(row.xpPerHour)}
+        {formatRatePerHour(row.xpPerHour, lang)}
       </DataTable.Cell>
       <DataTable.Cell align="right">{formatBand(row.itemLevelLabel)}</DataTable.Cell>
       <DataTable.Cell align="right" numeric>

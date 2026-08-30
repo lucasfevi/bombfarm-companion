@@ -23,6 +23,8 @@ function marketEntry(overrides: Partial<MarketEntry> & { hashName: string }): Ma
     rarityIdx: 1,
     level: 10,
     act: null,
+    lowestNative: {},
+    nativeQuotedUtc: null,
     lowestUsd: 2.5,
     listings: 4,
     iconUrl: null,
@@ -157,5 +159,62 @@ describe('resolveKey', () => {
 
   it('reports unknown for a key nothing on the market carries', () => {
     expect(resolveKey('chest#Nothing', snapshotOf([])).state).toBe('unknown');
+  });
+});
+
+describe('native versus converted quotes', () => {
+  const item = { defId: 'ember_arma', rarity: 1, tradable: true };
+
+  it('quotes the currency Steam priced itself, not the converted figure', () => {
+    const snapshot = snapshotOf([
+      marketEntry({ hashName: 'Ember Sword', lowestUsd: 4.8, lowestNative: { BRL: 25 } }),
+    ]);
+    snapshot.fx = { USD: 1, BRL: 5.1641 };
+
+    expect(resolveItemPrice(item, snapshot, 'BRL')).toMatchObject({
+      amount: 25,
+      currency: 'BRL',
+      basis: 'native',
+    });
+  });
+
+  it('falls back to converting when Steam declined to quote that currency', () => {
+    const snapshot = snapshotOf([
+      marketEntry({ hashName: 'Ember Sword', lowestUsd: 10, lowestNative: {} }),
+    ]);
+    snapshot.fx = { USD: 1, BRL: 5 };
+
+    expect(resolveItemPrice(item, snapshot, 'BRL')).toMatchObject({
+      amount: 50,
+      currency: 'BRL',
+      basis: 'converted',
+    });
+  });
+
+  it('dates a native quote by its own timestamp rather than by the enumeration', () => {
+    const snapshot = snapshotOf([
+      marketEntry({
+        hashName: 'Ember Sword',
+        lowestUsd: 4.8,
+        lowestNative: { BRL: 25 },
+        fetchedUtc: '2026-08-29T18:00:00.000Z',
+        nativeQuotedUtc: '2026-08-29T12:00:00.000Z',
+      }),
+    ]);
+
+    expect(resolveItemPrice(item, snapshot, 'BRL').quotedUtc).toBe('2026-08-29T12:00:00.000Z');
+  });
+
+  it('reports no listing when the enumeration found none, even holding a native quote', () => {
+    // priceoverview under-reports rather than over-reports, so the enumeration owns this call;
+    // a stale quote must not resurrect supply that is gone.
+    const snapshot = snapshotOf([
+      marketEntry({ hashName: 'Ember Sword', lowestUsd: null, lowestNative: { BRL: 25 } }),
+    ]);
+
+    expect(resolveItemPrice(item, snapshot, 'BRL')).toMatchObject({
+      state: 'no-listing',
+      amount: null,
+    });
   });
 });

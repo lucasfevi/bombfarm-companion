@@ -1,9 +1,11 @@
 'use client';
 
+import { useMemo } from 'react';
+
 import { SLOTS, sumGearBonuses, type GearBonuses } from '@bombfarm/domain/gear';
 import { itemsEqual } from '@bombfarm/domain/loadout';
 import { useAppLang } from '@/shared/context/app-lang';
-import { formatNumber } from '@/shared/lib/format-number';
+import { formatNumber, numberFormatterFor } from '@/shared/lib/format-number';
 import { usePlannerStore, selectAdvisorPipeline } from '@/shared/stores';
 import { useHeroBuildActions } from '../hooks/use-hero-build-actions';
 import { Button, MetricScoreboard, type MetricScoreboardCell } from '@bombfarm/ui';
@@ -23,6 +25,7 @@ const compareRevealTransition = { duration: 0.4, ease: 'easeInOut' as const };
 /** Compare header + actions + alt-loadout grid + totals/scoreboard for the Items panel. */
 export function GearCompareSection() {
   const { t, lang } = useAppLang();
+  const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
   const { setAltSlot, clearCompare, copyGear, applyAltGear } = useHeroBuildActions();
 
   const loadout = usePlannerStore((state) => state.loadout);
@@ -46,29 +49,29 @@ export function GearCompareSection() {
         {
           id: 'dps-current',
           label: `${t.metricSustained} · ${t.compareCurrent}`,
-          value: formatNumber(dps, 0),
+          value: formatNumber(dps, lang, 0),
           tone: 'ink',
         },
         {
           id: 'hit-current',
           label: `${t.compareHit} · ${t.compareCurrent}`,
-          value: formatNumber(predHit, 0),
+          value: formatNumber(predHit, lang, 0),
           tone: 'ink',
         },
         {
           id: 'dps-clone',
           label: `${t.metricSustained} · ${t.compareAlt}`,
-          value: formatNumber(B.dps, 0),
+          value: formatNumber(B.dps, lang, 0),
           tone: 'accent',
-          delta: `${bDiff >= 0 ? '+' : ''}${formatNumber(bDiff, 1)}%`,
+          delta: `${bDiff >= 0 ? '+' : ''}${formatNumber(bDiff, lang, 1)}%`,
           deltaTone: bDiff >= 0 ? 'up' : 'down',
         },
         {
           id: 'hit-clone',
           label: `${t.compareHit} · ${t.compareAlt}`,
-          value: formatNumber(B.hit, 0),
+          value: formatNumber(B.hit, lang, 0),
           tone: 'accent',
-          delta: `${bHitDiff >= 0 ? '+' : ''}${formatNumber(bHitDiff, 1)}%`,
+          delta: `${bHitDiff >= 0 ? '+' : ''}${formatNumber(bHitDiff, lang, 1)}%`,
           deltaTone: bHitDiff >= 0 ? 'up' : 'down',
         },
       ]
@@ -87,7 +90,7 @@ export function GearCompareSection() {
               current={gearBonuses}
               clone={comparing && altGearBonuses ? altGearBonuses : undefined}
               t={t}
-              formatNumber={formatNumber}
+              formatNumber={boundFormatNumber}
             />
             <AnimatePresence initial={false}>
               {comparing && B && altGearBonuses && (
@@ -181,7 +184,7 @@ export function GearCompareSection() {
                   );
                 })}
               </div>
-              <GearSlotStatsGrid loadout={altLoadout} t={t} formatNumber={formatNumber} />
+              <GearSlotStatsGrid loadout={altLoadout} t={t} formatNumber={boundFormatNumber} />
             </motion.div>
           )}
         </AnimatePresence>

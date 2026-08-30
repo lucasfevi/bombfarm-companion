@@ -48,16 +48,16 @@ export function PhasePropMixTable({ intel }: { intel: PhaseIntelGlobal }) {
                   </span>
                 </DataTable.Cell>
                 <DataTable.Cell align="right" numeric>
-                  {formatNumber(row.hp, 0)}
+                  {formatNumber(row.hp, lang, 0)}
                 </DataTable.Cell>
                 <DataTable.Cell align="right" numeric>
-                  {formatNumber(row.weightShare * 100, 1)}%
+                  {formatNumber(row.weightShare * 100, lang, 1)}%
                 </DataTable.Cell>
                 <DataTable.Cell align="right" numeric>
-                  <GoldValue className="w-full justify-end">{formatNumber(row.goldWiki, 0)}</GoldValue>
+                  <GoldValue className="w-full justify-end">{formatNumber(row.goldWiki, lang, 0)}</GoldValue>
                 </DataTable.Cell>
                 <DataTable.Cell align="right" numeric className="text-accent">
-                  <GoldValue className="w-full justify-end">{formatNumber(row.goldActual, 0)}</GoldValue>
+                  <GoldValue className="w-full justify-end">{formatNumber(row.goldActual, lang, 0)}</GoldValue>
                 </DataTable.Cell>
               </DataTable.Row>
             ))}

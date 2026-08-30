@@ -83,8 +83,11 @@ jobs:
       # rootDir: "src", and a paths entry pointing outside it is rejected). So contracts must
       # be built before anything that typechecks domain source, same as ci-desktop.yml's
       # existing "Build workspace packages (desktop deps)" step.
-      - name: Build contracts (domain type dependency)
-        run: pnpm --filter @bombfarm/contracts build
+      # `@bombfarm/pricing` is the one workspace package the planner consumes from `dist` rather
+      # than from source: it carries `.js` import specifiers so its build stays importable by the
+      # Node-side snapshot tool, which rules out the source alias the other packages use.
+      - name: Build contracts and pricing (type dependencies)
+        run: pnpm --filter @bombfarm/contracts --filter @bombfarm/pricing build
 
       - name: Typecheck web + domain + ui
         run: pnpm --filter @bombfarm/domain --filter @bombfarm/ui --filter @bombfarm/web typecheck

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { LiveEarnings } from '@bombfarm/contracts';
-import { formatCompactNumber, Icon, Panel, Tooltip } from '@bombfarm/ui';
-import { sub, useCopy } from '../../lib/copy';
+import { formatCompactNumber, Icon, Panel, Tooltip, type Lang } from '@bombfarm/ui';
+import { sub, useCopy, useLocale } from '../../lib/copy';
 import { formatCapturedAt } from '../../lib/format';
 import type { ReachedLiveFreshness } from './freshness-line';
 import { formatLiveDurationSeconds } from './format-live-duration';
@@ -20,8 +20,8 @@ function coverageMinutesLabel(coverageSeconds: number): number {
   return Math.min(MAX_COVERAGE_MINUTES, Math.max(1, Math.floor(coverageSeconds / 60)));
 }
 
-function numberText(value: number | null | undefined): ReactNode {
-  return value == null ? EM_DASH : formatCompactNumber(value, 1);
+function numberText(value: number | null | undefined, lang: Lang): ReactNode {
+  return value == null ? EM_DASH : formatCompactNumber(value, lang, 1);
 }
 
 /** Right-aligned label/value block for the right half's six figures. Every block reserves the
@@ -64,6 +64,7 @@ export function EarningsPanel({
   onReset: () => void;
 }) {
   const t = useCopy();
+  const { lang } = useLocale();
 
   const sessionSeconds = earnings?.sessionSeconds ?? 0;
   const coverageSeconds = earnings?.coverageSeconds ?? 0;
@@ -86,7 +87,7 @@ export function EarningsPanel({
   const currentGoldIsStale = balance !== null && currentGoldAgeText !== null;
   const currentGoldValue: ReactNode = (
     <>
-      <span className={currentGoldIsStale ? 'text-muted' : 'text-gold'}>{numberText(balance)}</span>
+      <span className={currentGoldIsStale ? 'text-muted' : 'text-gold'}>{numberText(balance, lang)}</span>
       <Tooltip.Provider>
         <Tooltip.Root>
           {currentGoldIsStale ? (
@@ -148,7 +149,7 @@ export function EarningsPanel({
             {recentWindowText}
           </span>
           <span data-testid="live-earnings-gold-10" className="text-[28px] font-bold leading-none text-gold tabular-nums whitespace-nowrap">
-            {numberText(earnings?.gold10)}
+            {numberText(earnings?.gold10, lang)}
           </span>
           <span
             data-testid="live-earnings-gold-10-unit"
@@ -160,7 +161,7 @@ export function EarningsPanel({
             data-testid="live-earnings-xp-10"
             className="text-[19px] font-bold leading-none text-info tabular-nums whitespace-nowrap"
           >
-            {numberText(earnings?.xp10)}
+            {numberText(earnings?.xp10, lang)}
           </span>
           <Tooltip.Provider>
             <Tooltip.Root>
@@ -196,14 +197,14 @@ export function EarningsPanel({
             blockTestId="live-earnings-block-gold-rate"
             testId="live-earnings-gold-session"
             label={t.liveEarningsGoldSessionLabel}
-            value={numberText(earnings?.goldSession)}
+            value={numberText(earnings?.goldSession, lang)}
             className="text-[23px] font-bold text-gold/70 tabular-nums whitespace-nowrap"
           />
           <Block
             blockTestId="live-earnings-block-gold-total"
             testId="live-earnings-gold-session-total"
             label={t.liveEarningsGoldSessionTotalLabel}
-            value={numberText(earnings?.goldSessionTotal)}
+            value={numberText(earnings?.goldSessionTotal, lang)}
             className="text-[23px] font-bold text-gold tabular-nums whitespace-nowrap"
           />
           <Block
@@ -217,14 +218,14 @@ export function EarningsPanel({
             blockTestId="live-earnings-block-xp-rate"
             testId="live-earnings-xp-session"
             label={t.liveEarningsXpSessionLabel}
-            value={numberText(earnings?.xpSession)}
+            value={numberText(earnings?.xpSession, lang)}
             className="text-[23px] font-bold text-info/70 tabular-nums whitespace-nowrap"
           />
           <Block
             blockTestId="live-earnings-block-xp-total"
             testId="live-earnings-xp-session-total"
             label={t.liveEarningsXpSessionTotalLabel}
-            value={numberText(earnings?.xpSessionTotal)}
+            value={numberText(earnings?.xpSessionTotal, lang)}
             className="text-[23px] font-bold text-info tabular-nums whitespace-nowrap"
           />
         </div>

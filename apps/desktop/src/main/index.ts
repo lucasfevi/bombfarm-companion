@@ -1,9 +1,11 @@
 import path from 'node:path';
-import { app, BrowserWindow, ipcMain, Menu } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron';
 import {
   DEFAULT_SETTINGS,
   disabledUpdateStatus,
+  emptyMarketSnapshotView,
   isIpcChannel,
+  isMarketQuoteTarget,
   liveGap,
   resolveStartupLocale,
   type AccountView,
@@ -12,9 +14,13 @@ import {
   type ConsentRecord,
   type IpcEventChannel,
   type IpcEvents,
+  type IpcInvokeArgs,
   type IpcInvokeChannel,
+  type IpcInvokeResult,
   type LiveDiagnosticsDumpOutcome,
   type LiveView,
+  type MarketQuoteResult,
+  type MarketQuoteTarget,
   type SettingsWriteResult,
   type UpdateStatus,
 } from '@bombfarm/contracts';
@@ -24,6 +30,7 @@ import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
 import { fuseSecondsForCdr } from './domain-edge.js';
 import { InvalidFlavorError, resolveAppEnv, RENDERER_DEV_URL, type AppEnv } from './env.js';
+import { applyExternalNavigationPolicy } from './external-navigation.js';
 import { GameReaderService } from './game-reader/game-reader-service.js';
 import {
   registerRendererProtocol,
@@ -51,6 +58,9 @@ import {
   unavailableUpdateService,
   type UpdateService,
 } from './updates/index.js';
+import { marketCachePath } from './market/market-cache.js';
+import { createMarketService, type MarketService } from './market/market-service.js';
+import { marketHttpGet } from './market/market-transport.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
 
@@ -64,6 +74,7 @@ let settingsStore: SettingsStore | null = null;
 let liveSource: LiveSource | null = null;
 let liveFastPublisher: LiveFastPublisher | null = null;
 let triggeredRefresh: TriggeredRefresh | null = null;
+let marketService: MarketService | null = null;
 /** Fixture mode only — see `gameReader.onAccountCommitted` for why a re-ingest of an unchanged
  *  rotation is not free. */
 let lastIngestedRotationBody: string | null = null;
@@ -137,8 +148,26 @@ function defaultLiveView(): LiveView {
   };
 }
 
+type IpcHandlers = {
+  [C in IpcInvokeChannel]: (...args: IpcInvokeArgs<C>) => IpcInvokeResult<C> | Promise<IpcInvokeResult<C>>;
+};
+
+function refreshMarketItem(target: MarketQuoteTarget): Promise<MarketQuoteResult> {
+  if (!isMarketQuoteTarget(target) || marketService === null) {
+    return Promise.resolve({
+      ok: false,
+      key: null,
+      hashName: null,
+      reason: 'unknown-item',
+      keptAmount: null,
+      at: new Date().toISOString(),
+    });
+  }
+  return marketService.refreshItem(target);
+}
+
 function registerIpcHandlers(): void {
-  const handlers: Record<IpcInvokeChannel, () => unknown> = {
+  const handlers: IpcHandlers = {
     'app:getFlavor': () => resolveAppEnv().flavor,
     'app:getEnvironment': () => {
       const env = resolveAppEnv();
@@ -189,13 +218,16 @@ function registerIpcHandlers(): void {
       updateService?.download() ?? disabledUpdateStatus(app.getVersion()),
     'updates:installOnRestart': (): UpdateStatus =>
       updateService?.installOnRestart() ?? disabledUpdateStatus(app.getVersion()),
+    'market:getSnapshot': () => marketService?.getView() ?? emptyMarketSnapshotView(),
+    'market:refreshItem': refreshMarketItem,
   };
 
-  ipcMain.handle('bfc:invoke', (_event, channel: string) => {
+  ipcMain.handle('bfc:invoke', (_event, channel: string, ...args: unknown[]) => {
     if (!isIpcChannel(channel)) {
       throw new Error(`Unknown IPC channel: ${channel}`);
     }
-    return handlers[channel]();
+    const handler = handlers[channel] as (...forwarded: unknown[]) => unknown;
+    return handler(...args);
   });
 }
 
@@ -223,6 +255,12 @@ async function createMainWindow(): Promise<void> {
       nodeIntegration: false,
       sandbox: false,
     },
+  });
+
+  applyExternalNavigationPolicy(mainWindow.webContents, {
+    openExternal: (url) => shell.openExternal(url),
+    log,
+    internalUrls: env.isDev ? [RENDERER_DEV_URL] : [],
   });
 
   gameReader?.setWindowProvider(() => mainWindow);
@@ -473,6 +511,20 @@ async function bootstrap(): Promise<void> {
     liveSource?.ingestRotation(committed);
   };
 
+  // Public, unauthenticated, and player-data-free: it reads a published price file and Steam's
+  // own per-item quote, carries no session token, and sends nothing about the account. That is
+  // why it is not behind the game-API consent gate the account cycle sits behind.
+  marketService = createMarketService({
+    httpGet: marketHttpGet,
+    cachePath: marketCachePath(userDataDir),
+    log,
+    now: () => Date.now(),
+    sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    onChanged: (view) => {
+      emitEvent('market:changed', view);
+    },
+  });
+
   registerIpcHandlers();
   registerRendererProtocol(path.join(__dirname, '../../renderer/out'));
   await createMainWindow();
@@ -501,6 +553,11 @@ async function bootstrap(): Promise<void> {
     updateService = unavailableUpdateService(app.getVersion(), env.descriptor.updateChannel);
     emitEvent('updates:changed', updateService.getStatus());
   }
+
+  // Outside that guard on purpose: prices have nothing to do with the updater, and an updater
+  // that could not start is no reason to open the app without them.
+  marketService.start();
+  log.info({ scope: 'main', event: 'market.started' });
 }
 
 function resolveBootEnv(): AppEnv {
@@ -590,6 +647,8 @@ if (!gotLock) {
     accountRefresh = null;
     liveFastPublisher?.stop();
     liveFastPublisher = null;
+    marketService?.stop();
+    marketService = null;
     triggeredRefresh = null;
     void liveSource?.teardown();
     liveSource = null;

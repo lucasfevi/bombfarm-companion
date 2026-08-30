@@ -107,6 +107,10 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'fileDropZoneRecipe',
   'formatCompactNumber',
   'formatNumber',
+  // The number formatters take the reader's language now, so the pair that binds one for the
+  // components which receive an injected formatter ships beside them.
+  'numberFormatterFor',
+  'compactNumberFormatterFor',
   'initialToastQueueState',
   'metricScoreboardDeltaRecipe',
   'metricScoreboardValueRecipe',
@@ -150,10 +154,22 @@ describe('design-system barrel surface (frozen)', () => {
 //
 // SpriteLoop: the preloading, reduced-motion-aware pixel-art frame loop generalised out of the
 // web-only hero6 bomb-activation sprite, so the desktop app can reuse the same implementation.
+// The market price and table exports (2026-08-29): the inventory grew a second layout, and both
+// shells render it beside the cards. `MarketPrice` is the one place a Steam price is drawn, so
+// the card and the table cannot drift apart on how an approximate figure or a missing listing
+// reads; `nextInventorySort` is the header buttons' pure fold over the domain's multi-term sort,
+// exported so a host driving the table from its own toolbar produces the same order.
 const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'AbilityIcon',
   'ArtFrame',
   'InventoryGrid',
+  'InventoryLayoutToggle',
+  'InventoryTable',
+  'InventoryToolbar',
+  'InventoryTotals',
+  'MAX_HERO_STARS',
+  'MarketPrice',
+  'nextInventorySort',
   'ChestIcon',
   'ClockIcon',
   'DropIcon',
@@ -188,6 +204,20 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'inventoryStatRowClass',
   'inventoryStatValueClass',
   'inventoryStatsPanelClass',
+  'inventoryTableActionButtonClass',
+  'inventoryTableBlankClass',
+  'inventoryTableForgeClass',
+  'inventoryTableGoldClass',
+  'inventoryTableGroupCountClass',
+  'inventoryTableGroupHeaderClass',
+  'inventoryTableHeroClass',
+  'inventoryTableHeroNameClass',
+  'inventoryTableItemNameClass',
+  'inventoryTableNameClass',
+  'inventoryTableResultCountClass',
+  'inventoryTableRowClass',
+  'inventoryTableSkippedNoteClass',
+  'inventoryTableToolbarClass',
   'rarityDotClass',
   'rarityTextClass',
   'rosterIconTooltipTriggerClass',
