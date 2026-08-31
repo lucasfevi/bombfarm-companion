@@ -1,15 +1,20 @@
 'use client';
 
-import { DataTable, Panel } from '@bombfarm/ui';
-import { panelHClass, panelTitleClass, phasesBoardPropsClass } from '@bombfarm/ui/panel-field.recipe';
-import { useAppLang } from '@/shared/context/app-lang';
-import { formatNumber } from '@/shared/lib/format-number';
-import { GoldValue, PropIcon } from '@/shared/game-art';
+import {
+  DataTable,
+  Panel,
+  formatNumber,
+  panelHClass,
+  panelTitleClass,
+  phasesBoardPropsClass,
+} from '@bombfarm/ui';
+import { GoldValue, PropIcon } from '@bombfarm/game-art';
 import { propLabel } from '@bombfarm/domain/game-labels';
 import type { PhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
+import { useFarmCopy } from './farm-copy-context';
 
 export function PhasePropMixTable({ intel }: { intel: PhaseIntelGlobal }) {
-  const { t, lang } = useAppLang();
+  const { t, lang } = useFarmCopy();
 
   return (
     <Panel className={phasesBoardPropsClass}>

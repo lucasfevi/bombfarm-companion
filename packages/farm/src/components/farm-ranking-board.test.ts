@@ -420,9 +420,12 @@ describe('Farm Ranking row — the gate marker is always mounted (no-layout-shif
 
 /**
  * The property that lets two apps render one screen: every component here takes what it shows,
- * and reaches for nothing. Four of them used to read the web app's zustand store directly, and a
- * fifth reading one again would compile, pass every test above, and silently make the package
+ * and reaches for nothing. Six of them used to read the web app's zustand store directly, and a
+ * seventh reading one again would compile, pass every test above, and silently make the package
  * un-renderable by any host but that one.
+ *
+ * The walk is recursive, so a component filed into a subdirectory (the hero picker) is covered
+ * rather than quietly exempt.
  */
 describe('the components are prop-driven — no store, no host module', () => {
   const HOST_REACH = [
@@ -441,9 +444,17 @@ describe('the components are prop-driven — no store, no host module', () => {
     return null;
   }
 
-  const componentFiles = readdirSync(COMPONENTS_DIR).filter(
-    (name) => name.endsWith('.tsx') && !name.endsWith('.test.tsx'),
-  );
+  function componentFilesUnder(dir: string, prefix = ''): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
+      entry.isDirectory()
+        ? componentFilesUnder(join(dir, entry.name), `${prefix}${entry.name}/`)
+        : entry.name.endsWith('.tsx') && !entry.name.endsWith('.test.tsx')
+          ? [`${prefix}${entry.name}`]
+          : [],
+    );
+  }
+
+  const componentFiles = componentFilesUnder(COMPONENTS_DIR);
 
   it('red state: a fabricated usePlannerStore subscription is caught', () => {
     expect(findHostReach('const rows = usePlannerStore(selectFarmBoardRows);')).toBe(
@@ -455,10 +466,12 @@ describe('the components are prop-driven — no store, no host module', () => {
     expect(findHostReach("import { sub } from '@/shared/i18n';")).toBe("from '@/shared/i18n'");
   });
 
-  it('the scan reaches every component in this directory', () => {
-    expect(componentFiles.length).toBe(16);
+  it('the scan reaches every component in this tree, subdirectories included', () => {
+    expect(componentFiles.length).toBe(35);
     expect(componentFiles).toContain('farm-ranking-board.tsx');
     expect(componentFiles).toContain('farm-respec-panel.tsx');
+    expect(componentFiles).toContain('phases-explorer.tsx');
+    expect(componentFiles).toContain('hero-picker/hero-picker-row.tsx');
   });
 
   it('green state: no component reads a store or imports a host module', () => {

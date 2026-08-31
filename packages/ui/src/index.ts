@@ -187,13 +187,27 @@ export {
   metricScoreboardValueRecipe,
   metricScoreboardDeltaRecipe,
 } from './metric-scoreboard.recipe';
-// `statListMutedRowClass` is on the root, not left to the deep `panel-field.recipe` subpath: this
-// package's `exports` map resolves a subpath to an extensionless source path, which an app's
-// tsconfig `paths` can complete but another package's own `tsc` cannot.
+// `statListMutedRowClass` and the phase-board/panel class constants beside it are on the root, not
+// left to the deep `panel-field.recipe` subpath: this package's `exports` map resolves a subpath to
+// an extensionless source path, which an app's tsconfig `paths` can complete but another package's
+// own `tsc` cannot. The phases panels that lay out that board are `@bombfarm/farm`'s now.
 export {
+  colClass,
+  dialogDescClass,
+  panelHClass,
   panelRecipe,
+  panelTitleClass,
+  phasesBoardClass,
+  phasesBoardDropsClass,
+  phasesBoardEconomyClass,
+  phasesBoardJaulaClass,
+  phasesBoardMapClass,
+  phasesBoardPropsClass,
+  phasesBoardRosterClass,
+  phasesBoardRosterSpanClass,
   setupBannerRecipe,
   statListMutedRowClass,
+  tipClass,
   type PanelVariant,
   type SetupBannerVariant,
 } from './panel-field.recipe';

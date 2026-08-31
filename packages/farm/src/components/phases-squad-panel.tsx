@@ -2,18 +2,20 @@
 
 import { useMemo } from 'react';
 
-import { Panel, StatList } from '@bombfarm/ui';
 import {
+  Panel,
+  StatList,
+  formatNumber,
+  numberFormatterFor,
   panelHClass,
   panelTitleClass,
   tipClass,
-} from '@bombfarm/ui/panel-field.recipe';
-import { useAppLang } from '@/shared/context/app-lang';
-import { sub } from '@/shared/i18n';
-import { formatNumber, numberFormatterFor } from '@/shared/lib/format-number';
-import { formatClearTime } from '@bombfarm/farm/model/phases-page';
-import type { HeroRecord } from '@/shared/lib/storage';
+} from '@bombfarm/ui';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { RosterDpsRow } from '@bombfarm/domain/roster-dps';
+import { sub } from '../copy';
+import { formatClearTime } from '../model/phases-page';
+import { useFarmCopy } from './farm-copy-context';
 import { PhasesTop9Table } from './phases-top9-table';
 
 export function PhasesSquadPanel({
@@ -34,7 +36,7 @@ export function PhasesSquadPanel({
   clearSecs: number | null;
   onSelectHero: (h: HeroRecord) => void;
 }) {
-  const { t, lang } = useAppLang();
+  const { t, lang } = useFarmCopy();
   const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
 
   return (

@@ -2,23 +2,24 @@
 
 import { useMemo } from 'react';
 
-import { Panel, StatList } from '@bombfarm/ui';
 import {
+  Panel,
+  StatList,
+  numberFormatterFor,
   panelHClass,
   panelTitleClass,
   phasesBoardJaulaClass,
   tipClass,
-} from '@bombfarm/ui/panel-field.recipe';
-import { useAppLang } from '@/shared/context/app-lang';
-import { numberFormatterFor } from '@/shared/lib/format-number';
+} from '@bombfarm/ui';
 import type { PhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
 import { WIKI_ASSETS_BASE } from '@bombfarm/domain/wiki-assets';
-import { jaulaItems } from '@bombfarm/farm/model/phase-fact-items';
+import { jaulaItems } from '../model/phase-fact-items';
+import { useFarmCopy } from './farm-copy-context';
 
 const cageArtSrc = `${WIKI_ASSETS_BASE}/env/jaula.png`;
 
 export function PhaseJaulaPanel({ intel }: { intel: PhaseIntelGlobal }) {
-  const { t, lang } = useAppLang();
+  const { t, lang } = useFarmCopy();
   const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
 
   return (

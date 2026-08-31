@@ -1,19 +1,19 @@
 'use client';
 
-import { HeroAvatar, rarityTextClass, rosterInactiveChromeClass } from '@/shared/game-art';
+import { HeroAvatar, rarityTextClass, rosterInactiveChromeClass } from '@bombfarm/game-art';
 import { cn, DataTable } from '@bombfarm/ui';
-import type { Strings } from '@/shared/i18n';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import type { RosterDpsRow } from '@bombfarm/domain/roster-dps';
-import type { HeroRecord } from '@/shared/lib/storage';
-import { formatClearTime } from '@bombfarm/farm/model/phases-page';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import type { FarmScreenCopy } from '../copy';
+import { formatClearTime } from '../model/phases-page';
 import { MAX_STARS } from '@bombfarm/domain/gear';
 
 type Props = {
   rows: RosterDpsRow[];
   heroesById: Map<string, HeroRecord>;
   activeHeroId: string | null;
-  t: Strings;
+  t: FarmScreenCopy;
   formatNumber: (n: number, d?: number) => string;
   onSelectHero: (hero: HeroRecord) => void;
 };

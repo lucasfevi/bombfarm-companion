@@ -1,8 +1,8 @@
 import { SLOTS } from '@bombfarm/domain/gear';
-import type { HeroRecord } from '@/shared/lib/storage';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { raritySortIdx, rankSortIdx } from '@bombfarm/domain/roster-sort';
 import { heroGearedSheet } from '@bombfarm/domain/power';
-import type { RosterSortDir, RosterSortKey } from '../components/roster-sort-header';
+import type { RosterSortDir, RosterSortKey } from '../components/hero-picker/roster-sort-header';
 
 export function gearCountOf(hero: HeroRecord): number {
   return SLOTS.filter((slot) => hero.loadout[slot]).length;

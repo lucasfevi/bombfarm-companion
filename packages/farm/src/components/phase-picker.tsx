@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { Panel, Select } from '@bombfarm/ui';
-import type { Lang, Strings } from '@/shared/i18n';
+import type { FarmCopy, Lang } from '../copy';
 import {
   firstPhaseForAto,
   formatMapOptionLabel,
@@ -23,7 +23,7 @@ export function PhasePicker({
 }: {
   phase: number;
   onPhase: (phase: number) => void;
-  t: Strings;
+  t: FarmCopy;
   lang: Lang;
 }) {
   const coord = phaseMapCoord(phase);

@@ -256,7 +256,9 @@ export default tseslint.config(
                 to: { element: { type: 'feature', captured: { feature: 'roster' } } },
               },
             },
-            // Allowlisted cross-feature edge — retires in W6 (phases-hero-switcher → HeroPickerDialog)
+            // Allowlisted cross-feature edge (phases-explorer connector → HeroPickerDialog): the
+            // explorer's hero panel takes the picker as a slot, and this app fills it with the
+            // same connector the planner strip opens.
             {
               from: { element: { type: 'feature', captured: { feature: 'phases' } } },
               allow: {
@@ -435,7 +437,6 @@ export default tseslint.config(
   {
     files: [
       'src/app/_shell/site-header.tsx',
-      'src/features/phases/components/phases-hero-switcher.tsx',
       'src/features/planner/components/hero-abilities-tab.tsx',
       'src/features/planner/components/hero-strip-identity.tsx',
       'src/features/planner/components/hero-strip-metrics.tsx',

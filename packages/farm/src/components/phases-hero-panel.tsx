@@ -2,15 +2,21 @@
 
 import { useMemo } from 'react';
 
-import { Panel, StatList } from '@bombfarm/ui';
-import { panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui/panel-field.recipe';
-import { useAppLang } from '@/shared/context/app-lang';
-import { formatNumber, numberFormatterFor } from '@/shared/lib/format-number';
-import { sub } from '@/shared/i18n';
-import { formatClearTime } from '@bombfarm/farm/model/phases-page';
+import {
+  Panel,
+  StatList,
+  formatNumber,
+  numberFormatterFor,
+  panelHClass,
+  panelTitleClass,
+  tipClass,
+} from '@bombfarm/ui';
 import type { HeroPhaseFit } from '@bombfarm/domain/phase-intel';
-import type { HeroRecord } from '@/shared/lib/storage';
-import { PhasesHeroSwitcher } from './phases-hero-switcher';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import { sub } from '../copy';
+import { formatClearTime } from '../model/phases-page';
+import { useFarmCopy } from './farm-copy-context';
+import { PhasesHeroSwitcherView, type HeroPickerSlot } from './phases-hero-switcher';
 import { PhasesHeroFitTable } from './phases-hero-fit-table';
 
 export function PhasesHeroPanel({
@@ -18,13 +24,15 @@ export function PhasesHeroPanel({
   hero,
   heroFit,
   onSelectHero,
+  renderPicker,
 }: {
   heroes: HeroRecord[];
   hero: HeroRecord;
   heroFit: HeroPhaseFit | null;
   onSelectHero: (h: HeroRecord) => void;
+  renderPicker?: HeroPickerSlot;
 }) {
-  const { t, lang } = useAppLang();
+  const { t, lang } = useFarmCopy();
   const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
 
   return (
@@ -33,13 +41,14 @@ export function PhasesHeroPanel({
         <h2 className={panelTitleClass}>{t.phasesHeroSection}</h2>
       </div>
       <p className={tipClass}>{t.phasesHeroTip}</p>
-      <PhasesHeroSwitcher
+      <PhasesHeroSwitcherView
         t={t}
         lang={lang}
         heroes={heroes}
         hero={hero}
         formatNumber={boundFormatNumber}
         onSelectHero={onSelectHero}
+        renderPicker={renderPicker}
       />
       {heroFit ? (
         <>

@@ -12,11 +12,15 @@ import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
 /**
  * The board's components and its pure model/format layer are both `@bombfarm/farm`'s now, so the
- * desktop app can render the same screen; what is left in this app is the connector that does the
- * store reads and renders the package's board. All three are scanned, and `every board dir
- * contributes files` below fails if any of them ever stops resolving — a source-scanning guard
- * pointed at a path that no longer exists keeps passing while checking nothing, which is the one
- * way these guards die silently.
+ * desktop app can render the same screen; what is left in this app's `features/phases/components`
+ * are the two connectors that do the store reads and render the package's views. All three dirs
+ * are scanned, and `every board dir contributes files` below fails if any of them ever stops
+ * resolving — a source-scanning guard pointed at a path that no longer exists keeps passing while
+ * checking nothing, which is the one way these guards die silently.
+ *
+ * The `farm-` filename prefix is what scopes these checks, and it is load-bearing rather than
+ * incidental: the phases explorer moved to the package alongside the board, and it legitimately
+ * calls the advisor pipeline that guard (a) forbids the board tree from touching.
  */
 const BOARD_DIRS = [
   path.join(WEB_PACKAGE_ROOT, '../../packages/farm/src/components'),
@@ -476,13 +480,18 @@ describe('guard (i) — no useShallow on the new farm respec selectors', () => {
 });
 
 // ---------------------------------------------------------------------------------------------
-// (j) One connector. The board's components are `@bombfarm/farm`'s and prop-driven; this app
-// reads its store in exactly one file and passes the values down. A second file subscribing on
-// the components' behalf would compile and pass every other guard here, and would be the first
-// step back toward a board only this app can render.
+// (j) Two connectors, and only two. The farm screen's components are `@bombfarm/farm`'s and
+// prop-driven; this app reads its store in the board connector and the explorer connector, and
+// passes the values down. A third file subscribing on the components' behalf would compile and
+// pass every other guard here, and would be the first step back toward a screen only this app can
+// render. Scoped by directory rather than by the `farm-` prefix the checks above use: the
+// explorer's connector is not prefixed, and leaving it out is precisely how a guard stops covering
+// half its subject without ever going red.
 // ---------------------------------------------------------------------------------------------
-describe('guard (j) — one connector does every farm board store read', () => {
-  const CONNECTOR = 'src/features/phases/components/farm-ranking-board.tsx';
+describe('guard (j) — the farm screen’s store reads happen in its two connectors and nowhere else', () => {
+  const BOARD_CONNECTOR = 'src/features/phases/components/farm-ranking-board.tsx';
+  const EXPLORER_CONNECTOR = 'src/features/phases/components/phases-explorer.tsx';
+  const CONNECTORS = [BOARD_CONNECTOR, EXPLORER_CONNECTOR];
   const BOARD_SELECTORS = [
     'selectFarmBoardRows',
     'selectFarmReRankActive',
@@ -490,39 +499,49 @@ describe('guard (j) — one connector does every farm board store read', () => {
     'selectFarmRespecView',
   ];
 
-  /** Every farm-* file under `features/phases`, and whether it subscribes. Returns the files too,
+  /** Every source file under `features/phases`, and whether it subscribes. Returns the files too,
    *  so the assertions below can prove the walk reached something before reading the answer. */
-  function farmFilesUnderPhases(): { rel: string; subscribes: boolean }[] {
+  function filesUnderPhases(): { rel: string; subscribes: boolean }[] {
     return walkFiles(
       path.join(WEB_PACKAGE_ROOT, 'src/features/phases'),
-      (name) => name.startsWith('farm-') && (name.endsWith('.ts') || name.endsWith('.tsx')),
+      (name) => name.endsWith('.ts') || name.endsWith('.tsx'),
     ).map((abs) => ({
       rel: path.relative(WEB_PACKAGE_ROOT, abs).split(path.sep).join('/'),
       subscribes: fs.readFileSync(abs, 'utf8').includes('usePlannerStore'),
     }));
   }
 
-  it('the connector subscribes to each board selector directly, none of them wrapped', () => {
-    const source = fs.readFileSync(path.join(WEB_PACKAGE_ROOT, CONNECTOR), 'utf8');
+  it('the board connector subscribes to each board selector directly, none of them wrapped', () => {
+    const source = fs.readFileSync(path.join(WEB_PACKAGE_ROOT, BOARD_CONNECTOR), 'utf8');
     expect(source).toContain('FarmRankingBoardView');
     for (const selector of BOARD_SELECTORS) {
-      expect(source, `${CONNECTOR} must subscribe to ${selector}`).toContain(
+      expect(source, `${BOARD_CONNECTOR} must subscribe to ${selector}`).toContain(
         `usePlannerStore(${selector})`,
       );
     }
   });
 
-  it('the walk reaches the connector — the equality below is not comparing two empty lists', () => {
-    expect(farmFilesUnderPhases().map((file) => file.rel)).toContain(CONNECTOR);
+  it('the explorer connector renders the package view and holds the explorer’s own store reads', () => {
+    const source = fs.readFileSync(path.join(WEB_PACKAGE_ROOT, EXPLORER_CONNECTOR), 'utf8');
+    expect(source).toContain('PhasesExplorerView');
+    for (const selector of ['selectPhasesViewPhase', 'selectAccountShared', 'selectHeroes']) {
+      expect(source, `${EXPLORER_CONNECTOR} must subscribe to ${selector}`).toContain(selector);
+    }
   });
 
-  /** Fails both ways: a second subscriber adds an entry, and a connector that stopped reading the
-   *  store (leaving the board with no data source) empties the list. */
-  it('it is the only farm-* file under features/phases that reads the store', () => {
-    const subscribers = farmFilesUnderPhases()
+  it('the walk reaches both connectors — the equality below is not comparing two empty lists', () => {
+    const found = filesUnderPhases().map((file) => file.rel);
+    for (const connector of CONNECTORS) expect(found).toContain(connector);
+  });
+
+  /** Fails both ways: a third subscriber adds an entry, and a connector that stopped reading the
+   *  store (leaving its view with no data source) drops out of the list. */
+  it('they are the only files under features/phases that read the store', () => {
+    const subscribers = filesUnderPhases()
       .filter((file) => file.subscribes)
-      .map((file) => file.rel);
-    expect(subscribers).toEqual([CONNECTOR]);
+      .map((file) => file.rel)
+      .sort();
+    expect(subscribers).toEqual([...CONNECTORS].sort());
   });
 });
 
@@ -531,10 +550,11 @@ describe('guard (j) — one connector does every farm board store read', () => {
 // ---------------------------------------------------------------------------------------------
 describe('guard — HeroIdentityChip is the only identity composition this item adds under features/phases', () => {
   it('no farm-respec-*/farm-ranking-* file imports HeroAvatar directly without going through HeroIdentityChip', () => {
-    // Scoped to this item's own farm-* files (boardFiles()) — features/phases already had
-    // pre-existing, unrelated HeroAvatar consumers (phases-hero-switcher.tsx,
-    // phases-top9-table.tsx) before this item, and this guard is about THIS item not inventing a
-    // second identity composition, not about banning HeroAvatar repo-wide.
+    // Scoped to the board's own farm-* files (boardFiles()) — the explorer's hero switcher and
+    // top-squad table were pre-existing, unrelated HeroAvatar consumers before the board was
+    // built and are still HeroAvatar consumers now that they live in the package. This guard is
+    // about the board not inventing a second identity composition, not about banning HeroAvatar
+    // repo-wide.
     const offenders = boardFiles()
       .filter((file) => file.path.endsWith('.tsx'))
       .filter((file) => file.text.includes('HeroAvatar') && !file.text.includes('HeroIdentityChip'))

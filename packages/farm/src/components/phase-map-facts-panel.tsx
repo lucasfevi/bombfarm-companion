@@ -2,15 +2,20 @@
 
 import { useMemo } from 'react';
 
-import { Panel, StatList } from '@bombfarm/ui';
-import { panelHClass, panelTitleClass, phasesBoardMapClass } from '@bombfarm/ui/panel-field.recipe';
-import { useAppLang } from '@/shared/context/app-lang';
-import { numberFormatterFor } from '@/shared/lib/format-number';
+import {
+  Panel,
+  StatList,
+  numberFormatterFor,
+  panelHClass,
+  panelTitleClass,
+  phasesBoardMapClass,
+} from '@bombfarm/ui';
 import type { PhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
-import { mapFactItems } from '@bombfarm/farm/model/phase-fact-items';
+import { mapFactItems } from '../model/phase-fact-items';
+import { useFarmCopy } from './farm-copy-context';
 
 export function PhaseMapFactsPanel({ intel }: { intel: PhaseIntelGlobal }) {
-  const { t, lang } = useAppLang();
+  const { t, lang } = useFarmCopy();
   const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
 
   return (

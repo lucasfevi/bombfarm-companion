@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SLOTS, emptyLoadout } from '@bombfarm/domain/gear';
-import { gearCountOf } from '@/features/roster/model/roster-compare';
-import type { HeroRecord } from '@/shared/lib/storage';
+import { gearCountOf } from './roster-compare';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 
 function hero(partial: Partial<HeroRecord> & Pick<HeroRecord, 'id' | 'name'>): HeroRecord {
   return {

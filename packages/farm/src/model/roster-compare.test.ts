@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { SLOTS, emptyLoadout } from '@bombfarm/domain/gear';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
-import { compareRosterHeroes } from '@/features/roster/model/roster-compare';
-import type { RosterSortKey } from '@/features/roster/components/roster-sort-header';
-import type { HeroRecord } from '@/shared/lib/storage';
+import { compareRosterHeroes } from './roster-compare';
+import type { RosterSortKey } from '../components/hero-picker/roster-sort-header';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 
 /**
- * `compareRosterHeroes` had no dedicated unit test. It was refactored in W7
- * (switch-assign `let` → extracted early-return `compareByKey`) with only indirect e2e
- * coverage, and it drives every roster/hero-picker sort.
+ * `compareRosterHeroes` had no dedicated unit test. It was refactored from a switch-assign `let`
+ * into an extracted early-return `compareByKey` with only indirect e2e coverage, and it drives
+ * every roster/hero-picker sort.
  *
  * Every `RosterSortKey` branch is covered, in both directions, plus the name tiebreak.
  */

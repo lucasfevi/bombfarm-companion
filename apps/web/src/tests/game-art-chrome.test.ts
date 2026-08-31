@@ -79,8 +79,8 @@ describe('phase drops panel', () => {
 });
 
 describe('phase prop tables', () => {
-  const mixSrc = read('features/phases/components/phase-prop-mix-table.tsx');
-  const fitSrc = read('features/phases/components/phases-hero-fit-table.tsx');
+  const mixSrc = readFarm('components/phase-prop-mix-table.tsx');
+  const fitSrc = readFarm('components/phases-hero-fit-table.tsx');
 
   it('prefixes the prop label with its art in both tables, without adding a column', () => {
     for (const src of [mixSrc, fitSrc]) {
@@ -110,8 +110,8 @@ describe('phase prop tables', () => {
 });
 
 describe('hero picker roster chrome', () => {
-  const rowSrc = read('features/roster/components/hero-picker-row.tsx');
-  const dialogSrc = read('features/roster/components/hero-picker-dialog.tsx');
+  const rowSrc = readFarm('components/hero-picker/hero-picker-row.tsx');
+  const dialogSrc = readFarm('components/hero-picker/hero-picker-dialog.tsx');
 
   it('renders gear and ability icon rows instead of gear fraction', () => {
     expect(rowSrc).toContain('HeroGearIcons');
@@ -131,12 +131,12 @@ describe('hero picker roster chrome', () => {
   });
 
   it('raises scroll row height for portrait gear chrome', () => {
-    const tableSrc = read('features/roster/components/hero-picker-table.tsx');
+    const tableSrc = readFarm('components/hero-picker/hero-picker-table.tsx');
     expect(tableSrc).toContain('rowHeight="4.5rem"');
   });
 
   it('leads with an unsorted avatar column then rank', () => {
-    const tableSrc = read('features/roster/components/hero-picker-table.tsx');
+    const tableSrc = readFarm('components/hero-picker/hero-picker-table.tsx');
     const head = tableSrc.slice(tableSrc.indexOf('<DataTable.Head>'), tableSrc.indexOf('</DataTable.Head>'));
     expectKeyOrder(head, ['heroAvatarCol', 'importColRank', 'importColName']);
     expect(rowSrc).toContain('size="lg"');
@@ -203,7 +203,7 @@ describe('hero ability icons', () => {
 });
 
 describe('hero picker row a11y', () => {
-  const src = read('features/roster/components/hero-picker-row.tsx');
+  const src = readFarm('components/hero-picker/hero-picker-row.tsx');
 
   it('uses one tab stop per row without nested role=button', () => {
     expect(src).toContain('tabIndex={0}');

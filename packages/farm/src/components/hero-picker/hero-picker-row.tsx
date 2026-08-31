@@ -1,14 +1,10 @@
 'use client';
 
 import { memo } from 'react';
-import type { HeroRecord } from '@/shared/lib/storage';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
-import type { Lang, Strings } from '@/shared/i18n';
-import { sub } from '@/shared/i18n';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { cn, DataTable } from '@bombfarm/ui';
-import { usePlannerStore } from '@/shared/stores';
-import { HeroActiveToggle } from './hero-active-toggle';
 import {
   HeroAvatar,
   HeroAbilityIcons,
@@ -16,22 +12,26 @@ import {
   rarityDotClass,
   rarityTextClass,
   rosterInactiveChromeClass,
-} from '@/shared/game-art';
+} from '@bombfarm/game-art';
+import { sub, type FarmRosterCopy, type Lang } from '../../copy';
+import { HeroActiveToggle } from './hero-active-toggle';
 
 /**
- * Memoised, mirroring its sibling `RosterRow` (deleted with the dead roster tree,
- * which had carried this boundary since W5).
+ * Memoised, mirroring the sibling roster row that carried this boundary before the dead roster
+ * tree was deleted.
  *
  * Sorting the roster rebuilds `sortedHeroes` as a new array, but the individual `hero`
  * objects keep their identity and `selected`/`powerShown` are unchanged for most rows, so
  * a shallow prop compare skips them. React Compiler does not cover this: it caches values
  * and elements *within* a scope keyed on that scope's own reactive deps, so when
  * `HeroPickerTable`'s sort state changes its scope invalidates and every row element is
- * recreated regardless. Only a boundary at the child can stop the cascade.
+ * recreated regardless. Only a boundary at the child can stop the cascade. The compiler is not
+ * even enabled in every host that renders this now, which makes the boundary load-bearing rather
+ * than belt-and-braces.
  *
- * P-04 is the sole scenario whose render count scales with roster size (2.60x at 10x
- * heroes), which is why this boundary earns its place while the equivalent for gear/tab
- * scenarios would not.
+ * Opening the picker is the sole measured scenario whose render count scales with roster size
+ * (2.60x at 10x heroes), which is why this boundary earns its place while the equivalent for
+ * gear/tab scenarios would not.
  */
 export const HeroPickerRow = memo(function HeroPickerRow({
   hero,
@@ -41,16 +41,17 @@ export const HeroPickerRow = memo(function HeroPickerRow({
   formatNumber,
   powerShown,
   onPick,
+  onSetBattleAllowed,
 }: {
   hero: HeroRecord;
   selected: boolean;
   lang: Lang;
-  t: Strings;
+  t: FarmRosterCopy;
   formatNumber: (n: number, d?: number) => string;
   powerShown: number;
   onPick: (hero: HeroRecord) => void;
+  onSetBattleAllowed: (heroId: string, enabled: boolean) => void;
 }) {
-  const setHeroBattleAllowedOnHero = usePlannerStore((state) => state.setHeroBattleAllowedOnHero);
   const rarIdx = RARITIES.indexOf(hero.rarity);
   const battleAllowed = hero.battleAllowed ?? true;
   const inactiveChrome = !battleAllowed ? rosterInactiveChromeClass : undefined;
@@ -133,7 +134,7 @@ export const HeroPickerRow = memo(function HeroPickerRow({
           <HeroActiveToggle
             battleAllowed={battleAllowed}
             t={t}
-            onCheckedChange={(checked) => setHeroBattleAllowedOnHero(hero.id, checked)}
+            onCheckedChange={(checked) => onSetBattleAllowed(hero.id, checked)}
           />
         ) : (
           <span className="text-muted">—</span>

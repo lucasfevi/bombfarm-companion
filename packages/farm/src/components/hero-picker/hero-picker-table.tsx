@@ -1,11 +1,11 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import type { HeroRecord } from '@/shared/lib/storage';
-import type { Lang, Strings } from '@/shared/i18n';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { heroPowerIndex } from '@bombfarm/domain/power';
 import { DataTable, Tooltip } from '@bombfarm/ui';
-import { compareRosterHeroes } from '../model/roster-compare';
+import type { FarmRosterCopy, Lang } from '../../copy';
+import { compareRosterHeroes } from '../../model/roster-compare';
 import {
   RosterSortHeader,
   type RosterSortDir,
@@ -20,13 +20,15 @@ export function HeroPickerTable({
   t,
   formatNumber,
   onPick,
+  onSetBattleAllowed,
 }: {
   heroes: HeroRecord[];
   heroId: string | null;
   lang: Lang;
-  t: Strings;
+  t: FarmRosterCopy;
   formatNumber: (n: number, d?: number) => string;
   onPick: (h: HeroRecord) => void;
+  onSetBattleAllowed: (heroId: string, enabled: boolean) => void;
 }) {
   const [sortKey, setSortKey] = useState<RosterSortKey>('power');
   const [sortDir, setSortDir] = useState<RosterSortDir>('desc');
@@ -132,6 +134,7 @@ export function HeroPickerTable({
                   formatNumber={formatNumber}
                   powerShown={powerShown}
                   onPick={onPick}
+                  onSetBattleAllowed={onSetBattleAllowed}
                 />
               );
             })}

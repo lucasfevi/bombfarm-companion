@@ -2,20 +2,21 @@
 
 import { useMemo } from 'react';
 
-import { Panel, StatList } from '@bombfarm/ui';
 import {
+  Panel,
+  StatList,
+  numberFormatterFor,
   panelHClass,
   panelTitleClass,
   phasesBoardDropsClass,
   tipClass,
-} from '@bombfarm/ui/panel-field.recipe';
-import { useAppLang } from '@/shared/context/app-lang';
-import { numberFormatterFor } from '@/shared/lib/format-number';
+} from '@bombfarm/ui';
 import type { PhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
-import { dropItems } from '@bombfarm/farm/model/phase-fact-items';
+import { dropItems } from '../model/phase-fact-items';
+import { useFarmCopy } from './farm-copy-context';
 
 export function PhaseDropsPanel({ intel }: { intel: PhaseIntelGlobal }) {
-  const { t, lang } = useAppLang();
+  const { t, lang } = useFarmCopy();
   const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
 
   return (

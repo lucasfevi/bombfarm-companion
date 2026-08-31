@@ -1,14 +1,13 @@
 'use client';
 
-import { DataTable } from '@bombfarm/ui';
-import { useAppLang } from '@/shared/context/app-lang';
-import { formatNumber } from '@/shared/lib/format-number';
-import { PropIcon } from '@/shared/game-art';
+import { DataTable, formatNumber } from '@bombfarm/ui';
+import { PropIcon } from '@bombfarm/game-art';
 import { propLabel } from '@bombfarm/domain/game-labels';
 import type { HeroPhaseFit } from '@bombfarm/domain/phase-intel';
+import { useFarmCopy } from './farm-copy-context';
 
 export function PhasesHeroFitTable({ propHits }: { propHits: HeroPhaseFit['propHits'] }) {
-  const { t, lang } = useAppLang();
+  const { t, lang } = useFarmCopy();
 
   return (
     <DataTable.Root scrollable maxRows={12} className="mt-3 rounded-sm border border-line">

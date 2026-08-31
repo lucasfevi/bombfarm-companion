@@ -1,11 +1,11 @@
 'use client';
 
-import type { Strings } from '@/shared/i18n';
 import { Switch, Tooltip, cn } from '@bombfarm/ui';
+import type { FarmRosterCopy } from '../../copy';
 
 type Props = {
   battleAllowed: boolean;
-  t: Strings;
+  t: FarmRosterCopy;
   onCheckedChange: (checked: boolean) => void;
   className?: string;
   /** Compact label beside the switch (strip + picker). */
