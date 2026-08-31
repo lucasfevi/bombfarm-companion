@@ -68,7 +68,7 @@ describe('configureLogging', () => {
   });
 
   it('uses info file and disabled console for installed flavors', () => {
-    for (const flavor of ['nightly', 'beta', 'prod'] as const) {
+    for (const flavor of ['beta', 'prod'] as const) {
       const env = buildAppEnv({
         rawFlavor: flavor,
         isPackaged: true,

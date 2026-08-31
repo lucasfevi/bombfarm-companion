@@ -37,21 +37,22 @@ export function ReleaseChannels({
       ) : null}
       <div className="flex flex-wrap gap-2.5">
         <ReleaseChannelCard
-          current
-          title={t.downloadChannelBetaTitle}
+          current={release?.channel === 'prod'}
+          title={t.downloadChannelStableTitle}
           note={
-            release === null
-              ? t.downloadChannelBetaNotePending
-              : sub(t.downloadChannelBetaNote, { version: release.version })
+            release?.channel === 'prod'
+              ? sub(t.downloadChannelStableNote, { version: release.version })
+              : t.downloadChannelStableNotePending
           }
         />
         <ReleaseChannelCard
-          title={t.downloadChannelNightlyTitle}
-          note={t.downloadChannelNightlyNote}
-        />
-        <ReleaseChannelCard
-          title={t.downloadChannelStableTitle}
-          note={t.downloadChannelStableNote}
+          current={release?.channel === 'beta'}
+          title={t.downloadChannelBetaTitle}
+          note={
+            release?.channel === 'beta'
+              ? sub(t.downloadChannelBetaNote, { version: release.version })
+              : t.downloadChannelBetaNoteAhead
+          }
         />
       </div>
     </section>

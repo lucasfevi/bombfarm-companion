@@ -113,10 +113,10 @@ describe('createUpdateService: the disabled path never contacts a feed', () => {
 
 describe('createUpdateService: start()', () => {
   it('turns off automatic download and quit-time install, and pins the flavor channel', () => {
-    const h = harness({ channel: 'nightly' });
+    const h = harness({ channel: 'latest' });
     h.service.start();
 
-    expect(h.applied).toEqual({ autoDownload: false, autoInstallOnAppQuit: false, channel: 'nightly' });
+    expect(h.applied).toEqual({ autoDownload: false, autoInstallOnAppQuit: false, channel: 'latest' });
   });
 
   it('schedules the first check after the launch delay and repeats every six hours', () => {
@@ -326,7 +326,7 @@ describe('unavailableUpdateService', () => {
   });
 
   it('re-reports the same failure from every action instead of retrying a port it never had', async () => {
-    const service = unavailableUpdateService('0.5.1', 'nightly');
+    const service = unavailableUpdateService('0.5.1', 'latest');
     const status = service.getStatus();
 
     expect(await service.check()).toEqual(status);

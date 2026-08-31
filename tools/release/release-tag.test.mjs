@@ -6,7 +6,6 @@ import {
   buildDesktopTag,
   channelFromDesktopTag,
   isUpdaterReadableTag,
-  nightlyPartsFromTag,
   versionFromDesktopTag,
 } from './release-tag.mjs';
 
@@ -27,7 +26,7 @@ describe('the property every desktop tag exists to satisfy', () => {
 });
 
 describe('buildDesktopTag', () => {
-  it.each(['0.5.1', '0.5.1-beta.150', '1.0.0-nightly.20260829.abcdef1'])('tags %s', (version) => {
+  it.each(['0.5.1', '0.5.1-beta.150'])('tags %s', (version) => {
     expect(buildDesktopTag(version)).toBe(`v${version}`);
     expect(isUpdaterReadableTag(buildDesktopTag(version))).toBe(true);
   });
@@ -62,29 +61,10 @@ describe('channelFromDesktopTag', () => {
   it.each([
     ['v0.5.1', null],
     ['v0.5.1-beta.150', 'beta'],
-    ['v0.5.1-nightly.20260829.abcdef1', 'nightly'],
     ['desktop-v0.5.1-beta.149', 'beta'],
     ['market-prices', null],
   ])('reads %s as %s', (tag, channel) => {
     expect(channelFromDesktopTag(tag)).toBe(channel);
-  });
-});
-
-describe('nightlyPartsFromTag', () => {
-  it('reads the date and sha off a nightly this rail produced', () => {
-    expect(nightlyPartsFromTag('v1.2.3-nightly.20260829.abcdef1')).toEqual({
-      date: '20260829',
-      sha7: 'abcdef1',
-    });
-  });
-
-  it('is strict about the shape, so a hand-cut nightly tag is never pruned as one of ours', () => {
-    expect(nightlyPartsFromTag('v1.0.0-nightly')).toBeNull();
-    expect(nightlyPartsFromTag('v1.0.0-nightly.20260829')).toBeNull();
-  });
-
-  it('never reads a beta as a nightly', () => {
-    expect(nightlyPartsFromTag('v0.5.1-beta.150')).toBeNull();
   });
 });
 
