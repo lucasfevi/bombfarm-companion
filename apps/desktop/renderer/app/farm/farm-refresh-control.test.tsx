@@ -58,7 +58,7 @@ describe('FarmRefreshControl — one control, always present, two states', () =>
   });
 });
 
-describe('the Farm screen mounts the control unconditionally, on the board heading line', () => {
+describe('the Farm screen mounts the control unconditionally, over the board heading line', () => {
   const source = readFileSync(path.join(__dirname, 'farm-view.tsx'), 'utf8')
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/\/\/.*$/gm, '');
@@ -68,7 +68,7 @@ describe('the Farm screen mounts the control unconditionally, on the board headi
   });
 
   it('hands the control to the board as its header slot, with no staleness gate around it', () => {
-    expect(source).toContain('headerAside: (');
+    expect(source).toContain('headerOverlay: (');
     expect(source).toContain('<FarmRefreshControl');
     expect(source).not.toMatch(/\{stale \?/);
   });

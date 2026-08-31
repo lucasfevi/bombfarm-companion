@@ -385,7 +385,7 @@ function FarmScreen({
 
   const boardSlots = useMemo<FarmRankingBoardSlots>(
     () => ({
-      headerAside: (
+      headerOverlay: (
         <FarmRefreshControl
           computedAt={computedAt}
           stale={refresh.stale}

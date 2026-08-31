@@ -1,15 +1,18 @@
 'use client';
 
 /**
- * The board's one refresh affordance, always mounted beside the board's heading — never a banner
- * that appears once the numbers have already gone out of date. Two states, one control: the age
- * of the board on screen, or the fact that the live account has moved past it.
+ * The board's one refresh affordance, always mounted over the board's heading line — never a
+ * banner that appears once the numbers have already gone out of date. Two states, one control:
+ * the age of the board on screen, or the fact that the live account has moved past it.
+ *
+ * The age sits under the button rather than beside it so the button keeps one fixed position
+ * while the line beneath it changes wording, width and tone.
  *
  * The age keeps itself current on its own interval. Nothing here recomputes anything: the board
  * only ever moves on `onRefresh`, which is the screen's own single recompute path.
  */
 import { useEffect, useState } from 'react';
-import { Button } from '@bombfarm/ui';
+import { Button, cn } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
 import { formatCapturedAt } from '../../lib/format';
 
@@ -41,17 +44,11 @@ export function FarmRefreshControl({
   }, []);
 
   return (
-    <span data-testid="farm-refresh-control" className="flex items-baseline gap-2">
-      <span
-        data-testid="farm-refresh-age"
-        className={stale ? 'text-[11px] text-warn' : 'text-[11px] text-muted'}
-      >
-        {stale ? t.farmRefreshStale : sub(t.farmRefreshedAge, { age: formatCapturedAt(computedAt, t, now) })}
-      </span>
+    <span data-testid="farm-refresh-control" className="flex flex-col items-end gap-0.5">
       <Button
         type="button"
-        variant="text"
-        className="min-w-20 text-right"
+        variant="primary"
+        className="min-w-20"
         data-testid="farm-refresh"
         disabled={busy}
         aria-busy={busy}
@@ -59,6 +56,12 @@ export function FarmRefreshControl({
       >
         {busy ? t.farmRefreshBusy : t.farmRefresh}
       </Button>
+      <span
+        data-testid="farm-refresh-age"
+        className={cn('text-[11px] leading-none', stale ? 'text-warn' : 'text-muted')}
+      >
+        {stale ? t.farmRefreshStale : sub(t.farmRefreshedAge, { age: formatCapturedAt(computedAt, t, now) })}
+      </span>
     </span>
   );
 }

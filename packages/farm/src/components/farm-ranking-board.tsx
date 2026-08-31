@@ -66,12 +66,14 @@ export type FarmRankingBoardData = {
 };
 
 /**
- * Host-supplied chrome the board makes room for but knows nothing about. `headerAside` shares the
- * heading's own line rather than taking a row of its own — the desktop shell puts its refresh
- * control there, and a window 640px tall has no row to spare above the table.
+ * Host-supplied chrome the board draws but knows nothing about. `headerOverlay` is painted over
+ * the empty space to the right of the heading instead of sharing its line, so it costs the board
+ * no height at all whatever its own is — the desktop shell puts its refresh control there, and a
+ * window 640px tall has no row to spare above the table. A host that passes something taller than
+ * the heading's own line owes the check that it clears the rotation pool beneath it.
  */
 export type FarmRankingBoardSlots = {
-  headerAside?: ReactNode;
+  headerOverlay?: ReactNode;
 };
 
 export type FarmRankingBoardActions = {
@@ -181,11 +183,13 @@ export function FarmRankingBoardView({
 
   return (
     <Panel data-testid="farm-ranking">
-      <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+      <div className="relative mb-2.5 flex items-baseline">
         <h2 className="m-0 text-[13px] font-bold tracking-[0.04em] uppercase">
           {t.farmRankingTitle}
         </h2>
-        {slots?.headerAside}
+        {slots?.headerOverlay ? (
+          <div className="absolute top-0 right-0">{slots.headerOverlay}</div>
+        ) : null}
       </div>
       {result.reason !== 'no-roster' ? (
         <div className="mb-3">
