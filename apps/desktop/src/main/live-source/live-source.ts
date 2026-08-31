@@ -126,6 +126,12 @@ function heroPathWithoutIndex(path: string): string {
   return path.replace(/heroes\[\d+\]/g, 'heroes[]');
 }
 
+/** `ROUTES` reads `/roster` before `/rotation`, and the five fail independently — so a cycle that
+ *  loses only its roster still commits a rotation body, with no roster beside it. */
+function carriesRoster(rosterRaw: unknown): boolean {
+  return Array.isArray(rosterRaw) && rosterRaw.length > 0;
+}
+
 function reportRotationDrops(log: LogPort, drops: readonly FieldDrop[]): void {
   for (const drop of drops) {
     log.warn({
@@ -574,7 +580,7 @@ export class LiveSource {
       return;
     }
     this.#rotationAtMs = atMs;
-    if (selfFetched) {
+    if (selfFetched && carriesRoster(selfFetched.rosterRaw)) {
       this.#lastRosterRaw = selfFetched.rosterRaw;
       this.#rosterHeroById = new Map(selfFetched.rosterHeroAbilities.map((hero) => [hero.id, hero]));
     }

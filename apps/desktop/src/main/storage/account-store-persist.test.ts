@@ -19,6 +19,15 @@ beforeAll(() => {
 const RESOLVED = (capturedAt: string): SectionFidelity => ({ status: 'resolved', capturedAt });
 const STALE = (capturedAt: string): SectionFidelity => ({ status: 'stale', capturedAt });
 const MISSING: SectionFidelity = { status: 'missing' };
+const DEGRADED = (
+  capturedAt: string,
+  keys: { missingKeys?: readonly string[]; addedKeys?: readonly string[] },
+): SectionFidelity => ({
+  status: 'degraded',
+  capturedAt,
+  missingKeys: keys.missingKeys ?? [],
+  addedKeys: keys.addedKeys ?? [],
+});
 
 function fullTableDump(db: SqliteDb): unknown[] {
   return db.prepare('SELECT * FROM account_section ORDER BY account_key, section').all();
@@ -230,12 +239,69 @@ describe('createAccountStore().persist()', () => {
       // gate weakened to `status !== 'missing'` would otherwise still write this row
       // successfully, and a fixture with no capturedAt would hide that (the write would
       // throw for an unrelated reason and land on the same written:[] outcome by accident).
-      const degradedFidelity = { status: 'degraded', capturedAt: '2026-08-12T03:00:00.000Z' } as unknown as SectionFidelity;
+      const unknownFidelity = { status: 'archived', capturedAt: '2026-08-12T03:00:00.000Z' } as unknown as SectionFidelity;
       const result = store.persist({
         heroes: [{ id: 'h2-should-not-be-written' }],
         fidelity: {
           account: MISSING,
-          heroes: degradedFidelity,
+          heroes: unknownFidelity,
+          skills: MISSING,
+          casa: MISSING,
+          items: MISSING,
+        },
+      });
+
+      expect(result.written).toEqual([]);
+      expect(readRow(open.db, 'heroes')).toEqual(beforeRow);
+      store.close();
+    });
+
+    it('writes a degraded section that lost no key, so a game update that only adds a field still leaves a last-known-good', () => {
+      const open = openTestAccountDb(binding);
+      if (!open.db) throw new Error('expected a usable db');
+      const store = createAccountStore(open);
+
+      const result = store.persist({
+        heroes: [{ id: 'h1', soulbound: true }],
+        fidelity: {
+          account: MISSING,
+          heroes: DEGRADED('2026-08-12T03:00:00.000Z', { addedKeys: ['heroes.heroes[0].soulbound'] }),
+          skills: MISSING,
+          casa: MISSING,
+          items: MISSING,
+        },
+      });
+
+      expect(result.written).toEqual(['heroes']);
+      expect(readRow(open.db, 'heroes')).toEqual({
+        body: JSON.stringify([{ id: 'h1', soulbound: true }]),
+        captured_at: '2026-08-12T03:00:00.000Z',
+      });
+      store.close();
+    });
+
+    it('does not write a degraded section that lost a key, whose body may already carry a substituted default', () => {
+      const open = openTestAccountDb(binding);
+      if (!open.db) throw new Error('expected a usable db');
+      const store = createAccountStore(open);
+
+      store.persist({
+        heroes: [{ id: 'h1' }],
+        fidelity: {
+          account: MISSING,
+          heroes: RESOLVED('2026-08-12T00:00:00.000Z'),
+          skills: MISSING,
+          casa: MISSING,
+          items: MISSING,
+        },
+      });
+      const beforeRow = readRow(open.db, 'heroes');
+
+      const result = store.persist({
+        heroes: [{ id: 'h2-should-not-be-written' }],
+        fidelity: {
+          account: MISSING,
+          heroes: DEGRADED('2026-08-12T03:00:00.000Z', { missingKeys: ['heroes.heroes[].rarity'] }),
           skills: MISSING,
           casa: MISSING,
           items: MISSING,

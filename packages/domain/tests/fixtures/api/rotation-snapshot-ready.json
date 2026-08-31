@@ -217,5 +217,10 @@
     "rescuesLeft": 14,
     "rescuesMax": 15
   },
-  "drops": []
+  "drops": [
+    {
+      "path": "(roster)",
+      "reason": "missing"
+    }
+  ]
 }

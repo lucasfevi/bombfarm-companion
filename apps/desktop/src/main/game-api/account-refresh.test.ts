@@ -907,4 +907,31 @@ describe('account-refresh — a drifted section is logged with path-qualified ke
     const payload = JSON.stringify(drift?.record);
     expect(payload).not.toContain(String(sentinelGold));
   });
+
+  it('a cycle that loses one route and commits the other four logs section.failed naming it, so a partial commit is not indistinguishable from a clean one', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+
+    const transport: HttpTransport = (req) => {
+      if (req.path === '/roster') {
+        return Promise.resolve({ status: 500, body: '' });
+      }
+      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[req.path] ?? {}) });
+    };
+
+    const { log, records } = createLogSpy();
+    const deps = baseDeps({ store, consentStore: fixedConsentStore(GRANTED), transport, readToken, log });
+    const refresh = createAccountRefresh(deps);
+
+    const view = await refresh.refreshNow();
+
+    expect(fidelityOf(view).heroes).toEqual({ status: 'missing' });
+    expect(view?.payload.casa).toBeDefined();
+
+    const failures = records.filter((r) => r.record.event === 'section.failed');
+    expect(failures.map((r) => r.record.section)).toEqual(['heroes']);
+    expect(failures[0]?.record.scope).toBe('account-refresh');
+    expect(failures[0]?.record.reason).toBe('http_error');
+  });
 });
