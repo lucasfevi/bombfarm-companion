@@ -90,7 +90,7 @@ describe('createFrameCapture: the two gates', () => {
   });
 
   it('writes nothing and reports exactly once when enabled outside dev, no matter how many pushes arrive', () => {
-    const { capture, appended, warnings, infos } = createCapture({ flavor: 'nightly', enabled: true });
+    const { capture, appended, warnings, infos } = createCapture({ flavor: 'beta', enabled: true });
     capture.push('conn', Buffer.from('a', 'utf8'));
     capture.push('conn', Buffer.from('b', 'utf8'));
     capture.push('conn', Buffer.from('c', 'utf8'));

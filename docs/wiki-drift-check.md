@@ -73,10 +73,9 @@ reorder-only case, so it is cheap to triage rather than mistaken for a real data
 One job, one `ubuntu-latest` runner, no dependency install, two HTTPS GETs (roughly 215 KB total),
 one hash pass, one comparison, and at most one issue API call — about ten seconds of real work.
 GitHub bills whole minutes per job, so this is budgeted at **one billed minute per run, roughly
-30–31 billed minutes per month**. For comparison, `nightly.yml`'s own schedule is currently
-disabled specifically to save Actions minutes, and when it did run it used two jobs (one of them a
-45-minute `windows-latest` packaging build, which bills at double the Linux rate on a private
-repo). This job's monthly cost is a small fraction of a single one of those runs.
+30–31 billed minutes per month**. For comparison, one desktop packaging run spends 45 minutes on
+`windows-latest`, which bills at double the Linux rate on a private repo. This job's monthly cost
+is a small fraction of a single one of those runs.
 
 ## 7. The adjacency, removed
 

@@ -20,7 +20,6 @@ jobs:
       has_desktop: ${{ steps.plan.outputs.has_desktop }}
       desktop_version: ${{ steps.plan.outputs.desktop_version }}
       desktop_old_version: ${{ steps.plan.outputs.desktop_old_version }}
-      prod_release_enabled: ${{ steps.plan.outputs.prod_release_enabled }}
       version_diffs_json: ${{ steps.plan.outputs.version_diffs_json }}
     steps:
       - name: Checkout main
@@ -33,13 +32,11 @@ jobs:
         env:
           BEFORE: ${{ github.event.before }}
           AFTER: ${{ github.sha }}
-          PROD_RELEASE_ENABLED: ${{ vars.BFC_ENABLE_PROD_RELEASE == 'true' }}
         run: |
           if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
             echo "has_desktop=false" >> "$GITHUB_OUTPUT"
             echo "desktop_version=" >> "$GITHUB_OUTPUT"
             echo "desktop_old_version=" >> "$GITHUB_OUTPUT"
-            echo "prod_release_enabled=${PROD_RELEASE_ENABLED}" >> "$GITHUB_OUTPUT"
             {
               echo '## Production release — skipped'
               echo ''
@@ -84,7 +81,6 @@ jobs:
             echo "has_desktop=${HAS_DESKTOP}"
             echo "desktop_version=${DESKTOP_VERSION}"
             echo "desktop_old_version=${DESKTOP_OLD_VERSION}"
-            echo "prod_release_enabled=${PROD_RELEASE_ENABLED}"
             echo "version_diffs_json<<EOF"
             echo "${VERSION_DIFFS_JSON}"
             echo "EOF"
@@ -156,7 +152,6 @@ jobs:
     needs: [plan, package]
     if: >-
       needs.plan.outputs.has_desktop == 'true' &&
-      needs.plan.outputs.prod_release_enabled == 'true' &&
       needs.package.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -239,7 +234,6 @@ jobs:
           HAS_DESKTOP: ${{ needs.plan.outputs.has_desktop }}
           VERSION: ${{ needs.plan.outputs.desktop_version }}
           OLD_VERSION: ${{ needs.plan.outputs.desktop_old_version }}
-          PROD_ENABLED: ${{ needs.plan.outputs.prod_release_enabled }}
           PACKAGE_RESULT: ${{ needs.package.result }}
           PUBLISH_RESULT: ${{ needs.publish.result }}
           SHA: ${{ github.sha }}
@@ -252,17 +246,8 @@ jobs:
             echo "| Desktop version | \`${OLD_VERSION}\` → \`${VERSION}\` |"
             echo "| SHA | \`${SHA}\` |"
             echo "| CI artifact | \`${PACKAGE_RESULT}\` |"
-            echo "| \`BFC_ENABLE_PROD_RELEASE\` | \`${PROD_ENABLED}\` |"
             echo ''
           } >> "$GITHUB_STEP_SUMMARY"
-
-          if [ "$PROD_ENABLED" != "true" ]; then
-            {
-              echo 'Prod GitHub Release skipped — `vars.BFC_ENABLE_PROD_RELEASE` is not `true`.'
-              echo 'No tag, draft, or GitHub Release was created.'
-            } >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
 
           if [ "$PUBLISH_RESULT" = "success" ]; then
             TAG=$(node --input-type=module -e "

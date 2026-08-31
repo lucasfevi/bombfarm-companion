@@ -24,7 +24,6 @@
     "test:render-count": "playwright test -c playwright.config.ts --project=render-count-instrument",
     "render-count:compare": "node tests/render-count/render-count-compare-baseline.mjs",
     "package:dev": "cross-env BFC_FLAVOR=dev NODE_ENV=production node scripts/package.mjs",
-    "package:nightly": "cross-env BFC_FLAVOR=nightly NODE_ENV=production node scripts/package.mjs",
     "package:beta": "cross-env BFC_FLAVOR=beta NODE_ENV=production node scripts/package.mjs",
     "package:prod": "cross-env BFC_FLAVOR=prod NODE_ENV=production node scripts/package.mjs"
   },

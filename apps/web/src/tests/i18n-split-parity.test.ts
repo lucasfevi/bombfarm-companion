@@ -531,6 +531,15 @@ const KEYS_ADDED: readonly string[] = [
    * key holding an array diffs as one leaf path per element (`key.0`, `key.1`, ...) in the two
    * value comparisons but as the bare key name in the key-name comparison, so one entry here
    * cannot satisfy both — and the only way to make an array fit is to loosen one of them.
+   *
+   * The stable-channel switch (2026-08-31) reshapes the channel copy while the page is still the
+   * only reader of any of it. The chip is no longer the constant "Beta" — the page now names the
+   * channel it actually resolved — so `downloadChannelChip` becomes `downloadChannelChipStable`
+   * and `downloadChannelChipBeta`. The nightly card is gone with the channel it advertised. Both
+   * remaining cards can be either the current one or the other one, so each needs a second note
+   * (`downloadChannelStableNotePending`, `downloadChannelBetaNoteAhead`) where beta alone used to
+   * need `downloadChannelBetaNotePending`. None of this is a fixture delta: the whole `download`
+   * namespace postdates the frozen fixture, so these keys move within `KEYS_ADDED`.
    */
   'downloadNavLabel',
   'downloadHeaderCta',
@@ -539,7 +548,8 @@ const KEYS_ADDED: readonly string[] = [
   'downloadHeadlineAccent',
   'downloadLede',
   'downloadCta',
-  'downloadChannelChip',
+  'downloadChannelChipStable',
+  'downloadChannelChipBeta',
   'downloadFileMeta',
   'downloadFileMetaPending',
   'downloadTrustPermission',
@@ -547,13 +557,12 @@ const KEYS_ADDED: readonly string[] = [
   'downloadTrustLicense',
   'downloadTrustLicenseLink',
   'downloadInstallsSuffix',
-  'downloadChannelBetaTitle',
-  'downloadChannelBetaNote',
-  'downloadChannelBetaNotePending',
-  'downloadChannelNightlyTitle',
-  'downloadChannelNightlyNote',
   'downloadChannelStableTitle',
   'downloadChannelStableNote',
+  'downloadChannelStableNotePending',
+  'downloadChannelBetaTitle',
+  'downloadChannelBetaNote',
+  'downloadChannelBetaNoteAhead',
   'downloadInstallHeading',
   'downloadStepRunTitle',
   'downloadStepRunBody',

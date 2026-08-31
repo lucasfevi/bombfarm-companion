@@ -35,9 +35,9 @@ describe('buildAppEnv', () => {
   });
 
   it('resolves a whitespace and case-insensitive flavor token', () => {
-    const env = buildAppEnv({ ...baseDeps, rawFlavor: ' NIGHTLY ' });
-    expect(env.flavor).toBe('nightly');
-    expect(env.productName).toBe('Bomb Farm Companion (Nightly)');
+    const env = buildAppEnv({ ...baseDeps, rawFlavor: ' BETA ' });
+    expect(env.flavor).toBe('beta');
+    expect(env.productName).toBe('Bomb Farm Companion (Beta)');
   });
 
   it('throws for an invalid unpackaged flavor token', () => {
@@ -51,10 +51,10 @@ describe('buildAppEnv', () => {
       ...baseDeps,
       isPackaged: true,
       bakedFlavor: 'prod',
-      rawFlavor: 'nightly',
+      rawFlavor: 'beta',
     });
     expect(env.flavor).toBe('prod');
-    expect(env.envConflict).toEqual({ requested: 'nightly', effective: 'prod' });
+    expect(env.envConflict).toEqual({ requested: 'beta', effective: 'prod' });
   });
 
   it('throws for an invalid packaged flavor token', () => {

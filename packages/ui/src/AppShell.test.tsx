@@ -52,7 +52,7 @@ describe('AppShell', () => {
     expect(out).toContain('body');
   });
 
-  it.each(['DEV', 'NIGHTLY', 'BETA'] as const)('renders %s flavor badge', (label) => {
+  it.each(['DEV', 'BETA'] as const)('renders %s flavor badge', (label) => {
     const out = html({ badge: label, children: 'body' });
     expect(out).toContain('data-testid="flavor-badge"');
     expect(out).toContain(`>${label}<`);

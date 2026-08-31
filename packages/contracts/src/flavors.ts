@@ -1,6 +1,6 @@
-export type AppFlavor = 'dev' | 'nightly' | 'beta' | 'prod';
+export type AppFlavor = 'dev' | 'beta' | 'prod';
 
-export type UpdateChannel = 'nightly' | 'beta' | 'latest';
+export type UpdateChannel = 'beta' | 'latest';
 
 export interface FlavorDescriptor {
   flavor: AppFlavor;
@@ -14,7 +14,7 @@ export interface FlavorDescriptor {
   logLevel: { console: 'debug' | false; file: 'debug' | 'info' };
 }
 
-export const APP_FLAVORS = ['dev', 'nightly', 'beta', 'prod'] as const satisfies readonly AppFlavor[];
+export const APP_FLAVORS = ['dev', 'beta', 'prod'] as const satisfies readonly AppFlavor[];
 
 export const FLAVORS: Readonly<Record<AppFlavor, FlavorDescriptor>> = {
   dev: {
@@ -27,17 +27,6 @@ export const FLAVORS: Readonly<Record<AppFlavor, FlavorDescriptor>> = {
     outputDir: 'release/dev',
     updateChannel: null,
     logLevel: { console: 'debug', file: 'debug' },
-  },
-  nightly: {
-    flavor: 'nightly',
-    appId: 'net.bombfarm.companion.nightly',
-    productName: 'Bomb Farm Companion (Nightly)',
-    badgeLabel: 'NIGHTLY',
-    dataDirName: 'Bomb Farm Companion (Nightly)',
-    packageName: 'bombfarm-companion-nightly',
-    outputDir: 'release/nightly',
-    updateChannel: 'nightly',
-    logLevel: { console: false, file: 'info' },
   },
   beta: {
     flavor: 'beta',

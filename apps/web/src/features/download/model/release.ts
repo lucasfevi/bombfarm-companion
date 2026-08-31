@@ -7,15 +7,38 @@
  * pointing at a file that does not exist is the worst defect this page can have. So the release is
  * resolved at runtime and the only fallback is the releases page, which cannot 404.
  *
- * Beta builds are published as GitHub *prereleases*, so `/releases/latest` does not find them:
- * it resolves to the newest non-prerelease and would 404 while beta is the only live channel.
+ * Stable builds publish as ordinary GitHub releases and beta builds as *prereleases*, so
+ * `/releases/latest` is no use for the second: the page reads the whole list and picks per channel.
  */
 export const REPO_URL = 'https://github.com/lucasfevi/bombfarm-companion';
 export const ISSUES_URL = `${REPO_URL}/issues`;
 export const RELEASES_URL = `${REPO_URL}/releases`;
 
-export const CHANNEL = 'beta';
+/**
+ * The distributed channels, best first. The page serves the highest one that has a published
+ * build, so a stable release takes the download button the moment one exists and beta carries it
+ * until then — or again, if stable publishing ever breaks.
+ */
+export const CHANNELS = ['prod', 'beta'] as const;
+export type Channel = (typeof CHANNELS)[number];
 
-/** The installer asset, as electron-builder names it for this channel. */
+/** The installer asset, as electron-builder names it. */
 export const INSTALLER_SUFFIX = '-setup.exe';
-export const INSTALLER_CHANNEL_MARKER = `-${CHANNEL}-`;
+
+const INSTALLER_PREFIX = 'bombfarm-companion-';
+
+/**
+ * Which channel published an installer, read off the name electron-builder gave it.
+ *
+ * Stable carries no channel word at all — `bombfarm-companion-0.7.0-setup.exe` against beta's
+ * `bombfarm-companion-beta-0.7.0-beta.166-setup.exe` — so it is recognised by the version starting
+ * immediately after the product name rather than by a marker. Anything else (a `dev` build, a
+ * channel added later) reads as neither and never reaches the button.
+ */
+export function channelOfInstaller(assetName: string): Channel | null {
+  if (!assetName.startsWith(INSTALLER_PREFIX) || !assetName.endsWith(INSTALLER_SUFFIX)) return null;
+
+  const afterProductName = assetName.slice(INSTALLER_PREFIX.length);
+  if (afterProductName.startsWith('beta-')) return 'beta';
+  return /^\d/.test(afterProductName) ? 'prod' : null;
+}

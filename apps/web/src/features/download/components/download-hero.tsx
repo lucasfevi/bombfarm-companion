@@ -1,9 +1,15 @@
 import { buttonRecipe, cn } from '@bombfarm/ui';
 import { sub, type Lang, type Strings } from '@/shared/i18n';
-import { CHANNEL, RELEASES_URL, REPO_URL } from '../model/release';
+import { RELEASES_URL, REPO_URL, type Channel } from '../model/release';
 import type { LatestRelease } from '../model/latest-release';
 import { LiveReplica } from './live/live-replica';
 import { TrustLine } from './trust-line';
+
+function channelLabel(channel: Channel, strings: Strings): string {
+  return channel === 'prod'
+    ? strings.downloadChannelChipStable
+    : strings.downloadChannelChipBeta;
+}
 
 export function DownloadHero({
   t,
@@ -37,9 +43,14 @@ export function DownloadHero({
               <span className="ml-2 font-mono text-xs opacity-70">v{release.version}</span>
             ) : null}
           </a>
-          <span className="rounded-sm border border-gold/45 bg-[color-mix(in_oklch,var(--gold)_12%,transparent)] px-2.5 py-1 font-mono text-[10px] tracking-wider text-gold uppercase">
-            {t.downloadChannelChip}
-          </span>
+          {release !== null ? (
+            <span
+              className="rounded-sm border border-gold/45 bg-[color-mix(in_oklch,var(--gold)_12%,transparent)] px-2.5 py-1 font-mono text-[10px] tracking-wider text-gold uppercase"
+              data-testid="download-channel-chip"
+            >
+              {channelLabel(release.channel, t)}
+            </span>
+          ) : null}
         </div>
 
         <p
@@ -47,11 +58,11 @@ export function DownloadHero({
           data-testid="download-file-meta"
         >
           {release === null
-            ? sub(t.downloadFileMetaPending, { channel: CHANNEL })
+            ? t.downloadFileMetaPending
             : sub(t.downloadFileMeta, {
                 file: release.fileName,
                 size: release.sizeLabel,
-                channel: CHANNEL,
+                channel: channelLabel(release.channel, t),
               })}
         </p>
 
