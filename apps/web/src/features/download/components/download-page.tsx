@@ -4,7 +4,7 @@ import { workspaceClass } from '@bombfarm/ui/panel-field.recipe';
 import type { Lang, Strings } from '@/shared/i18n';
 import { useLatestRelease } from '../model/use-latest-release';
 import { DownloadHero } from './download-hero';
-import { ReleaseChannels } from './release-channels';
+import { InstallCounts } from './install-counts';
 import { InstallSteps } from './install-steps';
 import { IncludedScreens } from './included-screens';
 
@@ -18,7 +18,7 @@ export function DownloadPage({ t, lang }: { t: Strings; lang: Lang }) {
   return (
     <div className={workspaceClass}>
       <DownloadHero t={t} lang={lang} release={release} />
-      <ReleaseChannels t={t} lang={lang} release={release} />
+      <InstallCounts t={t} lang={lang} release={release} />
       <InstallSteps t={t} fileName={release?.fileName ?? null} />
       <IncludedScreens t={t} />
     </div>

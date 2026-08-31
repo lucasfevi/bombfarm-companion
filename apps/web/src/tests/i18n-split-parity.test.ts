@@ -537,14 +537,12 @@ const KEYS_ADDED: readonly string[] = [
    * value comparisons but as the bare key name in the key-name comparison, so one entry here
    * cannot satisfy both — and the only way to make an array fit is to loosen one of them.
    *
-   * The stable-channel switch (2026-08-31) reshapes the channel copy while the page is still the
-   * only reader of any of it. The chip is no longer the constant "Beta" — the page now names the
-   * channel it actually resolved — so `downloadChannelChip` becomes `downloadChannelChipStable`
-   * and `downloadChannelChipBeta`. The nightly card is gone with the channel it advertised. Both
-   * remaining cards can be either the current one or the other one, so each needs a second note
-   * (`downloadChannelStableNotePending`, `downloadChannelBetaNoteAhead`) where beta alone used to
-   * need `downloadChannelBetaNotePending`. None of this is a fixture delta: the whole `download`
-   * namespace postdates the frozen fixture, so these keys move within `KEYS_ADDED`.
+   * The channel vocabulary is gone entirely (2026-08-31, second pass). Once a stable release
+   * existed the page stopped being a menu of channels and became one download, so the chip beside
+   * the button, both channel cards and the channel word in the file line all went with it — every
+   * `downloadChannel*` key together. `downloadFileMeta` loses its `{channel}` placeholder for the
+   * same reason. None of this is a fixture delta: the whole `download` namespace postdates the
+   * frozen fixture, so these keys only ever lived in `KEYS_ADDED` and simply leave it.
    */
   'downloadNavLabel',
   'downloadHeaderCta',
@@ -553,8 +551,6 @@ const KEYS_ADDED: readonly string[] = [
   'downloadHeadlineAccent',
   'downloadLede',
   'downloadCta',
-  'downloadChannelChipStable',
-  'downloadChannelChipBeta',
   'downloadFileMeta',
   'downloadFileMetaPending',
   'downloadTrustPermission',
@@ -562,12 +558,6 @@ const KEYS_ADDED: readonly string[] = [
   'downloadTrustLicense',
   'downloadTrustLicenseLink',
   'downloadInstallsSuffix',
-  'downloadChannelStableTitle',
-  'downloadChannelStableNote',
-  'downloadChannelStableNotePending',
-  'downloadChannelBetaTitle',
-  'downloadChannelBetaNote',
-  'downloadChannelBetaNoteAhead',
   'downloadInstallHeading',
   'downloadStepRunTitle',
   'downloadStepRunBody',
