@@ -237,6 +237,18 @@ export const CAPTURE_REGISTRY: Record<string, CaptureRow> = {
       '50-level Dano step is 1, leaving that half of the boundary WITHOUT a committed witness), ' +
       'every upgrade is 0, every hero is star-0, and max_phase is 21.',
   },
+  'sheet-math/save-20260831-13heroes-soulbound.json': {
+    capturedOn: '2026-08-31',
+    retention: 'value',
+    note:
+      'Past every boundary above, and the only capture carrying the `soulbound` flag the game ' +
+      'began emitting on 2026-08-29 — witnessed both ways on heroes and on items. The second ' +
+      'capture past the 2026-08-28 damage boundary and by far the thicker of the two: 13 heroes ' +
+      'and 112 items at max_phase 61, where save-20260828 is a fresh 4-hero account with 15 ' +
+      'items, every upgrade 0 and max_phase 21. Also the only capture in the corpus where any ' +
+      'hero holds an unspent stat point (Orin and Devin, 1 each). Does NOT reach the 50-level ' +
+      'Dano step: its items top out at level 30.',
+  },
   'farm-rate/save-20260815-486-7heroes.json': {
     capturedOn: '2026-08-15',
     retention: 'structural',

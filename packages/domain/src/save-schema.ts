@@ -221,6 +221,15 @@ const HERO_LEVEL: SchemaLevel = {
   // `stats`/`birth_stats`/`stat_ranges`/`abilities`/`slots` are value-shaped, not schema-shaped —
   // deliberately NOT declared as children: they are neither fingerprinted nor descended (design
   // §2.3). Their presence is still covered because they are keys of this level.
+  //
+  // `soulbound` marks a hero as bound to the account and unsellable on the marketplace. It is
+  // declared so the fidelity layer stops reporting it added on every refresh, and for nothing
+  // else: `marketable` is the field that actually governs whether a hero can be sold, and every
+  // soulbound hero already carries `marketable: false`. `optional`, not `keys` — the game emits
+  // the flag only on bound records (3 of 10 heroes across the 2026-08-29..08-31 exports, always
+  // literal `true`, never `false`), so requiring it would turn this into a missing-key report and
+  // degrade the section.
+  optional: ['soulbound'],
 };
 
 const ITEM_LEVEL: SchemaLevel = {
@@ -246,7 +255,14 @@ const ITEM_LEVEL: SchemaLevel = {
   // Measured (design §2.4): `/inventory.items` 27 with `slot` / 3 without (all category 4);
   // `save.items` 17 with / 5 without. Genuine game variance, not our artifact — `optional`, not
   // `allowance`. `assertOptionalKeyWitnessedBothWays` keeps this escape from ever going dead.
-  optional: ['slot'],
+  //
+  // `soulbound` marks an item as bound to the account and unsellable on the marketplace, and is
+  // declared for that reason alone: `tradable` is the field that actually governs whether an item
+  // can be sold, and soulbound is a strict subset of untradable — across the 2026-08-29..08-31
+  // exports, 225 soulbound items, all `tradable: false`, none otherwise. `resolvePrice` already
+  // withholds a market price on `!tradable`, so nothing downstream needs to read this flag. Same
+  // reason as the hero level for `optional` over `keys`: the game emits it only on bound records.
+  optional: ['slot', 'soulbound'],
 };
 
 const CASA_LEVEL: SchemaLevel = {
