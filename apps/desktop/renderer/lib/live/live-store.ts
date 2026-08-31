@@ -1,3 +1,4 @@
+import { energyDisplayPercent } from '@bombfarm/contracts';
 import type {
   FieldCountdown,
   LiveEarnings,
@@ -114,11 +115,18 @@ function sameRecoveryCountdowns(a: readonly RecoveryCountdown[], b: readonly Rec
   });
 }
 
+/** At the resolution the bar and the reading beside it are actually drawn at. The raw fraction
+ *  moves on every frame, so comparing it exactly makes every tick a change and every tick a
+ *  redraw of the same picture — see {@link energyDisplayPercent}. */
 function sameHeroEnergies(a: readonly LiveHeroEnergy[], b: readonly LiveHeroEnergy[]): boolean {
   if (a.length !== b.length) return false;
   return a.every((entry, index) => {
     const other = b[index];
-    return other !== undefined && entry.heroId === other.heroId && entry.energyFraction === other.energyFraction;
+    return (
+      other !== undefined &&
+      entry.heroId === other.heroId &&
+      energyDisplayPercent(entry.energyFraction) === energyDisplayPercent(other.energyFraction)
+    );
   });
 }
 
@@ -185,23 +193,28 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
       // Only the very first bootstrap can lose a genuine race against an event that already
       // landed first.
       const applyRest = state.hasBootstrapped || !state.hasAppliedArrival;
-      const nextFreshness = applyRest ? buildLiveFreshness(view.currency) : state.freshness;
-      const nextField = applyRest ? view.field : state.field;
-      const nextRecovery = applyRest ? view.recovery : state.recovery;
-      const nextEnergies = applyRest ? view.energies : state.energies;
-      const nextOnFieldHeroIds = applyRest ? view.onFieldHeroIds : state.onFieldHeroIds;
-      const nextEarnings = applyRest ? view.earnings : state.earnings;
-      const nextMap = applyRest ? view.map : state.map;
+      // Same per-slice identity rule as the fast channel below: a re-fetch that agrees with what
+      // is already held keeps the held reading, so an unchanged slice stays the same object across
+      // the authenticated cycle rather than being replaced by an equal clone of itself.
+      const keep = <T>(next: T, current: T, same: (a: T, b: T) => boolean): T =>
+        applyRest ? (state.hasAppliedArrival && same(current, next) ? current : next) : current;
+      const nextFreshness = keep(applyRest ? buildLiveFreshness(view.currency) : state.freshness, state.freshness, sameFreshness);
+      const nextField = keep(view.field, state.field, sameFieldCountdowns);
+      const nextRecovery = keep(view.recovery, state.recovery, sameRecoveryCountdowns);
+      const nextEnergies = keep(view.energies, state.energies, sameHeroEnergies);
+      const nextOnFieldHeroIds = keep(view.onFieldHeroIds, state.onFieldHeroIds, sameIdList);
+      const nextEarnings = keep(view.earnings, state.earnings, sameEarnings);
+      const nextMap = keep(view.map, state.map, sameMap);
       const unchanged =
         state.hasBootstrapped &&
         view.rotation === state.rotation &&
-        sameFreshness(nextFreshness, state.freshness) &&
+        nextFreshness === state.freshness &&
         nextField === state.field &&
         nextRecovery === state.recovery &&
         nextEnergies === state.energies &&
-        sameIdList(nextOnFieldHeroIds, state.onFieldHeroIds) &&
-        sameEarnings(nextEarnings, state.earnings) &&
-        sameMap(nextMap, state.map);
+        nextOnFieldHeroIds === state.onFieldHeroIds &&
+        nextEarnings === state.earnings &&
+        nextMap === state.map;
       if (unchanged) return state;
       return {
         ...state,
@@ -227,23 +240,38 @@ export function applyLiveArrival(state: LiveInternalState, arrival: LiveArrival)
         return { ...state, freshness: nextFreshness, hasAppliedArrival: true, revision: state.revision + 1 };
       }
       if (event.type === 'fastUpdate') {
+        // Per SLICE, not per arrival. The channel carries all six together and the IPC boundary
+        // structurally clones every one of them, so an arrival that moves only the gold balance
+        // still hands over a brand-new `field` array saying exactly what the old one said. Keeping
+        // the reading already held whenever the new one agrees is what lets everything downstream
+        // — the fast-model cache below, and the memoised rows above it — tell "this did not
+        // change" from "this arrived again".
+        const applied = state.hasAppliedArrival;
+        const field = applied && sameFieldCountdowns(state.field, event.field) ? state.field : event.field;
+        const recovery =
+          applied && sameRecoveryCountdowns(state.recovery, event.recovery) ? state.recovery : event.recovery;
+        const energies = applied && sameHeroEnergies(state.energies, event.energies) ? state.energies : event.energies;
+        const onFieldHeroIds =
+          applied && sameIdList(state.onFieldHeroIds, event.onFieldHeroIds) ? state.onFieldHeroIds : event.onFieldHeroIds;
+        const earnings = applied && sameEarnings(state.earnings, event.earnings) ? state.earnings : event.earnings;
+        const map = applied && sameMap(state.map, event.map) ? state.map : event.map;
         const unchanged =
-          state.hasAppliedArrival &&
-          sameFieldCountdowns(state.field, event.field) &&
-          sameRecoveryCountdowns(state.recovery, event.recovery) &&
-          sameHeroEnergies(state.energies, event.energies) &&
-          sameIdList(state.onFieldHeroIds, event.onFieldHeroIds) &&
-          sameEarnings(state.earnings, event.earnings) &&
-          sameMap(state.map, event.map);
+          applied &&
+          field === state.field &&
+          recovery === state.recovery &&
+          energies === state.energies &&
+          onFieldHeroIds === state.onFieldHeroIds &&
+          earnings === state.earnings &&
+          map === state.map;
         if (unchanged) return state;
         return {
           ...state,
-          field: event.field,
-          recovery: event.recovery,
-          energies: event.energies,
-          onFieldHeroIds: event.onFieldHeroIds,
-          earnings: event.earnings,
-          map: event.map,
+          field,
+          recovery,
+          energies,
+          onFieldHeroIds,
+          earnings,
+          map,
           hasAppliedArrival: true,
           revision: state.revision + 1,
         };
@@ -279,22 +307,59 @@ export function createSlowModelCache(): (
   };
 }
 
+/** Memoizes {@link buildLiveFastModel} on the identity of the three arrays it folds. Those are
+ *  kept stable per slice by `applyLiveArrival`, so a tick that moves only the gold balance leaves
+ *  every countdown and energy reading as the SAME object — which is what lets the hero rows skip
+ *  rendering rather than re-rendering into identical markup four times a second. */
+export function createFastModelCache(): (
+  field: readonly FieldCountdown[],
+  recovery: readonly RecoveryCountdown[],
+  energies: readonly LiveHeroEnergy[],
+) => LiveFastModel {
+  let hasComputed = false;
+  let lastField: readonly FieldCountdown[] = [];
+  let lastRecovery: readonly RecoveryCountdown[] = [];
+  let lastEnergies: readonly LiveHeroEnergy[] = [];
+  let lastResult: LiveFastModel = EMPTY_LIVE_FAST_MODEL;
+  return (field, recovery, energies) => {
+    if (hasComputed && field === lastField && recovery === lastRecovery && energies === lastEnergies) return lastResult;
+    hasComputed = true;
+    lastField = field;
+    lastRecovery = recovery;
+    lastEnergies = energies;
+    lastResult = buildLiveFastModel(field, recovery, energies);
+    return lastResult;
+  };
+}
+
+export interface LiveModelCaches {
+  readonly slow: (rotation: RotationSnapshot | null, onFieldHeroIds: readonly string[]) => LiveSlowModel | null;
+  readonly fast: (
+    field: readonly FieldCountdown[],
+    recovery: readonly RecoveryCountdown[],
+    energies: readonly LiveHeroEnergy[],
+  ) => LiveFastModel;
+}
+
+/** The pair a single store keeps for its lifetime. Both halves have to outlive one derivation or
+ *  they memoize nothing. */
+export function createLiveModelCaches(): LiveModelCaches {
+  return { slow: createSlowModelCache(), fast: createFastModelCache() };
+}
+
 /** No freeze step here: `state.recovery` already carries the correct `advancing` flag — the main
  *  process applies the same freeze against its own currency state before this ever crosses IPC
  *  (see `LiveSource.getView()`), so the renderer only ever displays what it was sent. */
-function deriveFastModel(state: LiveInternalState): LiveFastModel {
+function deriveFastModel(state: LiveInternalState, caches: LiveModelCaches): LiveFastModel {
   if (!state.hasAppliedArrival) return EMPTY_LIVE_FAST_MODEL;
-  return buildLiveFastModel(state.field, state.recovery, state.energies);
+  return caches.fast(state.field, state.recovery, state.energies);
 }
 
-export function deriveLiveModel(
-  state: LiveInternalState,
-  slowModelCache: (rotation: RotationSnapshot | null, onFieldHeroIds: readonly string[]) => LiveSlowModel | null,
-): LiveModel {
+export function deriveLiveModel(state: LiveInternalState, caches: LiveModelCaches): LiveModel {
   return {
     freshness: state.freshness,
-    slow: slowModelCache(state.rotation, state.onFieldHeroIds),
-    fast: deriveFastModel(state),
+    slow: caches.slow(state.rotation, state.onFieldHeroIds),
+    fast: deriveFastModel(state, caches),
     earnings: state.earnings,
     map: state.map,
   };
@@ -317,10 +382,10 @@ export interface LiveStore {
  */
 export function createLiveStore(deps: LiveStoreDeps): LiveStore {
   let state = initialLiveInternalState;
-  const slowModelCache = createSlowModelCache();
+  const caches = createLiveModelCaches();
   const listeners = new Set<(model: LiveModel) => void>();
   let lastPublishedRevision = -1;
-  let lastPublishedModel = deriveLiveModel(state, slowModelCache);
+  let lastPublishedModel = deriveLiveModel(state, caches);
   let started = false;
   let unsubscribeLiveEvent: (() => void) | null = null;
   let unsubscribeAccountChanged: (() => void) | null = null;
@@ -328,7 +393,7 @@ export function createLiveStore(deps: LiveStoreDeps): LiveStore {
   function publishIfChanged(): void {
     if (state.revision === lastPublishedRevision) return;
     lastPublishedRevision = state.revision;
-    lastPublishedModel = deriveLiveModel(state, slowModelCache);
+    lastPublishedModel = deriveLiveModel(state, caches);
     for (const listener of listeners) listener(lastPublishedModel);
   }
 

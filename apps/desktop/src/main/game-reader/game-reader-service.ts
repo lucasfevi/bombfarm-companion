@@ -11,7 +11,7 @@ import { isLiveCurrency } from '@bombfarm/contracts';
 import { tickToRawGameState } from '../live-source/tick-to-raw-state.js';
 import { log } from '../logging.js';
 import { buildFixtureAccountPayload } from './fixture-account.js';
-import { findProcessId } from './process.js';
+import { findProcessIdAsync, isProcessAlive } from './process.js';
 
 /** The subset of `AccountStore` the game reader needs to persist a fixture tick's payload. */
 export interface AccountCommitter {
@@ -57,6 +57,9 @@ export class GameReaderService {
    *  player. */
   private readonly consent: () => boolean;
   private status: GameStatusInfo;
+  /** Last pid `findProcessId` returned, kept so the recurring tick can verify it cheaply instead
+   *  of paying to find it again. Cleared the moment that process stops existing. */
+  private gamePid: number | null = null;
   private timer: NodeJS.Timeout | null = null;
   private windowProvider: (() => BrowserWindow | null) | null = null;
   private accountStore: AccountCommitter | null = null;
@@ -168,7 +171,10 @@ export class GameReaderService {
     // a `stop()` if one is ever added.
     this.stopped = false;
     if (this.config.mode === 'fixture') {
-      this.tick();
+      // Fixture mode awaits nothing, so this first tick has already run to completion by the time
+      // the promise is handed back — the account is committed before `start()` returns, which is
+      // what the boot path depends on.
+      void this.tick();
     }
     this.scheduleNext(0);
   }
@@ -201,16 +207,43 @@ export class GameReaderService {
     return this.config.mode;
   }
 
+  /**
+   * The pid of the game, on a tick that may neither block nor pay to look it up twice.
+   *
+   * Looking it up spawns PowerShell: ~166ms, a cold start every time, so it does not amortise.
+   * Electron's main process is single-threaded and its window message loop is on that thread — a
+   * window being dragged is moved by that loop — so doing it synchronously froze and lurched the
+   * drag in step with the spawns. This tick runs at `pollAttachedMs` (50ms) while the game is
+   * connected, which put the main process inside a child process for more than three times its own
+   * poll budget, permanently. The offline development mode never showed any of it, because the
+   * fixture tick never asks who is running.
+   *
+   * Two things fix it, and both are needed. A pid already in hand is verified with a syscall
+   * rather than a process, so the connected case never looks anything up at all. And the lookup
+   * that remains — only reachable with no live pid to check, i.e. while the game is closed — is
+   * awaited rather than blocked on, so the main process is free for its whole duration.
+   */
+  private async currentGamePid(): Promise<number | null> {
+    if (this.gamePid !== null && isProcessAlive(this.gamePid)) return this.gamePid;
+    this.gamePid = await findProcessIdAsync(this.config.processName);
+    return this.gamePid;
+  }
+
+  /** The next poll is scheduled only once this one has finished, never alongside it: a tick can
+   *  now await a process lookup, and a timer that kept firing through that would stack ticks —
+   *  and duplicate lookups — for as long as the lookup took. */
   private scheduleNext(delayMs: number): void {
     this.timer = setTimeout(() => {
-      this.tick();
-      const interval =
-        this.status.status === 'connected' ? this.config.pollAttachedMs : this.config.pollDetachedMs;
-      this.scheduleNext(interval);
+      void this.tick().then(() => {
+        if (this.stopped) return;
+        const interval =
+          this.status.status === 'connected' ? this.config.pollAttachedMs : this.config.pollDetachedMs;
+        this.scheduleNext(interval);
+      });
     }, delayMs);
   }
 
-  private tick(): void {
+  private async tick(): Promise<void> {
     // Belt-and-braces half of the shutdown-ordering fix: `stop()` already clears the pending
     // timer, so this only matters for a callback that had already begun running (or, on some
     // platforms, one that still fires despite `clearTimeout`) — it must never reach
@@ -221,7 +254,7 @@ export class GameReaderService {
       if (this.config.mode === 'fixture') {
         this.tickFixture();
       } else {
-        this.tickLive();
+        await this.tickLive();
       }
     } catch (err) {
       log.error({ scope: 'game-reader', event: 'tick.failed', err });
@@ -295,10 +328,13 @@ export class GameReaderService {
    * stopped delivering (`ingestLiveCurrency()`), it reports `stale` rather than replaying a
    * frozen reading as `connected`.
    */
-  private tickLive(): void {
+  private async tickLive(): Promise<void> {
     if (!this.consent()) {
       this.latestLiveTick = null;
       this.lastProcessedFrameSequence = null;
+      // Identifying the player's game process is one of the things consent covers, so the answer
+      // is dropped along with the frames rather than held for a re-grant.
+      this.gamePid = null;
       this.updateStatus({
         status: 'not_running',
         updatedAt: new Date().toISOString(),
@@ -307,7 +343,10 @@ export class GameReaderService {
       return;
     }
 
-    const pid = findProcessId(this.config.processName);
+    const pid = await this.currentGamePid();
+    // Shutdown can begin while a lookup is in flight, so the guard at the top of `tick()` is no
+    // longer enough on its own: nothing past this point may run against a closing app.
+    if (this.stopped) return;
     if (!pid) {
       this.latestLiveTick = null;
       this.lastProcessedFrameSequence = null;

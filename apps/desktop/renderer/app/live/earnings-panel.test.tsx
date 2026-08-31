@@ -87,12 +87,32 @@ function cellText(out: string, testId: string): string {
 }
 
 /**
+ * The component behind an element, whether it was written plainly or wrapped in `memo`. `memo`
+ * stores the real function one level down, on `type.type`.
+ */
+function componentOf(element: { type?: unknown }): ((props: unknown) => unknown) | null {
+  const { type } = element;
+  if (typeof type === 'function') return type as (props: unknown) => unknown;
+  if (type !== null && typeof type === 'object') {
+    const inner = (type as { type?: unknown }).type;
+    if (typeof inner === 'function') return inner as (props: unknown) => unknown;
+  }
+  return null;
+}
+
+/**
  * Walks the plain React-element tree `EarningsPanel(...)` returns when called directly as a
  * function (no dispatcher, no actual render) to find the one element carrying `data-testid`.
  * Independent of exactly how deep the control sits or how many wrapper elements surround it, and
  * of whether it is reached through `children` or through some other prop (`Block`'s own `value`,
- * for the current-gold marker below) — a custom component's props are never invoked here (nothing
- * in this tree is actually rendered), so any prop holding a nested element is a real place to look.
+ * for the current-gold marker below).
+ *
+ * A component element whose props hold nothing matching is expanded by CALLING it, so that pulling
+ * a piece of this panel out into its own component (`XpHeadlineHelp`) does not silently put the
+ * thing being searched for out of reach — which is exactly what a testid search finding nothing
+ * would otherwise look like. Only as a fallback, and only when the props hold no match: components
+ * that need a dispatcher (every Base UI part here does) throw when called this way, and their
+ * children are already reachable through `props` without calling anything.
  */
 function findElementByTestId(
   node: unknown,
@@ -106,7 +126,7 @@ function findElementByTestId(
     }
     return null;
   }
-  const element = node as { props?: Record<string, unknown> };
+  const element = node as { type?: unknown; props?: Record<string, unknown> };
   if (element.props && element.props['data-testid'] === testId) {
     return element as { props: Record<string, unknown> };
   }
@@ -115,7 +135,13 @@ function findElementByTestId(
     const found = findElementByTestId(value, testId);
     if (found) return found;
   }
-  return null;
+  const component = componentOf(element);
+  if (!component) return null;
+  try {
+    return findElementByTestId(component(element.props), testId);
+  } catch {
+    return null;
+  }
 }
 
 describe('EarningsPanel — every cell in every state', () => {

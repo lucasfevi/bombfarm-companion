@@ -78,6 +78,31 @@ export interface LiveFrame {
  *  the two sides cannot drift onto different numbers. */
 export const LIVE_DISPLAY_REFRESH_MS = 250;
 
+/**
+ * The epsilon is load-bearing, not defensive. The fraction is derived as `energy / energyMax`, and
+ * an exact hundredth does not survive the multiply: `0.29 * 100` is `28.999999999999996`, which
+ * floors to 28. Without it, 29%, 57% and 58% each render a point low.
+ */
+const ENERGY_FLOOR_EPSILON = 1e-9;
+
+/**
+ * A hero's energy as the whole percentage the app actually shows — FLOORED rather than rounded, so
+ * only a hero at exactly full energy reads 100%. A hero at 99.6% is still waiting, and "100%"
+ * beside one that has not left for the field is the reading the energy bar exists to prevent.
+ *
+ * It lives in the contract rather than in either app because it is also the definition of a
+ * CHANGE. The wire carries a raw float that moves on every frame, while the bar is one percent
+ * wide per point and the reading beside it has no decimals — so four consecutive readings of
+ * 0.28425…, 0.28389…, 0.28377…, 0.28365… are four identical pictures. Both sides ask "did the
+ * displayed percentage move?" through this one function: the main process to decide whether the
+ * fast channel is worth emitting at all, the renderer to decide whether to keep the readings it
+ * already holds. Two definitions of "changed" would put them back to disagreeing.
+ */
+export function energyDisplayPercent(fraction: number): number {
+  const clamped = Math.min(Math.max(fraction, 0), 1);
+  return Math.floor(clamped * 100 + ENERGY_FLOOR_EPSILON);
+}
+
 export type LiveEvent =
   | { readonly type: 'frame'; readonly frame: LiveFrame }
   | { readonly type: 'currency'; readonly currency: LiveCurrency }

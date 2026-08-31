@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isIpcChannel, isIpcEventChannel, IPC_CHANNELS, IPC_EVENT_CHANNELS } from './index.js';
-import { isActionableGap, liveGap, LIVE_DISPLAY_REFRESH_MS, type LiveEvent, type LiveGapReason } from './live-source.js';
+import { energyDisplayPercent, isActionableGap, liveGap, LIVE_DISPLAY_REFRESH_MS, type LiveEvent, type LiveGapReason } from './live-source.js';
 
 /** Exhaustive over `LiveGapReason` via a `satisfies` record: adding a reason without adding it
  *  here is a compile error, not a silently-actionable gap. */
@@ -85,6 +85,33 @@ describe('live IPC surface', () => {
 describe('LIVE_DISPLAY_REFRESH_MS', () => {
   it('is the one constant both the main process and the renderer pace the fast channel to', () => {
     expect(LIVE_DISPLAY_REFRESH_MS).toBe(250);
+  });
+});
+
+describe('energyDisplayPercent — one definition of what a visible change is', () => {
+  it('floors rather than rounds, so only a hero at exactly full energy reads 100%', () => {
+    expect(energyDisplayPercent(1)).toBe(100);
+    expect(energyDisplayPercent(0.996)).toBe(99);
+    expect(energyDisplayPercent(0.999999)).toBe(99);
+  });
+
+  it('prints every exact hundredth as itself — flooring a binary float loses 29, 57 and 58', () => {
+    for (let percent = 0; percent <= 100; percent += 1) {
+      expect(energyDisplayPercent(percent / 100)).toBe(percent);
+    }
+  });
+
+  it('clamps outside [0, 1] rather than reporting a percentage the bar cannot draw', () => {
+    expect(energyDisplayPercent(-0.5)).toBe(0);
+    expect(energyDisplayPercent(2)).toBe(100);
+  });
+
+  it('collapses a run of raw wire readings that all draw the same bar', () => {
+    // Four consecutive readings off the live tap, drifting in the 15th decimal place.
+    const drifting = [0.28425594587099745, 0.2838965614344286, 0.283776766622239, 0.28365697181004934];
+    expect(new Set(drifting).size).toBe(4);
+    expect(new Set(drifting.map(energyDisplayPercent)).size).toBe(1);
+    expect(energyDisplayPercent(drifting[0] as number)).toBe(28);
   });
 });
 
