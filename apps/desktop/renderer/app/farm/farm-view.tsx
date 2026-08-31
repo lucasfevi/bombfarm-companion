@@ -9,6 +9,8 @@
  * the screen opened, and the only things that move it are the two compute inputs and an explicit
  * Refresh — see `lib/farm/farm-snapshot-store.ts`. A snapshot the live account has moved past is
  * LABELLED and left alone; an unlabelled stale number is the failure this screen exists to avoid.
+ * That label is a state of the always-present refresh control beside the board's heading, so the
+ * age of the numbers is readable before they go out of date rather than only after.
  *
  * Every compute is scheduled off the paint, so the frame BEFORE it — the loading state on a first
  * open, the board already in hand on a recompute — is committed and visible rather than skipped
@@ -19,7 +21,7 @@
  * Compiler, and a freshly-allocated prop bag on every render reaches a 600-row table.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Banner, Button, EmptyState, colClass } from '@bombfarm/ui';
+import { Banner, EmptyState, colClass } from '@bombfarm/ui';
 import { scheduleAfterPaint } from '@bombfarm/farm';
 import {
   FarmRankingBoardView,
@@ -27,6 +29,7 @@ import {
   PhasesExplorerView,
   type FarmRankingBoardActions,
   type FarmRankingBoardData,
+  type FarmRankingBoardSlots,
   type FarmStatLabels,
   type HeroPickerSlotProps,
 } from '@bombfarm/farm/components';
@@ -49,6 +52,7 @@ import { freshProposal, reRankActive, type FarmRespecState } from '../../lib/far
 import { useFarmSnapshot } from '../../lib/farm/use-farm-snapshot';
 import { useFarmTableHeight } from '../../lib/farm/use-farm-table-height';
 import { farmScreenCopy, useFarmCopy } from './farm-copy';
+import { FarmRefreshControl } from './farm-refresh-control';
 
 const DEFAULT_PHASE = 1;
 
@@ -181,6 +185,11 @@ export function FarmView() {
 
   const tableScrollportHeightPx = useFarmTableHeight();
   const settled = useMemo(() => settledBoard(state), [state]);
+  const busy = state.status === 'computing';
+  const refreshBag = useMemo<FarmScreenRefresh>(
+    () => ({ stale, busy, onRefresh }),
+    [stale, busy, onRefresh],
+  );
 
   if (account.status === 'bridge-unavailable') {
     return (
@@ -234,27 +243,25 @@ export function FarmView() {
     <div
       data-testid="farm-view"
       className={colClass}
-      aria-busy={state.status === 'computing'}
+      aria-busy={busy}
     >
-      {stale ? (
-        <Banner tone="warn" title={t.farmStaleTitle}>
-          <span className="flex flex-wrap items-center gap-3">
-            <span>{t.farmStaleDescription}</span>
-            <Button type="button" variant="primary" data-testid="farm-refresh" onClick={onRefresh}>
-              {t.farmRefresh}
-            </Button>
-          </span>
-        </Banner>
-      ) : null}
       <FarmScreen
         snapshot={settled}
         view={{ phase, phaseChosen, activeHeroId, tableScrollportHeightPx }}
         respec={respec}
+        refresh={refreshBag}
         actions={screenActions}
       />
     </div>
   );
 }
+
+/** What the board's refresh control reads and writes — the screen's only recompute path. */
+type FarmScreenRefresh = {
+  stale: boolean;
+  busy: boolean;
+  onRefresh: () => void;
+};
 
 type FarmScreenActions = {
   setPhasesViewPhase: (phase: number) => void;
@@ -277,6 +284,7 @@ function FarmScreen({
   snapshot,
   view,
   respec,
+  refresh,
   actions,
 }: {
   snapshot: FarmSettledBoard;
@@ -287,12 +295,13 @@ function FarmScreen({
     tableScrollportHeightPx: number;
   };
   respec: FarmRespecState;
+  refresh: FarmScreenRefresh;
   actions: FarmScreenActions;
 }) {
   const t = useCopy();
   const { lang } = useLocale();
   const farmCopy = useFarmCopy();
-  const { board, inputs, gate } = snapshot;
+  const { board, inputs, gate, computedAt } = snapshot;
 
   const screenCopy = useMemo(() => farmScreenCopy(farmCopy, t), [farmCopy, t]);
 
@@ -374,6 +383,20 @@ function FarmScreen({
     [actions],
   );
 
+  const boardSlots = useMemo<FarmRankingBoardSlots>(
+    () => ({
+      headerAside: (
+        <FarmRefreshControl
+          computedAt={computedAt}
+          stale={refresh.stale}
+          busy={refresh.busy}
+          onRefresh={refresh.onRefresh}
+        />
+      ),
+    }),
+    [computedAt, refresh],
+  );
+
   const explorerData = useMemo(
     () => ({
       phase: view.phase,
@@ -420,7 +443,13 @@ function FarmScreen({
 
   return (
     <>
-      <FarmRankingBoardView t={farmCopy} lang={lang} data={boardData} actions={boardActions} />
+      <FarmRankingBoardView
+        t={farmCopy}
+        lang={lang}
+        data={boardData}
+        actions={boardActions}
+        slots={boardSlots}
+      />
       <PhasesExplorerView
         t={screenCopy}
         lang={lang}

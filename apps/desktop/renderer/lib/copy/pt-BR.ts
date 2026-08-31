@@ -297,9 +297,10 @@ export const ptBR: Copy = {
   inventoryEmptyDescription: 'Abra o jogo com o companion em execução, para que ele tenha o que ler.',
 
   farmNavLabel: 'Farm',
-  farmStaleTitle: 'Estes números são de uma leitura anterior',
-  farmStaleDescription: 'Sua conta mudou desde que o quadro foi calculado. Atualize para calcular de novo.',
   farmRefresh: 'Atualizar',
+  farmRefreshBusy: 'Calculando…',
+  farmRefreshedAge: 'calculado {age}',
+  farmRefreshStale: 'desatualizado',
   farmUnavailableTitle: 'Ainda falta ler parte da sua conta',
   farmUnavailableDescription: 'O quadro precisa de todas as partes da sua conta. Abra o jogo com o companion em execução e deixe aberto por um instante.',
   farmStatColumn: 'Atributo',

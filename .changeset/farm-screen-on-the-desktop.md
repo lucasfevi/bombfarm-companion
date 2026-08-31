@@ -13,9 +13,11 @@ where the web does.
 It computes once, when you open the tab. The desktop reads your account from the running game
 every few seconds, and recomputing six hundred rows on every one of those reads would be both
 wasteful and unsettling to look at — figures moving while you are trying to compare them. So the
-board takes a snapshot when you arrive and holds it. When the account moves on underneath, the
-screen says so and offers a refresh rather than quietly swapping the numbers out. It only says so
-when the account moved in a way the board would rank differently for — your gold balance ticking
+board takes a snapshot when you arrive and holds it. Beside the board's heading, a refresh is
+always there, saying how long ago the numbers were worked out, so you can work them out again
+whenever you like. When the account moves on underneath, that same line says the numbers are out
+of date rather than quietly swapping them. It only says so when the account moved in a way the
+board would rank differently for — your gold balance ticking
 up is not one, and the board never reads a balance. Your own edits
 still apply immediately: changing the rotation pool or the return bonus recomputes there and then,
 because those are inputs you chose rather than a tick you did not.

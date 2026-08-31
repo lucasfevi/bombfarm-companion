@@ -11,6 +11,7 @@ export { FarmRankingBoardView } from './farm-ranking-board';
 export type {
   FarmRankingBoardActions,
   FarmRankingBoardData,
+  FarmRankingBoardSlots,
   FarmRespecBoardData,
 } from './farm-ranking-board';
 export type { FarmStatLabels } from './stat-labels';

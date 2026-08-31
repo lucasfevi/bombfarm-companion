@@ -130,7 +130,13 @@ export function createFarmSnapshotStore(): {
     const outcome: FarmComputeOutcome =
       inputs === null
         ? { ok: false, reason: 'incomplete-account' }
-        : { ok: true, board: memo.rows(inputs), inputs, gate: memo.gate(inputs) };
+        : {
+            ok: true,
+            board: memo.rows(inputs),
+            inputs,
+            gate: memo.gate(inputs),
+            computedAt: new Date().toISOString(),
+          };
     dispatch({ kind: 'computed', sourceKey, controls, outcome });
   }
 

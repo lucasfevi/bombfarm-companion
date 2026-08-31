@@ -300,9 +300,10 @@ export const en = {
   // farm* — the Farm screen's own chrome. The board and the phase panels print their own
   // dictionary, which the farm package ships; these are the strings only this app owns.
   farmNavLabel: 'Farm',
-  farmStaleTitle: 'These numbers are from an earlier read',
-  farmStaleDescription: 'Your account has changed since the board was worked out. Refresh to work it out again.',
   farmRefresh: 'Refresh',
+  farmRefreshBusy: 'Working…',
+  farmRefreshedAge: 'worked out {age}',
+  farmRefreshStale: 'out of date',
   farmUnavailableTitle: 'Not enough of your account has been read',
   farmUnavailableDescription: 'The board needs every part of your account. Open the game with the companion running and leave it open for a moment.',
   // The stat vocabulary the farm screen borrows from this app. Every other stat name comes from

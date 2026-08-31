@@ -20,15 +20,17 @@ import type { FarmInputs, FarmRankingResult, FarmRespecGate } from '@bombfarm/fa
 import type { FarmControls } from './farm-inputs';
 
 /**
- * One compute's three settled products: the board, the inputs it was computed from, and the
- * first-tier respec gate over those same inputs. The gate is cheap and rides along with the
- * compute rather than being re-derived while the screen paints — the expensive second tier is a
- * button press, and lives nowhere near here.
+ * One compute's settled products: the board, the inputs it was computed from, the first-tier
+ * respec gate over those same inputs, and the moment the compute finished. The gate is cheap and
+ * rides along with the compute rather than being re-derived while the screen paints — the
+ * expensive second tier is a button press, and lives nowhere near here.
  */
 export type FarmSettledBoard = {
   readonly board: FarmRankingResult;
   readonly inputs: FarmInputs;
   readonly gate: FarmRespecGate;
+  /** ISO-8601, stamped by whoever ran the compute — this module reads no clock of its own. */
+  readonly computedAt: string;
 };
 
 /**
@@ -101,7 +103,12 @@ export function snapshotSourceKey(state: FarmSnapshotState): string | null {
  */
 export function settledBoard(state: FarmSnapshotState): FarmSettledBoard | null {
   if (state.status === 'ready') {
-    return { board: state.board, inputs: state.inputs, gate: state.gate };
+    return {
+      board: state.board,
+      inputs: state.inputs,
+      gate: state.gate,
+      computedAt: state.computedAt,
+    };
   }
   if (state.status === 'computing') return state.previous;
   return null;
@@ -170,6 +177,7 @@ export function accept(state: FarmSnapshotState, arrival: FarmSnapshotArrival): 
         board: arrival.outcome.board,
         inputs: arrival.outcome.inputs,
         gate: arrival.outcome.gate,
+        computedAt: arrival.outcome.computedAt,
         controls: arrival.controls,
         sourceKey: arrival.sourceKey,
       };

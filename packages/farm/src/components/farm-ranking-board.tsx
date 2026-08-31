@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Banner, EmptyState, Panel } from '@bombfarm/ui';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
 import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
@@ -65,6 +65,15 @@ export type FarmRankingBoardData = {
   tableScrollportHeightPx?: number;
 };
 
+/**
+ * Host-supplied chrome the board makes room for but knows nothing about. `headerAside` shares the
+ * heading's own line rather than taking a row of its own — the desktop shell puts its refresh
+ * control there, and a window 640px tall has no row to spare above the table.
+ */
+export type FarmRankingBoardSlots = {
+  headerAside?: ReactNode;
+};
+
 export type FarmRankingBoardActions = {
   setPhasesViewPhase: (phase: number) => void;
   syncDefaultPhaseSelection: (phase: number) => void;
@@ -86,11 +95,13 @@ export function FarmRankingBoardView({
   lang,
   data,
   actions,
+  slots,
 }: {
   t: FarmCopy;
   lang: Lang;
   data: FarmRankingBoardData;
   actions: FarmRankingBoardActions;
+  slots?: FarmRankingBoardSlots;
 }) {
   const {
     result,
@@ -170,9 +181,12 @@ export function FarmRankingBoardView({
 
   return (
     <Panel data-testid="farm-ranking">
-      <h2 className="m-0 mb-2.5 text-[13px] font-bold tracking-[0.04em] uppercase">
-        {t.farmRankingTitle}
-      </h2>
+      <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <h2 className="m-0 text-[13px] font-bold tracking-[0.04em] uppercase">
+          {t.farmRankingTitle}
+        </h2>
+        {slots?.headerAside}
+      </div>
       {result.reason !== 'no-roster' ? (
         <div className="mb-3">
           <FarmRotationPool
