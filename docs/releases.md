@@ -200,9 +200,9 @@ rather than a label.
 
 ## Production desktop GitHub Release
 
-**Merging a desktop bump to `main` publishes.** There is no flag to set and no dispatch to run: the
-`publish` job in [release-prod.yml](../.github/workflows/release-prod.yml) runs whenever the push
-changed `@bombfarm/desktop`'s version and packaging succeeded.
+**Merging a desktop bump to `main` publishes.** There is no flag to set: the `publish` job in
+[release-prod.yml](../.github/workflows/release-prod.yml) runs whenever the push changed
+`@bombfarm/desktop`'s version and packaging succeeded.
 
 It used to be gated on a repository variable, `BFC_ENABLE_PROD_RELEASE`, which was never set. For
 165 releases the workflow packaged an installer, uploaded it as a 1-day CI artifact and published
@@ -211,6 +211,29 @@ is the one that was always real — whether you merge the release PR.
 
 The publish step refuses rather than overwrites: an existing git tag or an existing GitHub Release
 at that version fails the job.
+
+### Retrying a failed publish
+
+**A publish that fails after the merge cannot be reached by a push again.** `main` already carries
+the new version, so the next push diffs to no change, `has_desktop` is `false`, and the rail skips
+that version forever. Re-running the failed run does not help either — a re-run replays the
+workflow file as it was at that commit, including whatever was broken.
+
+Run the workflow by hand against the release merge commit instead:
+
+```powershell
+gh workflow run release-prod.yml --ref main -f sha=<release-merge-commit>
+```
+
+Omit `-f sha` to take the branch tip. The dispatch replays the same plan the push would have
+produced — `<sha>^1` is the previous `main` tip, which is exactly what the push event's `before`
+was — then repackages and publishes. The installer is rebuilt rather than recovered from the
+failed run's artifact, so it does not matter that the artifact expires after a day.
+
+This happened on the first stable release, `0.7.0`: the `publish` job had never executed in the
+life of the workflow, and its very first run died importing `@manypkg/get-packages` because the
+job had no `pnpm install`. `tools/release/workflow-dependencies.test.mjs` now fails the build if
+any workflow job runs a `tools/release` module without installing what that module imports.
 
 ## Web production deploy
 
