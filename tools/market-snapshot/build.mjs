@@ -17,6 +17,7 @@ import {
   MARKET_APP_ID,
   appFiltersUrl,
   buildSnapshot,
+  catalogKeysLost,
   discoverMarket,
   readMarketSnapshot,
   parsePriceOverview,
@@ -275,8 +276,30 @@ async function main() {
     appId: APP_ID,
   });
 
-  writeFileSync(OUT, JSON.stringify(snapshot));
+  // The workflow publishes whatever is on disk whether or not this step succeeded, so refusing
+  // to write is what keeps the last good snapshot in place — and exiting non-zero is the only
+  // thing that says so out loud. A run that publishes a snapshot nobody can look a price up in is
+  // otherwise indistinguishable from a good one: the job is green either way, and the first
+  // report comes from a player watching an inventory board read zero.
+  //
+  // Gated on the tagging passes, not the enumeration: the enumeration is the cheap tenth of the
+  // sweep and finishes even on a run the quota kills, which is exactly how a full row set can be
+  // published with nothing identified in it.
+  const lost = discovery.complete ? [] : catalogKeysLost(prior, snapshot, catalog);
+  if (lost.length === 0) writeFileSync(OUT, JSON.stringify(snapshot));
+
   const lines = summarise(snapshot);
+  if (lost.length > 0) {
+    lines.push(`REFUSED TO PUBLISH: would lose ${lost.length} catalog keys the last snapshot had`);
+    log(`refusing to publish: ${lost.length} keys lost, e.g. ${lost.slice(0, 5).join(', ')}`);
+    console.log(
+      `::error title=Market snapshot would lose coverage::A cut-short run cannot delist anything, ` +
+        `so ${lost.length} catalog keys going missing is this run mis-deriving them. Kept the ` +
+        `previous ${OUT}. See docs/market-prices.md.`,
+    );
+    process.exitCode = 1;
+  }
+
   if (process.env.GITHUB_STEP_SUMMARY) {
     writeFileSync(
       process.env.GITHUB_STEP_SUMMARY,

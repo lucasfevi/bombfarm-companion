@@ -51,13 +51,16 @@ export {
 } from './discover.js';
 export {
   indexEntries,
+  keyForEntry,
   reconcile,
   type CatalogDef,
   type CatalogView,
+  type KeyableEntry,
   type Reconciliation,
 } from './reconcile.js';
 export {
   buildSnapshot,
+  catalogKeysLost,
   isMarketSnapshot,
   mergeEntries,
   readMarketSnapshot,
