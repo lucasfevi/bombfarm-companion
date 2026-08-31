@@ -19,6 +19,10 @@ export const ptBR: Copy = {
   shellStatusNotRunning: 'O jogo não está aberto',
   shellStatusStale: 'Desatualizado',
   shellLoadingLabel: 'Carregando…',
+  shellUpdateAvailable: 'Atualização disponível',
+  shellUpdateDownloading: 'Atualizando… {percent}%',
+  shellUpdateReady: 'Reinicie para atualizar',
+  shellUpdateOpenSettings: 'Abrir as configurações de atualização',
 
   // empty* — placeholder states shown before real data has arrived
   emptyBridgeUnavailableTitle: 'Ponte de comunicação indisponível',

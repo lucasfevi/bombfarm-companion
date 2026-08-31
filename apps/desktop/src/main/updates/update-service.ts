@@ -1,5 +1,5 @@
 import type { UpdateChannel, UpdateStatus } from '@bombfarm/contracts';
-import { disabledUpdateStatus } from '@bombfarm/contracts';
+import { initialUpdateStatus } from '@bombfarm/contracts';
 import type { LogPort } from '../live-source/log-port.js';
 import { classifyUpdateError, updateErrorMessage } from './update-error.js';
 
@@ -54,19 +54,8 @@ export interface UpdateService {
 }
 
 export function createUpdateService(deps: UpdateServiceDeps): UpdateService {
-  const enabled = deps.isPackaged && deps.channel !== null;
-
-  let status: UpdateStatus = enabled
-    ? {
-        phase: 'idle',
-        currentVersion: deps.currentVersion,
-        channel: deps.channel,
-        availableVersion: null,
-        percent: null,
-        error: null,
-        lastCheckedAt: null,
-      }
-    : disabledUpdateStatus(deps.currentVersion);
+  let status: UpdateStatus = initialUpdateStatus(deps);
+  const enabled = status.phase !== 'disabled';
 
   let started = false;
   let cancelFirstCheck: (() => void) | null = null;

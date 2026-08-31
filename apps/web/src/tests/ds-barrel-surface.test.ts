@@ -34,9 +34,13 @@ import * as GameArt from '@bombfarm/game-art';
 // Sparkline (2026-08-30): a trend line over a series of readings, sized by its container and
 // toned by `currentColor`. Added for the Live tab's 10-minute gold trend; the planner's own
 // history views are the obvious second caller.
+// ActionChip (2026-08-31): StatusChip's pill as a control — same chipRecipe tones and dot, but a
+// <button>. Added for the desktop footer's update indicator, which reports a state AND leads
+// somewhere; StatusChip stays the non-interactive game-connection vocabulary.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
+  'ActionChip',
   'AppNav',
   'AppShell',
   'Bar',

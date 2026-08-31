@@ -2,8 +2,8 @@ import path from 'node:path';
 import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron';
 import {
   DEFAULT_SETTINGS,
-  disabledUpdateStatus,
   emptyMarketSnapshotView,
+  initialUpdateStatus,
   isIpcChannel,
   isMarketQuoteTarget,
   liveGap,
@@ -168,6 +168,22 @@ function refreshMarketItem(target: MarketQuoteTarget): Promise<MarketQuoteResult
   return marketService.refreshItem(target);
 }
 
+/**
+ * `bootstrap()` builds the update service after the window opens, so the renderer's one
+ * `updates:get` on mount regularly lands before it exists. What that gap answers has to be what
+ * the built service will answer, because the Updates section greys out its own check button on
+ * `disabled` and nothing re-reads until the first scheduled check half a minute later — a
+ * `disabled` here told installed players their build never updates, for thirty seconds, with no
+ * control to correct it.
+ */
+function preServiceUpdateStatus(): UpdateStatus {
+  return initialUpdateStatus({
+    currentVersion: app.getVersion(),
+    channel: resolveAppEnv().descriptor.updateChannel,
+    isPackaged: app.isPackaged,
+  });
+}
+
 function registerIpcHandlers(): void {
   const handlers: IpcHandlers = {
     'app:getFlavor': () => resolveAppEnv().flavor,
@@ -210,16 +226,13 @@ function registerIpcHandlers(): void {
       liveSource?.resetEarnings();
       return null;
     },
-    // `disabledUpdateStatus` is the pre-bootstrap answer as well as the dev-flavor one: a
-    // renderer that asks before `bootstrap()` has built the service gets the same inert status it
-    // would get from an unpackaged run, never a throw.
-    'updates:get': (): UpdateStatus => updateService?.getStatus() ?? disabledUpdateStatus(app.getVersion()),
+    'updates:get': (): UpdateStatus => updateService?.getStatus() ?? preServiceUpdateStatus(),
     'updates:check': (): Promise<UpdateStatus> | UpdateStatus =>
-      updateService?.check() ?? disabledUpdateStatus(app.getVersion()),
+      updateService?.check() ?? preServiceUpdateStatus(),
     'updates:download': (): Promise<UpdateStatus> | UpdateStatus =>
-      updateService?.download() ?? disabledUpdateStatus(app.getVersion()),
+      updateService?.download() ?? preServiceUpdateStatus(),
     'updates:installOnRestart': (): UpdateStatus =>
-      updateService?.installOnRestart() ?? disabledUpdateStatus(app.getVersion()),
+      updateService?.installOnRestart() ?? preServiceUpdateStatus(),
     'market:getSnapshot': () => marketService?.getView() ?? emptyMarketSnapshotView(),
     'market:refreshItem': refreshMarketItem,
   };
@@ -542,9 +555,11 @@ async function bootstrap(): Promise<void> {
 
   // The updater is the one subsystem boot can lose and still hand over a working app, so its
   // failure stops at the Updates section instead of reaching `boot.failed`, which quits. The
-  // stand-in reports the failure where a player can see it, and is emitted rather than merely
-  // held: the renderer reads `updates:get` once on mount, which on this path has already
-  // answered with the pre-bootstrap inert status.
+  // stand-in reports the failure where a player can see it.
+  //
+  // Either way the settled status is pushed, not merely held: the renderer reads `updates:get`
+  // once on mount and that read has usually already happened by now, against a service that did
+  // not exist yet.
   try {
     updateService = await createElectronUpdateService((status) => {
       emitEvent('updates:changed', status);
@@ -553,8 +568,8 @@ async function bootstrap(): Promise<void> {
   } catch (error: unknown) {
     log.error({ scope: 'main', event: 'updates.unavailable', error: String(error) });
     updateService = unavailableUpdateService(app.getVersion(), env.descriptor.updateChannel);
-    emitEvent('updates:changed', updateService.getStatus());
   }
+  emitEvent('updates:changed', updateService.getStatus());
 
   // Outside that guard on purpose: prices have nothing to do with the updater, and an updater
   // that could not start is no reason to open the app without them.

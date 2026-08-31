@@ -17,6 +17,10 @@ export const en = {
   shellStatusNotRunning: 'Game not running',
   shellStatusStale: 'Stale',
   shellLoadingLabel: 'Loading…',
+  shellUpdateAvailable: 'Update available',
+  shellUpdateDownloading: 'Updating… {percent}%',
+  shellUpdateReady: 'Restart to update',
+  shellUpdateOpenSettings: 'Open the Updates settings',
 
   // empty* — placeholder states shown before real data has arrived
   emptyBridgeUnavailableTitle: 'Preload bridge unavailable',
