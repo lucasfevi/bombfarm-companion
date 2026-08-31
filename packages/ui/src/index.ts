@@ -56,6 +56,7 @@ export { Panel, type PanelProps } from './panel';
 export { PanelHeader, type PanelHeaderProps } from './panel-header';
 export { Fields, type FieldsProps, type FieldsLayout } from './fields';
 export { Bar, type BarProps } from './bar';
+export { Sparkline, type SparklineProps } from './sparkline';
 export { Num } from './num';
 export {
   Select,

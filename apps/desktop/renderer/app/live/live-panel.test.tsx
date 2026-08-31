@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
+import type { LiveEarnings, LiveMap } from '@bombfarm/contracts';
 import { STRINGS } from '../../lib/copy';
 import type { LiveFastModel, LiveSlowModel } from '../../lib/live/live-model';
 import { LivePanel } from './live-panel';
@@ -358,5 +359,71 @@ describe('LivePanel — the energy reading follows the fast channel, not the rot
     const html = renderToStaticMarkup(createElement(LivePanel, { freshness: { kind: 'live' }, slow, fast }));
 
     expect(readPercent(html, 'f1')).toBe('77%');
+  });
+});
+
+function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
+  return {
+    goldBalance: 12_345,
+    goldBalanceCapturedAt: null,
+    gold10: 100_000,
+    goldSession: 90_000,
+    xp10: 5_000,
+    xpSession: 4_500,
+    goldSessionTotal: 75_000,
+    xpSessionTotal: 3_750,
+    gold10Series: [90_000, 110_000],
+    goldPerProp10: 180,
+    propsPerMinute10: 110,
+    propsSessionTotal: 420,
+    coverageSeconds: 120,
+    sessionSeconds: 300,
+    ...overrides,
+  };
+}
+
+function map(economy: LiveMap['economy']): LiveMap {
+  return { phase: 21, healthFraction: 0.56, propsAlive: 27, propsTotal: 50, economy };
+}
+
+function renderLive(earningsValue: LiveEarnings | null, mapValue: LiveMap | null) {
+  return renderToStaticMarkup(
+    createElement(LivePanel, {
+      freshness: { kind: 'live' },
+      slow: slowModel(),
+      fast: emptyFast,
+      earnings: earningsValue,
+      map: mapValue,
+    }),
+  );
+}
+
+describe('LivePanel — the measured gold-per-prop against the map it is being measured on', () => {
+  it('compares the earnings panel’s reading against the map panel’s estimate', () => {
+    const html = renderLive(
+      earnings({ goldPerProp10: 179.2 }),
+      map({ xpPerProp: 90.9, averageGoldPerProp: 183.3, averageGoldPerClear: 9_200 }),
+    );
+
+    expect(html).toContain('data-testid="live-earnings-gold-per-prop-delta"');
+    expect(html).toContain('2% under estimate');
+  });
+
+  it('says nothing when the map sent no economy to compare against', () => {
+    const html = renderLive(earnings({ goldPerProp10: 179.2 }), map(null));
+    expect(html).not.toContain('live-earnings-gold-per-prop-delta');
+  });
+
+  it('says nothing when no map is being played at all', () => {
+    const html = renderLive(earnings({ goldPerProp10: 179.2 }), null);
+    expect(html).not.toContain('live-earnings-gold-per-prop-delta');
+  });
+
+  it('says nothing when nothing has paid out yet, however good the estimate is', () => {
+    const html = renderLive(
+      earnings({ goldPerProp10: null }),
+      map({ xpPerProp: 90.9, averageGoldPerProp: 183.3, averageGoldPerClear: 9_200 }),
+    );
+    expect(html).not.toContain('live-earnings-gold-per-prop-delta');
   });
 });

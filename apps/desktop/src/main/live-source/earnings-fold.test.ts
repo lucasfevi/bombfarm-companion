@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import type { LiveTick } from '@bombfarm/contracts';
 import { describe, expect, it, vi } from 'vitest';
 import { readCaptureRecords, type CaptureRecord } from './capture-format.js';
-import { EarningsFold, MAX_TICK_GAP_MS, type EarningsFoldDeps } from './earnings-fold.js';
+import { EARNINGS_SERIES_POINTS, EarningsFold, MAX_TICK_GAP_MS, type EarningsFoldDeps } from './earnings-fold.js';
 import type { LogPort } from './log-port.js';
 import { TlsConnections, type TapEvent } from './tls-stream.js';
 
@@ -23,8 +23,8 @@ function makeClock(startAt = 0): { now: () => number; advance: (ms: number) => v
   };
 }
 
-function requireNumber(value: number | null): number {
-  if (value === null) throw new Error('expected a non-null number');
+function requireNumber(value: number | null | undefined): number {
+  if (value == null) throw new Error('expected a non-null number');
   return value;
 }
 
@@ -483,5 +483,193 @@ describe('EarningsFold: session lifecycle', () => {
     clock.advance(100);
     fold.consumeTick({ heroes: [], wave: 10, kinds: [0], loot: [{ cell: 0, gold: 100 }] }, 4, undefined);
     expect(warn).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * A fold whose streamed clock has already started. The very first tick of a session has no
+ * previous tick to measure a gap against, so it contributes zero streamed time — priming here
+ * keeps that one-off out of every figure below, which are all about a session already running.
+ */
+function primedFold(clock: { now: () => number }): EarningsFold {
+  const fold = makeFold({ now: clock.now });
+  fold.consumeTick(baseTick({ phase: 1 }), 0, undefined);
+  return fold;
+}
+
+/** `gapMs` of streamed time, then one tick paying `gold` from each of `props` props. */
+function pay(
+  fold: EarningsFold,
+  clock: { advance: (ms: number) => void },
+  sequence: number,
+  props: number,
+  gold: number,
+  gapMs = 1_000,
+) {
+  clock.advance(gapMs);
+  fold.consumeTick(
+    baseTick({ phase: 1, loot: Array.from({ length: props }, (_, cell) => ({ cell, gold })) }),
+    sequence,
+    undefined,
+  );
+}
+
+describe('EarningsFold: measured per-prop figures', () => {
+  it('divides window gold by the props that actually paid it, with no wiki value involved', () => {
+    const clock = makeClock();
+    const fold = makeFold({ now: clock.now, xpPerProp: () => 999 });
+    fold.consumeTick(baseTick({ phase: 1 }), 0, undefined);
+
+    pay(fold, clock, 1, 2, 100);
+    pay(fold, clock, 2, 2, 300);
+
+    // Four props paid 800 gold between them, and the 999 xp-per-prop never enters it.
+    expect(fold.goldPerProp10).toBe(200);
+  });
+
+  it('reports no gold-per-prop while nothing has broken, rather than a rate of zero', () => {
+    const clock = makeClock();
+    const fold = primedFold(clock);
+
+    clock.advance(30_000);
+    fold.consumeTick(baseTick({ idle: true }), 1, undefined);
+
+    expect(fold.propsPerMinute10).toBe(0);
+    expect(fold.goldPerProp10).toBeNull();
+  });
+
+  it('measures prop throughput against streamed time, so a stream gap is not a throughput collapse', () => {
+    const clock = makeClock();
+    const fold = primedFold(clock);
+    for (let sequence = 1; sequence <= 10; sequence += 1) pay(fold, clock, sequence, 2, 50);
+
+    expect(fold.propsPerMinute10).toBe(120);
+
+    // Five real minutes with no ticks at all. The streamed clock only ever takes the per-tick cap
+    // from a gap, so the reading loses the two seconds that cap allows and nothing else.
+    pay(fold, clock, 11, 0, 0, 5 * 60_000);
+
+    expect(fold.propsPerMinute10).toBe(100);
+    // Against wall-clock time the same 20 props would have read under 4 per minute — which is the
+    // number this deliberately does not print.
+    expect((20 / (5 * 60 + 10)) * 60).toBeLessThan(4);
+  });
+
+  it('counts the session prop total independently of the rolling window', () => {
+    const clock = makeClock();
+    const fold = primedFold(clock);
+
+    pay(fold, clock, 1, 3, 10);
+    pay(fold, clock, 2, 4, 10);
+
+    expect(fold.propsSessionTotal).toBe(7);
+  });
+
+  it('has no session prop total before any tick has been streamed', () => {
+    expect(makeFold().propsSessionTotal).toBeNull();
+  });
+
+  it('zeroes the session prop count on reset while the window keeps its own props', () => {
+    const clock = makeClock();
+    const fold = primedFold(clock);
+    pay(fold, clock, 1, 5, 100);
+
+    fold.reset('reset');
+
+    expect(fold.propsSessionTotal).toBeNull();
+    expect(fold.goldPerProp10).toBe(100);
+  });
+
+  it('clears the window too when the samples turn out to belong to another account', () => {
+    const clock = makeClock();
+    const fold = primedFold(clock);
+    pay(fold, clock, 1, 5, 100);
+
+    fold.reset('accountChange');
+
+    expect(fold.goldPerProp10).toBeNull();
+    expect(fold.propsPerMinute10).toBeNull();
+  });
+});
+
+describe('EarningsFold: the rolling window as a series', () => {
+  it('reports only the span it has actually covered, not ten minutes of mostly nothing', () => {
+    const clock = makeClock();
+    const fold = primedFold(clock);
+    pay(fold, clock, 1, 1, 100);
+
+    // A one-second-old session covers one slice. Reporting sixty would pin every reading a young
+    // session has into the last sixtieth of whatever draws it.
+    expect(fold.gold10Series).toHaveLength(1);
+  });
+
+  it('grows toward the whole window as the session ages, and stops there', () => {
+    const clock = makeClock();
+    const fold = primedFold(clock);
+    pay(fold, clock, 1, 1, 100);
+    const atOneSecond = fold.gold10Series.length;
+
+    pay(fold, clock, 2, 1, 100, 120_000);
+    const atTwoMinutes = fold.gold10Series.length;
+
+    expect(atOneSecond).toBe(1);
+    expect(atTwoMinutes).toBe(13);
+    expect(atTwoMinutes).toBeLessThanOrEqual(EARNINGS_SERIES_POINTS);
+  });
+
+  it('is empty when nothing has been streamed at all, rather than a row of zeroes', () => {
+    expect(makeFold().gold10Series).toEqual([]);
+  });
+
+  it('keeps a gap inside the covered span, so a stream that stopped is not drawn as a rate', () => {
+    const clock = makeClock();
+    const fold = primedFold(clock);
+    pay(fold, clock, 1, 1, 100);
+    // A minute of silence, then payouts resume: the slices in between were covered by the window
+    // and genuinely have no reading.
+    pay(fold, clock, 2, 1, 100, 60_000);
+
+    const series = fold.gold10Series;
+    expect(series[0]).not.toBeNull();
+    expect(series[series.length - 1]).not.toBeNull();
+    expect(series.slice(1, -1).some((value) => value === null)).toBe(true);
+  });
+
+  it('puts the newest reading at the end, where the line ends', () => {
+    const clock = makeClock();
+    const fold = primedFold(clock);
+
+    pay(fold, clock, 1, 1, 100);
+    pay(fold, clock, 2, 1, 900, 30_000);
+
+    const series = fold.gold10Series;
+    const readings = series.filter((value): value is number => value !== null);
+    expect(readings).toHaveLength(2);
+    expect(requireNumber(series[series.length - 1])).toBeGreaterThan(requireNumber(readings[0]));
+  });
+
+  it('averages a slice over the seconds inside it rather than summing them', () => {
+    const clock = makeClock();
+    const fold = primedFold(clock);
+
+    // Two payouts one second apart, both landing in the same ten-second slice.
+    pay(fold, clock, 1, 1, 1_000);
+    pay(fold, clock, 2, 1, 1_000);
+
+    const series = fold.gold10Series;
+    expect(series).toHaveLength(1);
+    // 2000 gold over two streamed seconds is 3.6m/hr — not the 7.2m that adding two one-second
+    // rates together would have produced.
+    expect(series[0]).toBe(3_600_000);
+  });
+
+  it('drops a reading out of the series once it has aged past the window', () => {
+    const clock = makeClock();
+    const fold = primedFold(clock);
+    pay(fold, clock, 1, 1, 100);
+
+    clock.advance(11 * 60_000);
+
+    expect(fold.gold10Series).toEqual([]);
   });
 });

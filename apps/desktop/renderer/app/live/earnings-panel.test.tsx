@@ -37,14 +37,24 @@ function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
     xpSession: 4_500,
     goldSessionTotal: 75_000,
     xpSessionTotal: 3_750,
+    gold10Series: [90_000, 110_000, 100_000],
+    goldPerProp10: 180,
+    propsPerMinute10: 110,
+    propsSessionTotal: 420,
     coverageSeconds: 120,
     sessionSeconds: 300,
     ...overrides,
   };
 }
 
-function html(data: LiveEarnings | null, freshness: ReachedLiveFreshness = LIVE) {
-  return renderToStaticMarkup(createElement(EarningsPanel, { freshness, earnings: data, onReset: () => undefined }));
+function html(
+  data: LiveEarnings | null,
+  freshness: ReachedLiveFreshness = LIVE,
+  goldPerPropDelta: number | null = null,
+) {
+  return renderToStaticMarkup(
+    createElement(EarningsPanel, { freshness, earnings: data, goldPerPropDelta, onReset: () => undefined }),
+  );
 }
 
 /**
@@ -77,12 +87,32 @@ function cellText(out: string, testId: string): string {
 }
 
 /**
+ * The component behind an element, whether it was written plainly or wrapped in `memo`. `memo`
+ * stores the real function one level down, on `type.type`.
+ */
+function componentOf(element: { type?: unknown }): ((props: unknown) => unknown) | null {
+  const { type } = element;
+  if (typeof type === 'function') return type as (props: unknown) => unknown;
+  if (type !== null && typeof type === 'object') {
+    const inner = (type as { type?: unknown }).type;
+    if (typeof inner === 'function') return inner as (props: unknown) => unknown;
+  }
+  return null;
+}
+
+/**
  * Walks the plain React-element tree `EarningsPanel(...)` returns when called directly as a
  * function (no dispatcher, no actual render) to find the one element carrying `data-testid`.
  * Independent of exactly how deep the control sits or how many wrapper elements surround it, and
  * of whether it is reached through `children` or through some other prop (`Block`'s own `value`,
- * for the current-gold marker below) — a custom component's props are never invoked here (nothing
- * in this tree is actually rendered), so any prop holding a nested element is a real place to look.
+ * for the current-gold marker below).
+ *
+ * A component element whose props hold nothing matching is expanded by CALLING it, so that pulling
+ * a piece of this panel out into its own component (`XpHeadlineHelp`) does not silently put the
+ * thing being searched for out of reach — which is exactly what a testid search finding nothing
+ * would otherwise look like. Only as a fallback, and only when the props hold no match: components
+ * that need a dispatcher (every Base UI part here does) throw when called this way, and their
+ * children are already reachable through `props` without calling anything.
  */
 function findElementByTestId(
   node: unknown,
@@ -96,7 +126,7 @@ function findElementByTestId(
     }
     return null;
   }
-  const element = node as { props?: Record<string, unknown> };
+  const element = node as { type?: unknown; props?: Record<string, unknown> };
   if (element.props && element.props['data-testid'] === testId) {
     return element as { props: Record<string, unknown> };
   }
@@ -105,7 +135,13 @@ function findElementByTestId(
     const found = findElementByTestId(value, testId);
     if (found) return found;
   }
-  return null;
+  const component = componentOf(element);
+  if (!component) return null;
+  try {
+    return findElementByTestId(component(element.props), testId);
+  } catch {
+    return null;
+  }
 }
 
 describe('EarningsPanel — every cell in every state', () => {
@@ -509,5 +545,100 @@ describe('EarningsPanel — the reset control invokes the bridge exactly once', 
 
     button?.props.onClick();
     expect(onReset).toHaveBeenCalledTimes(1);
+  });
+});
+
+/** The `d` attribute of every stroked path the sparkline emitted, in document order. */
+function sparklineLines(out: string): readonly string[] {
+  return [...out.matchAll(/<path d="([^"]+)"[^>]*stroke="currentColor"/g)].map((match) => match[1] ?? '');
+}
+
+describe('EarningsPanel — the 10-minute trend', () => {
+  it('draws the series it was given', () => {
+    const out = html(earnings({ gold10Series: [100, 200, 300] }));
+    expect(sparklineLines(out)).toHaveLength(1);
+  });
+
+  it('breaks the line where the stream did not cover a slice', () => {
+    const out = html(earnings({ gold10Series: [100, null, 300] }));
+    expect(sparklineLines(out)).toHaveLength(2);
+  });
+
+  it('prints the window peak, so the line height means a number', () => {
+    const out = html(earnings({ gold10Series: [100_000, 1_400_000, 900_000] }));
+    expect(cellText(out, 'live-earnings-trend-peak')).toContain('1.4m');
+  });
+
+  it('says nothing about a peak when no slice was ever streamed', () => {
+    const out = html(earnings({ gold10Series: [null, null] }));
+    expect(out).not.toContain('live-earnings-trend-peak');
+    expect(sparklineLines(out)).toHaveLength(0);
+  });
+
+  it('still reserves the chart when there are no earnings at all', () => {
+    const out = html(null);
+    expect(out).toContain('data-testid="live-earnings-trend"');
+    expect(out).toContain('data-sparkline');
+  });
+});
+
+describe('EarningsPanel — the measured figures', () => {
+  it('prints gold per prop, prop throughput and the session prop count', () => {
+    const out = html(earnings({ goldPerProp10: 179.2, propsPerMinute10: 114, propsSessionTotal: 95 }));
+
+    expect(cellText(out, 'live-earnings-gold-per-prop')).toContain('179.2');
+    expect(cellText(out, 'live-earnings-props-per-minute')).toContain('114');
+    expect(cellText(out, 'live-earnings-props-total')).toContain('95');
+  });
+
+  it('dashes a figure the fold has not measured yet rather than printing a zero', () => {
+    const out = html(earnings({ goldPerProp10: null, propsPerMinute10: null, propsSessionTotal: null }));
+
+    expect(cellText(out, 'live-earnings-gold-per-prop')).toBe('—');
+    expect(cellText(out, 'live-earnings-props-per-minute')).toBe('—');
+    expect(cellText(out, 'live-earnings-props-total')).toBe('—');
+  });
+
+  it('distinguishes a measured zero from an unmeasured figure', () => {
+    const out = html(earnings({ propsPerMinute10: 0 }));
+    expect(cellText(out, 'live-earnings-props-per-minute')).toBe('0');
+  });
+
+  it('marks the whole row as measured, against the map panel’s estimates', () => {
+    const out = html(earnings());
+    expect(cellText(out, 'live-earnings-measured-trigger')).toBe(en.liveEarningsMeasuredNote);
+    // The popup itself only mounts once opened, so the full explanation reaches a screen reader
+    // through the trigger's own label — the same way the XP help beside it does.
+    expect(out).toContain(`aria-label="${en.liveEarningsMeasuredNote}: ${en.liveEarningsMeasuredBody}"`);
+  });
+});
+
+describe('EarningsPanel — gold per prop against the map estimate', () => {
+  it('reports a shortfall against the estimate, in the tone that says so', () => {
+    const out = html(earnings({ goldPerProp10: 179.2 }), LIVE, -0.0224);
+    expect(cellText(out, 'live-earnings-gold-per-prop-delta')).toBe('2% under estimate');
+    expect(out).toContain('text-down');
+  });
+
+  it('reports an overshoot the other way', () => {
+    const out = html(earnings({ goldPerProp10: 200 }), LIVE, 0.09);
+    expect(cellText(out, 'live-earnings-gold-per-prop-delta')).toBe('9% over estimate');
+    expect(out).toContain('text-up');
+  });
+
+  it('calls a deviation too small to round agreement, not a signed zero', () => {
+    const out = html(earnings({ goldPerProp10: 183 }), LIVE, -0.004);
+    expect(cellText(out, 'live-earnings-gold-per-prop-delta')).toBe(en.liveEarningsGoldPerPropOnEstimate);
+  });
+
+  it('says nothing when the map has no estimate to compare against', () => {
+    const out = html(earnings({ goldPerProp10: 179.2 }), LIVE, null);
+    expect(out).not.toContain('live-earnings-gold-per-prop-delta');
+  });
+
+  it('never annotates a figure that is not there', () => {
+    const out = html(earnings({ goldPerProp10: null }), LIVE, -0.5);
+    expect(cellText(out, 'live-earnings-gold-per-prop')).toBe('—');
+    expect(out).not.toContain('live-earnings-gold-per-prop-delta');
   });
 });

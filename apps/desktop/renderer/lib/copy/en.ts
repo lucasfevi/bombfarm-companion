@@ -95,7 +95,7 @@ export const en = {
   settingsUpdatesStatusReadyTitle: 'Version {version} is ready to install',
   settingsUpdatesStatusReadyBody: 'The app closes and reopens on the new version. Nothing you have saved is lost.',
   settingsUpdatesStatusDisabled:
-    'Updates are off in this build. Installed Nightly, Beta and stable builds update themselves; a local development build does not.',
+    'Updates are off in this build. Installed Beta and stable builds update themselves; a local development build does not.',
   settingsUpdatesErrorTitle: 'Could not check for updates',
   // One key per UpdateErrorReason (@bombfarm/contracts), mapped exhaustively by
   // UPDATE_ERROR_REASON_COPY_KEY below.
@@ -191,6 +191,18 @@ export const en = {
   liveEarningsElapsedLabel: 'Elapsed',
   liveEarningsXpHelpLabel: 'About this XP figure',
   liveEarningsXpHelpBody: 'Calculated from the props your heroes destroyed, not read directly from the game.',
+  liveEarningsSeriesLabel: 'Gold / hr — last {minutes} min',
+  liveEarningsSeriesAria: 'Gold per hour over the last {minutes} minutes',
+  liveEarningsSeriesPeakLabel: 'peak {value}',
+  liveEarningsMeasuredNote: 'Measured',
+  liveEarningsMeasuredBody:
+    'Measured from what actually dropped over the last 10 minutes — not estimated. Moving to another map mixes both maps’ payouts until the window has caught up.',
+  liveEarningsGoldPerPropLabel: 'Gold / prop',
+  liveEarningsPropsPerMinuteLabel: 'Props / min',
+  liveEarningsPropsTotalLabel: 'Props',
+  liveEarningsGoldPerPropUnder: '{percent}% under estimate',
+  liveEarningsGoldPerPropOver: '{percent}% over estimate',
+  liveEarningsGoldPerPropOnEstimate: 'on estimate',
 
   // liveMap* — the Map panel: which map is being played, and how far through it the run is.
   liveMapTitle: 'Map',

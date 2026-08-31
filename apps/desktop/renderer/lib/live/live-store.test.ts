@@ -3,6 +3,7 @@ import type { LiveEarnings, LiveEvent, LiveHeroEnergy, LiveMap, LiveView, Rotati
 import type { LiveModel } from './live-model';
 import {
   applyLiveArrival,
+  createLiveModelCaches,
   createLiveStore,
   createSlowModelCache,
   deriveLiveModel,
@@ -65,6 +66,10 @@ function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
     xpSession: 4_500,
     goldSessionTotal: 75_000,
     xpSessionTotal: 3_750,
+    gold10Series: [90_000, 110_000, 100_000],
+    goldPerProp10: 180,
+    propsPerMinute10: 110,
+    propsSessionTotal: 420,
     coverageSeconds: 120,
     sessionSeconds: 300,
     ...overrides,
@@ -279,7 +284,7 @@ describe('the rotation snapshot memoization backing the slow part', () => {
   });
 
   it('a rotation snapshot change produces a new slow-part object in the derived model', () => {
-    const cache = createSlowModelCache();
+    const caches = createLiveModelCaches();
     const rotationA = rotationSnapshot();
     const rotationB = rotationSnapshot({ fieldSize: 9 });
 
@@ -289,13 +294,93 @@ describe('the rotation snapshot memoization backing the slow part', () => {
       kind: 'bootstrap',
       view: liveView({ rotation: rotationA }),
     });
-    const modelAfterFirst = deriveLiveModel(afterFirst, cache);
+    const modelAfterFirst = deriveLiveModel(afterFirst, caches);
 
     const afterSecond = applyLiveArrival(afterFirst, { kind: 'bootstrap', view: liveView({ rotation: rotationB }) });
-    const modelAfterSecond = deriveLiveModel(afterSecond, cache);
+    const modelAfterSecond = deriveLiveModel(afterSecond, caches);
 
     expect(modelAfterFirst.slow).not.toBeNull();
     expect(modelAfterSecond.slow).not.toBe(modelAfterFirst.slow);
+  });
+});
+
+describe('what the store republishes when only part of a tick moved', () => {
+  /** The reducer alone, one fastUpdate after another, which is what the 4Hz channel drives. */
+  function applyTicks(...events: readonly LiveEvent[]) {
+    let state = applyLiveArrival(initialLiveInternalState, { kind: 'bootstrap', view: liveView() });
+    const caches = createLiveModelCaches();
+    const models = [deriveLiveModel(state, caches)];
+    for (const event of events) {
+      state = applyLiveArrival(state, { kind: 'event', event });
+      models.push(deriveLiveModel(state, caches));
+    }
+    return models;
+  }
+
+  it('a tick that moves only the gold balance leaves every countdown and energy reading the same object', () => {
+    const [, first, second] = applyTicks(
+      fastUpdateEvent(90, ['on-field'], earnings({ goldBalance: 1 })),
+      fastUpdateEvent(90, ['on-field'], earnings({ goldBalance: 2 })),
+    );
+
+    // The whole point: the balance is what changed, so the balance is all that may become new.
+    expect(second?.earnings).not.toBe(first?.earnings);
+    expect(second?.fast).toBe(first?.fast);
+    expect(second?.fast.field).toBe(first?.fast.field);
+    expect(second?.fast.energy).toBe(first?.fast.energy);
+  });
+
+  it('a countdown that actually ticks down does produce a new fast part', () => {
+    const [, first, second] = applyTicks(
+      fastUpdateEvent(90, ['on-field'], earnings({ goldBalance: 1 })),
+      fastUpdateEvent(89, ['on-field'], earnings({ goldBalance: 1 })),
+    );
+
+    expect(second?.fast).not.toBe(first?.fast);
+    expect(second?.fast.field['on-field']?.secondsRemaining).toBe(89);
+  });
+
+  it('an energy drift too small to move the reading keeps the fast part it already published', () => {
+    // Same four wire readings the publisher test uses: all of them draw 28%.
+    const [, first, second, third, fourth] = applyTicks(
+      fastUpdateEvent(90, ['on-field'], null, null, [{ heroId: 'on-field', energyFraction: 0.28425594587099745 }]),
+      fastUpdateEvent(90, ['on-field'], null, null, [{ heroId: 'on-field', energyFraction: 0.2838965614344286 }]),
+      fastUpdateEvent(90, ['on-field'], null, null, [{ heroId: 'on-field', energyFraction: 0.283776766622239 }]),
+      fastUpdateEvent(90, ['on-field'], null, null, [{ heroId: 'on-field', energyFraction: 0.28365697181004934 }]),
+    );
+
+    expect(second?.fast).toBe(first?.fast);
+    expect(third?.fast).toBe(first?.fast);
+    expect(fourth?.fast).toBe(first?.fast);
+  });
+
+  it('an energy reading that moves produces a new fast part, and one that repeats does not', () => {
+    const held: readonly LiveHeroEnergy[] = [{ heroId: 'on-field', energyFraction: 0.5 }];
+    const [, first, repeated, moved] = applyTicks(
+      fastUpdateEvent(90, ['on-field'], null, null, held),
+      fastUpdateEvent(90, ['on-field'], null, null, [{ heroId: 'on-field', energyFraction: 0.5 }]),
+      fastUpdateEvent(90, ['on-field'], null, null, [{ heroId: 'on-field', energyFraction: 0.25 }]),
+    );
+
+    expect(repeated?.fast).toBe(first?.fast);
+    expect(moved?.fast).not.toBe(first?.fast);
+    expect(moved?.fast.energy['on-field']).toBe(0.25);
+  });
+
+  it('a re-fetch that agrees with what is already held keeps the held readings, not equal copies of them', () => {
+    const caches = createLiveModelCaches();
+    // One rotation object across both reads, so this measures the re-fetch path rather than the
+    // slow cache's own (deliberate) keying on the snapshot's reference.
+    const rotation = rotationSnapshot();
+    const first = applyLiveArrival(initialLiveInternalState, { kind: 'bootstrap', view: liveView({ rotation }) });
+    const modelFirst = deriveLiveModel(first, caches);
+    // Every other field is a fresh object here, which is what the IPC clone hands over on each
+    // `account:changed` re-read — equal in value, new in identity.
+    const second = applyLiveArrival(first, { kind: 'bootstrap', view: liveView({ rotation }) });
+    const modelSecond = deriveLiveModel(second, caches);
+
+    expect(modelSecond.fast).toBe(modelFirst.fast);
+    expect(modelSecond.slow).toBe(modelFirst.slow);
   });
 });
 
@@ -437,6 +522,44 @@ describe('createLiveStore — earnings pass straight through, never folded or de
 
     expect(notifications).toHaveLength(1);
     expect(notifications[0]?.earnings).toEqual(earnings({ goldBalance: 2 }));
+  });
+
+  it('a fastUpdate differing only in the trend series still notifies, so the chart keeps moving', async () => {
+    const { bridge, emit, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+    const notifications: LiveModel[] = [];
+
+    store.start();
+    resolveNextGet(
+      liveView({ field: [], recovery: [], onFieldHeroIds: [], earnings: earnings({ gold10Series: [100, 200] }) }),
+    );
+    await flushMicrotasks();
+    store.subscribe((model) => notifications.push(model));
+
+    const moved = earnings({ gold10Series: [100, 200, 300] });
+    emit({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: moved, map: null });
+
+    expect(notifications).toHaveLength(1);
+    expect(store.getModel().earnings?.gold10Series).toEqual([100, 200, 300]);
+  });
+
+  it('a fastUpdate differing only in the measured per-prop figures still notifies', async () => {
+    const { bridge, emit, resolveNextGet } = fakeBridge();
+    const store = createLiveStore({ bridge });
+    const notifications: LiveModel[] = [];
+
+    store.start();
+    resolveNextGet(
+      liveView({ field: [], recovery: [], onFieldHeroIds: [], earnings: earnings({ propsSessionTotal: 400 }) }),
+    );
+    await flushMicrotasks();
+    store.subscribe((model) => notifications.push(model));
+
+    const moved = earnings({ propsSessionTotal: 412 });
+    emit({ type: 'fastUpdate', field: [], recovery: [], energies: [], onFieldHeroIds: [], earnings: moved, map: null });
+
+    expect(notifications).toHaveLength(1);
+    expect(store.getModel().earnings?.propsSessionTotal).toBe(412);
   });
 
   it('a fastUpdate byte-identical in earnings too produces zero notifications', async () => {

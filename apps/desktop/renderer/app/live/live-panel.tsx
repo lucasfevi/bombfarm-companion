@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Panel, PanelHeader } from '@bombfarm/ui';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
 import type { LiveEarnings, LiveMap } from '@bombfarm/contracts';
@@ -17,32 +18,41 @@ interface LiveRow {
   readonly id: string;
   readonly state: LiveRotationRowState;
   readonly hero: LiveHeroFact;
+  /** The fast channel's reading for this hero, when it has one — see `HeroRow`'s own prop for why
+   *  it travels beside the hero rather than merged into it. */
+  readonly energyFraction: number | undefined;
 }
 
 /**
- * The fast channel's energy reading replaces the slow model's wherever there is one. The slow
- * model's figure comes from the rotation snapshot, which is only replaced on the authenticated
- * cycle — up to a minute apart — while the countdown rendered beside it in the same row moves four
- * times a second. Left alone, the two disagree for the whole gap, and a hero whose rest has
- * finished sits at `0:00` beside a bar that still reads 99%.
+ * How far the measured gold-per-prop sits from what this map is modelled to pay, as a signed
+ * fraction. Computed here because this is the one place holding both panels' data — the earnings
+ * panel is not handed the map to reach into.
  *
- * A hero the fast channel does not reach — queued, benched — has nothing fresher than the
- * snapshot and keeps it.
+ * `null` unless both figures exist and the estimate is positive: dividing by a zero estimate is
+ * not a deviation of any size, and the comparison is only worth printing when there are two
+ * numbers to compare.
  */
-function withLiveEnergy<T extends LiveHeroFact>(hero: T, fast: LiveFastModel): T {
-  const energyFraction = fast.energy[hero.id];
-  if (energyFraction === undefined) return hero;
-  return { ...hero, energyFraction };
+function goldPerPropDeltaOf(earnings: LiveEarnings | null, map: LiveMap | null): number | null {
+  const measured = earnings?.goldPerProp10 ?? null;
+  const estimated = map?.economy?.averageGoldPerProp ?? null;
+  if (measured === null || estimated === null || estimated <= 0) return null;
+  return measured / estimated - 1;
 }
 
 /** One list in state order — field, then resting, then idle, then benched — concatenating each
  *  group without re-sorting inside it, so the classifier's own within-group order survives. */
 function buildRows(slow: LiveSlowModel, fast: LiveFastModel): readonly LiveRow[] {
+  const row = (hero: LiveHeroFact, state: LiveRotationRowState): LiveRow => ({
+    id: hero.id,
+    state,
+    hero,
+    energyFraction: fast.energy[hero.id],
+  });
   return [
-    ...slow.onField.map((hero): LiveRow => ({ id: hero.id, state: 'on-field', hero: withLiveEnergy(hero, fast) })),
-    ...slow.recovering.map((hero): LiveRow => ({ id: hero.id, state: 'recovering', hero: withLiveEnergy(hero, fast) })),
-    ...slow.queued.map((hero): LiveRow => ({ id: hero.id, state: 'queued', hero })),
-    ...slow.benched.map((hero): LiveRow => ({ id: hero.id, state: 'benched', hero })),
+    ...slow.onField.map((hero) => row(hero, 'on-field')),
+    ...slow.recovering.map((hero) => row(hero, 'recovering')),
+    ...slow.queued.map((hero) => row(hero, 'queued')),
+    ...slow.benched.map((hero) => row(hero, 'benched')),
   ];
 }
 
@@ -75,7 +85,7 @@ export function LivePanel({
   // does not actually know, is advice given without the fact it rests on.
   const fieldSlotsHint = fieldSize !== undefined && fieldSize < FIELD_SLOTS_MAX ? t.liveFieldSlotsHint : undefined;
 
-  const rows = buildRows(slow, fast);
+  const rows = useMemo(() => buildRows(slow, fast), [slow, fast]);
 
   return (
     <div data-testid="live-panel" className="flex flex-col gap-4">
@@ -89,7 +99,12 @@ export function LivePanel({
           size the window can take and needs no breakpoint at all. The map takes the remainder:
           its health bar and economy figures are the two that read better with the extra width. */}
       <div className="grid grid-cols-[max-content_minmax(0,1fr)] gap-4">
-        <EarningsPanel freshness={freshness} earnings={earnings} onReset={onResetEarnings} />
+        <EarningsPanel
+          freshness={freshness}
+          earnings={earnings}
+          goldPerPropDelta={goldPerPropDeltaOf(earnings, map)}
+          onReset={onResetEarnings}
+        />
         <MapPanel map={map} />
       </div>
       <Panel data-testid="live-heroes">
@@ -115,6 +130,7 @@ export function LivePanel({
                   key={row.id}
                   state={row.state}
                   hero={row.hero}
+                  energyFraction={row.energyFraction}
                   muted={row.state === 'benched'}
                   trailing={
                     row.state === 'on-field' ? (

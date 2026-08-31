@@ -7,7 +7,6 @@ const root = resolve(fileURLToPath(new URL('../..', import.meta.url)));
 
 const WORKFLOWS = {
   'release-pr.yml': join(root, '.github/workflows/release-pr.yml'),
-  'nightly.yml': join(root, '.github/workflows/nightly.yml'),
   'release-prod.yml': join(root, '.github/workflows/release-prod.yml'),
 };
 
@@ -35,7 +34,7 @@ function buildsTagByHand(text) {
 }
 
 function usesSharedTagBuilder(text) {
-  return /buildDesktopTag|buildNightlyTag/.test(stripCommentLines(text));
+  return /buildDesktopTag/.test(stripCommentLines(text));
 }
 
 function stampsVersionIntoBuild(text) {
@@ -59,7 +58,7 @@ describe('no release workflow builds a tag by hand', () => {
     });
 
     it(`${name}: the shared-builder predicate is capable of failing`, () => {
-      const withoutBuilder = text.replaceAll('buildDesktopTag', 'x').replaceAll('buildNightlyTag', 'y');
+      const withoutBuilder = text.replaceAll('buildDesktopTag', 'x');
       expect(usesSharedTagBuilder(withoutBuilder)).toBe(false);
     });
   }
@@ -69,7 +68,7 @@ describe('every published desktop build carries a version distinct from its neig
   // A build packaged without BFC_VERSION_OVERRIDE ships the bare package.json version, so every
   // build of one release is byte-identical in version and nothing ever compares as newer. Prod is
   // exempt: its version genuinely is the package.json one, bumped by changesets per release.
-  for (const name of ['release-pr.yml', 'nightly.yml']) {
+  for (const name of ['release-pr.yml']) {
     const text = readFileSync(WORKFLOWS[name], 'utf8');
 
     it(`${name} stamps the packaged version`, () => {

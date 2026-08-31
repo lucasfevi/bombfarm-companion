@@ -68,7 +68,7 @@ export function isUpdaterReadableTag(tag) {
 
 /**
  * @param {string} tag
- * @returns {string | null} the first prerelease identifier (`beta`, `nightly`), or `null` for a stable tag
+ * @returns {string | null} the first prerelease identifier (`beta`), or `null` for a stable tag
  */
 export function channelFromDesktopTag(tag) {
   const version = versionFromDesktopTag(tag);
@@ -77,32 +77,6 @@ export function channelFromDesktopTag(tag) {
   }
   const prerelease = semver.prerelease(version);
   return prerelease === null ? null : String(prerelease[0]);
-}
-
-/**
- * The `<yyyymmdd>.<sha7>` a nightly version carries, or `null` for anything that is not one.
- *
- * Deliberately stricter than "the channel is nightly": it requires the full shape
- * `buildNightlyVersion` produces, so a hand-cut `v1.0.0-nightly` is not mistaken for a build this
- * rail made and is never pruned by retention.
- *
- * @param {string} tag
- * @returns {{ date: string, sha7: string } | null}
- */
-export function nightlyPartsFromTag(tag) {
-  const version = versionFromDesktopTag(tag);
-  if (version === null) {
-    return null;
-  }
-  const prerelease = semver.prerelease(version);
-  if (prerelease === null || prerelease.length < 3) {
-    return null;
-  }
-  const [channel, date, sha7] = prerelease.map(String);
-  if (channel !== 'nightly') {
-    return null;
-  }
-  return { date, sha7 };
 }
 
 /**

@@ -9,6 +9,10 @@ This repository contains **application code only**. Do not invent planning/spec 
 | Shared (desktop + web + packages) | [`docs/README.md`](docs/README.md) |
 | Web planner only | [`apps/web/docs/README.md`](apps/web/docs/README.md) |
 
+**The desktop Live screen is drawn a second time on the web download page.** Change one and you
+change the other, in the same PR — see [`apps/desktop/AGENTS.md`](apps/desktop/AGENTS.md) and
+[`apps/web/AGENTS.md`](apps/web/AGENTS.md).
+
 ## Stack
 
 - **pnpm** monorepo (`apps/desktop`, `apps/web`, `packages/*`)
@@ -214,11 +218,10 @@ evidence as a claim that it is broken.
 
 ## Flavors
 
-`BFC_FLAVOR` selects one of `dev`, `nightly`, `beta`, or `prod`. Unpackaged local runs default to `dev` when unset. Invalid tokens fail fast (never fall back to `prod`).
+`BFC_FLAVOR` selects one of `dev`, `beta`, or `prod`. Unpackaged local runs default to `dev` when unset. Invalid tokens fail fast (never fall back to `prod`).
 
 | Flavor | App ID | User data (`%APPDATA%`) | How obtained | Distributed |
 | --- | --- | --- | --- | --- |
 | `dev` | `net.bombfarm.companion.dev` | `Bomb Farm Companion (Dev)` | Local run / `package:dev` | No |
-| `nightly` | `net.bombfarm.companion.nightly` | `Bomb Farm Companion (Nightly)` | Installed / `package:nightly` | Yes (`nightly` channel) |
 | `beta` | `net.bombfarm.companion.beta` | `Bomb Farm Companion (Beta)` | Installed / `package:beta` | Yes (`beta` channel) |
 | `prod` | `net.bombfarm.companion` | `Bomb Farm Companion` | Installed / `package:prod` | Yes (`latest` channel) |

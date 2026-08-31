@@ -51,7 +51,7 @@ export type {
   LiveView,
   RecoveryCountdown,
 } from './live-source.js';
-export { isActionableGap, isConnectedCurrency, isLiveCurrency, liveGap, LIVE_DISPLAY_REFRESH_MS } from './live-source.js';
+export { energyDisplayPercent, isActionableGap, isConnectedCurrency, isLiveCurrency, liveGap, LIVE_DISPLAY_REFRESH_MS } from './live-source.js';
 export type {
   MarketQuoteCurrency,
   MarketQuoteFailureReason,

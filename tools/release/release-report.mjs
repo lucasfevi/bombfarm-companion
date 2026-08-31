@@ -11,17 +11,10 @@ const REPORT_MARKER = '<!-- bfc-release-report -->';
  *   artifactPlan: ArtifactPlan,
  *   headSha: string,
  *   runUrl?: string,
- *   prodReleaseEnabled?: boolean,
  * }} options
  * @returns {string}
  */
-export function renderReleaseReport({
-  set,
-  artifactPlan,
-  headSha,
-  runUrl = '',
-  prodReleaseEnabled = false,
-}) {
+export function renderReleaseReport({ set, artifactPlan, headSha, runUrl = '' }) {
   const lines = [REPORT_MARKER, '', '# Release report', ''];
 
   if (isEmptySet(set)) {
@@ -29,7 +22,7 @@ export function renderReleaseReport({
     lines.push('');
     appendHeadSha(lines, headSha);
     appendRunUrl(lines, runUrl);
-    appendProdFlag(lines, prodReleaseEnabled);
+    appendProdRelease(lines, false);
     appendSoakChecklist(lines);
     return lines.join('\n');
   }
@@ -55,7 +48,7 @@ export function renderReleaseReport({
 
   appendHeadSha(lines, headSha);
   appendRunUrl(lines, runUrl);
-  appendProdFlag(lines, prodReleaseEnabled);
+  appendProdRelease(lines, artifactPlan.desktopInstaller.build);
   appendSoakChecklist(lines);
 
   return lines.join('\n');
@@ -101,15 +94,15 @@ function appendRunUrl(lines, runUrl) {
 
 /**
  * @param {string[]} lines
- * @param {boolean} prodReleaseEnabled
+ * @param {boolean} desktopInSet
  */
-function appendProdFlag(lines, prodReleaseEnabled) {
+function appendProdRelease(lines, desktopInSet) {
   lines.push('## Production GitHub Release', '');
-  if (prodReleaseEnabled) {
-    lines.push('Enabled — `BFC_ENABLE_PROD_RELEASE` is on.');
-  } else {
-    lines.push('Skipped — prod GitHub Release disabled (`BFC_ENABLE_PROD_RELEASE` is off).');
-  }
+  lines.push(
+    desktopInSet
+      ? 'Merging this PR publishes a public GitHub Release carrying the stable installer. Merging is the only gate.'
+      : 'No desktop bump in this set — merging publishes no GitHub Release.',
+  );
   lines.push('');
 }
 
@@ -122,114 +115,6 @@ function appendSoakChecklist(lines) {
     '_Human checklist only — not a required GitHub check._ Wait at least 24 hours after the beta installer is available, exercise the desktop build, and confirm the changelog before merging to `main`.',
   );
   lines.push('');
-}
-
-/**
- * @param {{
- *   packageName: string,
- *   oldVersion: string,
- *   newVersion: string,
- *   headSha: string,
- *   tag: string,
- *   assets: string[],
- * }} options
- * @returns {string}
- */
-export function renderNightlySummary({
-  packageName,
-  oldVersion,
-  newVersion,
-  headSha,
-  tag,
-  assets,
-}) {
-  const shortSha = headSha.slice(0, 7);
-  const lines = [
-    '## Nightly — published',
-    '',
-    '## Version bumps',
-    '',
-    '| Package | Version |',
-    '| --- | --- |',
-    `| ${packageName} | ${oldVersion} → ${newVersion} |`,
-    '',
-    '## Artifacts',
-    '',
-    '| Artifact | Status |',
-    '| --- | --- |',
-    `| Desktop nightly installer | produced — ${assets.length} asset(s) |`,
-    '| Web production deploy | skipped — N/A for nightly |',
-    '',
-    '## Head SHA',
-    '',
-    `\`${shortSha}\` (${headSha})`,
-    '',
-    '## Release tag',
-    '',
-    `\`${tag}\``,
-    '',
-    '### Assets',
-    '```',
-    ...assets,
-    '```',
-    '',
-  ];
-
-  return lines.join('\n');
-}
-
-/**
- * @param {{
- *   packageName: string,
- *   oldVersion: string,
- *   newVersion: string,
- *   headSha: string,
- *   tag: string,
- *   reason: 'tag_exists' | 'no_new_commits',
- * }} options
- * @returns {string}
- */
-export function renderNightlyNoOpSummary({
-  packageName,
-  oldVersion,
-  newVersion,
-  headSha,
-  tag,
-  reason,
-}) {
-  const shortSha = headSha.slice(0, 7);
-  const reasonLine =
-    reason === 'tag_exists'
-      ? `Tag \`${tag}\` already exists for develop HEAD \`${shortSha}\`.`
-      : `No new commits on \`develop\` since the latest nightly (\`${shortSha}\`).`;
-
-  return [
-    '## Nightly — no-op',
-    '',
-    reasonLine,
-    '',
-    '## Version bumps',
-    '',
-    '| Package | Version |',
-    '| --- | --- |',
-    `| ${packageName} | ${oldVersion} → ${newVersion} (not published) |`,
-    '',
-    '## Artifacts',
-    '',
-    '| Artifact | Status |',
-    '| --- | --- |',
-    '| Desktop nightly installer | skipped — no publish |',
-    '| Web production deploy | skipped — N/A for nightly |',
-    '',
-    '## Head SHA',
-    '',
-    `\`${shortSha}\` (${headSha})`,
-    '',
-    '## Release tag',
-    '',
-    `\`${tag}\``,
-    '',
-  ].join('\n');
 }
 
 export { REPORT_MARKER };

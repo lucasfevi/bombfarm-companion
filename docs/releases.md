@@ -13,7 +13,7 @@ feature PR (changeset) → merge to develop
   → human 24 h soak checklist (not a required check)
   → merge release PR to main with a merge commit (never squash)
   → release-sync.yml syncs versions back to develop
-  → release-prod.yml (desktop artifact; GitHub Release only when flag on)
+  → release-prod.yml (desktop installer + stable GitHub Release)
   → Vercel production deploy from main (unchanged Git integration)
 ```
 
@@ -28,7 +28,7 @@ feature PR (changeset) → merge to develop
 7. **Merge the release PR to `main` with a merge commit** — `gh pr merge <n> --merge`, or
    *Create a merge commit* in the UI. **Never squash it** (see [Merge strategy](#merge-strategy)).
    - **Web:** Vercel deploys production from `main` automatically (no GitHub Actions deploy step).
-   - **Desktop:** [release-prod.yml](../.github/workflows/release-prod.yml) builds a prod installer artifact when `@bombfarm/desktop` was in the release set. A public GitHub Release is created **only** when `BFC_ENABLE_PROD_RELEASE` is `true` (see [Going public](#going-public-desktop-github-release)).
+   - **Desktop:** [release-prod.yml](../.github/workflows/release-prod.yml) builds a prod installer when `@bombfarm/desktop` was in the release set and publishes it as the stable GitHub Release. A public GitHub Release is created from it (see [Production desktop GitHub Release](#production-desktop-github-release)).
 8. **Version sync:** [release-sync.yml](../.github/workflows/release-sync.yml) opens and auto-merges `release/next` → `develop` so both branches carry the same versions and consumed changesets.
 
 ## Release-set matrix
@@ -38,7 +38,7 @@ The release set comes from `pnpm changeset status` (all pending changesets aggre
 | Release set | Version bumps | Beta installer | On merge to `main` |
 | --- | --- | --- | --- |
 | Web only | `@bombfarm/web` + web-side libs | Skipped — reason in PR body | Vercel prod deploy; no desktop job |
-| Desktop only | `@bombfarm/desktop` + its libs | Built — PR artifact, GitHub prerelease, and `beta-installer` check | Prod installer artifact; GitHub Release only if flag on |
+| Desktop only | `@bombfarm/desktop` + its libs | Built — PR artifact, GitHub prerelease, and `beta-installer` check | Prod installer published as the stable GitHub Release |
 | Both (e.g. `packages/ui` bump) | Both apps + shared libs, one PR | Built | One merge covers web + desktop |
 | Libs only | Shared packages only | Skipped | No app-specific release artifacts |
 | No pending changesets | — | — | No release PR opened |
@@ -183,28 +183,34 @@ Installers are **not** built on every `main` push. Packaging is exercised by:
 
 | Path | Workflow | When |
 | --- | --- | --- |
-| Nightly prerelease | [nightly.yml](../.github/workflows/nightly.yml) | Manual `workflow_dispatch` from `develop` (schedule paused) |
 | Beta installer | [release-pr.yml](../.github/workflows/release-pr.yml) `beta-installer` job | When desktop is in the release set (PR artifact) |
 | Production | [release-prod.yml](../.github/workflows/release-prod.yml) | After merge to `main` when desktop was released |
 
-Local packaging: `pnpm --filter @bombfarm/desktop package:nightly|beta|prod` (see root `README.md`).
+Local packaging: `pnpm --filter @bombfarm/desktop package:dev|beta|prod` (see root `README.md`).
 
-## Nightly and beta access
+## Channel access
 
-Nightly and beta builds are published as GitHub Releases / prereleases. Testers download manually — they do **not** receive auto-updates until a production release channel is enabled.
+Both distributed channels publish as GitHub Releases. Every tag is built by
+[`tools/release/release-tag.mjs`](../tools/release/release-tag.mjs) and carries a bare `v` prefix
+— `electron-updater` discards any tag `semver.valid()` rejects, so the format is an interface
+rather than a label.
 
-- **Nightly:** GitHub Releases tagged `desktop-v<version>-nightly.<YYYYMMDD>.<sha7>` — download from the repo Releases page. Retention keeps the **7** newest nightlies. The scheduled nightly workflow is paused; run via `workflow_dispatch` when needed.
-- **Beta:** GitHub **prerelease** (`desktop-v<version>-beta.<run>`) with all `release/beta/*` assets, plus a PR workflow artifact (`bombfarm-companion-beta-<version>-<sha7>`) and PR comment with the head SHA. A `publish_prerelease` dispatch input can force-republish an existing beta release tag.
-- **Prod:** installer artifact on every qualifying `main` push; public GitHub Release only when the flag is on (below).
+- **Beta:** GitHub **prerelease** (`v<version>-beta.<run>`) with all `release/beta/*` assets, plus a PR workflow artifact (`bombfarm-companion-beta-<version>-<sha7>`) and PR comment with the head SHA. A `publish_prerelease` dispatch input can force-republish an existing beta release tag. The run number is stamped into the version so consecutive betas of one release compare as increasing.
+- **Prod:** GitHub Release (`v<version>`) marked `--latest`, with all `release/prod/*` assets, on every `main` push that carries a desktop version bump. This is what the web download page serves.
 
 ## Production desktop GitHub Release
 
-Production desktop publishing is gated by the repository variable **`BFC_ENABLE_PROD_RELEASE`**. When unset or not `true`:
+**Merging a desktop bump to `main` publishes.** There is no flag to set and no dispatch to run: the
+`publish` job in [release-prod.yml](../.github/workflows/release-prod.yml) runs whenever the push
+changed `@bombfarm/desktop`'s version and packaging succeeded.
 
-- No GitHub Release, no draft, and no tag are created.
-- The workflow still uploads a prod installer **CI artifact** for verification.
+It used to be gated on a repository variable, `BFC_ENABLE_PROD_RELEASE`, which was never set. For
+165 releases the workflow packaged an installer, uploaded it as a 1-day CI artifact and published
+nothing, while its name and its logs both read as though it had shipped. The control that remains
+is the one that was always real — whether you merge the release PR.
 
-Set `vars.BFC_ENABLE_PROD_RELEASE` to `true` in GitHub repository settings to enable `gh release create` with tag `desktop-v<version>`. No code change is required to flip this.
+The publish step refuses rather than overwrites: an existing git tag or an existing GitHub Release
+at that version fails the job.
 
 ## Web production deploy
 
@@ -252,8 +258,7 @@ A changesets bump updates the displayed version without additional code edits.
 | [changesets.yml](../.github/workflows/changesets.yml) | PRs + `develop` push | Validate changesets; require changeset on shipping PRs |
 | [release-pr.yml](../.github/workflows/release-pr.yml) | `develop` push, dispatch | Upsert `release/next` → `main` PR; beta artifact |
 | [release-sync.yml](../.github/workflows/release-sync.yml) | Release PR merged to `main` | Sync versions to `develop` |
-| [nightly.yml](../.github/workflows/nightly.yml) | Manual dispatch | Nightly desktop prerelease (schedule paused) |
-| [release-prod.yml](../.github/workflows/release-prod.yml) | `main` push | Prod desktop artifact + optional GitHub Release |
+| [release-prod.yml](../.github/workflows/release-prod.yml) | `main` push | Prod desktop artifact + public GitHub Release |
 | [ci-web.yml](../.github/workflows/ci-web.yml) | push, PR, dispatch | Web quality gate |
 | [ci-desktop.yml](../.github/workflows/ci-desktop.yml) | push, PR, dispatch | Desktop quality gate |
 | [e2e-web.yml](../.github/workflows/e2e-web.yml) | push, PR, dispatch | Web e2e gate |

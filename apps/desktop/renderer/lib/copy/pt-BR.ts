@@ -97,7 +97,7 @@ export const ptBR: Copy = {
   settingsUpdatesStatusReadyTitle: 'A versão {version} está pronta para instalar',
   settingsUpdatesStatusReadyBody: 'O app fecha e abre de novo na versão nova. Nada do que você salvou é perdido.',
   settingsUpdatesStatusDisabled:
-    'As atualizações estão desligadas nesta versão. As versões Nightly, Beta e estável instaladas se atualizam sozinhas; uma versão de desenvolvimento local não.',
+    'As atualizações estão desligadas nesta versão. As versões Beta e estável instaladas se atualizam sozinhas; uma versão de desenvolvimento local não.',
   settingsUpdatesErrorTitle: 'Não foi possível procurar atualizações',
   settingsUpdatesReasonOffline:
     'Não foi possível acessar o servidor de atualizações. Verifique sua conexão e tente de novo.',
@@ -190,6 +190,18 @@ export const ptBR: Copy = {
   liveEarningsElapsedLabel: 'Decorrido',
   liveEarningsXpHelpLabel: 'Sobre esse número de XP',
   liveEarningsXpHelpBody: 'Calculado a partir dos props que seus heróis destruíram, não lido diretamente do jogo.',
+  liveEarningsSeriesLabel: 'Ouro / h — últimos {minutes} min',
+  liveEarningsSeriesAria: 'Ouro por hora nos últimos {minutes} minutos',
+  liveEarningsSeriesPeakLabel: 'pico {value}',
+  liveEarningsMeasuredNote: 'Medido',
+  liveEarningsMeasuredBody:
+    'Medido a partir do que realmente caiu nos últimos 10 minutos — não estimado. Trocar de mapa mistura o que os dois pagaram até a janela se atualizar.',
+  liveEarningsGoldPerPropLabel: 'Ouro / prop',
+  liveEarningsPropsPerMinuteLabel: 'Props / min',
+  liveEarningsPropsTotalLabel: 'Props',
+  liveEarningsGoldPerPropUnder: '{percent}% abaixo da estimativa',
+  liveEarningsGoldPerPropOver: '{percent}% acima da estimativa',
+  liveEarningsGoldPerPropOnEstimate: 'na estimativa',
 
   // liveMap* — o painel de Mapa: em qual mapa se está jogando e o quanto da run já passou.
   liveMapTitle: 'Mapa',

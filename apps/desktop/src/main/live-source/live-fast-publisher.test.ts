@@ -23,6 +23,10 @@ function earnings(overrides: Partial<LiveEarnings> = {}): LiveEarnings {
     xpSession: 100,
     goldSessionTotal: 1_000,
     xpSessionTotal: 100,
+    gold10Series: [1_000, 1_000],
+    goldPerProp10: 50,
+    propsPerMinute10: 20,
+    propsSessionTotal: 20,
     coverageSeconds: 60,
     sessionSeconds: 60,
     ...overrides,
@@ -126,6 +130,35 @@ describe('createLiveFastPublisher — publishes only when the fast channel actua
     expect(emitted).toHaveLength(1);
 
     currentEarnings = earnings({ goldSessionTotal: 2_000, xpSessionTotal: 100 });
+    fireTick();
+
+    expect(emitted).toHaveLength(2);
+    expect(emitted[1]).toMatchObject({ type: 'fastUpdate', earnings: currentEarnings });
+  });
+
+  it('a change confined to the trend series still republishes, so the chart cannot freeze mid-session', () => {
+    let currentEarnings = earnings({ gold10Series: [1_000, 1_000] });
+    const { publisher, emitted, fireTick } = harness(() => view({ earnings: currentEarnings }));
+    publisher.start();
+    fireTick();
+    expect(emitted).toHaveLength(1);
+
+    // A quiet stretch: the window average has not moved, and the newest slice is a fresh reading
+    // that says so. Nothing else in the object differs.
+    currentEarnings = earnings({ gold10Series: [1_000, 1_000, 1_000] });
+    fireTick();
+
+    expect(emitted).toHaveLength(2);
+    expect(emitted[1]).toMatchObject({ type: 'fastUpdate', earnings: currentEarnings });
+  });
+
+  it('a change confined to the measured per-prop figures still republishes', () => {
+    let currentEarnings = earnings({ goldPerProp10: 180, propsPerMinute10: 110, propsSessionTotal: 400 });
+    const { publisher, emitted, fireTick } = harness(() => view({ earnings: currentEarnings }));
+    publisher.start();
+    fireTick();
+
+    currentEarnings = earnings({ goldPerProp10: 176, propsPerMinute10: 118, propsSessionTotal: 412 });
     fireTick();
 
     expect(emitted).toHaveLength(2);
@@ -289,5 +322,29 @@ describe('createLiveFastPublisher — per-hero energy is part of the fast channe
     fireTick();
     expect(emitted).toHaveLength(2);
     expect(emitted[1]).toMatchObject({ type: 'fastUpdate', energies: [{ heroId: 'h1', energyFraction: 0.51 }] });
+  });
+
+  it('a drift too small to move the reading does not republish — the bar is one percent wide per point', () => {
+    // Four consecutive readings off the real wire, all of which draw a 28%-wide bar beside the
+    // text "28%". Comparing the raw fraction made every one of these a change, and every change a
+    // redraw of the same picture, four times a second for as long as the screen was open.
+    const drifting = [0.28425594587099745, 0.2838965614344286, 0.283776766622239, 0.28365697181004934];
+    let current: readonly LiveHeroEnergy[] = [{ heroId: 'h1', energyFraction: drifting[0] as number }];
+    const { publisher, emitted, fireTick } = harness(() => view({ energies: current }));
+
+    publisher.start();
+    fireTick();
+    expect(emitted).toHaveLength(1);
+
+    for (const energyFraction of drifting.slice(1)) {
+      current = [{ heroId: 'h1', energyFraction }];
+      fireTick();
+    }
+    expect(emitted).toHaveLength(1);
+
+    // Crossing into the next whole percent is a change, and does republish.
+    current = [{ heroId: 'h1', energyFraction: 0.29 }];
+    fireTick();
+    expect(emitted).toHaveLength(2);
   });
 });

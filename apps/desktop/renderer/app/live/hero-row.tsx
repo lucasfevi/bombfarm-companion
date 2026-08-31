@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 import { HeroAvatar, rarityTextClass } from '@bombfarm/game-art';
 import { sub, useCopy, useLocale, type Copy } from '../../lib/copy';
 import { formatEnergyPercent } from '../../lib/format';
@@ -46,17 +46,27 @@ function EnergyReading({ testId, fraction }: { testId: string; fraction: number 
   );
 }
 
-export function HeroRow({
+/**
+ * Everything in the row that the hero itself decides — the state dot, the identity block, the
+ * energy bar and its reading. Split out and memoised because the fast channel republishes four
+ * times a second while a hero's own facts move on the authenticated cycle, up to a minute apart:
+ * without this, a tick that changed nothing but the gold balance re-rendered all of this for every
+ * hero on the list. A Fragment, not a wrapper element — these are grid items of the `<li>` above
+ * and an element around them would collapse five tracks into one.
+ *
+ * Memoising is only half of it, and was the half that bought nothing on its own: the props have to
+ * be stable for it to bite. `energyFraction` arriving as a number rather than merged into the hero
+ * is what makes that true here, and the store's per-slice identity rule is what makes the hero
+ * itself survive a tick unchanged.
+ */
+const HeroRowBody = memo(function HeroRowBody({
   state,
   hero,
-  muted = false,
-  trailing,
+  energyFraction,
 }: {
   state: LiveRotationRowState;
   hero: LiveHeroFact;
-  /** Drains the row's colour — a hero who is out of the rotation entirely, not resting inside it. */
-  muted?: boolean;
-  trailing?: ReactNode;
+  energyFraction: number | undefined;
 }) {
   const t = useCopy();
   // Name and grade arrive from the same roster join, so a grade without a name is half a join —
@@ -67,11 +77,7 @@ export function HeroRow({
   const energyTestId = `live-energy-${hero.id}`;
 
   return (
-    <li
-      data-testid={`live-hero-row-${hero.id}`}
-      data-muted={muted ? '' : undefined}
-      className="grid grid-cols-[0.5rem_8rem_minmax(0,1fr)_2.25rem_4rem] items-center gap-2 rounded-sm border border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-2 py-1 data-[muted]:opacity-60 data-[muted]:grayscale"
-    >
+    <>
       <span className="flex items-center">
         <RowStateDot state={state} />
         <span className="sr-only">{rowStateLabel(state, t)}</span>
@@ -96,8 +102,46 @@ export function HeroRow({
           </span>
         </span>
       </span>
-      <EnergyBar testId={energyTestId} fraction={hero.energyFraction} />
-      <EnergyReading testId={`${energyTestId}-value`} fraction={hero.energyFraction} />
+      <EnergyBar testId={energyTestId} fraction={energyFraction} />
+      <EnergyReading testId={`${energyTestId}-value`} fraction={energyFraction} />
+    </>
+  );
+});
+
+export function HeroRow({
+  state,
+  hero,
+  energyFraction,
+  muted = false,
+  trailing,
+}: {
+  state: LiveRotationRowState;
+  hero: LiveHeroFact;
+  /**
+   * The live reading from the fast channel, which supersedes the hero's own. The snapshot's figure
+   * is only replaced on the authenticated cycle — up to a minute apart — while the countdown drawn
+   * beside it in this row moves four times a second; left to the snapshot, a hero whose rest has
+   * finished would sit at `0:00` beside a bar still reading 99%.
+   *
+   * A separate prop rather than a hero merged with a fresh energy, because a number compares by
+   * value and a merged hero compares by identity: passing the reading here is what lets one hero's
+   * energy move without re-rendering the twelve rows around it.
+   *
+   * Omitted for a hero the fast channel does not reach — queued, benched — which keeps the
+   * snapshot's own figure.
+   */
+  energyFraction?: number;
+  /** Drains the row's colour — a hero who is out of the rotation entirely, not resting inside it. */
+  muted?: boolean;
+  trailing?: ReactNode;
+}) {
+  return (
+    <li
+      data-testid={`live-hero-row-${hero.id}`}
+      data-muted={muted ? '' : undefined}
+      className="grid grid-cols-[0.5rem_8rem_minmax(0,1fr)_2.25rem_4rem] items-center gap-2 rounded-sm border border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-2 py-1 data-[muted]:opacity-60 data-[muted]:grayscale"
+    >
+      <HeroRowBody state={state} hero={hero} energyFraction={energyFraction ?? hero.energyFraction} />
       {trailing !== undefined ? <span className="flex items-center gap-1">{trailing}</span> : null}
     </li>
   );

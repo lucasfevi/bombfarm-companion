@@ -24,6 +24,7 @@ import * as importNs from '@/shared/i18n/namespaces/import';
 import * as stats from '@/shared/i18n/namespaces/stats';
 import * as market from '@/shared/i18n/namespaces/market';
 import * as inventory from '@/shared/i18n/namespaces/inventory';
+import * as download from '@/shared/i18n/namespaces/download';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
 /**
@@ -519,6 +520,92 @@ const KEYS_ADDED: readonly string[] = [
   'phasesColNormalHit',
   'phasesColCritHit',
   'phasesColFieldTime',
+
+  /**
+   * The desktop download page (2026-08-30) — a standalone page at `/download` carrying the
+   * installer link, the Windows SmartScreen walkthrough, the install count and what the desktop
+   * app contains. All new prose on a page that did not exist before, so none of it edits an
+   * existing string.
+   *
+   * The per-screen bullet lists are numbered keys rather than arrays on purpose. A new top-level
+   * key holding an array diffs as one leaf path per element (`key.0`, `key.1`, ...) in the two
+   * value comparisons but as the bare key name in the key-name comparison, so one entry here
+   * cannot satisfy both — and the only way to make an array fit is to loosen one of them.
+   *
+   * The stable-channel switch (2026-08-31) reshapes the channel copy while the page is still the
+   * only reader of any of it. The chip is no longer the constant "Beta" — the page now names the
+   * channel it actually resolved — so `downloadChannelChip` becomes `downloadChannelChipStable`
+   * and `downloadChannelChipBeta`. The nightly card is gone with the channel it advertised. Both
+   * remaining cards can be either the current one or the other one, so each needs a second note
+   * (`downloadChannelStableNotePending`, `downloadChannelBetaNoteAhead`) where beta alone used to
+   * need `downloadChannelBetaNotePending`. None of this is a fixture delta: the whole `download`
+   * namespace postdates the frozen fixture, so these keys move within `KEYS_ADDED`.
+   */
+  'downloadNavLabel',
+  'downloadHeaderCta',
+  'downloadEyebrow',
+  'downloadHeadlineLead',
+  'downloadHeadlineAccent',
+  'downloadLede',
+  'downloadCta',
+  'downloadChannelChipStable',
+  'downloadChannelChipBeta',
+  'downloadFileMeta',
+  'downloadFileMetaPending',
+  'downloadTrustPermission',
+  'downloadTrustUpdates',
+  'downloadTrustLicense',
+  'downloadTrustLicenseLink',
+  'downloadInstallsSuffix',
+  'downloadChannelStableTitle',
+  'downloadChannelStableNote',
+  'downloadChannelStableNotePending',
+  'downloadChannelBetaTitle',
+  'downloadChannelBetaNote',
+  'downloadChannelBetaNoteAhead',
+  'downloadInstallHeading',
+  'downloadStepRunTitle',
+  'downloadStepRunBody',
+  'downloadInstallerGenericName',
+  'downloadStepWarnTitle',
+  'downloadStepWarnBody',
+  'downloadStepPermissionTitle',
+  'downloadStepPermissionBody',
+  'downloadSmartTitle',
+  'downloadSmartBody',
+  'downloadSmartMore',
+  'downloadSmartApp',
+  'downloadSmartPublisher',
+  'downloadSmartRunAnyway',
+  'downloadSmartDontRun',
+  'downloadWhyHeading',
+  'downloadWhySmartScreenTitle',
+  'downloadWhySmartScreenBody',
+  'downloadWhyAntivirusTitle',
+  'downloadWhyAntivirusBody',
+  'downloadWhySourceLink',
+  'downloadUpdatesSuffix',
+  'downloadPermissionRowLabel',
+  'downloadPermissionOnLine',
+  'downloadPermissionOffLine',
+  'downloadStepPermissionRequirement',
+  'downloadIncludedHeading',
+  'downloadScreenLiveTitle',
+  'downloadScreenLiveItem1',
+  'downloadScreenLiveItem2',
+  'downloadScreenLiveItem3',
+  'downloadScreenLiveItem4',
+  'downloadScreenLiveItem5',
+  'downloadScreenInventoryTitle',
+  'downloadScreenInventoryItem1',
+  'downloadScreenInventoryItem2',
+  'downloadScreenInventoryItem3',
+  'downloadScreenInventoryItem4',
+  'downloadScreenSettingsTitle',
+  'downloadScreenSettingsItem1',
+  'downloadScreenSettingsItem2',
+  'downloadScreenSettingsItem3',
+  'downloadScreenSettingsItem4',
 ];
 
 /**
@@ -625,6 +712,7 @@ const namespaces = [
   ['stats', stats],
   ['market', market],
   ['inventory', inventory],
+  ['download', download],
 ] as const;
 
 describe('i18n split parity', () => {
