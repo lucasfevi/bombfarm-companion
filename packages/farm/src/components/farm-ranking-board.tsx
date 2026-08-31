@@ -60,6 +60,9 @@ export type FarmRankingBoardData = {
   phasesViewPhaseChosen: boolean;
   statLabels: FarmStatLabels;
   respec: FarmRespecBoardData;
+  /** The table scrollport's height. Omitted, the table keeps the fixed height it has always
+   *  had — a host that draws the board inside a window it does not control passes its own. */
+  tableScrollportHeightPx?: number;
 };
 
 export type FarmRankingBoardActions = {
@@ -101,6 +104,7 @@ export function FarmRankingBoardView({
     phasesViewPhaseChosen,
     statLabels,
     respec,
+    tableScrollportHeightPx,
   } = data;
   const {
     setPhasesViewPhase,
@@ -260,7 +264,7 @@ export function FarmRankingBoardView({
             onActivate={setPhasesViewPhase}
             lang={lang}
             t={t}
-            reRankActive={reRankActive}
+            display={{ reRankActive, scrollportHeightPx: tableScrollportHeightPx }}
           />
         </>
       )}

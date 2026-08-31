@@ -418,6 +418,52 @@ describe('Farm Ranking row — the gate marker is always mounted (no-layout-shif
   });
 });
 
+describe('Farm Ranking table — the scrollport height is the host\'s to set', () => {
+  it('the window size is derived per render from the height, never from a module constant', () => {
+    const source = read('farm-ranking-table.tsx');
+    expect(source).toContain('visibleRowsFor(scrollportHeightPx)');
+    expect(source).toContain('windowFor(scrollTop, total, visibleRows)');
+    expect(source).toContain('maxRows={visibleRows}');
+    // The window size and the CSS height must come from one number, or the scrollport shows a
+    // band the window never mounted rows for.
+    expect(source).not.toMatch(/const VISIBLE_ROWS\s*=/);
+    expect(source).not.toMatch(/const CONTAINER_HEIGHT_PX\s*=/);
+  });
+
+  it('a host that says nothing about its viewport gets the height the table always had', () => {
+    expect(read('farm-ranking-table.tsx')).toContain(
+      'scrollportHeightPx = DEFAULT_SCROLLPORT_HEIGHT_PX',
+    );
+  });
+
+  it('the board threads its own optional height straight through', () => {
+    const source = read('farm-ranking-board.tsx');
+    expect(source).toContain('tableScrollportHeightPx?: number');
+    expect(source).toContain('scrollportHeightPx: tableScrollportHeightPx');
+  });
+});
+
+describe('hero picker — the enable/disable switch is a host capability, not a stub', () => {
+  it('the write is optional on the actions bag', () => {
+    expect(read('hero-picker/hero-picker-dialog.tsx')).toContain(
+      'onSetBattleAllowed?: (heroId: string, enabled: boolean) => void;',
+    );
+  });
+
+  it('head and body drop the Status column on the SAME condition — no column-count mismatch', () => {
+    const head = read('hero-picker/hero-picker-table.tsx');
+    const row = read('hero-picker/hero-picker-row.tsx');
+    expect(head).toMatch(/\{onSetBattleAllowed \? \([\s\S]*?t\.rosterColStatus/);
+    expect(row).toMatch(/\{onSetBattleAllowed \? \([\s\S]*?HeroActiveToggle/);
+  });
+
+  it('no disabled switch stands in for the absent write — the control is not rendered at all', () => {
+    const row = read('hero-picker/hero-picker-row.tsx');
+    expect(row).not.toMatch(/disabled=\{!onSetBattleAllowed\}/);
+    expect(row).not.toMatch(/onSetBattleAllowed\s*\?\?/);
+  });
+});
+
 /**
  * The property that lets two apps render one screen: every component here takes what it shows,
  * and reaches for nothing. Six of them used to read the web app's zustand store directly, and a

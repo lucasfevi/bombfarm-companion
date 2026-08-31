@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { FarmInputs, FarmRankingResult } from '@bombfarm/farm/core';
+import type { FarmInputs, FarmRankingResult, FarmRespecGate } from '@bombfarm/farm/core';
 import type { FarmControls } from './farm-inputs';
 import {
   accept,
   initialFarmSnapshotState,
+  settledBoard,
   snapshotSourceKey,
   type FarmSnapshotArrival,
   type FarmSnapshotState,
@@ -16,6 +17,8 @@ const OTHER_CONTROLS: FarmControls = { farmPoolOverrides: {}, farmReturnBonus: '
 
 const BOARD = { rows: [], reason: null } as FarmRankingResult;
 const INPUTS = {} as FarmInputs;
+const GATE: FarmRespecGate = { result: null, reason: 'no-roster', shouldSurface: false };
+const SETTLED = { ok: true, board: BOARD, inputs: INPUTS, gate: GATE } as const;
 
 function computing(sourceKey: string, controls: FarmControls = CONTROLS): FarmSnapshotState {
   return accept(initialFarmSnapshotState, { kind: 'begin', sourceKey, controls });
@@ -26,7 +29,7 @@ function ready(sourceKey: string, controls: FarmControls = CONTROLS): FarmSnapsh
     kind: 'computed',
     sourceKey,
     controls,
-    outcome: { ok: true, board: BOARD, inputs: INPUTS },
+    outcome: SETTLED,
   });
 }
 
@@ -131,7 +134,7 @@ describe('computed — latest wins, everything else is discarded', () => {
       kind: 'computed',
       sourceKey: 'key-a',
       controls: CONTROLS,
-      outcome: { ok: true, board: BOARD, inputs: INPUTS },
+      outcome: SETTLED,
     });
     expect(stale).toBe(awaiting);
   });
@@ -142,7 +145,7 @@ describe('computed — latest wins, everything else is discarded', () => {
       kind: 'computed',
       sourceKey: 'key-a',
       controls: CONTROLS,
-      outcome: { ok: true, board: BOARD, inputs: INPUTS },
+      outcome: SETTLED,
     });
     expect(stale).toBe(awaiting);
   });
@@ -153,17 +156,18 @@ describe('computed — latest wins, everything else is discarded', () => {
       kind: 'computed',
       sourceKey: 'key-a',
       controls: CONTROLS,
-      outcome: { ok: true, board: BOARD, inputs: INPUTS },
+      outcome: SETTLED,
     });
     expect(again).toBe(first);
   });
 
-  it('an accepted result carries the board, the inputs it was computed from, and its source', () => {
+  it('an accepted result carries the board, the inputs it was computed from, its gate and its source', () => {
     const state = ready('key-a');
     expect(state).toEqual({
       status: 'ready',
       board: BOARD,
       inputs: INPUTS,
+      gate: GATE,
       controls: CONTROLS,
       sourceKey: 'key-a',
     });
@@ -176,6 +180,7 @@ describe('computed — latest wins, everything else is discarded', () => {
         status: 'ready',
         board: arrival.outcome.board,
         inputs: arrival.outcome.inputs,
+        gate: arrival.outcome.gate,
         controls: arrival.controls,
         sourceKey: arrival.sourceKey,
       };
@@ -190,12 +195,67 @@ describe('computed — latest wins, everything else is discarded', () => {
       kind: 'computed',
       sourceKey: 'key-a',
       controls: CONTROLS,
-      outcome: { ok: true, board: BOARD, inputs: INPUTS },
+      outcome: SETTLED,
     });
 
     // The mutant pins the board to the account the screen has already left. The real reducer
     // asserts the opposite above (`stale` toBe `awaiting`).
     expect(snapshotSourceKey(awaiting)).toBe('key-b');
     expect(snapshotSourceKey(overwritten)).toBe('key-a');
+  });
+});
+
+/**
+ * A recompute is not a reason to blank the screen. The board's filters and column sort live in
+ * the component that draws it, so unmounting it for one frame silently resets both — which is
+ * what toggling a single hero in the rotation pool used to do.
+ */
+describe('a recompute keeps the board that is already on screen', () => {
+  it('the first compute has nothing to carry — that is the only genuine loading state', () => {
+    expect(settledBoard(initialFarmSnapshotState)).toBeNull();
+    expect(settledBoard(computing('key-a'))).toBeNull();
+  });
+
+  it('a controls change keeps the settled board renderable while the new one is computed', () => {
+    const recomputing = accept(ready('key-a'), { kind: 'controls', controls: OTHER_CONTROLS });
+    expect(recomputing.status).toBe('computing');
+    expect(settledBoard(recomputing)).toEqual({ board: BOARD, inputs: INPUTS, gate: GATE });
+  });
+
+  it('the carried board is the SAME rows object, not a copy — the table is not re-keyed', () => {
+    const settled = ready('key-a');
+    const recomputing = accept(settled, { kind: 'controls', controls: OTHER_CONTROLS });
+    expect(settledBoard(recomputing)?.board).toBe(settledBoard(settled)?.board);
+  });
+
+  it('a refresh and a re-open onto a moved account carry it forward too', () => {
+    const refreshing = accept(ready('key-a'), {
+      kind: 'refresh',
+      sourceKey: 'key-b',
+      controls: CONTROLS,
+    });
+    const reopening = accept(ready('key-a'), {
+      kind: 'begin',
+      sourceKey: 'key-b',
+      controls: CONTROLS,
+    });
+    expect(settledBoard(refreshing)?.board).toBe(BOARD);
+    expect(settledBoard(reopening)?.board).toBe(BOARD);
+  });
+
+  it('two recomputes in a row still carry the last settled board, never the previous computing state', () => {
+    const once = accept(ready('key-a'), { kind: 'controls', controls: OTHER_CONTROLS });
+    const twice = accept(once, { kind: 'controls', controls: CONTROLS });
+    expect(settledBoard(twice)?.board).toBe(BOARD);
+  });
+
+  it('an account judged uncomputable drops the board — a named reason is not a busy board', () => {
+    const unavailable = accept(computing('key-a'), {
+      kind: 'computed',
+      sourceKey: 'key-a',
+      controls: CONTROLS,
+      outcome: { ok: false, reason: 'incomplete-account' },
+    });
+    expect(settledBoard(unavailable)).toBeNull();
   });
 });

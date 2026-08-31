@@ -16,8 +16,20 @@
  * carried by `begin` or `refresh`, both user-initiated. There is no arrival a live tick could
  * dispatch, so no live tick can move this state — asserted in the test by reading this source.
  */
-import type { FarmInputs, FarmRankingResult } from '@bombfarm/farm/core';
+import type { FarmInputs, FarmRankingResult, FarmRespecGate } from '@bombfarm/farm/core';
 import type { FarmControls } from './farm-inputs';
+
+/**
+ * One compute's three settled products: the board, the inputs it was computed from, and the
+ * first-tier respec gate over those same inputs. The gate is cheap and rides along with the
+ * compute rather than being re-derived while the screen paints — the expensive second tier is a
+ * button press, and lives nowhere near here.
+ */
+export type FarmSettledBoard = {
+  readonly board: FarmRankingResult;
+  readonly inputs: FarmInputs;
+  readonly gate: FarmRespecGate;
+};
 
 /**
  * An account was read, but not one the board may be computed from — a section whose fidelity
@@ -29,14 +41,23 @@ export type FarmSnapshotUnavailableReason = 'incomplete-account';
 
 export type FarmSnapshotState =
   | { readonly status: 'idle' }
-  | { readonly status: 'computing'; readonly controls: FarmControls; readonly sourceKey: string }
   | {
-      readonly status: 'ready';
-      readonly board: FarmRankingResult;
-      readonly inputs: FarmInputs;
+      readonly status: 'computing';
       readonly controls: FarmControls;
       readonly sourceKey: string;
+      /**
+       * The board still on screen while this compute runs, or `null` on the very first one. A
+       * recompute is not a reason to blank the screen: unmounting the board for a frame throws
+       * away the filters and the column sort it holds, so a rotation-pool toggle used to reset
+       * both. The board stays mounted and is marked busy instead.
+       */
+      readonly previous: FarmSettledBoard | null;
     }
+  | ({
+      readonly status: 'ready';
+      readonly controls: FarmControls;
+      readonly sourceKey: string;
+    } & FarmSettledBoard)
   | {
       readonly status: 'unavailable';
       readonly reason: FarmSnapshotUnavailableReason;
@@ -44,7 +65,7 @@ export type FarmSnapshotState =
     };
 
 export type FarmComputeOutcome =
-  | { readonly ok: true; readonly board: FarmRankingResult; readonly inputs: FarmInputs }
+  | ({ readonly ok: true } & FarmSettledBoard)
   | { readonly ok: false; readonly reason: FarmSnapshotUnavailableReason };
 
 /**
@@ -74,6 +95,19 @@ export function snapshotSourceKey(state: FarmSnapshotState): string | null {
 }
 
 /**
+ * The board the screen should be drawing, settled or merely being recomputed — `null` only when
+ * there has never been one. A screen reads this and `status === 'computing'` separately: the
+ * first says what to draw, the second says whether to mark it busy.
+ */
+export function settledBoard(state: FarmSnapshotState): FarmSettledBoard | null {
+  if (state.status === 'ready') {
+    return { board: state.board, inputs: state.inputs, gate: state.gate };
+  }
+  if (state.status === 'computing') return state.previous;
+  return null;
+}
+
+/**
  * Pure, and returns the SAME state reference for an arrival that changes nothing, so a caller
  * driving this through `setState` gets React's bail-out-on-`Object.is` for free. Four rules:
  *
@@ -93,7 +127,12 @@ export function accept(state: FarmSnapshotState, arrival: FarmSnapshotArrival): 
   switch (arrival.kind) {
     case 'begin':
       if (snapshotSourceKey(state) === arrival.sourceKey) return state;
-      return { status: 'computing', controls: arrival.controls, sourceKey: arrival.sourceKey };
+      return {
+        status: 'computing',
+        controls: arrival.controls,
+        sourceKey: arrival.sourceKey,
+        previous: settledBoard(state),
+      };
 
     case 'refresh':
       if (
@@ -103,12 +142,22 @@ export function accept(state: FarmSnapshotState, arrival: FarmSnapshotArrival): 
       ) {
         return state;
       }
-      return { status: 'computing', controls: arrival.controls, sourceKey: arrival.sourceKey };
+      return {
+        status: 'computing',
+        controls: arrival.controls,
+        sourceKey: arrival.sourceKey,
+        previous: settledBoard(state),
+      };
 
     case 'controls':
       if (state.status !== 'ready' && state.status !== 'computing') return state;
       if (state.controls === arrival.controls) return state;
-      return { status: 'computing', controls: arrival.controls, sourceKey: state.sourceKey };
+      return {
+        status: 'computing',
+        controls: arrival.controls,
+        sourceKey: state.sourceKey,
+        previous: settledBoard(state),
+      };
 
     case 'computed': {
       if (state.status !== 'computing') return state;
@@ -120,6 +169,7 @@ export function accept(state: FarmSnapshotState, arrival: FarmSnapshotArrival): 
         status: 'ready',
         board: arrival.outcome.board,
         inputs: arrival.outcome.inputs,
+        gate: arrival.outcome.gate,
         controls: arrival.controls,
         sourceKey: arrival.sourceKey,
       };

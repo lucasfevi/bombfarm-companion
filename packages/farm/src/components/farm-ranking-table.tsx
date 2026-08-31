@@ -6,6 +6,11 @@ import { sub, type FarmCopy, type Lang } from '../copy';
 import type { FarmRateRow } from '@bombfarm/domain/farm-rate';
 import { FARM_COLUMNS, type FarmSortDir, type FarmSortKey } from '../model/farm-ranking-view';
 import { ROW_HEIGHT_CSS, ROW_HEIGHT_PX } from '../model/farm-ranking-row-height';
+import {
+  DEFAULT_SCROLLPORT_HEIGHT_PX,
+  visibleRowsFor,
+  windowFor,
+} from '../model/farm-ranking-window';
 import { FarmColumnHeaderLabel } from './farm-ranking-column-header';
 import { FarmRankingRow } from './farm-ranking-row';
 import { FarmRankingSpacerRow } from './farm-ranking-spacer-row';
@@ -45,34 +50,18 @@ type Props = {
   onActivate: (phase: number) => void;
   lang: Lang;
   t: FarmCopy;
-  /** True when the rows above come from the proposed respec build, not the player's current
-   *  one. Drives the caption text and a data-farm-mode attribute — no column, sort or filter
-   *  change; the table itself is byte-identical either way. */
-  reRankActive: boolean;
+  /** How the table is shown rather than what it lists, grouped to stay inside the 8-prop cap —
+   *  the same regrouping `sort` above already carries. */
+  display: {
+    /** True when the rows above come from the proposed respec build, not the player's current
+     *  one. Drives the caption text and a data-farm-mode attribute — no column, sort or filter
+     *  change; the table itself is byte-identical either way. */
+    reRankActive: boolean;
+    /** The scrollport's height, which is what the virtualization window is sized from. Omitted,
+     *  the table renders at the height it always had. */
+    scrollportHeightPx?: number;
+  };
 };
-
-/** Same scrollport height the table had before virtualization (14 rows at the old, wrong
- *  44px assumption) — rounded UP against the real 33px row height so the window always
- *  covers at least the full visible band, never less. */
-const CONTAINER_HEIGHT_PX = 614;
-const VISIBLE_ROWS = Math.ceil(CONTAINER_HEIGHT_PX / ROW_HEIGHT_PX);
-/** Rows kept mounted beyond the visible band on each side, so a scroll step never outruns
- *  the render window before React catches up. */
-const OVERSCAN_ROWS = 10;
-
-/**
- * `scrollTop` is state carried over from before the current filter/sort pass, so a set that just
- * got narrower can leave it pointing past the new `total` (e.g. scrolled deep into 600 rows, then
- * a filter narrows to 5) — clamping `firstVisible` to what the shrunken list can actually show
- * keeps the window landing on real rows instead of slicing past the end into nothing.
- */
-function windowFor(scrollTop: number, total: number): { start: number; end: number } {
-  const maxFirstVisible = Math.max(0, total - VISIBLE_ROWS);
-  const firstVisible = Math.min(maxFirstVisible, Math.floor(scrollTop / ROW_HEIGHT_PX));
-  const start = Math.max(0, firstVisible - OVERSCAN_ROWS);
-  const end = Math.min(total, firstVisible + VISIBLE_ROWS + OVERSCAN_ROWS);
-  return { start, end };
-}
 
 /**
  * `DataTable.Root scrollable` around a `table-fixed` `<table>` sized for real content
@@ -91,11 +80,16 @@ export function FarmRankingTable({
   onActivate,
   lang,
   t,
-  reRankActive,
+  display,
 }: Props) {
+  const { reRankActive, scrollportHeightPx = DEFAULT_SCROLLPORT_HEIGHT_PX } = display;
   const [scrollTop, setScrollTop] = useState(0);
   const total = rows.length;
-  const { start, end } = useMemo(() => windowFor(scrollTop, total), [scrollTop, total]);
+  const visibleRows = useMemo(() => visibleRowsFor(scrollportHeightPx), [scrollportHeightPx]);
+  const { start, end } = useMemo(
+    () => windowFor(scrollTop, total, visibleRows),
+    [scrollTop, total, visibleRows],
+  );
   const windowedRows = rows.slice(start, end);
 
   function handleScroll(event: UIEvent<HTMLDivElement>) {
@@ -117,7 +111,7 @@ export function FarmRankingTable({
       </div>
       <DataTable.Root
         scrollable
-        maxRows={VISIBLE_ROWS}
+        maxRows={visibleRows}
         rowHeight={ROW_HEIGHT_CSS}
         className="rounded-sm border border-line"
         onScroll={handleScroll}

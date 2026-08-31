@@ -10,21 +10,25 @@
  * Refresh — see `lib/farm/farm-snapshot-store.ts`. A snapshot the live account has moved past is
  * LABELLED and left alone; an unlabelled stale number is the failure this screen exists to avoid.
  *
- * Every compute is scheduled off the paint so the loading state is a committed frame rather than
- * a skipped one, and the hand memoisation below is load-bearing: the desktop renderer does not
- * enable the React Compiler, and a freshly-allocated prop bag on every render reaches a 600-row
- * table.
+ * Every compute is scheduled off the paint, so the frame BEFORE it — the loading state on a first
+ * open, the board already in hand on a recompute — is committed and visible rather than skipped
+ * over by a main thread that then blocks. A recompute never blanks the screen: the board stays
+ * mounted and is marked busy, which is also what keeps the filters and column sort it holds.
+ *
+ * The hand memoisation below is load-bearing: the desktop renderer does not enable the React
+ * Compiler, and a freshly-allocated prop bag on every render reaches a 600-row table.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Banner, Button, EmptyState, colClass } from '@bombfarm/ui';
 import { scheduleAfterPaint } from '@bombfarm/farm';
 import {
   FarmRankingBoardView,
+  HeroPickerDialogView,
   PhasesExplorerView,
   type FarmRankingBoardActions,
   type FarmRankingBoardData,
-  type FarmRespecBoardData,
   type FarmStatLabels,
+  type HeroPickerSlotProps,
 } from '@bombfarm/farm/components';
 import {
   buildAccount,
@@ -34,37 +38,36 @@ import {
 } from '@bombfarm/farm/core';
 import { statLabel } from '@bombfarm/domain/game-labels';
 import { SHEET_KEYS, type SheetKey } from '@bombfarm/domain/planner-constants';
-import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
+import type { ReturnBonusMode, SquadFarmFacts } from '@bombfarm/domain/farm-rate';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
 import { DEFAULT_FARM_CONTROLS, type FarmControls } from '../../lib/farm/farm-inputs';
 import { loadFarmView, saveFarmView } from '../../lib/farm/farm-view-storage';
+import { settledBoard, type FarmSettledBoard } from '../../lib/farm/farm-snapshot-store';
+import { freshProposal, reRankActive, type FarmRespecState } from '../../lib/farm/farm-respec-store';
 import { useFarmSnapshot } from '../../lib/farm/use-farm-snapshot';
+import { useFarmTableHeight } from '../../lib/farm/use-farm-table-height';
 import { farmScreenCopy, useFarmCopy } from './farm-copy';
 
 const DEFAULT_PHASE = 1;
 
-/**
- * The desktop offers no respec advisor: it has no build editor to spend the proposal in, and the
- * toolbar renders nothing at all unless the gate surfaces. A gate that never surfaces is the
- * honest way to say so — the alternative is an Optimize button that does nothing when pressed.
- */
-const NO_RESPEC: FarmRespecBoardData = Object.freeze({
-  gate: Object.freeze({ result: null, reason: null, shouldSurface: false }),
-  view: null,
-  status: 'idle',
-  panelOpen: false,
-});
-
-/** Unreachable while {@link NO_RESPEC} never surfaces, and typed rather than left undefined so
- *  that stays a fact about this screen instead of a crash if it ever changes. */
-function ignore(): void {}
-
 export function FarmView() {
   const t = useCopy();
   const account = useAccountView();
-  const { state, stale, hasAccount, open, refresh, setControls } = useFarmSnapshot();
+  const {
+    state,
+    respec,
+    stale,
+    hasAccount,
+    open,
+    refresh,
+    setControls,
+    setRespecPanelOpen,
+    setRespecReRank,
+    runRespec,
+    proposedRows,
+  } = useFarmSnapshot();
 
   const [controls, setLocalControls] = useState<FarmControls>(DEFAULT_FARM_CONTROLS);
   const [phase, setPhase] = useState(DEFAULT_PHASE);
@@ -158,6 +161,10 @@ export function FarmView() {
       setFarmHeroEnabled,
       setFarmReturnBonus,
       onSelectHero,
+      setRespecPanelOpen,
+      setRespecReRank,
+      runRespec,
+      proposedRows,
     }),
     [
       setPhasesViewPhase,
@@ -165,8 +172,15 @@ export function FarmView() {
       setFarmHeroEnabled,
       setFarmReturnBonus,
       onSelectHero,
+      setRespecPanelOpen,
+      setRespecReRank,
+      runRespec,
+      proposedRows,
     ],
   );
+
+  const tableScrollportHeightPx = useFarmTableHeight();
+  const settled = useMemo(() => settledBoard(state), [state]);
 
   if (account.status === 'bridge-unavailable') {
     return (
@@ -196,14 +210,6 @@ export function FarmView() {
     );
   }
 
-  if (state.status === 'idle' || state.status === 'computing') {
-    return (
-      <div data-testid="farm-view">
-        <EmptyState title={t.shellLoadingLabel} />
-      </div>
-    );
-  }
-
   if (state.status === 'unavailable') {
     return (
       <div data-testid="farm-view">
@@ -212,8 +218,24 @@ export function FarmView() {
     );
   }
 
+  // Only the FIRST compute has nothing to show. Every later one keeps the board it already has
+  // on screen and marks it busy below: unmounting the board would take the filters and the
+  // column sort down with it, and toggling one hero in the rotation pool would silently reset
+  // both.
+  if (settled === null) {
+    return (
+      <div data-testid="farm-view">
+        <EmptyState title={t.shellLoadingLabel} />
+      </div>
+    );
+  }
+
   return (
-    <div data-testid="farm-view" className={colClass}>
+    <div
+      data-testid="farm-view"
+      className={colClass}
+      aria-busy={state.status === 'computing'}
+    >
       {stale ? (
         <Banner tone="warn" title={t.farmStaleTitle}>
           <span className="flex flex-wrap items-center gap-3">
@@ -225,8 +247,9 @@ export function FarmView() {
         </Banner>
       ) : null}
       <FarmScreen
-        snapshot={{ board: state.board, inputs: state.inputs }}
-        view={{ phase, phaseChosen, activeHeroId }}
+        snapshot={settled}
+        view={{ phase, phaseChosen, activeHeroId, tableScrollportHeightPx }}
+        respec={respec}
         actions={screenActions}
       />
     </div>
@@ -239,6 +262,10 @@ type FarmScreenActions = {
   setFarmHeroEnabled: (heroId: string, enabled: boolean) => void;
   setFarmReturnBonus: (mode: ReturnBonusMode) => void;
   onSelectHero: (hero: HeroRecord) => void;
+  setRespecPanelOpen: (open: boolean) => void;
+  setRespecReRank: (active: boolean) => void;
+  runRespec: () => void;
+  proposedRows: (inputs: FarmInputs, proposedSquad: SquadFarmFacts) => FarmRankingResult;
 };
 
 /**
@@ -249,16 +276,23 @@ type FarmScreenActions = {
 function FarmScreen({
   snapshot,
   view,
+  respec,
   actions,
 }: {
-  snapshot: { board: FarmRankingResult; inputs: FarmInputs };
-  view: { phase: number; phaseChosen: boolean; activeHeroId: string | null };
+  snapshot: FarmSettledBoard;
+  view: {
+    phase: number;
+    phaseChosen: boolean;
+    activeHeroId: string | null;
+    tableScrollportHeightPx: number;
+  };
+  respec: FarmRespecState;
   actions: FarmScreenActions;
 }) {
   const t = useCopy();
   const { lang } = useLocale();
   const farmCopy = useFarmCopy();
-  const { board, inputs } = snapshot;
+  const { board, inputs, gate } = snapshot;
 
   const screenCopy = useMemo(() => farmScreenCopy(farmCopy, t), [farmCopy, t]);
 
@@ -282,10 +316,23 @@ function FarmScreen({
 
   const account = useMemo(() => buildAccount(inputs), [inputs]);
 
+  // Both read the proposal through the same freshness derivation, so the table can never be
+  // captioned as showing a build the panel is no longer allowed to describe.
+  const proposal = useMemo(() => freshProposal(respec, inputs), [respec, inputs]);
+  const reRanking = reRankActive(respec, inputs);
+
+  // Only computed on the re-ranked branch, and memoized inside the store, so leaving the toggle
+  // on costs one table rather than one per render.
+  const rows = useMemo(
+    () =>
+      proposal && reRanking ? actions.proposedRows(inputs, proposal.result.proposedSquad) : board,
+    [proposal, reRanking, actions, inputs, board],
+  );
+
   const boardData = useMemo<FarmRankingBoardData>(
     () => ({
-      result: board,
-      reRankActive: false,
+      result: rows,
+      reRankActive: reRanking,
       heroes,
       poolEntries,
       returnBonus: inputs.farmReturnBonus,
@@ -294,9 +341,24 @@ function FarmScreen({
       currentPhase: view.phase,
       phasesViewPhaseChosen: view.phaseChosen,
       statLabels,
-      respec: NO_RESPEC,
+      respec: { gate, view: proposal, status: respec.status, panelOpen: respec.panelOpen },
+      tableScrollportHeightPx: view.tableScrollportHeightPx,
     }),
-    [board, heroes, inputs, poolEntries, view.phase, view.phaseChosen, statLabels],
+    [
+      rows,
+      reRanking,
+      heroes,
+      inputs,
+      poolEntries,
+      view.phase,
+      view.phaseChosen,
+      view.tableScrollportHeightPx,
+      statLabels,
+      gate,
+      proposal,
+      respec.status,
+      respec.panelOpen,
+    ],
   );
 
   const boardActions = useMemo<FarmRankingBoardActions>(
@@ -305,9 +367,9 @@ function FarmScreen({
       syncDefaultPhaseSelection: actions.syncDefaultPhaseSelection,
       setFarmHeroEnabled: actions.setFarmHeroEnabled,
       setFarmReturnBonus: actions.setFarmReturnBonus,
-      setFarmRespecPanelOpen: ignore,
-      setFarmRespecReRank: ignore,
-      runFarmRespec: ignore,
+      setFarmRespecPanelOpen: actions.setRespecPanelOpen,
+      setFarmRespecReRank: actions.setRespecReRank,
+      runFarmRespec: actions.runRespec,
     }),
     [actions],
   );
@@ -331,10 +393,41 @@ function FarmScreen({
     [actions],
   );
 
+  /**
+   * The picker with no enable/disable switch in it. `onSetBattleAllowed` is what draws that
+   * column, and this app has no roster of its own to persist it to — so the column is absent
+   * rather than present and inert, and what is left is a way to choose which hero to look at.
+   */
+  const explorerSlots = useMemo(
+    () => ({
+      renderPicker: (picker: HeroPickerSlotProps) => (
+        <HeroPickerDialogView
+          open={picker.open}
+          onOpenChange={picker.onOpenChange}
+          lang={lang}
+          t={screenCopy}
+          data={{
+            heroes: picker.heroes,
+            heroId: picker.heroId,
+            formatNumber: picker.formatNumber,
+          }}
+          actions={{ onSelectHero: picker.onSelectHero }}
+        />
+      ),
+    }),
+    [lang, screenCopy],
+  );
+
   return (
     <>
       <FarmRankingBoardView t={farmCopy} lang={lang} data={boardData} actions={boardActions} />
-      <PhasesExplorerView t={screenCopy} lang={lang} data={explorerData} actions={explorerActions} />
+      <PhasesExplorerView
+        t={screenCopy}
+        lang={lang}
+        data={explorerData}
+        actions={explorerActions}
+        slots={explorerSlots}
+      />
     </>
   );
 }

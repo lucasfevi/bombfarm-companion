@@ -163,4 +163,26 @@ test.describe('core client flow', () => {
     const gearCell = picker.locator('tbody tr').first().locator('td[data-roster-wrap]').first();
     await expect(gearCell.getByRole('button')).toHaveCount(8);
   });
+
+  /**
+   * The picker's enable/disable column is drawn only for a host that supplies the write, and this
+   * planner is that host. Asserted here rather than left to the source scan: the column can now
+   * be absent by design, so "the picker opens" no longer implies the switch is in it.
+   */
+  test('hero picker carries the planner enable/disable switch, one per row', async ({ page }) => {
+    await page.goto('/');
+    await importSampleSave(page);
+
+    const heroStrip = page.getByRole('region', { name: /herói atual/i });
+    await heroStrip.getByRole('button', { name: /trocar herói/i }).click();
+    const picker = page.getByRole('dialog', { name: /trocar herói/i });
+    await expect(picker).toBeVisible();
+    await expect(picker.getByRole('columnheader', { name: /^Status$/i })).toBeVisible();
+
+    const rows = await picker.locator('tbody tr').count();
+    expect(rows).toBeGreaterThan(0);
+    await expect(
+      picker.getByRole('switch', { name: /ativar ou desativar este herói/i }),
+    ).toHaveCount(rows);
+  });
 });

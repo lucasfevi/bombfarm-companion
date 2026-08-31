@@ -20,8 +20,13 @@ export type HeroPickerData = {
 
 export type HeroPickerActions = {
   onSelectHero: (hero: HeroRecord) => void;
-  /** Persisting a hero's planner enable/disable is the host's write, not the picker's. */
-  onSetBattleAllowed: (heroId: string, enabled: boolean) => void;
+  /**
+   * Persisting a hero's planner enable/disable is the host's write, not the picker's — so a host
+   * that has nowhere to persist it omits this, and the Status column disappears with it: no
+   * header, no cell, no disabled switch standing in for a control that was never wired. The
+   * picker is then what is left, which is a way to choose which hero to look at.
+   */
+  onSetBattleAllowed?: (heroId: string, enabled: boolean) => void;
 };
 
 type Props = {

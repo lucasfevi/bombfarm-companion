@@ -50,7 +50,9 @@ export const HeroPickerRow = memo(function HeroPickerRow({
   formatNumber: (n: number, d?: number) => string;
   powerShown: number;
   onPick: (hero: HeroRecord) => void;
-  onSetBattleAllowed: (heroId: string, enabled: boolean) => void;
+  /** Absent on a host with no roster to write — the Status cell then does not exist, so the
+   *  row's cell count still matches the head's (which drops its header on the same condition). */
+  onSetBattleAllowed?: (heroId: string, enabled: boolean) => void;
 }) {
   const rarIdx = RARITIES.indexOf(hero.rarity);
   const battleAllowed = hero.battleAllowed ?? true;
@@ -129,17 +131,19 @@ export const HeroPickerRow = memo(function HeroPickerRow({
       <DataTable.Cell className={cn('max-[960px]:hidden py-2', inactiveChrome)} nowrap={false} data-roster-wrap>
         <HeroAbilityIcons abilities={hero.abilities} lang={lang} />
       </DataTable.Cell>
-      <DataTable.Cell className="max-[720px]:hidden">
-        {hero.sourceId ? (
-          <HeroActiveToggle
-            battleAllowed={battleAllowed}
-            t={t}
-            onCheckedChange={(checked) => onSetBattleAllowed(hero.id, checked)}
-          />
-        ) : (
-          <span className="text-muted">—</span>
-        )}
-      </DataTable.Cell>
+      {onSetBattleAllowed ? (
+        <DataTable.Cell className="max-[720px]:hidden">
+          {hero.sourceId ? (
+            <HeroActiveToggle
+              battleAllowed={battleAllowed}
+              t={t}
+              onCheckedChange={(checked) => onSetBattleAllowed(hero.id, checked)}
+            />
+          ) : (
+            <span className="text-muted">—</span>
+          )}
+        </DataTable.Cell>
+      ) : null}
     </DataTable.Row>
   );
 });

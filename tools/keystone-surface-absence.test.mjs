@@ -177,7 +177,7 @@ const CRIT_DMG_MULT_MAP = {
   // The desktop farm adapter's own account fixtures, same kind as the account-view entry above:
   // a raw save-shaped skills block, not a field the app reads.
   'apps/desktop/renderer/lib/farm/farm-inputs.test.ts': [38, 150],
-  'apps/desktop/renderer/lib/farm/use-farm-snapshot.test.ts': [44],
+  'apps/desktop/renderer/lib/farm/use-farm-snapshot.test.ts': [45],
   'apps/desktop/src/main/storage/account-store-restore.test.ts': [507, 540, 558, 591],
   'apps/desktop/src/main/storage/stale-sections.test.ts': [66, 81, 84, 88, 98, 105, 111, 123, 128, 164, 224],
   'apps/desktop/src/main/storage/stale-sections.ts': [11],

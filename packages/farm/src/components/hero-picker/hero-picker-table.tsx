@@ -28,7 +28,7 @@ export function HeroPickerTable({
   t: FarmRosterCopy;
   formatNumber: (n: number, d?: number) => string;
   onPick: (h: HeroRecord) => void;
-  onSetBattleAllowed: (heroId: string, enabled: boolean) => void;
+  onSetBattleAllowed?: (heroId: string, enabled: boolean) => void;
 }) {
   const [sortKey, setSortKey] = useState<RosterSortKey>('power');
   const [sortDir, setSortDir] = useState<RosterSortDir>('desc');
@@ -117,7 +117,9 @@ export function HeroPickerTable({
               <DataTable.Header className="min-w-44 max-[960px]:hidden">
                 {t.rosterColAbilities}
               </DataTable.Header>
-              <DataTable.Header className="max-[720px]:hidden">{t.rosterColStatus}</DataTable.Header>
+              {onSetBattleAllowed ? (
+                <DataTable.Header className="max-[720px]:hidden">{t.rosterColStatus}</DataTable.Header>
+              ) : null}
             </DataTable.Row>
           </DataTable.Head>
           <DataTable.Body>
