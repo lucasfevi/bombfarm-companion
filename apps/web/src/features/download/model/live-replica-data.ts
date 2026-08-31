@@ -57,6 +57,19 @@ export interface ReplicaFrame {
     readonly elapsed: string;
     readonly xpSession: number;
     readonly xpSessionTotal: number;
+    /** The rolling gold-rate window the trend line draws, oldest sample first. */
+    readonly goldSeries: readonly number[];
+    readonly seriesMinutes: number;
+  };
+  /**
+   * Counted from what dropped, as against the map card's estimates. `goldPerPropDelta` is the
+   * signed deviation from the map's own estimate, so the two cards agree the way the app's do.
+   */
+  readonly measured: {
+    readonly goldPerProp: number;
+    readonly goldPerPropDeltaPercent: number;
+    readonly propsPerMinute: number;
+    readonly propsSession: number;
   };
   readonly map: {
     /** The phase itself — the card names it with the domain's own helpers, as the desktop does. */
@@ -89,6 +102,20 @@ const BASE_XP_TOTAL = 287_000;
 const GOLD_PER_CLEAR = 1_840_000;
 const XP_PER_PROP = 41;
 const GOLD_PER_PROP = 173;
+const MEASURED_GOLD_PER_PROP = 168;
+const MEASURED_PROPS_PER_MINUTE = 41;
+const BASE_PROPS_SESSION = 8_940;
+const SERIES_MINUTES = 10;
+const SERIES_POINTS = 24;
+
+/**
+ * A gold-rate window that wanders the way a real one does — fixed, because the drawing has to be
+ * the same on the server and after hydration, and `Math.random()` would make it neither.
+ */
+const GOLD_SERIES_BASE: readonly number[] = [
+  318, 331, 342, 336, 351, 364, 358, 372, 381, 375, 389, 396, 384, 371, 366, 379, 392, 401, 394,
+  386, 377, 368, 359, 364, 373, 385, 397, 405, 398, 388, 376, 369, 361, 355, 367, 380, 391, 399,
+];
 
 /** At least a point a second, so the bar visibly empties inside one pass of the loop. */
 const HEALTH_DROP_PER_SECOND = 1.2;
@@ -147,6 +174,18 @@ export function replicaFrameAt(elapsedSeconds: number): ReplicaFrame {
       elapsed: formatElapsed(BASE_SESSION_SECONDS + whole),
       xpSession: 86_100,
       xpSessionTotal: BASE_XP_TOTAL + xpEarned,
+      goldSeries: Array.from(
+        { length: SERIES_POINTS },
+        (_unused, index) => GOLD_SERIES_BASE[(whole + index) % GOLD_SERIES_BASE.length] * 1000,
+      ),
+      seriesMinutes: SERIES_MINUTES,
+    },
+    measured: {
+      goldPerProp: MEASURED_GOLD_PER_PROP,
+      goldPerPropDeltaPercent:
+        Math.round(((MEASURED_GOLD_PER_PROP - GOLD_PER_PROP) / GOLD_PER_PROP) * 1000) / 10,
+      propsPerMinute: MEASURED_PROPS_PER_MINUTE,
+      propsSession: BASE_PROPS_SESSION + propsDestroyed,
     },
     map: {
       phase: REPLICA_PHASE,

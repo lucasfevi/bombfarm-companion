@@ -35,7 +35,7 @@ export function LiveReplica({ lang }: { lang: Lang }) {
         <ReplicaChrome lang={lang} />
         <div className="flex flex-col gap-3 p-3 sm:p-4">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <EarningsCard lang={lang} earnings={frame.earnings} />
+            <EarningsCard lang={lang} earnings={frame.earnings} measured={frame.measured} />
             <MapCard lang={lang} map={frame.map} />
           </div>
           <HeroesCard lang={lang} summary={frame.summary} heroes={frame.heroes} />

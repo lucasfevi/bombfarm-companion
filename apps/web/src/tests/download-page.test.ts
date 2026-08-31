@@ -45,7 +45,12 @@ describe('Live replica', () => {
   for (const lang of LANGS) {
     it(`prints every mirrored desktop label in ${lang}`, () => {
       const markup = renderToStaticMarkup(createElement(LiveReplica, { lang }));
-      const missing = MIRRORED_KEYS.filter((key) => !markup.includes(liveLabel(key, lang)));
+      // A templated label reaches the page with its placeholders filled, so match the literal
+      // run before the first one — still enough to fail on a reworded or missing label.
+      const literalPrefix = (text: string) => text.split('{')[0].trim();
+      const missing = MIRRORED_KEYS.filter(
+        (key) => !markup.includes(literalPrefix(liveLabel(key, lang))),
+      );
       expect(missing).toEqual([]);
     });
   }
@@ -61,6 +66,27 @@ describe('Live replica', () => {
   it('is hidden from assistive technology — the numbers in it are samples', () => {
     const markup = renderToStaticMarkup(createElement(LiveReplica, { lang: 'en' }));
     expect(markup).toContain('aria-hidden="true"');
+  });
+
+  /**
+   * The desktop's earnings panel gained a trend line and three measured figures while this page
+   * was in review. The label mirror caught nothing — the new labels were simply absent here — so
+   * this asserts the replica draws the panel the app actually has now.
+   */
+  it('draws the trend line and the measured figures the earnings panel carries', () => {
+    const markup = renderToStaticMarkup(createElement(LiveReplica, { lang: 'en' }));
+    expect(markup).toContain('<polyline');
+    expect(markup).toContain(liveLabel('liveEarningsMeasuredNote', 'en'));
+    expect(markup).toContain(liveLabel('liveEarningsPropsPerMinuteLabel', 'en'));
+    expect(markup).toContain(liveLabel('liveEarningsGoldPerPropLabel', 'en'));
+  });
+
+  it('reads the measured gold per prop against the map card own estimate', () => {
+    const frame = replicaFrameAt(0);
+    const expected =
+      Math.round(((frame.measured.goldPerProp - frame.map.goldPerProp) / frame.map.goldPerProp) * 1000) / 10;
+    expect(frame.measured.goldPerPropDeltaPercent).toBe(expected);
+    expect(frame.measured.goldPerProp).toBeLessThan(frame.map.goldPerProp);
   });
 
   it('shows the roster it was drawn from, with an avatar each', () => {
