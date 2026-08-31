@@ -8,16 +8,14 @@ import type { Strings, Lang } from '@/shared/i18n';
 import { AppNav, Button, SegmentedToggle, Tooltip, buttonRecipe } from '@bombfarm/ui';
 import { REFERRAL_CODE } from '@/shared/referral';
 import { useReferralCopy } from './use-referral-copy';
+import {
+  NAV_SECTIONS,
+  SITE_SECTION_HREF,
+  SITE_SECTION_LABEL_KEY,
+  isSiteSectionActive,
+  type SiteSection,
+} from '@/shared/lib/site-sections';
 
-export type SiteSection = 'planner' | 'farm' | 'teamPlan' | 'inventory' | 'account';
-
-const NAV_HREF: Record<SiteSection, string> = {
-  planner: '/',
-  farm: '/farm',
-  teamPlan: '/team-plan',
-  inventory: '/inventory',
-  account: '/account',
-};
 
 export function SiteHeader({
   t,
@@ -36,11 +34,6 @@ export function SiteHeader({
 }) {
   const pathname = usePathname();
   const { codeRef, copy: copyReferral } = useReferralCopy(t);
-  const plannerActive = pathname === '/';
-  const farmActive = pathname.startsWith('/farm');
-  const teamPlanActive = pathname.startsWith('/team-plan');
-  const inventoryActive = pathname.startsWith('/inventory');
-  const accountActive = pathname.startsWith('/account');
 
   return (
     <header className="sticky top-0 z-30 min-h-top border-b border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-4 py-2.5 backdrop-blur-[14px]">
@@ -62,17 +55,15 @@ export function SiteHeader({
           </Link>
           <AppNav
             ariaLabel={t.siteNavAria}
-            items={[
-              { id: 'planner', label: t.navPlanner, active: plannerActive },
-              { id: 'farm', label: t.navPhases, active: farmActive },
-              { id: 'teamPlan', label: t.navTeamPlan, active: teamPlanActive },
-              { id: 'inventory', label: t.navInventory, active: inventoryActive },
-              { id: 'account', label: t.navAccount, active: accountActive },
-            ]}
+            items={NAV_SECTIONS.map((section) => ({
+              id: section,
+              label: t[SITE_SECTION_LABEL_KEY[section]],
+              active: isSiteSectionActive(section, pathname),
+            }))}
             renderItem={(item, className) => (
               <Link
                 key={item.id}
-                href={NAV_HREF[item.id as SiteSection]}
+                href={SITE_SECTION_HREF[item.id as SiteSection]}
                 aria-current={item.active ? 'page' : undefined}
                 className={className}
               >
@@ -82,6 +73,14 @@ export function SiteHeader({
           />
         </div>
         <div className="flex flex-nowrap items-center justify-end gap-1.5 max-[720px]:flex-wrap max-[720px]:justify-start">
+          <Link
+            href={SITE_SECTION_HREF.download}
+            aria-current={isSiteSectionActive('download', pathname) ? 'page' : undefined}
+            className={buttonRecipe({ variant: 'primary' })}
+            data-testid="header-download-cta"
+          >
+            {t.downloadHeaderCta}
+          </Link>
           {onImport ? (
             <Button type="button" onClick={onImport}>
               {t.importHeroesBtn}

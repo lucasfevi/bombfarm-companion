@@ -9,6 +9,10 @@ This repository contains **application code only**. Do not invent planning/spec 
 | Shared (desktop + web + packages) | [`docs/README.md`](docs/README.md) |
 | Web planner only | [`apps/web/docs/README.md`](apps/web/docs/README.md) |
 
+**The desktop Live screen is drawn a second time on the web download page.** Change one and you
+change the other, in the same PR — see [`apps/desktop/AGENTS.md`](apps/desktop/AGENTS.md) and
+[`apps/web/AGENTS.md`](apps/web/AGENTS.md).
+
 ## Stack
 
 - **pnpm** monorepo (`apps/desktop`, `apps/web`, `packages/*`)
