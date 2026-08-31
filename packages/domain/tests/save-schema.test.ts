@@ -222,6 +222,21 @@ describe('checkSchema — the declared-path engine', () => {
     const result = checkSchema({ heroes }, fingerprint('root', level));
     expect(result).toEqual({ ok: false, missingKeys: [], addedKeys: ['root.heroes[2].extra_field'] });
   });
+
+  it('a mixed array where only some records carry `soulbound` is ok:true on both sections — the flag is neither added nor missing', () => {
+    const level: SchemaLevel = {
+      keys: ['heroes', 'items'],
+      children: {
+        heroes: { kind: 'array', element: SCHEMA_LEVELS.hero },
+        items: { kind: 'array', element: SCHEMA_LEVELS.item },
+      },
+    };
+    const body = {
+      heroes: [validHero({ soulbound: true }), validHero()],
+      items: [validItem({ soulbound: true }), validItem()],
+    };
+    expect(checkSchema(body, fingerprint('root', level))).toEqual({ ok: true });
+  });
 });
 
 describe('assertNonEmptyCorpusArray — anti-vacuity #1', () => {
@@ -295,9 +310,15 @@ describe('SCHEMA_LEVELS — the shared catalogue (design §2.3), key sets writte
     expect(SCHEMA_LEVELS.hero.children).toBeUndefined();
   });
 
-  it('item: the measured 17-key set with the enumerated optional escape `slot` (27/3 API split, 17/5 export split)', () => {
+  it('hero: `soulbound` is an optional escape, never a required key — the game emits it only on bound heroes', () => {
+    expect(SCHEMA_LEVELS.hero.optional).toEqual(['soulbound']);
+    expect(SCHEMA_LEVELS.hero.keys).not.toContain('soulbound');
+  });
+
+  it('item: the measured 17-key set with the enumerated optional escapes `slot` and `soulbound` (27/3 API split, 17/5 export split)', () => {
     expect(SCHEMA_LEVELS.item.keys).toHaveLength(17);
-    expect(SCHEMA_LEVELS.item.optional).toEqual(['slot']);
+    expect(SCHEMA_LEVELS.item.optional).toEqual(['slot', 'soulbound']);
+    expect(SCHEMA_LEVELS.item.keys).not.toContain('soulbound');
   });
 
   it('casa: the measured 7-key set with 4 value-list children (house-indexed arrays)', () => {

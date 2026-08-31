@@ -96,7 +96,16 @@ const EXPECTED_CORPUS_FILES = [
   'save-20260819-respec-crit-cdr.json',
   'save-20260822-15heroes-tree-crit-dmg.json',
   'save-20260823-13heroes-crit-points.json',
+  'save-20260831-13heroes-soulbound.json',
 ] as const;
+
+/**
+ * The one capture taken after the game began emitting `soulbound`. Named rather than discovered
+ * because the witness below asserts BOTH sides of that escape, and every earlier capture predates
+ * the field entirely — searching the corpus for "whatever happens to carry it" would go quietly
+ * vacuous the moment this file were renamed.
+ */
+const SOULBOUND_WITNESS_FILE = 'save-20260831-13heroes-soulbound.json';
 
 /**
  * RED-state mutation tests exercise `checkSchema`'s discriminating behaviour — missing/added key
@@ -178,6 +187,42 @@ describe('EXPORT_FINGERPRINT — corpus check', () => {
       'slot',
       'save.items[].slot',
     );
+  });
+
+  it('non-vacuity: soulbound is witnessed both ways on items AND on heroes', () => {
+    if (!corpus) return;
+    const witness = corpus.find((member) => member.file === SOULBOUND_WITNESS_FILE);
+    expect(witness, `the soulbound witness capture ${SOULBOUND_WITNESS_FILE} is no longer discovered`).toBeDefined();
+    if (!witness) return;
+    assertOptionalKeyWitnessedBothWays(
+      witness.body.items as Record<string, unknown>[],
+      'soulbound',
+      'save.items[].soulbound',
+    );
+    assertOptionalKeyWitnessedBothWays(
+      witness.body.heroes as Record<string, unknown>[],
+      'soulbound',
+      'save.heroes[].soulbound',
+    );
+  });
+
+  it('soulbound never appears without the untradable flag that actually withholds a market price', () => {
+    if (!corpus) return;
+    const bound = <T extends { soulbound?: unknown }>(rows: readonly T[]) => rows.filter((row) => row.soulbound === true);
+    let itemsSeen = 0;
+    let heroesSeen = 0;
+    for (const { file, body } of corpus) {
+      for (const item of bound(body.items as { soulbound?: unknown; tradable?: unknown; id?: unknown }[])) {
+        expect(item.tradable, `${file}: soulbound item ${String(item.id)} is tradable`).toBe(false);
+        itemsSeen += 1;
+      }
+      for (const hero of bound(body.heroes as { soulbound?: unknown; marketable?: unknown; id?: unknown }[])) {
+        expect(hero.marketable, `${file}: soulbound hero ${String(hero.id)} is marketable`).toBe(false);
+        heroesSeen += 1;
+      }
+    }
+    expect(itemsSeen, 'no soulbound item in the corpus — this check passed vacuously').toBeGreaterThan(0);
+    expect(heroesSeen, 'no soulbound hero in the corpus — this check passed vacuously').toBeGreaterThan(0);
   });
 
   describe('three named red states — one mutation of the representative export each', () => {
