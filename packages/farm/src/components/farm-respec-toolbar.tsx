@@ -1,25 +1,35 @@
 'use client';
 
-import type { Lang } from '@/shared/i18n';
-
 import { Button } from '@bombfarm/ui';
-import type { Strings } from '@/shared/i18n';
-import { selectFarmRespecGate, usePlannerStore } from '@/shared/stores';
+import type { FarmCopy, Lang } from '../copy';
+import type { FarmRespecGate } from '../core';
+import type { FarmRespecStatus } from '../model/farm-respec-view';
 import { FarmRespecHeadline } from './farm-respec-headline';
+
+export type FarmRespecToolbarData = {
+  gate: FarmRespecGate;
+  status: FarmRespecStatus;
+  panelOpen: boolean;
+};
 
 /**
  * The settled toolbar row: the Optimize `Button` plus the headline slot. Lives inside the
  * ranking board, above the column headers and below the rotation pool / filters block. Renders
- * NOTHING unless the Tier 1 gate has something to say — no reserved empty band; the board is
- * visually unchanged from today until then. `usePlannerStore(selectFarmRespecGate)` is used
- * WITHOUT `useShallow` — the selector returns a stable identity on a cache hit, and the board's
- * own row selector already relies on that same contract.
+ * NOTHING unless the first-tier gate has something to say — no reserved empty band; the board is
+ * visually unchanged until then.
  */
-export function FarmRespecToolbar({ t, lang }: { t: Strings; lang: Lang }) {
-  const gate = usePlannerStore(selectFarmRespecGate);
-  const status = usePlannerStore((state) => state.farmRespecStatus);
-  const panelOpen = usePlannerStore((state) => state.farmRespecPanelOpen);
-  const runFarmRespec = usePlannerStore((state) => state.runFarmRespec);
+export function FarmRespecToolbar({
+  t,
+  lang,
+  data,
+  onOptimize,
+}: {
+  t: FarmCopy;
+  lang: Lang;
+  data: FarmRespecToolbarData;
+  onOptimize: () => void;
+}) {
+  const { gate, status, panelOpen } = data;
 
   // Below the gain threshold (or no-roster / no-heroes-enabled), nothing renders — no reserved
   // empty band. The only visibility input read here is the gate's own shouldSurface flag, which
@@ -45,7 +55,7 @@ export function FarmRespecToolbar({ t, lang }: { t: Strings; lang: Lang }) {
         // Reserved to the longer of the idle/busy labels in both languages
         // ("Calculating…" / "Calculando…") so the busy transition never reflows the row.
         className="min-w-32"
-        onClick={runFarmRespec}
+        onClick={onOptimize}
       >
         {busy ? t.farmRespecOptimizeBusy : t.farmRespecOptimize}
       </Button>

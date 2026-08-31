@@ -2,9 +2,9 @@
 
 import { HelpTip, Select, Switch } from '@bombfarm/ui';
 import { gameDifficultyLabel, ITEM_LEVEL_TIERS } from '@bombfarm/domain/phase-wiki';
-import { sub } from '@/shared/i18n';
-import type { Lang, Strings } from '@/shared/i18n';
-import type { FarmFilters, GateFilter } from '@bombfarm/farm/model/farm-ranking-view';
+import { sub } from '../copy';
+import type { FarmCopy, Lang } from '../copy';
+import type { FarmFilters, GateFilter } from '../model/farm-ranking-view';
 
 type Props = {
   filters: FarmFilters;
@@ -12,7 +12,7 @@ type Props = {
   /** `false` when `maxPhase` is `null` — the unlocked-only control is non-applicable. */
   maxPhaseKnown: boolean;
   lang: Lang;
-  t: Strings;
+  t: FarmCopy;
 };
 
 export const farmFieldClass = 'flex flex-col gap-[3px]';

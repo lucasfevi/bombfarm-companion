@@ -1,16 +1,11 @@
 'use client';
 
-import type { Lang } from '@/shared/i18n';
-
 import type { FarmRespecResult } from '@bombfarm/domain/farm-optimize';
-import { sub, type Strings } from '@/shared/i18n';
-import {
-  resolveFrontierEntries,
-  resolveFrontierHeroNames,
-} from '@bombfarm/farm/model/farm-respec-view';
-import { formatGainPct, formatGold, formatHours } from '@bombfarm/farm/model/farm-respec-format';
+import { sub, type FarmCopy, type Lang } from '../copy';
+import { resolveFrontierEntries, resolveFrontierHeroNames } from '../model/farm-respec-view';
+import { formatGainPct, formatGold, formatHours } from '../model/farm-respec-format';
 
-function heroCountLabel(strings: Strings, heroCount: number): string {
+function heroCountLabel(strings: FarmCopy, heroCount: number): string {
   return heroCount === 1
     ? strings.farmRespecFrontierHeroCountOne
     : strings.farmRespecFrontierHeroCountTwo;
@@ -21,7 +16,7 @@ function heroCountLabel(strings: Strings, heroCount: number): string {
  * order (item A guarantees the ordering; this file never sorts, filters or reverses it). Omitted
  * entirely when empty (a single searchable hero) rather than rendered as an empty list.
  */
-export function FarmRespecFrontier({ t, lang, result }: { t: Strings; lang: Lang; result: FarmRespecResult }) {
+export function FarmRespecFrontier({ t, lang, result }: { t: FarmCopy; lang: Lang; result: FarmRespecResult }) {
   const entries = resolveFrontierEntries(result);
   if (entries == null) return null;
 

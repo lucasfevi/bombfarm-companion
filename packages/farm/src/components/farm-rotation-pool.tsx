@@ -1,17 +1,17 @@
 'use client';
 
-import { sub, type Lang, type Strings } from '@/shared/i18n';
 import { Switch, cn } from '@bombfarm/ui';
-import { HeroIdentityChip, rosterInactiveChromeClass } from '@/shared/game-art';
-import type { HeroRecord } from '@/shared/lib/storage';
-import type { FarmPoolEntry } from '@/shared/stores';
+import { HeroIdentityChip, rosterInactiveChromeClass } from '@bombfarm/game-art';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import { sub, type FarmCopy, type Lang } from '../copy';
+import type { FarmPoolEntry } from '../core';
 
 type Props = {
   entries: FarmPoolEntry[];
   heroes: readonly HeroRecord[];
   onToggle: (heroId: string, enabled: boolean) => void;
   lang: Lang;
-  t: Strings;
+  t: FarmCopy;
 };
 
 /**

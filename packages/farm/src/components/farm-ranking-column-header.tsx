@@ -1,7 +1,7 @@
 'use client';
 
 import { Tooltip } from '@bombfarm/ui';
-import { DropIcon, GoldIcon } from '@/shared/game-art';
+import { DropIcon, GoldIcon } from '@bombfarm/game-art';
 
 /** Fixed Inferno/mythic band for every header icon — a column header covers every phase at once,
  *  and Inferno's art is the sharpest version of each sprite. */

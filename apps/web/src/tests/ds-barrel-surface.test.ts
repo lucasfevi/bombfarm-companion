@@ -34,6 +34,10 @@ import * as GameArt from '@bombfarm/game-art';
 // Sparkline (2026-08-30): a trend line over a series of readings, sized by its container and
 // toned by `currentColor`. Added for the Live tab's 10-minute gold trend; the planner's own
 // history views are the obvious second caller.
+// statListMutedRowClass (2026-08-31): promoted from the `panel-field.recipe` subpath, beside the
+// other class constants already here. This package's `exports` map resolves a subpath to an
+// extensionless source path, which an app's tsconfig `paths` completes but another package's own
+// `tsc` cannot — so a shared component outside apps/web could not import it deeply.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -124,6 +128,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'selectFieldRecipe',
   'setupBannerRecipe',
   'sortableTableHeaderButtonClass',
+  'statListMutedRowClass',
   'stickyHeadClass',
   'switchRootRecipe',
   'toastQueueReducer',

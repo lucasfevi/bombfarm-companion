@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { Banner, EmptyState, Panel } from '@bombfarm/ui';
-import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
-import { sub, type Lang, type Strings } from '@/shared/i18n';
+import { useMemo } from 'react';
+import { FarmRankingBoardView } from '@bombfarm/farm/components';
+import type { Lang, Strings } from '@/shared/i18n';
 import {
   deriveFarmPoolEntries,
   selectFarmBoardRows,
   selectFarmReRankActive,
+  selectFarmRespecGate,
+  selectFarmRespecView,
   selectFarmReturnBonus,
   selectFieldSlots,
   selectHeroes,
@@ -16,32 +17,16 @@ import {
   selectPhasesViewPhaseChosen,
   usePlannerStore,
 } from '@/shared/stores';
-import {
-  applyFarmFilters,
-  DEFAULT_SORT,
-  defaultFarmFilters,
-  pickBestFarmRow,
-  pickContentionNotice,
-  sortFarmRows,
-  type FarmFilters,
-  type FarmSortDir,
-  type FarmSortKey,
-} from '@bombfarm/farm/model/farm-ranking-view';
-import { formatMitigationPct } from '@bombfarm/farm/model/farm-ranking-format';
-import { FarmRankingFilters } from './farm-ranking-filters';
-import { FarmRotationPool } from './farm-rotation-pool';
-import { FarmReturnBonus } from './farm-return-bonus';
-import { FarmRankingTable } from './farm-ranking-table';
-import { FarmRespecToolbar } from './farm-respec-toolbar';
-import { FarmRespecPanel } from './farm-respec-panel';
-import { FarmRespecRerankToggle } from './farm-respec-rerank-toggle';
 
 /**
- * The board — filters + rotation pool + return bonus + table, or one of the four
- * empty states. Sort/filter state is `useState` here (ephemeral, not
- * persisted); the pool and return bonus are store fields read via
- * `usePlannerStore(selectFarmBoardRows)` WITHOUT `useShallow` (the `selectAdvisorPipeline`
- * carve-out — shallow-comparing 600 rows on every write would defeat the memo).
+ * This app's connector for the shared board. Every store read the screen needs happens here and
+ * nowhere below: `@bombfarm/farm/components` is prop-driven so the desktop app can render the
+ * identical screen from its own state, and a second connector per component would put four
+ * subscriptions where this one already carries them.
+ *
+ * `selectFarmBoardRows`, `selectFarmRespecGate` and `selectFarmRespecView` are read WITHOUT
+ * `useShallow` — each returns a stable identity on a cache hit, and shallow-comparing 600 rows on
+ * every write would defeat the memo they exist to protect.
  */
 export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
   const result = usePlannerStore(selectFarmBoardRows);
@@ -57,142 +42,49 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
   const fieldSlots = usePlannerStore(selectFieldSlots);
   const currentPhase = usePlannerStore(selectPhasesViewPhase);
   const phasesViewPhaseChosen = usePlannerStore(selectPhasesViewPhaseChosen);
+  const respecGate = usePlannerStore(selectFarmRespecGate);
+  const respecView = usePlannerStore(selectFarmRespecView);
+  const respecStatus = usePlannerStore((state) => state.farmRespecStatus);
+  const respecPanelOpen = usePlannerStore((state) => state.farmRespecPanelOpen);
   const setPhasesViewPhase = usePlannerStore((state) => state.setPhasesViewPhase);
   const syncDefaultPhaseSelection = usePlannerStore((state) => state.syncDefaultPhaseSelection);
   const setFarmHeroEnabled = usePlannerStore((state) => state.setFarmHeroEnabled);
   const setFarmReturnBonus = usePlannerStore((state) => state.setFarmReturnBonus);
-
-  const [filters, setFilters] = useState<FarmFilters>(defaultFarmFilters);
-  const [sort, setSort] = useState<{ key: FarmSortKey; direction: FarmSortDir }>(DEFAULT_SORT);
-
-  const maxPhaseKnown = maxPhase != null;
-
-  const visibleRows = useMemo(() => {
-    const effectiveFilters = { ...filters, unlockedOnly: maxPhaseKnown && filters.unlockedOnly };
-    const filtered = applyFarmFilters(result.rows, effectiveFilters);
-    return sortFarmRows(filtered, sort.key, sort.direction);
-  }, [result.rows, filters, sort, maxPhaseKnown]);
-
-  // Read from `visibleRows` — after filtering, so a locked or filtered-out phase is never
-  // auto-selected.
-  const bestPhase = useMemo(() => pickBestFarmRow(visibleRows)?.phase ?? null, [visibleRows]);
-
-  // Nothing chosen yet (fresh load, no click, no persisted phase): point the shared phase at the
-  // current best gold/hr map instead of the store's phase-1 default. This writes the store rather
-  // than highlighting locally because `phasesViewPhase` also drives the Phases explorer below —
-  // a local-only highlight left the board claiming a row was current while seven panels beneath
-  // it described phase 1. `syncDefaultPhaseSelection` leaves the phase unchosen and unpersisted,
-  // so this re-runs against the best map on the next load and any real pick wins for good.
-  useEffect(() => {
-    if (phasesViewPhaseChosen || bestPhase == null) return;
-    syncDefaultPhaseSelection(bestPhase);
-  }, [phasesViewPhaseChosen, bestPhase, syncDefaultPhaseSelection]);
-
-  function onSort(key: FarmSortKey) {
-    setSort((previous) =>
-      previous.key === key
-        ? { key, direction: previous.direction === 'asc' ? 'desc' : 'asc' }
-        : { key, direction: 'desc' },
-    );
-  }
-
-  // The row the player is actually looking at — contention is per-row, never an aggregate.
-  const contention = useMemo(() => {
-    if (result.reason != null) return null;
-    return pickContentionNotice(
-      result.rows.find((candidate) => candidate.phase === currentPhase) ?? pickBestFarmRow(visibleRows),
-      fieldSlots,
-    );
-  }, [result.reason, result.rows, currentPhase, visibleRows, fieldSlots]);
-
-  const empty =
-    result.reason === 'no-roster'
-      ? { title: t.farmRankingEmptyNoRosterTitle, description: t.farmRankingEmptyNoRosterDesc }
-      : result.reason === 'no-heroes-enabled'
-        ? { title: t.farmRankingEmptyNoHeroesTitle, description: t.farmRankingEmptyNoHeroesDesc }
-        : result.reason == null && visibleRows.length === 0
-          ? { title: t.farmRankingEmptyNoMatchesTitle, description: t.farmRankingEmptyNoMatchesDesc }
-          : null;
+  const setFarmRespecPanelOpen = usePlannerStore((state) => state.setFarmRespecPanelOpen);
+  const setFarmRespecReRank = usePlannerStore((state) => state.setFarmRespecReRank);
+  const runFarmRespec = usePlannerStore((state) => state.runFarmRespec);
 
   return (
-    <Panel data-testid="farm-ranking">
-      <h2 className="m-0 mb-2.5 text-[13px] font-bold tracking-[0.04em] uppercase">
-        {t.farmRankingTitle}
-      </h2>
-      {result.reason !== 'no-roster' ? (
-        <div className="mb-3">
-          <FarmRotationPool
-            entries={poolEntries}
-            heroes={heroes}
-            onToggle={setFarmHeroEnabled}
-            lang={lang}
-            t={t}
-          />
-        </div>
-      ) : null}
-      {contention ? (
-        <div className="mb-3" data-testid="farm-contention-notice">
-          <Banner
-            tone="warn"
-            title={
-              contention.atMaxSlots
-                ? t.farmRankingContentionTitleMaxSlots
-                : t.farmRankingContentionTitle
-            }
-          >
-            {sub(
-              contention.atMaxSlots
-                ? t.farmRankingContentionDescMaxSlots
-                : t.farmRankingContentionDesc,
-              {
-                pct: `${formatMitigationPct(contention.pct, lang)}%`,
-                cost: `${formatMitigationPct(contention.costPct, lang)}%`,
-                slots: String(fieldSlots ?? '—'),
-                max: String(FIELD_SLOTS_MAX),
-              },
-            )}
-          </Banner>
-        </div>
-      ) : null}
-      <FarmRespecToolbar t={t} lang={lang} />
-      <FarmRespecPanel t={t} lang={lang} />
-      {result.reason !== 'no-roster' ? (
-        <div className="mb-2 flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
-          <FarmRankingFilters
-            filters={filters}
-            onChange={setFilters}
-            maxPhaseKnown={maxPhaseKnown}
-            lang={lang}
-            t={t}
-          />
-          <FarmReturnBonus value={returnBonus} onChange={setFarmReturnBonus} t={t} />
-        </div>
-      ) : null}
-      {result.reason === 'compute-failed' ? (
-        <div data-testid="farm-ranking-empty">
-          <Banner tone="warn" title={t.farmRankingEmptyComputeFailedTitle}>
-            {t.farmRankingEmptyComputeFailedDesc}
-          </Banner>
-        </div>
-      ) : empty ? (
-        <div data-testid="farm-ranking-empty">
-          <EmptyState title={empty.title} description={empty.description} />
-        </div>
-      ) : (
-        <>
-          <FarmRespecRerankToggle t={t} />
-          <FarmRankingTable
-            rows={visibleRows}
-            sort={sort}
-            onSort={onSort}
-            currentPhase={currentPhase}
-            onActivate={setPhasesViewPhase}
-            lang={lang}
-            t={t}
-            reRankActive={reRankActive}
-          />
-        </>
-      )}
-    </Panel>
+    <FarmRankingBoardView
+      t={t}
+      lang={lang}
+      data={{
+        result,
+        reRankActive,
+        heroes,
+        poolEntries,
+        returnBonus,
+        maxPhase,
+        fieldSlots,
+        currentPhase,
+        phasesViewPhaseChosen,
+        statLabels: { column: t.colStat, full: t.statFull },
+        respec: {
+          gate: respecGate,
+          view: respecView,
+          status: respecStatus,
+          panelOpen: respecPanelOpen,
+        },
+      }}
+      actions={{
+        setPhasesViewPhase,
+        syncDefaultPhaseSelection,
+        setFarmHeroEnabled,
+        setFarmReturnBonus,
+        setFarmRespecPanelOpen,
+        setFarmRespecReRank,
+        runFarmRespec,
+      }}
+    />
   );
 }

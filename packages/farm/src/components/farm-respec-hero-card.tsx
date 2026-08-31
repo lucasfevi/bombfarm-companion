@@ -2,10 +2,11 @@
 
 import type { FarmRespecHeroEntry } from '@bombfarm/domain/farm-optimize';
 import { DeltaTable, type DeltaTableRow, cn } from '@bombfarm/ui';
-import { HeroIdentityChip } from '@/shared/game-art';
-import type { Lang, Strings } from '@/shared/i18n';
-import type { HeroRecord } from '@/shared/lib/storage';
-import { buildHeroCardRows } from '@bombfarm/farm/model/farm-respec-view';
+import { HeroIdentityChip } from '@bombfarm/game-art';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import type { FarmCopy, Lang } from '../copy';
+import { buildHeroCardRows } from '../model/farm-respec-view';
+import type { FarmStatLabels } from './stat-labels';
 
 /**
  * One hero's respec split. A CHANGED hero lists all eight keys in the shared `DeltaTable` ledger
@@ -21,15 +22,17 @@ export function FarmRespecHeroCard({
   hero,
   lang,
   t,
+  statLabels,
 }: {
   entry: FarmRespecHeroEntry;
   hero: HeroRecord | undefined;
   lang: Lang;
-  t: Strings;
+  t: FarmCopy;
+  statLabels: FarmStatLabels;
 }) {
   const rows: DeltaTableRow[] = buildHeroCardRows(entry).map((row) => ({
     id: row.key,
-    label: t.statFull[row.key],
+    label: statLabels.full[row.key],
     now: row.current,
     target: row.target,
     locked: row.keep,
@@ -52,7 +55,7 @@ export function FarmRespecHeroCard({
         <DeltaTable
           caption={entry.heroName}
           columnLabels={{
-            label: t.colStat,
+            label: statLabels.column,
             now: t.farmRespecKeyCurrent,
             target: t.farmRespecKeyTarget,
             change: t.farmRespecKeyDelta,

@@ -1,10 +1,8 @@
 'use client';
 
-import type { Lang } from '@/shared/i18n';
-
 import type { FarmRespecResult } from '@bombfarm/domain/farm-optimize';
-import { sub, type Strings } from '@/shared/i18n';
-import { formatGainPct } from '@bombfarm/farm/model/farm-respec-format';
+import { sub, type FarmCopy, type Lang } from '../copy';
+import { formatGainPct } from '../model/farm-respec-format';
 
 /**
  * The toolbar's headline: the gain, labelled a LOWER BOUND, and nothing else. The phase, the
@@ -15,7 +13,7 @@ import { formatGainPct } from '@bombfarm/farm/model/farm-respec-format';
  * Only ever mounted by the toolbar when Tier 1 says there is something to say; this component
  * has no visibility logic of its own.
  */
-export function FarmRespecHeadline({ t, lang, result }: { t: Strings; lang: Lang; result: FarmRespecResult }) {
+export function FarmRespecHeadline({ t, lang, result }: { t: FarmCopy; lang: Lang; result: FarmRespecResult }) {
   return (
     <span data-testid="farm-respec-headline" className="text-[12px] font-bold text-accent">
       {sub(t.farmRespecHeadlineGain, { pct: formatGainPct(result.gainPct, lang) })}

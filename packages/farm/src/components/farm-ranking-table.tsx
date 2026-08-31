@@ -2,10 +2,10 @@
 
 import { useMemo, useState, type UIEvent } from 'react';
 import { DataTable } from '@bombfarm/ui';
-import { sub, type Lang, type Strings } from '@/shared/i18n';
+import { sub, type FarmCopy, type Lang } from '../copy';
 import type { FarmRateRow } from '@bombfarm/domain/farm-rate';
-import { FARM_COLUMNS, type FarmSortDir, type FarmSortKey } from '@bombfarm/farm/model/farm-ranking-view';
-import { ROW_HEIGHT_CSS, ROW_HEIGHT_PX } from '@bombfarm/farm/model/farm-ranking-row-height';
+import { FARM_COLUMNS, type FarmSortDir, type FarmSortKey } from '../model/farm-ranking-view';
+import { ROW_HEIGHT_CSS, ROW_HEIGHT_PX } from '../model/farm-ranking-row-height';
 import { FarmColumnHeaderLabel } from './farm-ranking-column-header';
 import { FarmRankingRow } from './farm-ranking-row';
 import { FarmRankingSpacerRow } from './farm-ranking-spacer-row';
@@ -44,7 +44,7 @@ type Props = {
   currentPhase: number;
   onActivate: (phase: number) => void;
   lang: Lang;
-  t: Strings;
+  t: FarmCopy;
   /** True when the rows above come from the proposed respec build, not the player's current
    *  one. Drives the caption text and a data-farm-mode attribute — no column, sort or filter
    *  change; the table itself is byte-identical either way. */

@@ -1,12 +1,11 @@
 'use client';
 
-import { DataTable, Tooltip, cn } from '@bombfarm/ui';
-import { statListMutedRowClass } from '@bombfarm/ui/panel-field.recipe';
-import { sub, type Lang, type Strings } from '@/shared/i18n';
+import { DataTable, Tooltip, cn, statListMutedRowClass } from '@bombfarm/ui';
+import { sub, type FarmCopy, type Lang } from '../copy';
 import type { FarmRateRow } from '@bombfarm/domain/farm-rate';
 import { dropAppliesOnPhase } from '@bombfarm/domain/phase-wiki';
-import { ClockIcon } from '@/shared/game-art';
-import { ROW_HEIGHT_CSS } from '@bombfarm/farm/model/farm-ranking-row-height';
+import { ClockIcon } from '@bombfarm/game-art';
+import { ROW_HEIGHT_CSS } from '../model/farm-ranking-row-height';
 import {
   formatBand,
   formatMitigationPct,
@@ -14,13 +13,13 @@ import {
   formatPhaseLabel,
   formatRatePerHour,
   formatSignedRatePerHour,
-} from '@bombfarm/farm/model/farm-ranking-format';
-import { formatClearTime } from '@bombfarm/farm/model/phases-page';
+} from '../model/farm-ranking-format';
+import { formatClearTime } from '../model/phases-page';
 
 type Props = {
   row: FarmRateRow;
   lang: Lang;
-  t: Strings;
+  t: FarmCopy;
   current: boolean;
   onActivate: (phase: number) => void;
   /** 1-based position within the full filtered row set (not the rendered window) — the

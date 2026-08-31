@@ -1,12 +1,13 @@
 'use client';
 
 import type { FarmRespecHeroEntry, FarmRespecResult } from '@bombfarm/domain/farm-optimize';
-import { sub, type Lang, type Strings } from '@/shared/i18n';
-import { GoldValue } from '@/shared/game-art';
-import type { HeroRecord } from '@/shared/lib/storage';
-import { partitionHeroEntries } from '@bombfarm/farm/model/farm-respec-view';
-import { formatGold } from '@bombfarm/farm/model/farm-respec-format';
+import { GoldValue } from '@bombfarm/game-art';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import { sub, type FarmCopy, type Lang } from '../copy';
+import { partitionHeroEntries } from '../model/farm-respec-view';
+import { formatGold } from '../model/farm-respec-format';
 import { FarmRespecHeroCard } from './farm-respec-hero-card';
+import type { FarmStatLabels } from './stat-labels';
 
 /**
  * Every enabled hero, in two groups: the ones that need a respec, then the ones that do not.
@@ -26,11 +27,13 @@ export function FarmRespecHeroGrid({
   heroes,
   lang,
   t,
+  statLabels,
 }: {
   result: FarmRespecResult;
   heroes: readonly HeroRecord[];
   lang: Lang;
-  t: Strings;
+  t: FarmCopy;
+  statLabels: FarmStatLabels;
 }) {
   const groups = partitionHeroEntries(result);
 
@@ -41,6 +44,7 @@ export function FarmRespecHeroGrid({
       hero={heroes.find((hero) => hero.id === entry.heroId)}
       lang={lang}
       t={t}
+      statLabels={statLabels}
     />
   );
 

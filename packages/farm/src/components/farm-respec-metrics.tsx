@@ -2,11 +2,11 @@
 
 import type { FarmRespecResult } from '@bombfarm/domain/farm-optimize';
 import { TipLabel, Tooltip } from '@bombfarm/ui';
-import { sub, type Lang, type Strings } from '@/shared/i18n';
-import { GoldIcon, GoldValue, ChestIcon } from '@/shared/game-art';
-import { formatPhaseLabel, formatRate } from '@bombfarm/farm/model/farm-ranking-format';
-import { resolvePaybackKind, resolvePhaseChange } from '@bombfarm/farm/model/farm-respec-view';
-import { formatGold, formatHours, formatSignedPct } from '@bombfarm/farm/model/farm-respec-format';
+import { GoldIcon, GoldValue, ChestIcon } from '@bombfarm/game-art';
+import { sub, type FarmCopy, type Lang } from '../copy';
+import { formatPhaseLabel, formatRate } from '../model/farm-ranking-format';
+import { resolvePaybackKind, resolvePhaseChange } from '../model/farm-respec-view';
+import { formatGold, formatHours, formatSignedPct } from '../model/farm-respec-format';
 
 /**
  * The five metric tiles — gold/hr, chests/hr, recommended phase, respec cost, payback — each
@@ -17,7 +17,7 @@ export function FarmRespecMetrics({
   lang,
   result,
 }: {
-  t: Strings;
+  t: FarmCopy;
   lang: Lang;
   result: FarmRespecResult;
 }) {

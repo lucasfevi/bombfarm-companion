@@ -1,8 +1,8 @@
 'use client';
 
 import { Select } from '@bombfarm/ui';
-import type { Strings } from '@/shared/i18n';
 import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
+import type { FarmCopy } from '../copy';
 import {
   farmFieldClass,
   farmFieldControlClass,
@@ -12,7 +12,7 @@ import {
 type Props = {
   value: ReturnBonusMode;
   onChange: (mode: ReturnBonusMode) => void;
-  t: Strings;
+  t: FarmCopy;
 };
 
 /**
