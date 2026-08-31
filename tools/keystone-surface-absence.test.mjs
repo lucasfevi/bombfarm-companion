@@ -208,7 +208,10 @@ const CRIT_DMG_MULT_MAP = {
   'apps/web/src/tests/derive.test.ts': [
     71, 73, 134, 162, 200, 230, 254, 293, 307, 359, 398, 436, 482, 514,
   ],
-  'apps/web/src/tests/fixture-corpus.test.ts': [23, 75],
+  // +8 (line number only) on the second hit: a second entry, with its rationale comment, joined
+  // COMPUTED_PATH_ALLOWLIST above this line when the 2026-08-31 soulbound capture landed. Both
+  // matches are unchanged in count and in kind.
+  'apps/web/src/tests/fixture-corpus.test.ts': [23, 83],
   'apps/web/src/tests/fixtures/sheet-math/README.md': [6],
   'apps/web/src/tests/fixtures/storage-roundtrip-20260729.json': [3],
   'apps/web/src/tests/points-reopt.test.ts': [106, 489],
@@ -241,7 +244,9 @@ const CRIT_DMG_MULT_MAP = {
   // the escape leaves no word boundary before the identifier.
   // +2 more (line numbers only, last four) from the corpus-parity repurpose/skip-counting-fix
   // note above the fixture-corpus-parity.test.mjs entry. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 287, 292, 302, 311],
+  // +5 (line numbers only) on the last four, self-referentially: the two rationale comments this
+  // same change added to the map above sit between line 169 and them. Unchanged in count and kind.
+  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 292, 297, 307, 316],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 
