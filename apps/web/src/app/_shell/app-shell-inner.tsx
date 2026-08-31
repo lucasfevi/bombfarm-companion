@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
+import { SITE_SECTIONS, isSiteSectionActive } from '@/shared/lib/site-sections';
 import { useAppLang } from '@/shared/context/app-lang';
 import { SiteHeader } from './site-header';
 import { GuideSection } from './guide-section';
@@ -26,11 +27,10 @@ export function AppShellInner({
   planner: ReactNode;
 }) {
   const pathname = usePathname();
-  const onFarm = pathname.startsWith('/farm');
-  const onTeamPlan = pathname.startsWith('/team-plan');
-  const onAccount = pathname.startsWith('/account');
-  const onInventory = pathname.startsWith('/inventory');
-  const onSectionPage = onFarm || onTeamPlan || onAccount || onInventory;
+  /** Every section but the planner renders `children`; the planner is the kept-alive slot. */
+  const onSectionPage = SITE_SECTIONS.some(
+    (section) => section !== 'planner' && isSiteSectionActive(section, pathname),
+  );
   const { lang, setLang, t } = useAppLang();
   const importDialogOpen = usePlannerStore((state) => state.importDialogOpen);
   const setImportDialogOpen = usePlannerStore((state) => state.setImportDialogOpen);
