@@ -10,7 +10,7 @@ import type { AccountFidelity, AccountPayload, AccountView } from '@bombfarm/con
 import { accountChangeKey } from '@bombfarm/contracts';
 import type { FarmControls } from './farm-inputs';
 import { freshProposal } from './farm-respec-store';
-import { createFarmSnapshotStore } from './use-farm-snapshot';
+import { createFarmSnapshotStore, farmBoardStale } from './use-farm-snapshot';
 
 const CONTROLS: FarmControls = { farmPoolOverrides: {}, farmReturnBonus: 'off' };
 
@@ -49,12 +49,21 @@ function payloadAtLevel(level: number): AccountPayload {
   };
 }
 
-function viewAtLevel(level: number): { view: AccountView; key: string } {
-  const payload = payloadAtLevel(level);
+function viewOf(payload: AccountPayload): { view: AccountView; key: string } {
   return {
     view: { payload, gameRunning: false, store: { status: 'ok', reason: null, binding: 'better-sqlite3' } },
     key: accountChangeKey(payload),
   };
+}
+
+function viewAtLevel(level: number): { view: AccountView; key: string } {
+  return viewOf(payloadAtLevel(level));
+}
+
+/** The same account read a moment later: the hero is unchanged, only the balance moved. */
+function payloadWithGold(level: number, gold: string): AccountPayload {
+  const payload = payloadAtLevel(level);
+  return { ...payload, account: { ...payload.account, gold } };
 }
 
 describe('the snapshot store computes once and does not follow the live account', () => {
@@ -255,6 +264,52 @@ describe('the respec advisor — a cheap gate with the board, an expensive solve
     await afterPaint();
     expect(respecStore.getState().status).toBe('failed');
     expect(respecStore.getState().proposal).toBeNull();
+  });
+});
+
+describe('a snapshot is stale when the BOARD would compute differently, not when any byte moved', () => {
+  function opened() {
+    const store = createFarmSnapshotStore();
+    const first = viewOf(payloadWithGold(10, '1000'));
+    store.open(first.view, first.key, CONTROLS);
+    return store;
+  }
+
+  it('the gold balance ticking up is not staleness — the board reads no balance at all', () => {
+    const { store } = opened();
+    const richer = viewOf(payloadWithGold(10, '999999999'));
+
+    // The cheap account key DOES move here. That it moves is exactly why it cannot be the signal.
+    expect(richer.key).not.toBe(viewOf(payloadWithGold(10, '1000')).key);
+    expect(farmBoardStale(store.getState(), richer.view)).toBe(false);
+  });
+
+  it('a hero levelling up IS staleness — the same gold, a board that would rank differently', () => {
+    const { store } = opened();
+    const levelled = viewOf(payloadWithGold(11, '1000'));
+    expect(farmBoardStale(store.getState(), levelled.view)).toBe(true);
+  });
+
+  it('a fresh capture of an unchanged account is not staleness', () => {
+    const { store } = opened();
+    const recaptured = viewOf({
+      ...payloadWithGold(10, '1000'),
+      fidelity: fidelityAt('2026-08-12T04:00:00.000Z'),
+    });
+    expect(farmBoardStale(store.getState(), recaptured.view)).toBe(false);
+  });
+
+  it('changing a compute input does not make the live account look stale', () => {
+    const { store, setControls } = opened();
+    setControls({ farmPoolOverrides: { h1: false }, farmReturnBonus: 'vip' });
+    const live = viewOf(payloadWithGold(10, '5000'));
+    expect(farmBoardStale(store.getState(), live.view)).toBe(false);
+  });
+
+  it('no board and no account are both "nothing to be stale about"', () => {
+    const { store } = createFarmSnapshotStore();
+    expect(farmBoardStale(store.getState(), viewAtLevel(10).view)).toBe(false);
+    expect(farmBoardStale(opened().store.getState(), null)).toBe(false);
   });
 });
 

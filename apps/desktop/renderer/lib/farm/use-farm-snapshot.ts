@@ -23,7 +23,12 @@ import type { SquadFarmFacts } from '@bombfarm/domain/farm-rate';
 import type { AccountView } from '@bombfarm/contracts';
 import { createLazySingleton, createSharedStore, type SharedStore } from '../shared-store';
 import { useAccountView } from '../account/use-account-view';
-import { buildFarmInputs, DEFAULT_FARM_CONTROLS, type FarmControls } from './farm-inputs';
+import {
+  buildFarmInputs,
+  farmBoardDepKey,
+  DEFAULT_FARM_CONTROLS,
+  type FarmControls,
+} from './farm-inputs';
 import {
   accept,
   initialFarmSnapshotState,
@@ -187,13 +192,35 @@ export function createFarmSnapshotStore(): {
 
 const sharedFarmSnapshotStore = createLazySingleton(createFarmSnapshotStore);
 
+/** The snapshot's own two compute inputs, so the live account is measured under the controls the
+ *  board on screen was computed with — a control change already recomputes the board itself. */
+function snapshotControls(inputs: FarmInputs): FarmControls {
+  return { farmPoolOverrides: inputs.farmPoolOverrides, farmReturnBonus: inputs.farmReturnBonus };
+}
+
+/**
+ * Whether the live account would give a different board than the one on screen — compared over
+ * what the board recomputes from, NOT over `accountChangeKey`, which hashes every byte of every
+ * section and so reports a change every few seconds as the player's gold balance ticks up.
+ *
+ * Pure and exported so the rule is testable: this project's Vitest run never mounts the hook.
+ */
+export function farmBoardStale(state: FarmSnapshotState, liveView: AccountView | null): boolean {
+  const settled = settledBoard(state);
+  if (settled === null || liveView === null) return false;
+  const live = buildFarmInputs(liveView, snapshotControls(settled.inputs));
+  if (live === null) return false;
+  return farmBoardDepKey(settled.inputs) !== farmBoardDepKey(live);
+}
+
 export interface FarmSnapshotHook {
   readonly state: FarmSnapshotState;
   readonly respec: FarmRespecState;
   /**
-   * The live account has moved past the snapshot on screen. Read-only, and read from a
-   * subscription this hook holds purely to be able to answer it: knowing a snapshot is stale is
-   * what lets the screen OFFER a refresh, and it never takes one.
+   * The live account would give a different board than the one on screen — see
+   * {@link farmBoardStale}. Read-only, and read from a subscription this hook holds purely to be
+   * able to answer it: knowing a snapshot is stale is what lets the screen OFFER a refresh, and
+   * it never takes one.
    */
   readonly stale: boolean;
   /** Whether an account has been read at all — until it has, `open` and `refresh` do nothing. */
@@ -275,8 +302,10 @@ export function useFarmSnapshot(): FarmSnapshotHook {
     [],
   );
 
-  const snapshotKey = snapshotSourceKey(state);
-  const stale = snapshotKey !== null && liveKey !== null && snapshotKey !== liveKey;
+  // Keyed on the live view rather than on every render: the account seam hands back the same
+  // reference until a genuinely different account is read, so the parse behind this runs at most
+  // once per account read.
+  const stale = useMemo(() => farmBoardStale(state, liveView), [state, liveView]);
 
   return useMemo(
     () => ({

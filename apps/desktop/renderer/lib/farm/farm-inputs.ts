@@ -8,11 +8,11 @@
 import { ACCOUNT_SECTIONS } from '@bombfarm/domain/account-fidelity';
 import { parseAccountPayload } from '@bombfarm/domain/import-save';
 import { computeTeamBuffsFromDeployed } from '@bombfarm/domain/team-buffs';
-import { isTrustworthySection } from '@bombfarm/contracts';
+import { canonicalStringify, isTrustworthySection } from '@bombfarm/contracts';
 import type { AccountPayload, AccountSection, AccountView, SectionFidelity } from '@bombfarm/contracts';
 import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import type { FarmInputs } from '@bombfarm/farm/core';
+import { readFarmDepTuple, type FarmInputs } from '@bombfarm/farm/core';
 
 /**
  * The two compute inputs the player owns. Everything else on {@link FarmInputs} is read out of
@@ -128,4 +128,31 @@ export function buildFarmInputs(view: AccountView, controls: FarmControls): Farm
     farmPoolOverrides: controls.farmPoolOverrides,
     farmReturnBonus: controls.farmReturnBonus,
   };
+}
+
+/**
+ * The heroes section's own capture time, copied onto every record by {@link buildFarmInputs} and
+ * read by nothing that computes a rate — no `@bombfarm/domain` module reads `updatedAt` at all.
+ * It moves on every poll, which is why `accountChangeKey` is `capturedAt`-blind and why the
+ * board's own identity below has to be too.
+ */
+function withoutCaptureTime(hero: HeroRecord): Record<string, unknown> {
+  const fields: Record<string, unknown> = { ...hero };
+  delete fields.updatedAt;
+  return fields;
+}
+
+/**
+ * A value identity for everything the farm board recomputes from — `readFarmDepTuple`'s
+ * nineteen members, compared as values rather than as references.
+ *
+ * `@bombfarm/farm/core` compares that tuple with `Object.is` and places the matching obligation
+ * on the host app: the three object members (`heroes`, `effectiveTeamBuffs`,
+ * `farmPoolOverrides`) must keep their identity across a read that changed nothing. This app
+ * cannot honour it — {@link buildFarmInputs} re-parses the payload and allocates two of the
+ * three afresh on every account read — so it answers the question by value instead.
+ */
+export function farmBoardDepKey(inputs: FarmInputs): string {
+  const [heroes, ...rest] = readFarmDepTuple(inputs);
+  return canonicalStringify([heroes.map(withoutCaptureTime), ...rest]);
 }
