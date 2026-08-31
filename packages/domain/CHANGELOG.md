@@ -1,5 +1,14 @@
 # @bombfarm/domain
 
+## 0.9.1
+
+### Patch Changes
+
+- Updated dependencies [3eb7026]
+- Updated dependencies [c94648a]
+- Updated dependencies [3233351]
+  - @bombfarm/contracts@0.6.0
+
 ## 0.9.0
 
 ### Minor Changes
