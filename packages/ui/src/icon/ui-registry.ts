@@ -1,4 +1,5 @@
 import {
+  HiMiniArrowsRightLeft,
   HiMiniChevronDown,
   HiMiniChevronUp,
   HiMiniXMark,
@@ -27,6 +28,8 @@ export const uiIconRegistry = {
   'chevron-up': HiMiniChevronUp,
   // ConfirmDialog close mark
   'x-mark': HiMiniXMark,
+  // Phases hero switcher — exchange the subject the screen is showing for another one
+  swap: HiMiniArrowsRightLeft,
   // The tick inside a multi-select's checkbox. Bare, not `check-circle` — that one is the toast's
   // success badge and carries its own ring.
   check: HiMiniCheck,

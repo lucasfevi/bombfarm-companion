@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { HiMiniArrowsRightLeft } from 'react-icons/hi2';
 import { HeroPickerDialog } from '@/features/roster';
 import { HeroAvatar, rarityTextClass } from '@/shared/game-art';
-import { cn } from '@bombfarm/ui';
+import { cn, Icon } from '@bombfarm/ui';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import type { Lang, Strings } from '@/shared/i18n';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
@@ -78,7 +77,7 @@ export function PhasesHeroSwitcher({ t, lang, heroes, hero, formatNumber, onSele
           className="flex shrink-0 items-center gap-1.5 self-stretch border-l border-line pl-2 text-muted transition-colors group-hover:text-accent"
           aria-hidden="true"
         >
-          <HiMiniArrowsRightLeft size={14} className="shrink-0" />
+          <Icon name="swap" size="sm" className="shrink-0" />
           <div className="flex flex-col leading-none">
             <span className="text-[8px] font-bold tracking-[0.08em] uppercase">{t.switchHeroShort}</span>
             <span className="font-mono text-[11px] font-semibold tabular-nums">{heroes.length}</span>

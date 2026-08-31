@@ -1,10 +1,9 @@
 'use client';
 
-import { HiMiniXMark } from 'react-icons/hi2';
 import type { HeroRecord } from '@/shared/lib/storage';
 import type { Lang, Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
-import { Dialog } from '@bombfarm/ui';
+import { Dialog, Icon } from '@bombfarm/ui';
 import { dialogDescClass } from '@bombfarm/ui/panel-field.recipe';
 import { HeroPickerTable } from './hero-picker-table';
 
@@ -45,7 +44,7 @@ export function HeroPickerDialog({
           <Dialog.Head>
             <Dialog.Title>{t.switchHero}</Dialog.Title>
             <Dialog.Close aria-label={t.importClose}>
-              <HiMiniXMark size={16} aria-hidden="true" />
+              <Icon name="x-mark" size="sm" />
             </Dialog.Close>
           </Dialog.Head>
           <p className={dialogDescClass}>{sub(t.switchHeroDesc, { n: heroes.length })}</p>
