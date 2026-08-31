@@ -174,6 +174,10 @@ const ALLOWLIST = [
  */
 const CRIT_DMG_MULT_MAP = {
   'apps/desktop/renderer/lib/account/account-view-store.test.ts': [34],
+  // The desktop farm adapter's own account fixtures, same kind as the account-view entry above:
+  // a raw save-shaped skills block, not a field the app reads.
+  'apps/desktop/renderer/lib/farm/farm-inputs.test.ts': [38, 150],
+  'apps/desktop/renderer/lib/farm/use-farm-snapshot.test.ts': [44],
   'apps/desktop/src/main/storage/account-store-restore.test.ts': [507, 540, 558, 591],
   'apps/desktop/src/main/storage/stale-sections.test.ts': [66, 81, 84, 88, 98, 105, 111, 123, 128, 164, 224],
   'apps/desktop/src/main/storage/stale-sections.ts': [11],
@@ -241,7 +245,9 @@ const CRIT_DMG_MULT_MAP = {
   // the escape leaves no word boundary before the identifier.
   // +2 more (line numbers only, last four) from the corpus-parity repurpose/skip-counting-fix
   // note above the fixture-corpus-parity.test.mjs entry. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 287, 292, 302, 311],
+  // +4 more (line numbers only, last four) from the desktop farm adapter's two entries and their
+  // explanatory comment above. Count and kind unchanged.
+  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 293, 298, 308, 317],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 

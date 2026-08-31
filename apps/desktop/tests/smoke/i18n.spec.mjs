@@ -102,7 +102,7 @@ async function acceptConsent(page) {
   await expect(modal).toBeHidden({ timeout: 15_000 });
 }
 
-/** The Live/Inventory/Settings nav buttons live in AppShell's persistent sidebar
+/** The Live/Farm/Inventory/Settings nav buttons live in AppShell's persistent sidebar
  *  (`packages/ui/src/AppShell.tsx`), which stays mounted across every `activeNavId` — unlike the
  *  content area, which conditionally mounts/unmounts per tab (`page.tsx`). `packages/ui` ships no
  *  `data-testid` on these buttons (a design-system reuse-boundary rule — it must not change), so they are located by role +
@@ -131,11 +131,12 @@ test.describe('language smoke — detected, switched in place, and remembered', 
         // --- The app opened in PT-BR, detected from the OS locale -----------------
         await expect(page1.locator('html')).toHaveAttribute('lang', 'pt-BR');
         await expect(navButton(page1, 0)).toHaveText(pt('liveNavLabel'));
-        await expect(navButton(page1, 1)).toHaveText(pt('inventoryNavLabel'));
-        await expect(navButton(page1, 2)).toHaveText(pt('settingsNavLabel'));
+        await expect(navButton(page1, 1)).toHaveText(pt('farmNavLabel'));
+        await expect(navButton(page1, 2)).toHaveText(pt('inventoryNavLabel'));
+        await expect(navButton(page1, 3)).toHaveText(pt('settingsNavLabel'));
 
         // --- Navigate to Inventory; the no-layout-shift "before" measurement + the no-recompute sentinel ------
-        await navButton(page1, 1).click();
+        await navButton(page1, 2).click();
         await page1.waitForSelector('[data-testid="inventory-view"]', { timeout: 15_000 });
         await page1.waitForSelector('[data-testid="inventory-card"]', { timeout: 20_000 });
 
@@ -154,7 +155,7 @@ test.describe('language smoke — detected, switched in place, and remembered', 
         expect(cardBoxBefore).not.toBeNull();
 
         // --- Navigate to Settings, drive the shipped Select to English (live switch, no restart) -----
-        await navButton(page1, 2).click();
+        await navButton(page1, 3).click();
         const select = page1.getByRole('combobox', { name: pt('settingsLanguageLabel') });
         await expect(select).toBeVisible({ timeout: 10_000 });
         await select.click();
@@ -162,8 +163,9 @@ test.describe('language smoke — detected, switched in place, and remembered', 
 
         // The SAME persistent nav node changed in place — Inventário -> Inventory.
         await expect(navButton(page1, 0)).toHaveText(en('liveNavLabel'), { timeout: 10_000 });
-        await expect(navButton(page1, 1)).toHaveText(en('inventoryNavLabel'));
-        await expect(navButton(page1, 2)).toHaveText(en('settingsNavLabel'));
+        await expect(navButton(page1, 1)).toHaveText(en('farmNavLabel'));
+        await expect(navButton(page1, 2)).toHaveText(en('inventoryNavLabel'));
+        await expect(navButton(page1, 3)).toHaveText(en('settingsNavLabel'));
 
         // No reload occurred — the sentinel stamped before the switch survived it.
         const sentinelAfter = await page1.evaluate(() => window.__bfcI18nSentinel);
@@ -178,7 +180,7 @@ test.describe('language smoke — detected, switched in place, and remembered', 
         // --- No-layout-shift "after" measurement, back on Inventory (settings unmounted the
         //     content area, so this is a fresh mount of inventory-view — the width comparison is
         //     what matters, not node identity) ----------------------------------------------
-        await navButton(page1, 1).click();
+        await navButton(page1, 2).click();
         await page1.waitForSelector('[data-testid="inventory-view"]', { timeout: 15_000 });
         await page1.waitForSelector('[data-testid="inventory-card"]', { timeout: 15_000 });
         const inventoryBoxAfter = await page1.getByTestId('inventory-view').boundingBox();
@@ -210,7 +212,8 @@ test.describe('language smoke — detected, switched in place, and remembered', 
         // --- English persists, read from settings, not from the (still pt-BR) OS ---
         await expect(page2.locator('html')).toHaveAttribute('lang', 'en');
         await expect(navButton(page2, 0)).toHaveText(en('liveNavLabel'));
-        await expect(navButton(page2, 1)).toHaveText(en('inventoryNavLabel'));
+        await expect(navButton(page2, 1)).toHaveText(en('farmNavLabel'));
+        await expect(navButton(page2, 2)).toHaveText(en('inventoryNavLabel'));
       } finally {
         await app2.close().catch(() => undefined);
       }
