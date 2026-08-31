@@ -1,10 +1,8 @@
-import { CHANNELS, INSTALLER_SUFFIX, REPO_URL, channelOfInstaller, type Channel } from './release';
+import { INSTALLER_SUFFIX, REPO_URL, isStableInstaller } from './release';
 
 export const RELEASES_API = `${REPO_URL.replace('https://github.com/', 'https://api.github.com/repos/')}/releases`;
 
 export interface LatestRelease {
-  /** Which channel this build came from — the page says so rather than implying stable. */
-  readonly channel: Channel;
   readonly version: string;
   readonly fileName: string;
   readonly downloadUrl: string;
@@ -61,15 +59,8 @@ function versionOf(release: RawRelease): string {
   return tag.startsWith('v') ? tag.slice(1) : tag;
 }
 
-interface Candidate {
-  readonly channel: Channel;
-  readonly release: RawRelease;
-  readonly asset: RawAsset;
-  readonly published: number;
-}
-
 /**
- * The newest published build on the best channel that has one, plus the running install total.
+ * The newest published stable build, plus the running install total across every channel.
  *
  * Newest by `published_at` rather than by list position or by parsing the tag: the API's order is
  * not a promise, and `0.7.0-beta.163` versus `0.6.0-beta.161` is a semver comparison this page has
@@ -81,7 +72,7 @@ export function parseLatestRelease(payload: unknown): LatestRelease | null {
   const releases = payload as RawRelease[];
   let installs = 0;
   let updates = 0;
-  const newestPerChannel = new Map<Channel, Candidate>();
+  let best: { release: RawRelease; asset: RawAsset; published: number } | null = null;
 
   for (const release of releases) {
     if (release.draft === true) continue;
@@ -93,27 +84,19 @@ export function parseLatestRelease(payload: unknown): LatestRelease | null {
       if (!isInstaller(asset)) continue;
       installs += downloadsOf(asset);
 
-      const channel = channelOfInstaller(String(asset.name));
-      if (channel === null) continue;
+      if (!isStableInstaller(String(asset.name))) continue;
       const published =
         typeof release.published_at === 'string' ? Date.parse(release.published_at) : Number.NaN;
       if (Number.isNaN(published)) continue;
-      const newest = newestPerChannel.get(channel);
-      if (newest === undefined || published > newest.published) {
-        newestPerChannel.set(channel, { channel, release, asset, published });
-      }
+      if (best === null || published > best.published) best = { release, asset, published };
     }
   }
 
-  const best = CHANNELS.map((channel) => newestPerChannel.get(channel)).find(
-    (candidate): candidate is Candidate => candidate !== undefined,
-  );
-  if (best === undefined) return null;
+  if (best === null) return null;
   const { asset, release } = best;
   if (typeof asset.browser_download_url !== 'string' || typeof asset.name !== 'string') return null;
 
   return {
-    channel: best.channel,
     version: versionOf(release),
     fileName: asset.name,
     downloadUrl: asset.browser_download_url,

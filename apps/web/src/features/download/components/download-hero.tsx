@@ -1,15 +1,9 @@
 import { buttonRecipe, cn } from '@bombfarm/ui';
 import { sub, type Lang, type Strings } from '@/shared/i18n';
-import { RELEASES_URL, REPO_URL, type Channel } from '../model/release';
+import { RELEASES_URL, REPO_URL } from '../model/release';
 import type { LatestRelease } from '../model/latest-release';
 import { LiveReplica } from './live/live-replica';
 import { TrustLine } from './trust-line';
-
-function channelLabel(channel: Channel, strings: Strings): string {
-  return channel === 'prod'
-    ? strings.downloadChannelChipStable
-    : strings.downloadChannelChipBeta;
-}
 
 export function DownloadHero({
   t,
@@ -43,14 +37,6 @@ export function DownloadHero({
               <span className="ml-2 font-mono text-xs opacity-70">v{release.version}</span>
             ) : null}
           </a>
-          {release !== null ? (
-            <span
-              className="rounded-sm border border-gold/45 bg-[color-mix(in_oklch,var(--gold)_12%,transparent)] px-2.5 py-1 font-mono text-[10px] tracking-wider text-gold uppercase"
-              data-testid="download-channel-chip"
-            >
-              {channelLabel(release.channel, t)}
-            </span>
-          ) : null}
         </div>
 
         <p
@@ -59,11 +45,7 @@ export function DownloadHero({
         >
           {release === null
             ? t.downloadFileMetaPending
-            : sub(t.downloadFileMeta, {
-                file: release.fileName,
-                size: release.sizeLabel,
-                channel: channelLabel(release.channel, t),
-              })}
+            : sub(t.downloadFileMeta, { file: release.fileName, size: release.sizeLabel })}
         </p>
 
         <ul className="m-0 mt-5 grid list-none gap-2 p-0">
