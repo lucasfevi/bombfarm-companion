@@ -93,106 +93,73 @@ describe('guard (a) — zero advisor-pipeline calls under the board tree', () =>
 });
 
 // ---------------------------------------------------------------------------------------------
-// (f) One farm-rate importer.
+// (f)/(g) One farm-rate importer and one farm-optimize importer — now BOTH in @bombfarm/farm,
+// and NEITHER in apps/web.
+//
+// FarmRateRow/FarmRateOptions/ReturnBonusMode/FarmRespecResult must be consumed as
+// @bombfarm/domain declares them — no local re-declaration — which forces a pure
+// `import type { ... } from '@bombfarm/domain/farm-rate'` in every component and model file that
+// types a row prop, and in the return-bonus control. A pure `import type` erases at compile time
+// (zero bundle bytes, zero possibility of carrying a re-implemented computation), so it is
+// allowed anywhere. These guards' real teeth is that no SECOND file may import a RUNTIME binding
+// (computeFarmRates, gateFarmRespec and their siblings), and that apps/web may import none at
+// all now that the compute itself lives in the package.
+//
+// The web half is a ZERO assertion, which is the one shape that can pass while checking nothing.
+// Two things stop that here: `scannedCount` proves the scan reached files, and the package half
+// is a POSITIVE `toEqual([...])` naming the one file — so "the compute vanished" fails there
+// rather than passing everywhere.
 // ---------------------------------------------------------------------------------------------
-describe('guard (f) — @bombfarm/domain/farm-rate: one RUNTIME importer', () => {
-  const srcRoot = path.join(WEB_PACKAGE_ROOT, 'src');
-  const allowedRuntimeFile = 'src/shared/stores/selectors/farm-ranking-selectors.ts';
+const WEB_SRC = path.join(WEB_PACKAGE_ROOT, 'src');
+const FARM_PACKAGE_ROOT = path.join(WEB_PACKAGE_ROOT, '../../packages/farm');
+const FARM_SRC = path.join(FARM_PACKAGE_ROOT, 'src');
 
-  // NOTE on scope, recorded for the validator: FarmRateRow/FarmRateOptions/
-  // ReturnBonusMode must be consumed "as @bombfarm/domain declares it — no local re-declaration". That forces a
-  // pure `import type { FarmRateRow } from '@bombfarm/domain/farm-rate'` in every component/model
-  // file that types a row prop (farm-ranking-row.tsx, farm-ranking-table.tsx,
-  // farm-ranking-view.ts) and in farm-return-bonus.tsx (ReturnBonusMode) — not just the single
-  // `phases-view-storage.ts` example this guard was originally written against. A pure `import type` erases at compile time
-  // (zero bundle bytes, zero possibility of carrying a re-implemented computation) — this guard's
-  // real teeth is that no SECOND file can import a runtime binding (computeFarmRates and its
-  // siblings). This guard therefore allows `import type { ... }` in any src file and restricts
-  // only import statements that carry at least one non-type binding to the selector file.
-
-  /** True when the file imports a non-type-only binding from the given `@bombfarm/domain/*`
-   *  specifier. Parameterised (not duplicated) so the farm-rate and farm-optimize checks below
-   *  share one classifier that cannot disagree with itself. */
-  function importsRuntimeBinding(text: string, specifier: string): boolean {
-    // `^` + `m` flag: only matches real import statements (line-start), never an "import"
-    // substring inside a comment (this file's own comments say "the type-only import" etc.).
-    const statementRe = new RegExp(`^import\\s+([^;]*?)\\s+from\\s+['"]${specifier}['"]`, 'gm');
-    for (const match of text.matchAll(statementRe)) {
-      const clause = match[1].trim();
-      if (clause.startsWith('type ')) continue; // `import type { ... }` — pure type-only.
-      // Inline form: `import { computeFarmRates, type FarmRateRow }` — strip `type X` members
-      // and see if any binding remains.
-      const inner = clause.replace(/^\{|\}$/g, '');
-      const members = inner.split(',').map((member) => member.trim()).filter(Boolean);
-      const hasRuntimeMember = members.some((member) => !member.startsWith('type '));
-      if (hasRuntimeMember) return true;
-    }
-    return false;
+/** True when the file imports a non-type-only binding from the given `@bombfarm/domain/*`
+ *  specifier. Parameterised (not duplicated) so the farm-rate and farm-optimize checks share one
+ *  classifier that cannot disagree with itself. */
+function importsRuntimeBinding(text: string, specifier: string): boolean {
+  // `^` + `m` flag: only matches real import statements (line-start), never an "import"
+  // substring inside a comment (this file's own comments say "the type-only import" etc.).
+  const statementRe = new RegExp(`^import\\s+([^;]*?)\\s+from\\s+['"]${specifier}['"]`, 'gm');
+  for (const match of text.matchAll(statementRe)) {
+    const clause = match[1].trim();
+    if (clause.startsWith('type ')) continue; // `import type { ... }` — pure type-only.
+    // Inline form: `import { computeFarmRates, type FarmRateRow }` — strip `type X` members
+    // and see if any binding remains.
+    const inner = clause.replace(/^\{|\}$/g, '');
+    const members = inner.split(',').map((member) => member.trim()).filter(Boolean);
+    const hasRuntimeMember = members.some((member) => !member.startsWith('type '));
+    if (hasRuntimeMember) return true;
   }
+  return false;
+}
 
-  function runtimeImporters(specifier: string): string[] {
-    const files = walkFiles(srcRoot, (name) => name.endsWith('.ts') || name.endsWith('.tsx'));
-    return files
-      .filter((abs) => !abs.includes(`${path.sep}tests${path.sep}`))
-      .map((abs) => path.relative(WEB_PACKAGE_ROOT, abs).split(path.sep).join('/'))
-      .filter((rel) => importsRuntimeBinding(fs.readFileSync(path.join(WEB_PACKAGE_ROOT, rel), 'utf8'), specifier));
-  }
+/** Production `.ts`/`.tsx` under `root`: co-located `*.test.*` files and anything inside a
+ *  `tests/` directory are excluded, since a test may legitimately call the domain directly. */
+function productionFilesUnder(root: string): string[] {
+  return walkFiles(
+    root,
+    (name) =>
+      (name.endsWith('.ts') || name.endsWith('.tsx')) &&
+      !name.endsWith('.test.ts') &&
+      !name.endsWith('.test.tsx'),
+  ).filter((abs) => !abs.includes(`${path.sep}tests${path.sep}`));
+}
 
-  it('red state: a fabricated second-file runtime import of computeFarmRates is caught', () => {
+function runtimeImportersUnder(root: string, relativeTo: string, specifier: string): string[] {
+  return productionFilesUnder(root)
+    .filter((abs) => importsRuntimeBinding(fs.readFileSync(abs, 'utf8'), specifier))
+    .map((abs) => path.relative(relativeTo, abs).split(path.sep).join('/'));
+}
+
+describe('guards (f)/(g) — the runtime-import classifier', () => {
+  it('red state: a fabricated runtime import of computeFarmRates is caught', () => {
     expect(
       importsRuntimeBinding("import { computeFarmRates } from '@bombfarm/domain/farm-rate';", '@bombfarm/domain/farm-rate'),
     ).toBe(true);
   });
 
-  it('red state: a fabricated inline mixed import (runtime + type) is still caught as runtime', () => {
-    expect(
-      importsRuntimeBinding(
-        "import { computeFarmRates, type FarmRateRow } from '@bombfarm/domain/farm-rate';",
-        '@bombfarm/domain/farm-rate',
-      ),
-    ).toBe(true);
-  });
-
-  it("a pure `import type { FarmRateRow }` is correctly classified as non-runtime (does not trip the guard)", () => {
-    expect(
-      importsRuntimeBinding("import type { FarmRateRow } from '@bombfarm/domain/farm-rate';", '@bombfarm/domain/farm-rate'),
-    ).toBe(false);
-  });
-
-  it('green state: exactly one production file imports a runtime binding from farm-rate', () => {
-    expect(runtimeImporters('@bombfarm/domain/farm-rate')).toEqual([allowedRuntimeFile]);
-  });
-});
-
-// ---------------------------------------------------------------------------------------------
-// (g) One farm-optimize importer — same parameterised classifier as guard (f).
-// ---------------------------------------------------------------------------------------------
-describe('guard (g) — @bombfarm/domain/farm-optimize: one RUNTIME importer', () => {
-  const srcRoot = path.join(WEB_PACKAGE_ROOT, 'src');
-  const allowedRuntimeFile = 'src/shared/stores/selectors/farm-ranking-selectors.ts';
-
-  function importsRuntimeBinding(text: string, specifier: string): boolean {
-    const statementRe = new RegExp(`^import\\s+([^;]*?)\\s+from\\s+['"]${specifier}['"]`, 'gm');
-    for (const match of text.matchAll(statementRe)) {
-      const clause = match[1].trim();
-      if (clause.startsWith('type ')) continue;
-      const inner = clause.replace(/^\{|\}$/g, '');
-      const members = inner.split(',').map((member) => member.trim()).filter(Boolean);
-      const hasRuntimeMember = members.some((member) => !member.startsWith('type '));
-      if (hasRuntimeMember) return true;
-    }
-    return false;
-  }
-
-  function runtimeImporters(specifier: string): string[] {
-    const files = walkFiles(srcRoot, (name) => name.endsWith('.ts') || name.endsWith('.tsx'));
-    return files
-      .filter((abs) => !abs.includes(`${path.sep}tests${path.sep}`))
-      .map((abs) => path.relative(WEB_PACKAGE_ROOT, abs).split(path.sep).join('/'))
-      .filter((rel) => importsRuntimeBinding(fs.readFileSync(path.join(WEB_PACKAGE_ROOT, rel), 'utf8'), specifier));
-  }
-
-  it('red state: a fabricated second-file runtime import of solveFarmRespec is caught', () => {
+  it('red state: a fabricated runtime import of solveFarmRespec is caught', () => {
     expect(
       importsRuntimeBinding(
         "import { solveFarmRespec } from '@bombfarm/domain/farm-optimize';",
@@ -204,13 +171,22 @@ describe('guard (g) — @bombfarm/domain/farm-optimize: one RUNTIME importer', (
   it('red state: a fabricated inline mixed import (runtime + type) is still caught as runtime', () => {
     expect(
       importsRuntimeBinding(
+        "import { computeFarmRates, type FarmRateRow } from '@bombfarm/domain/farm-rate';",
+        '@bombfarm/domain/farm-rate',
+      ),
+    ).toBe(true);
+    expect(
+      importsRuntimeBinding(
         "import { solveFarmRespec, type FarmRespecResult } from '@bombfarm/domain/farm-optimize';",
         '@bombfarm/domain/farm-optimize',
       ),
     ).toBe(true);
   });
 
-  it('a pure `import type { FarmRespecResult }` clause is correctly classified as non-runtime', () => {
+  it('a pure `import type { ... }` clause is correctly classified as non-runtime', () => {
+    expect(
+      importsRuntimeBinding("import type { FarmRateRow } from '@bombfarm/domain/farm-rate';", '@bombfarm/domain/farm-rate'),
+    ).toBe(false);
     expect(
       importsRuntimeBinding(
         "import type { FarmRespecResult } from '@bombfarm/domain/farm-optimize';",
@@ -219,8 +195,33 @@ describe('guard (g) — @bombfarm/domain/farm-optimize: one RUNTIME importer', (
     ).toBe(false);
   });
 
-  it('green state: exactly one production file imports a runtime binding from farm-optimize', () => {
-    expect(runtimeImporters('@bombfarm/domain/farm-optimize')).toEqual([allowedRuntimeFile]);
+  it('both scanned trees contribute production files — neither zero assertion is vacuous', () => {
+    expect(productionFilesUnder(WEB_SRC).length, 'apps/web/src contributed no file').toBeGreaterThan(0);
+    expect(productionFilesUnder(FARM_SRC).length, 'packages/farm/src contributed no file').toBeGreaterThan(0);
+  });
+});
+
+describe('guard (f) — @bombfarm/domain/farm-rate: one RUNTIME importer, and it is in the package', () => {
+  it('green state: exactly one production file in @bombfarm/farm imports a runtime binding', () => {
+    expect(
+      runtimeImportersUnder(FARM_SRC, FARM_PACKAGE_ROOT, '@bombfarm/domain/farm-rate'),
+    ).toEqual(['src/core/farm-compute.ts']);
+  });
+
+  it('green state: apps/web imports NO runtime binding from farm-rate', () => {
+    expect(runtimeImportersUnder(WEB_SRC, WEB_PACKAGE_ROOT, '@bombfarm/domain/farm-rate')).toEqual([]);
+  });
+});
+
+describe('guard (g) — @bombfarm/domain/farm-optimize: one RUNTIME importer, and it is in the package', () => {
+  it('green state: exactly one production file in @bombfarm/farm imports a runtime binding', () => {
+    expect(
+      runtimeImportersUnder(FARM_SRC, FARM_PACKAGE_ROOT, '@bombfarm/domain/farm-optimize'),
+    ).toEqual(['src/core/farm-compute.ts']);
+  });
+
+  it('green state: apps/web imports NO runtime binding from farm-optimize', () => {
+    expect(runtimeImportersUnder(WEB_SRC, WEB_PACKAGE_ROOT, '@bombfarm/domain/farm-optimize')).toEqual([]);
   });
 });
 
