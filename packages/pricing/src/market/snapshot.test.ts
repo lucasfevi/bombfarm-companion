@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { CatalogView } from './reconcile.js';
-import { buildSnapshot, isMarketSnapshot, mergeEntries, readMarketSnapshot } from './snapshot.js';
-import type { MarketEntry } from './types.js';
+import {
+  buildSnapshot,
+  catalogKeysLost,
+  isMarketSnapshot,
+  mergeEntries,
+  readMarketSnapshot,
+} from './snapshot.js';
+import type { MarketEntry, MarketSnapshot } from './types.js';
 import { priceKey } from './types.js';
 
 const CATALOG: CatalogView = {
@@ -89,6 +95,50 @@ describe('mergeEntries', () => {
     });
   });
 
+  it('keeps the key reachable when this run tagged the category but never reached rarity', () => {
+    const untagged = entry({
+      hashName: 'Ember Weapon',
+      key: 'equip#Ember Weapon',
+      category: 'equip',
+    });
+
+    const merged = mergeEntries([untagged], [weapon], false);
+
+    expect(merged[0]).toMatchObject({
+      key: priceKey('ember_arma', 1),
+      defId: 'ember_arma',
+      rarityIdx: 1,
+    });
+  });
+
+  it('recovers a key from an inherited identity even when the previous run lost it too', () => {
+    const lost = { ...weapon, key: 'equip#Ember Weapon' };
+    const untagged = entry({
+      hashName: 'Ember Weapon',
+      key: 'equip#Ember Weapon',
+      category: 'equip',
+    });
+
+    const merged = mergeEntries([untagged], [lost], false);
+
+    expect(merged[0]?.key).toBe(priceKey('ember_arma', 1));
+  });
+
+  it('leaves an item chest keyed by the rarity an owned one carries', () => {
+    const chest = entry({
+      hashName: 'Item Chest Lv 30',
+      key: priceKey('chest_item_30', 0),
+      category: 'chest',
+      defId: 'chest_item_30',
+      level: 30,
+    });
+    const untagged = entry({ hashName: 'Item Chest Lv 30', key: 'chest#Item Chest Lv 30', category: 'chest' });
+
+    const merged = mergeEntries([untagged], [chest], false);
+
+    expect(merged[0]?.key).toBe(priceKey('chest_item_30', 0));
+  });
+
   it('never inherits a previous price for an item that is listed nowhere now', () => {
     const delisted = { ...weapon, lowestUsd: null, listings: 0 };
 
@@ -122,6 +172,53 @@ describe('buildSnapshot', () => {
       matchedCatalogKeys: 1,
       searchCalls: 12,
     });
+  });
+});
+
+describe('catalogKeysLost', () => {
+  const build = (entries: MarketEntry[], prior: MarketSnapshot | null, complete: boolean) =>
+    buildSnapshot({
+      entries,
+      prior,
+      catalog: CATALOG,
+      fx: { USD: 1 },
+      anomalies: [],
+      searchCalls: 1,
+      enumerationComplete: complete,
+      now: () => 0,
+    });
+
+  const good = build([weapon, helmet], null, true);
+
+  it('names a key whose row is still on the market and no longer answers to it', () => {
+    const untagged = entry({ hashName: 'Ember Weapon', key: 'equip#Ember Weapon', category: 'equip' });
+    const stripped = build([untagged, helmet], null, false);
+
+    expect(catalogKeysLost(good, stripped, CATALOG)).toEqual([priceKey('ember_arma', 1)]);
+  });
+
+  it('says nothing about a key whose row has left the market', () => {
+    const delisted = build([weapon], null, true);
+
+    expect(catalogKeysLost(good, delisted, CATALOG)).toEqual([]);
+  });
+
+  it('is empty once the merge has restored the identity behind those keys', () => {
+    const untagged = entry({ hashName: 'Ember Weapon', key: 'equip#Ember Weapon', category: 'equip' });
+    const merged = build([untagged, helmet], good, false);
+
+    expect(catalogKeysLost(good, merged, CATALOG)).toEqual([]);
+  });
+
+  it('has nothing to compare against on a first run', () => {
+    expect(catalogKeysLost(null, good, CATALOG)).toEqual([]);
+  });
+
+  it('ignores a market row that never carried a catalog key', () => {
+    const skin = entry({ hashName: 'Some Skin', key: 'skin#Some Skin', category: 'skin' });
+    const withSkin = build([weapon, helmet, skin], null, true);
+
+    expect(catalogKeysLost(withSkin, good, CATALOG)).toEqual([]);
   });
 });
 

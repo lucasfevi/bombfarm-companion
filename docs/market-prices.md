@@ -145,6 +145,17 @@ limits. A run that stops early is not thrown away:
 - a run that enumerated a row but stopped before tagging it inherits the identity the previous run
   established, so an item that had a price yesterday does not lose it today. Prices are never
   inherited that way: a null `lowestUsd` is the meaningful statement that nothing is listed now
+- a key is **derived** from the identity an entry ends up with, inherited parts included, rather
+  than fixed when the row was written. Keeping the key a half-tagged run wrote is how an entry
+  ends up knowing its def and rarity and still being addressed by its hash name, which no owned
+  item looks up
+
+The enumeration is the cheap tenth of the sweep and usually finishes even when the quota kills the
+run, so a full row set is no evidence that the run learned what the rows are. What says that is
+`catalog keys carried` in the build log, and the job **refuses to publish** a snapshot that drops a
+key whose row is still on the market, when it did not finish tagging. It exits non-zero without
+writing the file, which leaves the last good snapshot in place for the publish steps to re-upload:
+prices freeze at yesterday's rather than going to zero, and the run goes red instead of green.
 
 ## What is not settled yet
 
