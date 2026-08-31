@@ -12,7 +12,7 @@ export interface AppNavProps {
   items: ReadonlyArray<AppNavItem>;
   /** Defaults to `'Main'` — the desktop smoke suite locates this landmark by that name. */
   ariaLabel?: string;
-  onSelect?: (id: string) => void;
+  onSelect?: ((id: string) => void) | undefined;
   /** Lets the web supply a Next `<Link>` in place of the default `<button type="button">`. */
   renderItem?: (item: AppNavItem, className: string) => ReactNode;
   className?: string;

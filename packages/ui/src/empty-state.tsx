@@ -5,11 +5,11 @@ import { cn } from './cn';
 export interface EmptyStateProps extends PropsWithChildren {
   icon?: IconName;
   title: string;
-  description?: string;
+  description?: string | undefined;
   action?: ReactNode;
   /** Heading tag for `title` — defaults to `h2` so it nests correctly under different pages. */
   headingLevel?: 2 | 3 | 4;
-  className?: string;
+  className?: string | undefined;
 }
 
 const HEADING_TAG = {

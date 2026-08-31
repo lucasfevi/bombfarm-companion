@@ -25,8 +25,8 @@ export type DataTableTableProps = HTMLAttributes<HTMLTableElement>;
 export type DataTableHeaderAlign = 'left' | 'center' | 'right';
 
 type HeaderBaseProps = {
-  align?: DataTableHeaderAlign;
-  className?: string;
+  align?: DataTableHeaderAlign | undefined;
+  className?: string | undefined;
   children: ReactNode;
 } & Omit<ThHTMLAttributes<HTMLTableCellElement>, 'children' | 'align'>;
 

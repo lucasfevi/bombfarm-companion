@@ -80,7 +80,7 @@ export interface InventoryToolbarLabels {
  */
 export interface InventoryToolbarLabelBag {
   groupTitle: (kind: ItemKind) => string;
-  heroOption?: (heroId: string) => InventoryHeroOption;
+  heroOption?: ((heroId: string) => InventoryHeroOption) | undefined;
   setOption: (group: InventorySetGroup) => string;
   setOptionCount: (group: InventorySetGroup) => string;
   toolbar: InventoryToolbarLabels;

@@ -45,10 +45,10 @@ export function SettingsSection({
 
 export type SettingsRowProps = PropsWithChildren<{
   label: string;
-  help?: string;
+  help?: string | undefined;
   /** Passed straight through to `Fields` — default `stack` fits a settings list best. */
-  layout?: FieldsLayout;
-  className?: string;
+  layout?: FieldsLayout | undefined;
+  className?: string | undefined;
 }>;
 
 /**

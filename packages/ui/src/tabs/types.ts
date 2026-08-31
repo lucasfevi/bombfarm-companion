@@ -1,5 +1,5 @@
-import type { CSSProperties, ReactNode } from 'react';
-import type { Transition } from 'motion/react';
+import type { ReactNode } from 'react';
+import type { MotionStyle, Transition } from 'motion/react';
 
 export type TabsRootProps = {
   value?: string;
@@ -36,5 +36,5 @@ export type TabsPanelProps = {
   value: string;
   className?: string;
   children: ReactNode;
-  style?: CSSProperties;
+  style?: MotionStyle | undefined;
 };

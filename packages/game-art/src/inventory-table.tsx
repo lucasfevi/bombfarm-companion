@@ -67,14 +67,14 @@ export interface InventoryTableLabels {
   /** The forge `+N`, or empty when the item is unforged. */
   itemForge: (item: InventoryViewItem) => string;
   /** `null` when the item is loose, or when the caller has no roster. Absent drops the column. */
-  equippedBy?: (item: InventoryViewItem) => InventoryEquippedBy | null;
+  equippedBy?: ((item: InventoryViewItem) => InventoryEquippedBy | null) | undefined;
   gold: (amount: number) => string;
   /** What free-text search matches against for one item. */
   searchText: (item: InventoryViewItem) => string;
   column: InventoryTableColumnLabels;
   setOption: (group: InventorySetGroup) => string;
   setOptionCount: (group: InventorySetGroup) => string;
-  heroOption?: (heroId: string) => InventoryHeroOption;
+  heroOption?: ((heroId: string) => InventoryHeroOption) | undefined;
   toolbar: InventoryToolbarLabels;
   /** Accessible name for the row's own control. Takes the item name because these repeat down
    *  the page, and a column of identical "Details" buttons names nothing. */
@@ -82,8 +82,8 @@ export interface InventoryTableLabels {
   clear: string;
   /** Shown in place of the rows when the filter is what emptied them. */
   filteredEmpty: { title: string; description: string };
-  empty: { title: string; description?: string };
-  skippedNote?: (count: number) => string;
+  empty: { title: string; description?: string | undefined };
+  skippedNote?: ((count: number) => string) | undefined;
 }
 
 export interface InventoryTableProps {
@@ -94,18 +94,18 @@ export interface InventoryTableProps {
   onFilterChange?: (next: InventoryFilter) => void;
   sort?: InventorySort;
   onSortChange?: (next: InventorySort) => void;
-  onSelectItem?: (item: InventoryViewItem) => void;
+  onSelectItem?: ((item: InventoryViewItem) => void) | undefined;
   /** `null` for an entry the market says nothing about. Absent drops the price column. */
-  priceOf?: (entry: InventoryEntry) => MarketPriceView | null;
-  priceLabels?: MarketPriceLabels;
+  priceOf?: ((entry: InventoryEntry) => MarketPriceView | null) | undefined;
+  priceLabels?: MarketPriceLabels | undefined;
   /** Whether the market is quoting a price for one item right now — the `Priced` chip's predicate.
    *  Supplied by the host, which owns the snapshot; absent drops the chip. */
-  isPricedItem?: (item: InventoryViewItem) => boolean;
+  isPricedItem?: ((item: InventoryViewItem) => boolean) | undefined;
   /** Slot at the toolbar's right edge, in the corner of the list itself. */
   toolbarActions?: ReactNode;
   /** Per-row refresh control, placed beside the price it refreshes. */
-  renderPriceAction?: (entry: InventoryEntry) => ReactNode;
-  className?: string;
+  renderPriceAction?: ((entry: InventoryEntry) => ReactNode) | undefined;
+  className?: string | undefined;
 }
 
 /**
@@ -210,10 +210,10 @@ const InventoryTableRow = memo(function InventoryTableRow({
   withPrice: boolean;
   withHero: boolean;
   withActions: boolean;
-  priceOf?: (entry: InventoryEntry) => MarketPriceView | null;
-  priceLabels?: MarketPriceLabels;
-  renderPriceAction?: (entry: InventoryEntry) => ReactNode;
-  onSelect?: (item: InventoryViewItem) => void;
+  priceOf?: ((entry: InventoryEntry) => MarketPriceView | null) | undefined;
+  priceLabels?: MarketPriceLabels | undefined;
+  renderPriceAction?: ((entry: InventoryEntry) => ReactNode) | undefined;
+  onSelect?: ((item: InventoryViewItem) => void) | undefined;
 }) {
   const { item, count } = entry;
   const name = labels.itemName(item);

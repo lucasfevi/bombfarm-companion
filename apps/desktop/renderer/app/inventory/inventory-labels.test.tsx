@@ -89,9 +89,10 @@ describe('desktop inventory labels', () => {
 
   it('splits a stat into label and value, and suffixes only the percent one', () => {
     const labels = inventoryLabels(en, 'en');
-    const stats = item('g1').stats;
-    expect(labels.itemStat(stats[0])).toEqual({ label: 'Damage', value: '+90.2' });
-    expect(labels.itemStat(stats[1])).toEqual({ label: 'Penetration', value: '+65.60%' });
+    expect(item('g1').stats.map((stat) => labels.itemStat(stat))).toEqual([
+      { label: 'Damage', value: '+90.2' },
+      { label: 'Penetration', value: '+65.60%' },
+    ]);
   });
 
   it('hands the card the hero identity in pieces — rank, name, rarity, level, avatar skin', () => {
