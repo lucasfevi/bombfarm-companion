@@ -1,7 +1,7 @@
 ---
-'@bombfarm/desktop': patch
-'@bombfarm/contracts': patch
-'@bombfarm/ui': patch
+"@bombfarm/desktop": patch
+"@bombfarm/contracts": patch
+"@bombfarm/ui": patch
 ---
 
 Fix Settings → Updates claiming "Updates are off in this build" on installed Beta and stable
