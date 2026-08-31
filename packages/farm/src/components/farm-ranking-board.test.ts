@@ -456,8 +456,11 @@ describe('Farm Ranking table — the scrollport height is the host\'s to set', (
 
 describe('hero picker — the enable/disable switch is a host capability, not a stub', () => {
   it('the write is optional on the actions bag', () => {
+    // Spelt with an explicit `| undefined` as well as the `?`: this package is compiled by the
+    // desktop under `exactOptionalPropertyTypes`, where a host passing the prop through as
+    // `undefined` is rejected unless the declaration admits it.
     expect(read('hero-picker/hero-picker-dialog.tsx')).toContain(
-      'onSetBattleAllowed?: (heroId: string, enabled: boolean) => void;',
+      'onSetBattleAllowed?: ((heroId: string, enabled: boolean) => void) | undefined;',
     );
   });
 

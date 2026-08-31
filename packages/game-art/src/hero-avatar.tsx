@@ -7,7 +7,7 @@ type Props = {
   rarityIdx: number;
   size?: ArtFrameSize;
   name: string;
-  className?: string;
+  className?: string | undefined;
 };
 
 export function HeroAvatar({ skin, rarityIdx, size = 'lg', name, className }: Props) {

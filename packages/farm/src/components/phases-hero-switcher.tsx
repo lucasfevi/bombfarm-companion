@@ -28,7 +28,7 @@ type Props = {
   hero: HeroRecord;
   formatNumber: (n: number, d?: number) => string;
   onSelectHero: (h: HeroRecord) => void;
-  renderPicker?: HeroPickerSlot;
+  renderPicker?: HeroPickerSlot | undefined;
 };
 
 /**

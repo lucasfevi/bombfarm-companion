@@ -26,7 +26,7 @@ export type HeroPickerActions = {
    * header, no cell, no disabled switch standing in for a control that was never wired. The
    * picker is then what is left, which is a way to choose which hero to look at.
    */
-  onSetBattleAllowed?: (heroId: string, enabled: boolean) => void;
+  onSetBattleAllowed?: ((heroId: string, enabled: boolean) => void) | undefined;
 };
 
 type Props = {

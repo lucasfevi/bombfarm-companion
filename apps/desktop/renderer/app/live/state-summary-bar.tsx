@@ -26,7 +26,7 @@ function StatBadge({
   children,
 }: {
   testId: string;
-  ariaLabel?: string;
+  ariaLabel?: string | undefined;
   tooltip?: ReactNode;
   children: ReactNode;
 }) {
@@ -76,9 +76,9 @@ export function StateSummaryBar({
   benchedCount,
 }: {
   onFieldCount: string;
-  onFieldHint?: string;
+  onFieldHint?: string | undefined;
   recoveringCount: string;
-  recoveringHint?: string;
+  recoveringHint?: string | undefined;
   recoveringFacts: readonly string[];
   queuedCount: string;
   benchedCount: string;

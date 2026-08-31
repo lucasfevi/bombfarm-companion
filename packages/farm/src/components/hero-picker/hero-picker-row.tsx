@@ -52,7 +52,7 @@ export const HeroPickerRow = memo(function HeroPickerRow({
   onPick: (hero: HeroRecord) => void;
   /** Absent on a host with no roster to write — the Status cell then does not exist, so the
    *  row's cell count still matches the head's (which drops its header on the same condition). */
-  onSetBattleAllowed?: (heroId: string, enabled: boolean) => void;
+  onSetBattleAllowed?: ((heroId: string, enabled: boolean) => void) | undefined;
 }) {
   const rarIdx = RARITIES.indexOf(hero.rarity);
   const battleAllowed = hero.battleAllowed ?? true;

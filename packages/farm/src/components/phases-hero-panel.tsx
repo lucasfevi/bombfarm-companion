@@ -30,7 +30,7 @@ export function PhasesHeroPanel({
   hero: HeroRecord;
   heroFit: HeroPhaseFit | null;
   onSelectHero: (h: HeroRecord) => void;
-  renderPicker?: HeroPickerSlot;
+  renderPicker?: HeroPickerSlot | undefined;
 }) {
   const { t, lang } = useFarmCopy();
   const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);

@@ -70,8 +70,8 @@ export function LivePanel({
   fast: LiveFastModel;
   earnings?: LiveEarnings | null;
   map?: LiveMap | null;
-  onResetEarnings?: () => void;
-  onReopenConsent?: () => void;
+  onResetEarnings?: (() => void) | undefined;
+  onReopenConsent?: (() => void) | undefined;
 }) {
   const t = useCopy();
   const { locale } = useLocale();

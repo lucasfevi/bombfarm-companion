@@ -59,7 +59,7 @@ type Props = {
     reRankActive: boolean;
     /** The scrollport's height, which is what the virtualization window is sized from. Omitted,
      *  the table renders at the height it always had. */
-    scrollportHeightPx?: number;
+    scrollportHeightPx?: number | undefined;
   };
 };
 

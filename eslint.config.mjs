@@ -147,6 +147,21 @@ export default tseslint.config(
       ],
     },
   },
+  // Two blocks, not one, because the desktop is two runtimes that never share a global scope.
+  // One project spanning both put the main process and the renderer in a single program, where
+  // their global augmentations collide: preload declares `Window.bfc` required (it is the code
+  // that creates it) while the renderer declares it optional (it must survive the bridge being
+  // absent), and Next's `ProcessEnv.NODE_ENV` reached main-process tests that never load Next.
+  // Each side is right about its own runtime, so the merged program was one no `tsc` could
+  // compile. Lint never showed that — it reports its own rules, never an assignability error —
+  // so the only cost was phantom errors for anyone who pointed a compiler at the lint config.
+  //
+  // `tsconfig.eslint.json` stays a lint-only projection of the main process rather than becoming
+  // `tsconfig.main.json`: that one is a build project (NodeNext, `outDir`), and under NodeNext's
+  // CJS resolution the program reads `@bombfarm/domain`'s subpath exports as `any` — which does
+  // not fail the build, it turns the typed rules into 47 unsafe-any errors. The renderer needs no
+  // such projection: its own project is already a bundler-resolution, base-tier, noEmit program,
+  // so lint and typecheck there share one program by construction.
   {
     files: farmPackage,
     extends: [...tseslint.configs.recommendedTypeChecked],
@@ -168,11 +183,27 @@ export default tseslint.config(
     },
   },
   {
-    files: ['apps/desktop/src/**/*.ts', 'apps/desktop/renderer/**/*.{ts,tsx}'],
+    files: ['apps/desktop/src/**/*.ts'],
     extends: [...tseslint.configs.strictTypeChecked],
     languageOptions: {
       parserOptions: {
         project: './apps/desktop/tsconfig.eslint.json',
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+    },
+  },
+  {
+    files: ['apps/desktop/renderer/**/*.{ts,tsx}'],
+    extends: [...tseslint.configs.strictTypeChecked],
+    languageOptions: {
+      parserOptions: {
+        project: './apps/desktop/renderer/tsconfig.json',
         tsconfigRootDir: import.meta.dirname,
       },
     },

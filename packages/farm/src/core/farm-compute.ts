@@ -144,7 +144,9 @@ export function buildAccount(inputs: FarmInputs): AccountShared {
       rankMode: 'dps',
       targetProp: 'stone',
     },
-    slots: inputs.slots,
+    // Spread rather than assigned: `AccountShared.slots` is optional-and-absent, never explicitly
+    // undefined, so a host with no House slots figure must omit the key rather than set it.
+    ...(inputs.slots === undefined ? {} : { slots: inputs.slots }),
     fieldSlots: inputs.fieldSlots,
     houseCycleSecs: inputs.houseCycleSecs,
     houseCycleSecsHouseIdx: inputs.houseCycleSecsHouseIdx,

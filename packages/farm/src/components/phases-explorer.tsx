@@ -50,7 +50,7 @@ export type PhasesExplorerSlots = {
   /** Link to the host's own roster-editing screen, shown under the empty-roster message. */
   emptyRosterAction?: ReactNode;
   /** The host's Switch Hero dialog. Without it the hero panel shows a static identity block. */
-  renderPicker?: HeroPickerSlot;
+  renderPicker?: HeroPickerSlot | undefined;
 };
 
 export function PhasesExplorerView({

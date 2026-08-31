@@ -54,8 +54,11 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
 ];
 
 function placeholderSet(value: string): Set<string> {
-  const matches = value.matchAll(/\{(\w+)\}/g);
-  return new Set(Array.from(matches, (match) => match[1]));
+  const names = new Set<string>();
+  for (const match of value.matchAll(/\{(\w+)\}/g)) {
+    if (match[1] !== undefined) names.add(match[1]);
+  }
+  return names;
 }
 
 describe('en/ptBR key-set parity', () => {
