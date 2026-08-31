@@ -31,6 +31,13 @@ and the empty-roster state points at the game rather than at a planner page. The
 present in full: it is advice about where to spend points, which is worth as much beside a live
 account as beside a plan.
 
+The advisor now says on every proposal that this is the best build the search found and not proof
+that no better one exists — on both surfaces. That was true of every answer it has ever given, but
+it only said so when the search had run out of room to keep looking, so the rest of the time its
+silence read as a guarantee it cannot make. The note about running out of room stays, saying only
+the narrower thing it knows: this search stopped at its limit on how many builds it may check,
+rather than because it had run out of improvements to make.
+
 The rotation pool now lays its hero cards out more densely when it is given a narrow column, so
 the ranking table stays visible on a small window instead of starting below the fold. The web
 planner's column is wide enough that its pool is unchanged.

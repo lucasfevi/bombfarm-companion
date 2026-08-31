@@ -95,6 +95,11 @@ export function FarmRespecPanel({
         </Banner>
       ) : (
         <>
+          {/* Unconditional: the search settles on a local best at any budget, so its absence
+              must never be readable as "this one is provably optimal". */}
+          <p className="m-0 text-[11px] text-muted" data-testid="farm-respec-best-found">
+            {t.farmRespecBestFound}
+          </p>
           {panelState.budgetExhausted ? (
             <Banner tone="warn" data-testid="farm-respec-budget-exhausted">
               {t.farmRespecBudgetExhausted}

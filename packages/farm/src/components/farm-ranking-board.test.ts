@@ -193,6 +193,17 @@ describe('Farm Respec Advisor panel — in-place expansion and banners', () => {
     expect(source).not.toContain('Switch');
   });
 
+  it('"the best found, not provably best" is rendered unconditionally, not only when the budget ran out', () => {
+    const source = read('farm-respec-panel.tsx');
+    const noteIndex = source.indexOf('farmRespecBestFound');
+    const branchIndex = source.indexOf('panelState.budgetExhausted');
+    expect(noteIndex).toBeGreaterThan(-1);
+    // Ahead of the only conditional in this branch, so no state of the panel can drop it — the
+    // search settles on a local best at every budget, and a caveat that appears only sometimes
+    // reads as a guarantee the rest of the time.
+    expect(branchIndex).toBeGreaterThan(noteIndex);
+  });
+
   it('the budget-exhausted banner renders ABOVE the metric tiles', () => {
     const source = read('farm-respec-panel.tsx');
     const bannerIndex = source.indexOf('farm-respec-budget-exhausted');
