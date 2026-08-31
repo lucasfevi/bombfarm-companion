@@ -25,13 +25,18 @@ vi.mock('electron-log/main.js', () => ({
   },
 }));
 
-// The non-fixture path now reports status from real process detection (`findProcessId`,
-// process.ts — a synchronous PowerShell spawn, deliberately left untouched and out of scope
-// for this feature). Mocked here so every test controls whether "the game" is running without
-// actually shelling out, the same way `process.ts` itself is never exercised for real in a unit
-// test elsewhere in this repo.
+// The non-fixture path reports status from real process detection. `findProcessId` is a
+// PowerShell spawn; both are mocked here so every test controls whether "the game" is running
+// without actually shelling out.
+//
+// `isProcessAlive` defaults to FALSE, which is what keeps the tests below reading as they always
+// did: with no live pid to reuse, every tick falls through to `findProcessId` and the mocked
+// return value drives the status directly. The cheap-path behaviour that default hides is the
+// point of the change, so it is asserted explicitly in its own describe block rather than left
+// implicit here.
 vi.mock('./process.js', () => ({
-  findProcessId: vi.fn(() => null as number | null),
+  findProcessIdAsync: vi.fn(() => Promise.resolve(null as number | null)),
+  isProcessAlive: vi.fn(() => false),
 }));
 
 // Wrapped rather than replaced, so the real parse still runs (the connected/stale gate depends
@@ -48,9 +53,10 @@ import { log } from '../logging.js';
 import { tickToRawGameState } from '../live-source/tick-to-raw-state.js';
 import type { AccountCommitter } from './game-reader-service.js';
 import { GameReaderService } from './game-reader-service.js';
-import { findProcessId } from './process.js';
+import { findProcessIdAsync, isProcessAlive } from './process.js';
 
-const mockedFindProcessId = vi.mocked(findProcessId);
+const mockedFindProcessId = vi.mocked(findProcessIdAsync);
+const mockedIsProcessAlive = vi.mocked(isProcessAlive);
 const mockedTickToRawGameState = vi.mocked(tickToRawGameState);
 
 /** A `live` currency, the tap's own proof it is currently delivering — the signal `tickLive()`
@@ -64,9 +70,10 @@ function liveFrame(tick: LiveTick, at = '2026-08-22T00:00:00.000Z', sequence = 1
 }
 
 /** `tick()` is private; every test drives it through this cast rather than waiting on the real
- *  poll timer. */
-function forceTick(service: GameReaderService): void {
-  (service as unknown as { tick(): void }).tick();
+ *  poll timer. Awaited, because a live tick may await a process lookup — without that, an
+ *  assertion would read the status from before the lookup landed. */
+async function forceTick(service: GameReaderService): Promise<void> {
+  await (service as unknown as { tick(): Promise<void> }).tick();
 }
 
 describe('GameReaderService — cold boot status (design R-2)', () => {
@@ -94,104 +101,104 @@ describe('GameReaderService — cold boot status (design R-2)', () => {
 });
 
 describe('GameReaderService — the live (non-fixture) tick never fabricates a reading', () => {
-  it('reports not_running when process detection finds nothing, regardless of any ingested tick', () => {
-    mockedFindProcessId.mockReturnValue(null);
+  it('reports not_running when process detection finds nothing, regardless of any ingested tick', async () => {
+    mockedFindProcessId.mockResolvedValue(null);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
     service.ingestLiveTick(liveFrame({ heroes: [], gold: 500, phase: 12 }));
 
-    forceTick(service);
+    await forceTick(service);
 
     expect(service.getStatus().status).toBe('not_running');
   });
 
-  it('reports stale — not a fabricated connected status — when the process is running but no live-tap frame has arrived yet', () => {
-    mockedFindProcessId.mockReturnValue(4242);
+  it('reports stale — not a fabricated connected status — when the process is running but no live-tap frame has arrived yet', async () => {
+    mockedFindProcessId.mockResolvedValue(4242);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
 
-    forceTick(service);
+    await forceTick(service);
 
     expect(service.getStatus().status).toBe('stale');
   });
 
-  it('reports stale when the ingested tick carries no gold, rather than inventing gold: 0', () => {
-    mockedFindProcessId.mockReturnValue(4242);
+  it('reports stale when the ingested tick carries no gold, rather than inventing gold: 0', async () => {
+    mockedFindProcessId.mockResolvedValue(4242);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
     service.ingestLiveTick(liveFrame({ heroes: [] }));
 
-    forceTick(service);
+    await forceTick(service);
 
     expect(service.getStatus().status).toBe('stale');
   });
 
-  it('reports connected once a real frame has been ingested and parses', () => {
-    mockedFindProcessId.mockReturnValue(4242);
+  it('reports connected once a real frame has been ingested and parses', async () => {
+    mockedFindProcessId.mockResolvedValue(4242);
     mockedTickToRawGameState.mockClear();
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
     const tick: LiveTick = { heroes: [], gold: 123456, phase: 26, wave: 3 };
     service.ingestLiveTick(liveFrame(tick, '2026-08-22T00:00:00.000Z'));
     service.ingestLiveCurrency(liveCurrency());
 
-    forceTick(service);
+    await forceTick(service);
 
     expect(service.getStatus().status).toBe('connected');
     expect(mockedTickToRawGameState).toHaveBeenCalledWith(tick);
   });
 
-  it('reports stale despite a cached tick when the tap has ingested a frame but never reported a live currency', () => {
+  it('reports stale despite a cached tick when the tap has ingested a frame but never reported a live currency', async () => {
     // A cached tick with no accompanying proof of liveness must not read as connected — this is
     // the exact shape a caller that forgets to wire ingestLiveCurrency() would produce.
-    mockedFindProcessId.mockReturnValue(4242);
+    mockedFindProcessId.mockResolvedValue(4242);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
     service.ingestLiveTick(liveFrame({ heroes: [], gold: 123456 }, '2026-08-22T00:00:00.000Z'));
 
-    forceTick(service);
+    await forceTick(service);
 
     expect(service.getStatus().status).toBe('stale');
   });
 
-  it('a later tick reflects a newer ingested frame — the parse chain tracks the tap, not a frozen first read', () => {
-    mockedFindProcessId.mockReturnValue(4242);
+  it('a later tick reflects a newer ingested frame — the parse chain tracks the tap, not a frozen first read', async () => {
+    mockedFindProcessId.mockResolvedValue(4242);
     mockedTickToRawGameState.mockClear();
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
     service.ingestLiveCurrency(liveCurrency());
 
     const firstTick: LiveTick = { heroes: [], gold: 100 };
     service.ingestLiveTick(liveFrame(firstTick, '2026-08-22T00:00:00.000Z', 1));
-    forceTick(service);
+    await forceTick(service);
     expect(mockedTickToRawGameState).toHaveBeenLastCalledWith(firstTick);
 
     const secondTick: LiveTick = { heroes: [], gold: 900 };
     service.ingestLiveTick(liveFrame(secondTick, '2026-08-22T00:00:01.000Z', 2));
-    forceTick(service);
+    await forceTick(service);
     expect(mockedTickToRawGameState).toHaveBeenLastCalledWith(secondTick);
     expect(service.getStatus().status).toBe('connected');
   });
 
-  it('processes two frames that share the same `at` timestamp but carry distinct sequence numbers — the dedup key this guards against being millisecond-resolution', () => {
-    mockedFindProcessId.mockReturnValue(4242);
+  it('processes two frames that share the same `at` timestamp but carry distinct sequence numbers — the dedup key this guards against being millisecond-resolution', async () => {
+    mockedFindProcessId.mockResolvedValue(4242);
     mockedTickToRawGameState.mockClear();
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
     service.ingestLiveCurrency(liveCurrency());
 
     const firstTick: LiveTick = { heroes: [], gold: 100 };
     service.ingestLiveTick(liveFrame(firstTick, '2026-08-22T00:00:00.000Z', 1));
-    forceTick(service);
+    await forceTick(service);
     expect(mockedTickToRawGameState).toHaveBeenLastCalledWith(firstTick);
 
     const secondTick: LiveTick = { heroes: [], gold: 900 };
     service.ingestLiveTick(liveFrame(secondTick, '2026-08-22T00:00:00.000Z', 2));
-    forceTick(service);
+    await forceTick(service);
     expect(mockedTickToRawGameState).toHaveBeenLastCalledWith(secondTick);
   });
 
-  it('degrades from connected to stale when the tap reports it has stopped delivering, even though the last tick is still cached — the frozen-tick regression this guards against', () => {
-    mockedFindProcessId.mockReturnValue(4242);
+  it('degrades from connected to stale when the tap reports it has stopped delivering, even though the last tick is still cached — the frozen-tick regression this guards against', async () => {
+    mockedFindProcessId.mockResolvedValue(4242);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
     const tick: LiveTick = { heroes: [], gold: 123456, phase: 26 };
     service.ingestLiveTick(liveFrame(tick, '2026-08-22T00:00:00.000Z'));
     service.ingestLiveCurrency(liveCurrency('2026-08-22T00:00:00.000Z'));
 
-    forceTick(service);
+    await forceTick(service);
     expect(service.getStatus().status).toBe('connected');
 
     // The tap itself detects the client has stopped streaming (or the hook has gone silent) and
@@ -199,62 +206,62 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
     // `ingestLiveCurrency()`. No new tick ever arrives: `latestLiveTick` is untouched.
     service.ingestLiveCurrency(liveGap('clientNotStreaming', '2026-08-22T00:01:00.000Z'));
 
-    forceTick(service);
+    await forceTick(service);
 
     expect(service.getStatus().status).toBe('stale');
   });
 
-  it('reports not_running (never a stale connected) when the process disappears entirely, even with a live currency still cached', () => {
-    mockedFindProcessId.mockReturnValue(4242);
+  it('reports not_running (never a stale connected) when the process disappears entirely, even with a live currency still cached', async () => {
+    mockedFindProcessId.mockResolvedValue(4242);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
     service.ingestLiveTick(liveFrame({ heroes: [], gold: 500 }, '2026-08-22T00:00:00.000Z'));
     service.ingestLiveCurrency(liveCurrency());
-    forceTick(service);
+    await forceTick(service);
     expect(service.getStatus().status).toBe('connected');
 
-    mockedFindProcessId.mockReturnValue(null);
-    forceTick(service);
+    mockedFindProcessId.mockResolvedValue(null);
+    await forceTick(service);
 
     expect(service.getStatus().status).toBe('not_running');
   });
 
-  it('does not re-run the parse chain for an unchanged frame', () => {
-    mockedFindProcessId.mockReturnValue(4242);
+  it('does not re-run the parse chain for an unchanged frame', async () => {
+    mockedFindProcessId.mockResolvedValue(4242);
     mockedTickToRawGameState.mockClear();
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
     service.ingestLiveTick(liveFrame({ heroes: [], gold: 123456, phase: 26 }, '2026-08-22T00:00:00.000Z'));
     service.ingestLiveCurrency(liveCurrency());
 
-    forceTick(service);
+    await forceTick(service);
     expect(service.getStatus().status).toBe('connected');
     expect(mockedTickToRawGameState).toHaveBeenCalledTimes(1);
 
     // Same cached frame, no new ingestLiveTick() in between — the poll that finds nothing new
     // must not re-run the parse from scratch.
-    forceTick(service);
+    await forceTick(service);
 
     expect(service.getStatus().status).toBe('connected');
     expect(mockedTickToRawGameState).toHaveBeenCalledTimes(1);
   });
 
-  it('reports a staleAgeMs derived from the tap-reported gap\'s sinceAt when the tap has stalled', () => {
-    mockedFindProcessId.mockReturnValue(4242);
+  it('reports a staleAgeMs derived from the tap-reported gap\'s sinceAt when the tap has stalled', async () => {
+    mockedFindProcessId.mockResolvedValue(4242);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
     const sinceAt = new Date(Date.now() - 5_000).toISOString();
     service.ingestLiveCurrency(liveGap('clientNotStreaming', sinceAt));
 
-    forceTick(service);
+    await forceTick(service);
 
     expect(service.getStatus().status).toBe('stale');
     expect(service.getStatus().staleAgeMs).toBeGreaterThanOrEqual(5_000);
     expect(service.getStatus().staleAgeMs).toBeLessThan(10_000);
   });
 
-  it('leaves staleAgeMs unset when the process is running but no currency has ever been reported', () => {
-    mockedFindProcessId.mockReturnValue(4242);
+  it('leaves staleAgeMs unset when the process is running but no currency has ever been reported', async () => {
+    mockedFindProcessId.mockResolvedValue(4242);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
 
-    forceTick(service);
+    await forceTick(service);
 
     expect(service.getStatus().status).toBe('stale');
     expect(service.getStatus().staleAgeMs).toBeUndefined();
@@ -262,27 +269,27 @@ describe('GameReaderService — the live (non-fixture) tick never fabricates a r
 });
 
 describe('GameReaderService — consent gates the live process lookup', () => {
-  it('performs zero process-list calls while consent is withheld, even with the game running', () => {
+  it('performs zero process-list calls while consent is withheld, even with the game running', async () => {
     mockedFindProcessId.mockClear();
-    mockedFindProcessId.mockReturnValue(4242);
+    mockedFindProcessId.mockResolvedValue(4242);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => false });
 
-    forceTick(service);
-    forceTick(service);
+    await forceTick(service);
+    await forceTick(service);
 
     expect(mockedFindProcessId).not.toHaveBeenCalled();
     expect(service.getStatus().status).toBe('not_running');
   });
 
-  it('logs nothing naming the process while consent is withheld', () => {
+  it('logs nothing naming the process while consent is withheld', async () => {
     const errorSpy = vi.spyOn(log, 'error').mockClear();
     const infoSpy = vi.spyOn(log, 'info').mockClear();
     const debugSpy = vi.spyOn(log, 'debug').mockClear();
     mockedFindProcessId.mockClear();
-    mockedFindProcessId.mockReturnValue(4242);
+    mockedFindProcessId.mockResolvedValue(4242);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => false });
 
-    forceTick(service);
+    await forceTick(service);
 
     const processName = service.getStatus().processName;
     for (const call of [...errorSpy.mock.calls, ...infoSpy.mock.calls, ...debugSpy.mock.calls]) {
@@ -292,13 +299,13 @@ describe('GameReaderService — consent gates the live process lookup', () => {
     }
   });
 
-  it('begins probing once consent is granted, and stops probing again once it is revoked', () => {
+  it('begins probing once consent is granted, and stops probing again once it is revoked', async () => {
     mockedFindProcessId.mockClear();
-    mockedFindProcessId.mockReturnValue(4242);
+    mockedFindProcessId.mockResolvedValue(4242);
     let granted = false;
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => granted });
 
-    forceTick(service);
+    await forceTick(service);
     expect(mockedFindProcessId).not.toHaveBeenCalled();
     expect(service.getStatus().status).toBe('not_running');
 
@@ -307,34 +314,34 @@ describe('GameReaderService — consent gates the live process lookup', () => {
     granted = true;
     service.ingestLiveTick(liveFrame({ heroes: [], gold: 500 }));
     service.ingestLiveCurrency(liveCurrency());
-    forceTick(service);
+    await forceTick(service);
     expect(mockedFindProcessId).toHaveBeenCalledTimes(1);
     expect(service.getStatus().status).toBe('connected');
 
     granted = false;
-    forceTick(service);
+    await forceTick(service);
     expect(mockedFindProcessId).toHaveBeenCalledTimes(1);
     expect(service.getStatus().status).toBe('not_running');
   });
 });
 
 describe('GameReaderService — pollNow nudges an immediate re-check', () => {
-  it('runs a tick immediately instead of waiting out the poll interval', () => {
+  it('runs a tick immediately instead of waiting out the poll interval', async () => {
     vi.useFakeTimers();
     try {
       mockedFindProcessId.mockClear();
-      mockedFindProcessId.mockReturnValue(null);
+      mockedFindProcessId.mockResolvedValue(null);
       const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
 
       service.start();
-      vi.advanceTimersByTime(0);
+      await vi.advanceTimersByTimeAsync(0);
       mockedFindProcessId.mockClear();
 
-      vi.advanceTimersByTime(9_000);
+      await vi.advanceTimersByTimeAsync(9_000);
       expect(mockedFindProcessId).not.toHaveBeenCalled();
 
       service.pollNow();
-      vi.advanceTimersByTime(0);
+      await vi.advanceTimersByTimeAsync(0);
 
       expect(mockedFindProcessId).toHaveBeenCalledTimes(1);
       service.stop();
@@ -390,15 +397,15 @@ describe('GameReaderService — account store wiring (T10, design §8)', () => {
     expect(service.getAccountView()).toBe(FAKE_VIEW);
   });
 
-  it('never calls accountStore.commit() from a live (non-fixture) tick — sourced from the authenticated route', () => {
-    mockedFindProcessId.mockReturnValue(4242);
+  it('never calls accountStore.commit() from a live (non-fixture) tick — sourced from the authenticated route', async () => {
+    mockedFindProcessId.mockResolvedValue(4242);
     const { committer, calls } = fakeCommitter();
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
     service.setAccountStore(committer);
     service.ingestLiveTick(liveFrame({ heroes: [], gold: 500 }));
 
-    forceTick(service);
-    forceTick(service);
+    await forceTick(service);
+    await forceTick(service);
 
     expect(calls).toHaveLength(0);
     expect(service.getAccountView()).toBeNull();
@@ -469,7 +476,7 @@ describe('GameReaderService — shutdown ordering (fix/fixture-tick-after-db-clo
   // Before this fix there was no latch: a stray post-stop `tick()` call would run
   // `tickFixture()` (or, before the try/catch was added, throw uncaught) exactly as if
   // shutdown had never happened.
-  it('stop() latches immediately — a tick invoked after stop() never reaches accountStore.commit() again', () => {
+  it('stop() latches immediately — a tick invoked after stop() never reaches accountStore.commit() again', async () => {
     const { committer, calls } = fakeCommitter();
     const service = new GameReaderService('/fake/user-data', { mode: 'fixture' });
     service.setAccountStore(committer);
@@ -480,7 +487,7 @@ describe('GameReaderService — shutdown ordering (fix/fixture-tick-after-db-clo
 
     // Simulate a timer callback that still fires after stop() cleared it (the private
     // dispatcher is exactly what scheduleNext()'s setTimeout callback invokes).
-    forceTick(service);
+    await forceTick(service);
 
     expect(calls).toHaveLength(1); // unchanged — the post-stop tick was a no-op
   });
@@ -503,7 +510,7 @@ describe('GameReaderService — status pushes', () => {
   const statusPushes = (channels: string[]) =>
     channels.filter((channel) => channel === 'bfc:event:game:status').length;
 
-  it('does not push a status event for ticks that only carry a newer read timestamp', () => {
+  it('does not push a status event for ticks that only carry a newer read timestamp', async () => {
     const { provider, channels } = statusSpy();
     const service = new GameReaderService('/fake/user-data', { mode: 'fixture' });
     service.setWindowProvider(provider);
@@ -521,7 +528,7 @@ describe('GameReaderService — status pushes', () => {
       while (Date.now() === startedAt) {
         /* advance past this millisecond */
       }
-      forceTick(service);
+      await forceTick(service);
     }
     service.stop();
 
@@ -549,70 +556,70 @@ describe('GameReaderService — status pushes', () => {
 });
 
 describe('GameReaderService — onConnected fires only on a transition into connected', () => {
-  it('fires exactly once when a poll first reports connected', () => {
-    mockedFindProcessId.mockReturnValue(4242);
+  it('fires exactly once when a poll first reports connected', async () => {
+    mockedFindProcessId.mockResolvedValue(4242);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
     const onConnected = vi.fn();
     service.onConnected = onConnected;
     service.ingestLiveTick(liveFrame({ heroes: [], gold: 500 }));
     service.ingestLiveCurrency(liveCurrency());
 
-    forceTick(service);
+    await forceTick(service);
 
     expect(service.getStatus().status).toBe('connected');
     expect(onConnected).toHaveBeenCalledTimes(1);
   });
 
-  it('does not fire again while later polls keep reporting connected', () => {
-    mockedFindProcessId.mockReturnValue(4242);
+  it('does not fire again while later polls keep reporting connected', async () => {
+    mockedFindProcessId.mockResolvedValue(4242);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
     const onConnected = vi.fn();
     service.onConnected = onConnected;
     service.ingestLiveTick(liveFrame({ heroes: [], gold: 500 }));
     service.ingestLiveCurrency(liveCurrency());
 
-    forceTick(service);
-    forceTick(service);
-    forceTick(service);
+    await forceTick(service);
+    await forceTick(service);
+    await forceTick(service);
 
     expect(service.getStatus().status).toBe('connected');
     expect(onConnected).toHaveBeenCalledTimes(1);
   });
 
-  it('does not fire on a transition into a non-connected status', () => {
-    mockedFindProcessId.mockReturnValue(null);
+  it('does not fire on a transition into a non-connected status', async () => {
+    mockedFindProcessId.mockResolvedValue(null);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
     const onConnected = vi.fn();
     service.onConnected = onConnected;
 
-    forceTick(service);
+    await forceTick(service);
 
     expect(service.getStatus().status).toBe('not_running');
     expect(onConnected).not.toHaveBeenCalled();
   });
 
-  it('fires again on a second transition after dropping back to a non-connected status in between', () => {
-    mockedFindProcessId.mockReturnValue(4242);
+  it('fires again on a second transition after dropping back to a non-connected status in between', async () => {
+    mockedFindProcessId.mockResolvedValue(4242);
     const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
     const onConnected = vi.fn();
     service.onConnected = onConnected;
     service.ingestLiveTick(liveFrame({ heroes: [], gold: 500 }));
     service.ingestLiveCurrency(liveCurrency());
 
-    forceTick(service);
+    await forceTick(service);
     expect(onConnected).toHaveBeenCalledTimes(1);
 
-    mockedFindProcessId.mockReturnValue(null);
-    forceTick(service);
+    mockedFindProcessId.mockResolvedValue(null);
+    await forceTick(service);
     expect(onConnected).toHaveBeenCalledTimes(1);
 
-    mockedFindProcessId.mockReturnValue(4242);
+    mockedFindProcessId.mockResolvedValue(4242);
     // The not_running branch wipes the cached tick/currency (the same honesty
     // "consent withdrawn" already has), so a reconnect needs a fresh frame before it can settle
     // on connected again rather than a stale one.
     service.ingestLiveTick(liveFrame({ heroes: [], gold: 500 }, '2026-08-22T00:00:01.000Z', 2));
     service.ingestLiveCurrency(liveCurrency('2026-08-22T00:00:01.000Z'));
-    forceTick(service);
+    await forceTick(service);
 
     expect(service.getStatus().status).toBe('connected');
     expect(onConnected).toHaveBeenCalledTimes(2);
@@ -656,12 +663,12 @@ describe('fixture mode advances the account balance from the streamed gold', () 
     return Number(account?.gold);
   }
 
-  it('holds the fixture baseline until a frame has arrived', () => {
+  it('holds the fixture baseline until a frame has arrived', async () => {
     vi.useFakeTimers();
     try {
       const { service, committed } = fixtureService();
       service.start();
-      vi.advanceTimersByTime(ONE_TICK_MS);
+      await vi.advanceTimersByTimeAsync(ONE_TICK_MS);
       service.stop();
 
       expect(committed.length).toBeGreaterThan(0);
@@ -673,7 +680,7 @@ describe('fixture mode advances the account balance from the streamed gold', () 
     }
   });
 
-  it("adds what the stream earned, rather than adopting the capture account's own balance", () => {
+  it("adds what the stream earned, rather than adopting the capture account's own balance", async () => {
     vi.useFakeTimers();
     try {
       const { service, committed } = fixtureService();
@@ -681,9 +688,9 @@ describe('fixture mode advances the account balance from the streamed gold', () 
       const baseline = Number((committed[0]?.account as Record<string, unknown>).gold);
 
       service.ingestLiveTick(frameWithGold(36_736_079, 1));
-      vi.advanceTimersByTime(ONE_TICK_MS);
+      await vi.advanceTimersByTimeAsync(ONE_TICK_MS);
       service.ingestLiveTick(frameWithGold(36_767_047, 2));
-      vi.advanceTimersByTime(ONE_TICK_MS);
+      await vi.advanceTimersByTimeAsync(ONE_TICK_MS);
       service.stop();
 
       // The capture's own balance is ~36.7M; the fixture's is its own. What lands is the fixture's
@@ -695,15 +702,15 @@ describe('fixture mode advances the account balance from the streamed gold', () 
     }
   });
 
-  it('keeps the balance a digit string, the way the wire sends it', () => {
+  it('keeps the balance a digit string, the way the wire sends it', async () => {
     vi.useFakeTimers();
     try {
       const { service, committed } = fixtureService();
       service.start();
       service.ingestLiveTick(frameWithGold(36_736_079, 1));
-      vi.advanceTimersByTime(ONE_TICK_MS);
+      await vi.advanceTimersByTimeAsync(ONE_TICK_MS);
       service.ingestLiveTick(frameWithGold(36_740_000, 2));
-      vi.advanceTimersByTime(ONE_TICK_MS);
+      await vi.advanceTimersByTimeAsync(ONE_TICK_MS);
       service.stop();
 
       const account = committed[committed.length - 1]?.account as Record<string, unknown>;
@@ -713,17 +720,17 @@ describe('fixture mode advances the account balance from the streamed gold', () 
     }
   });
 
-  it('never lets the balance fall, even if a later frame reports less gold', () => {
+  it('never lets the balance fall, even if a later frame reports less gold', async () => {
     vi.useFakeTimers();
     try {
       const { service, committed } = fixtureService();
       service.start();
       service.ingestLiveTick(frameWithGold(36_767_047, 1));
-      vi.advanceTimersByTime(ONE_TICK_MS);
+      await vi.advanceTimersByTimeAsync(ONE_TICK_MS);
       const high = latestGold(committed);
 
       service.ingestLiveTick(frameWithGold(36_736_079, 2));
-      vi.advanceTimersByTime(ONE_TICK_MS);
+      await vi.advanceTimersByTimeAsync(ONE_TICK_MS);
       service.stop();
 
       expect(latestGold(committed)).toBeGreaterThanOrEqual(high);
@@ -765,22 +772,22 @@ describe('the streamed balance never falls, whatever resets upstream', () => {
     return Number(committed[committed.length - 1]?.account?.gold);
   }
 
-  it('holds the earned balance across a stop and a restart', () => {
+  it('holds the earned balance across a stop and a restart', async () => {
     vi.useFakeTimers();
     try {
       const { service, committed } = fixtureService();
       service.start();
       service.ingestLiveTick(frameWithGold(36_736_079, 1));
-      vi.advanceTimersByTime(ONE_TICK_MS);
+      await vi.advanceTimersByTimeAsync(ONE_TICK_MS);
       service.ingestLiveTick(frameWithGold(36_767_047, 2));
-      vi.advanceTimersByTime(ONE_TICK_MS);
+      await vi.advanceTimersByTimeAsync(ONE_TICK_MS);
       const earned = latestGold(committed);
       service.stop();
 
       // A restart re-baselining on the next frame would silently give the whole gain back.
       service.start();
       service.ingestLiveTick(frameWithGold(36_767_047, 3));
-      vi.advanceTimersByTime(ONE_TICK_MS);
+      await vi.advanceTimersByTimeAsync(ONE_TICK_MS);
       service.stop();
 
       expect(latestGold(committed)).toBeGreaterThanOrEqual(earned);
@@ -789,24 +796,85 @@ describe('the streamed balance never falls, whatever resets upstream', () => {
     }
   });
 
-  it('holds it when a frame arrives reporting a balance below the first one seen', () => {
+  it('holds it when a frame arrives reporting a balance below the first one seen', async () => {
     vi.useFakeTimers();
     try {
       const { service, committed } = fixtureService();
       service.start();
       service.ingestLiveTick(frameWithGold(36_767_047, 1));
-      vi.advanceTimersByTime(ONE_TICK_MS);
+      await vi.advanceTimersByTimeAsync(ONE_TICK_MS);
       service.ingestLiveTick(frameWithGold(36_800_000, 2));
-      vi.advanceTimersByTime(ONE_TICK_MS);
+      await vi.advanceTimersByTimeAsync(ONE_TICK_MS);
       const earned = latestGold(committed);
 
       service.ingestLiveTick(frameWithGold(1_000, 3));
-      vi.advanceTimersByTime(ONE_TICK_MS);
+      await vi.advanceTimersByTimeAsync(ONE_TICK_MS);
       service.stop();
 
       expect(latestGold(committed)).toBe(earned);
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('GameReaderService — the recurring tick must never spawn a process', () => {
+  /**
+   * Finding the game costs a PowerShell cold start: ~166ms with Electron's single-threaded main
+   * process blocked for all of it. This tick runs every 50ms while the game is connected, so
+   * paying that here meant the main process sat inside a child process more than three times its
+   * own poll budget, permanently. The window message loop is on that same thread, which is why a
+   * window being dragged froze and jumped in step with it.
+   *
+   * Checking a pid already in hand is a syscall instead. These assert the CALL COUNT, not the
+   * resulting status: the status is identical either way, so a status assertion would pass with
+   * the whole cheap path deleted.
+   */
+  it('looks the game up once, then verifies the pid it already holds instead of looking again', async () => {
+    mockedFindProcessId.mockResolvedValue(4242);
+    mockedIsProcessAlive.mockReturnValue(true);
+    const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
+    mockedFindProcessId.mockClear();
+
+    for (let i = 0; i < 20; i++) await forceTick(service);
+
+    expect(mockedFindProcessId).toHaveBeenCalledTimes(1);
+    expect(mockedIsProcessAlive).toHaveBeenCalledWith(4242);
+  });
+
+  it('looks again as soon as the process it was holding is gone, rather than reporting a dead pid', async () => {
+    mockedFindProcessId.mockResolvedValue(4242);
+    mockedIsProcessAlive.mockReturnValue(true);
+    const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
+    await forceTick(service);
+    mockedFindProcessId.mockClear();
+
+    // The game exits: the held pid stops existing, and nothing else has changed.
+    mockedIsProcessAlive.mockReturnValue(false);
+    mockedFindProcessId.mockResolvedValue(null);
+    await forceTick(service);
+
+    expect(mockedFindProcessId).toHaveBeenCalledTimes(1);
+    expect(service.getStatus().status).toBe('not_running');
+  });
+
+  it('does not keep a pid it is no longer allowed to have once consent is withdrawn', async () => {
+    mockedFindProcessId.mockResolvedValue(4242);
+    mockedIsProcessAlive.mockReturnValue(true);
+    let granted = true;
+    const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => granted });
+    await forceTick(service);
+
+    granted = false;
+    await forceTick(service);
+    mockedFindProcessId.mockClear();
+    mockedIsProcessAlive.mockClear();
+
+    granted = true;
+    await forceTick(service);
+
+    // Nothing was carried across the revocation: the pid is found again from scratch.
+    expect(mockedIsProcessAlive).not.toHaveBeenCalled();
+    expect(mockedFindProcessId).toHaveBeenCalledTimes(1);
   });
 });
