@@ -1,6 +1,6 @@
 {
   "name": "@bombfarm/desktop",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "private": true,
   "description": "Bomb Farm Companion desktop shell",
   "repository": {

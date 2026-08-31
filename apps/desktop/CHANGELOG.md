@@ -1,5 +1,12 @@
 # @bombfarm/desktop
 
+## 0.7.2
+
+### Patch Changes
+
+- Updated dependencies [fa1d5fa]
+  - @bombfarm/pricing@0.1.2
+
 ## 0.7.1
 
 ### Patch Changes
