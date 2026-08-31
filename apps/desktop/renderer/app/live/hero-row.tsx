@@ -130,9 +130,9 @@ export function HeroRow({
    * Omitted for a hero the fast channel does not reach — queued, benched — which keeps the
    * snapshot's own figure.
    */
-  energyFraction?: number;
+  energyFraction?: number | undefined;
   /** Drains the row's colour — a hero who is out of the rotation entirely, not resting inside it. */
-  muted?: boolean;
+  muted?: boolean | undefined;
   trailing?: ReactNode;
 }) {
   return (

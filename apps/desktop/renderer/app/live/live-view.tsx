@@ -12,7 +12,7 @@ function getBridge(): NonNullable<Window['bfc']> | null {
   return (window as unknown as { bfc?: NonNullable<Window['bfc']> }).bfc ?? null;
 }
 
-export function LiveView({ onReopenConsent }: { onReopenConsent?: () => void }) {
+export function LiveView({ onReopenConsent }: { onReopenConsent?: (() => void) | undefined }) {
   const t = useCopy();
   const { freshness, slow, fast, earnings, map } = useLiveModel();
 

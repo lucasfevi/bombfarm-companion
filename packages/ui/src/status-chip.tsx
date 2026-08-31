@@ -9,8 +9,8 @@ export interface StatusChipProps {
   /** Caller-supplied, already-translated text — i18n stays out of the design system. */
   label: string;
   /** Preformatted duration (e.g. `"3m"`); only meaningful for `stale`. */
-  ageLabel?: string;
-  className?: string;
+  ageLabel?: string | undefined;
+  className?: string | undefined;
 }
 
 const STATUS_TONE: Record<GameConnectionStatus, ChipVariant> = {

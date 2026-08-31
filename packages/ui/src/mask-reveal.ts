@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { MotionStyle } from 'motion/react';
 
 /**
  * Soft edge reveal animation style for collapsible/accordion panels.
@@ -8,7 +8,7 @@ import type { CSSProperties } from 'react';
  *
  * See `docs/animation.md` rule 2 for the full rationale.
  */
-export const maskRevealStyle: CSSProperties = {
+export const maskRevealStyle: MotionStyle = {
   maskImage: 'linear-gradient(black var(--mask-stop), transparent var(--mask-stop))',
   WebkitMaskImage: 'linear-gradient(black var(--mask-stop), transparent var(--mask-stop))',
 };

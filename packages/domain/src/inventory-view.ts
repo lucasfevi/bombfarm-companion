@@ -561,7 +561,7 @@ export const INVENTORY_SORT_KEYS: readonly InventorySortKey[] = [
  * before anything else, and the reason the default is two terms rather than one: rarity alone
  * leaves a Lendária nv10 sitting above a Lendária nv100.
  */
-export const DEFAULT_INVENTORY_SORT: InventorySort = [
+export const DEFAULT_INVENTORY_SORT: readonly [InventorySortTerm, ...InventorySortTerm[]] = [
   { key: 'rarity', direction: 'desc' },
   { key: 'level', direction: 'desc' },
 ];

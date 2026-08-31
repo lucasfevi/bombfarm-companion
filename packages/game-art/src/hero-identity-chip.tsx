@@ -19,7 +19,7 @@ export function HeroIdentityChip({
   lang: Lang;
   variant?: HeroIdentityVariant;
   /** `data-testid` on the element carrying the hero's own name, for a caller that needs one. */
-  nameTestId?: string;
+  nameTestId?: string | undefined;
 }) {
   if (!hero) {
     return (

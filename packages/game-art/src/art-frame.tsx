@@ -10,7 +10,7 @@ type Props = {
   size?: ArtFrameSize;
   shape?: ArtFrameShape;
   fill?: ArtFrameFill;
-  className?: string;
+  className?: string | undefined;
   children: React.ReactNode;
 };
 

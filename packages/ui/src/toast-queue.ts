@@ -144,14 +144,14 @@ function upsertBuffer(
 
 function applyPush(state: ToastQueueState, input: ToastInput, now: number): ToastQueueState {
   const existingIndex = state.all.findIndex((entry) => entry.key === input.key);
-  const isCoalesce = existingIndex >= 0;
+  const prev = existingIndex >= 0 ? state.all[existingIndex] : undefined;
+  const isCoalesce = prev !== undefined;
 
   let entry: ToastEntry;
   let nextAll: ToastEntry[];
   let seq = state.seq;
 
-  if (isCoalesce) {
-    const prev = state.all[existingIndex];
+  if (prev !== undefined) {
     entry = {
       ...input,
       id: prev.id,
@@ -174,7 +174,7 @@ function applyPush(state: ToastQueueState, input: ToastInput, now: number): Toas
   }
 
   const { visible, overflow } = splitVisible(nextAll);
-  const prevProgress = isCoalesce ? state.all[existingIndex].progress : undefined;
+  const prevProgress = prev?.progress;
 
   return {
     ...state,

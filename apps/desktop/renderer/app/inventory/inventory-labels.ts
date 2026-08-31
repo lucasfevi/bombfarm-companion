@@ -46,7 +46,7 @@ function fill(template: string, vars: Record<string, string | number>): string {
 /** `chest_item_90` is the level-90 item chest; `chest_key_3`/`chest_gem_2` name their contents. */
 function chestName(defId: string, t: Copy): string {
   const itemChest = /^chest_item_(\d+)$/.exec(defId);
-  if (itemChest) return fill(t.inventoryChestItem, { level: itemChest[1] });
+  if (itemChest?.[1] !== undefined) return fill(t.inventoryChestItem, { level: itemChest[1] });
   if (defId.startsWith('chest_gem')) return t.inventoryChestGem;
   if (defId.startsWith('chest_key')) return t.inventoryChestKey;
   if (defId.startsWith('chest_skill')) return t.inventoryChestSkill;

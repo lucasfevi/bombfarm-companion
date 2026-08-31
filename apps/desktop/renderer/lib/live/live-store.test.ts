@@ -213,8 +213,9 @@ describe('createLiveStore — applies each arrival as it lands, with no display 
       emit(fastUpdateEvent(90 - frame));
     }
 
-    expect(published.length).toBeGreaterThan(1);
     const [firstModel, ...rest] = published;
+    if (firstModel === undefined) throw new Error('the store published nothing to compare');
+    expect(rest.length).toBeGreaterThan(0);
     expect(firstModel.slow).not.toBeNull();
     for (const model of rest) {
       expect(model.slow).toBe(firstModel.slow);

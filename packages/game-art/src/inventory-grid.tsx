@@ -96,9 +96,9 @@ export interface InventoryGridLabels {
   itemStat: (stat: InventoryViewStat) => InventoryStatText;
   badges: (item: InventoryViewItem) => InventoryBadge[];
   /** Footer left. `null` when the item is loose, or when the caller has no roster. */
-  equippedBy?: (item: InventoryViewItem) => InventoryEquippedBy | null;
+  equippedBy?: ((item: InventoryViewItem) => InventoryEquippedBy | null) | undefined;
   /** Names the hero filter's options; a caller with no roster returns the id. */
-  heroOption?: (heroId: string) => InventoryHeroOption;
+  heroOption?: ((heroId: string) => InventoryHeroOption) | undefined;
   /** One set-filter option, e.g. "Lv 30 · Coal". Level leads because the level is what the list
    *  ranks by — the set name is how a player says it. */
   setOption: (group: InventorySetGroup) => string;
@@ -112,25 +112,25 @@ export interface InventoryGridLabels {
   toolbar: InventoryToolbarLabels;
   /** Rendered in the `other` group's header — the raw category codes it holds, so an
    *  unrecognized item type can be reported without re-reading a capture. */
-  unknownCategoryNote?: (codes: readonly number[]) => string;
-  skippedNote?: (count: number) => string;
-  empty: { title: string; description?: string };
+  unknownCategoryNote?: ((codes: readonly number[]) => string) | undefined;
+  skippedNote?: ((count: number) => string) | undefined;
+  empty: { title: string; description?: string | undefined };
 }
 
 export interface InventoryGridProps {
   view: InventoryView;
   labels: InventoryGridLabels;
-  onSelectItem?: (item: InventoryViewItem) => void;
-  className?: string;
+  onSelectItem?: ((item: InventoryViewItem) => void) | undefined;
+  className?: string | undefined;
   /** Omitted by a shell with no market snapshot, which then renders exactly as it did before. */
-  priceOf?: (entry: InventoryEntry) => MarketPriceView | null;
-  priceLabels?: MarketPriceLabels;
+  priceOf?: ((entry: InventoryEntry) => MarketPriceView | null) | undefined;
+  priceLabels?: MarketPriceLabels | undefined;
   /** Whether the market is quoting a price for one item right now — the `Priced` chip's predicate.
    *  Supplied by the host, which owns the snapshot; absent drops the chip. */
-  isPricedItem?: (item: InventoryViewItem) => boolean;
+  isPricedItem?: ((item: InventoryViewItem) => boolean) | undefined;
   /** Slot at the toolbar's right edge, in the corner of the list itself. */
   toolbarActions?: ReactNode;
-  renderPriceAction?: (entry: InventoryEntry) => ReactNode;
+  renderPriceAction?: ((entry: InventoryEntry) => ReactNode) | undefined;
 }
 
 function unknownCategoryCodes(group: InventoryGroup): number[] {
@@ -263,9 +263,9 @@ const InventoryCard = memo(function InventoryCard({
 }: {
   entry: InventoryEntry;
   labels: InventoryGridLabels;
-  onSelect?: (item: InventoryViewItem) => void;
-  price?: MarketPriceView | null;
-  priceLabels?: MarketPriceLabels;
+  onSelect?: ((item: InventoryViewItem) => void) | undefined;
+  price?: MarketPriceView | null | undefined;
+  priceLabels?: MarketPriceLabels | undefined;
   priceAction?: ReactNode;
 }) {
   const { item, count } = entry;
