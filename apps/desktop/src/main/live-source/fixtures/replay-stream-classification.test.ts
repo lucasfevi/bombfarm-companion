@@ -91,8 +91,9 @@ describe('replay-stream.bin drives the full path: bytes -> ticks -> field countd
     // instead of being discarded, so every frame but the malformed one decodes, in order.
     expect(ticks).toEqual([...preMalformedFrames, ...postMalformedFrames].map((frame) => frame.tick));
 
+    // No /roster was captured beside this frame stream, so the identity join names nobody.
     const normalized = normalizeRotation(buildRotationBody(), []);
-    expect(normalized.drops).toEqual([]);
+    expect(normalized.drops).toEqual([{ path: '(roster)', reason: 'missing' }]);
 
     // No hero here carries a drain-reduction ability — the unreduced base is the true rate for
     // every one of them, the same rate the countdown falls back to once a fit is trusted.

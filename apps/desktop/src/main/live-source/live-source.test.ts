@@ -668,6 +668,49 @@ describe('LiveSource: observed and self-fetched rotation converge on one path, n
     expect(hero?.name).toBe('Alice');
   });
 
+  it('a read that committed a rotation body but no roster keeps the names the last roster gave, rather than blanking every hero', () => {
+    const { source, clock } = createHarness();
+    source.start();
+
+    function view(rosterHeroes: readonly Record<string, unknown>[] | undefined): AccountView {
+      return {
+        payload: {
+          casa: bodyWithHeroes([completeHero('h1')]),
+          ...(rosterHeroes !== undefined ? { heroes: rosterHeroes } : {}),
+        },
+        gameRunning: true,
+        store: { status: 'ok', reason: null, binding: 'sqlite' },
+      };
+    }
+
+    source.ingestRotation(view([{ id: 'h1', name: 'Alice', rank: 'gold', skin: 3 }]), clock.ms);
+
+    source.ingestRotation(view(undefined), clock.ms + 1_000);
+
+    const hero = source.getView().rotation?.heroes.find((candidate) => candidate.id === 'h1');
+    expect(hero?.name).toBe('Alice');
+    expect(hero?.grade).toBe('gold');
+    expect(hero?.skin).toBe(3);
+  });
+
+  it('an empty roster array does not count as a roster either — /roster yields one only when it read at least one hero', () => {
+    const { source, clock } = createHarness();
+    source.start();
+
+    function view(rosterHeroes: readonly Record<string, unknown>[]): AccountView {
+      return {
+        payload: { casa: bodyWithHeroes([completeHero('h1')]), heroes: rosterHeroes },
+        gameRunning: true,
+        store: { status: 'ok', reason: null, binding: 'sqlite' },
+      };
+    }
+
+    source.ingestRotation(view([{ id: 'h1', name: 'Alice', rank: 'gold' }]), clock.ms);
+    source.ingestRotation(view([]), clock.ms + 1_000);
+
+    expect(source.getView().rotation?.heroes.find((candidate) => candidate.id === 'h1')?.name).toBe('Alice');
+  });
+
   it('identifies a real /rotation-shaped body observed from traffic and feeds it through the same rotation the Live screen already renders', () => {
     const { source, currentTap, clock } = createHarness();
     source.start();

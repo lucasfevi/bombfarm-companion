@@ -503,8 +503,9 @@ describe('classifyRotation — liveOnField overrides a stale snapshot', () => {
 describe('classifyRotation — the captured full-and-waiting state', () => {
   const captured = loadFixtureJson('rotation-snapshot-ready.json', 'api') as unknown as RotationNormalizeResult;
 
-  it('normalizes with no drops, carrying all four activities', () => {
-    expect(captured.drops).toEqual([]);
+  it('normalizes with no field dropped, carrying all four activities', () => {
+    // Normalized against an empty roster, so the single entry names the join, not a body field.
+    expect(captured.drops).toEqual([{ path: '(roster)', reason: 'missing' }]);
     const seen = new Set(captured.snapshot.heroes.map((hero) => hero.activity));
     expect([...seen].sort()).toEqual(['benched', 'inField', 'ready', 'resting']);
   });
