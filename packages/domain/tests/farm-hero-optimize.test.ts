@@ -22,7 +22,6 @@ import { farmObjectiveScales } from '@bombfarm/domain/farm-optimize-objective';
 import { optimizeBuild } from '@bombfarm/domain/points-reopt';
 import { budgetOf, reoptBudget, REOPT_KEYS } from '@bombfarm/domain/points-reopt-core';
 import { pipelineForHero } from '@bombfarm/domain/roster-dps';
-import { effectiveFarmPhase, effectiveMitigationPct } from '@bombfarm/domain/farm-context';
 import { ZERO_PTS, type SheetKey } from '@bombfarm/domain/planner-constants';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
@@ -104,16 +103,12 @@ describe('re-running on its own proposal is a fixed point, not a compounding gai
 
 describe('the two targets are genuinely different searches', () => {
   it('at least one hero gets a different allocation under farm than under DPS', () => {
-    const phase = effectiveFarmPhase(account.phase ?? null);
-    const mitigationPct = effectiveMitigationPct({
-      phase: account.phase ?? null,
-      mitigationPct: null,
-    });
+    const { phase, mitigationPct } = account.context;
+    if (phase == null) throw new Error('fixture must carry account.context.phase for this test');
 
     const divergent = improvedEntries.filter(({ basis }) => {
       const hero = heroes.find((h) => h.id === basis.heroId)!;
       const pipeline = pipelineForHero(hero, account, phase, mitigationPct);
-      if (pipeline === null) return false;
       const dps = optimizeBuild({
         pts: basis.pts,
         effective: pipeline.effective,
