@@ -1,4 +1,5 @@
 import type { StateCreator } from 'zustand';
+import type { RankMode } from '@bombfarm/domain/model';
 import type { Lang } from '@/shared/i18n';
 import { saveLang } from '@/shared/i18n';
 import type { PlannerStore } from '@/shared/stores/planner-store';
@@ -29,6 +30,13 @@ export type SessionSlice = {
   shouldSkipAccountToast: boolean;
   /** Shell-owned import dialog — replaces AppShellBridge openImport. */
   importDialogOpen: boolean;
+  /**
+   * What the Points tab's on-demand Optimize build search scores against. Deliberately NOT
+   * `rankMode`: that one drives the Next point panel's ranking, and a player may reasonably
+   * rank their next point by farm rate while reallocating a whole build for damage. Session
+   * state, not account context — nothing about it is worth carrying into a save.
+   */
+  optimizeMode: RankMode;
 
   setLang: (next: Lang) => void;
   hydrateLang: (lang: Lang) => void;
@@ -44,6 +52,7 @@ export type SessionSlice = {
   openImportDialog: () => void;
   closeImportDialog: () => void;
   setImportDialogOpen: (open: boolean) => void;
+  setOptimizeMode: (next: RankMode) => void;
 };
 
 export const createSessionSlice: StateCreator<
@@ -59,6 +68,7 @@ export const createSessionSlice: StateCreator<
   shouldSkipHeroToast: true,
   shouldSkipAccountToast: true,
   importDialogOpen: false,
+  optimizeMode: 'dps',
 
   setLang: (next) => {
     const previous = get().lang;
@@ -143,5 +153,10 @@ export const createSessionSlice: StateCreator<
   setImportDialogOpen: (open) => {
     if (get().importDialogOpen === open) return;
     set({ importDialogOpen: open });
+  },
+
+  setOptimizeMode: (next) => {
+    if (get().optimizeMode === next) return;
+    set({ optimizeMode: next });
   },
 });

@@ -74,7 +74,8 @@ export function buildFixtures() {
 
   // A second, later capture whose roster is not the one the calibration bodies carry, so every
   // hero joins with no name — which is the routine absence the boundary already models, and the
-  // reason this fixture is normalized against an empty roster rather than a mismatched one.
+  // reason this fixture is normalized against an empty roster rather than a mismatched one. Its
+  // `drops` therefore carries the one entry that names the empty join.
   const readyBody = loadBodies('rotation-ready.json');
   fixtures.push({ name: 'rotation-snapshot-ready.json', payload: normalizeRotation(readyBody, []) });
 

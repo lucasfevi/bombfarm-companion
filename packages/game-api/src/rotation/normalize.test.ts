@@ -336,6 +336,30 @@ describe('roster join', () => {
     );
     expect(hero.skin).toBeUndefined();
   });
+
+  it('a join that named nobody reports one drop for the join itself, not one per hero and not silence', () => {
+    const result = normalizeRotation(rotationBody, undefined);
+    expect(result.drops).toEqual([{ path: '(roster)', reason: 'missing' }]);
+    expect(result.snapshot.heroes.length).toBeGreaterThan(1);
+    for (const hero of result.snapshot.heroes) {
+      expect(hero.name).toBeUndefined();
+      expect(hero.skin).toBeUndefined();
+    }
+  });
+
+  it('an empty roster array reports the same join drop — the join found nothing however it was spelled', () => {
+    expect(normalizeRotation(rotationBody, []).drops).toEqual([{ path: '(roster)', reason: 'missing' }]);
+  });
+
+  it('a roster that named even one hero is not a failed join — the routine mid-refresh case stays quiet', () => {
+    const rosterArray = rosterHeroes as ReadonlyArray<Record<string, unknown>>;
+    const oneEntry = rosterArray.filter((entry) => entry['id'] === '555');
+    expect(normalizeRotation(rotationBody, oneEntry).drops).toEqual([]);
+  });
+
+  it('a rotation body with no heroes at all reports no join drop — there was nothing to name', () => {
+    expect(normalizeRotation({ ...rotationBody, heroes: [] }, undefined).drops).toEqual([]);
+  });
 });
 
 describe('edge cases', () => {

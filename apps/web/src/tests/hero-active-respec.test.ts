@@ -9,7 +9,6 @@ import {
   resetAdvisorPipelineCache,
   resetPlannerStoreForTests,
   selectAdvisorPipeline,
-  selectHeroesWithResetAdvice,
   selectPointsTabStatus,
   usePlannerStore,
 } from '@/shared/stores';
@@ -99,22 +98,6 @@ describe('disabled heroes and automatic respec advice', () => {
     usePlannerStore.getState().applyHero(hero);
     return hero;
   }
-
-  it('selectHeroesWithResetAdvice drops a disabled hero and restores them when re-enabled', () => {
-    hydrateFiringCora(true);
-    expect(selectAdvisorPipeline(usePlannerStore.getState()).resetAdvice.recommend).toBe(true);
-    expect(selectHeroesWithResetAdvice(usePlannerStore.getState()).map((row) => row.heroId)).toEqual([
-      'seed-cora',
-    ]);
-
-    usePlannerStore.getState().setHeroBattleAllowedOnHero('seed-cora', false);
-    expect(selectHeroesWithResetAdvice(usePlannerStore.getState())).toEqual([]);
-
-    usePlannerStore.getState().setHeroBattleAllowedOnHero('seed-cora', true);
-    expect(selectHeroesWithResetAdvice(usePlannerStore.getState()).map((row) => row.heroId)).toEqual([
-      'seed-cora',
-    ]);
-  });
 
   it('selectPointsTabStatus warn-dots only while the open hero is enabled', () => {
     hydrateFiringCora(true);

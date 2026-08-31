@@ -225,6 +225,14 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
             addedKeys: outcome.addedKeys,
           });
         }
+        if (outcome.kind === 'failed') {
+          deps.log.warn({
+            scope: 'account-refresh',
+            event: 'section.failed',
+            section: route.section,
+            reason: outcome.reason,
+          });
+        }
         outcomes[route.section] = outcome;
       }
       currentAbort = null;

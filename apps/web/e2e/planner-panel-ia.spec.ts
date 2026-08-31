@@ -130,7 +130,7 @@ test.describe('planner tabs IA (PTI)', () => {
   });
 });
 
-test.describe('HeroStrip reset-advice warn chrome + roster banner', () => {
+test.describe('HeroStrip reset-advice warn chrome', () => {
   // Confirmed directly against computeAdvisorPipeline (not guessed): pts.cdr = level fires the
   // reset gate (~251% gainPct) on this seeded hero; pts.attack = level does not (~0%).
   function heroStripHero(pts: Record<string, number>, battleAllowed?: boolean) {
@@ -183,25 +183,12 @@ test.describe('HeroStrip reset-advice warn chrome + roster banner', () => {
     await expect(quiet).not.toHaveClass(/border-\[color-mix/);
   });
 
-  test('roster banner names the hero with level and Optimize build when the gate fires', async ({
-    page,
-  }) => {
+  test('no roster-wide banner is drawn above the strip when the gate fires', async ({ page }) => {
     await seedLocalStorage(page, heroStripHero(firingPts));
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
 
-    const banner = page.getByRole('status').filter({ hasText: /Cora \(Lv 38\)/i });
-    await expect(banner).toBeVisible();
-    await expect(banner).toContainText(/sustained DPS/i);
-    await expect(banner).toContainText(/Optimize build/i);
-    await expect(banner).toContainText(/Points/i);
-  });
-
-  test('roster banner is absent when no hero triggers the gate', async ({ page }) => {
-    await seedLocalStorage(page, heroStripHero(quietPts));
-    await page.goto('/');
-    await selectSavedHero(page, 'Cora');
-
+    await expect(heroStripSection(page)).toHaveClass(/border-\[color-mix/);
     await expect(page.getByRole('status').filter({ hasText: /Optimize build/i })).toHaveCount(0);
   });
 
@@ -223,12 +210,11 @@ test.describe('HeroStrip reset-advice warn chrome + roster banner', () => {
     await expect(page.getByRole('tab', { name: /^Points$/i }).locator('[data-tab-badge="warn"]')).toBeVisible();
   });
 
-  test('a disabled hero is left out of banner, strip warn, and Points tab warn', async ({ page }) => {
+  test('a disabled hero is left out of the strip warn and the Points tab warn', async ({ page }) => {
     await seedLocalStorage(page, heroStripHero(firingPts, false));
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
 
-    await expect(page.getByRole('status').filter({ hasText: /Optimize build/i })).toHaveCount(0);
     await expect(heroStripSection(page)).toHaveClass(/\bborder-line\b/);
     await expect(heroStripSection(page)).not.toHaveClass(/border-\[color-mix/);
     await expect(page.getByRole('tab', { name: /^Points$/i }).locator('[data-tab-badge="warn"]')).toHaveCount(0);
@@ -241,7 +227,6 @@ test.describe('HeroStrip reset-advice warn chrome + roster banner', () => {
 
     await page.getByRole('switch', { name: /enable or disable this hero/i }).click();
 
-    await expect(page.getByRole('status').filter({ hasText: /Cora \(Lv 38\)/i })).toBeVisible();
     await expect(heroStripSection(page)).toHaveClass(/border-\[color-mix/);
     await expect(page.getByRole('tab', { name: /^Points$/i }).locator('[data-tab-badge="warn"]')).toBeVisible();
   });

@@ -1,7 +1,7 @@
 /**
  * The two-tier copy contract, enforced over the strings themselves
- * (data), not a rendered component. Tier 1 (the automatic gate — `resetAdviceRoster*` /
- * `resetAdviceGain*`) may only claim a LOWER BOUND and must name Optimize build as the
+ * (data), not a rendered component. Tier 1 (the automatic gate — `resetAdviceGain*`) may only
+ * claim a LOWER BOUND and must name Optimize build as the
  * definitive answer. Tier 2 (`optimizeBuild*` / `previewApply*`, on demand) may claim the best
  * allocation ITS OWN search found, but never optimality, and never frames a result larger than
  * Tier 1's estimate as a correction or an inconsistency — tier monotonicity already guarantees
@@ -56,13 +56,17 @@ const CORRECTION_PATTERNS: Record<Lang, RegExp[]> = {
   pt: [/\bcorreç(ão|ões)\b/i, /\bcorrig(e|ir|ido)\b/i, /\binconsistent[ea]?\b/i, /\berro\b/i],
 };
 
-const TIER1_KEYS = ['resetAdviceRosterBanner', 'resetAdviceGainLine'] as const;
+const TIER1_KEYS = ['resetAdviceGainLine'] as const;
 const TIER2_KEYS = [
   'optimizeBuildButton',
   'optimizeBuildResultLine',
   'optimizeBuildKeptCurrent',
   'optimizeBuildBudgetExhausted',
   'optimizeBuildNoBudgetReason',
+  'optimizeBuildFarmResultLine',
+  'optimizeBuildFarmKeptCurrent',
+  'optimizeBuildFarmNoPool',
+  'optimizeBuildFarmNoRate',
   'previewApplyButton',
   'previewClearButton',
   'previewRespecNote',
@@ -98,10 +102,6 @@ describe('i18n copy contract — Tier 1 (reset advice gate) never over-claims', 
 
     it(`${lang}: resetAdviceGainLine carries the lower-bound marker ("at least ~X%" / "pelo menos ~X%")`, () => {
       expect(t.resetAdviceGainLine).toMatch(LOWER_BOUND_MARKER[lang]);
-    });
-
-    it(`${lang}: resetAdviceRosterBanner has no percentage slot — nothing to over-promise`, () => {
-      expect(t.resetAdviceRosterBanner).not.toMatch(/\{pct\}/);
     });
 
     it(`${lang}: resetAdviceGainLine's percentage never appears bare — always preceded by the hedge`, () => {
@@ -144,10 +144,46 @@ describe('i18n copy contract — Tier 2 (Optimize build) claims "best found", ne
   }
 });
 
+/**
+ * Optimize build searches for one of two things and they are denominated differently — one
+ * hero's sustained DPS, or the whole rotation's gold per hour. A result line that named the
+ * other target's unit would be a wrong number rather than a clumsy sentence, so each line has
+ * to name its own unit and must not name the other's. The Tier 1 gate is DPS-only and is held
+ * to the same rule: it now says so, because an unqualified "possible gain" no longer says which
+ * of the two targets it measured.
+ */
+describe('i18n copy contract — the two Optimize build targets never borrow each other unit', () => {
+  const DPS_UNIT: Record<Lang, RegExp> = { en: /sustained[- ]DPS/i, pt: /DPS efetivo/i };
+  const FARM_UNIT: Record<Lang, RegExp> = { en: /gold per hour/i, pt: /ouro por hora/i };
+
+  for (const lang of LANGS) {
+    const t = STRINGS[lang];
+
+    it(`${lang}: the DPS result line names sustained DPS and never gold per hour`, () => {
+      expect(t.optimizeBuildResultLine).toMatch(DPS_UNIT[lang]);
+      expect(t.optimizeBuildResultLine).not.toMatch(FARM_UNIT[lang]);
+    });
+
+    it(`${lang}: the farm result line names gold per hour and never sustained DPS`, () => {
+      expect(t.optimizeBuildFarmResultLine).toMatch(FARM_UNIT[lang]);
+      expect(t.optimizeBuildFarmResultLine).not.toMatch(DPS_UNIT[lang]);
+    });
+
+    it(`${lang}: the Tier 1 gate line says the gain it found is a sustained-DPS one`, () => {
+      expect(t.resetAdviceGainLine).toMatch(DPS_UNIT[lang]);
+      expect(t.tabPointsResetAdvice).toMatch(DPS_UNIT[lang]);
+    });
+
+    it(`${lang}: the two kept-current lines are distinct — neither target speaks for the other`, () => {
+      expect(t.optimizeBuildFarmKeptCurrent).not.toBe(t.optimizeBuildKeptCurrent);
+    });
+  }
+});
+
 describe('i18n copy contract — key naming keeps the two tiers apart', () => {
-  it('Tier 1 keys are all resetAdviceRoster* / resetAdviceGain*', () => {
+  it('Tier 1 keys are all resetAdviceGain*', () => {
     for (const key of TIER1_KEYS) {
-      expect(key).toMatch(/^resetAdvice(Roster|Gain)/);
+      expect(key).toMatch(/^resetAdviceGain/);
     }
   });
 

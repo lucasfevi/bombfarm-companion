@@ -204,6 +204,20 @@ jobs:
           BFC_FLAVOR: dev
           BFC_GAME_READER: fixture
 
+      # The capture carries a per-component render tally; the compare step prints only totals.
+      # When a runner disagrees with the baseline the difference is answerable by diffing two
+      # captures, and unanswerable from the totals alone — 95 versus 93 says nothing about WHICH
+      # two components went missing. Uploaded before the comparison and on failure, because the
+      # run that disagrees is the one worth keeping.
+      - name: Upload render-count capture
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: render-count-capture-${{ github.sha }}
+          path: apps/desktop/tests/render-count/out/render-count-capture.json
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Compare against baseline (gated fields only)
         run: pnpm --filter @bombfarm/desktop render-count:compare
 

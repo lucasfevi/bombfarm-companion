@@ -366,6 +366,10 @@ export function normalizeRotation(body: unknown, roster: unknown): RotationNorma
     });
   }
 
+  if (heroes.length > 0 && heroes.every((hero) => hero.name === undefined)) {
+    drops.push({ path: '(roster)', reason: 'missing' });
+  }
+
   const house = normalizeHouse(body[wireKey('house')], drops);
   const rescues = normalizeRescues(body, drops);
 
