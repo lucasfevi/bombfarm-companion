@@ -4,7 +4,6 @@ import { HeroAbilitiesTab } from './hero-abilities-tab';
 import { GearTab } from './gear-tab';
 import { AdviceColumn } from './advice-column';
 import { HeroStrip } from './hero-strip';
-import { ResetAdviceRosterBanner } from './reset-advice-roster-banner';
 import { Tabs, Tooltip } from '@bombfarm/ui';
 import type { TabStatus } from '@bombfarm/domain/planner-tab-status';
 import { usePlannerTab } from '../hooks/use-planner-tab';
@@ -36,12 +35,7 @@ export function PlannerTabs() {
 
   return (
     <div className={plannerStageClass}>
-      {!noHeroYet ? (
-        <>
-          <ResetAdviceRosterBanner />
-          <HeroStrip />
-        </>
-      ) : null}
+      {!noHeroYet ? <HeroStrip /> : null}
       <Tooltip.Provider delay={0} closeDelay={0}>
         <Tabs.Root value={tab} onValueChange={setTab}>
           <Tabs.List>

@@ -73,11 +73,6 @@ export {
   readAdvisorDepTuple,
 } from '@/shared/stores/selectors/advisor-selectors';
 export {
-  selectHeroesWithResetAdvice,
-  resetResetAdviceRosterCache,
-} from '@/shared/stores/selectors/reset-advice-roster-selectors';
-export type { ResetAdviceRosterRow } from '@/shared/stores/selectors/reset-advice-roster-selectors';
-export {
   selectHeroName,
   selectHeroRarity,
   selectHeroLevel,
@@ -152,5 +147,11 @@ export {
   selectNextPointBest,
   selectBestStat,
   selectBestGainPct,
+  selectActiveHeroFarmBases,
 } from '@/shared/stores/selectors/next-point-selectors';
-export type { NextPointRanking } from '@/shared/stores/selectors/next-point-selectors';
+export type { NextPointRanking, ActiveHeroFarmBases } from '@/shared/stores/selectors/next-point-selectors';
+export {
+  runHeroFarmOptimize,
+  getHeroFarmOptimizeSolveCount,
+  resetHeroFarmOptimizeSolveCount,
+} from '@/shared/stores/selectors/points-farm-optimize-selectors';

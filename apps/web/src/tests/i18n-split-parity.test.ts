@@ -225,6 +225,11 @@ const KEYS_REMOVED: readonly string[] = [
   // Farm board redesign (2026-08-19): the locked-phase "Push target" badge is withdrawn — it
   // wrapped onto a second line in the phase cell and grew every row it appeared on.
   'farmRankingPushTargetBadge',
+  // The roster-wide reset banner is withdrawn (2026-08-31). It restated, across the top of the
+  // planner, advice the hero strip's warn border and the Points panel's own gain line already
+  // carry for the hero being looked at. Its two strings have no reader left.
+  'resetAdviceRosterBanner',
+  'resetAdviceRosterHero',
 ];
 
 /**
@@ -606,6 +611,15 @@ const KEYS_ADDED: readonly string[] = [
   'downloadScreenSettingsItem2',
   'downloadScreenSettingsItem3',
   'downloadScreenSettingsItem4',
+  // Optimize build gains a target (2026-08-31): the same button now searches for sustained DPS
+  // or for the rotation's gold rate. `optimizeModeLabel` names the Select that picks; the four
+  // `optimizeBuildFarm*` strings are the farm target's own result and no-result lines, kept
+  // separate from the DPS ones because the two are denominated in different units.
+  'optimizeModeLabel',
+  'optimizeBuildFarmResultLine',
+  'optimizeBuildFarmKeptCurrent',
+  'optimizeBuildFarmNoPool',
+  'optimizeBuildFarmNoRate',
 ];
 
 /**
@@ -664,6 +678,10 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   // own `clearSecs` for the selected phase instead of modelling clear time a second way, so
   // `phasesClearDisclaimer` no longer describes a "mid-map sustained" estimate.
   'phasesClearDisclaimer',
+  // Optimize build gains a target (2026-08-31): the Tier 1 gain line now names sustained DPS as
+  // the thing it measured, and points at the DPS setting of the button rather than the button.
+  // With a farm target on the same control, an unqualified "possible gain" no longer says which.
+  'resetAdviceGainLine',
 ];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {

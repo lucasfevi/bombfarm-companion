@@ -7,7 +7,7 @@ import { pointsExceedLevel } from '@bombfarm/domain/point-inference';
 import { sub } from '@/shared/i18n';
 import { useAppLang } from '@/shared/context/app-lang';
 import { numberFormatterFor } from '@/shared/lib/format-number';
-import { usePlannerStore, selectAdvisorPipeline } from '@/shared/stores';
+import { usePlannerStore, selectAdvisorPipeline, runHeroFarmOptimize } from '@/shared/stores';
 import { Button, DataTable, Panel } from '@bombfarm/ui';
 import {
   mutedClass,
@@ -40,6 +40,8 @@ export function PointsTable() {
   const setPts = usePlannerStore((state) => state.setPts);
   const pipeline = usePlannerStore(selectAdvisorPipeline);
   const heroBattleAllowed = usePlannerStore((state) => state.heroBattleAllowed);
+  const optimizeMode = usePlannerStore((state) => state.optimizeMode);
+  const setOptimizeMode = usePlannerStore((state) => state.setOptimizeMode);
   const { spentDelta, pointDelta, adjusted, resetAdvice } = pipeline;
 
   const [preview, setPreview] = useState<PointsPreview | null>(null);
@@ -52,7 +54,18 @@ export function PointsTable() {
   }
 
   function handleOptimize() {
-    // On demand, in the click handler only — never render, a selector, or an effect.
+    // On demand, in the click handler only — never render, a selector, or an effect. That rule
+    // is load-bearing for both targets and hardest for farm, whose every candidate costs a
+    // squad-wide phase sweep.
+    setJustApplied(false);
+    if (optimizeMode === 'farm') {
+      // Read through getState() rather than a subscription: the farm search needs the whole
+      // rotation pool, and subscribing this component to it would drag a roster-wide dependency
+      // onto a panel that renders one hero.
+      const farm = runHeroFarmOptimize(usePlannerStore.getState());
+      setPreview({ mode: 'farm', pts: farm.pts, result: farm });
+      return;
+    }
     const result = optimizeBuild({
       pts,
       effective: pipeline.effective,
@@ -60,15 +73,14 @@ export function PointsTable() {
       context: pipeline.context,
       level,
     });
-    setJustApplied(false);
-    setPreview({ pts: result.pts, result });
+    setPreview({ mode: 'dps', pts: result.pts, result });
   }
 
   function handleApply() {
     if (!preview) return;
     // Spec edge case: a search with no measurable gain is a no-op, not a rewrite of an
     // equally-scoring reshuffle — and no respec note for zero player benefit.
-    if (hasApplicableGain(preview.result)) {
+    if (hasApplicableGain(preview)) {
       // preview.pts already echoes pts.luck untouched — no special-casing needed.
       setPts(preview.pts);
       setJustApplied(true);
@@ -168,7 +180,12 @@ export function PointsTable() {
         t={t}
         preview={preview}
         justApplied={justApplied}
-        optimize={{ disabled: budget <= 0, disabledReason: budget <= 0 ? t.optimizeBuildNoBudgetReason : null }}
+        optimize={{
+          disabled: budget <= 0,
+          disabledReason: budget <= 0 ? t.optimizeBuildNoBudgetReason : null,
+          mode: optimizeMode,
+          onModeChange: setOptimizeMode,
+        }}
         formatNumber={boundFormatNumber}
         onOptimize={handleOptimize}
         onApply={handleApply}
