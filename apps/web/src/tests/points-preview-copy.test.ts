@@ -1,10 +1,28 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { hasApplicableGain, optimizeResultDisplay } from '@/features/planner/model/points-preview-copy';
+import {
+  farmOptimizeNotice,
+  farmOptimizeResultDisplay,
+  hasApplicableGain,
+  optimizeResultDisplay,
+  previewResultDisplay,
+  type PointsPreview,
+} from '@/features/planner/model/points-preview-copy';
+import type { HeroFarmOptimizeOutcome, HeroFarmOptimizeResult } from '@bombfarm/domain/farm-hero-optimize';
+import type { ReoptResult } from '@bombfarm/domain/points-reopt';
+import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
 import { STRINGS, type Lang } from '@/shared/i18n';
 import { numberFormatterFor } from '@/shared/lib/format-number';
 
 const LANGS: Lang[] = ['en', 'pt'];
+
+function dpsPreview(gainPct: number): PointsPreview {
+  return { mode: 'dps', pts: ZERO_PTS(), result: { gainPct } as ReoptResult };
+}
+
+function farmPreview(outcome: HeroFarmOptimizeOutcome, gainPct: number): PointsPreview {
+  return { mode: 'farm', pts: ZERO_PTS(), result: { outcome, gainPct } as HeroFarmOptimizeResult };
+}
 
 describe('optimizeResultDisplay', () => {
   for (const lang of LANGS) {
@@ -51,15 +69,62 @@ describe('optimizeResultDisplay', () => {
 
 describe('hasApplicableGain (spec edge case: Apply is a no-op at zero gain)', () => {
   it('false at exactly 0', () => {
-    expect(hasApplicableGain({ gainPct: 0 })).toBe(false);
+    expect(hasApplicableGain(dpsPreview(0))).toBe(false);
   });
 
   it('false at floating-point noise near 0', () => {
-    expect(hasApplicableGain({ gainPct: 4.44e-14 })).toBe(false);
+    expect(hasApplicableGain(dpsPreview(4.44e-14))).toBe(false);
   });
 
   it('true for any measurable gain', () => {
-    expect(hasApplicableGain({ gainPct: 0.5 })).toBe(true);
-    expect(hasApplicableGain({ gainPct: 251.24 })).toBe(true);
+    expect(hasApplicableGain(dpsPreview(0.5))).toBe(true);
+    expect(hasApplicableGain(dpsPreview(251.24))).toBe(true);
   });
+
+  it('a farm preview that did not improve is never applicable, whatever its percentage reads', () => {
+    expect(hasApplicableGain(farmPreview('nothingToGain', 0))).toBe(false);
+    expect(hasApplicableGain(farmPreview('noFeasiblePhase', 12))).toBe(false);
+    expect(hasApplicableGain(farmPreview('emptyPool', 12))).toBe(false);
+  });
+
+  it('a farm preview that improved by a measurable amount is applicable', () => {
+    expect(hasApplicableGain(farmPreview('improved', 3.4))).toBe(true);
+    expect(hasApplicableGain(farmPreview('improved', 4.44e-14))).toBe(false);
+  });
+});
+
+describe('the two targets never borrow each other unit', () => {
+  for (const lang of LANGS) {
+    const t = STRINGS[lang];
+
+    it(`${lang}: a farm result renders the gold-per-hour line, never the sustained-DPS one`, () => {
+      const display = farmOptimizeResultDisplay(t, { outcome: 'improved', gainPct: 7.25 }, numberFormatterFor(lang));
+      expect(display?.kind).toBe('delta');
+      if (display?.kind !== 'delta') return;
+      const html = renderToStaticMarkup(display.node);
+      expect(html).toContain(lang === 'pt' ? 'ouro por hora' : 'gold per hour');
+      expect(html).not.toContain(lang === 'pt' ? 'DPS efetivo' : 'sustained DPS');
+    });
+
+    it(`${lang}: previewResultDisplay dispatches on the preview's own mode`, () => {
+      const dps = previewResultDisplay(t, dpsPreview(7.25), numberFormatterFor(lang));
+      const farm = previewResultDisplay(t, farmPreview('improved', 7.25), numberFormatterFor(lang));
+      expect(dps?.kind).toBe('delta');
+      expect(farm?.kind).toBe('delta');
+      if (dps?.kind !== 'delta' || farm?.kind !== 'delta') return;
+      expect(renderToStaticMarkup(dps.node)).not.toBe(renderToStaticMarkup(farm.node));
+    });
+
+    it(`${lang}: an outcome with nothing to compare says why instead of printing a 0% gain`, () => {
+      for (const outcome of ['emptyPool', 'heroNotInPool', 'degenerate', 'noFeasiblePhase'] as const) {
+        expect(farmOptimizeResultDisplay(t, { outcome, gainPct: 0 }, numberFormatterFor(lang))).toBeNull();
+        expect(farmOptimizeNotice(t, outcome)).toBeTruthy();
+      }
+    });
+
+    it(`${lang}: an outcome the search actually compared carries no notice`, () => {
+      expect(farmOptimizeNotice(t, 'improved')).toBeNull();
+      expect(farmOptimizeNotice(t, 'nothingToGain')).toBeNull();
+    });
+  }
 });

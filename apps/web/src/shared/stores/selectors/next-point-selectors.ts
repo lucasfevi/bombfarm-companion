@@ -212,44 +212,56 @@ function composeBases(
   return { bases, addedToPool: !activeEnabled };
 }
 
+/**
+ * The rotation pool with the ACTIVE hero's live draft spliced in at its roster position — the
+ * shared input for every farm-scored read the Points tab makes: the Next point ranking below,
+ * and the on-demand Optimize build search under its farm target. Composition itself is cheap;
+ * the two expensive halves (`selectFarmPoolBases`, `selectDraftFarmBasis`) carry their own memos.
+ */
+export type ActiveHeroFarmBases =
+  | { kind: 'ready'; bases: readonly HeroFarmBasis[]; heroId: string; addedToPool: boolean }
+  | { kind: 'unavailable'; outcome: 'emptyPool' | 'heroNotInPool' };
+
+export function selectActiveHeroFarmBases(state: PlannerStore): ActiveHeroFarmBases {
+  // No roster at all — short-circuited before any domain call, same shape as
+  // computeFarmRanking's own 'no-roster' check in farm-ranking-selectors.ts. Checked BEFORE
+  // activeHeroId, because an empty roster is the state a brand-new user with an unsaved draft
+  // and no activeHeroId is actually in.
+  if (state.heroes.length === 0) return { kind: 'unavailable', outcome: 'emptyPool' };
+
+  const activeHeroId = state.activeHeroId;
+  // Heroes exist but none is selected — the panel that renders this has no hero to show
+  // advice for in the first place. Defensive: reuses heroNotInPool rather than inventing a
+  // new outcome for a state the UI does not normally reach.
+  if (activeHeroId == null) return { kind: 'unavailable', outcome: 'heroNotInPool' };
+
+  const draftBasis = selectDraftFarmBasis(state);
+  if (draftBasis == null) return { kind: 'unavailable', outcome: 'heroNotInPool' };
+
+  const poolBases = selectFarmPoolBases(state);
+  const { bases, addedToPool } = composeBases(state, poolBases, draftBasis, activeHeroId);
+  if (bases.length === 0) return { kind: 'unavailable', outcome: 'emptyPool' };
+
+  return { kind: 'ready', bases, heroId: activeHeroId, addedToPool };
+}
+
 function computeNextPointRanking(state: PlannerStore): NextPointRanking {
   const pipeline = selectAdvisorPipeline(state);
   if (state.rankMode === 'dps') {
     return { rows: pipeline.ranking, mode: 'dps', fallback: null, addedToPool: false, phase: null };
   }
 
-  // No roster at all — short-circuited before the domain call, same shape as
-  // computeFarmRanking's own 'no-roster' check in farm-ranking-selectors.ts. Checked BEFORE
-  // activeHeroId, because an empty roster is the state a brand-new user with an unsaved draft
-  // and no activeHeroId is actually in.
-  if (state.heroes.length === 0) {
-    return dpsFallback('farm', 'emptyPool', pipeline.ranking);
+  const composed = selectActiveHeroFarmBases(state);
+  if (composed.kind === 'unavailable') {
+    return dpsFallback('farm', composed.outcome, pipeline.ranking);
   }
-
-  const activeHeroId = state.activeHeroId;
-  if (activeHeroId == null) {
-    // Heroes exist but none is selected — the panel that renders this has no hero to show
-    // advice for in the first place. Defensive: reuses heroNotInPool rather than inventing a
-    // new outcome for a state the UI does not normally reach.
-    return dpsFallback('farm', 'heroNotInPool', pipeline.ranking);
-  }
-
-  const draftBasis = selectDraftFarmBasis(state);
-  if (draftBasis == null) {
-    return dpsFallback('farm', 'heroNotInPool', pipeline.ranking);
-  }
-
-  const poolBases = selectFarmPoolBases(state);
-  const { bases, addedToPool } = composeBases(state, poolBases, draftBasis, activeHeroId);
-  if (bases.length === 0) {
-    return dpsFallback('farm', 'emptyPool', pipeline.ranking);
-  }
+  const { bases, heroId, addedToPool } = composed;
 
   farmRankComputeCount += 1;
   const result = rankNextPointForFarm({
     bases,
     account: buildAccount(state),
-    heroId: activeHeroId,
+    heroId,
     maxPhase: state.maxPhase,
     returnBonus: state.farmReturnBonus,
   });

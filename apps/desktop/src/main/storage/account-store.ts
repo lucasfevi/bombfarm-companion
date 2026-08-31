@@ -5,9 +5,11 @@ import type {
   AccountStoreStatus,
   AccountView,
   RestoredAccount,
+  SectionFidelity,
   StoredAccountFidelity,
   StoredSectionFidelity,
 } from '@bombfarm/contracts';
+import { isTrustworthySection } from '@bombfarm/contracts';
 import { decodeStoredSection, resolveAccountKey } from './account-rows.js';
 import { ACCOUNT_SECTIONS } from './account-schema.js';
 import type { LogPort, OpenResult } from './index.js';
@@ -15,6 +17,14 @@ import type { FsPort } from './legacy-snapshot.js';
 import { readLegacySnapshotPayload } from './legacy-snapshot.js';
 import { mergeStoredIntoLive } from './merge-account.js';
 import { judgeStoredSection } from './stale-sections.js';
+
+/** Deliberately the same test `mergeStoredIntoLive` applies when deciding whether a degraded body
+ *  may be served: a section good enough to show is good enough to keep, or it reads fine while the
+ *  game runs and is gone the moment it closes. */
+function isWritableFidelity(fidelity: SectionFidelity): fidelity is SectionFidelity & { capturedAt: string } {
+  if (fidelity.status === 'resolved') return true;
+  return fidelity.status === 'degraded' && isTrustworthySection(fidelity);
+}
 
 export interface AccountStoreDeps {
   log?: LogPort;
@@ -224,11 +234,10 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
   }
 
   /**
-   * Writes section `S` iff `payload.fidelity?.[S]?.status === 'resolved'` and `payload[S]`
-   * is present — an allow-list of exactly one status, so a future/unknown
-   * status (e.g. `degraded`) is never written by default. `capturedAt` is stored
-   * verbatim. All writes for one poll run inside one transaction; a throw mid-poll rolls
-   * back the whole poll, leaving every previously stored section untouched.
+   * Writes section `S` iff `payload[S]` is present and {@link isWritableFidelity} accepts its
+   * status — an allow-list, so a future/unknown status is never written by default. `capturedAt`
+   * is stored verbatim. All writes for one poll run inside one transaction; a throw mid-poll
+   * rolls back the whole poll, leaving every previously stored section untouched.
    */
   function persist(payload: AccountPayload, opts: PersistOpts = {}): PersistResult {
     if (closed || !db) {
@@ -246,7 +255,7 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
     for (const section of ACCOUNT_SECTIONS) {
       const sectionFidelity = fidelity[section];
       const body = untypedPayload[section];
-      if (sectionFidelity.status === 'resolved' && body !== undefined) {
+      if (isWritableFidelity(sectionFidelity) && body !== undefined) {
         toWrite.push({ section, body, capturedAt: sectionFidelity.capturedAt });
       }
     }

@@ -11,7 +11,7 @@ export { accountChangeKey, canonicalStringify } from './account-change-key.js';
  *  body, never at either module's top level, so the two modules finish initialising before either
  *  is actually called. */
 export * from './locale.js';
-export { disabledUpdateStatus } from './update.js';
+export { disabledUpdateStatus, idleUpdateStatus, initialUpdateStatus } from './update.js';
 export type { UpdateErrorReason, UpdatePhase, UpdateStatus } from './update.js';
 export { isTrustworthySection } from './account-payload.js';
 export type {

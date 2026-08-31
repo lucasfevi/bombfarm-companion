@@ -36,7 +36,6 @@ pnpm dev:web      # web planner only
 | `pnpm test:smoke` | Playwright Electron app-boot smoke test |
 | `pnpm --filter @bombfarm/web build` | Web static export |
 | `pnpm --filter @bombfarm/desktop package:dev` | Local diagnostic installer (not distributed) |
-| `pnpm --filter @bombfarm/desktop package:nightly` | Nightly-channel installer |
 | `pnpm --filter @bombfarm/desktop package:beta` | Beta-channel installer |
 | `pnpm --filter @bombfarm/desktop package:prod` | Production installer (`latest` channel) |
 
@@ -52,10 +51,9 @@ Path-filtered GitHub Actions (quality only — **no** deploy workflow):
 | `changesets.yml` | PRs + `develop` push — changeset validation and requirement |
 | `release-pr.yml` | `develop` push — release PR rail and beta installer when desktop ships |
 | `release-sync.yml` | release PR merged to `main` — version sync back to `develop` |
-| `nightly.yml` | schedule + dispatch — nightly desktop prerelease |
-| `release-prod.yml` | `main` push — prod desktop artifact (GitHub Release when enabled) |
+| `release-prod.yml` | `main` push — prod desktop artifact and the public GitHub Release |
 
-Desktop installers are built by **nightly**, the **release-PR beta job**, and **release-prod** — not on every `main` push. See [`docs/releases.md`](docs/releases.md).
+Desktop installers are built by the **release-PR beta job** and **release-prod** — not on every `main` push. See [`docs/releases.md`](docs/releases.md).
 
 **Vercel (Git integration):** production deploys from `main` to [https://bombfarm-companion.vercel.app](https://bombfarm-companion.vercel.app). Every push to `develop` updates the pre-production preview at [https://bombfarm-companion-git-develop-lucasfevi-projects.vercel.app](https://bombfarm-companion-git-develop-lucasfevi-projects.vercel.app). That preview is behind **Vercel Authentication** and is not a shareable playtester link. No Custom Environment, custom domain, or new GitHub Actions secret is involved. Framework: Next.js. **Root Directory:** `apps/web`. Branching: [`docs/branching.md`](docs/branching.md). Prefer green `ci-web` (including `pnpm --filter @bombfarm/web build`) before treating prod as healthy.
 
@@ -74,16 +72,15 @@ Feature PRs carry changesets → merge to `develop` → an always-current releas
 
 ## Desktop flavors
 
-Four isolated desktop flavors share one codebase. Set `BFC_FLAVOR` to `dev`, `nightly`, `beta`, or `prod` at build/run time. When unset in an **unpackaged** local run, the app defaults to `dev`.
+Three isolated desktop flavors share one codebase. Set `BFC_FLAVOR` to `dev`, `beta`, or `prod` at build/run time. When unset in an **unpackaged** local run, the app defaults to `dev`.
 
 | Flavor | App ID | User data (`%APPDATA%`) | How obtained | Distributed |
 | --- | --- | --- | --- | --- |
 | `dev` | `net.bombfarm.companion.dev` | `Bomb Farm Companion (Dev)` | Local run / `package:dev` | No |
-| `nightly` | `net.bombfarm.companion.nightly` | `Bomb Farm Companion (Nightly)` | Installed / `package:nightly` | Yes (`nightly` channel) |
 | `beta` | `net.bombfarm.companion.beta` | `Bomb Farm Companion (Beta)` | Installed / `package:beta` | Yes (`beta` channel) |
 | `prod` | `net.bombfarm.companion` | `Bomb Farm Companion` | Installed / `package:prod` | Yes (`latest` channel) |
 
-Each flavor has its own app ID, install entry, and data directory so nightly, beta, and prod can coexist on one machine alongside a local `dev` run.
+Each flavor has its own app ID, install entry, and data directory so beta and prod can coexist on one machine alongside a local `dev` run.
 
 ## Repository layout
 

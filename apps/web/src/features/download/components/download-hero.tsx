@@ -1,6 +1,6 @@
 import { buttonRecipe, cn } from '@bombfarm/ui';
 import { sub, type Lang, type Strings } from '@/shared/i18n';
-import { CHANNEL, RELEASES_URL, REPO_URL } from '../model/release';
+import { RELEASES_URL, REPO_URL } from '../model/release';
 import type { LatestRelease } from '../model/latest-release';
 import { LiveReplica } from './live/live-replica';
 import { TrustLine } from './trust-line';
@@ -37,9 +37,6 @@ export function DownloadHero({
               <span className="ml-2 font-mono text-xs opacity-70">v{release.version}</span>
             ) : null}
           </a>
-          <span className="rounded-sm border border-gold/45 bg-[color-mix(in_oklch,var(--gold)_12%,transparent)] px-2.5 py-1 font-mono text-[10px] tracking-wider text-gold uppercase">
-            {t.downloadChannelChip}
-          </span>
         </div>
 
         <p
@@ -47,12 +44,8 @@ export function DownloadHero({
           data-testid="download-file-meta"
         >
           {release === null
-            ? sub(t.downloadFileMetaPending, { channel: CHANNEL })
-            : sub(t.downloadFileMeta, {
-                file: release.fileName,
-                size: release.sizeLabel,
-                channel: CHANNEL,
-              })}
+            ? t.downloadFileMetaPending
+            : sub(t.downloadFileMeta, { file: release.fileName, size: release.sizeLabel })}
         </p>
 
         <ul className="m-0 mt-5 grid list-none gap-2 p-0">

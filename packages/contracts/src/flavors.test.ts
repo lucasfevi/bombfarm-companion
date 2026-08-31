@@ -36,17 +36,6 @@ const MATRIX: Record<
     consoleLogLevel: 'debug',
     fileLogLevel: 'debug',
   },
-  nightly: {
-    appId: 'net.bombfarm.companion.nightly',
-    productName: 'Bomb Farm Companion (Nightly)',
-    badgeLabel: 'NIGHTLY',
-    dataDirName: 'Bomb Farm Companion (Nightly)',
-    packageName: 'bombfarm-companion-nightly',
-    outputDir: 'release/nightly',
-    updateChannel: 'nightly',
-    consoleLogLevel: false,
-    fileLogLevel: 'info',
-  },
   beta: {
     appId: 'net.bombfarm.companion.beta',
     productName: 'Bomb Farm Companion (Beta)',
@@ -72,8 +61,8 @@ const MATRIX: Record<
 };
 
 describe('APP_FLAVORS', () => {
-  it('lists the closed four-token set', () => {
-    expect(APP_FLAVORS).toEqual(['dev', 'nightly', 'beta', 'prod']);
+  it('lists the closed three-token set', () => {
+    expect(APP_FLAVORS).toEqual(['dev', 'beta', 'prod']);
   });
 });
 
@@ -104,11 +93,11 @@ describe('getFlavorDescriptor', () => {
 });
 
 describe('isAppFlavor', () => {
-  it('accepts only the four tokens', () => {
+  it('accepts only the three tokens', () => {
     expect(isAppFlavor('dev')).toBe(true);
-    expect(isAppFlavor('nightly')).toBe(true);
     expect(isAppFlavor('beta')).toBe(true);
     expect(isAppFlavor('prod')).toBe(true);
+    expect(isAppFlavor('nightly')).toBe(false);
     expect(isAppFlavor('beeta')).toBe(false);
     expect(isAppFlavor('production')).toBe(false);
     expect(isAppFlavor(null)).toBe(false);
@@ -117,7 +106,7 @@ describe('isAppFlavor', () => {
 
 describe('parseFlavorToken', () => {
   it('trim and lower-case before matching', () => {
-    expect(parseFlavorToken(' NIGHTLY ')).toBe('nightly');
+    expect(parseFlavorToken(' PROD ')).toBe('prod');
     expect(parseFlavorToken(' BETA ')).toBe('beta');
   });
 
@@ -128,12 +117,13 @@ describe('parseFlavorToken', () => {
     expect(parseFlavorToken('   ')).toBeNull();
     expect(parseFlavorToken('beeta')).toBeNull();
     expect(parseFlavorToken('production')).toBeNull();
+    expect(parseFlavorToken('nightly')).toBeNull();
   });
 });
 
 describe('resolveBuildFlavor', () => {
   it('resolves valid tokens', () => {
-    expect(resolveBuildFlavor('nightly')).toBe('nightly');
+    expect(resolveBuildFlavor('beta')).toBe('beta');
     expect(resolveBuildFlavor(' PROD ')).toBe('prod');
   });
 
@@ -142,6 +132,7 @@ describe('resolveBuildFlavor', () => {
     expect(() => resolveBuildFlavor('')).toThrow(InvalidFlavorError);
     expect(() => resolveBuildFlavor('beeta')).toThrow(InvalidFlavorError);
     expect(() => resolveBuildFlavor('production')).toThrow(InvalidFlavorError);
+    expect(() => resolveBuildFlavor('nightly')).toThrow(InvalidFlavorError);
   });
 
   it('names the rejected value in build errors', () => {
@@ -167,8 +158,8 @@ describe('resolveRuntimeFlavor', () => {
   });
 
   it('resolves trimmed unpackaged tokens', () => {
-    expect(resolveRuntimeFlavor({ raw: ' NIGHTLY ', isPackaged: false, bakedFlavor: null })).toEqual({
-      flavor: 'nightly',
+    expect(resolveRuntimeFlavor({ raw: ' BETA ', isPackaged: false, bakedFlavor: null })).toEqual({
+      flavor: 'beta',
       envConflict: null,
     });
   });
@@ -193,10 +184,10 @@ describe('resolveRuntimeFlavor', () => {
 
   it('reports env conflict when packaged env requests a different valid flavor', () => {
     expect(
-      resolveRuntimeFlavor({ raw: 'nightly', isPackaged: true, bakedFlavor: 'prod' }),
+      resolveRuntimeFlavor({ raw: 'beta', isPackaged: true, bakedFlavor: 'prod' }),
     ).toEqual({
       flavor: 'prod',
-      envConflict: { requested: 'nightly', effective: 'prod' },
+      envConflict: { requested: 'beta', effective: 'prod' },
     });
   });
 

@@ -1,5 +1,43 @@
 # @bombfarm/ui
 
+## 0.7.1
+
+### Patch Changes
+
+- af7bd8c: Optimize build now picks what it optimizes for, and the roster-wide reset banner is gone.
+
+  A target select is glued to the **Optimize build** button on the Points tab. **DPS** is what the
+  button always did — the best allocation the search found for that hero's sustained DPS. **Farm**
+  searches the same points against your farming rotation's gold per hour instead: the whole
+  rotation is scored, only the open hero's points move, and the result is reported in gold per hour
+  rather than DPS. It is its own setting, independent of the Next point panel's ranking mode, so you
+  can rank the next point one way while reallocating a whole build the other.
+
+  The banner across the top of the planner that named every hero a reset might help is withdrawn. It
+  restated, roster-wide, advice already carried for the hero you are looking at — the warn border on
+  the hero strip and the gain line inside the Points panel, both of which stay. Those two now say
+  that the gain they found is a sustained-DPS one, which an unqualified "possible gain" no longer
+  settled once the button could also search for farm rate.
+
+## 0.7.0
+
+### Minor Changes
+
+- 3eb7026: Fill out the Live tab's earnings panel, which showed six numbers and then a large empty space
+  below them wherever the map panel beside it ran taller.
+
+  Two things now sit in that space. A trend line covers the same ten minutes the headline gold rate
+  averages, so a run that is picking up or falling away is visible rather than something you infer
+  from two figures that disagree — a stretch the stream never covered breaks the line instead of
+  drawing it as a collapse to no income. Beneath it, three measured figures: gold per prop, props
+  per minute, and the session's prop count, all counted from what actually dropped. Gold per prop is
+  printed against the map panel's own estimate for the map being played, so a map paying less than
+  it should now says so.
+
+  The trend line ships as a `Sparkline` primitive in the design system rather than as a one-off:
+  it takes any series of readings, stretches to whatever width its container has, and takes its
+  colour from the text colour around it.
+
 ## 0.6.0
 
 ### Minor Changes

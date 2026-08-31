@@ -149,26 +149,26 @@ describe('BFC_VERSION_OVERRIDE', () => {
 
   it('applies override to extraMetadata.version when set', () => {
     delete process.env.BFC_VERSION_OVERRIDE;
-    process.env.BFC_VERSION_OVERRIDE = '0.1.0-nightly.20260805.abc1234';
+    process.env.BFC_VERSION_OVERRIDE = '0.1.0-beta.187';
 
-    const config = createBuilderConfig('nightly');
-    const descriptor = getFlavorDescriptor('nightly');
+    const config = createBuilderConfig('beta');
+    const descriptor = getFlavorDescriptor('beta');
 
     expect(config.extraMetadata).toEqual({
       name: descriptor.packageName,
-      bfcFlavor: 'nightly',
-      version: '0.1.0-nightly.20260805.abc1234',
+      bfcFlavor: 'beta',
+      version: '0.1.0-beta.187',
     });
   });
 
   it('omits version from extraMetadata when unset', () => {
     delete process.env.BFC_VERSION_OVERRIDE;
 
-    const config = createBuilderConfig('nightly');
+    const config = createBuilderConfig('beta');
 
     expect(config.extraMetadata).toEqual({
-      name: getFlavorDescriptor('nightly').packageName,
-      bfcFlavor: 'nightly',
+      name: getFlavorDescriptor('beta').packageName,
+      bfcFlavor: 'beta',
     });
     expect(config.extraMetadata).not.toHaveProperty('version');
   });
@@ -176,7 +176,7 @@ describe('BFC_VERSION_OVERRIDE', () => {
   it('treats an empty override as unset', () => {
     process.env.BFC_VERSION_OVERRIDE = '';
 
-    const config = createBuilderConfig('nightly');
+    const config = createBuilderConfig('beta');
 
     expect(config.extraMetadata).not.toHaveProperty('version');
   });
@@ -184,8 +184,8 @@ describe('BFC_VERSION_OVERRIDE', () => {
   it('throws InvalidVersionOverrideError for a non-semver override', () => {
     process.env.BFC_VERSION_OVERRIDE = 'not-semver';
 
-    expect(() => createBuilderConfig('nightly')).toThrow(InvalidVersionOverrideError);
-    expect(() => createBuilderConfig('nightly')).toThrow(/not valid semver/);
+    expect(() => createBuilderConfig('beta')).toThrow(InvalidVersionOverrideError);
+    expect(() => createBuilderConfig('beta')).toThrow(/not valid semver/);
   });
 });
 
@@ -200,11 +200,12 @@ describe('generateUpdatesFilesForAllChannels', () => {
     }
   });
 
-  it('stays enabled for beta and nightly flavors', () => {
+  it('stays enabled for every flavor that publishes', () => {
     delete process.env.BFC_VERSION_OVERRIDE;
 
     expect(createBuilderConfig('beta').generateUpdatesFilesForAllChannels).toBe(true);
-    expect(createBuilderConfig('nightly').generateUpdatesFilesForAllChannels).toBe(true);
+    expect(createBuilderConfig('prod').generateUpdatesFilesForAllChannels).toBe(true);
+    expect(createBuilderConfig('dev').generateUpdatesFilesForAllChannels).toBe(false);
   });
 });
 

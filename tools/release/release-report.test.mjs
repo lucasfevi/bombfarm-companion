@@ -6,7 +6,7 @@ import {
   readReleaseSet,
   resolveArtifactPlan,
 } from './release-plan.mjs';
-import { REPORT_MARKER, renderReleaseReport, renderNightlySummary, renderNightlyNoOpSummary } from './release-report.mjs';
+import { REPORT_MARKER, renderReleaseReport } from './release-report.mjs';
 
 const fixturesDir = join(fileURLToPath(new URL('.', import.meta.url)), '__fixtures__');
 const loadFixture = (name) =>
@@ -22,7 +22,6 @@ function renderForFixture(name) {
     artifactPlan: resolveArtifactPlan(set),
     headSha,
     runUrl,
-    prodReleaseEnabled: false,
   });
 }
 
@@ -70,21 +69,20 @@ describe('renderReleaseReport', () => {
     expect(report).toContain(headSha);
   });
 
-  it('includes the prod-release disabled line by default', () => {
+  /**
+   * The report used to print a flag whose repository variable was never set, so 165 releases in a
+   * row said "prod GitHub Release disabled" and nobody read it as anything but boilerplate. There
+   * is no flag now: merging a desktop bump publishes, and the report says so.
+   */
+  it('tells the reviewer that merging a desktop bump publishes a stable release', () => {
     const report = renderForFixture('release-plan-desktop-only.json');
-    expect(report).toContain('Skipped — prod GitHub Release disabled');
-    expect(report).toContain('BFC_ENABLE_PROD_RELEASE');
+    expect(report).toContain('Merging this PR publishes a public GitHub Release');
+    expect(report).not.toContain('BFC_ENABLE_PROD_RELEASE');
   });
 
-  it('states when prod release is enabled', () => {
-    const set = readReleaseSet(loadFixture('release-plan-desktop-only.json'));
-    const report = renderReleaseReport({
-      set,
-      artifactPlan: resolveArtifactPlan(set),
-      headSha,
-      prodReleaseEnabled: true,
-    });
-    expect(report).toContain('Enabled — `BFC_ENABLE_PROD_RELEASE` is on.');
+  it('says no release is published when the set carries no desktop bump', () => {
+    const report = renderForFixture('release-plan-web-only.json');
+    expect(report).toContain('No desktop bump in this set');
   });
 
   it('includes the human soak checklist wording', () => {
@@ -94,37 +92,3 @@ describe('renderReleaseReport', () => {
   });
 });
 
-describe('renderNightlySummary', () => {
-  it('lists version bumps, produced assets, and skipped web deploy', () => {
-    const summary = renderNightlySummary({
-      packageName: '@bombfarm/desktop',
-      oldVersion: '0.0.0',
-      newVersion: '0.0.0-nightly.20260805.abcdef1',
-      headSha: 'abcdef1234567890abcdef1234567890abcdef12',
-      tag: 'desktop-v0.0.0-nightly.20260805.abcdef1',
-      assets: ['nightly.yml', 'setup.exe'],
-    });
-
-    expect(summary).toContain('| @bombfarm/desktop | 0.0.0 → 0.0.0-nightly.20260805.abcdef1 |');
-    expect(summary).toContain('| Desktop nightly installer | produced — 2 asset(s) |');
-    expect(summary).toContain('| Web production deploy | skipped — N/A for nightly |');
-    expect(summary).toContain('nightly.yml');
-  });
-});
-
-describe('renderNightlyNoOpSummary', () => {
-  it('explains skipped artifacts when no new commits exist', () => {
-    const summary = renderNightlyNoOpSummary({
-      packageName: '@bombfarm/desktop',
-      oldVersion: '0.0.0',
-      newVersion: '0.0.0-nightly.20260805.abcdef1',
-      headSha: 'abcdef1234567890abcdef1234567890abcdef12',
-      tag: 'desktop-v0.0.0-nightly.20260805.abcdef1',
-      reason: 'no_new_commits',
-    });
-
-    expect(summary).toContain('No new commits on `develop`');
-    expect(summary).toContain('| Desktop nightly installer | skipped — no publish |');
-    expect(summary).toContain('(not published)');
-  });
-});

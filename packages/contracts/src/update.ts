@@ -41,3 +41,33 @@ export function disabledUpdateStatus(currentVersion: string): UpdateStatus {
     lastCheckedAt: null,
   };
 }
+
+/** A build that can update but has not looked yet. */
+export function idleUpdateStatus(currentVersion: string, channel: UpdateChannel | null): UpdateStatus {
+  return {
+    phase: 'idle',
+    currentVersion,
+    channel,
+    availableVersion: null,
+    percent: null,
+    error: null,
+    lastCheckedAt: null,
+  };
+}
+
+/**
+ * The one expression of "does this build update itself", so the answer main gives before its
+ * update service exists cannot disagree with the one the service gives once it does.
+ *
+ * `disabled` is a claim about the build, not about readiness: the Updates section greys out its
+ * own check button on that phase, so a wrong `disabled` is one a player cannot correct.
+ */
+export function initialUpdateStatus(input: {
+  currentVersion: string;
+  channel: UpdateChannel | null;
+  isPackaged: boolean;
+}): UpdateStatus {
+  return input.isPackaged && input.channel !== null
+    ? idleUpdateStatus(input.currentVersion, input.channel)
+    : disabledUpdateStatus(input.currentVersion);
+}

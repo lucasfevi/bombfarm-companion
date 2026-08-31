@@ -56,9 +56,43 @@ describe('a failing updater cannot take down boot', () => {
     expect(catchBody).toContain("event: 'updates.unavailable'");
   });
 
-  it('pushes that status to a renderer that already read the pre-bootstrap one', () => {
-    const catchBody = tail.slice(tail.indexOf('} catch'));
+  it('pushes the settled status on BOTH paths, not only the failing one', () => {
+    const emit = tail.indexOf("emitEvent('updates:changed', updateService.getStatus())");
+    const catchClose = tail.indexOf('}', tail.indexOf('unavailableUpdateService('));
 
-    expect(catchBody).toContain("emitEvent('updates:changed'");
+    expect(emit).toBeGreaterThan(-1);
+    // Inside the catch it would fire only when construction threw, and the success path — the
+    // one every installed build takes — would leave the renderer holding the answer main gave
+    // before this service existed.
+    expect(emit).toBeGreaterThan(catchClose);
+  });
+});
+
+/**
+ * The window opens before the service is built, and the renderer reads `updates:get` exactly
+ * once, on mount. `disabledUpdateStatus` as that gap's answer is not a harmless placeholder:
+ * the Updates section disables its own check button on `disabled`, so an installed player was
+ * shown "updates are off in this build" with no control to disprove it.
+ */
+describe('the answer given before the service exists', () => {
+  const source = stripComments(readFileSync(INDEX_PATH, 'utf8'));
+
+  it('derives from the flavor, so it cannot claim a build that updates does not', () => {
+    expect(source).toContain('function preServiceUpdateStatus()');
+    expect(source).toContain('initialUpdateStatus({');
+  });
+
+  it('is what every updates channel falls back to', () => {
+    const channels = ['updates:get', 'updates:check', 'updates:download', 'updates:installOnRestart'];
+
+    for (const channel of channels) {
+      const at = source.indexOf(`'${channel}':`);
+      expect(at).toBeGreaterThan(-1);
+      expect(source.slice(at, source.indexOf(`'market:`, at))).toContain('preServiceUpdateStatus()');
+    }
+  });
+
+  it('never answers disabled outright — that is a claim about the build, not about readiness', () => {
+    expect(source).not.toContain('disabledUpdateStatus');
   });
 });

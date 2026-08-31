@@ -1,5 +1,74 @@
 # @bombfarm/contracts
 
+## 0.6.0
+
+### Minor Changes
+
+- 3eb7026: Fill out the Live tab's earnings panel, which showed six numbers and then a large empty space
+  below them wherever the map panel beside it ran taller.
+
+  Two things now sit in that space. A trend line covers the same ten minutes the headline gold rate
+  averages, so a run that is picking up or falling away is visible rather than something you infer
+  from two figures that disagree — a stretch the stream never covered breaks the line instead of
+  drawing it as a collapse to no income. Beneath it, three measured figures: gold per prop, props
+  per minute, and the session's prop count, all counted from what actually dropped. Gold per prop is
+  printed against the map panel's own estimate for the map being played, so a map paying less than
+  it should now says so.
+
+  The trend line ships as a `Sparkline` primitive in the design system rather than as a one-off:
+  it takes any series of readings, stretches to whatever width its container has, and takes its
+  colour from the text colour around it.
+
+- 3233351: Ship the desktop app on a stable channel, and point the download page at it.
+
+  Merging a desktop version bump to `main` now publishes a public GitHub Release. It always looked
+  as though it did: the workflow packaged an installer, named itself after production, and logged a
+  successful run. What it actually did was gate the publish step on a repository variable nobody had
+  ever set, upload the installer as a CI artifact that expired after a day, and publish nothing —
+  165 times. The gate is gone. Whether to ship is decided by whether you merge the release PR, which
+  is the control that was always real.
+
+  The download page serves that stable build, and falls back to the newest beta when no stable build
+  exists — which was the case for the whole life of the page until now, and would be the case again
+  if stable publishing broke. The fallback is never silent: the chip beside the download button and
+  the line under it name the channel the page actually resolved, and the channel cards mark whichever
+  one is being served. Recognising a stable installer takes a little care, because it is the one
+  build electron-builder names without a channel word in it: `bombfarm-companion-0.7.0-setup.exe`
+  against beta's `bombfarm-companion-beta-0.7.0-beta.163-setup.exe`.
+
+  The nightly channel is withdrawn — the flavor, its packaging script, its scheduled workflow, its
+  release retention, and the card on the download page that promised builds "every night". It had
+  published no release in the life of the project and its schedule had been switched off to save CI
+  minutes, so nothing is installed on it and no update path breaks. `BFC_FLAVOR` now takes `dev`,
+  `beta` or `prod`, and rejects `nightly` rather than quietly accepting a flavor that no longer
+  builds.
+
+### Patch Changes
+
+- c94648a: Stop the Live tab redrawing itself four times a second to show the same numbers.
+
+  Per-hero energy rides the fast channel as a raw fraction, and it moves on every frame: four
+  consecutive readings off the wire were 0.28425…, 0.28389…, 0.28377…, 0.28365…. The bar is one
+  percent wide per point and the reading beside it has no decimals, so all four are the same
+  picture — but every one of them counted as a change, so the main process emitted, the store
+  republished, and every hero row re-rendered, continuously, for as long as the screen was open.
+
+  Both sides now ask whether the _displayed_ percentage moved, through one shared
+  `energyDisplayPercent` in the contract rather than two comparisons that could drift apart. Nothing
+  on screen changes: the bar and the reading are drawn from that same whole percent already, and
+  their agreement is asserted on the running app.
+
+  Three things underneath had to change for that to bite, each a defeat of memoisation on its own:
+
+  - The store replaced every slice of a fast update with whatever arrived, so a tick that moved only
+    the gold balance still handed over a brand-new countdown array saying exactly what the old one
+    said. Each slice now keeps the reading it already holds when the new one agrees.
+  - A hero row was handed a hero merged with a fresh energy figure, which compares by identity. The
+    reading now travels beside the hero as a number, so one hero's energy can move without
+    re-rendering the twelve rows around it.
+  - The earnings panel rebuilt two Base UI tooltips — provider, root, trigger, portal, positioner,
+    popup — four times a second to draw two words that depend only on the language.
+
 ## 0.5.0
 
 ### Minor Changes

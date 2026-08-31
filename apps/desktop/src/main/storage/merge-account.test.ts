@@ -441,12 +441,13 @@ describe('createAccountStore().commit()', () => {
    * restore cannot serve it. Asserted rather than assumed — without this, deleting `persist()`
    * changes no test outcome anywhere in this file.
    */
-  it('a drifted section is not written to storage, so a later restore cannot serve it', () => {
+  it('a drifted section that lost no key is written and served stale later, so a game update that only adds a field does not cost the last-known-good', () => {
     const open = openTestAccountDb('node:sqlite');
     const store = createAccountStore(open);
+    const body = { field_size: 5, heroes: [], casa: { active_casa: 1 }, rescues_left: 2, rescues_max: 3 };
 
     const written = store.persist({
-      casa: { field_size: 5, heroes: [], casa: { active_casa: 1 }, rescues_left: 2, rescues_max: 3 },
+      casa: body,
       fidelity: {
         account: MISSING_LIVE,
         heroes: MISSING_LIVE,
@@ -456,7 +457,29 @@ describe('createAccountStore().commit()', () => {
       },
     });
 
-    expect(written.written).not.toContain('casa');
+    expect(written.written).toEqual(['casa']);
+
+    const restored = store.restore();
+    expect((restored.payload as unknown as Record<string, unknown>).casa).toEqual(body);
+    expect(restored.payload.fidelity.casa).toEqual({ status: 'stale', capturedAt: 't1' });
+    store.close();
+  });
+
+  it('a drifted section that lost a key is still not written, so a body that may carry a substituted default never becomes the fallback', () => {
+    const open = openTestAccountDb('node:sqlite');
+    const store = createAccountStore(open);
+
+    const written = store.persist({
+      casa: { field_size: 5, heroes: [], casa: { active_casa: 1 }, rescues_left: 2, rescues_max: 3 },
+      fidelity: {
+        account: MISSING_LIVE,
+        heroes: MISSING_LIVE,
+        skills: MISSING_LIVE,
+        casa: { status: 'degraded', capturedAt: 't1', missingKeys: ['casa.rescues_max'], addedKeys: [] },
+        items: MISSING_LIVE,
+      },
+    });
+
     expect(written.written).toEqual([]);
 
     const restored = store.restore();

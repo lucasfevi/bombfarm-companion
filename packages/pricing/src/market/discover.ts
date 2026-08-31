@@ -53,8 +53,13 @@ const DEFAULT_BASE_DELAY_MS = 1500;
 const DEFAULT_MAX_DELAY_MS = 30_000;
 const DEFAULT_MAX_CONSECUTIVE_RATE_LIMITS = 6;
 
-/** Category first: it is what tells the completeness check which rows are equipment. */
-const FACET_ORDER: FacetName[] = ['category', 'slot', 'set', 'rarity', 'level', 'act'];
+/**
+ * Category first: it is what tells the completeness check which rows are equipment. Rarity next,
+ * because it is both the cheapest pass — six tags against a set's forty — and the one every key
+ * depends on: without it an equipment row falls back to being keyed by hash name, which no
+ * inventory can look up. A quota that runs out partway should cost a facet, not the whole board.
+ */
+const FACET_ORDER: FacetName[] = ['category', 'rarity', 'slot', 'set', 'level', 'act'];
 
 const UNKNOWN_TAG_ANOMALY: Partial<Record<FacetName, AnomalyKind>> = {
   slot: 'unknown-slot-tag',

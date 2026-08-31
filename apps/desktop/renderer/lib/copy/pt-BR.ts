@@ -19,6 +19,10 @@ export const ptBR: Copy = {
   shellStatusNotRunning: 'O jogo não está aberto',
   shellStatusStale: 'Desatualizado',
   shellLoadingLabel: 'Carregando…',
+  shellUpdateAvailable: 'Atualização disponível',
+  shellUpdateDownloading: 'Atualizando… {percent}%',
+  shellUpdateReady: 'Reinicie para atualizar',
+  shellUpdateOpenSettings: 'Abrir as configurações de atualização',
 
   // empty* — placeholder states shown before real data has arrived
   emptyBridgeUnavailableTitle: 'Ponte de comunicação indisponível',
@@ -97,7 +101,7 @@ export const ptBR: Copy = {
   settingsUpdatesStatusReadyTitle: 'A versão {version} está pronta para instalar',
   settingsUpdatesStatusReadyBody: 'O app fecha e abre de novo na versão nova. Nada do que você salvou é perdido.',
   settingsUpdatesStatusDisabled:
-    'As atualizações estão desligadas nesta versão. As versões Nightly, Beta e estável instaladas se atualizam sozinhas; uma versão de desenvolvimento local não.',
+    'As atualizações estão desligadas nesta versão. As versões Beta e estável instaladas se atualizam sozinhas; uma versão de desenvolvimento local não.',
   settingsUpdatesErrorTitle: 'Não foi possível procurar atualizações',
   settingsUpdatesReasonOffline:
     'Não foi possível acessar o servidor de atualizações. Verifique sua conexão e tente de novo.',

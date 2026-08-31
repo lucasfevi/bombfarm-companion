@@ -1,6 +1,6 @@
-import { indexEntries, type CatalogView } from './reconcile.js';
+import { indexEntries, keyForEntry, type CatalogView } from './reconcile.js';
 import type { Anomaly, MarketEntry, MarketSnapshot } from './types.js';
-import { MARKET_APP_ID } from './types.js';
+import { MARKET_APP_ID, priceKey } from './types.js';
 
 export interface SnapshotParts {
   entries: MarketEntry[];
@@ -24,6 +24,11 @@ export interface SnapshotParts {
  * missing from it has genuinely been delisted. A run cut short by Steam's IP quota knows nothing
  * about the rows it never reached, so it keeps them rather than publishing a snapshot that
  * oscillates between full and partial every six hours.
+ *
+ * Every row that comes out of here is keyed by its own identity, whichever side it came from. A
+ * key is derived state and a previous run's copy of it is only as good as what that run knew, so
+ * carrying one over unread is how a snapshot stays broken: the run that would repair a row has to
+ * reach it first, and a run Steam blocks outright reaches nothing.
  */
 export function mergeEntries(
   fresh: MarketEntry[],
@@ -38,7 +43,10 @@ export function mergeEntries(
   if (enumerationComplete) return kept;
 
   const freshHashes = new Set(fresh.map((entry) => entry.hashName));
-  return [...kept, ...prior.filter((entry) => !freshHashes.has(entry.hashName))];
+  const untouched = prior
+    .filter((entry) => !freshHashes.has(entry.hashName))
+    .map((entry) => ({ ...entry, key: keyForEntry(entry) }));
+  return [...kept, ...untouched];
 }
 
 /**
@@ -46,23 +54,28 @@ export function mergeEntries(
  * and then stop before the tag passes that would say what it is, which would drop it out of the
  * index — an item that had a price yesterday would show none today. Prices are never inherited
  * this way: a null `lowestUsd` is the meaningful statement that nothing is listed right now.
+ *
+ * The key is re-derived from the identity that results, never carried over from the run that had
+ * to guess. Inheriting the fields while keeping the fresh key is what publishes an entry that
+ * knows its def and rarity and is still addressed by its hash name, which no inventory can reach:
+ * a run cut short before the rarity pass keyed all 92 rows that way and took every price on the
+ * board to zero. Re-deriving is safe because a Steam hash never changes meaning, which is the
+ * same thing that makes inheriting the fields safe.
  */
 function withPriorIdentity(fresh: MarketEntry, prior: MarketEntry): MarketEntry {
-  const defId = fresh.defId ?? prior.defId;
-  const category = fresh.category ?? prior.category;
-  return {
+  const merged: MarketEntry = {
     ...fresh,
     ...inheritedNativeQuote(fresh, prior),
-    key: fresh.category == null && category != null ? prior.key : fresh.key,
-    defId,
+    defId: fresh.defId ?? prior.defId,
     kind: fresh.kind ?? prior.kind,
-    category,
+    category: fresh.category ?? prior.category,
     set: fresh.set ?? prior.set,
     slot: fresh.slot ?? prior.slot,
     rarityIdx: fresh.rarityIdx ?? prior.rarityIdx,
     level: fresh.level ?? prior.level,
     act: fresh.act ?? prior.act,
   };
+  return { ...merged, key: keyForEntry(merged) };
 }
 
 /**
@@ -111,6 +124,38 @@ export function buildSnapshot(parts: SnapshotParts): MarketSnapshot {
     anomalies: [...parts.anomalies, ...indexed.anomalies],
     coverage: { ...indexed.coverage, searchCalls: parts.searchCalls },
   };
+}
+
+/**
+ * Catalog keys the previous snapshot could price, whose market row this one still carries and can
+ * no longer price by that key.
+ *
+ * A row that has left the market takes its key with it, and that is the market talking. A row that
+ * is still right there and has stopped answering to the key it answered to yesterday is this run
+ * talking — it learned less about the row than the last one did and keyed it on what was left. The
+ * hash is what separates the two, and it can: Steam never reuses one for a different item.
+ *
+ * A caller should ask this only of a run that did not finish tagging, and treat a non-empty answer
+ * as a reason to publish nothing. A run that did finish is entitled to retag a row.
+ */
+export function catalogKeysLost(
+  prior: MarketSnapshot | null,
+  next: MarketSnapshot,
+  catalog: CatalogView,
+): string[] {
+  if (prior == null) return [];
+  const catalogKeys = new Set(
+    catalog.defs.flatMap((def) => catalog.rarityIdxs.map((idx) => priceKey(def.defId, idx))),
+  );
+  const stillCarried = new Set(next.entries.map((entry) => entry.hashName));
+
+  const lost: string[] = [];
+  for (const [key, position] of Object.entries(prior.index)) {
+    if (!catalogKeys.has(key) || next.index[key] != null) continue;
+    const hashName = prior.entries[position]?.hashName;
+    if (hashName != null && stillCarried.has(hashName)) lost.push(key);
+  }
+  return lost;
 }
 
 /**

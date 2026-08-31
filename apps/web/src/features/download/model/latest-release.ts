@@ -1,4 +1,4 @@
-import { CHANNEL, INSTALLER_CHANNEL_MARKER, INSTALLER_SUFFIX, REPO_URL } from './release';
+import { INSTALLER_SUFFIX, REPO_URL, isStableInstaller } from './release';
 
 export const RELEASES_API = `${REPO_URL.replace('https://github.com/', 'https://api.github.com/repos/')}/releases`;
 
@@ -36,11 +36,6 @@ function isInstaller(asset: RawAsset): boolean {
   return typeof asset.name === 'string' && asset.name.endsWith(INSTALLER_SUFFIX);
 }
 
-/** This channel's installer — what the download button points at. */
-function isChannelInstaller(asset: RawAsset): boolean {
-  return isInstaller(asset) && String(asset.name).includes(INSTALLER_CHANNEL_MARKER);
-}
-
 function isUpdatePatch(asset: RawAsset): boolean {
   return typeof asset.name === 'string' && asset.name.endsWith(`${INSTALLER_SUFFIX}.blockmap`);
 }
@@ -65,7 +60,7 @@ function versionOf(release: RawRelease): string {
 }
 
 /**
- * The newest published build on this channel, plus the running install total.
+ * The newest published stable build, plus the running install total across every channel.
  *
  * Newest by `published_at` rather than by list position or by parsing the tag: the API's order is
  * not a promise, and `0.7.0-beta.163` versus `0.6.0-beta.161` is a semver comparison this page has
@@ -89,7 +84,7 @@ export function parseLatestRelease(payload: unknown): LatestRelease | null {
       if (!isInstaller(asset)) continue;
       installs += downloadsOf(asset);
 
-      if (!isChannelInstaller(asset)) continue;
+      if (!isStableInstaller(String(asset.name))) continue;
       const published =
         typeof release.published_at === 'string' ? Date.parse(release.published_at) : Number.NaN;
       if (Number.isNaN(published)) continue;
@@ -110,5 +105,3 @@ export function parseLatestRelease(payload: unknown): LatestRelease | null {
     updates,
   };
 }
-
-export { CHANNEL };

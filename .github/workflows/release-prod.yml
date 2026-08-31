@@ -3,6 +3,17 @@ name: Release prod
 on:
   push:
     branches: [main]
+  # Retry path. A publish that fails after `main` already carries the new version can never be
+  # reached by a push again — the next push does not change the version, so `has_desktop` is
+  # false and the rail skips it forever. Dispatching against the release merge commit replays
+  # the same plan: `<sha>^1` is the previous `main` tip, which is exactly what the push event's
+  # `before` was.
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Release merge commit on `main` to publish (defaults to the branch tip)'
+        required: false
+        default: ''
 
 concurrency:
   group: release-prod
@@ -20,26 +31,36 @@ jobs:
       has_desktop: ${{ steps.plan.outputs.has_desktop }}
       desktop_version: ${{ steps.plan.outputs.desktop_version }}
       desktop_old_version: ${{ steps.plan.outputs.desktop_old_version }}
-      prod_release_enabled: ${{ steps.plan.outputs.prod_release_enabled }}
       version_diffs_json: ${{ steps.plan.outputs.version_diffs_json }}
+      sha: ${{ steps.plan.outputs.sha }}
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.inputs.sha || github.sha }}
           fetch-depth: 0
 
       - name: Detect released desktop version
         id: plan
         env:
-          BEFORE: ${{ github.event.before }}
-          AFTER: ${{ github.sha }}
-          PROD_RELEASE_ENABLED: ${{ vars.BFC_ENABLE_PROD_RELEASE == 'true' }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          DISPATCH_SHA: ${{ github.event.inputs.sha }}
         run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            AFTER=$(git rev-parse HEAD)
+            BEFORE=$(git rev-parse "${AFTER}^1")
+            echo "Replaying ${AFTER} against its first parent ${BEFORE}"
+          else
+            BEFORE="$PUSH_BEFORE"
+            AFTER="$GITHUB_SHA"
+          fi
+
+          echo "sha=${AFTER}" >> "$GITHUB_OUTPUT"
+
           if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
             echo "has_desktop=false" >> "$GITHUB_OUTPUT"
             echo "desktop_version=" >> "$GITHUB_OUTPUT"
             echo "desktop_old_version=" >> "$GITHUB_OUTPUT"
-            echo "prod_release_enabled=${PROD_RELEASE_ENABLED}" >> "$GITHUB_OUTPUT"
             {
               echo '## Production release — skipped'
               echo ''
@@ -84,7 +105,6 @@ jobs:
             echo "has_desktop=${HAS_DESKTOP}"
             echo "desktop_version=${DESKTOP_VERSION}"
             echo "desktop_old_version=${DESKTOP_OLD_VERSION}"
-            echo "prod_release_enabled=${PROD_RELEASE_ENABLED}"
             echo "version_diffs_json<<EOF"
             echo "${VERSION_DIFFS_JSON}"
             echo "EOF"
@@ -107,6 +127,8 @@ jobs:
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.sha }}
 
       - uses: pnpm/action-setup@v4
 
@@ -144,7 +166,7 @@ jobs:
       - name: Upload prod installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bombfarm-companion-prod-${{ needs.plan.outputs.desktop_version }}-${{ github.sha }}
+          name: bombfarm-companion-prod-${{ needs.plan.outputs.desktop_version }}-${{ needs.plan.outputs.sha }}
           path: apps/desktop/release/prod/**
           # Only exists to hand the build off from this (windows) job to `publish`
           # (ubuntu) in the same run; the installer itself lands on the GitHub
@@ -154,9 +176,10 @@ jobs:
   publish:
     name: Publish GitHub release
     needs: [plan, package]
+    outputs:
+      tag: ${{ steps.create.outputs.tag }}
     if: >-
       needs.plan.outputs.has_desktop == 'true' &&
-      needs.plan.outputs.prod_release_enabled == 'true' &&
       needs.package.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -164,13 +187,27 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@v4
         with:
+          ref: ${{ needs.plan.outputs.sha }}
           fetch-depth: 0
 
       - name: Download prod installer artifact
         uses: actions/download-artifact@v4
         with:
-          name: bombfarm-companion-prod-${{ needs.plan.outputs.desktop_version }}-${{ github.sha }}
+          name: bombfarm-companion-prod-${{ needs.plan.outputs.desktop_version }}-${{ needs.plan.outputs.sha }}
           path: release/prod
+
+      # Both steps below import `tools/release` modules that reach third-party packages
+      # (`@manypkg/get-packages`, `semver`). Without an install they die at module resolution,
+      # after the installer has already been built.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Extract changelog notes
         id: notes
@@ -189,6 +226,7 @@ jobs:
           NODE
 
       - name: Create GitHub Release
+        id: create
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.plan.outputs.desktop_version }}
@@ -197,6 +235,7 @@ jobs:
             import { buildDesktopTag } from './tools/release/release-tag.mjs';
             process.stdout.write(buildDesktopTag(process.env.VERSION));
           ")
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
 
           if git ls-remote --tags origin "refs/tags/${TAG}" | grep -q .; then
             echo "::error::Git tag ${TAG} already exists on origin"
@@ -229,20 +268,18 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout main
-        if: needs.plan.outputs.has_desktop == 'true'
-        uses: actions/checkout@v4
-
+      # Deliberately no checkout and no install: this job reads the tag `publish` already
+      # built rather than building a second one, so it depends on nothing in the repo.
       - name: Write production release summary
         if: needs.plan.outputs.has_desktop == 'true'
         env:
           HAS_DESKTOP: ${{ needs.plan.outputs.has_desktop }}
           VERSION: ${{ needs.plan.outputs.desktop_version }}
           OLD_VERSION: ${{ needs.plan.outputs.desktop_old_version }}
-          PROD_ENABLED: ${{ needs.plan.outputs.prod_release_enabled }}
           PACKAGE_RESULT: ${{ needs.package.result }}
           PUBLISH_RESULT: ${{ needs.publish.result }}
-          SHA: ${{ github.sha }}
+          TAG: ${{ needs.publish.outputs.tag }}
+          SHA: ${{ needs.plan.outputs.sha }}
         run: |
           {
             echo '## Production desktop release'
@@ -252,23 +289,10 @@ jobs:
             echo "| Desktop version | \`${OLD_VERSION}\` → \`${VERSION}\` |"
             echo "| SHA | \`${SHA}\` |"
             echo "| CI artifact | \`${PACKAGE_RESULT}\` |"
-            echo "| \`BFC_ENABLE_PROD_RELEASE\` | \`${PROD_ENABLED}\` |"
             echo ''
           } >> "$GITHUB_STEP_SUMMARY"
 
-          if [ "$PROD_ENABLED" != "true" ]; then
-            {
-              echo 'Prod GitHub Release skipped — `vars.BFC_ENABLE_PROD_RELEASE` is not `true`.'
-              echo 'No tag, draft, or GitHub Release was created.'
-            } >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-
           if [ "$PUBLISH_RESULT" = "success" ]; then
-            TAG=$(node --input-type=module -e "
-              import { buildDesktopTag } from './tools/release/release-tag.mjs';
-              process.stdout.write(buildDesktopTag(process.env.VERSION));
-            ")
             echo "GitHub Release \`${TAG}\` published." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "GitHub Release publish result: \`${PUBLISH_RESULT}\`." >> "$GITHUB_STEP_SUMMARY"

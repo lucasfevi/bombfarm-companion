@@ -1,5 +1,110 @@
 # @bombfarm/web
 
+## 0.13.0
+
+### Minor Changes
+
+- 4e8bad0: Make the download page offer one build instead of a menu of channels.
+
+  The channel chip beside the download button, the Stable and Beta cards, and the channel word in
+  the file line are all gone. What is left says what a visitor actually needs: the installer's name,
+  its size, that it is for Windows 10/11, and that it updates itself. The install and update counts
+  stay where they were.
+
+  The page now resolves the stable build and nothing else. It used to fall back to the newest beta
+  when no stable release existed, which was the right behaviour while none did — but that fallback
+  was only honest because the chip and the cards named the channel it had landed on. With the labels
+  gone there is no way to say "this is a beta", so serving one would mean handing someone a
+  prerelease under a page that cannot mention it. Where a beta would once have been offered, the
+  button now points at the releases page instead, which is the same thing it has always done when
+  GitHub cannot be reached: never a wrong build, never a 404.
+
+  Recognising the stable installer stays a positive match — a version digit immediately after the
+  product name, which is what electron-builder produces for the one flavor it does not put a channel
+  word into. Matching it as "not one of the other channels" would adopt a channel added later as
+  stable, on a page with no way to tell anyone.
+
+### Patch Changes
+
+- Updated dependencies [fa1d5fa]
+  - @bombfarm/pricing@0.1.2
+
+## 0.12.0
+
+### Minor Changes
+
+- af7bd8c: Optimize build now picks what it optimizes for, and the roster-wide reset banner is gone.
+
+  A target select is glued to the **Optimize build** button on the Points tab. **DPS** is what the
+  button always did — the best allocation the search found for that hero's sustained DPS. **Farm**
+  searches the same points against your farming rotation's gold per hour instead: the whole
+  rotation is scored, only the open hero's points move, and the result is reported in gold per hour
+  rather than DPS. It is its own setting, independent of the Next point panel's ranking mode, so you
+  can rank the next point one way while reallocating a whole build the other.
+
+  The banner across the top of the planner that named every hero a reset might help is withdrawn. It
+  restated, roster-wide, advice already carried for the hero you are looking at — the warn border on
+  the hero strip and the gain line inside the Points panel, both of which stay. Those two now say
+  that the gain they found is a sustained-DPS one, which an unqualified "possible gain" no longer
+  settled once the button could also search for farm rate.
+
+### Patch Changes
+
+- Updated dependencies [af7bd8c]
+  - @bombfarm/domain@0.10.0
+  - @bombfarm/ui@0.7.1
+  - @bombfarm/game-art@0.3.2
+
+## 0.11.0
+
+### Minor Changes
+
+- 3a18278: Add a `/download` section for the Windows desktop companion.
+
+  It carries the installer link, a walkthrough of the Windows SmartScreen warning that calls out the
+  hidden "More info" click, the two reasons a PC may object to the installer, the install and update
+  counts, and what each of the app's three screens does. A drawing of the Live screen runs a
+  fifteen-second loop beside the copy, so the app is visible before installing it.
+
+  The release is resolved from GitHub at runtime — version, filename, size and counts all come from
+  the newest published build, and the button falls back to the releases page when that call cannot be
+  made. Nothing about a release is written into the page.
+
+  Reached from a primary button in the header rather than a nav tab. Bilingual (EN / PT-BR) like the
+  rest of the planner.
+
+- 3233351: Ship the desktop app on a stable channel, and point the download page at it.
+
+  Merging a desktop version bump to `main` now publishes a public GitHub Release. It always looked
+  as though it did: the workflow packaged an installer, named itself after production, and logged a
+  successful run. What it actually did was gate the publish step on a repository variable nobody had
+  ever set, upload the installer as a CI artifact that expired after a day, and publish nothing —
+  165 times. The gate is gone. Whether to ship is decided by whether you merge the release PR, which
+  is the control that was always real.
+
+  The download page serves that stable build, and falls back to the newest beta when no stable build
+  exists — which was the case for the whole life of the page until now, and would be the case again
+  if stable publishing broke. The fallback is never silent: the chip beside the download button and
+  the line under it name the channel the page actually resolved, and the channel cards mark whichever
+  one is being served. Recognising a stable installer takes a little care, because it is the one
+  build electron-builder names without a channel word in it: `bombfarm-companion-0.7.0-setup.exe`
+  against beta's `bombfarm-companion-beta-0.7.0-beta.163-setup.exe`.
+
+  The nightly channel is withdrawn — the flavor, its packaging script, its scheduled workflow, its
+  release retention, and the card on the download page that promised builds "every night". It had
+  published no release in the life of the project and its schedule had been switched off to save CI
+  minutes, so nothing is installed on it and no update path breaks. `BFC_FLAVOR` now takes `dev`,
+  `beta` or `prod`, and rejects `nightly` rather than quietly accepting a flavor that no longer
+  builds.
+
+### Patch Changes
+
+- Updated dependencies [3eb7026]
+  - @bombfarm/ui@0.7.0
+  - @bombfarm/domain@0.9.1
+  - @bombfarm/pricing@0.1.1
+  - @bombfarm/game-art@0.3.1
+
 ## 0.10.0
 
 ### Minor Changes

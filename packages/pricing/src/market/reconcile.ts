@@ -109,22 +109,11 @@ export function reconcile(
     const level = asNumber(tags.level) ?? def?.level ?? null;
     const defId =
       def?.defId ?? categoryDefId(category, rarityIdx, catalog, level, act, discovered.row.hashName);
-    // An item chest is tagged by level and carries no rarity at all, while an owned one is rarity
-    // 0 — so keying it needs that 0 supplied here or the two never meet.
-    // An item chest is tagged by level and carries no rarity, while an owned one is rarity 0. An
-    // act chest carries an act, and that act IS its tier — `chest_time_2` is the Raro one.
-    const keyRarityIdx =
-      rarityIdx ??
-      (category === 'chest' && ACT_CHEST_DEF_BY_HASH[discovered.row.hashName] != null
-        ? act
-        : category === 'chest' && level != null
-          ? 0
-          : null);
 
     entries.push({
       hashName: discovered.row.hashName,
       name: discovered.row.name,
-      key: keyFor({ category, defId, rarityIdx: keyRarityIdx, hashName: discovered.row.hashName }),
+      key: keyForEntry({ hashName: discovered.row.hashName, category, defId, rarityIdx, level, act }),
       defId,
       kind: def != null ? 'equipment' : kind,
       category,
@@ -181,22 +170,46 @@ function categoryDefId(
   return `${prefix}_${token}`;
 }
 
-function keyFor(parts: {
+/** The identity a key is derived from — the fields a `MarketEntry` already carries. */
+export interface KeyableEntry {
+  hashName: string;
   category: string | null;
   defId: string | null;
   rarityIdx: number | null;
-  hashName: string;
-}): string {
+  level: number | null;
+  act: number | null;
+}
+
+/**
+ * The key an entry is addressed by, derived from its identity and nothing else.
+ *
+ * Derived rather than decided once, so that an entry whose identity is completed after the fact —
+ * a rate-limited run inheriting the previous snapshot's tags — ends up addressed by the same key
+ * a run that tagged it itself would have produced.
+ */
+export function keyForEntry(entry: KeyableEntry): string {
   // A hero has no def and needs none: rarity is its whole identity on the market.
-  if (parts.category === HERO_CATEGORY && parts.rarityIdx != null) {
-    return heroPriceKey(parts.rarityIdx);
+  if (entry.category === HERO_CATEGORY && entry.rarityIdx != null) {
+    return heroPriceKey(entry.rarityIdx);
   }
-  if (parts.defId != null && parts.rarityIdx != null) {
-    return priceKey(parts.defId, parts.rarityIdx);
+  const rarityIdx = entry.rarityIdx ?? chestRarityIdx(entry);
+  if (entry.defId != null && rarityIdx != null) {
+    return priceKey(entry.defId, rarityIdx);
   }
   // Equipment that never got a set, slot or rarity must not share a key with the def it belongs
   // to; keying it by name keeps it addressable without letting it claim another item's price.
-  return categoryKey(parts.category ?? 'unknown', parts.hashName);
+  return categoryKey(entry.category ?? 'unknown', entry.hashName);
+}
+
+/**
+ * An item chest is tagged by level and carries no rarity at all, while an owned one is rarity 0 —
+ * so keying it needs that 0 supplied here or the two never meet. An act chest carries an act, and
+ * that act IS its tier: `chest_time_2` is the Raro one.
+ */
+function chestRarityIdx(entry: KeyableEntry): number | null {
+  if (entry.category !== 'chest') return null;
+  if (ACT_CHEST_DEF_BY_HASH[entry.hashName] != null) return entry.act;
+  return entry.level == null ? null : 0;
 }
 
 /**

@@ -29,10 +29,6 @@ export const en = {
   heroBattleToggleAria: "Enable or disable this hero in the planner",
   heroStripStatus: "Status",
   rosterColStatus: "Status",
-  // Roster-wide Tier 1 gate — lower bound only; names Optimize build as the definitive check.
-  resetAdviceRosterBanner:
-    "Reallocating points may help {names} raise their sustained DPS — try Optimize build on the Points tab.",
-  resetAdviceRosterHero: "{name} (Lv {level})",
 };
 
 export const pt: typeof en = {
@@ -66,7 +62,4 @@ export const pt: typeof en = {
   heroBattleToggleAria: "Ativar ou desativar este herói no planejador",
   heroStripStatus: "Status",
   rosterColStatus: "Status",
-  resetAdviceRosterBanner:
-    "Realocar pontos pode ajudar {names} a aumentar o DPS efetivo — use Otimizar build na aba Pontos.",
-  resetAdviceRosterHero: "{name} (Nv {level})",
 };

@@ -17,6 +17,10 @@ export const en = {
   shellStatusNotRunning: 'Game not running',
   shellStatusStale: 'Stale',
   shellLoadingLabel: 'Loading…',
+  shellUpdateAvailable: 'Update available',
+  shellUpdateDownloading: 'Updating… {percent}%',
+  shellUpdateReady: 'Restart to update',
+  shellUpdateOpenSettings: 'Open the Updates settings',
 
   // empty* — placeholder states shown before real data has arrived
   emptyBridgeUnavailableTitle: 'Preload bridge unavailable',
@@ -95,7 +99,7 @@ export const en = {
   settingsUpdatesStatusReadyTitle: 'Version {version} is ready to install',
   settingsUpdatesStatusReadyBody: 'The app closes and reopens on the new version. Nothing you have saved is lost.',
   settingsUpdatesStatusDisabled:
-    'Updates are off in this build. Installed Nightly, Beta and stable builds update themselves; a local development build does not.',
+    'Updates are off in this build. Installed Beta and stable builds update themselves; a local development build does not.',
   settingsUpdatesErrorTitle: 'Could not check for updates',
   // One key per UpdateErrorReason (@bombfarm/contracts), mapped exhaustively by
   // UPDATE_ERROR_REASON_COPY_KEY below.

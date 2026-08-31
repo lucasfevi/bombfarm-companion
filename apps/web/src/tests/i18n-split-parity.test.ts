@@ -225,6 +225,11 @@ const KEYS_REMOVED: readonly string[] = [
   // Farm board redesign (2026-08-19): the locked-phase "Push target" badge is withdrawn — it
   // wrapped onto a second line in the phase cell and grew every row it appeared on.
   'farmRankingPushTargetBadge',
+  // The roster-wide reset banner is withdrawn (2026-08-31). It restated, across the top of the
+  // planner, advice the hero strip's warn border and the Points panel's own gain line already
+  // carry for the hero being looked at. Its two strings have no reader left.
+  'resetAdviceRosterBanner',
+  'resetAdviceRosterHero',
 ];
 
 /**
@@ -531,6 +536,13 @@ const KEYS_ADDED: readonly string[] = [
    * key holding an array diffs as one leaf path per element (`key.0`, `key.1`, ...) in the two
    * value comparisons but as the bare key name in the key-name comparison, so one entry here
    * cannot satisfy both — and the only way to make an array fit is to loosen one of them.
+   *
+   * The channel vocabulary is gone entirely (2026-08-31, second pass). Once a stable release
+   * existed the page stopped being a menu of channels and became one download, so the chip beside
+   * the button, both channel cards and the channel word in the file line all went with it — every
+   * `downloadChannel*` key together. `downloadFileMeta` loses its `{channel}` placeholder for the
+   * same reason. None of this is a fixture delta: the whole `download` namespace postdates the
+   * frozen fixture, so these keys only ever lived in `KEYS_ADDED` and simply leave it.
    */
   'downloadNavLabel',
   'downloadHeaderCta',
@@ -539,7 +551,6 @@ const KEYS_ADDED: readonly string[] = [
   'downloadHeadlineAccent',
   'downloadLede',
   'downloadCta',
-  'downloadChannelChip',
   'downloadFileMeta',
   'downloadFileMetaPending',
   'downloadTrustPermission',
@@ -547,13 +558,6 @@ const KEYS_ADDED: readonly string[] = [
   'downloadTrustLicense',
   'downloadTrustLicenseLink',
   'downloadInstallsSuffix',
-  'downloadChannelBetaTitle',
-  'downloadChannelBetaNote',
-  'downloadChannelBetaNotePending',
-  'downloadChannelNightlyTitle',
-  'downloadChannelNightlyNote',
-  'downloadChannelStableTitle',
-  'downloadChannelStableNote',
   'downloadInstallHeading',
   'downloadStepRunTitle',
   'downloadStepRunBody',
@@ -597,6 +601,15 @@ const KEYS_ADDED: readonly string[] = [
   'downloadScreenSettingsItem2',
   'downloadScreenSettingsItem3',
   'downloadScreenSettingsItem4',
+  // Optimize build gains a target (2026-08-31): the same button now searches for sustained DPS
+  // or for the rotation's gold rate. `optimizeModeLabel` names the Select that picks; the four
+  // `optimizeBuildFarm*` strings are the farm target's own result and no-result lines, kept
+  // separate from the DPS ones because the two are denominated in different units.
+  'optimizeModeLabel',
+  'optimizeBuildFarmResultLine',
+  'optimizeBuildFarmKeptCurrent',
+  'optimizeBuildFarmNoPool',
+  'optimizeBuildFarmNoRate',
   // The respec advisor's honest framing (2026-08-31): `farmRespecBestFound` says the proposal is
   // the best build the search found and not proof that no better one exists, and it renders on
   // every result. That claim used to appear only inside `farmRespecBudgetExhausted`, whose
@@ -660,6 +673,10 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   // own `clearSecs` for the selected phase instead of modelling clear time a second way, so
   // `phasesClearDisclaimer` no longer describes a "mid-map sustained" estimate.
   'phasesClearDisclaimer',
+  // Optimize build gains a target (2026-08-31): the Tier 1 gain line now names sustained DPS as
+  // the thing it measured, and points at the DPS setting of the button rather than the button.
+  // With a farm target on the same control, an unqualified "possible gain" no longer says which.
+  'resetAdviceGainLine',
   // The respec advisor's honest framing (2026-08-31): this line no longer carries the
   // "not guaranteed to be the best that exists" clause — `farmRespecBestFound` says that on every
   // result now — and no longer calls the bound a time budget, which it never was.

@@ -9,7 +9,7 @@ import type {
   SettingsWriteReason,
   UpdateStatus,
 } from '@bombfarm/contracts';
-import { DEFAULT_SETTINGS, disabledUpdateStatus } from '@bombfarm/contracts';
+import { DEFAULT_SETTINGS, idleUpdateStatus } from '@bombfarm/contracts';
 import { AppShell, BrandMark, SegmentedToggle, StatusChip } from '@bombfarm/ui';
 // Proves the renderer can import @bombfarm/domain: a value import from a
 // FILE subpath that itself value-imports ./data/catalog.json, so a dist missing the JSON data
@@ -23,6 +23,7 @@ import { useOverlayInset } from '../lib/window-overlay';
 import { navItemsFor } from './nav-items';
 import { ConsentGate, isConsentGateVisible } from './consent-gate';
 import { ConsentModal } from './consent-modal';
+import { UpdateChip } from './update-chip';
 import { LiveView } from './live/live-view';
 import { FarmView } from './farm/farm-view';
 import { InventoryView } from './inventory/inventory-view';
@@ -131,9 +132,10 @@ function HomePageContent({
   const [consent, setConsent] = useState<ConsentRecord | null>(null);
   const [consentForceOpen, setConsentForceOpen] = useState(false);
   const [diagnosticsDumpResult, setDiagnosticsDumpResult] = useState<LiveDiagnosticsDumpOutcome | null>(null);
-  // Seeded disabled rather than null so the Updates section renders its final height on first
-  // paint; main answers `updates:get` with the same inert status when no service exists yet.
-  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>(() => disabledUpdateStatus(''));
+  // Seeded rather than null so the Updates section renders on first paint, and seeded `idle`
+  // because that is the one phase that claims nothing: `disabled` is a statement about the build
+  // that this component is in no position to make before main has answered.
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>(() => idleUpdateStatus('', null));
 
   useEffect(() => {
     const bridge = getBridge();
@@ -272,6 +274,16 @@ function HomePageContent({
         version={
           environment ? (
             <>
+              {/* Left of the version, and only while consent is granted: the chip's whole action
+                  is reaching Settings, and the nav it would reach does not exist until then. */}
+              {granted ? (
+                <UpdateChip
+                  status={updateStatus}
+                  onOpenSettings={() => {
+                    setActiveNavId('settings');
+                  }}
+                />
+              ) : null}
               <span data-testid="app-version" className="font-mono tabular-nums">
                 v{environment.version}
               </span>

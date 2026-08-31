@@ -310,7 +310,6 @@ jobs:
             artifactPlan: metadata.artifactPlan,
             headSha: process.env.HEAD_SHA,
             runUrl: process.env.RUN_URL,
-            prodReleaseEnabled: false,
           });
           writeFileSync(process.env.BODY_PATH, body);
           NODE
@@ -564,7 +563,6 @@ jobs:
             artifactPlan: metadata.artifactPlan,
             headSha,
             runUrl: process.env.RUN_URL,
-            prodReleaseEnabled: false,
           });
           appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${report}\n`);
           NODE
