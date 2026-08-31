@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
     '@bombfarm/game-api',
     '@bombfarm/domain',
     '@bombfarm/game-art',
+    '@bombfarm/farm',
   ],
 };
 

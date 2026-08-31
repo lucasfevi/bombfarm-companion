@@ -33,6 +33,13 @@ const plannerOriginPackages = [
  */
 const gameArtPackage = ['packages/game-art/**/*.{ts,tsx}'];
 
+/**
+ * `farm` holds the shared farm screen, moved verbatim out of `apps/web/src/features/phases/` —
+ * a tree that never carried `exactOptionalPropertyTypes`/`noUncheckedIndexedAccess`. Same
+ * relaxed tier as `gameArtPackage`, and its own list for the same reason.
+ */
+const farmPackage = ['packages/farm/**/*.{ts,tsx}'];
+
 /** Ban raw react-icons / SVG imports outside the Icon seam (ICO-23, ICO-24, D12). */
 const rawIconImportRule = [
   'error',
@@ -86,6 +93,7 @@ export default tseslint.config(
       // Stories are excluded too, but stay linted — see the stories block below.
       'packages/ui/**/*.{test,spec}.{ts,tsx}',
       'packages/game-art/**/*.{test,spec}.{ts,tsx}',
+      'packages/farm/**/*.{test,spec}.{ts,tsx}',
     ],
   },
   eslint.configs.recommended,
@@ -139,6 +147,23 @@ export default tseslint.config(
     },
   },
   {
+    files: farmPackage,
+    extends: [...tseslint.configs.recommendedTypeChecked],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+      globals: globals.browser,
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+    },
+  },
+  {
     files: ['apps/desktop/src/**/*.ts', 'apps/desktop/renderer/**/*.{ts,tsx}'],
     extends: [...tseslint.configs.strictTypeChecked],
     languageOptions: {
@@ -155,7 +180,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'apps/desktop/renderer/**/*.{ts,tsx}'],
+    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}', 'apps/desktop/renderer/**/*.{ts,tsx}'],
     plugins: { 'react-hooks': reactHooks },
     languageOptions: {
       globals: globals.browser,
@@ -165,17 +190,17 @@ export default tseslint.config(
     },
   },
   {
-    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'apps/desktop/renderer/**/*.{ts,tsx}'],
+    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}', 'apps/desktop/renderer/**/*.{ts,tsx}'],
     plugins: { react },
     rules: { 'react/forbid-dom-props': nativeTooltipRule },
   },
   {
-    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}'],
+    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}'],
     plugins: { tailwindcss: eslintPluginTailwindcss },
     settings: {
       tailwindcss: {
-        // Web app owns the Tailwind v4 entry; recipes in packages/ui and packages/game-art
-        // are scanned from there.
+        // Web app owns the Tailwind v4 entry; recipes in packages/ui, packages/game-art and
+        // packages/farm are scanned from there.
         cssConfigPath: webTailwindCss,
       },
     },
@@ -202,6 +227,10 @@ export default tseslint.config(
   },
   {
     files: ['apps/desktop/**/*.{ts,tsx}'],
+    rules: { 'no-restricted-imports': rawIconImportRule },
+  },
+  {
+    files: ['packages/farm/**/*.{ts,tsx}'],
     rules: { 'no-restricted-imports': rawIconImportRule },
   },
   // Stories sit outside packages/ui/tsconfig.json, so they cannot carry type-aware
