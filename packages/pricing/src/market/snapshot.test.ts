@@ -139,6 +139,14 @@ describe('mergeEntries', () => {
     expect(merged[0]?.key).toBe(priceKey('chest_item_30', 0));
   });
 
+  it('re-keys a row this run never reached, so a blocked run still repairs one', () => {
+    const lost = { ...weapon, key: 'equip#Ember Weapon' };
+
+    const merged = mergeEntries([], [lost], false);
+
+    expect(merged[0]?.key).toBe(priceKey('ember_arma', 1));
+  });
+
   it('never inherits a previous price for an item that is listed nowhere now', () => {
     const delisted = { ...weapon, lowestUsd: null, listings: 0 };
 
