@@ -1,15 +1,14 @@
 /**
- * The one number/date formatter for the renderer (design.md §6). Every
- * formatter now follows the chosen language — this file owns no words of its own. The five
- * relative-age strings and the two short-age suffixes render through `sub()` against copy keys
- * the caller supplies (`en.ts`'s `age*` keys); the number formatters take the locale and resolve
- * it through `BCP47_BY_LOCALE` for `Intl`/`toLocaleString`, replacing the hardcoded `'en-US'`.
+ * The one number/date formatter for the renderer. Every formatter follows the chosen language —
+ * this file owns no words of its own. The five relative-age strings and the two short-age suffixes
+ * render through `sub()` against copy keys the caller supplies (`en.ts`'s `age*` keys); the number
+ * formatters take the locale and resolve it through `BCP47_BY_LOCALE` for `Intl`/`toLocaleString`.
  *
- * What this file deliberately does not become (design §2.3, §9): a general formatting layer, an
+ * What this file deliberately does not become: a general formatting layer, an
  * `Intl.RelativeTimeFormat` wrapper, or a plural-rule engine. Four buckets is the shell's whole
  * relative-age need, and the `age*` copy keys are singular/plural-agnostic by construction.
  */
-import { BCP47_BY_LOCALE, type AppLocale } from '@bombfarm/contracts';
+import { BCP47_BY_LOCALE, energyDisplayPercent, type AppLocale } from '@bombfarm/contracts';
 import { sub, type Copy } from './copy';
 
 /** The exact slice of `Copy` these two formatters depend on — narrower than the full `Copy`
@@ -67,21 +66,10 @@ export function formatCount(count: number, locale: AppLocale): string {
   return Math.round(count).toLocaleString(BCP47_BY_LOCALE[locale]);
 }
 
-/**
- * A hero's energy as a whole percentage, FLOORED rather than rounded: only a hero at exactly full
- * energy may read 100%. A hero at 99.6% is still waiting, and "100%" beside one that has not left
- * for the field is the reading this bar exists to prevent.
- *
- * The epsilon is load-bearing, not defensive. `energyFractionOf` derives the fraction as
- * `energy / energyMax`, and an exact hundredth does not survive the multiply: `0.29 * 100` is
- * `28.999999999999996`, which floors to 28. Without it, 29%, 57% and 58% each render a point low.
- */
-const FLOOR_EPSILON = 1e-9;
-
-export function energyPercent(fraction: number): number {
-  const clamped = Math.min(Math.max(fraction, 0), 1);
-  return Math.floor(clamped * 100 + FLOOR_EPSILON);
-}
+/** Re-exported rather than reimplemented: this is the same rule the main process uses to decide
+ *  whether a new energy reading is worth sending at all, and a second copy of it here is how the
+ *  two would drift into disagreeing about what a change is. */
+export const energyPercent = energyDisplayPercent;
 
 export function formatEnergyPercent(fraction: number, locale: AppLocale): string {
   return new Intl.NumberFormat(BCP47_BY_LOCALE[locale], {

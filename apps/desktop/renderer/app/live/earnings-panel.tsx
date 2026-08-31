@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 import type { AppLocale, LiveEarnings } from '@bombfarm/contracts';
 import { formatCompactNumber, Icon, Panel, Sparkline, Tooltip, type Lang } from '@bombfarm/ui';
 import { sub, useCopy, useLocale, type Copy } from '../../lib/copy';
@@ -55,12 +55,45 @@ function Block({
 }
 
 /**
+ * The unit under the XP headline, and what it means. Nothing here depends on a figure — only on
+ * the language — so it is memoised: the panel around it re-renders four times a second as gold and
+ * XP move, and rebuilding a Base UI tooltip (provider, root, trigger, portal, positioner, popup)
+ * that many times a second to draw the same word is the largest single piece of work this panel
+ * was repeating for no reason.
+ */
+const XpHeadlineHelp = memo(function XpHeadlineHelp({ t }: { t: Copy }) {
+  return (
+    <Tooltip.Provider>
+      <Tooltip.Root>
+        <Tooltip.Trigger
+          type="button"
+          data-testid="live-earnings-xp-help-trigger"
+          aria-label={`${t.liveEarningsXpHeadlineUnit}: ${t.liveEarningsXpHelpBody}`}
+          className="block w-full border-0 bg-transparent p-0 text-right text-muted text-[10.5px] font-normal underline decoration-dotted underline-offset-2 cursor-help hover:text-ink focus-visible:rounded-sm focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          {t.liveEarningsXpHeadlineUnit}
+        </Tooltip.Trigger>
+        <Tooltip.Portal>
+          <Tooltip.Positioner sideOffset={6}>
+            <Tooltip.Popup>
+              <p className="m-0" data-testid="live-earnings-xp-help-body">
+                {t.liveEarningsXpHelpBody}
+              </p>
+            </Tooltip.Popup>
+          </Tooltip.Positioner>
+        </Tooltip.Portal>
+      </Tooltip.Root>
+    </Tooltip.Provider>
+  );
+});
+
+/**
  * Marks the three figures below it as measured, against the map panel's own "Estimated" note in
  * the same position one panel over. The two rows sit at the same height and print the same kind of
  * per-prop figure, so which of them is a reading and which is a model has to be legible without
  * opening either tooltip.
  */
-function MeasuredNote({ t }: { t: Copy }) {
+const MeasuredNote = memo(function MeasuredNote({ t }: { t: Copy }) {
   return (
     <Tooltip.Provider>
       <Tooltip.Root>
@@ -84,7 +117,7 @@ function MeasuredNote({ t }: { t: Copy }) {
       </Tooltip.Root>
     </Tooltip.Provider>
   );
-}
+});
 
 /** The footnote sits on its own line rather than beside the value, and the line is reserved whether
  *  or not there is one: its longest Portuguese form is wider than the English one, and inline it
@@ -338,27 +371,7 @@ export function EarningsPanel({
             >
               {numberText(earnings?.xp10, lang)}
             </span>
-            <Tooltip.Provider>
-              <Tooltip.Root>
-                <Tooltip.Trigger
-                  type="button"
-                  data-testid="live-earnings-xp-help-trigger"
-                  aria-label={`${t.liveEarningsXpHeadlineUnit}: ${t.liveEarningsXpHelpBody}`}
-                  className="block w-full border-0 bg-transparent p-0 text-right text-muted text-[10.5px] font-normal underline decoration-dotted underline-offset-2 cursor-help hover:text-ink focus-visible:rounded-sm focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                >
-                  {t.liveEarningsXpHeadlineUnit}
-                </Tooltip.Trigger>
-                <Tooltip.Portal>
-                  <Tooltip.Positioner sideOffset={6}>
-                    <Tooltip.Popup>
-                      <p className="m-0" data-testid="live-earnings-xp-help-body">
-                        {t.liveEarningsXpHelpBody}
-                      </p>
-                    </Tooltip.Popup>
-                  </Tooltip.Positioner>
-                </Tooltip.Portal>
-              </Tooltip.Root>
-            </Tooltip.Provider>
+            <XpHeadlineHelp t={t} />
           </div>
           <div className="grid grid-cols-[repeat(3,7rem)] gap-x-3 gap-y-3">
             <Block

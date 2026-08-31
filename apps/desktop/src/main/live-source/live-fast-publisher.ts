@@ -1,4 +1,5 @@
 import {
+  energyDisplayPercent,
   LIVE_DISPLAY_REFRESH_MS,
   type FieldCountdown,
   type LiveEarnings,
@@ -67,11 +68,18 @@ function sameRecoveryCountdowns(a: readonly RecoveryCountdown[], b: readonly Rec
   });
 }
 
+/** At the resolution the bar and the reading beside it are actually drawn at. The raw fraction
+ *  moves on every frame, so comparing it exactly makes every tick a change and every tick a
+ *  redraw of the same picture — see {@link energyDisplayPercent}. */
 function sameHeroEnergies(a: readonly LiveHeroEnergy[], b: readonly LiveHeroEnergy[]): boolean {
   if (a.length !== b.length) return false;
   return a.every((entry, index) => {
     const other = b[index];
-    return other !== undefined && entry.heroId === other.heroId && entry.energyFraction === other.energyFraction;
+    return (
+      other !== undefined &&
+      entry.heroId === other.heroId &&
+      energyDisplayPercent(entry.energyFraction) === energyDisplayPercent(other.energyFraction)
+    );
   });
 }
 

@@ -323,4 +323,28 @@ describe('createLiveFastPublisher — per-hero energy is part of the fast channe
     expect(emitted).toHaveLength(2);
     expect(emitted[1]).toMatchObject({ type: 'fastUpdate', energies: [{ heroId: 'h1', energyFraction: 0.51 }] });
   });
+
+  it('a drift too small to move the reading does not republish — the bar is one percent wide per point', () => {
+    // Four consecutive readings off the real wire, all of which draw a 28%-wide bar beside the
+    // text "28%". Comparing the raw fraction made every one of these a change, and every change a
+    // redraw of the same picture, four times a second for as long as the screen was open.
+    const drifting = [0.28425594587099745, 0.2838965614344286, 0.283776766622239, 0.28365697181004934];
+    let current: readonly LiveHeroEnergy[] = [{ heroId: 'h1', energyFraction: drifting[0] as number }];
+    const { publisher, emitted, fireTick } = harness(() => view({ energies: current }));
+
+    publisher.start();
+    fireTick();
+    expect(emitted).toHaveLength(1);
+
+    for (const energyFraction of drifting.slice(1)) {
+      current = [{ heroId: 'h1', energyFraction }];
+      fireTick();
+    }
+    expect(emitted).toHaveLength(1);
+
+    // Crossing into the next whole percent is a change, and does republish.
+    current = [{ heroId: 'h1', energyFraction: 0.29 }];
+    fireTick();
+    expect(emitted).toHaveLength(2);
+  });
 });
