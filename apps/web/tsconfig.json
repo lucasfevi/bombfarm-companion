@@ -23,6 +23,8 @@
       "@bombfarm/domain/*": ["../../packages/domain/src/*"],
       "@bombfarm/ui": ["../../packages/ui/src/index.ts"],
       "@bombfarm/ui/*": ["../../packages/ui/src/*"],
+      "@bombfarm/farm": ["../../packages/farm/src/index.ts"],
+      "@bombfarm/farm/*": ["../../packages/farm/src/*"],
       "@bombfarm/contracts": ["../../packages/contracts/src/index.ts"]
     }
   },

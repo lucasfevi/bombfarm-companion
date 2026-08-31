@@ -4,10 +4,7 @@ import {
   type PhasesViewState,
   type ReturnBonusMode,
 } from '@/shared/lib/phases-view-storage';
-// Type-only import — erases at compile time, so this slice never becomes a runtime importer of
-// @bombfarm/domain/farm-optimize (farm-ranking-guards.test.ts guard (g) scopes runtime imports
-// to farm-ranking-selectors.ts only).
-import type { FarmRespecResult } from '@bombfarm/domain/farm-optimize';
+import type { FarmRespecProposal, FarmRespecStatus } from '@bombfarm/farm';
 import { scheduleAfterPaint } from '@/shared/lib/schedule-after-paint';
 // Legal intra-element import (boundaries/elements declares one `shared-stores` element covering
 // both slices/ and selectors/) — the reverse edge of the same shape already ships in
@@ -19,15 +16,11 @@ import {
 } from '@/shared/stores/selectors/farm-ranking-selectors';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 
-/** The on-demand Tier 2 result, keyed by the EXACT dependency tuple that produced it
- *  (`readFarmRespecDepTuple`'s return value) — the staleness key AND the memo key, compared
+/** Declared in `@bombfarm/farm` beside the view model that reads them, and re-exported here so
+ *  this slice stays the import surface its existing consumers already use. The dependency tuple
+ *  a `FarmRespecProposal` is keyed by is `readFarmRespecDepTuple`'s return value, compared
  *  element-wise via the selectors module's own `depsEqual`. */
-export type FarmRespecProposal = {
-  deps: readonly unknown[];
-  result: FarmRespecResult;
-};
-
-export type FarmRespecStatus = 'idle' | 'solving' | 'done' | 'failed';
+export type { FarmRespecProposal, FarmRespecStatus };
 
 export type PhasesSlice = {
   phasesViewPhase: number;

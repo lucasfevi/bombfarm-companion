@@ -4,9 +4,9 @@ import type { FarmRespecResult } from '@bombfarm/domain/farm-optimize';
 import { TipLabel, Tooltip } from '@bombfarm/ui';
 import { sub, type Lang, type Strings } from '@/shared/i18n';
 import { GoldIcon, GoldValue, ChestIcon } from '@/shared/game-art';
-import { formatPhaseLabel, formatRate } from '@/features/phases/model/farm-ranking-format';
-import { resolvePaybackKind, resolvePhaseChange } from '@/features/phases/model/farm-respec-view';
-import { formatGold, formatHours, formatSignedPct } from '@/features/phases/model/farm-respec-format';
+import { formatPhaseLabel, formatRate } from '@bombfarm/farm/model/farm-ranking-format';
+import { resolvePaybackKind, resolvePhaseChange } from '@bombfarm/farm/model/farm-respec-view';
+import { formatGold, formatHours, formatSignedPct } from '@bombfarm/farm/model/farm-respec-format';
 
 /**
  * The five metric tiles — gold/hr, chests/hr, recommended phase, respec cost, payback — each

@@ -7,7 +7,7 @@ import { panelHClass, panelTitleClass, phasesBoardEconomyClass } from '@bombfarm
 import { useAppLang } from '@/shared/context/app-lang';
 import { numberFormatterFor } from '@/shared/lib/format-number';
 import type { PhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
-import { economyItems } from '../model/phase-fact-items';
+import { economyItems } from '@bombfarm/farm/model/phase-fact-items';
 
 export function PhaseEconomyPanel({ intel }: { intel: PhaseIntelGlobal }) {
   const { t, lang } = useAppLang();

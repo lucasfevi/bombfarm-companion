@@ -7,7 +7,7 @@ import { panelHClass, panelTitleClass, phasesBoardMapClass } from '@bombfarm/ui/
 import { useAppLang } from '@/shared/context/app-lang';
 import { numberFormatterFor } from '@/shared/lib/format-number';
 import type { PhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
-import { mapFactItems } from '../model/phase-fact-items';
+import { mapFactItems } from '@bombfarm/farm/model/phase-fact-items';
 
 export function PhaseMapFactsPanel({ intel }: { intel: PhaseIntelGlobal }) {
   const { t, lang } = useAppLang();

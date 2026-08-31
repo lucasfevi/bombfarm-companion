@@ -13,7 +13,7 @@ import { useAppLang } from '@/shared/context/app-lang';
 import { numberFormatterFor } from '@/shared/lib/format-number';
 import type { PhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
 import { WIKI_ASSETS_BASE } from '@bombfarm/domain/wiki-assets';
-import { jaulaItems } from '../model/phase-fact-items';
+import { jaulaItems } from '@bombfarm/farm/model/phase-fact-items';
 
 const cageArtSrc = `${WIKI_ASSETS_BASE}/env/jaula.png`;
 

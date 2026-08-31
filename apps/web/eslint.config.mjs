@@ -423,18 +423,6 @@ export default tseslint.config(
       'max-lines': ['error', { max: 650, skipBlankLines: true, skipComments: true }],
     },
   },
-  // Farm Respec Advisor (fra-web-ui) — src/shared/i18n/namespaces/phases.ts carries the Farm
-  // Ranking board's ~50 keys plus this item's 46 new farmRespec* keys, each in both EN and
-  // PT, by the design's own deliberate choice to keep one prefix-greppable namespace file
-  // rather than split by feature. Splitting the namespace file is out of this item's scope and
-  // would fragment `farmRanking*`/`farmRespec*` across files for no reader benefit. Raised cap,
-  // not disabled — a genuinely runaway namespace file still trips this.
-  {
-    files: ['src/shared/i18n/namespaces/phases.ts'],
-    rules: {
-      'max-lines': ['error', { max: 400, skipBlankLines: true, skipComments: true }],
-    },
-  },
   {
     files: ['*.{mjs,js}', 'vitest.config.ts', 'next.config.ts'],
     ...tseslint.configs.disableTypeChecked,
@@ -448,7 +436,6 @@ export default tseslint.config(
     files: [
       'src/app/_shell/site-header.tsx',
       'src/features/phases/components/phases-hero-switcher.tsx',
-      'src/features/phases/model/phase-fact-items.tsx',
       'src/features/planner/components/hero-abilities-tab.tsx',
       'src/features/planner/components/hero-strip-identity.tsx',
       'src/features/planner/components/hero-strip-metrics.tsx',

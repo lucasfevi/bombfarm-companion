@@ -6,7 +6,7 @@
  */
 import type { FarmRateRow } from '@bombfarm/domain/farm-rate';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
-import type { Strings } from '@/shared/i18n';
+import type { FarmCopy } from '../copy';
 
 export type FarmSortKey =
   | 'mitigationPct'
@@ -20,14 +20,14 @@ export type FarmSortKey =
 
 export type FarmSortDir = 'asc' | 'desc';
 
-/** Keys of `Strings` whose value is a plain string — narrows `t[headerKey]` to `string`. */
+/** Keys of the copy whose value is a plain string — narrows `t[headerKey]` to `string`. */
 type StringKeyOf<T> = { [K in keyof T]: T[K] extends string ? K : never }[keyof T];
 
 export type FarmColumnDef = {
   /** Stable, greppable id — also the `data-testid` suffix. */
   id: string;
-  /** `Strings` key for the column header text (`t.*`, `farmRanking*` prefix). */
-  headerKey: StringKeyOf<Strings>;
+  /** Copy key for the column header text (`t.*`, `farmRanking*` prefix). */
+  headerKey: StringKeyOf<FarmCopy>;
   align: 'left' | 'right';
   numeric: boolean;
   sortKey: FarmSortKey | null;

@@ -3,7 +3,7 @@
 import { Banner, Button } from '@bombfarm/ui';
 import { sub, type Lang, type Strings } from '@/shared/i18n';
 import { selectFarmRespecView, selectHeroes, usePlannerStore } from '@/shared/stores';
-import { resolvePanelState } from '@/features/phases/model/farm-respec-view';
+import { resolvePanelState } from '@bombfarm/farm/model/farm-respec-view';
 import { FarmRespecMetrics } from './farm-respec-metrics';
 import { FarmRespecHeroGrid } from './farm-respec-hero-grid';
 import { FarmRespecFrontier } from './farm-respec-frontier';

@@ -4,7 +4,7 @@ import type { Lang } from '@/shared/i18n';
 
 import type { FarmRespecResult } from '@bombfarm/domain/farm-optimize';
 import { sub, type Strings } from '@/shared/i18n';
-import { formatGainPct } from '@/features/phases/model/farm-respec-format';
+import { formatGainPct } from '@bombfarm/farm/model/farm-respec-format';
 
 /**
  * The toolbar's headline: the gain, labelled a LOWER BOUND, and nothing else. The phase, the

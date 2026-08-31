@@ -5,7 +5,7 @@
  *
  * Zero rate arithmetic, and zero point arithmetic too — the shared `DeltaTable` ledger primitive
  * now derives the per-key change from `current`/`target` itself, so this file no longer computes
- * a delta of its own. Every field below is item A's own field, read and passed through.
+ * a delta of its own. Every field below is the solver's own field, read and passed through.
  */
 import { SHEET_PANEL_KEYS, type SheetKey } from '@bombfarm/domain/planner-constants';
 // Type-only imports erase at compile time — this file never becomes a runtime importer of
@@ -16,7 +16,19 @@ import type {
   FarmRespecOutcome,
   FarmRespecResult,
 } from '@bombfarm/domain/farm-optimize';
-import type { FarmRespecProposal, FarmRespecStatus } from '@/shared/stores/slices/phases-slice';
+
+/**
+ * The on-demand result, keyed by the EXACT dependency tuple that produced it — the staleness key
+ * AND the memo key, compared element-wise by whichever store holds it. Plain data with no store
+ * library in it, so it is declared here, beside the only code that reads it, and the host app's
+ * store re-exports it rather than owning it.
+ */
+export type FarmRespecProposal = {
+  deps: readonly unknown[];
+  result: FarmRespecResult;
+};
+
+export type FarmRespecStatus = 'idle' | 'solving' | 'done' | 'failed';
 
 export type FarmRespecKeyRow = {
   key: SheetKey;
@@ -30,7 +42,7 @@ export type FarmRespecKeyRow = {
  * respec — a respec refunds every point, so a diff alone is not executable at the moment the
  * player needs it. The change column the player uses to judge whether a move is worth performing
  * (the game does not display per-stat spent points) is `DeltaTable`'s own `target - current`, not
- * a field this file carries. Luck's `keep` is true for every input — item A freezes it, so that
+ * a field this file carries. Luck's `keep` is true for every input — the solver freezes it, so that
  * subtraction naturally yields 0 there too.
  */
 export function buildHeroCardRows(entry: FarmRespecHeroEntry): FarmRespecKeyRow[] {
@@ -121,7 +133,7 @@ export type FarmRespecPhaseChange =
 
 /**
  * Whether the Phase tile has one label to show or two. `currentPhase`/`recommendedPhase` are
- * independently nullable (item A: null when nothing is feasible on that side), so `'moved'`
+ * independently nullable (the solver returns null when nothing is feasible on that side), so `'moved'`
  * covers every combination of one side null and the other not, not just a genuine two-sided move.
  * `'same'` fires only when BOTH sides are the identical non-null phase — the no-op proposal that
  * would otherwise print `Normal 1-1 (#51) -> Normal 1-1 (#51)`.
@@ -136,7 +148,7 @@ export function resolvePhaseChange(result: FarmRespecResult): FarmRespecPhaseCha
 }
 
 /**
- * Passes `result.frontier` through UNCHANGED — item A guarantees cost-ascending order, and this
+ * Passes `result.frontier` through UNCHANGED — the solver guarantees cost-ascending order, and this
  * file does not sort, filter or reverse it. An empty frontier (one searchable hero) yields `null`
  * — a "render nothing" signal — rather than an empty array to map over.
  */

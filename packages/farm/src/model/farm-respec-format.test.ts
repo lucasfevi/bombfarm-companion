@@ -5,13 +5,12 @@ import {
   formatGold,
   formatHours,
   formatSignedPct,
-} from '@/features/phases/model/farm-respec-format';
-import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
+} from './farm-respec-format';
 
 describe('farm-respec-format', () => {
   it('is React-free — no import from "react" anywhere in the file', () => {
     const source = readFileSync(
-      `${WEB_PACKAGE_ROOT}/src/features/phases/model/farm-respec-format.ts`,
+      new URL('./farm-respec-format.ts', import.meta.url),
       'utf8',
     );
     expect(source).not.toMatch(/from ['"]react['"]/);

@@ -4,7 +4,7 @@ import { HelpTip, Select, Switch } from '@bombfarm/ui';
 import { gameDifficultyLabel, ITEM_LEVEL_TIERS } from '@bombfarm/domain/phase-wiki';
 import { sub } from '@/shared/i18n';
 import type { Lang, Strings } from '@/shared/i18n';
-import type { FarmFilters, GateFilter } from '@/features/phases/model/farm-ranking-view';
+import type { FarmFilters, GateFilter } from '@bombfarm/farm/model/farm-ranking-view';
 
 type Props = {
   filters: FarmFilters;

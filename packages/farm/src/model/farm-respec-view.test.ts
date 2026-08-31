@@ -15,9 +15,8 @@ import {
   resolvePanelState,
   resolvePaybackKind,
   resolvePhaseChange,
-} from '@/features/phases/model/farm-respec-view';
-import type { FarmRespecProposal } from '@/shared/stores/slices/phases-slice';
-import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
+  type FarmRespecProposal,
+} from './farm-respec-view';
 
 function heroEntry(overrides: Partial<FarmRespecHeroEntry> = {}): FarmRespecHeroEntry {
   return {
@@ -38,7 +37,7 @@ function heroEntry(overrides: Partial<FarmRespecHeroEntry> = {}): FarmRespecHero
 describe('farm-respec-view', () => {
   it('is React-free — no import from "react" anywhere in the file', () => {
     const source = readFileSync(
-      `${WEB_PACKAGE_ROOT}/src/features/phases/model/farm-respec-view.ts`,
+      new URL('./farm-respec-view.ts', import.meta.url),
       'utf8',
     );
     expect(source).not.toMatch(/from ['"]react['"]/);

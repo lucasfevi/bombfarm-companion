@@ -9,6 +9,9 @@ const read = (rel: string) => readFileSync(resolve(root, 'src', rel), 'utf8');
 // this package's own source for the bundled-art coverage that used to sit in this file).
 const gameArtRoot = resolve(root, '../../packages/game-art');
 const readGameArt = (rel: string) => readFileSync(resolve(gameArtRoot, 'src', rel), 'utf8');
+// The farm screen's row builders live in the shared package the desktop app renders them from.
+const farmRoot = resolve(root, '../../packages/farm');
+const readFarm = (rel: string) => readFileSync(resolve(farmRoot, 'src', rel), 'utf8');
 
 function expectKeyOrder(source: string, keys: string[]) {
   let last = -1;
@@ -20,7 +23,7 @@ function expectKeyOrder(source: string, keys: string[]) {
 }
 
 describe('phase drops panel', () => {
-  const itemsSrc = read('features/phases/model/phase-fact-items.tsx');
+  const itemsSrc = readFarm('model/phase-fact-items.tsx');
   const iconSrc = readGameArt('drop-icon.tsx');
 
   it('carries the drop art on the merged row', () => {

@@ -11,7 +11,7 @@ import {
 import { useAppLang } from '@/shared/context/app-lang';
 import { sub } from '@/shared/i18n';
 import { formatNumber, numberFormatterFor } from '@/shared/lib/format-number';
-import { formatClearTime } from '../model/phases-page';
+import { formatClearTime } from '@bombfarm/farm/model/phases-page';
 import type { HeroRecord } from '@/shared/lib/storage';
 import type { RosterDpsRow } from '@bombfarm/domain/roster-dps';
 import { PhasesTop9Table } from './phases-top9-table';

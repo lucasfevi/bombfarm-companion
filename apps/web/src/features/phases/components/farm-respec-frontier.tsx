@@ -7,8 +7,8 @@ import { sub, type Strings } from '@/shared/i18n';
 import {
   resolveFrontierEntries,
   resolveFrontierHeroNames,
-} from '@/features/phases/model/farm-respec-view';
-import { formatGainPct, formatGold, formatHours } from '@/features/phases/model/farm-respec-format';
+} from '@bombfarm/farm/model/farm-respec-view';
+import { formatGainPct, formatGold, formatHours } from '@bombfarm/farm/model/farm-respec-format';
 
 function heroCountLabel(strings: Strings, heroCount: number): string {
   return heroCount === 1

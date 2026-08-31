@@ -9,8 +9,7 @@ import {
   formatRatePerHour,
   formatSignedRate,
   formatSignedRatePerHour,
-} from '@/features/phases/model/farm-ranking-format';
-import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
+} from './farm-ranking-format';
 
 describe('formatRate', () => {
   it('formats zero', () => {
@@ -129,7 +128,7 @@ describe('formatPhaseLabel', () => {
 describe('React-free source (formatting module)', () => {
   it('farm-ranking-format.ts has no React import', () => {
     const source = readFileSync(
-      `${WEB_PACKAGE_ROOT}/src/features/phases/model/farm-ranking-format.ts`,
+      new URL('./farm-ranking-format.ts', import.meta.url),
       'utf8',
     );
     expect(source).not.toMatch(/from ['"]react['"]/);

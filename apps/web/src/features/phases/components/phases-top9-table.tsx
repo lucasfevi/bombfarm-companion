@@ -6,7 +6,7 @@ import type { Strings } from '@/shared/i18n';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import type { RosterDpsRow } from '@bombfarm/domain/roster-dps';
 import type { HeroRecord } from '@/shared/lib/storage';
-import { formatClearTime } from '../model/phases-page';
+import { formatClearTime } from '@bombfarm/farm/model/phases-page';
 import { MAX_STARS } from '@bombfarm/domain/gear';
 
 type Props = {

@@ -5,7 +5,7 @@ import { DeltaTable, type DeltaTableRow, cn } from '@bombfarm/ui';
 import { HeroIdentityChip } from '@/shared/game-art';
 import type { Lang, Strings } from '@/shared/i18n';
 import type { HeroRecord } from '@/shared/lib/storage';
-import { buildHeroCardRows } from '@/features/phases/model/farm-respec-view';
+import { buildHeroCardRows } from '@bombfarm/farm/model/farm-respec-view';
 
 /**
  * One hero's respec split. A CHANGED hero lists all eight keys in the shared `DeltaTable` ledger

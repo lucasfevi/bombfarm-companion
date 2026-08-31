@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
-import { STRINGS } from '@/shared/i18n';
-import { TipLabel } from '@bombfarm/ui/stat-list-tip-label';
+import { farmPtBR } from '../copy';
+import { TipLabel } from '@bombfarm/ui';
 import {
   dropItems,
   economyItems,
   jaulaChestOdds,
   jaulaItems,
   mapFactItems,
-} from '@/features/phases/model/phase-fact-items';
+} from './phase-fact-items';
 
 // Account-486, phase-51/60 live-tooltip witness (also pinned in
 // `packages/domain/tests/phase-intel-486-witness.test.ts` at the domain layer) — reused here to
@@ -74,7 +74,7 @@ function subtextTip(value: unknown): string | null {
 }
 
 describe('phase-fact-items', () => {
-  const t = STRINGS.pt;
+  const t = farmPtBR;
   const fmt = (n: number, d = 0) => n.toFixed(d);
 
   it('mapFactItems returns the frozen nine row ids', () => {
@@ -162,7 +162,7 @@ describe('phase-fact-items', () => {
 });
 
 describe('dropItems', () => {
-  const t = STRINGS.pt;
+  const t = farmPtBR;
   const fmt = (n: number, d = 0) => n.toFixed(d);
 
   it('phase 51 (non-gate): all five rows, chest and key live, the gate-only three dashed and dimmed', () => {

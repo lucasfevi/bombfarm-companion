@@ -4,8 +4,8 @@ import type { FarmRespecHeroEntry, FarmRespecResult } from '@bombfarm/domain/far
 import { sub, type Lang, type Strings } from '@/shared/i18n';
 import { GoldValue } from '@/shared/game-art';
 import type { HeroRecord } from '@/shared/lib/storage';
-import { partitionHeroEntries } from '@/features/phases/model/farm-respec-view';
-import { formatGold } from '@/features/phases/model/farm-respec-format';
+import { partitionHeroEntries } from '@bombfarm/farm/model/farm-respec-view';
+import { formatGold } from '@bombfarm/farm/model/farm-respec-format';
 import { FarmRespecHeroCard } from './farm-respec-hero-card';
 
 /**

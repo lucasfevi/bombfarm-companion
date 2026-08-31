@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { FARM_COLUMNS } from '@/features/phases/model/farm-ranking-view';
+import { FARM_COLUMNS } from '@bombfarm/farm/model/farm-ranking-view';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
 /**

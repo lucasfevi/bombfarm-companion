@@ -6,7 +6,7 @@ import { sub, type Lang, type Strings } from '@/shared/i18n';
 import type { FarmRateRow } from '@bombfarm/domain/farm-rate';
 import { dropAppliesOnPhase } from '@bombfarm/domain/phase-wiki';
 import { ClockIcon } from '@/shared/game-art';
-import { ROW_HEIGHT_CSS } from '@/features/phases/model/farm-ranking-row-height';
+import { ROW_HEIGHT_CSS } from '@bombfarm/farm/model/farm-ranking-row-height';
 import {
   formatBand,
   formatMitigationPct,
@@ -14,8 +14,8 @@ import {
   formatPhaseLabel,
   formatRatePerHour,
   formatSignedRatePerHour,
-} from '@/features/phases/model/farm-ranking-format';
-import { formatClearTime } from '@/features/phases/model/phases-page';
+} from '@bombfarm/farm/model/farm-ranking-format';
+import { formatClearTime } from '@bombfarm/farm/model/phases-page';
 
 type Props = {
   row: FarmRateRow;

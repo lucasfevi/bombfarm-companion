@@ -10,9 +10,16 @@ import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
  * (proving it CAN fail — "red state demonstrated") before being run against the real tree.
  */
 
+/**
+ * The board's two halves now live in two packages: its components are still this app's, its
+ * pure model/format layer is `@bombfarm/farm`'s, so the desktop app can render the same screen.
+ * Both are scanned, and `both board dirs contribute files` below fails if either half ever stops
+ * resolving — a source-scanning guard pointed at a path that no longer exists keeps passing
+ * while checking nothing, which is the one way these guards die silently.
+ */
 const BOARD_DIRS = [
-  'src/features/phases/components',
-  'src/features/phases/model',
+  path.join(WEB_PACKAGE_ROOT, 'src/features/phases/components'),
+  path.join(WEB_PACKAGE_ROOT, '../../packages/farm/src/model'),
 ];
 
 function walkFiles(dir: string, predicate: (name: string) => boolean, acc: string[] = []): string[] {
@@ -25,13 +32,34 @@ function walkFiles(dir: string, predicate: (name: string) => boolean, acc: strin
   return acc;
 }
 
-function boardFiles(): { path: string; text: string }[] {
-  const files: string[] = [];
-  for (const dir of BOARD_DIRS) {
-    walkFiles(path.join(WEB_PACKAGE_ROOT, dir), (name) => name.startsWith('farm-') && (name.endsWith('.ts') || name.endsWith('.tsx')), files);
-  }
+function boardFilesIn(dir: string): { path: string; text: string }[] {
+  const files = walkFiles(
+    dir,
+    (name) =>
+      name.startsWith('farm-') &&
+      !name.endsWith('.test.ts') &&
+      !name.endsWith('.test.tsx') &&
+      (name.endsWith('.ts') || name.endsWith('.tsx')),
+  );
   return files.map((file) => ({ path: file, text: fs.readFileSync(file, 'utf8') }));
 }
+
+function boardFiles(): { path: string; text: string }[] {
+  return BOARD_DIRS.flatMap(boardFilesIn);
+}
+
+describe('the board tree the guards below scan', () => {
+  it('both board dirs exist and contribute files — no guard is silently scanning nothing', () => {
+    for (const dir of BOARD_DIRS) {
+      expect(fs.existsSync(dir), `${dir} does not exist`).toBe(true);
+      expect(boardFilesIn(dir).length, `${dir} contributed no farm-* file`).toBeGreaterThan(0);
+    }
+  });
+
+  it('red state: a dir that does not exist contributes nothing, which is what the check above catches', () => {
+    expect(boardFilesIn(path.join(WEB_PACKAGE_ROOT, 'src/features/phases/nowhere'))).toEqual([]);
+  });
+});
 
 // ---------------------------------------------------------------------------------------------
 // (a) One compute: zero advisor-pipeline calls anywhere under the board's tree.
@@ -325,9 +353,10 @@ describe('guard (d) — persisted key strings unchanged', () => {
 });
 
 // ---------------------------------------------------------------------------------------------
-// (h) No research-private identifier or path anywhere in apps/web (public-repo hygiene).
+// (h) No research-private identifier or path anywhere in apps/web or the shared farm package
+// (public-repo hygiene).
 // ---------------------------------------------------------------------------------------------
-describe('guard (h) — no research-private identifier or path in apps/web', () => {
+describe('guard (h) — no research-private identifier or path in apps/web or @bombfarm/farm', () => {
   const RESEARCH_ID_PATTERNS = [
     /FRAW-/,
     /FRAD-/,
@@ -372,11 +401,21 @@ describe('guard (h) — no research-private identifier or path in apps/web', () 
     expect(findResearchId('.specs/features/fra-web-ui/design.md')).toBe('.specs/');
   });
 
-  it('green state: no apps/web source or test file (this guard\'s own file self-excluded) contains a research-private identifier or path', () => {
-    const files = walkFiles(
-      path.join(WEB_PACKAGE_ROOT, 'src'),
-      (name) => name.endsWith('.ts') || name.endsWith('.tsx'),
+  // The farm package is scanned too: the farm screen's copy and model layer moved there, and a
+  // guard that stops following its subject stops guarding without ever going red.
+  const SCANNED_ROOTS = [
+    path.join(WEB_PACKAGE_ROOT, 'src'),
+    path.join(WEB_PACKAGE_ROOT, '../../packages/farm/src'),
+  ];
+
+  it('green state: no apps/web or @bombfarm/farm source or test file (this guard\'s own file self-excluded) contains a research-private identifier or path', () => {
+    const files = SCANNED_ROOTS.flatMap((root) =>
+      walkFiles(root, (name) => name.endsWith('.ts') || name.endsWith('.tsx')),
     );
+    expect(files.length, 'scanned file count').toBeGreaterThan(0);
+    for (const root of SCANNED_ROOTS) {
+      expect(files.some((abs) => abs.startsWith(root)), `${root} contributed no file`).toBe(true);
+    }
     const offenders: string[] = [];
     for (const abs of files) {
       const rel = path.relative(WEB_PACKAGE_ROOT, abs).split(path.sep).join('/');

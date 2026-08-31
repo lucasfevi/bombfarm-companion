@@ -1,12 +1,12 @@
-import type { Lang } from '@/shared/i18n';
 /**
  * Rate / duration / sign / label formatting for the Farm Ranking board — PURE, no React, no
- * math. Wraps the shipped `format-number.ts` and `phases-page.ts`'s `formatClearTime`, and
+ * math. Wraps `@bombfarm/ui`'s number formatters and `phases-page.ts`'s `formatClearTime`, and
  * re-exports the shared phase label.
  * Does not re-implement anything `@bombfarm/domain` already computed — comparison, slicing and
  * string composition only.
  */
-import { formatCompactNumber, formatNumber } from '@/shared/lib/format-number';
+import { formatCompactNumber, formatNumber } from '@bombfarm/ui';
+import type { Lang } from '../copy';
 
 /** A non-negative rate (gold/hr, chests/hr, gems/hr, time-pieces/hr, xp/hr). */
 export function formatRate(value: number, lang: Lang): string {
@@ -63,9 +63,8 @@ export function formatOneShot(oneShot: boolean, labels: { yes: string; no: strin
 }
 
 /**
- * Re-exported, not defined here: the Account page prints the same label and cannot import from
- * this feature (cross-feature edges are denied), so the definition moved to
- * `@/shared/lib/phase-label`. Kept as a re-export so this module stays the board's one import
- * surface for its formatters.
+ * Re-exported, not defined here: the host app's Account page prints the same label, so the
+ * definition sits in its own module and is reachable from this package's root. Kept as a
+ * re-export so this module stays the board's one import surface for its formatters.
  */
-export { formatPhaseLabel } from '@/shared/lib/phase-label';
+export { formatPhaseLabel } from './phase-label';

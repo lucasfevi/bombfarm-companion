@@ -1,10 +1,9 @@
 import React from 'react';
-import { DropIcon, GoldIcon, rarityTextClass as rarityTextClassFor } from '@/shared/game-art';
-import type { Lang, Strings } from '@/shared/i18n';
-import { sub } from '@/shared/i18n';
+import { DropIcon, GoldIcon, rarityTextClass as rarityTextClassFor } from '@bombfarm/game-art';
 import type { DropChanceRow, PhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
 import { phaseMapDisplayName, rarityLabel } from '@bombfarm/domain/phase-wiki';
-import { TipLabel } from '@bombfarm/ui/stat-list-tip-label';
+import { TipLabel, Tooltip } from '@bombfarm/ui';
+import { sub, type FarmCopy, type Lang } from '../copy';
 import { formatDurationShort, GATE_KEY_RARITY_INDEX } from './phases-page';
 
 function rarityTextClass(index: number): string {
@@ -39,9 +38,36 @@ export function jaulaChestOdds(
   );
 }
 
+/**
+ * The map name, revealed in full on hover when the row clips it. `min-w-[28ch]` plus
+ * `whitespace-nowrap` is what makes the reveal necessary at all, so the two travel together on
+ * the trigger itself — `render={<span />}` keeps the element a span, not the button
+ * `Tooltip.Trigger` renders by default, so the row's layout is what it was.
+ */
+function MapNameValue({ mapName }: { mapName: string }) {
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger
+        delay={180}
+        closeDelay={80}
+        render={<span className="inline-block min-w-[28ch] whitespace-nowrap" />}
+      >
+        {mapName}
+      </Tooltip.Trigger>
+      <Tooltip.Portal>
+        <Tooltip.Positioner sideOffset={6}>
+          <Tooltip.Popup>
+            <p className="m-0 text-[11px] leading-snug">{mapName}</p>
+          </Tooltip.Popup>
+        </Tooltip.Positioner>
+      </Tooltip.Portal>
+    </Tooltip.Root>
+  );
+}
+
 export function mapFactItems(
   intel: PhaseIntelGlobal,
-  strings: Strings,
+  strings: FarmCopy,
   formatNumber: (n: number, d?: number) => string,
   lang: Lang,
 ) {
@@ -51,11 +77,7 @@ export function mapFactItems(
     {
       id: 'mapName',
       label: strings.phasesMapName,
-      value: (
-        <span className="inline-block min-w-[28ch] whitespace-nowrap" title={mapName}>
-          {mapName}
-        </span>
-      ),
+      value: <MapNameValue mapName={mapName} />,
     },
     { id: 'stone', label: strings.phasesStoneHp, value: formatNumber(intel.stoneHp, 0) },
     {
@@ -103,7 +125,7 @@ export function mapFactItems(
 
 export function economyItems(
   intel: PhaseIntelGlobal,
-  strings: Strings,
+  strings: FarmCopy,
   formatNumber: (n: number, d?: number) => string,
 ): {
   id: string;
@@ -174,7 +196,7 @@ export function economyItems(
 
 export function jaulaItems(
   intel: PhaseIntelGlobal,
-  strings: Strings,
+  strings: FarmCopy,
   formatNumber: (n: number, d?: number) => string,
   lang: Lang,
 ) {
@@ -210,12 +232,12 @@ export function jaulaItems(
 }
 
 /**
- * `DropChanceRow.id` -> its label string. A `switch` (not an indexed lookup table) so each arm
- * reads `strings.phasesDropXxx` directly — a plain property access TypeScript can narrow to
- * `string`, unlike `strings[someKeyofStrings]`, which widens to the union of every value type
- * across `Strings` (some of which, e.g. `explainSections`, are not `ReactNode`).
+ * `DropChanceRow.id` -> its label string. A `switch` (not an indexed lookup table) so a new
+ * `DropChanceRow` id is a compile error here: the unhandled arm leaves the function able to
+ * return `undefined`, which its `string` return type rejects — where a lookup table would just
+ * hand the panel a missing label at runtime.
  */
-function dropLabel(dropId: DropChanceRow['id'], strings: Strings): string {
+function dropLabel(dropId: DropChanceRow['id'], strings: FarmCopy): string {
   switch (dropId) {
     case 'chest':
       return strings.phasesDropChest;
@@ -312,7 +334,7 @@ function dropBoostTerms(row: DropChanceRow, intel: PhaseIntelGlobal): number[] {
  * specific to (`dropAppliesOnPhase`): every id but the ready key is gate-only, so it is the one
  * exception this checks for by id rather than re-deriving from `applies` a second time.
  */
-function inapplicableDropValue(dropId: DropChanceRow['id'], strings: Strings): React.ReactNode {
+function inapplicableDropValue(dropId: DropChanceRow['id'], strings: FarmCopy): React.ReactNode {
   const note = dropId === 'key' ? strings.phasesDropNonGateOnly : strings.phasesDropGateOnly;
   return (
     <span className="flex flex-col items-end gap-0.5 leading-tight">
@@ -331,7 +353,7 @@ function inapplicableDropValue(dropId: DropChanceRow['id'], strings: Strings): R
  */
 export function dropItems(
   intel: PhaseIntelGlobal,
-  strings: Strings,
+  strings: FarmCopy,
   formatNumber: (n: number, d?: number) => string,
 ) {
   const items: {

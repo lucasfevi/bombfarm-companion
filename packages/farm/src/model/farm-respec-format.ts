@@ -1,12 +1,12 @@
-import type { Lang } from '@/shared/i18n';
 /**
- * Number formatting for the Farm Respec Advisor — PURE, no React, no rate math. Wraps the
- * shipped `format-number.ts` exactly the way `farm-ranking-format.ts` does: every function
+ * Number formatting for the Farm Respec Advisor — PURE, no React, no rate math. Wraps
+ * `@bombfarm/ui`'s `formatNumber` exactly the way `farm-ranking-format.ts` does: every function
  * returns a bare number string (no unit, no sign of the ranking board's own kind of glyph), so
  * the surrounding `t.*` string supplies the unit and any surrounding words. Locale-independent
  * digit formatting (`,`/`.`) is `formatNumber`'s own deliberate choice, kept here unchanged.
  */
-import { formatNumber } from '@/shared/lib/format-number';
+import { formatNumber } from '@bombfarm/ui';
+import type { Lang } from '../copy';
 
 /** A percent gain, one decimal — e.g. `12.8`. */
 export function formatGainPct(value: number, lang: Lang): string {

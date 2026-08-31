@@ -12,7 +12,7 @@ import {
 import { useAppLang } from '@/shared/context/app-lang';
 import { numberFormatterFor } from '@/shared/lib/format-number';
 import type { PhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
-import { dropItems } from '../model/phase-fact-items';
+import { dropItems } from '@bombfarm/farm/model/phase-fact-items';
 
 export function PhaseDropsPanel({ intel }: { intel: PhaseIntelGlobal }) {
   const { t, lang } = useAppLang();

@@ -26,8 +26,8 @@ import {
   type FarmFilters,
   type FarmSortDir,
   type FarmSortKey,
-} from '@/features/phases/model/farm-ranking-view';
-import { formatMitigationPct } from '@/features/phases/model/farm-ranking-format';
+} from '@bombfarm/farm/model/farm-ranking-view';
+import { formatMitigationPct } from '@bombfarm/farm/model/farm-ranking-format';
 import { FarmRankingFilters } from './farm-ranking-filters';
 import { FarmRotationPool } from './farm-rotation-pool';
 import { FarmReturnBonus } from './farm-return-bonus';

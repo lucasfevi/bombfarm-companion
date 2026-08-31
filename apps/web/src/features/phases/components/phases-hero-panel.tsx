@@ -7,7 +7,7 @@ import { panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui/panel-field
 import { useAppLang } from '@/shared/context/app-lang';
 import { formatNumber, numberFormatterFor } from '@/shared/lib/format-number';
 import { sub } from '@/shared/i18n';
-import { formatClearTime } from '../model/phases-page';
+import { formatClearTime } from '@bombfarm/farm/model/phases-page';
 import type { HeroPhaseFit } from '@bombfarm/domain/phase-intel';
 import type { HeroRecord } from '@/shared/lib/storage';
 import { PhasesHeroSwitcher } from './phases-hero-switcher';

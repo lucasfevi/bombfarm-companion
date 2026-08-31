@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { FarmRateRow } from '@bombfarm/domain/farm-rate';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
-import * as phasesStrings from '@/shared/i18n/namespaces/phases';
+import { farmEn, farmPtBR } from '../copy';
 import {
   applyFarmFilters,
   DEFAULT_SORT,
@@ -13,8 +13,7 @@ import {
   CONTENTION_NOTICE_MIN_PCT,
   sortFarmRows,
   type FarmSortKey,
-} from '@/features/phases/model/farm-ranking-view';
-import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
+} from './farm-ranking-view';
 
 function row(overrides: Partial<FarmRateRow> & { phase: number }): FarmRateRow {
   return {
@@ -89,8 +88,8 @@ describe('FARM_COLUMNS (matches the design column list, transcribed, not derived
   });
 
   it('every column header key resolves in both EN and PT strings', () => {
-    const en = phasesStrings.en as Record<string, string>;
-    const pt = phasesStrings.pt as Record<string, string>;
+    const en = farmEn as Record<string, string>;
+    const pt = farmPtBR as Record<string, string>;
     for (const column of FARM_COLUMNS) {
       expect(en[column.headerKey], `en.${column.headerKey}`).toBeTruthy();
       expect(pt[column.headerKey], `pt.${column.headerKey}`).toBeTruthy();
@@ -361,7 +360,7 @@ describe('pickBestFarmRow', () => {
 describe('React-free source (both files)', () => {
   it('farm-ranking-view.ts has no React import', () => {
     const source = readFileSync(
-      `${WEB_PACKAGE_ROOT}/src/features/phases/model/farm-ranking-view.ts`,
+      new URL('./farm-ranking-view.ts', import.meta.url),
       'utf8',
     );
     expect(source).not.toMatch(/from ['"]react['"]/);
