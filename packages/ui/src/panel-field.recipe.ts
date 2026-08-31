@@ -121,6 +121,15 @@ export const adviceSplitClass =
 /** Compact rank-mode Select in the Next point panel header (content-sized, right-aligned). */
 export const rankModeSelectClass = '!w-auto max-w-[7rem] shrink-0';
 
+/**
+ * A primary Button and a compact Select drawn as ONE control: the two share an edge instead of
+ * stacking two borders (`-ml-px`), and `items-stretch` gives the Select the button's height
+ * rather than its own `min-h`, which is shorter.
+ */
+export const optimizeGroupClass = 'inline-flex items-stretch';
+export const optimizeGroupButtonClass = 'rounded-r-none';
+export const optimizeGroupSelectClass = '!-ml-px !w-auto max-w-[6rem] shrink-0 rounded-l-none';
+
 /** Shared top rule + padding for the Account two-column body (one border, not per subsection). */
 export const accountBodyClass = 'mt-1 border-t border-line pt-3';
 

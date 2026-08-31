@@ -41,7 +41,7 @@ export const en = {
   // Tier 1 (the automatic gate) is a lower bound: "at least ~{pct}%", never a
   // bare percentage or a future-tense promise, and it names Optimize build as the definitive
   // answer. `{pct}` is Tier 1's own gainPct, already floored at 0 by the seed comparison.
-  resetAdviceGainLine: "A fast check found a possible gain of at least ~{pct}%. Optimize build gives the definitive answer.",
+  resetAdviceGainLine: "A fast check found a possible sustained-DPS gain of at least ~{pct}%. Optimize build on its DPS setting gives the definitive answer.",
   pointsStepMinusFiveAria: "Remove 5 points from {stat}",
   pointsStepPlusFiveAria: "Add 5 points to {stat}",
   // Tier 2 (on-demand) may claim the best allocation ITS search found;
@@ -56,6 +56,18 @@ export const en = {
   optimizeBuildNoBudgetReason: "No points to place at this level yet.",
   optimizeBuildHeroDisabledNote:
     "This hero is disabled, so it is not included in automatic respec recommendations.",
+  // The target the on-demand search scores against. Its own control, independent of the Next
+  // point panel's ranking mode: ranking the next point by farm rate and reallocating a whole
+  // build for damage are separate questions a player may legitimately ask at the same time.
+  optimizeModeLabel: "Optimize build target",
+  // Farm scores the whole rotation's gold rate, so its result line is denominated in gold per
+  // hour, never DPS — the two targets must never borrow each other's unit.
+  optimizeBuildFarmResultLine:
+    "Best allocation this search found: about {pct}% more gold per hour for your rotation.",
+  optimizeBuildFarmKeptCurrent: "This search did not beat your current allocation for farming.",
+  optimizeBuildFarmNoPool:
+    "No farming rotation to search against. Add this hero to your rotation, or switch the target to DPS.",
+  optimizeBuildFarmNoRate: "No farmable phase for this rotation yet — nothing to search against.",
   previewApplyButton: "Apply preview",
   previewClearButton: "Clear preview",
   previewRespecNote: "Applied on the planner — spend a real in-game reset to match this build.",
@@ -181,7 +193,7 @@ export const pt: typeof en = {
   colPreview: "Prévia",
   pointsUnspentBanked: "+{count} não gastos",
   pointsOverBudgetWarning: "Estes pontos de atributo não fecham: {spent} pontos em um herói de nível {level}, e o jogo concede apenas um por nível. Importe um save novo — se continuar assim, avise no Discord.",
-  resetAdviceGainLine: "Uma checagem rápida encontrou um possível ganho de pelo menos ~{pct}%. Otimizar build dá a resposta definitiva.",
+  resetAdviceGainLine: "Uma checagem rápida encontrou um possível ganho de DPS efetivo de pelo menos ~{pct}%. Otimizar build no modo DPS dá a resposta definitiva.",
   pointsStepMinusFiveAria: "Remover 5 pontos de {stat}",
   pointsStepPlusFiveAria: "Adicionar 5 pontos a {stat}",
   optimizeBuildButton: "Otimizar build",
@@ -191,6 +203,13 @@ export const pt: typeof en = {
   optimizeBuildNoBudgetReason: "Nenhum ponto para alocar neste nível ainda.",
   optimizeBuildHeroDisabledNote:
     "Este herói está desativado, então não entra nas recomendações automáticas de reset.",
+  optimizeModeLabel: "Alvo do Otimizar build",
+  optimizeBuildFarmResultLine:
+    "Melhor alocação encontrada por essa busca: cerca de {pct}% a mais de ouro por hora para sua rotação.",
+  optimizeBuildFarmKeptCurrent: "Essa busca não superou sua alocação atual para farm.",
+  optimizeBuildFarmNoPool:
+    "Nenhuma rotação de farm para comparar. Adicione este herói à sua rotação, ou troque o alvo para DPS.",
+  optimizeBuildFarmNoRate: "Nenhuma fase farmável para essa rotação ainda — nada para comparar.",
   previewApplyButton: "Aplicar prévia",
   previewClearButton: "Limpar prévia",
   previewRespecNote: "Aplicado no planner — use um reset de verdade no jogo para bater com essa build.",

@@ -38,6 +38,23 @@ async function openPointsTab(page: import('@playwright/test').Page, lang: 'pt' |
   await page.getByRole('tab', { name: lang === 'en' ? /^points$/i : /^pontos$/i }).click();
 }
 
+/** The Select glued to Optimize build — a Base UI listbox (trigger + popup), not a native
+ *  `<select>`, so its value is the trigger's own text and its options live in a popup. */
+function optimizeTarget(page: import('@playwright/test').Page, lang: 'pt' | 'en' = 'pt') {
+  return page.getByRole('combobox', {
+    name: lang === 'en' ? /^optimize build target$/i : /^alvo do otimizar build$/i,
+  });
+}
+
+async function pickTarget(
+  page: import('@playwright/test').Page,
+  optionName: RegExp,
+  lang: 'pt' | 'en' = 'pt',
+) {
+  await optimizeTarget(page, lang).click();
+  await page.getByRole('option', { name: optionName }).click();
+}
+
 function pointsPanel(page: import('@playwright/test').Page, lang: 'pt' | 'en' = 'pt') {
   const heading = lang === 'en' ? /^Points$/i : /^Pontos$/i;
   return page.locator('[data-slot="tabs-panel"][data-state="active"]').filter({
@@ -505,6 +522,61 @@ test.describe('points panel reset advice gain line + Optimize build result', () 
     const panel = pointsPanel(page);
     await panel.getByRole('button', { name: /^Otimizar build$/i }).click();
     await expect(panel.getByText(/melhor alocação encontrada por essa busca/i)).toBeVisible();
+  });
+
+  test('the target select sits with Optimize build, defaults to DPS, and offers exactly DPS and Farm', async ({
+    page,
+  }) => {
+    const pts = { ...zeroPts(), cdr: 38 };
+    await seedLocalStorage(page, pointsHero({ level: 38, pts }));
+    await page.goto('/');
+    await selectSavedHero(page, 'Cora');
+    await openPointsTab(page);
+
+    const target = optimizeTarget(page);
+    await expect(target).toHaveText(/^DPS$/i);
+
+    await target.click();
+    const options = page.getByRole('option');
+    await expect(options).toHaveCount(2);
+    expect((await options.allTextContents()).map((name) => name.trim()).sort()).toEqual(['DPS', 'Farm']);
+    await page.keyboard.press('Escape');
+  });
+
+  test('the target is its OWN setting — switching it leaves the Next point panel ranking untouched', async ({
+    page,
+  }) => {
+    const pts = { ...zeroPts(), cdr: 38 };
+    await seedLocalStorage(page, pointsHero({ level: 38, pts }));
+    await page.goto('/');
+    await selectSavedHero(page, 'Cora');
+    await openPointsTab(page);
+
+    const nextPoint = page.getByRole('combobox', { name: /^próximo ponto$/i });
+    const before = await nextPoint.textContent();
+
+    await pickTarget(page, /^Farm$/i);
+    await expect(optimizeTarget(page)).toHaveText(/^Farm$/i);
+    await expect(nextPoint).toHaveText(new RegExp(`^${before!.trim()}$`, 'i'));
+  });
+
+  test('under the Farm target the result names gold per hour, never sustained DPS', async ({ page }) => {
+    const pts = { ...zeroPts(), cdr: 38 };
+    await seedLocalStorage(page, pointsHero({ level: 38, pts }));
+    await page.goto('/');
+    await selectSavedHero(page, 'Cora');
+    await openPointsTab(page);
+
+    const panel = pointsPanel(page);
+    await pickTarget(page, /^Farm$/i);
+    await panel.getByRole('button', { name: /^Otimizar build$/i }).click();
+
+    // Either a real farm gain or the honest "this search did not beat your current allocation
+    // for farming" — never the DPS target's own unit, whichever way the search lands.
+    await expect(
+      panel.getByText(/ouro por hora|não superou sua alocação atual para farm/i),
+    ).toBeVisible();
+    await expect(panel.getByText(/a mais de DPS efetivo/i)).toHaveCount(0);
   });
 
   test('result line reads "kept current" when the search finds no measurable gain, and Apply does not write pts', async ({

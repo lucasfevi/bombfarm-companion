@@ -28,7 +28,6 @@ import {
 } from '@/shared/stores/slices/session-slice';
 import { clearAccountSharedSelectorCache } from '@/shared/stores/selectors/account-selectors';
 import { resetPlannerTabStatusCache } from '@/shared/stores/selectors/tab-status-selectors';
-import { resetResetAdviceRosterCache } from '@/shared/stores/selectors/reset-advice-roster-selectors';
 
 export type PlannerStore = SessionSlice &
   AccountSlice &
@@ -82,7 +81,6 @@ export function resetPlannerStoreForTests(): void {
   clearSessionTimersForTests();
   clearAccountSharedSelectorCache();
   resetPlannerTabStatusCache();
-  resetResetAdviceRosterCache();
   usePlannerStore.setState(initialPlannerState, true);
   persistenceTestCleanup?.();
   storageListenerTestCleanup?.();
