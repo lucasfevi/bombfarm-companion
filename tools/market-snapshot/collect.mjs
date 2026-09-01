@@ -7,6 +7,7 @@
  * without a built workspace. This file's own requests reach the history store and the publishing
  * API and nothing else.
  */
+import { writeFileSync } from 'node:fs';
 import { basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -359,6 +360,116 @@ export function createPublisher({
   return { publishRelease, publishBranch };
 }
 
+/**
+ * The published snapshot is served with a five-minute max-age, so a pass that finished faster
+ * than this gains nothing by publishing again immediately.
+ */
+export const MIN_PASS_MS = 300_000;
+
+/**
+ * A tripped breaker means the per-address quota is spent, and looping straight back into it is
+ * how a temporary block becomes a permanent one.
+ */
+export const COOL_DOWN_LADDER_MS = [0, 15, 30, 60, 120].map((minutes) => minutes * 60_000);
+
+export function nextCoolDown(currentMs) {
+  const rung = COOL_DOWN_LADDER_MS.indexOf(currentMs);
+  return COOL_DOWN_LADDER_MS[Math.min(rung + 1, COOL_DOWN_LADDER_MS.length - 1)];
+}
+
+export function runRowFrom(stats, snapshotBytes) {
+  return {
+    rows_seen: stats.rowsSeen,
+    search_calls: stats.searchCalls,
+    quote_calls: stats.quoteCalls,
+    quotes_ok: stats.quotesOk,
+    rate_limit_hits: stats.rateLimitHits,
+    enumeration_complete: stats.enumerationComplete,
+    quotes_complete: stats.quotesComplete,
+    snapshot_bytes: snapshotBytes,
+    anomalies: stats.anomalies.length,
+    unmapped_tags: stats.unmappedTags.length,
+    unlinkable_items: stats.unlinkableItems.length,
+  };
+}
+
+/**
+ * The pass, repeated. Three orderings here are load-bearing:
+ *
+ * History is written before publishing, because a reading not taken is gone forever while a
+ * published snapshot can be rebuilt by the next pass — so a history failure is recorded and the
+ * pass publishes anyway, the artifact being what users read.
+ *
+ * The run row is written in a `finally`, so a pass that throws still leaves a row carrying its
+ * error. Health in one query would otherwise under-count failures as passes that never happened.
+ *
+ * A pass that completes with the rotation cut short is not an error — it publishes and persists
+ * what it got — but it still enters the cool-down ladder, because a tripped breaker is the exact
+ * signal the ladder exists for.
+ */
+export async function runCollector({
+  config,
+  runSweep,
+  loadPrior,
+  writeSnapshot,
+  persistHistory,
+  publishRelease,
+  publishBranch,
+  writeRun,
+  log,
+  sleep,
+  now = Date.now,
+  maxPasses = Infinity,
+}) {
+  let coolDownMs = 0;
+
+  for (let pass = 1; pass <= maxPasses; pass += 1) {
+    const startedAtMs = now();
+    let row = {
+      pass,
+      started_at: new Date(startedAtMs).toISOString(),
+      spacing_ms: config.spacingMs,
+    };
+
+    try {
+      log('pass.start', { pass, spacingMs: config.spacingMs });
+
+      const prior = loadPrior(config.snapshotPath);
+      const { snapshot, stats } = await runSweep({
+        prior,
+        quoteDelayMs: config.spacingMs,
+        nativeCurrencies: config.currencies,
+        log: (message) => {
+          log('sweep.line', { message });
+        },
+      });
+      logSweepStats(log, stats);
+
+      const body = JSON.stringify(snapshot);
+      writeSnapshot(config.snapshotPath, body);
+      row = { ...row, ...runRowFrom(stats, body.length) };
+
+      const history = await persistHistory(snapshot, stats);
+      if (!history.ok) row.error = history.error;
+
+      row.published_release = await publishRelease(body);
+      row.published_branch = await publishBranch(body);
+
+      coolDownMs = stats.quotesComplete ? 0 : nextCoolDown(coolDownMs);
+    } catch (err) {
+      row.error = String(err?.stack ?? err);
+      log('pass.failed', { pass, error: row.error }, 'error');
+      coolDownMs = nextCoolDown(coolDownMs);
+    } finally {
+      row.finished_at = new Date(now()).toISOString();
+      await writeRun(row);
+      log('pass.done', { pass, ms: now() - startedAtMs, coolDownMs });
+    }
+
+    await sleep(Math.max(coolDownMs, MIN_PASS_MS - (now() - startedAtMs)));
+  }
+}
+
 async function main() {
   const config = readConfig(process.env);
   const log = createLogger();
@@ -369,6 +480,40 @@ async function main() {
     spacingClamped: config.spacingClamped,
     currencies: config.currencies,
     snapshotPath: config.snapshotPath,
+  });
+
+  // Imported here, not at module load: the sweep resolves a workspace package from its build
+  // output, and everything above must stay drivable without one.
+  const { runSweep, loadPrior } = await import('./build.mjs');
+  const { persistHistory, writeRun } = createHistory({
+    url: config.supabaseUrl,
+    key: config.supabaseKey,
+    fetch,
+    log,
+  });
+  const { publishRelease, publishBranch } = createPublisher({
+    token: config.githubToken,
+    repo: config.repo,
+    releaseTag: config.releaseTag,
+    dataBranch: config.dataBranch,
+    snapshotName: config.snapshotName,
+    fetch,
+    log,
+  });
+
+  await runCollector({
+    config,
+    runSweep,
+    loadPrior,
+    writeSnapshot: (path, body) => {
+      writeFileSync(path, body);
+    },
+    persistHistory,
+    publishRelease,
+    publishBranch,
+    writeRun,
+    log,
+    sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   });
 }
 
