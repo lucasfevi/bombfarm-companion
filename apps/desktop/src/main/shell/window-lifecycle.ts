@@ -11,7 +11,7 @@ export interface WindowPort {
 }
 
 export interface TrayMenuItem {
-  readonly id: 'show' | 'quit';
+  readonly id: 'show' | 'mini' | 'quit';
   readonly label: string;
   readonly click: () => void;
 }
@@ -49,6 +49,7 @@ export function createShellLifecycle(deps: {
   window: WindowPort;
   tray: TrayPort | null;
   quit: () => void;
+  openMini: () => void;
   log: {
     info: (rec: Record<string, unknown>) => void;
     error: (rec: Record<string, unknown>) => void;
@@ -84,6 +85,7 @@ export function createShellLifecycle(deps: {
 
   const buildMenu = (): TrayMenuItem[] => [
     { id: 'show', label: labels.show, click: show },
+    { id: 'mini', label: labels.mini, click: deps.openMini },
     { id: 'quit', label: labels.quit, click: () => deps.quit() },
   ];
 

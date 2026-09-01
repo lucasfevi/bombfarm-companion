@@ -61,6 +61,7 @@ describe('createShellLifecycle', () => {
       window,
       tray: null,
       quit: vi.fn(),
+      openMini: vi.fn(),
       log: { info: vi.fn(), error: vi.fn() },
       labels: TRAY_TEXT.en,
       tooltip: 'Bomb Farm Companion',
@@ -79,6 +80,7 @@ describe('createShellLifecycle', () => {
       window,
       tray: null,
       quit: vi.fn(),
+      openMini: vi.fn(),
       log: { info: vi.fn(), error: vi.fn() },
       labels: TRAY_TEXT.en,
       tooltip: 'Bomb Farm Companion',
@@ -97,6 +99,7 @@ describe('createShellLifecycle', () => {
       window: createWindowPort(),
       tray: createTrayPort(),
       quit: vi.fn(),
+      openMini: vi.fn(),
       log: { info: vi.fn(), error: vi.fn() },
       labels: TRAY_TEXT.en,
       tooltip: 'Bomb Farm Companion',
@@ -107,12 +110,14 @@ describe('createShellLifecycle', () => {
     expect(lifecycle.onWindowClose()).toBe('let-close');
   });
 
-  it('installs exactly two tray menu items with show and quit ids', () => {
+  it('installs show, mini, and quit tray menu items in order', () => {
+    const openMini = vi.fn();
     const tray = createTrayPort();
     const lifecycle = createShellLifecycle({
       window: createWindowPort(),
       tray,
       quit: vi.fn(),
+      openMini,
       log: { info: vi.fn(), error: vi.fn() },
       labels: TRAY_TEXT.en,
       tooltip: 'Bomb Farm Companion',
@@ -120,10 +125,14 @@ describe('createShellLifecycle', () => {
 
     lifecycle.setTrayLabels(TRAY_TEXT['pt-BR']);
 
-    expect(tray.items).toHaveLength(2);
-    expect(tray.items.map((item) => item.id)).toEqual(['show', 'quit']);
+    expect(tray.items).toHaveLength(3);
+    expect(tray.items.map((item) => item.id)).toEqual(['show', 'mini', 'quit']);
     expect(tray.items[0]?.label).toBe('Mostrar');
-    expect(tray.items[1]?.label).toBe('Sair');
+    expect(tray.items[1]?.label).toBe('Mini');
+    expect(tray.items[2]?.label).toBe('Sair');
+
+    tray.items[1]?.click();
+    expect(openMini).toHaveBeenCalledOnce();
   });
 
   it('calls quit through requestQuit', () => {
@@ -132,6 +141,7 @@ describe('createShellLifecycle', () => {
       window: createWindowPort(),
       tray: null,
       quit,
+      openMini: vi.fn(),
       log: { info: vi.fn(), error: vi.fn() },
       labels: TRAY_TEXT.en,
       tooltip: 'Bomb Farm Companion',
@@ -148,6 +158,7 @@ describe('createShellLifecycle', () => {
       window: createWindowPort(),
       tray,
       quit: vi.fn(),
+      openMini: vi.fn(),
       log: { info: vi.fn(), error: vi.fn() },
       labels: TRAY_TEXT.en,
       tooltip: 'Bomb Farm Companion',

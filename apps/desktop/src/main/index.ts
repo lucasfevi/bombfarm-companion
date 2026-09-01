@@ -580,6 +580,7 @@ function setupShellLifecycle(productName: string): void {
     window: windowPort,
     tray: trayPort,
     quit: () => app.quit(),
+    openMini: () => miniLiveController?.open(),
     log,
     labels: trayTextFor(currentSettings.locale),
     tooltip: productName,
