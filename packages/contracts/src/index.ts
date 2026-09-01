@@ -279,13 +279,17 @@ export interface DamageAttributionResult {
 }
 
 export interface AppSettings {
-  schemaVersion: 1;
+  schemaVersion: 2;
   locale: 'en' | 'pt-BR';
+  alwaysOnTopMain: boolean;
+  alwaysOnTopMini: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   locale: 'en',
+  alwaysOnTopMain: false,
+  alwaysOnTopMini: false,
 };
 
 export interface AppEnvironmentInfo {
@@ -310,6 +314,7 @@ export interface IpcChannels {
    *  `isIpcChannel` is already the allowlist validator for it. */
   'settings:useEnglish': { args: []; result: SettingsWriteResult };
   'settings:usePortuguese': { args: []; result: SettingsWriteResult };
+  'settings:setAlwaysOnTopMain': { args: [boolean]; result: SettingsWriteResult };
   'storage:health': { args: []; result: { binding: string; ok: boolean } };
   'game:getStatus': { args: []; result: GameStatusInfo };
   'account:get': { args: []; result: AccountView };
@@ -358,6 +363,7 @@ export const IPC_CHANNELS = [
   'settings:get',
   'settings:useEnglish',
   'settings:usePortuguese',
+  'settings:setAlwaysOnTopMain',
   'storage:health',
   'game:getStatus',
   'account:get',
