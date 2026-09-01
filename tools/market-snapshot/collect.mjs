@@ -238,6 +238,101 @@ export function createHistory({ url, key, fetch, log, now = Date.now }) {
   return { persistHistory, writeRun };
 }
 
+const GITHUB_API = 'https://api.github.com';
+const GITHUB_UPLOADS = 'https://uploads.github.com';
+
+/**
+ * The two publish targets fail independently and are recorded independently: the desktop app and
+ * the web planner read different ones, so "the snapshot published" is not a single fact.
+ */
+export function createPublisher({
+  token,
+  repo,
+  releaseTag,
+  dataBranch,
+  snapshotName,
+  fetch,
+  log,
+  now = Date.now,
+}) {
+  const headers = (extra = {}) => ({
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+    'User-Agent': 'bombfarm-companion-market-collector',
+    ...extra,
+  });
+
+  const call = async (url, init) => {
+    const response = await fetch(url, init);
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      const error = new Error(`${init?.method ?? 'GET'} ${url} answered ${String(response.status)}`);
+      error.status = response.status;
+      error.body = body;
+      throw error;
+    }
+    return response;
+  };
+
+  const json = async (url, init) => (await call(url, init)).json();
+
+  const post = (path, payload) =>
+    json(`${GITHUB_API}/repos/${repo}/${path}`, {
+      method: 'POST',
+      headers: headers({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(payload),
+    });
+
+  const timed = async (target, bytes, publish) => {
+    const startedMs = now();
+    try {
+      await publish();
+      log('publish.done', { target, bytes, ms: now() - startedMs });
+      return true;
+    } catch (err) {
+      log(
+        'publish.failed',
+        { target, status: err?.status ?? null, body: err?.body ?? String(err) },
+        'error',
+      );
+      return false;
+    }
+  };
+
+  const uploadAsset = (releaseId, body) =>
+    call(
+      `${GITHUB_UPLOADS}/repos/${repo}/releases/${String(releaseId)}/assets?name=${encodeURIComponent(snapshotName)}`,
+      { method: 'POST', headers: headers({ 'Content-Type': 'application/json' }), body },
+    );
+
+  /**
+   * Delete-then-upload, because the REST API has no replace. That leaves a sub-second window
+   * where the asset is missing — clients treat a failed download as "keep the cached snapshot" —
+   * and it is why the upload gets a second attempt before the pass calls the target failed.
+   */
+  const publishRelease = (body) =>
+    timed('release', body.length, async () => {
+      const release = await json(`${GITHUB_API}/repos/${repo}/releases/tags/${releaseTag}`, {
+        headers: headers(),
+      });
+      const existing = (release.assets ?? []).find((asset) => asset.name === snapshotName);
+      if (existing) {
+        await call(`${GITHUB_API}/repos/${repo}/releases/assets/${String(existing.id)}`, {
+          method: 'DELETE',
+          headers: headers(),
+        });
+      }
+      try {
+        await uploadAsset(release.id, body);
+      } catch {
+        await uploadAsset(release.id, body);
+      }
+    });
+
+  return { publishRelease };
+}
+
 async function main() {
   const config = readConfig(process.env);
   const log = createLogger();
