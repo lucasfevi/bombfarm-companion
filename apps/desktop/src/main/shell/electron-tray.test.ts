@@ -90,12 +90,8 @@ describe('createElectronTray', () => {
       throw new Error('expected tray creation to succeed');
     }
     expect(setToolTip).toHaveBeenCalledWith(TOOLTIP);
-    expect(result.tray).toEqual(
-      expect.objectContaining({
-        setToolTip: expect.any(Function),
-        setContextMenu: expect.any(Function),
-        destroy: expect.any(Function),
-      }),
-    );
+    expect(typeof result.tray.setToolTip).toBe('function');
+    expect(typeof result.tray.setContextMenu).toBe('function');
+    expect(typeof result.tray.destroy).toBe('function');
   });
 });

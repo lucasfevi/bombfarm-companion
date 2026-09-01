@@ -110,7 +110,7 @@ describe('createWindowLayoutStore over a db whose INSERT throws', () => {
     };
     return {
       exec: () => undefined,
-      prepare: () => statement,
+      prepare: (): SqliteStatement => statement,
       close: () => undefined,
     };
   }
@@ -201,7 +201,7 @@ describe.each(availableBindings)('mini layout fields (%s)', (binding) => {
           run(sql, ...args);
           return statement.run(...args);
         },
-      } as SqliteStatement;
+      };
     };
     open.db.prepare('INSERT INTO account_meta (key, value) VALUES (?, ?)').run(
       WINDOW_LAYOUT_META_KEY,
@@ -216,7 +216,7 @@ describe.each(availableBindings)('mini layout fields (%s)', (binding) => {
       axis: 'horizontal',
     });
 
-    const keys = run.mock.calls.map((call) => call[1]);
+    const keys = run.mock.calls.map((call: [string, ...unknown[]]) => call[1]);
     expect(keys).toContain(WINDOW_LAYOUT_META_KEY);
     expect(keys).not.toContain('settings_v1');
   });

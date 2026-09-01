@@ -4,7 +4,6 @@ import { RENDERER_HOST, RENDERER_SCHEME } from './renderer-protocol.js';
 import {
   clampMiniToWorkArea,
   fitMiniGrowthAxis,
-  type MiniLiveBounds,
   type MiniLiveLayoutStored,
   type WorkArea,
   type WindowLayoutDocument,

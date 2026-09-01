@@ -18,8 +18,12 @@ export function installShellSmokeBridge(
   simulateSecondInstance: () => void,
 ): void {
   (globalThis as GlobalWithBridge)[GLOBAL_KEY] = {
-    show: () => lifecycle.show(),
-    quitFromTray: () => lifecycle.requestQuit(),
+    show: () => {
+      lifecycle.show();
+    },
+    quitFromTray: () => {
+      lifecycle.requestQuit();
+    },
     simulateSecondInstance,
     get trayPresent() {
       return lifecycle.trayPresent;
@@ -28,5 +32,5 @@ export function installShellSmokeBridge(
 }
 
 export function clearShellSmokeBridge(): void {
-  delete (globalThis as GlobalWithBridge)[GLOBAL_KEY];
+  Reflect.deleteProperty(globalThis, GLOBAL_KEY);
 }

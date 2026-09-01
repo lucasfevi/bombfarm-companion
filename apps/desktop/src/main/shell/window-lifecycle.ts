@@ -99,7 +99,9 @@ export function createShellLifecycle(deps: {
   const buildMenu = (): TrayMenuItem[] => [
     { id: 'show', label: labels.show, click: show },
     { id: 'mini', label: labels.mini, click: deps.openMini },
-    { id: 'quit', label: labels.quit, click: () => deps.quit() },
+    { id: 'quit', label: labels.quit, click: () => {
+      deps.quit();
+    } },
   ];
 
   const setTrayLabels = (next: TrayLabels): void => {

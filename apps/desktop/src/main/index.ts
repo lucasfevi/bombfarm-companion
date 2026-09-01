@@ -85,7 +85,6 @@ import {
 import { clearShellSmokeBridge, installShellSmokeBridge } from './shell/shell-smoke-bridge.js';
 import {
   createShellLifecycle,
-  decideOnClose,
   shouldQuitOnAllWindowsClosed,
   type ShellLifecycle,
   type WindowPort,
@@ -467,7 +466,7 @@ function createMiniLiveControllerInstance(env: ReturnType<typeof resolveAppEnv>)
   }
 
   return createMiniLiveController({
-    BrowserWindowCtor: BrowserWindow as never,
+    BrowserWindowCtor: BrowserWindow,
     layoutStore: windowLayoutStore,
     resolveLoadUrl: () => resolveMiniLiveLoadUrl({ isDev: env.isDev, devBaseUrl: RENDERER_DEV_URL }),
     preloadPath: path.join(__dirname, '../preload/index.cjs'),
@@ -613,7 +612,9 @@ function setupShellLifecycle(productName: string): void {
   shellLifecycle = createShellLifecycle({
     window: windowPort,
     tray: trayPort,
-    quit: () => app.quit(),
+    quit: () => {
+      app.quit();
+    },
     openMini: () => miniLiveController?.open(),
     log,
     labels: trayTextFor(currentSettings.locale),

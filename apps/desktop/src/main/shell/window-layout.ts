@@ -95,7 +95,8 @@ export function clampToWorkArea(input: {
   defaultWidth: number;
   defaultHeight: number;
 }): { bounds: WorkArea; isMaximized: boolean; displayMissing: boolean } {
-  if (!input.stored) {
+  const stored = input.stored;
+  if (!stored) {
     const { width, height } = fitSize(
       input.defaultWidth,
       input.defaultHeight,
@@ -110,23 +111,23 @@ export function clampToWorkArea(input: {
     };
   }
 
-  const matchedDisplay = input.displays.find((display) => display.id === input.stored!.displayId);
+  const matchedDisplay = input.displays.find((display) => display.id === stored.displayId);
   const displayMissing = matchedDisplay === undefined;
   const workArea = matchedDisplay?.workArea ?? input.primaryWorkArea;
   const { width, height } = fitSize(
-    input.stored.width,
-    input.stored.height,
+    stored.width,
+    stored.height,
     workArea,
     input.minWidth,
     input.minHeight,
   );
-  const absoluteX = workArea.x + input.stored.x;
-  const absoluteY = workArea.y + input.stored.y;
+  const absoluteX = workArea.x + stored.x;
+  const absoluteY = workArea.y + stored.y;
   const position = clampPosition(absoluteX, absoluteY, width, height, workArea);
 
   return {
     bounds: { ...position, width, height },
-    isMaximized: input.stored.isMaximized,
+    isMaximized: stored.isMaximized,
     displayMissing,
   };
 }
@@ -140,7 +141,8 @@ export function clampMiniToWorkArea(input: {
   defaultWidth: number;
   defaultHeight: number;
 }): { bounds: WorkArea; displayId: number; displayMissing: boolean } {
-  if (!input.stored) {
+  const stored = input.stored;
+  if (!stored) {
     const { width, height } = fitSize(
       input.defaultWidth,
       input.defaultHeight,
@@ -155,23 +157,23 @@ export function clampMiniToWorkArea(input: {
     };
   }
 
-  const matchedDisplay = input.displays.find((display) => display.id === input.stored!.displayId);
+  const matchedDisplay = input.displays.find((display) => display.id === stored.displayId);
   const displayMissing = matchedDisplay === undefined;
   const workArea = matchedDisplay?.workArea ?? input.primaryWorkArea;
   const { width, height } = fitSize(
-    input.stored.width,
-    input.stored.height,
+    stored.width,
+    stored.height,
     workArea,
     input.minWidth,
     input.minHeight,
   );
-  const absoluteX = workArea.x + input.stored.x;
-  const absoluteY = workArea.y + input.stored.y;
+  const absoluteX = workArea.x + stored.x;
+  const absoluteY = workArea.y + stored.y;
   const position = clampPosition(absoluteX, absoluteY, width, height, workArea);
 
   return {
     bounds: { ...position, width, height },
-    displayId: matchedDisplay?.id ?? input.displays[0]?.id ?? input.stored.displayId,
+    displayId: matchedDisplay?.id ?? input.displays[0]?.id ?? stored.displayId,
     displayMissing,
   };
 }

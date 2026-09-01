@@ -83,7 +83,7 @@ describe('createMiniLiveBrowserWindow', () => {
       setIgnoreMouseEvents = setIgnoreMouseEvents;
     }
 
-    createMiniLiveBrowserWindow(FakeBrowserWindow as never, {
+    createMiniLiveBrowserWindow(FakeBrowserWindow, {
       preloadPath: PRELOAD,
       iconPath: ICON,
       x: 0,
@@ -197,7 +197,8 @@ describe('createMiniLiveController', () => {
 
     controller.open();
     expect(fake.constructCount).toBe(1);
-    const instance = fake.lastInstance!;
+    const instance = fake.lastInstance;
+    if (!instance) throw new Error('expected a BrowserWindow instance');
     instance.focus.mockClear();
 
     controller.open();

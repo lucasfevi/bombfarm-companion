@@ -41,27 +41,37 @@ describe('decideOnClose', () => {
   });
 });
 
-function createWindowPort(overrides: Partial<WindowPort> = {}): WindowPort {
+function createWindowPort(
+  overrides: Partial<Pick<WindowPort, 'isVisible' | 'isMinimized' | 'isDestroyed'>> = {},
+) {
+  const hide = vi.fn<WindowPort['hide']>();
+  const show = vi.fn<WindowPort['show']>();
+  const focus = vi.fn<WindowPort['focus']>();
+  const restore = vi.fn<WindowPort['restore']>();
+  const isVisible = overrides.isVisible ?? vi.fn<WindowPort['isVisible']>(() => true);
+  const isMinimized = overrides.isMinimized ?? vi.fn<WindowPort['isMinimized']>(() => false);
+  const isDestroyed = overrides.isDestroyed ?? vi.fn<WindowPort['isDestroyed']>(() => false);
   return {
-    hide: vi.fn(),
-    show: vi.fn(),
-    focus: vi.fn(),
-    restore: vi.fn(),
-    isVisible: vi.fn(() => true),
-    isMinimized: vi.fn(() => false),
-    isDestroyed: vi.fn(() => false),
-    ...overrides,
+    hide,
+    show,
+    focus,
+    restore,
+    isVisible,
+    isMinimized,
+    isDestroyed,
   };
 }
 
-function createTrayPort(): TrayPort & { items: TrayMenuItem[] } {
-  const port: TrayPort & { items: TrayMenuItem[] } = {
+function createTrayPort() {
+  const setToolTip = vi.fn<TrayPort['setToolTip']>();
+  const destroy = vi.fn<TrayPort['destroy']>();
+  const port: TrayPort & { items: TrayMenuItem[]; destroy: typeof destroy } = {
     items: [],
-    setToolTip: vi.fn(),
+    setToolTip,
     setContextMenu(items) {
       port.items = [...items];
     },
-    destroy: vi.fn(),
+    destroy,
   };
   return port;
 }
@@ -69,8 +79,8 @@ function createTrayPort(): TrayPort & { items: TrayMenuItem[] } {
 describe('createShellLifecycle', () => {
   it('restores, shows, and focuses on the first show call', () => {
     const window = createWindowPort({
-      isVisible: vi.fn(() => false),
-      isMinimized: vi.fn(() => true),
+      isVisible: vi.fn<WindowPort['isVisible']>(() => false),
+      isMinimized: vi.fn<WindowPort['isMinimized']>(() => true),
     });
     const lifecycle = createShellLifecycle({
       window,
@@ -84,9 +94,9 @@ describe('createShellLifecycle', () => {
 
     lifecycle.show();
 
-    expect(window.restore).toHaveBeenCalledOnce();
-    expect(window.show).toHaveBeenCalledOnce();
-    expect(window.focus).toHaveBeenCalledOnce();
+    expect(window.restore.mock.calls).toHaveLength(1);
+    expect(window.show.mock.calls).toHaveLength(1);
+    expect(window.focus.mock.calls).toHaveLength(1);
   });
 
   it('does not call show, restore, or focus again when already visible and restored', () => {
@@ -104,9 +114,9 @@ describe('createShellLifecycle', () => {
     lifecycle.show();
     lifecycle.show();
 
-    expect(window.restore).not.toHaveBeenCalled();
-    expect(window.show).not.toHaveBeenCalled();
-    expect(window.focus).toHaveBeenCalledOnce();
+    expect(window.restore.mock.calls).toHaveLength(0);
+    expect(window.show.mock.calls).toHaveLength(0);
+    expect(window.focus.mock.calls).toHaveLength(1);
   });
 
   it('returns let-close after markQuitting even when the tray is present', () => {
@@ -181,6 +191,6 @@ describe('createShellLifecycle', () => {
 
     lifecycle.destroyTray();
 
-    expect(tray.destroy).toHaveBeenCalledOnce();
+    expect(tray.destroy.mock.calls).toHaveLength(1);
   });
 });
