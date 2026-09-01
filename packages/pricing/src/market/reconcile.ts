@@ -7,8 +7,10 @@ import {
   isKnownCategory,
   itemKindFor,
   rarityIdxFor,
+  steamRarityFor,
+  steamSlotFor,
 } from './tags.js';
-import type { Anomaly, MarketCoverage, MarketEntry } from './types.js';
+import type { Anomaly, FacetName, MarketCoverage, MarketEntry } from './types.js';
 import { HERO_CATEGORY, categoryKey, heroPriceKey, priceKey } from './types.js';
 
 /** One committed catalog definition, as `catalog.json` records it. */
@@ -120,11 +122,9 @@ export function reconcile(
     const defId =
       def?.defId ?? categoryDefId(category, rarityIdx, catalog, level, act, hashName);
 
-    const key = keyForEntry({ hashName, category, defId, rarityIdx, level, act });
-    // The categoryKey fallback means this row is priced and no owned copy can reach it. A skin is
-    // the one row for which that is the honest end state: it is a field on a hero rather than an
-    // inventory item, so it has no owned counterpart to fail to reach.
-    if (key === categoryKey(category ?? 'unknown', hashName) && category !== 'skin') {
+    const keyable = { hashName, category, defId, rarityIdx, level, act };
+    const key = keyForEntry(keyable);
+    if (!isFullyIdentified(keyable)) {
       anomalies.push({
         kind: 'unlinkable-item',
         detail: `${hashName} (category ${category ?? 'none'}) is priced but no owned copy can look it up`,
@@ -221,6 +221,64 @@ export function keyForEntry(entry: KeyableEntry): string {
   // Equipment that never got a set, slot or rarity must not share a key with the def it belongs
   // to; keying it by name keeps it addressable without letting it claim another item's price.
   return categoryKey(entry.category ?? 'unknown', entry.hashName);
+}
+
+/**
+ * True when an entry answers to a key an owned copy can produce, rather than falling back to its
+ * own hash name. That fallback means the row is priced and no owned copy can reach it — either
+ * because the tag passes never said what it is, or because the catalog cannot explain what they
+ * said. A skin is the one row for which the hash key is the honest end state: it is a field on a
+ * hero rather than an inventory item, so it has no owned counterpart to fail to reach.
+ */
+export function isFullyIdentified(entry: KeyableEntry): boolean {
+  if (entry.category == null) return false;
+  if (entry.category === 'skin') return true;
+  return keyForEntry(entry) !== categoryKey(entry.category, entry.hashName);
+}
+
+/**
+ * The facet tags a previous run established for each row it fully identified, by market hash.
+ *
+ * This is what lets a sweep tell a row it already knows from one it has never seen. Item identity
+ * is near-static, so asking Steam again what a hundred known rows are learns nothing and costs a
+ * burst of queries at the rate that gets an address blocked.
+ *
+ * A row a cut-short pass left half-identified is withheld on purpose, so the next sweep asks about
+ * it again rather than inheriting the gap forever — and so is one whose facets cannot be spelled
+ * back as the Steam tags they came from, since stamping a partial set would key it by hash and
+ * take its price with it.
+ */
+export function knownTagsFrom(
+  entries: MarketEntry[],
+): Record<string, Partial<Record<FacetName, string>>> {
+  const known: Record<string, Partial<Record<FacetName, string>>> = {};
+  for (const entry of entries) {
+    if (!isFullyIdentified(entry)) continue;
+    const tags = facetTagsOf(entry);
+    if (tags != null) known[entry.hashName] = tags;
+  }
+  return known;
+}
+
+/** The queries an entry would have come back from, or null if one of them cannot be spelled. */
+function facetTagsOf(entry: MarketEntry): Partial<Record<FacetName, string>> | null {
+  const tags: Partial<Record<FacetName, string>> = {};
+  if (entry.category != null) tags.category = entry.category;
+  if (entry.set != null) tags.set = entry.set;
+  if (entry.level != null) tags.level = String(entry.level);
+  if (entry.act != null) tags.act = String(entry.act);
+
+  if (entry.slot != null) {
+    const slot = steamSlotFor(entry.slot);
+    if (slot == null) return null;
+    tags.slot = slot;
+  }
+  if (entry.rarityIdx != null) {
+    const rarity = steamRarityFor(entry.rarityIdx);
+    if (rarity == null) return null;
+    tags.rarity = rarity;
+  }
+  return tags;
 }
 
 /**
