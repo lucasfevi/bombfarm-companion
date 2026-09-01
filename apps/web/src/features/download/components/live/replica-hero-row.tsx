@@ -14,8 +14,8 @@ const STATE_DOT_CLASS: Record<ReplicaRowState, string> = {
  * every other state holds still and gets no marker.
  *
  * Like the desktop's, it is held in place by the mono figure beside it in a fixed slot rather
- * than by anything of its own — `DM Sans` has no tabular figures, so a sans reading changes width
- * as it counts and drags the caret with it.
+ * than by anything of its own — the slot is what stops a reading gaining a digit and dragging the
+ * caret with it, which no choice of face can do.
  */
 const ENERGY_DIRECTION: Record<ReplicaRowState, { readonly glyph: string; readonly className: string } | null> = {
   'on-field': { glyph: '▾', className: 'text-down' },

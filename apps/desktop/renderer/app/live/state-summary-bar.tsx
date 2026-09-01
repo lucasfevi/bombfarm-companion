@@ -113,6 +113,22 @@ export function StateSummaryBar({
     </div>
   ) : undefined;
 
+  /*
+   * Each count below reserves its own slot. These badges are content-sized in a wrapping flex
+   * row, so the width of any one count is the whole row's geometry: a roster crossing nine heroes
+   * in a single state widens that badge mid-tick and shoves every badge after it sideways. The
+   * face holds the digits themselves to one width; only a reserved slot holds their number.
+   *
+   * A minimum rather than a fixed width: two digits covers every state a roster reaches in
+   * practice, and a third grows the badge once instead of clipping the count.
+   *
+   * The slot has to EXCEED two digits, not merely equal them, or the wider value sits at its own
+   * natural width instead of clamping to the slot and the badge creeps anyway. Two things make a
+   * bare `2ch` too small: the badge's `tracking-[0.04em]` falls outside `ch`, which measures a
+   * glyph's advance alone (worth 0.91px here), and `ch` itself reports a hair under the real
+   * advance (a further 0.02px). The margin covers both and is not otherwise load-bearing — the
+   * smoke spec's exact-geometry assertion is what proves it is still big enough.
+   */
   return (
     <div data-testid="live-state-summary" className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
       <StatBadge
@@ -124,7 +140,10 @@ export function StateSummaryBar({
       >
         <span aria-hidden className="size-2 shrink-0 rounded-full bg-up" />
         <span>{t.liveListOnFieldTitle}</span>
-        <span data-testid="live-state-summary-on-field-count" className="tabular-nums text-up">
+        <span
+          data-testid="live-state-summary-on-field-count"
+          className="inline-block min-w-[calc(2ch_+_0.15em)] text-right tabular-nums text-up"
+        >
           {onFieldCount}
         </span>
       </StatBadge>
@@ -139,21 +158,30 @@ export function StateSummaryBar({
       >
         <span aria-hidden className="size-2 shrink-0 rounded-full bg-info" />
         <span>{t.liveListRecoveringTitle}</span>
-        <span data-testid="live-state-summary-recovering-count" className="tabular-nums text-info">
+        <span
+          data-testid="live-state-summary-recovering-count"
+          className="inline-block min-w-[calc(2ch_+_0.15em)] text-right tabular-nums text-info"
+        >
           {recoveringCount}
         </span>
       </StatBadge>
       <StatBadge testId="live-state-summary-queued">
         <span aria-hidden className="size-2 shrink-0 rounded-full bg-warn" />
         <span>{t.liveListQueuedTitle}</span>
-        <span data-testid="live-state-summary-queued-count" className="tabular-nums text-warn">
+        <span
+          data-testid="live-state-summary-queued-count"
+          className="inline-block min-w-[calc(2ch_+_0.15em)] text-right tabular-nums text-warn"
+        >
           {queuedCount}
         </span>
       </StatBadge>
       <StatBadge testId="live-state-summary-benched">
         <span aria-hidden className="size-2 shrink-0 rounded-full bg-muted" />
         <span>{t.liveListBenchedTitle}</span>
-        <span data-testid="live-state-summary-benched-count" className="tabular-nums text-muted">
+        <span
+          data-testid="live-state-summary-benched-count"
+          className="inline-block min-w-[calc(2ch_+_0.15em)] text-right tabular-nums text-muted"
+        >
           {benchedCount}
         </span>
       </StatBadge>

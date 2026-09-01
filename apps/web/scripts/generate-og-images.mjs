@@ -9,8 +9,8 @@
  *
  *   pnpm --filter @bombfarm/web og
  *
- * Needs network: the cards are set in DM Sans, the same face the site loads, and the run fails
- * rather than falling back to a system font that would silently change every card.
+ * Needs network: the cards are set in IBM Plex Sans, the same face the site loads, and the run
+ * fails rather than falling back to a system font that would silently change every card.
  */
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -64,12 +64,12 @@ function cardHtml(preview) {
 <html lang="en"><head><meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=block" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=block" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     width: ${WIDTH}px; height: ${HEIGHT}px; overflow: hidden;
-    font-family: 'DM Sans', sans-serif; color: ${TOKEN.ink};
+    font-family: 'IBM Plex Sans', sans-serif; color: ${TOKEN.ink};
     background: linear-gradient(135deg, ${TOKEN.bg} 0%, ${TOKEN.bg} 45%, ${TOKEN.bg2} 100%);
   }
   .card { position: relative; width: 100%; height: 100%; padding: 76px 80px; display: flex; flex-direction: column; }
@@ -135,11 +135,11 @@ try {
     await page.setContent(cardHtml(preview), { waitUntil: 'networkidle' });
     await page.evaluate(() => document.fonts.ready);
 
-    const hasWebFont = await page.evaluate(() => document.fonts.check('700 68px "DM Sans"'));
+    const hasWebFont = await page.evaluate(() => document.fonts.check('700 68px "IBM Plex Sans"'));
     if (!hasWebFont) {
       throw new Error(
-        'DM Sans did not load — the cards would render in a fallback face and silently stop ' +
-          'matching the site. Check network access to fonts.googleapis.com and re-run.',
+        'IBM Plex Sans did not load — the cards would render in a fallback face and silently ' +
+          'stop matching the site. Check network access to fonts.googleapis.com and re-run.',
       );
     }
 
