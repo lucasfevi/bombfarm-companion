@@ -16,9 +16,11 @@ import { describe, expect, it } from 'vitest';
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const TAGS_PATH = join(root, 'packages/pricing/src/market/tags.ts');
 const CATALOG_PATH = join(root, 'packages/domain/src/data/catalog.json');
+const WIKI_PATH = join(root, 'packages/domain/src/data/phase-wiki.json');
 
 const tagsSource = readFileSync(TAGS_PATH, 'utf-8');
 const catalog = JSON.parse(readFileSync(CATALOG_PATH, 'utf-8'));
+const wiki = JSON.parse(readFileSync(WIKI_PATH, 'utf-8'));
 
 /** The body of `export const <name> ... = { ... };`, sliced by matching braces. */
 function tableBody(source, name) {
@@ -64,6 +66,22 @@ const slotTableIsOneToOne = (source) => {
   return new Set(codes).size === codes.length;
 };
 
+/**
+ * The catalog holds no gems and no chests, so the predicates above could never have covered the
+ * two market categories whose identity is not read off a facet. These three do, from the game data
+ * that actually names them.
+ */
+const gemsAreDerivedNotTabled = (source) => tableBody(source, 'GEM_DEF_BY_HASH') == null;
+
+const everyGemHasAnIdentity = (gems) =>
+  gems.length === 9 &&
+  gems.every((gem) => typeof gem.defId === 'string' && typeof gem.name === 'string');
+
+const chestTableIsKeyedByFamily = (source) =>
+  tableEntries(source, 'ACT_CHEST_FAMILY_DEF').length === 4 &&
+  tableEntries(source, 'ACT_CHEST_FAMILY_DEF').every(([, def]) => def.startsWith('chest_')) &&
+  !/\(Act \d/.test(tableBody(source, 'ACT_CHEST_FAMILY_DEF') ?? '');
+
 describe('the Steam tag tables against the committed catalog', () => {
   it('finds a real table to read, so the predicates below are not vacuous', () => {
     expect(tableEntries(tagsSource, 'STEAM_SLOT_TO_CATALOG').length).toBeGreaterThan(0);
@@ -93,5 +111,41 @@ describe('the Steam tag tables against the committed catalog', () => {
   it('needs no table for sets, because Steam publishes the catalog set codes verbatim', () => {
     expect(catalog.sets).toContain('ember');
     expect(tableBody(tagsSource, 'STEAM_SET_TO_CATALOG')).toBeNull();
+  });
+});
+
+describe('the market categories the catalog cannot speak for', () => {
+  it('names no gems here, because a partial list is what left six of nine unpriceable', () => {
+    expect(gemsAreDerivedNotTabled(tagsSource)).toBe(true);
+    expect(
+      gemsAreDerivedNotTabled(
+        `${tagsSource}\nexport const GEM_DEF_BY_HASH = {\n  'Emerald Gem': 'gem_emerald',\n};\n`,
+      ),
+    ).toBe(false);
+  });
+
+  it('finds a def id and a name for every gem in the game data the builder reads', () => {
+    expect(everyGemHasAnIdentity(wiki.gems.list)).toBe(true);
+    expect(everyGemHasAnIdentity(wiki.gems.list.slice(1))).toBe(false);
+    expect(everyGemHasAnIdentity(wiki.gems.list.map((gem) => ({ ...gem, defId: undefined })))).toBe(
+      false,
+    );
+  });
+
+  it('keys the act chests by family alone, so a new act needs no entry', () => {
+    const withoutGemChest = tagsSource.replace(/^\s*'Gem Chest': 'chest_gem',$/m, '');
+    const gemChestDefReversed = tagsSource.replace(
+      /^\s*'Gem Chest': 'chest_gem',$/m,
+      "  'Gem Chest': 'gem_chest',",
+    );
+    const gemChestKeyedByAct = tagsSource.replace(
+      /^\s*'Gem Chest': 'chest_gem',$/m,
+      "  'Gem Chest (Act 1)': 'chest_gem',",
+    );
+
+    expect(chestTableIsKeyedByFamily(tagsSource)).toBe(true);
+    expect(chestTableIsKeyedByFamily(withoutGemChest)).toBe(false);
+    expect(chestTableIsKeyedByFamily(gemChestDefReversed)).toBe(false);
+    expect(chestTableIsKeyedByFamily(gemChestKeyedByAct)).toBe(false);
   });
 });
