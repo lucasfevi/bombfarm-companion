@@ -1,0 +1,44 @@
+{
+  "planner": {
+    "eyebrow": "Planner",
+    "title": "Bomb Farm Companion",
+    "description": "Import your Bomb Farm save and see what your next skill point is worth — every hero's geared stats, gear sets, points and DPS. Free, and the save never leaves your browser.",
+    "cardHeadline": ["Know what your next point", "is worth before you spend it."],
+    "cardChips": ["Next-point DPS", "Gear & sets", "Skill points", "Respec payback"]
+  },
+  "farm": {
+    "eyebrow": "Farm",
+    "title": "Farm — Bomb Farm Companion",
+    "description": "Every Bomb Farm phase ranked by what it pays your account per hour — gold, XP, item level, drop odds and clear time, worked out from your own save.",
+    "cardHeadline": ["Every phase, ranked by", "what it pays you."],
+    "cardChips": ["Gold/hr", "XP/hr", "Drop odds", "Clear time"]
+  },
+  "teamPlan": {
+    "eyebrow": "Team plan",
+    "title": "Team plan — Bomb Farm Companion",
+    "description": "Plan gear moves, forge work and point resets across your whole Bomb Farm roster at once — scored for combined DPS, not one hero at a time.",
+    "cardHeadline": ["One plan for the", "whole roster."],
+    "cardChips": ["Gear moves", "Forge work", "Point resets", "Combined DPS"]
+  },
+  "inventory": {
+    "eyebrow": "Inventory",
+    "title": "Inventory — Bomb Farm Companion",
+    "description": "Every item your Bomb Farm save carries, not only what is equipped — gear, gems, keys, House parts, skill stones and chests, with set, slot, level and forge.",
+    "cardHeadline": ["Everything your save carries,", "not just what is equipped."],
+    "cardChips": ["Gear & sets", "Gems & keys", "Skill stones", "House parts"]
+  },
+  "account": {
+    "eyebrow": "Account",
+    "title": "Account — Bomb Farm Companion",
+    "description": "Your Bomb Farm account at a glance — phase progress, House recovery cycle and slots, and every account-wide skill tree bonus totalled the way the game totals them.",
+    "cardHeadline": ["Your account, totalled", "the way the game does it."],
+    "cardChips": ["Phase progress", "House cycle", "Recovery slots", "Skill tree"]
+  },
+  "download": {
+    "eyebrow": "Download",
+    "title": "Download for Windows — Bomb Farm Companion",
+    "description": "The free Windows companion for Bomb Farm: energy to full, when the next field clears, per-hero state, map value, and measured gold and XP rates. Open source, and it updates itself.",
+    "cardHeadline": ["See what your farm is", "actually paying you."],
+    "cardChips": ["Energy to full", "Field countdown", "Gold & XP rates", "Free · open source"]
+  }
+}

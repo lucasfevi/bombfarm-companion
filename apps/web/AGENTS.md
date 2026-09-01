@@ -43,6 +43,26 @@ GitHub at runtime and falls back to the releases page. Do not reintroduce a hard
 first version of this page did, all three constants were wrong within a day, and the download
 button 404'd.
 
+## RULE: link previews are drawn, not written — re-render them when the copy changes
+
+Every route carries its own `<title>`, description and share card, built by
+`sectionMetadata()` from `src/shared/lib/site-previews.json`. **A route that sets `title` alone
+still inherits the parent's whole `openGraph` object**, which is how every page on the site once
+previewed as the planner. If you add a route, add its entry to `site-previews.json` and give the
+segment a layout that exports `sectionMetadata('<section>')`.
+
+The card images in `public/og/` are rendered from that same JSON:
+
+```bash
+pnpm --filter @bombfarm/web og
+```
+
+**Editing the copy without re-running that is the failure this replaced.** The previous card was
+a committed PNG with no generator: its SVG source was updated to a new product name and the image
+every shared link actually served kept the old one for months. `scripts/og-manifest.json` records
+what the PNGs were last drawn from and `src/tests/link-preview.test.ts` fails when it disagrees
+with the JSON — so re-render in the same commit as the copy change.
+
 ## Local checks
 
 ```bash
@@ -54,4 +74,8 @@ pnpm --filter @bombfarm/web test:e2e:smoke
 
 ```bash
 npx vitest run --project tools download-page-drift
+```
+
+```bash
+pnpm --filter @bombfarm/web og   # after editing src/shared/lib/site-previews.json
 ```

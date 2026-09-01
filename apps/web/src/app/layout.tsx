@@ -3,12 +3,13 @@ import { DM_Sans, IBM_Plex_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { ClarityAnalytics } from '@/app/_shell/clarity';
+import {
+  SITE_NAME,
+  SITE_THEME_COLOR,
+  SITE_URL,
+  sectionMetadata,
+} from '@/shared/lib/site-metadata';
 import './globals.css';
-
-const SITE_URL = 'https://bombfarm-companion.vercel.app';
-const SITE_TITLE = 'Bomb Farm Companion';
-const SITE_DESCRIPTION =
-  'Unofficial Bomb Farm companion — recreate your sheet, gear, skill points and buffs, then get next-point DPS advice. Runs entirely in the browser.';
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -23,15 +24,21 @@ const ibmPlexMono = IBM_Plex_Mono({
   display: 'swap',
 });
 
+/**
+ * Site-wide chrome plus the planner's own preview: `/` has no layout of its own, so this is
+ * where the planner's title, description and share card come from. Every other section overrides
+ * all three from its own layout.
+ */
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: SITE_TITLE,
-  description: SITE_DESCRIPTION,
-  applicationName: SITE_TITLE,
+  ...sectionMetadata('planner'),
+  applicationName: SITE_NAME,
   keywords: [
     'Bomb Farm',
     'companion',
     'hero planner',
+    'farm ranking',
+    'gold per hour',
     'DPS',
     'gear',
     'skill points',
@@ -44,32 +51,10 @@ export const metadata: Metadata = {
   icons: {
     icon: '/favicon.svg',
   },
-  openGraph: {
-    type: 'website',
-    url: SITE_URL,
-    siteName: SITE_TITLE,
-    title: SITE_TITLE,
-    description: SITE_DESCRIPTION,
-    images: [
-      {
-        url: '/og.png',
-        width: 1200,
-        height: 630,
-        alt: 'Bomb Farm Companion — plan gear, skill points and DPS in the browser',
-      },
-    ],
-    locale: 'en_US',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: SITE_TITLE,
-    description: SITE_DESCRIPTION,
-    images: ['/og.png'],
-  },
 };
 
 export const viewport = {
-  themeColor: '#b96b17',
+  themeColor: SITE_THEME_COLOR,
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
