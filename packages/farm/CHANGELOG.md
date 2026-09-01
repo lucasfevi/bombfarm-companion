@@ -1,5 +1,13 @@
 # @bombfarm/farm
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [18a722d]
+  - @bombfarm/ui@0.9.0
+  - @bombfarm/game-art@0.3.4
+
 ## 0.2.0
 
 ### Minor Changes
