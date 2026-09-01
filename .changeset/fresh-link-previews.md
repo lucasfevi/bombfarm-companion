@@ -1,5 +1,5 @@
 ---
-'@bombfarm/web': minor
+"@bombfarm/web": minor
 ---
 
 Give every page its own link preview, and stop serving a stale one.
