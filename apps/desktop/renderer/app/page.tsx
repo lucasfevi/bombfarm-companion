@@ -31,6 +31,7 @@ import { ConsentSection } from './settings/consent-section';
 import { DiagnosticsSection } from './settings/diagnostics-section';
 import { LanguageSection } from './settings/language-section';
 import { UpdatesSection } from './settings/updates-section';
+import { WindowSection } from './settings/window-section';
 
 const DEFAULT_NAV_ID = 'live';
 
@@ -64,6 +65,8 @@ export default function HomePage() {
   const [locale, setLocale] = useState<AppLocale | null>(null);
   // The unwritable-settings-surfaced rule's surface half — null iff the last write persisted (or none has been attempted yet).
   const [persistWarning, setPersistWarning] = useState<SettingsWriteReason | null>(null);
+  const [alwaysOnTopMain, setAlwaysOnTopMain] = useState(DEFAULT_SETTINGS.alwaysOnTopMain);
+  const [alwaysOnTopWarning, setAlwaysOnTopWarning] = useState<SettingsWriteReason | null>(null);
 
   useEffect(() => {
     const bridge = getBridge();
@@ -77,6 +80,7 @@ export default function HomePage() {
       .invoke('settings:get')
       .then((settings) => {
         setLocale(settings.locale);
+        setAlwaysOnTopMain(settings.alwaysOnTopMain);
       })
       .catch(() => {
         setLocale(DEFAULT_SETTINGS.locale);
@@ -103,12 +107,24 @@ export default function HomePage() {
     });
   };
 
+  const onAlwaysOnTopMainChange = (next: boolean) => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('settings:setAlwaysOnTopMain', next).then((result) => {
+      setAlwaysOnTopMain(result.settings.alwaysOnTopMain);
+      setAlwaysOnTopWarning(result.persisted ? null : result.reason);
+    });
+  };
+
   return (
     <CopyProvider locale={locale ?? DEFAULT_SETTINGS.locale}>
       <HomePageContent
         locale={locale ?? DEFAULT_SETTINGS.locale}
         onLocaleChange={onLocaleChange}
         persistWarning={persistWarning}
+        alwaysOnTopMain={alwaysOnTopMain}
+        onAlwaysOnTopMainChange={onAlwaysOnTopMainChange}
+        alwaysOnTopWarning={alwaysOnTopWarning}
       />
     </CopyProvider>
   );
@@ -118,10 +134,16 @@ function HomePageContent({
   locale,
   onLocaleChange,
   persistWarning,
+  alwaysOnTopMain,
+  onAlwaysOnTopMainChange,
+  alwaysOnTopWarning,
 }: {
   locale: AppLocale;
   onLocaleChange: (next: AppLocale) => void;
   persistWarning: SettingsWriteReason | null;
+  alwaysOnTopMain: boolean;
+  onAlwaysOnTopMainChange: (next: boolean) => void;
+  alwaysOnTopWarning: SettingsWriteReason | null;
 }) {
   const t = useCopy();
   const { lang } = useLocale();
@@ -307,6 +329,11 @@ function HomePageContent({
           ) : activeNavId === 'settings' ? (
             <div data-testid="settings-view" className="mx-auto flex w-full max-w-settings flex-col gap-4">
               <LanguageSection locale={locale} onLocaleChange={onLocaleChange} persistWarning={persistWarning} />
+              <WindowSection
+                alwaysOnTopMain={alwaysOnTopMain}
+                onAlwaysOnTopMainChange={onAlwaysOnTopMainChange}
+                persistWarning={alwaysOnTopWarning}
+              />
               <ConsentSection onRevoke={onConsentRevoke} />
               <DiagnosticsSection onSave={onSaveDiagnostics} result={diagnosticsDumpResult} />
               <UpdatesSection
