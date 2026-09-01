@@ -330,7 +330,33 @@ export function createPublisher({
       }
     });
 
-  return { publishRelease };
+  /**
+   * A fresh orphan commit, force-pushed. `parents: []` is what keeps the branch a single commit
+   * forever: it is derived data with no value in its history, and a commit a pass would bloat
+   * every clone of the repository.
+   */
+  const publishBranch = (body) =>
+    timed('branch', body.length, async () => {
+      const blob = await post('git/blobs', {
+        content: Buffer.from(body, 'utf-8').toString('base64'),
+        encoding: 'base64',
+      });
+      const tree = await post('git/trees', {
+        tree: [{ path: snapshotName, mode: '100644', type: 'blob', sha: blob.sha }],
+      });
+      const commit = await post('git/commits', {
+        message: `chore(market): snapshot ${new Date(now()).toISOString()}`,
+        tree: tree.sha,
+        parents: [],
+      });
+      await call(`${GITHUB_API}/repos/${repo}/git/refs/heads/${dataBranch}`, {
+        method: 'PATCH',
+        headers: headers({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ sha: commit.sha, force: true }),
+      });
+    });
+
+  return { publishRelease, publishBranch };
 }
 
 async function main() {
