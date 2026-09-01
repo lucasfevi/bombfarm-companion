@@ -7,8 +7,18 @@ import { createSettingsStore } from './settings-store.js';
 const availableBindings = detectAvailableBindings();
 warnForUnavailableBindings(availableBindings);
 
-const EN: AppSettings = { schemaVersion: 1, locale: 'en' };
-const PT_BR: AppSettings = { schemaVersion: 1, locale: 'pt-BR' };
+const EN: AppSettings = {
+  schemaVersion: 2,
+  locale: 'en',
+  alwaysOnTopMain: false,
+  alwaysOnTopMini: false,
+};
+const PT_BR: AppSettings = {
+  schemaVersion: 2,
+  locale: 'pt-BR',
+  alwaysOnTopMain: false,
+  alwaysOnTopMini: false,
+};
 
 describe.each(availableBindings)('createSettingsStore over the real account_meta table (%s)', (binding) => {
   it('read() returns null when no row has ever been written — never a default', () => {
@@ -58,12 +68,32 @@ describe.each(availableBindings)('createSettingsStore over the real account_meta
     expect(store.read()).toBeNull();
   });
 
-  it('a wrong schemaVersion falls back to null', () => {
+  it('a v1 row migrates to v2 on read and persists v2 on the next write', () => {
     const open = openTestAccountDb(binding);
     if (!open.db) throw new Error('expected an open db for this binding');
     open.db
       .prepare('INSERT INTO account_meta (key, value) VALUES (?, ?)')
-      .run('settings_v1', JSON.stringify({ schemaVersion: 2, locale: 'en' }));
+      .run('settings_v1', JSON.stringify({ schemaVersion: 1, locale: 'pt-BR' }));
+
+    const store = createSettingsStore(open.db);
+
+    expect(store.read()).toEqual(PT_BR);
+
+    const result = store.write(PT_BR);
+
+    expect(result).toEqual({ settings: PT_BR, persisted: true, reason: null });
+    const row = open.db.prepare('SELECT value FROM account_meta WHERE key = ?').get('settings_v1') as
+      | { value: string }
+      | undefined;
+    expect(JSON.parse(row?.value ?? '')).toEqual(PT_BR);
+  });
+
+  it('an unknown future schemaVersion falls back to null', () => {
+    const open = openTestAccountDb(binding);
+    if (!open.db) throw new Error('expected an open db for this binding');
+    open.db
+      .prepare('INSERT INTO account_meta (key, value) VALUES (?, ?)')
+      .run('settings_v1', JSON.stringify({ schemaVersion: 99, locale: 'en' }));
 
     const store = createSettingsStore(open.db);
 
