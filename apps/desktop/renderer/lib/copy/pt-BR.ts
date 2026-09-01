@@ -65,6 +65,10 @@ export const ptBR: Copy = {
   settingsAlwaysOnTopMainHelp:
     'O companion fica acima das outras janelas enquanto isso estiver ligado. Tem efeito imediato.',
   settingsAlwaysOnTopNotSavedTitle: 'Sempre no topo alterado, mas não salvo',
+  settingsAlwaysOnTopMiniLabel: 'Manter a janela compacta no topo',
+  settingsAlwaysOnTopMiniHelp:
+    'A janela compacta do Ao vivo fica acima das outras janelas enquanto isso estiver ligado. Tem efeito imediato.',
+  settingsAlwaysOnTopMiniNotSavedTitle: 'Sempre no topo da janela compacta alterado, mas não salvo',
 
   // settingsConsent* — o controle de revogar o acesso à conta (Configurações só é alcançável já permitido)
   settingsConsentSectionTitle: 'Acesso à conta',
@@ -129,6 +133,15 @@ export const ptBR: Copy = {
 
   // live* — a tela Ao Vivo: rótulo de navegação e a linha de status de atualização no topo do painel
   liveNavLabel: 'Ao vivo',
+
+  miniLiveOpenLabel: 'Abrir mini',
+  miniLiveCloseTitle: 'Fechar mini',
+  miniLiveGearTitle: 'Layout dos painéis',
+  miniLiveAxisLabel: 'Direção de crescimento',
+  miniLiveAxisVerticalLabel: 'Empilhado',
+  miniLiveAxisHorizontalLabel: 'Em linha',
+  miniLiveLastSectionTitle: 'Pelo menos um painel precisa permanecer ligado',
+
   liveStatusLiveLabel: 'Transmitindo ao vivo do jogo',
   liveStatusNotLiveLabel: 'Não ao vivo — mostrando o último estado conhecido',
 

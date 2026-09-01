@@ -62,6 +62,10 @@ export const en = {
   settingsAlwaysOnTopMainHelp:
     'The companion stays above other windows while this is on. Takes effect immediately.',
   settingsAlwaysOnTopNotSavedTitle: 'Always-on-top changed, but not saved',
+  settingsAlwaysOnTopMiniLabel: 'Keep the mini window on top',
+  settingsAlwaysOnTopMiniHelp:
+    'The compact Live window stays above other windows while this is on. Takes effect immediately.',
+  settingsAlwaysOnTopMiniNotSavedTitle: 'Mini always-on-top changed, but not saved',
 
   // settingsConsent* — the account access revoke control (Settings is reachable only once granted)
   settingsConsentSectionTitle: 'Account access',
@@ -127,6 +131,15 @@ export const en = {
 
   // live* — the Live screen: nav label and the top-of-panel freshness status line
   liveNavLabel: 'Live',
+
+  miniLiveOpenLabel: 'Open mini',
+  miniLiveCloseTitle: 'Close mini',
+  miniLiveGearTitle: 'Panel layout',
+  miniLiveAxisLabel: 'Growth direction',
+  miniLiveAxisVerticalLabel: 'Vertical',
+  miniLiveAxisHorizontalLabel: 'Horizontal',
+  miniLiveLastSectionTitle: 'At least one panel must stay on',
+
   liveStatusLiveLabel: 'Streaming live from the game',
   liveStatusNotLiveLabel: 'Not live — showing the last known state',
 
