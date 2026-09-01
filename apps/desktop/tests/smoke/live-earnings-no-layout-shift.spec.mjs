@@ -40,6 +40,52 @@ const BLOCK_TEST_IDS = [
   'live-earnings-block-xp-total',
 ];
 
+/** The figure inside each of those blocks, in the same order. */
+const VALUE_TEST_IDS = [
+  'live-earnings-gold-current',
+  'live-earnings-gold-session',
+  'live-earnings-gold-session-total',
+  'live-earnings-elapsed',
+  'live-earnings-xp-session',
+  'live-earnings-xp-session-total',
+];
+
+/**
+ * The right edge of the DIGITS in each block, measured over the text node itself rather than its
+ * element box. The two differ exactly where this went wrong: current gold carries an always-mounted
+ * staleness marker inside its value, so its element box ends flush with its siblings while the
+ * number inside it is inset by the marker and the gap in front of it. Measuring the element would
+ * have reported six identical right edges and proved nothing; a range over the text reports what
+ * the reader actually sees.
+ */
+function measureFigureRightEdges(page) {
+  return page.evaluate((valueIds) => {
+    return valueIds.map((testId) => {
+      const el = document.querySelector(`[data-testid="${testId}"]`);
+      if (!el) throw new Error(`value not found: ${testId}`);
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      let node = null;
+      let digits = null;
+      while ((node = walker.nextNode()) !== null) {
+        if (/\d/.test(node.textContent)) {
+          digits = node;
+          break;
+        }
+      }
+      if (digits === null) throw new Error(`value rendered no digits: ${testId}`);
+      const range = document.createRange();
+      range.selectNodeContents(digits);
+      const rect = range.getBoundingClientRect();
+      return {
+        testId,
+        text: digits.textContent.trim(),
+        right: Math.round(rect.right * 100) / 100,
+        elementRight: Math.round(el.getBoundingClientRect().right * 100) / 100,
+      };
+    });
+  }, VALUE_TEST_IDS);
+}
+
 /**
  * Measures, for each of the six blocks, its own box and its label's overflow/height — the two
  * signals that together catch both failure modes this panel has already shipped once each: a
@@ -551,6 +597,51 @@ test.describe('live earnings panel: no layout shift smoke', () => {
       }
 
       await app.close();
+    } finally {
+      await app.close().catch(() => undefined);
+      fs.rmSync(userDataDir, { recursive: true, force: true });
+    }
+  });
+
+  test("every figure's digits end flush with its own tile's right edge, marker or no marker", async () => {
+    const { app, page, userDataDir } = await launchEarningsPanelApp('bfc-earnings-right-edge-');
+    try {
+      // Current gold is a dash until the first authenticated balance lands, and a dash has no
+      // right edge worth comparing. Waiting for every figure to carry a digit is what keeps this
+      // from measuring the absent-value copy and agreeing with itself.
+      await page.waitForFunction(
+        (valueIds) =>
+          valueIds.every((id) => {
+            const el = document.querySelector(`[data-testid="${id}"]`);
+            return el !== null && /\d/.test(el.textContent);
+          }),
+        VALUE_TEST_IDS,
+        { timeout: 60_000 },
+      );
+
+      const figures = await measureFigureRightEdges(page);
+      const detail = JSON.stringify(figures, null, 2);
+
+      // Proof only if the figures were actually read: an empty list, or one where every block
+      // rendered a dash, would agree with itself and say nothing.
+      expect(figures.length, `no figures were measured:
+${detail}`).toBe(VALUE_TEST_IDS.length);
+      for (const figure of figures) {
+        expect(figure.text, `figure "${figure.testId}" rendered no digits:
+${detail}`).toMatch(/\d/);
+      }
+
+      // The six tiles sit side by side, so their right edges differ by design. What must hold is
+      // that each figure's digits reach its own tile's edge: a tile whose value carries anything
+      // after the number insets the number by that much, and it alone reads as nudged left of the
+      // five beside it.
+      for (const figure of figures) {
+        expect(
+          figure.elementRight - figure.right,
+          `figure "${figure.testId}" is inset from its own tile's right edge:
+${detail}`,
+        ).toBe(0);
+      }
     } finally {
       await app.close().catch(() => undefined);
       fs.rmSync(userDataDir, { recursive: true, force: true });

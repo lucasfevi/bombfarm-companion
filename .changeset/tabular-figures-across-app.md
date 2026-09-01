@@ -22,6 +22,12 @@ counts sat content-sized in a row, so a roster crossing nine heroes in one state
 badge and shoved the three beside it sideways. Each count now reserves a slot wide enough for
 two digits, on the desktop Live screen and on the download page's replica of it.
 
+The Live earnings panel's current-gold figure also sat 16px left of the five figures beside it.
+Its staleness marker is always mounted — merely invisible while the reading is fresh, so that
+showing it never resizes the tile — but it sat after the number and pushed it off the tile's right
+edge. The marker now hangs to the number's left, the way the hero row's direction caret already
+does.
+
 Two notes on the new face. It tops out at weight 700, so the few `font-extrabold` and
 `font-black` headings and hero-rank badges now render at bold rather than heavier. Link-preview
 cards are regenerated in the new face by the same script that draws them.

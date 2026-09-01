@@ -292,9 +292,15 @@ export function EarningsPanel({
   // A dash carries nothing to be stale about — gating on `balance` keeps the marker dark rather
   // than pinning a fabricated reading beside a figure that isn't there.
   const currentGoldIsStale = balance !== null && currentGoldAgeText !== null;
+  /*
+   * The staleness marker hangs to the LEFT of the figure, the same way the hero row's direction
+   * caret does, and for the same reason: it is always mounted — merely `invisible` when the
+   * reading is fresh — so that toggling it never resizes this tile. Sitting after the number, that
+   * reserved width plus the gap in front of it inset the number 16px from the tile's own right
+   * edge, and this one figure read as nudged left of the five beside it.
+   */
   const currentGoldValue: ReactNode = (
     <>
-      <span className={currentGoldIsStale ? 'text-muted' : 'text-gold'}>{numberText(balance, lang)}</span>
       <Tooltip.Provider>
         <Tooltip.Root>
           {currentGoldIsStale ? (
@@ -327,6 +333,7 @@ export function EarningsPanel({
           </Tooltip.Portal>
         </Tooltip.Root>
       </Tooltip.Provider>
+      <span className={currentGoldIsStale ? 'text-muted' : 'text-gold'}>{numberText(balance, lang)}</span>
     </>
   );
 
