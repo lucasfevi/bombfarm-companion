@@ -30,6 +30,12 @@ describe('contracts IPC surface', () => {
       'settings:useEnglish',
       'settings:usePortuguese',
       'settings:setAlwaysOnTopMain',
+      'settings:setAlwaysOnTopMini',
+      'miniLive:open',
+      'miniLive:close',
+      'miniLive:getLayout',
+      'miniLive:setLayout',
+      'miniLive:fitGrowthAxis',
       'storage:health',
       'game:getStatus',
       'account:get',
@@ -57,6 +63,7 @@ describe('contracts IPC surface', () => {
       'live:event',
       'updates:changed',
       'market:changed',
+      'settings:changed',
     ]);
   });
 

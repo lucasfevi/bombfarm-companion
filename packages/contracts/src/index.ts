@@ -293,6 +293,22 @@ export const DEFAULT_SETTINGS: AppSettings = {
   alwaysOnTopMini: false,
 };
 
+export type MiniLiveGrowthAxis = 'vertical' | 'horizontal';
+
+export interface MiniLiveLayoutView {
+  showEarnings: boolean;
+  showMap: boolean;
+  showHeroes: boolean;
+  axis: MiniLiveGrowthAxis;
+}
+
+export interface MiniLiveLayoutPatch {
+  showEarnings: boolean;
+  showMap: boolean;
+  showHeroes: boolean;
+  axis: MiniLiveGrowthAxis;
+}
+
 export interface AppEnvironmentInfo {
   flavor: AppFlavor;
   productName: string;
@@ -316,6 +332,12 @@ export interface IpcChannels {
   'settings:useEnglish': { args: []; result: SettingsWriteResult };
   'settings:usePortuguese': { args: []; result: SettingsWriteResult };
   'settings:setAlwaysOnTopMain': { args: [boolean]; result: SettingsWriteResult };
+  'settings:setAlwaysOnTopMini': { args: [boolean]; result: SettingsWriteResult };
+  'miniLive:open': { args: []; result: null };
+  'miniLive:close': { args: []; result: null };
+  'miniLive:getLayout': { args: []; result: MiniLiveLayoutView };
+  'miniLive:setLayout': { args: [MiniLiveLayoutPatch]; result: MiniLiveLayoutView };
+  'miniLive:fitGrowthAxis': { args: [{ width: number; height: number }]; result: null };
   'storage:health': { args: []; result: { binding: string; ok: boolean } };
   'game:getStatus': { args: []; result: GameStatusInfo };
   'account:get': { args: []; result: AccountView };
@@ -365,6 +387,12 @@ export const IPC_CHANNELS = [
   'settings:useEnglish',
   'settings:usePortuguese',
   'settings:setAlwaysOnTopMain',
+  'settings:setAlwaysOnTopMini',
+  'miniLive:open',
+  'miniLive:close',
+  'miniLive:getLayout',
+  'miniLive:setLayout',
+  'miniLive:fitGrowthAxis',
   'storage:health',
   'game:getStatus',
   'account:get',
@@ -389,7 +417,8 @@ export type IpcEventChannel =
   | 'account:changed'
   | 'live:event'
   | 'updates:changed'
-  | 'market:changed';
+  | 'market:changed'
+  | 'settings:changed';
 
 export interface IpcEvents {
   'game:status': GameStatusInfo;
@@ -411,6 +440,9 @@ export interface IpcEvents {
   /** Fired whenever main adopts a different snapshot body, or merges a fresh per-item quote into
    *  the one it holds. A check that changed nothing (a 304, a failed fetch) does not fire it. */
   'market:changed': MarketSnapshotView;
+  /** Fired after a successful settings write so every window can adopt the new locale or
+   *  always-on-top flags without a relaunch. */
+  'settings:changed': AppSettings;
 }
 
 export const IPC_EVENT_CHANNELS = [
@@ -420,6 +452,7 @@ export const IPC_EVENT_CHANNELS = [
   'live:event',
   'updates:changed',
   'market:changed',
+  'settings:changed',
 ] as const satisfies readonly IpcEventChannel[];
 
 export function isIpcChannel(value: string): value is IpcInvokeChannel {
