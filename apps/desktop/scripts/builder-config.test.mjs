@@ -78,6 +78,7 @@ describe('createBuilderConfig', () => {
           'renderer/out/**/*',
           'package.json',
           '!**/*.map',
+          'assets/**/*',
         ]);
         expect(config.win).toEqual({
           target: [{ target: 'nsis', arch: ['x64'] }],
