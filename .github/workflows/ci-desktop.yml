@@ -166,11 +166,12 @@ jobs:
 
   render-count-windows:
     # Advisory only (continue-on-error): a render-profiling instrument, not a correctness check
-    # on shipped behaviour. Two of its three measured numbers
-    # (component render counts) were measured to vary run-to-run on one machine — see
-    # render-count-baseline.json's `recordedOnly` note — so this is a signal to read, not a gate
-    # to trust blindly on a shared runner it has never run on.
-    name: Render-count instrument (advisory — component counts vary run to run, not yet gated)
+    # on shipped behaviour. What it gates is deliberately coarse — that the collector attached at
+    # all, and that the render counts sit inside a range wide enough to hold both CI and a
+    # developer machine. The component-type count it used to pin exactly is recorded and not
+    # gated, because it counts minified identifiers rather than components: see
+    # render-count-baseline.json's `recordedOnly` note for the measurement behind that.
+    name: Render-count instrument (advisory — ranged gate on render counts)
     runs-on: windows-latest
     needs: quality
     if: needs.quality.result == 'success'

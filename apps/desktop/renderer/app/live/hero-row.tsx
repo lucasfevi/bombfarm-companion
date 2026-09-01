@@ -32,16 +32,101 @@ function rowStateLabel(state: LiveRotationRowState, t: Copy): string {
   return t.liveListBenchedTitle;
 }
 
-/** The energy reading beside the bar — its own fixed grid column (see `HeroRow`) rather than part
- *  of `EnergyBar`, so this column's width never depends on whether the row also has a countdown. */
-function EnergyReading({ testId, fraction }: { testId: string; fraction: number | undefined }) {
+type EnergyDirection = 'rising' | 'falling' | 'steady';
+
+/**
+ * Which way a hero's energy is travelling, taken from the one thing that decides it: the list the
+ * hero is in. On the field it is spent, resting it is recovered, and in every other state it holds
+ * where it is.
+ *
+ * Read from the state rather than from consecutive readings. The fast channel republishes four
+ * times a second while a whole percent takes seconds to move, so the difference between two frames
+ * is zero far more often than it is the truth — a marker fed by it would sit at "steady" through
+ * most of a drain it was drawn to report.
+ */
+function energyDirectionOf(state: LiveRotationRowState): EnergyDirection {
+  if (state === 'on-field') return 'falling';
+  if (state === 'recovering') return 'rising';
+  return 'steady';
+}
+
+/**
+ * The caret in front of the reading. Glyph and colour together, never colour alone, with the word
+ * itself carried for a screen reader — the same three-part treatment `RowStateDot` gets, and one
+ * literal per direction for the same reason it writes one per state.
+ */
+function EnergyDirectionMark({ direction }: { direction: EnergyDirection }) {
+  const t = useCopy();
+
+  if (direction === 'rising') {
+    return (
+      <>
+        <span aria-hidden className="text-[13px] leading-none text-up">
+          ▴
+        </span>
+        <span className="sr-only">{t.liveEnergyRisingLabel}</span>
+      </>
+    );
+  }
+  if (direction === 'falling') {
+    return (
+      <>
+        <span aria-hidden className="text-[13px] leading-none text-down">
+          ▾
+        </span>
+        <span className="sr-only">{t.liveEnergyFallingLabel}</span>
+      </>
+    );
+  }
+  return null;
+}
+
+/**
+ * The energy reading beside the bar — its own fixed grid column (see `HeroRow`) rather than part
+ * of `EnergyBar`, so this column's width never depends on whether the row also has a countdown.
+ *
+ * The caret sits inside this column but outside the reading's own element: the reading is the
+ * figure and nothing else, and hanging the marker to its left keeps every percentage on the list
+ * aligned on the same right edge whether or not its row has a direction to report.
+ *
+ * The figure is drawn in the mono face inside a slot as wide as its longest value, and that pair
+ * is what holds the caret still. Neither half is optional. `DM Sans` ships no tabular figures —
+ * `1` is barely half the width of `8`, and `font-variant-numeric: tabular-nums` has nothing to
+ * switch on — so in the sans face the digits themselves change width as they count; and even in
+ * the mono face `99%` is one character narrower than `100%`. Right-aligning a fixed slot pins the
+ * left edge the caret sits against, so a hero crossing 100% moves nothing.
+ *
+ * No caret without a reading — direction is known for a hero the energy figure never arrived for,
+ * but a marker printed against "not available" annotates a number that is not there. That branch
+ * keeps the plain block: the absent-value copy is prose, and squeezing it into a four-character
+ * slot would wrap it down the row.
+ */
+function EnergyReading({
+  testId,
+  fraction,
+  direction,
+}: {
+  testId: string;
+  fraction: number | undefined;
+  direction: EnergyDirection;
+}) {
   const t = useCopy();
   const { locale } = useLocale();
-  const known = fraction !== undefined;
+
+  if (fraction === undefined) {
+    return (
+      <span data-testid={testId} className="block text-right text-[10px] leading-none text-muted">
+        {t.valueNotAvailable}
+      </span>
+    );
+  }
 
   return (
-    <span data-testid={testId} className="block text-right text-[10px] leading-none tabular-nums text-muted">
-      {known ? formatEnergyPercent(fraction, locale) : t.valueNotAvailable}
+    <span className="flex items-center justify-end gap-1 text-[10px] leading-none text-muted">
+      <EnergyDirectionMark direction={direction} />
+      <span data-testid={testId} className="inline-block w-[4ch] text-right font-mono">
+        {formatEnergyPercent(fraction, locale)}
+      </span>
     </span>
   );
 }
@@ -103,7 +188,11 @@ const HeroRowBody = memo(function HeroRowBody({
         </span>
       </span>
       <EnergyBar testId={energyTestId} fraction={energyFraction} />
-      <EnergyReading testId={`${energyTestId}-value`} fraction={energyFraction} />
+      <EnergyReading
+        testId={`${energyTestId}-value`}
+        fraction={energyFraction}
+        direction={energyDirectionOf(state)}
+      />
     </>
   );
 });
@@ -139,7 +228,7 @@ export function HeroRow({
     <li
       data-testid={`live-hero-row-${hero.id}`}
       data-muted={muted ? '' : undefined}
-      className="grid grid-cols-[0.5rem_8rem_minmax(0,1fr)_2.25rem_4rem] items-center gap-2 rounded-sm border border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-2 py-1 data-[muted]:opacity-60 data-[muted]:grayscale"
+      className="grid grid-cols-[0.5rem_8rem_minmax(0,1fr)_3rem_4rem] items-center gap-2 rounded-sm border border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-2 py-1 data-[muted]:opacity-60 data-[muted]:grayscale"
     >
       <HeroRowBody state={state} hero={hero} energyFraction={energyFraction ?? hero.energyFraction} />
       {trailing !== undefined ? <span className="flex items-center gap-1">{trailing}</span> : null}

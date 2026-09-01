@@ -149,6 +149,8 @@ export const en = {
   liveListEmptyLine: 'No heroes here right now.',
   liveHeroLevelValue: 'Lv {level}',
   liveEnergyLabel: 'Energy',
+  liveEnergyRisingLabel: 'Rising',
+  liveEnergyFallingLabel: 'Falling',
   liveFieldSlotsHint: 'Upgrade field slots in your skill tree',
   liveRestingSlotsHint: 'Upgrade to a later house for more rest slots',
   liveRestingCycleValue: 'Full rest cycle {duration}',

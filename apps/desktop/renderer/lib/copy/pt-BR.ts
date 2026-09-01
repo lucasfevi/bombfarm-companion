@@ -148,6 +148,8 @@ export const ptBR: Copy = {
   liveListEmptyLine: 'Nenhum herói aqui no momento.',
   liveHeroLevelValue: 'Nv {level}',
   liveEnergyLabel: 'Energia',
+  liveEnergyRisingLabel: 'Subindo',
+  liveEnergyFallingLabel: 'Caindo',
   liveFieldSlotsHint: 'Compre mais vagas de campo na sua árvore de habilidades',
   liveRestingSlotsHint: 'Ative uma casa superior para mais vagas de descanso',
   liveRestingCycleValue: 'Ciclo completo de descanso {duration}',
