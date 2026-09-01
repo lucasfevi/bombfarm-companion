@@ -1,5 +1,5 @@
 /**
- * The shape guard for the scheduled market snapshot job. It holds `contents: write`, so the
+ * The shape guard for the market snapshot workflow. It holds `contents: write`, so the
  * things worth pinning are what it must never write: no commit to the default branch, nothing
  * under `packages/**`, and no second job that could quietly gain those rights later.
  *
@@ -44,6 +44,8 @@ function jobNames(text) {
 const singleJob = (text) => jobNames(text).length === 1;
 const hasLiveSchedule = (text) =>
   /^\s*schedule:\s*$/m.test(text) && /^\s*-\s*cron:\s*'[^']+'/m.test(text);
+const isManualOnly = (text) =>
+  /^\s*workflow_dispatch:\s*$/m.test(text) && !hasLiveSchedule(text);
 const serialises = (text) => /cancel-in-progress:\s*false/.test(stripCommentLines(text));
 const isTimeBoxed = (text) => /timeout-minutes:\s*\d+/.test(stripCommentLines(text));
 const publishesWhateverItGot = (text) =>
@@ -70,9 +72,15 @@ const pushingTo = (text, branch) =>
   text.replace(/(push --force[\s\S]*?)"\$DATA_BRANCH"/, `$1"${branch}"`);
 
 describe('the market-prices workflow', () => {
-  it('runs on a live schedule and serialises overlapping runs', () => {
-    expect(hasLiveSchedule(workflow)).toBe(true);
-    expect(hasLiveSchedule(workflow.replace(/^\s*-\s*cron:.*$/m, ''))).toBe(false);
+  it('runs only when a human asks, and serialises overlapping runs', () => {
+    expect(isManualOnly(workflow)).toBe(true);
+
+    // A reintroduced cron would race the routine producer and publish over what it produced.
+    expect(
+      isManualOnly(workflow.replace(/^on:$/m, "on:\n  schedule:\n    - cron: '23 */6 * * *'")),
+    ).toBe(false);
+    // And the manual lever itself must not quietly disappear either.
+    expect(isManualOnly(workflow.replace(/^\s*workflow_dispatch:\s*$/m, ''))).toBe(false);
 
     expect(serialises(workflow)).toBe(true);
     expect(serialises(workflow.replace('cancel-in-progress: false', 'cancel-in-progress: true'))).toBe(

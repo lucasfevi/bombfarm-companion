@@ -5,9 +5,8 @@ one published JSON file so the planner and the desktop app can put a price on an
 owns — equipment, gate keys, time parts, gems, chests, hero cages, skill stones and skins.
 
 The rule is the same one the wiki data follows: **the sweep is the only thing that talks to
-Steam.** One scheduled job, [`.github/workflows/market-prices.yml`](../.github/workflows/market-prices.yml),
-walks the market and publishes `market-prices.json`; both apps download that file and price
-everything from it.
+Steam.** It walks the market and publishes `market-prices.json`; both apps download that file and
+price everything from it.
 
 **One deliberate exception: the desktop app's per-item refresh.** A player who wants this item's
 price now, rather than the snapshot's, gets one `priceoverview` call from the Electron main
@@ -19,6 +18,30 @@ The web planner has no such affordance and cannot have one. Steam sends no
 `Access-Control-Allow-Origin`, so a browser cannot call it at all, and the planner is a static
 export with no server of its own to relay through. Its refresh re-downloads the snapshot, and the
 UI dates each price by the quote behind it so "now" is never implied.
+
+## The snapshot is produced continuously
+
+Passes run back to back rather than on a clock. The delay between the calls inside a pass is
+derived from a daily call budget rather than fixed: raising the budget tightens the rotation with
+no code change, and a budget high enough to breach the delay a full pass was measured drawing zero
+rate limits at is clamped rather than obeyed, and says so. A pass never starts sooner than five
+minutes after the previous one began, because the published file is served with a five-minute
+`max-age` and republishing inside that window reaches nobody. A pass that fails, or one whose
+rotation the circuit breaker cut short, climbs a cool-down ladder before the next; and every pass
+resumes from the snapshot the last good one published.
+
+[`.github/workflows/market-prices.yml`](../.github/workflows/market-prices.yml) still builds and
+publishes the same file to the same two targets, but it is a **manual rebuild lever** now — it
+carries no schedule and runs only when a human asks. It is the one-click fallback for the routine
+producer being stopped, and the two are not meant to run at once: both publish the same asset, so
+a second producer on a timer would race the first and publish over it.
+
+Every pass also records what it read — one row per priced item, plus a row for the pass itself
+carrying its counts and any error. Readings are retained for 30 days and exposed to nobody:
+nothing shipped reads them and no app has a route to them. They exist so that questions about how
+the market moves over time have an answer a single current snapshot cannot give.
+
+The published file's schema is unchanged, and so is everything below about how a pass builds it.
 
 ## Enumerate first, then ask what things are
 
@@ -156,7 +179,7 @@ limits. A run that stops early is not thrown away:
 - a **completed** enumeration walked the whole market, so its row set is the truth and anything
   missing from it has genuinely been delisted
 - a **cut-short** run keeps the rows it never reached, rather than publishing a snapshot that
-  oscillates between full and partial every six hours
+  oscillates between full and partial from one pass to the next
 - a run that enumerated a row but stopped before tagging it inherits the identity the previous run
   established, so an item that had a price yesterday does not lose it today. Prices are never
   inherited that way: a null `lowestUsd` is the meaningful statement that nothing is listed now
@@ -167,10 +190,11 @@ limits. A run that stops early is not thrown away:
 
 The enumeration is the cheap tenth of the sweep and usually finishes even when the quota kills the
 run, so a full row set is no evidence that the run learned what the rows are. What says that is
-`catalog keys carried` in the build log, and the job **refuses to publish** a snapshot that drops a
-key whose row is still on the market, when it did not finish tagging. It exits non-zero without
-writing the file, which leaves the last good snapshot in place for the publish steps to re-upload:
-prices freeze at yesterday's rather than going to zero, and the run goes red instead of green.
+`catalog keys carried` in the build log, and the sweep **refuses to publish** a snapshot that
+drops a key whose row is still on the market, when it did not finish tagging. It exits non-zero
+without writing the file, which leaves the last published snapshot standing: prices freeze at the
+last good ones rather than going to zero, and the pass is recorded as failed instead of quietly
+succeeding.
 
 ## What is not settled yet
 
@@ -196,3 +220,23 @@ the leggings), so a tidy-up back to the obvious guesses is the regression most w
 
 `tools/market-tags-catalog-parity.test.mjs` fails if the slot or rarity tables stop covering the
 committed catalog.
+
+`tools/market-item-linking.test.mjs` drives the builder's own catalog load against the built
+reconciliation, over the real committed game data. The builder is `.mjs` and is not typechecked,
+so this is the only thing that proves it still supplies the hash → `def_id` map every gem and act
+chest is linked by.
+
+`tools/market-snapshot/sweep-stats.test.mjs` holds the two seams no type reaches: that the
+rate-limit counts still find the log lines they are read off — reword either message and the count
+silently goes to zero — and that the expensive tag pass stays off an ordinary pass. Drop the
+hand-off that keeps it off and every unit test stays green while the burst comes back every pass.
+
+`tools/market-collector.test.mjs` drives the continuous producer with an injected clock, sweep and
+transport, so its decisions are exercised without a market call. The two worth naming are that a
+pass which throws still leaves a row saying so, and that the cool-down ladder resets after a pass
+that completes — both asserted by observing the write rather than reading a value back.
+
+`tools/market-prices-workflow.test.mjs` reads the workflow as text. It asserts the manual lever
+runs only when a human asks — false if a cron is spliced back in, false if the manual trigger is
+stripped — and that it is one time-boxed job which publishes whatever it got, never commits to a
+branch this repository releases from, and never writes the source tree.

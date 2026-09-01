@@ -105,7 +105,7 @@ export function InventoryPage() {
         <p className="pb-3 text-sm text-muted">{t.inventoryTip}</p>
 
         {/* No refresh control here: the planner has no way to ask Steam anything, so a button
-            could only re-download the same six-hourly file and would promise a freshness it
+            could only re-download the same published file and would promise a freshness it
             cannot deliver. The stamp says how old the prices are, which is the whole truth
             available. */}
         {prices.totals ? (

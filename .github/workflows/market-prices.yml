@@ -1,9 +1,10 @@
 name: Market prices
 
-# Builds the shared Steam Community Market snapshot for this app's items and publishes it as
-# `market-prices.json`. This is the ONLY place that calls Steam — see docs/market-prices.md.
-# The shipped apps download the published snapshot and never talk to Steam themselves, the same
-# rule the wiki data follows.
+# The manual rebuild lever for the shared Steam Community Market snapshot, published as
+# `market-prices.json` — see docs/market-prices.md. The routine snapshot is produced
+# continuously, so this runs only when a human asks for a rebuild. The sweep it drives is the
+# only thing here that calls Steam; the shipped apps download the published snapshot and never
+# talk to Steam themselves, the same rule the wiki data follows.
 #
 # Two publish targets, because they reach different clients:
 #   - the rolling `market-prices` release, for the desktop app (no CORS involved)
@@ -14,8 +15,6 @@ name: Market prices
 # tools/market-prices-workflow.test.mjs.
 
 on:
-  schedule:
-    - cron: '23 */6 * * *' # every 6h, off the hour (queue delay)
   workflow_dispatch:
 
 permissions:
@@ -60,7 +59,7 @@ jobs:
           gh release view "$RELEASE_TAG" >/dev/null 2>&1 || \
             gh release create "$RELEASE_TAG" \
               --title "Market price snapshot" \
-              --notes "Auto-generated Steam Community Market snapshot for Bomb Farm items. Rebuilt every 6h. Not an app release." \
+              --notes "Auto-generated Steam Community Market snapshot for Bomb Farm items. Rebuilt continuously. Not an app release." \
               --latest=false
 
       - name: Download the previous snapshot (resume)
