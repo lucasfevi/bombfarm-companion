@@ -241,6 +241,28 @@ function summarise(snapshot) {
 }
 
 /**
+ * The two lines the quote pass and the discovery pass each emit, once, per 429. Neither pass
+ * totals them — the quote pass resets its consecutive counter on every success — so a pass that
+ * absorbed five and recovered reports itself complete with nothing to show for them. Reading the
+ * count off the log is what makes those visible without changing two packages' return shapes.
+ *
+ * This couples a counter to log prose, which is fragile. The sweep's own guard drives a
+ * rate-limited stub down each path and fails if either message is reworded.
+ */
+const RATE_LIMIT_LINE = /^rate limited on |^rate-limited at /;
+
+function countingLog(inner) {
+  let hits = 0;
+  return {
+    log: (message) => {
+      if (RATE_LIMIT_LINE.test(message)) hits += 1;
+      inner(message);
+    },
+    hits: () => hits,
+  };
+}
+
+/**
  * The real network, as one bundle. Injectable so the sweep can be driven without touching Steam;
  * this is also the only handle through which anything else could reach it.
  */
@@ -266,8 +288,11 @@ export async function runSweep({
   steamNet = STEAM_NET,
 } = {}) {
   const startedAtMs = now();
-  const tags = steamTagsFor(catalog, log);
-  log(`catalog: ${catalog.defs.length} defs x ${catalog.rarityIdxs.length} rarities`);
+  const rateLimits = countingLog(log);
+  const sweepLog = rateLimits.log;
+
+  const tags = steamTagsFor(catalog, sweepLog);
+  sweepLog(`catalog: ${catalog.defs.length} defs x ${catalog.rarityIdxs.length} rarities`);
 
   const discovery = await discoverMarket(appId, {
     fetchAppFilters: () => steamNet.fetchAppFilters(appId),
@@ -275,9 +300,9 @@ export async function runSweep({
     catalogTags: tags,
     sleep,
     baseDelayMs: searchDelayMs,
-    log,
+    log: sweepLog,
   });
-  log(
+  sweepLog(
     `tagged ${discovery.rows.length} rows in ${discovery.searchCalls} calls ` +
       `(${discovery.complete ? 'complete' : 'PARTIAL — rate limited'})`,
   );
@@ -293,9 +318,9 @@ export async function runSweep({
     sleep,
     baseDelayMs: quoteDelayMs,
     now,
-    log,
+    log: sweepLog,
   });
-  log(
+  sweepLog(
     `quoted ${quoted.quotes.size}/${quotable.length} rows in ${nativeCurrencies.join(', ')} ` +
       `over ${quoted.calls} calls (${quoted.unquoted} unquoted by Steam` +
       `${quoted.complete ? '' : ', PARTIAL — rate limited'})`,
@@ -310,7 +335,7 @@ export async function runSweep({
     return { ...entry, lowestNative, nativeQuotedUtc: quoted.quotedUtc };
   });
 
-  const fx = await steamNet.fetchFx(prior, log);
+  const fx = await steamNet.fetchFx(prior, sweepLog);
 
   const snapshot = buildSnapshot({
     entries: withQuotes,
@@ -328,6 +353,19 @@ export async function runSweep({
   const quotesAttempted = quotable.length * nativeCurrencies.length;
   const unmappedTags = snapshot.anomalies.filter((anomaly) => anomaly.kind.startsWith('unknown-'));
 
+  // Every attempt increments `calls` and only a rate limit retries, so the difference is exactly
+  // the 429s the rotation absorbed — but only on a pass that finished. Once the breaker trips,
+  // the items after it were never attempted and `quotesAttempted` overstates, so the derivation
+  // is reported as absent rather than as a wrong number. It is also blind to the discovery pass.
+  const rateLimitHits = rateLimits.hits();
+  const rateLimitHitsDerived = quoted.complete ? quoted.calls - quotesAttempted : null;
+  if (rateLimitHitsDerived !== null && rateLimitHitsDerived !== rateLimitHits) {
+    sweepLog(
+      `WARNING quote.rateLimitCountMismatch: counted ${rateLimitHits}, ` +
+        `derived ${rateLimitHitsDerived} from the rotation alone; keeping the counted one`,
+    );
+  }
+
   const stats = {
     startedAtMs,
     finishedAtMs: now(),
@@ -337,10 +375,8 @@ export async function runSweep({
     quotesAttempted,
     quotesOk: quoted.quotes.size,
     unquoted: quoted.unquoted,
-    // Every attempt increments `calls` and only a rate limit retries, so the difference is the
-    // number of 429s the rotation absorbed — but only on a pass that finished. Once the breaker
-    // trips, the items after the trip were never attempted and `quotesAttempted` overstates.
-    rateLimitHitsDerived: quoted.complete ? quoted.calls - quotesAttempted : null,
+    rateLimitHits,
+    rateLimitHitsDerived,
     enumerationComplete: discovery.enumerationComplete,
     discoveryComplete: discovery.complete,
     quotesComplete: quoted.complete,
