@@ -158,6 +158,7 @@ function createFakeBrowserWindowCtor() {
 }
 
 const PRIMARY_WORK_AREA = { x: 0, y: 0, width: 1920, height: 1080 };
+const DEFAULT_DISPLAY = { id: 1, workArea: PRIMARY_WORK_AREA };
 
 const MAIN_ONLY_DOC: WindowLayoutDocument = {
   schemaVersion: 1,
@@ -171,19 +172,27 @@ const MAIN_ONLY_DOC: WindowLayoutDocument = {
   },
 };
 
+function controllerDeps(overrides: Partial<Parameters<typeof createMiniLiveController>[0]> = {}) {
+  return {
+    BrowserWindowCtor: createFakeBrowserWindowCtor().Ctor,
+    layoutStore: createLayoutStore(MAIN_ONLY_DOC),
+    resolveLoadUrl: () => 'http://127.0.0.1:3000/mini-live/',
+    preloadPath: PRELOAD,
+    iconPath: ICON,
+    applyExternalNavigation: vi.fn(),
+    getDisplays: () => [DEFAULT_DISPLAY],
+    getPrimaryWorkArea: () => PRIMARY_WORK_AREA,
+    getDisplayForBounds: () => DEFAULT_DISPLAY,
+    getAlwaysOnTopMini: () => false,
+    ...overrides,
+  };
+}
+
 describe('createMiniLiveController', () => {
   it('focuses an existing window on the second open instead of constructing twice', () => {
     const fake = createFakeBrowserWindowCtor();
     const controller = createMiniLiveController({
-      BrowserWindowCtor: fake.Ctor,
-      layoutStore: createLayoutStore(MAIN_ONLY_DOC),
-      resolveLoadUrl: () => 'http://127.0.0.1:3000/mini-live/',
-      preloadPath: PRELOAD,
-      iconPath: ICON,
-      applyExternalNavigation: vi.fn(),
-      getDisplays: () => [{ id: 1, workArea: PRIMARY_WORK_AREA }],
-      getPrimaryWorkArea: () => PRIMARY_WORK_AREA,
-      getAlwaysOnTopMini: () => false,
+      ...controllerDeps({ BrowserWindowCtor: fake.Ctor }),
     });
 
     controller.open();
@@ -201,15 +210,7 @@ describe('createMiniLiveController', () => {
     const quit = vi.fn();
     const fake = createFakeBrowserWindowCtor();
     const controller = createMiniLiveController({
-      BrowserWindowCtor: fake.Ctor,
-      layoutStore: createLayoutStore(MAIN_ONLY_DOC),
-      resolveLoadUrl: () => 'http://127.0.0.1:3000/mini-live/',
-      preloadPath: PRELOAD,
-      iconPath: ICON,
-      applyExternalNavigation: vi.fn(),
-      getDisplays: () => [{ id: 1, workArea: PRIMARY_WORK_AREA }],
-      getPrimaryWorkArea: () => PRIMARY_WORK_AREA,
-      getAlwaysOnTopMini: () => false,
+      ...controllerDeps({ BrowserWindowCtor: fake.Ctor }),
     });
 
     controller.open();
@@ -233,15 +234,7 @@ describe('createMiniLiveController', () => {
     });
     const fake = createFakeBrowserWindowCtor();
     const controller = createMiniLiveController({
-      BrowserWindowCtor: fake.Ctor,
-      layoutStore: store,
-      resolveLoadUrl: () => 'http://127.0.0.1:3000/mini-live/',
-      preloadPath: PRELOAD,
-      iconPath: ICON,
-      applyExternalNavigation: vi.fn(),
-      getDisplays: () => [{ id: 1, workArea: PRIMARY_WORK_AREA }],
-      getPrimaryWorkArea: () => PRIMARY_WORK_AREA,
-      getAlwaysOnTopMini: () => false,
+      ...controllerDeps({ BrowserWindowCtor: fake.Ctor, layoutStore: store }),
     });
 
     controller.open();
@@ -255,25 +248,20 @@ describe('createMiniLiveController', () => {
     const minimize = vi.fn();
     const fake = createFakeBrowserWindowCtor();
     const controller = createMiniLiveController({
-      BrowserWindowCtor: fake.Ctor,
-      layoutStore: createLayoutStore({
-        ...MAIN_ONLY_DOC,
-        mini: {
-          bounds: { displayId: 1, x: 0, y: 0, width: 320, height: 200 },
-          showEarnings: true,
-          showMap: true,
-          showHeroes: false,
-          axis: 'vertical',
-          wasOpen: true,
-        },
+      ...controllerDeps({
+        BrowserWindowCtor: fake.Ctor,
+        layoutStore: createLayoutStore({
+          ...MAIN_ONLY_DOC,
+          mini: {
+            bounds: { displayId: 1, x: 0, y: 0, width: 320, height: 200 },
+            showEarnings: true,
+            showMap: true,
+            showHeroes: false,
+            axis: 'vertical',
+            wasOpen: true,
+          },
+        }),
       }),
-      resolveLoadUrl: () => 'http://127.0.0.1:3000/mini-live/',
-      preloadPath: PRELOAD,
-      iconPath: ICON,
-      applyExternalNavigation: vi.fn(),
-      getDisplays: () => [{ id: 1, workArea: PRIMARY_WORK_AREA }],
-      getPrimaryWorkArea: () => PRIMARY_WORK_AREA,
-      getAlwaysOnTopMini: () => false,
     });
 
     controller.restoreIfWasOpen();
@@ -286,20 +274,39 @@ describe('createMiniLiveController', () => {
   it('applies stored always-on-top at screen-saver when the mini is created', () => {
     const fake = createFakeBrowserWindowCtor();
     const controller = createMiniLiveController({
-      BrowserWindowCtor: fake.Ctor,
-      layoutStore: createLayoutStore(MAIN_ONLY_DOC),
-      resolveLoadUrl: () => 'http://127.0.0.1:3000/mini-live/',
-      preloadPath: PRELOAD,
-      iconPath: ICON,
-      applyExternalNavigation: vi.fn(),
-      getDisplays: () => [{ id: 1, workArea: PRIMARY_WORK_AREA }],
-      getPrimaryWorkArea: () => PRIMARY_WORK_AREA,
-      getAlwaysOnTopMini: () => true,
+      ...controllerDeps({ BrowserWindowCtor: fake.Ctor, getAlwaysOnTopMini: () => true }),
     });
 
     controller.open();
 
     expect(fake.lastInstance?.setAlwaysOnTop).toHaveBeenCalledWith(true, 'screen-saver');
+  });
+
+  it('fits the growth axis from measured content and persists bounds', () => {
+    const store = createLayoutStore({
+      ...MAIN_ONLY_DOC,
+      mini: {
+        bounds: { displayId: 1, x: 0, y: 0, width: 400, height: 200 },
+        showEarnings: true,
+        showMap: true,
+        showHeroes: false,
+        axis: 'vertical',
+        wasOpen: true,
+      },
+    });
+    const fake = createFakeBrowserWindowCtor();
+    const controller = createMiniLiveController({
+      ...controllerDeps({ BrowserWindowCtor: fake.Ctor, layoutStore: store }),
+    });
+
+    controller.open();
+    controller.fitGrowthAxis({ width: 999, height: 320 });
+
+    expect(fake.lastInstance?.setBounds).toHaveBeenCalledWith(
+      expect.objectContaining({ width: 320, height: 320 }),
+    );
+    expect(store.read()?.mini?.bounds.height).toBe(320);
+    expect(store.read()?.mini?.bounds.width).toBe(320);
   });
 });
 

@@ -116,6 +116,7 @@ let windowLayoutStore: WindowLayoutStore | null = null;
 let layoutPersistTimer: ReturnType<typeof setTimeout> | null = null;
 let layoutMaximizing = false;
 let miniLiveController: MiniLiveController | null = null;
+let miniLayoutPersistTimer: ReturnType<typeof setTimeout> | null = null;
 
 function emitEvent<C extends IpcEventChannel>(channel: C, payload: IpcEvents[C]): void {
   broadcastEventToWindows(BrowserWindow.getAllWindows(), `bfc:event:${channel}`, payload);
@@ -305,7 +306,10 @@ function registerIpcHandlers(): void {
     },
     'miniLive:getLayout': () => windowLayoutStore?.getLayout() ?? DEFAULT_MINI_LAYOUT_VIEW,
     'miniLive:setLayout': (patch) => windowLayoutStore?.setLayout(patch) ?? DEFAULT_MINI_LAYOUT_VIEW,
-    'miniLive:fitGrowthAxis': () => null,
+    'miniLive:fitGrowthAxis': (content) => {
+      miniLiveController?.fitGrowthAxis(content);
+      return null;
+    },
   };
 
   ipcMain.handle('bfc:invoke', (_event, channel: string, ...args: unknown[]) => {
@@ -432,6 +436,25 @@ async function createMainWindow(): Promise<void> {
   miniLiveController.restoreIfWasOpen();
 }
 
+function scheduleMiniLayoutPersist(callback: () => void, immediate: boolean): void {
+  if (immediate) {
+    if (miniLayoutPersistTimer) {
+      clearTimeout(miniLayoutPersistTimer);
+      miniLayoutPersistTimer = null;
+    }
+    callback();
+    return;
+  }
+
+  if (miniLayoutPersistTimer) {
+    clearTimeout(miniLayoutPersistTimer);
+  }
+  miniLayoutPersistTimer = setTimeout(() => {
+    miniLayoutPersistTimer = null;
+    callback();
+  }, 300);
+}
+
 function createMiniLiveControllerInstance(env: ReturnType<typeof resolveAppEnv>): MiniLiveController {
   if (!windowLayoutStore) {
     throw new Error('window layout store is not ready');
@@ -456,7 +479,12 @@ function createMiniLiveControllerInstance(env: ReturnType<typeof resolveAppEnv>)
         workArea: display.workArea,
       })),
     getPrimaryWorkArea: () => screen.getPrimaryDisplay().workArea,
+    getDisplayForBounds: (bounds) => {
+      const display = screen.getDisplayMatching(bounds);
+      return { id: display.id, workArea: display.workArea };
+    },
     getAlwaysOnTopMini: () => currentSettings.alwaysOnTopMini,
+    schedulePersist: scheduleMiniLayoutPersist,
     log,
   });
 }
@@ -955,6 +983,10 @@ if (!gotLock) {
     if (layoutPersistTimer) {
       clearTimeout(layoutPersistTimer);
       layoutPersistTimer = null;
+    }
+    if (miniLayoutPersistTimer) {
+      clearTimeout(miniLayoutPersistTimer);
+      miniLayoutPersistTimer = null;
     }
     shellLifecycle?.destroyTray();
     clearShellSmokeBridge();

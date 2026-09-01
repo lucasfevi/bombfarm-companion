@@ -3,6 +3,7 @@ import type { WindowLayoutStore } from './game-api/window-layout-store.js';
 import { RENDERER_HOST, RENDERER_SCHEME } from './renderer-protocol.js';
 import {
   clampMiniToWorkArea,
+  fitMiniGrowthAxis,
   type MiniLiveBounds,
   type MiniLiveLayoutStored,
   type WorkArea,
@@ -181,11 +182,39 @@ function writeMiniWasOpen(store: WindowLayoutStore, wasOpen: boolean): void {
   store.write({ schemaVersion: 1, main: doc.main, mini: { ...mini, wasOpen } });
 }
 
+function writeMiniBounds(
+  store: WindowLayoutStore,
+  absoluteBounds: { x: number; y: number; width: number; height: number },
+  displayId: number,
+  workArea: WorkArea,
+): void {
+  const doc = store.read();
+  if (!doc) {
+    return;
+  }
+  const mini = doc.mini ?? defaultMiniStored(doc.main.displayId);
+  store.write({
+    schemaVersion: 1,
+    main: doc.main,
+    mini: {
+      ...mini,
+      bounds: {
+        displayId,
+        x: absoluteBounds.x - workArea.x,
+        y: absoluteBounds.y - workArea.y,
+        width: absoluteBounds.width,
+        height: absoluteBounds.height,
+      },
+    },
+  });
+}
+
 export interface MiniLiveController {
   open(): void;
   close(): void;
   restoreIfWasOpen(): void;
   applyAlwaysOnTop(enabled: boolean, level: 'screen-saver'): void;
+  fitGrowthAxis(content: { width: number; height: number }): void;
   getWindow(): MiniLiveWindowLike | null;
 }
 
@@ -198,10 +227,38 @@ export function createMiniLiveController(deps: {
   applyExternalNavigation: (webContents: MiniLiveWebContents) => void;
   getDisplays: () => readonly DisplayInfo[];
   getPrimaryWorkArea: () => WorkArea;
+  getDisplayForBounds: (bounds: { x: number; y: number; width: number; height: number }) => DisplayInfo;
   getAlwaysOnTopMini: () => boolean;
+  schedulePersist?: (callback: () => void, immediate: boolean) => void;
   log?: { info: (rec: Record<string, unknown>) => void; error: (rec: Record<string, unknown>) => void };
 }): MiniLiveController {
   let miniWindow: MiniLiveWindowLike | null = null;
+
+  const persistBounds = (immediate: boolean): void => {
+    const write = (): void => {
+      if (!miniWindow || miniWindow.isDestroyed()) {
+        return;
+      }
+      const bounds = miniWindow.getBounds();
+      const display = deps.getDisplayForBounds(bounds);
+      writeMiniBounds(deps.layoutStore, bounds, display.id, display.workArea);
+    };
+
+    if (deps.schedulePersist) {
+      deps.schedulePersist(write, immediate);
+      return;
+    }
+    write();
+  };
+
+  const attachLayoutPersistence = (win: MiniLiveWindowLike): void => {
+    win.on('move', () => {
+      persistBounds(false);
+    });
+    win.on('resize', () => {
+      persistBounds(false);
+    });
+  };
 
   const focusOrCreate = (): void => {
     if (miniWindow && !miniWindow.isDestroyed()) {
@@ -227,6 +284,7 @@ export function createMiniLiveController(deps: {
     });
 
     applyMiniAlwaysOnTop(miniWindow, deps.getAlwaysOnTopMini());
+    attachLayoutPersistence(miniWindow);
     writeMiniWasOpen(deps.layoutStore, true);
     deps.log?.info({ scope: 'main', event: 'mini.opened' });
   };
@@ -258,6 +316,26 @@ export function createMiniLiveController(deps: {
         return;
       }
       applyMiniAlwaysOnTop(win, enabled);
+    },
+    fitGrowthAxis(content) {
+      const win = miniWindow && !miniWindow.isDestroyed() ? miniWindow : null;
+      if (!win) {
+        return;
+      }
+      const layout = deps.layoutStore.getLayout();
+      const current = win.getBounds();
+      const display = deps.getDisplayForBounds(current);
+      const next = fitMiniGrowthAxis({
+        currentBounds: { width: current.width, height: current.height },
+        content,
+        axis: layout.axis,
+        workArea: display.workArea,
+        minWidth: MIN_MINI_WIDTH,
+        minHeight: MIN_MINI_HEIGHT,
+        position: { x: current.x, y: current.y },
+      });
+      win.setBounds(next);
+      writeMiniBounds(deps.layoutStore, next, display.id, display.workArea);
     },
     getWindow() {
       return miniWindow && !miniWindow.isDestroyed() ? miniWindow : null;

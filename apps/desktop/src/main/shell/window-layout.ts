@@ -175,3 +175,19 @@ export function clampMiniToWorkArea(input: {
     displayMissing,
   };
 }
+
+export function fitMiniGrowthAxis(input: {
+  currentBounds: { width: number; height: number };
+  content: { width: number; height: number };
+  axis: MiniLiveGrowthAxis;
+  workArea: WorkArea;
+  minWidth: number;
+  minHeight: number;
+  position: { x: number; y: number };
+}): { x: number; y: number; width: number; height: number } {
+  const targetWidth = input.axis === 'horizontal' ? input.content.width : input.currentBounds.width;
+  const targetHeight = input.axis === 'vertical' ? input.content.height : input.currentBounds.height;
+  const { width, height } = fitSize(targetWidth, targetHeight, input.workArea, input.minWidth, input.minHeight);
+  const position = clampPosition(input.position.x, input.position.y, width, height, input.workArea);
+  return { ...position, width, height };
+}
