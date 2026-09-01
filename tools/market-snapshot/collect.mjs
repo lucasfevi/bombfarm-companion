@@ -134,6 +134,110 @@ export function logSweepStats(log, stats) {
   }
 }
 
+/**
+ * One row per (item, currency) the pass actually quoted. An item the market answered without a
+ * price contributes no row: "unquoted" and "quoted as unlisted" are different claims, and a null
+ * row would erase the difference in the history forever.
+ */
+export function quoteRowsFrom(stats) {
+  const rows = [];
+  for (const [hashName, byCurrency] of stats.quotes) {
+    for (const [currency, quote] of Object.entries(byCurrency)) {
+      rows.push({
+        hash_name: hashName,
+        currency,
+        quoted_at: stats.quotedUtc,
+        lowest: quote.lowest,
+        median: quote.median,
+        volume: quote.volume,
+      });
+    }
+  }
+  return rows;
+}
+
+/**
+ * Identity for every row the pass saw. `first_seen` is deliberately absent: the upsert writes
+ * only the columns the body carries, so omitting it lets the column default fire on insert and
+ * leaves it untouched on update. Including it would reset every item's first-seen date every pass.
+ */
+export function itemRowsFrom(snapshot, lastSeen) {
+  return snapshot.entries.map((entry) => ({
+    hash_name: entry.hashName,
+    key: entry.key,
+    def_id: entry.defId,
+    kind: entry.kind,
+    category: entry.category,
+    last_seen: lastSeen,
+  }));
+}
+
+const HISTORY_TIMEOUT_MS = 30_000;
+
+export function createHistory({ url, key, fetch, log, now = Date.now }) {
+  const post = async (path, rows, prefer) => {
+    const response = await fetch(`${url}/rest/v1/${path}`, {
+      method: 'POST',
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        Prefer: prefer,
+      },
+      body: JSON.stringify(rows),
+      signal: AbortSignal.timeout(HISTORY_TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      const error = new Error(`${path} answered ${String(response.status)}`);
+      error.status = response.status;
+      error.body = body;
+      throw error;
+    }
+  };
+
+  /**
+   * Never throws. A history failure must not cost the pass its publish — the artifact is what
+   * users read — so it is reported to the caller and recorded on the run row instead.
+   */
+  const persistHistory = async (snapshot, stats) => {
+    const startedMs = now();
+    const quoteRows = quoteRowsFrom(stats);
+    const itemRows = itemRowsFrom(snapshot, new Date(now()).toISOString());
+    try {
+      if (quoteRows.length > 0) await post('quote', quoteRows, 'return=minimal');
+      if (itemRows.length > 0) {
+        await post(
+          'market_item?on_conflict=hash_name',
+          itemRows,
+          'resolution=merge-duplicates,return=minimal',
+        );
+      }
+      log('history.done', {
+        quoteRows: quoteRows.length,
+        itemRows: itemRows.length,
+        ms: now() - startedMs,
+      });
+      return { ok: true, error: null };
+    } catch (err) {
+      const error = String(err?.message ?? err);
+      log('history.failed', { status: err?.status ?? null, body: err?.body ?? error }, 'error');
+      return { ok: false, error };
+    }
+  };
+
+  /** Never throws: it is called from a `finally`, where an exception would replace the real one. */
+  const writeRun = async (row) => {
+    try {
+      await post('collector_run', [row], 'return=minimal');
+    } catch (err) {
+      log('run.failed', { status: err?.status ?? null, body: err?.body ?? String(err) }, 'error');
+    }
+  };
+
+  return { persistHistory, writeRun };
+}
+
 async function main() {
   const config = readConfig(process.env);
   const log = createLogger();
