@@ -7,9 +7,9 @@ import { Tooltip } from '@bombfarm/ui';
 /**
  * Asks Steam for one item's price right now.
  *
- * Only the desktop shell has this. The published snapshot is at most six hours old, and Electron's
- * main process is Node — so it can call the one endpoint that quotes a currency directly, which a
- * browser cannot do at all.
+ * Only the desktop shell has this. The published snapshot is only ever as fresh as the last pass
+ * that published it, and Electron's main process is Node — so it can call the one endpoint that
+ * quotes a currency directly, which a browser cannot do at all.
  *
  * The pending state is per button rather than global: a refresh of one row must not disable the
  * rest of the page, and a slow call on one item should not read as the whole screen hanging.
