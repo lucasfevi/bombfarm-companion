@@ -49,7 +49,10 @@ export function createShellLifecycle(deps: {
   window: WindowPort;
   tray: TrayPort | null;
   quit: () => void;
-  log: { info: (rec: object) => void; error: (rec: object) => void };
+  log: {
+    info: (rec: Record<string, unknown>) => void;
+    error: (rec: Record<string, unknown>) => void;
+  };
   labels: TrayLabels;
   tooltip: string;
 }): ShellLifecycle {
