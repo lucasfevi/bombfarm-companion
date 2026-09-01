@@ -170,7 +170,10 @@ describe('disabled-hero copy + Points chrome contracts', () => {
       'utf8',
     );
     const picker = readFileSync(
-      join(WEB_PACKAGE_ROOT, 'src/features/roster/components/hero-picker-row.tsx'),
+      join(
+        WEB_PACKAGE_ROOT,
+        '../../packages/farm/src/components/hero-picker/hero-picker-row.tsx',
+      ),
       'utf8',
     );
     expect(strip).toContain('HeroActiveToggle');

@@ -25,6 +25,7 @@ import { ConsentGate, isConsentGateVisible } from './consent-gate';
 import { ConsentModal } from './consent-modal';
 import { UpdateChip } from './update-chip';
 import { LiveView } from './live/live-view';
+import { FarmView } from './farm/farm-view';
 import { InventoryView } from './inventory/inventory-view';
 import { ConsentSection } from './settings/consent-section';
 import { DiagnosticsSection } from './settings/diagnostics-section';
@@ -315,6 +316,8 @@ function HomePageContent({
                 onInstall={onUpdateInstall}
               />
             </div>
+          ) : activeNavId === 'farm' ? (
+            <FarmView />
           ) : activeNavId === 'inventory' ? (
             <InventoryView />
           ) : (

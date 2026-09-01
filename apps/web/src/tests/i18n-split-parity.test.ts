@@ -610,6 +610,11 @@ const KEYS_ADDED: readonly string[] = [
   'optimizeBuildFarmKeptCurrent',
   'optimizeBuildFarmNoPool',
   'optimizeBuildFarmNoRate',
+  // The respec advisor's honest framing (2026-08-31): `farmRespecBestFound` says the proposal is
+  // the best build the search found and not proof that no better one exists, and it renders on
+  // every result. That claim used to appear only inside `farmRespecBudgetExhausted`, whose
+  // absence then read as a guarantee of optimality the search cannot make at any budget.
+  'farmRespecBestFound',
 ];
 
 /**
@@ -672,6 +677,10 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   // the thing it measured, and points at the DPS setting of the button rather than the button.
   // With a farm target on the same control, an unqualified "possible gain" no longer says which.
   'resetAdviceGainLine',
+  // The respec advisor's honest framing (2026-08-31): this line no longer carries the
+  // "not guaranteed to be the best that exists" clause — `farmRespecBestFound` says that on every
+  // result now — and no longer calls the bound a time budget, which it never was.
+  'farmRespecBudgetExhausted',
 ];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {

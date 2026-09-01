@@ -151,6 +151,36 @@ describe('Copy guard — no player-facing literal outside lib/copy/', () => {
     ).toEqual(['Sell it']);
   });
 
+  /**
+   * The farm screen brings a SECOND supplier of player-facing strings into this renderer — the
+   * dictionary `@bombfarm/farm` ships with the views it draws. The copy guard above cannot see it
+   * (those strings are not literals in this tree), so the one-place-for-copy invariant is kept
+   * structurally instead: exactly one module may reach that dictionary, and it composes the two
+   * halves for everything else.
+   */
+  const FARM_COPY_MODULE = join(RENDERER_ROOT, 'app', 'farm', 'farm-copy.ts');
+  const FARM_COPY_IMPORT = /from\s*['"]@bombfarm\/farm\/copy['"]/;
+
+  function farmCopyImporters(files: readonly { path: string; source: string }[]): string[] {
+    return files.filter((file) => FARM_COPY_IMPORT.test(stripComments(file.source))).map((file) => file.path);
+  }
+
+  it('only app/farm/farm-copy.ts imports the farm dictionary', () => {
+    const importers = farmCopyImporters(readAll(RENDERER_ROOT, ['.ts', '.tsx']));
+    expect(
+      importers,
+      `Only ${FARM_COPY_MODULE} may import the farm screen's dictionary — every other module ` +
+        `reads copy through lib/copy. Found: ${importers.join(', ')}`,
+    ).toEqual([FARM_COPY_MODULE]);
+  });
+
+  it('red state demonstrated: a second module reaching for the farm dictionary is caught', () => {
+    const fixture = [
+      { path: 'second.tsx', source: "import { farmCopyFor } from '@bombfarm/farm/copy';" },
+    ];
+    expect(farmCopyImporters(fixture)).toEqual(['second.tsx']);
+  });
+
   it("allowlisted props (data-testid, className, href, id, role, type, key) are not flagged even though they are string literals", () => {
     const fixture = '<DataTable.Row key="i1" data-testid="inventory-row-i1" className="flex" role="row" type="button" id="x" href="#" />';
     expect(findLiteralPropViolations(fixture)).toEqual([]);

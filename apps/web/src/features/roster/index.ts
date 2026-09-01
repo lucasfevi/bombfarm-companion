@@ -1,5 +1,4 @@
-export { compareRosterHeroes, gearCountOf } from './model/roster-compare';
-export type { RosterSortDir, RosterSortKey } from './components/roster-sort-header';
-export { RosterSortHeader } from './components/roster-sort-header';
 export { HeroPickerDialog } from './components/hero-picker-dialog';
-export { HeroActiveToggle } from './components/hero-active-toggle';
+// The toggle itself is `@bombfarm/farm`'s — the hero picker's rows carry it and moved with them.
+// Re-exported here so the planner strip's own call site is unchanged.
+export { HeroActiveToggle } from '@bombfarm/farm/components';

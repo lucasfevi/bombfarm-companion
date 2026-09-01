@@ -17,6 +17,7 @@ export default defineConfig({
     projects: [
       'packages/contracts/vitest.config.ts',
       'packages/domain/vitest.config.ts',
+      'packages/farm/vitest.config.ts',
       'packages/game-api/vitest.config.ts',
       'packages/game-art/vitest.config.ts',
       'packages/game-data/vitest.config.ts',

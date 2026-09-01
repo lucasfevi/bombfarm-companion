@@ -5,7 +5,7 @@
  * Luck (`roster-dps.test.ts`), `computePhaseIntelGlobal` turns a `luckFraction` into drop
  * chances (`packages/domain/tests/phase-intel-486-witness.test.ts`), and `dropItems` formats
  * those rows (`phase-fact-items.test.ts`). What none of them exercises is the expression in
- * `phases-explorer.tsx` that connects them — the mean of the top-squad rows' Luck, divided by
+ * `PhasesExplorerView` that connects them — the mean of the top-squad rows' Luck, divided by
  * 100 — which is where a units slip (percentage points vs. fraction) or an aggregation slip
  * (sum/max instead of mean) would live and still leave every other test green.
  *
@@ -70,7 +70,7 @@ const account: AccountShared = {
 const PHASE_GATE = 60;
 const SLOTS = 9;
 
-/** Verbatim the expression `phases-explorer.tsx` uses to build `luckFraction`. */
+/** Verbatim the expression `PhasesExplorerView` uses to build `luckFraction`. */
 function luckFractionFor(heroes: HeroRecord[]): number {
   const rows = rankRosterByDps(
     { heroes, account, phase: PHASE_GATE, mitigationPct: 0 },

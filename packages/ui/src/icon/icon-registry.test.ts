@@ -15,6 +15,7 @@ const MIGRATED_UI_NAMES = [
   'chevron-down',
   'chevron-up',
   'x-mark',
+  'swap',
   'check',
   'coffee',
   'check-circle',

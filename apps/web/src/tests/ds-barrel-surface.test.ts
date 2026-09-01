@@ -37,6 +37,13 @@ import * as GameArt from '@bombfarm/game-art';
 // ActionChip (2026-08-31): StatusChip's pill as a control — same chipRecipe tones and dot, but a
 // <button>. Added for the desktop footer's update indicator, which reports a state AND leads
 // somewhere; StatusChip stays the non-interactive game-connection vocabulary.
+// statListMutedRowClass (2026-08-31): promoted from the `panel-field.recipe` subpath, beside the
+// other class constants already here. This package's `exports` map resolves a subpath to an
+// extensionless source path, which an app's tsconfig `paths` completes but another package's own
+// `tsc` cannot — so a shared component outside apps/web could not import it deeply.
+// colClass / dialogDescClass / panelHClass / panelTitleClass / tipClass / the eight phasesBoard*
+// classes (2026-08-31): promoted from the same subpath for the same reason. They lay out the
+// phases explorer's panel grid, and the panels that draw it are `@bombfarm/farm`'s now.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -105,6 +112,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'buttonRecipe',
   'chipRecipe',
   'cn',
+  'colClass',
   'colorTokens',
   'contrastPairs',
   'cssVariables',
@@ -112,6 +120,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'dataTableClass',
   'dataTableHeadButtonClass',
   'dataTableHeadClass',
+  'dialogDescClass',
   'fileDropZoneRecipe',
   'formatCompactNumber',
   'formatNumber',
@@ -124,12 +133,24 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'metricScoreboardValueRecipe',
   'motionTokens',
   'nextExpiryDeadline',
+  'panelHClass',
   'panelRecipe',
+  'panelTitleClass',
+  'phasesBoardClass',
+  'phasesBoardDropsClass',
+  'phasesBoardEconomyClass',
+  'phasesBoardJaulaClass',
+  'phasesBoardMapClass',
+  'phasesBoardPropsClass',
+  'phasesBoardRosterClass',
+  'phasesBoardRosterSpanClass',
   'selectFieldRecipe',
   'setupBannerRecipe',
   'sortableTableHeaderButtonClass',
+  'statListMutedRowClass',
   'stickyHeadClass',
   'switchRootRecipe',
+  'tipClass',
   'toastQueueReducer',
   'tokens',
   'tooltipPopupRecipe',
