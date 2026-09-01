@@ -10,7 +10,7 @@ export function NeverReadEmptyState({
   onReopenConsent,
 }: {
   freshness: ReachedLiveFreshness;
-  onReopenConsent?: () => void;
+  onReopenConsent?: (() => void) | undefined;
 }) {
   const t = useCopy();
 

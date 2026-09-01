@@ -10,9 +10,22 @@ import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
  * (proving it CAN fail — "red state demonstrated") before being run against the real tree.
  */
 
+/**
+ * The board's components and its pure model/format layer are both `@bombfarm/farm`'s now, so the
+ * desktop app can render the same screen; what is left in this app's `features/phases/components`
+ * are the two connectors that do the store reads and render the package's views. All three dirs
+ * are scanned, and `every board dir contributes files` below fails if any of them ever stops
+ * resolving — a source-scanning guard pointed at a path that no longer exists keeps passing while
+ * checking nothing, which is the one way these guards die silently.
+ *
+ * The `farm-` filename prefix is what scopes these checks, and it is load-bearing rather than
+ * incidental: the phases explorer moved to the package alongside the board, and it legitimately
+ * calls the advisor pipeline that guard (a) forbids the board tree from touching.
+ */
 const BOARD_DIRS = [
-  'src/features/phases/components',
-  'src/features/phases/model',
+  path.join(WEB_PACKAGE_ROOT, '../../packages/farm/src/components'),
+  path.join(WEB_PACKAGE_ROOT, '../../packages/farm/src/model'),
+  path.join(WEB_PACKAGE_ROOT, 'src/features/phases/components'),
 ];
 
 function walkFiles(dir: string, predicate: (name: string) => boolean, acc: string[] = []): string[] {
@@ -25,13 +38,34 @@ function walkFiles(dir: string, predicate: (name: string) => boolean, acc: strin
   return acc;
 }
 
-function boardFiles(): { path: string; text: string }[] {
-  const files: string[] = [];
-  for (const dir of BOARD_DIRS) {
-    walkFiles(path.join(WEB_PACKAGE_ROOT, dir), (name) => name.startsWith('farm-') && (name.endsWith('.ts') || name.endsWith('.tsx')), files);
-  }
+function boardFilesIn(dir: string): { path: string; text: string }[] {
+  const files = walkFiles(
+    dir,
+    (name) =>
+      name.startsWith('farm-') &&
+      !name.endsWith('.test.ts') &&
+      !name.endsWith('.test.tsx') &&
+      (name.endsWith('.ts') || name.endsWith('.tsx')),
+  );
   return files.map((file) => ({ path: file, text: fs.readFileSync(file, 'utf8') }));
 }
+
+function boardFiles(): { path: string; text: string }[] {
+  return BOARD_DIRS.flatMap(boardFilesIn);
+}
+
+describe('the board tree the guards below scan', () => {
+  it('every board dir exists and contributes files — no guard is silently scanning nothing', () => {
+    for (const dir of BOARD_DIRS) {
+      expect(fs.existsSync(dir), `${dir} does not exist`).toBe(true);
+      expect(boardFilesIn(dir).length, `${dir} contributed no farm-* file`).toBeGreaterThan(0);
+    }
+  });
+
+  it('red state: a dir that does not exist contributes nothing, which is what the check above catches', () => {
+    expect(boardFilesIn(path.join(WEB_PACKAGE_ROOT, 'src/features/phases/nowhere'))).toEqual([]);
+  });
+});
 
 // ---------------------------------------------------------------------------------------------
 // (a) One compute: zero advisor-pipeline calls anywhere under the board's tree.
@@ -65,106 +99,73 @@ describe('guard (a) — zero advisor-pipeline calls under the board tree', () =>
 });
 
 // ---------------------------------------------------------------------------------------------
-// (f) One farm-rate importer.
+// (f)/(g) One farm-rate importer and one farm-optimize importer — now BOTH in @bombfarm/farm,
+// and NEITHER in apps/web.
+//
+// FarmRateRow/FarmRateOptions/ReturnBonusMode/FarmRespecResult must be consumed as
+// @bombfarm/domain declares them — no local re-declaration — which forces a pure
+// `import type { ... } from '@bombfarm/domain/farm-rate'` in every component and model file that
+// types a row prop, and in the return-bonus control. A pure `import type` erases at compile time
+// (zero bundle bytes, zero possibility of carrying a re-implemented computation), so it is
+// allowed anywhere. These guards' real teeth is that no SECOND file may import a RUNTIME binding
+// (computeFarmRates, gateFarmRespec and their siblings), and that apps/web may import none at
+// all now that the compute itself lives in the package.
+//
+// The web half is a ZERO assertion, which is the one shape that can pass while checking nothing.
+// Two things stop that here: `scannedCount` proves the scan reached files, and the package half
+// is a POSITIVE `toEqual([...])` naming the one file — so "the compute vanished" fails there
+// rather than passing everywhere.
 // ---------------------------------------------------------------------------------------------
-describe('guard (f) — @bombfarm/domain/farm-rate: one RUNTIME importer', () => {
-  const srcRoot = path.join(WEB_PACKAGE_ROOT, 'src');
-  const allowedRuntimeFile = 'src/shared/stores/selectors/farm-ranking-selectors.ts';
+const WEB_SRC = path.join(WEB_PACKAGE_ROOT, 'src');
+const FARM_PACKAGE_ROOT = path.join(WEB_PACKAGE_ROOT, '../../packages/farm');
+const FARM_SRC = path.join(FARM_PACKAGE_ROOT, 'src');
 
-  // NOTE on scope, recorded for the validator: FarmRateRow/FarmRateOptions/
-  // ReturnBonusMode must be consumed "as @bombfarm/domain declares it — no local re-declaration". That forces a
-  // pure `import type { FarmRateRow } from '@bombfarm/domain/farm-rate'` in every component/model
-  // file that types a row prop (farm-ranking-row.tsx, farm-ranking-table.tsx,
-  // farm-ranking-view.ts) and in farm-return-bonus.tsx (ReturnBonusMode) — not just the single
-  // `phases-view-storage.ts` example this guard was originally written against. A pure `import type` erases at compile time
-  // (zero bundle bytes, zero possibility of carrying a re-implemented computation) — this guard's
-  // real teeth is that no SECOND file can import a runtime binding (computeFarmRates and its
-  // siblings). This guard therefore allows `import type { ... }` in any src file and restricts
-  // only import statements that carry at least one non-type binding to the selector file.
-
-  /** True when the file imports a non-type-only binding from the given `@bombfarm/domain/*`
-   *  specifier. Parameterised (not duplicated) so the farm-rate and farm-optimize checks below
-   *  share one classifier that cannot disagree with itself. */
-  function importsRuntimeBinding(text: string, specifier: string): boolean {
-    // `^` + `m` flag: only matches real import statements (line-start), never an "import"
-    // substring inside a comment (this file's own comments say "the type-only import" etc.).
-    const statementRe = new RegExp(`^import\\s+([^;]*?)\\s+from\\s+['"]${specifier}['"]`, 'gm');
-    for (const match of text.matchAll(statementRe)) {
-      const clause = match[1].trim();
-      if (clause.startsWith('type ')) continue; // `import type { ... }` — pure type-only.
-      // Inline form: `import { computeFarmRates, type FarmRateRow }` — strip `type X` members
-      // and see if any binding remains.
-      const inner = clause.replace(/^\{|\}$/g, '');
-      const members = inner.split(',').map((member) => member.trim()).filter(Boolean);
-      const hasRuntimeMember = members.some((member) => !member.startsWith('type '));
-      if (hasRuntimeMember) return true;
-    }
-    return false;
+/** True when the file imports a non-type-only binding from the given `@bombfarm/domain/*`
+ *  specifier. Parameterised (not duplicated) so the farm-rate and farm-optimize checks share one
+ *  classifier that cannot disagree with itself. */
+function importsRuntimeBinding(text: string, specifier: string): boolean {
+  // `^` + `m` flag: only matches real import statements (line-start), never an "import"
+  // substring inside a comment (this file's own comments say "the type-only import" etc.).
+  const statementRe = new RegExp(`^import\\s+([^;]*?)\\s+from\\s+['"]${specifier}['"]`, 'gm');
+  for (const match of text.matchAll(statementRe)) {
+    const clause = match[1].trim();
+    if (clause.startsWith('type ')) continue; // `import type { ... }` — pure type-only.
+    // Inline form: `import { computeFarmRates, type FarmRateRow }` — strip `type X` members
+    // and see if any binding remains.
+    const inner = clause.replace(/^\{|\}$/g, '');
+    const members = inner.split(',').map((member) => member.trim()).filter(Boolean);
+    const hasRuntimeMember = members.some((member) => !member.startsWith('type '));
+    if (hasRuntimeMember) return true;
   }
+  return false;
+}
 
-  function runtimeImporters(specifier: string): string[] {
-    const files = walkFiles(srcRoot, (name) => name.endsWith('.ts') || name.endsWith('.tsx'));
-    return files
-      .filter((abs) => !abs.includes(`${path.sep}tests${path.sep}`))
-      .map((abs) => path.relative(WEB_PACKAGE_ROOT, abs).split(path.sep).join('/'))
-      .filter((rel) => importsRuntimeBinding(fs.readFileSync(path.join(WEB_PACKAGE_ROOT, rel), 'utf8'), specifier));
-  }
+/** Production `.ts`/`.tsx` under `root`: co-located `*.test.*` files and anything inside a
+ *  `tests/` directory are excluded, since a test may legitimately call the domain directly. */
+function productionFilesUnder(root: string): string[] {
+  return walkFiles(
+    root,
+    (name) =>
+      (name.endsWith('.ts') || name.endsWith('.tsx')) &&
+      !name.endsWith('.test.ts') &&
+      !name.endsWith('.test.tsx'),
+  ).filter((abs) => !abs.includes(`${path.sep}tests${path.sep}`));
+}
 
-  it('red state: a fabricated second-file runtime import of computeFarmRates is caught', () => {
+function runtimeImportersUnder(root: string, relativeTo: string, specifier: string): string[] {
+  return productionFilesUnder(root)
+    .filter((abs) => importsRuntimeBinding(fs.readFileSync(abs, 'utf8'), specifier))
+    .map((abs) => path.relative(relativeTo, abs).split(path.sep).join('/'));
+}
+
+describe('guards (f)/(g) — the runtime-import classifier', () => {
+  it('red state: a fabricated runtime import of computeFarmRates is caught', () => {
     expect(
       importsRuntimeBinding("import { computeFarmRates } from '@bombfarm/domain/farm-rate';", '@bombfarm/domain/farm-rate'),
     ).toBe(true);
   });
 
-  it('red state: a fabricated inline mixed import (runtime + type) is still caught as runtime', () => {
-    expect(
-      importsRuntimeBinding(
-        "import { computeFarmRates, type FarmRateRow } from '@bombfarm/domain/farm-rate';",
-        '@bombfarm/domain/farm-rate',
-      ),
-    ).toBe(true);
-  });
-
-  it("a pure `import type { FarmRateRow }` is correctly classified as non-runtime (does not trip the guard)", () => {
-    expect(
-      importsRuntimeBinding("import type { FarmRateRow } from '@bombfarm/domain/farm-rate';", '@bombfarm/domain/farm-rate'),
-    ).toBe(false);
-  });
-
-  it('green state: exactly one production file imports a runtime binding from farm-rate', () => {
-    expect(runtimeImporters('@bombfarm/domain/farm-rate')).toEqual([allowedRuntimeFile]);
-  });
-});
-
-// ---------------------------------------------------------------------------------------------
-// (g) One farm-optimize importer — same parameterised classifier as guard (f).
-// ---------------------------------------------------------------------------------------------
-describe('guard (g) — @bombfarm/domain/farm-optimize: one RUNTIME importer', () => {
-  const srcRoot = path.join(WEB_PACKAGE_ROOT, 'src');
-  const allowedRuntimeFile = 'src/shared/stores/selectors/farm-ranking-selectors.ts';
-
-  function importsRuntimeBinding(text: string, specifier: string): boolean {
-    const statementRe = new RegExp(`^import\\s+([^;]*?)\\s+from\\s+['"]${specifier}['"]`, 'gm');
-    for (const match of text.matchAll(statementRe)) {
-      const clause = match[1].trim();
-      if (clause.startsWith('type ')) continue;
-      const inner = clause.replace(/^\{|\}$/g, '');
-      const members = inner.split(',').map((member) => member.trim()).filter(Boolean);
-      const hasRuntimeMember = members.some((member) => !member.startsWith('type '));
-      if (hasRuntimeMember) return true;
-    }
-    return false;
-  }
-
-  function runtimeImporters(specifier: string): string[] {
-    const files = walkFiles(srcRoot, (name) => name.endsWith('.ts') || name.endsWith('.tsx'));
-    return files
-      .filter((abs) => !abs.includes(`${path.sep}tests${path.sep}`))
-      .map((abs) => path.relative(WEB_PACKAGE_ROOT, abs).split(path.sep).join('/'))
-      .filter((rel) => importsRuntimeBinding(fs.readFileSync(path.join(WEB_PACKAGE_ROOT, rel), 'utf8'), specifier));
-  }
-
-  it('red state: a fabricated second-file runtime import of solveFarmRespec is caught', () => {
+  it('red state: a fabricated runtime import of solveFarmRespec is caught', () => {
     expect(
       importsRuntimeBinding(
         "import { solveFarmRespec } from '@bombfarm/domain/farm-optimize';",
@@ -176,13 +177,22 @@ describe('guard (g) — @bombfarm/domain/farm-optimize: one RUNTIME importer', (
   it('red state: a fabricated inline mixed import (runtime + type) is still caught as runtime', () => {
     expect(
       importsRuntimeBinding(
+        "import { computeFarmRates, type FarmRateRow } from '@bombfarm/domain/farm-rate';",
+        '@bombfarm/domain/farm-rate',
+      ),
+    ).toBe(true);
+    expect(
+      importsRuntimeBinding(
         "import { solveFarmRespec, type FarmRespecResult } from '@bombfarm/domain/farm-optimize';",
         '@bombfarm/domain/farm-optimize',
       ),
     ).toBe(true);
   });
 
-  it('a pure `import type { FarmRespecResult }` clause is correctly classified as non-runtime', () => {
+  it('a pure `import type { ... }` clause is correctly classified as non-runtime', () => {
+    expect(
+      importsRuntimeBinding("import type { FarmRateRow } from '@bombfarm/domain/farm-rate';", '@bombfarm/domain/farm-rate'),
+    ).toBe(false);
     expect(
       importsRuntimeBinding(
         "import type { FarmRespecResult } from '@bombfarm/domain/farm-optimize';",
@@ -191,8 +201,33 @@ describe('guard (g) — @bombfarm/domain/farm-optimize: one RUNTIME importer', (
     ).toBe(false);
   });
 
-  it('green state: exactly one production file imports a runtime binding from farm-optimize', () => {
-    expect(runtimeImporters('@bombfarm/domain/farm-optimize')).toEqual([allowedRuntimeFile]);
+  it('both scanned trees contribute production files — neither zero assertion is vacuous', () => {
+    expect(productionFilesUnder(WEB_SRC).length, 'apps/web/src contributed no file').toBeGreaterThan(0);
+    expect(productionFilesUnder(FARM_SRC).length, 'packages/farm/src contributed no file').toBeGreaterThan(0);
+  });
+});
+
+describe('guard (f) — @bombfarm/domain/farm-rate: one RUNTIME importer, and it is in the package', () => {
+  it('green state: exactly one production file in @bombfarm/farm imports a runtime binding', () => {
+    expect(
+      runtimeImportersUnder(FARM_SRC, FARM_PACKAGE_ROOT, '@bombfarm/domain/farm-rate'),
+    ).toEqual(['src/core/farm-compute.ts']);
+  });
+
+  it('green state: apps/web imports NO runtime binding from farm-rate', () => {
+    expect(runtimeImportersUnder(WEB_SRC, WEB_PACKAGE_ROOT, '@bombfarm/domain/farm-rate')).toEqual([]);
+  });
+});
+
+describe('guard (g) — @bombfarm/domain/farm-optimize: one RUNTIME importer, and it is in the package', () => {
+  it('green state: exactly one production file in @bombfarm/farm imports a runtime binding', () => {
+    expect(
+      runtimeImportersUnder(FARM_SRC, FARM_PACKAGE_ROOT, '@bombfarm/domain/farm-optimize'),
+    ).toEqual(['src/core/farm-compute.ts']);
+  });
+
+  it('green state: apps/web imports NO runtime binding from farm-optimize', () => {
+    expect(runtimeImportersUnder(WEB_SRC, WEB_PACKAGE_ROOT, '@bombfarm/domain/farm-optimize')).toEqual([]);
   });
 });
 
@@ -325,9 +360,10 @@ describe('guard (d) — persisted key strings unchanged', () => {
 });
 
 // ---------------------------------------------------------------------------------------------
-// (h) No research-private identifier or path anywhere in apps/web (public-repo hygiene).
+// (h) No research-private identifier or path anywhere in apps/web or the shared farm package
+// (public-repo hygiene).
 // ---------------------------------------------------------------------------------------------
-describe('guard (h) — no research-private identifier or path in apps/web', () => {
+describe('guard (h) — no research-private identifier or path in apps/web or @bombfarm/farm', () => {
   const RESEARCH_ID_PATTERNS = [
     /FRAW-/,
     /FRAD-/,
@@ -372,11 +408,21 @@ describe('guard (h) — no research-private identifier or path in apps/web', () 
     expect(findResearchId('.specs/features/fra-web-ui/design.md')).toBe('.specs/');
   });
 
-  it('green state: no apps/web source or test file (this guard\'s own file self-excluded) contains a research-private identifier or path', () => {
-    const files = walkFiles(
-      path.join(WEB_PACKAGE_ROOT, 'src'),
-      (name) => name.endsWith('.ts') || name.endsWith('.tsx'),
+  // The farm package is scanned too: the farm screen's copy and model layer moved there, and a
+  // guard that stops following its subject stops guarding without ever going red.
+  const SCANNED_ROOTS = [
+    path.join(WEB_PACKAGE_ROOT, 'src'),
+    path.join(WEB_PACKAGE_ROOT, '../../packages/farm/src'),
+  ];
+
+  it('green state: no apps/web or @bombfarm/farm source or test file (this guard\'s own file self-excluded) contains a research-private identifier or path', () => {
+    const files = SCANNED_ROOTS.flatMap((root) =>
+      walkFiles(root, (name) => name.endsWith('.ts') || name.endsWith('.tsx')),
     );
+    expect(files.length, 'scanned file count').toBeGreaterThan(0);
+    for (const root of SCANNED_ROOTS) {
+      expect(files.some((abs) => abs.startsWith(root)), `${root} contributed no file`).toBe(true);
+    }
     const offenders: string[] = [];
     for (const abs of files) {
       const rel = path.relative(WEB_PACKAGE_ROOT, abs).split(path.sep).join('/');
@@ -434,14 +480,81 @@ describe('guard (i) — no useShallow on the new farm respec selectors', () => {
 });
 
 // ---------------------------------------------------------------------------------------------
+// (j) Two connectors, and only two. The farm screen's components are `@bombfarm/farm`'s and
+// prop-driven; this app reads its store in the board connector and the explorer connector, and
+// passes the values down. A third file subscribing on the components' behalf would compile and
+// pass every other guard here, and would be the first step back toward a screen only this app can
+// render. Scoped by directory rather than by the `farm-` prefix the checks above use: the
+// explorer's connector is not prefixed, and leaving it out is precisely how a guard stops covering
+// half its subject without ever going red.
+// ---------------------------------------------------------------------------------------------
+describe('guard (j) — the farm screen’s store reads happen in its two connectors and nowhere else', () => {
+  const BOARD_CONNECTOR = 'src/features/phases/components/farm-ranking-board.tsx';
+  const EXPLORER_CONNECTOR = 'src/features/phases/components/phases-explorer.tsx';
+  const CONNECTORS = [BOARD_CONNECTOR, EXPLORER_CONNECTOR];
+  const BOARD_SELECTORS = [
+    'selectFarmBoardRows',
+    'selectFarmReRankActive',
+    'selectFarmRespecGate',
+    'selectFarmRespecView',
+  ];
+
+  /** Every source file under `features/phases`, and whether it subscribes. Returns the files too,
+   *  so the assertions below can prove the walk reached something before reading the answer. */
+  function filesUnderPhases(): { rel: string; subscribes: boolean }[] {
+    return walkFiles(
+      path.join(WEB_PACKAGE_ROOT, 'src/features/phases'),
+      (name) => name.endsWith('.ts') || name.endsWith('.tsx'),
+    ).map((abs) => ({
+      rel: path.relative(WEB_PACKAGE_ROOT, abs).split(path.sep).join('/'),
+      subscribes: fs.readFileSync(abs, 'utf8').includes('usePlannerStore'),
+    }));
+  }
+
+  it('the board connector subscribes to each board selector directly, none of them wrapped', () => {
+    const source = fs.readFileSync(path.join(WEB_PACKAGE_ROOT, BOARD_CONNECTOR), 'utf8');
+    expect(source).toContain('FarmRankingBoardView');
+    for (const selector of BOARD_SELECTORS) {
+      expect(source, `${BOARD_CONNECTOR} must subscribe to ${selector}`).toContain(
+        `usePlannerStore(${selector})`,
+      );
+    }
+  });
+
+  it('the explorer connector renders the package view and holds the explorer’s own store reads', () => {
+    const source = fs.readFileSync(path.join(WEB_PACKAGE_ROOT, EXPLORER_CONNECTOR), 'utf8');
+    expect(source).toContain('PhasesExplorerView');
+    for (const selector of ['selectPhasesViewPhase', 'selectAccountShared', 'selectHeroes']) {
+      expect(source, `${EXPLORER_CONNECTOR} must subscribe to ${selector}`).toContain(selector);
+    }
+  });
+
+  it('the walk reaches both connectors — the equality below is not comparing two empty lists', () => {
+    const found = filesUnderPhases().map((file) => file.rel);
+    for (const connector of CONNECTORS) expect(found).toContain(connector);
+  });
+
+  /** Fails both ways: a third subscriber adds an entry, and a connector that stopped reading the
+   *  store (leaving its view with no data source) drops out of the list. */
+  it('they are the only files under features/phases that read the store', () => {
+    const subscribers = filesUnderPhases()
+      .filter((file) => file.subscribes)
+      .map((file) => file.rel)
+      .sort();
+    expect(subscribers).toEqual([...CONNECTORS].sort());
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
 // Component inventory — no second avatar-plus-rarity identity composition under features/phases.
 // ---------------------------------------------------------------------------------------------
 describe('guard — HeroIdentityChip is the only identity composition this item adds under features/phases', () => {
   it('no farm-respec-*/farm-ranking-* file imports HeroAvatar directly without going through HeroIdentityChip', () => {
-    // Scoped to this item's own farm-* files (boardFiles()) — features/phases already had
-    // pre-existing, unrelated HeroAvatar consumers (phases-hero-switcher.tsx,
-    // phases-top9-table.tsx) before this item, and this guard is about THIS item not inventing a
-    // second identity composition, not about banning HeroAvatar repo-wide.
+    // Scoped to the board's own farm-* files (boardFiles()) — the explorer's hero switcher and
+    // top-squad table were pre-existing, unrelated HeroAvatar consumers before the board was
+    // built and are still HeroAvatar consumers now that they live in the package. This guard is
+    // about the board not inventing a second identity composition, not about banning HeroAvatar
+    // repo-wide.
     const offenders = boardFiles()
       .filter((file) => file.path.endsWith('.tsx'))
       .filter((file) => file.text.includes('HeroAvatar') && !file.text.includes('HeroIdentityChip'))

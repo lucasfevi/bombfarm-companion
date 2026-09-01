@@ -178,9 +178,10 @@ test.describe('shell measure — one scrollbar, two columns, capped and centred 
     await expectSideBySideAtMinimumWidth('English');
 
     // Same technique as `i18n.spec.mjs` — the nav carries no test ids by design, so it is indexed.
-    // Live, Inventory, Settings: Settings is the last of the three.
+    // Settings is the last entry; addressed as such rather than by number, because a nav that
+    // gains a tab moves every number after it and this spec then clicks the wrong screen.
     await resize(app, page, 1280, 800);
-    await page.locator('nav[aria-label="Main"] button').nth(2).click();
+    await page.locator('nav[aria-label="Main"] button').last().click();
     const select = page.getByRole('combobox', { name: 'App language' });
     await select.waitFor({ state: 'visible', timeout: 10_000 });
     await select.click();
@@ -212,8 +213,8 @@ test.describe('shell measure — one scrollbar, two columns, capped and centred 
   });
 
   test('holds the settings sections to their own measure instead of letting them span the window', async () => {
-    // Live, Inventory, Settings: Settings is the last of the three.
-    await page.locator('nav[aria-label="Main"] button').nth(2).click();
+    // Settings is the last entry — see the note above on why it is not addressed by number.
+    await page.locator('nav[aria-label="Main"] button').last().click();
     await expect(page.getByTestId('settings-view')).toBeVisible({ timeout: 15_000 });
 
     for (const width of [MIN_WINDOW.width, MAX_CONTENT, 2560]) {

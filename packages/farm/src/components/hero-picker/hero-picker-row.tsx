@@ -1,0 +1,149 @@
+'use client';
+
+import { memo } from 'react';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import { RARITIES } from '@bombfarm/domain/planner-constants';
+import { rarityLabel } from '@bombfarm/domain/game-labels';
+import { cn, DataTable } from '@bombfarm/ui';
+import {
+  HeroAvatar,
+  HeroAbilityIcons,
+  HeroGearIcons,
+  rarityDotClass,
+  rarityTextClass,
+  rosterInactiveChromeClass,
+} from '@bombfarm/game-art';
+import { sub, type FarmRosterCopy, type Lang } from '../../copy';
+import { HeroActiveToggle } from './hero-active-toggle';
+
+/**
+ * Memoised, mirroring the sibling roster row that carried this boundary before the dead roster
+ * tree was deleted.
+ *
+ * Sorting the roster rebuilds `sortedHeroes` as a new array, but the individual `hero`
+ * objects keep their identity and `selected`/`powerShown` are unchanged for most rows, so
+ * a shallow prop compare skips them. React Compiler does not cover this: it caches values
+ * and elements *within* a scope keyed on that scope's own reactive deps, so when
+ * `HeroPickerTable`'s sort state changes its scope invalidates and every row element is
+ * recreated regardless. Only a boundary at the child can stop the cascade. The compiler is not
+ * even enabled in every host that renders this now, which makes the boundary load-bearing rather
+ * than belt-and-braces.
+ *
+ * Opening the picker is the sole measured scenario whose render count scales with roster size
+ * (2.60x at 10x heroes), which is why this boundary earns its place while the equivalent for
+ * gear/tab scenarios would not.
+ */
+export const HeroPickerRow = memo(function HeroPickerRow({
+  hero,
+  selected,
+  lang,
+  t,
+  formatNumber,
+  powerShown,
+  onPick,
+  onSetBattleAllowed,
+}: {
+  hero: HeroRecord;
+  selected: boolean;
+  lang: Lang;
+  t: FarmRosterCopy;
+  formatNumber: (n: number, d?: number) => string;
+  powerShown: number;
+  onPick: (hero: HeroRecord) => void;
+  /** Absent on a host with no roster to write — the Status cell then does not exist, so the
+   *  row's cell count still matches the head's (which drops its header on the same condition). */
+  onSetBattleAllowed?: ((heroId: string, enabled: boolean) => void) | undefined;
+}) {
+  const rarIdx = RARITIES.indexOf(hero.rarity);
+  const battleAllowed = hero.battleAllowed ?? true;
+  const inactiveChrome = !battleAllowed ? rosterInactiveChromeClass : undefined;
+
+  return (
+    <DataTable.Row
+      className={cn(
+        'cursor-pointer focus-visible:[outline:2px_solid_var(--accent)] focus-visible:[outline-offset:-2px]',
+        selected
+          ? 'bg-[color-mix(in_oklch,var(--accent)_10%,transparent)] shadow-[inset_3px_0_0_var(--accent)]'
+          : 'hover:bg-[color-mix(in_oklch,var(--accent)_6%,transparent)]',
+        !battleAllowed && 'bg-[color-mix(in_oklch,var(--bg)_45%,transparent)]',
+      )}
+      tabIndex={0}
+      aria-current={selected ? 'true' : undefined}
+      aria-label={hero.name}
+      onClick={() => onPick(hero)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onPick(hero);
+        }
+      }}
+    >
+      <DataTable.Cell className="w-14 px-1" nowrap={false}>
+        <span className={inactiveChrome}>
+          <HeroAvatar skin={hero.skin ?? 0} rarityIdx={rarIdx} size="lg" name={hero.name} />
+        </span>
+      </DataTable.Cell>
+      <DataTable.Cell
+        className={cn(
+          'max-[560px]:hidden text-xl leading-none font-black tracking-tight',
+          hero.rank?.trim() ? 'text-accent' : 'text-muted',
+          inactiveChrome,
+        )}
+      >
+        {hero.rank?.trim() || '—'}
+      </DataTable.Cell>
+      <DataTable.Cell className={inactiveChrome}>
+        <span className={cn('text-base leading-none font-bold', battleAllowed ? 'text-ink' : 'text-muted')}>
+          {hero.name}
+          {hero.stars > 0 ? (
+            <span className="ml-1 text-[0.92em] tracking-tight text-rar-4" aria-hidden="true">
+              {'★'.repeat(hero.stars)}
+            </span>
+          ) : null}
+        </span>
+      </DataTable.Cell>
+      <DataTable.Cell
+        className={cn('max-[560px]:hidden', rarityTextClass(rarIdx) ?? 'text-muted', inactiveChrome)}
+      >
+        <span className="inline-flex items-center gap-1.5 text-sm leading-none font-bold">
+          <span
+            className={`inline-block size-1.5 shrink-0 rounded-full ${rarityDotClass(rarIdx) ?? 'bg-muted'}`}
+            aria-hidden="true"
+          />
+          {rarityLabel(hero.rarity, lang)}
+        </span>
+      </DataTable.Cell>
+      <DataTable.Cell numeric className={inactiveChrome}>
+        L{hero.level}
+      </DataTable.Cell>
+      <DataTable.Cell align="right" numeric className={inactiveChrome}>
+        {formatNumber(powerShown, 0)}
+      </DataTable.Cell>
+      <DataTable.Cell className={cn('max-[720px]:hidden py-2', inactiveChrome)} nowrap={false} data-roster-wrap>
+        <HeroGearIcons
+          loadout={hero.loadout}
+          lang={lang}
+          emptySlotAriaLabel={(slotName) => sub(t.gearSlotEmptyAria, { slot: slotName })}
+          emptySlotTip={t.gearSlotEmptyTip}
+          lvLabel={t.rankLv}
+        />
+      </DataTable.Cell>
+      <DataTable.Cell className={cn('max-[960px]:hidden py-2', inactiveChrome)} nowrap={false} data-roster-wrap>
+        <HeroAbilityIcons abilities={hero.abilities} lang={lang} />
+      </DataTable.Cell>
+      {onSetBattleAllowed ? (
+        <DataTable.Cell className="max-[720px]:hidden">
+          {hero.sourceId ? (
+            <HeroActiveToggle
+              battleAllowed={battleAllowed}
+              t={t}
+              onCheckedChange={(checked) => onSetBattleAllowed(hero.id, checked)}
+            />
+          ) : (
+            <span className="text-muted">—</span>
+          )}
+        </DataTable.Cell>
+      ) : null}
+    </DataTable.Row>
+  );
+});

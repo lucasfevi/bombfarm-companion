@@ -24,6 +24,11 @@ export interface SnapshotParts {
  * missing from it has genuinely been delisted. A run cut short by Steam's IP quota knows nothing
  * about the rows it never reached, so it keeps them rather than publishing a snapshot that
  * oscillates between full and partial every six hours.
+ *
+ * Every row that comes out of here is keyed by its own identity, whichever side it came from. A
+ * key is derived state and a previous run's copy of it is only as good as what that run knew, so
+ * carrying one over unread is how a snapshot stays broken: the run that would repair a row has to
+ * reach it first, and a run Steam blocks outright reaches nothing.
  */
 export function mergeEntries(
   fresh: MarketEntry[],
@@ -38,7 +43,10 @@ export function mergeEntries(
   if (enumerationComplete) return kept;
 
   const freshHashes = new Set(fresh.map((entry) => entry.hashName));
-  return [...kept, ...prior.filter((entry) => !freshHashes.has(entry.hashName))];
+  const untouched = prior
+    .filter((entry) => !freshHashes.has(entry.hashName))
+    .map((entry) => ({ ...entry, key: keyForEntry(entry) }));
+  return [...kept, ...untouched];
 }
 
 /**

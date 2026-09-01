@@ -1,15 +1,9 @@
 'use client';
 
-import { HiMiniXMark } from 'react-icons/hi2';
+import { HeroPickerDialogView } from '@bombfarm/farm/components';
 import type { HeroRecord } from '@/shared/lib/storage';
 import type { Lang, Strings } from '@/shared/i18n';
-import { sub } from '@/shared/i18n';
-import { Dialog } from '@bombfarm/ui';
-import { dialogDescClass } from '@bombfarm/ui/panel-field.recipe';
-import { HeroPickerTable } from './hero-picker-table';
-
-/** Hero roster picker — wider than default import dialog for gear + ability icon columns. */
-const heroPickerPopupClass = '!w-[min(96vw,1240px)]';
+import { usePlannerStore } from '@/shared/stores';
 
 type Props = {
   open: boolean;
@@ -22,6 +16,11 @@ type Props = {
   onSelectHero: (h: HeroRecord) => void;
 };
 
+/**
+ * This app's connector for the shared picker. The picker's rows carry the planner enable/disable
+ * switch, which is a store write; the view itself is prop-driven so the desktop app can render the
+ * same dialog against its own state. Callers keep the props they always passed.
+ */
 export function HeroPickerDialog({
   open,
   onOpenChange,
@@ -32,33 +31,16 @@ export function HeroPickerDialog({
   formatNumber,
   onSelectHero,
 }: Props) {
-  function pick(hero: HeroRecord) {
-    onSelectHero(hero);
-    onOpenChange(false);
-  }
+  const setHeroBattleAllowedOnHero = usePlannerStore((state) => state.setHeroBattleAllowedOnHero);
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Backdrop />
-        <Dialog.Popup className={heroPickerPopupClass}>
-          <Dialog.Head>
-            <Dialog.Title>{t.switchHero}</Dialog.Title>
-            <Dialog.Close aria-label={t.importClose}>
-              <HiMiniXMark size={16} aria-hidden="true" />
-            </Dialog.Close>
-          </Dialog.Head>
-          <p className={dialogDescClass}>{sub(t.switchHeroDesc, { n: heroes.length })}</p>
-          <HeroPickerTable
-            heroes={heroes}
-            heroId={heroId}
-            lang={lang}
-            t={t}
-            formatNumber={formatNumber}
-            onPick={pick}
-          />
-        </Dialog.Popup>
-      </Dialog.Portal>
-    </Dialog.Root>
+    <HeroPickerDialogView
+      open={open}
+      onOpenChange={onOpenChange}
+      lang={lang}
+      t={t}
+      data={{ heroes, heroId, formatNumber }}
+      actions={{ onSelectHero, onSetBattleAllowed: setHeroBattleAllowedOnHero }}
+    />
   );
 }

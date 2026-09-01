@@ -1,14 +1,6 @@
 /**
- * Runs `callback` after the browser has painted the current frame — double
- * `requestAnimationFrame`, not one: a single `rAF` callback still fires BEFORE the paint it is
- * meant to follow, so a busy state set just before calling this would never actually reach the
- * screen with one frame. Falls back to `setTimeout(callback, 0)` when `requestAnimationFrame` is
- * unavailable (Vitest/Node).
+ * Re-exported so this app keeps one import path for it while the implementation has a single
+ * owner — the farm board is what schedules a compute off the paint, and the desktop app runs the
+ * same board.
  */
-export function scheduleAfterPaint(callback: () => void): void {
-  if (typeof requestAnimationFrame === 'function') {
-    requestAnimationFrame(() => requestAnimationFrame(callback));
-  } else {
-    setTimeout(callback, 0);
-  }
-}
+export { scheduleAfterPaint } from '@bombfarm/farm';

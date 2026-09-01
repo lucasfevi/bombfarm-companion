@@ -17,6 +17,10 @@ export const en = {
   shellStatusNotRunning: 'Game not running',
   shellStatusStale: 'Stale',
   shellLoadingLabel: 'Loading…',
+  shellUpdateAvailable: 'Update available',
+  shellUpdateDownloading: 'Updating… {percent}%',
+  shellUpdateReady: 'Restart to update',
+  shellUpdateOpenSettings: 'Open the Updates settings',
 
   // empty* — placeholder states shown before real data has arrived
   emptyBridgeUnavailableTitle: 'Preload bridge unavailable',
@@ -296,4 +300,45 @@ export const en = {
   inventorySkipped: '{count} entries could not be read and are not shown.',
   inventoryEmptyTitle: 'No items read yet',
   inventoryEmptyDescription: 'Open the game with the companion running, so it has something to read.',
+
+  // farm* — the Farm screen's own chrome. The board and the phase panels print their own
+  // dictionary, which the farm package ships; these are the strings only this app owns.
+  farmNavLabel: 'Farm',
+  farmRefresh: 'Refresh',
+  farmRefreshBusy: 'Working…',
+  farmRefreshedAge: 'worked out {age}',
+  farmRefreshStale: 'out of date',
+  farmUnavailableTitle: 'Not enough of your account has been read',
+  farmUnavailableDescription: 'The board needs every part of your account. Open the game with the companion running and leave it open for a moment.',
+  // The stat vocabulary the farm screen borrows from this app. Every other stat name comes from
+  // the game data itself; loot-facing Luck is the one the shared map does not carry.
+  farmStatColumn: 'Stat',
+  farmStatLuck: 'Luck',
+
+  // hero*/gear*/import*/roster*/switch*/mode*/rank* — hero-identity vocabulary the farm screen's
+  // roster surfaces read as one structural contract. Named exactly as that contract names them.
+  heroAvatarCol: 'Avatar',
+  heroBattleActive: 'Enabled',
+  heroBattleActiveTitle: 'Enabled for the rotation',
+  heroBattleInactive: 'Disabled',
+  heroBattleInactiveTitle: 'Disabled for the rotation',
+  heroBattleToggleAria: 'Enable or disable this hero for the rotation',
+  heroRank: 'Rank',
+  heroStripSwitch: 'Switch hero',
+  gearSlotEmptyAria: '{slot} — empty',
+  gearSlotEmptyTip: 'Empty',
+  importClose: 'Close',
+  importColLevel: 'Lv',
+  importColName: 'Name',
+  importColPower: 'Power',
+  importColRank: 'Rank',
+  importColRarity: 'Rarity',
+  modeDps: 'DPS',
+  rankLv: 'Lv',
+  rosterColAbilities: 'Abilities',
+  rosterColGear: 'Gear',
+  rosterColStatus: 'Status',
+  switchHero: 'Switch hero',
+  switchHeroDesc: 'Pick from {n} heroes on your account. Sorted by power by default.',
+  switchHeroShort: 'Roster',
 } as const;

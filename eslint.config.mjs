@@ -33,6 +33,13 @@ const plannerOriginPackages = [
  */
 const gameArtPackage = ['packages/game-art/**/*.{ts,tsx}'];
 
+/**
+ * `farm` holds the shared farm screen, moved verbatim out of `apps/web/src/features/phases/` —
+ * a tree that never carried `exactOptionalPropertyTypes`/`noUncheckedIndexedAccess`. Same
+ * relaxed tier as `gameArtPackage`, and its own list for the same reason.
+ */
+const farmPackage = ['packages/farm/**/*.{ts,tsx}'];
+
 /** Ban raw react-icons / SVG imports outside the Icon seam (ICO-23, ICO-24, D12). */
 const rawIconImportRule = [
   'error',
@@ -84,6 +91,8 @@ export default tseslint.config(
       '**/next-env.d.ts',
       // Tests are excluded from package tsconfigs; lint via web Vitest instead.
       // Stories are excluded too, but stay linted — see the stories block below.
+      // `packages/farm` is NOT here: it carries its own `tsconfig.eslint.json` that includes its
+      // tests, so they lint like every other test in the repo.
       'packages/ui/**/*.{test,spec}.{ts,tsx}',
       'packages/game-art/**/*.{test,spec}.{ts,tsx}',
     ],
@@ -138,8 +147,43 @@ export default tseslint.config(
       ],
     },
   },
+  // Two blocks, not one, because the desktop is two runtimes that never share a global scope.
+  // One project spanning both put the main process and the renderer in a single program, where
+  // their global augmentations collide: preload declares `Window.bfc` required (it is the code
+  // that creates it) while the renderer declares it optional (it must survive the bridge being
+  // absent), and Next's `ProcessEnv.NODE_ENV` reached main-process tests that never load Next.
+  // Each side is right about its own runtime, so the merged program was one no `tsc` could
+  // compile. Lint never showed that — it reports its own rules, never an assignability error —
+  // so the only cost was phantom errors for anyone who pointed a compiler at the lint config.
+  //
+  // `tsconfig.eslint.json` stays a lint-only projection of the main process rather than becoming
+  // `tsconfig.main.json`: that one is a build project (NodeNext, `outDir`), and under NodeNext's
+  // CJS resolution the program reads `@bombfarm/domain`'s subpath exports as `any` — which does
+  // not fail the build, it turns the typed rules into 47 unsafe-any errors. The renderer needs no
+  // such projection: its own project is already a bundler-resolution, base-tier, noEmit program,
+  // so lint and typecheck there share one program by construction.
   {
-    files: ['apps/desktop/src/**/*.ts', 'apps/desktop/renderer/**/*.{ts,tsx}'],
+    files: farmPackage,
+    extends: [...tseslint.configs.recommendedTypeChecked],
+    languageOptions: {
+      parserOptions: {
+        // A dedicated project rather than `projectService`: the package tsconfig excludes tests
+        // (they must not ship in `dist/`), and the service then errors on a test file belonging
+        // to no project. This one includes them, so they are linted like every other test here.
+        project: './packages/farm/tsconfig.eslint.json',
+        tsconfigRootDir: import.meta.dirname,
+      },
+      globals: globals.browser,
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+    },
+  },
+  {
+    files: ['apps/desktop/src/**/*.ts'],
     extends: [...tseslint.configs.strictTypeChecked],
     languageOptions: {
       parserOptions: {
@@ -155,7 +199,23 @@ export default tseslint.config(
     },
   },
   {
-    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'apps/desktop/renderer/**/*.{ts,tsx}'],
+    files: ['apps/desktop/renderer/**/*.{ts,tsx}'],
+    extends: [...tseslint.configs.strictTypeChecked],
+    languageOptions: {
+      parserOptions: {
+        project: './apps/desktop/renderer/tsconfig.json',
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+    },
+  },
+  {
+    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}', 'apps/desktop/renderer/**/*.{ts,tsx}'],
     plugins: { 'react-hooks': reactHooks },
     languageOptions: {
       globals: globals.browser,
@@ -165,17 +225,17 @@ export default tseslint.config(
     },
   },
   {
-    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'apps/desktop/renderer/**/*.{ts,tsx}'],
+    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}', 'apps/desktop/renderer/**/*.{ts,tsx}'],
     plugins: { react },
     rules: { 'react/forbid-dom-props': nativeTooltipRule },
   },
   {
-    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}'],
+    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}'],
     plugins: { tailwindcss: eslintPluginTailwindcss },
     settings: {
       tailwindcss: {
-        // Web app owns the Tailwind v4 entry; recipes in packages/ui and packages/game-art
-        // are scanned from there.
+        // Web app owns the Tailwind v4 entry; recipes in packages/ui, packages/game-art and
+        // packages/farm are scanned from there.
         cssConfigPath: webTailwindCss,
       },
     },
@@ -202,6 +262,10 @@ export default tseslint.config(
   },
   {
     files: ['apps/desktop/**/*.{ts,tsx}'],
+    rules: { 'no-restricted-imports': rawIconImportRule },
+  },
+  {
+    files: ['packages/farm/**/*.{ts,tsx}'],
     rules: { 'no-restricted-imports': rawIconImportRule },
   },
   // Stories sit outside packages/ui/tsconfig.json, so they cannot carry type-aware

@@ -9,7 +9,7 @@ export function FreshnessLine({
   onReopenConsent,
 }: {
   freshness: ReachedLiveFreshness;
-  onReopenConsent?: () => void;
+  onReopenConsent?: (() => void) | undefined;
 }) {
   const t = useCopy();
 

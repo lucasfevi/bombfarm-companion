@@ -1,5 +1,55 @@
 # @bombfarm/domain
 
+## 0.10.1
+
+### Patch Changes
+
+- 090f1ce: Typecheck the desktop renderer at the repo's own strictness bar.
+
+  The renderer's tsconfig came from a stock Next.js template: it set `strict` and stopped there,
+  never extending `tsconfig.base.json`. Two flags the base turns on — `exactOptionalPropertyTypes`
+  and `noUncheckedIndexedAccess` — were therefore off for every renderer file, and the desktop's
+  typecheck was passing at a bar looser than the rest of the repo. ESLint parsed the same files
+  through a base-tier program but only ever reports its own rules, so around fifty real type errors
+  sat in the renderer with every check green.
+
+  The renderer project now extends the base, and the errors that surfaced are fixed rather than
+  suppressed. Most were optional React props declared `?: T` while the caller passes a computed
+  `T | undefined` — a distinction `exactOptionalPropertyTypes` draws and React does not, so those
+  props now say `?: T | undefined`. Three were genuine unchecked reads: a hero's rarity index past
+  the end of the rarity list produced an undefined tier rather than the documented "unknown", the
+  toast queue re-read a coalesced entry by an index it had already proved, and `DEFAULT_INVENTORY_SORT`
+  could not tell a consumer that it always has a leading term.
+
+  A guard asserts the resolved strictness of both desktop projects, so this cannot silently lapse
+  again.
+
+  Lint's desktop project is split in two along the same seam. It had been one program spanning the
+  main process and the renderer — two runtimes that never share a global scope, and whose global
+  declarations contradict each other on purpose. Each half now has its own project, so the program
+  lint builds is one a compiler could actually accept.
+
+- 972e2d1: Stop reporting the game's new `soulbound` flag as account drift on every refresh.
+
+  The game began emitting a `soulbound` boolean on hero and item records in late August. Nothing in
+  the fidelity layer declared it, so each account refresh reported it as an added key on both the
+  heroes and the items section — a standing false alarm that filled the log and would have kept
+  firing indefinitely.
+
+  The flag marks a hero or item as bound to the account and unsellable on the marketplace. It is now
+  declared as an optional escape and read by nothing else: `tradable` (items) and `marketable`
+  (heroes) already govern whether something can be sold, every soulbound record carries those as
+  `false`, and market pricing already withholds a price on that basis. Declaring it optional rather
+  than required matters because the game emits the key only on bound records — requiring it would
+  have converted the false alarm into a missing-key report and marked the sections degraded.
+
+  A capture taken after the field appeared is committed alongside it, so the new escape is witnessed
+  present and absent on both sections instead of being taken on trust, and the subset claim above is
+  checked over the whole corpus rather than stated in a comment.
+
+- Updated dependencies [b02478e]
+  - @bombfarm/contracts@0.6.1
+
 ## 0.10.0
 
 ### Minor Changes

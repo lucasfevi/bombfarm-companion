@@ -26,7 +26,7 @@ export function TooltipPopup({
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.5 }}
           transition={transition}
-          style={style}
+          {...(style === undefined ? {} : { style })}
         />
       }
       className={cn(tooltipPopupRecipe({ tone }), className)}

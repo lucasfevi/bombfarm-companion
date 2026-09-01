@@ -30,6 +30,13 @@ import { ptBR } from './pt-BR';
 // "props" elsewhere in this table), so the two languages land on the identical string.
 // liveEarningsPropsPerMinuteLabel / liveEarningsPropsTotalLabel: "Props / min" and "Props" — same
 // loanword as liveMapXpPerPropLabel above, and "min" abbreviates the same word in both languages.
+// farmNavLabel: "Farm" — the loanword the game's Portuguese-speaking players use for this screen,
+// and the web planner's own nav prints the same word in both languages.
+// heroAvatarCol / rosterColStatus: "Avatar" and "Status" are loanwords carrying the same spelling
+// in pt-BR, the same case as inventoryViewLabel above.
+// heroRank / importColRank: "Rank" is the game's own untranslated term for a hero's letter grade —
+// the game itself prints it in Portuguese, so translating it here would rename a game concept.
+// modeDps: "DPS" — an acronym, identical in both languages.
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'ageShortSeconds',
   'liveMapXpPerPropLabel',
@@ -38,11 +45,20 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'inventoryViewLabel',
   'liveEarningsPropsPerMinuteLabel',
   'liveEarningsPropsTotalLabel',
+  'farmNavLabel',
+  'heroAvatarCol',
+  'heroRank',
+  'importColRank',
+  'modeDps',
+  'rosterColStatus',
 ];
 
 function placeholderSet(value: string): Set<string> {
-  const matches = value.matchAll(/\{(\w+)\}/g);
-  return new Set(Array.from(matches, (match) => match[1]));
+  const names = new Set<string>();
+  for (const match of value.matchAll(/\{(\w+)\}/g)) {
+    if (match[1] !== undefined) names.add(match[1]);
+  }
+  return names;
 }
 
 describe('en/ptBR key-set parity', () => {

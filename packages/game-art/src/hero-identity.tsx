@@ -30,13 +30,13 @@ export function HeroIdentity({
   nameTestId,
 }: {
   name: string;
-  rank?: string;
-  rarityIdx?: number;
-  stars?: number;
-  level?: number;
-  skin?: number;
+  rank?: string | undefined;
+  rarityIdx?: number | undefined;
+  stars?: number | undefined;
+  level?: number | undefined;
+  skin?: number | undefined;
   /** Trailing `#<id>`, shown only in `inline` — `stacked` drops it for a uniform line count. */
-  shortId?: string;
+  shortId?: string | undefined;
   lang: Lang;
   size?: ArtFrameSize;
   /**
@@ -45,12 +45,13 @@ export function HeroIdentity({
    */
   variant?: HeroIdentityVariant;
   /** `data-testid` on the element carrying the hero's own name, for a caller that needs one. */
-  nameTestId?: string;
+  nameTestId?: string | undefined;
 }) {
   // An index off the end reads as unknown, not as a rarity with no name: the roster join accepts
   // any non-negative number so a new tier lands here before this list knows it, and
   // `RARITIES.indexOf` answers -1 for a rarity it does not recognise.
-  const hasRarity = rarityIdx !== undefined && rarityIdx >= 0 && rarityIdx < RARITIES.length;
+  const rarityKey = rarityIdx === undefined ? undefined : RARITIES[rarityIdx];
+  const hasRarity = rarityIdx !== undefined && rarityKey !== undefined;
   const clampedStars = Math.max(0, Math.min(3, Math.round(stars)));
   const stacked = variant === 'stacked';
 
@@ -62,7 +63,7 @@ export function HeroIdentity({
       )}
       aria-hidden={hasRarity ? undefined : true}
     >
-      {hasRarity ? rarityLabel(RARITIES[rarityIdx], lang) : '—'}
+      {rarityKey !== undefined ? rarityLabel(rarityKey, lang) : '—'}
     </span>
   );
 

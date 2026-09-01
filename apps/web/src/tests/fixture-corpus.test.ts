@@ -59,6 +59,14 @@ const COMPUTED_PATH_ALLOWLIST: Record<string, string> = {
   // `points-within-level-budget.test.ts`, and the domain-side orphan sweep holds it to that.
   'save-20260825-11heroes-one-shot-spread.json':
     'read only by packages/domain tests (farm-point-rank, team-plan-step-monotonicity, points-within-level-budget); no web-side scorer suite exists to name it',
+  // Domain-only for the same reason. It was captured for the account-fidelity schema — it is the
+  // only committed capture carrying the game's `soulbound` flag, and it witnesses that optional
+  // escape both ways so it cannot go dead. Schema fingerprinting has no web-side surface at all,
+  // so naming it in a web test would be the contrived cross-tree reference this sweep exists to
+  // catch. Its live readers are `packages/domain/tests/export-fingerprint.test.ts` (by literal
+  // filename) and the corpus sweep in `points-within-level-budget.test.ts`.
+  'save-20260831-13heroes-soulbound.json':
+    'read only by packages/domain tests (export-fingerprint, points-within-level-budget); the account-fidelity schema it was captured for has no web-side suite',
 };
 
 describe('sheet-math fixture corpus guard', () => {

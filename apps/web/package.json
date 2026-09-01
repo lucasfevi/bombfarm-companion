@@ -1,6 +1,6 @@
 {
   "name": "@bombfarm/web",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "private": true,
   "sideEffects": [
     "src/features/team-plan/index.ts",
@@ -33,6 +33,7 @@
   "dependencies": {
     "@base-ui/react": "^1.6.0",
     "@bombfarm/domain": "workspace:*",
+    "@bombfarm/farm": "workspace:*",
     "@bombfarm/game-art": "workspace:*",
     "@bombfarm/pricing": "workspace:*",
     "@bombfarm/ui": "workspace:*",
