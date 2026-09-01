@@ -61,7 +61,7 @@ function EnergyDirectionMark({ direction }: { direction: EnergyDirection }) {
   if (direction === 'rising') {
     return (
       <>
-        <span aria-hidden className="text-up">
+        <span aria-hidden className="text-[13px] leading-none text-up">
           ▴
         </span>
         <span className="sr-only">{t.liveEnergyRisingLabel}</span>
@@ -71,7 +71,7 @@ function EnergyDirectionMark({ direction }: { direction: EnergyDirection }) {
   if (direction === 'falling') {
     return (
       <>
-        <span aria-hidden className="text-down">
+        <span aria-hidden className="text-[13px] leading-none text-down">
           ▾
         </span>
         <span className="sr-only">{t.liveEnergyFallingLabel}</span>
@@ -89,8 +89,17 @@ function EnergyDirectionMark({ direction }: { direction: EnergyDirection }) {
  * figure and nothing else, and hanging the marker to its left keeps every percentage on the list
  * aligned on the same right edge whether or not its row has a direction to report.
  *
+ * The figure is drawn in the mono face inside a slot as wide as its longest value, and that pair
+ * is what holds the caret still. Neither half is optional. `DM Sans` ships no tabular figures —
+ * `1` is barely half the width of `8`, and `font-variant-numeric: tabular-nums` has nothing to
+ * switch on — so in the sans face the digits themselves change width as they count; and even in
+ * the mono face `99%` is one character narrower than `100%`. Right-aligning a fixed slot pins the
+ * left edge the caret sits against, so a hero crossing 100% moves nothing.
+ *
  * No caret without a reading — direction is known for a hero the energy figure never arrived for,
- * but a marker printed against "n/a" annotates a number that is not there.
+ * but a marker printed against "not available" annotates a number that is not there. That branch
+ * keeps the plain block: the absent-value copy is prose, and squeezing it into a four-character
+ * slot would wrap it down the row.
  */
 function EnergyReading({
   testId,
@@ -103,12 +112,21 @@ function EnergyReading({
 }) {
   const t = useCopy();
   const { locale } = useLocale();
-  const known = fraction !== undefined;
+
+  if (fraction === undefined) {
+    return (
+      <span data-testid={testId} className="block text-right text-[10px] leading-none text-muted">
+        {t.valueNotAvailable}
+      </span>
+    );
+  }
 
   return (
-    <span className="flex items-center justify-end gap-0.5 text-[10px] leading-none tabular-nums text-muted">
-      {known ? <EnergyDirectionMark direction={direction} /> : null}
-      <span data-testid={testId}>{known ? formatEnergyPercent(fraction, locale) : t.valueNotAvailable}</span>
+    <span className="flex items-center justify-end gap-1 text-[10px] leading-none text-muted">
+      <EnergyDirectionMark direction={direction} />
+      <span data-testid={testId} className="inline-block w-[4ch] text-right font-mono">
+        {formatEnergyPercent(fraction, locale)}
+      </span>
     </span>
   );
 }

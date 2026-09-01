@@ -105,6 +105,14 @@ describe('Live replica', () => {
     expect(markup.match(/▴/g) ?? []).toHaveLength(movingBy(1).length);
   });
 
+  it('draws every energy reading in the mono face inside a fixed slot, so the caret never moves', () => {
+    const markup = renderToStaticMarkup(createElement(LiveReplica, { lang: 'en' }));
+    const readings = [...markup.matchAll(/class="([^"]*w-\[4ch\][^"]*)"/g)].map((match) => match[1]);
+
+    expect(readings.length).toBe(replicaFrameAt(0).heroes.length);
+    for (const className of readings) expect(className).toContain('font-mono');
+  });
+
   it('shows the roster it was drawn from, with an avatar each', () => {
     const markup = renderToStaticMarkup(createElement(LiveReplica, { lang: 'en' }));
     for (const name of ['Bellatrix', 'Jon', 'Minato']) expect(markup).toContain(name);

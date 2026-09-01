@@ -167,7 +167,7 @@ describe('HeroRow — which way the energy is going', () => {
     const html = renderToStaticMarkup(
       createElement(HeroRow, { state: 'on-field', hero: { id: 'hero-7', energyFraction: 0.43 } }),
     );
-    expect(html).toMatch(/aria-hidden="true" class="text-down">▾</);
+    expect(html).toMatch(/aria-hidden="true" class="[^"]*\btext-down\b[^"]*">▾</);
     expect(html).toContain(`class="sr-only">${en.liveEnergyFallingLabel}<`);
   });
 
@@ -175,7 +175,7 @@ describe('HeroRow — which way the energy is going', () => {
     const html = renderToStaticMarkup(
       createElement(HeroRow, { state: 'recovering', hero: { id: 'hero-7', energyFraction: 0.77 } }),
     );
-    expect(html).toMatch(/aria-hidden="true" class="text-up">▴</);
+    expect(html).toMatch(/aria-hidden="true" class="[^"]*\btext-up\b[^"]*">▴</);
     expect(html).toContain(`class="sr-only">${en.liveEnergyRisingLabel}<`);
   });
 
@@ -192,6 +192,21 @@ describe('HeroRow — which way the energy is going', () => {
     expect(readingOf(html)).toBe(en.valueNotAvailable);
     expect(html).not.toContain('▾');
     expect(html).not.toContain(en.liveEnergyFallingLabel);
+  });
+
+  it('draws the figure in the mono face inside a slot as wide as its longest value', () => {
+    const html = renderToStaticMarkup(
+      createElement(HeroRow, { state: 'on-field', hero: { id: 'hero-7', energyFraction: 0.09 } }),
+    );
+    const readingClass = /data-testid="live-energy-hero-7-value" class="([^"]*)"/.exec(html)?.[1];
+    expect(readingClass).toContain('font-mono');
+    expect(readingClass).toContain('w-[4ch]');
+  });
+
+  it('leaves the absent-value copy out of the fixed slot, where it would wrap down the row', () => {
+    const html = renderToStaticMarkup(createElement(HeroRow, { state: 'on-field', hero: { id: 'hero-7' } }));
+    const readingClass = /data-testid="live-energy-hero-7-value" class="([^"]*)"/.exec(html)?.[1];
+    expect(readingClass).not.toContain('w-[4ch]');
   });
 
   it('keeps the caret out of the reading itself, so the reading stays the figure and nothing else', () => {
