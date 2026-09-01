@@ -187,7 +187,7 @@ async function fetchPriceOverview(url) {
   }
   if (!res.ok) return { ok: false, rateLimited: false };
   try {
-    return { ok: true, lowest: parsePriceOverview(await res.json()) };
+    return { ok: true, lowest: parsePriceOverview(await res.json())?.lowest ?? null };
   } catch {
     return { ok: false, rateLimited: false };
   }

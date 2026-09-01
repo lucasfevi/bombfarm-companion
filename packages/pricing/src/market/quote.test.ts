@@ -37,13 +37,39 @@ describe('parseMoneyAmount', () => {
 });
 
 describe('parsePriceOverview', () => {
-  it('reads the lowest listing', () => {
-    expect(parsePriceOverview({ success: true, lowest_price: 'R$ 25,00' })).toBe(25);
+  it('reads the lowest listing, the median and the 24h volume from one answer', () => {
+    expect(
+      parsePriceOverview({
+        success: true,
+        lowest_price: 'R$ 25,00',
+        median_price: 'R$ 26,50',
+        volume: '1,234',
+      }),
+    ).toEqual({ lowest: 25, median: 26.5, volume: 1234 });
   });
 
-  it('is null when Steam succeeds without quoting a price', () => {
+  it('leaves a field Steam omitted null rather than zero', () => {
+    expect(parsePriceOverview({ success: true, lowest_price: 'R$ 25,00' })).toEqual({
+      lowest: 25,
+      median: null,
+      volume: null,
+    });
+  });
+
+  it('is null for a volume that is not a number', () => {
+    expect(parsePriceOverview({ success: true, volume: 'many' })?.volume).toBeNull();
+  });
+
+  it('carries no price when Steam succeeds without quoting one', () => {
     // Measured live: this is what a genuinely listed item can answer, so it cannot mean unlisted.
-    expect(parsePriceOverview({ success: true })).toBeNull();
+    expect(parsePriceOverview({ success: true })).toEqual({
+      lowest: null,
+      median: null,
+      volume: null,
+    });
+  });
+
+  it('is null overall when Steam did not answer', () => {
     expect(parsePriceOverview({ success: false, lowest_price: 'R$ 25,00' })).toBeNull();
   });
 });

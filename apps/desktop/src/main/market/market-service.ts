@@ -301,7 +301,7 @@ export function createMarketService(deps: MarketServiceDeps): MarketService {
       return failure(subject, 'network');
     }
 
-    const amount = parsePriceOverview(payload);
+    const amount = parsePriceOverview(payload)?.lowest ?? null;
     // Steam declining to quote is not evidence the item is unlisted — it has answered with no
     // price for an item that had a live listing. The snapshot's own price stands.
     if (amount === null) {
