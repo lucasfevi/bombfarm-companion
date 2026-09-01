@@ -20,9 +20,29 @@ export interface MainWindowLayout {
   isMaximized: boolean;
 }
 
+export type MiniLiveGrowthAxis = 'vertical' | 'horizontal';
+
+export interface MiniLiveBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  displayId: number;
+}
+
+export interface MiniLiveLayoutStored {
+  bounds: MiniLiveBounds;
+  showEarnings: boolean;
+  showMap: boolean;
+  showHeroes: boolean;
+  axis: MiniLiveGrowthAxis;
+  wasOpen: boolean;
+}
+
 export interface WindowLayoutDocument {
   schemaVersion: 1;
   main: MainWindowLayout;
+  mini?: MiniLiveLayoutStored;
 }
 
 function fitSize(

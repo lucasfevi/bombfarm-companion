@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { SqliteDb, SqliteStatement } from '../storage/index.js';
 import { detectAvailableBindings, openTestAccountDb, warnForUnavailableBindings } from '../storage/test-support.js';
 import type { WindowLayoutDocument } from '../shell/window-layout.js';
-import { createWindowLayoutStore } from './window-layout-store.js';
+import { WINDOW_LAYOUT_META_KEY } from '../shell/window-layout.js';
+import { createWindowLayoutStore, DEFAULT_MINI_LAYOUT_VIEW } from './window-layout-store.js';
 
 const availableBindings = detectAvailableBindings();
 warnForUnavailableBindings(availableBindings);
@@ -117,5 +118,127 @@ describe('createWindowLayoutStore over a db whose INSERT throws', () => {
   it('write() catches the throw and reports { persisted: false }', () => {
     const store = createWindowLayoutStore(throwingDb());
     expect(store.write(SAMPLE_LAYOUT)).toEqual({ persisted: false });
+  });
+});
+
+describe.each(availableBindings)('mini layout fields (%s)', (binding) => {
+  it('reads a main-only row without throwing and restores main bounds', () => {
+    const open = openTestAccountDb(binding);
+    if (!open.db) throw new Error('expected an open db for this binding');
+    open.db.prepare('INSERT INTO account_meta (key, value) VALUES (?, ?)').run(
+      WINDOW_LAYOUT_META_KEY,
+      JSON.stringify({ schemaVersion: 1, main: SAMPLE_LAYOUT.main }),
+    );
+
+    const store = createWindowLayoutStore(open.db);
+
+    expect(() => store.read()).not.toThrow();
+    expect(store.read()).toEqual(SAMPLE_LAYOUT);
+    expect(store.getLayout()).toEqual(DEFAULT_MINI_LAYOUT_VIEW);
+  });
+
+  it('ignores an invalid mini object without wiping main', () => {
+    const open = openTestAccountDb(binding);
+    if (!open.db) throw new Error('expected an open db for this binding');
+    open.db.prepare('INSERT INTO account_meta (key, value) VALUES (?, ?)').run(
+      WINDOW_LAYOUT_META_KEY,
+      JSON.stringify({
+        schemaVersion: 1,
+        main: SAMPLE_LAYOUT.main,
+        mini: { width: 400, height: 300 },
+      }),
+    );
+
+    const store = createWindowLayoutStore(open.db);
+
+    expect(store.read()).toEqual(SAMPLE_LAYOUT);
+    expect(store.getLayout()).toEqual(DEFAULT_MINI_LAYOUT_VIEW);
+  });
+
+  it('setLayout with every section off keeps the previous flags', () => {
+    const open = openTestAccountDb(binding);
+    if (!open.db) throw new Error('expected an open db for this binding');
+    const storedMini = {
+      bounds: { displayId: 1, x: 10, y: 20, width: 360, height: 240 },
+      showEarnings: true,
+      showMap: true,
+      showHeroes: false,
+      axis: 'vertical' as const,
+      wasOpen: true,
+    };
+    open.db.prepare('INSERT INTO account_meta (key, value) VALUES (?, ?)').run(
+      WINDOW_LAYOUT_META_KEY,
+      JSON.stringify({ schemaVersion: 1, main: SAMPLE_LAYOUT.main, mini: storedMini }),
+    );
+
+    const store = createWindowLayoutStore(open.db);
+    const rejected = store.setLayout({
+      showEarnings: false,
+      showMap: false,
+      showHeroes: false,
+      axis: 'horizontal',
+    });
+
+    expect(rejected).toEqual({
+      showEarnings: true,
+      showMap: true,
+      showHeroes: false,
+      axis: 'vertical',
+    });
+    expect(store.read()?.mini).toEqual(storedMini);
+  });
+
+  it('persists setLayout on the window-layout key, not settings_v1', () => {
+    const open = openTestAccountDb(binding);
+    if (!open.db) throw new Error('expected an open db for this binding');
+    const run = vi.fn();
+    const originalPrepare = open.db.prepare.bind(open.db);
+    open.db.prepare = (sql: string) => {
+      const statement = originalPrepare(sql);
+      return {
+        ...statement,
+        run: (...args: unknown[]) => {
+          run(sql, ...args);
+          return statement.run(...args);
+        },
+      } as SqliteStatement;
+    };
+    open.db.prepare('INSERT INTO account_meta (key, value) VALUES (?, ?)').run(
+      WINDOW_LAYOUT_META_KEY,
+      JSON.stringify({ schemaVersion: 1, main: SAMPLE_LAYOUT.main }),
+    );
+
+    const store = createWindowLayoutStore(open.db);
+    store.setLayout({
+      showEarnings: true,
+      showMap: false,
+      showHeroes: true,
+      axis: 'horizontal',
+    });
+
+    const keys = run.mock.calls.map((call) => call[1]);
+    expect(keys).toContain(WINDOW_LAYOUT_META_KEY);
+    expect(keys).not.toContain('settings_v1');
+  });
+
+  it('round-trips a valid mini section with main', () => {
+    const open = openTestAccountDb(binding);
+    const store = createWindowLayoutStore(open.db);
+    store.write(SAMPLE_LAYOUT);
+    store.setLayout({
+      showEarnings: false,
+      showMap: true,
+      showHeroes: true,
+      axis: 'horizontal',
+    });
+
+    expect(store.getLayout()).toEqual({
+      showEarnings: false,
+      showMap: true,
+      showHeroes: true,
+      axis: 'horizontal',
+    });
+    expect(store.read()?.main).toEqual(SAMPLE_LAYOUT.main);
+    expect(store.read()?.mini?.wasOpen).toBe(false);
   });
 });
