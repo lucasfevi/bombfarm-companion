@@ -1,7 +1,7 @@
 ---
-'@bombfarm/desktop': minor
-'@bombfarm/web': minor
-'@bombfarm/ui': minor
+"@bombfarm/desktop": minor
+"@bombfarm/web": minor
+"@bombfarm/ui": minor
 ---
 
 Set the app in a face whose digits are all one width, so numbers stop jittering as they count
