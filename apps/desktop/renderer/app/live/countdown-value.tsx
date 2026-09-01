@@ -7,9 +7,9 @@
  * hero row, and a tick that drops a digit ("1:00" → "0:59") must not shift anything beside it.
  * The reserve holds the longest form the formatter can produce, `h:mm:ss`.
  *
- * The mono face is what makes the digits themselves hold still. `tabular-nums` sat here and did
- * nothing: `DM Sans` ships no tabular figures, so `1` renders at barely half the width of `8` and
- * every second of a countdown re-flowed the number inside its own reserve.
+ * The mono face is what makes the digits themselves hold still. The app's sans holds its figures
+ * to one width too, so this is no longer the only face that would work here; it stays mono
+ * because a clock reads as an instrument, and the two are the same superfamily.
  */
 export function CountdownValue({
   testId,

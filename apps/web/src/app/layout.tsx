@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { DM_Sans, IBM_Plex_Mono } from 'next/font/google';
+import { IBM_Plex_Mono, IBM_Plex_Sans } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { ClarityAnalytics } from '@/app/_shell/clarity';
@@ -11,9 +11,20 @@ import {
 } from '@/shared/lib/site-metadata';
 import './globals.css';
 
-const dmSans = DM_Sans({
+/**
+ * The sans face carries the app's figures, so it has to be one whose digits are all one width.
+ * Every live reading re-flowed under a proportional face, and `tabular-nums` could not fix it:
+ * a face without tabular figures has no such feature to switch on. IBM Plex Sans needs no
+ * feature — its digits are equal-width by default — and it is the mono face's own superfamily.
+ *
+ * Weights are explicit because Google serves this family as statics, not a variable axis. It
+ * tops out at 700, so `font-extrabold` and `font-black` render at 700; nothing is gained by
+ * requesting weights the family does not have.
+ */
+const ibmPlexSans = IBM_Plex_Sans({
   subsets: ['latin'],
-  variable: '--font-dm-sans',
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-ibm-plex-sans',
   display: 'swap',
 });
 
@@ -59,7 +70,7 @@ export const viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${dmSans.variable} ${ibmPlexMono.variable}`}>
+    <html lang="en" className={`${ibmPlexSans.variable} ${ibmPlexMono.variable}`}>
       <body>
         {children}
         <ClarityAnalytics />

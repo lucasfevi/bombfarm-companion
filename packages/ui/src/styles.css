@@ -26,7 +26,7 @@
   --color-rar-4: #e3bc6f;
   --color-rar-5: #f08b68;
 
-  --font-sans: var(--font-dm-sans), 'DM Sans', system-ui, sans-serif;
+  --font-sans: var(--font-ibm-plex-sans), 'IBM Plex Sans', system-ui, sans-serif;
   --font-mono: var(--font-ibm-plex-mono), 'IBM Plex Mono', ui-monospace, monospace;
 
   --spacing-top: 58px;

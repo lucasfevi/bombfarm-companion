@@ -12,14 +12,13 @@
    `next/font/google`, a Next-compiler transform with no Vite equivalent. Self-host
    instead via `@fontsource` — no CDN, offline-safe, no CSP issue — and keep setting
    the same two CSS variables `styles.css` resolves `font-sans` / `font-mono` through.
-   DM Sans loads as a variable font (matching the original unweighted `DM_Sans()` call,
-   which requested Google's variable axis); IBM Plex Mono loads the same two static
-   weights the original decorator requested (500, 600). */
-@import '@fontsource-variable/dm-sans';
+   IBM Plex Sans loads as a variable font (matching the app's own variable axis); IBM Plex Mono
+   loads the same two static weights the original decorator requested (500, 600). */
+@import '@fontsource-variable/ibm-plex-sans';
 @import '@fontsource/ibm-plex-mono/500.css';
 @import '@fontsource/ibm-plex-mono/600.css';
 
 :root {
-  --font-dm-sans: 'DM Sans Variable';
+  --font-ibm-plex-sans: 'IBM Plex Sans Variable';
   --font-ibm-plex-mono: 'IBM Plex Mono';
 }

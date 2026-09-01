@@ -90,11 +90,11 @@ function EnergyDirectionMark({ direction }: { direction: EnergyDirection }) {
  * aligned on the same right edge whether or not its row has a direction to report.
  *
  * The figure is drawn in the mono face inside a slot as wide as its longest value, and that pair
- * is what holds the caret still. Neither half is optional. `DM Sans` ships no tabular figures —
- * `1` is barely half the width of `8`, and `font-variant-numeric: tabular-nums` has nothing to
- * switch on — so in the sans face the digits themselves change width as they count; and even in
- * the mono face `99%` is one character narrower than `100%`. Right-aligning a fixed slot pins the
- * left edge the caret sits against, so a hero crossing 100% moves nothing.
+ * is what holds the caret still. The slot is the half that is not optional: no face stops `99%`
+ * being one character narrower than `100%`, and right-aligning a fixed slot pins the left edge
+ * the caret sits against, so a hero crossing 100% moves nothing. The face is the other half —
+ * the digits must not change width as they count, which the app's sans and mono both now
+ * guarantee; this one stays mono because a live reading reads as an instrument.
  *
  * No caret without a reading — direction is known for a hero the energy figure never arrived for,
  * but a marker printed against "not available" annotates a number that is not there. That branch
