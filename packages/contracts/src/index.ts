@@ -5,6 +5,7 @@ import type { UpdateStatus } from './update.js';
 import type { MarketQuoteResult, MarketQuoteTarget, MarketSnapshotView } from './market.js';
 
 export { accountChangeKey, canonicalStringify } from './account-change-key.js';
+export { migrateStoredSettings } from './settings-migration.js';
 /** The desktop locale token, its one domain/BCP-47 mapping, and the pure
  *  startup resolution. `locale.ts` itself imports `AppSettings`/`DEFAULT_SETTINGS` back from this
  *  file (see its own doc comment) — safe because every such value is read only inside a function
