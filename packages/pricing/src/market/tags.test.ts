@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  actChestFamilyFor,
   catalogSlotFor,
   isKnownCategory,
   itemKindFor,
@@ -49,6 +50,29 @@ describe('the Steam rarity tags', () => {
   ])('maps the confirmed %s to catalog index %i', (steamTag, idx) => {
     expect(rarityIdxFor(steamTag)).toBe(idx);
     expect(steamRarityFor(idx)).toBe(steamTag);
+  });
+});
+
+describe('the act chest families', () => {
+  it.each([
+    ['Hero Cage (Act 1)', 'chest_hero'],
+    ['Time Chest (Act 3)', 'chest_time'],
+    ['Gem Chest (Act 2)', 'chest_gem'],
+    ['Skill Stone Chest (Act 3)', 'chest_skill'],
+  ])('reads the family off %s without reading the act out of the name', (hashName, family) => {
+    expect(actChestFamilyFor(hashName)).toBe(family);
+  });
+
+  it('matches a family named on its own, with no act after it', () => {
+    expect(actChestFamilyFor('Time Chest')).toBe('chest_time');
+  });
+
+  it('needs the family at the front, so a hash that merely contains one does not borrow its def', () => {
+    expect(actChestFamilyFor('Ancient Time Chest (Act 1)')).toBeNull();
+  });
+
+  it('fails closed on a family it does not name', () => {
+    expect(actChestFamilyFor('Rune Chest (Act 1)')).toBeNull();
   });
 });
 

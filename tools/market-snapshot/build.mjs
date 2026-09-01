@@ -12,7 +12,7 @@
 // previous run published rather than shrinking the snapshot to what it managed to reach.
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   MARKET_APP_ID,
   appFiltersUrl,
@@ -40,6 +40,7 @@ const defIdToken = (label) =>
     .toLowerCase();
 
 const CATALOG_PATH = fileURLToPath(new URL('../../packages/domain/src/data/catalog.json', import.meta.url));
+const WIKI_PATH = fileURLToPath(new URL('../../packages/domain/src/data/phase-wiki.json', import.meta.url));
 const FRANKFURTER_LATEST = 'https://api.frankfurter.app/latest?from=USD';
 const USER_AGENT = 'Bomb Farm Companion market snapshot (+https://github.com/lucasfevi/bombfarm-companion)';
 
@@ -65,7 +66,18 @@ const NATIVE_CURRENCIES = (process.env.NATIVE_CURRENCIES ?? 'BRL')
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const log = (message) => console.log(`[market-snapshot] ${message}`);
 
-function loadCatalog() {
+/**
+ * `Topaz` -> `Topaz Gem` -> `gem_topaz`. Steam's market hash for a gem is its display name plus
+ * " Gem", which holds for every gem the market has ever listed. Derived here rather than tabled in
+ * @bombfarm/pricing: pricing is imported by both shipped apps, and pulling the wiki bundle into it
+ * to answer nine gem names would ship the whole file to the renderer.
+ */
+function gemDefIdsByHash() {
+  const wiki = JSON.parse(readFileSync(WIKI_PATH, 'utf-8'));
+  return Object.fromEntries(wiki.gems.list.map((gem) => [`${gem.name} Gem`, gem.defId]));
+}
+
+export function loadCatalog() {
   const raw = JSON.parse(readFileSync(CATALOG_PATH, 'utf-8'));
   return {
     defs: raw.defs.map((def) => ({
@@ -78,6 +90,7 @@ function loadCatalog() {
     rarityTokens: Object.fromEntries(
       raw.rarities.map((rarity) => [rarity.idx, defIdToken(rarity.label)]),
     ),
+    defIdByHash: gemDefIdsByHash(),
     sets: raw.sets,
     slots: raw.slots,
   };
@@ -309,7 +322,14 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Only when this file IS the process entry point. Importing it for its loader — which a guard
+// does, to prove the loader supplies what reconciliation needs — must not start a Steam sweep.
+const invokedAsCli =
+  process.argv[1] != null && import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (invokedAsCli) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

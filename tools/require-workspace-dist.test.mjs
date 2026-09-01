@@ -63,7 +63,10 @@ const WIRED_PROJECTS = [
   {
     project: 'tools',
     globalSetupConfig: null,
-    requiredDistKeys: ['tools/derived-fixture-drift.test.mjs'],
+    requiredDistKeys: [
+      'tools/derived-fixture-drift.test.mjs',
+      'tools/market-item-linking.test.mjs',
+    ],
   },
 ];
 
@@ -84,9 +87,34 @@ const TOOLS_GUARDED_FILES = [
   {
     file: 'tools/derived-fixture-drift.test.mjs',
     requiredPackages: ['domain', 'game-api'],
-    dynamicImportTarget: "'../packages/game-api/scripts/generate-domain-fixtures.mjs'",
-    dynamicImportPattern: /await import\(\s*'\.\.\/packages\/game-api\/scripts\/generate-domain-fixtures\.mjs'\s*\)/,
-    staticImportPattern: /^import\b[^\n]*generate-domain-fixtures\.mjs/m,
+    dynamicImports: [
+      {
+        target: "'../packages/game-api/scripts/generate-domain-fixtures.mjs'",
+        dynamicPattern: /await import\(\s*'\.\.\/packages\/game-api\/scripts\/generate-domain-fixtures\.mjs'\s*\)/,
+        staticPattern: /^import\b[^\n]*generate-domain-fixtures\.mjs/m,
+      },
+    ],
+  },
+  {
+    file: 'tools/market-item-linking.test.mjs',
+    requiredPackages: ['pricing'],
+    dynamicImports: [
+      {
+        // Through a variable, because Vite's import analysis resolves a literal package specifier
+        // while transforming the file — before the top-level assert can run — and replaces the
+        // guard's message with its own.
+        target: "'@bombfarm/pricing'",
+        dynamicPattern: /const PRICING_PACKAGE = '@bombfarm\/pricing';[\s\S]{0,200}?await import\([^)]*PRICING_PACKAGE\)/,
+        staticPattern: /^import\b[^\n]*'@bombfarm\/pricing'/m,
+      },
+      {
+        // The builder imports @bombfarm/pricing itself, so a hoisted static import of it would
+        // fail before the assert just as surely as importing the package directly.
+        target: "'./market-snapshot/build.mjs'",
+        dynamicPattern: /await import\(\s*'\.\/market-snapshot\/build\.mjs'\s*\)/,
+        staticPattern: /^import\b[^\n]*market-snapshot\/build\.mjs/m,
+      },
+    ],
   },
 ];
 
@@ -136,6 +164,7 @@ describe('REQUIRED_DIST_PACKAGES', () => {
       '@bombfarm/desktop': ['contracts', 'domain', 'game-api', 'game-data', 'pricing', 'tap-runtime'],
       '@bombfarm/game-api': ['domain'],
       'tools/derived-fixture-drift.test.mjs': ['domain', 'game-api'],
+      'tools/market-item-linking.test.mjs': ['pricing'],
     });
   });
 
@@ -184,13 +213,7 @@ describe('guard wiring (every consumer reaches this one module)', () => {
       expect(globalSetupTargets(TOOLS_CONFIG)).toEqual([]);
     });
 
-    for (const {
-      file,
-      requiredPackages,
-      dynamicImportTarget,
-      dynamicImportPattern,
-      staticImportPattern,
-    } of TOOLS_GUARDED_FILES) {
+    for (const { file, requiredPackages, dynamicImports } of TOOLS_GUARDED_FILES) {
       describe(file, () => {
         const guardedSource = readFileSync(path.join(repoRoot, file), 'utf8');
         const ownCallText = `assertWorkspaceDistBuilt('${file}');`;
@@ -215,14 +238,16 @@ describe('guard wiring (every consumer reaches this one module)', () => {
          * find package` error instead of the guard's actionable message. It must arrive via a
          * dynamic import placed after the assert.
          */
-        it(`pulls ${dynamicImportTarget} in by dynamic import, after the assert — never by a hoisted static import`, () => {
-          expect(guardedSource).not.toMatch(staticImportPattern);
+        for (const { target, dynamicPattern, staticPattern } of dynamicImports) {
+          it(`pulls ${target} in by dynamic import, after the assert — never by a hoisted static import`, () => {
+            expect(guardedSource).not.toMatch(staticPattern);
 
-          const assertIndex = guardedSource.indexOf(ownCallText);
-          const dynamicImportIndex = guardedSource.search(dynamicImportPattern);
-          expect(assertIndex).toBeGreaterThan(-1);
-          expect(dynamicImportIndex).toBeGreaterThan(assertIndex);
-        });
+            const assertIndex = guardedSource.indexOf(ownCallText);
+            const dynamicImportIndex = guardedSource.search(dynamicPattern);
+            expect(assertIndex).toBeGreaterThan(-1);
+            expect(dynamicImportIndex).toBeGreaterThan(assertIndex);
+          });
+        }
       });
     }
   });
@@ -339,7 +364,9 @@ describe('assertWorkspaceDistBuilt', () => {
       }
       expect(message).toContain(key);
       expect(message).toContain('pnpm build');
-      expect(message).toContain(path.join(root, 'domain', 'dist'));
+      for (const name of requiredDistPackages(key)) {
+        expect(message, key).toContain(path.join(root, name, 'dist'));
+      }
     }
   });
 

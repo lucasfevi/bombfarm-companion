@@ -15,13 +15,21 @@ import { LIVE_MARKET_ROWS } from './__fixtures__/live-market-rows.js';
 const CATALOG_PATH = fileURLToPath(
   new URL('../../../domain/src/data/catalog.json', import.meta.url),
 );
+const WIKI_PATH = fileURLToPath(
+  new URL('../../../domain/src/data/phase-wiki.json', import.meta.url),
+);
 
 interface RawCatalog {
   defs: { id: string; set: string; slot: string; nativeLevel: number }[];
   rarities: { idx: number; label: string }[];
 }
 
+interface RawWiki {
+  gems: { list: { defId: string; name: string }[] };
+}
+
 const raw = JSON.parse(readFileSync(CATALOG_PATH, 'utf-8')) as RawCatalog;
+const wiki = JSON.parse(readFileSync(WIKI_PATH, 'utf-8')) as RawWiki;
 const CATALOG: CatalogView = {
   defs: raw.defs.map((def) => ({
     defId: def.id,
@@ -39,6 +47,7 @@ const CATALOG: CatalogView = {
         .toLowerCase(),
     ]),
   ),
+  defIdByHash: Object.fromEntries(wiki.gems.list.map((gem) => [`${gem.name} Gem`, gem.defId])),
 };
 
 const FETCHED = '2026-08-29T00:00:00.000Z';
@@ -61,8 +70,8 @@ const entryFor = (key: string) => {
 
 describe('the live market rows', () => {
   it('prices every row it enumerated, whatever the catalog knows about it', () => {
-    expect(snapshot.coverage.marketRows).toBe(35);
-    expect(snapshot.coverage.pricedRows).toBe(35);
+    expect(snapshot.coverage.marketRows).toBe(40);
+    expect(snapshot.coverage.pricedRows).toBe(40);
     expect(snapshot.coverage.unkeyedRows).toBe(0);
   });
 
@@ -121,6 +130,16 @@ describe('the live market rows', () => {
     for (const [defId, rarityIdx, hashName] of cases) {
       expect(entryFor(priceKey(defId, rarityIdx))?.hashName).toBe(hashName);
     }
+  });
+
+  it.each([
+    ['gem_topaz', 3, 'Topaz Gem'],
+    ['chest_time_3', 3, 'Time Chest (Act 3)'],
+    ['chest_gem_2', 2, 'Gem Chest (Act 2)'],
+    ['chest_skill_2', 2, 'Skill Stone Chest (Act 2)'],
+    ['chest_skill_3', 3, 'Skill Stone Chest (Act 3)'],
+  ])('links %s, which the published snapshot could not', (defId, rarityIdx, hashName) => {
+    expect(entryFor(priceKey(defId, rarityIdx))?.hashName).toBe(hashName);
   });
 
   it('keeps two same-act chests apart, which a facet-built key would have merged', () => {

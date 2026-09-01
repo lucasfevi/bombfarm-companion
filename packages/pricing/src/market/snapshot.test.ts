@@ -17,6 +17,7 @@ const CATALOG: CatalogView = {
   ],
   rarityIdxs: [1],
   rarityTokens: { 1: 'incomum' },
+  defIdByHash: {},
 };
 
 function entry(overrides: Partial<MarketEntry> & { hashName: string }): MarketEntry {

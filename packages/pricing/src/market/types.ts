@@ -97,7 +97,8 @@ export type AnomalyKind =
   | 'untagged-equipment'
   | 'unresolved-rarity'
   | 'ambiguous-tag'
-  | 'rate-limited';
+  | 'rate-limited'
+  | 'unlinkable-item';
 
 /**
  * Something the sweep saw that the catalog cannot explain. Every one of these is a reason the
