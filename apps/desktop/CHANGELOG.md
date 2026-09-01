@@ -1,5 +1,12 @@
 # @bombfarm/desktop
 
+## 0.8.1
+
+### Patch Changes
+
+- Updated dependencies [7763419]
+  - @bombfarm/pricing@0.1.4
+
 ## 0.8.0
 
 ### Minor Changes

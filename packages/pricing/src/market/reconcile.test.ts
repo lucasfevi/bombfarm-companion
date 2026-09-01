@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DiscoveryRow } from './discover.js';
 import { indexEntries, reconcile, type CatalogView } from './reconcile.js';
-import { categoryKey, priceKey, type FacetName } from './types.js';
+import { categoryKey, heroPriceKey, priceKey, type FacetName } from './types.js';
 
 const FETCHED = '2026-08-29T00:00:00.000Z';
 
@@ -12,6 +12,7 @@ const CATALOG: CatalogView = {
   ],
   rarityIdxs: [0, 1, 2],
   rarityTokens: { 0: 'comum', 1: 'incomum', 2: 'raro' },
+  defIdByHash: { 'Emerald Gem': 'gem_emerald' },
 };
 
 function row(
@@ -65,6 +66,31 @@ describe('reconcile', () => {
     });
   });
 
+  it('gives a gem the def id the caller supplied for its hash', () => {
+    const { entries } = reconcile(
+      [row('Emerald Gem', { category: 'gem', rarity: 'rare' })],
+      CATALOG,
+      FETCHED,
+    );
+
+    expect(entries[0]).toMatchObject({
+      defId: 'gem_emerald',
+      key: priceKey('gem_emerald', 2),
+      kind: 'gem',
+    });
+  });
+
+  it('leaves a gem the supplied map does not name keyed by hash rather than guessing one', () => {
+    const { entries } = reconcile(
+      [row('Obsidian Gem', { category: 'gem', rarity: 'rare' })],
+      CATALOG,
+      FETCHED,
+    );
+
+    expect(entries[0]?.defId).toBeNull();
+    expect(entries[0]?.key).toBe(categoryKey('gem', 'Obsidian Gem'));
+  });
+
   it('keys an item the catalog has no def for on its category and hash', () => {
     const { entries } = reconcile([row('Royal Sentinel Skin', { category: 'skin' })], CATALOG, FETCHED);
 
@@ -90,6 +116,50 @@ describe('reconcile', () => {
     expect(entries.every((entry) => entry.act === 1)).toBe(true);
   });
 
+  it.each([
+    ['Hero Cage', 'chest_hero'],
+    ['Time Chest', 'chest_time'],
+    ['Gem Chest', 'chest_gem'],
+    ['Skill Stone Chest', 'chest_skill'],
+  ])('reaches every act of %s, taking the act off the facet', (family, defPrefix) => {
+    for (const act of [1, 2, 3]) {
+      const hashName = `${family} (Act ${String(act)})`;
+      const { entries } = reconcile(
+        [row(hashName, { category: 'chest', act: String(act) })],
+        CATALOG,
+        FETCHED,
+      );
+
+      expect(entries[0]?.defId).toBe(`${defPrefix}_${String(act)}`);
+      expect(entries[0]?.key).toBe(priceKey(`${defPrefix}_${String(act)}`, act));
+    }
+  });
+
+  it('treats a Gem Chest as a chest, not as a gem', () => {
+    const { entries } = reconcile(
+      [row('Gem Chest (Act 2)', { category: 'chest', act: '2' })],
+      CATALOG,
+      FETCHED,
+    );
+
+    expect(entries[0]).toMatchObject({
+      defId: 'chest_gem_2',
+      key: priceKey('chest_gem_2', 2),
+      category: 'chest',
+    });
+  });
+
+  it('does not let a hash that merely contains a family name borrow that family price', () => {
+    const { entries } = reconcile(
+      [row('Ancient Time Chest (Act 1)', { category: 'chest', act: '1' })],
+      CATALOG,
+      FETCHED,
+    );
+
+    expect(entries[0]?.defId).toBeNull();
+    expect(entries[0]?.key).toBe(categoryKey('chest', 'Ancient Time Chest (Act 1)'));
+  });
+
   it('leaves a row unmatched rather than guessing when Steam uses a slot tag we do not know', () => {
     const { entries, anomalies } = reconcile(
       [row('Ember Cape', { category: 'equip', set: 'ember', slot: 'cape', rarity: 'rare' })],
@@ -107,6 +177,39 @@ describe('reconcile', () => {
     expect(entries[0]?.key).toBe(categoryKey('mount', 'Warhorse Mount'));
     expect(entries[0]?.lowestUsd).toBe(2.5);
     expect(anomalies.map((anomaly) => anomaly.kind)).toContain('unknown-category-tag');
+  });
+
+  it('reports a priced row no owned copy can look up, naming the hash and the category', () => {
+    const { anomalies } = reconcile(
+      [row('Obsidian Gem', { category: 'gem', rarity: 'rare' })],
+      CATALOG,
+      FETCHED,
+    );
+
+    expect(anomalies).toHaveLength(1);
+    expect(anomalies[0]?.kind).toBe('unlinkable-item');
+    expect(anomalies[0]?.detail).toContain('Obsidian Gem');
+    expect(anomalies[0]?.detail).toContain('gem');
+  });
+
+  it('says nothing about a skin, which is a field on a hero and has no owned copy to reach', () => {
+    const { anomalies } = reconcile([row('Royal Sentinel Skin', { category: 'skin' })], CATALOG, FETCHED);
+
+    expect(anomalies).toEqual([]);
+  });
+
+  it('says nothing about a tradable hero, whose rarity alone is the key an owner looks up', () => {
+    const { entries, anomalies } = reconcile([row('Hero (Rare)', { category: 'hero', rarity: 'rare' })], CATALOG, FETCHED);
+
+    expect(entries[0]?.key).toBe(heroPriceKey(2));
+    expect(anomalies).toEqual([]);
+  });
+
+  it('reports equipment the tag passes never reached, which the discovery pass separately explains', () => {
+    const { entries, anomalies } = reconcile([row('Ember Weapon', { category: 'equip' })], CATALOG, FETCHED);
+
+    expect(entries[0]?.key).toBe(categoryKey('equip', 'Ember Weapon'));
+    expect(anomalies.map((anomaly) => anomaly.kind)).toEqual(['unlinkable-item']);
   });
 
   it('says nothing about a category it knows carries no item kind', () => {

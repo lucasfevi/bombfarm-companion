@@ -60,9 +60,9 @@ export const EQUIPMENT_CATEGORY_TAG = 'equip';
  * `time_part_raro` and `time_part_epico` — the same two prefixes the inventory parser's
  * `inferKind` keys off.
  *
- * `gem` is absent on purpose: `inferKind` knows the `gem_` prefix, but nothing here says what
- * follows it for an Emerald or a Sapphire, and inventing a suffix would be a wrong `def_id`
- * rather than an honest missing one.
+ * `gem` is absent on purpose: a gem's `def_id` is not its rarity token, so this shape cannot spell
+ * one. The caller supplies gem identity in `CatalogView.defIdByHash`, from the committed game data
+ * that names all nine.
  */
 export const CATEGORY_DEF_PREFIX: Readonly<Record<string, string>> = {
   key: 'map_key',
@@ -83,36 +83,38 @@ export const CATEGORY_DEF_PREFIX: Readonly<Record<string, string>> = {
 export const LEVEL_CHEST_DEF_PREFIX = 'chest_item';
 
 /**
- * The act-scoped chests, by the family their def id uses.
+ * The act-scoped chests, by the family their def id uses. Four families, owner-confirmed complete;
+ * `chest_auto`, `chest_easy` and `chest_inferno` never reach the market.
  *
- * The act IS the tier: `Hero Cage (Act 1)` is the Incomum cage and an owned copy is
- * `chest_hero_1`, which the domain reads as rarity 1. So the act facet supplies both halves of
- * the key and only the family has to be looked up.
+ * The act is NOT read from the name — it comes off the `act` facet, and it doubles as the rarity
+ * tier, so `Time Chest (Act 3)` is `chest_time_3` at rarity 3. Only the family is looked up here,
+ * because the facets cannot supply it: every row is `category=chest` plus an act and nothing else.
+ * Naming the families is what stops a Hero Cage taking a Time Chest's price.
  *
- * A table rather than a rule, because the facets cannot tell these apart — every row here is
- * `category=chest` plus an act, and nothing else. Naming them is what stops a Hero Cage taking a
- * Time Chest's price; `market-parity` fails if the market carries an act chest missing from this.
+ * `tools/market-item-linking.test.mjs` reconciles each family across the acts the market carries
+ * and fails on a family that stops linking; `tools/market-tags-catalog-parity.test.mjs` fails if
+ * an act creeps back into a key here.
  */
-export const ACT_CHEST_DEF_BY_HASH: Readonly<Record<string, string>> = {
-  'Hero Cage (Act 1)': 'chest_hero',
-  'Hero Cage (Act 2)': 'chest_hero',
-  'Time Chest (Act 1)': 'chest_time',
-  'Time Chest (Act 2)': 'chest_time',
-  'Gem Chest (Act 1)': 'chest_gem',
-  'Skill Stone Chest (Act 1)': 'chest_skill',
+export const ACT_CHEST_FAMILY_DEF: Readonly<Record<string, string>> = {
+  'Hero Cage': 'chest_hero',
+  'Time Chest': 'chest_time',
+  'Gem Chest': 'chest_gem',
+  'Skill Stone Chest': 'chest_skill',
 };
 
 /**
- * Gems by name, because no facet separates them: every gem row carries `category=gem` and its
- * rarity, and nothing else distinguishes Sapphire from Emerald. A short explicit table is honest
- * about that where parsing the hash would pretend the format is guaranteed — `market-parity`
- * fails if the market carries a gem this does not name.
+ * The family a chest hash belongs to, or null. Matched as a whole leading segment — the family
+ * name exactly, or the family name followed by a space — never by splitting the hash on " (Act".
+ * A family this does not name fails closed: the row keeps a category key rather than borrowing a
+ * named family's def.
  */
-export const GEM_DEF_BY_HASH: Readonly<Record<string, string>> = {
-  'Aquamarine Gem': 'gem_aquamarine',
-  'Emerald Gem': 'gem_emerald',
-  'Sapphire Gem': 'gem_sapphire',
-};
+export function actChestFamilyFor(hashName: string): string | null {
+  for (const [family, defPrefix] of Object.entries(ACT_CHEST_FAMILY_DEF)) {
+    if (hashName === family) return defPrefix;
+    if (hashName.startsWith(`${family} `)) return defPrefix;
+  }
+  return null;
+}
 
 export function defPrefixFor(steamCategoryTag: string): string | null {
   return CATEGORY_DEF_PREFIX[steamCategoryTag] ?? null;

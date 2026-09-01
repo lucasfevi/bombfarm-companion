@@ -10,7 +10,7 @@
  * `src/**\/*.test.ts`). `.github/workflows/ci-desktop.yml` runs the root vitest minus the web
  * project, so this file runs in CI.
  */
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -36,18 +36,18 @@ const guardModule = path.join(__dirname, 'require-workspace-dist.mjs');
  * the reverse) is a drift bug.
  *
  * Two projects run it project-wide as `globalSetup`, one key per project; every CI invocation of
- * those two builds the workspace packages first (`ci-desktop.yml` builds before `pnpm vitest run
- * --project '!@bombfarm/web'`, `ci-fidelity.yml` builds before `pnpm vitest run --project tools`),
- * so a project-wide throw never fires in a job that did not need a build.
+ * those two builds the workspace packages first, so a project-wide throw never fires in a job that
+ * did not need a build. That the workflows really do build first is no longer asserted only in
+ * this comment — the CI-coverage block below reads them.
  *
  * `tools` carries it per-file instead (`globalSetupConfig: null`), with one key per FILE rather
  * than one key for the whole project. `globalSetup` runs once per PROJECT before collection
  * regardless of any filename filter, and `.github/workflows/line-endings.yml` runs `pnpm vitest
  * run --project tools line-endings` build-free by design — a project-wide guard there failed a job
- * that needed no build. The key stays per-file even now that only one file needs a build
- * (`derived-fixture-drift.test.mjs`, which needs `domain` AND `game-api`): a second build-dependent
- * file will not need the same packages, and a shared `tools` list would then under-demand for one
- * and over-demand for the other.
+ * that needed no build. Per-file is also what keeps the demand honest now that the files diverge:
+ * `derived-fixture-drift.test.mjs` needs `domain` AND `game-api`, `market-item-linking.test.mjs`
+ * needs `pricing`, and a shared `tools` list would under-demand for one and over-demand for the
+ * other.
  */
 const WIRED_PROJECTS = [
   {
@@ -63,7 +63,10 @@ const WIRED_PROJECTS = [
   {
     project: 'tools',
     globalSetupConfig: null,
-    requiredDistKeys: ['tools/derived-fixture-drift.test.mjs'],
+    requiredDistKeys: [
+      'tools/derived-fixture-drift.test.mjs',
+      'tools/market-item-linking.test.mjs',
+    ],
   },
 ];
 
@@ -84,11 +87,185 @@ const TOOLS_GUARDED_FILES = [
   {
     file: 'tools/derived-fixture-drift.test.mjs',
     requiredPackages: ['domain', 'game-api'],
-    dynamicImportTarget: "'../packages/game-api/scripts/generate-domain-fixtures.mjs'",
-    dynamicImportPattern: /await import\(\s*'\.\.\/packages\/game-api\/scripts\/generate-domain-fixtures\.mjs'\s*\)/,
-    staticImportPattern: /^import\b[^\n]*generate-domain-fixtures\.mjs/m,
+    dynamicImports: [
+      {
+        target: "'../packages/game-api/scripts/generate-domain-fixtures.mjs'",
+        dynamicPattern: /await import\(\s*'\.\.\/packages\/game-api\/scripts\/generate-domain-fixtures\.mjs'\s*\)/,
+        staticPattern: /^import\b[^\n]*generate-domain-fixtures\.mjs/m,
+      },
+    ],
+  },
+  {
+    file: 'tools/market-item-linking.test.mjs',
+    requiredPackages: ['pricing'],
+    dynamicImports: [
+      {
+        // Through a variable, because Vite's import analysis resolves a literal package specifier
+        // while transforming the file — before the top-level assert can run — and replaces the
+        // guard's message with its own.
+        target: "'@bombfarm/pricing'",
+        dynamicPattern: /const PRICING_PACKAGE = '@bombfarm\/pricing';[\s\S]{0,200}?await import\([^)]*PRICING_PACKAGE\)/,
+        staticPattern: /^import\b[^\n]*'@bombfarm\/pricing'/m,
+      },
+      {
+        // The builder imports @bombfarm/pricing itself, so a hoisted static import of it would
+        // fail before the assert just as surely as importing the package directly.
+        target: "'./market-snapshot/build.mjs'",
+        dynamicPattern: /await import\(\s*'\.\/market-snapshot\/build\.mjs'\s*\)/,
+        staticPattern: /^import\b[^\n]*market-snapshot\/build\.mjs/m,
+      },
+    ],
   },
 ];
+
+/**
+ * The union of every guarded file's required packages: what a CI job has to have built before it
+ * runs the `tools` project with no filename filter, since then every file in it collects.
+ */
+const TOOLS_REQUIRED_PACKAGES = [
+  ...new Set(TOOLS_GUARDED_FILES.flatMap(({ requiredPackages }) => requiredPackages)),
+].sort();
+
+const WORKFLOWS_DIR = path.join(repoRoot, '.github/workflows');
+
+/** Drops whole-line `#` comments, so prose quoting a command is never mistaken for one. */
+function stripComments(text) {
+  return text
+    .split('\n')
+    .filter((line) => !/^\s*#/.test(line))
+    .join('\n');
+}
+
+/**
+ * Every top-level `jobs.<name>:` block of a workflow, as `{ job, body }`. Text slicing rather than
+ * a YAML parse, matching what the other workflow guards in this directory already do.
+ */
+function workflowJobs(workflowText) {
+  const text = stripComments(workflowText);
+  const jobsIndex = text.search(/^jobs:\s*$/m);
+  if (jobsIndex === -1) return [];
+
+  const jobs = [];
+  let current = null;
+  for (const line of text.slice(jobsIndex).split('\n')) {
+    const header = /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(line);
+    if (header) {
+      if (current) jobs.push(current);
+      current = { job: header[1], lines: [] };
+    } else if (current) {
+      current.lines.push(line);
+    }
+  }
+  if (current) jobs.push(current);
+  return jobs.map(({ job, lines }) => ({ job, body: lines.join('\n') }));
+}
+
+/**
+ * Every step's `run:` command in a job body, in order, each with the offset it starts at. Folded
+ * (`>`) and literal (`|`) block scalars are joined back onto one line: step keys sit at eight
+ * spaces, so a scalar's content is whatever is indented deeper.
+ */
+function runCommands(jobBody) {
+  const lines = jobBody.split('\n');
+  const commands = [];
+  let offset = 0;
+  for (let i = 0; i < lines.length; i += 1) {
+    const lineStart = offset;
+    offset += lines[i].length + 1;
+
+    const match = /^ {8}run:\s*(.*)$/.exec(lines[i]);
+    if (!match) continue;
+
+    const head = match[1] === '>' || match[1] === '|' ? '' : match[1];
+    const parts = head ? [head] : [];
+    for (let j = i + 1; j < lines.length && !/^ {0,8}\S/.test(lines[j]); j += 1) {
+      if (lines[j].trim()) parts.push(lines[j].trim());
+    }
+    commands.push({ command: parts.join(' ').trim(), index: lineStart });
+  }
+  return commands;
+}
+
+/**
+ * How a `pnpm vitest run` command relates to the `tools` project, or `null` when it never reaches
+ * it. A `--project` list can select it by name, exclude something else (`'!@bombfarm/web'` still
+ * runs it), or be absent entirely (every project runs). A trailing positional is vitest's filename
+ * filter — with one, only the named files collect, which is how line-endings.yml runs this project
+ * build-free on purpose.
+ */
+function toolsProjectRun(command) {
+  if (!/\bvitest run\b/.test(command)) return null;
+
+  const tokens = command.trim().split(/\s+/);
+  const args = tokens.slice(tokens.indexOf('run') + 1);
+  const projects = [];
+  const positionals = [];
+  for (let i = 0; i < args.length; i += 1) {
+    if (args[i] === '--project') {
+      projects.push((args[i + 1] ?? '').replace(/^'|'$/g, ''));
+      i += 1;
+    } else if (!args[i].startsWith('--')) {
+      positionals.push(args[i]);
+    }
+  }
+
+  const runsTools =
+    projects.length === 0 ||
+    projects.some((name) => (name.startsWith('!') ? name.slice(1) !== 'tools' : name === 'tools'));
+  return runsTools ? { filtered: positionals.length > 0 } : null;
+}
+
+/**
+ * The `packages/<name>` short names a command builds: `[]` when it is not a package build at all,
+ * and `null` for an unfiltered one, which builds the whole workspace and so covers everything.
+ */
+function packagesBuiltBy(command) {
+  const tokens = command.trim().split(/\s+/);
+  if (tokens[0] !== 'pnpm' || tokens[tokens.length - 1] !== 'build') return [];
+
+  const filters = [...command.matchAll(/--filter\s+@bombfarm\/([A-Za-z0-9-]+)/g)].map(([, name]) => name);
+  return filters.length > 0 ? filters : null;
+}
+
+/** Which of `required` a job has NOT built by the time it reaches `index`, in declaration order. */
+function unbuiltBefore(jobBody, index, required) {
+  const built = new Set();
+  for (const { command, index: commandIndex } of runCommands(jobBody)) {
+    if (commandIndex >= index) break;
+    const names = packagesBuiltBy(command);
+    if (names === null) return [];
+    for (const name of names) built.add(name);
+  }
+  return required.filter((name) => !built.has(name));
+}
+
+/** Every unfiltered `tools`-project run in the given workflows, with what it leaves unbuilt. */
+function unfilteredToolsRuns(workflows) {
+  const runs = [];
+  for (const { workflow, text } of workflows) {
+    for (const { job, body } of workflowJobs(text)) {
+      for (const { command, index } of runCommands(body)) {
+        const run = toolsProjectRun(command);
+        if (!run || run.filtered) continue;
+        runs.push({
+          workflow,
+          job,
+          command,
+          unbuilt: unbuiltBefore(body, index, TOOLS_REQUIRED_PACKAGES),
+        });
+      }
+    }
+  }
+  return runs;
+}
+
+/** Every workflow file on disk, read once. */
+function allWorkflows() {
+  return readdirSync(WORKFLOWS_DIR)
+    .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'))
+    .sort()
+    .map((workflow) => ({ workflow, text: readFileSync(path.join(WORKFLOWS_DIR, workflow), 'utf8') }));
+}
 
 /** Escapes a literal string for use inside a `new RegExp(...)`. */
 function escapeForRegExp(literal) {
@@ -136,6 +313,7 @@ describe('REQUIRED_DIST_PACKAGES', () => {
       '@bombfarm/desktop': ['contracts', 'domain', 'game-api', 'game-data', 'pricing', 'tap-runtime'],
       '@bombfarm/game-api': ['domain'],
       'tools/derived-fixture-drift.test.mjs': ['domain', 'game-api'],
+      'tools/market-item-linking.test.mjs': ['pricing'],
     });
   });
 
@@ -184,13 +362,7 @@ describe('guard wiring (every consumer reaches this one module)', () => {
       expect(globalSetupTargets(TOOLS_CONFIG)).toEqual([]);
     });
 
-    for (const {
-      file,
-      requiredPackages,
-      dynamicImportTarget,
-      dynamicImportPattern,
-      staticImportPattern,
-    } of TOOLS_GUARDED_FILES) {
+    for (const { file, requiredPackages, dynamicImports } of TOOLS_GUARDED_FILES) {
       describe(file, () => {
         const guardedSource = readFileSync(path.join(repoRoot, file), 'utf8');
         const ownCallText = `assertWorkspaceDistBuilt('${file}');`;
@@ -215,14 +387,16 @@ describe('guard wiring (every consumer reaches this one module)', () => {
          * find package` error instead of the guard's actionable message. It must arrive via a
          * dynamic import placed after the assert.
          */
-        it(`pulls ${dynamicImportTarget} in by dynamic import, after the assert — never by a hoisted static import`, () => {
-          expect(guardedSource).not.toMatch(staticImportPattern);
+        for (const { target, dynamicPattern, staticPattern } of dynamicImports) {
+          it(`pulls ${target} in by dynamic import, after the assert — never by a hoisted static import`, () => {
+            expect(guardedSource).not.toMatch(staticPattern);
 
-          const assertIndex = guardedSource.indexOf(ownCallText);
-          const dynamicImportIndex = guardedSource.search(dynamicImportPattern);
-          expect(assertIndex).toBeGreaterThan(-1);
-          expect(dynamicImportIndex).toBeGreaterThan(assertIndex);
-        });
+            const assertIndex = guardedSource.indexOf(ownCallText);
+            const dynamicImportIndex = guardedSource.search(dynamicPattern);
+            expect(assertIndex).toBeGreaterThan(-1);
+            expect(dynamicImportIndex).toBeGreaterThan(assertIndex);
+          });
+        }
       });
     }
   });
@@ -235,6 +409,66 @@ describe('guard wiring (every consumer reaches this one module)', () => {
       const manifest = JSON.parse(readFileSync(path.join(repoRoot, manifestPath), 'utf8'));
       expect(manifest.name).toBe(project);
     }
+  });
+});
+
+/**
+ * The half of the arrangement the guard itself cannot enforce. `assertWorkspaceDistBuilt` makes an
+ * unbuilt package fail loudly instead of quietly not running — but it cannot make CI build it, and
+ * a job that never builds fails on every run rather than testing anything. That gap is not
+ * theoretical: `market-item-linking.test.mjs` reached `develop` while the one job that runs this
+ * project unfiltered built domain and game-api and not pricing, and it surfaced days later on a
+ * release branch, because the workflow's own path filter had kept the job from ever running on the
+ * pull request that added the file.
+ *
+ * Stated over the workflows rather than over one named job, so a new place that runs the project
+ * is held to the same bar as the two that exist today.
+ */
+describe('CI jobs that run the tools project build what its guarded files need', () => {
+  const runs = unfilteredToolsRuns(allWorkflows());
+
+  it('finds the unfiltered tools runs — an empty scan would pass every assertion below', () => {
+    expect(runs.map(({ workflow, job }) => `${workflow}:${job}`)).toEqual([
+      'ci-desktop.yml:quality',
+      'ci-fidelity.yml:fidelity-gate',
+    ]);
+  });
+
+  it('demands the union of the guarded files, not one file\'s share of it', () => {
+    expect(TOOLS_REQUIRED_PACKAGES).toEqual(['domain', 'game-api', 'pricing']);
+  });
+
+  for (const { workflow, job, unbuilt } of runs) {
+    it(`${workflow}:${job} builds every required package before running the project`, () => {
+      expect(unbuilt).toEqual([]);
+    });
+  }
+
+  it('exempts a run that carries a filename filter — line-endings.yml runs this project build-free', () => {
+    const lineEndings = readFileSync(path.join(WORKFLOWS_DIR, 'line-endings.yml'), 'utf8');
+    const filtered = workflowJobs(lineEndings)
+      .flatMap(({ body }) => runCommands(body))
+      .map(({ command }) => toolsProjectRun(command))
+      .filter(Boolean);
+
+    expect(filtered.length).toBeGreaterThan(0);
+    expect(filtered.every(({ filtered: hasFilter }) => hasFilter)).toBe(true);
+  });
+
+  /**
+   * Red state on the real workflow rather than a hand-written fixture: delete the step that builds
+   * one required package and the scan must name it. Without this, every assertion above still
+   * passes if the reader silently stops finding build steps.
+   */
+  it('names the package when its build step is deleted from the workflow', () => {
+    const workflow = 'ci-fidelity.yml';
+    const text = readFileSync(path.join(WORKFLOWS_DIR, workflow), 'utf8');
+    const withoutPricingBuild = text.replace(/^ {8}run: pnpm --filter @bombfarm\/pricing build$/m, '');
+
+    expect(withoutPricingBuild).not.toBe(text);
+    expect(unfilteredToolsRuns([{ workflow, text: withoutPricingBuild }])).toEqual([
+      expect.objectContaining({ job: 'fidelity-gate', unbuilt: ['pricing'] }),
+    ]);
   });
 });
 
@@ -339,7 +573,9 @@ describe('assertWorkspaceDistBuilt', () => {
       }
       expect(message).toContain(key);
       expect(message).toContain('pnpm build');
-      expect(message).toContain(path.join(root, 'domain', 'dist'));
+      for (const name of requiredDistPackages(key)) {
+        expect(message, key).toContain(path.join(root, name, 'dist'));
+      }
     }
   });
 

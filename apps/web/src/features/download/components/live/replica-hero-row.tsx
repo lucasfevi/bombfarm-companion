@@ -8,6 +8,22 @@ const STATE_DOT_CLASS: Record<ReplicaRowState, string> = {
   benched: 'bg-line',
 };
 
+/**
+ * The caret in front of the energy reading, drawn from the row's state the same way the desktop
+ * row derives it: a hero on the field is spending energy, a resting one is recovering it, and
+ * every other state holds still and gets no marker.
+ *
+ * Like the desktop's, it is held in place by the mono figure beside it in a fixed slot rather
+ * than by anything of its own — `DM Sans` has no tabular figures, so a sans reading changes width
+ * as it counts and drags the caret with it.
+ */
+const ENERGY_DIRECTION: Record<ReplicaRowState, { readonly glyph: string; readonly className: string } | null> = {
+  'on-field': { glyph: '▾', className: 'text-down' },
+  recovering: { glyph: '▴', className: 'text-up' },
+  queued: null,
+  benched: null,
+};
+
 const RARITY_TEXT_CLASS: Record<number, string> = {
   0: 'text-rar-0',
   1: 'text-rar-1',
@@ -26,11 +42,12 @@ const RARITY_TEXT_CLASS: Record<number, string> = {
  */
 export function ReplicaHeroRow({ hero }: { hero: ReplicaHero }) {
   const muted = hero.state === 'benched';
+  const direction = ENERGY_DIRECTION[hero.state];
 
   return (
     <li
       data-muted={muted ? '' : undefined}
-      className="grid grid-cols-[0.5rem_minmax(5.5rem,9rem)_minmax(0,1fr)_2.5rem_3.25rem] items-center gap-2 rounded-sm border border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-2 py-1 data-[muted]:opacity-60 data-[muted]:grayscale"
+      className="grid grid-cols-[0.5rem_minmax(5.5rem,9rem)_minmax(0,1fr)_3.25rem_3.25rem] items-center gap-2 rounded-sm border border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-2 py-1 data-[muted]:opacity-60 data-[muted]:grayscale"
     >
       <span className={`size-2 rounded-full ${STATE_DOT_CLASS[hero.state]}`} />
       <span className="flex min-w-0 items-center gap-2">
@@ -55,8 +72,11 @@ export function ReplicaHeroRow({ hero }: { hero: ReplicaHero }) {
           style={{ width: `${String(hero.energyPercent)}%` }}
         />
       </span>
-      <span className="text-right text-[10px] leading-none text-muted tabular-nums">
-        {hero.energyPercent}%
+      <span className="flex items-center justify-end gap-1 text-[10px] leading-none text-muted">
+        {direction !== null ? (
+          <span className={`text-[13px] leading-none ${direction.className}`}>{direction.glyph}</span>
+        ) : null}
+        <span className="inline-block w-[4ch] text-right font-mono">{hero.energyPercent}%</span>
       </span>
       <span className="text-right font-mono text-[11px] text-ink tabular-nums">
         {hero.countdown ?? ''}

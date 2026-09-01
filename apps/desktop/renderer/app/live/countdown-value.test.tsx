@@ -26,6 +26,12 @@ describe('CountdownValue — one look for every countdown', () => {
     }
   });
 
+  it('draws the clock in the mono face, the only one here whose digits are all one width', () => {
+    const classOf = (html: string) => /data-testid="live-countdown-x" class="([^"]*)"/.exec(html)?.[1]?.split(' ') ?? [];
+
+    expect(classOf(render(false))).toContain('font-mono');
+  });
+
   it('the number itself renders identically in both states', () => {
     expect(render(false)).toContain('2:00');
     expect(render(true)).toContain('2:00');

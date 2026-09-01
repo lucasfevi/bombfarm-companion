@@ -9,6 +9,7 @@ const CATALOG: CatalogView = {
   defs: [{ defId: 'ember_arma', set: 'ember', slot: 'arma', level: 10 }],
   rarityIdxs: [1, 2],
   rarityTokens: { 1: 'incomum', 2: 'raro' },
+  defIdByHash: {},
 };
 
 function marketEntry(overrides: Partial<MarketEntry> & { hashName: string }): MarketEntry {

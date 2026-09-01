@@ -1,8 +1,7 @@
 import type { DiscoveryRow } from './discover.js';
 import {
-  ACT_CHEST_DEF_BY_HASH,
-  GEM_DEF_BY_HASH,
   LEVEL_CHEST_DEF_PREFIX,
+  actChestFamilyFor,
   catalogSlotFor,
   defPrefixFor,
   isKnownCategory,
@@ -30,6 +29,16 @@ export interface CatalogView {
    * rather than hardcoding them here.
    */
   rarityTokens: Record<number, string>;
+  /**
+   * Steam market hash -> the `def_id` an owned copy carries, for the categories no facet
+   * separates. Today that is gems only: every gem row is `category=gem` plus a rarity, and
+   * nothing else tells Sapphire from Emerald. Supplied by the caller from committed game data
+   * rather than tabled here, so a gem added by a patch needs no code change.
+   *
+   * Required rather than optional on purpose: an optional field silently reproduces an
+   * unlinkable row the moment a caller forgets it.
+   */
+  defIdByHash: Record<string, string>;
 }
 
 export interface Reconciliation {
@@ -66,8 +75,9 @@ export function reconcile(
 
   for (const discovered of rows) {
     const { tags } = discovered;
-    if (seenHashes.has(discovered.row.hashName)) continue;
-    seenHashes.add(discovered.row.hashName);
+    const hashName = discovered.row.hashName;
+    if (seenHashes.has(hashName)) continue;
+    seenHashes.add(hashName);
 
     const slot = tags.slot == null ? null : catalogSlotFor(tags.slot);
     if (tags.slot != null && slot == null) {
@@ -108,12 +118,23 @@ export function reconcile(
     const act = asNumber(tags.act);
     const level = asNumber(tags.level) ?? def?.level ?? null;
     const defId =
-      def?.defId ?? categoryDefId(category, rarityIdx, catalog, level, act, discovered.row.hashName);
+      def?.defId ?? categoryDefId(category, rarityIdx, catalog, level, act, hashName);
+
+    const key = keyForEntry({ hashName, category, defId, rarityIdx, level, act });
+    // The categoryKey fallback means this row is priced and no owned copy can reach it. A skin is
+    // the one row for which that is the honest end state: it is a field on a hero rather than an
+    // inventory item, so it has no owned counterpart to fail to reach.
+    if (key === categoryKey(category ?? 'unknown', hashName) && category !== 'skin') {
+      anomalies.push({
+        kind: 'unlinkable-item',
+        detail: `${hashName} (category ${category ?? 'none'}) is priced but no owned copy can look it up`,
+      });
+    }
 
     entries.push({
-      hashName: discovered.row.hashName,
+      hashName,
       name: discovered.row.name,
-      key: keyForEntry({ hashName: discovered.row.hashName, category, defId, rarityIdx, level, act }),
+      key,
       defId,
       kind: def != null ? 'equipment' : kind,
       category,
@@ -139,7 +160,8 @@ export function reconcile(
  *
  * Three shapes, each read off a facet rather than the hash name: a fixed prefix plus the rarity's
  * own token (`map_key_raro`, `time_part_epico`, `skill_stone_epico`), a fixed prefix plus a level
- * (`chest_item_30`), and gems, which no facet separates and which take an explicit table.
+ * (`chest_item_30`), and gems, which no facet separates and which the caller names in
+ * `defIdByHash`.
  *
  * Returns null for anything whose def cannot be known — the act-scoped chests especially, where
  * an owned `chest_time_2` numbers a rarity tier and the market row numbers an act. Those stay
@@ -155,10 +177,10 @@ function categoryDefId(
 ): string | null {
   if (category == null) return null;
 
-  if (category === 'gem') return GEM_DEF_BY_HASH[hashName] ?? null;
+  if (category === 'gem') return catalog.defIdByHash[hashName] ?? null;
 
   if (category === 'chest') {
-    const family = ACT_CHEST_DEF_BY_HASH[hashName];
+    const family = actChestFamilyFor(hashName);
     if (family != null) return act == null ? null : `${family}_${String(act)}`;
     return level == null ? null : `${LEVEL_CHEST_DEF_PREFIX}_${String(level)}`;
   }
@@ -208,7 +230,7 @@ export function keyForEntry(entry: KeyableEntry): string {
  */
 function chestRarityIdx(entry: KeyableEntry): number | null {
   if (entry.category !== 'chest') return null;
-  if (ACT_CHEST_DEF_BY_HASH[entry.hashName] != null) return entry.act;
+  if (actChestFamilyFor(entry.hashName) != null) return entry.act;
   return entry.level == null ? null : 0;
 }
 

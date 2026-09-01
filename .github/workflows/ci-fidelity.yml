@@ -104,6 +104,12 @@ jobs:
       - name: Build game-api (drift guard re-derives fixtures through its dist)
         run: pnpm --filter @bombfarm/game-api build
 
+      # market-item-linking.test.mjs drives the built `reconcile` through @bombfarm/pricing's
+      # exports map, which points at ./dist/**. Its per-file build guard names this package and
+      # throws rather than letting the test collect and silently not run.
+      - name: Build pricing (market-item linking guard resolves it through dist)
+        run: pnpm --filter @bombfarm/pricing build
+
       # The guard on this workflow itself (tools/fidelity-gate.test.mjs) and the no-skip source
       # guard over the six F4 files both live in the tools project.
       - name: Fidelity gate guard (tools project)
