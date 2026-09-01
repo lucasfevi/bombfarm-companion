@@ -6,6 +6,7 @@ import {
   buildMiniLiveWindowOptions,
   createMiniLiveBrowserWindow,
   createMiniLiveController,
+  applyMiniAlwaysOnTop,
   resolveMiniLiveLoadUrl,
 } from './mini-live-window.js';
 
@@ -182,6 +183,7 @@ describe('createMiniLiveController', () => {
       applyExternalNavigation: vi.fn(),
       getDisplays: () => [{ id: 1, workArea: PRIMARY_WORK_AREA }],
       getPrimaryWorkArea: () => PRIMARY_WORK_AREA,
+      getAlwaysOnTopMini: () => false,
     });
 
     controller.open();
@@ -207,6 +209,7 @@ describe('createMiniLiveController', () => {
       applyExternalNavigation: vi.fn(),
       getDisplays: () => [{ id: 1, workArea: PRIMARY_WORK_AREA }],
       getPrimaryWorkArea: () => PRIMARY_WORK_AREA,
+      getAlwaysOnTopMini: () => false,
     });
 
     controller.open();
@@ -238,6 +241,7 @@ describe('createMiniLiveController', () => {
       applyExternalNavigation: vi.fn(),
       getDisplays: () => [{ id: 1, workArea: PRIMARY_WORK_AREA }],
       getPrimaryWorkArea: () => PRIMARY_WORK_AREA,
+      getAlwaysOnTopMini: () => false,
     });
 
     controller.open();
@@ -269,6 +273,7 @@ describe('createMiniLiveController', () => {
       applyExternalNavigation: vi.fn(),
       getDisplays: () => [{ id: 1, workArea: PRIMARY_WORK_AREA }],
       getPrimaryWorkArea: () => PRIMARY_WORK_AREA,
+      getAlwaysOnTopMini: () => false,
     });
 
     controller.restoreIfWasOpen();
@@ -276,5 +281,38 @@ describe('createMiniLiveController', () => {
     expect(fake.constructCount).toBe(1);
     expect(hide).not.toHaveBeenCalled();
     expect(minimize).not.toHaveBeenCalled();
+  });
+
+  it('applies stored always-on-top at screen-saver when the mini is created', () => {
+    const fake = createFakeBrowserWindowCtor();
+    const controller = createMiniLiveController({
+      BrowserWindowCtor: fake.Ctor,
+      layoutStore: createLayoutStore(MAIN_ONLY_DOC),
+      resolveLoadUrl: () => 'http://127.0.0.1:3000/mini-live/',
+      preloadPath: PRELOAD,
+      iconPath: ICON,
+      applyExternalNavigation: vi.fn(),
+      getDisplays: () => [{ id: 1, workArea: PRIMARY_WORK_AREA }],
+      getPrimaryWorkArea: () => PRIMARY_WORK_AREA,
+      getAlwaysOnTopMini: () => true,
+    });
+
+    controller.open();
+
+    expect(fake.lastInstance?.setAlwaysOnTop).toHaveBeenCalledWith(true, 'screen-saver');
+  });
+});
+
+describe('applyMiniAlwaysOnTop', () => {
+  it('uses the screen-saver level on the mini window stub', () => {
+    const setAlwaysOnTop = vi.fn();
+    const win = {
+      isDestroyed: () => false,
+      setAlwaysOnTop,
+    };
+
+    applyMiniAlwaysOnTop(win as never, true);
+
+    expect(setAlwaysOnTop).toHaveBeenCalledWith(true, 'screen-saver');
   });
 });

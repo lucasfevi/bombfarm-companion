@@ -71,6 +71,7 @@ import { createAccountStore, type AccountStore } from './storage/account-store.j
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
 import {
   applyAlwaysOnTopMain as applyAlwaysOnTopMainSettings,
+  applyAlwaysOnTopMini as applyAlwaysOnTopMiniSettings,
   applyLocale as applyLocaleSettings,
 } from './shell/settings-apply.js';
 import { createElectronTray } from './shell/electron-tray.js';
@@ -175,6 +176,17 @@ function applyAlwaysOnTopMain(enabled: unknown): SettingsWriteResult {
   });
 }
 
+function applyAlwaysOnTopMini(enabled: unknown): SettingsWriteResult {
+  return applyAlwaysOnTopMiniSettings({
+    current: currentSettings,
+    enabled,
+    setAlwaysOnTop: (on, level) => {
+      miniLiveController?.applyAlwaysOnTop(on, level);
+    },
+    persist: persistSettings,
+  });
+}
+
 function defaultLiveView(): LiveView {
   const now = new Date().toISOString();
   return {
@@ -245,6 +257,13 @@ function registerIpcHandlers(): void {
     'settings:useEnglish': (): SettingsWriteResult => applyLocale('en'),
     'settings:usePortuguese': (): SettingsWriteResult => applyLocale('pt-BR'),
     'settings:setAlwaysOnTopMain': (enabled: boolean): SettingsWriteResult => applyAlwaysOnTopMain(enabled),
+    'settings:setAlwaysOnTopMini': (enabled: boolean): SettingsWriteResult => {
+      const result = applyAlwaysOnTopMini(enabled);
+      if (result.persisted) {
+        emitEvent('settings:changed', result.settings);
+      }
+      return result;
+    },
     'storage:health': () => storage?.healthCheck() ?? { binding: 'unknown', ok: false },
     'game:getStatus': () => gameReader?.getStatus() ?? {
       status: 'not_running' as const,
@@ -437,6 +456,7 @@ function createMiniLiveControllerInstance(env: ReturnType<typeof resolveAppEnv>)
         workArea: display.workArea,
       })),
     getPrimaryWorkArea: () => screen.getPrimaryDisplay().workArea,
+    getAlwaysOnTopMini: () => currentSettings.alwaysOnTopMini,
     log,
   });
 }

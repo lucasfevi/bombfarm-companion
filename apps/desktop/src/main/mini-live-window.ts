@@ -129,6 +129,13 @@ export interface DisplayInfo {
   readonly workArea: WorkArea;
 }
 
+export function applyMiniAlwaysOnTop(win: MiniLiveWindowLike, enabled: boolean): void {
+  if (win.isDestroyed()) {
+    return;
+  }
+  win.setAlwaysOnTop(enabled, 'screen-saver');
+}
+
 function defaultMiniStored(mainDisplayId: number): MiniLiveLayoutStored {
   return {
     bounds: {
@@ -178,6 +185,7 @@ export interface MiniLiveController {
   open(): void;
   close(): void;
   restoreIfWasOpen(): void;
+  applyAlwaysOnTop(enabled: boolean, level: 'screen-saver'): void;
   getWindow(): MiniLiveWindowLike | null;
 }
 
@@ -190,6 +198,7 @@ export function createMiniLiveController(deps: {
   applyExternalNavigation: (webContents: MiniLiveWebContents) => void;
   getDisplays: () => readonly DisplayInfo[];
   getPrimaryWorkArea: () => WorkArea;
+  getAlwaysOnTopMini: () => boolean;
   log?: { info: (rec: Record<string, unknown>) => void; error: (rec: Record<string, unknown>) => void };
 }): MiniLiveController {
   let miniWindow: MiniLiveWindowLike | null = null;
@@ -217,6 +226,7 @@ export function createMiniLiveController(deps: {
       log: deps.log,
     });
 
+    applyMiniAlwaysOnTop(miniWindow, deps.getAlwaysOnTopMini());
     writeMiniWasOpen(deps.layoutStore, true);
     deps.log?.info({ scope: 'main', event: 'mini.opened' });
   };
@@ -241,6 +251,13 @@ export function createMiniLiveController(deps: {
         return;
       }
       focusOrCreate();
+    },
+    applyAlwaysOnTop(enabled) {
+      const win = miniWindow && !miniWindow.isDestroyed() ? miniWindow : null;
+      if (!win) {
+        return;
+      }
+      applyMiniAlwaysOnTop(win, enabled);
     },
     getWindow() {
       return miniWindow && !miniWindow.isDestroyed() ? miniWindow : null;

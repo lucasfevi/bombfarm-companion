@@ -1,6 +1,6 @@
 import { DEFAULT_SETTINGS, type AppSettings } from '@bombfarm/contracts';
 import { describe, expect, it, vi } from 'vitest';
-import { applyAlwaysOnTopMain, applyLocale } from './settings-apply.js';
+import { applyAlwaysOnTopMain, applyAlwaysOnTopMini, applyLocale } from './settings-apply.js';
 
 const BASE: AppSettings = {
   schemaVersion: 2,
@@ -125,5 +125,51 @@ describe('applyAlwaysOnTopMain', () => {
 
     expect(result.settings.alwaysOnTopMini).toBe(true);
     expect(result.settings.alwaysOnTopMain).toBe(false);
+  });
+});
+
+describe('applyAlwaysOnTopMini', () => {
+  it('calls setAlwaysOnTop with screen-saver level and persists schemaVersion 2', () => {
+    const setAlwaysOnTop = vi.fn();
+    const persist = vi.fn((settings: AppSettings) => ({
+      settings,
+      persisted: true,
+      reason: null,
+    }));
+
+    const result = applyAlwaysOnTopMini({
+      current: { ...DEFAULT_SETTINGS, locale: 'pt-BR' },
+      enabled: true,
+      setAlwaysOnTop,
+      persist,
+    });
+
+    expect(setAlwaysOnTop).toHaveBeenCalledWith(true, 'screen-saver');
+    expect(result.settings).toEqual({
+      schemaVersion: 2,
+      locale: 'pt-BR',
+      alwaysOnTopMain: false,
+      alwaysOnTopMini: true,
+    });
+    expect(persist).toHaveBeenCalledWith(result.settings);
+  });
+
+  it('does not call main setAlwaysOnTop through this handler', () => {
+    const setAlwaysOnTop = vi.fn();
+    const persist = vi.fn((settings: AppSettings) => ({
+      settings,
+      persisted: true,
+      reason: null,
+    }));
+
+    applyAlwaysOnTopMini({
+      current: DEFAULT_SETTINGS,
+      enabled: true,
+      setAlwaysOnTop,
+      persist,
+    });
+
+    expect(setAlwaysOnTop).toHaveBeenCalledWith(true, 'screen-saver');
+    expect(setAlwaysOnTop).not.toHaveBeenCalledWith(true, 'normal');
   });
 });
