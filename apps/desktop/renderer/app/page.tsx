@@ -67,6 +67,8 @@ export default function HomePage() {
   const [persistWarning, setPersistWarning] = useState<SettingsWriteReason | null>(null);
   const [alwaysOnTopMain, setAlwaysOnTopMain] = useState(DEFAULT_SETTINGS.alwaysOnTopMain);
   const [alwaysOnTopWarning, setAlwaysOnTopWarning] = useState<SettingsWriteReason | null>(null);
+  const [alwaysOnTopMini, setAlwaysOnTopMini] = useState(DEFAULT_SETTINGS.alwaysOnTopMini);
+  const [alwaysOnTopMiniWarning, setAlwaysOnTopMiniWarning] = useState<SettingsWriteReason | null>(null);
 
   useEffect(() => {
     const bridge = getBridge();
@@ -81,6 +83,7 @@ export default function HomePage() {
       .then((settings) => {
         setLocale(settings.locale);
         setAlwaysOnTopMain(settings.alwaysOnTopMain);
+        setAlwaysOnTopMini(settings.alwaysOnTopMini);
       })
       .catch(() => {
         setLocale(DEFAULT_SETTINGS.locale);
@@ -116,6 +119,15 @@ export default function HomePage() {
     });
   };
 
+  const onAlwaysOnTopMiniChange = (next: boolean) => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('settings:setAlwaysOnTopMini', next).then((result) => {
+      setAlwaysOnTopMini(result.settings.alwaysOnTopMini);
+      setAlwaysOnTopMiniWarning(result.persisted ? null : result.reason);
+    });
+  };
+
   return (
     <CopyProvider locale={locale ?? DEFAULT_SETTINGS.locale}>
       <HomePageContent
@@ -125,6 +137,9 @@ export default function HomePage() {
         alwaysOnTopMain={alwaysOnTopMain}
         onAlwaysOnTopMainChange={onAlwaysOnTopMainChange}
         alwaysOnTopWarning={alwaysOnTopWarning}
+        alwaysOnTopMini={alwaysOnTopMini}
+        onAlwaysOnTopMiniChange={onAlwaysOnTopMiniChange}
+        alwaysOnTopMiniWarning={alwaysOnTopMiniWarning}
       />
     </CopyProvider>
   );
@@ -137,6 +152,9 @@ function HomePageContent({
   alwaysOnTopMain,
   onAlwaysOnTopMainChange,
   alwaysOnTopWarning,
+  alwaysOnTopMini,
+  onAlwaysOnTopMiniChange,
+  alwaysOnTopMiniWarning,
 }: {
   locale: AppLocale;
   onLocaleChange: (next: AppLocale) => void;
@@ -144,6 +162,9 @@ function HomePageContent({
   alwaysOnTopMain: boolean;
   onAlwaysOnTopMainChange: (next: boolean) => void;
   alwaysOnTopWarning: SettingsWriteReason | null;
+  alwaysOnTopMini: boolean;
+  onAlwaysOnTopMiniChange: (next: boolean) => void;
+  alwaysOnTopMiniWarning: SettingsWriteReason | null;
 }) {
   const t = useCopy();
   const { lang } = useLocale();
@@ -333,6 +354,9 @@ function HomePageContent({
                 alwaysOnTopMain={alwaysOnTopMain}
                 onAlwaysOnTopMainChange={onAlwaysOnTopMainChange}
                 persistWarning={alwaysOnTopWarning}
+                alwaysOnTopMini={alwaysOnTopMini}
+                onAlwaysOnTopMiniChange={onAlwaysOnTopMiniChange}
+                miniPersistWarning={alwaysOnTopMiniWarning}
               />
               <ConsentSection onRevoke={onConsentRevoke} />
               <DiagnosticsSection onSave={onSaveDiagnostics} result={diagnosticsDumpResult} />

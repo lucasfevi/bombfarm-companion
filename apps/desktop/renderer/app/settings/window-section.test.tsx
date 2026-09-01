@@ -33,6 +33,9 @@ describe('WindowSection renders SettingsSection -> SettingsRow -> Switch, both l
           alwaysOnTopMain: false,
           onAlwaysOnTopMainChange: () => {},
           persistWarning: null,
+          alwaysOnTopMini: false,
+          onAlwaysOnTopMiniChange: () => {},
+          miniPersistWarning: null,
         }),
       }),
     );
@@ -43,6 +46,9 @@ describe('WindowSection renders SettingsSection -> SettingsRow -> Switch, both l
           alwaysOnTopMain: false,
           onAlwaysOnTopMainChange: () => {},
           persistWarning: null,
+          alwaysOnTopMini: false,
+          onAlwaysOnTopMiniChange: () => {},
+          miniPersistWarning: null,
         }),
       }),
     );
@@ -59,6 +65,9 @@ describe('WindowSection renders SettingsSection -> SettingsRow -> Switch, both l
           alwaysOnTopMain: false,
           onAlwaysOnTopMainChange: () => {},
           persistWarning: null,
+          alwaysOnTopMini: false,
+          onAlwaysOnTopMiniChange: () => {},
+          miniPersistWarning: null,
         }),
       }),
     );
@@ -75,6 +84,9 @@ describe('WindowSection renders SettingsSection -> SettingsRow -> Switch, both l
           alwaysOnTopMain: true,
           onAlwaysOnTopMainChange: () => {},
           persistWarning: null,
+          alwaysOnTopMini: true,
+          onAlwaysOnTopMiniChange: () => {},
+          miniPersistWarning: null,
         }),
       }),
     );
@@ -93,6 +105,9 @@ describe('WindowSection — the not-persisted Banner is an always-mounted slot (
           alwaysOnTopMain: false,
           onAlwaysOnTopMainChange: () => {},
           persistWarning: null,
+          alwaysOnTopMini: false,
+          onAlwaysOnTopMiniChange: () => {},
+          miniPersistWarning: null,
         }),
       }),
     );
@@ -111,6 +126,9 @@ describe('WindowSection — the not-persisted Banner is an always-mounted slot (
           alwaysOnTopMain: true,
           onAlwaysOnTopMainChange: () => {},
           persistWarning: 'not_writable',
+          alwaysOnTopMini: false,
+          onAlwaysOnTopMiniChange: () => {},
+          miniPersistWarning: null,
         }),
       }),
     );
@@ -129,10 +147,95 @@ describe('WindowSection — the not-persisted Banner is an always-mounted slot (
           alwaysOnTopMain: true,
           onAlwaysOnTopMainChange: () => {},
           persistWarning: 'no_store',
+          alwaysOnTopMini: false,
+          onAlwaysOnTopMiniChange: () => {},
+          miniPersistWarning: null,
         }),
       }),
     );
     expect(html).toContain('indisponível');
+    expect(html).not.toContain('data-testid="settings-language-warning"');
+  });
+});
+
+describe('WindowSection — mini always-on-top switch', () => {
+  it('defaults to off when alwaysOnTopMini is false', () => {
+    const html = renderToStaticMarkup(
+      createElement(CopyProvider, {
+        locale: 'en',
+        children: createElement(WindowSection, {
+          alwaysOnTopMain: false,
+          onAlwaysOnTopMainChange: () => {},
+          persistWarning: null,
+          alwaysOnTopMini: false,
+          onAlwaysOnTopMiniChange: () => {},
+          miniPersistWarning: null,
+        }),
+      }),
+    );
+    expect(html).toContain('Keep the mini window on top');
+    expect(html).toContain('aria-checked="false"');
+    const miniChecked = [...html.matchAll(/aria-checked="(true|false)"/g)].map((match) => match[1]);
+    expect(miniChecked.filter((checked) => checked === 'false').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('English: mini switch aria-label comes from copy', () => {
+    const html = renderToStaticMarkup(
+      createElement(CopyProvider, {
+        locale: 'en',
+        children: createElement(WindowSection, {
+          alwaysOnTopMain: false,
+          onAlwaysOnTopMainChange: () => {},
+          persistWarning: null,
+          alwaysOnTopMini: true,
+          onAlwaysOnTopMiniChange: () => {},
+          miniPersistWarning: null,
+        }),
+      }),
+    );
+    expect(html).toContain('aria-label="Keep the mini window on top"');
+  });
+});
+
+describe('WindowSection — mini persist failure Banner is separate from language warning', () => {
+  it('persisted (miniPersistWarning: null): the slot is present, empty, and hidden', () => {
+    const html = renderToStaticMarkup(
+      createElement(CopyProvider, {
+        locale: 'en',
+        children: createElement(WindowSection, {
+          alwaysOnTopMain: false,
+          onAlwaysOnTopMainChange: () => {},
+          persistWarning: null,
+          alwaysOnTopMini: false,
+          onAlwaysOnTopMiniChange: () => {},
+          miniPersistWarning: null,
+        }),
+      }),
+    );
+    expect(html).toContain('data-testid="settings-always-on-top-mini-warning"');
+    expect(html).toContain('aria-hidden="true"');
+    expect(html).not.toContain('Your save location');
+    expect(html).not.toContain('could not be saved');
+    expect(html).not.toContain('data-testid="settings-language-warning"');
+  });
+
+  it("not persisted (miniPersistWarning: 'not_writable'): the reason renders and the slot is visible", () => {
+    const html = renderToStaticMarkup(
+      createElement(CopyProvider, {
+        locale: 'en',
+        children: createElement(WindowSection, {
+          alwaysOnTopMain: false,
+          onAlwaysOnTopMainChange: () => {},
+          persistWarning: null,
+          alwaysOnTopMini: true,
+          onAlwaysOnTopMiniChange: () => {},
+          miniPersistWarning: 'not_writable',
+        }),
+      }),
+    );
+    expect(html).toContain('data-testid="settings-always-on-top-mini-warning"');
+    expect(html).toContain('Mini always-on-top changed, but not saved');
+    expect(html).toContain('Your save location is not writable');
     expect(html).not.toContain('data-testid="settings-language-warning"');
   });
 });

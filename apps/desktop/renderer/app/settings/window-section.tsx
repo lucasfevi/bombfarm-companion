@@ -17,10 +17,16 @@ export function WindowSection({
   alwaysOnTopMain,
   onAlwaysOnTopMainChange,
   persistWarning,
+  alwaysOnTopMini,
+  onAlwaysOnTopMiniChange,
+  miniPersistWarning,
 }: {
   alwaysOnTopMain: boolean;
   onAlwaysOnTopMainChange: (next: boolean) => void;
   persistWarning: SettingsWriteReason | null;
+  alwaysOnTopMini: boolean;
+  onAlwaysOnTopMiniChange: (next: boolean) => void;
+  miniPersistWarning: SettingsWriteReason | null;
 }) {
   const t = useCopy();
 
@@ -41,6 +47,22 @@ export function WindowSection({
         className={cn(!persistWarning && 'invisible')}
       >
         {persistWarning ? t[SETTINGS_WRITE_REASON_COPY_KEY[persistWarning]] : ''}
+      </Banner>
+      <SettingsRow label={t.settingsAlwaysOnTopMiniLabel} help={t.settingsAlwaysOnTopMiniHelp}>
+        <Switch
+          checked={alwaysOnTopMini}
+          onCheckedChange={onAlwaysOnTopMiniChange}
+          aria-label={t.settingsAlwaysOnTopMiniLabel}
+        />
+      </SettingsRow>
+      <Banner
+        tone="warn"
+        title={t.settingsAlwaysOnTopMiniNotSavedTitle}
+        data-testid="settings-always-on-top-mini-warning"
+        aria-hidden={!miniPersistWarning}
+        className={cn(!miniPersistWarning && 'invisible')}
+      >
+        {miniPersistWarning ? t[SETTINGS_WRITE_REASON_COPY_KEY[miniPersistWarning]] : ''}
       </Banner>
     </SettingsSection>
   );

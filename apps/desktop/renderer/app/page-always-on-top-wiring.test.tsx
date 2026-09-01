@@ -27,4 +27,19 @@ describe('page.tsx — always-on-top wiring keeps language and window warnings s
     expect(handler).toContain('setAlwaysOnTopWarning');
     expect(handler).not.toContain('setPersistWarning');
   });
+
+  it('onAlwaysOnTopMiniChange surfaces alwaysOnTopMiniWarning, not language persistWarning', () => {
+    expect(source).toContain('alwaysOnTopMiniWarning');
+    expect(source).toContain('setAlwaysOnTopMiniWarning');
+    expect(source).toContain("'settings:setAlwaysOnTopMini'");
+
+    const handlerStart = source.indexOf('const onAlwaysOnTopMiniChange');
+    expect(handlerStart).toBeGreaterThanOrEqual(0);
+    const handlerEnd = source.indexOf('};', handlerStart);
+    const handler = source.slice(handlerStart, handlerEnd);
+
+    expect(handler).toContain('setAlwaysOnTopMini');
+    expect(handler).toContain('setAlwaysOnTopMiniWarning');
+    expect(handler).not.toContain('setPersistWarning');
+  });
 });
