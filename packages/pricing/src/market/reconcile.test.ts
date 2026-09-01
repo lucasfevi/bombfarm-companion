@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DiscoveryRow } from './discover.js';
 import { indexEntries, reconcile, type CatalogView } from './reconcile.js';
-import { categoryKey, priceKey, type FacetName } from './types.js';
+import { categoryKey, heroPriceKey, priceKey, type FacetName } from './types.js';
 
 const FETCHED = '2026-08-29T00:00:00.000Z';
 
@@ -177,6 +177,39 @@ describe('reconcile', () => {
     expect(entries[0]?.key).toBe(categoryKey('mount', 'Warhorse Mount'));
     expect(entries[0]?.lowestUsd).toBe(2.5);
     expect(anomalies.map((anomaly) => anomaly.kind)).toContain('unknown-category-tag');
+  });
+
+  it('reports a priced row no owned copy can look up, naming the hash and the category', () => {
+    const { anomalies } = reconcile(
+      [row('Obsidian Gem', { category: 'gem', rarity: 'rare' })],
+      CATALOG,
+      FETCHED,
+    );
+
+    expect(anomalies).toHaveLength(1);
+    expect(anomalies[0]?.kind).toBe('unlinkable-item');
+    expect(anomalies[0]?.detail).toContain('Obsidian Gem');
+    expect(anomalies[0]?.detail).toContain('gem');
+  });
+
+  it('says nothing about a skin, which is a field on a hero and has no owned copy to reach', () => {
+    const { anomalies } = reconcile([row('Royal Sentinel Skin', { category: 'skin' })], CATALOG, FETCHED);
+
+    expect(anomalies).toEqual([]);
+  });
+
+  it('says nothing about a tradable hero, whose rarity alone is the key an owner looks up', () => {
+    const { entries, anomalies } = reconcile([row('Hero (Rare)', { category: 'hero', rarity: 'rare' })], CATALOG, FETCHED);
+
+    expect(entries[0]?.key).toBe(heroPriceKey(2));
+    expect(anomalies).toEqual([]);
+  });
+
+  it('reports equipment the tag passes never reached, which the discovery pass separately explains', () => {
+    const { entries, anomalies } = reconcile([row('Ember Weapon', { category: 'equip' })], CATALOG, FETCHED);
+
+    expect(entries[0]?.key).toBe(categoryKey('equip', 'Ember Weapon'));
+    expect(anomalies.map((anomaly) => anomaly.kind)).toEqual(['unlinkable-item']);
   });
 
   it('says nothing about a category it knows carries no item kind', () => {

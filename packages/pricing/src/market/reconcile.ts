@@ -75,8 +75,9 @@ export function reconcile(
 
   for (const discovered of rows) {
     const { tags } = discovered;
-    if (seenHashes.has(discovered.row.hashName)) continue;
-    seenHashes.add(discovered.row.hashName);
+    const hashName = discovered.row.hashName;
+    if (seenHashes.has(hashName)) continue;
+    seenHashes.add(hashName);
 
     const slot = tags.slot == null ? null : catalogSlotFor(tags.slot);
     if (tags.slot != null && slot == null) {
@@ -117,12 +118,23 @@ export function reconcile(
     const act = asNumber(tags.act);
     const level = asNumber(tags.level) ?? def?.level ?? null;
     const defId =
-      def?.defId ?? categoryDefId(category, rarityIdx, catalog, level, act, discovered.row.hashName);
+      def?.defId ?? categoryDefId(category, rarityIdx, catalog, level, act, hashName);
+
+    const key = keyForEntry({ hashName, category, defId, rarityIdx, level, act });
+    // The categoryKey fallback means this row is priced and no owned copy can reach it. A skin is
+    // the one row for which that is the honest end state: it is a field on a hero rather than an
+    // inventory item, so it has no owned counterpart to fail to reach.
+    if (key === categoryKey(category ?? 'unknown', hashName) && category !== 'skin') {
+      anomalies.push({
+        kind: 'unlinkable-item',
+        detail: `${hashName} (category ${category ?? 'none'}) is priced but no owned copy can look it up`,
+      });
+    }
 
     entries.push({
-      hashName: discovered.row.hashName,
+      hashName,
       name: discovered.row.name,
-      key: keyForEntry({ hashName: discovered.row.hashName, category, defId, rarityIdx, level, act }),
+      key,
       defId,
       kind: def != null ? 'equipment' : kind,
       category,
