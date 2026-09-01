@@ -40,8 +40,10 @@ function tableBody(source, name) {
 function tableEntries(source, name) {
   const body = tableBody(source, name);
   if (body == null) return [];
-  return [...body.matchAll(/^\s*([A-Za-z0-9_]+)\s*:\s*([^,\n]+),/gm)].map(([, key, value]) => [
-    key,
+  // A key is either a bare identifier or a quoted string: the act-chest table is keyed by Steam
+  // hash names, which contain spaces and parentheses and so cannot be written unquoted.
+  return [...body.matchAll(/^\s*('[^']+'|[A-Za-z0-9_]+)\s*:\s*([^,\n]+),/gm)].map(([, key, value]) => [
+    key.replace(/^'|'$/g, ''),
     value.trim().replace(/^'|'$/g, ''),
   ]);
 }
@@ -66,6 +68,7 @@ describe('the Steam tag tables against the committed catalog', () => {
   it('finds a real table to read, so the predicates below are not vacuous', () => {
     expect(tableEntries(tagsSource, 'STEAM_SLOT_TO_CATALOG').length).toBeGreaterThan(0);
     expect(tableEntries(tagsSource, 'STEAM_RARITY_TO_IDX').length).toBeGreaterThan(0);
+    expect(tableEntries(tagsSource, 'ACT_CHEST_DEF_BY_HASH').length).toBe(6);
     expect(catalogSlots.length).toBe(8);
     expect(catalogRarityIdxs).toEqual([0, 1, 2, 3, 4, 5]);
   });
