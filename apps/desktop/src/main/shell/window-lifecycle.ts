@@ -24,6 +24,19 @@ export interface TrayPort {
 
 export type CloseDecision = 'hide' | 'let-close';
 
+export function shouldQuitOnAllWindowsClosed(input: {
+  platform: NodeJS.Platform;
+  trayPresent: boolean;
+}): boolean {
+  if (input.trayPresent) {
+    return false;
+  }
+  if (input.platform === 'darwin') {
+    return false;
+  }
+  return true;
+}
+
 export function decideOnClose(state: {
   trayPresent: boolean;
   quitting: boolean;

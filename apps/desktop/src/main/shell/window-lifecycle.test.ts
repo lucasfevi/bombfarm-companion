@@ -3,10 +3,25 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   createShellLifecycle,
   decideOnClose,
+  shouldQuitOnAllWindowsClosed,
   type TrayMenuItem,
   type TrayPort,
   type WindowPort,
 } from './window-lifecycle.js';
+
+describe('shouldQuitOnAllWindowsClosed', () => {
+  it('does not quit when a tray is present', () => {
+    expect(shouldQuitOnAllWindowsClosed({ platform: 'win32', trayPresent: true })).toBe(false);
+  });
+
+  it('still quits on Windows when the tray is absent', () => {
+    expect(shouldQuitOnAllWindowsClosed({ platform: 'win32', trayPresent: false })).toBe(true);
+  });
+
+  it('does not quit on darwin without a tray', () => {
+    expect(shouldQuitOnAllWindowsClosed({ platform: 'darwin', trayPresent: false })).toBe(false);
+  });
+});
 
 describe('decideOnClose', () => {
   it('returns hide when the tray is present on win32 and the app is not quitting', () => {

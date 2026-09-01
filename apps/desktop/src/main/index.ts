@@ -83,7 +83,13 @@ import {
   MIN_MAIN_WIDTH,
 } from './shell/window-layout.js';
 import { clearShellSmokeBridge, installShellSmokeBridge } from './shell/shell-smoke-bridge.js';
-import { createShellLifecycle, type ShellLifecycle, type WindowPort } from './shell/window-lifecycle.js';
+import {
+  createShellLifecycle,
+  decideOnClose,
+  shouldQuitOnAllWindowsClosed,
+  type ShellLifecycle,
+  type WindowPort,
+} from './shell/window-lifecycle.js';
 import { broadcastEventToWindows } from './shell/broadcast-event.js';
 import {
   createMiniLiveController,
@@ -947,9 +953,15 @@ if (!gotLock) {
   });
 
   app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-      app.quit();
+    if (
+      !shouldQuitOnAllWindowsClosed({
+        platform: process.platform,
+        trayPresent: shellLifecycle?.trayPresent ?? false,
+      })
+    ) {
+      return;
     }
+    app.quit();
   });
 
   // `before-quit` is the single shutdown path in this app (reached identically whether it fires
