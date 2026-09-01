@@ -41,33 +41,59 @@ export function deriveSpacing(rawBudget) {
   };
 }
 
-function required(env, name) {
-  const value = env[name];
-  if (typeof value !== 'string' || value.length === 0) {
-    throw new Error(`${name} must be set`);
+/** The first name is canonical; the rest are accepted so a differently-named environment starts. */
+const firstSet = (env, names) => {
+  for (const name of names) {
+    const value = env[name];
+    if (typeof value === 'string' && value.length > 0) return value;
   }
-  return value;
-}
+  return null;
+};
 
+/**
+ * Every problem at once, never the first one only. This process is restarted on failure, so a
+ * config error reported one variable at a time costs a restart cycle per variable to discover.
+ */
 export function readConfig(env) {
-  const { budget, spacingMs, spacingClamped } = deriveSpacing(
-    env.MARKET_DAILY_BUDGET ?? DEFAULT_DAILY_BUDGET,
-  );
-  const snapshotPath = env.SNAPSHOT ?? 'market-prices.json';
+  const problems = [];
+
+  const need = (...names) => {
+    const value = firstSet(env, names);
+    if (value == null) problems.push(`${names[0]} is not set`);
+    return value;
+  };
+
+  const supabaseUrl = need('SUPABASE_URL');
+  const supabaseKey = need('SUPABASE_KEY');
+  const githubToken = need('GITHUB_TOKEN');
+  const repo = need('GITHUB_REPO', 'GITHUB_REPOSITORY');
+
+  let spacing = null;
+  try {
+    spacing = deriveSpacing(env.MARKET_DAILY_BUDGET ?? DEFAULT_DAILY_BUDGET);
+  } catch (err) {
+    problems.push(String(err.message));
+  }
+
+  if (problems.length > 0) {
+    throw new Error(`the collector cannot start: ${problems.join('; ')}`);
+  }
+
+  const snapshotPath = firstSet(env, ['SNAPSHOT', 'MARKET_SNAPSHOT_PATH']) ?? 'market-prices.json';
   return {
-    supabaseUrl: required(env, 'SUPABASE_URL').replace(/\/+$/, ''),
-    supabaseKey: required(env, 'SUPABASE_KEY'),
-    githubToken: required(env, 'GITHUB_TOKEN'),
-    repo: required(env, 'GITHUB_REPO'),
-    budget,
-    spacingMs,
-    spacingClamped,
+    supabaseUrl: supabaseUrl.replace(/\/+$/, ''),
+    supabaseKey,
+    githubToken,
+    repo,
+    budget: spacing.budget,
+    spacingMs: spacing.spacingMs,
+    spacingClamped: spacing.spacingClamped,
     currencies: (env.MARKET_CURRENCY ?? 'BRL')
       .split(',')
       .map((code) => code.trim().toUpperCase())
       .filter(Boolean),
-    releaseTag: env.RELEASE_TAG ?? 'market-prices',
-    dataBranch: env.DATA_BRANCH ?? 'market-data',
+    releaseTag: firstSet(env, ['RELEASE_TAG', 'MARKET_RELEASE_TAG']) ?? 'market-prices',
+    dataBranch: firstSet(env, ['DATA_BRANCH', 'MARKET_DATA_BRANCH']) ?? 'market-data',
     snapshotPath,
     // One variable names the resume file, and the published artifact takes its name, so the two
     // can never drift into disagreeing about which file the snapshot is.
@@ -221,7 +247,10 @@ export function createHistory({ url, key, fetch, log, now = Date.now }) {
       });
       return { ok: true, error: null };
     } catch (err) {
-      const error = String(err?.message ?? err);
+      // Prefixed because this shares the run row's `error` column with a pass that threw, and
+      // health counts any non-null `error` as a failure. Both readings are genuinely lost, so
+      // both belong in the count; the prefix is what separates a lost reading from a lost pass.
+      const error = `history: ${String(err?.message ?? err)}`;
       log('history.failed', { status: err?.status ?? null, body: err?.body ?? error }, 'error');
       return { ok: false, error };
     }

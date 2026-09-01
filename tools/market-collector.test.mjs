@@ -161,6 +161,55 @@ describe('configuration read from the environment', () => {
     delete missing.SUPABASE_KEY;
     expect(() => readConfig(missing)).toThrow(/SUPABASE_KEY/);
   });
+
+  /**
+   * The process is restarted on failure, so reporting one variable per start costs a whole
+   * restart cycle to discover each next one. Every problem has to come out of the first start.
+   */
+  it('names every missing variable and a bad budget in one message, not the first one only', () => {
+    const broken = { ...ENV, MARKET_DAILY_BUDGET: 'abc' };
+    delete broken.SUPABASE_KEY;
+    delete broken.GITHUB_TOKEN;
+
+    let thrown;
+    try {
+      readConfig(broken);
+    } catch (err) {
+      thrown = err;
+    }
+
+    expect(thrown).toBeDefined();
+    expect(thrown.message).toMatch(/SUPABASE_KEY/);
+    expect(thrown.message).toMatch(/GITHUB_TOKEN/);
+    expect(thrown.message).toMatch(/MARKET_DAILY_BUDGET/);
+  });
+
+  it.each([
+    ['GITHUB_REPO', 'GITHUB_REPOSITORY', 'repo', 'owner/repo'],
+    ['SNAPSHOT', 'MARKET_SNAPSHOT_PATH', 'snapshotPath', '/var/state/market-prices.json'],
+    ['RELEASE_TAG', 'MARKET_RELEASE_TAG', 'releaseTag', 'market-prices'],
+    ['DATA_BRANCH', 'MARKET_DATA_BRANCH', 'dataBranch', 'market-data'],
+  ])('reads %s under its longer name %s too', (canonical, alias, field, value) => {
+    const aliased = { ...ENV, [alias]: value };
+    delete aliased[canonical];
+    expect(readConfig(aliased)[field]).toBe(value);
+  });
+
+  it('starts on an environment carrying only the four that have no sane default', () => {
+    const minimal = {
+      SUPABASE_URL: ENV.SUPABASE_URL,
+      SUPABASE_KEY: ENV.SUPABASE_KEY,
+      GITHUB_TOKEN: ENV.GITHUB_TOKEN,
+      GITHUB_REPO: ENV.GITHUB_REPO,
+    };
+    expect(readConfig(minimal)).toMatchObject({
+      budget: 2000,
+      currencies: ['BRL'],
+      releaseTag: 'market-prices',
+      dataBranch: 'market-data',
+      snapshotName: 'market-prices.json',
+    });
+  });
 });
 
 describe('the rows a pass produces', () => {
@@ -308,13 +357,31 @@ describe('the pass', () => {
 
   it('publishes anyway when the history write failed, and records that it did', async () => {
     const h = harness({
-      persistHistory: async () => ({ ok: false, error: 'quote answered 503' }),
+      persistHistory: async () => ({ ok: false, error: 'history: quote answered 503' }),
     });
     await runCollector(h.deps);
 
     expect(h.published).toEqual(['release', 'branch']);
-    expect(h.runs[0].error).toBe('quote answered 503');
+    expect(h.runs[0].error).toBe('history: quote answered 503');
     expect(h.runs[0].published_release).toBe(true);
+  });
+
+  it('marks a lost reading apart from a lost pass, both sharing one error column', async () => {
+    const lostReading = harness({
+      persistHistory: async () => ({ ok: false, error: 'history: quote answered 503' }),
+    });
+    await runCollector(lostReading.deps);
+
+    const lostPass = harness({
+      runSweep: async () => {
+        throw new Error('sweep exploded');
+      },
+    });
+    await runCollector(lostPass.deps);
+
+    expect(lostReading.runs[0].error.startsWith('history: ')).toBe(true);
+    expect(lostPass.runs[0].error.startsWith('history: ')).toBe(false);
+    for (const run of [lostReading.runs[0], lostPass.runs[0]]) expect(run.error).toBeTruthy();
   });
 
   it('records the two publish targets independently', async () => {
