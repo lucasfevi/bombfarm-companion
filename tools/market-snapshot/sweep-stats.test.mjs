@@ -7,7 +7,7 @@
  * stubbed network, with no request made, down each path in turn. That is what this file is for,
  * and it is what makes the counter safe to depend on.
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { assertWorkspaceDistBuilt } from '../require-workspace-dist.mjs';
 
 // Per-file build guard, on this file's OWN key: the builder resolves @bombfarm/pricing through
@@ -16,7 +16,7 @@ import { assertWorkspaceDistBuilt } from '../require-workspace-dist.mjs';
 // an error that points nowhere near `pnpm build`.
 assertWorkspaceDistBuilt('tools/market-snapshot/sweep-stats.test.mjs');
 
-const { runSweep } = await import('./build.mjs');
+const { runSweep, summarise } = await import('./build.mjs');
 
 const CATALOG = {
   defs: [{ defId: 'coal_bota', set: 'coal', slot: 'bota', level: 30 }],
@@ -144,5 +144,32 @@ describe('the sweep reports what it asked for and what it could not explain', ()
     // are told apart rather than both passing on a run that has only one kind in it.
     expect(stats.unmappedTags.map((anomaly) => anomaly.kind)).toContain('unknown-slot-tag');
     expect(stats.unlinkableItems).not.toEqual(stats.anomalies);
+  });
+});
+
+describe('the unmapped-tag annotation', () => {
+  const annotationsWith = (githubActions, snapshot) => {
+    const printed = [];
+    const console_ = vi.spyOn(console, 'log').mockImplementation((line) => printed.push(line));
+    vi.stubEnv('GITHUB_ACTIONS', githubActions);
+    try {
+      summarise(snapshot);
+    } finally {
+      console_.mockRestore();
+      vi.unstubAllEnvs();
+    }
+    return printed.filter((line) => line.startsWith('::warning title=Unmapped market tags::'));
+  };
+
+  it('is raised on Actions, which is the only place that renders one', async () => {
+    const { snapshot, stats } = await sweepWith();
+    expect(stats.unmappedTags.length).toBeGreaterThan(0);
+    expect(annotationsWith('true', snapshot)).toHaveLength(1);
+  });
+
+  it('is not printed off Actions, where it is a line nobody reads', async () => {
+    const { snapshot } = await sweepWith();
+    expect(annotationsWith(undefined, snapshot)).toEqual([]);
+    expect(annotationsWith('false', snapshot)).toEqual([]);
   });
 });

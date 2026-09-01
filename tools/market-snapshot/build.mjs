@@ -211,7 +211,7 @@ async function fetchFx(prior, log = defaultLog) {
   return { ok: false, rates: prior?.fx ?? { USD: 1 } };
 }
 
-function summarise(snapshot) {
+export function summarise(snapshot) {
   const { coverage } = snapshot;
   const lines = [
     `market rows: ${coverage.marketRows}`,
@@ -229,8 +229,11 @@ function summarise(snapshot) {
 
   // An unmapped tag does not fail anything — it just makes every item behind it lose its price
   // silently. Raise it to a run annotation so it is visible without opening the log.
+  //
+  // Only Actions renders an annotation. Anywhere else it is a line nobody reads, so a caller off
+  // CI is expected to surface the same rows itself — the sweep hands them back in its statistics.
   const unmapped = snapshot.anomalies.filter((anomaly) => anomaly.kind.startsWith('unknown-'));
-  if (unmapped.length > 0) {
+  if (unmapped.length > 0 && process.env.GITHUB_ACTIONS === 'true') {
     const kinds = [...new Set(unmapped.map((anomaly) => anomaly.kind))].join(', ');
     console.log(
       `::warning title=Unmapped market tags::${unmapped.length} rows the catalog cannot explain (${kinds}). ` +
