@@ -1,6 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { app, BrowserWindow, ipcMain, Menu, nativeImage, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, shell } from 'electron';
 import {
   DEFAULT_SETTINGS,
   emptyMarketSnapshotView,
@@ -43,6 +43,7 @@ import { createConsentApplier } from './game-api/consent-applier.js';
 import { createConsentStore, type ConsentStore } from './game-api/consent-store.js';
 import { createLiveConsentGate } from './game-api/live-consent-gate.js';
 import { createSettingsStore, type SettingsStore } from './game-api/settings-store.js';
+import { createWindowLayoutStore, type WindowLayoutStore } from './game-api/window-layout-store.js';
 import { nodeHttpsTransport } from './game-api/https-transport.js';
 import { readSessionToken, sessionCfgPath } from './game-api/session-token-file.js';
 import { createTriggeredRefresh, type TriggeredRefresh } from './game-api/triggered-refresh.js';
@@ -69,6 +70,13 @@ import {
   applyLocale as applyLocaleSettings,
 } from './shell/settings-apply.js';
 import { createElectronTray } from './shell/electron-tray.js';
+import {
+  clampToWorkArea,
+  DEFAULT_MAIN_HEIGHT,
+  DEFAULT_MAIN_WIDTH,
+  MIN_MAIN_HEIGHT,
+  MIN_MAIN_WIDTH,
+} from './shell/window-layout.js';
 import { createShellLifecycle, type ShellLifecycle, type WindowPort } from './shell/window-lifecycle.js';
 
 let mainWindow: BrowserWindow | null = null;
@@ -92,6 +100,9 @@ let lastIngestedRotationBody: string | null = null;
 let currentSettings: AppSettings = DEFAULT_SETTINGS;
 let updateService: UpdateService | null = null;
 let shellLifecycle: ShellLifecycle | null = null;
+let windowLayoutStore: WindowLayoutStore | null = null;
+let layoutPersistTimer: ReturnType<typeof setTimeout> | null = null;
+let layoutMaximizing = false;
 
 function emitEvent<C extends IpcEventChannel>(channel: C, payload: IpcEvents[C]): void {
   mainWindow?.webContents.send(`bfc:event:${channel}`, payload);
@@ -267,11 +278,37 @@ function registerIpcHandlers(): void {
 async function createMainWindow(): Promise<void> {
   const env = resolveAppEnv();
 
+  const storedLayout = windowLayoutStore?.read()?.main ?? null;
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const displays = screen.getAllDisplays().map((display) => ({
+    id: display.id,
+    workArea: display.workArea,
+  }));
+  const clamped = clampToWorkArea({
+    stored: storedLayout,
+    displays,
+    primaryWorkArea: primaryDisplay.workArea,
+    minWidth: MIN_MAIN_WIDTH,
+    minHeight: MIN_MAIN_HEIGHT,
+    defaultWidth: DEFAULT_MAIN_WIDTH,
+    defaultHeight: DEFAULT_MAIN_HEIGHT,
+  });
+
+  if (storedLayout) {
+    log.info({
+      scope: 'main',
+      event: 'window.layout_restore',
+      displayMissing: clamped.displayMissing,
+    });
+  }
+
   mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 800,
-    minWidth: 960,
-    minHeight: 640,
+    width: clamped.bounds.width,
+    height: clamped.bounds.height,
+    x: clamped.bounds.x,
+    y: clamped.bounds.y,
+    minWidth: MIN_MAIN_WIDTH,
+    minHeight: MIN_MAIN_HEIGHT,
     backgroundColor: '#17100c',
     show: false,
     title: env.productName,
@@ -289,6 +326,10 @@ async function createMainWindow(): Promise<void> {
       sandbox: false,
     },
   });
+
+  if (clamped.isMaximized) {
+    mainWindow.maximize();
+  }
 
   applyExternalNavigationPolicy(mainWindow.webContents, {
     openExternal: (url) => shell.openExternal(url),
@@ -344,6 +385,93 @@ async function createMainWindow(): Promise<void> {
   }
 
   setupShellLifecycle(env.productName);
+  attachWindowLayoutPersistence();
+}
+
+function persistMainWindowLayout(immediate: boolean): void {
+  if (!mainWindow || mainWindow.isDestroyed() || !windowLayoutStore) {
+    return;
+  }
+  if (mainWindow.isMinimized()) {
+    return;
+  }
+
+  const write = (): void => {
+    if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isMinimized() || !windowLayoutStore) {
+      return;
+    }
+    if (layoutMaximizing) {
+      return;
+    }
+
+    const bounds = mainWindow.isMaximized() ? mainWindow.getNormalBounds() : mainWindow.getBounds();
+    const display = screen.getDisplayMatching(bounds);
+    const workArea = display.workArea;
+    const result = windowLayoutStore.write({
+      schemaVersion: 1,
+      main: {
+        displayId: display.id,
+        x: bounds.x - workArea.x,
+        y: bounds.y - workArea.y,
+        width: bounds.width,
+        height: bounds.height,
+        isMaximized: mainWindow.isMaximized(),
+      },
+    });
+    if (!result.persisted) {
+      log.error({ scope: 'main', event: 'window.layout_write_failed' });
+    }
+  };
+
+  if (immediate) {
+    if (layoutPersistTimer) {
+      clearTimeout(layoutPersistTimer);
+      layoutPersistTimer = null;
+    }
+    write();
+    return;
+  }
+
+  if (layoutPersistTimer) {
+    clearTimeout(layoutPersistTimer);
+  }
+  layoutPersistTimer = setTimeout(() => {
+    layoutPersistTimer = null;
+    write();
+  }, 300);
+}
+
+function attachWindowLayoutPersistence(): void {
+  if (!mainWindow) {
+    return;
+  }
+
+  const skipTransient = (): boolean =>
+    mainWindow?.isMaximized() === true || mainWindow?.isMinimized() === true || layoutMaximizing;
+
+  mainWindow.on('move', () => {
+    if (skipTransient()) {
+      return;
+    }
+    persistMainWindowLayout(false);
+  });
+  mainWindow.on('resize', () => {
+    if (skipTransient()) {
+      return;
+    }
+    persistMainWindowLayout(false);
+  });
+  mainWindow.on('maximize', () => {
+    layoutMaximizing = true;
+    persistMainWindowLayout(true);
+    layoutMaximizing = false;
+  });
+  mainWindow.on('unmaximize', () => {
+    persistMainWindowLayout(true);
+  });
+  mainWindow.on('hide', () => {
+    persistMainWindowLayout(true);
+  });
 }
 
 function setupShellLifecycle(productName: string): void {
@@ -446,6 +574,7 @@ async function bootstrap(): Promise<void> {
   // valid. A stored override always wins over the OS; source is logged so "why did it
   // open in English?" is answerable from a log line rather than a guess.
   settingsStore = createSettingsStore(accountOpen.db);
+  windowLayoutStore = createWindowLayoutStore(accountOpen.db);
 
   // Replay mode swaps the whole attach mechanism for a reader over a committed byte capture, so
   // an unpackaged dev build never lists processes and never loads the instrumentation runtime —
@@ -744,11 +873,17 @@ if (!gotLock) {
     liveSource = null;
     lastIngestedRotationBody = null;
     consentStore = null;
+    persistMainWindowLayout(true);
+    if (layoutPersistTimer) {
+      clearTimeout(layoutPersistTimer);
+      layoutPersistTimer = null;
+    }
     shellLifecycle?.destroyTray();
     shellLifecycle = null;
     // settingsStore borrows accountOpen.db, which accountStore.close() already owns
     // below; it holds no timer and opens no handle of its own, so it must not gain a close().
     settingsStore = null;
+    windowLayoutStore = null;
     storage?.close();
     storage = null;
     accountStore?.close();
