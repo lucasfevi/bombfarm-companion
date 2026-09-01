@@ -30,6 +30,16 @@ export interface CatalogView {
    * rather than hardcoding them here.
    */
   rarityTokens: Record<number, string>;
+  /**
+   * Steam market hash -> the `def_id` an owned copy carries, for the categories no facet
+   * separates. Today that is gems only: every gem row is `category=gem` plus a rarity, and
+   * nothing else tells Sapphire from Emerald. Supplied by the caller from committed game data
+   * rather than tabled here, so a gem added by a patch needs no code change.
+   *
+   * Required rather than optional on purpose: an optional field silently reproduces an
+   * unlinkable row the moment a caller forgets it.
+   */
+  defIdByHash: Record<string, string>;
 }
 
 export interface Reconciliation {

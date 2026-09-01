@@ -15,13 +15,21 @@ import { LIVE_MARKET_ROWS } from './__fixtures__/live-market-rows.js';
 const CATALOG_PATH = fileURLToPath(
   new URL('../../../domain/src/data/catalog.json', import.meta.url),
 );
+const WIKI_PATH = fileURLToPath(
+  new URL('../../../domain/src/data/phase-wiki.json', import.meta.url),
+);
 
 interface RawCatalog {
   defs: { id: string; set: string; slot: string; nativeLevel: number }[];
   rarities: { idx: number; label: string }[];
 }
 
+interface RawWiki {
+  gems: { list: { defId: string; name: string }[] };
+}
+
 const raw = JSON.parse(readFileSync(CATALOG_PATH, 'utf-8')) as RawCatalog;
+const wiki = JSON.parse(readFileSync(WIKI_PATH, 'utf-8')) as RawWiki;
 const CATALOG: CatalogView = {
   defs: raw.defs.map((def) => ({
     defId: def.id,
@@ -39,6 +47,7 @@ const CATALOG: CatalogView = {
         .toLowerCase(),
     ]),
   ),
+  defIdByHash: Object.fromEntries(wiki.gems.list.map((gem) => [`${gem.name} Gem`, gem.defId])),
 };
 
 const FETCHED = '2026-08-29T00:00:00.000Z';

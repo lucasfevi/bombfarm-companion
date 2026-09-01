@@ -12,6 +12,7 @@ const CATALOG: CatalogView = {
   ],
   rarityIdxs: [0, 1, 2],
   rarityTokens: { 0: 'comum', 1: 'incomum', 2: 'raro' },
+  defIdByHash: { 'Emerald Gem': 'gem_emerald' },
 };
 
 function row(
