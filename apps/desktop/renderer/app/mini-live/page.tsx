@@ -109,26 +109,39 @@ function MiniLiveShell({
     });
   }, [layout, model.earnings, model.map, model.slow]);
 
+  const sections = (
+    <>
+      {layout.showEarnings ? <MiniEarnings earnings={model.earnings} onReset={onResetEarnings} /> : null}
+      {layout.showMap ? <MiniMap map={model.map} /> : null}
+      {layout.showHeroes ? <MiniHeroes slow={model.slow} fast={model.fast} /> : null}
+    </>
+  );
+
   return (
     <div data-testid="mini-live-page" className="flex h-dvh flex-col bg-bg text-ink font-sans">
       <MiniChrome
         onClose={onClose}
         gear={<MiniGear open={gearOpen} onOpenChange={onGearOpenChange} layout={layout} onLayoutChange={onLayoutChange} />}
       />
-      <div
-        ref={contentRef}
-        data-testid="mini-live-sections"
-        data-axis={layout.axis}
-        className={
-          layout.axis === 'horizontal'
-            ? 'flex min-h-0 flex-1 flex-row gap-2 p-2'
-            : 'flex min-h-0 flex-1 flex-col gap-2 p-2'
-        }
-      >
-        {layout.showEarnings ? <MiniEarnings earnings={model.earnings} onReset={onResetEarnings} /> : null}
-        {layout.showMap ? <MiniMap map={model.map} /> : null}
-        {layout.showHeroes ? <MiniHeroes slow={model.slow} fast={model.fast} /> : null}
-      </div>
+      {layout.axis === 'horizontal' ? (
+        <div
+          ref={contentRef}
+          data-testid="mini-live-sections"
+          data-axis="horizontal"
+          className="flex min-h-0 flex-1 flex-row gap-2 p-2"
+        >
+          {sections}
+        </div>
+      ) : (
+        <div
+          ref={contentRef}
+          data-testid="mini-live-sections"
+          data-axis="vertical"
+          className="flex min-h-0 flex-1 flex-col gap-2 p-2"
+        >
+          {sections}
+        </div>
+      )}
     </div>
   );
 }

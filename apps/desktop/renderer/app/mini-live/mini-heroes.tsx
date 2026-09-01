@@ -18,6 +18,12 @@ function energyDirectionOf(state: LiveRotationRowState): 'rising' | 'falling' | 
   return 'steady';
 }
 
+function DirectionMark({ direction }: { direction: ReturnType<typeof energyDirectionOf> }) {
+  if (direction === 'falling') return <span aria-hidden>▾</span>;
+  if (direction === 'rising') return <span aria-hidden>▴</span>;
+  return null;
+}
+
 function MiniEnergyBar({ testId, fraction }: { testId: string; fraction: number | undefined }) {
   const t = useCopy();
   const percent = fraction !== undefined ? Math.round(fraction * 100) : 0;
@@ -55,15 +61,15 @@ function MiniHeroRow({
   return (
     <li data-testid={`live-hero-row-${hero.id}`} className="grid grid-cols-[auto_minmax(0,1fr)_3.5rem_4.5rem_auto] items-center gap-2 py-0.5">
       <HeroAvatar skin={hero.skin ?? 0} rarityIdx={hero.rarity ?? NEUTRAL_RARITY_IDX} size="xs" name={name} />
-      <span data-testid={`live-hero-row-${hero.id}-name`} className={`truncate text-[11px] ${rarityClass}`}>
-        {name}
+      <span data-testid={`live-hero-row-${hero.id}-name`} className="truncate text-[11px]">
+        <span className={rarityClass}>{name}</span>
       </span>
       <span data-testid={`live-hero-row-${hero.id}-energy`} className="text-right font-mono text-[10px] tabular-nums text-ink">
         {energyFraction === undefined ? t.valueNotAvailable : formatEnergyPercent(energyFraction, locale)}
       </span>
       <MiniEnergyBar testId={`live-hero-row-${hero.id}-energy-bar`} fraction={energyFraction} />
       <div className="min-w-[3.5rem] text-right font-mono text-[10px] tabular-nums text-muted">
-        {direction === 'falling' ? <span aria-hidden>▾</span> : direction === 'rising' ? <span aria-hidden>▴</span> : null}
+        <DirectionMark direction={direction} />
         {trailing}
       </div>
     </li>

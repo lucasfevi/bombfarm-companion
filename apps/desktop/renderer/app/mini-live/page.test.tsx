@@ -49,6 +49,7 @@ describe('mini-live section layout', () => {
   it('uses a horizontal row when the growth axis is horizontal', () => {
     expect(source).toContain("layout.axis === 'horizontal'");
     expect(source).toContain('flex-row');
-    expect(source).toContain('data-axis={layout.axis}');
+    expect(source).toContain('data-axis="horizontal"');
+    expect(source).toContain('data-axis="vertical"');
   });
 });
