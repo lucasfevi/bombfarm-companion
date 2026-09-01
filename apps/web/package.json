@@ -28,7 +28,8 @@
     "perf:host": "node e2e/scripts/perf-host.mjs",
     "perf:build:profile": "node e2e/scripts/perf-build-profile.mjs",
     "perf:capture:profile": "node e2e/scripts/perf-profile-host.mjs",
-    "perf:compare": "node e2e/scripts/perf-compare-baseline.mjs"
+    "perf:compare": "node e2e/scripts/perf-compare-baseline.mjs",
+    "og": "node scripts/generate-og-images.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
