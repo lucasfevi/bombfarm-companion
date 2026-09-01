@@ -49,6 +49,21 @@ A full live run costs **4 calls to enumerate and about 30 to tag**. The earlier 
 facet combination and cost roughly 250, which Steam's per-IP tolerance on this endpoint cut off
 after six.
 
+**The tag pass runs only when the enumeration turns up a row the previous snapshot cannot name.**
+It is the large majority of a pass's search calls and it fires them a second or two apart — a
+burst, wrapped around a per-item rotation deliberately paced tens of seconds apart. Item identity
+barely moves, so re-establishing what a hundred already-identified rows are, every pass, learns
+nothing and spends a quota Steam counts cumulatively; that is what got a collector's address
+limited after a few hundred calls. So the sweep is handed the identities the previous snapshot
+carries. A pass that finds nothing new stamps those and asks no narrowed query at all; a pass that
+finds one unrecognised row runs the whole sweep, which is the intended cost on the day an item is
+first listed. It cannot be made cheaper by asking about the new row alone — the sweep learns a tag
+by asking for it and reading back which rows answer, so identifying one row still costs a sweep.
+
+Identity is carried over only where it is complete. A row a cut-short pass left half-tagged, or
+one whose facets cannot be spelled back as the Steam tags they came from, is withheld and asked
+about again — so a gap repairs itself on the next pass instead of being inherited forever.
+
 ## The price shown is the price on the page
 
 The number an app displays links straight to a Steam listing, so it has to be the number that

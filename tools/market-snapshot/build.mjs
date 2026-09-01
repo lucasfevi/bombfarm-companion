@@ -19,6 +19,7 @@ import {
   buildSnapshot,
   catalogKeysLost,
   discoverMarket,
+  knownTagsFrom,
   readMarketSnapshot,
   parsePriceOverview,
   parseSearchPage,
@@ -301,13 +302,17 @@ export async function runSweep({
     fetchAppFilters: () => steamNet.fetchAppFilters(appId),
     fetchSearchPage: steamNet.fetchSearchPage,
     catalogTags: tags,
+    knownTags: knownTagsFrom(prior?.entries ?? []),
     sleep,
     baseDelayMs: searchDelayMs,
     log: sweepLog,
   });
   sweepLog(
-    `tagged ${discovery.rows.length} rows in ${discovery.searchCalls} calls ` +
-      `(${discovery.complete ? 'complete' : 'PARTIAL — rate limited'})`,
+    (discovery.facetSweepRan
+      ? `tagged ${discovery.rows.length} rows in ${discovery.searchCalls} calls`
+      : `carried the tags of ${discovery.rows.length} known rows over ` +
+        `${discovery.searchCalls} calls`) +
+      ` (${discovery.complete ? 'complete' : 'PARTIAL — rate limited'})`,
   );
 
   const generatedUtc = new Date(now()).toISOString();
@@ -385,6 +390,7 @@ export async function runSweep({
     rateLimitHits,
     rateLimitHitsDerived,
     enumerationComplete: discovery.enumerationComplete,
+    facetSweepRan: discovery.facetSweepRan,
     discoveryComplete: discovery.complete,
     quotesComplete: quoted.complete,
     fxOk: fx.ok,

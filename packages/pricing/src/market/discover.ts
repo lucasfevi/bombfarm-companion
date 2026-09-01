@@ -24,6 +24,11 @@ export interface DiscoverDeps {
    * sellable, so it cannot be the only source of the tags to ask for.
    */
   catalogTags: Record<'set' | 'slot' | 'rarity', string[]>;
+  /**
+   * Facet tags a previous run established, by market hash. A sweep whose enumeration turns up
+   * nothing outside this set asks no facet queries at all and stamps these instead.
+   */
+  knownTags?: Record<string, Partial<Record<FacetName, string>>>;
   sleep: (ms: number) => Promise<void>;
   baseDelayMs?: number;
   maxDelayMs?: number;
@@ -43,6 +48,8 @@ export interface DiscoveryResult {
   rows: DiscoveryRow[];
   /** True when the flat enumeration finished, making the row set authoritative. */
   enumerationComplete: boolean;
+  /** False when every enumerated row was already known, so not one facet query was issued. */
+  facetSweepRan: boolean;
   anomalies: Anomaly[];
   searchCalls: number;
   /** False when the circuit breaker tripped anywhere in the run. */
@@ -83,6 +90,13 @@ class RateLimitedOut extends Error {}
  * theory: the game renamed its items days after launch (`Ember Amulet (Rare)` became
  * `Ember Amulet Lv 10 (Rare)`), and a name parser would have broken on the rename while a facet
  * query did not notice it.
+ *
+ * That second pass runs only when the enumeration turns up a row `knownTags` cannot name. It is a
+ * burst — sixty-odd queries seconds apart, against a rotation paced in tens of seconds — and item
+ * identity is near-static, so paying it hourly to re-learn what has not changed is what spent an
+ * address's quota. Paying it on the day an item is first listed is the intended cost; narrowing it
+ * to the new row is not possible, since the sweep learns a tag by asking for it and reading back
+ * which rows answer.
  */
 export async function discoverMarket(appId: number, deps: DiscoverDeps): Promise<DiscoveryResult> {
   const baseDelayMs = deps.baseDelayMs ?? DEFAULT_BASE_DELAY_MS;
@@ -98,6 +112,7 @@ export async function discoverMarket(appId: number, deps: DiscoverDeps): Promise
   let consecutiveRateLimits = 0;
   let complete = true;
   let enumerationComplete = false;
+  let facetSweepRan = false;
 
   // The facet schema is a hint, not a prerequisite. Letting a failed fetch throw would abandon
   // the run before a single price was written, which is what a 429 here used to do.
@@ -175,17 +190,8 @@ export async function discoverMarket(appId: number, deps: DiscoverDeps): Promise
       entry.tags[facet] = tag;
     });
 
-  try {
-    enumerationComplete = await sweep({}, () => {
-      // The flat pass exists to enumerate and price; tags arrive in the passes below.
-    });
-    deps.log?.(
-      `enumerated ${String(byHash.size)} rows in ${String(searchCalls)} calls` +
-        (enumerationComplete ? '' : ' (INCOMPLETE)'),
-    );
-
-    anomalies.push(...unknownTagsIn(filters));
-
+  /** Ask for every tag there is, and let the rows that answer say what they are. */
+  const tagEveryRow = async (): Promise<void> => {
     const attempted: Record<string, Set<string>> = {};
     for (const facet of FACET_ORDER) {
       attempted[facet] = new Set<string>();
@@ -223,6 +229,33 @@ export async function discoverMarket(appId: number, deps: DiscoverDeps): Promise
         });
       }
     }
+  };
+
+  try {
+    enumerationComplete = await sweep({}, () => {
+      // The flat pass exists to enumerate and price; tags arrive in the passes below.
+    });
+    deps.log?.(
+      `enumerated ${String(byHash.size)} rows in ${String(searchCalls)} calls` +
+        (enumerationComplete ? '' : ' (INCOMPLETE)'),
+    );
+
+    anomalies.push(...unknownTagsIn(filters));
+
+    const knownTags = deps.knownTags ?? {};
+    const newHashes = [...byHash.keys()].filter((hashName) => knownTags[hashName] == null);
+    facetSweepRan = newHashes.length > 0;
+
+    if (facetSweepRan) {
+      deps.log?.(
+        `${String(newHashes.length)} of ${String(byHash.size)} rows are new, e.g. ` +
+          `${newHashes[0] ?? ''}; asking what everything is`,
+      );
+      await tagEveryRow();
+    } else {
+      for (const [hashName, entry] of byHash) entry.tags = { ...knownTags[hashName] };
+      deps.log?.(`all ${String(byHash.size)} rows are already identified; asked no facet queries`);
+    }
   } catch (err) {
     if (!(err instanceof RateLimitedOut)) throw err;
     complete = false;
@@ -233,6 +266,7 @@ export async function discoverMarket(appId: number, deps: DiscoverDeps): Promise
     filters,
     rows: [...byHash.values()],
     enumerationComplete,
+    facetSweepRan,
     anomalies,
     searchCalls,
     complete,
