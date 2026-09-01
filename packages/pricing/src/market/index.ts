@@ -27,6 +27,7 @@ export {
   parseSearchPage,
   priceOverviewUrl,
   searchRenderUrl,
+  type PriceQuote,
 } from './endpoints.js';
 export {
   CATEGORY_DEF_PREFIX,

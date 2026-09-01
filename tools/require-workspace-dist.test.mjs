@@ -1,7 +1,7 @@
 /**
  * The shared build-prerequisite guard (`tools/require-workspace-dist.mjs`), which three vitest
  * projects use: `@bombfarm/desktop` and `@bombfarm/game-api` as a project-wide `globalSetup`,
- * and `tools` as a per-file call from its one build-dependent test (see WIRED_PROJECTS below).
+ * and `tools` as a per-file call from each build-dependent test it has (see WIRED_PROJECTS below).
  *
  * It lives here rather than beside a single consumer because it belongs to none of them: `tools/`
  * is where the repo keeps build/CI tooling shared across packages, and `tools/vitest.config.ts`'s
@@ -45,9 +45,9 @@ const guardModule = path.join(__dirname, 'require-workspace-dist.mjs');
  * regardless of any filename filter, and `.github/workflows/line-endings.yml` runs `pnpm vitest
  * run --project tools line-endings` build-free by design — a project-wide guard there failed a job
  * that needed no build. Per-file is also what keeps the demand honest now that the files diverge:
- * `derived-fixture-drift.test.mjs` needs `domain` AND `game-api`, `market-item-linking.test.mjs`
- * needs `pricing`, and a shared `tools` list would under-demand for one and over-demand for the
- * other.
+ * `derived-fixture-drift.test.mjs` needs `domain` AND `game-api` while the other two need
+ * `pricing` alone, and a shared `tools` list would under-demand for one and over-demand for the
+ * others.
  */
 const WIRED_PROJECTS = [
   {
@@ -66,6 +66,7 @@ const WIRED_PROJECTS = [
     requiredDistKeys: [
       'tools/derived-fixture-drift.test.mjs',
       'tools/market-item-linking.test.mjs',
+      'tools/market-snapshot/sweep-stats.test.mjs',
     ],
   },
 ];
@@ -77,7 +78,7 @@ const ALL_REQUIRED_DIST_KEYS = WIRED_PROJECTS.flatMap(({ requiredDistKeys }) => 
  * The subset of `WIRED_PROJECTS` that actually wires `setup` up as `globalSetup` — `tools` is
  * deliberately excluded: it calls {@link assertWorkspaceDistBuilt} per-file instead (see above), so
  * `setup({ name: 'tools' })` is never a real call vitest makes, and `'tools'` is not even a key
- * `requiredDistPackages` recognizes any more (its two files are).
+ * `requiredDistPackages` recognizes any more (its guarded files are).
  */
 const GLOBAL_SETUP_PROJECTS = WIRED_PROJECTS.filter(({ globalSetupConfig }) => globalSetupConfig);
 
@@ -113,6 +114,19 @@ const TOOLS_GUARDED_FILES = [
         target: "'./market-snapshot/build.mjs'",
         dynamicPattern: /await import\(\s*'\.\/market-snapshot\/build\.mjs'\s*\)/,
         staticPattern: /^import\b[^\n]*market-snapshot\/build\.mjs/m,
+      },
+    ],
+  },
+  {
+    file: 'tools/market-snapshot/sweep-stats.test.mjs',
+    requiredPackages: ['pricing'],
+    dynamicImports: [
+      {
+        // The builder imports @bombfarm/pricing itself, so a hoisted static import of it would
+        // fail before the assert just as surely as importing the package directly.
+        target: "'./build.mjs'",
+        dynamicPattern: /await import\(\s*'\.\/build\.mjs'\s*\)/,
+        staticPattern: /^import\b[^\n]*'\.\/build\.mjs'/m,
       },
     ],
   },
@@ -273,6 +287,19 @@ function escapeForRegExp(literal) {
 }
 
 /**
+ * The specifier a guarded file must import the guard by, derived from where that file sits rather
+ * than assumed to be a sibling — the guarded files are not all directly in `tools/`.
+ */
+function guardImportPattern(file) {
+  const relative = path.posix.relative(
+    path.posix.dirname(file),
+    'tools/require-workspace-dist.mjs',
+  );
+  const specifier = relative.startsWith('.') ? relative : `./${relative}`;
+  return new RegExp(`from '${escapeForRegExp(specifier)}'`);
+}
+
+/**
  * The guard is exercised against injected fixture roots, never against real build output:
  * deleting a real package's `dist` from inside a test would break every other file here.
  */
@@ -314,6 +341,7 @@ describe('REQUIRED_DIST_PACKAGES', () => {
       '@bombfarm/game-api': ['domain'],
       'tools/derived-fixture-drift.test.mjs': ['domain', 'game-api'],
       'tools/market-item-linking.test.mjs': ['pricing'],
+      'tools/market-snapshot/sweep-stats.test.mjs': ['pricing'],
     });
   });
 
@@ -369,7 +397,7 @@ describe('guard wiring (every consumer reaches this one module)', () => {
         const ownCallPattern = new RegExp(`^${escapeForRegExp(ownCallText)}$`, 'm');
 
         it('imports the shared guard', () => {
-          expect(guardedSource).toMatch(/from '\.\/require-workspace-dist\.mjs'/);
+          expect(guardedSource).toMatch(guardImportPattern(file));
         });
 
         it(`calls assertWorkspaceDistBuilt('${file}') at top level — its OWN key, not a shared 'tools' key`, () => {

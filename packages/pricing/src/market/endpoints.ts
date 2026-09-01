@@ -70,18 +70,36 @@ interface RawPriceOverview {
   volume?: unknown;
 }
 
+export interface PriceQuote {
+  lowest: number | null;
+  median: number | null;
+  /** 24h units sold, as Steam reports it — `"1,234"` on the wire. */
+  volume: number | null;
+}
+
+function parseVolume(raw: unknown): number | null {
+  if (typeof raw !== 'string' && typeof raw !== 'number') return null;
+  const units = Number(String(raw).replace(/,/g, ''));
+  return Number.isFinite(units) ? units : null;
+}
+
 /**
- * The lowest live listing in the requested currency, or null when Steam declines to quote one.
+ * What Steam quotes for one item in one currency, or null when it did not answer at all.
  *
- * A null is not the same statement as `search/render`'s null. Measured 2026-08-29,
- * `Gold Gloves (Legendary)` answered `{"success":true}` with no price in either currency while
- * the search endpoint carried it at $14.99 with a live listing — so this endpoint under-reports,
- * and a caller must fall back rather than conclude the item is unlisted.
+ * Each field is independently absent, and a null `lowest` is not the same statement as
+ * `search/render`'s null. Measured 2026-08-29, `Gold Gloves (Legendary)` answered
+ * `{"success":true}` with no price in either currency while the search endpoint carried it at
+ * $14.99 with a live listing — so this endpoint under-reports, and a caller must fall back rather
+ * than conclude the item is unlisted.
  */
-export function parsePriceOverview(payload: unknown): number | null {
+export function parsePriceOverview(payload: unknown): PriceQuote | null {
   const raw = payload as RawPriceOverview | null;
-  if (raw?.success !== true || typeof raw.lowest_price !== 'string') return null;
-  return parseMoneyAmount(raw.lowest_price);
+  if (raw?.success !== true) return null;
+  return {
+    lowest: typeof raw.lowest_price === 'string' ? parseMoneyAmount(raw.lowest_price) : null,
+    median: typeof raw.median_price === 'string' ? parseMoneyAmount(raw.median_price) : null,
+    volume: parseVolume(raw.volume),
+  };
 }
 
 /**
