@@ -64,7 +64,7 @@ const NATIVE_CURRENCIES = (process.env.NATIVE_CURRENCIES ?? 'BRL')
   .filter(Boolean);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const log = (message) => console.log(`[market-snapshot] ${message}`);
+const defaultLog = (message) => console.log(`[market-snapshot] ${message}`);
 
 /**
  * `Topaz` -> `Topaz Gem` -> `gem_topaz`. Steam's market hash for a gem is its display name plus
@@ -100,7 +100,7 @@ export function loadCatalog() {
  * Fallback tags for the tagging passes, from the catalog rather than from `appfilters`, which was
  * measured omitting a slot that had a live listing.
  */
-function steamTagsFor(catalog) {
+function steamTagsFor(catalog, log) {
   const missing = [];
   const translate = (values, translator, label) =>
     values
@@ -122,20 +122,24 @@ function steamTagsFor(catalog) {
   return tags;
 }
 
-function loadPrior() {
-  if (!existsSync(OUT)) return null;
+/**
+ * The snapshot to resume from, or null. The path is the caller's: the CLI resumes from `OUT`,
+ * and a long-running caller resumes from wherever it keeps its own state.
+ */
+export function loadPrior(path, log = defaultLog) {
+  if (!existsSync(path)) return null;
   try {
     // Normalised, not merely validated: the file on disk is whatever the last run published, and
     // a version 2 one carries no native quotes for the merge to reason about.
-    const parsed = readMarketSnapshot(JSON.parse(readFileSync(OUT, 'utf-8')));
+    const parsed = readMarketSnapshot(JSON.parse(readFileSync(path, 'utf-8')));
     if (parsed == null) {
-      log(`ignoring ${OUT}: not a recognised snapshot`);
+      log(`ignoring ${path}: not a recognised snapshot`);
       return null;
     }
-    log(`resuming from ${OUT} (${parsed.entries.length} entries, generated ${parsed.generatedUtc})`);
+    log(`resuming from ${path} (${parsed.entries.length} entries, generated ${parsed.generatedUtc})`);
     return parsed;
   } catch (err) {
-    log(`ignoring ${OUT}: ${err.message}`);
+    log(`ignoring ${path}: ${err.message}`);
     return null;
   }
 }
@@ -148,6 +152,8 @@ async function getJson(url) {
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   return res.json();
 }
+
+const fetchAppFilters = (appId) => getJson(appFiltersUrl(appId));
 
 async function fetchSearchPage(url) {
   let res;
@@ -193,7 +199,7 @@ async function fetchPriceOverview(url) {
   }
 }
 
-async function fetchFx(prior) {
+async function fetchFx(prior, log = defaultLog) {
   try {
     const data = await getJson(FRANKFURTER_LATEST);
     const rates = { USD: 1, ...(data.rates ?? {}) };
@@ -216,9 +222,9 @@ function summarise(snapshot) {
     `search calls: ${coverage.searchCalls}`,
     `anomalies: ${snapshot.anomalies.length}`,
   ];
-  for (const line of lines) log(line);
+  for (const line of lines) defaultLog(line);
   for (const anomaly of snapshot.anomalies.slice(0, 20)) {
-    log(`  anomaly [${anomaly.kind}] ${anomaly.detail}`);
+    defaultLog(`  anomaly [${anomaly.kind}] ${anomaly.detail}`);
   }
 
   // An unmapped tag does not fail anything — it just makes every item behind it lose its price
@@ -234,18 +240,40 @@ function summarise(snapshot) {
   return lines;
 }
 
-async function main() {
-  const catalog = loadCatalog();
-  const tags = steamTagsFor(catalog);
-  const prior = loadPrior();
+/**
+ * The real network, as one bundle. Injectable so the sweep can be driven without touching Steam;
+ * this is also the only handle through which anything else could reach it.
+ */
+const STEAM_NET = { fetchAppFilters, fetchSearchPage, fetchPriceOverview, fetchFx };
+
+/**
+ * Run one complete sweep: enumerate, tag, reconcile, quote the rotation, build the snapshot.
+ * The only Steam-talking entry point in the repository. Returns the artifact and what a caller
+ * needs to describe the pass without re-deriving it.
+ *
+ * Nothing here reads or writes disk state: `prior` is passed in and the snapshot is returned, so
+ * the CLI and any longer-lived caller each keep their own resume path.
+ */
+export async function runSweep({
+  appId = APP_ID,
+  catalog = loadCatalog(),
+  prior = null,
+  searchDelayMs = DELAY_MS,
+  quoteDelayMs = QUOTE_DELAY_MS,
+  nativeCurrencies = NATIVE_CURRENCIES,
+  log = defaultLog,
+  now = Date.now,
+  steamNet = STEAM_NET,
+} = {}) {
+  const tags = steamTagsFor(catalog, log);
   log(`catalog: ${catalog.defs.length} defs x ${catalog.rarityIdxs.length} rarities`);
 
-  const discovery = await discoverMarket(APP_ID, {
-    fetchAppFilters: () => getJson(appFiltersUrl(APP_ID)),
-    fetchSearchPage,
+  const discovery = await discoverMarket(appId, {
+    fetchAppFilters: () => steamNet.fetchAppFilters(appId),
+    fetchSearchPage: steamNet.fetchSearchPage,
     catalogTags: tags,
     sleep,
-    baseDelayMs: DELAY_MS,
+    baseDelayMs: searchDelayMs,
     log,
   });
   log(
@@ -253,20 +281,21 @@ async function main() {
       `(${discovery.complete ? 'complete' : 'PARTIAL — rate limited'})`,
   );
 
-  const generatedUtc = new Date().toISOString();
+  const generatedUtc = new Date(now()).toISOString();
   const reconciled = reconcile(discovery.rows, catalog, generatedUtc);
 
   // Only rows the enumeration found a listing for: an unlisted row has nothing to quote, and the
   // per-item call is the expensive half of the sweep.
   const quotable = reconciled.entries.filter((entry) => entry.lowestUsd != null);
-  const quoted = await quoteNative(APP_ID, quotable.map((entry) => entry.hashName), NATIVE_CURRENCIES, {
-    fetchPriceOverview,
+  const quoted = await quoteNative(appId, quotable.map((entry) => entry.hashName), nativeCurrencies, {
+    fetchPriceOverview: steamNet.fetchPriceOverview,
     sleep,
-    baseDelayMs: QUOTE_DELAY_MS,
+    baseDelayMs: quoteDelayMs,
+    now,
     log,
   });
   log(
-    `quoted ${quoted.quotes.size}/${quotable.length} rows in ${NATIVE_CURRENCIES.join(', ')} ` +
+    `quoted ${quoted.quotes.size}/${quotable.length} rows in ${nativeCurrencies.join(', ')} ` +
       `over ${quoted.calls} calls (${quoted.unquoted} unquoted by Steam` +
       `${quoted.complete ? '' : ', PARTIAL — rate limited'})`,
   );
@@ -284,14 +313,22 @@ async function main() {
     entries: withQuotes,
     prior,
     catalog,
-    fx: await fetchFx(prior),
-    nativeCurrencies: NATIVE_CURRENCIES,
+    fx: await steamNet.fetchFx(prior, log),
+    nativeCurrencies,
     anomalies: [...discovery.anomalies, ...reconciled.anomalies, ...quoted.anomalies],
     searchCalls: discovery.searchCalls + quoted.calls,
     enumerationComplete: discovery.enumerationComplete,
-    now: Date.now,
-    appId: APP_ID,
+    now,
+    appId,
   });
+
+  return { snapshot, stats: { discoveryComplete: discovery.complete } };
+}
+
+async function main() {
+  const catalog = loadCatalog();
+  const prior = loadPrior(OUT);
+  const { snapshot, stats } = await runSweep({ catalog, prior });
 
   // The workflow publishes whatever is on disk whether or not this step succeeded, so refusing
   // to write is what keeps the last good snapshot in place — and exiting non-zero is the only
@@ -302,13 +339,13 @@ async function main() {
   // Gated on the tagging passes, not the enumeration: the enumeration is the cheap tenth of the
   // sweep and finishes even on a run the quota kills, which is exactly how a full row set can be
   // published with nothing identified in it.
-  const lost = discovery.complete ? [] : catalogKeysLost(prior, snapshot, catalog);
+  const lost = stats.discoveryComplete ? [] : catalogKeysLost(prior, snapshot, catalog);
   if (lost.length === 0) writeFileSync(OUT, JSON.stringify(snapshot));
 
   const lines = summarise(snapshot);
   if (lost.length > 0) {
     lines.push(`REFUSED TO PUBLISH: would lose ${lost.length} catalog keys the last snapshot had`);
-    log(`refusing to publish: ${lost.length} keys lost, e.g. ${lost.slice(0, 5).join(', ')}`);
+    defaultLog(`refusing to publish: ${lost.length} keys lost, e.g. ${lost.slice(0, 5).join(', ')}`);
     console.log(
       `::error title=Market snapshot would lose coverage::A cut-short run cannot delist anything, ` +
         `so ${lost.length} catalog keys going missing is this run mis-deriving them. Kept the ` +
