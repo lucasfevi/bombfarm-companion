@@ -7,8 +7,6 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..', '..');
 
-const win32 = process.platform === 'win32';
-
 function electronExecutable() {
   return path.join(
     desktopRoot,
@@ -86,8 +84,6 @@ async function simulateSecondInstance(app) {
 }
 
 test.describe('tray hide smoke', () => {
-  test.skip(!win32, 'hide-to-tray ships on Windows only');
-
   test('closing the main window hides it while the process keeps running, then Show and Quit work', async () => {
     const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-tray-hide-'));
     let app;
