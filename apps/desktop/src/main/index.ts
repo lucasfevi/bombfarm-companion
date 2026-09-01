@@ -24,7 +24,7 @@ import {
   type SettingsWriteResult,
   type UpdateStatus,
 } from '@bombfarm/contracts';
-import { createPacingGate, initialConsent } from '@bombfarm/game-api';
+import { createPacingGate, initialConsent, trayTextFor } from '@bombfarm/game-api';
 import { createAccountNotifier, resolveAccountView } from './account-view.js';
 import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
@@ -63,6 +63,11 @@ import { createMarketService, type MarketService } from './market/market-service
 import { marketHttpGet } from './market/market-transport.js';
 import { createAccountStore, type AccountStore } from './storage/account-store.js';
 import { createStorage, openAccountDatabase, type Storage } from './storage/index.js';
+import {
+  applyAlwaysOnTopMain as applyAlwaysOnTopMainSettings,
+  applyLocale as applyLocaleSettings,
+} from './shell/settings-apply.js';
+import { type ShellLifecycle } from './shell/window-lifecycle.js';
 
 let mainWindow: BrowserWindow | null = null;
 let storage: Storage | null = null;
@@ -84,6 +89,7 @@ let lastIngestedRotationBody: string | null = null;
 // races a caller that arrives before boot finishes.
 let currentSettings: AppSettings = DEFAULT_SETTINGS;
 let updateService: UpdateService | null = null;
+let shellLifecycle: ShellLifecycle | null = null;
 
 function emitEvent<C extends IpcEventChannel>(channel: C, payload: IpcEvents[C]): void {
   mainWindow?.webContents.send(`bfc:event:${channel}`, payload);
@@ -122,17 +128,26 @@ const applyConsentEvent = createConsentApplier({
   },
 });
 
-/**
- * design.md §4.1 — the one path both `settings:useEnglish` and
- * `settings:usePortuguese` go through (the `applyConsentEvent` shape, `index.ts:40-47`, applied
- * to a payload with two possible values instead of an enum event). APPLIES first, always, THEN
- * persists — `currentSettings` is reassigned before the store is ever touched, so the returned
- * `settings` is the applied value on every branch ("the language still applies for the
- * session" is then structural, not a branch someone has to remember to write).
- */
+function persistSettings(settings: AppSettings): SettingsWriteResult {
+  currentSettings = settings;
+  return settingsStore?.write(settings) ?? { settings, persisted: false, reason: 'no_store' };
+}
+
 function applyLocale(next: AppLocale): SettingsWriteResult {
-  currentSettings = { schemaVersion: 1, locale: next };
-  return settingsStore?.write(currentSettings) ?? { settings: currentSettings, persisted: false, reason: 'no_store' };
+  const result = applyLocaleSettings({ current: currentSettings, next, persist: persistSettings });
+  shellLifecycle?.setTrayLabels(trayTextFor(next));
+  return result;
+}
+
+function applyAlwaysOnTopMain(enabled: unknown): SettingsWriteResult {
+  return applyAlwaysOnTopMainSettings({
+    current: currentSettings,
+    enabled,
+    setAlwaysOnTop: (on, level) => {
+      mainWindow?.setAlwaysOnTop(on, level);
+    },
+    persist: persistSettings,
+  });
 }
 
 function defaultLiveView(): LiveView {
@@ -204,6 +219,7 @@ function registerIpcHandlers(): void {
     'settings:get': (): AppSettings => currentSettings,
     'settings:useEnglish': (): SettingsWriteResult => applyLocale('en'),
     'settings:usePortuguese': (): SettingsWriteResult => applyLocale('pt-BR'),
+    'settings:setAlwaysOnTopMain': (enabled: boolean): SettingsWriteResult => applyAlwaysOnTopMain(enabled),
     'storage:health': () => storage?.healthCheck() ?? { binding: 'unknown', ok: false },
     'game:getStatus': () => gameReader?.getStatus() ?? {
       status: 'not_running' as const,
@@ -446,7 +462,7 @@ async function bootstrap(): Promise<void> {
   const storedSettings = settingsStore.read();
   const systemLocale = app.getLocale();
   const { locale, source } = resolveStartupLocale({ stored: storedSettings?.locale ?? null, systemLocale });
-  currentSettings = { schemaVersion: 1, locale };
+  currentSettings = storedSettings ? { ...storedSettings, locale } : { ...DEFAULT_SETTINGS, locale };
   log.info({ scope: 'main', event: 'locale.resolved', locale, source, systemLocale });
 
   const gate = createPacingGate({
@@ -543,6 +559,7 @@ async function bootstrap(): Promise<void> {
   registerIpcHandlers();
   registerRendererProtocol(path.join(__dirname, '../../renderer/out'));
   await createMainWindow();
+  mainWindow?.setAlwaysOnTop(currentSettings.alwaysOnTopMain, 'normal');
   gameReader.start();
   log.info({
     scope: 'main',
