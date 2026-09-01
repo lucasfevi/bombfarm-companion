@@ -1,9 +1,9 @@
-import { priceOverviewUrl } from './endpoints.js';
+import { priceOverviewUrl, type PriceQuote } from './endpoints.js';
 import type { Anomaly } from './types.js';
 
 export type QuoteFetchResult =
-  /** `lowest` is null when Steam answered without quoting a price, which is not "unlisted". */
-  | { ok: true; lowest: number | null }
+  /** `quote` is null when Steam answered nothing at all, which is not "unlisted". */
+  | { ok: true; quote: PriceQuote | null }
   | { ok: false; rateLimited: boolean };
 
 export interface QuoteDeps {
@@ -18,8 +18,8 @@ export interface QuoteDeps {
 }
 
 export interface QuoteResult {
-  /** hash name -> ISO currency -> lowest listing in major units. Sparse; see `quoteNative`. */
-  quotes: Map<string, Record<string, number | null>>;
+  /** hash name -> ISO currency -> what Steam quoted, in major units. Sparse; see `quoteNative`. */
+  quotes: Map<string, Record<string, PriceQuote>>;
   quotedUtc: string;
   /** Currencies this pass asked for, whether or not any came back. */
   currencies: string[];
@@ -67,7 +67,7 @@ export async function quoteNative(
     deps.maxConsecutiveRateLimits ?? DEFAULT_MAX_CONSECUTIVE_RATE_LIMITS;
   const now = deps.now ?? Date.now;
 
-  const quotes = new Map<string, Record<string, number | null>>();
+  const quotes = new Map<string, Record<string, PriceQuote>>();
   const anomalies: Anomaly[] = [];
   let calls = 0;
   let unquoted = 0;
@@ -75,7 +75,7 @@ export async function quoteNative(
   let delayMs = baseDelayMs;
   let consecutiveRateLimits = 0;
 
-  const fetchOne = async (hashName: string, currency: string): Promise<number | null> => {
+  const fetchOne = async (hashName: string, currency: string): Promise<PriceQuote | null> => {
     for (;;) {
       calls += 1;
       const result = await deps.fetchPriceOverview(priceOverviewUrl(appId, hashName, currency));
@@ -84,7 +84,7 @@ export async function quoteNative(
         consecutiveRateLimits = 0;
         delayMs = baseDelayMs;
         await deps.sleep(delayMs);
-        return result.lowest;
+        return result.quote;
       }
 
       if (!result.rateLimited) {
@@ -102,13 +102,13 @@ export async function quoteNative(
 
   try {
     for (const hashName of hashNames) {
-      const byCurrency: Record<string, number | null> = {};
+      const byCurrency: Record<string, PriceQuote> = {};
       for (const currency of currencies) {
-        const lowest = await fetchOne(hashName, currency);
+        const quote = await fetchOne(hashName, currency);
         // Absent rather than null: a null would be indistinguishable from "quoted as unlisted",
         // and `resolveKey` treats an absent key as "convert from USD" instead of showing nothing.
-        if (lowest == null) unquoted += 1;
-        else byCurrency[currency] = lowest;
+        if (quote?.lowest == null) unquoted += 1;
+        else byCurrency[currency] = quote;
       }
       if (Object.keys(byCurrency).length > 0) quotes.set(hashName, byCurrency);
     }

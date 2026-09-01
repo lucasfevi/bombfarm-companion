@@ -187,7 +187,7 @@ async function fetchPriceOverview(url) {
   }
   if (!res.ok) return { ok: false, rateLimited: false };
   try {
-    return { ok: true, lowest: parsePriceOverview(await res.json())?.lowest ?? null };
+    return { ok: true, quote: parsePriceOverview(await res.json()) };
   } catch {
     return { ok: false, rateLimited: false };
   }
@@ -273,7 +273,11 @@ async function main() {
 
   const withQuotes = reconciled.entries.map((entry) => {
     const native = quoted.quotes.get(entry.hashName);
-    return native == null ? entry : { ...entry, lowestNative: native, nativeQuotedUtc: quoted.quotedUtc };
+    if (native == null) return entry;
+    const lowestNative = Object.fromEntries(
+      Object.entries(native).map(([currency, quote]) => [currency, quote.lowest]),
+    );
+    return { ...entry, lowestNative, nativeQuotedUtc: quoted.quotedUtc };
   });
 
   const snapshot = buildSnapshot({
