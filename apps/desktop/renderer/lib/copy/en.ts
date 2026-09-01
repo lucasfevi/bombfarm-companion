@@ -57,6 +57,12 @@ export const en = {
   settingsLanguageReasonNotWritable: 'Your save location is not writable, so this will not survive a restart.',
   settingsLanguageReasonUnknown: 'This choice could not be saved, so it will not survive a restart.',
 
+  settingsWindowSectionTitle: 'Window',
+  settingsAlwaysOnTopMainLabel: 'Keep the main window on top',
+  settingsAlwaysOnTopMainHelp:
+    'The companion stays above other windows while this is on. Takes effect immediately.',
+  settingsAlwaysOnTopNotSavedTitle: 'Always-on-top changed, but not saved',
+
   // settingsConsent* — the account access revoke control (Settings is reachable only once granted)
   settingsConsentSectionTitle: 'Account access',
   settingsConsentStatusGranted: 'Access: allowed',

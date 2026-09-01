@@ -60,6 +60,12 @@ export const ptBR: Copy = {
     'Seu local de salvamento não pode ser gravado, então isso não vai sobreviver a um reinício.',
   settingsLanguageReasonUnknown: 'Essa escolha não pôde ser salva, então não vai sobreviver a um reinício.',
 
+  settingsWindowSectionTitle: 'Janela',
+  settingsAlwaysOnTopMainLabel: 'Manter a janela principal no topo',
+  settingsAlwaysOnTopMainHelp:
+    'O companion fica acima das outras janelas enquanto isso estiver ligado. Tem efeito imediato.',
+  settingsAlwaysOnTopNotSavedTitle: 'Sempre no topo alterado, mas não salvo',
+
   // settingsConsent* — o controle de revogar o acesso à conta (Configurações só é alcançável já permitido)
   settingsConsentSectionTitle: 'Acesso à conta',
   settingsConsentStatusGranted: 'Acesso: permitido',
