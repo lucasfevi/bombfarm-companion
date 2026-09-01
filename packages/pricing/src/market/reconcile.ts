@@ -1,7 +1,6 @@
 import type { DiscoveryRow } from './discover.js';
 import {
   ACT_CHEST_DEF_BY_HASH,
-  GEM_DEF_BY_HASH,
   LEVEL_CHEST_DEF_PREFIX,
   catalogSlotFor,
   defPrefixFor,
@@ -149,7 +148,8 @@ export function reconcile(
  *
  * Three shapes, each read off a facet rather than the hash name: a fixed prefix plus the rarity's
  * own token (`map_key_raro`, `time_part_epico`, `skill_stone_epico`), a fixed prefix plus a level
- * (`chest_item_30`), and gems, which no facet separates and which take an explicit table.
+ * (`chest_item_30`), and gems, which no facet separates and which the caller names in
+ * `defIdByHash`.
  *
  * Returns null for anything whose def cannot be known — the act-scoped chests especially, where
  * an owned `chest_time_2` numbers a rarity tier and the market row numbers an act. Those stay
@@ -165,7 +165,7 @@ function categoryDefId(
 ): string | null {
   if (category == null) return null;
 
-  if (category === 'gem') return GEM_DEF_BY_HASH[hashName] ?? null;
+  if (category === 'gem') return catalog.defIdByHash[hashName] ?? null;
 
   if (category === 'chest') {
     const family = ACT_CHEST_DEF_BY_HASH[hashName];

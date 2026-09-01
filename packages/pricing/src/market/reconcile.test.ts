@@ -66,6 +66,31 @@ describe('reconcile', () => {
     });
   });
 
+  it('gives a gem the def id the caller supplied for its hash', () => {
+    const { entries } = reconcile(
+      [row('Emerald Gem', { category: 'gem', rarity: 'rare' })],
+      CATALOG,
+      FETCHED,
+    );
+
+    expect(entries[0]).toMatchObject({
+      defId: 'gem_emerald',
+      key: priceKey('gem_emerald', 2),
+      kind: 'gem',
+    });
+  });
+
+  it('leaves a gem the supplied map does not name keyed by hash rather than guessing one', () => {
+    const { entries } = reconcile(
+      [row('Obsidian Gem', { category: 'gem', rarity: 'rare' })],
+      CATALOG,
+      FETCHED,
+    );
+
+    expect(entries[0]?.defId).toBeNull();
+    expect(entries[0]?.key).toBe(categoryKey('gem', 'Obsidian Gem'));
+  });
+
   it('keys an item the catalog has no def for on its category and hash', () => {
     const { entries } = reconcile([row('Royal Sentinel Skin', { category: 'skin' })], CATALOG, FETCHED);
 

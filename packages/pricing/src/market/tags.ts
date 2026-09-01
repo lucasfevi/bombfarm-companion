@@ -102,18 +102,6 @@ export const ACT_CHEST_DEF_BY_HASH: Readonly<Record<string, string>> = {
   'Skill Stone Chest (Act 1)': 'chest_skill',
 };
 
-/**
- * Gems by name, because no facet separates them: every gem row carries `category=gem` and its
- * rarity, and nothing else distinguishes Sapphire from Emerald. A short explicit table is honest
- * about that where parsing the hash would pretend the format is guaranteed — `market-parity`
- * fails if the market carries a gem this does not name.
- */
-export const GEM_DEF_BY_HASH: Readonly<Record<string, string>> = {
-  'Aquamarine Gem': 'gem_aquamarine',
-  'Emerald Gem': 'gem_emerald',
-  'Sapphire Gem': 'gem_sapphire',
-};
-
 export function defPrefixFor(steamCategoryTag: string): string | null {
   return CATEGORY_DEF_PREFIX[steamCategoryTag] ?? null;
 }
