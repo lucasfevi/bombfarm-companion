@@ -74,10 +74,64 @@ export function readConfig(env) {
   };
 }
 
+/**
+ * One JSON object per line to stdout, for the service manager to capture. `evt` is a dotted
+ * `subject.outcome` throughout so a filter on one subject reads as one thing.
+ */
 export function createLogger({ write = console.log, clock = () => new Date() } = {}) {
   return (evt, fields = {}, lvl = 'info') => {
     write(JSON.stringify({ ts: clock().toISOString(), lvl, evt, ...fields }));
   };
+}
+
+/**
+ * Say what the pass saw. The two warnings are most of what replaces the annotation the sweep only
+ * emits under CI: without them a newly unlinkable item would surface nowhere at all.
+ */
+export function logSweepStats(log, stats) {
+  log('enumerate.done', {
+    rows: stats.rowsSeen,
+    calls: stats.searchCalls,
+    complete: stats.enumerationComplete,
+  });
+  log('quote.done', {
+    quoted: stats.quotesOk,
+    calls: stats.quoteCalls,
+    rateLimitHits: stats.rateLimitHits,
+    complete: stats.quotesComplete,
+  });
+
+  if (!stats.quotesComplete) {
+    log('quote.circuitBroken', { calls: stats.quoteCalls, quoted: stats.quotesOk }, 'error');
+  }
+  if (stats.rateLimitHitsDerived != null && stats.rateLimitHitsDerived !== stats.rateLimitHits) {
+    log(
+      'quote.rateLimitCountMismatch',
+      { counted: stats.rateLimitHits, derived: stats.rateLimitHitsDerived },
+      'warn',
+    );
+  }
+  if (stats.unmappedTags.length > 0) {
+    log(
+      'tags.unmapped',
+      {
+        count: stats.unmappedTags.length,
+        kinds: [...new Set(stats.unmappedTags.map((anomaly) => anomaly.kind))],
+        details: stats.unmappedTags.map((anomaly) => anomaly.detail),
+      },
+      'warn',
+    );
+  }
+  if (stats.unlinkableItems.length > 0) {
+    log(
+      'items.unlinkable',
+      {
+        count: stats.unlinkableItems.length,
+        details: stats.unlinkableItems.map((anomaly) => anomaly.detail),
+      },
+      'warn',
+    );
+  }
 }
 
 async function main() {
