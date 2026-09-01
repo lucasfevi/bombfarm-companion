@@ -1,7 +1,7 @@
 import type { DiscoveryRow } from './discover.js';
 import {
-  ACT_CHEST_DEF_BY_HASH,
   LEVEL_CHEST_DEF_PREFIX,
+  actChestFamilyFor,
   catalogSlotFor,
   defPrefixFor,
   isKnownCategory,
@@ -168,7 +168,7 @@ function categoryDefId(
   if (category === 'gem') return catalog.defIdByHash[hashName] ?? null;
 
   if (category === 'chest') {
-    const family = ACT_CHEST_DEF_BY_HASH[hashName];
+    const family = actChestFamilyFor(hashName);
     if (family != null) return act == null ? null : `${family}_${String(act)}`;
     return level == null ? null : `${LEVEL_CHEST_DEF_PREFIX}_${String(level)}`;
   }
@@ -218,7 +218,7 @@ export function keyForEntry(entry: KeyableEntry): string {
  */
 function chestRarityIdx(entry: KeyableEntry): number | null {
   if (entry.category !== 'chest') return null;
-  if (ACT_CHEST_DEF_BY_HASH[entry.hashName] != null) return entry.act;
+  if (actChestFamilyFor(entry.hashName) != null) return entry.act;
   return entry.level == null ? null : 0;
 }
 

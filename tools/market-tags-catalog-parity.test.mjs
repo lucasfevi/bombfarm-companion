@@ -68,7 +68,7 @@ describe('the Steam tag tables against the committed catalog', () => {
   it('finds a real table to read, so the predicates below are not vacuous', () => {
     expect(tableEntries(tagsSource, 'STEAM_SLOT_TO_CATALOG').length).toBeGreaterThan(0);
     expect(tableEntries(tagsSource, 'STEAM_RARITY_TO_IDX').length).toBeGreaterThan(0);
-    expect(tableEntries(tagsSource, 'ACT_CHEST_DEF_BY_HASH').length).toBe(6);
+    expect(tableEntries(tagsSource, 'ACT_CHEST_FAMILY_DEF').length).toBe(4);
     expect(catalogSlots.length).toBe(8);
     expect(catalogRarityIdxs).toEqual([0, 1, 2, 3, 4, 5]);
   });

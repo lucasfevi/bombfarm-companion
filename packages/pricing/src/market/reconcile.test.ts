@@ -116,6 +116,50 @@ describe('reconcile', () => {
     expect(entries.every((entry) => entry.act === 1)).toBe(true);
   });
 
+  it.each([
+    ['Hero Cage', 'chest_hero'],
+    ['Time Chest', 'chest_time'],
+    ['Gem Chest', 'chest_gem'],
+    ['Skill Stone Chest', 'chest_skill'],
+  ])('reaches every act of %s, taking the act off the facet', (family, defPrefix) => {
+    for (const act of [1, 2, 3]) {
+      const hashName = `${family} (Act ${String(act)})`;
+      const { entries } = reconcile(
+        [row(hashName, { category: 'chest', act: String(act) })],
+        CATALOG,
+        FETCHED,
+      );
+
+      expect(entries[0]?.defId).toBe(`${defPrefix}_${String(act)}`);
+      expect(entries[0]?.key).toBe(priceKey(`${defPrefix}_${String(act)}`, act));
+    }
+  });
+
+  it('treats a Gem Chest as a chest, not as a gem', () => {
+    const { entries } = reconcile(
+      [row('Gem Chest (Act 2)', { category: 'chest', act: '2' })],
+      CATALOG,
+      FETCHED,
+    );
+
+    expect(entries[0]).toMatchObject({
+      defId: 'chest_gem_2',
+      key: priceKey('chest_gem_2', 2),
+      category: 'chest',
+    });
+  });
+
+  it('does not let a hash that merely contains a family name borrow that family price', () => {
+    const { entries } = reconcile(
+      [row('Ancient Time Chest (Act 1)', { category: 'chest', act: '1' })],
+      CATALOG,
+      FETCHED,
+    );
+
+    expect(entries[0]?.defId).toBeNull();
+    expect(entries[0]?.key).toBe(categoryKey('chest', 'Ancient Time Chest (Act 1)'));
+  });
+
   it('leaves a row unmatched rather than guessing when Steam uses a slot tag we do not know', () => {
     const { entries, anomalies } = reconcile(
       [row('Ember Cape', { category: 'equip', set: 'ember', slot: 'cape', rarity: 'rare' })],
