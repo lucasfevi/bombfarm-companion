@@ -43,7 +43,11 @@ import { createConsentApplier } from './game-api/consent-applier.js';
 import { createConsentStore, type ConsentStore } from './game-api/consent-store.js';
 import { createLiveConsentGate } from './game-api/live-consent-gate.js';
 import { createSettingsStore, type SettingsStore } from './game-api/settings-store.js';
-import { createWindowLayoutStore, type WindowLayoutStore } from './game-api/window-layout-store.js';
+import {
+  createWindowLayoutStore,
+  DEFAULT_MINI_LAYOUT_VIEW,
+  type WindowLayoutStore,
+} from './game-api/window-layout-store.js';
 import { nodeHttpsTransport } from './game-api/https-transport.js';
 import { readSessionToken, sessionCfgPath } from './game-api/session-token-file.js';
 import { createTriggeredRefresh, type TriggeredRefresh } from './game-api/triggered-refresh.js';
@@ -80,6 +84,11 @@ import {
 import { clearShellSmokeBridge, installShellSmokeBridge } from './shell/shell-smoke-bridge.js';
 import { createShellLifecycle, type ShellLifecycle, type WindowPort } from './shell/window-lifecycle.js';
 import { broadcastEventToWindows } from './shell/broadcast-event.js';
+import {
+  createMiniLiveController,
+  resolveMiniLiveLoadUrl,
+  type MiniLiveController,
+} from './mini-live-window.js';
 
 let mainWindow: BrowserWindow | null = null;
 let storage: Storage | null = null;
@@ -105,6 +114,7 @@ let shellLifecycle: ShellLifecycle | null = null;
 let windowLayoutStore: WindowLayoutStore | null = null;
 let layoutPersistTimer: ReturnType<typeof setTimeout> | null = null;
 let layoutMaximizing = false;
+let miniLiveController: MiniLiveController | null = null;
 
 function emitEvent<C extends IpcEventChannel>(channel: C, payload: IpcEvents[C]): void {
   broadcastEventToWindows(BrowserWindow.getAllWindows(), `bfc:event:${channel}`, payload);
@@ -266,6 +276,17 @@ function registerIpcHandlers(): void {
       updateService?.installOnRestart() ?? preServiceUpdateStatus(),
     'market:getSnapshot': () => marketService?.getView() ?? emptyMarketSnapshotView(),
     'market:refreshItem': refreshMarketItem,
+    'miniLive:open': () => {
+      miniLiveController?.open();
+      return null;
+    },
+    'miniLive:close': () => {
+      miniLiveController?.close();
+      return null;
+    },
+    'miniLive:getLayout': () => windowLayoutStore?.getLayout() ?? DEFAULT_MINI_LAYOUT_VIEW,
+    'miniLive:setLayout': (patch) => windowLayoutStore?.setLayout(patch) ?? DEFAULT_MINI_LAYOUT_VIEW,
+    'miniLive:fitGrowthAxis': () => null,
   };
 
   ipcMain.handle('bfc:invoke', (_event, channel: string, ...args: unknown[]) => {
@@ -388,6 +409,36 @@ async function createMainWindow(): Promise<void> {
 
   setupShellLifecycle(env.productName);
   attachWindowLayoutPersistence();
+  miniLiveController = createMiniLiveControllerInstance(env);
+  miniLiveController.restoreIfWasOpen();
+}
+
+function createMiniLiveControllerInstance(env: ReturnType<typeof resolveAppEnv>): MiniLiveController {
+  if (!windowLayoutStore) {
+    throw new Error('window layout store is not ready');
+  }
+
+  return createMiniLiveController({
+    BrowserWindowCtor: BrowserWindow as never,
+    layoutStore: windowLayoutStore,
+    resolveLoadUrl: () => resolveMiniLiveLoadUrl({ isDev: env.isDev, devBaseUrl: RENDERER_DEV_URL }),
+    preloadPath: path.join(__dirname, '../preload/index.cjs'),
+    iconPath: path.join(__dirname, '../../assets/icon.ico'),
+    applyExternalNavigation: (webContents) => {
+      applyExternalNavigationPolicy(webContents as never, {
+        openExternal: (url) => shell.openExternal(url),
+        log,
+        internalUrls: env.isDev ? [RENDERER_DEV_URL] : [],
+      });
+    },
+    getDisplays: () =>
+      screen.getAllDisplays().map((display) => ({
+        id: display.id,
+        workArea: display.workArea,
+      })),
+    getPrimaryWorkArea: () => screen.getPrimaryDisplay().workArea,
+    log,
+  });
 }
 
 function persistMainWindowLayout(immediate: boolean): void {
@@ -887,6 +938,8 @@ if (!gotLock) {
     shellLifecycle?.destroyTray();
     clearShellSmokeBridge();
     shellLifecycle = null;
+    miniLiveController?.close();
+    miniLiveController = null;
     // settingsStore borrows accountOpen.db, which accountStore.close() already owns
     // below; it holds no timer and opens no handle of its own, so it must not gain a close().
     settingsStore = null;

@@ -1,5 +1,13 @@
 import type { BrowserWindowConstructorOptions } from 'electron';
+import type { WindowLayoutStore } from './game-api/window-layout-store.js';
 import { RENDERER_HOST, RENDERER_SCHEME } from './renderer-protocol.js';
+import {
+  clampMiniToWorkArea,
+  type MiniLiveBounds,
+  type MiniLiveLayoutStored,
+  type WorkArea,
+  type WindowLayoutDocument,
+} from './shell/window-layout.js';
 
 export const MIN_MINI_WIDTH = 320;
 export const MIN_MINI_HEIGHT = 88;
@@ -114,4 +122,128 @@ export function createMiniLiveBrowserWindow(
   void win.webContents.loadURL(input.loadUrl);
 
   return win;
+}
+
+export interface DisplayInfo {
+  readonly id: number;
+  readonly workArea: WorkArea;
+}
+
+function defaultMiniStored(mainDisplayId: number): MiniLiveLayoutStored {
+  return {
+    bounds: {
+      displayId: mainDisplayId,
+      x: 0,
+      y: 0,
+      width: DEFAULT_MINI_WIDTH,
+      height: DEFAULT_MINI_HEIGHT,
+    },
+    showEarnings: true,
+    showMap: true,
+    showHeroes: false,
+    axis: 'vertical',
+    wasOpen: false,
+  };
+}
+
+function resolveMiniOpenBounds(
+  doc: WindowLayoutDocument | null,
+  displays: readonly DisplayInfo[],
+  primaryWorkArea: WorkArea,
+): { x: number; y: number; width: number; height: number } {
+  const storedBounds = doc?.mini?.bounds ?? null;
+  const clamped = clampMiniToWorkArea({
+    stored: storedBounds,
+    displays,
+    primaryWorkArea,
+    minWidth: MIN_MINI_WIDTH,
+    minHeight: MIN_MINI_HEIGHT,
+    defaultWidth: DEFAULT_MINI_WIDTH,
+    defaultHeight: DEFAULT_MINI_HEIGHT,
+  });
+  return clamped.bounds;
+}
+
+function writeMiniWasOpen(store: WindowLayoutStore, wasOpen: boolean): void {
+  const doc = store.read();
+  if (!doc) {
+    return;
+  }
+  const mainDisplayId = doc.main.displayId;
+  const mini = doc.mini ?? defaultMiniStored(mainDisplayId);
+  store.write({ schemaVersion: 1, main: doc.main, mini: { ...mini, wasOpen } });
+}
+
+export interface MiniLiveController {
+  open(): void;
+  close(): void;
+  restoreIfWasOpen(): void;
+  getWindow(): MiniLiveWindowLike | null;
+}
+
+export function createMiniLiveController(deps: {
+  BrowserWindowCtor: new (options: BrowserWindowConstructorOptions) => MiniLiveWindowLike;
+  layoutStore: WindowLayoutStore;
+  resolveLoadUrl: () => string;
+  preloadPath: string;
+  iconPath: string;
+  applyExternalNavigation: (webContents: MiniLiveWebContents) => void;
+  getDisplays: () => readonly DisplayInfo[];
+  getPrimaryWorkArea: () => WorkArea;
+  log?: { info: (rec: Record<string, unknown>) => void; error: (rec: Record<string, unknown>) => void };
+}): MiniLiveController {
+  let miniWindow: MiniLiveWindowLike | null = null;
+
+  const focusOrCreate = (): void => {
+    if (miniWindow && !miniWindow.isDestroyed()) {
+      miniWindow.focus();
+      return;
+    }
+
+    const displays = deps.getDisplays();
+    const primaryWorkArea = deps.getPrimaryWorkArea();
+    const doc = deps.layoutStore.read();
+    const bounds = resolveMiniOpenBounds(doc, displays, primaryWorkArea);
+
+    miniWindow = createMiniLiveBrowserWindow(deps.BrowserWindowCtor, {
+      preloadPath: deps.preloadPath,
+      iconPath: deps.iconPath,
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+      loadUrl: deps.resolveLoadUrl(),
+      applyExternalNavigation: deps.applyExternalNavigation,
+      log: deps.log,
+    });
+
+    writeMiniWasOpen(deps.layoutStore, true);
+    deps.log?.info({ scope: 'main', event: 'mini.opened' });
+  };
+
+  return {
+    open() {
+      focusOrCreate();
+    },
+    close() {
+      if (!miniWindow || miniWindow.isDestroyed()) {
+        writeMiniWasOpen(deps.layoutStore, false);
+        return;
+      }
+      miniWindow.destroy();
+      miniWindow = null;
+      writeMiniWasOpen(deps.layoutStore, false);
+      deps.log?.info({ scope: 'main', event: 'mini.closed' });
+    },
+    restoreIfWasOpen() {
+      const doc = deps.layoutStore.read();
+      if (doc?.mini?.wasOpen !== true) {
+        return;
+      }
+      focusOrCreate();
+    },
+    getWindow() {
+      return miniWindow && !miniWindow.isDestroyed() ? miniWindow : null;
+    },
+  };
 }

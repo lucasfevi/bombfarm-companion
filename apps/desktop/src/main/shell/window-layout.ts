@@ -130,3 +130,48 @@ export function clampToWorkArea(input: {
     displayMissing,
   };
 }
+
+export function clampMiniToWorkArea(input: {
+  stored: MiniLiveBounds | null;
+  displays: readonly { id: number; workArea: WorkArea }[];
+  primaryWorkArea: WorkArea;
+  minWidth: number;
+  minHeight: number;
+  defaultWidth: number;
+  defaultHeight: number;
+}): { bounds: WorkArea; displayId: number; displayMissing: boolean } {
+  if (!input.stored) {
+    const { width, height } = fitSize(
+      input.defaultWidth,
+      input.defaultHeight,
+      input.primaryWorkArea,
+      input.minWidth,
+      input.minHeight,
+    );
+    return {
+      bounds: centeredBounds(width, height, input.primaryWorkArea),
+      displayId: input.displays[0]?.id ?? 0,
+      displayMissing: false,
+    };
+  }
+
+  const matchedDisplay = input.displays.find((display) => display.id === input.stored!.displayId);
+  const displayMissing = matchedDisplay === undefined;
+  const workArea = matchedDisplay?.workArea ?? input.primaryWorkArea;
+  const { width, height } = fitSize(
+    input.stored.width,
+    input.stored.height,
+    workArea,
+    input.minWidth,
+    input.minHeight,
+  );
+  const absoluteX = workArea.x + input.stored.x;
+  const absoluteY = workArea.y + input.stored.y;
+  const position = clampPosition(absoluteX, absoluteY, width, height, workArea);
+
+  return {
+    bounds: { ...position, width, height },
+    displayId: matchedDisplay?.id ?? input.displays[0]?.id ?? input.stored.displayId,
+    displayMissing,
+  };
+}
