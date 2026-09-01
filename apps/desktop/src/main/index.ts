@@ -79,6 +79,7 @@ import {
 } from './shell/window-layout.js';
 import { clearShellSmokeBridge, installShellSmokeBridge } from './shell/shell-smoke-bridge.js';
 import { createShellLifecycle, type ShellLifecycle, type WindowPort } from './shell/window-lifecycle.js';
+import { broadcastEventToWindows } from './shell/broadcast-event.js';
 
 let mainWindow: BrowserWindow | null = null;
 let storage: Storage | null = null;
@@ -106,7 +107,7 @@ let layoutPersistTimer: ReturnType<typeof setTimeout> | null = null;
 let layoutMaximizing = false;
 
 function emitEvent<C extends IpcEventChannel>(channel: C, payload: IpcEvents[C]): void {
-  mainWindow?.webContents.send(`bfc:event:${channel}`, payload);
+  broadcastEventToWindows(BrowserWindow.getAllWindows(), `bfc:event:${channel}`, payload);
 }
 
 /** Reads, transitions, persists, and announces one consent event — the single path every
