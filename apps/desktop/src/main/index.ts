@@ -77,6 +77,7 @@ import {
   MIN_MAIN_HEIGHT,
   MIN_MAIN_WIDTH,
 } from './shell/window-layout.js';
+import { clearShellSmokeBridge, installShellSmokeBridge } from './shell/shell-smoke-bridge.js';
 import { createShellLifecycle, type ShellLifecycle, type WindowPort } from './shell/window-lifecycle.js';
 
 let mainWindow: BrowserWindow | null = null;
@@ -512,6 +513,10 @@ function setupShellLifecycle(productName: string): void {
     tooltip: productName,
   });
 
+  installShellSmokeBridge(shellLifecycle, () => {
+    shellLifecycle?.show();
+  });
+
   if (trayResult.ok) {
     const showFromTray = (): void => {
       shellLifecycle?.show();
@@ -879,6 +884,7 @@ if (!gotLock) {
       layoutPersistTimer = null;
     }
     shellLifecycle?.destroyTray();
+    clearShellSmokeBridge();
     shellLifecycle = null;
     // settingsStore borrows accountOpen.db, which accountStore.close() already owns
     // below; it holds no timer and opens no handle of its own, so it must not gain a close().

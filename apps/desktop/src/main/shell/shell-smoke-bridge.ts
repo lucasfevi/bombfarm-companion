@@ -1,0 +1,32 @@
+import type { ShellLifecycle } from './window-lifecycle.js';
+
+export interface ShellSmokeBridge {
+  show(): void;
+  quitFromTray(): void;
+  simulateSecondInstance(): void;
+  readonly trayPresent: boolean;
+}
+
+const GLOBAL_KEY = '__bfcShellSmoke';
+
+type GlobalWithBridge = typeof globalThis & {
+  [GLOBAL_KEY]?: ShellSmokeBridge;
+};
+
+export function installShellSmokeBridge(
+  lifecycle: ShellLifecycle,
+  simulateSecondInstance: () => void,
+): void {
+  (globalThis as GlobalWithBridge)[GLOBAL_KEY] = {
+    show: () => lifecycle.show(),
+    quitFromTray: () => lifecycle.requestQuit(),
+    simulateSecondInstance,
+    get trayPresent() {
+      return lifecycle.trayPresent;
+    },
+  };
+}
+
+export function clearShellSmokeBridge(): void {
+  delete (globalThis as GlobalWithBridge)[GLOBAL_KEY];
+}

@@ -25,6 +25,7 @@ export default defineConfig({
         'live-hero-row-no-layout-shift.spec.mjs',
         'live-state-summary-no-layout-shift.spec.mjs',
         'shell-measure-and-scrollbars.spec.mjs',
+        'tray-hide.spec.mjs',
       ],
     },
     {
