@@ -203,12 +203,12 @@ async function fetchFx(prior, log = defaultLog) {
   try {
     const data = await getJson(FRANKFURTER_LATEST);
     const rates = { USD: 1, ...(data.rates ?? {}) };
-    if (Object.keys(rates).length > 1) return rates;
+    if (Object.keys(rates).length > 1) return { ok: true, rates };
     log('FX returned no rates; keeping the previous ones');
   } catch (err) {
     log(`FX fetch failed (${err.message}); keeping the previous ones`);
   }
-  return prior?.fx ?? { USD: 1 };
+  return { ok: false, rates: prior?.fx ?? { USD: 1 } };
 }
 
 function summarise(snapshot) {
@@ -265,6 +265,7 @@ export async function runSweep({
   now = Date.now,
   steamNet = STEAM_NET,
 } = {}) {
+  const startedAtMs = now();
   const tags = steamTagsFor(catalog, log);
   log(`catalog: ${catalog.defs.length} defs x ${catalog.rarityIdxs.length} rarities`);
 
@@ -309,11 +310,13 @@ export async function runSweep({
     return { ...entry, lowestNative, nativeQuotedUtc: quoted.quotedUtc };
   });
 
+  const fx = await steamNet.fetchFx(prior, log);
+
   const snapshot = buildSnapshot({
     entries: withQuotes,
     prior,
     catalog,
-    fx: await steamNet.fetchFx(prior, log),
+    fx: fx.rates,
     nativeCurrencies,
     anomalies: [...discovery.anomalies, ...reconciled.anomalies, ...quoted.anomalies],
     searchCalls: discovery.searchCalls + quoted.calls,
@@ -322,7 +325,32 @@ export async function runSweep({
     appId,
   });
 
-  return { snapshot, stats: { discoveryComplete: discovery.complete } };
+  const quotesAttempted = quotable.length * nativeCurrencies.length;
+  const unmappedTags = snapshot.anomalies.filter((anomaly) => anomaly.kind.startsWith('unknown-'));
+
+  const stats = {
+    startedAtMs,
+    finishedAtMs: now(),
+    rowsSeen: discovery.rows.length,
+    searchCalls: discovery.searchCalls,
+    quoteCalls: quoted.calls,
+    quotesAttempted,
+    quotesOk: quoted.quotes.size,
+    unquoted: quoted.unquoted,
+    // Every attempt increments `calls` and only a rate limit retries, so the difference is the
+    // number of 429s the rotation absorbed — but only on a pass that finished. Once the breaker
+    // trips, the items after the trip were never attempted and `quotesAttempted` overstates.
+    rateLimitHitsDerived: quoted.complete ? quoted.calls - quotesAttempted : null,
+    enumerationComplete: discovery.enumerationComplete,
+    discoveryComplete: discovery.complete,
+    quotesComplete: quoted.complete,
+    fxOk: fx.ok,
+    anomalies: snapshot.anomalies,
+    unmappedTags,
+    unlinkableItems: snapshot.anomalies.filter((anomaly) => anomaly.kind === 'unlinkable-item'),
+  };
+
+  return { snapshot, stats };
 }
 
 async function main() {
