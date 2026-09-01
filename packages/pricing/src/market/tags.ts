@@ -60,9 +60,9 @@ export const EQUIPMENT_CATEGORY_TAG = 'equip';
  * `time_part_raro` and `time_part_epico` — the same two prefixes the inventory parser's
  * `inferKind` keys off.
  *
- * `gem` is absent on purpose: `inferKind` knows the `gem_` prefix, but nothing here says what
- * follows it for an Emerald or a Sapphire, and inventing a suffix would be a wrong `def_id`
- * rather than an honest missing one.
+ * `gem` is absent on purpose: a gem's `def_id` is not its rarity token, so this shape cannot spell
+ * one. The caller supplies gem identity in `CatalogView.defIdByHash`, from the committed game data
+ * that names all nine.
  */
 export const CATEGORY_DEF_PREFIX: Readonly<Record<string, string>> = {
   key: 'map_key',
@@ -90,6 +90,10 @@ export const LEVEL_CHEST_DEF_PREFIX = 'chest_item';
  * tier, so `Time Chest (Act 3)` is `chest_time_3` at rarity 3. Only the family is looked up here,
  * because the facets cannot supply it: every row is `category=chest` plus an act and nothing else.
  * Naming the families is what stops a Hero Cage taking a Time Chest's price.
+ *
+ * `tools/market-item-linking.test.mjs` reconciles each family across the acts the market carries
+ * and fails on a family that stops linking; `tools/market-tags-catalog-parity.test.mjs` fails if
+ * an act creeps back into a key here.
  */
 export const ACT_CHEST_FAMILY_DEF: Readonly<Record<string, string>> = {
   'Hero Cage': 'chest_hero',
