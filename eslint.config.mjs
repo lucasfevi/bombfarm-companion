@@ -230,6 +230,10 @@ export default tseslint.config(
     rules: { 'react/forbid-dom-props': nativeTooltipRule },
   },
   {
+    files: ['apps/desktop/renderer/app/mini-live/**/*.{ts,tsx}'],
+    rules: { 'react/forbid-dom-props': 'off' },
+  },
+  {
     files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}'],
     plugins: { tailwindcss: eslintPluginTailwindcss },
     settings: {
