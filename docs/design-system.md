@@ -344,8 +344,8 @@ Preview loads Tailwind via [`packages/ui/.storybook/preview.css`](../packages/ui
 which imports `packages/ui/src/styles.css` directly (self-sufficient — its own
 `@import 'tailwindcss'` + `@source` scan of `packages/ui/src`, processed by the
 `@tailwindcss/vite` plugin wired in `main.ts`). Canvas uses app tokens (`bg-bg` /
-`text-ink` / `font-sans`); fonts are self-hosted via `@fontsource` (DM Sans, IBM Plex
-Mono) rather than `next/font` — no Next.js under Vite, and no CDN. If stories look like
+`text-ink` / `font-sans`); fonts are self-hosted via `@fontsource` (IBM Plex Sans, IBM
+Plex Mono) rather than `next/font` — no Next.js under Vite, and no CDN. If stories look like
 unstyled browser defaults, rebuild and confirm the Vite Tailwind plugin is processing
 `preview.css`. See also [`tailwind-first.md`](tailwind-first.md) rule 11.
 

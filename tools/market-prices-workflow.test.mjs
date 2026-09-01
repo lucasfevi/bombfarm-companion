@@ -15,9 +15,11 @@ import { describe, expect, it } from 'vitest';
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const WORKFLOW_PATH = join(root, '.github/workflows/market-prices.yml');
 const BUILDER_PATH = join(root, 'tools/market-snapshot/build.mjs');
+const COLLECTOR_PATH = join(root, 'tools/market-snapshot/collect.mjs');
 
 const workflow = readFileSync(WORKFLOW_PATH, 'utf-8');
 const builder = readFileSync(BUILDER_PATH, 'utf-8');
+const collector = readFileSync(COLLECTOR_PATH, 'utf-8');
 
 /** Comments describe the very constraints under test; predicates must read YAML, not prose. */
 function stripCommentLines(text) {
@@ -126,5 +128,21 @@ describe('the snapshot builder', () => {
   it('leaves URL building in the package, so the sweep and the apps address Steam identically', () => {
     expect(/steamcommunity\.com/.test(pricingSource('endpoints.ts'))).toBe(true);
     expect(/steamcommunity\.com/.test(builder)).toBe(false);
+  });
+
+  /**
+   * The collector drives the sweep, so the builder stays the only Steam-talker. The injected
+   * network bundle is the one handle through which another file could reach Steam anyway, which
+   * is why its name is guarded exactly as tightly as the hostname.
+   */
+  it('keeps the collector off Steam, by hostname and by the handle that would let it in', () => {
+    const namesSteam = (source) => /steamcommunity\.com/.test(source);
+    const injectsTheNetwork = (source) => /\bsteamNet\b/.test(source);
+
+    expect(namesSteam(collector)).toBe(false);
+    expect(namesSteam(`${collector}\nconst url = 'https://steamcommunity.com/market/';`)).toBe(true);
+
+    expect(injectsTheNetwork(collector)).toBe(false);
+    expect(injectsTheNetwork(`${collector}\nawait runSweep({ steamNet: mine });`)).toBe(true);
   });
 });

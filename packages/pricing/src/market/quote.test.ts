@@ -1,17 +1,23 @@
 import { describe, expect, it, vi } from 'vitest';
-import { parseMoneyAmount, parsePriceOverview, priceOverviewUrl } from './endpoints.js';
+import {
+  parseMoneyAmount,
+  parsePriceOverview,
+  priceOverviewUrl,
+  type PriceQuote,
+} from './endpoints.js';
 import { quoteNative, type QuoteFetchResult } from './quote.js';
 
 const APP_ID = 4892010;
 const noSleep = () => Promise.resolve();
 const at = (iso: string) => () => Date.parse(iso);
+const quote = (lowest: number): PriceQuote => ({ lowest, median: lowest + 1, volume: 7 });
 
 function fetcherFrom(answers: Record<string, QuoteFetchResult>) {
   const calls: string[] = [];
   const fetchPriceOverview = vi.fn((url: string): Promise<QuoteFetchResult> => {
     calls.push(url);
     const hashName = decodeURIComponent(new URL(url).searchParams.get('market_hash_name') ?? '');
-    return Promise.resolve<QuoteFetchResult>(answers[hashName] ?? { ok: true, lowest: null });
+    return Promise.resolve<QuoteFetchResult>(answers[hashName] ?? { ok: true, quote: null });
   });
   return { calls, fetchPriceOverview };
 }
@@ -37,13 +43,39 @@ describe('parseMoneyAmount', () => {
 });
 
 describe('parsePriceOverview', () => {
-  it('reads the lowest listing', () => {
-    expect(parsePriceOverview({ success: true, lowest_price: 'R$ 25,00' })).toBe(25);
+  it('reads the lowest listing, the median and the 24h volume from one answer', () => {
+    expect(
+      parsePriceOverview({
+        success: true,
+        lowest_price: 'R$ 25,00',
+        median_price: 'R$ 26,50',
+        volume: '1,234',
+      }),
+    ).toEqual({ lowest: 25, median: 26.5, volume: 1234 });
   });
 
-  it('is null when Steam succeeds without quoting a price', () => {
+  it('leaves a field Steam omitted null rather than zero', () => {
+    expect(parsePriceOverview({ success: true, lowest_price: 'R$ 25,00' })).toEqual({
+      lowest: 25,
+      median: null,
+      volume: null,
+    });
+  });
+
+  it('is null for a volume that is not a number', () => {
+    expect(parsePriceOverview({ success: true, volume: 'many' })?.volume).toBeNull();
+  });
+
+  it('carries no price when Steam succeeds without quoting one', () => {
     // Measured live: this is what a genuinely listed item can answer, so it cannot mean unlisted.
-    expect(parsePriceOverview({ success: true })).toBeNull();
+    expect(parsePriceOverview({ success: true })).toEqual({
+      lowest: null,
+      median: null,
+      volume: null,
+    });
+  });
+
+  it('is null overall when Steam did not answer', () => {
     expect(parsePriceOverview({ success: false, lowest_price: 'R$ 25,00' })).toBeNull();
   });
 });
@@ -51,7 +83,7 @@ describe('parsePriceOverview', () => {
 describe('quoteNative', () => {
   it('quotes each hash in each requested currency', async () => {
     const { fetchPriceOverview } = fetcherFrom({
-      'Coal Boots Lv 30 (Rare)': { ok: true, lowest: 25 },
+      'Coal Boots Lv 30 (Rare)': { ok: true, quote: quote(25) },
     });
 
     const result = await quoteNative(APP_ID, ['Coal Boots Lv 30 (Rare)'], ['BRL'], {
@@ -60,7 +92,7 @@ describe('quoteNative', () => {
       now: at('2026-08-29T18:00:00.000Z'),
     });
 
-    expect(result.quotes.get('Coal Boots Lv 30 (Rare)')).toEqual({ BRL: 25 });
+    expect(result.quotes.get('Coal Boots Lv 30 (Rare)')).toEqual({ BRL: quote(25) });
     expect(result.quotedUtc).toBe('2026-08-29T18:00:00.000Z');
     expect(result.currencies).toEqual(['BRL']);
     expect(result.complete).toBe(true);
@@ -79,7 +111,7 @@ describe('quoteNative', () => {
 
   it('leaves an unquoted hash absent rather than recording it as zero or null', async () => {
     const { fetchPriceOverview } = fetcherFrom({
-      'Gold Gloves (Legendary)': { ok: true, lowest: null },
+      'Gold Gloves (Legendary)': { ok: true, quote: { lowest: null, median: 14.5, volume: 3 } },
     });
 
     const result = await quoteNative(APP_ID, ['Gold Gloves (Legendary)'], ['BRL'], {
@@ -100,7 +132,7 @@ describe('quoteNative', () => {
         limited = true;
         return Promise.resolve<QuoteFetchResult>({ ok: false, rateLimited: true });
       }
-      return Promise.resolve<QuoteFetchResult>({ ok: true, lowest: 12 });
+      return Promise.resolve<QuoteFetchResult>({ ok: true, quote: quote(12) });
     });
 
     const result = await quoteNative(APP_ID, ['Ember Ring Lv 10 (Rare)'], ['BRL'], {
@@ -113,7 +145,7 @@ describe('quoteNative', () => {
     });
 
     expect(waits[0]).toBe(200);
-    expect(result.quotes.get('Ember Ring Lv 10 (Rare)')).toEqual({ BRL: 12 });
+    expect(result.quotes.get('Ember Ring Lv 10 (Rare)')).toEqual({ BRL: quote(12) });
     expect(result.complete).toBe(true);
   });
 
@@ -122,7 +154,7 @@ describe('quoteNative', () => {
     const fetchPriceOverview = vi.fn((url: string) => {
       const hashName = decodeURIComponent(new URL(url).searchParams.get('market_hash_name') ?? '');
       return Promise.resolve<QuoteFetchResult>(
-        hashName === quoted ? { ok: true, lowest: 25 } : { ok: false, rateLimited: true },
+        hashName === quoted ? { ok: true, quote: quote(25) } : { ok: false, rateLimited: true },
       );
     });
 
@@ -134,7 +166,7 @@ describe('quoteNative', () => {
     });
 
     expect(result.complete).toBe(false);
-    expect(result.quotes.get(quoted)).toEqual({ BRL: 25 });
+    expect(result.quotes.get(quoted)).toEqual({ BRL: quote(25) });
     expect(result.anomalies.map((anomaly) => anomaly.kind)).toEqual(['rate-limited']);
   });
 });

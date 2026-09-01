@@ -92,7 +92,7 @@ importers:
       '@bombfarm/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      '@fontsource-variable/dm-sans':
+      '@fontsource-variable/ibm-plex-sans':
         specifier: ^5.3.0
         version: 5.3.0
       '@fontsource/ibm-plex-mono':
@@ -437,13 +437,14 @@ importers:
         version: 3.2.7(@types/debug@4.1.13)(@types/node@22.20.1)(happy-dom@20.11.15)(lightningcss@1.32.0)(terser@5.49.0)
 
   packages/ui:
+    dependencies:
+      '@fontsource-variable/ibm-plex-sans':
+        specifier: ^5.3.0
+        version: 5.3.0
     devDependencies:
       '@base-ui/react':
         specifier: ^1.6.0
         version: 1.6.0(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@fontsource-variable/dm-sans':
-        specifier: ^5.3.0
-        version: 5.3.0
       '@fontsource/ibm-plex-mono':
         specifier: ^5.3.0
         version: 5.3.0
@@ -1301,8 +1302,8 @@ packages:
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
 
-  '@fontsource-variable/dm-sans@5.3.0':
-    resolution: {integrity: sha512-BpUG5bqePiDFMBM4ZtLSlPdAIOM990uB1dlXzIf4aw21yQR7BmykedLXXXMqGWsR18aMLOsbWccwJNh3ztTQaA==}
+  '@fontsource-variable/ibm-plex-sans@5.3.0':
+    resolution: {integrity: sha512-agG8tXFEo0hD9+J7npa4vbbWult52eMLVaQ6WQRlhs/iCAojrMAoejru85W9HTVXHfyUj96KM7gp/KGAS87XaQ==}
 
   '@fontsource/ibm-plex-mono@5.3.0':
     resolution: {integrity: sha512-eTgnZjZEGk1QtD3ZstF+Vclo2HLAni8YMy34/DxllwZvyz1lR/1RF/xTiAquOBO7MvqBx8D2Ig2WCPMVfdZu7Q==}
@@ -7642,7 +7643,7 @@ snapshots:
 
   '@floating-ui/utils@0.2.12': {}
 
-  '@fontsource-variable/dm-sans@5.3.0': {}
+  '@fontsource-variable/ibm-plex-sans@5.3.0': {}
 
   '@fontsource/ibm-plex-mono@5.3.0': {}
 

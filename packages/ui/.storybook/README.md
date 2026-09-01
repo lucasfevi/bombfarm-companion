@@ -52,7 +52,7 @@ aggregator, which fails on `skipped`/`cancelled` too, not only `failure`) gates 
    alias around).
 3. **Dark-only preview** — [`preview.css`](preview.css) imports `../src/styles.css`
    directly (Tailwind v4 + its own `@source` scan of `packages/ui/src` — no separate
-   app `globals.css` needed under Vite) and self-hosts DM Sans / IBM Plex Mono via
+   app `globals.css` needed under Vite) and self-hosts IBM Plex Sans / IBM Plex Mono via
    `@fontsource` (no Next, no CDN — see `preview.css`'s own comments for why).
    [`decorators.tsx`](decorators.tsx) wraps the canvas in `bg-bg text-ink font-sans`.
    Do not add light-mode stories or a theme toggle. If a story looks like a bare

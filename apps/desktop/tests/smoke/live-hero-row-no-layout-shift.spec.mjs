@@ -12,12 +12,13 @@ const ACCOUNT_FULL_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-ful
  * The hero list's two numeric columns must hold still while their own digits change.
  *
  * This is measured rather than reviewed because the failure is invisible in markup and invisible
- * in a screenshot of a single frame: `DM Sans` ships no tabular figures, so `1` renders at barely
- * half the width of `8`, and `tabular-nums` — which this row and the countdown beside it both
- * carried — has no feature to switch on and changes nothing. Every reading therefore re-flowed as
- * it counted, dragging the energy caret with it. A class assertion cannot catch that; only the
- * rendered geometry can, which is why this lives in the smoke suite next to the earnings panel's
- * own layout-shift spec rather than in a unit test.
+ * in a screenshot of a single frame: the app once set its figures in a face with no tabular
+ * figures at all, where `1` rendered at barely half the width of `8` and the `tabular-nums` this
+ * row and the countdown beside it both carried had no feature to switch on. Every reading
+ * re-flowed as it counted, dragging the energy caret with it. A class assertion cannot catch
+ * that — a passing one is exactly what the app had — and only the rendered geometry can, which is
+ * why this lives in the smoke suite next to the earnings panel's own layout-shift spec rather
+ * than in a unit test.
  *
  * The two properties asserted are the two halves of the fix, and each fails on its own: the
  * figure renders in a face whose digits are all one width, and it sits in a slot wide enough for

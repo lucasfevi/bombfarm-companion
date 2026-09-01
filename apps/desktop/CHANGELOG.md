@@ -1,5 +1,62 @@
 # @bombfarm/desktop
 
+## 0.9.0
+
+### Minor Changes
+
+- 18a722d: Set the app in a face whose digits are all one width, so numbers stop jittering as they count
+
+  Every figure in the app re-flowed while it was on screen. The body face shipped no tabular
+  figures, which meant `1` rendered at barely half the width of `8` — measured at 20px, 6.56px
+  against 12.33px — and the ~105 places that asked for `font-variant-numeric: tabular-nums` got
+  nothing back, because a face without tabular figures has no such feature to switch on. Every
+  live reading therefore changed width as its own digits changed, dragging whatever sat beside it.
+
+  The body face is now IBM Plex Sans, whose digits are equal-width with no feature required, so
+  they hold still even where nothing asked. It is the superfamily of the mono face the app already
+  loaded, so the figures that are deliberately set in mono — the hero energy readings, the rest
+  countdowns — now sit beside their own sans rather than an unrelated one.
+
+  A face cannot fix the other half: no figure stops `9` becoming `10`. The Live screen's rotation
+  counts sat content-sized in a row, so a roster crossing nine heroes in one state widened that
+  badge and shoved the three beside it sideways. Each count now reserves a slot wide enough for
+  two digits, on the desktop Live screen and on the download page's replica of it.
+
+  The Live earnings panel's current-gold figure also sat 16px left of the five figures beside it.
+  Its staleness marker is always mounted — merely invisible while the reading is fresh, so that
+  showing it never resizes the tile — but it sat after the number and pushed it off the tile's right
+  edge. The marker now hangs to the number's left, the way the hero row's direction caret already
+  does.
+
+  Two notes on the new face. It tops out at weight 700, so the few `font-extrabold` and
+  `font-black` headings and hero-rank badges now render at bold rather than heavier. Link-preview
+  cards are regenerated in the new face by the same script that draws them.
+
+### Patch Changes
+
+- bc88553: Keep the median and 24-hour volume Steam quotes alongside the lowest price.
+
+  The market quote endpoint returns three numbers for every item it is asked about — the lowest live
+  listing, the median of recent sales, and how many units sold in the last day — and the sweep read
+  the first and discarded the other two, on calls it had already paid for. All three are now carried
+  through the pass that fetches them.
+
+  Nothing about the published snapshot moves: its entries still carry the lowest price per currency,
+  its schema version is unchanged, and its bytes are identical for the same market. No app needs a
+  change to read it, and none of this is visible in the planner or the desktop app yet — the extra
+  numbers exist so that price history has something to record when it arrives.
+
+  The desktop app's per-item refresh reads the lowest price out of the wider answer, and keeps
+  treating Steam answering without a price as "not quoted" rather than as a price of nothing, so the
+  snapshot's own figure still stands in that case.
+
+- Updated dependencies [18a722d]
+- Updated dependencies [bc88553]
+  - @bombfarm/ui@0.9.0
+  - @bombfarm/pricing@0.1.5
+  - @bombfarm/farm@0.2.1
+  - @bombfarm/game-art@0.3.4
+
 ## 0.8.1
 
 ### Patch Changes
