@@ -377,6 +377,10 @@ export async function runSweep({
     quoteCalls: quoted.calls,
     quotesAttempted,
     quotesOk: quoted.quotes.size,
+    // The snapshot keeps only `lowest` per currency, so this is the sole route by which the
+    // median and the 24h volume the rotation already paid for reach a caller at all.
+    quotes: quoted.quotes,
+    quotedUtc: quoted.quotedUtc,
     unquoted: quoted.unquoted,
     rateLimitHits,
     rateLimitHitsDerived,
