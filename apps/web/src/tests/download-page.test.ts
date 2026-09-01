@@ -90,6 +90,21 @@ describe('Live replica', () => {
     expect(frame.measured.goldPerProp).toBeLessThan(frame.map.goldPerProp);
   });
 
+  it('marks each row with the way that hero energy is actually moving, not merely with a colour', () => {
+    const markup = renderToStaticMarkup(createElement(LiveReplica, { lang: 'en' }));
+    const start = replicaFrameAt(0);
+    const later = replicaFrameAt(LOOP_SECONDS);
+    const movingBy = (sign: number) =>
+      start.heroes.filter(
+        (hero, index) => Math.sign((later.heroes[index]?.energyPercent ?? 0) - hero.energyPercent) === sign,
+      );
+
+    expect(movingBy(-1).length).toBeGreaterThan(0);
+    expect(movingBy(1).length).toBeGreaterThan(0);
+    expect(markup.match(/▾/g) ?? []).toHaveLength(movingBy(-1).length);
+    expect(markup.match(/▴/g) ?? []).toHaveLength(movingBy(1).length);
+  });
+
   it('shows the roster it was drawn from, with an avatar each', () => {
     const markup = renderToStaticMarkup(createElement(LiveReplica, { lang: 'en' }));
     for (const name of ['Bellatrix', 'Jon', 'Minato']) expect(markup).toContain(name);
