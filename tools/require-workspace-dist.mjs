@@ -50,6 +50,12 @@ export const PACKAGES_ROOT = join(here, '..', 'packages');
  *     `packages/pricing/src` is an `import type`, erased before it can be resolved. `domain` is
  *     not one either: the builder reads `packages/domain/src/data/*.json` by relative path, never
  *     through that package's exports.
+ *   - `tools/market-snapshot/sweep-stats.test.mjs` needs `pricing` only, for the same reason: it
+ *     imports the snapshot builder, which imports `@bombfarm/pricing` through that package's
+ *     exports map. Measured by moving each `packages/<name>/dist` aside in turn and running the
+ *     file alone — only `pricing` fails it, with `Failed to resolve entry for package
+ *     "@bombfarm/pricing"`; the other eight leave it green at 1 file / 8 tests. It drives the
+ *     sweep against a stubbed network and reads no `packages/domain` data of its own.
  *   Removing any other package's `dist` leaves those files, and the rest of the project, green.
  *   It calls the assert on its own key, not on a shared `tools` key — see
  *   `tools/vitest.config.ts`.
@@ -66,6 +72,7 @@ export const REQUIRED_DIST_PACKAGES = Object.freeze({
   '@bombfarm/game-api': Object.freeze(['domain']),
   'tools/derived-fixture-drift.test.mjs': Object.freeze(['domain', 'game-api']),
   'tools/market-item-linking.test.mjs': Object.freeze(['pricing']),
+  'tools/market-snapshot/sweep-stats.test.mjs': Object.freeze(['pricing']),
 });
 
 /**
