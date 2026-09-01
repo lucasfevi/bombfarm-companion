@@ -89,6 +89,7 @@ describe('createBuilderConfig', () => {
           perMachine: false,
           allowToChangeInstallationDirectory: false,
         });
+        expect(config.asarUnpack).toEqual(['**/node_modules/frida/**/*']);
       });
 
       if (descriptor.updateChannel === null) {
