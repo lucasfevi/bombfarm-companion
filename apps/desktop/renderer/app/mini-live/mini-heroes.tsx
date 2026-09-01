@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { HeroAvatar, rarityTextClass } from '@bombfarm/game-art';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
 import { useCopy, useLocale } from '../../lib/copy';
@@ -44,13 +44,13 @@ function MiniHeroRow({
   state: LiveRotationRowState;
   hero: LiveHeroFact;
   energyFraction: number | undefined;
-  trailing?: React.ReactNode;
+  trailing?: ReactNode;
 }) {
   const t = useCopy();
   const { locale } = useLocale();
   const direction = energyDirectionOf(state);
   const name = hero.name ?? hero.id;
-  const rarityClass = hero.rarity !== undefined ? rarityTextClass(hero.rarity) : 'text-ink';
+  const rarityClass = hero.rarity !== undefined ? (rarityTextClass(hero.rarity) ?? 'text-ink') : 'text-ink';
 
   return (
     <li data-testid={`live-hero-row-${hero.id}`} className="grid grid-cols-[auto_minmax(0,1fr)_3.5rem_4.5rem_auto] items-center gap-2 py-0.5">
@@ -89,6 +89,15 @@ export function MiniHeroes({ slow, fast }: { slow: LiveSlowModel | null; fast: L
   const t = useCopy();
   const { locale } = useLocale();
 
+  const { occupied, fieldSize } = slow?.occupancy ?? { occupied: 0, fieldSize: undefined };
+  const onFieldCount =
+    slow && fieldSize !== undefined
+      ? `${formatCount(occupied, locale)}/${formatCount(fieldSize, locale)}`
+      : formatCount(occupied, locale);
+  const fieldSlotsHint =
+    slow && fieldSize !== undefined && fieldSize < FIELD_SLOTS_MAX ? t.liveFieldSlotsHint : undefined;
+  const rows = useMemo(() => (slow ? buildRows(slow, fast) : []), [slow, fast]);
+
   if (slow === null) {
     return (
       <section data-testid="mini-heroes" aria-label={t.liveHeroesTitle} className="min-h-0 min-w-0 overflow-auto rounded-md border border-line/55 bg-surface p-2">
@@ -98,14 +107,6 @@ export function MiniHeroes({ slow, fast }: { slow: LiveSlowModel | null; fast: L
       </section>
     );
   }
-
-  const { occupied, fieldSize } = slow.occupancy;
-  const onFieldCount =
-    fieldSize !== undefined
-      ? `${formatCount(occupied, locale)}/${formatCount(fieldSize, locale)}`
-      : formatCount(occupied, locale);
-  const fieldSlotsHint = fieldSize !== undefined && fieldSize < FIELD_SLOTS_MAX ? t.liveFieldSlotsHint : undefined;
-  const rows = useMemo(() => buildRows(slow, fast), [slow, fast]);
 
   return (
     <section

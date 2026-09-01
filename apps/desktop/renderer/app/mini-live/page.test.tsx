@@ -21,7 +21,34 @@ describe('mini-live page shell', () => {
     expect(source).toContain("'miniLive:close'");
   });
 
-  it('sets native title on the gear control', () => {
-    expect(source).toContain('miniLiveGearTitle');
+  it('routes gear layout changes through miniLive:setLayout', () => {
+    expect(source).toContain("'miniLive:setLayout'");
+  });
+
+  it('measures content for miniLive:fitGrowthAxis after layout changes', () => {
+    expect(source).toContain("'miniLive:fitGrowthAxis'");
+  });
+});
+
+describe('mini-live section layout', () => {
+  const source = readFileSync(join(__dirname, 'page.tsx'), 'utf8');
+
+  it('defaults to earnings and map on with heroes off', () => {
+    expect(source).toContain('showEarnings: true');
+    expect(source).toContain('showMap: true');
+    expect(source).toContain('showHeroes: false');
+    expect(source).toContain("axis: 'vertical'");
+  });
+
+  it('renders earnings, map, and heroes only when their layout flags are on', () => {
+    expect(source).toContain('layout.showEarnings ?');
+    expect(source).toContain('layout.showMap ?');
+    expect(source).toContain('layout.showHeroes ?');
+  });
+
+  it('uses a horizontal row when the growth axis is horizontal', () => {
+    expect(source).toContain("layout.axis === 'horizontal'");
+    expect(source).toContain('flex-row');
+    expect(source).toContain('data-axis={layout.axis}');
   });
 });

@@ -1,10 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import type { AppLocale, MiniLiveLayoutView } from '@bombfarm/contracts';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { AppLocale, MiniLiveLayoutPatch, MiniLiveLayoutView } from '@bombfarm/contracts';
 import { DEFAULT_SETTINGS } from '@bombfarm/contracts';
-import { CopyProvider, useCopy } from '../../lib/copy';
+import { CopyProvider } from '../../lib/copy';
+import { useLiveModel } from '../../lib/live/use-live-model';
 import { MiniChrome } from './mini-chrome';
+import { MiniEarnings } from './mini-earnings';
+import { MiniGear } from './mini-gear';
+import { MiniHeroes } from './mini-heroes';
+import { MiniMap } from './mini-map';
 
 const DEFAULT_MINI_LAYOUT: MiniLiveLayoutView = {
   showEarnings: true,
@@ -20,6 +25,7 @@ function getBridge(): NonNullable<Window['bfc']> | null {
 export default function MiniLivePage() {
   const [locale, setLocale] = useState<AppLocale>(DEFAULT_SETTINGS.locale);
   const [layout, setLayout] = useState<MiniLiveLayoutView>(DEFAULT_MINI_LAYOUT);
+  const [gearOpen, setGearOpen] = useState(false);
 
   useEffect(() => {
     const bridge = getBridge();
@@ -46,44 +52,83 @@ export default function MiniLivePage() {
     void bridge.invoke('miniLive:close');
   }, []);
 
+  const onLayoutChange = useCallback((patch: MiniLiveLayoutPatch) => {
+    const bridge = getBridge();
+    if (!bridge) {
+      setLayout(patch);
+      return;
+    }
+    void bridge.invoke('miniLive:setLayout', patch).then(setLayout);
+  }, []);
+
+  const onResetEarnings = useCallback(() => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('live:resetEarnings');
+  }, []);
+
   return (
     <CopyProvider locale={locale}>
-      <MiniLiveShell layout={layout} onClose={onClose} />
+      <MiniLiveShell
+        layout={layout}
+        gearOpen={gearOpen}
+        onGearOpenChange={setGearOpen}
+        onClose={onClose}
+        onLayoutChange={onLayoutChange}
+        onResetEarnings={onResetEarnings}
+      />
     </CopyProvider>
   );
 }
 
 function MiniLiveShell({
   layout,
+  gearOpen,
+  onGearOpenChange,
   onClose,
+  onLayoutChange,
+  onResetEarnings,
 }: {
   layout: MiniLiveLayoutView;
+  gearOpen: boolean;
+  onGearOpenChange: (open: boolean) => void;
   onClose: () => void;
+  onLayoutChange: (patch: MiniLiveLayoutPatch) => void;
+  onResetEarnings: () => void;
 }) {
-  const t = useCopy();
+  const model = useLiveModel();
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const node = contentRef.current;
+    const bridge = getBridge();
+    if (!node || !bridge) return;
+    void bridge.invoke('miniLive:fitGrowthAxis', {
+      width: node.scrollWidth,
+      height: node.scrollHeight,
+    });
+  }, [layout, model.earnings, model.map, model.slow]);
 
   return (
     <div data-testid="mini-live-page" className="flex h-dvh flex-col bg-bg text-ink font-sans">
       <MiniChrome
         onClose={onClose}
-        gear={
-          <button
-            type="button"
-            data-testid="mini-live-gear"
-            title={t.miniLiveGearTitle}
-            aria-label={t.miniLiveGearTitle}
-            className="grid size-7 place-items-center rounded-sm border-0 bg-transparent text-muted transition-colors hover:text-ink focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          />
-        }
+        gear={<MiniGear open={gearOpen} onOpenChange={onGearOpenChange} layout={layout} onLayoutChange={onLayoutChange} />}
       />
       <div
+        ref={contentRef}
         data-testid="mini-live-sections"
+        data-axis={layout.axis}
         className={
           layout.axis === 'horizontal'
             ? 'flex min-h-0 flex-1 flex-row gap-2 p-2'
             : 'flex min-h-0 flex-1 flex-col gap-2 p-2'
         }
-      />
+      >
+        {layout.showEarnings ? <MiniEarnings earnings={model.earnings} onReset={onResetEarnings} /> : null}
+        {layout.showMap ? <MiniMap map={model.map} /> : null}
+        {layout.showHeroes ? <MiniHeroes slow={model.slow} fast={model.fast} /> : null}
+      </div>
     </div>
   );
 }
