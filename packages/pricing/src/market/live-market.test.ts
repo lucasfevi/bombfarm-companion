@@ -70,8 +70,8 @@ const entryFor = (key: string) => {
 
 describe('the live market rows', () => {
   it('prices every row it enumerated, whatever the catalog knows about it', () => {
-    expect(snapshot.coverage.marketRows).toBe(35);
-    expect(snapshot.coverage.pricedRows).toBe(35);
+    expect(snapshot.coverage.marketRows).toBe(40);
+    expect(snapshot.coverage.pricedRows).toBe(40);
     expect(snapshot.coverage.unkeyedRows).toBe(0);
   });
 
@@ -130,6 +130,16 @@ describe('the live market rows', () => {
     for (const [defId, rarityIdx, hashName] of cases) {
       expect(entryFor(priceKey(defId, rarityIdx))?.hashName).toBe(hashName);
     }
+  });
+
+  it.each([
+    ['gem_topaz', 3, 'Topaz Gem'],
+    ['chest_time_3', 3, 'Time Chest (Act 3)'],
+    ['chest_gem_2', 2, 'Gem Chest (Act 2)'],
+    ['chest_skill_2', 2, 'Skill Stone Chest (Act 2)'],
+    ['chest_skill_3', 3, 'Skill Stone Chest (Act 3)'],
+  ])('links %s, which the published snapshot could not', (defId, rarityIdx, hashName) => {
+    expect(entryFor(priceKey(defId, rarityIdx))?.hashName).toBe(hashName);
   });
 
   it('keeps two same-act chests apart, which a facet-built key would have merged', () => {

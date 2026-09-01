@@ -3,9 +3,9 @@ import type { FacetName } from '../types.js';
 
 /**
  * Every row the Steam market carried for this app on 2026-08-29, with the facet tags each one was
- * discovered under. Transcribed from a flat `search/render` walk plus one narrowed query per tag
- * — the same two passes the sweep makes, so these are the tags Steam answered with, not an
- * interpretation of the names.
+ * discovered under, plus five rows the market gained afterwards. Transcribed from a flat
+ * `search/render` walk plus one narrowed query per tag — the same two passes the sweep makes, so
+ * these are the tags Steam answered with, not an interpretation of the names.
  *
  * A shape witness, not a price source: it proves the reconciliation turns real market rows into
  * the right identities. Nothing asserts these prices are current, and it never needs refreshing
@@ -75,4 +75,13 @@ export const LIVE_MARKET_ROWS: DiscoveryRow[] = [
   row('Hero Cage (Act 1)', 15, 289, { category: 'chest', act: '1' }),
   row('Skill Stone Chest (Act 1)', 5, 129, { category: 'chest', act: '1' }),
   row('Royal Sentinel Skin', 1, 4814, { category: 'skin' }),
+
+  // Listed after the walk above, and every one of them was priced and unreachable from an
+  // inventory until the family and gem lookups were fixed. Kept together so it stays obvious
+  // which rows are the regression witnesses.
+  row('Gem Chest (Act 2)', 4, 577, { category: 'chest', act: '2' }),
+  row('Skill Stone Chest (Act 2)', 2, 55, { category: 'chest', act: '2' }),
+  row('Skill Stone Chest (Act 3)', 3, 487, { category: 'chest', act: '3' }),
+  row('Time Chest (Act 3)', 1, 1500, { category: 'chest', act: '3' }),
+  row('Topaz Gem', 1, 1772, { category: 'gem', rarity: 'epic' }),
 ];
