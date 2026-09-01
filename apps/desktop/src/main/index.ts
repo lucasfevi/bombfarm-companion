@@ -1,5 +1,6 @@
 import path from 'node:path';
-import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron';
+import fs from 'node:fs';
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, shell } from 'electron';
 import {
   DEFAULT_SETTINGS,
   emptyMarketSnapshotView,
@@ -67,7 +68,8 @@ import {
   applyAlwaysOnTopMain as applyAlwaysOnTopMainSettings,
   applyLocale as applyLocaleSettings,
 } from './shell/settings-apply.js';
-import { type ShellLifecycle } from './shell/window-lifecycle.js';
+import { createElectronTray } from './shell/electron-tray.js';
+import { createShellLifecycle, type ShellLifecycle, type WindowPort } from './shell/window-lifecycle.js';
 
 let mainWindow: BrowserWindow | null = null;
 let storage: Storage | null = null;
@@ -340,6 +342,63 @@ async function createMainWindow(): Promise<void> {
     log.info({ scope: 'main', event: 'renderer.load_url', url: RENDERER_ENTRY_URL });
     await mainWindow.loadURL(RENDERER_ENTRY_URL);
   }
+
+  setupShellLifecycle(env.productName);
+}
+
+function setupShellLifecycle(productName: string): void {
+  if (!mainWindow) {
+    return;
+  }
+
+  const windowPort: WindowPort = {
+    hide: () => mainWindow?.hide(),
+    show: () => mainWindow?.show(),
+    focus: () => mainWindow?.focus(),
+    restore: () => mainWindow?.restore(),
+    isVisible: () => mainWindow?.isVisible() ?? false,
+    isMinimized: () => mainWindow?.isMinimized() ?? false,
+    isDestroyed: () => mainWindow?.isDestroyed() ?? true,
+  };
+
+  const iconPath = path.join(__dirname, '../../assets/icon.ico');
+  const trayResult = createElectronTray({
+    iconPath,
+    tooltip: productName,
+    platform: process.platform,
+    fileExists: (filePath) => fs.existsSync(filePath),
+    createNativeImage: (filePath) => nativeImage.createFromPath(filePath),
+  });
+
+  const trayPort = trayResult.ok ? trayResult.tray : null;
+  if (!trayResult.ok && trayResult.reason !== 'not-win32') {
+    log.error({ scope: 'main', event: 'tray.create_failed', reason: trayResult.reason });
+  }
+
+  shellLifecycle = createShellLifecycle({
+    window: windowPort,
+    tray: trayPort,
+    quit: () => app.quit(),
+    log,
+    labels: trayTextFor(currentSettings.locale),
+    tooltip: productName,
+  });
+
+  if (trayResult.ok) {
+    const showFromTray = (): void => {
+      shellLifecycle?.show();
+    };
+    trayResult.native.on('click', showFromTray);
+    trayResult.native.on('double-click', showFromTray);
+  }
+
+  mainWindow.on('close', (event) => {
+    if (shellLifecycle?.onWindowClose() === 'hide') {
+      event.preventDefault();
+      mainWindow?.hide();
+      log.info({ scope: 'main', event: 'window.hidden' });
+    }
+  });
 }
 
 async function bootstrap(): Promise<void> {
@@ -644,11 +703,7 @@ if (!gotLock) {
 } else {
   app.on('second-instance', () => {
     log.info({ scope: 'main', event: 'app.second_instance' });
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      if (!mainWindow.isVisible()) mainWindow.show();
-      mainWindow.focus();
-    }
+    shellLifecycle?.show();
   });
 
   app.whenReady().then(bootstrap).catch((error: unknown) => {
@@ -673,6 +728,7 @@ if (!gotLock) {
   // anyway. See fix/fixture-tick-after-db-close — closing storage before stopping the fixture
   // ticker produced an uncaught "database is not open" exception on quit.
   app.on('before-quit', () => {
+    shellLifecycle?.markQuitting();
     updateService?.stop();
     updateService = null;
     gameReader?.stop();
@@ -688,6 +744,8 @@ if (!gotLock) {
     liveSource = null;
     lastIngestedRotationBody = null;
     consentStore = null;
+    shellLifecycle?.destroyTray();
+    shellLifecycle = null;
     // settingsStore borrows accountOpen.db, which accountStore.close() already owns
     // below; it holds no timer and opens no handle of its own, so it must not gain a close().
     settingsStore = null;
