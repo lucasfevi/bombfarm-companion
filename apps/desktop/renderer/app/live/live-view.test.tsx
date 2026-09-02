@@ -21,10 +21,4 @@ describe('LiveView — reachable-under-SSR behaviour', () => {
     expect(html).toContain(en.shellLoadingLabel);
     expect(html).not.toContain('data-testid="live-panel"');
   });
-
-  it('renders the labelled Open-mini control in the loading branch', () => {
-    const html = renderToStaticMarkup(createElement(LiveView, {}));
-    expect(html).toContain('data-testid="live-open-mini"');
-    expect(html).toContain(en.miniLiveOpenLabel);
-  });
 });

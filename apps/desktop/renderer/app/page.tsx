@@ -10,7 +10,7 @@ import type {
   UpdateStatus,
 } from '@bombfarm/contracts';
 import { DEFAULT_SETTINGS, idleUpdateStatus } from '@bombfarm/contracts';
-import { AppShell, BrandMark, SegmentedToggle, StatusChip } from '@bombfarm/ui';
+import { AppShell, BrandMark, Button, Icon, SegmentedToggle, StatusChip } from '@bombfarm/ui';
 // Proves the renderer can import @bombfarm/domain: a value import from a
 // FILE subpath that itself value-imports ./data/catalog.json, so a dist missing the JSON data
 // fails the static export build rather than surfacing later at runtime. It also carries a
@@ -57,6 +57,29 @@ function statusLabel(status: GameStatusInfo['status'], t: Copy): string {
 
 function getBridge(): NonNullable<Window['bfc']> | null {
   return (window as unknown as { bfc?: NonNullable<Window['bfc']> }).bfc ?? null;
+}
+
+function OpenMiniButton() {
+  const t = useCopy();
+
+  const onOpenMini = () => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('miniLive:open');
+  };
+
+  return (
+    <Button
+      type="button"
+      variant="text"
+      data-testid="open-mini"
+      onClick={onOpenMini}
+      className="inline-flex items-center gap-1.5"
+    >
+      <Icon name="window" size="sm" />
+      {t.miniLiveOpenLabel}
+    </Button>
+  );
 }
 
 export default function HomePage() {
@@ -292,14 +315,17 @@ function HomePageContent({
         draggable
         overlayInset={overlayInset}
         actions={
-          <SegmentedToggle
-            options={LOCALE_OPTIONS}
-            value={locale}
-            onChange={(id) => {
-              if (id === 'en' || id === 'pt-BR') onLocaleChange(id);
-            }}
-            ariaLabel={t.consentGateLanguageLabel}
-          />
+          <div className="flex items-center gap-3">
+            {granted ? <OpenMiniButton /> : null}
+            <SegmentedToggle
+              options={LOCALE_OPTIONS}
+              value={locale}
+              onChange={(id) => {
+                if (id === 'en' || id === 'pt-BR') onLocaleChange(id);
+              }}
+              ariaLabel={t.consentGateLanguageLabel}
+            />
+          </div>
         }
         status={
           <span data-testid="game-status-chip">

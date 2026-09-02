@@ -9,7 +9,9 @@ import { uiIconRegistry } from './ui-registry';
 // locked-row glyph, replacing a Chip + HelpTip pair.
 // Inventory layout toggle (2026-08-30): layout-grid, layout-list — the cards/list switch is two
 // icon buttons rather than two words, so it sits in the toolbar's corner without crowding it.
+// Compact Live window (2026-09-01): window — the desktop header's opener for the second window.
 const MIGRATED_UI_NAMES = [
+  'window',
   'layout-grid',
   'layout-list',
   'chevron-down',

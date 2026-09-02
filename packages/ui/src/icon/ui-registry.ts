@@ -12,12 +12,15 @@ import {
   HiMiniLockClosed,
   HiMiniSquares2X2,
   HiMiniBars3,
+  HiMiniWindow,
 } from 'react-icons/hi2';
 import { BiCoffee } from 'react-icons/bi';
 import { PiSortAscending, PiSortDescending } from 'react-icons/pi';
 import type { IconGlyph } from './types';
 
 export const uiIconRegistry = {
+  // Desktop header control that opens the compact second Live window
+  window: HiMiniWindow,
   // Inventory layout toggle — cards
   'layout-grid': HiMiniSquares2X2,
   // Inventory layout toggle — list

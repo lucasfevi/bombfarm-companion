@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, EmptyState } from '@bombfarm/ui';
+import { EmptyState } from '@bombfarm/ui';
 import { useCopy } from '../../lib/copy';
 import { useLiveModel } from '../../lib/live/use-live-model';
 import { LivePanel } from './live-panel';
@@ -10,33 +10,6 @@ import { NeverReadEmptyState } from './never-read-empty-state';
  *  `consent-modal.tsx`'s own `getBridge()`. */
 function getBridge(): NonNullable<Window['bfc']> | null {
   return (window as unknown as { bfc?: NonNullable<Window['bfc']> }).bfc ?? null;
-}
-
-function OpenMiniButton() {
-  const t = useCopy();
-
-  const onOpenMini = () => {
-    const bridge = getBridge();
-    if (!bridge) return;
-    void bridge.invoke('miniLive:open');
-  };
-
-  return (
-    <Button type="button" variant="text" data-testid="live-open-mini" onClick={onOpenMini}>
-      {t.miniLiveOpenLabel}
-    </Button>
-  );
-}
-
-function LiveViewChrome({ children }: { children: React.ReactNode }) {
-  return (
-    <div data-testid="live-view" className="flex flex-col gap-2">
-      <div className="flex justify-end">
-        <OpenMiniButton />
-      </div>
-      {children}
-    </div>
-  );
 }
 
 export function LiveView({ onReopenConsent }: { onReopenConsent?: (() => void) | undefined }) {
@@ -51,30 +24,30 @@ export function LiveView({ onReopenConsent }: { onReopenConsent?: (() => void) |
 
   if (freshness.kind === 'bridge-unavailable') {
     return (
-      <LiveViewChrome>
+      <div data-testid="live-view">
         <EmptyState title={t.emptyBridgeUnavailableTitle} />
-      </LiveViewChrome>
+      </div>
     );
   }
 
   if (freshness.kind === 'loading') {
     return (
-      <LiveViewChrome>
+      <div data-testid="live-view">
         <EmptyState title={t.shellLoadingLabel} />
-      </LiveViewChrome>
+      </div>
     );
   }
 
   if (slow === null) {
     return (
-      <LiveViewChrome>
+      <div data-testid="live-view">
         <NeverReadEmptyState freshness={freshness} onReopenConsent={onReopenConsent} />
-      </LiveViewChrome>
+      </div>
     );
   }
 
   return (
-    <LiveViewChrome>
+    <div data-testid="live-view">
       <LivePanel
         freshness={freshness}
         slow={slow}
@@ -84,6 +57,6 @@ export function LiveView({ onReopenConsent }: { onReopenConsent?: (() => void) |
         onResetEarnings={onResetEarnings}
         onReopenConsent={onReopenConsent}
       />
-    </LiveViewChrome>
+    </div>
   );
 }
