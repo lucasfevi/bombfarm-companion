@@ -2,9 +2,8 @@
 /**
  * Open the merged Playwright report from a failed CI run.
  *
- * The same report is published to GitHub Pages and linked from the PR comment —
- * this script is the offline path (and the only one that includes traces, which
- * are stripped from the public Pages copy).
+ * This is the only way to see a CI diff. The PR comment names the failing screenshots but cannot
+ * show them, so reviewing one means pulling the artifact down.
  *
  * Default: download the single `e2e-report` artifact and open it locally.
  *
@@ -25,7 +24,6 @@ const PLAYWRIGHT_CLI = path.join(ROOT, 'node_modules', '@playwright', 'test', 'c
 const REPORT_ARTIFACT = 'e2e-report';
 const LEGACY_ARTIFACTS = ['playwright-report-visual', 'playwright-report-visual-merged'];
 const ARTIFACT_PREFIX = 'playwright-report';
-const PAGES_ROOT = 'https://lucasfevi.github.io/bombfarm-companion';
 
 function usage(exitCode = 0) {
   const text = `Usage: node e2e/scripts/show-ci-report.mjs [--pr <n>] [--run <id>] [--url-only] [--help]
@@ -33,10 +31,10 @@ function usage(exitCode = 0) {
 Resolves the latest failed Playwright e2e CI run for the current branch's PR
 (or --pr / --run), downloads the merged report artifact, and opens it locally.
 
---url-only  Print the online report URL and stop (no download).
+--url-only  Print the PR and run URLs and stop (no download).
 
-To review without downloading anything, open the published report URL printed
-below — it holds every shard (smoke + visual) in one comparator.`;
+The downloaded report holds every shard (smoke + visual) in one comparator, with
+the diff images and the traces.`;
   console[exitCode ? 'error' : 'log'](text);
   process.exit(exitCode);
 }
@@ -228,8 +226,6 @@ function main() {
   );
   if (resolved.prUrl) console.log(resolved.prUrl);
   if (resolved.runUrl) console.log(resolved.runUrl);
-  console.log(`\nOnline report (no download): ${PAGES_ROOT}/reports/${resolved.runId}/`);
-  console.log('Published for ~20 runs; traces are stripped there — download for those.\n');
 
   if (args.urlOnly) {
     process.exit(0);
