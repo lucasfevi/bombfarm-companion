@@ -47,3 +47,24 @@ Ubiquitous language for the companion's game model. Terms only — no implementa
   guaranteed-spawn window.
 - **Skill stones (reroll items)** — the ability-reroll cost items. **No drop rate is known**
   (wiki/API silent); excluded from estimates until captured.
+
+## Heroes
+
+- **Birth roll** — the eight stats a hero is generated with, before level, stars, gear, points
+  or the skill tree touch them. Permanent: nothing a player does ever changes it.
+- **Roll band** — the min–max range a stat may be generated within. Published per hero, not
+  merely per rarity, so a hero's own bands are always known exactly.
+- **Roll percentile** — how far up its own roll band a single birth stat landed, 0–100%.
+- **Roll quality** — the unweighted mean of a hero's eight roll percentiles. **Rank is this
+  number, bucketed** — measured across every hero in the fixture corpus, with no exception, and
+  all eight stats counting equally. Distinct from `HeroScore`, which is a combat evaluation.
+- **Rank** — the hero's S/A/B/C/D/E letter. Reserved for this meaning in player-facing copy:
+  a sorted table is a *ranking*, never a rank.
+- **Ability rating** — the companion's own judgement of how strong an ability is. Editorial,
+  not a game value, and labelled as such wherever it appears.
+- **Live** — a hero as the authoritative source last reported them: the running game on the
+  desktop, the last imported save on the web.
+- **Draft** — a player's edits layered over Live, held per hero. Never written back to the game.
+  Several heroes may hold drafts at once, and each is flagged.
+- **Out of date (draft)** — a draft whose Live values have since moved in a field that draft
+  touches. Judged per hero: another hero changing must never flag this one.
