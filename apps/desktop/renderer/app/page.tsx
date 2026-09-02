@@ -10,7 +10,7 @@ import type {
   UpdateStatus,
 } from '@bombfarm/contracts';
 import { DEFAULT_SETTINGS, idleUpdateStatus } from '@bombfarm/contracts';
-import { AppShell, BrandMark, SegmentedToggle, StatusChip } from '@bombfarm/ui';
+import { AppShell, BrandMark, Button, Icon, SegmentedToggle, StatusChip } from '@bombfarm/ui';
 // Proves the renderer can import @bombfarm/domain: a value import from a
 // FILE subpath that itself value-imports ./data/catalog.json, so a dist missing the JSON data
 // fails the static export build rather than surfacing later at runtime. It also carries a
@@ -31,6 +31,7 @@ import { ConsentSection } from './settings/consent-section';
 import { DiagnosticsSection } from './settings/diagnostics-section';
 import { LanguageSection } from './settings/language-section';
 import { UpdatesSection } from './settings/updates-section';
+import { WindowSection } from './settings/window-section';
 
 const DEFAULT_NAV_ID = 'live';
 
@@ -58,12 +59,39 @@ function getBridge(): NonNullable<Window['bfc']> | null {
   return (window as unknown as { bfc?: NonNullable<Window['bfc']> }).bfc ?? null;
 }
 
+function OpenMiniButton() {
+  const t = useCopy();
+
+  const onOpenMini = () => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('miniLive:open');
+  };
+
+  return (
+    <Button
+      type="button"
+      variant="text"
+      data-testid="open-mini"
+      onClick={onOpenMini}
+      className="inline-flex items-center gap-1.5"
+    >
+      <Icon name="window" size="sm" />
+      {t.miniLiveOpenLabel}
+    </Button>
+  );
+}
+
 export default function HomePage() {
   // Locale state lives here, ABOVE CopyProvider, because CopyProvider needs it as a
   // prop; it cannot be read from the context it itself creates.
   const [locale, setLocale] = useState<AppLocale | null>(null);
   // The unwritable-settings-surfaced rule's surface half — null iff the last write persisted (or none has been attempted yet).
   const [persistWarning, setPersistWarning] = useState<SettingsWriteReason | null>(null);
+  const [alwaysOnTopMain, setAlwaysOnTopMain] = useState(DEFAULT_SETTINGS.alwaysOnTopMain);
+  const [alwaysOnTopWarning, setAlwaysOnTopWarning] = useState<SettingsWriteReason | null>(null);
+  const [alwaysOnTopMini, setAlwaysOnTopMini] = useState(DEFAULT_SETTINGS.alwaysOnTopMini);
+  const [alwaysOnTopMiniWarning, setAlwaysOnTopMiniWarning] = useState<SettingsWriteReason | null>(null);
 
   useEffect(() => {
     const bridge = getBridge();
@@ -77,6 +105,8 @@ export default function HomePage() {
       .invoke('settings:get')
       .then((settings) => {
         setLocale(settings.locale);
+        setAlwaysOnTopMain(settings.alwaysOnTopMain);
+        setAlwaysOnTopMini(settings.alwaysOnTopMini);
       })
       .catch(() => {
         setLocale(DEFAULT_SETTINGS.locale);
@@ -103,12 +133,36 @@ export default function HomePage() {
     });
   };
 
+  const onAlwaysOnTopMainChange = (next: boolean) => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('settings:setAlwaysOnTopMain', next).then((result) => {
+      setAlwaysOnTopMain(result.settings.alwaysOnTopMain);
+      setAlwaysOnTopWarning(result.persisted ? null : result.reason);
+    });
+  };
+
+  const onAlwaysOnTopMiniChange = (next: boolean) => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('settings:setAlwaysOnTopMini', next).then((result) => {
+      setAlwaysOnTopMini(result.settings.alwaysOnTopMini);
+      setAlwaysOnTopMiniWarning(result.persisted ? null : result.reason);
+    });
+  };
+
   return (
     <CopyProvider locale={locale ?? DEFAULT_SETTINGS.locale}>
       <HomePageContent
         locale={locale ?? DEFAULT_SETTINGS.locale}
         onLocaleChange={onLocaleChange}
         persistWarning={persistWarning}
+        alwaysOnTopMain={alwaysOnTopMain}
+        onAlwaysOnTopMainChange={onAlwaysOnTopMainChange}
+        alwaysOnTopWarning={alwaysOnTopWarning}
+        alwaysOnTopMini={alwaysOnTopMini}
+        onAlwaysOnTopMiniChange={onAlwaysOnTopMiniChange}
+        alwaysOnTopMiniWarning={alwaysOnTopMiniWarning}
       />
     </CopyProvider>
   );
@@ -118,10 +172,22 @@ function HomePageContent({
   locale,
   onLocaleChange,
   persistWarning,
+  alwaysOnTopMain,
+  onAlwaysOnTopMainChange,
+  alwaysOnTopWarning,
+  alwaysOnTopMini,
+  onAlwaysOnTopMiniChange,
+  alwaysOnTopMiniWarning,
 }: {
   locale: AppLocale;
   onLocaleChange: (next: AppLocale) => void;
   persistWarning: SettingsWriteReason | null;
+  alwaysOnTopMain: boolean;
+  onAlwaysOnTopMainChange: (next: boolean) => void;
+  alwaysOnTopWarning: SettingsWriteReason | null;
+  alwaysOnTopMini: boolean;
+  onAlwaysOnTopMiniChange: (next: boolean) => void;
+  alwaysOnTopMiniWarning: SettingsWriteReason | null;
 }) {
   const t = useCopy();
   const { lang } = useLocale();
@@ -249,14 +315,17 @@ function HomePageContent({
         draggable
         overlayInset={overlayInset}
         actions={
-          <SegmentedToggle
-            options={LOCALE_OPTIONS}
-            value={locale}
-            onChange={(id) => {
-              if (id === 'en' || id === 'pt-BR') onLocaleChange(id);
-            }}
-            ariaLabel={t.consentGateLanguageLabel}
-          />
+          <div className="flex items-center gap-3">
+            {granted ? <OpenMiniButton /> : null}
+            <SegmentedToggle
+              options={LOCALE_OPTIONS}
+              value={locale}
+              onChange={(id) => {
+                if (id === 'en' || id === 'pt-BR') onLocaleChange(id);
+              }}
+              ariaLabel={t.consentGateLanguageLabel}
+            />
+          </div>
         }
         status={
           <span data-testid="game-status-chip">
@@ -307,6 +376,14 @@ function HomePageContent({
           ) : activeNavId === 'settings' ? (
             <div data-testid="settings-view" className="mx-auto flex w-full max-w-settings flex-col gap-4">
               <LanguageSection locale={locale} onLocaleChange={onLocaleChange} persistWarning={persistWarning} />
+              <WindowSection
+                alwaysOnTopMain={alwaysOnTopMain}
+                onAlwaysOnTopMainChange={onAlwaysOnTopMainChange}
+                persistWarning={alwaysOnTopWarning}
+                alwaysOnTopMini={alwaysOnTopMini}
+                onAlwaysOnTopMiniChange={onAlwaysOnTopMiniChange}
+                miniPersistWarning={alwaysOnTopMiniWarning}
+              />
               <ConsentSection onRevoke={onConsentRevoke} />
               <DiagnosticsSection onSave={onSaveDiagnostics} result={diagnosticsDumpResult} />
               <UpdatesSection

@@ -13,6 +13,13 @@
  */
 export const LOOP_SECONDS = 15;
 
+/**
+ * Which of the two Live windows a panel is being drawn for: the full-size tab, or the compact
+ * second window. It selects the figure set and the type scale, and nothing else — both densities
+ * read the same frame.
+ */
+export type ReplicaDensity = 'full' | 'compact';
+
 export type ReplicaRowState = 'on-field' | 'recovering' | 'queued' | 'benched';
 
 export interface ReplicaHeroSeed {

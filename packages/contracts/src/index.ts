@@ -5,6 +5,7 @@ import type { UpdateStatus } from './update.js';
 import type { MarketQuoteResult, MarketQuoteTarget, MarketSnapshotView } from './market.js';
 
 export { accountChangeKey, canonicalStringify } from './account-change-key.js';
+export { migrateStoredSettings } from './settings-migration.js';
 /** The desktop locale token, its one domain/BCP-47 mapping, and the pure
  *  startup resolution. `locale.ts` itself imports `AppSettings`/`DEFAULT_SETTINGS` back from this
  *  file (see its own doc comment) — safe because every such value is read only inside a function
@@ -279,14 +280,29 @@ export interface DamageAttributionResult {
 }
 
 export interface AppSettings {
-  schemaVersion: 1;
+  schemaVersion: 2;
   locale: 'en' | 'pt-BR';
+  alwaysOnTopMain: boolean;
+  alwaysOnTopMini: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   locale: 'en',
+  alwaysOnTopMain: false,
+  alwaysOnTopMini: false,
 };
+
+export type MiniLiveGrowthAxis = 'vertical' | 'horizontal';
+
+export interface MiniLiveLayoutView {
+  showEarnings: boolean;
+  showMap: boolean;
+  showHeroes: boolean;
+  axis: MiniLiveGrowthAxis;
+}
+
+export type MiniLiveLayoutPatch = MiniLiveLayoutView;
 
 export interface AppEnvironmentInfo {
   flavor: AppFlavor;
@@ -310,6 +326,13 @@ export interface IpcChannels {
    *  `isIpcChannel` is already the allowlist validator for it. */
   'settings:useEnglish': { args: []; result: SettingsWriteResult };
   'settings:usePortuguese': { args: []; result: SettingsWriteResult };
+  'settings:setAlwaysOnTopMain': { args: [boolean]; result: SettingsWriteResult };
+  'settings:setAlwaysOnTopMini': { args: [boolean]; result: SettingsWriteResult };
+  'miniLive:open': { args: []; result: null };
+  'miniLive:close': { args: []; result: null };
+  'miniLive:getLayout': { args: []; result: MiniLiveLayoutView };
+  'miniLive:setLayout': { args: [MiniLiveLayoutPatch]; result: MiniLiveLayoutView };
+  'miniLive:fitGrowthAxis': { args: [{ width: number; height: number }]; result: null };
   'storage:health': { args: []; result: { binding: string; ok: boolean } };
   'game:getStatus': { args: []; result: GameStatusInfo };
   'account:get': { args: []; result: AccountView };
@@ -358,6 +381,13 @@ export const IPC_CHANNELS = [
   'settings:get',
   'settings:useEnglish',
   'settings:usePortuguese',
+  'settings:setAlwaysOnTopMain',
+  'settings:setAlwaysOnTopMini',
+  'miniLive:open',
+  'miniLive:close',
+  'miniLive:getLayout',
+  'miniLive:setLayout',
+  'miniLive:fitGrowthAxis',
   'storage:health',
   'game:getStatus',
   'account:get',
@@ -382,7 +412,8 @@ export type IpcEventChannel =
   | 'account:changed'
   | 'live:event'
   | 'updates:changed'
-  | 'market:changed';
+  | 'market:changed'
+  | 'settings:changed';
 
 export interface IpcEvents {
   'game:status': GameStatusInfo;
@@ -404,6 +435,9 @@ export interface IpcEvents {
   /** Fired whenever main adopts a different snapshot body, or merges a fresh per-item quote into
    *  the one it holds. A check that changed nothing (a 304, a failed fetch) does not fire it. */
   'market:changed': MarketSnapshotView;
+  /** Fired whenever main adopts new settings — persisted or not, since a locale or always-on-top
+   *  change applies for the session either way — so every window follows without a relaunch. */
+  'settings:changed': AppSettings;
 }
 
 export const IPC_EVENT_CHANNELS = [
@@ -413,6 +447,7 @@ export const IPC_EVENT_CHANNELS = [
   'live:event',
   'updates:changed',
   'market:changed',
+  'settings:changed',
 ] as const satisfies readonly IpcEventChannel[];
 
 export function isIpcChannel(value: string): value is IpcInvokeChannel {

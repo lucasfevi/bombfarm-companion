@@ -42,11 +42,36 @@ const MIRRORED = {
   liveMapGoldPerPropLabel: { en: 'Gold / prop', pt: 'Ouro / prop' },
   liveMapGoldPerClearLabel: { en: 'Gold / clear', pt: 'Ouro / limpeza' },
   liveMapEstimateNote: { en: 'Estimated', pt: 'Estimativa' },
+  liveEarningsRecentWindowLabel: { en: 'last {minutes} min', pt: 'últimos {minutes} min' },
+  miniLiveOpenLabel: { en: 'Open mini', pt: 'Abrir mini' },
+  miniLiveAxisLabel: { en: 'Growth direction', pt: 'Direção de crescimento' },
+  miniLiveAxisVerticalLabel: { en: 'Stacked', pt: 'Empilhado' },
+  miniLiveAxisHorizontalLabel: { en: 'Side by side', pt: 'Em linha' },
+  miniLiveLastSectionNote: { en: 'At least one panel must stay on', pt: 'Pelo menos um painel precisa permanecer ligado' },
 } as const;
 
 export type MirroredKey = keyof typeof MIRRORED;
 
 export const MIRRORED_KEYS = Object.keys(MIRRORED) as readonly MirroredKey[];
+
+/**
+ * The labels only the compact-window drawing prints. They are split out because the two drawings
+ * are checked separately: a key added here has to appear in the mini section, and every other
+ * mirrored key has to appear in the full-size replica. Folded into one list, a label could be
+ * mirrored, guarded against the desktop, and drawn by neither.
+ */
+const MINI_KEYS = new Set<string>([
+  'liveEarningsRecentWindowLabel',
+  'miniLiveOpenLabel',
+  'miniLiveAxisLabel',
+  'miniLiveAxisVerticalLabel',
+  'miniLiveAxisHorizontalLabel',
+  'miniLiveLastSectionNote',
+]);
+
+export const MIRRORED_MINI_KEYS = MIRRORED_KEYS.filter((key) => MINI_KEYS.has(key));
+
+export const MIRRORED_BASE_KEYS = MIRRORED_KEYS.filter((key) => !MINI_KEYS.has(key));
 
 export function liveLabel(key: MirroredKey, lang: Lang): string {
   return MIRRORED[key][lang];

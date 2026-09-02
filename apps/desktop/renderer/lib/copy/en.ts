@@ -57,6 +57,16 @@ export const en = {
   settingsLanguageReasonNotWritable: 'Your save location is not writable, so this will not survive a restart.',
   settingsLanguageReasonUnknown: 'This choice could not be saved, so it will not survive a restart.',
 
+  settingsWindowSectionTitle: 'Window',
+  settingsAlwaysOnTopMainLabel: 'Keep the main window on top',
+  settingsAlwaysOnTopMainHelp:
+    'The companion stays above other windows while this is on. Takes effect immediately.',
+  settingsAlwaysOnTopNotSavedTitle: 'Always-on-top changed, but not saved',
+  settingsAlwaysOnTopMiniLabel: 'Keep the mini window on top',
+  settingsAlwaysOnTopMiniHelp:
+    'The compact Live window stays above other windows while this is on. Takes effect immediately.',
+  settingsAlwaysOnTopMiniNotSavedTitle: 'Mini always-on-top changed, but not saved',
+
   // settingsConsent* — the account access revoke control (Settings is reachable only once granted)
   settingsConsentSectionTitle: 'Account access',
   settingsConsentStatusGranted: 'Access: allowed',
@@ -121,6 +131,17 @@ export const en = {
 
   // live* — the Live screen: nav label and the top-of-panel freshness status line
   liveNavLabel: 'Live',
+
+  // miniLive* — the compact second Live window: its opener on the Live tab, its own chrome, and
+  // the panel-layout menu. `*Aria` keys label icon-only controls for assistive technology.
+  miniLiveOpenLabel: 'Open mini',
+  miniLiveCloseAria: 'Close mini',
+  miniLiveGearAria: 'Panel layout',
+  miniLiveAxisLabel: 'Growth direction',
+  miniLiveAxisVerticalLabel: 'Stacked',
+  miniLiveAxisHorizontalLabel: 'Side by side',
+  miniLiveLastSectionNote: 'At least one panel must stay on',
+
   liveStatusLiveLabel: 'Streaming live from the game',
   liveStatusNotLiveLabel: 'Not live — showing the last known state',
 

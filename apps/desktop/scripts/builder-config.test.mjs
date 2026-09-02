@@ -78,6 +78,7 @@ describe('createBuilderConfig', () => {
           'renderer/out/**/*',
           'package.json',
           '!**/*.map',
+          'assets/**/*',
         ]);
         expect(config.win).toEqual({
           target: [{ target: 'nsis', arch: ['x64'] }],
@@ -88,6 +89,7 @@ describe('createBuilderConfig', () => {
           perMachine: false,
           allowToChangeInstallationDirectory: false,
         });
+        expect(config.asarUnpack).toEqual(['**/node_modules/frida/**/*']);
       });
 
       if (descriptor.updateChannel === null) {

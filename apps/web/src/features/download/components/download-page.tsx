@@ -6,6 +6,7 @@ import { useLatestRelease } from '../model/use-latest-release';
 import { DownloadHero } from './download-hero';
 import { InstallCounts } from './install-counts';
 import { InstallSteps } from './install-steps';
+import { MiniWindowSection } from './mini-live/mini-window-section';
 import { IncludedScreens } from './included-screens';
 
 /**
@@ -20,6 +21,7 @@ export function DownloadPage({ t, lang }: { t: Strings; lang: Lang }) {
       <DownloadHero t={t} lang={lang} release={release} />
       <InstallCounts t={t} lang={lang} release={release} />
       <InstallSteps t={t} fileName={release?.fileName ?? null} />
+      <MiniWindowSection t={t} lang={lang} />
       <IncludedScreens t={t} />
     </div>
   );
