@@ -453,7 +453,7 @@ export class Tap {
     for (const event of events) {
       this.#lastTrafficAt = this.#deps.clock.now();
       if (event.kind === 'http' && event.body !== undefined) {
-        this.#deps.onHttpBody?.(event.body, this.#deps.clock.now());
+        this.#reportObservedBody(event.body, this.#deps.clock.now());
       }
       if (event.kind !== 'tick') continue;
       this.#reportObservedFrame(event.raw);
@@ -464,6 +464,20 @@ export class Tap {
         type: 'frame',
         frame: { at: this.#nowIso(), sequence: this.#sequence, tick: event.tick },
       });
+    }
+  }
+
+  /** Consumed by the live read path, not by a diagnostic, so this one is deliberately NOT latched
+   *  off the way {@link Tap.#reportObservedFrame} is: giving up after a single failure would leave
+   *  rotation silently un-ingested for the rest of the session, which is a worse outcome than
+   *  retrying a body that may well succeed. The shared log deduplicates, so a persistent failure
+   *  reports once rather than per response. */
+  #reportObservedBody(body: Buffer, atMs: number): void {
+    if (this.#deps.onHttpBody === undefined) return;
+    try {
+      this.#deps.onHttpBody(body, atMs);
+    } catch (error) {
+      this.#log.warn({ scope: 'live-source', event: 'tap.http_body_port_failed', error: String(error) });
     }
   }
 

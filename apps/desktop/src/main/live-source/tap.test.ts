@@ -156,6 +156,8 @@ interface HarnessOptions {
   readonly resolveRuntime?: () => Promise<TapRuntime>;
   /** Passed through only when supplied, so the default harness keeps proving the port is optional. */
   readonly onObservedFrame?: (wire: Record<string, unknown>, atMs: number) => void;
+  /** Replaces the recording consumer below, for the cases that need one that misbehaves. */
+  readonly onHttpBody?: (body: Buffer, atMs: number) => void;
 }
 
 function createHarness(options: HarnessOptions = {}) {
@@ -183,7 +185,11 @@ function createHarness(options: HarnessOptions = {}) {
     consent: () => consent,
     clock,
     onEvent: (event) => events.push(event),
-    onHttpBody: (body, atMs) => httpBodies.push({ body, atMs }),
+    onHttpBody:
+      options.onHttpBody ??
+      ((body: Buffer, atMs: number) => {
+        httpBodies.push({ body, atMs });
+      }),
     log: sharedLog,
     pollIntervalMs: options.pollIntervalMs ?? 1_000,
     ...(options.onObservedFrame !== undefined ? { onObservedFrame: options.onObservedFrame } : {}),
@@ -1233,5 +1239,65 @@ describe('Tap: observed frames reach onObservedFrame', () => {
 
     expect(events.filter((event) => event.type === 'frame')).toHaveLength(3);
     expect(warnings.filter((record) => record.event === 'tap.observed_frame_port_failed')).toHaveLength(1);
+  });
+});
+
+describe('Tap: a throwing body consumer cannot stop the tap reading', () => {
+  async function attachedTap(options: HarnessOptions, pid: number, address: number) {
+    const harness = createHarness(options);
+    harness.processes.processes = [{ pid, name: PROCESS_NAME }];
+    harness.candidates.resolveResult = { addresses: [address], fromCache: false, buildId: null };
+    harness.tap.start();
+    await harness.clock.advance(0);
+    const interceptor = harness.runtime.sessions[0]?.interceptorsByAddress.get(address);
+    if (!interceptor) throw new Error('test setup: interceptor not installed');
+    return { ...harness, interceptor };
+  }
+
+  it('keeps decoding ticks after the body consumer throws, and reports the failure', async () => {
+    const { interceptor, events, warnings } = await attachedTap(
+      {
+        onHttpBody: () => {
+          throw new Error('ingest exploded');
+        },
+      },
+      8_001,
+      0xf000,
+    );
+
+    const body = JSON.stringify({ field_size: 3 });
+    const frame = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [] }), 'utf8'));
+    expect(() => {
+      interceptor.fire({ ctx: 'rest-0', bytes: buildHttpResponse(200, 'OK', body) });
+      interceptor.fire({ ctx: 'ws-0', bytes: frame });
+    }).not.toThrow();
+
+    expect(events.filter((event) => event.type === 'frame')).toHaveLength(1);
+    expect(warnings.filter((record) => record.event === 'tap.http_body_port_failed')).toHaveLength(1);
+  });
+
+  /** Unlike the dev-only frame port, this one is on the live read path: latching it off after one
+   *  failure would leave rotation un-ingested for the rest of the session. */
+  it('keeps offering later bodies rather than latching the consumer off after one failure', async () => {
+    const seen: string[] = [];
+    let failNext = true;
+    const { interceptor } = await attachedTap(
+      {
+        onHttpBody: (body) => {
+          if (failNext) {
+            failNext = false;
+            throw new Error('one transient failure');
+          }
+          seen.push(body.toString('utf8'));
+        },
+      },
+      8_002,
+      0xf100,
+    );
+
+    interceptor.fire({ ctx: 'rest-0', bytes: buildHttpResponse(200, 'OK', JSON.stringify({ first: true })) });
+    interceptor.fire({ ctx: 'rest-1', bytes: buildHttpResponse(200, 'OK', JSON.stringify({ second: true })) });
+
+    expect(seen).toEqual([JSON.stringify({ second: true })]);
   });
 });
