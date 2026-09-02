@@ -23,7 +23,7 @@ export interface SnapshotParts {
  * A completed enumeration walked the whole market, so its row set is the truth and anything
  * missing from it has genuinely been delisted. A run cut short by Steam's IP quota knows nothing
  * about the rows it never reached, so it keeps them rather than publishing a snapshot that
- * oscillates between full and partial every six hours.
+ * oscillates between full and partial from one pass to the next.
  *
  * Every row that comes out of here is keyed by its own identity, whichever side it came from. A
  * key is derived state and a previous run's copy of it is only as good as what that run knew, so
@@ -159,8 +159,9 @@ export function catalogKeysLost(
 }
 
 /**
- * Version 2 is still accepted because the published file only becomes version 3 on the job's next
- * six-hourly run, and an app that shipped first would otherwise show no prices at all until then.
+ * Version 2 is still accepted because the published file only becomes version 3 on the next pass
+ * that publishes it, and an app that shipped first would otherwise show no prices at all until
+ * then.
  * A version 2 entry simply carries no native quotes, which `resolveKey` already reads as
  * "convert from USD" — the correct answer for a snapshot taken before any currency was quoted.
  */

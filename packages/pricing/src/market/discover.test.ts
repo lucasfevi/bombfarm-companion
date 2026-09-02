@@ -187,19 +187,57 @@ describe('discoverMarket', () => {
   });
 
   it('counts rate limits across the run, because the quota Steam enforces is on the IP', async () => {
+    // The enumeration succeeds, so the limits below land in the tag passes that follow it and the
+    // count has two passes to span.
     const market = fakeMarket(APP_ID, [emberWeapon], FACETS, {
       failures: new Map([
-        [0, { rateLimited: true }],
         [1, { rateLimited: true }],
-        [2, { rateLimited: false }],
-        [3, { rateLimited: true }],
+        [2, { rateLimited: true }],
+        [3, { rateLimited: false }],
+        [4, { rateLimited: true }],
       ]),
     });
 
     const result = await discoverMarket(APP_ID, deps(market, { maxConsecutiveRateLimits: 3 }));
 
     expect(result.complete).toBe(false);
-    expect(result.searchCalls).toBe(4);
+    expect(result.searchCalls).toBe(5);
+  });
+
+  it('asks not one facet query when every row it enumerated is already identified', async () => {
+    const market = fakeMarket(APP_ID, [emberWeapon, heroCage, skin], FACETS);
+    const knownTags = {
+      [emberWeapon.hash]: { category: 'equip', set: 'ember', slot: 'weapon', rarity: 'uncommon' },
+      [heroCage.hash]: { category: 'chest', act: '1' },
+      [skin.hash]: { category: 'skin' },
+    };
+
+    const result = await discoverMarket(APP_ID, deps(market, { knownTags }));
+
+    expect(market.queries).toEqual(['']);
+    expect(result.facetSweepRan).toBe(false);
+    expect(result.rows.find((row) => row.row.hashName === emberWeapon.hash)?.tags).toEqual(
+      knownTags[emberWeapon.hash],
+    );
+  });
+
+  it('asks them all again for one row it has never seen, and identifies that row', async () => {
+    const market = fakeMarket(APP_ID, [emberWeapon, emberHelmet], FACETS);
+    const knownTags = {
+      [emberWeapon.hash]: { category: 'equip', set: 'ember', slot: 'weapon', rarity: 'uncommon' },
+    };
+
+    const result = await discoverMarket(APP_ID, deps(market, { knownTags }));
+
+    expect(result.facetSweepRan).toBe(true);
+    expect(market.queries).toContain('slot=helmet');
+    expect(result.rows.find((row) => row.row.hashName === emberHelmet.hash)?.tags).toEqual({
+      category: 'equip',
+      set: 'ember',
+      slot: 'helmet',
+      rarity: 'rare',
+      level: '10',
+    });
   });
 
   it('says the enumeration is incomplete when its walk was cut off', async () => {

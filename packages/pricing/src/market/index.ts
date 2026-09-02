@@ -52,7 +52,9 @@ export {
 } from './discover.js';
 export {
   indexEntries,
+  isFullyIdentified,
   keyForEntry,
+  knownTagsFrom,
   reconcile,
   type CatalogDef,
   type CatalogView,

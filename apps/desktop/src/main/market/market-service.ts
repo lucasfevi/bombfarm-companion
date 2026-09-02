@@ -51,7 +51,14 @@ export interface MarketService {
   refreshItem(target: MarketQuoteTarget): Promise<MarketQuoteResult>;
 }
 
-const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+/**
+ * How stale an idle desktop's prices are allowed to get. It does not track how often the snapshot
+ * is published — that is far more often than a planner needs — and checking often is cheap,
+ * because a check that finds nothing new is a conditional request answered 304, which adopts
+ * nothing and announces nothing. Below the five-minute `max-age` the published file is served
+ * with, a check could not see anything newer anyway; that is the floor, not this.
+ */
+const SNAPSHOT_REFRESH_MS = 15 * 60 * 1000;
 
 interface QuoteSubject {
   readonly key: string | null;
@@ -68,7 +75,7 @@ export function createMarketService(deps: MarketServiceDeps): MarketService {
   const io = deps.io ?? nodeMarketCacheIo;
   const setTimeoutFn = deps.scheduler?.setTimeout ?? setTimeout;
   const clearTimeoutFn = deps.scheduler?.clearTimeout ?? clearTimeout;
-  const snapshotRefreshMs = deps.snapshotRefreshMs ?? SIX_HOURS_MS;
+  const snapshotRefreshMs = deps.snapshotRefreshMs ?? SNAPSHOT_REFRESH_MS;
   const quoteSpacingMs = deps.quoteSpacingMs ?? 3_500;
   const baseBackoffMs = deps.quoteBackoffMs ?? 30_000;
   const maxBackoffMs = deps.maxQuoteBackoffMs ?? 15 * 60_000;

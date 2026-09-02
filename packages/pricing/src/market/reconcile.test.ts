@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { DiscoveryRow } from './discover.js';
-import { indexEntries, reconcile, type CatalogView } from './reconcile.js';
-import { categoryKey, heroPriceKey, priceKey, type FacetName } from './types.js';
+import { indexEntries, knownTagsFrom, reconcile, type CatalogView } from './reconcile.js';
+import {
+  categoryKey,
+  heroPriceKey,
+  priceKey,
+  type FacetName,
+  type MarketEntry,
+} from './types.js';
 
 const FETCHED = '2026-08-29T00:00:00.000Z';
 
@@ -290,5 +296,63 @@ describe('indexEntries', () => {
 
     expect(indexed.index[priceKey('ember_arma', 2)]).toBe(1);
     expect(indexed.coverage.pricedRows).toBe(1);
+  });
+});
+
+describe('knownTagsFrom', () => {
+  const identityOf = (entries: MarketEntry[]) =>
+    entries.map(({ hashName, key, defId, kind, category, set, slot, rarityIdx, level, act }) => ({
+      hashName,
+      key,
+      defId,
+      kind,
+      category,
+      set,
+      slot,
+      rarityIdx,
+      level,
+      act,
+    }));
+
+  const IDENTIFIED = [
+    row('Ember Weapon', { category: 'equip', set: 'ember', slot: 'weapon', rarity: 'rare' }),
+    row('Emerald Gem', { category: 'gem', rarity: 'rare' }),
+    row('Hero Cage (Act 1)', { category: 'chest', act: '1' }),
+    row('Item Chest (Lv 30)', { category: 'chest', level: '30' }),
+    row('Hero (Rare)', { category: 'hero', rarity: 'rare' }),
+    row('Royal Sentinel Skin', { category: 'skin' }),
+  ];
+
+  it('hands back tags that reconcile to the very identity they were read off', () => {
+    const tagged = reconcile(IDENTIFIED, CATALOG, FETCHED);
+    const known = knownTagsFrom(tagged.entries);
+
+    const restamped = reconcile(
+      IDENTIFIED.map((entry) => ({ ...entry, tags: known[entry.row.hashName] ?? {} })),
+      CATALOG,
+      FETCHED,
+    );
+
+    expect(Object.keys(known).sort()).toEqual(IDENTIFIED.map((entry) => entry.row.hashName).sort());
+    expect(identityOf(restamped.entries)).toEqual(identityOf(tagged.entries));
+    expect(restamped.anomalies).toEqual(tagged.anomalies);
+  });
+
+  it('withholds a row a cut-short pass left half-tagged, so the next sweep asks again', () => {
+    const { entries } = reconcile(
+      [row('Ember Weapon', { category: 'equip', set: 'ember', slot: 'weapon' })],
+      CATALOG,
+      FETCHED,
+    );
+
+    expect(entries[0]?.key).toBe(categoryKey('equip', 'Ember Weapon'));
+    expect(knownTagsFrom(entries)).toEqual({});
+  });
+
+  it('withholds a row no tag pass ever reached, which the enumeration alone produces', () => {
+    const { entries } = reconcile([row('Mystery Blade', {})], CATALOG, FETCHED);
+
+    expect(entries[0]?.category).toBeNull();
+    expect(knownTagsFrom(entries)).toEqual({});
   });
 });

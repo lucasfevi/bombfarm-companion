@@ -1,5 +1,12 @@
 # @bombfarm/web
 
+## 0.15.1
+
+### Patch Changes
+
+- Updated dependencies [3110bde]
+  - @bombfarm/pricing@0.1.6
+
 ## 0.15.0
 
 ### Minor Changes

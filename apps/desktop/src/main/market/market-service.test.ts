@@ -486,4 +486,37 @@ describe('periodic snapshot refresh', () => {
     await Promise.resolve();
     expect(timers).toHaveLength(2);
   });
+
+  /**
+   * Every other case here injects the interval, so nothing exercised the default the shipped app
+   * actually runs on. The bounds are the two ways it can be wrong: tighter than the published
+   * file's cache is a check that cannot see anything newer, and slacker than the ceiling is drift
+   * back toward the six-hourly default this used to carry, which mirrored a publish cadence that
+   * no longer exists. Moving the interval should mean re-reading that reasoning, so the ceiling
+   * sits at the interval rather than loosely above it.
+   */
+  it('defaults to an interval inside the band that can both see a change and bound staleness', async () => {
+    const FILE_CACHE_MAX_AGE_MS = 300_000;
+    const STALENESS_CEILING_MS = 900_000;
+    const timers: { callback: () => void; delay: number }[] = [];
+    const h = harness({
+      respond: () => ok(snapshotWith([entry(GLOVES, 'k1', 25, null)]), 'v1'),
+      overrides: {
+        scheduler: {
+          setTimeout: ((callback: () => void, delay: number) => {
+            timers.push({ callback, delay });
+            return timers.length;
+          }) as unknown as typeof setTimeout,
+          clearTimeout: () => undefined,
+        },
+      },
+    });
+
+    h.service.start();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(timers[0]?.delay).toBeGreaterThanOrEqual(FILE_CACHE_MAX_AGE_MS);
+    expect(timers[0]?.delay).toBeLessThanOrEqual(STALENESS_CEILING_MS);
+  });
 });
