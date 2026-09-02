@@ -23,6 +23,7 @@ export const ptBR: Copy = {
   shellUpdateDownloading: 'Atualizando… {percent}%',
   shellUpdateReady: 'Reinicie para atualizar',
   shellUpdateOpenSettings: 'Abrir as configurações de atualização',
+  shellCoffeeLabel: 'Me pague um café',
 
   // empty* — placeholder states shown before real data has arrived
   emptyBridgeUnavailableTitle: 'Ponte de comunicação indisponível',
@@ -120,6 +121,12 @@ export const ptBR: Copy = {
   settingsUpdatesReasonNoRelease: 'Ainda não existe uma versão publicada para esta build.',
   settingsUpdatesReasonUnknown:
     'Algo deu errado. Tente de novo e, se continuar falhando, salve um arquivo para relatório de erro abaixo.',
+
+  // settingsSupport* — a metade com rótulo do link de apoio; a barra superior tem a metade só com ícone
+  settingsSupportSectionTitle: 'Apoie o projeto',
+  settingsSupportCoffeeLabel: 'Me pague um café',
+  settingsSupportCoffeeHelp: 'O companion é gratuito e continua gratuito. Abre a página no seu navegador.',
+  settingsSupportCoffeeAction: 'Me pague um café',
 
   // consentGate* — o portão de permissão mostrado no lugar do conteúdo do app quando o acesso não é permitido
   consentGateTitle: 'Este app precisa da sua permissão para funcionar',
