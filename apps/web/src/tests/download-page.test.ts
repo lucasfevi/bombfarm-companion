@@ -12,8 +12,22 @@ import {
   SITE_SECTION_LABEL_KEY,
   isSiteSectionActive,
 } from '@/shared/lib/site-sections';
-import { MIRRORED_KEYS, liveLabel } from '@/features/download/model/live-replica-copy';
+import { MiniWindowSection } from '@/features/download/components/mini-live/mini-window-section';
+import { MiniWindowFrame } from '@/features/download/components/mini-live/mini-window-frame';
+import { MiniLayoutControls } from '@/features/download/components/mini-live/mini-layout-controls';
+import {
+  MIRRORED_BASE_KEYS,
+  MIRRORED_KEYS,
+  MIRRORED_MINI_KEYS,
+  liveLabel,
+} from '@/features/download/model/live-replica-copy';
 import { LOOP_SECONDS, replicaFrameAt } from '@/features/download/model/live-replica-data';
+import {
+  DEFAULT_MINI_LAYOUT,
+  isMiniSectionDisabled,
+  withMiniSection,
+  type MiniLiveLayout,
+} from '@/features/download/model/mini-live-layout';
 import {
   DOUBLE_CLICK_LOOP_SECONDS,
   PERMISSION_LOOP_SECONDS,
@@ -25,6 +39,12 @@ import { RELEASES_URL, isStableInstaller } from '@/features/download/model/relea
 import { STRINGS, type Lang } from '@/shared/i18n';
 
 const LANGS: readonly Lang[] = ['en', 'pt'];
+
+/**
+ * A templated label reaches the page with its placeholders filled, so match the literal run
+ * before the first one — still enough to fail on a reworded or missing label.
+ */
+const literalPrefix = (text: string) => text.split('{')[0].trim();
 
 const RELEASE: LatestRelease = {
   version: '0.7.0',
@@ -46,15 +66,23 @@ describe('Live replica', () => {
   for (const lang of LANGS) {
     it(`prints every mirrored desktop label in ${lang}`, () => {
       const markup = renderToStaticMarkup(createElement(LiveReplica, { lang }));
-      // A templated label reaches the page with its placeholders filled, so match the literal
-      // run before the first one — still enough to fail on a reworded or missing label.
-      const literalPrefix = (text: string) => text.split('{')[0].trim();
-      const missing = MIRRORED_KEYS.filter(
+      const missing = MIRRORED_BASE_KEYS.filter(
         (key) => !markup.includes(literalPrefix(liveLabel(key, lang))),
       );
       expect(missing).toEqual([]);
     });
   }
+
+  /**
+   * The two key groups have to cover the mirror between them and overlap nowhere. Without this,
+   * a key could be dropped from both groups and stay guarded against the desktop shell while no
+   * drawing on the page prints it.
+   */
+  it('splits the mirror between the two drawings, with nothing lost and nothing counted twice', () => {
+    expect([...MIRRORED_BASE_KEYS, ...MIRRORED_MINI_KEYS].sort()).toEqual([...MIRRORED_KEYS].sort());
+    expect(MIRRORED_BASE_KEYS.filter((key) => MIRRORED_MINI_KEYS.includes(key))).toEqual([]);
+    expect(MIRRORED_MINI_KEYS.length).toBeGreaterThan(0);
+  });
 
   it('follows the language it is handed', () => {
     const en = renderToStaticMarkup(createElement(LiveReplica, { lang: 'en' }));
@@ -117,6 +145,175 @@ describe('Live replica', () => {
     const markup = renderToStaticMarkup(createElement(LiveReplica, { lang: 'en' }));
     for (const name of ['Bellatrix', 'Jon', 'Minato']) expect(markup).toContain(name);
     expect(markup.match(/<img/g) ?? []).toHaveLength(replicaFrameAt(0).heroes.length);
+  });
+});
+
+describe('the mini window section', () => {
+  const render = (layout: MiniLiveLayout, lang: Lang = 'en') =>
+    renderToStaticMarkup(
+      createElement(MiniWindowFrame, { lang, layout, frame: replicaFrameAt(0) }),
+    );
+
+  for (const lang of LANGS) {
+    it(`prints every mirrored compact-window label in ${lang}`, () => {
+      const markup = renderToStaticMarkup(
+        createElement(MiniWindowSection, { t: STRINGS[lang], lang }),
+      );
+      const missing = MIRRORED_MINI_KEYS.filter(
+        (key) => !markup.includes(literalPrefix(liveLabel(key, lang))),
+      );
+      expect(missing).toEqual([]);
+    });
+  }
+
+  it('opens on the layout the app opens on — earnings and map, stacked', () => {
+    expect(DEFAULT_MINI_LAYOUT).toEqual({
+      showEarnings: true,
+      showMap: true,
+      showHeroes: false,
+      axis: 'vertical',
+    });
+  });
+
+  it('will not let the reader switch off the last panel standing', () => {
+    const earningsOnly = withMiniSection(
+      withMiniSection(DEFAULT_MINI_LAYOUT, 'showMap', false),
+      'showHeroes',
+      false,
+    );
+    expect(isMiniSectionDisabled(earningsOnly, 'showEarnings')).toBe(true);
+    expect(isMiniSectionDisabled(earningsOnly, 'showMap')).toBe(false);
+    expect(isMiniSectionDisabled(DEFAULT_MINI_LAYOUT, 'showEarnings')).toBe(false);
+  });
+
+  /**
+   * The note keeps its line in both states, so switching a panel off cannot move what is under
+   * the controls — on a phone that is the rest of the page.
+   */
+  it('shows the last-panel note only once one panel is left, without gaining a block', () => {
+    const noteTag = (layout: MiniLiveLayout) => {
+      const markup = renderToStaticMarkup(
+        createElement(MiniLayoutControls, {
+          t: STRINGS.en,
+          lang: 'en',
+          layout,
+          onLayoutChange: () => undefined,
+        }),
+      );
+      return /<p[^>]*data-testid="download-mini-last-section-note"[^>]*>/.exec(markup)?.[0] ?? '';
+    };
+
+    expect(noteTag(DEFAULT_MINI_LAYOUT)).toContain('invisible');
+    expect(noteTag(DEFAULT_MINI_LAYOUT)).toContain('aria-hidden');
+    expect(noteTag({ ...DEFAULT_MINI_LAYOUT, showMap: false })).not.toContain('invisible');
+    expect(noteTag({ ...DEFAULT_MINI_LAYOUT, showMap: false })).not.toContain('sr-only');
+    expect(noteTag({ ...DEFAULT_MINI_LAYOUT, showMap: false })).not.toBe('');
+  });
+
+  it('draws only the panels that are switched on', () => {
+    const both = render(DEFAULT_MINI_LAYOUT);
+    expect(both).toContain(liveLabel('liveEarningsCurrentGoldLabel', 'en'));
+    expect(both).toContain(liveLabel('liveMapHealthLabel', 'en'));
+    expect(both).not.toContain('Bellatrix');
+
+    const heroesOnly = render({ ...DEFAULT_MINI_LAYOUT, showEarnings: false, showMap: false, showHeroes: true });
+    expect(heroesOnly).toContain('Bellatrix');
+    expect(heroesOnly).not.toContain(liveLabel('liveMapHealthLabel', 'en'));
+  });
+
+  it('lays the panels out on the axis it is handed', () => {
+    expect(render(DEFAULT_MINI_LAYOUT)).toContain('data-axis="vertical"');
+    expect(render({ ...DEFAULT_MINI_LAYOUT, axis: 'horizontal' })).toContain(
+      'data-axis="horizontal"',
+    );
+  });
+
+  /**
+   * The compact earnings panel is a different figure set, not the full one shrunk: the sparkline,
+   * the session totals, the elapsed clock and the reading against the map's estimate all go, and
+   * a recent-window headline arrives in their place.
+   */
+  it('drops the trend line, the session totals and the elapsed clock from compact earnings', () => {
+    const markup = render({ ...DEFAULT_MINI_LAYOUT, showMap: false });
+    expect(markup).not.toContain('<polyline');
+    expect(markup).not.toContain(liveLabel('liveEarningsGoldSessionTotalLabel', 'en'));
+    expect(markup).not.toContain(liveLabel('liveEarningsElapsedLabel', 'en'));
+    expect(markup).not.toContain(liveLabel('liveEarningsMeasuredNote', 'en'));
+    expect(markup).not.toContain(
+      liveLabel('liveEarningsGoldPerPropUnder', 'en').split('}')[1].trim(),
+    );
+    expect(markup).toContain(literalPrefix(liveLabel('liveEarningsRecentWindowLabel', 'en')));
+    expect(markup).toContain(liveLabel('liveEarningsPropsPerMinuteLabel', 'en'));
+    expect(markup).toContain(liveLabel('liveEarningsPropsTotalLabel', 'en'));
+  });
+
+  it('carries the map economy strip without the estimate heading the full panel prints', () => {
+    const markup = render({ ...DEFAULT_MINI_LAYOUT, showEarnings: false });
+    expect(markup).not.toContain(liveLabel('liveMapEstimateNote', 'en'));
+    for (const key of [
+      'liveMapXpPerPropLabel',
+      'liveMapGoldPerPropLabel',
+      'liveMapGoldPerClearLabel',
+    ] as const) {
+      expect(markup).toContain(liveLabel(key, 'en'));
+    }
+  });
+
+  /**
+   * Colour alone would leave four indistinguishable markers: the compact list has no room for the
+   * summary bar that acts as the legend on the full-size row, so each state is a shape as well,
+   * with its own word behind it.
+   */
+  it('marks each compact hero state with a shape of its own, not a colour of its own', () => {
+    const markup = render({ ...DEFAULT_MINI_LAYOUT, showEarnings: false, showMap: false, showHeroes: true });
+    const shapes = ['rounded-full bg-up', 'border-2 border-info', 'rounded-[1px] bg-warn', 'h-0.5 w-2'];
+    for (const shape of shapes) expect(markup).toContain(shape);
+    for (const key of [
+      'liveListOnFieldTitle',
+      'liveListRecoveringTitle',
+      'liveListQueuedTitle',
+      'liveListBenchedTitle',
+    ] as const) {
+      expect(markup).toContain(liveLabel(key, 'en'));
+    }
+  });
+
+  it('gives every compact hero row the same height whatever state it is in', () => {
+    const markup = render({ ...DEFAULT_MINI_LAYOUT, showEarnings: false, showMap: false, showHeroes: true });
+    const rows = [...markup.matchAll(/<li class="([^"]*)"/g)].map((match) => match[1]);
+    expect(rows).toHaveLength(replicaFrameAt(0).heroes.length);
+    for (const className of rows) {
+      expect(className).toContain('h-9');
+      expect(className).toContain('grid-rows-2');
+    }
+  });
+
+  it('is drawn on the same clock as the full-size replica', () => {
+    const early = renderToStaticMarkup(
+      createElement(MiniWindowFrame, {
+        lang: 'en',
+        layout: DEFAULT_MINI_LAYOUT,
+        frame: replicaFrameAt(0),
+      }),
+    );
+    const late = renderToStaticMarkup(
+      createElement(MiniWindowFrame, {
+        lang: 'en',
+        layout: DEFAULT_MINI_LAYOUT,
+        frame: replicaFrameAt(LOOP_SECONDS),
+      }),
+    );
+    expect(early).not.toBe(late);
+  });
+
+  it('hides the drawing from assistive technology, and leaves the controls in the tree', () => {
+    const markup = renderToStaticMarkup(
+      createElement(MiniWindowSection, { t: STRINGS.en, lang: 'en' }),
+    );
+    expect(markup).toContain('aria-hidden="true"');
+    for (const key of ['liveEarningsTitle', 'liveMapTitle', 'liveHeroesTitle'] as const) {
+      expect(markup).toContain(`aria-label="${liveLabel(key, 'en')}"`);
+    }
   });
 });
 

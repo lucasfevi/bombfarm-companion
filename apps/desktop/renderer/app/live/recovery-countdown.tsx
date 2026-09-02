@@ -1,13 +1,21 @@
 import { useCopy } from '../../lib/copy';
 import type { LiveRecoveryCountdownModel } from '../../lib/live/live-model';
-import { CountdownValue } from './countdown-value';
+import { CountdownAbsentValue, CountdownValue, type CountdownSize } from './countdown-value';
 import { formatLiveDurationSeconds } from './format-live-duration';
 
-export function RecoveryCountdown({ testId, model }: { testId: string; model: LiveRecoveryCountdownModel | undefined }) {
+export function RecoveryCountdown({
+  testId,
+  model,
+  size = 'default',
+}: {
+  testId: string;
+  model: LiveRecoveryCountdownModel | undefined;
+  size?: CountdownSize;
+}) {
   const t = useCopy();
 
   if (!model) {
-    return <span data-testid={testId}>{t.valueNotAvailable}</span>;
+    return <CountdownAbsentValue testId={testId} label={t.valueNotAvailable} size={size} />;
   }
 
   return (
@@ -16,6 +24,7 @@ export function RecoveryCountdown({ testId, model }: { testId: string; model: Li
       formatted={formatLiveDurationSeconds(model.secondsRemaining)}
       qualified={!model.advancing}
       qualifier={t.liveCountdownPausedQualifier}
+      size={size}
     />
   );
 }

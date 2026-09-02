@@ -40,7 +40,7 @@ const gameArtPackage = ['packages/game-art/**/*.{ts,tsx}'];
  */
 const farmPackage = ['packages/farm/**/*.{ts,tsx}'];
 
-/** Ban raw react-icons / SVG imports outside the Icon seam (ICO-23, ICO-24, D12). */
+/** Ban raw react-icons / SVG imports outside the Icon seam. */
 const rawIconImportRule = [
   'error',
   {

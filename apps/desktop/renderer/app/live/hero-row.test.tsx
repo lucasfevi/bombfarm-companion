@@ -156,7 +156,10 @@ describe('HeroRow — the energy reading beside the bar', () => {
     );
     const withoutData = renderToStaticMarkup(createElement(HeroRow, { state: 'queued', hero: { id: 'hero-7' } }));
     expect(/data-testid="live-energy-hero-7-value"[^>]*>([^<]*)</.exec(withData)?.[1]).toBe('0%');
-    expect(/data-testid="live-energy-hero-7-value"[^>]*>([^<]*)</.exec(withoutData)?.[1]).toBe(en.valueNotAvailable);
+    // Absent reads as a dash on screen, with the words carried for a screen reader — never as 0%.
+    expect(withoutData).toContain('<span aria-hidden="true">—</span>');
+    expect(withoutData).toContain(`<span class="sr-only">${en.valueNotAvailable}</span>`);
+    expect(/data-testid="live-energy-hero-7-value"[^>]*>0%</.test(withoutData)).toBe(false);
   });
 });
 
@@ -189,7 +192,7 @@ describe('HeroRow — which way the energy is going', () => {
 
   it('withholds the caret when no reading arrived, rather than annotating a figure that is not there', () => {
     const html = renderToStaticMarkup(createElement(HeroRow, { state: 'on-field', hero: { id: 'hero-7' } }));
-    expect(readingOf(html)).toBe(en.valueNotAvailable);
+    expect(html).toContain(`<span class="sr-only">${en.valueNotAvailable}</span>`);
     expect(html).not.toContain('▾');
     expect(html).not.toContain(en.liveEnergyFallingLabel);
   });
@@ -203,10 +206,14 @@ describe('HeroRow — which way the energy is going', () => {
     expect(readingClass).toContain('w-[4ch]');
   });
 
-  it('leaves the absent-value copy out of the fixed slot, where it would wrap down the row', () => {
+  it('keeps the absent-value copy out of the visible slot, where prose would wrap down the row', () => {
     const html = renderToStaticMarkup(createElement(HeroRow, { state: 'on-field', hero: { id: 'hero-7' } }));
     const readingClass = /data-testid="live-energy-hero-7-value" class="([^"]*)"/.exec(html)?.[1];
-    expect(readingClass).not.toContain('w-[4ch]');
+    // The slot is the same width a reading holds, so a figure arriving moves nothing beside it,
+    // and what sits in it is a dash — the sentence goes to the screen reader instead.
+    expect(readingClass).toContain('w-[4ch]');
+    expect(html).toContain('<span aria-hidden="true">—</span>');
+    expect(html.split(en.valueNotAvailable)).toHaveLength(2);
   });
 
   it('keeps the caret out of the reading itself, so the reading stays the figure and nothing else', () => {
@@ -251,6 +258,32 @@ describe('HeroRow — every row shares one fixed column grid', () => {
     const nameWrapper = /<span class="([^"]*)"><span[^>]*data-testid="live-hero-row-hero-7-name"/.exec(html)?.[1];
     expect(nameWrapper).toMatch(/\btruncate\b/);
     expect(html).toContain('A Genuinely Very Long Hero Name That Keeps Going');
+  });
+
+  it('bands the list with an alternating row tint, the way the compact window does', () => {
+    const html = renderToStaticMarkup(
+      createElement(HeroRow, { state: 'on-field', hero: { id: 'hero-7', name: 'Astra', grade: 'A' } }),
+    );
+    const tokens = (/<li [^>]*class="([^"]*)"/.exec(html)?.[1] ?? '').split(' ');
+    expect(tokens.some((token) => token.startsWith('odd:bg-'))).toBe(true);
+    // The base background stays: the tint lightens alternate rows, it does not replace the row's
+    // own surface on the others.
+    expect(tokens).toContain('bg-[color-mix(in_oklch,var(--surface)_92%,transparent)]');
+  });
+
+  it('prints a dash for a level the roster join has not delivered, rather than claiming level 0', () => {
+    const html = renderToStaticMarkup(
+      createElement(HeroRow, { state: 'on-field', hero: { id: 'hero-7', name: 'Astra', grade: 'A' } }),
+    );
+    expect(html).not.toContain(sub(en.liveHeroLevelValue, { level: 0 }));
+    expect(html).toContain('—');
+  });
+
+  it('prints the level it was given', () => {
+    const html = renderToStaticMarkup(
+      createElement(HeroRow, { state: 'on-field', hero: { id: 'hero-7', name: 'Astra', grade: 'A', level: 61 } }),
+    );
+    expect(html).toContain(sub(en.liveHeroLevelValue, { level: 61 }));
   });
 
   it('stacks the rank and name on one line, with the level on a second line, both beside the avatar', () => {

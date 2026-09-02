@@ -23,6 +23,7 @@ export const ptBR: Copy = {
   shellUpdateDownloading: 'Atualizando… {percent}%',
   shellUpdateReady: 'Reinicie para atualizar',
   shellUpdateOpenSettings: 'Abrir as configurações de atualização',
+  shellCoffeeLabel: 'Me pague um café',
 
   // empty* — placeholder states shown before real data has arrived
   emptyBridgeUnavailableTitle: 'Ponte de comunicação indisponível',
@@ -59,6 +60,16 @@ export const ptBR: Copy = {
   settingsLanguageReasonNotWritable:
     'Seu local de salvamento não pode ser gravado, então isso não vai sobreviver a um reinício.',
   settingsLanguageReasonUnknown: 'Essa escolha não pôde ser salva, então não vai sobreviver a um reinício.',
+
+  settingsWindowSectionTitle: 'Janela',
+  settingsAlwaysOnTopMainLabel: 'Manter a janela principal no topo',
+  settingsAlwaysOnTopMainHelp:
+    'O companion fica acima das outras janelas enquanto isso estiver ligado. Tem efeito imediato.',
+  settingsAlwaysOnTopNotSavedTitle: 'Sempre no topo alterado, mas não salvo',
+  settingsAlwaysOnTopMiniLabel: 'Manter a janela compacta no topo',
+  settingsAlwaysOnTopMiniHelp:
+    'A janela compacta do Ao vivo fica acima das outras janelas enquanto isso estiver ligado. Tem efeito imediato.',
+  settingsAlwaysOnTopMiniNotSavedTitle: 'Sempre no topo da janela compacta alterado, mas não salvo',
 
   // settingsConsent* — o controle de revogar o acesso à conta (Configurações só é alcançável já permitido)
   settingsConsentSectionTitle: 'Acesso à conta',
@@ -111,6 +122,12 @@ export const ptBR: Copy = {
   settingsUpdatesReasonUnknown:
     'Algo deu errado. Tente de novo e, se continuar falhando, salve um arquivo para relatório de erro abaixo.',
 
+  // settingsSupport* — a metade com rótulo do link de apoio; a barra superior tem a metade só com ícone
+  settingsSupportSectionTitle: 'Apoie o projeto',
+  settingsSupportCoffeeLabel: 'Me pague um café',
+  settingsSupportCoffeeHelp: 'O companion é gratuito e continua gratuito. Abre a página no seu navegador.',
+  settingsSupportCoffeeAction: 'Me pague um café',
+
   // consentGate* — o portão de permissão mostrado no lugar do conteúdo do app quando o acesso não é permitido
   consentGateTitle: 'Este app precisa da sua permissão para funcionar',
   consentGateBody:
@@ -123,6 +140,17 @@ export const ptBR: Copy = {
 
   // live* — a tela Ao Vivo: rótulo de navegação e a linha de status de atualização no topo do painel
   liveNavLabel: 'Ao vivo',
+
+  // miniLive* — a segunda janela compacta do Ao Vivo: o botão que a abre na aba Ao vivo, o
+  // próprio chrome dela e o menu de layout dos painéis. Chaves `*Aria` rotulam controles só de ícone.
+  miniLiveOpenLabel: 'Abrir mini',
+  miniLiveCloseAria: 'Fechar mini',
+  miniLiveGearAria: 'Layout dos painéis',
+  miniLiveAxisLabel: 'Direção de crescimento',
+  miniLiveAxisVerticalLabel: 'Empilhado',
+  miniLiveAxisHorizontalLabel: 'Em linha',
+  miniLiveLastSectionNote: 'Pelo menos um painel precisa permanecer ligado',
+
   liveStatusLiveLabel: 'Transmitindo ao vivo do jogo',
   liveStatusNotLiveLabel: 'Não ao vivo — mostrando o último estado conhecido',
 

@@ -362,8 +362,17 @@ const KEYS_REMOVED: readonly string[] = [
  * the headline figure actually covers, counted against TRADABLE items rather than all of them —
  * the game forbids selling the rest, so they were never candidates for a price and counting them
  * would make the coverage read worse than it is.
+ *
+ * The download page's mini-window section (2026-09-01) adds `downloadMiniHeading`,
+ * `downloadMiniLede` and `downloadMiniControlsTitle`. The section is the page's own chrome around
+ * a drawing of the desktop app's compact Live window; every label inside the drawing and its
+ * controls is mirrored from the desktop shell in `live-replica-copy.ts` instead, under the drift
+ * guard, so only the three strings the web page says in its own voice live here.
  */
 const KEYS_ADDED: readonly string[] = [
+  'downloadMiniHeading',
+  'downloadMiniLede',
+  'downloadMiniControlsTitle',
   'inventoryFilterPriced',
   'inventoryTotalsTitle',
   'inventoryTotalsCoverage',

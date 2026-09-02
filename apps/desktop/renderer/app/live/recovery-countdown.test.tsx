@@ -22,6 +22,19 @@ describe('RecoveryCountdown — a hero at a genuine zero is not the same as a he
     expect(html).toContain(en.valueNotAvailable);
     expect(html).not.toMatch(/>\s*0:00\s*</);
   });
+
+  it('shows the absence as a dash and keeps the words for a screen reader only', () => {
+    const html = render(undefined);
+    expect(html).toContain('<span aria-hidden="true">—</span>');
+    expect(html).toContain(`<span class="sr-only">${en.valueNotAvailable}</span>`);
+    // Once, and only inside the visually-hidden span: the sighted sentence is what wraps the row.
+    expect(html.split(en.valueNotAvailable)).toHaveLength(2);
+  });
+
+  it('reserves the same digit column as a live reading, so an arriving countdown shifts nothing', () => {
+    expect(render(undefined)).toContain('min-w-16');
+    expect(render({ heroId: 'h1', secondsRemaining: 30, advancing: true })).toContain('min-w-16');
+  });
 });
 
 describe('RecoveryCountdown — a frozen countdown never looks like a running one', () => {

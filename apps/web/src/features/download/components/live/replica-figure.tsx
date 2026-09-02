@@ -1,4 +1,4 @@
-export function MeasuredFigure({
+export function ReplicaFigure({
   label,
   value,
   note,

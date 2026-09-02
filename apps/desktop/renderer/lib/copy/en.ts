@@ -21,6 +21,7 @@ export const en = {
   shellUpdateDownloading: 'Updating… {percent}%',
   shellUpdateReady: 'Restart to update',
   shellUpdateOpenSettings: 'Open the Updates settings',
+  shellCoffeeLabel: 'Buy me a coffee',
 
   // empty* — placeholder states shown before real data has arrived
   emptyBridgeUnavailableTitle: 'Preload bridge unavailable',
@@ -56,6 +57,16 @@ export const en = {
   settingsLanguageReasonNoStore: 'Your save location is unavailable, so this will not survive a restart.',
   settingsLanguageReasonNotWritable: 'Your save location is not writable, so this will not survive a restart.',
   settingsLanguageReasonUnknown: 'This choice could not be saved, so it will not survive a restart.',
+
+  settingsWindowSectionTitle: 'Window',
+  settingsAlwaysOnTopMainLabel: 'Keep the main window on top',
+  settingsAlwaysOnTopMainHelp:
+    'The companion stays above other windows while this is on. Takes effect immediately.',
+  settingsAlwaysOnTopNotSavedTitle: 'Always-on-top changed, but not saved',
+  settingsAlwaysOnTopMiniLabel: 'Keep the mini window on top',
+  settingsAlwaysOnTopMiniHelp:
+    'The compact Live window stays above other windows while this is on. Takes effect immediately.',
+  settingsAlwaysOnTopMiniNotSavedTitle: 'Mini always-on-top changed, but not saved',
 
   // settingsConsent* — the account access revoke control (Settings is reachable only once granted)
   settingsConsentSectionTitle: 'Account access',
@@ -108,6 +119,12 @@ export const en = {
   settingsUpdatesReasonNoRelease: 'There is no published release for this build yet.',
   settingsUpdatesReasonUnknown: 'Something went wrong. Try again, and save a bug report file below if it keeps failing.',
 
+  // settingsSupport* — the labelled half of the support link; the top bar carries the icon-only half
+  settingsSupportSectionTitle: 'Support the project',
+  settingsSupportCoffeeLabel: 'Buy me a coffee',
+  settingsSupportCoffeeHelp: 'The companion is free and stays free. Opens the page in your browser.',
+  settingsSupportCoffeeAction: 'Buy me a coffee',
+
   // consentGate* — the permission gate shown instead of app content when access is not allowed
   consentGateTitle: 'This app needs your permission to work',
   consentGateBody:
@@ -121,6 +138,17 @@ export const en = {
 
   // live* — the Live screen: nav label and the top-of-panel freshness status line
   liveNavLabel: 'Live',
+
+  // miniLive* — the compact second Live window: its opener on the Live tab, its own chrome, and
+  // the panel-layout menu. `*Aria` keys label icon-only controls for assistive technology.
+  miniLiveOpenLabel: 'Open mini',
+  miniLiveCloseAria: 'Close mini',
+  miniLiveGearAria: 'Panel layout',
+  miniLiveAxisLabel: 'Growth direction',
+  miniLiveAxisVerticalLabel: 'Stacked',
+  miniLiveAxisHorizontalLabel: 'Side by side',
+  miniLiveLastSectionNote: 'At least one panel must stay on',
+
   liveStatusLiveLabel: 'Streaming live from the game',
   liveStatusNotLiveLabel: 'Not live — showing the last known state',
 

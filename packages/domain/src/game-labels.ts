@@ -30,6 +30,11 @@ export function rarityLabel(key: RarityKey, lang: Lang): string {
   return pick(RARITY_LABELS[key], lang, key);
 }
 
+/** Hero level with its prefix. The abbreviation is a game term, so it follows `Lang`. */
+export function heroLevelLabel(level: number, lang: Lang): string {
+  return `${pick(HERO_LEVEL_PREFIX, lang, 'Lv')} ${String(level)}`;
+}
+
 /** Item rarity label by catalog rarity index 0..5. */
 export function itemRarityLabel(rarityIdx: number, lang: Lang): string {
   return pick(ITEM_RARITY_LABELS[rarityIdx], lang, String(rarityIdx));
@@ -213,6 +218,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '+1 Penetration/level, +20 at cap (on-sheet status not proven)',
   },
 };
+
+const HERO_LEVEL_PREFIX: Bilingual = { pt: 'Nv', en: 'Lv' };
 
 const RARITY_LABELS: Record<RarityKey, Bilingual> = {
   Comum: { pt: 'Comum', en: 'Common' },

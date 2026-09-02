@@ -39,6 +39,7 @@ const DESKTOP_COPY = {
 };
 const REPLICA_COPY = 'apps/web/src/features/download/model/live-replica-copy.ts';
 const LIVE_DIR = 'apps/desktop/renderer/app/live';
+const MINI_LIVE_DIR = 'apps/desktop/renderer/app/mini-live';
 
 /**
  * The Live screen's parts, as of the replica's last review. Filenames rather than exported
@@ -58,6 +59,21 @@ const LIVE_COMPONENTS = [
   'recovery-countdown.tsx',
   'state-summary-bar.tsx',
   'waiting-flavor-line.tsx',
+];
+
+/**
+ * The compact Live window's parts, as of the download page's mini section last review. The page
+ * draws that window too, at its own density, so it goes stale the same way the full-size drawing
+ * does and gets the same pin.
+ */
+const MINI_LIVE_COMPONENTS = [
+  'mini-chrome.tsx',
+  'mini-earnings.tsx',
+  'mini-gear.tsx',
+  'mini-heroes.tsx',
+  'mini-map.tsx',
+  'mini-skeleton.tsx',
+  'page.tsx',
 ];
 
 /** `key: 'value',` on one line. Every mirrored label is a short single-line string by design. */
@@ -129,6 +145,16 @@ describe('download page — Live replica drift', () => {
       present,
       `the Live screen changed shape — review apps/web/src/features/download/components/live/live-replica.tsx, then re-pin LIVE_COMPONENTS`,
     ).toEqual([...LIVE_COMPONENTS].sort());
+  });
+
+  it('the compact Live window is still built from the components the mini section was drawn against', () => {
+    const present = readdirSync(resolve(root, MINI_LIVE_DIR))
+      .filter((name) => name.endsWith('.tsx') && !name.endsWith('.test.tsx'))
+      .sort();
+    expect(
+      present,
+      `the compact Live window changed shape — review apps/web/src/features/download/components/mini-live/mini-window-frame.tsx, then re-pin MINI_LIVE_COMPONENTS`,
+    ).toEqual([...MINI_LIVE_COMPONENTS].sort());
   });
 
 });

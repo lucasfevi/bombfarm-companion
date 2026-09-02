@@ -29,6 +29,13 @@ describe('contracts IPC surface', () => {
       'settings:get',
       'settings:useEnglish',
       'settings:usePortuguese',
+      'settings:setAlwaysOnTopMain',
+      'settings:setAlwaysOnTopMini',
+      'miniLive:open',
+      'miniLive:close',
+      'miniLive:getLayout',
+      'miniLive:setLayout',
+      'miniLive:fitGrowthAxis',
       'storage:health',
       'game:getStatus',
       'account:get',
@@ -56,6 +63,7 @@ describe('contracts IPC surface', () => {
       'live:event',
       'updates:changed',
       'market:changed',
+      'settings:changed',
     ]);
   });
 
@@ -149,8 +157,10 @@ describe('contracts IPC surface', () => {
   });
 
   it('ships default settings schema version', () => {
-    expect(DEFAULT_SETTINGS.schemaVersion).toBe(1);
+    expect(DEFAULT_SETTINGS.schemaVersion).toBe(2);
     expect(DEFAULT_SETTINGS.locale).toBe('en');
+    expect(DEFAULT_SETTINGS.alwaysOnTopMain).toBe(false);
+    expect(DEFAULT_SETTINGS.alwaysOnTopMini).toBe(false);
   });
 });
 

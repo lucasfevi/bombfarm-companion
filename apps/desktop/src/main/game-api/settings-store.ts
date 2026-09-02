@@ -1,5 +1,5 @@
 import type { AppSettings, SettingsWriteResult } from '@bombfarm/contracts';
-import { isAppLocale } from '@bombfarm/contracts';
+import { migrateStoredSettings } from '@bombfarm/contracts';
 import type { SqliteDb } from '../storage/index.js';
 
 /**
@@ -17,14 +17,6 @@ const SETTINGS_META_KEY = 'settings_v1';
 
 interface MetaRow {
   value: string;
-}
-
-/** Validated with `isAppLocale` + `schemaVersion === 1` — a malformed/hand-edited row is treated
- *  as no override (OS detection then runs), never as a language nobody chose. */
-function isValidAppSettings(value: unknown): value is AppSettings {
-  if (typeof value !== 'object' || value === null) return false;
-  const record = value as Record<string, unknown>;
-  return record.schemaVersion === 1 && isAppLocale(record.locale);
 }
 
 export interface SettingsStore {
@@ -63,7 +55,7 @@ export function createSettingsStore(db: SqliteDb | null): SettingsStore {
         return null;
       }
 
-      return isValidAppSettings(parsed) ? parsed : null;
+      return migrateStoredSettings(parsed);
     },
 
     write(settings: AppSettings): SettingsWriteResult {

@@ -95,7 +95,10 @@ jobs:
           # clone of this repository forever.
           git -C "$tmp" init -q -b "$DATA_BRANCH"
           cp "$SNAPSHOT" "$tmp/$SNAPSHOT"
-          git -C "$tmp" add "$SNAPSHOT"
+          # The branch is data, not an application, but Vercel opens a preview build for every
+          # branch pushed. This is the commit telling it not to — see the module for why.
+          node tools/market-snapshot/deploy-optout.mjs "$tmp" "$DATA_BRANCH"
+          git -C "$tmp" add -A
           git -C "$tmp" commit -q -m "chore(market): snapshot ${{ github.run_id }}"
           git -C "$tmp" push --force \
             "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" \

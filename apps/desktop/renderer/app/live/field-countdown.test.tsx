@@ -23,12 +23,28 @@ describe('FieldCountdown — a hero at a genuine zero is not the same as a hero 
     expect(html).not.toMatch(/>\s*0:00\s*</);
   });
 
+  it('shows the absence as a dash and keeps the words for a screen reader only', () => {
+    const html = render(undefined);
+    expect(html).toContain('<span aria-hidden="true">—</span>');
+    expect(html).toContain(`<span class="sr-only">${en.valueNotAvailable}</span>`);
+    // Once, and only inside the visually-hidden span: the sighted sentence is what wraps the row.
+    expect(html.split(en.valueNotAvailable)).toHaveLength(2);
+  });
+
+  it('reserves the same digit column as a live reading, so an arriving countdown shifts nothing', () => {
+    expect(render(undefined)).toContain('min-w-16');
+    expect(render({ heroId: 'h1', secondsRemaining: 0, basis: 'observed' })).toContain('min-w-16');
+  });
+
   it('the two states produce different markup, not just different text', () => {
     const zero = render({ heroId: 'h1', secondsRemaining: 0, basis: 'observed' });
     const absent = render(undefined);
     expect(zero).not.toBe(absent);
-    expect(zero).toContain('sr-only');
-    expect(absent).not.toContain('sr-only');
+    // A real zero prints digits; an absent reading prints a dash and says why out of sight.
+    expect(zero).toContain('0:00');
+    expect(zero).not.toContain('—');
+    expect(absent).toContain('—');
+    expect(absent).not.toContain('0:00');
   });
 });
 
