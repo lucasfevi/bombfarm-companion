@@ -1,7 +1,10 @@
 import { defineConfig } from 'vitest/config';
+import { MAX_TEST_WORKERS } from '../../vitest.workers';
 
 export default defineConfig({
   test: {
+    // Capped here too, so a standalone `pnpm --filter` run is bounded — see vitest.workers.ts.
+    maxWorkers: MAX_TEST_WORKERS,
     include: ['src/**/*.test.ts'],
     // Fail once, before collection, when packages/domain/dist is missing — measured: without it
     // five of this project's files (client, domain-edge, fingerprints, routes, shape) die at
