@@ -1,0 +1,42 @@
+name: Market snapshot freshness
+
+# The staleness alarm for the published `market-prices.json` — see docs/market-prices.md.
+#
+# Every way the snapshot can stop being produced has the same silent symptom: the file simply
+# stops changing. This is what notices. It fetches the file both shipped apps read and fails when
+# it is stale, unparseable, empty, or matches no catalog key — the last being a witnessed shape,
+# a snapshot that published successfully and was useless. A failing scheduled run notifies the
+# repository owner, which is the whole mechanism.
+#
+# One GET of a public file: it never calls Steam, installs nothing, and holds `contents: read`.
+# The freshness threshold is defined once, in tools/market-snapshot/freshness.mjs.
+# Shape-guarded by tools/market-snapshot-freshness-workflow.test.mjs.
+
+on:
+  schedule:
+    - cron: '41 * * * *'        # hourly, deliberately off the hour (queue delay)
+  workflow_dispatch:
+
+concurrency:
+  group: market-snapshot-freshness
+  cancel-in-progress: false     # overlapping runs serialise; two alarms must not race
+
+permissions:
+  contents: read
+
+jobs:
+  freshness:
+    name: Published snapshot freshness
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      # No dependency install: the checker imports only Node built-ins, and an install step here
+      # would multiply this job's one billed minute by an order of magnitude.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Check the published snapshot
+        run: node tools/market-snapshot/freshness.mjs
