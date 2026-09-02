@@ -1,4 +1,4 @@
-import { closeSync, openSync, readFileSync, writeFileSync, writeSync } from 'node:fs';
+import { closeSync, fstatSync, ftruncateSync, mkdirSync, openSync, readFileSync, writeFileSync, writeSync } from 'node:fs';
 import path from 'node:path';
 import type {
   AccountSection,
@@ -36,6 +36,7 @@ import { runPowerShellAsync, runPowerShellSync, stripExeSuffix } from '../game-r
 import { EarningsFold } from './earnings-fold.js';
 import { createFrameCapture, readFrameCaptureEnabledFromEnv } from './frame-capture.js';
 import { FrameRing } from './frame-ring.js';
+import type { ObservationAppendPort, ObservationCapture } from './observation-capture.js';
 import type { LogPort } from './log-port.js';
 import { MapFold, type MapAccountBoosts, type MapWikiFacts } from './map-fold.js';
 import { RuntimePort } from './runtime.js';
@@ -122,6 +123,96 @@ function nodeFrameCaptureAppendPort(destination: string): { append(bytes: Uint8A
   };
 }
 
+const OBSERVATION_CAPTURE_DIR = 'observation-capture';
+
+function twoDigits(value: number): string {
+  return String(value).padStart(2, '0');
+}
+
+/**
+ * One file per run, named by the run's start time. The sibling raw capture truncates on its first
+ * open, which is right for a single-header binary format and wrong here: a truncating recorder
+ * destroys the previous session's evidence, and an appending one interleaves two runs' sequence
+ * numbers into one ordering nothing can untangle. A per-run name avoids both without a flag.
+ */
+export function observationCaptureFilePath(userDataDir: string, startedAtMs: number): string {
+  const at = new Date(startedAtMs);
+  const stamp = [
+    String(at.getFullYear()),
+    twoDigits(at.getMonth() + 1),
+    twoDigits(at.getDate()),
+    '-',
+    twoDigits(at.getHours()),
+    twoDigits(at.getMinutes()),
+    twoDigits(at.getSeconds()),
+  ].join('');
+  return path.join(userDataDir, OBSERVATION_CAPTURE_DIR, `observed-${stamp}.ndjson`);
+}
+
+/**
+ * Each line is written as one buffer, its trailing newline included, and a write that fails part
+ * way through truncates back to the offset the line started at before rethrowing. The file
+ * therefore always ends on a record boundary, so a reader never meets half a JSON object — the
+ * residual window is a hard process kill inside a single write, which is stated rather than
+ * claimed away.
+ *
+ * The handle is deliberately not opened in append mode: Windows refuses `ftruncate` on an
+ * append-mode descriptor (EPERM), which would leave the truncate-back above permanently broken on
+ * the only platform this app runs on. Every write instead names its absolute position, so the
+ * file's own position pointer is never load-bearing.
+ *
+ * `writeChunk` exists so a test can fail a write part way through; production never passes it.
+ */
+export function nodeObservationAppendPort(
+  destination: string,
+  writeChunk: (fd: number, buffer: Buffer, offset: number, length: number, position: number) => number = writeSync,
+): ObservationAppendPort {
+  let fd: number | null = null;
+  let offset = 0;
+  let createdThisProcess = false;
+
+  function closeHandle(): void {
+    if (fd === null) return;
+    closeSync(fd);
+    fd = null;
+  }
+
+  /** A per-run filename means the first open creates the file; a later reopen (after `close()`)
+   *  must continue it rather than truncate away everything the session already recorded. */
+  function ensureOpen(): number {
+    if (fd !== null) return fd;
+    mkdirSync(path.dirname(destination), { recursive: true });
+    fd = openSync(destination, createdThisProcess ? 'r+' : 'w');
+    offset = createdThisProcess ? fstatSync(fd).size : 0;
+    createdThisProcess = true;
+    return fd;
+  }
+
+  return {
+    append: (line) => {
+      const handle = ensureOpen();
+      const buffer = Buffer.from(line, 'utf8');
+      const lineStartedAt = offset;
+      try {
+        let written = 0;
+        while (written < buffer.length) {
+          // writeSync is not obliged to consume the whole buffer, and a short write would leave a
+          // truncated JSON object that no reader can distinguish from a corrupt file.
+          const justWritten = writeChunk(handle, buffer, written, buffer.length - written, offset);
+          written += justWritten;
+          offset += justWritten;
+        }
+      } catch (error) {
+        ftruncateSync(handle, lineStartedAt);
+        offset = lineStartedAt;
+        closeHandle();
+        throw error;
+      }
+    },
+    close: closeHandle,
+  };
+}
+
 function heroPathWithoutIndex(path: string): string {
   return path.replace(/heroes\[\d+\]/g, 'heroes[]');
 }
@@ -172,6 +263,13 @@ export interface LiveSourceDeps {
    *  `createTap` overrides that factory entirely. Defaults to `'prod'`, the flavor capture never
    *  runs under. */
   readonly flavor?: AppFlavor;
+  /** Gates the frame capture alongside {@link LiveSourceDeps.flavor}, and defaults to `true`
+   *  because an omission must disable the capture rather than enable it — a packaged artifact can
+   *  carry the `dev` flavor, so flavor alone does not answer this. */
+  readonly isPackaged?: boolean;
+  /** The developer observation recorder, when the mode is on. Omitted everywhere else, so the
+   *  shipped path grows optional calls rather than a branch. */
+  readonly observer?: ObservationCapture;
   readonly processName?: string;
   readonly log?: LogPort;
   readonly now?: () => number;
@@ -237,12 +335,15 @@ function createDefaultTapFactory(deps: {
   readonly userDataDir: string;
   readonly processName: string;
   readonly flavor: AppFlavor;
+  readonly isPackaged: boolean;
   readonly log: LogPort;
   readonly ring: FrameRing;
+  readonly observer?: ObservationCapture;
 }): (onEvent: (event: LiveEvent) => void, onHttpBody: (body: Buffer, atMs: number) => void) => TapHandle {
   const ring = deps.ring;
 
   const capture = createFrameCapture({
+    isPackaged: deps.isPackaged,
     flavor: deps.flavor,
     enabled: readFrameCaptureEnabledFromEnv(process.env),
     maxBytes: FRAME_CAPTURE_MAX_BYTES,
@@ -267,6 +368,9 @@ function createDefaultTapFactory(deps: {
       log: deps.log,
       ring,
       capture,
+      ...(deps.observer !== undefined
+        ? { onObservedFrame: (wire: Record<string, unknown>, atMs: number) => deps.observer?.frame(wire, atMs) }
+        : {}),
     });
     return {
       start: () => {
@@ -394,6 +498,7 @@ export class LiveSource {
   /** The most recent stored `/state` gold reading — {@link #buildEarnings} falls back to this
    *  whenever no live tick has ever set {@link #goldBalance} this session, so a game-closed read
    *  shows a real (if aging) balance instead of an em dash. */
+  readonly #observer: ObservationCapture | null;
   #accountGoldBalance: number | null = null;
   /** When {@link #accountGoldBalance} was captured. `null` only alongside a `null` balance. */
   #accountGoldCapturedAt: string | null = null;
@@ -410,6 +515,7 @@ export class LiveSource {
 
   constructor(deps: LiveSourceDeps) {
     this.#log = deps.log ?? NOOP_LOG_PORT;
+    this.#observer = deps.observer ?? null;
     this.#now = deps.now ?? Date.now;
     this.#earningsFold = new EarningsFold({ now: this.#now, xpPerProp, log: this.#log });
     this.#mapFold = new MapFold({ wikiFactsFor });
@@ -424,8 +530,10 @@ export class LiveSource {
         userDataDir: deps.userDataDir,
         processName: deps.processName ?? DEFAULT_PROCESS_NAME,
         flavor: deps.flavor ?? 'prod',
+        isPackaged: deps.isPackaged ?? true,
         log: this.#log,
         ring,
+        ...(deps.observer !== undefined ? { observer: deps.observer } : {}),
       });
     }
     this.#currency = liveGap('neverAttached', this.#nowIso());
@@ -449,6 +557,7 @@ export class LiveSource {
    *  session token — not just `account_id`/`player_name`. */
   setCredentialRedactor(redact: ((text: string) => string) | null): void {
     this.#ring?.setCredentialRedactor(redact);
+    this.#observer?.setCredentialRedactor(redact);
   }
 
   /** Mirrors `AccountRefreshHandle.onConsentChanged`: called from the same consent-changed path
@@ -604,6 +713,10 @@ export class LiveSource {
    *  a guess. Only the rotation route is wired downstream this slice; every other identified
    *  section is named in the log and otherwise left alone, the seam the next one plugs into. */
   #handleObservedHttpBody(bodyBuf: Buffer, atMs: number): void {
+    // Above every early return below, and on the raw bytes: the bodies the developer capture
+    // exists to record are exactly the ones the unidentified and ambiguous branches discard.
+    this.#observer?.body(bodyBuf, atMs);
+
     let parsed: unknown;
     try {
       parsed = JSON.parse(bodyBuf.toString('utf8'));
@@ -686,6 +799,7 @@ export class LiveSource {
   // so the branch below is exhaustive over what can actually arrive here.
   #handleTapEvent(event: LiveEvent): void {
     if (event.type === 'currency') {
+      this.#observer?.currency(event.currency, this.#now());
       this.#currency = event.currency;
       this.#touch();
     } else if (event.type === 'frame') {

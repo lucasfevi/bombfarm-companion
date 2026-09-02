@@ -4,7 +4,8 @@
 now the boundary log — every record it emits, at every level including `debug`, is redacted and
 deduplicated before it reaches `electron-log`. The live-source pipeline also gained two local
 diagnostic artifacts: a bounded frame ring for parse-failure post-mortems, and a dev-gated raw
-capture for building new replay fixtures.
+capture for building new replay fixtures. A third joined them since: a dev-gated recording of every
+body and frame the tap observes, including the ones the app cannot identify (§4b).
 
 ## 1. The shared log's two guarantees
 
@@ -75,9 +76,18 @@ shared redaction function.
 
 `apps/desktop/src/main/live-source/frame-capture.ts`'s `createFrameCapture` records the raw,
 never-re-encoded bytes, so the resulting file replays through the exact same decoding path that
-read it live (see §5). Two independent gates decide whether anything is ever written — the app
-flavor must be `dev`, **and** `BFC_LIVE_FRAME_CAPTURE=1` must be set — because a flavor check
-alone is one edit away from shipping a capture that runs in production.
+read it live (see §5). Three independent gates decide whether anything is ever written — the build
+must be **unpackaged**, the app flavor must be `dev`, **and** `BFC_LIVE_FRAME_CAPTURE=1` must be
+set — because no one of them is enough on its own.
+
+The packaging gate is not redundant with the flavor one. `package:dev` produces a **packaged**
+artifact stamped with the `dev` flavor, and a packaged build returns that baked stamp, so
+`isPackaged` and `flavor === 'dev'` can both be true at once; a flavor-only gate could therefore be
+satisfied by an installed build. `isPackaged` is a required dependency rather than something the
+factory reads for itself, so the caller has to pass Electron's real answer and no environment
+variable can talk an install into capturing. A refusal caused by packaging logs its own distinct
+event, so the log names which gate refused rather than misreporting a packaged dev build as being
+outside dev.
 
 **The capture is a record stream, not a flat byte dump, and it has to be.** The hook fires for
 every TLS read in the game client, and those reads interleave many connections: a real 1.5 MB
@@ -105,10 +115,87 @@ reattach after a consent revoke keeps appending correctly.
 `createFrameCapture` emits one `info` record naming the byte cap the moment both gates are open, so
 a maintainer who enables it in dev gets a log line confirming it is running instead of silence.
 
+## 4b. The observation capture — what the app made of the traffic
+
+`apps/desktop/src/main/live-source/observation-capture.ts` records, as newline-delimited JSON,
+every REST body and every live frame the tap observes. It is the complement of §4's capture rather
+than a replacement: `.bfcc` reproduces the byte stream, this reproduces what the app made of it —
+a verdict, a sequence number, a timestamp, and the body itself.
+
+**Its reason to exist is the traffic the app throws away.** The hook is on the TLS read side, so an
+observed body carries no URL and no method; `identifyObservedBody` matches it against five route
+fingerprints and returns `unidentified` for everything else, and `LiveSource` drops those after one
+log line naming a byte length. Anything the game sends that the app does not model — what a cage
+open actually returns, what a chest open actually contains — is in that discarded set. The recorder
+is therefore wired **above** those early returns, on the raw bytes.
+
+```powershell
+pnpm dev:capture
+```
+
+That sets `BFC_OBSERVATION_CAPTURE=1` and `BFC_FLAVOR=dev` as defaults, announcing either if your
+environment already holds one, then builds and starts the dev app against the real client. It
+deliberately does **not** set the replay live source: replayed frames come from a committed capture
+and would answer nothing.
+
+**The gate is the same fail-closed shape `sessionCfgPath` uses**, and it is asked twice — once at
+the call site (`isObservationCaptureEnabled(env, isPackaged)`) and again inside the factory, which
+returns an inert sink when the build is packaged **or** the mode is not enabled. Both parameters are
+required and `isPackaged` is never read from the environment, so an installed build cannot be talked
+into recording live account traffic; it produces no file and logs no line advertising that the mode
+exists.
+
+**Records.** One JSON object per line. Every record carries `seq` (monotonic, and authoritative for
+ordering — two observations can share a millisecond), `at`, the most recent frame's `phase` and
+`wave` as explicit nulls until a frame arrives, and `redaction`. The kinds are:
+
+| `kind` | Carries |
+| --- | --- |
+| `body` | `byteLength`, the `verdict` (`identified` with its section, `unidentified`, `ambiguous` with its sections, or `parse_failed`), and the parsed body — **including** when the verdict is `unidentified` |
+| `frame` | `wire`: the frame object verbatim, decoded keys and the keys `toLiveTick` never reads alike |
+| `mark` | `label` — an annotation you typed while playing |
+| `session` | `started` (naming the destination), each currency transition, `redactor_armed`, `stopped`, `append_failed` |
+
+A body that is not valid JSON is recorded with the `parse_failed` verdict and its byte length
+rather than dropped: "we saw something we could not read" is a finding. Currency transitions are
+recorded so a run where the tap never attached says `consentMissing` or `clientNotStreaming` in the
+file itself, instead of being an empty file that reads as "nothing happened".
+
+**`redaction` says which scrub was in force**, and it has two values. `armed` means the value-level
+credential redactor was installed when that line was written; `key-name-only` means it was not yet.
+The redactor is built from the first successful session-token read, which happens after startup, so
+the earliest lines of a recording can predate it — the stamp makes that legible instead of leaving
+it to be assumed. Three layers apply to every record regardless: a `SessionToken` value renders as
+the redaction marker from its own type, sensitive-named keys are blanked at any depth without
+needing to know the value, and `account_id` / `player_name` are removed outright.
+
+**The token cannot reach the file, structurally.** The module exports no way to append text: every
+record goes through one encoder that scrubs before it stringifies, so bypassing redaction means
+deleting that call rather than forgetting it. A test plants a sentinel token, produces a file, and
+asserts the sentinel does not occur in it as raw text.
+
+**Markers.** Type a note into the launcher's terminal and press Enter while you play; it is written
+to `mark.txt` beside the recording, prefixed with an incrementing ordinal so the same note twice
+still changes the file, and main polls that file for content changes. Content identity rather than
+mtime, because a same-millisecond rewrite is invisible to mtime on Windows. A read failure costs
+the annotation and never the recording.
+
+**Failure never disturbs the tap.** A throwing append latches the recorder off, warns once however
+many observations follow, and returns; `LiveSource` calls it through `?.` and ignores the result. A
+line is written as a single buffer including its newline, and a write that fails part way through
+truncates back to the offset that line started at, so the file always ends on a record boundary.
+
+**Volume, and your own cleanup.** The wire tick is roughly 2 KB at about 10 frames a second —
+around 70 MB per hour — and there is deliberately no size cap, because a cap risks truncating the
+one interesting body. Start and stop the mode by hand. **Recordings hold live account data from
+your own session, nothing deletes them for you, and they must never be committed.**
+
 ## 5. Where the artifacts land, and producing a fixture from a capture
 
-Both are local files written beside the user data directory — `live-frame-dump.json` (the ring's
-scrubbed dump) and `live-frame-capture.bin` (the capture) — nothing is transmitted anywhere.
+All three are local files written beside the user data directory — `live-frame-dump.json` (the
+ring's scrubbed dump), `live-frame-capture.bin` (the raw capture), and
+`observation-capture/observed-<YYYYMMDD-HHmmss>.ndjson` (§4b, one file per run so two sessions
+never share one) — nothing is transmitted anywhere.
 
 `fixtures/live-capture.bfcc` is a committed capture from a real session, produced by this path. To
 make another:

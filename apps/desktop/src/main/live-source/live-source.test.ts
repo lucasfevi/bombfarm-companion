@@ -1,11 +1,16 @@
+import { mkdtempSync, readFileSync, rmSync, writeSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import type { AccountView, LiveCurrency, LiveEvent, LiveFrame, LiveTick, SectionFidelity } from '@bombfarm/contracts';
 import { liveGap } from '@bombfarm/contracts';
-import { wireKey } from '@bombfarm/game-api';
-import { describe, expect, it } from 'vitest';
+import { liveFrameWireKey, wireKey } from '@bombfarm/game-api';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createBoundaryLog } from '../boundary-log/index.js';
 import { generateReplayStream } from './fixtures/generate-replay-stream.js';
 import type { LogPort } from './log-port.js';
-import { LiveSource, type TapHandle } from './live-source.js';
+import type { ObservationCapture } from './observation-capture.js';
+import { createReplayTapFactory } from './replay-tap.js';
+import { LiveSource, nodeObservationAppendPort, observationCaptureFilePath, type TapHandle } from './live-source.js';
 
 class FakeTap implements TapHandle {
   startCount = 0;
@@ -1211,5 +1216,294 @@ describe('LiveSource: current gold falls back to the stored account reading', ()
 
     const earnings = source.getView().earnings;
     expect(earnings).toBeNull();
+  });
+});
+
+/** The raw frame capture is built by the tap factory `LiveSource` owns, and a `createTap` override
+ *  replaces that factory wholesale — so these construct the real one. Neither calls `start()`, so
+ *  no process is ever listed and no runtime is ever loaded; the capture's own gate log is the
+ *  observation. `BFC_LIVE_FRAME_CAPTURE` is read from the real environment inside that factory,
+ *  which is why it is set and restored here rather than injected. */
+describe('LiveSource: the raw frame capture is packaging-gated', () => {
+  function withCaptureEnabled<T>(run: () => T): T {
+    const original = process.env.BFC_LIVE_FRAME_CAPTURE;
+    process.env.BFC_LIVE_FRAME_CAPTURE = '1';
+    try {
+      return run();
+    } finally {
+      if (original === undefined) delete process.env.BFC_LIVE_FRAME_CAPTURE;
+      else process.env.BFC_LIVE_FRAME_CAPTURE = original;
+    }
+  }
+
+  function captureLog(): { log: LogPort; warnings: Record<string, unknown>[]; infos: Record<string, unknown>[] } {
+    const warnings: Record<string, unknown>[] = [];
+    const infos: Record<string, unknown>[] = [];
+    return { log: { info: (record) => infos.push(record), warn: (record) => warnings.push(record) }, warnings, infos };
+  }
+
+  it('stays inert when isPackaged is omitted, because the omitted answer defaults to packaged', () => {
+    const { log, warnings, infos } = captureLog();
+    withCaptureEnabled(() => new LiveSource({ consent: () => true, userDataDir: 'unused-in-tests', flavor: 'dev', log }));
+
+    expect(infos.filter((record) => record.scope === 'frame-capture')).toHaveLength(0);
+    expect(warnings.filter((record) => record.scope === 'frame-capture')).toEqual([
+      expect.objectContaining({ event: 'unavailable_in_packaged_build' }),
+    ]);
+  });
+
+  it('starts the capture when the real unpackaged answer is threaded in, so the default is not refusing everything', () => {
+    const { log, warnings, infos } = captureLog();
+    withCaptureEnabled(
+      () =>
+        new LiveSource({
+          consent: () => true,
+          userDataDir: 'unused-in-tests',
+          flavor: 'dev',
+          isPackaged: false,
+          log,
+        }),
+    );
+
+    expect(warnings.filter((record) => record.scope === 'frame-capture')).toHaveLength(0);
+    expect(infos.filter((record) => record.scope === 'frame-capture')).toEqual([
+      expect.objectContaining({ event: 'started' }),
+    ]);
+  });
+});
+
+describe('observationCaptureFilePath', () => {
+  it('names the file by the run start time, under the capture directory in the user-data tree', () => {
+    const at = Date.parse('2026-09-02T04:07:09.000Z');
+    const resolved = observationCaptureFilePath('C:\\userdata', at);
+    const expectedStamp = [
+      String(new Date(at).getFullYear()),
+      String(new Date(at).getMonth() + 1).padStart(2, '0'),
+      String(new Date(at).getDate()).padStart(2, '0'),
+      '-',
+      String(new Date(at).getHours()).padStart(2, '0'),
+      String(new Date(at).getMinutes()).padStart(2, '0'),
+      String(new Date(at).getSeconds()).padStart(2, '0'),
+    ].join('');
+
+    expect(resolved).toBe(join('C:\\userdata', 'observation-capture', `observed-${expectedStamp}.ndjson`));
+  });
+
+  it('gives two runs two different files, so one never overwrites or interleaves with the other', () => {
+    const first = observationCaptureFilePath('C:\\userdata', Date.parse('2026-09-02T04:07:09.000Z'));
+    const second = observationCaptureFilePath('C:\\userdata', Date.parse('2026-09-02T04:07:10.000Z'));
+
+    expect(first).not.toBe(second);
+  });
+});
+
+describe('nodeObservationAppendPort', () => {
+  const dirs: string[] = [];
+
+  function tempDestination(): string {
+    const dir = mkdtempSync(join(tmpdir(), 'bfc-observation-'));
+    dirs.push(dir);
+    return join(dir, 'observation-capture', 'observed-20260902-040709.ndjson');
+  }
+
+  afterEach(() => {
+    for (const dir of dirs.splice(0)) {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  function readLines(destination: string): string[] {
+    return readFileSync(destination, 'utf8').split('\n').filter((line) => line !== '');
+  }
+
+  it('creates the capture directory and round-trips every line as parseable JSON', () => {
+    const destination = tempDestination();
+    const port = nodeObservationAppendPort(destination);
+
+    port.append(`${JSON.stringify({ seq: 1, kind: 'session' })}\n`);
+    port.append(`${JSON.stringify({ seq: 2, kind: 'body' })}\n`);
+    port.close();
+
+    expect(readLines(destination).map((line) => JSON.parse(line) as unknown)).toEqual([
+      { seq: 1, kind: 'session' },
+      { seq: 2, kind: 'body' },
+    ]);
+  });
+
+  it('consumes the whole buffer even when the underlying write returns short', () => {
+    const destination = tempDestination();
+    const port = nodeObservationAppendPort(destination, (fd, buffer, offset, length, position) =>
+      writeSync(fd, buffer, offset, Math.min(3, length), position),
+    );
+
+    const line = `${JSON.stringify({ seq: 1, note: 'written three bytes at a time' })}\n`;
+    port.append(line);
+    port.close();
+
+    expect(readFileSync(destination, 'utf8')).toBe(line);
+  });
+
+  it('truncates back to the record boundary when a write fails part way through, and rethrows', () => {
+    const destination = tempDestination();
+    let failAfterBytes: number | null = null;
+    const port = nodeObservationAppendPort(destination, (fd, buffer, offset, length, position) => {
+      if (failAfterBytes !== null && offset >= failAfterBytes) throw new Error('ENOSPC: no space left on device');
+      const cap = failAfterBytes === null ? length : Math.min(failAfterBytes - offset, length);
+      return writeSync(fd, buffer, offset, cap, position);
+    });
+
+    port.append(`${JSON.stringify({ seq: 1, kind: 'session' })}\n`);
+    port.append(`${JSON.stringify({ seq: 2, kind: 'body' })}\n`);
+    failAfterBytes = 5;
+    expect(() => {
+      port.append(`${JSON.stringify({ seq: 3, kind: 'body' })}\n`);
+    }).toThrow('ENOSPC');
+    port.close();
+
+    const lines = readLines(destination);
+    expect(lines).toHaveLength(2);
+    expect(lines.map((line) => JSON.parse(line) as unknown)).toEqual([
+      { seq: 1, kind: 'session' },
+      { seq: 2, kind: 'body' },
+    ]);
+  });
+
+  it('leaves no partial trailing record after a failure, so the file always ends on a boundary', () => {
+    const destination = tempDestination();
+    const port = nodeObservationAppendPort(destination, (fd, buffer, offset, length, position) => {
+      if (offset > 0) throw new Error('EIO: write failed mid-record');
+      return writeSync(fd, buffer, offset, Math.min(4, length), position);
+    });
+
+    expect(() => {
+      port.append(`${JSON.stringify({ seq: 1, kind: 'session' })}\n`);
+    }).toThrow('EIO');
+    port.close();
+
+    expect(readFileSync(destination, 'utf8')).toBe('');
+  });
+});
+
+interface RecordedObservation {
+  readonly kind: 'body' | 'frame' | 'currency' | 'mark';
+  readonly value: unknown;
+  readonly atMs: number;
+}
+
+/** A sink that keeps what it was handed, so the assertions below are about what reached the
+ *  recorder rather than about which method was called. */
+function recordingObserver(): { observer: ObservationCapture; seen: RecordedObservation[]; redactors: unknown[] } {
+  const seen: RecordedObservation[] = [];
+  const redactors: unknown[] = [];
+  return {
+    seen,
+    redactors,
+    observer: {
+      body: (bytes, atMs) => seen.push({ kind: 'body', value: bytes.toString('utf8'), atMs }),
+      frame: (wire, atMs) => seen.push({ kind: 'frame', value: wire, atMs }),
+      currency: (currency, atMs) => seen.push({ kind: 'currency', value: currency, atMs }),
+      mark: (label, atMs) => seen.push({ kind: 'mark', value: label, atMs }),
+      setCredentialRedactor: (redact) => redactors.push(redact),
+      close: () => undefined,
+    },
+  };
+}
+
+describe('LiveSource: every observed body reaches the recorder, identified or not', () => {
+  function harnessWithObserver() {
+    const { observer, seen, redactors } = recordingObserver();
+    const taps: FakeTap[] = [];
+    const source = new LiveSource({
+      consent: () => true,
+      userDataDir: 'unused-in-tests',
+      observer,
+      createTap: (onEvent, onHttpBody) => {
+        const tap = new FakeTap(onEvent, onHttpBody);
+        taps.push(tap);
+        return tap;
+      },
+    });
+    const tap = taps[0];
+    if (!tap) throw new Error('harness: no tap constructed');
+    return { source, tap, seen, redactors };
+  }
+
+  it('records an unknown-shape body in full, above the branch that discards it today', () => {
+    const { tap, seen } = harnessWithObserver();
+    const unknownShape = { cage: { hero: 'Dano', rarity: 'Common' }, reward: [7, 8] };
+    tap.emitHttpBody(unknownShape, 1_700_000_000_000);
+
+    expect(seen).toEqual([
+      { kind: 'body', value: JSON.stringify(unknownShape), atMs: 1_700_000_000_000 },
+    ]);
+  });
+
+  it('records a known-shape body too, so the recording is the whole stream and not the leftovers', () => {
+    const { tap, seen } = harnessWithObserver();
+    const rotation = bodyWithHeroes([]);
+    tap.emitHttpBody(rotation, 1_700_000_000_100);
+
+    expect(seen.map((entry) => entry.kind)).toEqual(['body']);
+    expect(seen[0]?.value).toBe(JSON.stringify(rotation));
+  });
+
+  it('records a body that is not JSON, which the live path drops after one log line', () => {
+    const { tap, seen } = harnessWithObserver();
+    tap.emitRawHttpBody(Buffer.from('not-json-at-all', 'utf8'), 1_700_000_000_200);
+
+    expect(seen).toEqual([{ kind: 'body', value: 'not-json-at-all', atMs: 1_700_000_000_200 }]);
+  });
+
+  it('records every currency transition the tap reports', () => {
+    const { tap, seen } = harnessWithObserver();
+    tap.emit({ type: 'currency', currency: liveGap('consentMissing', '2026-09-02T04:00:00.000Z') });
+    tap.emit({ type: 'currency', currency: liveGap('neverAttached', '2026-09-02T04:00:01.000Z') });
+
+    expect(seen.map((entry) => entry.kind)).toEqual(['currency', 'currency']);
+    expect(seen.map((entry) => (entry.value as { reason: string }).reason)).toEqual([
+      'consentMissing',
+      'neverAttached',
+    ]);
+  });
+
+  it('forwards the credential redactor to the recorder from the same single call the ring gets', () => {
+    const { source, redactors } = harnessWithObserver();
+    const redact = (text: string): string => text;
+    source.setCredentialRedactor(redact);
+
+    expect(redactors).toEqual([redact]);
+  });
+});
+
+describe('LiveSource: observed frames reach the recorder through the tap factory', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('delivers the wire object, undecoded keys included, when the factory threads the port', () => {
+    const { observer, seen } = recordingObserver();
+    const capturePath = resolve(__dirname, 'fixtures', 'live-capture.bfcc');
+    const source = new LiveSource({
+      consent: () => true,
+      userDataDir: 'unused-in-tests',
+      observer,
+      createTap: createReplayTapFactory({
+        capturePath,
+        consent: () => true,
+        onObservedFrame: (wire, atMs) => {
+          observer.frame(wire, atMs);
+        },
+      }),
+    });
+    source.start();
+    vi.advanceTimersByTime(5_000);
+
+    const frames = seen.filter((entry) => entry.kind === 'frame');
+    expect(frames.length).toBeGreaterThan(0);
+    expect(frames[0]?.value).toHaveProperty(liveFrameWireKey('messageType'), liveFrameWireKey('snapMessageType'));
   });
 });

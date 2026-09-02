@@ -53,7 +53,17 @@ import { nodeHttpsTransport } from './game-api/https-transport.js';
 import { readSessionToken, sessionCfgPath } from './game-api/session-token-file.js';
 import { createTriggeredRefresh, type TriggeredRefresh } from './game-api/triggered-refresh.js';
 import { createLiveFastPublisher, type LiveFastPublisher } from './live-source/live-fast-publisher.js';
-import { LiveSource } from './live-source/live-source.js';
+import {
+  LiveSource,
+  nodeObservationAppendPort,
+  observationCaptureFilePath,
+} from './live-source/live-source.js';
+import {
+  createObservationCapture,
+  isObservationCaptureEnabled,
+  type ObservationCapture,
+} from './live-source/observation-capture.js';
+import { createMarkWatch, type MarkWatch } from './live-source/observation-mark-watch.js';
 import {
   createReplayTapFactory,
   isReplayLiveSourceEnabled,
@@ -109,6 +119,8 @@ let accountRefresh: AccountRefreshHandle | null = null;
 let consentStore: ConsentStore | null = null;
 let settingsStore: SettingsStore | null = null;
 let liveSource: LiveSource | null = null;
+let observationCapture: ObservationCapture | null = null;
+let observationMarkWatch: MarkWatch | null = null;
 let liveFastPublisher: LiveFastPublisher | null = null;
 let triggeredRefresh: TriggeredRefresh | null = null;
 let marketService: MarketService | null = null;
@@ -713,6 +725,35 @@ async function bootstrap(): Promise<void> {
   // an unpackaged dev build never lists processes and never loads the instrumentation runtime —
   // which is what lets it run beside a packaged build that is tapping the real game.
   const liveConsent = createLiveConsentGate(consentStore);
+
+  // A developer recording of everything the tap observes, including the bodies the app refuses to
+  // identify and discards. Both the gate here and the recorder's own constructor are handed
+  // Electron's real packaged answer, so no environment can talk an installed build into writing
+  // live account traffic to disk.
+  const observationCaptureEnabled = isObservationCaptureEnabled(process.env, resolveAppEnv().isPackaged);
+  const observationCaptureStartedAt = Date.now();
+  const observationCaptureDestination = observationCaptureFilePath(userDataDir, observationCaptureStartedAt);
+  observationCapture = createObservationCapture({
+    enabled: observationCaptureEnabled,
+    isPackaged: resolveAppEnv().isPackaged,
+    destination: observationCaptureDestination,
+    appendPort: nodeObservationAppendPort(observationCaptureDestination),
+    log,
+  });
+
+  // Only polled when the mode is actually on: a shipped build must not read a file every half
+  // second for a recorder it does not have.
+  if (observationCaptureEnabled) {
+    observationMarkWatch = createMarkWatch({
+      path: path.join(path.dirname(observationCaptureDestination), 'mark.txt'),
+      readFile: (markPath) => (fs.existsSync(markPath) ? fs.readFileSync(markPath, 'utf8') : null),
+      onMark: (label) => {
+        observationCapture?.mark(label, Date.now());
+      },
+    });
+    observationMarkWatch.start();
+  }
+
   const replayLive = isReplayLiveSourceEnabled(process.env, resolveAppEnv().isPackaged);
   if (replayLive) {
     log.info({
@@ -726,6 +767,8 @@ async function bootstrap(): Promise<void> {
     consent: liveConsent,
     userDataDir,
     flavor: resolveAppEnv().flavor,
+    isPackaged: resolveAppEnv().isPackaged,
+    observer: observationCapture,
     log,
     ...(replayLive
       ? {
@@ -733,6 +776,9 @@ async function bootstrap(): Promise<void> {
             capturePath: resolveReplayCapturePath(process.env, __dirname),
             consent: liveConsent,
             log,
+            onObservedFrame: (wire, atMs) => {
+              observationCapture?.frame(wire, atMs);
+            },
           }),
         }
       : {}),
@@ -795,7 +841,7 @@ async function bootstrap(): Promise<void> {
   // assigned once every producer it reads (gameReader, consentStore, accountRefresh) exists.
   // Both producers below "ping" the notifier and ignore their own payload argument for that call
   // — the notifier always re-resolves the CURRENT cached view itself (resolveCachedAccountView),
-  // so the push and the pull are provably the same function (design.md §2.3). accountRefresh's
+  // so the push and the pull are provably the same function. accountRefresh's
   // callback additionally forwards its argument to liveSource — a separate consumer with its own
   // reason to want the freshly committed view.
   let notifier: ReturnType<typeof createAccountNotifier> | null = null;
@@ -1010,6 +1056,10 @@ if (!gotLock) {
     triggeredRefresh = null;
     void liveSource?.teardown();
     liveSource = null;
+    observationMarkWatch?.stop();
+    observationMarkWatch = null;
+    observationCapture?.close();
+    observationCapture = null;
     lastIngestedRotationBody = null;
     consentStore = null;
     persistMainWindowLayout(true);
