@@ -117,6 +117,15 @@ test.describe('consent modal smoke (Success Criterion "shown once, survives rest
         await expect(page.getByTestId('consent-gate')).toBeVisible({ timeout: 15_000 });
         await expect(page.locator('nav[aria-label="Main"] button')).toHaveCount(0);
 
+        // The one control that outlives the gate. It reads nothing and attaches to nothing, so
+        // it is not part of what was just declined — and Settings, which carries the labelled
+        // half, is unreachable from here.
+        await expect(page.getByTestId('shell-coffee')).toBeVisible();
+        await expect(page.getByTestId('shell-coffee')).toHaveAttribute(
+          'href',
+          'https://buymeacoffee.com/lucasfevi',
+        );
+
         // The gate is not a dead end, and the only way out of it is through the disclosure.
         await page.getByTestId('consent-gate-read-again').click();
         await expect(modal).toBeVisible({ timeout: 15_000 });

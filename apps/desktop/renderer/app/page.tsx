@@ -21,6 +21,7 @@ import { CopyProvider, useCopy, useLocale, type Copy } from '../lib/copy';
 import { formatAge } from '../lib/format';
 import { useOverlayInset } from '../lib/window-overlay';
 import { navItemsFor } from './nav-items';
+import { CoffeeIconLink } from './coffee-link';
 import { ConsentGate, isConsentGateVisible } from './consent-gate';
 import { ConsentModal } from './consent-modal';
 import { UpdateChip } from './update-chip';
@@ -30,6 +31,7 @@ import { InventoryView } from './inventory/inventory-view';
 import { ConsentSection } from './settings/consent-section';
 import { DiagnosticsSection } from './settings/diagnostics-section';
 import { LanguageSection } from './settings/language-section';
+import { SupportSection } from './settings/support-section';
 import { UpdatesSection } from './settings/updates-section';
 import { WindowSection } from './settings/window-section';
 
@@ -317,6 +319,10 @@ function HomePageContent({
         actions={
           <div className="flex items-center gap-3">
             {granted ? <OpenMiniButton /> : null}
+            {/* Left of the language toggle, and unconditional — unlike the mini-window button
+                above it: the gate screen is where a first run spends its time, and this link
+                neither reads the account nor touches the game. */}
+            <CoffeeIconLink />
             <SegmentedToggle
               options={LOCALE_OPTIONS}
               value={locale}
@@ -392,6 +398,7 @@ function HomePageContent({
                 onDownload={onUpdateDownload}
                 onInstall={onUpdateInstall}
               />
+              <SupportSection />
             </div>
           ) : activeNavId === 'farm' ? (
             <FarmView />

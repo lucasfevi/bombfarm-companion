@@ -21,6 +21,7 @@ export const en = {
   shellUpdateDownloading: 'Updating… {percent}%',
   shellUpdateReady: 'Restart to update',
   shellUpdateOpenSettings: 'Open the Updates settings',
+  shellCoffeeLabel: 'Buy me a coffee',
 
   // empty* — placeholder states shown before real data has arrived
   emptyBridgeUnavailableTitle: 'Preload bridge unavailable',
@@ -117,6 +118,12 @@ export const en = {
   settingsUpdatesReasonRateLimited: 'The update server is asking us to slow down. Wait a few minutes and try again.',
   settingsUpdatesReasonNoRelease: 'There is no published release for this build yet.',
   settingsUpdatesReasonUnknown: 'Something went wrong. Try again, and save a bug report file below if it keeps failing.',
+
+  // settingsSupport* — the labelled half of the support link; the top bar carries the icon-only half
+  settingsSupportSectionTitle: 'Support the project',
+  settingsSupportCoffeeLabel: 'Buy me a coffee',
+  settingsSupportCoffeeHelp: 'The companion is free and stays free. Opens the page in your browser.',
+  settingsSupportCoffeeAction: 'Buy me a coffee',
 
   // consentGate* — the permission gate shown instead of app content when access is not allowed
   consentGateTitle: 'This app needs your permission to work',
