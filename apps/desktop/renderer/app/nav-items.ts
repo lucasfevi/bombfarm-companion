@@ -5,6 +5,7 @@ export function navItemsFor(t: Copy) {
     { id: 'live', label: t.liveNavLabel },
     { id: 'farm', label: t.farmNavLabel },
     { id: 'inventory', label: t.inventoryNavLabel },
+    { id: 'account', label: t.accountNavLabel },
     { id: 'settings', label: t.settingsNavLabel },
   ];
 }

@@ -28,6 +28,7 @@ import { UpdateChip } from './update-chip';
 import { LiveView } from './live/live-view';
 import { FarmView } from './farm/farm-view';
 import { InventoryView } from './inventory/inventory-view';
+import { AccountView } from './account/account-view';
 import { ConsentSection } from './settings/consent-section';
 import { DiagnosticsSection } from './settings/diagnostics-section';
 import { LanguageSection } from './settings/language-section';
@@ -404,6 +405,12 @@ function HomePageContent({
             <FarmView />
           ) : activeNavId === 'inventory' ? (
             <InventoryView />
+          ) : activeNavId === 'account' ? (
+            <AccountView
+              onOpenBag={() => {
+                setActiveNavId('inventory');
+              }}
+            />
           ) : (
             <LiveView onReopenConsent={onConsentReallow} />
           )}

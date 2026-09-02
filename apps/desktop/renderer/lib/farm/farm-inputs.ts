@@ -1,18 +1,25 @@
 /**
  * `AccountView` → the flat `FarmInputs` record `@bombfarm/farm/core` computes the farm board
- * from. Pure, no React import — and the one place `parseAccountPayload` is called on the desktop.
- * It is called from the RENDERER on purpose: main detects that the account changed, the renderer
- * is what recomputes from it, and a structural guard fails the build if that identifier ever
- * appears under `apps/desktop/src/main`.
+ * from. Pure, no React import. `parseAccountPayload` is called from the RENDERER on purpose: main
+ * detects that the account changed, the renderer is what recomputes from it, and a structural
+ * guard fails the build if that identifier ever appears under `apps/desktop/src/main`.
+ *
+ * The per-section usability gate and the capture-time reads are `lib/account/account-facts.ts`'s,
+ * imported rather than restated — the Account screen gates on the same rule, per panel.
  */
 import { ACCOUNT_SECTIONS } from '@bombfarm/domain/account-fidelity';
 import { parseAccountPayload } from '@bombfarm/domain/import-save';
 import { computeTeamBuffsFromDeployed } from '@bombfarm/domain/team-buffs';
-import { canonicalStringify, isTrustworthySection } from '@bombfarm/contracts';
-import type { AccountPayload, AccountSection, AccountView, SectionFidelity } from '@bombfarm/contracts';
+import { canonicalStringify } from '@bombfarm/contracts';
+import type { AccountView } from '@bombfarm/contracts';
 import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { readFarmDepTuple, type FarmInputs } from '@bombfarm/farm/core';
+import { capturedAtOf, isSectionUsable, sectionFidelityOf } from '../account/account-facts';
+
+// Re-exported, never redefined: the board's withhold gate IS that rule, and this module stays the
+// seam its own tests ask for it through.
+export { isSectionUsable };
 
 /**
  * The two compute inputs the player owns. Everything else on {@link FarmInputs} is read out of
@@ -31,28 +38,6 @@ export const DEFAULT_FARM_CONTROLS: FarmControls = Object.freeze({
   farmPoolOverrides: Object.freeze({}) as Record<string, boolean>,
   farmReturnBonus: 'off' as const,
 });
-
-/**
- * The withhold gate is per-section usability, never the account-wide fidelity grade. A
- * `degraded` section is usable only when `isTrustworthySection` says its body lost nothing.
- */
-export function isSectionUsable(fidelity: SectionFidelity): boolean {
-  if (fidelity.status === 'degraded') return isTrustworthySection(fidelity);
-  return fidelity.status === 'resolved' || fidelity.status === 'stale';
-}
-
-function sectionFidelityOf(payload: AccountPayload, section: AccountSection): SectionFidelity {
-  // No fidelity block for a section reads as `missing` — the conservative, withhold-safe default.
-  // It differs from `deriveAccountFidelity`'s own "absent fidelity ⇒ grade full" rule, which
-  // exists for the web's direct-file import where every section is present by construction; an
-  // `AccountView` always carries a real fidelity block, so this branch is defensive only.
-  return payload.fidelity?.[section] ?? { status: 'missing' };
-}
-
-function capturedAtOf(payload: AccountPayload, section: AccountSection): string | null {
-  const fidelity = sectionFidelityOf(payload, section);
-  return fidelity.status === 'missing' ? null : fidelity.capturedAt;
-}
 
 /**
  * `null` when the board must not be computed at all. Nothing here ever fills a missing value
