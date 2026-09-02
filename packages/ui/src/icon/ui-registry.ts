@@ -14,7 +14,7 @@ import {
   HiMiniBars3,
   HiMiniWindow,
 } from 'react-icons/hi2';
-import { BiCoffee } from 'react-icons/bi';
+import { BiCoffee, BiCopy } from 'react-icons/bi';
 import { PiSortAscending, PiSortDescending } from 'react-icons/pi';
 import type { IconGlyph } from './types';
 
@@ -38,6 +38,8 @@ export const uiIconRegistry = {
   check: HiMiniCheck,
   // Button coffee / coffee-full stories
   coffee: BiCoffee,
+  // The referral-code controls in both apps' chrome — copy the code to the clipboard
+  copy: BiCopy,
   // toast/notification `success` variant (m2-toast-settings)
   'check-circle': HiMiniCheckCircle,
   // toast/notification `error` variant (m2-toast-settings)
