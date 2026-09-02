@@ -286,6 +286,32 @@ describe('carrying native quotes across a rate-limited run', () => {
     expect(merged?.lowestNative).toEqual({ BRL: 15.2 });
     expect(merged?.nativeQuotedUtc).toBe('2026-08-29T18:00:00.000Z');
   });
+
+  /**
+   * The condition inheritance fires on — this run took no quote and the price has not moved — is
+   * also the condition a row the run deliberately stopped quoting presents. Those are not the same
+   * claim: no later pass is coming for that row, so an inherited quote would go on ageing behind a
+   * `native` label that says it is the number on the listing.
+   */
+  it('inherits nothing for a row the run chose not to quote', () => {
+    const fresh = entry({ hashName: 'Gold Ring Lv 20 (Rare)', lowestUsd: 2.8, lowestNative: {} });
+    const merged = mergeEntries(
+      [fresh],
+      [prior],
+      true,
+      new Set(['Gold Ring Lv 20 (Rare)']),
+    )[0];
+
+    expect(merged?.lowestNative).toEqual({});
+    expect(merged?.nativeQuotedUtc).toBeNull();
+  });
+
+  it('leaves a row outside that set inheriting as before', () => {
+    const fresh = entry({ hashName: 'Gold Ring Lv 20 (Rare)', lowestUsd: 2.8, lowestNative: {} });
+    const merged = mergeEntries([fresh], [prior], true, new Set(['Something Else (Rare)']))[0];
+
+    expect(merged?.lowestNative).toEqual({ BRL: 14.46 });
+  });
 });
 
 describe('readMarketSnapshot', () => {
