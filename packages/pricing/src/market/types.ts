@@ -177,6 +177,9 @@ export function categoryKey(category: string, hashName: string): string {
 /** The Steam category tag heroes are listed under. */
 export const HERO_CATEGORY = 'hero';
 
+/** The Steam category tag hero skins are listed under. */
+export const SKIN_CATEGORY = 'skin';
+
 /**
  * The key for a tradable hero, which is its rarity and nothing else.
  *

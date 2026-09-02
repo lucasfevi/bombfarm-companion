@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { CatalogView } from './reconcile.js';
-import { resolveItemPrice, resolveKey } from './resolve.js';
+import { resolveHeroPrice, resolveItemPrice, resolveKey, resolveSkinPrice } from './resolve.js';
 import { buildSnapshot } from './snapshot.js';
 import type { MarketEntry } from './types.js';
-import { MARKET_APP_ID, categoryKey, priceKey } from './types.js';
+import { MARKET_APP_ID, categoryKey, heroPriceKey, priceKey } from './types.js';
 
 const CATALOG: CatalogView = {
   defs: [{ defId: 'ember_arma', set: 'ember', slot: 'arma', level: 10 }],
@@ -160,6 +160,86 @@ describe('resolveKey', () => {
 
   it('reports unknown for a key nothing on the market carries', () => {
     expect(resolveKey('chest#Nothing', snapshotOf([])).state).toBe('unknown');
+  });
+});
+
+describe('resolveHeroPrice', () => {
+  const heroEntry = marketEntry({
+    hashName: 'Hero (Rare)',
+    key: heroPriceKey(2),
+    defId: null,
+    kind: null,
+    category: 'hero',
+    set: null,
+    slot: null,
+    rarityIdx: 2,
+    level: null,
+    lowestUsd: 10,
+  });
+
+  it('prices an owned hero on its rarity and nothing else', () => {
+    expect(resolveHeroPrice({ rarity: 2, marketable: true }, snapshotOf([heroEntry]))).toMatchObject(
+      { state: 'priced', key: heroPriceKey(2), hashName: 'Hero (Rare)', amount: 10 },
+    );
+  });
+
+  it('does not let one rarity reach another rarity of the same hero listing', () => {
+    expect(resolveHeroPrice({ rarity: 3, marketable: true }, snapshotOf([heroEntry])).state).toBe(
+      'unknown',
+    );
+  });
+
+  it('keeps a hero away from the item priced at the same rarity index', () => {
+    const both = snapshotOf([heroEntry, marketEntry({ hashName: 'Ember Weapon' })]);
+
+    expect(resolveHeroPrice({ rarity: 1, marketable: true }, both).state).toBe('unknown');
+  });
+
+  it('says not-tradable for a hero bound to the account, without consulting the snapshot', () => {
+    const resolved = resolveHeroPrice({ rarity: 2, marketable: false }, snapshotOf([heroEntry]));
+
+    expect(resolved).toMatchObject({ state: 'not-tradable', key: null, amount: null });
+  });
+});
+
+describe('resolveSkinPrice', () => {
+  const snapshot = snapshotOf([
+    marketEntry({
+      hashName: 'Royal Sentinel Skin',
+      key: categoryKey('skin', 'Royal Sentinel Skin'),
+      defId: null,
+      kind: null,
+      category: 'skin',
+      set: null,
+      slot: null,
+      rarityIdx: null,
+      level: null,
+      lowestUsd: 48.14,
+    }),
+  ]);
+
+  it('prices a worn skin through the listing the table names for it', () => {
+    expect(resolveSkinPrice(8, snapshot)).toMatchObject({
+      state: 'priced',
+      hashName: 'Royal Sentinel Skin',
+      amount: 48.14,
+    });
+  });
+
+  it('gives an index the table cannot name no key and no price, not the only skin listed', () => {
+    expect(resolveSkinPrice(9, snapshot)).toMatchObject({
+      key: null,
+      hashName: null,
+      amount: null,
+    });
+  });
+
+  it('gives a named skin the market has never carried no price either', () => {
+    expect(resolveSkinPrice(4, snapshot)).toMatchObject({ state: 'unknown', amount: null });
+  });
+
+  it('has no price for a birth skin, which is not something anyone bought', () => {
+    expect(resolveSkinPrice(0, snapshot).amount).toBeNull();
   });
 });
 

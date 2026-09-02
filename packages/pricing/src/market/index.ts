@@ -2,6 +2,7 @@ export {
   FACET_NAMES,
   MARKET_APP_ID,
   HERO_CATEGORY,
+  SKIN_CATEGORY,
   categoryKey,
   heroPriceKey,
   priceKey,
@@ -30,11 +31,14 @@ export {
   type PriceQuote,
 } from './endpoints.js';
 export {
+  BOUGHT_SKIN_HASH,
   CATEGORY_DEF_PREFIX,
   EQUIPMENT_CATEGORY_TAG,
+  FIRST_BOUGHT_SKIN_INDEX,
   STEAM_CATEGORY_TO_KIND,
   STEAM_RARITY_TO_IDX,
   STEAM_SLOT_TO_CATALOG,
+  boughtSkinHashFor,
   catalogSlotFor,
   defPrefixFor,
   isKnownTag,
@@ -73,10 +77,22 @@ export { quoteNative, type QuoteDeps, type QuoteFetchResult, type QuoteResult } 
 export {
   keyForItem,
   marketEntryFor,
+  resolveHeroPrice,
   resolveItemPrice,
   resolveKey,
+  resolveSkinPrice,
   type PriceBasis,
   type PriceState,
+  type PriceableHero,
   type PriceableItem,
   type ResolvedPrice,
 } from './resolve.js';
+export {
+  HOLDING_COMPONENTS,
+  accountHoldings,
+  boughtSkinsWorn,
+  type AccountHoldings,
+  type AccountHoldingsInput,
+  type HoldingComponent,
+  type HoldingsTally,
+} from './holdings.js';
