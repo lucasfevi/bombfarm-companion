@@ -18,6 +18,7 @@
     "build": "pnpm build:electron && pnpm build:renderer",
     "dev": "pnpm build:electron && node scripts/dev.mjs",
     "dev:offline": "node scripts/dev-offline.mjs",
+    "dev:capture": "node scripts/dev-capture.mjs",
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p renderer/tsconfig.json --noEmit",
     "lint": "pnpm --dir ../.. exec eslint apps/desktop/src apps/desktop/renderer",
     "test:smoke": "playwright test -c playwright.config.ts --project=electron-smoke",
