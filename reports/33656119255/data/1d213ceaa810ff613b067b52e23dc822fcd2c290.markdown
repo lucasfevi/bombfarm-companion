@@ -1,0 +1,1482 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: farm-respec.spec.ts >> Farm Respec Advisor >> re-rank moves the top-ranked phase into 53-57, closes the panel, and marks the table
+- Location: e2e/farm-respec.spec.ts:201:7
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded.
+```
+
+```
+Error: locator.click: Test timeout of 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('farm-respec-rerank').getByRole('switch')
+    - locator resolved to <span tabindex="0" role="switch" data-unchecked="" data-switch="true" id="base-ui-_r_o7_" aria-checked="false" aria-labelledby="base-ui-_r_o8_-label" aria-label="Show ranking under this build" class="relative inline-flex h-[22px] w-10 shrink-0 cursor-pointer items-center rounded-full border border-line bg-bg-2 p-0.5 outline-none select-none motion-safe:transition-[background-color,border-color,transform] motion-safe:duration-[140ms] motion-safe:ease-out data-[checked]:border-accent data-[checked]:bg…>…</span>
+  - attempting click action
+    - waiting for element to be visible, enabled and stable
+  - element was detached from the DOM, retrying
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - alert [ref=e2]
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - link "Bomb Farm Companion" [ref=e7] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e8]:
+              - generic [ref=e9]: Bomb Farm
+              - generic [ref=e10]: Companion
+          - navigation "Main sections" [ref=e11]:
+            - link "Planner" [ref=e12] [cursor=pointer]:
+              - /url: /
+            - link "Farm" [ref=e13] [cursor=pointer]:
+              - /url: /farm
+            - link "Team plan" [ref=e14] [cursor=pointer]:
+              - /url: /team-plan
+            - link "Inventory" [ref=e15] [cursor=pointer]:
+              - /url: /inventory
+            - link "Account" [ref=e16] [cursor=pointer]:
+              - /url: /account
+        - generic [ref=e17]:
+          - link "Download BombFarm Companion" [ref=e18] [cursor=pointer]:
+            - /url: /download
+          - button "Import" [ref=e19] [cursor=pointer]
+          - button "Copy my referral code — we both get a reward once you clear stage 151" [ref=e20] [cursor=pointer]:
+            - generic [ref=e21]: F-X7BTKJPP
+            - img [ref=e22]
+          - link "Buy me a coffee" [ref=e24] [cursor=pointer]:
+            - /url: https://buymeacoffee.com/lucasfevi
+            - img [ref=e25]
+          - group "Language" [ref=e27]:
+            - button "PT" [ref=e28] [cursor=pointer]
+            - button "EN" [ref=e29] [cursor=pointer]
+    - generic [ref=e31]:
+      - generic [ref=e32]:
+        - heading "Farm Ranking" [level=2] [ref=e34]
+        - group "Rotation pool" [ref=e36]:
+          - generic [ref=e37]: Rotation pool
+          - generic [ref=e38]:
+            - generic [ref=e39]:
+              - generic [ref=e41]:
+                - img "Minato" [ref=e44]
+                - generic [ref=e45]:
+                  - generic [ref=e46]:
+                    - generic [ref=e47]: B
+                    - generic [ref=e48]: Minato
+                  - generic [ref=e50]: Rare
+                  - generic [ref=e51]: Lv 95
+              - switch "Include Minato in the farm estimate" [checked] [ref=e52] [cursor=pointer]
+              - checkbox [checked] [ref=e53] [cursor=pointer]
+            - generic [ref=e54]:
+              - generic [ref=e56]:
+                - img "Jon" [ref=e59]
+                - generic [ref=e60]:
+                  - generic [ref=e61]:
+                    - generic [ref=e62]: D
+                    - generic [ref=e63]: Jon
+                  - generic [ref=e65]: Rare
+                  - generic [ref=e66]: Lv 96
+              - switch "Include Jon in the farm estimate" [checked] [ref=e67] [cursor=pointer]
+              - checkbox [checked] [ref=e68] [cursor=pointer]
+            - generic [ref=e69]:
+              - generic [ref=e71]:
+                - img "Bellatrix" [ref=e74]
+                - generic [ref=e75]:
+                  - generic [ref=e76]:
+                    - generic [ref=e77]: A
+                    - generic [ref=e78]: Bellatrix
+                  - generic [ref=e80]: Uncommon
+                  - generic [ref=e81]: Lv 106
+              - switch "Include Bellatrix in the farm estimate" [checked] [ref=e82] [cursor=pointer]
+              - checkbox [checked] [ref=e83] [cursor=pointer]
+            - generic [ref=e84]:
+              - generic [ref=e86]:
+                - 'img "Buff S #1" [ref=e89]'
+                - generic [ref=e90]:
+                  - generic [ref=e91]:
+                    - generic [ref=e92]: S
+                    - generic [ref=e93]: "Buff S #1"
+                  - generic [ref=e95]: Rare
+                  - generic [ref=e96]: Lv 85
+              - 'switch "Include Buff S #1 in the farm estimate" [checked] [ref=e97] [cursor=pointer]'
+              - checkbox [checked] [ref=e98] [cursor=pointer]
+            - generic [ref=e99]:
+              - generic [ref=e101]:
+                - 'img "WB #2" [ref=e104]'
+                - generic [ref=e105]:
+                  - generic [ref=e106]:
+                    - generic [ref=e107]: D
+                    - generic [ref=e108]: "WB #2"
+                  - generic [ref=e110]: Common
+                  - generic [ref=e111]: Lv 77
+              - 'switch "Include WB #2 in the farm estimate" [checked] [ref=e112] [cursor=pointer]'
+              - checkbox [checked] [ref=e113] [cursor=pointer]
+            - generic [ref=e114]:
+              - generic [ref=e116]:
+                - 'img "WB #1" [ref=e119]'
+                - generic [ref=e120]:
+                  - generic [ref=e121]:
+                    - generic [ref=e122]: B
+                    - generic [ref=e123]: "WB #1"
+                  - generic [ref=e125]: Common
+                  - generic [ref=e126]: Lv 84
+              - 'switch "Include WB #1 in the farm estimate" [checked] [ref=e127] [cursor=pointer]'
+              - checkbox [checked] [ref=e128] [cursor=pointer]
+            - generic [ref=e129]:
+              - generic [ref=e131]:
+                - 'img "Buff L #1" [ref=e134]'
+                - generic [ref=e135]:
+                  - generic [ref=e136]:
+                    - generic [ref=e137]: E
+                    - generic [ref=e138]: "Buff L #1"
+                  - generic [ref=e140]: Rare
+                  - generic [ref=e141]: Lv 68
+              - 'switch "Include Buff L #1 in the farm estimate" [checked] [ref=e142] [cursor=pointer]'
+              - checkbox [checked] [ref=e143] [cursor=pointer]
+            - generic [ref=e144]:
+              - generic [ref=e146]:
+                - 'img "WB #3" [ref=e149]'
+                - generic [ref=e150]:
+                  - generic [ref=e151]:
+                    - generic [ref=e152]: A
+                    - generic [ref=e153]: "WB #3"
+                  - generic [ref=e155]: Common
+                  - generic [ref=e156]: Lv 59
+              - 'switch "Include WB #3 in the farm estimate" [checked] [ref=e157] [cursor=pointer]'
+              - checkbox [checked] [ref=e158] [cursor=pointer]
+            - generic [ref=e159]:
+              - generic [ref=e161]:
+                - 'img "Buff FL #1" [ref=e164]'
+                - generic [ref=e165]:
+                  - generic [ref=e166]:
+                    - generic [ref=e167]: A
+                    - generic [ref=e168]: "Buff FL #1"
+                  - generic [ref=e170]: Uncommon
+                  - generic [ref=e171]: Lv 50
+              - 'switch "Include Buff FL #1 in the farm estimate" [checked] [ref=e172] [cursor=pointer]'
+              - checkbox [checked] [ref=e173] [cursor=pointer]
+            - generic [ref=e174]:
+              - generic [ref=e176]:
+                - 'img "Manco #2" [ref=e179]'
+                - generic [ref=e180]:
+                  - generic [ref=e181]:
+                    - generic [ref=e182]: E
+                    - generic [ref=e183]: "Manco #2"
+                  - generic [ref=e185]: Rare
+                  - generic [ref=e186]: Lv 67
+              - 'switch "Include Manco #2 in the farm estimate" [checked] [ref=e187] [cursor=pointer]'
+              - checkbox [checked] [ref=e188] [cursor=pointer]
+            - generic [ref=e189]:
+              - generic [ref=e191]:
+                - img "Rowan" [ref=e194]
+                - generic [ref=e195]:
+                  - generic [ref=e196]:
+                    - generic [ref=e197]: S
+                    - generic [ref=e198]: Rowan
+                  - generic [ref=e200]: Common
+                  - generic [ref=e201]: Lv 2
+              - switch "Include Rowan in the farm estimate" [checked] [ref=e202] [cursor=pointer]
+              - checkbox [checked] [ref=e203] [cursor=pointer]
+            - generic [ref=e204]:
+              - generic [ref=e206]:
+                - img "Perrin" [ref=e209]
+                - generic [ref=e210]:
+                  - generic [ref=e211]:
+                    - generic [ref=e212]: E
+                    - generic [ref=e213]: Perrin
+                  - generic [ref=e215]: Rare
+                  - generic [ref=e216]: Lv 53
+              - switch "Include Perrin in the farm estimate" [checked] [ref=e217] [cursor=pointer]
+              - checkbox [checked] [ref=e218] [cursor=pointer]
+            - generic [ref=e219]:
+              - generic [ref=e221]:
+                - img "Korin" [ref=e224]
+                - generic [ref=e225]:
+                  - generic [ref=e226]:
+                    - generic [ref=e227]: A
+                    - generic [ref=e228]: Korin
+                  - generic [ref=e230]: Common
+                  - generic [ref=e231]: Lv 2
+              - switch "Include Korin in the farm estimate" [checked] [ref=e232] [cursor=pointer]
+              - checkbox [checked] [ref=e233] [cursor=pointer]
+        - status [ref=e235]:
+          - heading "Your field is saturated" [level=2] [ref=e236]
+          - paragraph [ref=e237]: "11.0% of the time a rested hero waits on the bench because all 9 of your field slots are taken. 9 is the maximum, so this one is structural — there are no more slots to buy. The gold/hr estimate already charges this wait: it costs about 2.0% of the rate you would get with room for everyone. Turning heroes off above lowers the waiting too, but usually lowers the total as well: a hero that only sometimes gets a slot still earns while it has one."
+        - generic [ref=e238]:
+          - button "Optimize" [expanded] [ref=e239] [cursor=pointer]
+          - generic [ref=e240]: At least 16.5% more per hour
+        - generic [ref=e241]:
+          - generic [ref=e242]:
+            - generic [ref=e243]:
+              - generic [ref=e244]: Unlocked only
+              - generic [ref=e245]:
+                - switch "Unlocked only" [checked] [ref=e246] [cursor=pointer]
+                - checkbox [checked] [ref=e247] [cursor=pointer]
+            - generic [ref=e248]:
+              - generic [ref=e249]: Difficulty filter
+              - generic [ref=e250]:
+                - combobox "Difficulty filter" [ref=e251]:
+                  - generic:
+                    - generic:
+                      - img
+                  - generic [ref=e252]: All difficulties
+                - textbox [ref=e253]
+            - generic [ref=e254]:
+              - generic [ref=e255]: Gate
+              - generic [ref=e256]:
+                - combobox "Gate" [ref=e257]:
+                  - generic:
+                    - generic:
+                      - img
+                  - generic [ref=e258]: All phases
+                - textbox [ref=e259]: all
+            - generic [ref=e260]:
+              - generic [ref=e261]: Min item level
+              - generic [ref=e262]:
+                - combobox "Min item level" [ref=e263]:
+                  - generic:
+                    - generic:
+                      - img
+                  - generic [ref=e264]: Any item level
+                - textbox [ref=e265]
+          - generic [ref=e266]:
+            - generic [ref=e267]: Return Bonus
+            - generic [ref=e268]:
+              - combobox "Return Bonus" [ref=e269]:
+                - generic:
+                  - generic:
+                    - img
+                - generic [ref=e270]: "Off"
+              - textbox [ref=e271]: "off"
+        - generic [ref=e272]:
+          - generic [ref=e273]: Sorted by Gold, descending
+          - table "Every wiki phase ranked by what it pays this account per hour" [ref=e275]:
+            - caption [ref=e288]: Every wiki phase ranked by what it pays this account per hour
+            - rowgroup [ref=e289]:
+              - row "Phase Mitigation Gold Item chest Key Gem chest Time chest XP Item level Clear time One-shot" [ref=e290]:
+                - columnheader "Phase" [ref=e291]:
+                  - generic [ref=e292]: Phase
+                - columnheader "Mitigation" [ref=e293]:
+                  - button "Mitigation" [ref=e294] [cursor=pointer]:
+                    - generic [ref=e295]: Mitigation
+                    - generic [ref=e296]:
+                      - img [ref=e298]
+                      - img [ref=e301]
+                - columnheader "Gold" [ref=e303]:
+                  - button "Gold" [ref=e304] [cursor=pointer]:
+                    - generic [ref=e305]:
+                      - img [ref=e307]
+                      - generic [ref=e308]: Gold
+                    - img [ref=e310]
+                - columnheader "Item chest" [ref=e312]:
+                  - button "Item chest" [ref=e313] [cursor=pointer]:
+                    - generic [ref=e314]:
+                      - img [ref=e316]
+                      - generic [ref=e317]: Item chest
+                    - generic [ref=e318]:
+                      - img [ref=e320]
+                      - img [ref=e323]
+                - columnheader "Key" [ref=e325]:
+                  - button "Key" [ref=e326] [cursor=pointer]:
+                    - generic [ref=e327]:
+                      - img [ref=e329]
+                      - generic [ref=e330]: Key
+                    - generic [ref=e331]:
+                      - img [ref=e333]
+                      - img [ref=e336]
+                - columnheader "Gem chest" [ref=e338]:
+                  - button "Gem chest" [ref=e339] [cursor=pointer]:
+                    - generic [ref=e340]:
+                      - img [ref=e342]
+                      - generic [ref=e343]: Gem chest
+                    - generic [ref=e344]:
+                      - img [ref=e346]
+                      - img [ref=e349]
+                - columnheader "Time chest" [ref=e351]:
+                  - button "Time chest" [ref=e352] [cursor=pointer]:
+                    - generic [ref=e353]:
+                      - img [ref=e355]
+                      - generic [ref=e356]: Time chest
+                    - generic [ref=e357]:
+                      - img [ref=e359]
+                      - img [ref=e362]
+                - columnheader "XP" [ref=e364]:
+                  - button "XP" [ref=e365] [cursor=pointer]:
+                    - generic [ref=e366]: XP
+                    - generic [ref=e367]:
+                      - img [ref=e369]
+                      - img [ref=e372]
+                - columnheader "Item level" [ref=e374]:
+                  - generic [ref=e375]: Item level
+                - columnheader "Clear time" [ref=e376]:
+                  - button "Clear time" [ref=e377] [cursor=pointer]:
+                    - generic [ref=e378]: Clear time
+                    - generic [ref=e379]:
+                      - img [ref=e381]
+                      - img [ref=e384]
+                - columnheader "One-shot" [ref=e386]:
+                  - generic [ref=e387]: One-shot
+            - rowgroup [ref=e388]:
+              - row "Normal 1-6 (#56) 5.5% 20.5m/h 12.8/h +12.8/h — — 1.8m/h 30 27s No" [ref=e389] [cursor=pointer]:
+                - cell "Normal 1-6 (#56)" [ref=e390]:
+                  - generic [ref=e391]: Normal 1-6 (#56)
+                - cell "5.5%" [ref=e392]
+                - cell "20.5m/h" [ref=e393]
+                - cell "12.8/h" [ref=e394]
+                - cell "+12.8/h" [ref=e395]
+                - cell "—" [ref=e396]
+                - cell "—" [ref=e397]
+                - cell "1.8m/h" [ref=e398]
+                - cell "30" [ref=e399]
+                - cell "27s" [ref=e400]
+                - cell "No" [ref=e401]
+              - row "Normal 1-5 (#55) 5.4% 20.5m/h 13.0/h +13.0/h — — 1.8m/h 30 26s No" [ref=e402] [cursor=pointer]:
+                - cell "Normal 1-5 (#55)" [ref=e403]:
+                  - generic [ref=e404]: Normal 1-5 (#55)
+                - cell "5.4%" [ref=e405]
+                - cell "20.5m/h" [ref=e406]
+                - cell "13.0/h" [ref=e407]
+                - cell "+13.0/h" [ref=e408]
+                - cell "—" [ref=e409]
+                - cell "—" [ref=e410]
+                - cell "1.8m/h" [ref=e411]
+                - cell "30" [ref=e412]
+                - cell "26s" [ref=e413]
+                - cell "No" [ref=e414]
+              - row "Normal 1-1 (#51) 5.1% 20.5m/h 14.0/h +14.0/h — — 1.9m/h 30 24s No" [ref=e415] [cursor=pointer]:
+                - cell "Normal 1-1 (#51)" [ref=e416]:
+                  - generic [ref=e417]: Normal 1-1 (#51)
+                - cell "5.1%" [ref=e418]
+                - cell "20.5m/h" [ref=e419]
+                - cell "14.0/h" [ref=e420]
+                - cell "+14.0/h" [ref=e421]
+                - cell "—" [ref=e422]
+                - cell "—" [ref=e423]
+                - cell "1.9m/h" [ref=e424]
+                - cell "30" [ref=e425]
+                - cell "24s" [ref=e426]
+                - cell "No" [ref=e427]
+              - row "Normal 1-4 (#54) 5.3% 20.5m/h 13.2/h +13.2/h — — 1.8m/h 30 26s No" [ref=e428] [cursor=pointer]:
+                - cell "Normal 1-4 (#54)" [ref=e429]:
+                  - generic [ref=e430]: Normal 1-4 (#54)
+                - cell "5.3%" [ref=e431]
+                - cell "20.5m/h" [ref=e432]
+                - cell "13.2/h" [ref=e433]
+                - cell "+13.2/h" [ref=e434]
+                - cell "—" [ref=e435]
+                - cell "—" [ref=e436]
+                - cell "1.8m/h" [ref=e437]
+                - cell "30" [ref=e438]
+                - cell "26s" [ref=e439]
+                - cell "No" [ref=e440]
+              - row "Normal 1-3 (#53) 5.3% 20.3m/h 13.4/h +13.4/h — — 1.8m/h 30 25s No" [ref=e441] [cursor=pointer]:
+                - cell "Normal 1-3 (#53)" [ref=e442]:
+                  - generic [ref=e443]: Normal 1-3 (#53)
+                - cell "5.3%" [ref=e444]
+                - cell "20.3m/h" [ref=e445]
+                - cell "13.4/h" [ref=e446]
+                - cell "+13.4/h" [ref=e447]
+                - cell "—" [ref=e448]
+                - cell "—" [ref=e449]
+                - cell "1.8m/h" [ref=e450]
+                - cell "30" [ref=e451]
+                - cell "25s" [ref=e452]
+                - cell "No" [ref=e453]
+              - row "Normal 1-8 (#58) 5.7% 20.3m/h 12.2/h +12.2/h — — 1.8m/h 30 28s No" [ref=e454] [cursor=pointer]:
+                - cell "Normal 1-8 (#58)" [ref=e455]:
+                  - generic [ref=e456]: Normal 1-8 (#58)
+                - cell "5.7%" [ref=e457]
+                - cell "20.3m/h" [ref=e458]
+                - cell "12.2/h" [ref=e459]
+                - cell "+12.2/h" [ref=e460]
+                - cell "—" [ref=e461]
+                - cell "—" [ref=e462]
+                - cell "1.8m/h" [ref=e463]
+                - cell "30" [ref=e464]
+                - cell "28s" [ref=e465]
+                - cell "No" [ref=e466]
+              - row "Normal 1-7 (#57) 5.6% 20.3m/h 12.4/h +12.4/h — — 1.8m/h 30 28s No" [ref=e467] [cursor=pointer]:
+                - cell "Normal 1-7 (#57)" [ref=e468]:
+                  - generic [ref=e469]: Normal 1-7 (#57)
+                - cell "5.6%" [ref=e470]
+                - cell "20.3m/h" [ref=e471]
+                - cell "12.4/h" [ref=e472]
+                - cell "+12.4/h" [ref=e473]
+                - cell "—" [ref=e474]
+                - cell "—" [ref=e475]
+                - cell "1.8m/h" [ref=e476]
+                - cell "30" [ref=e477]
+                - cell "28s" [ref=e478]
+                - cell "No" [ref=e479]
+              - row "Normal 1-2 (#52) 5.2% 20.2m/h 13.6/h +13.6/h — — 1.8m/h 30 25s No" [ref=e480] [cursor=pointer]:
+                - cell "Normal 1-2 (#52)" [ref=e481]:
+                  - generic [ref=e482]: Normal 1-2 (#52)
+                - cell "5.2%" [ref=e483]
+                - cell "20.2m/h" [ref=e484]
+                - cell "13.6/h" [ref=e485]
+                - cell "+13.6/h" [ref=e486]
+                - cell "—" [ref=e487]
+                - cell "—" [ref=e488]
+                - cell "1.8m/h" [ref=e489]
+                - cell "30" [ref=e490]
+                - cell "25s" [ref=e491]
+                - cell "No" [ref=e492]
+              - row "Normal 1-9 (#59) 5.7% 20.1m/h 11.8/h +11.8/h — — 1.8m/h 30 29s No" [ref=e493] [cursor=pointer]:
+                - cell "Normal 1-9 (#59)" [ref=e494]:
+                  - generic [ref=e495]: Normal 1-9 (#59)
+                - cell "5.7%" [ref=e496]
+                - cell "20.1m/h" [ref=e497]
+                - cell "11.8/h" [ref=e498]
+                - cell "+11.8/h" [ref=e499]
+                - cell "—" [ref=e500]
+                - cell "—" [ref=e501]
+                - cell "1.8m/h" [ref=e502]
+                - cell "30" [ref=e503]
+                - cell "29s" [ref=e504]
+                - cell "No" [ref=e505]
+              - row "Normal 1-12 (#62) 6.0% 19.5m/h 10.9/h +10.9/h — — 1.7m/h 30–40 31s No" [ref=e506] [cursor=pointer]:
+                - cell "Normal 1-12 (#62)" [ref=e507]:
+                  - generic [ref=e508]: Normal 1-12 (#62)
+                - cell "6.0%" [ref=e509]
+                - cell "19.5m/h" [ref=e510]
+                - cell "10.9/h" [ref=e511]
+                - cell "+10.9/h" [ref=e512]
+                - cell "—" [ref=e513]
+                - cell "—" [ref=e514]
+                - cell "1.7m/h" [ref=e515]
+                - cell "30–40" [ref=e516]
+                - cell "31s" [ref=e517]
+                - cell "No" [ref=e518]
+              - row "Normal 1-11 (#61) 5.9% 19.4m/h 11.0/h +11.0/h — — 1.7m/h 30–40 31s No" [ref=e519] [cursor=pointer]:
+                - cell "Normal 1-11 (#61)" [ref=e520]:
+                  - generic [ref=e521]: Normal 1-11 (#61)
+                - cell "5.9%" [ref=e522]
+                - cell "19.4m/h" [ref=e523]
+                - cell "11.0/h" [ref=e524]
+                - cell "+11.0/h" [ref=e525]
+                - cell "—" [ref=e526]
+                - cell "—" [ref=e527]
+                - cell "1.7m/h" [ref=e528]
+                - cell "30–40" [ref=e529]
+                - cell "31s" [ref=e530]
+                - cell "No" [ref=e531]
+              - row "Normal 1-14 (#64) 6.2% 18.9m/h 10.2/h +10.2/h — — 1.7m/h 30–40 33s No" [ref=e532] [cursor=pointer]:
+                - cell "Normal 1-14 (#64)" [ref=e533]:
+                  - generic [ref=e534]: Normal 1-14 (#64)
+                - cell "6.2%" [ref=e535]
+                - cell "18.9m/h" [ref=e536]
+                - cell "10.2/h" [ref=e537]
+                - cell "+10.2/h" [ref=e538]
+                - cell "—" [ref=e539]
+                - cell "—" [ref=e540]
+                - cell "1.7m/h" [ref=e541]
+                - cell "30–40" [ref=e542]
+                - cell "33s" [ref=e543]
+                - cell "No" [ref=e544]
+              - row "Normal 1-13 (#63) 6.1% 18.8m/h 10.3/h +10.3/h — — 1.7m/h 30–40 33s No" [ref=e545] [cursor=pointer]:
+                - cell "Normal 1-13 (#63)" [ref=e546]:
+                  - generic [ref=e547]: Normal 1-13 (#63)
+                - cell "6.1%" [ref=e548]
+                - cell "18.8m/h" [ref=e549]
+                - cell "10.3/h" [ref=e550]
+                - cell "+10.3/h" [ref=e551]
+                - cell "—" [ref=e552]
+                - cell "—" [ref=e553]
+                - cell "1.7m/h" [ref=e554]
+                - cell "30–40" [ref=e555]
+                - cell "33s" [ref=e556]
+                - cell "No" [ref=e557]
+              - row "Normal 1-10 (#60) Gate 5.8% 18.6m/h 10.8/h -113.5/h 0.5/h 10.8/h 1.7m/h 30 32s No" [ref=e558] [cursor=pointer]:
+                - cell "Normal 1-10 (#60) Gate" [ref=e559]:
+                  - generic [ref=e560]:
+                    - text: Normal 1-10 (#60)
+                    - generic [ref=e561]:
+                      - img [ref=e563]
+                      - generic [ref=e564]: Gate
+                - cell "5.8%" [ref=e565]
+                - cell "18.6m/h" [ref=e566]
+                - cell "10.8/h" [ref=e567]
+                - cell "-113.5/h" [ref=e568]
+                - cell "0.5/h" [ref=e569]
+                - cell "10.8/h" [ref=e570]
+                - cell "1.7m/h" [ref=e571]
+                - cell "30" [ref=e572]
+                - cell "32s" [ref=e573]
+                - cell "No" [ref=e574]
+              - row "Normal 1-16 (#66) 6.3% 18.5m/h 9.7/h +9.7/h — — 1.6m/h 30–40 35s No" [ref=e575] [cursor=pointer]:
+                - cell "Normal 1-16 (#66)" [ref=e576]:
+                  - generic [ref=e577]: Normal 1-16 (#66)
+                - cell "6.3%" [ref=e578]
+                - cell "18.5m/h" [ref=e579]
+                - cell "9.7/h" [ref=e580]
+                - cell "+9.7/h" [ref=e581]
+                - cell "—" [ref=e582]
+                - cell "—" [ref=e583]
+                - cell "1.6m/h" [ref=e584]
+                - cell "30–40" [ref=e585]
+                - cell "35s" [ref=e586]
+                - cell "No" [ref=e587]
+              - row "Normal 1-15 (#65) 6.2% 18.5m/h 9.8/h +9.8/h — — 1.6m/h 30–40 35s No" [ref=e588] [cursor=pointer]:
+                - cell "Normal 1-15 (#65)" [ref=e589]:
+                  - generic [ref=e590]: Normal 1-15 (#65)
+                - cell "6.2%" [ref=e591]
+                - cell "18.5m/h" [ref=e592]
+                - cell "9.8/h" [ref=e593]
+                - cell "+9.8/h" [ref=e594]
+                - cell "—" [ref=e595]
+                - cell "—" [ref=e596]
+                - cell "1.6m/h" [ref=e597]
+                - cell "30–40" [ref=e598]
+                - cell "35s" [ref=e599]
+                - cell "No" [ref=e600]
+              - row "Normal 1-17 (#67) 6.4% 18.1m/h 9.4/h +9.4/h — — 1.6m/h 30–40 36s No" [ref=e601] [cursor=pointer]:
+                - cell "Normal 1-17 (#67)" [ref=e602]:
+                  - generic [ref=e603]: Normal 1-17 (#67)
+                - cell "6.4%" [ref=e604]
+                - cell "18.1m/h" [ref=e605]
+                - cell "9.4/h" [ref=e606]
+                - cell "+9.4/h" [ref=e607]
+                - cell "—" [ref=e608]
+                - cell "—" [ref=e609]
+                - cell "1.6m/h" [ref=e610]
+                - cell "30–40" [ref=e611]
+                - cell "36s" [ref=e612]
+                - cell "No" [ref=e613]
+              - row "Normal 1-18 (#68) 6.5% 17.7m/h 9.0/h +9.0/h — — 1.5m/h 30–40 38s No" [ref=e614] [cursor=pointer]:
+                - cell "Normal 1-18 (#68)" [ref=e615]:
+                  - generic [ref=e616]: Normal 1-18 (#68)
+                - cell "6.5%" [ref=e617]
+                - cell "17.7m/h" [ref=e618]
+                - cell "9.0/h" [ref=e619]
+                - cell "+9.0/h" [ref=e620]
+                - cell "—" [ref=e621]
+                - cell "—" [ref=e622]
+                - cell "1.5m/h" [ref=e623]
+                - cell "30–40" [ref=e624]
+                - cell "38s" [ref=e625]
+                - cell "No" [ref=e626]
+              - row "Normal 1-19 (#69) 6.6% 17.6m/h 8.8/h +8.8/h — — 1.5m/h 30–40 39s No" [ref=e627] [cursor=pointer]:
+                - cell "Normal 1-19 (#69)" [ref=e628]:
+                  - generic [ref=e629]: Normal 1-19 (#69)
+                - cell "6.6%" [ref=e630]
+                - cell "17.6m/h" [ref=e631]
+                - cell "8.8/h" [ref=e632]
+                - cell "+8.8/h" [ref=e633]
+                - cell "—" [ref=e634]
+                - cell "—" [ref=e635]
+                - cell "1.5m/h" [ref=e636]
+                - cell "30–40" [ref=e637]
+                - cell "39s" [ref=e638]
+                - cell "No" [ref=e639]
+              - row "Normal 2-1 (#71) 6.7% 17.5m/h 8.5/h +8.5/h — — 1.5m/h 40 40s No" [ref=e640] [cursor=pointer]:
+                - cell "Normal 2-1 (#71)" [ref=e641]:
+                  - generic [ref=e642]: Normal 2-1 (#71)
+                - cell "6.7%" [ref=e643]
+                - cell "17.5m/h" [ref=e644]
+                - cell "8.5/h" [ref=e645]
+                - cell "+8.5/h" [ref=e646]
+                - cell "—" [ref=e647]
+                - cell "—" [ref=e648]
+                - cell "1.5m/h" [ref=e649]
+                - cell "40" [ref=e650]
+                - cell "40s" [ref=e651]
+                - cell "No" [ref=e652]
+              - row "Normal 2-2 (#72) 6.8% 17m/h 8.2/h +8.2/h — — 1.5m/h 40 42s No" [ref=e653] [cursor=pointer]:
+                - cell "Normal 2-2 (#72)" [ref=e654]:
+                  - generic [ref=e655]: Normal 2-2 (#72)
+                - cell "6.8%" [ref=e656]
+                - cell "17m/h" [ref=e657]
+                - cell "8.2/h" [ref=e658]
+                - cell "+8.2/h" [ref=e659]
+                - cell "—" [ref=e660]
+                - cell "—" [ref=e661]
+                - cell "1.5m/h" [ref=e662]
+                - cell "40" [ref=e663]
+                - cell "42s" [ref=e664]
+                - cell "No" [ref=e665]
+              - row "Normal 2-3 (#73) 6.9% 16.8m/h 8.0/h +8.0/h — — 1.5m/h 40 43s No" [ref=e666] [cursor=pointer]:
+                - cell "Normal 2-3 (#73)" [ref=e667]:
+                  - generic [ref=e668]: Normal 2-3 (#73)
+                - cell "6.9%" [ref=e669]
+                - cell "16.8m/h" [ref=e670]
+                - cell "8.0/h" [ref=e671]
+                - cell "+8.0/h" [ref=e672]
+                - cell "—" [ref=e673]
+                - cell "—" [ref=e674]
+                - cell "1.5m/h" [ref=e675]
+                - cell "40" [ref=e676]
+                - cell "43s" [ref=e677]
+                - cell "No" [ref=e678]
+              - row "Normal 2-4 (#74) 7.0% 16.6m/h 7.7/h +7.7/h — — 1.4m/h 40 44s No" [ref=e679] [cursor=pointer]:
+                - cell "Normal 2-4 (#74)" [ref=e680]:
+                  - generic [ref=e681]: Normal 2-4 (#74)
+                - cell "7.0%" [ref=e682]
+                - cell "16.6m/h" [ref=e683]
+                - cell "7.7/h" [ref=e684]
+                - cell "+7.7/h" [ref=e685]
+                - cell "—" [ref=e686]
+                - cell "—" [ref=e687]
+                - cell "1.4m/h" [ref=e688]
+                - cell "40" [ref=e689]
+                - cell "44s" [ref=e690]
+                - cell "No" [ref=e691]
+              - row "Normal 2-5 (#75) 7.1% 16.4m/h 7.5/h +7.5/h — — 1.4m/h 40 45s No" [ref=e692] [cursor=pointer]:
+                - cell "Normal 2-5 (#75)" [ref=e693]:
+                  - generic [ref=e694]: Normal 2-5 (#75)
+                - cell "7.1%" [ref=e695]
+                - cell "16.4m/h" [ref=e696]
+                - cell "7.5/h" [ref=e697]
+                - cell "+7.5/h" [ref=e698]
+                - cell "—" [ref=e699]
+                - cell "—" [ref=e700]
+                - cell "1.4m/h" [ref=e701]
+                - cell "40" [ref=e702]
+                - cell "45s" [ref=e703]
+                - cell "No" [ref=e704]
+              - row "Normal 1-20 (#70) Gate 6.6% 16.3m/h 8.1/h -85.1/h 0.4/h 8.1/h 1.4m/h 30–40 42s No" [ref=e705] [cursor=pointer]:
+                - cell "Normal 1-20 (#70) Gate" [ref=e706]:
+                  - generic [ref=e707]:
+                    - text: Normal 1-20 (#70)
+                    - generic [ref=e708]:
+                      - img [ref=e710]
+                      - generic [ref=e711]: Gate
+                - cell "6.6%" [ref=e712]
+                - cell "16.3m/h" [ref=e713]
+                - cell "8.1/h" [ref=e714]
+                - cell "-85.1/h" [ref=e715]
+                - cell "0.4/h" [ref=e716]
+                - cell "8.1/h" [ref=e717]
+                - cell "1.4m/h" [ref=e718]
+                - cell "30–40" [ref=e719]
+                - cell "42s" [ref=e720]
+                - cell "No" [ref=e721]
+              - row "Normal 2-6 (#76) 7.1% 15.5m/h 7.1/h +7.1/h — — 1.3m/h 40 48s No" [ref=e722] [cursor=pointer]:
+                - cell "Normal 2-6 (#76)" [ref=e723]:
+                  - generic [ref=e724]: Normal 2-6 (#76)
+                - cell "7.1%" [ref=e725]
+                - cell "15.5m/h" [ref=e726]
+                - cell "7.1/h" [ref=e727]
+                - cell "+7.1/h" [ref=e728]
+                - cell "—" [ref=e729]
+                - cell "—" [ref=e730]
+                - cell "1.3m/h" [ref=e731]
+                - cell "40" [ref=e732]
+                - cell "48s" [ref=e733]
+                - cell "No" [ref=e734]
+              - row "Normal 2-7 (#77) 7.2% 15.2m/h 6.8/h +6.8/h — — 1.3m/h 40 50s No" [ref=e735] [cursor=pointer]:
+                - cell "Normal 2-7 (#77)" [ref=e736]:
+                  - generic [ref=e737]: Normal 2-7 (#77)
+                - cell "7.2%" [ref=e738]
+                - cell "15.2m/h" [ref=e739]
+                - cell "6.8/h" [ref=e740]
+                - cell "+6.8/h" [ref=e741]
+                - cell "—" [ref=e742]
+                - cell "—" [ref=e743]
+                - cell "1.3m/h" [ref=e744]
+                - cell "40" [ref=e745]
+                - cell "50s" [ref=e746]
+                - cell "No" [ref=e747]
+              - row "Normal 2-8 (#78) 7.3% 14.9m/h 6.6/h +6.6/h — — 1.3m/h 40 52s No" [ref=e748] [cursor=pointer]:
+                - cell "Normal 2-8 (#78)" [ref=e749]:
+                  - generic [ref=e750]: Normal 2-8 (#78)
+                - cell "7.3%" [ref=e751]
+                - cell "14.9m/h" [ref=e752]
+                - cell "6.6/h" [ref=e753]
+                - cell "+6.6/h" [ref=e754]
+                - cell "—" [ref=e755]
+                - cell "—" [ref=e756]
+                - cell "1.3m/h" [ref=e757]
+                - cell "40" [ref=e758]
+                - cell "52s" [ref=e759]
+                - cell "No" [ref=e760]
+              - row "Normal 2-9 (#79) 7.4% 14.8m/h 6.4/h +6.4/h — — 1.3m/h 40 53s No" [ref=e761] [cursor=pointer]:
+                - cell "Normal 2-9 (#79)" [ref=e762]:
+                  - generic [ref=e763]: Normal 2-9 (#79)
+                - cell "7.4%" [ref=e764]
+                - cell "14.8m/h" [ref=e765]
+                - cell "6.4/h" [ref=e766]
+                - cell "+6.4/h" [ref=e767]
+                - cell "—" [ref=e768]
+                - cell "—" [ref=e769]
+                - cell "1.3m/h" [ref=e770]
+                - cell "40" [ref=e771]
+                - cell "53s" [ref=e772]
+                - cell "No" [ref=e773]
+              - row [ref=e774]:
+                - cell [ref=e775]
+      - generic [ref=e776]:
+        - generic [ref=e778]:
+          - generic [ref=e779]:
+            - generic [ref=e780]: Difficulty
+            - combobox "Difficulty" [ref=e781]:
+              - generic:
+                - generic:
+                  - img
+              - generic [ref=e782]: Normal
+            - textbox [ref=e783]: "2"
+          - generic [ref=e784]:
+            - generic [ref=e785]: Map
+            - combobox "Map" [ref=e786]:
+              - generic:
+                - generic:
+                  - img
+              - generic [ref=e787]: 1-6 · Blind Rootlets
+            - textbox [ref=e788]: "56"
+        - generic [ref=e789]:
+          - generic [ref=e790]:
+            - heading "Map" [level=2] [ref=e792]
+            - generic [ref=e793]:
+              - generic [ref=e794]:
+                - term [ref=e795]: Map name
+                - definition [ref=e796]:
+                  - generic [ref=e797]: "Blind Rootlets · #56"
+              - generic [ref=e798]:
+                - term [ref=e799]: Stone HP
+                - definition [ref=e800]: 6,625
+              - generic [ref=e801]:
+                - term [ref=e802]:
+                  - 'button "Mitigation: Need 5.5% pen to ignore all mitigation" [ref=e803]': Mitigation
+                - definition [ref=e804]: 5.5%
+              - generic [ref=e805]:
+                - term [ref=e806]: Props on map
+                - definition [ref=e807]: "75"
+              - generic [ref=e808]:
+                - term [ref=e809]: Avg prop HP
+                - definition [ref=e810]: 8,546
+              - generic [ref=e811]:
+                - term [ref=e812]: Est. total map HP
+                - definition [ref=e813]: 640,969
+              - generic [ref=e814]:
+                - term [ref=e815]:
+                  - 'button "Boss / cage HP: ×10 stone — shared 2×2 pool" [ref=e816]': Boss / cage HP
+                - definition [ref=e817]: 66,250
+              - generic [ref=e818]:
+                - term [ref=e819]: Gate timer
+                - definition [ref=e820]: —
+              - generic [ref=e821]:
+                - term [ref=e822]: Key consumed
+                - definition [ref=e823]: —
+          - generic [ref=e824]:
+            - heading "Economy" [level=2] [ref=e826]
+            - generic [ref=e827]:
+              - generic [ref=e828]:
+                - term [ref=e829]: Item drops
+                - definition [ref=e830]: Level 30 items
+              - generic [ref=e831]:
+                - term [ref=e832]: XP per prop
+                - definition [ref=e833]:
+                  - generic [ref=e834]:
+                    - generic [ref=e835]: "288"
+                    - 'button "182 + 58%: base value × your skill tree''s XP multiplier" [ref=e837]': 182 + 58%
+              - generic [ref=e838]:
+                - term [ref=e839]:
+                  - generic [ref=e840]:
+                    - img [ref=e841]
+                    - generic [ref=e842]: Gold (Common)
+                - definition [ref=e843]:
+                  - generic [ref=e844]:
+                    - generic [ref=e845]: 1,226
+                    - 'button "413 + 197%: base value × (1 + your skill tree''s team coin %)" [ref=e847]': 413 + 197%
+              - generic [ref=e848]:
+                - term [ref=e849]:
+                  - generic [ref=e850]:
+                    - img [ref=e851]
+                    - generic [ref=e852]: Avg gold / prop
+                - definition [ref=e853]:
+                  - generic [ref=e854]:
+                    - generic [ref=e855]: 1,924
+                    - 'button "648 + 197%: base value × (1 + your skill tree''s team coin %)" [ref=e857]': 648 + 197%
+              - generic [ref=e858]:
+                - term [ref=e859]:
+                  - generic [ref=e860]:
+                    - img [ref=e861]
+                    - generic [ref=e862]: Est. map gold
+                - definition [ref=e863]:
+                  - generic [ref=e864]:
+                    - generic [ref=e865]: 144,322
+                    - 'button "48,631 + 197%: base value × (1 + your skill tree''s team coin %)" [ref=e867]': 48,631 + 197%
+          - generic [ref=e868]:
+            - heading "Cage" [level=2] [ref=e870]
+            - img [ref=e871]
+            - paragraph [ref=e872]: The cage runs on a logged-in play clock, not a per-room roll. It can arrive early — the chance climbs from 0 to the cap across the window — and is guaranteed at the end.
+            - generic [ref=e873]:
+              - generic [ref=e874]:
+                - term [ref=e875]: Early-arrival chance at this phase
+                - definition [ref=e876]: 10.0%
+              - generic [ref=e877]:
+                - term [ref=e878]: Guarantee window
+                - definition [ref=e879]:
+                  - generic [ref=e880]:
+                    - generic [ref=e881]: 3h 30m
+                    - generic [ref=e882]: VIP 3h 0m
+              - generic [ref=e883]:
+                - term [ref=e884]: Cage HP
+                - definition [ref=e885]: 66,250
+              - generic [ref=e886]:
+                - term [ref=e887]: Hero chest odds
+                - definition [ref=e888]:
+                  - generic [ref=e889]:
+                    - generic [ref=e890]: Common 80.0%
+                    - generic [ref=e891]: Uncommon 17.0%
+                    - generic [ref=e892]: Rare 2.9%
+                    - generic [ref=e893]: Epic 0.1%
+          - generic [ref=e894]:
+            - heading "Drop chances" [level=2] [ref=e896]
+            - paragraph [ref=e897]: Which drops can roll depends on whether the phase is a gate.
+            - generic [ref=e898]:
+              - generic [ref=e899]:
+                - term [ref=e900]:
+                  - generic [ref=e901]:
+                    - img [ref=e902]
+                    - generic [ref=e903]: Item chest
+                - definition [ref=e904]:
+                  - generic [ref=e905]:
+                    - generic [ref=e906]: 0.127%
+                    - 'button "0.100% + 19% + 7%: base value + your skill tree''s luck + your squad''s average luck." [ref=e908]': 0.100% + 19% + 7%
+              - generic [ref=e909]:
+                - term [ref=e910]:
+                  - generic [ref=e911]:
+                    - img [ref=e912]
+                    - generic [ref=e913]: Key
+                - definition [ref=e914]:
+                  - generic [ref=e915]:
+                    - generic [ref=e916]: 0.127%
+                    - 'button "0.100% + 19% + 7%: base value + your skill tree''s luck + your squad''s average luck." [ref=e918]': 0.100% + 19% + 7%
+              - generic [ref=e919]:
+                - term [ref=e920]:
+                  - generic [ref=e921]:
+                    - img [ref=e922]
+                    - generic [ref=e923]: Time chest
+                - definition [ref=e924]:
+                  - generic [ref=e925]:
+                    - generic [ref=e926]: —
+                    - generic [ref=e927]: Gates only
+              - generic [ref=e928]:
+                - term [ref=e929]:
+                  - generic [ref=e930]:
+                    - img [ref=e931]
+                    - generic [ref=e932]: Gem chest
+                - definition [ref=e933]:
+                  - generic [ref=e934]:
+                    - generic [ref=e935]: —
+                    - generic [ref=e936]: Gates only
+              - generic [ref=e937]:
+                - term [ref=e938]:
+                  - generic [ref=e939]:
+                    - img [ref=e940]
+                    - generic [ref=e941]: Stone chest
+                - definition [ref=e942]:
+                  - generic [ref=e943]:
+                    - generic [ref=e944]: —
+                    - generic [ref=e945]: Gates only
+          - generic [ref=e946]:
+            - heading "Prop mix" [level=2] [ref=e948]
+            - table [ref=e950]:
+              - rowgroup [ref=e951]:
+                - row "Target prop HP Share Gold (wiki) Gold (yours)" [ref=e952]:
+                  - columnheader "Target prop" [ref=e953]:
+                    - generic [ref=e954]: Target prop
+                  - columnheader "HP" [ref=e955]:
+                    - generic [ref=e956]: HP
+                  - columnheader "Share" [ref=e957]:
+                    - generic [ref=e958]: Share
+                  - columnheader "Gold (wiki)" [ref=e959]:
+                    - generic [ref=e960]: Gold (wiki)
+                  - columnheader "Gold (yours)" [ref=e961]:
+                    - generic [ref=e962]: Gold (yours)
+              - rowgroup [ref=e963]:
+                - row "Bush 3,644 20.0% 413 1,226" [ref=e964]:
+                  - cell "Bush" [ref=e965]:
+                    - generic [ref=e966]:
+                      - img [ref=e967]
+                      - generic [ref=e968]: Bush
+                  - cell "3,644" [ref=e969]
+                  - cell "20.0%" [ref=e970]
+                  - cell "413" [ref=e971]:
+                    - generic [ref=e972]:
+                      - img [ref=e973]
+                      - generic [ref=e974]: "413"
+                  - cell "1,226" [ref=e975]:
+                    - generic [ref=e976]:
+                      - img [ref=e977]
+                      - generic [ref=e978]: 1,226
+                - row "Stone 6,625 27.5% 578 1,716" [ref=e979]:
+                  - cell "Stone" [ref=e980]:
+                    - generic [ref=e981]:
+                      - img [ref=e982]
+                      - generic [ref=e983]: Stone
+                  - cell "6,625" [ref=e984]
+                  - cell "27.5%" [ref=e985]
+                  - cell "578" [ref=e986]:
+                    - generic [ref=e987]:
+                      - img [ref=e988]
+                      - generic [ref=e989]: "578"
+                  - cell "1,716" [ref=e990]:
+                    - generic [ref=e991]:
+                      - img [ref=e992]
+                      - generic [ref=e993]: 1,716
+                - row "Box 5,300 15.0% 413 1,226" [ref=e994]:
+                  - cell "Box" [ref=e995]:
+                    - generic [ref=e996]:
+                      - img [ref=e997]
+                      - generic [ref=e998]: Box
+                  - cell "5,300" [ref=e999]
+                  - cell "15.0%" [ref=e1000]
+                  - cell "413" [ref=e1001]:
+                    - generic [ref=e1002]:
+                      - img [ref=e1003]
+                      - generic [ref=e1004]: "413"
+                  - cell "1,226" [ref=e1005]:
+                    - generic [ref=e1006]:
+                      - img [ref=e1007]
+                      - generic [ref=e1008]: 1,226
+                - row "Copper Mine 9,606 10.0% 743 2,206" [ref=e1009]:
+                  - cell "Copper Mine" [ref=e1010]:
+                    - generic [ref=e1011]:
+                      - img [ref=e1012]
+                      - generic [ref=e1013]: Copper Mine
+                  - cell "9,606" [ref=e1014]
+                  - cell "10.0%" [ref=e1015]
+                  - cell "743" [ref=e1016]:
+                    - generic [ref=e1017]:
+                      - img [ref=e1018]
+                      - generic [ref=e1019]: "743"
+                  - cell "2,206" [ref=e1020]:
+                    - generic [ref=e1021]:
+                      - img [ref=e1022]
+                      - generic [ref=e1023]: 2,206
+                - row "Iron Mine 11,925 7.5% 909 2,696" [ref=e1024]:
+                  - cell "Iron Mine" [ref=e1025]:
+                    - generic [ref=e1026]:
+                      - img [ref=e1027]
+                      - generic [ref=e1028]: Iron Mine
+                  - cell "11,925" [ref=e1029]
+                  - cell "7.5%" [ref=e1030]
+                  - cell "909" [ref=e1031]:
+                    - generic [ref=e1032]:
+                      - img [ref=e1033]
+                      - generic [ref=e1034]: "909"
+                  - cell "2,696" [ref=e1035]:
+                    - generic [ref=e1036]:
+                      - img [ref=e1037]
+                      - generic [ref=e1038]: 2,696
+                - row "Gold Ore 14,575 5.0% 909 2,696" [ref=e1039]:
+                  - cell "Gold Ore" [ref=e1040]:
+                    - generic [ref=e1041]:
+                      - img [ref=e1042]
+                      - generic [ref=e1043]: Gold Ore
+                  - cell "14,575" [ref=e1044]
+                  - cell "5.0%" [ref=e1045]
+                  - cell "909" [ref=e1046]:
+                    - generic [ref=e1047]:
+                      - img [ref=e1048]
+                      - generic [ref=e1049]: "909"
+                  - cell "2,696" [ref=e1050]:
+                    - generic [ref=e1051]:
+                      - img [ref=e1052]
+                      - generic [ref=e1053]: 2,696
+                - row "Mithril Ore 18,550 3.8% 1,239 3,677" [ref=e1054]:
+                  - cell "Mithril Ore" [ref=e1055]:
+                    - generic [ref=e1056]:
+                      - img [ref=e1057]
+                      - generic [ref=e1058]: Mithril Ore
+                  - cell "18,550" [ref=e1059]
+                  - cell "3.8%" [ref=e1060]
+                  - cell "1,239" [ref=e1061]:
+                    - generic [ref=e1062]:
+                      - img [ref=e1063]
+                      - generic [ref=e1064]: 1,239
+                  - cell "3,677" [ref=e1065]:
+                    - generic [ref=e1066]:
+                      - img [ref=e1067]
+                      - generic [ref=e1068]: 3,677
+                - row "Blue Crystal 15,900 5.0% 909 2,696" [ref=e1069]:
+                  - cell "Blue Crystal" [ref=e1070]:
+                    - generic [ref=e1071]:
+                      - img [ref=e1072]
+                      - generic [ref=e1073]: Blue Crystal
+                  - cell "15,900" [ref=e1074]
+                  - cell "5.0%" [ref=e1075]
+                  - cell "909" [ref=e1076]:
+                    - generic [ref=e1077]:
+                      - img [ref=e1078]
+                      - generic [ref=e1079]: "909"
+                  - cell "2,696" [ref=e1080]:
+                    - generic [ref=e1081]:
+                      - img [ref=e1082]
+                      - generic [ref=e1083]: 2,696
+                - row "Ruby Crystal 15,900 3.8% 909 2,696" [ref=e1084]:
+                  - cell "Ruby Crystal" [ref=e1085]:
+                    - generic [ref=e1086]:
+                      - img [ref=e1087]
+                      - generic [ref=e1088]: Ruby Crystal
+                  - cell "15,900" [ref=e1089]
+                  - cell "3.8%" [ref=e1090]
+                  - cell "909" [ref=e1091]:
+                    - generic [ref=e1092]:
+                      - img [ref=e1093]
+                      - generic [ref=e1094]: "909"
+                  - cell "2,696" [ref=e1095]:
+                    - generic [ref=e1096]:
+                      - img [ref=e1097]
+                      - generic [ref=e1098]: 2,696
+                - row "Purple Crystal 21,200 2.5% 1,239 3,677" [ref=e1099]:
+                  - cell "Purple Crystal" [ref=e1100]:
+                    - generic [ref=e1101]:
+                      - img [ref=e1102]
+                      - generic [ref=e1103]: Purple Crystal
+                  - cell "21,200" [ref=e1104]
+                  - cell "2.5%" [ref=e1105]
+                  - cell "1,239" [ref=e1106]:
+                    - generic [ref=e1107]:
+                      - img [ref=e1108]
+                      - generic [ref=e1109]: 1,239
+                  - cell "3,677" [ref=e1110]:
+                    - generic [ref=e1111]:
+                      - img [ref=e1112]
+                      - generic [ref=e1113]: 3,677
+          - generic [ref=e1114]:
+            - generic [ref=e1115]:
+              - heading "Your hero" [level=2] [ref=e1117]
+              - paragraph [ref=e1118]: Uses your Account settings and each hero’s geared sheet + points.
+              - button "Switch hero" [ref=e1119] [cursor=pointer]:
+                - img "Bellatrix" [ref=e1121]
+                - generic [ref=e1122]:
+                  - generic [ref=e1123]:
+                    - generic "Rank" [ref=e1124]: A
+                    - paragraph [ref=e1125]: Bellatrix
+                  - generic [ref=e1126]:
+                    - generic [ref=e1127]: Uncommon
+                    - generic [ref=e1128]: L106
+                - generic [ref=e1129]:
+                  - img [ref=e1131]
+                  - generic [ref=e1133]:
+                    - generic [ref=e1134]: Roster
+                    - generic [ref=e1135]: "13"
+              - generic [ref=e1136]:
+                - generic [ref=e1137]:
+                  - term [ref=e1138]: Penetration vs phase
+                  - definition [ref=e1139]: Fully piercing
+                - generic [ref=e1140]:
+                  - term [ref=e1141]: Normal hit
+                  - definition [ref=e1142]: 17,091
+                - generic [ref=e1143]:
+                  - term [ref=e1144]: Critical hit
+                  - definition [ref=e1145]: 30,064
+                - generic [ref=e1146]:
+                  - term [ref=e1147]: Avg hit (this build)
+                  - definition [ref=e1148]: 17,596
+                - generic [ref=e1149]:
+                  - term [ref=e1150]: Field time
+                  - definition [ref=e1151]: 25m
+              - table [ref=e1153]:
+                - rowgroup [ref=e1154]:
+                  - row "Target prop HP Hits" [ref=e1155]:
+                    - columnheader "Target prop" [ref=e1156]:
+                      - generic [ref=e1157]: Target prop
+                    - columnheader "HP" [ref=e1158]:
+                      - generic [ref=e1159]: HP
+                    - columnheader "Hits" [ref=e1160]:
+                      - generic [ref=e1161]: Hits
+                - rowgroup [ref=e1162]:
+                  - row "Bush 3,644 1" [ref=e1163]:
+                    - cell "Bush" [ref=e1164]:
+                      - generic [ref=e1165]:
+                        - img [ref=e1166]
+                        - generic [ref=e1167]: Bush
+                    - cell "3,644" [ref=e1168]
+                    - cell "1" [ref=e1169]
+                  - row "Stone 6,625 1" [ref=e1170]:
+                    - cell "Stone" [ref=e1171]:
+                      - generic [ref=e1172]:
+                        - img [ref=e1173]
+                        - generic [ref=e1174]: Stone
+                    - cell "6,625" [ref=e1175]
+                    - cell "1" [ref=e1176]
+                  - row "Box 5,300 1" [ref=e1177]:
+                    - cell "Box" [ref=e1178]:
+                      - generic [ref=e1179]:
+                        - img [ref=e1180]
+                        - generic [ref=e1181]: Box
+                    - cell "5,300" [ref=e1182]
+                    - cell "1" [ref=e1183]
+                  - row "Copper Mine 9,606 1" [ref=e1184]:
+                    - cell "Copper Mine" [ref=e1185]:
+                      - generic [ref=e1186]:
+                        - img [ref=e1187]
+                        - generic [ref=e1188]: Copper Mine
+                    - cell "9,606" [ref=e1189]
+                    - cell "1" [ref=e1190]
+                  - row "Iron Mine 11,925 1" [ref=e1191]:
+                    - cell "Iron Mine" [ref=e1192]:
+                      - generic [ref=e1193]:
+                        - img [ref=e1194]
+                        - generic [ref=e1195]: Iron Mine
+                    - cell "11,925" [ref=e1196]
+                    - cell "1" [ref=e1197]
+                  - row "Gold Ore 14,575 1" [ref=e1198]:
+                    - cell "Gold Ore" [ref=e1199]:
+                      - generic [ref=e1200]:
+                        - img [ref=e1201]
+                        - generic [ref=e1202]: Gold Ore
+                    - cell "14,575" [ref=e1203]
+                    - cell "1" [ref=e1204]
+                  - row "Mithril Ore 18,550 2" [ref=e1205]:
+                    - cell "Mithril Ore" [ref=e1206]:
+                      - generic [ref=e1207]:
+                        - img [ref=e1208]
+                        - generic [ref=e1209]: Mithril Ore
+                    - cell "18,550" [ref=e1210]
+                    - cell "2" [ref=e1211]
+                  - row "Blue Crystal 15,900 1" [ref=e1212]:
+                    - cell "Blue Crystal" [ref=e1213]:
+                      - generic [ref=e1214]:
+                        - img [ref=e1215]
+                        - generic [ref=e1216]: Blue Crystal
+                    - cell "15,900" [ref=e1217]
+                    - cell "1" [ref=e1218]
+                  - row "Ruby Crystal 15,900 1" [ref=e1219]:
+                    - cell "Ruby Crystal" [ref=e1220]:
+                      - generic [ref=e1221]:
+                        - img [ref=e1222]
+                        - generic [ref=e1223]: Ruby Crystal
+                    - cell "15,900" [ref=e1224]
+                    - cell "1" [ref=e1225]
+                  - row "Purple Crystal 21,200 2" [ref=e1226]:
+                    - cell "Purple Crystal" [ref=e1227]:
+                      - generic [ref=e1228]:
+                        - img [ref=e1229]
+                        - generic [ref=e1230]: Purple Crystal
+                    - cell "21,200" [ref=e1231]
+                    - cell "2" [ref=e1232]
+            - generic [ref=e1233]:
+              - heading "Top 9 by solo DPS" [level=2] [ref=e1235]
+              - paragraph [ref=e1236]: Sum of the highest solo sustained-DPS builds in your roster (same Account), up to your casa slot count.
+              - generic [ref=e1237]:
+                - generic [ref=e1238]:
+                  - term [ref=e1239]: Combined sustained DPS
+                  - definition [ref=e1240]: 49,136
+                - generic [ref=e1241]:
+                  - term [ref=e1242]:
+                    - 'button "Est. clear time: The ranking board''s model — your whole rotation under House and field limits, charging whole hits per prop. Not map HP ÷ combined DPS." [ref=e1243]': Est. clear time
+                  - definition [ref=e1244]: 27s
+              - table [ref=e1246]:
+                - rowgroup [ref=e1247]:
+                  - row "# Avatar Name Lv Normal Crit Field DPS" [ref=e1248]:
+                    - columnheader "#" [ref=e1249]:
+                      - generic [ref=e1250]: "#"
+                    - columnheader "Avatar" [ref=e1251]:
+                      - generic [ref=e1253]: Avatar
+                    - columnheader "Name" [ref=e1254]:
+                      - generic [ref=e1255]: Name
+                    - columnheader "Lv" [ref=e1256]:
+                      - generic [ref=e1257]: Lv
+                    - columnheader "Normal" [ref=e1258]:
+                      - generic [ref=e1259]: Normal
+                    - columnheader "Crit" [ref=e1260]:
+                      - generic [ref=e1261]: Crit
+                    - columnheader "Field" [ref=e1262]:
+                      - generic [ref=e1263]: Field
+                    - columnheader "DPS" [ref=e1264]:
+                      - generic [ref=e1265]: DPS
+                - rowgroup [ref=e1266]:
+                  - row "Bellatrix" [ref=e1267] [cursor=pointer]:
+                    - cell "1" [ref=e1268]
+                    - cell "Bellatrix" [ref=e1269]:
+                      - img "Bellatrix" [ref=e1272]
+                    - cell "Bellatrix" [ref=e1273]
+                    - cell "L106" [ref=e1274]
+                    - cell "17,091" [ref=e1275]
+                    - cell "30,064" [ref=e1276]
+                    - cell "25m" [ref=e1277]
+                    - cell "12,173" [ref=e1278]
+                  - row "Minato" [ref=e1279] [cursor=pointer]:
+                    - cell "2" [ref=e1280]
+                    - cell "Minato" [ref=e1281]:
+                      - img "Minato" [ref=e1284]
+                    - cell "Minato" [ref=e1285]
+                    - cell "L95" [ref=e1286]
+                    - cell "15,714" [ref=e1287]
+                    - cell "27,409" [ref=e1288]
+                    - cell "23m 25s" [ref=e1289]
+                    - cell "8,439" [ref=e1290]
+                  - 'row "Buff S #1" [ref=e1291] [cursor=pointer]':
+                    - cell "3" [ref=e1292]
+                    - 'cell "Buff S #1" [ref=e1293]':
+                      - 'img "Buff S #1" [ref=e1296]'
+                    - 'cell "Buff S #1" [ref=e1297]'
+                    - cell "L85" [ref=e1298]
+                    - cell "13,603" [ref=e1299]
+                    - cell "35,545" [ref=e1300]
+                    - cell "21m 60s" [ref=e1301]
+                    - cell "5,996" [ref=e1302]
+                  - row "Jon" [ref=e1303] [cursor=pointer]:
+                    - cell "4" [ref=e1304]
+                    - cell "Jon" [ref=e1305]:
+                      - img "Jon" [ref=e1308]
+                    - cell "Jon" [ref=e1309]
+                    - cell "L96" [ref=e1310]
+                    - cell "10,980" [ref=e1311]
+                    - cell "18,046" [ref=e1312]
+                    - cell "25m 19s" [ref=e1313]
+                    - cell "5,983" [ref=e1314]
+                  - 'row "WB #1" [ref=e1315] [cursor=pointer]':
+                    - cell "5" [ref=e1316]
+                    - 'cell "WB #1" [ref=e1317]':
+                      - 'img "WB #1" [ref=e1320]'
+                    - 'cell "WB #1" [ref=e1321]'
+                    - cell "L84" [ref=e1322]
+                    - cell "7,848" [ref=e1323]
+                    - cell "13,183" [ref=e1324]
+                    - cell "19m 44s" [ref=e1325]
+                    - cell "4,994" [ref=e1326]
+                  - 'row "WB #2" [ref=e1327] [cursor=pointer]':
+                    - cell "6" [ref=e1328]
+                    - 'cell "WB #2" [ref=e1329]':
+                      - 'img "WB #2" [ref=e1332]'
+                    - 'cell "WB #2" [ref=e1333]'
+                    - cell "L77" [ref=e1334]
+                    - cell "6,809" [ref=e1335]
+                    - cell "10,665" [ref=e1336]
+                    - cell "17m 13s" [ref=e1337]
+                    - cell "4,070" [ref=e1338]
+                  - 'row "WB #3" [ref=e1339] [cursor=pointer]':
+                    - cell "7" [ref=e1340]
+                    - 'cell "WB #3" [ref=e1341]':
+                      - 'img "WB #3" [ref=e1344]'
+                    - 'cell "WB #3" [ref=e1345]'
+                    - cell "L59" [ref=e1346]
+                    - cell "4,518" [ref=e1347]
+                    - cell "7,034" [ref=e1348]
+                    - cell "15m 37s" [ref=e1349]
+                    - cell "2,670" [ref=e1350]
+                  - 'row "Manco #2" [ref=e1351] [cursor=pointer]':
+                    - cell "8" [ref=e1352]
+                    - 'cell "Manco #2" [ref=e1353]':
+                      - 'img "Manco #2" [ref=e1356]'
+                    - 'cell "Manco #2" [ref=e1357]'
+                    - cell "L67" [ref=e1358]
+                    - cell "6,904" [ref=e1359]
+                    - cell "11,135" [ref=e1360]
+                    - cell "17m 33s" [ref=e1361]
+                    - cell "2,572" [ref=e1362]
+                  - 'row "Buff L #1" [ref=e1363] [cursor=pointer]':
+                    - cell "9" [ref=e1364]
+                    - 'cell "Buff L #1" [ref=e1365]':
+                      - 'img "Buff L #1" [ref=e1368]'
+                    - 'cell "Buff L #1" [ref=e1369]'
+                    - cell "L68" [ref=e1370]
+                    - cell "6,211" [ref=e1371]
+                    - cell "11,006" [ref=e1372]
+                    - cell "16m 35s" [ref=e1373]
+                    - cell "2,240" [ref=e1374]
+    - contentinfo [ref=e1375]:
+      - generic [ref=e1376]:
+        - paragraph [ref=e1377]: This is an unofficial, fan-made tool. It is not affiliated with, endorsed by or connected to the BombFarm developers in any way.
+        - paragraph [ref=e1378]:
+          - text: Assets are from the official BombFarm wiki.
+          - link "wiki.bombfarm.net" [ref=e1379] [cursor=pointer]:
+            - /url: https://wiki.bombfarm.net
+          - text: .
+        - paragraph [ref=e1380]:
+          - generic [ref=e1381]: Referral code
+          - code [ref=e1382]: F-X7BTKJPP
+          - button "Copy referral code" [ref=e1383] [cursor=pointer]:
+            - img [ref=e1384]
+          - generic [ref=e1386]: — a reward for us both at stage 151.
+      - generic [ref=e1387]:
+        - generic [ref=e1388]: v0.0.0-e2e
+        - link "Buy me a coffee" [ref=e1389] [cursor=pointer]:
+          - /url: https://buymeacoffee.com/lucasfevi
+          - img [ref=e1390]
+          - text: Buy me a coffee
+```
+
+# Test source
+
+```ts
+  107 |     await expect(headline(page)).not.toContainText(/gold to respec|pays for itself/i);
+  108 | 
+  109 |     await optimizeButton(page).click();
+  110 |     await expect(panel(page)).toBeVisible();
+  111 |     const phaseText = (await page.getByTestId('farm-respec-metric-phase').textContent()) ?? '';
+  112 |     const phases = [...phaseText.matchAll(/#(\d+)/g)].map((match) => Number(match[1]));
+  113 |     expect(phases.length, `no phase number found in "${phaseText}"`).toBeGreaterThan(0);
+  114 |     // The tile reads `current -> recommended`; the recommendation is the last one it prints.
+  115 |     const recommended = phases[phases.length - 1];
+  116 |     // The solver lands on 55 for this account, up from 52 before the 2026-08-28 damage patch made
+  117 |     // weapons worth five times as much: a stronger roster clears higher, so the phase it should
+  118 |     // farm rises. Asserted as a narrow band rather than a point so a last-digit move in an
+  119 |     // unrelated constant does not fail a test about the UI.
+  120 |     //
+  121 |     // This band is a UI anchor, not a measurement. The capture behind it is out of regime for
+  122 |     // sheet math (see `docs/fixture-corpus.md` §13), so the number is here to keep the assertion
+  123 |     // from going vacuous, and it moves whenever the model does.
+  124 |     expect(recommended).toBeGreaterThanOrEqual(53);
+  125 |     expect(recommended).toBeLessThanOrEqual(57);
+  126 |   });
+  127 | 
+  128 |   // 2. Optimize expands the panel IN PLACE — DOM order between the toolbar and the table's
+  129 |   // <thead>, never a modal or drawer.
+  130 |   test('Optimize expands the panel in place, between the toolbar and the table head, never a dialog', async ({ page }) => {
+  131 |     await optimizeButton(page).click();
+  132 |     await expect(panel(page)).toBeVisible();
+  133 | 
+  134 |     const order = await page.evaluate(() => {
+  135 |       const toolbarEl = document.querySelector('[data-testid="farm-respec-toolbar"]');
+  136 |       const panelEl = document.querySelector('[data-testid="farm-respec-panel"]');
+  137 |       const theadEl = document.querySelector('[data-testid="farm-ranking-table"] thead');
+  138 |       if (!toolbarEl || !panelEl || !theadEl) return null;
+  139 |       const toolbarBeforePanel = Boolean(
+  140 |         toolbarEl.compareDocumentPosition(panelEl) & Node.DOCUMENT_POSITION_FOLLOWING,
+  141 |       );
+  142 |       const panelBeforeThead = Boolean(
+  143 |         panelEl.compareDocumentPosition(theadEl) & Node.DOCUMENT_POSITION_FOLLOWING,
+  144 |       );
+  145 |       return { toolbarBeforePanel, panelBeforeThead };
+  146 |     });
+  147 |     expect(order).toEqual({ toolbarBeforePanel: true, panelBeforeThead: true });
+  148 | 
+  149 |     expect(await page.locator('[role="dialog"]:visible').count()).toBe(0);
+  150 |   });
+  151 | 
+  152 |   // 3. The split is executable: every enabled hero has a card, at least one is the unchanged
+  153 |   // variant naming gold not spent, a changed hero's card has eight key rows, the luck row reads
+  154 |   // the keep wording, and nothing reads optional/negligible/skip.
+  155 |   test('every enabled hero has a card; changed heroes show all eight keys with luck kept; unchanged heroes name the gold not spent', async ({ page }) => {
+  156 |     await optimizeButton(page).click();
+  157 |     await expect(panel(page)).toBeVisible();
+  158 |     await expect(heroGrid(page)).toBeVisible();
+  159 | 
+  160 |     const cardCount = await heroGrid(page).locator('[data-testid^="farm-respec-hero-"]').count();
+  161 |     expect(cardCount).toBe(13); // the committed capture's thirteen heroes
+  162 | 
+  163 |     const keyRows = heroGrid(page).locator('[data-testid^="farm-respec-key-"]');
+  164 |     const changedCardKeyCount = await keyRows.count();
+  165 |     expect(changedCardKeyCount).toBeGreaterThan(0);
+  166 |     expect(changedCardKeyCount % 8).toBe(0); // every changed card contributes exactly 8 rows
+  167 | 
+  168 |     // The Luck row's lock glyph carries "Keep" as its accessible name (DeltaTable's `lockLabel`),
+  169 |     // not visible text — a compact icon replaces the old Chip + HelpTip pair.
+  170 |     await expect(heroGrid(page).getByRole('button', { name: 'Keep' }).first()).toBeVisible();
+  171 |     await expect(heroGrid(page).getByText(/no respec needed/i).first()).toBeVisible();
+  172 | 
+  173 |     const panelText = (await panel(page).textContent()) ?? '';
+  174 |     expect(panelText).not.toMatch(/optional|negligible|\bskip(pable)?\b/i);
+  175 |   });
+  176 | 
+  177 |   // 4. Cards wrap onto further rows; never an accordion, tab list or horizontal scroller.
+  178 |   test('hero cards wrap onto further rows at 1280px width, never collapsing into tabs or a scroller', async ({ page }) => {
+  179 |     await optimizeButton(page).click();
+  180 |     await expect(heroGrid(page)).toBeVisible();
+  181 | 
+  182 |     const cards = heroGrid(page).locator('[data-testid^="farm-respec-hero-"]');
+  183 |     const count = await cards.count();
+  184 |     expect(count).toBeGreaterThan(1);
+  185 |     const boxes = await Promise.all(
+  186 |       Array.from({ length: count }, (_unused, index) => cards.nth(index).boundingBox()),
+  187 |     );
+  188 |     const tops = new Set(boxes.map((box) => box?.y));
+  189 |     expect(tops.size, 'expected cards on more than one row').toBeGreaterThan(1);
+  190 | 
+  191 |     // Scoped to the hero grid — the page may legitimately have an unrelated tablist elsewhere
+  192 |     // (e.g. shell chrome); the requirement here is that this grid never becomes one.
+  193 |     expect(await heroGrid(page).locator('[role="tablist"]').count()).toBe(0);
+  194 |     const gridOverflowX = await heroGrid(page).evaluate((element) => getComputedStyle(element).overflowX);
+  195 |     expect(gridOverflowX).not.toBe('scroll');
+  196 |     expect(gridOverflowX).not.toBe('auto');
+  197 |   });
+  198 | 
+  199 |   // 5. Re-rank moves the top-ranked phase into the recommended band, closes the panel, and marks the
+  200 |   // table as showing the proposed build. Same band, and the same caveat, as the Phase tile above.
+  201 |   test('re-rank moves the top-ranked phase into 53-57, closes the panel, and marks the table', async ({ page }) => {
+  202 |     const beforePhase = await firstRowPhase(page);
+  203 | 
+  204 |     await optimizeButton(page).click();
+  205 |     await expect(panel(page)).toBeVisible();
+  206 | 
+> 207 |     await page.getByTestId('farm-respec-rerank').getByRole('switch').click();
+      |                                                                      ^ Error: locator.click: Test timeout of 30000ms exceeded.
+  208 |     await expect(panel(page)).toBeHidden();
+  209 |     await expect(table(page).locator('table')).toHaveAttribute('data-farm-mode', 'proposed');
+  210 |     await expect(page.getByTestId('farm-respec-rerank-banner')).toBeVisible();
+  211 | 
+  212 |     const afterPhase = await firstRowPhase(page);
+  213 |     expect(afterPhase).not.toBe(beforePhase);
+  214 |     expect(afterPhase).toBeGreaterThanOrEqual(53);
+  215 |     expect(afterPhase).toBeLessThanOrEqual(57);
+  216 |   });
+  217 | 
+  218 |   // 6. Invalidation: with re-rank on, changing an input reverts everything — no stale figure.
+  219 |   test('changing a rotation-pool input while re-ranked reverts the panel and the table, with no stale gain figure left on screen', async ({ page }) => {
+  220 |     await optimizeButton(page).click();
+  221 |     await expect(panel(page)).toBeVisible();
+  222 | 
+  223 |     // The PANEL's gold tile, not the toolbar headline. The headline is a live lower bound that
+  224 |     // gets recomputed for whatever pool is selected, so it can legitimately read the same string
+  225 |     // before and after — it did exactly that here ("At least 2.4% more per hour" both times),
+  226 |     // which made a global search for it prove nothing. The tile carries the SOLVED proposal, is
+  227 |     // rendered only inside the panel, and therefore has to be gone once the panel is invalidated.
+  228 |     const proposalText = (await page.getByTestId('farm-respec-metric-gold').textContent()) ?? '';
+  229 |     expect(proposalText.trim()).not.toBe('');
+  230 | 
+  231 |     await page.getByTestId('farm-respec-rerank').getByRole('switch').click();
+  232 |     await expect(table(page).locator('table')).toHaveAttribute('data-farm-mode', 'proposed');
+  233 | 
+  234 |     // Toggle a rotation-pool hero — an input the respec proposal is keyed on.
+  235 |     const firstPoolSwitch = page.locator('[data-testid^="farm-pool-hero-"]').first().getByRole('switch');
+  236 |     await firstPoolSwitch.click();
+  237 | 
+  238 |     await expect(panel(page)).toBeHidden();
+  239 |     await expect(table(page).locator('table')).toHaveAttribute('data-farm-mode', 'current');
+  240 |     await expect(page.getByTestId('farm-respec-metric-gold')).toHaveCount(0);
+  241 |     await expect(page.getByText(proposalText, { exact: true })).toHaveCount(0);
+  242 |   });
+  243 | 
+  244 |   // 7. PT — the toolbar, panel and tiles render in Portuguese, no EN leakage.
+  245 |   test('renders in Portuguese with no EN leakage in the toolbar or panel', async ({ page }) => {
+  246 |     const captured = await captureSeededState(page, 'pt');
+  247 |     await seedLocalStorage(page, captured);
+  248 |     await page.goto('/farm');
+  249 | 
+  250 |     await expect(toolbar(page)).toContainText(/pelo menos/i);
+  251 |     await optimizeButton(page).click();
+  252 |     await expect(panel(page)).toBeVisible();
+  253 |     await expect(panel(page).getByText('Ouro / h', { exact: true })).toBeVisible();
+  254 | 
+  255 |     const toolbarText = (await toolbar(page).textContent()) ?? '';
+  256 |     const panelText = (await panel(page).textContent()) ?? '';
+  257 |     expect(toolbarText).not.toMatch(/at least/i);
+  258 |     expect(panelText).not.toMatch(/Optimize|Payback|Respec cost/i);
+  259 |   });
+  260 | 
+  261 |   // 8. Keyboard reachability and the busy state.
+  262 |   test('Optimize is keyboard-activatable and exposes aria-expanded; the re-rank switch is keyboard-reachable with an accessible name', async ({ page }) => {
+  263 |     await optimizeButton(page).focus();
+  264 |     await expect(optimizeButton(page)).toBeFocused();
+  265 |     await page.keyboard.press('Enter');
+  266 |     await expect(panel(page)).toBeVisible();
+  267 |     await expect(optimizeButton(page)).toHaveAttribute('aria-expanded', 'true');
+  268 | 
+  269 |     const rerankSwitch = page.getByTestId('farm-respec-rerank').getByRole('switch');
+  270 |     await rerankSwitch.focus();
+  271 |     await expect(rerankSwitch).toBeFocused();
+  272 |     await expect(page.getByRole('switch', { name: /show ranking under this build/i })).toBeVisible();
+  273 |   });
+  274 | });
+  275 | 
+```
