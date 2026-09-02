@@ -12,6 +12,7 @@ function readJson(relativePath) {
 const WORKSPACE_PACKAGES = [
   { name: '@bombfarm/web', path: 'apps/web/package.json' },
   { name: '@bombfarm/desktop', path: 'apps/desktop/package.json' },
+  { name: '@bombfarm/account', path: 'packages/account/package.json' },
   { name: '@bombfarm/contracts', path: 'packages/contracts/package.json' },
   { name: '@bombfarm/domain', path: 'packages/domain/package.json' },
   { name: '@bombfarm/farm', path: 'packages/farm/package.json' },
@@ -77,7 +78,7 @@ describe('workspace package privacy', () => {
 });
 
 describe('changeset package selector coverage', () => {
-  it('offers the same eleven workspace packages changesets would version', async () => {
+  it('offers the same twelve workspace packages changesets would version', async () => {
     const { getPackages } = await import('@manypkg/get-packages');
     const { packages } = await getPackages(root);
     const discoveredNames = packages
@@ -89,7 +90,7 @@ describe('changeset package selector coverage', () => {
     );
 
     expect(discoveredNames).toEqual(expectedNames);
-    expect(discoveredNames).toHaveLength(11);
+    expect(discoveredNames).toHaveLength(12);
   });
 });
 

@@ -15,6 +15,7 @@ export default defineConfig({
     // flag needs to be set here too.
     dangerouslyIgnoreUnhandledErrors: true,
     projects: [
+      'packages/account/vitest.config.ts',
       'packages/contracts/vitest.config.ts',
       'packages/domain/vitest.config.ts',
       'packages/farm/vitest.config.ts',

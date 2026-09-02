@@ -44,6 +44,9 @@ import * as GameArt from '@bombfarm/game-art';
 // colClass / dialogDescClass / panelHClass / panelTitleClass / tipClass / the eight phasesBoard*
 // classes (2026-08-31): promoted from the same subpath for the same reason. They lay out the
 // phases explorer's panel grid, and the panels that draw it are `@bombfarm/farm`'s now.
+// accountStatListClass / heroAbilTitleClass (2026-09-02): promoted from the same subpath for the
+// same reason. They style the Account page's stat rows and its sub-headings, and the panels that
+// draw them are `@bombfarm/account`'s now.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -106,6 +109,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'TooltipStatusBody',
   'abilityCardRecipe',
   'abilityChipRecipe',
+  'accountStatListClass',
   'accordionRecipe',
   'barRecipe',
   'breakpoints',
@@ -128,6 +132,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   // components which receive an injected formatter ships beside them.
   'numberFormatterFor',
   'compactNumberFormatterFor',
+  'heroAbilTitleClass',
   'initialToastQueueState',
   'metricScoreboardDeltaRecipe',
   'metricScoreboardValueRecipe',

@@ -193,8 +193,10 @@ export {
 // an extensionless source path, which an app's tsconfig `paths` can complete but another package's
 // own `tsc` cannot. The phases panels that lay out that board are `@bombfarm/farm`'s now.
 export {
+  accountStatListClass,
   colClass,
   dialogDescClass,
+  heroAbilTitleClass,
   panelHClass,
   panelRecipe,
   panelTitleClass,
