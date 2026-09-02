@@ -841,7 +841,7 @@ async function bootstrap(): Promise<void> {
   // assigned once every producer it reads (gameReader, consentStore, accountRefresh) exists.
   // Both producers below "ping" the notifier and ignore their own payload argument for that call
   // — the notifier always re-resolves the CURRENT cached view itself (resolveCachedAccountView),
-  // so the push and the pull are provably the same function (design.md §2.3). accountRefresh's
+  // so the push and the pull are provably the same function. accountRefresh's
   // callback additionally forwards its argument to liveSource — a separate consumer with its own
   // reason to want the freshly committed view.
   let notifier: ReturnType<typeof createAccountNotifier> | null = null;
