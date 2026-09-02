@@ -53,7 +53,16 @@ import { nodeHttpsTransport } from './game-api/https-transport.js';
 import { readSessionToken, sessionCfgPath } from './game-api/session-token-file.js';
 import { createTriggeredRefresh, type TriggeredRefresh } from './game-api/triggered-refresh.js';
 import { createLiveFastPublisher, type LiveFastPublisher } from './live-source/live-fast-publisher.js';
-import { LiveSource } from './live-source/live-source.js';
+import {
+  LiveSource,
+  nodeObservationAppendPort,
+  observationCaptureFilePath,
+} from './live-source/live-source.js';
+import {
+  createObservationCapture,
+  isObservationCaptureEnabled,
+  type ObservationCapture,
+} from './live-source/observation-capture.js';
 import {
   createReplayTapFactory,
   isReplayLiveSourceEnabled,
@@ -109,6 +118,7 @@ let accountRefresh: AccountRefreshHandle | null = null;
 let consentStore: ConsentStore | null = null;
 let settingsStore: SettingsStore | null = null;
 let liveSource: LiveSource | null = null;
+let observationCapture: ObservationCapture | null = null;
 let liveFastPublisher: LiveFastPublisher | null = null;
 let triggeredRefresh: TriggeredRefresh | null = null;
 let marketService: MarketService | null = null;
@@ -713,6 +723,21 @@ async function bootstrap(): Promise<void> {
   // an unpackaged dev build never lists processes and never loads the instrumentation runtime —
   // which is what lets it run beside a packaged build that is tapping the real game.
   const liveConsent = createLiveConsentGate(consentStore);
+
+  // A developer recording of everything the tap observes, including the bodies the app refuses to
+  // identify and discards. Both the gate here and the recorder's own constructor are handed
+  // Electron's real packaged answer, so no environment can talk an installed build into writing
+  // live account traffic to disk.
+  const observationCaptureStartedAt = Date.now();
+  const observationCaptureDestination = observationCaptureFilePath(userDataDir, observationCaptureStartedAt);
+  observationCapture = createObservationCapture({
+    enabled: isObservationCaptureEnabled(process.env, resolveAppEnv().isPackaged),
+    isPackaged: resolveAppEnv().isPackaged,
+    destination: observationCaptureDestination,
+    appendPort: nodeObservationAppendPort(observationCaptureDestination),
+    log,
+  });
+
   const replayLive = isReplayLiveSourceEnabled(process.env, resolveAppEnv().isPackaged);
   if (replayLive) {
     log.info({
@@ -726,6 +751,8 @@ async function bootstrap(): Promise<void> {
     consent: liveConsent,
     userDataDir,
     flavor: resolveAppEnv().flavor,
+    isPackaged: resolveAppEnv().isPackaged,
+    observer: observationCapture,
     log,
     ...(replayLive
       ? {
@@ -733,6 +760,9 @@ async function bootstrap(): Promise<void> {
             capturePath: resolveReplayCapturePath(process.env, __dirname),
             consent: liveConsent,
             log,
+            onObservedFrame: (wire, atMs) => {
+              observationCapture?.frame(wire, atMs);
+            },
           }),
         }
       : {}),
@@ -1010,6 +1040,8 @@ if (!gotLock) {
     triggeredRefresh = null;
     void liveSource?.teardown();
     liveSource = null;
+    observationCapture?.close();
+    observationCapture = null;
     lastIngestedRotationBody = null;
     consentStore = null;
     persistMainWindowLayout(true);
