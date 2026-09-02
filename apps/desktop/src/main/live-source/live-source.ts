@@ -172,6 +172,10 @@ export interface LiveSourceDeps {
    *  `createTap` overrides that factory entirely. Defaults to `'prod'`, the flavor capture never
    *  runs under. */
   readonly flavor?: AppFlavor;
+  /** Gates the frame capture alongside {@link LiveSourceDeps.flavor}, and defaults to `true`
+   *  because an omission must disable the capture rather than enable it — a packaged artifact can
+   *  carry the `dev` flavor, so flavor alone does not answer this. */
+  readonly isPackaged?: boolean;
   readonly processName?: string;
   readonly log?: LogPort;
   readonly now?: () => number;
@@ -237,12 +241,14 @@ function createDefaultTapFactory(deps: {
   readonly userDataDir: string;
   readonly processName: string;
   readonly flavor: AppFlavor;
+  readonly isPackaged: boolean;
   readonly log: LogPort;
   readonly ring: FrameRing;
 }): (onEvent: (event: LiveEvent) => void, onHttpBody: (body: Buffer, atMs: number) => void) => TapHandle {
   const ring = deps.ring;
 
   const capture = createFrameCapture({
+    isPackaged: deps.isPackaged,
     flavor: deps.flavor,
     enabled: readFrameCaptureEnabledFromEnv(process.env),
     maxBytes: FRAME_CAPTURE_MAX_BYTES,
@@ -424,6 +430,7 @@ export class LiveSource {
         userDataDir: deps.userDataDir,
         processName: deps.processName ?? DEFAULT_PROCESS_NAME,
         flavor: deps.flavor ?? 'prod',
+        isPackaged: deps.isPackaged ?? true,
         log: this.#log,
         ring,
       });

@@ -6,9 +6,12 @@
  * every TLS connection's bytes into one undecodable stream. Payload bytes inside a record are
  * never re-encoded — the resulting file replays through the same decoding path that read it live.
  *
- * Two independent gates decide whether anything is ever written: the app flavor must be `dev`,
- * and capture must be explicitly enabled. A flavor check alone is one edit away from shipping a
- * capture that runs in production, so neither gate alone is trusted.
+ * Three independent gates decide whether anything is ever written: the build must be unpackaged,
+ * the app flavor must be `dev`, and capture must be explicitly enabled. No gate alone is trusted —
+ * and the packaging gate is not redundant with the flavor one, because `package:dev` produces a
+ * packaged artifact stamped with the `dev` flavor, so an installed build can satisfy the flavor
+ * check. `isPackaged` is a required dep rather than something read here, so the caller has to pass
+ * Electron's real answer and no environment can talk a packaged build into capturing.
  */
 
 import type { AppFlavor } from '@bombfarm/contracts';
@@ -28,6 +31,9 @@ export interface FrameCapture {
 }
 
 export interface FrameCaptureDeps {
+  /** Required, with no default: the factory must not be constructible without an answer, because
+   *  this is where the decision is made. */
+  readonly isPackaged: boolean;
   readonly flavor: AppFlavor;
   readonly enabled: boolean;
   readonly maxBytes: number;
@@ -46,6 +52,17 @@ const NOOP_CAPTURE: FrameCapture = { push: () => undefined, close: () => undefin
 const HEADER = encodeCaptureHeader();
 
 export function createFrameCapture(deps: FrameCaptureDeps): FrameCapture {
+  // Packaging is checked before flavor so the log names which gate refused, rather than reporting
+  // a packaged dev build as being outside dev. Like the flavor refusal below, it only speaks when
+  // the enabling variable is already set — nothing here advertises the mode to anyone who did not
+  // ask for it.
+  if (deps.isPackaged) {
+    if (deps.enabled) {
+      deps.log.warn({ scope: 'frame-capture', event: 'unavailable_in_packaged_build', flavor: deps.flavor });
+    }
+    return NOOP_CAPTURE;
+  }
+
   if (deps.flavor !== 'dev') {
     if (deps.enabled) {
       deps.log.warn({ scope: 'frame-capture', event: 'unavailable_outside_dev', flavor: deps.flavor });

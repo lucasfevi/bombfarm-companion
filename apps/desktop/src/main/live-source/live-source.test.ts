@@ -1213,3 +1213,56 @@ describe('LiveSource: current gold falls back to the stored account reading', ()
     expect(earnings).toBeNull();
   });
 });
+
+/** The raw frame capture is built by the tap factory `LiveSource` owns, and a `createTap` override
+ *  replaces that factory wholesale — so these construct the real one. Neither calls `start()`, so
+ *  no process is ever listed and no runtime is ever loaded; the capture's own gate log is the
+ *  observation. `BFC_LIVE_FRAME_CAPTURE` is read from the real environment inside that factory,
+ *  which is why it is set and restored here rather than injected. */
+describe('LiveSource: the raw frame capture is packaging-gated', () => {
+  function withCaptureEnabled<T>(run: () => T): T {
+    const original = process.env.BFC_LIVE_FRAME_CAPTURE;
+    process.env.BFC_LIVE_FRAME_CAPTURE = '1';
+    try {
+      return run();
+    } finally {
+      if (original === undefined) delete process.env.BFC_LIVE_FRAME_CAPTURE;
+      else process.env.BFC_LIVE_FRAME_CAPTURE = original;
+    }
+  }
+
+  function captureLog(): { log: LogPort; warnings: Record<string, unknown>[]; infos: Record<string, unknown>[] } {
+    const warnings: Record<string, unknown>[] = [];
+    const infos: Record<string, unknown>[] = [];
+    return { log: { info: (record) => infos.push(record), warn: (record) => warnings.push(record) }, warnings, infos };
+  }
+
+  it('stays inert when isPackaged is omitted, because the omitted answer defaults to packaged', () => {
+    const { log, warnings, infos } = captureLog();
+    withCaptureEnabled(() => new LiveSource({ consent: () => true, userDataDir: 'unused-in-tests', flavor: 'dev', log }));
+
+    expect(infos.filter((record) => record.scope === 'frame-capture')).toHaveLength(0);
+    expect(warnings.filter((record) => record.scope === 'frame-capture')).toEqual([
+      expect.objectContaining({ event: 'unavailable_in_packaged_build' }),
+    ]);
+  });
+
+  it('starts the capture when the real unpackaged answer is threaded in, so the default is not refusing everything', () => {
+    const { log, warnings, infos } = captureLog();
+    withCaptureEnabled(
+      () =>
+        new LiveSource({
+          consent: () => true,
+          userDataDir: 'unused-in-tests',
+          flavor: 'dev',
+          isPackaged: false,
+          log,
+        }),
+    );
+
+    expect(warnings.filter((record) => record.scope === 'frame-capture')).toHaveLength(0);
+    expect(infos.filter((record) => record.scope === 'frame-capture')).toEqual([
+      expect.objectContaining({ event: 'started' }),
+    ]);
+  });
+});
