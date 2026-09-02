@@ -1,6 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, shell, type WebContents } from 'electron';
 import {
   DEFAULT_SETTINGS,
   emptyMarketSnapshotView,
@@ -25,7 +25,7 @@ import {
   type SettingsWriteResult,
   type UpdateStatus,
 } from '@bombfarm/contracts';
-import { createPacingGate, initialConsent, trayTextFor } from '@bombfarm/game-api';
+import { createPacingGate, initialConsent, isGranted, trayTextFor } from '@bombfarm/game-api';
 import { createAccountNotifier, resolveAccountView } from './account-view.js';
 import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
@@ -46,6 +46,7 @@ import { createSettingsStore, type SettingsStore } from './game-api/settings-sto
 import {
   createWindowLayoutStore,
   DEFAULT_MINI_LAYOUT_VIEW,
+  parseMiniLiveLayoutPatch,
   type WindowLayoutStore,
 } from './game-api/window-layout-store.js';
 import { nodeHttpsTransport } from './game-api/https-transport.js';
@@ -82,7 +83,11 @@ import {
   MIN_MAIN_HEIGHT,
   MIN_MAIN_WIDTH,
 } from './shell/window-layout.js';
-import { clearShellSmokeBridge, installShellSmokeBridge } from './shell/shell-smoke-bridge.js';
+import {
+  clearShellSmokeBridge,
+  installShellSmokeBridge,
+  shouldInstallShellSmokeBridge,
+} from './shell/shell-smoke-bridge.js';
 import {
   createShellLifecycle,
   shouldQuitOnAllWindowsClosed,
@@ -119,7 +124,6 @@ let updateService: UpdateService | null = null;
 let shellLifecycle: ShellLifecycle | null = null;
 let windowLayoutStore: WindowLayoutStore | null = null;
 let layoutPersistTimer: ReturnType<typeof setTimeout> | null = null;
-let layoutMaximizing = false;
 let miniLiveController: MiniLiveController | null = null;
 let miniLayoutPersistTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -146,6 +150,12 @@ const applyConsentEvent = createConsentApplier({
       emitEvent('consent:changed', next);
     },
     (next) => {
+      shellLifecycle?.setMiniAvailable(isGranted(next));
+      if (!isGranted(next)) {
+        miniLiveController?.close();
+      }
+    },
+    (next) => {
       accountRefresh?.onConsentChanged(next);
     },
     () => {
@@ -160,9 +170,18 @@ const applyConsentEvent = createConsentApplier({
   },
 });
 
+/** The compact window shows account data, so every route to it — the header button, the tray
+ *  entry, the IPC channel and the restore-on-launch — sits behind the same grant the Live tab
+ *  itself is behind. */
+function isMiniAvailable(): boolean {
+  return isGranted(consentStore?.read() ?? initialConsent());
+}
+
 function persistSettings(settings: AppSettings): SettingsWriteResult {
   currentSettings = settings;
-  return settingsStore?.write(settings) ?? { settings, persisted: false, reason: 'no_store' };
+  const result = settingsStore?.write(settings) ?? { settings, persisted: false, reason: 'no_store' };
+  emitEvent('settings:changed', settings);
+  return result;
 }
 
 function applyLocale(next: AppLocale): SettingsWriteResult {
@@ -263,13 +282,7 @@ function registerIpcHandlers(): void {
     'settings:useEnglish': (): SettingsWriteResult => applyLocale('en'),
     'settings:usePortuguese': (): SettingsWriteResult => applyLocale('pt-BR'),
     'settings:setAlwaysOnTopMain': (enabled: boolean): SettingsWriteResult => applyAlwaysOnTopMain(enabled),
-    'settings:setAlwaysOnTopMini': (enabled: boolean): SettingsWriteResult => {
-      const result = applyAlwaysOnTopMini(enabled);
-      if (result.persisted) {
-        emitEvent('settings:changed', result.settings);
-      }
-      return result;
-    },
+    'settings:setAlwaysOnTopMini': (enabled: boolean): SettingsWriteResult => applyAlwaysOnTopMini(enabled),
     'storage:health': () => storage?.healthCheck() ?? { binding: 'unknown', ok: false },
     'game:getStatus': () => gameReader?.getStatus() ?? {
       status: 'not_running' as const,
@@ -302,7 +315,9 @@ function registerIpcHandlers(): void {
     'market:getSnapshot': () => marketService?.getView() ?? emptyMarketSnapshotView(),
     'market:refreshItem': refreshMarketItem,
     'miniLive:open': () => {
-      miniLiveController?.open();
+      if (isMiniAvailable()) {
+        miniLiveController?.open();
+      }
       return null;
     },
     'miniLive:close': () => {
@@ -310,7 +325,13 @@ function registerIpcHandlers(): void {
       return null;
     },
     'miniLive:getLayout': () => windowLayoutStore?.getLayout() ?? DEFAULT_MINI_LAYOUT_VIEW,
-    'miniLive:setLayout': (patch) => windowLayoutStore?.setLayout(patch) ?? DEFAULT_MINI_LAYOUT_VIEW,
+    'miniLive:setLayout': (patch) => {
+      const validPatch = parseMiniLiveLayoutPatch(patch);
+      if (!validPatch || !windowLayoutStore) {
+        return windowLayoutStore?.getLayout() ?? DEFAULT_MINI_LAYOUT_VIEW;
+      }
+      return windowLayoutStore.setLayout(validPatch);
+    },
     'miniLive:fitGrowthAxis': (content) => {
       miniLiveController?.fitGrowthAxis(content);
       return null;
@@ -435,10 +456,15 @@ async function createMainWindow(): Promise<void> {
     await mainWindow.loadURL(RENDERER_ENTRY_URL);
   }
 
-  setupShellLifecycle(env.productName);
+  setupShellLifecycle(env);
   attachWindowLayoutPersistence();
+  // Seed the layout row now: the mini window's own layout writes hang off the main entry, and
+  // without this a mini opened before the first move or resize would have nowhere to persist.
+  persistMainWindowLayout(true);
   miniLiveController = createMiniLiveControllerInstance(env);
-  miniLiveController.restoreIfWasOpen();
+  if (isMiniAvailable()) {
+    miniLiveController.restoreIfWasOpen();
+  }
 }
 
 function scheduleMiniLayoutPersist(callback: () => void, immediate: boolean): void {
@@ -472,7 +498,7 @@ function createMiniLiveControllerInstance(env: ReturnType<typeof resolveAppEnv>)
     preloadPath: path.join(__dirname, '../preload/index.cjs'),
     iconPath: path.join(__dirname, '../../assets/icon.ico'),
     applyExternalNavigation: (webContents) => {
-      applyExternalNavigationPolicy(webContents as never, {
+      applyExternalNavigationPolicy(webContents as WebContents, {
         openExternal: (url) => shell.openExternal(url),
         log,
         internalUrls: env.isDev ? [RENDERER_DEV_URL] : [],
@@ -506,23 +532,17 @@ function persistMainWindowLayout(immediate: boolean): void {
     if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isMinimized() || !windowLayoutStore) {
       return;
     }
-    if (layoutMaximizing) {
-      return;
-    }
 
     const bounds = mainWindow.isMaximized() ? mainWindow.getNormalBounds() : mainWindow.getBounds();
     const display = screen.getDisplayMatching(bounds);
     const workArea = display.workArea;
-    const result = windowLayoutStore.write({
-      schemaVersion: 1,
-      main: {
-        displayId: display.id,
-        x: bounds.x - workArea.x,
-        y: bounds.y - workArea.y,
-        width: bounds.width,
-        height: bounds.height,
-        isMaximized: mainWindow.isMaximized(),
-      },
+    const result = windowLayoutStore.writeMain({
+      displayId: display.id,
+      x: bounds.x - workArea.x,
+      y: bounds.y - workArea.y,
+      width: bounds.width,
+      height: bounds.height,
+      isMaximized: mainWindow.isMaximized(),
     });
     if (!result.persisted) {
       log.error({ scope: 'main', event: 'window.layout_write_failed' });
@@ -552,8 +572,7 @@ function attachWindowLayoutPersistence(): void {
     return;
   }
 
-  const skipTransient = (): boolean =>
-    mainWindow?.isMaximized() === true || mainWindow?.isMinimized() === true || layoutMaximizing;
+  const skipTransient = (): boolean => mainWindow?.isMaximized() === true || mainWindow?.isMinimized() === true;
 
   mainWindow.on('move', () => {
     if (skipTransient()) {
@@ -568,9 +587,7 @@ function attachWindowLayoutPersistence(): void {
     persistMainWindowLayout(false);
   });
   mainWindow.on('maximize', () => {
-    layoutMaximizing = true;
     persistMainWindowLayout(true);
-    layoutMaximizing = false;
   });
   mainWindow.on('unmaximize', () => {
     persistMainWindowLayout(true);
@@ -580,7 +597,7 @@ function attachWindowLayoutPersistence(): void {
   });
 }
 
-function setupShellLifecycle(productName: string): void {
+function setupShellLifecycle(env: ReturnType<typeof resolveAppEnv>): void {
   if (!mainWindow) {
     return;
   }
@@ -598,7 +615,7 @@ function setupShellLifecycle(productName: string): void {
   const iconPath = path.join(__dirname, '../../assets/icon.ico');
   const trayResult = createElectronTray({
     iconPath,
-    tooltip: productName,
+    tooltip: env.productName,
     platform: process.platform,
     fileExists: (filePath) => fs.existsSync(filePath),
     createNativeImage: (filePath) => nativeImage.createFromPath(filePath),
@@ -618,12 +635,15 @@ function setupShellLifecycle(productName: string): void {
     openMini: () => miniLiveController?.open(),
     log,
     labels: trayTextFor(currentSettings.locale),
-    tooltip: productName,
+    tooltip: env.productName,
+    miniAvailable: isMiniAvailable(),
   });
 
-  installShellSmokeBridge(shellLifecycle, () => {
-    shellLifecycle?.show();
-  });
+  if (shouldInstallShellSmokeBridge({ isPackaged: env.isPackaged })) {
+    installShellSmokeBridge(shellLifecycle, () => {
+      shellLifecycle?.show();
+    });
+  }
 
   if (trayResult.ok) {
     const showFromTray = (): void => {
@@ -1004,7 +1024,7 @@ if (!gotLock) {
     shellLifecycle?.destroyTray();
     clearShellSmokeBridge();
     shellLifecycle = null;
-    miniLiveController?.close();
+    miniLiveController?.dispose();
     miniLiveController = null;
     // settingsStore borrows accountOpen.db, which accountStore.close() already owns
     // below; it holds no timer and opens no handle of its own, so it must not gain a close().

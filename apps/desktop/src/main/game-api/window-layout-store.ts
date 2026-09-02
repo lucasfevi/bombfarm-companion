@@ -66,6 +66,24 @@ function parseMiniGrowthAxis(value: unknown): MiniLiveLayoutStored['axis'] | nul
   return value === 'vertical' || value === 'horizontal' ? value : null;
 }
 
+export function parseMiniLiveLayoutPatch(value: unknown): MiniLiveLayoutPatch | null {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return null;
+  }
+  const record = value as Record<string, unknown>;
+  const axis = parseMiniGrowthAxis(record.axis);
+  if (!axis) return null;
+  if (typeof record.showEarnings !== 'boolean') return null;
+  if (typeof record.showMap !== 'boolean') return null;
+  if (typeof record.showHeroes !== 'boolean') return null;
+  return {
+    showEarnings: record.showEarnings,
+    showMap: record.showMap,
+    showHeroes: record.showHeroes,
+    axis,
+  };
+}
+
 function parseMiniLiveLayout(value: unknown): MiniLiveLayoutStored | null {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return null;
@@ -126,6 +144,8 @@ function isAllSectionsOff(patch: MiniLiveLayoutPatch): boolean {
 export interface WindowLayoutStore {
   read(): WindowLayoutDocument | null;
   write(doc: WindowLayoutDocument): { persisted: boolean };
+  /** Replaces the main window's bounds while keeping whatever the mini window has stored. */
+  writeMain(main: MainWindowLayout): { persisted: boolean };
   getLayout(): MiniLiveLayoutView;
   setLayout(patch: MiniLiveLayoutPatch): MiniLiveLayoutView;
 }
@@ -170,6 +190,11 @@ export function createWindowLayoutStore(db: SqliteDb | null): WindowLayoutStore 
         return { persisted: false };
       }
       return { persisted: true };
+    },
+
+    writeMain(main: MainWindowLayout): { persisted: boolean } {
+      const mini = this.read()?.mini;
+      return this.write(mini ? { schemaVersion: 1, main, mini } : { schemaVersion: 1, main });
     },
 
     getLayout(): MiniLiveLayoutView {

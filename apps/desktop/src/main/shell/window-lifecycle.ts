@@ -55,6 +55,7 @@ export interface ShellLifecycle {
   markQuitting(): void;
   destroyTray(): void;
   setTrayLabels(labels: TrayLabels): void;
+  setMiniAvailable(available: boolean): void;
   readonly trayPresent: boolean;
 }
 
@@ -69,9 +70,11 @@ export function createShellLifecycle(deps: {
   };
   labels: TrayLabels;
   tooltip: string;
+  miniAvailable: boolean;
 }): ShellLifecycle {
   let quitting = false;
   let labels = deps.labels;
+  let miniAvailable = deps.miniAvailable;
   let focusedWhileVisible = false;
 
   const show = (): void => {
@@ -96,9 +99,12 @@ export function createShellLifecycle(deps: {
     }
   };
 
+  // The compact window shows account data, so the tray drops the entry entirely until access is
+  // granted — the same move the shell makes with its nav items, rather than offering a control
+  // that would open a window with nothing in it.
   const buildMenu = (): TrayMenuItem[] => [
     { id: 'show', label: labels.show, click: show },
-    { id: 'mini', label: labels.mini, click: deps.openMini },
+    ...(miniAvailable ? [{ id: 'mini' as const, label: labels.mini, click: deps.openMini }] : []),
     { id: 'quit', label: labels.quit, click: () => {
       deps.quit();
     } },
@@ -106,6 +112,11 @@ export function createShellLifecycle(deps: {
 
   const setTrayLabels = (next: TrayLabels): void => {
     labels = next;
+    deps.tray?.setContextMenu(buildMenu());
+  };
+
+  const setMiniAvailable = (available: boolean): void => {
+    miniAvailable = available;
     deps.tray?.setContextMenu(buildMenu());
   };
 
@@ -136,5 +147,6 @@ export function createShellLifecycle(deps: {
       deps.tray?.destroy();
     },
     setTrayLabels,
+    setMiniAvailable,
   };
 }

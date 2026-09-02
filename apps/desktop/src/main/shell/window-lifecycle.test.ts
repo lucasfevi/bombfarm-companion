@@ -90,6 +90,7 @@ describe('createShellLifecycle', () => {
       log: { info: vi.fn(), error: vi.fn() },
       labels: TRAY_TEXT.en,
       tooltip: 'Bomb Farm Companion',
+      miniAvailable: true,
     });
 
     lifecycle.show();
@@ -109,6 +110,7 @@ describe('createShellLifecycle', () => {
       log: { info: vi.fn(), error: vi.fn() },
       labels: TRAY_TEXT.en,
       tooltip: 'Bomb Farm Companion',
+      miniAvailable: true,
     });
 
     lifecycle.show();
@@ -128,6 +130,7 @@ describe('createShellLifecycle', () => {
       log: { info: vi.fn(), error: vi.fn() },
       labels: TRAY_TEXT.en,
       tooltip: 'Bomb Farm Companion',
+      miniAvailable: true,
     });
 
     expect(lifecycle.onWindowClose()).toBe('hide');
@@ -146,6 +149,7 @@ describe('createShellLifecycle', () => {
       log: { info: vi.fn(), error: vi.fn() },
       labels: TRAY_TEXT.en,
       tooltip: 'Bomb Farm Companion',
+      miniAvailable: true,
     });
 
     lifecycle.setTrayLabels(TRAY_TEXT['pt-BR']);
@@ -170,6 +174,7 @@ describe('createShellLifecycle', () => {
       log: { info: vi.fn(), error: vi.fn() },
       labels: TRAY_TEXT.en,
       tooltip: 'Bomb Farm Companion',
+      miniAvailable: true,
     });
 
     lifecycle.requestQuit();
@@ -187,10 +192,61 @@ describe('createShellLifecycle', () => {
       log: { info: vi.fn(), error: vi.fn() },
       labels: TRAY_TEXT.en,
       tooltip: 'Bomb Farm Companion',
+      miniAvailable: true,
     });
 
     lifecycle.destroyTray();
 
     expect(tray.destroy.mock.calls).toHaveLength(1);
+  });
+});
+
+describe('createShellLifecycle — the tray Mini entry is gated on account access', () => {
+  function lifecycleWithTray(miniAvailable: boolean) {
+    const tray = createTrayPort();
+    const openMini = vi.fn();
+    const lifecycle = createShellLifecycle({
+      window: createWindowPort(),
+      tray,
+      quit: vi.fn(),
+      openMini,
+      log: { info: vi.fn(), error: vi.fn() },
+      labels: TRAY_TEXT.en,
+      tooltip: 'Bomb Farm Companion',
+      miniAvailable,
+    });
+    return { tray, openMini, lifecycle };
+  }
+
+  it('omits Mini from the first menu it installs when access has not been granted', () => {
+    const { tray } = lifecycleWithTray(false);
+
+    expect(tray.items.map((item) => item.id)).toEqual(['show', 'quit']);
+  });
+
+  it('adds Mini in its place between Show and Quit once access is granted', () => {
+    const { tray, lifecycle } = lifecycleWithTray(false);
+
+    lifecycle.setMiniAvailable(true);
+
+    expect(tray.items.map((item) => item.id)).toEqual(['show', 'mini', 'quit']);
+  });
+
+  it('removes Mini again when access is revoked', () => {
+    const { tray, lifecycle } = lifecycleWithTray(true);
+
+    lifecycle.setMiniAvailable(false);
+
+    expect(tray.items.map((item) => item.id)).toEqual(['show', 'quit']);
+  });
+
+  it('a locale change while access is ungranted does not reintroduce Mini', () => {
+    const { tray, lifecycle } = lifecycleWithTray(false);
+
+    lifecycle.setTrayLabels(TRAY_TEXT['pt-BR']);
+
+    expect(tray.items.map((item) => item.id)).toEqual(['show', 'quit']);
+    expect(tray.items[0]?.label).toBe('Mostrar');
+    expect(tray.items[1]?.label).toBe('Sair');
   });
 });

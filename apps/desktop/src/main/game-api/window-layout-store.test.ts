@@ -3,7 +3,11 @@ import type { SqliteDb, SqliteStatement } from '../storage/index.js';
 import { detectAvailableBindings, openTestAccountDb, warnForUnavailableBindings } from '../storage/test-support.js';
 import type { WindowLayoutDocument } from '../shell/window-layout.js';
 import { WINDOW_LAYOUT_META_KEY } from '../shell/window-layout.js';
-import { createWindowLayoutStore, DEFAULT_MINI_LAYOUT_VIEW } from './window-layout-store.js';
+import {
+  createWindowLayoutStore,
+  DEFAULT_MINI_LAYOUT_VIEW,
+  parseMiniLiveLayoutPatch,
+} from './window-layout-store.js';
 
 const availableBindings = detectAvailableBindings();
 warnForUnavailableBindings(availableBindings);
@@ -216,7 +220,7 @@ describe.each(availableBindings)('mini layout fields (%s)', (binding) => {
       axis: 'horizontal',
     });
 
-    const keys = run.mock.calls.map((call: [string, ...unknown[]]) => call[1]);
+    const keys = run.mock.calls.map((call: unknown[]) => call[1]);
     expect(keys).toContain(WINDOW_LAYOUT_META_KEY);
     expect(keys).not.toContain('settings_v1');
   });
@@ -240,5 +244,55 @@ describe.each(availableBindings)('mini layout fields (%s)', (binding) => {
     });
     expect(store.read()?.main).toEqual(SAMPLE_LAYOUT.main);
     expect(store.read()?.mini?.wasOpen).toBe(false);
+  });
+});
+
+describe.each(availableBindings)('writeMain keeps the mini section (%s)', (binding) => {
+  it('replaces the main bounds without dropping the stored mini layout', () => {
+    const open = openTestAccountDb(binding);
+    const store = createWindowLayoutStore(open.db);
+    store.write(SAMPLE_LAYOUT);
+    store.setLayout({ showEarnings: false, showMap: true, showHeroes: true, axis: 'horizontal' });
+    const movedMain = { ...SAMPLE_LAYOUT.main, x: 400, y: 300 };
+
+    const result = store.writeMain(movedMain);
+
+    expect(result).toEqual({ persisted: true });
+    expect(store.read()?.main).toEqual(movedMain);
+    expect(store.getLayout()).toEqual({
+      showEarnings: false,
+      showMap: true,
+      showHeroes: true,
+      axis: 'horizontal',
+    });
+  });
+
+  it('writes a main-only document when nothing was stored before', () => {
+    const open = openTestAccountDb(binding);
+    const store = createWindowLayoutStore(open.db);
+
+    store.writeMain(SAMPLE_LAYOUT.main);
+
+    expect(store.read()).toEqual(SAMPLE_LAYOUT);
+  });
+});
+
+describe('parseMiniLiveLayoutPatch — the renderer-supplied patch is validated at the IPC boundary', () => {
+  it('accepts a well-formed patch', () => {
+    expect(
+      parseMiniLiveLayoutPatch({ showEarnings: true, showMap: false, showHeroes: true, axis: 'horizontal' }),
+    ).toEqual({ showEarnings: true, showMap: false, showHeroes: true, axis: 'horizontal' });
+  });
+
+  it('rejects a missing flag, a non-boolean flag, an unknown axis, and non-objects', () => {
+    expect(parseMiniLiveLayoutPatch({ showEarnings: true, showMap: false, axis: 'vertical' })).toBeNull();
+    expect(
+      parseMiniLiveLayoutPatch({ showEarnings: 'yes', showMap: false, showHeroes: true, axis: 'vertical' }),
+    ).toBeNull();
+    expect(
+      parseMiniLiveLayoutPatch({ showEarnings: true, showMap: false, showHeroes: true, axis: 'diagonal' }),
+    ).toBeNull();
+    expect(parseMiniLiveLayoutPatch(null)).toBeNull();
+    expect(parseMiniLiveLayoutPatch([])).toBeNull();
   });
 });

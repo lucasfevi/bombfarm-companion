@@ -55,6 +55,11 @@ export interface MiniLiveWebContents {
   on(event: string, listener: (...args: unknown[]) => void): void;
 }
 
+export interface MiniLiveLog {
+  info: (rec: Record<string, unknown>) => void;
+  error: (rec: Record<string, unknown>) => void;
+}
+
 export interface MiniLiveWindowLike {
   show(): void;
   focus(): void;
@@ -77,8 +82,8 @@ export function createMiniLiveBrowserWindow(
     width: number;
     height: number;
     loadUrl: string;
-    applyExternalNavigation?: (webContents: MiniLiveWebContents) => void;
-    log?: { info: (rec: Record<string, unknown>) => void; error: (rec: Record<string, unknown>) => void };
+    applyExternalNavigation?: ((webContents: MiniLiveWebContents) => void) | undefined;
+    log?: MiniLiveLog | undefined;
   },
 ): MiniLiveWindowLike {
   const win = new BrowserWindowCtor(
@@ -94,18 +99,21 @@ export function createMiniLiveBrowserWindow(
 
   input.applyExternalNavigation?.(win.webContents);
 
-  const reveal = (): void => {
-    if (win.isDestroyed()) {
-      return;
-    }
+  // Revealed the moment it exists rather than at first paint. Spawning this window's renderer
+  // measures ~150 ms, and waiting for it left the screen unchanged for that whole time, so the
+  // click read as ignored. The opaque `backgroundColor` above is what keeps this first frame from
+  // flashing white, and the page paints a skeleton until the live model answers.
+  //
+  // Revealing once, here, is also what stops the window taking focus back a second time: it used
+  // to show on `ready-to-show` and again on `did-finish-load` ~60 ms later, over whatever the
+  // player had clicked into in between.
+  if (!win.isDestroyed()) {
     win.show();
     win.focus();
-  };
+  }
 
-  win.on('ready-to-show', reveal);
   win.webContents.on('did-finish-load', () => {
     input.log?.info({ scope: 'main', event: 'mini.renderer.loaded' });
-    reveal();
   });
   win.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
     input.log?.error({
@@ -115,7 +123,6 @@ export function createMiniLiveBrowserWindow(
       errorDescription,
       validatedURL,
     });
-    reveal();
   });
 
   input.log?.info({ scope: 'main', event: 'mini.renderer.load_url', url: input.loadUrl });
@@ -210,7 +217,10 @@ function writeMiniBounds(
 
 export interface MiniLiveController {
   open(): void;
+  /** The player's choice: tears the window down and forgets it was open. */
   close(): void;
+  /** App shutdown: tears the window down but keeps `wasOpen`, so the next launch restores it. */
+  dispose(): void;
   restoreIfWasOpen(): void;
   applyAlwaysOnTop(enabled: boolean, level: 'screen-saver'): void;
   fitGrowthAxis(content: { width: number; height: number }): void;
@@ -229,7 +239,7 @@ export function createMiniLiveController(deps: {
   getDisplayForBounds: (bounds: { x: number; y: number; width: number; height: number }) => DisplayInfo;
   getAlwaysOnTopMini: () => boolean;
   schedulePersist?: (callback: () => void, immediate: boolean) => void;
-  log?: { info: (rec: Record<string, unknown>) => void; error: (rec: Record<string, unknown>) => void };
+  log?: MiniLiveLog;
 }): MiniLiveController {
   let miniWindow: MiniLiveWindowLike | null = null;
 
@@ -259,6 +269,15 @@ export function createMiniLiveController(deps: {
     });
   };
 
+  const forget = (win: MiniLiveWindowLike): void => {
+    if (miniWindow !== win) {
+      return;
+    }
+    miniWindow = null;
+    writeMiniWasOpen(deps.layoutStore, false);
+    deps.log?.info({ scope: 'main', event: 'mini.closed' });
+  };
+
   const focusOrCreate = (): void => {
     if (miniWindow && !miniWindow.isDestroyed()) {
       miniWindow.focus();
@@ -282,8 +301,12 @@ export function createMiniLiveController(deps: {
       log: deps.log,
     });
 
-    applyMiniAlwaysOnTop(miniWindow, deps.getAlwaysOnTopMini());
-    attachLayoutPersistence(miniWindow);
+    const created = miniWindow;
+    applyMiniAlwaysOnTop(created, deps.getAlwaysOnTopMini());
+    attachLayoutPersistence(created);
+    created.on('closed', () => {
+      forget(created);
+    });
     writeMiniWasOpen(deps.layoutStore, true);
     deps.log?.info({ scope: 'main', event: 'mini.opened' });
   };
@@ -293,14 +316,21 @@ export function createMiniLiveController(deps: {
       focusOrCreate();
     },
     close() {
-      if (!miniWindow || miniWindow.isDestroyed()) {
+      const win = miniWindow;
+      if (!win || win.isDestroyed()) {
+        miniWindow = null;
         writeMiniWasOpen(deps.layoutStore, false);
         return;
       }
-      miniWindow.destroy();
+      win.destroy();
+      forget(win);
+    },
+    dispose() {
+      const win = miniWindow;
       miniWindow = null;
-      writeMiniWasOpen(deps.layoutStore, false);
-      deps.log?.info({ scope: 'main', event: 'mini.closed' });
+      if (win && !win.isDestroyed()) {
+        win.destroy();
+      }
     },
     restoreIfWasOpen() {
       const doc = deps.layoutStore.read();

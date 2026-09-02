@@ -1,3 +1,7 @@
+import type { MiniLiveGrowthAxis } from '@bombfarm/contracts';
+
+export type { MiniLiveGrowthAxis };
+
 export const WINDOW_LAYOUT_META_KEY = 'window_layout_v1';
 export const DEFAULT_MAIN_WIDTH = 1280;
 export const DEFAULT_MAIN_HEIGHT = 800;
@@ -19,8 +23,6 @@ export interface MainWindowLayout {
   height: number;
   isMaximized: boolean;
 }
-
-export type MiniLiveGrowthAxis = 'vertical' | 'horizontal';
 
 export interface MiniLiveBounds {
   x: number;

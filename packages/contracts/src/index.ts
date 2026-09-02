@@ -302,12 +302,7 @@ export interface MiniLiveLayoutView {
   axis: MiniLiveGrowthAxis;
 }
 
-export interface MiniLiveLayoutPatch {
-  showEarnings: boolean;
-  showMap: boolean;
-  showHeroes: boolean;
-  axis: MiniLiveGrowthAxis;
-}
+export type MiniLiveLayoutPatch = MiniLiveLayoutView;
 
 export interface AppEnvironmentInfo {
   flavor: AppFlavor;
@@ -440,8 +435,8 @@ export interface IpcEvents {
   /** Fired whenever main adopts a different snapshot body, or merges a fresh per-item quote into
    *  the one it holds. A check that changed nothing (a 304, a failed fetch) does not fire it. */
   'market:changed': MarketSnapshotView;
-  /** Fired after a successful settings write so every window can adopt the new locale or
-   *  always-on-top flags without a relaunch. */
+  /** Fired whenever main adopts new settings — persisted or not, since a locale or always-on-top
+   *  change applies for the session either way — so every window follows without a relaunch. */
   'settings:changed': AppSettings;
 }
 

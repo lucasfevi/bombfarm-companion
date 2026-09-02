@@ -60,7 +60,7 @@ describe('buildMiniLiveWindowOptions', () => {
 describe('createMiniLiveBrowserWindow', () => {
   it('does not call setIgnoreMouseEvents on the factory path', () => {
     const setIgnoreMouseEvents = vi.fn();
-    const instances: Array<Record<string, unknown>> = [];
+    const instances: Array<{ options: unknown }> = [];
 
     class FakeBrowserWindow {
       webContents = {
@@ -107,6 +107,10 @@ function createLayoutStore(doc: WindowLayoutDocument | null): WindowLayoutStore 
       current = next;
       return { persisted: true };
     },
+    writeMain: (main) => {
+      current = current?.mini ? { schemaVersion: 1, main, mini: current.mini } : { schemaVersion: 1, main };
+      return { persisted: true };
+    },
     getLayout: () => ({
       showEarnings: true,
       showMap: true,
@@ -119,11 +123,7 @@ function createLayoutStore(doc: WindowLayoutDocument | null): WindowLayoutStore 
 
 function createFakeBrowserWindowCtor() {
   let constructCount = 0;
-  const instances: Array<{
-    focus: ReturnType<typeof vi.fn>;
-    destroy: ReturnType<typeof vi.fn>;
-    isDestroyed: ReturnType<typeof vi.fn>;
-  }> = [];
+  const instances: FakeBrowserWindow[] = [];
 
   class FakeBrowserWindow {
     webContents = {
@@ -322,5 +322,146 @@ describe('applyMiniAlwaysOnTop', () => {
     applyMiniAlwaysOnTop(win as never, true);
 
     expect(setAlwaysOnTop).toHaveBeenCalledWith(true, 'screen-saver');
+  });
+});
+
+describe('createMiniLiveController — shutdown versus the player closing it', () => {
+  const OPEN_DOC: WindowLayoutDocument = {
+    ...MAIN_ONLY_DOC,
+    mini: {
+      bounds: { displayId: 1, x: 0, y: 0, width: 320, height: 200 },
+      showEarnings: true,
+      showMap: true,
+      showHeroes: false,
+      axis: 'vertical',
+      wasOpen: true,
+    },
+  };
+
+  function closedListenerOf(instance: { on: { mock: { calls: unknown[][] } } } | undefined): (() => void) | undefined {
+    const call = instance?.on.mock.calls.find(([event]) => event === 'closed');
+    return typeof call?.[1] === 'function' ? (call[1] as () => void) : undefined;
+  }
+
+  it('dispose tears the window down but keeps wasOpen so the next launch restores the mini', () => {
+    const store = createLayoutStore(OPEN_DOC);
+    const fake = createFakeBrowserWindowCtor();
+    const controller = createMiniLiveController({
+      ...controllerDeps({ BrowserWindowCtor: fake.Ctor, layoutStore: store }),
+    });
+
+    controller.open();
+    controller.dispose();
+
+    expect(fake.lastInstance?.destroy).toHaveBeenCalledOnce();
+    expect(store.read()?.mini?.wasOpen).toBe(true);
+    expect(controller.getWindow()).toBeNull();
+  });
+
+  it('a window the OS closed is forgotten: wasOpen false and the next open constructs afresh', () => {
+    const store = createLayoutStore(OPEN_DOC);
+    const fake = createFakeBrowserWindowCtor();
+    const controller = createMiniLiveController({
+      ...controllerDeps({ BrowserWindowCtor: fake.Ctor, layoutStore: store }),
+    });
+
+    controller.open();
+    const onClosed = closedListenerOf(fake.lastInstance);
+    if (!onClosed) throw new Error('expected the controller to listen for closed');
+    onClosed();
+
+    expect(store.read()?.mini?.wasOpen).toBe(false);
+    expect(controller.getWindow()).toBeNull();
+
+    controller.open();
+
+    expect(fake.constructCount).toBe(2);
+  });
+
+  it('the closed event that destroy() itself fires during dispose does not flip wasOpen', () => {
+    const store = createLayoutStore(OPEN_DOC);
+    const fake = createFakeBrowserWindowCtor();
+    const controller = createMiniLiveController({
+      ...controllerDeps({ BrowserWindowCtor: fake.Ctor, layoutStore: store }),
+    });
+
+    controller.open();
+    const onClosed = closedListenerOf(fake.lastInstance);
+    if (!onClosed) throw new Error('expected the controller to listen for closed');
+    controller.dispose();
+    onClosed();
+
+    expect(store.read()?.mini?.wasOpen).toBe(true);
+  });
+});
+
+describe('createMiniLiveBrowserWindow — revealed at construction, exactly once', () => {
+  function windowWithCapturedListeners() {
+    const show = vi.fn();
+    const focus = vi.fn();
+    const contentsListeners = new Map<string, (...args: unknown[]) => void>();
+
+    class FakeBrowserWindow {
+      webContents = {
+        loadURL: vi.fn(() => Promise.resolve()),
+        on: (event: string, listener: (...args: unknown[]) => void) => {
+          contentsListeners.set(event, listener);
+        },
+      };
+
+      show = show;
+      focus = focus;
+      destroy = vi.fn();
+      isDestroyed = vi.fn(() => false);
+      setAlwaysOnTop = vi.fn();
+      setBounds = vi.fn();
+      getBounds = vi.fn(() => ({ x: 0, y: 0, width: 320, height: 200 }));
+      on = vi.fn();
+
+      constructor(public options: unknown) {}
+    }
+
+    createMiniLiveBrowserWindow(FakeBrowserWindow, {
+      preloadPath: PRELOAD,
+      iconPath: ICON,
+      x: 0,
+      y: 0,
+      width: 320,
+      height: 200,
+      loadUrl: 'http://127.0.0.1:3000/mini-live/',
+    });
+
+    return { show, focus, contentsListeners };
+  }
+
+  it('shows and focuses without waiting for the renderer to paint', () => {
+    const { show, focus } = windowWithCapturedListeners();
+
+    expect(show).toHaveBeenCalledOnce();
+    expect(focus).toHaveBeenCalledOnce();
+  });
+
+  it('never waits on ready-to-show, which is what used to delay the reveal', () => {
+    const { show } = windowWithCapturedListeners();
+
+    expect(show).toHaveBeenCalledOnce();
+  });
+
+  it('does not take focus again once the renderer finishes loading', () => {
+    const { show, focus, contentsListeners } = windowWithCapturedListeners();
+
+    contentsListeners.get('did-finish-load')?.();
+
+    expect(show).toHaveBeenCalledOnce();
+    expect(focus).toHaveBeenCalledOnce();
+  });
+
+  it('does not take focus again when the renderer fails to load', () => {
+    const { show, focus, contentsListeners } = windowWithCapturedListeners();
+
+    contentsListeners.get('did-fail-load')?.({}, -6, 'ERR_FILE_NOT_FOUND', 'app://x');
+
+    expect(show).toHaveBeenCalledOnce();
+    expect(focus).toHaveBeenCalledOnce();
   });
 });

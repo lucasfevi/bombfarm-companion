@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { AccountView, AppSettings, ConsentRecord, LiveEvent } from '@bombfarm/contracts';
+import type { AppSettings, ConsentRecord, LiveEvent } from '@bombfarm/contracts';
 import { broadcastEventToWindows } from './broadcast-event.js';
 
 function fakeWindow(destroyed: boolean) {
@@ -11,11 +11,21 @@ function fakeWindow(destroyed: boolean) {
   };
 }
 
+const EMPTY_FAST_UPDATE: LiveEvent = {
+  type: 'fastUpdate',
+  field: [],
+  recovery: [],
+  energies: [],
+  onFieldHeroIds: [],
+  earnings: null,
+  map: null,
+};
+
 describe('broadcastEventToWindows', () => {
   it('sends live:event to every non-destroyed window', () => {
     const first = fakeWindow(false);
     const second = fakeWindow(false);
-    const payload: LiveEvent = { type: 'tick', tick: { at: '2026-01-01T00:00:00.000Z' } };
+    const payload = EMPTY_FAST_UPDATE;
 
     broadcastEventToWindows([first, second], 'bfc:event:live:event', payload);
 
@@ -26,7 +36,7 @@ describe('broadcastEventToWindows', () => {
   it('sends account:changed to every non-destroyed window', () => {
     const first = fakeWindow(false);
     const second = fakeWindow(false);
-    const payload = { status: 'empty' } as AccountView;
+    const payload: unknown = { gameRunning: false };
 
     broadcastEventToWindows([first, second], 'bfc:event:account:changed', payload);
 
@@ -64,7 +74,7 @@ describe('broadcastEventToWindows', () => {
   it('skips destroyed windows', () => {
     const living = fakeWindow(false);
     const destroyed = fakeWindow(true);
-    const payload: LiveEvent = { type: 'gap', gap: { reason: 'never_read' } };
+    const payload = EMPTY_FAST_UPDATE;
 
     broadcastEventToWindows([living, destroyed], 'bfc:event:live:event', payload);
 
@@ -75,7 +85,7 @@ describe('broadcastEventToWindows', () => {
   it('delivers to surviving windows when the first entry is destroyed', () => {
     const destroyed = fakeWindow(true);
     const living = fakeWindow(false);
-    const payload: LiveEvent = { type: 'gap', gap: { reason: 'never_read' } };
+    const payload = EMPTY_FAST_UPDATE;
 
     broadcastEventToWindows([destroyed, living], 'bfc:event:live:event', payload);
 

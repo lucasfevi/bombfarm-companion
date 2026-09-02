@@ -1,6 +1,5 @@
 import type { AppLocale, AppSettings, SettingsWriteResult } from '@bombfarm/contracts';
 
-/** One path: spread the current object, apply the locale, then persist. */
 export function applyLocale(deps: {
   current: AppSettings;
   next: AppLocale;
