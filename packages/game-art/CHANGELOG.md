@@ -1,5 +1,19 @@
 # @bombfarm/game-art
 
+## 0.3.5
+
+### Patch Changes
+
+- 4b6d4ba: Hero level chips now read **Nv 61** under a Portuguese UI instead of **Lv 61**. The prefix was
+  written into the shared hero identity block in English, so every Portuguese surface that showed a
+  hero level printed the English abbreviation. A level that has not been read yet now shows a dash
+  rather than claiming level 0.
+- Updated dependencies [4b6d4ba]
+- Updated dependencies [4b6d4ba]
+- Updated dependencies [652ab4a]
+  - @bombfarm/ui@0.9.1
+  - @bombfarm/domain@0.10.2
+
 ## 0.3.4
 
 ### Patch Changes
