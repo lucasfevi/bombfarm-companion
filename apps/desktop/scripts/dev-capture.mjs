@@ -1,5 +1,7 @@
 import { spawnSync } from 'node:child_process';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import process from 'node:process';
 
@@ -80,6 +82,33 @@ function captureDirectory() {
   return path.join(appData, DEV_DATA_DIR_NAME, 'observation-capture');
 }
 
+/**
+ * Marker input. Main polls `mark.txt` for content changes, so each line carries an incrementing
+ * ordinal — otherwise typing the same note twice would leave the file byte-identical and the
+ * second marker would never be seen.
+ *
+ * Failures here are announced and swallowed: losing an annotation must never take down the run
+ * that is producing the recording.
+ */
+function startMarkerInput(directory) {
+  const markPath = path.join(directory, 'mark.txt');
+  let ordinal = 0;
+
+  const rl = readline.createInterface({ input: process.stdin, terminal: false });
+  rl.on('line', (line) => {
+    const label = line.trim();
+    if (label === '') return;
+    ordinal += 1;
+    try {
+      mkdirSync(directory, { recursive: true });
+      writeFileSync(markPath, `${ordinal} ${label}`, 'utf8');
+      console.log(`  marker ${ordinal}: ${label}`);
+    } catch (error) {
+      console.warn(`  !! could not write the marker: ${error.message}`);
+    }
+  });
+}
+
 const applied = [useDefault('BFC_OBSERVATION_CAPTURE', '1'), useDefault('BFC_FLAVOR', 'dev')];
 
 runBuildStep('predev');
@@ -94,6 +123,9 @@ console.log('');
 console.log('  !! These recordings contain LIVE ACCOUNT DATA from your own game session.');
 console.log('     Nothing deletes them for you, and they must never be committed.');
 console.log('     The session token is redacted; everything else is recorded as observed.');
+console.log('  Type a note and press Enter at any time to drop a labelled marker into the recording.');
 console.log('');
+
+startMarkerInput(captureDirectory());
 
 await import('./dev.mjs');

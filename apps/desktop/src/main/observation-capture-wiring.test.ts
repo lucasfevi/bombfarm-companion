@@ -38,7 +38,10 @@ describe('the developer observation capture is wired to the real packaged flag',
   it('asks the gate with the app environment answer, never a literal and never an environment read', () => {
     const construction = constructionBody(source, 'createObservationCapture({');
 
-    expect(construction).toContain('enabled: isObservationCaptureEnabled(process.env, resolveAppEnv().isPackaged)');
+    expect(source).toContain(
+      'const observationCaptureEnabled = isObservationCaptureEnabled(process.env, resolveAppEnv().isPackaged)',
+    );
+    expect(construction).toContain('enabled: observationCaptureEnabled');
     expect(construction).toContain('isPackaged: resolveAppEnv().isPackaged');
     expect(construction).not.toContain('isPackaged: false');
     expect(construction).not.toContain('isPackaged: true');
@@ -67,5 +70,21 @@ describe('the developer observation capture is wired to the real packaged flag',
     expect(teardownAt).toBeGreaterThan(-1);
     expect(closeAt).toBeGreaterThan(teardownAt);
     expect(closeAt).toBeLessThan(body.indexOf('accountStore'));
+  });
+
+  it('stops the marker watch in the same quit handler, before the recorder it feeds is closed', () => {
+    const body = beforeQuitBody(source);
+    const stopAt = body.indexOf('observationMarkWatch?.stop()');
+
+    expect(stopAt).toBeGreaterThan(-1);
+    expect(stopAt).toBeLessThan(body.indexOf('observationCapture?.close()'));
+  });
+
+  it('polls for markers only when the mode is on, so a shipped build never reads that file', () => {
+    const guardAt = source.indexOf('if (observationCaptureEnabled) {');
+    const watchAt = source.indexOf('createMarkWatch({');
+
+    expect(guardAt).toBeGreaterThan(-1);
+    expect(watchAt).toBeGreaterThan(guardAt);
   });
 });

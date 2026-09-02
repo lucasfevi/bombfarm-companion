@@ -63,6 +63,7 @@ import {
   isObservationCaptureEnabled,
   type ObservationCapture,
 } from './live-source/observation-capture.js';
+import { createMarkWatch, type MarkWatch } from './live-source/observation-mark-watch.js';
 import {
   createReplayTapFactory,
   isReplayLiveSourceEnabled,
@@ -119,6 +120,7 @@ let consentStore: ConsentStore | null = null;
 let settingsStore: SettingsStore | null = null;
 let liveSource: LiveSource | null = null;
 let observationCapture: ObservationCapture | null = null;
+let observationMarkWatch: MarkWatch | null = null;
 let liveFastPublisher: LiveFastPublisher | null = null;
 let triggeredRefresh: TriggeredRefresh | null = null;
 let marketService: MarketService | null = null;
@@ -728,15 +730,29 @@ async function bootstrap(): Promise<void> {
   // identify and discards. Both the gate here and the recorder's own constructor are handed
   // Electron's real packaged answer, so no environment can talk an installed build into writing
   // live account traffic to disk.
+  const observationCaptureEnabled = isObservationCaptureEnabled(process.env, resolveAppEnv().isPackaged);
   const observationCaptureStartedAt = Date.now();
   const observationCaptureDestination = observationCaptureFilePath(userDataDir, observationCaptureStartedAt);
   observationCapture = createObservationCapture({
-    enabled: isObservationCaptureEnabled(process.env, resolveAppEnv().isPackaged),
+    enabled: observationCaptureEnabled,
     isPackaged: resolveAppEnv().isPackaged,
     destination: observationCaptureDestination,
     appendPort: nodeObservationAppendPort(observationCaptureDestination),
     log,
   });
+
+  // Only polled when the mode is actually on: a shipped build must not read a file every half
+  // second for a recorder it does not have.
+  if (observationCaptureEnabled) {
+    observationMarkWatch = createMarkWatch({
+      path: path.join(path.dirname(observationCaptureDestination), 'mark.txt'),
+      readFile: (markPath) => (fs.existsSync(markPath) ? fs.readFileSync(markPath, 'utf8') : null),
+      onMark: (label) => {
+        observationCapture?.mark(label, Date.now());
+      },
+    });
+    observationMarkWatch.start();
+  }
 
   const replayLive = isReplayLiveSourceEnabled(process.env, resolveAppEnv().isPackaged);
   if (replayLive) {
@@ -1040,6 +1056,8 @@ if (!gotLock) {
     triggeredRefresh = null;
     void liveSource?.teardown();
     liveSource = null;
+    observationMarkWatch?.stop();
+    observationMarkWatch = null;
     observationCapture?.close();
     observationCapture = null;
     lastIngestedRotationBody = null;
