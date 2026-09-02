@@ -24,6 +24,11 @@ export const ptBR: Copy = {
   shellUpdateReady: 'Reinicie para atualizar',
   shellUpdateOpenSettings: 'Abrir as configurações de atualização',
   shellCoffeeLabel: 'Me pague um café',
+  shellReferralLabel:
+    'Copiar meu código de indicação — nós dois ganhamos uma recompensa quando você passar da fase 151',
+  shellReferralCopied: 'Código de indicação copiado',
+  shellReferralCopyManual:
+    'Área de transferência indisponível — o código está selecionado, aperte Control e C para copiar.',
 
   // empty* — placeholder states shown before real data has arrived
   emptyBridgeUnavailableTitle: 'Ponte de comunicação indisponível',
@@ -127,6 +132,9 @@ export const ptBR: Copy = {
   settingsSupportCoffeeLabel: 'Me pague um café',
   settingsSupportCoffeeHelp: 'O companion é gratuito e continua gratuito. Abre a página no seu navegador.',
   settingsSupportCoffeeAction: 'Me pague um café',
+  settingsSupportReferralLabel: 'Código de indicação',
+  settingsSupportReferralHelp:
+    'Cola na tela de convite do jogo. Cada conta usa um código de indicação só, e quando você passar da fase 151 a gente ganha uma recompensa.',
 
   // consentGate* — o portão de permissão mostrado no lugar do conteúdo do app quando o acesso não é permitido
   consentGateTitle: 'Este app precisa da sua permissão para funcionar',

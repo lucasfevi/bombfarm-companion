@@ -1,9 +1,5 @@
 /**
- * The maintainer's in-game referral code, surfaced in the topbar chip, the footer
- * line and the first-run notice.
- *
- * Both sides receive a reward once the invited player clears stage 151, so the
- * copy states the mutual benefit rather than presenting it as a one-way favour.
- * Update here — every surface reads this constant.
+ * Re-exported so the planner's surfaces keep importing the code from `@/shared`, while the value
+ * itself is shared with the desktop app rather than duplicated per app.
  */
-export const REFERRAL_CODE = 'F-X7BTKJPP';
+export { REFERRAL_CODE } from '@bombfarm/domain/referral';
