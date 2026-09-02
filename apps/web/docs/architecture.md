@@ -30,7 +30,7 @@ Six feature slices, each with a required `index.ts` public-API barrel — nothin
 | Slice | Owns |
 | --- | --- |
 | `planner/` | Composer, tab stage (`PlannerTabs`), per-tab panels (Abilities / Gear / Account / Points), hero-draft action hooks, `planner-tab` model |
-| `account/` | Account column — house/level, plain-text skill-tree totals (import-sourced, read-only), team buffs |
+| `account/` | Account column — house/level, plain-text skill-tree totals (import-sourced, read-only), team buffs, and the holdings section (what the account could sell). The panels themselves are drawn by `@bombfarm/account` (`packages/account/src/panels`, `packages/account/src/holdings`), prop-driven and language-blind, so the desktop app renders the same ones; this slice keeps the store reads, the labels and `model/account-holdings.ts` that feed them |
 | `gear/` | `SlotEditor`, gear slots grid, gear domain UI |
 | `roster/` | Roster table / sort / open-state hooks (see the dead-code note below), hero picker |
 | `phases/` | Farm Ranking board + phase explorer + phase page-state model — slice name kept from the pre-rename `/phases` route (deliberate, see the routes section below) |
