@@ -15,6 +15,7 @@ import {
   createLogger,
   createPublisher,
   deriveSpacing,
+  incompleteStages,
   itemRowsFrom,
   nextCoolDown,
   quoteRowsFrom,
@@ -56,6 +57,7 @@ const statsFixture = (overrides = {}) => ({
   rateLimitHits: 0,
   rateLimitHitsDerived: 0,
   enumerationComplete: true,
+  discoveryComplete: true,
   quotesComplete: true,
   anomalies: [],
   unmappedTags: [],
@@ -300,6 +302,56 @@ describe('the cool-down ladder', () => {
     expect(h.sleeps.at(-1)).toBe(MIN_PASS_MS);
   });
 
+  it('names every stage that did not finish, and nothing when all of them did', () => {
+    expect(incompleteStages(statsFixture())).toEqual([]);
+    expect(incompleteStages(statsFixture({ enumerationComplete: false }))).toEqual(['enumerate']);
+    expect(incompleteStages(statsFixture({ discoveryComplete: false }))).toEqual(['tag']);
+    expect(incompleteStages(statsFixture({ quotesComplete: false }))).toEqual(['quote']);
+  });
+
+  it('treats a stage that never reported as unfinished, not as finished', () => {
+    const silent = statsFixture();
+    delete silent.discoveryComplete;
+    expect(incompleteStages(silent)).toEqual(['tag']);
+  });
+
+  it('climbs when a pass dies enumerating, though it never reached a quote to fail at', async () => {
+    // The witnessed shape: enumeration broke, so the rotation was never entered and reports
+    // itself complete having had nothing to leave undone. Reading that alone reset the ladder.
+    const diedEnumerating = statsFixture({
+      enumerationComplete: false,
+      discoveryComplete: false,
+      quotesComplete: true,
+      rowsSeen: 0,
+      searchCalls: 6,
+      quoteCalls: 0,
+      quotesOk: 0,
+      rateLimitHits: 5,
+      quotes: new Map(),
+    });
+
+    const h = harness({
+      maxPasses: 3,
+      runSweep: async () => ({ snapshot: snapshotFixture(), stats: diedEnumerating }),
+    });
+    await runCollector(h.deps);
+
+    expect(h.sleeps).toEqual([15 * 60_000, 30 * 60_000, 60 * 60_000]);
+  });
+
+  it('climbs when a pass dies tagging, having enumerated and quoted nothing', async () => {
+    const h = harness({
+      maxPasses: 2,
+      runSweep: async () => ({
+        snapshot: snapshotFixture(),
+        stats: statsFixture({ discoveryComplete: false, quotesOk: 0, quotes: new Map() }),
+      }),
+    });
+    await runCollector(h.deps);
+
+    expect(h.sleeps).toEqual([15 * 60_000, 30 * 60_000]);
+  });
+
   it('enters the ladder for a rotation cut short, while still publishing and persisting it', async () => {
     const persisted = [];
     const h = harness({
@@ -442,6 +494,48 @@ describe('the log', () => {
     expect(byEvent.get('tags.unmapped').lvl).toBe('warn');
     expect(byEvent.get('quote.circuitBroken').lvl).toBe('error');
     expect(byEvent.get('sweep.line').message).toBe('tagged 2 rows in 9 calls');
+  });
+
+  it('says outright that a pass collected nothing, and which stage cost it', async () => {
+    const h = harness({
+      runSweep: async () => ({
+        snapshot: snapshotFixture(),
+        stats: statsFixture({
+          enumerationComplete: false,
+          discoveryComplete: false,
+          rowsSeen: 0,
+          searchCalls: 6,
+          quoteCalls: 0,
+          quotesOk: 0,
+          rateLimitHits: 5,
+          quotes: new Map(),
+        }),
+      }),
+    });
+    await runCollector(h.deps);
+
+    const byEvent = new Map(h.lines.map((line) => JSON.parse(line)).map((e) => [e.evt, e]));
+    expect(byEvent.get('pass.collectedNothing')).toMatchObject({
+      lvl: 'error',
+      rows: 0,
+      searchCalls: 6,
+      quoteCalls: 0,
+      rateLimitHits: 5,
+    });
+    expect(byEvent.get('pass.incomplete')).toMatchObject({
+      lvl: 'error',
+      stages: ['enumerate', 'tag'],
+      quoted: 0,
+    });
+  });
+
+  it('stays quiet about both when the pass finished and collected', async () => {
+    const h = harness();
+    await runCollector(h.deps);
+
+    const events = h.lines.map((line) => JSON.parse(line).evt);
+    expect(events).not.toContain('pass.collectedNothing');
+    expect(events).not.toContain('pass.incomplete');
   });
 });
 

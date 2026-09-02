@@ -418,6 +418,25 @@ export function nextCoolDown(currentMs) {
   return COOL_DOWN_LADDER_MS[Math.min(rung + 1, COOL_DOWN_LADDER_MS.length - 1)];
 }
 
+const PASS_STAGES = [
+  ['enumerate', 'enumerationComplete'],
+  ['tag', 'discoveryComplete'],
+  ['quote', 'quotesComplete'],
+];
+
+/**
+ * Which stages of the pass did not finish, named rather than counted so the log says what the
+ * cool-down is answering.
+ *
+ * A stage is complete only when it says so. Reading `quotesComplete` alone called a pass that
+ * died during enumeration complete — it never reached a quote, so nothing was left incomplete —
+ * which reset the ladder to zero and retried at once, holding a temporary block open at 8-9
+ * passes an hour against the 1 an hour that let the address recover.
+ */
+export function incompleteStages(stats) {
+  return PASS_STAGES.filter(([, flag]) => stats[flag] !== true).map(([stage]) => stage);
+}
+
 export function runRowFrom(stats, snapshotBytes) {
   return {
     rows_seen: stats.rowsSeen,
@@ -444,9 +463,9 @@ export function runRowFrom(stats, snapshotBytes) {
  * The run row is written in a `finally`, so a pass that throws still leaves a row carrying its
  * error. Health in one query would otherwise under-count failures as passes that never happened.
  *
- * A pass that completes with the rotation cut short is not an error — it publishes and persists
- * what it got — but it still enters the cool-down ladder, because a tripped breaker is the exact
- * signal the ladder exists for.
+ * A pass cut short at any stage is not an error — it publishes and persists what it got — but it
+ * still enters the cool-down ladder, because a tripped breaker is the exact signal the ladder
+ * exists for.
  */
 export async function runCollector({
   config,
@@ -486,6 +505,24 @@ export async function runCollector({
       });
       logSweepStats(log, stats);
 
+      const incomplete = incompleteStages(stats);
+      if (incomplete.length > 0) {
+        log('pass.incomplete', { pass, stages: incomplete, quoted: stats.quotesOk }, 'error');
+      }
+      if (stats.quotesOk === 0) {
+        log(
+          'pass.collectedNothing',
+          {
+            pass,
+            rows: stats.rowsSeen,
+            searchCalls: stats.searchCalls,
+            quoteCalls: stats.quoteCalls,
+            rateLimitHits: stats.rateLimitHits,
+          },
+          'error',
+        );
+      }
+
       const body = JSON.stringify(snapshot);
       writeSnapshot(config.snapshotPath, body);
       row = { ...row, ...runRowFrom(stats, body.length) };
@@ -496,7 +533,7 @@ export async function runCollector({
       row.published_release = await publishRelease(body);
       row.published_branch = await publishBranch(body);
 
-      coolDownMs = stats.quotesComplete ? 0 : nextCoolDown(coolDownMs);
+      coolDownMs = incomplete.length === 0 ? 0 : nextCoolDown(coolDownMs);
     } catch (err) {
       row.error = String(err?.stack ?? err);
       log('pass.failed', { pass, error: row.error }, 'error');
