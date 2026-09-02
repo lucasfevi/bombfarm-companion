@@ -42,7 +42,9 @@ export const SectionHeadingLevel3: Story = {
     <div className="w-[26rem]">
       <SettingsSection title="Advanced" headingLevel={3}>
         <SettingsRow label="Row under an h3 section">
-          <span className="text-sm text-muted">control</span>
+          <span data-settings-value className="text-sm text-muted">
+            control
+          </span>
         </SettingsRow>
       </SettingsSection>
     </div>
