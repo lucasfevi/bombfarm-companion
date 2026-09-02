@@ -43,6 +43,24 @@ the market moves over time have an answer a single current snapshot cannot give.
 
 The published file's schema is unchanged, and so is everything below about how a pass builds it.
 
+## Nothing else notices when it stops
+
+Every way the snapshot can stop being produced has the same symptom — the file simply stops
+changing — so
+[`.github/workflows/market-snapshot-freshness.yml`](../.github/workflows/market-snapshot-freshness.yml)
+is what notices. Hourly, it fetches the file both apps read and fails when `generatedUtc` is more
+than six hours old, when the body does not parse, when `entries` is empty, or when
+`coverage.matchedCatalogKeys` is 0. A failing scheduled run notifies the repository owner, which
+is the whole mechanism.
+
+The last of those four is the one with a precedent: a partial sweep once published an artifact
+that was fresh, valid and **useless** — no inventory item could look up a price in it — and a
+freshness check alone would have called it healthy.
+
+It makes one GET of a public file, so it never calls Steam and installs nothing, and it says only
+that the snapshot has not advanced rather than guessing why. The threshold lives once, in
+`tools/market-snapshot/freshness.mjs`.
+
 ## Enumerate first, then ask what things are
 
 The sweep is two passes, and the order is the whole design.
@@ -240,3 +258,12 @@ that completes — both asserted by observing the write rather than reading a va
 runs only when a human asks — false if a cron is spliced back in, false if the manual trigger is
 stripped — and that it is one time-boxed job which publishes whatever it got, never commits to a
 branch this repository releases from, and never writes the source tree.
+
+`tools/market-snapshot/freshness.test.mjs` proves each of the alarm's four checks red against a
+snapshot broken in exactly that one way, with a healthy one green beside it — a monitor never
+observed failing has not been verified.
+
+`tools/market-snapshot-freshness-workflow.test.mjs` holds the alarm to its shape: a live hourly
+schedule, one time-boxed read-only job with no escape hatch, and every field the checker claims to
+read still being read. It also pins the alarm's URL to the two shipped clients' own, so moving the
+publish target cannot leave the monitor watching an address nothing uses.
