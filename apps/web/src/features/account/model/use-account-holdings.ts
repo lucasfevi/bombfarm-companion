@@ -10,9 +10,9 @@ import { loadInventoryView } from '@/shared/lib/inventory-view-storage';
 import { selectHeroes, usePlannerStore } from '@/shared/stores';
 import {
   accountHoldingsFrom,
-  bagFromStorage,
+  holdingsComponents,
   holdingsLabels,
-  holdingsRows,
+  inventoryFromStorage,
   priceableHeroes,
   skinsWornBy,
 } from './account-holdings';
@@ -24,30 +24,30 @@ import {
  * against one market snapshot, and each read has its own answer for "could this be read at all" —
  * the page's job is layout.
  */
-export function useAccountHoldings(): Omit<HoldingsViewProps, 'bagLink' | 'className'> {
+export function useAccountHoldings(): Omit<HoldingsViewProps, 'inventoryLink' | 'className'> {
   const { t, lang } = useAppLang();
   const { snapshot, generatedUtc } = useMarketSnapshot();
   const heroes = usePlannerStore(selectHeroes);
   // The store's import stamp is the change signal, not the data: an import writes both the store
-  // and the stored bag, so re-reading on it keeps the two in step. Read in an effect, never during
-  // render — this route prerenders to static HTML, where `localStorage` does not exist.
+  // and the stored inventory, so re-reading on it keeps the two in step. Read in an effect, never
+  // during render — this route prerenders to static HTML, where `localStorage` does not exist.
   const importedAt = usePlannerStore((state) => state.inventory.importedAt);
-  const [bag, setBag] = useState<InventoryViewItem[] | null>(null);
+  const [inventory, setInventory] = useState<InventoryViewItem[] | null>(null);
 
   useEffect(() => {
-    setBag(bagFromStorage(loadInventoryView()));
+    setInventory(inventoryFromStorage(loadInventoryView()));
   }, [importedAt]);
 
   const skinsWorn = useMemo(() => skinsWornBy(heroes), [heroes]);
   const sellable = useMemo(() => priceableHeroes(heroes), [heroes]);
   const holdings = useMemo(
-    () => accountHoldingsFrom({ bag, heroes: sellable, skinsWorn, snapshot }),
-    [bag, sellable, skinsWorn, snapshot],
+    () => accountHoldingsFrom({ inventory, heroes: sellable, skinsWorn, snapshot }),
+    [inventory, sellable, skinsWorn, snapshot],
   );
   const labels = useMemo(() => holdingsLabels(t, lang), [t, lang]);
 
   return {
-    ...holdingsRows(holdings),
+    ...holdingsComponents(holdings, sellable, lang),
     labels,
     footnote: generatedUtc == null ? undefined : formatPricesUpdated(generatedUtc, lang),
   };

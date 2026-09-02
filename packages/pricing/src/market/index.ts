@@ -95,4 +95,5 @@ export {
   type AccountHoldingsInput,
   type HoldingComponent,
   type HoldingsTally,
+  type SkinsTally,
 } from './holdings.js';

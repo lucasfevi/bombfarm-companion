@@ -8,7 +8,7 @@ import type {
   AccountIdentityLabels,
   AccountTreeLabels,
 } from '@bombfarm/account/panels';
-import type { HoldingsLabels, HoldingsRowId } from '@bombfarm/account/holdings';
+import type { HoldingsComponentId, HoldingsLabels } from '@bombfarm/account/holdings';
 import { formatNumber } from '@bombfarm/ui';
 import { houseLabel } from '@bombfarm/domain/game-labels';
 import { formatPhaseLabel } from '@bombfarm/farm';
@@ -102,13 +102,13 @@ export function accountTreeLabels(t: Copy, lang: DomainLang): AccountTreeLabels 
 }
 
 export function accountHoldingsLabels(t: Copy, locale: AppLocale): HoldingsLabels {
-  const titles: Record<HoldingsRowId, string> = {
-    bag: t.accountHoldingsBag,
+  const titles: Record<HoldingsComponentId, string> = {
+    inventory: t.accountHoldingsInventory,
     heroes: t.accountHoldingsHeroes,
     skins: t.accountHoldingsSkins,
   };
-  const row = (rowId: HoldingsRowId, coverage: string, withheld: string) => ({
-    title: titles[rowId],
+  const component = (componentId: HoldingsComponentId, coverage: string, withheld: string) => ({
+    title: titles[componentId],
     coverage: (priced: number, eligible: number) => sub(coverage, { priced, eligible }),
     withheld,
   });
@@ -118,13 +118,20 @@ export function accountHoldingsLabels(t: Copy, locale: AppLocale): HoldingsLabel
     partialTotal: t.accountHoldingsPartialTotal,
     amount: (value, currency) => formatMoney(value, locale, currency),
     coverage: (priced, eligible) => sub(t.accountHoldingsCoverage, { priced, eligible }),
-    missing: (rows) =>
-      sub(t.accountHoldingsMissing, { rows: rows.map((rowId) => titles[rowId]).join(', ') }),
-    rows: {
-      bag: row('bag', t.accountHoldingsBagCoverage, t.accountHoldingsBagWithheld),
-      heroes: row('heroes', t.accountHoldingsHeroesCoverage, t.accountHoldingsHeroesWithheld),
-      skins: row('skins', t.accountHoldingsSkinsCoverage, t.accountHoldingsSkinsWithheld),
+    missing: (components) =>
+      sub(t.accountHoldingsMissing, {
+        rows: components.map((componentId) => titles[componentId]).join(', '),
+      }),
+    components: {
+      inventory: component(
+        'inventory',
+        t.accountHoldingsInventoryCoverage,
+        t.accountHoldingsInventoryWithheld,
+      ),
+      heroes: component('heroes', t.accountHoldingsHeroesCoverage, t.accountHoldingsHeroesWithheld),
+      skins: component('skins', t.accountHoldingsSkinsCoverage, t.accountHoldingsSkinsWithheld),
     },
+    unpriced: t.accountHoldingsUnpriced,
     heroesAreAFloor: t.accountHoldingsHeroesFloor,
     skinsCountedWhileWorn: t.accountHoldingsSkinsWorn,
   };

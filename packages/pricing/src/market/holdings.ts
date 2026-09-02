@@ -18,7 +18,7 @@ export function boughtSkinsWorn(skinValues: readonly number[]): number[] {
   return [...bought].sort((left, right) => left - right);
 }
 
-export const HOLDING_COMPONENTS = ['bag', 'heroes', 'skins'] as const;
+export const HOLDING_COMPONENTS = ['inventory', 'heroes', 'skins'] as const;
 export type HoldingComponent = (typeof HOLDING_COMPONENTS)[number];
 
 export interface HoldingsTally {
@@ -34,18 +34,33 @@ export interface HoldingsTally {
   eligible: number;
   /** True when the caller could not supply this component's account data at all. */
   withheld: boolean;
+  /**
+   * What the market said about each thing this component holds — one per thing given, in the order
+   * it was given, so a caller can name the source of a price without resolving anything a second
+   * time. Empty for a withheld component.
+   */
+  prices: ResolvedPrice[];
+}
+
+/**
+ * Skins are the one component priced over a list the caller never handed in: the input is per hero,
+ * and one purchase dresses any number of them, so the prices are per distinct bought skin.
+ * `skinIndexes` is that list, in the order `prices` follows.
+ */
+export interface SkinsTally extends HoldingsTally {
+  skinIndexes: number[];
 }
 
 export interface AccountHoldings {
   /** The currency asked for, upper-cased. */
   currency: string;
-  /** `bag`, `heroes` and `skins` summed. */
+  /** `inventory`, `heroes` and `skins` summed. */
   total: number;
   priced: number;
   eligible: number;
-  bag: HoldingsTally;
+  inventory: HoldingsTally;
   heroes: HoldingsTally;
-  skins: HoldingsTally;
+  skins: SkinsTally;
   /**
    * The components whose account data the caller could not supply. A non-empty list means `total`
    * covers only part of the account and must not be shown as what the account is worth.
@@ -56,8 +71,8 @@ export interface AccountHoldings {
 }
 
 export interface AccountHoldingsInput {
-  /** Every priceable row in the bag, or null when the bag could not be read. */
-  bag: readonly PriceableItem[] | null;
+  /** Every priceable row in the inventory, or null when the inventory could not be read. */
+  inventory: readonly PriceableItem[] | null;
   /** Every owned hero, or null when the roster could not be read. */
   heroes: readonly PriceableHero[] | null;
   /** Every hero's worn `skin` index, or null when the roster could not be read. */
@@ -72,18 +87,18 @@ export interface AccountHoldingsInput {
  * nor the denominator. Everything else counts as eligible whether or not anything is listed today,
  * because the total is always of a subset and the coverage is what says so.
  */
-function tally(resolved: readonly ResolvedPrice[]): HoldingsTally {
+function tally(prices: ResolvedPrice[]): HoldingsTally {
   let amount = 0;
   let priced = 0;
   let eligible = 0;
-  for (const price of resolved) {
+  for (const price of prices) {
     if (price.key == null) continue;
     eligible += 1;
     if (price.state !== 'priced' || price.amount == null) continue;
     amount += price.amount;
     priced += 1;
   }
-  return { amount, priced, eligible, withheld: false };
+  return { amount, priced, eligible, withheld: false, prices };
 }
 
 const withheldTally = (): HoldingsTally => ({
@@ -91,30 +106,40 @@ const withheldTally = (): HoldingsTally => ({
   priced: 0,
   eligible: 0,
   withheld: true,
+  prices: [],
 });
 
 /**
- * What the market says a whole account is worth: the bag, the sellable heroes, and the bought skins
- * those heroes are wearing, each with the count it covers.
+ * What the market says a whole account is worth: the inventory, the sellable heroes, and the bought
+ * skins those heroes are wearing, each with the count it covers and what it said about every piece.
  *
  * Pure and network-free, so every surface showing the figure computes it once and identically.
  */
 export function accountHoldings({
-  bag,
+  inventory,
   heroes,
   skinsWorn,
   snapshot,
   currency = 'USD',
 }: AccountHoldingsInput): AccountHoldings {
   const code = currency.toUpperCase();
-  const parts: Record<HoldingComponent, HoldingsTally> = {
-    bag: bag == null ? withheldTally() : tally(bag.map((it) => resolveItemPrice(it, snapshot, code))),
-    heroes:
-      heroes == null ? withheldTally() : tally(heroes.map((it) => resolveHeroPrice(it, snapshot, code))),
-    skins:
-      skinsWorn == null
+  const bought = skinsWorn == null ? null : boughtSkinsWorn(skinsWorn);
+  const parts: Record<HoldingComponent, HoldingsTally> & { skins: SkinsTally } = {
+    inventory:
+      inventory == null
         ? withheldTally()
-        : tally(boughtSkinsWorn(skinsWorn).map((skin) => resolveSkinPrice(skin, snapshot, code))),
+        : tally(inventory.map((item) => resolveItemPrice(item, snapshot, code))),
+    heroes:
+      heroes == null
+        ? withheldTally()
+        : tally(heroes.map((hero) => resolveHeroPrice(hero, snapshot, code))),
+    skins:
+      bought == null
+        ? { ...withheldTally(), skinIndexes: [] }
+        : {
+            ...tally(bought.map((skin) => resolveSkinPrice(skin, snapshot, code))),
+            skinIndexes: bought,
+          },
   };
 
   const sum = (read: (part: HoldingsTally) => number) =>
@@ -126,7 +151,7 @@ export function accountHoldings({
     total: sum((part) => part.amount),
     priced: sum((part) => part.priced),
     eligible: sum((part) => part.eligible),
-    bag: parts.bag,
+    inventory: parts.inventory,
     heroes: parts.heroes,
     skins: parts.skins,
     withheld,

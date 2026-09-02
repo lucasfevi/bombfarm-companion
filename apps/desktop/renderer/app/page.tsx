@@ -407,7 +407,7 @@ function HomePageContent({
             <InventoryView />
           ) : activeNavId === 'account' ? (
             <AccountView
-              onOpenBag={() => {
+              onOpenInventory={() => {
                 setActiveNavId('inventory');
               }}
             />

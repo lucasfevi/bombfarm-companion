@@ -36,8 +36,10 @@ vi.mock('../../lib/market/use-market-snapshot', () => ({
 const CAPTURED_AT = '2026-08-12T00:00:00.000Z';
 const EARLIER = '2026-08-11T00:00:00.000Z';
 const HERO_RARITY = 4;
-const BAG_DEF = 'espada_ferro';
-const BAG_RARITY = 2;
+/** A rarity the snapshot below quotes nothing for, so its hero is sellable and unpriced. */
+const UNLISTED_HERO_RARITY = 2;
+const ITEM_DEF = 'espada_ferro';
+const ITEM_RARITY = 2;
 
 function entry(key: string, hashName: string, lowestUsd: number): MarketEntry {
   return {
@@ -65,7 +67,7 @@ function snapshot(): MarketSnapshot {
   const entries = [
     entry(heroPriceKey(HERO_RARITY), 'Hero (Legendary)', 20),
     entry(categoryKey(SKIN_CATEGORY, 'Forest Warden Skin'), 'Forest Warden Skin', 7),
-    entry(priceKey(BAG_DEF, BAG_RARITY), 'Iron Sword (Rare)', 3),
+    entry(priceKey(ITEM_DEF, ITEM_RARITY), 'Iron Sword (Rare)', 3),
   ];
   const index: Record<string, number> = {};
   entries.forEach((row, position) => {
@@ -109,7 +111,11 @@ function resolvedFidelity(overrides: Partial<AccountFidelity> = {}): AccountFide
 function payloadOf(fidelity: AccountFidelity = resolvedFidelity()): AccountPayload {
   return {
     account: { phase: 60, max_phase: 88, player_name: 'Tester', account_id: 1 },
-    heroes: [{ id: 'h1', rarity: HERO_RARITY, skin: 4, marketable: true }],
+    heroes: [
+      { id: 'h1', name: 'Vex', rarity: HERO_RARITY, skin: 4, marketable: true },
+      { id: 'h2', name: 'Nim', rarity: UNLISTED_HERO_RARITY, skin: 0, marketable: true },
+      { id: 'h3', name: 'Bound', rarity: HERO_RARITY, skin: 0, marketable: false },
+    ],
     skills: {
       field_slots: 6,
       totals: {
@@ -128,7 +134,7 @@ function payloadOf(fidelity: AccountFidelity = resolvedFidelity()): AccountPaylo
       },
     },
     casa: { active_casa: 1, levels: [10], slots: 3, cycle_secs: 1168 },
-    items: [{ id: 'i1', def_id: BAG_DEF, rarity: BAG_RARITY, category: 0, tradable: true }],
+    items: [{ id: 'i1', def_id: ITEM_DEF, rarity: ITEM_RARITY, category: 0, tradable: true }],
     fidelity,
   };
 }
@@ -143,7 +149,14 @@ function loaded(payload: AccountPayload): AccountViewState {
 }
 
 function html(): string {
-  return renderToStaticMarkup(createElement(AccountView, { onOpenBag: () => {} }));
+  return renderToStaticMarkup(createElement(AccountView, { onOpenInventory: () => {} }));
+}
+
+/** Every occurrence of a repeated `data-testid` slot, in document order. */
+function slots(markup: string, testId: string): string[] {
+  return [...markup.matchAll(new RegExp(`data-testid="${testId}"[^>]*>([^<]*)<`, 'g'))].map(
+    (match) => match[1] ?? '',
+  );
 }
 
 beforeEach(() => {
@@ -194,7 +207,55 @@ describe('the Account screen', () => {
     const markup = html();
     expect(markup).toContain(en.accountHoldingsPartialTotal);
     expect(markup).not.toContain(en.accountHoldingsTotal);
-    expect(markup).toContain('account-holdings-bag-withheld');
+    expect(markup).toContain('account-holdings-inventory-withheld');
+  });
+});
+
+describe('the things each holdings component is made of', () => {
+  it('lists every sellable hero by name, beside the rarity the market quotes it on', () => {
+    const markup = html();
+    expect(slots(markup, 'account-holdings-heroes-entry-name')).toEqual(['Vex', 'Nim']);
+    expect(slots(markup, 'account-holdings-heroes-entry-detail')).toEqual(['Legendary', 'Rare']);
+  });
+
+  it('leaves the hero the game forbids selling out of the list, as it is out of the figure', () => {
+    const markup = html();
+    expect(markup).not.toContain('>Bound<');
+    expect(slots(markup, 'account-holdings-heroes-entry')).toHaveLength(2);
+  });
+
+  it('keeps a sellable hero the market lists nothing for, and marks it rather than dropping it', () => {
+    // The coverage line reads "1 of 2 sellable heroes priced"; the marked entry is what says
+    // WHICH of the two the figure left out.
+    const markup = html();
+    expect(slots(markup, 'account-holdings-heroes-entry-amount')).toEqual(['R$20.00']);
+    expect(slots(markup, 'account-holdings-heroes-entry-unpriced')).toEqual([
+      en.accountHoldingsUnpriced,
+    ]);
+  });
+
+  it('names a hero the roster carried no name for rather than drawing an empty row', () => {
+    accountState.current = loaded({
+      ...payloadOf(),
+      heroes: [{ id: 'h1', rarity: HERO_RARITY, skin: 0, marketable: true }],
+    });
+    expect(slots(html(), 'account-holdings-heroes-entry-name')).toEqual(['—']);
+  });
+
+  it('lists a bought skin by the listing it appears under, with nothing to tell two apart', () => {
+    const markup = html();
+    expect(slots(markup, 'account-holdings-skins-entry-name')).toEqual(['Forest Warden Skin']);
+    expect(slots(markup, 'account-holdings-skins-entry-detail')).toEqual([]);
+    expect(slots(markup, 'account-holdings-skins-entry-amount')).toEqual(['R$7.00']);
+  });
+
+  it('leaves the inventory column its figure and its link, and no list of dozens of rows', () => {
+    const markup = html();
+    expect(slots(markup, 'account-holdings-inventory-entry')).toEqual([]);
+    expect(markup).not.toContain('account-holdings-inventory-entries');
+    expect(markup).toContain('account-holdings-inventory-amount');
+    expect(markup).toContain('account-holdings-inventory-link');
+    expect(markup).toContain(en.accountHoldingsInventoryLink);
   });
 });
 

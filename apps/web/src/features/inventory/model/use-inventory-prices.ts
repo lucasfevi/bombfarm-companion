@@ -26,17 +26,17 @@ export interface InventoryTotals {
 }
 
 /**
- * What the bag alone could sell, taken from the shared account-wide computation so this screen and
- * the Account page cannot disagree about the component they share. `eligible` is what the game
- * permits selling, which is what the header counts its coverage against.
+ * What the inventory alone could sell, taken from the shared account-wide computation so this
+ * screen and the Account page cannot disagree about the component they share. `eligible` is what
+ * the game permits selling, which is what the header counts its coverage against.
  */
-export function bagTotals(
+export function inventoryTotals(
   items: readonly InventoryViewItem[],
   snapshot: MarketSnapshot | null,
 ): InventoryTotals | null {
   if (snapshot == null) return null;
-  const { bag } = accountHoldings({
-    bag: items.map((item) => ({
+  const { inventory } = accountHoldings({
+    inventory: items.map((item) => ({
       defId: item.defId,
       rarity: item.rarityIdx,
       tradable: item.tradable,
@@ -46,7 +46,7 @@ export function bagTotals(
     snapshot,
     currency: CURRENCY,
   });
-  return { total: bag.amount, priced: bag.priced, tradable: bag.eligible };
+  return { total: inventory.amount, priced: inventory.priced, tradable: inventory.eligible };
 }
 
 /**
@@ -89,9 +89,9 @@ export function useInventoryPrices(view: InventoryView) {
 
   /**
    * Summed over the whole inventory, never the filtered view: narrowing to one set must not
-   * restate the bag as a smaller fortune.
+   * restate what it holds as a smaller fortune.
    */
-  const totals = useMemo(() => bagTotals(view.items, snapshot), [snapshot, view]);
+  const totals = useMemo(() => inventoryTotals(view.items, snapshot), [snapshot, view]);
 
   const priceLabels = useMemo<MarketPriceLabels>(
     () => ({

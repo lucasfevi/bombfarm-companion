@@ -31,7 +31,7 @@ describe('page.tsx routes every nav item', () => {
     expect(source).toContain('<AccountView');
   });
 
-  it('lets the holdings bag row lead to the Inventory tab', () => {
-    expect(source).toMatch(/onOpenBag=\{\(\) => \{\s*setActiveNavId\('inventory'\);/);
+  it('lets the holdings inventory column lead to the Inventory tab', () => {
+    expect(source).toMatch(/onOpenInventory=\{\(\) => \{\s*setActiveNavId\('inventory'\);/);
   });
 });

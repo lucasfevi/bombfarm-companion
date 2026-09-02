@@ -1,7 +1,8 @@
 /**
- * The Inventory header names the BAG and prints the bag component of the account-wide holdings
- * computation, so this screen and the Account screen cannot disagree about the same bag. Rendered
- * rather than asserted on the call, because what matters is the figure that reaches the screen.
+ * The Inventory header names what the INVENTORY holds and prints the inventory component of the
+ * account-wide holdings computation, so this screen and the Account screen cannot disagree about
+ * the same items. Rendered rather than asserted on the call, because what matters is the figure
+ * that reaches the screen.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createElement } from 'react';
@@ -13,7 +14,7 @@ import { buildInventoryView } from '@bombfarm/domain/inventory-view';
 import { en } from '../../lib/copy/en';
 import type { AccountViewState } from '../../lib/account/use-account-view';
 import type { MarketState } from '../../lib/market/market-store';
-import { bagTotals } from '../../lib/account/account-holdings';
+import { inventoryTotals } from '../../lib/account/account-holdings';
 import { formatMoney } from '../../lib/format';
 import { InventoryView } from './inventory-view';
 
@@ -134,9 +135,9 @@ beforeEach(() => {
 });
 
 describe('the Inventory header', () => {
-  it('prints exactly what the shared bag computation returns, and the coverage that goes with it', () => {
-    const totals = bagTotals(buildInventoryView(RAW_ITEMS).items, snapshot());
-    if (totals === null) throw new Error('the snapshot is in hand, so the bag has a figure');
+  it('prints exactly what the shared inventory computation returns, and the coverage with it', () => {
+    const totals = inventoryTotals(buildInventoryView(RAW_ITEMS).items, snapshot());
+    if (totals === null) throw new Error('the snapshot is in hand, so the inventory has a figure');
     expect(totals).toEqual({ total: 6, priced: 2, tradable: 3 });
 
     const markup = html();
@@ -148,7 +149,7 @@ describe('the Inventory header', () => {
     );
   });
 
-  it('names the bag rather than the whole account, which is a different figure on another screen', () => {
+  it('names the inventory rather than the whole account, a different figure on another screen', () => {
     expect(html()).toContain(en.inventoryTotalsTitle);
     expect(en.inventoryTotalsTitle).not.toBe(en.accountHoldingsTotal);
   });

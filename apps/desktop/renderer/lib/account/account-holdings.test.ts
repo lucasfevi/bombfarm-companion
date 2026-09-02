@@ -3,7 +3,12 @@ import type { MarketEntry, MarketSnapshot } from '@bombfarm/pricing';
 import { SKIN_CATEGORY, categoryKey, heroPriceKey, priceKey } from '@bombfarm/pricing';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import type { AccountHoldingsFacts } from './account-facts';
-import { HOLDINGS_CURRENCY, accountHoldingsFrom, bagTotals } from './account-holdings';
+import {
+  HOLDINGS_CURRENCY,
+  accountHoldingsFrom,
+  holdingsComponents,
+  inventoryTotals,
+} from './account-holdings';
 
 const QUOTED = '2026-08-12T00:00:00.000Z';
 
@@ -29,7 +34,7 @@ function entry(key: string, hashName: string, lowestUsd: number | null): MarketE
   };
 }
 
-/** A snapshot quoting one rare hero, one bought skin and one bag item, all in whole USD. */
+/** A snapshot quoting one rare hero, one bought skin and one inventory item, all in whole USD. */
 function snapshotOf(entries: MarketEntry[]): MarketSnapshot {
   const index: Record<string, number> = {};
   entries.forEach((row, position) => {
@@ -62,33 +67,37 @@ function snapshotOf(entries: MarketEntry[]): MarketSnapshot {
 }
 
 const HERO_RARITY = 4;
+/** A rarity the snapshot quotes nothing for, so its hero is sellable and unpriced. */
+const UNLISTED_HERO_RARITY = 2;
 const BOUGHT_SKIN = 4;
-const BAG_DEF = 'espada_ferro';
-const BAG_RARITY = 2;
+/** Named by the skin table, and deliberately absent from the snapshot. */
+const UNLISTED_BOUGHT_SKIN = 5;
+const ITEM_DEF = 'espada_ferro';
+const ITEM_RARITY = 2;
 
 const SNAPSHOT = snapshotOf([
   entry(heroPriceKey(HERO_RARITY), 'Hero (Legendary)', 20),
   entry(categoryKey(SKIN_CATEGORY, 'Forest Warden Skin'), 'Forest Warden Skin', 7),
-  entry(priceKey(BAG_DEF, BAG_RARITY), 'Iron Sword (Rare)', 3),
+  entry(priceKey(ITEM_DEF, ITEM_RARITY), 'Iron Sword (Rare)', 3),
 ]);
 
 function facts(overrides: Partial<AccountHoldingsFacts> = {}): AccountHoldingsFacts {
   return {
-    bag: [{ defId: BAG_DEF, rarity: BAG_RARITY, tradable: true }],
-    heroes: [{ rarity: HERO_RARITY, marketable: true }],
+    inventory: [{ defId: ITEM_DEF, rarity: ITEM_RARITY, tradable: true }],
+    heroes: [{ name: 'Vex', rarity: HERO_RARITY, marketable: true }],
     skinsWorn: [BOUGHT_SKIN],
     ...overrides,
   };
 }
 
-function bagItem(overrides: Partial<InventoryViewItem> = {}): InventoryViewItem {
+function inventoryItem(overrides: Partial<InventoryViewItem> = {}): InventoryViewItem {
   return {
     id: 'i1',
-    defId: BAG_DEF,
+    defId: ITEM_DEF,
     kind: 'equipment',
     categoryCode: 0,
     set: '',
-    rarityIdx: BAG_RARITY,
+    rarityIdx: ITEM_RARITY,
     rarityCode: null,
     slot: null,
     level: 1,
@@ -109,10 +118,10 @@ function bagItem(overrides: Partial<InventoryViewItem> = {}): InventoryViewItem 
 }
 
 describe('what the account could sell', () => {
-  it('quotes the bag, the sellable heroes and the worn bought skins in one figure', () => {
+  it('quotes the inventory, the sellable heroes and the worn bought skins in one figure', () => {
     const holdings = accountHoldingsFrom(facts(), SNAPSHOT);
     expect(holdings.currency).toBe(HOLDINGS_CURRENCY);
-    expect(holdings.bag.amount).toBe(3);
+    expect(holdings.inventory.amount).toBe(3);
     expect(holdings.heroes.amount).toBe(20);
     expect(holdings.skins.amount).toBe(7);
     expect(holdings.total).toBe(30);
@@ -123,9 +132,9 @@ describe('what the account could sell', () => {
     const holdings = accountHoldingsFrom(
       facts({
         heroes: [
-          { rarity: HERO_RARITY, marketable: true },
-          { rarity: HERO_RARITY, marketable: true },
-          { rarity: HERO_RARITY, marketable: false },
+          { name: 'Vex', rarity: HERO_RARITY, marketable: true },
+          { name: 'Ora', rarity: HERO_RARITY, marketable: true },
+          { name: 'Bound', rarity: HERO_RARITY, marketable: false },
         ],
       }),
       SNAPSHOT,
@@ -137,7 +146,7 @@ describe('what the account could sell', () => {
 
   it('reports a sellable hero the market is not quoting as eligible but unpriced', () => {
     const noListings = snapshotOf([entry(heroPriceKey(HERO_RARITY), 'Hero (Legendary)', null)]);
-    const holdings = accountHoldingsFrom(facts({ bag: [], skinsWorn: [] }), noListings);
+    const holdings = accountHoldingsFrom(facts({ inventory: [], skinsWorn: [] }), noListings);
     expect(holdings.heroes.amount).toBe(0);
     expect(holdings.heroes.priced).toBe(0);
     expect(holdings.heroes.eligible).toBe(1);
@@ -159,37 +168,124 @@ describe('what the account could sell', () => {
   });
 
   it('withholds a component whose account data could not be read, rather than calling it zero', () => {
-    const holdings = accountHoldingsFrom(facts({ bag: null }), SNAPSHOT);
-    expect(holdings.bag.withheld).toBe(true);
-    expect(holdings.withheld).toEqual(['bag']);
+    const holdings = accountHoldingsFrom(facts({ inventory: null }), SNAPSHOT);
+    expect(holdings.inventory.withheld).toBe(true);
+    expect(holdings.withheld).toEqual(['inventory']);
     expect(holdings.complete).toBe(false);
     expect(holdings.total).toBe(27);
   });
 });
 
-describe('the bag figure the Inventory header prints', () => {
-  it('is the bag component of the account-wide computation, over the whole bag', () => {
-    const items = [bagItem(), bagItem({ id: 'i2' })];
-    expect(bagTotals(items, SNAPSHOT)).toEqual({ total: 6, priced: 2, tradable: 2 });
-    expect(bagTotals(items, SNAPSHOT)?.total).toBe(
+describe('the things each column lists under its figure', () => {
+  const roster = [
+    { name: 'Vex', rarity: HERO_RARITY, marketable: true },
+    { name: 'Nim', rarity: UNLISTED_HERO_RARITY, marketable: true },
+    { name: 'Bound', rarity: HERO_RARITY, marketable: false },
+  ];
+  const columnsOf = (overrides: Partial<AccountHoldingsFacts> = {}) => {
+    const built = facts({ heroes: roster, ...overrides });
+    return holdingsComponents(accountHoldingsFrom(built, SNAPSHOT), built.heroes, 'en');
+  };
+
+  it('names each sellable hero and the rarity the market quotes it on', () => {
+    expect(columnsOf().heroes.entries).toEqual([
+      { name: 'Vex', detail: 'Legendary', amount: 20 },
+      { name: 'Nim', detail: 'Rare', amount: null },
+    ]);
+  });
+
+  it('follows the language the rest of the screen speaks', () => {
+    const built = facts({ heroes: roster });
+    const columns = holdingsComponents(accountHoldingsFrom(built, SNAPSHOT), built.heroes, 'pt');
+    expect(columns.heroes.entries.map((row) => row.detail)).toEqual(['Lendária', 'Raro']);
+  });
+
+  it('pairs each hero with its own price rather than with the list as a whole', () => {
+    // Two heroes of the SAME rarity carry the same figure, and one of a rarity nobody lists
+    // carries none — an entry taking a neighbour's price would quote the unlisted one.
+    const columns = columnsOf({
+      heroes: [
+        { name: 'Nim', rarity: UNLISTED_HERO_RARITY, marketable: true },
+        { name: 'Vex', rarity: HERO_RARITY, marketable: true },
+      ],
+    });
+    expect(columns.heroes.entries).toEqual([
+      { name: 'Nim', detail: 'Rare', amount: null },
+      { name: 'Vex', detail: 'Legendary', amount: 20 },
+    ]);
+  });
+
+  it('keeps the unpriced entry, which is what makes the coverage line investigable', () => {
+    const columns = columnsOf({ skinsWorn: [BOUGHT_SKIN, UNLISTED_BOUGHT_SKIN] });
+    expect(columns.heroes.priced).toBe(1);
+    expect(columns.heroes.eligible).toBe(2);
+    expect(columns.skins.priced).toBe(1);
+    expect(columns.skins.eligible).toBe(2);
+    expect(columns.skins.entries).toEqual([
+      { name: 'Forest Warden Skin', amount: 7 },
+      { name: 'Shadow Hunter Skin', amount: null },
+    ]);
+  });
+
+  it('names a skin by its listing and gives it nothing to tell two of them apart', () => {
+    for (const skin of columnsOf().skins.entries) {
+      expect(skin.detail).toBeUndefined();
+    }
+  });
+
+  it('drops a worn skin index the table cannot name, which no price could exist for', () => {
+    const columns = columnsOf({ skinsWorn: [BOUGHT_SKIN, 99] });
+    expect(columns.skins.entries).toEqual([{ name: 'Forest Warden Skin', amount: 7 }]);
+    expect(columns.skins.eligible).toBe(1);
+  });
+
+  it('lists nothing under the inventory, which holds more rows than a column can carry', () => {
+    expect(columnsOf().inventory.entries).toEqual([]);
+    expect(columnsOf().inventory.amount).toBe(3);
+  });
+
+  it('lists nothing for a component whose account data could not be read', () => {
+    const columns = columnsOf({ heroes: null, skinsWorn: null });
+    expect(columns.heroes).toEqual({
+      amount: 0,
+      priced: 0,
+      eligible: 0,
+      withheld: true,
+      entries: [],
+    });
+    expect(columns.skins.entries).toEqual([]);
+  });
+});
+
+describe('the inventory figure the Inventory header prints', () => {
+  it('is the inventory component of the account-wide computation, over everything it holds', () => {
+    const items = [inventoryItem(), inventoryItem({ id: 'i2' })];
+    expect(inventoryTotals(items, SNAPSHOT)).toEqual({ total: 6, priced: 2, tradable: 2 });
+    expect(inventoryTotals(items, SNAPSHOT)?.total).toBe(
       accountHoldingsFrom(
-        facts({ bag: items.map((item) => ({ defId: item.defId, rarity: item.rarityIdx, tradable: true })) }),
+        facts({
+          inventory: items.map((item) => ({
+            defId: item.defId,
+            rarity: item.rarityIdx,
+            tradable: true,
+          })),
+        }),
         SNAPSHOT,
-      ).bag.amount,
+      ).inventory.amount,
     );
   });
 
   it('counts an item the game forbids selling in neither the figure nor the coverage', () => {
-    const items = [bagItem(), bagItem({ id: 'i2', tradable: false })];
-    expect(bagTotals(items, SNAPSHOT)).toEqual({ total: 3, priced: 1, tradable: 1 });
+    const items = [inventoryItem(), inventoryItem({ id: 'i2', tradable: false })];
+    expect(inventoryTotals(items, SNAPSHOT)).toEqual({ total: 3, priced: 1, tradable: 1 });
   });
 
   it('counts a tradable item the market is not quoting against the coverage but not the figure', () => {
-    const items = [bagItem(), bagItem({ id: 'i2', defId: 'nao_listado' })];
-    expect(bagTotals(items, SNAPSHOT)).toEqual({ total: 3, priced: 1, tradable: 2 });
+    const items = [inventoryItem(), inventoryItem({ id: 'i2', defId: 'nao_listado' })];
+    expect(inventoryTotals(items, SNAPSHOT)).toEqual({ total: 3, priced: 1, tradable: 2 });
   });
 
   it('has nothing to say with no snapshot in hand', () => {
-    expect(bagTotals([bagItem()], null)).toBeNull();
+    expect(inventoryTotals([inventoryItem()], null)).toBeNull();
   });
 });

@@ -92,11 +92,18 @@ const BOUND_HERO = { rarity: 2, marketable: false };
 const ROYAL_SENTINEL = 8;
 
 const holdingsOf = (
-  bag: { defId: string; rarity: number; tradable: boolean }[] | null,
+  inventory: { defId: string; rarity: number; tradable: boolean }[] | null,
   heroes: { rarity: number; marketable: boolean }[] | null,
   skinsWorn: number[] | null,
   currency?: string,
-) => accountHoldings({ bag, heroes, skinsWorn, snapshot: SNAPSHOT, ...(currency == null ? {} : { currency }) });
+) =>
+  accountHoldings({
+    inventory,
+    heroes,
+    skinsWorn,
+    snapshot: SNAPSHOT,
+    ...(currency == null ? {} : { currency }),
+  });
 
 describe('boughtSkinsWorn', () => {
   it('holds one skin however many heroes are wearing it', () => {
@@ -118,12 +125,22 @@ describe('boughtSkinsWorn', () => {
 });
 
 describe('accountHoldings', () => {
-  it('sums the bag, the heroes and the worn skins into one figure', () => {
+  it('sums the inventory, the heroes and the worn skins into one figure', () => {
     const holdings = holdingsOf([PRICED_ITEM], [PRICED_HERO], [ROYAL_SENTINEL]);
 
-    expect(holdings.bag).toEqual({ amount: 2.5, priced: 1, eligible: 1, withheld: false });
-    expect(holdings.heroes).toEqual({ amount: 10, priced: 1, eligible: 1, withheld: false });
-    expect(holdings.skins).toEqual({ amount: 48.14, priced: 1, eligible: 1, withheld: false });
+    expect(holdings.inventory).toMatchObject({
+      amount: 2.5,
+      priced: 1,
+      eligible: 1,
+      withheld: false,
+    });
+    expect(holdings.heroes).toMatchObject({ amount: 10, priced: 1, eligible: 1, withheld: false });
+    expect(holdings.skins).toMatchObject({
+      amount: 48.14,
+      priced: 1,
+      eligible: 1,
+      withheld: false,
+    });
     expect(holdings.total).toBeCloseTo(60.64);
     expect(holdings).toMatchObject({ priced: 3, eligible: 3, currency: 'USD', complete: true });
     expect(holdings.withheld).toEqual([]);
@@ -138,41 +155,60 @@ describe('accountHoldings', () => {
 
   it('leaves what the game forbids selling out of the value and out of the denominator alike', () => {
     const withBound = holdingsOf([PRICED_ITEM, BOUND_ITEM], [PRICED_HERO, BOUND_HERO], [ROYAL_SENTINEL]);
+    const sellableOnly = holdingsOf([PRICED_ITEM], [PRICED_HERO], [ROYAL_SENTINEL]);
 
-    expect(withBound).toEqual(holdingsOf([PRICED_ITEM], [PRICED_HERO], [ROYAL_SENTINEL]));
+    expect(withBound.total).toBeCloseTo(sellableOnly.total);
+    expect(withBound.priced).toBe(sellableOnly.priced);
     expect(withBound.eligible).toBe(3);
   });
 
   it('counts something sellable that nobody is listing toward coverage, never toward the value', () => {
     const holdings = holdingsOf([PRICED_ITEM, UNLISTED_ITEM, UNKNOWN_ITEM], [], []);
 
-    expect(holdings.bag).toEqual({ amount: 2.5, priced: 1, eligible: 3, withheld: false });
+    expect(holdings.inventory).toMatchObject({
+      amount: 2.5,
+      priced: 1,
+      eligible: 3,
+      withheld: false,
+    });
   });
 
   it('holds one skin however many heroes wear it, and prices it once', () => {
     const dressed = holdingsOf([], [], [ROYAL_SENTINEL, ROYAL_SENTINEL, ROYAL_SENTINEL]);
 
-    expect(dressed.skins).toEqual({ amount: 48.14, priced: 1, eligible: 1, withheld: false });
+    expect(dressed.skins).toMatchObject({
+      amount: 48.14,
+      priced: 1,
+      eligible: 1,
+      withheld: false,
+    });
     expect(dressed).toEqual(holdingsOf([], [], [ROYAL_SENTINEL]));
   });
 
   it('counts a skin index the table cannot name nowhere at all', () => {
     const unnamed = holdingsOf([], [], [ROYAL_SENTINEL, 9]);
+    const named = holdingsOf([], [], [ROYAL_SENTINEL]);
 
     expect(unnamed.skins.eligible).toBe(1);
-    expect(unnamed).toEqual(holdingsOf([], [], [ROYAL_SENTINEL]));
+    expect(unnamed.total).toBeCloseTo(named.total);
   });
 
   it('prices heroes on rarity alone, so a rarity the market never carried only counts as eligible', () => {
     const holdings = holdingsOf([], [PRICED_HERO, { rarity: 4, marketable: true }], []);
 
-    expect(holdings.heroes).toEqual({ amount: 10, priced: 1, eligible: 2, withheld: false });
+    expect(holdings.heroes).toMatchObject({ amount: 10, priced: 1, eligible: 2, withheld: false });
   });
 
   it('contributes nothing for a withheld component and says which one it was', () => {
     const withoutRoster = holdingsOf([PRICED_ITEM], null, [ROYAL_SENTINEL]);
 
-    expect(withoutRoster.heroes).toEqual({ amount: 0, priced: 0, eligible: 0, withheld: true });
+    expect(withoutRoster.heroes).toEqual({
+      amount: 0,
+      priced: 0,
+      eligible: 0,
+      withheld: true,
+      prices: [],
+    });
     expect(withoutRoster.withheld).toEqual(['heroes']);
     expect(withoutRoster.complete).toBe(false);
     expect(withoutRoster.total).toBeCloseTo(50.64);
@@ -181,7 +217,7 @@ describe('accountHoldings', () => {
   it('never reports a withheld account as a complete total', () => {
     const nothing = holdingsOf(null, null, null);
 
-    expect(nothing.withheld).toEqual(['bag', 'heroes', 'skins']);
+    expect(nothing.withheld).toEqual(['inventory', 'heroes', 'skins']);
     expect(nothing.complete).toBe(false);
     expect(nothing.total).toBe(0);
   });
@@ -196,7 +232,7 @@ describe('accountHoldings', () => {
 
   it('prices nothing without a snapshot, and still counts what could be priced', () => {
     const holdings = accountHoldings({
-      bag: [PRICED_ITEM],
+      inventory: [PRICED_ITEM],
       heroes: [PRICED_HERO],
       skinsWorn: [ROYAL_SENTINEL],
       snapshot: null,
@@ -206,5 +242,66 @@ describe('accountHoldings', () => {
     expect(holdings.priced).toBe(0);
     expect(holdings.eligible).toBe(3);
     expect(holdings.complete).toBe(true);
+  });
+});
+
+describe('accountHoldings — the price behind every figure', () => {
+  it('answers for each item in the order the inventory was given', () => {
+    const holdings = holdingsOf([UNLISTED_ITEM, PRICED_ITEM, BOUND_ITEM], [], []);
+
+    expect(holdings.inventory.prices.map((price) => price.state)).toEqual([
+      'no-listing',
+      'priced',
+      'not-tradable',
+    ]);
+    expect(holdings.inventory.prices.map((price) => price.amount)).toEqual([null, 2.5, null]);
+  });
+
+  it('answers for each hero in the order the roster was given', () => {
+    const holdings = holdingsOf([], [BOUND_HERO, PRICED_HERO, { rarity: 4, marketable: true }], []);
+
+    expect(holdings.heroes.prices.map((price) => price.state)).toEqual([
+      'not-tradable',
+      'priced',
+      'unknown',
+    ]);
+    expect(holdings.heroes.prices.map((price) => price.amount)).toEqual([null, 10, null]);
+  });
+
+  it('answers per distinct bought skin, and names which skin each answer is for', () => {
+    const holdings = holdingsOf([], [], [9, ROYAL_SENTINEL, ROYAL_SENTINEL, 0]);
+
+    expect(holdings.skins.skinIndexes).toEqual([ROYAL_SENTINEL, 9]);
+    expect(holdings.skins.prices).toHaveLength(2);
+    expect(holdings.skins.prices.map((price) => price.amount)).toEqual([48.14, null]);
+  });
+
+  it('converts every answer into the currency asked for, as the totals are', () => {
+    const holdings = holdingsOf([PRICED_ITEM], [PRICED_HERO], [ROYAL_SENTINEL], 'brl');
+
+    expect(holdings.inventory.prices[0]?.amount).toBeCloseTo(2.5 * 5);
+    expect(holdings.heroes.prices[0]?.amount).toBeCloseTo(10 * 5);
+    expect(holdings.skins.prices[0]?.amount).toBeCloseTo(48.14 * 5);
+  });
+
+  it('answers for nothing in a component it could not read', () => {
+    const nothing = holdingsOf(null, null, null);
+
+    expect(nothing.inventory.prices).toEqual([]);
+    expect(nothing.heroes.prices).toEqual([]);
+    expect(nothing.skins.prices).toEqual([]);
+    expect(nothing.skins.skinIndexes).toEqual([]);
+  });
+
+  it('sums exactly the answers it hands back, so no figure is made of anything unlisted', () => {
+    const holdings = holdingsOf([PRICED_ITEM, UNLISTED_ITEM, BOUND_ITEM], [PRICED_HERO], [ROYAL_SENTINEL]);
+    const summed = [holdings.inventory, holdings.heroes, holdings.skins].flatMap(
+      (component) => component.prices,
+    );
+
+    expect(summed.reduce((running, price) => running + (price.amount ?? 0), 0)).toBeCloseTo(
+      holdings.total,
+    );
+    expect(summed.filter((price) => price.amount != null)).toHaveLength(holdings.priced);
   });
 });

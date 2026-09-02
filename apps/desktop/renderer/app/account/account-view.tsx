@@ -7,7 +7,7 @@
  *
  * The layout follows the planner's: holdings first, then identity, then House and tree side by
  * side. Two things differ. Each panel is drawn only when the account sections it reads were
- * usable, so a bag the game would not give up hides the bag figure and nothing else. And the
+ * usable, so an inventory the game would not give up hides that figure and nothing else. And the
  * heroes component carries a figure at all, which the planner's cannot: the roster the game serves
  * says whether a hero may be sold, and a save export never did.
  */
@@ -19,7 +19,7 @@ import { sub, useCopy, useLocale } from '../../lib/copy';
 import { formatCapturedAt } from '../../lib/format';
 import { useAccountView } from '../../lib/account/use-account-view';
 import { accountFactsFrom } from '../../lib/account/account-facts';
-import { accountHoldingsFrom } from '../../lib/account/account-holdings';
+import { accountHoldingsFrom, holdingsComponents } from '../../lib/account/account-holdings';
 import { useMarketSnapshot } from '../../lib/market/use-market-snapshot';
 import { quoteAge } from '../inventory/market-labels';
 import {
@@ -29,7 +29,7 @@ import {
   accountTreeLabels,
 } from './account-labels';
 
-export function AccountView({ onOpenBag }: { onOpenBag: () => void }) {
+export function AccountView({ onOpenInventory }: { onOpenInventory: () => void }) {
   const t = useCopy();
   const { lang, locale } = useLocale();
   const accountViewState = useAccountView();
@@ -98,15 +98,16 @@ export function AccountView({ onOpenBag }: { onOpenBag: () => void }) {
   return (
     <div data-testid="account-view" className={colClass}>
       <HoldingsView
-        total={holdings.total}
-        currency={holdings.currency}
-        bag={holdings.bag}
-        heroes={holdings.heroes}
-        skins={holdings.skins}
+        {...holdingsComponents(holdings, facts.holdings.heroes, lang)}
         labels={holdingsLabels}
-        bagLink={
-          <Button type="button" variant="text" data-testid="account-holdings-bag-link" onClick={onOpenBag}>
-            {t.accountHoldingsBagLink}
+        inventoryLink={
+          <Button
+            type="button"
+            variant="text"
+            data-testid="account-holdings-inventory-link"
+            onClick={onOpenInventory}
+          >
+            {t.accountHoldingsInventoryLink}
           </Button>
         }
         {...(priceAge === null ? {} : { footnote: priceAge })}

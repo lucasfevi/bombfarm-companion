@@ -81,6 +81,9 @@ that project with a filename filter). `apps/web` and `packages/domain` alias `@b
 - **Reach for a design-system primitive before a native or bespoke control** — `Tooltip` (never the
   native `title` attribute, which lint rejects), `Select` / `Num`, `Switch` — see
   [`docs/design-system.md`](docs/design-system.md)
+- **A row is full-width because it is wide, not because it matters.** Repeated short rows each
+  claiming a width they do not use are a finding to **report to the maintainer**, not to silently
+  rearrange — see [`docs/use-the-width.md`](docs/use-the-width.md)
 - TypeScript strict at the monorepo base; planner-origin packages `@bombfarm/domain`
   and `@bombfarm/ui` intentionally keep a documented exception (see
   [`docs/typescript-planner-origin.md`](docs/typescript-planner-origin.md))

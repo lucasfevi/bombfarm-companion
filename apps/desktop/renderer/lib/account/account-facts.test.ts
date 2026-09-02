@@ -65,7 +65,7 @@ function drawnParts(payload: AccountPayload) {
     identity: facts.identity !== null,
     house: facts.house !== null,
     tree: facts.tree !== null,
-    bag: facts.holdings.bag !== null,
+    inventory: facts.holdings.inventory !== null,
     heroes: facts.holdings.heroes !== null,
     skins: facts.holdings.skinsWorn !== null,
   };
@@ -75,7 +75,7 @@ const EVERYTHING_DRAWN = {
   identity: true,
   house: true,
   tree: true,
-  bag: true,
+  inventory: true,
   heroes: true,
   skins: true,
 } as const;
@@ -85,7 +85,7 @@ describe('the account facts every part of the screen is drawn from', () => {
     expect(drawnParts(basePayload())).toEqual(EVERYTHING_DRAWN);
   });
 
-  it('reads identity, House, tree and the bag out of one payload', () => {
+  it('reads identity, House, tree and the inventory out of one payload', () => {
     const facts = factsOf(basePayload());
     expect(facts.identity).toEqual({
       playerName: 'Tester',
@@ -97,7 +97,7 @@ describe('the account facts every part of the screen is drawn from', () => {
     expect(facts.tree?.totalDamage).toBe(1.5);
     expect(facts.tree?.squadDamagePct).toBeCloseTo(17.9, 6);
     expect(facts.tree?.fieldSlots).toBe(6);
-    expect(facts.holdings.bag).toEqual([{ defId: 'espada_ferro', rarity: 2, tradable: true }]);
+    expect(facts.holdings.inventory).toEqual([{ defId: 'espada_ferro', rarity: 2, tradable: true }]);
   });
 });
 
@@ -107,7 +107,7 @@ describe('each part withholds on its own sections, and on no others', () => {
     casa: ['house'],
     skills: ['tree'],
     heroes: ['heroes', 'skins'],
-    items: ['bag'],
+    items: ['inventory'],
   };
 
   it.each(Object.keys(withheldBy) as AccountSection[])(
@@ -121,10 +121,10 @@ describe('each part withholds on its own sections, and on no others', () => {
     },
   );
 
-  it('a stale bag leaves the skill tree on screen — the whole reason the gate is per part', () => {
+  it('a stale inventory leaves the skill tree on screen — the whole reason the gate is per part', () => {
     const payload = basePayload(resolvedFidelity({ items: { status: 'missing' } }));
     expect(factsOf(payload).tree).not.toBeNull();
-    expect(factsOf(payload).holdings.bag).toBeNull();
+    expect(factsOf(payload).holdings.inventory).toBeNull();
   });
 
   it('a section that is stale rather than absent is still read — last-known-good is data', () => {
@@ -219,8 +219,8 @@ describe('the sellable flag the game itself sends', () => {
       heroes: [rawHero('h1', { rarity: 4, marketable: true }), rawHero('h2', { rarity: 2 })],
     };
     expect(factsOf(payload).holdings.heroes).toEqual([
-      { rarity: 4, marketable: true },
-      { rarity: 2, marketable: false },
+      { name: 'h1', rarity: 4, marketable: true },
+      { name: 'h2', rarity: 2, marketable: false },
     ]);
   });
 
@@ -229,7 +229,7 @@ describe('the sellable flag the game itself sends', () => {
       ...basePayload(),
       heroes: [{ id: 'h1', rarity: 3 }],
     };
-    expect(factsOf(payload).holdings.heroes).toEqual([{ rarity: 3, marketable: false }]);
+    expect(factsOf(payload).holdings.heroes).toEqual([{ name: '—', rarity: 3, marketable: false }]);
   });
 
   it('reads every worn skin, leaving the collapsing to the shared computation', () => {

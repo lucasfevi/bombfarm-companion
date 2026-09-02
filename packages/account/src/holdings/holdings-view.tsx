@@ -1,20 +1,26 @@
 import type { ReactNode } from 'react';
 import { cn } from '@bombfarm/ui';
-import { HoldingsRow, type HoldingsRowLabels, type HoldingsRowView } from './holdings-row';
+import {
+  HoldingsColumn,
+  type HoldingsColumnLabels,
+  type HoldingsComponentView,
+} from './holdings-column';
 
-export const HOLDINGS_ROWS = ['bag', 'heroes', 'skins'] as const;
-export type HoldingsRowId = (typeof HOLDINGS_ROWS)[number];
+export const HOLDINGS_COMPONENTS = ['inventory', 'heroes', 'skins'] as const;
+export type HoldingsComponentId = (typeof HOLDINGS_COMPONENTS)[number];
 
 export interface HoldingsLabels {
-  /** Headline caption while every row was read — the only state that may claim the whole account. */
+  /** Headline caption while every component was read — the only state that may claim the account. */
   total: string;
   /** Headline caption once anything is withheld, so the figure stops reading as the whole account. */
   partialTotal: string;
   amount: (value: number, currency: string) => string;
   coverage: (priced: number, eligible: number) => string;
-  /** Names the rows whose account data could not be read. */
-  missing: (rows: readonly HoldingsRowId[]) => string;
-  rows: Record<HoldingsRowId, HoldingsRowLabels>;
+  /** Names the components whose account data could not be read. */
+  missing: (components: readonly HoldingsComponentId[]) => string;
+  components: Record<HoldingsComponentId, HoldingsColumnLabels>;
+  /** Stands in for an entry's figure when the market is listing nothing for it. */
+  unpriced: string;
   /** Why the heroes figure is a floor: the market identifies a hero by rarity and nothing else. */
   heroesAreAFloor: string;
   /** Why the skins figure can fall without anything having been sold. */
@@ -22,15 +28,15 @@ export interface HoldingsLabels {
 }
 
 export interface HoldingsViewProps {
-  /** Every row summed, in `currency`. */
+  /** Every component summed, in `currency`. */
   total: number;
   currency: string;
-  bag: HoldingsRowView;
-  heroes: HoldingsRowView;
-  skins: HoldingsRowView;
+  inventory: HoldingsComponentView;
+  heroes: HoldingsComponentView;
+  skins: HoldingsComponentView;
   labels: HoldingsLabels;
-  /** Sits in the bag row: one app routes to the inventory, the other switches a tab. */
-  bagLink?: ReactNode;
+  /** Sits in the inventory column: one app routes to the Inventory screen, the other switches a tab. */
+  inventoryLink?: ReactNode;
   /** How old the prices behind the figures are — shown beside the coverage, not as a claim of its
    *  own. */
   footnote?: string;
@@ -38,33 +44,42 @@ export interface HoldingsViewProps {
 }
 
 /**
- * What the market says a whole account could sell right now: the bag, the sellable heroes, and the
- * skins those heroes are wearing, each over the count its figure reaches.
+ * What the market says a whole account could sell right now: the inventory, the sellable heroes,
+ * and the skins those heroes are wearing, each over the count its figure reaches.
  *
- * Withholding is derived from the rows rather than taken as a prop, because the headline's honesty
- * depends on it. A row whose account data could not be read makes `total` cover only part of the
- * account, so the caption changes and the unread rows are named — the number stays on screen but
- * stops presenting itself as what the account is worth.
+ * The three sit side by side and fall back to a stack as the measure narrows, because the desktop
+ * window resizes down to a small width and the planner is read on narrow viewports; the column
+ * count follows the width available rather than a fixed three.
  *
- * The two sentences under the rows are permanent text rather than tips. Each explains a figure that
- * is routinely read as something it is not, and an explanation nobody hovers is one nobody reads.
+ * Withholding is derived from the components rather than taken as a prop, because the headline's
+ * honesty depends on it. A component whose account data could not be read makes `total` cover only
+ * part of the account, so the caption changes and the unread ones are named — the number stays on
+ * screen but stops presenting itself as what the account is worth.
+ *
+ * The two sentences under the columns are permanent text rather than tips. Each explains a figure
+ * that is routinely read as something it is not, and an explanation nobody hovers is one nobody
+ * reads.
  */
 export function HoldingsView({
   total,
   currency,
-  bag,
+  inventory,
   heroes,
   skins,
   labels,
-  bagLink,
+  inventoryLink,
   footnote,
   className,
 }: HoldingsViewProps) {
-  const rows: Record<HoldingsRowId, HoldingsRowView> = { bag, heroes, skins };
-  const withheld = HOLDINGS_ROWS.filter((id) => rows[id].withheld);
-  const wasRead = HOLDINGS_ROWS.filter((id) => !rows[id].withheld);
-  const countOf = (pick: (row: HoldingsRowView) => number) =>
-    wasRead.reduce((running, id) => running + pick(rows[id]), 0);
+  const components: Record<HoldingsComponentId, HoldingsComponentView> = {
+    inventory,
+    heroes,
+    skins,
+  };
+  const withheld = HOLDINGS_COMPONENTS.filter((id) => components[id].withheld);
+  const wasRead = HOLDINGS_COMPONENTS.filter((id) => !components[id].withheld);
+  const countOf = (pick: (component: HoldingsComponentView) => number) =>
+    wasRead.reduce((running, id) => running + pick(components[id]), 0);
 
   return (
     <div
@@ -86,8 +101,8 @@ export function HoldingsView({
         </span>
         <span className="text-xs text-muted">
           {labels.coverage(
-            countOf((row) => row.priced),
-            countOf((row) => row.eligible),
+            countOf((component) => component.priced),
+            countOf((component) => component.eligible),
           )}
           {footnote == null ? null : (
             <span data-testid="account-holdings-footnote" className="ml-2 opacity-70">
@@ -102,28 +117,31 @@ export function HoldingsView({
         )}
       </div>
 
-      <div className="flex flex-col divide-y divide-line border-t border-line px-4">
-        <HoldingsRow
-          testId="account-holdings-bag"
-          row={bag}
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(14rem,1fr))] items-start gap-x-6 gap-y-1 border-t border-line px-4 py-1">
+        <HoldingsColumn
+          testId="account-holdings-inventory"
+          component={inventory}
           currency={currency}
-          labels={labels.rows.bag}
+          labels={labels.components.inventory}
           amount={labels.amount}
-          action={bagLink}
+          unpriced={labels.unpriced}
+          action={inventoryLink}
         />
-        <HoldingsRow
+        <HoldingsColumn
           testId="account-holdings-heroes"
-          row={heroes}
+          component={heroes}
           currency={currency}
-          labels={labels.rows.heroes}
+          labels={labels.components.heroes}
           amount={labels.amount}
+          unpriced={labels.unpriced}
         />
-        <HoldingsRow
+        <HoldingsColumn
           testId="account-holdings-skins"
-          row={skins}
+          component={skins}
           currency={currency}
-          labels={labels.rows.skins}
+          labels={labels.components.skins}
           amount={labels.amount}
+          unpriced={labels.unpriced}
         />
       </div>
 

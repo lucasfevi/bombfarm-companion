@@ -4,10 +4,10 @@
  *
  * The farm board withholds everything unless all five sections are usable, because every figure it
  * prints is derived from all five. This screen is the opposite shape: four independent readings of
- * four different parts of the account, and a bag that could not be read has nothing to say about
- * the skill tree. So each part carries its own gate and its own `null`, and a part whose sections
- * were not usable is absent rather than defaulted — there is no zero here standing in for a value
- * nobody read.
+ * four different parts of the account, and an inventory that could not be read has nothing to say
+ * about the skill tree. So each part carries its own gate and its own `null`, and a part whose
+ * sections were not usable is absent rather than defaulted — there is no zero here standing in
+ * for a value nobody read.
  */
 import { parseAccountPayload } from '@bombfarm/domain/import-save';
 import { buildInventoryView } from '@bombfarm/domain/inventory-view';
@@ -77,10 +77,15 @@ export interface AccountTreeFacts {
   fieldSlots: number | null;
 }
 
+/** A hero the market can price, carrying the name the holdings list prints it under. */
+export interface HoldingsHero extends PriceableHero {
+  name: string;
+}
+
 /** The three priceable readings behind the holdings section. `null` is "not read", never "none". */
 export interface AccountHoldingsFacts {
-  bag: PriceableItem[] | null;
-  heroes: PriceableHero[] | null;
+  inventory: PriceableItem[] | null;
+  heroes: HoldingsHero[] | null;
   skinsWorn: number[] | null;
 }
 
@@ -197,19 +202,30 @@ const priceableItem = (item: {
   tradable: boolean;
 }): PriceableItem => ({ defId: item.defId, rarity: item.rarityIdx, tradable: item.tradable });
 
+const UNNAMED_HERO = '—';
+
+function heroNameOf(raw: Record<string, unknown>): string {
+  const name = raw.name;
+  return typeof name === 'string' && name.trim() !== '' ? name : UNNAMED_HERO;
+}
+
 /**
  * The desktop reads the roster the game itself serves, and those records carry `marketable` — the
  * game's own answer to whether a hero may be listed at all. A row that does not carry the flag is
  * treated as unsellable, which keeps it out of the total AND out of the count the coverage is
  * over, rather than inventing a price for it.
  */
-function priceableHeroesOf(rawHeroes: readonly unknown[]): PriceableHero[] {
-  const heroes: PriceableHero[] = [];
+function priceableHeroesOf(rawHeroes: readonly unknown[]): HoldingsHero[] {
+  const heroes: HoldingsHero[] = [];
   for (const raw of rawHeroes) {
     if (!isObject(raw)) continue;
     const rarity = raw.rarity;
     if (typeof rarity !== 'number' || !Number.isFinite(rarity)) continue;
-    heroes.push({ rarity: Math.round(rarity), marketable: raw.marketable === true });
+    heroes.push({
+      name: heroNameOf(raw),
+      rarity: Math.round(rarity),
+      marketable: raw.marketable === true,
+    });
   }
   return heroes;
 }
@@ -228,13 +244,13 @@ function skinsWornOf(rawHeroes: readonly unknown[]): number[] {
 function holdingsFactsOf(payload: AccountPayload): AccountHoldingsFacts {
   const rawItems = payload.items;
   const rawHeroes = payload.heroes;
-  const bagRead = readable(payload, 'items') && Array.isArray(rawItems);
+  const inventoryRead = readable(payload, 'items') && Array.isArray(rawItems);
   const rosterRead = readable(payload, 'heroes') && Array.isArray(rawHeroes);
 
   return {
     // The same derivation the Inventory screen draws from, so the two cannot disagree about what
-    // the bag holds.
-    bag: bagRead ? buildInventoryView(rawItems).items.map(priceableItem) : null,
+    // the inventory holds.
+    inventory: inventoryRead ? buildInventoryView(rawItems).items.map(priceableItem) : null,
     heroes: rosterRead ? priceableHeroesOf(rawHeroes) : null,
     skinsWorn: rosterRead ? skinsWornOf(rawHeroes) : null,
   };
