@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 /**
- * Fails when the published market snapshot has stopped advancing, or has advanced into a state
- * nothing can price from. One GET of a public file, no Steam call, no install, no write.
+ * Fails when the published market snapshot has stopped advancing, has advanced into a state
+ * nothing can price from, or has advanced carrying nothing new. One GET of a public file, no
+ * Steam call, no install, no write.
  *
- * The useless-but-fresh case is the one with a precedent: a partial sweep once published valid,
- * current JSON in which `matchedCatalogKeys` was 0, so no owned item could look up a price.
- * Freshness alone would have called that healthy.
+ * Each of the last two has a precedent. A partial sweep once published valid, current JSON in
+ * which `matchedCatalogKeys` was 0, so no owned item could look up a price. And a run of passes
+ * that collected nothing went on republishing the previous pass's quotes carried forward, so the
+ * file stayed current, populated and matched for hours after collection had stopped. A check on
+ * the file's own timestamp says a pass ran; it does not say a pass collected.
  */
 
 import { writeFileSync } from 'node:fs';
@@ -20,11 +23,22 @@ export const SNAPSHOT_URL =
 
 const MS_PER_HOUR = 3_600_000;
 
-function ageInHours(generatedUtc, nowMs) {
-  if (typeof generatedUtc !== 'string') return null;
-  const generatedMs = Date.parse(generatedUtc);
-  if (Number.isNaN(generatedMs)) return null;
-  return (nowMs - generatedMs) / MS_PER_HOUR;
+function ageInHours(stamp, nowMs) {
+  if (typeof stamp !== 'string') return null;
+  const stampedMs = Date.parse(stamp);
+  if (Number.isNaN(stampedMs)) return null;
+  return (nowMs - stampedMs) / MS_PER_HOUR;
+}
+
+/** How old the freshest price in the file is, which is a different claim from how old the file is. */
+function newestQuoteAgeInHours(entries, nowMs) {
+  let newest = null;
+  for (const entry of entries) {
+    const age = ageInHours(entry?.nativeQuotedUtc, nowMs);
+    if (age === null) continue;
+    if (newest === null || age < newest) newest = age;
+  }
+  return newest;
 }
 
 export function evaluateSnapshot({ status, body, nowMs }) {
@@ -51,8 +65,17 @@ export function evaluateSnapshot({ status, body, nowMs }) {
   }
 
   const entries = snapshot?.entries;
-  if (!Array.isArray(entries) || entries.length === 0) {
+  const populated = Array.isArray(entries) && entries.length > 0;
+  const quoteAgeHours = populated ? newestQuoteAgeInHours(entries, nowMs) : null;
+
+  if (!populated) {
     failures.push('the published snapshot carries no entries');
+  } else if (quoteAgeHours === null) {
+    failures.push('the published snapshot carries no priced entry at all');
+  } else if (quoteAgeHours > MAX_AGE_HOURS) {
+    failures.push(
+      `the published snapshot has priced nothing in ${quoteAgeHours.toFixed(1)} hours (threshold ${MAX_AGE_HOURS}), so it is carrying old prices forward`,
+    );
   }
 
   const matchedCatalogKeys = snapshot?.coverage?.matchedCatalogKeys;
@@ -66,6 +89,7 @@ export function evaluateSnapshot({ status, body, nowMs }) {
     ok: failures.length === 0,
     failures,
     ageHours,
+    quoteAgeHours,
     entryCount: Array.isArray(entries) ? entries.length : 0,
     matchedCatalogKeys: typeof matchedCatalogKeys === 'number' ? matchedCatalogKeys : 0,
   };
@@ -95,6 +119,7 @@ export function renderSummary(result) {
   if (!result.ok) return result.failures.join('\n');
   return [
     `the published snapshot advanced ${result.ageHours.toFixed(1)} hours ago`,
+    `its freshest price is ${result.quoteAgeHours.toFixed(1)} hours old`,
     `${result.entryCount} entries, ${result.matchedCatalogKeys} catalog keys matched`,
   ].join('\n');
 }
