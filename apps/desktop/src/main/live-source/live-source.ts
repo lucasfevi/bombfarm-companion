@@ -1,4 +1,4 @@
-import { closeSync, openSync, readFileSync, writeFileSync, writeSync } from 'node:fs';
+import { closeSync, fstatSync, ftruncateSync, mkdirSync, openSync, readFileSync, writeFileSync, writeSync } from 'node:fs';
 import path from 'node:path';
 import type {
   AccountSection,
@@ -36,6 +36,7 @@ import { runPowerShellAsync, runPowerShellSync, stripExeSuffix } from '../game-r
 import { EarningsFold } from './earnings-fold.js';
 import { createFrameCapture, readFrameCaptureEnabledFromEnv } from './frame-capture.js';
 import { FrameRing } from './frame-ring.js';
+import type { ObservationAppendPort } from './observation-capture.js';
 import type { LogPort } from './log-port.js';
 import { MapFold, type MapAccountBoosts, type MapWikiFacts } from './map-fold.js';
 import { RuntimePort } from './runtime.js';
@@ -114,6 +115,96 @@ function nodeFrameCaptureAppendPort(destination: string): { append(bytes: Uint8A
           written += writeSync(fd, bytes, written, bytes.length - written);
         }
       } catch (error) {
+        closeHandle();
+        throw error;
+      }
+    },
+    close: closeHandle,
+  };
+}
+
+const OBSERVATION_CAPTURE_DIR = 'observation-capture';
+
+function twoDigits(value: number): string {
+  return String(value).padStart(2, '0');
+}
+
+/**
+ * One file per run, named by the run's start time. The sibling raw capture truncates on its first
+ * open, which is right for a single-header binary format and wrong here: a truncating recorder
+ * destroys the previous session's evidence, and an appending one interleaves two runs' sequence
+ * numbers into one ordering nothing can untangle. A per-run name avoids both without a flag.
+ */
+export function observationCaptureFilePath(userDataDir: string, startedAtMs: number): string {
+  const at = new Date(startedAtMs);
+  const stamp = [
+    String(at.getFullYear()),
+    twoDigits(at.getMonth() + 1),
+    twoDigits(at.getDate()),
+    '-',
+    twoDigits(at.getHours()),
+    twoDigits(at.getMinutes()),
+    twoDigits(at.getSeconds()),
+  ].join('');
+  return path.join(userDataDir, OBSERVATION_CAPTURE_DIR, `observed-${stamp}.ndjson`);
+}
+
+/**
+ * Each line is written as one buffer, its trailing newline included, and a write that fails part
+ * way through truncates back to the offset the line started at before rethrowing. The file
+ * therefore always ends on a record boundary, so a reader never meets half a JSON object — the
+ * residual window is a hard process kill inside a single write, which is stated rather than
+ * claimed away.
+ *
+ * The handle is deliberately not opened in append mode: Windows refuses `ftruncate` on an
+ * append-mode descriptor (EPERM), which would leave the truncate-back above permanently broken on
+ * the only platform this app runs on. Every write instead names its absolute position, so the
+ * file's own position pointer is never load-bearing.
+ *
+ * `writeChunk` exists so a test can fail a write part way through; production never passes it.
+ */
+export function nodeObservationAppendPort(
+  destination: string,
+  writeChunk: (fd: number, buffer: Buffer, offset: number, length: number, position: number) => number = writeSync,
+): ObservationAppendPort {
+  let fd: number | null = null;
+  let offset = 0;
+  let createdThisProcess = false;
+
+  function closeHandle(): void {
+    if (fd === null) return;
+    closeSync(fd);
+    fd = null;
+  }
+
+  /** A per-run filename means the first open creates the file; a later reopen (after `close()`)
+   *  must continue it rather than truncate away everything the session already recorded. */
+  function ensureOpen(): number {
+    if (fd !== null) return fd;
+    mkdirSync(path.dirname(destination), { recursive: true });
+    fd = openSync(destination, createdThisProcess ? 'r+' : 'w');
+    offset = createdThisProcess ? fstatSync(fd).size : 0;
+    createdThisProcess = true;
+    return fd;
+  }
+
+  return {
+    append: (line) => {
+      const handle = ensureOpen();
+      const buffer = Buffer.from(line, 'utf8');
+      const lineStartedAt = offset;
+      try {
+        let written = 0;
+        while (written < buffer.length) {
+          // writeSync is not obliged to consume the whole buffer, and a short write would leave a
+          // truncated JSON object that no reader can distinguish from a corrupt file.
+          const justWritten = writeChunk(handle, buffer, written, buffer.length - written, offset);
+          written += justWritten;
+          offset += justWritten;
+        }
+      } catch (error) {
+        ftruncateSync(handle, lineStartedAt);
+        offset = lineStartedAt;
         closeHandle();
         throw error;
       }

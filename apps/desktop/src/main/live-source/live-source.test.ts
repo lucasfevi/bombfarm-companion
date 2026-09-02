@@ -1,11 +1,14 @@
+import { mkdtempSync, readFileSync, rmSync, writeSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import type { AccountView, LiveCurrency, LiveEvent, LiveFrame, LiveTick, SectionFidelity } from '@bombfarm/contracts';
 import { liveGap } from '@bombfarm/contracts';
 import { wireKey } from '@bombfarm/game-api';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { createBoundaryLog } from '../boundary-log/index.js';
 import { generateReplayStream } from './fixtures/generate-replay-stream.js';
 import type { LogPort } from './log-port.js';
-import { LiveSource, type TapHandle } from './live-source.js';
+import { LiveSource, nodeObservationAppendPort, observationCaptureFilePath, type TapHandle } from './live-source.js';
 
 class FakeTap implements TapHandle {
   startCount = 0;
@@ -1264,5 +1267,117 @@ describe('LiveSource: the raw frame capture is packaging-gated', () => {
     expect(infos.filter((record) => record.scope === 'frame-capture')).toEqual([
       expect.objectContaining({ event: 'started' }),
     ]);
+  });
+});
+
+describe('observationCaptureFilePath', () => {
+  it('names the file by the run start time, under the capture directory in the user-data tree', () => {
+    const at = Date.parse('2026-09-02T04:07:09.000Z');
+    const resolved = observationCaptureFilePath('C:\\userdata', at);
+    const expectedStamp = [
+      String(new Date(at).getFullYear()),
+      String(new Date(at).getMonth() + 1).padStart(2, '0'),
+      String(new Date(at).getDate()).padStart(2, '0'),
+      '-',
+      String(new Date(at).getHours()).padStart(2, '0'),
+      String(new Date(at).getMinutes()).padStart(2, '0'),
+      String(new Date(at).getSeconds()).padStart(2, '0'),
+    ].join('');
+
+    expect(resolved).toBe(join('C:\\userdata', 'observation-capture', `observed-${expectedStamp}.ndjson`));
+  });
+
+  it('gives two runs two different files, so one never overwrites or interleaves with the other', () => {
+    const first = observationCaptureFilePath('C:\\userdata', Date.parse('2026-09-02T04:07:09.000Z'));
+    const second = observationCaptureFilePath('C:\\userdata', Date.parse('2026-09-02T04:07:10.000Z'));
+
+    expect(first).not.toBe(second);
+  });
+});
+
+describe('nodeObservationAppendPort', () => {
+  const dirs: string[] = [];
+
+  function tempDestination(): string {
+    const dir = mkdtempSync(join(tmpdir(), 'bfc-observation-'));
+    dirs.push(dir);
+    return join(dir, 'observation-capture', 'observed-20260902-040709.ndjson');
+  }
+
+  afterEach(() => {
+    for (const dir of dirs.splice(0)) {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  function readLines(destination: string): string[] {
+    return readFileSync(destination, 'utf8').split('\n').filter((line) => line !== '');
+  }
+
+  it('creates the capture directory and round-trips every line as parseable JSON', () => {
+    const destination = tempDestination();
+    const port = nodeObservationAppendPort(destination);
+
+    port.append(`${JSON.stringify({ seq: 1, kind: 'session' })}\n`);
+    port.append(`${JSON.stringify({ seq: 2, kind: 'body' })}\n`);
+    port.close();
+
+    expect(readLines(destination).map((line) => JSON.parse(line) as unknown)).toEqual([
+      { seq: 1, kind: 'session' },
+      { seq: 2, kind: 'body' },
+    ]);
+  });
+
+  it('consumes the whole buffer even when the underlying write returns short', () => {
+    const destination = tempDestination();
+    const port = nodeObservationAppendPort(destination, (fd, buffer, offset, length, position) =>
+      writeSync(fd, buffer, offset, Math.min(3, length), position),
+    );
+
+    const line = `${JSON.stringify({ seq: 1, note: 'written three bytes at a time' })}\n`;
+    port.append(line);
+    port.close();
+
+    expect(readFileSync(destination, 'utf8')).toBe(line);
+  });
+
+  it('truncates back to the record boundary when a write fails part way through, and rethrows', () => {
+    const destination = tempDestination();
+    let failAfterBytes: number | null = null;
+    const port = nodeObservationAppendPort(destination, (fd, buffer, offset, length, position) => {
+      if (failAfterBytes !== null && offset >= failAfterBytes) throw new Error('ENOSPC: no space left on device');
+      const cap = failAfterBytes === null ? length : Math.min(failAfterBytes - offset, length);
+      return writeSync(fd, buffer, offset, cap, position);
+    });
+
+    port.append(`${JSON.stringify({ seq: 1, kind: 'session' })}\n`);
+    port.append(`${JSON.stringify({ seq: 2, kind: 'body' })}\n`);
+    failAfterBytes = 5;
+    expect(() => {
+      port.append(`${JSON.stringify({ seq: 3, kind: 'body' })}\n`);
+    }).toThrow('ENOSPC');
+    port.close();
+
+    const lines = readLines(destination);
+    expect(lines).toHaveLength(2);
+    expect(lines.map((line) => JSON.parse(line) as unknown)).toEqual([
+      { seq: 1, kind: 'session' },
+      { seq: 2, kind: 'body' },
+    ]);
+  });
+
+  it('leaves no partial trailing record after a failure, so the file always ends on a boundary', () => {
+    const destination = tempDestination();
+    const port = nodeObservationAppendPort(destination, (fd, buffer, offset, length, position) => {
+      if (offset > 0) throw new Error('EIO: write failed mid-record');
+      return writeSync(fd, buffer, offset, Math.min(4, length), position);
+    });
+
+    expect(() => {
+      port.append(`${JSON.stringify({ seq: 1, kind: 'session' })}\n`);
+    }).toThrow('EIO');
+    port.close();
+
+    expect(readFileSync(destination, 'utf8')).toBe('');
   });
 });
