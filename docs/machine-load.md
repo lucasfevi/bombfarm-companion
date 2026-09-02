@@ -82,6 +82,22 @@ Reading the state claims nothing, so asking what is running never changes what i
 BFC_CPU_BUDGET=16 pnpm test
 ```
 
+## Adding a workspace package
+
+A new package with tests owes the machine two things, and **both fail silently when forgotten**:
+
+1. **`maxWorkers: MAX_TEST_WORKERS` in its own `vitest.config.ts`**, imported from the root
+   `vitest.workers.ts`. The root config's cap governs the root run only — it does not reach
+   `pnpm --filter @bombfarm/<pkg> test`, which is what a scoped local check or an agent session
+   runs. Uncapped, that single command takes roughly one worker per core, outside the budget
+   entirely, and several of them multiply.
+2. **An entry in the root `vitest.config.ts` `projects` array.** A package the root run never
+   lists is never run by `pnpm test`, which stays green while the suite does not execute.
+
+Neither is a matter of discipline. `tools/vitest-worker-cap.test.mjs` derives the expected set
+from the directory listing and fails, naming the file and the fix, when either is missing — the
+rule had previously lived as a comment in two project configs while ten siblings went without it.
+
 ## What this does not cover
 
 - **The share is chosen once, at startup.** Vitest, Playwright and Next all fix their pool before

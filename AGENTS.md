@@ -89,6 +89,12 @@ that project with a filename filter). `apps/web` and `packages/domain` alias `@b
   effect of a change — the repo is LF everywhere (`.gitattributes`), and a stream edit that
   rewrites endings turns a one-line change into a whole-file diff that buries the real change
   and destroys `git blame`. See [`docs/line-endings.md`](docs/line-endings.md)
+- **A new workspace package with tests owes two things**: `maxWorkers: MAX_TEST_WORKERS` in its
+  own `vitest.config.ts` (the root cap does not reach a standalone `pnpm --filter` run, which
+  then takes one worker per core outside the machine-wide budget), and an entry in the root
+  `vitest.config.ts` `projects` array (or `pnpm test` never runs it and stays green).
+  `tools/vitest-worker-cap.test.mjs` fails on either omission — see
+  [`docs/machine-load.md`](docs/machine-load.md)
 - No secrets in the repo
 - Do not mention other fan tools in user-facing docs
 - **Changesets are mandatory** on any PR touching `@bombfarm/web` or `@bombfarm/domain` user-visible
