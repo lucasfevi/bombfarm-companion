@@ -6,6 +6,12 @@
  */
 
 import type { LiveCurrency } from '@bombfarm/contracts';
+import {
+  identifyObservedBody,
+  liveFrameWireKey as wireKey,
+  type ObservedBodyIdentification,
+} from '@bombfarm/game-api';
+import type { LogPort } from './log-port.js';
 import { scrubJsonValue, type CredentialRedactor } from './scrub.js';
 
 const CAPTURE_ENV_VAR = 'BFC_OBSERVATION_CAPTURE';
@@ -52,27 +58,29 @@ export type ObservationBodyVerdict =
 
 export type ObservationSessionEvent = 'started' | 'currency' | 'redactor_armed' | 'stopped' | 'append_failed';
 
-export type ObservationRecord = ObservationEnvelope &
-  (
-    | {
-        readonly kind: 'body';
-        readonly byteLength: number;
-        readonly verdict: ObservationBodyVerdict;
-        /** Absent only for `parse_failed`, where there is nothing parseable to carry. */
-        readonly body?: unknown;
-      }
-    | {
-        readonly kind: 'frame';
-        /** The wire object verbatim — decoded keys and keys the decoded tick never reads alike. */
-        readonly wire: Record<string, unknown>;
-      }
-    | { readonly kind: 'mark'; readonly label: string }
-    | {
-        readonly kind: 'session';
-        readonly event: ObservationSessionEvent;
-        readonly detail?: Record<string, unknown>;
-      }
-  );
+/** A record without its envelope: the one write path stamps `seq`, `at`, `phase`, `wave` and the
+ *  redaction level itself, so no caller can supply — or forget — them. */
+export type ObservationRecordBody =
+  | {
+      readonly kind: 'body';
+      readonly byteLength: number;
+      readonly verdict: ObservationBodyVerdict;
+      /** Absent only for `parse_failed`, where there is nothing parseable to carry. */
+      readonly body?: unknown;
+    }
+  | {
+      readonly kind: 'frame';
+      /** The wire object verbatim — decoded keys and keys the decoded tick never reads alike. */
+      readonly wire: Record<string, unknown>;
+    }
+  | { readonly kind: 'mark'; readonly label: string }
+  | {
+      readonly kind: 'session';
+      readonly event: ObservationSessionEvent;
+      readonly detail?: Record<string, unknown>;
+    };
+
+export type ObservationRecord = ObservationEnvelope & ObservationRecordBody;
 
 export interface ObservationAppendPort {
   /** Appends one whole line. Throws on failure; the caller latches and reports. */
@@ -104,4 +112,136 @@ const NO_REGISTERED_SECRETS: ReadonlySet<string> = new Set<string>();
 export function encodeObservationLine(record: ObservationRecord, redact: CredentialRedactor | null): string {
   const asJson: unknown = JSON.parse(JSON.stringify(record));
   return `${JSON.stringify(scrubJsonValue(asJson, NO_REGISTERED_SECRETS, redact))}\n`;
+}
+
+export interface ObservationCapture extends ObservationSink {
+  setCredentialRedactor(redact: CredentialRedactor | null): void;
+  close(): void;
+}
+
+export interface ObservationCaptureDeps {
+  readonly enabled: boolean;
+  readonly isPackaged: boolean;
+  readonly destination: string;
+  readonly appendPort: ObservationAppendPort;
+  readonly log: LogPort;
+  readonly identify?: (body: unknown) => ObservedBodyIdentification;
+  readonly now?: () => number;
+}
+
+const NOOP_OBSERVATION_CAPTURE: ObservationCapture = {
+  body: () => undefined,
+  frame: () => undefined,
+  currency: () => undefined,
+  mark: () => undefined,
+  setCredentialRedactor: () => undefined,
+  close: () => undefined,
+};
+
+/** Lazily on append rather than on a timer, so there is no handle to leak on teardown — the same
+ *  timerless discipline the raw frame capture keeps. */
+const HEARTBEAT_INTERVAL_MS = 30_000;
+
+/**
+ * The recorder. Its two gates are independent of the caller's own check by design: a single gate
+ * is one edit away from writing live account traffic out of a packaged build, so `index.ts` asks
+ * {@link isObservationCaptureEnabled} and this constructor asks again.
+ */
+export function createObservationCapture(deps: ObservationCaptureDeps): ObservationCapture {
+  if (deps.isPackaged || !deps.enabled) return NOOP_OBSERVATION_CAPTURE;
+
+  const identify = deps.identify ?? identifyObservedBody;
+  const now = deps.now ?? Date.now;
+
+  let seq = 0;
+  let phase: number | null = null;
+  let wave: number | null = null;
+  let redactor: CredentialRedactor | null = null;
+  let stopped = false;
+  let reported = false;
+  let totalBytes = 0;
+  let lastHeartbeatAt: number | null = null;
+
+  function report(event: string, extra: Record<string, unknown> = {}): void {
+    if (reported) return;
+    reported = true;
+    deps.log.warn({ scope: 'observation-capture', event, records: seq, totalBytes, ...extra });
+  }
+
+  function heartbeat(atMs: number): void {
+    if (lastHeartbeatAt !== null && atMs - lastHeartbeatAt < HEARTBEAT_INTERVAL_MS) return;
+    lastHeartbeatAt = atMs;
+    deps.log.info({ scope: 'observation-capture', event: 'progress', records: seq, totalBytes });
+  }
+
+  /** The one write path. Every record kind reaches the file through here, and here alone calls
+   *  {@link encodeObservationLine} — bypassing redaction would mean deleting this call, not
+   *  forgetting one. */
+  function write(atMs: number, body: ObservationRecordBody): void {
+    if (stopped) return;
+    seq += 1;
+    const line = encodeObservationLine(
+      {
+        seq,
+        at: new Date(atMs).toISOString(),
+        phase,
+        wave,
+        redaction: redactor === null ? 'key-name-only' : 'armed',
+        ...body,
+      },
+      redactor,
+    );
+    try {
+      deps.appendPort.append(line);
+      totalBytes += Buffer.byteLength(line, 'utf8');
+    } catch (error) {
+      stopped = true;
+      report('append_failed', { error: String(error) });
+      return;
+    }
+    heartbeat(atMs);
+  }
+
+  write(now(), { kind: 'session', event: 'started', detail: { destination: deps.destination } });
+
+  return {
+    body(bytes: Buffer, atMs: number): void {
+      const byteLength = bytes.length;
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(bytes.toString('utf8'));
+      } catch {
+        write(atMs, { kind: 'body', byteLength, verdict: { kind: 'parse_failed' } });
+        return;
+      }
+      write(atMs, { kind: 'body', byteLength, verdict: identify(parsed), body: parsed });
+    },
+
+    frame(wire: Record<string, unknown>, atMs: number): void {
+      const observedPhase = wire[wireKey('phase')];
+      const observedWave = wire[wireKey('wave')];
+      if (typeof observedPhase === 'number' && Number.isFinite(observedPhase)) phase = observedPhase;
+      if (typeof observedWave === 'number' && Number.isFinite(observedWave)) wave = observedWave;
+      write(atMs, { kind: 'frame', wire });
+    },
+
+    currency(currency: LiveCurrency, atMs: number): void {
+      write(atMs, { kind: 'session', event: 'currency', detail: { currency } });
+    },
+
+    mark(label: string, atMs: number): void {
+      write(atMs, { kind: 'mark', label });
+    },
+
+    setCredentialRedactor(redact: CredentialRedactor | null): void {
+      const wasArmed = redactor !== null;
+      redactor = redact;
+      if (!wasArmed && redact !== null) write(now(), { kind: 'session', event: 'redactor_armed' });
+    },
+
+    close(): void {
+      write(now(), { kind: 'session', event: 'stopped' });
+      deps.appendPort.close();
+    },
+  };
 }
