@@ -38,7 +38,9 @@ export interface ResolvedPrice {
   basis: PriceBasis;
   /**
    * When the quoted `amount` was read from Steam: the native quote's own timestamp when
-   * `basis` is `native`, the enumeration's when it is `converted`. Null when unpriced.
+   * `basis` is `native`, the enumeration's when it is `converted`. Null only when unpriced —
+   * every `priced` result carries a timestamp, so a caller never has to date a price it is
+   * showing by guesswork.
    */
   quotedUtc: string | null;
   listings: number;
@@ -102,7 +104,11 @@ export function resolveKey(
   // endpoint carries as live — so treating its silence as "unlisted" would delist real supply.
   if (entry.lowestUsd == null) return unpriced('no-listing', key, entry, code, url);
 
-  const native = entry.lowestNative[code] ?? null;
+  // An undated native quote is not usable as one. It is a price with no provenance, and the
+  // basis exists so a reader can click through and check the number against the listing —
+  // which needs to know how old it is. Converting from USD loses 0.6-1.2% of exactness and
+  // gains a timestamp `fetchedUtc` always carries, and that is the better trade.
+  const native = entry.nativeQuotedUtc == null ? null : (entry.lowestNative[code] ?? null);
   const rate = snapshot.fx[code] ?? (code === 'USD' ? 1 : null);
 
   if (native != null) {

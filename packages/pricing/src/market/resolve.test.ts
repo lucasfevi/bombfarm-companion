@@ -168,7 +168,12 @@ describe('native versus converted quotes', () => {
 
   it('quotes the currency Steam priced itself, not the converted figure', () => {
     const snapshot = snapshotOf([
-      marketEntry({ hashName: 'Ember Sword', lowestUsd: 4.8, lowestNative: { BRL: 25 } }),
+      marketEntry({
+        hashName: 'Ember Sword',
+        lowestUsd: 4.8,
+        lowestNative: { BRL: 25 },
+        nativeQuotedUtc: '2026-08-29T12:00:00.000Z',
+      }),
     ]);
     snapshot.fx = { USD: 1, BRL: 5.1641 };
 
@@ -177,6 +182,36 @@ describe('native versus converted quotes', () => {
       currency: 'BRL',
       basis: 'native',
     });
+  });
+
+  it('converts rather than quoting a native price it cannot date', () => {
+    const snapshot = snapshotOf([
+      marketEntry({
+        hashName: 'Ember Sword',
+        lowestUsd: 10,
+        lowestNative: { BRL: 52 },
+        nativeQuotedUtc: null,
+      }),
+    ]);
+    snapshot.fx = { USD: 1, BRL: 5 };
+
+    expect(resolveItemPrice(item, snapshot, 'BRL')).toMatchObject({
+      amount: 50,
+      currency: 'BRL',
+      basis: 'converted',
+      quotedUtc: '2026-08-29T00:00:00.000Z',
+    });
+  });
+
+  it('leaves every priced result datable, whatever the basis', () => {
+    const snapshot = snapshotOf([
+      marketEntry({ hashName: 'Ember Sword', lowestUsd: 10, lowestNative: { BRL: 52 } }),
+    ]);
+    snapshot.fx = { USD: 1, BRL: 5 };
+
+    const price = resolveItemPrice(item, snapshot, 'BRL');
+    expect(price.state).toBe('priced');
+    expect(price.quotedUtc).not.toBeNull();
   });
 
   it('falls back to converting when Steam declined to quote that currency', () => {
