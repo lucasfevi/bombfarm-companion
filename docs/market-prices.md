@@ -43,6 +43,24 @@ the market moves over time have an answer a single current snapshot cannot give.
 
 The published file's schema is unchanged, and so is everything below about how a pass builds it.
 
+## The data branch tells Vercel not to build it
+
+The web planner reads the snapshot from a branch rather than the release asset, because GitHub
+release assets send no `Access-Control-Allow-Origin` and the planner is a browser. That branch is
+a single orphan commit holding the JSON — and Vercel opened a preview build for every push to it,
+which failed on the missing `apps/web` root directory and mailed the owner several times an hour.
+
+It cannot be excluded from the dashboard. Preview branch tracking covers every branch not assigned
+to another environment and its matcher is fixed, so there is nothing to subtract a branch from.
+What Vercel does honour is `git.deploymentEnabled`, read from the pushed commit before the
+deployment is created — so both publishers add that opt-out to the commit they push, from
+`tools/market-snapshot/deploy-optout.mjs`. It is written at the repository root **and** at
+`apps/web/`, because project configuration resolves against the Root Directory and whether the
+pre-deployment check honours that or reads the repository root is undocumented.
+
+This is why a branch of derived data carries a `vercel.json` at all. It changes nothing about the
+URL either app fetches.
+
 ## Nothing else notices when it stops
 
 Every way the snapshot can stop being produced has the same symptom — the file simply stops
@@ -252,12 +270,17 @@ hand-off that keeps it off and every unit test stays green while the burst comes
 `tools/market-collector.test.mjs` drives the continuous producer with an injected clock, sweep and
 transport, so its decisions are exercised without a market call. The two worth naming are that a
 pass which throws still leaves a row saying so, and that the cool-down ladder resets after a pass
-that completes — both asserted by observing the write rather than reading a value back.
+that completes — both asserted by observing the write rather than reading a value back. It also
+reads the tree the producer pushes, not the opt-out's text: the deployment opt-out only works if
+it is in the pushed commit, and it must name the branch actually being pushed rather than one
+spelled into the config.
 
 `tools/market-prices-workflow.test.mjs` reads the workflow as text. It asserts the manual lever
 runs only when a human asks — false if a cron is spliced back in, false if the manual trigger is
 stripped — and that it is one time-boxed job which publishes whatever it got, never commits to a
-branch this repository releases from, and never writes the source tree.
+branch this repository releases from, and never writes the source tree. It also holds the two
+regressions that would quietly restore the failing deploys: writing the opt-out after the commit
+instead of before it, and narrowing the staging step back to the snapshot by name.
 
 `tools/market-snapshot/freshness.test.mjs` proves each of the alarm's four checks red against a
 snapshot broken in exactly that one way, with a healthy one green beside it — a monitor never

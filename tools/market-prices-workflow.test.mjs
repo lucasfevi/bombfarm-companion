@@ -67,6 +67,20 @@ const forcePushIsScopedToTheDataBranch = (text) => {
   return forcePushes.length > 0 && forcePushes.every((push) => /DATA_BRANCH/.test(push));
 };
 
+/**
+ * The published commit must carry its own deployment opt-out, written before it is committed —
+ * a push to a branch without one starts a preview build of a tree with no application in it.
+ */
+const optsOutOfDeployment = (text) => {
+  const body = shellBody(text);
+  const written = body.indexOf('deploy-optout.mjs');
+  const committed = body.indexOf('commit -q -m');
+  return written !== -1 && committed !== -1 && written < committed;
+};
+
+/** Staging the snapshot by name would drop the opt-out while leaving every other check green. */
+const stagesEverythingItWrote = (text) => /add -A\b/.test(shellBody(text));
+
 /** The workflow with the branch its force-push targets swapped, leaving the rest intact. */
 const pushingTo = (text, branch) =>
   text.replace(/(push --force[\s\S]*?)"\$DATA_BRANCH"/, `$1"${branch}"`);
@@ -111,6 +125,24 @@ describe('the market-prices workflow', () => {
     expect(neverWritesPackages(`${workflow}\n          cp out.json packages/domain/src/data/\n`)).toBe(
       false,
     );
+  });
+
+  it('publishes a commit that opts itself out of being deployed', () => {
+    expect(optsOutOfDeployment(workflow)).toBe(true);
+
+    // Dropping the write leaves a commit that is built, fails, and mails the owner every pass.
+    expect(optsOutOfDeployment(workflow.replace(/^.*deploy-optout\.mjs.*$/m, ''))).toBe(false);
+    // Writing it after the commit is the same branch with the same emails and a green suite.
+    expect(
+      optsOutOfDeployment(
+        workflow
+          .replace(/^.*deploy-optout\.mjs.*$/m, '')
+          .replace(/(commit -q -m[^\n]*\n)/, '$1          node tools/market-snapshot/deploy-optout.mjs "$tmp" "$DATA_BRANCH"\n'),
+      ),
+    ).toBe(false);
+
+    expect(stagesEverythingItWrote(workflow)).toBe(true);
+    expect(stagesEverythingItWrote(workflow.replace('add -A', 'add "$SNAPSHOT"'))).toBe(false);
   });
 
   it('force-pushes only the derived data branch', () => {

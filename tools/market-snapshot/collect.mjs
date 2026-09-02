@@ -11,6 +11,8 @@ import { writeFileSync } from 'node:fs';
 import { basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { deployOptOutFiles } from './deploy-optout.mjs';
+
 const MS_PER_DAY = 86_400_000;
 
 /**
@@ -367,12 +369,22 @@ export function createPublisher({
    */
   const publishBranch = (body) =>
     timed('branch', body.length, async () => {
-      const blob = await post('git/blobs', {
-        content: Buffer.from(body, 'utf-8').toString('base64'),
-        encoding: 'base64',
-      });
+      const files = [{ path: snapshotName, content: body }, ...deployOptOutFiles(dataBranch)];
+      const blobs = await Promise.all(
+        files.map((file) =>
+          post('git/blobs', {
+            content: Buffer.from(file.content, 'utf-8').toString('base64'),
+            encoding: 'base64',
+          }),
+        ),
+      );
       const tree = await post('git/trees', {
-        tree: [{ path: snapshotName, mode: '100644', type: 'blob', sha: blob.sha }],
+        tree: files.map((file, index) => ({
+          path: file.path,
+          mode: '100644',
+          type: 'blob',
+          sha: blobs[index].sha,
+        })),
       });
       const commit = await post('git/commits', {
         message: `chore(market): snapshot ${new Date(now()).toISOString()}`,
