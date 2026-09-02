@@ -1,13 +1,21 @@
 import { useCopy } from '../../lib/copy';
 import type { LiveFieldCountdownModel } from '../../lib/live/live-model';
-import { CountdownValue } from './countdown-value';
+import { CountdownAbsentValue, CountdownValue, type CountdownSize } from './countdown-value';
 import { formatLiveDurationSeconds } from './format-live-duration';
 
-export function FieldCountdown({ testId, model }: { testId: string; model: LiveFieldCountdownModel | undefined }) {
+export function FieldCountdown({
+  testId,
+  model,
+  size = 'default',
+}: {
+  testId: string;
+  model: LiveFieldCountdownModel | undefined;
+  size?: CountdownSize;
+}) {
   const t = useCopy();
 
   if (!model) {
-    return <span data-testid={testId}>{t.valueNotAvailable}</span>;
+    return <CountdownAbsentValue testId={testId} label={t.valueNotAvailable} size={size} />;
   }
 
   return (
@@ -16,6 +24,7 @@ export function FieldCountdown({ testId, model }: { testId: string; model: LiveF
       formatted={formatLiveDurationSeconds(model.secondsRemaining)}
       qualified={model.basis === 'modelled'}
       qualifier={t.liveCountdownEstimatedQualifier}
+      size={size}
     />
   );
 }
