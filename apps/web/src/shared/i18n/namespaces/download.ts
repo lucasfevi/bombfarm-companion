@@ -47,6 +47,10 @@ export const en = {
   downloadPermissionOffLine: "Not allowed — the app has nothing to show",
   downloadStepPermissionRequirement:
     "This is not optional: without it every screen stays empty, because there is nothing for the app to read.",
+  downloadMiniHeading: "The mini window",
+  downloadMiniLede:
+    "Live also opens as a second, much smaller window that sits over the game while you play. Choose which panels it carries and which way it grows — the drawing follows every choice you make here.",
+  downloadMiniControlsTitle: "Panel layout",
   downloadIncludedHeading: "What you get",
   downloadScreenLiveTitle: "Live",
   downloadScreenLiveItem1: "Measured gold and XP per hour",
@@ -115,6 +119,10 @@ export const pt = {
   downloadPermissionOffLine: "Sem permissão — o app não tem o que mostrar",
   downloadStepPermissionRequirement:
     "Isso não é opcional: sem a permissão todas as telas ficam vazias, porque não há nada para o app ler.",
+  downloadMiniHeading: "A janela mini",
+  downloadMiniLede:
+    "O Ao vivo também abre como uma segunda janela, bem menor, que fica sobre o jogo enquanto você joga. Escolha quais painéis ela leva e para que lado ela cresce — o desenho acompanha cada escolha que você fizer aqui.",
+  downloadMiniControlsTitle: "Layout dos painéis",
   downloadIncludedHeading: "O que você leva",
   downloadScreenLiveTitle: "Ao vivo",
   downloadScreenLiveItem1: "Ouro e XP por hora, medidos",
