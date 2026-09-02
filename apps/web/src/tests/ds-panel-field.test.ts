@@ -23,6 +23,20 @@ import * as pf from '@bombfarm/ui/panel-field.recipe';
  * claim column 2, so the grid left it in the label cell and it rendered on top of the label.
  * `data-account-tree-value` and `data-math-check-value` are the same shape for their own screens;
  * this is the third, additive and matching them.
+ *
+ * `stackFieldsClass` GAINED a fifth marker, `data-switch` (2026-09-02), and the snapshot moved
+ * again. The desktop Window section's two always-on-top toggles rendered on top of their own
+ * labels: `Switch` is the one control primitive whose root element is a bare `<span>`, so it was
+ * caught by the label cell's own `[&_label>span]` rule instead of claiming column 2. This marker
+ * carries `flex-row` on top of the column, which the ones before it do not need — that rule also
+ * set `flex-col` on the switch, standing its track on end.
+ *
+ * `stackFieldsClass` also LOST a marker in the same change: `data-account-tree-value`, along with
+ * the `accountStackAlignClass` / `accountHouseStackClass` / `mathCheckPropStackClass` /
+ * `accountTreeValueClass` bundles and `data-math-check-value` with them. No element in either app
+ * wore those markers and nothing imported those bundles — this file was their only reader, so the
+ * guard was pinning strings that shipped to CSS and matched nothing. Their absence is asserted by
+ * name below, in the same shape as the retired-recipe removal that follows it.
  */
 
 const fieldControlDesc =
@@ -52,7 +66,7 @@ const chrome = {
   tdNeedInputClass: '',
   inlineFieldsClass: `grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-2 ${inlineLabelDesc} ${fieldControlDesc}`,
   inlineFieldsDenseClass: `grid grid-cols-[repeat(auto-fit,minmax(90px,1fr))] gap-2 ${inlineLabelDesc} ${fieldControlDesc}`,
-  stackFieldsClass: `grid grid-cols-1 gap-0 ${fieldControlDesc} [&_label]:grid [&_label]:grid-cols-[1fr_auto] [&_label]:items-center [&_label]:gap-x-2 [&_label]:border-b [&_label]:border-[color-mix(in_oklch,var(--line)_70%,transparent)] [&_label]:py-1.5 [&_label]:text-[13px] [&_label]:text-ink [&_label:last-child]:border-b-0 [&_label>span]:col-start-1 [&_label>span]:row-start-1 [&_label>span]:flex [&_label>span]:min-w-0 [&_label>span]:flex-col [&_label>span]:gap-0.5 [&_label>span_[data-field-hint]]:text-[11px] [&_label>span_[data-field-hint]]:font-normal [&_label>span_[data-field-hint]]:normal-case [&_label>span_[data-field-hint]]:text-muted [&_label_[data-num]]:col-start-2 [&_label_[data-num]]:row-start-1 [&_label_[data-num]]:w-[96px] [&_label_[data-account-tree-value]]:col-start-2 [&_label_[data-account-tree-value]]:row-start-1 [&_label_[data-account-tree-value]]:justify-self-end [&_label_[data-select]]:col-start-2 [&_label_[data-select]]:row-start-1 [&_label_[data-select]]:w-[96px] [&_label_[data-settings-value]]:col-start-2 [&_label_[data-settings-value]]:row-start-1 [&_label_[data-settings-value]]:justify-self-end`,
+  stackFieldsClass: `grid grid-cols-1 gap-0 ${fieldControlDesc} [&_label]:grid [&_label]:grid-cols-[1fr_auto] [&_label]:items-center [&_label]:gap-x-2 [&_label]:border-b [&_label]:border-[color-mix(in_oklch,var(--line)_70%,transparent)] [&_label]:py-1.5 [&_label]:text-[13px] [&_label]:text-ink [&_label:last-child]:border-b-0 [&_label>span]:col-start-1 [&_label>span]:row-start-1 [&_label>span]:flex [&_label>span]:min-w-0 [&_label>span]:flex-col [&_label>span]:gap-0.5 [&_label>span_[data-field-hint]]:text-[11px] [&_label>span_[data-field-hint]]:font-normal [&_label>span_[data-field-hint]]:normal-case [&_label>span_[data-field-hint]]:text-muted [&_label_[data-num]]:col-start-2 [&_label_[data-num]]:row-start-1 [&_label_[data-num]]:w-[96px] [&_label_[data-select]]:col-start-2 [&_label_[data-select]]:row-start-1 [&_label_[data-select]]:w-[96px] [&_label_[data-settings-value]]:col-start-2 [&_label_[data-settings-value]]:row-start-1 [&_label_[data-settings-value]]:justify-self-end [&_label_[data-switch]]:col-start-2 [&_label_[data-switch]]:row-start-1 [&_label_[data-switch]]:flex-row [&_label_[data-switch]]:justify-self-end`,
   fieldLabelClass: 'flex flex-col gap-[3px] text-[11px] tracking-[0.03em] text-muted uppercase',
   fieldControlClass: 'w-full rounded-sm border border-line bg-bg px-2 py-1.5 text-[13px] tabular-nums',
   stackLabelClass: 'grid grid-cols-[1fr_auto] items-center gap-2 text-[13px] text-ink',
@@ -171,13 +185,22 @@ const passthrough: Array<keyof typeof pf & keyof typeof chrome> = [
 ];
 
 describe('account house stack recipe', () => {
-  it('exports house stack classes', () => {
-    expect(pf.accountHouseStackClass).toContain('[&_label_[data-select]]:w-[14rem]');
-    expect(pf.accountHouseStackClass).toContain('[&_label_[data-num]]:w-[14rem]');
-    expect(pf.accountHouseStackClass).toContain(pf.accountStackAlignClass);
+  it('keeps the stack control slot the base 96px, with no Account-only widening left behind', () => {
     expect(pf.stackFieldsClass).toContain('[&_label_[data-select]]:w-[96px]');
-    expect(pf.stackFieldsClass).toContain('[&_label_[data-account-tree-value]]:justify-self-end');
-    expect(pf.accountTreeValueClass).toContain('tabular-nums');
+    expect(pf.stackFieldsClass).toContain('[&_label_[data-num]]:w-[96px]');
+    expect(pf.stackFieldsClass).not.toContain('w-[14rem]');
+  });
+
+  // The Account stack bundles are gone, not weakened — asserted by name, in the same shape as the
+  // retired-recipe removal below. Nothing rendered a `data-account-tree-value` or
+  // `data-math-check-value` element, and nothing imported the four bundles that dressed them, so
+  // Tailwind was emitting rules for selectors no element in either app could match.
+  it('no longer exports the Account/math-check stack bundles or their unworn markers', () => {
+    expect('accountStackAlignClass' in pf).toBe(false);
+    expect('accountHouseStackClass' in pf).toBe(false);
+    expect('mathCheckPropStackClass' in pf).toBe(false);
+    expect('accountTreeValueClass' in pf).toBe(false);
+    expect(pf.stackFieldsClass).not.toContain('data-account-tree-value');
   });
 
   // The keystone control/status recipe classes and stack variant
@@ -189,22 +212,9 @@ describe('account house stack recipe', () => {
     expect(pf.stackFieldsClass).not.toContain('data-keystone-control');
   });
 
-  it('reserves equal label slot height for single- and two-line Account rows', () => {
-    expect(pf.accountStackAlignClass).toContain('[&_label]:min-h-[3.25rem]');
-    expect(pf.accountStackAlignClass).toContain('[&_label>span]:min-h-[2.375rem]');
-    expect(pf.accountStackAlignClass).toContain('[&_label>span]:justify-center');
-  });
 });
 
 describe('math check stack alignment', () => {
-  it('shares 14rem control slot for Num, Select, and mit readout', () => {
-    expect(pf.mathCheckPropStackClass).toContain('[&_label_[data-num]]:w-[14rem]');
-    expect(pf.mathCheckPropStackClass).toContain('[&_label_[data-select]]:w-[14rem]');
-    expect(pf.mathCheckPropStackClass).toContain('[data-math-check-value]');
-    expect(pf.mathCheckPropStackClass).toContain('w-[14rem]');
-    expect(pf.mathCheckPropStackClass).toContain(pf.accountStackAlignClass);
-  });
-
   it('advice dual panes use uniform gap-2.5 and sit side-by-side above 720px', () => {
     expect(pf.adviceSplitClass).toContain('grid-cols-1');
     expect(pf.adviceSplitClass).toContain('min-[720px]:grid-cols-2');
