@@ -106,6 +106,9 @@ export interface TapDeps {
    *  status-only response — see {@link TapEvent}'s `body` field), stamped with this same clock.
    *  Optional so every existing construction site and test is unaffected. */
   readonly onHttpBody?: (body: Buffer, atMs: number) => void;
+  /** Fed the wire object every decoded tick was built from, so the keys the decoded tick does not
+   *  model survive past the decoder. Optional for the same reason as {@link ring}. */
+  readonly onObservedFrame?: (wire: Record<string, unknown>, atMs: number) => void;
 }
 
 function chooseTarget(candidates: readonly TapTargetProcess[]): TapTargetProcess {
@@ -132,6 +135,8 @@ export class Tap {
 
   #candidates = new Map<number, { readonly interceptor: TapInterceptor; readonly stream: TlsConnections }>();
   #winner: { readonly address: number; readonly stream: TlsConnections } | null = null;
+
+  #observedFrameStopped = false;
 
   #validationTimer: unknown = null;
   #stalenessTimer: unknown = null;
@@ -451,6 +456,7 @@ export class Tap {
         this.#deps.onHttpBody?.(event.body, this.#deps.clock.now());
       }
       if (event.kind !== 'tick') continue;
+      this.#reportObservedFrame(event.raw);
       this.#sequence += 1;
       this.#lastFrameAt = this.#deps.clock.now();
       if (this.#winner !== null && this.#currency.kind === 'gap') this.#reportLive();
@@ -458,6 +464,19 @@ export class Tap {
         type: 'frame',
         frame: { at: this.#nowIso(), sequence: this.#sequence, tick: event.tick },
       });
+    }
+  }
+
+  /** This port is a developer's, and it is called from inside the hook's own read callback — so a
+   *  throw here would travel into the interceptor and stop the tap reading at all. It is latched
+   *  off after one failure rather than retried per frame. */
+  #reportObservedFrame(wire: Record<string, unknown>): void {
+    if (this.#observedFrameStopped || this.#deps.onObservedFrame === undefined) return;
+    try {
+      this.#deps.onObservedFrame(wire, this.#deps.clock.now());
+    } catch (error) {
+      this.#observedFrameStopped = true;
+      this.#log.warn({ scope: 'live-source', event: 'tap.observed_frame_port_failed', error: String(error) });
     }
   }
 

@@ -154,6 +154,8 @@ interface HarnessOptions {
   readonly consent?: boolean;
   readonly pollIntervalMs?: number;
   readonly resolveRuntime?: () => Promise<TapRuntime>;
+  /** Passed through only when supplied, so the default harness keeps proving the port is optional. */
+  readonly onObservedFrame?: (wire: Record<string, unknown>, atMs: number) => void;
 }
 
 function createHarness(options: HarnessOptions = {}) {
@@ -184,6 +186,7 @@ function createHarness(options: HarnessOptions = {}) {
     onHttpBody: (body, atMs) => httpBodies.push({ body, atMs }),
     log: sharedLog,
     pollIntervalMs: options.pollIntervalMs ?? 1_000,
+    ...(options.onObservedFrame !== undefined ? { onObservedFrame: options.onObservedFrame } : {}),
   });
 
   return {
@@ -1168,5 +1171,67 @@ describe('Tap: teardown', () => {
     expect(infos).toContainEqual(
       expect.objectContaining({ event: 'tap.session_detach_timed_out', pid: 1_214 }),
     );
+  });
+});
+
+describe('Tap: observed frames reach onObservedFrame', () => {
+  const WIRE_TICK = { t: 'snap', heroes: [], jaula_state: 2, seca_secs: 41 };
+
+  async function attachedTap(options: HarnessOptions, pid: number, address: number) {
+    const harness = createHarness(options);
+    harness.processes.processes = [{ pid, name: PROCESS_NAME }];
+    harness.candidates.resolveResult = { addresses: [address], fromCache: false, buildId: null };
+    harness.tap.start();
+    await harness.clock.advance(0);
+    const interceptor = harness.runtime.sessions[0]?.interceptorsByAddress.get(address);
+    if (!interceptor) throw new Error('test setup: interceptor not installed');
+    return { ...harness, interceptor };
+  }
+
+  it('fires once per tick with the wire object and the tap clock reading', async () => {
+    const observed: Array<{ readonly wire: Record<string, unknown>; readonly atMs: number }> = [];
+    const { clock, interceptor } = await attachedTap(
+      { onObservedFrame: (wire, atMs) => observed.push({ wire, atMs }) },
+      7_001,
+      0xc000,
+    );
+
+    interceptor.fire({ ctx: 'ws-0', bytes: buildServerTextFrame(Buffer.from(JSON.stringify(WIRE_TICK), 'utf8')) });
+
+    expect(observed).toHaveLength(1);
+    expect(observed[0]?.wire).toEqual(WIRE_TICK);
+    expect(observed[0]?.atMs).toBe(clock.now());
+  });
+
+  it('never fires for a status-only HTTP response or any other non-tick event', async () => {
+    const observed: Record<string, unknown>[] = [];
+    const { interceptor } = await attachedTap({ onObservedFrame: (wire) => observed.push(wire) }, 7_002, 0xd000);
+
+    interceptor.fire({ ctx: 'rest-0', bytes: buildHttpResponse(204, 'No Content', '') });
+    interceptor.fire({ ctx: 'rest-1', bytes: buildHttpResponse(200, 'OK', JSON.stringify({ field_size: 3 })) });
+
+    expect(observed).toEqual([]);
+  });
+
+  it('survives a throwing port: the tap keeps decoding, and the failure is reported once', async () => {
+    const { interceptor, events, warnings } = await attachedTap(
+      {
+        onObservedFrame: () => {
+          throw new Error('recorder exploded');
+        },
+      },
+      7_003,
+      0xe000,
+    );
+
+    const frame = buildServerTextFrame(Buffer.from(JSON.stringify(WIRE_TICK), 'utf8'));
+    expect(() => {
+      interceptor.fire({ ctx: 'ws-0', bytes: frame });
+      interceptor.fire({ ctx: 'ws-0', bytes: frame });
+      interceptor.fire({ ctx: 'ws-0', bytes: frame });
+    }).not.toThrow();
+
+    expect(events.filter((event) => event.type === 'frame')).toHaveLength(3);
+    expect(warnings.filter((record) => record.event === 'tap.observed_frame_port_failed')).toHaveLength(1);
   });
 });
