@@ -20,7 +20,7 @@ export const CONVENTIONAL_BRANCH_PATTERN = new RegExp(
   `^(${CONVENTIONAL_BRANCH_TYPES.join('|')})/[a-z0-9]+(-[a-z0-9]+)*$`,
 );
 
-export const NAMING_EXEMPT_BRANCHES = ['main', 'develop', 'release/next', 'gh-pages'];
+export const NAMING_EXEMPT_BRANCHES = ['main', 'develop', 'release/next'];
 
 export const NAMING_EXEMPT_PREFIXES = ['backup/'];
 

@@ -129,15 +129,12 @@ Playwright serves `out/` via `e2e/scripts/serve-static.mjs` (port **4321**), sam
 
 Same test commands on `ubuntu-latest`; build artifact shared across smoke shards. Every test job writes a **blob report**; the `report` job merges all of them — 2 smoke shards + visual (when run) — into **one** HTML report.
 
-**Review CI diffs — no download:**
+**Review CI diffs:**
 
-1. The **PR comment** shows each diff image inline and links the merged report.
-2. **[Published report](https://lucasfevi.github.io/bombfarm-companion/)** — `reports/<run_id>/`, the full Playwright comparator (expected / actual / diff slider) for every failing test across all shards. Kept for the newest 20 runs.
-3. `pnpm test:e2e:report:ci` — downloads the single **`e2e-report`** artifact and opens it locally. This is the only copy with **traces**.
+1. The **PR comment** names each failing screenshot and which of expected / actual / diff exist.
+2. `pnpm test:e2e:report:ci` — downloads the single **`e2e-report`** artifact and opens it locally. It carries the merged report with the full Playwright comparator (expected / actual / diff slider), every diff image, and the **traces**.
 
-> Trace files are stripped from the published Pages copy because they embed page snapshots, network payloads and source; screenshots of the already-public app are published as-is. Full traces stay in the Actions `e2e-report` artifact.
-
-Diff images are referenced by `https` URL, never base64 — GitHub's markdown sanitizer strips `data:` URIs from job summaries and comments, so inline base64 always renders broken.
+Reviewing a diff means downloading that artifact; the comment cannot show one. Rendering an image inline needs an `https` URL that outlives the comment, so it would mean hosting the images somewhere. Base64 is not the way around that — GitHub's markdown sanitizer strips `data:` URIs from job summaries and comments alike, so inline base64 always renders broken.
 
 ### Projects
 
@@ -154,7 +151,7 @@ Both use `colorScheme: 'dark'`, viewport `1280×800`, DSR 1, `reducedMotion: 're
 | `build-e2e` | Single `pnpm build:e2e` → artifact `e2e-static-out` |
 | `smoke-shard` | Matrix **2** shards — smoke project → blob report |
 | `visual-e2e` | Visual project on `develop`/`main` (or PR label `visual-ci`); specs may still be `describe.skip` → blob report |
-| `report` | On failure: merge all blobs → publish to Pages, upload one artifact, upsert PR comment |
+| `report` | On failure: merge all blobs → upload one artifact, upsert PR comment |
 | `report-resolved` | On green: rewrite the PR comment so an approved run stops showing stale diffs |
 | **`e2e-smoke`** | Required gate |
 | **`e2e-visual`** | Required gate |
@@ -175,9 +172,8 @@ pnpm test:e2e:report
 
 **From CI:**
 
-1. PR comment → inline diff images + link to the merged report
-2. Published report URL → full comparator for every shard
-3. With traces, offline: `pnpm test:e2e:report:ci`
+1. PR comment → which screenshots failed, and which of expected / actual / diff exist
+2. `pnpm test:e2e:report:ci` → the full comparator for every shard, the diff images, and the traces
 
 Pass extra Playwright args through Docker:
 
@@ -193,14 +189,13 @@ pnpm test:e2e:visual -- e2e/visual.spec.ts
 | Docker not running | Start Docker Desktop; retry |
 | Stale Linux deps after lockfile change | `docker volume rm bombfarm-companion-web-e2e-node-modules` then re-run |
 | Playwright version bump | `pnpm test:e2e:docker:build` |
-| Need CI diffs without local Docker | PR comment → inline images, or the published report URL |
-| Diff images render broken in a comment | Never use `data:` URIs — GitHub strips them. Reference the published `https` URL |
-| Published report 404s | The `report` job only publishes on failure, and skips fork PRs; check its log |
-| Need traces from CI | `pnpm test:e2e:report:ci` — traces are stripped from the public copy |
+| Need CI diffs without local Docker | `pnpm test:e2e:report:ci` — the comment names the diffs, it cannot show them |
+| Diff images render broken in a comment | Expected; there is nowhere hosting them. `data:` URIs will not work either — GitHub strips them |
+| Need traces from CI | `pnpm test:e2e:report:ci` — the artifact carries them |
 
 ## Approving diffs from the PR
 
-Once you have reviewed every diff in the published report:
+Once you have reviewed every diff in the downloaded report:
 
 - **Accept** — add the **`update-snapshots`** label to the PR. [`e2e-update-baselines.yml`](../.github/workflows/e2e-update-baselines.yml) regenerates the Linux Chromium screenshots on the runner, pushes them to the branch, removes the label, and comments the commit SHA. The next e2e run turns the PR comment green.
 - **Reject** — fix the product or the test. Do not label.

@@ -12,7 +12,6 @@ This repo uses a two-branch integration model. Feature work lands on **`develop`
 | `main` | Release-only — reachable via a release PR from `develop` or the hotfix path below |
 | `<type>/*` | Short-lived work branches — see [Branch names](#branch-names) |
 | `release/next` | Machine branch — changesets release PR; exempt from the naming rule |
-| `gh-pages` | Machine branch — CI-owned visual-report host; exempt from protection, the local guard, and the naming rule |
 
 ## Branch names
 
@@ -32,7 +31,7 @@ for commit subjects. The branch then reads like the commit that will land it.
 Good: `feat/rotation-pool-redesign`, `fix/stale-vip-window`, `docs/comments-hard-truth`.
 Bad: `comments`, `lucas/wip`, `feat/ACS-06`, `claude/code-comment-policy-924368`.
 
-Exempt: `main`, `develop`, `release/next`, `gh-pages`, and `backup/*` snapshots.
+Exempt: `main`, `develop`, `release/next`, and `backup/*` snapshots.
 
 This is enforced — the [local guard](#local-guard) refuses a push from a branch that does not match.
 
@@ -85,7 +84,6 @@ Shared by both branches:
 - Branches do **not** need to be up to date before merge (`strict: false`)
 - Direct pushes blocked; force pushes and branch deletion blocked
 - `enforce_admins: true` — no owner bypass
-- `gh-pages` is **not** protected — CI pushes to it directly
 
 Where they differ:
 
@@ -135,7 +133,6 @@ gh api repos/$OWNER/$REPO/branches/develop/protection \
 # main must report linear:false — see Merge strategy in releases.md
 gh api repos/$OWNER/$REPO/branches/main/protection \
   --jq '{checks: [.required_status_checks.checks[].context], linear: .required_linear_history.enabled, admins: .enforce_admins.enabled}'
-gh api repos/$OWNER/$REPO/branches/gh-pages/protection 2>&1 | head -1
 # main must allow "merge" and nothing else
 gh api repos/$OWNER/$REPO/rules/branches/main \
   --jq '.[] | select(.type == "pull_request") | .parameters.allowed_merge_methods'
@@ -152,7 +149,6 @@ A Husky pre-push hook (`.husky/pre-push` → `tools/pre-push-guard.mjs`) refuses
 2. **Branch names that do not match [the pattern above](#branch-names)**, with the `git branch -m` command to fix it.
 
 - **Bypass:** `git push --no-verify` (documented escape hatch for legitimate release actions)
-- **`gh-pages` is not guarded** — the hook's protected list excludes it; CI pushes from a temp clone without Husky installed
 - **Deleting a badly-named branch is always allowed** — a delete-push carries an all-zero local sha, and refusing it would trap you halfway through the rename it is asking for
 - **`release/next` and `backup/*` are exempt from the naming rule**, since neither is hand-authored work
 

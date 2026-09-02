@@ -2,12 +2,12 @@
 /**
  * Build the PR comment / job summary body for a failed e2e run.
  *
- * Diff images are referenced by https URL from the published Pages report —
- * GitHub's markdown sanitizer strips `data:` URIs, so inline base64 can never
- * render in a comment or job summary.
+ * The comment names the diffs and points at the `e2e-report` artifact; it cannot show them.
+ * Rendering one inline needs an https URL that outlives the comment, so it would mean hosting the
+ * images somewhere — and inline base64 is not the way around that, because GitHub's markdown
+ * sanitizer strips `data:` URIs from comments and job summaries alike.
  *
- * Env: REPORT_URL (empty when publishing was skipped), RUN_URL,
- *      SMOKE_RESULT, VISUAL_RESULT
+ * Env: RUN_URL, SMOKE_RESULT, VISUAL_RESULT
  * Writes: pr-comment.md
  */
 import fs from 'node:fs';
@@ -17,7 +17,6 @@ const ROOT = process.cwd();
 const DIFF_DIR = path.join(ROOT, 'visual-diffs');
 const OUT_FILE = path.join(ROOT, 'pr-comment.md');
 
-const REPORT_URL = (process.env.REPORT_URL || '').replace(/\/+$/, '');
 const RUN_URL = process.env.RUN_URL || '';
 const SMOKE_RESULT = process.env.SMOKE_RESULT || 'unknown';
 const VISUAL_RESULT = process.env.VISUAL_RESULT || 'unknown';
@@ -56,21 +55,11 @@ function main() {
   lines.push(resultRow('visual', VISUAL_RESULT));
   lines.push('');
 
-  if (REPORT_URL) {
-    lines.push(
-      `### 🔍 [Open the merged report](${REPORT_URL}/)`,
-      '',
-      'Every shard — smoke and visual — in one HTML report, with the expected / actual / diff comparator.',
-      '',
-    );
-  } else {
-    lines.push(
-      '> The online report was not published for this run (fork PR, or the failure happened before ' +
-        'any test produced a report). Download the **`e2e-report`** artifact from the ' +
-        `[run](${RUN_URL}) if it exists — it bundles the merged report and every diff.`,
-      '',
-    );
-  }
+  lines.push(
+    `> Download the **\`e2e-report\`** artifact from the [run](${RUN_URL}) — it bundles the merged ` +
+      'HTML report, with the expected / actual / diff comparator, and every diff image.',
+    '',
+  );
 
   if (groups.length === 0) {
     lines.push(
@@ -81,18 +70,7 @@ function main() {
     lines.push(`### Screenshot diffs (${groups.length})`, '');
     for (const g of groups) {
       lines.push(`<details open><summary><code>${g.base}</code></summary>`, '');
-      if (REPORT_URL && g.diff) {
-        lines.push(`<img alt="${g.base} diff" src="${REPORT_URL}/diffs/${g.diff}" width="900" />`, '');
-      }
-      if (REPORT_URL) {
-        const links = ['expected', 'actual', 'diff']
-          .filter((kind) => g[kind])
-          .map((kind) => `[${kind}](${REPORT_URL}/diffs/${g[kind]})`)
-          .join(' · ');
-        lines.push(links, '');
-      } else {
-        lines.push(`_Files: ${['expected', 'actual', 'diff'].filter((k) => g[k]).join(', ')}_`, '');
-      }
+      lines.push(`_Files: ${['expected', 'actual', 'diff'].filter((k) => g[k]).join(', ')}_`, '');
       lines.push('</details>', '');
     }
   }
@@ -116,12 +94,12 @@ function main() {
       groups.length > 0 ? ', `pnpm test:e2e:update` (Docker) accepts diffs' : ''
     }.`,
     '',
-    `<sub>Trace files are stripped from the published report (the Pages site is public). Download the \`e2e-report\` artifact from the [run](${RUN_URL}) for traces.</sub>`,
+    `<sub>Traces, diff images and the full comparator are all in the \`e2e-report\` artifact on the [run](${RUN_URL}).</sub>`,
     '',
   );
 
   fs.writeFileSync(OUT_FILE, lines.join('\n'));
-  console.log(`Wrote pr-comment.md — ${groups.length} diff group(s), report ${REPORT_URL || '(unpublished)'}`);
+  console.log(`Wrote pr-comment.md — ${groups.length} diff group(s)`);
 }
 
 main();

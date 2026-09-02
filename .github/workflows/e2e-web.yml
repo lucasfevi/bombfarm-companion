@@ -25,7 +25,6 @@ permissions:
 
 env:
   SHARD_TOTAL: 2
-  PAGES_ROOT: https://lucasfevi.github.io/bombfarm-companion
 
 jobs:
   changes:
@@ -288,7 +287,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      contents: write
+      contents: read
       pull-requests: write
       actions: write
     defaults:
@@ -367,79 +366,9 @@ jobs:
             gh api -X DELETE "repos/${REPO}/actions/artifacts/${id}" && echo "deleted artifact ${id}"
           done
 
-      - name: Resolve publish eligibility
-        id: publish
-        env:
-          IS_FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
-          HAS_BLOBS: ${{ steps.inputs.outputs.blobs }}
-        run: |
-          if [ "$IS_FORK" = "true" ] || [ "$HAS_BLOBS" != "true" ]; then
-            echo "eligible=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "eligible=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Stage publishable copy (no traces)
-        if: steps.publish.outputs.eligible == 'true'
-        run: node e2e/scripts/stage-published-report.mjs
-
-      - name: Publish report to GitHub Pages
-        id: pages
-        if: steps.publish.outputs.eligible == 'true'
-        continue-on-error: true
-        working-directory: .
-        env:
-          RUN_ID: ${{ github.run_id }}
-          KEEP_REPORTS: '20'
-        run: |
-          set -euo pipefail
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          tmp=$(mktemp -d)
-          git clone --depth 1 --branch gh-pages \
-            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "$tmp" 2>/dev/null || {
-            git clone --depth 1 "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "$tmp"
-            git -C "$tmp" checkout --orphan gh-pages
-            git -C "$tmp" rm -rf . >/dev/null 2>&1 || true
-          }
-
-          touch "$tmp/.nojekyll"
-          mkdir -p "$tmp/reports"
-          rm -rf "$tmp/reports/${RUN_ID}"
-          cp -r apps/web/publish-report "$tmp/reports/${RUN_ID}"
-
-          stale=$(ls -1 "$tmp/reports" | sort -n | head -n "-${KEEP_REPORTS}" || true)
-          for old in $stale; do
-            rm -rf "$tmp/reports/$old"
-            echo "pruned reports/$old"
-          done
-
-          git -C "$tmp" add -A
-          if git -C "$tmp" diff --staged --quiet; then
-            echo "Nothing to publish — this run's report is already on gh-pages."
-            echo "published=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          git -C "$tmp" commit -m "ci: visual report for run ${RUN_ID}"
-
-          for attempt in 1 2 3 4 5; do
-            if git -C "$tmp" push origin gh-pages; then
-              echo "published on attempt ${attempt}"
-              echo "published=true" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            echo "push rejected, rebasing (attempt ${attempt})"
-            git -C "$tmp" fetch origin gh-pages
-            git -C "$tmp" rebase origin/gh-pages || git -C "$tmp" rebase --abort
-            sleep $((attempt * 5))
-          done
-          echo "::warning::Could not push the report to gh-pages after 5 attempts."
-
       - name: Build review summary and PR comment
         if: always()
         env:
-          REPORT_URL: ${{ steps.pages.outputs.published == 'true' && format('{0}/reports/{1}', env.PAGES_ROOT, github.run_id) || '' }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           SMOKE_RESULT: ${{ needs.smoke-shard.result }}
           VISUAL_RESULT: ${{ needs.visual-e2e.result }}
