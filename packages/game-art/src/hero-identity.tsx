@@ -1,7 +1,7 @@
 'use client';
 
 import { RARITIES } from '@bombfarm/domain/planner-constants';
-import { rarityLabel } from '@bombfarm/domain/game-labels';
+import { heroLevelLabel, rarityLabel } from '@bombfarm/domain/game-labels';
 import type { Lang } from '@bombfarm/domain/shims/i18n';
 import { cn } from '@bombfarm/ui';
 import { HeroAvatar } from './hero-avatar';
@@ -103,14 +103,14 @@ export function HeroIdentity({
               className={cn('mt-1 text-[10px] leading-none text-muted', level === undefined && 'invisible')}
               aria-hidden={level === undefined ? true : undefined}
             >
-              Lv {level ?? 0}
+              {heroLevelLabel(level ?? 0, lang)}
             </div>
           </>
         ) : (
           <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] leading-none">
             {rarity}
             <span className="shrink-0 text-muted">
-              Lv {level}
+              {level === undefined ? '' : heroLevelLabel(level, lang)}
               <span aria-hidden> · </span>#{shortId}
             </span>
           </div>
