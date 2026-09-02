@@ -189,6 +189,11 @@ function bool(value: unknown, fallback = false): boolean {
   return typeof value === 'boolean' ? value : fallback;
 }
 
+/** Keeps "the save did not say" distinct from "the save said no". */
+function optionalBool(value: unknown): boolean | undefined {
+  return typeof value === 'boolean' ? value : undefined;
+}
+
 /**
  * Maps `skills.totals` (skill-tree aggregate bonuses) and `casa` (current house)
  * into the app's account-wide TreeState/HeroContext shape.
@@ -586,6 +591,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
     const rank = typeof rawHero.rank === 'string' ? rawHero.rank : null;
     const deployed = bool(rawHero.in_field);
     const battleAllowed = bool(rawHero.battle_allowed, true);
+    const marketable = optionalBool(rawHero.marketable);
     const stars = asNumber(rawHero.stars, 0);
     // An out-of-range skin degrades to the neutral placeholder
     // (0), never a nearest-index clamp — absence (undefined/null) is normal
@@ -740,6 +746,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
       power: power || undefined,
       deployed,
       battleAllowed,
+      marketable,
       skin,
       birth,
     };

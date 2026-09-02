@@ -13,6 +13,7 @@ import {
   bagFromStorage,
   holdingsLabels,
   holdingsRows,
+  priceableHeroes,
   skinsWornBy,
 } from './account-holdings';
 
@@ -38,9 +39,10 @@ export function useAccountHoldings(): Omit<HoldingsViewProps, 'bagLink' | 'class
   }, [importedAt]);
 
   const skinsWorn = useMemo(() => skinsWornBy(heroes), [heroes]);
+  const sellable = useMemo(() => priceableHeroes(heroes), [heroes]);
   const holdings = useMemo(
-    () => accountHoldingsFrom({ bag, skinsWorn, snapshot }),
-    [bag, skinsWorn, snapshot],
+    () => accountHoldingsFrom({ bag, heroes: sellable, skinsWorn, snapshot }),
+    [bag, sellable, skinsWorn, snapshot],
   );
   const labels = useMemo(() => holdingsLabels(t, lang), [t, lang]);
 

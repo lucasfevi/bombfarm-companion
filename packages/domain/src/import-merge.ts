@@ -19,7 +19,7 @@ export function recomputeGearedSheet(
 /**
  * Re-import OVERWRITE, not a gear-refresh merge. The incoming
  * birth-backed record (naked, gearedOverride, pts, level, stars, abilities, rarity, loadout,
- * name, skin, rank, power, deployed, battleAllowed) is authoritative — re-deriving
+ * name, skin, rank, power, deployed, battleAllowed, marketable) is authoritative — re-deriving
  * `gearedOverride` from `applyGear` (via `recomputeGearedSheet`) would drop the tree
  * `composeSheetFromBirth` already applied once. Only `id`, `sourceId` and
  * `altLoadout` — the three planner-only / identity fields the save knows nothing about —

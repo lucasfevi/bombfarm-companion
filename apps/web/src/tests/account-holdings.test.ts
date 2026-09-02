@@ -3,7 +3,13 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { HoldingsView } from '@bombfarm/account/holdings';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
-import type { CatalogView, MarketEntry, MarketSnapshot } from '@bombfarm/pricing';
+import type { RarityKey } from '@bombfarm/domain/model';
+import type {
+  CatalogView,
+  MarketEntry,
+  MarketSnapshot,
+  PriceableHero,
+} from '@bombfarm/pricing';
 import {
   buildSnapshot,
   categoryKey,
@@ -17,6 +23,7 @@ import {
   bagFromStorage,
   holdingsLabels,
   holdingsRows,
+  priceableHeroes,
   skinsWornBy,
 } from '@/features/account/model/account-holdings';
 import { bagTotals } from '@/features/inventory/model/use-inventory-prices';
@@ -114,13 +121,20 @@ const BAG = [
 ];
 
 const ROYAL_SENTINEL = 8;
-const ROSTER = [{ skin: ROYAL_SENTINEL }, { skin: ROYAL_SENTINEL }, { skin: 0 }];
+
+/** One hero the snapshot quotes, one the account binds, one of a rarity nobody is listing. */
+const ROSTER: { rarity: RarityKey; marketable?: boolean; skin: number }[] = [
+  { rarity: 'Raro', marketable: true, skin: ROYAL_SENTINEL },
+  { rarity: 'Raro', marketable: false, skin: ROYAL_SENTINEL },
+  { rarity: 'Incomum', marketable: true, skin: 0 },
+];
 
 const holdingsOf = (
   bag: readonly InventoryViewItem[] | null,
   skinsWorn: readonly number[] | null,
   snapshot: MarketSnapshot | null = SNAPSHOT,
-) => accountHoldingsFrom({ bag, skinsWorn, snapshot });
+  heroes: readonly PriceableHero[] | null = null,
+) => accountHoldingsFrom({ bag, heroes, skinsWorn, snapshot });
 
 /** The text of one `data-testid` slot, or null when the view did not render it at all. */
 function slot(html: string, testId: string): string | null {
@@ -130,10 +144,11 @@ function slot(html: string, testId: string): string | null {
 function renderSection(
   bag: readonly InventoryViewItem[] | null,
   skinsWorn: readonly number[] | null,
+  heroes: readonly PriceableHero[] | null = null,
 ): string {
   return renderToStaticMarkup(
     createElement(HoldingsView, {
-      ...holdingsRows(holdingsOf(bag, skinsWorn)),
+      ...holdingsRows(holdingsOf(bag, skinsWorn, SNAPSHOT, heroes)),
       labels: holdingsLabels(STRINGS.en, 'en'),
     }),
   );
@@ -158,13 +173,47 @@ describe('account holdings — the three components the section reads', () => {
     });
   });
 
-  it('withholds heroes even for a full roster, because a save cannot say which may be sold', () => {
-    const holdings = holdingsOf(BAG, ROSTER.map((hero) => hero.skin));
+  it('prices the heroes the game permits selling, and leaves the bound ones out of both counts', () => {
+    const holdings = holdingsOf(
+      BAG,
+      ROSTER.map((hero) => hero.skin),
+      SNAPSHOT,
+      priceableHeroes(ROSTER),
+    );
+
+    expect(holdings.heroes).toEqual({ amount: 50, priced: 1, eligible: 2, withheld: false });
+    expect(holdings.withheld).toEqual([]);
+    expect(holdings.total).toBe(90);
+  });
+
+  it('still withholds heroes for a roster stored before anything read the flag', () => {
+    const stale = ROSTER.map(({ rarity, skin }) => ({ rarity, skin }));
+    const holdings = holdingsOf(
+      BAG,
+      stale.map((hero) => hero.skin),
+      SNAPSHOT,
+      priceableHeroes(stale),
+    );
 
     expect(holdings.heroes).toEqual({ amount: 0, priced: 0, eligible: 0, withheld: true });
     expect(holdings.withheld).toEqual(['heroes']);
     // The snapshot does quote a rarity-2 hero, so the zero is a decision and not an empty market.
     expect(holdings.total).toBe(40);
+  });
+
+  it('answers zero for a roster where every hero is bound, rather than calling it unread', () => {
+    const allBound = ROSTER.map(({ rarity, skin }) => ({ rarity, skin, marketable: false }));
+    const holdings = holdingsOf(
+      BAG,
+      allBound.map((hero) => hero.skin),
+      SNAPSHOT,
+      priceableHeroes(allBound),
+    );
+
+    // The same zero as the roster above, and a different KIND of zero: every hero answered, and
+    // every answer was no. Withholding here would report an answered question as unasked.
+    expect(holdings.heroes).toEqual({ amount: 0, priced: 0, eligible: 0, withheld: false });
+    expect(holdings.withheld).toEqual([]);
   });
 
   it('reads an empty roster as no save rather than as a player wearing nothing bought', () => {

@@ -1,6 +1,13 @@
 import type { HoldingsLabels, HoldingsRowId, HoldingsViewProps } from '@bombfarm/account/holdings';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
-import type { AccountHoldings, MarketSnapshot, PriceableItem } from '@bombfarm/pricing';
+import type { RarityKey } from '@bombfarm/domain/model';
+import { RARITIES } from '@bombfarm/domain/planner-constants';
+import type {
+  AccountHoldings,
+  MarketSnapshot,
+  PriceableHero,
+  PriceableItem,
+} from '@bombfarm/pricing';
 import { accountHoldings } from '@bombfarm/pricing';
 import { formatMoney, sub, type Lang, type Strings } from '@/shared/i18n';
 import type { StoredInventoryView } from '@/shared/lib/inventory-view-storage';
@@ -11,6 +18,8 @@ export const HOLDINGS_CURRENCY = 'BRL';
 export interface AccountHoldingsSource {
   /** Every row of the stored bag, or null when no save has been imported into this browser. */
   bag: readonly InventoryViewItem[] | null;
+  /** The roster as the market sees it, or null when no hero in it can answer for itself. */
+  heroes: readonly PriceableHero[] | null;
   /** Each hero's worn skin index, or null when there is no roster to read them off. */
   skinsWorn: readonly number[] | null;
   snapshot: MarketSnapshot | null;
@@ -23,12 +32,23 @@ const priceable = (item: InventoryViewItem): PriceableItem => ({
 });
 
 /**
- * Whether a hero may be sold is the game's own `marketable` flag, and a save export's hero records
- * carry nothing the planner can derive it from. Pricing every hero would count account-bound ones
- * the game refuses to list; pricing none would report a whole roster as worthless. So this surface
- * withholds the component rather than inventing either answer.
+ * The roster as the market sees it, or null when not one hero in it can answer for itself.
+ *
+ * A hero carrying the game's `marketable` flag as `false` HAS answered: the account holds it and
+ * the market will not list it, so it prices at nothing and belongs in no denominator. A roster
+ * where no hero carries the flag at all is the other thing — heroes stored before the planner read
+ * the flag, which nobody has asked yet — and only that withholds the whole component. Same shape
+ * for a hero the planner built by hand, which the game has never seen and cannot sell.
  */
-const HEROES_ARE_UNREADABLE_HERE = null;
+export function priceableHeroes(
+  heroes: readonly { rarity: RarityKey; marketable?: boolean }[],
+): PriceableHero[] | null {
+  if (!heroes.some((hero) => hero.marketable != null)) return null;
+  return heroes.map((hero) => ({
+    rarity: RARITIES.indexOf(hero.rarity),
+    marketable: hero.marketable ?? false,
+  }));
+}
 
 /**
  * An account always has heroes, so an empty roster is a browser that has imported no save rather
@@ -46,12 +66,13 @@ export function bagFromStorage(stored: StoredInventoryView): InventoryViewItem[]
 
 export function accountHoldingsFrom({
   bag,
+  heroes,
   skinsWorn,
   snapshot,
 }: AccountHoldingsSource): AccountHoldings {
   return accountHoldings({
     bag: bag == null ? null : bag.map(priceable),
-    heroes: HEROES_ARE_UNREADABLE_HERE,
+    heroes,
     skinsWorn,
     snapshot,
     currency: HOLDINGS_CURRENCY,
