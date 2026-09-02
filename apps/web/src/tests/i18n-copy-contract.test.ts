@@ -208,26 +208,22 @@ describe('i18n copy contract — Luck row states it is loot-facing, not scored f
 });
 
 /**
- * Farm Respec Advisor T7 — the same lower-bound-vs-precise shape as the reset-advice contract
- * above, applied to the toolbar headline (Tier 1, a conservative gate estimate) vs. the panel
- * (Tier 2, the fuller on-demand solve). Tier 2 legitimately reports a HIGHER number than Tier 1
- * — that is the two-tier design working, not an inconsistency — so the two keys must carry
- * distinct wording: the headline hedges, the panel does not.
+ * The panel reports the solve's own number and nothing hedged. There used to be a second,
+ * conservative estimate shown in the toolbar, and this contract kept the two from reading as if
+ * one corrected the other. That estimate is gone — the panel is the only place a gain figure
+ * appears — so what survives is the half that still has a subject: the panel never hedges, and
+ * never phrases its figure as a correction of some earlier one.
  */
 const FARM_RESPEC_LOWER_BOUND_MARKER: Record<Lang, RegExp> = {
   en: /at least ~?\{pct\}%/i,
   pt: /pelo menos ~?\{pct\}%/i,
 };
 
-describe('i18n copy contract — Farm Respec Advisor headline is a lower bound, the panel is not', () => {
+describe('i18n copy contract — the Farm Respec Advisor panel states its gain outright', () => {
   for (const lang of LANGS) {
     const t = STRINGS[lang];
 
-    it(`${lang}: farmRespecHeadlineGain (Tier 1) carries the lower-bound hedge`, () => {
-      expect(t.farmRespecHeadlineGain).toMatch(FARM_RESPEC_LOWER_BOUND_MARKER[lang]);
-    });
-
-    it(`${lang}: farmRespecPanelGain (Tier 2) does NOT carry the lower-bound hedge — a larger number here is the copy working, not a correction`, () => {
+    it(`${lang}: farmRespecPanelGain does NOT carry a lower-bound hedge, and does not read as a correction`, () => {
       expect(t.farmRespecPanelGain).not.toMatch(FARM_RESPEC_LOWER_BOUND_MARKER[lang]);
       for (const pattern of CORRECTION_PATTERNS[lang]) {
         expect(t.farmRespecPanelGain).not.toMatch(pattern);

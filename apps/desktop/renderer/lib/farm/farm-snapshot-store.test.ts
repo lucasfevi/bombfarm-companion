@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { FarmInputs, FarmRankingResult, FarmRespecGate } from '@bombfarm/farm/core';
+import type { FarmInputs, FarmRankingResult } from '@bombfarm/farm/core';
 import type { FarmControls } from './farm-inputs';
 import {
   accept,
@@ -17,9 +17,8 @@ const OTHER_CONTROLS: FarmControls = { farmPoolOverrides: {}, farmReturnBonus: '
 
 const BOARD = { rows: [], reason: null } as FarmRankingResult;
 const INPUTS = {} as FarmInputs;
-const GATE: FarmRespecGate = { result: null, reason: 'no-roster', shouldSurface: false };
 const COMPUTED_AT = '2026-08-12T00:00:00.000Z';
-const SETTLED = { ok: true, board: BOARD, inputs: INPUTS, gate: GATE, computedAt: COMPUTED_AT } as const;
+const SETTLED = { ok: true, board: BOARD, inputs: INPUTS, computedAt: COMPUTED_AT } as const;
 
 function computing(sourceKey: string, controls: FarmControls = CONTROLS): FarmSnapshotState {
   return accept(initialFarmSnapshotState, { kind: 'begin', sourceKey, controls });
@@ -162,13 +161,12 @@ describe('computed — latest wins, everything else is discarded', () => {
     expect(again).toBe(first);
   });
 
-  it('an accepted result carries the board, the inputs it was computed from, its gate, when it was computed and its source', () => {
+  it('an accepted result carries the board, the inputs it was computed from, when it was computed and its source', () => {
     const state = ready('key-a');
     expect(state).toEqual({
       status: 'ready',
       board: BOARD,
       inputs: INPUTS,
-      gate: GATE,
       computedAt: COMPUTED_AT,
       controls: CONTROLS,
       sourceKey: 'key-a',
@@ -182,7 +180,6 @@ describe('computed — latest wins, everything else is discarded', () => {
         status: 'ready',
         board: arrival.outcome.board,
         inputs: arrival.outcome.inputs,
-        gate: arrival.outcome.gate,
         computedAt: arrival.outcome.computedAt,
         controls: arrival.controls,
         sourceKey: arrival.sourceKey,
@@ -225,7 +222,6 @@ describe('a recompute keeps the board that is already on screen', () => {
     expect(settledBoard(recomputing)).toEqual({
       board: BOARD,
       inputs: INPUTS,
-      gate: GATE,
       computedAt: COMPUTED_AT,
     });
   });

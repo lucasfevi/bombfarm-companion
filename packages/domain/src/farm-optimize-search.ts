@@ -16,8 +16,6 @@ const EPS_REL = 1e-9;
 
 /** Outer coordinate-descent sweep bound. */
 export const FARM_OPT_MAX_SWEEPS = 8;
-/** Every N-th phase is probed by Tier 1's CANDIDATE sweeps (never the current build's). */
-export const FARM_OPT_GATE_PHASE_STRIDE = 5;
 /** Canonical seed energy shares, in seed order. */
 export const FARM_OPT_SEED_ENERGY_SHARES: readonly number[] = [0.25, 0.5, 0.75];
 /** The share-ladder move family AND the plateau probe grid: 0, 0.05, … 1.00. */
@@ -28,8 +26,6 @@ export const FARM_OPT_PLATEAU_SHARES: readonly number[] = [
 export const FARM_OPT_PLATEAU_TOLERANCE_PCT = 1;
 /** How many heroes are candidates for each frontier tier. */
 export const FARM_OPT_FRONTIER_CANDIDATES = 3;
-/** Evaluation bound for the whole Tier 1 gate. */
-export const FARM_OPT_GATE_MAX_EVALUATIONS = 64;
 /** Evaluation bound for the whole Tier 2 call — joint solve plus every frontier re-solve. */
 export const FARM_OPT_FULL_MAX_EVALUATIONS = 8_000;
 /** Share of the Tier 2 bound reserved for the joint solve; the rest funds the frontier. */
@@ -384,51 +380,3 @@ export function runFarmSearch(
   return { winner, winningSeedName, evaluations, sweeps, budgetExhausted, ladder };
 }
 
-export type FarmGateOutcome = {
-  winner: FarmCandidate;
-  /** The current build's own evaluation, on the FULL phase set — the gate's reference point AND
-   *  one of the candidates the comparator picks among. */
-  currentEval: { squad: SquadFarmFacts; pick: FarmPhasePick | null; value: number };
-  evaluations: number;
-};
-
-/**
- * Tier 1's seed stage (design.md §4.8): the CURRENT build is scored on the FULL phase set; every
- * other canonical seed is scored on a phase grid subsampled by `gatePhaseStride`. Subsampling
- * only the candidates means `gainPct` can only be UNDER-stated relative to the true optimum,
- * never over-stated — the lower-bound contract Tier 1 promises. No local search, no ladder —
- * seeds only, `<= 1 + 5` evaluations.
- */
-export function runFarmGateSeeds(
-  bases: readonly HeroFarmBasis[],
-  searchableIds: readonly string[],
-  budgetById: ReadonlyMap<string, number>,
-  account: AccountShared,
-  objective: ResolvedFarmObjective,
-  scales: FarmObjectiveScales,
-  phaseOptions: FarmRateOptions,
-  gatePhaseStride: number,
-  evaluationBudget: number,
-): FarmGateOutcome {
-  const searchableSet = new Set(searchableIds);
-  let evaluations = 0;
-
-  const currentEval = evaluateAssignment(bases, null, account, objective, scales, phaseOptions);
-  evaluations += 1;
-
-  const candidates: FarmCandidate[] = [
-    { name: 'current', assignment: new Map(), value: currentEval.value, pick: currentEval.pick, squad: currentEval.squad },
-  ];
-
-  for (const seedDef of SEED_DEFS) {
-    if (seedDef.energyShare === null) continue; // 'current' is already evaluated above, at full resolution.
-    if (evaluations >= evaluationBudget) break;
-    const assignment = buildSeedAssignment(bases, searchableSet, budgetById, seedDef.energyShare);
-    const ev = evaluateAssignment(bases, assignment, account, objective, scales, { ...phaseOptions, phaseStride: gatePhaseStride });
-    evaluations += 1;
-    candidates.push({ name: seedDef.name, assignment, value: ev.value, pick: ev.pick, squad: ev.squad });
-  }
-
-  const winner = pickBestCandidate(candidates, bases);
-  return { winner, currentEval, evaluations };
-}

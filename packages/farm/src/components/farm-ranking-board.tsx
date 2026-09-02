@@ -6,7 +6,7 @@ import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
 import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { sub, type FarmCopy, type Lang } from '../copy';
-import type { FarmPoolEntry, FarmRankingResult, FarmRespecGate } from '../core';
+import type { FarmPoolEntry, FarmRankingResult } from '../core';
 import type { FarmRespecProposal, FarmRespecStatus } from '../model/farm-respec-view';
 import {
   applyFarmFilters,
@@ -29,9 +29,8 @@ import { FarmRespecPanel } from './farm-respec-panel';
 import { FarmRespecRerankToggle } from './farm-respec-rerank-toggle';
 import type { FarmStatLabels } from './stat-labels';
 
-/** The advisor's four values, grouped so the board's own bag stays about the ranking. */
+/** The advisor's three values, grouped so the board's own bag stays about the ranking. */
 export type FarmRespecBoardData = {
-  gate: FarmRespecGate;
   /** Already narrowed to a FRESH proposal by the host — a stale one arrives as `null`. */
   view: FarmRespecProposal | null;
   status: FarmRespecStatus;
@@ -228,8 +227,7 @@ export function FarmRankingBoardView({
       ) : null}
       <FarmRespecToolbar
         t={t}
-        lang={lang}
-        data={{ gate: respec.gate, status: respec.status, panelOpen: respec.panelOpen }}
+        data={{ status: respec.status, panelOpen: respec.panelOpen }}
         onOptimize={runFarmRespec}
       />
       <FarmRespecPanel

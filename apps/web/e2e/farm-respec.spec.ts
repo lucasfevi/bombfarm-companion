@@ -10,24 +10,28 @@ import { seedLocalStorage, type SeededState } from './fixtures/seed';
  * stand in for it (`docs/fixture-corpus.md`). Read from the domain package's own committed
  * capture rather than a local copy — a second copy would drift from it.
  *
- * SWAPPED to the 2026-08-23 capture. The 5-hero 2026-08-13 one drove every case here until that
- * patch restated the crit-chance abilities in points; under today's sheet math its best reachable
- * respec is worth 0.077%, far below `FARM_RESPEC_MIN_GAIN_PCT`, so the toolbar callout this whole
- * file drives never appears and there is no UI left to test. That account's flip to quiet is a
- * real behaviour change and is asserted where it belongs, in
- * `src/tests/farm-respec-fixture.test.ts`; this file needs an account with genuine headroom, and
- * the 2026-08-23 capture has it (3.66% lower bound, 11.09% solved) while also being the only
- * capture whose sheet math today's model reproduces.
+ * SWAPPED to the 2026-08-23 capture. The 5-hero 2026-08-13 one drove every case here until the
+ * patch that restated the crit-chance abilities in points; under today's sheet math its best
+ * reachable respec is worth a rounding error, so the panel would answer every press with the
+ * not-worth-it banner and there would be no laid-out recommendation left to test. This file
+ * needs an account with genuine headroom, and the 2026-08-23 capture has it while also being one
+ * of the captures whose sheet math today's model reproduces.
  */
 const account486 = path.join(
   process.cwd(),
   '../../packages/domain/tests/fixtures/sheet-math/save-20260823-13heroes-crit-points.json',
 );
 
+/** A capture whose best reachable respec is worth low single digits — under the floor, so the
+ *  panel answers with the not-worth-it banner instead of a per-hero split. */
+const accountNearOptimal = path.join(
+  process.cwd(),
+  '../../packages/domain/tests/fixtures/sheet-math/save-20260828-4heroes-postpatch.json',
+);
+
 const table = (page: Page) => page.locator('[data-testid="farm-ranking-table"]');
 const rows = (page: Page) => table(page).locator('tbody tr');
 const toolbar = (page: Page) => page.getByTestId('farm-respec-toolbar');
-const headline = (page: Page) => page.getByTestId('farm-respec-headline');
 const optimizeButton = (page: Page) => page.getByTestId('farm-respec-optimize');
 const panel = (page: Page) => page.getByTestId('farm-respec-panel');
 const heroGrid = (page: Page) => page.getByTestId('farm-respec-heroes');
@@ -97,14 +101,15 @@ test.describe('Farm Respec Advisor', () => {
     await importAccount486(page);
   });
 
-  // 1. The callout appears with a lower-bound gain and nothing else; the recommended phase it
-  // used to restate is the panel's Phase tile, so the band is asserted there instead.
-  test('the toolbar callout is the lower-bound gain alone; the panel names a phase in 53-57', async ({ page }) => {
+  // 1. The toolbar is the Optimize control and nothing else — no figure is reported until the
+  // player asks. The recommended phase is the panel's Phase tile, so the band is asserted there.
+  test('the toolbar offers Optimize and reports no figure; the panel names a phase in 53-57', async ({ page }) => {
     await expect(toolbar(page)).toBeVisible();
-    await expect(headline(page)).toContainText(/at least/i);
-    // The phase, the cost and the payback all moved into the panel — none of them may creep back.
-    await expect(headline(page)).not.toContainText(/#\d+/);
-    await expect(headline(page)).not.toContainText(/gold to respec|pays for itself/i);
+    await expect(optimizeButton(page)).toBeEnabled();
+    // Before the press the toolbar carries the button label and no number of any kind: no gain,
+    // no phase, no cost, no payback.
+    const beforePress = (await toolbar(page).textContent())?.trim() ?? '';
+    expect(beforePress).toBe('Optimize');
 
     await optimizeButton(page).click();
     await expect(panel(page)).toBeVisible();
@@ -220,11 +225,8 @@ test.describe('Farm Respec Advisor', () => {
     await optimizeButton(page).click();
     await expect(panel(page)).toBeVisible();
 
-    // The PANEL's gold tile, not the toolbar headline. The headline is a live lower bound that
-    // gets recomputed for whatever pool is selected, so it can legitimately read the same string
-    // before and after — it did exactly that here ("At least 2.4% more per hour" both times),
-    // which made a global search for it prove nothing. The tile carries the SOLVED proposal, is
-    // rendered only inside the panel, and therefore has to be gone once the panel is invalidated.
+    // The PANEL's gold tile carries the SOLVED proposal and is rendered only inside the panel,
+    // so it has to be gone once the panel is invalidated.
     const proposalText = (await page.getByTestId('farm-respec-metric-gold').textContent()) ?? '';
     expect(proposalText.trim()).not.toBe('');
 
@@ -247,14 +249,14 @@ test.describe('Farm Respec Advisor', () => {
     await seedLocalStorage(page, captured);
     await page.goto('/farm');
 
-    await expect(toolbar(page)).toContainText(/pelo menos/i);
+    await expect(toolbar(page)).toContainText(/Otimizar/i);
     await optimizeButton(page).click();
     await expect(panel(page)).toBeVisible();
     await expect(panel(page).getByText('Ouro / h', { exact: true })).toBeVisible();
 
     const toolbarText = (await toolbar(page).textContent()) ?? '';
     const panelText = (await panel(page).textContent()) ?? '';
-    expect(toolbarText).not.toMatch(/at least/i);
+    expect(toolbarText).not.toMatch(/Optimize/i);
     expect(panelText).not.toMatch(/Optimize|Payback|Respec cost/i);
   });
 
@@ -270,5 +272,29 @@ test.describe('Farm Respec Advisor', () => {
     await rerankSwitch.focus();
     await expect(rerankSwitch).toBeFocused();
     await expect(page.getByRole('switch', { name: /show ranking under this build/i })).toBeVisible();
+  });
+
+  // 9. The floor's other side: the search runs, finds a real but small gain, and the panel says
+  // the gold is better left unspent rather than laying out a respec that does not pay.
+  test('a gain under the floor answers with the not-worth-it banner and no per-hero split', async ({ page }) => {
+    await page.getByRole('button', { name: 'Import', exact: true }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.locator('input[type="file"]').setInputFiles(accountNearOptimal);
+    await page.getByRole('button', { name: /import \d+ hero/i }).click();
+    await expect(page.getByRole('dialog')).toBeHidden();
+
+    // The control is offered on this account too — that is the point of it being unconditional.
+    await expect(optimizeButton(page)).toBeEnabled();
+    await optimizeButton(page).click();
+    await expect(panel(page)).toBeVisible();
+
+    const banner = page.getByTestId('farm-respec-below-threshold-banner');
+    await expect(banner).toBeVisible();
+    // It names the gain it DID find rather than hiding it, and says what the floor is.
+    await expect(banner).toContainText(/%/);
+    // No recommendation is laid out: no metric tiles, no hero cards, no frontier.
+    await expect(page.getByTestId('farm-respec-metrics')).toHaveCount(0);
+    await expect(heroGrid(page)).toHaveCount(0);
+    await expect(page.getByTestId('farm-respec-frontier')).toHaveCount(0);
   });
 });

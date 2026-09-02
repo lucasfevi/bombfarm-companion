@@ -1,42 +1,34 @@
 'use client';
 
 import { Button } from '@bombfarm/ui';
-import type { FarmCopy, Lang } from '../copy';
-import type { FarmRespecGate } from '../core';
+import type { FarmCopy } from '../copy';
 import type { FarmRespecStatus } from '../model/farm-respec-view';
-import { FarmRespecHeadline } from './farm-respec-headline';
 
 export type FarmRespecToolbarData = {
-  gate: FarmRespecGate;
   status: FarmRespecStatus;
   panelOpen: boolean;
 };
 
 /**
- * The settled toolbar row: the Optimize `Button` plus the headline slot. Lives inside the
- * ranking board, above the column headers and below the rotation pool / filters block. Renders
- * NOTHING unless the first-tier gate has something to say — no reserved empty band; the board is
- * visually unchanged until then.
+ * The settled toolbar row: the Optimize `Button`, and nothing else. Lives inside the ranking
+ * board, above the column headers and below the rotation pool / filters block.
+ *
+ * It renders unconditionally. The board no longer runs a background estimate to decide whether
+ * the control is worth offering, so there is no state in which a player can want the answer and
+ * find no way to ask for it. Everything the solve has to say — the gain, the cost, the payback,
+ * and the verdict that a respec is not worth making at all — is reported in the panel below,
+ * after the player asks.
  */
 export function FarmRespecToolbar({
   t,
-  lang,
   data,
   onOptimize,
 }: {
   t: FarmCopy;
-  lang: Lang;
   data: FarmRespecToolbarData;
   onOptimize: () => void;
 }) {
-  const { gate, status, panelOpen } = data;
-
-  // Below the gain threshold (or no-roster / no-heroes-enabled), nothing renders — no reserved
-  // empty band. The only visibility input read here is the gate's own shouldSurface flag, which
-  // is gain alone; the payback figure is reported elsewhere but never gates this decision.
-  const degraded = gate.reason === 'gate-failed';
-  if (!degraded && !gate.shouldSurface) return null;
-
+  const { status, panelOpen } = data;
   const busy = status === 'solving';
 
   return (
@@ -59,11 +51,6 @@ export function FarmRespecToolbar({
       >
         {busy ? t.farmRespecOptimizeBusy : t.farmRespecOptimize}
       </Button>
-      {degraded ? (
-        <span className="text-[12px] text-muted">{t.farmRespecGateFailed}</span>
-      ) : gate.result ? (
-        <FarmRespecHeadline t={t} lang={lang} result={gate.result} />
-      ) : null}
     </div>
   );
 }

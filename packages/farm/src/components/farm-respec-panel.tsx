@@ -8,6 +8,7 @@ import {
   type FarmRespecProposal,
   type FarmRespecStatus,
 } from '../model/farm-respec-view';
+import { formatFloorPct, formatGainPct } from '../model/farm-respec-format';
 import { FarmRespecMetrics } from './farm-respec-metrics';
 import { FarmRespecHeroGrid } from './farm-respec-hero-grid';
 import { FarmRespecFrontier } from './farm-respec-frontier';
@@ -92,6 +93,21 @@ export function FarmRespecPanel({
           data-testid="farm-respec-terminal-banner"
         >
           {t.farmRespecTerminalDesc}
+        </Banner>
+      ) : panelState.kind === 'belowThreshold' ? (
+        // The search ran and finished; the answer is simply that the gold is better left
+        // unspent. The gain it did find is named rather than hidden — a player who asked
+        // deserves the number — but no per-hero split is laid out, because acting on one
+        // would cost more than it returns.
+        <Banner
+          tone="ok"
+          title={t.farmRespecNotWorthTitle}
+          data-testid="farm-respec-below-threshold-banner"
+        >
+          {sub(t.farmRespecNotWorthDesc, {
+            gain: formatGainPct(panelState.gainPct, lang),
+            floor: formatFloorPct(panelState.floorPct, lang),
+          })}
         </Banner>
       ) : (
         <>

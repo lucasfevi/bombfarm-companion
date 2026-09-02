@@ -154,10 +154,10 @@ export const farmEn = {
   // Farm Respec Advisor.
   farmRespecOptimize: "Optimize",
   farmRespecOptimizeBusy: "Calculating…",
-  farmRespecHeadlineGain: "At least {pct}% more per hour",
-  farmRespecGateFailed: "The quick check couldn't run this time. Optimize is still available for the full answer.",
   farmRespecPaybackHours: "Pays for itself in {hours} h",
   farmRespecPaybackNoChange: "Gold per hour does not change, so there is no gold payback to report.",
+  farmRespecNotWorthTitle: "Your build is already close to the best found",
+  farmRespecNotWorthDesc: "The best build this search reached is worth {gain}% more gold per hour, under the {floor}% it takes to be worth a respec. Keep your points where they are and spend the gold elsewhere.",
   farmRespecPanelHeading: "Respec advisor",
   farmRespecClose: "Close",
   farmRespecPanelGain: "{pct}% more per hour",

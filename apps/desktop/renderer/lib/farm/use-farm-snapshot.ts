@@ -124,9 +124,8 @@ export function createFarmSnapshotStore(): {
     if (view === null) return;
 
     const inputs = buildFarmInputs(view, controls);
-    // The gate is the cheap first tier and rides along with the board it belongs to, so nothing
-    // about the advisor is derived while the screen paints. The expensive second tier is
-    // `runRespec` below, and only a button press reaches it.
+    // Nothing about the advisor is derived while the screen paints: the solve is `runRespec`
+    // below, and only a button press reaches it.
     const outcome: FarmComputeOutcome =
       inputs === null
         ? { ok: false, reason: 'incomplete-account' }
@@ -134,7 +133,6 @@ export function createFarmSnapshotStore(): {
             ok: true,
             board: memo.rows(inputs),
             inputs,
-            gate: memo.gate(inputs),
             computedAt: new Date().toISOString(),
           };
     dispatch({ kind: 'computed', sourceKey, controls, outcome });
