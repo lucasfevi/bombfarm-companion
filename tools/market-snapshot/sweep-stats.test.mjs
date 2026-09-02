@@ -23,7 +23,7 @@ import { assertWorkspaceDistBuilt } from '../require-workspace-dist.mjs';
 assertWorkspaceDistBuilt('tools/market-snapshot/sweep-stats.test.mjs');
 
 const { runSweep, summarise } = await import('./build.mjs');
-const { SEARCH_PAGE_SIZE, priceKey } = await import('@bombfarm/pricing');
+const { SEARCH_PAGE_SIZE, priceKey, resolveKey } = await import('@bombfarm/pricing');
 
 const CATALOG = {
   defs: [{ defId: 'coal_bota', set: 'coal', slot: 'bota', level: 30 }],
@@ -237,7 +237,7 @@ function narrowingOf(url) {
   return narrow;
 }
 
-function taggedSweep({ items, prior = null }) {
+function taggedSweep({ items, prior = null, planQuotes = undefined }) {
   const facetQueries = [];
 
   const steamNet = {
@@ -277,11 +277,109 @@ function taggedSweep({ items, prior = null }) {
     searchDelayMs: 0,
     quoteDelayMs: 0,
     nativeCurrencies: ['BRL'],
+    planQuotes,
     log: () => {},
     now: () => Date.parse('2026-09-01T00:00:00.000Z'),
     steamNet,
   }).then(({ snapshot, stats }) => ({ snapshot, stats, facetQueries }));
 }
+
+const BOOTS_KEY = priceKey('coal_bota', 2);
+const GEM_KEY = priceKey('gem_topaz', 2);
+
+const onlyBoots = ({ quotable }) => ({
+  hashNames: quotable
+    .filter((entry) => entry.hashName === BOOTS.hashName)
+    .map((entry) => entry.hashName),
+});
+
+/**
+ * The half of tiering the snapshot has to carry. A row dropped from the rotation is not a row
+ * whose quote is merely late — no later pass is coming for it — so the previous quote must not be
+ * inherited, or the file would go on labelling an indefinitely ageing figure as the listing's own
+ * price. The prior snapshot here holds a native quote for both rows, and the USD price has not
+ * moved, which is exactly the condition inheritance fires on.
+ */
+describe('a row left to the enumeration is priced from it, and says which', () => {
+  it('reports the rotation native and the row it dropped converted', async () => {
+    const first = await taggedSweep({ items: [BOOTS, GEM] });
+    expect(resolveKey(GEM_KEY, first.snapshot, 'BRL').basis).toBe('native');
+
+    const second = await taggedSweep({
+      items: [BOOTS, GEM],
+      prior: first.snapshot,
+      planQuotes: onlyBoots,
+    });
+
+    const boots = resolveKey(BOOTS_KEY, second.snapshot, 'BRL');
+    const gem = resolveKey(GEM_KEY, second.snapshot, 'BRL');
+
+    expect(boots.basis).toBe('native');
+    expect(boots.amount).toBe(25);
+    expect(gem.basis).toBe('converted');
+    expect(gem.amount).toBeCloseTo(4.8 * 5.4);
+    expect(gem.state).toBe('priced');
+  });
+
+  it('spends a call on the rotation only, and names both sides of the split', async () => {
+    const first = await taggedSweep({ items: [BOOTS, GEM] });
+    const second = await taggedSweep({
+      items: [BOOTS, GEM],
+      prior: first.snapshot,
+      planQuotes: onlyBoots,
+    });
+
+    expect(first.stats.quoteCalls).toBe(2);
+    expect(second.stats.quoteCalls).toBe(1);
+    expect(second.stats.quotesAttempted).toBe(1);
+    expect(second.stats.quotable).toBe(2);
+    expect(second.stats.rotation).toEqual([BOOTS.hashName]);
+    expect(second.stats.enumerationOnly).toEqual([GEM.hashName]);
+  });
+
+  it('paces the rotation at the delay the plan chose, not the caller default', async () => {
+    const { stats } = await taggedSweep({
+      items: [BOOTS, GEM],
+      planQuotes: ({ quotable }) => ({
+        hashNames: quotable.map((entry) => entry.hashName),
+        delayMs: 7,
+      }),
+    });
+    expect(stats.rotationDelayMs).toBe(7);
+  });
+
+  /**
+   * The plan is a policy, and a policy that named a row this pass never saw would spend a call on
+   * something with nothing to price. The rotation is the expensive half of the sweep.
+   */
+  it('never quotes a row the plan named but the market did not list', async () => {
+    const { stats } = await taggedSweep({
+      items: [BOOTS],
+      planQuotes: ({ quotable }) => ({
+        hashNames: [...quotable.map((entry) => entry.hashName), 'Nothing Listed (Rare)'],
+      }),
+    });
+
+    expect(stats.rotation).toEqual([BOOTS.hashName]);
+    expect(stats.quoteCalls).toBe(1);
+  });
+
+  it('hands the plan the enumeration it just paid for, the facet schema included', async () => {
+    const seen = [];
+    await taggedSweep({
+      items: [BOOTS, GEM],
+      planQuotes: ({ quotable, enumerationCalls, searchDelayMs }) => {
+        seen.push({ enumerationCalls, searchDelayMs, quotable: quotable.length });
+        return { hashNames: [] };
+      },
+    });
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0].quotable).toBe(2);
+    expect(seen[0].searchDelayMs).toBe(0);
+    expect(seen[0].enumerationCalls).toBeGreaterThan(1);
+  });
+});
 
 describe('the facet sweep runs only when the enumeration turns up something new', () => {
   it('asks for every tag on a pass with no prior, and identifies what answers', async () => {
