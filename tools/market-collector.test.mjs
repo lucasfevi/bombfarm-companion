@@ -493,12 +493,12 @@ describe('the history transport', () => {
 });
 
 describe('publishing', () => {
-  const publisherWith = (fetch, lines = []) =>
+  const publisherWith = (fetch, lines = [], dataBranch = 'market-data') =>
     createPublisher({
       token: 'token',
       repo: 'owner/repo',
       releaseTag: 'market-prices',
-      dataBranch: 'market-data',
+      dataBranch,
       snapshotName: 'market-prices.json',
       fetch,
       log: createLogger({ write: (line) => lines.push(line), clock: () => new Date(0) }),
@@ -535,18 +535,64 @@ describe('publishing', () => {
     expect(uploads).toBe(2);
   });
 
-  it('commits the data branch with no parent, so it stays one commit forever', async () => {
+  /**
+   * Every blob gets its own sha, so the pushed tree can be read back as path → content. A shared
+   * sha would let a tree that points two paths at the same blob pass as though both were written.
+   */
+  const capturingPublisher = (dataBranch = 'market-data') => {
     const bodies = new Map();
-    const { publishBranch } = publisherWith(async (url, init) => {
-      if (init?.body) bodies.set(url.split('/repos/owner/repo/')[1], JSON.parse(init.body));
-      return okResponse({ sha: 'deadbeef' });
-    });
+    const blobsBySha = new Map();
+    const { publishBranch } = publisherWith(
+      async (url, init) => {
+        const path = url.split('/repos/owner/repo/')[1];
+        const body = init?.body ? JSON.parse(init.body) : null;
+        if (body) bodies.set(path, [...(bodies.get(path) ?? []), body]);
+        if (path === 'git/blobs') {
+          const sha = `blob${String(blobsBySha.size)}`;
+          blobsBySha.set(sha, Buffer.from(body.content, 'base64').toString('utf-8'));
+          return okResponse({ sha });
+        }
+        return okResponse({ sha: 'deadbeef' });
+      },
+      [],
+      dataBranch,
+    );
+    const last = (path) => bodies.get(path)?.at(-1);
+    const committed = () =>
+      new Map(last('git/trees').tree.map((entry) => [entry.path, blobsBySha.get(entry.sha)]));
+    return { publishBranch, last, committed };
+  };
+
+  it('commits the data branch with no parent, so it stays one commit forever', async () => {
+    const { publishBranch, last, committed } = capturingPublisher();
 
     expect(await publishBranch('{"a":1}')).toBe(true);
-    expect(bodies.get('git/commits').parents).toEqual([]);
-    expect(bodies.get('git/refs/heads/market-data')).toEqual({ sha: 'deadbeef', force: true });
-    expect(Buffer.from(bodies.get('git/blobs').content, 'base64').toString('utf-8')).toBe('{"a":1}');
+    expect(last('git/commits').parents).toEqual([]);
+    expect(last('git/refs/heads/market-data')).toEqual({ sha: 'deadbeef', force: true });
+    expect(committed().get('market-prices.json')).toBe('{"a":1}');
   });
+
+  /**
+   * A push to this branch would otherwise start a preview build of a tree with no application in
+   * it, which fails and mails the owner on every pass. The opt-out only works if it is in the
+   * pushed commit, so what is read back is the tree rather than the config's text — and it must
+   * name the branch actually being pushed, not one spelled into the config.
+   */
+  it.each(['market-data', 'market-elsewhere'])(
+    'commits a deployment opt-out naming %s, at every path it is read from',
+    async (dataBranch) => {
+      const { publishBranch, committed } = capturingPublisher(dataBranch);
+
+      expect(await publishBranch('{"a":1}')).toBe(true);
+
+      const tree = committed();
+      for (const path of ['vercel.json', 'apps/web/vercel.json']) {
+        expect(JSON.parse(tree.get(path) ?? 'null')?.git?.deploymentEnabled).toEqual({
+          [dataBranch]: false,
+        });
+      }
+    },
+  );
 
   it('leaves the flag of the other target alone when one of them fails', async () => {
     const { publishRelease, publishBranch } = publisherWith(async (url) => {
