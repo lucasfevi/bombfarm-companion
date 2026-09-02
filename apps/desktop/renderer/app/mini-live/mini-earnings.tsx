@@ -45,7 +45,7 @@ export function MiniEarnings({ earnings, onReset }: { earnings: LiveEarnings | n
   const recentWindowText = sub(t.liveEarningsRecentWindowLabel, { minutes });
 
   return (
-    <section data-testid="mini-earnings" aria-label={t.liveEarningsTitle} className="relative min-w-0 rounded-md border border-line/55 bg-surface p-2">
+    <section data-testid="mini-earnings" aria-label={t.liveEarningsTitle} className="relative min-w-0 shrink-0 rounded-md border border-line/55 bg-surface p-2">
       <div className="flex flex-col gap-2">
         <div className="flex items-end justify-between gap-2">
           <div className="flex min-w-0 flex-col items-start gap-0.5">
@@ -109,7 +109,6 @@ export function MiniEarnings({ earnings, onReset }: { earnings: LiveEarnings | n
       <button
         type="button"
         data-testid="live-earnings-reset"
-        title={t.liveEarningsResetAria}
         aria-label={t.liveEarningsResetAria}
         onClick={onReset}
         className="absolute right-1 top-1 grid place-items-center rounded-sm border-0 bg-transparent p-0 text-muted transition-colors hover:text-ink focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"

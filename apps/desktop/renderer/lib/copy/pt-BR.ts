@@ -134,13 +134,15 @@ export const ptBR: Copy = {
   // live* — a tela Ao Vivo: rótulo de navegação e a linha de status de atualização no topo do painel
   liveNavLabel: 'Ao vivo',
 
+  // miniLive* — a segunda janela compacta do Ao Vivo: o botão que a abre na aba Ao vivo, o
+  // próprio chrome dela e o menu de layout dos painéis. Chaves `*Aria` rotulam controles só de ícone.
   miniLiveOpenLabel: 'Abrir mini',
-  miniLiveCloseTitle: 'Fechar mini',
-  miniLiveGearTitle: 'Layout dos painéis',
+  miniLiveCloseAria: 'Fechar mini',
+  miniLiveGearAria: 'Layout dos painéis',
   miniLiveAxisLabel: 'Direção de crescimento',
   miniLiveAxisVerticalLabel: 'Empilhado',
   miniLiveAxisHorizontalLabel: 'Em linha',
-  miniLiveLastSectionTitle: 'Pelo menos um painel precisa permanecer ligado',
+  miniLiveLastSectionNote: 'Pelo menos um painel precisa permanecer ligado',
 
   liveStatusLiveLabel: 'Transmitindo ao vivo do jogo',
   liveStatusNotLiveLabel: 'Não ao vivo — mostrando o último estado conhecido',

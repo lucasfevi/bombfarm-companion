@@ -63,7 +63,7 @@ export function MiniMap({ map }: { map: LiveMap | null }) {
         : `${formatCount(propsAlive, locale)}/${formatCount(propsTotal, locale)}`;
 
   return (
-    <section data-testid="mini-map" aria-label={t.liveMapTitle} className="min-w-0 rounded-md border border-line/55 bg-surface p-2">
+    <section data-testid="mini-map" aria-label={t.liveMapTitle} className="min-w-0 shrink-0 rounded-md border border-line/55 bg-surface p-2">
       <div className="flex flex-col gap-2">
         <div className="flex items-baseline justify-between gap-2">
           <div className="flex min-w-0 flex-col gap-0.5">

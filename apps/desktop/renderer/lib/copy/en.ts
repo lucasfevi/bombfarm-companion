@@ -132,13 +132,15 @@ export const en = {
   // live* — the Live screen: nav label and the top-of-panel freshness status line
   liveNavLabel: 'Live',
 
+  // miniLive* — the compact second Live window: its opener on the Live tab, its own chrome, and
+  // the panel-layout menu. `*Aria` keys label icon-only controls for assistive technology.
   miniLiveOpenLabel: 'Open mini',
-  miniLiveCloseTitle: 'Close mini',
-  miniLiveGearTitle: 'Panel layout',
+  miniLiveCloseAria: 'Close mini',
+  miniLiveGearAria: 'Panel layout',
   miniLiveAxisLabel: 'Growth direction',
-  miniLiveAxisVerticalLabel: 'Vertical',
-  miniLiveAxisHorizontalLabel: 'Horizontal',
-  miniLiveLastSectionTitle: 'At least one panel must stay on',
+  miniLiveAxisVerticalLabel: 'Stacked',
+  miniLiveAxisHorizontalLabel: 'Side by side',
+  miniLiveLastSectionNote: 'At least one panel must stay on',
 
   liveStatusLiveLabel: 'Streaming live from the game',
   liveStatusNotLiveLabel: 'Not live — showing the last known state',

@@ -10,7 +10,7 @@ vi.mock('../../lib/copy', async (importOriginal) => {
 });
 
 describe('MiniChrome', () => {
-  it('renders chrome testids and native title on the close control', () => {
+  it('labels the close control for assistive technology without a native title tooltip', () => {
     const html = renderToStaticMarkup(
       createElement(MiniChrome, {
         onClose: () => undefined,
@@ -19,7 +19,7 @@ describe('MiniChrome', () => {
     );
     expect(html).toContain('data-testid="mini-live-chrome"');
     expect(html).toContain('data-testid="mini-live-close"');
-    expect(html).toContain(`title="${en.miniLiveCloseTitle}"`);
-    expect(html).toContain(`aria-label="${en.miniLiveCloseTitle}"`);
+    expect(html).toContain(`aria-label="${en.miniLiveCloseAria}"`);
+    expect(html).not.toContain('title=');
   });
 });

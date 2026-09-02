@@ -55,8 +55,7 @@ export function MiniGear({
       <Popover.Trigger
         type="button"
         data-testid="mini-live-gear"
-        title={t.miniLiveGearTitle}
-        aria-label={t.miniLiveGearTitle}
+        aria-label={t.miniLiveGearAria}
         className="grid size-7 place-items-center rounded-sm border-0 bg-transparent text-muted transition-colors hover:text-ink focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         <Icon name="layout-grid" size="sm" />
@@ -116,9 +115,8 @@ export function MiniGear({
                   'm-0 text-[10px] text-muted',
                   enabledSectionCount(layout) > 1 && 'sr-only',
                 )}
-                title={t.miniLiveLastSectionTitle}
               >
-                {t.miniLiveLastSectionTitle}
+                {t.miniLiveLastSectionNote}
               </p>
             </div>
           </Popover.Popup>

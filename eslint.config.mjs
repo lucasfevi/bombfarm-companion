@@ -40,7 +40,7 @@ const gameArtPackage = ['packages/game-art/**/*.{ts,tsx}'];
  */
 const farmPackage = ['packages/farm/**/*.{ts,tsx}'];
 
-/** Ban raw react-icons / SVG imports outside the Icon seam (ICO-23, ICO-24, D12). */
+/** Ban raw react-icons / SVG imports outside the Icon seam. */
 const rawIconImportRule = [
   'error',
   {
@@ -228,10 +228,6 @@ export default tseslint.config(
     files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}', 'apps/desktop/renderer/**/*.{ts,tsx}'],
     plugins: { react },
     rules: { 'react/forbid-dom-props': nativeTooltipRule },
-  },
-  {
-    files: ['apps/desktop/renderer/app/mini-live/**/*.{ts,tsx}'],
-    rules: { 'react/forbid-dom-props': 'off' },
   },
   {
     files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}'],
