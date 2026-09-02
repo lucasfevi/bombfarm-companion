@@ -624,6 +624,40 @@ const KEYS_ADDED: readonly string[] = [
   // every result. That claim used to appear only inside `farmRespecBudgetExhausted`, whose
   // absence then read as a guarantee of optimality the search cannot make at any budget.
   'farmRespecBestFound',
+  /**
+   * The account-holdings section (2026-09-02) — the Account page's new headline figure for what
+   * the whole account could sell, over three components: the bag, the sellable heroes and the
+   * bought skins heroes are wearing. Each row needs its own name, its own coverage template and
+   * its own notice for the case where the planner cannot read that component at all, which is why
+   * the block is three near-parallel triples rather than one shared set.
+   *
+   * `accountHoldingsHeroesFloor` and `accountHoldingsSkinsWorn` are permanent on-screen sentences
+   * rather than tooltips: each explains a figure readers routinely take for something it is not (a
+   * hero quote knows only rarity; a skin stops counting the moment nobody wears it), and an
+   * explanation nobody hovers is one nobody reads.
+   *
+   * `inventoryTotalsTitle` is REWORDED by the same feature, from "Market value" to a phrase naming
+   * the bag — the Account page now carries the larger figure that contains it, and an unqualified
+   * "Market value" on the Inventory screen read as the account's whole worth. It is not listed in
+   * `PROSE_EDITED_PATHS`: the key is already declared added above, and an added key's value is
+   * unconstrained by the comparison.
+   */
+  'accountHoldingsTotal',
+  'accountHoldingsPartialTotal',
+  'accountHoldingsCoverage',
+  'accountHoldingsMissing',
+  'accountHoldingsBag',
+  'accountHoldingsBagCoverage',
+  'accountHoldingsBagWithheld',
+  'accountHoldingsBagLink',
+  'accountHoldingsHeroes',
+  'accountHoldingsHeroesCoverage',
+  'accountHoldingsHeroesWithheld',
+  'accountHoldingsHeroesFloor',
+  'accountHoldingsSkins',
+  'accountHoldingsSkinsCoverage',
+  'accountHoldingsSkinsWithheld',
+  'accountHoldingsSkinsWorn',
 ];
 
 /**
