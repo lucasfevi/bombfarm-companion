@@ -36,7 +36,7 @@ import { runPowerShellAsync, runPowerShellSync, stripExeSuffix } from '../game-r
 import { EarningsFold } from './earnings-fold.js';
 import { createFrameCapture, readFrameCaptureEnabledFromEnv } from './frame-capture.js';
 import { FrameRing } from './frame-ring.js';
-import type { ObservationAppendPort } from './observation-capture.js';
+import type { ObservationAppendPort, ObservationCapture } from './observation-capture.js';
 import type { LogPort } from './log-port.js';
 import { MapFold, type MapAccountBoosts, type MapWikiFacts } from './map-fold.js';
 import { RuntimePort } from './runtime.js';
@@ -267,6 +267,9 @@ export interface LiveSourceDeps {
    *  because an omission must disable the capture rather than enable it — a packaged artifact can
    *  carry the `dev` flavor, so flavor alone does not answer this. */
   readonly isPackaged?: boolean;
+  /** The developer observation recorder, when the mode is on. Omitted everywhere else, so the
+   *  shipped path grows optional calls rather than a branch. */
+  readonly observer?: ObservationCapture;
   readonly processName?: string;
   readonly log?: LogPort;
   readonly now?: () => number;
@@ -335,6 +338,7 @@ function createDefaultTapFactory(deps: {
   readonly isPackaged: boolean;
   readonly log: LogPort;
   readonly ring: FrameRing;
+  readonly observer?: ObservationCapture;
 }): (onEvent: (event: LiveEvent) => void, onHttpBody: (body: Buffer, atMs: number) => void) => TapHandle {
   const ring = deps.ring;
 
@@ -364,6 +368,9 @@ function createDefaultTapFactory(deps: {
       log: deps.log,
       ring,
       capture,
+      ...(deps.observer !== undefined
+        ? { onObservedFrame: (wire: Record<string, unknown>, atMs: number) => deps.observer?.frame(wire, atMs) }
+        : {}),
     });
     return {
       start: () => {
@@ -491,6 +498,7 @@ export class LiveSource {
   /** The most recent stored `/state` gold reading — {@link #buildEarnings} falls back to this
    *  whenever no live tick has ever set {@link #goldBalance} this session, so a game-closed read
    *  shows a real (if aging) balance instead of an em dash. */
+  readonly #observer: ObservationCapture | null;
   #accountGoldBalance: number | null = null;
   /** When {@link #accountGoldBalance} was captured. `null` only alongside a `null` balance. */
   #accountGoldCapturedAt: string | null = null;
@@ -507,6 +515,7 @@ export class LiveSource {
 
   constructor(deps: LiveSourceDeps) {
     this.#log = deps.log ?? NOOP_LOG_PORT;
+    this.#observer = deps.observer ?? null;
     this.#now = deps.now ?? Date.now;
     this.#earningsFold = new EarningsFold({ now: this.#now, xpPerProp, log: this.#log });
     this.#mapFold = new MapFold({ wikiFactsFor });
@@ -524,6 +533,7 @@ export class LiveSource {
         isPackaged: deps.isPackaged ?? true,
         log: this.#log,
         ring,
+        ...(deps.observer !== undefined ? { observer: deps.observer } : {}),
       });
     }
     this.#currency = liveGap('neverAttached', this.#nowIso());
@@ -547,6 +557,7 @@ export class LiveSource {
    *  session token — not just `account_id`/`player_name`. */
   setCredentialRedactor(redact: ((text: string) => string) | null): void {
     this.#ring?.setCredentialRedactor(redact);
+    this.#observer?.setCredentialRedactor(redact);
   }
 
   /** Mirrors `AccountRefreshHandle.onConsentChanged`: called from the same consent-changed path
@@ -702,6 +713,10 @@ export class LiveSource {
    *  a guess. Only the rotation route is wired downstream this slice; every other identified
    *  section is named in the log and otherwise left alone, the seam the next one plugs into. */
   #handleObservedHttpBody(bodyBuf: Buffer, atMs: number): void {
+    // Above every early return below, and on the raw bytes: the bodies the developer capture
+    // exists to record are exactly the ones the unidentified and ambiguous branches discard.
+    this.#observer?.body(bodyBuf, atMs);
+
     let parsed: unknown;
     try {
       parsed = JSON.parse(bodyBuf.toString('utf8'));
@@ -784,6 +799,7 @@ export class LiveSource {
   // so the branch below is exhaustive over what can actually arrive here.
   #handleTapEvent(event: LiveEvent): void {
     if (event.type === 'currency') {
+      this.#observer?.currency(event.currency, this.#now());
       this.#currency = event.currency;
       this.#touch();
     } else if (event.type === 'frame') {

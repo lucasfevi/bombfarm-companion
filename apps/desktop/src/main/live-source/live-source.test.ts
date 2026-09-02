@@ -1,13 +1,15 @@
 import { mkdtempSync, readFileSync, rmSync, writeSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import type { AccountView, LiveCurrency, LiveEvent, LiveFrame, LiveTick, SectionFidelity } from '@bombfarm/contracts';
 import { liveGap } from '@bombfarm/contracts';
-import { wireKey } from '@bombfarm/game-api';
-import { afterEach, describe, expect, it } from 'vitest';
+import { liveFrameWireKey, wireKey } from '@bombfarm/game-api';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createBoundaryLog } from '../boundary-log/index.js';
 import { generateReplayStream } from './fixtures/generate-replay-stream.js';
 import type { LogPort } from './log-port.js';
+import type { ObservationCapture } from './observation-capture.js';
+import { createReplayTapFactory } from './replay-tap.js';
 import { LiveSource, nodeObservationAppendPort, observationCaptureFilePath, type TapHandle } from './live-source.js';
 
 class FakeTap implements TapHandle {
@@ -1379,5 +1381,129 @@ describe('nodeObservationAppendPort', () => {
     port.close();
 
     expect(readFileSync(destination, 'utf8')).toBe('');
+  });
+});
+
+interface RecordedObservation {
+  readonly kind: 'body' | 'frame' | 'currency' | 'mark';
+  readonly value: unknown;
+  readonly atMs: number;
+}
+
+/** A sink that keeps what it was handed, so the assertions below are about what reached the
+ *  recorder rather than about which method was called. */
+function recordingObserver(): { observer: ObservationCapture; seen: RecordedObservation[]; redactors: unknown[] } {
+  const seen: RecordedObservation[] = [];
+  const redactors: unknown[] = [];
+  return {
+    seen,
+    redactors,
+    observer: {
+      body: (bytes, atMs) => seen.push({ kind: 'body', value: bytes.toString('utf8'), atMs }),
+      frame: (wire, atMs) => seen.push({ kind: 'frame', value: wire, atMs }),
+      currency: (currency, atMs) => seen.push({ kind: 'currency', value: currency, atMs }),
+      mark: (label, atMs) => seen.push({ kind: 'mark', value: label, atMs }),
+      setCredentialRedactor: (redact) => redactors.push(redact),
+      close: () => undefined,
+    },
+  };
+}
+
+describe('LiveSource: every observed body reaches the recorder, identified or not', () => {
+  function harnessWithObserver() {
+    const { observer, seen, redactors } = recordingObserver();
+    const taps: FakeTap[] = [];
+    const source = new LiveSource({
+      consent: () => true,
+      userDataDir: 'unused-in-tests',
+      observer,
+      createTap: (onEvent, onHttpBody) => {
+        const tap = new FakeTap(onEvent, onHttpBody);
+        taps.push(tap);
+        return tap;
+      },
+    });
+    const tap = taps[0];
+    if (!tap) throw new Error('harness: no tap constructed');
+    return { source, tap, seen, redactors };
+  }
+
+  it('records an unknown-shape body in full, above the branch that discards it today', () => {
+    const { tap, seen } = harnessWithObserver();
+    const unknownShape = { cage: { hero: 'Dano', rarity: 'Common' }, reward: [7, 8] };
+    tap.emitHttpBody(unknownShape, 1_700_000_000_000);
+
+    expect(seen).toEqual([
+      { kind: 'body', value: JSON.stringify(unknownShape), atMs: 1_700_000_000_000 },
+    ]);
+  });
+
+  it('records a known-shape body too, so the recording is the whole stream and not the leftovers', () => {
+    const { tap, seen } = harnessWithObserver();
+    const rotation = bodyWithHeroes([]);
+    tap.emitHttpBody(rotation, 1_700_000_000_100);
+
+    expect(seen.map((entry) => entry.kind)).toEqual(['body']);
+    expect(seen[0]?.value).toBe(JSON.stringify(rotation));
+  });
+
+  it('records a body that is not JSON, which the live path drops after one log line', () => {
+    const { tap, seen } = harnessWithObserver();
+    tap.emitRawHttpBody(Buffer.from('not-json-at-all', 'utf8'), 1_700_000_000_200);
+
+    expect(seen).toEqual([{ kind: 'body', value: 'not-json-at-all', atMs: 1_700_000_000_200 }]);
+  });
+
+  it('records every currency transition the tap reports', () => {
+    const { tap, seen } = harnessWithObserver();
+    tap.emit({ type: 'currency', currency: liveGap('consentMissing', '2026-09-02T04:00:00.000Z') });
+    tap.emit({ type: 'currency', currency: liveGap('neverAttached', '2026-09-02T04:00:01.000Z') });
+
+    expect(seen.map((entry) => entry.kind)).toEqual(['currency', 'currency']);
+    expect(seen.map((entry) => (entry.value as { reason: string }).reason)).toEqual([
+      'consentMissing',
+      'neverAttached',
+    ]);
+  });
+
+  it('forwards the credential redactor to the recorder from the same single call the ring gets', () => {
+    const { source, redactors } = harnessWithObserver();
+    const redact = (text: string): string => text;
+    source.setCredentialRedactor(redact);
+
+    expect(redactors).toEqual([redact]);
+  });
+});
+
+describe('LiveSource: observed frames reach the recorder through the tap factory', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('delivers the wire object, undecoded keys included, when the factory threads the port', () => {
+    const { observer, seen } = recordingObserver();
+    const capturePath = resolve(__dirname, 'fixtures', 'live-capture.bfcc');
+    const source = new LiveSource({
+      consent: () => true,
+      userDataDir: 'unused-in-tests',
+      observer,
+      createTap: createReplayTapFactory({
+        capturePath,
+        consent: () => true,
+        onObservedFrame: (wire, atMs) => {
+          observer.frame(wire, atMs);
+        },
+      }),
+    });
+    source.start();
+    vi.advanceTimersByTime(5_000);
+
+    const frames = seen.filter((entry) => entry.kind === 'frame');
+    expect(frames.length).toBeGreaterThan(0);
+    expect(frames[0]?.value).toHaveProperty(liveFrameWireKey('messageType'), liveFrameWireKey('snapMessageType'));
   });
 });
