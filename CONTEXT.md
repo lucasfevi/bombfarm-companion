@@ -60,8 +60,15 @@ Ubiquitous language for the companion's game model. Terms only — no implementa
   all eight stats counting equally. Distinct from `HeroScore`, which is a combat evaluation.
 - **Rank** — the hero's S/A/B/C/D/E letter. Reserved for this meaning in player-facing copy:
   a sorted table is a *ranking*, never a rank.
-- **Ability rating** — the companion's own judgement of how strong an ability is. Editorial,
-  not a game value, and labelled as such wherever it appears.
+- **Ability gain** — what the next level of an ability is worth **to one hero, at one phase**,
+  in the same units as the next-point ranking. Computed, hero-specific, and absent (shown as
+  *not modelled*) for abilities whose effect the model does not carry.
+- **Ability rating** — the companion's own judgement of how strong an ability is *in general*,
+  independent of any hero. Editorial, not a game value, and labelled as such wherever it
+  appears. Answers a different question from **ability gain**: which abilities to hope for on a
+  hero you do not own yet.
+- **Lv** — an ability's own level, 0 to its max. Player-facing copy says *Lv*, never *rank*;
+  rank is the hero's letter.
 - **Live** — a hero as the authoritative source last reported them: the running game on the
   desktop, the last imported save on the web.
 - **Draft** — a player's edits layered over Live, held per hero. Never written back to the game.
