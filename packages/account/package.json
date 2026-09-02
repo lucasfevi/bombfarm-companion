@@ -8,6 +8,10 @@
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./layout": {
+      "types": "./src/layout/index.ts",
+      "default": "./src/layout/index.ts"
+    },
     "./panels": {
       "types": "./src/panels/index.ts",
       "default": "./src/panels/index.ts"

@@ -282,6 +282,80 @@ describe('HoldingsView — what a component is made of', () => {
   });
 });
 
+describe('HoldingsView — an entry whose leading cell the host drew itself', () => {
+  const drawn = (position: number) =>
+    createElement('span', { 'data-testid': `drawn-${String(position)}` }, `drawn ${String(position)}`);
+
+  /** Each hero arrives already depicted; the skins beside them stay plain names. */
+  const heroesDrawn: HoldingsComponentView = {
+    ...EN.heroes,
+    entries: EN.heroes.entries.map((entry, position) => ({ ...entry, leading: drawn(position) })),
+  };
+
+  const renderDrawn = () => render({ heroes: heroesDrawn });
+
+  /** The markup of one entry, which `split` ends at the next entry marker. */
+  function entryChunks(html: string, testId: string): string[] {
+    return html
+      .split(`data-testid="${testId}-entry"`)
+      .slice(1)
+      .map((chunk) => chunk.split('</ul>')[0] ?? chunk);
+  }
+
+  it('renders the node it was handed', () => {
+    const html = renderDrawn();
+
+    expect(slots(html, 'drawn-0')).toEqual(['drawn 0']);
+    expect(slots(html, 'drawn-1')).toEqual(['drawn 1']);
+    expect(slots(html, 'drawn-2')).toEqual(['drawn 2']);
+  });
+
+  it('drops the plain name and detail it would otherwise have printed, rather than doubling them', () => {
+    const html = renderDrawn();
+
+    expect(slots(html, 'account-holdings-heroes-entry-name')).toEqual([]);
+    expect(slots(html, 'account-holdings-heroes-entry-detail')).toEqual([]);
+    expect(html).not.toContain('en Kendo');
+  });
+
+  it('keeps the plain pair for the entries of a component that handed over no node', () => {
+    const html = renderDrawn();
+
+    expect(slots(html, 'account-holdings-skins-entry-name')).toEqual([
+      'en Royal Sentinel',
+      'en Deep Diver',
+    ]);
+    expect(slots(html, 'account-holdings-skins-entry-leading')).toEqual([]);
+  });
+
+  it('pairs each drawn entry with its own price, in the order the entries run', () => {
+    const chunks = entryChunks(renderDrawn(), 'account-holdings-heroes');
+
+    expect(chunks).toHaveLength(3);
+    expect(chunks[0]).toContain('drawn 0');
+    expect(chunks[0]).toContain('en USD 6.00');
+    expect(chunks[1]).toContain('drawn 1');
+    expect(chunks[1]).toContain('en USD 2.00');
+    expect(chunks[2]).toContain('drawn 2');
+    expect(chunks[2]).toContain('en nothing listed');
+    expect(chunks[2]).not.toContain('en USD');
+  });
+
+  it('still lists an entry the market is quoting nothing for, node and marker both', () => {
+    const html = renderDrawn();
+
+    expect(slots(html, 'drawn-2')).toEqual(['drawn 2']);
+    expect(slots(html, 'account-holdings-heroes-entry-unpriced')).toEqual(['en nothing listed']);
+  });
+
+  it('lists nothing at all for a component it could not read, nodes included', () => {
+    const html = render({ heroes: { ...heroesDrawn, withheld: true } });
+
+    expect(html).not.toContain('drawn-0');
+    expect(slot(html, 'account-holdings-heroes-withheld')).toBe('en heroes could not be read');
+  });
+});
+
 describe('HoldingsView — a component that could not be read', () => {
   it('re-captions the headline for every combination of withheld components', () => {
     const complete = slot(render(), 'account-holdings-caption');

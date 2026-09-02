@@ -112,7 +112,7 @@ function payloadOf(fidelity: AccountFidelity = resolvedFidelity()): AccountPaylo
   return {
     account: { phase: 60, max_phase: 88, player_name: 'Tester', account_id: 1 },
     heroes: [
-      { id: 'h1', name: 'Vex', rarity: HERO_RARITY, skin: 4, marketable: true },
+      { id: 'h1', name: 'Vex', rarity: HERO_RARITY, skin: 4, marketable: true, rank: 'S', level: 42 },
       { id: 'h2', name: 'Nim', rarity: UNLISTED_HERO_RARITY, skin: 0, marketable: true },
       { id: 'h3', name: 'Bound', rarity: HERO_RARITY, skin: 0, marketable: false },
     ],
@@ -159,6 +159,14 @@ function slots(markup: string, testId: string): string[] {
   );
 }
 
+/** One entry's own markup, which `split` ends where the next entry begins. */
+function entryChunks(markup: string, component: string): string[] {
+  return markup
+    .split(`data-testid="account-holdings-${component}-entry"`)
+    .slice(1)
+    .map((chunk) => chunk.split('</ul>')[0] ?? chunk);
+}
+
 beforeEach(() => {
   accountState.current = loaded(payloadOf());
   marketState.current = {
@@ -184,11 +192,33 @@ describe('the Account screen', () => {
     expect(markup).toContain(en.accountTreePanelTitle);
   });
 
-  it('leads with the holdings section, above the identity panel', () => {
+  it('leads with the holdings section, ahead of the identity panel', () => {
     const markup = html();
     expect(markup.indexOf('data-testid="account-holdings"')).toBeLessThan(
       markup.indexOf(en.accountPanelTitle),
     );
+  });
+
+  it('sets holdings and identity side by side, in the shared layout rather than one of its own', () => {
+    const markup = html();
+    const summary = markup.slice(
+      markup.indexOf('data-testid="account-screen-summary"'),
+      markup.indexOf('data-testid="account-screen-panels"'),
+    );
+
+    expect(summary).toContain('data-testid="account-holdings"');
+    expect(summary).toContain(en.accountPanelTitle);
+    expect(summary).not.toContain(en.accountHouse);
+  });
+
+  it('keeps how old the read is with the figure it dates, not adrift between the panels', () => {
+    const markup = html();
+    const holdings = markup.slice(
+      markup.indexOf('data-testid="account-screen-holdings"'),
+      markup.indexOf('data-testid="account-screen-identity"'),
+    );
+
+    expect(holdings).toContain('account-read-age');
   });
 
   it('prices the heroes the game marks sellable — the component the web planner cannot draw', () => {
@@ -212,10 +242,31 @@ describe('the Account screen', () => {
 });
 
 describe('the things each holdings component is made of', () => {
-  it('lists every sellable hero by name, beside the rarity the market quotes it on', () => {
-    const markup = html();
-    expect(slots(markup, 'account-holdings-heroes-entry-name')).toEqual(['Vex', 'Nim']);
-    expect(slots(markup, 'account-holdings-heroes-entry-detail')).toEqual(['Legendary', 'Rare']);
+  it('depicts every sellable hero the way the rest of the app depicts one', () => {
+    const [vex, nim] = entryChunks(html(), 'heroes');
+
+    expect(vex).toContain('alt="Vex"');
+    expect(vex).toContain('>S<');
+    expect(vex).toContain('Legendary');
+    expect(vex).toContain('Lv 42');
+    expect(nim).toContain('alt="Nim"');
+    expect(nim).toContain('Rare');
+  });
+
+  it('shows what it knows about a hero the roster told it less about, and crashes on none of it', () => {
+    const [, nim] = entryChunks(html(), 'heroes');
+
+    expect(nim).toContain('alt="Nim"');
+    expect(nim).not.toContain('Lv 42');
+  });
+
+  it('pairs each depicted hero with its own price, not with the list as a whole', () => {
+    const [vex, nim] = entryChunks(html(), 'heroes');
+
+    expect(vex).toContain('R$20.00');
+    expect(vex).not.toContain(en.accountHoldingsUnpriced);
+    expect(nim).toContain(en.accountHoldingsUnpriced);
+    expect(nim).not.toContain('R$20.00');
   });
 
   it('leaves the hero the game forbids selling out of the list, as it is out of the figure', () => {
@@ -239,13 +290,17 @@ describe('the things each holdings component is made of', () => {
       ...payloadOf(),
       heroes: [{ id: 'h1', rarity: HERO_RARITY, skin: 0, marketable: true }],
     });
-    expect(slots(html(), 'account-holdings-heroes-entry-name')).toEqual(['—']);
+    const [only] = entryChunks(html(), 'heroes');
+
+    expect(only).toContain('alt="—"');
+    expect(only).toContain('>—<');
   });
 
-  it('lists a bought skin by the listing it appears under, with nothing to tell two apart', () => {
+  it('lists a bought skin by the listing it appears under, and depicts nothing for it', () => {
     const markup = html();
     expect(slots(markup, 'account-holdings-skins-entry-name')).toEqual(['Forest Warden Skin']);
     expect(slots(markup, 'account-holdings-skins-entry-detail')).toEqual([]);
+    expect(slots(markup, 'account-holdings-skins-entry-leading')).toEqual([]);
     expect(slots(markup, 'account-holdings-skins-entry-amount')).toEqual(['R$7.00']);
   });
 

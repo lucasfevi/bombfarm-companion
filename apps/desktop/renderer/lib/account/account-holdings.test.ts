@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { isValidElement } from 'react';
+import type { HoldingsEntry } from '@bombfarm/account/holdings';
 import type { MarketEntry, MarketSnapshot } from '@bombfarm/pricing';
 import { SKIN_CATEGORY, categoryKey, heroPriceKey, priceKey } from '@bombfarm/pricing';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
@@ -178,7 +180,7 @@ describe('what the account could sell', () => {
 
 describe('the things each column lists under its figure', () => {
   const roster = [
-    { name: 'Vex', rarity: HERO_RARITY, marketable: true },
+    { name: 'Vex', rarity: HERO_RARITY, marketable: true, rank: 'S', level: 42, skin: BOUGHT_SKIN },
     { name: 'Nim', rarity: UNLISTED_HERO_RARITY, marketable: true },
     { name: 'Bound', rarity: HERO_RARITY, marketable: false },
   ];
@@ -187,17 +189,48 @@ describe('the things each column lists under its figure', () => {
     return holdingsComponents(accountHoldingsFrom(built, SNAPSHOT), built.heroes, 'en');
   };
 
-  it('names each sellable hero and the rarity the market quotes it on', () => {
-    expect(columnsOf().heroes.entries).toEqual([
-      { name: 'Vex', detail: 'Legendary', amount: 20 },
-      { name: 'Nim', detail: 'Rare', amount: null },
-    ]);
+  /** What the entry's leading cell was built from, so its depiction can be read as data. */
+  function identityOf(entry: HoldingsEntry | undefined): Record<string, unknown> {
+    const leading: unknown = entry?.leading;
+    if (!isValidElement(leading)) {
+      throw new Error(`the entry for "${entry?.name ?? 'nothing at all'}" carries no identity block`);
+    }
+    return leading.props as Record<string, unknown>;
+  }
+
+  it('hands each sellable hero over already depicted, rather than as a bare name', () => {
+    const entries = columnsOf().heroes.entries;
+
+    expect(entries.map((entry) => entry.name)).toEqual(['Vex', 'Nim']);
+    expect(identityOf(entries[0])).toMatchObject({
+      name: 'Vex',
+      rank: 'S',
+      rarityIdx: HERO_RARITY,
+      level: 42,
+      skin: BOUGHT_SKIN,
+    });
+  });
+
+  it('lets a hero the roster told it less about show what it does know', () => {
+    const nim = identityOf(columnsOf().heroes.entries[1]);
+
+    expect(nim).toMatchObject({ name: 'Nim', rarityIdx: UNLISTED_HERO_RARITY });
+    expect(nim.rank).toBeUndefined();
+    expect(nim.level).toBeUndefined();
+  });
+
+  it('draws no depiction of its own for a skin, which has nothing but a listing name', () => {
+    for (const skin of columnsOf().skins.entries) {
+      expect(skin.leading).toBeUndefined();
+    }
   });
 
   it('follows the language the rest of the screen speaks', () => {
     const built = facts({ heroes: roster });
     const columns = holdingsComponents(accountHoldingsFrom(built, SNAPSHOT), built.heroes, 'pt');
-    expect(columns.heroes.entries.map((row) => row.detail)).toEqual(['Lendária', 'Raro']);
+
+    expect(columns.heroes.entries.map((entry) => identityOf(entry).lang)).toEqual(['pt', 'pt']);
+    expect(columnsOf().heroes.entries.map((entry) => identityOf(entry).lang)).toEqual(['en', 'en']);
   });
 
   it('pairs each hero with its own price rather than with the list as a whole', () => {
@@ -209,9 +242,15 @@ describe('the things each column lists under its figure', () => {
         { name: 'Vex', rarity: HERO_RARITY, marketable: true },
       ],
     });
-    expect(columns.heroes.entries).toEqual([
-      { name: 'Nim', detail: 'Rare', amount: null },
-      { name: 'Vex', detail: 'Legendary', amount: 20 },
+
+    expect(
+      columns.heroes.entries.map((entry) => ({
+        depicted: identityOf(entry).name,
+        amount: entry.amount,
+      })),
+    ).toEqual([
+      { depicted: 'Nim', amount: null },
+      { depicted: 'Vex', amount: 20 },
     ]);
   });
 

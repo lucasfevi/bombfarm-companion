@@ -122,8 +122,15 @@ const ROYAL_SENTINEL = 8;
 const FOREST_WARDEN = 4;
 
 /** One hero the snapshot quotes, one the account binds, one of a rarity nobody is listing. */
-const ROSTER: { name: string; rarity: RarityKey; marketable?: boolean; skin: number }[] = [
-  { name: 'Aria', rarity: 'Raro', marketable: true, skin: ROYAL_SENTINEL },
+const ROSTER: {
+  name: string;
+  rarity: RarityKey;
+  marketable?: boolean;
+  skin: number;
+  rank?: string;
+  level?: number;
+}[] = [
+  { name: 'Aria', rarity: 'Raro', marketable: true, skin: ROYAL_SENTINEL, rank: 'S', level: 42 },
   { name: 'Bran', rarity: 'Raro', marketable: false, skin: ROYAL_SENTINEL },
   { name: 'Cyra', rarity: 'Incomum', marketable: true, skin: 0 },
 ];
@@ -155,6 +162,14 @@ function slots(html: string, testId: string): string[] {
   return [...html.matchAll(new RegExp(`data-testid="${testId}"[^>]*>([^<]*)<`, 'g'))].map(
     (match) => match[1] ?? '',
   );
+}
+
+/** One entry's own markup, which `split` ends where the next entry begins. */
+function entryChunks(html: string, component: string): string[] {
+  return html
+    .split(`data-testid="account-holdings-${component}-entry"`)
+    .slice(1)
+    .map((chunk) => chunk.split('</ul>')[0] ?? chunk);
 }
 
 function renderSection(
@@ -298,9 +313,31 @@ describe('account holdings — what each component is made of', () => {
   const heroes = priceableHeroes(ROSTER);
   const html = renderSection(INVENTORY, [ROYAL_SENTINEL, FOREST_WARDEN], heroes);
 
-  it('lists a hero under its own name, and the rarity the market quotes it on', () => {
-    expect(slots(html, 'account-holdings-heroes-entry-name')).toEqual(['Aria', 'Cyra']);
-    expect(slots(html, 'account-holdings-heroes-entry-detail')).toEqual(['Rare', 'Uncommon']);
+  it('depicts a hero the way the rest of the planner depicts one', () => {
+    const [aria, cyra] = entryChunks(html, 'heroes');
+
+    expect(aria).toContain('alt="Aria"');
+    expect(aria).toContain('>S<');
+    expect(aria).toContain('Rare');
+    expect(aria).toContain('Lv 42');
+    expect(cyra).toContain('alt="Cyra"');
+    expect(cyra).toContain('Uncommon');
+  });
+
+  it('shows what it knows about a hero the roster told it less about, and crashes on none of it', () => {
+    const [, cyra] = entryChunks(html, 'heroes');
+
+    expect(cyra).toContain('alt="Cyra"');
+    expect(cyra).not.toContain('Lv 42');
+  });
+
+  it('pairs each depicted hero with its own price, not with the list as a whole', () => {
+    const [aria, cyra] = entryChunks(html, 'heroes');
+
+    expect(aria).toContain('R$50.00');
+    expect(aria).not.toContain(STRINGS.en.accountHoldingsUnpriced);
+    expect(cyra).toContain(STRINGS.en.accountHoldingsUnpriced);
+    expect(cyra).not.toContain('R$50.00');
   });
 
   it('leaves the hero the game forbids selling out of the list, as it is out of the figure', () => {
@@ -326,12 +363,13 @@ describe('account holdings — what each component is made of', () => {
     expect(slot(html, 'account-holdings-skins-coverage')).toBe('1 of 2 bought skins priced');
   });
 
-  it('lists a skin by the listing it appears under, with nothing to tell two of them apart', () => {
+  it('lists a skin by the listing it appears under, and depicts nothing for it', () => {
     expect(slots(html, 'account-holdings-skins-entry-name')).toEqual([
       'Forest Warden Skin',
       'Royal Sentinel Skin',
     ]);
     expect(slots(html, 'account-holdings-skins-entry-detail')).toEqual([]);
+    expect(slots(html, 'account-holdings-skins-entry-leading')).toEqual([]);
     expect(slots(html, 'account-holdings-skins-entry-amount')).toEqual(['R$30.00']);
   });
 
@@ -363,8 +401,11 @@ describe('account holdings — what each component is made of', () => {
 
   it('says the same things in Portuguese, down to the rarity and the unpriced marker', () => {
     const portuguese = renderSection(INVENTORY, [ROYAL_SENTINEL, FOREST_WARDEN], heroes, 'pt');
+    const [aria, cyra] = entryChunks(portuguese, 'heroes');
 
-    expect(slots(portuguese, 'account-holdings-heroes-entry-detail')).toEqual(['Raro', 'Incomum']);
+    expect(aria).toContain('Raro');
+    expect(cyra).toContain('Incomum');
+    expect(portuguese).not.toContain('Uncommon');
     expect(slots(portuguese, 'account-holdings-heroes-entry-unpriced')).toEqual([
       STRINGS.pt.accountHoldingsUnpriced,
     ]);

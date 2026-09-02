@@ -6,7 +6,6 @@ import type {
   HoldingsViewProps,
 } from '@bombfarm/account/holdings';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
-import { rarityLabel } from '@bombfarm/domain/game-labels';
 import type { RarityKey } from '@bombfarm/domain/model';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import type {
@@ -18,15 +17,20 @@ import type {
   SkinsTally,
 } from '@bombfarm/pricing';
 import { accountHoldings, boughtSkinHashFor } from '@bombfarm/pricing';
+import { HeroIdentity } from '@/shared/game-art';
 import { formatMoney, sub, type Lang, type Strings } from '@/shared/i18n';
 import type { StoredInventoryView } from '@/shared/lib/inventory-view-storage';
 
 /** The currency the published market snapshot is quoted in — the one the Inventory screen states. */
 export const HOLDINGS_CURRENCY = 'BRL';
 
-/** A hero the market can price, carrying the name the holdings list prints it under. */
+/** A hero the market can price, carrying what the holdings list needs to depict it. */
 export interface HoldingsHero extends PriceableHero {
   name: string;
+  rank?: string;
+  stars?: number;
+  level?: number;
+  skin?: number;
 }
 
 export interface AccountHoldingsSource {
@@ -55,13 +59,25 @@ const priceable = (item: InventoryViewItem): PriceableItem => ({
  * for a hero the planner built by hand, which the game has never seen and cannot sell.
  */
 export function priceableHeroes(
-  heroes: readonly { name: string; rarity: RarityKey; marketable?: boolean }[],
+  heroes: readonly {
+    name: string;
+    rarity: RarityKey;
+    marketable?: boolean;
+    rank?: string;
+    stars?: number;
+    level?: number;
+    skin?: number;
+  }[],
 ): HoldingsHero[] | null {
   if (!heroes.some((hero) => hero.marketable != null)) return null;
   return heroes.map((hero) => ({
     name: hero.name,
     rarity: RARITIES.indexOf(hero.rarity),
     marketable: hero.marketable ?? false,
+    rank: hero.rank,
+    stars: hero.stars,
+    level: hero.level,
+    skin: hero.skin,
   }));
 }
 
@@ -106,10 +122,15 @@ const componentView = (
 });
 
 /**
- * One entry per hero the market could ever quote, carrying the rarity the quote is made on. A hero
- * the game forbids selling resolved with no key at all and belongs in no list; an eligible hero
- * nothing is listed for keeps its entry with a null amount, which is what makes the coverage line
- * above it investigable rather than a number to be taken on trust.
+ * One entry per hero the market could ever quote, depicted the way every other screen depicts a
+ * hero — avatar, rank, name, rarity, level. A hero the game forbids selling resolved with no key at
+ * all and belongs in no list; an eligible hero nothing is listed for keeps its entry with a null
+ * amount, which is what makes the coverage line above it investigable rather than a number to be
+ * taken on trust.
+ *
+ * The identity block is built here rather than in the shared view because it needs a language, and
+ * that view has none. A roster row missing a rank or a level leaves the field out and lets the block
+ * show what it does know.
  */
 function heroEntries(
   heroes: readonly HoldingsHero[] | null,
@@ -121,10 +142,21 @@ function heroEntries(
   heroes.forEach((hero, position) => {
     const price = tally.prices[position];
     if (price == null || price.key == null) return;
-    const rarity = RARITIES[hero.rarity];
     entries.push({
       name: hero.name,
-      ...(rarity == null ? {} : { detail: rarityLabel(rarity, lang) }),
+      leading: (
+        <HeroIdentity
+          name={hero.name}
+          rank={hero.rank}
+          rarityIdx={hero.rarity}
+          stars={hero.stars}
+          level={hero.level}
+          skin={hero.skin}
+          lang={lang}
+          size="xs"
+          variant="stacked"
+        />
+      ),
       amount: price.amount,
     });
   });

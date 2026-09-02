@@ -48,17 +48,22 @@ export function AccountIdentityView({
         <h2 className={panelTitleClass}>{labels.title}</h2>
       </div>
       <p className={tipClass}>{labels.tip}</p>
-      <div className="grid grid-cols-2 gap-x-6 gap-y-3 min-[560px]:grid-cols-4">
-        <IdentityFact label={labels.playerName} value={playerName ?? labels.missing} />
-        <IdentityFact label={labels.accountId} value={accountId ?? labels.missing} />
-        <IdentityFact
-          label={labels.currentPhase}
-          value={phase != null ? labels.phase(phase) : labels.missing}
-        />
-        <IdentityFact
-          label={labels.maxPhase}
-          value={maxPhase != null ? labels.phase(maxPhase) : labels.missing}
-        />
+      {/* The four facts spread out on their own width rather than the viewport's: this panel sits
+          in a column beside the holdings figure, where a wide window says nothing about the room
+          the facts actually have. */}
+      <div className="@container">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-3 @min-[32rem]:grid-cols-4">
+          <IdentityFact label={labels.playerName} value={playerName ?? labels.missing} />
+          <IdentityFact label={labels.accountId} value={accountId ?? labels.missing} />
+          <IdentityFact
+            label={labels.currentPhase}
+            value={phase != null ? labels.phase(phase) : labels.missing}
+          />
+          <IdentityFact
+            label={labels.maxPhase}
+            value={maxPhase != null ? labels.phase(maxPhase) : labels.missing}
+          />
+        </div>
       </div>
     </Panel>
   );

@@ -9,6 +9,15 @@ export interface HoldingsEntry {
    * nothing else, so the rarity is what makes a repeated figure legible; skins carry none.
    */
   detail?: string;
+  /**
+   * The entry's leading cell, already drawn by the host, in place of the name and its detail.
+   *
+   * A hero is depicted with its avatar, rank, rarity and level everywhere else in both apps, and
+   * that depiction needs a language this package deliberately does not have. So the app that has
+   * one draws it and hands the node over; an entry with nothing more to say than a name — a skin —
+   * passes none and keeps the plain pair.
+   */
+  leading?: ReactNode;
   /** This entry's price in the view's currency, or null when nothing is listed for it right now. */
   amount: number | null;
 }
@@ -110,24 +119,33 @@ export function HoldingsColumn({
                 <li
                   key={`${String(position)}-${entry.name}`}
                   data-testid={`${testId}-entry`}
-                  className="flex items-baseline justify-between gap-2"
+                  className={cn(
+                    'flex justify-between gap-2',
+                    entry.leading == null ? 'items-baseline' : 'items-center',
+                  )}
                 >
-                  <span className="flex min-w-0 items-baseline gap-1">
-                    <span
-                      data-testid={`${testId}-entry-name`}
-                      className="truncate text-[11px] text-ink"
-                    >
-                      {entry.name}
-                    </span>
-                    {entry.detail == null ? null : (
+                  {entry.leading == null ? (
+                    <span className="flex min-w-0 items-baseline gap-1">
                       <span
-                        data-testid={`${testId}-entry-detail`}
-                        className="shrink-0 text-[10px] text-muted"
+                        data-testid={`${testId}-entry-name`}
+                        className="truncate text-[11px] text-ink"
                       >
-                        {entry.detail}
+                        {entry.name}
                       </span>
-                    )}
-                  </span>
+                      {entry.detail == null ? null : (
+                        <span
+                          data-testid={`${testId}-entry-detail`}
+                          className="shrink-0 text-[10px] text-muted"
+                        >
+                          {entry.detail}
+                        </span>
+                      )}
+                    </span>
+                  ) : (
+                    <span data-testid={`${testId}-entry-leading`} className="flex min-w-0">
+                      {entry.leading}
+                    </span>
+                  )}
                   {entry.amount == null ? (
                     <span
                       data-testid={`${testId}-entry-unpriced`}

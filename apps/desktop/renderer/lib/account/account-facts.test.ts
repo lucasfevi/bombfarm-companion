@@ -218,7 +218,13 @@ describe('the sellable flag the game itself sends', () => {
       ...basePayload(),
       heroes: [rawHero('h1', { rarity: 4, marketable: true }), rawHero('h2', { rarity: 2 })],
     };
-    expect(factsOf(payload).holdings.heroes).toEqual([
+    const listable = factsOf(payload).holdings.heroes?.map(({ name, rarity, marketable }) => ({
+      name,
+      rarity,
+      marketable,
+    }));
+
+    expect(listable).toEqual([
       { name: 'h1', rarity: 4, marketable: true },
       { name: 'h2', rarity: 2, marketable: false },
     ]);
@@ -230,6 +236,29 @@ describe('the sellable flag the game itself sends', () => {
       heroes: [{ id: 'h1', rarity: 3 }],
     };
     expect(factsOf(payload).holdings.heroes).toEqual([{ name: '—', rarity: 3, marketable: false }]);
+  });
+
+  it('carries what it takes to depict a hero, the way every other screen depicts one', () => {
+    const payload: AccountPayload = {
+      ...basePayload(),
+      heroes: [rawHero('h1', { rank: 'S', level: 42, stars: 3, skin: 4 })],
+    };
+    expect(factsOf(payload).holdings.heroes).toEqual([
+      { name: 'h1', rarity: 2, marketable: false, rank: 'S', level: 42, stars: 3, skin: 4 },
+    ]);
+  });
+
+  it('leaves out a depiction field the roster row did not carry, rather than inventing one', () => {
+    const payload: AccountPayload = {
+      ...basePayload(),
+      heroes: [{ id: 'h1', name: 'Nim', rarity: 3, rank: 7, level: 'twelve' }],
+    };
+    const [hero] = factsOf(payload).holdings.heroes ?? [];
+
+    expect(hero?.name).toBe('Nim');
+    expect(hero?.rank).toBeUndefined();
+    expect(hero?.level).toBeUndefined();
+    expect(hero?.skin).toBeUndefined();
   });
 
   it('reads every worn skin, leaving the collapsing to the shared computation', () => {

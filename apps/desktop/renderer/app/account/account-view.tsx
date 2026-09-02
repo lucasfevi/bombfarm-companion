@@ -5,13 +5,15 @@
  * skill tree grant. Every drawing here is `@bombfarm/account`'s, the same one the web planner
  * shows; this file is their connector, and `account-labels.ts` beside it is their vocabulary.
  *
- * The layout follows the planner's: holdings first, then identity, then House and tree side by
- * side. Two things differ. Each panel is drawn only when the account sections it reads were
- * usable, so an inventory the game would not give up hides that figure and nothing else. And the
- * heroes component carries a figure at all, which the planner's cannot: the roster the game serves
- * says whether a hero may be sold, and a save export never did.
+ * The arrangement is the planner's too, and for the same reason it is not restated here: holdings
+ * and identity share the first row, House and tree the second, and `AccountScreenLayout` owns both.
+ * Two things differ. Each panel is drawn only when the account sections it reads were usable, so an
+ * inventory the game would not give up hides that figure and nothing else. And the heroes component
+ * carries a figure at all, which the planner's cannot: the roster the game serves says whether a
+ * hero may be sold, and a save export never did.
  */
 import { useMemo } from 'react';
+import { AccountScreenLayout } from '@bombfarm/account/layout';
 import { AccountHouseView, AccountIdentityView, AccountTreeView } from '@bombfarm/account/panels';
 import { HoldingsView } from '@bombfarm/account/holdings';
 import { Banner, Button, EmptyState, colClass } from '@bombfarm/ui';
@@ -97,45 +99,48 @@ export function AccountView({ onOpenInventory }: { onOpenInventory: () => void }
 
   return (
     <div data-testid="account-view" className={colClass}>
-      <HoldingsView
-        {...holdingsComponents(holdings, facts.holdings.heroes, lang)}
-        labels={holdingsLabels}
-        inventoryLink={
-          <Button
-            type="button"
-            variant="text"
-            data-testid="account-holdings-inventory-link"
-            onClick={onOpenInventory}
-          >
-            {t.accountHoldingsInventoryLink}
-          </Button>
-        }
-        {...(priceAge === null ? {} : { footnote: priceAge })}
-      />
+      <AccountScreenLayout
+        holdings={
+          <>
+            <HoldingsView
+              {...holdingsComponents(holdings, facts.holdings.heroes, lang)}
+              labels={holdingsLabels}
+              inventoryLink={
+                <Button
+                  type="button"
+                  variant="text"
+                  data-testid="account-holdings-inventory-link"
+                  onClick={onOpenInventory}
+                >
+                  {t.accountHoldingsInventoryLink}
+                </Button>
+              }
+              {...(priceAge === null ? {} : { footnote: priceAge })}
+            />
 
-      {/* The prices inside the section above age on their own clock; this one is how old the
-          reading of the account itself is, and both belong on screen. */}
-      {facts.readCapturedAt === null ? null : (
-        <p data-testid="account-read-age" className="text-xs text-muted">
-          {sub(t.accountReadAge, { age: formatCapturedAt(facts.readCapturedAt, t) })}
-        </p>
-      )}
+            {/* The prices inside the section above age on their own clock; this one is how old the
+                reading of the account itself is, and both belong on screen. */}
+            {facts.readCapturedAt === null ? null : (
+              <p data-testid="account-read-age" className="text-xs text-muted">
+                {sub(t.accountReadAge, { age: formatCapturedAt(facts.readCapturedAt, t) })}
+              </p>
+            )}
+          </>
+        }
+        identity={
+          facts.identity === null ? null : (
+            <AccountIdentityView {...facts.identity} labels={identityLabels} />
+          )
+        }
+        house={
+          facts.house === null ? null : <AccountHouseView {...facts.house} labels={houseLabels} />
+        }
+        tree={facts.tree === null ? null : <AccountTreeView {...facts.tree} labels={treeLabels} />}
+      />
 
       {nothingReadable ? (
         <EmptyState title={t.accountUnavailableTitle} description={t.accountUnavailableDescription} />
       ) : null}
-
-      {facts.identity === null ? null : (
-        <AccountIdentityView {...facts.identity} labels={identityLabels} />
-      )}
-
-      {/* The design system's own two-column split, restated rather than imported: it lives on a
-          deep recipe subpath that resolves only for an app whose tsconfig maps the package to
-          source, and this renderer resolves the package through its exports map instead. */}
-      <div className="grid grid-cols-1 gap-2.5 min-[720px]:grid-cols-2">
-        {facts.house === null ? null : <AccountHouseView {...facts.house} labels={houseLabels} />}
-        {facts.tree === null ? null : <AccountTreeView {...facts.tree} labels={treeLabels} />}
-      </div>
     </div>
   );
 }

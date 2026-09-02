@@ -77,9 +77,13 @@ export interface AccountTreeFacts {
   fieldSlots: number | null;
 }
 
-/** A hero the market can price, carrying the name the holdings list prints it under. */
+/** A hero the market can price, carrying what the holdings list needs to depict it. */
 export interface HoldingsHero extends PriceableHero {
   name: string;
+  rank?: string | undefined;
+  stars?: number | undefined;
+  level?: number | undefined;
+  skin?: number | undefined;
 }
 
 /** The three priceable readings behind the holdings section. `null` is "not read", never "none". */
@@ -209,6 +213,10 @@ function heroNameOf(raw: Record<string, unknown>): string {
   return typeof name === 'string' && name.trim() !== '' ? name : UNNAMED_HERO;
 }
 
+function roundedNumberOf(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.round(value) : undefined;
+}
+
 /**
  * The desktop reads the roster the game itself serves, and those records carry `marketable` — the
  * game's own answer to whether a hero may be listed at all. A row that does not carry the flag is
@@ -225,6 +233,10 @@ function priceableHeroesOf(rawHeroes: readonly unknown[]): HoldingsHero[] {
       name: heroNameOf(raw),
       rarity: Math.round(rarity),
       marketable: raw.marketable === true,
+      rank: typeof raw.rank === 'string' ? raw.rank : undefined,
+      stars: roundedNumberOf(raw.stars),
+      level: roundedNumberOf(raw.level),
+      skin: roundedNumberOf(raw.skin),
     });
   }
   return heroes;
