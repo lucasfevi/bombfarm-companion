@@ -26,6 +26,7 @@ export default defineConfig({
         'live-state-summary-no-layout-shift.spec.mjs',
         'shell-measure-and-scrollbars.spec.mjs',
         'tray-hide.spec.mjs',
+        'mini-live.spec.mjs',
       ],
     },
     {

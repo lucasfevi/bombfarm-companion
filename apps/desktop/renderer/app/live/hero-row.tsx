@@ -97,9 +97,10 @@ function EnergyDirectionMark({ direction }: { direction: EnergyDirection }) {
  * guarantee; this one stays mono because a live reading reads as an instrument.
  *
  * No caret without a reading — direction is known for a hero the energy figure never arrived for,
- * but a marker printed against "not available" annotates a number that is not there. That branch
- * keeps the plain block: the absent-value copy is prose, and squeezing it into a four-character
- * slot would wrap it down the row.
+ * but a marker printed against a value that is not there annotates nothing. That branch prints a
+ * dash in the same slot and hands the words to a screen reader: the absent-value copy is prose,
+ * and prose in a four-character slot wraps down the row, making that row taller than its
+ * neighbours the moment one hero's reading is missing and another's is not.
  */
 function EnergyReading({
   testId,
@@ -115,8 +116,11 @@ function EnergyReading({
 
   if (fraction === undefined) {
     return (
-      <span data-testid={testId} className="block text-right text-[10px] leading-none text-muted">
-        {t.valueNotAvailable}
+      <span className="flex items-center justify-end gap-1 text-[10px] leading-none text-muted">
+        <span data-testid={testId} className="inline-block w-[4ch] text-right font-mono">
+          <span aria-hidden>—</span>
+          <span className="sr-only">{t.valueNotAvailable}</span>
+        </span>
       </span>
     );
   }
@@ -183,7 +187,7 @@ const HeroRowBody = memo(function HeroRowBody({
             </span>
           </span>
           <span className="text-[10px] leading-none text-muted tabular-nums">
-            {sub(t.liveHeroLevelValue, { level: hero.level ?? 0 })}
+            {hero.level === undefined ? '—' : sub(t.liveHeroLevelValue, { level: hero.level })}
           </span>
         </span>
       </span>
@@ -228,7 +232,7 @@ export function HeroRow({
     <li
       data-testid={`live-hero-row-${hero.id}`}
       data-muted={muted ? '' : undefined}
-      className="grid grid-cols-[0.5rem_8rem_minmax(0,1fr)_3rem_4rem] items-center gap-2 rounded-sm border border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-2 py-1 data-[muted]:opacity-60 data-[muted]:grayscale"
+      className="grid grid-cols-[0.5rem_8rem_minmax(0,1fr)_3rem_4rem] items-center gap-2 rounded-sm border border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-2 py-1 odd:bg-[color-mix(in_oklch,var(--ink)_5%,var(--surface))] data-[muted]:opacity-60 data-[muted]:grayscale"
     >
       <HeroRowBody state={state} hero={hero} energyFraction={energyFraction ?? hero.energyFraction} />
       {trailing !== undefined ? <span className="flex items-center gap-1">{trailing}</span> : null}
