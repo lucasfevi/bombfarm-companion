@@ -25,8 +25,10 @@ describe('mini-live page shell', () => {
     expect(source).toContain("'miniLive:setLayout'");
   });
 
-  it('measures content for miniLive:fitGrowthAxis after layout changes', () => {
+  it('measures content for miniLive:fitGrowthAxis after layout changes and once when live data lands, never per tick', () => {
     expect(source).toContain("'miniLive:fitGrowthAxis'");
+    expect(source).toContain('}, [layout, hasLiveData]);');
+    expect(source).not.toContain('model.earnings, model.map, model.slow');
   });
 });
 
@@ -51,5 +53,11 @@ describe('mini-live section layout', () => {
     expect(source).toContain('flex-row');
     expect(source).toContain('data-axis="horizontal"');
     expect(source).toContain('data-axis="vertical"');
+  });
+
+  it('lets the heroes section fill leftover height instead of clipping into empty window space', () => {
+    expect(source).toContain('overflow-hidden');
+    expect(source).toContain('flex-1 flex-col');
+    expect(source).toContain('readMiniLiveFitSize(root, content, layout.axis)');
   });
 });
