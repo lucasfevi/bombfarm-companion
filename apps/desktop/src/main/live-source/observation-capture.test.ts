@@ -287,6 +287,21 @@ describe('createObservationCapture: what it records', () => {
   });
 });
 
+describe('createObservationCapture: repetition', () => {
+  /** Deduplicating would hide the very repetition that identifies a polling route, so an identical
+   *  body arriving many times must produce that many records. */
+  it('records every occurrence of an identical body rather than collapsing them', () => {
+    const { capture, records } = createCapture();
+    const polled = { casa: { level: 3 }, heroes: [] };
+    for (let i = 0; i < 50; i += 1) capture.body(bodyBytes(polled), 1_700_000_000_000 + i);
+
+    const bodies = records().filter((entry) => entry.kind === 'body');
+    expect(bodies).toHaveLength(50);
+    expect(new Set(bodies.map((entry) => entry.seq)).size).toBe(50);
+    expect(bodies.every((entry) => JSON.stringify(entry.body) === JSON.stringify(polled))).toBe(true);
+  });
+});
+
 describe('createObservationCapture: ordering', () => {
   it('increases the sequence strictly across every record kind, including within one millisecond', () => {
     const { capture, records } = createCapture();
