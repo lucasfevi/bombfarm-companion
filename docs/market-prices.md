@@ -32,6 +32,13 @@ taken off the top and the rotation is paced with what is left. Pacing the rotati
 enumeration outside the configured number, and a day of passes spent about 9% more than the figure
 it was given.
 
+This is what absorbs a day the market grows. A newly listed row fires the tag pass, and one such
+pass was measured at **191 calls** against a ceiling near 650 — most of it enumeration. Because the
+budget is derived per pass from what the enumeration has just cost, the rotation is paced
+correspondingly slower and the day still fits. Expect the call figures to look worse on those days
+without anything having regressed: the enumeration is taking a share the rotation would otherwise
+have had.
+
 A pass never starts sooner than five
 minutes after the previous one began, because the published file is served with a five-minute
 `max-age` and republishing inside that window reaches nobody. A pass that fails, or one whose
@@ -221,7 +228,12 @@ Both tier sizes are recorded on the pass's own row, not only logged. Sub-dividin
 becomes worth doing once it passes roughly **80 rows**, and that is a trend rather than a moment:
 a log line cannot answer it. The counts exclude rows being quoted for the first time, which belong
 to neither tier yet — a figure that moved with however many rows happened to be newly listed that
-pass could not be read against a threshold.
+pass could not be read against a threshold. Those are counted separately, so the three together
+account for every row the split saw.
+
+**Which is every row the enumeration found a live price for, not every row the market carried.** A
+row with no active listing has nothing to quote and never reaches the split, so the three are a
+partition of the priced rows rather than of the board.
 
 **That threshold is close.** The quoted tier stood at 74 on 2026-09-03. So the remaining freshness
 is in sub-dividing it rather than in anything else here: the volume distribution inside it is

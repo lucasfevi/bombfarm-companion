@@ -678,6 +678,9 @@ export async function runCollector({
       row.spacing_ms = plan?.spacingMs ?? null;
       row.tier_a_count = plan?.tierACount ?? null;
       row.tier_b_count = plan?.tierBCount ?? null;
+      // The three add up to the rows the enumeration found a live price for, not to every row the
+      // market carried: an unlisted row has nothing to quote and never reaches the split.
+      row.first_quote_count = plan?.firstQuote.length ?? null;
       row.finished_at = new Date(now()).toISOString();
       await writeRun(row);
       log('pass.done', { pass, ms: now() - startedAtMs, coolDownMs });

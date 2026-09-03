@@ -290,7 +290,7 @@ describe('the pass plans what it will quote', () => {
     expect(h.runs[0].tier_b_count).toBe(1);
   });
 
-  it('counts an item being quoted for the first time into neither tier', async () => {
+  it('counts an item being quoted for the first time into neither tier, but records it', async () => {
     const h = planningHarness({
       readTiers: async () => ({ traded: new Set(), observed: new Set(['Quiet Item']) }),
     });
@@ -299,9 +299,25 @@ describe('the pass plans what it will quote', () => {
     expect(h.plans[0].firstQuote).toEqual(['Traded Item']);
     expect(h.runs[0].tier_a_count).toBe(0);
     expect(h.runs[0].tier_b_count).toBe(1);
+    expect(h.runs[0].first_quote_count).toBe(1);
   });
 
-  it.each(['spacing_ms', 'tier_a_count', 'tier_b_count'])(
+  /**
+   * The three account for every row the split saw, which is the rows the enumeration found a live
+   * price for — not every row the market carried. An unlisted row has nothing to quote and never
+   * reaches the split, so reading these as a partition of the board would over-count it.
+   */
+  it('accounts for every priced row across the three counts', async () => {
+    const h = planningHarness({
+      readTiers: async () => ({ traded: new Set(['Traded Item']), observed: new Set(listed) }),
+    });
+    await runCollector(h.deps);
+
+    const [run] = h.runs;
+    expect(run.tier_a_count + run.tier_b_count + run.first_quote_count).toBe(listed.length);
+  });
+
+  it.each(['spacing_ms', 'tier_a_count', 'tier_b_count', 'first_quote_count'])(
     'leaves %s null on a pass that never got as far as planning one',
     async (column) => {
       const h = harness({
