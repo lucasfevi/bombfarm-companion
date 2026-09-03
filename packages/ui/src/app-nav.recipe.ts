@@ -17,8 +17,18 @@ export const appNavItemRecipe = cva(
         true: 'bg-[color-mix(in_oklch,var(--accent)_18%,var(--surface))] text-ink shadow-[0_1px_0_color-mix(in_oklch,var(--line)_80%,transparent),inset_0_0_0_1px_color-mix(in_oklch,var(--accent)_35%,var(--line))]',
         false: 'text-muted hover:bg-[color-mix(in_oklch,var(--line)_28%,transparent)] hover:text-ink',
       },
+      /**
+       * `label` adds nothing, so a caller that asks for words gets the byte-identical class string
+       * the web's header has always emitted. Only the two narrow forms lay a glyph beside text and
+       * therefore need the box to be a flex row.
+       */
+      layout: {
+        label: '',
+        'icon-and-label': 'inline-flex items-center gap-1.5',
+        icon: 'inline-flex items-center justify-center px-2',
+      },
     },
-    defaultVariants: { active: false },
+    defaultVariants: { active: false, layout: 'label' },
   },
 );
 

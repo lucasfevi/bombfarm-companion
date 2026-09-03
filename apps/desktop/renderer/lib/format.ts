@@ -66,6 +66,11 @@ export function formatCount(count: number, locale: AppLocale): string {
   return Math.round(count).toLocaleString(BCP47_BY_LOCALE[locale]);
 }
 
+/** A market amount in its own currency, symbol and separators both following the chosen language. */
+export function formatMoney(amount: number, locale: AppLocale, currency: string): string {
+  return new Intl.NumberFormat(BCP47_BY_LOCALE[locale], { style: 'currency', currency }).format(amount);
+}
+
 /** Re-exported rather than reimplemented: this is the same rule the main process uses to decide
  *  whether a new energy reading is worth sending at all, and a second copy of it here is how the
  *  two would drift into disagreeing about what a change is. */

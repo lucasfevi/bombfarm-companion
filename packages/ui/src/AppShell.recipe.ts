@@ -22,12 +22,20 @@ export const appShellHeaderClass =
   'relative flex min-h-top shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-4 py-2.5';
 
 /** Brand row — mark beside the lockup, same shape as the web's `SiteHeader` `<Link>`. */
-export const appShellBrandRowClass = 'flex items-center gap-2.5';
+export const appShellBrandRowClass = 'flex shrink-0 items-center gap-2.5';
 
 /** Brand lockup — name over an uppercase tag, styled like the web's `SiteHeader` brand block. */
-export const appShellBrandClass = 'flex flex-col justify-center';
+export const appShellBrandClass = 'flex flex-col justify-center whitespace-nowrap';
 export const appShellBrandNameClass = 'text-[13px] leading-1.1 font-bold text-ink';
 export const appShellBrandTagClass = 'text-[11px] font-semibold tracking-wide text-muted uppercase';
+
+/**
+ * The flavor badge. Its own chip beside the lockup rather than the lockup's second line, which
+ * belongs to the suite tag: the tag says which product this is and never changes, the badge says
+ * which build of it you are running and is absent on a release.
+ */
+export const appShellFlavorBadgeClass =
+  'shrink-0 rounded-sm border border-line bg-bg-2 px-1.5 py-0.5 text-[10px] font-bold tracking-[0.06em] text-muted uppercase';
 
 export const appShellActionsClass = 'flex shrink-0 items-center gap-2';
 

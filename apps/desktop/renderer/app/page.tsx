@@ -10,7 +10,7 @@ import type {
   UpdateStatus,
 } from '@bombfarm/contracts';
 import { DEFAULT_SETTINGS, idleUpdateStatus } from '@bombfarm/contracts';
-import { AppShell, BrandMark, Button, Icon, SegmentedToggle, StatusChip } from '@bombfarm/ui';
+import { AppShell, BrandMark, StatusChip, useShellDensity } from '@bombfarm/ui';
 // Proves the renderer can import @bombfarm/domain: a value import from a
 // FILE subpath that itself value-imports ./data/catalog.json, so a dist missing the JSON data
 // fails the static export build rather than surfacing later at runtime. It also carries a
@@ -21,14 +21,14 @@ import { CopyProvider, useCopy, useLocale, type Copy } from '../lib/copy';
 import { formatAge } from '../lib/format';
 import { useOverlayInset } from '../lib/window-overlay';
 import { navItemsFor } from './nav-items';
-import { CoffeeIconLink } from './coffee-link';
-import { ReferralChip } from './referral-link';
+import { ShellActions } from './shell-actions';
 import { ConsentGate, isConsentGateVisible } from './consent-gate';
 import { ConsentModal } from './consent-modal';
 import { UpdateChip } from './update-chip';
 import { LiveView } from './live/live-view';
 import { FarmView } from './farm/farm-view';
 import { InventoryView } from './inventory/inventory-view';
+import { AccountView } from './account/account-view';
 import { ConsentSection } from './settings/consent-section';
 import { DiagnosticsSection } from './settings/diagnostics-section';
 import { LanguageSection } from './settings/language-section';
@@ -37,13 +37,6 @@ import { UpdatesSection } from './settings/updates-section';
 import { WindowSection } from './settings/window-section';
 
 const DEFAULT_NAV_ID = 'live';
-
-// Matches the shipped Settings language `Select` (the primitive-control rule) — same two locales, same
-// `onLocaleChange`, kept in sync only because both read/write the one `locale` state in `HomePage`.
-const LOCALE_OPTIONS: ReadonlyArray<{ id: AppLocale; label: string }> = [
-  { id: 'pt-BR', label: 'PT' },
-  { id: 'en', label: 'EN' },
-];
 
 function statusLabel(status: GameStatusInfo['status'], t: Copy): string {
   switch (status) {
@@ -60,29 +53,6 @@ function statusLabel(status: GameStatusInfo['status'], t: Copy): string {
 
 function getBridge(): NonNullable<Window['bfc']> | null {
   return (window as unknown as { bfc?: NonNullable<Window['bfc']> }).bfc ?? null;
-}
-
-function OpenMiniButton() {
-  const t = useCopy();
-
-  const onOpenMini = () => {
-    const bridge = getBridge();
-    if (!bridge) return;
-    void bridge.invoke('miniLive:open');
-  };
-
-  return (
-    <Button
-      type="button"
-      variant="text"
-      data-testid="open-mini"
-      onClick={onOpenMini}
-      className="inline-flex items-center gap-1.5"
-    >
-      <Icon name="window" size="sm" />
-      {t.miniLiveOpenLabel}
-    </Button>
-  );
 }
 
 export default function HomePage() {
@@ -195,6 +165,9 @@ function HomePageContent({
   const t = useCopy();
   const { lang } = useLocale();
   const overlayInset = useOverlayInset();
+  // The OS caption buttons are subtracted before the bar is judged: on Windows they take ~136px
+  // the header can never draw in, and on every other platform they take none.
+  const density = useShellDensity(overlayInset);
   const [activeNavId, setActiveNavId] = useState(DEFAULT_NAV_ID);
   const [environment, setEnvironment] = useState<AppEnvironmentInfo | null>(null);
   const [status, setStatus] = useState<GameStatusInfo | null>(null);
@@ -309,8 +282,8 @@ function HomePageContent({
     <>
       <ConsentModal forceOpen={consentForceOpen} onDecided={onConsentDecided} />
       <AppShell
-        title={environment?.productName}
         badge={environment?.badgeLabel ?? null}
+        density={density}
         items={granted ? navItemsFor(t) : []}
         activeId={activeNavId}
         onNavigate={setActiveNavId}
@@ -318,22 +291,12 @@ function HomePageContent({
         draggable
         overlayInset={overlayInset}
         actions={
-          <div className="flex items-center gap-3">
-            {granted ? <OpenMiniButton /> : null}
-            {/* Left of the language toggle, and unconditional — unlike the mini-window button
-                above them: the gate screen is where a first run spends its time, and neither of
-                these reads the account or touches the game. */}
-            <ReferralChip />
-            <CoffeeIconLink />
-            <SegmentedToggle
-              options={LOCALE_OPTIONS}
-              value={locale}
-              onChange={(id) => {
-                if (id === 'en' || id === 'pt-BR') onLocaleChange(id);
-              }}
-              ariaLabel={t.consentGateLanguageLabel}
-            />
-          </div>
+          <ShellActions
+            density={density}
+            granted={granted}
+            locale={locale}
+            onLocaleChange={onLocaleChange}
+          />
         }
         status={
           <span data-testid="game-status-chip">
@@ -361,12 +324,12 @@ function HomePageContent({
                   }}
                 />
               ) : null}
+              {/* The flavor is NOT repeated here. It is the header's badge, four words from the
+                  app's own name, which is where "which build am I running" is actually asked; a
+                  second copy beside the version said the same word twice in one small window. */}
               <span data-testid="app-version" className="font-mono tabular-nums">
                 v{environment.version}
               </span>
-              {environment.flavor !== 'prod' && environment.badgeLabel ? (
-                <span className="text-xs font-semibold uppercase tracking-wide">{environment.badgeLabel}</span>
-              ) : null}
             </>
           ) : null
         }
@@ -406,6 +369,12 @@ function HomePageContent({
             <FarmView />
           ) : activeNavId === 'inventory' ? (
             <InventoryView />
+          ) : activeNavId === 'account' ? (
+            <AccountView
+              onOpenInventory={() => {
+                setActiveNavId('inventory');
+              }}
+            />
           ) : (
             <LiveView onReopenConsent={onConsentReallow} />
           )}

@@ -67,9 +67,10 @@ async function goToInventory(page) {
 
   await page.getByRole('button', { name: 'Inventory' }).click();
   await page.waitForSelector('[data-testid="inventory-view"]', { timeout: 20_000 });
-  // The grid mounts about 100 ms after its container, so the unsynchronised `count()` reads below
-  // are free to read zero and compare against it. On screen that surfaced as an occasional flake;
-  // with the window hidden the grid is never early enough and it failed every run.
+  // Wait for the ROWS, not just the screen. The grid mounts about 100ms after its container, so
+  // an unsynchronised count() below is free to read zero and then compare against the real number.
+  // On screen that was an intermittent flake — three runs in six on a clean tree; with the window
+  // hidden the grid is never early enough and it failed every run. Every test here needs cards.
   await page.waitForSelector('[data-testid="inventory-card"]', { timeout: 20_000 });
 }
 

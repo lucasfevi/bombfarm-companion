@@ -9,7 +9,7 @@ import * as GameArt from '@bombfarm/game-art';
 // module with a directory fails this test.
 // M2-icons: Icon, iconSources, isIconName added (UI-chrome only; no game glyphs).
 // M2-shell-status (2026-08-11): StatusChip, EmptyState added — StatusChip is
-// the single implementation of INV-1 connection states; EmptyState covers
+// the single implementation of the game-connection states; EmptyState covers
 // "no game / no items / no filter matches" placeholders. AppShell's export
 // itself is unchanged (still a value export); only its props grew.
 // M2-toast-settings (2026-08-11): toastQueueReducer, initialToastQueueState,
@@ -44,6 +44,16 @@ import * as GameArt from '@bombfarm/game-art';
 // colClass / dialogDescClass / panelHClass / panelTitleClass / tipClass / the eight phasesBoard*
 // classes (2026-08-31): promoted from the same subpath for the same reason. They lay out the
 // phases explorer's panel grid, and the panels that draw it are `@bombfarm/farm`'s now.
+// accountStatListClass / heroAbilTitleClass (2026-09-02): promoted from the same subpath for the
+// same reason. They style the Account page's stat rows and its sub-headings, and the panels that
+// draw them are `@bombfarm/account`'s now.
+// Menu (2026-09-02): the compound wrap over Base UI's menu, dressed with the popup chrome Select
+// already draws. Added for the desktop top bar's overflow button; the barrel had no popup control
+// that lists commands, which is how one nearly got hand-rolled.
+// useShellDensity / shellDensityFor / SHELL_ACTIONS_COLLAPSE_WIDTH / SHELL_ICON_TABS_WIDTH
+// (2026-09-02): the two widths at which a top bar stops fitting, and the hook that reports which
+// side of them the window is on. AppShell takes the answer as a prop rather than measuring, so the
+// same value drives the tabs and whatever the caller puts in the actions slot.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -72,6 +82,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'iconSources',
   'isIconName',
   'MAX_VISIBLE_TOASTS',
+  'Menu',
   'MetricScoreboard',
   'NOTIFICATION_BUFFER_LIMIT',
   'NotificationCenter',
@@ -81,6 +92,8 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'RankControl',
   'SaveBar',
   'SegmentedToggle',
+  'SHELL_ACTIONS_COLLAPSE_WIDTH',
+  'SHELL_ICON_TABS_WIDTH',
   'Select',
   // `SelectMultiple` (2026-08-27): its own component rather than a `multiple?: boolean` branch on
   // `Select` — the two disagree on the type of `value` and on what a change is, and a union that
@@ -106,6 +119,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'TooltipStatusBody',
   'abilityCardRecipe',
   'abilityChipRecipe',
+  'accountStatListClass',
   'accordionRecipe',
   'barRecipe',
   'breakpoints',
@@ -128,6 +142,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   // components which receive an injected formatter ships beside them.
   'numberFormatterFor',
   'compactNumberFormatterFor',
+  'heroAbilTitleClass',
   'initialToastQueueState',
   'metricScoreboardDeltaRecipe',
   'metricScoreboardValueRecipe',
@@ -146,6 +161,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'phasesBoardRosterSpanClass',
   'selectFieldRecipe',
   'setupBannerRecipe',
+  'shellDensityFor',
   'sortableTableHeaderButtonClass',
   'statListMutedRowClass',
   'stickyHeadClass',
@@ -154,6 +170,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'toastQueueReducer',
   'tokens',
   'tooltipPopupRecipe',
+  'useShellDensity',
   'useToast',
 ].sort();
 

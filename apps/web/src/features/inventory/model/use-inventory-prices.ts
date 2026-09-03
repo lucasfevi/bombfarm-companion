@@ -3,7 +3,8 @@
 import { useMemo } from 'react';
 import type { MarketPriceLabels, InventoryTotalsLabels } from '@bombfarm/game-art';
 import type { InventoryEntry, InventoryView, InventoryViewItem } from '@bombfarm/domain/inventory-view';
-import { resolveItemPrice } from '@bombfarm/pricing';
+import type { MarketSnapshot } from '@bombfarm/pricing';
+import { accountHoldings, resolveItemPrice } from '@bombfarm/pricing';
 import { useAppLang } from '@/shared/context/app-lang';
 import { useMarketSnapshot } from '@/shared/hooks/use-market-snapshot';
 import {
@@ -22,6 +23,30 @@ export interface InventoryTotals {
   priced: number;
   /** Items the game permits selling — the only ones that could ever carry a price. */
   tradable: number;
+}
+
+/**
+ * What the inventory alone could sell, taken from the shared account-wide computation so this
+ * screen and the Account page cannot disagree about the component they share. `eligible` is what
+ * the game permits selling, which is what the header counts its coverage against.
+ */
+export function inventoryTotals(
+  items: readonly InventoryViewItem[],
+  snapshot: MarketSnapshot | null,
+): InventoryTotals | null {
+  if (snapshot == null) return null;
+  const { inventory } = accountHoldings({
+    inventory: items.map((item) => ({
+      defId: item.defId,
+      rarity: item.rarityIdx,
+      tradable: item.tradable,
+    })),
+    heroes: null,
+    skinsWorn: null,
+    snapshot,
+    currency: CURRENCY,
+  });
+  return { total: inventory.amount, priced: inventory.priced, tradable: inventory.eligible };
 }
 
 /**
@@ -63,24 +88,10 @@ export function useInventoryPrices(view: InventoryView) {
   );
 
   /**
-   * Summed over the whole inventory, never the filtered view: this is what the account is worth,
-   * so narrowing to one set must not restate it as a smaller fortune.
+   * Summed over the whole inventory, never the filtered view: narrowing to one set must not
+   * restate what it holds as a smaller fortune.
    */
-  const totals = useMemo<InventoryTotals | null>(() => {
-    if (priceOfItem == null) return null;
-    let total = 0;
-    let priced = 0;
-    let tradable = 0;
-    for (const item of view.items) {
-      if (!item.tradable) continue;
-      tradable += 1;
-      const price = priceOfItem(item);
-      if (price.state !== 'priced' || price.amount == null) continue;
-      priced += 1;
-      total += price.amount;
-    }
-    return { total, priced, tradable };
-  }, [priceOfItem, view]);
+  const totals = useMemo(() => inventoryTotals(view.items, snapshot), [snapshot, view]);
 
   const priceLabels = useMemo<MarketPriceLabels>(
     () => ({

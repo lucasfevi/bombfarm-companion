@@ -624,6 +624,45 @@ const KEYS_ADDED: readonly string[] = [
   // every result. That claim used to appear only inside `farmRespecBudgetExhausted`, whose
   // absence then read as a guarantee of optimality the search cannot make at any budget.
   'farmRespecBestFound',
+  /**
+   * The account-holdings section (2026-09-02) — the Account page's new headline figure for what
+   * the whole account could sell, over three components: the inventory, the sellable heroes and
+   * the bought skins heroes are wearing. Each component needs its own name, its own coverage
+   * template and its own notice for the case where the planner cannot read it at all, which is why
+   * the block is three near-parallel triples rather than one shared set.
+   *
+   * `accountHoldingsUnpriced` is shared by all three instead: the heroes and skins components list
+   * what they hold, and an entry the market is listing nothing for is printed and marked rather
+   * than dropped, so the coverage line above it can be read as WHICH one is missing.
+   *
+   * `accountHoldingsHeroesFloor` and `accountHoldingsSkinsWorn` are permanent on-screen sentences
+   * rather than tooltips: each explains a figure readers routinely take for something it is not (a
+   * hero quote knows only rarity; a skin stops counting the moment nobody wears it), and an
+   * explanation nobody hovers is one nobody reads.
+   *
+   * `inventoryTotalsTitle` is REWORDED by the same feature, from "Market value" to a phrase naming
+   * the inventory — the Account page now carries the larger figure that contains it, and an
+   * unqualified "Market value" on the Inventory screen read as the account's whole worth. It is not
+   * listed in `PROSE_EDITED_PATHS`: the key is already declared added above, and an added key's
+   * value is unconstrained by the comparison.
+   */
+  'accountHoldingsTotal',
+  'accountHoldingsPartial',
+  'accountHoldingsCoverage',
+  'accountHoldingsMissing',
+  'accountHoldingsUnpriced',
+  'accountHoldingsInventory',
+  'accountHoldingsInventoryCoverage',
+  'accountHoldingsInventoryWithheld',
+  'accountHoldingsInventoryLink',
+  'accountHoldingsHeroes',
+  'accountHoldingsHeroesCoverage',
+  'accountHoldingsHeroesWithheld',
+  'accountHoldingsHeroesFloor',
+  'accountHoldingsSkins',
+  'accountHoldingsSkinsCoverage',
+  'accountHoldingsSkinsWithheld',
+  'accountHoldingsSkinsWorn',
 ];
 
 /**

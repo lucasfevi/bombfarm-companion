@@ -12,8 +12,18 @@ import { uiIconRegistry } from './ui-registry';
 // Compact Live window (2026-09-01): window — the desktop header's opener for the second window.
 // Desktop referral code (2026-09-02): copy — the desktop's top-bar chip and Settings row copy the
 // code to the clipboard, and the web already drew this glyph from the vendor package directly.
+// Desktop top-bar density (2026-09-02): signal, map, archive-box, user, cog — the five nav tabs
+// draw their glyph instead of their word at the narrowest widths; ellipsis-horizontal is the
+// overflow trigger the secondary actions collapse into. These six take the registry to its
+// 24-entry budget exactly, so the next glyph is a conversation rather than a quiet addition.
 const MIGRATED_UI_NAMES = [
   'window',
+  'signal',
+  'map',
+  'archive-box',
+  'user',
+  'cog',
+  'ellipsis-horizontal',
   'layout-grid',
   'layout-list',
   'chevron-down',

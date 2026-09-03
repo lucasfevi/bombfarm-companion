@@ -86,6 +86,14 @@ export type HeroRecord = {
    * recommendations. Defaults to `true` when absent.
    */
   battleAllowed?: boolean;
+  /**
+   * Save `marketable` — whether the game permits selling this hero on the market. Deliberately
+   * three-state and never defaulted on load: `false` says the hero is bound to the account, while
+   * absence says nobody has asked the game (a roster stored before the importer carried the flag,
+   * or a hero built by hand in the planner). Collapsing absence into `false` would price a whole
+   * roster at nothing and call it an answer.
+   */
+  marketable?: boolean;
   /** Cosmetic avatar skin from save `skin` (0–7; see `HERO_SKIN_COUNT`). Display-only. */
   skin?: number;
   /**
@@ -146,6 +154,7 @@ export function normalizeHero(raw: Partial<HeroRecord> & Pick<HeroRecord, 'id' |
     power: raw.power,
     deployed: raw.deployed ?? false,
     battleAllowed: raw.battleAllowed ?? true,
+    marketable: raw.marketable,
     skin: normalizeSkin(raw.skin),
     birth: raw.birth ? normalizeSheetStats(raw.birth) : undefined,
   };

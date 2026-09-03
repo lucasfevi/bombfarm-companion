@@ -28,6 +28,7 @@ export function selectHeroDraftTuple(state: PlannerStore) {
     state.heroPower,
     state.heroDeployed,
     state.heroBattleAllowed,
+    state.heroMarketable,
     state.heroSkin,
     state.statPointsAvailable,
   ] as const;

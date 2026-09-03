@@ -102,7 +102,7 @@ async function acceptConsent(page) {
   await expect(modal).toBeHidden({ timeout: 15_000 });
 }
 
-/** The Live/Farm/Inventory/Settings nav buttons live in AppShell's persistent sidebar
+/** The Live/Farm/Inventory/Account/Settings nav buttons live in AppShell's persistent sidebar
  *  (`packages/ui/src/AppShell.tsx`), which stays mounted across every `activeNavId` — unlike the
  *  content area, which conditionally mounts/unmounts per tab (`page.tsx`). `packages/ui` ships no
  *  `data-testid` on these buttons (a design-system reuse-boundary rule — it must not change), so they are located by role +
@@ -133,7 +133,8 @@ test.describe('language smoke — detected, switched in place, and remembered', 
         await expect(navButton(page1, 0)).toHaveText(pt('liveNavLabel'));
         await expect(navButton(page1, 1)).toHaveText(pt('farmNavLabel'));
         await expect(navButton(page1, 2)).toHaveText(pt('inventoryNavLabel'));
-        await expect(navButton(page1, 3)).toHaveText(pt('settingsNavLabel'));
+        await expect(navButton(page1, 3)).toHaveText(pt('accountNavLabel'));
+        await expect(navButton(page1, 4)).toHaveText(pt('settingsNavLabel'));
 
         // --- Navigate to Inventory; the no-layout-shift "before" measurement + the no-recompute sentinel ------
         await navButton(page1, 2).click();
@@ -155,7 +156,7 @@ test.describe('language smoke — detected, switched in place, and remembered', 
         expect(cardBoxBefore).not.toBeNull();
 
         // --- Navigate to Settings, drive the shipped Select to English (live switch, no restart) -----
-        await navButton(page1, 3).click();
+        await navButton(page1, 4).click();
         const select = page1.getByRole('combobox', { name: pt('settingsLanguageLabel') });
         await expect(select).toBeVisible({ timeout: 10_000 });
         await select.click();
@@ -165,7 +166,8 @@ test.describe('language smoke — detected, switched in place, and remembered', 
         await expect(navButton(page1, 0)).toHaveText(en('liveNavLabel'), { timeout: 10_000 });
         await expect(navButton(page1, 1)).toHaveText(en('farmNavLabel'));
         await expect(navButton(page1, 2)).toHaveText(en('inventoryNavLabel'));
-        await expect(navButton(page1, 3)).toHaveText(en('settingsNavLabel'));
+        await expect(navButton(page1, 3)).toHaveText(en('accountNavLabel'));
+        await expect(navButton(page1, 4)).toHaveText(en('settingsNavLabel'));
 
         // No reload occurred — the sentinel stamped before the switch survived it.
         const sentinelAfter = await page1.evaluate(() => window.__bfcI18nSentinel);

@@ -75,3 +75,26 @@ Ubiquitous language for the companion's game model. Terms only — no implementa
   Several heroes may hold drafts at once, and each is flagged.
 - **Out of date (draft)** — a draft whose Live values have since moved in a field that draft
   touches. Judged per hero: another hero changing must never flag this one.
+
+## Market value
+
+- **Holdings** — what the account could liquidate on the Steam market right now: the inventory,
+  the sellable heroes, and the skins its heroes are wearing. Gold is not holdings — it never
+  leaves the game, and summing the two would produce a number in no unit at all.
+- **Sellable** — the game's own permission to list a thing on the market. Anything it refuses
+  is not merely unpriced, it was never a candidate, and it stays out of both the value and the
+  count that value is measured against.
+- **Coverage** — how much of what *could* be priced actually is, right now. Every stated value
+  is of a subset, because a sellable thing with no live listing has no price; a value without
+  its coverage reads as a claim about the whole.
+- **Hero floor** — a hero's market value. The market identifies a hero by rarity and nothing
+  else, so a long-invested hero and a fresh one of the same rarity quote identically. The
+  figure is a floor, never an appraisal.
+- **Bought skin** — a cosmetic beyond the four a hero can be born wearing. Bought skins are
+  unlocked **per account, not per hero**: one unlock dresses any number of heroes, so the
+  account holds one of it however many heroes wear it.
+- **Worn skin** — the skin a hero is currently wearing, and the only evidence the account owns
+  that skin at all. Nothing enumerates skins another way, and a skin that has left every hero
+  has left the account, so holdings count what is on someone's back and nothing else. A skin
+  gone from the roster is gone from the value, and the screen says so rather than leaving the
+  reader to notice a figure that dropped.

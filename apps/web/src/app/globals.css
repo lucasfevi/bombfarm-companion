@@ -8,6 +8,7 @@
 @source '../../../../packages/ui/src/**/*.{ts,tsx}';
 @source '../../../../packages/game-art/src/**/*.{ts,tsx}';
 @source '../../../../packages/farm/src/**/*.{ts,tsx}';
+@source '../../../../packages/account/src/**/*.{ts,tsx}';
 
 /* Form font/color inherit lives in Tailwind Preflight (@layer base).
    Do not redeclare unlayered here — it overrides text-* utilities on
