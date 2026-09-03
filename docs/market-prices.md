@@ -252,6 +252,28 @@ account for every row the split saw.
 row with no active listing has nothing to quote and never reaches the split, so the three are a
 partition of the priced rows rather than of the board.
 
+### Reading a pass back off its own row
+
+The recorded delay is reconstructable, which is how a deploy is confirmed to have changed the
+pacing rather than merely to have shipped. Two columns do not mean what their names suggest, and
+both matter here:
+
+- **Enumeration cost one call more than `search_calls`.** The facet schema is a different endpoint
+  and is counted apart, exactly once per pass.
+- **The rotation was paced for attempts, not calls.** `quote_calls` counts each rate-limited retry
+  again, so the planned figure is `quote_calls - rate_limit_hits`.
+
+With `E = search_calls + 1` and `Q = quote_calls - rate_limit_hits`, the delay follows from the
+pacing rule — a pass costs `E + Q` and takes `MS_PER_DAY x (E + Q) / budget`, less the
+enumeration's own `E x searchDelayMs`, divided across `Q`. And `Q` should independently equal
+`tier_a_count + first_quote_count` times the currency count, which is the cross-check worth
+running: two derivations of the same number from different columns.
+
+**Only on a pass that completed.** The delay is derived up front from what the pass planned to
+spend, while the call columns record what it did spend, so a pass the breaker cut short lands
+below its plan with nothing wrong. Assert this only where `enumeration_complete` and
+`quotes_complete` are both true; on a short pass, spend falling under plan is the breaker working.
+
 **That threshold is close.** The quoted tier stood at 74 on 2026-09-03. So the remaining freshness
 is in sub-dividing it rather than in anything else here: the volume distribution inside it is
 extremely skewed, the busiest rows trading thousands of times a day and the quietest once, which

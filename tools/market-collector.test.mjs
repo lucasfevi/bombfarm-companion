@@ -22,7 +22,7 @@ import {
   runCollector,
   runRowFrom,
 } from './market-snapshot/collect.mjs';
-import { splitRotation, tiersFromHistory } from './market-snapshot/quote-plan.mjs';
+import { planPacing, splitRotation, tiersFromHistory } from './market-snapshot/quote-plan.mjs';
 
 const ENV = {
   SUPABASE_URL: 'https://history.example/',
@@ -315,6 +315,41 @@ describe('the pass plans what it will quote', () => {
 
     const [run] = h.runs;
     expect(run.tier_a_count + run.tier_b_count + run.first_quote_count).toBe(listed.length);
+  });
+
+  /**
+   * The run row has to reconstruct the pass on its own, because that is the only place anyone
+   * reads it back from. Two identities carry that, and both are cross-column — the kind that
+   * breaks silently, since every column stays individually plausible.
+   *
+   * Enumeration costs one call more than `search_calls` says: the facet schema is a different
+   * endpoint and is counted apart. And the rotation the pacing was derived for is the attempts,
+   * not the calls, `quote_calls` counting each rate-limited retry again.
+   */
+  it('reconstructs the delay it chose from the columns it wrote', async () => {
+    const h = planningHarness({
+      readTiers: async () => ({
+        traded: new Set(['Traded Item']),
+        observed: new Set(listed),
+      }),
+    });
+    await runCollector(h.deps);
+
+    const [run] = h.runs;
+    const plan = h.plans[0];
+    const enumerationCalls = run.search_calls + 1;
+    const attempted = run.quote_calls - run.rate_limit_hits;
+
+    expect(attempted).toBe(run.tier_a_count + run.first_quote_count);
+    expect(
+      planPacing({
+        budget: h.deps.config.budget,
+        quoteCount: attempted,
+        enumerationCalls,
+        searchDelayMs: 1500,
+      }).spacingMs,
+    ).toBe(run.spacing_ms);
+    expect(run.spacing_ms).toBe(plan.spacingMs);
   });
 
   it.each(['spacing_ms', 'tier_a_count', 'tier_b_count', 'first_quote_count'])(
