@@ -39,8 +39,21 @@ pnpm lint
 pnpm test
 pnpm --filter @bombfarm/domain test
 pnpm --filter @bombfarm/web test
+pnpm --filter @bombfarm/web exec playwright test --project=smoke
 pnpm test:smoke   # Windows — builds static renderer + launches Electron
 ```
+
+**The Playwright line is not optional, and `pnpm test` does not cover it.** `pnpm test` is Vitest
+only; the `apps/web` e2e specs are the only check that exercises the planner as a running browser
+app over time, and a whole class of break is invisible without them. One landed on 2026-09-02:
+a stored hero field the draft did not mirror made the 700ms autosave churn the roster array, so
+the Farm Respec panel closed itself ~700ms after opening — five e2e tests red while `build`,
+`typecheck`, `lint`, 7,002 Vitest tests and the Electron smoke suite were all green.
+
+It builds the static export itself and takes ~2.5 minutes cold. Two things to know before reading
+its result: pass `E2E_PREBUILT=1` to skip the build when `apps/web/out` is genuinely current, and
+kill anything already listening on port 4321 first — `reuseExistingServer` is on outside CI, so a
+stale server silently serves an old export and the run describes code you are not testing.
 
 ## Running the desktop app without the game
 

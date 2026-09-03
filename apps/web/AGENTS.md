@@ -81,8 +81,16 @@ with the JSON — so re-render in the same commit as the copy change.
 pnpm --filter @bombfarm/web typecheck
 pnpm --filter @bombfarm/web test
 pnpm --filter @bombfarm/web build
-pnpm --filter @bombfarm/web test:e2e:smoke
+pnpm --filter @bombfarm/web test:e2e:host:smoke
 ```
+
+The **host** runner, deliberately. `test:e2e:smoke` goes through `e2e/scripts/docker-run.mjs`,
+which exits `ENOENT` with no fallback when there is no Docker daemon. Docker earns its place for
+the *visual* project, whose screenshot baselines are only stable inside one image — the
+behavioural smoke specs compare no pixels and need none of it. Every note in the root
+[`AGENTS.md`](../../AGENTS.md) check list applies: it is the check that catches breaks no Vitest
+run can see, `E2E_PREBUILT=1` skips the build when `out/` is current, and a stale listener on port
+4321 makes the whole run describe an old export.
 
 ```bash
 npx vitest run --project tools download-page-drift
