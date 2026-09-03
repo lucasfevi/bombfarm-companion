@@ -24,7 +24,15 @@ UI dates each price by the quote behind it so "now" is never implied.
 Passes run back to back rather than on a clock. The delay between the calls inside a pass is
 derived from a daily call budget rather than fixed: raising the budget tightens the rotation with
 no code change, and a budget high enough to breach the delay a full pass was measured drawing zero
-rate limits at is clamped rather than obeyed, and says so. A pass never starts sooner than five
+rate limits at is clamped rather than obeyed, and says so.
+
+**The budget counts every call, enumeration included.** Steam's per-address quota is cumulative
+and makes no distinction between endpoints, so neither does the budget: the enumeration's cost is
+taken off the top and the rotation is paced with what is left. Pacing the rotation alone left the
+enumeration outside the configured number, and a day of passes spent about 9% more than the figure
+it was given.
+
+A pass never starts sooner than five
 minutes after the previous one began, because the published file is served with a five-minute
 `max-age` and republishing inside that window reaches nobody. A pass that fails, or one whose
 rotation the circuit breaker cut short, climbs a cool-down ladder before the next; and every pass
@@ -147,15 +155,46 @@ currency while the search endpoint carried it at $14.99 with a live listing. An 
 therefore means "not quoted", never "no supply".
 
 Coverage of a full pass: **42 of the 44 keys the index quotes**. Six of the eight raw misses are
-the pre-rename hashes that only ever appear as `alternates`. It costs one call per listed row at a
-**3.5s** spacing — the search pass's 1.5s is near double the rate this endpoint tolerates — and it
-is the first thing a rate-limited run drops, which is why a quote carries `nativeQuotedUtc` of its
-own rather than being dated by the run that published it.
+the pre-rename hashes that only ever appear as `alternates`. It costs one call per row in the
+rotation, never below the **3.5s** floor — the search pass's 1.5s is near double the rate this
+endpoint tolerates — and it is the first thing a rate-limited run drops, which is why a quote
+carries `nativeQuotedUtc` of its own rather than being dated by the run that published it.
 
 A quote is inherited across a run that could not take its own, but **only while `lowestUsd` is
 unchanged**. Once the book has visibly moved the old quote is known wrong: `Gold Ring Lv 20 (Rare)`
 went $2.80 to $1.10 inside one six-hour window, and an inherited `R$ 14,46` would have gone on
 being shown against a real `R$ 5,75`.
+
+## Only the rows that trade get a call of their own
+
+**About half the market has never reported a sale.** Of 109 listed rows, roughly 53 have ever
+answered with a non-zero 24-hour volume; the rest return a lowest price and nothing else. Quoting
+every row every pass therefore left each one stale for up to a full rotation *before* the publish
+gap began — about 4.75 hours on average, against roughly 3 for the six-hourly job this replaced.
+At a fixed quota the only way to be fresh where it matters is to spend unevenly.
+
+So the rotation is the rows that trade. Everything else is priced from the enumeration, which
+already returns a live USD price and listing count for **every** listed row for ten calls total —
+so the quiet half is not left stale, it is refreshed each pass and converted rather than quoted.
+Both halves get fresher, because the pass gets shorter for everyone.
+
+Membership is a binary split on whether the row trades at all, not a graduated tier: it is a real
+distinction rather than a tuning parameter, and thresholds nobody can defend are worse than none.
+It is recomputed on its own interval from the readings the rotation has already been paying for —
+the history store keeps a volume per row per pass — so deciding it costs no collection of its own.
+A read that fails leaves the membership the collector had; with none yet, the rotation is
+everything listed, which is what the budget alone would have bought.
+
+A row the enumeration turns up for the first time has no history to be placed by, so it is quoted
+once and placed by that result. A row the quote endpoint answers with nothing is placed by that
+too — the endpoint under-reports, and reading its silence as "still unknown" would put the row
+back in the rotation every pass forever.
+
+**A row left to the enumeration reports `basis: 'converted'`, and inherits no earlier quote.** The
+inheritance above exists for a quote that is merely late; this one is retired, and no later pass
+is coming for it, so carrying it forward would age a figure indefinitely behind the label that
+says it is the number on the listing. Native ran 0.6-1.2% from converted per row when both were
+measured, so the difference is real and the file states which it is showing.
 
 ## What the file says
 
@@ -274,6 +313,13 @@ that completes — both asserted by observing the write rather than reading a va
 reads the tree the producer pushes, not the opt-out's text: the deployment opt-out only works if
 it is in the pushed commit, and it must name the branch actually being pushed rather than one
 spelled into the config.
+
+`tools/market-quote-plan.test.mjs` holds the two claims a narrower test would pass on by accident.
+Membership is asserted in both directions from the readings alone — a row leaves the rotation when
+the window stops holding a sale for it, and joins when it starts — because a test that only proved
+a row was in the rotation would pass just as well against a hardcoded list. And the budget is
+asserted by counting a simulated day's calls the way the address counts them, every call whatever
+endpoint it went to, with the old rotation-only pacing kept alongside as the case that overshoots.
 
 `tools/market-prices-workflow.test.mjs` reads the workflow as text. It asserts the manual lever
 runs only when a human asks — false if a cron is spliced back in, false if the manual trigger is

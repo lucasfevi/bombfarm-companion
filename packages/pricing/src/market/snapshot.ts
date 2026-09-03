@@ -13,6 +13,13 @@ export interface SnapshotParts {
   searchCalls: number;
   /** True when the flat enumeration finished, making this run's row set authoritative. */
   enumerationComplete: boolean;
+  /**
+   * Hashes this run deliberately did not quote, priced from the enumeration instead. Distinct
+   * from the ones a rate limit cut short: those are worth carrying a previous quote for until the
+   * next pass reaches them, while these are never going to be reached again, so an inherited
+   * quote would age indefinitely behind a `native` label that says it is the listing's own price.
+   */
+  enumerationOnly?: readonly string[];
   now: () => number;
   appId?: number;
 }
@@ -34,11 +41,13 @@ export function mergeEntries(
   fresh: MarketEntry[],
   prior: MarketEntry[],
   enumerationComplete: boolean,
+  enumerationOnly: ReadonlySet<string> = new Set(),
 ): MarketEntry[] {
   const priorByHash = new Map(prior.map((entry) => [entry.hashName, entry]));
   const kept = fresh.map((entry) => {
     const previous = priorByHash.get(entry.hashName);
-    return previous == null ? entry : withPriorIdentity(entry, previous);
+    if (previous == null) return entry;
+    return withPriorIdentity(entry, previous, enumerationOnly.has(entry.hashName));
   });
   if (enumerationComplete) return kept;
 
@@ -62,10 +71,14 @@ export function mergeEntries(
  * board to zero. Re-deriving is safe because a Steam hash never changes meaning, which is the
  * same thing that makes inheriting the fields safe.
  */
-function withPriorIdentity(fresh: MarketEntry, prior: MarketEntry): MarketEntry {
+function withPriorIdentity(
+  fresh: MarketEntry,
+  prior: MarketEntry,
+  enumerationOnly: boolean,
+): MarketEntry {
   const merged: MarketEntry = {
     ...fresh,
-    ...inheritedNativeQuote(fresh, prior),
+    ...inheritedNativeQuote(fresh, prior, enumerationOnly),
     defId: fresh.defId ?? prior.defId,
     kind: fresh.kind ?? prior.kind,
     category: fresh.category ?? prior.category,
@@ -87,13 +100,20 @@ function withPriorIdentity(fresh: MarketEntry, prior: MarketEntry): MarketEntry 
  * quote is known to be wrong, and falling back to the freshly-converted figure is the smaller
  * error. Verified against a real move: `Gold Ring Lv 20 (Rare)` went $2.80 -> $1.10 within one
  * six-hour window, which an inherited R$ 14,46 would have gone on reporting against R$ 5,75.
+ *
+ * A row the run chose not to quote inherits nothing. Its quote is not late, it is retired, and no
+ * later pass will replace it — so carrying it forward would publish an indefinitely ageing figure
+ * under the label that says it is the number on the listing.
  */
 function inheritedNativeQuote(
   fresh: MarketEntry,
   prior: MarketEntry,
+  enumerationOnly: boolean,
 ): Pick<MarketEntry, 'lowestNative' | 'nativeQuotedUtc'> {
   const tookOwnQuote = Object.keys(fresh.lowestNative).length > 0;
   if (tookOwnQuote) return { lowestNative: fresh.lowestNative, nativeQuotedUtc: fresh.nativeQuotedUtc };
+
+  if (enumerationOnly) return { lowestNative: {}, nativeQuotedUtc: null };
 
   const priceMoved = fresh.lowestUsd !== prior.lowestUsd;
   if (priceMoved) return { lowestNative: {}, nativeQuotedUtc: null };
@@ -107,6 +127,7 @@ export function buildSnapshot(parts: SnapshotParts): MarketSnapshot {
     parts.entries,
     parts.prior?.entries ?? [],
     parts.enumerationComplete,
+    new Set(parts.enumerationOnly ?? []),
   );
   const indexed = indexEntries(entries, parts.catalog);
 
