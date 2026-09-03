@@ -32,12 +32,19 @@ taken off the top and the rotation is paced with what is left. Pacing the rotati
 enumeration outside the configured number, and a day of passes spent about 9% more than the figure
 it was given.
 
-This is what absorbs a day the market grows. A newly listed row fires the tag pass, and one such
-pass was measured at **191 calls** against a ceiling near 650 — most of it enumeration. Because the
-budget is derived per pass from what the enumeration has just cost, the rotation is paced
-correspondingly slower and the day still fits. Expect the call figures to look worse on those days
-without anything having regressed: the enumeration is taking a share the rotation would otherwise
-have had.
+**A day the market grows is what makes this load-bearing rather than tidy.** A newly listed row
+fires the tag pass, and one such pass was measured at **191 calls** — most of it enumeration.
+Pacing the rotation alone leaves the pass length unchanged whatever the enumeration costs, so that
+day spends 191 × 4.8 ≈ **917 calls against a ceiling of 650–700**. It does not fit, and the market
+has been adding around six rows a day, so those are not rare days.
+
+Deriving the pass length from the whole cost is what absorbs it: at 191 calls the pass stretches
+to about **8.3 hours** and the day spends 550. That is a real cost — a growth day gets a much
+slower rotation — and it is the right trade, because the alternative is not a faster rotation but
+a throttled address, which costs every row on the board rather than one day's freshness.
+
+So expect the call figures to look worse on a day the market grows, without anything having
+regressed: the enumeration is taking a share the rotation would otherwise have had.
 
 A pass never starts sooner than five
 minutes after the previous one began, because the published file is served with a five-minute
@@ -192,14 +199,22 @@ Both parts get fresher, because the pass gets shorter for everyone.
 **What it actually bought, measured rather than projected.** The design projected a 47% cut in
 calls per pass on an estimate that half the market was untraded. Half was wrong:
 
-| | calls per pass | cadence at a 550-call budget |
-| --- | --- | --- |
-| Uniform | 10 enumerate + 115 quotes = **125** | 5.5 h |
-| Traded rows only | 10 enumerate + 74 quotes = **84** | **3.7 h** |
+At a configured budget of 550 calls a day:
+
+| | calls per pass | cadence | actually spent |
+| --- | --- | --- | --- |
+| Uniform, pacing the rotation only | 125 | 5.0 h | **~600/day** |
+| Uniform, budget honoured | 125 | 5.5 h | 550/day |
+| Traded rows only, budget honoured | **84** | **3.7 h** | 550/day |
 
 **33%, not 47%** — a real saving and a smaller one than advertised. The saving is the durable
-figure; the two cadences scale with whatever the budget is set to, and 550 is only what it was set
-to when this was measured. Two things the arithmetic does
+figure; the cadences scale with whatever the budget is set to, and 550 is only what it was set to
+when this was measured.
+
+The first row is what ran before any of this: a 5.0-hour rotation that looks faster than the
+second only because it was buying the difference with calls nobody had budgeted. Measured on the
+live collector, a pass paced at 157,090 ms — exactly a day divided by 550, the rotation counted
+and the enumeration not. Two things the arithmetic does
 not capture are worth more than the difference. Spending individual quotes on rows with no trades
 at all was wrong on principle whatever the ratio turned out to be, and those rows lose nothing
 they were getting. And making the budget a total-call budget is the structural half: it is what
