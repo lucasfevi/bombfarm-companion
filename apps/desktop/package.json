@@ -22,6 +22,8 @@
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p renderer/tsconfig.json --noEmit",
     "lint": "pnpm --dir ../.. exec eslint apps/desktop/src apps/desktop/renderer",
     "test:smoke": "playwright test -c playwright.config.ts --project=electron-smoke",
+    "pretest:smoke:hidden": "cross-env NODE_ENV=production BFC_FLAVOR=dev BFC_GAME_READER=fixture pnpm build",
+    "test:smoke:hidden": "cross-env BFC_HIDE_WINDOWS=1 playwright test -c playwright.config.ts --project=electron-smoke",
     "test:render-count": "playwright test -c playwright.config.ts --project=render-count-instrument",
     "render-count:compare": "node tests/render-count/render-count-compare-baseline.mjs",
     "package:dev": "cross-env BFC_FLAVOR=dev NODE_ENV=production node scripts/package.mjs",
