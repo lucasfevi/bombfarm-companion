@@ -167,16 +167,34 @@ being shown against a real `R$ 5,75`.
 
 ## Only the rows that trade get a call of their own
 
-**About half the market has never reported a sale.** Of 109 listed rows, roughly 53 have ever
-answered with a non-zero 24-hour volume; the rest return a lowest price and nothing else. Quoting
-every row every pass therefore left each one stale for up to a full rotation *before* the publish
-gap began — about 4.75 hours on average, against roughly 3 for the six-hourly job this replaced.
-At a fixed quota the only way to be fresh where it matters is to spend unevenly.
+**About a third of the market has never reported a sale** — 41 of 115 listed rows, 36%, measured
+2026-09-03 against two independent sources that agree. The rest return a lowest price and nothing
+else. Quoting every row every pass left each one stale for up to a full rotation *before* the
+publish gap began, which put the continuous producer **behind the six-hourly job it replaced**:
+roughly 3 hours of staleness there against a 5-hour rotation here. At a fixed quota the only way
+to be fresh where it matters is to spend unevenly.
+
+Prefer the ratio to the counts. The market grew from 109 rows to 115 in a single day, so every
+absolute figure here ages; the date is on them for that reason.
 
 So the rotation is the rows that trade. Everything else is priced from the enumeration, which
 already returns a live USD price and listing count for **every** listed row for ten calls total —
-so the quiet half is not left stale, it is refreshed each pass and converted rather than quoted.
-Both halves get fresher, because the pass gets shorter for everyone.
+so the quiet third is not left stale, it is refreshed each pass and converted rather than quoted.
+Both parts get fresher, because the pass gets shorter for everyone.
+
+**What it actually bought, measured rather than projected.** The design projected a 47% cut in
+calls per pass on an estimate that half the market was untraded. Half was wrong:
+
+| | calls per pass | cadence at ~600 calls/day |
+| --- | --- | --- |
+| Uniform | 10 enumerate + 115 quotes = **125** | 5.0 h |
+| Traded rows only | 10 enumerate + 74 quotes = **84** | **3.4 h** |
+
+**33%, not 47%** — a real saving and a smaller one than advertised. Two things the arithmetic does
+not capture are worth more than the difference. Spending individual quotes on rows with no trades
+at all was wrong on principle whatever the ratio turned out to be, and those rows lose nothing
+they were getting. And making the budget a total-call budget is the structural half: it is what
+was overshooting the quota, and the configured number now means what it says.
 
 Membership is a binary split on whether the row trades at all, not a graduated tier: it is a real
 distinction rather than a tuning parameter, and thresholds nobody can defend are worse than none.
@@ -200,9 +218,18 @@ from the ones that merely produced no price. The snapshot never sees these — a
 there would date the row and defeat the inheritance a rate-limited pass depends on.
 
 Both tier sizes are recorded on the pass's own row, not only logged. Sub-dividing the quoted tier
-becomes worth doing once it passes roughly **80 items**, and that is a trend rather than a moment:
+becomes worth doing once it passes roughly **80 rows**, and that is a trend rather than a moment:
 a log line cannot answer it. The counts exclude rows being quoted for the first time, which belong
-to neither tier yet.
+to neither tier yet — a figure that moved with however many rows happened to be newly listed that
+pass could not be read against a threshold.
+
+**That threshold is close.** The quoted tier stood at 74 on 2026-09-03. So the remaining freshness
+is in sub-dividing it rather than in anything else here: the volume distribution inside it is
+extremely skewed, the busiest rows trading thousands of times a day and the quietest once, which
+is exactly the shape a second split exploits. As a projection and not a measurement — quoting a
+top slice every pass and the remainder every fourth would put a pass near 40 calls and roughly 15
+passes a day, taking the heavily-traded rows to about 1.6 hours while the quiet remainder sits
+near 6. That is a larger gain, for the rows anyone actually reads, than this split delivered.
 
 **A row left to the enumeration reports `basis: 'converted'`, and inherits no earlier quote.** The
 inheritance above exists for a quote that is merely late; this one is retired, and no later pass
