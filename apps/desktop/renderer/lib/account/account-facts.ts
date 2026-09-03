@@ -268,7 +268,13 @@ function holdingsFactsOf(payload: AccountPayload): AccountHoldingsFacts {
   };
 }
 
-function oldestCaptureOf(payload: AccountPayload): string | null {
+/**
+ * The OLDEST capture time across the five sections, so a line drawn from it never claims to be
+ * fresher than the stalest thing under it. Exported because the farm board dates its numbers by
+ * this too: both screens must answer "how old is this account read?" the same way, and the farm
+ * board asking a clock of its own is what let it report a fresh calculation over a frozen account.
+ */
+export function oldestCaptureOf(payload: AccountPayload): string | null {
   let oldest: string | null = null;
   let oldestMs = Number.POSITIVE_INFINITY;
   for (const section of ACCOUNT_SECTIONS) {

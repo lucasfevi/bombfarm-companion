@@ -23,6 +23,7 @@ import type { SquadFarmFacts } from '@bombfarm/domain/farm-rate';
 import type { AccountView } from '@bombfarm/contracts';
 import { createLazySingleton, createSharedStore, type SharedStore } from '../shared-store';
 import { useAccountView } from '../account/use-account-view';
+import { oldestCaptureOf } from '../account/account-facts';
 import {
   buildFarmInputs,
   farmBoardDepKey,
@@ -135,7 +136,10 @@ export function createFarmSnapshotStore(): {
             board: memo.rows(inputs),
             inputs,
             gate: memo.gate(inputs),
-            computedAt: new Date().toISOString(),
+            // The account's own capture time, never `Date.now()`: this compute is the only thing
+            // that just happened, and dating the board by it is what let a recompute over an
+            // account the app had stopped re-reading present itself as current.
+            capturedAt: oldestCaptureOf(view.payload),
           };
     dispatch({ kind: 'computed', sourceKey, controls, outcome });
   }

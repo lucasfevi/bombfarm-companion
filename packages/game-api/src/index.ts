@@ -20,7 +20,7 @@ export { parseSessionCfg } from './session-cfg.js';
 export type { SessionCfgParseReason, SessionCfgParseResult } from './session-cfg.js';
 export { requestGet } from './request.js';
 export type { HttpRequest, HttpResponse, HttpTransport, RequestOptions, RequestOutcome } from './request.js';
-export { PacingHaltedError, PacingRefusedError, READ_PACING, createPacingGate } from './pacing.js';
+export { PacingRefusedError, READ_PACING, createPacingGate } from './pacing.js';
 export type { PacingClock, PacingGate, PacingState } from './pacing.js';
 export { ROUTE_FINGERPRINTS, SECTION_FINGERPRINTS, checkSectionShape } from './fingerprints.js';
 export type { RouteFingerprint, SectionFingerprint } from './fingerprints.js';

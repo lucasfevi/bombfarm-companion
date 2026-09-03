@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
-  PacingHaltedError,
   PacingRefusedError,
   READ_PACING,
   createPacingGate,
@@ -186,19 +185,12 @@ describe('createPacingGate — cooldown backoff ladder', () => {
   });
 });
 
-describe('createPacingGate — unauthorized halts the cycle', () => {
+describe('createPacingGate — unauthorized halts the cycle for a bounded window', () => {
   it('unauthorized sets halted, distinct from ready or a backoff window', () => {
     const clock = createFakeClock();
     const gate = createPacingGate(clock);
     gate.observe({ kind: 'unauthorized' });
     expect(gate.state).toBe('halted');
-  });
-
-  it('nextCycleDelayMs refuses to schedule while halted', () => {
-    const clock = createFakeClock();
-    const gate = createPacingGate(clock);
-    gate.observe({ kind: 'unauthorized' });
-    expect(() => gate.nextCycleDelayMs(true)).toThrow(PacingHaltedError);
   });
 
   it('run() refuses while halted, without invoking the transport', async () => {
@@ -209,15 +201,69 @@ describe('createPacingGate — unauthorized halts the cycle', () => {
     await expect(gate.run('/state', fn)).rejects.toBeInstanceOf(PacingRefusedError);
   });
 
-  it('only resetAuth() clears halted — the two legitimate callers are a changed token file and an explicit user retry, never a timer', () => {
+  // Two rejections, not one: the first step of the ladder is the ordinary cycle interval, so a
+  // single rejection cannot tell "waited out the window" from "ignored it and used the interval".
+  it('nextCycleDelayMs waits the window out rather than declining to schedule at all', () => {
     const clock = createFakeClock();
     const gate = createPacingGate(clock);
+    gate.observe({ kind: 'unauthorized' });
+    gate.observe({ kind: 'unauthorized' });
+    expect(gate.nextCycleDelayMs(true)).toBe(READ_PACING.authRetryStartMs * 2);
+    expect(gate.nextCycleDelayMs(true)).toBeGreaterThan(READ_PACING.cycleForegroundMs);
+  });
+
+  it('the halt ends on its own once the window lapses, with nobody having called resetAuth', async () => {
+    const clock = createFakeClock();
+    const gate = createPacingGate(clock);
+    gate.observe({ kind: 'unauthorized' });
+
+    await clock.sleep(READ_PACING.authRetryStartMs);
+
+    expect(gate.state).toBe('ready');
+    const ran = await gate.run('/state', () => Promise.resolve('reached the transport'));
+    expect(ran).toBe('reached the transport');
+  });
+
+  for (const [rejections, expectedDelayMs] of [
+    [1, READ_PACING.authRetryStartMs],
+    [2, READ_PACING.authRetryStartMs * 2],
+    [3, READ_PACING.authRetryStartMs * 4],
+    [10, READ_PACING.authRetryCapMs],
+  ] as const) {
+    it(`${String(rejections)} consecutive rejection(s) -> a ${String(expectedDelayMs)}ms wait, capped`, () => {
+      const clock = createFakeClock();
+      const gate = createPacingGate(clock);
+      for (let i = 0; i < rejections; i += 1) {
+        gate.observe({ kind: 'unauthorized' });
+      }
+      expect(gate.nextCycleDelayMs(true)).toBe(expectedDelayMs);
+    });
+  }
+
+  it('resetAuth() clears the window ahead of its expiry — a changed token file need not wait it out', () => {
+    const clock = createFakeClock();
+    const gate = createPacingGate(clock);
+    gate.observe({ kind: 'unauthorized' });
     gate.observe({ kind: 'unauthorized' });
     expect(gate.state).toBe('halted');
 
     gate.resetAuth();
     expect(gate.state).toBe('ready');
-    expect(() => gate.nextCycleDelayMs(true)).not.toThrow();
+    // The streak is cleared too, so the next rejection starts the ladder at step 1.
+    gate.observe({ kind: 'unauthorized' });
+    expect(gate.nextCycleDelayMs(true)).toBe(READ_PACING.authRetryStartMs);
+  });
+
+  it('an answered read clears the ladder — the credentials proved live', () => {
+    const clock = createFakeClock();
+    const gate = createPacingGate(clock);
+    gate.observe({ kind: 'unauthorized' });
+    gate.observe({ kind: 'unauthorized' });
+    gate.observe({ kind: 'ok' });
+    expect(gate.state).toBe('ready');
+
+    gate.observe({ kind: 'unauthorized' });
+    expect(gate.nextCycleDelayMs(true)).toBe(READ_PACING.authRetryStartMs);
   });
 });
 

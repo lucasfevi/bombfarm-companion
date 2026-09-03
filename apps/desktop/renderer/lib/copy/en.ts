@@ -413,7 +413,7 @@ export const en = {
   farmNavLabel: 'Farm',
   farmRefresh: 'Refresh',
   farmRefreshBusy: 'Working…',
-  farmRefreshedAge: 'worked out {age}',
+  farmRefreshedAge: 'account read {age}',
   farmRefreshStale: 'out of date',
   farmUnavailableTitle: 'Not enough of your account has been read',
   farmUnavailableDescription: 'The board needs every part of your account. Open the game with the companion running and leave it open for a moment.',
