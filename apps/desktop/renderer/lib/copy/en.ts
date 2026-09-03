@@ -22,6 +22,10 @@ export const en = {
   shellUpdateReady: 'Restart to update',
   shellUpdateOpenSettings: 'Open the Updates settings',
   shellCoffeeLabel: 'Buy me a coffee',
+  // The top bar's overflow button, and the referral row inside it — a menu row is read on its own
+  // line, so it says what the click does rather than repeating the chip's whole sentence.
+  shellMoreActionsLabel: 'More actions',
+  shellReferralMenuLabel: 'Copy referral code',
   shellReferralLabel: 'Copy my referral code — we both get a reward once you clear stage 151',
   shellReferralCopied: 'Referral code copied',
   shellReferralCopyManual:

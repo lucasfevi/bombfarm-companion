@@ -40,6 +40,13 @@ export { BrandMark } from './brand-mark';
 export type { BrandMarkProps } from './brand-mark';
 export { AppNav } from './app-nav';
 export type { AppNavItem, AppNavProps } from './app-nav';
+export {
+  useShellDensity,
+  shellDensityFor,
+  SHELL_ACTIONS_COLLAPSE_WIDTH,
+  SHELL_ICON_TABS_WIDTH,
+  type ShellDensity,
+} from './shell-density';
 export { SegmentedToggle } from './segmented-toggle';
 export type { SegmentedToggleOption, SegmentedToggleProps } from './segmented-toggle';
 export { StatusChip, type StatusChipProps, type GameConnectionStatus } from './status-chip';
@@ -179,6 +186,7 @@ export { FileDropZone, type FileDropZoneProps } from './file-drop-zone';
 export { fileDropZoneRecipe } from './file-drop-zone.recipe';
 export { Banner, type BannerProps } from './banner';
 export { Dialog } from './dialog';
+export { Menu } from './menu';
 export { ConfirmDialog, type ConfirmDialogProps } from './confirm-dialog';
 
 export { buttonRecipe, type ButtonVariant } from './button.recipe';

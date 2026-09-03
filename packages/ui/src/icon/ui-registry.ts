@@ -1,7 +1,13 @@
 import {
+  HiMiniArchiveBox,
   HiMiniArrowsRightLeft,
   HiMiniChevronDown,
   HiMiniChevronUp,
+  HiMiniCog6Tooth,
+  HiMiniEllipsisHorizontal,
+  HiMiniMap,
+  HiMiniSignal,
+  HiMiniUser,
   HiMiniXMark,
   HiMiniCheck,
   HiMiniCheckCircle,
@@ -21,6 +27,16 @@ import type { IconGlyph } from './types';
 export const uiIconRegistry = {
   // Desktop header control that opens the compact second Live window
   window: HiMiniWindow,
+  // The five desktop top-bar tabs, drawn instead of their words once the bar runs out of room.
+  // Named for the glyph rather than for the tab, so a second caller with a different vocabulary
+  // can reuse one without the key lying about what it draws.
+  signal: HiMiniSignal,
+  map: HiMiniMap,
+  'archive-box': HiMiniArchiveBox,
+  user: HiMiniUser,
+  cog: HiMiniCog6Tooth,
+  // The top bar's overflow trigger — the secondary actions, once they no longer fit beside the tabs
+  'ellipsis-horizontal': HiMiniEllipsisHorizontal,
   // Inventory layout toggle — cards
   'layout-grid': HiMiniSquares2X2,
   // Inventory layout toggle — list

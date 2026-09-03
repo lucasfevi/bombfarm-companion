@@ -24,6 +24,8 @@ export const ptBR: Copy = {
   shellUpdateReady: 'Reinicie para atualizar',
   shellUpdateOpenSettings: 'Abrir as configurações de atualização',
   shellCoffeeLabel: 'Me pague um café',
+  shellMoreActionsLabel: 'Mais ações',
+  shellReferralMenuLabel: 'Copiar código de indicação',
   shellReferralLabel:
     'Copiar meu código de indicação — nós dois ganhamos uma recompensa quando você passar da fase 151',
   shellReferralCopied: 'Código de indicação copiado',

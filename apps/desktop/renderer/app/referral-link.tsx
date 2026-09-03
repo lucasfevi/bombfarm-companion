@@ -1,8 +1,9 @@
 /**
- * The referral code, in the two shapes the app shows it: a chip in the top bar and a labelled row
- * control in Settings. Both copy the one code held in `@bombfarm/domain/referral`, which the web
- * planner's own surfaces read too — a code updated on one app and not the other is a dead code a
- * player pastes and loses the reward on.
+ * The referral code, in the three shapes the app shows it: a chip in the top bar, a row in that
+ * bar's overflow menu once the chip no longer fits, and a labelled row control in Settings. All
+ * three copy the one code held in `@bombfarm/domain/referral`, which the web planner's own
+ * surfaces read too — a code updated on one app and not the other is a dead code a player pastes
+ * and loses the reward on.
  *
  * The renderer writes the clipboard itself rather than going through IPC: the packaged renderer is
  * served over the `app:` scheme, registered `secure: true` (`src/main/renderer-protocol.ts`), and
@@ -14,7 +15,7 @@
  * `src/main/i18n-guards.test.ts` pins that absence deliberately.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Icon, Tooltip, buttonRecipe } from '@bombfarm/ui';
+import { Icon, Menu, Tooltip, buttonRecipe } from '@bombfarm/ui';
 import { REFERRAL_CODE } from '@bombfarm/domain/referral';
 import { useCopy } from '../lib/copy';
 import { copyReferralCode, type CopyStatus } from './referral-clipboard';
@@ -85,6 +86,27 @@ export function ReferralChip() {
         </Tooltip.Portal>
       </Tooltip.Root>
     </Tooltip.Provider>
+  );
+}
+
+/**
+ * Overflow shape — a menu row that says what the click does, with the code itself trailing it.
+ * `closeOnClick={false}` is load-bearing rather than cosmetic: the copy can be refused, and the
+ * fallback selects the code in place, which a menu that closed on the click would have unmounted.
+ */
+export function ReferralMenuItem() {
+  const t = useCopy();
+  const messages = useReferralMessages();
+  const { codeRef, status, onClick } = useReferralCopy();
+
+  return (
+    <Menu.Item closeOnClick={false} onClick={onClick} data-testid="shell-overflow-referral">
+      <Icon name={status === 'copied' ? 'check' : 'copy'} size="sm" />
+      {status === 'idle' ? t.shellReferralMenuLabel : messages[status]}
+      <span ref={codeRef} className="ml-auto pl-3 font-mono text-[11px] text-muted">
+        {REFERRAL_CODE}
+      </span>
+    </Menu.Item>
   );
 }
 
