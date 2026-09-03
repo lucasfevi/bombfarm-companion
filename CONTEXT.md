@@ -48,11 +48,39 @@ Ubiquitous language for the companion's game model. Terms only — no implementa
 - **Skill stones (reroll items)** — the ability-reroll cost items. **No drop rate is known**
   (wiki/API silent); excluded from estimates until captured.
 
+## Heroes
+
+- **Birth roll** — the eight stats a hero is generated with, before level, stars, gear, points
+  or the skill tree touch them. Permanent: nothing a player does ever changes it.
+- **Roll band** — the min–max range a stat may be generated within. Published per hero, not
+  merely per rarity, so a hero's own bands are always known exactly.
+- **Roll percentile** — how far up its own roll band a single birth stat landed, 0–100%.
+- **Roll quality** — the unweighted mean of a hero's eight roll percentiles. **Rank is this
+  number, bucketed** — measured across every hero in the fixture corpus, with no exception, and
+  all eight stats counting equally. Distinct from `HeroScore`, which is a combat evaluation.
+- **Rank** — the hero's S/A/B/C/D/E letter. Reserved for this meaning in player-facing copy:
+  a sorted table is a *ranking*, never a rank.
+- **Ability gain** — what the next level of an ability is worth **to one hero, at one phase**,
+  in the same units as the next-point ranking. Computed, hero-specific, and absent (shown as
+  *not modelled*) for abilities whose effect the model does not carry.
+- **Ability rating** — the companion's own judgement of how strong an ability is *in general*,
+  independent of any hero. Editorial, not a game value, and labelled as such wherever it
+  appears. Answers a different question from **ability gain**: which abilities to hope for on a
+  hero you do not own yet.
+- **Lv** — an ability's own level, 0 to its max. Player-facing copy says *Lv*, never *rank*;
+  rank is the hero's letter.
+- **Live** — a hero as the authoritative source last reported them: the running game on the
+  desktop, the last imported save on the web.
+- **Draft** — a player's edits layered over Live, held per hero. Never written back to the game.
+  Several heroes may hold drafts at once, and each is flagged.
+- **Out of date (draft)** — a draft whose Live values have since moved in a field that draft
+  touches. Judged per hero: another hero changing must never flag this one.
+
 ## Market value
 
-- **Holdings** — what the account could liquidate on the Steam market right now: the bag, the
-  sellable heroes, and the unlocked skins. Gold is not holdings — it never leaves the game, and
-  summing the two would produce a number in no unit at all.
+- **Holdings** — what the account could liquidate on the Steam market right now: the inventory,
+  the sellable heroes, and the skins its heroes are wearing. Gold is not holdings — it never
+  leaves the game, and summing the two would produce a number in no unit at all.
 - **Sellable** — the game's own permission to list a thing on the market. Anything it refuses
   is not merely unpriced, it was never a candidate, and it stays out of both the value and the
   count that value is measured against.

@@ -10,7 +10,7 @@ import { TlsConnections, type TapEvent } from '../tls-stream.js';
 const HERE = __dirname;
 const COMMITTED_PATH = resolve(HERE, 'live-capture.bfcc');
 
-function isTick(event: TapEvent): event is { kind: 'tick'; tick: LiveTick } {
+function isTick(event: TapEvent): event is Extract<TapEvent, { kind: 'tick' }> {
   return event.kind === 'tick';
 }
 

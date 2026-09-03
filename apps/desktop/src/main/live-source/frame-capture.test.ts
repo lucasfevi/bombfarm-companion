@@ -53,6 +53,7 @@ function createCapture(overrides: Partial<FrameCaptureDeps> = {}) {
   const { appendPort, appended } = createAppendSpy();
   const { log, warnings, infos } = createLogSpy();
   const capture = createFrameCapture({
+    isPackaged: false,
     flavor: 'dev',
     enabled: true,
     maxBytes: 10_000,
@@ -102,6 +103,45 @@ describe('createFrameCapture: the two gates', () => {
 
   it('writes nothing when disabled outside dev, and does not report anything', () => {
     const { capture, appended, warnings, infos } = createCapture({ flavor: 'prod', enabled: false });
+    capture.push('conn', Buffer.from('a', 'utf8'));
+
+    expect(appended).toHaveLength(0);
+    expect(warnings).toHaveLength(0);
+    expect(infos).toHaveLength(0);
+  });
+});
+
+describe('createFrameCapture: the packaging gate', () => {
+  it('writes nothing in a packaged build stamped with the dev flavor, and reports exactly once however many pushes arrive', () => {
+    const { capture, appended, warnings, infos } = createCapture({ isPackaged: true, flavor: 'dev', enabled: true });
+    capture.push('conn', Buffer.from('a', 'utf8'));
+    capture.push('conn', Buffer.from('b', 'utf8'));
+    capture.push('conn', Buffer.from('c', 'utf8'));
+
+    expect(appended).toHaveLength(0);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatchObject({ event: 'unavailable_in_packaged_build', flavor: 'dev' });
+    expect(infos).toHaveLength(0);
+  });
+
+  it('still writes byte-identical records in an unpackaged dev build, so the gate cannot pass by refusing everything', () => {
+    const { capture, appended } = createCapture({ isPackaged: false, flavor: 'dev', enabled: true });
+    const bytes = Buffer.from([0x81, 0x05, 0x01, 0x02, 0x03, 0x04, 0x05]);
+    capture.push('conn', bytes);
+
+    const [record] = toBuffers([...readCaptureRecords(Buffer.concat(appended))]);
+    expect(record).toEqual({ ctx: 'conn', bytes });
+  });
+
+  it('writes nothing in a packaged non-dev build', () => {
+    const { capture, appended } = createCapture({ isPackaged: true, flavor: 'prod', enabled: true });
+    capture.push('conn', Buffer.from('a', 'utf8'));
+
+    expect(appended).toHaveLength(0);
+  });
+
+  it('writes nothing and logs nothing in a packaged dev build when capture is not enabled', () => {
+    const { capture, appended, warnings, infos } = createCapture({ isPackaged: true, flavor: 'dev', enabled: false });
     capture.push('conn', Buffer.from('a', 'utf8'));
 
     expect(appended).toHaveLength(0);
@@ -183,6 +223,7 @@ describe('createFrameCapture: file-system failure', () => {
   it('disables capture and reports once without throwing into the frame stream', () => {
     const { log, warnings } = createLogSpy();
     const capture = createFrameCapture({
+      isPackaged: false,
       flavor: 'dev',
       enabled: true,
       maxBytes: 10_000,
@@ -209,7 +250,7 @@ describe('createFrameCapture: closing', () => {
   it('delegates close to the append port so the underlying file is closed cleanly', () => {
     const { appendPort, closeCalls } = createAppendSpy();
     const { log } = createLogSpy();
-    const capture = createFrameCapture({ flavor: 'dev', enabled: true, maxBytes: 10_000, appendPort, log });
+    const capture = createFrameCapture({ isPackaged: false, flavor: 'dev', enabled: true, maxBytes: 10_000, appendPort, log });
 
     capture.close();
 

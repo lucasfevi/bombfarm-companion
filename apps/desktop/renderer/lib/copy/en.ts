@@ -22,6 +22,10 @@ export const en = {
   shellUpdateReady: 'Restart to update',
   shellUpdateOpenSettings: 'Open the Updates settings',
   shellCoffeeLabel: 'Buy me a coffee',
+  shellReferralLabel: 'Copy my referral code — we both get a reward once you clear stage 151',
+  shellReferralCopied: 'Referral code copied',
+  shellReferralCopyManual:
+    'Clipboard unavailable — the code is selected, press Control and C to copy it.',
 
   // empty* — placeholder states shown before real data has arrived
   emptyBridgeUnavailableTitle: 'Preload bridge unavailable',
@@ -124,6 +128,9 @@ export const en = {
   settingsSupportCoffeeLabel: 'Buy me a coffee',
   settingsSupportCoffeeHelp: 'The companion is free and stays free. Opens the page in your browser.',
   settingsSupportCoffeeAction: 'Buy me a coffee',
+  settingsSupportReferralLabel: 'Referral code',
+  settingsSupportReferralHelp:
+    'Paste it on the game’s invite screen. Each account uses one referral code, and when you clear stage 151 we both get a reward.',
 
   // consentGate* — the permission gate shown instead of app content when access is not allowed
   consentGateTitle: 'This app needs your permission to work',

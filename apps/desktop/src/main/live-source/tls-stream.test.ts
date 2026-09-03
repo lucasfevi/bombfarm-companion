@@ -15,7 +15,7 @@ import { findWsFrameStart, toLiveTick, TlsConnections, type Ctx, type FrameRingP
 
 const stream = generateReplayStream();
 
-function isTick(event: TapEvent): event is { kind: 'tick'; tick: LiveTick } {
+function isTick(event: TapEvent): event is Extract<TapEvent, { kind: 'tick' }> {
   return event.kind === 'tick';
 }
 
@@ -42,6 +42,17 @@ function pushWholeStream(conn: TlsConnections, ctx: Ctx, replay: ReplayStream): 
     events.push(...conn.push(ctx, replay.bytes.subarray(segment.offset, segment.endOffset)));
   }
   return events;
+}
+
+/** The whole tick event a `{ t: 'snap', heroes: [...] }` payload decodes to. Spelled once so the
+ *  assertions below stay exact — the event carries the wire object as well as the decoded tick,
+ *  and a `toMatchObject` here would stop noticing either. */
+function tickEvent(id: string, extraWire: Record<string, unknown> = {}): Extract<TapEvent, { kind: 'tick' }> {
+  return {
+    kind: 'tick',
+    tick: { heroes: [{ id }] },
+    raw: { t: 'snap', heroes: [{ id }], ...extraWire },
+  };
 }
 
 describe('TlsConnections: decoding the full replay stream', () => {
@@ -152,9 +163,9 @@ describe('TlsConnections: malformed frame mid-stream', () => {
     const malformed = buildOversized64BitLengthFrame();
     const frameB = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-02' }] })));
 
-    expect(conn.push('flaky', frameA)).toEqual([{ kind: 'tick', tick: { heroes: [{ id: 'hero-01' }] } }]);
+    expect(conn.push('flaky', frameA)).toEqual([tickEvent('hero-01')]);
     expect(conn.push('flaky', malformed)).toEqual([]);
-    expect(conn.push('flaky', frameB)).toEqual([{ kind: 'tick', tick: { heroes: [{ id: 'hero-02' }] } }]);
+    expect(conn.push('flaky', frameB)).toEqual([tickEvent('hero-02')]);
   });
 });
 
@@ -169,9 +180,9 @@ describe('TlsConnections: good frames preceding a malformed frame in the same ch
     const events = conn.push('one-chunk', Buffer.concat([frameA, frameB, frameC, malformed]));
 
     expect(events).toEqual([
-      { kind: 'tick', tick: { heroes: [{ id: 'hero-01' }] } },
-      { kind: 'tick', tick: { heroes: [{ id: 'hero-02' }] } },
-      { kind: 'tick', tick: { heroes: [{ id: 'hero-03' }] } },
+      tickEvent('hero-01'),
+      tickEvent('hero-02'),
+      tickEvent('hero-03'),
     ]);
   });
 
@@ -184,7 +195,7 @@ describe('TlsConnections: good frames preceding a malformed frame in the same ch
     conn.push('one-chunk-resync', Buffer.concat([good, malformed]));
     const events = conn.push('one-chunk-resync', later);
 
-    expect(events).toEqual([{ kind: 'tick', tick: { heroes: [{ id: 'hero-02' }] } }]);
+    expect(events).toEqual([tickEvent('hero-02')]);
   });
 
   it('emits ticks for both valid frames when a malformed frame arrives between them in one push', () => {
@@ -196,8 +207,8 @@ describe('TlsConnections: good frames preceding a malformed frame in the same ch
     const events = conn.push('sandwiched', Buffer.concat([frameA, malformed, frameB]));
 
     expect(events).toEqual([
-      { kind: 'tick', tick: { heroes: [{ id: 'hero-01' }] } },
-      { kind: 'tick', tick: { heroes: [{ id: 'hero-02' }] } },
+      tickEvent('hero-01'),
+      tickEvent('hero-02'),
     ]);
   });
 
@@ -212,9 +223,9 @@ describe('TlsConnections: good frames preceding a malformed frame in the same ch
     const events = conn.push('double-malformed', Buffer.concat([frameA, malformed1, frameB, malformed2, frameC]));
 
     expect(events).toEqual([
-      { kind: 'tick', tick: { heroes: [{ id: 'hero-01' }] } },
-      { kind: 'tick', tick: { heroes: [{ id: 'hero-02' }] } },
-      { kind: 'tick', tick: { heroes: [{ id: 'hero-03' }] } },
+      tickEvent('hero-01'),
+      tickEvent('hero-02'),
+      tickEvent('hero-03'),
     ]);
   });
 
@@ -305,7 +316,7 @@ describe('TlsConnections: websocket upgrade caught live', () => {
 
     const events = conn.push('handshake', Buffer.concat([handshake, frame]));
 
-    expect(events).toEqual([{ kind: 'upgrade' }, { kind: 'tick', tick: { heroes: [{ id: 'hero-01' }] } }]);
+    expect(events).toEqual([{ kind: 'upgrade' }, tickEvent('hero-01')]);
   });
 });
 
@@ -526,7 +537,7 @@ describe('TlsConnections: idle connection sweep', () => {
     conn.push('rest-conn', buildHttpResponse(200, 'OK', ''));
 
     const frame = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-01' }] })));
-    expect(conn.push('ws-conn', frame)).toEqual([{ kind: 'tick', tick: { heroes: [{ id: 'hero-01' }] } }]);
+    expect(conn.push('ws-conn', frame)).toEqual([tickEvent('hero-01')]);
   });
 });
 
@@ -540,7 +551,7 @@ describe('TlsConnections: resync overlap across a chunk boundary', () => {
 
     expect(conn.push('split', Buffer.alloc(20, 0x00))).toEqual([]);
     expect(conn.push('split', headerFirstByte)).toEqual([]);
-    expect(conn.push('split', rest)).toEqual([{ kind: 'tick', tick: { heroes: [{ id: 'hero-01' }] } }]);
+    expect(conn.push('split', rest)).toEqual([tickEvent('hero-01')]);
   });
 });
 
@@ -555,7 +566,7 @@ describe('TlsConnections: a frame split across the resync boundary is revisited,
     const second = conn.push('split-payload', bytes.subarray(1000));
 
     expect([...first, ...second]).toHaveLength(1);
-    expect([...first, ...second][0]).toEqual({ kind: 'tick', tick: { heroes: [{ id: 'hero-01' }] } });
+    expect([...first, ...second][0]).toEqual(tickEvent('hero-01', { pad: 'x'.repeat(1800) }));
   });
 
   /**
@@ -735,14 +746,14 @@ describe('TlsConnections: application-level zlib-compressed combat frames', () =
     const binaryEvents = new TlsConnections().push('binary', buildServerBinaryFrame(deflateSync(payload)));
 
     expect(binaryEvents).toEqual(textEvents);
-    expect(binaryEvents).toEqual([{ kind: 'tick', tick: { heroes: [{ id: 'hero-01' }] } }]);
+    expect(binaryEvents).toEqual([tickEvent('hero-01')]);
   });
 
   it('still decodes a plain-text frame with verbatim JSON (the pre-compression path is unaffected)', () => {
     const conn = new TlsConnections();
     const frame = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [{ id: 'hero-09' }] })));
 
-    expect(conn.push('plain', frame)).toEqual([{ kind: 'tick', tick: { heroes: [{ id: 'hero-09' }] } }]);
+    expect(conn.push('plain', frame)).toEqual([tickEvent('hero-09')]);
   });
 
   it('does not treat a payload whose first byte is neither "{" nor the zlib header as a snap', () => {
@@ -759,7 +770,7 @@ describe('TlsConnections: application-level zlib-compressed combat frames', () =
     const frame = buildServerBinaryFrame(deflateSync(payload));
     const bytes = Buffer.concat([Buffer.alloc(37, 0x00), frame]);
 
-    expect(conn.push('resync-binary', bytes)).toEqual([{ kind: 'tick', tick: { heroes: [{ id: 'hero-05' }] } }]);
+    expect(conn.push('resync-binary', bytes)).toEqual([tickEvent('hero-05')]);
   });
 
   it('fires the undecodable-payload diagnostic once, not per frame', () => {
@@ -779,5 +790,44 @@ describe('TlsConnections: application-level zlib-compressed combat frames', () =
         firstByte: badPayload.readUInt8(0),
       },
     ]);
+  });
+});
+
+/** The cage fields this exists to preserve are declared on the wire but not modelled by
+ *  {@link toLiveTick}, so probing the decoded tick can never testify about them — the event has to
+ *  carry the wire object itself. */
+describe('TlsConnections: the tick event carries the wire object it was decoded from', () => {
+  const WIRE_TICK = {
+    [wireKey('messageType')]: wireKey('snapMessageType'),
+    [wireKey('phase')]: 26,
+    [wireKey('wave')]: 3,
+    jaula_state: 2,
+    jaula_secs: 118,
+    jaula_teto: 4,
+    jaula_ato: 1,
+    seca_secs: 41,
+  };
+
+  function pushTick(payload: Record<string, unknown>): TapEvent[] {
+    const conn = new TlsConnections();
+    const frame = buildServerTextFrame(Buffer.from(JSON.stringify(payload), 'utf8'));
+    return [...conn.push('main', frame)];
+  }
+
+  it('keeps every wire key the decoded tick does not model, cage fields included', () => {
+    const [event] = pushTick(WIRE_TICK).filter(isTick);
+
+    expect(event?.raw).toEqual(WIRE_TICK);
+    for (const unmodelled of ['jaula_state', 'jaula_secs', 'jaula_teto', 'jaula_ato', 'seca_secs']) {
+      expect(event?.raw).toHaveProperty(unmodelled);
+      expect(event?.tick).not.toHaveProperty(unmodelled);
+    }
+  });
+
+  it('carries the same object the tick was built from, not a separately parsed one', () => {
+    const [event] = pushTick(WIRE_TICK).filter(isTick);
+
+    expect(event?.tick.phase).toBe(event?.raw[wireKey('phase')]);
+    expect(event?.tick.wave).toBe(event?.raw[wireKey('wave')]);
   });
 });

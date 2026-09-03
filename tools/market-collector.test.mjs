@@ -14,7 +14,7 @@ import {
   createHistory,
   createLogger,
   createPublisher,
-  deriveSpacing,
+  incompleteStages,
   itemRowsFrom,
   nextCoolDown,
   quoteRowsFrom,
@@ -51,11 +51,17 @@ const snapshotFixture = () => ({
 const statsFixture = (overrides = {}) => ({
   rowsSeen: 2,
   searchCalls: 9,
+  enumerationCalls: 10,
   quoteCalls: 1,
   quotesOk: 1,
+  quotable: 2,
+  rotation: ['Coal Boots (Rare)'],
+  enumerationOnly: ['Topaz Gem'],
+  rotationDelayMs: 43_200,
   rateLimitHits: 0,
   rateLimitHitsDerived: 0,
   enumerationComplete: true,
+  discoveryComplete: true,
   quotesComplete: true,
   anomalies: [],
   unmappedTags: [],
@@ -94,11 +100,18 @@ function harness(overrides = {}) {
   });
 
   const deps = {
-    config: { spacingMs: 43_200, snapshotPath: '/state/snap.json', currencies: ['BRL'] },
+    config: {
+      budget: 2000,
+      tierWindowMs: 30 * 86_400_000,
+      retierEveryMs: 86_400_000,
+      snapshotPath: '/state/snap.json',
+      currencies: ['BRL'],
+    },
     runSweep: async () => ({ snapshot: snapshotFixture(), stats: statsFixture() }),
     loadPrior: () => null,
     writeSnapshot: () => {},
     persistHistory: async () => ({ ok: true, error: null }),
+    readTiers: async () => ({ traded: new Set(), observed: new Set() }),
     publishRelease: async () => {
       published.push('release');
       return true;
@@ -131,21 +144,139 @@ function harness(overrides = {}) {
   };
 }
 
-describe('spacing derived from a daily call budget', () => {
-  it('turns a budget into a delay, and raising the budget shortens it', () => {
-    expect(deriveSpacing(2000)).toEqual({ budget: 2000, spacingMs: 43_200, spacingClamped: false });
-    expect(deriveSpacing(4000).spacingMs).toBeLessThan(deriveSpacing(2000).spacingMs);
+/**
+ * The plan itself is proved in market-quote-plan.test.mjs. What is proved here is that the pass
+ * actually runs one: that membership reaches the sweep, that it is re-read on its own interval
+ * rather than once, and that a store the collector cannot read costs it the rotation rather than
+ * the whole board.
+ */
+describe('the pass plans what it will quote', () => {
+  const listed = ['Traded Item', 'Quiet Item'];
+
+  const planningHarness = (overrides = {}) => {
+    const plans = [];
+    const h = harness({
+      runSweep: async ({ planQuotes }) => {
+        plans.push(
+          planQuotes({
+            quotable: listed.map((hashName) => ({ hashName })),
+            enumerationCalls: 10,
+            searchDelayMs: 1500,
+          }),
+        );
+        return { snapshot: snapshotFixture(), stats: statsFixture() };
+      },
+      ...overrides,
+    });
+    return { ...h, plans };
+  };
+
+  it('quotes what the store says has traded and leaves the rest to the enumeration', async () => {
+    const h = planningHarness({
+      readTiers: async () => ({
+        traded: new Set(['Traded Item']),
+        observed: new Set(listed),
+      }),
+    });
+    await runCollector(h.deps);
+
+    expect(h.plans[0].hashNames).toEqual(['Traded Item']);
+    expect(h.plans[0].enumerationOnly).toEqual(['Quiet Item']);
+    expect(h.plans[0].spacingMs).toBeGreaterThanOrEqual(MIN_SPACING_MS);
   });
 
-  it('clamps a budget that would breach the measured-safe floor, and says it clamped', () => {
-    const derived = deriveSpacing(100_000);
-    expect(derived.spacingMs).toBe(MIN_SPACING_MS);
-    expect(derived.spacingClamped).toBe(true);
+  it('asks the store for the window it was configured with', async () => {
+    const asked = [];
+    const h = planningHarness({
+      readTiers: async (windowMs) => {
+        asked.push(windowMs);
+        return { traded: new Set(), observed: new Set(listed) };
+      },
+    });
+    await runCollector(h.deps);
+    expect(asked).toEqual([30 * 86_400_000]);
   });
 
-  it.each([0, -1, 'abc', ''])('refuses the budget %p, naming the variable and the value', (bad) => {
-    expect(() => deriveSpacing(bad)).toThrow(/MARKET_DAILY_BUDGET/);
-    expect(() => deriveSpacing(bad)).toThrow(JSON.stringify(bad));
+  it('re-reads membership once the interval has passed, and not before', async () => {
+    let reads = 0;
+    const h = planningHarness({
+      maxPasses: 3,
+      readTiers: async () => {
+        reads += 1;
+        return { traded: new Set(), observed: new Set(listed) };
+      },
+      sleep: async (ms) => {
+        h.advance(ms);
+      },
+    });
+    h.deps.config.retierEveryMs = MIN_PASS_MS * 2;
+    await runCollector(h.deps);
+
+    expect(reads).toBe(2);
+  });
+
+  /**
+   * Losing the readings must not lose the board. With no membership to go on the rotation is
+   * everything listed, which is what the budget alone would have bought anyway.
+   */
+  it('quotes everything listed when the store cannot be read', async () => {
+    const h = planningHarness({ readTiers: async () => null });
+    await runCollector(h.deps);
+
+    expect(h.plans[0].hashNames).toEqual(listed);
+    expect(h.plans[0].firstQuote).toEqual(listed);
+    expect(h.lines.map((line) => JSON.parse(line).evt)).toContain('quote.planned');
+  });
+
+  it('places an item quoted for the first time by its own result, without waiting for a re-read', async () => {
+    const h = planningHarness({
+      maxPasses: 2,
+      readTiers: async () => null,
+      runSweep: async ({ planQuotes }) => {
+        const plan = planQuotes({
+          quotable: listed.map((hashName) => ({ hashName })),
+          enumerationCalls: 10,
+          searchDelayMs: 1500,
+        });
+        h.plans.push(plan);
+        return {
+          snapshot: snapshotFixture(),
+          stats: statsFixture({
+            rotation: plan.hashNames,
+            quotes: new Map([
+              ['Traded Item', { BRL: { lowest: 1, median: 1, volume: 6 } }],
+              ['Quiet Item', { BRL: { lowest: 1, median: 1, volume: 0 } }],
+            ]),
+          }),
+        };
+      },
+    });
+    await runCollector(h.deps);
+
+    expect(h.plans[0].hashNames).toEqual(listed);
+    expect(h.plans[1].hashNames).toEqual(['Traded Item']);
+    expect(h.plans[1].enumerationOnly).toEqual(['Quiet Item']);
+  });
+
+  it('records the delay the plan chose on the run row', async () => {
+    const h = planningHarness({
+      readTiers: async () => ({ traded: new Set(listed), observed: new Set(listed) }),
+    });
+    await runCollector(h.deps);
+
+    expect(h.runs[0].spacing_ms).toBe(h.plans[0].spacingMs);
+    expect(h.runs[0].spacing_ms).toBeGreaterThan(0);
+  });
+
+  it('leaves the delay null on a pass that never got as far as planning one', async () => {
+    const h = harness({
+      runSweep: async () => {
+        throw new Error('sweep exploded');
+      },
+    });
+    await runCollector(h.deps);
+
+    expect(h.runs[0].spacing_ms).toBeNull();
   });
 });
 
@@ -195,6 +326,19 @@ describe('configuration read from the environment', () => {
     expect(readConfig(aliased)[field]).toBe(value);
   });
 
+  it('turns the tiering intervals into milliseconds', () => {
+    const config = readConfig({ ...ENV, MARKET_TIER_WINDOW_DAYS: '7', MARKET_RETIER_HOURS: '6' });
+    expect(config.tierWindowMs).toBe(7 * 86_400_000);
+    expect(config.retierEveryMs).toBe(6 * 3_600_000);
+  });
+
+  it.each(['MARKET_TIER_WINDOW_DAYS', 'MARKET_RETIER_HOURS'])(
+    'names a nonsensical %s in the same message as everything else wrong',
+    (name) => {
+      expect(() => readConfig({ ...ENV, [name]: '-1' })).toThrow(name);
+    },
+  );
+
   it('starts on an environment carrying only the four that have no sane default', () => {
     const minimal = {
       SUPABASE_URL: ENV.SUPABASE_URL,
@@ -204,6 +348,8 @@ describe('configuration read from the environment', () => {
     };
     expect(readConfig(minimal)).toMatchObject({
       budget: 2000,
+      tierWindowMs: 30 * 86_400_000,
+      retierEveryMs: 24 * 3_600_000,
       currencies: ['BRL'],
       releaseTag: 'market-prices',
       dataBranch: 'market-data',
@@ -298,6 +444,56 @@ describe('the cool-down ladder', () => {
     await runCollector(h.deps);
     expect(h.sleeps.slice(0, 2)).toEqual([15 * 60_000, 30 * 60_000]);
     expect(h.sleeps.at(-1)).toBe(MIN_PASS_MS);
+  });
+
+  it('names every stage that did not finish, and nothing when all of them did', () => {
+    expect(incompleteStages(statsFixture())).toEqual([]);
+    expect(incompleteStages(statsFixture({ enumerationComplete: false }))).toEqual(['enumerate']);
+    expect(incompleteStages(statsFixture({ discoveryComplete: false }))).toEqual(['tag']);
+    expect(incompleteStages(statsFixture({ quotesComplete: false }))).toEqual(['quote']);
+  });
+
+  it('treats a stage that never reported as unfinished, not as finished', () => {
+    const silent = statsFixture();
+    delete silent.discoveryComplete;
+    expect(incompleteStages(silent)).toEqual(['tag']);
+  });
+
+  it('climbs when a pass dies enumerating, though it never reached a quote to fail at', async () => {
+    // The witnessed shape: enumeration broke, so the rotation was never entered and reports
+    // itself complete having had nothing to leave undone. Reading that alone reset the ladder.
+    const diedEnumerating = statsFixture({
+      enumerationComplete: false,
+      discoveryComplete: false,
+      quotesComplete: true,
+      rowsSeen: 0,
+      searchCalls: 6,
+      quoteCalls: 0,
+      quotesOk: 0,
+      rateLimitHits: 5,
+      quotes: new Map(),
+    });
+
+    const h = harness({
+      maxPasses: 3,
+      runSweep: async () => ({ snapshot: snapshotFixture(), stats: diedEnumerating }),
+    });
+    await runCollector(h.deps);
+
+    expect(h.sleeps).toEqual([15 * 60_000, 30 * 60_000, 60 * 60_000]);
+  });
+
+  it('climbs when a pass dies tagging, having enumerated and quoted nothing', async () => {
+    const h = harness({
+      maxPasses: 2,
+      runSweep: async () => ({
+        snapshot: snapshotFixture(),
+        stats: statsFixture({ discoveryComplete: false, quotesOk: 0, quotes: new Map() }),
+      }),
+    });
+    await runCollector(h.deps);
+
+    expect(h.sleeps).toEqual([15 * 60_000, 30 * 60_000]);
   });
 
   it('enters the ladder for a rotation cut short, while still publishing and persisting it', async () => {
@@ -443,6 +639,48 @@ describe('the log', () => {
     expect(byEvent.get('quote.circuitBroken').lvl).toBe('error');
     expect(byEvent.get('sweep.line').message).toBe('tagged 2 rows in 9 calls');
   });
+
+  it('says outright that a pass collected nothing, and which stage cost it', async () => {
+    const h = harness({
+      runSweep: async () => ({
+        snapshot: snapshotFixture(),
+        stats: statsFixture({
+          enumerationComplete: false,
+          discoveryComplete: false,
+          rowsSeen: 0,
+          searchCalls: 6,
+          quoteCalls: 0,
+          quotesOk: 0,
+          rateLimitHits: 5,
+          quotes: new Map(),
+        }),
+      }),
+    });
+    await runCollector(h.deps);
+
+    const byEvent = new Map(h.lines.map((line) => JSON.parse(line)).map((e) => [e.evt, e]));
+    expect(byEvent.get('pass.collectedNothing')).toMatchObject({
+      lvl: 'error',
+      rows: 0,
+      searchCalls: 6,
+      quoteCalls: 0,
+      rateLimitHits: 5,
+    });
+    expect(byEvent.get('pass.incomplete')).toMatchObject({
+      lvl: 'error',
+      stages: ['enumerate', 'tag'],
+      quoted: 0,
+    });
+  });
+
+  it('stays quiet about both when the pass finished and collected', async () => {
+    const h = harness();
+    await runCollector(h.deps);
+
+    const events = h.lines.map((line) => JSON.parse(line).evt);
+    expect(events).not.toContain('pass.collectedNothing');
+    expect(events).not.toContain('pass.incomplete');
+  });
 });
 
 describe('the history transport', () => {
@@ -489,6 +727,59 @@ describe('the history transport', () => {
     const { writeRun } = historyWith(async () => failResponse(401), lines);
     await expect(writeRun({ pass: 1 })).resolves.toBeUndefined();
     expect(lines.map((line) => JSON.parse(line).evt)).toContain('run.failed');
+  });
+
+  describe('reading back which items have traded', () => {
+    it('asks only for the window, and sorts the two sets out of the readings', async () => {
+      const calls = [];
+      const { readTiers } = historyWith(async (url, init) => {
+        calls.push({ url, init });
+        return okResponse([
+          { hash_name: 'Traded Item', volume: 4 },
+          { hash_name: 'Traded Item', volume: 0 },
+          { hash_name: 'Quiet Item', volume: 0 },
+        ]);
+      });
+
+      const tiers = await readTiers(86_400_000);
+
+      expect(calls).toHaveLength(1);
+      expect(calls[0].url).toContain('quoted_at=gte.1969-12-31T00%3A00%3A00.000Z');
+      expect(calls[0].init.method).toBe('GET');
+      expect([...tiers.traded]).toEqual(['Traded Item']);
+      expect([...tiers.observed]).toEqual(['Traded Item', 'Quiet Item']);
+    });
+
+    it('keeps asking while a page comes back full, and stops on the first short one', async () => {
+      const ranges = [];
+      const { readTiers } = historyWith(async (url, init) => {
+        ranges.push(init.headers.Range);
+        const full = ranges.length === 1;
+        return okResponse(
+          Array.from({ length: full ? 1000 : 3 }, (_, index) => ({
+            hash_name: `Item ${String(index)}`,
+            volume: 1,
+          })),
+        );
+      });
+
+      const tiers = await readTiers(86_400_000);
+
+      expect(ranges).toEqual(['0-999', '1000-1999']);
+      expect(tiers.traded.size).toBe(1000);
+    });
+
+    /**
+     * Answering with a partial set would retire every traded item the read did not reach, which
+     * is the opposite of what the rotation exists for. The caller keeps what it had instead.
+     */
+    it('answers with nothing at all rather than a partial set', async () => {
+      const lines = [];
+      const { readTiers } = historyWith(async () => failResponse(503), lines);
+
+      await expect(readTiers(86_400_000)).resolves.toBeNull();
+      expect(lines.map((line) => JSON.parse(line).evt)).toContain('tier.readFailed');
+    });
   });
 });
 

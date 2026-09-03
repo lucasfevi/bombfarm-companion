@@ -11,6 +11,7 @@
   "scripts": {
     "dev": "pnpm --filter @bombfarm/desktop dev",
     "dev:offline": "pnpm --filter @bombfarm/desktop dev:offline",
+    "dev:capture": "pnpm --filter @bombfarm/desktop dev:capture",
     "dev:web": "pnpm --filter @bombfarm/web dev",
     "build": "node tools/with-cpu-budget.mjs pnpm -r build",
     "typecheck": "node tools/with-cpu-budget.mjs pnpm -r typecheck",

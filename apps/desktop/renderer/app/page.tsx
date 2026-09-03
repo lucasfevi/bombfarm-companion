@@ -22,6 +22,7 @@ import { formatAge } from '../lib/format';
 import { useOverlayInset } from '../lib/window-overlay';
 import { navItemsFor } from './nav-items';
 import { CoffeeIconLink } from './coffee-link';
+import { ReferralChip } from './referral-link';
 import { ConsentGate, isConsentGateVisible } from './consent-gate';
 import { ConsentModal } from './consent-modal';
 import { UpdateChip } from './update-chip';
@@ -321,8 +322,9 @@ function HomePageContent({
           <div className="flex items-center gap-3">
             {granted ? <OpenMiniButton /> : null}
             {/* Left of the language toggle, and unconditional — unlike the mini-window button
-                above it: the gate screen is where a first run spends its time, and this link
-                neither reads the account nor touches the game. */}
+                above them: the gate screen is where a first run spends its time, and neither of
+                these reads the account or touches the game. */}
+            <ReferralChip />
             <CoffeeIconLink />
             <SegmentedToggle
               options={LOCALE_OPTIONS}

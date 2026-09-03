@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { FieldCountdown, LiveTick } from '@bombfarm/contracts';
+import type { FieldCountdown } from '@bombfarm/contracts';
 import { createInitialFieldCountdownState, ingestFieldCountdownTick, type DrainMultipliers } from '@bombfarm/domain/live';
 import { classifyRotation } from '@bombfarm/domain/rotation-status';
 import { normalizeRotation, wireKey } from '@bombfarm/game-api';
@@ -12,7 +12,7 @@ import { generateReplayStream } from './generate-replay-stream.js';
 const HERE = __dirname;
 const COMMITTED_PATH = resolve(HERE, 'replay-stream.bin');
 
-function isTick(event: TapEvent): event is { kind: 'tick'; tick: LiveTick } {
+function isTick(event: TapEvent): event is Extract<TapEvent, { kind: 'tick' }> {
   return event.kind === 'tick';
 }
 

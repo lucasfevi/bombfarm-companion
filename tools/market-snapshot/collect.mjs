@@ -12,36 +12,33 @@ import { basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { deployOptOutFiles } from './deploy-optout.mjs';
+import {
+  DEFAULT_DAILY_BUDGET,
+  MIN_SPACING_MS,
+  NO_TIERS,
+  planPass,
+  readBudget,
+  tiersAfterPass,
+  tiersFromHistory,
+} from './quote-plan.mjs';
 
+const MS_PER_HOUR = 3_600_000;
 const MS_PER_DAY = 86_400_000;
 
-/**
- * The rotation delay a full pass was measured drawing zero rate limits at. Never go below it
- * whatever the budget says: the budget bounds the daily total, not the instantaneous rate.
- */
-export const MIN_SPACING_MS = 3_500;
+export { MIN_SPACING_MS };
 
-const DEFAULT_DAILY_BUDGET = 2_000;
+const DEFAULT_TIER_WINDOW_DAYS = 30;
+const DEFAULT_RETIER_HOURS = 24;
 
-/**
- * Derive the rotation delay from a daily call budget. Raising the budget shortens the delay with
- * no code change; a budget high enough to breach the measured-safe floor is clamped rather than
- * obeyed, and says so, so a budget that is not being honoured is visible from the log.
- */
-export function deriveSpacing(rawBudget) {
-  const budget = Number(rawBudget);
-  if (!Number.isFinite(budget) || budget <= 0) {
-    throw new Error(
-      `MARKET_DAILY_BUDGET must be a positive number; got ${JSON.stringify(rawBudget)}`,
-    );
+const positive = (raw, fallback, name, problems) => {
+  if (raw == null || raw === '') return fallback;
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value <= 0) {
+    problems.push(`${name} must be a positive number; got ${JSON.stringify(raw)}`);
+    return fallback;
   }
-  const derived = Math.floor(MS_PER_DAY / budget);
-  return {
-    budget,
-    spacingMs: Math.max(MIN_SPACING_MS, derived),
-    spacingClamped: derived < MIN_SPACING_MS,
-  };
-}
+  return value;
+};
 
 /** The first name is canonical; the rest are accepted so a differently-named environment starts. */
 const firstSet = (env, names) => {
@@ -70,12 +67,25 @@ export function readConfig(env) {
   const githubToken = need('GITHUB_TOKEN');
   const repo = need('GITHUB_REPO', 'GITHUB_REPOSITORY');
 
-  let spacing = null;
+  let budget = DEFAULT_DAILY_BUDGET;
   try {
-    spacing = deriveSpacing(env.MARKET_DAILY_BUDGET ?? DEFAULT_DAILY_BUDGET);
+    budget = readBudget(env.MARKET_DAILY_BUDGET ?? DEFAULT_DAILY_BUDGET);
   } catch (err) {
     problems.push(String(err.message));
   }
+
+  const tierWindowDays = positive(
+    env.MARKET_TIER_WINDOW_DAYS,
+    DEFAULT_TIER_WINDOW_DAYS,
+    'MARKET_TIER_WINDOW_DAYS',
+    problems,
+  );
+  const retierHours = positive(
+    env.MARKET_RETIER_HOURS,
+    DEFAULT_RETIER_HOURS,
+    'MARKET_RETIER_HOURS',
+    problems,
+  );
 
   if (problems.length > 0) {
     throw new Error(`the collector cannot start: ${problems.join('; ')}`);
@@ -87,9 +97,9 @@ export function readConfig(env) {
     supabaseKey,
     githubToken,
     repo,
-    budget: spacing.budget,
-    spacingMs: spacing.spacingMs,
-    spacingClamped: spacing.spacingClamped,
+    budget,
+    tierWindowMs: tierWindowDays * MS_PER_DAY,
+    retierEveryMs: retierHours * MS_PER_HOUR,
     currencies: (env.MARKET_CURRENCY ?? 'BRL')
       .split(',')
       .map((code) => code.trim().toUpperCase())
@@ -126,6 +136,9 @@ export function logSweepStats(log, stats) {
   log('quote.done', {
     quoted: stats.quotesOk,
     calls: stats.quoteCalls,
+    rotation: stats.rotation?.length ?? null,
+    enumerationOnly: stats.enumerationOnly?.length ?? null,
+    delayMs: stats.rotationDelayMs ?? null,
     rateLimitHits: stats.rateLimitHits,
     complete: stats.quotesComplete,
   });
@@ -203,6 +216,15 @@ export function itemRowsFrom(snapshot, lastSeen) {
 
 const HISTORY_TIMEOUT_MS = 30_000;
 
+const HISTORY_PAGE_ROWS = 1_000;
+
+/**
+ * A window holds at most one reading per call the budget allowed, so this is far above any real
+ * answer. Hitting it means the query matched something other than what was asked for, and a
+ * truncated read would silently retire every traded item that fell past the cut.
+ */
+const HISTORY_MAX_ROWS = 500_000;
+
 export function createHistory({ url, key, fetch, log, now = Date.now }) {
   const post = async (path, rows, prefer) => {
     const response = await fetch(`${url}/rest/v1/${path}`, {
@@ -223,6 +245,66 @@ export function createHistory({ url, key, fetch, log, now = Date.now }) {
       error.body = body;
       throw error;
     }
+  };
+
+  const getPage = async (path, offset) => {
+    const response = await fetch(`${url}/rest/v1/${path}`, {
+      method: 'GET',
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        Accept: 'application/json',
+        'Range-Unit': 'items',
+        Range: `${String(offset)}-${String(offset + HISTORY_PAGE_ROWS - 1)}`,
+      },
+      signal: AbortSignal.timeout(HISTORY_TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      const error = new Error(`${path} answered ${String(response.status)}`);
+      error.status = response.status;
+      error.body = body;
+      throw error;
+    }
+    return response.json();
+  };
+
+  /**
+   * Which items have traded within the window, and which have only ever been quoted. Null when
+   * the read failed or came back implausibly large: the caller then keeps the membership it had,
+   * because guessing here retires items from the rotation that are the reason it exists.
+   */
+  const readTiers = async (windowMs) => {
+    const startedMs = now();
+    const since = new Date(now() - windowMs).toISOString();
+    const query =
+      `quote?select=hash_name,volume&quoted_at=gte.${encodeURIComponent(since)}&order=id.asc`;
+    const rows = [];
+
+    try {
+      for (;;) {
+        const page = await getPage(query, rows.length);
+        rows.push(...page);
+        if (page.length < HISTORY_PAGE_ROWS) break;
+        if (rows.length >= HISTORY_MAX_ROWS) {
+          log('tier.readOversized', { rows: rows.length, since }, 'error');
+          return null;
+        }
+      }
+    } catch (err) {
+      log('tier.readFailed', { status: err?.status ?? null, body: err?.body ?? String(err) }, 'error');
+      return null;
+    }
+
+    const tiers = tiersFromHistory(rows);
+    log('tier.read', {
+      rows: rows.length,
+      traded: tiers.traded.size,
+      observed: tiers.observed.size,
+      since,
+      ms: now() - startedMs,
+    });
+    return tiers;
   };
 
   /**
@@ -267,7 +349,7 @@ export function createHistory({ url, key, fetch, log, now = Date.now }) {
     }
   };
 
-  return { persistHistory, writeRun };
+  return { persistHistory, readTiers, writeRun };
 }
 
 const GITHUB_API = 'https://api.github.com';
@@ -418,6 +500,25 @@ export function nextCoolDown(currentMs) {
   return COOL_DOWN_LADDER_MS[Math.min(rung + 1, COOL_DOWN_LADDER_MS.length - 1)];
 }
 
+const PASS_STAGES = [
+  ['enumerate', 'enumerationComplete'],
+  ['tag', 'discoveryComplete'],
+  ['quote', 'quotesComplete'],
+];
+
+/**
+ * Which stages of the pass did not finish, named rather than counted so the log says what the
+ * cool-down is answering.
+ *
+ * A stage is complete only when it says so. Reading `quotesComplete` alone called a pass that
+ * died during enumeration complete — it never reached a quote, so nothing was left incomplete —
+ * which reset the ladder to zero and retried at once, holding a temporary block open at 8-9
+ * passes an hour against the 1 an hour that let the address recover.
+ */
+export function incompleteStages(stats) {
+  return PASS_STAGES.filter(([, flag]) => stats[flag] !== true).map(([stage]) => stage);
+}
+
 export function runRowFrom(stats, snapshotBytes) {
   return {
     rows_seen: stats.rowsSeen,
@@ -444,9 +545,14 @@ export function runRowFrom(stats, snapshotBytes) {
  * The run row is written in a `finally`, so a pass that throws still leaves a row carrying its
  * error. Health in one query would otherwise under-count failures as passes that never happened.
  *
- * A pass that completes with the rotation cut short is not an error — it publishes and persists
- * what it got — but it still enters the cool-down ladder, because a tripped breaker is the exact
- * signal the ladder exists for.
+ * A pass cut short at any stage is not an error — it publishes and persists what it got — but it
+ * still enters the cool-down ladder, because a tripped breaker is the exact signal the ladder
+ * exists for.
+ *
+ * Tier membership is recomputed on its own interval from the readings already in the history
+ * store, and folded forward from each pass so an item quoted for the first time is placed by its
+ * own result. A read that fails leaves the membership the collector had; with none yet, the
+ * rotation is everything the market lists, which is the behaviour the budget alone would give.
  */
 export async function runCollector({
   config,
@@ -454,6 +560,7 @@ export async function runCollector({
   loadPrior,
   writeSnapshot,
   persistHistory,
+  readTiers,
   publishRelease,
   publishBranch,
   writeRun,
@@ -463,28 +570,79 @@ export async function runCollector({
   maxPasses = Infinity,
 }) {
   let coolDownMs = 0;
+  let tiers = null;
+  let tieredAtMs = null;
 
   for (let pass = 1; pass <= maxPasses; pass += 1) {
     const startedAtMs = now();
-    let row = {
-      pass,
-      started_at: new Date(startedAtMs).toISOString(),
-      spacing_ms: config.spacingMs,
-    };
+    let plan = null;
+    let row = { pass, started_at: new Date(startedAtMs).toISOString() };
 
     try {
-      log('pass.start', { pass, spacingMs: config.spacingMs });
+      log('pass.start', { pass, budget: config.budget });
+
+      if (tieredAtMs == null || now() - tieredAtMs >= config.retierEveryMs) {
+        const fresh = await readTiers(config.tierWindowMs);
+        if (fresh != null) {
+          tiers = fresh;
+          tieredAtMs = now();
+        }
+      }
 
       const prior = loadPrior(config.snapshotPath);
       const { snapshot, stats } = await runSweep({
         prior,
-        quoteDelayMs: config.spacingMs,
         nativeCurrencies: config.currencies,
+        planQuotes: ({ quotable, enumerationCalls, searchDelayMs }) => {
+          plan = planPass({
+            hashNames: quotable.map((entry) => entry.hashName),
+            tiers: tiers ?? NO_TIERS,
+            budget: config.budget,
+            currencyCount: config.currencies.length,
+            enumerationCalls,
+            searchDelayMs,
+          });
+          log('quote.planned', {
+            pass,
+            quotable: quotable.length,
+            rotation: plan.quote.length,
+            enumerationOnly: plan.enumerationOnly.length,
+            firstQuote: plan.firstQuote.length,
+            enumerationCalls,
+            callsPerPass: plan.callsPerPass,
+            spacingMs: plan.spacingMs,
+            spacingClamped: plan.spacingClamped,
+          });
+          return plan;
+        },
         log: (message) => {
           log('sweep.line', { message });
         },
       });
       logSweepStats(log, stats);
+
+      tiers = tiersAfterPass(tiers ?? NO_TIERS, {
+        attempted: stats.rotation ?? [],
+        quotes: stats.quotes,
+      });
+
+      const incomplete = incompleteStages(stats);
+      if (incomplete.length > 0) {
+        log('pass.incomplete', { pass, stages: incomplete, quoted: stats.quotesOk }, 'error');
+      }
+      if (stats.quotesOk === 0) {
+        log(
+          'pass.collectedNothing',
+          {
+            pass,
+            rows: stats.rowsSeen,
+            searchCalls: stats.searchCalls,
+            quoteCalls: stats.quoteCalls,
+            rateLimitHits: stats.rateLimitHits,
+          },
+          'error',
+        );
+      }
 
       const body = JSON.stringify(snapshot);
       writeSnapshot(config.snapshotPath, body);
@@ -496,12 +654,13 @@ export async function runCollector({
       row.published_release = await publishRelease(body);
       row.published_branch = await publishBranch(body);
 
-      coolDownMs = stats.quotesComplete ? 0 : nextCoolDown(coolDownMs);
+      coolDownMs = incomplete.length === 0 ? 0 : nextCoolDown(coolDownMs);
     } catch (err) {
       row.error = String(err?.stack ?? err);
       log('pass.failed', { pass, error: row.error }, 'error');
       coolDownMs = nextCoolDown(coolDownMs);
     } finally {
+      row.spacing_ms = plan?.spacingMs ?? null;
       row.finished_at = new Date(now()).toISOString();
       await writeRun(row);
       log('pass.done', { pass, ms: now() - startedAtMs, coolDownMs });
@@ -517,8 +676,8 @@ async function main() {
 
   log('collector.start', {
     budget: config.budget,
-    spacingMs: config.spacingMs,
-    spacingClamped: config.spacingClamped,
+    tierWindowMs: config.tierWindowMs,
+    retierEveryMs: config.retierEveryMs,
     currencies: config.currencies,
     snapshotPath: config.snapshotPath,
   });
@@ -526,7 +685,7 @@ async function main() {
   // Imported here, not at module load: the sweep resolves a workspace package from its build
   // output, and everything above must stay drivable without one.
   const { runSweep, loadPrior } = await import('./build.mjs');
-  const { persistHistory, writeRun } = createHistory({
+  const { persistHistory, readTiers, writeRun } = createHistory({
     url: config.supabaseUrl,
     key: config.supabaseKey,
     fetch,
@@ -550,6 +709,7 @@ async function main() {
       writeFileSync(path, body);
     },
     persistHistory,
+    readTiers,
     publishRelease,
     publishBranch,
     writeRun,

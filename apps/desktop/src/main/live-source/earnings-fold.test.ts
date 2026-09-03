@@ -37,7 +37,7 @@ function makeFold(overrides: Partial<EarningsFoldDeps> = {}): EarningsFold {
   });
 }
 
-function isTick(event: TapEvent): event is { kind: 'tick'; tick: LiveTick } {
+function isTick(event: TapEvent): event is Extract<TapEvent, { kind: 'tick' }> {
   return event.kind === 'tick';
 }
 
