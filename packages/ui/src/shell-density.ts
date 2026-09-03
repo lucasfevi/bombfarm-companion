@@ -26,7 +26,15 @@ export type ShellDensity = 'full' | 'actions-collapsed' | 'icon-tabs';
  */
 export const SHELL_ACTIONS_COLLAPSE_WIDTH = 1000;
 
-/** The same sum with the actions already down to their one 38px button: 687px. */
+/**
+ * The same sum with the actions already down to their one 38px button: 687px.
+ *
+ * No window reaches this today — the desktop's own minimum is 960px, which leaves 824px of bar
+ * even after the caption inset, and that is the stage above. It is kept because the sum it comes
+ * from is not fixed: every tab added pushes both widths up, and a sixth or seventh destination
+ * brings this one inside the range a window can be dragged to. The alternative is deleting it and
+ * writing it again on the day a tab is added, against a bar that has already started overlapping.
+ */
 export const SHELL_ICON_TABS_WIDTH = 700;
 
 export function shellDensityFor(availableWidth: number): ShellDensity {

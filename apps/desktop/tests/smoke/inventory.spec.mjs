@@ -67,6 +67,10 @@ async function goToInventory(page) {
 
   await page.getByRole('button', { name: 'Inventory' }).click();
   await page.waitForSelector('[data-testid="inventory-view"]', { timeout: 20_000 });
+  // Wait for the ROWS, not just the screen. The view mounts before the account arrives, so a
+  // caller reading a card count the moment this resolves could read 0 and then fail later against
+  // the real number — three runs in six on a clean tree. Every test in this file needs cards.
+  await page.waitForSelector('[data-testid="inventory-card"]', { timeout: 20_000 });
 }
 
 /** Every card in the screen's grids, across all groups. */
