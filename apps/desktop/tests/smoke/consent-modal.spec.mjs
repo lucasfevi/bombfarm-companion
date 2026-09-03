@@ -130,7 +130,7 @@ test.describe('consent modal smoke (Success Criterion "shown once, survives rest
         // The referral chip is the other one, and outlives the gate for the same reason. Which
         // code it carries is referral-link.test.tsx's to prove — asserting the text here would be
         // read as a disclosure-wording assertion by consent-smoke-text-drift.test.ts.
-        await expect(page.getByTestId('shell-referral')).toBeVisible();
+        await expect(await shellControl(page, 'shell-referral')).toBeVisible();
 
         // The gate is not a dead end, and the only way out of it is through the disclosure.
         await page.getByTestId('consent-gate-read-again').click();
