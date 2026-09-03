@@ -22,6 +22,7 @@ import {
   runCollector,
   runRowFrom,
 } from './market-snapshot/collect.mjs';
+import { splitRotation, tiersFromHistory } from './market-snapshot/quote-plan.mjs';
 
 const ENV = {
   SUPABASE_URL: 'https://history.example/',
@@ -69,6 +70,9 @@ const statsFixture = (overrides = {}) => ({
   quotedUtc: '2026-09-01T00:00:00.000Z',
   // Only the boots were quoted; the gem is an item the market answered without a price.
   quotes: new Map([['Coal Boots (Rare)', { BRL: { lowest: 12.5, median: 13, volume: 40 } }]]),
+  answeredUnpriced: [
+    { hashName: 'Topaz Gem', currency: 'BRL', quote: { lowest: null, median: null, volume: 0 } },
+  ],
   ...overrides,
 });
 
@@ -268,16 +272,48 @@ describe('the pass plans what it will quote', () => {
     expect(h.runs[0].spacing_ms).toBeGreaterThan(0);
   });
 
-  it('leaves the delay null on a pass that never got as far as planning one', async () => {
-    const h = harness({
-      runSweep: async () => {
-        throw new Error('sweep exploded');
-      },
+  /**
+   * Recorded per pass rather than logged, because the measurable trigger for sub-dividing the
+   * quoted tier is that it grows past roughly eighty items — which is a trend, and a log line is
+   * not trendable. Log-only would leave that trigger written down and unusable.
+   */
+  it('records both tier sizes on the run row', async () => {
+    const h = planningHarness({
+      readTiers: async () => ({
+        traded: new Set(['Traded Item']),
+        observed: new Set(listed),
+      }),
     });
     await runCollector(h.deps);
 
-    expect(h.runs[0].spacing_ms).toBeNull();
+    expect(h.runs[0].tier_a_count).toBe(1);
+    expect(h.runs[0].tier_b_count).toBe(1);
   });
+
+  it('counts an item being quoted for the first time into neither tier', async () => {
+    const h = planningHarness({
+      readTiers: async () => ({ traded: new Set(), observed: new Set(['Quiet Item']) }),
+    });
+    await runCollector(h.deps);
+
+    expect(h.plans[0].firstQuote).toEqual(['Traded Item']);
+    expect(h.runs[0].tier_a_count).toBe(0);
+    expect(h.runs[0].tier_b_count).toBe(1);
+  });
+
+  it.each(['spacing_ms', 'tier_a_count', 'tier_b_count'])(
+    'leaves %s null on a pass that never got as far as planning one',
+    async (column) => {
+      const h = harness({
+        runSweep: async () => {
+          throw new Error('sweep exploded');
+        },
+      });
+      await runCollector(h.deps);
+
+      expect(h.runs[0][column]).toBeNull();
+    },
+  );
 });
 
 describe('configuration read from the environment', () => {
@@ -359,9 +395,8 @@ describe('configuration read from the environment', () => {
 });
 
 describe('the rows a pass produces', () => {
-  it('writes no quote row for an item the market answered without a price', () => {
-    const rows = quoteRowsFrom(statsFixture());
-    expect(rows).toEqual([
+  it('writes one row per item the market answered for, priced or not', () => {
+    expect(quoteRowsFrom(statsFixture())).toEqual([
       {
         hash_name: 'Coal Boots (Rare)',
         currency: 'BRL',
@@ -370,8 +405,81 @@ describe('the rows a pass produces', () => {
         median: 13,
         volume: 40,
       },
+      {
+        hash_name: 'Topaz Gem',
+        currency: 'BRL',
+        quoted_at: '2026-09-01T00:00:00.000Z',
+        lowest: null,
+        median: null,
+        volume: 0,
+      },
     ]);
-    expect(rows.map((row) => row.hash_name)).not.toContain('Topaz Gem');
+  });
+
+  /**
+   * The reading is what places the item outside the rotation, and it has to outlive the process
+   * that took it — with no row at all the item had no history, so every restart quoted it again.
+   */
+  it('records a priceless answer as a null price rather than dropping it', () => {
+    const rows = quoteRowsFrom(statsFixture());
+    const gem = rows.find((row) => row.hash_name === 'Topaz Gem');
+
+    expect(gem).toBeDefined();
+    expect(gem.lowest).toBeNull();
+  });
+
+  /**
+   * The distinction the null row must not erase. An answer is a fact about the item; a pair the
+   * pass never got an answer for — failed, rate limited, or past the breaker — is a fact about the
+   * pass, and a row for one would claim a reading nobody took.
+   */
+  it('writes nothing for a pair the pass never got an answer for', () => {
+    const rows = quoteRowsFrom(statsFixture({ answeredUnpriced: [] }));
+    expect(rows.map((row) => row.hash_name)).toEqual(['Coal Boots (Rare)']);
+  });
+
+  /**
+   * The round trip that makes the reading worth taking: what this pass writes is what a re-tier
+   * reads back after a restart, when the in-memory membership is gone. Drop the null row and the
+   * item reads as one nothing has ever been asked about, which puts it back in the rotation.
+   */
+  describe('read back by a later re-tier', () => {
+    const listed = ['Coal Boots (Rare)', 'Topaz Gem'];
+    const tiersFromWrittenRows = (stats) => tiersFromHistory(quoteRowsFrom(stats));
+
+    it('retires the item the market answered without a price', () => {
+      const split = splitRotation(listed, tiersFromWrittenRows(statsFixture()));
+
+      expect(split.quote).toEqual(['Coal Boots (Rare)']);
+      expect(split.enumerationOnly).toEqual(['Topaz Gem']);
+      expect(split.firstQuote).toEqual([]);
+    });
+
+    it('leaves it looking never-asked-about when the row is dropped', () => {
+      const split = splitRotation(
+        listed,
+        tiersFromWrittenRows(statsFixture({ answeredUnpriced: [] })),
+      );
+
+      expect(split.quote).toEqual(listed);
+      expect(split.firstQuote).toEqual(['Topaz Gem']);
+    });
+
+    it('still does not grant the quoted tier, which needs a sale', () => {
+      const traded = statsFixture({
+        answeredUnpriced: [
+          {
+            hashName: 'Topaz Gem',
+            currency: 'BRL',
+            quote: { lowest: null, median: null, volume: 12 },
+          },
+        ],
+      });
+
+      expect([...tiersFromWrittenRows(statsFixture()).traded]).toEqual(['Coal Boots (Rare)']);
+      // A priceless answer that still reports sales is an item that trades, and joins on that.
+      expect([...tiersFromWrittenRows(traded).traded]).toContain('Topaz Gem');
+    });
   });
 
   it('carries the median and the volume the rotation already paid for', () => {
@@ -705,7 +813,7 @@ describe('the history transport', () => {
     expect(result.ok).toBe(true);
     expect(calls).toHaveLength(2);
     expect(calls[0].url).toBe('https://history.example/rest/v1/quote');
-    expect(JSON.parse(calls[0].init.body)).toHaveLength(1);
+    expect(JSON.parse(calls[0].init.body)).toHaveLength(quoteRowsFrom(statsFixture()).length);
     expect(calls[0].init.headers.Prefer).toBe('return=minimal');
     expect(calls[1].url).toBe('https://history.example/rest/v1/market_item?on_conflict=hash_name');
     expect(calls[1].init.headers.Prefer).toBe('resolution=merge-duplicates,return=minimal');

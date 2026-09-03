@@ -177,23 +177,34 @@ export function logSweepStats(log, stats) {
 }
 
 /**
- * One row per (item, currency) the pass actually quoted. An item the market answered without a
- * price contributes no row: "unquoted" and "quoted as unlisted" are different claims, and a null
- * row would erase the difference in the history forever.
+ * One row per (item, currency) the market answered for, priced or not.
+ *
+ * A priceless answer is a reading, so it is kept with a null `lowest` rather than dropped: it is
+ * the market saying it has nothing to quote for that item, which is what places the item outside
+ * the rotation. Dropping it left the item with no history at all, so every restart re-read it.
+ *
+ * What still contributes no row is a pair the pass never got an answer for — a failed request, a
+ * rate-limited one, or one the breaker stopped it reaching. Those say nothing about the item, and
+ * a row for one would claim a reading that was never taken.
  */
 export function quoteRowsFrom(stats) {
   const rows = [];
+  const row = (hashName, currency, quote) => ({
+    hash_name: hashName,
+    currency,
+    quoted_at: stats.quotedUtc,
+    lowest: quote.lowest,
+    median: quote.median,
+    volume: quote.volume,
+  });
+
   for (const [hashName, byCurrency] of stats.quotes) {
     for (const [currency, quote] of Object.entries(byCurrency)) {
-      rows.push({
-        hash_name: hashName,
-        currency,
-        quoted_at: stats.quotedUtc,
-        lowest: quote.lowest,
-        median: quote.median,
-        volume: quote.volume,
-      });
+      rows.push(row(hashName, currency, quote));
     }
+  }
+  for (const answer of stats.answeredUnpriced ?? []) {
+    rows.push(row(answer.hashName, answer.currency, answer.quote));
   }
   return rows;
 }
@@ -606,7 +617,8 @@ export async function runCollector({
             pass,
             quotable: quotable.length,
             rotation: plan.quote.length,
-            enumerationOnly: plan.enumerationOnly.length,
+            tierA: plan.tierACount,
+            tierB: plan.tierBCount,
             firstQuote: plan.firstQuote.length,
             enumerationCalls,
             callsPerPass: plan.callsPerPass,
@@ -660,7 +672,12 @@ export async function runCollector({
       log('pass.failed', { pass, error: row.error }, 'error');
       coolDownMs = nextCoolDown(coolDownMs);
     } finally {
+      // Off the plan rather than the sweep, so a pass that died mid-rotation still records the
+      // membership it was working from — and a pass that never planned records null, which says
+      // it got nowhere near deciding rather than claiming an empty board.
       row.spacing_ms = plan?.spacingMs ?? null;
+      row.tier_a_count = plan?.tierACount ?? null;
+      row.tier_b_count = plan?.tierBCount ?? null;
       row.finished_at = new Date(now()).toISOString();
       await writeRun(row);
       log('pass.done', { pass, ms: now() - startedAtMs, coolDownMs });

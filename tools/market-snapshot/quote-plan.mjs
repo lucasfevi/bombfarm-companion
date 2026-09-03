@@ -117,6 +117,11 @@ export function tiersAfterPass(tiers, { attempted, quotes }) {
  *
  * `currencyCount` multiplies the rotation into calls, because the quote endpoint is asked once per
  * item per currency and the pacing is a delay between calls, not between items.
+ *
+ * The two membership counts exclude the items being quoted for the first time, which belong to
+ * neither tier yet. Sub-dividing the quoted tier becomes worth doing once it passes roughly eighty
+ * items, and a count that drifted with however many items happened to be new that pass could not
+ * answer that.
  */
 export function planPass({
   hashNames,
@@ -134,7 +139,14 @@ export function planPass({
     searchDelayMs,
   });
 
-  return { ...split, ...pacing, hashNames: split.quote, delayMs: pacing.spacingMs };
+  return {
+    ...split,
+    ...pacing,
+    hashNames: split.quote,
+    delayMs: pacing.spacingMs,
+    tierACount: split.quote.length - split.firstQuote.length,
+    tierBCount: split.enumerationOnly.length,
+  };
 }
 
 export function planPacing({ budget, quoteCount, enumerationCalls, searchDelayMs }) {

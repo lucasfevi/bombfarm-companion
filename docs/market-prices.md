@@ -186,9 +186,23 @@ A read that fails leaves the membership the collector had; with none yet, the ro
 everything listed, which is what the budget alone would have bought.
 
 A row the enumeration turns up for the first time has no history to be placed by, so it is quoted
-once and placed by that result. A row the quote endpoint answers with nothing is placed by that
-too — the endpoint under-reports, and reading its silence as "still unknown" would put the row
-back in the rotation every pass forever.
+once and placed by that result. A row the quote endpoint answers *without a price* is placed by
+that too — the endpoint under-reports, and reading its silence as "still unknown" would put the
+row back in the rotation on every restart.
+
+**That answer is written down as a reading, with a null price.** `{"success":true}` and no
+`lowest_price` is the market saying it has nothing to quote for that row, which is a fact about
+the row and the thing that places it. A pair the pass never got an answer for — a failed request,
+a rate-limited one, one the breaker stopped it reaching — still writes nothing at all, because
+that is a fact about the pass and a row for it would claim a reading nobody took. The two are told
+apart at the source: the quote pass reports which pairs the endpoint *answered* for, separately
+from the ones that merely produced no price. The snapshot never sees these — a priceless entry
+there would date the row and defeat the inheritance a rate-limited pass depends on.
+
+Both tier sizes are recorded on the pass's own row, not only logged. Sub-dividing the quoted tier
+becomes worth doing once it passes roughly **80 items**, and that is a trend rather than a moment:
+a log line cannot answer it. The counts exclude rows being quoted for the first time, which belong
+to neither tier yet.
 
 **A row left to the enumeration reports `basis: 'converted'`, and inherits no earlier quote.** The
 inheritance above exists for a quote that is merely late; this one is retired, and no later pass
