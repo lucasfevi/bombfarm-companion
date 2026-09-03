@@ -124,6 +124,69 @@ describe('quoteNative', () => {
     expect(result.complete).toBe(true);
   });
 
+  /**
+   * Absent from `quotes` and present here are the same answer read two ways. The snapshot must not
+   * see it — a priceless entry there would date the row and defeat the inheritance a rate-limited
+   * pass depends on — while a caller keeping history has a reading worth writing down: the market
+   * saying it has nothing to quote for this item.
+   */
+  it('reports a priceless answer as a reading, with what the answer did hold', async () => {
+    const { fetchPriceOverview } = fetcherFrom({
+      'Gold Gloves (Legendary)': { ok: true, quote: { lowest: null, median: 14.5, volume: 3 } },
+    });
+
+    const result = await quoteNative(APP_ID, ['Gold Gloves (Legendary)'], ['BRL'], {
+      fetchPriceOverview,
+      sleep: noSleep,
+    });
+
+    expect(result.answeredUnpriced).toEqual([
+      {
+        hashName: 'Gold Gloves (Legendary)',
+        currency: 'BRL',
+        quote: { lowest: null, median: 14.5, volume: 3 },
+      },
+    ]);
+  });
+
+  it('reports nothing for a hash the endpoint did not answer for at all', async () => {
+    const { fetchPriceOverview } = fetcherFrom({
+      'Never Answered (Rare)': { ok: true, quote: null },
+      'Request Failed (Rare)': { ok: false, rateLimited: false },
+    });
+
+    const result = await quoteNative(
+      APP_ID,
+      ['Never Answered (Rare)', 'Request Failed (Rare)'],
+      ['BRL'],
+      { fetchPriceOverview, sleep: noSleep },
+    );
+
+    expect(result.unquoted).toBe(2);
+    expect(result.answeredUnpriced).toEqual([]);
+  });
+
+  it('reports nothing for the hashes the breaker stopped it reaching', async () => {
+    const fetchPriceOverview = vi.fn((url: string) => {
+      const hashName = decodeURIComponent(new URL(url).searchParams.get('market_hash_name') ?? '');
+      return Promise.resolve<QuoteFetchResult>(
+        hashName === 'Priceless (Rare)'
+          ? { ok: true, quote: { lowest: null, median: null, volume: null } }
+          : { ok: false, rateLimited: true },
+      );
+    });
+
+    const result = await quoteNative(
+      APP_ID,
+      ['Priceless (Rare)', 'Never Reached (Rare)'],
+      ['BRL'],
+      { fetchPriceOverview, sleep: noSleep, baseDelayMs: 1, maxConsecutiveRateLimits: 3 },
+    );
+
+    expect(result.complete).toBe(false);
+    expect(result.answeredUnpriced.map((answer) => answer.hashName)).toEqual(['Priceless (Rare)']);
+  });
+
   it('backs off on a rate limit and then continues', async () => {
     const waits: number[] = [];
     let limited = false;
