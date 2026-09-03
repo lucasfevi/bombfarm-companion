@@ -406,7 +406,7 @@ export const ptBR: Copy = {
   farmNavLabel: 'Farm',
   farmRefresh: 'Atualizar',
   farmRefreshBusy: 'Calculando…',
-  farmRefreshedAge: 'calculado {age}',
+  farmRefreshedAge: 'conta lida {age}',
   farmRefreshStale: 'desatualizado',
   farmUnavailableTitle: 'Ainda falta ler parte da sua conta',
   farmUnavailableDescription: 'O quadro precisa de todas as partes da sua conta. Abra o jogo com o companion em execução e deixe aberto por um instante.',

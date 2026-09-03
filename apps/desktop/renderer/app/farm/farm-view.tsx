@@ -301,7 +301,7 @@ function FarmScreen({
   const t = useCopy();
   const { lang } = useLocale();
   const farmCopy = useFarmCopy();
-  const { board, inputs, gate, computedAt } = snapshot;
+  const { board, inputs, gate, capturedAt } = snapshot;
 
   const screenCopy = useMemo(() => farmScreenCopy(farmCopy, t), [farmCopy, t]);
 
@@ -387,14 +387,14 @@ function FarmScreen({
     () => ({
       headerOverlay: (
         <FarmRefreshControl
-          computedAt={computedAt}
+          capturedAt={capturedAt}
           stale={refresh.stale}
           busy={refresh.busy}
           onRefresh={refresh.onRefresh}
         />
       ),
     }),
-    [computedAt, refresh],
+    [capturedAt, refresh],
   );
 
   const explorerData = useMemo(

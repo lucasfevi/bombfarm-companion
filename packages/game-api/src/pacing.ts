@@ -1,8 +1,8 @@
 import type { RequestOutcome } from './request.js';
 
 /**
- * Read pacing — single-flight with a min gap and cycle interval, cooldown getting bounded
- * backoff instead of a storm, and 401/403 halting into a distinct terminal state. Every value
+ * Read pacing — single-flight with a min gap and cycle interval, and two bounded backoff ladders
+ * instead of a storm: one for cooldown, one for 401/403. Every value
  * here is **unmeasured** — the
  * server's actual read-rate tolerance has never been measured (spec.md, Assumptions & Open
  * Questions). Each constant below carries its own provenance comment for exactly that reason: a
@@ -42,6 +42,16 @@ export const READ_PACING = {
   /** Unmeasured. Backoff ceiling — never wait longer than 15 minutes between retries. */
   backoffCapMs: 900_000,
 
+  /** Unmeasured. First wait after a 401/403 before the same credentials are tried again — one
+   *  ordinary cycle, so a transient rejection costs a single skipped read rather than every read
+   *  until the app is relaunched. */
+  authRetryStartMs: 60_000,
+
+  /** Unmeasured. Ceiling for the 401/403 ladder. A session the server keeps rejecting is retried
+   *  four times an hour, which is the whole difference between a stall that ends by itself and
+   *  one that ends only when the player notices and restarts. */
+  authRetryCapMs: 900_000,
+
   /** Reused verbatim from the internal automation prototype's request timeout. */
   requestTimeoutMs: 15_000,
 } as const;
@@ -62,29 +72,23 @@ export class PacingRefusedError extends Error {
   }
 }
 
-/** Thrown by `nextCycleDelayMs` while halted — the cycle must not schedule itself again until
- *  `resetAuth()` is called. */
-export class PacingHaltedError extends Error {
-  constructor() {
-    super('PacingHaltedError: the cycle is halted on an unresolved unauthorized response');
-    this.name = 'PacingHaltedError';
-  }
-}
-
 export interface PacingGate {
   /** Serialises every call through one queue, enforcing `minRequestGapMs` between starts.
    *  A repeat of the same `key` while a prior call for that key is still in flight is coalesced
    *  into it — one underlying call, every caller resolves to the same result. */
   run<T>(key: string, fn: () => Promise<T>): Promise<T>;
-  /** Feeds a request's outcome back into the ladder: `cooldown` trips backoff, `ok` resets it,
-   *  `unauthorized` halts the gate. Every other kind leaves pacing state untouched. */
+  /** Feeds a request's outcome back into the two ladders: `cooldown` trips the backoff window,
+   *  `unauthorized` trips the auth-retry window, `ok` clears both. Every other kind leaves
+   *  pacing state untouched. */
   observe(outcome: Pick<RequestOutcome, 'kind'>): void;
   readonly state: PacingState;
-  /** Throws `PacingHaltedError` while halted. Otherwise the configured cycle interval, or the
-   *  remaining backoff window if that is longer. */
+  /** Never throws, and never answers "not ever": the configured cycle interval, or whichever
+   *  open window — cooldown or auth-retry — outlasts it. A gate that refused to schedule at all
+   *  is what turned one rejected request into a stall only relaunching the app could end. */
   nextCycleDelayMs(focused: boolean): number;
-  /** The only two legitimate callers: a changed token file, or an explicit user
-   *  retry. Never a timer. */
+  /** Clears the auth-retry window immediately, ahead of its own expiry. The two legitimate
+   *  callers are a changed token file and an explicit user retry — never a timer, which is what
+   *  the ladder itself is for. */
   resetAuth(): void;
 }
 
@@ -93,11 +97,20 @@ export function createPacingGate(clock: PacingClock, cfg: typeof READ_PACING = R
   let lastStart: number | null = null;
   let consecutiveCooldowns = 0;
   let backoffUntil: number | null = null;
-  let halted = false;
+  let consecutiveUnauthorized = 0;
+  let authRetryAt: number | null = null;
   const inFlightByKey = new Map<string, Promise<unknown>>();
 
+  /** Whichever of the two windows is still open reads as remaining milliseconds; a closed one
+   *  reads as zero. Expiry is read from the clock rather than cleared by a timer, so a window
+   *  that nobody looked at while it lapsed has still lapsed. */
+  function remaining(until: number | null): number {
+    if (until === null) return 0;
+    return Math.max(0, until - clock.now());
+  }
+
   function computeState(): PacingState {
-    if (halted) return 'halted';
+    if (remaining(authRetryAt) > 0) return 'halted';
     if (backoffUntil !== null && clock.now() < backoffUntil) return { backoffUntil };
     return 'ready';
   }
@@ -137,7 +150,9 @@ export function createPacingGate(clock: PacingClock, cfg: typeof READ_PACING = R
 
     observe(outcome: Pick<RequestOutcome, 'kind'>): void {
       if (outcome.kind === 'unauthorized') {
-        halted = true;
+        consecutiveUnauthorized += 1;
+        const step = cfg.authRetryStartMs * cfg.backoffFactor ** (consecutiveUnauthorized - 1);
+        authRetryAt = clock.now() + Math.min(step, cfg.authRetryCapMs);
         return;
       }
       if (outcome.kind === 'cooldown') {
@@ -149,6 +164,10 @@ export function createPacingGate(clock: PacingClock, cfg: typeof READ_PACING = R
       if (outcome.kind === 'ok') {
         consecutiveCooldowns = 0;
         backoffUntil = null;
+        // A read the server answered is proof the credentials are live, so the auth ladder starts
+        // over rather than carrying a streak from a rejection the session has since recovered from.
+        consecutiveUnauthorized = 0;
+        authRetryAt = null;
       }
     },
 
@@ -157,19 +176,13 @@ export function createPacingGate(clock: PacingClock, cfg: typeof READ_PACING = R
     },
 
     nextCycleDelayMs(focused: boolean): number {
-      if (halted) {
-        throw new PacingHaltedError();
-      }
       const base = focused ? cfg.cycleForegroundMs : cfg.cycleBackgroundMs;
-      if (backoffUntil !== null) {
-        const remaining = backoffUntil - clock.now();
-        if (remaining > base) return remaining;
-      }
-      return base;
+      return Math.max(base, remaining(backoffUntil), remaining(authRetryAt));
     },
 
     resetAuth(): void {
-      halted = false;
+      consecutiveUnauthorized = 0;
+      authRetryAt = null;
     },
   };
 }
