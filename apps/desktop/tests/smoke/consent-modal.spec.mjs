@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { shellControl } from './shell-control.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..', '..');
@@ -120,8 +121,9 @@ test.describe('consent modal smoke (Success Criterion "shown once, survives rest
         // The one control that outlives the gate. It reads nothing and attaches to nothing, so
         // it is not part of what was just declined — and Settings, which carries the labelled
         // half, is unreachable from here.
-        await expect(page.getByTestId('shell-coffee')).toBeVisible();
-        await expect(page.getByTestId('shell-coffee')).toHaveAttribute(
+        const coffee = await shellControl(page, 'shell-coffee');
+        await expect(coffee).toBeVisible();
+        await expect(coffee).toHaveAttribute(
           'href',
           'https://buymeacoffee.com/lucasfevi',
         );
