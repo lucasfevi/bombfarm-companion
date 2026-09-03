@@ -192,12 +192,14 @@ Both parts get fresher, because the pass gets shorter for everyone.
 **What it actually bought, measured rather than projected.** The design projected a 47% cut in
 calls per pass on an estimate that half the market was untraded. Half was wrong:
 
-| | calls per pass | cadence at ~600 calls/day |
+| | calls per pass | cadence at a 550-call budget |
 | --- | --- | --- |
-| Uniform | 10 enumerate + 115 quotes = **125** | 5.0 h |
-| Traded rows only | 10 enumerate + 74 quotes = **84** | **3.4 h** |
+| Uniform | 10 enumerate + 115 quotes = **125** | 5.5 h |
+| Traded rows only | 10 enumerate + 74 quotes = **84** | **3.7 h** |
 
-**33%, not 47%** — a real saving and a smaller one than advertised. Two things the arithmetic does
+**33%, not 47%** — a real saving and a smaller one than advertised. The saving is the durable
+figure; the two cadences scale with whatever the budget is set to, and 550 is only what it was set
+to when this was measured. Two things the arithmetic does
 not capture are worth more than the difference. Spending individual quotes on rows with no trades
 at all was wrong on principle whatever the ratio turned out to be, and those rows lose nothing
 they were getting. And making the budget a total-call budget is the structural half: it is what
