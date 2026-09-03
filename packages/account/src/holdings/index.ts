@@ -1,9 +1,10 @@
-export { HoldingsColumn } from './holdings-column';
+export { HOLDINGS_COMPONENTS, HoldingsRow } from './holdings-row';
 export type {
-  HoldingsColumnLabels,
-  HoldingsColumnProps,
+  HoldingsComponentId,
   HoldingsComponentView,
   HoldingsEntry,
-} from './holdings-column';
-export { HOLDINGS_COMPONENTS, HoldingsView } from './holdings-view';
-export type { HoldingsComponentId, HoldingsLabels, HoldingsViewProps } from './holdings-view';
+  HoldingsRowLabels,
+  HoldingsRowProps,
+} from './holdings-row';
+export { HoldingsView } from './holdings-view';
+export type { HoldingsLabels, HoldingsViewProps } from './holdings-view';

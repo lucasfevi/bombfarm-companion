@@ -390,7 +390,7 @@ export const en = {
   accountBagTabs: 'Bag tabs',
 
   accountHoldingsTotal: 'What this account could sell',
-  accountHoldingsPartialTotal: 'Part of what this account could sell',
+  accountHoldingsPartial: 'part of the account only',
   accountHoldingsCoverage: '{priced} of {eligible} sellable things priced right now',
   accountHoldingsMissing: 'Not counted here: {rows}.',
   accountHoldingsPricesUpdated: 'prices {age}',

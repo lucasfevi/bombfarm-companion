@@ -4,9 +4,14 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import type { AccountFidelity, AccountPayload, AccountView as AccountViewData } from '@bombfarm/contracts';
 import type { MarketEntry, MarketSnapshot } from '@bombfarm/pricing';
 import { SKIN_CATEGORY, categoryKey, heroPriceKey, priceKey } from '@bombfarm/pricing';
+import { HoldingsRow, type HoldingsComponentId } from '@bombfarm/account/holdings';
+import { Accordion } from '@bombfarm/ui';
 import { en } from '../../lib/copy/en';
 import type { AccountViewState } from '../../lib/account/use-account-view';
 import type { MarketState } from '../../lib/market/market-store';
+import { accountFactsFrom } from '../../lib/account/account-facts';
+import { accountHoldingsFrom, holdingsComponents } from '../../lib/account/account-holdings';
+import { accountHoldingsLabels } from './account-labels';
 import { AccountView } from './account-view';
 
 // `useCopy()`/`useLocale()` are hooks over a context this test never mounts a provider for, and
@@ -152,6 +157,38 @@ function html(): string {
   return renderToStaticMarkup(createElement(AccountView, { onOpenInventory: () => {} }));
 }
 
+/**
+ * One holdings row with its disclosure already open — what a reader sees after clicking it. A
+ * static render cannot click, so the open state comes from the accordion the row sits in; the row
+ * is fed the very components the screen builds, so what it lists is what the screen would list.
+ */
+function openRow(id: HoldingsComponentId): string {
+  const state = accountState.current;
+  if (state.status !== 'loaded') throw new Error('no account to draw a row from');
+  const facts = accountFactsFrom(state.view);
+  const snapshotNow = marketState.current.status === 'ready' ? marketState.current.view.snapshot : null;
+  const components = holdingsComponents(
+    accountHoldingsFrom(facts.holdings, snapshotNow),
+    facts.holdings.heroes,
+    'en',
+  );
+  const labels = accountHoldingsLabels(en, 'en');
+  return renderToStaticMarkup(
+    createElement(Accordion.Root, {
+      multiple: true,
+      defaultValue: [id],
+      children: createElement(HoldingsRow, {
+        id,
+        component: components[id],
+        currency: components.currency,
+        labels: labels.components[id],
+        amount: labels.amount,
+        unpriced: labels.unpriced,
+      }),
+    }),
+  );
+}
+
 /** Every occurrence of a repeated `data-testid` slot, in document order. */
 function slots(markup: string, testId: string): string[] {
   return [...markup.matchAll(new RegExp(`data-testid="${testId}"[^>]*>([^<]*)<`, 'g'))].map(
@@ -239,21 +276,53 @@ describe('the Account screen', () => {
   });
 
   it('claims the whole account only while every component was read', () => {
-    expect(html()).toContain(en.accountHoldingsTotal);
+    const markup = html();
+    expect(markup).toContain(en.accountHoldingsTotal);
+    expect(markup).not.toContain(en.accountHoldingsPartial);
   });
 
-  it('stops claiming the whole account, and names what is missing, once a component is unread', () => {
+  it('qualifies the figure itself, and names what is missing, once a component is unread', () => {
     accountState.current = loaded(payloadOf(resolvedFidelity({ items: { status: 'missing' } })));
     const markup = html();
-    expect(markup).toContain(en.accountHoldingsPartialTotal);
-    expect(markup).not.toContain(en.accountHoldingsTotal);
+    // The section title is fixed now, so the qualifier travels with the number it qualifies —
+    // between the figure and the rows, where a reader cannot take the sum for the whole account.
+    expect(markup).toContain(en.accountHoldingsPartial);
+    expect(markup.indexOf(en.accountHoldingsPartial)).toBeGreaterThan(
+      markup.indexOf('data-testid="account-holdings-total"'),
+    );
+    expect(markup.indexOf(en.accountHoldingsPartial)).toBeLessThan(
+      markup.indexOf('data-testid="account-holdings-inventory"'),
+    );
+    expect(markup).toContain(en.accountHoldingsTotal);
     expect(markup).toContain('account-holdings-inventory-withheld');
+  });
+
+  it('draws the three components as three rows, one line each and nothing that can reflow', () => {
+    const markup = html();
+    const section = markup.slice(
+      markup.indexOf('data-testid="account-holdings"'),
+      markup.indexOf('data-testid="account-screen-identity"'),
+    );
+
+    for (const id of ['inventory', 'heroes', 'skins'] as const) {
+      expect(slots(section, `account-holdings-${id}`)).toHaveLength(1);
+    }
+    expect(section).toContain('class="flex flex-col gap-1"');
+    expect(section).not.toContain('auto-fit');
   });
 });
 
 describe('the things each holdings component is made of', () => {
+  it('keeps them behind the row disclosure until it is opened', () => {
+    const markup = html();
+
+    expect(slots(markup, 'account-holdings-heroes-entry')).toEqual([]);
+    expect(markup).not.toContain('account-holdings-heroes-entries');
+    expect(slots(openRow('heroes'), 'account-holdings-heroes-entry')).toHaveLength(2);
+  });
+
   it('depicts every sellable hero the way the rest of the app depicts one', () => {
-    const [vex, nim] = entryChunks(html(), 'heroes');
+    const [vex, nim] = entryChunks(openRow('heroes'), 'heroes');
 
     expect(vex).toContain('alt="Vex"');
     expect(vex).toContain('>S<');
@@ -264,14 +333,14 @@ describe('the things each holdings component is made of', () => {
   });
 
   it('shows what it knows about a hero the roster told it less about, and crashes on none of it', () => {
-    const [, nim] = entryChunks(html(), 'heroes');
+    const [, nim] = entryChunks(openRow('heroes'), 'heroes');
 
     expect(nim).toContain('alt="Nim"');
     expect(nim).not.toContain('Lv 42');
   });
 
   it('pairs each depicted hero with its own price, not with the list as a whole', () => {
-    const [vex, nim] = entryChunks(html(), 'heroes');
+    const [vex, nim] = entryChunks(openRow('heroes'), 'heroes');
 
     expect(vex).toContain('R$20.00');
     expect(vex).not.toContain(en.accountHoldingsUnpriced);
@@ -280,7 +349,7 @@ describe('the things each holdings component is made of', () => {
   });
 
   it('leaves the hero the game forbids selling out of the list, as it is out of the figure', () => {
-    const markup = html();
+    const markup = openRow('heroes');
     expect(markup).not.toContain('>Bound<');
     expect(slots(markup, 'account-holdings-heroes-entry')).toHaveLength(2);
   });
@@ -288,7 +357,7 @@ describe('the things each holdings component is made of', () => {
   it('keeps a sellable hero the market lists nothing for, and marks it rather than dropping it', () => {
     // The coverage line reads "1 of 2 sellable heroes priced"; the marked entry is what says
     // WHICH of the two the figure left out.
-    const markup = html();
+    const markup = openRow('heroes');
     expect(slots(markup, 'account-holdings-heroes-entry-amount')).toEqual(['R$20.00']);
     expect(slots(markup, 'account-holdings-heroes-entry-unpriced')).toEqual([
       en.accountHoldingsUnpriced,
@@ -300,26 +369,32 @@ describe('the things each holdings component is made of', () => {
       ...payloadOf(),
       heroes: [{ id: 'h1', rarity: HERO_RARITY, skin: 0, marketable: true }],
     });
-    const [only] = entryChunks(html(), 'heroes');
+    const [only] = entryChunks(openRow('heroes'), 'heroes');
 
     expect(only).toContain('alt="—"');
     expect(only).toContain('>—<');
   });
 
   it('lists a bought skin by the listing it appears under, and depicts nothing for it', () => {
-    const markup = html();
+    const markup = openRow('skins');
     expect(slots(markup, 'account-holdings-skins-entry-name')).toEqual(['Forest Warden Skin']);
     expect(slots(markup, 'account-holdings-skins-entry-detail')).toEqual([]);
     expect(slots(markup, 'account-holdings-skins-entry-leading')).toEqual([]);
     expect(slots(markup, 'account-holdings-skins-entry-amount')).toEqual(['R$7.00']);
   });
 
-  it('leaves the inventory column its figure and its link, and no list of dozens of rows', () => {
+  it('leaves the inventory row its figure and its link, and no disclosure that opens onto nothing', () => {
     const markup = html();
+    const inventory = markup.slice(
+      markup.indexOf('data-testid="account-holdings-inventory"'),
+      markup.indexOf('data-testid="account-holdings-heroes"'),
+    );
+
     expect(slots(markup, 'account-holdings-inventory-entry')).toEqual([]);
     expect(markup).not.toContain('account-holdings-inventory-entries');
+    expect(inventory).not.toContain('aria-expanded');
     expect(markup).toContain('account-holdings-inventory-amount');
-    expect(markup).toContain('account-holdings-inventory-link');
+    expect(inventory).toContain('account-holdings-inventory-link');
     expect(markup).toContain(en.accountHoldingsInventoryLink);
   });
 });

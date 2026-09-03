@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react';
-import { cn } from '@bombfarm/ui';
+import { Accordion, accordionRecipe, cn } from '@bombfarm/ui';
+
+export const HOLDINGS_COMPONENTS = ['inventory', 'heroes', 'skins'] as const;
+export type HoldingsComponentId = (typeof HOLDINGS_COMPONENTS)[number];
 
 export interface HoldingsEntry {
   /** Already resolved by the host — this package names nothing itself. */
@@ -36,49 +39,66 @@ export interface HoldingsComponentView {
   /** True when this component's account data could not be read at all. */
   withheld: boolean;
   /**
-   * What the component holds, in the order it was priced. Empty leaves the column a figure alone,
-   * which is what a component holding more rows than a column can carry does — it hands the reader
-   * an `action` out to the screen that lists them instead.
+   * What the component holds, in the order it was priced. Empty leaves the row its figure alone and
+   * no disclosure to open, which is what a component holding more rows than a list can carry does —
+   * it hands the reader an `action` out to the screen that lists them instead.
    */
   entries: readonly HoldingsEntry[];
 }
 
-export interface HoldingsColumnLabels {
+export interface HoldingsRowLabels {
   title: string;
-  /** How much of the component the figure above it actually covers. */
+  /** How much of the component the figure beside it actually covers. */
   coverage: (priced: number, eligible: number) => string;
   /** Stands in for the figure when the component's account data could not be read. */
   withheld: string;
 }
 
-export interface HoldingsColumnProps {
-  testId: string;
+export interface HoldingsRowProps {
+  id: HoldingsComponentId;
   component: HoldingsComponentView;
   currency: string;
-  labels: HoldingsColumnLabels;
+  labels: HoldingsRowLabels;
   amount: (value: number, currency: string) => string;
   /** Stands in for an entry's figure when the market is listing nothing for it. */
   unpriced: string;
-  /** Somewhere for the column to lead: one app routes, the other switches a tab. */
+  /** Somewhere for the row to lead: one app routes, the other switches a tab. */
   action?: ReactNode;
   className?: string;
 }
 
+/** A row that offers no disclosure still wears the disclosure's chrome, so the three read as one set. */
+const staticHeaderClass = cn(
+  accordionRecipe({ tone: 'row', size: 'compact' }),
+  'min-w-0 cursor-default select-text',
+);
+
+/** The revealed list, continuing the accent rail the row above it carries. */
+const entriesClass =
+  'm-0 flex list-none flex-col gap-0.5 border border-t-0 border-line border-l-[3px] border-l-accent bg-bg-2 px-2.5 py-2';
+
+function rowTestId(id: HoldingsComponentId): string {
+  return `account-holdings-${id}`;
+}
+
 /**
- * One component of what the account could sell, over the count that figure reaches, above the
- * things the figure is made of.
+ * One component of what the account could sell, on one line: its name, how much of it the figure
+ * reaches, and the figure.
  *
- * The coverage line is mandatory rather than optional decoration. Only some owned things are quoted
- * at any moment, so the figure is always of a subset and a bare number would read as the whole
- * component. The entries are what make that line investigable: an entry the market is listing
- * nothing for is printed and marked, never dropped, so "1 of 2 priced" can be read as *which* one
- * rather than taken on trust.
+ * The coverage is part of the line rather than optional decoration. Only some owned things are
+ * quoted at any moment, so the figure is always of a subset and a bare number would read as the
+ * whole component.
  *
- * A withheld column prints its notice in the figure's place instead: there is no number, no list,
- * and a zero would claim the component is worth nothing rather than unread.
+ * What the figure is made of sits behind the row's own disclosure, closed until asked for: the
+ * three rows have to read identically at any width, and a list unrolled beneath one of them was
+ * what made the section hard to parse. A component with no entries offers no disclosure at all —
+ * an empty one that opens onto nothing is worse than none.
+ *
+ * A withheld row prints its notice in the figure's place instead: there is no number, no list, and
+ * a zero would claim the component is worth nothing rather than unread.
  */
-export function HoldingsColumn({
-  testId,
+export function HoldingsRow({
+  id,
   component,
   currency,
   labels,
@@ -86,36 +106,57 @@ export function HoldingsColumn({
   unpriced,
   action,
   className,
-}: HoldingsColumnProps) {
-  return (
-    <div data-testid={testId} className={cn('flex min-w-0 flex-col gap-1.5 py-2.5', className)}>
-      <span className="flex min-w-0 items-baseline gap-2">
-        <span className="truncate text-sm text-ink">{labels.title}</span>
-        {action}
-      </span>
+}: HoldingsRowProps) {
+  const testId = rowTestId(id);
+  const entries = component.withheld ? [] : component.entries;
+  const header = (
+    <>
+      <span className="min-w-0 flex-1 truncate text-left text-sm text-ink">{labels.title}</span>
       {component.withheld ? (
-        <span data-testid={`${testId}-withheld`} className="text-sm text-warn">
+        <span data-testid={`${testId}-withheld`} className="shrink-0 text-sm text-warn">
           {labels.withheld}
         </span>
       ) : (
         <>
-          <span className="flex flex-col gap-0.5">
-            <span
-              data-testid={`${testId}-amount`}
-              className="text-sm leading-none font-semibold tabular-nums text-ink"
-            >
-              {amount(component.amount, currency)}
-            </span>
-            <span data-testid={`${testId}-coverage`} className="text-[11px] text-muted">
-              {labels.coverage(component.priced, component.eligible)}
-            </span>
+          <span
+            data-testid={`${testId}-coverage`}
+            className="shrink-0 text-[11px] whitespace-nowrap text-muted"
+          >
+            {labels.coverage(component.priced, component.eligible)}
           </span>
-          {component.entries.length === 0 ? null : (
-            <ul
-              data-testid={`${testId}-entries`}
-              className="m-0 flex list-none flex-col gap-0.5 border-t border-line pt-1.5 pl-0"
-            >
-              {component.entries.map((entry, position) => (
+          {/* Mono, because the three figures now stack: the sans face has no tabular figures, so
+              `tabular-nums` alone would leave the digits of one row not lining up with the next. */}
+          <span
+            data-testid={`${testId}-amount`}
+            className="shrink-0 font-mono font-semibold tabular-nums text-ink"
+          >
+            {amount(component.amount, currency)}
+          </span>
+        </>
+      )}
+    </>
+  );
+
+  return (
+    <div data-testid={testId} className={cn('min-w-0', className)}>
+      {entries.length === 0 ? (
+        // The action takes the trailing slot the chevron holds on the rows that open, so the three
+        // stay the same shape and the same width.
+        <div className={staticHeaderClass}>
+          {header}
+          {action}
+        </div>
+      ) : (
+        <Accordion.Item value={id}>
+          <div className="flex min-w-0 items-center gap-2">
+            <Accordion.Trigger tone="row" size="compact" className="min-w-0 flex-1">
+              {header}
+            </Accordion.Trigger>
+            {action}
+          </div>
+          <Accordion.Panel>
+            <ul data-testid={`${testId}-entries`} className={entriesClass}>
+              {entries.map((entry, position) => (
                 <li
                   key={`${String(position)}-${entry.name}`}
                   data-testid={`${testId}-entry`}
@@ -164,8 +205,8 @@ export function HoldingsColumn({
                 </li>
               ))}
             </ul>
-          )}
-        </>
+          </Accordion.Panel>
+        </Accordion.Item>
       )}
     </div>
   );

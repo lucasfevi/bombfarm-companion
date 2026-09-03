@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { HoldingsView } from '@bombfarm/account/holdings';
+import { HoldingsRow, HoldingsView, type HoldingsComponentId } from '@bombfarm/account/holdings';
+import { Accordion } from '@bombfarm/ui';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import type { RarityKey } from '@bombfarm/domain/model';
 import type { CatalogView, HoldingsTally, MarketEntry, MarketSnapshot } from '@bombfarm/pricing';
@@ -186,6 +187,40 @@ function renderSection(
   );
 }
 
+/**
+ * One row of the section with its disclosure already open — what a reader sees after clicking it.
+ * A static render cannot click, so the open state comes from the accordion the row sits in, and the
+ * row is fed the same components the section itself is built from.
+ */
+function openRow(
+  id: HoldingsComponentId,
+  inventory: readonly InventoryViewItem[] | null,
+  skinsWorn: readonly number[] | null,
+  heroes: readonly HoldingsHero[] | null = null,
+  lang: Lang = 'en',
+): string {
+  const components = holdingsComponents(
+    holdingsOf(inventory, skinsWorn, SNAPSHOT, heroes),
+    heroes,
+    lang,
+  );
+  const labels = holdingsLabels(STRINGS[lang], lang);
+  return renderToStaticMarkup(
+    createElement(Accordion.Root, {
+      multiple: true,
+      defaultValue: [id],
+      children: createElement(HoldingsRow, {
+        id,
+        component: components[id],
+        currency: components.currency,
+        labels: labels.components[id],
+        amount: labels.amount,
+        unpriced: labels.unpriced,
+      }),
+    }),
+  );
+}
+
 describe('account holdings — the three components the section reads', () => {
   it('prices the inventory in the snapshot currency, over the items the game permits selling', () => {
     expect(tallyOf(holdingsOf(INVENTORY, wornBy(ROSTER)).inventory)).toEqual({
@@ -270,12 +305,20 @@ describe('account holdings — what reaches the view', () => {
     expect(slot(html, 'account-holdings-skins-coverage')).toBe('1 of 1 bought skins priced');
   });
 
-  it('heads the components with their sum and disowns it while heroes cannot be read', () => {
+  it('heads the components with their sum and qualifies it while heroes cannot be read', () => {
     expect(slot(html, 'account-holdings-total')).toBe('R$40.00');
-    expect(slot(html, 'account-holdings-caption')).toBe(STRINGS.en.accountHoldingsPartialTotal);
+    expect(slot(html, 'account-holdings-partial')).toBe(STRINGS.en.accountHoldingsPartial);
     expect(slot(html, 'account-holdings-missing')).toBe(
       `Not counted here: ${STRINGS.en.accountHoldingsHeroes}.`,
     );
+  });
+
+  it('leaves the figure unqualified, under the same title, once every component was read', () => {
+    const whole = renderSection(INVENTORY, wornBy(ROSTER), priceableHeroes(ROSTER));
+
+    expect(slot(whole, 'account-holdings-partial')).toBeNull();
+    expect(whole).toContain(STRINGS.en.accountHoldingsTotal);
+    expect(html).toContain(STRINGS.en.accountHoldingsTotal);
   });
 
   it('prints the heroes notice in place of a figure, so an unread component is not worth zero', () => {
@@ -299,9 +342,7 @@ describe('account holdings — what reaches the view', () => {
   it('speaks Portuguese when the app does', () => {
     const portuguese = renderSection(INVENTORY, wornBy(ROSTER), null, 'pt');
 
-    expect(slot(portuguese, 'account-holdings-caption')).toBe(
-      STRINGS.pt.accountHoldingsPartialTotal,
-    );
+    expect(slot(portuguese, 'account-holdings-partial')).toBe(STRINGS.pt.accountHoldingsPartial);
     expect(slot(portuguese, 'account-holdings-total')).toBe('R$ 40,00');
     expect(slot(portuguese, 'account-holdings-inventory-coverage')).toBe(
       '1 de 2 itens negociáveis com preço',
@@ -311,10 +352,31 @@ describe('account holdings — what reaches the view', () => {
 
 describe('account holdings — what each component is made of', () => {
   const heroes = priceableHeroes(ROSTER);
-  const html = renderSection(INVENTORY, [ROYAL_SENTINEL, FOREST_WARDEN], heroes);
+  const worn = [ROYAL_SENTINEL, FOREST_WARDEN];
+  const html = renderSection(INVENTORY, worn, heroes);
+  const openHeroes = openRow('heroes', INVENTORY, worn, heroes);
+  const openSkins = openRow('skins', INVENTORY, worn, heroes);
+
+  it('reveals its entries only once the row disclosure is opened', () => {
+    expect(slots(html, 'account-holdings-heroes-entry-name')).toEqual([]);
+    expect(slot(html, 'account-holdings-heroes-entries')).toBeNull();
+    expect(slots(openHeroes, 'account-holdings-heroes-entry')).toHaveLength(2);
+  });
+
+  it('offers no disclosure on the inventory row, which has no list to reveal', () => {
+    const inventory = html.slice(
+      html.indexOf('data-testid="account-holdings-inventory"'),
+      html.indexOf('data-testid="account-holdings-heroes"'),
+    );
+
+    expect(inventory).not.toContain('aria-expanded');
+    expect(html.slice(html.indexOf('data-testid="account-holdings-heroes"'))).toContain(
+      'aria-expanded="false"',
+    );
+  });
 
   it('depicts a hero the way the rest of the planner depicts one', () => {
-    const [aria, cyra] = entryChunks(html, 'heroes');
+    const [aria, cyra] = entryChunks(openHeroes, 'heroes');
 
     expect(aria).toContain('alt="Aria"');
     expect(aria).toContain('>S<');
@@ -325,14 +387,14 @@ describe('account holdings — what each component is made of', () => {
   });
 
   it('shows what it knows about a hero the roster told it less about, and crashes on none of it', () => {
-    const [, cyra] = entryChunks(html, 'heroes');
+    const [, cyra] = entryChunks(openHeroes, 'heroes');
 
     expect(cyra).toContain('alt="Cyra"');
     expect(cyra).not.toContain('Lv 42');
   });
 
   it('pairs each depicted hero with its own price, not with the list as a whole', () => {
-    const [aria, cyra] = entryChunks(html, 'heroes');
+    const [aria, cyra] = entryChunks(openHeroes, 'heroes');
 
     expect(aria).toContain('R$50.00');
     expect(aria).not.toContain(STRINGS.en.accountHoldingsUnpriced);
@@ -341,46 +403,47 @@ describe('account holdings — what each component is made of', () => {
   });
 
   it('leaves the hero the game forbids selling out of the list, as it is out of the figure', () => {
-    expect(html).not.toContain('Bran');
-    expect(slots(html, 'account-holdings-heroes-entry')).toHaveLength(2);
+    expect(openHeroes).not.toContain('Bran');
+    expect(slots(openHeroes, 'account-holdings-heroes-entry')).toHaveLength(2);
   });
 
   it('pairs each hero with its own price, so two identical figures are still two heroes', () => {
-    expect(slots(html, 'account-holdings-heroes-entry-amount')).toEqual(['R$50.00']);
+    expect(slots(openHeroes, 'account-holdings-heroes-entry-amount')).toEqual(['R$50.00']);
     expect(slot(html, 'account-holdings-heroes-amount')).toBe('R$50.00');
     expect(slot(html, 'account-holdings-heroes-coverage')).toBe('1 of 2 sellable heroes priced');
   });
 
   it('keeps an entry the market is listing nothing for, and marks it rather than dropping it', () => {
-    // "1 of 2 sellable heroes priced" is only investigable if the unpriced one is on screen: Cyra
-    // is the second entry, and the marker is what says which of the two the figure left out.
-    expect(slots(html, 'account-holdings-heroes-entry-unpriced')).toEqual([
+    // "1 of 2 sellable heroes priced" is only investigable if the unpriced one is on screen once
+    // the row is opened: Cyra is the second entry, and the marker says which of the two the figure
+    // left out.
+    expect(slots(openHeroes, 'account-holdings-heroes-entry-unpriced')).toEqual([
       STRINGS.en.accountHoldingsUnpriced,
     ]);
-    expect(slots(html, 'account-holdings-skins-entry-unpriced')).toEqual([
+    expect(slots(openSkins, 'account-holdings-skins-entry-unpriced')).toEqual([
       STRINGS.en.accountHoldingsUnpriced,
     ]);
     expect(slot(html, 'account-holdings-skins-coverage')).toBe('1 of 2 bought skins priced');
   });
 
   it('lists a skin by the listing it appears under, and depicts nothing for it', () => {
-    expect(slots(html, 'account-holdings-skins-entry-name')).toEqual([
+    expect(slots(openSkins, 'account-holdings-skins-entry-name')).toEqual([
       'Forest Warden Skin',
       'Royal Sentinel Skin',
     ]);
-    expect(slots(html, 'account-holdings-skins-entry-detail')).toEqual([]);
-    expect(slots(html, 'account-holdings-skins-entry-leading')).toEqual([]);
-    expect(slots(html, 'account-holdings-skins-entry-amount')).toEqual(['R$30.00']);
+    expect(slots(openSkins, 'account-holdings-skins-entry-detail')).toEqual([]);
+    expect(slots(openSkins, 'account-holdings-skins-entry-leading')).toEqual([]);
+    expect(slots(openSkins, 'account-holdings-skins-entry-amount')).toEqual(['R$30.00']);
   });
 
   it('drops a worn skin index the table cannot name, which no price could exist for', () => {
-    const unnamed = renderSection(INVENTORY, [ROYAL_SENTINEL, 99], heroes);
+    const unnamed = openRow('skins', INVENTORY, [ROYAL_SENTINEL, 99], heroes);
 
     expect(slots(unnamed, 'account-holdings-skins-entry-name')).toEqual(['Royal Sentinel Skin']);
     expect(slot(unnamed, 'account-holdings-skins-coverage')).toBe('1 of 1 bought skins priced');
   });
 
-  it('leaves the inventory column its figure and its link, and no list of dozens of rows', () => {
+  it('leaves the inventory row its figure and its link, and no list of dozens of things', () => {
     const withLink = renderToStaticMarkup(
       createElement(HoldingsView, {
         ...holdingsComponents(
@@ -400,7 +463,7 @@ describe('account holdings — what each component is made of', () => {
   });
 
   it('says the same things in Portuguese, down to the rarity and the unpriced marker', () => {
-    const portuguese = renderSection(INVENTORY, [ROYAL_SENTINEL, FOREST_WARDEN], heroes, 'pt');
+    const portuguese = openRow('heroes', INVENTORY, worn, heroes, 'pt');
     const [aria, cyra] = entryChunks(portuguese, 'heroes');
 
     expect(aria).toContain('Raro');
@@ -461,7 +524,7 @@ describe('the section drawn with nothing imported', () => {
       expect(slot(html, `account-holdings-${component}-coverage`)).toBeNull();
       expect(slot(html, `account-holdings-${component}-entries`)).toBeNull();
     }
-    expect(slot(html, 'account-holdings-caption')).toBe(STRINGS.pt.accountHoldingsPartialTotal);
+    expect(slot(html, 'account-holdings-partial')).toBe(STRINGS.pt.accountHoldingsPartial);
   });
 
   it('still says both things a reader would otherwise get wrong', () => {

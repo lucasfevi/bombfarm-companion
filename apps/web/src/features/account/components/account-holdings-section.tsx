@@ -7,7 +7,7 @@ import { SITE_SECTION_HREF } from '@/shared/lib/site-sections';
 import { useAccountHoldings } from '../model/use-account-holdings';
 
 /**
- * The inventory column's link opens the Inventory as the player last left it — no filter in the URL
+ * The inventory row's link opens the Inventory as the player last left it — no filter in the URL
  * and nothing written to the stored view — because the figure beside it is over the WHOLE
  * inventory, and a link that narrowed the screen would land the reader on a smaller number than the
  * one they clicked.

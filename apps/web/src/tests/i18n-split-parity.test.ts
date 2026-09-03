@@ -647,7 +647,7 @@ const KEYS_ADDED: readonly string[] = [
    * value is unconstrained by the comparison.
    */
   'accountHoldingsTotal',
-  'accountHoldingsPartialTotal',
+  'accountHoldingsPartial',
   'accountHoldingsCoverage',
   'accountHoldingsMissing',
   'accountHoldingsUnpriced',

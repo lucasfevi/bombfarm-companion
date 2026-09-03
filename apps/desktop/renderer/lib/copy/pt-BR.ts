@@ -385,7 +385,7 @@ export const ptBR: Copy = {
   accountBagTabs: 'Abas da bolsa',
 
   accountHoldingsTotal: 'O que esta conta poderia vender',
-  accountHoldingsPartialTotal: 'Parte do que esta conta poderia vender',
+  accountHoldingsPartial: 'apenas parte da conta',
   accountHoldingsCoverage: '{priced} de {eligible} coisas vendáveis com preço agora',
   accountHoldingsMissing: 'Fora desta conta: {rows}.',
   accountHoldingsPricesUpdated: 'preços {age}',

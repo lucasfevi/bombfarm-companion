@@ -114,8 +114,8 @@ export function accountHoldingsLabels(t: Copy, locale: AppLocale): HoldingsLabel
   });
 
   return {
-    total: t.accountHoldingsTotal,
-    partialTotal: t.accountHoldingsPartialTotal,
+    title: t.accountHoldingsTotal,
+    partial: t.accountHoldingsPartial,
     amount: (value, currency) => formatMoney(value, locale, currency),
     coverage: (priced, eligible) => sub(t.accountHoldingsCoverage, { priced, eligible }),
     missing: (components) =>

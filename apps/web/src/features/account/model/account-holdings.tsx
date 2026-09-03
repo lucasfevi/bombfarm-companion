@@ -179,9 +179,9 @@ function skinEntries(skins: SkinsTally): HoldingsEntry[] {
 }
 
 /**
- * The three columns the holdings section draws, each over what its figure is made of.
+ * The three rows the holdings section draws, each over what its figure is made of.
  *
- * The inventory column lists nothing: it holds dozens of rows, more than a column can carry, and
+ * The inventory row lists nothing: it holds dozens of things, more than a disclosure can carry, and
  * the Inventory screen its link leads to is what lists them.
  */
 export function holdingsComponents(
@@ -211,8 +211,8 @@ export function holdingsLabels(strings: Strings, lang: Lang): HoldingsLabels {
   });
 
   return {
-    total: strings.accountHoldingsTotal,
-    partialTotal: strings.accountHoldingsPartialTotal,
+    title: strings.accountHoldingsTotal,
+    partial: strings.accountHoldingsPartial,
     amount: (value, currency) => formatMoney(value, lang, currency),
     coverage: (priced, eligible) => sub(strings.accountHoldingsCoverage, { priced, eligible }),
     missing: (components) =>

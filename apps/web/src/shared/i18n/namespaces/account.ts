@@ -43,7 +43,7 @@ export const en = {
   accountMissingFieldsBody: "Export a fresh save from the game and import it again. Until you do, the planner has to guess these, and what it recommends can be wrong — including phases you cannot enter yet.",
 
   accountHoldingsTotal: "What this account could sell",
-  accountHoldingsPartialTotal: "Part of what this account could sell",
+  accountHoldingsPartial: "part of the account only",
   accountHoldingsCoverage: "{priced} of {eligible} sellable things priced right now",
   accountHoldingsMissing: "Not counted here: {rows}.",
   accountHoldingsUnpriced: "not listed",
@@ -111,7 +111,7 @@ export const pt: typeof en = {
   accountMissingFieldsBody: "Exporte um save novo do jogo e importe de novo. Até lá o planejador precisa adivinhar esses valores, e o que ele recomenda pode estar errado — inclusive fases que você ainda não consegue entrar.",
 
   accountHoldingsTotal: "O que esta conta poderia vender",
-  accountHoldingsPartialTotal: "Parte do que esta conta poderia vender",
+  accountHoldingsPartial: "apenas parte da conta",
   accountHoldingsCoverage: "{priced} de {eligible} coisas vendáveis com preço agora",
   accountHoldingsMissing: "Fora desta conta: {rows}.",
   accountHoldingsUnpriced: "sem oferta",

@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { createElement } from 'react';
+import { createElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { Accordion } from '@bombfarm/ui';
+import { HoldingsView, type HoldingsLabels, type HoldingsViewProps } from './holdings-view';
 import {
   HOLDINGS_COMPONENTS,
-  HoldingsView,
+  HoldingsRow,
   type HoldingsComponentId,
-  type HoldingsLabels,
-  type HoldingsViewProps,
-} from './holdings-view';
-import type { HoldingsComponentView } from './holdings-column';
+  type HoldingsComponentView,
+} from './holdings-row';
 
 /**
- * The inventory holds more rows than a column can carry, so it lists nothing and leads out to the
- * screen that does. Heroes and skins list what they are made of, unpriced entries included.
+ * The inventory holds more things than a disclosure can carry, so it lists nothing and leads out to
+ * the screen that does. Heroes and skins list what they are made of, unpriced entries included.
  */
 function componentsSpeaking(voice: string): Record<HoldingsComponentId, HoldingsComponentView> {
   return {
@@ -56,8 +56,8 @@ function labelsSpeaking(voice: string): HoldingsLabels {
     withheld: `${voice} ${name} could not be read`,
   });
   return {
-    total: `${voice} what this account could sell`,
-    partialTotal: `${voice} part of what this account could sell`,
+    title: `${voice} what this account could sell`,
+    partial: `${voice} part of the account only`,
     amount: (value, currency) => `${voice} ${currency} ${value.toFixed(2)}`,
     coverage: (priced, eligible) => `${voice} ${priced} of ${eligible} priced overall`,
     missing: (ids) => `${voice} missing ${ids.join(' and ')}`,
@@ -88,17 +88,51 @@ function render(overrides: Partial<HoldingsViewProps> = {}): string {
   );
 }
 
+/**
+ * One row with its disclosure already open — the state a reader reaches by clicking the trigger.
+ * A static render never clicks, so the open state is supplied by the accordion the row sits in,
+ * which is where the view itself keeps it.
+ */
+function openRow(
+  id: HoldingsComponentId,
+  {
+    component = EN[id],
+    labels = LABELS,
+    currency = 'USD',
+    action,
+  }: {
+    component?: HoldingsComponentView;
+    labels?: HoldingsLabels;
+    currency?: string;
+    action?: ReactNode;
+  } = {},
+): string {
+  return renderToStaticMarkup(
+    createElement(Accordion.Root, {
+      multiple: true,
+      defaultValue: [id],
+      children: createElement(HoldingsRow, {
+        id,
+        component,
+        currency,
+        labels: labels.components[id],
+        amount: labels.amount,
+        unpriced: labels.unpriced,
+        action,
+      }),
+    }),
+  );
+}
+
 function withhold(...ids: readonly HoldingsComponentId[]): Partial<HoldingsViewProps> {
-  const unread: HoldingsComponentView = {
-    amount: 0,
-    priced: 0,
-    eligible: 0,
-    withheld: true,
-    entries: [],
-  };
   const components: Partial<HoldingsViewProps> = { ...EN };
-  for (const id of ids) components[id] = unread;
+  for (const id of ids) components[id] = unread(EN[id]);
   return components;
+}
+
+/** Unread, and still carrying the entries it would have listed had anything read it. */
+function unread(component: HoldingsComponentView): HoldingsComponentView {
+  return { ...component, amount: 0, priced: 0, eligible: 0, withheld: true };
 }
 
 function renderWithholding(ids: readonly HoldingsComponentId[]): string {
@@ -115,6 +149,14 @@ function slots(html: string, testId: string): string[] {
   return [...html.matchAll(new RegExp(`data-testid="${testId}"[^>]*>([^<]*)<`, 'g'))].map(
     (match) => match[1] ?? '',
   );
+}
+
+/** Everything one row's markup covers, which ends where the next row's marker begins. */
+function rowMarkup(html: string, id: HoldingsComponentId): string {
+  const next = HOLDINGS_COMPONENTS[HOLDINGS_COMPONENTS.indexOf(id) + 1];
+  const start = html.indexOf(`data-testid="account-holdings-${id}"`);
+  const end = next === undefined ? html.length : html.indexOf(`data-testid="account-holdings-${next}"`);
+  return html.slice(start, end);
 }
 
 /** Every string the markup actually puts in front of a reader, tags and attributes dropped. */
@@ -186,25 +228,86 @@ describe('HoldingsView — the three components and their coverage', () => {
 
     expect(render()).toContain(`en ${priced} of ${eligible} priced overall`);
   });
+});
 
-  it('lays the three side by side under a grid the available width sizes, never a stack', () => {
+describe('HoldingsView — three rows, whatever the width', () => {
+  it('draws each component once, and nothing else that could be taken for a fourth', () => {
     const html = render();
 
-    expect(html).toMatch(/class="grid grid-cols-\[repeat\(auto-fit,minmax\([^)]+,1fr\)\)\]/);
-    expect(html).not.toContain('divide-y');
+    for (const id of HOLDINGS_COMPONENTS) {
+      expect(slots(html, `account-holdings-${id}`)).toHaveLength(1);
+    }
+  });
+
+  it('keeps the three in the order they are summed in', () => {
+    const html = render();
+    const at = (id: HoldingsComponentId) => html.indexOf(`data-testid="account-holdings-${id}"`);
+
+    expect(at('inventory')).toBeLessThan(at('heroes'));
+    expect(at('heroes')).toBeLessThan(at('skins'));
+  });
+
+  it('stacks them, so no width can put two of them side by side or wrap the third', () => {
+    const html = render();
+
+    // The three were columns an auto-fit grid sized: narrowing the window wrapped the third under
+    // a component it has nothing to do with, and the figures stopped reading as belonging to
+    // anything. A single flex column cannot reflow, at any measure.
+    expect(html).toContain('class="flex flex-col gap-1"');
+    expect(html).not.toContain('grid');
+    expect(html).not.toContain('auto-fit');
+  });
+
+  it('sits under a section title of its own, as the panels beside it do', () => {
+    const html = render();
+
+    expect(html).toContain(`<h2 class="m-0 text-[13px] font-bold tracking-[0.04em] uppercase">${LABELS.title}</h2>`);
+    expect(html.indexOf(LABELS.title)).toBeLessThan(html.indexOf('data-testid="account-holdings-total"'));
   });
 });
 
-describe('HoldingsView — what a component is made of', () => {
-  it('lists every entry it was handed, in the order it was handed them', () => {
+describe('HoldingsView — what a component is made of, behind its own disclosure', () => {
+  it('lists nothing until its disclosure is opened', () => {
     const html = render();
+
+    for (const id of ['heroes', 'skins'] as const) {
+      expect(slots(html, `account-holdings-${id}-entry-name`)).toEqual([]);
+      expect(slot(html, `account-holdings-${id}-entries`)).toBeNull();
+    }
+  });
+
+  it('offers every component that holds entries a disclosure to open', () => {
+    const html = render();
+
+    for (const id of ['heroes', 'skins'] as const) {
+      expect(rowMarkup(html, id)).toContain('aria-expanded="false"');
+    }
+  });
+
+  it('offers no disclosure on the inventory, which has no list to reveal', () => {
+    const html = render({ inventoryLink: createElement('a', { href: '/inventory' }, 'open it') });
+    const inventory = rowMarkup(html, 'inventory');
+
+    // An empty disclosure that opens onto nothing is worse than none: the inventory holds more
+    // things than a list here could carry, and the link is what stands in for that list.
+    expect(inventory).not.toContain('aria-expanded');
+    expect(inventory).toContain('href="/inventory"');
+    expect(slot(html, 'account-holdings-inventory-amount')).toBe('en USD 12.50');
+  });
+
+  it('reveals that component entries once opened, and only that component', () => {
+    const html = openRow('heroes');
 
     expect(slots(html, 'account-holdings-heroes-entry-name')).toEqual([
       'en Kendo',
       'en Dano',
       'en Folego',
     ]);
-    expect(slots(html, 'account-holdings-skins-entry-name')).toEqual([
+    expect(slots(html, 'account-holdings-skins-entry-name')).toEqual([]);
+  });
+
+  it('lists every entry it was handed, in the order it was handed them', () => {
+    expect(slots(openRow('skins'), 'account-holdings-skins-entry-name')).toEqual([
       'en Royal Sentinel',
       'en Deep Diver',
     ]);
@@ -214,22 +317,20 @@ describe('HoldingsView — what a component is made of', () => {
     const [first, second, third] = EN.heroes.entries;
     const reversed = { ...EN.heroes, entries: [third, second, first] };
 
-    expect(slots(render({ heroes: reversed }), 'account-holdings-heroes-entry-name')).toEqual([
-      'en Folego',
-      'en Dano',
-      'en Kendo',
-    ]);
+    expect(
+      slots(openRow('heroes', { component: reversed }), 'account-holdings-heroes-entry-name'),
+    ).toEqual(['en Folego', 'en Dano', 'en Kendo']);
   });
 
   it('prices each entry through the label bag, in the order the names run', () => {
-    expect(slots(render(), 'account-holdings-heroes-entry-amount')).toEqual([
+    expect(slots(openRow('heroes'), 'account-holdings-heroes-entry-amount')).toEqual([
       'en USD 6.00',
       'en USD 2.00',
     ]);
   });
 
   it('prints the detail beside an entry that carries one', () => {
-    expect(slots(render(), 'account-holdings-heroes-entry-detail')).toEqual([
+    expect(slots(openRow('heroes'), 'account-holdings-heroes-entry-detail')).toEqual([
       'en rare',
       'en rare',
       'en common',
@@ -237,47 +338,48 @@ describe('HoldingsView — what a component is made of', () => {
   });
 
   it('prints no detail for entries that carry none, rather than an empty one', () => {
-    const html = render();
+    const html = openRow('skins');
 
     expect(slots(html, 'account-holdings-skins-entry-detail')).toEqual([]);
     expect(slots(html, 'account-holdings-skins-entry-name')).toHaveLength(2);
   });
 
   it('shows an entry the market is listing nothing for, and marks it as unpriced', () => {
-    const html = render();
-
-    expect(slots(html, 'account-holdings-skins-entry-name')).toContain('en Deep Diver');
-    expect(slots(html, 'account-holdings-skins-entry-unpriced')).toEqual(['en nothing listed']);
-    expect(slots(html, 'account-holdings-heroes-entry-unpriced')).toEqual(['en nothing listed']);
+    expect(slots(openRow('skins'), 'account-holdings-skins-entry-name')).toContain('en Deep Diver');
+    expect(slots(openRow('skins'), 'account-holdings-skins-entry-unpriced')).toEqual([
+      'en nothing listed',
+    ]);
+    expect(slots(openRow('heroes'), 'account-holdings-heroes-entry-unpriced')).toEqual([
+      'en nothing listed',
+    ]);
   });
 
   it('leaves an unpriced entry without a figure rather than printing a zero for it', () => {
-    const html = render();
+    const html = openRow('skins');
 
     expect(slots(html, 'account-holdings-skins-entry-amount')).toEqual(['en USD 4.25']);
     expect(html).not.toContain('en USD 0.00');
   });
 
   it('lists as many entries as the component calls eligible, so its coverage can be investigated', () => {
-    const html = render();
-
     for (const id of ['heroes', 'skins'] as const) {
-      expect(slots(html, `account-holdings-${id}-entry-name`)).toHaveLength(EN[id].eligible);
+      expect(slots(openRow(id), `account-holdings-${id}-entry-name`)).toHaveLength(EN[id].eligible);
     }
   });
 
-  it('lists nothing for a component handed no entries, and keeps that component figures', () => {
+  it('offers no disclosure for a component handed no entries, and keeps its figures', () => {
     const html = render();
 
-    expect(slots(html, 'account-holdings-inventory-entry-name')).toEqual([]);
+    expect(rowMarkup(html, 'inventory')).not.toContain('aria-expanded');
     expect(slot(html, 'account-holdings-inventory-entries')).toBeNull();
     expect(slot(html, 'account-holdings-inventory-amount')).toBe('en USD 12.50');
   });
 
-  it('lists nothing for a component it could not read, whatever entries came with it', () => {
-    const html = render({ heroes: { ...EN.heroes, withheld: true } });
+  it('reveals nothing for a component it could not read, whatever entries came with it', () => {
+    const html = openRow('heroes', { component: unread(EN.heroes) });
 
     expect(slots(html, 'account-holdings-heroes-entry-name')).toEqual([]);
+    expect(html).not.toContain('aria-expanded');
     expect(slot(html, 'account-holdings-heroes-withheld')).toBe('en heroes could not be read');
   });
 });
@@ -292,7 +394,7 @@ describe('HoldingsView — an entry whose leading cell the host drew itself', ()
     entries: EN.heroes.entries.map((entry, position) => ({ ...entry, leading: drawn(position) })),
   };
 
-  const renderDrawn = () => render({ heroes: heroesDrawn });
+  const renderDrawn = () => openRow('heroes', { component: heroesDrawn });
 
   /** The markup of one entry, which `split` ends at the next entry marker. */
   function entryChunks(html: string, testId: string): string[] {
@@ -319,7 +421,7 @@ describe('HoldingsView — an entry whose leading cell the host drew itself', ()
   });
 
   it('keeps the plain pair for the entries of a component that handed over no node', () => {
-    const html = renderDrawn();
+    const html = openRow('skins');
 
     expect(slots(html, 'account-holdings-skins-entry-name')).toEqual([
       'en Royal Sentinel',
@@ -349,7 +451,7 @@ describe('HoldingsView — an entry whose leading cell the host drew itself', ()
   });
 
   it('lists nothing at all for a component it could not read, nodes included', () => {
-    const html = render({ heroes: { ...heroesDrawn, withheld: true } });
+    const html = openRow('heroes', { component: unread(heroesDrawn) });
 
     expect(html).not.toContain('drawn-0');
     expect(slot(html, 'account-holdings-heroes-withheld')).toBe('en heroes could not be read');
@@ -357,15 +459,29 @@ describe('HoldingsView — an entry whose leading cell the host drew itself', ()
 });
 
 describe('HoldingsView — a component that could not be read', () => {
-  it('re-captions the headline for every combination of withheld components', () => {
-    const complete = slot(render(), 'account-holdings-caption');
-
-    expect(complete).toBe(LABELS.total);
+  it('qualifies the figure itself for every combination of withheld components', () => {
+    expect(slot(render(), 'account-holdings-partial')).toBeNull();
     for (const missing of EVERY_WITHHOLDING) {
-      const caption = slot(renderWithholding(missing), 'account-holdings-caption');
-      expect(caption, `withholding ${missing.join('+')} left the headline claiming the account`)
-        .not.toBe(complete);
-      expect(caption).toBe(LABELS.partialTotal);
+      const html = renderWithholding(missing);
+      const qualifier = slot(html, 'account-holdings-partial');
+
+      expect(qualifier, `withholding ${missing.join('+')} left the figure claiming the account`).toBe(
+        LABELS.partial,
+      );
+      // Against the number it qualifies, ahead of the coverage line — a title cannot carry this,
+      // because the title is the same whatever was read.
+      expect(html.indexOf(LABELS.partial)).toBeGreaterThan(
+        html.indexOf('data-testid="account-holdings-total"'),
+      );
+      expect(html.indexOf(LABELS.partial)).toBeLessThan(
+        html.indexOf('data-testid="account-holdings-inventory"'),
+      );
+    }
+  });
+
+  it('keeps the section title the same whatever was read, so only the figure is qualified', () => {
+    for (const missing of EVERY_WITHHOLDING) {
+      expect(renderWithholding(missing)).toContain(LABELS.title);
     }
   });
 
@@ -389,12 +505,16 @@ describe('HoldingsView — a component that could not be read', () => {
     expect(slot(html, 'account-holdings-heroes-coverage')).toBeNull();
   });
 
+  it('offers no disclosure on a row it could not read', () => {
+    expect(rowMarkup(renderWithholding(['heroes']), 'heroes')).not.toContain('aria-expanded');
+  });
+
   it('leaves the components it did read untouched', () => {
     const html = renderWithholding(['heroes']);
 
     expect(slot(html, 'account-holdings-inventory-amount')).toBe('en USD 12.50');
     expect(slot(html, 'account-holdings-skins-amount')).toBe('en USD 4.25');
-    expect(slots(html, 'account-holdings-skins-entry-name')).toHaveLength(2);
+    expect(rowMarkup(html, 'skins')).toContain('aria-expanded="false"');
   });
 
   it('drops a withheld component from the headline coverage rather than counting it as zero', () => {
@@ -403,10 +523,10 @@ describe('HoldingsView — a component that could not be read', () => {
     );
   });
 
-  it('keeps the figure on screen when everything is withheld, under a caption that disowns it', () => {
+  it('keeps the figure on screen when everything is withheld, qualified rather than disowned', () => {
     const html = render({ ...withhold(...HOLDINGS_COMPONENTS), total: 0 });
 
-    expect(slot(html, 'account-holdings-caption')).toBe(LABELS.partialTotal);
+    expect(slot(html, 'account-holdings-partial')).toBe(LABELS.partial);
     expect(slot(html, 'account-holdings-missing')).toBe('en missing inventory and heroes and skins');
     expect(slot(html, 'account-holdings-total')).toBe('en USD 0.00');
     expect(html).toContain('en 0 of 0 priced overall');
@@ -451,7 +571,7 @@ describe('HoldingsView — the inventory link', () => {
     expect(html).toContain('<a href="/inventory">open the inventory</a>');
   });
 
-  it('leaves the inventory column whole when no link is given', () => {
+  it('leaves the inventory row whole when no link is given', () => {
     const html = render();
 
     expect(html).not.toContain('inventory-link');
@@ -459,17 +579,15 @@ describe('HoldingsView — the inventory link', () => {
     expect(slot(html, 'account-holdings-inventory-coverage')).toBe('en 12 of 47 inventory priced');
   });
 
-  it('hangs the link on the inventory column and on no other', () => {
+  it('hangs the link on the inventory row and on no other', () => {
     const html = render({ inventoryLink: link() });
-    const columnStart = (id: HoldingsComponentId) =>
-      html.indexOf(`data-testid="account-holdings-${id}"`);
 
-    const linkAt = html.indexOf('data-testid="inventory-link"');
-    expect(linkAt).toBeGreaterThan(columnStart('inventory'));
-    expect(linkAt).toBeLessThan(columnStart('heroes'));
+    expect(rowMarkup(html, 'inventory')).toContain('data-testid="inventory-link"');
+    expect(rowMarkup(html, 'heroes')).not.toContain('data-testid="inventory-link"');
+    expect(rowMarkup(html, 'skins')).not.toContain('data-testid="inventory-link"');
   });
 
-  it('keeps the link on a column that lists nothing — the link is what stands in for the list', () => {
+  it('keeps the link on a row that reveals nothing — the link is what stands in for the list', () => {
     const html = render({ inventoryLink: link() });
 
     expect(html).toContain('data-testid="inventory-link"');
@@ -493,6 +611,8 @@ describe('HoldingsView — the price-age footnote', () => {
 });
 
 describe('HoldingsView — every string comes from the label bag', () => {
+  const PT = labelsSpeaking('pt');
+
   const inPortuguese = () => {
     const pt = componentsSpeaking('pt');
     return renderToStaticMarkup(
@@ -502,7 +622,7 @@ describe('HoldingsView — every string comes from the label bag', () => {
         inventory: pt.inventory,
         heroes: pt.heroes,
         skins: pt.skins,
-        labels: labelsSpeaking('pt'),
+        labels: PT,
       }),
     );
   };
@@ -510,7 +630,7 @@ describe('HoldingsView — every string comes from the label bag', () => {
   it('speaks entirely in the wording of the bag it was handed', () => {
     const html = inPortuguese();
 
-    expect(slot(html, 'account-holdings-caption')).toBe('pt what this account could sell');
+    expect(html).toContain(PT.title);
     expect(slot(html, 'account-holdings-total')).toBe('pt BRL 24.75');
     expect(slot(html, 'account-holdings-inventory-coverage')).toBe('pt 12 of 47 inventory priced');
     expect(slot(html, 'account-holdings-heroes-floor')).toBe(
@@ -520,12 +640,17 @@ describe('HoldingsView — every string comes from the label bag', () => {
   });
 
   it('takes the unpriced marker from the bag rather than wording it itself', () => {
-    expect(slots(inPortuguese(), 'account-holdings-skins-entry-unpriced')).toEqual([
-      'pt nothing listed',
-    ]);
+    const html = openRow('skins', {
+      component: componentsSpeaking('pt').skins,
+      labels: PT,
+      currency: 'BRL',
+    });
+
+    expect(slots(html, 'account-holdings-skins-entry-unpriced')).toEqual(['pt nothing listed']);
   });
 
   it('formats no number itself — every figure arrives through a label callback', () => {
+    const labels: HoldingsLabels = { ...LABELS, amount: () => 'no figure here' };
     const html = renderToStaticMarkup(
       createElement(HoldingsView, {
         total: TOTAL,
@@ -533,7 +658,7 @@ describe('HoldingsView — every string comes from the label bag', () => {
         inventory: EN.inventory,
         heroes: EN.heroes,
         skins: EN.skins,
-        labels: { ...LABELS, amount: () => 'no figure here' },
+        labels,
       }),
     );
 
@@ -541,9 +666,8 @@ describe('HoldingsView — every string comes from the label bag', () => {
     for (const id of HOLDINGS_COMPONENTS) {
       expect(slot(html, `account-holdings-${id}-amount`)).toBe('no figure here');
     }
-    expect(slots(html, 'account-holdings-heroes-entry-amount')).toEqual([
-      'no figure here',
-      'no figure here',
-    ]);
+    expect(
+      slots(openRow('heroes', { labels }), 'account-holdings-heroes-entry-amount'),
+    ).toEqual(['no figure here', 'no figure here']);
   });
 });

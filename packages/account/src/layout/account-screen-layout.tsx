@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { cn } from '@bombfarm/ui';
 
 export interface AccountScreenLayoutProps {
-  /** What the account could sell — the widest region, and the one with columns of its own. */
+  /** What the account could sell — the widest region, and the one with rows of its own. */
   holdings: ReactNode;
   /** Who the account is: four short read-only facts. */
   identity: ReactNode;
@@ -25,10 +25,10 @@ export interface AccountScreenLayoutProps {
  * grid, so the two screens cannot drift into two arrangements of the same four things.
  *
  * Holdings and identity share the first row. Holdings takes the remaining width rather than half of
- * it, because it lays three columns out inside itself and an even split would fold them back into a
- * stack; identity is capped so it stops growing once its longest fact fits unabbreviated. Both rows
- * collapse to a stack as the measure narrows — the desktop window resizes down to a small width and
- * the planner is read on narrow viewports.
+ * it, because each of its own rows carries a name, a coverage line and a figure on one line and an
+ * even split would start abbreviating them; identity is capped so it stops growing once its longest
+ * fact fits unabbreviated. Both rows collapse to a stack as the measure narrows — the desktop window
+ * resizes down to a small width and the planner is read on narrow viewports.
  *
  * Side-by-side panels are the SAME HEIGHT. One that stops short of its neighbour reads as
  * unfinished rather than as brief. The stretch has to reach the panel itself, not just the grid
