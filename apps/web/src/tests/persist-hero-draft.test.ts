@@ -142,8 +142,8 @@ describe('hero draft persistence subscription', () => {
     expect(setItem).not.toHaveBeenCalled();
   });
 
-  it('selectHeroDraftTuple has 19 members (includes birth and statPointsAvailable; obsHit/obsCrit gone)', () => {
+  it('selectHeroDraftTuple has 20 members (includes birth, marketable and statPointsAvailable; obsHit/obsCrit gone)', () => {
     const tuple = selectHeroDraftTuple(usePlannerStore.getState());
-    expect(tuple).toHaveLength(19);
+    expect(tuple).toHaveLength(20);
   });
 });

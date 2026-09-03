@@ -40,6 +40,13 @@ const gameArtPackage = ['packages/game-art/**/*.{ts,tsx}'];
  */
 const farmPackage = ['packages/farm/**/*.{ts,tsx}'];
 
+/**
+ * `account` holds the shared Account screen, moved verbatim out of `apps/web/src/features/account/`
+ * — the same planner-origin tree `farm` and `game-art` came from, so it lints on the same relaxed
+ * tier and keeps its own list for the same reason.
+ */
+const accountPackage = ['packages/account/**/*.{ts,tsx}'];
+
 /** Ban raw react-icons / SVG imports outside the Icon seam. */
 const rawIconImportRule = [
   'error',
@@ -171,6 +178,27 @@ export default tseslint.config(
         // (they must not ship in `dist/`), and the service then errors on a test file belonging
         // to no project. This one includes them, so they are linted like every other test here.
         project: './packages/farm/tsconfig.eslint.json',
+        tsconfigRootDir: import.meta.dirname,
+      },
+      globals: globals.browser,
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+    },
+  },
+
+  {
+    files: accountPackage,
+    extends: [...tseslint.configs.recommendedTypeChecked],
+    languageOptions: {
+      parserOptions: {
+        // A dedicated project rather than `projectService`: the package tsconfig excludes tests
+        // (they must not ship in `dist/`), and the service then errors on a test file belonging
+        // to no project. This one includes them, so they are linted like every other test here.
+        project: './packages/account/tsconfig.eslint.json',
         tsconfigRootDir: import.meta.dirname,
       },
       globals: globals.browser,

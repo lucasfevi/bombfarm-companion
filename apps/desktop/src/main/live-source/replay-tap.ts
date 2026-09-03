@@ -84,6 +84,9 @@ export interface ReplayTapDeps {
   readonly consent: () => boolean;
   readonly onEvent: (event: LiveEvent) => void;
   readonly onHttpBody?: (body: Buffer, atMs: number) => void;
+  /** The wire object every decoded tick was built from, so a recording driven from a committed
+   *  capture carries the keys the decoded tick does not model. */
+  readonly onObservedFrame?: (wire: Record<string, unknown>, atMs: number) => void;
   readonly log?: LogPort;
   readonly intervalMs?: number;
   readonly now?: () => Date;
@@ -221,6 +224,7 @@ class ReplayTap implements TapHandle {
         this.#deps.onHttpBody?.(event.body, Date.now());
       }
       if (event.kind !== 'tick') continue;
+      this.#deps.onObservedFrame?.(event.raw, Date.now());
       this.#sequence += 1;
       if (this.#currency.kind !== 'live') this.#reportLive();
       this.#deps.onEvent({
@@ -291,6 +295,9 @@ export function createReplayTapFactory(deps: {
   readonly consent: () => boolean;
   readonly log?: LogPort;
   readonly intervalMs?: number;
+  /** A factory-level dep rather than a third callback parameter, because the recorder outlives any
+   *  one tap — a consent revoke rebuilds the tap through this same factory. */
+  readonly onObservedFrame?: (wire: Record<string, unknown>, atMs: number) => void;
 }): (onEvent: (event: LiveEvent) => void, onHttpBody: (body: Buffer, atMs: number) => void) => TapHandle {
   // One per factory, deliberately outside the closure below: `LiveSource.forceDetach()` discards
   // the tap and builds another through this same factory, and a balance that reset there would
@@ -304,6 +311,7 @@ export function createReplayTapFactory(deps: {
       consent: deps.consent,
       onEvent,
       onHttpBody,
+      ...(deps.onObservedFrame !== undefined ? { onObservedFrame: deps.onObservedFrame } : {}),
       ...(deps.log !== undefined ? { log: deps.log } : {}),
       ...(deps.intervalMs !== undefined ? { intervalMs: deps.intervalMs } : {}),
     });

@@ -8,6 +8,11 @@ const NAV_ITEMS: AppShellNavItem[] = [
   { id: 'stats', label: 'Stats' },
 ];
 
+const ICON_NAV_ITEMS: AppShellNavItem[] = [
+  { id: 'inventory', label: 'Inventory', icon: 'archive-box' },
+  { id: 'stats', label: 'Stats', icon: 'signal' },
+];
+
 function html(props: Parameters<typeof AppShell>[0]) {
   return renderToStaticMarkup(createElement(AppShell, props));
 }
@@ -46,10 +51,25 @@ describe('AppShell', () => {
     expect(out).toContain('hello');
   });
 
-  it('defaults title when omitted', () => {
+  it('defaults the lockup to the product name over its suite tag, the way the web header draws it', () => {
     const out = html({ children: 'body' });
-    expect(out).toContain('Bomb Farm Companion');
-    expect(out).toContain('body');
+    // Two separate lines, name first — not one string. The desktop used to feed the whole
+    // "Bomb Farm Companion (Dev)" into the name slot, where it wrapped to three lines.
+    expect(out).toMatch(/>Bomb Farm<\/div>/);
+    expect(out).toMatch(/>Companion<\/div>/);
+    expect(out.indexOf('>Bomb Farm<')).toBeLessThan(out.indexOf('>Companion<'));
+    expect(out).not.toContain('Bomb Farm Companion');
+  });
+
+  it('gives the name and the suite tag their own elements, so neither can wrap into the other', () => {
+    const out = html({ title: 'Product', suiteTag: 'Suite', children: 'body' });
+    expect(out).toMatch(/<div[^>]*>Product<\/div><div[^>]*>Suite<\/div>/);
+  });
+
+  it('omits the suite-tag line when the caller has none', () => {
+    const out = html({ suiteTag: '', children: 'body' });
+    expect(out).toContain('>Bomb Farm<');
+    expect(out).not.toContain('Companion');
   });
 
   it.each(['DEV', 'BETA'] as const)('renders %s flavor badge', (label) => {
@@ -204,11 +224,68 @@ describe('AppShell', () => {
       children: 'body',
     });
     expect(out).toContain('data-testid="brand-slot"');
-    expect(out.indexOf('data-testid="brand-slot"')).toBeLessThan(out.indexOf('Bomb Farm Companion'));
+    expect(out.indexOf('data-testid="brand-slot"')).toBeLessThan(out.indexOf('>Bomb Farm<'));
   });
 
   it('renders no brand slot markup when brand is omitted', () => {
     const out = html({ children: 'body' });
     expect(out).not.toContain('data-testid="brand-slot"');
+  });
+
+  it('keeps the flavor badge out of the lockup — the suite tag is not the build label', () => {
+    const out = html({ badge: 'DEV', suiteTag: 'Companion', children: 'body' });
+    expect(out).toContain('>Companion</div>');
+    expect(out).toMatch(/data-testid="flavor-badge"[^>]*>DEV</);
+  });
+
+  describe('density', () => {
+    it('keeps every tab worded at full and actions-collapsed density', () => {
+      for (const density of ['full', 'actions-collapsed'] as const) {
+        const out = html({ items: ICON_NAV_ITEMS, activeId: 'stats', density, children: 'body' });
+        expect(out, density).toContain('>Inventory</button>');
+        expect(out, density).toContain('Stats</button>');
+        expect(out, density).not.toContain('<svg');
+      }
+    });
+
+    it('draws the tabs as glyphs at icon-tabs density, and still reaches every one of them', () => {
+      const out = html({ items: ICON_NAV_ITEMS, activeId: 'stats', density: 'icon-tabs', children: 'body' });
+      const buttons = out.match(/<button[^>]*>/g) ?? [];
+      expect(buttons).toHaveLength(ICON_NAV_ITEMS.length);
+      expect(out).toContain('aria-label="Inventory"');
+      expect(out).not.toContain('>Inventory</button>');
+    });
+
+    it('leaves the active tab named, so the screen the player is on is never only a glyph', () => {
+      const out = html({ items: ICON_NAV_ITEMS, activeId: 'stats', density: 'icon-tabs', children: 'body' });
+      expect(out).toContain('Stats</button>');
+      // The named one is the active one, not merely some one of them.
+      const active = out.match(/<button[^>]*aria-current="page"[^>]*>.*?<\/button>/)?.[0] ?? '';
+      expect(active).toContain('Stats');
+      expect(active).not.toContain('aria-label=');
+    });
+
+    it('shrinks the brand to its mark alone at icon-tabs density — words, tag and badge all go', () => {
+      const out = html({
+        brand: createElement('span', { 'data-testid': 'brand-slot' }, 'mark'),
+        badge: 'DEV',
+        density: 'icon-tabs',
+        children: 'body',
+      });
+      expect(out).toContain('data-testid="brand-slot"');
+      expect(out).not.toContain('Bomb Farm');
+      expect(out).not.toContain('Companion');
+      expect(out).not.toContain('data-testid="flavor-badge"');
+    });
+
+    it('keeps the flavor badge at the density the smallest real window actually sits at', () => {
+      const out = html({ badge: 'DEV', density: 'actions-collapsed', children: 'body' });
+      expect(out).toMatch(/data-testid="flavor-badge"[^>]*>DEV</);
+    });
+
+    it('keeps an item without a glyph worded even at icon-tabs density', () => {
+      const out = html({ items: NAV_ITEMS, activeId: 'stats', density: 'icon-tabs', children: 'body' });
+      expect(out).toContain('>Inventory</button>');
+    });
   });
 });

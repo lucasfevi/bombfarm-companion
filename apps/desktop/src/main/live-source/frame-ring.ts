@@ -9,15 +9,11 @@
  * pay the cost on data that is thrown away. Paying it once, at dump time, is strictly cheaper.
  */
 
-import { isPlainObject } from '@bombfarm/game-api';
-import { isSensitiveKey } from '../boundary-log/redaction.js';
-
 export type { LogPort } from './log-port.js';
 import type { LogPort } from './log-port.js';
+export { PERSONAL_FIELDS } from './scrub.js';
+import { redactText, scrubJsonValue, type CredentialRedactor } from './scrub.js';
 
-export const PERSONAL_FIELDS = ['account_id', 'player_name'] as const;
-
-const REDACTION_PLACEHOLDER = '[redacted]';
 const UNREADABLE_PLACEHOLDER_KIND = 'unreadable';
 const DEFAULT_DUMP_RATE_LIMIT_MS = 5_000;
 
@@ -53,39 +49,6 @@ export type FrameDumpOutcome =
   | { readonly written: true; readonly path: string }
   | { readonly written: false; readonly reason: 'rate-limited' | 'write-failed' };
 
-type CredentialRedactor = (text: string) => string;
-
-function redactSecrets(text: string, secrets: ReadonlySet<string>, credentialRedactor: CredentialRedactor | null): string {
-  let result = text;
-  for (const secret of secrets) {
-    if (secret.length === 0) continue;
-    result = result.split(secret).join(REDACTION_PLACEHOLDER);
-  }
-  return credentialRedactor ? credentialRedactor(result) : result;
-}
-
-/** One traversal applying every scrub rule per node, rather than three passes over the same tree:
- *  a personal field ({@link PERSONAL_FIELDS}) is removed, a sensitive-named key
- *  ({@link isSensitiveKey}, reused from the boundary log rather than a second list) is blanked to
- *  the redacted marker, and any other string is checked for a secret substring. Removal wins when
- *  a key is both a personal field and a sensitive-named key, since the field is dropped before the
- *  sensitive-key check ever runs. */
-function scrubNode(value: unknown, secrets: ReadonlySet<string>, credentialRedactor: CredentialRedactor | null): unknown {
-  if (Array.isArray(value)) return value.map((item) => scrubNode(item, secrets, credentialRedactor));
-  if (isPlainObject(value)) {
-    const out: Record<string, unknown> = {};
-    for (const [key, v] of Object.entries(value)) {
-      if ((PERSONAL_FIELDS as readonly string[]).includes(key)) continue;
-      out[key] = isSensitiveKey(key)
-        ? redactSecrets(REDACTION_PLACEHOLDER, secrets, credentialRedactor)
-        : scrubNode(v, secrets, credentialRedactor);
-    }
-    return out;
-  }
-  if (typeof value === 'string') return redactSecrets(value, secrets, credentialRedactor);
-  return value;
-}
-
 function scrubFrame(frame: Buffer, secrets: ReadonlySet<string>, credentialRedactor: CredentialRedactor | null): DumpedFrame {
   const text = frame.toString('utf8');
   const isReadableText = Buffer.from(text, 'utf8').equals(frame);
@@ -95,10 +58,10 @@ function scrubFrame(frame: Buffer, secrets: ReadonlySet<string>, credentialRedac
 
   try {
     const parsed: unknown = JSON.parse(text);
-    const payload = scrubNode(parsed, secrets, credentialRedactor);
+    const payload = scrubJsonValue(parsed, secrets, credentialRedactor);
     return { kind: 'json', byteLength: frame.length, payload };
   } catch {
-    return { kind: 'text', byteLength: frame.length, text: redactSecrets(text, secrets, credentialRedactor) };
+    return { kind: 'text', byteLength: frame.length, text: redactText(text, secrets, credentialRedactor) };
   }
 }
 

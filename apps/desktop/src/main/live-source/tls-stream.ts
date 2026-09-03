@@ -20,7 +20,11 @@ export type Ctx = string | number;
 export type TapEvent =
   | { readonly kind: 'http'; readonly status: number; readonly body?: Buffer }
   | { readonly kind: 'upgrade' }
-  | { readonly kind: 'tick'; readonly tick: LiveTick };
+  /** `raw` is the wire object the tick was decoded from, carried alongside it because
+   *  {@link toLiveTick} reads a fixed key list and everything outside it — the cage fields among
+   *  them — would otherwise be gone before any consumer sees it. It is the already-narrowed
+   *  object, assigned rather than cloned, and it never crosses IPC. */
+  | { readonly kind: 'tick'; readonly tick: LiveTick; readonly raw: Record<string, unknown> };
 
 const HEAD_CAP_BYTES = 16 * 1024;
 /** Also the cap on a single HTTP response body's reassembly: 256 KiB gives roughly 3x headroom
@@ -490,7 +494,9 @@ export class TlsConnections {
       return;
     }
     if (outcome.kind === 'unparseable') return;
-    if (isSnapMessage(outcome.json)) events.push({ kind: 'tick', tick: toLiveTick(outcome.json) });
+    if (isSnapMessage(outcome.json)) {
+      events.push({ kind: 'tick', tick: toLiveTick(outcome.json), raw: outcome.json });
+    }
   }
 
   #reportUndecodablePayload(firstByte: number): void {

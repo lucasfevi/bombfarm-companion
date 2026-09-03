@@ -1,5 +1,130 @@
 # @bombfarm/desktop
 
+## 0.11.0
+
+### Minor Changes
+
+- 006f970: Answer the question both apps could only half answer: what is this account actually worth?
+
+  **A new figure — what this account could sell.** It adds up three things the market will take off
+  your hands: the tradable items in your inventory, the heroes the game permits selling, and the bought
+  skins your heroes are wearing. Each is broken out on its own line with its own count, so you can
+  see at a glance that, say, forty of forty-three tradable items are priced and two of six sellable
+  heroes are. It appears on the Account page of the web planner and on the desktop app's new Account
+  screen, and it is the same computation on both — the two cannot disagree about the same inventory.
+
+  Two things about that number are stated where you read it, because both would otherwise mislead.
+  A hero listing is priced by rarity alone — level, gear and abilities count for nothing on the
+  market — so the heroes line is a floor, never what a well built hero fetches. And a bought skin is
+  an account-wide unlock: it counts once however many heroes wear it, and only while one of them
+  still does, so dressing every hero back to a birth skin drops the figure with nothing sold.
+
+  **It never guesses at a part it cannot see.** When one of the three cannot be read at all, that
+  line says so instead of showing zero, and the heading changes to say the total covers only part of
+  the account. A missing part is never quietly counted as nothing.
+
+  **The desktop app has an Account screen.** It shows who the account belongs to and how far it has
+  come, the House — its recovery cycle and how many heroes it refills at once, with the next House
+  previewed at the level you get on unlocking it — the full skill tree as the game totals it, and
+  the sell figure above. The tab sits between Inventory and Settings, so the nav now reads
+  Live · Farm · Inventory · Account · Settings.
+
+  **The inventory's own total is now named for what it is.** The header that read "Market value" on the
+  Inventory screen of both apps now reads "What your inventory could sell". It was never the account's
+  worth — it was always the inventory's, and now that the account has a figure of its own the old title
+  was the wrong one on the wrong screen. The number itself is unchanged, and it is now taken from
+  the same shared computation the Account screen uses.
+
+  **On the web planner, heroes are counted only after a fresh import.** Whether a hero may be sold
+  is something the game says in your save, and the planner has only just started carrying it. A
+  roster imported before this change does not have that answer, so the heroes line is withheld —
+  rather than reporting a whole roster as unsellable, which is what assuming an answer would do.
+  Import a save again and the line fills in. The inventory and skins lines need no re-import.
+
+- 37fd673: Add the referral code to the desktop app, in the two shapes the support link already uses: a chip
+  in the top bar beside the language toggle, and a labelled row in the Settings support section.
+  Clicking either copies the code; when the clipboard is refused the code is selected in place and
+  the app says so, so the click always leaves something to act on.
+
+  The code itself moves to `@bombfarm/domain/referral`, which the web planner's topbar chip, footer
+  line and first-run notice now read through as well. It had been a web-only constant, and this code
+  does change — a desktop copy updated separately would eventually show a dead code that a player
+  pastes and loses the reward on.
+
+  `@bombfarm/ui` gains the `copy` icon and a `referral` button variant that both apps' controls can
+  draw from.
+
+### Patch Changes
+
+- a8ce125: Add a developer-only recording mode that writes every REST body and live frame the tap observes to
+  a newline-delimited JSON file, including the bodies the app cannot identify and otherwise discards.
+  The mode is unavailable in an installed build regardless of environment, and the session token
+  cannot reach the recording: every record is written through one serialiser that scrubs first, and
+  each line records whether value-level redaction was armed when it was written.
+
+  The raw frame capture that already lived beside it now also refuses to run in a packaged build,
+  rather than gating on the app flavor alone.
+
+- 1eda18d: Stop the desktop app from silently giving up on reading your account, and say how old the Farm
+  board's numbers really are.
+
+  **A single rejected read no longer freezes the app until you restart it.** When the game's servers
+  turned down one request, the app stopped asking — permanently. Everything carried on looking
+  normal: the Farm board kept its numbers, the Refresh button kept working, nothing said anything
+  was wrong. But the account behind those numbers had stopped moving, and the only way out was
+  quitting and reopening the app. One installation sat like that for over fifteen hours, and the
+  credentials had been fine the whole time — reopening the app proved it by working immediately with
+  the very same session. The app now waits and tries again, backing off from a minute up to fifteen
+  if the rejections keep coming, so a passing refusal costs one skipped read instead of the rest of
+  the session.
+
+  **The line under the Farm board's Refresh button now dates your account, not the calculation.**
+  It used to time how long ago the board was worked out, which is a different thing and only looks
+  the same while the app is reading the game normally. Change a setting on the board while the app
+  has lost contact and the line reset itself to "just now" over numbers that had not moved in hours.
+  It reports the age of the account read itself now — the oldest part of it, so it never sounds
+  fresher than the stalest thing under it — and no amount of recalculating can make that read look
+  newer than it is.
+
+- 4cef783: Add a developer-only way to run the desktop smoke suite without any window reaching the screen, so
+  a run no longer paints over the machine or takes focus once per spec. `BFC_HIDE_WINDOWS=1`
+  suppresses the reveal a window performs when it is created — both the main window and the mini Live
+  window — and, with it, the maximize that would otherwise surface a restored maximized layout.
+
+  Only the automatic reveal is suppressed. An explicit `show()`, such as the tray's Show or a second
+  instance surfacing the window, is untouched. The flag is refused in a packaged build regardless of
+  environment, so a shipped app cannot be started with a window the player cannot find.
+
+- ff44b70: Stop the inventory tooltip reporting a freshly refreshed Steam price as "quoted at an unknown time".
+
+  Two causes, both fixed. The desktop labels bound a single moment as their clock when they were
+  built, so every quote was dated against the render that made them: ages never advanced, and a
+  price refreshed after that render was stamped in the future and read as undatable. The clock is
+  now read each time a tooltip is asked for, and a quote that reads as later than it says "just
+  now" — matching the planner, which already clamped this.
+
+  Pricing no longer presents a native quote it cannot date. An undated native price is one whose
+  provenance is unknown, and the basis exists so a reader can click through and check the number
+  against the listing; converting from USD gives up a little exactness for a timestamp the entry
+  always carries. Every priced result now has a quote time.
+
+- Updated dependencies [006f970]
+- Updated dependencies [1eda18d]
+- Updated dependencies [f534b9e]
+- Updated dependencies [37fd673]
+- Updated dependencies [a8f352f]
+- Updated dependencies [f06d68d]
+- Updated dependencies [2a9dc62]
+- Updated dependencies [ff44b70]
+- Updated dependencies [f534b9e]
+  - @bombfarm/account@0.2.0
+  - @bombfarm/domain@0.11.0
+  - @bombfarm/pricing@0.2.0
+  - @bombfarm/ui@0.10.0
+  - @bombfarm/game-api@0.3.7
+  - @bombfarm/game-art@0.3.6
+  - @bombfarm/farm@0.2.3
+
 ## 0.10.0
 
 ### Minor Changes

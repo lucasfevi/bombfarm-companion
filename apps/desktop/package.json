@@ -1,6 +1,6 @@
 {
   "name": "@bombfarm/desktop",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "private": true,
   "description": "Bomb Farm Companion desktop shell",
   "repository": {
@@ -18,9 +18,12 @@
     "build": "pnpm build:electron && pnpm build:renderer",
     "dev": "pnpm build:electron && node scripts/dev.mjs",
     "dev:offline": "node scripts/dev-offline.mjs",
+    "dev:capture": "node scripts/dev-capture.mjs",
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p renderer/tsconfig.json --noEmit",
     "lint": "pnpm --dir ../.. exec eslint apps/desktop/src apps/desktop/renderer",
     "test:smoke": "playwright test -c playwright.config.ts --project=electron-smoke",
+    "pretest:smoke:hidden": "cross-env NODE_ENV=production BFC_FLAVOR=dev BFC_GAME_READER=fixture pnpm build",
+    "test:smoke:hidden": "cross-env BFC_HIDE_WINDOWS=1 playwright test -c playwright.config.ts --project=electron-smoke",
     "test:render-count": "playwright test -c playwright.config.ts --project=render-count-instrument",
     "render-count:compare": "node tests/render-count/render-count-compare-baseline.mjs",
     "package:dev": "cross-env BFC_FLAVOR=dev NODE_ENV=production node scripts/package.mjs",
@@ -29,6 +32,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
+    "@bombfarm/account": "workspace:*",
     "@bombfarm/contracts": "workspace:*",
     "@bombfarm/domain": "workspace:*",
     "@bombfarm/farm": "workspace:*",

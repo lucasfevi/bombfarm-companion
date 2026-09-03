@@ -50,13 +50,19 @@ describe('evaluatePushRefs', () => {
     expect(result.blocked).toEqual([]);
   });
 
-  it('allows a push to gh-pages', () => {
+  /**
+   * `gh-pages` was exempt while CI published visual reports to it. Nothing pushes it now, so the
+   * naming rule applies to it like any other name — and a reintroduced exemption would be dead
+   * config that quietly re-permits the branch.
+   */
+  it('holds gh-pages to the naming rule, its CI publisher being gone', () => {
+    expect(NAMING_EXEMPT_BRANCHES).not.toContain('gh-pages');
+
     const result = evaluatePushRefs(
       line('refs/heads/gh-pages', sha, 'refs/heads/gh-pages'),
       { protectedBranches },
     );
-    expect(result.allowed).toBe(true);
-    expect(result.blocked).toEqual([]);
+    expect(result.allowed).toBe(false);
   });
 
   it('blocks a delete-push (all-zero local sha) to a protected branch', () => {

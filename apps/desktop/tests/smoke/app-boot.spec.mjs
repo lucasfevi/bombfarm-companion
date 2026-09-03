@@ -39,6 +39,17 @@ test.describe('app boot smoke', () => {
       await page.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
       await expect(page.getByTestId('game-status-chip')).toHaveText('Connected', { timeout: 15_000 });
 
+      // Both directions of `BFC_HIDE_WINDOWS`, from whichever run is happening. Without this the
+      // hidden run would be green whether or not the flag was honoured, and the flag could rot
+      // into a no-op that nothing here would notice.
+      const revealed = process.env.BFC_HIDE_WINDOWS !== '1';
+      await expect
+        .poll(
+          () => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.isVisible() ?? false),
+          { timeout: 15_000 },
+        )
+        .toBe(revealed);
+
       const flavor = await page.evaluate(async () => {
         const bridge = window.bfc;
         if (!bridge) throw new Error('preload bridge missing');
@@ -71,16 +82,24 @@ test.describe('app boot smoke', () => {
       await expect(consentModal).toBeHidden({ timeout: 15_000 });
 
       // Live is the default tab in every flavor now, so its testids must be reachable the moment
-      // consent clears — no nav click. The renderer has no real game process to attach to here, so
-      // the honest "nothing read yet" empty state is exactly what should render, never four empty
-      // lists standing in for an account that was never read.
+      // consent clears — no nav click. Before anything has been read the honest "nothing read yet"
+      // empty state is what should render, never four empty lists standing in for an account that
+      // was never read.
+      //
+      // The view mounts its testid immediately and prints a loading placeholder until the first
+      // read settles, so the mount below proves nothing on its own and the text is the real wait.
+      // The fixture reader does eventually deliver frames, which measured here leaves the empty
+      // state standing for about 4.7s after consent — long enough to catch, but only if the wait
+      // outlasts a runner slow enough to still be loading, which is what failed at the 5s default.
       await expect(page.getByTestId('live-view')).toBeVisible({ timeout: 30_000 });
-      await expect(page.getByTestId('live-view')).toContainText('Nothing read from your account yet');
+      await expect(page.getByTestId('live-view')).toContainText('Nothing read from your account yet', {
+        timeout: 30_000,
+      });
 
-      // Four tabs: Live, Farm, Inventory, Settings (`navItemsFor`). This asserts the shell
-      // rendered its nav at all, not which tabs it holds — `i18n.spec.mjs` names each one.
+      // Five tabs: Live, Farm, Inventory, Account, Settings (`navItemsFor`). This asserts the
+      // shell rendered its nav at all, not which tabs it holds — `i18n.spec.mjs` names each one.
       const navButtons = page.locator('nav[aria-label="Main"] button');
-      await expect(navButtons).toHaveCount(4, { timeout: 30_000 });
+      await expect(navButtons).toHaveCount(5, { timeout: 30_000 });
 
       // the renderer's @bombfarm/domain value import reached the DOM.
       await expect(page.getByTestId('domain-label-probe')).toHaveText('Common');

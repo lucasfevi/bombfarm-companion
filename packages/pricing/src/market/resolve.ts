@@ -1,6 +1,7 @@
 import { listingUrl } from './endpoints.js';
+import { boughtSkinHashFor } from './tags.js';
 import type { MarketEntry, MarketSnapshot } from './types.js';
-import { categoryKey, priceKey } from './types.js';
+import { SKIN_CATEGORY, categoryKey, heroPriceKey, priceKey } from './types.js';
 
 export type PriceState =
   /** The game marks the item untradable; it can never have a market price. */
@@ -16,6 +17,20 @@ export interface PriceableItem {
   defId: string;
   rarity: number;
   tradable: boolean;
+}
+
+/** The fields of an owned hero that pricing needs. Matches the roster record. */
+export interface PriceableHero {
+  rarity: number;
+  /**
+   * The game's own marketable flag, and the field that governs whether a hero can be sold at all.
+   * Every account-bound hero carries it false.
+   *
+   * Whether it survives the player LISTING a hero is unobserved: no capture has ever held a hero
+   * that was on the market, so there is nothing to read it off. A listed hero is still owned until
+   * it sells and should still count, so if the flag does flip while listed, this under-reports.
+   */
+  marketable: boolean;
 }
 
 /**
@@ -38,7 +53,9 @@ export interface ResolvedPrice {
   basis: PriceBasis;
   /**
    * When the quoted `amount` was read from Steam: the native quote's own timestamp when
-   * `basis` is `native`, the enumeration's when it is `converted`. Null when unpriced.
+   * `basis` is `native`, the enumeration's when it is `converted`. Null only when unpriced —
+   * every `priced` result carries a timestamp, so a caller never has to date a price it is
+   * showing by guesswork.
    */
   quotedUtc: string | null;
   listings: number;
@@ -102,7 +119,11 @@ export function resolveKey(
   // endpoint carries as live — so treating its silence as "unlisted" would delist real supply.
   if (entry.lowestUsd == null) return unpriced('no-listing', key, entry, code, url);
 
-  const native = entry.lowestNative[code] ?? null;
+  // An undated native quote is not usable as one. It is a price with no provenance, and the
+  // basis exists so a reader can click through and check the number against the listing —
+  // which needs to know how old it is. Converting from USD loses 0.6-1.2% of exactness and
+  // gains a timestamp `fetchedUtc` always carries, and that is the better trade.
+  const native = entry.nativeQuotedUtc == null ? null : (entry.lowestNative[code] ?? null);
   const rate = snapshot.fx[code] ?? (code === 'USD' ? 1 : null);
 
   if (native != null) {
@@ -151,6 +172,36 @@ export function resolveItemPrice(
   const code = currency.toUpperCase();
   if (!item.tradable) return unpriced('not-tradable', null, null, code);
   return resolveKey(keyForItem(item), snapshot, currency);
+}
+
+/**
+ * Price one owned hero. Its market identity is its rarity and nothing else — a hero listing carries
+ * no set, slot, level or act — so unlike an item it needs no def to be looked up.
+ */
+export function resolveHeroPrice(
+  hero: PriceableHero,
+  snapshot: MarketSnapshot | null,
+  currency = 'USD',
+): ResolvedPrice {
+  const code = currency.toUpperCase();
+  if (!hero.marketable) return unpriced('not-tradable', null, null, code);
+  return resolveKey(heroPriceKey(hero.rarity), snapshot, currency);
+}
+
+/**
+ * Price one bought skin by the `skin` index a hero record carries. An index the skin table cannot
+ * name resolves with no key at all, which is what keeps it out of a total rather than letting it
+ * take another skin's price.
+ */
+export function resolveSkinPrice(
+  skinIndex: number,
+  snapshot: MarketSnapshot | null,
+  currency = 'USD',
+): ResolvedPrice {
+  const code = currency.toUpperCase();
+  const hashName = boughtSkinHashFor(skinIndex);
+  if (hashName == null) return unpriced('unknown', null, null, code);
+  return resolveKey(categoryKey(SKIN_CATEGORY, hashName), snapshot, currency);
 }
 
 export function marketEntryFor(

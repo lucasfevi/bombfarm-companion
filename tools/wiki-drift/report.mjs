@@ -15,12 +15,21 @@ export const TRACKER_MARKER = '<!-- bfc-wiki-drift-tracker -->';
  * source belongs here too — `data.rotacao`'s field and House ceilings are exactly that, and
  * listing only `phase-wiki.json` for it sent a reader to a file that does not hold them.
  *
- * `data.bolsa`/`combate`/`ritual`/`skill_tree`/`stat_kinds` and `fasesNomes.disponivel`/`mundos`/
+ * `data.bolsa`/`ritual`/`skill_tree`/`stat_kinds` and `fasesNomes.disponivel`/`mundos`/
  * `sufixos`/`zonas` back nothing today and are deliberately absent — `skill_tree` in particular
  * backs no committed file but is the section the wiki drift check reasoned from, so it still sits
  * inside the baseline; its absence here only affects how the "backs nothing" note reads.
  */
 export const ARTIFACT_BACKED_SECTIONS = {
+  // GRID_SPEED_COEF from `grid_speed_coef`, EFF_IA from `eff_ia`, the level-power step from
+  // `level_power`, the blocks-per-bomb and second-blast coefficients (model/combat.ts);
+  // PASSAGEM_BASTAO_WINDOW_SEC from `swap_dmg_secs` and PASSAGEM_BASTAO_COOLDOWN_SEC from
+  // `swap_dmg_cooldown_secs` (team-plan/ability-extras.ts). All hand-maintained constants — this
+  // section reaches no generated JSON.
+  'data.combate': [
+    'packages/domain/src/model/combat.ts',
+    'packages/domain/src/team-plan/ability-extras.ts',
+  ],
   // lines, gateSecsPorAto (phase-wiki.json); lines (phases.json)
   'data.fases': ['packages/domain/src/data/phase-wiki.json', 'packages/domain/src/data/phases.json'],
   // props, propsPorAto, bossHpMult, repHpMult, jaula

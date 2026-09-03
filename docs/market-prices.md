@@ -24,7 +24,29 @@ UI dates each price by the quote behind it so "now" is never implied.
 Passes run back to back rather than on a clock. The delay between the calls inside a pass is
 derived from a daily call budget rather than fixed: raising the budget tightens the rotation with
 no code change, and a budget high enough to breach the delay a full pass was measured drawing zero
-rate limits at is clamped rather than obeyed, and says so. A pass never starts sooner than five
+rate limits at is clamped rather than obeyed, and says so.
+
+**The budget counts every call, enumeration included.** Steam's per-address quota is cumulative
+and makes no distinction between endpoints, so neither does the budget: the enumeration's cost is
+taken off the top and the rotation is paced with what is left. Pacing the rotation alone left the
+enumeration outside the configured number, and a day of passes spent about 9% more than the figure
+it was given.
+
+**A day the market grows is what makes this load-bearing rather than tidy.** A newly listed row
+fires the tag pass, and one such pass was measured at **191 calls** — most of it enumeration.
+Pacing the rotation alone leaves the pass length unchanged whatever the enumeration costs, so that
+day spends 191 × 4.8 ≈ **917 calls against a ceiling of 650–700**. It does not fit, and the market
+has been adding around six rows a day, so those are not rare days.
+
+Deriving the pass length from the whole cost is what absorbs it: at 191 calls the pass stretches
+to about **8.3 hours** and the day spends 550. That is a real cost — a growth day gets a much
+slower rotation — and it is the right trade, because the alternative is not a faster rotation but
+a throttled address, which costs every row on the board rather than one day's freshness.
+
+So expect the call figures to look worse on a day the market grows, without anything having
+regressed: the enumeration is taking a share the rotation would otherwise have had.
+
+A pass never starts sooner than five
 minutes after the previous one began, because the published file is served with a five-minute
 `max-age` and republishing inside that window reaches nobody. A pass that fails, or one whose
 rotation the circuit breaker cut short, climbs a cool-down ladder before the next; and every pass
@@ -147,15 +169,124 @@ currency while the search endpoint carried it at $14.99 with a live listing. An 
 therefore means "not quoted", never "no supply".
 
 Coverage of a full pass: **42 of the 44 keys the index quotes**. Six of the eight raw misses are
-the pre-rename hashes that only ever appear as `alternates`. It costs one call per listed row at a
-**3.5s** spacing — the search pass's 1.5s is near double the rate this endpoint tolerates — and it
-is the first thing a rate-limited run drops, which is why a quote carries `nativeQuotedUtc` of its
-own rather than being dated by the run that published it.
+the pre-rename hashes that only ever appear as `alternates`. It costs one call per row in the
+rotation, never below the **3.5s** floor — the search pass's 1.5s is near double the rate this
+endpoint tolerates — and it is the first thing a rate-limited run drops, which is why a quote
+carries `nativeQuotedUtc` of its own rather than being dated by the run that published it.
 
 A quote is inherited across a run that could not take its own, but **only while `lowestUsd` is
 unchanged**. Once the book has visibly moved the old quote is known wrong: `Gold Ring Lv 20 (Rare)`
 went $2.80 to $1.10 inside one six-hour window, and an inherited `R$ 14,46` would have gone on
 being shown against a real `R$ 5,75`.
+
+## Only the rows that trade get a call of their own
+
+**About a third of the market has never reported a sale** — 41 of 115 listed rows, 36%, measured
+2026-09-03 against two independent sources that agree. The rest return a lowest price and nothing
+else. Quoting every row every pass left each one stale for up to a full rotation *before* the
+publish gap began, which put the continuous producer **behind the six-hourly job it replaced**:
+roughly 3 hours of staleness there against a 5-hour rotation here. At a fixed quota the only way
+to be fresh where it matters is to spend unevenly.
+
+Prefer the ratio to the counts. The market grew from 109 rows to 115 in a single day, so every
+absolute figure here ages; the date is on them for that reason.
+
+So the rotation is the rows that trade. Everything else is priced from the enumeration, which
+already returns a live USD price and listing count for **every** listed row for ten calls total —
+so the quiet third is not left stale, it is refreshed each pass and converted rather than quoted.
+Both parts get fresher, because the pass gets shorter for everyone.
+
+**What it actually bought, measured rather than projected.** The design projected a 47% cut in
+calls per pass on an estimate that half the market was untraded. Half was wrong:
+
+At a configured budget of 550 calls a day:
+
+| | calls per pass | cadence | actually spent |
+| --- | --- | --- | --- |
+| Uniform, pacing the rotation only | 125 | 5.0 h | **~600/day** |
+| Uniform, budget honoured | 125 | 5.5 h | 550/day |
+| Traded rows only, budget honoured | **84** | **3.7 h** | 550/day |
+
+**33%, not 47%** — a real saving and a smaller one than advertised. The saving is the durable
+figure; the cadences scale with whatever the budget is set to, and 550 is only what it was set to
+when this was measured.
+
+The first row is what ran before any of this: a 5.0-hour rotation that looks faster than the
+second only because it was buying the difference with calls nobody had budgeted. Measured on the
+live collector, a pass paced at 157,090 ms — exactly a day divided by 550, the rotation counted
+and the enumeration not. Two things the arithmetic does
+not capture are worth more than the difference. Spending individual quotes on rows with no trades
+at all was wrong on principle whatever the ratio turned out to be, and those rows lose nothing
+they were getting. And making the budget a total-call budget is the structural half: it is what
+was overshooting the quota, and the configured number now means what it says.
+
+Membership is a binary split on whether the row trades at all, not a graduated tier: it is a real
+distinction rather than a tuning parameter, and thresholds nobody can defend are worse than none.
+It is recomputed on its own interval from the readings the rotation has already been paying for —
+the history store keeps a volume per row per pass — so deciding it costs no collection of its own.
+A read that fails leaves the membership the collector had; with none yet, the rotation is
+everything listed, which is what the budget alone would have bought.
+
+A row the enumeration turns up for the first time has no history to be placed by, so it is quoted
+once and placed by that result. A row the quote endpoint answers *without a price* is placed by
+that too — the endpoint under-reports, and reading its silence as "still unknown" would put the
+row back in the rotation on every restart.
+
+**That answer is written down as a reading, with a null price.** `{"success":true}` and no
+`lowest_price` is the market saying it has nothing to quote for that row, which is a fact about
+the row and the thing that places it. A pair the pass never got an answer for — a failed request,
+a rate-limited one, one the breaker stopped it reaching — still writes nothing at all, because
+that is a fact about the pass and a row for it would claim a reading nobody took. The two are told
+apart at the source: the quote pass reports which pairs the endpoint *answered* for, separately
+from the ones that merely produced no price. The snapshot never sees these — a priceless entry
+there would date the row and defeat the inheritance a rate-limited pass depends on.
+
+Both tier sizes are recorded on the pass's own row, not only logged. Sub-dividing the quoted tier
+becomes worth doing once it passes roughly **80 rows**, and that is a trend rather than a moment:
+a log line cannot answer it. The counts exclude rows being quoted for the first time, which belong
+to neither tier yet — a figure that moved with however many rows happened to be newly listed that
+pass could not be read against a threshold. Those are counted separately, so the three together
+account for every row the split saw.
+
+**Which is every row the enumeration found a live price for, not every row the market carried.** A
+row with no active listing has nothing to quote and never reaches the split, so the three are a
+partition of the priced rows rather than of the board.
+
+### Reading a pass back off its own row
+
+The recorded delay is reconstructable, which is how a deploy is confirmed to have changed the
+pacing rather than merely to have shipped. Two columns do not mean what their names suggest, and
+both matter here:
+
+- **Enumeration cost one call more than `search_calls`.** The facet schema is a different endpoint
+  and is counted apart, exactly once per pass.
+- **The rotation was paced for attempts, not calls.** `quote_calls` counts each rate-limited retry
+  again, so the planned figure is `quote_calls - rate_limit_hits`.
+
+With `E = search_calls + 1` and `Q = quote_calls - rate_limit_hits`, the delay follows from the
+pacing rule — a pass costs `E + Q` and takes `MS_PER_DAY x (E + Q) / budget`, less the
+enumeration's own `E x searchDelayMs`, divided across `Q`. And `Q` should independently equal
+`tier_a_count + first_quote_count` times the currency count, which is the cross-check worth
+running: two derivations of the same number from different columns.
+
+**Only on a pass that completed.** The delay is derived up front from what the pass planned to
+spend, while the call columns record what it did spend, so a pass the breaker cut short lands
+below its plan with nothing wrong. Assert this only where `enumeration_complete` and
+`quotes_complete` are both true; on a short pass, spend falling under plan is the breaker working.
+
+**That threshold is close.** The quoted tier stood at 74 on 2026-09-03. So the remaining freshness
+is in sub-dividing it rather than in anything else here: the volume distribution inside it is
+extremely skewed, the busiest rows trading thousands of times a day and the quietest once, which
+is exactly the shape a second split exploits. As a projection and not a measurement — quoting a
+top slice every pass and the remainder every fourth would put a pass near 40 calls and roughly 15
+passes a day, taking the heavily-traded rows to about 1.6 hours while the quiet remainder sits
+near 6. That is a larger gain, for the rows anyone actually reads, than this split delivered.
+
+**A row left to the enumeration reports `basis: 'converted'`, and inherits no earlier quote.** The
+inheritance above exists for a quote that is merely late; this one is retired, and no later pass
+is coming for it, so carrying it forward would age a figure indefinitely behind the label that
+says it is the number on the listing. Native ran 0.6-1.2% from converted per row when both were
+measured, so the difference is real and the file states which it is showing.
 
 ## What the file says
 
@@ -274,6 +405,13 @@ that completes — both asserted by observing the write rather than reading a va
 reads the tree the producer pushes, not the opt-out's text: the deployment opt-out only works if
 it is in the pushed commit, and it must name the branch actually being pushed rather than one
 spelled into the config.
+
+`tools/market-quote-plan.test.mjs` holds the two claims a narrower test would pass on by accident.
+Membership is asserted in both directions from the readings alone — a row leaves the rotation when
+the window stops holding a sale for it, and joins when it starts — because a test that only proved
+a row was in the rotation would pass just as well against a hardcoded list. And the budget is
+asserted by counting a simulated day's calls the way the address counts them, every call whatever
+endpoint it went to, with the old rotation-only pacing kept alongside as the case that overshoots.
 
 `tools/market-prices-workflow.test.mjs` reads the workflow as text. It asserts the manual lever
 runs only when a human asks — false if a cron is spliced back in, false if the manual trigger is

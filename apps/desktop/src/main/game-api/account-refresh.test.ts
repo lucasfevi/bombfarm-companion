@@ -775,8 +775,9 @@ describe('account-refresh — revoke mid-cycle', () => {
     gate.observe({ kind: 'unauthorized' });
     expect(gate.state).toBe('halted');
 
-    // Second cycle, same mtimeMs — the cache still matches, so nothing resets the gate: it
-    // stays halted, exactly as the 401/403 terminal-state rule requires (never cleared by the normal cadence).
+    // Second cycle, same mtimeMs — the cache still matches, so nothing resets the gate. The
+    // clock here never advances, so the gate's own retry window cannot have lapsed either: this
+    // asserts the cycle does not clear a halt merely by coming round again.
     await refresh.refreshNow();
     expect(gate.state).toBe('halted');
 

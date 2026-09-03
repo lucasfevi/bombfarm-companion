@@ -1,5 +1,6 @@
 import { resolve } from 'node:path';
 import type { LiveEvent } from '@bombfarm/contracts';
+import { liveFrameWireKey as wireKey } from '@bombfarm/game-api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createReplayTapFactory,
@@ -18,16 +19,18 @@ const CAPTURE_TICKS = 58;
 
 function drive(overrides: { readonly consent?: () => boolean; readonly capturePath?: string } = {}) {
   const events: LiveEvent[] = [];
+  const observedFrames: Record<string, unknown>[] = [];
   const handle = createReplayTapFactory({
     capturePath: overrides.capturePath ?? COMMITTED_CAPTURE,
     consent: overrides.consent ?? (() => true),
+    onObservedFrame: (wire) => observedFrames.push(wire),
   })(
     (event) => events.push(event),
     () => undefined,
   );
   const frames = () => events.filter((event) => event.type === 'frame');
   const currencies = () => events.filter((event) => event.type === 'currency');
-  return { events, handle, frames, currencies };
+  return { events, handle, frames, currencies, observedFrames };
 }
 
 function advanceRecords(count: number): void {
@@ -239,5 +242,40 @@ describe('the replay tap drives the real decode path from the committed capture'
 
     advanceRecords(CAPTURE_RECORDS);
     expect(frames().length).toBe(beforeTeardown);
+  });
+});
+
+
+describe('ReplayTap: observed frames reach onObservedFrame', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('fires once per decoded tick, in arrival order, across a whole pass of the committed capture', () => {
+    const { handle, frames, observedFrames } = drive();
+    handle.start();
+    advanceRecords(CAPTURE_RECORDS);
+
+    expect(observedFrames).toHaveLength(CAPTURE_TICKS);
+    expect(frames()).toHaveLength(CAPTURE_TICKS);
+    expect(observedFrames.map((wire) => wire[wireKey('phase')])).toEqual(
+      frames().map((event) => event.frame.tick.phase),
+    );
+  });
+
+  it('is optional: a factory built without it replays the same ticks', () => {
+    const events: LiveEvent[] = [];
+    const handle = createReplayTapFactory({ capturePath: COMMITTED_CAPTURE, consent: () => true })(
+      (event) => events.push(event),
+      () => undefined,
+    );
+    handle.start();
+    advanceRecords(CAPTURE_RECORDS);
+
+    expect(events.filter((event) => event.type === 'frame')).toHaveLength(CAPTURE_TICKS);
   });
 });

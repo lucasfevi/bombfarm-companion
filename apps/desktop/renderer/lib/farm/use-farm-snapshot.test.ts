@@ -10,6 +10,7 @@ import type { AccountFidelity, AccountPayload, AccountView } from '@bombfarm/con
 import { accountChangeKey } from '@bombfarm/contracts';
 import type { FarmControls } from './farm-inputs';
 import { freshProposal } from './farm-respec-store';
+import { settledBoard } from './farm-snapshot-store';
 import { createFarmSnapshotStore, farmBoardStale } from './use-farm-snapshot';
 
 const CONTROLS: FarmControls = { farmPoolOverrides: {}, farmReturnBonus: 'off' };
@@ -64,6 +65,11 @@ function viewAtLevel(level: number): { view: AccountView; key: string } {
 function payloadWithGold(level: number, gold: string): AccountPayload {
   const payload = payloadAtLevel(level);
   return { ...payload, account: { ...payload.account, gold } };
+}
+
+/** The same account, stamped with when it was actually read off the game. */
+function payloadReadAt(level: number, capturedAt: string): AccountPayload {
+  return { ...payloadAtLevel(level), fidelity: fidelityAt(capturedAt) };
 }
 
 describe('the snapshot store computes once and does not follow the live account', () => {
@@ -335,5 +341,57 @@ describe('the hook subscribes to the account seam for freshness only', () => {
     const effects = source.match(/useEffect\(/g) ?? [];
     expect(effects).toHaveLength(1);
     expect(source).toMatch(/\}, \[\]\);/);
+  });
+});
+
+/**
+ * A compute is not a read. The board recomputes from an `AccountView` the renderer already holds,
+ * and when the app cannot reach the game that view stops moving while computes keep happening — a
+ * rotation-pool toggle is one, and it is a button the player presses over the board. Dating the
+ * settled snapshot by the compute made every one of those declare the numbers current; dating it
+ * by the account read cannot, because the compute does not touch it.
+ */
+describe('a settled board is dated by the account read behind it, never by the compute', () => {
+  const THREE_HOURS_AGO = new Date(Date.parse('2026-08-12T00:00:00.000Z') - 3 * 3_600_000).toISOString();
+
+  it('carries the account read time, not a clock this module read', () => {
+    const { store, open } = createFarmSnapshotStore();
+    const read = viewOf(payloadReadAt(10, THREE_HOURS_AGO));
+
+    open(read.view, read.key, CONTROLS);
+
+    expect(settledBoard(store.getState())?.capturedAt).toBe(THREE_HOURS_AGO);
+  });
+
+  it('a recompute over the same, un-re-read account does not refresh that date', () => {
+    const { store, open, setControls } = createFarmSnapshotStore();
+    const read = viewOf(payloadReadAt(10, THREE_HOURS_AGO));
+
+    open(read.view, read.key, CONTROLS);
+    const boardBefore = settledBoard(store.getState())?.board;
+
+    // The player toggles a hero out of the rotation pool. The board is computed again against the
+    // frozen account — a genuinely new compute, over data nobody re-read.
+    setControls({ farmPoolOverrides: { h1: false }, farmReturnBonus: 'off' });
+
+    const after = settledBoard(store.getState());
+    expect(after?.board).not.toBe(boardBefore);
+    expect(after?.capturedAt).toBe(THREE_HOURS_AGO);
+  });
+
+  it('takes the OLDEST section read, so the date never outruns the stalest thing under it', () => {
+    const { store, open } = createFarmSnapshotStore();
+    const payload = payloadReadAt(10, '2026-08-12T00:00:00.000Z');
+    const read = viewOf({
+      ...payload,
+      fidelity: {
+        ...fidelityAt('2026-08-12T00:00:00.000Z'),
+        items: { status: 'stale', capturedAt: THREE_HOURS_AGO },
+      },
+    });
+
+    open(read.view, read.key, CONTROLS);
+
+    expect(settledBoard(store.getState())?.capturedAt).toBe(THREE_HOURS_AGO);
   });
 });

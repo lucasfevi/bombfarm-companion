@@ -105,6 +105,14 @@ export type HeroRecord = {
   power?: number;
   deployed?: boolean;
   battleAllowed?: boolean;
+  /**
+   * The game's own `marketable` flag — whether the market permits selling this hero at all.
+   * Three-state on purpose: `false` is the account-bound answer, while absence means nobody has
+   * asked the game yet (a record written before the importer carried the flag, or a hero the
+   * planner built by hand). A reader that collapses absence into `false` reports a whole roster
+   * as bound.
+   */
+  marketable?: boolean;
   skin?: number;
   birth?: SheetStats;
   tree?: TreeState;

@@ -5,6 +5,7 @@
 @source '../../../../packages/ui/src/**/*.{ts,tsx}';
 @source '../../../../packages/game-art/src/**/*.{ts,tsx}';
 @source '../../../../packages/farm/src/**/*.{ts,tsx}';
+@source '../../../../packages/account/src/**/*.{ts,tsx}';
 
 /* @fontsource-variable/ibm-plex-sans registers its family as 'IBM Plex Sans Variable', not
    'IBM Plex Sans' — bridge it (and the mono face) to the --font-ibm-plex-sans /

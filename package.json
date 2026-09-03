@@ -11,6 +11,7 @@
   "scripts": {
     "dev": "pnpm --filter @bombfarm/desktop dev",
     "dev:offline": "pnpm --filter @bombfarm/desktop dev:offline",
+    "dev:capture": "pnpm --filter @bombfarm/desktop dev:capture",
     "dev:web": "pnpm --filter @bombfarm/web dev",
     "build": "node tools/with-cpu-budget.mjs pnpm -r build",
     "typecheck": "node tools/with-cpu-budget.mjs pnpm -r typecheck",
@@ -18,6 +19,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:smoke": "pnpm --filter @bombfarm/desktop test:smoke",
+    "test:smoke:hidden": "pnpm --filter @bombfarm/desktop test:smoke:hidden",
     "generate:wire-vocabulary": "node tools/generate-wire-glossary.mjs",
     "changeset": "changeset",
     "changeset:status": "changeset status",

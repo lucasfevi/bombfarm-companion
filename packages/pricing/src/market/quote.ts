@@ -24,8 +24,19 @@ export interface QuoteResult {
   /** Currencies this pass asked for, whether or not any came back. */
   currencies: string[];
   calls: number;
-  /** How many (hash, currency) pairs Steam answered without a price. */
+  /** How many (hash, currency) pairs produced no usable price, answered or not. */
   unquoted: number;
+  /**
+   * The pairs Steam answered *for* and carried no price on, with what the answer did hold.
+   *
+   * A reading, not a gap. `{"success":true}` with no `lowest_price` is the endpoint saying it has
+   * nothing to quote, which is a fact about the item worth keeping; a request that failed, was
+   * rate limited, or was never reached says nothing about the item and appears nowhere here.
+   *
+   * Deliberately not folded into `quotes`: a priceless entry there would set `nativeQuotedUtc` on
+   * the snapshot and defeat the inheritance a rate-limited pass depends on.
+   */
+  answeredUnpriced: { hashName: string; currency: string; quote: PriceQuote }[];
   /** False when the circuit breaker tripped; the caller keeps the previous run's quotes. */
   complete: boolean;
   anomalies: Anomaly[];
@@ -68,6 +79,7 @@ export async function quoteNative(
   const now = deps.now ?? Date.now;
 
   const quotes = new Map<string, Record<string, PriceQuote>>();
+  const answeredUnpriced: QuoteResult['answeredUnpriced'] = [];
   const anomalies: Anomaly[] = [];
   let calls = 0;
   let unquoted = 0;
@@ -75,7 +87,11 @@ export async function quoteNative(
   let delayMs = baseDelayMs;
   let consecutiveRateLimits = 0;
 
-  const fetchOne = async (hashName: string, currency: string): Promise<PriceQuote | null> => {
+  /** `answered` separates "the endpoint said nothing to quote" from "the request got nowhere". */
+  const fetchOne = async (
+    hashName: string,
+    currency: string,
+  ): Promise<{ answered: boolean; quote: PriceQuote | null }> => {
     for (;;) {
       calls += 1;
       const result = await deps.fetchPriceOverview(priceOverviewUrl(appId, hashName, currency));
@@ -84,12 +100,12 @@ export async function quoteNative(
         consecutiveRateLimits = 0;
         delayMs = baseDelayMs;
         await deps.sleep(delayMs);
-        return result.quote;
+        return { answered: true, quote: result.quote };
       }
 
       if (!result.rateLimited) {
         await deps.sleep(delayMs);
-        return null;
+        return { answered: false, quote: null };
       }
 
       consecutiveRateLimits += 1;
@@ -104,11 +120,15 @@ export async function quoteNative(
     for (const hashName of hashNames) {
       const byCurrency: Record<string, PriceQuote> = {};
       for (const currency of currencies) {
-        const quote = await fetchOne(hashName, currency);
+        const { answered, quote } = await fetchOne(hashName, currency);
         // Absent rather than null: a null would be indistinguishable from "quoted as unlisted",
         // and `resolveKey` treats an absent key as "convert from USD" instead of showing nothing.
-        if (quote?.lowest == null) unquoted += 1;
-        else byCurrency[currency] = quote;
+        if (quote?.lowest != null) {
+          byCurrency[currency] = quote;
+          continue;
+        }
+        unquoted += 1;
+        if (answered && quote != null) answeredUnpriced.push({ hashName, currency, quote });
       }
       if (Object.keys(byCurrency).length > 0) quotes.set(hashName, byCurrency);
     }
@@ -128,6 +148,7 @@ export async function quoteNative(
     currencies: [...currencies],
     calls,
     unquoted,
+    answeredUnpriced,
     complete,
     anomalies,
   };

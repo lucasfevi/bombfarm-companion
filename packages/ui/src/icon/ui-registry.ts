@@ -1,7 +1,13 @@
 import {
+  HiMiniArchiveBox,
   HiMiniArrowsRightLeft,
   HiMiniChevronDown,
   HiMiniChevronUp,
+  HiMiniCog6Tooth,
+  HiMiniEllipsisHorizontal,
+  HiMiniMap,
+  HiMiniSignal,
+  HiMiniUser,
   HiMiniXMark,
   HiMiniCheck,
   HiMiniCheckCircle,
@@ -14,13 +20,23 @@ import {
   HiMiniBars3,
   HiMiniWindow,
 } from 'react-icons/hi2';
-import { BiCoffee } from 'react-icons/bi';
+import { BiCoffee, BiCopy } from 'react-icons/bi';
 import { PiSortAscending, PiSortDescending } from 'react-icons/pi';
 import type { IconGlyph } from './types';
 
 export const uiIconRegistry = {
   // Desktop header control that opens the compact second Live window
   window: HiMiniWindow,
+  // The five desktop top-bar tabs, drawn instead of their words once the bar runs out of room.
+  // Named for the glyph rather than for the tab, so a second caller with a different vocabulary
+  // can reuse one without the key lying about what it draws.
+  signal: HiMiniSignal,
+  map: HiMiniMap,
+  'archive-box': HiMiniArchiveBox,
+  user: HiMiniUser,
+  cog: HiMiniCog6Tooth,
+  // The top bar's overflow trigger — the secondary actions, once they no longer fit beside the tabs
+  'ellipsis-horizontal': HiMiniEllipsisHorizontal,
   // Inventory layout toggle — cards
   'layout-grid': HiMiniSquares2X2,
   // Inventory layout toggle — list
@@ -38,6 +54,8 @@ export const uiIconRegistry = {
   check: HiMiniCheck,
   // Button coffee / coffee-full stories
   coffee: BiCoffee,
+  // The referral-code controls in both apps' chrome — copy the code to the clipboard
+  copy: BiCopy,
   // toast/notification `success` variant (m2-toast-settings)
   'check-circle': HiMiniCheckCircle,
   // toast/notification `error` variant (m2-toast-settings)

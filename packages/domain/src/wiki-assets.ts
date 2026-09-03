@@ -63,7 +63,9 @@ export const HERO_SKIN_COUNT = 9;
  * Save `skin` → bundled `hero{N}_avatar.png` N.
  * Wiki filenames `hero2` / `hero3` are swapped vs in-game skin 1 / 2.
  * Skin 7 → file 8 and skin 8 → file 9 are INFERRED from the identity mapping that holds for
- * indices 3..6; neither has been confirmed against an in-game save carrying that `skin`.
+ * indices 3..6. Skin 8 is no longer hypothetical — exports now carry heroes wearing it — but
+ * the pairing itself is still unverified: nobody has checked in game that a hero on skin 8
+ * displays file 9's art. Naming a skin does not confirm which file draws it.
  */
 const SKIN_AVATAR_FILE = [1, 3, 2, 4, 5, 6, 7, 8, 9] as const;
 
