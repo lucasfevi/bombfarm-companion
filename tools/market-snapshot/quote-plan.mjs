@@ -27,9 +27,10 @@ export function readBudget(raw) {
  * Split the listed items into the ones worth a call of their own and the ones the enumeration
  * already prices well enough.
  *
- * About half the market has never reported a sale, and an item nobody trades has a price that
- * moves only when someone relists it — which the enumeration sees anyway, for a tenth of a call.
- * Spending an equal share of a scarce budget on those is the whole inefficiency.
+ * About a third of the market has never reported a sale — 41 of 115 listed rows, measured
+ * 2026-09-03 — and an item nobody trades has a price that moves only when someone relists it,
+ * which the enumeration sees anyway for a tenth of a call. Spending an equal share of a scarce
+ * budget on those is the inefficiency this exists to remove.
  *
  * An item with no trading history at all is quoted rather than assumed either way: one call
  * settles which side it belongs on, and stranding it in a tier would decide that by default.
@@ -117,6 +118,11 @@ export function tiersAfterPass(tiers, { attempted, quotes }) {
  *
  * `currencyCount` multiplies the rotation into calls, because the quote endpoint is asked once per
  * item per currency and the pacing is a delay between calls, not between items.
+ *
+ * The two membership counts exclude the items being quoted for the first time, which belong to
+ * neither tier yet. Sub-dividing the quoted tier becomes worth doing once it passes roughly eighty
+ * items, and a count that drifted with however many items happened to be new that pass could not
+ * answer that.
  */
 export function planPass({
   hashNames,
@@ -134,7 +140,14 @@ export function planPass({
     searchDelayMs,
   });
 
-  return { ...split, ...pacing, hashNames: split.quote, delayMs: pacing.spacingMs };
+  return {
+    ...split,
+    ...pacing,
+    hashNames: split.quote,
+    delayMs: pacing.spacingMs,
+    tierACount: split.quote.length - split.firstQuote.length,
+    tierBCount: split.enumerationOnly.length,
+  };
 }
 
 export function planPacing({ budget, quoteCount, enumerationCalls, searchDelayMs }) {

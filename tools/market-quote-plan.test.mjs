@@ -189,6 +189,43 @@ describe('an item with no trading history is quoted once and placed by the resul
     const after = tiersAfterPass(known, { attempted: [], quotes: new Map() });
     expect(splitRotation(['Known', 'New'], after).quote).toEqual(['New']);
   });
+
+  it('counts it into neither tier while it is being quoted for the first time', () => {
+    const plan = planPass({
+      hashNames: ['Known', 'New'],
+      tiers: tiersFromHistory([reading('Known', 0)]),
+      budget: 600,
+      currencyCount: 1,
+      enumerationCalls: 10,
+      searchDelayMs: SEARCH_DELAY_MS,
+    });
+
+    expect(plan.hashNames).toEqual(['New']);
+    expect(plan.tierACount).toBe(0);
+    expect(plan.tierBCount).toBe(1);
+  });
+});
+
+/**
+ * Counted apart from the rotation, which carries the first-quote items too. The measurable trigger
+ * for sub-dividing the quoted tier is that it passes roughly eighty items, and a figure that moved
+ * with however many items happened to be new that pass could not answer it.
+ */
+describe('the two tier sizes', () => {
+  it('count membership, not the rotation the pass happens to run', () => {
+    const plan = planPass({
+      hashNames: ['Traded', 'Quiet', 'New'],
+      tiers: tiersFromHistory([reading('Traded', 5), reading('Quiet', 0)]),
+      budget: 600,
+      currencyCount: 1,
+      enumerationCalls: 10,
+      searchDelayMs: SEARCH_DELAY_MS,
+    });
+
+    expect(plan.hashNames).toEqual(['Traded', 'New']);
+    expect(plan.tierACount).toBe(1);
+    expect(plan.tierBCount).toBe(1);
+  });
 });
 
 /**

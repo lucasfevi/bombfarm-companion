@@ -429,6 +429,9 @@ export async function runSweep({
     quotes: quoted.quotes,
     quotedUtc: quoted.quotedUtc,
     unquoted: quoted.unquoted,
+    // A reading the snapshot has no room for: the market answered and had nothing to quote. It
+    // reaches a caller only here, and nowhere else does that stay apart from "never asked".
+    answeredUnpriced: quoted.answeredUnpriced,
     rateLimitHits,
     rateLimitHitsDerived,
     enumerationComplete: discovery.enumerationComplete,
