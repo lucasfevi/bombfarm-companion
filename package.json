@@ -19,6 +19,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:smoke": "pnpm --filter @bombfarm/desktop test:smoke",
+    "test:smoke:hidden": "pnpm --filter @bombfarm/desktop test:smoke:hidden",
     "generate:wire-vocabulary": "node tools/generate-wire-glossary.mjs",
     "changeset": "changeset",
     "changeset:status": "changeset status",

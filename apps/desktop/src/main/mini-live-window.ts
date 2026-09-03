@@ -83,6 +83,7 @@ export function createMiniLiveBrowserWindow(
     height: number;
     loadUrl: string;
     applyExternalNavigation?: ((webContents: MiniLiveWebContents) => void) | undefined;
+    suppressReveal?: boolean | undefined;
     log?: MiniLiveLog | undefined;
   },
 ): MiniLiveWindowLike {
@@ -107,7 +108,7 @@ export function createMiniLiveBrowserWindow(
   // Revealing once, here, is also what stops the window taking focus back a second time: it used
   // to show on `ready-to-show` and again on `did-finish-load` ~60 ms later, over whatever the
   // player had clicked into in between.
-  if (!win.isDestroyed()) {
+  if (!win.isDestroyed() && input.suppressReveal !== true) {
     win.show();
     win.focus();
   }
@@ -238,6 +239,7 @@ export function createMiniLiveController(deps: {
   getPrimaryWorkArea: () => WorkArea;
   getDisplayForBounds: (bounds: { x: number; y: number; width: number; height: number }) => DisplayInfo;
   getAlwaysOnTopMini: () => boolean;
+  suppressReveal?: boolean;
   schedulePersist?: (callback: () => void, immediate: boolean) => void;
   log?: MiniLiveLog;
 }): MiniLiveController {
@@ -298,6 +300,7 @@ export function createMiniLiveController(deps: {
       height: bounds.height,
       loadUrl: deps.resolveLoadUrl(),
       applyExternalNavigation: deps.applyExternalNavigation,
+      suppressReveal: deps.suppressReveal,
       log: deps.log,
     });
 
