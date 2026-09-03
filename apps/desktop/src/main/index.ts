@@ -105,6 +105,7 @@ import {
   type WindowPort,
 } from './shell/window-lifecycle.js';
 import { broadcastEventToWindows } from './shell/broadcast-event.js';
+import { isWindowRevealSuppressed } from './shell/window-reveal.js';
 import {
   createMiniLiveController,
   resolveMiniLiveLoadUrl,
@@ -361,6 +362,7 @@ function registerIpcHandlers(): void {
 
 async function createMainWindow(): Promise<void> {
   const env = resolveAppEnv();
+  const revealSuppressed = isWindowRevealSuppressed(process.env, env.isPackaged);
 
   const storedLayout = windowLayoutStore?.read()?.main ?? null;
   const primaryDisplay = screen.getPrimaryDisplay();
@@ -411,7 +413,9 @@ async function createMainWindow(): Promise<void> {
     },
   });
 
-  if (clamped.isMaximized) {
+  // `maximize()` shows a window that is not being displayed yet, so restoring a maximized layout
+  // is a second way onto the screen and has to answer to the same gate as `reveal`.
+  if (clamped.isMaximized && !revealSuppressed) {
     mainWindow.maximize();
   }
 
@@ -424,6 +428,7 @@ async function createMainWindow(): Promise<void> {
   gameReader?.setWindowProvider(() => mainWindow);
 
   const reveal = (): void => {
+    if (revealSuppressed) return;
     if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isVisible()) return;
     mainWindow.show();
     mainWindow.focus();
@@ -509,6 +514,7 @@ function createMiniLiveControllerInstance(env: ReturnType<typeof resolveAppEnv>)
     resolveLoadUrl: () => resolveMiniLiveLoadUrl({ isDev: env.isDev, devBaseUrl: RENDERER_DEV_URL }),
     preloadPath: path.join(__dirname, '../preload/index.cjs'),
     iconPath: path.join(__dirname, '../../assets/icon.ico'),
+    suppressReveal: isWindowRevealSuppressed(process.env, env.isPackaged),
     applyExternalNavigation: (webContents) => {
       applyExternalNavigationPolicy(webContents as WebContents, {
         openExternal: (url) => shell.openExternal(url),

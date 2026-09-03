@@ -39,6 +39,17 @@ test.describe('app boot smoke', () => {
       await page.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
       await expect(page.getByTestId('game-status-chip')).toHaveText('Connected', { timeout: 15_000 });
 
+      // Both directions of `BFC_HIDE_WINDOWS`, from whichever run is happening. Without this the
+      // hidden run would be green whether or not the flag was honoured, and the flag could rot
+      // into a no-op that nothing here would notice.
+      const revealed = process.env.BFC_HIDE_WINDOWS !== '1';
+      await expect
+        .poll(
+          () => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.isVisible() ?? false),
+          { timeout: 15_000 },
+        )
+        .toBe(revealed);
+
       const flavor = await page.evaluate(async () => {
         const bridge = window.bfc;
         if (!bridge) throw new Error('preload bridge missing');
