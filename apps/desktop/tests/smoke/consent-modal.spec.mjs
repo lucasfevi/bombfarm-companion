@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { shellControl } from './shell-control.mjs';
+import { closeShellOverflow, shellControl } from './shell-control.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..', '..');
@@ -131,6 +131,11 @@ test.describe('consent modal smoke (Success Criterion "shown once, survives rest
         // code it carries is referral-link.test.tsx's to prove — asserting the text here would be
         // read as a disclosure-wording assertion by consent-smoke-text-drift.test.ts.
         await expect(await shellControl(page, 'shell-referral')).toBeVisible();
+
+        // Reading those two opens the overflow menu on a bar narrow enough to have folded them,
+        // and an open menu holds the pointer for the whole window. The gate below is unreachable
+        // until it is shut.
+        await closeShellOverflow(page);
 
         // The gate is not a dead end, and the only way out of it is through the disclosure.
         await page.getByTestId('consent-gate-read-again').click();

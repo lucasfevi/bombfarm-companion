@@ -32,3 +32,19 @@ export async function shellControl(page, testId) {
   }
   return page.getByTestId(folded);
 }
+
+/**
+ * Shuts the overflow menu if a lookup opened one, and does nothing on the flat bar.
+ *
+ * An open menu holds the pointer for the whole window — its popup lays an inert layer over
+ * everything behind it — so a spec that only READ a folded control leaves the page underneath
+ * unclickable. Clicking a menu item closes it, which is why the specs that click never needed
+ * this; a spec that asserts and then goes back to the page does.
+ */
+export async function closeShellOverflow(page) {
+  const menu = page.getByTestId('shell-overflow-menu');
+  if ((await menu.count()) === 0) return;
+
+  await page.keyboard.press('Escape');
+  await menu.waitFor({ state: 'detached', timeout: 10_000 });
+}
