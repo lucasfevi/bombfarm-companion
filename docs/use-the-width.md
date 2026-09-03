@@ -15,7 +15,14 @@ three rows, three short numbers, and roughly two thirds of every row empty.
 3. Side by side collapses to stacked at narrow widths. The desktop window is resizable down to a
    small measure and the planner is used on narrow viewports, so a fixed multi-column grid is as
    wrong as never using the width at all.
-4. Empty space is not automatically a defect. Deliberate breathing room around a single headline
+4. **Side-by-side panels are the same height.** A panel that stops short of its neighbour, leaving
+   a ragged step and a hole beneath it, reads as unfinished rather than as brief. Stretch the row
+   and let the shorter panel fill it. The stretch has to reach the panel itself and not merely the
+   cell around it — the panel is the thing carrying the border, so a stretched cell wrapping an
+   unstretched panel looks exactly as wrong as no stretch at all.
+5. A panel whose values are abbreviating is too narrow, whatever the layout says. Widen its track
+   before accepting the ellipsis: the neighbour usually has the room to spare.
+6. Empty space is not automatically a defect. Deliberate breathing room around a single headline
    figure, or a measure that stops prose growing past a readable line length, are both correct.
    The defect is *repeated* short rows each claiming a full width they do not use.
 

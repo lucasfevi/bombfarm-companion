@@ -65,6 +65,21 @@ describe('AccountScreenLayout — where the four regions sit', () => {
     expect(Number(tracks?.[2])).toBeGreaterThan(Number(tracks?.[1]));
   });
 
+  it('stretches both halves of the summary row to one height, panel included', () => {
+    const html = render();
+    const row = classOf(html, 'account-screen-summary');
+
+    // A panel that stops short of its neighbour reads as unfinished rather than as brief.
+    expect(row, 'the row pins its cells to their own height again').not.toContain('items-start');
+    expect(row).toContain('items-stretch');
+
+    // The grid cell filling the row is not enough on its own: the panel inside carries the border,
+    // so it is the thing that has to grow. Both slots pass the stretch down, so the rule holds
+    // whichever side turns out to be taller.
+    expect(classOf(html, 'account-screen-identity')).toContain('flex-1');
+    expect(classOf(html, 'account-screen-holdings')).toContain('flex-1');
+  });
+
   it('collapses both rows to a stack before the width is there for them', () => {
     const html = render();
 

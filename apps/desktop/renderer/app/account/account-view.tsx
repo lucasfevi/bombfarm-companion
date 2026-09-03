@@ -117,15 +117,18 @@ export function AccountView({ onOpenInventory }: { onOpenInventory: () => void }
               }
               {...(priceAge === null ? {} : { footnote: priceAge })}
             />
-
-            {/* The prices inside the section above age on their own clock; this one is how old the
-                reading of the account itself is, and both belong on screen. */}
-            {facts.readCapturedAt === null ? null : (
-              <p data-testid="account-read-age" className="text-xs text-muted">
-                {sub(t.accountReadAge, { age: formatCapturedAt(facts.readCapturedAt, t) })}
-              </p>
-            )}
           </>
+        }
+        meta={
+          // The prices inside the holdings section age on their own clock; this is how old the
+          // reading of the ACCOUNT is. It dates all four panels rather than any one of them, so it
+          // sits under the row — inside a column it would push that panel past its neighbour and
+          // leave the two of them not lining up.
+          facts.readCapturedAt === null ? null : (
+            <p data-testid="account-read-age" className="text-xs text-muted">
+              {sub(t.accountReadAge, { age: formatCapturedAt(facts.readCapturedAt, t) })}
+            </p>
+          )
         }
         identity={
           facts.identity === null ? null : (

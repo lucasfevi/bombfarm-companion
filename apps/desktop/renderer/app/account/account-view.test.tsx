@@ -211,14 +211,24 @@ describe('the Account screen', () => {
     expect(summary).not.toContain(en.accountHouse);
   });
 
-  it('keeps how old the read is with the figure it dates, not adrift between the panels', () => {
+  it('puts how old the read is under the row, not in a column that would then outgrow its neighbour', () => {
     const markup = html();
     const holdings = markup.slice(
       markup.indexOf('data-testid="account-screen-holdings"'),
       markup.indexOf('data-testid="account-screen-identity"'),
     );
 
-    expect(holdings).toContain('account-read-age');
+    // This line used to sit in the holdings column, under the panel, which made that column taller
+    // than the identity panel beside it — the two stopped lining up at the bottom. The age dates
+    // the whole read rather than the holdings figure alone, so under the row is both the tidier
+    // place and the truer one.
+    expect(holdings).not.toContain('account-read-age');
+    expect(markup.slice(markup.indexOf('data-testid="account-screen-meta"'))).toContain(
+      'account-read-age',
+    );
+    expect(markup.indexOf('data-testid="account-screen-meta"')).toBeGreaterThan(
+      markup.indexOf('data-testid="account-screen-summary"'),
+    );
   });
 
   it('prices the heroes the game marks sellable — the component the web planner cannot draw', () => {
