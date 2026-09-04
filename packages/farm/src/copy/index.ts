@@ -1,16 +1,13 @@
 /** `@bombfarm/farm/copy` — user-facing strings for the farm screen. */
 import { farmEn } from './en';
 import { farmPtBR } from './pt-BR';
-import type { RosterCopy } from '@bombfarm/hero/copy';
+import type { Lang, RosterCopy } from '@bombfarm/hero/copy';
 
 export { farmEn } from './en';
 export { farmPtBR } from './pt-BR';
-export { sub } from './format';
+export { sub } from '@bombfarm/hero/copy';
+export type { Lang } from '@bombfarm/hero/copy';
 export type { RosterCopy as FarmRosterCopy } from '@bombfarm/hero/copy';
-
-/** The two languages the farm screen ships in. Spelled as the literal union `@bombfarm/domain`'s
- *  own formatters declare, so the two stay structurally identical. */
-export type Lang = 'en' | 'pt';
 
 /**
  * A value-widening mapped type, one line. `en.ts` keeps its `as const` (so its own values stay
