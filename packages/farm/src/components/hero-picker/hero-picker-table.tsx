@@ -5,7 +5,7 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { heroPowerIndex } from '@bombfarm/domain/power';
 import { DataTable, Tooltip } from '@bombfarm/ui';
 import type { FarmRosterCopy, Lang } from '../../copy';
-import { compareRosterHeroes } from '../../model/roster-compare';
+import { compareRosterHeroes } from '@bombfarm/hero/model';
 import {
   RosterSortHeader,
   type RosterSortDir,

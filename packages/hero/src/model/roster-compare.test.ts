@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SLOTS, emptyLoadout } from '@bombfarm/domain/gear';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { compareRosterHeroes } from './roster-compare';
-import type { RosterSortKey } from '@bombfarm/hero/components';
+import type { RosterSortKey } from '../components/hero-picker/roster-sort-header';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 
 /**
