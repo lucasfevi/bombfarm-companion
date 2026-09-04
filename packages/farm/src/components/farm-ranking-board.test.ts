@@ -527,7 +527,7 @@ describe('the components are prop-driven — no store, no host module', () => {
   });
 
   it('the scan reaches every component in this tree, subdirectories included', () => {
-    expect(componentFiles.length).toBe(35);
+    expect(componentFiles.length).toBe(34);
     expect(componentFiles).toContain('farm-ranking-board.tsx');
     expect(componentFiles).toContain('farm-respec-panel.tsx');
     expect(componentFiles).toContain('phases-explorer.tsx');

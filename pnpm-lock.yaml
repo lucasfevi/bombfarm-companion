@@ -364,6 +364,9 @@ importers:
       '@bombfarm/game-art':
         specifier: workspace:*
         version: link:../game-art
+      '@bombfarm/hero':
+        specifier: workspace:*
+        version: link:../hero
       '@bombfarm/ui':
         specifier: workspace:*
         version: link:../ui

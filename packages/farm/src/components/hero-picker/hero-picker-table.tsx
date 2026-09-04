@@ -10,7 +10,7 @@ import {
   RosterSortHeader,
   type RosterSortDir,
   type RosterSortKey,
-} from './roster-sort-header';
+} from '@bombfarm/hero/components';
 import { HeroPickerRow } from './hero-picker-row';
 
 export function HeroPickerTable({
