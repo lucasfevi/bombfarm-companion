@@ -171,6 +171,7 @@ export function normalizeHero(raw: Partial<HeroRecord> & Pick<HeroRecord, 'id' |
     marketable: raw.marketable,
     skin: normalizeSkin(raw.skin),
     birth: raw.birth ? normalizeSheetStats(raw.birth) : undefined,
+    statRanges: raw.statRanges,
   };
 }
 
