@@ -8,6 +8,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./forge": {
+      "types": "./dist/forge/index.d.ts",
+      "import": "./dist/forge/index.js"
+    },
     "./gear": {
       "types": "./dist/gear/index.d.ts",
       "import": "./dist/gear/index.js"
