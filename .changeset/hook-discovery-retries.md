@@ -8,9 +8,15 @@ A single empty candidate scan used to retire the game process permanently: the p
 every later poll returned "could not connect to the game" without rescanning, so one unlucky
 moment — an image read starved of memory, a security product mid-sweep, a game launched elevated —
 left the app reporting a connection failure every five seconds until it was quit and reopened. The
-whole account went with it, because the authenticated read is gated on the live reader being
-connected even though it needs nothing from it. A player who restarted the app saw it start
-working and had no way to know why.
+whole account went with it, and a player who restarted the app saw it start working with no way to
+know why.
+
+The account read no longer rides on that at all. Whether the game is running is now a question
+about the process, asked in one place and answered the same way everywhere, where it used to mean
+"the live tap has delivered a frame this reader could parse". Those are different questions, and
+conflating them meant a hook that could not attach also withheld the authenticated read — which
+needs only the session file and a granted consent, and would have succeeded on its own. An account
+that reads fine now does so while the tap is still trying.
 
 Discovery now stands down on a ladder (15s, 1m, 5m, 15m) and rescans, so a transient failure
 recovers without a restart while a binary that genuinely cannot be hooked is not rescanned on a

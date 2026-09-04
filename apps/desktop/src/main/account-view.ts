@@ -15,6 +15,7 @@ import type { AccountPayload, AccountView, ConsentRecord, GameStatusInfo } from 
  */
 export interface GameReaderLike {
   getStatus(): GameStatusInfo;
+  isGameProcessRunning(): boolean;
   getAccountView(): AccountView | null;
 }
 
@@ -52,9 +53,9 @@ export interface ResolveAccountViewDeps extends AccountViewDeps {
  * fixed in PR #69, `2dcfb73`).
  */
 export function resolveCachedAccountView(deps: AccountViewDeps): AccountView | null {
-  // gameRunning always comes fresh from the game reader's current status — never from a
-  // cached view, so a stale cached commit can never misreport whether the game is running.
-  const gameRunning = deps.gameReader?.getStatus().status === 'connected';
+  // gameRunning always comes fresh from the game reader — never from a cached view, so a stale
+  // cached commit can never misreport whether the game is running.
+  const gameRunning = deps.gameReader?.isGameProcessRunning() ?? false;
   // The game-API cycle is the freshest live producer, but only once it has
   // actually read something — i.e. once consent is granted. Before that, every cycle it
   // runs (including the very first one at boot, and every one thereafter while declined/
@@ -87,7 +88,7 @@ export function resolveCachedAccountView(deps: AccountViewDeps): AccountView | n
 export function resolveAccountView(deps: ResolveAccountViewDeps): AccountView {
   const cached = resolveCachedAccountView(deps);
   if (cached) return cached;
-  const gameRunning = deps.gameReader?.getStatus().status === 'connected';
+  const gameRunning = deps.gameReader?.isGameProcessRunning() ?? false;
   return (
     deps.accountStore?.commit({}, { gameRunning }) ?? {
       payload: {},
