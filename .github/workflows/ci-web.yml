@@ -13,6 +13,7 @@ on:
       - 'packages/domain/**'
       - 'packages/farm/**'
       - 'packages/game-art/**'
+      - 'packages/hero/**'
       - 'packages/pricing/**'
       - 'packages/ui/**'
       - 'docs/**'
@@ -54,6 +55,7 @@ jobs:
               - 'packages/domain/**'
               - 'packages/farm/**'
               - 'packages/game-art/**'
+              - 'packages/hero/**'
               - 'packages/pricing/**'
               - 'packages/ui/**'
               - 'docs/**'
@@ -95,19 +97,25 @@ jobs:
       - name: Build contracts and pricing (type dependencies)
         run: pnpm --filter @bombfarm/contracts --filter @bombfarm/pricing build
 
-      - name: Typecheck web + domain + ui
-        run: pnpm --filter @bombfarm/domain --filter @bombfarm/ui --filter @bombfarm/web typecheck
-
-      - name: Lint web + domain + ui
-        run: pnpm --filter @bombfarm/domain --filter @bombfarm/ui --filter @bombfarm/web lint
-
       # apps/web itself still resolves @bombfarm/domain SOURCE via tsconfig `paths` and the
-      # Vitest `resolve.alias` (AD-034) — this step is NOT that. It exists only so
-      # packages/domain's own packaging test (dist-package-exports.test.ts, AD-032) has a
-      # dist/ to assert against when "Unit tests (domain)" below runs. Do not "simplify" this
-      # into a web dependency; web never reads packages/domain/dist.
+      # Vitest `resolve.alias` — this step is NOT that. It exists so
+      # packages/domain's own packaging test (dist-package-exports.test.ts) has a
+      # dist/ to assert against when "Unit tests (domain)" below runs, and because
+      # @bombfarm/farm and @bombfarm/hero reach domain through its exports map (which points
+      # at dist), so the typecheck and lint steps below cannot run before this. Do not
+      # "simplify" this into a web dependency; web never reads packages/domain/dist.
       - name: Build domain (its own packaging test needs dist)
         run: pnpm --filter @bombfarm/domain build
+
+      - name: Typecheck web + domain + ui + farm + hero
+        run: >
+          pnpm --filter @bombfarm/domain --filter @bombfarm/ui --filter @bombfarm/farm
+          --filter @bombfarm/hero --filter @bombfarm/web typecheck
+
+      - name: Lint web + domain + ui + farm + hero
+        run: >
+          pnpm --filter @bombfarm/domain --filter @bombfarm/ui --filter @bombfarm/farm
+          --filter @bombfarm/hero --filter @bombfarm/web lint
 
       # Domain tests need no build output, so they stay ahead of the (slow) build to keep
       # fast feedback on the most common failures.

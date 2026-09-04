@@ -37,6 +37,7 @@
     "@bombfarm/domain": "workspace:*",
     "@bombfarm/farm": "workspace:*",
     "@bombfarm/game-art": "workspace:*",
+    "@bombfarm/hero": "workspace:*",
     "@bombfarm/pricing": "workspace:*",
     "@bombfarm/ui": "workspace:*",
     "@dnd-kit/core": "^6.3.1",

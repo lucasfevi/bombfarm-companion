@@ -39,6 +39,7 @@
     "@bombfarm/game-api": "workspace:*",
     "@bombfarm/game-art": "workspace:*",
     "@bombfarm/game-data": "workspace:*",
+    "@bombfarm/hero": "workspace:*",
     "@bombfarm/pricing": "workspace:*",
     "@bombfarm/tap-runtime": "workspace:*",
     "@bombfarm/ui": "workspace:*",

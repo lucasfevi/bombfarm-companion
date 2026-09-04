@@ -15,6 +15,7 @@ on:
       - 'packages/domain/**'
       - 'packages/game-api/**'
       - 'packages/game-data/**'
+      - 'packages/hero/**'
       - 'packages/pricing/**'
       - 'packages/ui/**'
       - 'pnpm-lock.yaml'
@@ -58,6 +59,7 @@ jobs:
               - 'packages/domain/**'
               - 'packages/game-api/**'
               - 'packages/game-data/**'
+              - 'packages/hero/**'
               - 'packages/pricing/**'
               - 'packages/ui/**'
               - 'pnpm-lock.yaml'
@@ -99,13 +101,15 @@ jobs:
         run: >
           pnpm --filter @bombfarm/contracts --filter @bombfarm/ui
           --filter @bombfarm/game-data --filter @bombfarm/game-api --filter @bombfarm/pricing
-          --filter @bombfarm/domain --filter @bombfarm/tap-runtime --filter @bombfarm/desktop typecheck
+          --filter @bombfarm/domain --filter @bombfarm/tap-runtime
+          --filter @bombfarm/farm --filter @bombfarm/hero --filter @bombfarm/desktop typecheck
 
       - name: Lint desktop + deps
         run: >
           pnpm --filter @bombfarm/contracts --filter @bombfarm/ui
           --filter @bombfarm/game-data --filter @bombfarm/game-api --filter @bombfarm/pricing
-          --filter @bombfarm/domain --filter @bombfarm/tap-runtime --filter @bombfarm/desktop lint
+          --filter @bombfarm/domain --filter @bombfarm/tap-runtime
+          --filter @bombfarm/farm --filter @bombfarm/hero --filter @bombfarm/desktop lint
 
       # apps/desktop/src/main/domain-edge.test.ts asserts against the esbuild main-process
       # bundle (MDW-03: domain code is actually inlined) and fails loudly in CI when it's
