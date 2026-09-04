@@ -878,3 +878,50 @@ describe('GameReaderService — the recurring tick must never spawn a process', 
     expect(mockedFindProcessId).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('GameReaderService — the process question is separate from the frame question', () => {
+  // The bug this separates out: consumers that only need "is the player in the game" asked the
+  // connected question, so a tap that could not attach also withheld the authenticated account
+  // read — which needs nothing from the tap.
+  it('reports the process running while the status is stale for want of a parseable frame', async () => {
+    mockedFindProcessId.mockResolvedValue(4242);
+    const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
+
+    await forceTick(service);
+
+    expect(service.getStatus().status).toBe('stale');
+    expect(service.isGameProcessRunning()).toBe(true);
+  });
+
+  it('reports the process not running when detection finds nothing', async () => {
+    mockedFindProcessId.mockResolvedValue(null);
+    const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
+    service.ingestLiveTick(liveFrame({ heroes: [], gold: 500, phase: 12 }));
+
+    await forceTick(service);
+
+    expect(service.isGameProcessRunning()).toBe(false);
+  });
+
+  it('reports the process not running while consent is withheld, whatever detection would find', async () => {
+    mockedFindProcessId.mockResolvedValue(4242);
+    const service = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => false });
+
+    await forceTick(service);
+
+    expect(service.isGameProcessRunning()).toBe(false);
+  });
+
+  it('reports the process running once a frame does parse, and in fixture mode', async () => {
+    mockedFindProcessId.mockResolvedValue(4242);
+    const live = new GameReaderService('/fake/user-data', { mode: 'live' }, { consent: () => true });
+    live.ingestLiveTick(liveFrame({ heroes: [], gold: 500, phase: 12 }));
+    live.ingestLiveCurrency(liveCurrency());
+
+    await forceTick(live);
+
+    expect(live.getStatus().status).toBe('connected');
+    expect(live.isGameProcessRunning()).toBe(true);
+    expect(new GameReaderService('/fake/user-data', { mode: 'fixture' }).isGameProcessRunning()).toBe(true);
+  });
+});
