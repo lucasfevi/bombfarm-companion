@@ -84,7 +84,7 @@ describe('phase drops panel', () => {
 
 describe('phase prop tables', () => {
   const mixSrc = readFarm('components/phase-prop-mix-table.tsx');
-  const fitSrc = readFarm('components/phases-hero-fit-table.tsx');
+  const fitSrc = readHero('components/phases-hero-fit-table.tsx');
 
   it('prefixes the prop label with its art in both tables, without adding a column', () => {
     for (const src of [mixSrc, fitSrc]) {

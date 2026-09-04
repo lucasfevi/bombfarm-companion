@@ -19,7 +19,7 @@ import { PhaseEconomyPanel } from './phase-economy-panel';
 import { PhaseJaulaPanel } from './phase-jaula-panel';
 import { PhaseDropsPanel } from './phase-drops-panel';
 import { PhasePropMixTable } from './phase-prop-mix-table';
-import { PhasesHeroPanel } from './phases-hero-panel';
+import { PhasesHeroPanel } from '@bombfarm/hero/components';
 import { PhasesSquadPanel } from './phases-squad-panel';
 import { PhasesEmptyRoster } from './phases-empty-roster';
 import type { HeroPickerSlot } from '@bombfarm/hero/components';
