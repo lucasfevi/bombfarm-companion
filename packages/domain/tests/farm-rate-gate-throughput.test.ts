@@ -14,6 +14,7 @@ import {
   computeSquadFarmFacts,
   type HeroFarmFacts,
 } from '@bombfarm/domain/farm-rate';
+import { FUSE_FLOOR, STAT_CAPS } from '@bombfarm/domain/model';
 import { propCountForAto } from '@bombfarm/domain/phase-wiki';
 import { holdSuiteUntilInRegime } from './helpers/capture-regime';
 import { FARM_OPTIMIZE_FIXTURE, loadFarmRateFixture } from './helpers/farm-rate-fixtures';
@@ -63,6 +64,8 @@ describe('the boss costs a gate row real throughput', () => {
     avgHitBase: 1e12,
     penetrationPct: 0,
     fuseSecs: 2,
+    fuseFloorSecs: FUSE_FLOOR,
+    cdrCapPct: STAT_CAPS.cdr,
     walkSpeedCells: 2,
     cycleSecs: 2,
     plantsPerSec: 0.5,

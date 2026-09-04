@@ -9,7 +9,7 @@
  * a count is wrong.
  */
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
-import type { SheetStats } from '@bombfarm/domain';
+import type { SheetStats } from '@bombfarm/domain/gear';
 import { normalizeHero, type HeroRecord } from '@/shared/lib/storage';
 import { selectHeroDraftTuple } from '@/shared/stores/persistence/persist-hero-draft';
 import { defaultHeroDraftFields } from '@/shared/stores/slices/hero-draft-slice';
