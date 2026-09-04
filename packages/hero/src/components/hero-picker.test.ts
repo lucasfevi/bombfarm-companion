@@ -86,7 +86,7 @@ describe('the components are prop-driven — no store, no host module', () => {
   });
 
   it('the scan reaches every component in this tree, subdirectories included', () => {
-    expect(componentFiles.length).toBe(6);
+    expect(componentFiles.length).toBe(7);
     expect(componentFiles).toContain('phases-hero-switcher.tsx');
     expect(componentFiles).toContain('hero-picker/hero-picker-row.tsx');
     expect(componentFiles).toContain('hero-picker/roster-sort-header.tsx');

@@ -6,3 +6,5 @@ export type { HeroPickerActions, HeroPickerData } from './hero-picker/hero-picke
 export { HeroActiveToggle } from './hero-picker/hero-active-toggle';
 export { PhasesHeroSwitcherView } from './phases-hero-switcher';
 export type { HeroPickerSlot, HeroPickerSlotProps } from './phases-hero-switcher';
+export { HeroCopyProvider, useHeroCopy } from './hero-copy-context';
+export type { HeroCopyValue } from './hero-copy-context';
