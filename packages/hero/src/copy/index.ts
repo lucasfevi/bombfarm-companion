@@ -1,2 +1,2 @@
 /** `@bombfarm/hero/copy` — user-facing strings for the hero and roster views. */
-export {};
+export type { RosterCopy } from './roster-copy';

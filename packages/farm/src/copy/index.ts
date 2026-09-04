@@ -1,12 +1,12 @@
 /** `@bombfarm/farm/copy` — user-facing strings for the farm screen. */
 import { farmEn } from './en';
 import { farmPtBR } from './pt-BR';
-import type { FarmRosterCopy } from './roster-copy';
+import type { RosterCopy } from '@bombfarm/hero/copy';
 
 export { farmEn } from './en';
 export { farmPtBR } from './pt-BR';
 export { sub } from './format';
-export type { FarmRosterCopy } from './roster-copy';
+export type { RosterCopy as FarmRosterCopy } from '@bombfarm/hero/copy';
 
 /** The two languages the farm screen ships in. Spelled as the literal union `@bombfarm/domain`'s
  *  own formatters declare, so the two stay structurally identical. */
@@ -30,10 +30,10 @@ export type FarmCopyKey = keyof FarmCopy;
 
 /**
  * Everything the farm SCREEN prints: its own dictionary plus the host's hero-identity vocabulary
- * (`FarmRosterCopy`, and see that file for why those strings are not in `farmEn`). A host passes one
+ * (`RosterCopy`, and see that file for why those strings are not in `farmEn`). A host passes one
  * object satisfying both halves, which is what its own flat dictionary already is.
  */
-export type FarmScreenCopy = FarmCopy & FarmRosterCopy;
+export type FarmScreenCopy = FarmCopy & RosterCopy;
 
 export const FARM_STRINGS: Record<Lang, FarmCopy> = { en: farmEn, pt: farmPtBR };
 
