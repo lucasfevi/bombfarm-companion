@@ -31,6 +31,7 @@ describe('contracts IPC surface', () => {
       'settings:usePortuguese',
       'settings:setAlwaysOnTopMain',
       'settings:setAlwaysOnTopMini',
+      'settings:setForgeWritesEnabled',
       'miniLive:open',
       'miniLive:close',
       'miniLive:getLayout',
@@ -157,10 +158,11 @@ describe('contracts IPC surface', () => {
   });
 
   it('ships default settings schema version', () => {
-    expect(DEFAULT_SETTINGS.schemaVersion).toBe(2);
+    expect(DEFAULT_SETTINGS.schemaVersion).toBe(3);
     expect(DEFAULT_SETTINGS.locale).toBe('en');
     expect(DEFAULT_SETTINGS.alwaysOnTopMain).toBe(false);
     expect(DEFAULT_SETTINGS.alwaysOnTopMini).toBe(false);
+    expect(DEFAULT_SETTINGS.forgeWritesEnabled).toBe(false);
   });
 });
 

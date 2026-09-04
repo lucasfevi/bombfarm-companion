@@ -1,16 +1,17 @@
 import { DEFAULT_SETTINGS, type AppSettings } from '@bombfarm/contracts';
 import { describe, expect, it, vi } from 'vitest';
-import { applyAlwaysOnTopMain, applyAlwaysOnTopMini, applyLocale } from './settings-apply.js';
+import { applyAlwaysOnTopMain, applyAlwaysOnTopMini, applyForgeWritesEnabled, applyLocale } from './settings-apply.js';
 
 const BASE: AppSettings = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   locale: 'en',
   alwaysOnTopMain: true,
   alwaysOnTopMini: true,
+  forgeWritesEnabled: true,
 };
 
 describe('applyLocale', () => {
-  it('spreads the current object and forces schemaVersion 2', () => {
+  it('spreads the current object and forces schemaVersion 3', () => {
     const persist = vi.fn((settings: AppSettings) => ({
       settings,
       persisted: true,
@@ -20,10 +21,11 @@ describe('applyLocale', () => {
     const result = applyLocale({ current: BASE, next: 'pt-BR', persist });
 
     expect(result.settings).toEqual({
-      schemaVersion: 2,
+      schemaVersion: 3,
       locale: 'pt-BR',
       alwaysOnTopMain: true,
       alwaysOnTopMini: true,
+      forgeWritesEnabled: true,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -63,10 +65,11 @@ describe('applyAlwaysOnTopMain', () => {
 
     expect(setAlwaysOnTop).toHaveBeenCalledWith(true, 'normal');
     expect(result.settings).toEqual({
-      schemaVersion: 2,
+      schemaVersion: 3,
       locale: 'pt-BR',
       alwaysOnTopMain: true,
       alwaysOnTopMini: false,
+      forgeWritesEnabled: false,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -129,7 +132,7 @@ describe('applyAlwaysOnTopMain', () => {
 });
 
 describe('applyAlwaysOnTopMini', () => {
-  it('calls setAlwaysOnTop with screen-saver level and persists schemaVersion 2', () => {
+  it('calls setAlwaysOnTop with screen-saver level and persists schemaVersion 3', () => {
     const setAlwaysOnTop = vi.fn();
     const persist = vi.fn((settings: AppSettings) => ({
       settings,
@@ -146,10 +149,11 @@ describe('applyAlwaysOnTopMini', () => {
 
     expect(setAlwaysOnTop).toHaveBeenCalledWith(true, 'screen-saver');
     expect(result.settings).toEqual({
-      schemaVersion: 2,
+      schemaVersion: 3,
       locale: 'pt-BR',
       alwaysOnTopMain: false,
       alwaysOnTopMini: true,
+      forgeWritesEnabled: false,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -171,5 +175,61 @@ describe('applyAlwaysOnTopMini', () => {
 
     expect(setAlwaysOnTop).toHaveBeenCalledWith(true, 'screen-saver');
     expect(setAlwaysOnTop).not.toHaveBeenCalledWith(true, 'normal');
+  });
+});
+
+describe('applyForgeWritesEnabled', () => {
+  it('persists the spread object with the flag applied and touches no window', () => {
+    const persist = vi.fn((settings: AppSettings) => ({
+      settings,
+      persisted: true,
+      reason: null,
+    }));
+
+    const result = applyForgeWritesEnabled({ current: { ...DEFAULT_SETTINGS, locale: 'pt-BR' }, enabled: true, persist });
+
+    expect(result.settings).toEqual({
+      schemaVersion: 3,
+      locale: 'pt-BR',
+      alwaysOnTopMain: false,
+      alwaysOnTopMini: false,
+      forgeWritesEnabled: true,
+    });
+    expect(persist).toHaveBeenCalledWith(result.settings);
+  });
+
+  it('turning it off persists false and leaves every other setting alone', () => {
+    const persist = vi.fn((settings: AppSettings) => ({
+      settings,
+      persisted: true,
+      reason: null,
+    }));
+
+    const result = applyForgeWritesEnabled({ current: BASE, enabled: false, persist });
+
+    expect(result.settings).toEqual({ ...BASE, forgeWritesEnabled: false });
+  });
+
+  it('returns applied settings with persisted false when the write fails', () => {
+    const persist = vi.fn(() => ({
+      settings: { ...DEFAULT_SETTINGS, forgeWritesEnabled: true },
+      persisted: false,
+      reason: 'no_store' as const,
+    }));
+
+    const result = applyForgeWritesEnabled({ current: DEFAULT_SETTINGS, enabled: true, persist });
+
+    expect(result.settings.forgeWritesEnabled).toBe(true);
+    expect(result.persisted).toBe(false);
+    expect(result.reason).toBe('no_store');
+  });
+
+  it('is a no-op for a non-boolean enabled argument — the switch cannot be turned on by a string', () => {
+    const persist = vi.fn();
+
+    const result = applyForgeWritesEnabled({ current: DEFAULT_SETTINGS, enabled: 'true', persist });
+
+    expect(result).toEqual({ settings: DEFAULT_SETTINGS, persisted: true, reason: null });
+    expect(persist).not.toHaveBeenCalled();
   });
 });

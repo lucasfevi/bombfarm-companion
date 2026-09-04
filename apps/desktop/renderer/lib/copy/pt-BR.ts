@@ -78,6 +78,13 @@ export const ptBR: Copy = {
     'A janela compacta do Ao vivo fica acima das outras janelas enquanto isso estiver ligado. Tem efeito imediato.',
   settingsAlwaysOnTopMiniNotSavedTitle: 'Sempre no topo da janela compacta alterado, mas não salvo',
 
+  // settingsForge* — o único interruptor que deixa a aba Forja gastar ouro (desligado por padrão)
+  settingsForgeSectionTitle: 'Forja',
+  settingsForgeWritesLabel: 'Deixar a Forja gastar ouro',
+  settingsForgeWritesHelp:
+    'Desligado: a aba Forja planeja subidas e nunca rola. Ligado: o botão Forjar gasta ouro da sua conta, uma execução confirmada por vez.',
+  settingsForgeWritesNotSavedTitle: 'Configuração da Forja alterada, mas não salva',
+
   // settingsConsent* — o controle de revogar o acesso à conta (Configurações só é alcançável já permitido)
   settingsConsentSectionTitle: 'Acesso à conta',
   settingsConsentStatusGranted: 'Acesso: permitido',

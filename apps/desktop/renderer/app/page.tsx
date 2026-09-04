@@ -30,6 +30,7 @@ import { FarmView } from './farm/farm-view';
 import { InventoryView } from './inventory/inventory-view';
 import { AccountView } from './account/account-view';
 import { ConsentSection } from './settings/consent-section';
+import { ForgeSection } from './settings/forge-section';
 import { DiagnosticsSection } from './settings/diagnostics-section';
 import { LanguageSection } from './settings/language-section';
 import { SupportSection } from './settings/support-section';
@@ -65,6 +66,8 @@ export default function HomePage() {
   const [alwaysOnTopWarning, setAlwaysOnTopWarning] = useState<SettingsWriteReason | null>(null);
   const [alwaysOnTopMini, setAlwaysOnTopMini] = useState(DEFAULT_SETTINGS.alwaysOnTopMini);
   const [alwaysOnTopMiniWarning, setAlwaysOnTopMiniWarning] = useState<SettingsWriteReason | null>(null);
+  const [forgeWritesEnabled, setForgeWritesEnabled] = useState(DEFAULT_SETTINGS.forgeWritesEnabled);
+  const [forgeWritesWarning, setForgeWritesWarning] = useState<SettingsWriteReason | null>(null);
 
   useEffect(() => {
     const bridge = getBridge();
@@ -80,6 +83,7 @@ export default function HomePage() {
         setLocale(settings.locale);
         setAlwaysOnTopMain(settings.alwaysOnTopMain);
         setAlwaysOnTopMini(settings.alwaysOnTopMini);
+        setForgeWritesEnabled(settings.forgeWritesEnabled);
       })
       .catch(() => {
         setLocale(DEFAULT_SETTINGS.locale);
@@ -124,6 +128,15 @@ export default function HomePage() {
     });
   };
 
+  const onForgeWritesEnabledChange = (next: boolean) => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('settings:setForgeWritesEnabled', next).then((result) => {
+      setForgeWritesEnabled(result.settings.forgeWritesEnabled);
+      setForgeWritesWarning(result.persisted ? null : result.reason);
+    });
+  };
+
   return (
     <CopyProvider locale={locale ?? DEFAULT_SETTINGS.locale}>
       <HomePageContent
@@ -136,6 +149,9 @@ export default function HomePage() {
         alwaysOnTopMini={alwaysOnTopMini}
         onAlwaysOnTopMiniChange={onAlwaysOnTopMiniChange}
         alwaysOnTopMiniWarning={alwaysOnTopMiniWarning}
+        forgeWritesEnabled={forgeWritesEnabled}
+        onForgeWritesEnabledChange={onForgeWritesEnabledChange}
+        forgeWritesWarning={forgeWritesWarning}
       />
     </CopyProvider>
   );
@@ -151,6 +167,9 @@ function HomePageContent({
   alwaysOnTopMini,
   onAlwaysOnTopMiniChange,
   alwaysOnTopMiniWarning,
+  forgeWritesEnabled,
+  onForgeWritesEnabledChange,
+  forgeWritesWarning,
 }: {
   locale: AppLocale;
   onLocaleChange: (next: AppLocale) => void;
@@ -161,6 +180,9 @@ function HomePageContent({
   alwaysOnTopMini: boolean;
   onAlwaysOnTopMiniChange: (next: boolean) => void;
   alwaysOnTopMiniWarning: SettingsWriteReason | null;
+  forgeWritesEnabled: boolean;
+  onForgeWritesEnabledChange: (next: boolean) => void;
+  forgeWritesWarning: SettingsWriteReason | null;
 }) {
   const t = useCopy();
   const { lang } = useLocale();
@@ -354,6 +376,11 @@ function HomePageContent({
                 alwaysOnTopMini={alwaysOnTopMini}
                 onAlwaysOnTopMiniChange={onAlwaysOnTopMiniChange}
                 miniPersistWarning={alwaysOnTopMiniWarning}
+              />
+              <ForgeSection
+                forgeWritesEnabled={forgeWritesEnabled}
+                onForgeWritesEnabledChange={onForgeWritesEnabledChange}
+                persistWarning={forgeWritesWarning}
               />
               <ConsentSection onRevoke={onConsentRevoke} />
               <DiagnosticsSection onSave={onSaveDiagnostics} result={diagnosticsDumpResult} />
