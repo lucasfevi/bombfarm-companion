@@ -4,7 +4,16 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import type { SheetStats } from '@bombfarm/domain/gear';
 import { SHEET_KEYS, ZERO_PTS_TEMPLATE, type SheetKey } from '@bombfarm/domain/planner-constants';
-import { rollQualityFor, statRollsFor } from '@bombfarm/domain/roll-quality';
+import {
+  LETTER_BANDS,
+  compareRollQuality,
+  distanceToNextLetter,
+  isNearBoundary,
+  letterForRollQuality,
+  rollQualityFor,
+  statRollsFor,
+  type LetterEvidence,
+} from '@bombfarm/domain/roll-quality';
 import { birthFromSave, readStatRanges } from '@bombfarm/domain/save-units';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { isJson, listFiles } from './helpers/list-files';
@@ -88,18 +97,19 @@ const SAVE_KEY_BY_SHEET_KEY: Record<SheetKey, string> = {
   luck: 'luck',
 };
 
-describe('rollQualityFor: the worked example', () => {
-  const payload = JSON.parse(
+const NYX = (
+  JSON.parse(
     readFileSync(join(FIXTURES_DIR, 'api', 'assembled-payload-after.json'), 'utf8'),
-  ) as { heroes: SaveHero[] };
-  const nyx = payload.heroes.find((h) => String(h.id) === '555');
+  ) as { heroes: SaveHero[] }
+).heroes.find((h) => String(h.id) === '555') as SaveHero;
 
+describe('rollQualityFor: the worked example', () => {
   it('the fixture still carries the hero this example is written against', () => {
-    expect(nyx, 'hero id 555 in api/assembled-payload-after.json').toBeDefined();
-    expect(nyx?.name).toBe('Nyx');
+    expect(NYX, 'hero id 555 in api/assembled-payload-after.json').toBeDefined();
+    expect(NYX.name).toBe('Nyx');
   });
 
-  const report = rollQualityFor(recordFromSaveHero(nyx as SaveHero));
+  const report = rollQualityFor(recordFromSaveHero(NYX));
 
   const EXPECTED: Record<SheetKey, number> = {
     attack: 20.395336195060263,
@@ -289,5 +299,208 @@ describe('the mean is unweighted over the statistics that contributed', () => {
     expect(report?.contributingStats).toBe(3);
     const placed = SHEET_KEYS.filter((key) => report?.perStat[key].percentile !== undefined);
     expect(placed).toEqual(['attack', 'energy', 'speed']);
+  });
+});
+
+function heroScoring(mean: number, rank?: string): HeroRecord {
+  return heroWith({
+    rank,
+    birth: birthWith({ attack: mean }),
+    statRanges: { attack: { min: 0, max: 100 } },
+  });
+}
+
+/** One entry per distinct hero, keyed on the birth-roll signature the letter table is derived on. */
+function distinctCorpusHeroes(): { readonly hero: SaveHero; readonly mean: number }[] {
+  const bySignature = new Map<string, { hero: SaveHero; mean: number }>();
+  for (const { hero } of CORPUS) {
+    const report = rollQualityFor(recordFromSaveHero(hero));
+    if (report === undefined) continue;
+    const signature = SHEET_KEYS.map(
+      (key) => (hero.birth_stats as Record<string, unknown>)[SAVE_KEY_BY_SHEET_KEY[key]],
+    ).join('|');
+    if (!bySignature.has(signature)) bySignature.set(signature, { hero, mean: report.mean });
+  }
+  return [...bySignature.values()];
+}
+
+const DISTINCT = distinctCorpusHeroes();
+
+describe('LETTER_BANDS still describes the corpus it was derived from', () => {
+  it('the corpus still holds the 65 distinct heroes the table was read off', () => {
+    expect(DISTINCT.length).toBe(65);
+  });
+
+  for (const evidence of LETTER_BANDS.evidence) {
+    it(`${evidence.letter}: the recorded hero count and observed extremes match the corpus`, () => {
+      const means = DISTINCT.filter((entry) => entry.hero.rank === evidence.letter).map((e) => e.mean);
+      expect(means.length).toBe(evidence.heroes);
+      expect(Math.min(...means)).toBeCloseTo(evidence.observedMin, 4);
+      expect(Math.max(...means)).toBeCloseTo(evidence.observedMax, 4);
+    });
+  }
+
+  it('orders the letters with no inversions: no hero outscores one of a higher letter', () => {
+    const inversions: string[] = [];
+    for (const a of DISTINCT) {
+      for (const b of DISTINCT) {
+        const rankA = LETTER_BANDS.letters.indexOf(String(a.hero.rank));
+        const rankB = LETTER_BANDS.letters.indexOf(String(b.hero.rank));
+        if (rankA < rankB && a.mean >= b.mean) {
+          inversions.push(`${a.hero.rank} ${a.mean} >= ${b.hero.rank} ${b.mean}`);
+        }
+      }
+    }
+    expect(inversions).toEqual([]);
+  });
+
+  it('every boundary interval is empty: no observed hero falls inside one', () => {
+    const inside = DISTINCT.filter((entry) => isNearBoundary(entry.mean)).map(
+      (entry) => `${entry.hero.rank} ${entry.mean}`,
+    );
+    expect(inside).toEqual([]);
+  });
+
+  it('places every corpus hero on the letter the game itself stored', () => {
+    const wrong = DISTINCT.filter((entry) => letterForRollQuality(entry.mean) !== entry.hero.rank).map(
+      (entry) => `${entry.hero.rank} ${entry.mean}`,
+    );
+    expect(wrong).toEqual([]);
+  });
+
+  it('reports no disagreement and no unknown letter anywhere in the corpus', () => {
+    for (const { hero } of CORPUS) {
+      const report = rollQualityFor(recordFromSaveHero(hero));
+      expect(report?.disagrees, String(hero.name)).toBe(false);
+      expect(report?.unknownLetter, String(hero.name)).toBe(false);
+    }
+  });
+});
+
+describe('letterForRollQuality', () => {
+  it('places the worked-example hero on the letter its record already carries', () => {
+    const report = rollQualityFor(recordFromSaveHero(NYX));
+    expect(report?.storedLetter).toBe('A');
+    expect(report?.computedLetter).toBe('A');
+    expect(report?.disagrees).toBe(false);
+    expect(report?.nearBoundary).toBe(false);
+    expect(report?.unknownLetter).toBe(false);
+  });
+
+  it('is open-ended at both ends — the observed extremes are not limits', () => {
+    expect(letterForRollQuality(0)).toBe('E');
+    expect(letterForRollQuality(LETTER_BANDS.evidence[0].observedMin - 10)).toBe('E');
+    expect(letterForRollQuality(100)).toBe('S');
+    expect(letterForRollQuality(LETTER_BANDS.evidence[5].observedMax + 10)).toBe('S');
+  });
+
+  for (const boundary of LETTER_BANDS.boundaries) {
+    const pair = `${boundary.below}/${boundary.above}`;
+
+    it(`${pair}: a mean inside the interval is near an edge, not a disagreement`, () => {
+      const mean = (boundary.min + boundary.max) / 2;
+      for (const stored of [boundary.below, boundary.above]) {
+        const report = rollQualityFor(heroScoring(mean, stored));
+        expect(report?.nearBoundary, stored).toBe(true);
+        expect(report?.disagrees, stored).toBe(false);
+        expect(report?.storedLetter, stored).toBe(stored);
+      }
+    });
+
+    it(`${pair}: the interval sits between the two letters' observed extremes`, () => {
+      const below = LETTER_BANDS.evidence.find((e) => e.letter === boundary.below) as LetterEvidence;
+      const above = LETTER_BANDS.evidence.find((e) => e.letter === boundary.above) as LetterEvidence;
+      expect(boundary.min).toBeGreaterThanOrEqual(below.observedMax);
+      expect(boundary.max).toBeLessThanOrEqual(above.observedMin);
+      expect(boundary.min).toBeLessThan(boundary.max);
+    });
+  }
+});
+
+describe('a disagreement is reported, never resolved', () => {
+  const maximalBands: MutableStatRanges = {};
+  const maximalBirth: Partial<Record<SheetKey, number>> = {};
+  for (const key of SHEET_KEYS) {
+    maximalBands[key] = { min: 0, max: 100 };
+    maximalBirth[key] = 100;
+  }
+  const report = rollQualityFor(
+    heroWith({ rank: 'E', birth: birthWith(maximalBirth), statRanges: maximalBands }),
+  );
+
+  it('a hero rolling the top of every band while stored as the lowest grade disagrees', () => {
+    expect(report?.mean).toBe(100);
+    expect(report?.computedLetter).toBe('S');
+    expect(report?.disagrees).toBe(true);
+  });
+
+  it('returns the stored letter unchanged even so', () => {
+    expect(report?.storedLetter).toBe('E');
+  });
+
+  it('one letter apart is never a disagreement, however far from the boundary', () => {
+    const middleOfB = (LETTER_BANDS.evidence[3].observedMin + LETTER_BANDS.evidence[3].observedMax) / 2;
+    const oneOff = rollQualityFor(heroScoring(middleOfB, 'A'));
+    expect(oneOff?.computedLetter).toBe('B');
+    expect(oneOff?.nearBoundary).toBe(false);
+    expect(oneOff?.disagrees).toBe(false);
+  });
+});
+
+describe('a stored letter this table does not know', () => {
+  it('reports unknownLetter and never a disagreement', () => {
+    const report = rollQualityFor(heroScoring(100, 'F'));
+    expect(report?.unknownLetter).toBe(true);
+    expect(report?.disagrees).toBe(false);
+    expect(report?.storedLetter).toBe('F');
+    expect(report?.computedLetter).toBe('S');
+  });
+
+  it('treats an absent stored letter the same way', () => {
+    const report = rollQualityFor(heroScoring(100));
+    expect(report?.unknownLetter).toBe(true);
+    expect(report?.disagrees).toBe(false);
+    expect(report?.storedLetter).toBeUndefined();
+  });
+});
+
+describe('distance to the next letter is a range, not a number', () => {
+  it('measures to both edges of the boundary interval', () => {
+    const boundary = LETTER_BANDS.boundaries[2];
+    const distance = distanceToNextLetter(50);
+    expect(distance?.letter).toBe('B');
+    expect(distance?.min).toBeCloseTo(boundary.min - 50, 10);
+    expect(distance?.max).toBeCloseTo(boundary.max - 50, 10);
+    expect(distance?.min).toBeLessThan(distance?.max as number);
+  });
+
+  it('is carried on the report, and absent on the top band, which has no next letter', () => {
+    expect(rollQualityFor(heroScoring(50))?.toNextLetter?.letter).toBe('B');
+    expect(rollQualityFor(heroScoring(90))?.toNextLetter).toBeUndefined();
+  });
+});
+
+describe('compareRollQuality', () => {
+  it('orders best roll first and unavailable last', () => {
+    const rows = [{ id: 'c' }, { id: 'a', rollQuality: 40 }, { id: 'b', rollQuality: 80 }];
+    expect([...rows].sort(compareRollQuality).map((r) => r.id)).toEqual(['b', 'a', 'c']);
+  });
+
+  it('breaks ties on hero id, so the same set orders the same way from any starting order', () => {
+    const tied = [
+      { id: 'delta', rollQuality: 60 },
+      { id: 'alpha', rollQuality: 60 },
+      { id: 'charlie', rollQuality: 60 },
+    ];
+    const forwards = [...tied].sort(compareRollQuality).map((r) => r.id);
+    const backwards = [...tied].reverse().sort(compareRollQuality).map((r) => r.id);
+    expect(forwards).toEqual(['alpha', 'charlie', 'delta']);
+    expect(backwards).toEqual(forwards);
+  });
+
+  it('orders two heroes with no roll quality at all by id rather than arbitrarily', () => {
+    const rows = [{ id: 'z' }, { id: 'y' }];
+    expect([...rows].sort(compareRollQuality).map((r) => r.id)).toEqual(['y', 'z']);
+    expect([...rows].reverse().sort(compareRollQuality).map((r) => r.id)).toEqual(['y', 'z']);
   });
 });
