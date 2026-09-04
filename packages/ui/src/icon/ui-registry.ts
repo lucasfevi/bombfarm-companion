@@ -21,7 +21,7 @@ import {
   HiMiniWindow,
 } from 'react-icons/hi2';
 import { BiCoffee, BiCopy } from 'react-icons/bi';
-import { PiSortAscending, PiSortDescending } from 'react-icons/pi';
+import { PiHammer, PiSortAscending, PiSortDescending } from 'react-icons/pi';
 import type { IconGlyph } from './types';
 
 export const uiIconRegistry = {
@@ -35,6 +35,8 @@ export const uiIconRegistry = {
   'archive-box': HiMiniArchiveBox,
   user: HiMiniUser,
   cog: HiMiniCog6Tooth,
+  // The sixth desktop tab, the Forge — drawn as its glyph at the same widths as the five above.
+  hammer: PiHammer,
   // The top bar's overflow trigger — the secondary actions, once they no longer fit beside the tabs
   'ellipsis-horizontal': HiMiniEllipsisHorizontal,
   // Inventory layout toggle — cards

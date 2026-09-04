@@ -28,6 +28,7 @@ import { UpdateChip } from './update-chip';
 import { LiveView } from './live/live-view';
 import { FarmView } from './farm/farm-view';
 import { InventoryView } from './inventory/inventory-view';
+import { ForgeView } from './forge/forge-view';
 import { AccountView } from './account/account-view';
 import { ConsentSection } from './settings/consent-section';
 import { ForgeSection } from './settings/forge-section';
@@ -396,6 +397,8 @@ function HomePageContent({
             <FarmView />
           ) : activeNavId === 'inventory' ? (
             <InventoryView />
+          ) : activeNavId === 'forge' ? (
+            <ForgeView forgeWritesEnabled={forgeWritesEnabled} accountSource={environment?.accountSource ?? null} />
           ) : activeNavId === 'account' ? (
             <AccountView
               onOpenInventory={() => {

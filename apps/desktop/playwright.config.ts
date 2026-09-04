@@ -21,6 +21,7 @@ export default defineConfig({
         'auto-recompute.spec.mjs',
         'i18n.spec.mjs',
         'inventory.spec.mjs',
+        'forge-plan.spec.mjs',
         'live-earnings-no-layout-shift.spec.mjs',
         'live-hero-row-no-layout-shift.spec.mjs',
         'live-state-summary-no-layout-shift.spec.mjs',
