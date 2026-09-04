@@ -16,7 +16,7 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { sub } from '../copy';
 import { formatClearTime } from '../model/phases-page';
 import { useFarmCopy } from './farm-copy-context';
-import { PhasesHeroSwitcherView, type HeroPickerSlot } from './phases-hero-switcher';
+import { PhasesHeroSwitcherView, type HeroPickerSlot } from '@bombfarm/hero/components';
 import { PhasesHeroFitTable } from './phases-hero-fit-table';
 
 export function PhasesHeroPanel({

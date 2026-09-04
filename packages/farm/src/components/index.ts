@@ -23,7 +23,14 @@ export type {
   PhasesExplorerData,
   PhasesExplorerSlots,
 } from './phases-explorer';
-export { PhasesHeroSwitcherView } from './phases-hero-switcher';
-export type { HeroPickerSlot, HeroPickerSlotProps } from './phases-hero-switcher';
-export { HeroActiveToggle, HeroPickerDialogView } from '@bombfarm/hero/components';
-export type { HeroPickerActions, HeroPickerData } from '@bombfarm/hero/components';
+export {
+  HeroActiveToggle,
+  HeroPickerDialogView,
+  PhasesHeroSwitcherView,
+} from '@bombfarm/hero/components';
+export type {
+  HeroPickerActions,
+  HeroPickerData,
+  HeroPickerSlot,
+  HeroPickerSlotProps,
+} from '@bombfarm/hero/components';

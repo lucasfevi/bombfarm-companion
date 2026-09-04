@@ -22,7 +22,7 @@ import { PhasePropMixTable } from './phase-prop-mix-table';
 import { PhasesHeroPanel } from './phases-hero-panel';
 import { PhasesSquadPanel } from './phases-squad-panel';
 import { PhasesEmptyRoster } from './phases-empty-roster';
-import type { HeroPickerSlot } from './phases-hero-switcher';
+import type { HeroPickerSlot } from '@bombfarm/hero/components';
 
 /**
  * Everything the explorer reads, in the host's own store-field names — the same rename-free

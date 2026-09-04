@@ -4,3 +4,5 @@ export type { RosterSortDir, RosterSortKey } from './hero-picker/roster-sort-hea
 export { HeroPickerDialogView } from './hero-picker/hero-picker-dialog';
 export type { HeroPickerActions, HeroPickerData } from './hero-picker/hero-picker-dialog';
 export { HeroActiveToggle } from './hero-picker/hero-active-toggle';
+export { PhasesHeroSwitcherView } from './phases-hero-switcher';
+export type { HeroPickerSlot, HeroPickerSlotProps } from './phases-hero-switcher';
