@@ -13,7 +13,7 @@ import {
   rarityTextClass,
   rosterInactiveChromeClass,
 } from '@bombfarm/game-art';
-import { sub, type FarmRosterCopy, type Lang } from '../../copy';
+import { sub, type Lang, type RosterCopy } from '../../copy';
 import { HeroActiveToggle } from './hero-active-toggle';
 
 /**
@@ -46,7 +46,7 @@ export const HeroPickerRow = memo(function HeroPickerRow({
   hero: HeroRecord;
   selected: boolean;
   lang: Lang;
-  t: FarmRosterCopy;
+  t: RosterCopy;
   formatNumber: (n: number, d?: number) => string;
   powerShown: number;
   onPick: (hero: HeroRecord) => void;

@@ -1,6 +1,6 @@
 /**
- * The hero-identity strings the farm screen's roster surfaces print — the switcher, the top-squad
- * table and the hero picker.
+ * The hero-identity strings the roster surfaces print — the switcher, the top-squad table and the
+ * hero picker, all of which the farm screen renders today.
  *
  * They are deliberately NOT in `farmEn`/`farmPtBR`. Every one of them is shared vocabulary a host
  * already prints elsewhere: "Rarity", "Power" and "Close" head this app's import preview, "Enabled"
@@ -13,7 +13,7 @@
  * already has. `apps/web`'s `Strings` matches member for member with no adapter; a host missing one
  * fails to compile at the call site naming the key.
  */
-export type FarmRosterCopy = {
+export type RosterCopy = {
   heroAvatarCol: string;
   heroBattleActive: string;
   heroBattleActiveTitle: string;

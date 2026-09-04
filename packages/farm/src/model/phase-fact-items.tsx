@@ -3,7 +3,8 @@ import { DropIcon, GoldIcon, rarityTextClass as rarityTextClassFor } from '@bomb
 import type { DropChanceRow, PhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
 import { phaseMapDisplayName, rarityLabel } from '@bombfarm/domain/phase-wiki';
 import { TipLabel, Tooltip } from '@bombfarm/ui';
-import { sub, type FarmCopy, type Lang } from '../copy';
+import { sub, type Lang } from '@bombfarm/hero/copy';
+import type { FarmCopy } from '../copy';
 import { formatDurationShort, GATE_KEY_RARITY_INDEX } from './phases-page';
 
 function rarityTextClass(index: number): string {

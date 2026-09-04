@@ -27,6 +27,7 @@ export default defineConfig({
       '@bombfarm/domain': path.resolve(root, '../../packages/domain/src'),
       '@bombfarm/ui': path.resolve(root, '../../packages/ui/src'),
       '@bombfarm/farm': path.resolve(root, '../../packages/farm/src'),
+      '@bombfarm/hero': path.resolve(root, '../../packages/hero/src'),
       '@bombfarm/contracts': path.resolve(root, '../../packages/contracts/src'),
     },
   },

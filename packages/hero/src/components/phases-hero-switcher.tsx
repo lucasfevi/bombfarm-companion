@@ -7,7 +7,7 @@ import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { MAX_STARS } from '@bombfarm/domain/gear';
-import type { FarmRosterCopy, Lang } from '../copy';
+import type { Lang, RosterCopy } from '../copy';
 
 /** What a host's picker needs to open over this control and report a pick back to it. */
 export type HeroPickerSlotProps = {
@@ -22,7 +22,7 @@ export type HeroPickerSlotProps = {
 export type HeroPickerSlot = (picker: HeroPickerSlotProps) => ReactNode;
 
 type Props = {
-  t: FarmRosterCopy;
+  t: RosterCopy;
   lang: Lang;
   heroes: HeroRecord[];
   hero: HeroRecord;

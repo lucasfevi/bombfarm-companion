@@ -4,8 +4,8 @@ import { useCallback, useMemo, useState } from 'react';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { heroPowerIndex } from '@bombfarm/domain/power';
 import { DataTable, Tooltip } from '@bombfarm/ui';
-import type { FarmRosterCopy, Lang } from '../../copy';
-import { compareRosterHeroes } from '../../model/roster-compare';
+import type { Lang, RosterCopy } from '../../copy';
+import { compareRosterHeroes } from '../../model';
 import {
   RosterSortHeader,
   type RosterSortDir,
@@ -25,7 +25,7 @@ export function HeroPickerTable({
   heroes: HeroRecord[];
   heroId: string | null;
   lang: Lang;
-  t: FarmRosterCopy;
+  t: RosterCopy;
   formatNumber: (n: number, d?: number) => string;
   onPick: (h: HeroRecord) => void;
   onSetBattleAllowed?: ((heroId: string, enabled: boolean) => void) | undefined;

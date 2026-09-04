@@ -14,8 +14,8 @@ import {
 import type { HeroPhaseFit } from '@bombfarm/domain/phase-intel';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { sub } from '../copy';
-import { formatClearTime } from '../model/phases-page';
-import { useFarmCopy } from './farm-copy-context';
+import { formatClearTime } from '../model';
+import { useHeroCopy } from './hero-copy-context';
 import { PhasesHeroSwitcherView, type HeroPickerSlot } from './phases-hero-switcher';
 import { PhasesHeroFitTable } from './phases-hero-fit-table';
 
@@ -32,7 +32,7 @@ export function PhasesHeroPanel({
   onSelectHero: (h: HeroRecord) => void;
   renderPicker?: HeroPickerSlot | undefined;
 }) {
-  const { t, lang } = useFarmCopy();
+  const { t, lang } = useHeroCopy();
   const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
 
   return (

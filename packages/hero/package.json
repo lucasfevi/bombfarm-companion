@@ -1,6 +1,6 @@
 {
-  "name": "@bombfarm/farm",
-  "version": "0.2.3",
+  "name": "@bombfarm/hero",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "exports": {
@@ -12,17 +12,13 @@
       "types": "./src/components/index.ts",
       "default": "./src/components/index.ts"
     },
-    "./core": {
-      "types": "./src/core/index.ts",
-      "default": "./src/core/index.ts"
-    },
     "./copy": {
       "types": "./src/copy/index.ts",
       "default": "./src/copy/index.ts"
     },
-    "./*": {
-      "types": "./src/*",
-      "default": "./src/*"
+    "./model": {
+      "types": "./src/model/index.ts",
+      "default": "./src/model/index.ts"
     }
   },
   "scripts": {
@@ -34,7 +30,6 @@
   "dependencies": {
     "@bombfarm/domain": "workspace:*",
     "@bombfarm/game-art": "workspace:*",
-    "@bombfarm/hero": "workspace:*",
     "@bombfarm/ui": "workspace:*"
   },
   "peerDependencies": {
