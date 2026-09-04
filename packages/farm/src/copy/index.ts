@@ -5,9 +5,6 @@ import type { Lang, RosterCopy } from '@bombfarm/hero/copy';
 
 export { farmEn } from './en';
 export { farmPtBR } from './pt-BR';
-export { sub } from '@bombfarm/hero/copy';
-export type { Lang } from '@bombfarm/hero/copy';
-export type { RosterCopy as FarmRosterCopy } from '@bombfarm/hero/copy';
 
 /**
  * A value-widening mapped type, one line. `en.ts` keeps its `as const` (so its own values stay

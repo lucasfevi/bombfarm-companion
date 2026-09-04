@@ -6,7 +6,7 @@ import { RARITIES } from '@bombfarm/domain/planner-constants';
 import type { RosterDpsRow } from '@bombfarm/domain/roster-dps';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { FarmScreenCopy } from '../copy';
-import { formatClearTime } from '../model/phases-page';
+import { formatClearTime } from '@bombfarm/hero/model';
 import { MAX_STARS } from '@bombfarm/domain/gear';
 
 type Props = {

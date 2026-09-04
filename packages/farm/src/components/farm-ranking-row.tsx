@@ -1,7 +1,8 @@
 'use client';
 
 import { DataTable, Tooltip, cn, statListMutedRowClass } from '@bombfarm/ui';
-import { sub, type FarmCopy, type Lang } from '../copy';
+import { sub, type Lang } from '@bombfarm/hero/copy';
+import type { FarmCopy } from '../copy';
 import type { FarmRateRow } from '@bombfarm/domain/farm-rate';
 import { dropAppliesOnPhase } from '@bombfarm/domain/phase-wiki';
 import { ClockIcon } from '@bombfarm/game-art';
@@ -14,7 +15,7 @@ import {
   formatRatePerHour,
   formatSignedRatePerHour,
 } from '../model/farm-ranking-format';
-import { formatClearTime } from '../model/phases-page';
+import { formatClearTime } from '@bombfarm/hero/model';
 
 type Props = {
   row: FarmRateRow;

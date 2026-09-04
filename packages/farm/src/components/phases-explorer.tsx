@@ -10,7 +10,8 @@ import {
 } from '@bombfarm/domain/roster-dps';
 import { DEFAULT_CASA_SLOTS } from '@bombfarm/domain/casa-slots';
 import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
-import type { FarmScreenCopy, Lang } from '../copy';
+import type { Lang } from '@bombfarm/hero/copy';
+import type { FarmScreenCopy } from '../copy';
 import type { FarmRankingResult } from '../core';
 import { FarmCopyProvider } from './farm-copy-context';
 import { PhasePicker } from './phase-picker';

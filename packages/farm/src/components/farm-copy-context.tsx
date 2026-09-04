@@ -1,7 +1,8 @@
 'use client';
 
 import { useHeroCopy } from '@bombfarm/hero/components';
-import type { FarmScreenCopy, Lang } from '../copy';
+import type { Lang } from '@bombfarm/hero/copy';
+import type { FarmScreenCopy } from '../copy';
 
 export { HeroCopyProvider as FarmCopyProvider } from '@bombfarm/hero/components';
 

@@ -25,14 +25,13 @@ import { Banner, EmptyState, colClass } from '@bombfarm/ui';
 import { scheduleAfterPaint } from '@bombfarm/farm';
 import {
   FarmRankingBoardView,
-  HeroPickerDialogView,
   PhasesExplorerView,
   type FarmRankingBoardActions,
   type FarmRankingBoardData,
   type FarmRankingBoardSlots,
   type FarmStatLabels,
-  type HeroPickerSlotProps,
 } from '@bombfarm/farm/components';
+import { HeroPickerDialogView, type HeroPickerSlotProps } from '@bombfarm/hero/components';
 import {
   buildAccount,
   deriveFarmPoolEntries,

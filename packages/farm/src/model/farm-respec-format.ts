@@ -6,7 +6,7 @@
  * digit formatting (`,`/`.`) is `formatNumber`'s own deliberate choice, kept here unchanged.
  */
 import { formatNumber } from '@bombfarm/ui';
-import type { Lang } from '../copy';
+import type { Lang } from '@bombfarm/hero/copy';
 
 /** A percent gain, one decimal — e.g. `12.8`. */
 export function formatGainPct(value: number, lang: Lang): string {
