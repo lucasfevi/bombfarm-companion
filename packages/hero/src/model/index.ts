@@ -1,0 +1,2 @@
+/** `@bombfarm/hero/model` — the view models and formatting the hero components render from. */
+export {};

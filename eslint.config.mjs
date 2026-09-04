@@ -47,6 +47,13 @@ const farmPackage = ['packages/farm/**/*.{ts,tsx}'];
  */
 const accountPackage = ['packages/account/**/*.{ts,tsx}'];
 
+/**
+ * `hero` holds the shared hero and roster views, which come out of `farm` — the same
+ * planner-origin tree, so it lints on the same relaxed tier and keeps its own list for the same
+ * reason.
+ */
+const heroPackage = ['packages/hero/**/*.{ts,tsx}'];
+
 /** Ban raw react-icons / SVG imports outside the Icon seam. */
 const rawIconImportRule = [
   'error',
@@ -199,6 +206,26 @@ export default tseslint.config(
         // (they must not ship in `dist/`), and the service then errors on a test file belonging
         // to no project. This one includes them, so they are linted like every other test here.
         project: './packages/account/tsconfig.eslint.json',
+        tsconfigRootDir: import.meta.dirname,
+      },
+      globals: globals.browser,
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+    },
+  },
+  {
+    files: heroPackage,
+    extends: [...tseslint.configs.recommendedTypeChecked],
+    languageOptions: {
+      parserOptions: {
+        // A dedicated project rather than `projectService`: the package tsconfig excludes tests
+        // (they must not ship in `dist/`), and the service then errors on a test file belonging
+        // to no project. This one includes them, so they are linted like every other test here.
+        project: './packages/hero/tsconfig.eslint.json',
         tsconfigRootDir: import.meta.dirname,
       },
       globals: globals.browser,
