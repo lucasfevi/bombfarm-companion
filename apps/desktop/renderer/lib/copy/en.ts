@@ -76,6 +76,13 @@ export const en = {
     'The compact Live window stays above other windows while this is on. Takes effect immediately.',
   settingsAlwaysOnTopMiniNotSavedTitle: 'Mini always-on-top changed, but not saved',
 
+  // settingsForge* — the one switch that lets the Forge tab spend gold (off by default)
+  settingsForgeSectionTitle: 'Forge',
+  settingsForgeWritesLabel: 'Let Forge spend gold',
+  settingsForgeWritesHelp:
+    'Off: the Forge tab plans climbs and never rolls. On: the Forge button spends gold on your account, one confirmed run at a time.',
+  settingsForgeWritesNotSavedTitle: 'Forge setting changed, but not saved',
+
   // settingsConsent* — the account access revoke control (Settings is reachable only once granted)
   settingsConsentSectionTitle: 'Account access',
   settingsConsentStatusGranted: 'Access: allowed',

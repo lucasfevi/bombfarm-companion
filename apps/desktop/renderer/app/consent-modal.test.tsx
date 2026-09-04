@@ -57,6 +57,12 @@ describe('isConsentModalVisible — unchanged existing behaviour', () => {
  * `renderToStaticMarkup` (no jsdom in this project), so a heading/text assertion against
  * `ConsentModalDialog` itself would see an empty string no matter what it renders.
  */
+/** renderToStaticMarkup HTML-escapes both quote kinds in text: "game's" -> "game&#x27;s", and the
+ *  quoted switch label in the write clause -> &quot;…&quot;. */
+function asRenderedText(text: string): string {
+  return text.replace(/'/g, '&#x27;').replace(/"/g, '&quot;');
+}
+
 describe('ConsentClauseList — every clause heading and its text reach the output', () => {
   it('English: all five headings and sentences appear, and none of the PT-BR text does', () => {
     const en = consentTextFor('en');
@@ -64,8 +70,7 @@ describe('ConsentClauseList — every clause heading and its text reach the outp
     expect(en.body).toHaveLength(5);
     for (const clause of en.body) {
       expect(html).toContain(clause.heading);
-      // renderToStaticMarkup HTML-escapes apostrophes ("game's" -> "game&#x27;s").
-      expect(html).toContain(clause.text.replace(/'/g, '&#x27;'));
+      expect(html).toContain(asRenderedText(clause.text));
     }
     const [firstPtBrClause] = consentTextFor('pt-BR').body;
     expect(firstPtBrClause).toBeDefined();
@@ -78,7 +83,7 @@ describe('ConsentClauseList — every clause heading and its text reach the outp
     expect(ptBr.body).toHaveLength(5);
     for (const clause of ptBr.body) {
       expect(html).toContain(clause.heading);
-      expect(html).toContain(clause.text);
+      expect(html).toContain(asRenderedText(clause.text));
     }
     const [firstEnClause] = consentTextFor('en').body;
     expect(firstEnClause).toBeDefined();

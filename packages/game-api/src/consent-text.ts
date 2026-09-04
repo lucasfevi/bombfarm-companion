@@ -24,7 +24,7 @@ export interface ConsentText {
   readonly declineLabel: string;
 }
 
-export const CONSENT_TEXT_VERSION = 3;
+export const CONSENT_TEXT_VERSION = 4;
 
 export const CONSENT_TEXT: Readonly<Record<AppLocale, ConsentText>> = {
   en: {
@@ -38,9 +38,11 @@ export const CONSENT_TEXT: Readonly<Record<AppLocale, ConsentText>> = {
           'that client is already exchanging with that server.',
       },
       {
-        heading: 'Never writes.',
-        text: 'It only reads: it sends nothing of its own to the game or the server, and nothing ' +
-          'in it can change your account, your game client, or your progress.',
+        heading: 'Writes only when you tell it to.',
+        text: 'Everything it shows is read. The one thing it can send is a forge roll — the same ' +
+          "two calls the game's own forge screen makes — and only from the Forge tab, only after " +
+          'you turn on "Let Forge spend gold" in Settings, and only after you confirm each run. ' +
+          'Nothing else in it can change your account, your game client, or your progress.',
       },
       {
         heading: 'Your token stays put.',
@@ -73,9 +75,12 @@ export const CONSENT_TEXT: Readonly<Record<AppLocale, ConsentText>> = {
           'ler o tráfego que esse cliente já troca com esse servidor.',
       },
       {
-        heading: 'Nunca escreve.',
-        text: 'Ele apenas lê: não envia nada de si mesmo ao jogo nem ao servidor, e nada nele ' +
-          'pode alterar sua conta, o cliente do jogo ou seu progresso.',
+        heading: 'Escreve só quando você manda.',
+        text: 'Tudo o que ele mostra é leitura. A única coisa que ele envia é uma rolagem de forja ' +
+          '— as mesmas duas chamadas que a tela de forja do jogo faz — e só pela aba Forja, só ' +
+          'depois que você ligar "Deixar a Forja gastar ouro" nas Configurações, e só depois de ' +
+          'confirmar cada execução. Nada mais nele pode alterar sua conta, o cliente do jogo ou ' +
+          'seu progresso.',
       },
       {
         heading: 'Seu token não sai do lugar.',

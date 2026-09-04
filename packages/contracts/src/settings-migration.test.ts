@@ -3,21 +3,40 @@ import { DEFAULT_SETTINGS } from './index.js';
 import { migrateStoredSettings } from './settings-migration.js';
 
 describe('migrateStoredSettings', () => {
-  it('migrates a v1 row to v2 with both always-on-top flags false', () => {
+  it('migrates a v1 row to v3 with every flag false', () => {
     expect(migrateStoredSettings({ schemaVersion: 1, locale: 'pt-BR' })).toEqual({
-      schemaVersion: 2,
+      schemaVersion: 3,
       locale: 'pt-BR',
       alwaysOnTopMain: false,
       alwaysOnTopMini: false,
+      forgeWritesEnabled: false,
     });
   });
 
-  it('returns a well-formed v2 row as-is', () => {
+  it('migrates a v2 row to v3 with forge writes off — the switch never comes on by migration', () => {
+    expect(
+      migrateStoredSettings({
+        schemaVersion: 2,
+        locale: 'en',
+        alwaysOnTopMain: true,
+        alwaysOnTopMini: false,
+      }),
+    ).toEqual({
+      schemaVersion: 3,
+      locale: 'en',
+      alwaysOnTopMain: true,
+      alwaysOnTopMini: false,
+      forgeWritesEnabled: false,
+    });
+  });
+
+  it('returns a well-formed v3 row as-is', () => {
     const stored = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       locale: 'en' as const,
       alwaysOnTopMain: true,
       alwaysOnTopMini: false,
+      forgeWritesEnabled: true,
     };
     expect(migrateStoredSettings(stored)).toEqual(stored);
   });
@@ -31,20 +50,24 @@ describe('migrateStoredSettings', () => {
         alwaysOnTopMini: true,
       }),
     ).toEqual({
-      schemaVersion: 2,
+      schemaVersion: 3,
       locale: 'en',
       alwaysOnTopMain: false,
       alwaysOnTopMini: true,
+      forgeWritesEnabled: false,
     });
   });
 
-  it('fills missing always-on-top flags from DEFAULT_SETTINGS on a v2 row', () => {
-    expect(migrateStoredSettings({ schemaVersion: 2, locale: 'en' })).toEqual({
-      schemaVersion: 2,
-      locale: 'en',
-      alwaysOnTopMain: DEFAULT_SETTINGS.alwaysOnTopMain,
-      alwaysOnTopMini: DEFAULT_SETTINGS.alwaysOnTopMini,
-    });
+  it('fills missing flags from DEFAULT_SETTINGS on a v2 or v3 row', () => {
+    for (const schemaVersion of [2, 3]) {
+      expect(migrateStoredSettings({ schemaVersion, locale: 'en' })).toEqual({
+        schemaVersion: 3,
+        locale: 'en',
+        alwaysOnTopMain: DEFAULT_SETTINGS.alwaysOnTopMain,
+        alwaysOnTopMini: DEFAULT_SETTINGS.alwaysOnTopMini,
+        forgeWritesEnabled: DEFAULT_SETTINGS.forgeWritesEnabled,
+      });
+    }
   });
 
   it('returns null for an unknown future schema version', () => {
@@ -58,11 +81,11 @@ describe('migrateStoredSettings', () => {
   });
 
   it('returns null when locale is missing or invalid', () => {
-    expect(migrateStoredSettings({ schemaVersion: 2, locale: 'fr' })).toBeNull();
-    expect(migrateStoredSettings({ schemaVersion: 2 })).toBeNull();
+    expect(migrateStoredSettings({ schemaVersion: 3, locale: 'fr' })).toBeNull();
+    expect(migrateStoredSettings({ schemaVersion: 3 })).toBeNull();
   });
 
-  it('returns null when a present always-on-top flag is not a boolean', () => {
+  it('returns null when a present flag is not a boolean', () => {
     expect(
       migrateStoredSettings({
         schemaVersion: 2,
@@ -77,6 +100,15 @@ describe('migrateStoredSettings', () => {
         locale: 'en',
         alwaysOnTopMain: false,
         alwaysOnTopMini: 1,
+      }),
+    ).toBeNull();
+    expect(
+      migrateStoredSettings({
+        schemaVersion: 3,
+        locale: 'en',
+        alwaysOnTopMain: false,
+        alwaysOnTopMini: false,
+        forgeWritesEnabled: 'on',
       }),
     ).toBeNull();
   });

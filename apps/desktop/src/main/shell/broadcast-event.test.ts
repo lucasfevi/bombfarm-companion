@@ -59,10 +59,11 @@ describe('broadcastEventToWindows', () => {
     const first = fakeWindow(false);
     const second = fakeWindow(false);
     const payload: AppSettings = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       locale: 'pt-BR',
       alwaysOnTopMain: false,
       alwaysOnTopMini: true,
+      forgeWritesEnabled: false,
     };
 
     broadcastEventToWindows([first, second], 'bfc:event:settings:changed', payload);
