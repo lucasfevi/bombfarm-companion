@@ -270,7 +270,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}', 'apps/desktop/renderer/**/*.{ts,tsx}'],
+    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}', 'packages/hero/**/*.{ts,tsx}', 'apps/desktop/renderer/**/*.{ts,tsx}'],
     plugins: { 'react-hooks': reactHooks },
     languageOptions: {
       globals: globals.browser,
@@ -280,17 +280,17 @@ export default tseslint.config(
     },
   },
   {
-    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}', 'apps/desktop/renderer/**/*.{ts,tsx}'],
+    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}', 'packages/hero/**/*.{ts,tsx}', 'apps/desktop/renderer/**/*.{ts,tsx}'],
     plugins: { react },
     rules: { 'react/forbid-dom-props': nativeTooltipRule },
   },
   {
-    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}'],
+    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}', 'packages/hero/**/*.{ts,tsx}'],
     plugins: { tailwindcss: eslintPluginTailwindcss },
     settings: {
       tailwindcss: {
-        // Web app owns the Tailwind v4 entry; recipes in packages/ui, packages/game-art and
-        // packages/farm are scanned from there.
+        // Web app owns the Tailwind v4 entry; recipes in packages/ui, packages/game-art,
+        // packages/farm and packages/hero are scanned from there.
         cssConfigPath: webTailwindCss,
       },
     },
@@ -320,7 +320,7 @@ export default tseslint.config(
     rules: { 'no-restricted-imports': rawIconImportRule },
   },
   {
-    files: ['packages/farm/**/*.{ts,tsx}'],
+    files: ['packages/farm/**/*.{ts,tsx}', 'packages/hero/**/*.{ts,tsx}'],
     rules: { 'no-restricted-imports': rawIconImportRule },
   },
   // Stories sit outside packages/ui/tsconfig.json, so they cannot carry type-aware
