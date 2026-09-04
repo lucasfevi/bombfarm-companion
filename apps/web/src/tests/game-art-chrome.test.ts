@@ -179,8 +179,8 @@ describe('hero gear icons', () => {
   });
 
   it('takes empty-slot copy as caller-supplied labels, and uses hover-only tooltip triggers', () => {
-    // Localisation itself is the caller's job (CIV-DEBT-02 — this package cannot import
-    // `@/shared/i18n`); the roster row call sites pin the localized text, see below.
+    // Localisation itself is the caller's job — this package cannot import `@/shared/i18n`; the
+    // roster row call sites pin the localized text, see below.
     expect(src).toContain('emptySlotAriaLabel');
     expect(src).toContain('emptySlotTip');
     expect(src).toContain('type="button"');

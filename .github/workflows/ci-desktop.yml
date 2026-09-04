@@ -11,9 +11,12 @@ on:
     # Keep in sync with the dorny/paths-filter list in the changes job below.
     paths:
       - 'apps/desktop/**'
+      - 'packages/account/**'
       - 'packages/contracts/**'
       - 'packages/domain/**'
+      - 'packages/farm/**'
       - 'packages/game-api/**'
+      - 'packages/game-art/**'
       - 'packages/game-data/**'
       - 'packages/hero/**'
       - 'packages/pricing/**'
@@ -55,9 +58,12 @@ jobs:
           filters: |
             desktop:
               - 'apps/desktop/**'
+              - 'packages/account/**'
               - 'packages/contracts/**'
               - 'packages/domain/**'
+              - 'packages/farm/**'
               - 'packages/game-api/**'
+              - 'packages/game-art/**'
               - 'packages/game-data/**'
               - 'packages/hero/**'
               - 'packages/pricing/**'
