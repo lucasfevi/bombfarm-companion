@@ -1,7 +1,8 @@
 /**
- * The bag table's own filter, order and cap over the inventory view's gear rows. Pure, no React
- * import. The inventory's shared filter is not reused because this table narrows on two axes it
- * does not have — a slot and a forge floor — and shows one kind only.
+ * The bag table's own filter over the inventory view's gear rows. Pure, no React import. The
+ * inventory's shared filter is not reused because this screen narrows on two axes it does not
+ * have — a slot and a forge floor — and shows one kind only. The order is the shared table's,
+ * which sorts and virtualizes the rows this hands it.
  */
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
 
@@ -57,64 +58,6 @@ export function filterForgeItems(
     const haystack = fold(searchText(item));
     return needles.every((needle) => haystack.includes(needle));
   });
-}
-
-export type ForgeSortKey = 'item' | 'slot' | 'level' | 'forge' | 'power';
-export type ForgeSortDirection = 'asc' | 'desc';
-export type ForgeSort = { readonly key: ForgeSortKey; readonly direction: ForgeSortDirection };
-
-export const DEFAULT_FORGE_SORT: ForgeSort = { key: 'forge', direction: 'desc' };
-
-const TEXT_KEYS: ReadonlySet<ForgeSortKey> = new Set<ForgeSortKey>(['item', 'slot']);
-
-/** Re-picking the leading column flips it; a new column opens the way a reader expects — words
- *  smallest-first, numbers largest-first. */
-export function nextForgeSort(sort: ForgeSort, key: ForgeSortKey): ForgeSort {
-  if (sort.key === key) return { key, direction: sort.direction === 'asc' ? 'desc' : 'asc' };
-  return { key, direction: TEXT_KEYS.has(key) ? 'asc' : 'desc' };
-}
-
-function numberOf(item: InventoryViewItem, key: ForgeSortKey): number {
-  switch (key) {
-    case 'level':
-      return item.level;
-    case 'forge':
-      return item.upgrade;
-    case 'power':
-      return item.power;
-    case 'item':
-    case 'slot':
-      return 0;
-  }
-}
-
-/** Ties break on power, then on the item id, so the order is the same on every render. */
-function tieBreak(a: InventoryViewItem, b: InventoryViewItem): number {
-  return b.power - a.power || a.id.localeCompare(b.id);
-}
-
-export function sortForgeRows(
-  rows: readonly InventoryViewItem[],
-  sort: ForgeSort,
-  nameOf: (item: InventoryViewItem) => string,
-  slotNameOf: (item: InventoryViewItem) => string,
-): InventoryViewItem[] {
-  const sign = sort.direction === 'asc' ? 1 : -1;
-  const compare = (a: InventoryViewItem, b: InventoryViewItem): number => {
-    if (TEXT_KEYS.has(sort.key)) {
-      const text = sort.key === 'item' ? nameOf : slotNameOf;
-      return sign * text(a).localeCompare(text(b)) || tieBreak(a, b);
-    }
-    return sign * (numberOf(a, sort.key) - numberOf(b, sort.key)) || tieBreak(a, b);
-  };
-  return [...rows].sort(compare);
-}
-
-export const FORGE_ROW_CAP = 400;
-
-export function capForgeRows(rows: readonly InventoryViewItem[]): { rows: InventoryViewItem[]; hidden: number } {
-  if (rows.length <= FORGE_ROW_CAP) return { rows: [...rows], hidden: 0 };
-  return { rows: rows.slice(0, FORGE_ROW_CAP), hidden: rows.length - FORGE_ROW_CAP };
 }
 
 /** Hero ids that wear gear in the bag, field heroes first, then by the caller's name. */

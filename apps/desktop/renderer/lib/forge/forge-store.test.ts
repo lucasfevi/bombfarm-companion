@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { FORGE_MAX } from '@bombfarm/domain/forge';
 import { buildInventoryView, type InventoryViewItem } from '@bombfarm/domain/inventory-view';
-import { DEFAULT_FORGE_SORT, EMPTY_FORGE_FILTER } from './forge-rows';
+import { EMPTY_FORGE_FILTER } from './forge-rows';
 import { INITIAL_FORGE_PLAN } from './use-forge-plan';
-import { INITIAL_FORGE_SCREEN, createForgeScreenStore, resolveForgeScreen } from './forge-store';
+import {
+  DEFAULT_FORGE_SORT,
+  INITIAL_FORGE_SCREEN,
+  createForgeScreenStore,
+  resolveForgeScreen,
+} from './forge-store';
 
 const ROWS = [
   { id: 'g1', def_id: 'steel_luva', category: 0, set: 'steel', rarity: 2, level: 20, upgrade: 12, power: 41.6 },
@@ -65,13 +70,13 @@ describe('the forge screen store', () => {
   it('holds what was put in it across reads, which is what surviving a tab change means', () => {
     const store = createForgeScreenStore();
     store.setFilter({ ...EMPTY_FORGE_FILTER, minForge: 8 });
-    store.setSort({ key: 'power', direction: 'asc' });
+    store.setSort([{ key: 'level', direction: 'asc' }]);
     store.select('g1');
     store.setPlan({ itemId: 'g1', target: 14, maxGold: 5_000, attempts: null });
 
     const held = store.getState();
     expect(held.filter.minForge).toBe(8);
-    expect(held.sort).toEqual({ key: 'power', direction: 'asc' });
+    expect(held.sort).toEqual([{ key: 'level', direction: 'asc' }]);
     expect(held.selectedId).toBe('g1');
     expect(held.plan.target).toBe(14);
     expect(store.getState()).toBe(held);
@@ -99,7 +104,7 @@ describe('the forge screen store', () => {
   it('goes back to where it started when reset', () => {
     const store = createForgeScreenStore();
     store.select('g1');
-    store.setSort({ key: 'item', direction: 'asc' });
+    store.setSort([{ key: 'name', direction: 'asc' }]);
     store.reset();
     expect(store.getState()).toEqual(INITIAL_FORGE_SCREEN);
   });

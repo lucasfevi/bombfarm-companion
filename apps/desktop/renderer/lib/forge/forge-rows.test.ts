@@ -1,18 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { buildInventoryView, type InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import {
-  DEFAULT_FORGE_SORT,
   EMPTY_FORGE_FILTER,
-  FORGE_ROW_CAP,
-  capForgeRows,
   filterForgeItems,
   forgeHeroIds,
   forgeRarities,
   forgeSlots,
   gearOf,
   isEmptyForgeFilter,
-  nextForgeSort,
-  sortForgeRows,
 } from './forge-rows';
 
 function gearRow(
@@ -33,13 +28,6 @@ const ROWS = [
 
 const GEAR = gearOf(buildInventoryView(ROWS).items);
 const nameOf = (item: InventoryViewItem) => item.defId;
-const slotOf = (item: InventoryViewItem) => item.slot ?? '';
-
-function itemNamed(id: string): InventoryViewItem {
-  const found = GEAR.find((item) => item.id === id);
-  if (!found) throw new Error(`no gear row ${id}`);
-  return found;
-}
 
 describe('gearOf', () => {
   it('keeps gear and nothing else', () => {
@@ -66,49 +54,6 @@ describe('filterForgeItems', () => {
   it('knows an empty filter', () => {
     expect(isEmptyForgeFilter(EMPTY_FORGE_FILTER)).toBe(true);
     expect(isEmptyForgeFilter({ ...EMPTY_FORGE_FILTER, minForge: 1 })).toBe(false);
-  });
-});
-
-describe('sortForgeRows', () => {
-  const order = (sort: typeof DEFAULT_FORGE_SORT) => sortForgeRows(GEAR, sort, nameOf, slotOf).map((item) => item.id);
-
-  it('opens on the forge level, highest first', () => {
-    expect(order(DEFAULT_FORGE_SORT)).toEqual(['ring', 'sword', 'helm', 'boots']);
-  });
-
-  it('breaks a tie on power, then on the id', () => {
-    expect(order({ key: 'level', direction: 'desc' })).toEqual(['sword', 'boots', 'helm', 'ring']);
-  });
-
-  it('orders words by the caller\'s name', () => {
-    expect(order({ key: 'slot', direction: 'asc' })).toEqual(['ring', 'sword', 'boots', 'helm']);
-  });
-
-  it('leaves the rows it was handed alone', () => {
-    const before = GEAR.map((item) => item.id);
-    sortForgeRows(GEAR, { key: 'item', direction: 'asc' }, nameOf, slotOf);
-    expect(GEAR.map((item) => item.id)).toEqual(before);
-  });
-});
-
-describe('nextForgeSort', () => {
-  it('opens a word column ascending and a number column descending, and flips the one already leading', () => {
-    expect(nextForgeSort(DEFAULT_FORGE_SORT, 'item')).toEqual({ key: 'item', direction: 'asc' });
-    expect(nextForgeSort(DEFAULT_FORGE_SORT, 'power')).toEqual({ key: 'power', direction: 'desc' });
-    expect(nextForgeSort(DEFAULT_FORGE_SORT, 'forge')).toEqual({ key: 'forge', direction: 'asc' });
-  });
-});
-
-describe('capForgeRows', () => {
-  it('shows every row up to the cap and counts the rest', () => {
-    const many: InventoryViewItem[] = Array.from({ length: FORGE_ROW_CAP + 7 }, (_, index) => ({
-      ...itemNamed('sword'),
-      id: `row-${String(index)}`,
-    }));
-    const capped = capForgeRows(many);
-    expect(capped.rows).toHaveLength(FORGE_ROW_CAP);
-    expect(capped.hidden).toBe(7);
-    expect(capForgeRows(many.slice(0, 3)).hidden).toBe(0);
   });
 });
 

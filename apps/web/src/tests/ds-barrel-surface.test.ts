@@ -215,9 +215,17 @@ describe('design-system barrel surface (frozen)', () => {
 // next — the one arrangement every surface that names an item now uses. The inventory card, the
 // inventory row and the Forge screen each had their own before, and the level itself was written
 // three different ways; added so a fourth surface cannot invent a fifth.
+//
+// The table's per-host column set (2026-09-05): `DEFAULT_INVENTORY_TABLE_COLUMNS` is the set an
+// inventory bag asks for, named so a second host can start from it. `inventoryTableNameClass`,
+// `inventoryTableItemNameClass` and `inventoryTableForgeClass` left with it — `ItemIdentity` now
+// draws that whole block, and the three had no callers once it did.
+// `inventoryTableSelectedRowClass` arrives in their place, for the row a picker screen is
+// currently planning against.
 const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'AbilityIcon',
   'ArtFrame',
+  'DEFAULT_INVENTORY_TABLE_COLUMNS',
   'InventoryGrid',
   'InventoryLayoutToggle',
   'InventoryTable',
@@ -264,16 +272,14 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'inventoryStatsPanelClass',
   'inventoryTableActionButtonClass',
   'inventoryTableBlankClass',
-  'inventoryTableForgeClass',
   'inventoryTableGoldClass',
   'inventoryTableGroupCountClass',
   'inventoryTableGroupHeaderClass',
   'inventoryTableHeroClass',
   'inventoryTableHeroNameClass',
-  'inventoryTableItemNameClass',
-  'inventoryTableNameClass',
   'inventoryTableResultCountClass',
   'inventoryTableRowClass',
+  'inventoryTableSelectedRowClass',
   'inventoryTableSkippedNoteClass',
   'inventoryTableToolbarClass',
   'rarityDotClass',

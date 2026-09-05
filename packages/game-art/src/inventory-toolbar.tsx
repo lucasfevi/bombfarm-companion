@@ -13,7 +13,7 @@ import {
   type InventoryFilter,
   type InventorySetGroup,
   type InventorySort,
-  type InventorySortKey,
+  type InventorySortMenuKey,
   type InventoryView,
   type ItemKind,
 } from "@bombfarm/domain/inventory-view";
@@ -68,7 +68,7 @@ export interface InventoryToolbarLabels {
   /** The popup's action when the list is narrowed — the other half of `clear`. */
   selectAllSets: string;
   sortLabel: string;
-  sortKey: (key: InventorySortKey) => string;
+  sortKey: (key: InventorySortMenuKey) => string;
   sortAscending: string;
   sortDescending: string;
 }
@@ -122,9 +122,6 @@ export interface InventoryToolbarProps {
   sort: InventorySort;
   onSortChange: (next: InventorySort) => void;
   shown: number;
-  /** The list layout sorts through its own column headers, so it hides this pair rather than
-   *  offering a second control for the same order. */
-  showSort?: boolean;
   /** Offered only where a market snapshot exists — with no prices to compare, the chip would
    *  empty the screen and say nothing about why. */
   showPricedOnly?: boolean;
@@ -141,7 +138,6 @@ export function InventoryToolbar({
   sort,
   onSortChange,
   shown,
-  showSort = true,
   showPricedOnly = false,
   actions,
 }: InventoryToolbarProps) {
@@ -181,7 +177,6 @@ export function InventoryToolbar({
           {/* Sort leads the row: it describes the whole grid, where the search box narrows it.
             Both halves share an outline so the pair reads as "sorted by X, descending", and the
             group matches the search box's height rather than sitting as a shorter pill beside it. */}
-          {showSort ? (
           <span className={inventorySortGroupClass}>
             <Select
               size="compact"
@@ -189,11 +184,11 @@ export function InventoryToolbar({
               onChange={(event) =>
                 onSortChange(
                   withSortTerm(sort, {
-                    key: event.target.value as InventorySortKey,
+                    key: event.target.value as InventorySortMenuKey,
                     direction:
                       sortDirectionFor(
                         sort,
-                        event.target.value as InventorySortKey
+                        event.target.value as InventorySortMenuKey
                       ) ?? "desc",
                   })
                 )
@@ -237,7 +232,6 @@ export function InventoryToolbar({
               </Tooltip.Portal>
             </Tooltip.Root>
           </span>
-          ) : null}
 
           {/* A select rather than a chip per hero: a mature account fields dozens, and that many
               chips would push the grid below the fold before a single item was shown. It sits

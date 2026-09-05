@@ -363,6 +363,11 @@ const KEYS_REMOVED: readonly string[] = [
  * the game forbids selling the rest, so they were never candidates for a price and counting them
  * would make the coverage read worse than it is.
  *
+ * The table's per-host column set (2026-09-05) adds `inventoryColumnSlot` and
+ * `inventoryColumnForge`. The table is shared with a screen that lists gear only and needs both
+ * columns; the label bag names every column the table can draw, the way it already named the row
+ * actions this page's list layout does not use, so one vocabulary covers both hosts.
+ *
  * The download page's mini-window section (2026-09-01) adds `downloadMiniHeading`,
  * `downloadMiniLede` and `downloadMiniControlsTitle`. The section is the page's own chrome around
  * a drawing of the desktop app's compact Live window; every label inside the drawing and its
@@ -388,6 +393,8 @@ const KEYS_ADDED: readonly string[] = [
   'inventoryTableCaption',
   'inventoryColumnEquippedBy',
   'inventoryColumnActions',
+  'inventoryColumnSlot',
+  'inventoryColumnForge',
   'inventoryRowAction',
   'marketNoListings',
   'marketNotOnMarket',

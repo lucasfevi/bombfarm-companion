@@ -35,8 +35,13 @@ export type {
   InventoryGridProps,
   InventoryStatText,
 } from './inventory-grid';
-export { InventoryTable, nextInventorySort } from './inventory-table';
+export {
+  DEFAULT_INVENTORY_TABLE_COLUMNS,
+  InventoryTable,
+  nextInventorySort,
+} from './inventory-table';
 export type {
+  InventoryTableColumnId,
   InventoryTableColumnLabels,
   InventoryTableLabels,
   InventoryTableProps,
@@ -92,15 +97,13 @@ export {
 export {
   inventoryTableActionButtonClass,
   inventoryTableBlankClass,
-  inventoryTableForgeClass,
   inventoryTableGoldClass,
   inventoryTableGroupCountClass,
   inventoryTableGroupHeaderClass,
   inventoryTableHeroClass,
   inventoryTableHeroNameClass,
-  inventoryTableItemNameClass,
-  inventoryTableNameClass,
   inventoryTableResultCountClass,
+  inventoryTableSelectedRowClass,
   inventoryTableRowClass,
   inventoryTableSkippedNoteClass,
   inventoryTableToolbarClass,

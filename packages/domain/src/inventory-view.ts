@@ -540,14 +540,20 @@ export function heroIdsInView(view: InventoryView): string[] {
   return ids;
 }
 
-export type InventorySortKey = 'rarity' | 'level' | 'value' | 'name' | 'count' | 'market';
+/** The orders a sort picker offers over a whole inventory — every kind of item can be ranked by
+ *  each of them. */
+export type InventorySortMenuKey = 'rarity' | 'level' | 'value' | 'name' | 'count' | 'market';
+
+/** `slot` and `forge` are gear-only, so they are reachable through a gear column rather than
+ *  through the picker, which a bag of keys and gems also has to answer. */
+export type InventorySortKey = InventorySortMenuKey | 'slot' | 'forge';
 export type InventorySortDirection = 'asc' | 'desc';
 export type InventorySortTerm = { key: InventorySortKey; direction: InventorySortDirection };
 
 /** Most significant term first. */
 export type InventorySort = readonly InventorySortTerm[];
 
-export const INVENTORY_SORT_KEYS: readonly InventorySortKey[] = [
+export const INVENTORY_SORT_KEYS: readonly InventorySortMenuKey[] = [
   'rarity',
   'level',
   'value',
@@ -555,6 +561,13 @@ export const INVENTORY_SORT_KEYS: readonly InventorySortKey[] = [
   'count',
   'market',
 ];
+
+/** The game's own slot order (weapon, helm, ring, …), so ordering by slot reads the way the
+ *  character sheet does rather than alphabetically in whichever language is on. */
+const slotRank = new Map(catalog.slots.map((slot, index) => [slot, index] as const));
+
+/** Past the last known slot, so a slot a patch adds sinks rather than landing mid-list. */
+const UNKNOWN_SLOT_RANK = catalog.slots.length;
 
 /**
  * Best-first, then newest-first within a tier — what a player scanning for an upgrade wants
@@ -598,6 +611,10 @@ function sortValue(entry: InventoryEntry, key: InventorySortKey): number {
       return entry.sellValueGold;
     case 'count':
       return entry.count;
+    case 'slot':
+      return entry.item.slot === null ? UNKNOWN_SLOT_RANK : (slotRank.get(entry.item.slot) ?? UNKNOWN_SLOT_RANK);
+    case 'forge':
+      return entry.item.upgrade;
     case 'name':
     case 'market':
       return 0;

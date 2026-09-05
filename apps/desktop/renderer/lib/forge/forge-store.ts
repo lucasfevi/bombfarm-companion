@@ -8,13 +8,17 @@
  * the filter — and the stored target may no longer be a rung the piece can reach.
  */
 import { useSyncExternalStore } from 'react';
-import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
-import { DEFAULT_FORGE_SORT, EMPTY_FORGE_FILTER, type ForgeFilter, type ForgeSort } from './forge-rows';
+import type { InventorySort, InventoryViewItem } from '@bombfarm/domain/inventory-view';
+import { EMPTY_FORGE_FILTER, type ForgeFilter } from './forge-rows';
 import { INITIAL_FORGE_PLAN, forgePlanFor, type ForgePlan } from './use-forge-plan';
+
+/** The screen's subject leads the order: a bag is read forged-first, and the shared table folds
+ *  any column a reader picks in front of this. */
+export const DEFAULT_FORGE_SORT: InventorySort = [{ key: 'forge', direction: 'desc' }];
 
 export type ForgeScreenState = {
   readonly filter: ForgeFilter;
-  readonly sort: ForgeSort;
+  readonly sort: InventorySort;
   readonly selectedId: string | null;
   readonly plan: ForgePlan;
 };
@@ -42,7 +46,7 @@ export interface ForgeScreenStore {
   readonly getState: () => ForgeScreenState;
   readonly subscribe: (listener: () => void) => () => void;
   readonly setFilter: (filter: ForgeFilter) => void;
-  readonly setSort: (sort: ForgeSort) => void;
+  readonly setSort: (sort: InventorySort) => void;
   readonly select: (itemId: string | null) => void;
   readonly setPlan: (plan: ForgePlan) => void;
   readonly reset: () => void;
@@ -101,7 +105,7 @@ export function setForgeFilter(filter: ForgeFilter): void {
   screen.setFilter(filter);
 }
 
-export function setForgeSort(sort: ForgeSort): void {
+export function setForgeSort(sort: InventorySort): void {
   screen.setSort(sort);
 }
 

@@ -59,11 +59,19 @@ async function goToForge(page) {
   await page.waitForSelector('[data-testid="forge-view"]', { timeout: 20_000 });
   // The rows, not just the screen: the table mounts once the account is in hand, and a count
   // read before then is zero.
-  await page.waitForSelector('[data-testid="forge-table-row"]', { timeout: 20_000 });
+  await page.waitForSelector('[data-testid="inventory-table-row"]', { timeout: 20_000 });
 }
 
+/** The rows that are actually in the document — a windowed slice of the bag, not all of it. */
 function rows(page) {
-  return page.getByTestId('forge-table-row');
+  return page.getByTestId('inventory-table-row');
+}
+
+/** How many rows the bag holds, which the DOM no longer counts: the table mounts only what is on
+ *  screen and carries the rest on `aria-rowcount`. */
+async function rowCount(page) {
+  const count = await page.locator('[data-testid="inventory-table-scroll"] table').getAttribute('aria-rowcount');
+  return Number(count);
 }
 
 async function withForge(run) {
@@ -97,24 +105,32 @@ test.describe('forge plan smoke', () => {
     await withForge(async (page) => {
       const view = page.getByTestId('forge-view');
 
-      // The whole bag first, gear only, with the toolbar's count agreeing with the rows.
-      const before = await rows(page).count();
+      // The whole bag first, gear only.
+      const before = await rowCount(page);
       expect(before).toBeGreaterThan(1);
       await expect(view.getByTestId('forge-hero-hint')).toHaveCount(0);
+
+      // Virtualized: the fixture's gear does not fit the pane, and what does not fit is not in
+      // the document. Two spacer rows hold its height open instead.
+      const mounted = await rows(page).count();
+      expect(mounted).toBeLessThan(before);
+      await expect(page.getByTestId('inventory-table-spacer-bottom')).toHaveCount(1);
 
       // Picked by position: an option is a face, a rank, a name and a level rendered as markup, so
       // its accessible name is the block concatenated and matching on it would match formatting.
       await page.getByRole('combobox', { name: 'Filter by hero' }).click();
       await page.getByRole('option').nth(1).click();
 
-      await expect.poll(() => rows(page).count(), { timeout: 10_000 }).toBeLessThan(before);
-      const wornByHero = await rows(page).count();
+      await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBeLessThan(before);
+      const wornByHero = await rowCount(page);
       expect(wornByHero).toBeGreaterThan(0);
+      // Few enough to fit now, so every one of them is mounted and neither spacer is needed.
+      expect(await rows(page).count()).toBe(wornByHero);
       await expect(view.getByTestId('forge-hero-hint')).toContainText(/^Showing what .+ wears$/);
 
       // The first row is the hero's highest forge; clicking it names the piece in the item panel.
       const first = rows(page).first();
-      const firstName = (await first.getByTestId('forge-row-name').textContent())?.trim() ?? '';
+      const firstName = (await first.getByTestId('inventory-row-name').textContent())?.trim() ?? '';
       expect(firstName.length).toBeGreaterThan(0);
       await first.click();
 

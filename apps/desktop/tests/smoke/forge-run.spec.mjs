@@ -75,7 +75,7 @@ async function turnOnForgeWrites(page) {
 async function goToForge(page) {
   await page.getByRole('button', { name: 'Forge' }).click();
   await page.waitForSelector('[data-testid="forge-view"]', { timeout: 20_000 });
-  await page.waitForSelector('[data-testid="forge-table-row"]', { timeout: 20_000 });
+  await page.waitForSelector('[data-testid="inventory-table-row"]', { timeout: 20_000 });
 }
 
 /** The fixture's first worn piece: narrow to a hero, then the top row is what that hero wears. */
@@ -83,7 +83,7 @@ async function selectFirstWornPiece(page) {
   await page.getByRole('combobox', { name: 'Filter by hero' }).click();
   await page.getByRole('option').nth(1).click();
   await expect(page.getByTestId('forge-hero-hint')).toBeVisible();
-  await page.getByTestId('forge-table-row').first().click();
+  await page.getByTestId('inventory-table-row').first().click();
   const itemPanel = page.getByTestId('forge-item-panel');
   await expect(itemPanel).toHaveAttribute('data-state', 'item');
   await expect(itemPanel.getByTestId('forge-item-whereabouts')).toContainText('worn by');

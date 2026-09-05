@@ -23,21 +23,26 @@ import {
   type ForgeStartReason,
 } from '@bombfarm/contracts';
 import { SLOTS } from '@bombfarm/domain/gear';
-import { buildInventoryView, mapInventoryHeroes, type InventoryViewItem } from '@bombfarm/domain/inventory-view';
+import {
+  buildInventoryView,
+  groupInventoryByKind,
+  mapInventoryHeroes,
+  type InventoryView,
+  type InventoryViewItem,
+} from '@bombfarm/domain/inventory-view';
+import { InventoryTable } from '@bombfarm/game-art';
 import { Banner, ConfirmDialog, EmptyState, motionTokens, Panel, PanelHeader } from '@bombfarm/ui';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { oldestCaptureOf } from '../../lib/account/account-facts';
 import { useAccountView } from '../../lib/account/use-account-view';
 import {
   EMPTY_FORGE_FILTER,
-  capForgeRows,
   filterForgeItems,
   forgeHeroIds,
   forgeRarities,
   forgeSlots,
   gearOf,
   isEmptyForgeFilter,
-  sortForgeRows,
 } from '../../lib/forge/forge-rows';
 import {
   forgeRunReducer,
@@ -61,7 +66,7 @@ import { forgeButtonReason, forgeLabels } from './forge-labels';
 import { ForgeLedger } from './forge-ledger';
 import { ForgePlanPanel } from './forge-plan-panel';
 import { ForgeRail } from './forge-rail';
-import { ForgeTable } from './forge-table';
+import { FORGE_TABLE_COLUMNS, forgeTableLabels } from './forge-table-labels';
 import { ForgeToolbar, type ForgeHeroOption } from './forge-toolbar';
 
 type Bridge = NonNullable<Window['bfc']>;
@@ -150,6 +155,7 @@ export function ForgeView({
   const inField = useMemo(() => fieldHeroIds(rawHeroes), [rawHeroes]);
   const gear = useMemo(() => gearOf(inventory.items), [inventory]);
   const labels = useMemo(() => forgeLabels(t, lang, locale), [t, lang, locale]);
+  const tableLabels = useMemo(() => forgeTableLabels(t, lang, heroes), [t, lang, heroes]);
 
   const screen = useForgeScreen();
   const { filter, sort } = screen;
@@ -175,10 +181,14 @@ export function ForgeView({
   const slots = useMemo(() => forgeSlots(gear, SLOTS), [gear]);
   const rarities = useMemo(() => forgeRarities(gear), [gear]);
 
-  const shown = useMemo(() => {
-    const kept = filterForgeItems(gear, filter, labels.searchText);
-    return capForgeRows(sortForgeRows(kept, sort, labels.itemName, (item) => labels.slotName(item.slot)));
-  }, [gear, filter, sort, labels]);
+  // Filtered here, ordered and windowed by the table — which mounts only the rows on screen, so
+  // the whole bag can be handed over rather than capped at a row count nobody chose.
+  const shown = useMemo(() => filterForgeItems(gear, filter, labels.searchText), [gear, filter, labels]);
+  const tableView = useMemo<InventoryView>(
+    () => ({ items: shown, groups: groupInventoryByKind(shown), skipped: 0 }),
+    [shown],
+  );
+  const filterActive = !isEmptyForgeFilter(filter);
 
   const onSelect = useCallback((item: InventoryViewItem) => {
     selectForgePiece(item.id);
@@ -330,7 +340,7 @@ export function ForgeView({
           onFilterChange={setForgeFilter}
           slots={slots}
           rarities={rarities}
-          shown={shown.rows.length + shown.hidden}
+          shown={shown.length}
           total={gear.length}
           heroHint={heroHint}
           bag={bag}
@@ -363,16 +373,16 @@ export function ForgeView({
         className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_372px] grid-rows-[minmax(0,1fr)] gap-3"
       >
         <Panel className="relative flex min-h-0 flex-col">
-          <ForgeTable
-            rows={shown.rows}
-            hidden={shown.hidden}
+          <InventoryTable
+            view={tableView}
+            labels={tableLabels}
+            columns={FORGE_TABLE_COLUMNS}
+            showToolbar={false}
             sort={sort}
             onSortChange={setForgeSort}
-            selectedId={screen.selectedId}
-            onSelect={onSelect}
-            labels={labels}
-            filtered={!isEmptyForgeFilter(filter)}
-            onClearFilter={clearFilter}
+            selectedItemId={screen.selectedId}
+            onSelectRow={onSelect}
+            onClearFilter={filterActive ? clearFilter : undefined}
             className="min-h-0 flex-1"
           />
         </Panel>

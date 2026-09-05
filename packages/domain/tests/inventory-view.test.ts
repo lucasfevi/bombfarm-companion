@@ -624,6 +624,34 @@ describe('sortInventoryView', () => {
     expect(sorted.items).toBe(original.items);
     expect(sorted.skipped).toBe(original.skipped);
   });
+
+  it('orders by forge level, which a bag being climbed is read by', () => {
+    const forged = buildInventoryView([
+      { id: 'plain', def_id: 'glacier_arma', category: 0, rarity: 2, level: 60, upgrade: 0 },
+      { id: 'safe', def_id: 'glacier_bota', category: 0, rarity: 2, level: 60, upgrade: 8 },
+      { id: 'deep', def_id: 'glacier_elmo', category: 0, rarity: 2, level: 60, upgrade: 15 },
+    ]);
+    const order = (direction: 'asc' | 'desc') =>
+      sortInventoryView(forged, [{ key: 'forge', direction }], nameOf).groups[0].entries.map(
+        (entry) => entry.item.id,
+      );
+    expect(order('desc')).toEqual(['deep', 'safe', 'plain']);
+    expect(order('asc')).toEqual(['plain', 'safe', 'deep']);
+  });
+
+  /** The character sheet's order, not the alphabet's — which also means the answer does not
+   *  change with the language the names are printed in. */
+  it('orders by slot in the game\'s own slot order', () => {
+    const bySlot = buildInventoryView([
+      { id: 'boot', def_id: 'glacier_bota', category: 0, rarity: 2, level: 60 },
+      { id: 'weapon', def_id: 'glacier_arma', category: 0, rarity: 2, level: 60 },
+      { id: 'helm', def_id: 'glacier_elmo', category: 0, rarity: 2, level: 60 },
+    ]);
+    const order = sortInventoryView(bySlot, [{ key: 'slot', direction: 'asc' }], nameOf).groups[0].entries.map(
+      (entry) => entry.item.slot,
+    );
+    expect(order).toEqual(['arma', 'elmo', 'bota']);
+  });
 });
 
 describe('withSortTerm', () => {
