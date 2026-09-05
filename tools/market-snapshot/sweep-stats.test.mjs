@@ -22,7 +22,7 @@ import { assertWorkspaceDistBuilt } from '../require-workspace-dist.mjs';
 // an error that points nowhere near `pnpm build`.
 assertWorkspaceDistBuilt('tools/market-snapshot/sweep-stats.test.mjs');
 
-const { runSweep, summarise } = await import('./build.mjs');
+const { parsePrior, runSweep, summarise } = await import('./build.mjs');
 const { SEARCH_PAGE_SIZE, priceKey, resolveKey } = await import('@bombfarm/pricing');
 
 const CATALOG = {
@@ -428,6 +428,63 @@ describe('a sweep asked for no native currency', () => {
     expect(snapshot.index[BOOTS_KEY]).toBeDefined();
     expect(snapshot.index[GEM_KEY]).toBeDefined();
     expect(snapshot.coverage.matchedCatalogKeys).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * The seam a pass reads its row identities through, whether they came off disk or off the
+ * published file. Version 2 is the case that earns the test: it predates native quotes, so it is
+ * a real published shape that carries fields the merge would otherwise reason about as absent.
+ */
+describe('reading a prior snapshot out of a body', () => {
+  const body = (overrides) =>
+    JSON.stringify({
+      schemaVersion: 3,
+      generatedUtc: '2026-09-05T00:00:00.000Z',
+      entries: [
+        {
+          hashName: 'Coal Boots Lv 30 (Rare)',
+          key: 'coal_bota#2',
+          lowestUsd: 4.8,
+          lowestNative: { BRL: 26 },
+          nativeQuotedUtc: '2026-09-05T00:00:00.000Z',
+        },
+      ],
+      index: { 'coal_bota#2': 0 },
+      fx: { USD: 1, BRL: 5.4 },
+      ...overrides,
+    });
+
+  const quiet = () => {};
+
+  it('reads a current body back as the snapshot it is', () => {
+    const parsed = parsePrior(body(), 'the published snapshot', quiet);
+
+    expect(parsed?.schemaVersion).toBe(3);
+    expect(parsed?.entries[0].lowestNative).toEqual({ BRL: 26 });
+  });
+
+  it('normalises a body older than native quotes, rather than handing the merge holes', () => {
+    const parsed = parsePrior(
+      body({ schemaVersion: 2, entries: [{ hashName: 'Topaz Gem', key: 'gem#Topaz Gem', lowestUsd: 1 }] }),
+      'the published snapshot',
+      quiet,
+    );
+
+    expect(parsed?.schemaVersion).toBe(3);
+    expect(parsed?.nativeCurrencies).toEqual([]);
+    expect(parsed?.entries[0].lowestNative).toEqual({});
+    expect(parsed?.entries[0].nativeQuotedUtc).toBeNull();
+  });
+
+  it.each([
+    ['a body that is not JSON', '<!DOCTYPE html>'],
+    ['JSON that is not a snapshot', '{"hello":"world"}'],
+    ['a schema version nothing here can read', '{"schemaVersion":99,"generatedUtc":"x"}'],
+  ])('answers null on %s, and says which source it gave up on', (_case, raw) => {
+    const said = [];
+    expect(parsePrior(raw, 'the published snapshot', (line) => said.push(line))).toBeNull();
+    expect(said.join(' ')).toContain('the published snapshot');
   });
 });
 

@@ -13,6 +13,7 @@ import {
   MIN_SPACING_MS,
   createHistory,
   createLogger,
+  createPriorReader,
   incompleteStages,
   itemRowsFrom,
   nextCoolDown,
@@ -21,6 +22,7 @@ import {
   runCollector,
   runRowFrom,
 } from './market-snapshot/collect.mjs';
+import { SNAPSHOT_URL } from './market-snapshot/freshness.mjs';
 import { planPacing, splitRotation, tiersFromHistory } from './market-snapshot/quote-plan.mjs';
 
 const ENV = {
@@ -425,7 +427,83 @@ describe('configuration read from the environment', () => {
   it('asks for no publishing credential, and grows no field carrying one', () => {
     const config = readConfig({ ...ENV, GITHUB_TOKEN: 'token', GITHUB_REPO: 'owner/repo' });
     expect(Object.keys(config).sort()).toEqual(
-      ['budget', 'currencies', 'retierEveryMs', 'snapshotPath', 'supabaseKey', 'supabaseUrl', 'tierWindowMs'].sort(),
+      [
+        'budget',
+        'currencies',
+        'retierEveryMs',
+        'snapshotPath',
+        'snapshotUrl',
+        'supabaseKey',
+        'supabaseUrl',
+        'tierWindowMs',
+      ].sort(),
+    );
+  });
+});
+
+/**
+ * Identifying a row costs a burst of facet queries, and the burst fires whenever the enumeration
+ * turns up a row the prior cannot name. So the question these answer is which prior a pass starts
+ * from: the freshest one available, or nothing at all when the freshest cannot be had.
+ */
+describe('where a pass gets its row identities', () => {
+  const PUBLISHED = {
+    entries: [{ hashName: 'Published Row' }],
+    generatedUtc: '2026-09-05T00:00:00.000Z',
+  };
+  const LOCAL = { entries: [{ hashName: 'Local Row' }], generatedUtc: '2026-09-04T00:00:00.000Z' };
+
+  const readerWith = ({ fetchImpl, parsePrior = (body) => JSON.parse(body) }) => {
+    const lines = [];
+    const read = createPriorReader({
+      url: 'https://data.example/market-prices.json',
+      fetchImpl,
+      parsePrior,
+      loadFile: () => LOCAL,
+      log: createLogger({ write: (line) => lines.push(line), clock: () => new Date(0) }),
+    });
+    return { read, events: () => lines.map((line) => JSON.parse(line).evt) };
+  };
+
+  it('starts from the published snapshot, identified far more recently than its own', async () => {
+    const { read, events } = readerWith({
+      fetchImpl: async () => ({ ok: true, status: 200, text: async () => JSON.stringify(PUBLISHED) }),
+    });
+
+    await expect(read('/state/snap.json')).resolves.toEqual(PUBLISHED);
+    expect(events()).toEqual(['prior.published']);
+  });
+
+  it.each([
+    [
+      'the fetch gets nowhere',
+      async () => {
+        throw new Error('getaddrinfo ENOTFOUND');
+      },
+    ],
+    ['the file is not served', async () => ({ ok: false, status: 404, text: async () => '404' })],
+  ])('falls back to what the last pass wrote when %s', async (_case, fetchImpl) => {
+    const { read, events } = readerWith({ fetchImpl });
+
+    await expect(read('/state/snap.json')).resolves.toEqual(LOCAL);
+    expect(events()).toEqual(['prior.fetchFailed', 'prior.local']);
+  });
+
+  it('falls back on a body that is not a snapshot, rather than starting from nothing', async () => {
+    const { read, events } = readerWith({
+      fetchImpl: async () => ({ ok: true, status: 200, text: async () => '<!DOCTYPE html>' }),
+      parsePrior: () => null,
+    });
+
+    await expect(read('/state/snap.json')).resolves.toEqual(LOCAL);
+    expect(events()).toEqual(['prior.publishedUnreadable', 'prior.local']);
+  });
+
+  /** Reading a different file would let the two sides disagree about what a row is. */
+  it('reads the file the shipped apps read, so identities agree by construction', () => {
+    expect(readConfig(ENV).snapshotUrl).toBe(SNAPSHOT_URL);
+    expect(readConfig({ ...ENV, MARKET_SNAPSHOT_URL: 'https://elsewhere.example/x.json' }).snapshotUrl).toBe(
+      'https://elsewhere.example/x.json',
     );
   });
 });

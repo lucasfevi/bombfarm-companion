@@ -14,6 +14,7 @@
 import { writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
+import { SNAPSHOT_URL } from './freshness.mjs';
 import {
   DEFAULT_DAILY_BUDGET,
   MIN_SPACING_MS,
@@ -101,8 +102,9 @@ export function readConfig(env) {
       .split(',')
       .map((code) => code.trim().toUpperCase())
       .filter(Boolean),
-    // Private working state, not an artifact anyone reads: it is what the next pass resumes its
-    // row identities from, so a pass that finds nothing new asks no facet queries.
+    // Where row identities are read from, and the local file they fall back to. That file is
+    // private working state written by the last pass, not an artifact anyone reads.
+    snapshotUrl: firstSet(env, ['MARKET_SNAPSHOT_URL']) ?? SNAPSHOT_URL,
     snapshotPath: firstSet(env, ['SNAPSHOT', 'MARKET_SNAPSHOT_PATH']) ?? 'market-prices.json',
   };
 }
@@ -217,6 +219,48 @@ export function itemRowsFrom(snapshot, lastSeen) {
     category: entry.category,
     last_seen: lastSeen,
   }));
+}
+
+const PRIOR_TIMEOUT_MS = 15_000;
+
+/**
+ * The row identities a pass starts from.
+ *
+ * Read from the published snapshot rather than from this process's own last pass. Identifying a
+ * row costs a burst of facet queries, and it fires whenever the enumeration turns up a row the
+ * prior cannot name — so the fresher the prior, the less often it fires. The published file is
+ * rebuilt every half hour or so against a pass here that takes hours, which makes it the better
+ * answer to "what is already known" by an order of magnitude.
+ *
+ * Never throws, and never lets a fetch failure cost the pass. Identity is an optimisation at this
+ * point: falling back to the file the last pass wrote is exactly the behaviour this replaced.
+ */
+export function createPriorReader({ url, fetchImpl, parsePrior, loadFile, log }) {
+  return async (path) => {
+    try {
+      const response = await fetchImpl(url, {
+        headers: { 'cache-control': 'no-cache' },
+        signal: AbortSignal.timeout(PRIOR_TIMEOUT_MS),
+      });
+      if (!response.ok) throw new Error(`answered ${String(response.status)}`);
+
+      const published = parsePrior(await response.text(), 'the published snapshot');
+      if (published != null) {
+        log('prior.published', {
+          entries: published.entries.length,
+          generated: published.generatedUtc,
+        });
+        return published;
+      }
+      log('prior.publishedUnreadable', { url }, 'warn');
+    } catch (err) {
+      log('prior.fetchFailed', { url, error: String(err?.message ?? err) }, 'warn');
+    }
+
+    const local = loadFile(path);
+    log('prior.local', { entries: local?.entries.length ?? 0 });
+    return local;
+  };
 }
 
 const HISTORY_TIMEOUT_MS = 30_000;
@@ -457,7 +501,7 @@ export async function runCollector({
         }
       }
 
-      const prior = loadPrior(config.snapshotPath);
+      const prior = await loadPrior(config.snapshotPath);
       const { snapshot, stats } = await runSweep({
         prior,
         nativeCurrencies: config.currencies,
@@ -550,6 +594,7 @@ async function main() {
 
   log('collector.start', {
     budget: config.budget,
+    snapshotUrl: config.snapshotUrl,
     tierWindowMs: config.tierWindowMs,
     retierEveryMs: config.retierEveryMs,
     currencies: config.currencies,
@@ -558,7 +603,7 @@ async function main() {
 
   // Imported here, not at module load: the sweep resolves a workspace package from its build
   // output, and everything above must stay drivable without one.
-  const { runSweep, loadPrior } = await import('./build.mjs');
+  const { runSweep, loadPrior, parsePrior } = await import('./build.mjs');
   const { persistHistory, readTiers, writeRun } = createHistory({
     url: config.supabaseUrl,
     key: config.supabaseKey,
@@ -568,7 +613,13 @@ async function main() {
   await runCollector({
     config,
     runSweep,
-    loadPrior,
+    loadPrior: createPriorReader({
+      url: config.snapshotUrl,
+      fetchImpl: fetch,
+      parsePrior,
+      loadFile: loadPrior,
+      log,
+    }),
     writeSnapshot: (path, body) => {
       writeFileSync(path, body);
     },

@@ -124,25 +124,33 @@ function steamTagsFor(catalog, log) {
 }
 
 /**
- * The snapshot to resume from, or null. The path is the caller's: the CLI resumes from `OUT`,
- * and a long-running caller resumes from wherever it keeps its own state.
+ * The snapshot in a serialised body, or null. `source` only names it in the log, so a caller that
+ * read the body from somewhere other than disk says where without a second parser existing.
+ */
+export function parsePrior(body, source, log = defaultLog) {
+  try {
+    // Normalised, not merely validated: the body is whatever the last run published, and a
+    // version 2 one carries no native quotes for the merge to reason about.
+    const parsed = readMarketSnapshot(JSON.parse(body));
+    if (parsed == null) {
+      log(`ignoring ${source}: not a recognised snapshot`);
+      return null;
+    }
+    log(`resuming from ${source} (${parsed.entries.length} entries, generated ${parsed.generatedUtc})`);
+    return parsed;
+  } catch (err) {
+    log(`ignoring ${source}: ${err.message}`);
+    return null;
+  }
+}
+
+/**
+ * The snapshot to resume from on disk, or null. The path is the caller's: the CLI resumes from
+ * `OUT`, and a long-running caller resumes from wherever it keeps its own state.
  */
 export function loadPrior(path, log = defaultLog) {
   if (!existsSync(path)) return null;
-  try {
-    // Normalised, not merely validated: the file on disk is whatever the last run published, and
-    // a version 2 one carries no native quotes for the merge to reason about.
-    const parsed = readMarketSnapshot(JSON.parse(readFileSync(path, 'utf-8')));
-    if (parsed == null) {
-      log(`ignoring ${path}: not a recognised snapshot`);
-      return null;
-    }
-    log(`resuming from ${path} (${parsed.entries.length} entries, generated ${parsed.generatedUtc})`);
-    return parsed;
-  } catch (err) {
-    log(`ignoring ${path}: ${err.message}`);
-    return null;
-  }
+  return parsePrior(readFileSync(path, 'utf-8'), path, log);
 }
 
 async function getJson(url) {

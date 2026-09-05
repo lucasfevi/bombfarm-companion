@@ -171,6 +171,13 @@ finds one unrecognised row runs the whole sweep, which is the intended cost on t
 first listed. It cannot be made cheaper by asking about the new row alone — the sweep learns a tag
 by asking for it and reading back which rows answer, so identifying one row still costs a sweep.
 
+**Which snapshot gets handed in decides how often that fires, so both callers hand in the freshest
+one there is: the published file.** The scheduled job resumes from what it published last run,
+half an hour ago. The collector reads the same file over HTTP rather than the copy its own last
+pass wrote, which is hours old — every row the schedule has already named is a row a pass here
+does not pay the burst to name again. A fetch that fails costs nothing but that: it falls back to
+its own copy, which is what it read before.
+
 Identity is carried over only where it is complete. A row a cut-short pass left half-tagged, or
 one whose facets cannot be spelled back as the Steam tags they came from, is withheld and asked
 about again — so a gap repairs itself on the next pass instead of being inherited forever.
