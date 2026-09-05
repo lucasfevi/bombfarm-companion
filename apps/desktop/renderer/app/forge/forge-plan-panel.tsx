@@ -168,8 +168,9 @@ export function ForgePlanPanel({
 
       <fieldset disabled={running} data-testid="forge-plan-controls" className="m-0 flex min-w-0 flex-col gap-3 border-0 p-0">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] text-muted">{t.forgeTargetLabel}</span>
+          <span className="text-xs text-muted">{t.forgeTargetLabel}</span>
           <Stepper
+            valueClassName="text-sm"
             value={<span data-testid="forge-target">{forgeLevel(target)}</span>}
             onDecrement={() => { onStepTarget(-1); }}
             onIncrement={() => { onStepTarget(1); }}

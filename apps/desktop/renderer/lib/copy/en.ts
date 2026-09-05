@@ -458,7 +458,6 @@ export const en = {
   forgeRailRolls: '{rolls} rolls',
   forgeRailSpent: '{spent} gold',
   forgeRailWallet: 'wallet {wallet}',
-  forgeRailRecent: 'Recent',
   forgeRailTallyCaption: 'Rolls by rung',
   forgeRailTallyRung: 'Rung',
   forgeRailTallyRolls: 'Rolls',

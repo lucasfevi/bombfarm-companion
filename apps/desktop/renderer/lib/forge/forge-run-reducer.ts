@@ -148,9 +148,3 @@ export function rungTally(steps: readonly ForgeStepEvent[]): ForgeRungRow[] {
   }
   return rows;
 }
-
-export const RECENT_MARKS = 12;
-
-export function recentSteps(steps: readonly ForgeStepEvent[], count: number = RECENT_MARKS): readonly ForgeStepEvent[] {
-  return steps.slice(Math.max(0, steps.length - count));
-}

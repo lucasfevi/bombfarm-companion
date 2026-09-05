@@ -93,7 +93,7 @@ describe('ForgeRail', () => {
     expect(html).not.toContain('data-testid="forge-chart"');
   });
 
-  it('running, shows the level against the target, the chart, the recent strip, the collapsed tally and the cancel', () => {
+  it('running, shows the level against the target, the chart, the collapsed tally and the cancel', () => {
     const html = renderRail(running());
     expect(stateOf(html)).toBe('running');
     expect(html).toContain('data-testid="forge-rail-level"');
@@ -102,7 +102,7 @@ describe('ForgeRail', () => {
     expect(html).toContain('800 gold');
     expect(html).toContain('wallet 5,000');
     expect(html).toContain('data-testid="forge-chart"');
-    expect((html.match(/data-testid="forge-recent"/g) ?? []).length).toBe(1);
+    expect(html).not.toContain('data-testid="forge-recent"');
     const rungs = [...html.matchAll(/data-testid="forge-tally-rung"[^>]*>([^<]+)</g)].map((match) => match[1]);
     expect(rungs).toEqual(['+9…+11', '+12']);
     expect(html).toContain('Cancel after this roll');

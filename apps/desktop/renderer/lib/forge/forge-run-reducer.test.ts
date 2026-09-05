@@ -1,13 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ForgeDoneEvent, ForgeStepEvent } from '@bombfarm/contracts';
-import {
-  forgeRunReducer,
-  IDLE_FORGE_RUN,
-  recentSteps,
-  rungTally,
-  shouldAdoptLiveAfter,
-  type ForgeRunState,
-} from './forge-run-reducer';
+import { forgeRunReducer, IDLE_FORGE_RUN, rungTally, shouldAdoptLiveAfter, type ForgeRunState } from './forge-run-reducer';
 
 function step(overrides: Partial<ForgeStepEvent>): ForgeStepEvent {
   return {
@@ -190,13 +183,5 @@ describe('rungTally', () => {
 
   it('is empty before the first call', () => {
     expect(rungTally([])).toEqual([]);
-  });
-});
-
-describe('recentSteps', () => {
-  it('keeps the last twelve marks, and everything when there are fewer', () => {
-    const many = Array.from({ length: 20 }, (_, index) => step({ attempt: index + 1 }));
-    expect(recentSteps(many).map((mark) => mark.attempt)).toEqual([9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]);
-    expect(recentSteps(climb())).toHaveLength(8);
   });
 });

@@ -8,10 +8,10 @@
  * `Done` shrinks it first; the view settles it once the shrink has run.
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Button, cn, DataTable, motionTokens, Panel } from '@bombfarm/ui';
+import { Button, DataTable, motionTokens, Panel } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
-import { recentSteps, rungTally, type ForgeRunActive, type ForgeRunState } from '../../lib/forge/forge-run-reducer';
-import { ForgeChart, forgeMarkClass, forgeMarkLabel } from './forge-chart';
+import { rungTally, type ForgeRunActive, type ForgeRunState } from '../../lib/forge/forge-run-reducer';
+import { ForgeChart } from './forge-chart';
 import { BLANK, forgeLevel, forgeRungLabel, type ForgeLabels } from './forge-labels';
 import { ForgeResult } from './forge-result';
 
@@ -46,7 +46,6 @@ function useContentHeight(): { ref: (node: HTMLDivElement | null) => void; heigh
 function Running({ run, gold, onCancel }: { run: ForgeRunActive; gold: (amount: number) => string; onCancel: () => void }) {
   const t = useCopy();
   const rows = useMemo(() => rungTally(run.steps), [run.steps]);
-  const recent = useMemo(() => recentSteps(run.steps), [run.steps]);
 
   return (
     <Panel className="flex flex-col gap-3">
@@ -80,22 +79,8 @@ function Running({ run, gold, onCancel }: { run: ForgeRunActive; gold: (amount: 
       </div>
 
       <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex min-w-0 flex-col">
           <ForgeChart start={run.from} target={run.target} steps={run.steps} />
-          <div className="flex items-center gap-2 text-[11px] text-muted">
-            <span>{t.forgeRailRecent}</span>
-            <ol data-testid="forge-recent" aria-label={t.forgeRailRecent} className="m-0 flex list-none gap-1 p-0">
-              {recent.map((step) => (
-                <li
-                  key={step.attempt}
-                  role="img"
-                  aria-label={forgeMarkLabel(step, t)}
-                  data-outcome={step.kind === 'safe' ? 'safe' : step.outcome}
-                  className={cn('size-2', 'rounded-full', 'bg-current', forgeMarkClass(step))}
-                />
-              ))}
-            </ol>
-          </div>
         </div>
 
         <DataTable.Root>

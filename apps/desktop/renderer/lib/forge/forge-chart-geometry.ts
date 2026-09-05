@@ -1,16 +1,27 @@
 /**
  * The climb as a stepped line — horizontal to the call, then vertical to where the server put
- * the piece, never a diagonal — in a fixed viewBox the SVG scales to its width. Pure, no React
- * import; the component is a thin wrapper over what this returns.
+ * the piece, never a diagonal — inside a rolling window of the most recent attempts. Pure, no
+ * React import; the component is a thin wrapper that measures its width and draws what this
+ * returns. Coordinates are the measured CSS pixels, so a 9px label is 9px on screen.
  */
 import type { ForgeCallKind, ForgeRollOutcome } from '@bombfarm/contracts';
 import { FORGE_SAFE } from '@bombfarm/domain/forge';
 
-export const FORGE_CHART_BOX = { width: 320, height: 120 } as const;
+export const FORGE_CHART_HEIGHT = 120;
+/** What the first paint draws at, before the wrapper has measured itself. */
+export const FORGE_CHART_FALLBACK_WIDTH = 560;
 const PAD = { left: 28, right: 8, top: 10, bottom: 18 } as const;
 /** The x axis never draws shorter than this many calls, so a short run does not fill the width. */
-const MIN_ATTEMPTS = 10;
-const TICK_EVERY = 10;
+const MIN_SPAN = 10;
+/** Every attempt the window holds gets at least this much x, so marks never come to touch. */
+const MARK_SPACING = 12;
+const WINDOW = { min: 24, max: 90 } as const;
+const MARK_RADIUS = { of: 0.2, min: 1.6, max: 3.6 } as const;
+const LINE_WIDTH = { of: 0.06, min: 0.9, max: 1.8 } as const;
+const TICK_STEPS = [10, 20, 50] as const;
+const WIDEST_TICK_STEP = 50;
+/** Three mono digits at 9px, plus the space either side that keeps two labels apart. */
+const MIN_TICK_GAP = 28;
 
 export type ForgeChartStep = {
   readonly attempt: number;
@@ -30,31 +41,70 @@ export type ForgeChartGeometry = {
   readonly axisY: number;
   readonly left: number;
   readonly right: number;
+  readonly markRadius: number;
+  readonly lineWidth: number;
+};
+
+export type ForgeChartInput = {
+  readonly width: number;
+  readonly window: number;
+  readonly start: number;
+  readonly target: number;
+  readonly steps: readonly ForgeChartStep[];
 };
 
 function round(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
-export function forgeChartGeometry(start: number, target: number, steps: readonly ForgeChartStep[]): ForgeChartGeometry {
-  const levels = [start, target, ...steps.map((step) => step.to)];
+function clamp(value: number, low: number, high: number): number {
+  return Math.min(high, Math.max(low, value));
+}
+
+/** How many attempts a chart this wide can hold without crowding its marks. */
+export function forgeChartWindow(width: number): number {
+  const plot = width - PAD.left - PAD.right;
+  if (!Number.isFinite(plot) || plot <= 0) return WINDOW.min;
+  return clamp(Math.floor(plot / MARK_SPACING), WINDOW.min, WINDOW.max);
+}
+
+function tickEvery(spacing: number): number {
+  return TICK_STEPS.find((step) => step * spacing >= MIN_TICK_GAP) ?? WIDEST_TICK_STEP;
+}
+
+export function forgeChartGeometry({ width, window: held, start, target, steps }: ForgeChartInput): ForgeChartGeometry {
+  const kept = clamp(Math.floor(held), 1, Number.MAX_SAFE_INTEGER);
+  const dropped = Math.max(0, steps.length - kept);
+  const shown = steps.slice(dropped);
+  /** The level the piece stood on before the window's first attempt, so the first segment of the
+   *  line is a real transition rather than a gap. */
+  const entryLevel = steps[dropped - 1]?.to ?? start;
+  const entryAttempt = (shown[0]?.attempt ?? 1) - 1;
+  const span = Math.max(Math.min(MIN_SPAN, kept), shown.length);
+
+  const levels = [entryLevel, target, ...shown.map((step) => step.to)];
   const lowest = Math.min(...levels);
   const highest = Math.max(lowest + 1, ...levels);
-  const attempts = Math.max(MIN_ATTEMPTS, steps.length);
 
   const left = PAD.left;
-  const right = FORGE_CHART_BOX.width - PAD.right;
+  const right = Math.max(left + MIN_TICK_GAP, width - PAD.right);
   const top = PAD.top;
-  const axisY = FORGE_CHART_BOX.height - PAD.bottom;
+  const axisY = FORGE_CHART_HEIGHT - PAD.bottom;
+  const spacing = (right - left) / span;
 
-  const x = (attempt: number) => round(left + ((right - left) * attempt) / attempts);
+  const x = (attempt: number) => round(left + spacing * (attempt - entryAttempt));
   const y = (level: number) => round(axisY - ((axisY - top) * (level - lowest)) / (highest - lowest));
 
-  const points = steps.map((step) => ({ ...step, x: x(step.attempt), y: y(step.to) }));
-  const path = [`M${String(x(0))} ${String(y(start))}`, ...points.map((point) => `H${String(point.x)} V${String(point.y)}`)].join(' ');
+  const points = shown.map((step) => ({ ...step, x: x(step.attempt), y: y(step.to) }));
+  const path = [`M${String(x(entryAttempt))} ${String(y(entryLevel))}`, ...points.map((point) => `H${String(point.x)} V${String(point.y)}`)].join(
+    ' ',
+  );
 
+  const every = tickEvery(spacing);
   const ticks: { x: number; attempt: number }[] = [];
-  for (let attempt = 0; attempt <= attempts; attempt += TICK_EVERY) ticks.push({ x: x(attempt), attempt });
+  for (let attempt = Math.ceil(entryAttempt / every) * every; attempt <= entryAttempt + span; attempt += every) {
+    ticks.push({ x: x(attempt), attempt });
+  }
 
   return {
     path,
@@ -65,5 +115,7 @@ export function forgeChartGeometry(start: number, target: number, steps: readonl
     axisY,
     left,
     right,
+    markRadius: round(clamp(spacing * MARK_RADIUS.of, MARK_RADIUS.min, MARK_RADIUS.max)),
+    lineWidth: round(clamp(spacing * LINE_WIDTH.of, LINE_WIDTH.min, LINE_WIDTH.max)),
   };
 }
