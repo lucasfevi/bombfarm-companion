@@ -197,6 +197,26 @@ describe('the switch decides, and takes effect on the next poll', () => {
   });
 });
 
+describe('a launch wait that expires without the game returning', () => {
+  it('logs a structured timeout failure and does not ask again until backoff elapses', async () => {
+    const harness = createHarness();
+    harness.keepAlive.setEnabled(true);
+
+    await sightingThenAbsence(harness);
+    await harness.advance(ABSENT_DEBOUNCE_MS);
+    expect(harness.askSteam).toHaveBeenCalledTimes(1);
+
+    await harness.advance(LAUNCH_WAIT_MS);
+    expect(harness.log).toHaveBeenCalledWith('keep_alive.ask_failed', { outcome: 'timeout' });
+
+    await harness.advance(POLL_INTERVAL_MS * 4);
+    expect(harness.askSteam).toHaveBeenCalledTimes(1);
+
+    await harness.advance(30_000);
+    expect(harness.askSteam).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe('an ask that did not launch the game arms the next attempt immediately', () => {
   for (const outcome of ['updating', 'unavailable'] as const) {
     it(`'${outcome}' counts as a failed attempt: the poll right after it does not ask again`, async () => {
@@ -207,6 +227,19 @@ describe('an ask that did not launch the game arms the next attempt immediately'
       await sightingThenAbsence(harness);
       await harness.advance(ABSENT_DEBOUNCE_MS);
       expect(harness.askSteam).toHaveBeenCalledTimes(1);
+      if (outcome === 'updating') {
+        expect(harness.log).toHaveBeenCalledWith('keep_alive.skip_updating', { outcome: 'updating' });
+      } else {
+        expect(harness.log).toHaveBeenCalledWith('keep_alive.ask_failed', { outcome: 'unavailable' });
+      }
+      for (const call of harness.log.mock.calls) {
+        const detail = call[1] as Record<string, unknown> | undefined;
+        if (detail) {
+          expect(detail).not.toHaveProperty('token');
+          expect(detail).not.toHaveProperty('inventory');
+        }
+      }
+      expect(harness.log).not.toHaveBeenCalledWith('keep_alive.ask_failed', { outcome: 'timeout' });
       const askedAtMs = harness.now();
 
       await harness.advance(POLL_INTERVAL_MS * 2);
@@ -231,6 +264,15 @@ describe('an ask that did not launch the game arms the next attempt immediately'
     await sightingThenAbsence(harness);
     await harness.advance(ABSENT_DEBOUNCE_MS);
     expect(harness.askSteam).toHaveBeenCalledTimes(1);
+    expect(harness.log).toHaveBeenCalledWith('keep_alive.ask_failed', { outcome: 'error' });
+    for (const call of harness.log.mock.calls) {
+      const detail = call[1] as Record<string, unknown> | undefined;
+      if (detail) {
+        expect(detail).not.toHaveProperty('token');
+        expect(detail).not.toHaveProperty('inventory');
+      }
+    }
+    expect(harness.log).not.toHaveBeenCalledWith('keep_alive.ask_failed', { outcome: 'timeout' });
     const pollsWhenItThrew = harness.processPresent.mock.calls.length;
 
     await harness.advance(POLL_INTERVAL_MS * 8);

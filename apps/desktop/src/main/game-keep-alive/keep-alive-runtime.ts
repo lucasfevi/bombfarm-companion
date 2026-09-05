@@ -81,6 +81,14 @@ export function createGameKeepAlive(deps: GameKeepAliveDeps): GameKeepAlive {
       if (processPresent && wasAsked) {
         log('keep_alive.recovered');
       }
+      if (
+        wasAsked &&
+        !processPresent &&
+        tick.action === 'none' &&
+        tick.state.inFlightSinceMs === null
+      ) {
+        log('keep_alive.ask_failed', { outcome: 'timeout' });
+      }
       if (tick.action === 'ask-steam') {
         await ask();
       }
