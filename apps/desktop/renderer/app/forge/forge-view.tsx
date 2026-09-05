@@ -104,17 +104,6 @@ function fieldHeroIds(rawHeroes: readonly unknown[] | undefined): Set<string> {
   return ids;
 }
 
-/** The bag's capacity is per tab; the count the account reports is across all of them. */
-function bagOf(account: Record<string, unknown> | undefined): { free: number; capacity: number } | null {
-  if (!account) return null;
-  const perTab = finiteNumber(account.bag_capacity);
-  const tabs = finiteNumber(account.bag_tabs);
-  const count = finiteNumber(account.items_count);
-  if (perTab === null || tabs === null || count === null) return null;
-  const capacity = perTab * tabs;
-  return { free: Math.max(0, capacity - count), capacity };
-}
-
 /** What a refresh would change: the sections the screen draws from, compared as values. The
  *  gold balance is left out on purpose — it moves every few seconds and would keep the line red. */
 function sectionsKey(view: AccountView | null): string | null {
@@ -271,10 +260,14 @@ export function ForgeView({
     });
   }, [selected, plan, planControls.forecast]);
 
+  // Main honours a cancel between rolls, so the roll in flight has to settle first — the flag
+  // goes down here, on the press, or the screen would look inert for a second or two and invite
+  // a second press.
   const onCancel = useCallback(() => {
     const bridge = bridgeOf();
     const current = runRef.current;
-    if (!bridge || current.status !== 'running') return;
+    if (!bridge || current.status !== 'running' || current.run.cancelRequested) return;
+    dispatchRun({ kind: 'cancel' });
     void bridge.invoke('forge:cancel', current.run.runId);
   }, []);
 
@@ -296,10 +289,16 @@ export function ForgeView({
   }, []);
 
   const running = run.status === 'running';
-  const reason = forgeButtonReason({ upgrade: selected?.upgrade ?? 0, accountSource, forgeWritesEnabled, running });
+  const cancelRequested = run.status === 'running' && run.run.cancelRequested;
+  const reason = forgeButtonReason({
+    upgrade: selected?.upgrade ?? 0,
+    accountSource,
+    forgeWritesEnabled,
+    running,
+    cancelRequested,
+  });
 
   const account = view?.payload.account;
-  const bag = useMemo(() => bagOf(account), [account]);
   const walletGold = finiteNumber(account?.gold);
   const capturedAt = view === null ? null : oldestCaptureOf(view.payload);
   const heroHint = filter.heroId === null ? null : sub(t.forgeHeroHint, { hero: heroName(filter.heroId) });
@@ -338,12 +337,13 @@ export function ForgeView({
           heroes={heroOptions}
           filter={filter}
           onFilterChange={setForgeFilter}
+          sort={sort}
+          onSortChange={setForgeSort}
           slots={slots}
           rarities={rarities}
           shown={shown.length}
           total={gear.length}
           heroHint={heroHint}
-          bag={bag}
           capturedAt={capturedAt}
           stale={stale}
           onRefresh={refresh}

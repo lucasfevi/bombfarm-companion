@@ -23,6 +23,9 @@ export type ForgeRunActive = {
   readonly tally: ForgeTally;
   readonly steps: readonly ForgeStepEvent[];
   readonly plan: ForgeRunPlan | null;
+  /** The player has asked for the run to stop, and main will honour it once the roll in flight
+   *  has settled. Both cancel controls read this to say the press landed. */
+  readonly cancelRequested: boolean;
 };
 
 export type ForgeRunState =
@@ -40,6 +43,7 @@ export type ForgeRunAction =
   | { kind: 'start'; runId: string; itemId: string; target: number; from: number; plan: ForgeRunPlan | null }
   | { kind: 'step'; event: ForgeStepEvent; adopt: ForgeRunAdoption | null }
   | { kind: 'done'; event: ForgeDoneEvent }
+  | { kind: 'cancel' }
   | { kind: 'dismiss' }
   | { kind: 'settle' };
 
@@ -56,6 +60,7 @@ function freshRun(input: { runId: string; itemId: string; target: number; from: 
     tally: emptyForgeTally(),
     steps: [],
     plan: input.plan,
+    cancelRequested: false,
   };
 }
 
@@ -88,6 +93,9 @@ export function forgeRunReducer(state: ForgeRunState, action: ForgeRunAction): F
     case 'done':
       if (state.status !== 'running' || state.run.runId !== action.event.runId) return state;
       return { status: 'done', run: state.run, result: action.event.result };
+    case 'cancel':
+      if (state.status !== 'running' || state.run.cancelRequested) return state;
+      return { status: 'running', run: { ...state.run, cancelRequested: true } };
     case 'dismiss':
       return state.status === 'done' ? { status: 'dismissed' } : state;
     case 'settle':

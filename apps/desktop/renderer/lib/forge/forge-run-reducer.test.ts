@@ -118,6 +118,35 @@ describe('forgeRunReducer', () => {
     expect(other.run.plan).toBeNull();
   });
 
+  it('remembers that the cancel was asked for, so the button can say the press landed', () => {
+    const asked = forgeRunReducer(started(), { kind: 'cancel' });
+    if (asked.status !== 'running') throw new Error('expected a running state');
+    expect(asked.run.cancelRequested).toBe(true);
+    expect(forgeRunReducer(asked, { kind: 'cancel' })).toBe(asked);
+  });
+
+  it('keeps the cancel pending through the rolls that land before main stops', () => {
+    let state = forgeRunReducer(started(), { kind: 'cancel' });
+    for (const event of climb()) state = forgeRunReducer(state, { kind: 'step', event, adopt: null });
+    if (state.status !== 'running') throw new Error('expected a running state');
+    expect(state.run.cancelRequested).toBe(true);
+    expect(state.run.steps).toHaveLength(8);
+  });
+
+  it('opens every run with no cancel asked for, however the screen came by it', () => {
+    const own = started();
+    if (own.status !== 'running') throw new Error('expected a running state');
+    expect(own.run.cancelRequested).toBe(false);
+    const adopted = forgeRunReducer(IDLE_FORGE_RUN, { kind: 'step', event: step({}), adopt: null });
+    if (adopted.status !== 'running') throw new Error('expected a running state');
+    expect(adopted.run.cancelRequested).toBe(false);
+  });
+
+  it('ignores a cancel with nothing rolling', () => {
+    expect(forgeRunReducer(IDLE_FORGE_RUN, { kind: 'cancel' })).toBe(IDLE_FORGE_RUN);
+    expect(forgeRunReducer({ status: 'dismissed' }, { kind: 'cancel' })).toEqual({ status: 'dismissed' });
+  });
+
   it('ignores a done for a run it is not showing, and a dismiss before done', () => {
     const running = started();
     expect(forgeRunReducer(running, { kind: 'done', event: { ...DONE, runId: 'other' } })).toBe(running);

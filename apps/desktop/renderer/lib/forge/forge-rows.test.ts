@@ -36,24 +36,37 @@ describe('gearOf', () => {
 });
 
 describe('filterForgeItems', () => {
-  it('narrows to one wearer, one slot, a forge floor, and a rarity set', () => {
-    const ids = (filter: Partial<typeof EMPTY_FORGE_FILTER>) =>
-      filterForgeItems(GEAR, { ...EMPTY_FORGE_FILTER, ...filter }, nameOf).map((item) => item.id);
+  const ids = (filter: Partial<typeof EMPTY_FORGE_FILTER>) =>
+    filterForgeItems(GEAR, { ...EMPTY_FORGE_FILTER, ...filter }, nameOf).map((item) => item.id);
+
+  it('narrows to one wearer, one slot, and a rarity set', () => {
     expect(ids({ heroId: 'h1' })).toEqual(['sword']);
     expect(ids({ slot: 'elmo' })).toEqual(['helm']);
-    expect(ids({ minForge: 8 })).toEqual(['sword', 'helm', 'ring']);
-    expect(ids({ minForge: 15 })).toEqual(['ring']);
     expect(ids({ rarities: [0, 4] })).toEqual(['boots', 'ring']);
   });
 
+  it('reads the forge rung as a ceiling, so it finds the pieces still worth forging', () => {
+    expect(ids({ maxForge: 0 })).toEqual(['boots']);
+    expect(ids({ maxForge: 8 })).toEqual(['helm', 'boots']);
+    expect(ids({ maxForge: 14 })).toEqual(['sword', 'helm', 'boots']);
+    expect(ids({ maxForge: null })).toEqual(['sword', 'helm', 'boots', 'ring']);
+  });
+
+  it('splits the bag into what a hero is wearing and what nobody is', () => {
+    expect(ids({ worn: 'worn' })).toEqual(['sword', 'helm']);
+    expect(ids({ worn: 'spare' })).toEqual(['boots', 'ring']);
+    expect(ids({ worn: 'all' })).toEqual(['sword', 'helm', 'boots', 'ring']);
+  });
+
   it('matches every word of the search, ignoring case and accents', () => {
-    const ids = filterForgeItems(GEAR, { ...EMPTY_FORGE_FILTER, text: 'STEEL bótá' }, nameOf).map((item) => item.id);
-    expect(ids).toEqual(['boots']);
+    const found = filterForgeItems(GEAR, { ...EMPTY_FORGE_FILTER, text: 'STEEL bótá' }, nameOf).map((item) => item.id);
+    expect(found).toEqual(['boots']);
   });
 
   it('knows an empty filter', () => {
     expect(isEmptyForgeFilter(EMPTY_FORGE_FILTER)).toBe(true);
-    expect(isEmptyForgeFilter({ ...EMPTY_FORGE_FILTER, minForge: 1 })).toBe(false);
+    expect(isEmptyForgeFilter({ ...EMPTY_FORGE_FILTER, maxForge: 14 })).toBe(false);
+    expect(isEmptyForgeFilter({ ...EMPTY_FORGE_FILTER, worn: 'spare' })).toBe(false);
   });
 });
 

@@ -11,10 +11,10 @@ import { FORGE_MAX, FORGE_SAFE, forgeChance } from '@bombfarm/domain/forge';
 import { upgradeMult } from '@bombfarm/domain/gear';
 import { itemRarityLabel, itemStatLabel, slotLabel } from '@bombfarm/domain/game-labels';
 import type { ItemIdentityLabels } from '@bombfarm/game-art';
-import type { InventoryViewItem, InventoryViewStat } from '@bombfarm/domain/inventory-view';
+import type { InventorySortKey, InventoryViewItem, InventoryViewStat } from '@bombfarm/domain/inventory-view';
 import { sub, type Copy } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
-import type { ForgeMinForge } from '../../lib/forge/forge-rows';
+import type { ForgeMaxForge, ForgeWorn } from '../../lib/forge/forge-rows';
 import { inventoryLabels } from '../inventory/inventory-labels';
 
 export const BLANK = '—';
@@ -24,11 +24,12 @@ export function forgeLevel(upgrade: number): string {
   return `+${String(upgrade)}`;
 }
 
-export type ForgeButtonReason = 'maxed' | 'fixture' | 'switch-off' | 'ready' | 'running';
+export type ForgeButtonReason = 'maxed' | 'fixture' | 'switch-off' | 'ready' | 'running' | 'cancelling';
 
 /**
  * What the Forge button is for right now, first reason that applies. A run in flight owns the
- * button outright — it is the cancel. Otherwise a piece with nowhere to go beats everything; an
+ * button outright — it is the cancel, until the cancel has been asked for and the button has
+ * nothing left to do but say so. Otherwise a piece with nowhere to go beats everything; an
  * account with no server behind it beats the switch, because turning the switch on would not
  * help; and only then is the button armed.
  */
@@ -37,8 +38,9 @@ export function forgeButtonReason(input: {
   accountSource: AccountSource | null;
   forgeWritesEnabled: boolean;
   running: boolean;
+  cancelRequested: boolean;
 }): ForgeButtonReason {
-  if (input.running) return 'running';
+  if (input.running) return input.cancelRequested ? 'cancelling' : 'running';
   if (input.upgrade >= FORGE_MAX) return 'maxed';
   if (input.accountSource === 'fixture') return 'fixture';
   if (!input.forgeWritesEnabled) return 'switch-off';
@@ -57,6 +59,8 @@ export function forgeReasonText(reason: ForgeButtonReason, t: Copy): string {
       return t.forgeReasonReady;
     case 'running':
       return t.forgeReasonRunning;
+    case 'cancelling':
+      return t.forgeReasonCancelling;
   }
 }
 
@@ -139,10 +143,40 @@ export function forgeRungLabel(row: { from: number; to: number }): string {
   return row.from === row.to ? forgeLevel(row.from) : `${forgeLevel(row.from)}…${forgeLevel(row.to)}`;
 }
 
-export function forgeMinForgeText(min: ForgeMinForge, t: Copy): string {
-  if (min === 0) return t.forgeMinAny;
-  if (min === FORGE_MAX) return sub(t.forgeMinOnly, { level: forgeLevel(min) });
-  return sub(t.forgeMinAndUp, { level: forgeLevel(min) });
+/** The forge filter is a ceiling: the reader is hunting for pieces still worth forging, not for
+ *  the ones already forged far. */
+export function forgeMaxForgeText(max: ForgeMaxForge, t: Copy): string {
+  if (max === null) return t.forgeMaxAny;
+  if (max === 0) return sub(t.forgeMaxOnly, { level: forgeLevel(max) });
+  return sub(t.forgeMaxUpTo, { level: forgeLevel(max) });
+}
+
+export function forgeWornText(worn: ForgeWorn, t: Copy): string {
+  switch (worn) {
+    case 'all':
+      return t.forgeWornAny;
+    case 'worn':
+      return t.forgeWornEquipped;
+    case 'spare':
+      return t.forgeWornSpare;
+  }
+}
+
+const FORGE_SORT_COPY_KEY = {
+  forge: 'inventoryColumnForge',
+  rarity: 'inventorySortRarity',
+  level: 'inventorySortLevel',
+  slot: 'inventoryColumnSlot',
+  name: 'inventorySortName',
+  value: 'inventorySortValue',
+  count: 'inventorySortCount',
+  market: 'inventorySortMarket',
+} as const satisfies Record<InventorySortKey, keyof Copy>;
+
+/** An order named by the same word its column header uses, so picking "Forge" in the toolbar and
+ *  clicking the Forge column are visibly the same idea. */
+export function forgeSortKeyText(key: InventorySortKey, t: Copy): string {
+  return t[FORGE_SORT_COPY_KEY[key]];
 }
 
 export type ForgeStatRow = {
@@ -206,7 +240,9 @@ export interface ForgeLabels extends ItemIdentityLabels<InventoryViewItem> {
   multiplier: (upgrade: number) => string;
   /** A chance as the game prints it: `50%`. */
   chance: (fraction: number) => string;
-  minForge: (min: ForgeMinForge) => string;
+  maxForge: (max: ForgeMaxForge) => string;
+  worn: (worn: ForgeWorn) => string;
+  sortKey: (key: InventorySortKey) => string;
   span: (target: number) => string;
   warning: (target: number, safeJumps: number | null) => string;
   statsNote: (nowUpgrade: number, targetUpgrade: number) => string;
@@ -240,7 +276,9 @@ export function forgeLabels(t: Copy, lang: DomainLang, locale: AppLocale): Forge
     rolls: (value) => decimals(value, 1, locale),
     multiplier,
     chance,
-    minForge: (min) => forgeMinForgeText(min, t),
+    maxForge: (max) => forgeMaxForgeText(max, t),
+    worn: (worn) => forgeWornText(worn, t),
+    sortKey: (key) => forgeSortKeyText(key, t),
     span: (target) =>
       target <= FORGE_SAFE ? t.forgeSpanSafe : sub(t.forgeSpanRisky, { chance: chance(forgeChance(target)) }),
     warning: (target, safeJumps) =>

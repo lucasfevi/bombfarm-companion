@@ -66,8 +66,16 @@ function Running({ run, gold, onCancel }: { run: ForgeRunActive; gold: (amount: 
         <span data-testid="forge-rail-wallet" className="tabular-nums text-muted">
           {run.wallet === null ? BLANK : sub(t.forgeRailWallet, { wallet: gold(run.wallet) })}
         </span>
-        <Button type="button" variant="default" className="ml-auto" data-testid="forge-rail-cancel" onClick={onCancel}>
-          {t.forgeButtonCancel}
+        <Button
+          type="button"
+          variant="default"
+          className="ml-auto"
+          data-testid="forge-rail-cancel"
+          data-pending={run.cancelRequested ? 'true' : undefined}
+          disabled={run.cancelRequested}
+          onClick={onCancel}
+        >
+          {run.cancelRequested ? t.forgeButtonCancelPending : t.forgeButtonCancel}
         </Button>
       </div>
 

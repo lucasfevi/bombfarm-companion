@@ -234,10 +234,21 @@ test.describe('forge run smoke', () => {
       await expect(tallyRows.nth(1).getByTestId('forge-tally-rolls')).toHaveText('2');
       await expect(tallyRows.nth(1).getByTestId('forge-tally-fails')).toHaveText('1');
       await expect(page.getByTestId('forge-button')).toHaveText('Cancel after this roll');
+      await expect(rail.getByTestId('forge-rail-cancel')).toBeEnabled();
       await page.waitForTimeout(400);
       await railSpansTheRow(page);
       await nothingScrolls(page);
       await shoot(page, testInfo, 'forge-run-running.png');
+
+      // --- Cancelled: main honours it between rolls, so the press has to be visible at once ----
+      await rail.getByTestId('forge-rail-cancel').click();
+      await expect(rail.getByTestId('forge-rail-cancel')).toHaveText('Cancelling after this roll…');
+      await expect(rail.getByTestId('forge-rail-cancel')).toBeDisabled();
+      await expect(page.getByTestId('forge-button')).toHaveText('Cancelling after this roll…');
+      await expect(page.getByTestId('forge-button')).toBeDisabled();
+      await expect(page.getByTestId('forge-button-reason')).toHaveText(
+        'Cancelling — waiting for the roll in flight to settle',
+      );
 
       // --- Finished: the result block, still spanning the row and still fitting ---------------
       expect(await inject(page, [scriptedDone(itemId)])).toEqual({ ok: true });

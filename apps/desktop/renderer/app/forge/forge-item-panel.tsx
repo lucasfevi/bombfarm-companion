@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { ItemIdentity } from '@bombfarm/game-art';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
-import { DataTable, EmptyState, Panel, PanelHeader } from '@bombfarm/ui';
+import { cn, DataTable, EmptyState, Panel, PanelHeader } from '@bombfarm/ui';
 import { useCopy, useLocale } from '../../lib/copy';
 import { forgeLevel, forgeStatRows, type ForgeLabels } from './forge-labels';
 
@@ -12,6 +12,14 @@ const CHANGE_CLASS = {
   down: 'text-down',
   none: 'text-muted',
 } as const;
+
+/**
+ * A stat name is the row's subject, not a column heading — but a `<th>` picks up the base
+ * stylesheet's column-header type, which is 10px on a 13.3px line where the figures beside it sit
+ * at 12px on a 16px line. Two line heights in one row is what tilted the figures off the label's
+ * baseline, and one row against the next off each other.
+ */
+const STAT_LABEL_CLASS = cn('text-xs', 'font-normal', 'tracking-normal', 'normal-case', 'text-ink');
 
 export function ForgeItemPanel({
   item,
@@ -70,7 +78,7 @@ export function ForgeItemPanel({
           <DataTable.Body>
             {rows.map((row) => (
               <DataTable.Row key={row.code} data-testid="forge-stat-row">
-                <DataTable.RowHeader>{row.label}</DataTable.RowHeader>
+                <DataTable.RowHeader className={STAT_LABEL_CLASS}>{row.label}</DataTable.RowHeader>
                 <DataTable.Cell align="right" numeric>
                   {row.now}
                 </DataTable.Cell>

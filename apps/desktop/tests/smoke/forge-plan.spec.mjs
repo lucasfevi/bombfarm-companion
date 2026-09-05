@@ -109,6 +109,47 @@ test.describe('forge plan smoke', () => {
       const before = await rowCount(page);
       expect(before).toBeGreaterThan(1);
       await expect(view.getByTestId('forge-hero-hint')).toHaveCount(0);
+      // A bag-slot counter is not what this screen is deciding about, and it is gone.
+      await expect(view.getByTestId('forge-bag')).toHaveCount(0);
+
+      // The bag opens forged-first, and the Forge header says so.
+      const forgeHeader = page.getByRole('columnheader', { name: 'Forge' });
+      await expect(forgeHeader).toHaveAttribute('aria-sort', 'descending');
+
+      // The order picker reaches the two orders the table has no column for. Choosing rarity
+      // takes the lead away from the Forge column, which is what proves it reordered the rows
+      // rather than only relabelling itself.
+      const sortBy = page.getByRole('combobox', { name: 'Sort by' });
+      await sortBy.click();
+      await page.getByRole('option', { name: 'Rarity' }).click();
+      await expect(forgeHeader).toHaveAttribute('aria-sort', 'none');
+      await sortBy.click();
+      await page.getByRole('option', { name: 'Forge' }).click();
+      await expect(forgeHeader).toHaveAttribute('aria-sort', 'descending');
+
+      // The forge filter is a ceiling now: nothing in it offers a floor, and picking one narrows
+      // the bag to the pieces still worth forging.
+      const maxForge = page.getByRole('combobox', { name: 'Maximum forge' });
+      await expect(maxForge).toHaveText('Any forge');
+      await maxForge.click();
+      await page.getByRole('option', { name: 'Forged up to +8' }).click();
+      await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBeLessThan(before);
+      await maxForge.click();
+      await page.getByRole('option', { name: 'Any forge' }).click();
+      await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBe(before);
+
+      // Worn and spare split the bag between them, and neither is the whole of it.
+      const worn = page.getByRole('combobox', { name: 'Filter by who wears it' });
+      await worn.click();
+      await page.getByRole('option', { name: 'Worn by a hero' }).click();
+      await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBeLessThan(before);
+      const wornRows = await rowCount(page);
+      await worn.click();
+      await page.getByRole('option', { name: 'Nobody wearing it' }).click();
+      await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBe(before - wornRows);
+      await worn.click();
+      await page.getByRole('option', { name: 'Worn or not' }).click();
+      await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBe(before);
 
       // Virtualized: the fixture's gear does not fit the pane, and what does not fit is not in
       // the document. Two spacer rows hold its height open instead.
@@ -127,6 +168,11 @@ test.describe('forge plan smoke', () => {
       // Few enough to fit now, so every one of them is mounted and neither spacer is needed.
       expect(await rows(page).count()).toBe(wornByHero);
       await expect(view.getByTestId('forge-hero-hint')).toContainText(/^Showing what .+ wears$/);
+
+      // A hero already means "worn, by that hero", so the worn filter stops offering a second
+      // cut and says why instead of quietly emptying the table.
+      await expect(page.getByRole('combobox', { name: 'Filter by who wears it' })).toBeDisabled();
+      await expect(view.getByTestId('forge-worn-implied')).toBeVisible();
 
       // The first row is the hero's highest forge; clicking it names the piece in the item panel.
       const first = rows(page).first();

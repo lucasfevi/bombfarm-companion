@@ -9,13 +9,15 @@ import {
   forgeButtonReason,
   forgeLabels,
   forgeLevel,
-  forgeMinForgeText,
+  forgeMaxForgeText,
   forgeReasonText,
   forgeResultHeading,
   forgeRungLabel,
+  forgeSortKeyText,
   forgeStartRefusalText,
   forgeStatRows,
   forgeStopText,
+  forgeWornText,
 } from './forge-labels';
 
 const ROWS = [
@@ -44,15 +46,20 @@ function item(id: string): InventoryViewItem {
   return found;
 }
 
-const IDLE = { running: false };
+const IDLE = { running: false, cancelRequested: false };
 
 describe('forgeButtonReason', () => {
   it('ranks the reasons: a run in flight, then maxed, then no server, then the switch, then ready', () => {
-    expect(forgeButtonReason({ upgrade: FORGE_MAX, accountSource: 'fixture', forgeWritesEnabled: false, running: true })).toBe('running');
+    expect(forgeButtonReason({ upgrade: FORGE_MAX, accountSource: 'fixture', forgeWritesEnabled: false, running: true, cancelRequested: false })).toBe('running');
     expect(forgeButtonReason({ upgrade: FORGE_MAX, accountSource: 'fixture', forgeWritesEnabled: false, ...IDLE })).toBe('maxed');
     expect(forgeButtonReason({ upgrade: 12, accountSource: 'fixture', forgeWritesEnabled: true, ...IDLE })).toBe('fixture');
     expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: false, ...IDLE })).toBe('switch-off');
     expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: true, ...IDLE })).toBe('ready');
+  });
+
+  it('says the cancel landed once it has been asked for, and only while a run is in flight', () => {
+    expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: true, running: true, cancelRequested: true })).toBe('cancelling');
+    expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: true, running: false, cancelRequested: true })).toBe('ready');
   });
 
   it('treats an environment not yet answered as a server, so the switch line still shows', () => {
@@ -66,6 +73,8 @@ describe('forgeButtonReason', () => {
     expect(forgeReasonText('fixture', en)).toBe('No server to forge on');
     expect(forgeReasonText('ready', en)).toBe(en.forgeReasonReady);
     expect(forgeReasonText('running', en)).toBe(en.forgeReasonRunning);
+    expect(forgeReasonText('cancelling', en)).toBe(en.forgeReasonCancelling);
+    expect(forgeReasonText('cancelling', ptBR)).toBe(ptBR.forgeReasonCancelling);
   });
 });
 
@@ -140,12 +149,39 @@ describe('forgeRungLabel', () => {
   });
 });
 
-describe('forgeMinForgeText', () => {
-  it('reads the floor the way the brief spells it', () => {
-    expect(forgeMinForgeText(0, en)).toBe('Any forge');
-    expect(forgeMinForgeText(1, en)).toBe('+1 and up');
-    expect(forgeMinForgeText(12, en)).toBe('+12 and up');
-    expect(forgeMinForgeText(15, en)).toBe('+15 only');
+describe('forgeMaxForgeText', () => {
+  it('reads as a ceiling, so it names the pieces still worth forging rather than the ones already forged far', () => {
+    expect(forgeMaxForgeText(null, en)).toBe('Any forge');
+    expect(forgeMaxForgeText(0, en)).toBe('+0 only');
+    expect(forgeMaxForgeText(8, en)).toBe('Forged up to +8');
+    expect(forgeMaxForgeText(14, en)).toBe('Forged up to +14');
+    expect(forgeMaxForgeText(14, ptBR)).toBe('Forjado até +14');
+  });
+
+  it('says nothing about a floor any more', () => {
+    for (const max of [null, 0, 8, 14] as const) {
+      expect(forgeMaxForgeText(max, en)).not.toContain('and up');
+      expect(forgeMaxForgeText(max, ptBR)).not.toContain('ou mais');
+    }
+  });
+});
+
+describe('forgeWornText', () => {
+  it('names the three cuts through who is wearing what', () => {
+    expect(forgeWornText('all', en)).toBe('Worn or not');
+    expect(forgeWornText('worn', en)).toBe('Worn by a hero');
+    expect(forgeWornText('spare', en)).toBe('Nobody wearing it');
+    expect(forgeWornText('spare', ptBR)).toBe('Ninguém usando');
+  });
+});
+
+describe('forgeSortKeyText', () => {
+  it('names an order with the same word its column header carries', () => {
+    expect(forgeSortKeyText('forge', en)).toBe(en.inventoryColumnForge);
+    expect(forgeSortKeyText('slot', en)).toBe(en.inventoryColumnSlot);
+    expect(forgeSortKeyText('name', en)).toBe(en.inventorySortName);
+    expect(forgeSortKeyText('rarity', en)).toBe(en.inventorySortRarity);
+    expect(forgeSortKeyText('level', en)).toBe(en.inventorySortLevel);
   });
 });
 

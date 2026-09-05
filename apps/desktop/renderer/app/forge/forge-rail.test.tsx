@@ -71,6 +71,10 @@ function stateOf(html: string): string | undefined {
   return /data-testid="forge-rail" data-state="([a-z]+)"/.exec(html)?.[1];
 }
 
+function railCancelTag(html: string): string {
+  return /<button[^>]*data-testid="forge-rail-cancel"[^>]*>/.exec(html)?.[0] ?? '';
+}
+
 describe('forgeRailState', () => {
   it('names the three states the rail can be in — a live run, a just-finished one, or nothing', () => {
     expect(forgeRailState(IDLE_FORGE_RUN)).toBe('collapsed');
@@ -102,6 +106,15 @@ describe('ForgeRail', () => {
     const rungs = [...html.matchAll(/data-testid="forge-tally-rung"[^>]*>([^<]+)</g)].map((match) => match[1]);
     expect(rungs).toEqual(['+9…+11', '+12']);
     expect(html).toContain('Cancel after this roll');
+    expect(railCancelTag(html)).not.toContain(' disabled=""');
+  });
+
+  it('says the cancel landed and stops taking presses once it has been asked for', () => {
+    const html = renderRail(forgeRunReducer(running(), { kind: 'cancel' }));
+    expect(html).toContain(en.forgeButtonCancelPending);
+    expect(html).not.toContain('>Cancel after this roll<');
+    expect(railCancelTag(html)).toContain(' disabled=""');
+    expect(railCancelTag(html)).toContain('data-pending="true"');
   });
 
   it('finished, shows the result block with its heading, the plan bar and the done control, and no wallet-after fact', () => {
@@ -212,7 +225,10 @@ function item(): InventoryViewItem {
   return found;
 }
 
-function renderPanel(reason: 'ready' | 'running' | 'switch-off', startRefusal: 'busy' | null = null): string {
+function renderPanel(
+  reason: 'ready' | 'running' | 'cancelling' | 'switch-off',
+  startRefusal: 'busy' | null = null,
+): string {
   return renderToStaticMarkup(
     createElement(CopyProvider, {
       locale: 'en',
@@ -253,6 +269,14 @@ describe('ForgePlanPanel — the button', () => {
     expect(buttonTag(html)).not.toContain(' disabled=""');
     expect(html).toMatch(/<fieldset disabled=""[^>]*data-testid="forge-plan-controls"/);
     expect(html).toContain(en.forgeReasonRunning);
+  });
+
+  it('says the same thing as the rail once the cancel has been asked for, and takes no second press', () => {
+    const html = renderPanel('cancelling');
+    expect(html).toMatch(/data-testid="forge-button"[^>]*>Cancelling after this roll…</);
+    expect(buttonTag(html)).toContain(' disabled=""');
+    expect(html).toContain(en.forgeReasonCancelling);
+    expect(html).toMatch(/<fieldset disabled=""[^>]*data-testid="forge-plan-controls"/);
   });
 
   it('stays disabled with the switch off, and prints main\'s refusal under the button when there is one', () => {

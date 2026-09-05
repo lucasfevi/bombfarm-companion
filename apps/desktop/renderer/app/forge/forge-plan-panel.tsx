@@ -130,7 +130,8 @@ export function ForgePlanPanel({
   const maxed = item.upgrade >= FORGE_MAX;
   const target = plan.target;
   const rungs = riskyRungs(item.upgrade, target);
-  const running = reason === 'running';
+  const cancelling = reason === 'cancelling';
+  const running = reason === 'running' || cancelling;
   const { armed, arm, disarm } = useArmedButton(item.id, target);
 
   const onPress = () => {
@@ -148,7 +149,8 @@ export function ForgePlanPanel({
   };
 
   let buttonLabel: string;
-  if (running) buttonLabel = t.forgeButtonCancel;
+  if (cancelling) buttonLabel = t.forgeButtonCancelPending;
+  else if (running) buttonLabel = t.forgeButtonCancel;
   else if (armed) buttonLabel = t.forgeButtonConfirm;
   else buttonLabel = sub(t.forgeButton, { target: forgeLevel(maxed ? FORGE_MAX : target) });
   const reasonLine = startRefusal === null || armed ? forgeReasonText(reason, t) : forgeStartRefusalText(startRefusal, t);
@@ -233,9 +235,10 @@ export function ForgePlanPanel({
           type="button"
           variant={running ? 'default' : 'primary'}
           className="w-full"
-          disabled={reason !== 'ready' && !running}
+          disabled={cancelling || (reason !== 'ready' && !running)}
           data-testid="forge-button"
           data-armed={armed ? 'true' : undefined}
+          data-pending={cancelling ? 'true' : undefined}
           onClick={onPress}
         >
           {buttonLabel}
