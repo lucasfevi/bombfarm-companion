@@ -1,18 +1,28 @@
 'use client';
 
 /**
- * The Forge screen as a planner: pick a piece, pick a target, see what the climb buys its wearer
- * and what it should cost. Reads the account through the shared `useAccountView()` seam and pins
- * the first read it sees, the way the Farm board does — a plan must not move under the player as
- * the live account ticks, so a newer read is adopted only through the toolbar's refresh, and the
- * age line under it dates the read the screen is drawn from. Nothing here writes.
+ * The Forge screen: pick a piece, pick a target, see what the climb buys its wearer and what it
+ * should cost — then forge it. Reads the account through the shared `useAccountView()` seam and
+ * pins the first read it sees, the way the Farm board does — a plan must not move under the
+ * player as the live account ticks, so a newer read is adopted only through the toolbar's
+ * refresh, and once more the moment a run finishes, so the bag shows the level the server just
+ * returned. The run itself lives in main; this screen asks for it, watches it, and draws it.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { canonicalStringify, type AccountSource, type AccountView } from '@bombfarm/contracts';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import {
+  canonicalStringify,
+  EMPTY_FORGE_HISTORY,
+  type AccountSource,
+  type AccountView,
+  type ForgeEvent,
+  type ForgeHistoryResult,
+  type ForgeHistoryRow,
+  type ForgeStartReason,
+} from '@bombfarm/contracts';
 import { FORGE_MAX } from '@bombfarm/domain/forge';
 import { SLOTS } from '@bombfarm/domain/gear';
 import { buildInventoryView, mapInventoryHeroes, type InventoryViewItem } from '@bombfarm/domain/inventory-view';
-import { Banner, EmptyState, Panel, PanelHeader } from '@bombfarm/ui';
+import { Banner, ConfirmDialog, EmptyState, motionTokens, Panel, PanelHeader } from '@bombfarm/ui';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { oldestCaptureOf } from '../../lib/account/account-facts';
 import { useAccountView } from '../../lib/account/use-account-view';
@@ -32,13 +42,33 @@ import {
   type ForgeRow,
   type ForgeSort,
 } from '../../lib/forge/forge-rows';
+import {
+  forgeRunReducer,
+  IDLE_FORGE_RUN,
+  shouldAdoptLiveAfter,
+  type ForgeRunAdoption,
+  type ForgeRunPlan,
+  type ForgeRunState,
+} from '../../lib/forge/forge-run-reducer';
 import { useForgePlan } from '../../lib/forge/use-forge-plan';
 import { ForgeItemPanel } from './forge-item-panel';
 import { forgeButtonReason, forgeLabels } from './forge-labels';
 import { ForgePlanPanel } from './forge-plan-panel';
-import { ForgeRail } from './forge-rail';
+import { ForgeRail, type ForgeRailIdle, type ForgeRailLastRun } from './forge-rail';
 import { ForgeTable } from './forge-table';
 import { ForgeToolbar, type ForgeHeroOption } from './forge-toolbar';
+
+type Bridge = NonNullable<Window['bfc']>;
+
+function bridgeOf(): Bridge | null {
+  if (typeof window === 'undefined') return null;
+  return (window as unknown as { bfc?: Bridge }).bfc ?? null;
+}
+
+function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -80,8 +110,6 @@ function sectionsKey(view: AccountView | null): string | null {
   return view === null ? null : canonicalStringify([view.payload.items ?? null, view.payload.heroes ?? null]);
 }
 
-const NO_RUNS = { lastRun: null, totals: null };
-
 export function ForgeView({
   forgeWritesEnabled,
   accountSource,
@@ -99,6 +127,8 @@ export function ForgeView({
     if (pinned === null && live !== null) setPinned(live);
   }, [pinned, live]);
   const view = pinned ?? live;
+  const liveRef = useRef(live);
+  liveRef.current = live;
 
   const liveKey = useMemo(() => sectionsKey(live), [live]);
   const pinnedKey = useMemo(() => sectionsKey(view), [view]);
@@ -181,7 +211,150 @@ export function ForgeView({
     selected !== null && wearerId !== null && evaluator !== null && selected.upgrade < FORGE_MAX
       ? evaluator.deltaAt(wearerId, selected, plan.plan.target)
       : null;
-  const reason = forgeButtonReason({ upgrade: selected?.upgrade ?? 0, accountSource, forgeWritesEnabled });
+
+  const [run, dispatchRun] = useReducer(forgeRunReducer, IDLE_FORGE_RUN);
+  const runRef = useRef<ForgeRunState>(run);
+  runRef.current = run;
+  const selectionRef = useRef<ForgeRunAdoption | null>(null);
+  selectionRef.current = selected === null ? null : { itemId: selected.id, plan: { forecast: plan.forecast, deltaToTarget } };
+
+  const [history, setHistory] = useState<ForgeHistoryResult>(EMPTY_FORGE_HISTORY);
+  const [lastFinished, setLastFinished] = useState<ForgeRailLastRun | null>(null);
+  const [startRefusal, setStartRefusal] = useState<ForgeStartReason | null>(null);
+  const [clearOpen, setClearOpen] = useState(false);
+
+  const loadHistory = useCallback(() => {
+    const bridge = bridgeOf();
+    if (!bridge) return;
+    void bridge
+      .invoke('forge:history')
+      .then(setHistory)
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    const bridge = bridgeOf();
+    if (!bridge) return;
+    loadHistory();
+    return bridge.on('forge:event', (event: ForgeEvent) => {
+      if (event.type === 'done') dispatchRun({ kind: 'done', event });
+      else dispatchRun({ kind: 'step', event, adopt: selectionRef.current });
+    });
+  }, [loadHistory]);
+
+  const itemLabelFor = useCallback(
+    (itemId: string, fallback: string) => {
+      const item = gear.find((candidate) => candidate.id === itemId);
+      return item ? labels.itemName(item) : fallback;
+    },
+    [gear, labels],
+  );
+
+  const previousStatus = useRef(run.status);
+  useEffect(() => {
+    const before = previousStatus.current;
+    previousStatus.current = run.status;
+    if (!shouldAdoptLiveAfter(before, run.status) || run.status !== 'done') return;
+    setPinned(liveRef.current);
+    setLastFinished({
+      itemLabel: itemLabelFor(run.result.itemId, run.result.itemId),
+      fromUpgrade: run.result.from,
+      toUpgrade: run.result.to,
+      rolls: run.result.rolls,
+      fails: run.result.fails,
+      spent: run.result.spent,
+      at: new Date().toISOString(),
+    });
+    loadHistory();
+  }, [run, itemLabelFor, loadHistory]);
+
+  useEffect(() => {
+    if (run.status !== 'dismissed') return;
+    const timer = setTimeout(
+      () => {
+        dispatchRun({ kind: 'settle' });
+      },
+      prefersReducedMotion() ? 0 : motionTokens.panelMs,
+    );
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [run.status]);
+
+  useEffect(() => {
+    setStartRefusal(null);
+  }, [selectedId]);
+
+  const onForge = useCallback(() => {
+    const bridge = bridgeOf();
+    if (!bridge || selected === null) return;
+    const request = { itemId: selected.id, target: plan.plan.target, maxGold: plan.plan.maxGold, maxAttempts: plan.plan.attempts };
+    const planNow: ForgeRunPlan = { forecast: plan.forecast, deltaToTarget };
+    void bridge.invoke('forge:start', request).then((result) => {
+      if (result.ok) {
+        setStartRefusal(null);
+        dispatchRun({ kind: 'start', runId: result.runId, itemId: selected.id, target: request.target, from: selected.upgrade, plan: planNow });
+      } else {
+        setStartRefusal(result.reason);
+      }
+    });
+  }, [selected, plan.plan, plan.forecast, deltaToTarget]);
+
+  const onCancel = useCallback(() => {
+    const bridge = bridgeOf();
+    const current = runRef.current;
+    if (!bridge || current.status !== 'running') return;
+    void bridge.invoke('forge:cancel', current.run.runId);
+  }, []);
+
+  const onDone = useCallback(() => {
+    dispatchRun({ kind: 'dismiss' });
+  }, []);
+
+  const onClearHistory = useCallback(() => {
+    const bridge = bridgeOf();
+    if (!bridge) return;
+    void bridge
+      .invoke('forge:clearHistory')
+      .then((result) => {
+        setHistory(result);
+        setLastFinished(null);
+      })
+      .catch(() => undefined);
+  }, []);
+
+  const running = run.status === 'running';
+  const reason = forgeButtonReason({ upgrade: selected?.upgrade ?? 0, accountSource, forgeWritesEnabled, running });
+
+  const idle = useMemo<ForgeRailIdle>(() => {
+    const latest: ForgeHistoryRow | undefined = history.rows[0];
+    const fromHistory: ForgeRailLastRun | null = latest
+      ? {
+          itemLabel: itemLabelFor(latest.itemId, latest.defId),
+          fromUpgrade: latest.fromUpgrade,
+          toUpgrade: latest.toUpgrade,
+          rolls: latest.rolls,
+          fails: latest.fails,
+          spent: latest.spent,
+          at: latest.finishedAt,
+        }
+      : null;
+    const lastRun = lastFinished !== null && (fromHistory === null || lastFinished.at >= fromHistory.at) ? lastFinished : fromHistory;
+    const totals = history.totals.runs > 0 ? { runs: history.totals.runs, spent: history.totals.spent } : null;
+    return { lastRun, totals };
+  }, [history, lastFinished, itemLabelFor]);
+
+  const runItem = run.status === 'running' || run.status === 'done' ? run.run.itemId : null;
+  const runWearerName = runItem !== null && selected?.id === runItem ? wearerName : null;
+  const realisedDelta = useMemo(() => {
+    if (run.status !== 'done' || evaluator === null || selected === null || selected.id !== run.result.itemId) return null;
+    if (selected.equippedBy === null) return null;
+    return evaluator.deltaAt(
+      selected.equippedBy,
+      { slot: selected.slot, defId: selected.defId, upgrade: run.result.from },
+      run.result.to,
+    );
+  }, [run, evaluator, selected]);
 
   const account = view?.payload.account;
   const bag = useMemo(() => bagOf(account), [account]);
@@ -236,23 +409,46 @@ export function ForgeView({
         />
       </Panel>
 
-      <ForgeRail idle={NO_RUNS} gold={labels.gold} />
+      <ConfirmDialog
+        open={clearOpen}
+        onOpenChange={setClearOpen}
+        title={t.forgeRailClearTitle}
+        description={t.forgeRailClearDescription}
+        confirmLabel={t.forgeRailClearConfirm}
+        cancelLabel={t.forgeRailClearCancel}
+        onConfirm={onClearHistory}
+      />
 
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_372px] gap-3">
-        <Panel className="flex min-h-0 flex-col">
-          <ForgeTable
-            rows={shown.rows}
-            hidden={shown.hidden}
-            sort={sort}
-            onSortChange={setSort}
-            selectedId={selectedId}
-            onSelect={onSelect}
+        <div className="flex min-h-0 flex-col gap-3">
+          <ForgeRail
+            idle={idle}
+            run={run}
+            gold={labels.gold}
             labels={labels}
-            filtered={!isEmptyForgeFilter(filter)}
-            onClearFilter={clearFilter}
-            className="min-h-0 flex-1"
+            wearerName={runWearerName}
+            realisedDelta={realisedDelta}
+            onCancel={onCancel}
+            onDone={onDone}
+            onClearHistory={() => {
+              setClearOpen(true);
+            }}
           />
-        </Panel>
+          <Panel className="flex min-h-0 flex-1 flex-col">
+            <ForgeTable
+              rows={shown.rows}
+              hidden={shown.hidden}
+              sort={sort}
+              onSortChange={setSort}
+              selectedId={selectedId}
+              onSelect={onSelect}
+              labels={labels}
+              filtered={!isEmptyForgeFilter(filter)}
+              onClearFilter={clearFilter}
+              className="min-h-0 flex-1"
+            />
+          </Panel>
+        </div>
         <div className="flex min-h-0 flex-col gap-3 overflow-y-auto">
           <ForgeItemPanel item={selected} wearerName={wearerName} target={plan.plan.target} labels={labels} />
           {selected === null ? null : (
@@ -264,10 +460,13 @@ export function ForgeView({
               deltaToTarget={deltaToTarget}
               walletGold={walletGold}
               reason={reason}
+              startRefusal={startRefusal}
               labels={labels}
               onStepTarget={plan.stepTarget}
               onMaxGoldChange={plan.setMaxGold}
               onAttemptsChange={plan.setAttempts}
+              onForge={onForge}
+              onCancel={onCancel}
             />
           )}
         </div>

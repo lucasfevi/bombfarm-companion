@@ -28,6 +28,9 @@ const REQUEST_FILE = join(GAME_API_SRC, 'request.ts');
 const FORGE_REQUEST_FILE = join(GAME_API_SRC, 'forge-request.ts');
 const FORGE_ROUTE_PATHS = ['/item/forge', '/item/forge_to_safe'];
 const ACCOUNT_REFRESH_FILE = join(DESKTOP_MAIN, 'game-api/account-refresh.ts');
+/** The one caller of `requestPost()` — the forge run. Typed to a `WriteSession`, and the second
+ *  root of the live-tap walk below: a write path must be as far from the tap as the read path. */
+const FORGE_SERVICE_FILE = join(DESKTOP_MAIN, 'forge/forge-service.ts');
 /** This guard file itself necessarily names the strings it checks for — excluded from every scan. */
 const BOUNDARIES_TEST_FILE = join(DESKTOP_MAIN, 'game-api/boundaries.test.ts');
 
@@ -321,12 +324,18 @@ describe('Guard 3 — no path to the network or the token file bypasses consent'
     expect(offenders, `Every write call site must be typed to a WriteSession. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
   });
 
-  it('forge-request.ts is the only definer of requestPost(), and its caller set is empty — nothing in the app forges yet; the Forge tab is the change that flips this', () => {
+  it('forge-request.ts is the only definer of requestPost(), and forge-service.ts is its only caller — the one place in the app that forges', () => {
     const definers = nonTestFiles.filter((file) => /export async function requestPost\(/.test(readFileSync(file, 'utf8')));
     expect(definers).toEqual([FORGE_REQUEST_FILE]);
 
     const callers = nonTestFiles.filter((file) => file !== FORGE_REQUEST_FILE && /\brequestPost\(/.test(readFileSync(file, 'utf8')));
-    expect(callers).toEqual([]);
+    expect(callers).toEqual([FORGE_SERVICE_FILE]);
+  });
+
+  it('forge-service.ts mints its session through grantWriteSession() and names WriteSession (sanity — the caller rule above is not vacuous)', () => {
+    const text = readFileSync(FORGE_SERVICE_FILE, 'utf8');
+    expect(text).toContain('grantWriteSession(');
+    expect(text).toContain('WriteSession');
   });
 });
 
@@ -554,6 +563,22 @@ describe('Guard 4 — the account path never reaches the live tap', () => {
     expect(
       violations,
       `The account is never sourced from the live tap, in this feature or as a fallback. Violations: ${JSON.stringify(violations)}`,
+    ).toEqual([]);
+  });
+});
+
+describe('Guard 4 — the forge run never reaches the live tap either', () => {
+  const { violations, visited } = walkImportGraph(FORGE_SERVICE_FILE);
+
+  it('walked a non-empty import graph from forge-service.ts', () => {
+    expect(visited.size).toBeGreaterThan(0);
+    expect(visited.has(FORGE_SERVICE_FILE)).toBe(true);
+  });
+
+  it('reaches no edge into live-source/ or its LiveSource class', () => {
+    expect(
+      violations,
+      `A write is never sourced from, or informed by, the live tap. Violations: ${JSON.stringify(violations)}`,
     ).toEqual([]);
   });
 });

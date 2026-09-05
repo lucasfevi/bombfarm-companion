@@ -3,6 +3,7 @@ import { FORGE_MAX } from '@bombfarm/domain/forge';
 import { buildInventoryView, type InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { en } from '../../lib/copy/en';
 import { ptBR } from '../../lib/copy/pt-BR';
+import type { ForgeRunResult } from '@bombfarm/contracts';
 import {
   BLANK,
   forgeButtonReason,
@@ -10,6 +11,9 @@ import {
   forgeLevel,
   forgeMinForgeText,
   forgeReasonText,
+  forgeResultHeading,
+  forgeRungLabel,
+  forgeStartRefusalText,
   forgeStatRows,
 } from './forge-labels';
 
@@ -39,16 +43,19 @@ function item(id: string): InventoryViewItem {
   return found;
 }
 
+const IDLE = { running: false };
+
 describe('forgeButtonReason', () => {
-  it('ranks the reasons: maxed, then no server, then the switch, then the release', () => {
-    expect(forgeButtonReason({ upgrade: FORGE_MAX, accountSource: 'fixture', forgeWritesEnabled: false })).toBe('maxed');
-    expect(forgeButtonReason({ upgrade: 12, accountSource: 'fixture', forgeWritesEnabled: true })).toBe('fixture');
-    expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: false })).toBe('switch-off');
-    expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: true })).toBe('not-yet');
+  it('ranks the reasons: a run in flight, then maxed, then no server, then the switch, then ready', () => {
+    expect(forgeButtonReason({ upgrade: FORGE_MAX, accountSource: 'fixture', forgeWritesEnabled: false, running: true })).toBe('running');
+    expect(forgeButtonReason({ upgrade: FORGE_MAX, accountSource: 'fixture', forgeWritesEnabled: false, ...IDLE })).toBe('maxed');
+    expect(forgeButtonReason({ upgrade: 12, accountSource: 'fixture', forgeWritesEnabled: true, ...IDLE })).toBe('fixture');
+    expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: false, ...IDLE })).toBe('switch-off');
+    expect(forgeButtonReason({ upgrade: 12, accountSource: 'server', forgeWritesEnabled: true, ...IDLE })).toBe('ready');
   });
 
   it('treats an environment not yet answered as a server, so the switch line still shows', () => {
-    expect(forgeButtonReason({ upgrade: 12, accountSource: null, forgeWritesEnabled: false })).toBe('switch-off');
+    expect(forgeButtonReason({ upgrade: 12, accountSource: null, forgeWritesEnabled: false, ...IDLE })).toBe('switch-off');
   });
 
   it('names the Settings switch by the same copy the Settings screen prints', () => {
@@ -56,6 +63,65 @@ describe('forgeButtonReason', () => {
     expect(forgeReasonText('switch-off', ptBR)).toContain(ptBR.settingsForgeWritesLabel);
     expect(forgeReasonText('maxed', en)).toBe('Already at +15 — nothing left to forge');
     expect(forgeReasonText('fixture', en)).toBe('No server to forge on');
+    expect(forgeReasonText('ready', en)).toBe(en.forgeReasonReady);
+    expect(forgeReasonText('running', en)).toBe(en.forgeReasonRunning);
+  });
+});
+
+describe('forgeStartRefusalText', () => {
+  it('says what main could not do, reusing the fixture and switch lines where they already say it', () => {
+    expect(forgeStartRefusalText('offline', en)).toBe(en.forgeReasonFixture);
+    expect(forgeStartRefusalText('writes_disabled', en)).toContain(en.settingsForgeWritesLabel);
+    expect(forgeStartRefusalText('busy', en)).toBe(en.forgeStartBusy);
+    expect(forgeStartRefusalText('not_consented', en)).toBe(en.forgeStartNotConsented);
+    expect(forgeStartRefusalText('game_not_running', en)).toBe(en.forgeStartGameNotRunning);
+    expect(forgeStartRefusalText('token_unavailable', en)).toBe(en.forgeStartTokenUnavailable);
+    expect(forgeStartRefusalText('unknown_item', en)).toBe(en.forgeStartUnknownItem);
+    expect(forgeStartRefusalText('bad_target', en)).toBe(en.forgeStartBadTarget);
+    expect(forgeStartRefusalText('unavailable', en)).toBe(en.forgeStartUnavailable);
+  });
+});
+
+function result(overrides: Partial<ForgeRunResult>): ForgeRunResult {
+  return {
+    itemId: 'g1',
+    from: 8,
+    to: 12,
+    target: 12,
+    stop: 'target',
+    reached: true,
+    rolls: 7,
+    fails: 1,
+    crits: 0,
+    safeJumps: 0,
+    spent: 100,
+    walletAfter: null,
+    durationMs: 1000,
+    ...overrides,
+  };
+}
+
+describe('forgeResultHeading', () => {
+  it('reads every stop in the player\'s terms, tinted by whose decision it was', () => {
+    expect(forgeResultHeading(result({}), en)).toEqual({ text: 'Reached +12', tone: 'up' });
+    expect(forgeResultHeading(result({ stop: 'cancelled', to: 11, rolls: 14 }), en)).toEqual({
+      text: 'Stopped at +11 — cancelled after roll 14',
+      tone: 'warn',
+    });
+    expect(forgeResultHeading(result({ stop: 'shortfall', to: 9 }), en)).toEqual({ text: 'Out of gold at +9', tone: 'down' });
+    expect(forgeResultHeading(result({ stop: 'budget' }), en)).toEqual({ text: 'Stopped by the gold budget at +12', tone: 'warn' });
+    expect(forgeResultHeading(result({ stop: 'attempts' }), en)).toEqual({ text: 'Stopped by the attempt limit at +12', tone: 'warn' });
+    expect(forgeResultHeading(result({ stop: 'cooldown' }), en)).toEqual({ text: 'Server cooldown at +12', tone: 'down' });
+    expect(forgeResultHeading(result({ stop: 'missing' }), en)).toEqual({ text: 'Server refused the item', tone: 'down' });
+    expect(forgeResultHeading(result({ stop: 'error', to: 8 }), en)).toEqual({ text: 'Stopped by an error at +8', tone: 'down' });
+    expect(forgeResultHeading(result({}), ptBR).text).toBe('Chegou a +12');
+  });
+});
+
+describe('forgeRungLabel', () => {
+  it('spans a merged row and stands alone otherwise', () => {
+    expect(forgeRungLabel({ from: 9, to: 11 })).toBe('+9…+11');
+    expect(forgeRungLabel({ from: 12, to: 12 })).toBe('+12');
   });
 });
 

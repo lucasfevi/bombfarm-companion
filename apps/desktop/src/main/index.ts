@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, shell, type WebContents } from 'electron';
 import {
   DEFAULT_SETTINGS,
+  EMPTY_FORGE_HISTORY,
   emptyMarketSnapshotView,
   initialUpdateStatus,
   isIpcChannel,
@@ -13,6 +14,9 @@ import {
   type AppLocale,
   type AppSettings,
   type ConsentRecord,
+  type ForgeHistoryResult,
+  type ForgeStartRequest,
+  type ForgeStartResult,
   type IpcEventChannel,
   type IpcEvents,
   type IpcInvokeArgs,
@@ -26,7 +30,11 @@ import {
   type UpdateStatus,
 } from '@bombfarm/contracts';
 import { createPacingGate, initialConsent, isGranted, trayTextFor } from '@bombfarm/game-api';
-import { createAccountNotifier, resolveAccountView } from './account-view.js';
+import { createAccountNotifier, resolveAccountView, resolveCachedAccountView } from './account-view.js';
+import { patchAccountAfterForge } from './forge/forge-account-patch.js';
+import { createForgeHistory, type ForgeHistory } from './forge/forge-history.js';
+import { createForgeInjector, shouldHonourForgeInject, type ForgeInjector } from './forge/forge-inject.js';
+import { createForgeService, type ForgeService } from './forge/forge-service.js';
 import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
 import { fuseSecondsForCdr } from './domain-edge.js';
@@ -38,7 +46,7 @@ import {
   registerRendererSchemeAsPrivileged,
   RENDERER_ENTRY_URL,
 } from './renderer-protocol.js';
-import { createAccountRefresh, type AccountRefreshHandle } from './game-api/account-refresh.js';
+import { createAccountRefresh, type AccountRefreshDeps, type AccountRefreshHandle } from './game-api/account-refresh.js';
 import { createConsentApplier } from './game-api/consent-applier.js';
 import { createConsentStore, type ConsentStore } from './game-api/consent-store.js';
 import { createLiveConsentGate } from './game-api/live-consent-gate.js';
@@ -126,6 +134,9 @@ let observationMarkWatch: MarkWatch | null = null;
 let liveFastPublisher: LiveFastPublisher | null = null;
 let triggeredRefresh: TriggeredRefresh | null = null;
 let marketService: MarketService | null = null;
+let forgeService: ForgeService | null = null;
+let forgeHistory: ForgeHistory | null = null;
+let forgeInjector: ForgeInjector | null = null;
 /** Fixture mode only — see `gameReader.onAccountCommitted` for why a re-ingest of an unchanged
  *  rotation is not free. */
 let lastIngestedRotationBody: string | null = null;
@@ -249,6 +260,14 @@ type IpcHandlers = {
   [C in IpcInvokeChannel]: (...args: IpcInvokeArgs<C>) => IpcInvokeResult<C> | Promise<IpcInvokeResult<C>>;
 };
 
+function startForgeRun(request: ForgeStartRequest): ForgeStartResult {
+  return forgeService?.start(request) ?? { ok: false, reason: 'unavailable' };
+}
+
+function listForgeHistory(): ForgeHistoryResult {
+  return forgeHistory?.list({ limit: 50 }) ?? EMPTY_FORGE_HISTORY;
+}
+
 function refreshMarketItem(target: MarketQuoteTarget): Promise<MarketQuoteResult> {
   if (!isMarketQuoteTarget(target) || marketService === null) {
     return Promise.resolve({
@@ -334,6 +353,14 @@ function registerIpcHandlers(): void {
       updateService?.installOnRestart() ?? preServiceUpdateStatus(),
     'market:getSnapshot': () => marketService?.getView() ?? emptyMarketSnapshotView(),
     'market:refreshItem': refreshMarketItem,
+    'forge:start': startForgeRun,
+    'forge:cancel': (runId: string) => forgeService?.cancel(runId) ?? false,
+    'forge:history': listForgeHistory,
+    'forge:clearHistory': () => {
+      forgeHistory?.clear();
+      return listForgeHistory();
+    },
+    'forge:inject': (events: unknown) => forgeInjector?.inject(events) ?? { ok: false },
     'miniLive:open': () => {
       if (isMiniAvailable()) {
         miniLiveController?.open();
@@ -859,6 +886,21 @@ async function bootstrap(): Promise<void> {
   // reason to want the freshly committed view.
   let notifier: ReturnType<typeof createAccountNotifier> | null = null;
 
+  // Threads Electron's real `app.isPackaged` (via `resolveAppEnv()`) so `sessionCfgPath`'s
+  // `BFC_TOKEN_PATH_OVERRIDE` escape hatch can ever apply — and, symmetrically, cannot apply in
+  // a packaged build no matter what is set in its environment. See `session-token-file.ts`'s
+  // `SessionCfgPathDeps` doc comment. Shared by the account cycle and the forge run, so both
+  // read the same file and both redact the same token.
+  const readToken: AccountRefreshDeps['readToken'] = (consent) => {
+    const result = readSessionToken(consent, undefined, sessionCfgPath({ isPackaged: resolveAppEnv().isPackaged }));
+    if (result.ok) {
+      const redact = (text: string): string => result.token.redactFrom(text);
+      log.setCredentialRedactor(redact);
+      liveSource?.setCredentialRedactor(redact);
+    }
+    return result;
+  };
+
   accountRefresh = createAccountRefresh({
     consentStore,
     transport: nodeHttpsTransport,
@@ -867,19 +909,7 @@ async function bootstrap(): Promise<void> {
     log,
     now: () => new Date().toISOString(),
     isGameRunning: () => gameReader?.isGameProcessRunning() ?? false,
-    // Threads Electron's real `app.isPackaged` (via `resolveAppEnv()`) so `sessionCfgPath`'s
-    // `BFC_TOKEN_PATH_OVERRIDE` escape hatch (T-fix-4) can ever apply — and, symmetrically,
-    // cannot apply in a packaged build no matter what is set in its environment. See
-    // `session-token-file.ts`'s `SessionCfgPathDeps` doc comment.
-    readToken: (consent) => {
-      const result = readSessionToken(consent, undefined, sessionCfgPath({ isPackaged: resolveAppEnv().isPackaged }));
-      if (result.ok) {
-        const redact = (text: string): string => result.token.redactFrom(text);
-        log.setCredentialRedactor(redact);
-        liveSource?.setCredentialRedactor(redact);
-      }
-      return result;
-    },
+    readToken,
     // account-refresh.ts itself is unmodified (MP2 owns that file's commit semantics) —
     // only what the listener does changed: it used to emit unconditionally on every commit;
     // it now asks the notifier, which emits only on a real change.
@@ -895,6 +925,43 @@ async function bootstrap(): Promise<void> {
     accountRefresh,
     emit: (view) => {
       emitEvent('account:changed', view);
+    },
+  });
+
+  // The forge run reads the account the renderer is looking at, spends through the same gate
+  // and transport as the cycle above, and lands its result through the cycle's own commit seam
+  // so the notifier is what announces the patched bag and wallet.
+  const cachedAccount = (): AccountView | null => resolveCachedAccountView({ gameReader, consentStore, accountRefresh });
+  forgeHistory = createForgeHistory(accountOpen.db, log);
+  forgeService = createForgeService({
+    consentStore,
+    readToken,
+    settings: () => currentSettings,
+    transport: nodeHttpsTransport,
+    gate,
+    accountSource: () => (gameReader?.getMode() === 'fixture' ? 'fixture' : 'server'),
+    isGameRunning: () => gameReader?.isGameProcessRunning() ?? false,
+    currentItems: () => cachedAccount()?.payload.items ?? null,
+    currentGold: () => {
+      const gold = cachedAccount()?.payload.account?.gold;
+      const parsed = typeof gold === 'string' ? Number(gold) : gold;
+      return typeof parsed === 'number' && Number.isFinite(parsed) ? parsed : null;
+    },
+    applyResult: (patch) => {
+      accountRefresh?.applyPatch((payload) => patchAccountAfterForge(payload, patch, new Date().toISOString()));
+    },
+    history: forgeHistory,
+    emit: (event) => {
+      emitEvent('forge:event', event);
+    },
+    log,
+    now: () => Date.now(),
+    sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  });
+  forgeInjector = createForgeInjector({
+    honoured: () => shouldHonourForgeInject(process.env, resolveAppEnv().isPackaged),
+    emit: (event) => {
+      emitEvent('forge:event', event);
     },
   });
 
@@ -1066,6 +1133,11 @@ if (!gotLock) {
     liveFastPublisher = null;
     marketService?.stop();
     marketService = null;
+    forgeService = null;
+    forgeInjector = null;
+    // forgeHistory borrows accountOpen.db the way settingsStore does; accountStore.close()
+    // below owns the handle, so it gains no close() of its own.
+    forgeHistory = null;
     triggeredRefresh = null;
     void liveSource?.teardown();
     liveSource = null;

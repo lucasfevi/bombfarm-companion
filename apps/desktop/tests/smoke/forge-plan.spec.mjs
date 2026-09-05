@@ -143,7 +143,8 @@ test.describe('forge plan smoke', () => {
       // the one slot's forge moved, never a dash on a worn piece of a complete account.
       await expect(planPanel.getByTestId('forge-fact-buys')).toHaveText(/^[+−-]\d+(?:\.\d+)?%$/);
 
-      // The button never forges in this release, and the fixture rule outranks the switch rule.
+      // An account with no server behind it cannot forge, whatever the switch says — the fixture
+      // rule outranks the switch rule, and the button stays disabled with that reason under it.
       await expect(planPanel.getByTestId('forge-button')).toBeDisabled();
       await expect(planPanel.getByTestId('forge-button-reason')).toHaveText('No server to forge on');
 

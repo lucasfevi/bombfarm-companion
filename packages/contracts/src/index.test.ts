@@ -53,6 +53,11 @@ describe('contracts IPC surface', () => {
       'updates:installOnRestart',
       'market:getSnapshot',
       'market:refreshItem',
+      'forge:start',
+      'forge:cancel',
+      'forge:history',
+      'forge:clearHistory',
+      'forge:inject',
     ]);
   });
 
@@ -65,6 +70,7 @@ describe('contracts IPC surface', () => {
       'updates:changed',
       'market:changed',
       'settings:changed',
+      'forge:event',
     ]);
   });
 

@@ -1,4 +1,11 @@
-import { BCP47_BY_LOCALE, type AccountSource, type AppLocale, type DomainLang } from '@bombfarm/contracts';
+import {
+  BCP47_BY_LOCALE,
+  type AccountSource,
+  type AppLocale,
+  type DomainLang,
+  type ForgeRunResult,
+  type ForgeStartReason,
+} from '@bombfarm/contracts';
 import { FORGE_MAX, FORGE_SAFE, forgeChance, forgeRollCost } from '@bombfarm/domain/forge';
 import { upgradeMult } from '@bombfarm/domain/gear';
 import { itemRarityLabel, itemStatLabel, slotLabel } from '@bombfarm/domain/game-labels';
@@ -15,22 +22,25 @@ export function forgeLevel(upgrade: number): string {
   return `+${String(upgrade)}`;
 }
 
-export type ForgeButtonReason = 'maxed' | 'fixture' | 'switch-off' | 'not-yet';
+export type ForgeButtonReason = 'maxed' | 'fixture' | 'switch-off' | 'ready' | 'running';
 
 /**
- * Why the Forge button is disabled, first reason that applies. A piece with nowhere to go beats
- * everything; an account with no server behind it beats the switch, because turning the switch on
- * would not help; and the switch beats the release note for the same reason.
+ * What the Forge button is for right now, first reason that applies. A run in flight owns the
+ * button outright — it is the cancel. Otherwise a piece with nowhere to go beats everything; an
+ * account with no server behind it beats the switch, because turning the switch on would not
+ * help; and only then is the button armed.
  */
 export function forgeButtonReason(input: {
   upgrade: number;
   accountSource: AccountSource | null;
   forgeWritesEnabled: boolean;
+  running: boolean;
 }): ForgeButtonReason {
+  if (input.running) return 'running';
   if (input.upgrade >= FORGE_MAX) return 'maxed';
   if (input.accountSource === 'fixture') return 'fixture';
   if (!input.forgeWritesEnabled) return 'switch-off';
-  return 'not-yet';
+  return 'ready';
 }
 
 export function forgeReasonText(reason: ForgeButtonReason, t: Copy): string {
@@ -41,9 +51,67 @@ export function forgeReasonText(reason: ForgeButtonReason, t: Copy): string {
       return t.forgeReasonFixture;
     case 'switch-off':
       return sub(t.forgeReasonSwitchOff, { switch: t.settingsForgeWritesLabel });
-    case 'not-yet':
-      return t.forgeReasonNotYet;
+    case 'ready':
+      return t.forgeReasonReady;
+    case 'running':
+      return t.forgeReasonRunning;
   }
+}
+
+/** Main's refusal, in the player's terms. The fixture and the switch say what the reason line
+ *  already says for them; the rest are things only main can know. */
+export function forgeStartRefusalText(reason: ForgeStartReason, t: Copy): string {
+  switch (reason) {
+    case 'busy':
+      return t.forgeStartBusy;
+    case 'offline':
+      return t.forgeReasonFixture;
+    case 'not_consented':
+      return t.forgeStartNotConsented;
+    case 'game_not_running':
+      return t.forgeStartGameNotRunning;
+    case 'token_unavailable':
+      return t.forgeStartTokenUnavailable;
+    case 'writes_disabled':
+      return sub(t.forgeReasonSwitchOff, { switch: t.settingsForgeWritesLabel });
+    case 'unknown_item':
+      return t.forgeStartUnknownItem;
+    case 'bad_target':
+      return t.forgeStartBadTarget;
+    case 'unavailable':
+      return t.forgeStartUnavailable;
+  }
+}
+
+export type ForgeResultTone = 'up' | 'warn' | 'down';
+
+/** The result heading in the player's terms, and the tone it is tinted with: reaching the target
+ *  is a gain, the player's own limits are a warning, and the server's refusals are a loss. */
+export function forgeResultHeading(result: ForgeRunResult, t: Copy): { text: string; tone: ForgeResultTone } {
+  const level = forgeLevel(result.to);
+  switch (result.stop) {
+    case 'target':
+      return { text: sub(t.forgeResultReached, { level }), tone: 'up' };
+    case 'cancelled':
+      return { text: sub(t.forgeResultCancelled, { level, rolls: result.rolls }), tone: 'warn' };
+    case 'shortfall':
+      return { text: sub(t.forgeResultShortfall, { level }), tone: 'down' };
+    case 'budget':
+      return { text: sub(t.forgeResultBudget, { level }), tone: 'warn' };
+    case 'attempts':
+      return { text: sub(t.forgeResultAttempts, { level }), tone: 'warn' };
+    case 'cooldown':
+      return { text: sub(t.forgeResultCooldown, { level }), tone: 'down' };
+    case 'missing':
+      return { text: t.forgeResultMissing, tone: 'down' };
+    case 'error':
+      return { text: sub(t.forgeResultError, { level }), tone: 'down' };
+  }
+}
+
+/** `+9…+11` for a merged row, `+12` for one that stands alone. */
+export function forgeRungLabel(row: { from: number; to: number }): string {
+  return row.from === row.to ? forgeLevel(row.from) : `${forgeLevel(row.from)}…${forgeLevel(row.to)}`;
 }
 
 export function forgeMinForgeText(min: ForgeMinForge, t: Copy): string {

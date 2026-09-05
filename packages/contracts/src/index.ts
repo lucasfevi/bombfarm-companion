@@ -3,8 +3,25 @@ import type { SettingsWriteResult } from './locale.js';
 import type { LiveDiagnosticsDumpOutcome, LiveEvent, LiveView } from './live-source.js';
 import type { UpdateStatus } from './update.js';
 import type { MarketQuoteResult, MarketQuoteTarget, MarketSnapshotView } from './market.js';
+import type { ForgeEvent, ForgeHistoryResult, ForgeStartRequest, ForgeStartResult } from './forge.js';
 
 export { accountChangeKey, canonicalStringify } from './account-change-key.js';
+export { EMPTY_FORGE_HISTORY } from './forge.js';
+export type {
+  ForgeCallKind,
+  ForgeDoneEvent,
+  ForgeEvent,
+  ForgeHistoryResult,
+  ForgeHistoryRow,
+  ForgeHistoryTotals,
+  ForgeRollOutcome,
+  ForgeRunResult,
+  ForgeStartReason,
+  ForgeStartRequest,
+  ForgeStartResult,
+  ForgeStepEvent,
+  ForgeStopReason,
+} from './forge.js';
 export { migrateStoredSettings } from './settings-migration.js';
 /** The desktop locale token, its one domain/BCP-47 mapping, and the pure
  *  startup resolution. `locale.ts` itself imports `AppSettings`/`DEFAULT_SETTINGS` back from this
@@ -377,6 +394,17 @@ export interface IpcChannels {
    *  `isMarketQuoteTarget` before anything acts on it — the renderer is not trusted to have sent
    *  a well-formed one. */
   'market:refreshItem': { args: [MarketQuoteTarget]; result: MarketQuoteResult };
+  /** The one channel that spends the player's gold. Main re-validates the request against the
+   *  account it holds and refuses with a named reason rather than trusting the renderer. */
+  'forge:start': { args: [ForgeStartRequest]; result: ForgeStartResult };
+  /** Honoured between rolls only; the result says whether a run with that id was still there to
+   *  cancel. The in-flight call always settles first. */
+  'forge:cancel': { args: [string]; result: boolean };
+  'forge:history': { args: []; result: ForgeHistoryResult };
+  'forge:clearHistory': { args: []; result: ForgeHistoryResult };
+  /** Test-only: replays a scripted event sequence through the real `forge:event` seam. Main
+   *  honours it only unpackaged on the fixture reader; anywhere else it answers `{ ok: false }`. */
+  'forge:inject': { args: [unknown]; result: { ok: boolean } };
 }
 
 export type IpcInvokeChannel = keyof IpcChannels;
@@ -415,6 +443,11 @@ export const IPC_CHANNELS = [
   'updates:installOnRestart',
   'market:getSnapshot',
   'market:refreshItem',
+  'forge:start',
+  'forge:cancel',
+  'forge:history',
+  'forge:clearHistory',
+  'forge:inject',
 ] as const satisfies readonly IpcInvokeChannel[];
 
 export type IpcEventChannel =
@@ -424,7 +457,8 @@ export type IpcEventChannel =
   | 'live:event'
   | 'updates:changed'
   | 'market:changed'
-  | 'settings:changed';
+  | 'settings:changed'
+  | 'forge:event';
 
 export interface IpcEvents {
   'game:status': GameStatusInfo;
@@ -449,6 +483,9 @@ export interface IpcEvents {
   /** Fired whenever main adopts new settings — persisted or not, since a locale or always-on-top
    *  change applies for the session either way — so every window follows without a relaunch. */
   'settings:changed': AppSettings;
+  /** Every call a forge run makes, as it settles, then one `done`. The step's `to` is the
+   *  server's answer, never an inference from the odds. */
+  'forge:event': ForgeEvent;
 }
 
 export const IPC_EVENT_CHANNELS = [
@@ -459,6 +496,7 @@ export const IPC_EVENT_CHANNELS = [
   'updates:changed',
   'market:changed',
   'settings:changed',
+  'forge:event',
 ] as const satisfies readonly IpcEventChannel[];
 
 export function isIpcChannel(value: string): value is IpcInvokeChannel {
