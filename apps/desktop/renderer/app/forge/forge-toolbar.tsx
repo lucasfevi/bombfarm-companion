@@ -1,7 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { HeroAvatar, inventoryChipRecipe, inventoryFieldClass, rarityTextClass } from '@bombfarm/game-art';
+import {
+  HeroAvatar,
+  inventoryChipRecipe,
+  inventoryFieldClass,
+  inventoryFieldHeightClass,
+  rarityTextClass,
+} from '@bombfarm/game-art';
 import { Button, cn, Select } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
 import { formatCapturedAt } from '../../lib/format';
@@ -31,10 +37,12 @@ function toggle(list: readonly number[], value: number): number[] {
   return list.includes(value) ? list.filter((entry) => entry !== value) : [...list, value];
 }
 
+/** The avatar is sized to the toolbar's field height rather than to its own `xs` step: a control
+ *  in this row stands the same height as the fields beside it, so the picture gives way. */
 function HeroOptionLabel({ hero }: { hero: ForgeHeroOption }) {
   return (
     <span className="flex min-w-0 items-center gap-1.5">
-      <HeroAvatar skin={hero.skin} rarityIdx={hero.rarityIdx} size="xs" name={hero.name} className="shrink-0" />
+      <HeroAvatar skin={hero.skin} rarityIdx={hero.rarityIdx} size="xs" name={hero.name} className="size-5 shrink-0" />
       {hero.rank ? <span className="shrink-0 text-[11px] font-black tracking-tight text-accent">{hero.rank}</span> : null}
       <span className={cn('truncate', 'font-semibold', rarityTextClass(hero.rarityIdx) ?? 'text-ink')}>{hero.name}</span>
       <span className="shrink-0 text-[10px] tabular-nums text-muted">{hero.level}</span>
@@ -99,7 +107,7 @@ export function ForgeToolbar({
             value={filter.heroId ?? ''}
             onChange={(event) => { onFilterChange({ ...filter, heroId: event.target.value || null }); }}
             aria-label={t.inventoryFilterHeroLabel}
-            className="w-56 shrink-0"
+            className={cn(inventoryFieldHeightClass, 'w-56', 'shrink-0')}
           >
             <option value="">{t.inventoryFilterAllHeroes}</option>
             {heroes.map((hero) => (
@@ -124,7 +132,7 @@ export function ForgeToolbar({
           value={filter.slot ?? ''}
           onChange={(event) => { onFilterChange({ ...filter, slot: event.target.value || null }); }}
           aria-label={t.forgeSlotLabel}
-          className="w-32 shrink-0"
+          className={cn(inventoryFieldHeightClass, 'w-32', 'shrink-0')}
         >
           <option value="">{t.forgeAllSlots}</option>
           {slots.map((slot) => (
@@ -141,7 +149,7 @@ export function ForgeToolbar({
             { onFilterChange({ ...filter, minForge: Number(event.target.value) as ForgeMinForge }); }
           }
           aria-label={t.forgeMinForgeLabel}
-          className="w-32 shrink-0"
+          className={cn(inventoryFieldHeightClass, 'w-32', 'shrink-0')}
         >
           {FORGE_MIN_FORGE_OPTIONS.map((min) => (
             <option key={min} value={String(min)}>

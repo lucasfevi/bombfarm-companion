@@ -13,7 +13,6 @@ import {
   isEmptyForgeFilter,
   nextForgeSort,
   sortForgeRows,
-  type ForgeRow,
 } from './forge-rows';
 
 function gearRow(
@@ -71,11 +70,7 @@ describe('filterForgeItems', () => {
 });
 
 describe('sortForgeRows', () => {
-  const rows: ForgeRow[] = GEAR.map((item) => ({
-    item,
-    buys: item.id === 'sword' ? 0.03 : item.id === 'helm' ? 0.05 : null,
-  }));
-  const order = (sort: typeof DEFAULT_FORGE_SORT) => sortForgeRows(rows, sort, nameOf, slotOf).map((row) => row.item.id);
+  const order = (sort: typeof DEFAULT_FORGE_SORT) => sortForgeRows(GEAR, sort, nameOf, slotOf).map((item) => item.id);
 
   it('opens on the forge level, highest first', () => {
     expect(order(DEFAULT_FORGE_SORT)).toEqual(['ring', 'sword', 'helm', 'boots']);
@@ -89,15 +84,10 @@ describe('sortForgeRows', () => {
     expect(order({ key: 'slot', direction: 'asc' })).toEqual(['ring', 'sword', 'boots', 'helm']);
   });
 
-  it('sinks the rows nobody wears to the bottom of the buys column in both directions', () => {
-    expect(order({ key: 'buys', direction: 'desc' })).toEqual(['helm', 'sword', 'boots', 'ring']);
-    expect(order({ key: 'buys', direction: 'asc' })).toEqual(['sword', 'helm', 'boots', 'ring']);
-  });
-
   it('leaves the rows it was handed alone', () => {
-    const before = rows.map((row) => row.item.id);
-    sortForgeRows(rows, { key: 'item', direction: 'asc' }, nameOf, slotOf);
-    expect(rows.map((row) => row.item.id)).toEqual(before);
+    const before = GEAR.map((item) => item.id);
+    sortForgeRows(GEAR, { key: 'item', direction: 'asc' }, nameOf, slotOf);
+    expect(GEAR.map((item) => item.id)).toEqual(before);
   });
 });
 
@@ -111,9 +101,9 @@ describe('nextForgeSort', () => {
 
 describe('capForgeRows', () => {
   it('shows every row up to the cap and counts the rest', () => {
-    const many: ForgeRow[] = Array.from({ length: FORGE_ROW_CAP + 7 }, (_, index) => ({
-      item: { ...itemNamed('sword'), id: `row-${String(index)}` },
-      buys: null,
+    const many: InventoryViewItem[] = Array.from({ length: FORGE_ROW_CAP + 7 }, (_, index) => ({
+      ...itemNamed('sword'),
+      id: `row-${String(index)}`,
     }));
     const capped = capForgeRows(many);
     expect(capped.rows).toHaveLength(FORGE_ROW_CAP);

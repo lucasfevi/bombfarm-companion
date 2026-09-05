@@ -361,7 +361,13 @@ function HomePageContent({
             whichever tab happens to be showing — six smoke specs wait on it purely as a boot
             signal. The probe beside it proves a @bombfarm/domain value and the active language
             reached the DOM; it renders nothing a player sees. */}
-        <div data-testid="app-ready" className="flex flex-1 flex-col gap-4">
+        {/* `min-h-0` is what lets a screen fill the scroll region instead of growing past it. A
+            flex item's automatic minimum size is its content, so without this every tab was as
+            tall as its contents and `<main>` scrolled whatever the tab did with `min-h-0` and
+            `flex-1` inside — the bag table's own scroller had nothing to be a scroller inside of.
+            A tab that is genuinely taller than the region still overflows this box and still
+            scrolls `<main>`, because nothing here clips. */}
+        <div data-testid="app-ready" className="flex min-h-0 flex-1 flex-col gap-4">
           <span data-testid="domain-label-probe" className="sr-only">
             {rarityLabel('Comum', lang)}
           </span>

@@ -1,21 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import type { ForgeStepEvent } from '@bombfarm/contracts';
+import { EMPTY_FORGE_HISTORY, type ForgeHistoryResult, type ForgeHistoryRow, type ForgeStepEvent } from '@bombfarm/contracts';
 import { buildInventoryView, type InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { CopyProvider } from '../../lib/copy';
 import { en } from '../../lib/copy/en';
 import { forgeRunReducer, IDLE_FORGE_RUN, type ForgeRunState } from '../../lib/forge/forge-run-reducer';
 import { forgeLabels } from './forge-labels';
+import { ForgeLedger } from './forge-ledger';
 import { ForgePlanPanel } from './forge-plan-panel';
-import { ForgeRail, forgeRailState, type ForgeRailIdle } from './forge-rail';
+import { ForgeRail, forgeRailState } from './forge-rail';
 
 const labels = forgeLabels(en, 'en', 'en');
-const NO_RUNS: ForgeRailIdle = { lastRun: null, totals: null };
-const IDLE: ForgeRailIdle = {
-  lastRun: { itemLabel: 'Steel · Gloves', fromUpgrade: 8, toUpgrade: 12, rolls: 8, fails: 1, spent: 800, at: new Date().toISOString() },
-  totals: { runs: 3, spent: 2_400 },
-};
 
 function step(attempt: number, from: number, to: number, outcome: ForgeStepEvent['outcome'] = 'success'): ForgeStepEvent {
   return { runId: 'r1', itemId: 'g1', attempt, kind: 'roll', target: outcome === 'fail' ? from + 1 : to, from, to, outcome, cost: 100, spent: 100 * attempt, wallet: 5_000 };
@@ -28,7 +24,7 @@ function running(): ForgeRunState {
     itemId: 'g1',
     target: 12,
     from: 8,
-    plan: { forecast: { rolls: 6.5, safeJumps: 0, gold: 650, badRunGold: 1_200 }, deltaToTarget: 0.04 },
+    plan: { forecast: { rolls: 6.5, safeJumps: 0, gold: 650, badRunGold: 1_200 } },
   });
   const path: [number, number, ForgeStepEvent['outcome']][] = [
     [8, 9, 'success'],
@@ -56,20 +52,16 @@ function finished(): ForgeRunState {
   });
 }
 
-function renderRail(run: ForgeRunState, idle: ForgeRailIdle): string {
+function renderRail(run: ForgeRunState): string {
   return renderToStaticMarkup(
     createElement(CopyProvider, {
       locale: 'en',
       children: createElement(ForgeRail, {
-        idle,
         run,
         gold: labels.gold,
         labels,
-        wearerName: 'Kendo',
-        realisedDelta: 0.035,
         onCancel: () => {},
         onDone: () => {},
-        onClearHistory: () => {},
       }),
     }),
   );
@@ -80,33 +72,25 @@ function stateOf(html: string): string | undefined {
 }
 
 describe('forgeRailState', () => {
-  it('names the four states the rail can be in', () => {
-    expect(forgeRailState(IDLE_FORGE_RUN, NO_RUNS)).toBe('collapsed');
-    expect(forgeRailState(IDLE_FORGE_RUN, IDLE)).toBe('idle');
-    expect(forgeRailState({ status: 'dismissed' }, IDLE)).toBe('idle');
-    expect(forgeRailState(running(), NO_RUNS)).toBe('running');
-    expect(forgeRailState(finished(), IDLE)).toBe('finished');
+  it('names the three states the rail can be in — a live run, a just-finished one, or nothing', () => {
+    expect(forgeRailState(IDLE_FORGE_RUN)).toBe('collapsed');
+    expect(forgeRailState({ status: 'dismissed' })).toBe('collapsed');
+    expect(forgeRailState(running())).toBe('running');
+    expect(forgeRailState(finished())).toBe('finished');
   });
 });
 
 describe('ForgeRail', () => {
-  it('collapses to no height with nothing to show', () => {
-    const html = renderRail(IDLE_FORGE_RUN, NO_RUNS);
+  it('collapses to no height with no run to draw — the ledger is what reads between runs', () => {
+    const html = renderRail(IDLE_FORGE_RUN);
     expect(stateOf(html)).toBe('collapsed');
     expect(html).toContain('height:0');
-    expect(html).not.toContain('forge-rail-last-run');
-  });
-
-  it('idle, prints the last run\'s line, the totals and the clear control', () => {
-    const html = renderRail(IDLE_FORGE_RUN, IDLE);
-    expect(stateOf(html)).toBe('idle');
-    expect(html).toContain('Last run: Steel · Gloves +8 → +12 · 8 rolls, 1 fails · 800 gold · just now');
-    expect(html).toContain('3 runs · 2,400 gold spent');
-    expect(html).toContain('data-testid="forge-rail-clear"');
+    expect(html).not.toContain('data-testid="forge-result"');
+    expect(html).not.toContain('data-testid="forge-chart"');
   });
 
   it('running, shows the level against the target, the chart, the recent strip, the collapsed tally and the cancel', () => {
-    const html = renderRail(running(), NO_RUNS);
+    const html = renderRail(running());
     expect(stateOf(html)).toBe('running');
     expect(html).toContain('data-testid="forge-rail-level"');
     expect(html).toMatch(/forge-rail-level[^>]*>\+12</);
@@ -120,8 +104,8 @@ describe('ForgeRail', () => {
     expect(html).toContain('Cancel after this roll');
   });
 
-  it('finished, shows the result block with its heading, the plan bar and the bought line, and the done control', () => {
-    const html = renderRail(finished(), NO_RUNS);
+  it('finished, shows the result block with its heading, the plan bar and the done control, and no wallet-after fact', () => {
+    const html = renderRail(finished());
     expect(stateOf(html)).toBe('finished');
     expect(html).toMatch(/forge-result-heading[^>]*>Reached \+12</);
     expect(html).toMatch(/forge-result-climb[^>]*>\+8 → \+12</);
@@ -129,9 +113,81 @@ describe('ForgeRail', () => {
     expect(html).toContain('spent 800');
     expect(html).toContain('expected 650');
     expect(html).toContain('a bad run 1,200');
-    expect(html).toContain('+3.5% DPS for Kendo, against the +4.0% the plan promised');
-    expect(html).toContain('+12 keeps its stats; the next roll for +13 is 40%');
     expect(html).toContain('data-testid="forge-done"');
+    expect(html).not.toContain('data-testid="forge-result-wallet"');
+    expect(html).not.toContain('data-testid="forge-bought"');
+  });
+});
+
+function historyRow(overrides: Partial<ForgeHistoryRow> & { id: number }): ForgeHistoryRow {
+  return {
+    startedAt: '2026-09-05T10:00:00.000Z',
+    finishedAt: new Date().toISOString(),
+    accountId: 'a1',
+    itemId: 'g1',
+    defId: 'steel_luva',
+    rarity: 2,
+    slot: 2,
+    itemLevel: 20,
+    fromUpgrade: 8,
+    toUpgrade: 12,
+    target: 12,
+    stop: 'target',
+    reached: true,
+    rolls: 8,
+    fails: 1,
+    crits: 0,
+    safeJumps: 0,
+    spent: 8_000,
+    walletAfter: 214_054_630,
+    durationMs: 14_000,
+    ...overrides,
+  };
+}
+
+const HISTORY: ForgeHistoryResult = {
+  rows: [
+    historyRow({ id: 2, finishedAt: '2026-09-05T12:00:00.000Z' }),
+    historyRow({ id: 1, finishedAt: '2026-09-05T10:00:00.000Z', defId: 'steel_bota', stop: 'budget', toUpgrade: 10, spent: 2_400 }),
+  ],
+  totals: { runs: 2, spent: 10_400, rolls: 13, fails: 2 },
+};
+
+function renderLedger(history: ForgeHistoryResult, defaultOpen = true): string {
+  return renderToStaticMarkup(
+    createElement(CopyProvider, {
+      locale: 'en',
+      children: createElement(ForgeLedger, { history, labels, onClearHistory: () => {}, defaultOpen }),
+    }),
+  );
+}
+
+describe('ForgeLedger', () => {
+  it('reads its two figures with the table shut, so the section is worth having closed', () => {
+    const html = renderLedger(HISTORY, false);
+    expect(html).toMatch(/forge-ledger-summary[^>]*>2 runs · 10,400 gold</);
+    expect(html).toContain('Run ledger');
+    expect(html).not.toContain('data-testid="forge-ledger-body"');
+  });
+
+  it('says so rather than drawing an empty table with no runs', () => {
+    const html = renderLedger(EMPTY_FORGE_HISTORY);
+    expect(html).toContain('data-state="empty"');
+    expect(html).toContain('No runs yet');
+    expect(html).not.toContain('data-testid="forge-ledger-body"');
+  });
+
+  it('names each piece from the run\'s own def id, prints the climb and the stop, and never a wallet column', () => {
+    const html = renderLedger(HISTORY);
+    expect(html).toContain('data-state="runs"');
+    const names = [...html.matchAll(/data-testid="forge-ledger-item"[^>]*>([^<]+)</g)].map((match) => match[1]);
+    expect(names).toEqual(['Steel · Gloves', 'Steel · Boots']);
+    const climbs = [...html.matchAll(/data-testid="forge-ledger-climb"[^>]*>([^<]+)</g)].map((match) => match[1]);
+    expect(climbs).toEqual(['+8 → +12', '+8 → +10']);
+    const outcomes = [...html.matchAll(/data-testid="forge-ledger-outcome"[^>]*>([^<]+)</g)].map((match) => match[1]);
+    expect(outcomes).toEqual(['Reached', 'Gold budget']);
+    expect(html).toMatch(/forge-ledger-totals[^>]*>2 runs · 10,400 gold · 13 rolls · 2 fails</);
+    expect(html).not.toContain('Wallet after');
   });
 });
 
@@ -164,8 +220,6 @@ function renderPanel(reason: 'ready' | 'running' | 'switch-off', startRefusal: '
         item: item(),
         plan: { itemId: 'g1', target: 13, maxGold: null, attempts: null },
         forecast: null,
-        wearerName: 'Kendo',
-        deltaToTarget: null,
         walletGold: null,
         reason,
         startRefusal,
@@ -204,5 +258,11 @@ describe('ForgePlanPanel — the button', () => {
   it('stays disabled with the switch off, and prints main\'s refusal under the button when there is one', () => {
     expect(buttonTag(renderPanel('switch-off'))).toContain(' disabled=""');
     expect(renderPanel('ready', 'busy')).toContain(en.forgeStartBusy);
+  });
+
+  it('ends its facts at the wallet — nothing on this panel prints a DPS delta any more', () => {
+    const html = renderPanel('ready');
+    expect(html).toContain(en.forgeFactWallet);
+    expect(html).not.toContain('data-testid="forge-fact-buys"');
   });
 });

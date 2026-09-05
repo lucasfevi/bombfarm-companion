@@ -5,13 +5,14 @@ import {
   type DomainLang,
   type ForgeRunResult,
   type ForgeStartReason,
+  type ForgeStopReason,
 } from '@bombfarm/contracts';
-import { FORGE_MAX, FORGE_SAFE, forgeChance, forgeRollCost } from '@bombfarm/domain/forge';
+import { FORGE_MAX, FORGE_SAFE, forgeChance } from '@bombfarm/domain/forge';
 import { upgradeMult } from '@bombfarm/domain/gear';
 import { itemRarityLabel, itemStatLabel, slotLabel } from '@bombfarm/domain/game-labels';
 import type { InventoryViewItem, InventoryViewStat } from '@bombfarm/domain/inventory-view';
 import { sub, type Copy } from '../../lib/copy';
-import { formatCount, formatGainPct } from '../../lib/format';
+import { formatCount } from '../../lib/format';
 import type { ForgeMinForge } from '../../lib/forge/forge-rows';
 import { inventoryLabels } from '../inventory/inventory-labels';
 
@@ -109,6 +110,29 @@ export function forgeResultHeading(result: ForgeRunResult, t: Copy): { text: str
   }
 }
 
+/** Why a run ended, short enough for a ledger cell — the rung it stopped on is the row's own
+ *  climb column, so this says only what stopped it. */
+export function forgeStopText(stop: ForgeStopReason, t: Copy): string {
+  switch (stop) {
+    case 'target':
+      return t.forgeStopTarget;
+    case 'cancelled':
+      return t.forgeStopCancelled;
+    case 'shortfall':
+      return t.forgeStopShortfall;
+    case 'budget':
+      return t.forgeStopBudget;
+    case 'attempts':
+      return t.forgeStopAttempts;
+    case 'cooldown':
+      return t.forgeStopCooldown;
+    case 'missing':
+      return t.forgeStopMissing;
+    case 'error':
+      return t.forgeStopError;
+  }
+}
+
 /** `+9…+11` for a merged row, `+12` for one that stands alone. */
 export function forgeRungLabel(row: { from: number; to: number }): string {
   return row.from === row.to ? forgeLevel(row.from) : `${forgeLevel(row.from)}…${forgeLevel(row.to)}`;
@@ -184,10 +208,6 @@ export interface ForgeLabels {
   multiplier: (upgrade: number) => string;
   /** A chance as the game prints it: `50%`. */
   chance: (fraction: number) => string;
-  /** A signed DPS change: `+3.1%`. */
-  gain: (fraction: number) => string;
-  /** The `+1 buys` tooltip for one worn row. */
-  buysTip: (item: InventoryViewItem, delta: number) => string;
   minForge: (min: ForgeMinForge) => string;
   span: (target: number) => string;
   warning: (target: number, safeJumps: number | null) => string;
@@ -226,16 +246,6 @@ export function forgeLabels(t: Copy, lang: DomainLang, locale: AppLocale): Forge
     rolls: (value) => decimals(value, 1, locale),
     multiplier,
     chance,
-    gain: (fraction) => formatGainPct(fraction * 100, locale),
-    buysTip: (item, delta) => {
-      const next = item.upgrade + 1;
-      return sub(t.forgeBuysTip, {
-        delta: formatGainPct(delta * 100, locale),
-        cost: gold(forgeRollCost(item.level, item.rarityIdx, next)),
-        target: forgeLevel(next),
-        chance: chance(forgeChance(next)),
-      });
-    },
     minForge: (min) => forgeMinForgeText(min, t),
     span: (target) =>
       target <= FORGE_SAFE ? t.forgeSpanSafe : sub(t.forgeSpanRisky, { chance: chance(forgeChance(target)) }),

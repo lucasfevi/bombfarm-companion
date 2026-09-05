@@ -205,6 +205,11 @@ describe('design-system barrel surface (frozen)', () => {
 // the card and the table cannot drift apart on how an approximate figure or a missing listing
 // reads; `nextInventorySort` is the header buttons' pure fold over the domain's multi-term sort,
 // exported so a host driving the table from its own toolbar produces the same order.
+//
+// `inventoryFieldHeightClass` (2026-09-05): the toolbar field height on its own, for a control
+// that brings its own chrome — a design-system `Select` — and needs only to stand the same height
+// as the fields beside it. Split out of `inventoryFieldClass` so a second toolbar cannot reach
+// for a number of its own and drift a pixel from this one.
 const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'AbilityIcon',
   'ArtFrame',
@@ -240,6 +245,7 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'inventoryCountClass',
   'inventoryCountValueClass',
   'inventoryFieldClass',
+  'inventoryFieldHeightClass',
   'inventoryFooterClass',
   'inventoryGridClass',
   'inventorySortDirectionClass',

@@ -62,7 +62,7 @@ const DONE: ForgeDoneEvent = {
   },
 };
 
-const PLAN = { forecast: { rolls: 6.5, safeJumps: 0, gold: 650, badRunGold: 1_200 }, deltaToTarget: 0.04 };
+const PLAN = { forecast: { rolls: 6.5, safeJumps: 0, gold: 650, badRunGold: 1_200 } };
 
 function started(): ForgeRunState {
   return forgeRunReducer(IDLE_FORGE_RUN, { kind: 'start', runId: 'r1', itemId: 'g1', target: 12, from: 8, plan: PLAN });

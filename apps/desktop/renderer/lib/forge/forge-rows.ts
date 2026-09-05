@@ -59,7 +59,7 @@ export function filterForgeItems(
   });
 }
 
-export type ForgeSortKey = 'item' | 'slot' | 'level' | 'forge' | 'power' | 'buys';
+export type ForgeSortKey = 'item' | 'slot' | 'level' | 'forge' | 'power';
 export type ForgeSortDirection = 'asc' | 'desc';
 export type ForgeSort = { readonly key: ForgeSortKey; readonly direction: ForgeSortDirection };
 
@@ -74,51 +74,36 @@ export function nextForgeSort(sort: ForgeSort, key: ForgeSortKey): ForgeSort {
   return { key, direction: TEXT_KEYS.has(key) ? 'asc' : 'desc' };
 }
 
-export type ForgeRow = {
-  item: InventoryViewItem;
-  /** What the next rung buys the wearer, as a fraction; `null` for a row nobody wears. */
-  buys: number | null;
-};
-
-function numberOf(row: ForgeRow, key: ForgeSortKey): number {
+function numberOf(item: InventoryViewItem, key: ForgeSortKey): number {
   switch (key) {
     case 'level':
-      return row.item.level;
+      return item.level;
     case 'forge':
-      return row.item.upgrade;
+      return item.upgrade;
     case 'power':
-      return row.item.power;
+      return item.power;
     case 'item':
     case 'slot':
-    case 'buys':
       return 0;
   }
 }
 
 /** Ties break on power, then on the item id, so the order is the same on every render. */
-function tieBreak(a: ForgeRow, b: ForgeRow): number {
-  return b.item.power - a.item.power || a.item.id.localeCompare(b.item.id);
+function tieBreak(a: InventoryViewItem, b: InventoryViewItem): number {
+  return b.power - a.power || a.id.localeCompare(b.id);
 }
 
 export function sortForgeRows(
-  rows: readonly ForgeRow[],
+  rows: readonly InventoryViewItem[],
   sort: ForgeSort,
   nameOf: (item: InventoryViewItem) => string,
   slotNameOf: (item: InventoryViewItem) => string,
-): ForgeRow[] {
+): InventoryViewItem[] {
   const sign = sort.direction === 'asc' ? 1 : -1;
-  const compare = (a: ForgeRow, b: ForgeRow): number => {
-    if (sort.key === 'buys') {
-      // An unworn row has nothing to buy and sinks in both directions, or cheapest-first would
-      // open with every piece the figure cannot be computed for.
-      if (a.buys === null && b.buys === null) return tieBreak(a, b);
-      if (a.buys === null) return 1;
-      if (b.buys === null) return -1;
-      return sign * (a.buys - b.buys) || tieBreak(a, b);
-    }
+  const compare = (a: InventoryViewItem, b: InventoryViewItem): number => {
     if (TEXT_KEYS.has(sort.key)) {
       const text = sort.key === 'item' ? nameOf : slotNameOf;
-      return sign * text(a.item).localeCompare(text(b.item)) || tieBreak(a, b);
+      return sign * text(a).localeCompare(text(b)) || tieBreak(a, b);
     }
     return sign * (numberOf(a, sort.key) - numberOf(b, sort.key)) || tieBreak(a, b);
   };
@@ -127,7 +112,7 @@ export function sortForgeRows(
 
 export const FORGE_ROW_CAP = 400;
 
-export function capForgeRows(rows: readonly ForgeRow[]): { rows: ForgeRow[]; hidden: number } {
+export function capForgeRows(rows: readonly InventoryViewItem[]): { rows: InventoryViewItem[]; hidden: number } {
   if (rows.length <= FORGE_ROW_CAP) return { rows: [...rows], hidden: 0 };
   return { rows: rows.slice(0, FORGE_ROW_CAP), hidden: rows.length - FORGE_ROW_CAP };
 }

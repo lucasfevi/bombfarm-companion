@@ -1,10 +1,11 @@
 /**
  * The plan panel's state — the target rung and the two optional limits — as a pure reducer, and
- * the hook a screen reads it through. The forecast behind the panel's facts is derived here too,
- * memoised per piece and target, so stepping the target costs one value iteration and one seeded
- * run of simulated climbs and nothing else.
+ * the hook a screen reads it through. The state itself is held by the screen's store so it
+ * outlives a tab change; this hook only derives from it and hands changes back. The forecast
+ * behind the panel's facts is derived here too, memoised per piece and target, so stepping the
+ * target costs one value iteration and one seeded run of simulated climbs and nothing else.
  */
-import { useCallback, useMemo, useReducer } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   FORGE_ITEM_LEVELS,
   FORGE_MAX,
@@ -99,14 +100,24 @@ export function forgePlanForecast(
 
 export type ForgePlanItem = { id: string; upgrade: number; level: number; rarityIdx: number };
 
-export function useForgePlan(item: ForgePlanItem | null) {
-  const [state, dispatch] = useReducer(forgePlanReducer, INITIAL_FORGE_PLAN);
-  const plan = useMemo(() => forgePlanFor(state, item), [state, item]);
-
+/** `plan` is the stored plan already resolved against `item`; `onPlanChange` puts the next one
+ *  back where it came from. */
+export function useForgePlan(
+  item: ForgePlanItem | null,
+  plan: ForgePlan,
+  onPlanChange: (next: ForgePlan) => void,
+) {
   const forecast = useMemo(
     () =>
       item === null ? null : forgePlanForecast(item.upgrade, plan.target, item.level, item.rarityIdx),
     [item, plan.target],
+  );
+
+  const dispatch = useCallback(
+    (action: ForgePlanAction) => {
+      onPlanChange(forgePlanReducer(plan, action));
+    },
+    [plan, onPlanChange],
   );
 
   const stepTarget = useCallback(
@@ -114,14 +125,20 @@ export function useForgePlan(item: ForgePlanItem | null) {
       if (item === null) return;
       dispatch({ kind: 'step', itemId: item.id, upgrade: item.upgrade, delta });
     },
-    [item],
+    [item, dispatch],
   );
-  const setMaxGold = useCallback((text: string) => {
-    dispatch({ kind: 'maxGold', text });
-  }, []);
-  const setAttempts = useCallback((text: string) => {
-    dispatch({ kind: 'attempts', text });
-  }, []);
+  const setMaxGold = useCallback(
+    (text: string) => {
+      dispatch({ kind: 'maxGold', text });
+    },
+    [dispatch],
+  );
+  const setAttempts = useCallback(
+    (text: string) => {
+      dispatch({ kind: 'attempts', text });
+    },
+    [dispatch],
+  );
 
-  return { plan, forecast, stepTarget, setMaxGold, setAttempts };
+  return { forecast, stepTarget, setMaxGold, setAttempts };
 }

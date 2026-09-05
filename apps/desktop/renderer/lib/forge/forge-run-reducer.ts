@@ -11,7 +11,6 @@ import type { ForgePlanForecast } from './use-forge-plan';
 /** The figures the plan panel printed when the run started — never recomputed afterwards. */
 export type ForgeRunPlan = {
   readonly forecast: ForgePlanForecast | null;
-  readonly deltaToTarget: number | null;
 };
 
 export type ForgeRunActive = {

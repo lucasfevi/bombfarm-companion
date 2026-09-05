@@ -1,43 +1,26 @@
 'use client';
 
 /**
- * The slot above the bag table, in the bag's own column. Idle, it shows the last run's ledger
- * row and the running totals; with nothing to show it collapses to no height rather than leaving
- * an empty band. A run expands it in place — the bag below moves down, the plan panel beside the
- * bag does not — through one height transition at the panel duration, instant under reduced
- * motion. `Done` shrinks it first; the view settles it to idle once the shrink has run.
+ * The full-width band between the toolbar and the split, and only ever a live or just-finished
+ * run: the ledger at the foot of the screen is what a player reads between runs, so with nothing
+ * rolling this collapses to no height rather than leaving an empty band. A run expands it in
+ * place through one height transition at the panel duration, instant under reduced motion.
+ * `Done` shrinks it first; the view settles it once the shrink has run.
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Button, cn, DataTable, motionTokens, Panel } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
-import { formatCapturedAt } from '../../lib/format';
 import { recentSteps, rungTally, type ForgeRunActive, type ForgeRunState } from '../../lib/forge/forge-run-reducer';
 import { ForgeChart, forgeMarkClass, forgeMarkLabel } from './forge-chart';
 import { BLANK, forgeLevel, forgeRungLabel, type ForgeLabels } from './forge-labels';
 import { ForgeResult } from './forge-result';
 
-export type ForgeRailLastRun = {
-  itemLabel: string;
-  fromUpgrade: number;
-  toUpgrade: number;
-  rolls: number;
-  fails: number;
-  spent: number;
-  /** ISO-8601, when the run ended. */
-  at: string;
-};
+export type ForgeRailState = 'collapsed' | 'running' | 'finished';
 
-export type ForgeRailIdle = {
-  lastRun: ForgeRailLastRun | null;
-  totals: { runs: number; spent: number } | null;
-};
-
-export type ForgeRailState = 'collapsed' | 'idle' | 'running' | 'finished';
-
-export function forgeRailState(run: ForgeRunState, idle: ForgeRailIdle): ForgeRailState {
+export function forgeRailState(run: ForgeRunState): ForgeRailState {
   if (run.status === 'running') return 'running';
   if (run.status === 'done') return 'finished';
-  return idle.lastRun === null && idle.totals === null ? 'collapsed' : 'idle';
+  return 'collapsed';
 }
 
 /** The rendered height of the content, followed as it changes, so the wrapper can animate to it.
@@ -58,45 +41,6 @@ function useContentHeight(): { ref: (node: HTMLDivElement | null) => void; heigh
     };
   }, [node]);
   return { ref: setNode, height };
-}
-
-function IdleLine({
-  idle,
-  gold,
-  onClearHistory,
-}: {
-  idle: ForgeRailIdle;
-  gold: (amount: number) => string;
-  onClearHistory: () => void;
-}) {
-  const t = useCopy();
-  return (
-    <Panel className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-xs">
-      {idle.lastRun ? (
-        <span data-testid="forge-rail-last-run" className="text-ink">
-          {sub(t.forgeRailLastRun, {
-            item: idle.lastRun.itemLabel,
-            from: forgeLevel(idle.lastRun.fromUpgrade),
-            to: forgeLevel(idle.lastRun.toUpgrade),
-            rolls: idle.lastRun.rolls,
-            fails: idle.lastRun.fails,
-            spent: gold(idle.lastRun.spent),
-            age: formatCapturedAt(idle.lastRun.at, t),
-          })}
-        </span>
-      ) : null}
-      {idle.totals ? (
-        <span data-testid="forge-rail-totals" className="text-muted">
-          {sub(t.forgeRailTotals, { runs: idle.totals.runs, spent: gold(idle.totals.spent) })}
-        </span>
-      ) : null}
-      {idle.totals ? (
-        <Button type="button" variant="text" className="ml-auto" data-testid="forge-rail-clear" onClick={onClearHistory}>
-          {t.forgeRailClear}
-        </Button>
-      ) : null}
-    </Panel>
-  );
 }
 
 function Running({ run, gold, onCancel }: { run: ForgeRunActive; gold: (amount: number) => string; onCancel: () => void }) {
@@ -191,27 +135,19 @@ function Running({ run, gold, onCancel }: { run: ForgeRunActive; gold: (amount: 
 }
 
 export function ForgeRail({
-  idle,
   run,
   gold,
   labels,
-  wearerName,
-  realisedDelta,
   onCancel,
   onDone,
-  onClearHistory,
 }: {
-  idle: ForgeRailIdle;
   run: ForgeRunState;
   gold: (amount: number) => string;
   labels: ForgeLabels;
-  wearerName: string | null;
-  realisedDelta: number | null;
   onCancel: () => void;
   onDone: () => void;
-  onClearHistory: () => void;
 }) {
-  const state = forgeRailState(run, idle);
+  const state = forgeRailState(run);
   const { ref, height } = useContentHeight();
 
   let content: ReactNode = null;
@@ -219,17 +155,10 @@ export function ForgeRail({
   else if (run.status === 'done') {
     content = (
       <Panel>
-        <ForgeResult
-          result={run.result}
-          plan={run.run.plan}
-          labels={labels}
-          wearerName={wearerName}
-          realisedDelta={realisedDelta}
-          onDone={onDone}
-        />
+        <ForgeResult result={run.result} plan={run.run.plan} labels={labels} onDone={onDone} />
       </Panel>
     );
-  } else if (state === 'idle') content = <IdleLine idle={idle} gold={gold} onClearHistory={onClearHistory} />;
+  }
 
   return (
     <div

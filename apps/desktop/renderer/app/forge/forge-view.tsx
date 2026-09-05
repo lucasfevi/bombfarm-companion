@@ -1,12 +1,16 @@
 'use client';
 
 /**
- * The Forge screen: pick a piece, pick a target, see what the climb buys its wearer and what it
- * should cost — then forge it. Reads the account through the shared `useAccountView()` seam and
- * pins the first read it sees, the way the Farm board does — a plan must not move under the
- * player as the live account ticks, so a newer read is adopted only through the toolbar's
- * refresh, and once more the moment a run finishes, so the bag shows the level the server just
- * returned. The run itself lives in main; this screen asks for it, watches it, and draws it.
+ * The Forge screen: pick a piece, pick a target, see what the climb should cost — then forge it.
+ * Reads the account through the shared `useAccountView()` seam and pins the first read it sees,
+ * the way the Farm board does — a plan must not move under the player as the live account ticks,
+ * so a newer read is adopted only through the toolbar's refresh, and once more the moment a run
+ * finishes, so the bag shows the level the server just returned. The run itself lives in main;
+ * this screen asks for it, watches it, and draws it.
+ *
+ * The filter, the order, the piece in hand and the plan live in the screen's store rather than in
+ * this component: the shell unmounts a tab the player leaves, and none of that should be lost by
+ * looking at another screen.
  */
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import {
@@ -16,19 +20,15 @@ import {
   type AccountView,
   type ForgeEvent,
   type ForgeHistoryResult,
-  type ForgeHistoryRow,
   type ForgeStartReason,
 } from '@bombfarm/contracts';
-import { FORGE_MAX } from '@bombfarm/domain/forge';
 import { SLOTS } from '@bombfarm/domain/gear';
 import { buildInventoryView, mapInventoryHeroes, type InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { Banner, ConfirmDialog, EmptyState, motionTokens, Panel, PanelHeader } from '@bombfarm/ui';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { oldestCaptureOf } from '../../lib/account/account-facts';
 import { useAccountView } from '../../lib/account/use-account-view';
-import { createForgeDpsEvaluator } from '../../lib/forge/forge-dps';
 import {
-  DEFAULT_FORGE_SORT,
   EMPTY_FORGE_FILTER,
   capForgeRows,
   filterForgeItems,
@@ -38,9 +38,6 @@ import {
   gearOf,
   isEmptyForgeFilter,
   sortForgeRows,
-  type ForgeFilter,
-  type ForgeRow,
-  type ForgeSort,
 } from '../../lib/forge/forge-rows';
 import {
   forgeRunReducer,
@@ -50,11 +47,20 @@ import {
   type ForgeRunPlan,
   type ForgeRunState,
 } from '../../lib/forge/forge-run-reducer';
+import {
+  resolveForgeScreen,
+  selectForgePiece,
+  setForgeFilter,
+  setForgePlan,
+  setForgeSort,
+  useForgeScreen,
+} from '../../lib/forge/forge-store';
 import { useForgePlan } from '../../lib/forge/use-forge-plan';
 import { ForgeItemPanel } from './forge-item-panel';
 import { forgeButtonReason, forgeLabels } from './forge-labels';
+import { ForgeLedger } from './forge-ledger';
 import { ForgePlanPanel } from './forge-plan-panel';
-import { ForgeRail, type ForgeRailIdle, type ForgeRailLastRun } from './forge-rail';
+import { ForgeRail } from './forge-rail';
 import { ForgeTable } from './forge-table';
 import { ForgeToolbar, type ForgeHeroOption } from './forge-toolbar';
 
@@ -144,23 +150,10 @@ export function ForgeView({
   const inField = useMemo(() => fieldHeroIds(rawHeroes), [rawHeroes]);
   const gear = useMemo(() => gearOf(inventory.items), [inventory]);
   const labels = useMemo(() => forgeLabels(t, lang, locale), [t, lang, locale]);
-  const evaluator = useMemo(() => createForgeDpsEvaluator(view), [view]);
 
-  const allRows = useMemo<ForgeRow[]>(
-    () =>
-      gear.map((item) => ({
-        item,
-        buys:
-          evaluator !== null && item.equippedBy !== null && item.upgrade < FORGE_MAX
-            ? evaluator.deltaAt(item.equippedBy, item, item.upgrade + 1)
-            : null,
-      })),
-    [gear, evaluator],
-  );
-
-  const [filter, setFilter] = useState<ForgeFilter>(EMPTY_FORGE_FILTER);
-  const [sort, setSort] = useState<ForgeSort>(DEFAULT_FORGE_SORT);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const screen = useForgeScreen();
+  const { filter, sort } = screen;
+  const { selected, plan } = useMemo(() => resolveForgeScreen(screen, gear), [screen, gear]);
 
   const heroName = useCallback((heroId: string) => heroes.get(heroId)?.name ?? heroId, [heroes]);
   const heroOptions = useMemo<ForgeHeroOption[]>(
@@ -183,43 +176,28 @@ export function ForgeView({
   const rarities = useMemo(() => forgeRarities(gear), [gear]);
 
   const shown = useMemo(() => {
-    const kept = new Set(filterForgeItems(gear, filter, labels.searchText).map((item) => item.id));
-    const sorted = sortForgeRows(
-      allRows.filter((row) => kept.has(row.item.id)),
-      sort,
-      labels.itemName,
-      (item) => labels.slotName(item.slot),
-    );
-    return capForgeRows(sorted);
-  }, [gear, allRows, filter, sort, labels]);
+    const kept = filterForgeItems(gear, filter, labels.searchText);
+    return capForgeRows(sortForgeRows(kept, sort, labels.itemName, (item) => labels.slotName(item.slot)));
+  }, [gear, filter, sort, labels]);
 
-  const selected = useMemo(
-    () => (selectedId === null ? null : (gear.find((item) => item.id === selectedId) ?? null)),
-    [gear, selectedId],
-  );
   const onSelect = useCallback((item: InventoryViewItem) => {
-    setSelectedId(item.id);
+    selectForgePiece(item.id);
   }, []);
   const clearFilter = useCallback(() => {
-    setFilter(EMPTY_FORGE_FILTER);
+    setForgeFilter(EMPTY_FORGE_FILTER);
   }, []);
 
-  const plan = useForgePlan(selected);
+  const planControls = useForgePlan(selected, plan, setForgePlan);
   const wearerId = selected?.equippedBy ?? null;
   const wearerName = wearerId === null ? null : (heroes.get(wearerId)?.name ?? t.inventoryEquippedByUnknown);
-  const deltaToTarget =
-    selected !== null && wearerId !== null && evaluator !== null && selected.upgrade < FORGE_MAX
-      ? evaluator.deltaAt(wearerId, selected, plan.plan.target)
-      : null;
 
   const [run, dispatchRun] = useReducer(forgeRunReducer, IDLE_FORGE_RUN);
   const runRef = useRef<ForgeRunState>(run);
   runRef.current = run;
   const selectionRef = useRef<ForgeRunAdoption | null>(null);
-  selectionRef.current = selected === null ? null : { itemId: selected.id, plan: { forecast: plan.forecast, deltaToTarget } };
+  selectionRef.current = selected === null ? null : { itemId: selected.id, plan: { forecast: planControls.forecast } };
 
   const [history, setHistory] = useState<ForgeHistoryResult>(EMPTY_FORGE_HISTORY);
-  const [lastFinished, setLastFinished] = useState<ForgeRailLastRun | null>(null);
   const [startRefusal, setStartRefusal] = useState<ForgeStartReason | null>(null);
   const [clearOpen, setClearOpen] = useState(false);
 
@@ -242,31 +220,14 @@ export function ForgeView({
     });
   }, [loadHistory]);
 
-  const itemLabelFor = useCallback(
-    (itemId: string, fallback: string) => {
-      const item = gear.find((candidate) => candidate.id === itemId);
-      return item ? labels.itemName(item) : fallback;
-    },
-    [gear, labels],
-  );
-
   const previousStatus = useRef(run.status);
   useEffect(() => {
     const before = previousStatus.current;
     previousStatus.current = run.status;
     if (!shouldAdoptLiveAfter(before, run.status) || run.status !== 'done') return;
     setPinned(liveRef.current);
-    setLastFinished({
-      itemLabel: itemLabelFor(run.result.itemId, run.result.itemId),
-      fromUpgrade: run.result.from,
-      toUpgrade: run.result.to,
-      rolls: run.result.rolls,
-      fails: run.result.fails,
-      spent: run.result.spent,
-      at: new Date().toISOString(),
-    });
     loadHistory();
-  }, [run, itemLabelFor, loadHistory]);
+  }, [run, loadHistory]);
 
   useEffect(() => {
     if (run.status !== 'dismissed') return;
@@ -283,13 +244,13 @@ export function ForgeView({
 
   useEffect(() => {
     setStartRefusal(null);
-  }, [selectedId]);
+  }, [screen.selectedId]);
 
   const onForge = useCallback(() => {
     const bridge = bridgeOf();
     if (!bridge || selected === null) return;
-    const request = { itemId: selected.id, target: plan.plan.target, maxGold: plan.plan.maxGold, maxAttempts: plan.plan.attempts };
-    const planNow: ForgeRunPlan = { forecast: plan.forecast, deltaToTarget };
+    const request = { itemId: selected.id, target: plan.target, maxGold: plan.maxGold, maxAttempts: plan.attempts };
+    const planNow: ForgeRunPlan = { forecast: planControls.forecast };
     void bridge.invoke('forge:start', request).then((result) => {
       if (result.ok) {
         setStartRefusal(null);
@@ -298,7 +259,7 @@ export function ForgeView({
         setStartRefusal(result.reason);
       }
     });
-  }, [selected, plan.plan, plan.forecast, deltaToTarget]);
+  }, [selected, plan, planControls.forecast]);
 
   const onCancel = useCallback(() => {
     const bridge = bridgeOf();
@@ -316,45 +277,16 @@ export function ForgeView({
     if (!bridge) return;
     void bridge
       .invoke('forge:clearHistory')
-      .then((result) => {
-        setHistory(result);
-        setLastFinished(null);
-      })
+      .then(setHistory)
       .catch(() => undefined);
+  }, []);
+
+  const openClear = useCallback(() => {
+    setClearOpen(true);
   }, []);
 
   const running = run.status === 'running';
   const reason = forgeButtonReason({ upgrade: selected?.upgrade ?? 0, accountSource, forgeWritesEnabled, running });
-
-  const idle = useMemo<ForgeRailIdle>(() => {
-    const latest: ForgeHistoryRow | undefined = history.rows[0];
-    const fromHistory: ForgeRailLastRun | null = latest
-      ? {
-          itemLabel: itemLabelFor(latest.itemId, latest.defId),
-          fromUpgrade: latest.fromUpgrade,
-          toUpgrade: latest.toUpgrade,
-          rolls: latest.rolls,
-          fails: latest.fails,
-          spent: latest.spent,
-          at: latest.finishedAt,
-        }
-      : null;
-    const lastRun = lastFinished !== null && (fromHistory === null || lastFinished.at >= fromHistory.at) ? lastFinished : fromHistory;
-    const totals = history.totals.runs > 0 ? { runs: history.totals.runs, spent: history.totals.spent } : null;
-    return { lastRun, totals };
-  }, [history, lastFinished, itemLabelFor]);
-
-  const runItem = run.status === 'running' || run.status === 'done' ? run.run.itemId : null;
-  const runWearerName = runItem !== null && selected?.id === runItem ? wearerName : null;
-  const realisedDelta = useMemo(() => {
-    if (run.status !== 'done' || evaluator === null || selected === null || selected.id !== run.result.itemId) return null;
-    if (selected.equippedBy === null) return null;
-    return evaluator.deltaAt(
-      selected.equippedBy,
-      { slot: selected.slot, defId: selected.defId, upgrade: run.result.from },
-      run.result.to,
-    );
-  }, [run, evaluator, selected]);
 
   const account = view?.payload.account;
   const bag = useMemo(() => bagOf(account), [account]);
@@ -390,12 +322,12 @@ export function ForgeView({
 
   return (
     <div data-testid="forge-view" className="flex min-h-0 flex-1 flex-col gap-3">
-      <Panel>
+      <Panel className="shrink-0">
         <PanelHeader title={t.forgeTitle} />
         <ForgeToolbar
           heroes={heroOptions}
           filter={filter}
-          onFilterChange={setFilter}
+          onFilterChange={setForgeFilter}
           slots={slots}
           rarities={rarities}
           shown={shown.rows.length + shown.hidden}
@@ -412,65 +344,65 @@ export function ForgeView({
       <ConfirmDialog
         open={clearOpen}
         onOpenChange={setClearOpen}
-        title={t.forgeRailClearTitle}
-        description={t.forgeRailClearDescription}
-        confirmLabel={t.forgeRailClearConfirm}
-        cancelLabel={t.forgeRailClearCancel}
+        title={t.forgeLedgerClearTitle}
+        description={t.forgeLedgerClearDescription}
+        confirmLabel={t.forgeLedgerClearConfirm}
+        cancelLabel={t.forgeLedgerClearCancel}
         onConfirm={onClearHistory}
       />
 
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_372px] gap-3">
-        <div className="flex min-h-0 flex-col gap-3">
-          <ForgeRail
-            idle={idle}
-            run={run}
-            gold={labels.gold}
+      <ForgeRail run={run} gold={labels.gold} labels={labels} onCancel={onCancel} onDone={onDone} />
+
+      {/* `grid-rows-[minmax(0,1fr)]` is what actually bounds this. A grid row is `auto` by
+          default, so it sizes to its tallest item and overflows the grid's own box — visibly,
+          which is enough to grow the scroll region above it and hand the whole screen a
+          scrollbar. Pinning the row to the container's height is what pushes the overflow down
+          into the table and the right-hand column, where each has a scroller of its own. */}
+      <div
+        data-testid="forge-split"
+        className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_372px] grid-rows-[minmax(0,1fr)] gap-3"
+      >
+        <Panel className="relative flex min-h-0 flex-col">
+          <ForgeTable
+            rows={shown.rows}
+            hidden={shown.hidden}
+            sort={sort}
+            onSortChange={setForgeSort}
+            selectedId={screen.selectedId}
+            onSelect={onSelect}
             labels={labels}
-            wearerName={runWearerName}
-            realisedDelta={realisedDelta}
-            onCancel={onCancel}
-            onDone={onDone}
-            onClearHistory={() => {
-              setClearOpen(true);
-            }}
+            filtered={!isEmptyForgeFilter(filter)}
+            onClearFilter={clearFilter}
+            className="min-h-0 flex-1"
           />
-          <Panel className="flex min-h-0 flex-1 flex-col">
-            <ForgeTable
-              rows={shown.rows}
-              hidden={shown.hidden}
-              sort={sort}
-              onSortChange={setSort}
-              selectedId={selectedId}
-              onSelect={onSelect}
-              labels={labels}
-              filtered={!isEmptyForgeFilter(filter)}
-              onClearFilter={clearFilter}
-              className="min-h-0 flex-1"
-            />
-          </Panel>
-        </div>
-        <div className="flex min-h-0 flex-col gap-3 overflow-y-auto">
-          <ForgeItemPanel item={selected} wearerName={wearerName} target={plan.plan.target} labels={labels} />
+        </Panel>
+        {/* `relative` is doing the same job it does on the shell's `<main>`, one level down.
+            `sr-only` is `position: absolute`, so a table caption in here resolves its containing
+            block to the nearest positioned ancestor — with none, that was `<main>`, and the
+            caption sat below this column's own bottom edge where no `overflow` on the column
+            could clip it. `<main>` then grew 13px to reach it and the whole screen scrolled. */}
+        <div className="relative flex min-h-0 flex-col gap-3 overflow-y-auto">
+          <ForgeItemPanel item={selected} wearerName={wearerName} target={plan.target} labels={labels} />
           {selected === null ? null : (
             <ForgePlanPanel
               item={selected}
-              plan={plan.plan}
-              forecast={plan.forecast}
-              wearerName={wearerName}
-              deltaToTarget={deltaToTarget}
+              plan={plan}
+              forecast={planControls.forecast}
               walletGold={walletGold}
               reason={reason}
               startRefusal={startRefusal}
               labels={labels}
-              onStepTarget={plan.stepTarget}
-              onMaxGoldChange={plan.setMaxGold}
-              onAttemptsChange={plan.setAttempts}
+              onStepTarget={planControls.stepTarget}
+              onMaxGoldChange={planControls.setMaxGold}
+              onAttemptsChange={planControls.setAttempts}
               onForge={onForge}
               onCancel={onCancel}
             />
           )}
         </div>
       </div>
+
+      <ForgeLedger history={history} labels={labels} onClearHistory={openClear} />
     </div>
   );
 }

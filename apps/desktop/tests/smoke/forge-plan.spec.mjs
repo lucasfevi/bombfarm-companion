@@ -11,10 +11,9 @@ const desktopRoot = path.join(__dirname, '..', '..');
  * The Forge screen as a planner, end to end in the real app.
  *
  * Modelled on `inventory.spec.mjs`: the screen's whole job is composition — the domain's forge
- * rules and cost table, the farm board's DPS pipeline, `@bombfarm/game-art`'s icons and this
- * shell's words — and only a launched app proves they were wired to each other. The offline
- * fixture is the account here because it is the one committed account that is complete enough
- * for the DPS delta (every section resolved) and carries worn gear across several forge levels.
+ * rules and cost table, `@bombfarm/game-art`'s icons and this shell's words — and only a launched
+ * app proves they were wired to each other. The offline fixture is the account here because it
+ * carries worn gear across several forge levels.
  *
  * Launched on the fixture reader, which is also what makes the button's reason the fixture one:
  * an account with no server behind it cannot forge, whatever the Settings switch says.
@@ -139,17 +138,17 @@ test.describe('forge plan smoke', () => {
       const rollsAfter = (await planPanel.getByTestId('forge-fact-rolls').textContent()) ?? '';
       expect(figureOf(rollsAfter)).toBeGreaterThan(figureOf(rollsBefore));
 
-      // What the climb buys the wearer is a signed percentage — the farm board's own DPS with
-      // the one slot's forge moved, never a dash on a worn piece of a complete account.
-      await expect(planPanel.getByTestId('forge-fact-buys')).toHaveText(/^[+−-]\d+(?:\.\d+)?%$/);
+      // The facts end at the wallet — nothing on this panel prints a DPS delta.
+      await expect(planPanel.getByTestId('forge-fact-buys')).toHaveCount(0);
 
       // An account with no server behind it cannot forge, whatever the switch says — the fixture
       // rule outranks the switch rule, and the button stays disabled with that reason under it.
       await expect(planPanel.getByTestId('forge-button')).toBeDisabled();
       await expect(planPanel.getByTestId('forge-button-reason')).toHaveText('No server to forge on');
 
-      // No ledger yet, so the rail takes no room.
+      // Nothing rolling, so the rail takes no room; the ledger below says it has no runs.
       await expect(page.getByTestId('forge-rail')).toHaveAttribute('data-state', 'collapsed');
+      await expect(page.getByTestId('forge-ledger')).toHaveAttribute('data-state', 'empty');
     });
   });
 });

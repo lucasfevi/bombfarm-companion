@@ -12,9 +12,14 @@ const desktopRoot = path.join(__dirname, '..', '..');
  * roll — main refuses a run against a fixture account, and this spec relies on that — so the run
  * arrives through `forge:inject`, the test-only channel that pushes a scripted sequence through
  * the same `forge:event` seam the real service uses. What is proved here is everything on the
- * renderer's side of that seam: the rail's states in order, that the plan panel never moves while
- * the rail expands and shrinks, the tally's quiet-rung collapsing, the result heading, the return
- * to idle carrying the run's own line, and that an injected run is never a ledger row.
+ * renderer's side of that seam: the rail's states in order, that the rail spans the whole row as
+ * it expands and that the screen never grows a scrollbar doing it, the tally's quiet-rung
+ * collapsing, the result heading, and the return to a collapsed rail.
+ *
+ * `forge:inject` deliberately writes no ledger row — only a real run through the service does —
+ * so the ledger at the foot of the screen stays empty through all three phases, and that is what
+ * the last phase asserts. A ledger row for an injected run would mean the test channel had
+ * reached further than the event seam it is meant to stop at.
  *
  * The Settings switch is turned on through the real UI first, so the screen is in the state a
  * player who can forge would see it in — the fixture rule still outranks it for a real start.
@@ -163,27 +168,63 @@ function inject(page, events) {
   return page.evaluate((scripted) => window.bfc.invoke('forge:inject', scripted), events);
 }
 
-function sameBox(a, b) {
-  expect(a).not.toBeNull();
-  expect(b).not.toBeNull();
-  expect(Math.round(b.x)).toBe(Math.round(a.x));
-  expect(Math.round(b.y)).toBe(Math.round(a.y));
-  expect(Math.round(b.width)).toBe(Math.round(a.width));
+/**
+ * A window that was never shown hands the compositor no frames once the page settles, and
+ * `page.screenshot` waits for one — so on the quiet run the capture hangs until it times out,
+ * on whichever phase happens to settle first. That is a property of `BFC_HIDE_WINDOWS=1`, not of
+ * anything this spec asserts: every assertion around these calls runs either way, and the visible
+ * run — the one CI takes — still writes all three pictures. This spec is the only one in the
+ * suite that screenshots at all, which is why the flag's own notes do not mention it.
+ */
+async function shoot(page, testInfo, name) {
+  if (process.env.BFC_HIDE_WINDOWS === '1') return;
+  await page.screenshot({ path: testInfo.outputPath(name) });
+}
+
+/** The rail is a full-width band between the toolbar and the split, so its box has to line up
+ *  with the split's on both edges — not with the bag column inside it. */
+async function railSpansTheRow(page) {
+  const rail = await page.getByTestId('forge-rail').boundingBox();
+  const split = await page.getByTestId('forge-split').boundingBox();
+  expect(rail).not.toBeNull();
+  expect(split).not.toBeNull();
+  expect(Math.round(rail.x)).toBe(Math.round(split.x));
+  expect(Math.round(rail.width)).toBe(Math.round(split.width));
+}
+
+/** `<main>` is the app's one scroll region, and this screen is supposed to fill it and scroll
+ *  only inside the bag table — so an expanding rail must not hand `<main>` anything to scroll. */
+async function nothingScrolls(page) {
+  const metrics = await page.evaluate(() => {
+    const main = document.querySelector('main');
+    return main === null
+      ? null
+      : {
+          mainScroll: main.scrollHeight,
+          mainClient: main.clientHeight,
+          docScroll: document.documentElement.scrollHeight,
+          docClient: document.documentElement.clientHeight,
+        };
+  });
+  expect(metrics).not.toBeNull();
+  expect(metrics.mainScroll).toBeLessThanOrEqual(metrics.mainClient + 1);
+  expect(metrics.docScroll).toBeLessThanOrEqual(metrics.docClient + 1);
 }
 
 test.describe('forge run smoke', () => {
-  test('draws an injected run through running, finished and back to idle without moving the plan panel', async ({}, testInfo) => {
+  test('draws an injected run through running and finished and back to a collapsed rail, spanning the row and never scrolling the screen', async ({}, testInfo) => {
     testInfo.setTimeout(180_000);
     await withForge(async (page) => {
       const itemId = await selectFirstWornPiece(page);
       expect(itemId).toBeTruthy();
 
       const rail = page.getByTestId('forge-rail');
-      const planPanel = page.getByTestId('forge-plan-panel');
+      const ledger = page.getByTestId('forge-ledger');
       await expect(rail).toHaveAttribute('data-state', 'collapsed');
-      const planBoxBefore = await planPanel.boundingBox();
+      await expect(ledger).toHaveAttribute('data-state', 'empty');
+      await nothingScrolls(page);
 
-      // --- Running: the rail expands under the bag, the plan panel stays put ------------------
+      // --- Running: the rail expands across the whole row, and the screen still fits ----------
       expect(await inject(page, scriptedSteps(itemId))).toEqual({ ok: true });
       await expect(rail).toHaveAttribute('data-state', 'running');
       await expect(rail.getByTestId('forge-rail-level')).toHaveText('+12');
@@ -194,27 +235,34 @@ test.describe('forge run smoke', () => {
       await expect(tallyRows.nth(1).getByTestId('forge-tally-fails')).toHaveText('1');
       await expect(page.getByTestId('forge-button')).toHaveText('Cancel after this roll');
       await page.waitForTimeout(400);
-      sameBox(planBoxBefore, await planPanel.boundingBox());
-      await page.screenshot({ path: testInfo.outputPath('forge-run-running.png') });
+      await railSpansTheRow(page);
+      await nothingScrolls(page);
+      await shoot(page, testInfo, 'forge-run-running.png');
 
-      // --- Finished: the result block, still without moving the plan panel --------------------
+      // --- Finished: the result block, still spanning the row and still fitting ---------------
       expect(await inject(page, [scriptedDone(itemId)])).toEqual({ ok: true });
       await expect(rail).toHaveAttribute('data-state', 'finished');
       await expect(rail.getByTestId('forge-result-heading')).toHaveText('Reached +12');
       await expect(rail.getByTestId('forge-result-climb')).toHaveText('+8 → +12');
       await page.waitForTimeout(400);
-      sameBox(planBoxBefore, await planPanel.boundingBox());
-      await page.screenshot({ path: testInfo.outputPath('forge-run-finished.png') });
+      await railSpansTheRow(page);
+      await nothingScrolls(page);
+      await shoot(page, testInfo, 'forge-run-finished.png');
 
-      // --- Done: the rail shrinks to the idle line carrying this run's own figures -------------
+      // --- Done: the rail collapses to nothing, and the ledger below it is opened to show that
+      //     it is STILL empty — `forge:inject` stops at the event seam and never writes a row, so
+      //     a run through the real service is the only thing that fills this table. ------------
       await rail.getByTestId('forge-done').click();
-      await expect(rail).toHaveAttribute('data-state', 'idle', { timeout: 5_000 });
-      await expect(rail.getByTestId('forge-rail-last-run')).toContainText('+8 → +12 · 8 rolls, 1 fails · 8,000 gold');
+      await expect(rail).toHaveAttribute('data-state', 'collapsed', { timeout: 5_000 });
+      await expect(ledger).toHaveAttribute('data-state', 'empty');
+      await expect(ledger.getByTestId('forge-ledger-summary')).toHaveText('0 runs · 0 gold');
+      await ledger.getByRole('button', { name: 'Run ledger' }).click();
+      await expect(ledger.getByText('No runs yet')).toBeVisible();
+      await expect(ledger.getByTestId('forge-ledger-body')).toHaveCount(0);
       await page.waitForTimeout(400);
-      sameBox(planBoxBefore, await planPanel.boundingBox());
-      await page.screenshot({ path: testInfo.outputPath('forge-run-idle.png') });
+      await nothingScrolls(page);
+      await shoot(page, testInfo, 'forge-run-collapsed.png');
 
-      // --- An injected run is never a ledger row -----------------------------------------------
       const history = await page.evaluate(() => window.bfc.invoke('forge:history'));
       expect(history.rows).toEqual([]);
       expect(history.totals.runs).toBe(0);

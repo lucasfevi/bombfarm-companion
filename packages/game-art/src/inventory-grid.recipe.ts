@@ -111,6 +111,10 @@ export const inventoryGridClass = 'grid grid-cols-[repeat(auto-fill,minmax(17rem
  */
 const TOOLBAR_FIELD_HEIGHT = 'h-[30px]';
 
+/** The height on its own, for a toolbar control that brings its own chrome — a design-system
+ *  `Select`, say — and needs only to stand the same height as the fields beside it. */
+export const inventoryFieldHeightClass = TOOLBAR_FIELD_HEIGHT;
+
 export const inventoryFieldClass = `${TOOLBAR_FIELD_HEIGHT} rounded-sm border border-line bg-bg-2 px-2.5 text-sm text-ink placeholder:text-muted focus-visible:border-accent focus-visible:outline-none`;
 
 /**

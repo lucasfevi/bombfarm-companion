@@ -1,12 +1,11 @@
 'use client';
 
 import type { ForgeRunResult } from '@bombfarm/contracts';
-import { FORGE_MAX, forgeChance } from '@bombfarm/domain/forge';
 import { Bar, Button, cn, StatList, type StatListItem } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
 import { formatAge } from '../../lib/format';
 import type { ForgeRunPlan } from '../../lib/forge/forge-run-reducer';
-import { BLANK, forgeLevel, forgeResultHeading, type ForgeLabels, type ForgeResultTone } from './forge-labels';
+import { forgeLevel, forgeResultHeading, type ForgeLabels, type ForgeResultTone } from './forge-labels';
 
 const TONE_CLASS: Record<ForgeResultTone, string> = { up: 'text-up', warn: 'text-warn', down: 'text-down' };
 
@@ -44,63 +43,15 @@ function AgainstPlan({ spent, plan, gold }: { spent: number; plan: ForgeRunPlan 
   );
 }
 
-function Bought({
-  result,
-  plan,
-  labels,
-  wearerName,
-  realisedDelta,
-}: {
-  result: ForgeRunResult;
-  plan: ForgeRunPlan | null;
-  labels: ForgeLabels;
-  wearerName: string | null;
-  realisedDelta: number | null;
-}) {
-  const t = useCopy();
-  const wiped = result.to === 0 && result.from > 0;
-  const realised = realisedDelta === null ? BLANK : labels.gain(realisedDelta);
-  const promised = plan?.deltaToTarget == null ? BLANK : labels.gain(plan.deltaToTarget);
-
-  let line: string;
-  if (wearerName === null) line = t.forgeBoughtNobody;
-  else if (wiped) line = sub(t.forgeBoughtWiped, { loss: realised });
-  else line = sub(t.forgeBoughtRealised, { delta: realised, hero: wearerName, promised });
-
-  const next =
-    result.to >= FORGE_MAX
-      ? sub(t.forgeBoughtTop, { level: forgeLevel(result.to) })
-      : sub(t.forgeBoughtNext, {
-          level: forgeLevel(result.to),
-          next: forgeLevel(result.to + 1),
-          chance: labels.chance(forgeChance(result.to + 1)),
-        });
-
-  return (
-    <div className="flex flex-col gap-0.5 text-xs">
-      <span data-testid="forge-bought" className={cn(wiped ? 'text-down' : 'text-ink')}>
-        {line}
-      </span>
-      <span data-testid="forge-bought-next" className="text-muted">
-        {next}
-      </span>
-    </div>
-  );
-}
-
 export function ForgeResult({
   result,
   plan,
   labels,
-  wearerName,
-  realisedDelta,
   onDone,
 }: {
   result: ForgeRunResult;
   plan: ForgeRunPlan | null;
   labels: ForgeLabels;
-  wearerName: string | null;
-  realisedDelta: number | null;
   onDone: () => void;
 }) {
   const t = useCopy();
@@ -119,11 +70,6 @@ export function ForgeResult({
         <span data-testid="forge-result-rolls">{`${labels.count(result.rolls)} · ${labels.count(result.fails)} · ${labels.count(result.crits)}`}</span>
       ),
     },
-    {
-      id: 'wallet',
-      label: t.forgeResultWalletAfter,
-      value: <span data-testid="forge-result-wallet">{result.walletAfter === null ? BLANK : labels.gold(result.walletAfter)}</span>,
-    },
     { id: 'duration', label: t.forgeResultDuration, value: <span data-testid="forge-result-duration">{formatAge(result.durationMs, t)}</span> },
   ];
 
@@ -134,15 +80,9 @@ export function ForgeResult({
       </h3>
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <StatList items={facts} aria-label={t.forgeResultClimb} />
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-1">
-            <span className="text-[11px] tracking-[0.04em] text-muted uppercase">{t.forgeAgainstPlanTitle}</span>
-            <AgainstPlan spent={result.spent} plan={plan} gold={labels.gold} />
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-[11px] tracking-[0.04em] text-muted uppercase">{t.forgeBoughtTitle}</span>
-            <Bought result={result} plan={plan} labels={labels} wearerName={wearerName} realisedDelta={realisedDelta} />
-          </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] tracking-[0.04em] text-muted uppercase">{t.forgeAgainstPlanTitle}</span>
+          <AgainstPlan spent={result.spent} plan={plan} gold={labels.gold} />
         </div>
       </div>
       <div className="flex justify-end">

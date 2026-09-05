@@ -70,6 +70,7 @@ export {
   inventoryCountClass,
   inventoryCountValueClass,
   inventoryFieldClass,
+  inventoryFieldHeightClass,
   inventoryFooterClass,
   inventoryGridClass,
   inventorySortDirectionClass,

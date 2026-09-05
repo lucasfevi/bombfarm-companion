@@ -15,6 +15,7 @@ import {
   forgeRungLabel,
   forgeStartRefusalText,
   forgeStatRows,
+  forgeStopText,
 } from './forge-labels';
 
 const ROWS = [
@@ -118,6 +119,20 @@ describe('forgeResultHeading', () => {
   });
 });
 
+describe('forgeStopText', () => {
+  it('names every stop in a word or two, leaving the rung to the ledger\'s own climb column', () => {
+    expect(forgeStopText('target', en)).toBe('Reached');
+    expect(forgeStopText('cancelled', en)).toBe('Cancelled');
+    expect(forgeStopText('shortfall', en)).toBe('Out of gold');
+    expect(forgeStopText('budget', en)).toBe('Gold budget');
+    expect(forgeStopText('attempts', en)).toBe('Attempt limit');
+    expect(forgeStopText('cooldown', en)).toBe('Server cooldown');
+    expect(forgeStopText('missing', en)).toBe('Item refused');
+    expect(forgeStopText('error', en)).toBe('Error');
+    expect(forgeStopText('target', ptBR)).toBe('Chegou');
+  });
+});
+
 describe('forgeRungLabel', () => {
   it('spans a merged row and stands alone otherwise', () => {
     expect(forgeRungLabel({ from: 9, to: 11 })).toBe('+9…+11');
@@ -172,11 +187,6 @@ describe('forgeLabels', () => {
     expect(labels.whereabouts(item('g3'), null)).toBe('Power 9 · in the bag');
   });
 
-  it('builds the buys tooltip from the delta, the next rung\'s cost and its chance', () => {
-    // (120 + 8 × 20 + 100 × 2) × 14² ÷ 4 — the wiki's own cost for a level-20 rare piece at +13.
-    expect(labels.buysTip(item('g1'), 0.031)).toBe('+3.1% DPS · 23,520 gold for +13 (40%)');
-  });
-
   it('describes the span and the warning by the target', () => {
     expect(labels.span(8)).toBe('safe span — every step lands');
     expect(labels.span(13)).toBe('risky span — 40% at the top');
@@ -198,7 +208,6 @@ describe('forgeLabels', () => {
     expect(labels.gold(127595)).toBe('127,595');
     expect(labels.rolls(2.5)).toBe('2.5');
     expect(labels.chance(0.5)).toBe('50%');
-    expect(labels.gain(0.031)).toBe('+3.1%');
     expect(labels.multiplier(13)).toBe('2.04');
     expect(forgeLevel(0)).toBe('+0');
   });

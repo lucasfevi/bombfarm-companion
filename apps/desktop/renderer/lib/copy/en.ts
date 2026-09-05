@@ -349,8 +349,8 @@ export const en = {
   inventoryEmptyTitle: 'No items read yet',
   inventoryEmptyDescription: 'Open the game with the companion running, so it has something to read.',
 
-  // forge* — the Forge screen: pick a piece, pick a target, see what the climb buys and what it
-  // should cost. Forge levels reach these strings as values (`{target}` is "+13"), never as
+  // forge* — the Forge screen: pick a piece, pick a target, see what the climb should cost, and
+  // forge it. Forge levels reach these strings as values (`{target}` is "+13"), never as
   // characters of their own — a bare plus in copy reads as a formula.
   forgeNavLabel: 'Forge',
   forgeTitle: 'Forge',
@@ -368,13 +368,11 @@ export const en = {
   forgeColumnSlot: 'Slot',
   forgeColumnForge: 'Forge',
   forgeColumnPower: 'Power',
-  forgeColumnBuys: '{step} buys',
-  forgeBuysTip: '{delta} DPS · {cost} gold for {target} ({chance})',
   forgeRowSelect: 'Plan a climb for {item}',
   forgeMoreRows: '{count} more — refine the filter',
   forgeItemTitle: 'Piece',
   forgePickTitle: 'Pick a piece',
-  forgePickDescription: 'Click a row to see what a climb buys and what it should cost.',
+  forgePickDescription: 'Click a row to see what a climb should cost.',
   forgeWornBy: 'Power {power} · worn by {hero}',
   forgeInBag: 'Power {power} · in the bag',
   forgeInStash: 'Power {power} · in the stash',
@@ -397,8 +395,6 @@ export const en = {
   forgeFactRolls: 'Expected rolls',
   forgeFactGold: 'Expected gold',
   forgeFactBadRun: 'A bad run (p90)',
-  forgeFactBuysHero: 'What it buys {hero}',
-  forgeFactBuys: 'What it buys',
   forgeFactWallet: 'Wallet',
   forgeWarnMax:
     '{max} is the only rung that wipes the piece to {floor}. Expect to rebuild from the safe floor about {times} times on the way.',
@@ -421,13 +417,39 @@ export const en = {
   forgeStartUnknownItem: 'This piece is not in the account any more — refresh the bag',
   forgeStartBadTarget: 'The target is behind the piece now — refresh the bag',
   forgeStartUnavailable: 'The app is still starting — try again in a moment',
-  forgeRailLastRun: 'Last run: {item} {from} → {to} · {rolls} rolls, {fails} fails · {spent} gold · {age}',
-  forgeRailTotals: '{runs} runs · {spent} gold spent',
-  forgeRailClear: 'Clear the ledger',
-  forgeRailClearTitle: 'Clear the forge ledger?',
-  forgeRailClearDescription: 'Every past run and the totals go with it. The gold was spent either way.',
-  forgeRailClearConfirm: 'Clear',
-  forgeRailClearCancel: 'Keep',
+  // forgeLedger* — the run history at the foot of the screen. The header line is what the
+  // section says with the table shut, so it carries the two figures worth knowing at a glance.
+  forgeLedgerTitle: 'Run ledger',
+  forgeLedgerSummary: '{runs} runs · {spent} gold',
+  forgeLedgerCaption: 'Every forge run this app has made on the account, newest first',
+  forgeLedgerEmptyTitle: 'No runs yet',
+  forgeLedgerEmptyDescription: 'A run started from the plan panel is kept here.',
+  forgeLedgerColumnWhen: 'When',
+  forgeLedgerColumnItem: 'Piece',
+  forgeLedgerColumnClimb: 'Climb',
+  forgeLedgerColumnOutcome: 'Outcome',
+  forgeLedgerColumnRolls: 'Rolls',
+  forgeLedgerColumnFails: 'Fails',
+  forgeLedgerColumnCrits: 'Crits',
+  forgeLedgerColumnSafeJumps: 'Safe jumps',
+  forgeLedgerColumnGold: 'Gold',
+  forgeLedgerColumnDuration: 'Duration',
+  forgeLedgerTotals: '{runs} runs · {spent} gold · {rolls} rolls · {fails} fails',
+  forgeLedgerClear: 'Clear the ledger',
+  forgeLedgerClearTitle: 'Clear the forge ledger?',
+  forgeLedgerClearDescription: 'Every past run and the totals go with it. The gold was spent either way.',
+  forgeLedgerClearConfirm: 'Clear',
+  forgeLedgerClearCancel: 'Keep',
+  // forgeStop* — why a run ended, short enough for a table cell. The result heading says the same
+  // thing at length, with the rung it stopped on.
+  forgeStopTarget: 'Reached',
+  forgeStopCancelled: 'Cancelled',
+  forgeStopShortfall: 'Out of gold',
+  forgeStopBudget: 'Gold budget',
+  forgeStopAttempts: 'Attempt limit',
+  forgeStopCooldown: 'Server cooldown',
+  forgeStopMissing: 'Item refused',
+  forgeStopError: 'Error',
   // The running rail: the climb so far, one dot per call, and the tally by rung.
   forgeRailRolls: '{rolls} rolls',
   forgeRailSpent: '{spent} gold',
@@ -445,8 +467,7 @@ export const en = {
   forgeMarkCritical: 'critical',
   forgeMarkFail: 'missed',
   forgeMarkSafe: 'safe jump',
-  // The result block, in the player's terms: what happened, what it cost against the plan, and
-  // what the gold bought.
+  // The result block, in the player's terms: what happened and what it cost against the plan.
   forgeResultReached: 'Reached {level}',
   forgeResultCancelled: 'Stopped at {level} — cancelled after roll {rolls}',
   forgeResultShortfall: 'Out of gold at {level}',
@@ -457,19 +478,12 @@ export const en = {
   forgeResultError: 'Stopped by an error at {level}',
   forgeResultClimb: 'Climb',
   forgeResultRolls: 'Rolls · fails · crits',
-  forgeResultWalletAfter: 'Wallet after',
   forgeResultDuration: 'Duration',
   forgeAgainstPlanTitle: 'Against the plan',
   forgeAgainstSpent: 'spent {gold}',
   forgeAgainstExpected: 'expected {gold}',
   forgeAgainstBadRun: 'a bad run {gold}',
   forgeAgainstNoPlan: 'No plan to compare against — this run was not started from the panel',
-  forgeBoughtTitle: 'Bought',
-  forgeBoughtRealised: '{delta} DPS for {hero}, against the {promised} the plan promised',
-  forgeBoughtNobody: 'Nobody wears this piece, so nothing changes on the field yet',
-  forgeBoughtNext: '{level} keeps its stats; the next roll for {next} is {chance}',
-  forgeBoughtWiped: '{loss} DPS until you rebuild',
-  forgeBoughtTop: '{level} is the top of the ladder',
   forgeDone: 'Done',
 
   // account* — the Account screen: what the account could sell, who it belongs to, and what its

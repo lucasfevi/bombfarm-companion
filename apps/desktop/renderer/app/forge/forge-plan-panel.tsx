@@ -102,8 +102,6 @@ export function ForgePlanPanel({
   item,
   plan,
   forecast,
-  wearerName,
-  deltaToTarget,
   walletGold,
   reason,
   startRefusal,
@@ -117,8 +115,6 @@ export function ForgePlanPanel({
   item: InventoryViewItem;
   plan: ForgePlan;
   forecast: ForgePlanForecast | null;
-  wearerName: string | null;
-  deltaToTarget: number | null;
   walletGold: number | null;
   reason: ForgeButtonReason;
   /** Why main refused the last start, until the next press or a change of piece. */
@@ -161,11 +157,6 @@ export function ForgePlanPanel({
     { id: 'rolls', label: t.forgeFactRolls, value: <span data-testid="forge-fact-rolls">{forecast ? labels.rolls(forecast.rolls) : BLANK}</span> },
     { id: 'gold', label: t.forgeFactGold, value: <span data-testid="forge-fact-gold">{forecast ? labels.gold(forecast.gold) : BLANK}</span> },
     { id: 'bad-run', label: t.forgeFactBadRun, value: <span data-testid="forge-fact-bad-run">{forecast ? labels.gold(forecast.badRunGold) : BLANK}</span> },
-    {
-      id: 'buys',
-      label: wearerName === null ? t.forgeFactBuys : sub(t.forgeFactBuysHero, { hero: wearerName }),
-      value: <span data-testid="forge-fact-buys">{deltaToTarget === null ? BLANK : labels.gain(deltaToTarget)}</span>,
-    },
     { id: 'wallet', label: t.forgeFactWallet, value: <span data-testid="forge-fact-wallet">{walletGold === null ? BLANK : labels.gold(walletGold)}</span> },
   ];
 
