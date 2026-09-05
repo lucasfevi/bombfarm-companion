@@ -2,6 +2,7 @@
 "@bombfarm/desktop": minor
 "@bombfarm/contracts": patch
 "@bombfarm/ui": patch
+"@bombfarm/web": patch
 ---
 
 Add the Forge tab, as a planner.
