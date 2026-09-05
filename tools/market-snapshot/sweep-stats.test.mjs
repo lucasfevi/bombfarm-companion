@@ -237,7 +237,7 @@ function narrowingOf(url) {
   return narrow;
 }
 
-function taggedSweep({ items, prior = null, planQuotes = undefined }) {
+function taggedSweep({ items, prior = null, planQuotes = undefined, currencies = ['BRL'] }) {
   const facetQueries = [];
 
   const steamNet = {
@@ -276,7 +276,7 @@ function taggedSweep({ items, prior = null, planQuotes = undefined }) {
     prior,
     searchDelayMs: 0,
     quoteDelayMs: 0,
-    nativeCurrencies: ['BRL'],
+    nativeCurrencies: currencies,
     planQuotes,
     log: () => {},
     now: () => Date.parse('2026-09-01T00:00:00.000Z'),
@@ -378,6 +378,56 @@ describe('a row left to the enumeration is priced from it, and says which', () =
     expect(seen[0].quotable).toBe(2);
     expect(seen[0].searchDelayMs).toBe(0);
     expect(seen[0].enumerationCalls).toBeGreaterThan(1);
+  });
+});
+
+/**
+ * The sweep with its expensive half switched off, which is what a caller running on a fresh
+ * address every pass wants: the enumeration prices every listed row for a tenth of a call each.
+ *
+ * The row that had a native quote is the one worth asserting on. Its USD price has not moved, so
+ * it meets the condition inheritance fires on — and inheriting it here would publish a figure no
+ * later pass is coming to replace, ageing indefinitely behind the label that says it is the
+ * number on the listing.
+ */
+describe('a sweep asked for no native currency', () => {
+  it('leaves every listed row to the enumeration, whatever plan the caller brought', async () => {
+    const { stats } = await taggedSweep({
+      items: [BOOTS, GEM],
+      currencies: [],
+      planQuotes: ({ quotable }) => ({ hashNames: quotable.map((entry) => entry.hashName) }),
+    });
+
+    expect(stats.rotation).toEqual([]);
+    expect([...stats.enumerationOnly].sort()).toEqual([BOOTS.hashName, GEM.hashName].sort());
+    expect(stats.quoteCalls).toBe(0);
+    expect(stats.quotesAttempted).toBe(0);
+  });
+
+  it('retires the previous pass native quotes rather than carrying them behind their label', async () => {
+    const quoted = await taggedSweep({ items: [BOOTS, GEM] });
+    expect(resolveKey(BOOTS_KEY, quoted.snapshot, 'BRL').basis).toBe('native');
+
+    const enumerated = await taggedSweep({
+      items: [BOOTS, GEM],
+      prior: quoted.snapshot,
+      currencies: [],
+    });
+
+    const boots = resolveKey(BOOTS_KEY, enumerated.snapshot, 'BRL');
+    expect(boots.state).toBe('priced');
+    expect(boots.basis).toBe('converted');
+    expect(boots.amount).toBeCloseTo(4.8 * 5.4);
+    expect(enumerated.snapshot.nativeCurrencies).toEqual([]);
+  });
+
+  it('still enumerates and identifies the board, which is the half it keeps', async () => {
+    const { snapshot, stats } = await taggedSweep({ items: [BOOTS, GEM], currencies: [] });
+
+    expect(stats.enumerationComplete).toBe(true);
+    expect(snapshot.index[BOOTS_KEY]).toBeDefined();
+    expect(snapshot.index[GEM_KEY]).toBeDefined();
+    expect(snapshot.coverage.matchedCatalogKeys).toBeGreaterThan(0);
   });
 });
 

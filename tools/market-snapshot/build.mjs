@@ -280,6 +280,9 @@ const QUOTE_EVERY_LISTED_ROW = ({ quotable }) => ({
   hashNames: quotable.map((entry) => entry.hashName),
 });
 
+/** No currency to ask for means no per-item call to make, whatever policy the caller brought. */
+const QUOTE_NOTHING = { hashNames: [] };
+
 /**
  * Run one complete sweep: enumerate, tag, reconcile, quote the rotation, build the snapshot.
  * The only Steam-talking entry point in the repository. Returns the artifact and what a caller
@@ -342,7 +345,13 @@ export async function runSweep({
   // per-item call is the expensive half of the sweep.
   const quotable = reconciled.entries.filter((entry) => entry.lowestUsd != null);
   const enumerationCalls = discovery.searchCalls + filterCalls;
-  const plan = planQuotes({ quotable, enumerationCalls, searchDelayMs });
+  // Every listed row falls to the enumeration when no native currency is configured, which is
+  // also what retires the native quotes a previous run took: a row nothing will quote again must
+  // not go on publishing an ageing figure under the label that says it is the listing's own.
+  const plan =
+    nativeCurrencies.length > 0
+      ? planQuotes({ quotable, enumerationCalls, searchDelayMs })
+      : QUOTE_NOTHING;
 
   // Intersected rather than trusted: a plan naming a row this pass never enumerated would spend a
   // call on something with nothing to price, and the rotation is the expensive half of the sweep.

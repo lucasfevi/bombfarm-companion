@@ -1,17 +1,19 @@
 /**
  * The long-running collector: it repeats the market sweep on a cadence derived from a daily call
- * budget, persists what each pass read, publishes the artifact, and records the pass.
+ * budget, persists what each pass read, and records the pass.
+ *
+ * It publishes nothing. The artifact both apps read has exactly one producer, and this is not it —
+ * a second writer of the same file is a race whichever one happens to be running. What this
+ * produces is readings: the median and the 24h volume that only a per-item quote returns. That
+ * sampling is what the budget bounds, and it is the only thing the budget bounds.
  *
  * It makes no market call of its own. The sweep it drives is the only thing in this repository
  * that talks to the market, and it is imported lazily so that everything here stays drivable
- * without a built workspace. This file's own requests reach the history store and the publishing
- * API and nothing else.
+ * without a built workspace. This file's own requests reach the history store and nothing else.
  */
 import { writeFileSync } from 'node:fs';
-import { basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { deployOptOutFiles } from './deploy-optout.mjs';
 import {
   DEFAULT_DAILY_BUDGET,
   MIN_SPACING_MS,
@@ -64,8 +66,6 @@ export function readConfig(env) {
 
   const supabaseUrl = need('SUPABASE_URL');
   const supabaseKey = need('SUPABASE_KEY');
-  const githubToken = need('GITHUB_TOKEN');
-  const repo = need('GITHUB_REPO', 'GITHUB_REPOSITORY');
 
   let budget = DEFAULT_DAILY_BUDGET;
   try {
@@ -91,12 +91,9 @@ export function readConfig(env) {
     throw new Error(`the collector cannot start: ${problems.join('; ')}`);
   }
 
-  const snapshotPath = firstSet(env, ['SNAPSHOT', 'MARKET_SNAPSHOT_PATH']) ?? 'market-prices.json';
   return {
     supabaseUrl: supabaseUrl.replace(/\/+$/, ''),
     supabaseKey,
-    githubToken,
-    repo,
     budget,
     tierWindowMs: tierWindowDays * MS_PER_DAY,
     retierEveryMs: retierHours * MS_PER_HOUR,
@@ -104,12 +101,9 @@ export function readConfig(env) {
       .split(',')
       .map((code) => code.trim().toUpperCase())
       .filter(Boolean),
-    releaseTag: firstSet(env, ['RELEASE_TAG', 'MARKET_RELEASE_TAG']) ?? 'market-prices',
-    dataBranch: firstSet(env, ['DATA_BRANCH', 'MARKET_DATA_BRANCH']) ?? 'market-data',
-    snapshotPath,
-    // One variable names the resume file, and the published artifact takes its name, so the two
-    // can never drift into disagreeing about which file the snapshot is.
-    snapshotName: basename(snapshotPath),
+    // Private working state, not an artifact anyone reads: it is what the next pass resumes its
+    // row identities from, so a pass that finds nothing new asks no facet queries.
+    snapshotPath: firstSet(env, ['SNAPSHOT', 'MARKET_SNAPSHOT_PATH']) ?? 'market-prices.json',
   };
 }
 
@@ -319,8 +313,8 @@ export function createHistory({ url, key, fetch, log, now = Date.now }) {
   };
 
   /**
-   * Never throws. A history failure must not cost the pass its publish — the artifact is what
-   * users read — so it is reported to the caller and recorded on the run row instead.
+   * Never throws. A history failure must not cost the pass the rest of its work — the tiering it
+   * folds forward and the run row it owes — so it is reported to the caller and recorded instead.
    */
   const persistHistory = async (snapshot, stats) => {
     const startedMs = now();
@@ -363,140 +357,10 @@ export function createHistory({ url, key, fetch, log, now = Date.now }) {
   return { persistHistory, readTiers, writeRun };
 }
 
-const GITHUB_API = 'https://api.github.com';
-const GITHUB_UPLOADS = 'https://uploads.github.com';
-
 /**
- * The two publish targets fail independently and are recorded independently: the desktop app and
- * the web planner read different ones, so "the snapshot published" is not a single fact.
- */
-export function createPublisher({
-  token,
-  repo,
-  releaseTag,
-  dataBranch,
-  snapshotName,
-  fetch,
-  log,
-  now = Date.now,
-}) {
-  const headers = (extra = {}) => ({
-    Authorization: `Bearer ${token}`,
-    Accept: 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28',
-    'User-Agent': 'bombfarm-companion-market-collector',
-    ...extra,
-  });
-
-  const call = async (url, init) => {
-    const response = await fetch(url, init);
-    if (!response.ok) {
-      const body = await response.text().catch(() => '');
-      const error = new Error(`${init?.method ?? 'GET'} ${url} answered ${String(response.status)}`);
-      error.status = response.status;
-      error.body = body;
-      throw error;
-    }
-    return response;
-  };
-
-  const json = async (url, init) => (await call(url, init)).json();
-
-  const post = (path, payload) =>
-    json(`${GITHUB_API}/repos/${repo}/${path}`, {
-      method: 'POST',
-      headers: headers({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify(payload),
-    });
-
-  const timed = async (target, bytes, publish) => {
-    const startedMs = now();
-    try {
-      await publish();
-      log('publish.done', { target, bytes, ms: now() - startedMs });
-      return true;
-    } catch (err) {
-      log(
-        'publish.failed',
-        { target, status: err?.status ?? null, body: err?.body ?? String(err) },
-        'error',
-      );
-      return false;
-    }
-  };
-
-  const uploadAsset = (releaseId, body) =>
-    call(
-      `${GITHUB_UPLOADS}/repos/${repo}/releases/${String(releaseId)}/assets?name=${encodeURIComponent(snapshotName)}`,
-      { method: 'POST', headers: headers({ 'Content-Type': 'application/json' }), body },
-    );
-
-  /**
-   * Delete-then-upload, because the REST API has no replace. That leaves a sub-second window
-   * where the asset is missing — clients treat a failed download as "keep the cached snapshot" —
-   * and it is why the upload gets a second attempt before the pass calls the target failed.
-   */
-  const publishRelease = (body) =>
-    timed('release', body.length, async () => {
-      const release = await json(`${GITHUB_API}/repos/${repo}/releases/tags/${releaseTag}`, {
-        headers: headers(),
-      });
-      const existing = (release.assets ?? []).find((asset) => asset.name === snapshotName);
-      if (existing) {
-        await call(`${GITHUB_API}/repos/${repo}/releases/assets/${String(existing.id)}`, {
-          method: 'DELETE',
-          headers: headers(),
-        });
-      }
-      try {
-        await uploadAsset(release.id, body);
-      } catch {
-        await uploadAsset(release.id, body);
-      }
-    });
-
-  /**
-   * A fresh orphan commit, force-pushed. `parents: []` is what keeps the branch a single commit
-   * forever: it is derived data with no value in its history, and a commit a pass would bloat
-   * every clone of the repository.
-   */
-  const publishBranch = (body) =>
-    timed('branch', body.length, async () => {
-      const files = [{ path: snapshotName, content: body }, ...deployOptOutFiles(dataBranch)];
-      const blobs = await Promise.all(
-        files.map((file) =>
-          post('git/blobs', {
-            content: Buffer.from(file.content, 'utf-8').toString('base64'),
-            encoding: 'base64',
-          }),
-        ),
-      );
-      const tree = await post('git/trees', {
-        tree: files.map((file, index) => ({
-          path: file.path,
-          mode: '100644',
-          type: 'blob',
-          sha: blobs[index].sha,
-        })),
-      });
-      const commit = await post('git/commits', {
-        message: `chore(market): snapshot ${new Date(now()).toISOString()}`,
-        tree: tree.sha,
-        parents: [],
-      });
-      await call(`${GITHUB_API}/repos/${repo}/git/refs/heads/${dataBranch}`, {
-        method: 'PATCH',
-        headers: headers({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ sha: commit.sha, force: true }),
-      });
-    });
-
-  return { publishRelease, publishBranch };
-}
-
-/**
- * The published snapshot is served with a five-minute max-age, so a pass that finished faster
- * than this gains nothing by publishing again immediately.
+ * A floor on how often a pass may repeat, which the budget arithmetic does not supply: spacing
+ * stretches a pass in proportion to how much it has to quote, so a board small enough to finish
+ * in seconds would otherwise loop straight back into the market.
  */
 export const MIN_PASS_MS = 300_000;
 
@@ -547,18 +411,13 @@ export function runRowFrom(stats, snapshotBytes) {
 }
 
 /**
- * The pass, repeated. Three orderings here are load-bearing:
- *
- * History is written before publishing, because a reading not taken is gone forever while a
- * published snapshot can be rebuilt by the next pass — so a history failure is recorded and the
- * pass publishes anyway, the artifact being what users read.
+ * The pass, repeated. Two orderings here are load-bearing:
  *
  * The run row is written in a `finally`, so a pass that throws still leaves a row carrying its
  * error. Health in one query would otherwise under-count failures as passes that never happened.
  *
- * A pass cut short at any stage is not an error — it publishes and persists what it got — but it
- * still enters the cool-down ladder, because a tripped breaker is the exact signal the ladder
- * exists for.
+ * A pass cut short at any stage is not an error — it persists what it got — but it still enters
+ * the cool-down ladder, because a tripped breaker is the exact signal the ladder exists for.
  *
  * Tier membership is recomputed on its own interval from the readings already in the history
  * store, and folded forward from each pass so an item quoted for the first time is placed by its
@@ -572,8 +431,6 @@ export async function runCollector({
   writeSnapshot,
   persistHistory,
   readTiers,
-  publishRelease,
-  publishBranch,
   writeRun,
   log,
   sleep,
@@ -663,9 +520,6 @@ export async function runCollector({
       const history = await persistHistory(snapshot, stats);
       if (!history.ok) row.error = history.error;
 
-      row.published_release = await publishRelease(body);
-      row.published_branch = await publishBranch(body);
-
       coolDownMs = incomplete.length === 0 ? 0 : nextCoolDown(coolDownMs);
     } catch (err) {
       row.error = String(err?.stack ?? err);
@@ -711,16 +565,6 @@ async function main() {
     fetch,
     log,
   });
-  const { publishRelease, publishBranch } = createPublisher({
-    token: config.githubToken,
-    repo: config.repo,
-    releaseTag: config.releaseTag,
-    dataBranch: config.dataBranch,
-    snapshotName: config.snapshotName,
-    fetch,
-    log,
-  });
-
   await runCollector({
     config,
     runSweep,
@@ -730,8 +574,6 @@ async function main() {
     },
     persistHistory,
     readTiers,
-    publishRelease,
-    publishBranch,
     writeRun,
     log,
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),

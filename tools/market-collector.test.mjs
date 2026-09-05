@@ -13,7 +13,6 @@ import {
   MIN_SPACING_MS,
   createHistory,
   createLogger,
-  createPublisher,
   incompleteStages,
   itemRowsFrom,
   nextCoolDown,
@@ -27,12 +26,8 @@ import { planPacing, splitRotation, tiersFromHistory } from './market-snapshot/q
 const ENV = {
   SUPABASE_URL: 'https://history.example/',
   SUPABASE_KEY: 'key',
-  GITHUB_TOKEN: 'token',
-  GITHUB_REPO: 'owner/repo',
   MARKET_DAILY_BUDGET: '2000',
   MARKET_CURRENCY: 'BRL',
-  RELEASE_TAG: 'market-prices',
-  DATA_BRANCH: 'market-data',
   SNAPSHOT: '/var/state/market-prices.json',
 };
 
@@ -94,7 +89,6 @@ const failResponse = (status = 500) => ({
 function harness(overrides = {}) {
   const lines = [];
   const runs = [];
-  const published = [];
   const sleeps = [];
   let clockMs = 0;
 
@@ -116,14 +110,6 @@ function harness(overrides = {}) {
     writeSnapshot: () => {},
     persistHistory: async () => ({ ok: true, error: null }),
     readTiers: async () => ({ traded: new Set(), observed: new Set() }),
-    publishRelease: async () => {
-      published.push('release');
-      return true;
-    },
-    publishBranch: async () => {
-      published.push('branch');
-      return true;
-    },
     writeRun: async (row) => {
       runs.push(row);
     },
@@ -140,7 +126,6 @@ function harness(overrides = {}) {
     deps,
     lines,
     runs,
-    published,
     sleeps,
     advance: (ms) => {
       clockMs += ms;
@@ -368,10 +353,8 @@ describe('the pass plans what it will quote', () => {
 });
 
 describe('configuration read from the environment', () => {
-  it('names the published artifact after the file it resumes from', () => {
-    const config = readConfig(ENV);
-    expect(config.snapshotPath).toBe('/var/state/market-prices.json');
-    expect(config.snapshotName).toBe('market-prices.json');
+  it('reads the path it resumes its row identities from', () => {
+    expect(readConfig(ENV).snapshotPath).toBe('/var/state/market-prices.json');
   });
 
   it('refuses to start without a credential rather than failing on the first call', () => {
@@ -387,7 +370,7 @@ describe('configuration read from the environment', () => {
   it('names every missing variable and a bad budget in one message, not the first one only', () => {
     const broken = { ...ENV, MARKET_DAILY_BUDGET: 'abc' };
     delete broken.SUPABASE_KEY;
-    delete broken.GITHUB_TOKEN;
+    delete broken.SUPABASE_URL;
 
     let thrown;
     try {
@@ -398,20 +381,18 @@ describe('configuration read from the environment', () => {
 
     expect(thrown).toBeDefined();
     expect(thrown.message).toMatch(/SUPABASE_KEY/);
-    expect(thrown.message).toMatch(/GITHUB_TOKEN/);
+    expect(thrown.message).toMatch(/SUPABASE_URL/);
     expect(thrown.message).toMatch(/MARKET_DAILY_BUDGET/);
   });
 
-  it.each([
-    ['GITHUB_REPO', 'GITHUB_REPOSITORY', 'repo', 'owner/repo'],
-    ['SNAPSHOT', 'MARKET_SNAPSHOT_PATH', 'snapshotPath', '/var/state/market-prices.json'],
-    ['RELEASE_TAG', 'MARKET_RELEASE_TAG', 'releaseTag', 'market-prices'],
-    ['DATA_BRANCH', 'MARKET_DATA_BRANCH', 'dataBranch', 'market-data'],
-  ])('reads %s under its longer name %s too', (canonical, alias, field, value) => {
-    const aliased = { ...ENV, [alias]: value };
-    delete aliased[canonical];
-    expect(readConfig(aliased)[field]).toBe(value);
-  });
+  it.each([['SNAPSHOT', 'MARKET_SNAPSHOT_PATH', 'snapshotPath', '/var/state/market-prices.json']])(
+    'reads %s under its longer name %s too',
+    (canonical, alias, field, value) => {
+      const aliased = { ...ENV, [alias]: value };
+      delete aliased[canonical];
+      expect(readConfig(aliased)[field]).toBe(value);
+    },
+  );
 
   it('turns the tiering intervals into milliseconds', () => {
     const config = readConfig({ ...ENV, MARKET_TIER_WINDOW_DAYS: '7', MARKET_RETIER_HOURS: '6' });
@@ -426,22 +407,26 @@ describe('configuration read from the environment', () => {
     },
   );
 
-  it('starts on an environment carrying only the four that have no sane default', () => {
-    const minimal = {
-      SUPABASE_URL: ENV.SUPABASE_URL,
-      SUPABASE_KEY: ENV.SUPABASE_KEY,
-      GITHUB_TOKEN: ENV.GITHUB_TOKEN,
-      GITHUB_REPO: ENV.GITHUB_REPO,
-    };
+  it('starts on an environment carrying only the two that have no sane default', () => {
+    const minimal = { SUPABASE_URL: ENV.SUPABASE_URL, SUPABASE_KEY: ENV.SUPABASE_KEY };
     expect(readConfig(minimal)).toMatchObject({
       budget: 2000,
       tierWindowMs: 30 * 86_400_000,
       retierEveryMs: 24 * 3_600_000,
       currencies: ['BRL'],
-      releaseTag: 'market-prices',
-      dataBranch: 'market-data',
-      snapshotName: 'market-prices.json',
+      snapshotPath: 'market-prices.json',
     });
+  });
+
+  /**
+   * A leftover credential in the environment file must not read as a collector that still has
+   * somewhere to publish. Nothing here asks for one, so nothing here can be handed one.
+   */
+  it('asks for no publishing credential, and grows no field carrying one', () => {
+    const config = readConfig({ ...ENV, GITHUB_TOKEN: 'token', GITHUB_REPO: 'owner/repo' });
+    expect(Object.keys(config).sort()).toEqual(
+      ['budget', 'currencies', 'retierEveryMs', 'snapshotPath', 'supabaseKey', 'supabaseUrl', 'tierWindowMs'].sort(),
+    );
   });
 });
 
@@ -655,7 +640,7 @@ describe('the cool-down ladder', () => {
     expect(h.sleeps).toEqual([15 * 60_000, 30 * 60_000]);
   });
 
-  it('enters the ladder for a rotation cut short, while still publishing and persisting it', async () => {
+  it('enters the ladder for a rotation cut short, while still persisting what it got', async () => {
     const persisted = [];
     const h = harness({
       runSweep: async () => ({
@@ -670,7 +655,6 @@ describe('the cool-down ladder', () => {
     await runCollector(h.deps);
 
     expect(persisted).toHaveLength(1);
-    expect(h.published).toEqual(['release', 'branch']);
     expect(h.runs[0].error).toBeUndefined();
     expect(h.sleeps).toEqual([15 * 60_000]);
   });
@@ -690,35 +674,32 @@ describe('the pass', () => {
     expect(h.runs[0].finished_at).toBeTruthy();
   });
 
-  it('persists the readings before it publishes, because a reading not taken cannot be redone', async () => {
+  it('records the pass only after persisting it, so the row describes work already done', async () => {
     const order = [];
-    const h = harness({
+    let h;
+    h = harness({
       persistHistory: async () => {
         order.push('history');
         return { ok: true, error: null };
       },
-      publishRelease: async () => {
-        order.push('release');
-        return true;
-      },
-      publishBranch: async () => {
-        order.push('branch');
-        return true;
+      writeRun: async (row) => {
+        order.push('run');
+        h.runs.push(row);
       },
     });
     await runCollector(h.deps);
-    expect(order).toEqual(['history', 'release', 'branch']);
+    expect(order).toEqual(['history', 'run']);
   });
 
-  it('publishes anyway when the history write failed, and records that it did', async () => {
+  it('finishes the pass when the history write failed, and records what was lost', async () => {
     const h = harness({
       persistHistory: async () => ({ ok: false, error: 'history: quote answered 503' }),
     });
     await runCollector(h.deps);
 
-    expect(h.published).toEqual(['release', 'branch']);
+    expect(h.runs).toHaveLength(1);
     expect(h.runs[0].error).toBe('history: quote answered 503');
-    expect(h.runs[0].published_release).toBe(true);
+    expect(h.runs[0].finished_at).toBeTruthy();
   });
 
   it('marks a lost reading apart from a lost pass, both sharing one error column', async () => {
@@ -739,15 +720,18 @@ describe('the pass', () => {
     for (const run of [lostReading.runs[0], lostPass.runs[0]]) expect(run.error).toBeTruthy();
   });
 
-  it('records the two publish targets independently', async () => {
-    const h = harness({ publishRelease: async () => false });
+  /**
+   * A dormant writer is the thing the cutover removed, so the row a pass writes is asserted to
+   * carry no outcome for a publish — a column still being written would mean one still ran.
+   */
+  it('records no publish outcome, there being no publish left to have an outcome', async () => {
+    const h = harness();
     await runCollector(h.deps);
 
-    expect(h.runs[0].published_release).toBe(false);
-    expect(h.runs[0].published_branch).toBe(true);
+    expect(Object.keys(h.runs[0]).filter((column) => column.startsWith('published'))).toEqual([]);
   });
 
-  it('holds a fast pass to the publish floor and does not extend a slow one', async () => {
+  it('holds a fast pass to the floor and does not extend a slow one', async () => {
     const fast = harness();
     await runCollector(fast.deps);
     expect(fast.sleeps).toEqual([MIN_PASS_MS]);
@@ -939,120 +923,5 @@ describe('the history transport', () => {
       await expect(readTiers(86_400_000)).resolves.toBeNull();
       expect(lines.map((line) => JSON.parse(line).evt)).toContain('tier.readFailed');
     });
-  });
-});
-
-describe('publishing', () => {
-  const publisherWith = (fetch, lines = [], dataBranch = 'market-data') =>
-    createPublisher({
-      token: 'token',
-      repo: 'owner/repo',
-      releaseTag: 'market-prices',
-      dataBranch,
-      snapshotName: 'market-prices.json',
-      fetch,
-      log: createLogger({ write: (line) => lines.push(line), clock: () => new Date(0) }),
-      now: () => 0,
-    });
-
-  it('replaces the existing asset, there being no replace call to make', async () => {
-    const calls = [];
-    const { publishRelease } = publisherWith(async (url, init) => {
-      calls.push(`${init?.method ?? 'GET'} ${url}`);
-      if (url.endsWith('/releases/tags/market-prices')) {
-        return okResponse({ id: 7, assets: [{ id: 99, name: 'market-prices.json' }] });
-      }
-      return okResponse();
-    });
-
-    expect(await publishRelease('{}')).toBe(true);
-    expect(calls).toEqual([
-      'GET https://api.github.com/repos/owner/repo/releases/tags/market-prices',
-      'DELETE https://api.github.com/repos/owner/repo/releases/assets/99',
-      'POST https://uploads.github.com/repos/owner/repo/releases/7/assets?name=market-prices.json',
-    ]);
-  });
-
-  it('retries the upload exactly once, then records the target as failed rather than throwing', async () => {
-    let uploads = 0;
-    const { publishRelease } = publisherWith(async (url) => {
-      if (url.endsWith('/releases/tags/market-prices')) return okResponse({ id: 7, assets: [] });
-      uploads += 1;
-      return failResponse(502);
-    });
-
-    await expect(publishRelease('{}')).resolves.toBe(false);
-    expect(uploads).toBe(2);
-  });
-
-  /**
-   * Every blob gets its own sha, so the pushed tree can be read back as path → content. A shared
-   * sha would let a tree that points two paths at the same blob pass as though both were written.
-   */
-  const capturingPublisher = (dataBranch = 'market-data') => {
-    const bodies = new Map();
-    const blobsBySha = new Map();
-    const { publishBranch } = publisherWith(
-      async (url, init) => {
-        const path = url.split('/repos/owner/repo/')[1];
-        const body = init?.body ? JSON.parse(init.body) : null;
-        if (body) bodies.set(path, [...(bodies.get(path) ?? []), body]);
-        if (path === 'git/blobs') {
-          const sha = `blob${String(blobsBySha.size)}`;
-          blobsBySha.set(sha, Buffer.from(body.content, 'base64').toString('utf-8'));
-          return okResponse({ sha });
-        }
-        return okResponse({ sha: 'deadbeef' });
-      },
-      [],
-      dataBranch,
-    );
-    const last = (path) => bodies.get(path)?.at(-1);
-    const committed = () =>
-      new Map(last('git/trees').tree.map((entry) => [entry.path, blobsBySha.get(entry.sha)]));
-    return { publishBranch, last, committed };
-  };
-
-  it('commits the data branch with no parent, so it stays one commit forever', async () => {
-    const { publishBranch, last, committed } = capturingPublisher();
-
-    expect(await publishBranch('{"a":1}')).toBe(true);
-    expect(last('git/commits').parents).toEqual([]);
-    expect(last('git/refs/heads/market-data')).toEqual({ sha: 'deadbeef', force: true });
-    expect(committed().get('market-prices.json')).toBe('{"a":1}');
-  });
-
-  /**
-   * A push to this branch would otherwise start a preview build of a tree with no application in
-   * it, which fails and mails the owner on every pass. The opt-out only works if it is in the
-   * pushed commit, so what is read back is the tree rather than the config's text — and it must
-   * name the branch actually being pushed, not one spelled into the config.
-   */
-  it.each(['market-data', 'market-elsewhere'])(
-    'commits a deployment opt-out naming %s, at every path it is read from',
-    async (dataBranch) => {
-      const { publishBranch, committed } = capturingPublisher(dataBranch);
-
-      expect(await publishBranch('{"a":1}')).toBe(true);
-
-      const tree = committed();
-      for (const path of ['vercel.json', 'apps/web/vercel.json']) {
-        expect(JSON.parse(tree.get(path) ?? 'null')?.git?.deploymentEnabled).toEqual({
-          [dataBranch]: false,
-        });
-      }
-    },
-  );
-
-  it('leaves the flag of the other target alone when one of them fails', async () => {
-    const { publishRelease, publishBranch } = publisherWith(async (url) => {
-      if (url.startsWith('https://api.github.com/repos/owner/repo/git/')) {
-        return okResponse({ sha: 'x' });
-      }
-      return failResponse(500);
-    });
-
-    expect(await publishRelease('{}')).toBe(false);
-    expect(await publishBranch('{}')).toBe(true);
   });
 });

@@ -28,13 +28,13 @@ export function deployOptOut(dataBranch) {
   return `${JSON.stringify(config, null, 2)}\n`;
 }
 
-/** The files to add to the published commit, in the shape both publishers commit them. */
+/** The files to add to the published commit. */
 export function deployOptOutFiles(dataBranch) {
   const content = deployOptOut(dataBranch);
   return DEPLOY_OPTOUT_PATHS.map((path) => ({ path, content }));
 }
 
-/** Write them into a working tree, for the publisher that commits with git rather than the API. */
+/** Write them into the working tree the publishing workflow commits from. */
 export function writeDeployOptOut(root, dataBranch) {
   for (const file of deployOptOutFiles(dataBranch)) {
     const target = join(root, file.path);
