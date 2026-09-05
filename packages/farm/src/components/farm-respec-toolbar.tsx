@@ -1,7 +1,8 @@
 'use client';
 
 import { Button } from '@bombfarm/ui';
-import type { FarmCopy, Lang } from '../copy';
+import type { Lang } from '@bombfarm/hero/copy';
+import type { FarmCopy } from '../copy';
 import type { FarmRespecGate } from '../core';
 import type { FarmRespecStatus } from '../model/farm-respec-view';
 import { FarmRespecHeadline } from './farm-respec-headline';

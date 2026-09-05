@@ -83,6 +83,7 @@ import { createStorage, openAccountDatabase, type Storage } from './storage/inde
 import {
   applyAlwaysOnTopMain as applyAlwaysOnTopMainSettings,
   applyAlwaysOnTopMini as applyAlwaysOnTopMiniSettings,
+  applyForgeWritesEnabled as applyForgeWritesEnabledSettings,
   applyLocale as applyLocaleSettings,
 } from './shell/settings-apply.js';
 import { createElectronTray } from './shell/electron-tray.js';
@@ -225,6 +226,10 @@ function applyAlwaysOnTopMini(enabled: unknown): SettingsWriteResult {
   });
 }
 
+function applyForgeWritesEnabled(enabled: unknown): SettingsWriteResult {
+  return applyForgeWritesEnabledSettings({ current: currentSettings, enabled, persist: persistSettings });
+}
+
 function defaultLiveView(): LiveView {
   const now = new Date().toISOString();
   return {
@@ -286,6 +291,7 @@ function registerIpcHandlers(): void {
         updateChannel: env.descriptor.updateChannel,
         isPackaged: env.isPackaged,
         version: app.getVersion(),
+        accountSource: gameReader?.getMode() === 'fixture' ? 'fixture' : 'server',
       };
     },
     'app:ping': () => ({ ok: true as const, from: 'main' as const }),
@@ -296,6 +302,7 @@ function registerIpcHandlers(): void {
     'settings:usePortuguese': (): SettingsWriteResult => applyLocale('pt-BR'),
     'settings:setAlwaysOnTopMain': (enabled: boolean): SettingsWriteResult => applyAlwaysOnTopMain(enabled),
     'settings:setAlwaysOnTopMini': (enabled: boolean): SettingsWriteResult => applyAlwaysOnTopMini(enabled),
+    'settings:setForgeWritesEnabled': (enabled: boolean): SettingsWriteResult => applyForgeWritesEnabled(enabled),
     'storage:health': () => storage?.healthCheck() ?? { binding: 'unknown', ok: false },
     'game:getStatus': () => gameReader?.getStatus() ?? {
       status: 'not_running' as const,

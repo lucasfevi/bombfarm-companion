@@ -5,7 +5,7 @@ export function applyLocale(deps: {
   next: AppLocale;
   persist: (settings: AppSettings) => SettingsWriteResult;
 }): SettingsWriteResult {
-  const applied: AppSettings = { ...deps.current, schemaVersion: 2, locale: deps.next };
+  const applied: AppSettings = { ...deps.current, schemaVersion: 3, locale: deps.next };
   return deps.persist(applied);
 }
 
@@ -19,7 +19,7 @@ export function applyAlwaysOnTopMain(deps: {
     return { settings: deps.current, persisted: true, reason: null };
   }
 
-  const applied: AppSettings = { ...deps.current, schemaVersion: 2, alwaysOnTopMain: deps.enabled };
+  const applied: AppSettings = { ...deps.current, schemaVersion: 3, alwaysOnTopMain: deps.enabled };
   deps.setAlwaysOnTop(deps.enabled, 'normal');
   return deps.persist(applied);
 }
@@ -34,7 +34,20 @@ export function applyAlwaysOnTopMini(deps: {
     return { settings: deps.current, persisted: true, reason: null };
   }
 
-  const applied: AppSettings = { ...deps.current, schemaVersion: 2, alwaysOnTopMini: deps.enabled };
+  const applied: AppSettings = { ...deps.current, schemaVersion: 3, alwaysOnTopMini: deps.enabled };
   deps.setAlwaysOnTop(deps.enabled, 'screen-saver');
+  return deps.persist(applied);
+}
+
+export function applyForgeWritesEnabled(deps: {
+  current: AppSettings;
+  enabled: unknown;
+  persist: (settings: AppSettings) => SettingsWriteResult;
+}): SettingsWriteResult {
+  if (typeof deps.enabled !== 'boolean') {
+    return { settings: deps.current, persisted: true, reason: null };
+  }
+
+  const applied: AppSettings = { ...deps.current, schemaVersion: 3, forgeWritesEnabled: deps.enabled };
   return deps.persist(applied);
 }

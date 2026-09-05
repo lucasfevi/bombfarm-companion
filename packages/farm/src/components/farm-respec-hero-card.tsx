@@ -4,7 +4,8 @@ import type { FarmRespecHeroEntry } from '@bombfarm/domain/farm-optimize';
 import { DeltaTable, type DeltaTableRow, cn } from '@bombfarm/ui';
 import { HeroIdentityChip } from '@bombfarm/game-art';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import type { FarmCopy, Lang } from '../copy';
+import type { Lang } from '@bombfarm/hero/copy';
+import type { FarmCopy } from '../copy';
 import { buildHeroCardRows } from '../model/farm-respec-view';
 import type { FarmStatLabels } from './stat-labels';
 

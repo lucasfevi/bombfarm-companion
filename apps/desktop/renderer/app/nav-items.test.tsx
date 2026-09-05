@@ -5,11 +5,12 @@ import { navItemsFor } from './nav-items';
 const t = STRINGS.en;
 
 describe('navItemsFor', () => {
-  it('offers exactly Live, Farm, Inventory, Account, Settings, in that order, in every flavor', () => {
+  it('offers exactly Live, Farm, Inventory, Forge, Account, Settings, in that order, in every flavor', () => {
     expect(navItemsFor(t).map((item) => item.id)).toEqual([
       'live',
       'farm',
       'inventory',
+      'forge',
       'account',
       'settings',
     ]);
@@ -19,9 +20,10 @@ describe('navItemsFor', () => {
     expect(navItemsFor(t)[0]?.id).toBe('live');
   });
 
-  it('puts Account after Inventory and leaves Settings last, the way the web planner orders them', () => {
+  it('puts Forge after Inventory and Account after Forge, and leaves Settings last', () => {
     const ids = navItemsFor(t).map((item) => item.id);
-    expect(ids.indexOf('account')).toBe(ids.indexOf('inventory') + 1);
+    expect(ids.indexOf('forge')).toBe(ids.indexOf('inventory') + 1);
+    expect(ids.indexOf('account')).toBe(ids.indexOf('forge') + 1);
     expect(ids.at(-1)).toBe('settings');
   });
 

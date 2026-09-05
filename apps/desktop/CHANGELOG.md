@@ -1,5 +1,92 @@
 # @bombfarm/desktop
 
+## 0.12.0
+
+### Minor Changes
+
+- 2ab64c9: Add the Forge tab, as a planner.
+
+  **A new tab, between Inventory and Account.** The nav now reads Live · Farm · Inventory · Forge ·
+  Account · Settings. Pick a hero and the bag narrows to what that hero wears; pick a piece and the
+  screen shows what it becomes at a chosen target — every roll on it now and at the target, scaled by
+  the forge's own flat multiplier, so the figures are exact rather than an average of where a climb
+  might stop.
+
+  **What the climb should cost, from the wiki's own cost table.** For a piece and a target the plan
+  panel prints the expected number of rolls, the expected gold, and what a bad run costs at the 90th
+  percentile — all from the forge rules and the roll costs the wiki publishes, carried exactly. The
+  ladder above the facts shows every risky rung with its odds and where a miss lands, and one line
+  under them says what a failed roll does, including the one rung that wipes a piece to nothing.
+
+  **What one more level buys.** The bag table has a `+1 buys` column: the DPS its wearer gains from one
+  more forge level on that piece, measured the way the Farm board measures every hero, with a
+  tooltip giving the next roll's cost and chance. The plan panel prints the same figure for the
+  chosen target. A piece nobody wears shows a dash, never a guess, and so does an account the board
+  itself would withhold.
+
+  **The button waits for the next change.** Forging is not wired up yet: the Forge button is always
+  disabled and the line under it says why — the piece is already at the top, the account has no
+  server behind it, the Settings switch is off, or simply that forging arrives in the next release.
+  The app now tells the screen where its account came from, which is what lets a fixture account be
+  refused without a switch ever being consulted.
+
+- 076fc40: Give the app the ability to make one kind of write — a forge roll — behind a switch that is off.
+
+  **The companion can now send one thing.** Until now it was read-only by construction, and the
+  guards that prove it stayed green on every change. It can now make exactly two calls of its own,
+  the two the game's own forge screen makes when you roll an item: `/item/forge` and
+  `/item/forge_to_safe`. Nothing else in it can write. The guards still prove that: `POST` is
+  allowed in one file, that file names those two paths and no other, and every other file is held
+  to the same no-write rule as before. A write also has to come from a session that was granted
+  consent, and from a write capability that only exists while the switch below is on — both are
+  checked at runtime, not only by type. Writes share the reads' pacing gate, so a cooldown on a roll
+  backs off the account reads too, and no two calls of any kind can interleave past each other.
+
+  **The disclosure changed, so everyone will be asked again.** The first-run text used to say
+  "never writes". It now says what the app can send, that it can only do so from the Forge tab,
+  only after you turn the switch on, and only after you confirm each run. Every install sees the
+  new text at its next launch and has to allow it again.
+
+  **The switch is off until you turn it on.** Settings has a new Forge section with one control,
+  "Let Forge spend gold". Off, the Forge tab plans climbs and never rolls. On, the Forge button can
+  spend gold on your account, one confirmed run at a time. An existing install migrates with it off.
+
+  **The tab itself comes in a later change.** This is the boundary work: the capability, the
+  disclosure, the switch. Nothing in the app calls the new write yet.
+
+### Patch Changes
+
+- d155a2f: Move the hero and roster user interface into a package of its own. Nothing a player sees changes:
+  the same picker, switcher, sort header, per-hero combat panel and roster wording are drawn by the
+  same two apps, from the same numbers.
+
+  What moved is where those views live. They had grown up inside the farm package, which is where the
+  farm screen happened to need them first, so the planner and the desktop app both reached through
+  the farm screen to render a hero list that has nothing to do with farming. They are now their own
+  package, and the farm package depends on it rather than the other way round — a one-way dependency
+  a test in the new package enforces, naming the offending file if anything ever imports back.
+
+  The guards that watched these components moved with them: the eight-prop component budget now
+  covers the new package too, the desktop rule that only one module may reach the farm screen's
+  wording covers both dictionaries, and the two applications' continuous-integration filters now list
+  every package they actually compile, so a change to one of them can no longer skip the checks that
+  would have caught it.
+
+- Updated dependencies [a326087]
+- Updated dependencies [2ab64c9]
+- Updated dependencies [076fc40]
+- Updated dependencies [d155a2f]
+  - @bombfarm/domain@0.12.0
+  - @bombfarm/contracts@0.7.0
+  - @bombfarm/ui@0.10.1
+  - @bombfarm/game-api@0.4.0
+  - @bombfarm/hero@0.1.1
+  - @bombfarm/farm@0.2.4
+  - @bombfarm/account@0.2.1
+  - @bombfarm/game-art@0.3.7
+  - @bombfarm/game-data@0.0.13
+  - @bombfarm/pricing@0.2.1
+
 ## 0.11.1
 
 ### Patch Changes

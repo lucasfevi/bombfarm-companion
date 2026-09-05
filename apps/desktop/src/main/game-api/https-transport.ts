@@ -1,5 +1,5 @@
 import https from 'node:https';
-import type { HttpRequest, HttpResponse, HttpTransport } from '@bombfarm/game-api';
+import type { HttpResponse, HttpTransport } from '@bombfarm/game-api';
 
 /**
  * The only socket (apps/desktop's syscall boundary). Converts an `HttpRequest` into an `HttpResponse` or
@@ -11,7 +11,7 @@ import type { HttpRequest, HttpResponse, HttpTransport } from '@bombfarm/game-ap
  */
 const MAX_RESPONSE_BYTES = 2_000_000;
 
-export const nodeHttpsTransport: HttpTransport = (req: HttpRequest): Promise<HttpResponse> =>
+export const nodeHttpsTransport: HttpTransport = (req): Promise<HttpResponse> =>
   new Promise<HttpResponse>((resolve, reject) => {
     const request = https.request(
       {

@@ -1,12 +1,12 @@
 /**
  * Rate / duration / sign / label formatting for the Farm Ranking board — PURE, no React, no
- * math. Wraps `@bombfarm/ui`'s number formatters and `phases-page.ts`'s `formatClearTime`, and
- * re-exports the shared phase label.
+ * math. Wraps `@bombfarm/ui`'s number formatters and `@bombfarm/hero/model`'s `formatClearTime`,
+ * and re-exports the shared phase label.
  * Does not re-implement anything `@bombfarm/domain` already computed — comparison, slicing and
  * string composition only.
  */
 import { formatCompactNumber, formatNumber } from '@bombfarm/ui';
-import type { Lang } from '../copy';
+import type { Lang } from '@bombfarm/hero/copy';
 
 /** A non-negative rate (gold/hr, chests/hr, gems/hr, time-pieces/hr, xp/hr). */
 export function formatRate(value: number, lang: Lang): string {

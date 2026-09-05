@@ -5,7 +5,8 @@ import { Banner, EmptyState, Panel } from '@bombfarm/ui';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
 import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import { sub, type FarmCopy, type Lang } from '../copy';
+import { sub, type Lang } from '@bombfarm/hero/copy';
+import type { FarmCopy } from '../copy';
 import type { FarmPoolEntry, FarmRankingResult, FarmRespecGate } from '../core';
 import type { FarmRespecProposal, FarmRespecStatus } from '../model/farm-respec-view';
 import {

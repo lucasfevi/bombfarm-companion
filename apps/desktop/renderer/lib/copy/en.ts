@@ -76,6 +76,13 @@ export const en = {
     'The compact Live window stays above other windows while this is on. Takes effect immediately.',
   settingsAlwaysOnTopMiniNotSavedTitle: 'Mini always-on-top changed, but not saved',
 
+  // settingsForge* — the one switch that lets the Forge tab spend gold (off by default)
+  settingsForgeSectionTitle: 'Forge',
+  settingsForgeWritesLabel: 'Let Forge spend gold',
+  settingsForgeWritesHelp:
+    'Off: the Forge tab plans climbs and never rolls. On: the Forge button spends gold on your account, one confirmed run at a time.',
+  settingsForgeWritesNotSavedTitle: 'Forge setting changed, but not saved',
+
   // settingsConsent* — the account access revoke control (Settings is reachable only once granted)
   settingsConsentSectionTitle: 'Account access',
   settingsConsentStatusGranted: 'Access: allowed',
@@ -341,6 +348,69 @@ export const en = {
   inventorySkipped: '{count} entries could not be read and are not shown.',
   inventoryEmptyTitle: 'No items read yet',
   inventoryEmptyDescription: 'Open the game with the companion running, so it has something to read.',
+
+  // forge* — the Forge screen: pick a piece, pick a target, see what the climb buys and what it
+  // should cost. Forge levels reach these strings as values (`{target}` is "+13"), never as
+  // characters of their own — a bare plus in copy reads as a formula.
+  forgeNavLabel: 'Forge',
+  forgeTitle: 'Forge',
+  forgeSearchPlaceholder: 'Search gear…',
+  forgeSearchLabel: 'Search your gear',
+  forgeSlotLabel: 'Filter by slot',
+  forgeAllSlots: 'All slots',
+  forgeMinForgeLabel: 'Minimum forge',
+  forgeMinAny: 'Any forge',
+  forgeMinAndUp: '{level} and up',
+  forgeMinOnly: '{level} only',
+  forgeHeroHint: 'Showing what {hero} wears',
+  forgeBagFree: '{free} of {capacity} bag slots free',
+  forgeTableCaption: 'Every piece of gear on the account, ranked by forge level',
+  forgeColumnSlot: 'Slot',
+  forgeColumnForge: 'Forge',
+  forgeColumnPower: 'Power',
+  forgeColumnBuys: '{step} buys',
+  forgeBuysTip: '{delta} DPS · {cost} gold for {target} ({chance})',
+  forgeRowSelect: 'Plan a climb for {item}',
+  forgeMoreRows: '{count} more — refine the filter',
+  forgeItemTitle: 'Piece',
+  forgePickTitle: 'Pick a piece',
+  forgePickDescription: 'Click a row to see what a climb buys and what it should cost.',
+  forgeWornBy: 'Power {power} · worn by {hero}',
+  forgeInBag: 'Power {power} · in the bag',
+  forgeInStash: 'Power {power} · in the stash',
+  forgeStatsCaption: 'Every roll on the piece now and at the target',
+  forgeColumnChange: 'Change',
+  forgeStatsNote:
+    'Every roll scales by the same factor — ×{factor} at {target} against ×{now} now — so this is what the piece becomes if the climb lands, not an average of where it might stop.',
+  forgePlanTitle: 'Plan',
+  forgeTargetLabel: 'Target',
+  forgeTargetLower: 'Lower the target',
+  forgeTargetRaise: 'Raise the target',
+  forgeSpanSafe: 'safe span — every step lands',
+  forgeSpanRisky: 'risky span — {chance} at the top',
+  forgeMaxGoldLabel: 'Max gold',
+  forgeMaxGoldPlaceholder: 'no budget',
+  forgeAttemptsLabel: 'Attempts',
+  forgeAttemptsPlaceholder: 'no limit',
+  forgeLadderCaption: 'The risky rungs of the climb and their odds',
+  forgeLadderFailTo: 'fail → {floor}',
+  forgeFactRolls: 'Expected rolls',
+  forgeFactGold: 'Expected gold',
+  forgeFactBadRun: 'A bad run (p90)',
+  forgeFactBuysHero: 'What it buys {hero}',
+  forgeFactBuys: 'What it buys',
+  forgeFactWallet: 'Wallet',
+  forgeWarnMax:
+    '{max} is the only rung that wipes the piece to {floor}. Expect to rebuild from the safe floor about {times} times on the way.',
+  forgeWarnRisky:
+    'A failed roll at {from}…{to} drops the piece back to {floor} and the gold is charged either way.',
+  forgeButton: 'Forge to {target}',
+  forgeReasonMaxed: 'Already at {max} — nothing left to forge',
+  forgeReasonFixture: 'No server to forge on',
+  forgeReasonSwitchOff: 'Turn on "{switch}" in Settings to forge from here',
+  forgeReasonNotYet: 'Forging arrives in the next release',
+  forgeRailLastRun: 'Last run: {item} {from} → {to} · {rolls} rolls, {fails} fails · {spent} gold · {age}',
+  forgeRailTotals: '{runs} runs · {spent} gold spent',
 
   // account* — the Account screen: what the account could sell, who it belongs to, and what its
   // House and skill tree grant. The panels are shared drawings that take a label for every string

@@ -280,17 +280,21 @@ export interface DamageAttributionResult {
 }
 
 export interface AppSettings {
-  schemaVersion: 2;
+  schemaVersion: 3;
   locale: 'en' | 'pt-BR';
   alwaysOnTopMain: boolean;
   alwaysOnTopMini: boolean;
+  /** "Let Forge spend gold" — off until the player turns it on; the only thing that lets the
+   *  Forge tab send a forge roll. */
+  forgeWritesEnabled: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   locale: 'en',
   alwaysOnTopMain: false,
   alwaysOnTopMini: false,
+  forgeWritesEnabled: false,
 };
 
 export type MiniLiveGrowthAxis = 'vertical' | 'horizontal';
@@ -304,6 +308,10 @@ export interface MiniLiveLayoutView {
 
 export type MiniLiveLayoutPatch = MiniLiveLayoutView;
 
+/** Where the account the renderer reads came from. A fixture has no server behind it, so
+ *  nothing that would send a write can run against one. */
+export type AccountSource = 'server' | 'fixture';
+
 export interface AppEnvironmentInfo {
   flavor: AppFlavor;
   productName: string;
@@ -311,6 +319,7 @@ export interface AppEnvironmentInfo {
   updateChannel: UpdateChannel | null;
   isPackaged: boolean;
   version: string;
+  accountSource: AccountSource;
 }
 
 export interface IpcChannels {
@@ -328,6 +337,7 @@ export interface IpcChannels {
   'settings:usePortuguese': { args: []; result: SettingsWriteResult };
   'settings:setAlwaysOnTopMain': { args: [boolean]; result: SettingsWriteResult };
   'settings:setAlwaysOnTopMini': { args: [boolean]; result: SettingsWriteResult };
+  'settings:setForgeWritesEnabled': { args: [boolean]; result: SettingsWriteResult };
   'miniLive:open': { args: []; result: null };
   'miniLive:close': { args: []; result: null };
   'miniLive:getLayout': { args: []; result: MiniLiveLayoutView };
@@ -383,6 +393,7 @@ export const IPC_CHANNELS = [
   'settings:usePortuguese',
   'settings:setAlwaysOnTopMain',
   'settings:setAlwaysOnTopMini',
+  'settings:setForgeWritesEnabled',
   'miniLive:open',
   'miniLive:close',
   'miniLive:getLayout',

@@ -370,6 +370,11 @@ const KEYS_REMOVED: readonly string[] = [
  * guard, so only the three strings the web page says in its own voice live here.
  */
 const KEYS_ADDED: readonly string[] = [
+  'downloadScreenForgeTitle',
+  'downloadScreenForgeItem1',
+  'downloadScreenForgeItem2',
+  'downloadScreenForgeItem3',
+  'downloadScreenForgeItem4',
   'downloadMiniHeading',
   'downloadMiniLede',
   'downloadMiniControlsTitle',

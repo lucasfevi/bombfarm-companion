@@ -172,7 +172,7 @@ describe('disabled-hero copy + Points chrome contracts', () => {
     const picker = readFileSync(
       join(
         WEB_PACKAGE_ROOT,
-        '../../packages/farm/src/components/hero-picker/hero-picker-row.tsx',
+        '../../packages/hero/src/components/hero-picker/hero-picker-row.tsx',
       ),
       'utf8',
     );

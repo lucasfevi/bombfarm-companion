@@ -31,6 +31,7 @@ describe('contracts IPC surface', () => {
       'settings:usePortuguese',
       'settings:setAlwaysOnTopMain',
       'settings:setAlwaysOnTopMini',
+      'settings:setForgeWritesEnabled',
       'miniLive:open',
       'miniLive:close',
       'miniLive:getLayout',
@@ -108,6 +109,7 @@ describe('contracts IPC surface', () => {
       updateChannel: descriptor.updateChannel,
       isPackaged: false,
       version: '0.0.0',
+      accountSource: 'fixture',
     };
     expect(info).toEqual({
       flavor: 'dev',
@@ -116,6 +118,7 @@ describe('contracts IPC surface', () => {
       updateChannel: null,
       isPackaged: false,
       version: '0.0.0',
+      accountSource: 'fixture',
     });
   });
 
@@ -128,6 +131,7 @@ describe('contracts IPC surface', () => {
       updateChannel: descriptor.updateChannel,
       isPackaged: true,
       version: '1.2.3',
+      accountSource: 'server',
     };
     expect(info).toEqual({
       flavor: 'prod',
@@ -136,6 +140,7 @@ describe('contracts IPC surface', () => {
       updateChannel: 'latest',
       isPackaged: true,
       version: '1.2.3',
+      accountSource: 'server',
     });
   });
 
@@ -148,6 +153,7 @@ describe('contracts IPC surface', () => {
       updateChannel: FLAVORS.beta.updateChannel,
       isPackaged: true,
       version: '0.0.0',
+      accountSource: 'server',
     };
     expect(env.version).toMatch(/^\d+\.\d+\.\d+/);
   });
@@ -157,10 +163,11 @@ describe('contracts IPC surface', () => {
   });
 
   it('ships default settings schema version', () => {
-    expect(DEFAULT_SETTINGS.schemaVersion).toBe(2);
+    expect(DEFAULT_SETTINGS.schemaVersion).toBe(3);
     expect(DEFAULT_SETTINGS.locale).toBe('en');
     expect(DEFAULT_SETTINGS.alwaysOnTopMain).toBe(false);
     expect(DEFAULT_SETTINGS.alwaysOnTopMini).toBe(false);
+    expect(DEFAULT_SETTINGS.forgeWritesEnabled).toBe(false);
   });
 });
 

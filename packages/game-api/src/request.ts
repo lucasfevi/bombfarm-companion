@@ -1,10 +1,13 @@
+import type { HttpWriteRequest } from './forge-request.js';
 import { ConsentedSessionRequiredError, RAW, isConsentedSession, type ConsentedSession } from './session.js';
 
 /**
- * The one request function (one host, HTTPS, GET only; every pacing failure gets a distinct
+ * The one read request function (one host, HTTPS, GET; every pacing failure gets a distinct
  * named status). Adapted from the internal automation prototype's
  * API client — the header set and the 15 s timeout are reused; `FALLBACK_IPS` and the IP-retry
  * loop are deliberately not ported (transport failure gets a named status, not an IP fallback).
+ * The write twin, `forge-request.ts`, is the only module that may build a POST, and it reuses
+ * this module's headers, classifier and timeout rather than carrying a second copy.
  *
  * `host`/`method` are literal types so a different value is not expressible at the call site
  * (the one-host/HTTPS/GET-only invariant's compile-time half). `isTrustedHttpRequest` is the
@@ -33,13 +36,17 @@ const COOLDOWN_BODY_PATTERN = /"(?:err|error|code)"\s*:\s*"[^"]*(?:RATE|COOLDOWN
 
 const PREVIEW_LENGTH = 200;
 
-export interface HttpRequest {
+/** Everything a request carries except its method — the read and write shapes each pin their own. */
+export interface HttpRequestTarget {
   readonly host: typeof HOST;
-  readonly method: typeof METHOD;
   readonly path: string;
   readonly headers: Readonly<Record<string, string>>;
   readonly timeoutMs: number;
   readonly signal?: AbortSignal;
+}
+
+export interface HttpRequest extends HttpRequestTarget {
+  readonly method: typeof METHOD;
 }
 
 export interface HttpResponse {
@@ -47,7 +54,7 @@ export interface HttpResponse {
   readonly body: string;
 }
 
-export type HttpTransport = (req: HttpRequest) => Promise<HttpResponse>;
+export type HttpTransport = (req: HttpRequest | HttpWriteRequest) => Promise<HttpResponse>;
 
 export type RequestOutcome =
   | { readonly kind: 'ok'; readonly status: 200; readonly json: unknown }
@@ -63,33 +70,38 @@ export interface RequestOptions {
   readonly signal?: AbortSignal;
 }
 
-const DEFAULT_TIMEOUT_MS = 15_000;
+export const DEFAULT_TIMEOUT_MS = 15_000;
 
-/** Builds the request. The token is read through the module-private `RAW` symbol here, and
- *  nowhere else in this package — it goes straight into the `Authorization` header.
+/** The one place the token is read: through the module-private `RAW` symbol, straight into the
+ *  `Authorization` header, for the read builder below and the write builder in
+ *  `forge-request.ts` alike.
  *
  *  Runtime-checks `session` first (see module doc comment) — a value that only *types* as
  *  `ConsentedSession` without actually being minted by `grantSession` throws
  *  `ConsentedSessionRequiredError` before any header is built. */
+export function authorizedHeaders(session: ConsentedSession): Readonly<Record<string, string>> {
+  if (!isConsentedSession(session)) {
+    throw new ConsentedSessionRequiredError();
+  }
+  return {
+    Authorization: `Bearer ${session.token[RAW]()}`,
+    'X-Account-Id': session.accountId,
+    Accept: 'application/json',
+    Host: HOST,
+    Connection: 'close',
+  };
+}
+
 export function buildHttpRequest(
   session: ConsentedSession,
   path: string,
   opts?: RequestOptions,
 ): HttpRequest {
-  if (!isConsentedSession(session)) {
-    throw new ConsentedSessionRequiredError();
-  }
   return {
     host: HOST,
     method: METHOD,
     path,
-    headers: {
-      Authorization: `Bearer ${session.token[RAW]()}`,
-      'X-Account-Id': session.accountId,
-      Accept: 'application/json',
-      Host: HOST,
-      Connection: 'close',
-    },
+    headers: authorizedHeaders(session),
     timeoutMs: opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     ...(opts?.signal ? { signal: opts.signal } : {}),
   };
@@ -124,8 +136,8 @@ function extractRetryHint(body: string): string | null {
 
 /** Maps a raw response into a `RequestOutcome` — every branch names a distinct, closed reason.
  *  Order matters: size, then auth, then cooldown (status OR shape), then generic error,
- *  then success. */
-function classifyResponse(status: number, body: string): RequestOutcome {
+ *  then success. Shared with `forge-request.ts`: a forge roll's cooldown reads the same way. */
+export function classifyResponse(status: number, body: string): RequestOutcome {
   const bytes = Buffer.byteLength(body, 'utf8');
   if (bytes > MAX_RESPONSE_BYTES) {
     return { kind: 'too_large', bytes };
@@ -178,7 +190,7 @@ export async function sendGet(req: HttpRequest, transport: HttpTransport): Promi
   return classifyResponse(response.status, response.body);
 }
 
-/** The one request function (one host, HTTPS, GET only). No `node:https`, no `fetch` — the transport is injected. */
+/** The one read request function (one host, HTTPS, GET). No `node:https`, no `fetch` — the transport is injected. */
 export async function requestGet(
   session: ConsentedSession,
   transport: HttpTransport,

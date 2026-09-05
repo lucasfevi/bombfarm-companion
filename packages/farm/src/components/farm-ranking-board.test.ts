@@ -454,38 +454,14 @@ describe('Farm Ranking table — the scrollport height is the host\'s to set', (
   });
 });
 
-describe('hero picker — the enable/disable switch is a host capability, not a stub', () => {
-  it('the write is optional on the actions bag', () => {
-    // Spelt with an explicit `| undefined` as well as the `?`: this package is compiled by the
-    // desktop under `exactOptionalPropertyTypes`, where a host passing the prop through as
-    // `undefined` is rejected unless the declaration admits it.
-    expect(read('hero-picker/hero-picker-dialog.tsx')).toContain(
-      'onSetBattleAllowed?: ((heroId: string, enabled: boolean) => void) | undefined;',
-    );
-  });
-
-  it('head and body drop the Status column on the SAME condition — no column-count mismatch', () => {
-    const head = read('hero-picker/hero-picker-table.tsx');
-    const row = read('hero-picker/hero-picker-row.tsx');
-    expect(head).toMatch(/\{onSetBattleAllowed \? \([\s\S]*?t\.rosterColStatus/);
-    expect(row).toMatch(/\{onSetBattleAllowed \? \([\s\S]*?HeroActiveToggle/);
-  });
-
-  it('no disabled switch stands in for the absent write — the control is not rendered at all', () => {
-    const row = read('hero-picker/hero-picker-row.tsx');
-    expect(row).not.toMatch(/disabled=\{!onSetBattleAllowed\}/);
-    expect(row).not.toMatch(/onSetBattleAllowed\s*\?\?/);
-  });
-});
-
 /**
  * The property that lets two apps render one screen: every component here takes what it shows,
  * and reaches for nothing. Six of them used to read the web app's zustand store directly, and a
  * seventh reading one again would compile, pass every test above, and silently make the package
  * un-renderable by any host but that one.
  *
- * The walk is recursive, so a component filed into a subdirectory (the hero picker) is covered
- * rather than quietly exempt.
+ * The walk is recursive, so a component filed into a subdirectory is covered rather than quietly
+ * exempt.
  */
 describe('the components are prop-driven — no store, no host module', () => {
   const HOST_REACH = [
@@ -527,11 +503,10 @@ describe('the components are prop-driven — no store, no host module', () => {
   });
 
   it('the scan reaches every component in this tree, subdirectories included', () => {
-    expect(componentFiles.length).toBe(35);
+    expect(componentFiles.length).toBe(27);
     expect(componentFiles).toContain('farm-ranking-board.tsx');
     expect(componentFiles).toContain('farm-respec-panel.tsx');
     expect(componentFiles).toContain('phases-explorer.tsx');
-    expect(componentFiles).toContain('hero-picker/hero-picker-row.tsx');
   });
 
   it('green state: no component reads a store or imports a host module', () => {

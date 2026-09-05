@@ -2,7 +2,7 @@
 
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { Dialog, Icon, dialogDescClass } from '@bombfarm/ui';
-import { sub, type FarmRosterCopy, type Lang } from '../../copy';
+import { sub, type Lang, type RosterCopy } from '../../copy';
 import { HeroPickerTable } from './hero-picker-table';
 
 /** Hero roster picker — wider than default import dialog for gear + ability icon columns. */
@@ -33,7 +33,7 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   lang: Lang;
-  t: FarmRosterCopy;
+  t: RosterCopy;
   data: HeroPickerData;
   actions: HeroPickerActions;
 };

@@ -4,10 +4,10 @@ import { DataTable, formatNumber } from '@bombfarm/ui';
 import { PropIcon } from '@bombfarm/game-art';
 import { propLabel } from '@bombfarm/domain/game-labels';
 import type { HeroPhaseFit } from '@bombfarm/domain/phase-intel';
-import { useFarmCopy } from './farm-copy-context';
+import { useHeroCopy } from './hero-copy-context';
 
 export function PhasesHeroFitTable({ propHits }: { propHits: HeroPhaseFit['propHits'] }) {
-  const { t, lang } = useFarmCopy();
+  const { t, lang } = useHeroCopy();
 
   return (
     <DataTable.Root scrollable maxRows={12} className="mt-3 rounded-sm border border-line">

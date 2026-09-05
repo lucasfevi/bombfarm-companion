@@ -12,6 +12,10 @@ const readGameArt = (rel: string) => readFileSync(resolve(gameArtRoot, 'src', re
 // The farm screen's row builders live in the shared package the desktop app renders them from.
 const farmRoot = resolve(root, '../../packages/farm');
 const readFarm = (rel: string) => readFileSync(resolve(farmRoot, 'src', rel), 'utf8');
+// The hero roster views — the picker among them — are their own shared package, rendered by both
+// apps the same way.
+const heroRoot = resolve(root, '../../packages/hero');
+const readHero = (rel: string) => readFileSync(resolve(heroRoot, 'src', rel), 'utf8');
 
 function expectKeyOrder(source: string, keys: string[]) {
   let last = -1;
@@ -80,7 +84,7 @@ describe('phase drops panel', () => {
 
 describe('phase prop tables', () => {
   const mixSrc = readFarm('components/phase-prop-mix-table.tsx');
-  const fitSrc = readFarm('components/phases-hero-fit-table.tsx');
+  const fitSrc = readHero('components/phases-hero-fit-table.tsx');
 
   it('prefixes the prop label with its art in both tables, without adding a column', () => {
     for (const src of [mixSrc, fitSrc]) {
@@ -110,8 +114,8 @@ describe('phase prop tables', () => {
 });
 
 describe('hero picker roster chrome', () => {
-  const rowSrc = readFarm('components/hero-picker/hero-picker-row.tsx');
-  const dialogSrc = readFarm('components/hero-picker/hero-picker-dialog.tsx');
+  const rowSrc = readHero('components/hero-picker/hero-picker-row.tsx');
+  const dialogSrc = readHero('components/hero-picker/hero-picker-dialog.tsx');
 
   it('renders gear and ability icon rows instead of gear fraction', () => {
     expect(rowSrc).toContain('HeroGearIcons');
@@ -131,12 +135,12 @@ describe('hero picker roster chrome', () => {
   });
 
   it('raises scroll row height for portrait gear chrome', () => {
-    const tableSrc = readFarm('components/hero-picker/hero-picker-table.tsx');
+    const tableSrc = readHero('components/hero-picker/hero-picker-table.tsx');
     expect(tableSrc).toContain('rowHeight="4.5rem"');
   });
 
   it('leads with an unsorted avatar column then rank', () => {
-    const tableSrc = readFarm('components/hero-picker/hero-picker-table.tsx');
+    const tableSrc = readHero('components/hero-picker/hero-picker-table.tsx');
     const head = tableSrc.slice(tableSrc.indexOf('<DataTable.Head>'), tableSrc.indexOf('</DataTable.Head>'));
     expectKeyOrder(head, ['heroAvatarCol', 'importColRank', 'importColName']);
     expect(rowSrc).toContain('size="lg"');
@@ -175,8 +179,8 @@ describe('hero gear icons', () => {
   });
 
   it('takes empty-slot copy as caller-supplied labels, and uses hover-only tooltip triggers', () => {
-    // Localisation itself is the caller's job (CIV-DEBT-02 — this package cannot import
-    // `@/shared/i18n`); the roster row call sites pin the localized text, see below.
+    // Localisation itself is the caller's job — this package cannot import `@/shared/i18n`; the
+    // roster row call sites pin the localized text, see below.
     expect(src).toContain('emptySlotAriaLabel');
     expect(src).toContain('emptySlotTip');
     expect(src).toContain('type="button"');
@@ -203,7 +207,7 @@ describe('hero ability icons', () => {
 });
 
 describe('hero picker row a11y', () => {
-  const src = readFarm('components/hero-picker/hero-picker-row.tsx');
+  const src = readHero('components/hero-picker/hero-picker-row.tsx');
 
   it('uses one tab stop per row without nested role=button', () => {
     expect(src).toContain('tabIndex={0}');

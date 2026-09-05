@@ -1,5 +1,68 @@
 # @bombfarm/web
 
+## 0.17.1
+
+### Patch Changes
+
+- 22f78f0: Cache the bundled game art, the favicon and the route prefetch payloads at the CDN instead of revalidating every one of them on every page view.
+
+  `vercel.json` sent `max-age=0, must-revalidate` for everything except `/_next/static/**`, so a repeat visit re-asked the CDN about each sprite and each prefetch payload and got back a `304` carrying no content. Measured on `/farm`, 23 of the 24 requests a returning visitor made were exactly that. The art and favicon now hold for 30 days; the prefetch payloads hold for 5 minutes, kept short because a static export has no deployment-skew guard.
+
+  Nothing about a cold visit changes, and the share-card images stay on the old header on purpose — they are crawler traffic, where a stale preview would cost more than the requests save.
+
+- 2ab64c9: Add the Forge tab, as a planner.
+
+  **A new tab, between Inventory and Account.** The nav now reads Live · Farm · Inventory · Forge ·
+  Account · Settings. Pick a hero and the bag narrows to what that hero wears; pick a piece and the
+  screen shows what it becomes at a chosen target — every roll on it now and at the target, scaled by
+  the forge's own flat multiplier, so the figures are exact rather than an average of where a climb
+  might stop.
+
+  **What the climb should cost, from the wiki's own cost table.** For a piece and a target the plan
+  panel prints the expected number of rolls, the expected gold, and what a bad run costs at the 90th
+  percentile — all from the forge rules and the roll costs the wiki publishes, carried exactly. The
+  ladder above the facts shows every risky rung with its odds and where a miss lands, and one line
+  under them says what a failed roll does, including the one rung that wipes a piece to nothing.
+
+  **What one more level buys.** The bag table has a `+1 buys` column: the DPS its wearer gains from one
+  more forge level on that piece, measured the way the Farm board measures every hero, with a
+  tooltip giving the next roll's cost and chance. The plan panel prints the same figure for the
+  chosen target. A piece nobody wears shows a dash, never a guess, and so does an account the board
+  itself would withhold.
+
+  **The button waits for the next change.** Forging is not wired up yet: the Forge button is always
+  disabled and the line under it says why — the piece is already at the top, the account has no
+  server behind it, the Settings switch is off, or simply that forging arrives in the next release.
+  The app now tells the screen where its account came from, which is what lets a fixture account be
+  refused without a switch ever being consulted.
+
+- d155a2f: Move the hero and roster user interface into a package of its own. Nothing a player sees changes:
+  the same picker, switcher, sort header, per-hero combat panel and roster wording are drawn by the
+  same two apps, from the same numbers.
+
+  What moved is where those views live. They had grown up inside the farm package, which is where the
+  farm screen happened to need them first, so the planner and the desktop app both reached through
+  the farm screen to render a hero list that has nothing to do with farming. They are now their own
+  package, and the farm package depends on it rather than the other way round — a one-way dependency
+  a test in the new package enforces, naming the offending file if anything ever imports back.
+
+  The guards that watched these components moved with them: the eight-prop component budget now
+  covers the new package too, the desktop rule that only one module may reach the farm screen's
+  wording covers both dictionaries, and the two applications' continuous-integration filters now list
+  every package they actually compile, so a change to one of them can no longer skip the checks that
+  would have caught it.
+
+- Updated dependencies [a326087]
+- Updated dependencies [2ab64c9]
+- Updated dependencies [d155a2f]
+  - @bombfarm/domain@0.12.0
+  - @bombfarm/ui@0.10.1
+  - @bombfarm/hero@0.1.1
+  - @bombfarm/farm@0.2.4
+  - @bombfarm/account@0.2.1
+  - @bombfarm/game-art@0.3.7
+  - @bombfarm/pricing@0.2.1
+
 ## 0.17.0
 
 ### Minor Changes

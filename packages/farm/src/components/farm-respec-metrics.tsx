@@ -3,7 +3,8 @@
 import type { FarmRespecResult } from '@bombfarm/domain/farm-optimize';
 import { TipLabel, Tooltip } from '@bombfarm/ui';
 import { GoldIcon, GoldValue, ChestIcon } from '@bombfarm/game-art';
-import { sub, type FarmCopy, type Lang } from '../copy';
+import { sub, type Lang } from '@bombfarm/hero/copy';
+import type { FarmCopy } from '../copy';
 import { formatPhaseLabel, formatRate } from '../model/farm-ranking-format';
 import { resolvePaybackKind, resolvePhaseChange } from '../model/farm-respec-view';
 import { formatGold, formatHours, formatSignedPct } from '../model/farm-respec-format';

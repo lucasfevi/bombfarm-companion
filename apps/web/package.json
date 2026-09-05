@@ -1,6 +1,6 @@
 {
   "name": "@bombfarm/web",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "private": true,
   "sideEffects": [
     "src/features/team-plan/index.ts",
@@ -37,6 +37,7 @@
     "@bombfarm/domain": "workspace:*",
     "@bombfarm/farm": "workspace:*",
     "@bombfarm/game-art": "workspace:*",
+    "@bombfarm/hero": "workspace:*",
     "@bombfarm/pricing": "workspace:*",
     "@bombfarm/ui": "workspace:*",
     "@dnd-kit/core": "^6.3.1",
