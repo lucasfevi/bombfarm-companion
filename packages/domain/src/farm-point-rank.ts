@@ -21,6 +21,7 @@ import {
   resolveFarmObjective,
   bestFarmPhase,
   farmObjectiveScales,
+  type BestFarmPhaseOptions,
   type FarmObjective,
   type ResolvedFarmObjective,
   type FarmObjectiveScales,
@@ -90,7 +91,14 @@ function emptyResult(
 export function rankNextPointForFarm(input: FarmPointRankInput): FarmPointRankResult {
   const { bases, account, heroId } = input;
   const objective = resolveFarmObjective(input.objective);
-  const options = { maxPhase: input.maxPhase, returnBonus: input.returnBonus };
+  // Every sweep this function spends becomes a figure the player reads — the baseline phase, the
+  // seven gains ranked against it, and under `'blend'` the normalizer they share — so none may
+  // take `bestFarmPhase`'s screen-and-refine shortcut, which is a heuristic and can miss.
+  const options: BestFarmPhaseOptions = {
+    maxPhase: input.maxPhase,
+    returnBonus: input.returnBonus,
+    exhaustive: true,
+  };
 
   if (bases.length === 0) return emptyResult('emptyPool', objective, 0);
 
