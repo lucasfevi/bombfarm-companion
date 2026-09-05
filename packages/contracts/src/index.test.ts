@@ -109,6 +109,7 @@ describe('contracts IPC surface', () => {
       updateChannel: descriptor.updateChannel,
       isPackaged: false,
       version: '0.0.0',
+      accountSource: 'fixture',
     };
     expect(info).toEqual({
       flavor: 'dev',
@@ -117,6 +118,7 @@ describe('contracts IPC surface', () => {
       updateChannel: null,
       isPackaged: false,
       version: '0.0.0',
+      accountSource: 'fixture',
     });
   });
 
@@ -129,6 +131,7 @@ describe('contracts IPC surface', () => {
       updateChannel: descriptor.updateChannel,
       isPackaged: true,
       version: '1.2.3',
+      accountSource: 'server',
     };
     expect(info).toEqual({
       flavor: 'prod',
@@ -137,6 +140,7 @@ describe('contracts IPC surface', () => {
       updateChannel: 'latest',
       isPackaged: true,
       version: '1.2.3',
+      accountSource: 'server',
     });
   });
 
@@ -149,6 +153,7 @@ describe('contracts IPC surface', () => {
       updateChannel: FLAVORS.beta.updateChannel,
       isPackaged: true,
       version: '0.0.0',
+      accountSource: 'server',
     };
     expect(env.version).toMatch(/^\d+\.\d+\.\d+/);
   });

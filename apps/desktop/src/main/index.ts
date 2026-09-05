@@ -291,6 +291,7 @@ function registerIpcHandlers(): void {
         updateChannel: env.descriptor.updateChannel,
         isPackaged: env.isPackaged,
         version: app.getVersion(),
+        accountSource: gameReader?.getMode() === 'fixture' ? 'fixture' : 'server',
       };
     },
     'app:ping': () => ({ ok: true as const, from: 'main' as const }),

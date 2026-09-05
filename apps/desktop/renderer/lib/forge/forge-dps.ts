@@ -1,0 +1,93 @@
+/**
+ * What one more forge level on one worn piece buys its wearer, as the farm board would measure
+ * it. Pure, no React import.
+ *
+ * The heroes and the account come out of `buildFarmInputs`, the same read the farm board is
+ * computed from, so this never builds a second roster of its own: the same per-section gate
+ * withholds it (an unusable `skills` or `casa` section is a `null` evaluator, never a guess), and
+ * the wearer's sheet is the board's sheet with the one slot's forge moved.
+ */
+import type { AccountView } from '@bombfarm/contracts';
+import { computeHeroSoloDps } from '@bombfarm/domain/roster-dps';
+import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
+import { buildAccount } from '@bombfarm/farm/core';
+import { buildFarmInputs, DEFAULT_FARM_CONTROLS } from '../farm/farm-inputs';
+
+/** The phase and mitigation the farm board evaluates every hero at, so a delta printed here is a
+ *  delta on the board's own figure rather than on a phase of this screen's choosing. */
+const BOARD_PHASE = 1;
+const BOARD_MITIGATION_PCT = 0;
+
+export type ForgeDpsPiece = {
+  slot: string | null;
+  defId: string;
+  upgrade: number;
+};
+
+export interface ForgeDpsEvaluator {
+  /** The wearer's solo DPS with the piece at `upgrade`; `null` when the hero is not on the
+   *  roster or the piece is not the one in that slot of their loadout. */
+  dpsAt(heroId: string, piece: ForgeDpsPiece, upgrade: number): number | null;
+  /** Fractional change from the piece's current forge to `upgrade` — `0.031` reads as a 3.1% gain. */
+  deltaAt(heroId: string, piece: ForgeDpsPiece, upgrade: number): number | null;
+}
+
+const BASE = 'base';
+
+function withUpgrade(hero: HeroRecord, slot: string, upgrade: number): HeroRecord | null {
+  const worn = hero.loadout[slot];
+  if (!worn) return null;
+  return { ...hero, loadout: { ...hero.loadout, [slot]: { ...worn, upgrade } } };
+}
+
+export function createForgeDpsEvaluator(view: AccountView | null): ForgeDpsEvaluator | null {
+  if (view === null) return null;
+  const inputs = buildFarmInputs(view, DEFAULT_FARM_CONTROLS);
+  if (inputs === null) return null;
+
+  const account: AccountShared = buildAccount(inputs);
+  const heroesById = new Map(inputs.heroes.map((hero) => [hero.id, hero]));
+  const memo = new Map<string, number | null>();
+
+  function compute(hero: HeroRecord, slot: string, upgrade: number): number | null {
+    const worn = hero.loadout[slot];
+    if (!worn) return null;
+    const key = [hero.id, worn.upgrade === upgrade ? BASE : `${slot}:${String(upgrade)}`].join(' ');
+    const cached = memo.get(key);
+    if (cached !== undefined) return cached;
+
+    let dps: number | null = null;
+    try {
+      const subject = worn.upgrade === upgrade ? hero : withUpgrade(hero, slot, upgrade);
+      dps = subject === null ? null : computeHeroSoloDps(subject, account, BOARD_PHASE, BOARD_MITIGATION_PCT);
+    } catch {
+      dps = null;
+    }
+    if (dps !== null && !Number.isFinite(dps)) dps = null;
+    memo.set(key, dps);
+    return dps;
+  }
+
+  function resolve(heroId: string, piece: ForgeDpsPiece): { hero: HeroRecord; slot: string } | null {
+    const hero = heroesById.get(heroId);
+    if (!hero || piece.slot === null) return null;
+    const worn = hero.loadout[piece.slot];
+    if (!worn || worn.defId !== piece.defId) return null;
+    return { hero, slot: piece.slot };
+  }
+
+  return {
+    dpsAt(heroId, piece, upgrade) {
+      const found = resolve(heroId, piece);
+      return found === null ? null : compute(found.hero, found.slot, upgrade);
+    },
+    deltaAt(heroId, piece, upgrade) {
+      const found = resolve(heroId, piece);
+      if (found === null) return null;
+      const now = compute(found.hero, found.slot, piece.upgrade);
+      const then = compute(found.hero, found.slot, upgrade);
+      if (now === null || then === null || now <= 0) return null;
+      return then / now - 1;
+    },
+  };
+}

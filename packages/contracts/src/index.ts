@@ -308,6 +308,10 @@ export interface MiniLiveLayoutView {
 
 export type MiniLiveLayoutPatch = MiniLiveLayoutView;
 
+/** Where the account the renderer reads came from. A fixture has no server behind it, so
+ *  nothing that would send a write can run against one. */
+export type AccountSource = 'server' | 'fixture';
+
 export interface AppEnvironmentInfo {
   flavor: AppFlavor;
   productName: string;
@@ -315,6 +319,7 @@ export interface AppEnvironmentInfo {
   updateChannel: UpdateChannel | null;
   isPackaged: boolean;
   version: string;
+  accountSource: AccountSource;
 }
 
 export interface IpcChannels {
