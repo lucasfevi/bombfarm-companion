@@ -51,3 +51,16 @@ export function applyForgeWritesEnabled(deps: {
   const applied: AppSettings = { ...deps.current, schemaVersion: 3, forgeWritesEnabled: deps.enabled };
   return deps.persist(applied);
 }
+
+export function applyRestartGameOnExit(deps: {
+  current: AppSettings;
+  enabled: unknown;
+  persist: (settings: AppSettings) => SettingsWriteResult;
+}): SettingsWriteResult {
+  if (typeof deps.enabled !== 'boolean') {
+    return { settings: deps.current, persisted: true, reason: null };
+  }
+
+  const applied: AppSettings = { ...deps.current, schemaVersion: 3, restartGameOnExit: deps.enabled };
+  return deps.persist(applied);
+}

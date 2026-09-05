@@ -287,6 +287,9 @@ export interface AppSettings {
   /** "Let Forge spend gold" — off until the player turns it on; the only thing that lets the
    *  Forge tab send a forge roll. */
   forgeWritesEnabled: boolean;
+  /** Off until the player turns it on. While on, a game process this app already saw running and
+   *  which then disappears is asked back through Steam. Nothing here ever stops a living game. */
+  restartGameOnExit: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -295,6 +298,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   alwaysOnTopMain: false,
   alwaysOnTopMini: false,
   forgeWritesEnabled: false,
+  restartGameOnExit: false,
 };
 
 export type MiniLiveGrowthAxis = 'vertical' | 'horizontal';
@@ -338,6 +342,7 @@ export interface IpcChannels {
   'settings:setAlwaysOnTopMain': { args: [boolean]; result: SettingsWriteResult };
   'settings:setAlwaysOnTopMini': { args: [boolean]; result: SettingsWriteResult };
   'settings:setForgeWritesEnabled': { args: [boolean]; result: SettingsWriteResult };
+  'settings:setRestartGameOnExit': { args: [boolean]; result: SettingsWriteResult };
   'miniLive:open': { args: []; result: null };
   'miniLive:close': { args: []; result: null };
   'miniLive:getLayout': { args: []; result: MiniLiveLayoutView };
@@ -394,6 +399,7 @@ export const IPC_CHANNELS = [
   'settings:setAlwaysOnTopMain',
   'settings:setAlwaysOnTopMini',
   'settings:setForgeWritesEnabled',
+  'settings:setRestartGameOnExit',
   'miniLive:open',
   'miniLive:close',
   'miniLive:getLayout',

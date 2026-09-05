@@ -85,6 +85,7 @@ import {
   applyAlwaysOnTopMini as applyAlwaysOnTopMiniSettings,
   applyForgeWritesEnabled as applyForgeWritesEnabledSettings,
   applyLocale as applyLocaleSettings,
+  applyRestartGameOnExit as applyRestartGameOnExitSettings,
 } from './shell/settings-apply.js';
 import { createElectronTray } from './shell/electron-tray.js';
 import {
@@ -230,6 +231,10 @@ function applyForgeWritesEnabled(enabled: unknown): SettingsWriteResult {
   return applyForgeWritesEnabledSettings({ current: currentSettings, enabled, persist: persistSettings });
 }
 
+function applyRestartGameOnExit(enabled: unknown): SettingsWriteResult {
+  return applyRestartGameOnExitSettings({ current: currentSettings, enabled, persist: persistSettings });
+}
+
 function defaultLiveView(): LiveView {
   const now = new Date().toISOString();
   return {
@@ -303,6 +308,7 @@ function registerIpcHandlers(): void {
     'settings:setAlwaysOnTopMain': (enabled: boolean): SettingsWriteResult => applyAlwaysOnTopMain(enabled),
     'settings:setAlwaysOnTopMini': (enabled: boolean): SettingsWriteResult => applyAlwaysOnTopMini(enabled),
     'settings:setForgeWritesEnabled': (enabled: boolean): SettingsWriteResult => applyForgeWritesEnabled(enabled),
+    'settings:setRestartGameOnExit': (enabled: boolean): SettingsWriteResult => applyRestartGameOnExit(enabled),
     'storage:health': () => storage?.healthCheck() ?? { binding: 'unknown', ok: false },
     'game:getStatus': () => gameReader?.getStatus() ?? {
       status: 'not_running' as const,
