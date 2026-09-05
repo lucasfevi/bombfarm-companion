@@ -246,15 +246,22 @@ describe('applyForgeWritesEnabled', () => {
 });
 
 describe('applyRestartGameOnExit', () => {
-  it('persists the spread object with the flag applied and touches no window', () => {
+  it('persists the spread object with the flag applied and calls setEnabled', () => {
+    const setEnabled = vi.fn();
     const persist = vi.fn((settings: AppSettings) => ({
       settings,
       persisted: true,
       reason: null,
     }));
 
-    const result = applyRestartGameOnExit({ current: { ...DEFAULT_SETTINGS, locale: 'pt-BR' }, enabled: true, persist });
+    const result = applyRestartGameOnExit({
+      current: { ...DEFAULT_SETTINGS, locale: 'pt-BR' },
+      enabled: true,
+      setEnabled,
+      persist,
+    });
 
+    expect(setEnabled).toHaveBeenCalledWith(true);
     expect(result.settings).toEqual({
       schemaVersion: 3,
       locale: 'pt-BR',
@@ -266,24 +273,28 @@ describe('applyRestartGameOnExit', () => {
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
 
-  it('turning it off persists false and leaves every other setting alone', () => {
+  it('turning it off persists false, leaves every other setting alone, and calls setEnabled', () => {
+    const setEnabled = vi.fn();
     const persist = vi.fn((settings: AppSettings) => ({
       settings,
       persisted: true,
       reason: null,
     }));
 
-    const result = applyRestartGameOnExit({ current: BASE, enabled: false, persist });
+    const result = applyRestartGameOnExit({ current: BASE, enabled: false, setEnabled, persist });
 
+    expect(setEnabled).toHaveBeenCalledWith(false);
     expect(result.settings).toEqual({ ...BASE, restartGameOnExit: false });
   });
 
   it('is a no-op for a non-boolean enabled argument — the switch cannot be turned on by a string', () => {
+    const setEnabled = vi.fn();
     const persist = vi.fn();
 
-    const result = applyRestartGameOnExit({ current: DEFAULT_SETTINGS, enabled: 'true', persist });
+    const result = applyRestartGameOnExit({ current: DEFAULT_SETTINGS, enabled: 'true', setEnabled, persist });
 
     expect(result).toEqual({ settings: DEFAULT_SETTINGS, persisted: true, reason: null });
+    expect(setEnabled).not.toHaveBeenCalled();
     expect(persist).not.toHaveBeenCalled();
   });
 });

@@ -113,6 +113,12 @@ import {
   resolveMiniLiveLoadUrl,
   type MiniLiveController,
 } from './mini-live-window.js';
+import {
+  createGameKeepAlive,
+  createProcessPresencePort,
+  type GameKeepAlive,
+} from './game-keep-alive/keep-alive-runtime.js';
+import { askSteam, createSteamLaunchDeps } from './game-keep-alive/steam-launch.js';
 
 let mainWindow: BrowserWindow | null = null;
 let storage: Storage | null = null;
@@ -141,6 +147,7 @@ let windowLayoutStore: WindowLayoutStore | null = null;
 let layoutPersistTimer: ReturnType<typeof setTimeout> | null = null;
 let miniLiveController: MiniLiveController | null = null;
 let miniLayoutPersistTimer: ReturnType<typeof setTimeout> | null = null;
+let gameKeepAlive: GameKeepAlive | null = null;
 
 function emitEvent<C extends IpcEventChannel>(channel: C, payload: IpcEvents[C]): void {
   broadcastEventToWindows(BrowserWindow.getAllWindows(), `bfc:event:${channel}`, payload);
@@ -232,7 +239,14 @@ function applyForgeWritesEnabled(enabled: unknown): SettingsWriteResult {
 }
 
 function applyRestartGameOnExit(enabled: unknown): SettingsWriteResult {
-  return applyRestartGameOnExitSettings({ current: currentSettings, enabled, persist: persistSettings });
+  return applyRestartGameOnExitSettings({
+    current: currentSettings,
+    enabled,
+    setEnabled: (on) => {
+      gameKeepAlive?.setEnabled(on);
+    },
+    persist: persistSettings,
+  });
 }
 
 function defaultLiveView(): LiveView {
@@ -851,6 +865,15 @@ async function bootstrap(): Promise<void> {
   currentSettings = storedSettings ? { ...storedSettings, locale } : { ...DEFAULT_SETTINGS, locale };
   log.info({ scope: 'main', event: 'locale.resolved', locale, source, systemLocale });
 
+  gameKeepAlive = createGameKeepAlive({
+    clock: { now: () => Date.now(), setTimeout, clearTimeout },
+    processPresent: createProcessPresencePort(),
+    askSteam: () => askSteam(createSteamLaunchDeps()),
+    log: (event, detail) => log.info({ scope: 'main', event, ...detail }),
+  });
+  gameKeepAlive.setEnabled(currentSettings.restartGameOnExit);
+  gameKeepAlive.start();
+
   const gate = createPacingGate({
     now: () => Date.now(),
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
@@ -1066,6 +1089,8 @@ if (!gotLock) {
     updateService = null;
     gameReader?.stop();
     gameReader = null;
+    gameKeepAlive?.stop();
+    gameKeepAlive = null;
     accountRefresh?.stop();
     accountRefresh = null;
     liveFastPublisher?.stop();

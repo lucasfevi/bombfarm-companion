@@ -55,6 +55,7 @@ export function applyForgeWritesEnabled(deps: {
 export function applyRestartGameOnExit(deps: {
   current: AppSettings;
   enabled: unknown;
+  setEnabled: (enabled: boolean) => void;
   persist: (settings: AppSettings) => SettingsWriteResult;
 }): SettingsWriteResult {
   if (typeof deps.enabled !== 'boolean') {
@@ -62,5 +63,6 @@ export function applyRestartGameOnExit(deps: {
   }
 
   const applied: AppSettings = { ...deps.current, schemaVersion: 3, restartGameOnExit: deps.enabled };
+  deps.setEnabled(deps.enabled);
   return deps.persist(applied);
 }
