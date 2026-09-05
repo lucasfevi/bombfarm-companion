@@ -1,6 +1,12 @@
 import { DEFAULT_SETTINGS, type AppSettings } from '@bombfarm/contracts';
 import { describe, expect, it, vi } from 'vitest';
-import { applyAlwaysOnTopMain, applyAlwaysOnTopMini, applyForgeWritesEnabled, applyLocale } from './settings-apply.js';
+import {
+  applyAlwaysOnTopMain,
+  applyAlwaysOnTopMini,
+  applyForgeWritesEnabled,
+  applyLocale,
+  applyRestartGameOnExit,
+} from './settings-apply.js';
 
 const BASE: AppSettings = {
   schemaVersion: 3,
@@ -8,6 +14,7 @@ const BASE: AppSettings = {
   alwaysOnTopMain: true,
   alwaysOnTopMini: true,
   forgeWritesEnabled: true,
+  restartGameOnExit: true,
 };
 
 describe('applyLocale', () => {
@@ -26,6 +33,7 @@ describe('applyLocale', () => {
       alwaysOnTopMain: true,
       alwaysOnTopMini: true,
       forgeWritesEnabled: true,
+      restartGameOnExit: true,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -70,6 +78,7 @@ describe('applyAlwaysOnTopMain', () => {
       alwaysOnTopMain: true,
       alwaysOnTopMini: false,
       forgeWritesEnabled: false,
+      restartGameOnExit: false,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -154,6 +163,7 @@ describe('applyAlwaysOnTopMini', () => {
       alwaysOnTopMain: false,
       alwaysOnTopMini: true,
       forgeWritesEnabled: false,
+      restartGameOnExit: false,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -194,6 +204,7 @@ describe('applyForgeWritesEnabled', () => {
       alwaysOnTopMain: false,
       alwaysOnTopMini: false,
       forgeWritesEnabled: true,
+      restartGameOnExit: false,
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -230,6 +241,60 @@ describe('applyForgeWritesEnabled', () => {
     const result = applyForgeWritesEnabled({ current: DEFAULT_SETTINGS, enabled: 'true', persist });
 
     expect(result).toEqual({ settings: DEFAULT_SETTINGS, persisted: true, reason: null });
+    expect(persist).not.toHaveBeenCalled();
+  });
+});
+
+describe('applyRestartGameOnExit', () => {
+  it('persists the spread object with the flag applied and calls setEnabled', () => {
+    const setEnabled = vi.fn();
+    const persist = vi.fn((settings: AppSettings) => ({
+      settings,
+      persisted: true,
+      reason: null,
+    }));
+
+    const result = applyRestartGameOnExit({
+      current: { ...DEFAULT_SETTINGS, locale: 'pt-BR' },
+      enabled: true,
+      setEnabled,
+      persist,
+    });
+
+    expect(setEnabled).toHaveBeenCalledWith(true);
+    expect(result.settings).toEqual({
+      schemaVersion: 3,
+      locale: 'pt-BR',
+      alwaysOnTopMain: false,
+      alwaysOnTopMini: false,
+      forgeWritesEnabled: false,
+      restartGameOnExit: true,
+    });
+    expect(persist).toHaveBeenCalledWith(result.settings);
+  });
+
+  it('turning it off persists false, leaves every other setting alone, and calls setEnabled', () => {
+    const setEnabled = vi.fn();
+    const persist = vi.fn((settings: AppSettings) => ({
+      settings,
+      persisted: true,
+      reason: null,
+    }));
+
+    const result = applyRestartGameOnExit({ current: BASE, enabled: false, setEnabled, persist });
+
+    expect(setEnabled).toHaveBeenCalledWith(false);
+    expect(result.settings).toEqual({ ...BASE, restartGameOnExit: false });
+  });
+
+  it('is a no-op for a non-boolean enabled argument — the switch cannot be turned on by a string', () => {
+    const setEnabled = vi.fn();
+    const persist = vi.fn();
+
+    const result = applyRestartGameOnExit({ current: DEFAULT_SETTINGS, enabled: 'true', setEnabled, persist });
+
+    expect(result).toEqual({ settings: DEFAULT_SETTINGS, persisted: true, reason: null });
+    expect(setEnabled).not.toHaveBeenCalled();
     expect(persist).not.toHaveBeenCalled();
   });
 });

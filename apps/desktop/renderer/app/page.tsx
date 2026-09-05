@@ -32,6 +32,7 @@ import { ForgeView } from './forge/forge-view';
 import { AccountView } from './account/account-view';
 import { ConsentSection } from './settings/consent-section';
 import { ForgeSection } from './settings/forge-section';
+import { GameSection } from './settings/game-section';
 import { DiagnosticsSection } from './settings/diagnostics-section';
 import { LanguageSection } from './settings/language-section';
 import { SupportSection } from './settings/support-section';
@@ -69,6 +70,8 @@ export default function HomePage() {
   const [alwaysOnTopMiniWarning, setAlwaysOnTopMiniWarning] = useState<SettingsWriteReason | null>(null);
   const [forgeWritesEnabled, setForgeWritesEnabled] = useState(DEFAULT_SETTINGS.forgeWritesEnabled);
   const [forgeWritesWarning, setForgeWritesWarning] = useState<SettingsWriteReason | null>(null);
+  const [restartGameOnExit, setRestartGameOnExit] = useState(DEFAULT_SETTINGS.restartGameOnExit);
+  const [restartGameOnExitWarning, setRestartGameOnExitWarning] = useState<SettingsWriteReason | null>(null);
 
   useEffect(() => {
     const bridge = getBridge();
@@ -85,6 +88,7 @@ export default function HomePage() {
         setAlwaysOnTopMain(settings.alwaysOnTopMain);
         setAlwaysOnTopMini(settings.alwaysOnTopMini);
         setForgeWritesEnabled(settings.forgeWritesEnabled);
+        setRestartGameOnExit(settings.restartGameOnExit);
       })
       .catch(() => {
         setLocale(DEFAULT_SETTINGS.locale);
@@ -138,6 +142,15 @@ export default function HomePage() {
     });
   };
 
+  const onRestartGameOnExitChange = (next: boolean) => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('settings:setRestartGameOnExit', next).then((result) => {
+      setRestartGameOnExit(result.settings.restartGameOnExit);
+      setRestartGameOnExitWarning(result.persisted ? null : result.reason);
+    });
+  };
+
   return (
     <CopyProvider locale={locale ?? DEFAULT_SETTINGS.locale}>
       <HomePageContent
@@ -153,6 +166,9 @@ export default function HomePage() {
         forgeWritesEnabled={forgeWritesEnabled}
         onForgeWritesEnabledChange={onForgeWritesEnabledChange}
         forgeWritesWarning={forgeWritesWarning}
+        restartGameOnExit={restartGameOnExit}
+        onRestartGameOnExitChange={onRestartGameOnExitChange}
+        restartGameOnExitWarning={restartGameOnExitWarning}
       />
     </CopyProvider>
   );
@@ -171,6 +187,9 @@ function HomePageContent({
   forgeWritesEnabled,
   onForgeWritesEnabledChange,
   forgeWritesWarning,
+  restartGameOnExit,
+  onRestartGameOnExitChange,
+  restartGameOnExitWarning,
 }: {
   locale: AppLocale;
   onLocaleChange: (next: AppLocale) => void;
@@ -184,6 +203,9 @@ function HomePageContent({
   forgeWritesEnabled: boolean;
   onForgeWritesEnabledChange: (next: boolean) => void;
   forgeWritesWarning: SettingsWriteReason | null;
+  restartGameOnExit: boolean;
+  onRestartGameOnExitChange: (next: boolean) => void;
+  restartGameOnExitWarning: SettingsWriteReason | null;
 }) {
   const t = useCopy();
   const { lang } = useLocale();
@@ -377,6 +399,11 @@ function HomePageContent({
                 alwaysOnTopMini={alwaysOnTopMini}
                 onAlwaysOnTopMiniChange={onAlwaysOnTopMiniChange}
                 miniPersistWarning={alwaysOnTopMiniWarning}
+              />
+              <GameSection
+                restartGameOnExit={restartGameOnExit}
+                onRestartGameOnExitChange={onRestartGameOnExitChange}
+                persistWarning={restartGameOnExitWarning}
               />
               <ForgeSection
                 forgeWritesEnabled={forgeWritesEnabled}
