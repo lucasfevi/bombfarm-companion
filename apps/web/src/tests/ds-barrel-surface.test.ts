@@ -210,6 +210,11 @@ describe('design-system barrel surface (frozen)', () => {
 // that brings its own chrome — a design-system `Select` — and needs only to stand the same height
 // as the fields beside it. Split out of `inventoryFieldClass` so a second toolbar cannot reach
 // for a number of its own and drift a pixel from this one.
+//
+// `ItemIdentity` (2026-09-05): icon, name and forge level on one line, tier and level on the
+// next — the one arrangement every surface that names an item now uses. The inventory card, the
+// inventory row and the Forge screen each had their own before, and the level itself was written
+// three different ways; added so a fourth surface cannot invent a fifth.
 const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'AbilityIcon',
   'ArtFrame',
@@ -233,6 +238,7 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'HeroIdentityChip',
   'HouseIcon',
   'ItemIcon',
+  'ItemIdentity',
   'PropIcon',
   'SpriteLoop',
   'abilityIconRecipe',

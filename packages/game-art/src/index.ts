@@ -4,6 +4,11 @@ export { HeroAvatar } from './hero-avatar';
 export { HeroIdentity, type HeroIdentityVariant } from './hero-identity';
 export { HeroIdentityChip } from './hero-identity-chip';
 export { ItemIcon, type ItemIconItem } from './item-icon';
+export {
+  ItemIdentity,
+  type ItemIdentityLabels,
+  type ItemIdentitySize,
+} from './item-identity';
 export { InventoryGrid } from './inventory-grid';
 export {
   InventoryLayoutToggle,

@@ -4,12 +4,9 @@ import { memo } from 'react';
 import { FORGE_SAFE } from '@bombfarm/domain/forge';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import {
-  ItemIcon,
-  inventoryTableItemNameClass,
-  inventoryTableNameClass,
+  ItemIdentity,
   inventoryTableRowClass,
   inventoryTableSkippedNoteClass,
-  rarityTextClass,
 } from '@bombfarm/game-art';
 import { cn, DataTable, EmptyState, Icon } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
@@ -54,14 +51,9 @@ const ForgeTableRow = memo(function ForgeTableRow({
             onSelect(item);
           }}
         >
-          <span className={inventoryTableNameClass}>
-            <ItemIcon item={item} size="sm" showLevel={false} showUpgrade={false} />
-            <span className="flex min-w-0 items-center gap-1">
-              <span data-testid="forge-row-name" className={cn(inventoryTableItemNameClass, rarityTextClass(item.rarityIdx) ?? 'text-ink')}>
-                {name}
-              </span>
-              {item.locked ? <Icon name="lock-closed" size="xs" className="shrink-0 text-muted" /> : null}
-            </span>
+          <span className="flex min-w-0 items-center gap-1">
+            <ItemIdentity item={item} labels={labels} nameTestId="forge-row-name" className="flex-1" />
+            {item.locked ? <Icon name="lock-closed" size="xs" className="shrink-0 text-muted" /> : null}
           </span>
         </button>
       </DataTable.RowHeader>

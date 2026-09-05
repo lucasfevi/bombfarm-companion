@@ -176,9 +176,12 @@ describe('forgeStatRows', () => {
 describe('forgeLabels', () => {
   const labels = forgeLabels(en, 'en', 'en');
 
-  it('names the piece the way the Inventory screen does', () => {
+  it('identifies the piece the way the Inventory screen does', () => {
     expect(labels.itemName(item('g1'))).toBe('Steel · Gloves');
-    expect(labels.itemMeta(item('g1'))).toBe('Rare · Gloves · nv20 · +12');
+    expect(labels.itemRarity(item('g1'))).toBe('Rare');
+    expect(labels.itemLevel(item('g1'))).toBe('Lv 20');
+    expect(labels.itemForge(item('g1'))).toBe('+12');
+    expect(labels.itemForge(item('g2'))).toBe('');
   });
 
   it('says where the piece is', () => {

@@ -275,6 +275,7 @@ export function inventoryTableLabels(
     groupTitle: grid.groupTitle,
     itemName: grid.itemName,
     itemRarity: grid.itemRarity,
+    itemLevel: grid.itemLevel,
     itemForge: grid.itemForge,
     equippedBy: grid.equippedBy,
     gold: grid.gold,

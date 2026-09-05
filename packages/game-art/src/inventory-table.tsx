@@ -18,7 +18,7 @@ import {
 import { cn, DataTable, EmptyState, Icon } from '@bombfarm/ui';
 import { GoldIcon } from './gold-icon';
 import { HeroAvatar } from './hero-avatar';
-import { ItemIcon } from './item-icon';
+import { ItemIdentity, type ItemIdentityLabels } from './item-identity';
 import { MarketPrice, type MarketPriceLabels, type MarketPriceView } from './market-price';
 import { rarityTextClass } from './game-art.recipe';
 import { inventoryChipRecipe } from './inventory-grid.recipe';
@@ -31,14 +31,11 @@ import {
 import {
   inventoryTableActionButtonClass,
   inventoryTableBlankClass,
-  inventoryTableForgeClass,
   inventoryTableGoldClass,
   inventoryTableGroupCountClass,
   inventoryTableGroupHeaderClass,
   inventoryTableHeroClass,
   inventoryTableHeroNameClass,
-  inventoryTableItemNameClass,
-  inventoryTableNameClass,
   inventoryTableRowClass,
   inventoryTableSkippedNoteClass,
 } from './inventory-table.recipe';
@@ -54,18 +51,10 @@ export interface InventoryTableColumnLabels {
   actions: string;
 }
 
-export interface InventoryTableLabels {
+export interface InventoryTableLabels extends ItemIdentityLabels<InventoryViewItem> {
   /** The table's own accessible name, rendered as a visually hidden `<caption>`. */
   caption: string;
   groupTitle: (kind: ItemKind) => string;
-  /** Display name for one item — the caller owns it, since set, slot and rarity tokens are
-   *  localized and this package carries no i18n. */
-  itemName: (item: InventoryViewItem) => string;
-  /** Empty for the kinds whose NAME is already their tier (a key, a house part, a skill stone),
-   *  which is also what tells the row to colour the name instead. */
-  itemRarity: (item: InventoryViewItem) => string;
-  /** The forge `+N`, or empty when the item is unforged. */
-  itemForge: (item: InventoryViewItem) => string;
   /** `null` when the item is loose, or when the caller has no roster. Absent drops the column. */
   equippedBy?: ((item: InventoryViewItem) => InventoryEquippedBy | null) | undefined;
   gold: (amount: number) => string;
@@ -218,22 +207,13 @@ const InventoryTableRow = memo(function InventoryTableRow({
   const { item, count } = entry;
   const name = labels.itemName(item);
   const rarity = labels.itemRarity(item);
-  const forge = labels.itemForge(item);
   const hero = labels.equippedBy?.(item) ?? null;
   const price = priceOf?.(entry) ?? null;
 
   return (
     <DataTable.Row data-testid="inventory-table-row" data-item-id={entry.key} className={inventoryTableRowClass}>
       <DataTable.RowHeader>
-        <span className={inventoryTableNameClass}>
-          <ItemIcon item={item} size="sm" showLevel={false} showUpgrade={false} />
-          <span className="flex min-w-0 items-baseline">
-            <span className={cn(inventoryTableItemNameClass, rarity ? 'text-ink' : rarityTextClass(item.rarityIdx) ?? 'text-ink')}>
-              {name}
-            </span>
-            {forge ? <span className={inventoryTableForgeClass}>{forge}</span> : null}
-          </span>
-        </span>
+        <ItemIdentity item={item} labels={labels} />
       </DataTable.RowHeader>
 
       <DataTable.Cell className={cn('font-medium', rarityTextClass(item.rarityIdx))}>

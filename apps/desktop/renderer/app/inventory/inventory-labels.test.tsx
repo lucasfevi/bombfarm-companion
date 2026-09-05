@@ -62,7 +62,7 @@ describe('desktop inventory labels', () => {
   it('gives gear a rarity, a level and a forge, and gives a gem only a rarity', () => {
     const labels = inventoryLabels(en, 'en');
     expect(labels.itemRarity(item('g1'))).toBe('Rare');
-    expect(labels.itemLevel(item('g1'))).toBe('Level 20');
+    expect(labels.itemLevel(item('g1'))).toBe('Lv 20');
     expect(labels.itemForge(item('g1'))).toBe('+8');
 
     expect(labels.itemRarity(item('m1'))).toBe('Legendary');
@@ -100,7 +100,7 @@ describe('desktop inventory labels', () => {
       name: 'Kendo',
       rank: 'S',
       rarityIdx: 5,
-      level: 'Level 157',
+      level: 'Lv 157',
       stars: 2,
       skin: 3,
       unknown: false,
@@ -131,7 +131,7 @@ describe('desktop inventory labels', () => {
       rank: 'S',
       rarityIdx: 5,
       stars: 2,
-      level: 'Level 157',
+      level: 'Lv 157',
     });
     expect(resolve('nobody')).toEqual({
       id: 'nobody',

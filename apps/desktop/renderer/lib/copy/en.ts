@@ -279,7 +279,7 @@ export const en = {
   inventoryBadgeMarketBlocked: 'Cannot be traded away',
   inventoryBadgeUnresolved: 'Not in the item list yet',
   inventoryDetailSetSlot: '{set} · {slot}',
-  inventoryDetailLevel: 'Level {level}',
+  inventoryDetailLevel: 'Lv {level}',
   inventoryEquippedByHero: '{hero} · Level {level}',
   inventoryGroupTime: 'House parts',
   inventoryGroupStone: 'Skill stones',

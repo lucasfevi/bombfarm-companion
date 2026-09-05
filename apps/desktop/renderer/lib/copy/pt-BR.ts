@@ -277,7 +277,7 @@ export const ptBR: Copy = {
   inventoryBadgeMarketBlocked: 'Não pode ser negociado',
   inventoryBadgeUnresolved: 'Ainda não está na lista de itens',
   inventoryDetailSetSlot: '{set} · {slot}',
-  inventoryDetailLevel: 'Nível {level}',
+  inventoryDetailLevel: 'Nv {level}',
   inventoryEquippedByHero: '{hero} · Nível {level}',
   inventoryGroupTime: 'Peças de Casa',
   inventoryGroupStone: 'Pedras de habilidade',

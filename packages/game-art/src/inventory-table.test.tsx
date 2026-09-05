@@ -27,6 +27,7 @@ const labels: InventoryTableLabels = {
   groupTitle: (kind) => kind,
   itemName: (item) => NAMES[item.defId] ?? item.defId,
   itemRarity: (item) => RARITIES[item.rarityIdx] ?? '',
+  itemLevel: (item) => (item.level > 0 ? `Lv ${item.level}` : ''),
   itemForge: (item) => (item.upgrade > 0 ? `+${item.upgrade}` : ''),
   gold: (amount) => String(amount),
   searchText: (item) => NAMES[item.defId] ?? item.defId,
