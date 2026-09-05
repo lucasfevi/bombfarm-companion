@@ -1,6 +1,12 @@
 /**
  * How one pass spends the call budget: which listed items it quotes natively, and how far apart.
  *
+ * The budget bounds detail sampling and nothing else. A per-item quote is the only thing that
+ * returns a median and a 24-hour volume, and those are readings — they reach a history store, not
+ * the published artifact, whose prices come from the enumeration on a schedule of its own. So a
+ * budget change moves how much of the market gets sampled and how often, never how old a price a
+ * player is looking at.
+ *
  * Everything here is pure. The collector supplies the trading history it read back and the
  * enumeration cost the sweep has just paid; it gets back the rotation and its pacing.
  */
@@ -24,13 +30,13 @@ export function readBudget(raw) {
 }
 
 /**
- * Split the listed items into the ones worth a call of their own and the ones the enumeration
- * already prices well enough.
+ * Split the listed items into the ones worth a call of their own and the ones there is nothing to
+ * learn from sampling.
  *
  * About a third of the market has never reported a sale — 41 of 115 listed rows, measured
- * 2026-09-03 — and an item nobody trades has a price that moves only when someone relists it,
- * which the enumeration sees anyway for a tenth of a call. Spending an equal share of a scarce
- * budget on those is the inefficiency this exists to remove.
+ * 2026-09-03 — and a row that has never traded returns a zero volume and no median however often
+ * it is asked. Spending an equal share of a scarce budget on those buys no reading at all, which
+ * is the inefficiency this exists to remove.
  *
  * An item with no trading history at all is quoted rather than assumed either way: one call
  * settles which side it belongs on, and stranding it in a tier would decide that by default.
