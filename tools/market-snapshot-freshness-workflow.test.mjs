@@ -66,6 +66,8 @@ const namesSteam = (text) => /steamcommunity\.com/.test(text);
 const readsGeneratedUtc = (text) => /\bgeneratedUtc\b/.test(text);
 const readsEntries = (text) => /\bentries\b/.test(text);
 const readsMatchedCatalogKeys = (text) => /\bmatchedCatalogKeys\b/.test(text);
+/** The per-row stamp that separates "a pass ran" from "a pass collected". */
+const readsFetchedUtc = (text) => /\bfetchedUtc\b/.test(text);
 const readsResponseStatus = (text) => /status !== 200/.test(text);
 const invokesItselfWhenRun = (text) =>
   /pathToFileURL\(process\.argv\[1\]\)\.href === import\.meta\.url/.test(text);
@@ -136,7 +138,7 @@ describe('the staleness alarm workflow', () => {
 });
 
 describe('the checker still reads what it claims to', () => {
-  it('reads the timestamp, the entries, the catalog match and the response status', () => {
+  it('reads the file timestamp, the row timestamp, the entries, the match and the status', () => {
     expect(readsGeneratedUtc(checker)).toBe(true);
     expect(readsGeneratedUtc(checker.replaceAll('generatedUtc', 'stampedAt'))).toBe(false);
 
@@ -152,6 +154,9 @@ describe('the checker still reads what it claims to', () => {
     expect(readsResponseStatus(checker.replace('status !== 200', 'status !== undefined'))).toBe(
       false,
     );
+
+    expect(readsFetchedUtc(checker)).toBe(true);
+    expect(readsFetchedUtc(checker.replaceAll('fetchedUtc', 'quotedAt'))).toBe(false);
   });
 
   it('runs its check when the workflow invokes it as a script', () => {
@@ -164,7 +169,7 @@ describe('the checker still reads what it claims to', () => {
   it('holds the freshness threshold in exactly one place', () => {
     expect(thresholdDefinedOnce(checker)).toBe(true);
     expect(thresholdDefinedOnce(`${checker}\nconst MAX_AGE_HOURS = 999;\n`)).toBe(false);
-    expect(thresholdDefinedOnce(checker.replace(/MAX_AGE_HOURS\s*=\s*6/, 'THRESHOLD = 6'))).toBe(
+    expect(thresholdDefinedOnce(checker.replace(/MAX_AGE_HOURS\s*=\s*3/, 'THRESHOLD = 3'))).toBe(
       false,
     );
   });

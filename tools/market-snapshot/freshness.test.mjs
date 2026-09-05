@@ -18,16 +18,16 @@ const MS_PER_HOUR = 3_600_000;
 
 const generatedHoursAgo = (hours) => new Date(NOW_MS - hours * MS_PER_HOUR).toISOString();
 
-const entryQuotedHoursAgo = (hours) => ({
+const entryReadHoursAgo = (hours) => ({
   key: 'ember_luva#2',
-  nativeQuotedUtc: generatedHoursAgo(hours),
+  fetchedUtc: generatedHoursAgo(hours),
 });
 
 function snapshotBody(overrides = {}) {
   return JSON.stringify({
     schemaVersion: 3,
     generatedUtc: generatedHoursAgo(1),
-    entries: [entryQuotedHoursAgo(1)],
+    entries: [entryReadHoursAgo(1)],
     coverage: { marketRows: 1, keyedRows: 1, matchedCatalogKeys: 1, catalogKeys: 1440 },
     ...overrides,
   });
@@ -49,7 +49,7 @@ describe('the published snapshot alarm', () => {
     const stale = evaluate({ generatedUtc: generatedHoursAgo(MAX_AGE_HOURS + 3.2) });
     expect(stale.ok).toBe(false);
     expect(stale.failures).toEqual([
-      `the published snapshot has not advanced in 9.2 hours (threshold ${MAX_AGE_HOURS})`,
+      `the published snapshot has not advanced in 6.2 hours (threshold ${MAX_AGE_HOURS})`,
     ]);
   });
 
@@ -78,36 +78,50 @@ describe('the published snapshot alarm', () => {
     ]);
   });
 
-  it('fails a fresh, populated, matched snapshot whose prices have stopped moving', () => {
+  /**
+   * The witnessed shape, and the reason this check is pointed at the rows rather than at the file:
+   * a pass whose enumeration reached nothing republishes the rows it already had, which advances
+   * `generatedUtc` while nothing in the file has been read since.
+   */
+  it('fails a fresh, populated, matched snapshot that has stopped reading anything', () => {
     const carriedForward = evaluate({
       generatedUtc: generatedHoursAgo(0.1),
-      entries: [entryQuotedHoursAgo(MAX_AGE_HOURS + 1.4), entryQuotedHoursAgo(MAX_AGE_HOURS + 9)],
+      entries: [entryReadHoursAgo(MAX_AGE_HOURS + 1.4), entryReadHoursAgo(MAX_AGE_HOURS + 9)],
     });
 
     expect(carriedForward.ok).toBe(false);
     expect(carriedForward.failures).toEqual([
-      `the published snapshot has priced nothing in 7.4 hours (threshold ${MAX_AGE_HOURS}), so it is carrying old prices forward`,
+      `the published snapshot has read nothing in 4.4 hours (threshold ${MAX_AGE_HOURS}), so it is carrying old rows forward`,
     ]);
   });
 
-  it('dates the file by its freshest price, not its oldest', () => {
+  it('dates the file by its freshest reading, not its oldest', () => {
     const mixed = evaluate({
-      entries: [entryQuotedHoursAgo(MAX_AGE_HOURS + 40), entryQuotedHoursAgo(2)],
+      entries: [entryReadHoursAgo(MAX_AGE_HOURS + 40), entryReadHoursAgo(2)],
     });
     expect(mixed.ok).toBe(true);
-    expect(mixed.quoteAgeHours).toBe(2);
+    expect(mixed.readingAgeHours).toBe(2);
   });
 
-  it('fails a snapshot in which nothing carries a readable price timestamp', () => {
-    expect(evaluate({ entries: [{ key: 'ember_luva#2', nativeQuotedUtc: null }] }).failures).toEqual(
-      ['the published snapshot carries no priced entry at all'],
-    );
-    expect(evaluate({ entries: [{ key: 'ember_luva#2' }] }).failures).toEqual([
-      'the published snapshot carries no priced entry at all',
+  /**
+   * A snapshot with no per-row timestamp leaves this check nothing to assert on, so it fails
+   * rather than passing: a monitor whose subject is absent is not a monitor that is satisfied.
+   */
+  it('fails a snapshot in which nothing carries a readable reading timestamp', () => {
+    expect(evaluate({ entries: [{ key: 'ember_luva#2', fetchedUtc: null }] }).failures).toEqual([
+      'the published snapshot carries no entry it can date at all',
     ]);
+    expect(evaluate({ entries: [{ key: 'ember_luva#2' }] }).failures).toEqual([
+      'the published snapshot carries no entry it can date at all',
+    ]);
+    // A native quote is not a substitute: it left the published file when quoting left the sweep.
+    expect(
+      evaluate({ entries: [{ key: 'ember_luva#2', nativeQuotedUtc: generatedHoursAgo(0.1) }] })
+        .failures,
+    ).toEqual(['the published snapshot carries no entry it can date at all']);
   });
 
-  it('says nothing about price age when there are no entries to price', () => {
+  it('says nothing about reading age when there are no entries at all', () => {
     expect(evaluate({ entries: [] }).failures).toEqual([
       'the published snapshot carries no entries',
     ]);
@@ -186,7 +200,7 @@ describe('what the alarm prints', () => {
     expect(renderSummary(evaluate())).toBe(
       [
         'the published snapshot advanced 1.0 hours ago',
-        'its freshest price is 1.0 hours old',
+        'its freshest reading is 1.0 hours old',
         '1 entries, 1 catalog keys matched',
       ].join('\n'),
     );
