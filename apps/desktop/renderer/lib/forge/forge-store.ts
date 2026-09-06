@@ -8,22 +8,17 @@
  * the filter — and the stored target may no longer be a rung the piece can reach.
  */
 import { useSyncExternalStore } from 'react';
-import type { InventorySort, InventorySortKey, InventoryViewItem } from '@bombfarm/domain/inventory-view';
+import type { InventorySort, InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { EMPTY_FORGE_FILTER, type ForgeFilter } from './forge-rows';
 import { INITIAL_FORGE_PLAN, forgePlanFor, type ForgePlan } from './use-forge-plan';
 
-/** The screen's subject leads the order: a bag is read forged-first, and the shared table folds
- *  any column a reader picks in front of this. */
-export const DEFAULT_FORGE_SORT: InventorySort = [{ key: 'forge', direction: 'desc' }];
-
 /**
- * What the toolbar's order picker offers. Rarity and level are the two the bag table has no
- * column for, and so the only orders that would be out of reach without this; the other three are
- * here because the picker must be able to name whichever order the table's headers put in front,
- * or it would print one order while the rows stood in another. Value, quantity and market price
- * are left out — this bag is gear, one piece to a row, and none of the three is on screen.
+ * The screen's subject leads the order: a bag is read forged-first, and the shared table folds
+ * any column a reader picks in front of this. The bag table's Item, Slot and Forge headers are
+ * the whole of the ordering on this screen — the toolbar offers none of its own, so a reader
+ * changes the order by clicking the column they want to read it by.
  */
-export const FORGE_SORT_KEYS: readonly InventorySortKey[] = ['forge', 'rarity', 'level', 'slot', 'name'];
+export const DEFAULT_FORGE_SORT: InventorySort = [{ key: 'forge', direction: 'desc' }];
 
 export type ForgeScreenState = {
   readonly filter: ForgeFilter;

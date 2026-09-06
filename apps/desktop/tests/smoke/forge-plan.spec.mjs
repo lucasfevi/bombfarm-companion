@@ -68,10 +68,12 @@ function rows(page) {
 }
 
 /** How many rows the bag holds, which the DOM no longer counts: the table mounts only what is on
- *  screen and carries the rest on `aria-rowcount`. */
+ *  screen and carries the rest on `aria-rowcount`. A filter that matches nothing replaces the
+ *  whole table with an empty state, which is a bag of zero rows rather than an unreadable count. */
 async function rowCount(page) {
-  const count = await page.locator('[data-testid="inventory-table-scroll"] table').getAttribute('aria-rowcount');
-  return Number(count);
+  const table = page.locator('[data-testid="inventory-table-scroll"] table');
+  if ((await table.count()) === 0) return 0;
+  return Number(await table.getAttribute('aria-rowcount'));
 }
 
 async function withForge(run) {
@@ -116,26 +118,41 @@ test.describe('forge plan smoke', () => {
       const forgeHeader = page.getByRole('columnheader', { name: 'Forge' });
       await expect(forgeHeader).toHaveAttribute('aria-sort', 'descending');
 
-      // The order picker reaches the two orders the table has no column for. Choosing rarity
-      // takes the lead away from the Forge column, which is what proves it reordered the rows
-      // rather than only relabelling itself.
-      const sortBy = page.getByRole('combobox', { name: 'Sort by' });
-      await sortBy.click();
-      await page.getByRole('option', { name: 'Rarity' }).click();
+      // The table's headers are the only ordering on this screen — the toolbar offers none of its
+      // own, and clicking a header is what changes the order.
+      await expect(page.getByRole('combobox', { name: 'Sort by' })).toHaveCount(0);
+      const nameHeader = page.getByRole('columnheader', { name: 'Name' });
+      await nameHeader.getByRole('button').click();
       await expect(forgeHeader).toHaveAttribute('aria-sort', 'none');
-      await sortBy.click();
-      await page.getByRole('option', { name: 'Forge' }).click();
+      await expect(nameHeader).not.toHaveAttribute('aria-sort', 'none');
+      await forgeHeader.getByRole('button').click();
       await expect(forgeHeader).toHaveAttribute('aria-sort', 'descending');
 
-      // The forge filter is a ceiling now: nothing in it offers a floor, and picking one narrows
-      // the bag to the pieces still worth forging.
-      const maxForge = page.getByRole('combobox', { name: 'Maximum forge' });
-      await expect(maxForge).toHaveText('Any forge');
-      await maxForge.click();
-      await page.getByRole('option', { name: 'Forged up to +8' }).click();
-      await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBeLessThan(before);
-      await maxForge.click();
+      // The forge filter is a band now: each option is a stretch of the ladder, and every one of
+      // them narrows the bag to the pieces standing on it.
+      const forgeBand = page.getByRole('combobox', { name: 'Filter by forge level' });
+      await expect(forgeBand).toHaveText('Any forge');
+      for (const band of ['+0 only', '+8 only', '+8 to +10', '+10 to +12', '+12 to +14', '+14 and higher']) {
+        await forgeBand.click();
+        await page.getByRole('option', { name: band, exact: true }).click();
+        await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBeLessThan(before);
+      }
+      await forgeBand.click();
       await page.getByRole('option', { name: 'Any forge' }).click();
+      await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBe(before);
+
+      // A live read on this fixture never moves, so the toolbar is only ever in its current-read
+      // state here: no label over Refresh, and the read age printing beside it.
+      await expect(view.getByTestId('forge-stale-label')).toHaveCount(0);
+      await expect(view.getByTestId('forge-read-age')).toContainText('Account read');
+
+      // Clearing is a button beside the fields now, not a chip, and it is there only while a
+      // filter is on.
+      await expect(view.getByTestId('forge-clear-filter')).toHaveCount(0);
+      await forgeBand.click();
+      await page.getByRole('option', { name: '+8 only', exact: true }).click();
+      await view.getByTestId('forge-clear-filter').click();
+      await expect(forgeBand).toHaveText('Any forge');
       await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBe(before);
 
       // Worn and spare split the bag between them, and neither is the whole of it.

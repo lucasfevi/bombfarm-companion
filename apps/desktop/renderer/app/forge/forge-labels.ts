@@ -11,10 +11,10 @@ import { FORGE_MAX, FORGE_SAFE, forgeChance } from '@bombfarm/domain/forge';
 import { upgradeMult } from '@bombfarm/domain/gear';
 import { itemRarityLabel, itemStatLabel, slotLabel } from '@bombfarm/domain/game-labels';
 import type { ItemIdentityLabels } from '@bombfarm/game-art';
-import type { InventorySortKey, InventoryViewItem, InventoryViewStat } from '@bombfarm/domain/inventory-view';
+import type { InventoryViewItem, InventoryViewStat } from '@bombfarm/domain/inventory-view';
 import { sub, type Copy } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
-import type { ForgeMaxForge, ForgeWorn } from '../../lib/forge/forge-rows';
+import { FORGE_BAND_RANGE, type ForgeBand, type ForgeWorn } from '../../lib/forge/forge-rows';
 import { inventoryLabels } from '../inventory/inventory-labels';
 
 export const BLANK = '—';
@@ -143,12 +143,14 @@ export function forgeRungLabel(row: { from: number; to: number }): string {
   return row.from === row.to ? forgeLevel(row.from) : `${forgeLevel(row.from)}…${forgeLevel(row.to)}`;
 }
 
-/** The forge filter is a ceiling: the reader is hunting for pieces still worth forging, not for
- *  the ones already forged far. */
-export function forgeMaxForgeText(max: ForgeMaxForge, t: Copy): string {
-  if (max === null) return t.forgeMaxAny;
-  if (max === 0) return sub(t.forgeMaxOnly, { level: forgeLevel(max) });
-  return sub(t.forgeMaxUpTo, { level: forgeLevel(max) });
+/** The forge filter is a stretch of the ladder, so a band names both of its ends — except the two
+ *  that stand on a single rung and the one at the top, which has no end to name. */
+export function forgeBandText(band: ForgeBand | null, t: Copy): string {
+  if (band === null) return t.forgeBandAny;
+  const { from, to } = FORGE_BAND_RANGE[band];
+  if (to === null) return sub(t.forgeBandFrom, { level: forgeLevel(from) });
+  if (to === from) return sub(t.forgeBandOnly, { level: forgeLevel(from) });
+  return sub(t.forgeBandRange, { from: forgeLevel(from), to: forgeLevel(to) });
 }
 
 export function forgeWornText(worn: ForgeWorn, t: Copy): string {
@@ -160,23 +162,6 @@ export function forgeWornText(worn: ForgeWorn, t: Copy): string {
     case 'spare':
       return t.forgeWornSpare;
   }
-}
-
-const FORGE_SORT_COPY_KEY = {
-  forge: 'inventoryColumnForge',
-  rarity: 'inventorySortRarity',
-  level: 'inventorySortLevel',
-  slot: 'inventoryColumnSlot',
-  name: 'inventorySortName',
-  value: 'inventorySortValue',
-  count: 'inventorySortCount',
-  market: 'inventorySortMarket',
-} as const satisfies Record<InventorySortKey, keyof Copy>;
-
-/** An order named by the same word its column header uses, so picking "Forge" in the toolbar and
- *  clicking the Forge column are visibly the same idea. */
-export function forgeSortKeyText(key: InventorySortKey, t: Copy): string {
-  return t[FORGE_SORT_COPY_KEY[key]];
 }
 
 export type ForgeStatRow = {
@@ -240,9 +225,8 @@ export interface ForgeLabels extends ItemIdentityLabels<InventoryViewItem> {
   multiplier: (upgrade: number) => string;
   /** A chance as the game prints it: `50%`. */
   chance: (fraction: number) => string;
-  maxForge: (max: ForgeMaxForge) => string;
+  band: (band: ForgeBand | null) => string;
   worn: (worn: ForgeWorn) => string;
-  sortKey: (key: InventorySortKey) => string;
   span: (target: number) => string;
   warning: (target: number, safeJumps: number | null) => string;
   statsNote: (nowUpgrade: number, targetUpgrade: number) => string;
@@ -276,9 +260,8 @@ export function forgeLabels(t: Copy, lang: DomainLang, locale: AppLocale): Forge
     rolls: (value) => decimals(value, 1, locale),
     multiplier,
     chance,
-    maxForge: (max) => forgeMaxForgeText(max, t),
+    band: (band) => forgeBandText(band, t),
     worn: (worn) => forgeWornText(worn, t),
-    sortKey: (key) => forgeSortKeyText(key, t),
     span: (target) =>
       target <= FORGE_SAFE ? t.forgeSpanSafe : sub(t.forgeSpanRisky, { chance: chance(forgeChance(target)) }),
     warning: (target, safeJumps) =>

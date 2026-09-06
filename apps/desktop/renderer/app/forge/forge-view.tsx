@@ -346,8 +346,6 @@ export function ForgeView({
           heroes={heroOptions}
           filter={filter}
           onFilterChange={setForgeFilter}
-          sort={sort}
-          onSortChange={setForgeSort}
           slots={slots}
           rarities={rarities}
           shown={shown.length}

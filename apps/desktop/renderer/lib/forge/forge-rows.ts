@@ -1,21 +1,40 @@
 /**
  * The bag table's own filter over the inventory view's gear rows. Pure, no React import. The
  * inventory's shared filter is not reused because this screen narrows on two axes it does not
- * have — a slot and a forge ceiling — and shows one kind only. The order is the shared table's,
- * which sorts and virtualizes the rows this hands it.
+ * have — a slot and a stretch of the forge ladder — and shows one kind only. The order is the
+ * shared table's, which sorts and virtualizes the rows this hands it.
  */
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
 
 /**
- * The ceiling rungs the toolbar offers, chosen against the ladder rather than spread evenly:
- * `+0` is a piece nobody has touched, `+8` is the safe floor and so the last rung reachable
- * without a roll that can wipe the piece, and `+14` is everything short of a maxed piece. `+4`
- * and `+11` halve the two spans those three leave.
+ * The stretches of the forge ladder the toolbar offers. The two lowest are single rungs because
+ * they are the ones worth asking for exactly — `+0` is a piece nobody has touched and `+8` is the
+ * safe floor, the last rung reachable without a roll that can wipe the piece; above the floor a
+ * reader is choosing a stretch rather than a rung.
+ *
+ * The bands share their endpoints on purpose: a piece at `+10` is in both the band that ends
+ * there and the band that starts there, because a reader looking at either stretch wants the
+ * pieces sitting on its edge.
  */
-export const FORGE_MAX_FORGE_RUNGS = [0, 4, 8, 11, 14] as const;
+export const FORGE_BANDS = ['at0', 'at8', '8to10', '10to12', '12to14', 'from14'] as const;
 
 /** `null` is every rung — the filter off. */
-export type ForgeMaxForge = (typeof FORGE_MAX_FORGE_RUNGS)[number] | null;
+export type ForgeBand = (typeof FORGE_BANDS)[number];
+
+/** Inclusive at both ends; a `to` of `null` is a band that never closes. */
+export const FORGE_BAND_RANGE: Record<ForgeBand, { readonly from: number; readonly to: number | null }> = {
+  at0: { from: 0, to: 0 },
+  at8: { from: 8, to: 8 },
+  '8to10': { from: 8, to: 10 },
+  '10to12': { from: 10, to: 12 },
+  '12to14': { from: 12, to: 14 },
+  from14: { from: 14, to: null },
+};
+
+export function forgeBandHolds(band: ForgeBand, upgrade: number): boolean {
+  const { from, to } = FORGE_BAND_RANGE[band];
+  return upgrade >= from && (to === null || upgrade <= to);
+}
 
 /** Whether a piece is on a hero right now. */
 export type ForgeWorn = 'all' | 'worn' | 'spare';
@@ -26,8 +45,8 @@ export type ForgeFilter = {
   readonly text: string;
   readonly slot: string | null;
   readonly worn: ForgeWorn;
-  /** The highest forge level a row may already stand at; `null` is every rung. */
-  readonly maxForge: ForgeMaxForge;
+  /** The stretch of the ladder a row must already stand on; `null` is every rung. */
+  readonly forge: ForgeBand | null;
   readonly rarities: readonly number[];
 };
 
@@ -36,7 +55,7 @@ export const EMPTY_FORGE_FILTER: ForgeFilter = {
   text: '',
   slot: null,
   worn: 'all',
-  maxForge: null,
+  forge: null,
   rarities: [],
 };
 
@@ -46,7 +65,7 @@ export function isEmptyForgeFilter(filter: ForgeFilter): boolean {
     filter.text.trim() === '' &&
     filter.slot === null &&
     filter.worn === 'all' &&
-    filter.maxForge === null &&
+    filter.forge === null &&
     filter.rarities.length === 0
   );
 }
@@ -75,7 +94,7 @@ export function filterForgeItems(
     if (filter.worn === 'worn' && item.equippedBy === null) return false;
     if (filter.worn === 'spare' && item.equippedBy !== null) return false;
     if (filter.slot !== null && item.slot !== filter.slot) return false;
-    if (filter.maxForge !== null && item.upgrade > filter.maxForge) return false;
+    if (filter.forge !== null && !forgeBandHolds(filter.forge, item.upgrade)) return false;
     if (rarities && !rarities.has(item.rarityIdx)) return false;
     if (needles.length === 0) return true;
     const haystack = fold(searchText(item));

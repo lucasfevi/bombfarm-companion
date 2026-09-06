@@ -4,16 +4,16 @@ import { buildInventoryView, type InventoryViewItem } from '@bombfarm/domain/inv
 import { en } from '../../lib/copy/en';
 import { ptBR } from '../../lib/copy/pt-BR';
 import type { ForgeRunResult } from '@bombfarm/contracts';
+import { FORGE_BANDS } from '../../lib/forge/forge-rows';
 import {
   BLANK,
+  forgeBandText,
   forgeButtonReason,
   forgeLabels,
   forgeLevel,
-  forgeMaxForgeText,
   forgeReasonText,
   forgeResultHeading,
   forgeRungLabel,
-  forgeSortKeyText,
   forgeStartRefusalText,
   forgeStatRows,
   forgeStopText,
@@ -149,19 +149,23 @@ describe('forgeRungLabel', () => {
   });
 });
 
-describe('forgeMaxForgeText', () => {
-  it('reads as a ceiling, so it names the pieces still worth forging rather than the ones already forged far', () => {
-    expect(forgeMaxForgeText(null, en)).toBe('Any forge');
-    expect(forgeMaxForgeText(0, en)).toBe('+0 only');
-    expect(forgeMaxForgeText(8, en)).toBe('Forged up to +8');
-    expect(forgeMaxForgeText(14, en)).toBe('Forged up to +14');
-    expect(forgeMaxForgeText(14, ptBR)).toBe('Forjado até +14');
+describe('forgeBandText', () => {
+  it('names a single rung as itself, a closed band by both ends, and the top band by where it starts', () => {
+    expect(forgeBandText(null, en)).toBe('Any forge');
+    expect(forgeBandText('at0', en)).toBe('+0 only');
+    expect(forgeBandText('at8', en)).toBe('+8 only');
+    expect(forgeBandText('8to10', en)).toBe('+8 to +10');
+    expect(forgeBandText('10to12', en)).toBe('+10 to +12');
+    expect(forgeBandText('12to14', en)).toBe('+12 to +14');
+    expect(forgeBandText('from14', en)).toBe('+14 and higher');
+    expect(forgeBandText('8to10', ptBR)).toBe('De +8 a +10');
+    expect(forgeBandText('from14', ptBR)).toBe('+14 ou mais');
   });
 
-  it('says nothing about a floor any more', () => {
-    for (const max of [null, 0, 8, 14] as const) {
-      expect(forgeMaxForgeText(max, en)).not.toContain('and up');
-      expect(forgeMaxForgeText(max, ptBR)).not.toContain('ou mais');
+  it('has stopped reading as a ceiling in either language', () => {
+    for (const band of [null, ...FORGE_BANDS]) {
+      expect(forgeBandText(band, en)).not.toContain('up to');
+      expect(forgeBandText(band, ptBR)).not.toContain('até');
     }
   });
 });
@@ -172,16 +176,6 @@ describe('forgeWornText', () => {
     expect(forgeWornText('worn', en)).toBe('Worn by a hero');
     expect(forgeWornText('spare', en)).toBe('Nobody wearing it');
     expect(forgeWornText('spare', ptBR)).toBe('Ninguém usando');
-  });
-});
-
-describe('forgeSortKeyText', () => {
-  it('names an order with the same word its column header carries', () => {
-    expect(forgeSortKeyText('forge', en)).toBe(en.inventoryColumnForge);
-    expect(forgeSortKeyText('slot', en)).toBe(en.inventoryColumnSlot);
-    expect(forgeSortKeyText('name', en)).toBe(en.inventorySortName);
-    expect(forgeSortKeyText('rarity', en)).toBe(en.inventorySortRarity);
-    expect(forgeSortKeyText('level', en)).toBe(en.inventorySortLevel);
   });
 });
 

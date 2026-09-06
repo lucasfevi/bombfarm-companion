@@ -3,13 +3,7 @@ import { FORGE_MAX } from '@bombfarm/domain/forge';
 import { buildInventoryView, type InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { EMPTY_FORGE_FILTER } from './forge-rows';
 import { INITIAL_FORGE_PLAN } from './use-forge-plan';
-import {
-  DEFAULT_FORGE_SORT,
-  FORGE_SORT_KEYS,
-  INITIAL_FORGE_SCREEN,
-  createForgeScreenStore,
-  resolveForgeScreen,
-} from './forge-store';
+import { DEFAULT_FORGE_SORT, INITIAL_FORGE_SCREEN, createForgeScreenStore, resolveForgeScreen } from './forge-store';
 
 const ROWS = [
   { id: 'g1', def_id: 'steel_luva', category: 0, set: 'steel', rarity: 2, level: 20, upgrade: 12, power: 41.6 },
@@ -58,17 +52,9 @@ describe('resolveForgeScreen', () => {
   });
 });
 
-describe('FORGE_SORT_KEYS', () => {
-  it('can name every order the screen can end up in, so the picker never prints one the rows are not in', () => {
-    // The three the bag table's own headers produce, plus the order the screen opens on.
-    for (const key of ['name', 'slot', 'forge'] as const) expect(FORGE_SORT_KEYS).toContain(key);
-    for (const term of DEFAULT_FORGE_SORT) expect(FORGE_SORT_KEYS).toContain(term.key);
-  });
-
-  it('offers the two orders the table lost with its rarity and level columns, and nothing off this screen', () => {
-    expect(FORGE_SORT_KEYS).toContain('rarity');
-    expect(FORGE_SORT_KEYS).toContain('level');
-    for (const key of ['value', 'count', 'market'] as const) expect(FORGE_SORT_KEYS).not.toContain(key);
+describe('DEFAULT_FORGE_SORT', () => {
+  it('opens on a column the bag table itself carries, since its headers are the only ordering here', () => {
+    for (const term of DEFAULT_FORGE_SORT) expect(['name', 'slot', 'forge']).toContain(term.key);
   });
 });
 
@@ -84,13 +70,13 @@ describe('the forge screen store', () => {
 
   it('holds what was put in it across reads, which is what surviving a tab change means', () => {
     const store = createForgeScreenStore();
-    store.setFilter({ ...EMPTY_FORGE_FILTER, maxForge: 8 });
+    store.setFilter({ ...EMPTY_FORGE_FILTER, forge: '8to10' });
     store.setSort([{ key: 'level', direction: 'asc' }]);
     store.select('g1');
     store.setPlan({ itemId: 'g1', target: 14, maxGold: 5_000, attempts: null });
 
     const held = store.getState();
-    expect(held.filter.maxForge).toBe(8);
+    expect(held.filter.forge).toBe('8to10');
     expect(held.sort).toEqual([{ key: 'level', direction: 'asc' }]);
     expect(held.selectedId).toBe('g1');
     expect(held.plan.target).toBe(14);
