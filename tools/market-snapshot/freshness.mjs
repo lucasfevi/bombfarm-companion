@@ -11,8 +11,18 @@
  * the file's own timestamp says a pass ran; it does not say a pass collected.
  *
  * `fetchedUtc` is what says a pass collected, and it is per row. A pass whose enumeration reached
- * nothing carries every row forward with the stamp it already had, so the newest one stops
- * advancing while `generatedUtc` goes on being rewritten every run.
+ * nothing carries every row forward with the stamp it already had, while `generatedUtc` goes on
+ * being rewritten every run.
+ *
+ * It is the median row that is asked, not the newest. Partial enumeration is normal and intended
+ * — a rate-limited pass advances coverage rather than discarding it, and a pass reaching 85% of
+ * rows is healthy — so the newest row answers "did anything get read", which one row satisfies.
+ * A published file stamped six minutes old with 30 rows read within the hour and 111 carried from
+ * over twelve hours earlier passed that check at 0.1 hours. The median asks whether the typical
+ * row is fresh, which is the claim the file makes by carrying a recent `generatedUtc`.
+ *
+ * The oldest row would be the wrong subject: it fails permanently on any row the enumeration
+ * keeps missing, which is a different problem with a different owner.
  */
 
 import { writeFileSync } from 'node:fs';
@@ -40,15 +50,16 @@ function ageInHours(stamp, nowMs) {
   return (nowMs - stampedMs) / MS_PER_HOUR;
 }
 
-/** How old the freshest row read is, which is a different claim from how old the file is. */
-function newestReadingAgeInHours(entries, nowMs) {
-  let newest = null;
-  for (const entry of entries) {
-    const age = ageInHours(entry?.fetchedUtc, nowMs);
-    if (age === null) continue;
-    if (newest === null || age < newest) newest = age;
-  }
-  return newest;
+/** How old the typical row read is, which is a different claim from how old the file is. */
+function medianReadingAgeInHours(entries, nowMs) {
+  const ages = entries
+    .map((entry) => ageInHours(entry?.fetchedUtc, nowMs))
+    .filter((age) => age !== null)
+    .sort((a, b) => a - b);
+  if (ages.length === 0) return null;
+
+  const middle = Math.floor(ages.length / 2);
+  return ages.length % 2 === 0 ? (ages[middle - 1] + ages[middle]) / 2 : ages[middle];
 }
 
 export function evaluateSnapshot({ status, body, nowMs }) {
@@ -76,15 +87,15 @@ export function evaluateSnapshot({ status, body, nowMs }) {
 
   const entries = snapshot?.entries;
   const populated = Array.isArray(entries) && entries.length > 0;
-  const readingAgeHours = populated ? newestReadingAgeInHours(entries, nowMs) : null;
+  const medianReadingAgeHours = populated ? medianReadingAgeInHours(entries, nowMs) : null;
 
   if (!populated) {
     failures.push('the published snapshot carries no entries');
-  } else if (readingAgeHours === null) {
+  } else if (medianReadingAgeHours === null) {
     failures.push('the published snapshot carries no entry it can date at all');
-  } else if (readingAgeHours > MAX_AGE_HOURS) {
+  } else if (medianReadingAgeHours > MAX_AGE_HOURS) {
     failures.push(
-      `the published snapshot has read nothing in ${readingAgeHours.toFixed(1)} hours (threshold ${MAX_AGE_HOURS}), so it is carrying old rows forward`,
+      `most of the published snapshot has not been read in ${medianReadingAgeHours.toFixed(1)} hours (threshold ${MAX_AGE_HOURS}), so it is carrying old rows forward`,
     );
   }
 
@@ -99,7 +110,7 @@ export function evaluateSnapshot({ status, body, nowMs }) {
     ok: failures.length === 0,
     failures,
     ageHours,
-    readingAgeHours,
+    medianReadingAgeHours,
     entryCount: Array.isArray(entries) ? entries.length : 0,
     matchedCatalogKeys: typeof matchedCatalogKeys === 'number' ? matchedCatalogKeys : 0,
   };
@@ -129,7 +140,7 @@ export function renderSummary(result) {
   if (!result.ok) return result.failures.join('\n');
   return [
     `the published snapshot advanced ${result.ageHours.toFixed(1)} hours ago`,
-    `its freshest reading is ${result.readingAgeHours.toFixed(1)} hours old`,
+    `its median row was read ${result.medianReadingAgeHours.toFixed(1)} hours ago`,
     `${result.entryCount} entries, ${result.matchedCatalogKeys} catalog keys matched`,
   ].join('\n');
 }

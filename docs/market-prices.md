@@ -110,7 +110,7 @@ Every way the snapshot can stop being produced has the same symptom — the file
 changing — so
 [`.github/workflows/market-snapshot-freshness.yml`](../.github/workflows/market-snapshot-freshness.yml)
 is what notices. Hourly, it fetches the file both apps read and fails when `generatedUtc` is more
-than three hours old, when the newest `fetchedUtc` across the entries is, when the body does not
+than three hours old, when the **median** `fetchedUtc` across the entries is, when the body does not
 parse, when `entries` is empty, or when `coverage.matchedCatalogKeys` is 0. A failing scheduled run
 notifies the repository owner, which is the whole mechanism.
 
@@ -126,6 +126,15 @@ after collection had stopped.
 `fetchedUtc` is what tells those apart, and it is per row: a pass whose enumeration reached nothing
 carries every row forward with the stamp it already had, while `generatedUtc` is rewritten every
 run regardless. So the file's own timestamp says a pass ran, and only the rows say a pass read.
+
+**It is the median row that is asked, not the newest.** Partial enumeration is normal and
+intended — a rate-limited pass advances coverage rather than discarding it — so the newest row
+answers "did anything get read at all", which a single row satisfies. A published file stamped six
+minutes old, with 30 of 141 rows re-read within the hour and the other 111 carried from over twelve
+hours earlier, passed that check at 0.1 hours. The median asks whether the *typical* row is fresh,
+which is the claim the file makes by carrying a recent `generatedUtc`; a run reaching 85% of rows
+still passes. The oldest row would be the wrong subject — it fails permanently on any row the
+enumeration keeps missing, which is a different problem with a different owner.
 
 It makes one GET of a public file, so it never calls Steam and installs nothing, and it says only
 that the snapshot has not advanced rather than guessing why. The threshold lives once, in
@@ -203,11 +212,16 @@ converts and reports `basis: 'converted'`, which is a UI's cue to mark the figur
 **That pass does not run on the scheduled job, and so the published file carries no native quote.**
 One call per item per currency is the spend a single address cannot make, which is why moving
 production onto a schedule meant giving it up: every published row is now converted, and the app
-says so. A sweep configured with no native currency quotes nothing at all and **retires** whatever
-native figures the previous file carried, rather than inheriting them — a price no later pass is
-coming to replace would otherwise age indefinitely behind a label claiming it is the number on the
-listing. The remaining native figures are the desktop app's per-item refresh, and whatever the
-manual rebuild lever produces on the run a human asks for.
+says so.
+
+**A published row carries only a quote the run that wrote it took itself.** Nothing is inherited
+from the previous file, on either route through the merge — neither for a row the run re-read
+without quoting, nor for a row a cut-short run never reached at all. A carried-forward quote has
+no pass coming to replace it, and resolution prefers it over the freshly-converted figure standing
+beside it, so the two drift apart without bound: measured on the first scheduled publish, 72 rows
+were showing a figure frozen the previous afternoon while the rest were minutes old. The remaining
+native figures are the desktop app's per-item refresh, and whatever the manual rebuild lever
+produces on the run a human asks for.
 
 **The quote never overrides the enumeration on whether anything is listed.** This endpoint
 under-reports: `Gold Gloves (Legendary)` answered `{"success":true}` with no price in either
@@ -220,10 +234,9 @@ rotation, never below the **3.5s** floor — the search pass's 1.5s is near doub
 endpoint tolerates — and it is the first thing a rate-limited run drops, which is why a quote
 carries `nativeQuotedUtc` of its own rather than being dated by the run that published it.
 
-A quote is inherited across a run that could not take its own, but **only while `lowestUsd` is
-unchanged**. Once the book has visibly moved the old quote is known wrong: `Gold Ring Lv 20 (Rare)`
-went $2.80 to $1.10 inside one six-hour window, and an inherited `R$ 14,46` would have gone on
-being shown against a real `R$ 5,75`.
+How wrong an inherited quote gets is why none is: `Gold Ring Lv 20 (Rare)` went $2.80 to $1.10
+inside one six-hour window, and a carried-over `R$ 14,46` would have gone on being shown against a
+real `R$ 5,75`.
 
 ## Only the rows that trade get a call of their own
 
@@ -470,7 +483,9 @@ instead of before it, and narrowing the staging step back to the snapshot by nam
 
 `tools/market-snapshot/freshness.test.mjs` proves each of the alarm's four checks red against a
 snapshot broken in exactly that one way, with a healthy one green beside it — a monitor never
-observed failing has not been verified.
+observed failing has not been verified. The coverage check is held to both edges: the witnessed
+shape of a handful of fresh rows among a stale majority fails, and a run that reached most rows and
+missed a few passes, because an alarm that fires on healthy behaviour is one nobody reads.
 
 `tools/market-snapshot-freshness-workflow.test.mjs` holds the alarm to its shape: a live hourly
 schedule, one time-boxed read-only job with no escape hatch, and every field the checker claims to

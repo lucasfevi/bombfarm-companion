@@ -79,8 +79,8 @@ describe('the published snapshot alarm', () => {
   });
 
   /**
-   * The witnessed shape, and the reason this check is pointed at the rows rather than at the file:
-   * a pass whose enumeration reached nothing republishes the rows it already had, which advances
+   * The reason this check is pointed at the rows rather than at the file: a pass whose
+   * enumeration reached nothing republishes the rows it already had, which advances
    * `generatedUtc` while nothing in the file has been read since.
    */
   it('fails a fresh, populated, matched snapshot that has stopped reading anything', () => {
@@ -91,16 +91,64 @@ describe('the published snapshot alarm', () => {
 
     expect(carriedForward.ok).toBe(false);
     expect(carriedForward.failures).toEqual([
-      `the published snapshot has read nothing in 4.4 hours (threshold ${MAX_AGE_HOURS}), so it is carrying old rows forward`,
+      `most of the published snapshot has not been read in 8.2 hours (threshold ${MAX_AGE_HOURS}), so it is carrying old rows forward`,
     ]);
   });
 
-  it('dates the file by its freshest reading, not its oldest', () => {
+  /**
+   * The witnessed shape, and the one a newest-row check cannot see: a file stamped six minutes
+   * old, 30 of 141 rows re-read within the hour and the other 111 carried from over twelve hours
+   * earlier. One freshly read row is not a freshly read file.
+   */
+  it('fails a snapshot in which a handful of rows are fresh and most are not', () => {
+    const barelySwept = evaluate({
+      generatedUtc: generatedHoursAgo(0.1),
+      entries: [
+        ...Array.from({ length: 30 }, () => entryReadHoursAgo(0.1)),
+        ...Array.from({ length: 111 }, () => entryReadHoursAgo(12.4)),
+      ],
+    });
+
+    expect(barelySwept.ok).toBe(false);
+    expect(barelySwept.failures).toEqual([
+      `most of the published snapshot has not been read in 12.4 hours (threshold ${MAX_AGE_HOURS}), so it is carrying old rows forward`,
+    ]);
+  });
+
+  /**
+   * Partial enumeration is normal and intended — a rate-limited pass advances coverage rather
+   * than discarding it — so an alarm that fires on a mildly partial run is one nobody reads.
+   */
+  it('passes a run that reached most rows and missed a few', () => {
+    const mostlySwept = evaluate({
+      generatedUtc: generatedHoursAgo(0.1),
+      entries: [
+        ...Array.from({ length: 120 }, () => entryReadHoursAgo(0.4)),
+        ...Array.from({ length: 21 }, () => entryReadHoursAgo(15.6)),
+      ],
+    });
+
+    expect(mostlySwept.ok).toBe(true);
+    expect(mostlySwept.medianReadingAgeHours).toBe(0.4);
+  });
+
+  it('dates the file by its median reading, not by either extreme', () => {
     const mixed = evaluate({
-      entries: [entryReadHoursAgo(MAX_AGE_HOURS + 40), entryReadHoursAgo(2)],
+      entries: [
+        entryReadHoursAgo(MAX_AGE_HOURS + 40),
+        entryReadHoursAgo(2),
+        entryReadHoursAgo(0.2),
+      ],
     });
     expect(mixed.ok).toBe(true);
-    expect(mixed.readingAgeHours).toBe(2);
+    expect(mixed.medianReadingAgeHours).toBe(2);
+  });
+
+  it('averages the two middle rows when the file has an even number of them', () => {
+    const even = evaluate({
+      entries: [entryReadHoursAgo(0.5), entryReadHoursAgo(1), entryReadHoursAgo(2), entryReadHoursAgo(8)],
+    });
+    expect(even.medianReadingAgeHours).toBe(1.5);
   });
 
   /**
@@ -200,7 +248,7 @@ describe('what the alarm prints', () => {
     expect(renderSummary(evaluate())).toBe(
       [
         'the published snapshot advanced 1.0 hours ago',
-        'its freshest reading is 1.0 hours old',
+        'its median row was read 1.0 hours ago',
         '1 entries, 1 catalog keys matched',
       ].join('\n'),
     );
