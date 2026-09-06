@@ -124,25 +124,33 @@ function steamTagsFor(catalog, log) {
 }
 
 /**
- * The snapshot to resume from, or null. The path is the caller's: the CLI resumes from `OUT`,
- * and a long-running caller resumes from wherever it keeps its own state.
+ * The snapshot in a serialised body, or null. `source` only names it in the log, so a caller that
+ * read the body from somewhere other than disk says where without a second parser existing.
+ */
+export function parsePrior(body, source, log = defaultLog) {
+  try {
+    // Normalised, not merely validated: the body is whatever the last run published, and a
+    // version 2 one carries no native quotes for the merge to reason about.
+    const parsed = readMarketSnapshot(JSON.parse(body));
+    if (parsed == null) {
+      log(`ignoring ${source}: not a recognised snapshot`);
+      return null;
+    }
+    log(`resuming from ${source} (${parsed.entries.length} entries, generated ${parsed.generatedUtc})`);
+    return parsed;
+  } catch (err) {
+    log(`ignoring ${source}: ${err.message}`);
+    return null;
+  }
+}
+
+/**
+ * The snapshot to resume from on disk, or null. The path is the caller's: the CLI resumes from
+ * `OUT`, and a long-running caller resumes from wherever it keeps its own state.
  */
 export function loadPrior(path, log = defaultLog) {
   if (!existsSync(path)) return null;
-  try {
-    // Normalised, not merely validated: the file on disk is whatever the last run published, and
-    // a version 2 one carries no native quotes for the merge to reason about.
-    const parsed = readMarketSnapshot(JSON.parse(readFileSync(path, 'utf-8')));
-    if (parsed == null) {
-      log(`ignoring ${path}: not a recognised snapshot`);
-      return null;
-    }
-    log(`resuming from ${path} (${parsed.entries.length} entries, generated ${parsed.generatedUtc})`);
-    return parsed;
-  } catch (err) {
-    log(`ignoring ${path}: ${err.message}`);
-    return null;
-  }
+  return parsePrior(readFileSync(path, 'utf-8'), path, log);
 }
 
 async function getJson(url) {
@@ -280,6 +288,9 @@ const QUOTE_EVERY_LISTED_ROW = ({ quotable }) => ({
   hashNames: quotable.map((entry) => entry.hashName),
 });
 
+/** No currency to ask for means no per-item call to make, whatever policy the caller brought. */
+const QUOTE_NOTHING = { hashNames: [] };
+
 /**
  * Run one complete sweep: enumerate, tag, reconcile, quote the rotation, build the snapshot.
  * The only Steam-talking entry point in the repository. Returns the artifact and what a caller
@@ -342,7 +353,13 @@ export async function runSweep({
   // per-item call is the expensive half of the sweep.
   const quotable = reconciled.entries.filter((entry) => entry.lowestUsd != null);
   const enumerationCalls = discovery.searchCalls + filterCalls;
-  const plan = planQuotes({ quotable, enumerationCalls, searchDelayMs });
+  // Every listed row falls to the enumeration when no native currency is configured, which is
+  // also what retires the native quotes a previous run took: a row nothing will quote again must
+  // not go on publishing an ageing figure under the label that says it is the listing's own.
+  const plan =
+    nativeCurrencies.length > 0
+      ? planQuotes({ quotable, enumerationCalls, searchDelayMs })
+      : QUOTE_NOTHING;
 
   // Intersected rather than trusted: a plan naming a row this pass never enumerated would spend a
   // call on something with nothing to price, and the rotation is the expensive half of the sweep.

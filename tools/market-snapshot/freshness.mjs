@@ -6,16 +6,26 @@
  *
  * Each of the last two has a precedent. A partial sweep once published valid, current JSON in
  * which `matchedCatalogKeys` was 0, so no owned item could look up a price. And a run of passes
- * that collected nothing went on republishing the previous pass's quotes carried forward, so the
+ * that collected nothing went on republishing the previous pass's rows carried forward, so the
  * file stayed current, populated and matched for hours after collection had stopped. A check on
  * the file's own timestamp says a pass ran; it does not say a pass collected.
+ *
+ * `fetchedUtc` is what says a pass collected, and it is per row. A pass whose enumeration reached
+ * nothing carries every row forward with the stamp it already had, so the newest one stops
+ * advancing while `generatedUtc` goes on being rewritten every run.
  */
 
 import { writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
-/** Raised here and nowhere else, so a cadence change costs one edit. */
-export const MAX_AGE_HOURS = 6;
+/**
+ * Raised here and nowhere else, so a cadence change costs one edit.
+ *
+ * Set against what the schedule delivers rather than what it asks for: scheduled runs are
+ * best-effort and routinely queue 10-30 minutes late, so a half-hourly cron lands every 30-60
+ * minutes. Three hours is several consecutive misses, which is a stoppage rather than a queue.
+ */
+export const MAX_AGE_HOURS = 3;
 
 /** The file both shipped clients read; a monitor pointed anywhere else proves nothing. */
 export const SNAPSHOT_URL =
@@ -30,11 +40,11 @@ function ageInHours(stamp, nowMs) {
   return (nowMs - stampedMs) / MS_PER_HOUR;
 }
 
-/** How old the freshest price in the file is, which is a different claim from how old the file is. */
-function newestQuoteAgeInHours(entries, nowMs) {
+/** How old the freshest row read is, which is a different claim from how old the file is. */
+function newestReadingAgeInHours(entries, nowMs) {
   let newest = null;
   for (const entry of entries) {
-    const age = ageInHours(entry?.nativeQuotedUtc, nowMs);
+    const age = ageInHours(entry?.fetchedUtc, nowMs);
     if (age === null) continue;
     if (newest === null || age < newest) newest = age;
   }
@@ -66,15 +76,15 @@ export function evaluateSnapshot({ status, body, nowMs }) {
 
   const entries = snapshot?.entries;
   const populated = Array.isArray(entries) && entries.length > 0;
-  const quoteAgeHours = populated ? newestQuoteAgeInHours(entries, nowMs) : null;
+  const readingAgeHours = populated ? newestReadingAgeInHours(entries, nowMs) : null;
 
   if (!populated) {
     failures.push('the published snapshot carries no entries');
-  } else if (quoteAgeHours === null) {
-    failures.push('the published snapshot carries no priced entry at all');
-  } else if (quoteAgeHours > MAX_AGE_HOURS) {
+  } else if (readingAgeHours === null) {
+    failures.push('the published snapshot carries no entry it can date at all');
+  } else if (readingAgeHours > MAX_AGE_HOURS) {
     failures.push(
-      `the published snapshot has priced nothing in ${quoteAgeHours.toFixed(1)} hours (threshold ${MAX_AGE_HOURS}), so it is carrying old prices forward`,
+      `the published snapshot has read nothing in ${readingAgeHours.toFixed(1)} hours (threshold ${MAX_AGE_HOURS}), so it is carrying old rows forward`,
     );
   }
 
@@ -89,7 +99,7 @@ export function evaluateSnapshot({ status, body, nowMs }) {
     ok: failures.length === 0,
     failures,
     ageHours,
-    quoteAgeHours,
+    readingAgeHours,
     entryCount: Array.isArray(entries) ? entries.length : 0,
     matchedCatalogKeys: typeof matchedCatalogKeys === 'number' ? matchedCatalogKeys : 0,
   };
@@ -119,7 +129,7 @@ export function renderSummary(result) {
   if (!result.ok) return result.failures.join('\n');
   return [
     `the published snapshot advanced ${result.ageHours.toFixed(1)} hours ago`,
-    `its freshest price is ${result.quoteAgeHours.toFixed(1)} hours old`,
+    `its freshest reading is ${result.readingAgeHours.toFixed(1)} hours old`,
     `${result.entryCount} entries, ${result.matchedCatalogKeys} catalog keys matched`,
   ].join('\n');
 }
