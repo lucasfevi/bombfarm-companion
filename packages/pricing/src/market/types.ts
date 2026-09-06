@@ -82,9 +82,10 @@ export interface MarketEntry {
   iconUrl: string | null;
   fetchedUtc: string;
   /**
-   * When `lowestNative` was last read, which is not `fetchedUtc`. The quote pass runs after the
-   * enumeration and is the first thing a rate-limited run drops, so a fresh row can carry a
-   * native price from hours earlier; collapsing the two would date that price to this run.
+   * When `lowestNative` was last read, which is not `fetchedUtc`: the quote pass runs after the
+   * enumeration and can date its figure hours later, so collapsing the two would misdate one of
+   * them. The published snapshot leaves both empty — it carries no quote it did not take on the
+   * pass that wrote it — and a client quoting the user's own currency fills them in per user.
    */
   nativeQuotedUtc: string | null;
 }
