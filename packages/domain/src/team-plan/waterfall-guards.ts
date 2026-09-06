@@ -18,6 +18,7 @@ import type {
   TeamPlanInput,
   HeroPlanContext,
   RosterEvaluation,
+  TeamPlanFarmObjective,
 } from './types';
 
 const EPS = 1e-9;
@@ -41,6 +42,7 @@ export function evaluateAt(
   gearInput: TeamPlanInput,
   itemById: ReadonlyMap<string, InventoryItem>,
   forgeFloor: number,
+  farmObjective?: TeamPlanFarmObjective,
 ): RosterEvaluation {
   const evalInput: EvaluateRosterInput = {
     contexts,
@@ -49,6 +51,7 @@ export function evaluateAt(
     slots: gearInput.account.fieldSlots,
     farm: farmFromAccount(gearInput),
     forgeFloor,
+    farmObjective,
   };
   return evaluateRoster(evalInput);
 }
@@ -60,7 +63,7 @@ export type AcceptedRespec = {
   /**
    * Marginal ROSTER objective gain at the moment each hero was accepted (`bestObjective - base`
    * at that iteration of the greedy loop). Keyed by heroId. Display-only — feeds
-   * `pointResets[].rosterGainDps`, never the objective or the accept decision itself.
+   * `pointResets[].rosterGainObjective`, never the objective or the accept decision itself.
    */
   gainByHeroId: Record<string, number>;
   /** Full roster evaluation for the final accepted vector — avoids a caller-side recompute. */
@@ -87,6 +90,7 @@ export function acceptPointResets(
   itemById: ReadonlyMap<string, InventoryItem>,
   floor: number,
   gearEvaluation: RosterEvaluation,
+  farmObjective?: TeamPlanFarmObjective,
 ): AcceptedRespec {
   const accepted: Record<string, PointAlloc> = { ...currentPts };
   let base = gearEvaluation.objective;
@@ -110,7 +114,7 @@ export function acceptPointResets(
     let bestEvaluation = baseEvaluation;
     for (const heroId of pending) {
       const trial = { ...accepted, [heroId]: finalPtsByHeroId[heroId] };
-      const evaluation = evaluateAt(contexts, assignment, trial, gearInput, itemById, floor);
+      const evaluation = evaluateAt(contexts, assignment, trial, gearInput, itemById, floor, farmObjective);
       if (evaluation.objective > bestObjective + EPS) {
         bestObjective = evaluation.objective;
         bestEvaluation = evaluation;
@@ -150,6 +154,7 @@ export type ChooseGearCandidateInput = {
   currentPts: Record<string, PointAlloc>;
   finalPtsByHeroId: Record<string, PointAlloc>;
   rosterHeroIds: ReadonlySet<string>;
+  farmObjective?: TeamPlanFarmObjective;
 };
 
 export type ChosenGear = {
@@ -230,11 +235,12 @@ export function chooseGearCandidate(input: ChooseGearCandidateInput): ChosenGear
     currentPts,
     finalPtsByHeroId,
     rosterHeroIds,
+    farmObjective,
   } = input;
   const floor = gearInput.forgeFloor;
   // Kept for the caller (buildWaterfall derives `requiresFullPlan` / `gearDipDps` from it) —
   // option B no longer uses it to discard a candidate here (see the docstring above).
-  const todayEvaluation = evaluateAt(contexts, baselineAssignment, currentPts, gearInput, itemById, 0);
+  const todayEvaluation = evaluateAt(contexts, baselineAssignment, currentPts, gearInput, itemById, 0, farmObjective);
   const sameAssignment = assignmentsMatch(baselineAssignment, planAssignment);
 
   const declared: GearCandidate[] = [{ key: 'none', assignment: baselineAssignment, floor: 0 }];
@@ -256,6 +262,7 @@ export function chooseGearCandidate(input: ChooseGearCandidateInput): ChosenGear
       gearInput,
       itemById,
       candidate.floor,
+      farmObjective,
     );
     const respec = acceptPointResets(
       contexts,
@@ -266,6 +273,7 @@ export function chooseGearCandidate(input: ChooseGearCandidateInput): ChosenGear
       itemById,
       candidate.floor,
       gearEvaluation,
+      farmObjective,
     );
     evaluated.push({ candidate, gearEvaluation, respec });
   }

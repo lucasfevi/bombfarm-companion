@@ -1,4 +1,5 @@
 import type { BirthStats, TreeSheetTotals } from '../birth-sheet';
+import type { FarmRateOptions, HeroFarmFacts, SquadFarmAccount } from '../farm-rate';
 import type { Loadout, PointAlloc, SheetStats } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import type {
@@ -20,7 +21,7 @@ export type PoolEntry = {
   level: number;
   /** The item's own stored forge level (lowest among the grouped ids). */
   upgrade: number;
-  /** `min(FORJA_MAX, max(upgrade, forgeFloor))` — what scoring uses (AD-RGO-06). */
+  /** `min(FORJA_MAX, max(upgrade, forgeFloor))` — what scoring uses. */
   effectiveUpgrade: number;
   slot: string;
   count: number;
@@ -105,9 +106,9 @@ export type HeroScore = {
 
 /**
  * Cache of per-hero scores, keyed by everything `scoreHeroLoadout` reads that can vary within
- * one run: `heroId | loadout | pts | auras`. The rest of its inputs — the `HeroPlanContext` a
- * `heroId` resolves to, and the `FarmContext` — are fixed for a whole `runTeamPlan`, which is
- * exactly the scope a memo may span. Never share one across two different inputs.
+ * one run: `heroId | loadout | pts | auras | farm`. Only the `HeroPlanContext` a `heroId`
+ * resolves to is fixed for a whole `runTeamPlan`, which is exactly the scope a memo may span.
+ * Never share one across two different inputs.
  *
  * FIFO-bounded, same reasoning as the solver's evaluation cache: a cache must never grow with
  * the evaluation budget. Eviction can only cost time, never change a result — the key
@@ -120,6 +121,18 @@ export type ScoreMemo = {
 
 export type RosterRegime = 'underSaturated' | 'saturated';
 
+/**
+ * What "better" means to the Team Plan's search.
+ *
+ * `'dps'` is the roster's duty-weighted sustained damage — the historical objective, and still
+ * the default. `'farm'` is the squad's best achievable gold per hour. They are different
+ * orderings over the same gear and points, and they disagree in SIGN and not merely in degree: a
+ * damage-mode plan that lifts roster damage by tens of percent can lower the gold the account
+ * earns. The measured figures live in this change's changeset, where each carries the capture it
+ * came from and that capture's date.
+ */
+export type TeamPlanObjective = 'dps' | 'farm';
+
 export type RosterEvaluation = {
   objective: number;
   regime: RosterRegime;
@@ -127,6 +140,14 @@ export type RosterEvaluation = {
   slots: number;
   perHero: Record<string, HeroScore>;
   auras: Record<TeamBuffId, number>;
+  /**
+   * Farm mode only: the phase `objective` was measured at, and the per-hero farm facts it was
+   * measured from. Absent in DPS mode, and `farmPhase` is `null` when no phase is feasible.
+   * `screenRosterObjective` reads both — it rescores only the heroes a move touches and prices
+   * the incumbent's phase alone, rather than sweeping the phase table per screened move.
+   */
+  farmPhase?: number | null;
+  farmFacts?: readonly HeroFarmFacts[];
 };
 
 export type TeamPlanHeroInput = {
@@ -162,6 +183,67 @@ export type TeamPlanAccountInput = {
   /** See {@link FarmContext.cycleSecsHouseIdx}/`cycleSecsLevel`. */
   cycleSecsHouseIdx?: number | null;
   cycleSecsLevel?: number | null;
+  /**
+   * The three account-level terms only the FARM objective reads, none of which the DPS objective
+   * has ever needed. `teamCoinPct` (`skills.totals.team_coin × 100`, the tree's gold multiplier)
+   * defaults to 0 and `xpMult` (`skills.totals.xp_mult`, verbatim) to 1, both matching the
+   * estimator. A DPS-mode plan is unaffected by all three.
+   *
+   * `maxPhase` (`account.max_phase`) has NO default in farm mode — `runTeamPlan` refuses to plan
+   * for gold without it rather than fall back to the 600-phase table ceiling, which would
+   * optimise the squad for phases the account has never unlocked. Optional only because a
+   * DPS-mode caller genuinely has no use for it.
+   */
+  teamCoinPct?: number;
+  xpMult?: number;
+  maxPhase?: number | null;
+};
+
+/**
+ * The build-independent half of one hero's farm basis, extracted once per run.
+ *
+ * `dmgMult` and the two loot ability levels are functions of the hero's abilities and the frozen
+ * team auras alone — no gear, no points — so they survive every candidate the search tries. The
+ * build-DEPENDENT half (the effective sheet, its per-point deltas, and the farm `Context`) comes
+ * from the scorer per evaluation and is combined with this.
+ */
+export type FrozenHeroFarmTerms = {
+  /** The very `HeroPlanContext` the run was built from — fixed for a whole `runTeamPlan`, which
+   *  is also the exact lifetime of the objective holding it. */
+  ctx: HeroPlanContext;
+  dmgMult: number;
+  /**
+   * Present exactly for a squad hero the search may not re-gear. Nothing supplies a loadout for
+   * such a hero per evaluation — the assignment only covers optimize scope — so the objective
+   * carries the one it will farm with for the whole run.
+   */
+  fixedLoadout?: Loadout;
+};
+
+/**
+ * Everything a farm-mode evaluation needs that does not move as the search reassigns gear or
+ * points: the rotation-priced team auras, the phase-1/zero-mitigation farm context the farm
+ * estimator prices every hero against, the account terms the squad reduction reads, and the
+ * per-hero frozen terms above (in roster order).
+ *
+ * `heroes` is the SQUAD, not the search's scope. A hero the player left alone still fields, still
+ * takes a House slot and still earns gold, and House allocation, `uptimeSum` and `sorteFraction`
+ * are all nonlinear in who is present — so pricing the squad without it answers a question about
+ * a roster the player is not running. What scope decides is which of these heroes the search may
+ * MOVE gear onto, which is the same split `farm-hero-optimize.ts` already makes.
+ *
+ * Frozen deliberately, and for the same reason the respec optimizer freezes them: the auras are a
+ * function of every hero's uptime, uptime moves with the build, and re-pricing them per candidate
+ * would cost a pipeline pass per candidate. The residual is second-order — only Fôlego reaches
+ * uptime at all, and a roster whose Fôlego total sits at its cap has no sensitivity left.
+ */
+export type TeamPlanFarmObjective = {
+  auras: Record<TeamBuffId, number>;
+  farm: FarmContext;
+  account: SquadFarmAccount;
+  phaseOptions: FarmRateOptions;
+  treeLuckFlatPct: number;
+  heroes: readonly FrozenHeroFarmTerms[];
 };
 
 export type TeamPlanInput = {
@@ -170,6 +252,8 @@ export type TeamPlanInput = {
   account: TeamPlanAccountInput;
   scopeByHeroId: Record<string, ScopeState>;
   forgeFloor: number;
+  /** Omitted ⇒ `'dps'`, the historical behaviour. See {@link TeamPlanObjective}. */
+  objective?: TeamPlanObjective;
 };
 
 /**
@@ -236,10 +320,15 @@ export type TeamPlan = {
      *  the hero's live points instead pairs {@link pts} with a start nothing here measured. */
     ptsBefore: Record<string, number>;
     pts: Record<string, number>;
-    /** Per-hero sustained % change, MAY be negative — the roster can still gain. Not floored. */
-    gainPct: number;
-    /** Marginal ROSTER objective gain at the moment this reset was accepted. Display-only. */
-    rosterGainDps: number;
+    /**
+     * Per-hero sustained DPS % change, MAY be negative — the roster can still gain. Not floored.
+     * DPS in BOTH objective modes: the farm objective replaces only the scalar the search
+     * compares, and leaves `perHero` describing the roster's damage state.
+     */
+    heroGainDpsPct: number;
+    /** Marginal ROSTER objective gain at the moment this reset was accepted — sustained damage
+     *  under the DPS objective, gold per hour under the farm one. Display-only. */
+    rosterGainObjective: number;
     /** `heroLevel * 1000` gold. Display-only — never in the objective, never a filter or gate. */
     resetCostGold: number;
   }[];
@@ -307,4 +396,14 @@ export type EvaluateRosterInput = {
    * the search to reuse the ~14 heroes a neighbouring assignment leaves untouched.
    */
   scoreMemo?: ScoreMemo;
+  /**
+   * The resolved farm objective, or absent for `'dps'`.
+   *
+   * ONE field rather than a `'dps' | 'farm'` tag beside a bridge: the bridge is derived once from
+   * the whole `TeamPlanInput` and carries every frozen term a farm evaluation needs, so a
+   * separate tag could only ever contradict it. `TeamPlanObjective` stays the caller-facing knob
+   * on {@link TeamPlanInput}; `runTeamPlan` turns `'farm'` into this and nothing else selects the
+   * mode below that point.
+   */
+  farmObjective?: TeamPlanFarmObjective;
 };

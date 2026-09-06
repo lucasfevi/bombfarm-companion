@@ -19,6 +19,7 @@ import type {
   HeroPlanContext,
   RosterEvaluation,
   ScoreMemo,
+  TeamPlanFarmObjective,
 } from './types';
 
 /**
@@ -177,6 +178,7 @@ export function evaluateAssignment(
   input: TeamPlanInput,
   itemById: ReadonlyMap<string, InventoryItem>,
   budget: SolverBudget,
+  farmObjective?: TeamPlanFarmObjective,
 ): RosterEvaluation {
   const invariantKey = invariantCacheKey(ptsByHeroId, input.forgeFloor);
   const slotKey = slotCacheKey(assignment);
@@ -195,6 +197,7 @@ export function evaluateAssignment(
     farm: farmFromAccount(input),
     forgeFloor: input.forgeFloor,
     scoreMemo: budget.scoreMemo,
+    farmObjective,
   };
   const result = evaluateRoster(evalInput);
   // Stop memoising once the cap is reached rather than evicting: the search keeps running and
@@ -237,6 +240,7 @@ function beamCandidates(
   input: TeamPlanInput,
   itemById: ReadonlyMap<string, InventoryItem>,
   budget: SolverBudget,
+  farmObjective?: TeamPlanFarmObjective,
 ): MoveCandidate[] {
   const farm = farmFromAccount(input);
   const screened = moves.map((move) => {
@@ -255,6 +259,7 @@ function beamCandidates(
         farm,
         forgeFloor: input.forgeFloor,
         scoreMemo: budget.scoreMemo,
+        farmObjective,
       },
       currentEval,
       changed,
@@ -280,6 +285,7 @@ function gearPass(
   itemById: ReadonlyMap<string, InventoryItem>,
   budget: SolverBudget,
   startEval: RosterEvaluation,
+  farmObjective?: TeamPlanFarmObjective,
 ): { assignment: AssignmentState; evaluation: RosterEvaluation } {
   let currentAssignment = assignment;
   let currentEval = startEval;
@@ -302,7 +308,7 @@ function gearPass(
     let bestEval = currentEval;
 
     const candidates = beamActive
-      ? beamCandidates(moves, currentAssignment, currentEval, contexts, ptsByHeroId, input, itemById, budget)
+      ? beamCandidates(moves, currentAssignment, currentEval, contexts, ptsByHeroId, input, itemById, budget, farmObjective)
       : moves.map((move) => ({ move, assignment: applyMove(currentAssignment, move) }));
 
     for (const candidate of candidates) {
@@ -314,6 +320,7 @@ function gearPass(
         input,
         itemById,
         budget,
+        farmObjective,
       );
       if (candidateEval.objective > bestEval.objective + EPS) {
         bestEval = candidateEval;
@@ -378,6 +385,7 @@ export type SeedRunnerInput = {
   gearInput: TeamPlanInput;
   itemById: ReadonlyMap<string, InventoryItem>;
   budget: SolverBudget;
+  farmObjective?: TeamPlanFarmObjective;
 };
 
 export type SeedResult = {
@@ -398,6 +406,7 @@ export function runSeedSearch(input: SeedRunnerInput): SeedResult {
     input.gearInput,
     input.itemById,
     input.budget,
+    input.farmObjective,
   );
   let rounds = 0;
   let prevObjective = evaluation.objective;
@@ -411,6 +420,7 @@ export function runSeedSearch(input: SeedRunnerInput): SeedResult {
       input.itemById,
       input.budget,
       evaluation,
+      input.farmObjective,
     );
     assignment = gearResult.assignment;
     evaluation = gearResult.evaluation;
@@ -424,6 +434,7 @@ export function runSeedSearch(input: SeedRunnerInput): SeedResult {
       input.gearInput,
       input.itemById,
       input.budget,
+      input.farmObjective,
     );
     // Guard: pointsPass is per-hero and can lower the ROSTER objective (saturated fair-share).
     // The old code let this degraded vector survive whenever the round loop broke right after
@@ -451,6 +462,7 @@ export function runSeedSearch(input: SeedRunnerInput): SeedResult {
     input.gearInput,
     input.itemById,
     input.budget,
+    input.farmObjective,
   );
   // optimizeBuild is per-hero; reject a final pass that lowers roster objective
   // (e.g. under saturated fair-share) so we never recommend a DPS-down respec.

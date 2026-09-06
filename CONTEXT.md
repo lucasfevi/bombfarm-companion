@@ -27,6 +27,13 @@ Ubiquitous language for the companion's game model. Terms only — no implementa
   and every drop chance are boosted (+40%, +80% VIP). Only multiplies what the player
   destroys while it runs.
 
+## Team Plan
+
+- **Plan objective** — what the Team Plan's search treats as "better" when it decides where gear
+  and stat points should go. Two of them: **DPS**, the roster's duty-weighted sustained damage,
+  and **Farm**, the squad's gold per hour at the best phase it can hold. They order the same
+  roster differently, and can disagree in sign.
+
 ## Loot
 
 - **Sorte (field luck)** — the loot-chance multiplier: average luck of on-field heroes plus the

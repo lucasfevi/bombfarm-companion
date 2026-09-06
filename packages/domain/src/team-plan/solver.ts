@@ -1,6 +1,8 @@
 import type { Loadout } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import { unmodelledAbilitiesInScope } from './ability-extras';
+import { loadoutForScoring } from './evaluate';
+import { buildFarmObjective, isSquadScope } from './farm-objective';
 import { buildHeroPlanContexts } from './hero-context';
 import { buildPool } from './pool';
 import { createScoreMemo } from './score';
@@ -15,7 +17,13 @@ import {
 } from './solver-search';
 import { loadoutsFromAssignment } from './solver-assignment';
 import { buildWaterfall } from './waterfall';
-import type { TeamPlan, TeamPlanInput, TeamPlanResult, HeroPlanContext } from './types';
+import type {
+  TeamPlan,
+  TeamPlanFarmObjective,
+  TeamPlanInput,
+  TeamPlanResult,
+  HeroPlanContext,
+} from './types';
 
 export {
   TEAM_PLAN_BEAM_WIDTH,
@@ -66,9 +74,33 @@ function evaluateCurrentAssignment(
   assignment: ReturnType<typeof buildInitialAssignment>,
   itemById: ReadonlyMap<string, InventoryItem>,
   budget: SolverBudget,
+  farmObjective?: TeamPlanFarmObjective,
 ) {
   const ptsByHeroId = currentPtsByHeroId(input);
-  return evaluateAssignment(assignment, contexts, ptsByHeroId, input, itemById, budget);
+  return evaluateAssignment(assignment, contexts, ptsByHeroId, input, itemById, budget, farmObjective);
+}
+
+/**
+ * The farm objective's once-per-run setup, or `undefined` in DPS mode.
+ *
+ * Built over the whole SQUAD rather than the search's optimize scope — a hero the player left
+ * alone still farms — while the search below still only moves gear the pool gives it.
+ *
+ * Seeded from the roster AS IT STANDS — the current loadout at forge floor 0, not the baseline
+ * assignment — because the team auras it freezes are priced from every hero's uptime today. That
+ * is the same starting point the farm estimator reads off the save, which is what lets the two
+ * agree exactly before the search moves anything.
+ */
+function farmObjectiveFor(
+  input: TeamPlanInput,
+  contexts: HeroPlanContext[],
+): TeamPlanFarmObjective | undefined {
+  if (input.objective !== 'farm') return undefined;
+  const squadContexts = contexts.filter((ctx) => isSquadScope(ctx.scope));
+  if (squadContexts.length === 0) return undefined;
+  const loadoutByHeroId: Record<string, Loadout> = {};
+  for (const hero of input.heroes) loadoutByHeroId[hero.heroId] = loadoutForScoring(hero.loadout, 0);
+  return buildFarmObjective(squadContexts, input.account, loadoutByHeroId);
 }
 
 export function runTeamPlan(
@@ -106,12 +138,14 @@ export function runTeamPlan(
     beamWidth: options?.beamWidth ?? TEAM_PLAN_BEAM_WIDTH,
   };
 
+  const farmObjective = farmObjectiveFor(input, contexts);
   const currentEval = evaluateCurrentAssignment(
     input,
     contexts,
     baseAssignment,
     itemById,
     budget,
+    farmObjective,
   );
   const seeds = buildSeedAssignments(
     baseAssignment,
@@ -129,6 +163,7 @@ export function runTeamPlan(
     gearInput: input,
     itemById,
     budget,
+    farmObjective,
   });
 
   for (let i = 1; i < seeds.length && !budget.exhausted; i++) {
@@ -141,6 +176,7 @@ export function runTeamPlan(
       gearInput: input,
       itemById,
       budget,
+      farmObjective,
     });
     if (candidate.evaluation.objective > best.evaluation.objective + 1e-9) {
       best = candidate;
@@ -154,6 +190,7 @@ export function runTeamPlan(
     planAssignment: best.assignment,
     finalPtsByHeroId: best.ptsByHeroId,
     itemById,
+    farmObjective,
   });
 
   // The waterfall is the decision point (AC-RGO monotonicity fix) — it may reject the search's

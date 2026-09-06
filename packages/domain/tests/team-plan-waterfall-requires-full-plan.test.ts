@@ -120,7 +120,7 @@ describe('buildWaterfall requiresFullPlan / gearDipDps (mocked evaluateRoster)',
     // The reset that bought the recovery is disclosed with its display-only cost.
     expect(result.pointResets).toHaveLength(1);
     expect(result.pointResets[0]).toMatchObject({ heroId: 'hero1', resetCostGold: 50_000 });
-    expect(result.pointResets[0]!.rosterGainDps).toBeCloseTo(300, 6);
+    expect(result.pointResets[0]!.rosterGainObjective).toBeCloseTo(300, 6);
   });
 
   it('does not flag requiresFullPlan when the gear step never dips', () => {

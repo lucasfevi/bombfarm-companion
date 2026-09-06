@@ -133,7 +133,10 @@ const SRC_ALLOWLIST: Record<string, number[]> = {
   // +1 (line number only): the `cycleSecs` pass-through added one line above this hit.
   // +2 more: the House-ceiling regression repair's `cycleSecsHouseIdx`/`cycleSecsLevel`
   // pass-through (PR #86 finding, house.ts:38) added two more lines above it.
-  'team-plan/score.ts': [138],
+  // +12 (line number only): keying the score memo on the `FarmContext` too — a run holds two of
+  // them once the farm objective exists — added a signature builder and its doc comment above
+  // this hit.
+  'team-plan/score.ts': [150],
 };
 
 /**

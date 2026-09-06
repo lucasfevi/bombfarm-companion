@@ -39,6 +39,11 @@ export function buildTeamPlanInputFromStore(state: PlannerStore): TeamPlanInput 
       // The (house, level) `cycleSecs` above is anchored to — see `AccountSlice.houseCycleSecsHouseIdx`.
       cycleSecsHouseIdx: state.houseCycleSecsHouseIdx,
       cycleSecsLevel: state.houseCycleSecsLevel,
+      // Read by the farm objective only, and it refuses to plan without `maxPhase` — supplied
+      // here so a caller switching a plan to gold cannot silently get the 600-phase ceiling.
+      teamCoinPct: state.treeTeamCoinPct,
+      xpMult: state.treeXpMult,
+      maxPhase: state.maxPhase,
     },
     // Must match the scope board: missing keys use battleAllowed defaults (Donate when
     // disabled), never a hard-coded Optimize — that silently scored Donate-looking heroes.

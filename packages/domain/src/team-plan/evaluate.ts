@@ -1,6 +1,7 @@
 import type { Loadout } from '../gear/types';
 import { passagemBastaoMult } from './ability-extras';
 import { computeRosterAuras } from './auras';
+import { evaluateFarmObjective, screenFarmObjective } from './farm-objective';
 import { effectiveUpgrade } from './pool';
 import { createScoreMemo, scoreHeroLoadout } from './score';
 import type { EvaluateRosterInput, HeroScore, RosterEvaluation, RosterRegime } from './types';
@@ -8,7 +9,7 @@ import type { EvaluateRosterInput, HeroScore, RosterEvaluation, RosterRegime } f
 export const AURA_FIXED_POINT_ROUNDS = 4;
 const DUTY_EPSILON = 1e-9;
 
-function loadoutForScoring(loadout: Loadout, forgeFloor: number): Loadout {
+export function loadoutForScoring(loadout: Loadout, forgeFloor: number): Loadout {
   const out: Loadout = {};
   for (const [slot, item] of Object.entries(loadout)) {
     if (!item) {
@@ -79,6 +80,25 @@ export function screenRosterObjective(
   base: RosterEvaluation,
   changedHeroIds: readonly string[],
 ): number {
+  if (input.farmObjective) {
+    const changedLoadouts: Record<string, Loadout> = {};
+    for (const heroId of changedHeroIds) {
+      changedLoadouts[heroId] = loadoutForScoring(
+        input.loadoutsByHeroId[heroId] ?? {},
+        input.forgeFloor,
+      );
+    }
+    return screenFarmObjective(
+      input.farmObjective,
+      base.farmFacts,
+      base.farmPhase ?? null,
+      changedLoadouts,
+      input.ptsByHeroId,
+      changedHeroIds,
+      input.scoreMemo,
+    );
+  }
+
   const slots = Math.max(1, Math.round(input.slots));
   const duties: Record<string, number> = {};
   for (const [heroId, score] of Object.entries(base.perHero)) duties[heroId] = score.duty;
@@ -150,13 +170,17 @@ export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
 
   const { objective, regime } = objectiveFromScores(perHero, input.contexts, sumDuty, slots);
   const auras = computeRosterAuras(input.contexts, duties);
+  const evaluation: RosterEvaluation = { objective, regime, sumDuty, slots, perHero, auras };
+  if (!input.farmObjective) return evaluation;
 
-  return {
-    objective,
-    regime,
-    sumDuty,
-    slots,
-    perHero,
-    auras,
-  };
+  // The farm objective replaces the scalar the solver compares, and nothing else: `regime`,
+  // `sumDuty` and `perHero` keep describing the roster's DPS state, which is what the waterfall's
+  // per-hero table and the point passes read.
+  const farm = evaluateFarmObjective(
+    input.farmObjective,
+    scoringLoadouts,
+    input.ptsByHeroId,
+    memo,
+  );
+  return { ...evaluation, objective: farm.objective, farmPhase: farm.phase, farmFacts: farm.facts };
 }
