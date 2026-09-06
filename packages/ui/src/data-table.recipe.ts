@@ -16,6 +16,19 @@ export const dataTableHeadSectionClass = `sticky top-0 z-20 ${dataTableHeadFillC
 export const dataTableHeadClass =
   `sticky top-0 z-20 whitespace-nowrap border-b border-line ${dataTableHeadFillClass} p-0 text-left font-semibold text-muted [box-shadow:0_1px_0_var(--line),0_-12px_0_color-mix(in_oklch,var(--bg)_70%,var(--surface))]`;
 
+/**
+ * Head chrome for a table with no scrollport. The pinned variant's upward sealing shadow paints
+ * 12px of header fill above the `<thead>`; a scrollport clips that, and a table without one lets
+ * it spill into the gap above the table, so the head reads a rung taller than the rows under it.
+ * `relative` stands in for what `sticky` was doing besides pinning — giving the sortable button's
+ * full-cell `before:` layer a containing block at the cell.
+ */
+export const dataTableHeadStaticClass =
+  `relative whitespace-nowrap border-b border-line ${dataTableHeadFillClass} p-0 text-left font-semibold text-muted`;
+
+/** `<thead>` for a table with no scrollport: the fill, without the pin. */
+export const dataTableHeadStaticSectionClass = dataTableHeadFillClass;
+
 /** Shared inner pad/type for static and sortable column headers (keeps columns aligned). */
 export const dataTableHeadInnerClass =
   'flex w-full items-center gap-0.5 px-2 py-[7px] text-[10px] font-semibold tracking-[0.02em] uppercase';
