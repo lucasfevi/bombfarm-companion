@@ -13,6 +13,7 @@ const EN: AppSettings = {
   alwaysOnTopMain: false,
   alwaysOnTopMini: false,
   forgeWritesEnabled: false,
+  restartGameOnExit: false,
 };
 const PT_BR: AppSettings = {
   schemaVersion: 3,
@@ -20,6 +21,7 @@ const PT_BR: AppSettings = {
   alwaysOnTopMain: false,
   alwaysOnTopMini: false,
   forgeWritesEnabled: false,
+  restartGameOnExit: false,
 };
 
 describe.each(availableBindings)('createSettingsStore over the real account_meta table (%s)', (binding) => {

@@ -10,6 +10,7 @@ describe('migrateStoredSettings', () => {
       alwaysOnTopMain: false,
       alwaysOnTopMini: false,
       forgeWritesEnabled: false,
+      restartGameOnExit: false,
     });
   });
 
@@ -27,6 +28,7 @@ describe('migrateStoredSettings', () => {
       alwaysOnTopMain: true,
       alwaysOnTopMini: false,
       forgeWritesEnabled: false,
+      restartGameOnExit: false,
     });
   });
 
@@ -37,6 +39,7 @@ describe('migrateStoredSettings', () => {
       alwaysOnTopMain: true,
       alwaysOnTopMini: false,
       forgeWritesEnabled: true,
+      restartGameOnExit: true,
     };
     expect(migrateStoredSettings(stored)).toEqual(stored);
   });
@@ -55,6 +58,7 @@ describe('migrateStoredSettings', () => {
       alwaysOnTopMain: false,
       alwaysOnTopMini: true,
       forgeWritesEnabled: false,
+      restartGameOnExit: false,
     });
   });
 
@@ -66,8 +70,28 @@ describe('migrateStoredSettings', () => {
         alwaysOnTopMain: DEFAULT_SETTINGS.alwaysOnTopMain,
         alwaysOnTopMini: DEFAULT_SETTINGS.alwaysOnTopMini,
         forgeWritesEnabled: DEFAULT_SETTINGS.forgeWritesEnabled,
+        restartGameOnExit: DEFAULT_SETTINGS.restartGameOnExit,
       });
     }
+  });
+
+  it('fills a missing restartGameOnExit with false while preserving every other stored field', () => {
+    expect(
+      migrateStoredSettings({
+        schemaVersion: 3,
+        locale: 'pt-BR',
+        alwaysOnTopMain: true,
+        alwaysOnTopMini: true,
+        forgeWritesEnabled: true,
+      }),
+    ).toEqual({
+      schemaVersion: 3,
+      locale: 'pt-BR',
+      alwaysOnTopMain: true,
+      alwaysOnTopMini: true,
+      forgeWritesEnabled: true,
+      restartGameOnExit: false,
+    });
   });
 
   it('returns null for an unknown future schema version', () => {
@@ -109,6 +133,23 @@ describe('migrateStoredSettings', () => {
         alwaysOnTopMain: false,
         alwaysOnTopMini: false,
         forgeWritesEnabled: 'on',
+      }),
+    ).toBeNull();
+    expect(
+      migrateStoredSettings({
+        schemaVersion: 3,
+        locale: 'en',
+        alwaysOnTopMain: false,
+        alwaysOnTopMini: false,
+        forgeWritesEnabled: false,
+        restartGameOnExit: 'yes',
+      }),
+    ).toBeNull();
+    expect(
+      migrateStoredSettings({
+        schemaVersion: 3,
+        locale: 'en',
+        restartGameOnExit: 1,
       }),
     ).toBeNull();
   });
