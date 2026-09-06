@@ -869,7 +869,9 @@ async function bootstrap(): Promise<void> {
     clock: { now: () => Date.now(), setTimeout, clearTimeout },
     processPresent: createProcessPresencePort(),
     askSteam: () => askSteam(createSteamLaunchDeps()),
-    log: (event, detail) => log.info({ scope: 'main', event, ...detail }),
+    log: (event, detail) => {
+      log.info({ scope: 'main', event, ...detail });
+    },
   });
   gameKeepAlive.setEnabled(currentSettings.restartGameOnExit);
   gameKeepAlive.start();
