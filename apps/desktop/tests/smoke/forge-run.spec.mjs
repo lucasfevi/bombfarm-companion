@@ -13,8 +13,14 @@ const desktopRoot = path.join(__dirname, '..', '..');
  * arrives through `forge:inject`, the test-only channel that pushes a scripted sequence through
  * the same `forge:event` seam the real service uses. What is proved here is everything on the
  * renderer's side of that seam: the rail's states in order, that the rail spans the whole row as
- * it expands and that the screen never grows a scrollbar doing it, the tally's quiet-rung
- * collapsing, the result heading, and the return to a collapsed rail.
+ * it expands while the split below it keeps its shape, the tally's quiet-rung collapsing, the
+ * result heading, and the return to a collapsed rail.
+ *
+ * The screen is sized by its content, so what the layout promises here is not that nothing
+ * scrolls — the page is free to be taller than the window. It is that the bag is as tall as the
+ * item and plan panels beside it, that the column holding those two never scrolls inside itself,
+ * that the bag table is the one scroller on the screen, and that opening the ledger only ever
+ * adds height below what is already drawn.
  *
  * `forge:inject` deliberately writes no ledger row — only a real run through the service does —
  * so the ledger at the foot of the screen stays empty through all three phases, and that is what
@@ -192,29 +198,101 @@ async function railSpansTheRow(page) {
   expect(Math.round(rail.width)).toBe(Math.round(split.width));
 }
 
-/** `<main>` is the app's one scroll region, and this screen is supposed to fill it and scroll
- *  only inside the bag table — so an expanding rail must not hand `<main>` anything to scroll. */
-async function nothingScrolls(page) {
-  const metrics = await page.evaluate(() => {
+function boxesOf(page) {
+  return page.evaluate(() => {
     const main = document.querySelector('main');
-    return main === null
-      ? null
-      : {
-          mainScroll: main.scrollHeight,
-          mainClient: main.clientHeight,
-          docScroll: document.documentElement.scrollHeight,
-          docClient: document.documentElement.clientHeight,
-        };
+    // Measured down the page, not down the viewport: clicking the ledger's trigger scrolls
+    // `<main>`, which moves every viewport-relative `top` on the screen without moving anything.
+    const box = (selector) => {
+      const element = document.querySelector(selector);
+      if (element === null) return null;
+      return {
+        pageTop: Math.round(element.getBoundingClientRect().top) + (main?.scrollTop ?? 0),
+        height: Math.round(element.getBoundingClientRect().height),
+        scrollHeight: element.scrollHeight,
+        clientHeight: element.clientHeight,
+        offsetWidth: element.offsetWidth,
+        clientWidth: element.clientWidth,
+      };
+    };
+    return {
+      view: box('[data-testid="forge-view"]'),
+      split: box('[data-testid="forge-split"]'),
+      bag: box('[data-testid="forge-bag-panel"]'),
+      aside: box('[data-testid="forge-aside"]'),
+      scroller: box('[data-testid="inventory-table-scroll"]'),
+      mainScroll: main === null ? null : main.scrollHeight,
+    };
   });
-  expect(metrics).not.toBeNull();
-  expect(metrics.mainScroll).toBeLessThanOrEqual(metrics.mainClient + 1);
-  expect(metrics.docScroll).toBeLessThanOrEqual(metrics.docClient + 1);
+}
+
+/** The floor the screen puts under the split so an unpicked bag is still worth reading. */
+const SPLIT_MIN_HEIGHT = 460;
+
+/**
+ * The column beside the bag grows to exactly what it draws — no scroller of its own, and no
+ * scrollbar narrowing it — and the bag panel is as tall as that column, floored so an unpicked
+ * bag is still worth reading. Polled rather than slept through: the column animates to its new
+ * height, and a hidden window takes its time about it.
+ */
+async function splitFollowsTheAside(page) {
+  const settled = {
+    asideHoldsItsContent: true,
+    asideKeepsItsFullWidth: true,
+    bagIsTheRowHeight: true,
+    rowFollowsTheAside: true,
+  };
+  await expect
+    .poll(
+      async () => {
+        const { bag, aside, split } = await boxesOf(page);
+        if (bag === null || aside === null || split === null) return null;
+        return {
+          asideHoldsItsContent: aside.scrollHeight <= aside.clientHeight + 1,
+          asideKeepsItsFullWidth: aside.clientWidth === aside.offsetWidth,
+          bagIsTheRowHeight: bag.height === split.height,
+          rowFollowsTheAside: split.height === Math.max(aside.height, SPLIT_MIN_HEIGHT),
+        };
+      },
+      { timeout: 15_000 },
+    )
+    .toEqual(settled);
+}
+
+/** The bag is the one thing on this screen that scrolls inside itself. */
+async function theBagScrolls(page) {
+  const { scroller } = await boxesOf(page);
+  expect(scroller).not.toBeNull();
+  expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight);
+}
+
+/** The screen is sized by its content now, so the page is free to be taller than the window —
+ *  but only downwards. Opening the ledger adds to what `<main>` scrolls and moves nothing above
+ *  it, which is the promise the old "nothing scrolls anywhere" rule was standing in for. */
+async function openingTheLedgerOnlyAdds(page, ledger) {
+  const trigger = ledger.getByRole('button', { name: 'Run ledger' });
+  const before = await boxesOf(page);
+  await trigger.click();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  await expect.poll(async () => (await boxesOf(page)).view.height).toBeGreaterThan(before.view.height);
+  const after = await boxesOf(page);
+  expect(after.split).toEqual(before.split);
+  expect(after.mainScroll).toBeGreaterThanOrEqual(before.mainScroll);
+  await splitFollowsTheAside(page);
+
+  await trigger.click();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect.poll(async () => (await boxesOf(page)).view.height).toBe(before.view.height);
+  expect((await boxesOf(page)).split).toEqual(before.split);
 }
 
 test.describe('forge run smoke', () => {
-  test('draws an injected run through running and finished and back to a collapsed rail, spanning the row and never scrolling the screen', async ({}, testInfo) => {
+  test('draws an injected run through running and finished and back to a collapsed rail, spanning the row while the bag stays as tall as the column beside it', async ({}, testInfo) => {
     testInfo.setTimeout(180_000);
     await withForge(async (page) => {
+      // The whole bag, before the hero filter narrows it: the table is the screen's one scroller.
+      await theBagScrolls(page);
+
       const itemId = await selectFirstWornPiece(page);
       expect(itemId).toBeTruthy();
 
@@ -222,9 +300,10 @@ test.describe('forge run smoke', () => {
       const ledger = page.getByTestId('forge-ledger');
       await expect(rail).toHaveAttribute('data-state', 'collapsed');
       await expect(ledger).toHaveAttribute('data-state', 'empty');
-      await nothingScrolls(page);
+      await splitFollowsTheAside(page);
+      await openingTheLedgerOnlyAdds(page, ledger);
 
-      // --- Running: the rail expands across the whole row, and the screen still fits ----------
+      // --- Running: the rail expands across the whole row, and the split keeps its shape ------
       expect(await inject(page, scriptedSteps(itemId))).toEqual({ ok: true });
       await expect(rail).toHaveAttribute('data-state', 'running');
       await expect(rail.getByTestId('forge-rail-level')).toHaveText('+12');
@@ -237,7 +316,7 @@ test.describe('forge run smoke', () => {
       await expect(rail.getByTestId('forge-rail-cancel')).toBeEnabled();
       await page.waitForTimeout(400);
       await railSpansTheRow(page);
-      await nothingScrolls(page);
+      await splitFollowsTheAside(page);
       await shoot(page, testInfo, 'forge-run-running.png');
 
       // --- Cancelled: main honours it between rolls, so the press has to be visible at once ----
@@ -250,14 +329,14 @@ test.describe('forge run smoke', () => {
         'Cancelling — waiting for the roll in flight to settle',
       );
 
-      // --- Finished: the result block, still spanning the row and still fitting ---------------
+      // --- Finished: the result block, still spanning the row above an unchanged split --------
       expect(await inject(page, [scriptedDone(itemId)])).toEqual({ ok: true });
       await expect(rail).toHaveAttribute('data-state', 'finished');
       await expect(rail.getByTestId('forge-result-heading')).toHaveText('Reached +12');
       await expect(rail.getByTestId('forge-result-climb')).toHaveText('+8 → +12');
       await page.waitForTimeout(400);
       await railSpansTheRow(page);
-      await nothingScrolls(page);
+      await splitFollowsTheAside(page);
       await shoot(page, testInfo, 'forge-run-finished.png');
 
       // --- Done: the rail collapses to nothing, and the ledger below it is opened to show that
@@ -271,7 +350,7 @@ test.describe('forge run smoke', () => {
       await expect(ledger.getByText('No runs yet')).toBeVisible();
       await expect(ledger.getByTestId('forge-ledger-body')).toHaveCount(0);
       await page.waitForTimeout(400);
-      await nothingScrolls(page);
+      await splitFollowsTheAside(page);
       await shoot(page, testInfo, 'forge-run-collapsed.png');
 
       const history = await page.evaluate(() => window.bfc.invoke('forge:history'));

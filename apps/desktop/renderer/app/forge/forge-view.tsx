@@ -60,6 +60,7 @@ import {
   setForgeSort,
   useForgeScreen,
 } from '../../lib/forge/forge-store';
+import { useContentHeight } from '../../lib/forge/use-content-height';
 import { useForgePlan } from '../../lib/forge/use-forge-plan';
 import { ForgeItemPanel } from './forge-item-panel';
 import { forgeButtonReason, forgeLabels } from './forge-labels';
@@ -70,6 +71,12 @@ import { FORGE_TABLE_COLUMNS, forgeTableLabels } from './forge-table-labels';
 import { ForgeToolbar, type ForgeHeroOption } from './forge-toolbar';
 
 type Bridge = NonNullable<Window['bfc']>;
+
+/** The floor under the split, in px. With nothing picked the column beside the bag is a short
+ *  empty state — 188px — and a row measured from that alone would leave four bag rows showing.
+ *  460 holds fifteen rows under the sticky header and still keeps the whole unpicked screen
+ *  inside the default 1280x800 window with the ledger shut: 670px drawn into 709px of region. */
+const SPLIT_MIN_HEIGHT = 460;
 
 function bridgeOf(): Bridge | null {
   if (typeof window === 'undefined') return null;
@@ -195,6 +202,8 @@ export function ForgeView({
   runRef.current = run;
   const selectionRef = useRef<ForgeRunAdoption | null>(null);
   selectionRef.current = selected === null ? null : { itemId: selected.id, plan: { forecast: planControls.forecast } };
+
+  const { ref: asideRef, height: asideHeight } = useContentHeight();
 
   const [history, setHistory] = useState<ForgeHistoryResult>(EMPTY_FORGE_HISTORY);
   const [startRefusal, setStartRefusal] = useState<ForgeStartReason | null>(null);
@@ -330,7 +339,7 @@ export function ForgeView({
   }
 
   return (
-    <div data-testid="forge-view" className="flex min-h-0 flex-1 flex-col gap-3">
+    <div data-testid="forge-view" className="flex flex-col gap-3">
       <Panel className="shrink-0">
         <PanelHeader title={t.forgeTitle} />
         <ForgeToolbar
@@ -363,52 +372,58 @@ export function ForgeView({
 
       <ForgeRail run={run} gold={labels.gold} labels={labels} onCancel={onCancel} onDone={onDone} />
 
-      {/* `grid-rows-[minmax(0,1fr)]` is what actually bounds this. A grid row is `auto` by
-          default, so it sizes to its tallest item and overflows the grid's own box — visibly,
-          which is enough to grow the scroll region above it and hand the whole screen a
-          scrollbar. Pinning the row to the container's height is what pushes the overflow down
-          into the table and the right-hand column, where each has a scroller of its own. */}
+      {/* The right column sizes the row; the bag matches it. The bag Panel is taken out of flow
+          so the whole bag cannot contribute its height to an `auto` grid row, leaving the row
+          measured by the piece and the plan beside it — floored by `SPLIT_MIN_HEIGHT` so the bag
+          is still worth reading before anything is picked. Being absolute also gives the Panel a
+          definite height to bound the table's own scroller against. */}
       <div
         data-testid="forge-split"
-        className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_372px] grid-rows-[minmax(0,1fr)] gap-3"
+        className="grid grid-cols-[minmax(0,1fr)_372px] gap-3"
+        style={{ gridTemplateRows: `minmax(${String(SPLIT_MIN_HEIGHT)}px, auto)` }}
       >
-        <Panel className="relative flex min-h-0 flex-col">
-          <InventoryTable
-            view={tableView}
-            labels={tableLabels}
-            columns={FORGE_TABLE_COLUMNS}
-            showToolbar={false}
-            sort={sort}
-            onSortChange={setForgeSort}
-            selectedItemId={screen.selectedId}
-            onSelectRow={onSelect}
-            onClearFilter={filterActive ? clearFilter : undefined}
-            className="min-h-0 flex-1"
-          />
-        </Panel>
-        {/* `relative` is doing the same job it does on the shell's `<main>`, one level down.
-            `sr-only` is `position: absolute`, so a table caption in here resolves its containing
-            block to the nearest positioned ancestor — with none, that was `<main>`, and the
-            caption sat below this column's own bottom edge where no `overflow` on the column
-            could clip it. `<main>` then grew 13px to reach it and the whole screen scrolled. */}
-        <div className="relative flex min-h-0 flex-col gap-3 overflow-y-auto">
-          <ForgeItemPanel item={selected} wearerName={wearerName} target={plan.target} labels={labels} />
-          {selected === null ? null : (
-            <ForgePlanPanel
-              item={selected}
-              plan={plan}
-              forecast={planControls.forecast}
-              walletGold={walletGold}
-              reason={reason}
-              startRefusal={startRefusal}
-              labels={labels}
-              onStepTarget={planControls.stepTarget}
-              onMaxGoldChange={planControls.setMaxGold}
-              onAttemptsChange={planControls.setAttempts}
-              onForge={onForge}
-              onCancel={onCancel}
+        <div className="relative">
+          <Panel data-testid="forge-bag-panel" className="absolute inset-0 flex min-h-0 flex-col">
+            <InventoryTable
+              view={tableView}
+              labels={tableLabels}
+              columns={FORGE_TABLE_COLUMNS}
+              showToolbar={false}
+              sort={sort}
+              onSortChange={setForgeSort}
+              selectedItemId={screen.selectedId}
+              onSelectRow={onSelect}
+              onClearFilter={filterActive ? clearFilter : undefined}
+              className="min-h-0 flex-1"
             />
-          )}
+          </Panel>
+        </div>
+        {/* `relative` also keeps `sr-only` table captions in here — they are `position: absolute`
+            — resolving against this column rather than against the shell's `<main>`. */}
+        <div
+          data-testid="forge-aside"
+          className="relative overflow-hidden motion-safe:transition-[height] motion-safe:ease-out motion-reduce:transition-none"
+          style={{ height: asideHeight, transitionDuration: `${String(motionTokens.panelMs)}ms` }}
+        >
+          <div ref={asideRef} className="flex flex-col gap-3">
+            <ForgeItemPanel item={selected} wearerName={wearerName} target={plan.target} labels={labels} />
+            {selected === null ? null : (
+              <ForgePlanPanel
+                item={selected}
+                plan={plan}
+                forecast={planControls.forecast}
+                walletGold={walletGold}
+                reason={reason}
+                startRefusal={startRefusal}
+                labels={labels}
+                onStepTarget={planControls.stepTarget}
+                onMaxGoldChange={planControls.setMaxGold}
+                onAttemptsChange={planControls.setAttempts}
+                onForge={onForge}
+                onCancel={onCancel}
+              />
+            )}
+          </div>
         </div>
       </div>
 

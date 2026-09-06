@@ -7,10 +7,11 @@
  * place through one height transition at the panel duration, instant under reduced motion.
  * `Done` shrinks it first; the view settles it once the shrink has run.
  */
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { Button, DataTable, motionTokens, Panel } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
 import { rungTally, type ForgeRunActive, type ForgeRunState } from '../../lib/forge/forge-run-reducer';
+import { useContentHeight } from '../../lib/forge/use-content-height';
 import { ForgeChart } from './forge-chart';
 import { BLANK, forgeLevel, forgeRungLabel, type ForgeLabels } from './forge-labels';
 import { ForgeResult } from './forge-result';
@@ -21,26 +22,6 @@ export function forgeRailState(run: ForgeRunState): ForgeRailState {
   if (run.status === 'running') return 'running';
   if (run.status === 'done') return 'finished';
   return 'collapsed';
-}
-
-/** The rendered height of the content, followed as it changes, so the wrapper can animate to it.
- *  Undefined until measured — the first paint is at the natural height, with no transition. */
-function useContentHeight(): { ref: (node: HTMLDivElement | null) => void; height: number | undefined } {
-  const [node, setNode] = useState<HTMLDivElement | null>(null);
-  const [height, setHeight] = useState<number | undefined>(undefined);
-  useEffect(() => {
-    if (node === null || typeof ResizeObserver === 'undefined') return;
-    const measure = () => {
-      setHeight(node.getBoundingClientRect().height);
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(node);
-    return () => {
-      observer.disconnect();
-    };
-  }, [node]);
-  return { ref: setNode, height };
 }
 
 function Running({ run, gold, onCancel }: { run: ForgeRunActive; gold: (amount: number) => string; onCancel: () => void }) {
