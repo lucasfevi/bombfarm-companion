@@ -353,9 +353,7 @@ export async function runSweep({
   // per-item call is the expensive half of the sweep.
   const quotable = reconciled.entries.filter((entry) => entry.lowestUsd != null);
   const enumerationCalls = discovery.searchCalls + filterCalls;
-  // Every listed row falls to the enumeration when no native currency is configured, which is
-  // also what retires the native quotes a previous run took: a row nothing will quote again must
-  // not go on publishing an ageing figure under the label that says it is the listing's own.
+  // Every listed row falls to the enumeration when no native currency is configured.
   const plan =
     nativeCurrencies.length > 0
       ? planQuotes({ quotable, enumerationCalls, searchDelayMs })
@@ -405,7 +403,6 @@ export async function runSweep({
     anomalies: [...discovery.anomalies, ...reconciled.anomalies, ...quoted.anomalies],
     searchCalls: discovery.searchCalls + quoted.calls,
     enumerationComplete: discovery.enumerationComplete,
-    enumerationOnly,
     now,
     appId,
   });
