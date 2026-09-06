@@ -1,6 +1,6 @@
 /**
- * The Forge run's IPC seam: what the renderer asks for, what main answers, and the two event
- * shapes a run pushes while it spends the player's gold. The outcome and stop vocabularies mirror
+ * The Forge run's IPC seam: what the renderer asks for, what main answers, and the event shapes a
+ * run pushes while it spends the player's gold. The outcome and stop vocabularies mirror
  * the domain's forge session module by value — this package sits below it and cannot import it.
  */
 
@@ -71,12 +71,27 @@ export interface ForgeRunResult {
   durationMs: number;
 }
 
+/**
+ * A gap the run is about to take before its next roll, pushed the moment the gap is drawn and
+ * before it is waited out. The run decides its own gaps so its calls do not fall into a fixed
+ * beat; nothing outside is holding it back, and a cooldown the server asks for ends a run rather
+ * than pausing one. How long a gap is worth saying anything about is the renderer's to decide.
+ */
+export interface ForgePauseEvent {
+  runId: string;
+  /** How long the run will wait before the next roll, in milliseconds. */
+  ms: number;
+}
+
 export interface ForgeDoneEvent {
   runId: string;
   result: ForgeRunResult;
 }
 
-export type ForgeEvent = ({ type: 'step' } & ForgeStepEvent) | ({ type: 'done' } & ForgeDoneEvent);
+export type ForgeEvent =
+  | ({ type: 'step' } & ForgeStepEvent)
+  | ({ type: 'pause' } & ForgePauseEvent)
+  | ({ type: 'done' } & ForgeDoneEvent);
 
 export interface ForgeHistoryRow {
   id: number;

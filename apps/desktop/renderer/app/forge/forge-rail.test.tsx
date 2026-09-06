@@ -75,6 +75,10 @@ function railCancelTag(html: string): string {
   return /<button[^>]*data-testid="forge-rail-cancel"[^>]*>/.exec(html)?.[0] ?? '';
 }
 
+function pacingTag(html: string): string {
+  return /<span[^>]*data-testid="forge-rail-pausing"[^>]*>/.exec(html)?.[0] ?? '';
+}
+
 describe('forgeRailState', () => {
   it('names the three states the rail can be in — a live run, a just-finished one, or nothing', () => {
     expect(forgeRailState(IDLE_FORGE_RUN)).toBe('collapsed');
@@ -107,6 +111,21 @@ describe('ForgeRail', () => {
     expect(rungs).toEqual(['+9…+11', '+12']);
     expect(html).toContain('Cancel after this roll');
     expect(railCancelTag(html)).not.toContain(' disabled=""');
+  });
+
+  it('keeps the pacing word drawn but unseen between gaps, so nothing beside it moves when a gap comes', () => {
+    const html = renderRail(running());
+    expect(pacingTag(html)).toContain('invisible');
+    expect(pacingTag(html)).not.toContain('data-pausing');
+    expect(html).toContain(en.forgeRailPausing);
+  });
+
+  it('shows the pacing word on a gap long enough to look like nothing is happening', () => {
+    const html = renderRail(forgeRunReducer(running(), { kind: 'pause', event: { runId: 'r1', ms: 9_000 } }));
+    expect(pacingTag(html)).toContain('data-pausing="true"');
+    expect(pacingTag(html)).not.toContain('invisible');
+    expect(html).toContain(en.forgeRailPausing);
+    expect(html).toContain('motion-safe:animate-pulse');
   });
 
   it('says the cancel landed and stops taking presses once it has been asked for', () => {

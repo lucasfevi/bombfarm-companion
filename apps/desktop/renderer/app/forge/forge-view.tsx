@@ -223,6 +223,7 @@ export function ForgeView({
     loadHistory();
     return bridge.on('forge:event', (event: ForgeEvent) => {
       if (event.type === 'done') dispatchRun({ kind: 'done', event });
+      else if (event.type === 'pause') dispatchRun({ kind: 'pause', event });
       else dispatchRun({ kind: 'step', event, adopt: selectionRef.current });
     });
   }, [loadHistory]);

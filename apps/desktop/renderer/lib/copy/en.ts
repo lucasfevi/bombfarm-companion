@@ -456,6 +456,9 @@ export const en = {
   forgeRailRolls: '{rolls} rolls',
   forgeRailSpent: '{spent} gold',
   forgeRailWallet: 'wallet {wallet}',
+  // A run leaves a gap between its rolls on purpose. The word says the next roll is coming — never
+  // that anything is holding the run back, because nothing is.
+  forgeRailPausing: 'pausing',
   forgeRailTallyCaption: 'Rolls by rung',
   forgeRailTallyRung: 'Rung',
   forgeRailTallyRolls: 'Rolls',

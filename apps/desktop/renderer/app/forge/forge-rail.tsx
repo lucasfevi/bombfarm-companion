@@ -12,7 +12,7 @@
  * and only a run starting, and only when some part of it is out of view.
  */
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
-import { Button, DataTable, motionTokens, Panel } from '@bombfarm/ui';
+import { Button, cn, DataTable, motionTokens, Panel } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
 import { rungTally, type ForgeRunActive, type ForgeRunState } from '../../lib/forge/forge-run-reducer';
 import { bringBandIntoView } from '../../lib/forge/run-into-view';
@@ -27,6 +27,37 @@ export function forgeRailState(run: ForgeRunState): ForgeRailState {
   if (run.status === 'running') return 'running';
   if (run.status === 'done') return 'finished';
   return 'collapsed';
+}
+
+/** Staggered so the three dots read as one travelling wave rather than three lamps blinking
+ *  together, and shortened from the utility's own two seconds so a wave finishes inside the
+ *  shortest gap this word is ever shown for. */
+const PACING_DOTS_MS = [0, 200, 400];
+const PACING_DOT_CYCLE_MS = 1_200;
+
+/** Always drawn, so the roll count and the spend beside it never move as it comes and goes. */
+function Pacing({ pausing }: { pausing: boolean }) {
+  const t = useCopy();
+  return (
+    <span
+      data-testid="forge-rail-pausing"
+      data-pausing={pausing ? 'true' : undefined}
+      className={cn('text-muted', !pausing && 'invisible')}
+    >
+      {t.forgeRailPausing}
+      <span aria-hidden="true">
+        {PACING_DOTS_MS.map((delay) => (
+          <span
+            key={delay}
+            className="motion-safe:animate-pulse"
+            style={{ animationDelay: `${String(delay)}ms`, animationDuration: `${String(PACING_DOT_CYCLE_MS)}ms` }}
+          >
+            .
+          </span>
+        ))}
+      </span>
+    </span>
+  );
 }
 
 function Running({ run, gold, onCancel }: { run: ForgeRunActive; gold: (amount: number) => string; onCancel: () => void }) {
@@ -51,6 +82,7 @@ function Running({ run, gold, onCancel }: { run: ForgeRunActive; gold: (amount: 
         <span data-testid="forge-rail-wallet" className="tabular-nums text-muted">
           {run.wallet === null ? BLANK : sub(t.forgeRailWallet, { wallet: gold(run.wallet) })}
         </span>
+        <Pacing pausing={run.pausingMs !== null} />
         <Button
           type="button"
           variant="default"

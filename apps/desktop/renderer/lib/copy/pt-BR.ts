@@ -447,6 +447,7 @@ export const ptBR: Copy = {
   forgeRailRolls: '{rolls} rolagens',
   forgeRailSpent: '{spent} de ouro',
   forgeRailWallet: 'carteira {wallet}',
+  forgeRailPausing: 'pausando',
   forgeRailTallyCaption: 'Rolagens por degrau',
   forgeRailTallyRung: 'Degrau',
   forgeRailTallyRolls: 'Rolagens',

@@ -4,7 +4,7 @@
  * run this screen did not start (one injected by the smoke, or one begun before the screen
  * mounted) is adopted from the event itself rather than dropped.
  */
-import type { ForgeDoneEvent, ForgeRunResult, ForgeStepEvent } from '@bombfarm/contracts';
+import type { ForgeDoneEvent, ForgePauseEvent, ForgeRunResult, ForgeStepEvent } from '@bombfarm/contracts';
 import { emptyForgeTally, foldForgeStep, type ForgeTally } from '@bombfarm/domain/forge';
 import type { ForgePlanForecast } from './use-forge-plan';
 
@@ -26,6 +26,9 @@ export type ForgeRunActive = {
   /** The player has asked for the run to stop, and main will honour it once the roll in flight
    *  has settled. Both cancel controls read this to say the press landed. */
   readonly cancelRequested: boolean;
+  /** How long the gap before the next roll will be, once it is long enough to be worth saying so;
+   *  null the rest of the time, which is most of it. */
+  readonly pausingMs: number | null;
 };
 
 export type ForgeRunState =
@@ -42,12 +45,21 @@ export type ForgeRunAdoption = { readonly itemId: string; readonly plan: ForgeRu
 export type ForgeRunAction =
   | { kind: 'start'; runId: string; itemId: string; target: number; from: number; plan: ForgeRunPlan | null }
   | { kind: 'step'; event: ForgeStepEvent; adopt: ForgeRunAdoption | null }
+  | { kind: 'pause'; event: ForgePauseEvent }
   | { kind: 'done'; event: ForgeDoneEvent }
   | { kind: 'cancel' }
   | { kind: 'dismiss' }
   | { kind: 'settle' };
 
 export const IDLE_FORGE_RUN: ForgeRunState = { status: 'idle' };
+
+/**
+ * The shortest gap the screen will say anything about. A run paces itself between rolls and most
+ * of those gaps are a second or two: a word that blinks on and off every single roll reads as a
+ * fault, and is worse than the silence it was meant to fill. Only the occasional long gap — the
+ * one that actually looks like the screen has frozen — clears this.
+ */
+export const FORGE_PAUSE_WORTH_SAYING_MS = 1_500;
 
 function freshRun(input: { runId: string; itemId: string; target: number; from: number; plan: ForgeRunPlan | null }): ForgeRunActive {
   return {
@@ -61,6 +73,7 @@ function freshRun(input: { runId: string; itemId: string; target: number; from: 
     steps: [],
     plan: input.plan,
     cancelRequested: false,
+    pausingMs: null,
   };
 }
 
@@ -74,6 +87,7 @@ function fold(run: ForgeRunActive, event: ForgeStepEvent): ForgeRunActive {
     wallet: event.wallet,
     tally: foldForgeStep(run.tally, event),
     steps: [...run.steps, event],
+    pausingMs: null,
   };
 }
 
@@ -90,9 +104,15 @@ export function forgeRunReducer(state: ForgeRunState, action: ForgeRunAction): F
       const adopted = freshRun({ runId: event.runId, itemId: event.itemId, target: event.target, from: event.from, plan });
       return { status: 'running', run: fold(adopted, event) };
     }
+    case 'pause': {
+      if (state.status !== 'running' || state.run.runId !== action.event.runId) return state;
+      const pausingMs = action.event.ms >= FORGE_PAUSE_WORTH_SAYING_MS ? action.event.ms : null;
+      if (pausingMs === state.run.pausingMs) return state;
+      return { status: 'running', run: { ...state.run, pausingMs } };
+    }
     case 'done':
       if (state.status !== 'running' || state.run.runId !== action.event.runId) return state;
-      return { status: 'done', run: state.run, result: action.event.result };
+      return { status: 'done', run: { ...state.run, pausingMs: null }, result: action.event.result };
     case 'cancel':
       if (state.status !== 'running' || state.run.cancelRequested) return state;
       return { status: 'running', run: { ...state.run, cancelRequested: true } };

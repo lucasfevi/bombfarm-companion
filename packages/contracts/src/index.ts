@@ -14,6 +14,7 @@ export type {
   ForgeHistoryResult,
   ForgeHistoryRow,
   ForgeHistoryTotals,
+  ForgePauseEvent,
   ForgeRollOutcome,
   ForgeRunResult,
   ForgeStartReason,

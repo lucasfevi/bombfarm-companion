@@ -21,6 +21,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function isForgeEvent(value: unknown): value is ForgeEvent {
   if (!isRecord(value) || typeof value.runId !== 'string') return false;
   if (value.type === 'step') return typeof value.itemId === 'string' && typeof value.to === 'number';
+  if (value.type === 'pause') return typeof value.ms === 'number' && Number.isFinite(value.ms);
   if (value.type === 'done') return isRecord(value.result) && typeof value.result.stop === 'string';
   return false;
 }
