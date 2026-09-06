@@ -1,5 +1,5 @@
 ---
-'@bombfarm/pricing': patch
+"@bombfarm/pricing": patch
 ---
 
 The published market snapshot no longer carries a native price forward from the previous file. A
