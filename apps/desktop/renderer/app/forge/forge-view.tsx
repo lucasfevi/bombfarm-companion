@@ -66,6 +66,7 @@ import { ForgeItemPanel } from './forge-item-panel';
 import { forgeButtonReason, forgeLabels } from './forge-labels';
 import { ForgeLedger } from './forge-ledger';
 import { ForgePlanPanel } from './forge-plan-panel';
+import { ForgeRefresh } from './forge-refresh';
 import { ForgeRail } from './forge-rail';
 import { FORGE_TABLE_COLUMNS, forgeTableLabels } from './forge-table-labels';
 import { ForgeToolbar, type ForgeHeroOption } from './forge-toolbar';
@@ -194,8 +195,6 @@ export function ForgeView({
   }, []);
 
   const planControls = useForgePlan(selected, plan, setForgePlan);
-  const wearerId = selected?.equippedBy ?? null;
-  const wearerName = wearerId === null ? null : (heroes.get(wearerId)?.name ?? t.inventoryEquippedByUnknown);
 
   const [run, dispatchRun] = useReducer(forgeRunReducer, IDLE_FORGE_RUN);
   const runRef = useRef<ForgeRunState>(run);
@@ -351,9 +350,6 @@ export function ForgeView({
           shown={shown.length}
           total={gear.length}
           heroHint={heroHint}
-          capturedAt={capturedAt}
-          stale={stale}
-          onRefresh={refresh}
           labels={labels}
         />
       </Panel>
@@ -382,6 +378,11 @@ export function ForgeView({
       >
         <div className="relative">
           <Panel data-testid="forge-bag-panel" className="absolute inset-0 flex min-h-0 flex-col">
+            {/* Refresh acts on the read behind the bag, not on what is filtered out of it, so it
+                stands over the bag rather than among the filters. */}
+            <div data-testid="forge-bag-header" className="mb-2 flex shrink-0 justify-end">
+              <ForgeRefresh capturedAt={capturedAt} stale={stale} onRefresh={refresh} />
+            </div>
             <InventoryTable
               view={tableView}
               labels={tableLabels}
@@ -404,7 +405,7 @@ export function ForgeView({
           style={{ height: asideHeight, transitionDuration: `${String(motionTokens.panelMs)}ms` }}
         >
           <div ref={asideRef} className="flex flex-col gap-3">
-            <ForgeItemPanel item={selected} wearerName={wearerName} target={plan.target} labels={labels} />
+            <ForgeItemPanel item={selected} target={plan.target} labels={labels} />
             {selected === null ? null : (
               <ForgePlanPanel
                 item={selected}

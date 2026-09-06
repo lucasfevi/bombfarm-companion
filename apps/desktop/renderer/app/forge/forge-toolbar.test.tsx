@@ -10,12 +10,22 @@ import { ForgeToolbar } from './forge-toolbar';
 
 const labels = forgeLabels(en, 'en', 'en');
 
-function renderToolbar(overrides: { filter?: ForgeFilter; stale?: boolean } = {}): string {
+const HERO = {
+  id: 'h1',
+  name: 'Bellatrix',
+  rank: 'A',
+  rarityIdx: 3,
+  skin: 0,
+  level: 'Level 106',
+  inField: true,
+};
+
+function renderToolbar(overrides: { filter?: ForgeFilter } = {}): string {
   return renderToStaticMarkup(
     createElement(CopyProvider, {
       locale: 'en',
       children: createElement(ForgeToolbar, {
-        heroes: [],
+        heroes: [HERO],
         filter: overrides.filter ?? EMPTY_FORGE_FILTER,
         onFilterChange: () => {},
         slots: ['arma'],
@@ -23,13 +33,17 @@ function renderToolbar(overrides: { filter?: ForgeFilter; stale?: boolean } = {}
         shown: 3,
         total: 9,
         heroHint: null,
-        capturedAt: new Date().toISOString(),
-        stale: overrides.stale ?? false,
-        onRefresh: () => {},
         labels,
       }),
     }),
   );
+}
+
+/** Where each control opens in the row, by the order its markup comes in. */
+function positionOf(html: string, needle: string): number {
+  const at = html.indexOf(needle);
+  expect(at, `"${needle}" is not in the toolbar at all`).toBeGreaterThan(-1);
+  return at;
 }
 
 function tagOf(html: string, testid: string): string {
@@ -60,24 +74,40 @@ describe('ForgeToolbar', () => {
     expect(clear).toContain('h-[30px]');
   });
 
-  it('says nothing above the Refresh button while the read is current, and still prints its age', () => {
-    const html = renderToolbar();
+  it('is filters only — Refresh acts on the read behind the bag and stands over the bag instead', () => {
+    const html = renderToolbar({ filter: { ...EMPTY_FORGE_FILTER, forge: 'at8' } });
+    expect(html).not.toContain('data-testid="forge-refresh"');
     expect(html).not.toContain('data-testid="forge-stale-label"');
-    expect(tagOf(html, 'forge-refresh')).not.toContain('border-warn');
-    expect(html).toContain('Account read');
+    expect(html).not.toContain('data-testid="forge-read-age"');
+    expect(html).not.toContain('Account read');
+    expect(html).not.toContain(en.farmRefresh);
   });
 
-  it('hangs an out-of-date label over the Refresh button and borders the button itself when the read is stale', () => {
-    const html = renderToolbar({ stale: true });
-    const label = tagOf(html, 'forge-stale-label');
-    // Absolute so the row keeps one baseline whether the label is there or not.
-    expect(label).toContain('absolute');
-    expect(label).toContain('uppercase');
-    expect(label).toContain('font-bold');
-    expect(tagOf(html, 'forge-refresh')).toContain('border-warn');
-    expect(html).toContain(en.farmRefreshStale);
-    // The read age stays where it was — the stale treatment is beside it, not instead of it.
-    expect(html).toContain('Account read');
+  it('leads on the hero, groups the three narrowing dropdowns behind it, and ends on the one field that grows', () => {
+    const html = renderToolbar({ filter: { ...EMPTY_FORGE_FILTER, forge: 'at8' } });
+    const order = [
+      en.inventoryFilterHeroLabel,
+      en.forgeWornLabel,
+      en.forgeSlotLabel,
+      en.forgeBandLabel,
+      en.forgeSearchLabel,
+    ].map((label) => positionOf(html, `aria-label="${label}"`));
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    // Clear closes the row, after the field that takes the width left over.
+    expect(positionOf(html, 'data-testid="forge-clear-filter"')).toBeGreaterThan(
+      positionOf(html, `aria-label="${en.forgeSearchLabel}"`),
+    );
+  });
+
+  it('gives the growing field the width nothing else claims, and every control one height', () => {
+    const html = renderToolbar();
+    expect(tagOf(html, 'forge-toolbar')).not.toContain('ml-auto');
+    const search = new RegExp(`<input[^>]*aria-label="${en.forgeSearchLabel}"[^>]*>`).exec(html)?.[0] ?? '';
+    expect(search).toContain('flex-1');
+    expect(search).toContain('h-[30px]');
+    for (const label of [en.forgeWornLabel, en.forgeSlotLabel, en.forgeBandLabel]) {
+      expect(new RegExp(`<[a-z]+[^>]*aria-label="${label}"[^>]*>`).exec(html)?.[0] ?? '').toContain('h-[30px]');
+    }
   });
 
   it('shouts through CSS, so the Portuguese label is a sentence in the copy file', () => {

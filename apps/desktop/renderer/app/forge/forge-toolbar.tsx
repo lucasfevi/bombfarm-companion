@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import {
   HeroAvatar,
   inventoryChipRecipe,
@@ -10,7 +9,6 @@ import {
 } from '@bombfarm/game-art';
 import { Button, cn, Select } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
-import { formatCapturedAt } from '../../lib/format';
 import {
   EMPTY_FORGE_FILTER,
   FORGE_BANDS,
@@ -31,8 +29,6 @@ export type ForgeHeroOption = {
   level: string;
   inField: boolean;
 };
-
-const AGE_TICK_MS = 15_000;
 
 const FORGE_WORN_OPTIONS: readonly ForgeWorn[] = ['all', 'worn', 'spare'];
 
@@ -69,9 +65,6 @@ export function ForgeToolbar({
   shown,
   total,
   heroHint,
-  capturedAt,
-  stale,
-  onRefresh,
   labels,
 }: {
   heroes: readonly ForgeHeroOption[];
@@ -82,25 +75,11 @@ export function ForgeToolbar({
   shown: number;
   total: number;
   heroHint: string | null;
-  capturedAt: string | null;
-  stale: boolean;
-  onRefresh: () => void;
   labels: ForgeLabels;
 }) {
   const t = useCopy();
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      setNow(Date.now());
-    }, AGE_TICK_MS);
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, []);
 
   const dirty = !isEmptyForgeFilter(filter);
-  const ageLine = capturedAt === null ? '' : sub(t.accountReadAge, { age: formatCapturedAt(capturedAt, t, now) });
 
   // A hero already means "worn, by that hero", so leaving this live would offer a second cut that
   // either says nothing or empties the table outright. It is frozen on the value the hero implies
@@ -143,15 +122,6 @@ export function ForgeToolbar({
           ))}
         </Select>
 
-        <input
-          type="search"
-          value={filter.text}
-          onChange={(event) => { onFilterChange({ ...filter, text: event.target.value }); }}
-          placeholder={t.forgeSearchPlaceholder}
-          aria-label={t.forgeSearchLabel}
-          className={cn(inventoryFieldClass, 'min-w-40 flex-1')}
-        />
-
         <Select
           size="compact"
           value={filter.slot ?? ''}
@@ -182,6 +152,18 @@ export function ForgeToolbar({
           ))}
         </Select>
 
+        {/* The one control that grows, at the end of the row where a growing control belongs —
+            in the middle it split the fixed-width dropdowns into two groups that read as two
+            rows of controls sharing a line. */}
+        <input
+          type="search"
+          value={filter.text}
+          onChange={(event) => { onFilterChange({ ...filter, text: event.target.value }); }}
+          placeholder={t.forgeSearchPlaceholder}
+          aria-label={t.forgeSearchLabel}
+          className={cn(inventoryFieldClass, 'min-w-40 flex-1')}
+        />
+
         <span data-testid="forge-result-count" className="shrink-0 text-xs tabular-nums text-muted">
           {sub(t.inventoryFilterCount, { shown, total })}
         </span>
@@ -196,32 +178,6 @@ export function ForgeToolbar({
             {t.inventoryFilterClear}
           </Button>
         ) : null}
-
-        {/* `relative` with the stale label absolute inside it: the label hangs above the button
-            without taking a row of its own, so the button keeps the baseline it stands on when the
-            read is current. */}
-        <span className="relative ml-auto flex flex-col items-end gap-0.5">
-          {stale ? (
-            <span
-              data-testid="forge-stale-label"
-              className="absolute -top-3 right-0 text-[10px] leading-none font-bold tracking-[0.06em] text-warn uppercase"
-            >
-              {t.farmRefreshStale}
-            </span>
-          ) : null}
-          <Button
-            type="button"
-            variant="default"
-            data-testid="forge-refresh"
-            onClick={onRefresh}
-            className={cn(stale && 'border-warn')}
-          >
-            {t.farmRefresh}
-          </Button>
-          <span data-testid="forge-read-age" className="text-[11px] leading-none text-muted">
-            {ageLine}
-          </span>
-        </span>
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5">

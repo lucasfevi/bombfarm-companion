@@ -376,9 +376,6 @@ export const en = {
   forgeItemTitle: 'Item',
   forgePickTitle: 'Pick a piece',
   forgePickDescription: 'Click a row to see what a climb should cost.',
-  forgeWornBy: 'Power {power} · worn by {hero}',
-  forgeInBag: 'Power {power} · in the bag',
-  forgeInStash: 'Power {power} · in the stash',
   forgeStatsCaption: 'Every roll on the piece now and at the target',
   forgeColumnChange: 'Change',
   forgeStatsNote:

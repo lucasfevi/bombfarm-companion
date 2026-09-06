@@ -374,9 +374,6 @@ export const ptBR: Copy = {
   forgeItemTitle: 'Item',
   forgePickTitle: 'Escolha uma peça',
   forgePickDescription: 'Clique em uma linha para ver quanto uma subida deve custar.',
-  forgeWornBy: 'Poder {power} · usado por {hero}',
-  forgeInBag: 'Poder {power} · na mochila',
-  forgeInStash: 'Poder {power} · no baú',
   forgeStatsCaption: 'Cada atributo da peça agora e no alvo',
   forgeColumnChange: 'Mudança',
   forgeStatsNote:

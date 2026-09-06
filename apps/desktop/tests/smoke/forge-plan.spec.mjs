@@ -141,10 +141,15 @@ test.describe('forge plan smoke', () => {
       await page.getByRole('option', { name: 'Any forge' }).click();
       await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBe(before);
 
-      // A live read on this fixture never moves, so the toolbar is only ever in its current-read
-      // state here: no label over Refresh, and the read age printing beside it.
+      // Refresh acts on the read behind the bag, so it stands over the bag rather than among the
+      // filters. A live read on this fixture never moves, so it is only ever in its current-read
+      // state here: no label above it, and the read age answered only when the button is asked.
+      await expect(view.getByTestId('forge-toolbar').getByTestId('forge-refresh')).toHaveCount(0);
+      await expect(view.getByTestId('forge-bag-panel').getByTestId('forge-refresh')).toBeVisible();
       await expect(view.getByTestId('forge-stale-label')).toHaveCount(0);
-      await expect(view.getByTestId('forge-read-age')).toContainText('Account read');
+      await expect(page.getByTestId('forge-read-age')).toHaveCount(0);
+      await view.getByTestId('forge-refresh').hover();
+      await expect(page.getByTestId('forge-read-age')).toContainText('Account read');
 
       // Clearing is a button beside the fields now, not a chip, and it is there only while a
       // filter is on.
@@ -200,7 +205,9 @@ test.describe('forge plan smoke', () => {
       const itemPanel = page.getByTestId('forge-item-panel');
       await expect(itemPanel).toHaveAttribute('data-state', 'item');
       await expect(itemPanel.getByTestId('forge-item-name')).toHaveText(firstName);
-      await expect(itemPanel.getByTestId('forge-item-whereabouts')).toContainText('worn by');
+      // The identity block above already names the piece; where an unworn piece sits is not
+      // something this screen can act on, and the line saying so is gone.
+      await expect(itemPanel.getByTestId('forge-item-whereabouts')).toHaveCount(0);
 
       // The plan panel prints an expected-rolls figure that is a number, and raising the target
       // by one rung changes it — a second value iteration over a longer ladder.

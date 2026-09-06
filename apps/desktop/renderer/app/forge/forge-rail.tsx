@@ -6,11 +6,16 @@
  * rolling this collapses to no height rather than leaving an empty band. A run expands it in
  * place through one height transition at the panel duration, instant under reduced motion.
  * `Done` shrinks it first; the view settles it once the shrink has run.
+ *
+ * The screen is sized by its content, so on a short window this band can open below the fold: the
+ * reader confirms the spend and nothing appears to happen. A run starting brings it into view —
+ * and only a run starting, and only when some part of it is out of view.
  */
-import { useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Button, DataTable, motionTokens, Panel } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
 import { rungTally, type ForgeRunActive, type ForgeRunState } from '../../lib/forge/forge-run-reducer';
+import { bringBandIntoView } from '../../lib/forge/run-into-view';
 import { useContentHeight } from '../../lib/forge/use-content-height';
 import { ForgeChart } from './forge-chart';
 import { BLANK, forgeLevel, forgeRungLabel, type ForgeLabels } from './forge-labels';
@@ -123,6 +128,18 @@ export function ForgeRail({
 }) {
   const state = forgeRailState(run);
   const { ref, height } = useContentHeight();
+  const band = useRef<HTMLDivElement | null>(null);
+  const brought = useRef(false);
+
+  useEffect(() => {
+    if (run.status !== 'running') {
+      brought.current = false;
+      return;
+    }
+    if (brought.current || height === undefined || height === 0) return;
+    brought.current = true;
+    bringBandIntoView(band.current, height);
+  }, [run.status, height]);
 
   let content: ReactNode = null;
   if (run.status === 'running') content = <Running run={run.run} gold={gold} onCancel={onCancel} />;
@@ -136,6 +153,7 @@ export function ForgeRail({
 
   return (
     <div
+      ref={band}
       data-testid="forge-rail"
       data-state={state}
       className="relative shrink-0 overflow-hidden motion-safe:transition-[height] motion-safe:ease-out motion-reduce:transition-none"

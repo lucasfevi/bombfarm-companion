@@ -15,12 +15,10 @@ const CHANGE_CLASS = {
 
 export function ForgeItemPanel({
   item,
-  wearerName,
   target,
   labels,
 }: {
   item: InventoryViewItem | null;
-  wearerName: string | null;
   target: number;
   labels: ForgeLabels;
 }) {
@@ -43,12 +41,7 @@ export function ForgeItemPanel({
   return (
     <Panel data-testid="forge-item-panel" data-state="item" data-item-id={item.id} className="flex flex-col gap-3">
       <PanelHeader title={t.forgeItemTitle} />
-      <div className="flex min-w-0 flex-col gap-1">
-        <ItemIdentity item={item} labels={labels} size="xl" nameTestId="forge-item-name" />
-        <span data-testid="forge-item-whereabouts" className="text-xs text-muted">
-          {labels.whereabouts(item, wearerName)}
-        </span>
-      </div>
+      <ItemIdentity item={item} labels={labels} size="xl" nameTestId="forge-item-name" />
 
       <DataTable.Root>
         <DataTable.Table>

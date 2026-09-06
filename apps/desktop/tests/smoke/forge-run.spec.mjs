@@ -92,7 +92,7 @@ async function selectFirstWornPiece(page) {
   await page.getByTestId('inventory-table-row').first().click();
   const itemPanel = page.getByTestId('forge-item-panel');
   await expect(itemPanel).toHaveAttribute('data-state', 'item');
-  await expect(itemPanel.getByTestId('forge-item-whereabouts')).toContainText('worn by');
+  await expect(itemPanel.getByTestId('forge-item-name')).not.toBeEmpty();
   return itemPanel.getAttribute('data-item-id');
 }
 
@@ -304,6 +304,9 @@ test.describe('forge run smoke', () => {
       await openingTheLedgerOnlyAdds(page, ledger);
 
       // --- Running: the rail expands across the whole row, and the split keeps its shape ------
+      // A band that is already wholly on screen must not move the page under the reader when the
+      // run starts. How far a clipped one moves is `scrollDeltaIntoView`'s own unit tests.
+      const scrollBefore = await page.evaluate(() => document.querySelector('main')?.scrollTop ?? 0);
       expect(await inject(page, scriptedSteps(itemId))).toEqual({ ok: true });
       await expect(rail).toHaveAttribute('data-state', 'running');
       await expect(rail.getByTestId('forge-rail-level')).toHaveText('+12');
@@ -315,6 +318,7 @@ test.describe('forge run smoke', () => {
       await expect(page.getByTestId('forge-button')).toHaveText('Cancel after this roll');
       await expect(rail.getByTestId('forge-rail-cancel')).toBeEnabled();
       await page.waitForTimeout(400);
+      expect(await page.evaluate(() => document.querySelector('main')?.scrollTop ?? 0)).toBe(scrollBefore);
       await railSpansTheRow(page);
       await splitFollowsTheAside(page);
       await shoot(page, testInfo, 'forge-run-running.png');

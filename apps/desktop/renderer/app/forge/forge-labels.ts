@@ -218,7 +218,6 @@ export interface ForgeLabels extends ItemIdentityLabels<InventoryViewItem> {
   searchText: (item: InventoryViewItem) => string;
   slotName: (slot: string | null) => string;
   rarityName: (rarityIdx: number) => string;
-  whereabouts: (item: InventoryViewItem, heroName: string | null) => string;
   gold: (amount: number) => string;
   count: (value: number) => string;
   rolls: (value: number) => string;
@@ -248,13 +247,6 @@ export function forgeLabels(t: Copy, lang: DomainLang, locale: AppLocale): Forge
     searchText: inventory.searchText,
     slotName: (slot) => (slot === null ? BLANK : slotLabel(slot, lang)),
     rarityName: (rarityIdx) => itemRarityLabel(rarityIdx, lang),
-    whereabouts: (item, heroName) => {
-      const power = formatCount(item.power, locale);
-      if (item.equippedBy !== null) {
-        return sub(t.forgeWornBy, { power, hero: heroName ?? t.inventoryEquippedByUnknown });
-      }
-      return sub(item.inStash ? t.forgeInStash : t.forgeInBag, { power });
-    },
     gold,
     count: (value) => formatCount(value, locale),
     rolls: (value) => decimals(value, 1, locale),

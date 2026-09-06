@@ -214,12 +214,6 @@ describe('forgeLabels', () => {
     expect(labels.itemForge(item('g2'))).toBe('');
   });
 
-  it('says where the piece is', () => {
-    expect(labels.whereabouts(item('g1'), 'Kendo')).toBe('Power 42 · worn by Kendo');
-    expect(labels.whereabouts(item('g2'), null)).toBe('Power 12 · in the stash');
-    expect(labels.whereabouts(item('g3'), null)).toBe('Power 9 · in the bag');
-  });
-
   it('describes the span and the warning by the target', () => {
     expect(labels.span(8)).toBe('safe span — every step lands');
     expect(labels.span(13)).toBe('risky span — 40% at the top');
