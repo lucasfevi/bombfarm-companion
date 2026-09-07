@@ -2,7 +2,8 @@
 
 import { Banner, Button } from '@bombfarm/ui';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import { sub, type FarmCopy, type Lang } from '../copy';
+import { sub, type Lang } from '@bombfarm/hero/copy';
+import type { FarmCopy } from '../copy';
 import {
   resolvePanelState,
   type FarmRespecProposal,

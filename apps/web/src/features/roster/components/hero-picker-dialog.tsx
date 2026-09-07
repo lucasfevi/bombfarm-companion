@@ -1,6 +1,6 @@
 'use client';
 
-import { HeroPickerDialogView } from '@bombfarm/farm/components';
+import { HeroPickerDialogView } from '@bombfarm/hero/components';
 import type { HeroRecord } from '@/shared/lib/storage';
 import type { Lang, Strings } from '@/shared/i18n';
 import { usePlannerStore } from '@/shared/stores';

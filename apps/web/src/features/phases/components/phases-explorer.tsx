@@ -3,7 +3,8 @@
 import { useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useShallow } from 'zustand/react/shallow';
-import { PhasesExplorerView, type HeroPickerSlotProps } from '@bombfarm/farm/components';
+import { PhasesExplorerView } from '@bombfarm/farm/components';
+import type { HeroPickerSlotProps } from '@bombfarm/hero/components';
 import { HeroPickerDialog } from '@/features/roster';
 import type { HeroRecord } from '@/shared/lib/storage';
 import type { Lang, Strings } from '@/shared/i18n';

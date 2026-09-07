@@ -4,6 +4,11 @@ export { HeroAvatar } from './hero-avatar';
 export { HeroIdentity, type HeroIdentityVariant } from './hero-identity';
 export { HeroIdentityChip } from './hero-identity-chip';
 export { ItemIcon, type ItemIconItem } from './item-icon';
+export {
+  ItemIdentity,
+  type ItemIdentityLabels,
+  type ItemIdentitySize,
+} from './item-identity';
 export { InventoryGrid } from './inventory-grid';
 export {
   InventoryLayoutToggle,
@@ -30,8 +35,13 @@ export type {
   InventoryGridProps,
   InventoryStatText,
 } from './inventory-grid';
-export { InventoryTable, nextInventorySort } from './inventory-table';
+export {
+  DEFAULT_INVENTORY_TABLE_COLUMNS,
+  InventoryTable,
+  nextInventorySort,
+} from './inventory-table';
 export type {
+  InventoryTableColumnId,
   InventoryTableColumnLabels,
   InventoryTableLabels,
   InventoryTableProps,
@@ -70,6 +80,7 @@ export {
   inventoryCountClass,
   inventoryCountValueClass,
   inventoryFieldClass,
+  inventoryFieldHeightClass,
   inventoryFooterClass,
   inventoryGridClass,
   inventorySortDirectionClass,
@@ -86,15 +97,13 @@ export {
 export {
   inventoryTableActionButtonClass,
   inventoryTableBlankClass,
-  inventoryTableForgeClass,
   inventoryTableGoldClass,
   inventoryTableGroupCountClass,
   inventoryTableGroupHeaderClass,
   inventoryTableHeroClass,
   inventoryTableHeroNameClass,
-  inventoryTableItemNameClass,
-  inventoryTableNameClass,
   inventoryTableResultCountClass,
+  inventoryTableSelectedRowClass,
   inventoryTableRowClass,
   inventoryTableSkippedNoteClass,
   inventoryTableToolbarClass,

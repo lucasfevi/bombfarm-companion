@@ -205,9 +205,27 @@ describe('design-system barrel surface (frozen)', () => {
 // the card and the table cannot drift apart on how an approximate figure or a missing listing
 // reads; `nextInventorySort` is the header buttons' pure fold over the domain's multi-term sort,
 // exported so a host driving the table from its own toolbar produces the same order.
+//
+// `inventoryFieldHeightClass` (2026-09-05): the toolbar field height on its own, for a control
+// that brings its own chrome — a design-system `Select` — and needs only to stand the same height
+// as the fields beside it. Split out of `inventoryFieldClass` so a second toolbar cannot reach
+// for a number of its own and drift a pixel from this one.
+//
+// `ItemIdentity` (2026-09-05): icon, name and forge level on one line, tier and level on the
+// next — the one arrangement every surface that names an item now uses. The inventory card, the
+// inventory row and the Forge screen each had their own before, and the level itself was written
+// three different ways; added so a fourth surface cannot invent a fifth.
+//
+// The table's per-host column set (2026-09-05): `DEFAULT_INVENTORY_TABLE_COLUMNS` is the set an
+// inventory bag asks for, named so a second host can start from it. `inventoryTableNameClass`,
+// `inventoryTableItemNameClass` and `inventoryTableForgeClass` left with it — `ItemIdentity` now
+// draws that whole block, and the three had no callers once it did.
+// `inventoryTableSelectedRowClass` arrives in their place, for the row a picker screen is
+// currently planning against.
 const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'AbilityIcon',
   'ArtFrame',
+  'DEFAULT_INVENTORY_TABLE_COLUMNS',
   'InventoryGrid',
   'InventoryLayoutToggle',
   'InventoryTable',
@@ -228,6 +246,7 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'HeroIdentityChip',
   'HouseIcon',
   'ItemIcon',
+  'ItemIdentity',
   'PropIcon',
   'SpriteLoop',
   'abilityIconRecipe',
@@ -240,6 +259,7 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'inventoryCountClass',
   'inventoryCountValueClass',
   'inventoryFieldClass',
+  'inventoryFieldHeightClass',
   'inventoryFooterClass',
   'inventoryGridClass',
   'inventorySortDirectionClass',
@@ -252,16 +272,14 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'inventoryStatsPanelClass',
   'inventoryTableActionButtonClass',
   'inventoryTableBlankClass',
-  'inventoryTableForgeClass',
   'inventoryTableGoldClass',
   'inventoryTableGroupCountClass',
   'inventoryTableGroupHeaderClass',
   'inventoryTableHeroClass',
   'inventoryTableHeroNameClass',
-  'inventoryTableItemNameClass',
-  'inventoryTableNameClass',
   'inventoryTableResultCountClass',
   'inventoryTableRowClass',
+  'inventoryTableSelectedRowClass',
   'inventoryTableSkippedNoteClass',
   'inventoryTableToolbarClass',
   'rarityDotClass',

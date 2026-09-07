@@ -10,7 +10,8 @@ import {
 } from '@bombfarm/domain/roster-dps';
 import { DEFAULT_CASA_SLOTS } from '@bombfarm/domain/casa-slots';
 import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
-import type { FarmScreenCopy, Lang } from '../copy';
+import type { Lang } from '@bombfarm/hero/copy';
+import type { FarmScreenCopy } from '../copy';
 import type { FarmRankingResult } from '../core';
 import { FarmCopyProvider } from './farm-copy-context';
 import { PhasePicker } from './phase-picker';
@@ -19,10 +20,10 @@ import { PhaseEconomyPanel } from './phase-economy-panel';
 import { PhaseJaulaPanel } from './phase-jaula-panel';
 import { PhaseDropsPanel } from './phase-drops-panel';
 import { PhasePropMixTable } from './phase-prop-mix-table';
-import { PhasesHeroPanel } from './phases-hero-panel';
+import { PhasesHeroPanel } from '@bombfarm/hero/components';
 import { PhasesSquadPanel } from './phases-squad-panel';
 import { PhasesEmptyRoster } from './phases-empty-roster';
-import type { HeroPickerSlot } from './phases-hero-switcher';
+import type { HeroPickerSlot } from '@bombfarm/hero/components';
 
 /**
  * Everything the explorer reads, in the host's own store-field names — the same rename-free

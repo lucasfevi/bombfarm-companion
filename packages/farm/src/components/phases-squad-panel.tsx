@@ -13,8 +13,8 @@ import {
 } from '@bombfarm/ui';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { RosterDpsRow } from '@bombfarm/domain/roster-dps';
-import { sub } from '../copy';
-import { formatClearTime } from '../model/phases-page';
+import { sub } from '@bombfarm/hero/copy';
+import { formatClearTime } from '@bombfarm/hero/model';
 import { useFarmCopy } from './farm-copy-context';
 import { PhasesTop9Table } from './phases-top9-table';
 

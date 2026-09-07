@@ -28,8 +28,11 @@ import { UpdateChip } from './update-chip';
 import { LiveView } from './live/live-view';
 import { FarmView } from './farm/farm-view';
 import { InventoryView } from './inventory/inventory-view';
+import { ForgeView } from './forge/forge-view';
 import { AccountView } from './account/account-view';
 import { ConsentSection } from './settings/consent-section';
+import { ForgeSection } from './settings/forge-section';
+import { GameSection } from './settings/game-section';
 import { DiagnosticsSection } from './settings/diagnostics-section';
 import { LanguageSection } from './settings/language-section';
 import { SupportSection } from './settings/support-section';
@@ -65,6 +68,10 @@ export default function HomePage() {
   const [alwaysOnTopWarning, setAlwaysOnTopWarning] = useState<SettingsWriteReason | null>(null);
   const [alwaysOnTopMini, setAlwaysOnTopMini] = useState(DEFAULT_SETTINGS.alwaysOnTopMini);
   const [alwaysOnTopMiniWarning, setAlwaysOnTopMiniWarning] = useState<SettingsWriteReason | null>(null);
+  const [forgeWritesEnabled, setForgeWritesEnabled] = useState(DEFAULT_SETTINGS.forgeWritesEnabled);
+  const [forgeWritesWarning, setForgeWritesWarning] = useState<SettingsWriteReason | null>(null);
+  const [restartGameOnExit, setRestartGameOnExit] = useState(DEFAULT_SETTINGS.restartGameOnExit);
+  const [restartGameOnExitWarning, setRestartGameOnExitWarning] = useState<SettingsWriteReason | null>(null);
 
   useEffect(() => {
     const bridge = getBridge();
@@ -80,6 +87,8 @@ export default function HomePage() {
         setLocale(settings.locale);
         setAlwaysOnTopMain(settings.alwaysOnTopMain);
         setAlwaysOnTopMini(settings.alwaysOnTopMini);
+        setForgeWritesEnabled(settings.forgeWritesEnabled);
+        setRestartGameOnExit(settings.restartGameOnExit);
       })
       .catch(() => {
         setLocale(DEFAULT_SETTINGS.locale);
@@ -124,6 +133,24 @@ export default function HomePage() {
     });
   };
 
+  const onForgeWritesEnabledChange = (next: boolean) => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('settings:setForgeWritesEnabled', next).then((result) => {
+      setForgeWritesEnabled(result.settings.forgeWritesEnabled);
+      setForgeWritesWarning(result.persisted ? null : result.reason);
+    });
+  };
+
+  const onRestartGameOnExitChange = (next: boolean) => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('settings:setRestartGameOnExit', next).then((result) => {
+      setRestartGameOnExit(result.settings.restartGameOnExit);
+      setRestartGameOnExitWarning(result.persisted ? null : result.reason);
+    });
+  };
+
   return (
     <CopyProvider locale={locale ?? DEFAULT_SETTINGS.locale}>
       <HomePageContent
@@ -136,6 +163,12 @@ export default function HomePage() {
         alwaysOnTopMini={alwaysOnTopMini}
         onAlwaysOnTopMiniChange={onAlwaysOnTopMiniChange}
         alwaysOnTopMiniWarning={alwaysOnTopMiniWarning}
+        forgeWritesEnabled={forgeWritesEnabled}
+        onForgeWritesEnabledChange={onForgeWritesEnabledChange}
+        forgeWritesWarning={forgeWritesWarning}
+        restartGameOnExit={restartGameOnExit}
+        onRestartGameOnExitChange={onRestartGameOnExitChange}
+        restartGameOnExitWarning={restartGameOnExitWarning}
       />
     </CopyProvider>
   );
@@ -151,6 +184,12 @@ function HomePageContent({
   alwaysOnTopMini,
   onAlwaysOnTopMiniChange,
   alwaysOnTopMiniWarning,
+  forgeWritesEnabled,
+  onForgeWritesEnabledChange,
+  forgeWritesWarning,
+  restartGameOnExit,
+  onRestartGameOnExitChange,
+  restartGameOnExitWarning,
 }: {
   locale: AppLocale;
   onLocaleChange: (next: AppLocale) => void;
@@ -161,6 +200,12 @@ function HomePageContent({
   alwaysOnTopMini: boolean;
   onAlwaysOnTopMiniChange: (next: boolean) => void;
   alwaysOnTopMiniWarning: SettingsWriteReason | null;
+  forgeWritesEnabled: boolean;
+  onForgeWritesEnabledChange: (next: boolean) => void;
+  forgeWritesWarning: SettingsWriteReason | null;
+  restartGameOnExit: boolean;
+  onRestartGameOnExitChange: (next: boolean) => void;
+  restartGameOnExitWarning: SettingsWriteReason | null;
 }) {
   const t = useCopy();
   const { lang } = useLocale();
@@ -338,7 +383,13 @@ function HomePageContent({
             whichever tab happens to be showing — six smoke specs wait on it purely as a boot
             signal. The probe beside it proves a @bombfarm/domain value and the active language
             reached the DOM; it renders nothing a player sees. */}
-        <div data-testid="app-ready" className="flex flex-1 flex-col gap-4">
+        {/* `min-h-0` is what lets a screen fill the scroll region instead of growing past it. A
+            flex item's automatic minimum size is its content, so without this every tab was as
+            tall as its contents and `<main>` scrolled whatever the tab did with `min-h-0` and
+            `flex-1` inside — the bag table's own scroller had nothing to be a scroller inside of.
+            A tab that is genuinely taller than the region still overflows this box and still
+            scrolls `<main>`, because nothing here clips. */}
+        <div data-testid="app-ready" className="flex min-h-0 flex-1 flex-col gap-4">
           <span data-testid="domain-label-probe" className="sr-only">
             {rarityLabel('Comum', lang)}
           </span>
@@ -355,6 +406,16 @@ function HomePageContent({
                 onAlwaysOnTopMiniChange={onAlwaysOnTopMiniChange}
                 miniPersistWarning={alwaysOnTopMiniWarning}
               />
+              <GameSection
+                restartGameOnExit={restartGameOnExit}
+                onRestartGameOnExitChange={onRestartGameOnExitChange}
+                persistWarning={restartGameOnExitWarning}
+              />
+              <ForgeSection
+                forgeWritesEnabled={forgeWritesEnabled}
+                onForgeWritesEnabledChange={onForgeWritesEnabledChange}
+                persistWarning={forgeWritesWarning}
+              />
               <ConsentSection onRevoke={onConsentRevoke} />
               <DiagnosticsSection onSave={onSaveDiagnostics} result={diagnosticsDumpResult} />
               <UpdatesSection
@@ -369,6 +430,8 @@ function HomePageContent({
             <FarmView />
           ) : activeNavId === 'inventory' ? (
             <InventoryView />
+          ) : activeNavId === 'forge' ? (
+            <ForgeView forgeWritesEnabled={forgeWritesEnabled} accountSource={environment?.accountSource ?? null} />
           ) : activeNavId === 'account' ? (
             <AccountView
               onOpenInventory={() => {

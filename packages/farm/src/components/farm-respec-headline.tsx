@@ -1,7 +1,8 @@
 'use client';
 
 import type { FarmRespecResult } from '@bombfarm/domain/farm-optimize';
-import { sub, type FarmCopy, type Lang } from '../copy';
+import { sub, type Lang } from '@bombfarm/hero/copy';
+import type { FarmCopy } from '../copy';
 import { formatGainPct } from '../model/farm-respec-format';
 
 /**

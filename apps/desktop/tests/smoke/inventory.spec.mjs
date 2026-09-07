@@ -497,7 +497,7 @@ test.describe('inventory smoke', () => {
           .locator('[data-testid="inventory-group"][data-kind="equipment"]')
           .getByTestId('inventory-card')
           .evaluateAll((nodes) => nodes.map((node) => node.textContent ?? ''));
-        return texts.map((text) => Number(/Level (\d+)/.exec(text)?.[1] ?? 0));
+        return texts.map((text) => Number(/Lv (\d+)/.exec(text)?.[1] ?? 0));
       };
 
       // Narrow to one rarity, so every visible card ties on the primary key and the order that

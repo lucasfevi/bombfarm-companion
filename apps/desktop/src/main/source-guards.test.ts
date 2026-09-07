@@ -153,23 +153,27 @@ describe('Copy guard — no player-facing literal outside lib/copy/', () => {
 
   /**
    * The farm screen brings a SECOND supplier of player-facing strings into this renderer — the
-   * dictionary `@bombfarm/farm` ships with the views it draws. The copy guard above cannot see it
+   * dictionaries the packages ship with the views they draw. The copy guard above cannot see them
    * (those strings are not literals in this tree), so the one-place-for-copy invariant is kept
-   * structurally instead: exactly one module may reach that dictionary, and it composes the two
+   * structurally instead: exactly one module may reach those dictionaries, and it composes the two
    * halves for everything else.
+   *
+   * The pattern covers every package that supplies the screen's copy, not just the one the screen
+   * is named after: the roster half of the dictionary lives in `@bombfarm/hero` now, and a guard
+   * matching one specifier would let a second module reach the other while still reporting green.
    */
   const FARM_COPY_MODULE = join(RENDERER_ROOT, 'app', 'farm', 'farm-copy.ts');
-  const FARM_COPY_IMPORT = /from\s*['"]@bombfarm\/farm\/copy['"]/;
+  const SCREEN_COPY_IMPORT = /from\s*['"]@bombfarm\/(?:farm|hero)\/copy['"]/;
 
-  function farmCopyImporters(files: readonly { path: string; source: string }[]): string[] {
-    return files.filter((file) => FARM_COPY_IMPORT.test(stripComments(file.source))).map((file) => file.path);
+  function screenCopyImporters(files: readonly { path: string; source: string }[]): string[] {
+    return files.filter((file) => SCREEN_COPY_IMPORT.test(stripComments(file.source))).map((file) => file.path);
   }
 
-  it('only app/farm/farm-copy.ts imports the farm dictionary', () => {
-    const importers = farmCopyImporters(readAll(RENDERER_ROOT, ['.ts', '.tsx']));
+  it('only app/farm/farm-copy.ts imports the farm and hero dictionaries', () => {
+    const importers = screenCopyImporters(readAll(RENDERER_ROOT, ['.ts', '.tsx']));
     expect(
       importers,
-      `Only ${FARM_COPY_MODULE} may import the farm screen's dictionary — every other module ` +
+      `Only ${FARM_COPY_MODULE} may import the farm screen's dictionaries — every other module ` +
         `reads copy through lib/copy. Found: ${importers.join(', ')}`,
     ).toEqual([FARM_COPY_MODULE]);
   });
@@ -178,7 +182,14 @@ describe('Copy guard — no player-facing literal outside lib/copy/', () => {
     const fixture = [
       { path: 'second.tsx', source: "import { farmCopyFor } from '@bombfarm/farm/copy';" },
     ];
-    expect(farmCopyImporters(fixture)).toEqual(['second.tsx']);
+    expect(screenCopyImporters(fixture)).toEqual(['second.tsx']);
+  });
+
+  it('red state demonstrated: a second module reaching for the hero dictionary is caught', () => {
+    const fixture = [
+      { path: 'second.tsx', source: "import type { RosterCopy } from '@bombfarm/hero/copy';" },
+    ];
+    expect(screenCopyImporters(fixture)).toEqual(['second.tsx']);
   });
 
   it("allowlisted props (data-testid, className, href, id, role, type, key) are not flagged even though they are string literals", () => {

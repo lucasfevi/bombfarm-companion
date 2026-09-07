@@ -21,21 +21,22 @@ export type ShellDensity = 'full' | 'actions-collapsed' | 'icon-tabs';
  * overlapping on. Portuguese is the binding language; its tab words are the longest either
  * language puts in the pill.
  *
- * Brand 159 + tabs 446 + actions 340 + the padding and two gaps = 989px for the whole bar. The
- * margin above that absorbs a font-rendering pass that measures a few pixels wider.
+ * Brand 159 + tabs 512 + actions 340 + the padding and two gaps = 1055px for the whole bar, with
+ * six tabs (the sixth, the Forge, added 66px to the five measured at 446). The margin above that
+ * absorbs a font-rendering pass that measures a few pixels wider.
  */
-export const SHELL_ACTIONS_COLLAPSE_WIDTH = 1000;
+export const SHELL_ACTIONS_COLLAPSE_WIDTH = 1070;
 
 /**
- * The same sum with the actions already down to their one 38px button: 687px.
+ * The same sum with the actions already down to their one 38px button: 753px.
  *
  * No window reaches this today — the desktop's own minimum is 960px, which leaves 824px of bar
  * even after the caption inset, and that is the stage above. It is kept because the sum it comes
- * from is not fixed: every tab added pushes both widths up, and a sixth or seventh destination
- * brings this one inside the range a window can be dragged to. The alternative is deleting it and
- * writing it again on the day a tab is added, against a bar that has already started overlapping.
+ * from is not fixed: every tab added pushes both widths up, and a seventh destination brings this
+ * one inside the range a window can be dragged to. The alternative is deleting it and writing it
+ * again on the day a tab is added, against a bar that has already started overlapping.
  */
-export const SHELL_ICON_TABS_WIDTH = 700;
+export const SHELL_ICON_TABS_WIDTH = 770;
 
 export function shellDensityFor(availableWidth: number): ShellDensity {
   if (availableWidth < SHELL_ICON_TABS_WIDTH) return 'icon-tabs';

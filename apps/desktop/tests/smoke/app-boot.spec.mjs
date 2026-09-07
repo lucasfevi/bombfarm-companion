@@ -69,6 +69,7 @@ test.describe('app boot smoke', () => {
         updateChannel: null,
         isPackaged: false,
         version: expect.stringMatching(/^\d+\.\d+\.\d+/),
+        accountSource: 'fixture',
       });
 
       await expect(page.getByTestId('flavor-badge')).toHaveText('DEV');
@@ -96,10 +97,10 @@ test.describe('app boot smoke', () => {
         timeout: 30_000,
       });
 
-      // Five tabs: Live, Farm, Inventory, Account, Settings (`navItemsFor`). This asserts the
-      // shell rendered its nav at all, not which tabs it holds — `i18n.spec.mjs` names each one.
+      // Six tabs: Live, Farm, Inventory, Forge, Account, Settings (`navItemsFor`). This asserts
+      // the shell rendered its nav at all, not which tabs it holds — `i18n.spec.mjs` names each one.
       const navButtons = page.locator('nav[aria-label="Main"] button');
-      await expect(navButtons).toHaveCount(5, { timeout: 30_000 });
+      await expect(navButtons).toHaveCount(6, { timeout: 30_000 });
 
       // the renderer's @bombfarm/domain value import reached the DOM.
       await expect(page.getByTestId('domain-label-probe')).toHaveText('Common');

@@ -14,8 +14,10 @@ import { uiIconRegistry } from './ui-registry';
 // code to the clipboard, and the web already drew this glyph from the vendor package directly.
 // Desktop top-bar density (2026-09-02): signal, map, archive-box, user, cog — the five nav tabs
 // draw their glyph instead of their word at the narrowest widths; ellipsis-horizontal is the
-// overflow trigger the secondary actions collapse into. These six take the registry to its
+// overflow trigger the secondary actions collapse into. These six took the registry to its
 // 24-entry budget exactly, so the next glyph is a conversation rather than a quiet addition.
+// Desktop Forge tab (2026-09-04): hammer — the sixth nav tab's glyph, which is what the
+// conversation above was for; the budget moved to 25 with it.
 const MIGRATED_UI_NAMES = [
   'window',
   'signal',
@@ -23,6 +25,7 @@ const MIGRATED_UI_NAMES = [
   'archive-box',
   'user',
   'cog',
+  'hammer',
   'ellipsis-horizontal',
   'layout-grid',
   'layout-list',
@@ -44,8 +47,8 @@ const MIGRATED_UI_NAMES = [
 ] as const;
 
 describe('icon registries — budget and membership', () => {
-  it('keeps uiIconRegistry within the 24-entry budget', () => {
-    expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(24);
+  it('keeps uiIconRegistry within the 25-entry budget', () => {
+    expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(25);
   });
 
   it('maps exactly the declared ui-chrome glyphs', () => {

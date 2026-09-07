@@ -1,5 +1,94 @@
 # @bombfarm/domain
 
+## 0.12.0
+
+### Minor Changes
+
+- a326087: Teach the planner the forge, ahead of the screen that will use it.
+
+  **The planner now knows the forge's rules.** An item climbs from +0 to +15 one roll at a time.
+  Rolls up to +8 always land; from +9 on the odds fall from 80% to 20%, a miss drops the item back
+  to +8, and a miss on the last roll for +15 drops it all the way to +0. Gold is charged whether the
+  roll lands or not. Below +8 a single call takes the item straight to +8 for the sum of the eight
+  rolls it replaces. With those rules the planner can say, for any item and any target, how many
+  rolls a climb is expected to take, how many times it is expected to fall back and jump to +8
+  again, and what it is expected to cost — and, from a seeded run of simulated climbs, what a run of
+  bad luck costs at a chosen percentile.
+
+  **The gold cost is exact, and it comes from the wiki.** Every roll cost — thirty item levels, six
+  rarities, fifteen steps — is carried exactly as the wiki's forge page publishes it, not
+  approximated. The table also has a closed form, (120 + 8 × level + 100 × rarity) × (step + 1)² ÷ 4,
+  and a test holds every one of the 2,700 cells to it: a rebalance that only changes the numbers is
+  a refresh of the data file, and one that changes the shape of the cost fails loudly instead of
+  drifting.
+
+  **Nothing is on screen yet.** This change is the arithmetic only; the Forge tab that uses it comes
+  in a later change.
+
+- 06c9b42: A finished forge run leads with its verdict, and the bag drops the column that repeated half of
+  every name.
+
+  **Against the plan answers the question first.** The block used to run three gold figures and a
+  percentage together as one line of prose, wrap, and then draw a bar with two tick marks nothing
+  explained. The percentage is now the headline — large, in the mono face, signed and rounded to a
+  whole percent — with a phrase beside it saying what it means: _under what the plan expected_ in
+  the up colour, _over what the plan expected_ in the warn colour, _worse than a bad run_ in the
+  down colour. The bar keeps its place underneath, and the three figures follow it as one quiet
+  line — spent, expected, a bad run, each with the game's coin.
+
+  A run that landed on the expected figure is neither under nor over, so it says _exactly what the
+  plan expected_ in the muted colour and prints no percentage at all, rather than a signed zero
+  picking a side of an inequality. A run cut short after one cheap roll still reads as an outcome:
+  `−100% under what the plan expected` is what actually happened.
+
+  **The Forge bag has no Slot column.** A piece's name already reads `Set · Slot`, so the column
+  printed half of every name a second time beside it — and the width it took was what squeezed the
+  name column at the app's minimum width until the identity block broke apart. Removing it gives
+  the name 180px at a 960-wide window instead of 52px, and the bag is now Item, Forge and Equipped
+  by. Ordering by slot goes with the column, which the bag's headers were the only route to.
+
+  Nothing else drew that column, so the shared table no longer knows how: the column, its label and
+  the inventory model's `slot` sort key are all gone rather than left as a column nothing hosts. The
+  web planner's inventory list, which draws through the same table, never asked for it.
+
+- 03c3302: Keep each hero's roll bounds, and work out how well that hero actually rolled.
+
+  **A hero's roll bounds now survive the trip.** Every hero is born with a lowest and a highest
+  possible value for each of its statistics, and the game says so on import. Until now the planner
+  read those bounds, used nothing, and dropped them on the floor — they were gone by the time the
+  hero reached storage, and gone again every time the autosave wrote the hero being edited back out.
+  They are now carried from the import, through the stored hero record, and through the draft the
+  editor works on, so a hero that has been opened and saved still knows what it could have rolled.
+
+  **From those bounds, two new numbers.** For a single statistic, where its roll landed between the
+  lowest and the highest that hero could have been born with, as a percentile. For the hero as a
+  whole, one roll-quality number summarising all of them. Both are computable from a stored hero
+  record alone — no re-import, no live game.
+
+  **Roll quality is placed against the letter the hero already carries, and never overrides it.**
+  The game grades every hero with a letter, and that letter is the hero's own; the planner treats it
+  as fact. When the measured roll quality disagrees with it — a hero graded well above or below what
+  its rolls support — the disagreement is reported as a disagreement, with both values intact.
+  Nothing recomputes, corrects, or replaces the stored letter.
+
+  **Fuse time is now a first-class result.** Both the per-hero combat result and the farming result
+  report the hero's fuse in seconds, the floor it cannot go below, and the cooldown-reduction cap
+  that governs it. The two constants are reported separately and on purpose: they happen to coincide
+  today, but they are equal only by construction, and a balance patch could move either one alone —
+  so nothing has to infer one from the other, and nothing restates either from memory.
+
+  **Nothing is on screen yet.** This change is the data, the arithmetic and the tests that hold them;
+  the views that show a player how their hero rolled come in a later change.
+
+### Patch Changes
+
+- Updated dependencies [06c9b42]
+- Updated dependencies [06c9b42]
+- Updated dependencies [06c9b42]
+- Updated dependencies [2ab64c9]
+- Updated dependencies [076fc40]
+  - @bombfarm/contracts@0.7.0
+
 ## 0.11.0
 
 ### Minor Changes

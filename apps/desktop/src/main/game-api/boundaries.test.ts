@@ -23,7 +23,14 @@ const MARKET_TRANSPORT_FILE = join(DESKTOP_MAIN, 'market/market-transport.ts');
 const MARKET_SNAPSHOT_HOST = 'raw.githubusercontent.com';
 const SESSION_TOKEN_FILE_FILE = join(DESKTOP_MAIN, 'game-api/session-token-file.ts');
 const REQUEST_FILE = join(GAME_API_SRC, 'request.ts');
+/** The one write surface. It may name `POST` and exactly the two forge routes below, and nothing
+ *  else in either tree may name either — the read-only posture is reversed for that width only. */
+const FORGE_REQUEST_FILE = join(GAME_API_SRC, 'forge-request.ts');
+const FORGE_ROUTE_PATHS = ['/item/forge', '/item/forge_to_safe'];
 const ACCOUNT_REFRESH_FILE = join(DESKTOP_MAIN, 'game-api/account-refresh.ts');
+/** The one caller of `requestPost()` — the forge run. Typed to a `WriteSession`, and the second
+ *  root of the live-tap walk below: a write path must be as far from the tap as the read path. */
+const FORGE_SERVICE_FILE = join(DESKTOP_MAIN, 'forge/forge-service.ts');
 /** This guard file itself necessarily names the strings it checks for — excluded from every scan. */
 const BOUNDARIES_TEST_FILE = join(DESKTOP_MAIN, 'game-api/boundaries.test.ts');
 
@@ -45,11 +52,12 @@ function isTestFile(file: string): boolean {
 }
 
 // -------------------------------------------------------------------------------------------
-// Guard 1 — no write surface. Every source file that can reach the network:
+// Guard 1 — one write surface, two routes wide. Every source file that can reach the network:
 // packages/game-api/src (the classification/typing half) AND apps/desktop/src/main (the one
 // real socket, https-transport.ts, plus everything around it) — the scan used to cover only the
 // former, which is exactly why a hard-coded non-GET method in https-transport.ts was invisible
 // to it (see the T-fix-1 commit notes: `'PO' + 'ST'` passed this guard untouched before this fix).
+// `POST` is allowed in forge-request.ts alone; PUT/PATCH/DELETE stay forbidden everywhere.
 // -------------------------------------------------------------------------------------------
 
 /**
@@ -79,7 +87,7 @@ function foldStringConcatenation(text: string): string {
  *  semver build-metadata string already is above. */
 const LOOPBACK_IPS = new Set(['127.0.0.1', '0.0.0.0']);
 
-describe('Guard 1 — no write surface anywhere the network can be reached (D24)', () => {
+describe('Guard 1 — one write surface, two routes wide, anywhere the network can be reached', () => {
   const sourceFiles = [...walkTsFiles(GAME_API_SRC), ...walkTsFiles(DESKTOP_MAIN)].filter((f) => !isTestFile(f));
 
   it('scans a non-empty set of non-test source files, including apps/desktop/src/main', () => {
@@ -87,12 +95,34 @@ describe('Guard 1 — no write surface anywhere the network can be reached (D24)
     expect(sourceFiles).toContain(HTTPS_TRANSPORT_FILE);
   });
 
-  it('contains no POST/PUT/PATCH/DELETE HTTP method literal, including one assembled via string concatenation', () => {
-    const methodPattern = /['"](POST|PUT|PATCH|DELETE)['"]/;
+  it('contains no PUT/PATCH/DELETE HTTP method literal anywhere, and a POST literal only in forge-request.ts — including one assembled via string concatenation', () => {
     const offenders = sourceFiles
-      .map((file) => ({ file, match: methodPattern.exec(foldStringConcatenation(readFileSync(file, 'utf8'))) }))
+      .map((file) => {
+        const methodPattern = file === FORGE_REQUEST_FILE ? /['"](PUT|PATCH|DELETE)['"]/ : /['"](POST|PUT|PATCH|DELETE)['"]/;
+        return { file, match: methodPattern.exec(foldStringConcatenation(readFileSync(file, 'utf8'))) };
+      })
       .filter((r) => r.match !== null);
-    expect(offenders, `D24: this app has no write surface — reads only. Offenders: ${JSON.stringify(offenders.map((o) => o.file))}`).toEqual([]);
+    expect(offenders, `forge-request.ts is the one write surface, and it may only POST. Offenders: ${JSON.stringify(offenders.map((o) => o.file))}`).toEqual([]);
+  });
+
+  it('forge-request.ts itself does name POST (sanity — its exemption is not vacuous)', () => {
+    expect(/['"]POST['"]/.test(readFileSync(FORGE_REQUEST_FILE, 'utf8'))).toBe(true);
+  });
+
+  it('forge-request.ts names no path literal other than the two forge routes', () => {
+    const text = foldStringConcatenation(readFileSync(FORGE_REQUEST_FILE, 'utf8'));
+    const pathLiterals = Array.from(text.matchAll(/['"](\/[^'"]*)['"]/g), (match) => match[1]);
+    expect(pathLiterals.length, 'sanity: forge-request.ts must name its routes as path literals').toBeGreaterThan(0);
+    expect(new Set(pathLiterals), `forge-request.ts may name exactly ${JSON.stringify(FORGE_ROUTE_PATHS)}. Found: ${JSON.stringify(pathLiterals)}`).toEqual(new Set(FORGE_ROUTE_PATHS));
+  });
+
+  it('no file other than forge-request.ts contains a POST literal or names either forge route', () => {
+    const offenders = sourceFiles.filter((file) => {
+      if (file === FORGE_REQUEST_FILE) return false;
+      const text = foldStringConcatenation(readFileSync(file, 'utf8'));
+      return /['"]POST['"]/.test(text) || FORGE_ROUTE_PATHS.some((route) => text.includes(route));
+    });
+    expect(offenders, `Only forge-request.ts may POST or name a forge route. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
   });
 
   it('names no host other than app.bombfarm.net, and the market snapshot host only in the market transport', () => {
@@ -284,6 +314,28 @@ describe('Guard 3 — no path to the network or the token file bypasses consent'
       return /\brequestGet\(/.test(text) || /\breadSection\(/.test(text);
     });
     expect(callers.length).toBeGreaterThan(0);
+  });
+
+  it('every caller of requestPost() is typed to a WriteSession — the same rule as requestGet() → ConsentedSession', () => {
+    const offenders = nonTestFiles.filter((file) => {
+      const text = readFileSync(file, 'utf8');
+      return /\brequestPost\(/.test(text) && !text.includes('WriteSession');
+    });
+    expect(offenders, `Every write call site must be typed to a WriteSession. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
+  });
+
+  it('forge-request.ts is the only definer of requestPost(), and forge-service.ts is its only caller — the one place in the app that forges', () => {
+    const definers = nonTestFiles.filter((file) => /export async function requestPost\(/.test(readFileSync(file, 'utf8')));
+    expect(definers).toEqual([FORGE_REQUEST_FILE]);
+
+    const callers = nonTestFiles.filter((file) => file !== FORGE_REQUEST_FILE && /\brequestPost\(/.test(readFileSync(file, 'utf8')));
+    expect(callers).toEqual([FORGE_SERVICE_FILE]);
+  });
+
+  it('forge-service.ts mints its session through grantWriteSession() and names WriteSession (sanity — the caller rule above is not vacuous)', () => {
+    const text = readFileSync(FORGE_SERVICE_FILE, 'utf8');
+    expect(text).toContain('grantWriteSession(');
+    expect(text).toContain('WriteSession');
   });
 });
 
@@ -511,6 +563,22 @@ describe('Guard 4 — the account path never reaches the live tap', () => {
     expect(
       violations,
       `The account is never sourced from the live tap, in this feature or as a fallback. Violations: ${JSON.stringify(violations)}`,
+    ).toEqual([]);
+  });
+});
+
+describe('Guard 4 — the forge run never reaches the live tap either', () => {
+  const { violations, visited } = walkImportGraph(FORGE_SERVICE_FILE);
+
+  it('walked a non-empty import graph from forge-service.ts', () => {
+    expect(visited.size).toBeGreaterThan(0);
+    expect(visited.has(FORGE_SERVICE_FILE)).toBe(true);
+  });
+
+  it('reaches no edge into live-source/ or its LiveSource class', () => {
+    expect(
+      violations,
+      `A write is never sourced from, or informed by, the live tap. Violations: ${JSON.stringify(violations)}`,
     ).toEqual([]);
   });
 });

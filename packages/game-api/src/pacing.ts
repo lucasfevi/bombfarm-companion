@@ -10,9 +10,10 @@ import type { RequestOutcome } from './request.js';
  * source and fails if any value loses its comment).
  *
  * Reused from the internal automation prototype's rate-limit module: the cooldown-detection shape (see
- * `request.ts`'s `COOLDOWN_BODY_PATTERN`) and the 429/503 checks. The *write*-pacing half
- * (`beforeWrite`, `dryRun`, `min_write_interval_ms`) is not ported — it guards a surface this
- * package does not have (`D24`: no writes).
+ * `request.ts`'s `COOLDOWN_BODY_PATTERN`) and the 429/503 checks. The write half below paces the
+ * app's one kind of write, a forge roll, through the same gate instance as the reads — one
+ * stream, one cooldown — so a 429 on a roll trips the backoff the account reads honour, and two
+ * writers can never interleave past each other's spacing on separate gates.
  */
 export const READ_PACING = {
   /** Unmeasured. 1.1s is the only inter-GET spacing ever exercised against these routes (the
@@ -54,6 +55,36 @@ export const READ_PACING = {
 
   /** Reused verbatim from the internal automation prototype's request timeout. */
   requestTimeoutMs: 15_000,
+
+  /** Unmeasured. Reused from the internal automation prototype's write-interval default; never
+   *  exceeded a server cooldown in its logs at this spacing, which is evidence of safety, not a
+   *  measured limit. */
+  minWriteGapMs: 1_500,
+
+  /** Reused from the internal automation prototype's forge pacing defaults; cadence shaping on
+   *  our own account, not an attempt to defeat the server's limit — the gate still owns the hard
+   *  floor and the cooldown. */
+  forgeDelayMinMs: 700,
+
+  /** Reused from the internal automation prototype's forge pacing defaults; cadence shaping on
+   *  our own account, not an attempt to defeat the server's limit — the gate still owns the hard
+   *  floor and the cooldown. */
+  forgeDelayMaxMs: 2_500,
+
+  /** Reused from the internal automation prototype's forge pacing defaults; cadence shaping on
+   *  our own account, not an attempt to defeat the server's limit — the gate still owns the hard
+   *  floor and the cooldown. */
+  forgeLongPauseChance: 0.08,
+
+  /** Reused from the internal automation prototype's forge pacing defaults; cadence shaping on
+   *  our own account, not an attempt to defeat the server's limit — the gate still owns the hard
+   *  floor and the cooldown. */
+  forgeLongPauseMinMs: 4_000,
+
+  /** Reused from the internal automation prototype's forge pacing defaults; cadence shaping on
+   *  our own account, not an attempt to defeat the server's limit — the gate still owns the hard
+   *  floor and the cooldown. */
+  forgeLongPauseMaxMs: 12_000,
 } as const;
 
 export interface PacingClock {
@@ -77,9 +108,17 @@ export interface PacingGate {
    *  A repeat of the same `key` while a prior call for that key is still in flight is coalesced
    *  into it — one underlying call, every caller resolves to the same result. */
   run<T>(key: string, fn: () => Promise<T>): Promise<T>;
+  /** The write half of the same queue and the same refusal rules: a write waits out
+   *  `minWriteGapMs` since the last write start *and* `minRequestGapMs` since the last start of
+   *  any kind. Never coalesces — two forge calls with the same `key` are two calls. */
+  runWrite<T>(key: string, fn: () => Promise<T>): Promise<T>;
+  /** The humanised gap between two consecutive forge rolls: a uniform draw between the forge
+   *  delay bounds, replaced by a longer pause with `forgeLongPauseChance`. The first draw decides
+   *  the pause, the second places the delay inside its bounds; `random` is injectable for tests. */
+  nextForgeDelayMs(random?: () => number): number;
   /** Feeds a request's outcome back into the two ladders: `cooldown` trips the backoff window,
    *  `unauthorized` trips the auth-retry window, `ok` clears both. Every other kind leaves
-   *  pacing state untouched. */
+   *  pacing state untouched. A write's outcome feeds the same ladders as a read's. */
   observe(outcome: Pick<RequestOutcome, 'kind'>): void;
   readonly state: PacingState;
   /** Never throws, and never answers "not ever": the configured cycle interval, or whichever
@@ -95,6 +134,7 @@ export interface PacingGate {
 export function createPacingGate(clock: PacingClock, cfg: typeof READ_PACING = READ_PACING): PacingGate {
   let chain: Promise<void> = Promise.resolve();
   let lastStart: number | null = null;
+  let lastWriteStart: number | null = null;
   let consecutiveCooldowns = 0;
   let backoffUntil: number | null = null;
   let consecutiveUnauthorized = 0;
@@ -115,14 +155,21 @@ export function createPacingGate(clock: PacingClock, cfg: typeof READ_PACING = R
     return 'ready';
   }
 
-  function schedule<T>(fn: () => Promise<T>): Promise<T> {
+  function gapRemaining(since: number | null, gapMs: number): number {
+    if (since === null) return 0;
+    return gapMs - (clock.now() - since);
+  }
+
+  function schedule<T>(fn: () => Promise<T>, kind: 'read' | 'write'): Promise<T> {
     const previous = chain;
     const runPromise: Promise<T> = previous.then(async () => {
-      if (lastStart !== null) {
-        const wait = cfg.minRequestGapMs - (clock.now() - lastStart);
-        if (wait > 0) await clock.sleep(wait);
-      }
+      const wait = Math.max(
+        gapRemaining(lastStart, cfg.minRequestGapMs),
+        kind === 'write' ? gapRemaining(lastWriteStart, cfg.minWriteGapMs) : 0,
+      );
+      if (wait > 0) await clock.sleep(wait);
       lastStart = clock.now();
+      if (kind === 'write') lastWriteStart = lastStart;
       return fn();
     });
     chain = runPromise.then(
@@ -132,20 +179,36 @@ export function createPacingGate(clock: PacingClock, cfg: typeof READ_PACING = R
     return runPromise;
   }
 
+  function refuseUnlessReady(): void {
+    const currentState = computeState();
+    if (currentState !== 'ready') {
+      throw new PacingRefusedError(currentState);
+    }
+  }
+
   return {
     async run<T>(key: string, fn: () => Promise<T>): Promise<T> {
       const existing = inFlightByKey.get(key);
       if (existing) return existing as Promise<T>;
 
-      const currentState = computeState();
-      if (currentState !== 'ready') {
-        throw new PacingRefusedError(currentState);
-      }
+      refuseUnlessReady();
 
-      const promise = schedule(fn);
+      const promise = schedule(fn, 'read');
       inFlightByKey.set(key, promise);
       promise.finally(() => inFlightByKey.delete(key)).catch(() => undefined);
       return promise;
+    },
+
+    async runWrite<T>(_key: string, fn: () => Promise<T>): Promise<T> {
+      refuseUnlessReady();
+      return schedule(fn, 'write');
+    },
+
+    nextForgeDelayMs(random: () => number = Math.random): number {
+      const longPause = random() < cfg.forgeLongPauseChance;
+      const minMs = longPause ? cfg.forgeLongPauseMinMs : cfg.forgeDelayMinMs;
+      const maxMs = longPause ? cfg.forgeLongPauseMaxMs : cfg.forgeDelayMaxMs;
+      return Math.round(minMs + random() * (maxMs - minMs));
     },
 
     observe(outcome: Pick<RequestOutcome, 'kind'>): void {

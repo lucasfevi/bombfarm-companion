@@ -2,7 +2,8 @@
 
 import { useMemo, useState, type UIEvent } from 'react';
 import { DataTable } from '@bombfarm/ui';
-import { sub, type FarmCopy, type Lang } from '../copy';
+import { sub, type Lang } from '@bombfarm/hero/copy';
+import type { FarmCopy } from '../copy';
 import type { FarmRateRow } from '@bombfarm/domain/farm-rate';
 import { FARM_COLUMNS, type FarmSortDir, type FarmSortKey } from '../model/farm-ranking-view';
 import { ROW_HEIGHT_CSS, ROW_HEIGHT_PX } from '../model/farm-ranking-row-height';

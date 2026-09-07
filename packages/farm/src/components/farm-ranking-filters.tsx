@@ -2,8 +2,8 @@
 
 import { HelpTip, Select, Switch } from '@bombfarm/ui';
 import { gameDifficultyLabel, ITEM_LEVEL_TIERS } from '@bombfarm/domain/phase-wiki';
-import { sub } from '../copy';
-import type { FarmCopy, Lang } from '../copy';
+import { sub, type Lang } from '@bombfarm/hero/copy';
+import type { FarmCopy } from '../copy';
 import type { FarmFilters, GateFilter } from '../model/farm-ranking-view';
 
 type Props = {

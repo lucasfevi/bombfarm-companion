@@ -8,16 +8,20 @@ const availableBindings = detectAvailableBindings();
 warnForUnavailableBindings(availableBindings);
 
 const EN: AppSettings = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   locale: 'en',
   alwaysOnTopMain: false,
   alwaysOnTopMini: false,
+  forgeWritesEnabled: false,
+  restartGameOnExit: false,
 };
 const PT_BR: AppSettings = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   locale: 'pt-BR',
   alwaysOnTopMain: false,
   alwaysOnTopMini: false,
+  forgeWritesEnabled: false,
+  restartGameOnExit: false,
 };
 
 describe.each(availableBindings)('createSettingsStore over the real account_meta table (%s)', (binding) => {

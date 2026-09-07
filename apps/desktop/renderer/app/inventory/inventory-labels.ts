@@ -8,7 +8,7 @@ import type {
 } from '@bombfarm/game-art';
 import type {
   InventoryHero,
-  InventorySortKey,
+  InventorySortMenuKey,
   InventoryViewItem,
   InventoryViewStat,
   ItemKind,
@@ -114,7 +114,7 @@ function itemStat(stat: InventoryViewStat, lang: 'pt' | 'en'): InventoryStatText
   return { label, value };
 }
 
-const SORT_KEY: Record<InventorySortKey, keyof Copy> = {
+const SORT_KEY: Record<InventorySortMenuKey, keyof Copy> = {
   rarity: 'inventorySortRarity',
   level: 'inventorySortLevel',
   value: 'inventorySortValue',
@@ -262,18 +262,18 @@ export function inventoryTableLabels(
     groupTitle: grid.groupTitle,
     itemName: grid.itemName,
     itemRarity: grid.itemRarity,
+    itemLevel: grid.itemLevel,
     itemForge: grid.itemForge,
     equippedBy: grid.equippedBy,
     gold: grid.gold,
     searchText: grid.searchText,
     column: {
       name: t.inventorySortName,
-      rarity: t.inventorySortRarity,
-      level: t.inventorySortLevel,
+      forge: t.inventoryColumnForge,
       count: t.inventorySortCount,
       value: t.inventorySortValue,
       market: t.inventorySortMarket,
-      equippedBy: t.inventoryColumnEquippedBy,
+      hero: t.inventoryColumnEquippedBy,
       actions: t.inventoryColumnActions,
     },
     rowAction: (itemLabel) => fill(t.inventoryRowAction, { item: itemLabel }),
@@ -282,10 +282,7 @@ export function inventoryTableLabels(
     heroOption: grid.heroOption,
     toolbar: grid.toolbar,
     clear: t.inventoryFilterClear,
-    filteredEmpty: {
-      title: t.inventoryFilterNoMatches,
-      description: t.inventoryFilterClear,
-    },
+    filteredEmpty: { title: t.inventoryFilterNoMatches },
     empty: { title: t.inventoryEmptyTitle, description: t.inventoryEmptyDescription },
     skippedNote: (count) => fill(t.inventorySkipped, { count }),
   };

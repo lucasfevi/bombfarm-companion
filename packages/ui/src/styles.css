@@ -234,7 +234,7 @@ input[type='checkbox']:disabled {
   cursor: not-allowed;
 }
 
-/* Base table element styling (TW-07). Kept in @layer base so migrated per-table
+/* Base table element styling. Kept in @layer base so migrated per-table
    utilities win by normal cascade (tailwind-first.md rule 9) instead of being
    silently overridden by unlayered rules. */
 @layer base {
@@ -246,18 +246,25 @@ input[type='checkbox']:disabled {
   }
   th {
     text-align: left;
+    padding: 4px 6px;
+  }
+  /* A `<th scope="row">` names the row it sits in; it is content, not a heading over a column,
+     and reading it at the column-header's 10px beside a 12.5px cell puts two line heights in
+     one row. Only the headings that sit over a column get that type. */
+  th:not([scope='row']) {
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--muted);
     font-weight: 600;
-    padding: 4px 6px;
     border-bottom: 1px solid var(--line);
   }
-  td {
+  td,
+  th[scope='row'] {
     padding: 4px 6px;
     border-bottom: 1px solid color-mix(in oklch, var(--line) 70%, transparent);
     vertical-align: middle;
+    font-weight: 400;
   }
   tr:last-child td,
   tr:last-child th {

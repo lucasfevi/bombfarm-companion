@@ -5,6 +5,9 @@ import {
   mitigationFactor,
   critFactor,
   fieldSeconds,
+  fuseSeconds,
+  FUSE_FLOOR,
+  STAT_CAPS,
   type AbilityMods,
   type Context,
   type HeroSheet,
@@ -130,6 +133,19 @@ export type AdvisorPipelineResult = {
   /** Seconds on field per deployment — `uptime`'s numerator, surfaced for callers that print
    *  the deployment length rather than the duty-cycle ratio derived from it. */
   fieldSecs: number;
+  /** `fuseSeconds(effective.cdr)`, seconds. */
+  fuseSecs: number;
+  /**
+   * The floor {@link fuseSecs} cannot go below, seconds, and the cooldown-reduction cap that
+   * governs it, percent. Both are reported because neither may be inferred from the other: they
+   * coincide today only by construction — twice the base cycle at the 80% cap is exactly 0.40s —
+   * and a balance patch can move either one alone. A consumer deriving one from the other would
+   * keep printing a self-consistent, wrong pair.
+   */
+  fuseFloorSecs: number;
+  cdrCapPct: number;
+  /** `fuseSecs` has reached {@link fuseFloorSecs}; further cooldown reduction buys no cadence. */
+  fuseAtFloor: boolean;
   uptime: number;
   mitF: number;
   predCrit: number;
@@ -336,6 +352,8 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   });
   const resetAdvice = buildResetAdvice(gate);
 
+  const fuseSecs = fuseSeconds(effective.cdr);
+
   return {
     mods,
     sheetOther,
@@ -364,6 +382,10 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     eSwitch,
     spentDelta,
     fieldSecs: field,
+    fuseSecs,
+    fuseFloorSecs: FUSE_FLOOR,
+    cdrCapPct: STAT_CAPS.cdr,
+    fuseAtFloor: fuseSecs <= FUSE_FLOOR,
     uptime,
     mitF,
     predCrit,

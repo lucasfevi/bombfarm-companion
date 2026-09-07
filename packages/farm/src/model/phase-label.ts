@@ -1,5 +1,5 @@
 import { formatPhaseCoord } from '@bombfarm/domain/phase-wiki';
-import type { Lang } from '../copy';
+import type { Lang } from '@bombfarm/hero/copy';
 
 /**
  * A phase as the game names it, e.g. `Normal 1-1 (#51)` — the in-game difficulty + map

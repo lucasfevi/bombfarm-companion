@@ -3,7 +3,8 @@
 import type { FarmRespecHeroEntry, FarmRespecResult } from '@bombfarm/domain/farm-optimize';
 import { GoldValue } from '@bombfarm/game-art';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import { sub, type FarmCopy, type Lang } from '../copy';
+import { sub, type Lang } from '@bombfarm/hero/copy';
+import type { FarmCopy } from '../copy';
 import { partitionHeroEntries } from '../model/farm-respec-view';
 import { formatGold } from '../model/farm-respec-format';
 import { FarmRespecHeroCard } from './farm-respec-hero-card';

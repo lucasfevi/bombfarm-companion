@@ -290,3 +290,121 @@ describe('createPacingGate — cycle interval', () => {
     expect(gate.nextCycleDelayMs(true)).toBeGreaterThan(READ_PACING.cycleForegroundMs);
   });
 });
+
+describe('createPacingGate — writes share the one gate with the reads', () => {
+  it('the write gap is wider than the read gap, so it is the binding one between two writes', () => {
+    expect(READ_PACING.minWriteGapMs).toBeGreaterThan(READ_PACING.minRequestGapMs);
+  });
+
+  it('a write after a read waits the read gap', async () => {
+    const clock = createFakeClock();
+    const gate = createPacingGate(clock);
+
+    await gate.run('/state', () => Promise.resolve('read'));
+    await gate.runWrite('/item/forge', () => Promise.resolve('write'));
+
+    expect(clock.sleepCalls).toEqual([READ_PACING.minRequestGapMs]);
+  });
+
+  it('a write after a write waits the write gap', async () => {
+    const clock = createFakeClock();
+    const gate = createPacingGate(clock);
+
+    await gate.runWrite('/item/forge', () => Promise.resolve('first'));
+    await gate.runWrite('/item/forge', () => Promise.resolve('second'));
+
+    expect(clock.sleepCalls).toEqual([READ_PACING.minWriteGapMs]);
+  });
+
+  it('a read after a write waits the read gap — the shared stream spaces every start', async () => {
+    const clock = createFakeClock();
+    const gate = createPacingGate(clock);
+
+    await gate.runWrite('/item/forge', () => Promise.resolve('write'));
+    await gate.run('/state', () => Promise.resolve('read'));
+
+    expect(clock.sleepCalls).toEqual([READ_PACING.minRequestGapMs]);
+  });
+
+  it('two writes with the same key are two calls — a write never coalesces', async () => {
+    const clock = createFakeClock();
+    const gate = createPacingGate(clock);
+    let invocations = 0;
+    const fn = () => {
+      invocations += 1;
+      return Promise.resolve(invocations);
+    };
+
+    const [first, second] = await Promise.all([gate.runWrite('/item/forge', fn), gate.runWrite('/item/forge', fn)]);
+
+    expect(invocations).toBe(2);
+    expect(first).toBe(1);
+    expect(second).toBe(2);
+  });
+
+  it('a cooldown observed from a write refuses the next read without invoking it', async () => {
+    const clock = createFakeClock();
+    const gate = createPacingGate(clock);
+
+    await gate.runWrite('/item/forge', () => Promise.resolve({ kind: 'cooldown' as const }));
+    gate.observe({ kind: 'cooldown' });
+
+    await expect(gate.run('/state', () => Promise.resolve('should-not-run'))).rejects.toBeInstanceOf(PacingRefusedError);
+  });
+
+  it('a cooldown observed from a read refuses the next write too', async () => {
+    const clock = createFakeClock();
+    const gate = createPacingGate(clock);
+    gate.observe({ kind: 'cooldown' });
+
+    await expect(gate.runWrite('/item/forge', () => Promise.resolve('should-not-run'))).rejects.toBeInstanceOf(
+      PacingRefusedError,
+    );
+  });
+
+  it('runWrite refuses while halted on an unresolved 401/403', async () => {
+    const clock = createFakeClock();
+    const gate = createPacingGate(clock);
+    gate.observe({ kind: 'unauthorized' });
+
+    await expect(gate.runWrite('/item/forge', () => Promise.resolve('should-not-run'))).rejects.toBeInstanceOf(
+      PacingRefusedError,
+    );
+  });
+});
+
+describe('createPacingGate — nextForgeDelayMs, the humanised gap between rolls', () => {
+  function sequence(values: number[]): () => number {
+    let index = 0;
+    return () => values[index++] ?? 0;
+  }
+
+  it('stays within the short bounds when the first draw does not pick the long pause', () => {
+    const gate = createPacingGate(createFakeClock());
+    expect(gate.nextForgeDelayMs(sequence([READ_PACING.forgeLongPauseChance, 0]))).toBe(READ_PACING.forgeDelayMinMs);
+    expect(gate.nextForgeDelayMs(sequence([0.5, 1]))).toBe(READ_PACING.forgeDelayMaxMs);
+    expect(gate.nextForgeDelayMs(sequence([0.99, 0.5]))).toBe(
+      Math.round((READ_PACING.forgeDelayMinMs + READ_PACING.forgeDelayMaxMs) / 2),
+    );
+  });
+
+  it('takes the long pause exactly when the first draw falls under forgeLongPauseChance', () => {
+    const gate = createPacingGate(createFakeClock());
+    const justUnder = READ_PACING.forgeLongPauseChance - 0.001;
+    expect(gate.nextForgeDelayMs(sequence([justUnder, 0]))).toBe(READ_PACING.forgeLongPauseMinMs);
+    expect(gate.nextForgeDelayMs(sequence([justUnder, 1]))).toBe(READ_PACING.forgeLongPauseMaxMs);
+    expect(gate.nextForgeDelayMs(sequence([0, 0.5]))).toBe(
+      Math.round((READ_PACING.forgeLongPauseMinMs + READ_PACING.forgeLongPauseMaxMs) / 2),
+    );
+  });
+
+  it('with the default random source, a thousand draws all land inside one of the two ranges', () => {
+    const gate = createPacingGate(createFakeClock());
+    for (let i = 0; i < 1_000; i += 1) {
+      const delay = gate.nextForgeDelayMs();
+      const short = delay >= READ_PACING.forgeDelayMinMs && delay <= READ_PACING.forgeDelayMaxMs;
+      const long = delay >= READ_PACING.forgeLongPauseMinMs && delay <= READ_PACING.forgeLongPauseMaxMs;
+      expect(short || long).toBe(true);
+    }
+  });
+});

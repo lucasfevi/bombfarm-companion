@@ -18,10 +18,10 @@ const ACCOUNT_FULL_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-ful
 /** `createMainWindow`'s own `minWidth` — the narrowest window a player can drag to. */
 const MIN_WINDOW = 960;
 /** Below the minimum, reachable only by lifting it as `resize` does. The icon-tab stage lives
- *  here: five worded tabs plus one overflow button still fit at the real minimum, so the stage is
+ *  here: six worded tabs plus one overflow button still fit at the real minimum, so the stage is
  *  a floor under a future smaller window rather than something a player meets today. */
 const ICON_TABS_WINDOW = 760;
-/** Narrower still. Five tabs and a menu stop fitting below ~520px, which is 440px past the
+/** Narrower still. Six tabs and a menu stop fitting below ~540px, which is 420px past the
  *  smallest window that exists. */
 const NARROWEST_MEASURED = 560;
 
@@ -56,7 +56,7 @@ async function launchApp() {
   await expect(consentModal).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('consent-accept').click();
   await expect(consentModal).toBeHidden({ timeout: 15_000 });
-  await expect(page.locator('nav[aria-label="Main"] button')).toHaveCount(5, { timeout: 30_000 });
+  await expect(page.locator('nav[aria-label="Main"] button')).toHaveCount(6, { timeout: 30_000 });
 
   return { app, page };
 }
@@ -192,7 +192,7 @@ test.describe('top bar — degrades as the window narrows, and never overlaps it
     await resize(app, page, ICON_TABS_WINDOW);
     const rendered = await tabs(page);
 
-    expect(rendered).toHaveLength(5);
+    expect(rendered).toHaveLength(6);
     const active = rendered.filter((tab) => tab.active);
     expect(active).toHaveLength(1);
     expect(active[0].text, 'the current screen lost its name').not.toBe('');
@@ -221,7 +221,7 @@ test.describe('top bar — degrades as the window narrows, and never overlaps it
 
   test('every tab still reaches its screen at the narrowest width the bar is drawn at', async () => {
     await resize(app, page, NARROWEST_MEASURED);
-    const screens = ['live-view', 'farm-view', 'inventory-view', 'account-view', 'settings-view'];
+    const screens = ['live-view', 'farm-view', 'inventory-view', 'forge-view', 'account-view', 'settings-view'];
 
     for (const [index, testId] of screens.entries()) {
       await page.locator('nav[aria-label="Main"] button').nth(index).click();

@@ -76,6 +76,21 @@ export const en = {
     'The compact Live window stays above other windows while this is on. Takes effect immediately.',
   settingsAlwaysOnTopMiniNotSavedTitle: 'Mini always-on-top changed, but not saved',
 
+  // settingsForge* — the one switch that lets the Forge tab spend gold (off by default)
+  settingsForgeSectionTitle: 'Forge',
+  settingsForgeWritesLabel: 'Let Forge spend gold',
+  settingsForgeWritesHelp:
+    'Off: the Forge tab plans climbs and never rolls. On: the Forge button spends gold on your account, one confirmed run at a time.',
+  settingsForgeWritesNotSavedTitle: 'Forge setting changed, but not saved',
+
+  // settingsGame*/settingsRestartGameOnExit* — the one switch that lets Steam bring the game
+  // back after it exits (off by default)
+  settingsGameSectionTitle: 'Game',
+  settingsRestartGameOnExitLabel: 'Restart Bomb Farm if it exits',
+  settingsRestartGameOnExitHelp:
+    'When this is on, if the game closes while the companion is already running, Steam starts it again. The companion will not start the game when it itself opens. Off by default.',
+  settingsRestartGameOnExitNotSavedTitle: 'Game setting changed, but not saved',
+
   // settingsConsent* — the account access revoke control (Settings is reachable only once granted)
   settingsConsentSectionTitle: 'Account access',
   settingsConsentStatusGranted: 'Access: allowed',
@@ -272,7 +287,7 @@ export const en = {
   inventoryBadgeMarketBlocked: 'Cannot be traded away',
   inventoryBadgeUnresolved: 'Not in the item list yet',
   inventoryDetailSetSlot: '{set} · {slot}',
-  inventoryDetailLevel: 'Level {level}',
+  inventoryDetailLevel: 'Lv {level}',
   inventoryEquippedByHero: '{hero} · Level {level}',
   inventoryGroupTime: 'House parts',
   inventoryGroupStone: 'Skill stones',
@@ -317,6 +332,7 @@ export const en = {
   inventoryViewList: 'List',
   inventoryTableCaption: 'Every item on the account, as a sortable table',
   inventoryColumnEquippedBy: 'Equipped by',
+  inventoryColumnForge: 'Forge',
   inventoryColumnActions: 'Actions',
   inventoryRowAction: 'Details for {item}',
   marketNoListings: 'No listings',
@@ -341,6 +357,158 @@ export const en = {
   inventorySkipped: '{count} entries could not be read and are not shown.',
   inventoryEmptyTitle: 'No items read yet',
   inventoryEmptyDescription: 'Open the game with the companion running, so it has something to read.',
+
+  // forge* — the Forge screen: pick a piece, pick a target, see what the climb should cost, and
+  // forge it. Forge levels reach these strings as values (`{target}` is "+13"), never as
+  // characters of their own — a bare plus in copy reads as a formula.
+  forgeNavLabel: 'Forge',
+  forgeTitle: 'Forge',
+  forgeSearchPlaceholder: 'Search gear…',
+  forgeSearchLabel: 'Search your gear',
+  forgeSlotLabel: 'Filter by slot',
+  forgeAllSlots: 'All slots',
+  forgeBandLabel: 'Filter by forge level',
+  forgeBandAny: 'Any forge',
+  forgeBandOnly: '{level} only',
+  forgeBandRange: '{from} to {to}',
+  forgeBandFrom: '{level} and higher',
+  forgeHeroHint: 'Showing what {hero} wears',
+  forgeTableCaption: 'Every piece of gear on the account, ranked by forge level',
+  forgeRowSelect: 'Plan a climb for {item}',
+  forgeItemTitle: 'Item',
+  forgePickTitle: 'Pick a piece',
+  forgePickDescription: 'Click a row to see what a climb should cost.',
+  forgeStatsCaption: 'Every roll on the piece now and at the target',
+  forgeColumnChange: 'Change',
+  forgeStatsNote:
+    'Every roll scales by the same factor — ×{factor} at {target} against ×{now} now — so this is what the piece becomes if the climb lands, not an average of where it might stop.',
+  forgePlanTitle: 'Plan',
+  forgeTargetLabel: 'Target',
+  forgeTargetLower: 'Lower the target',
+  forgeTargetRaise: 'Raise the target',
+  forgeSpanSafe: 'safe span — every step lands',
+  forgeSpanRisky: 'risky span — {chance} at the top',
+  forgeMaxGoldLabel: 'Max gold',
+  forgeMaxGoldPlaceholder: 'no budget',
+  forgeAttemptsLabel: 'Attempts',
+  forgeAttemptsPlaceholder: 'no limit',
+  forgeLadderCaption: 'The risky rungs of the climb and their odds',
+  forgeLadderFailTo: 'fail → {floor}',
+  forgeFactRolls: 'Expected rolls',
+  forgeFactGold: 'Expected gold',
+  forgeFactBadRun: 'A bad run (p90)',
+  forgeFactWallet: 'Wallet',
+  forgeWarnMax:
+    '{max} is the only rung that wipes the piece to {floor}. Expect to rebuild from the safe floor about {times} times on the way.',
+  forgeWarnRisky:
+    'A failed roll at {from}…{to} drops the piece back to {floor} and the gold is charged either way.',
+  forgeButton: 'Forge to {target}',
+  forgeReasonMaxed: 'Already at {max} — nothing left to forge',
+  forgeReasonFixture: 'No server to forge on',
+  forgeReasonSwitchOff: 'Turn on "{switch}" in Settings to forge from here',
+  forgeReasonReady: 'Spends gold on your account — the button asks twice',
+  forgeReasonRunning: 'Rolling — the run stops after the roll in flight',
+  forgeReasonCancelling: 'Cancelling — waiting for the roll in flight to settle',
+  forgeButtonConfirm: 'Confirm — spends gold',
+  forgeButtonCancel: 'Cancel after this roll',
+  forgeButtonCancelPending: 'Cancelling after this roll…',
+  // forgeStart* — why main refused to start a run the panel asked for. The fixture and the
+  // switch reuse the reason lines above; these are the ones only main can know.
+  forgeStartBusy: 'A run is already in progress',
+  forgeStartNotConsented: 'Accept the account read in Settings before forging',
+  forgeStartGameNotRunning: 'Open the game before forging',
+  forgeStartTokenUnavailable: 'The game session could not be read — open the game and try again',
+  forgeStartUnknownItem: 'This piece is not in the account any more — refresh the bag',
+  forgeStartBadTarget: 'The target is behind the piece now — refresh the bag',
+  forgeStartUnavailable: 'The app is still starting — try again in a moment',
+  // accountRead* — every Refresh that goes and reads the account shares these, so they name no
+  // one screen's subject. They cover the reasons a read can fail, plus the floor that stops two
+  // presses becoming two reads. Two more reuse the forgeStart* lines above, which already say the
+  // same thing in the same words.
+  forgeRefreshWorking: 'Reading…',
+  accountReadRecent: 'Just read a moment ago — the account is as fresh as it gets',
+  accountReadFixture: 'No server to read from',
+  accountReadNotConsented: 'Accept the account read in Settings to refresh',
+  accountReadGameNotRunning: 'Open the game to read the account again',
+  // forgeLedger* — the run history at the foot of the screen. The header line is what the
+  // section says with the table shut, so it carries the two figures worth knowing at a glance.
+  forgeLedgerTitle: 'Run ledger',
+  forgeLedgerSummary: '{runs} runs',
+  // Its own clause rather than part of the two lines above, so the coin beside it marks the gold
+  // and not the run and roll counts standing next to it.
+  forgeLedgerGold: '{spent} gold',
+  forgeLedgerCaption: 'Every forge run this app has made on the account, newest first',
+  forgeLedgerEmptyTitle: 'No runs yet',
+  forgeLedgerEmptyDescription: 'A run started from the plan panel is kept here.',
+  forgeLedgerColumnWhen: 'When',
+  forgeLedgerColumnItem: 'Piece',
+  forgeLedgerColumnClimb: 'Climb',
+  forgeLedgerColumnOutcome: 'Outcome',
+  forgeLedgerColumnRolls: 'Rolls',
+  forgeLedgerColumnFails: 'Fails',
+  forgeLedgerColumnCrits: 'Crits',
+  forgeLedgerColumnSafeJumps: 'Safe jumps',
+  forgeLedgerColumnGold: 'Gold',
+  forgeLedgerColumnDuration: 'Duration',
+  forgeLedgerTotals: '{runs} runs · {rolls} rolls · {fails} fails',
+  forgeLedgerClear: 'Clear the ledger',
+  forgeLedgerClearTitle: 'Clear the forge ledger?',
+  forgeLedgerClearDescription: 'Every past run and the totals go with it. The gold was spent either way.',
+  forgeLedgerClearConfirm: 'Clear',
+  forgeLedgerClearCancel: 'Keep',
+  // forgeStop* — why a run ended, short enough for a table cell. The result heading says the same
+  // thing at length, with the rung it stopped on.
+  forgeStopTarget: 'Reached',
+  forgeStopCancelled: 'Cancelled',
+  forgeStopShortfall: 'Out of gold',
+  forgeStopBudget: 'Gold budget',
+  forgeStopAttempts: 'Attempt limit',
+  forgeStopCooldown: 'Server cooldown',
+  forgeStopMissing: 'Item refused',
+  forgeStopError: 'Error',
+  // The running rail: the climb so far, one dot per call, and the tally by rung.
+  forgeRailRolls: '{rolls} rolls',
+  forgeRailSpent: '{spent} gold',
+  forgeRailWallet: 'wallet {wallet}',
+  forgeRailTallyCaption: 'Rolls by rung',
+  forgeRailTallyRung: 'Rung',
+  forgeRailTallyRolls: 'Rolls',
+  forgeRailTallyFails: 'Fails',
+  forgeRailTallyGold: 'Gold',
+  forgeChartLabel: 'The climb, one dot per call',
+  forgeChartFloor: 'floor',
+  forgeChartTarget: 'target',
+  forgeMarkSuccess: 'landed',
+  forgeMarkCritical: 'critical',
+  forgeMarkFail: 'missed',
+  forgeMarkSafe: 'safe jump',
+  // A run leaves a gap between its rolls on purpose, and the chart holds the next roll's place
+  // while it is in flight — never that anything is holding the run back, because nothing is.
+  forgeMarkPending: 'rolling',
+  // The result block, in the player's terms: what happened and what it cost against the plan.
+  forgeResultReached: 'Reached {level}',
+  forgeResultCancelled: 'Stopped at {level} — cancelled after roll {rolls}',
+  forgeResultShortfall: 'Out of gold at {level}',
+  forgeResultBudget: 'Stopped by the gold budget at {level}',
+  forgeResultAttempts: 'Stopped by the attempt limit at {level}',
+  forgeResultCooldown: 'Server cooldown at {level}',
+  forgeResultMissing: 'Server refused the item',
+  forgeResultError: 'Stopped by an error at {level}',
+  forgeResultClimb: 'Climb',
+  forgeResultRolls: 'Rolls · fails · crits',
+  forgeResultDuration: 'Duration',
+  forgeAgainstPlanTitle: 'Against the plan',
+  // Bare labels: each figure's amount is drawn beside its label rather than substituted into it,
+  // so the coin marking it as gold stands next to the number and not in front of the word.
+  forgeAgainstSpent: 'spent',
+  forgeAgainstExpected: 'expected',
+  forgeAgainstBadRun: 'a bad run',
+  forgeAgainstUnder: 'under what the plan expected',
+  forgeAgainstOver: 'over what the plan expected',
+  forgeAgainstWorse: 'worse than a bad run',
+  forgeAgainstExact: 'exactly what the plan expected',
+  forgeAgainstNoPlan: 'No plan to compare against — this run was not started from the panel',
+  forgeDone: 'Done',
 
   // account* — the Account screen: what the account could sell, who it belongs to, and what its
   // House and skill tree grant. The panels are shared drawings that take a label for every string

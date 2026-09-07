@@ -14,7 +14,13 @@ import {
   type HeroFarmFacts,
 } from '@bombfarm/domain/farm-rate';
 import { pipelineForHero } from '@bombfarm/domain/roster-dps';
-import { peelSheetSources, ABILITY_LEVEL_MAX, type TreeSheetTotals } from '@bombfarm/domain/model';
+import {
+  peelSheetSources,
+  ABILITY_LEVEL_MAX,
+  FUSE_FLOOR,
+  STAT_CAPS,
+  type TreeSheetTotals,
+} from '@bombfarm/domain/model';
 import { abilityMods } from '@bombfarm/domain/model';
 import { emptySheetOther, type SheetOtherPct } from '@bombfarm/domain/gear';
 import { DEFAULT_CASA_SLOTS } from '@bombfarm/domain/casa-slots';
@@ -240,6 +246,8 @@ describe('computeSquadFarmFacts — houseSlotDemand', () => {
     avgHitBase: 100,
     penetrationPct: 0,
     fuseSecs: 2,
+    fuseFloorSecs: FUSE_FLOOR,
+    cdrCapPct: STAT_CAPS.cdr,
     walkSpeedCells: 2,
     cycleSecs: 2,
     plantsPerSec: 0.5,

@@ -3,7 +3,9 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import type { AccountReadRefusal } from '@bombfarm/contracts';
 import { STRINGS, sub } from '../../lib/copy';
+import { accountReadRefusalText } from '../../lib/account-read-labels';
 import { FarmRefreshControl, farmRefreshAgeLine } from './farm-refresh-control';
 
 const en = STRINGS.en;
@@ -18,6 +20,7 @@ function render(props: Partial<Parameters<typeof FarmRefreshControl>[0]> = {}) {
       capturedAt: minutesAgo(0),
       stale: false,
       busy: false,
+      readState: { kind: 'idle' },
       onRefresh: () => {},
       ...props,
     }),
@@ -58,10 +61,53 @@ describe('FarmRefreshControl — one control, always present, two states', () =>
     expect(html).toContain('aria-busy="true"');
   });
 
+  it('is equally working while the account read is in flight, with the board already re-solved', () => {
+    const html = render({ busy: false, readState: { kind: 'working' } });
+    expect(html).toContain(en.farmRefreshBusy);
+    expect(html).toContain('disabled=""');
+    expect(html).toContain('aria-busy="true"');
+  });
+
   it('is pressable again once the recompute has settled', () => {
     const html = render({ busy: false });
     expect(html).toContain(en.farmRefresh);
     expect(html).not.toContain('disabled=""');
+  });
+});
+
+/**
+ * The press asks the app to go and read the account, so it can be answered by a read that never
+ * started — and a board that re-solved over the same account it already had, with nothing said,
+ * is the stale answer this control exists to make impossible to misread.
+ */
+describe('a press that started no read says why, beside the button', () => {
+  it('says nothing about a read that is not being refused', () => {
+    expect(render()).not.toContain('data-testid="farm-refresh-refusal"');
+    expect(render({ readState: { kind: 'working' } })).not.toContain('data-testid="farm-refresh-refusal"');
+  });
+
+  it.each<AccountReadRefusal>([
+    'rate_limited',
+    'offline',
+    'not_consented',
+    'game_not_running',
+    'token_unavailable',
+    'unavailable',
+  ])('has words for %s, in the same wording every other screen uses', (reason) => {
+    const html = render({ readState: { kind: 'refused', reason } });
+    expect(html).toContain(accountReadRefusalText(reason, en));
+    expect(html).toContain('data-testid="farm-refresh-refusal"');
+  });
+
+  it('leaves the button pressable — a refusal is not a read in flight', () => {
+    const html = render({ readState: { kind: 'refused', reason: 'rate_limited' } });
+    expect(html).toContain(en.farmRefresh);
+    expect(html).not.toContain('disabled=""');
+  });
+
+  it('still states the age of the account the board was computed from', () => {
+    const html = render({ capturedAt: minutesAgo(5), readState: { kind: 'refused', reason: 'offline' } });
+    expect(html).toContain(sub(en.farmRefreshedAge, { age: en.ageMinutes.replace('{n}', '5') }));
   });
 });
 
@@ -113,5 +159,12 @@ describe('the Farm screen mounts the control unconditionally, over the board hea
   it('refreshes through the screen\'s one recompute path, never a second call into the store', () => {
     const refreshCalls = source.match(/\brefresh\(/g) ?? [];
     expect(refreshCalls).toHaveLength(1);
+  });
+
+  // The defect this was rewritten for: the press re-solved the board from whatever account the
+  // renderer already held, so a gear change made seconds earlier could not reach it however many
+  // times it was pressed.
+  it('asks the app to go and read the account, not only to re-solve from the one in hand', () => {
+    expect(source).toContain('useAccountReadRequest(adoptLive)');
   });
 });

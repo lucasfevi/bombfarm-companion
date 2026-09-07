@@ -68,6 +68,7 @@ test.describe('consent modal smoke (Success Criterion "shown once, survives rest
         await expect(body).toContainText(
           'Attaching to another running program is the technique behavior-based detection looks for',
         );
+        await expect(body).toContainText('only after you confirm each run');
 
         await page1.getByTestId('consent-accept').click();
         await expect(modal).toBeHidden({ timeout: 15_000 });
