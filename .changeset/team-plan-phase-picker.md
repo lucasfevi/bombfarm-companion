@@ -1,7 +1,7 @@
 ---
-'@bombfarm/domain': minor
-'@bombfarm/web': minor
-'@bombfarm/ui': minor
+"@bombfarm/domain": minor
+"@bombfarm/web": minor
+"@bombfarm/ui": minor
 ---
 
 Team plan: plan for one phase, under either objective
