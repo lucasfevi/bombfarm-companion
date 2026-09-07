@@ -108,6 +108,8 @@ export {
 export {
   selectPhasesViewPhase,
   selectPhasesViewPhaseChosen,
+  selectCombatPhase,
+  selectCombatMitigationPct,
 } from '@/shared/stores/selectors/phases-selectors';
 export { selectTreeSheetTotals } from '@/shared/stores/selectors/tree-sheet-selectors';
 export {

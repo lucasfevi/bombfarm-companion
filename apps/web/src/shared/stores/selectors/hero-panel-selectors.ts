@@ -7,13 +7,16 @@
  * `useShallow`.
  */
 import { abilityGainFor, type AbilityGain } from '@bombfarm/domain/ability-gain';
-import { effectiveFarmPhase, effectiveMitigationPct } from '@bombfarm/domain/farm-context';
 import { rollQualityFor, type RollQualityReport } from '@bombfarm/domain/roll-quality';
 import type { AccountShared, HeroRecord } from '@/shared/lib/storage';
 import {
   selectAccountShared,
   selectEffectiveTeamBuffs,
 } from '@/shared/stores/selectors/account-selectors';
+import {
+  selectCombatMitigationPct,
+  selectCombatPhase,
+} from '@/shared/stores/selectors/phases-selectors';
 import { selectHeroDraftTuple } from '@/shared/stores/persistence/persist-hero-draft';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 
@@ -86,8 +89,8 @@ function readAbilityGainDepTuple(state: PlannerStore): readonly unknown[] {
     selectDraftHeroRecord(state),
     selectAccountShared(state),
     selectEffectiveTeamBuffs(state),
-    state.phase,
-    state.mitigationPct,
+    selectCombatPhase(state),
+    selectCombatMitigationPct(state),
   ] as const;
 }
 
@@ -98,8 +101,8 @@ export function selectHeroAbilityGains(state: PlannerStore): readonly AbilityGai
   const result = abilityGainFor(
     selectDraftHeroRecord(state),
     abilityGainAccount(state),
-    effectiveFarmPhase(state.phase),
-    effectiveMitigationPct({ phase: state.phase, mitigationPct: state.mitigationPct }),
+    selectCombatPhase(state),
+    selectCombatMitigationPct(state),
   );
   abilityGainsCache = { deps, result };
   return result;

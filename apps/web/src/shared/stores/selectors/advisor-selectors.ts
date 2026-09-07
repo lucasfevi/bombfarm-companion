@@ -4,6 +4,10 @@ import {
 } from '@bombfarm/domain/advisor-pipeline';
 import { substituteHeroAbilities } from '@bombfarm/domain/team-buffs';
 import { selectEffectiveTeamBuffs } from '@/shared/stores/selectors/account-selectors';
+import {
+  selectCombatMitigationPct,
+  selectCombatPhase,
+} from '@/shared/stores/selectors/phases-selectors';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 
 /**
@@ -60,8 +64,11 @@ export function readAdvisorDepTuple(state: PlannerStore): readonly unknown[] {
     state.houseCycleSecs,
     state.houseCycleSecsHouseIdx,
     state.houseCycleSecsLevel,
-    state.phase,
-    state.mitigationPct,
+    // The phase the player picked in the phases explorer, or the account's own farm phase while
+    // there is no pick — never `state.phase` directly, which no shipped code path moves and which
+    // left this pipeline answering for a different stage than the explorer's own panel.
+    selectCombatPhase(state),
+    selectCombatMitigationPct(state),
     // state.rankMode is deliberately NOT a dep here: computeAdvisorPipeline no longer reads
     // rankMode for anything, so including it would invalidate this cache on every dps/farm
     // toggle for no reason — the pipeline's ranking output cannot change from it.
@@ -123,8 +130,8 @@ export function selectAdvisorPipeline(state: PlannerStore): AdvisorPipelineResul
     houseCycleSecs: state.houseCycleSecs,
     houseCycleSecsHouseIdx: state.houseCycleSecsHouseIdx,
     houseCycleSecsLevel: state.houseCycleSecsLevel,
-    phase: state.phase,
-    mitigationPct: state.mitigationPct,
+    phase: selectCombatPhase(state),
+    mitigationPct: selectCombatMitigationPct(state),
     rankMode: state.rankMode,
     targetProp: state.targetProp,
     birth: state.birth,
