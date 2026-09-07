@@ -1,6 +1,6 @@
-import type { Strings } from '@/shared/i18n';
 import type { StatBreakdown } from '@bombfarm/domain/stat-breakdown';
-import { mutedClass } from '@bombfarm/ui/panel-field.recipe';
+import { mutedClass } from '@bombfarm/ui';
+import type { StatPanelCopy } from '../copy';
 import { groupLabel, ledgerStepNote } from '../model/breakdown-labels';
 
 /**
@@ -13,7 +13,7 @@ export function LedgerBody({
   formatNumber,
   breakdown,
 }: {
-  t: Strings;
+  t: StatPanelCopy;
   formatNumber: (n: number, d?: number) => string;
   breakdown: Extract<StatBreakdown, { kind: 'ledger' }>;
 }) {

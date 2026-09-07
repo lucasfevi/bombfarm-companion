@@ -138,11 +138,17 @@ describe('disabled-hero copy + Points chrome contracts', () => {
 
   it('Points preview notices animate via Collapsible and stay left-aligned', () => {
     const actions = readFileSync(
-      join(WEB_PACKAGE_ROOT, 'src/features/planner/components/points-preview-actions.tsx'),
+      join(
+        WEB_PACKAGE_ROOT,
+        '../../packages/hero/src/components/points-preview-actions.tsx',
+      ),
       'utf8',
     );
     const notice = readFileSync(
-      join(WEB_PACKAGE_ROOT, 'src/features/planner/components/points-preview-notice.tsx'),
+      join(
+        WEB_PACKAGE_ROOT,
+        '../../packages/hero/src/components/points-preview-notice.tsx',
+      ),
       'utf8',
     );
     expect(actions).toContain('optimizeBuildHeroDisabledNote');
@@ -158,7 +164,7 @@ describe('disabled-hero copy + Points chrome contracts', () => {
 
   it('a new Optimize run clears the applied-respec note', () => {
     const source = readFileSync(
-      join(WEB_PACKAGE_ROOT, 'src/features/planner/components/points-table.tsx'),
+      join(WEB_PACKAGE_ROOT, '../../packages/hero/src/components/points-table.tsx'),
       'utf8',
     );
     expect(source).toMatch(/function handleOptimize\([\s\S]*?setJustApplied\(false\)/);

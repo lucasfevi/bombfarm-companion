@@ -1,7 +1,7 @@
 import type { ReoptResult } from '@bombfarm/domain/points-reopt';
 import type { HeroFarmOptimizeOutcome, HeroFarmOptimizeResult } from '@bombfarm/domain/farm-hero-optimize';
 import type { SheetKey } from '@bombfarm/domain/planner-constants';
-import type { Strings } from '@/shared/i18n';
+import type { StatPanelCopy } from '../copy';
 import type { ReactNode } from 'react';
 import { renderTemplateWithPct } from './render-template-with-pct';
 
@@ -40,7 +40,7 @@ export type OptimizeResultDisplay =
  * same way: `(winner.score / s1Score − 1) × 100`, floored at 0) instead.
  */
 export function optimizeResultDisplay(
-  strings: Strings,
+  strings: StatPanelCopy,
   result: Pick<ReoptResult, 'gainPct'>,
   formatNumber: (n: number, d?: number) => string,
 ): OptimizeResultDisplay {
@@ -60,7 +60,7 @@ export function optimizeResultDisplay(
  * a 0% that would read as "your build is already right".
  */
 export function farmOptimizeResultDisplay(
-  strings: Strings,
+  strings: StatPanelCopy,
   result: Pick<HeroFarmOptimizeResult, 'outcome' | 'gainPct'>,
   formatNumber: (n: number, d?: number) => string,
 ): OptimizeResultDisplay | null {
@@ -77,7 +77,7 @@ export function farmOptimizeResultDisplay(
 
 /** The mode-dispatched result line — the one entry point the panel renders. */
 export function previewResultDisplay(
-  strings: Strings,
+  strings: StatPanelCopy,
   preview: PointsPreview,
   formatNumber: (n: number, d?: number) => string,
 ): OptimizeResultDisplay | null {
@@ -92,7 +92,7 @@ export function previewResultDisplay(
  * same collapse the Next point panel's own fallback note makes. `noBudget` is absent because the
  * button is already disabled with its own reason in that state.
  */
-export function farmOptimizeNotice(strings: Strings, outcome: HeroFarmOptimizeOutcome): string | null {
+export function farmOptimizeNotice(strings: StatPanelCopy, outcome: HeroFarmOptimizeOutcome): string | null {
   if (outcome === 'emptyPool' || outcome === 'heroNotInPool') return strings.optimizeBuildFarmNoPool;
   if (outcome === 'degenerate' || outcome === 'noFeasiblePhase') return strings.optimizeBuildFarmNoRate;
   return null;

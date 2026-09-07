@@ -1,24 +1,28 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import type { AdvisorPipelineResult } from '@bombfarm/domain/advisor-pipeline';
+import type { HeroFarmOptimizeResult } from '@bombfarm/domain/farm-hero-optimize';
+import type { RankMode } from '@bombfarm/domain/model';
 import { SHEET_PANEL_KEYS, ZERO_PTS, type SheetKey } from '@bombfarm/domain/planner-constants';
 import { optimizeBuild, reoptBudget } from '@bombfarm/domain/points-reopt';
 import { pointsExceedLevel } from '@bombfarm/domain/point-inference';
-import { sub } from '@/shared/i18n';
-import { useAppLang } from '@/shared/context/app-lang';
-import { numberFormatterFor } from '@/shared/lib/format-number';
-import { usePlannerStore, selectAdvisorPipeline, runHeroFarmOptimize } from '@/shared/stores';
-import { Button, DataTable, Panel } from '@bombfarm/ui';
 import {
+  Button,
+  DataTable,
+  Panel,
   mutedClass,
+  numberFormatterFor,
   panelHClass,
   panelTitleClass,
   warnClass,
-} from '@bombfarm/ui/panel-field.recipe';
+} from '@bombfarm/ui';
+import { sub, type Lang, type StatPanelCopy } from '../copy';
 import { PointsStatRow } from './points-stat-row';
 import { PointsPreviewActions, type PointsPreview } from './points-preview-actions';
 import { PointsResetAdvice } from './points-reset-advice';
 import { hasApplicableGain } from '../model/points-preview-copy';
+import { pointsPanelReading } from '../model/points-panel';
 
 /**
  * Points panel shell (split): header (title, spent/level counter, Reset), the stat
@@ -32,16 +36,40 @@ import { hasApplicableGain } from '../model/points-preview-copy';
  * consequence of keying (an effect keyed on `pts` would also fire on Apply and discard the
  * vector it just committed).
  */
-export function PointsTable() {
-  const { t, lang } = useAppLang();
+/**
+ * The callbacks a host supplies to make the panel editable. Absent, the same figures render with
+ * no way to change them — see `pointsPanelReading`.
+ *
+ * `runFarmOptimize` is the host's own search, not a store read: the farm target needs the whole
+ * rotation pool, and reaching for it from here would drag a roster-wide dependency onto a panel
+ * that renders one hero.
+ */
+export type PointsTableEditing = {
+  onPts: (next: Record<SheetKey, number>) => void;
+  optimizeMode: RankMode;
+  onOptimizeModeChange: (next: RankMode) => void;
+  runFarmOptimize: () => HeroFarmOptimizeResult;
+};
+
+export function PointsTable({
+  t,
+  lang,
+  level,
+  pts,
+  pipeline,
+  heroBattleAllowed,
+  editing,
+}: {
+  t: StatPanelCopy;
+  lang: Lang;
+  level: number;
+  pts: Record<SheetKey, number>;
+  pipeline: AdvisorPipelineResult;
+  heroBattleAllowed: boolean;
+  editing?: PointsTableEditing | undefined;
+}) {
   const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
-  const level = usePlannerStore((state) => state.level);
-  const pts = usePlannerStore((state) => state.pts);
-  const setPts = usePlannerStore((state) => state.setPts);
-  const pipeline = usePlannerStore(selectAdvisorPipeline);
-  const heroBattleAllowed = usePlannerStore((state) => state.heroBattleAllowed);
-  const optimizeMode = usePlannerStore((state) => state.optimizeMode);
-  const setOptimizeMode = usePlannerStore((state) => state.setOptimizeMode);
+  const reading = pointsPanelReading({ editable: !!editing, heroBattleAllowed });
   const { spentDelta, pointDelta, adjusted, resetAdvice } = pipeline;
 
   const [preview, setPreview] = useState<PointsPreview | null>(null);
@@ -50,7 +78,7 @@ export function PointsTable() {
   function handlePtsMutate(next: Record<SheetKey, number>) {
     setPreview(null);
     setJustApplied(false);
-    setPts(next);
+    editing?.onPts(next);
   }
 
   function handleOptimize() {
@@ -58,11 +86,9 @@ export function PointsTable() {
     // is load-bearing for both targets and hardest for farm, whose every candidate costs a
     // squad-wide phase sweep.
     setJustApplied(false);
-    if (optimizeMode === 'farm') {
-      // Read through getState() rather than a subscription: the farm search needs the whole
-      // rotation pool, and subscribing this component to it would drag a roster-wide dependency
-      // onto a panel that renders one hero.
-      const farm = runHeroFarmOptimize(usePlannerStore.getState());
+    if (!editing) return;
+    if (editing.optimizeMode === 'farm') {
+      const farm = editing.runFarmOptimize();
       setPreview({ mode: 'farm', pts: farm.pts, result: farm });
       return;
     }
@@ -82,7 +108,7 @@ export function PointsTable() {
     // equally-scoring reshuffle — and no respec note for zero player benefit.
     if (hasApplicableGain(preview)) {
       // preview.pts already echoes pts.luck untouched — no special-casing needed.
-      setPts(preview.pts);
+      editing?.onPts(preview.pts);
       setJustApplied(true);
     }
     setPreview(null);
@@ -120,9 +146,11 @@ export function PointsTable() {
             // being spent rather than as points appearing from nowhere.
             <span className={mutedClass}>{sub(t.pointsUnspentBanked, { count: unspent })}</span>
           )}
-          <Button type="button" onClick={() => handlePtsMutate(ZERO_PTS())}>
-            {t.reset}
-          </Button>
+          {reading.showReset && (
+            <Button type="button" onClick={() => handlePtsMutate(ZERO_PTS())}>
+              {t.reset}
+            </Button>
+          )}
         </div>
       </div>
       {pointsExceedLevel(pts, level) && (
@@ -135,7 +163,7 @@ export function PointsTable() {
         t={t}
         resetAdvice={resetAdvice}
         formatNumber={boundFormatNumber}
-        enabled={heroBattleAllowed}
+        enabled={reading.showResetAdvice}
       />
       <DataTable.Root>
         <DataTable.Table className="table-fixed">
@@ -169,28 +197,31 @@ export function PointsTable() {
                   after: adjusted[key],
                   preview: previewValueFor(key),
                 }}
-                onPts={handlePtsMutate}
+                onPts={reading.showPointSteppers ? handlePtsMutate : undefined}
                 formatNumber={boundFormatNumber}
               />
             ))}
           </DataTable.Body>
         </DataTable.Table>
       </DataTable.Root>
-      <PointsPreviewActions
-        t={t}
-        preview={preview}
-        justApplied={justApplied}
-        optimize={{
-          disabled: budget <= 0,
-          disabledReason: budget <= 0 ? t.optimizeBuildNoBudgetReason : null,
-          mode: optimizeMode,
-          onModeChange: setOptimizeMode,
-        }}
-        formatNumber={boundFormatNumber}
-        onOptimize={handleOptimize}
-        onApply={handleApply}
-        onClear={handleClear}
-      />
+      {reading.showPreviewActions && editing && (
+        <PointsPreviewActions
+          t={t}
+          preview={preview}
+          justApplied={justApplied}
+          optimize={{
+            disabled: budget <= 0,
+            disabledReason: budget <= 0 ? t.optimizeBuildNoBudgetReason : null,
+            mode: editing.optimizeMode,
+            onModeChange: editing.onOptimizeModeChange,
+            heroEnabled: heroBattleAllowed,
+          }}
+          formatNumber={boundFormatNumber}
+          onOptimize={handleOptimize}
+          onApply={handleApply}
+          onClear={handleClear}
+        />
+      )}
     </Panel>
   );
 }

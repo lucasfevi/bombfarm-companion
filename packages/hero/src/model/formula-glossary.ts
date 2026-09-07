@@ -1,6 +1,6 @@
-import type { Strings } from '@/shared/i18n';
+import type { StatPanelCopy } from '../copy';
 
-type GlossEntry = { tokens: string[]; tipKey: keyof Strings };
+type GlossEntry = { tokens: string[]; tipKey: keyof StatPanelCopy };
 
 /** Opaque abbreviations only — Effective-row labels (mitF, dmg, Hit, …) stay plain. */
 export const FORMULA_GLOSSARY: Partial<Record<string, GlossEntry[]>> = {
@@ -50,7 +50,7 @@ export const FORMULA_GLOSSARY: Partial<Record<string, GlossEntry[]>> = {
  */
 export function resolveFormulaTerms(
   expressionKey: string,
-  strings: Strings,
+  strings: StatPanelCopy,
 ): ReadonlyMap<string, string> {
   const entries = FORMULA_GLOSSARY[expressionKey] ?? [];
   const tokenToTip = new Map<string, string>();

@@ -1,9 +1,8 @@
 'use client';
 
 import type { ResetAdvice } from '@bombfarm/domain/advisor-tables';
-import type { Strings } from '@/shared/i18n';
-import { mutedClass } from '@bombfarm/ui/panel-field.recipe';
-import { cn } from '@bombfarm/ui';
+import { cn, mutedClass } from '@bombfarm/ui';
+import type { StatPanelCopy } from '../copy';
 import { renderTemplateWithPct } from '../model/render-template-with-pct';
 
 /**
@@ -18,7 +17,7 @@ export function PointsResetAdvice({
   formatNumber,
   enabled = true,
 }: {
-  t: Strings;
+  t: StatPanelCopy;
   resetAdvice: ResetAdvice;
   formatNumber: (n: number, d?: number) => string;
   /** When false (disabled hero), hide advice without unmounting (no layout shift). */

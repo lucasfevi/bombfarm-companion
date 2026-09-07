@@ -2,18 +2,23 @@
 
 import { useMemo } from 'react';
 
-import { peelSheetStages, type SheetStageRow } from '@bombfarm/domain/sheet-stages';
-import { SHEET_PANEL_KEYS } from '@bombfarm/domain/planner-constants';
-import { useAppLang } from '@/shared/context/app-lang';
-import { numberFormatterFor } from '@/shared/lib/format-number';
-import { usePlannerStore, selectAdvisorPipeline } from '@/shared/stores';
-import { DataTable, FieldRequired, Panel } from '@bombfarm/ui';
 import {
+  peelSheetStages,
+  type PeelSheetStagesInput,
+  type SheetStageRow,
+} from '@bombfarm/domain/sheet-stages';
+import { SHEET_PANEL_KEYS } from '@bombfarm/domain/planner-constants';
+import {
+  DataTable,
+  FieldRequired,
+  Panel,
   mutedClass,
+  numberFormatterFor,
   panelHClass,
   panelTitleClass,
   tipClass,
-} from '@bombfarm/ui/panel-field.recipe';
+} from '@bombfarm/ui';
+import type { Lang, StatPanelCopy } from '../copy';
 
 const STAGE_DELTA_KEYS = [
   'deltaLevel',
@@ -49,18 +54,23 @@ function formatOverCapCell(row: SheetStageRow, format: (n: number, d?: number) =
   return `${format(row.cappedTotal, 2)} (${formatStageCell(row.deltaCap, format, true)})`;
 }
 
-export function SheetTable() {
-  const { t, lang } = useAppLang();
+/** `peelSheetStages`' own input, with a birth roll the panel may not have yet. */
+export type SheetTableInput = Omit<PeelSheetStagesInput, 'birth'> & {
+  birth: PeelSheetStagesInput['birth'] | undefined;
+};
+
+export function SheetTable({
+  t,
+  lang,
+  input,
+}: {
+  t: StatPanelCopy;
+  lang: Lang;
+  input: SheetTableInput;
+}) {
   const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
 
-  const birth = usePlannerStore((state) => state.birth);
-  const level = usePlannerStore((state) => state.level);
-  const stars = usePlannerStore((state) => state.stars);
-  const loadout = usePlannerStore((state) => state.loadout);
-  const pts = usePlannerStore((state) => state.pts);
-
-  const pipeline = usePlannerStore(selectAdvisorPipeline);
-  const { sheetOther, treeSheet } = pipeline;
+  const { birth, level, stars, sheetOther, loadout, pts, tree } = input;
 
   const stages = birth
     ? peelSheetStages({
@@ -70,7 +80,7 @@ export function SheetTable() {
         sheetOther,
         loadout,
         pts,
-        tree: treeSheet,
+        tree,
       })
     : null;
 

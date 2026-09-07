@@ -86,12 +86,20 @@ describe('the components are prop-driven — no store, no host module', () => {
   });
 
   it('the scan reaches every component in this tree, subdirectories included', () => {
-    expect(componentFiles.length).toBe(11);
+    expect(componentFiles.length).toBe(19);
     expect(componentFiles).toContain('hero-identity-roll-panel.tsx');
     expect(componentFiles).toContain('hero-abilities-panel.tsx');
     expect(componentFiles).toContain('phases-hero-switcher.tsx');
     expect(componentFiles).toContain('hero-picker/hero-picker-row.tsx');
     expect(componentFiles).toContain('hero-picker/roster-sort-header.tsx');
+    expect(componentFiles).toContain('sheet-table.tsx');
+    expect(componentFiles).toContain('points-table.tsx');
+    expect(componentFiles).toContain('points-stat-row.tsx');
+    expect(componentFiles).toContain('points-preview-actions.tsx');
+    expect(componentFiles).toContain('points-preview-notice.tsx');
+    expect(componentFiles).toContain('points-reset-advice.tsx');
+    expect(componentFiles).toContain('stat-breakdown-formula.tsx');
+    expect(componentFiles).toContain('stat-breakdown-ledger.tsx');
   });
 
   it('green state: no component reads a store or imports a host module', () => {

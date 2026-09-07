@@ -1,14 +1,14 @@
 'use client';
 
 import type { RankMode } from '@bombfarm/domain/model';
-import type { Strings } from '@/shared/i18n';
-import { Button, Select } from '@bombfarm/ui';
 import {
+  Button,
+  Select,
   optimizeGroupClass,
   optimizeGroupButtonClass,
   optimizeGroupSelectClass,
-} from '@bombfarm/ui/panel-field.recipe';
-import { usePlannerStore, selectHeroBattleAllowed } from '@/shared/stores';
+} from '@bombfarm/ui';
+import type { StatPanelCopy } from '../copy';
 import { farmOptimizeNotice, previewResultDisplay, type PointsPreview } from '../model/points-preview-copy';
 import { PointsPreviewNotice } from './points-preview-notice';
 
@@ -20,6 +20,8 @@ export type OptimizeControl = {
   disabledReason: string | null;
   mode: RankMode;
   onModeChange: (next: RankMode) => void;
+  /** The hero takes part in automatic respec advice; when it does not, the panel says so. */
+  heroEnabled: boolean;
 };
 
 /**
@@ -42,7 +44,7 @@ export function PointsPreviewActions({
   onApply,
   onClear,
 }: {
-  t: Strings;
+  t: StatPanelCopy;
   preview: PointsPreview | null;
   justApplied: boolean;
   optimize: OptimizeControl;
@@ -51,7 +53,7 @@ export function PointsPreviewActions({
   onApply: () => void;
   onClear: () => void;
 }) {
-  const heroEnabled = usePlannerStore(selectHeroBattleAllowed);
+  const heroEnabled = optimize.heroEnabled;
   const resultDisplay = preview ? previewResultDisplay(t, preview, formatNumber) : null;
   const farmNotice = preview?.mode === 'farm' ? farmOptimizeNotice(t, preview.result.outcome) : null;
   const showBudgetExhausted = !!preview?.result.budgetExhausted;

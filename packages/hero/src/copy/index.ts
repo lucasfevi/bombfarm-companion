@@ -5,6 +5,7 @@ import { heroPtBR } from './pt-BR';
 export { sub } from './format';
 export type { RosterCopy } from './roster-copy';
 export type { HeroPanelCopy } from './hero-panel-copy';
+export type { StatPanelCopy } from './stat-panel-copy';
 export { heroEn } from './en';
 export { heroPtBR } from './pt-BR';
 

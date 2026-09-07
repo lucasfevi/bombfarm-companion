@@ -11,7 +11,7 @@ import {
   type PipelineFacts,
   type StatBreakdown,
 } from '@bombfarm/domain/stat-breakdown';
-import { sub, type Strings } from '@/shared/i18n';
+import { sub, type StatPanelCopy } from '../copy';
 
 // Luck joins the pct set now that `statFull.luck` / `statShort.luck` exist
 // (T5) and `isSheetKey` below is widened to cover it (T11) — renders at 2 dp with `%` on
@@ -24,7 +24,7 @@ export const SHEET_PCT_KEYS: ReadonlySet<SheetPanelKey> = new Set([
   'luck',
 ]);
 
-export function derivedLabel(strings: Strings, statId: Exclude<BreakdownStatId, SheetKey>): string {
+export function derivedLabel(strings: StatPanelCopy, statId: Exclude<BreakdownStatId, SheetKey>): string {
   switch (statId) {
     case 'mitF':
       return strings.effectiveMitF;
@@ -93,7 +93,7 @@ export function rowValue(statId: BreakdownStatId, facts: PipelineFacts): number 
   return breakdown.kind === 'formula' ? breakdown.value : 0;
 }
 
-export function sourceLabel(strings: Strings, source: LedgerSource): string {
+export function sourceLabel(strings: StatPanelCopy, source: LedgerSource): string {
   switch (source) {
     case 'base':
       return strings.bdSrcBase;
@@ -126,7 +126,7 @@ export function sourceLabel(strings: Strings, source: LedgerSource): string {
  * lines — those steps keep their existing, more specific `sourceLabel` copy rather
  * than being folded into a generic fifth label.
  */
-export function groupLabel(strings: Strings, source: LedgerSource): string {
+export function groupLabel(strings: StatPanelCopy, source: LedgerSource): string {
   const group = LEDGER_SOURCE_GROUP[source];
   switch (group) {
     case 'hero':
@@ -143,7 +143,7 @@ export function groupLabel(strings: Strings, source: LedgerSource): string {
 }
 
 export function ledgerStepNote(
-  strings: Strings,
+  strings: StatPanelCopy,
   formatNumber: (n: number, d?: number) => string,
   step: Extract<StatBreakdown, { kind: 'ledger' }>['steps'][number],
 ): string | null {

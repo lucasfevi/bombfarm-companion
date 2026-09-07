@@ -190,7 +190,7 @@ const CRIT_DMG_MULT_MAP = {
   // `farmObjective` row above this section with a prose paragraph, a net +1 line. Match itself is
   // unchanged in count and in kind.
   'apps/web/docs/local-data-compat.md': [110, 118],
-  'apps/web/src/features/planner/components/advice-column.tsx': [38, 59],
+  'apps/web/src/features/planner/components/advice-column.tsx': [45, 66],
   // +16 (line number only): the House-ceiling fix added `fieldSlots`/`houseCycleSecs`, with
   // their doc comments, to `AccountShared` above this line. The match itself is unchanged in
   // count and in kind — still `normalizeTree`'s doc comment naming a stale key it discards.

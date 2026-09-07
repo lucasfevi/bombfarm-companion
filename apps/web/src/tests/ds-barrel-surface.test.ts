@@ -59,6 +59,11 @@ import * as GameArt from '@bombfarm/game-art';
 // (2026-09-07): promoted from the `ability-card.recipe` subpath for the same reason as the class
 // constants above. They lay out an ability card's icon rail, name, tag and effect text, and the
 // hero abilities panel that draws them is `@bombfarm/hero`'s.
+// mutedClass / warnClass / explainFormulaClass / the three optimizeGroup* classes (2026-09-07):
+// promoted from the `panel-field.recipe` subpath for the same reason as the class constants
+// above. They tone a panel's secondary and over-budget text, box a substituted formula, and weld
+// the Optimize button to its target Select — and the sheet, points and stat-breakdown panels that
+// draw them are `@bombfarm/hero`'s now.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -155,6 +160,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'dataTableHeadButtonClass',
   'dataTableHeadClass',
   'dialogDescClass',
+  'explainFormulaClass',
   'fileDropZoneRecipe',
   'formatCompactNumber',
   'formatNumber',
@@ -167,7 +173,11 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'metricScoreboardDeltaRecipe',
   'metricScoreboardValueRecipe',
   'motionTokens',
+  'mutedClass',
   'nextExpiryDeadline',
+  'optimizeGroupButtonClass',
+  'optimizeGroupClass',
+  'optimizeGroupSelectClass',
   'panelHClass',
   'panelRecipe',
   'panelTitleClass',
@@ -192,6 +202,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'tooltipPopupRecipe',
   'useShellDensity',
   'useToast',
+  'warnClass',
 ].sort();
 
 describe('design-system barrel surface (frozen)', () => {

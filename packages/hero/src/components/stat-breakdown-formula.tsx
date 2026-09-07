@@ -1,8 +1,6 @@
-import { Tooltip } from '@base-ui/react/tooltip';
-import type { Strings } from '@/shared/i18n';
 import type { BreakdownStatId, StatBreakdown } from '@bombfarm/domain/stat-breakdown';
-import { GlossedText } from '@bombfarm/ui';
-import { explainFormulaClass } from '@bombfarm/ui/panel-field.recipe';
+import { GlossedText, Tooltip, explainFormulaClass } from '@bombfarm/ui';
+import type { StatPanelCopy } from '../copy';
 import { formatBreakdownValue } from '../model/breakdown-labels';
 import { resolveFormulaTerms } from '../model/formula-glossary';
 
@@ -12,12 +10,12 @@ export function FormulaBody({
   id,
   breakdown,
 }: {
-  t: Strings;
+  t: StatPanelCopy;
   formatNumber: (n: number, d?: number) => string;
   id: BreakdownStatId;
   breakdown: Extract<StatBreakdown, { kind: 'formula' }>;
 }) {
-  const template = t[breakdown.expressionKey as keyof Strings];
+  const template = t[breakdown.expressionKey as keyof StatPanelCopy];
   return (
     <div className="text-[11px]">
       <Tooltip.Provider delay={200} closeDelay={100}>

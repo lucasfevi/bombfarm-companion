@@ -1,10 +1,8 @@
 'use client';
 
 import { clampPointStep, type SheetKey } from '@bombfarm/domain/planner-constants';
-import { sub, type Strings } from '@/shared/i18n';
-import { Button, DataTable, Stepper } from '@bombfarm/ui';
-import { mutedClass } from '@bombfarm/ui/panel-field.recipe';
-import { cn } from '@bombfarm/ui';
+import { Button, DataTable, Stepper, cn, mutedClass } from '@bombfarm/ui';
+import { sub, type StatPanelCopy } from '../copy';
 
 /** −5 / +5 buttons: the `Button` `default` variant, narrowed to a compact fixed-height pill
  *  (content-fit-ui.md — sized for "−5"/"+5", not the variant's default text-button padding). */
@@ -33,47 +31,52 @@ export function PointsStatRow({
   onPts,
   formatNumber,
 }: {
-  t: Strings;
+  t: StatPanelCopy;
   statKey: SheetKey;
   pts: Record<SheetKey, number>;
   level: number;
   values: PointsStatRowValues;
-  onPts: (next: Record<SheetKey, number>) => void;
+  /** Absent on a host that renders the row read-only: the step controls give way to the count. */
+  onPts?: ((next: Record<SheetKey, number>) => void) | undefined;
   formatNumber: (n: number, d?: number) => string;
 }) {
   const label = t.statFull[statKey];
-  const step = (delta: number) => onPts(clampPointStep(pts, statKey, delta, level));
+  const step = (delta: number) => onPts?.(clampPointStep(pts, statKey, delta, level));
   const { perPt: perPtValue, after: afterValue, preview: previewValue } = values;
 
   return (
     <DataTable.Row>
       <DataTable.Cell className="truncate">{t.statShort[statKey]}</DataTable.Cell>
       <DataTable.Cell align="center" nowrap={false}>
-        <div className="inline-flex items-center gap-1.5">
-          <Button
-            type="button"
-            variant="default"
-            className={fiveStepBtnClass}
-            onClick={() => step(-5)}
-            aria-label={sub(t.pointsStepMinusFiveAria, { stat: label })}
-          >
-            −5
-          </Button>
-          <Stepper
-            value={pts[statKey]}
-            onDecrement={() => step(-1)}
-            onIncrement={() => step(1)}
-          />
-          <Button
-            type="button"
-            variant="default"
-            className={fiveStepBtnClass}
-            onClick={() => step(5)}
-            aria-label={sub(t.pointsStepPlusFiveAria, { stat: label })}
-          >
-            +5
-          </Button>
-        </div>
+        {onPts ? (
+          <div className="inline-flex items-center gap-1.5">
+            <Button
+              type="button"
+              variant="default"
+              className={fiveStepBtnClass}
+              onClick={() => step(-5)}
+              aria-label={sub(t.pointsStepMinusFiveAria, { stat: label })}
+            >
+              −5
+            </Button>
+            <Stepper
+              value={pts[statKey]}
+              onDecrement={() => step(-1)}
+              onIncrement={() => step(1)}
+            />
+            <Button
+              type="button"
+              variant="default"
+              className={fiveStepBtnClass}
+              onClick={() => step(5)}
+              aria-label={sub(t.pointsStepPlusFiveAria, { stat: label })}
+            >
+              +5
+            </Button>
+          </div>
+        ) : (
+          <span className="font-mono tabular-nums">{formatNumber(pts[statKey], 0)}</span>
+        )}
       </DataTable.Cell>
       {/* Sheet magnitudes at 2 dp (Points Δ per point and after). */}
       <DataTable.Cell align="right" numeric className={mutedClass}>
