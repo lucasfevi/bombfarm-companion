@@ -101,3 +101,28 @@ test.describe('Team plan phase picker', () => {
     await expect(page.getByText(/picked automatically/)).toHaveCount(0);
   });
 });
+
+/**
+ * The three setup fields carry hints of different lengths under their controls, and the row they
+ * sit in bottom-aligns its children. Left alone that stepped the controls down a staircase —
+ * measured 202 / 220 / 230 px before the fields were grouped to share a top edge.
+ */
+test.describe('the setup fields sit on one line', () => {
+  test('Score for, Plan for phase and Min forge share a control baseline', async ({ page }) => {
+    await seedLocalStorage(page, teamPlanFixtureSeed('en'));
+    await gotoTeamPlan(page);
+
+    const tops = await page.evaluate(() =>
+      [...document.querySelectorAll('label')]
+        .filter((label) => /Score for|Plan for phase|Min forge/i.test(label.textContent ?? ''))
+        .map((label) => {
+          const control = label.querySelector('select, input, [role="combobox"], button');
+          return Math.round(control?.getBoundingClientRect().top ?? -1);
+        }),
+    );
+
+    expect(tops).toHaveLength(3);
+    expect(tops[0]).toBeGreaterThan(0);
+    expect(new Set(tops).size, `controls stepped down: ${tops.join(' / ')}`).toBe(1);
+  });
+});

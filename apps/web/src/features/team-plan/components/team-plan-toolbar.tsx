@@ -83,9 +83,15 @@ export function TeamPlanToolbar({
         </p>
       ) : null}
       <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-6">
-        <ObjectiveField t={t} copy={copy} />
-        <PhaseField t={t} lang={lang} />
-        <ForgeFloorField t={t} />
+        {/* The fields align on their TOPS, not the row's bottom: each carries a hint of its own
+            length below the control, so bottom-aligning three of them steps the controls down
+            like a staircase. Their labels are one line and share a class, so a shared top edge
+            puts every control on the same line. */}
+        <div className="flex min-w-0 flex-1 flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:gap-6">
+          <ObjectiveField t={t} copy={copy} />
+          <PhaseField t={t} lang={lang} />
+          <ForgeFloorField t={t} />
+        </div>
         <Button
           type="button"
           variant="primary"
