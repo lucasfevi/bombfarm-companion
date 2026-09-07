@@ -44,6 +44,7 @@ export {
   useShellDensity,
   shellDensityFor,
   SHELL_ACTIONS_COLLAPSE_WIDTH,
+  SHELL_BRAND_MARK_WIDTH,
   SHELL_ICON_TABS_WIDTH,
   type ShellDensity,
 } from './shell-density';

@@ -30,17 +30,20 @@ describe('ShellActions', () => {
     expect(html).not.toContain('data-testid="shell-overflow"');
   });
 
-  it('replaces the whole cluster with one overflow button below the first width', () => {
+  it('keeps every action a control until the tabs and the brand have both given way', () => {
+    for (const density of ['icon-tabs', 'brand-mark'] as const) {
+      const html = render(density);
+      for (const id of BAR_CONTROLS) expect(html, `${density}/${id}`).toContain(`data-testid="${id}"`);
+      expect(html, density).toContain('aria-label="Language"');
+      expect(html, density).not.toContain('data-testid="shell-overflow"');
+    }
+  });
+
+  it('replaces the whole cluster with one overflow button at the narrowest width', () => {
     const html = render('actions-collapsed');
     expect(html).toContain('data-testid="shell-overflow"');
     for (const id of BAR_CONTROLS) expect(html, id).not.toContain(`data-testid="${id}"`);
     expect(html).not.toContain('aria-label="Language"');
-  });
-
-  it('stays collapsed at the narrowest width rather than coming back beside the glyph tabs', () => {
-    const html = render('icon-tabs');
-    expect(html).toContain('data-testid="shell-overflow"');
-    for (const id of BAR_CONTROLS) expect(html, id).not.toContain(`data-testid="${id}"`);
   });
 
   it('names the overflow button, which is a glyph and would otherwise be unreadable', () => {

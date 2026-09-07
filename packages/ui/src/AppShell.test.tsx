@@ -212,10 +212,45 @@ describe('AppShell', () => {
     expect(stripMatch?.[1]).toMatch(/-webkit-app-region:\s*drag/);
   });
 
-  it('reserves overlayInset as right padding on the header', () => {
+  it('holds the caption-button strip clear of the bar, net of the measure gutter it already has', () => {
     const out = html({ items: NAV_ITEMS, overlayInset: 140, children: 'body' });
-    const headerMatch = out.match(/<header[^>]*style="([^"]*)"/);
-    expect(headerMatch?.[1]).toMatch(/padding-right:\s*140px/);
+    // On the bar rather than the header: the header is full-bleed chrome, and padding there would
+    // shift the content off the measure everything below it is read at.
+    expect(out.match(/<header[^>]*style="([^"]*)"/)?.[1] ?? '').not.toMatch(/padding-right/);
+    const barMatch = out.match(/<header[^>]*>.*?<div class="[^"]*max-w-desktop[^"]*" style="([^"]*)"/);
+    expect(barMatch?.[1]).toContain('140px');
+    expect(barMatch?.[1]).toContain('var(--container-desktop)');
+  });
+
+  it('asks for no clearance at all when the window has no caption buttons over it', () => {
+    const out = html({ items: NAV_ITEMS, children: 'body' });
+    expect(out).not.toContain('padding-right');
+  });
+
+  it('draws the header and the status strip on the same measure as main, so they line up', () => {
+    const out = html({
+      items: NAV_ITEMS,
+      status: createElement('span', { 'data-testid': 'status-slot' }, 'Connected'),
+      children: 'body',
+    });
+    const measured = out.match(/class="[^"]*mx-auto[^"]*max-w-desktop[^"]*"/g) ?? [];
+    expect(measured, 'header bar, main inner, status strip').toHaveLength(3);
+    // Full-bleed chrome: the border and background still span the window, only the content is capped.
+    expect(out.match(/<header[^>]*class="([^"]*)"/)?.[1]).not.toContain('max-w-desktop');
+    expect(out.match(/<footer[^>]*class="([^"]*)"/)?.[1]).not.toContain('max-w-desktop');
+    // The same gutter on all three, and the scrollbar strip main gives up reserved on the two
+    // bands that have no scrollbar of their own — without it the top bar sits 5px right of the panels.
+    for (const tag of ['header', 'main', 'footer']) {
+      expect(out.match(new RegExp(`<${tag}[^>]*class="([^"]*)"`))?.[1], tag).toContain(
+        'px-[var(--shell-gutter)]',
+      );
+    }
+    for (const tag of ['header', 'footer']) {
+      expect(out.match(new RegExp(`<${tag}[^>]*class="([^"]*)"`))?.[1], tag).toContain(
+        'pr-[calc(var(--shell-gutter)+var(--scrollbar))]',
+      );
+    }
+    expect(out.match(/<main[^>]*class="([^"]*)"/)?.[1]).toContain('[scrollbar-gutter:stable]');
   });
 
   it('renders the brand slot left of the title when provided', () => {
@@ -239,21 +274,21 @@ describe('AppShell', () => {
   });
 
   describe('density', () => {
-    it('keeps every tab worded at full and actions-collapsed density', () => {
-      for (const density of ['full', 'actions-collapsed'] as const) {
-        const out = html({ items: ICON_NAV_ITEMS, activeId: 'stats', density, children: 'body' });
-        expect(out, density).toContain('>Inventory</button>');
-        expect(out, density).toContain('Stats</button>');
-        expect(out, density).not.toContain('<svg');
-      }
+    it('keeps every tab worded only while the bar is full', () => {
+      const out = html({ items: ICON_NAV_ITEMS, activeId: 'stats', density: 'full', children: 'body' });
+      expect(out).toContain('>Inventory</button>');
+      expect(out).toContain('Stats</button>');
+      expect(out).not.toContain('<svg');
     });
 
-    it('draws the tabs as glyphs at icon-tabs density, and still reaches every one of them', () => {
-      const out = html({ items: ICON_NAV_ITEMS, activeId: 'stats', density: 'icon-tabs', children: 'body' });
-      const buttons = out.match(/<button[^>]*>/g) ?? [];
-      expect(buttons).toHaveLength(ICON_NAV_ITEMS.length);
-      expect(out).toContain('aria-label="Inventory"');
-      expect(out).not.toContain('>Inventory</button>');
+    it('draws the tabs as glyphs from icon-tabs down, and still reaches every one of them', () => {
+      for (const density of ['icon-tabs', 'brand-mark', 'actions-collapsed'] as const) {
+        const out = html({ items: ICON_NAV_ITEMS, activeId: 'stats', density, children: 'body' });
+        const buttons = out.match(/<button[^>]*>/g) ?? [];
+        expect(buttons, density).toHaveLength(ICON_NAV_ITEMS.length);
+        expect(out, density).toContain('aria-label="Inventory"');
+        expect(out, density).not.toContain('>Inventory</button>');
+      }
     });
 
     it('leaves the active tab named, so the screen the player is on is never only a glyph', () => {
@@ -265,21 +300,24 @@ describe('AppShell', () => {
       expect(active).not.toContain('aria-label=');
     });
 
-    it('shrinks the brand to its mark alone at icon-tabs density — words, tag and badge all go', () => {
-      const out = html({
-        brand: createElement('span', { 'data-testid': 'brand-slot' }, 'mark'),
-        badge: 'DEV',
-        density: 'icon-tabs',
-        children: 'body',
-      });
-      expect(out).toContain('data-testid="brand-slot"');
-      expect(out).not.toContain('Bomb Farm');
-      expect(out).not.toContain('Companion');
-      expect(out).not.toContain('data-testid="flavor-badge"');
+    it('shrinks the brand to its mark from brand-mark down — words, tag and badge all go', () => {
+      for (const density of ['brand-mark', 'actions-collapsed'] as const) {
+        const out = html({
+          brand: createElement('span', { 'data-testid': 'brand-slot' }, 'mark'),
+          badge: 'DEV',
+          density,
+          children: 'body',
+        });
+        expect(out, density).toContain('data-testid="brand-slot"');
+        expect(out, density).not.toContain('Bomb Farm');
+        expect(out, density).not.toContain('Companion');
+        expect(out, density).not.toContain('data-testid="flavor-badge"');
+      }
     });
 
-    it('keeps the flavor badge at the density the smallest real window actually sits at', () => {
-      const out = html({ badge: 'DEV', density: 'actions-collapsed', children: 'body' });
+    it('keeps the whole lockup while only the tabs have given way', () => {
+      const out = html({ badge: 'DEV', density: 'icon-tabs', children: 'body' });
+      expect(out).toContain('Bomb Farm');
       expect(out).toMatch(/data-testid="flavor-badge"[^>]*>DEV</);
     });
 
