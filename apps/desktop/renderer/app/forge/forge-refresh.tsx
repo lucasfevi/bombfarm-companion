@@ -1,20 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { AccountReadRefusal } from '@bombfarm/contracts';
 import { Button, cn, Tooltip } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
+import { accountReadRefusalText } from '../../lib/account-read-labels';
+import type { AccountReadRequestState } from '../../lib/account/use-account-read-request';
 import { formatCapturedAt } from '../../lib/format';
-import { forgeRefreshRefusalText } from './forge-labels';
 
 const AGE_TICK_MS = 15_000;
-
-/** What the press is doing: nothing yet, a read in flight, or a read that never started and the
- *  reason it did not. */
-export type ForgeRefreshState =
-  | { kind: 'idle' }
-  | { kind: 'working' }
-  | { kind: 'refused'; reason: AccountReadRefusal };
 
 /**
  * The control that goes and reads the account, and the three things a reader needs to judge it.
@@ -32,7 +25,7 @@ export function ForgeRefresh({
 }: {
   capturedAt: string | null;
   stale: boolean;
-  state: ForgeRefreshState;
+  state: AccountReadRequestState;
   onRefresh: () => void;
 }) {
   const t = useCopy();
@@ -65,7 +58,7 @@ export function ForgeRefresh({
     <div className="flex items-end justify-end gap-3">
       {state.kind === 'refused' ? (
         <span data-testid="forge-refresh-refusal" className="text-warn pb-1.5 text-xs leading-snug">
-          {forgeRefreshRefusalText(state.reason, t)}
+          {accountReadRefusalText(state.reason, t)}
         </span>
       ) : null}
       <div className="flex flex-col items-end gap-1.5">

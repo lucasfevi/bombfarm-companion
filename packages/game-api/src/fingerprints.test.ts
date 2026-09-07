@@ -106,7 +106,7 @@ describe('ROUTE_FINGERPRINTS', () => {
     });
   });
 
-  it('api-bodies-after.json is a second WITNESS, not a competing baseline: identical key sets at every declared level (design §2.2)', () => {
+  it('api-bodies-after.json is a second WITNESS, not a competing baseline: identical key sets at every declared level', () => {
     if (!afterBodies) return;
     for (const route of ROUTES) {
       const fingerprint = ROUTE_FINGERPRINTS[route.section];
@@ -171,7 +171,7 @@ describe('ROUTE_FINGERPRINTS', () => {
   });
 });
 
-describe('SECTION_FINGERPRINTS — the projected shapes derive from ROUTE_FINGERPRINTS (design §5.3)', () => {
+describe('SECTION_FINGERPRINTS — the projected shapes derive from ROUTE_FINGERPRINTS', () => {
   it('account, skills and casa project as identity — their section fingerprint IS their route fingerprint', () => {
     expect(SECTION_FINGERPRINTS.account).toEqual({ kind: 'object', ...ROUTE_FINGERPRINTS.account });
     expect(SECTION_FINGERPRINTS.skills).toEqual({ kind: 'object', ...ROUTE_FINGERPRINTS.skills });

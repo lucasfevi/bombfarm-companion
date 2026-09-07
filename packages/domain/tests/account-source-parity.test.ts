@@ -194,7 +194,7 @@ describe('the deliberate parseSaveFile / parseAccountPayload divergence', () => 
   });
 });
 
-describe('edge cases (spec.md Edge Cases)', () => {
+describe('edge cases', () => {
   it('items absent: existing warning, parsing continues', () => {
     const payload = { heroes: [minimalHero('1')], skills: POST_PATCH_SKILLS };
     const { warnings, rejected, candidates } = parseSaveFile(payload, []);
@@ -240,7 +240,7 @@ describe('edge cases (spec.md Edge Cases)', () => {
     );
   });
 
-  it('a resolved-but-absent section warns without silently downgrading the derived grade (spec.md edge case)', () => {
+  it('a resolved-but-absent section warns without silently downgrading the derived grade', () => {
     const fidelity = {
       account: { status: 'resolved' as const, capturedAt: '2026-08-12T00:00:00.000Z' },
       heroes: { status: 'resolved' as const, capturedAt: '2026-08-12T00:00:00.000Z' },

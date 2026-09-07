@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { contrastRatio } from './token-color';
 import { colorTokens, contrastPairs } from './tokens';
 
-describe('design tokens — contrast AA (TOK-09)', () => {
+describe('design tokens — contrast AA', () => {
   it.each(contrastPairs.map((pair) => [pair.fg, pair.bg, pair.minRatio, pair] as const))(
     '%s on %s meets %.1f:1',
     (fgKey, bgKey, minRatio) => {

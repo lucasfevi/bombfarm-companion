@@ -12,7 +12,7 @@ const sharedStyles = readFileSync(
   'utf8',
 );
 
-describe('token CSS import wiring (TOK-02/03)', () => {
+describe('token CSS import wiring', () => {
   it('web globals imports shared ui styles and does not duplicate @theme colors', () => {
     expect(webGlobals).toMatch(/^@import '@bombfarm\/ui\/styles\.css';/m);
     expect(webGlobals).not.toContain('@theme {');

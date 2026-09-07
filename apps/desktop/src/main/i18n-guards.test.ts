@@ -137,7 +137,7 @@ const GUARD_1_EXCLUDE = (path: string): boolean =>
   path.endsWith(join('live-source', 'image-scan.ts'));
 
 describe('Guard 1 — no player-facing literal outside the i18n source', () => {
-  // What this rule CANNOT catch, stated rather than glossed (design §9, hazard 2): a one-word
+  // What this rule CANNOT catch, stated rather than glossed: a one-word
   // player-facing literal ('Loading'), and the one-letter s/m abbreviations §2.3 names. Those are
   // covered BEHAVIOURALLY instead, by format.test.ts's both-locales assertions — a
   // guard that claims more than it proves is worse than one that states its edge.
@@ -179,7 +179,7 @@ describe('Guard 1 — no player-facing literal outside the i18n source', () => {
   it('red state demonstrated (.ts): inlining one template literal is caught, by path and by value', () => {
     // NOT inside new Error(...)/console.*(...)/log.*(...) — those are the deliberate, documented
     // exclusions above (diagnostic text, never rendered). A bare returned/assigned template
-    // literal is exactly format.ts's own pre-F4 shape (design §2.3) and must still be caught.
+    // literal is exactly format.ts's own earlier shape and must still be caught.
     const offenders = [{ path: 'fixture.ts', source: 'export function label() { return `Game not running right now`; }' }]
       .map((file) => ({ file, violations: findProseLiterals(file.source) }))
       .filter((entry) => entry.violations.length > 0);

@@ -135,7 +135,7 @@ function squadAccountFor(account: TeamPlanAccountInput): SquadFarmAccount {
 }
 
 /** The estimator's own uptime expression, two-step and not "simplified" — `field / (field + rest)`
- *  is algebraically equal and not bit-equal in IEEE754. */
+ *  is algebraically equal and not bit-equal in IEEE-754. */
 function presenceOf(score: HeroScore): number {
   const field = fieldSeconds(score.effective, score.context);
   return (100 * field) / (field + score.context.restSeconds) / 100;

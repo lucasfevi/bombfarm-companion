@@ -252,7 +252,7 @@ function handComputeRow(stoneHp: number, mitig: number, goldComum: number, phase
 describe('phase 42 — non-gate hand-computed values', () => {
   const line = wikiPhaseLine(42)!;
 
-  it('published inputs: hp and mitig match spec.md exactly; ato/gate/propCount as stated', () => {
+  it('published inputs: hp and mitig match the published values exactly; ato/gate/propCount as stated', () => {
     expect(line.hp).toBe(2475);
     expect(line.mitig).toBeCloseTo(0.04353923205342237, 15);
     expect(line.ato).toBe(1);
@@ -314,7 +314,7 @@ describe('phase 42 — non-gate hand-computed values', () => {
 describe('phase 10 — gate hand-computed values', () => {
   const line = wikiPhaseLine(10)!;
 
-  it('published inputs: hp and mitig match spec.md exactly; ato/gate/timer as stated', () => {
+  it('published inputs: hp and mitig match the published values exactly; ato/gate/timer as stated', () => {
     expect(line.hp).toBe(122);
     expect(line.mitig).toBeCloseTo(0.01736227045075125, 15);
     expect(line.ato).toBe(1);
@@ -387,7 +387,7 @@ describe('phase 10 — gate hand-computed values', () => {
   });
 });
 
-describe('gold-share factor — independent cross-check against the raw prop table (design.md §2.2)', () => {
+describe('gold-share factor — independent cross-check against the raw prop table', () => {
   it('Σ share × goldRarityMult, derived from the live WIKI_PROPS table, is what both hand rows use', () => {
     // NOTE: the design's illustrative figure for this factor was 1.545 — that predates the 2026-08-14
     // wiki re-pull (same staleness as the goldComum values noted at the top of this file). The

@@ -3,7 +3,7 @@
  *
  * Seven cases, each a single-variable delta against a shared baseline, each asserting both the
  * column that must move AND `toBe`-level equality on the columns that must not. Proves the two
- * do-not-"fix" asymmetries from `design.md` §4.2/§4.4: Sorte moves chest/key/gem/time and never
+ * do-not-"fix" asymmetries: Sorte moves chest/key/gem/time and never
  * gold/xp; the gold chain (team_coin/fortuna/veia_ouro) moves gold and never chest/key/gem/xp.
  */
 import { describe, expect, it } from 'vitest';
@@ -167,7 +167,7 @@ describe('Gold tracks team_coin / fortuna / veia_ouro, never Sorte', () => {
 
     const line = wikiPhaseLine(42)!;
     const share = heroShare(baseFacts, jon.id, line);
-    // The fixture carries no veia_ouro anywhere (design.md §2.5), so goldSelfMix_base === 1
+    // The fixture carries no veia_ouro anywhere, so goldSelfMix_base === 1
     // exactly (Σ share_h × 1 = Σ share_h = 1) — baseRow.goldPerHour already IS
     // propsPerHour × E_gold × goldMult, so the delta reduces to this one clean expression.
     const expectedGold = baseRow.goldPerHour * (1 + share * LOOT_ABILITY_VALUES.veia_ouro.perLevel * delta);

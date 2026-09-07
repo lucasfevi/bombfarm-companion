@@ -53,7 +53,7 @@ describe('the evaluation budget binds, and a truncated search still returns a va
     const result = solveFarmRespec({ heroes, account, maxPhase });
     expect(result.evaluations).toBeLessThanOrEqual(FARM_OPT_FULL_MAX_EVALUATIONS);
     expect(result.budgetExhausted).toBe(false);
-    // Record the actual count (not asserted as a literal — design.md §0.1).
+    // Record the actual count (not asserted as a literal).
     expect(result.evaluations).toBeGreaterThan(0);
   });
 

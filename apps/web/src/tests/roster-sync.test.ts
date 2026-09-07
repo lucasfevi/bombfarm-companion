@@ -116,7 +116,7 @@ describe('importHeroes — full roster sync', () => {
 
   it('a blocked candidate (sourceId in the set, no record) is kept, not removed', () => {
     saveHeroes([hero('a', 'save-a'), hero('blocked-hero', 'save-blocked')]);
-    // The blocked candidate contributes its sourceId to the set but no record (design.md).
+    // The blocked candidate contributes its sourceId to the set but no record.
     const result = importHeroes(loadHeroes(), [record('save-a')], new Set(['save-a', 'save-blocked']));
     expect(result.removed).toBe(0);
     expect(result.heroes.some((h) => h.sourceId === 'save-blocked')).toBe(true);
@@ -170,7 +170,7 @@ describe('importHeroes — full roster sync', () => {
     expect(result.heroes.map((h) => h.sourceId).sort()).toEqual(['save-a', 'save-b', 'save-c']);
   });
 
-  it('the whole heroes[] being empty removes every existing hero (deliberate, spec.md edge case)', () => {
+  it('the whole heroes[] being empty removes every existing hero (a deliberate edge case)', () => {
     saveHeroes([hero('a', 'save-a'), hero('b', 'save-b')]);
     const result = importHeroes(loadHeroes(), [], new Set());
     expect(result.removed).toBe(2);

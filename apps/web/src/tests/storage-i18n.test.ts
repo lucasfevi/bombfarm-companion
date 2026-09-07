@@ -19,7 +19,7 @@ describe('save-failure toast', () => {
   });
 });
 
-describe('account house chrome (AHK-11)', () => {
+describe('account house chrome', () => {
   it('defines House subsection chrome in EN and PT', () => {
     expect(STRINGS.en.panelHouse).toBe('House');
     expect(STRINGS.pt.panelHouse).toBe('Casa');
@@ -57,7 +57,7 @@ describe('account house chrome (AHK-11)', () => {
   });
 });
 
-describe('account form UX chrome (AFU-10/11)', () => {
+describe('account form UX chrome', () => {
   it('EN panelSheet reads Stats; PT reads Atributos', () => {
     expect(STRINGS.en.panelSheet).toBe('Stats');
     expect(STRINGS.pt.panelSheet).toBe('Atributos');
@@ -93,7 +93,7 @@ describe('planner tabs IA (PTI-*)', () => {
     panelEffective: { en: 'Effective stats', pt: 'Stats efetivos' },
   } as const;
 
-  it('tab labels have no numeric prefixes (PTI-03)', () => {
+  it('tab labels have no numeric prefixes', () => {
     for (const [key, expected] of Object.entries(tabLabels)) {
       expect(STRINGS.en[key as keyof typeof tabLabels]).toBe(expected.en);
       expect(STRINGS.pt[key as keyof typeof tabLabels]).toBe(expected.pt);
@@ -102,7 +102,7 @@ describe('planner tabs IA (PTI-*)', () => {
     }
   });
 
-  it('subsection panel titles drop numeric prefixes (PTI-03)', () => {
+  it('subsection panel titles drop numeric prefixes', () => {
     for (const [key, expected] of Object.entries(panelTitles)) {
       expect(STRINGS.en[key as keyof typeof panelTitles]).toBe(expected.en);
       expect(STRINGS.pt[key as keyof typeof panelTitles]).toBe(expected.pt);
@@ -111,7 +111,7 @@ describe('planner tabs IA (PTI-*)', () => {
     }
   });
 
-  it('retire collapse-all chrome keys (PTI-07)', () => {
+  it('retire collapse-all chrome keys', () => {
     expect('collapseAll' in STRINGS.en).toBe(false);
     expect('expandAll' in STRINGS.en).toBe(false);
     expect('collapseAll' in STRINGS.pt).toBe(false);
@@ -136,7 +136,7 @@ describe('planner tabs IA (PTI-*)', () => {
 });
 
 describe('effective stats panel chrome (EST-*)', () => {
-  it('effectiveTip clarifies post-pipeline sources in EN and PT (EST-04, EST-09)', () => {
+  it('effectiveTip clarifies post-pipeline sources in EN and PT', () => {
     expect(STRINGS.en.effectiveTip).toBe(
       'Includes gear, points, skill tree, abilities, and team buffs.',
     );
@@ -154,7 +154,7 @@ describe('effective stats panel chrome (EST-*)', () => {
     expect(STRINGS.pt.effectiveTargetHp).toBe('HP do alvo');
   });
 
-  it('defines breakdown derived labels, sources, notes, and formula keys (ESB-12)', () => {
+  it('defines breakdown derived labels, sources, notes, and formula keys', () => {
     const keys = [
       'effectiveMitF',
       'effectiveDmg',
@@ -232,7 +232,7 @@ describe('effective stats panel chrome (EST-*)', () => {
     expect(STRINGS.pt.bdNoteSplit).toContain('{team}');
   });
 
-  it('explain-math guard: fuse / crit-factor tokens stay in explainSections (ESB-11)', () => {
+  it('explain-math guard: fuse / crit-factor tokens stay in explainSections', () => {
     const enCodes = STRINGS.en.explainSections.map((s) => s.code).join('\n');
     const ptCodes = STRINGS.pt.explainSections.map((s) => s.code).join('\n');
     expect(enCodes).toMatch(/critChance|critDmg|cdr|bombs\/s|walk/i);
@@ -450,7 +450,7 @@ describe('parseEmphasis', () => {
   });
 });
 
-describe('PT template contracts after copy polish (PTUX-03)', () => {
+describe('PT template contracts after copy polish', () => {
   it('sub interpolates touched PT strings with unchanged placeholder names', () => {
     expect(sub(STRINGS.pt.abilitiesSpent, { spent: 3, max: 50 })).toBe('3 / 50 pontos');
     expect(sub(STRINGS.pt.setupNeedUnspentPts, { left: 12, max: 40 })).toBe(
@@ -561,7 +561,7 @@ describe('portuguese UX glossary (PTUX)', () => {
     expect(joined).toMatch(/Olho Clínico/);
     expect(joined).toMatch(/Ponta de Diamante/);
     expect(joined).toMatch(/Grito de Guerra/);
-    // Guide + explain surfaces (PTUX-08)
+    // Guide + explain surfaces
     expect(STRINGS.pt.sheetTip).toMatch(/Olho Clínico/);
     expect(STRINGS.pt.sheetTip).toMatch(/Ponta de Diamante/);
     expect(STRINGS.pt.explainSections[7].p.join(' ')).toMatch(/Grito de Guerra/);

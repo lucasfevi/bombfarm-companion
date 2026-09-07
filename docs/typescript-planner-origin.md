@@ -1,6 +1,6 @@
 # TypeScript — planner-origin packages
 
-**Status:** permanent exception (MP1 HYG-DEBT-01)
+**Status:** permanent exception
 
 `tsconfig.base.json` enables `strict`, `exactOptionalPropertyTypes`, and
 `noUncheckedIndexedAccess` for companion-native packages.
@@ -33,9 +33,9 @@ package means a green repo.
 `@bombfarm/domain` is not in this position: it resolves through `dist/**/*.d.ts` (see below), so a
 consumer never compiles its source at all.
 
-## Scope unchanged by `AD-032`/`AD-033` (MP3 F1)
+## Scope unchanged by the built-package move
 
-MP3 F1 makes `@bombfarm/domain` a **built** package — consumers (`apps/desktop`'s main
+That move makes `@bombfarm/domain` a **built** package — consumers (`apps/desktop`'s main
 process and renderer) resolve its `dist/**/*.d.ts` under `skipLibCheck`, rather than its
 `src/**/*.ts` under this package's own relaxed `tsconfig.json`. That is precisely what lets
 this exception stay **unchanged in scope**: the two packages (`@bombfarm/domain`,

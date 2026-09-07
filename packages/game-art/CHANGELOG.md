@@ -1,5 +1,151 @@
 # @bombfarm/game-art
 
+## 0.4.0
+
+### Minor Changes
+
+- 06c9b42: A forge run holds the next roll's place on the chart, the bag's columns stop moving as you scroll,
+  and gold figures carry the game's coin.
+
+  **The chart says a roll is in flight, so nothing says `pausing…` any more.** A run leaves a gap
+  between one roll and the next, and the header used to fill that gap with a word. The word was
+  effectively always on: the gaps are drawn from 700ms to 2,500ms, so about two in five cleared the
+  threshold meant to catch only the long ones, and the word blinked every few rolls. There is no
+  threshold now. Where the next mark will land, the chart draws a hollow accent circle with a short
+  dashed stub back to the last real one, at the level the piece stands on — because where it lands
+  is exactly what nobody knows yet. Both breathe together over 1.4s, or hold still at a middling
+  opacity for anyone who has asked for less motion. When the roll settles, the real mark appears at
+  that same x and the ghost is gone, which reads as a shape filling in rather than a blink. The mark
+  covers the first roll of a run too, not just the gaps between rolls, so there is always either a
+  ghost or a fresh mark and never a moment of nothing.
+
+  **The bag's columns held still while it scrolled.** The gear table only keeps the rows you can see
+  in the document, so the browser was re-measuring the column widths from whichever slice happened
+  to be mounted, and the columns visibly jumped as you scrolled. Measured on a 137-row bag, the
+  Forge column went 119px at the top to 144px deep in it — a fifth wider — while Item, Slot and
+  Equipped by all shifted to pay for it. The table now sizes its columns once, from the column set
+  itself, and gives the item name whatever width is left. The same table draws the web planner's
+  inventory list, so its columns hold still now too.
+
+  **Every gold figure on the Forge screen carries the coin.** The plan's expected, bad-run and
+  wallet figures, the run's spend and its by-rung gold, the result block's three figures, and the
+  ledger's gold column, totals and header — one coin, sized to the text it stands beside, and never
+  on a figure that is not gold. The ledger's two summary lines print their gold as its own clause
+  for that reason: a coin in front of `2 runs · 13 rolls · 2 fails` would have marked three counts
+  that are not money.
+
+  **The result block says how far the run ran from its plan.** Beside the spend, as a signed whole
+  percent against the expected figure — `−20%` in the up colour under the plan, `+87%` in the warn
+  colour over it but inside the bad run, `+282%` in the down colour past the bad run.
+
+  **The Forge toolbar is three rows, and one dropdown fewer.** The search field takes the first row
+  to itself, full width; the hero, slot and forge-level dropdowns share the second with the result
+  count and Clear; the rarity chips have the third. Who wears a piece is a chip there now — the same
+  `Equipped` chip the Inventory toolbar has — instead of a three-state dropdown, and it appears only
+  when the bag actually holds a piece somebody is wearing. Asking for "nobody wearing it" while a
+  hero was chosen could only ever show an empty table; with one chip that cannot be asked at all,
+  and with a hero chosen the chip goes away entirely, because every row is already one they wear.
+
+- 06c9b42: A finished forge run leads with its verdict, and the bag drops the column that repeated half of
+  every name.
+
+  **Against the plan answers the question first.** The block used to run three gold figures and a
+  percentage together as one line of prose, wrap, and then draw a bar with two tick marks nothing
+  explained. The percentage is now the headline — large, in the mono face, signed and rounded to a
+  whole percent — with a phrase beside it saying what it means: _under what the plan expected_ in
+  the up colour, _over what the plan expected_ in the warn colour, _worse than a bad run_ in the
+  down colour. The bar keeps its place underneath, and the three figures follow it as one quiet
+  line — spent, expected, a bad run, each with the game's coin.
+
+  A run that landed on the expected figure is neither under nor over, so it says _exactly what the
+  plan expected_ in the muted colour and prints no percentage at all, rather than a signed zero
+  picking a side of an inequality. A run cut short after one cheap roll still reads as an outcome:
+  `−100% under what the plan expected` is what actually happened.
+
+  **The Forge bag has no Slot column.** A piece's name already reads `Set · Slot`, so the column
+  printed half of every name a second time beside it — and the width it took was what squeezed the
+  name column at the app's minimum width until the identity block broke apart. Removing it gives
+  the name 180px at a 960-wide window instead of 52px, and the bag is now Item, Forge and Equipped
+  by. Ordering by slot goes with the column, which the bag's headers were the only route to.
+
+  Nothing else drew that column, so the shared table no longer knows how: the column, its label and
+  the inventory model's `slot` sort key are all gone rather than left as a column nothing hosts. The
+  web planner's inventory list, which draws through the same table, never asked for it.
+
+- 06c9b42: Gold figures sit on the line of the sentence they are in, and a run that spent what the plan said
+  can say so.
+
+  **A gold figure inside a sentence floated above the words beside it.** The coin and its number are
+  laid out as a centred flex box, and a flex box whose items are all centred has no baseline of its
+  own — the browser synthesises one from the bottom edge, so the whole chunk rides high. Measured in
+  the running app: on the Forge run band's header the spend sat 2.89px above `0 rolls` and
+  `wallet 16,218,906` on the same line, and on the result block's figures line each of the three
+  figures sat 2.56px above the separators between them. Both now read 0.00px. The figure is asked
+  for this explicitly, because the synthesised baseline also props a table row open by 3px: the
+  farm board's right-aligned gold cells keep the alignment they were built with, unchanged to the
+  pixel — same coin, same number, same right edge, same row height.
+
+  **A run could never be told it had spent what the plan said.** The result block has a fourth
+  verdict for a spend that matched the plan — no percentage, a muted phrase, neither under nor over
+  — and it was reached only when the spend and the expected figure were identical numbers. They
+  never are: the expected figure is a value iteration's float (486,379.99999993795 on a measured
+  piece) and the server charges whole gold. So every run within a rounding error of its plan printed
+  `+0%` or `−0%` beside a phrase that had picked a side. The verdict now follows the figure that is
+  actually printed — inside half a percent of expected, the run reads as matching the plan and prints
+  no percentage, whichever side of it the spend fell.
+
+- 06c9b42: The inventory list says an item once, and the Forge bag is that same list.
+
+  **Rarity and level leave the columns.** The name cell already prints both — an Épico on one line
+  and `Nv 30` under it — so the two columns beside it were the same two facts a second time, and the
+  row had grown to 46px to hold the repetition. Both columns are gone. Nothing else about the row
+  changed. Ordering by rarity or by level did not go with them: the list layout now offers the same
+  sort picker the cards do, so either order is a pick away, and the columns that are left still sort
+  from their own headers.
+
+  **The Forge bag reads like the Inventory one.** The Forge screen had grown a table of its own for
+  the sake of one column the shared table would not take. It now uses the shared table with a set of
+  columns it asks for by name — the piece, its slot, its forge level and the hero wearing it, drawn
+  with the same face-and-name block the inventory list uses instead of a bare hero name. A row still
+  picks a piece to plan, and the picked row is still marked. A filter that leaves nothing now says
+  so once: the word "Clear" was printed both as the explanation and on the button under it.
+
+  **Long bags only render what is on screen.** A mature account carries a few hundred pieces of gear,
+  and both screens bound their list, so the rows below the fold are no longer in the page at all —
+  two spacers hold their height open, and the scrollbar still measures the whole bag. The column
+  headings stay put while the rows move under them. The Forge bag's old 400-row cap, and the
+  "refine the filter" line that came with it, are gone: there is nothing left for a cap to protect.
+
+- 06c9b42: An item now reads the same way everywhere it is named.
+
+  **One shape, four surfaces.** The inventory cards, the inventory list, the Forge screen's item
+  panel and the Forge screen's list each drew a piece their own way: the card put the forge level on
+  the second line beside the tier, the list put it beside the name, the Forge screen ran the tier,
+  the slot, the level and the forge together into one grey line. All four now draw the same block —
+  the item's art, its name and its forge level on the first line, its tier and its level on the
+  second — so a piece you recognise on one screen is the same piece on the next.
+
+  **The level is written one way.** It was three: `Level 60` on the desktop inventory, `Nível 60` in
+  Portuguese, and a run-together `nv60` on the Forge screen. It is `Lv 60` everywhere now, and
+  `Nv 60` in Portuguese — the same abbreviation the app already uses for a hero's level.
+
+  **Names keep their tier colour where the tier has nowhere else to go.** A key, a house part or a
+  skill stone is named by its tier, so the name itself carries the colour; everything else carries
+  it on the tier word under the name. The forge level keeps the accent it had in the list, and an
+  unforged piece still prints nothing rather than a `+0`.
+
+### Patch Changes
+
+- Updated dependencies [06c9b42]
+- Updated dependencies [a326087]
+- Updated dependencies [06c9b42]
+- Updated dependencies [2ab64c9]
+- Updated dependencies [06c9b42]
+- Updated dependencies [03c3302]
+- Updated dependencies [06c9b42]
+  - @bombfarm/ui@0.11.0
+  - @bombfarm/domain@0.12.0
+
 ## 0.3.6
 
 ### Patch Changes

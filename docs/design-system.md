@@ -18,7 +18,7 @@ so every app that imports it gets both the tokens and the chrome that dresses th
 no `prefers-color-scheme` toggle. Primitives reference tokens **only** through Tailwind theme utilities
 (`bg-surface`, `text-muted`, `border-line`, …) or `color-mix(... var(--token) ...)`
 arbitrary values — never hardcoded palette literals (the one documented exception is the Ko-fi
-brand button, `AD-003`).
+brand button).
 
 | Group | Tokens |
 | --- | --- |
@@ -35,7 +35,7 @@ Because the token block is self-contained it is the first thing extractable as
 
 Bare-element `table` / `th` / `td` rules in `packages/ui/src/styles.css`'s `@layer base` are **base
 element styling**, not a design-system primitive and not a named CSS exception — see
-[`css-exceptions.md`](css-exceptions.md) (TW-07). **All planner tables** use the `DataTable`
+[`css-exceptions.md`](css-exceptions.md). **All planner tables** use the `DataTable`
 compound primitive under `design-system/` (`scrollable` for sticky lists that fill the parent or
 optionally `maxRows`/`minRows` rem caps; sticky heads are `z-20` with `border-separate` so row chrome
 cannot overlay labels; `Header sortable` for sort chrome). Do not hand-roll `<table>` markup in feature code.
@@ -198,7 +198,7 @@ under `packages/ui/src/`, not a single module — e.g. `dialog/`, not `dialog.ts
   own file each, calling the real part they forward to, and the namespace `index.ts` re-exports them
   alongside the compound object so the barrel line is unaffected.
 
-This convention is **AD-021** and applies to every future compound primitive.
+This convention applies to every future compound primitive.
 
 ## cva conventions
 

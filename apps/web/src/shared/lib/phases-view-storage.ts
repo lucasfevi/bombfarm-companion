@@ -44,7 +44,7 @@ function normalizePhase(raw: unknown): number | undefined {
 }
 
 /**
- * `farmPool` normalize (design §6.1): non-object -> `{}`; non-boolean entries dropped
+ * `farmPool` normalize: non-object -> `{}`; non-boolean entries dropped
  * (siblings kept); empty-string keys dropped; more than `MAX_POOL_ENTRIES` keys -> first
  * `MAX_POOL_ENTRIES` kept. Unknown hero ids are NOT pruned here — a read must not write
  * (the `bf-hp-gear-scope-v1` contract); pruning-on-use happens at the call site.

@@ -173,14 +173,14 @@ export function derive(input: DeriveInput): DeriveResult {
   const baseCrit = naked.critChance - Math.max(0, sheetOther.critChanceFlat);
   const star = starsMult(stars);
   const atkPt = attackPointGain(level) * star;
-  // GAP-W4-01 (resolved): the six pooled shared-divisor deltas below
-  // (speed/critChance/critDmg/penetration/cdr/luck) needed no Wave 5 change — dividing by
+  // Resolved: the six pooled shared-divisor deltas below
+  // (speed/critChance/critDmg/penetration/cdr/luck) need no tree divisor — dividing by
   // (1 + sheetOther[key]) only was already exact once `naked` became `nakedFromBirth`'s
-  // tree-free output. Energy was the ONE exception the W4 comment got wrong: `gem =
+  // tree-free output. Energy was the ONE exception: `gem =
   // gearedX.energy / naked.energy` already carries `(1 + energia_add)` once `naked` is
   // tree-free, so the explicit `(1 + treeSheet.energyPct / 100)` factor that was correct
   // when `naked` was still tree-contaminated (it cancelled inside `gem` then) became a
-  // second application once Wave 5 shipped a genuinely tree-free `naked` — a 1.81x
+  // second application once `naked` became genuinely tree-free — a 1.81x
   // overstatement of every energy point on `save-20260801-crit-dmg-tree.json`
   // (`energia_add = 0.812711865`). Removed below.
   const delta: Record<SheetKey, number> = {

@@ -7,7 +7,7 @@ import { DATA_URL, FASES_NOMES_URL } from './fetch-endpoints.mjs';
 export const TRACKER_MARKER = '<!-- bfc-wiki-drift-tracker -->';
 
 /**
- * Which committed files carry values from each wiki section (design §2.6). Keyed by
+ * Which committed files carry values from each wiki section. Keyed by
  * `${endpoint}.${section}`; values are repo-relative paths, and `renderIssueBody` prints them, so
  * a drift issue names where to look without anyone opening this file.
  *

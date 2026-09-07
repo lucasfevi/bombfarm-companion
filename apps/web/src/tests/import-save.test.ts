@@ -278,8 +278,7 @@ describe('parseSaveFile', () => {
 
   it('skips hero entries with no id and warns', () => {
     const save = baseSave();
-    // The whole-file birth scan runs before the no-id skip (design.md step 2 vs
-    // step 4), so a hero object entered here needs its own usable birth_stats or the whole
+    // The whole-file birth scan runs before the no-id skip, so a hero object entered here needs its own usable birth_stats or the whole
     // save rejects instead of exercising the no-id skip this test targets.
     save.heroes.push({
       id: '',

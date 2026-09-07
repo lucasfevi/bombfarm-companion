@@ -9,7 +9,7 @@ import {
 /**
  * Deepened per-route schema fingerprints — the schema vocabulary lives in @bombfarm/domain,
  * with this package taking the edge. The spec's sharpest finding
- * (spec.md Problem Statement) is that the fingerprint this replaces — a flat top-level required-
+ * is that the fingerprint this replaces — a flat top-level required-
  * key LIST checked as a SUBSET — was authored from the already-drifted 2026-08-12 capture and
  * silently adopted the new shape as its own baseline: the `skills` section's required-key list
  * already named `refunds`, a key the 2026-08-13 patch added. A subset assertion cannot fail on an
@@ -36,7 +36,7 @@ const CAPTURED_AT = '2026-08-12T13:15:38.000Z';
 const SOURCE_ARTIFACT = 'packages/game-api/src/__fixtures__/api-bodies.json — 2026-08-12 capture';
 
 /** `/rotation.heroes[]` — a sixth declared element level, distinct from the export/API roster
- *  hero. One variant across 8 elements in the committed corpus (design §2.3). */
+ *  hero. One variant across 8 elements in the committed corpus. */
 const ROTATION_HERO_LEVEL: SchemaLevel = {
   keys: [
     'id',
@@ -131,7 +131,7 @@ export const ROUTE_FINGERPRINTS: Readonly<Record<AccountSection, RouteFingerprin
   },
 };
 
-// --- Section fingerprints — the PROJECTED shapes (design §5.3) -------------------------------
+// --- Section fingerprints — the PROJECTED shapes -------------------------------------------
 //
 // `ROUTE_FINGERPRINTS[section]` fingerprints the whole route BODY (what `checkShape` is handed
 // at `routes.ts`). `SECTION_FINGERPRINTS[section]` fingerprints the PROJECTED body: what

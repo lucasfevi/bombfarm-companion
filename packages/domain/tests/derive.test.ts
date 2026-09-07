@@ -188,7 +188,7 @@ describe('derive', () => {
     expect(result.hit).toBeGreaterThan(0);
   });
 
-  it('carries a finite luck delta/effectiveDelta/adjusted, but never on effective (BSPW2-AC-13)', () => {
+  it('carries a finite luck delta/effectiveDelta/adjusted, but never on effective', () => {
     const naked = sampleNaked();
     const geared = { ...naked, attack: naked.attack + 50 };
     const pts = { ...ZERO_PTS(), luck: 4 };
@@ -276,7 +276,7 @@ describe('derive', () => {
   });
 
   it('effective ≡ the real save sheet at pts=0 — the tree is applied exactly once', () => {
-    // The load-bearing double-count regression guard (M1/M2 in spec.md's discrimination note).
+    // The load-bearing double-count regression guard.
     // (the ground-truth rule's class (a) + (b)): re-pointed onto save-20260813-5heroes.json's Bellatrix
     // (8/8 geared) — the only post-patch corpus hero pattern available. RECORDED LOSS: every
     // post-patch capture has `crit_dmg_add: 0` (skills.totals), so this can no longer
@@ -470,7 +470,7 @@ describe('derive', () => {
 
   it('pooled deltas (speed/critChance/critDmg/pen/cdr/luck) are unchanged from main — no tree divisor', () => {
     // Explicit literals, computed independently of the implementation, so this proves the
-    // wave's neutrality claim on the GAP-W4-01 axis rather than merely restating the source.
+    // neutrality claim on the tree-divisor axis rather than merely restating the source.
     const naked = sampleNaked();
     const tree: TreeSheetTotals = {
       danoStatic: 2,

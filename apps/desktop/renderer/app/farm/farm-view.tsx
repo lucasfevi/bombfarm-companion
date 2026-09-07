@@ -44,6 +44,10 @@ import type { ReturnBonusMode, SquadFarmFacts } from '@bombfarm/domain/farm-rate
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
+import {
+  useAccountReadRequest,
+  type AccountReadRequestState,
+} from '../../lib/account/use-account-read-request';
 import { DEFAULT_FARM_CONTROLS, type FarmControls } from '../../lib/farm/farm-inputs';
 import { loadFarmView, saveFarmView } from '../../lib/farm/farm-view-storage';
 import { settledBoard, type FarmSettledBoard } from '../../lib/farm/farm-snapshot-store';
@@ -120,11 +124,16 @@ export function FarmView() {
     });
   }, [storageReady, hasAccount, controls, setControls]);
 
-  const onRefresh = useCallback(() => {
+  // Re-solving alone would answer the press from the account the renderer already holds, which
+  // the background cycle need not have moved since the board last took it. So the press also asks
+  // main to go and read — and re-solves either way, because the board can be behind an account
+  // that is already committed even when no new read is allowed to start.
+  const adoptLive = useCallback(() => {
     scheduleAfterPaint(() => {
       refresh(controls);
     });
   }, [refresh, controls]);
+  const { state: readState, request: onRefresh } = useAccountReadRequest(adoptLive);
 
   const setFarmHeroEnabled = useCallback((heroId: string, enabled: boolean) => {
     setLocalControls((previous) =>
@@ -186,8 +195,8 @@ export function FarmView() {
   const settled = useMemo(() => settledBoard(state), [state]);
   const busy = state.status === 'computing';
   const refreshBag = useMemo<FarmScreenRefresh>(
-    () => ({ stale, busy, onRefresh }),
-    [stale, busy, onRefresh],
+    () => ({ stale, busy, readState, onRefresh }),
+    [stale, busy, readState, onRefresh],
   );
 
   if (account.status === 'bridge-unavailable') {
@@ -259,6 +268,7 @@ export function FarmView() {
 type FarmScreenRefresh = {
   stale: boolean;
   busy: boolean;
+  readState: AccountReadRequestState;
   onRefresh: () => void;
 };
 
@@ -388,6 +398,7 @@ function FarmScreen({
           capturedAt={capturedAt}
           stale={refresh.stale}
           busy={refresh.busy}
+          readState={refresh.readState}
           onRefresh={refresh.onRefresh}
         />
       ),

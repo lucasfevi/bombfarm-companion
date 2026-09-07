@@ -1,5 +1,475 @@
 # @bombfarm/desktop
 
+## 0.12.0
+
+### Minor Changes
+
+- fddb03c: The Farm board's Refresh goes and reads the account, instead of re-solving over the one it already
+  had.
+
+  **It never asked for a read.** Pressing it took whatever the background account cycle had already
+  committed and re-solved the board from that. When the cycle had not run since the board last took
+  its copy, the press re-solved from identical inputs and produced the identical board. This was
+  harder to spot than the same defect on the Forge screen, because the press always did real work
+  and always showed a busy state — so a board re-solved over an account minutes old looked exactly
+  like one that had just gone and looked. Change a hero's gear in the game, press Refresh, and the
+  old answer came back with nothing to say why.
+
+  **Now the press asks main to read, and still re-solves either way.** The re-solve is not
+  conditional on the read being allowed: the board can be behind an account the app has already
+  committed even when no new read may start, and that case is fixed by re-solving alone. What the
+  read finds arrives afterwards and re-solves the board a second time.
+
+  **Every press ends in something the reader can see.** The button reads as working while either the
+  re-solve or the read is in flight, and takes no second press meanwhile. A press that started no
+  read says why, beside the button, where a line of any length leaves the button where the reader
+  last saw it: the account was just read a moment ago, no server behind this account, the account
+  read not accepted in Settings, the game not open, the game session unreadable, or the app still
+  starting. Both locales.
+
+  **One wording, one behaviour, for both screens.** The refusal lines and the press-to-settle
+  behaviour are now shared with the Forge screen's Refresh rather than written twice. Two of the
+  lines named the Forge's bag and now name the account, which is what both screens are actually
+  refreshing.
+
+- 06c9b42: A long climb reads as a rolling window rather than a crowded line, and the stepper's glyphs sit
+  where they belong.
+
+  **The run chart is a rolling window.** It used to fit the whole run into a fixed drawing, so a
+  91-roll climb crowded its marks until they touched while the marks and the axis numbers stayed
+  sized for a run of ten. It now shows the most recent attempts only: one arrives, the oldest drops
+  off, and the line enters the window at the level the piece stood on before the window's first
+  attempt, so the first segment is a real transition rather than a gap. It is the same stepped line
+  and the same coloured marks at ninety rolls as at nine — nothing switches to a different drawing
+  when the run gets long.
+
+  **How many attempts it holds is a reading of the screen.** The chart measures its own width and
+  gives every attempt at least 12px of it, between a floor of 24 and a ceiling of 90. At the app's
+  smallest window that is 45 attempts; at 1920 it is 74, and it re-measures as the window is
+  dragged. The marks and the line scale with what the window holds — full, the dots are small and
+  the line is hairline; on a short run they are as big as they ever were. The axis is labelled with
+  the real attempt numbers of the window (`50 60 70 80 90`, not `0` to `45`), spaced so the labels
+  cannot collide however narrow the chart is drawn.
+
+  **The recent-rolls strip is gone.** The row of coloured dots under the chart drew exactly the
+  attempts the window now shows, so it was drawing them twice. The space goes back to the chart.
+
+  **The stepper's `−` and `+` sat low in their buttons.** Both glyphs are drawn on the maths axis,
+  which is above the middle of the font's own box, so centring the line box left them 1.5px low in
+  a 24px button — measured, not eyeballed. The buttons now centre their content explicitly and
+  lift the glyph by the difference, in `em` so it holds at any size. This is the shared control, so
+  the web planner's steppers are fixed by the same change.
+
+  **The Forge target reads at the size of the decision it is.** `Target` and its `+14` were a step
+  smaller than the figures below them, on the panel where that number is the one thing a player
+  sets. Both go up a step; the value slot is measured in its own type size, so it still fits.
+
+- 06c9b42: A forge run holds the next roll's place on the chart, the bag's columns stop moving as you scroll,
+  and gold figures carry the game's coin.
+
+  **The chart says a roll is in flight, so nothing says `pausing…` any more.** A run leaves a gap
+  between one roll and the next, and the header used to fill that gap with a word. The word was
+  effectively always on: the gaps are drawn from 700ms to 2,500ms, so about two in five cleared the
+  threshold meant to catch only the long ones, and the word blinked every few rolls. There is no
+  threshold now. Where the next mark will land, the chart draws a hollow accent circle with a short
+  dashed stub back to the last real one, at the level the piece stands on — because where it lands
+  is exactly what nobody knows yet. Both breathe together over 1.4s, or hold still at a middling
+  opacity for anyone who has asked for less motion. When the roll settles, the real mark appears at
+  that same x and the ghost is gone, which reads as a shape filling in rather than a blink. The mark
+  covers the first roll of a run too, not just the gaps between rolls, so there is always either a
+  ghost or a fresh mark and never a moment of nothing.
+
+  **The bag's columns held still while it scrolled.** The gear table only keeps the rows you can see
+  in the document, so the browser was re-measuring the column widths from whichever slice happened
+  to be mounted, and the columns visibly jumped as you scrolled. Measured on a 137-row bag, the
+  Forge column went 119px at the top to 144px deep in it — a fifth wider — while Item, Slot and
+  Equipped by all shifted to pay for it. The table now sizes its columns once, from the column set
+  itself, and gives the item name whatever width is left. The same table draws the web planner's
+  inventory list, so its columns hold still now too.
+
+  **Every gold figure on the Forge screen carries the coin.** The plan's expected, bad-run and
+  wallet figures, the run's spend and its by-rung gold, the result block's three figures, and the
+  ledger's gold column, totals and header — one coin, sized to the text it stands beside, and never
+  on a figure that is not gold. The ledger's two summary lines print their gold as its own clause
+  for that reason: a coin in front of `2 runs · 13 rolls · 2 fails` would have marked three counts
+  that are not money.
+
+  **The result block says how far the run ran from its plan.** Beside the spend, as a signed whole
+  percent against the expected figure — `−20%` in the up colour under the plan, `+87%` in the warn
+  colour over it but inside the bad run, `+282%` in the down colour past the bad run.
+
+  **The Forge toolbar is three rows, and one dropdown fewer.** The search field takes the first row
+  to itself, full width; the hero, slot and forge-level dropdowns share the second with the result
+  count and Clear; the rarity chips have the third. Who wears a piece is a chip there now — the same
+  `Equipped` chip the Inventory toolbar has — instead of a three-state dropdown, and it appears only
+  when the bag actually holds a piece somebody is wearing. Asking for "nobody wearing it" while a
+  hero was chosen could only ever show an empty table; with one chip that cannot be asked at all,
+  and with a hero chosen the chip goes away entirely, because every row is already one they wear.
+
+- 06c9b42: The Forge screen's Refresh goes and reads the account, instead of re-showing what was already
+  there.
+
+  **It never asked for a read.** Pressing it adopted whatever the background account cycle had
+  already committed. When that cycle had not run since the screen pinned its view — the ordinary
+  case a minute after opening the tab — there was nothing newer to adopt, so the press changed
+  nothing at all and said nothing about it. A piece forged to +12 in the game still read as
+  unforged in the bag after pressing it.
+
+  **Now the press asks main to read.** A new channel starts a real account read on demand and
+  answers with what happened, honouring the same manual-refresh floor the app's other triggered
+  reads already respect, so two presses in a row can never become two reads.
+
+  **Every press ends in something the reader can see.** While the read is in flight the button says
+  it is reading and takes no second press. If the floor refuses the press, the screen says the bag
+  was just read a moment ago — in those words, not a countdown. If a read cannot happen at all, it
+  says which of the four reasons it is: no server behind this account, the account read not
+  accepted in Settings, the game not open, or the game session unreadable. Both locales.
+
+- 06c9b42: Refresh moves to the bag it acts on, the toolbar reads as one row, and a table that does not
+  scroll stops drawing a scroller's header.
+
+  **Refresh stands over the bag, not among the filters.** It adopts a newer read of the account —
+  it does not narrow what the bag shows — so it now sits at the top right of the bag panel, in a
+  compact strip of its own, and has left the filter row entirely. The out-of-date warning sits
+  above it in bold with a gap between the two, and takes its own space now that the button no
+  longer shares a baseline with a row of inputs; the button keeps the warn border it gains when the
+  read is stale.
+
+  **The read age is a tooltip.** "Account read 14d ago" was a line of screen printed at all times to
+  answer a question that is only ever asked at the moment of pressing the button. It is now the
+  button's tooltip, and nothing else on the screen prints the read age.
+
+  **The filter row is grouped.** The search field grew to fill and sat in the middle, splitting the
+  row into two clumps of dropdowns that read as two rows sharing a line. The order is now hero
+  picker, equipped, slot, forged, search, Clear: the screen's primary axis leads, the three
+  fixed-width selects follow it as one group, and the one control that grows takes the width left
+  over at the end. Every control keeps the height it had.
+
+  **A run that starts below the fold comes into view.** The Forge screen is sized by its content, so
+  on a short window the run band could open under the fold — the reader confirmed the spend and
+  nothing appeared to happen. Starting a run now scrolls the band into view if any part of it is out
+  of view, smoothly, and instantly under reduced motion. A band that is already wholly visible does
+  not move the page at all, and nothing takes focus.
+
+  **The item panel drops a line it could not act on.** `Power 9 · in the bag` came out: the identity
+  block above it already names the piece, and where an unworn piece sits is not something this
+  screen does anything with.
+
+  **A table with no scrollport no longer draws sticky header chrome.** `DataTable` heads were always
+  pinned, fill and sealing shadow included, whether or not the table they sat in could scroll. That
+  shadow paints 12px of header fill above the `<thead>`: a scrollport clips it, and a table without
+  one let it spill into the gap above, so the head read as a 40px band over 29px rows. `DataTable`
+  now takes its head chrome from whether its own root is a scrollport, so the two small Forge tables
+  — the stat comparison and the run tally — draw a plain head that matches their rows, while the
+  bag, the ledger and every other scrolling table keep the pinned treatment unchanged.
+
+- 06c9b42: The Forge tab now forges.
+
+  **A run, from the plan panel.** Pick a piece, pick a target, set a gold budget or an attempt
+  limit if you want one, and press Forge. The button asks twice — `Forge to +12`, then
+  `Confirm — spends gold` — and the second press starts a run on your account: a safe jump to +8
+  when the piece is below it, then one roll per rung, paced the way the game's own screen paces
+  them. Where each roll lands is what the server says it is, never a guess from the odds. The run
+  stops when it reaches the target, when your budget or your attempt limit would be crossed by the
+  next roll, when the wallet cannot cover it, when the server asks for a cooldown, or when you press
+  `Cancel after this roll` — a roll already sent always finishes first, so the piece and the wallet
+  never disagree with the server.
+
+  **A band that draws the climb.** A full-width band between the toolbar and the bag expands while
+  a run is on: the level now against the target, rolls and gold so far, the wallet, the whole climb
+  as a stepped line with one dot per call coloured by what it did, the last dozen marks as a strip,
+  and a tally by rung that folds the quiet rungs together — `+9…+11` and `+12`, not four identical
+  lines. When the run ends it shows the result in your terms — `Reached +12`,
+  `Stopped by the gold budget at +11`, `Out of gold at +9` — with the climb, the counts and the
+  duration, and what you spent against what the plan expected and what a bad run would have cost.
+  The bag and the piece show the new level the moment the run ends, without waiting for the next
+  account read. With nothing rolling the band takes no room at all.
+
+  **A ledger.** Every run is kept, and a collapsible table at the foot of the screen reads them
+  newest first: when it ran, the piece, the climb, why it stopped, rolls, fails, crits, safe jumps,
+  gold and how long it took, sortable on every column, with the running totals underneath. Its
+  header says how many runs and how much gold with the table shut, and it can be cleared from
+  there, behind a confirmation.
+
+  **The screen keeps its place.** The filter, the order, the piece you picked and the plan you made
+  for it survive a trip to another tab and come back as you left them — a piece that is no longer
+  in the bag is dropped rather than drawn, and a target the piece has since climbed past is pulled
+  back to the next rung it can reach. Only the bag table scrolls; the screen itself does not.
+
+  **Two things it needs, and one it refuses.** A run starts only with "Let Forge spend gold" turned
+  on in Settings, and only after the second press of the button — nothing rolls on its own. Offline
+  mode plans but never rolls: an account with no server behind it is refused before anything is
+  sent, and the button says so.
+
+- 06c9b42: **The Forge screen is sized by its content, not by the window.**
+
+  The bag is now exactly as tall as the item panel and the plan panel stacked beside it, and it
+  scrolls inside that height with its sticky header and its windowing intact. With nothing picked
+  those two are a short empty state, so the split keeps a 460px floor — fifteen bag rows under the
+  header, and the whole unpicked screen still inside the default window.
+
+  The column holding the piece and the plan no longer scrolls inside itself. A longer odds ladder,
+  a taller stat table or the run's result block make the column grow, and the bag grows with it,
+  through the same height transition the run rail already uses — instant under reduced motion.
+
+  Opening the run ledger at the foot adds to the page instead of squeezing what is above it:
+  nothing shortens, and the window scrolls down to the ledger. The screen is free to be taller than
+  the window now, which it deliberately was not before.
+
+- 2ab64c9: Add the Forge tab, as a planner.
+
+  **A new tab, between Inventory and Account.** The nav now reads Live · Farm · Inventory · Forge ·
+  Account · Settings. Pick a hero and the bag narrows to what that hero wears; pick a piece and the
+  screen shows what it becomes at a chosen target — every roll on it now and at the target, scaled by
+  the forge's own flat multiplier, so the figures are exact rather than an average of where a climb
+  might stop.
+
+  **What the climb should cost, from the wiki's own cost table.** For a piece and a target the plan
+  panel prints the expected number of rolls, the expected gold, and what a bad run costs at the 90th
+  percentile — all from the forge rules and the roll costs the wiki publishes, carried exactly. The
+  ladder above the facts shows every risky rung with its odds and where a miss lands, and one line
+  under them says what a failed roll does, including the one rung that wipes a piece to nothing.
+
+  **What one more level buys.** The bag table has a `+1 buys` column: the DPS its wearer gains from one
+  more forge level on that piece, measured the way the Farm board measures every hero, with a
+  tooltip giving the next roll's cost and chance. The plan panel prints the same figure for the
+  chosen target. A piece nobody wears shows a dash, never a guess, and so does an account the board
+  itself would withhold.
+
+  **The button waits for the next change.** Forging is not wired up yet: the Forge button is always
+  disabled and the line under it says why — the piece is already at the top, the account has no
+  server behind it, the Settings switch is off, or simply that forging arrives in the next release.
+  The app now tells the screen where its account came from, which is what lets a fixture account be
+  refused without a switch ever being consulted.
+
+- 06c9b42: The Forge toolbar looks for pieces worth forging, and the cancel says the press landed.
+
+  **The forge filter counts down, not up.** It used to offer `+8 and up` and `+9 and up`, which
+  finds the pieces already forged high — the opposite of what this screen is for. It is a ceiling
+  now: `Forged up to +8` keeps the pieces that still have a climb ahead of them, with `+0 only` for
+  the untouched, `+14` for everything short of maxed, and `Any forge` still the default. `+8` is
+  there because it is the safe floor, the last rung reachable without a roll that can wipe the
+  piece.
+
+  **A filter for what a hero is wearing.** Worn by a hero, worn by nobody, or both. Picking a hero
+  already means "worn, by that hero", so with one chosen this stops offering a second cut and says
+  so rather than quietly emptying the table.
+
+  **The order picker is back.** Rarity and level lost their columns from the bag, and with them the
+  only way to order by either. The toolbar now carries the same order control the Inventory list
+  has, and it names whichever order is leading — including one chosen from the Item, Slot or Forge
+  column headers, which still sort from the header.
+
+  **The bag-slot counter is gone.** How many bag slots are free is not what this screen decides
+  about. The read age beside it stays.
+
+  **The item panel.** Its title reads `Item`. Its stat table drew the stat name a size smaller than
+  the figures beside it, on a shorter line, which tilted `+13`, `+14` and `Change` off the label's
+  baseline and made one row taller than the next. Every cell in a row now shares one size and one
+  line, with the figures right-aligned in the fixed-width face.
+
+  **`Cancel after this roll` says the press landed.** The cancel is honoured between rolls, so for
+  a second or two after pressing it nothing used to change and the button invited a second press.
+  It now disables itself and reads `Cancelling after this roll…` until the run ends, in the run band
+  and in the plan panel both, with the line under the button saying the app is waiting for the roll
+  in flight to settle.
+
+- 06c9b42: The Forge toolbar picks a stretch of the ladder, clears with a real button, and says out loud when
+  what it is showing is old.
+
+  **The forge filter is a range, not a ceiling.** It offered `Forged up to +8` and its neighbours,
+  which answers "how far has this piece not got" rather than "which pieces are sitting where I am
+  working". It now offers seven: `Any forge`, `+0 only`, `+8 only`, `+8 to +10`, `+10 to +12`,
+  `+12 to +14` and `+14 and higher`. The bands share their endpoints on purpose — a piece at `+12`
+  is in both the band that ends there and the band that starts there — so a piece sitting on a
+  shoulder shows up whichever side of it you are reading.
+
+  **The order picker is gone from the Forge toolbar.** The bag's own Item, Slot and Forge headers
+  sort, and one screen does not need two ways to order the same rows. Ordering by rarity or by
+  level is no longer reachable here, which is the accepted cost of the columns those orders lost.
+  The Inventory list keeps its picker: its headers carry neither of those orders, so there the
+  picker is the only route to them.
+
+  **Clearing the filters is a button.** It was a chip among the rarity chips; it now stands at the
+  same height and weight as the selects and the search field it undoes, and still appears only while
+  a filter is on.
+
+  **An out-of-date read says so above the Refresh button.** A stale read used to tint the read-age
+  line, which is the quietest thing on the row. The age line now always prints the age, and when the
+  account has moved on since the screen pinned it, a bold `OUT OF DATE` hangs over the Refresh
+  button and the button itself takes a border. The label is positioned clear of the row, so every
+  control on it keeps one baseline whether the label is showing or not.
+
+- 06c9b42: A finished forge run leads with its verdict, and the bag drops the column that repeated half of
+  every name.
+
+  **Against the plan answers the question first.** The block used to run three gold figures and a
+  percentage together as one line of prose, wrap, and then draw a bar with two tick marks nothing
+  explained. The percentage is now the headline — large, in the mono face, signed and rounded to a
+  whole percent — with a phrase beside it saying what it means: _under what the plan expected_ in
+  the up colour, _over what the plan expected_ in the warn colour, _worse than a bad run_ in the
+  down colour. The bar keeps its place underneath, and the three figures follow it as one quiet
+  line — spent, expected, a bad run, each with the game's coin.
+
+  A run that landed on the expected figure is neither under nor over, so it says _exactly what the
+  plan expected_ in the muted colour and prints no percentage at all, rather than a signed zero
+  picking a side of an inequality. A run cut short after one cheap roll still reads as an outcome:
+  `−100% under what the plan expected` is what actually happened.
+
+  **The Forge bag has no Slot column.** A piece's name already reads `Set · Slot`, so the column
+  printed half of every name a second time beside it — and the width it took was what squeezed the
+  name column at the app's minimum width until the identity block broke apart. Removing it gives
+  the name 180px at a 960-wide window instead of 52px, and the bag is now Item, Forge and Equipped
+  by. Ordering by slot goes with the column, which the bag's headers were the only route to.
+
+  Nothing else drew that column, so the shared table no longer knows how: the column, its label and
+  the inventory model's `slot` sort key are all gone rather than left as a column nothing hosts. The
+  web planner's inventory list, which draws through the same table, never asked for it.
+
+- 076fc40: Give the app the ability to make one kind of write — a forge roll — behind a switch that is off.
+
+  **The companion can now send one thing.** Until now it was read-only by construction, and the
+  guards that prove it stayed green on every change. It can now make exactly two calls of its own,
+  the two the game's own forge screen makes when you roll an item: `/item/forge` and
+  `/item/forge_to_safe`. Nothing else in it can write. The guards still prove that: `POST` is
+  allowed in one file, that file names those two paths and no other, and every other file is held
+  to the same no-write rule as before. A write also has to come from a session that was granted
+  consent, and from a write capability that only exists while the switch below is on — both are
+  checked at runtime, not only by type. Writes share the reads' pacing gate, so a cooldown on a roll
+  backs off the account reads too, and no two calls of any kind can interleave past each other.
+
+  **The disclosure changed, so everyone will be asked again.** The first-run text used to say
+  "never writes". It now says what the app can send, that it can only do so from the Forge tab,
+  only after you turn the switch on, and only after you confirm each run. Every install sees the
+  new text at its next launch and has to allow it again.
+
+  **The switch is off until you turn it on.** Settings has a new Forge section with one control,
+  "Let Forge spend gold". Off, the Forge tab plans climbs and never rolls. On, the Forge button can
+  spend gold on your account, one confirmed run at a time. An existing install migrates with it off.
+
+  **The tab itself comes in a later change.** This is the boundary work: the capability, the
+  disclosure, the switch. Nothing in the app calls the new write yet.
+
+### Patch Changes
+
+- 06c9b42: Gold figures sit on the line of the sentence they are in, and a run that spent what the plan said
+  can say so.
+
+  **A gold figure inside a sentence floated above the words beside it.** The coin and its number are
+  laid out as a centred flex box, and a flex box whose items are all centred has no baseline of its
+  own — the browser synthesises one from the bottom edge, so the whole chunk rides high. Measured in
+  the running app: on the Forge run band's header the spend sat 2.89px above `0 rolls` and
+  `wallet 16,218,906` on the same line, and on the result block's figures line each of the three
+  figures sat 2.56px above the separators between them. Both now read 0.00px. The figure is asked
+  for this explicitly, because the synthesised baseline also props a table row open by 3px: the
+  farm board's right-aligned gold cells keep the alignment they were built with, unchanged to the
+  pixel — same coin, same number, same right edge, same row height.
+
+  **A run could never be told it had spent what the plan said.** The result block has a fourth
+  verdict for a spend that matched the plan — no percentage, a muted phrase, neither under nor over
+  — and it was reached only when the spend and the expected figure were identical numbers. They
+  never are: the expected figure is a value iteration's float (486,379.99999993795 on a measured
+  piece) and the server charges whole gold. So every run within a rounding error of its plan printed
+  `+0%` or `−0%` beside a phrase that had picked a side. The verdict now follows the figure that is
+  actually printed — inside half a percent of expected, the run reads as matching the plan and prints
+  no percentage, whichever side of it the spend fell.
+
+- 06c9b42: The inventory list says an item once, and the Forge bag is that same list.
+
+  **Rarity and level leave the columns.** The name cell already prints both — an Épico on one line
+  and `Nv 30` under it — so the two columns beside it were the same two facts a second time, and the
+  row had grown to 46px to hold the repetition. Both columns are gone. Nothing else about the row
+  changed. Ordering by rarity or by level did not go with them: the list layout now offers the same
+  sort picker the cards do, so either order is a pick away, and the columns that are left still sort
+  from their own headers.
+
+  **The Forge bag reads like the Inventory one.** The Forge screen had grown a table of its own for
+  the sake of one column the shared table would not take. It now uses the shared table with a set of
+  columns it asks for by name — the piece, its slot, its forge level and the hero wearing it, drawn
+  with the same face-and-name block the inventory list uses instead of a bare hero name. A row still
+  picks a piece to plan, and the picked row is still marked. A filter that leaves nothing now says
+  so once: the word "Clear" was printed both as the explanation and on the button under it.
+
+  **Long bags only render what is on screen.** A mature account carries a few hundred pieces of gear,
+  and both screens bound their list, so the rows below the fold are no longer in the page at all —
+  two spacers hold their height open, and the scrollbar still measures the whole bag. The column
+  headings stay put while the rows move under them. The Forge bag's old 400-row cap, and the
+  "refine the filter" line that came with it, are gone: there is nothing left for a cap to protect.
+
+- 06c9b42: An item now reads the same way everywhere it is named.
+
+  **One shape, four surfaces.** The inventory cards, the inventory list, the Forge screen's item
+  panel and the Forge screen's list each drew a piece their own way: the card put the forge level on
+  the second line beside the tier, the list put it beside the name, the Forge screen ran the tier,
+  the slot, the level and the forge together into one grey line. All four now draw the same block —
+  the item's art, its name and its forge level on the first line, its tier and its level on the
+  second — so a piece you recognise on one screen is the same piece on the next.
+
+  **The level is written one way.** It was three: `Level 60` on the desktop inventory, `Nível 60` in
+  Portuguese, and a run-together `nv60` on the Forge screen. It is `Lv 60` everywhere now, and
+  `Nv 60` in Portuguese — the same abbreviation the app already uses for a hero's level.
+
+  **Names keep their tier colour where the tier has nowhere else to go.** A key, a house part or a
+  skill stone is named by its tier, so the name itself carries the colour; everything else carries
+  it on the tier word under the name. The forge level keeps the accent it had in the list, and an
+  unforged piece still prints nothing rather than a `+0`.
+
+- 3cd7b5c: Add an opt-in Settings switch that asks Steam to start Bomb Farm again if the game process disappears after this app has seen it running. Off by default. Closing the game while the switch is on is treated as an exit to recover from. Companion start never launches the game on its own.
+- 06c9b42: **A table's row headings now read as content rather than as headings.** The base stylesheet
+  dressed every `<th>` as a column heading — 10px, uppercase, letter-spaced, muted, over a full
+  hairline — including the ones that name a row rather than a column. Beside a cell at the table's
+  12px body type that put two line heights in one row, which is what tilted the Forge item panel's
+  stat figures off their labels. Only the headings that sit over a column get that type now; a row
+  heading is drawn like the cells it belongs to.
+
+  It moves the item name in both apps' bags, the stat names in every gain/loss table on the team
+  plan and the farm respec card, the Forge item panel's stat names, the Forge run ledger's _When_
+  column and the running tally's rung column. Tables that already spelled out their own heading
+  type — the planner's gear totals row — are unchanged.
+
+- d155a2f: Move the hero and roster user interface into a package of its own. Nothing a player sees changes:
+  the same picker, switcher, sort header, per-hero combat panel and roster wording are drawn by the
+  same two apps, from the same numbers.
+
+  What moved is where those views live. They had grown up inside the farm package, which is where the
+  farm screen happened to need them first, so the planner and the desktop app both reached through
+  the farm screen to render a hero list that has nothing to do with farming. They are now their own
+  package, and the farm package depends on it rather than the other way round — a one-way dependency
+  a test in the new package enforces, naming the offending file if anything ever imports back.
+
+  The guards that watched these components moved with them: the eight-prop component budget now
+  covers the new package too, the desktop rule that only one module may reach the farm screen's
+  wording covers both dictionaries, and the two applications' continuous-integration filters now list
+  every package they actually compile, so a change to one of them can no longer skip the checks that
+  would have caught it.
+
+- Updated dependencies [06c9b42]
+- Updated dependencies [a326087]
+- Updated dependencies [06c9b42]
+- Updated dependencies [06c9b42]
+- Updated dependencies [06c9b42]
+- Updated dependencies [06c9b42]
+- Updated dependencies [2ab64c9]
+- Updated dependencies [06c9b42]
+- Updated dependencies [076fc40]
+- Updated dependencies [06c9b42]
+- Updated dependencies [03c3302]
+- Updated dependencies [06c9b42]
+- Updated dependencies [06c9b42]
+- Updated dependencies [06c9b42]
+- Updated dependencies [d155a2f]
+- Updated dependencies [3e785eb]
+  - @bombfarm/ui@0.11.0
+  - @bombfarm/domain@0.12.0
+  - @bombfarm/contracts@0.7.0
+  - @bombfarm/game-art@0.4.0
+  - @bombfarm/game-api@0.4.0
+  - @bombfarm/hero@0.1.1
+  - @bombfarm/farm@0.2.4
+  - @bombfarm/pricing@0.2.1
+  - @bombfarm/account@0.2.1
+  - @bombfarm/game-data@0.0.13
+
 ## 0.11.1
 
 ### Patch Changes

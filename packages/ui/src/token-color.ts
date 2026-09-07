@@ -1,4 +1,4 @@
-/** WCAG relative luminance + contrast helpers for token tests (TOK-09). */
+/** WCAG relative luminance + contrast helpers for token tests. */
 
 export type Rgb = readonly [number, number, number];
 

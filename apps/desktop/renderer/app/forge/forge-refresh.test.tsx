@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { AccountReadRefusal } from '@bombfarm/contracts';
+import type { AccountReadRequestState } from '../../lib/account/use-account-read-request';
 import { CopyProvider } from '../../lib/copy';
 import { en } from '../../lib/copy/en';
-import { ForgeRefresh, type ForgeRefreshState } from './forge-refresh';
+import { ForgeRefresh } from './forge-refresh';
 
 function render(
-  overrides: { stale?: boolean; capturedAt?: string | null; state?: ForgeRefreshState } = {},
+  overrides: { stale?: boolean; capturedAt?: string | null; state?: AccountReadRequestState } = {},
 ): string {
   return renderToStaticMarkup(
     createElement(CopyProvider, {
@@ -90,16 +91,16 @@ describe('ForgeRefresh', () => {
 
   it('says the floor refused the press in plain words, with no millisecond figure in sight', () => {
     const html = render({ state: { kind: 'refused', reason: 'rate_limited' } });
-    expect(textOf(html, 'forge-refresh-refusal')).toBe(en.forgeRefreshRecent);
+    expect(textOf(html, 'forge-refresh-refusal')).toBe(en.accountReadRecent);
     expect(textOf(html, 'forge-refresh-refusal')).not.toMatch(/\d/);
     // Refused is not working: the button is pressable again the moment the floor reopens.
     expect(isDisabled(html, 'forge-refresh')).toBe(false);
   });
 
   it.each<[AccountReadRefusal, string]>([
-    ['offline', en.forgeRefreshFixture],
-    ['not_consented', en.forgeRefreshNotConsented],
-    ['game_not_running', en.forgeRefreshGameNotRunning],
+    ['offline', en.accountReadFixture],
+    ['not_consented', en.accountReadNotConsented],
+    ['game_not_running', en.accountReadGameNotRunning],
     ['token_unavailable', en.forgeStartTokenUnavailable],
     ['unavailable', en.forgeStartUnavailable],
   ])('says why a read cannot happen at all: %s', (reason, expected) => {

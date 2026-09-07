@@ -1,5 +1,5 @@
 /**
- * The gate entry point and the provenance ladder (design §4.4, §1.2).
+ * The gate entry point and the provenance ladder.
  *
  * `runFidelityGate` is the one function that runs the whole gate, so the ordering (guard →
  * parse → compare → executed-work floor) cannot be reassembled wrongly per-test.
@@ -29,7 +29,7 @@ export interface GateAssertion {
 }
 
 /**
- * Strictness ladder (design §1.2): every branch is non-empty and exercised now —
+ * Strictness ladder: every branch is non-empty and exercised now —
  * `export-derived` for real (the committed pair), `memory-assembled` and `api-assembled`
  * against synthetic manifests — so changing the token can neither silently drop the
  * export-derived checks nor land on an untested stub.
@@ -76,7 +76,7 @@ function independentOriginAssertions(token: LiveSource): readonly GateAssertion[
 export const PROVENANCE_LADDER: Record<LiveSource, readonly GateAssertion[]> = {
   'export-derived': [
     {
-      description: 'the live capture is byte-reproducible by re-running frameLiveCapture on the export (a regression fence, not a discovery instrument — design §1.1)',
+      description: 'the live capture is byte-reproducible by re-running frameLiveCapture on the export (a regression fence, not a discovery instrument)',
       run: (pair) => {
         const regenerated = frameLiveCapture(pair.exportPayload as unknown as Record<string, unknown>, {
           capturedAt: pair.manifest.live.capturedAt,
@@ -129,7 +129,7 @@ function assertExportCaptureIsUsable(payload: AccountPayload, label: string): vo
  * "coerced string gold" / dropped "stat_ranges" hazards — see `compareRawAccountFields` /
  * `compareRawHeroFields` doc comments in `fidelity-compare.ts`) → assert the manifest's
  * executed-work floors. Every step throws `FidelityGateError` on failure — there is no partial
- * success return (design §4.4's body, extended by the raw-payload layer; the provenance ladder
+ * success return (extended by the raw-payload layer; the provenance ladder
  * above is a separate, independently-tested table — see `assertProvenanceLadder` and
  * `fidelity-gate.test.ts`).
  */

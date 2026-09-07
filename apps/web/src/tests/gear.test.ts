@@ -373,7 +373,7 @@ describe('rescaleNakedForStars', () => {
     expect(next.speed).toBe(custom.speed);
   });
 
-  it('rescales luck alongside the other starred stats (BSPW2-AC-06)', () => {
+  it('rescales luck alongside the other starred stats', () => {
     const custom: SheetStats = { ...naked(), luck: 8.4 };
     const next = rescaleNakedForStars(custom, 0, 2);
     expect(next.luck).toBeCloseTo(custom.luck * ratio0to2, 6);
@@ -394,7 +394,7 @@ describe('rescaleNakedForLevel', () => {
     expect(next.energy).toBe(custom.energy);
   });
 
-  it('leaves luck untouched — level does not scale luck (BSPW2-AC-06)', () => {
+  it('leaves luck untouched — level does not scale luck', () => {
     const custom: SheetStats = { ...naked(), luck: 8.4 };
     const next = rescaleNakedForLevel(custom, 1, 26);
     expect(next.luck).toBe(custom.luck);
@@ -467,7 +467,7 @@ describe('rescaleNakedCritChance', () => {
 
   it('preserves a non-midpoint hero’s own roll, where a rarity-midpoint reset would discard it', () => {
     // Bellatrix's actual birth crit-chance roll (9.51) vs Raro's rarity midpoint (7) — a 36%
-    // error (spec.md's evidence table). Swapping the flat addend must move the sheet by the
+    // error. Swapping the flat addend must move the sheet by the
     // addend alone and leave the roll underneath untouched.
     const bellatrixCritChance = 9.51;
     const custom: SheetStats = { ...naked(), critChance: bellatrixCritChance };

@@ -6,7 +6,7 @@ import { checkSectionShape, SECTION_FINGERPRINTS } from '@bombfarm/game-api';
  * `stale-account.ts` carries the `TreeState` field vocabulary over the SAME dead keystone
  * mechanic; this file carries the raw SAVE vocabulary a pre-patch `skills` row still holds.
  * They are DIFFERENT vocabularies over the same retired mechanic, not copies of each other
- * (design §2.8) — no parity guard between them is meaningful, and none is added.
+ * — no parity guard between them is meaningful, and none is added.
  */
 export const RETIRED_TOTALS_KEYS = ['keystones', 'abisso_base', 'crit_dmg_mult'] as const;
 
@@ -36,7 +36,7 @@ function retiredKeyTriggers(section: AccountSection, body: unknown): string[] {
  * A stored `skills` section body predates the 2026-08-13 game patch — and
  * must be dropped, never served — when it carries a retired `skills.totals` key (path-qualified
  * presence) **or** fails `SECTION_FINGERPRINTS.skills` with an unexpected ADDED key. Both
- * triggers are POSITIVE tests on things that ARE there (design §5.5) — a section missing new
+ * triggers are POSITIVE tests on things that ARE there — a section missing new
  * post-patch keys is deliberately never a trigger here; that "are the new keys present" question
  * belongs to the export accept/reject gate (`missingPostUpdateKeys`), not to
  * this best-effort, never-throws storage read.

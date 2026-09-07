@@ -23,7 +23,6 @@ import {
   type ForgeStartReason,
 } from '@bombfarm/contracts';
 import { SLOTS } from '@bombfarm/domain/gear';
-import { READ_PACING } from '@bombfarm/game-api';
 import {
   buildInventoryView,
   groupInventoryByKind,
@@ -36,6 +35,7 @@ import { Banner, ConfirmDialog, EmptyState, motionTokens, Panel, PanelHeader } f
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { oldestCaptureOf } from '../../lib/account/account-facts';
 import { useAccountView } from '../../lib/account/use-account-view';
+import { useAccountReadRequest } from '../../lib/account/use-account-read-request';
 import {
   EMPTY_FORGE_FILTER,
   filterForgeItems,
@@ -68,7 +68,7 @@ import { ForgeItemPanel } from './forge-item-panel';
 import { forgeButtonReason, forgeLabels } from './forge-labels';
 import { ForgeLedger } from './forge-ledger';
 import { ForgePlanPanel } from './forge-plan-panel';
-import { ForgeRefresh, type ForgeRefreshState } from './forge-refresh';
+import { ForgeRefresh } from './forge-refresh';
 import { ForgeRail } from './forge-rail';
 import { FORGE_TABLE_COLUMNS, forgeTableLabels } from './forge-table-labels';
 import { ForgeToolbar, type ForgeHeroOption } from './forge-toolbar';
@@ -144,50 +144,10 @@ export function ForgeView({
   const pinnedKey = useMemo(() => sectionsKey(view), [view]);
   const stale = liveKey !== null && pinnedKey !== null && liveKey !== pinnedKey;
 
-  const [refreshState, setRefreshState] = useState<ForgeRefreshState>({ kind: 'idle' });
-  const liveAtPress = useRef<AccountView | null>(null);
-
-  // Adopting the newer view is not a refresh: the background cycle may not have run since this
-  // screen pinned its read, and then there is no newer view to adopt. So the press asks main to
-  // go and read, and what it finds arrives as a push, which is what settles the button.
-  const refresh = useCallback(() => {
-    const bridge = bridgeOf();
-    liveAtPress.current = liveRef.current;
+  const adoptLive = useCallback(() => {
     setPinned(liveRef.current);
-    if (!bridge) {
-      setRefreshState({ kind: 'refused', reason: 'unavailable' });
-      return;
-    }
-    setRefreshState({ kind: 'working' });
-    void bridge
-      .invoke('account:readNow')
-      .then((result) => {
-        if (!result.ok) setRefreshState({ kind: 'refused', reason: result.reason });
-      })
-      .catch(() => {
-        setRefreshState({ kind: 'refused', reason: 'unavailable' });
-      });
   }, []);
-
-  // A read that changed nothing commits nothing and pushes nothing, so waiting on the push alone
-  // would leave the button reading forever on an account that simply had no news. The floor is
-  // the deadline because past it the button is pressable again anyway, and a control saying it is
-  // working while it is ready to be pressed says the one thing that is not true.
-  useEffect(() => {
-    if (refreshState.kind !== 'working') return;
-    const settle = (): void => {
-      setPinned(liveRef.current);
-      setRefreshState({ kind: 'idle' });
-    };
-    if (live !== liveAtPress.current) {
-      settle();
-      return;
-    }
-    const timer = setTimeout(settle, READ_PACING.manualRefreshFloorMs);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [refreshState, live]);
+  const { state: refreshState, request: refresh } = useAccountReadRequest(adoptLive);
 
   const items = view?.payload.items;
   const rawHeroes = view?.payload.heroes;

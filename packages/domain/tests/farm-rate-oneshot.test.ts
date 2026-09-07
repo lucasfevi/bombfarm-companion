@@ -20,7 +20,7 @@ import { mitigationFactor, EFF_IA, FUSE_FLOOR, STAT_CAPS } from '@bombfarm/domai
 import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
 const { account } = loadFarmRateFixture();
-const MAX_HP_MULT = 3.2; // purple_crystal — the highest hpMult in WIKI_PROPS (design.md §2.2).
+const MAX_HP_MULT = 3.2; // purple_crystal — the highest hpMult in WIKI_PROPS.
 
 function syntheticHero(overrides: Partial<HeroFarmFacts> & { heroId: string }): HeroFarmFacts {
   return {

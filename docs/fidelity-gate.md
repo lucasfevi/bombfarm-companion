@@ -1,4 +1,4 @@
-# The fidelity gate (MP2 F4, LHP-13)
+# The fidelity gate
 
 **Status (2026-08-13, MP5 F1):** the committed pair was re-captured from the post-patch
 2026-08-13 export after `mp5-fixture-rebaseline` deleted the pre-wipe corpus the old pair was
@@ -7,12 +7,12 @@ reference account is now **5 heroes**, `account 486`, phase 24 / max_phase 42 �
 `sheet-math/save-20260813-5heroes.json` documents; `export-capture.json` is byte-identical to
 that fixture. `pair.json → live.source` is still `"export-derived"`, so the cross-source
 *equality* half remains a **regression fence, not a discovery instrument** — both committed
-captures share an origin, so it cannot find a reader bug (design §1.1). This does not relax the
+captures share an origin, so it cannot find a reader bug. This does not relax the
 capture constraint below: the fidelity pair is still built solely from one export, and the
 `sheet-math/` copy of it is a checked byte-identical invariant, not a second source. The two
-halves that are fully real today, and are what `LHP-13`'s exit clause actually turns on, are:
+halves that are fully real today, and are what this gate's exit clause actually turns on, are:
 
-1. **The degraded-input guard** (`FID-05`/`06`/`07`) — a live capture whose derived fidelity
+1. **The degraded-input guard** — a live capture whose derived fidelity
    grade is not `full` fails the gate, naming every non-`resolved` section and its literal
    status, before any sheet comparison is attempted.
 2. **The discrimination (mutation) suite** — eight committed-pair mutants, each proven to fail
@@ -139,7 +139,7 @@ What remains is blocked on a **maintainer capture**, not on code:
    `account_id`/`player_name`) and `export-capture.json` with the matching export.
 3. Set `pair.json → live.source` to `"api-assembled"`.
 4. Add `live.readerVersion` — `@bombfarm/game-api`'s version — and `live.fingerprints`, the
-   per-anchor schema fingerprints from the separate calibration capture (`AD-019`'s API-oracle
+   per-anchor schema fingerprints from the separate calibration capture (the API-oracle
    procedure, not this gate).
 5. Recompute `expected.heroes`/`items`/`statComparisons` from the real output.
 
@@ -162,7 +162,7 @@ What remains is blocked on a **maintainer capture**, not on code:
 > If a mismatched pair ever appears to make the gate "pass", the comparator has been loosened and
 > the gate is worthless. Fix the capture, never the tolerance.
 
-Four assertions tighten the moment the token changes (design §1.2) — no code, no workflow and no
+Four assertions tighten the moment the token changes — no code, no workflow and no
 other assertion needs editing, because the rung is already registered:
 
 | Assertion | `export-derived` | `api-assembled` |
@@ -175,7 +175,7 @@ other assertion needs editing, because the rung is already registered:
 **The gate's honest limitation improves under `api-assembled`, and by more than the original
 memory-sourced plan would have given it:** a save export and a live REST response are genuinely
 independent origins, so the equality half becomes a real discovery instrument rather than the
-regression fence `AD-026` settled for.
+regression fence this settled for.
 
-`validation.md` for this feature must be re-run once the token changes, since the equality
+The validation pass for this feature must be re-run once the token changes, since the equality
 half's meaning changes.

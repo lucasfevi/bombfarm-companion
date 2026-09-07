@@ -3,10 +3,10 @@
  *
  * `frameLiveCapture` / `scrubPersonalFields` (T1) are pure, non-throwing transforms used both
  * to build the committed `live-capture.json` and, pre-F2, to prove that file is exactly what
- * the framing function produces from the committed export (design §1.1).
+ * the framing function produces from the committed export.
  *
  * `loadFidelityPair` (T2) is the fail-loud entry point: every failure mode throws a typed
- * `FidelityGateError` (`design.md` §4.1) — there is no "return null/undefined" branch for a
+ * `FidelityGateError` — there is no "return null/undefined" branch for a
  * caller to forget to check.
  */
 import { existsSync, readFileSync, statSync } from 'node:fs';
@@ -20,7 +20,7 @@ const PAIR_MANIFEST_FILE = 'pair.json';
 const DOCS_LINK = 'docs/fidelity-gate.md';
 
 /**
- * The provenance token this design ladders strictness off (`design.md` §1.2).
+ * The provenance token this design ladders strictness off.
  *
  * `api-assembled` was added once API ingest shipped as a source rather than the memory reader
  * the ladder was first written for. `memory-assembled` is deliberately kept, not renamed: it is
@@ -66,7 +66,7 @@ export interface FidelityPair {
 }
 
 /**
- * Personal fields scrubbed from every committed capture (`docs/SAVE_EXPORT.md`, spec.md).
+ * Personal fields scrubbed from every committed capture (`docs/SAVE_EXPORT.md`).
  * Exported so the repo-wide fixture guard (`fixtures-scrubbed.test.ts`) enforces the same
  * list F4's own pair is held to — one source of truth, not two drifting copies.
  */
@@ -98,7 +98,7 @@ export interface FrameStamp {
 }
 
 /**
- * Deterministic export → live framing (design §1.1): lifts the five `AccountPayload` sections
+ * Deterministic export → live framing: lifts the five `AccountPayload` sections
  * out of a scrubbed export object, drops the two file-only keys (`export_version`,
  * `generated_at` — file-only concerns stay in the adapter), and attaches a five-section `fidelity` block stamped `resolved` at
  * `stamp.capturedAt`. Calling this twice on the same input produces byte-identical output

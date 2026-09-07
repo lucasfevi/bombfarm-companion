@@ -1,5 +1,160 @@
 # @bombfarm/contracts
 
+## 0.7.0
+
+### Minor Changes
+
+- 06c9b42: A forge run holds the next roll's place on the chart, the bag's columns stop moving as you scroll,
+  and gold figures carry the game's coin.
+
+  **The chart says a roll is in flight, so nothing says `pausing…` any more.** A run leaves a gap
+  between one roll and the next, and the header used to fill that gap with a word. The word was
+  effectively always on: the gaps are drawn from 700ms to 2,500ms, so about two in five cleared the
+  threshold meant to catch only the long ones, and the word blinked every few rolls. There is no
+  threshold now. Where the next mark will land, the chart draws a hollow accent circle with a short
+  dashed stub back to the last real one, at the level the piece stands on — because where it lands
+  is exactly what nobody knows yet. Both breathe together over 1.4s, or hold still at a middling
+  opacity for anyone who has asked for less motion. When the roll settles, the real mark appears at
+  that same x and the ghost is gone, which reads as a shape filling in rather than a blink. The mark
+  covers the first roll of a run too, not just the gaps between rolls, so there is always either a
+  ghost or a fresh mark and never a moment of nothing.
+
+  **The bag's columns held still while it scrolled.** The gear table only keeps the rows you can see
+  in the document, so the browser was re-measuring the column widths from whichever slice happened
+  to be mounted, and the columns visibly jumped as you scrolled. Measured on a 137-row bag, the
+  Forge column went 119px at the top to 144px deep in it — a fifth wider — while Item, Slot and
+  Equipped by all shifted to pay for it. The table now sizes its columns once, from the column set
+  itself, and gives the item name whatever width is left. The same table draws the web planner's
+  inventory list, so its columns hold still now too.
+
+  **Every gold figure on the Forge screen carries the coin.** The plan's expected, bad-run and
+  wallet figures, the run's spend and its by-rung gold, the result block's three figures, and the
+  ledger's gold column, totals and header — one coin, sized to the text it stands beside, and never
+  on a figure that is not gold. The ledger's two summary lines print their gold as its own clause
+  for that reason: a coin in front of `2 runs · 13 rolls · 2 fails` would have marked three counts
+  that are not money.
+
+  **The result block says how far the run ran from its plan.** Beside the spend, as a signed whole
+  percent against the expected figure — `−20%` in the up colour under the plan, `+87%` in the warn
+  colour over it but inside the bad run, `+282%` in the down colour past the bad run.
+
+  **The Forge toolbar is three rows, and one dropdown fewer.** The search field takes the first row
+  to itself, full width; the hero, slot and forge-level dropdowns share the second with the result
+  count and Clear; the rarity chips have the third. Who wears a piece is a chip there now — the same
+  `Equipped` chip the Inventory toolbar has — instead of a three-state dropdown, and it appears only
+  when the bag actually holds a piece somebody is wearing. Asking for "nobody wearing it" while a
+  hero was chosen could only ever show an empty table; with one chip that cannot be asked at all,
+  and with a hero chosen the chip goes away entirely, because every row is already one they wear.
+
+- 06c9b42: The Forge screen's Refresh goes and reads the account, instead of re-showing what was already
+  there.
+
+  **It never asked for a read.** Pressing it adopted whatever the background account cycle had
+  already committed. When that cycle had not run since the screen pinned its view — the ordinary
+  case a minute after opening the tab — there was nothing newer to adopt, so the press changed
+  nothing at all and said nothing about it. A piece forged to +12 in the game still read as
+  unforged in the bag after pressing it.
+
+  **Now the press asks main to read.** A new channel starts a real account read on demand and
+  answers with what happened, honouring the same manual-refresh floor the app's other triggered
+  reads already respect, so two presses in a row can never become two reads.
+
+  **Every press ends in something the reader can see.** While the read is in flight the button says
+  it is reading and takes no second press. If the floor refuses the press, the screen says the bag
+  was just read a moment ago — in those words, not a countdown. If a read cannot happen at all, it
+  says which of the four reasons it is: no server behind this account, the account read not
+  accepted in Settings, the game not open, or the game session unreadable. Both locales.
+
+- 06c9b42: The Forge tab now forges.
+
+  **A run, from the plan panel.** Pick a piece, pick a target, set a gold budget or an attempt
+  limit if you want one, and press Forge. The button asks twice — `Forge to +12`, then
+  `Confirm — spends gold` — and the second press starts a run on your account: a safe jump to +8
+  when the piece is below it, then one roll per rung, paced the way the game's own screen paces
+  them. Where each roll lands is what the server says it is, never a guess from the odds. The run
+  stops when it reaches the target, when your budget or your attempt limit would be crossed by the
+  next roll, when the wallet cannot cover it, when the server asks for a cooldown, or when you press
+  `Cancel after this roll` — a roll already sent always finishes first, so the piece and the wallet
+  never disagree with the server.
+
+  **A band that draws the climb.** A full-width band between the toolbar and the bag expands while
+  a run is on: the level now against the target, rolls and gold so far, the wallet, the whole climb
+  as a stepped line with one dot per call coloured by what it did, the last dozen marks as a strip,
+  and a tally by rung that folds the quiet rungs together — `+9…+11` and `+12`, not four identical
+  lines. When the run ends it shows the result in your terms — `Reached +12`,
+  `Stopped by the gold budget at +11`, `Out of gold at +9` — with the climb, the counts and the
+  duration, and what you spent against what the plan expected and what a bad run would have cost.
+  The bag and the piece show the new level the moment the run ends, without waiting for the next
+  account read. With nothing rolling the band takes no room at all.
+
+  **A ledger.** Every run is kept, and a collapsible table at the foot of the screen reads them
+  newest first: when it ran, the piece, the climb, why it stopped, rolls, fails, crits, safe jumps,
+  gold and how long it took, sortable on every column, with the running totals underneath. Its
+  header says how many runs and how much gold with the table shut, and it can be cleared from
+  there, behind a confirmation.
+
+  **The screen keeps its place.** The filter, the order, the piece you picked and the plan you made
+  for it survive a trip to another tab and come back as you left them — a piece that is no longer
+  in the bag is dropped rather than drawn, and a target the piece has since climbed past is pulled
+  back to the next rung it can reach. Only the bag table scrolls; the screen itself does not.
+
+  **Two things it needs, and one it refuses.** A run starts only with "Let Forge spend gold" turned
+  on in Settings, and only after the second press of the button — nothing rolls on its own. Offline
+  mode plans but never rolls: an account with no server behind it is refused before anything is
+  sent, and the button says so.
+
+- 076fc40: Give the app the ability to make one kind of write — a forge roll — behind a switch that is off.
+
+  **The companion can now send one thing.** Until now it was read-only by construction, and the
+  guards that prove it stayed green on every change. It can now make exactly two calls of its own,
+  the two the game's own forge screen makes when you roll an item: `/item/forge` and
+  `/item/forge_to_safe`. Nothing else in it can write. The guards still prove that: `POST` is
+  allowed in one file, that file names those two paths and no other, and every other file is held
+  to the same no-write rule as before. A write also has to come from a session that was granted
+  consent, and from a write capability that only exists while the switch below is on — both are
+  checked at runtime, not only by type. Writes share the reads' pacing gate, so a cooldown on a roll
+  backs off the account reads too, and no two calls of any kind can interleave past each other.
+
+  **The disclosure changed, so everyone will be asked again.** The first-run text used to say
+  "never writes". It now says what the app can send, that it can only do so from the Forge tab,
+  only after you turn the switch on, and only after you confirm each run. Every install sees the
+  new text at its next launch and has to allow it again.
+
+  **The switch is off until you turn it on.** Settings has a new Forge section with one control,
+  "Let Forge spend gold". Off, the Forge tab plans climbs and never rolls. On, the Forge button can
+  spend gold on your account, one confirmed run at a time. An existing install migrates with it off.
+
+  **The tab itself comes in a later change.** This is the boundary work: the capability, the
+  disclosure, the switch. Nothing in the app calls the new write yet.
+
+### Patch Changes
+
+- 2ab64c9: Add the Forge tab, as a planner.
+
+  **A new tab, between Inventory and Account.** The nav now reads Live · Farm · Inventory · Forge ·
+  Account · Settings. Pick a hero and the bag narrows to what that hero wears; pick a piece and the
+  screen shows what it becomes at a chosen target — every roll on it now and at the target, scaled by
+  the forge's own flat multiplier, so the figures are exact rather than an average of where a climb
+  might stop.
+
+  **What the climb should cost, from the wiki's own cost table.** For a piece and a target the plan
+  panel prints the expected number of rolls, the expected gold, and what a bad run costs at the 90th
+  percentile — all from the forge rules and the roll costs the wiki publishes, carried exactly. The
+  ladder above the facts shows every risky rung with its odds and where a miss lands, and one line
+  under them says what a failed roll does, including the one rung that wipes a piece to nothing.
+
+  **What one more level buys.** The bag table has a `+1 buys` column: the DPS its wearer gains from one
+  more forge level on that piece, measured the way the Farm board measures every hero, with a
+  tooltip giving the next roll's cost and chance. The plan panel prints the same figure for the
+  chosen target. A piece nobody wears shows a dash, never a guess, and so does an account the board
+  itself would withhold.
+
+  **The button waits for the next change.** Forging is not wired up yet: the Forge button is always
+  disabled and the line under it says why — the piece is already at the top, the account has no
+  server behind it, the Settings switch is off, or simply that forging arrives in the next release.
+  The app now tells the screen where its account came from, which is what lets a fixture account be
+  refused without a switch ever being consulted.
+
 ## 0.6.2
 
 ### Patch Changes

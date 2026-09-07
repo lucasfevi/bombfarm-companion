@@ -664,7 +664,7 @@ export function computeHeroFarmBases(input: FarmFactsInput): HeroFarmBasis[] {
  *
  * THE TRAP: `uptime` must repeat the pipeline's own two-step expression
  * `((100 × field) / (field + rest)) / 100`, not the algebraically-equal `field / (field + rest)`
- * — they are not bit-equal in IEEE754. Do not "simplify" this.
+ * — they are not bit-equal in IEEE-754. Do not "simplify" this.
  */
 export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, number>): HeroFarmFacts {
   const sheet = buildCandidateSheet(basis.effective, basis.pts, basis.effectiveDelta, pts);
@@ -1086,7 +1086,7 @@ const PROP_SHARES: readonly PropShare[] = WIKI_PROPS.map((prop) => ({
 /** Highest `hpMult` across `WIKI_PROPS` — the one-shot threshold multiplier. */
 const MAX_PROP_HP_MULT = WIKI_PROPS.reduce((max, prop) => Math.max(max, prop.hpMult), 0);
 
-/** `Σ share × goldRarityMult` — the phase-independent gold factor, `1.545`. */
+/** `Σ share × goldRarityMult` — the phase-independent gold factor (`1.545`). */
 const GOLD_SHARE_FACTOR = PROP_SHARES.reduce((sum, prop) => sum + prop.share * prop.goldMult, 0);
 
 // ---------------------------------------------------------------------------------------------
