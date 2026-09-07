@@ -88,8 +88,22 @@ function explorerCombat(state: PlannerStore): AdvisorPipelineResult {
   return pipelineForHero(hero, account, intel.phase, intel.mitigationPct);
 }
 
+/**
+ * The three figures the requirement names, plus one that actually moves with the phase.
+ *
+ * `predHit`, `uptime` and `dps` are phase-INVARIANT at a fixed mitigation — the phase reaches them
+ * only through the mitigation derived from it. Comparing those three alone therefore cannot see
+ * two surfaces reading different phases, only two surfaces reading different mitigations. Adding
+ * the target's hit points, which is read straight off the phase, is what makes this a phase
+ * comparison rather than a mitigation one.
+ */
 function figures(combat: AdvisorPipelineResult) {
-  return { normalHit: combat.predHit, uptime: combat.uptime, dps: combat.dps };
+  return {
+    normalHit: combat.predHit,
+    uptime: combat.uptime,
+    dps: combat.dps,
+    targetHp: combat.targetHp,
+  };
 }
 
 /**
@@ -172,6 +186,13 @@ describe('the hero workspace and the phases explorer read one phase', () => {
 
     expect(atSecondPick).toEqual(figures(explorerCombat(state)));
     expect(atSecondPick.normalHit).not.toBe(atFirstPick.normalHit);
+  });
+
+  it('resolves to the very phase the explorer is showing, not merely to matching figures', () => {
+    usePlannerStore.getState().setPhasesViewPhase(137);
+    const state = usePlannerStore.getState();
+
+    expect(selectCombatPhase(state)).toBe(selectPhasesViewPhase(state));
   });
 
   it('answers for the account’s own farm phase until the player picks one', () => {
