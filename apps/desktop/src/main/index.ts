@@ -10,6 +10,8 @@ import {
   isMarketQuoteTarget,
   liveGap,
   resolveStartupLocale,
+  type AccountReadResult,
+  type AccountSource,
   type AccountView,
   type AppLocale,
   type AppSettings,
@@ -46,6 +48,7 @@ import {
   registerRendererSchemeAsPrivileged,
   RENDERER_ENTRY_URL,
 } from './renderer-protocol.js';
+import { requestAccountRead } from './game-api/account-read-request.js';
 import { createAccountRefresh, type AccountRefreshDeps, type AccountRefreshHandle } from './game-api/account-refresh.js';
 import { createConsentApplier } from './game-api/consent-applier.js';
 import { createConsentStore, type ConsentStore } from './game-api/consent-store.js';
@@ -264,6 +267,35 @@ function startForgeRun(request: ForgeStartRequest): ForgeStartResult {
   return forgeService?.start(request) ?? { ok: false, reason: 'unavailable' };
 }
 
+// Threads Electron's real `app.isPackaged` (via `resolveAppEnv()`) so `sessionCfgPath`'s
+// `BFC_TOKEN_PATH_OVERRIDE` escape hatch can ever apply — and, symmetrically, cannot apply in
+// a packaged build no matter what is set in its environment. See `session-token-file.ts`'s
+// `SessionCfgPathDeps` doc comment. Shared by the account cycle, the forge run and the
+// on-demand read, so all three read the same file and all three redact the same token.
+const readToken: NonNullable<AccountRefreshDeps['readToken']> = (consent) => {
+  const result = readSessionToken(consent, undefined, sessionCfgPath({ isPackaged: resolveAppEnv().isPackaged }));
+  if (result.ok) {
+    const redact = (text: string): string => result.token.redactFrom(text);
+    log.setCredentialRedactor(redact);
+    liveSource?.setCredentialRedactor(redact);
+  }
+  return result;
+};
+
+function currentAccountSource(): AccountSource {
+  return gameReader?.getMode() === 'fixture' ? 'fixture' : 'server';
+}
+
+function requestAccountReadNow(): AccountReadResult {
+  return requestAccountRead({
+    consentStore: { read: () => consentStore?.read() ?? initialConsent() },
+    accountSource: currentAccountSource,
+    isGameRunning: () => gameReader?.isGameProcessRunning() ?? false,
+    readToken,
+    triggeredRefresh: () => triggeredRefresh,
+  });
+}
+
 function listForgeHistory(): ForgeHistoryResult {
   return forgeHistory?.list({ limit: 50 }) ?? EMPTY_FORGE_HISTORY;
 }
@@ -310,7 +342,7 @@ function registerIpcHandlers(): void {
         updateChannel: env.descriptor.updateChannel,
         isPackaged: env.isPackaged,
         version: app.getVersion(),
-        accountSource: gameReader?.getMode() === 'fixture' ? 'fixture' : 'server',
+        accountSource: currentAccountSource(),
       };
     },
     'app:ping': () => ({ ok: true as const, from: 'main' as const }),
@@ -331,6 +363,7 @@ function registerIpcHandlers(): void {
     // resolveAccountView(); this is a one-line call to it. See that file for the T-fix-6
     // precedence comment this used to carry inline.
     'account:get': (): AccountView => resolveAccountView({ gameReader, consentStore, accountRefresh, accountStore }),
+    'account:readNow': (): AccountReadResult => requestAccountReadNow(),
     'consent:get': (): ConsentRecord => consentStore?.read() ?? initialConsent(),
     'consent:accept': (): Promise<ConsentRecord> =>
       applyConsentEvent({ type: 'accept', now: new Date().toISOString(), locale: currentSettings.locale }),
@@ -886,21 +919,6 @@ async function bootstrap(): Promise<void> {
   // reason to want the freshly committed view.
   let notifier: ReturnType<typeof createAccountNotifier> | null = null;
 
-  // Threads Electron's real `app.isPackaged` (via `resolveAppEnv()`) so `sessionCfgPath`'s
-  // `BFC_TOKEN_PATH_OVERRIDE` escape hatch can ever apply — and, symmetrically, cannot apply in
-  // a packaged build no matter what is set in its environment. See `session-token-file.ts`'s
-  // `SessionCfgPathDeps` doc comment. Shared by the account cycle and the forge run, so both
-  // read the same file and both redact the same token.
-  const readToken: AccountRefreshDeps['readToken'] = (consent) => {
-    const result = readSessionToken(consent, undefined, sessionCfgPath({ isPackaged: resolveAppEnv().isPackaged }));
-    if (result.ok) {
-      const redact = (text: string): string => result.token.redactFrom(text);
-      log.setCredentialRedactor(redact);
-      liveSource?.setCredentialRedactor(redact);
-    }
-    return result;
-  };
-
   accountRefresh = createAccountRefresh({
     consentStore,
     transport: nodeHttpsTransport,
@@ -939,7 +957,7 @@ async function bootstrap(): Promise<void> {
     settings: () => currentSettings,
     transport: nodeHttpsTransport,
     gate,
-    accountSource: () => (gameReader?.getMode() === 'fixture' ? 'fixture' : 'server'),
+    accountSource: currentAccountSource,
     isGameRunning: () => gameReader?.isGameProcessRunning() ?? false,
     currentItems: () => cachedAccount()?.payload.items ?? null,
     currentGold: () => {

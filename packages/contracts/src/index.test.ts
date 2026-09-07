@@ -40,6 +40,7 @@ describe('contracts IPC surface', () => {
       'storage:health',
       'game:getStatus',
       'account:get',
+      'account:readNow',
       'consent:get',
       'consent:accept',
       'consent:decline',
@@ -78,6 +79,7 @@ describe('contracts IPC surface', () => {
     expect(isIpcChannel('app:ping')).toBe(true);
     expect(isIpcChannel('app:getEnvironment')).toBe(true);
     expect(isIpcChannel('account:get')).toBe(true);
+    expect(isIpcChannel('account:readNow')).toBe(true);
     expect(isIpcChannel('consent:get')).toBe(true);
     expect(isIpcChannel('consent:accept')).toBe(true);
     expect(isIpcChannel('consent:decline')).toBe(true);

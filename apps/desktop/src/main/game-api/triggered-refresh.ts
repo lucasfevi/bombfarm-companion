@@ -11,9 +11,11 @@ export interface TriggeredRefreshDeps {
 }
 
 export interface TriggeredRefresh {
-  /** Runs `refreshNow()` unless one has already run within `floorMs`. Safe to call as often as
-   *  the caller likes — every call past the floor is a no-op, not a queued one. */
-  readonly notify: () => void;
+  /** Runs `refreshNow()` unless one has already run within `floorMs`, and answers whether it
+   *  started one. Safe to call as often as the caller likes — every call inside the floor is a
+   *  no-op, not a queued one. A caller with a player waiting on it needs the answer: a press that
+   *  starts nothing and says nothing is indistinguishable from a broken button. */
+  readonly notify: () => boolean;
 }
 
 export function createTriggeredRefresh(deps: TriggeredRefreshDeps): TriggeredRefresh {
@@ -21,11 +23,12 @@ export function createTriggeredRefresh(deps: TriggeredRefreshDeps): TriggeredRef
   let lastTriggeredAt: number | null = null;
 
   return {
-    notify(): void {
+    notify(): boolean {
       const nowMs = deps.now();
-      if (lastTriggeredAt !== null && nowMs - lastTriggeredAt < floorMs) return;
+      if (lastTriggeredAt !== null && nowMs - lastTriggeredAt < floorMs) return false;
       lastTriggeredAt = nowMs;
       void deps.refreshNow();
+      return true;
     },
   };
 }

@@ -158,6 +158,15 @@ test.describe('forge plan smoke', () => {
       await view.getByTestId('forge-refresh').hover();
       await expect(page.getByTestId('forge-read-age')).toContainText('Account read');
 
+      // Pressing it asks main to go and read, rather than re-showing what was already in hand —
+      // and a fixture has no server behind it, so the one thing the press must not do is look
+      // like it worked. This is also the state a real player reaches with the game closed.
+      await expect(view.getByTestId('forge-refresh-refusal')).toHaveCount(0);
+      await view.getByTestId('forge-refresh').click();
+      await expect(view.getByTestId('forge-refresh-refusal')).toHaveText('No server to read from');
+      // Refused is not working: nothing is in flight, so the button is pressable again.
+      await expect(view.getByTestId('forge-refresh')).toBeEnabled();
+
       // Clearing is a button beside the fields now, not a chip, and it is there only while a
       // filter is on.
       await expect(view.getByTestId('forge-clear-filter')).toHaveCount(0);

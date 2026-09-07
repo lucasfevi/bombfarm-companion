@@ -1,5 +1,6 @@
 import {
   BCP47_BY_LOCALE,
+  type AccountReadRefusal,
   type AccountSource,
   type AppLocale,
   type DomainLang,
@@ -84,6 +85,26 @@ export function forgeStartRefusalText(reason: ForgeStartReason, t: Copy): string
       return t.forgeStartUnknownItem;
     case 'bad_target':
       return t.forgeStartBadTarget;
+    case 'unavailable':
+      return t.forgeStartUnavailable;
+  }
+}
+
+/** Why the bag was not re-read, in the player's terms. The floor is deliberately not a number of
+ *  milliseconds: what the player can act on is that the read is already as fresh as the app will
+ *  make it, not how long is left on a timer they never saw start. */
+export function forgeRefreshRefusalText(reason: AccountReadRefusal, t: Copy): string {
+  switch (reason) {
+    case 'rate_limited':
+      return t.forgeRefreshRecent;
+    case 'offline':
+      return t.forgeRefreshFixture;
+    case 'not_consented':
+      return t.forgeRefreshNotConsented;
+    case 'game_not_running':
+      return t.forgeRefreshGameNotRunning;
+    case 'token_unavailable':
+      return t.forgeStartTokenUnavailable;
     case 'unavailable':
       return t.forgeStartUnavailable;
   }

@@ -330,6 +330,22 @@ export type MiniLiveLayoutPatch = MiniLiveLayoutView;
  *  nothing that would send a write can run against one. */
 export type AccountSource = 'server' | 'fixture';
 
+/** Why an on-demand account read did not start. `rate_limited` is the manual-refresh floor still
+ *  closed after a read moments ago — the one reason worth trying again shortly. The next four are
+ *  the account cycle's own reasons a read cannot happen at all, and `unavailable` is a request
+ *  that reached main before its reader existed. */
+export type AccountReadRefusal =
+  | 'rate_limited'
+  | 'offline'
+  | 'not_consented'
+  | 'game_not_running'
+  | 'token_unavailable'
+  | 'unavailable';
+
+/** `ok` means a read was *started*, never that it landed: what it found arrives separately, on
+ *  `account:changed`, and only if it changed something. */
+export type AccountReadResult = { ok: true } | { ok: false; reason: AccountReadRefusal };
+
 export interface AppEnvironmentInfo {
   flavor: AppFlavor;
   productName: string;
@@ -364,6 +380,10 @@ export interface IpcChannels {
   'storage:health': { args: []; result: { binding: string; ok: boolean } };
   'game:getStatus': { args: []; result: GameStatusInfo };
   'account:get': { args: []; result: AccountView };
+  /** Asks main to go and read the account now, rather than serving what it already holds. Honours
+   *  the same manual-refresh floor the app's other triggered reads do, so a second press inside
+   *  that window is refused rather than doubling the request rate. */
+  'account:readNow': { args: []; result: AccountReadResult };
   /** Consent for the game-API account reader. All four are
    *  zero-arg by design: the existing `bfc:invoke` bridge forwards no arguments, so the
    *  player's answer is three verbs (`accept`/`decline`/`revoke`) rather than one call taking a
@@ -431,6 +451,7 @@ export const IPC_CHANNELS = [
   'storage:health',
   'game:getStatus',
   'account:get',
+  'account:readNow',
   'consent:get',
   'consent:accept',
   'consent:decline',
