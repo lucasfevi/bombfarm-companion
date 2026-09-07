@@ -24,15 +24,19 @@ const ICON_TABS_WINDOW = 1120;
 /** `createMainWindow`'s own `minWidth` — the narrowest window a player can drag to. */
 const MIN_WINDOW = 960;
 /** Below the minimum, reachable only by lifting it as `resize` does. The overflow stage lives
- *  here: glyph tabs, a brand mark and all five actions still fit at the real minimum even with seven tabs, so the stage
- *  is a floor under a future smaller window rather than one a player meets today.
+ *  here: glyph tabs, a brand mark and all five actions still fit at the real minimum, seven tabs
+ *  included, so the stage is a floor under a future smaller window rather than one a player meets
+ *  today.
  *
  *  A probe, not a boundary: the stage starts where the window minus the caption cluster falls
  *  under `SHELL_ACTIONS_COLLAPSE_WIDTH`, so this has to stay under that sum plus the cluster's
  *  own width and moves whenever either does. */
 const ACTIONS_COLLAPSED_WINDOW = 860;
-/** Narrower still. Seven glyph tabs, a mark and a menu stop fitting below ~610px, which is 350px
- *  past the smallest window that exists. */
+/** Narrower still. The seventh glyph widened the tab strip 354.6px to 390.6px, taking the width at
+ *  which the tabs and the overflow menu stop fitting from ~540px to ~576px — so this probe clears
+ *  the seven-tab floor by 64px, where a six-tab probe 20px above the old one would have sat under
+ *  it. That is the failure the launch suite caught once: the actions cluster painted over the last
+ *  tab. */
 const NARROWEST_MEASURED = 640;
 
 async function launchApp() {
