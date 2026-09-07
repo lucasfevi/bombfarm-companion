@@ -16,6 +16,10 @@
       "types": "./src/copy/index.ts",
       "default": "./src/copy/index.ts"
     },
+    "./core": {
+      "types": "./src/core/index.ts",
+      "default": "./src/core/index.ts"
+    },
     "./model": {
       "types": "./src/model/index.ts",
       "default": "./src/model/index.ts"
