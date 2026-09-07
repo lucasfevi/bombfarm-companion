@@ -1,5 +1,19 @@
 # @bombfarm/account
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [06c9b42]
+- Updated dependencies [a326087]
+- Updated dependencies [06c9b42]
+- Updated dependencies [2ab64c9]
+- Updated dependencies [06c9b42]
+- Updated dependencies [03c3302]
+- Updated dependencies [06c9b42]
+  - @bombfarm/ui@0.11.0
+  - @bombfarm/domain@0.12.0
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,5 +1,119 @@
 # @bombfarm/ui
 
+## 0.11.0
+
+### Minor Changes
+
+- 06c9b42: A long climb reads as a rolling window rather than a crowded line, and the stepper's glyphs sit
+  where they belong.
+
+  **The run chart is a rolling window.** It used to fit the whole run into a fixed drawing, so a
+  91-roll climb crowded its marks until they touched while the marks and the axis numbers stayed
+  sized for a run of ten. It now shows the most recent attempts only: one arrives, the oldest drops
+  off, and the line enters the window at the level the piece stood on before the window's first
+  attempt, so the first segment is a real transition rather than a gap. It is the same stepped line
+  and the same coloured marks at ninety rolls as at nine — nothing switches to a different drawing
+  when the run gets long.
+
+  **How many attempts it holds is a reading of the screen.** The chart measures its own width and
+  gives every attempt at least 12px of it, between a floor of 24 and a ceiling of 90. At the app's
+  smallest window that is 45 attempts; at 1920 it is 74, and it re-measures as the window is
+  dragged. The marks and the line scale with what the window holds — full, the dots are small and
+  the line is hairline; on a short run they are as big as they ever were. The axis is labelled with
+  the real attempt numbers of the window (`50 60 70 80 90`, not `0` to `45`), spaced so the labels
+  cannot collide however narrow the chart is drawn.
+
+  **The recent-rolls strip is gone.** The row of coloured dots under the chart drew exactly the
+  attempts the window now shows, so it was drawing them twice. The space goes back to the chart.
+
+  **The stepper's `−` and `+` sat low in their buttons.** Both glyphs are drawn on the maths axis,
+  which is above the middle of the font's own box, so centring the line box left them 1.5px low in
+  a 24px button — measured, not eyeballed. The buttons now centre their content explicitly and
+  lift the glyph by the difference, in `em` so it holds at any size. This is the shared control, so
+  the web planner's steppers are fixed by the same change.
+
+  **The Forge target reads at the size of the decision it is.** `Target` and its `+14` were a step
+  smaller than the figures below them, on the panel where that number is the one thing a player
+  sets. Both go up a step; the value slot is measured in its own type size, so it still fits.
+
+### Patch Changes
+
+- 06c9b42: Refresh moves to the bag it acts on, the toolbar reads as one row, and a table that does not
+  scroll stops drawing a scroller's header.
+
+  **Refresh stands over the bag, not among the filters.** It adopts a newer read of the account —
+  it does not narrow what the bag shows — so it now sits at the top right of the bag panel, in a
+  compact strip of its own, and has left the filter row entirely. The out-of-date warning sits
+  above it in bold with a gap between the two, and takes its own space now that the button no
+  longer shares a baseline with a row of inputs; the button keeps the warn border it gains when the
+  read is stale.
+
+  **The read age is a tooltip.** "Account read 14d ago" was a line of screen printed at all times to
+  answer a question that is only ever asked at the moment of pressing the button. It is now the
+  button's tooltip, and nothing else on the screen prints the read age.
+
+  **The filter row is grouped.** The search field grew to fill and sat in the middle, splitting the
+  row into two clumps of dropdowns that read as two rows sharing a line. The order is now hero
+  picker, equipped, slot, forged, search, Clear: the screen's primary axis leads, the three
+  fixed-width selects follow it as one group, and the one control that grows takes the width left
+  over at the end. Every control keeps the height it had.
+
+  **A run that starts below the fold comes into view.** The Forge screen is sized by its content, so
+  on a short window the run band could open under the fold — the reader confirmed the spend and
+  nothing appeared to happen. Starting a run now scrolls the band into view if any part of it is out
+  of view, smoothly, and instantly under reduced motion. A band that is already wholly visible does
+  not move the page at all, and nothing takes focus.
+
+  **The item panel drops a line it could not act on.** `Power 9 · in the bag` came out: the identity
+  block above it already names the piece, and where an unworn piece sits is not something this
+  screen does anything with.
+
+  **A table with no scrollport no longer draws sticky header chrome.** `DataTable` heads were always
+  pinned, fill and sealing shadow included, whether or not the table they sat in could scroll. That
+  shadow paints 12px of header fill above the `<thead>`: a scrollport clips it, and a table without
+  one let it spill into the gap above, so the head read as a 40px band over 29px rows. `DataTable`
+  now takes its head chrome from whether its own root is a scrollport, so the two small Forge tables
+  — the stat comparison and the run tally — draw a plain head that matches their rows, while the
+  bag, the ledger and every other scrolling table keep the pinned treatment unchanged.
+
+- 2ab64c9: Add the Forge tab, as a planner.
+
+  **A new tab, between Inventory and Account.** The nav now reads Live · Farm · Inventory · Forge ·
+  Account · Settings. Pick a hero and the bag narrows to what that hero wears; pick a piece and the
+  screen shows what it becomes at a chosen target — every roll on it now and at the target, scaled by
+  the forge's own flat multiplier, so the figures are exact rather than an average of where a climb
+  might stop.
+
+  **What the climb should cost, from the wiki's own cost table.** For a piece and a target the plan
+  panel prints the expected number of rolls, the expected gold, and what a bad run costs at the 90th
+  percentile — all from the forge rules and the roll costs the wiki publishes, carried exactly. The
+  ladder above the facts shows every risky rung with its odds and where a miss lands, and one line
+  under them says what a failed roll does, including the one rung that wipes a piece to nothing.
+
+  **What one more level buys.** The bag table has a `+1 buys` column: the DPS its wearer gains from one
+  more forge level on that piece, measured the way the Farm board measures every hero, with a
+  tooltip giving the next roll's cost and chance. The plan panel prints the same figure for the
+  chosen target. A piece nobody wears shows a dash, never a guess, and so does an account the board
+  itself would withhold.
+
+  **The button waits for the next change.** Forging is not wired up yet: the Forge button is always
+  disabled and the line under it says why — the piece is already at the top, the account has no
+  server behind it, the Settings switch is off, or simply that forging arrives in the next release.
+  The app now tells the screen where its account came from, which is what lets a fixture account be
+  refused without a switch ever being consulted.
+
+- 06c9b42: **A table's row headings now read as content rather than as headings.** The base stylesheet
+  dressed every `<th>` as a column heading — 10px, uppercase, letter-spaced, muted, over a full
+  hairline — including the ones that name a row rather than a column. Beside a cell at the table's
+  12px body type that put two line heights in one row, which is what tilted the Forge item panel's
+  stat figures off their labels. Only the headings that sit over a column get that type now; a row
+  heading is drawn like the cells it belongs to.
+
+  It moves the item name in both apps' bags, the stat names in every gain/loss table on the team
+  plan and the farm respec card, the Forge item panel's stat names, the Forge run ledger's _When_
+  column and the running tally's rung column. Tables that already spelled out their own heading
+  type — the planner's gear totals row — are unchanged.
+
 ## 0.10.0
 
 ### Minor Changes
