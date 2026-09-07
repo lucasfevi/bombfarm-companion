@@ -164,17 +164,27 @@ type Column = {
   align: ColumnAlign;
   /** `null` for the columns nothing can be ordered by. */
   sortKey: InventorySortKey | null;
+  width: string | undefined;
 };
 
-const COLUMN_SHAPE: Record<InventoryTableColumnId, { align: ColumnAlign; sortKey: InventorySortKey | null }> = {
-  name: { align: 'left', sortKey: 'name' },
-  slot: { align: 'left', sortKey: 'slot' },
-  forge: { align: 'right', sortKey: 'forge' },
-  count: { align: 'right', sortKey: 'count' },
-  value: { align: 'right', sortKey: 'value' },
-  market: { align: 'right', sortKey: 'market' },
-  hero: { align: 'left', sortKey: null },
-  actions: { align: 'right', sortKey: null },
+/**
+ * Each column's alignment, what it sorts by, and how wide it stands. The width matters because
+ * the table is windowed: with an auto layout the browser measures whichever slice of rows happens
+ * to be mounted, so the columns shift under the reader as they scroll. A fixed layout with these
+ * widths measures nothing, and `undefined` — the item name — takes whatever is left over.
+ */
+const COLUMN_SHAPE: Record<
+  InventoryTableColumnId,
+  { align: ColumnAlign; sortKey: InventorySortKey | null; width: string | undefined }
+> = {
+  name: { align: 'left', sortKey: 'name', width: undefined },
+  slot: { align: 'left', sortKey: 'slot', width: '8rem' },
+  forge: { align: 'right', sortKey: 'forge', width: '5.5rem' },
+  count: { align: 'right', sortKey: 'count', width: '5rem' },
+  value: { align: 'right', sortKey: 'value', width: '8rem' },
+  market: { align: 'right', sortKey: 'market', width: '11rem' },
+  hero: { align: 'left', sortKey: null, width: '13rem' },
+  actions: { align: 'right', sortKey: null, width: '3.5rem' },
 };
 
 function columnsFor(
@@ -561,8 +571,13 @@ export function InventoryTable({
           onScroll={(event: UIEvent<HTMLDivElement>) => { setScrollTop(event.currentTarget.scrollTop); }}
           data-testid="inventory-table-scroll"
         >
-          <DataTable.Table aria-rowcount={rowCount}>
+          <DataTable.Table aria-rowcount={rowCount} className="table-fixed">
             <DataTable.Caption>{labels.caption}</DataTable.Caption>
+            <colgroup>
+              {columns.map((column) => (
+                <col key={column.id} data-column={column.id} style={column.width ? { width: column.width } : undefined} />
+              ))}
+            </colgroup>
             <DataTable.Head>
               <DataTable.Row>
                 {columns.map((column) =>
