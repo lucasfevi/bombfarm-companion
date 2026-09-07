@@ -65,8 +65,8 @@ export function readAdvisorDepTuple(state: PlannerStore): readonly unknown[] {
     state.houseCycleSecsHouseIdx,
     state.houseCycleSecsLevel,
     // The phase the player picked in the phases explorer, or the account's own farm phase while
-    // there is no pick — never `state.phase` directly, which no shipped code path moves and which
-    // left this pipeline answering for a different stage than the explorer's own panel.
+    // there is no pick. Reading the import-time field directly left this pipeline answering for a
+    // different stage than the explorer's own per-hero panel.
     selectCombatPhase(state),
     selectCombatMitigationPct(state),
     // state.rankMode is deliberately NOT a dep here: computeAdvisorPipeline no longer reads
