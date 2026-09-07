@@ -255,4 +255,9 @@ export {
 } from './ability-card.recipe';
 export { selectFieldRecipe, type SelectSize } from './select.recipe';
 export { switchRootRecipe, type SwitchSize } from './switch.recipe';
-export { accordionRecipe, type AccordionVariant } from './accordion.recipe';
+export {
+  accordionRecipe,
+  accordionLedgerBodyClass,
+  accordionStackClass,
+  type AccordionVariant,
+} from './accordion.recipe';

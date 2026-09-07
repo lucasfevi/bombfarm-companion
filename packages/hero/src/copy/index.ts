@@ -1,6 +1,10 @@
 /** `@bombfarm/hero/copy` — user-facing strings for the hero and roster views. */
 import { heroEn } from './en';
 import { heroPtBR } from './pt-BR';
+import { gearPanelEn, statPanelEn } from './panel-en';
+import { gearPanelPtBR, statPanelPtBR } from './panel-pt-BR';
+import type { GearPanelCopy } from './gear-panel-copy';
+import type { StatPanelCopy } from './stat-panel-copy';
 
 export { sub } from './format';
 export type { RosterCopy } from './roster-copy';
@@ -9,6 +13,8 @@ export type { StatPanelCopy } from './stat-panel-copy';
 export type { GearPanelCopy } from './gear-panel-copy';
 export { heroEn } from './en';
 export { heroPtBR } from './pt-BR';
+export { gearPanelEn, statPanelEn } from './panel-en';
+export { gearPanelPtBR, statPanelPtBR } from './panel-pt-BR';
 
 /** The two languages these screens ship in. Spelled as the literal union `@bombfarm/domain`'s
  *  own formatters declare, so the two stay structurally identical. */
@@ -35,4 +41,22 @@ export const HERO_STRINGS: Record<Lang, HeroCopy> = { en: heroEn, pt: heroPtBR }
 
 export function heroCopyFor(lang: Lang): HeroCopy {
   return HERO_STRINGS[lang];
+}
+
+/**
+ * Defaults for the two contracts a host may instead satisfy from its own dictionary.
+ *
+ * These two annotations are what type-check `panel-en.ts`: its objects are `as const` and
+ * unannotated in their own file, so a member missing there is reported HERE, naming it. The
+ * Portuguese objects carry their own annotation and fail in their own file.
+ */
+export const STAT_PANEL_STRINGS: Record<Lang, StatPanelCopy> = { en: statPanelEn, pt: statPanelPtBR };
+export const GEAR_PANEL_STRINGS: Record<Lang, GearPanelCopy> = { en: gearPanelEn, pt: gearPanelPtBR };
+
+export function statPanelCopyFor(lang: Lang): StatPanelCopy {
+  return STAT_PANEL_STRINGS[lang];
+}
+
+export function gearPanelCopyFor(lang: Lang): GearPanelCopy {
+  return GEAR_PANEL_STRINGS[lang];
 }

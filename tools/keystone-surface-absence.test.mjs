@@ -173,6 +173,10 @@ const ALLOWLIST = [
  * on another) fails by name. `packages/ui` has zero lines and needs no entry.
  */
 const CRIT_DMG_MULT_MAP = {
+  // New file for this token: the Heroes screen assembles `PipelineFacts` for the per-statistic
+  // breakdown, and the kept combat pass-through is one of its rows. Read off the pipeline result,
+  // never off a tree state.
+  'apps/desktop/renderer/app/heroes/heroes-view.tsx': [414],
   // The shared roster builder's own account fixture, same kind as the two farm entries below: a
   // raw save-shaped skills block handed to the parser, not a field the app reads.
   'apps/desktop/renderer/lib/account/account-roster.test.ts': [39],
@@ -264,7 +268,7 @@ const CRIT_DMG_MULT_MAP = {
   // Count and kind unchanged.
   // +3 more (line numbers only, last four): the note on the farm snapshot entry above, plus this
   // one. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 310, 315, 325, 334],
+  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 314, 319, 329, 338],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 

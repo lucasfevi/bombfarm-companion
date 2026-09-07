@@ -70,6 +70,10 @@ import * as GameArt from '@bombfarm/game-art';
 // barRowClass / rankModeSelectClass (2026-09-07): promoted for the same reason again. They lay out
 // a labelled gain bar and size the mode select beside a panel heading, and the next-point ranking
 // panel that draws them is `@bombfarm/hero`'s now.
+// accordionStackClass / accordionLedgerBodyClass (2026-09-07): promoted from the
+// `accordion.recipe` subpath, beside `accordionRecipe` which was already here. They space a
+// stack of accordion rows and pad an opened one's body — the per-statistic breakdown the desktop
+// Heroes screen now draws needs both, and that app imports the barrel, not deep paths.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -152,6 +156,8 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'abilityChipRecipe',
   'accountStatListClass',
   'accordionRecipe',
+  'accordionLedgerBodyClass',
+  'accordionStackClass',
   'barRecipe',
   'barRowClass',
   'breakpoints',

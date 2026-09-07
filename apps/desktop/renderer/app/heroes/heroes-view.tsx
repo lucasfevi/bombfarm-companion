@@ -27,20 +27,36 @@ import {
 } from '@bombfarm/ui';
 import { HeroIdentityChip } from '@bombfarm/game-art';
 import {
+  GearTab,
   HeroAbilitiesPanel,
   HeroCopyProvider,
   HeroIdentityRollPanel,
   HeroPickerDialogView,
+  NextPointRanking,
   PhasesHeroPanel,
+  PointsTable,
+  SheetTable,
 } from '@bombfarm/hero/components';
 import { abilityGainFor, type AbilityGain } from '@bombfarm/domain/ability-gain';
+import type { AdvisorPipelineResult } from '@bombfarm/domain/advisor-pipeline';
 import { statLabel } from '@bombfarm/domain/game-labels';
+import type { RankMode } from '@bombfarm/domain/model';
 import { pipelineForHero } from '@bombfarm/domain/roster-dps';
+import type { PipelineFacts } from '@bombfarm/domain/stat-breakdown';
 import type { SheetKey } from '@bombfarm/domain/planner-constants';
-import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
 import { useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
-import { farmScreenCopy, rosterCopyFrom, useFarmCopy, useHeroDetailCopy } from '../screen-copy';
+import {
+  farmScreenCopy,
+  rosterCopyFrom,
+  useFarmCopy,
+  useGearPanelCopy,
+  useHeroDetailCopy,
+  useStatPanelCopy,
+} from '../screen-copy';
+import { heroNextPointRanking } from './hero-detail-panels';
+import { HeroEffectiveStats } from './hero-effective-stats';
 import { heroesScreenModel, type HeroesScreenModel } from './heroes-screen-model';
 import { rollQualityText, type RosterHeroRow } from './hero-roster-order';
 import { resolveSelectedHeroId, selectedRow } from './hero-selection';
@@ -127,6 +143,9 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   // the Farm selection again. It outlives a hero switch on purpose — comparing two heroes at one
   // phase is the reason to override at all.
   const [overridePhase, setOverridePhase] = useState<number | null>(null);
+  // Which target the next-point ranking is read against. View-local and stored nowhere, like the
+  // phase override above — it changes what this screen prints, never anything on the account.
+  const [rankMode, setRankMode] = useState<RankMode>('dps');
   const farmPhase = useFarmSelectedPhase();
 
   const { rows, roster } = model;
@@ -141,6 +160,22 @@ function HeroesRoster({ model }: { model: RosterModel }) {
     [farmPhase, overridePhase],
   );
   const figures = useMemo(() => heroFigures(phaseReading, roster), [phaseReading, roster]);
+
+  // One pipeline run for the whole detail pane. Every panel below the identity panel reads off it
+  // — combat, the ranking, the stat sheet, the items and the breakdown — so running it once here
+  // is what keeps a hero switch from costing five identical runs.
+  const combat = useMemo(
+    () =>
+      figures.kind === 'at'
+        ? pipelineForHero(
+            active.hero,
+            figures.inputs.account,
+            figures.inputs.phase,
+            figures.inputs.mitigationPct,
+          )
+        : null,
+    [active.hero, figures],
+  );
 
   const gainsCache = useRef(createAbilityGainCache());
   const abilityGains =
@@ -212,8 +247,24 @@ function HeroesRoster({ model }: { model: RosterModel }) {
             onOverridePhase={setOverridePhase}
             onClearOverride={onClearOverride}
           />
-          <HeroCombat heroes={heroes} hero={active.hero} figures={figures} onSelectHero={onSelectHero} />
+          <HeroCombat
+            heroes={heroes}
+            hero={active.hero}
+            combat={combat}
+            figures={figures}
+            onSelectHero={onSelectHero}
+          />
           <HeroAbilitiesPanel hero={active.hero} abilityGains={abilityGains} t={heroCopy} lang={lang} />
+          {figures.kind === 'at' && combat && (
+            <HeroReference
+              hero={active.hero}
+              account={figures.inputs.account}
+              combat={combat}
+              rankMode={rankMode}
+              onRankMode={setRankMode}
+              formatNumber={boundFormatNumber}
+            />
+          )}
         </div>
       </HeroCopyProvider>
       <HeroPickerDialogView
@@ -271,22 +322,17 @@ function PhaseControl({
 function HeroCombat({
   heroes,
   hero,
+  combat,
   figures,
   onSelectHero,
 }: {
   heroes: HeroRecord[];
   hero: HeroRecord;
+  combat: AdvisorPipelineResult | null;
   figures: HeroFigures;
   onSelectHero: (hero: HeroRecord) => void;
 }) {
   const t = useCopy();
-  const combat = useMemo(
-    () =>
-      figures.kind === 'at'
-        ? pipelineForHero(hero, figures.inputs.account, figures.inputs.phase, figures.inputs.mitigationPct)
-        : null,
-    [hero, figures],
-  );
 
   switch (figures.kind) {
     case 'pending':
@@ -314,6 +360,117 @@ function HeroCombat({
         />
       );
   }
+}
+
+/**
+ * The reference half of the detail: what to spend the next point on, then the tables the answer is
+ * read out of — points placed, the stat sheet they build, the items feeding it, and finally how
+ * each combat figure above was arrived at.
+ *
+ * Every one of these panels takes its editing callbacks as optional props, and this screen passes
+ * none. That is the whole read-only posture: no stepper, no Reset, no Optimize build, no slot
+ * editor, and a loadout comparison with no control that changes either loadout.
+ * `heroes-read-only.test.ts` holds it there.
+ */
+function HeroReference({
+  hero,
+  account,
+  combat,
+  rankMode,
+  onRankMode,
+  formatNumber,
+}: {
+  hero: HeroRecord;
+  account: AccountShared;
+  combat: AdvisorPipelineResult;
+  rankMode: RankMode;
+  onRankMode: (next: RankMode) => void;
+  formatNumber: (n: number, d?: number) => string;
+}) {
+  const { lang } = useLocale();
+  const statCopy = useStatPanelCopy();
+  const gearCopy = useGearPanelCopy();
+
+  const ranking = useMemo(
+    () => heroNextPointRanking(rankMode, combat.ranking),
+    [rankMode, combat],
+  );
+
+  const facts: PipelineFacts = useMemo(
+    () => ({
+      geared: hero.gearedOverride,
+      adjusted: combat.adjusted,
+      pts: hero.pts,
+      delta: combat.pointDelta,
+      effective: combat.effective,
+      mods: combat.mods,
+      sheetOther: combat.sheetOther,
+      naked: hero.naked,
+      level: hero.level,
+      stars: hero.stars,
+      attackMult: combat.attackMult,
+      energyMult: combat.energyMult,
+      speedMult: combat.speedMult,
+      critDmgMult: combat.critDmgMult,
+      teamCritFlat: combat.teamCritFlat,
+      treeSpeed: account.tree.speed,
+      treeCritChance: account.tree.critChance,
+      treeCritDmg: account.tree.critDmg,
+      treeEnergy: account.tree.energy,
+      treeLuckFlatPct: combat.treeSheet.luckFlatPct,
+      context: combat.context,
+      dmgMult: combat.dmgMult,
+      treeDanoTotal: account.tree.danoTotal,
+      // The planner's Math-check override, which this app has no surface for.
+      extraDmgPct: 0,
+      active: combat.active,
+      dps: combat.dps,
+      uptime: combat.uptime,
+      rest: combat.rest,
+    }),
+    [hero, account, combat],
+  );
+
+  return (
+    <>
+      <NextPointRanking
+        t={statCopy}
+        lang={lang}
+        ranking={ranking}
+        rankMode={rankMode}
+        onRankMode={onRankMode}
+      />
+      <PointsTable
+        t={statCopy}
+        lang={lang}
+        level={hero.level}
+        pts={hero.pts}
+        pipeline={combat}
+        heroBattleAllowed={hero.battleAllowed !== false}
+      />
+      <SheetTable
+        t={statCopy}
+        lang={lang}
+        input={{
+          birth: hero.birth,
+          level: hero.level,
+          stars: hero.stars,
+          sheetOther: combat.sheetOther,
+          loadout: hero.loadout,
+          pts: hero.pts,
+          tree: combat.treeSheet,
+        }}
+      />
+      <GearTab
+        t={gearCopy}
+        lang={lang}
+        loadout={hero.loadout}
+        altLoadout={hero.altLoadout}
+        pipeline={combat}
+      />
+      <HeroEffectiveStats t={statCopy} facts={facts} formatNumber={formatNumber} />
+    </>
+  );
 }
 
 function RosterRail({

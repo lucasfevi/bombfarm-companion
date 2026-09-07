@@ -12,8 +12,20 @@
  * with a second supplier in play.
  */
 import { farmCopyFor, type FarmCopy, type FarmScreenCopy } from '@bombfarm/farm/copy';
-import { heroCopyFor, type HeroCopy, type RosterCopy } from '@bombfarm/hero/copy';
+import {
+  gearPanelCopyFor,
+  heroCopyFor,
+  statPanelCopyFor,
+  type GearPanelCopy,
+  type HeroCopy,
+  type RosterCopy,
+  type StatPanelCopy,
+} from '@bombfarm/hero/copy';
 import { useLocale, type Copy } from '../lib/copy';
+
+/** Re-exported so a screen naming one of these contracts in a prop type does not have to import
+ *  a package dictionary module of its own — the one-module rule above covers types too. */
+export type { GearPanelCopy, StatPanelCopy };
 
 /**
  * Written out key by key rather than spread from the app dictionary. A spread would let any
@@ -61,6 +73,21 @@ export function useFarmCopy(): FarmCopy {
  */
 export function useHeroDetailCopy(): HeroCopy {
   return heroCopyFor(useLocale().lang);
+}
+
+/**
+ * The sheet, points, next-point, breakdown and Items vocabulary. Both are HOST-supplied contracts
+ * — the web planner satisfies them from its own dictionary — and this app takes the package's own
+ * defaults instead, because it prints not one of those 125 strings anywhere else. Satisfying them
+ * from `lib/copy` would mean two owners for every one of them and no way to keep the two hosts
+ * saying the same thing.
+ */
+export function useStatPanelCopy(): StatPanelCopy {
+  return statPanelCopyFor(useLocale().lang);
+}
+
+export function useGearPanelCopy(): GearPanelCopy {
+  return gearPanelCopyFor(useLocale().lang);
 }
 
 /** The board's dictionary plus this app's hero-identity vocabulary — what the phase explorer

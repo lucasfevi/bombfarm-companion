@@ -616,6 +616,11 @@ export const en = {
   heroesPhaseUseFarm: 'Back to your Farm phase',
   heroesPhaseUnknownTitle: 'That is not a phase this app knows',
   heroesPhaseUnknownDescription: 'Pick a phase the game actually has, and the numbers come back.',
+  heroesEffectiveTitle: 'Effective stats',
+  heroesEffectiveTip: 'Includes gear, points, skill tree, abilities and team buffs.',
+  heroesEffectiveGroupSheet: 'Sheet stats',
+  heroesEffectiveGroupDerived: 'Derived combat',
+  heroesEffectiveTriggerAria: 'Show breakdown of {stat}',
 
   // hero*/gear*/import*/roster*/switch*/mode*/rank* — hero-identity vocabulary the farm screen's
   // roster surfaces read as one structural contract. Named exactly as that contract names them.
