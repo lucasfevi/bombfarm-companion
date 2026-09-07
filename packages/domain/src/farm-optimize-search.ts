@@ -7,10 +7,15 @@
  */
 import { generateMoves, REOPT_FULL_MAX_SWEEPS } from './points-reopt-search';
 import { clampPtsToBudget, REOPT_KEYS } from './points-reopt-core';
-import { squadFactsFromBases, type HeroFarmBasis, type SquadFarmFacts, type FarmRateOptions } from './farm-rate';
+import {
+  squadFactsFromBases,
+  type HeroFarmBasis,
+  type SquadFarmAccount,
+  type SquadFarmFacts,
+  type FarmRateOptions,
+} from './farm-rate';
 import { bestFarmPhase, type FarmObjectiveScales, type FarmPhasePick, type ResolvedFarmObjective } from './farm-optimize-objective';
 import type { SheetKey } from './planner-constants';
-import type { AccountShared } from './shims/storage';
 
 const EPS_REL = 1e-9;
 
@@ -47,7 +52,7 @@ export type FarmCandidate = {
 export function evaluateAssignment(
   bases: readonly HeroFarmBasis[],
   assignment: PtsAssignment | null,
-  account: AccountShared,
+  account: SquadFarmAccount,
   objective: ResolvedFarmObjective,
   scales: FarmObjectiveScales,
   phaseOptions: FarmRateOptions & { phaseStride?: number },
@@ -289,7 +294,7 @@ export function runFarmSearch(
   bases: readonly HeroFarmBasis[],
   searchableIds: readonly string[],
   budgetById: ReadonlyMap<string, number>,
-  account: AccountShared,
+  account: SquadFarmAccount,
   objective: ResolvedFarmObjective,
   scales: FarmObjectiveScales,
   phaseOptions: FarmRateOptions,

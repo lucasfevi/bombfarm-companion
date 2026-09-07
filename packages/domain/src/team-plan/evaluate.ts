@@ -4,7 +4,13 @@ import { computeRosterAuras } from './auras';
 import { evaluateFarmObjective, screenFarmObjective } from './farm-objective';
 import { effectiveUpgrade } from './pool';
 import { createScoreMemo, scoreHeroLoadout } from './score';
-import type { EvaluateRosterInput, HeroScore, RosterEvaluation, RosterRegime } from './types';
+import type {
+  EvaluateRosterInput,
+  HeroPlanContext,
+  HeroScore,
+  RosterEvaluation,
+  RosterRegime,
+} from './types';
 
 export const AURA_FIXED_POINT_ROUNDS = 4;
 const DUTY_EPSILON = 1e-9;
@@ -20,6 +26,24 @@ export function loadoutForScoring(loadout: Loadout, forgeFloor: number): Loadout
       ...item,
       upgrade: effectiveUpgrade(item.upgrade, forgeFloor),
     };
+  }
+  return out;
+}
+
+/**
+ * The loadouts a roster evaluation actually scores: optimize-scope heroes only, each at the run's
+ * forge floor. Shared with the farm point pass, which must search the very build the evaluation
+ * that accepts or rejects it will price.
+ */
+export function scoringLoadoutsFor(
+  contexts: readonly HeroPlanContext[],
+  loadoutsByHeroId: Readonly<Record<string, Loadout>>,
+  forgeFloor: number,
+): Record<string, Loadout> {
+  const out: Record<string, Loadout> = {};
+  for (const ctx of contexts) {
+    if (ctx.scope !== 'optimize') continue;
+    out[ctx.heroId] = loadoutForScoring(loadoutsByHeroId[ctx.heroId] ?? {}, forgeFloor);
   }
   return out;
 }
@@ -129,13 +153,11 @@ export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
   // Loop-invariant: the forge-floored loadout depends only on the input loadout and the forge
   // floor, neither of which the fixed-point rounds touch. Building it inside the round loop
   // rebuilt every hero's loadout four times per evaluation for nothing.
-  const scoringLoadouts: Record<string, Loadout> = {};
-  for (const ctx of optimizeContexts) {
-    scoringLoadouts[ctx.heroId] = loadoutForScoring(
-      input.loadoutsByHeroId[ctx.heroId] ?? {},
-      input.forgeFloor,
-    );
-  }
+  const scoringLoadouts = scoringLoadoutsFor(
+    optimizeContexts,
+    input.loadoutsByHeroId,
+    input.forgeFloor,
+  );
   const duties: Record<string, number> = {};
   let perHero: Record<string, HeroScore> = {};
   let sumDuty = 0;

@@ -30,6 +30,7 @@ import {
   computeSquadFarmFacts,
   heroFactsFromBasis,
   heroFarmBasisFromParts,
+  type HeroFarmBasis,
   type HeroFarmFacts,
   type SquadFarmAccount,
 } from '../farm-rate';
@@ -65,8 +66,8 @@ const FARM_BASIS_PHASE = 1;
 const FARM_BASIS_MITIGATION_PCT = 0;
 
 /** Gold per hour, so `farmObjectiveValue` reads `row.goldPerHour` and the scales go unread. */
-const GOLD: ResolvedFarmObjective = resolveFarmObjective({ kind: 'gold' });
-const UNUSED_SCALES: FarmObjectiveScales = { goldScale: 1, chestScale: 1 };
+export const FARM_GOLD_OBJECTIVE: ResolvedFarmObjective = resolveFarmObjective({ kind: 'gold' });
+export const FARM_UNREAD_SCALES: FarmObjectiveScales = { goldScale: 1, chestScale: 1 };
 
 export type FarmObjectiveResult = {
   objective: number;
@@ -197,22 +198,24 @@ function loadoutFor(
 }
 
 /**
- * One hero's farm facts for a candidate loadout and point vector.
+ * One hero's farm basis for a candidate loadout and point vector.
  *
  * The basis is handed the scorer's own sheet as its base point AND the same `pts` it was scored
- * at, so `heroFactsFromBasis`'s affine reconstruction reduces to `effective[key] + 0 × delta` —
- * the sheet is used verbatim, not re-derived from a different anchor.
+ * at, so `heroFactsFromBasis`'s affine reconstruction at that vector reduces to
+ * `effective[key] + 0 × delta` — the sheet is used verbatim, not re-derived from a different
+ * anchor. At any OTHER vector the reconstruction is exact rather than approximate, which is what
+ * lets a point search read candidates off this basis without re-entering the scorer.
  */
-function factsForHero(
+function basisForHero(
   objective: TeamPlanFarmObjective,
   frozen: FrozenHeroFarmTerms,
   loadout: Loadout,
   pts: PointAlloc,
   memo: ScoreMemo | undefined,
-): HeroFarmFacts {
+): HeroFarmBasis {
   const ctx = frozen.ctx;
   const score = scoreHeroLoadout(ctx, loadout, pts, objective.auras, objective.farm, memo);
-  const basis = heroFarmBasisFromParts({
+  return heroFarmBasisFromParts({
     heroId: ctx.heroId,
     heroName: ctx.name,
     level: ctx.level,
@@ -225,7 +228,42 @@ function factsForHero(
     treeLuckFlatPct: objective.treeLuckFlatPct,
     abilities: ctx.abilities,
   });
-  return heroFactsFromBasis(basis, pts);
+}
+
+function factsForHero(
+  objective: TeamPlanFarmObjective,
+  frozen: FrozenHeroFarmTerms,
+  loadout: Loadout,
+  pts: PointAlloc,
+  memo: ScoreMemo | undefined,
+): HeroFarmFacts {
+  return heroFactsFromBasis(basisForHero(objective, frozen, loadout, pts, memo), pts);
+}
+
+/**
+ * The squad's farm bases for a candidate build, in the same order {@link evaluateFarmObjective}
+ * prices them.
+ *
+ * The point pass needs the bases and not the facts: a fact is one vector's answer, whereas a basis
+ * scores every vector the search will try. `heroFactsFromBasis(basis, basis.pts)` recovers exactly
+ * what {@link evaluateFarmObjective} would have produced for this same build, so the two entry
+ * points cannot describe different squads.
+ */
+export function farmBasesForBuild(
+  objective: TeamPlanFarmObjective,
+  loadoutByHeroId: Readonly<Record<string, Loadout>>,
+  ptsByHeroId: Readonly<Record<string, PointAlloc>>,
+  memo: ScoreMemo | undefined,
+): HeroFarmBasis[] {
+  return objective.heroes.map((frozen) =>
+    basisForHero(
+      objective,
+      frozen,
+      loadoutFor(frozen, loadoutByHeroId),
+      ptsByHeroId[frozen.ctx.heroId] ?? frozen.ctx.pts,
+      memo,
+    ),
+  );
 }
 
 function valueAt(
@@ -235,7 +273,7 @@ function valueAt(
 ): number {
   const row = computeFarmRateRow(phase, computeSquadFarmFacts(facts, objective.account), objective.phaseOptions);
   if (row === null || row.infeasible) return 0;
-  const value = farmObjectiveValue(row, GOLD, UNUSED_SCALES);
+  const value = farmObjectiveValue(row, FARM_GOLD_OBJECTIVE, FARM_UNREAD_SCALES);
   return Number.isFinite(value) ? value : 0;
 }
 
@@ -263,7 +301,7 @@ export function evaluateFarmObjective(
   );
 
   const squad = computeSquadFarmFacts(facts, objective.account);
-  const pick = bestFarmPhase(squad, GOLD, UNUSED_SCALES, objective.phaseOptions);
+  const pick = bestFarmPhase(squad, FARM_GOLD_OBJECTIVE, FARM_UNREAD_SCALES, objective.phaseOptions);
   return { objective: pick ? pick.value : 0, phase: pick ? pick.phase : null, facts };
 }
 

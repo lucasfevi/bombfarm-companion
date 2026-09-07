@@ -671,7 +671,7 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
 export function squadFactsFromBases(
   bases: readonly HeroFarmBasis[],
   ptsByHeroId: ReadonlyMap<string, Record<SheetKey, number>> | null,
-  account: AccountShared,
+  account: SquadFarmAccount,
 ): SquadFarmFacts {
   const heroFacts = bases.map((basis) => heroFactsFromBasis(basis, ptsByHeroId?.get(basis.heroId) ?? basis.pts));
   return computeSquadFarmFacts(heroFacts, account);

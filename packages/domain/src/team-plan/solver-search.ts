@@ -2,7 +2,8 @@ import type { InventoryItem } from '../inventory';
 import type { Loadout } from '../gear/types';
 import { SLOTS } from '../gear/catalog';
 import { findGateCandidate, optimizeBuild } from '../points-reopt';
-import { evaluateRoster, screenRosterObjective } from './evaluate';
+import { evaluateRoster, screenRosterObjective, scoringLoadoutsFor } from './evaluate';
+import { farmPointsPass, FARM_POINTS_PASS_MAX_EVALUATIONS } from './farm-points';
 import {
   applyMove,
   cloneAssignment,
@@ -377,6 +378,39 @@ function pointsPass(
   return nextPts;
 }
 
+/**
+ * The farm objective's stat-point pass, charged to the plan's own budget.
+ *
+ * `finalTier` has no counterpart here — see `farm-points.ts` for why the farm search has one tier
+ * where the damage pass has two — so both call sites run the same solve, over whatever gear and
+ * points the round left behind.
+ */
+function farmPointsFor(
+  input: SeedRunnerInput,
+  farmObjective: TeamPlanFarmObjective,
+  assignment: AssignmentState,
+  ptsByHeroId: Record<string, import('../gear/types').PointAlloc>,
+): Record<string, import('../gear/types').PointAlloc> {
+  const budget = input.budget;
+  const result = farmPointsPass({
+    objective: farmObjective,
+    loadoutByHeroId: scoringLoadoutsFor(
+      input.contexts,
+      loadoutsFromAssignment(assignment, input.itemById),
+      input.gearInput.forgeFloor,
+    ),
+    ptsByHeroId,
+    memo: budget.scoreMemo,
+    evaluationBudget: Math.max(
+      0,
+      Math.min(FARM_POINTS_PASS_MAX_EVALUATIONS, budget.maxEvaluations - budget.evaluations),
+    ),
+  });
+  budget.evaluations += result.evaluations;
+  if (budget.evaluations >= budget.maxEvaluations) budget.exhausted = true;
+  return result.ptsByHeroId;
+}
+
 export type SeedRunnerInput = {
   name: string;
   assignment: AssignmentState;
@@ -426,7 +460,9 @@ export function runSeedSearch(input: SeedRunnerInput): SeedResult {
     evaluation = gearResult.evaluation;
     const prePointsObjective = evaluation.objective;
     const prePointsVector = ptsByHeroId;
-    const nextPts = pointsPass(evaluation, input.contexts, ptsByHeroId, false);
+    const nextPts = input.farmObjective
+      ? farmPointsFor(input, input.farmObjective, assignment, ptsByHeroId)
+      : pointsPass(evaluation, input.contexts, ptsByHeroId, false);
     const nextEval = evaluateAssignment(
       assignment,
       input.contexts,
@@ -436,9 +472,10 @@ export function runSeedSearch(input: SeedRunnerInput): SeedResult {
       input.budget,
       input.farmObjective,
     );
-    // Guard: pointsPass is per-hero and can lower the ROSTER objective (saturated fair-share).
-    // The old code let this degraded vector survive whenever the round loop broke right after
-    // on IMPROVEMENT_EPSILON — revert both the vector and the evaluation when that happens.
+    // Guard: a point pass can lower the ROSTER objective — the damage pass because it is per-hero
+    // under saturated fair-share, the farm pass because its search screens the phase argmax where
+    // this evaluation sweeps it. The old code let a degraded vector survive whenever the round
+    // loop broke right after on IMPROVEMENT_EPSILON — revert vector and evaluation both.
     if (nextEval.objective + EPS >= prePointsObjective) {
       ptsByHeroId = nextPts;
       evaluation = nextEval;
@@ -454,7 +491,9 @@ export function runSeedSearch(input: SeedRunnerInput): SeedResult {
 
   const ptsBeforeFinal = ptsByHeroId;
   const evalBeforeFinal = evaluation;
-  ptsByHeroId = pointsPass(evaluation, input.contexts, ptsByHeroId, true);
+  ptsByHeroId = input.farmObjective
+    ? farmPointsFor(input, input.farmObjective, assignment, ptsByHeroId)
+    : pointsPass(evaluation, input.contexts, ptsByHeroId, true);
   const afterFinalPts = evaluateAssignment(
     assignment,
     input.contexts,
@@ -464,8 +503,8 @@ export function runSeedSearch(input: SeedRunnerInput): SeedResult {
     input.budget,
     input.farmObjective,
   );
-  // optimizeBuild is per-hero; reject a final pass that lowers roster objective
-  // (e.g. under saturated fair-share) so we never recommend a DPS-down respec.
+  // Same guard as the round loop's, on the last pass: never recommend a respec that lowers the
+  // very objective it was chosen for.
   if (afterFinalPts.objective + 1e-9 >= evalBeforeFinal.objective) {
     evaluation = afterFinalPts;
   } else {
