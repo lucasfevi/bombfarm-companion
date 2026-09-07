@@ -132,6 +132,22 @@ describe('abilityGainFor — the model responds to the abilities it is handed', 
   });
 });
 
+/**
+ * Sustained DPS does not reach every effect the model carries: Contra o Relógio's attack bonus is
+ * consumed by the timed-phase table alone. Pricing it at 0.0% would read to a player who can see
+ * "+2% Attack in timed phases" as the ability doing nothing, which is the reading the state union
+ * exists to prevent — so an identical re-run is named, not reported as a gain.
+ */
+describe('abilityGainFor — effects this measure does not reach', () => {
+  it('names an unmeasured effect instead of pricing it at zero', () => {
+    const hero = withAbilityLevels(heroByName('IDK'), { contra_relogio: 3 });
+    const bumped = withAbilityLevels(hero, { contra_relogio: 4 });
+
+    expect(dpsOf(bumped)).toBe(dpsOf(hero));
+    expect(stateOf(hero, 'contra_relogio')).toEqual({ kind: 'notMeasured' });
+  });
+});
+
 describe('abilityGainFor — team auras', () => {
   const carrier = withAbilityLevels(heroByName('IDK'), { grito_guerra: 5 });
 

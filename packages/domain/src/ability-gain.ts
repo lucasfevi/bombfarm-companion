@@ -47,6 +47,17 @@ export type AbilityGainState =
   | { kind: 'notModelled' }
   /** A team aura whose field-wide ceiling the roster total has already reached. */
   | { kind: 'auraAtCeiling' }
+  /**
+   * The model carries this ability's effect, a next level is buyable, and re-running the model
+   * with it returned an IDENTICAL figure — so the effect lands somewhere sustained DPS does not
+   * measure. `contra_relogio`'s attack bonus reaches only the timed-phase table, and
+   * `marcha_acelerada`'s team speed is discarded by the serial cycle model, which prices cadence
+   * as `1 / (fuse + walk delay)`. Both are worth something a player can read in the ability text,
+   * so reporting `gainPct: 0` for them would read as "this ability does nothing" — the one thing
+   * a four-state union exists to prevent. Derived from the run rather than from a list of ability
+   * ids, so an ability that lands here later needs no edit.
+   */
+  | { kind: 'notMeasured' }
   | { kind: 'unavailable'; reason: AbilityGainUnavailableReason };
 
 export type AbilityGain = {
@@ -88,8 +99,9 @@ function planBump(entry: AbilityEntry, hero: HeroRecord, account: AccountShared)
   return { kind: 'price', hero: { ...hero, abilities }, account: { ...account, teamBuffs } };
 }
 
-function gainPctOf(bumpedDps: number, baselineDps: number): number {
-  return baselineDps > 0 ? (bumpedDps / baselineDps - 1) * 100 : 0;
+function pricedState(bumpedDps: number, baselineDps: number): AbilityGainState {
+  if (bumpedDps === baselineDps) return { kind: 'notMeasured' };
+  return { kind: 'gain', gainPct: baselineDps > 0 ? (bumpedDps / baselineDps - 1) * 100 : 0 };
 }
 
 /**
@@ -124,12 +136,6 @@ export function abilityGainFor(
     state:
       bump.kind === 'settled'
         ? bump.state
-        : {
-            kind: 'gain',
-            gainPct: gainPctOf(
-              pipelineForHero(bump.hero, bump.account, phase, mitigationPct).dps,
-              baselineDps,
-            ),
-          },
+        : pricedState(pipelineForHero(bump.hero, bump.account, phase, mitigationPct).dps, baselineDps),
   }));
 }
