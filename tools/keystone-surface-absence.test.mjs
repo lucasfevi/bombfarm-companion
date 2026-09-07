@@ -173,6 +173,9 @@ const ALLOWLIST = [
  * on another) fails by name. `packages/ui` has zero lines and needs no entry.
  */
 const CRIT_DMG_MULT_MAP = {
+  // The shared roster builder's own account fixture, same kind as the two farm entries below: a
+  // raw save-shaped skills block handed to the parser, not a field the app reads.
+  'apps/desktop/renderer/lib/account/account-roster.test.ts': [39],
   'apps/desktop/renderer/lib/account/account-view-store.test.ts': [34],
   // The desktop farm adapter's own account fixtures, same kind as the account-view entry above:
   // a raw save-shaped skills block, not a field the app reads.
@@ -261,7 +264,7 @@ const CRIT_DMG_MULT_MAP = {
   // Count and kind unchanged.
   // +3 more (line numbers only, last four): the note on the farm snapshot entry above, plus this
   // one. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 307, 312, 322, 331],
+  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 310, 315, 325, 334],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 
