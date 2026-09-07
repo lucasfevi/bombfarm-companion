@@ -13,9 +13,8 @@ import {
 } from '@bombfarm/domain/stat-breakdown';
 import { sub, type StatPanelCopy } from '../copy';
 
-// Luck joins the pct set now that `statFull.luck` / `statShort.luck` exist
-// (T5) and `isSheetKey` below is widened to cover it (T11) — renders at 2 dp with `%` on
-// every SHEET_PANEL_KEYS surface.
+// Luck joins the pct set now that `statFull.luck` / `statShort.luck` exist and `isSheetKey`
+// below is widened to cover it — renders at 2 dp with `%` on every SHEET_PANEL_KEYS surface.
 export const SHEET_PCT_KEYS: ReadonlySet<SheetPanelKey> = new Set([
   'critChance',
   'critDmg',
@@ -55,7 +54,7 @@ export function derivedLabel(strings: StatPanelCopy, statId: Exclude<BreakdownSt
 
 /**
  * `SHEET_PANEL_KEYS`-scoped (8, incl. `luck`). `t.statFull` / `t.statShort`
- * have carried a `luck` entry since Wave 6's i18n task (T5), so every `SheetPanelKey` has a
+ * both carry a `luck` entry, so every `SheetPanelKey` has a
  * label; `rowValue` still special-cases `luck` ahead of this guard because `facts.effective`
  * (`HeroSheet`) has no `luck` field to index.
  */

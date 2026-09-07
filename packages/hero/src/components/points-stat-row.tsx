@@ -10,9 +10,8 @@ const fiveStepBtnClass = 'h-6 min-w-[1.75rem] px-1 py-0 text-[10px] leading-none
 
 /**
  * One Points stat row: label, −5 / −1 / value / +1 / +5, per-point gain, after value.
- * Split into one component per file (T1.6, T2.*, T5.*, T6.2). Every step routes through
- * `clampPointStep` — the user's Q-1 decision means ±1 shares the SAME clamp as ±5
- * (floor at 0, ceiling at `level`), not just the floor an earlier proposal used.
+ * Every step routes through `clampPointStep`: ±1 shares the SAME clamp as ±5 (floor at 0,
+ * ceiling at `level`), not just the floor an earlier proposal used.
  */
 /** The row's three numeric readouts, bundled to keep `PointsStatRow` at the 8-prop cap. */
 export type PointsStatRowValues = {

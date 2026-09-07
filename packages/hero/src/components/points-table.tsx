@@ -32,9 +32,9 @@ import { pointsPanelReading } from '../model/points-panel';
  * Preview `{ pts, result }` is `useState` here — never a store field, never
  * `localStorage`. It is cleared by the SAME handler every `pts` mutation goes through
  * (`handlePtsMutate`) and, per-hero, by keying this whole component on `activeHeroId` at its
- * call site (`AdviceColumn`) — a remount, not an effect: a useEffect-free
- * consequence of keying (an effect keyed on `pts` would also fire on Apply and discard the
- * vector it just committed).
+ * call site (`AdviceColumn`) — a remount, not an effect. Keying makes the reset a consequence of
+ * identity changing; an effect keyed on `pts` would also fire on Apply and discard the vector it
+ * just committed.
  */
 /**
  * The callbacks a host supplies to make the panel editable. Absent, the same figures render with
