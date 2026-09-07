@@ -604,6 +604,13 @@ export const en = {
   heroesNavLabel: 'Heroes',
   heroesNeverReadTitle: 'Nothing read from your account yet',
   heroesNeverReadDescription: 'Open the game with the companion running, and your heroes will appear here.',
+  heroesNoneTitle: 'This account has no heroes',
+  heroesNoneDescription: 'Your account was read, and it holds nobody to show here yet.',
+  heroesRosterTitle: 'Your roster',
+  heroesRosterListLabel: 'Your heroes, best birth roll first',
+  heroesRollQualityLabel: 'Roll',
+  heroesFiguresWithheldTitle: 'Not enough of your account has been read',
+  heroesFiguresWithheldDescription: 'The per-hero numbers need your skill tree and your House. Leave the game open for a moment and they will fill in.',
 
   // hero*/gear*/import*/roster*/switch*/mode*/rank* — hero-identity vocabulary the farm screen's
   // roster surfaces read as one structural contract. Named exactly as that contract names them.

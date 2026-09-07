@@ -54,7 +54,7 @@ import { settledBoard, type FarmSettledBoard } from '../../lib/farm/farm-snapsho
 import { freshProposal, reRankActive, type FarmRespecState } from '../../lib/farm/farm-respec-store';
 import { useFarmSnapshot } from '../../lib/farm/use-farm-snapshot';
 import { useFarmTableHeight } from '../../lib/farm/use-farm-table-height';
-import { farmScreenCopy, useFarmCopy } from './farm-copy';
+import { farmScreenCopy, useFarmCopy } from '../screen-copy';
 import { FarmRefreshControl } from './farm-refresh-control';
 
 const DEFAULT_PHASE = 1;

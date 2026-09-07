@@ -13,7 +13,6 @@ import { DEFAULT_SETTINGS, idleUpdateStatus } from '@bombfarm/contracts';
 import {
   AppShell,
   BrandMark,
-  EmptyState,
   StatusChip,
   useShellDensity,
   WINDOW_CONTROLS_WIDTH,
@@ -34,6 +33,7 @@ import { ConsentModal } from './consent-modal';
 import { UpdateChip } from './update-chip';
 import { LiveView } from './live/live-view';
 import { FarmView } from './farm/farm-view';
+import { HeroesView } from './heroes/heroes-view';
 import { InventoryView } from './inventory/inventory-view';
 import { ForgeView } from './forge/forge-view';
 import { AccountView } from './account/account-view';
@@ -436,13 +436,7 @@ function HomePageContent({
           ) : activeNavId === 'farm' ? (
             <FarmView />
           ) : activeNavId === 'heroes' ? (
-            <div data-testid="heroes-view" className="flex flex-1 flex-col">
-              <EmptyState
-                icon="user-group"
-                title={t.heroesNeverReadTitle}
-                description={t.heroesNeverReadDescription}
-              />
-            </div>
+            <HeroesView />
           ) : activeNavId === 'inventory' ? (
             <InventoryView />
           ) : activeNavId === 'forge' ? (

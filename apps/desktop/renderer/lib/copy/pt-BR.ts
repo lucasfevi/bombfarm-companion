@@ -574,6 +574,13 @@ export const ptBR: Copy = {
   heroesNavLabel: 'Heróis',
   heroesNeverReadTitle: 'Nada foi lido da sua conta ainda',
   heroesNeverReadDescription: 'Abra o jogo com o companion em execução, e seus heróis aparecerão aqui.',
+  heroesNoneTitle: 'Esta conta não tem heróis',
+  heroesNoneDescription: 'Sua conta foi lida e ainda não há ninguém para mostrar aqui.',
+  heroesRosterTitle: 'Seu elenco',
+  heroesRosterListLabel: 'Seus heróis, do melhor sorteio de nascimento para o pior',
+  heroesRollQualityLabel: 'Sorteio',
+  heroesFiguresWithheldTitle: 'Ainda não foi lido o bastante da sua conta',
+  heroesFiguresWithheldDescription: 'Os números de cada herói precisam da sua árvore de habilidades e da sua Casa. Deixe o jogo aberto por um instante e eles vão aparecer.',
 
   heroAvatarCol: 'Avatar',
   heroBattleActive: 'Ativado',
