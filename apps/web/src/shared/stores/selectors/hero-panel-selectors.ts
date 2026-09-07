@@ -8,9 +8,10 @@
  */
 import { abilityGainFor, type AbilityGain } from '@bombfarm/domain/ability-gain';
 import { rollQualityFor, type RollQualityReport } from '@bombfarm/domain/roll-quality';
-import type { AccountShared, HeroRecord } from '@/shared/lib/storage';
+import type { HeroRecord } from '@/shared/lib/storage';
 import {
   selectAccountShared,
+  selectAccountSharedForCombat,
   selectEffectiveTeamBuffs,
 } from '@/shared/stores/selectors/account-selectors';
 import {
@@ -73,16 +74,7 @@ export function selectHeroRollQuality(state: PlannerStore): RollQualityReport | 
   return result;
 }
 
-/**
- * The account the gains are priced against — `selectAccountShared` carrying the DERIVED
- * roster-wide aura total instead of its persisted `teamBuffsOverride ?? {}`, so the panel prices
- * one more ability level against the same baseline the workspace's own combat figures use.
- */
-function abilityGainAccount(state: PlannerStore): AccountShared {
-  const shared = selectAccountShared(state);
-  const teamBuffs = selectEffectiveTeamBuffs(state);
-  return shared.teamBuffs === teamBuffs ? shared : { ...shared, teamBuffs };
-}
+const abilityGainAccount = selectAccountSharedForCombat;
 
 function readAbilityGainDepTuple(state: PlannerStore): readonly unknown[] {
   return [

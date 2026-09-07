@@ -180,4 +180,35 @@ export function selectAccountTuple(state: PlannerStore) {
   ] as const;
 }
 
+let accountSharedForCombatCache: AccountShared | null = null;
+
+/**
+ * The account to COMPUTE against, as opposed to the one to persist.
+ *
+ * `selectAccountShared` carries `teamBuffsOverride ?? {}` because that is the field storage holds:
+ * an absent override is absent, and writing a derived total back would persist a number nobody
+ * typed. Combat cannot use that shape — an account whose carriers are deployed but whose override
+ * was never set would be priced with no team auras at all, so the same hero answers differently on
+ * two screens. This overlays the derived roster total for readers that compute, and leaves the
+ * persistence path reading the stored field.
+ */
+export function selectAccountSharedForCombat(state: PlannerStore): AccountShared {
+  const shared = selectAccountShared(state);
+  const teamBuffs = selectEffectiveTeamBuffs(state);
+  if (shared.teamBuffs === teamBuffs) return shared;
+  if (
+    accountSharedForCombatCache &&
+    accountSharedForCombatCache.teamBuffs === teamBuffs &&
+    Object.is(accountSharedForCombatCache.context, shared.context)
+  ) {
+    return accountSharedForCombatCache;
+  }
+  accountSharedForCombatCache = { ...shared, teamBuffs };
+  return accountSharedForCombatCache;
+}
+
+export function resetAccountSharedForCombatCache(): void {
+  accountSharedForCombatCache = null;
+}
+
 export type { TeamBuffId };

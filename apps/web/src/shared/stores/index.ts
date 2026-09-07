@@ -20,6 +20,7 @@ export {
 } from '@/shared/stores/selectors/session-selectors';
 export {
   selectAccountShared,
+  selectAccountSharedForCombat,
   selectAccountTuple,
   selectTreeDanoTotal,
   selectTreeCritChance,

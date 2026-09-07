@@ -18,10 +18,10 @@ import type { AdvisorPipelineResult } from '@bombfarm/domain/advisor-pipeline';
 import { normalizeHero } from '@/shared/lib/storage';
 import {
   resetPlannerStoreForTests,
-  selectAccountShared,
+  selectAccountSharedForCombat,
   selectAdvisorPipeline,
-  selectCombatPhase,
   selectEffectiveTeamBuffs,
+  selectCombatPhase,
   selectPhasesViewPhase,
   usePlannerStore,
   type PlannerStore,
@@ -70,12 +70,6 @@ function hydrateOneHero(): void {
     houseLevel: 5,
     phase: ACCOUNT_FARM_PHASE,
   });
-  // The explorer prices with the account's stored aura total and the workspace with the derived
-  // one. Pinning the override to the derived value makes them the same total, so the only thing
-  // left that could move a figure between the two surfaces is the phase — which is what this
-  // file is about.
-  const derived = selectEffectiveTeamBuffs(usePlannerStore.getState());
-  usePlannerStore.getState().setTeamBuffsOverride(derived);
 }
 
 /**
@@ -83,7 +77,7 @@ function hydrateOneHero(): void {
  * assemble it: the phases-view phase, through `computePhaseIntelGlobal`, into `pipelineForHero`.
  */
 function explorerCombat(state: PlannerStore): AdvisorPipelineResult {
-  const account = selectAccountShared(state);
+  const account = selectAccountSharedForCombat(state);
   const intel = computePhaseIntelGlobal(selectPhasesViewPhase(state), {
     teamCoinPct: account.tree.teamCoinPct ?? 0,
     xpMult: account.tree.xpMult ?? 1,
@@ -97,6 +91,63 @@ function explorerCombat(state: PlannerStore): AdvisorPipelineResult {
 function figures(combat: AdvisorPipelineResult) {
   return { normalHit: combat.predHit, uptime: combat.uptime, dps: combat.dps };
 }
+
+/**
+ * A roster whose deployed hero carries a team aura and whose override was never set — the state a
+ * real account is in before anyone finds the auto-fill control. The aura total is DERIVED from the
+ * deployed roster, so a surface reading the stored override alone prices the hero with no auras at
+ * all and answers differently from one that derives.
+ */
+function hydrateDeployedAuraCarrier(): void {
+  const state = usePlannerStore.getState();
+  const carrier = normalizeHero({
+    ...state.heroes[0],
+    id: 'h1',
+    deployed: true,
+    abilities: { grito_guerra: 12 },
+  });
+  state.hydrateRoster([carrier], 'h1');
+  state.applyHero(carrier);
+}
+
+describe('the two surfaces agree on team auras, not only on the phase', () => {
+  beforeEach(() => {
+    resetPlannerStoreForTests();
+    hydrateOneHero();
+    hydrateDeployedAuraCarrier();
+  });
+
+  it('non-vacuity: the deployed carrier really does produce a non-zero aura total', () => {
+    const derived = selectEffectiveTeamBuffs(usePlannerStore.getState());
+
+    expect(usePlannerStore.getState().teamBuffsOverride ?? null).toBeNull();
+    expect(derived.grito_guerra).toBeGreaterThan(0);
+  });
+
+  it('agrees with no override set, which is the state a real account is in', () => {
+    usePlannerStore.getState().setPhasesViewPhase(137);
+    const state = usePlannerStore.getState();
+
+    expect(figures(selectAdvisorPipeline(state))).toEqual(figures(explorerCombat(state)));
+  });
+
+  it('the aura is actually priced in, so the agreement is not two zeros matching', () => {
+    usePlannerStore.getState().setPhasesViewPhase(137);
+    const state = usePlannerStore.getState();
+    const withAura = figures(explorerCombat(state));
+
+    const withoutAura = figures(
+      pipelineForHero(
+        state.heroes[0],
+        { ...selectAccountSharedForCombat(state), teamBuffs: {} },
+        selectCombatPhase(state),
+        state.mitigationPct,
+      ),
+    );
+
+    expect(withAura.normalHit).not.toBe(withoutAura.normalHit);
+  });
+});
 
 describe('the hero workspace and the phases explorer read one phase', () => {
   beforeEach(() => {
@@ -131,7 +182,7 @@ describe('the hero workspace and the phases explorer read one phase', () => {
     expect(selectAdvisorPipeline(state)).toEqual(
       pipelineForHero(
         state.heroes[0],
-        selectAccountShared(state),
+        selectAccountSharedForCombat(state),
         ACCOUNT_FARM_PHASE,
         state.mitigationPct,
       ),
