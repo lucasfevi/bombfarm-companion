@@ -22,6 +22,7 @@ export default defineConfig({
         'i18n.spec.mjs',
         'inventory.spec.mjs',
         'forge-plan.spec.mjs',
+        'forge-run.spec.mjs',
         'live-earnings-no-layout-shift.spec.mjs',
         'live-hero-row-no-layout-shift.spec.mjs',
         'live-state-summary-no-layout-shift.spec.mjs',

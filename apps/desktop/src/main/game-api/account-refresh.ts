@@ -1,4 +1,4 @@
-import type { AccountSection, AccountView } from '@bombfarm/contracts';
+import type { AccountPayload, AccountSection, AccountView } from '@bombfarm/contracts';
 import type {
   ConsentRecord,
   GrantedConsent,
@@ -97,6 +97,11 @@ export interface AccountRefreshHandle {
   onConsentChanged(record: ConsentRecord): void;
   /** The most recently committed view, or `null` before any cycle has committed one. */
   getLastView(): AccountView | null;
+  /** Re-commits the last committed payload with `patch` applied — the seam a forge run uses to
+   *  land the server's returned item and gold before the next cycle reads them. Goes through the
+   *  same commit and the same `onView` as a cycle, so the notifier decides whether it changed
+   *  anything. `null` when nothing has been committed yet, so there is nothing to patch. */
+  applyPatch(patch: (payload: AccountPayload) => AccountPayload): AccountView | null;
 }
 
 interface CachedToken {
@@ -257,6 +262,10 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
     },
     getLastView() {
       return lastView;
+    },
+    applyPatch(patch) {
+      if (lastView === null) return null;
+      return commitAndNotify(patch(lastView.payload));
     },
   };
 }

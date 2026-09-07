@@ -18,7 +18,7 @@ import { cn } from "@bombfarm/ui";
 import { GoldIcon } from "./gold-icon";
 import { MarketPrice, type MarketPriceLabels, type MarketPriceView } from "./market-price";
 import { HeroAvatar } from "./hero-avatar";
-import { ItemIcon } from "./item-icon";
+import { ItemIdentity, type ItemIdentityLabels } from "./item-identity";
 import { rarityTextClass } from "./game-art.recipe";
 import {
   InventoryToolbar,
@@ -76,23 +76,8 @@ export interface InventoryStatText {
 }
 
 
-export interface InventoryGridLabels {
+export interface InventoryGridLabels extends ItemIdentityLabels<InventoryViewItem> {
   groupTitle: (kind: ItemKind) => string;
-  /** Display name for one item — the caller owns it, since set, slot and rarity tokens are
-   *  localized and this package carries no i18n. */
-  itemName: (item: InventoryViewItem) => string;
-  /**
-   * The three parts of the line under the name, kept apart so the card can colour each: the
-   * rarity in its own tier colour, the level muted, the forge in the accent. Joining them into
-   * one string would force the card to colour the separators too.
-   *
-   * `rarity` is empty for the kinds whose NAME is already their tier (a key, a house part, a
-   * skill stone) — that absence is also what tells the card to colour the name instead.
-   */
-  itemRarity: (item: InventoryViewItem) => string;
-  itemLevel: (item: InventoryViewItem) => string;
-  /** The forge `+N`, or empty when the item is unforged. */
-  itemForge: (item: InventoryViewItem) => string;
   itemStat: (stat: InventoryViewStat) => InventoryStatText;
   badges: (item: InventoryViewItem) => InventoryBadge[];
   /** Footer left. `null` when the item is loose, or when the caller has no roster. */
@@ -269,13 +254,7 @@ const InventoryCard = memo(function InventoryCard({
   priceAction?: ReactNode;
 }) {
   const { item, count } = entry;
-  const rarity = labels.itemRarity(item);
-  const level = labels.itemLevel(item);
-  const forge = labels.itemForge(item);
   const badges = labels.badges(item);
-  // The name only carries the tier colour when nothing below it does — which is exactly the
-  // kinds whose name IS their tier.
-  const detailParts = [rarity, level, forge].filter(Boolean);
   const equippedBy = labels.equippedBy?.(item) ?? null;
   const stats = item.stats.slice(0, MAX_STAT_LINES);
   const tone = inventoryCardTone(item.rarityIdx, item.kind !== 'other');
@@ -286,65 +265,25 @@ const InventoryCard = memo(function InventoryCard({
 
   const body = (
     <>
-      <span className="flex min-w-0 items-start gap-2.5">
-        <ItemIcon item={item} size="xl" className="shrink-0" />
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="flex min-w-0 items-start gap-1.5">
-            <span
-              data-testid="inventory-card-name"
-              className={cn(
-                "min-w-0 flex-1 truncate text-sm font-semibold",
-                rarity
-                  ? "text-ink"
-                  : rarityTextClass(item.rarityIdx) ?? "text-ink"
-              )}
-            >
-              {labels.itemName(item)}
-            </span>
+      <span className="flex min-w-0 flex-col gap-1">
+        <ItemIdentity
+          item={item}
+          labels={labels}
+          size="xl"
+          nameTestId="inventory-card-name"
+        />
+        {badges.length > 0 ? (
+          <span className="flex flex-wrap gap-1">
+            {badges.map((badge) => (
+              <span
+                key={badge.key}
+                className={inventoryBadgeRecipe({ tone: badge.tone })}
+              >
+                {badge.label}
+              </span>
+            ))}
           </span>
-          {detailParts.length > 0 ? (
-            <span className="flex min-w-0 items-baseline gap-1 text-xs">
-              {rarity ? (
-                <span
-                  className={cn(
-                    "shrink-0 font-medium",
-                    rarityTextClass(item.rarityIdx) ?? "text-ink"
-                  )}
-                >
-                  {rarity}
-                </span>
-              ) : null}
-              {level ? (
-                <>
-                  {rarity ? (
-                    <span className="shrink-0 text-muted">&middot;</span>
-                  ) : null}
-                  <span className="truncate text-muted">{level}</span>
-                </>
-              ) : null}
-              {forge ? (
-                <>
-                  <span className="shrink-0 text-muted">&middot;</span>
-                  <span className="shrink-0 font-semibold text-accent">
-                    {forge}
-                  </span>
-                </>
-              ) : null}
-            </span>
-          ) : null}
-          {badges.length > 0 ? (
-            <span className="mt-1 flex flex-wrap gap-1">
-              {badges.map((badge) => (
-                <span
-                  key={badge.key}
-                  className={inventoryBadgeRecipe({ tone: badge.tone })}
-                >
-                  {badge.label}
-                </span>
-              ))}
-            </span>
-          ) : null}
-        </span>
+        ) : null}
       </span>
 
       {stats.length > 0 ? (

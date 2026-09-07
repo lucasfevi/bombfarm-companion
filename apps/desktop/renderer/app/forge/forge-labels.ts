@@ -1,11 +1,21 @@
-import { BCP47_BY_LOCALE, type AccountSource, type AppLocale, type DomainLang } from '@bombfarm/contracts';
-import { FORGE_MAX, FORGE_SAFE, forgeChance, forgeRollCost } from '@bombfarm/domain/forge';
+import {
+  BCP47_BY_LOCALE,
+  type AccountReadRefusal,
+  type AccountSource,
+  type AppLocale,
+  type DomainLang,
+  type ForgeRunResult,
+  type ForgeStartReason,
+  type ForgeStopReason,
+} from '@bombfarm/contracts';
+import { FORGE_MAX, FORGE_SAFE, forgeChance } from '@bombfarm/domain/forge';
 import { upgradeMult } from '@bombfarm/domain/gear';
 import { itemRarityLabel, itemStatLabel, slotLabel } from '@bombfarm/domain/game-labels';
+import type { ItemIdentityLabels } from '@bombfarm/game-art';
 import type { InventoryViewItem, InventoryViewStat } from '@bombfarm/domain/inventory-view';
 import { sub, type Copy } from '../../lib/copy';
-import { formatCount, formatGainPct } from '../../lib/format';
-import type { ForgeMinForge } from '../../lib/forge/forge-rows';
+import { formatCount } from '../../lib/format';
+import { FORGE_BAND_RANGE, type ForgeBand } from '../../lib/forge/forge-rows';
 import { inventoryLabels } from '../inventory/inventory-labels';
 
 export const BLANK = '—';
@@ -15,22 +25,27 @@ export function forgeLevel(upgrade: number): string {
   return `+${String(upgrade)}`;
 }
 
-export type ForgeButtonReason = 'maxed' | 'fixture' | 'switch-off' | 'not-yet';
+export type ForgeButtonReason = 'maxed' | 'fixture' | 'switch-off' | 'ready' | 'running' | 'cancelling';
 
 /**
- * Why the Forge button is disabled, first reason that applies. A piece with nowhere to go beats
- * everything; an account with no server behind it beats the switch, because turning the switch on
- * would not help; and the switch beats the release note for the same reason.
+ * What the Forge button is for right now, first reason that applies. A run in flight owns the
+ * button outright — it is the cancel, until the cancel has been asked for and the button has
+ * nothing left to do but say so. Otherwise a piece with nowhere to go beats everything; an
+ * account with no server behind it beats the switch, because turning the switch on would not
+ * help; and only then is the button armed.
  */
 export function forgeButtonReason(input: {
   upgrade: number;
   accountSource: AccountSource | null;
   forgeWritesEnabled: boolean;
+  running: boolean;
+  cancelRequested: boolean;
 }): ForgeButtonReason {
+  if (input.running) return input.cancelRequested ? 'cancelling' : 'running';
   if (input.upgrade >= FORGE_MAX) return 'maxed';
   if (input.accountSource === 'fixture') return 'fixture';
   if (!input.forgeWritesEnabled) return 'switch-off';
-  return 'not-yet';
+  return 'ready';
 }
 
 export function forgeReasonText(reason: ForgeButtonReason, t: Copy): string {
@@ -41,15 +56,161 @@ export function forgeReasonText(reason: ForgeButtonReason, t: Copy): string {
       return t.forgeReasonFixture;
     case 'switch-off':
       return sub(t.forgeReasonSwitchOff, { switch: t.settingsForgeWritesLabel });
-    case 'not-yet':
-      return t.forgeReasonNotYet;
+    case 'ready':
+      return t.forgeReasonReady;
+    case 'running':
+      return t.forgeReasonRunning;
+    case 'cancelling':
+      return t.forgeReasonCancelling;
   }
 }
 
-export function forgeMinForgeText(min: ForgeMinForge, t: Copy): string {
-  if (min === 0) return t.forgeMinAny;
-  if (min === FORGE_MAX) return sub(t.forgeMinOnly, { level: forgeLevel(min) });
-  return sub(t.forgeMinAndUp, { level: forgeLevel(min) });
+/** Main's refusal, in the player's terms. The fixture and the switch say what the reason line
+ *  already says for them; the rest are things only main can know. */
+export function forgeStartRefusalText(reason: ForgeStartReason, t: Copy): string {
+  switch (reason) {
+    case 'busy':
+      return t.forgeStartBusy;
+    case 'offline':
+      return t.forgeReasonFixture;
+    case 'not_consented':
+      return t.forgeStartNotConsented;
+    case 'game_not_running':
+      return t.forgeStartGameNotRunning;
+    case 'token_unavailable':
+      return t.forgeStartTokenUnavailable;
+    case 'writes_disabled':
+      return sub(t.forgeReasonSwitchOff, { switch: t.settingsForgeWritesLabel });
+    case 'unknown_item':
+      return t.forgeStartUnknownItem;
+    case 'bad_target':
+      return t.forgeStartBadTarget;
+    case 'unavailable':
+      return t.forgeStartUnavailable;
+  }
+}
+
+/** Why the bag was not re-read, in the player's terms. The floor is deliberately not a number of
+ *  milliseconds: what the player can act on is that the read is already as fresh as the app will
+ *  make it, not how long is left on a timer they never saw start. */
+export function forgeRefreshRefusalText(reason: AccountReadRefusal, t: Copy): string {
+  switch (reason) {
+    case 'rate_limited':
+      return t.forgeRefreshRecent;
+    case 'offline':
+      return t.forgeRefreshFixture;
+    case 'not_consented':
+      return t.forgeRefreshNotConsented;
+    case 'game_not_running':
+      return t.forgeRefreshGameNotRunning;
+    case 'token_unavailable':
+      return t.forgeStartTokenUnavailable;
+    case 'unavailable':
+      return t.forgeStartUnavailable;
+  }
+}
+
+export type ForgeResultTone = 'up' | 'warn' | 'down';
+
+/** The result heading in the player's terms, and the tone it is tinted with: reaching the target
+ *  is a gain, the player's own limits are a warning, and the server's refusals are a loss. */
+export function forgeResultHeading(result: ForgeRunResult, t: Copy): { text: string; tone: ForgeResultTone } {
+  const level = forgeLevel(result.to);
+  switch (result.stop) {
+    case 'target':
+      return { text: sub(t.forgeResultReached, { level }), tone: 'up' };
+    case 'cancelled':
+      return { text: sub(t.forgeResultCancelled, { level, rolls: result.rolls }), tone: 'warn' };
+    case 'shortfall':
+      return { text: sub(t.forgeResultShortfall, { level }), tone: 'down' };
+    case 'budget':
+      return { text: sub(t.forgeResultBudget, { level }), tone: 'warn' };
+    case 'attempts':
+      return { text: sub(t.forgeResultAttempts, { level }), tone: 'warn' };
+    case 'cooldown':
+      return { text: sub(t.forgeResultCooldown, { level }), tone: 'down' };
+    case 'missing':
+      return { text: t.forgeResultMissing, tone: 'down' };
+    case 'error':
+      return { text: sub(t.forgeResultError, { level }), tone: 'down' };
+  }
+}
+
+export type ForgeSpendVerdict = 'exact' | 'under' | 'over' | 'worse';
+
+/** Whether the difference against the plan would print as a zero — the printed figure is a whole
+ *  signed percent, so anything inside half a percent of the expected figure rounds away. The
+ *  expected figure is a value iteration's float and a spend is a whole number of gold, so the two
+ *  are never identical; this is what "the same as the plan" can mean. */
+function gapRoundsToZero(spent: number, expected: number): boolean {
+  if (expected <= 0) return spent === expected;
+  return Math.round(Math.abs((100 * (spent - expected)) / expected)) === 0;
+}
+
+/**
+ * How a run's spend stands against the plan it was made from. A spend the percentage cannot tell
+ * apart from the plan is neither under nor over, so it is its own answer rather than a `+0%` beside
+ * a phrase picking a side of an inequality; under is a gain; over but inside the bad run is the
+ * range the plan said to prepare for; past the bad run is worse than the plan ever offered.
+ */
+export function forgeSpendVerdict(
+  spent: number,
+  forecast: { gold: number; badRunGold: number },
+): ForgeSpendVerdict {
+  if (gapRoundsToZero(spent, forecast.gold)) return 'exact';
+  if (spent < forecast.gold) return 'under';
+  return spent <= forecast.badRunGold ? 'over' : 'worse';
+}
+
+export function forgeSpendVerdictText(verdict: ForgeSpendVerdict, t: Copy): string {
+  switch (verdict) {
+    case 'exact':
+      return t.forgeAgainstExact;
+    case 'under':
+      return t.forgeAgainstUnder;
+    case 'over':
+      return t.forgeAgainstOver;
+    case 'worse':
+      return t.forgeAgainstWorse;
+  }
+}
+
+/** Why a run ended, short enough for a ledger cell — the rung it stopped on is the row's own
+ *  climb column, so this says only what stopped it. */
+export function forgeStopText(stop: ForgeStopReason, t: Copy): string {
+  switch (stop) {
+    case 'target':
+      return t.forgeStopTarget;
+    case 'cancelled':
+      return t.forgeStopCancelled;
+    case 'shortfall':
+      return t.forgeStopShortfall;
+    case 'budget':
+      return t.forgeStopBudget;
+    case 'attempts':
+      return t.forgeStopAttempts;
+    case 'cooldown':
+      return t.forgeStopCooldown;
+    case 'missing':
+      return t.forgeStopMissing;
+    case 'error':
+      return t.forgeStopError;
+  }
+}
+
+/** `+9…+11` for a merged row, `+12` for one that stands alone. */
+export function forgeRungLabel(row: { from: number; to: number }): string {
+  return row.from === row.to ? forgeLevel(row.from) : `${forgeLevel(row.from)}…${forgeLevel(row.to)}`;
+}
+
+/** The forge filter is a stretch of the ladder, so a band names both of its ends — except the two
+ *  that stand on a single rung and the one at the top, which has no end to name. */
+export function forgeBandText(band: ForgeBand | null, t: Copy): string {
+  if (band === null) return t.forgeBandAny;
+  const { from, to } = FORGE_BAND_RANGE[band];
+  if (to === null) return sub(t.forgeBandFrom, { level: forgeLevel(from) });
+  if (to === from) return sub(t.forgeBandOnly, { level: forgeLevel(from) });
+  return sub(t.forgeBandRange, { from: forgeLevel(from), to: forgeLevel(to) });
 }
 
 export type ForgeStatRow = {
@@ -102,25 +263,19 @@ export function forgeStatRows(
   });
 }
 
-export interface ForgeLabels {
-  itemName: (item: InventoryViewItem) => string;
+export interface ForgeLabels extends ItemIdentityLabels<InventoryViewItem> {
   searchText: (item: InventoryViewItem) => string;
   slotName: (slot: string | null) => string;
   rarityName: (rarityIdx: number) => string;
-  /** `Rarity · Slot · nvLEVEL · +N` — the piece in one line under its name. */
-  itemMeta: (item: InventoryViewItem) => string;
-  whereabouts: (item: InventoryViewItem, heroName: string | null) => string;
   gold: (amount: number) => string;
   count: (value: number) => string;
   rolls: (value: number) => string;
   multiplier: (upgrade: number) => string;
   /** A chance as the game prints it: `50%`. */
   chance: (fraction: number) => string;
-  /** A signed DPS change: `+3.1%`. */
-  gain: (fraction: number) => string;
-  /** The `+1 buys` tooltip for one worn row. */
-  buysTip: (item: InventoryViewItem, delta: number) => string;
-  minForge: (min: ForgeMinForge) => string;
+  /** A difference as a signed whole percent: `+23%`, `−12%`. */
+  signedPercent: (fraction: number) => string;
+  band: (band: ForgeBand | null) => string;
   span: (target: number) => string;
   warning: (target: number, safeJumps: number | null) => string;
   statsNote: (nowUpgrade: number, targetUpgrade: number) => string;
@@ -131,44 +286,28 @@ export function forgeLabels(t: Copy, lang: DomainLang, locale: AppLocale): Forge
   const bcp47 = BCP47_BY_LOCALE[locale];
   const chance = (fraction: number) =>
     new Intl.NumberFormat(bcp47, { style: 'percent', maximumFractionDigits: 0 }).format(fraction);
+  const signedPercent = (fraction: number) =>
+    new Intl.NumberFormat(bcp47, { style: 'percent', maximumFractionDigits: 0, signDisplay: 'always' })
+      .format(fraction)
+      .replace(/^-/, '−');
   const gold = (amount: number) => formatCount(amount, locale);
   const multiplier = (upgrade: number) => decimals(upgradeMult(upgrade), 2, locale);
 
   return {
     itemName: inventory.itemName,
+    itemRarity: inventory.itemRarity,
+    itemLevel: inventory.itemLevel,
+    itemForge: inventory.itemForge,
     searchText: inventory.searchText,
     slotName: (slot) => (slot === null ? BLANK : slotLabel(slot, lang)),
     rarityName: (rarityIdx) => itemRarityLabel(rarityIdx, lang),
-    itemMeta: (item) =>
-      [
-        itemRarityLabel(item.rarityIdx, lang),
-        item.slot === null ? BLANK : slotLabel(item.slot, lang),
-        `nv${String(item.level)}`,
-        forgeLevel(item.upgrade),
-      ].join(' · '),
-    whereabouts: (item, heroName) => {
-      const power = formatCount(item.power, locale);
-      if (item.equippedBy !== null) {
-        return sub(t.forgeWornBy, { power, hero: heroName ?? t.inventoryEquippedByUnknown });
-      }
-      return sub(item.inStash ? t.forgeInStash : t.forgeInBag, { power });
-    },
     gold,
     count: (value) => formatCount(value, locale),
     rolls: (value) => decimals(value, 1, locale),
     multiplier,
     chance,
-    gain: (fraction) => formatGainPct(fraction * 100, locale),
-    buysTip: (item, delta) => {
-      const next = item.upgrade + 1;
-      return sub(t.forgeBuysTip, {
-        delta: formatGainPct(delta * 100, locale),
-        cost: gold(forgeRollCost(item.level, item.rarityIdx, next)),
-        target: forgeLevel(next),
-        chance: chance(forgeChance(next)),
-      });
-    },
-    minForge: (min) => forgeMinForgeText(min, t),
+    signedPercent,
+    band: (band) => forgeBandText(band, t),
     span: (target) =>
       target <= FORGE_SAFE ? t.forgeSpanSafe : sub(t.forgeSpanRisky, { chance: chance(forgeChance(target)) }),
     warning: (target, safeJumps) =>

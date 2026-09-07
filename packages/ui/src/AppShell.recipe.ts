@@ -66,12 +66,20 @@ export const appShellMainClass = 'relative flex min-h-0 flex-1 flex-col overflow
 
 /**
  * The measure. Caps and centres the content while the scrollbar stays on `<main>` at the window
- * edge, so a wide window grows the background rather than the panels. `flex-1` on a flex child
- * whose `min-height` is `auto` fills the viewport when the content is short and grows past it when
- * the content is tall — which is what lets one rule serve both a full-height tab that scrolls
- * inside itself and a tall tab that scrolls `<main>`.
+ * edge, so a wide window grows the background rather than the panels.
+ *
+ * `min-h-0` is what makes `flex-1` here mean "the region's height" rather than "at least my
+ * content's height". A flex item's automatic minimum size is its content, so without it this box
+ * was as tall as whatever the tab rendered — and a tab that bounds itself with `min-h-0` and
+ * `flex-1` all the way down still had nothing definite to be bounded BY, so its own table
+ * scrollers never engaged and `<main>` scrolled the whole screen instead. Measured on the Forge
+ * tab: 7,127px of box inside a 709px region, with a full-height bag table that never scrolled.
+ *
+ * A tab that is genuinely taller than the region is unaffected: it overflows this box, nothing
+ * here clips, and the overflow still counts toward `<main>`'s scrollable area, which is the one
+ * scrollbar in the app.
  */
-export const appShellMainInnerClass = 'mx-auto flex w-full max-w-desktop flex-1 flex-col';
+export const appShellMainInnerClass = 'mx-auto flex w-full min-h-0 max-w-desktop flex-1 flex-col';
 
 export const appShellStatusBarClass =
   'flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 border-t border-line px-6 py-1 text-sm';

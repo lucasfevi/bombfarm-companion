@@ -2,12 +2,20 @@
 
 import { cn } from '../cn';
 import { Icon } from '../icon';
-import { dataTableHeadButtonClass, dataTableHeadClass, dataTableHeadInnerClass } from '../data-table.recipe';
+import {
+  dataTableHeadButtonClass,
+  dataTableHeadClass,
+  dataTableHeadInnerClass,
+  dataTableHeadStaticClass,
+} from '../data-table.recipe';
+import { useDataTableScrollable } from './data-table-scrollable-context';
 import { headAlignClass } from './head-align';
 import { SortIdleIcon } from './sort-idle-icon';
 import type { DataTableHeaderProps } from './types';
 
 export function DataTableHeader<T extends string>(props: DataTableHeaderProps<T>) {
+  const headClass = useDataTableScrollable() ? dataTableHeadClass : dataTableHeadStaticClass;
+
   if (props.sortable === true) {
     const {
       col,
@@ -25,7 +33,7 @@ export function DataTableHeader<T extends string>(props: DataTableHeaderProps<T>
 
     return (
       <th
-        className={cn(dataTableHeadClass, className)}
+        className={cn(headClass, className)}
         aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
         {...thProps}
       >
@@ -59,7 +67,7 @@ export function DataTableHeader<T extends string>(props: DataTableHeaderProps<T>
   const { align = 'left', className, children, sortable: _sortable, ...thProps } = props;
 
   return (
-    <th className={cn(dataTableHeadClass, className)} {...thProps}>
+    <th className={cn(headClass, className)} {...thProps}>
       <div className={cn(dataTableHeadInnerClass, headAlignClass(align))}>{children}</div>
     </th>
   );

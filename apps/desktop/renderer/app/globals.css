@@ -26,3 +26,19 @@
   --font-ibm-plex-sans: 'IBM Plex Sans Variable';
   --font-ibm-plex-mono: 'IBM Plex Mono';
 }
+
+@theme {
+  --animate-forge-ghost: forge-ghost 1400ms ease-in-out infinite;
+}
+
+/* The Forge chart's pending roll. It breathes rather than blinks, so the mark that replaces it
+   reads as the shape filling in. */
+@keyframes forge-ghost {
+  0%,
+  100% {
+    opacity: 0.18;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}

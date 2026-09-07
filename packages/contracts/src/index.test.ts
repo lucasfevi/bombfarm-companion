@@ -41,6 +41,7 @@ describe('contracts IPC surface', () => {
       'storage:health',
       'game:getStatus',
       'account:get',
+      'account:readNow',
       'consent:get',
       'consent:accept',
       'consent:decline',
@@ -54,6 +55,11 @@ describe('contracts IPC surface', () => {
       'updates:installOnRestart',
       'market:getSnapshot',
       'market:refreshItem',
+      'forge:start',
+      'forge:cancel',
+      'forge:history',
+      'forge:clearHistory',
+      'forge:inject',
     ]);
   });
 
@@ -66,6 +72,7 @@ describe('contracts IPC surface', () => {
       'updates:changed',
       'market:changed',
       'settings:changed',
+      'forge:event',
     ]);
   });
 
@@ -73,6 +80,7 @@ describe('contracts IPC surface', () => {
     expect(isIpcChannel('app:ping')).toBe(true);
     expect(isIpcChannel('app:getEnvironment')).toBe(true);
     expect(isIpcChannel('account:get')).toBe(true);
+    expect(isIpcChannel('account:readNow')).toBe(true);
     expect(isIpcChannel('consent:get')).toBe(true);
     expect(isIpcChannel('consent:accept')).toBe(true);
     expect(isIpcChannel('consent:decline')).toBe(true);

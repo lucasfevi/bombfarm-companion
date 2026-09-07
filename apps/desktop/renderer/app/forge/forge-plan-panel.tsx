@@ -1,15 +1,28 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import type { ForgeStartReason } from '@bombfarm/contracts';
 import { FORGE_MAX, FORGE_SAFE, forgeChance, forgeFailFloor } from '@bombfarm/domain/forge';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { inventoryFieldClass } from '@bombfarm/game-art';
 import { Bar, Button, cn, Panel, PanelHeader, StatList, Stepper, type StatListItem } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
 import type { ForgePlan, ForgePlanForecast } from '../../lib/forge/use-forge-plan';
-import { BLANK, forgeLevel, forgeReasonText, type ForgeButtonReason, type ForgeLabels } from './forge-labels';
+import { ForgeGold } from './forge-gold';
+import {
+  BLANK,
+  forgeLevel,
+  forgeReasonText,
+  forgeStartRefusalText,
+  type ForgeButtonReason,
+  type ForgeLabels,
+} from './forge-labels';
 
 const GOOD_ODDS = 0.6;
 const FAIR_ODDS = 0.4;
+/** An armed button disarms itself if the second press does not come — long enough to read the
+ *  new label, short enough that a stray press minutes later cannot spend gold. */
+export const FORGE_ARM_MS = 5_000;
 
 function oddsClass(chance: number): string {
   if (chance >= GOOD_ODDS) return 'text-up';
@@ -30,6 +43,7 @@ function LimitField({
   value,
   onChange,
   testId,
+  disabled,
 }: {
   id: string;
   label: string;
@@ -37,6 +51,7 @@ function LimitField({
   value: number | null;
   onChange: (text: string) => void;
   testId: string;
+  disabled: boolean;
 }) {
   return (
     <label htmlFor={id} className="flex min-w-0 flex-1 flex-col gap-1 text-[11px] text-muted">
@@ -49,6 +64,7 @@ function LimitField({
         pattern="[0-9]*"
         value={value === null ? '' : String(value)}
         placeholder={placeholder}
+        disabled={disabled}
         onChange={(event) => { onChange(event.target.value); }}
         className={cn(inventoryFieldClass, 'w-full', 'font-mono', 'tabular-nums')}
       />
@@ -56,84 +72,150 @@ function LimitField({
   );
 }
 
+/** Armed by the first press, disarmed by the clock, by a change of piece or target, or by the
+ *  second press — which is the one that forges. */
+function useArmedButton(itemId: string, target: number): { armed: boolean; arm: () => void; disarm: () => void } {
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    setArmed(false);
+  }, [itemId, target]);
+  useEffect(() => {
+    if (!armed) return;
+    const timer = setTimeout(() => {
+      setArmed(false);
+    }, FORGE_ARM_MS);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [armed]);
+  return {
+    armed,
+    arm: () => {
+      setArmed(true);
+    },
+    disarm: () => {
+      setArmed(false);
+    },
+  };
+}
+
 export function ForgePlanPanel({
   item,
   plan,
   forecast,
-  wearerName,
-  deltaToTarget,
   walletGold,
   reason,
+  startRefusal,
   labels,
   onStepTarget,
   onMaxGoldChange,
   onAttemptsChange,
+  onForge,
+  onCancel,
 }: {
   item: InventoryViewItem;
   plan: ForgePlan;
   forecast: ForgePlanForecast | null;
-  wearerName: string | null;
-  deltaToTarget: number | null;
   walletGold: number | null;
   reason: ForgeButtonReason;
+  /** Why main refused the last start, until the next press or a change of piece. */
+  startRefusal: ForgeStartReason | null;
   labels: ForgeLabels;
   onStepTarget: (delta: 1 | -1) => void;
   onMaxGoldChange: (text: string) => void;
   onAttemptsChange: (text: string) => void;
+  onForge: () => void;
+  onCancel: () => void;
 }) {
   const t = useCopy();
   const maxed = item.upgrade >= FORGE_MAX;
   const target = plan.target;
   const rungs = riskyRungs(item.upgrade, target);
+  const cancelling = reason === 'cancelling';
+  const running = reason === 'running' || cancelling;
+  const { armed, arm, disarm } = useArmedButton(item.id, target);
+
+  const onPress = () => {
+    if (running) {
+      onCancel();
+      return;
+    }
+    if (reason !== 'ready') return;
+    if (!armed) {
+      arm();
+      return;
+    }
+    disarm();
+    onForge();
+  };
+
+  let buttonLabel: string;
+  if (cancelling) buttonLabel = t.forgeButtonCancelPending;
+  else if (running) buttonLabel = t.forgeButtonCancel;
+  else if (armed) buttonLabel = t.forgeButtonConfirm;
+  else buttonLabel = sub(t.forgeButton, { target: forgeLevel(maxed ? FORGE_MAX : target) });
+  const reasonLine = startRefusal === null || armed ? forgeReasonText(reason, t) : forgeStartRefusalText(startRefusal, t);
 
   const facts: StatListItem[] = [
     { id: 'rolls', label: t.forgeFactRolls, value: <span data-testid="forge-fact-rolls">{forecast ? labels.rolls(forecast.rolls) : BLANK}</span> },
-    { id: 'gold', label: t.forgeFactGold, value: <span data-testid="forge-fact-gold">{forecast ? labels.gold(forecast.gold) : BLANK}</span> },
-    { id: 'bad-run', label: t.forgeFactBadRun, value: <span data-testid="forge-fact-bad-run">{forecast ? labels.gold(forecast.badRunGold) : BLANK}</span> },
     {
-      id: 'buys',
-      label: wearerName === null ? t.forgeFactBuys : sub(t.forgeFactBuysHero, { hero: wearerName }),
-      value: <span data-testid="forge-fact-buys">{deltaToTarget === null ? BLANK : labels.gain(deltaToTarget)}</span>,
+      id: 'gold',
+      label: t.forgeFactGold,
+      value: <span data-testid="forge-fact-gold">{forecast ? <ForgeGold>{labels.gold(forecast.gold)}</ForgeGold> : BLANK}</span>,
     },
-    { id: 'wallet', label: t.forgeFactWallet, value: <span data-testid="forge-fact-wallet">{walletGold === null ? BLANK : labels.gold(walletGold)}</span> },
+    {
+      id: 'bad-run',
+      label: t.forgeFactBadRun,
+      value: <span data-testid="forge-fact-bad-run">{forecast ? <ForgeGold>{labels.gold(forecast.badRunGold)}</ForgeGold> : BLANK}</span>,
+    },
+    {
+      id: 'wallet',
+      label: t.forgeFactWallet,
+      value: <span data-testid="forge-fact-wallet">{walletGold === null ? BLANK : <ForgeGold>{labels.gold(walletGold)}</ForgeGold>}</span>,
+    },
   ];
 
   return (
     <Panel data-testid="forge-plan-panel" className="flex flex-col gap-3">
       <PanelHeader title={t.forgePlanTitle} />
 
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[11px] text-muted">{t.forgeTargetLabel}</span>
-        <Stepper
-          value={<span data-testid="forge-target">{forgeLevel(target)}</span>}
-          onDecrement={() => { onStepTarget(-1); }}
-          onIncrement={() => { onStepTarget(1); }}
-          decrementLabel={t.forgeTargetLower}
-          incrementLabel={t.forgeTargetRaise}
-        />
-        <span data-testid="forge-span" className="text-xs text-muted">
-          {maxed ? '' : labels.span(target)}
-        </span>
-      </div>
+      <fieldset disabled={running} data-testid="forge-plan-controls" className="m-0 flex min-w-0 flex-col gap-3 border-0 p-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-muted">{t.forgeTargetLabel}</span>
+          <Stepper
+            valueClassName="text-sm"
+            value={<span data-testid="forge-target">{forgeLevel(target)}</span>}
+            onDecrement={() => { onStepTarget(-1); }}
+            onIncrement={() => { onStepTarget(1); }}
+            decrementLabel={t.forgeTargetLower}
+            incrementLabel={t.forgeTargetRaise}
+          />
+          <span data-testid="forge-span" className="text-xs text-muted">
+            {maxed ? '' : labels.span(target)}
+          </span>
+        </div>
 
-      <div className="flex gap-2">
-        <LimitField
-          id="forge-max-gold"
-          testId="forge-max-gold"
-          label={t.forgeMaxGoldLabel}
-          placeholder={t.forgeMaxGoldPlaceholder}
-          value={plan.maxGold}
-          onChange={onMaxGoldChange}
-        />
-        <LimitField
-          id="forge-attempts"
-          testId="forge-attempts"
-          label={t.forgeAttemptsLabel}
-          placeholder={t.forgeAttemptsPlaceholder}
-          value={plan.attempts}
-          onChange={onAttemptsChange}
-        />
-      </div>
+        <div className="flex gap-2">
+          <LimitField
+            id="forge-max-gold"
+            testId="forge-max-gold"
+            label={t.forgeMaxGoldLabel}
+            placeholder={t.forgeMaxGoldPlaceholder}
+            value={plan.maxGold}
+            onChange={onMaxGoldChange}
+            disabled={running}
+          />
+          <LimitField
+            id="forge-attempts"
+            testId="forge-attempts"
+            label={t.forgeAttemptsLabel}
+            placeholder={t.forgeAttemptsPlaceholder}
+            value={plan.attempts}
+            onChange={onAttemptsChange}
+            disabled={running}
+          />
+        </div>
+      </fieldset>
 
       {rungs.length > 0 ? (
         <ol data-testid="forge-ladder" aria-label={t.forgeLadderCaption} className="m-0 flex list-none flex-col gap-1 p-0">
@@ -163,11 +245,20 @@ export function ForgePlanPanel({
       )}
 
       <div className="flex flex-col gap-1">
-        <Button type="button" variant="primary" className="w-full" disabled data-testid="forge-button">
-          {sub(t.forgeButton, { target: forgeLevel(maxed ? FORGE_MAX : target) })}
+        <Button
+          type="button"
+          variant={running ? 'default' : 'primary'}
+          className="w-full"
+          disabled={cancelling || (reason !== 'ready' && !running)}
+          data-testid="forge-button"
+          data-armed={armed ? 'true' : undefined}
+          data-pending={cancelling ? 'true' : undefined}
+          onClick={onPress}
+        >
+          {buttonLabel}
         </Button>
-        <span data-testid="forge-button-reason" className="text-[11px] text-muted">
-          {forgeReasonText(reason, t)}
+        <span data-testid="forge-button-reason" className={cn('text-[11px]', startRefusal === null || armed ? 'text-muted' : 'text-warn')}>
+          {reasonLine}
         </span>
       </div>
     </Panel>

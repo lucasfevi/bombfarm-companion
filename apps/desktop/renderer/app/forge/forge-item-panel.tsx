@@ -1,9 +1,9 @@
 'use client';
 
 import { useMemo } from 'react';
-import { ItemIcon, rarityTextClass } from '@bombfarm/game-art';
+import { ItemIdentity } from '@bombfarm/game-art';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
-import { cn, DataTable, EmptyState, Panel, PanelHeader } from '@bombfarm/ui';
+import { DataTable, EmptyState, Panel, PanelHeader } from '@bombfarm/ui';
 import { useCopy, useLocale } from '../../lib/copy';
 import { forgeLevel, forgeStatRows, type ForgeLabels } from './forge-labels';
 
@@ -15,12 +15,10 @@ const CHANGE_CLASS = {
 
 export function ForgeItemPanel({
   item,
-  wearerName,
   target,
   labels,
 }: {
   item: InventoryViewItem | null;
-  wearerName: string | null;
   target: number;
   labels: ForgeLabels;
 }) {
@@ -43,21 +41,7 @@ export function ForgeItemPanel({
   return (
     <Panel data-testid="forge-item-panel" data-state="item" data-item-id={item.id} className="flex flex-col gap-3">
       <PanelHeader title={t.forgeItemTitle} />
-      <div className="flex items-center gap-3">
-        <ItemIcon item={item} size="xl" showLevel={false} className="shrink-0" />
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <span
-            data-testid="forge-item-name"
-            className={cn('truncate', 'text-sm', 'font-semibold', rarityTextClass(item.rarityIdx) ?? 'text-ink')}
-          >
-            {labels.itemName(item)}
-          </span>
-          <span className="text-xs text-muted">{labels.itemMeta(item)}</span>
-          <span data-testid="forge-item-whereabouts" className="text-xs text-muted">
-            {labels.whereabouts(item, wearerName)}
-          </span>
-        </div>
-      </div>
+      <ItemIdentity item={item} labels={labels} size="xl" nameTestId="forge-item-name" />
 
       <DataTable.Root>
         <DataTable.Table>

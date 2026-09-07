@@ -6,7 +6,7 @@
 
 `globals.css` may contain only `@theme` / base element styles + the exceptions below. Do not add new named widget/layout CSS.
 
-`apps/web/src/app/globals.css` is **30** lines (`wc -l` / `(Get-Content src\app\globals.css).Count`) after the shared-chrome promotion: the base element styles, checkbox chrome, scrollbar chrome, and the `.btn.coffee` exception moved into `packages/ui/src/styles.css` (**300** lines) so both `apps/web` and `apps/desktop` inherit them from one place instead of `apps/web` carrying them alone. `apps/web/src/app/globals.css` now keeps only the `@import`, its local `@source` lines, and the `.roster-summary` / `.roster[open]` chevron group. Re-verify with a line count when changing exceptions.
+`apps/web/src/app/globals.css` is **42** lines (`wc -l` / `(Get-Content src\app\globals.css).Count`) after the shared-chrome promotion: the base element styles, checkbox chrome, scrollbar chrome, and the `.btn.coffee` exception moved into `packages/ui/src/styles.css` (**307** lines) so both `apps/web` and `apps/desktop` inherit them from one place instead of `apps/web` carrying them alone. `apps/web/src/app/globals.css` now keeps only the `@import`, its local `@source` lines, and the `.roster-summary` / `.roster[open]` chevron group. Re-verify with a line count when changing exceptions.
 
 ## Base element styling (not an exception)
 

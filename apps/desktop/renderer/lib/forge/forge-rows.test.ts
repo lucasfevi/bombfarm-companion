@@ -1,19 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { buildInventoryView, type InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import {
-  DEFAULT_FORGE_SORT,
   EMPTY_FORGE_FILTER,
-  FORGE_ROW_CAP,
-  capForgeRows,
+  FORGE_BANDS,
   filterForgeItems,
+  forgeAnyEquipped,
+  forgeBandHolds,
   forgeHeroIds,
   forgeRarities,
   forgeSlots,
   gearOf,
   isEmptyForgeFilter,
-  nextForgeSort,
-  sortForgeRows,
-  type ForgeRow,
 } from './forge-rows';
 
 function gearRow(
@@ -24,101 +21,84 @@ function gearRow(
   return { id, def_id: defId, category: 0, rarity: 2, level: 20, upgrade: 0, power: 10, ...overrides };
 }
 
+// One piece on each of the band endpoints — +0, +8, +10, +12, +14 — and one past the top of the
+// ladder, so every option has a boundary piece to claim or refuse.
 const ROWS = [
   gearRow('sword', 'steel_arma', { upgrade: 12, power: 40, equipped_on: 'h1' }),
   gearRow('helm', 'steel_elmo', { upgrade: 8, power: 30, equipped_on: 'h2' }),
   gearRow('boots', 'steel_bota', { upgrade: 0, power: 30, rarity: 4 }),
   gearRow('ring', 'steel_anel', { upgrade: 15, power: 5, rarity: 0, level: 20 }),
+  gearRow('amulet', 'steel_amuleto', { upgrade: 10, power: 34 }),
+  gearRow('chest', 'steel_peito', { upgrade: 14, power: 44 }),
   { id: 'gem', def_id: 'gem_ruby', category: 2, rarity: 3, level: 0 },
 ];
 
 const GEAR = gearOf(buildInventoryView(ROWS).items);
 const nameOf = (item: InventoryViewItem) => item.defId;
-const slotOf = (item: InventoryViewItem) => item.slot ?? '';
 
-function itemNamed(id: string): InventoryViewItem {
-  const found = GEAR.find((item) => item.id === id);
-  if (!found) throw new Error(`no gear row ${id}`);
-  return found;
-}
+const ALL_GEAR = ['sword', 'helm', 'boots', 'ring', 'amulet', 'chest'];
 
 describe('gearOf', () => {
   it('keeps gear and nothing else', () => {
-    expect(GEAR.map((item) => item.id)).toEqual(['sword', 'helm', 'boots', 'ring']);
+    expect(GEAR.map((item) => item.id)).toEqual(ALL_GEAR);
   });
 });
 
 describe('filterForgeItems', () => {
-  it('narrows to one wearer, one slot, a forge floor, and a rarity set', () => {
-    const ids = (filter: Partial<typeof EMPTY_FORGE_FILTER>) =>
-      filterForgeItems(GEAR, { ...EMPTY_FORGE_FILTER, ...filter }, nameOf).map((item) => item.id);
+  const ids = (filter: Partial<typeof EMPTY_FORGE_FILTER>) =>
+    filterForgeItems(GEAR, { ...EMPTY_FORGE_FILTER, ...filter }, nameOf).map((item) => item.id);
+
+  it('narrows to one wearer, one slot, and a rarity set', () => {
     expect(ids({ heroId: 'h1' })).toEqual(['sword']);
     expect(ids({ slot: 'elmo' })).toEqual(['helm']);
-    expect(ids({ minForge: 8 })).toEqual(['sword', 'helm', 'ring']);
-    expect(ids({ minForge: 15 })).toEqual(['ring']);
     expect(ids({ rarities: [0, 4] })).toEqual(['boots', 'ring']);
   });
 
+  it('reads the forge rung as a band, one option to a stretch of the ladder', () => {
+    expect(ids({ forge: null })).toEqual(ALL_GEAR);
+    expect(ids({ forge: 'at0' })).toEqual(['boots']);
+    expect(ids({ forge: 'at8' })).toEqual(['helm']);
+    expect(ids({ forge: '8to10' })).toEqual(['helm', 'amulet']);
+    expect(ids({ forge: '10to12' })).toEqual(['sword', 'amulet']);
+    expect(ids({ forge: '12to14' })).toEqual(['sword', 'chest']);
+    expect(ids({ forge: 'from14' })).toEqual(['ring', 'chest']);
+  });
+
+  it('hands a piece on a shoulder to both bands that meet there, which is what the overlap is for', () => {
+    for (const [upgrade, both] of [
+      [8, ['at8', '8to10']],
+      [10, ['8to10', '10to12']],
+      [12, ['10to12', '12to14']],
+      [14, ['12to14', 'from14']],
+    ] as const) {
+      for (const band of both) expect(forgeBandHolds(band, upgrade), `${band} at ${String(upgrade)}`).toBe(true);
+    }
+  });
+
+  it('leaves the rungs between +0 and the safe floor out of every band', () => {
+    for (const upgrade of [1, 4, 7]) {
+      expect(FORGE_BANDS.filter((band) => forgeBandHolds(band, upgrade))).toEqual([]);
+    }
+  });
+
+  it('narrows to what a hero is wearing, and off is the whole bag rather than the rest of it', () => {
+    expect(ids({ worn: true })).toEqual(['sword', 'helm']);
+    expect(ids({ worn: false })).toEqual(ALL_GEAR);
+  });
+
+  it('cannot be asked for a hero\'s pieces that nobody wears — the two cuts only ever narrow', () => {
+    expect(ids({ heroId: 'h1', worn: true })).toEqual(['sword']);
+  });
+
   it('matches every word of the search, ignoring case and accents', () => {
-    const ids = filterForgeItems(GEAR, { ...EMPTY_FORGE_FILTER, text: 'STEEL bótá' }, nameOf).map((item) => item.id);
-    expect(ids).toEqual(['boots']);
+    const found = filterForgeItems(GEAR, { ...EMPTY_FORGE_FILTER, text: 'STEEL bótá' }, nameOf).map((item) => item.id);
+    expect(found).toEqual(['boots']);
   });
 
   it('knows an empty filter', () => {
     expect(isEmptyForgeFilter(EMPTY_FORGE_FILTER)).toBe(true);
-    expect(isEmptyForgeFilter({ ...EMPTY_FORGE_FILTER, minForge: 1 })).toBe(false);
-  });
-});
-
-describe('sortForgeRows', () => {
-  const rows: ForgeRow[] = GEAR.map((item) => ({
-    item,
-    buys: item.id === 'sword' ? 0.03 : item.id === 'helm' ? 0.05 : null,
-  }));
-  const order = (sort: typeof DEFAULT_FORGE_SORT) => sortForgeRows(rows, sort, nameOf, slotOf).map((row) => row.item.id);
-
-  it('opens on the forge level, highest first', () => {
-    expect(order(DEFAULT_FORGE_SORT)).toEqual(['ring', 'sword', 'helm', 'boots']);
-  });
-
-  it('breaks a tie on power, then on the id', () => {
-    expect(order({ key: 'level', direction: 'desc' })).toEqual(['sword', 'boots', 'helm', 'ring']);
-  });
-
-  it('orders words by the caller\'s name', () => {
-    expect(order({ key: 'slot', direction: 'asc' })).toEqual(['ring', 'sword', 'boots', 'helm']);
-  });
-
-  it('sinks the rows nobody wears to the bottom of the buys column in both directions', () => {
-    expect(order({ key: 'buys', direction: 'desc' })).toEqual(['helm', 'sword', 'boots', 'ring']);
-    expect(order({ key: 'buys', direction: 'asc' })).toEqual(['sword', 'helm', 'boots', 'ring']);
-  });
-
-  it('leaves the rows it was handed alone', () => {
-    const before = rows.map((row) => row.item.id);
-    sortForgeRows(rows, { key: 'item', direction: 'asc' }, nameOf, slotOf);
-    expect(rows.map((row) => row.item.id)).toEqual(before);
-  });
-});
-
-describe('nextForgeSort', () => {
-  it('opens a word column ascending and a number column descending, and flips the one already leading', () => {
-    expect(nextForgeSort(DEFAULT_FORGE_SORT, 'item')).toEqual({ key: 'item', direction: 'asc' });
-    expect(nextForgeSort(DEFAULT_FORGE_SORT, 'power')).toEqual({ key: 'power', direction: 'desc' });
-    expect(nextForgeSort(DEFAULT_FORGE_SORT, 'forge')).toEqual({ key: 'forge', direction: 'asc' });
-  });
-});
-
-describe('capForgeRows', () => {
-  it('shows every row up to the cap and counts the rest', () => {
-    const many: ForgeRow[] = Array.from({ length: FORGE_ROW_CAP + 7 }, (_, index) => ({
-      item: { ...itemNamed('sword'), id: `row-${String(index)}` },
-      buys: null,
-    }));
-    const capped = capForgeRows(many);
-    expect(capped.rows).toHaveLength(FORGE_ROW_CAP);
-    expect(capped.hidden).toBe(7);
-    expect(capForgeRows(many.slice(0, 3)).hidden).toBe(0);
+    expect(isEmptyForgeFilter({ ...EMPTY_FORGE_FILTER, forge: '12to14' })).toBe(false);
+    expect(isEmptyForgeFilter({ ...EMPTY_FORGE_FILTER, worn: true })).toBe(false);
   });
 });
 
@@ -135,8 +115,16 @@ describe('the toolbar\'s own options', () => {
       'arma',
       'elmo',
       'anel',
+      'amuleto',
+      'peito',
       'bota',
     ]);
     expect(forgeRarities(GEAR)).toEqual([0, 2, 4]);
+  });
+
+  it('offers the equipped chip only for a bag that holds a piece somebody is wearing', () => {
+    expect(forgeAnyEquipped(GEAR)).toBe(true);
+    expect(forgeAnyEquipped(GEAR.filter((item) => item.equippedBy === null))).toBe(false);
+    expect(forgeAnyEquipped([])).toBe(false);
   });
 });

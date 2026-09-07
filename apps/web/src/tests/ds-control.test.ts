@@ -39,8 +39,9 @@ describe('stepper / rank-control / check parity', () => {
   it('preserves stepper class sets', () => {
     expect(stepper.stepperClass).toBe('inline-flex items-center gap-1.5');
     expect(stepper.stepperBtnClass).toBe(
-      'size-6 cursor-pointer rounded-sm border border-line bg-bg leading-none hover:border-accent motion-safe:transition-[border-color,background-color] motion-safe:duration-[120ms]',
+      'inline-flex size-6 cursor-pointer items-center justify-center rounded-sm border border-line bg-bg p-0 leading-none hover:border-accent motion-safe:transition-[border-color,background-color] motion-safe:duration-[120ms]',
     );
+    expect(stepper.stepperGlyphClass).toBe('block -translate-y-[0.09em]');
     expect(stepper.stepperValueClass).toBe(
       'inline-block w-[3ch] text-center font-mono text-xs tabular-nums',
     );

@@ -936,3 +936,48 @@ describe('account-refresh — a drifted section is logged with path-qualified ke
     expect(failures[0]?.record.reason).toBe('http_error');
   });
 });
+
+describe('account-refresh — applyPatch, the seam a forge run lands its result through', () => {
+  it('re-commits the last committed payload with the patch applied, through the same onView the cycle uses', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+    const seen: AccountView[] = [];
+    const deps = baseDeps({
+      store,
+      consentStore: fixedConsentStore(GRANTED),
+      transport: okTransport(),
+      readToken,
+      onView: (view) => {
+        seen.push(view);
+      },
+    });
+    const refresh = createAccountRefresh(deps);
+    await refresh.refreshNow();
+    expect(seen).toHaveLength(1);
+
+    const patched = refresh.applyPatch((payload) => ({
+      ...payload,
+      account: { ...(payload.account ?? {}), gold: 42 },
+    }));
+
+    expect(patched?.payload.account?.gold).toBe(42);
+    expect(refresh.getLastView()).toBe(patched);
+    expect(seen).toHaveLength(2);
+    expect(seen[1]).toBe(patched);
+    expect(store.restore().payload.account?.gold).toBe(42);
+  });
+
+  it('is a no-op before anything has been committed', () => {
+    const open = openTestAccountDb(firstBinding());
+    const refresh = createAccountRefresh(baseDeps({ store: createAccountStore(open) }));
+    let called = false;
+    expect(
+      refresh.applyPatch((payload) => {
+        called = true;
+        return payload;
+      }),
+    ).toBeNull();
+    expect(called).toBe(false);
+  });
+});

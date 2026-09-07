@@ -6,7 +6,13 @@
 
 export const stepperClass = 'inline-flex items-center gap-1.5';
 export const stepperBtnClass =
-  'size-6 cursor-pointer rounded-sm border border-line bg-bg leading-none hover:border-accent motion-safe:transition-[border-color,background-color] motion-safe:duration-[120ms]';
+  'inline-flex size-6 cursor-pointer items-center justify-center rounded-sm border border-line bg-bg p-0 leading-none hover:border-accent motion-safe:transition-[border-color,background-color] motion-safe:duration-[120ms]';
+/**
+ * `−` and `+` are drawn on the maths axis, which sits above the middle of the font's own box —
+ * so centring the line box leaves both glyphs measurably low (1.5px in a 24px button at 16px
+ * type). The lift is in `em` so it holds at whatever size the button inherits.
+ */
+export const stepperGlyphClass = 'block -translate-y-[0.09em]';
 export const stepperValueClass =
   'inline-block w-[3ch] text-center font-mono text-xs tabular-nums';
 
