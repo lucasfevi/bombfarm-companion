@@ -20,6 +20,7 @@ import * as advice from '@/shared/i18n/namespaces/advice';
 import * as breakdown from '@/shared/i18n/namespaces/breakdown';
 import * as phases from '@/shared/i18n/namespaces/phases';
 import * as teamPlan from '@/shared/i18n/namespaces/team-plan';
+import * as teamPlanObjective from '@/shared/i18n/namespaces/team-plan-objective';
 import * as importNs from '@/shared/i18n/namespaces/import';
 import * as stats from '@/shared/i18n/namespaces/stats';
 import * as market from '@/shared/i18n/namespaces/market';
@@ -177,8 +178,25 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  * That notice is reworded and gains `farmRankingContentionTitleMaxSlots` /
  * `farmRankingContentionDescMaxSlots` (2026-08-27) — see the `KEYS_ADDED` note above for why both
  * original strings change.
+ * The Team plan objective control (2026-09-06) lets a player score the search for gold per hour
+ * instead of combined roster damage, and defaults to gold. Nine strings on that page named the
+ * quantity being reported, so each is replaced by a `…Dps`/`…Farm` pair in `KEYS_ADDED` and the
+ * unsuffixed original loses its reader: `teamPlanSetupSectionBody`,
+ * `teamPlanRunSummaryRegimeHintSaturated`, `teamPlanTotalGainValue`, `teamPlanResultsHeader`,
+ * `teamPlanGearDipNote`, `teamPlanSaturationCallout`, `teamPlanAuraDisclosure`,
+ * `teamPlanPlannerDivergence` and `teamPlanForgeSkippedNote`. A pair rather than one templated
+ * string because the unit differs (dps against gold/h) and a template cannot carry a unit.
  */
 const KEYS_REMOVED: readonly string[] = [
+  'teamPlanSetupSectionBody',
+  'teamPlanRunSummaryRegimeHintSaturated',
+  'teamPlanTotalGainValue',
+  'teamPlanResultsHeader',
+  'teamPlanGearDipNote',
+  'teamPlanSaturationCallout',
+  'teamPlanAuraDisclosure',
+  'teamPlanPlannerDivergence',
+  'teamPlanForgeSkippedNote',
   'importSyncSummary',
   'importRemovedNote',
   'accountTargetPropHint',
@@ -370,8 +388,45 @@ const KEYS_REMOVED: readonly string[] = [
  * a drawing of the desktop app's compact Live window; every label inside the drawing and its
  * controls is mirrored from the desktop shell in `live-replica-copy.ts` instead, under the drift
  * guard, so only the three strings the web page says in its own voice live here.
+ * The Team plan objective control (2026-09-06) adds the control itself — `teamPlanObjectiveLabel`,
+ * `teamPlanObjectiveAria`, `teamPlanObjectiveOptionDamage`, `teamPlanObjectiveOptionGold`, the hint
+ * under it (`teamPlanObjectiveHintDps`/`Farm`) and the warning shown when a record carries no
+ * furthest-phase for gold to be priced against (`teamPlanObjectiveFarmNeedsMaxPhase`) — plus the
+ * `…Dps`/`…Farm` half of each string listed in `KEYS_REMOVED`. `teamPlanFarmAdvisorPointer` is the
+ * one that renders elsewhere: the Farm page's respec advisor now states that it moves stat points
+ * only, and the web planner appends this pointer to the Team plan page. The desktop app has no
+ * such page and passes nothing, so the shared panel names no destination there.
+ * `farmRespecPointsOnly` is that advisor's own scope sentence, and lives in the shared farm copy
+ * because it is true on both apps.
  */
 const KEYS_ADDED: readonly string[] = [
+  'farmRespecPointsOnly',
+  'teamPlanObjectiveLabel',
+  'teamPlanObjectiveAria',
+  'teamPlanObjectiveOptionDamage',
+  'teamPlanObjectiveOptionGold',
+  'teamPlanObjectiveHintDps',
+  'teamPlanObjectiveHintFarm',
+  'teamPlanObjectiveFarmNeedsMaxPhase',
+  'teamPlanFarmAdvisorPointer',
+  'teamPlanSetupSectionBodyDps',
+  'teamPlanSetupSectionBodyFarm',
+  'teamPlanRunSummaryRegimeHintSaturatedDps',
+  'teamPlanRunSummaryRegimeHintSaturatedFarm',
+  'teamPlanTotalGainValueDps',
+  'teamPlanTotalGainValueFarm',
+  'teamPlanResultsHeaderDps',
+  'teamPlanResultsHeaderFarm',
+  'teamPlanGearDipNoteDps',
+  'teamPlanGearDipNoteFarm',
+  'teamPlanSaturationCalloutDps',
+  'teamPlanSaturationCalloutFarm',
+  'teamPlanAuraDisclosureDps',
+  'teamPlanAuraDisclosureFarm',
+  'teamPlanPlannerDivergenceDps',
+  'teamPlanPlannerDivergenceFarm',
+  'teamPlanForgeSkippedNoteDps',
+  'teamPlanForgeSkippedNoteFarm',
   'downloadMiniHeading',
   'downloadMiniLede',
   'downloadMiniControlsTitle',
@@ -738,6 +793,7 @@ const namespaces = [
   ['breakdown', breakdown],
   ['phases', phases],
   ['teamPlan', teamPlan],
+  ['teamPlanObjective', teamPlanObjective],
   ['import', importNs],
   ['stats', stats],
   ['market', market],

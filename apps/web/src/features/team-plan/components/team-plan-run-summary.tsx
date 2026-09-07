@@ -6,6 +6,7 @@ import { mutedClass, panelHClass, panelTitleClass } from '@bombfarm/ui/panel-fie
 import type { Strings, Lang } from '@/shared/i18n';
 import { parseEmphasis, sub } from '@/shared/i18n';
 import { formatNumber } from '@/shared/lib/format-number';
+import type { TeamPlanObjectiveCopy } from '@/features/team-plan/model/objective-copy';
 
 function formatElapsedSeconds(elapsedMs: number, lang: Lang): string {
   return formatNumber(elapsedMs / 1000, lang, 1);
@@ -43,16 +44,18 @@ export function TeamPlanRunSummary({
   lang,
   plan,
   ranOnMainThread,
+  copy,
 }: {
   t: Strings;
   lang: Lang;
   plan: TeamPlan;
   ranOnMainThread: boolean;
+  copy: TeamPlanObjectiveCopy;
 }) {
   const saturated = plan.regime === 'saturated';
   const regimeLabel = saturated ? t.teamPlanRegimeSaturated : t.teamPlanRegimeUnderSaturated;
   const regimeHint = saturated
-    ? t.teamPlanRunSummaryRegimeHintSaturated
+    ? copy.regimeHintSaturated
     : t.teamPlanRunSummaryRegimeHintUnder;
 
   const metaLine = sub(t.teamPlanRunMetaFooter, {

@@ -17,3 +17,15 @@ export function selectScopeByHeroId(state: PlannerStore) {
 export function selectForgeFloor(state: PlannerStore) {
   return state.forgeFloor;
 }
+
+export function selectTeamPlanObjective(state: PlannerStore) {
+  return state.objective;
+}
+
+/**
+ * The farm objective prices phases the account has actually unlocked, and `runTeamPlan` refuses
+ * to guess: with no `max_phase` on the record there is nothing to plan gold against.
+ */
+export function selectTeamPlanFarmUnavailable(state: PlannerStore): boolean {
+  return state.maxPhase == null;
+}

@@ -130,6 +130,15 @@ test.describe('Farm Respec Advisor', () => {
     expect(recommended).toBeLessThanOrEqual(57);
   });
 
+  test('the panel says it moves points only, and points at the Team plan page for the rest', async ({ page }) => {
+    await optimizeButton(page).click();
+    await expect(panel(page)).toBeVisible();
+    const scope = page.getByTestId('farm-respec-points-only');
+    await expect(scope).toHaveText(/only moves stat points/i);
+    await expect(scope).toHaveText(/never moves gear between heroes and never forges anything/i);
+    await expect(scope).toHaveText(/use the Team plan page/i);
+  });
+
   // 2. Optimize expands the panel IN PLACE — DOM order between the toolbar and the table's
   // <thead>, never a modal or drawer.
   test('Optimize expands the panel in place, between the toolbar and the table head, never a dialog', async ({ page }) => {

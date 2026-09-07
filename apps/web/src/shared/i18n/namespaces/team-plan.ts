@@ -22,8 +22,6 @@ export const en = {
   teamPlanOptimizingCancel: 'Cancel',
   teamPlanOptimizingProgressAria: 'Building team plan',
   teamPlanSetupSectionTitle: 'Search setup',
-  teamPlanSetupSectionBody:
-    'Builds a plan of gear moves, forge work, and point resets for the heroes you mark Optimize — scored for combined roster DPS.',
   teamPlanRunSummaryTitle: 'Search summary',
   teamPlanRunSummaryFieldStatus: 'Field status',
   teamPlanRunSummaryDuty: 'Battle load',
@@ -32,8 +30,6 @@ export const en = {
     'How hard your Optimize heroes pull on the field versus how many can fight at once.',
   teamPlanRunSummaryRegimeHintUnder:
     'Your Optimize heroes aren’t competing for battle slots — each keeps their full share of field time.',
-  teamPlanRunSummaryRegimeHintSaturated:
-    'More field demand than battle slots — roster DPS is shared across who can fight at once.',
   teamPlanBudgetExhausted:
     'Search stopped early to save time — the gain shown is the best found so far, not a promise that nothing better exists.',
   teamPlanMainThreadFallback:
@@ -61,9 +57,7 @@ export const en = {
   teamPlanResultsSectionTitle: 'Plan results',
   teamPlanResultsSectionAria: 'Team plan results',
   teamPlanTotalGainLabel: 'Total gain',
-  teamPlanTotalGainValue: '{delta} dps ({pct}%)',
   teamPlanWaterfallTitle: 'Gain breakdown',
-  teamPlanResultsHeader: 'Best roster DPS found by this search',
   teamPlanStepToday: 'Today',
   teamPlanStepGear: 'Gear',
   teamPlanStepForged: 'Forge to minimum',
@@ -97,22 +91,12 @@ export const en = {
   teamPlanFlowRowFromLabel: 'From',
   teamPlanFlowRowExisting: 'Existing item — no change',
   teamPlanFlowRowForge: 'Forge from +{from} to +{to}',
-  teamPlanGearDipNote:
-    'Temporarily behind by {delta} dps — the Reset points step brings it past today.',
   teamPlanDisclosuresTitle: 'Assumptions & limits',
-  teamPlanSaturationCallout:
-    'Your field is full (battle load {duty} vs {slots} slots). Roster DPS is shared across who can fight at once — advice only; this page will not bench or donate heroes for you.',
-  teamPlanAuraDisclosure:
-    'Team auras here come from the scoped roster, exclude the hero being scored, and are weighted by each carrier’s duty. The Account tab’s manual Team buffs are ignored on this page but still drive the Planner’s own DPS.',
-  teamPlanPlannerDivergence:
-    'Planner DPS can differ from this page when roster-derived auras replace manual Team buffs, or when {ability} is modelled here only.',
   teamPlanUnmodelledAbilities: 'Unmodelled abilities in scope: {list}',
   teamPlanLoadoutDrift:
     'Stored loadout differs from the inventory snapshot for: {heroes}. This page treats the inventory as authoritative.',
   teamPlanExcludedItems:
     'Excluded from the pool — market-blocked: {market}, unresolved items: {unresolved}, foreign owners: {foreign}.',
-  teamPlanForgeSkippedNote:
-    'Forging to your minimum was left out of this plan — it did not improve roster DPS.',
   teamPlanStaleNotice:
     'Inputs changed since this plan was computed — run Build team plan again to refresh.',
   teamPlanBlockedTitle: 'Cannot run — missing birth stats',
@@ -148,8 +132,6 @@ export const pt: typeof en = {
   teamPlanOptimizingCancel: 'Cancelar',
   teamPlanOptimizingProgressAria: 'Montando plano do time',
   teamPlanSetupSectionTitle: 'Configurar busca',
-  teamPlanSetupSectionBody:
-    'Monta um plano de movimentações de itens, forjas e resets de pontos para os heróis marcados como Otimizar — pontuado pelo DPS de roster combinado.',
   teamPlanRunSummaryTitle: 'Resumo da busca',
   teamPlanRunSummaryFieldStatus: 'Situação do campo',
   teamPlanRunSummaryDuty: 'Carga de batalha',
@@ -158,8 +140,6 @@ export const pt: typeof en = {
     'Quanto seus heróis Otimizar pedem do campo em relação a quantos podem lutar ao mesmo tempo.',
   teamPlanRunSummaryRegimeHintUnder:
     'Seus heróis Otimizar não estão competindo por slots de batalha — cada um mantém a fatia cheia de tempo em campo.',
-  teamPlanRunSummaryRegimeHintSaturated:
-    'Há mais demanda de campo do que slots de batalha — o DPS do roster é dividido entre quem pode lutar ao mesmo tempo.',
   teamPlanBudgetExhausted:
     'A busca parou cedo para não demorar demais — o ganho mostrado é o melhor encontrado até aqui, sem prometer que não exista algo melhor.',
   teamPlanMainThreadFallback:
@@ -187,9 +167,7 @@ export const pt: typeof en = {
   teamPlanResultsSectionTitle: 'Resultados do plano',
   teamPlanResultsSectionAria: 'Resultados do plano do time',
   teamPlanTotalGainLabel: 'Ganho total',
-  teamPlanTotalGainValue: '{delta} dps ({pct}%)',
   teamPlanWaterfallTitle: 'Decomposição do ganho',
-  teamPlanResultsHeader: 'Melhor DPS de roster encontrado por esta busca',
   teamPlanStepToday: 'Hoje',
   teamPlanStepGear: 'Itens',
   teamPlanStepForged: 'Forjar até o mínimo',
@@ -223,22 +201,12 @@ export const pt: typeof en = {
   teamPlanFlowRowFromLabel: 'De',
   teamPlanFlowRowExisting: 'Item atual — sem mudança',
   teamPlanFlowRowForge: 'Forjar de +{from} para +{to}',
-  teamPlanGearDipNote:
-    'Temporariamente atrás em {delta} dps — o passo Resetar pontos leva além de hoje.',
   teamPlanDisclosuresTitle: 'Premissas e limites',
-  teamPlanSaturationCallout:
-    'Seu campo está lotado (carga de batalha {duty} vs {slots} slots). O DPS do roster é dividido entre quem pode lutar ao mesmo tempo — só orientação; esta página não banca nem doa heróis por você.',
-  teamPlanAuraDisclosure:
-    'Auras de time aqui vêm do roster no escopo, excluem o herói pontuado e são ponderadas pelo duty de cada portador. Os buffs manuais da aba Conta são ignorados nesta página, mas ainda movem o DPS do Planner.',
-  teamPlanPlannerDivergence:
-    'O DPS do Planner pode divergir quando auras derivadas do roster substituem buffs manuais, ou quando {ability} é modelada só aqui.',
   teamPlanUnmodelledAbilities: 'Habilidades não modeladas no escopo: {list}',
   teamPlanLoadoutDrift:
     'O loadout salvo difere do inventário para: {heroes}. Esta página usa o inventário como verdade.',
   teamPlanExcludedItems:
     'Fora do pool — bloqueados no mercado: {market}, itens sem definição: {unresolved}, donos fora do roster: {foreign}.',
-  teamPlanForgeSkippedNote:
-    'A forja até o seu mínimo ficou de fora deste plano — ela não melhorou o DPS do roster.',
   teamPlanStaleNotice:
     'Os inputs mudaram desde este plano — rode Montar plano do time de novo para atualizar.',
   teamPlanBlockedTitle: 'Não foi possível rodar — falta roll de nascimento',

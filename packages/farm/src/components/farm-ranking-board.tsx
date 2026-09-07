@@ -73,6 +73,9 @@ export type FarmRankingBoardData = {
  */
 export type FarmRankingBoardSlots = {
   headerOverlay?: ReactNode;
+  /** Passed straight to the respec panel's `scopeNote` — see that component for why it is the
+   *  host's to write. */
+  respecScopeNote?: ReactNode;
 };
 
 export type FarmRankingBoardActions = {
@@ -241,6 +244,7 @@ export function FarmRankingBoardView({
           statLabels,
         }}
         onClose={() => setFarmRespecPanelOpen(false)}
+        scopeNote={slots?.respecScopeNote}
       />
       {result.reason !== 'no-roster' ? (
         <div className="mb-2 flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">

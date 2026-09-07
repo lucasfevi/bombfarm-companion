@@ -57,6 +57,8 @@ export {
   selectInventoryItems,
   selectScopeByHeroId,
   selectForgeFloor,
+  selectTeamPlanObjective,
+  selectTeamPlanFarmUnavailable,
 } from '@/shared/stores/selectors/team-plan-selectors';
 export type { TeamPlanSlice } from '@/shared/stores/slices/team-plan-slice';
 export {

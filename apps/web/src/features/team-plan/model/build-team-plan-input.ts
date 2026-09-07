@@ -54,6 +54,7 @@ export function buildTeamPlanInputFromStore(state: PlannerStore): TeamPlanInput 
       }),
     ),
     forgeFloor: state.forgeFloor,
+    objective: state.objective,
   };
 }
 

@@ -8,11 +8,15 @@ import type {
   InventorySnapshot,
   ScopeState,
 } from '@/shared/stores/team-plan/types';
-import type { TeamPlan as DomainTeamPlan } from '@bombfarm/domain/team-plan/types';
+import type {
+  TeamPlan as DomainTeamPlan,
+  TeamPlanObjective,
+} from '@bombfarm/domain/team-plan/types';
 import {
   buildDefaultScopeMap,
   clampForgeFloor,
   computeTeamPlanInputSignature,
+  DEFAULT_TEAM_PLAN_OBJECTIVE,
   mergeScopeForRoster,
 } from '@/shared/stores/team-plan/types';
 
@@ -22,6 +26,7 @@ export type TeamPlanSlice = {
   inventory: InventorySnapshot;
   scopeByHeroId: Record<string, ScopeState>;
   forgeFloor: number;
+  objective: TeamPlanObjective;
   runStatus: TeamPlanRunStatus;
   runId: string | null;
   plan: TeamPlan;
@@ -32,6 +37,7 @@ export type TeamPlanSlice = {
   replaceInventoryFromImport: (items: InventoryItem[]) => void;
   setScope: (heroId: string, scope: ScopeState) => void;
   setForgeFloor: (value: number) => void;
+  setObjective: (value: TeamPlanObjective) => void;
   startRun: (runId: string) => void;
   resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
   applyPlan: (runId: string, plan: DomainTeamPlan) => void;
@@ -58,6 +64,7 @@ export const createTeamPlanSlice: StateCreator<
   inventory: EMPTY_INVENTORY,
   scopeByHeroId: {},
   forgeFloor: 10,
+  objective: DEFAULT_TEAM_PLAN_OBJECTIVE,
   runStatus: 'idle',
   runId: null,
   plan: null,
@@ -128,6 +135,21 @@ export const createTeamPlanSlice: StateCreator<
     set({ forgeFloor: next });
   },
 
+  // Clears outright rather than marking stale, the way setScope does: the two objectives report
+  // different quantities in different units, so a plan built for one renders as a wrong number
+  // under the other's copy. Dropping runId with it also disowns a run already in flight, whose
+  // answer would otherwise land under the objective the user has since switched away from.
+  setObjective: (value) => {
+    if (get().objective === value) return;
+    set({
+      objective: value,
+      plan: null,
+      planInputSignature: null,
+      runStatus: 'idle',
+      runId: null,
+    });
+  },
+
   startRun: (runId) => {
     if (get().runId === runId && get().runStatus === 'running') return;
     set({ runId, runStatus: 'running' });
@@ -179,5 +201,6 @@ export function selectLiveTeamPlanInputSignature(state: PlannerStore): string {
     treeDanoTotal: state.treeDanoTotal,
     houseIdx: state.houseIdx,
     houseCycleSecs: state.houseCycleSecs,
+    objective: state.objective,
   });
 }

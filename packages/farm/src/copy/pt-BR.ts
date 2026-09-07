@@ -163,6 +163,7 @@ export const farmPtBR: FarmCopy = {
   farmRespecNotWorthTitle: "Sua build já está perto da melhor encontrada",
   farmRespecNotWorthDesc: "A melhor build que esta busca alcançou rende {gain}% mais ouro por hora, abaixo dos {floor}% que justificam um respec. Mantenha seus pontos como estão e gaste o ouro em outra coisa.",
   farmRespecPanelHeading: "Consultor de respec",
+  farmRespecPointsOnly: "Este consultor só mexe em pontos de atributo. Ele nunca move itens entre heróis e nunca forja nada.",
   farmRespecClose: "Fechar",
   farmRespecPanelGain: "{pct}% a mais por hora",
   farmRespecMetricGold: "Ouro / h",

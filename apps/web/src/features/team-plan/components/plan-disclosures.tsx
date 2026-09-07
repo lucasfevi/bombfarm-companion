@@ -6,17 +6,20 @@ import { Panel } from '@bombfarm/ui';
 import { panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
 import type { Lang, Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
+import type { TeamPlanObjectiveCopy } from '@/features/team-plan/model/objective-copy';
 
 export function PlanDisclosures({
   t,
   lang,
   plan,
   requestedForgeFloor,
+  copy,
 }: {
   t: Strings;
   lang: Lang;
   plan: TeamPlan;
   requestedForgeFloor: number;
+  copy: TeamPlanObjectiveCopy;
 }) {
   const unmodelled = plan.disclosures.unmodelledAbilities
     .map((row) => `${abilityName(row.abilityId, lang)} (${row.heroNames.join(', ')})`)
@@ -31,15 +34,15 @@ export function PlanDisclosures({
       <div className="space-y-3 text-[13px] text-muted">
         {plan.regime === 'saturated' ? (
           <p className="m-0 rounded-sm border border-warn/40 bg-[color-mix(in_oklch,var(--warn)_8%,transparent)] px-3 py-2 text-ink">
-            {sub(t.teamPlanSaturationCallout, {
+            {sub(copy.saturationCallout, {
               duty: String(plan.sumDuty.toFixed(2)),
               slots: String(plan.slots),
             })}
           </p>
         ) : null}
-        <p className="m-0">{t.teamPlanAuraDisclosure}</p>
+        <p className="m-0">{copy.auraDisclosure}</p>
         <p className="m-0">
-          {sub(t.teamPlanPlannerDivergence, {
+          {sub(copy.plannerDivergence, {
             ability: abilityName('passagem_bastao', lang),
           })}
         </p>
@@ -60,7 +63,7 @@ export function PlanDisclosures({
             foreign: String(plan.disclosures.foreignOwnedItemCount),
           })}
         </p>
-        {forgeSkipped ? <p className="m-0">{t.teamPlanForgeSkippedNote}</p> : null}
+        {forgeSkipped ? <p className="m-0">{copy.forgeSkippedNote}</p> : null}
       </div>
     </Panel>
   );

@@ -246,6 +246,38 @@ describe('team-plan slice', () => {
     expect(usePlannerStore.getState().forgeFloor).toBe(before);
   });
 
+  it('objective defaults to farm — the domain keeps dps, this app asks for gold', () => {
+    expect(usePlannerStore.getState().objective).toBe('farm');
+  });
+
+  it('setObjective drops a displayed plan and disowns the run that produced it', () => {
+    usePlannerStore.setState({
+      plan: { steps: [] } as never,
+      planInputSignature: 'sig',
+      runId: 'run-1',
+      runStatus: 'done',
+    });
+    usePlannerStore.getState().setObjective('dps');
+    expect(usePlannerStore.getState().objective).toBe('dps');
+    expect(usePlannerStore.getState().plan).toBeNull();
+    expect(usePlannerStore.getState().planInputSignature).toBeNull();
+    expect(usePlannerStore.getState().runId).toBeNull();
+    expect(usePlannerStore.getState().runStatus).toBe('idle');
+  });
+
+  it('setObjective is a no-op when the objective is unchanged', () => {
+    usePlannerStore.setState({ planInputSignature: 'sig', runId: 'run-1', runStatus: 'done' });
+    usePlannerStore.getState().setObjective('farm');
+    expect(usePlannerStore.getState().planInputSignature).toBe('sig');
+    expect(usePlannerStore.getState().runId).toBe('run-1');
+  });
+
+  it('the objective is part of the plan input signature', () => {
+    const farmSignature = selectLiveTeamPlanInputSignature(usePlannerStore.getState());
+    usePlannerStore.getState().setObjective('dps');
+    expect(selectLiveTeamPlanInputSignature(usePlannerStore.getState())).not.toBe(farmSignature);
+  });
+
   it('startRun and resolveRun track run id', () => {
     usePlannerStore.getState().startRun('run-1');
     expect(usePlannerStore.getState().runStatus).toBe('running');

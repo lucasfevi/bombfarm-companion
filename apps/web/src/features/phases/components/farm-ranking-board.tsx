@@ -82,6 +82,7 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
         setFarmRespecReRank,
         runFarmRespec,
       }}
+      slots={{ respecScopeNote: t.teamPlanFarmAdvisorPointer }}
     />
   );
 }

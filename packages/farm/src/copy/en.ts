@@ -159,6 +159,7 @@ export const farmEn = {
   farmRespecNotWorthTitle: "Your build is already close to the best found",
   farmRespecNotWorthDesc: "The best build this search reached is worth {gain}% more gold per hour, under the {floor}% it takes to be worth a respec. Keep your points where they are and spend the gold elsewhere.",
   farmRespecPanelHeading: "Respec advisor",
+  farmRespecPointsOnly: "This advisor only moves stat points. It never moves gear between heroes and never forges anything.",
   farmRespecClose: "Close",
   farmRespecPanelGain: "{pct}% more per hour",
   farmRespecMetricGold: "Gold / hr",
