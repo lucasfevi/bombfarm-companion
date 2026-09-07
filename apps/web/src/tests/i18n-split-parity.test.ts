@@ -804,6 +804,40 @@ const KEYS_ADDED: readonly string[] = [
   'accountHoldingsSkinsCoverage',
   'accountHoldingsSkinsWithheld',
   'accountHoldingsSkinsWorn',
+  /**
+   * The download page's screen list catches up with the app (2026-09-07). It advertised four
+   * screens while the desktop app shipped seven: Farm and Account were added to the app and never
+   * added here, and Heroes is new. The three new cards are numbered keys for the same reason the
+   * original four are — an array diffs as one leaf path per element in the value comparisons but
+   * as the bare key name in the key-name comparison, so one entry could not satisfy both.
+   *
+   * Heroes carries six items rather than the four or five its neighbours do because the screen
+   * genuinely holds six separable readings of one hero, and folding two together would have
+   * described a screen that does less than it does.
+   *
+   * The cards are ordered as the app's own tab strip orders them, so a reader who installs it
+   * meets the screens in the sequence this page introduced them. Nothing ties the two together,
+   * so that ordering is a fact about this file only.
+   */
+  'downloadScreenFarmTitle',
+  'downloadScreenFarmItem1',
+  'downloadScreenFarmItem2',
+  'downloadScreenFarmItem3',
+  'downloadScreenFarmItem4',
+  'downloadScreenFarmItem5',
+  'downloadScreenHeroesTitle',
+  'downloadScreenHeroesItem1',
+  'downloadScreenHeroesItem2',
+  'downloadScreenHeroesItem3',
+  'downloadScreenHeroesItem4',
+  'downloadScreenHeroesItem5',
+  'downloadScreenHeroesItem6',
+  'downloadScreenAccountTitle',
+  'downloadScreenAccountItem1',
+  'downloadScreenAccountItem2',
+  'downloadScreenAccountItem3',
+  'downloadScreenAccountItem4',
+  'downloadScreenAccountItem5',
 ];
 
 /**

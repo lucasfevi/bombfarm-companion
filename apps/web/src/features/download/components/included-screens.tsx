@@ -19,6 +19,27 @@ export function IncludedScreens({ t }: { t: Strings }) {
           ]}
         />
         <ScreenCard
+          title={t.downloadScreenFarmTitle}
+          items={[
+            t.downloadScreenFarmItem1,
+            t.downloadScreenFarmItem2,
+            t.downloadScreenFarmItem3,
+            t.downloadScreenFarmItem4,
+            t.downloadScreenFarmItem5,
+          ]}
+        />
+        <ScreenCard
+          title={t.downloadScreenHeroesTitle}
+          items={[
+            t.downloadScreenHeroesItem1,
+            t.downloadScreenHeroesItem2,
+            t.downloadScreenHeroesItem3,
+            t.downloadScreenHeroesItem4,
+            t.downloadScreenHeroesItem5,
+            t.downloadScreenHeroesItem6,
+          ]}
+        />
+        <ScreenCard
           title={t.downloadScreenInventoryTitle}
           items={[
             t.downloadScreenInventoryItem1,
@@ -37,6 +58,16 @@ export function IncludedScreens({ t }: { t: Strings }) {
           ]}
         />
         <ScreenCard
+          title={t.downloadScreenAccountTitle}
+          items={[
+            t.downloadScreenAccountItem1,
+            t.downloadScreenAccountItem2,
+            t.downloadScreenAccountItem3,
+            t.downloadScreenAccountItem4,
+            t.downloadScreenAccountItem5,
+          ]}
+        />
+        <ScreenCard
           title={t.downloadScreenSettingsTitle}
           items={[
             t.downloadScreenSettingsItem1,
@@ -45,6 +76,10 @@ export function IncludedScreens({ t }: { t: Strings }) {
             t.downloadScreenSettingsItem4,
           ]}
         />
+        {/* The grid draws its dividers as a line-coloured backdrop showing through 1px gaps, so a
+            trailing empty cell reads as a solid block of that colour. Seven cards leave exactly one
+            at both two and four columns, and none at one. */}
+        <div aria-hidden className="hidden bg-bg md:block" />
       </div>
     </section>
   );
