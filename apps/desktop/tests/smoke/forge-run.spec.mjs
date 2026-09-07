@@ -228,22 +228,31 @@ function markPositions(page) {
  */
 async function theRunBandIsInView(page) {
   if (process.env.BFC_HIDE_WINDOWS === '1') return;
-  const seen = await page.evaluate(() => {
-    const main = document.querySelector('main');
-    const rail = document.querySelector('[data-testid="forge-rail"]');
-    if (main === null || rail === null) return null;
-    const port = main.getBoundingClientRect();
-    const band = rail.getBoundingClientRect();
-    return {
-      above: Math.round(band.top - port.top),
-      below: Math.round(port.bottom - band.bottom),
-      height: Math.round(band.height),
-    };
-  });
-  expect(seen).not.toBeNull();
-  expect(seen.height).toBeGreaterThan(0);
-  expect(seen.above).toBeGreaterThanOrEqual(0);
-  expect(seen.below).toBeGreaterThanOrEqual(0);
+  // Polled, never read once after a wait: the scroll is smooth, so a band that starts off screen
+  // arrives over a few hundred milliseconds and any single read can catch it mid-journey. That is
+  // how this failed twice — first as an exact offset caught 3px in, then as a geometry check
+  // caught 187px in. The band ending up in view is the promise; when it gets there is not.
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(() => {
+          const main = document.querySelector('main');
+          const rail = document.querySelector('[data-testid="forge-rail"]');
+          if (main === null || rail === null) return 'no band';
+          const port = main.getBoundingClientRect();
+          const band = rail.getBoundingClientRect();
+          if (Math.round(band.height) === 0) return 'collapsed';
+          const above = Math.round(band.top - port.top);
+          const below = Math.round(port.bottom - band.bottom);
+          if (above < 0) return `${String(-above)}px above the top`;
+          // A band taller than the port stops at aligning its top, which is what the scroll
+          // promises and all it can promise; anything shorter must fit whole.
+          if (below < 0 && band.height < port.height) return `${String(-below)}px below the bottom`;
+          return 'in view';
+        }),
+      { timeout: 10_000 },
+    )
+    .toBe('in view');
 }
 
 async function railSpansTheRow(page) {
