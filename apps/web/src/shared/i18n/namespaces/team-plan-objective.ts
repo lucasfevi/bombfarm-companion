@@ -8,6 +8,17 @@
  * side by side than scattered through the page's other hundred strings.
  */
 export const en = {
+  teamPlanPhaseHintNoneDps:
+    'No phase pinned. Damage is scored at the phase your account is on now.',
+  teamPlanPhaseHintNoneFarm:
+    'No phase pinned. The search picks the best phase your squad can hold, and says which one it settled on.',
+  /** Rendered only when a plan may respend points at all. Luck is not part of `HeroSheet`, so no
+   *  points search can reach it in either direction — worth saying under damage (your Luck is
+   *  safe) and worth saying louder under gold (a stat that earns is being held still). */
+  teamPlanLuckFrozenDps:
+    'Points already in Luck stay put — this search never moves Luck, in either direction.',
+  teamPlanLuckFrozenFarm:
+    'Points already in Luck stay put — this search never moves Luck, in either direction, even though Luck raises drop rates and so gold per hour.',
   teamPlanObjectiveLabel: 'Score for',
   teamPlanObjectiveAria: 'What this search scores a roster on',
   teamPlanObjectiveOptionDamage: 'DPS',
@@ -58,6 +69,14 @@ export const en = {
 };
 
 export const pt: typeof en = {
+  teamPlanPhaseHintNoneDps:
+    'Nenhuma fase fixada. O dano é pontuado na fase em que sua conta está agora.',
+  teamPlanPhaseHintNoneFarm:
+    'Nenhuma fase fixada. A busca escolhe a melhor fase que seu esquadrão aguenta, e diz qual ficou.',
+  teamPlanLuckFrozenDps:
+    'Pontos já em Sorte ficam onde estão — esta busca nunca mexe em Sorte, em nenhuma direção.',
+  teamPlanLuckFrozenFarm:
+    'Pontos já em Sorte ficam onde estão — esta busca nunca mexe em Sorte, em nenhuma direção, mesmo que Sorte aumente as chances de drop e portanto o ouro por hora.',
   teamPlanObjectiveLabel: 'Pontuar por',
   teamPlanObjectiveAria: 'O que esta busca usa para pontuar um roster',
   teamPlanObjectiveOptionDamage: 'DPS',

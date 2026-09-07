@@ -24,6 +24,12 @@ async function pickPhase(page: Page, query: string, optionName: RegExp) {
   await expect(page.getByRole('listbox')).toHaveCount(0);
 }
 
+async function pickObjective(page: Page, optionName: RegExp) {
+  await page.getByRole('combobox', { name: /^What this search scores a roster on$/i }).click();
+  await page.getByRole('option', { name: optionName }).click();
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+}
+
 test.describe('Team plan phase picker', () => {
   test.beforeEach(async ({ page }) => {
     await seedLocalStorage(page, teamPlanFixtureSeed('en'));
@@ -66,6 +72,22 @@ test.describe('Team plan phase picker', () => {
     await pickPhase(page, 'None', /^None$/);
     await expect(phaseCombobox(page)).toHaveText(/^None$/);
     await expect(page.getByText(/No phase pinned\./)).toBeVisible();
+  });
+
+  /**
+   * An unpinned phase means two different things. Gold sweeps for one and reports which it chose;
+   * damage does not sweep at all and scores at the account's own phase. One hint for both told
+   * damage users the search would go and find them a phase, which it never does.
+   */
+  test('unpinned says what each objective actually does with it', async ({ page }) => {
+    await pickPhase(page, 'None', /^None$/);
+    await expect(page.getByText(/No phase pinned\. The search picks the best phase/)).toBeVisible();
+
+    await pickObjective(page, /^DPS$/i);
+    await expect(
+      page.getByText(/No phase pinned\. Damage is scored at the phase your account is on now\./),
+    ).toBeVisible();
+    await expect(page.getByText(/The search picks the best phase/)).toHaveCount(0);
   });
 
   test('a chosen phase past the account’s furthest says so', async ({ page }) => {

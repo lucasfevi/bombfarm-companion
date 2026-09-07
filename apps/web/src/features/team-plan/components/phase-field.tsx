@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { SearchSelect } from '@bombfarm/ui';
 import type { Strings, Lang } from '@/shared/i18n';
+import type { TeamPlanObjectiveCopy } from '@/features/team-plan/model/objective-copy';
 import { sub } from '@/shared/i18n';
 import { usePlannerStore, selectTeamPlanTargetPhase } from '@/shared/stores';
 import { formatNumber } from '@/shared/lib/format-number';
@@ -16,7 +17,15 @@ const fieldLabelClass =
   'flex min-w-0 flex-col gap-[3px] text-[11px] tracking-[0.03em] text-muted uppercase';
 
 /** Phase picker + hint — no panel chrome (lives inside the search setup bar, beside Score for). */
-export function PhaseField({ t, lang }: { t: Strings; lang: Lang }) {
+export function PhaseField({
+  t,
+  lang,
+  copy,
+}: {
+  t: Strings;
+  lang: Lang;
+  copy: TeamPlanObjectiveCopy;
+}) {
   const targetPhase = usePlannerStore(selectTeamPlanTargetPhase);
   const maxPhase = usePlannerStore((state) => state.maxPhase);
   const setTargetPhase = usePlannerStore((state) => state.setTargetPhase);
@@ -48,7 +57,7 @@ export function PhaseField({ t, lang }: { t: Strings; lang: Lang }) {
         />
       </label>
       <p className="m-0 mt-2 text-[12px] text-muted">
-        {targetPhase == null ? t.teamPlanPhaseHintNone : t.teamPlanPhaseHintChosen}
+        {targetPhase == null ? copy.phaseHintNone : t.teamPlanPhaseHintChosen}
       </p>
       {beyondReach ? (
         <p className="m-0 mt-1 text-[12px] text-warn" role="status">

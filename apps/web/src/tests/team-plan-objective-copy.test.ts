@@ -121,7 +121,6 @@ describe('team plan objective copy', () => {
     'teamPlanPhaseSearchPlaceholder',
     'teamPlanPhaseNoMatch',
     'teamPlanPhaseMoreMatches',
-    'teamPlanPhaseHintNone',
     'teamPlanPhaseHintChosen',
     'teamPlanPhaseBeyondMax',
     'teamPlanRunSummaryScoredPhase',
@@ -140,6 +139,11 @@ describe('team plan objective copy', () => {
     'teamPlanAllowedChangesHintGear',
     'teamPlanAllowedChangesNotePoints',
     'teamPlanAllowedChangesNoteGear',
+    // The three Optimize arias name the KIND of work a plan may contain, never what it is scored
+    // on, so all three render under either objective.
+    'teamPlanOptimizeAriaBoth',
+    'teamPlanOptimizeAriaPoints',
+    'teamPlanOptimizeAriaGear',
   ] as const;
 
   for (const lang of LANGS) {

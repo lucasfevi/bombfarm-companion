@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { Button, Panel } from '@bombfarm/ui';
+import { mayMoveGear, mayRespendPoints } from '@bombfarm/domain/team-plan';
+import type { TeamPlanAllowedChanges } from '@bombfarm/domain/team-plan/types';
 import { panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui/panel-field.recipe';
 import type { Lang, Strings } from '@/shared/i18n';
 import type { TeamPlanRunner } from '@/features/team-plan/hooks/use-team-plan-runner';
@@ -20,6 +22,17 @@ import { AllowedChangesField } from './allowed-changes-field';
 import { ForgeFloorField } from './forge-floor-field';
 import { ObjectiveField } from './objective-field';
 import { PhaseField } from './phase-field';
+
+/**
+ * The button's accessible name has to follow Allowed changes: a points-only plan moves no gear,
+ * so an unconditional "gear moves and point resets" describes work it will not do to the one
+ * reader who cannot see the control that ruled it out.
+ */
+function optimizeAriaFor(strings: Strings, allowedChanges: TeamPlanAllowedChanges): string {
+  if (!mayMoveGear(allowedChanges)) return strings.teamPlanOptimizeAriaPoints;
+  if (!mayRespendPoints(allowedChanges)) return strings.teamPlanOptimizeAriaGear;
+  return strings.teamPlanOptimizeAriaBoth;
+}
 
 export function TeamPlanToolbar({
   t,
@@ -95,7 +108,7 @@ export function TeamPlanToolbar({
             edge puts every control on the same line. */}
         <div className="flex min-w-0 flex-1 flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:gap-6">
           <ObjectiveField t={t} copy={copy} />
-          <PhaseField t={t} lang={lang} />
+          <PhaseField t={t} lang={lang} copy={copy} />
           <AllowedChangesField t={t} />
           {/* A points-only plan is scored at the items' real forge levels and orders no forge
               work, so a floor the player can still set would be a control that does nothing. */}
@@ -106,7 +119,7 @@ export function TeamPlanToolbar({
           variant="primary"
           disabled={busy || scopeEmpty || farmBlocked}
           aria-busy={busy}
-          aria-label={t.teamPlanOptimizeAria}
+          aria-label={optimizeAriaFor(t, allowedChanges)}
           className="min-h-12 w-full shrink-0 px-8 text-sm sm:w-auto sm:min-w-52"
           onClick={handleOptimize}
         >

@@ -29,6 +29,9 @@ export function PlanDisclosures({
   // these two lines are the difference between "forging did not pay" and "forging was never on
   // the table" — only the plan knows which of those its empty forge list means.
   const gearAllowed = mayMoveGear(plan.allowedChanges);
+  // Luck is outside the reallocatable budget in both directions, which is only worth saying to
+  // someone whose plan could have moved points at all.
+  const pointsAllowed = mayRespendPoints(plan.allowedChanges);
   const forgeSkipped = gearAllowed && requestedForgeFloor > 0 && plan.forgeFloorApplied === 0;
 
   return (
@@ -70,11 +73,10 @@ export function PlanDisclosures({
             })}
           </p>
         ) : null}
+        {pointsAllowed ? <p className="m-0">{copy.luckFrozenNote}</p> : null}
         {forgeSkipped ? <p className="m-0">{copy.forgeSkippedNote}</p> : null}
         {!gearAllowed ? <p className="m-0">{t.teamPlanAllowedChangesNotePoints}</p> : null}
-        {!mayRespendPoints(plan.allowedChanges) ? (
-          <p className="m-0">{t.teamPlanAllowedChangesNoteGear}</p>
-        ) : null}
+        {!pointsAllowed ? <p className="m-0">{t.teamPlanAllowedChangesNoteGear}</p> : null}
       </div>
     </Panel>
   );

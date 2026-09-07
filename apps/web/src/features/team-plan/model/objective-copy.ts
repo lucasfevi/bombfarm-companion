@@ -22,6 +22,8 @@ export type TeamPlanObjectiveCopy = {
   auraDisclosure: string;
   plannerDivergence: string;
   forgeSkippedNote: string;
+  phaseHintNone: string;
+  luckFrozenNote: string;
 };
 
 export function teamPlanObjectiveCopy(
@@ -40,6 +42,8 @@ export function teamPlanObjectiveCopy(
         auraDisclosure: strings.teamPlanAuraDisclosureFarm,
         plannerDivergence: strings.teamPlanPlannerDivergenceFarm,
         forgeSkippedNote: strings.teamPlanForgeSkippedNoteFarm,
+        phaseHintNone: strings.teamPlanPhaseHintNoneFarm,
+        luckFrozenNote: strings.teamPlanLuckFrozenFarm,
       }
     : {
         setupSectionBody: strings.teamPlanSetupSectionBodyDps,
@@ -52,5 +56,7 @@ export function teamPlanObjectiveCopy(
         auraDisclosure: strings.teamPlanAuraDisclosureDps,
         plannerDivergence: strings.teamPlanPlannerDivergenceDps,
         forgeSkippedNote: strings.teamPlanForgeSkippedNoteDps,
+        phaseHintNone: strings.teamPlanPhaseHintNoneDps,
+        luckFrozenNote: strings.teamPlanLuckFrozenDps,
       };
 }

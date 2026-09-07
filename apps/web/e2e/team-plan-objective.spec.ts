@@ -1,7 +1,12 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { teamPlanFixtureSeed } from './fixtures/team-plan-seed';
 import { seedLocalStorage } from './fixtures/seed';
-import { clickOptimize, gotoTeamPlan, waitForOptimizeDone } from './fixtures/team-plan-e2e';
+import {
+  clickOptimize,
+  disclosuresPanel,
+  gotoTeamPlan,
+  waitForOptimizeDone,
+} from './fixtures/team-plan-e2e';
 
 /** DS Select is a Base UI combobox — not a native `<select>`. */
 function objectiveCombobox(page: Page): Locator {
@@ -32,6 +37,17 @@ test.describe('Team plan objective', () => {
     await pickObjective(page, /^DPS$/i);
     await expect(objectiveCombobox(page)).toHaveText(/^DPS$/i);
     await expect(page.getByText(/scored for combined roster DPS/i)).toBeVisible();
+  });
+
+  /**
+   * Luck raises drop rates and so gold per hour, and no points search can move it — the page owes
+   * a gold-scored reader that, and owes a damage-scored reader the reassurance it is not taken.
+   */
+  test('both objectives disclose that Luck is never moved', async ({ page }) => {
+    await clickOptimize(page);
+    await waitForOptimizeDone(page);
+    await expect(disclosuresPanel(page).getByText(/never moves Luck, in either direction/i)).toBeVisible();
+    await expect(disclosuresPanel(page).getByText(/Luck raises drop rates/i)).toBeVisible();
   });
 
   test('a Gold plan reports gold per hour and never roster DPS', async ({ page }) => {
@@ -93,7 +109,7 @@ test.describe('Team plan objective — a record with no furthest phase', () => {
     await pickNoPhase(page);
     await expect(page.getByText(NEEDS_PHASE)).toBeVisible();
     await expect(
-      page.getByRole('button', { name: /Build a team plan of gear moves and point resets/i }),
+      page.getByRole('button', { name: /^Build a team plan of /i }),
     ).toBeDisabled();
     await expect(page.getByRole('heading', { name: /^Search failed$/i })).toHaveCount(0);
   });

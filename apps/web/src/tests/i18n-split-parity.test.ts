@@ -189,6 +189,9 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  */
 const KEYS_REMOVED: readonly string[] = [
   'navTeamPlan',
+  // Split into `…Both`/`…Points`/`…Gear` (in `KEYS_ADDED`): the one string named gear moves and
+  // point resets whatever Allowed changes was set to.
+  'teamPlanOptimizeAria',
   'teamPlanSetupSectionBody',
   'teamPlanRunSummaryRegimeHintSaturated',
   'teamPlanTotalGainValue',
@@ -424,6 +427,16 @@ const KEYS_REMOVED: readonly string[] = [
  */
 const KEYS_ADDED: readonly string[] = [
   'navOptimizer',
+  'teamPlanOptimizeAriaBoth',
+  'teamPlanOptimizeAriaPoints',
+  'teamPlanOptimizeAriaGear',
+  'teamPlanPhaseHintNoneDps',
+  'teamPlanPhaseHintNoneFarm',
+  // Luck is not part of `HeroSheet`, so no points search can reach it in either direction. The
+  // page had never said so, which matters most under the gold objective: a stat that raises drop
+  // rates, and so gold per hour, is being held still while gold per hour is optimized.
+  'teamPlanLuckFrozenDps',
+  'teamPlanLuckFrozenFarm',
   'farmRespecPointsOnly',
   'teamPlanPhaseLabel',
   'teamPlanPhaseAria',
@@ -431,7 +444,6 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanPhaseSearchPlaceholder',
   'teamPlanPhaseNoMatch',
   'teamPlanPhaseMoreMatches',
-  'teamPlanPhaseHintNone',
   'teamPlanPhaseHintChosen',
   'teamPlanPhaseBeyondMax',
   'teamPlanRunSummaryScoredPhase',

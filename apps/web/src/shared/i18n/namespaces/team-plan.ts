@@ -13,7 +13,9 @@ export const en = {
     'Set at least one hero to Optimize before running a plan.',
   teamPlanImportCta: 'Import save',
   teamPlanOptimize: 'Build team plan',
-  teamPlanOptimizeAria: 'Build a team plan of gear moves and point resets',
+  teamPlanOptimizeAriaBoth: 'Build a team plan of gear moves and point resets',
+  teamPlanOptimizeAriaPoints: 'Build a team plan of point resets',
+  teamPlanOptimizeAriaGear: 'Build a team plan of gear moves',
   teamPlanOptimizing: 'Building plan…',
   teamPlanOptimizingTitle: 'Building plan…',
   teamPlanOptimizingBody:
@@ -30,8 +32,6 @@ export const en = {
   teamPlanPhaseSearchPlaceholder: 'Hard, Normal 2-1, or 151',
   teamPlanPhaseNoMatch: 'No phase matches that.',
   teamPlanPhaseMoreMatches: 'Showing {shown} of {matched} — keep typing to narrow.',
-  teamPlanPhaseHintNone:
-    'No phase pinned. The search picks the best phase your squad can hold, and says which one it settled on.',
   teamPlanPhaseHintChosen:
     'Every figure below is scored at this phase, and nowhere else. Pinning one also makes the search much faster.',
   teamPlanPhaseBeyondMax:
@@ -159,7 +159,10 @@ export const pt: typeof en = {
     'Marque pelo menos um herói como Otimizar antes de rodar um plano.',
   teamPlanImportCta: 'Importar save',
   teamPlanOptimize: 'Montar plano do time',
-  teamPlanOptimizeAria: 'Montar um plano do time com movimentações de itens e resets de pontos',
+  teamPlanOptimizeAriaBoth:
+    'Montar um plano do time com movimentações de itens e resets de pontos',
+  teamPlanOptimizeAriaPoints: 'Montar um plano do time com resets de pontos',
+  teamPlanOptimizeAriaGear: 'Montar um plano do time com movimentações de itens',
   teamPlanOptimizing: 'Montando plano…',
   teamPlanOptimizingTitle: 'Montando plano…',
   teamPlanOptimizingBody:
@@ -174,8 +177,6 @@ export const pt: typeof en = {
   teamPlanPhaseSearchPlaceholder: 'Difícil, Normal 2-1 ou 151',
   teamPlanPhaseNoMatch: 'Nenhuma fase corresponde.',
   teamPlanPhaseMoreMatches: 'Mostrando {shown} de {matched} — continue digitando para filtrar.',
-  teamPlanPhaseHintNone:
-    'Nenhuma fase fixada. A busca escolhe a melhor fase que seu esquadrão consegue sustentar, e informa qual foi.',
   teamPlanPhaseHintChosen:
     'Todos os números abaixo são calculados nesta fase, e em nenhuma outra. Fixar uma também deixa a busca muito mais rápida.',
   teamPlanPhaseBeyondMax:

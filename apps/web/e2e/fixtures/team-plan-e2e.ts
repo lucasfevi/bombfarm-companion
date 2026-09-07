@@ -26,17 +26,23 @@ export function disclosuresPanel(page: Page) {
     .locator('xpath=ancestor::section[1]');
 }
 
+/**
+ * The button's accessible name follows Allowed changes, so these helpers match only its stable
+ * prefix — driving the page must not depend on which kinds of work the current mode permits.
+ * The exact name per mode is asserted in `team-plan-allowed-changes.spec.ts`, where it is the
+ * subject rather than the route to one.
+ */
+const OPTIMIZE_BUTTON = /^Build a team plan of /i;
+
 export async function clickOptimize(page: Page) {
-  const button = page.getByRole('button', {
-    name: /Build a team plan of gear moves and point resets/i,
-  });
+  const button = page.getByRole('button', { name: OPTIMIZE_BUTTON });
   await expect(button).toBeEnabled();
   await button.click();
 }
 
 export async function waitForOptimizeDone(page: Page, timeout = 120_000) {
   await expect(
-    page.getByRole('button', { name: /Build a team plan of gear moves and point resets/i }),
+    page.getByRole('button', { name: OPTIMIZE_BUTTON }),
   ).toBeEnabled({
     timeout,
   });
