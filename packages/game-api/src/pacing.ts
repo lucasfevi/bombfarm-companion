@@ -1,8 +1,8 @@
 import type { RequestOutcome } from './request.js';
 
 /**
- * Read pacing — single-flight with a min gap and cycle interval, cooldown getting bounded
- * backoff instead of a storm, and 401/403 halting into a distinct terminal state. Every value
+ * Read pacing — single-flight with a min gap and cycle interval, and two bounded backoff ladders
+ * instead of a storm: one for cooldown, one for 401/403. Every value
  * here is **unmeasured** — the
  * server's actual read-rate tolerance has never been measured (spec.md, Assumptions & Open
  * Questions). Each constant below carries its own provenance comment for exactly that reason: a
@@ -10,9 +10,10 @@ import type { RequestOutcome } from './request.js';
  * source and fails if any value loses its comment).
  *
  * Reused from the internal automation prototype's rate-limit module: the cooldown-detection shape (see
- * `request.ts`'s `COOLDOWN_BODY_PATTERN`) and the 429/503 checks. The *write*-pacing half
- * (`beforeWrite`, `dryRun`, `min_write_interval_ms`) is not ported — it guards a surface this
- * package does not have (`D24`: no writes).
+ * `request.ts`'s `COOLDOWN_BODY_PATTERN`) and the 429/503 checks. The write half below paces the
+ * app's one kind of write, a forge roll, through the same gate instance as the reads — one
+ * stream, one cooldown — so a 429 on a roll trips the backoff the account reads honour, and two
+ * writers can never interleave past each other's spacing on separate gates.
  */
 export const READ_PACING = {
   /** Unmeasured. 1.1s is the only inter-GET spacing ever exercised against these routes (the
@@ -42,8 +43,48 @@ export const READ_PACING = {
   /** Unmeasured. Backoff ceiling — never wait longer than 15 minutes between retries. */
   backoffCapMs: 900_000,
 
+  /** Unmeasured. First wait after a 401/403 before the same credentials are tried again — one
+   *  ordinary cycle, so a transient rejection costs a single skipped read rather than every read
+   *  until the app is relaunched. */
+  authRetryStartMs: 60_000,
+
+  /** Unmeasured. Ceiling for the 401/403 ladder. A session the server keeps rejecting is retried
+   *  four times an hour, which is the whole difference between a stall that ends by itself and
+   *  one that ends only when the player notices and restarts. */
+  authRetryCapMs: 900_000,
+
   /** Reused verbatim from the internal automation prototype's request timeout. */
   requestTimeoutMs: 15_000,
+
+  /** Unmeasured. Reused from the internal automation prototype's write-interval default; never
+   *  exceeded a server cooldown in its logs at this spacing, which is evidence of safety, not a
+   *  measured limit. */
+  minWriteGapMs: 1_500,
+
+  /** Reused from the internal automation prototype's forge pacing defaults; cadence shaping on
+   *  our own account, not an attempt to defeat the server's limit — the gate still owns the hard
+   *  floor and the cooldown. */
+  forgeDelayMinMs: 700,
+
+  /** Reused from the internal automation prototype's forge pacing defaults; cadence shaping on
+   *  our own account, not an attempt to defeat the server's limit — the gate still owns the hard
+   *  floor and the cooldown. */
+  forgeDelayMaxMs: 2_500,
+
+  /** Reused from the internal automation prototype's forge pacing defaults; cadence shaping on
+   *  our own account, not an attempt to defeat the server's limit — the gate still owns the hard
+   *  floor and the cooldown. */
+  forgeLongPauseChance: 0.08,
+
+  /** Reused from the internal automation prototype's forge pacing defaults; cadence shaping on
+   *  our own account, not an attempt to defeat the server's limit — the gate still owns the hard
+   *  floor and the cooldown. */
+  forgeLongPauseMinMs: 4_000,
+
+  /** Reused from the internal automation prototype's forge pacing defaults; cadence shaping on
+   *  our own account, not an attempt to defeat the server's limit — the gate still owns the hard
+   *  floor and the cooldown. */
+  forgeLongPauseMaxMs: 12_000,
 } as const;
 
 export interface PacingClock {
@@ -62,54 +103,73 @@ export class PacingRefusedError extends Error {
   }
 }
 
-/** Thrown by `nextCycleDelayMs` while halted — the cycle must not schedule itself again until
- *  `resetAuth()` is called. */
-export class PacingHaltedError extends Error {
-  constructor() {
-    super('PacingHaltedError: the cycle is halted on an unresolved unauthorized response');
-    this.name = 'PacingHaltedError';
-  }
-}
-
 export interface PacingGate {
   /** Serialises every call through one queue, enforcing `minRequestGapMs` between starts.
    *  A repeat of the same `key` while a prior call for that key is still in flight is coalesced
    *  into it — one underlying call, every caller resolves to the same result. */
   run<T>(key: string, fn: () => Promise<T>): Promise<T>;
-  /** Feeds a request's outcome back into the ladder: `cooldown` trips backoff, `ok` resets it,
-   *  `unauthorized` halts the gate. Every other kind leaves pacing state untouched. */
+  /** The write half of the same queue and the same refusal rules: a write waits out
+   *  `minWriteGapMs` since the last write start *and* `minRequestGapMs` since the last start of
+   *  any kind. Never coalesces — two forge calls with the same `key` are two calls. */
+  runWrite<T>(key: string, fn: () => Promise<T>): Promise<T>;
+  /** The humanised gap between two consecutive forge rolls: a uniform draw between the forge
+   *  delay bounds, replaced by a longer pause with `forgeLongPauseChance`. The first draw decides
+   *  the pause, the second places the delay inside its bounds; `random` is injectable for tests. */
+  nextForgeDelayMs(random?: () => number): number;
+  /** Feeds a request's outcome back into the two ladders: `cooldown` trips the backoff window,
+   *  `unauthorized` trips the auth-retry window, `ok` clears both. Every other kind leaves
+   *  pacing state untouched. A write's outcome feeds the same ladders as a read's. */
   observe(outcome: Pick<RequestOutcome, 'kind'>): void;
   readonly state: PacingState;
-  /** Throws `PacingHaltedError` while halted. Otherwise the configured cycle interval, or the
-   *  remaining backoff window if that is longer. */
+  /** Never throws, and never answers "not ever": the configured cycle interval, or whichever
+   *  open window — cooldown or auth-retry — outlasts it. A gate that refused to schedule at all
+   *  is what turned one rejected request into a stall only relaunching the app could end. */
   nextCycleDelayMs(focused: boolean): number;
-  /** The only two legitimate callers: a changed token file, or an explicit user
-   *  retry. Never a timer. */
+  /** Clears the auth-retry window immediately, ahead of its own expiry. The two legitimate
+   *  callers are a changed token file and an explicit user retry — never a timer, which is what
+   *  the ladder itself is for. */
   resetAuth(): void;
 }
 
 export function createPacingGate(clock: PacingClock, cfg: typeof READ_PACING = READ_PACING): PacingGate {
   let chain: Promise<void> = Promise.resolve();
   let lastStart: number | null = null;
+  let lastWriteStart: number | null = null;
   let consecutiveCooldowns = 0;
   let backoffUntil: number | null = null;
-  let halted = false;
+  let consecutiveUnauthorized = 0;
+  let authRetryAt: number | null = null;
   const inFlightByKey = new Map<string, Promise<unknown>>();
 
+  /** Whichever of the two windows is still open reads as remaining milliseconds; a closed one
+   *  reads as zero. Expiry is read from the clock rather than cleared by a timer, so a window
+   *  that nobody looked at while it lapsed has still lapsed. */
+  function remaining(until: number | null): number {
+    if (until === null) return 0;
+    return Math.max(0, until - clock.now());
+  }
+
   function computeState(): PacingState {
-    if (halted) return 'halted';
+    if (remaining(authRetryAt) > 0) return 'halted';
     if (backoffUntil !== null && clock.now() < backoffUntil) return { backoffUntil };
     return 'ready';
   }
 
-  function schedule<T>(fn: () => Promise<T>): Promise<T> {
+  function gapRemaining(since: number | null, gapMs: number): number {
+    if (since === null) return 0;
+    return gapMs - (clock.now() - since);
+  }
+
+  function schedule<T>(fn: () => Promise<T>, kind: 'read' | 'write'): Promise<T> {
     const previous = chain;
     const runPromise: Promise<T> = previous.then(async () => {
-      if (lastStart !== null) {
-        const wait = cfg.minRequestGapMs - (clock.now() - lastStart);
-        if (wait > 0) await clock.sleep(wait);
-      }
+      const wait = Math.max(
+        gapRemaining(lastStart, cfg.minRequestGapMs),
+        kind === 'write' ? gapRemaining(lastWriteStart, cfg.minWriteGapMs) : 0,
+      );
+      if (wait > 0) await clock.sleep(wait);
       lastStart = clock.now();
+      if (kind === 'write') lastWriteStart = lastStart;
       return fn();
     });
     chain = runPromise.then(
@@ -119,25 +179,43 @@ export function createPacingGate(clock: PacingClock, cfg: typeof READ_PACING = R
     return runPromise;
   }
 
+  function refuseUnlessReady(): void {
+    const currentState = computeState();
+    if (currentState !== 'ready') {
+      throw new PacingRefusedError(currentState);
+    }
+  }
+
   return {
     async run<T>(key: string, fn: () => Promise<T>): Promise<T> {
       const existing = inFlightByKey.get(key);
       if (existing) return existing as Promise<T>;
 
-      const currentState = computeState();
-      if (currentState !== 'ready') {
-        throw new PacingRefusedError(currentState);
-      }
+      refuseUnlessReady();
 
-      const promise = schedule(fn);
+      const promise = schedule(fn, 'read');
       inFlightByKey.set(key, promise);
       promise.finally(() => inFlightByKey.delete(key)).catch(() => undefined);
       return promise;
     },
 
+    async runWrite<T>(_key: string, fn: () => Promise<T>): Promise<T> {
+      refuseUnlessReady();
+      return schedule(fn, 'write');
+    },
+
+    nextForgeDelayMs(random: () => number = Math.random): number {
+      const longPause = random() < cfg.forgeLongPauseChance;
+      const minMs = longPause ? cfg.forgeLongPauseMinMs : cfg.forgeDelayMinMs;
+      const maxMs = longPause ? cfg.forgeLongPauseMaxMs : cfg.forgeDelayMaxMs;
+      return Math.round(minMs + random() * (maxMs - minMs));
+    },
+
     observe(outcome: Pick<RequestOutcome, 'kind'>): void {
       if (outcome.kind === 'unauthorized') {
-        halted = true;
+        consecutiveUnauthorized += 1;
+        const step = cfg.authRetryStartMs * cfg.backoffFactor ** (consecutiveUnauthorized - 1);
+        authRetryAt = clock.now() + Math.min(step, cfg.authRetryCapMs);
         return;
       }
       if (outcome.kind === 'cooldown') {
@@ -149,6 +227,10 @@ export function createPacingGate(clock: PacingClock, cfg: typeof READ_PACING = R
       if (outcome.kind === 'ok') {
         consecutiveCooldowns = 0;
         backoffUntil = null;
+        // A read the server answered is proof the credentials are live, so the auth ladder starts
+        // over rather than carrying a streak from a rejection the session has since recovered from.
+        consecutiveUnauthorized = 0;
+        authRetryAt = null;
       }
     },
 
@@ -157,19 +239,13 @@ export function createPacingGate(clock: PacingClock, cfg: typeof READ_PACING = R
     },
 
     nextCycleDelayMs(focused: boolean): number {
-      if (halted) {
-        throw new PacingHaltedError();
-      }
       const base = focused ? cfg.cycleForegroundMs : cfg.cycleBackgroundMs;
-      if (backoffUntil !== null) {
-        const remaining = backoffUntil - clock.now();
-        if (remaining > base) return remaining;
-      }
-      return base;
+      return Math.max(base, remaining(backoffUntil), remaining(authRetryAt));
     },
 
     resetAuth(): void {
-      halted = false;
+      consecutiveUnauthorized = 0;
+      authRetryAt = null;
     },
   };
 }

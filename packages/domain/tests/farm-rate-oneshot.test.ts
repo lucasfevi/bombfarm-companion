@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest';
 import { computeSquadFarmFacts, computeFarmRateRow, type HeroFarmFacts } from '@bombfarm/domain/farm-rate';
 import { wikiPhaseLine } from '@bombfarm/domain/phase-wiki';
-import { mitigationFactor, EFF_IA } from '@bombfarm/domain/model';
+import { mitigationFactor, EFF_IA, FUSE_FLOOR, STAT_CAPS } from '@bombfarm/domain/model';
 import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
 const { account } = loadFarmRateFixture();
@@ -21,6 +21,8 @@ function syntheticHero(overrides: Partial<HeroFarmFacts> & { heroId: string }): 
     avgHitBase: 100,
     penetrationPct: 0,
     fuseSecs: 2,
+    fuseFloorSecs: FUSE_FLOOR,
+    cdrCapPct: STAT_CAPS.cdr,
     walkSpeedCells: 2,
     cycleSecs: 2,
     plantsPerSec: 0.5,

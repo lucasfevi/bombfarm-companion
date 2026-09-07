@@ -67,6 +67,11 @@ async function goToInventory(page) {
 
   await page.getByRole('button', { name: 'Inventory' }).click();
   await page.waitForSelector('[data-testid="inventory-view"]', { timeout: 20_000 });
+  // Wait for the ROWS, not just the screen. The grid mounts about 100ms after its container, so
+  // an unsynchronised count() below is free to read zero and then compare against the real number.
+  // On screen that was an intermittent flake — three runs in six on a clean tree; with the window
+  // hidden the grid is never early enough and it failed every run. Every test here needs cards.
+  await page.waitForSelector('[data-testid="inventory-card"]', { timeout: 20_000 });
 }
 
 /** Every card in the screen's grids, across all groups. */
@@ -492,7 +497,7 @@ test.describe('inventory smoke', () => {
           .locator('[data-testid="inventory-group"][data-kind="equipment"]')
           .getByTestId('inventory-card')
           .evaluateAll((nodes) => nodes.map((node) => node.textContent ?? ''));
-        return texts.map((text) => Number(/Level (\d+)/.exec(text)?.[1] ?? 0));
+        return texts.map((text) => Number(/Lv (\d+)/.exec(text)?.[1] ?? 0));
       };
 
       // Narrow to one rarity, so every visible card ties on the primary key and the order that

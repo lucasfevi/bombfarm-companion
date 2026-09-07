@@ -203,6 +203,21 @@ export class GameReaderService {
     return this.status;
   }
 
+  /**
+   * Whether the game process itself was found on the last poll — process detection alone.
+   *
+   * Deliberately not `status === 'connected'`, which additionally requires the live tap to have
+   * delivered a frame this reader could parse. Consumers that only need "is the player in the
+   * game" were asking the connected question, and so inherited every way the tap can fail: a hook
+   * that could not attach withheld the authenticated account read too, which needs nothing from
+   * the tap and would have succeeded on its own. `not_running` is the one status process detection
+   * sets by itself — {@link tickLive} sets it when consent is withheld or no pid is found, and
+   * decides `connected` vs `stale` only after a pid is in hand.
+   */
+  isGameProcessRunning(): boolean {
+    return this.status.status !== 'not_running';
+  }
+
   getMode(): GameReaderMode {
     return this.config.mode;
   }

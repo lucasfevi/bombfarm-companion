@@ -121,6 +121,57 @@ export function parsePe(image: Buffer): ParsedPe {
   return { buildId, sections, exceptionTable };
 }
 
+/** The only sections anything below reads: anchor literals live in `.rdata`, the `lea`s that
+ *  reference them in `.text`, and `resolveFunctionStart` chases those through the exception table
+ *  (`.pdata`) and the unwind info it points at (`.xdata`). Every other section — and in a
+ *  single-file game export that includes the content pack — is bytes the scan never looks at. */
+const SCANNED_SECTION_NAMES: readonly string[] = ['.text', '.rdata', '.pdata', '.xdata'];
+
+export type PeScanExtent =
+  | { readonly kind: 'ok'; readonly byteLength: number }
+  | { readonly kind: 'need-more'; readonly atLeast: number }
+  | { readonly kind: 'not-pe' };
+
+/**
+ * How much of the file a scan has to read: the end of the furthest {@link SCANNED_SECTION_NAMES}
+ * section, which for a single-file Godot export excludes a `pck` section holding ~87% of the file.
+ * Sections past it parse into clipped `rawData` that nothing here asks for.
+ *
+ * This exists because the read it bounds is synchronous and on the Electron main process, so its
+ * size is paid in both a stalled window and a main-process allocation big enough to fail under
+ * memory pressure — and a failed read is indistinguishable, from the outside, from a game the app
+ * simply cannot hook.
+ *
+ * Reads only the DOS header, the PE headers and the section table, so a small prefix answers for
+ * any real binary. A prefix too short to hold all three is `need-more` with the offset it wanted,
+ * never a wrong answer.
+ */
+export function peScanExtent(head: Buffer): PeScanExtent {
+  if (head.length < DOS_HEADER_SIZE) return { kind: 'need-more', atLeast: DOS_HEADER_SIZE };
+  if (head.readUInt16LE(0) !== 0x5a4d) return { kind: 'not-pe' };
+
+  const peHeaderOffset = head.readUInt32LE(0x3c);
+  const sectionHeadersBase = peHeaderOffset + 24;
+  if (sectionHeadersBase > head.length) return { kind: 'need-more', atLeast: sectionHeadersBase };
+  if (head.readUInt32LE(peHeaderOffset) !== PE_SIGNATURE) return { kind: 'not-pe' };
+
+  const numberOfSections = head.readUInt16LE(peHeaderOffset + 6);
+  const sizeOfOptionalHeader = head.readUInt16LE(peHeaderOffset + 20);
+  const sectionHeadersOffset = sectionHeadersBase + sizeOfOptionalHeader;
+  const sectionTableEnd = sectionHeadersOffset + numberOfSections * SECTION_HEADER_SIZE;
+  if (sectionTableEnd > head.length) return { kind: 'need-more', atLeast: sectionTableEnd };
+
+  let byteLength = sectionTableEnd;
+  for (let i = 0; i < numberOfSections; i += 1) {
+    const base = sectionHeadersOffset + i * SECTION_HEADER_SIZE;
+    const name = head.subarray(base, base + 8).toString('latin1').replace(/\0+$/, '');
+    if (!SCANNED_SECTION_NAMES.includes(name)) continue;
+    const end = head.readUInt32LE(base + 20) + head.readUInt32LE(base + 16);
+    if (end > byteLength) byteLength = end;
+  }
+  return { kind: 'ok', byteLength };
+}
+
 /** `parsePe` throwing (a truncated download, a process that never mapped) must never surface a
  * stale build stamp to the cache layer — the caller keys cache entries on this, and a wrong key
  * on a read failure would be worse than no key. */

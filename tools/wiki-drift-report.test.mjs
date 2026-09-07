@@ -235,6 +235,27 @@ describe('ARTIFACT_BACKED_SECTIONS — a wiki value held as a source constant is
     expect(casaSlots).toContain('CASA_SLOTS_PER_HOUSE');
     expect(house).toContain('HOUSE_MAX_LEVEL');
   });
+
+  // Same gap, second instance: `combate` reaches no generated JSON at all, so it read as a
+  // section backing nothing right up until a drift in it would have gone untriaged.
+  it('data.combate names the source files carrying its coefficients', () => {
+    expect(ARTIFACT_BACKED_SECTIONS['data.combate']).toEqual([
+      'packages/domain/src/model/combat.ts',
+      'packages/domain/src/team-plan/ability-extras.ts',
+    ]);
+  });
+
+  it('those two really do hold the combat constants named', () => {
+    const combat = readFileSync(join(root, '../packages/domain/src/model/combat.ts'), 'utf8');
+    const extras = readFileSync(
+      join(root, '../packages/domain/src/team-plan/ability-extras.ts'),
+      'utf8',
+    );
+    expect(combat).toContain('GRID_SPEED_COEF');
+    expect(combat).toContain('EFF_IA');
+    expect(extras).toContain('PASSAGEM_BASTAO_WINDOW_SEC');
+    expect(extras).toContain('PASSAGEM_BASTAO_COOLDOWN_SEC');
+  });
 });
 
 describe('renderIssueBody — the issue names where the differing values are committed', () => {

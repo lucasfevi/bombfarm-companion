@@ -9,7 +9,7 @@ import * as GameArt from '@bombfarm/game-art';
 // module with a directory fails this test.
 // M2-icons: Icon, iconSources, isIconName added (UI-chrome only; no game glyphs).
 // M2-shell-status (2026-08-11): StatusChip, EmptyState added — StatusChip is
-// the single implementation of INV-1 connection states; EmptyState covers
+// the single implementation of the game-connection states; EmptyState covers
 // "no game / no items / no filter matches" placeholders. AppShell's export
 // itself is unchanged (still a value export); only its props grew.
 // M2-toast-settings (2026-08-11): toastQueueReducer, initialToastQueueState,
@@ -44,6 +44,16 @@ import * as GameArt from '@bombfarm/game-art';
 // colClass / dialogDescClass / panelHClass / panelTitleClass / tipClass / the eight phasesBoard*
 // classes (2026-08-31): promoted from the same subpath for the same reason. They lay out the
 // phases explorer's panel grid, and the panels that draw it are `@bombfarm/farm`'s now.
+// accountStatListClass / heroAbilTitleClass (2026-09-02): promoted from the same subpath for the
+// same reason. They style the Account page's stat rows and its sub-headings, and the panels that
+// draw them are `@bombfarm/account`'s now.
+// Menu (2026-09-02): the compound wrap over Base UI's menu, dressed with the popup chrome Select
+// already draws. Added for the desktop top bar's overflow button; the barrel had no popup control
+// that lists commands, which is how one nearly got hand-rolled.
+// useShellDensity / shellDensityFor / SHELL_ACTIONS_COLLAPSE_WIDTH / SHELL_ICON_TABS_WIDTH
+// (2026-09-02): the two widths at which a top bar stops fitting, and the hook that reports which
+// side of them the window is on. AppShell takes the answer as a prop rather than measuring, so the
+// same value drives the tabs and whatever the caller puts in the actions slot.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -72,6 +82,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'iconSources',
   'isIconName',
   'MAX_VISIBLE_TOASTS',
+  'Menu',
   'MetricScoreboard',
   'NOTIFICATION_BUFFER_LIMIT',
   'NotificationCenter',
@@ -81,6 +92,8 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'RankControl',
   'SaveBar',
   'SegmentedToggle',
+  'SHELL_ACTIONS_COLLAPSE_WIDTH',
+  'SHELL_ICON_TABS_WIDTH',
   'Select',
   // `SelectMultiple` (2026-08-27): its own component rather than a `multiple?: boolean` branch on
   // `Select` — the two disagree on the type of `value` and on what a change is, and a union that
@@ -112,6 +125,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'TooltipStatusBody',
   'abilityCardRecipe',
   'abilityChipRecipe',
+  'accountStatListClass',
   'accordionRecipe',
   'barRecipe',
   'breakpoints',
@@ -134,6 +148,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   // components which receive an injected formatter ships beside them.
   'numberFormatterFor',
   'compactNumberFormatterFor',
+  'heroAbilTitleClass',
   'initialToastQueueState',
   'metricScoreboardDeltaRecipe',
   'metricScoreboardValueRecipe',
@@ -152,6 +167,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'phasesBoardRosterSpanClass',
   'selectFieldRecipe',
   'setupBannerRecipe',
+  'shellDensityFor',
   'sortableTableHeaderButtonClass',
   'statListMutedRowClass',
   'stickyHeadClass',
@@ -160,6 +176,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'toastQueueReducer',
   'tokens',
   'tooltipPopupRecipe',
+  'useShellDensity',
   'useToast',
 ].sort();
 
@@ -194,9 +211,27 @@ describe('design-system barrel surface (frozen)', () => {
 // the card and the table cannot drift apart on how an approximate figure or a missing listing
 // reads; `nextInventorySort` is the header buttons' pure fold over the domain's multi-term sort,
 // exported so a host driving the table from its own toolbar produces the same order.
+//
+// `inventoryFieldHeightClass` (2026-09-05): the toolbar field height on its own, for a control
+// that brings its own chrome — a design-system `Select` — and needs only to stand the same height
+// as the fields beside it. Split out of `inventoryFieldClass` so a second toolbar cannot reach
+// for a number of its own and drift a pixel from this one.
+//
+// `ItemIdentity` (2026-09-05): icon, name and forge level on one line, tier and level on the
+// next — the one arrangement every surface that names an item now uses. The inventory card, the
+// inventory row and the Forge screen each had their own before, and the level itself was written
+// three different ways; added so a fourth surface cannot invent a fifth.
+//
+// The table's per-host column set (2026-09-05): `DEFAULT_INVENTORY_TABLE_COLUMNS` is the set an
+// inventory bag asks for, named so a second host can start from it. `inventoryTableNameClass`,
+// `inventoryTableItemNameClass` and `inventoryTableForgeClass` left with it — `ItemIdentity` now
+// draws that whole block, and the three had no callers once it did.
+// `inventoryTableSelectedRowClass` arrives in their place, for the row a picker screen is
+// currently planning against.
 const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'AbilityIcon',
   'ArtFrame',
+  'DEFAULT_INVENTORY_TABLE_COLUMNS',
   'InventoryGrid',
   'InventoryLayoutToggle',
   'InventoryTable',
@@ -217,6 +252,7 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'HeroIdentityChip',
   'HouseIcon',
   'ItemIcon',
+  'ItemIdentity',
   'PropIcon',
   'SpriteLoop',
   'abilityIconRecipe',
@@ -229,6 +265,7 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'inventoryCountClass',
   'inventoryCountValueClass',
   'inventoryFieldClass',
+  'inventoryFieldHeightClass',
   'inventoryFooterClass',
   'inventoryGridClass',
   'inventorySortDirectionClass',
@@ -241,16 +278,14 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'inventoryStatsPanelClass',
   'inventoryTableActionButtonClass',
   'inventoryTableBlankClass',
-  'inventoryTableForgeClass',
   'inventoryTableGoldClass',
   'inventoryTableGroupCountClass',
   'inventoryTableGroupHeaderClass',
   'inventoryTableHeroClass',
   'inventoryTableHeroNameClass',
-  'inventoryTableItemNameClass',
-  'inventoryTableNameClass',
   'inventoryTableResultCountClass',
   'inventoryTableRowClass',
+  'inventoryTableSelectedRowClass',
   'inventoryTableSkippedNoteClass',
   'inventoryTableToolbarClass',
   'rarityDotClass',

@@ -1,11 +1,9 @@
 /**
- * A body row nobody has scrolled to yet. `contain-intrinsic-size` is the 32px item icon plus the
- * cell's own 6px of vertical padding; `auto` lets the browser keep each row's real height once it
- * has rendered, so the scrollbar settles after one pass instead of drifting as the reader scrolls.
- *
- * The alternative on a 3000-row account was a virtualization dependency, which this package does
- * not carry. Size containment is not defined for internal table boxes in every engine, so this
- * either skips the off-screen rows or does nothing — never anything worse.
+ * A body row. `contain-intrinsic-size` is the 32px item icon plus the cell's own 6px of vertical
+ * padding, which is also the height the table's window math starts from before it measures a real
+ * row; `auto` lets the browser keep the real height once the row has rendered. It covers the band
+ * of overscan the window keeps mounted either side of the visible rows — the rows beyond that
+ * band are not in the document at all.
  *
  * The rule sits on the cells rather than the row: `dataTableClass` uses the separated border
  * model, where a border declared on a `<tr>` is not painted at all.
@@ -22,11 +20,9 @@ export const inventoryTableGroupHeaderClass =
 
 export const inventoryTableGroupCountClass = 'ml-2 font-normal tabular-nums text-muted';
 
-export const inventoryTableNameClass = 'flex min-w-0 items-center gap-2';
-
-export const inventoryTableItemNameClass = 'min-w-0 truncate font-semibold';
-
-export const inventoryTableForgeClass = 'ml-1 shrink-0 font-semibold text-accent';
+/** The row a picker screen is currently planning against. A tint rather than a border: a border
+ *  would move every other row by a pixel as the selection walks down the list. */
+export const inventoryTableSelectedRowClass = 'bg-[color-mix(in_oklch,var(--accent)_14%,var(--surface))]';
 
 export const inventoryTableGoldClass = 'inline-flex items-center gap-1';
 

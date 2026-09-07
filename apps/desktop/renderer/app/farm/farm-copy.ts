@@ -1,6 +1,6 @@
 /**
- * The one module in this renderer allowed to import `@bombfarm/farm/copy` — a structural guard in
- * `src/main/source-guards.test.ts` fails the build if a second one appears.
+ * The one module in this renderer allowed to import `@bombfarm/farm/copy` or `@bombfarm/hero/copy`
+ * — a structural guard in `src/main/source-guards.test.ts` fails the build if a second one appears.
  *
  * Two dictionaries meet here and neither owns the other's words. The farm screen's own strings
  * ship with the package that draws it; the hero-identity vocabulary its roster surfaces print is
@@ -8,7 +8,8 @@
  * every other player-facing string in this renderer already lives. Composing them here rather
  * than at the call site is what keeps "one place for copy" true with a second supplier in play.
  */
-import { farmCopyFor, type FarmCopy, type FarmRosterCopy, type FarmScreenCopy } from '@bombfarm/farm/copy';
+import { farmCopyFor, type FarmCopy, type FarmScreenCopy } from '@bombfarm/farm/copy';
+import type { RosterCopy } from '@bombfarm/hero/copy';
 import { useLocale, type Copy } from '../../lib/copy';
 
 /**
@@ -16,7 +17,7 @@ import { useLocale, type Copy } from '../../lib/copy';
  * same-named app key silently shadow a farm string, and would stop the typecheck naming the key
  * when the contract gains a member.
  */
-function farmRosterCopyFrom(t: Copy): FarmRosterCopy {
+function farmRosterCopyFrom(t: Copy): RosterCopy {
   return {
     heroAvatarCol: t.heroAvatarCol,
     heroBattleActive: t.heroBattleActive,

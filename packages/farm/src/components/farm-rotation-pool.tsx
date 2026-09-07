@@ -3,7 +3,8 @@
 import { Switch, cn } from '@bombfarm/ui';
 import { HeroIdentityChip, rosterInactiveChromeClass } from '@bombfarm/game-art';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import { sub, type FarmCopy, type Lang } from '../copy';
+import { sub, type Lang } from '@bombfarm/hero/copy';
+import type { FarmCopy } from '../copy';
 import type { FarmPoolEntry } from '../core';
 
 type Props = {

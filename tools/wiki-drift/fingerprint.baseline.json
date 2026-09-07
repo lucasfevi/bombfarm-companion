@@ -1,8 +1,8 @@
 {
-  "capturedAt": "2026-08-28T23:49:00.249Z",
+  "capturedAt": "2026-09-02T21:54:12.692Z",
   "endpoints": {
     "data": {
-      "payloadSha256": "594b5e3feda963163083ee398d5168ce3336dd70edb4c2f1f2a2ed02e0da8f54",
+      "payloadSha256": "c395f9c82513dc07c0e459bee8f7aa266c6cb526698c62d17737c2f744c2afc8",
       "sectionNames": [
         "bolsa",
         "combate",
@@ -31,7 +31,7 @@
       ],
       "sectionSha256": {
         "bolsa": "32e0d7a1eeb1e027b19c8efe0c9731792167b68346fc626adf5e1cb4bda7c6fb",
-        "combate": "773b0b52bc73f4f6fe1ea3d1f34b5d2238a2b8d56d137ed4b163015993a89c92",
+        "combate": "e091381182a42419c768c72b49eeb0c95b608ffc8e7de3eb08a6c3645b4ffae7",
         "conquistas": "23b3fa775874948f64921777afa4010aefdf13531064538ab3dff070c7304ea9",
         "convite": "734f099a3c27f91869764bd8b7446a05b0121632a3c5c14719138f7221b30015",
         "drops": "b9c58b472b37326d38294b4dc6a90cb95ec0b3b7be705a7689ac9376e0406190",
@@ -39,13 +39,13 @@
         "fases": "5490ccd7957eb3f9befaea292bd6954deaadb3ea61dc2d172d3a152e63e1175e",
         "gemas": "611140ce2878ce4290580a2efaea428a765313efcf58e08b5a1459985df0bc83",
         "habilidades": "5cdba151b8ce5e4487b11713c7abef34624b6b8cb79a7511487409c2fa957f11",
-        "herois": "346e64df6e27771ccfb3de37c74ac0974e0b0b91ea8d0ba591551f0e1cda6745",
+        "herois": "fa204d3a4fac674a7f993bdd0519a2a45cc48121a2087f678bffd00cf36ee31e",
         "inventario": "7f24baca797e73d31ef4f2ec86deea3e7f559edcd822a465dd77c7e253a20cb9",
         "item_stats": "94041e8cad48122447a273106df9ecccec1c44d569659737dfd73fa44bb7cd79",
         "itens": "3c62de2a14ac4dc705f23e3443986d3ffe9658fafd921c0f8998e760c75f11dc",
-        "mercado": "7eff8c0504100cd6357eb3fd515258c2ecf2023946ea1240154d26e9bd2e1a6a",
+        "mercado": "6ae9cc0df8ff5760d740dd2f1814a64414e18472e4cfd785fc24f99e18dcfd2f",
         "pedra": "baedadf2ed982b0c12570e2c82d6b4ce2f305d6c9ff401fc5b9f70f714196a43",
-        "premios": "818075c989f12e5cc03434ac09e54ac60ba15a191f79ed15cff198d52113fc28",
+        "premios": "8f56c679d3d9d8503c9e75d346303130f9b540b6d0c3533ea60d1143f7ab9f1a",
         "raridades": "e014307c9fa181014e6669a97b435adf1813069b2cba314bb8623ee89b0bd070",
         "ritual": "a486a2038923a790260fed88a7da126d44a922f223f2bcb12f7052e275619234",
         "rotacao": "73e7c9aaa8005f213c3c956d180e13d028424e2b3cc5caf07fa01d886cf0dc5a",

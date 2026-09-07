@@ -23,8 +23,3 @@ export type {
   PhasesExplorerData,
   PhasesExplorerSlots,
 } from './phases-explorer';
-export { PhasesHeroSwitcherView } from './phases-hero-switcher';
-export type { HeroPickerSlot, HeroPickerSlotProps } from './phases-hero-switcher';
-export { HeroPickerDialogView } from './hero-picker/hero-picker-dialog';
-export type { HeroPickerActions, HeroPickerData } from './hero-picker/hero-picker-dialog';
-export { HeroActiveToggle } from './hero-picker/hero-active-toggle';

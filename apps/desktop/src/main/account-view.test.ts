@@ -56,6 +56,7 @@ function makeView(payload: AccountPayload, gameRunning = false): AccountView {
 function fakeGameReader(status: GameStatusInfo['status'], view: AccountView | null): GameReaderLike {
   return {
     getStatus: () => ({ status, updatedAt: NOW }),
+    isGameProcessRunning: () => status !== 'not_running',
     getAccountView: () => view,
   };
 }
@@ -122,6 +123,21 @@ describe('resolveCachedAccountView — the pure-read half of the single-source c
       accountRefresh: fakeAccountRefresh(null),
     });
     expect(result?.gameRunning).toBe(false);
+  });
+
+  // Whether the game is running is a question about the process, and the live tap failing to
+  // deliver a parseable frame is not an answer to it. Reading `connected` here meant a tap that
+  // could not attach reported the game as closed, which gated reads that never needed the tap.
+  it('gameRunning is true for a running process the tap has produced no usable frame from', () => {
+    const view = makeView(makePayload());
+    const deps = {
+      gameReader: fakeGameReader('stale', view),
+      consentStore: fakeConsentSource('unasked'),
+      accountRefresh: fakeAccountRefresh(null),
+    };
+
+    expect(resolveCachedAccountView(deps)?.gameRunning).toBe(true);
+    expect(resolveAccountView({ ...deps, accountStore: null }).gameRunning).toBe(true);
   });
 });
 
@@ -212,7 +228,13 @@ describe('createAccountNotifier — the single-source change-signal rule, point 
     const emit = vi.fn();
     let view = makeView(makePayload({ fidelity: fidelity('resolved') }));
     const notifier = createAccountNotifier({
-      gameReader: { getStatus: () => ({ status: 'connected', updatedAt: NOW }), getAccountView: () => view },
+      // Reads `view` through the closure rather than fakeGameReader's by-value capture: the
+      // reassignment below is the change this test is about.
+      gameReader: {
+        getStatus: () => ({ status: 'connected', updatedAt: NOW }),
+        isGameProcessRunning: () => true,
+        getAccountView: () => view,
+      },
       consentStore: fakeConsentSource('unasked'),
       accountRefresh: fakeAccountRefresh(null),
       emit,
@@ -240,7 +262,13 @@ describe('createAccountNotifier — the single-source change-signal rule, point 
     const emit = vi.fn();
     let view = makeView(makePayload({ fidelity: fidelity('resolved') }));
     const notifier = createAccountNotifier({
-      gameReader: { getStatus: () => ({ status: 'connected', updatedAt: NOW }), getAccountView: () => view },
+      // Reads `view` through the closure rather than fakeGameReader's by-value capture: the
+      // reassignment below is the change this test is about.
+      gameReader: {
+        getStatus: () => ({ status: 'connected', updatedAt: NOW }),
+        isGameProcessRunning: () => true,
+        getAccountView: () => view,
+      },
       consentStore: fakeConsentSource('unasked'),
       accountRefresh: fakeAccountRefresh(null),
       emit,

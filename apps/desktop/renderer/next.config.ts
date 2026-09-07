@@ -8,12 +8,14 @@ const nextConfig: NextConfig = {
   trailingSlash: true,
   images: { unoptimized: true },
   transpilePackages: [
+    '@bombfarm/account',
     '@bombfarm/ui',
     '@bombfarm/contracts',
     '@bombfarm/game-api',
     '@bombfarm/domain',
     '@bombfarm/game-art',
     '@bombfarm/farm',
+    '@bombfarm/hero',
   ],
 };
 

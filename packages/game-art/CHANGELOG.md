@@ -1,5 +1,18 @@
 # @bombfarm/game-art
 
+## 0.3.6
+
+### Patch Changes
+
+- f534b9e: Refresh the five house-part rarity icons to the 256×256 art the wiki now serves. They were bundled
+  at 128×128 and rendered visibly soft on high-DPI displays.
+- Updated dependencies [006f970]
+- Updated dependencies [37fd673]
+- Updated dependencies [a8f352f]
+- Updated dependencies [f534b9e]
+  - @bombfarm/domain@0.11.0
+  - @bombfarm/ui@0.10.0
+
 ## 0.3.5
 
 ### Patch Changes

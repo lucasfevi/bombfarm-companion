@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { STRINGS } from '@/shared/i18n';
-import { normalizeHero } from '@/shared/lib/storage';
+import { loadHeroes, normalizeHero } from '@/shared/lib/storage';
 import {
   attachHeroDraftPersistence,
   selectHeroDraftTuple,
@@ -142,8 +142,100 @@ describe('hero draft persistence subscription', () => {
     expect(setItem).not.toHaveBeenCalled();
   });
 
-  it('selectHeroDraftTuple has 19 members (includes birth and statPointsAvailable; obsHit/obsCrit gone)', () => {
+  it('selectHeroDraftTuple has 21 members (includes birth, statRanges, marketable and statPointsAvailable; obsHit/obsCrit gone)', () => {
     const tuple = selectHeroDraftTuple(usePlannerStore.getState());
-    expect(tuple).toHaveLength(19);
+    expect(tuple).toHaveLength(21);
+  });
+
+  it('an edit to a hero carrying roll bounds saves them back — reload from storage still has them', () => {
+    const statRanges = {
+      attack: { min: 120, max: 190 },
+      energy: { min: 140, max: 220 },
+    };
+    const h = normalizeHero({
+      id: 'h1',
+      name: 'Hero',
+      sourceId: 'src-1',
+      updatedAt: 1,
+      rarity: 'Raro',
+      level: 1,
+      stars: 0,
+      naked: {
+        attack: 10,
+        energy: 10,
+        speed: 10,
+        critChance: 0,
+        critDmg: 10,
+        penetration: 0,
+        cdr: 0,
+        luck: 0,
+      },
+      gearedOverride: {
+        attack: 10,
+        energy: 10,
+        speed: 10,
+        critChance: 0,
+        critDmg: 10,
+        penetration: 0,
+        cdr: 0,
+        luck: 0,
+      },
+      statRanges,
+    });
+    usePlannerStore.getState().hydrateRoster([h], 'h1');
+    usePlannerStore.getState().applyHero(h);
+    usePlannerStore.getState().setBooted(true);
+    usePlannerStore.getState().unlockPersist();
+
+    usePlannerStore.getState().setHeroLevel(2);
+    vi.advanceTimersByTime(AUTOSAVE_MS);
+
+    const reloaded = loadHeroes();
+    expect(reloaded[0]?.level).toBe(2);
+    expect(reloaded[0]?.statRanges).toEqual(statRanges);
+  });
+
+  it('changing only the bounds is enough to schedule a save on its own', () => {
+    const h = normalizeHero({
+      id: 'h1',
+      name: 'Hero',
+      sourceId: 'src-1',
+      updatedAt: 1,
+      rarity: 'Raro',
+      level: 1,
+      stars: 0,
+      naked: {
+        attack: 10,
+        energy: 10,
+        speed: 10,
+        critChance: 0,
+        critDmg: 10,
+        penetration: 0,
+        cdr: 0,
+        luck: 0,
+      },
+      gearedOverride: {
+        attack: 10,
+        energy: 10,
+        speed: 10,
+        critChance: 0,
+        critDmg: 10,
+        penetration: 0,
+        cdr: 0,
+        luck: 0,
+      },
+    });
+    usePlannerStore.getState().hydrateRoster([h], 'h1');
+    usePlannerStore.getState().applyHero(h);
+    usePlannerStore.getState().setBooted(true);
+    usePlannerStore.getState().unlockPersist();
+    vi.advanceTimersByTime(AUTOSAVE_MS);
+    usePlannerStore.getState().consumeSkipHeroToast();
+
+    const statRanges = { speed: { min: 8, max: 14 } };
+    usePlannerStore.setState({ statRanges });
+    vi.advanceTimersByTime(AUTOSAVE_MS);
+
+    expect(loadHeroes()[0]?.statRanges).toEqual(statRanges);
   });
 });

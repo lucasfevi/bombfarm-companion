@@ -26,6 +26,7 @@ import {
 import { resolveItemPrice } from '@bombfarm/pricing';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
+import { inventoryTotals } from '../../lib/account/account-holdings';
 import { useMarketSnapshot } from '../../lib/market/use-market-snapshot';
 import { inventoryLabels, inventoryTableLabels } from './inventory-labels';
 import { marketPriceLabels } from './market-labels';
@@ -112,22 +113,10 @@ export function InventoryView() {
     [priceOfItem],
   );
 
-  // Over the whole account, not the filtered view — this is what it holds, not what is on screen.
-  const totals = useMemo(() => {
-    if (priceOfItem == null) return null;
-    let total = 0;
-    let priced = 0;
-    let tradable = 0;
-    for (const item of inventory.items) {
-      if (!item.tradable) continue;
-      tradable += 1;
-      const price = priceOfItem(item);
-      if (price.state !== 'priced' || price.amount == null) continue;
-      priced += 1;
-      total += price.amount;
-    }
-    return { total, priced, tradable };
-  }, [priceOfItem, inventory]);
+  // Over the whole inventory, not the filtered view — this is what it holds, not what is on
+  // screen. Summed by the shared account-wide computation with the other components withheld, so
+  // this header and the Account screen's inventory column cannot disagree about the same items.
+  const totals = useMemo(() => inventoryTotals(inventory.items, snapshot), [inventory, snapshot]);
 
   const totalsLabels = useMemo(
     () => ({

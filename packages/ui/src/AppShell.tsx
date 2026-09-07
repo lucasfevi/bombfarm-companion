@@ -1,6 +1,8 @@
 import type { CSSProperties, PropsWithChildren, ReactNode } from 'react';
 import { AppNav } from './app-nav';
 import { cn } from './cn';
+import type { IconName } from './icon';
+import type { ShellDensity } from './shell-density';
 import {
   appShellActionsClass,
   appShellBrandClass,
@@ -8,6 +10,7 @@ import {
   appShellBrandRowClass,
   appShellBrandTagClass,
   appShellDragStripClass,
+  appShellFlavorBadgeClass,
   appShellHeaderClass,
   appShellMainClass,
   appShellMainInnerClass,
@@ -18,12 +21,22 @@ import {
 export interface AppShellNavItem {
   id: string;
   label: string;
+  /** Drawn in place of the label at `icon-tabs` density; an item without one keeps its words. */
+  icon?: IconName;
 }
 
 export interface AppShellProps extends PropsWithChildren {
+  /** The product name, bold, on the lockup's first line. */
   title?: string | undefined;
+  /** The small uppercase line beneath it — the web header's own second line. */
+  suiteTag?: string | undefined;
   /** Flavor badge — kept from M0; the desktop Playwright smoke test asserts `data-testid="flavor-badge"`. */
   badge?: string | null;
+  /**
+   * How much of the bar fits. Passed in rather than measured here so this component stays a pure
+   * function of its props — the window is the caller's to observe, with `useShellDensity`.
+   */
+  density?: ShellDensity;
   /** Omitted/empty renders no nav landmark. */
   items?: AppShellNavItem[];
   activeId?: string;
@@ -76,8 +89,10 @@ const NO_DRAG_STYLE: AppRegionStyle = { WebkitAppRegion: 'no-drag' };
  * `onNavigate`) and data-driven (`items`) rather than a hardcoded route list.
  */
 export function AppShell({
-  title = 'Bomb Farm Companion',
+  title = 'Bomb Farm',
+  suiteTag = 'Companion',
   badge,
+  density = 'full',
   items = [],
   activeId,
   onNavigate,
@@ -90,7 +105,13 @@ export function AppShell({
   overlayInset,
   children,
 }: AppShellProps) {
-  const navItems = items.map((item) => ({ id: item.id, label: item.label, active: item.id === activeId }));
+  const navItems = items.map((item) => ({
+    id: item.id,
+    label: item.label,
+    active: item.id === activeId,
+    ...(item.icon === undefined ? {} : { icon: item.icon }),
+  }));
+  const iconTabs = density === 'icon-tabs';
 
   const headerStyle = overlayInset ? { paddingRight: overlayInset } : undefined;
   const dragStripStyle = overlayInset
@@ -105,18 +126,23 @@ export function AppShell({
         <div className="relative flex min-w-0 items-center gap-4">
           <div className={appShellBrandRowClass} style={interactiveStyle}>
             {brand}
-            <div className={appShellBrandClass}>
-              <div className={appShellBrandNameClass}>{title}</div>
-              {badge ? (
-                <span data-testid="flavor-badge" className={appShellBrandTagClass}>
-                  {badge}
-                </span>
-              ) : null}
-            </div>
+            {iconTabs ? null : (
+              <>
+                <div className={appShellBrandClass}>
+                  <div className={appShellBrandNameClass}>{title}</div>
+                  {suiteTag ? <div className={appShellBrandTagClass}>{suiteTag}</div> : null}
+                </div>
+                {badge ? (
+                  <span data-testid="flavor-badge" className={appShellFlavorBadgeClass}>
+                    {badge}
+                  </span>
+                ) : null}
+              </>
+            )}
           </div>
           {navItems.length > 0 ? (
             <div style={interactiveStyle}>
-              <AppNav items={navItems} onSelect={onNavigate} />
+              <AppNav items={navItems} onSelect={onNavigate} compact={iconTabs} />
             </div>
           ) : null}
         </div>

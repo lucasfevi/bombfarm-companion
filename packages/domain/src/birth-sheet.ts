@@ -11,7 +11,7 @@ import { levelPowerMult } from './model/combat';
 import { applyPoints } from './gear/apply';
 import { starsMult } from './gear/catalog';
 import type { Loadout, PointAlloc, SheetOtherPct, SheetStats } from './gear/types';
-import { ZERO_PTS } from './planner-constants';
+import { ZERO_PTS, type SheetKey } from './planner-constants';
 
 /**
  * lv1 ★0 rolls in PLANNER units (already unit-converted — crit chance/luck/CDR are
@@ -20,6 +20,16 @@ import { ZERO_PTS } from './planner-constants';
  * level, so unit discipline lives in the save→planner converter and its test, not here.
  */
 export type BirthStats = SheetStats;
+
+/**
+ * The lv1 ★0 window each {@link BirthStats} value was rolled inside, in the SAME planner units
+ * as the roll itself. Per statistic and optional: the game publishes a window for every stat it
+ * rolls, but a statistic whose window is missing or unusable is simply absent here rather than
+ * standing in for one.
+ */
+export type StatRanges = {
+  readonly [K in SheetKey]?: { readonly min: number; readonly max: number };
+};
 
 /**
  * `skills.totals` in the units the planner store already uses. `luckFlatPct` is wired from

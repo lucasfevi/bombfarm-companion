@@ -38,15 +38,30 @@ export function mergeEntries(
   const priorByHash = new Map(prior.map((entry) => [entry.hashName, entry]));
   const kept = fresh.map((entry) => {
     const previous = priorByHash.get(entry.hashName);
-    return previous == null ? entry : withPriorIdentity(entry, previous);
+    if (previous == null) return entry;
+    return withPriorIdentity(entry, previous);
   });
   if (enumerationComplete) return kept;
 
   const freshHashes = new Set(fresh.map((entry) => entry.hashName));
   const untouched = prior
     .filter((entry) => !freshHashes.has(entry.hashName))
-    .map((entry) => ({ ...entry, key: keyForEntry(entry) }));
+    .map((entry) => withoutNativeQuote({ ...entry, key: keyForEntry(entry) }));
   return [...kept, ...untouched];
+}
+
+/**
+ * Strips a native quote this run did not take itself.
+ *
+ * A carried-forward quote has no pass coming to replace it. The per-item quote pass is the first
+ * thing a rate-limited run drops, and it is skipped outright when no native currency is
+ * configured, so an inherited figure ages indefinitely behind a label that says it is the number
+ * on the listing — and resolution prefers it over the freshly-converted price standing beside it,
+ * so the two drift apart without bound. A row carrying only its converted price is dated by
+ * `fetchedUtc`, which every published row already has.
+ */
+function withoutNativeQuote(entry: MarketEntry): MarketEntry {
+  return { ...entry, lowestNative: {}, nativeQuotedUtc: null };
 }
 
 /**
@@ -65,7 +80,6 @@ export function mergeEntries(
 function withPriorIdentity(fresh: MarketEntry, prior: MarketEntry): MarketEntry {
   const merged: MarketEntry = {
     ...fresh,
-    ...inheritedNativeQuote(fresh, prior),
     defId: fresh.defId ?? prior.defId,
     kind: fresh.kind ?? prior.kind,
     category: fresh.category ?? prior.category,
@@ -76,29 +90,6 @@ function withPriorIdentity(fresh: MarketEntry, prior: MarketEntry): MarketEntry 
     act: fresh.act ?? prior.act,
   };
   return { ...merged, key: keyForEntry(merged) };
-}
-
-/**
- * Carries a previous run's native quotes forward when this run did not take its own, which is
- * what a rate-limited pass leaves behind: the enumeration lands, the per-item quotes do not.
- *
- * Only while the USD price is unchanged. A native quote is a price, not an identity, and it
- * describes the order book at the moment it was read — once the book has visibly moved the old
- * quote is known to be wrong, and falling back to the freshly-converted figure is the smaller
- * error. Verified against a real move: `Gold Ring Lv 20 (Rare)` went $2.80 -> $1.10 within one
- * six-hour window, which an inherited R$ 14,46 would have gone on reporting against R$ 5,75.
- */
-function inheritedNativeQuote(
-  fresh: MarketEntry,
-  prior: MarketEntry,
-): Pick<MarketEntry, 'lowestNative' | 'nativeQuotedUtc'> {
-  const tookOwnQuote = Object.keys(fresh.lowestNative).length > 0;
-  if (tookOwnQuote) return { lowestNative: fresh.lowestNative, nativeQuotedUtc: fresh.nativeQuotedUtc };
-
-  const priceMoved = fresh.lowestUsd !== prior.lowestUsd;
-  if (priceMoved) return { lowestNative: {}, nativeQuotedUtc: null };
-
-  return { lowestNative: prior.lowestNative, nativeQuotedUtc: prior.nativeQuotedUtc };
 }
 
 export function buildSnapshot(parts: SnapshotParts): MarketSnapshot {

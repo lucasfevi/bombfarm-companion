@@ -12,6 +12,7 @@ These are **current truth**. Do not invent planning/spec paths in this repo.
 | [animation.md](animation.md) | Animating Base UI disclosures — Motion technique |
 | [content-fit-ui.md](content-fit-ui.md) | Size controls from real content; no accidental truncation |
 | [no-layout-shift.md](no-layout-shift.md) | No CLS from toggling required/status chrome |
+| [use-the-width.md](use-the-width.md) | Side-by-side over stacked short rows; agents report wasted width |
 | [css-exceptions.md](css-exceptions.md) | Allowed named CSS leftovers |
 | [react-performance.md](react-performance.md) | React performance boundaries |
 | [naming.md](naming.md) | Filenames, identifier conventions, no terse names |

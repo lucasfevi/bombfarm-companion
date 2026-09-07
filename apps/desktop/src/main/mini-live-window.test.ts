@@ -396,14 +396,15 @@ describe('createMiniLiveController — shutdown versus the player closing it', (
 });
 
 describe('createMiniLiveBrowserWindow — revealed at construction, exactly once', () => {
-  function windowWithCapturedListeners() {
+  function windowWithCapturedListeners(suppressReveal?: boolean) {
     const show = vi.fn();
     const focus = vi.fn();
+    const loadURL = vi.fn(() => Promise.resolve());
     const contentsListeners = new Map<string, (...args: unknown[]) => void>();
 
     class FakeBrowserWindow {
       webContents = {
-        loadURL: vi.fn(() => Promise.resolve()),
+        loadURL,
         on: (event: string, listener: (...args: unknown[]) => void) => {
           contentsListeners.set(event, listener);
         },
@@ -429,9 +430,10 @@ describe('createMiniLiveBrowserWindow — revealed at construction, exactly once
       width: 320,
       height: 200,
       loadUrl: 'http://127.0.0.1:3000/mini-live/',
+      suppressReveal,
     });
 
-    return { show, focus, contentsListeners };
+    return { show, focus, loadURL, contentsListeners };
   }
 
   it('shows and focuses without waiting for the renderer to paint', () => {
@@ -463,5 +465,18 @@ describe('createMiniLiveBrowserWindow — revealed at construction, exactly once
 
     expect(show).toHaveBeenCalledOnce();
     expect(focus).toHaveBeenCalledOnce();
+  });
+
+  it('neither shows nor focuses when the reveal is suppressed', () => {
+    const { show, focus } = windowWithCapturedListeners(true);
+
+    expect(show).not.toHaveBeenCalled();
+    expect(focus).not.toHaveBeenCalled();
+  });
+
+  it('still loads its renderer when the reveal is suppressed — hidden, not skipped', () => {
+    const { loadURL } = windowWithCapturedListeners(true);
+
+    expect(loadURL).toHaveBeenCalledWith('http://127.0.0.1:3000/mini-live/');
   });
 });

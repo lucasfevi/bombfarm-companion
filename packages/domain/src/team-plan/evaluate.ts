@@ -49,7 +49,7 @@ export function scoringLoadoutsFor(
 }
 
 function applyPassagem(score: HeroScore, rank: number): HeroScore {
-  const mult = passagemBastaoMult(rank, score.fieldSeconds);
+  const mult = passagemBastaoMult(rank, score.fieldSeconds, score.duty);
   return {
     ...score,
     sustained: score.sustained * mult,

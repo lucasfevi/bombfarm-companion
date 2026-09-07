@@ -12,10 +12,12 @@ const KNOWN_BODY_DIGESTS: Readonly<Record<'en' | 'pt-BR', Readonly<Record<number
     1: '4353ef5f05a0ae24b720b46af0f8967949e8b590495d32d45b727ada1b212779',
     2: '6821259f4832b5e77f0ce6f5b8d8c8ddd8dcda0f91b1887e4308df1db422aac2',
     3: '899613bee52877b8e3a66e2864500117f8cc239abf0288f0a3964acc5bca8ec4',
+    4: 'bedbd31213ce49606ceadb85774b1c322fdda20fe35582fa02402295a8cb2baa',
   },
   'pt-BR': {
     2: '1aa62c031159c769ae95530b147d7dc2f9eafdc3229f06e27a7d3d56ce0d886d',
     3: '2045be379089bf57ef168741f42e734de7d31e93bb17179ea97c4b5cd91d54fa',
+    4: '24d67f662e7a0dcd3c7cc4aeb45d797e67b94028e9185c1a596f625a4713d3c0',
   },
 };
 
@@ -66,11 +68,15 @@ describe('CONSENT_TEXT.en — clause content', () => {
     expect(clause?.text).toMatch(/traffic that client is already exchanging/i);
   });
 
-  it('states it sends nothing of its own, and cannot change the account, the client, or progress', () => {
-    const clause = body.find((c) => c.heading === 'Never writes.');
+  it('states the one write it can make, the three gates in front of it, and that nothing else can change the account, the client, or progress', () => {
+    const clause = body.find((c) => c.heading === 'Writes only when you tell it to.');
     expect(clause).toBeDefined();
-    expect(clause?.text).toMatch(/sends nothing of its own/i);
-    expect(clause?.text).toMatch(/change your account, your game client, or your progress/i);
+    expect(clause?.text).toMatch(/^Everything it shows is read\./);
+    expect(clause?.text).toMatch(/the same two calls the game's own forge screen makes/i);
+    expect(clause?.text).toMatch(/only from the Forge tab/i);
+    expect(clause?.text).toContain('only after you turn on "Let Forge spend gold" in Settings');
+    expect(clause?.text).toMatch(/only after you confirm each run/i);
+    expect(clause?.text).toMatch(/Nothing else in it can change your account, your game client, or your progress/);
   });
 
   it('states the token goes to one host and never into a log', () => {
@@ -107,11 +113,15 @@ describe('CONSENT_TEXT["pt-BR"] — clause content, the same facts in Portuguese
     expect(clause?.text).toMatch(/tráfego que esse cliente já troca/i);
   });
 
-  it('states it sends nothing of its own, and cannot change the account, the client, or progress', () => {
-    const clause = body.find((c) => c.heading === 'Nunca escreve.');
+  it('states the one write it can make, the three gates in front of it, and that nothing else can change the account, the client, or progress', () => {
+    const clause = body.find((c) => c.heading === 'Escreve só quando você manda.');
     expect(clause).toBeDefined();
-    expect(clause?.text).toMatch(/não envia nada de si mesmo/i);
-    expect(clause?.text).toMatch(/alterar sua conta, o cliente do jogo ou seu progresso/i);
+    expect(clause?.text).toMatch(/^Tudo o que ele mostra é leitura\./);
+    expect(clause?.text).toMatch(/as mesmas duas chamadas que a tela de forja do jogo faz/i);
+    expect(clause?.text).toMatch(/só pela aba Forja/i);
+    expect(clause?.text).toContain('só depois que você ligar "Deixar a Forja gastar ouro" nas Configurações');
+    expect(clause?.text).toMatch(/só depois de confirmar cada execução/i);
+    expect(clause?.text).toMatch(/Nada mais nele pode alterar sua conta, o cliente do jogo ou seu progresso/);
   });
 
   it('states the token goes to one host and never into a log', () => {

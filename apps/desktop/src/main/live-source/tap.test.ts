@@ -1301,3 +1301,76 @@ describe('Tap: a throwing body consumer cannot stop the tap reading', () => {
     expect(seen).toEqual([JSON.stringify({ second: true })]);
   });
 });
+
+describe('Tap: an empty hook discovery backs off instead of giving up on the pid', () => {
+  const EMPTY: HookCandidateResolution = { addresses: [], fromCache: false, buildId: 'build-empty' };
+
+  it('stands down for the backoff, then rescans the same pid with no restart', async () => {
+    const { tap, clock, processes, candidates } = createHarness();
+    processes.processes = [{ pid: 4_242, name: PROCESS_NAME }];
+    candidates.resolveResult = EMPTY;
+
+    tap.start();
+    await clock.advance(0);
+    expect(candidates.resolveCalls).toHaveLength(1);
+
+    await clock.advance(14_000);
+    expect(candidates.resolveCalls).toHaveLength(1);
+
+    await clock.advance(2_000);
+    expect(candidates.resolveCalls).toHaveLength(2);
+  });
+
+  // The bug this backoff exists for: one unlucky scan — an image read starved of memory, a
+  // security product mid-sweep — used to end the app's session permanently, and the only cure
+  // was quitting it. Recovery has to happen on its own.
+  it('attaches on its own once discovery starts working again', async () => {
+    const { tap, clock, processes, candidates, runtime } = createHarness();
+    processes.processes = [{ pid: 4_242, name: PROCESS_NAME }];
+    candidates.resolveResult = EMPTY;
+
+    tap.start();
+    await clock.advance(0);
+    expect(runtime.sessions).toHaveLength(0);
+
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: 'build-empty' };
+    await clock.advance(16_000);
+
+    expect(runtime.sessions).toHaveLength(1);
+  });
+
+  it('lengthens the stand-down with each consecutive empty scan', async () => {
+    const { tap, clock, processes, candidates } = createHarness();
+    processes.processes = [{ pid: 4_242, name: PROCESS_NAME }];
+    candidates.resolveResult = EMPTY;
+
+    tap.start();
+    await clock.advance(0);
+    await clock.advance(16_000);
+    expect(candidates.resolveCalls).toHaveLength(2);
+
+    await clock.advance(58_000);
+    expect(candidates.resolveCalls).toHaveLength(2);
+
+    await clock.advance(2_000);
+    expect(candidates.resolveCalls).toHaveLength(3);
+  });
+
+  it('records which build the empty scan ran against, and that it has not given up', async () => {
+    const { tap, clock, processes, candidates, warnings } = createHarness();
+    processes.processes = [{ pid: 4_242, name: PROCESS_NAME }];
+    candidates.resolveResult = EMPTY;
+
+    tap.start();
+    await clock.advance(0);
+
+    expect(warnings).toContainEqual({
+      scope: 'live-source',
+      event: 'tap.hook_discovery_empty',
+      pid: 4_242,
+      buildId: 'build-empty',
+      failures: 1,
+      retryInMs: 15_000,
+    });
+  });
+});

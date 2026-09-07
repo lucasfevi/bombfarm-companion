@@ -20,14 +20,20 @@ import type { FarmInputs, FarmRankingResult } from '@bombfarm/farm/core';
 import type { FarmControls } from './farm-inputs';
 
 /**
- * One compute's settled products: the board, the inputs it was computed from, and the moment the
- * compute finished. The respec solve is a button press and lives nowhere near here.
+ * One compute's settled products: the board, the inputs it was computed from, and the age of the
+ * account they all came from. The respec solve is a button press and lives nowhere near here.
  */
 export type FarmSettledBoard = {
   readonly board: FarmRankingResult;
   readonly inputs: FarmInputs;
-  /** ISO-8601, stamped by whoever ran the compute — this module reads no clock of its own. */
-  readonly computedAt: string;
+  /**
+   * ISO-8601 capture time of the ACCOUNT these numbers were computed from — the oldest across its
+   * five sections — not the moment the compute ran. The two diverge exactly when it matters: a
+   * board recomputed from an account the app has stopped being able to re-read is a fresh
+   * calculation over old data, and stamping the compute made the screen call that "just now".
+   * `null` when the account carries no readable capture time at all, which claims nothing.
+   */
+  readonly capturedAt: string | null;
 };
 
 /**
@@ -103,7 +109,7 @@ export function settledBoard(state: FarmSnapshotState): FarmSettledBoard | null 
     return {
       board: state.board,
       inputs: state.inputs,
-      computedAt: state.computedAt,
+      capturedAt: state.capturedAt,
     };
   }
   if (state.status === 'computing') return state.previous;
@@ -172,7 +178,7 @@ export function accept(state: FarmSnapshotState, arrival: FarmSnapshotArrival): 
         status: 'ready',
         board: arrival.outcome.board,
         inputs: arrival.outcome.inputs,
-        computedAt: arrival.outcome.computedAt,
+        capturedAt: arrival.outcome.capturedAt,
         controls: arrival.controls,
         sourceKey: arrival.sourceKey,
       };

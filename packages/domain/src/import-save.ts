@@ -15,6 +15,7 @@ import { isKnownSkin } from './wiki-assets';
 import {
   birthFromSave,
   hasUsableBirthStats,
+  readStatRanges,
   saveSheetUnits,
   treeTotalsFromSave,
 } from './save-units';
@@ -187,6 +188,11 @@ function asString(value: unknown, fallback = ''): string {
 
 function bool(value: unknown, fallback = false): boolean {
   return typeof value === 'boolean' ? value : fallback;
+}
+
+/** Keeps "the save did not say" distinct from "the save said no". */
+function optionalBool(value: unknown): boolean | undefined {
+  return typeof value === 'boolean' ? value : undefined;
 }
 
 /**
@@ -586,6 +592,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
     const rank = typeof rawHero.rank === 'string' ? rawHero.rank : null;
     const deployed = bool(rawHero.in_field);
     const battleAllowed = bool(rawHero.battle_allowed, true);
+    const marketable = optionalBool(rawHero.marketable);
     const stars = asNumber(rawHero.stars, 0);
     // An out-of-range skin degrades to the neutral placeholder
     // (0), never a nearest-index clamp — absence (undefined/null) is normal
@@ -658,6 +665,10 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
     // sheetOther/loadout/tree — neither needs the save's `stats` block at all; only the
     // spent-points inversion below does.
     const birth: BirthStats = birthFromSave(rawHero.birth_stats as Record<string, unknown>);
+    // Read INSIDE the per-hero loop, deliberately — the bounds get no whole-file gate of their
+    // own. They enrich a sheet that is already correct without them, so a hero, a save, or a
+    // live account read carrying no `stat_ranges` imports exactly as it did before.
+    const statRanges = readStatRanges(rawHero.stat_ranges);
     const naked = nakedFromBirth(birth, level, stars, sheetOther);
     const gearedOverride = composeSheetFromBirth({
       birth,
@@ -740,8 +751,10 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
       power: power || undefined,
       deployed,
       battleAllowed,
+      marketable,
       skin,
       birth,
+      statRanges,
     };
 
     candidates.push({

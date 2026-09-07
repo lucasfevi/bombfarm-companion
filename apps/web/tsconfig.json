@@ -19,12 +19,16 @@
     "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./src/*"],
+      "@bombfarm/account": ["../../packages/account/src/index.ts"],
+      "@bombfarm/account/*": ["../../packages/account/src/*"],
       "@bombfarm/domain": ["../../packages/domain/src/index.ts"],
       "@bombfarm/domain/*": ["../../packages/domain/src/*"],
       "@bombfarm/ui": ["../../packages/ui/src/index.ts"],
       "@bombfarm/ui/*": ["../../packages/ui/src/*"],
       "@bombfarm/farm": ["../../packages/farm/src/index.ts"],
       "@bombfarm/farm/*": ["../../packages/farm/src/*"],
+      "@bombfarm/hero": ["../../packages/hero/src/index.ts"],
+      "@bombfarm/hero/*": ["../../packages/hero/src/*"],
       "@bombfarm/contracts": ["../../packages/contracts/src/index.ts"]
     }
   },

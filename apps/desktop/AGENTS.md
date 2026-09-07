@@ -52,3 +52,18 @@ follow — see the rule above and [`apps/web/AGENTS.md`](../web/AGENTS.md).
 pnpm --filter @bombfarm/desktop typecheck
 pnpm test:smoke
 ```
+
+`pnpm test:smoke:hidden` runs the same specs without any window reaching the screen, so a run does
+not paint over what you were doing or take focus a dozen times. Electron has no headless mode and
+Playwright's `_electron.launch` has no `headless` option; this instead sets `BFC_HIDE_WINDOWS=1`,
+which suppresses the reveal a window does when it is created. The renderer still lays out and still
+animates, so nothing the specs measure changes — but explicit `show()` calls are deliberately
+untouched, so `tray-hide.spec.mjs` still surfaces a window when it exercises the tray's Show, which
+is the behaviour it exists to prove. The flag is unpackaged-only and CI keeps running the visible
+form, which is what covers the reveal path itself.
+
+**It buys quiet, not speed: the same 43 specs take 52 s visible and 4.4 min hidden.** The cost is a
+flat ~2 s per launch plus a much steeper penalty on the specs that resize the window (one goes
+0.96 s → 11.6 s). `backgroundThrottling: false` was measured and changes nothing, so the cause is
+not timer throttling — do not reach for it again. Reach for the hidden run when you want your
+machine back, not when you want a fast loop.

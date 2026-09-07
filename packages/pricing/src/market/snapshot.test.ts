@@ -250,41 +250,79 @@ describe('isMarketSnapshot', () => {
   });
 });
 
-describe('carrying native quotes across a rate-limited run', () => {
-  const prior = entry({
+describe('native quotes across runs', () => {
+  const QUOTED_UTC = '2026-08-29T12:00:00.000Z';
+  const priorRing = entry({
     hashName: 'Gold Ring Lv 20 (Rare)',
     lowestUsd: 2.8,
     lowestNative: { BRL: 14.46 },
-    nativeQuotedUtc: '2026-08-29T12:00:00.000Z',
+    nativeQuotedUtc: QUOTED_UTC,
   });
 
-  it('keeps the previous quote when this run took none and the price is unchanged', () => {
-    const fresh = entry({ hashName: 'Gold Ring Lv 20 (Rare)', lowestUsd: 2.8, lowestNative: {} });
-    const merged = mergeEntries([fresh], [prior], true)[0];
-
-    expect(merged?.lowestNative).toEqual({ BRL: 14.46 });
-    expect(merged?.nativeQuotedUtc).toBe('2026-08-29T12:00:00.000Z');
-  });
-
-  it('drops the previous quote once the price has moved under it', () => {
-    const fresh = entry({ hashName: 'Gold Ring Lv 20 (Rare)', lowestUsd: 1.1, lowestNative: {} });
-    const merged = mergeEntries([fresh], [prior], true)[0];
-
-    expect(merged?.lowestNative).toEqual({});
-    expect(merged?.nativeQuotedUtc).toBeNull();
-  });
-
-  it('prefers a quote taken by this run over the previous one', () => {
+  it('keeps a quote this run took itself', () => {
     const fresh = entry({
       hashName: 'Gold Ring Lv 20 (Rare)',
       lowestUsd: 2.8,
       lowestNative: { BRL: 15.2 },
       nativeQuotedUtc: '2026-08-29T18:00:00.000Z',
     });
-    const merged = mergeEntries([fresh], [prior], true)[0];
+    const merged = mergeEntries([fresh], [priorRing], true)[0];
 
     expect(merged?.lowestNative).toEqual({ BRL: 15.2 });
     expect(merged?.nativeQuotedUtc).toBe('2026-08-29T18:00:00.000Z');
+  });
+
+  it('drops the previous quote for a row this run re-read without quoting', () => {
+    const fresh = entry({ hashName: 'Gold Ring Lv 20 (Rare)', lowestUsd: 2.8, lowestNative: {} });
+    const merged = mergeEntries([fresh], [priorRing], true)[0];
+
+    expect(merged?.lowestNative).toEqual({});
+    expect(merged?.nativeQuotedUtc).toBeNull();
+  });
+
+  it('drops the previous quote from a row a cut-short run never reached', () => {
+    const merged = mergeEntries([weapon], [priorRing], false);
+    const carried = merged.find((row) => row.hashName === 'Gold Ring Lv 20 (Rare)');
+
+    expect(carried?.lowestUsd).toBe(2.8);
+    expect(carried?.lowestNative).toEqual({});
+    expect(carried?.nativeQuotedUtc).toBeNull();
+  });
+
+  /**
+   * The shape a published file actually has: a previous snapshot dense with quotes, and a run
+   * rate-limited before the quote pass. Every route out of the merge has to arrive uniformly
+   * converted, or the rows that keep a figure go on ageing behind the label that prefers them.
+   */
+  it('publishes no native quote at all when the run took none', () => {
+    const quotedWeapon = { ...weapon, lowestNative: { BRL: 27 }, nativeQuotedUtc: QUOTED_UTC };
+    const quotedHelmet = { ...helmet, lowestNative: { BRL: 37.8 }, nativeQuotedUtc: QUOTED_UTC };
+    const prior = buildSnapshot({
+      entries: [quotedWeapon, quotedHelmet, priorRing],
+      prior: null,
+      catalog: CATALOG,
+      fx: { USD: 1, BRL: 5.4 },
+      anomalies: [],
+      searchCalls: 12,
+      enumerationComplete: true,
+      now: () => Date.parse('2026-08-29T12:00:00.000Z'),
+    });
+    expect(prior.entries.filter((row) => row.nativeQuotedUtc != null)).toHaveLength(3);
+
+    const rateLimited = buildSnapshot({
+      entries: [entry({ hashName: 'Ember Weapon', lowestUsd: 5, lowestNative: {} })],
+      prior,
+      catalog: CATALOG,
+      fx: { USD: 1, BRL: 5.4 },
+      anomalies: [],
+      searchCalls: 1,
+      enumerationComplete: false,
+      now: () => Date.parse('2026-08-30T00:00:00.000Z'),
+    });
+
+    expect(rateLimited.entries).toHaveLength(3);
+    expect(rateLimited.entries.filter((row) => row.nativeQuotedUtc != null)).toEqual([]);
+    expect(rateLimited.entries.flatMap((row) => Object.keys(row.lowestNative))).toEqual([]);
   });
 });
 

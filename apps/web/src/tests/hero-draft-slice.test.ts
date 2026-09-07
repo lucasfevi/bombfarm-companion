@@ -1,8 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { emptyLoadout } from '@bombfarm/domain/gear';
 import { HERO_MAX_LEVEL } from '@bombfarm/domain/model';
-import { normalizeHero } from '@/shared/lib/storage';
+import { normalizeHero, patchHeroInList } from '@/shared/lib/storage';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
+
+const sheet = () => ({
+  attack: 11,
+  energy: 12,
+  speed: 13,
+  critChance: 1,
+  critDmg: 2,
+  penetration: 0,
+  cdr: 0,
+  luck: 0,
+});
 
 describe('hero-draft slice', () => {
   beforeEach(() => {
@@ -133,5 +144,47 @@ describe('hero-draft slice', () => {
     expect(record.level).toBe(10);
     expect(Object.keys(record)).not.toContain('obsHit');
     expect(Object.keys(record)).not.toContain('obsCrit');
+  });
+
+  /**
+   * The 700ms draft autosave stages `buildHeroRecord(activeHeroId)` and feeds it to
+   * `patchHeroInList`, so a stored field the draft does not mirror comes back missing: the value
+   * is stripped from localStorage AND the fresh array reference invalidates every memo keyed on
+   * `state.heroes`, dropping a farm-respec proposal the player is looking at. Field-agnostic on
+   * purpose — it fails for whichever field is dropped next, not only for `marketable`.
+   */
+  it('applyHero then buildHeroRecord round-trips every stored field, so a no-op autosave is a no-op', () => {
+    const hero = normalizeHero({
+      id: 'h1',
+      name: 'Bound',
+      sourceId: 'src-1',
+      updatedAt: 1,
+      rarity: 'Épico',
+      level: 42,
+      stars: 2,
+      naked: sheet(),
+      gearedOverride: sheet(),
+      loadout: emptyLoadout(),
+      abilities: { fireball: 3 },
+      pts: sheet(),
+      rank: 'A',
+      power: 999,
+      deployed: true,
+      battleAllowed: false,
+      marketable: false,
+      skin: 2,
+      statPointsAvailable: 7,
+    });
+
+    usePlannerStore.getState().applyHero(hero);
+    const restaged = normalizeHero({
+      ...usePlannerStore.getState().buildHeroRecord(hero.id),
+      id: hero.id,
+      updatedAt: hero.updatedAt,
+    });
+
+    const roster = [hero];
+    expect(restaged).toEqual(hero);
+    expect(patchHeroInList(roster, restaged)).toBe(roster);
   });
 });

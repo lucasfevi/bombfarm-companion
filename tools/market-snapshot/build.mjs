@@ -124,25 +124,33 @@ function steamTagsFor(catalog, log) {
 }
 
 /**
- * The snapshot to resume from, or null. The path is the caller's: the CLI resumes from `OUT`,
- * and a long-running caller resumes from wherever it keeps its own state.
+ * The snapshot in a serialised body, or null. `source` only names it in the log, so a caller that
+ * read the body from somewhere other than disk says where without a second parser existing.
+ */
+export function parsePrior(body, source, log = defaultLog) {
+  try {
+    // Normalised, not merely validated: the body is whatever the last run published, and a
+    // version 2 one carries no native quotes for the merge to reason about.
+    const parsed = readMarketSnapshot(JSON.parse(body));
+    if (parsed == null) {
+      log(`ignoring ${source}: not a recognised snapshot`);
+      return null;
+    }
+    log(`resuming from ${source} (${parsed.entries.length} entries, generated ${parsed.generatedUtc})`);
+    return parsed;
+  } catch (err) {
+    log(`ignoring ${source}: ${err.message}`);
+    return null;
+  }
+}
+
+/**
+ * The snapshot to resume from on disk, or null. The path is the caller's: the CLI resumes from
+ * `OUT`, and a long-running caller resumes from wherever it keeps its own state.
  */
 export function loadPrior(path, log = defaultLog) {
   if (!existsSync(path)) return null;
-  try {
-    // Normalised, not merely validated: the file on disk is whatever the last run published, and
-    // a version 2 one carries no native quotes for the merge to reason about.
-    const parsed = readMarketSnapshot(JSON.parse(readFileSync(path, 'utf-8')));
-    if (parsed == null) {
-      log(`ignoring ${path}: not a recognised snapshot`);
-      return null;
-    }
-    log(`resuming from ${path} (${parsed.entries.length} entries, generated ${parsed.generatedUtc})`);
-    return parsed;
-  } catch (err) {
-    log(`ignoring ${path}: ${err.message}`);
-    return null;
-  }
+  return parsePrior(readFileSync(path, 'utf-8'), path, log);
 }
 
 async function getJson(url) {
@@ -273,12 +281,27 @@ function countingLog(inner) {
 const STEAM_NET = { fetchAppFilters, fetchSearchPage, fetchPriceOverview, fetchFx };
 
 /**
+ * Quote every listed row, at the caller's fixed delay. What a one-shot run wants; a long-running
+ * caller supplies its own plan, because it is the one that knows what the day has already spent.
+ */
+const QUOTE_EVERY_LISTED_ROW = ({ quotable }) => ({
+  hashNames: quotable.map((entry) => entry.hashName),
+});
+
+/** No currency to ask for means no per-item call to make, whatever policy the caller brought. */
+const QUOTE_NOTHING = { hashNames: [] };
+
+/**
  * Run one complete sweep: enumerate, tag, reconcile, quote the rotation, build the snapshot.
  * The only Steam-talking entry point in the repository. Returns the artifact and what a caller
  * needs to describe the pass without re-deriving it.
  *
  * Nothing here reads or writes disk state: `prior` is passed in and the snapshot is returned, so
  * the CLI and any longer-lived caller each keep their own resume path.
+ *
+ * `planQuotes` decides which of the listed rows earn a call of their own and how far apart, given
+ * what the enumeration has just cost. The policy is the caller's because the caller is the one
+ * that knows the day's spending and which items have ever traded; the sweep only runs the plan.
  */
 export async function runSweep({
   appId = APP_ID,
@@ -287,6 +310,7 @@ export async function runSweep({
   searchDelayMs = DELAY_MS,
   quoteDelayMs = QUOTE_DELAY_MS,
   nativeCurrencies = NATIVE_CURRENCIES,
+  planQuotes = QUOTE_EVERY_LISTED_ROW,
   log = defaultLog,
   now = Date.now,
   steamNet = STEAM_NET,
@@ -298,8 +322,15 @@ export async function runSweep({
   const tags = steamTagsFor(catalog, sweepLog);
   sweepLog(`catalog: ${catalog.defs.length} defs x ${catalog.rarityIdxs.length} rarities`);
 
+  // Counted rather than assumed: the facet schema is one market call per pass on top of the
+  // search pages, and a plan that paces against the total cannot be handed a number missing it.
+  let filterCalls = 0;
+
   const discovery = await discoverMarket(appId, {
-    fetchAppFilters: () => steamNet.fetchAppFilters(appId),
+    fetchAppFilters: () => {
+      filterCalls += 1;
+      return steamNet.fetchAppFilters(appId);
+    },
     fetchSearchPage: steamNet.fetchSearchPage,
     catalogTags: tags,
     knownTags: knownTagsFrom(prior?.entries ?? []),
@@ -321,16 +352,34 @@ export async function runSweep({
   // Only rows the enumeration found a listing for: an unlisted row has nothing to quote, and the
   // per-item call is the expensive half of the sweep.
   const quotable = reconciled.entries.filter((entry) => entry.lowestUsd != null);
-  const quoted = await quoteNative(appId, quotable.map((entry) => entry.hashName), nativeCurrencies, {
+  const enumerationCalls = discovery.searchCalls + filterCalls;
+  // Every listed row falls to the enumeration when no native currency is configured.
+  const plan =
+    nativeCurrencies.length > 0
+      ? planQuotes({ quotable, enumerationCalls, searchDelayMs })
+      : QUOTE_NOTHING;
+
+  // Intersected rather than trusted: a plan naming a row this pass never enumerated would spend a
+  // call on something with nothing to price, and the rotation is the expensive half of the sweep.
+  const planned = new Set(plan.hashNames);
+  const rotation = quotable.filter((entry) => planned.has(entry.hashName));
+  const enumerationOnly = quotable
+    .filter((entry) => !planned.has(entry.hashName))
+    .map((entry) => entry.hashName);
+  const rotationDelayMs = plan.delayMs ?? quoteDelayMs;
+
+  const quoted = await quoteNative(appId, rotation.map((entry) => entry.hashName), nativeCurrencies, {
     fetchPriceOverview: steamNet.fetchPriceOverview,
     sleep,
-    baseDelayMs: quoteDelayMs,
+    baseDelayMs: rotationDelayMs,
     now,
     log: sweepLog,
   });
   sweepLog(
-    `quoted ${quoted.quotes.size}/${quotable.length} rows in ${nativeCurrencies.join(', ')} ` +
-      `over ${quoted.calls} calls (${quoted.unquoted} unquoted by Steam` +
+    `quoted ${quoted.quotes.size}/${rotation.length} rows in ${nativeCurrencies.join(', ')} ` +
+      `over ${quoted.calls} calls at ${rotationDelayMs}ms ` +
+      `(${enumerationOnly.length} priced from the enumeration, ` +
+      `${quoted.unquoted} unquoted by Steam` +
       `${quoted.complete ? '' : ', PARTIAL — rate limited'})`,
   );
 
@@ -358,7 +407,7 @@ export async function runSweep({
     appId,
   });
 
-  const quotesAttempted = quotable.length * nativeCurrencies.length;
+  const quotesAttempted = rotation.length * nativeCurrencies.length;
   const unmappedTags = snapshot.anomalies.filter((anomaly) => anomaly.kind.startsWith('unknown-'));
 
   // Every attempt increments `calls` and only a rate limit retries, so the difference is exactly
@@ -379,14 +428,24 @@ export async function runSweep({
     finishedAtMs: now(),
     rowsSeen: discovery.rows.length,
     searchCalls: discovery.searchCalls,
+    enumerationCalls,
     quoteCalls: quoted.calls,
     quotesAttempted,
     quotesOk: quoted.quotes.size,
+    quotable: quotable.length,
+    // The rotation as it was actually run, so the caller can tier an item from its own result
+    // rather than re-deriving which rows this pass decided to spend a call on.
+    rotation: rotation.map((entry) => entry.hashName),
+    enumerationOnly,
+    rotationDelayMs,
     // The snapshot keeps only `lowest` per currency, so this is the sole route by which the
     // median and the 24h volume the rotation already paid for reach a caller at all.
     quotes: quoted.quotes,
     quotedUtc: quoted.quotedUtc,
     unquoted: quoted.unquoted,
+    // A reading the snapshot has no room for: the market answered and had nothing to quote. It
+    // reaches a caller only here, and nowhere else does that stay apart from "never asked".
+    answeredUnpriced: quoted.answeredUnpriced,
     rateLimitHits,
     rateLimitHitsDerived,
     enumerationComplete: discovery.enumerationComplete,

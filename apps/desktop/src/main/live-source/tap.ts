@@ -83,6 +83,17 @@ const DEFAULT_POLL_INTERVAL_MS = 5_000;
  *  plateauing at the last entry instead of growing without bound. */
 const HOOK_DISCOVERY_WIDTHS = [4, 8, 16, 32] as const;
 
+/** How long discovery stands down after coming back empty, indexed by consecutive failures and
+ *  plateauing at the last entry. The first step is short because the failures worth retrying are
+ *  transient; the plateau is long because a binary the scan genuinely cannot hook will not start
+ *  matching, and re-reading its image forever costs a synchronous read on the main process. */
+const DISCOVERY_RETRY_BACKOFF_MS = [15_000, 60_000, 300_000, 900_000] as const;
+
+function discoveryBackoffMs(failures: number): number {
+  const index = Math.min(Math.max(failures, 1) - 1, DISCOVERY_RETRY_BACKOFF_MS.length - 1);
+  return DISCOVERY_RETRY_BACKOFF_MS[index] ?? DISCOVERY_RETRY_BACKOFF_MS[0];
+}
+
 export interface TapDeps {
   readonly processName: string;
   readonly runtime: RuntimePort;
@@ -147,10 +158,16 @@ export class Tap {
    *  the hook died. */
   #lastTrafficAt: number | null = null;
   #sequence = 0;
-  /** The pid discovery last failed for, so a poll interval does not re-pay a full image read and
-   *  candidate scan every 5s while nothing about the target process has changed. Cleared the
-   *  moment a different pid is attempted. */
-  #lastFailedDiscoveryPid: number | null = null;
+  /** When discovery may next be re-paid for the pid it last failed on, so a poll interval does
+   *  not re-run a full image read and candidate scan every 5s while nothing about the target
+   *  process has changed.
+   *
+   *  A deadline rather than the flat "never again for this pid" this used to be. Discovery fails
+   *  for reasons that pass on their own — an image read starved of memory, a security product
+   *  mid-scan, a game launched elevated and restarted since — and under a permanent latch a
+   *  single unlucky poll left the app reporting `attachFailed` every 5s until it was restarted,
+   *  with no line in the log to say why. Backing off keeps the cost bounded and still recovers. */
+  #discoveryRetry: { readonly pid: number; readonly failures: number; readonly notBeforeMs: number } | null = null;
 
   /** How many consecutive fresh-discovery validation failures the current build has racked up —
    *  an index into {@link HOOK_DISCOVERY_WIDTHS}, not a raw candidate count. Reset on a confirmed
@@ -321,7 +338,8 @@ export class Tap {
       return;
     }
 
-    if (this.#lastFailedDiscoveryPid === pid) {
+    const retry = this.#discoveryRetry;
+    if (retry?.pid === pid && this.#deps.clock.now() < retry.notBeforeMs) {
       this.#reportGap('attachFailed');
       return;
     }
@@ -329,11 +347,24 @@ export class Tap {
     const candidateResolution = this.#deps.candidates.resolve(pid, this.#currentDiscoveryWidth());
     if (!candidateResolution.fromCache) this.#syncDiscoveryEscalation(candidateResolution.buildId);
     if (candidateResolution.addresses.length === 0) {
-      this.#lastFailedDiscoveryPid = pid;
+      const failures = (retry?.pid === pid ? retry.failures : 0) + 1;
+      const backoffMs = discoveryBackoffMs(failures);
+      this.#discoveryRetry = { pid, failures, notBeforeMs: this.#deps.clock.now() + backoffMs };
+      // The only account of why the app is stuck on `attachFailed`: whether an image was read at
+      // all is already logged by the image source, so what this adds is that a scan ran, which
+      // build it ran against, and that the app has not given up.
+      this.#log.warn({
+        scope: 'live-source',
+        event: 'tap.hook_discovery_empty',
+        pid,
+        buildId: candidateResolution.buildId,
+        failures,
+        retryInMs: backoffMs,
+      });
       this.#reportGap('attachFailed');
       return;
     }
-    this.#lastFailedDiscoveryPid = null;
+    this.#discoveryRetry = null;
 
     let session: TapSession;
     try {

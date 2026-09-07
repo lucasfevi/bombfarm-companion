@@ -25,14 +25,13 @@ import { Banner, EmptyState, colClass } from '@bombfarm/ui';
 import { scheduleAfterPaint } from '@bombfarm/farm';
 import {
   FarmRankingBoardView,
-  HeroPickerDialogView,
   PhasesExplorerView,
   type FarmRankingBoardActions,
   type FarmRankingBoardData,
   type FarmRankingBoardSlots,
   type FarmStatLabels,
-  type HeroPickerSlotProps,
 } from '@bombfarm/farm/components';
+import { HeroPickerDialogView, type HeroPickerSlotProps } from '@bombfarm/hero/components';
 import {
   buildAccount,
   deriveFarmPoolEntries,
@@ -301,7 +300,7 @@ function FarmScreen({
   const t = useCopy();
   const { lang } = useLocale();
   const farmCopy = useFarmCopy();
-  const { board, inputs, computedAt } = snapshot;
+  const { board, inputs, capturedAt } = snapshot;
 
   const screenCopy = useMemo(() => farmScreenCopy(farmCopy, t), [farmCopy, t]);
 
@@ -386,14 +385,14 @@ function FarmScreen({
     () => ({
       headerOverlay: (
         <FarmRefreshControl
-          computedAt={computedAt}
+          capturedAt={capturedAt}
           stale={refresh.stale}
           busy={refresh.busy}
           onRefresh={refresh.onRefresh}
         />
       ),
     }),
-    [computedAt, refresh],
+    [capturedAt, refresh],
   );
 
   const explorerData = useMemo(

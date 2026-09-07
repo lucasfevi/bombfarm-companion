@@ -12,6 +12,7 @@ Planner/web-specific durable rules. Shared monorepo rules live at the companion 
 | [level-stars-sheet.md](level-stars-sheet.md) | Level/stars naked+geared sync |
 | [e2e-visual.md](e2e-visual.md) | Playwright e2e + visual baselines |
 | [adr/013-app-shell-route-group.md](adr/013-app-shell-route-group.md) | Shared `(app)` shell + `@planner` keep-alive |
+| [adr/015-cdn-cache-headers.md](adr/015-cdn-cache-headers.md) | `vercel.json` cache windows, and why the art is 30 days and the prefetch payloads 5 minutes |
 
 ## Shared (root)
 

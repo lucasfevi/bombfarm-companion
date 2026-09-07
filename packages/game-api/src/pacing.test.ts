@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
-  PacingHaltedError,
   PacingRefusedError,
   READ_PACING,
   createPacingGate,
@@ -186,19 +185,12 @@ describe('createPacingGate — cooldown backoff ladder', () => {
   });
 });
 
-describe('createPacingGate — unauthorized halts the cycle', () => {
+describe('createPacingGate — unauthorized halts the cycle for a bounded window', () => {
   it('unauthorized sets halted, distinct from ready or a backoff window', () => {
     const clock = createFakeClock();
     const gate = createPacingGate(clock);
     gate.observe({ kind: 'unauthorized' });
     expect(gate.state).toBe('halted');
-  });
-
-  it('nextCycleDelayMs refuses to schedule while halted', () => {
-    const clock = createFakeClock();
-    const gate = createPacingGate(clock);
-    gate.observe({ kind: 'unauthorized' });
-    expect(() => gate.nextCycleDelayMs(true)).toThrow(PacingHaltedError);
   });
 
   it('run() refuses while halted, without invoking the transport', async () => {
@@ -209,15 +201,69 @@ describe('createPacingGate — unauthorized halts the cycle', () => {
     await expect(gate.run('/state', fn)).rejects.toBeInstanceOf(PacingRefusedError);
   });
 
-  it('only resetAuth() clears halted — the two legitimate callers are a changed token file and an explicit user retry, never a timer', () => {
+  // Two rejections, not one: the first step of the ladder is the ordinary cycle interval, so a
+  // single rejection cannot tell "waited out the window" from "ignored it and used the interval".
+  it('nextCycleDelayMs waits the window out rather than declining to schedule at all', () => {
     const clock = createFakeClock();
     const gate = createPacingGate(clock);
+    gate.observe({ kind: 'unauthorized' });
+    gate.observe({ kind: 'unauthorized' });
+    expect(gate.nextCycleDelayMs(true)).toBe(READ_PACING.authRetryStartMs * 2);
+    expect(gate.nextCycleDelayMs(true)).toBeGreaterThan(READ_PACING.cycleForegroundMs);
+  });
+
+  it('the halt ends on its own once the window lapses, with nobody having called resetAuth', async () => {
+    const clock = createFakeClock();
+    const gate = createPacingGate(clock);
+    gate.observe({ kind: 'unauthorized' });
+
+    await clock.sleep(READ_PACING.authRetryStartMs);
+
+    expect(gate.state).toBe('ready');
+    const ran = await gate.run('/state', () => Promise.resolve('reached the transport'));
+    expect(ran).toBe('reached the transport');
+  });
+
+  for (const [rejections, expectedDelayMs] of [
+    [1, READ_PACING.authRetryStartMs],
+    [2, READ_PACING.authRetryStartMs * 2],
+    [3, READ_PACING.authRetryStartMs * 4],
+    [10, READ_PACING.authRetryCapMs],
+  ] as const) {
+    it(`${String(rejections)} consecutive rejection(s) -> a ${String(expectedDelayMs)}ms wait, capped`, () => {
+      const clock = createFakeClock();
+      const gate = createPacingGate(clock);
+      for (let i = 0; i < rejections; i += 1) {
+        gate.observe({ kind: 'unauthorized' });
+      }
+      expect(gate.nextCycleDelayMs(true)).toBe(expectedDelayMs);
+    });
+  }
+
+  it('resetAuth() clears the window ahead of its expiry — a changed token file need not wait it out', () => {
+    const clock = createFakeClock();
+    const gate = createPacingGate(clock);
+    gate.observe({ kind: 'unauthorized' });
     gate.observe({ kind: 'unauthorized' });
     expect(gate.state).toBe('halted');
 
     gate.resetAuth();
     expect(gate.state).toBe('ready');
-    expect(() => gate.nextCycleDelayMs(true)).not.toThrow();
+    // The streak is cleared too, so the next rejection starts the ladder at step 1.
+    gate.observe({ kind: 'unauthorized' });
+    expect(gate.nextCycleDelayMs(true)).toBe(READ_PACING.authRetryStartMs);
+  });
+
+  it('an answered read clears the ladder — the credentials proved live', () => {
+    const clock = createFakeClock();
+    const gate = createPacingGate(clock);
+    gate.observe({ kind: 'unauthorized' });
+    gate.observe({ kind: 'unauthorized' });
+    gate.observe({ kind: 'ok' });
+    expect(gate.state).toBe('ready');
+
+    gate.observe({ kind: 'unauthorized' });
+    expect(gate.nextCycleDelayMs(true)).toBe(READ_PACING.authRetryStartMs);
   });
 });
 
@@ -242,5 +288,123 @@ describe('createPacingGate — cycle interval', () => {
     // Force a longer backoff by tripping twice (120_000ms), which exceeds cycleForegroundMs (60_000ms).
     gate.observe({ kind: 'cooldown' });
     expect(gate.nextCycleDelayMs(true)).toBeGreaterThan(READ_PACING.cycleForegroundMs);
+  });
+});
+
+describe('createPacingGate — writes share the one gate with the reads', () => {
+  it('the write gap is wider than the read gap, so it is the binding one between two writes', () => {
+    expect(READ_PACING.minWriteGapMs).toBeGreaterThan(READ_PACING.minRequestGapMs);
+  });
+
+  it('a write after a read waits the read gap', async () => {
+    const clock = createFakeClock();
+    const gate = createPacingGate(clock);
+
+    await gate.run('/state', () => Promise.resolve('read'));
+    await gate.runWrite('/item/forge', () => Promise.resolve('write'));
+
+    expect(clock.sleepCalls).toEqual([READ_PACING.minRequestGapMs]);
+  });
+
+  it('a write after a write waits the write gap', async () => {
+    const clock = createFakeClock();
+    const gate = createPacingGate(clock);
+
+    await gate.runWrite('/item/forge', () => Promise.resolve('first'));
+    await gate.runWrite('/item/forge', () => Promise.resolve('second'));
+
+    expect(clock.sleepCalls).toEqual([READ_PACING.minWriteGapMs]);
+  });
+
+  it('a read after a write waits the read gap — the shared stream spaces every start', async () => {
+    const clock = createFakeClock();
+    const gate = createPacingGate(clock);
+
+    await gate.runWrite('/item/forge', () => Promise.resolve('write'));
+    await gate.run('/state', () => Promise.resolve('read'));
+
+    expect(clock.sleepCalls).toEqual([READ_PACING.minRequestGapMs]);
+  });
+
+  it('two writes with the same key are two calls — a write never coalesces', async () => {
+    const clock = createFakeClock();
+    const gate = createPacingGate(clock);
+    let invocations = 0;
+    const fn = () => {
+      invocations += 1;
+      return Promise.resolve(invocations);
+    };
+
+    const [first, second] = await Promise.all([gate.runWrite('/item/forge', fn), gate.runWrite('/item/forge', fn)]);
+
+    expect(invocations).toBe(2);
+    expect(first).toBe(1);
+    expect(second).toBe(2);
+  });
+
+  it('a cooldown observed from a write refuses the next read without invoking it', async () => {
+    const clock = createFakeClock();
+    const gate = createPacingGate(clock);
+
+    await gate.runWrite('/item/forge', () => Promise.resolve({ kind: 'cooldown' as const }));
+    gate.observe({ kind: 'cooldown' });
+
+    await expect(gate.run('/state', () => Promise.resolve('should-not-run'))).rejects.toBeInstanceOf(PacingRefusedError);
+  });
+
+  it('a cooldown observed from a read refuses the next write too', async () => {
+    const clock = createFakeClock();
+    const gate = createPacingGate(clock);
+    gate.observe({ kind: 'cooldown' });
+
+    await expect(gate.runWrite('/item/forge', () => Promise.resolve('should-not-run'))).rejects.toBeInstanceOf(
+      PacingRefusedError,
+    );
+  });
+
+  it('runWrite refuses while halted on an unresolved 401/403', async () => {
+    const clock = createFakeClock();
+    const gate = createPacingGate(clock);
+    gate.observe({ kind: 'unauthorized' });
+
+    await expect(gate.runWrite('/item/forge', () => Promise.resolve('should-not-run'))).rejects.toBeInstanceOf(
+      PacingRefusedError,
+    );
+  });
+});
+
+describe('createPacingGate — nextForgeDelayMs, the humanised gap between rolls', () => {
+  function sequence(values: number[]): () => number {
+    let index = 0;
+    return () => values[index++] ?? 0;
+  }
+
+  it('stays within the short bounds when the first draw does not pick the long pause', () => {
+    const gate = createPacingGate(createFakeClock());
+    expect(gate.nextForgeDelayMs(sequence([READ_PACING.forgeLongPauseChance, 0]))).toBe(READ_PACING.forgeDelayMinMs);
+    expect(gate.nextForgeDelayMs(sequence([0.5, 1]))).toBe(READ_PACING.forgeDelayMaxMs);
+    expect(gate.nextForgeDelayMs(sequence([0.99, 0.5]))).toBe(
+      Math.round((READ_PACING.forgeDelayMinMs + READ_PACING.forgeDelayMaxMs) / 2),
+    );
+  });
+
+  it('takes the long pause exactly when the first draw falls under forgeLongPauseChance', () => {
+    const gate = createPacingGate(createFakeClock());
+    const justUnder = READ_PACING.forgeLongPauseChance - 0.001;
+    expect(gate.nextForgeDelayMs(sequence([justUnder, 0]))).toBe(READ_PACING.forgeLongPauseMinMs);
+    expect(gate.nextForgeDelayMs(sequence([justUnder, 1]))).toBe(READ_PACING.forgeLongPauseMaxMs);
+    expect(gate.nextForgeDelayMs(sequence([0, 0.5]))).toBe(
+      Math.round((READ_PACING.forgeLongPauseMinMs + READ_PACING.forgeLongPauseMaxMs) / 2),
+    );
+  });
+
+  it('with the default random source, a thousand draws all land inside one of the two ranges', () => {
+    const gate = createPacingGate(createFakeClock());
+    for (let i = 0; i < 1_000; i += 1) {
+      const delay = gate.nextForgeDelayMs();
+      const short = delay >= READ_PACING.forgeDelayMinMs && delay <= READ_PACING.forgeDelayMaxMs;
+      const long = delay >= READ_PACING.forgeLongPauseMinMs && delay <= READ_PACING.forgeLongPauseMaxMs;
+      expect(short || long).toBe(true);
+    }
   });
 });

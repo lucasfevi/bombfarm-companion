@@ -3,7 +3,7 @@
 // (Comum 1 → Mítico 6). 1 point/level shared with... no — abilities have their
 // own points (1/level, same budget shown as "Pontos a Distribuir" in game).
 // Ability effects are FLAT game units applied outside the sheet (confirmed by
-// Ponta de Diamante "+2 de Penetração (pontos)" matching observed sheets).
+// Ponta de Diamante "+1 de Penetração (pontos)" matching observed sheets).
 import { critFactor } from './combat';
 import { BASE_ROLLS, POINT_GAIN, type RarityKey } from './rarity-constants';
 
@@ -145,7 +145,7 @@ export interface AbilityMods {
   /** Olho Clínico — FLAT crit-chance percentage points (planner units), already on the hero
    *  sheet. Feeds `SheetOtherPct.critChanceFlat` as an addend held OUTSIDE the shared pool. */
   sheetCritChanceFlat: number;
-  /** Ponta de Diamante etc. — raw Σ units on the unequipped sheet (+2 per level). */
+  /** Ponta de Diamante etc. — raw Σ units on the unequipped sheet (+1 per level). */
   sheetPenetrationRaw: number;
   penetrationPp: number;
   /** Golpe Brutal — FLAT crit-damage percentage points (planner units), already on the hero

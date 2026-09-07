@@ -775,8 +775,9 @@ describe('account-refresh — revoke mid-cycle', () => {
     gate.observe({ kind: 'unauthorized' });
     expect(gate.state).toBe('halted');
 
-    // Second cycle, same mtimeMs — the cache still matches, so nothing resets the gate: it
-    // stays halted, exactly as the 401/403 terminal-state rule requires (never cleared by the normal cadence).
+    // Second cycle, same mtimeMs — the cache still matches, so nothing resets the gate. The
+    // clock here never advances, so the gate's own retry window cannot have lapsed either: this
+    // asserts the cycle does not clear a halt merely by coming round again.
     await refresh.refreshNow();
     expect(gate.state).toBe('halted');
 
@@ -933,5 +934,50 @@ describe('account-refresh — a drifted section is logged with path-qualified ke
     expect(failures.map((r) => r.record.section)).toEqual(['heroes']);
     expect(failures[0]?.record.scope).toBe('account-refresh');
     expect(failures[0]?.record.reason).toBe('http_error');
+  });
+});
+
+describe('account-refresh — applyPatch, the seam a forge run lands its result through', () => {
+  it('re-commits the last committed payload with the patch applied, through the same onView the cycle uses', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+    const seen: AccountView[] = [];
+    const deps = baseDeps({
+      store,
+      consentStore: fixedConsentStore(GRANTED),
+      transport: okTransport(),
+      readToken,
+      onView: (view) => {
+        seen.push(view);
+      },
+    });
+    const refresh = createAccountRefresh(deps);
+    await refresh.refreshNow();
+    expect(seen).toHaveLength(1);
+
+    const patched = refresh.applyPatch((payload) => ({
+      ...payload,
+      account: { ...(payload.account ?? {}), gold: 42 },
+    }));
+
+    expect(patched?.payload.account?.gold).toBe(42);
+    expect(refresh.getLastView()).toBe(patched);
+    expect(seen).toHaveLength(2);
+    expect(seen[1]).toBe(patched);
+    expect(store.restore().payload.account?.gold).toBe(42);
+  });
+
+  it('is a no-op before anything has been committed', () => {
+    const open = openTestAccountDb(firstBinding());
+    const refresh = createAccountRefresh(baseDeps({ store: createAccountStore(open) }));
+    let called = false;
+    expect(
+      refresh.applyPatch((payload) => {
+        called = true;
+        return payload;
+      }),
+    ).toBeNull();
+    expect(called).toBe(false);
   });
 });

@@ -126,7 +126,10 @@ const SRC_ALLOWLIST: Record<string, number[]> = {
   // +1 (line number only): `spentDelta` now calls the shared `spentPointsOf` instead of
   // re-summing SHEET_KEYS inline, so the import block gained a line above these hits. Still FOUR
   // matches, unchanged in kind.
-  'advisor-pipeline.ts': [112, 221, 250, 349],
+  // +3/+16/+18 (line numbers only): reporting the fuse time with its floor and cooldown cap added
+  // three imports, a documented block of four fields on the result type, and one computed local
+  // above the returned object. Still FOUR matches, unchanged in kind.
+  'advisor-pipeline.ts': [115, 237, 266, 367],
   // +1 (line number only): the flat-crit-damage fix's `brutalStrike` LedgerNote arm
   // (review item 5, PR #90) added one line above this hit.
   'stat-breakdown/types.ts': [106],

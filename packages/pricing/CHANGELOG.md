@@ -1,5 +1,89 @@
 # @bombfarm/pricing
 
+## 0.2.0
+
+### Minor Changes
+
+- 006f970: Answer the question both apps could only half answer: what is this account actually worth?
+
+  **A new figure — what this account could sell.** It adds up three things the market will take off
+  your hands: the tradable items in your inventory, the heroes the game permits selling, and the bought
+  skins your heroes are wearing. Each is broken out on its own line with its own count, so you can
+  see at a glance that, say, forty of forty-three tradable items are priced and two of six sellable
+  heroes are. It appears on the Account page of the web planner and on the desktop app's new Account
+  screen, and it is the same computation on both — the two cannot disagree about the same inventory.
+
+  Two things about that number are stated where you read it, because both would otherwise mislead.
+  A hero listing is priced by rarity alone — level, gear and abilities count for nothing on the
+  market — so the heroes line is a floor, never what a well built hero fetches. And a bought skin is
+  an account-wide unlock: it counts once however many heroes wear it, and only while one of them
+  still does, so dressing every hero back to a birth skin drops the figure with nothing sold.
+
+  **It never guesses at a part it cannot see.** When one of the three cannot be read at all, that
+  line says so instead of showing zero, and the heading changes to say the total covers only part of
+  the account. A missing part is never quietly counted as nothing.
+
+  **The desktop app has an Account screen.** It shows who the account belongs to and how far it has
+  come, the House — its recovery cycle and how many heroes it refills at once, with the next House
+  previewed at the level you get on unlocking it — the full skill tree as the game totals it, and
+  the sell figure above. The tab sits between Inventory and Settings, so the nav now reads
+  Live · Farm · Inventory · Account · Settings.
+
+  **The inventory's own total is now named for what it is.** The header that read "Market value" on the
+  Inventory screen of both apps now reads "What your inventory could sell". It was never the account's
+  worth — it was always the inventory's, and now that the account has a figure of its own the old title
+  was the wrong one on the wrong screen. The number itself is unchanged, and it is now taken from
+  the same shared computation the Account screen uses.
+
+  **On the web planner, heroes are counted only after a fresh import.** Whether a hero may be sold
+  is something the game says in your save, and the planner has only just started carrying it. A
+  roster imported before this change does not have that answer, so the heroes line is withheld —
+  rather than reporting a whole roster as unsellable, which is what assuming an answer would do.
+  Import a save again and the line fills in. The inventory and skins lines need no re-import.
+
+### Patch Changes
+
+- f06d68d: Let a snapshot say which rows the run stopped quoting, so their price is not labelled as the
+  listing's own.
+
+  The producer now spends its call budget only on rows that actually trade — about a third of the
+  market has never reported a sale — and prices the rest from the enumeration it already pays for.
+  A row dropped from the rotation presents the same shape as one a rate limit cut short: this run
+  took no quote and the price has not moved, which is exactly the condition an inherited quote fires
+  on. It is not the same claim. No later pass is coming for that row, so an inherited quote would age
+  indefinitely behind a `basis: 'native'` label that says it is the number on the listing.
+
+  `buildSnapshot` therefore takes the rows the run deliberately left to the enumeration, and those
+  inherit nothing: they carry no native quote and resolve as `basis: 'converted'`, which is what
+  they are. Native ran 0.6-1.2% from converted per item when both were measured, so the difference
+  is real rather than presentational.
+
+- 2a9dc62: Report the quotes the market answered for and carried no price on, apart from the ones that got
+  no answer at all.
+
+  `quoteNative` counted both as `unquoted`, which made them indistinguishable to a caller. They are
+  different facts: `{"success":true}` with no `lowest_price` is the endpoint saying it has nothing
+  to quote for that item — a reading, and the one that settles whether the item is worth a call of
+  its own — while a failed, rate-limited or never-reached request says nothing about the item at
+  all. `answeredUnpriced` now carries the first kind, with whatever the answer did hold.
+
+  Deliberately kept out of `quotes`: a priceless entry there would stamp a quote time onto the
+  snapshot row and defeat the inheritance a rate-limited pass depends on. The snapshot's
+  absent-versus-null rule is unchanged.
+
+- ff44b70: Stop the inventory tooltip reporting a freshly refreshed Steam price as "quoted at an unknown time".
+
+  Two causes, both fixed. The desktop labels bound a single moment as their clock when they were
+  built, so every quote was dated against the render that made them: ages never advanced, and a
+  price refreshed after that render was stamped in the future and read as undatable. The clock is
+  now read each time a tooltip is asked for, and a quote that reads as later than it says "just
+  now" — matching the planner, which already clamped this.
+
+  Pricing no longer presents a native quote it cannot date. An undated native price is one whose
+  provenance is unknown, and the basis exists so a reader can click through and check the number
+  against the listing; converting from USD gives up a little exactness for a timestamp the entry
+  always carries. Every priced result now has a quote time.
+
 ## 0.1.7
 
 ### Patch Changes

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { READ_HOOK_ANCHORS, discoverHookCandidates, parsePe, tryReadBuildId } from './image-scan.js';
+import { READ_HOOK_ANCHORS, discoverHookCandidates, parsePe, peScanExtent, tryReadBuildId } from './image-scan.js';
 
 const ANCHOR1 = '=> read';
 const ANCHOR2 = 'bad application data message';
@@ -9,6 +9,8 @@ const NUL_LOOKALIKE = '=> read more';
 const TEXT_VA = 0x1000;
 const SECTION_ALIGN = 0x1000;
 const FILE_ALIGN = 0x200;
+const DOS_HEADER_BYTES = 0x40;
+const SECTION_HEADER_BYTES = 40;
 const LEA_LEN = 7; // REX prefix + 0x8D opcode + ModRM + 4-byte rip-relative displacement
 
 const CHAIN_ANCHOR = 'chain depth anchor';
@@ -478,5 +480,71 @@ describe('tryReadBuildId', () => {
     const fixture = buildFixtureImage();
 
     expect(tryReadBuildId(fixture.image)).toBe(parsePe(fixture.image).buildId);
+  });
+});
+
+/**
+ * Appends a section the scan never reads, laid out the way a single-file game export does it: the
+ * content pack is a real section with its own header, past every code and metadata section, and it
+ * dwarfs everything in front of it. Fits because the fixture's header region is `FILE_ALIGN`-padded
+ * with room to spare past its two section headers.
+ */
+function withTrailingPayloadSection(image: Buffer, name: string, payloadBytes: number): Buffer {
+  const peOff = image.readUInt32LE(0x3c);
+  const sectionCount = image.readUInt16LE(peOff + 6);
+  const sectionHeadersOffset = peOff + 24 + image.readUInt16LE(peOff + 20);
+  const newHeaderOffset = sectionHeadersOffset + sectionCount * SECTION_HEADER_BYTES;
+  const sizeOfHeaders = image.readUInt32LE(peOff + 24 + 60);
+  if (newHeaderOffset + SECTION_HEADER_BYTES > sizeOfHeaders) {
+    throw new Error('image-scan test fixture: no room in the header region for another section');
+  }
+
+  const withSection = Buffer.from(image);
+  withSection.writeUInt16LE(sectionCount + 1, peOff + 6);
+  withSection.write(name.padEnd(8, ' '), newHeaderOffset, 'latin1');
+  withSection.writeUInt32LE(payloadBytes, newHeaderOffset + 8);
+  withSection.writeUInt32LE(0x100000, newHeaderOffset + 12);
+  withSection.writeUInt32LE(payloadBytes, newHeaderOffset + 16);
+  withSection.writeUInt32LE(image.length, newHeaderOffset + 20);
+
+  return Buffer.concat([withSection, Buffer.alloc(payloadBytes, 0xab)]);
+}
+
+describe('peScanExtent', () => {
+  it('stops at the last scanned section, excluding a trailing payload section', () => {
+    const fixture = buildFixtureImage();
+    const withPack = withTrailingPayloadSection(fixture.image, 'pck', 8 * fixture.image.length);
+
+    expect(peScanExtent(fixture.image)).toEqual({ kind: 'ok', byteLength: fixture.image.length });
+    expect(peScanExtent(withPack)).toEqual({ kind: 'ok', byteLength: fixture.image.length });
+  });
+
+  // The whole reason the extent exists: reading less has to cost nothing in what is found.
+  it('discovers the same candidates from a file truncated at the extent as from the whole file', () => {
+    const fixture = buildFixtureImage();
+    const withPack = withTrailingPayloadSection(fixture.image, 'pck', 8 * fixture.image.length);
+    const extent = peScanExtent(withPack);
+    if (extent.kind !== 'ok') throw new Error(`expected an extent, got ${extent.kind}`);
+
+    const truncated = withPack.subarray(0, extent.byteLength);
+
+    expect(discoverHookCandidates(parsePe(truncated))).toEqual(discoverHookCandidates(parsePe(withPack)));
+    expect(extent.byteLength * 8).toBeLessThan(withPack.length);
+  });
+
+  it('asks for more bytes, naming the offset it needs, when the prefix ends inside the headers', () => {
+    const fixture = buildFixtureImage();
+
+    expect(peScanExtent(fixture.image.subarray(0, 0x20))).toEqual({ kind: 'need-more', atLeast: 0x40 });
+    expect(peScanExtent(fixture.image.subarray(0, 0x50))).toEqual({ kind: 'need-more', atLeast: 0x58 });
+    expect(peScanExtent(fixture.image.subarray(0, 0x150))).toEqual({ kind: 'need-more', atLeast: 0x198 });
+  });
+
+  it('rejects a non-PE prefix instead of asking for more of it', () => {
+    expect(peScanExtent(Buffer.alloc(DOS_HEADER_BYTES))).toEqual({ kind: 'not-pe' });
+
+    const noPeSignature = buildFixtureImage().image;
+    noPeSignature.writeUInt32LE(0, 0x40);
+    expect(peScanExtent(noPeSignature)).toEqual({ kind: 'not-pe' });
   });
 });

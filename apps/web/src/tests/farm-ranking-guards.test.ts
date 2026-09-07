@@ -360,10 +360,10 @@ describe('guard (d) — persisted key strings unchanged', () => {
 });
 
 // ---------------------------------------------------------------------------------------------
-// (h) No research-private identifier or path anywhere in apps/web or the shared farm package
+// (h) No research-private identifier or path anywhere in apps/web or the shared screen packages
 // (public-repo hygiene).
 // ---------------------------------------------------------------------------------------------
-describe('guard (h) — no research-private identifier or path in apps/web or @bombfarm/farm', () => {
+describe('guard (h) — no research-private identifier or path in apps/web, @bombfarm/farm or @bombfarm/hero', () => {
   const RESEARCH_ID_PATTERNS = [
     /FRAW-/,
     /FRAD-/,
@@ -408,14 +408,16 @@ describe('guard (h) — no research-private identifier or path in apps/web or @b
     expect(findResearchId('.specs/features/fra-web-ui/design.md')).toBe('.specs/');
   });
 
-  // The farm package is scanned too: the farm screen's copy and model layer moved there, and a
-  // guard that stops following its subject stops guarding without ever going red.
+  // The farm and hero packages are scanned too: the farm screen's copy and model layer moved to
+  // one and the roster views to the other, and a guard that stops following its subject stops
+  // guarding without ever going red.
   const SCANNED_ROOTS = [
     path.join(WEB_PACKAGE_ROOT, 'src'),
     path.join(WEB_PACKAGE_ROOT, '../../packages/farm/src'),
+    path.join(WEB_PACKAGE_ROOT, '../../packages/hero/src'),
   ];
 
-  it('green state: no apps/web or @bombfarm/farm source or test file (this guard\'s own file self-excluded) contains a research-private identifier or path', () => {
+  it('green state: no scanned source or test file (this guard\'s own file self-excluded) contains a research-private identifier or path', () => {
     const files = SCANNED_ROOTS.flatMap((root) =>
       walkFiles(root, (name) => name.endsWith('.ts') || name.endsWith('.tsx')),
     );

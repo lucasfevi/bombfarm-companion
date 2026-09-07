@@ -1,4 +1,4 @@
-import type { AccountSection, AccountView } from '@bombfarm/contracts';
+import type { AccountPayload, AccountSection, AccountView } from '@bombfarm/contracts';
 import type {
   ConsentRecord,
   GrantedConsent,
@@ -83,10 +83,6 @@ export interface AccountRefreshDeps {
   readToken?: (consent: GrantedConsent) => SessionTokenFileResult;
   /** Injected wall-clock scheduling seam. Defaults to the real timers. */
   scheduler?: { readonly setTimeout: typeof setTimeout; readonly clearTimeout: typeof clearTimeout };
-  /** Fallback delay (ms) used to re-check a halted gate. Never what clears `halted` — only
-   *  `resetAuth()` does that (a changed token file or an explicit retry); this only paces how
-   *  often the refused attempt is retried. */
-  haltedRecheckMs?: number;
   /** Called after every commit (T9's `account:changed` IPC event source). Optional so every
    *  existing test/caller that does not care about push notifications is unaffected. */
   onView?: (view: AccountView) => void;
@@ -101,6 +97,11 @@ export interface AccountRefreshHandle {
   onConsentChanged(record: ConsentRecord): void;
   /** The most recently committed view, or `null` before any cycle has committed one. */
   getLastView(): AccountView | null;
+  /** Re-commits the last committed payload with `patch` applied — the seam a forge run uses to
+   *  land the server's returned item and gold before the next cycle reads them. Goes through the
+   *  same commit and the same `onView` as a cycle, so the notifier decides whether it changed
+   *  anything. `null` when nothing has been committed yet, so there is nothing to patch. */
+  applyPatch(patch: (payload: AccountPayload) => AccountPayload): AccountView | null;
 }
 
 interface CachedToken {
@@ -113,7 +114,6 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
   const readToken = deps.readToken ?? readSessionToken;
   const setTimeoutFn = deps.scheduler?.setTimeout ?? setTimeout;
   const clearTimeoutFn = deps.scheduler?.clearTimeout ?? clearTimeout;
-  const haltedRecheckMs = deps.haltedRecheckMs ?? 10_000;
 
   let stopped = true;
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -132,12 +132,7 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
   function scheduleNext(): void {
     clearTimer();
     if (stopped) return;
-    let delay: number;
-    try {
-      delay = deps.gate.nextCycleDelayMs(true);
-    } catch {
-      delay = haltedRecheckMs;
-    }
+    const delay = deps.gate.nextCycleDelayMs(true);
     timer = setTimeoutFn(() => {
       void runCycle().finally(scheduleNext);
     }, delay);
@@ -267,6 +262,10 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
     },
     getLastView() {
       return lastView;
+    },
+    applyPatch(patch) {
+      if (lastView === null) return null;
+      return commitAndNotify(patch(lastView.payload));
     },
   };
 }

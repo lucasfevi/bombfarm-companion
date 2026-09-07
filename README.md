@@ -1,6 +1,6 @@
 # Bomb Farm Companion
 
-Desktop companion and web planner for [Bomb Farm](https://store.steampowered.com/) (Steam playtest): inventory visibility, pricing helpers, hero planning, and stats — read-only local desktop plus a static web planner.
+Desktop companion and web planner for [Bomb Farm](https://store.steampowered.com/) (Steam playtest): inventory visibility, pricing helpers, hero planning, and stats — local desktop plus a static web planner.
 
 ## Status
 
@@ -18,7 +18,7 @@ Monorepo with `@bombfarm/desktop` (Electron) and `@bombfarm/web` (Next.js static
 
 Your antivirus may flag or quarantine the desktop companion. The companion attaches to the running Bomb Farm client to read the data that client is already exchanging with the game's server, and attaching to another running program is the technique behavior-based detection looks for. The warning is about that technique, not about a virus.
 
-The companion sends nothing of its own to the game, does not modify the game client, and has no code path that writes to your account. Attaching is disclosed before it happens and cannot start until you allow it, and you can withdraw that permission at any time.
+The companion reads your account and never modifies the game client. Its one write is the Forge tab: with the "Let Forge spend gold" switch on, a confirmed run makes the same forge calls the game's own forge screen makes, and nothing else. Attaching and forging are both disclosed before they can happen, cannot start until you allow them, and you can withdraw that permission at any time.
 
 ## Quick start
 

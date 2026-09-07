@@ -1,0 +1,123 @@
+name: Market snapshot
+
+# The routine producer of the shared Steam Community Market snapshot, published as
+# `market-prices.json` — see docs/market-prices.md. It enumerates the whole market, which answers
+# with a live USD price for every listed row in a handful of calls, then publishes what it built.
+#
+# It is the only thing that publishes the snapshot. Two producers writing one artifact is a race,
+# so the manual rebuild in market-prices.yml shares this workflow's concurrency group, and the
+# long-running collector publishes nothing at all — it records readings and never the artifact.
+#
+# `NATIVE_CURRENCIES` is empty on purpose, and it is why this is affordable on a schedule. The
+# per-item quote pass costs one call per item against a tighter quota; the enumeration costs one
+# call per ten rows. Every price here is therefore the enumeration's own USD figure, which the
+# apps convert and label as converted.
+#
+# Scheduled runs are best-effort and routinely queue 10-30 minutes late, so a half-hourly cron
+# delivers 30-60 minutes in practice. The staleness alarm's threshold is set against that figure
+# and not against the nominal one.
+#
+# Two publish targets, because they reach different clients:
+#   - the rolling `market-prices` release, for the desktop app (no CORS involved)
+#   - the `market-data` branch, because GitHub release assets send no Access-Control-Allow-Origin
+#     and the static web planner is a browser
+#
+# It writes nothing under packages/** and never commits to the default branch — asserted by
+# tools/market-snapshot-workflow.test.mjs.
+
+on:
+  schedule:
+    - cron: '7,37 * * * *' # half-hourly, deliberately off the hour (queue delay)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  # Shared with the manual rebuild, which publishes the same asset: one writer at a time.
+  group: market-prices
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  RELEASE_TAG: market-prices
+  SNAPSHOT: market-prices.json
+  DATA_BRANCH: market-data
+  NATIVE_CURRENCIES: ''
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # The enumeration is a few dozen calls and the circuit breaker exits well before this. The cap
+    # is here so a stuck run cannot burn GitHub's 6h default, hold the concurrency group, and take
+    # every scheduled run behind it with it.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # tools/market-snapshot/build.mjs imports @bombfarm/pricing from dist.
+      - name: Build the pricing package
+        run: pnpm -r --filter @bombfarm/contracts --filter @bombfarm/pricing build
+
+      - name: Ensure the rolling release exists
+        run: |
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 || \
+            gh release create "$RELEASE_TAG" \
+              --title "Market price snapshot" \
+              --notes "Auto-generated Steam Community Market snapshot for Bomb Farm items. Rebuilt continuously. Not an app release." \
+              --latest=false
+
+      # The previous snapshot carries the tags a row was identified by, and the enumeration asks
+      # no facet queries for a row it already recognises. Without this the identification burst
+      # runs every time, which is most of what an address's quota would be spent on.
+      - name: Download the previous snapshot (resume)
+        run: gh release download "$RELEASE_TAG" --pattern "$SNAPSHOT" --dir . || echo "no prior snapshot"
+
+      - name: Build the snapshot
+        run: node tools/market-snapshot/build.mjs
+
+      # Always publish whatever progress exists: the builder keeps the previous prices for any
+      # partition a rate-limited run could not reach, so a partial run still advances coverage.
+      - name: Publish to the rolling release
+        if: always()
+        run: |
+          if [ -f "$SNAPSHOT" ]; then
+            gh release upload "$RELEASE_TAG" "$SNAPSHOT" --clobber
+          else
+            echo "no $SNAPSHOT produced; nothing to publish"
+          fi
+
+      - name: Publish to the data branch
+        if: always()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          [ -f "$SNAPSHOT" ] || { echo "no $SNAPSHOT produced; nothing to publish"; exit 0; }
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          tmp=$(mktemp -d)
+          # A fresh orphan commit every time, force-pushed: the branch is derived data with no
+          # value in its history, and a commit every half hour of a growing JSON would bloat every
+          # clone of this repository forever.
+          git -C "$tmp" init -q -b "$DATA_BRANCH"
+          cp "$SNAPSHOT" "$tmp/$SNAPSHOT"
+          # The branch is data, not an application, but a push opens a preview build for every
+          # branch. This is the commit telling it not to — see the module for why.
+          node tools/market-snapshot/deploy-optout.mjs "$tmp" "$DATA_BRANCH"
+          git -C "$tmp" add -A
+          git -C "$tmp" commit -q -m "chore(market): snapshot ${{ github.run_id }}"
+          git -C "$tmp" push --force \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" \
+            "$DATA_BRANCH"

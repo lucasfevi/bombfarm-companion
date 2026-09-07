@@ -540,14 +540,20 @@ export function heroIdsInView(view: InventoryView): string[] {
   return ids;
 }
 
-export type InventorySortKey = 'rarity' | 'level' | 'value' | 'name' | 'count' | 'market';
+/** The orders a sort picker offers over a whole inventory — every kind of item can be ranked by
+ *  each of them. */
+export type InventorySortMenuKey = 'rarity' | 'level' | 'value' | 'name' | 'count' | 'market';
+
+/** `forge` is gear-only, so it is reachable through a gear column rather than through the picker,
+ *  which a bag of keys and gems also has to answer. */
+export type InventorySortKey = InventorySortMenuKey | 'forge';
 export type InventorySortDirection = 'asc' | 'desc';
 export type InventorySortTerm = { key: InventorySortKey; direction: InventorySortDirection };
 
 /** Most significant term first. */
 export type InventorySort = readonly InventorySortTerm[];
 
-export const INVENTORY_SORT_KEYS: readonly InventorySortKey[] = [
+export const INVENTORY_SORT_KEYS: readonly InventorySortMenuKey[] = [
   'rarity',
   'level',
   'value',
@@ -598,6 +604,8 @@ function sortValue(entry: InventoryEntry, key: InventorySortKey): number {
       return entry.sellValueGold;
     case 'count':
       return entry.count;
+    case 'forge':
+      return entry.item.upgrade;
     case 'name':
     case 'market':
       return 0;

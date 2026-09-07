@@ -71,6 +71,8 @@
  */
 import {
   fuseSeconds,
+  FUSE_FLOOR,
+  STAT_CAPS,
   GRID_SPEED_COEF,
   EFF_IA,
   ABILITY_LEVEL_MAX,
@@ -345,6 +347,15 @@ export type HeroFarmFacts = {
   penetrationPct: number;
   /** `fuseSeconds(effective.cdr)`, seconds. */
   fuseSecs: number;
+  /**
+   * The floor {@link fuseSecs} cannot go below, seconds, and the cooldown-reduction cap that
+   * governs it, percent. Both are reported because neither may be inferred from the other: they
+   * coincide today only by construction — twice the base cycle at the 80% cap is exactly 0.40s —
+   * and a balance patch can move either one alone. A consumer deriving one from the other would
+   * keep printing a self-consistent, wrong pair.
+   */
+  fuseFloorSecs: number;
+  cdrCapPct: number;
   /** Grid walk speed `w = effective.speed × GRID_SPEED_COEF`, CELLS PER SECOND. */
   walkSpeedCells: number;
   /** {@link cycleSecondsForHero} at {@link HOP_FIT_ATO}, seconds — averaged over the hop
@@ -650,6 +661,8 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
     avgHitBase,
     penetrationPct,
     fuseSecs,
+    fuseFloorSecs: FUSE_FLOOR,
+    cdrCapPct: STAT_CAPS.cdr,
     walkSpeedCells,
     cycleSecs,
     plantsPerSec,

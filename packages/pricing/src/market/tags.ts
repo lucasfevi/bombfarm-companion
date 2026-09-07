@@ -116,6 +116,35 @@ export function actChestFamilyFor(hashName: string): string | null {
   return null;
 }
 
+/**
+ * The lowest `skin` index a hero can only be wearing because someone paid for it. Indices below it
+ * are birth skins, free to every account: across an 84-save corpus, 0 through 3 are the only values
+ * that have ever appeared as a hero's starting skin.
+ */
+export const FIRST_BOUGHT_SKIN_INDEX = 4;
+
+/**
+ * The Steam listing each bought skin appears under, by the `skin` index a hero record carries.
+ * Nothing in a save connects the two — the market keys a skin on its hash and a hero carries a bare
+ * integer — so this table is written out by hand, exactly as the act chest families are.
+ *
+ * `Royal Sentinel Skin` is the one name read off a live listing. The other four are owner-confirmed
+ * and their ` Skin` suffix follows that single witness, which is why an index this table does not
+ * name must fail closed: it resolves to no price at all rather than borrowing a neighbour's.
+ */
+export const BOUGHT_SKIN_HASH: Readonly<Record<number, string>> = {
+  4: 'Forest Warden Skin',
+  5: 'Shadow Hunter Skin',
+  6: 'White Oracle Skin',
+  7: 'Cobalt Sorcerer Skin',
+  8: 'Royal Sentinel Skin',
+};
+
+/** The market hash for a worn skin index, or null for a birth skin and for any index unnamed above. */
+export function boughtSkinHashFor(skinIndex: number): string | null {
+  return BOUGHT_SKIN_HASH[skinIndex] ?? null;
+}
+
 export function defPrefixFor(steamCategoryTag: string): string | null {
   return CATEGORY_DEF_PREFIX[steamCategoryTag] ?? null;
 }

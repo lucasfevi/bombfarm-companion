@@ -22,12 +22,20 @@ export const appShellHeaderClass =
   'relative flex min-h-top shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-4 py-2.5';
 
 /** Brand row — mark beside the lockup, same shape as the web's `SiteHeader` `<Link>`. */
-export const appShellBrandRowClass = 'flex items-center gap-2.5';
+export const appShellBrandRowClass = 'flex shrink-0 items-center gap-2.5';
 
 /** Brand lockup — name over an uppercase tag, styled like the web's `SiteHeader` brand block. */
-export const appShellBrandClass = 'flex flex-col justify-center';
+export const appShellBrandClass = 'flex flex-col justify-center whitespace-nowrap';
 export const appShellBrandNameClass = 'text-[13px] leading-1.1 font-bold text-ink';
 export const appShellBrandTagClass = 'text-[11px] font-semibold tracking-wide text-muted uppercase';
+
+/**
+ * The flavor badge. Its own chip beside the lockup rather than the lockup's second line, which
+ * belongs to the suite tag: the tag says which product this is and never changes, the badge says
+ * which build of it you are running and is absent on a release.
+ */
+export const appShellFlavorBadgeClass =
+  'shrink-0 rounded-sm border border-line bg-bg-2 px-1.5 py-0.5 text-[10px] font-bold tracking-[0.06em] text-muted uppercase';
 
 export const appShellActionsClass = 'flex shrink-0 items-center gap-2';
 
@@ -58,12 +66,20 @@ export const appShellMainClass = 'relative flex min-h-0 flex-1 flex-col overflow
 
 /**
  * The measure. Caps and centres the content while the scrollbar stays on `<main>` at the window
- * edge, so a wide window grows the background rather than the panels. `flex-1` on a flex child
- * whose `min-height` is `auto` fills the viewport when the content is short and grows past it when
- * the content is tall — which is what lets one rule serve both a full-height tab that scrolls
- * inside itself and a tall tab that scrolls `<main>`.
+ * edge, so a wide window grows the background rather than the panels.
+ *
+ * `min-h-0` is what makes `flex-1` here mean "the region's height" rather than "at least my
+ * content's height". A flex item's automatic minimum size is its content, so without it this box
+ * was as tall as whatever the tab rendered — and a tab that bounds itself with `min-h-0` and
+ * `flex-1` all the way down still had nothing definite to be bounded BY, so its own table
+ * scrollers never engaged and `<main>` scrolled the whole screen instead. Measured on the Forge
+ * tab: 7,127px of box inside a 709px region, with a full-height bag table that never scrolled.
+ *
+ * A tab that is genuinely taller than the region is unaffected: it overflows this box, nothing
+ * here clips, and the overflow still counts toward `<main>`'s scrollable area, which is the one
+ * scrollbar in the app.
  */
-export const appShellMainInnerClass = 'mx-auto flex w-full max-w-desktop flex-1 flex-col';
+export const appShellMainInnerClass = 'mx-auto flex w-full min-h-0 max-w-desktop flex-1 flex-col';
 
 export const appShellStatusBarClass =
   'flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 border-t border-line px-6 py-1 text-sm';

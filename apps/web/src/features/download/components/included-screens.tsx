@@ -7,7 +7,7 @@ export function IncludedScreens({ t }: { t: Strings }) {
       <p className="m-0 mb-4 flex items-center gap-3 font-mono text-[10.5px] tracking-[0.17em] text-muted uppercase after:h-px after:flex-1 after:bg-line/60 after:content-['']">
         {t.downloadIncludedHeading}
       </p>
-      <div className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-line bg-line md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-line bg-line md:grid-cols-2 xl:grid-cols-4">
         <ScreenCard
           title={t.downloadScreenLiveTitle}
           items={[
@@ -25,6 +25,15 @@ export function IncludedScreens({ t }: { t: Strings }) {
             t.downloadScreenInventoryItem2,
             t.downloadScreenInventoryItem3,
             t.downloadScreenInventoryItem4,
+          ]}
+        />
+        <ScreenCard
+          title={t.downloadScreenForgeTitle}
+          items={[
+            t.downloadScreenForgeItem1,
+            t.downloadScreenForgeItem2,
+            t.downloadScreenForgeItem3,
+            t.downloadScreenForgeItem4,
           ]}
         />
         <ScreenCard

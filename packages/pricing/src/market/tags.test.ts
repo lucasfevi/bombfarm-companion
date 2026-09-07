@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  BOUGHT_SKIN_HASH,
+  FIRST_BOUGHT_SKIN_INDEX,
   actChestFamilyFor,
+  boughtSkinHashFor,
   catalogSlotFor,
   isKnownCategory,
   itemKindFor,
@@ -8,6 +11,7 @@ import {
   steamRarityFor,
   steamSlotFor,
 } from './tags.js';
+import { LIVE_MARKET_ROWS } from './__fixtures__/live-market-rows.js';
 
 /**
  * The slot pairs below were read off the live market on 2026-08-28 by querying each Steam tag and
@@ -73,6 +77,48 @@ describe('the act chest families', () => {
 
   it('fails closed on a family it does not name', () => {
     expect(actChestFamilyFor('Rune Chest (Act 1)')).toBeNull();
+  });
+});
+
+describe('the bought skin listings', () => {
+  it.each([
+    [4, 'Forest Warden Skin'],
+    [5, 'Shadow Hunter Skin'],
+    [6, 'White Oracle Skin'],
+    [7, 'Cobalt Sorcerer Skin'],
+    [8, 'Royal Sentinel Skin'],
+  ])('names the listing skin %i is worn as', (skinIndex, hashName) => {
+    expect(boughtSkinHashFor(skinIndex)).toBe(hashName);
+  });
+
+  it('spells the one attested name exactly as the live market carries it', () => {
+    const listed = LIVE_MARKET_ROWS.filter((row) => row.tags.category === 'skin').map(
+      (row) => row.row.hashName,
+    );
+
+    expect(listed).toContain(boughtSkinHashFor(8));
+  });
+
+  it('gives every bought index a listing of its own, so no two skins share one price', () => {
+    const named = Object.values(BOUGHT_SKIN_HASH);
+
+    expect(new Set(named).size).toBe(named.length);
+  });
+
+  it('starts the bought range exactly where the table does', () => {
+    expect(boughtSkinHashFor(FIRST_BOUGHT_SKIN_INDEX)).not.toBeNull();
+    expect(boughtSkinHashFor(FIRST_BOUGHT_SKIN_INDEX - 1)).toBeNull();
+  });
+
+  it('leaves every birth skin unnamed, because none of them was ever for sale', () => {
+    for (const birth of [0, 1, 2, 3]) {
+      expect(boughtSkinHashFor(birth)).toBeNull();
+    }
+  });
+
+  it('fails closed on an index it does not name, rather than reaching for a neighbour', () => {
+    expect(boughtSkinHashFor(9)).toBeNull();
+    expect(boughtSkinHashFor(-1)).toBeNull();
   });
 });
 

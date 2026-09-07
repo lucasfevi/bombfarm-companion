@@ -1,3 +1,4 @@
+import type { StatRanges } from '@bombfarm/domain/birth-sheet';
 import type { RarityKey } from '@bombfarm/domain/model';
 import { abilityMods } from '@bombfarm/domain/model';
 import type { Loadout, SheetStats } from '@bombfarm/domain/gear';
@@ -86,6 +87,14 @@ export type HeroRecord = {
    * recommendations. Defaults to `true` when absent.
    */
   battleAllowed?: boolean;
+  /**
+   * Save `marketable` — whether the game permits selling this hero on the market. Deliberately
+   * three-state and never defaulted on load: `false` says the hero is bound to the account, while
+   * absence says nobody has asked the game (a roster stored before the importer carried the flag,
+   * or a hero built by hand in the planner). Collapsing absence into `false` would price a whole
+   * roster at nothing and call it an answer.
+   */
+  marketable?: boolean;
   /** Cosmetic avatar skin from save `skin` (0–7; see `HERO_SKIN_COUNT`). Display-only. */
   skin?: number;
   /**
@@ -93,6 +102,19 @@ export type HeroRecord = {
    * records until re-import. Required to recompose the read-only Stats Total from source.
    */
   birth?: SheetStats;
+  /**
+   * The window each {@link birth} value was rolled inside, in planner units. Additive — absent
+   * on every record written before the importer read it, and it stays absent until that hero is
+   * imported again. No migration: absence is a valid state, not a record to repair.
+   *
+   * Deliberately the OPPOSITE posture to {@link birth}, and the difference is load-bearing. A
+   * hero whose birth roll is partial rejects the ENTIRE save, because the sheet mathematics
+   * cannot be composed from an invented default. These bounds compose nothing — they are
+   * enrichment layered on top of a sheet that is already correct — so a missing, partial or
+   * malformed block must never reject anything: not the hero, not the file, not the live account
+   * read, which has no file to re-export and would be left with nothing at all.
+   */
+  statRanges?: StatRanges;
   /** @deprecated migrated into AccountShared — kept only for old saves. */
   tree?: TreeState;
   /** @deprecated migrated into AccountShared — kept only for old saves. */
@@ -146,8 +168,10 @@ export function normalizeHero(raw: Partial<HeroRecord> & Pick<HeroRecord, 'id' |
     power: raw.power,
     deployed: raw.deployed ?? false,
     battleAllowed: raw.battleAllowed ?? true,
+    marketable: raw.marketable,
     skin: normalizeSkin(raw.skin),
     birth: raw.birth ? normalizeSheetStats(raw.birth) : undefined,
+    statRanges: raw.statRanges,
   };
 }
 

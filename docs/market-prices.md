@@ -19,27 +19,70 @@ The web planner has no such affordance and cannot have one. Steam sends no
 export with no server of its own to relay through. Its refresh re-downloads the snapshot, and the
 UI dates each price by the quote behind it so "now" is never implied.
 
-## The snapshot is produced continuously
+## One scheduled job produces the snapshot
 
-Passes run back to back rather than on a clock. The delay between the calls inside a pass is
-derived from a daily call budget rather than fixed: raising the budget tightens the rotation with
-no code change, and a budget high enough to breach the delay a full pass was measured drawing zero
-rate limits at is clamped rather than obeyed, and says so. A pass never starts sooner than five
-minutes after the previous one began, because the published file is served with a five-minute
-`max-age` and republishing inside that window reaches nobody. A pass that fails, or one whose
-rotation the circuit breaker cut short, climbs a cool-down ladder before the next; and every pass
-resumes from the snapshot the last good one published.
+[`.github/workflows/market-snapshot.yml`](../.github/workflows/market-snapshot.yml) enumerates the
+market and publishes `market-prices.json`, twice an hour. The enumeration is the cheap half — ten
+rows a call, so the whole board costs a couple of dozen — and each run gets its own address, so the
+per-address quota that shapes everything below never binds on it. Every listed row gets a price
+every run, rather than the fraction a single address could afford to quote.
 
-[`.github/workflows/market-prices.yml`](../.github/workflows/market-prices.yml) still builds and
-publishes the same file to the same two targets, but it is a **manual rebuild lever** now — it
-carries no schedule and runs only when a human asks. It is the one-click fallback for the routine
-producer being stopped, and the two are not meant to run at once: both publish the same asset, so
-a second producer on a timer would race the first and publish over it.
+**Scheduled runs are best-effort.** They routinely queue 10–30 minutes late and are occasionally
+dropped, so a half-hourly cron delivers every 30–60 minutes in practice. Thresholds here are set
+against that figure rather than the nominal one.
 
-Every pass also records what it read — one row per priced item, plus a row for the pass itself
-carrying its counts and any error. Readings are retained for 30 days and exposed to nobody:
-nothing shipped reads them and no app has a route to them. They exist so that questions about how
-the market moves over time have an answer a single current snapshot cannot give.
+**It is the only publisher.** [`market-prices.yml`](../.github/workflows/market-prices.yml) builds
+and publishes the same file to the same two targets, but it is a **manual rebuild lever** — it
+carries no schedule and runs only when a human asks. The two share one concurrency group, so a
+rebuild asked for mid-run serialises behind it instead of publishing over it.
+
+**The published prices are USD, and the apps convert.** The scheduled job asks for no native
+currency, because `priceoverview` costs one call per item per currency and that is the spend this
+arrangement exists to stop making. A row in the file therefore reports `basis: 'converted'`, and
+the desktop app's per-item refresh is what still offers a native figure on demand.
+
+## What the long-running collector is for
+
+A collector runs the same sweep continuously and **publishes nothing**. What it produces is
+readings — the median and the 24-hour volume that only a per-item quote returns — one row per item
+per pass, retained for 30 days and exposed to nobody. Nothing shipped reads them and no app has a
+route to them. They exist so that questions about how the market moves over time have an answer a
+single current snapshot cannot give.
+
+**The daily call budget bounds that sampling, and only that.** It used to decide how fresh a
+published price was; the schedule above decides that now. The delay between the calls inside a
+pass is derived from the budget rather than fixed: raising the budget samples more rows more
+often, and a budget high enough to breach the delay a full pass was measured drawing zero rate
+limits at is clamped rather than obeyed, and says so.
+
+**The budget counts every call, enumeration included.** Steam's per-address quota is cumulative
+and makes no distinction between endpoints, so neither does the budget: the enumeration's cost is
+taken off the top and the rotation is paced with what is left. Pacing the rotation alone left the
+enumeration outside the configured number, and a day of passes spent about 9% more than the figure
+it was given.
+
+**A day the market grows is what makes this load-bearing rather than tidy.** A newly listed row
+fires the tag pass, and one such pass was measured at **191 calls** — most of it enumeration.
+Pacing the rotation alone leaves the pass length unchanged whatever the enumeration costs, so that
+day spends 191 × 4.8 ≈ **917 calls against a ceiling of 650–700**. It does not fit, and the market
+has been adding around six rows a day, so those are not rare days.
+
+Deriving the pass length from the whole cost is what absorbs it: at 191 calls the pass stretches
+to about **8.3 hours** and the day spends 550. That is a real cost — a growth day gets a much
+slower rotation — and it is the right trade, because the alternative is not a faster rotation but
+a throttled address, which costs every reading rather than one day's worth.
+
+So expect the call figures to look worse on a day the market grows, without anything having
+regressed: the enumeration is taking a share the rotation would otherwise have had.
+
+A pass never starts sooner than five minutes after the previous one began. Spacing stretches a
+pass in proportion to how much it has to quote, so a board small enough to finish in seconds would
+otherwise loop straight back into the market. A pass that fails, or one whose rotation the circuit
+breaker cut short, climbs a cool-down ladder before the next; and every pass resumes from the
+snapshot it last wrote, which is private working state rather than anything anyone reads.
+
+Every pass records what it read — one row per priced item, plus a row for the pass itself carrying
+its counts and any error.
 
 The published file's schema is unchanged, and so is everything below about how a pass builds it.
 
@@ -67,13 +110,31 @@ Every way the snapshot can stop being produced has the same symptom — the file
 changing — so
 [`.github/workflows/market-snapshot-freshness.yml`](../.github/workflows/market-snapshot-freshness.yml)
 is what notices. Hourly, it fetches the file both apps read and fails when `generatedUtc` is more
-than six hours old, when the body does not parse, when `entries` is empty, or when
-`coverage.matchedCatalogKeys` is 0. A failing scheduled run notifies the repository owner, which
-is the whole mechanism.
+than three hours old, when the **median** `fetchedUtc` across the entries is, when the body does not
+parse, when `entries` is empty, or when `coverage.matchedCatalogKeys` is 0. A failing scheduled run
+notifies the repository owner, which is the whole mechanism.
 
-The last of those four is the one with a precedent: a partial sweep once published an artifact
-that was fresh, valid and **useless** — no inventory item could look up a price in it — and a
-freshness check alone would have called it healthy.
+**Three hours is set against what the schedule delivers, not what it asks for**: at 30–60 minutes
+between runs, three hours is several consecutive misses, which is a stoppage rather than a queue.
+
+Two of those five have a precedent. A partial sweep once published an artifact that was fresh,
+valid and **useless** — no inventory item could look up a price in it — and a freshness check
+alone would have called it healthy. And a run of passes that collected nothing went on
+republishing the rows it already had, so the file stayed current, populated and matched for hours
+after collection had stopped.
+
+`fetchedUtc` is what tells those apart, and it is per row: a pass whose enumeration reached nothing
+carries every row forward with the stamp it already had, while `generatedUtc` is rewritten every
+run regardless. So the file's own timestamp says a pass ran, and only the rows say a pass read.
+
+**It is the median row that is asked, not the newest.** Partial enumeration is normal and
+intended — a rate-limited pass advances coverage rather than discarding it — so the newest row
+answers "did anything get read at all", which a single row satisfies. A published file stamped six
+minutes old, with 30 of 141 rows re-read within the hour and the other 111 carried from over twelve
+hours earlier, passed that check at 0.1 hours. The median asks whether the *typical* row is fresh,
+which is the claim the file makes by carrying a recent `generatedUtc`; a run reaching 85% of rows
+still passes. The oldest row would be the wrong subject — it fails permanently on any row the
+enumeration keeps missing, which is a different problem with a different owner.
 
 It makes one GET of a public file, so it never calls Steam and installs nothing, and it says only
 that the snapshot has not advanced rather than guessing why. The threshold lives once, in
@@ -119,6 +180,13 @@ finds one unrecognised row runs the whole sweep, which is the intended cost on t
 first listed. It cannot be made cheaper by asking about the new row alone — the sweep learns a tag
 by asking for it and reading back which rows answer, so identifying one row still costs a sweep.
 
+**Which snapshot gets handed in decides how often that fires, so both callers hand in the freshest
+one there is: the published file.** The scheduled job resumes from what it published last run,
+half an hour ago. The collector reads the same file over HTTP rather than the copy its own last
+pass wrote, which is hours old — every row the schedule has already named is a row a pass here
+does not pay the burst to name again. A fetch that fails costs nothing but that: it falls back to
+its own copy, which is what it read before.
+
 Identity is carried over only where it is complete. A row a cut-short pass left half-tagged, or
 one whose facets cannot be spelled back as the Steam tags they came from, is withheld and asked
 about again — so a gap repairs itself on the next pass instead of being inherited forever.
@@ -141,21 +209,145 @@ So a third pass asks `priceoverview` once per listed row, per currency, and stor
 the entry's `lowestNative`. `resolveKey` prefers it and reports `basis: 'native'`; with no quote it
 converts and reports `basis: 'converted'`, which is a UI's cue to mark the figure approximate.
 
+**That pass does not run on the scheduled job, and so the published file carries no native quote.**
+One call per item per currency is the spend a single address cannot make, which is why moving
+production onto a schedule meant giving it up: every published row is now converted, and the app
+says so.
+
+**A published row carries only a quote the run that wrote it took itself.** Nothing is inherited
+from the previous file, on either route through the merge — neither for a row the run re-read
+without quoting, nor for a row a cut-short run never reached at all. A carried-forward quote has
+no pass coming to replace it, and resolution prefers it over the freshly-converted figure standing
+beside it, so the two drift apart without bound: measured on the first scheduled publish, 72 rows
+were showing a figure frozen the previous afternoon while the rest were minutes old. The remaining
+native figures are the desktop app's per-item refresh, and whatever the manual rebuild lever
+produces on the run a human asks for.
+
 **The quote never overrides the enumeration on whether anything is listed.** This endpoint
 under-reports: `Gold Gloves (Legendary)` answered `{"success":true}` with no price in either
 currency while the search endpoint carried it at $14.99 with a live listing. An absent quote
 therefore means "not quoted", never "no supply".
 
 Coverage of a full pass: **42 of the 44 keys the index quotes**. Six of the eight raw misses are
-the pre-rename hashes that only ever appear as `alternates`. It costs one call per listed row at a
-**3.5s** spacing — the search pass's 1.5s is near double the rate this endpoint tolerates — and it
-is the first thing a rate-limited run drops, which is why a quote carries `nativeQuotedUtc` of its
-own rather than being dated by the run that published it.
+the pre-rename hashes that only ever appear as `alternates`. It costs one call per row in the
+rotation, never below the **3.5s** floor — the search pass's 1.5s is near double the rate this
+endpoint tolerates — and it is the first thing a rate-limited run drops, which is why a quote
+carries `nativeQuotedUtc` of its own rather than being dated by the run that published it.
 
-A quote is inherited across a run that could not take its own, but **only while `lowestUsd` is
-unchanged**. Once the book has visibly moved the old quote is known wrong: `Gold Ring Lv 20 (Rare)`
-went $2.80 to $1.10 inside one six-hour window, and an inherited `R$ 14,46` would have gone on
-being shown against a real `R$ 5,75`.
+How wrong an inherited quote gets is why none is: `Gold Ring Lv 20 (Rare)` went $2.80 to $1.10
+inside one six-hour window, and a carried-over `R$ 14,46` would have gone on being shown against a
+real `R$ 5,75`.
+
+## Only the rows that trade get a call of their own
+
+Everything in this section is about the collector's sampling. It decided published price freshness
+until the schedule took that over, and the measurements below were taken while it did — they are
+kept because the arithmetic still governs how much of the market gets a median and a volume
+recorded, and how often.
+
+**About a third of the market has never reported a sale** — 41 of 115 listed rows, 36%, measured
+2026-09-03 against two independent sources that agree. The rest return a lowest price and nothing
+else. Quoting every row every pass left each one sampled at best once per full rotation, which at
+a fixed quota is the cost of spending evenly across rows that differ by three orders of magnitude
+in how often they trade.
+
+Prefer the ratio to the counts. The market grew from 109 rows to 115 in a single day, so every
+absolute figure here ages; the date is on them for that reason.
+
+So the rotation is the rows that trade. Everything else is priced from the enumeration, which
+already returns a live USD price and listing count for **every** listed row for ten calls total —
+so the quiet third is not left stale, it is refreshed each pass and converted rather than quoted.
+Both parts get fresher, because the pass gets shorter for everyone.
+
+**What it actually bought, measured rather than projected.** The design projected a 47% cut in
+calls per pass on an estimate that half the market was untraded. Half was wrong:
+
+At a configured budget of 550 calls a day:
+
+| | calls per pass | cadence | actually spent |
+| --- | --- | --- | --- |
+| Uniform, pacing the rotation only | 125 | 5.0 h | **~600/day** |
+| Uniform, budget honoured | 125 | 5.5 h | 550/day |
+| Traded rows only, budget honoured | **84** | **3.7 h** | 550/day |
+
+**33%, not 47%** — a real saving and a smaller one than advertised. The saving is the durable
+figure; the cadences scale with whatever the budget is set to, and 550 is only what it was set to
+when this was measured.
+
+The first row is what ran before any of this: a 5.0-hour rotation that looks faster than the
+second only because it was buying the difference with calls nobody had budgeted. Measured on the
+live collector, a pass paced at 157,090 ms — exactly a day divided by 550, the rotation counted
+and the enumeration not. Two things the arithmetic does
+not capture are worth more than the difference. Spending individual quotes on rows with no trades
+at all was wrong on principle whatever the ratio turned out to be, and those rows lose nothing
+they were getting. And making the budget a total-call budget is the structural half: it is what
+was overshooting the quota, and the configured number now means what it says.
+
+Membership is a binary split on whether the row trades at all, not a graduated tier: it is a real
+distinction rather than a tuning parameter, and thresholds nobody can defend are worse than none.
+It is recomputed on its own interval from the readings the rotation has already been paying for —
+the history store keeps a volume per row per pass — so deciding it costs no collection of its own.
+A read that fails leaves the membership the collector had; with none yet, the rotation is
+everything listed, which is what the budget alone would have bought.
+
+A row the enumeration turns up for the first time has no history to be placed by, so it is quoted
+once and placed by that result. A row the quote endpoint answers *without a price* is placed by
+that too — the endpoint under-reports, and reading its silence as "still unknown" would put the
+row back in the rotation on every restart.
+
+**That answer is written down as a reading, with a null price.** `{"success":true}` and no
+`lowest_price` is the market saying it has nothing to quote for that row, which is a fact about
+the row and the thing that places it. A pair the pass never got an answer for — a failed request,
+a rate-limited one, one the breaker stopped it reaching — still writes nothing at all, because
+that is a fact about the pass and a row for it would claim a reading nobody took. The two are told
+apart at the source: the quote pass reports which pairs the endpoint *answered* for, separately
+from the ones that merely produced no price. The snapshot never sees these — a priceless entry
+there would date the row and defeat the inheritance a rate-limited pass depends on.
+
+Both tier sizes are recorded on the pass's own row, not only logged. Sub-dividing the quoted tier
+becomes worth doing once it passes roughly **80 rows**, and that is a trend rather than a moment:
+a log line cannot answer it. The counts exclude rows being quoted for the first time, which belong
+to neither tier yet — a figure that moved with however many rows happened to be newly listed that
+pass could not be read against a threshold. Those are counted separately, so the three together
+account for every row the split saw.
+
+**Which is every row the enumeration found a live price for, not every row the market carried.** A
+row with no active listing has nothing to quote and never reaches the split, so the three are a
+partition of the priced rows rather than of the board.
+
+### Reading a pass back off its own row
+
+The recorded delay is reconstructable, which is how a deploy is confirmed to have changed the
+pacing rather than merely to have shipped. Two columns do not mean what their names suggest, and
+both matter here:
+
+- **Enumeration cost one call more than `search_calls`.** The facet schema is a different endpoint
+  and is counted apart, exactly once per pass.
+- **The rotation was paced for attempts, not calls.** `quote_calls` counts each rate-limited retry
+  again, so the planned figure is `quote_calls - rate_limit_hits`.
+
+With `E = search_calls + 1` and `Q = quote_calls - rate_limit_hits`, the delay follows from the
+pacing rule — a pass costs `E + Q` and takes `MS_PER_DAY x (E + Q) / budget`, less the
+enumeration's own `E x searchDelayMs`, divided across `Q`. And `Q` should independently equal
+`tier_a_count + first_quote_count` times the currency count, which is the cross-check worth
+running: two derivations of the same number from different columns.
+
+**Only on a pass that completed.** The delay is derived up front from what the pass planned to
+spend, while the call columns record what it did spend, so a pass the breaker cut short lands
+below its plan with nothing wrong. Assert this only where `enumeration_complete` and
+`quotes_complete` are both true; on a short pass, spend falling under plan is the breaker working.
+
+**That threshold is close.** The quoted tier stood at 74 on 2026-09-03. Sub-dividing it would buy
+denser sampling of the rows that actually trade: the volume distribution inside it is extremely
+skewed, the busiest rows trading thousands of times a day and the quietest once, which is exactly
+the shape a second split exploits. It no longer buys anything a user sees, though — published
+prices come off the schedule now — so it is a question about the readings alone.
+
+**A row left to the enumeration reports `basis: 'converted'`, and inherits no earlier quote.** The
+inheritance above exists for a quote that is merely late; this one is retired, and no later pass
+is coming for it, so carrying it forward would age a figure indefinitely behind the label that
+says it is the number on the listing. Native ran 0.6-1.2% from converted per row when both were
+measured, so the difference is real and the file states which it is showing.
 
 ## What the file says
 
@@ -275,6 +467,13 @@ reads the tree the producer pushes, not the opt-out's text: the deployment opt-o
 it is in the pushed commit, and it must name the branch actually being pushed rather than one
 spelled into the config.
 
+`tools/market-quote-plan.test.mjs` holds the two claims a narrower test would pass on by accident.
+Membership is asserted in both directions from the readings alone — a row leaves the rotation when
+the window stops holding a sale for it, and joins when it starts — because a test that only proved
+a row was in the rotation would pass just as well against a hardcoded list. And the budget is
+asserted by counting a simulated day's calls the way the address counts them, every call whatever
+endpoint it went to, with the old rotation-only pacing kept alongside as the case that overshoots.
+
 `tools/market-prices-workflow.test.mjs` reads the workflow as text. It asserts the manual lever
 runs only when a human asks — false if a cron is spliced back in, false if the manual trigger is
 stripped — and that it is one time-boxed job which publishes whatever it got, never commits to a
@@ -284,7 +483,9 @@ instead of before it, and narrowing the staging step back to the snapshot by nam
 
 `tools/market-snapshot/freshness.test.mjs` proves each of the alarm's four checks red against a
 snapshot broken in exactly that one way, with a healthy one green beside it — a monitor never
-observed failing has not been verified.
+observed failing has not been verified. The coverage check is held to both edges: the witnessed
+shape of a handful of fresh rows among a stale majority fails, and a run that reached most rows and
+missed a few passes, because an alarm that fires on healthy behaviour is one nobody reads.
 
 `tools/market-snapshot-freshness-workflow.test.mjs` holds the alarm to its shape: a live hourly
 schedule, one time-boxed read-only job with no escape hatch, and every field the checker claims to

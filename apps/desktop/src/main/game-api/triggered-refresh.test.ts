@@ -31,6 +31,17 @@ describe('createTriggeredRefresh', () => {
     expect(getRefreshCount()).toBe(1);
   });
 
+  it('answers whether it started a refresh, so a caller can say why nothing happened', () => {
+    const { trigger, advance } = harness(10_000);
+
+    expect(trigger.notify()).toBe(true);
+    expect(trigger.notify()).toBe(false);
+    advance(9_999);
+    expect(trigger.notify()).toBe(false);
+    advance(1);
+    expect(trigger.notify()).toBe(true);
+  });
+
   it('a burst of notify() calls inside the floor produces exactly one refresh, however many calls arrive', () => {
     const { trigger, getRefreshCount } = harness(10_000);
 

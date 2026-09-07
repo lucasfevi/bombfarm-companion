@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { shellControl } from './shell-control.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..', '..');
@@ -105,7 +106,7 @@ test.describe('compact Live window smoke', () => {
       ({ app, page } = await launchLiveApp(userDataDir));
 
       const miniOpened = app.waitForEvent('window', { timeout: 30_000 });
-      await page.getByTestId('open-mini').click();
+      await (await shellControl(page, 'open-mini')).click();
       const mini = await miniOpened;
 
       await expect(mini.getByTestId('mini-live-page')).toBeVisible({ timeout: 30_000 });
@@ -121,7 +122,7 @@ test.describe('compact Live window smoke', () => {
       await expect.poll(() => windowCount(app), { timeout: 15_000 }).toBe(1);
 
       const reopened = app.waitForEvent('window', { timeout: 30_000 });
-      await page.getByTestId('open-mini').click();
+      await (await shellControl(page, 'open-mini')).click();
       const second = await reopened;
       await expect(second.getByTestId('mini-live-page')).toBeVisible({ timeout: 30_000 });
 
@@ -149,7 +150,7 @@ test.describe('compact Live window smoke', () => {
       ({ app, page } = await launchLiveApp(userDataDir));
 
       const miniOpened = app.waitForEvent('window', { timeout: 30_000 });
-      await page.getByTestId('open-mini').click();
+      await (await shellControl(page, 'open-mini')).click();
       const mini = await miniOpened;
       await expect(mini.getByTestId('mini-live-page')).toBeVisible({ timeout: 30_000 });
 
@@ -209,10 +210,10 @@ test.describe('compact Live window smoke', () => {
       let page;
       ({ app: second, page } = await launchLiveApp(userDataDir, { grantConsent: false }));
 
-      await expect(page.getByTestId('open-mini')).toBeVisible({ timeout: 15_000 });
+      await expect(await shellControl(page, 'open-mini')).toBeVisible({ timeout: 15_000 });
 
       const miniOpened = second.waitForEvent('window', { timeout: 30_000 });
-      await page.getByTestId('open-mini').click();
+      await (await shellControl(page, 'open-mini')).click();
       await expect((await miniOpened).getByTestId('mini-live-page')).toBeVisible({ timeout: 30_000 });
     } finally {
       await first?.close().catch(() => undefined);

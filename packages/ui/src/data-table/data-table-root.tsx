@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '../cn';
+import { DataTableScrollableProvider } from './data-table-scrollable-context';
 import type { DataTableRootProps } from './types';
 
 export function DataTableRoot({
@@ -28,7 +29,7 @@ export function DataTableRoot({
       style={style}
       {...rest}
     >
-      {children}
+      <DataTableScrollableProvider value={scrollable}>{children}</DataTableScrollableProvider>
     </div>
   );
 }

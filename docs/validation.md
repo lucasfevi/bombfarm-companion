@@ -21,11 +21,19 @@ pnpm test
 pnpm build
 ```
 
-For **UI / styling / visual** waves (or any change that can shift layout, tokens, or client flows), also run:
+For any change the web planner can observe — styling and layout, but equally store slices,
+selectors, persistence and stored record shapes — also run:
 
 ```bash
-pnpm test:e2e
+pnpm --filter @bombfarm/web exec playwright test --project=smoke
 ```
+
+**Do not read this as a visual-only gate.** It was one, and that let a state-management change
+through on 2026-09-02: a stored hero field the draft slice did not mirror made the debounced
+autosave churn the roster array, closing the Farm Respec panel ~700ms after the player opened it.
+Nothing about it was visual, and five e2e tests were red while `typecheck`, `lint`, `build`, 7,002
+Vitest tests and the Electron smoke suite were green. The e2e specs are the only check that drives
+the app as a running browser app over time, which is the one axis a Vitest assertion cannot reach.
 
 For **Storybook / design-system catalog** waves, also run:
 

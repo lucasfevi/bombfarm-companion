@@ -1,4 +1,13 @@
-import { closeSync, fstatSync, ftruncateSync, mkdirSync, openSync, readFileSync, writeFileSync, writeSync } from 'node:fs';
+import {
+  closeSync,
+  fstatSync,
+  ftruncateSync,
+  mkdirSync,
+  openSync,
+  readSync,
+  writeFileSync,
+  writeSync,
+} from 'node:fs';
 import path from 'node:path';
 import type {
   AccountSection,
@@ -36,6 +45,7 @@ import { runPowerShellAsync, runPowerShellSync, stripExeSuffix } from '../game-r
 import { EarningsFold } from './earnings-fold.js';
 import { createFrameCapture, readFrameCaptureEnabledFromEnv } from './frame-capture.js';
 import { FrameRing } from './frame-ring.js';
+import { peScanExtent } from './image-scan.js';
 import type { ObservationAppendPort, ObservationCapture } from './observation-capture.js';
 import type { LogPort } from './log-port.js';
 import { MapFold, type MapAccountBoosts, type MapWikiFacts } from './map-fold.js';
@@ -306,14 +316,61 @@ function createProcessLister(): ProcessLister {
   };
 }
 
-function createProcessImageSource(): ProcessImageSource {
+/** Comfortably past the DOS stub, the PE headers and the section table of any real binary, and
+ *  small enough to be free. A binary that somehow needs more is reported rather than retried. */
+const PE_HEADER_PROBE_BYTES = 64 * 1024;
+
+function readPrefix(fd: number, byteLength: number): Buffer {
+  const buffer = Buffer.alloc(byteLength);
+  let filled = 0;
+  while (filled < byteLength) {
+    const read = readSync(fd, buffer, filled, byteLength - filled, filled);
+    if (read === 0) break;
+    filled += read;
+  }
+  return buffer.subarray(0, filled);
+}
+
+function readImageFile(exePath: string): Buffer {
+  const fd = openSync(exePath, 'r');
+  try {
+    const head = readPrefix(fd, PE_HEADER_PROBE_BYTES);
+    const extent = peScanExtent(head);
+    if (extent.kind === 'not-pe') throw new Error('not a PE image');
+    if (extent.kind === 'need-more') {
+      throw new Error(`PE headers need ${String(extent.atLeast)} bytes, past the probe`);
+    }
+    return extent.byteLength <= head.length ? head.subarray(0, extent.byteLength) : readPrefix(fd, extent.byteLength);
+  } finally {
+    closeSync(fd);
+  }
+}
+
+/**
+ * Every failure here used to resolve to a bare `null`, which the tap could only report as a
+ * generic `attachFailed` — an unreadable image and a binary with no discoverable hook produced
+ * the same word on screen and the same silence in the log. The distinctions below are the ones a
+ * report can actually be diagnosed from: an elevated game answers no path at all, a security
+ * product blocks the read itself, and neither is a scan that ran and found nothing.
+ */
+function createProcessImageSource(deps: { readonly log: LogPort }): ProcessImageSource {
   return {
     read(pid: number): Buffer | null {
+      let exePath: string;
       try {
-        const script = `(Get-Process -Id ${String(pid)} -ErrorAction SilentlyContinue).Path`;
-        const out = runPowerShellSync(script);
-        return out ? readFileSync(out) : null;
-      } catch {
+        exePath = runPowerShellSync(`(Get-Process -Id ${String(pid)} -ErrorAction SilentlyContinue).Path`);
+      } catch (error) {
+        deps.log.warn({ scope: 'live-source', event: 'image.path_lookup_failed', pid, error: String(error) });
+        return null;
+      }
+      if (!exePath) {
+        deps.log.warn({ scope: 'live-source', event: 'image.path_unresolved', pid });
+        return null;
+      }
+      try {
+        return readImageFile(exePath);
+      } catch (error) {
+        deps.log.warn({ scope: 'live-source', event: 'image.unreadable', pid, error: String(error) });
         return null;
       }
     },
@@ -358,7 +415,7 @@ function createDefaultTapFactory(deps: {
       processes: createProcessLister(),
       candidates: createHookCandidateSource({
         cacheDir: path.join(deps.userDataDir, 'live-hook-cache'),
-        image: createProcessImageSource(),
+        image: createProcessImageSource({ log: deps.log }),
         log: deps.log,
       }),
       consent: deps.consent,

@@ -8,7 +8,12 @@ import {
   type InventoryEntry,
   type InventorySort,
 } from '@bombfarm/domain/inventory-view';
-import { InventoryTable, nextInventorySort, type InventoryTableLabels, type InventoryTableProps } from './inventory-table';
+import {
+  InventoryTable,
+  nextInventorySort,
+  type InventoryTableLabels,
+  type InventoryTableProps,
+} from './inventory-table';
 import type { MarketPriceLabels, MarketPriceView } from './market-price';
 
 const RAW_ITEMS = [
@@ -27,17 +32,17 @@ const labels: InventoryTableLabels = {
   groupTitle: (kind) => kind,
   itemName: (item) => NAMES[item.defId] ?? item.defId,
   itemRarity: (item) => RARITIES[item.rarityIdx] ?? '',
+  itemLevel: (item) => (item.level > 0 ? `Lv ${item.level}` : ''),
   itemForge: (item) => (item.upgrade > 0 ? `+${item.upgrade}` : ''),
   gold: (amount) => String(amount),
   searchText: (item) => NAMES[item.defId] ?? item.defId,
   column: {
     name: 'Item',
-    rarity: 'Rarity',
-    level: 'Level',
+    forge: 'Forge',
     count: 'Qty',
     value: 'Gold',
     market: 'Steam',
-    equippedBy: 'Hero',
+    hero: 'Hero',
     actions: 'Actions',
   },
   rowAction: (itemName) => `Details for ${itemName}`,
@@ -143,7 +148,7 @@ describe('InventoryTable', () => {
   it('marks the leading sort column ascending or descending and every other one none', () => {
     const ascending = render({ sort: byValue('asc') });
     expect(cellFor(ascending, 'Gold').ariaSort).toBe('ascending');
-    expect(cellFor(ascending, 'Level').ariaSort).toBe('none');
+    expect(cellFor(ascending, 'Qty').ariaSort).toBe('none');
     expect(cellFor(ascending, 'Item').ariaSort).toBe('none');
 
     const descending = render({ sort: byValue('desc') });
@@ -157,7 +162,7 @@ describe('InventoryTable', () => {
 
   it('puts a real button inside every sortable header', () => {
     const html = render({ sort: byValue('asc') });
-    for (const label of ['Item', 'Rarity', 'Level', 'Qty', 'Gold']) {
+    for (const label of ['Item', 'Qty', 'Gold']) {
       expect(cellFor(html, label).hasButton).toBe(true);
     }
   });
@@ -254,12 +259,20 @@ describe('InventoryTable', () => {
 });
 
 describe('InventoryTable toolbar', () => {
-  it('keeps the filters the cards have and drops only the sort control', () => {
+  it('keeps every control the cards have, the sort picker included', () => {
     const html = render();
     expect(html).toContain('Search');
     expect(html).toContain('All kinds');
-    // The headers are the sort control here; a second one would order the same rows twice.
+    // Rarity and level are no longer columns to click, so the picker is the only way to reach
+    // either order from the list layout.
+    expect(html).toContain('Sort by');
+  });
+
+  it('is left out entirely for a host that narrows the view through a toolbar of its own', () => {
+    const html = render({ showToolbar: false });
+    expect(html).not.toContain('Search');
     expect(html).not.toContain('Sort by');
+    expect(rowIds(html)).toHaveLength(3);
   });
 
   it('offers the priced narrowing only where the host can answer it', () => {
@@ -275,5 +288,72 @@ describe('InventoryTable toolbar', () => {
       filter: { ...EMPTY_INVENTORY_FILTER, pricedOnly: true },
     });
     expect(rowIds(html)).toEqual(['ring-2']);
+  });
+});
+
+describe('InventoryTable columns', () => {
+  it('says the tier and the level in the name cell instead of in columns of their own', () => {
+    const html = render();
+    expect(headCells(html).map((cell) => cell.label)).toEqual(['Item', 'Qty', 'Gold']);
+    expect(html).toContain('Epic');
+    expect(html).toContain('Lv 30');
+  });
+
+  it('draws the set a host asks for, in the order it asked for', () => {
+    const html = render({ columns: ['name', 'forge', 'count'] });
+    expect(headCells(html).map((cell) => cell.label)).toEqual(['Item', 'Forge', 'Qty']);
+    expect(html).toContain('+2');
+  });
+
+  it('drops a column the host has no data for even when it asked for one', () => {
+    expect(headCells(render({ columns: ['name', 'hero', 'market'] })).map((cell) => cell.label)).toEqual(['Item']);
+  });
+
+  it('marks the picked row and makes the whole row the control', () => {
+    const html = render({ onSelectRow: () => {}, selectedItemId: 'ring-2' });
+    expect(html).toContain('aria-selected="true"');
+    expect(html).toContain('data-selected=""');
+    expect(html).toContain('aria-label="Details for Iron Ring"');
+  });
+});
+
+describe('InventoryTable virtualization', () => {
+  const LONG_BAG = buildInventoryView(
+    Array.from({ length: 300 }, (_, index) => ({
+      id: `row-${String(index)}`,
+      def_id: 'coal_boots',
+      category: 0,
+      rarity: 3,
+      level: 30,
+      upgrade: 0,
+      sell_value: 100,
+    })),
+  );
+
+  function spacerHeight(html: string, side: 'top' | 'bottom'): number {
+    const spacer = new RegExp(
+      String.raw`data-testid="inventory-table-spacer-${side}"[\s\S]*?style="height:(\d+)px`,
+    ).exec(html);
+    return spacer === null ? 0 : Number(spacer[1]);
+  }
+
+  it('mounts a fraction of a 300-row bag and holds the rest open with spacers', () => {
+    const html = renderToStaticMarkup(createElement(InventoryTable, { view: LONG_BAG, labels }));
+    const mounted = rowIds(html);
+
+    expect(mounted.length).toBeGreaterThan(10);
+    expect(mounted.length).toBeLessThan(40);
+    // The first rows, in order — a window, not a sample.
+    expect(mounted[0]).toBe('row-0');
+    expect(mounted[1]).toBe('row-1');
+  });
+
+  it('keeps the scrollbar honest: spacers plus mounted rows are the whole bag\'s height', () => {
+    const html = renderToStaticMarkup(createElement(InventoryTable, { view: LONG_BAG, labels }));
+    const mounted = rowIds(html).length;
+    const rowHeight = 46;
+
+    expect(spacerHeight(html, 'top')).toBe(0);
+    expect(spacerHeight(html, 'bottom') + mounted * rowHeight).toBe(300 * rowHeight);
   });
 });

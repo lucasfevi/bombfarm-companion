@@ -2,7 +2,8 @@
 
 import { useCallback, useMemo } from 'react';
 import { Panel, Select } from '@bombfarm/ui';
-import type { FarmCopy, Lang } from '../copy';
+import type { Lang } from '@bombfarm/hero/copy';
+import type { FarmCopy } from '../copy';
 import {
   firstPhaseForAto,
   formatMapOptionLabel,

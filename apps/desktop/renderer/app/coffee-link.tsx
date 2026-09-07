@@ -1,6 +1,7 @@
 /**
- * The support link, in the two shapes the app shows it: an icon-only pill in the top bar and a
- * labelled button in Settings. Both point at the one URL held here.
+ * The support link, in the three shapes the app shows it: an icon-only pill in the top bar, a row
+ * in that bar's overflow menu once the pill no longer fits, and a labelled button in Settings.
+ * All three point at the one URL held here.
  *
  * No IPC and no `shell.openExternal` call of its own — `applyExternalNavigationPolicy`
  * (`src/main/external-navigation.ts`) already answers `window-open` for any `https:` target by
@@ -9,7 +10,7 @@
  * `will-navigate`, which the same policy also redirects, but only after the renderer has already
  * been asked to leave the page it is the only copy of.
  */
-import { Icon, Tooltip, buttonRecipe } from '@bombfarm/ui';
+import { Icon, Menu, Tooltip, buttonRecipe } from '@bombfarm/ui';
 import { useCopy } from '../lib/copy';
 
 const COFFEE_URL = 'https://buymeacoffee.com/lucasfevi';
@@ -48,6 +49,18 @@ export function CoffeeIconLink() {
         </Tooltip.Portal>
       </Tooltip.Root>
     </Tooltip.Provider>
+  );
+}
+
+/** Overflow shape — the same anchor as a menu row, where the label replaces the tooltip. */
+export function CoffeeMenuItem() {
+  const t = useCopy();
+
+  return (
+    <Menu.Item render={<a {...EXTERNAL_LINK_PROPS} data-testid="shell-overflow-coffee" />}>
+      <Icon name="coffee" size="sm" />
+      {t.shellCoffeeLabel}
+    </Menu.Item>
   );
 }
 

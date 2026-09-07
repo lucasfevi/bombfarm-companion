@@ -17,8 +17,8 @@ const OTHER_CONTROLS: FarmControls = { farmPoolOverrides: {}, farmReturnBonus: '
 
 const BOARD = { rows: [], reason: null } as FarmRankingResult;
 const INPUTS = {} as FarmInputs;
-const COMPUTED_AT = '2026-08-12T00:00:00.000Z';
-const SETTLED = { ok: true, board: BOARD, inputs: INPUTS, computedAt: COMPUTED_AT } as const;
+const CAPTURED_AT = '2026-08-12T00:00:00.000Z';
+const SETTLED = { ok: true, board: BOARD, inputs: INPUTS, capturedAt: CAPTURED_AT } as const;
 
 function computing(sourceKey: string, controls: FarmControls = CONTROLS): FarmSnapshotState {
   return accept(initialFarmSnapshotState, { kind: 'begin', sourceKey, controls });
@@ -161,13 +161,13 @@ describe('computed — latest wins, everything else is discarded', () => {
     expect(again).toBe(first);
   });
 
-  it('an accepted result carries the board, the inputs it was computed from, when it was computed and its source', () => {
+  it('an accepted result carries the board, the inputs it was computed from, the age of the account behind it and its source', () => {
     const state = ready('key-a');
     expect(state).toEqual({
       status: 'ready',
       board: BOARD,
       inputs: INPUTS,
-      computedAt: COMPUTED_AT,
+      capturedAt: CAPTURED_AT,
       controls: CONTROLS,
       sourceKey: 'key-a',
     });
@@ -180,7 +180,7 @@ describe('computed — latest wins, everything else is discarded', () => {
         status: 'ready',
         board: arrival.outcome.board,
         inputs: arrival.outcome.inputs,
-        computedAt: arrival.outcome.computedAt,
+        capturedAt: arrival.outcome.capturedAt,
         controls: arrival.controls,
         sourceKey: arrival.sourceKey,
       };
@@ -222,7 +222,7 @@ describe('a recompute keeps the board that is already on screen', () => {
     expect(settledBoard(recomputing)).toEqual({
       board: BOARD,
       inputs: INPUTS,
-      computedAt: COMPUTED_AT,
+      capturedAt: CAPTURED_AT,
     });
   });
 

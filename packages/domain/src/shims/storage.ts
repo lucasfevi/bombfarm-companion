@@ -1,4 +1,5 @@
 /** Domain-facing storage shapes (formerly `@/shared/lib/storage` types). */
+import type { StatRanges } from '../birth-sheet.js';
 import type { Loadout, SheetStats } from '../gear/types.js';
 import type { RankMode, RarityKey } from '../model/index.js';
 
@@ -105,8 +106,29 @@ export type HeroRecord = {
   power?: number;
   deployed?: boolean;
   battleAllowed?: boolean;
+  /**
+   * The game's own `marketable` flag — whether the market permits selling this hero at all.
+   * Three-state on purpose: `false` is the account-bound answer, while absence means nobody has
+   * asked the game yet (a record written before the importer carried the flag, or a hero the
+   * planner built by hand). A reader that collapses absence into `false` reports a whole roster
+   * as bound.
+   */
+  marketable?: boolean;
   skin?: number;
   birth?: SheetStats;
+  /**
+   * The window each {@link birth} value was rolled inside, in planner units. Additive — absent
+   * on every record written before the importer read it, and it stays absent until that hero is
+   * imported again. No migration: absence is a valid state, not a record to repair.
+   *
+   * Deliberately the OPPOSITE posture to {@link birth}, and the difference is load-bearing. A
+   * hero whose birth roll is partial rejects the ENTIRE save, because the sheet mathematics
+   * cannot be composed from an invented default. These bounds compose nothing — they are
+   * enrichment layered on top of a sheet that is already correct — so a missing, partial or
+   * malformed block must never reject anything: not the hero, not the file, not the live account
+   * read, which has no file to re-export and would be left with nothing at all.
+   */
+  statRanges?: StatRanges;
   tree?: TreeState;
   teamBuffs?: Record<string, number>;
   context?: HeroContext;

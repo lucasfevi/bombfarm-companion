@@ -1,47 +1,47 @@
 /**
  * The long-running collector: it repeats the market sweep on a cadence derived from a daily call
- * budget, persists what each pass read, publishes the artifact, and records the pass.
+ * budget, persists what each pass read, and records the pass.
+ *
+ * It publishes nothing. The artifact both apps read has exactly one producer, and this is not it —
+ * a second writer of the same file is a race whichever one happens to be running. What this
+ * produces is readings: the median and the 24h volume that only a per-item quote returns. That
+ * sampling is what the budget bounds, and it is the only thing the budget bounds.
  *
  * It makes no market call of its own. The sweep it drives is the only thing in this repository
  * that talks to the market, and it is imported lazily so that everything here stays drivable
- * without a built workspace. This file's own requests reach the history store and the publishing
- * API and nothing else.
+ * without a built workspace. This file's own requests reach the history store and nothing else.
  */
 import { writeFileSync } from 'node:fs';
-import { basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { deployOptOutFiles } from './deploy-optout.mjs';
+import { SNAPSHOT_URL } from './freshness.mjs';
+import {
+  DEFAULT_DAILY_BUDGET,
+  MIN_SPACING_MS,
+  NO_TIERS,
+  planPass,
+  readBudget,
+  tiersAfterPass,
+  tiersFromHistory,
+} from './quote-plan.mjs';
 
+const MS_PER_HOUR = 3_600_000;
 const MS_PER_DAY = 86_400_000;
 
-/**
- * The rotation delay a full pass was measured drawing zero rate limits at. Never go below it
- * whatever the budget says: the budget bounds the daily total, not the instantaneous rate.
- */
-export const MIN_SPACING_MS = 3_500;
+export { MIN_SPACING_MS };
 
-const DEFAULT_DAILY_BUDGET = 2_000;
+const DEFAULT_TIER_WINDOW_DAYS = 30;
+const DEFAULT_RETIER_HOURS = 24;
 
-/**
- * Derive the rotation delay from a daily call budget. Raising the budget shortens the delay with
- * no code change; a budget high enough to breach the measured-safe floor is clamped rather than
- * obeyed, and says so, so a budget that is not being honoured is visible from the log.
- */
-export function deriveSpacing(rawBudget) {
-  const budget = Number(rawBudget);
-  if (!Number.isFinite(budget) || budget <= 0) {
-    throw new Error(
-      `MARKET_DAILY_BUDGET must be a positive number; got ${JSON.stringify(rawBudget)}`,
-    );
+const positive = (raw, fallback, name, problems) => {
+  if (raw == null || raw === '') return fallback;
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value <= 0) {
+    problems.push(`${name} must be a positive number; got ${JSON.stringify(raw)}`);
+    return fallback;
   }
-  const derived = Math.floor(MS_PER_DAY / budget);
-  return {
-    budget,
-    spacingMs: Math.max(MIN_SPACING_MS, derived),
-    spacingClamped: derived < MIN_SPACING_MS,
-  };
-}
+  return value;
+};
 
 /** The first name is canonical; the rest are accepted so a differently-named environment starts. */
 const firstSet = (env, names) => {
@@ -67,39 +67,45 @@ export function readConfig(env) {
 
   const supabaseUrl = need('SUPABASE_URL');
   const supabaseKey = need('SUPABASE_KEY');
-  const githubToken = need('GITHUB_TOKEN');
-  const repo = need('GITHUB_REPO', 'GITHUB_REPOSITORY');
 
-  let spacing = null;
+  let budget = DEFAULT_DAILY_BUDGET;
   try {
-    spacing = deriveSpacing(env.MARKET_DAILY_BUDGET ?? DEFAULT_DAILY_BUDGET);
+    budget = readBudget(env.MARKET_DAILY_BUDGET ?? DEFAULT_DAILY_BUDGET);
   } catch (err) {
     problems.push(String(err.message));
   }
+
+  const tierWindowDays = positive(
+    env.MARKET_TIER_WINDOW_DAYS,
+    DEFAULT_TIER_WINDOW_DAYS,
+    'MARKET_TIER_WINDOW_DAYS',
+    problems,
+  );
+  const retierHours = positive(
+    env.MARKET_RETIER_HOURS,
+    DEFAULT_RETIER_HOURS,
+    'MARKET_RETIER_HOURS',
+    problems,
+  );
 
   if (problems.length > 0) {
     throw new Error(`the collector cannot start: ${problems.join('; ')}`);
   }
 
-  const snapshotPath = firstSet(env, ['SNAPSHOT', 'MARKET_SNAPSHOT_PATH']) ?? 'market-prices.json';
   return {
     supabaseUrl: supabaseUrl.replace(/\/+$/, ''),
     supabaseKey,
-    githubToken,
-    repo,
-    budget: spacing.budget,
-    spacingMs: spacing.spacingMs,
-    spacingClamped: spacing.spacingClamped,
+    budget,
+    tierWindowMs: tierWindowDays * MS_PER_DAY,
+    retierEveryMs: retierHours * MS_PER_HOUR,
     currencies: (env.MARKET_CURRENCY ?? 'BRL')
       .split(',')
       .map((code) => code.trim().toUpperCase())
       .filter(Boolean),
-    releaseTag: firstSet(env, ['RELEASE_TAG', 'MARKET_RELEASE_TAG']) ?? 'market-prices',
-    dataBranch: firstSet(env, ['DATA_BRANCH', 'MARKET_DATA_BRANCH']) ?? 'market-data',
-    snapshotPath,
-    // One variable names the resume file, and the published artifact takes its name, so the two
-    // can never drift into disagreeing about which file the snapshot is.
-    snapshotName: basename(snapshotPath),
+    // Where row identities are read from, and the local file they fall back to. That file is
+    // private working state written by the last pass, not an artifact anyone reads.
+    snapshotUrl: firstSet(env, ['MARKET_SNAPSHOT_URL']) ?? SNAPSHOT_URL,
+    snapshotPath: firstSet(env, ['SNAPSHOT', 'MARKET_SNAPSHOT_PATH']) ?? 'market-prices.json',
   };
 }
 
@@ -126,6 +132,9 @@ export function logSweepStats(log, stats) {
   log('quote.done', {
     quoted: stats.quotesOk,
     calls: stats.quoteCalls,
+    rotation: stats.rotation?.length ?? null,
+    enumerationOnly: stats.enumerationOnly?.length ?? null,
+    delayMs: stats.rotationDelayMs ?? null,
     rateLimitHits: stats.rateLimitHits,
     complete: stats.quotesComplete,
   });
@@ -164,23 +173,34 @@ export function logSweepStats(log, stats) {
 }
 
 /**
- * One row per (item, currency) the pass actually quoted. An item the market answered without a
- * price contributes no row: "unquoted" and "quoted as unlisted" are different claims, and a null
- * row would erase the difference in the history forever.
+ * One row per (item, currency) the market answered for, priced or not.
+ *
+ * A priceless answer is a reading, so it is kept with a null `lowest` rather than dropped: it is
+ * the market saying it has nothing to quote for that item, which is what places the item outside
+ * the rotation. Dropping it left the item with no history at all, so every restart re-read it.
+ *
+ * What still contributes no row is a pair the pass never got an answer for — a failed request, a
+ * rate-limited one, or one the breaker stopped it reaching. Those say nothing about the item, and
+ * a row for one would claim a reading that was never taken.
  */
 export function quoteRowsFrom(stats) {
   const rows = [];
+  const row = (hashName, currency, quote) => ({
+    hash_name: hashName,
+    currency,
+    quoted_at: stats.quotedUtc,
+    lowest: quote.lowest,
+    median: quote.median,
+    volume: quote.volume,
+  });
+
   for (const [hashName, byCurrency] of stats.quotes) {
     for (const [currency, quote] of Object.entries(byCurrency)) {
-      rows.push({
-        hash_name: hashName,
-        currency,
-        quoted_at: stats.quotedUtc,
-        lowest: quote.lowest,
-        median: quote.median,
-        volume: quote.volume,
-      });
+      rows.push(row(hashName, currency, quote));
     }
+  }
+  for (const answer of stats.answeredUnpriced ?? []) {
+    rows.push(row(answer.hashName, answer.currency, answer.quote));
   }
   return rows;
 }
@@ -201,7 +221,58 @@ export function itemRowsFrom(snapshot, lastSeen) {
   }));
 }
 
+const PRIOR_TIMEOUT_MS = 15_000;
+
+/**
+ * The row identities a pass starts from.
+ *
+ * Read from the published snapshot rather than from this process's own last pass. Identifying a
+ * row costs a burst of facet queries, and it fires whenever the enumeration turns up a row the
+ * prior cannot name — so the fresher the prior, the less often it fires. The published file is
+ * rebuilt every half hour or so against a pass here that takes hours, which makes it the better
+ * answer to "what is already known" by an order of magnitude.
+ *
+ * Never throws, and never lets a fetch failure cost the pass. Identity is an optimisation at this
+ * point: falling back to the file the last pass wrote is exactly the behaviour this replaced.
+ */
+export function createPriorReader({ url, fetchImpl, parsePrior, loadFile, log }) {
+  return async (path) => {
+    try {
+      const response = await fetchImpl(url, {
+        headers: { 'cache-control': 'no-cache' },
+        signal: AbortSignal.timeout(PRIOR_TIMEOUT_MS),
+      });
+      if (!response.ok) throw new Error(`answered ${String(response.status)}`);
+
+      const published = parsePrior(await response.text(), 'the published snapshot');
+      if (published != null) {
+        log('prior.published', {
+          entries: published.entries.length,
+          generated: published.generatedUtc,
+        });
+        return published;
+      }
+      log('prior.publishedUnreadable', { url }, 'warn');
+    } catch (err) {
+      log('prior.fetchFailed', { url, error: String(err?.message ?? err) }, 'warn');
+    }
+
+    const local = loadFile(path);
+    log('prior.local', { entries: local?.entries.length ?? 0 });
+    return local;
+  };
+}
+
 const HISTORY_TIMEOUT_MS = 30_000;
+
+const HISTORY_PAGE_ROWS = 1_000;
+
+/**
+ * A window holds at most one reading per call the budget allowed, so this is far above any real
+ * answer. Hitting it means the query matched something other than what was asked for, and a
+ * truncated read would silently retire every traded item that fell past the cut.
+ */
+const HISTORY_MAX_ROWS = 500_000;
 
 export function createHistory({ url, key, fetch, log, now = Date.now }) {
   const post = async (path, rows, prefer) => {
@@ -225,9 +296,69 @@ export function createHistory({ url, key, fetch, log, now = Date.now }) {
     }
   };
 
+  const getPage = async (path, offset) => {
+    const response = await fetch(`${url}/rest/v1/${path}`, {
+      method: 'GET',
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        Accept: 'application/json',
+        'Range-Unit': 'items',
+        Range: `${String(offset)}-${String(offset + HISTORY_PAGE_ROWS - 1)}`,
+      },
+      signal: AbortSignal.timeout(HISTORY_TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      const error = new Error(`${path} answered ${String(response.status)}`);
+      error.status = response.status;
+      error.body = body;
+      throw error;
+    }
+    return response.json();
+  };
+
   /**
-   * Never throws. A history failure must not cost the pass its publish — the artifact is what
-   * users read — so it is reported to the caller and recorded on the run row instead.
+   * Which items have traded within the window, and which have only ever been quoted. Null when
+   * the read failed or came back implausibly large: the caller then keeps the membership it had,
+   * because guessing here retires items from the rotation that are the reason it exists.
+   */
+  const readTiers = async (windowMs) => {
+    const startedMs = now();
+    const since = new Date(now() - windowMs).toISOString();
+    const query =
+      `quote?select=hash_name,volume&quoted_at=gte.${encodeURIComponent(since)}&order=id.asc`;
+    const rows = [];
+
+    try {
+      for (;;) {
+        const page = await getPage(query, rows.length);
+        rows.push(...page);
+        if (page.length < HISTORY_PAGE_ROWS) break;
+        if (rows.length >= HISTORY_MAX_ROWS) {
+          log('tier.readOversized', { rows: rows.length, since }, 'error');
+          return null;
+        }
+      }
+    } catch (err) {
+      log('tier.readFailed', { status: err?.status ?? null, body: err?.body ?? String(err) }, 'error');
+      return null;
+    }
+
+    const tiers = tiersFromHistory(rows);
+    log('tier.read', {
+      rows: rows.length,
+      traded: tiers.traded.size,
+      observed: tiers.observed.size,
+      since,
+      ms: now() - startedMs,
+    });
+    return tiers;
+  };
+
+  /**
+   * Never throws. A history failure must not cost the pass the rest of its work — the tiering it
+   * folds forward and the run row it owes — so it is reported to the caller and recorded instead.
    */
   const persistHistory = async (snapshot, stats) => {
     const startedMs = now();
@@ -267,143 +398,13 @@ export function createHistory({ url, key, fetch, log, now = Date.now }) {
     }
   };
 
-  return { persistHistory, writeRun };
-}
-
-const GITHUB_API = 'https://api.github.com';
-const GITHUB_UPLOADS = 'https://uploads.github.com';
-
-/**
- * The two publish targets fail independently and are recorded independently: the desktop app and
- * the web planner read different ones, so "the snapshot published" is not a single fact.
- */
-export function createPublisher({
-  token,
-  repo,
-  releaseTag,
-  dataBranch,
-  snapshotName,
-  fetch,
-  log,
-  now = Date.now,
-}) {
-  const headers = (extra = {}) => ({
-    Authorization: `Bearer ${token}`,
-    Accept: 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28',
-    'User-Agent': 'bombfarm-companion-market-collector',
-    ...extra,
-  });
-
-  const call = async (url, init) => {
-    const response = await fetch(url, init);
-    if (!response.ok) {
-      const body = await response.text().catch(() => '');
-      const error = new Error(`${init?.method ?? 'GET'} ${url} answered ${String(response.status)}`);
-      error.status = response.status;
-      error.body = body;
-      throw error;
-    }
-    return response;
-  };
-
-  const json = async (url, init) => (await call(url, init)).json();
-
-  const post = (path, payload) =>
-    json(`${GITHUB_API}/repos/${repo}/${path}`, {
-      method: 'POST',
-      headers: headers({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify(payload),
-    });
-
-  const timed = async (target, bytes, publish) => {
-    const startedMs = now();
-    try {
-      await publish();
-      log('publish.done', { target, bytes, ms: now() - startedMs });
-      return true;
-    } catch (err) {
-      log(
-        'publish.failed',
-        { target, status: err?.status ?? null, body: err?.body ?? String(err) },
-        'error',
-      );
-      return false;
-    }
-  };
-
-  const uploadAsset = (releaseId, body) =>
-    call(
-      `${GITHUB_UPLOADS}/repos/${repo}/releases/${String(releaseId)}/assets?name=${encodeURIComponent(snapshotName)}`,
-      { method: 'POST', headers: headers({ 'Content-Type': 'application/json' }), body },
-    );
-
-  /**
-   * Delete-then-upload, because the REST API has no replace. That leaves a sub-second window
-   * where the asset is missing — clients treat a failed download as "keep the cached snapshot" —
-   * and it is why the upload gets a second attempt before the pass calls the target failed.
-   */
-  const publishRelease = (body) =>
-    timed('release', body.length, async () => {
-      const release = await json(`${GITHUB_API}/repos/${repo}/releases/tags/${releaseTag}`, {
-        headers: headers(),
-      });
-      const existing = (release.assets ?? []).find((asset) => asset.name === snapshotName);
-      if (existing) {
-        await call(`${GITHUB_API}/repos/${repo}/releases/assets/${String(existing.id)}`, {
-          method: 'DELETE',
-          headers: headers(),
-        });
-      }
-      try {
-        await uploadAsset(release.id, body);
-      } catch {
-        await uploadAsset(release.id, body);
-      }
-    });
-
-  /**
-   * A fresh orphan commit, force-pushed. `parents: []` is what keeps the branch a single commit
-   * forever: it is derived data with no value in its history, and a commit a pass would bloat
-   * every clone of the repository.
-   */
-  const publishBranch = (body) =>
-    timed('branch', body.length, async () => {
-      const files = [{ path: snapshotName, content: body }, ...deployOptOutFiles(dataBranch)];
-      const blobs = await Promise.all(
-        files.map((file) =>
-          post('git/blobs', {
-            content: Buffer.from(file.content, 'utf-8').toString('base64'),
-            encoding: 'base64',
-          }),
-        ),
-      );
-      const tree = await post('git/trees', {
-        tree: files.map((file, index) => ({
-          path: file.path,
-          mode: '100644',
-          type: 'blob',
-          sha: blobs[index].sha,
-        })),
-      });
-      const commit = await post('git/commits', {
-        message: `chore(market): snapshot ${new Date(now()).toISOString()}`,
-        tree: tree.sha,
-        parents: [],
-      });
-      await call(`${GITHUB_API}/repos/${repo}/git/refs/heads/${dataBranch}`, {
-        method: 'PATCH',
-        headers: headers({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ sha: commit.sha, force: true }),
-      });
-    });
-
-  return { publishRelease, publishBranch };
+  return { persistHistory, readTiers, writeRun };
 }
 
 /**
- * The published snapshot is served with a five-minute max-age, so a pass that finished faster
- * than this gains nothing by publishing again immediately.
+ * A floor on how often a pass may repeat, which the budget arithmetic does not supply: spacing
+ * stretches a pass in proportion to how much it has to quote, so a board small enough to finish
+ * in seconds would otherwise loop straight back into the market.
  */
 export const MIN_PASS_MS = 300_000;
 
@@ -454,18 +455,18 @@ export function runRowFrom(stats, snapshotBytes) {
 }
 
 /**
- * The pass, repeated. Three orderings here are load-bearing:
- *
- * History is written before publishing, because a reading not taken is gone forever while a
- * published snapshot can be rebuilt by the next pass — so a history failure is recorded and the
- * pass publishes anyway, the artifact being what users read.
+ * The pass, repeated. Two orderings here are load-bearing:
  *
  * The run row is written in a `finally`, so a pass that throws still leaves a row carrying its
  * error. Health in one query would otherwise under-count failures as passes that never happened.
  *
- * A pass cut short at any stage is not an error — it publishes and persists what it got — but it
- * still enters the cool-down ladder, because a tripped breaker is the exact signal the ladder
- * exists for.
+ * A pass cut short at any stage is not an error — it persists what it got — but it still enters
+ * the cool-down ladder, because a tripped breaker is the exact signal the ladder exists for.
+ *
+ * Tier membership is recomputed on its own interval from the readings already in the history
+ * store, and folded forward from each pass so an item quoted for the first time is placed by its
+ * own result. A read that fails leaves the membership the collector had; with none yet, the
+ * rotation is everything the market lists, which is the behaviour the budget alone would give.
  */
 export async function runCollector({
   config,
@@ -473,8 +474,7 @@ export async function runCollector({
   loadPrior,
   writeSnapshot,
   persistHistory,
-  publishRelease,
-  publishBranch,
+  readTiers,
   writeRun,
   log,
   sleep,
@@ -482,28 +482,62 @@ export async function runCollector({
   maxPasses = Infinity,
 }) {
   let coolDownMs = 0;
+  let tiers = null;
+  let tieredAtMs = null;
 
   for (let pass = 1; pass <= maxPasses; pass += 1) {
     const startedAtMs = now();
-    let row = {
-      pass,
-      started_at: new Date(startedAtMs).toISOString(),
-      spacing_ms: config.spacingMs,
-    };
+    let plan = null;
+    let row = { pass, started_at: new Date(startedAtMs).toISOString() };
 
     try {
-      log('pass.start', { pass, spacingMs: config.spacingMs });
+      log('pass.start', { pass, budget: config.budget });
 
-      const prior = loadPrior(config.snapshotPath);
+      if (tieredAtMs == null || now() - tieredAtMs >= config.retierEveryMs) {
+        const fresh = await readTiers(config.tierWindowMs);
+        if (fresh != null) {
+          tiers = fresh;
+          tieredAtMs = now();
+        }
+      }
+
+      const prior = await loadPrior(config.snapshotPath);
       const { snapshot, stats } = await runSweep({
         prior,
-        quoteDelayMs: config.spacingMs,
         nativeCurrencies: config.currencies,
+        planQuotes: ({ quotable, enumerationCalls, searchDelayMs }) => {
+          plan = planPass({
+            hashNames: quotable.map((entry) => entry.hashName),
+            tiers: tiers ?? NO_TIERS,
+            budget: config.budget,
+            currencyCount: config.currencies.length,
+            enumerationCalls,
+            searchDelayMs,
+          });
+          log('quote.planned', {
+            pass,
+            quotable: quotable.length,
+            rotation: plan.quote.length,
+            tierA: plan.tierACount,
+            tierB: plan.tierBCount,
+            firstQuote: plan.firstQuote.length,
+            enumerationCalls,
+            callsPerPass: plan.callsPerPass,
+            spacingMs: plan.spacingMs,
+            spacingClamped: plan.spacingClamped,
+          });
+          return plan;
+        },
         log: (message) => {
           log('sweep.line', { message });
         },
       });
       logSweepStats(log, stats);
+
+      tiers = tiersAfterPass(tiers ?? NO_TIERS, {
+        attempted: stats.rotation ?? [],
+        quotes: stats.quotes,
+      });
 
       const incomplete = incompleteStages(stats);
       if (incomplete.length > 0) {
@@ -530,15 +564,21 @@ export async function runCollector({
       const history = await persistHistory(snapshot, stats);
       if (!history.ok) row.error = history.error;
 
-      row.published_release = await publishRelease(body);
-      row.published_branch = await publishBranch(body);
-
       coolDownMs = incomplete.length === 0 ? 0 : nextCoolDown(coolDownMs);
     } catch (err) {
       row.error = String(err?.stack ?? err);
       log('pass.failed', { pass, error: row.error }, 'error');
       coolDownMs = nextCoolDown(coolDownMs);
     } finally {
+      // Off the plan rather than the sweep, so a pass that died mid-rotation still records the
+      // membership it was working from — and a pass that never planned records null, which says
+      // it got nowhere near deciding rather than claiming an empty board.
+      row.spacing_ms = plan?.spacingMs ?? null;
+      row.tier_a_count = plan?.tierACount ?? null;
+      row.tier_b_count = plan?.tierBCount ?? null;
+      // The three add up to the rows the enumeration found a live price for, not to every row the
+      // market carried: an unlisted row has nothing to quote and never reaches the split.
+      row.first_quote_count = plan?.firstQuote.length ?? null;
       row.finished_at = new Date(now()).toISOString();
       await writeRun(row);
       log('pass.done', { pass, ms: now() - startedAtMs, coolDownMs });
@@ -554,41 +594,37 @@ async function main() {
 
   log('collector.start', {
     budget: config.budget,
-    spacingMs: config.spacingMs,
-    spacingClamped: config.spacingClamped,
+    snapshotUrl: config.snapshotUrl,
+    tierWindowMs: config.tierWindowMs,
+    retierEveryMs: config.retierEveryMs,
     currencies: config.currencies,
     snapshotPath: config.snapshotPath,
   });
 
   // Imported here, not at module load: the sweep resolves a workspace package from its build
   // output, and everything above must stay drivable without one.
-  const { runSweep, loadPrior } = await import('./build.mjs');
-  const { persistHistory, writeRun } = createHistory({
+  const { runSweep, loadPrior, parsePrior } = await import('./build.mjs');
+  const { persistHistory, readTiers, writeRun } = createHistory({
     url: config.supabaseUrl,
     key: config.supabaseKey,
     fetch,
     log,
   });
-  const { publishRelease, publishBranch } = createPublisher({
-    token: config.githubToken,
-    repo: config.repo,
-    releaseTag: config.releaseTag,
-    dataBranch: config.dataBranch,
-    snapshotName: config.snapshotName,
-    fetch,
-    log,
-  });
-
   await runCollector({
     config,
     runSweep,
-    loadPrior,
+    loadPrior: createPriorReader({
+      url: config.snapshotUrl,
+      fetchImpl: fetch,
+      parsePrior,
+      loadFile: loadPrior,
+      log,
+    }),
     writeSnapshot: (path, body) => {
       writeFileSync(path, body);
     },
     persistHistory,
-    publishRelease,
-    publishBranch,
+    readTiers,
     writeRun,
     log,
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
