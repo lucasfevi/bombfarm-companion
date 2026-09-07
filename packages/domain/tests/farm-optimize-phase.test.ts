@@ -14,6 +14,7 @@ import {
   computeFarmRateRow,
   type HeroFarmFacts,
 } from '@bombfarm/domain/farm-rate';
+import { FUSE_FLOOR, STAT_CAPS } from '@bombfarm/domain/model';
 import { holdSuiteUntilInRegime } from './helpers/capture-regime';
 import { FARM_OPTIMIZE_FIXTURE, loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
@@ -142,6 +143,8 @@ describe('bestFarmPhase — no feasible phase at all ⇒ null, never a fabricate
       avgHitBase: 0,
       penetrationPct: 0,
       fuseSecs: 2,
+      fuseFloorSecs: FUSE_FLOOR,
+      cdrCapPct: STAT_CAPS.cdr,
       walkSpeedCells: 0,
       cycleSecs: Infinity,
       plantsPerSec: 0,

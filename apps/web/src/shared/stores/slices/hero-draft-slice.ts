@@ -13,6 +13,7 @@ import {
   type SheetStats,
 } from '@bombfarm/domain/gear';
 import { ZERO_PTS, type SheetKey } from '@bombfarm/domain/planner-constants';
+import type { StatRanges } from '@bombfarm/domain/birth-sheet';
 import type { HeroRecord } from '@/shared/lib/storage';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 
@@ -29,6 +30,13 @@ export type HeroDraftSlice = {
   pts: Record<SheetKey, number>;
   /** Birth roll from import — undefined until a birth-capable save is applied. */
   birth: SheetStats | undefined;
+  /**
+   * The window each birth value was rolled inside — carried through the draft untouched so the
+   * autosave hands back what it loaded. Absence is a valid state and must survive as absence:
+   * only import writes this, so a default here would let a round-trip invent bounds the game
+   * never reported.
+   */
+  statRanges: StatRanges | undefined;
   heroSourceId: string | undefined;
   heroRank: string | undefined;
   heroPower: number | undefined;
@@ -84,6 +92,7 @@ export const defaultHeroDraftFields = (): Pick<
   | 'abilities'
   | 'pts'
   | 'birth'
+  | 'statRanges'
   | 'heroSourceId'
   | 'heroRank'
   | 'heroPower'
@@ -105,6 +114,7 @@ export const defaultHeroDraftFields = (): Pick<
   abilities: {},
   pts: ZERO_PTS(),
   birth: undefined,
+  statRanges: undefined,
   heroSourceId: undefined,
   heroRank: undefined,
   heroPower: undefined,
@@ -243,6 +253,7 @@ export const createHeroDraftSlice: StateCreator<
       abilities: hero.abilities ?? {},
       pts: hero.pts ?? ZERO_PTS(),
       birth: hero.birth,
+      statRanges: hero.statRanges,
       heroSourceId: hero.sourceId,
       heroRank: hero.rank,
       heroPower: hero.power,
@@ -273,6 +284,7 @@ export const createHeroDraftSlice: StateCreator<
       abilities: state.abilities,
       pts: state.pts,
       birth: state.birth,
+      statRanges: state.statRanges,
       sourceId: state.heroSourceId,
       rank: state.heroRank,
       power: state.heroPower,
