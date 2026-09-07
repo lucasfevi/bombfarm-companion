@@ -39,5 +39,24 @@ export type {
   DeadPointNotes,
   DeadPointReading,
 } from './ability-panel';
+export {
+  fuseNote,
+  fuseReadoutFor,
+  penetrationNote,
+  penetrationReadingFor,
+  propTableReadingFor,
+  stageLabelFor,
+} from './combat-panel';
+export type {
+  FuseNotes,
+  FuseReadout,
+  FuseSource,
+  PenetrationNotes,
+  PenetrationReading,
+  PenetrationSource,
+  PropTableReading,
+  StageLabel,
+  StageNotes,
+} from './combat-panel';
 export { railTintFor } from './roll-rail-tint';
 export type { RollTint } from './roll-rail-tint';

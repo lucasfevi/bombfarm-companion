@@ -88,6 +88,7 @@ export const heroEn = {
   heroDetailCombatActiveDps: "Active DPS",
   heroDetailCombatSustainedDps: "Sustained DPS",
   heroDetailCombatPenetration: "Penetration vs mitigation",
+  heroDetailCombatDamageThrough: "Damage that lands",
   heroDetailCombatHitsToKill: "Hits to kill",
   heroDetailCombatProps: "Props",
   heroDetailCombatPhase: "Phase {name}",

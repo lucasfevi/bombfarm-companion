@@ -88,6 +88,7 @@ export const heroPtBR: HeroCopy = {
   heroDetailCombatActiveDps: "DPS ativo",
   heroDetailCombatSustainedDps: "DPS sustentado",
   heroDetailCombatPenetration: "Penetração vs mitigação",
+  heroDetailCombatDamageThrough: "Dano que passa",
   heroDetailCombatHitsToKill: "Hits para matar",
   heroDetailCombatProps: "Props",
   heroDetailCombatPhase: "Fase {name}",
