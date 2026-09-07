@@ -210,6 +210,42 @@ function markPositions(page) {
 
 /** The rail is a full-width band between the toolbar and the split, so its box has to line up
  *  with the split's on both edges — not with the bag column inside it. */
+/**
+ * The whole run band sits inside the scroll region, which is what starting a run promises: a reader
+ * who confirmed a spend sees the run, wherever the page happened to be scrolled.
+ *
+ * Asserted as a property of the end state rather than as a scroll offset. How far a clipped band
+ * moves — and that a band already wholly on screen moves not at all — is `scrollDeltaIntoView`'s
+ * own unit tests, which measure it exactly. A smoke that pinned `scrollTop` to a literal instead
+ * asserted its own precondition without establishing it, and failed on a runner whose window left
+ * the band three pixels short of fitting, where the feature had correctly scrolled those three
+ * pixels.
+ *
+ * Skipped on a hidden run, for the same reason `shoot` is: a window that is never shown drives no
+ * layout for the band's own `ResizeObserver`, so its animated height stays 0 and there is no
+ * geometry to judge. Every other assertion around a running rail reads its DOM and holds either
+ * way; CI runs the visible form, which is where this one earns its place.
+ */
+async function theRunBandIsInView(page) {
+  if (process.env.BFC_HIDE_WINDOWS === '1') return;
+  const seen = await page.evaluate(() => {
+    const main = document.querySelector('main');
+    const rail = document.querySelector('[data-testid="forge-rail"]');
+    if (main === null || rail === null) return null;
+    const port = main.getBoundingClientRect();
+    const band = rail.getBoundingClientRect();
+    return {
+      above: Math.round(band.top - port.top),
+      below: Math.round(port.bottom - band.bottom),
+      height: Math.round(band.height),
+    };
+  });
+  expect(seen).not.toBeNull();
+  expect(seen.height).toBeGreaterThan(0);
+  expect(seen.above).toBeGreaterThanOrEqual(0);
+  expect(seen.below).toBeGreaterThanOrEqual(0);
+}
+
 async function railSpansTheRow(page) {
   const rail = await page.getByTestId('forge-rail').boundingBox();
   const split = await page.getByTestId('forge-split').boundingBox();
@@ -325,9 +361,6 @@ test.describe('forge run smoke', () => {
       await openingTheLedgerOnlyAdds(page, ledger);
 
       // --- Running: the rail expands across the whole row, and the split keeps its shape ------
-      // A band that is already wholly on screen must not move the page under the reader when the
-      // run starts. How far a clipped one moves is `scrollDeltaIntoView`'s own unit tests.
-      const scrollBefore = await page.evaluate(() => document.querySelector('main')?.scrollTop ?? 0);
       expect(await inject(page, scriptedSteps(itemId))).toEqual({ ok: true });
       await expect(rail).toHaveAttribute('data-state', 'running');
       await expect(rail.getByTestId('forge-rail-level')).toHaveText('+12');
@@ -339,7 +372,7 @@ test.describe('forge run smoke', () => {
       await expect(page.getByTestId('forge-button')).toHaveText('Cancel after this roll');
       await expect(rail.getByTestId('forge-rail-cancel')).toBeEnabled();
       await page.waitForTimeout(400);
-      expect(await page.evaluate(() => document.querySelector('main')?.scrollTop ?? 0)).toBe(scrollBefore);
+      await theRunBandIsInView(page);
       await railSpansTheRow(page);
       await splitFollowsTheAside(page);
       await shoot(page, testInfo, 'forge-run-running.png');
