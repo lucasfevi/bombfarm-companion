@@ -6,7 +6,7 @@
  * number of pipeline invocations. Import it here ONLY (test-only); `src/farm-rate.ts` must never
  * import `advisor-pipeline` — the structural case below scans the real source file to prove it.
  *
- * This file owns the counter cases exclusively (§Parallelism in tasks.md): the counter is
+ * This file owns the counter cases exclusively: the counter is
  * module-global mutable state, so a parallel file calling the pipeline would corrupt the count.
  */
 import { readFileSync } from 'node:fs';

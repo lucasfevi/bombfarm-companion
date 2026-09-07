@@ -266,7 +266,7 @@ describe('assertOptionalKeyWitnessedBothWays — anti-vacuity #2', () => {
   });
 });
 
-describe('SCHEMA_LEVELS — the shared catalogue (design §2.3), key sets written as literals', () => {
+describe('SCHEMA_LEVELS — the shared catalogue, key sets written as literals', () => {
   it('skills: the measured 7-key set, with totals/levels/refunds declared as children', () => {
     expect(SCHEMA_LEVELS.skills.keys).toEqual([
       'levels',

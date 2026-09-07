@@ -1,13 +1,13 @@
 /**
- * design §5.7 (missing artifact is a hard CI=1 failure, never an early-out; both directions
- * recorded in validation.md) — the shared "green without executing" guard, lifted
+ * A missing artifact is a hard CI=1 failure, never an early-out (both directions are
+ * recorded evidence) — the shared "green without executing" guard, lifted
  * from `apps/web/src/tests/support/build-output.ts`'s `requireBuildOutput` into a
  * fixture-agnostic form so every artifact-dependent suite in this feature routes through the
  * same shape: F4 has FOUR guarded artifacts (the two API bodies, the export corpus, the
  * rejection fixture directory), and duplicating this five times would be its own drift risk.
  *
- * The trap this closes (this repo's repeated "green without executing" failure — AGENTS.md /
- * tasks.md's own accounting): a bare `if (!existsSync(path)) return` reports GREEN when the
+ * The trap this closes (this repo's repeated "green without executing" failure, which
+ * `AGENTS.md` counts): a bare `if (!existsSync(path)) return` reports GREEN when the
  * guarded artifact is missing, so the suite passes without ever running the assertion it exists
  * to make.
  *

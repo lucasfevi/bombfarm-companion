@@ -95,7 +95,7 @@ function lexicographicCompare(a: PtsAssignment, b: PtsAssignment, bases: readonl
 }
 
 /**
- * The total tie-break order (design.md §4.6): higher objective value; then fewer
+ * The total tie-break order: higher objective value; then fewer
  * points moved from the current vectors; then fewer heroes changed; then lexicographic by
  * `(heroId ascending, REOPT_KEYS declaration order)`. `compare(a, b) < 0` means `a` wins.
  */
@@ -122,7 +122,7 @@ function pickBestCandidate(candidates: readonly FarmCandidate[], bases: readonly
   return best;
 }
 
-/** The six seeds, in this fixed order (design.md §4.4). The `current` vector is always first
+/** The six seeds, in this fixed order. The `current` vector is always first
  *  and wins ties. Heroes outside the searchable set keep `basis.pts` in every seed. */
 const SEED_DEFS: readonly { name: string; energyShare: number | null }[] = [
   { name: 'current', energyShare: null },
@@ -166,7 +166,7 @@ function buildSeedAssignment(
   return assignment;
 }
 
-/** `shareBuild` (design.md §4.5): holds every non-attack/energy key at the incumbent's value and
+/** `shareBuild`: holds every non-attack/energy key at the incumbent's value and
  *  re-splits only the attack+energy pool at the given squad energy share. */
 function shareBuild(
   bases: readonly HeroFarmBasis[],
@@ -205,7 +205,7 @@ function orderSearchableHeroes(searchableIds: readonly string[], budgetById: Rea
 /**
  * The squad's aggregate energy share over the searchable set: `Σ energy / Σ pool`, where `pool`
  * is each hero's attack+energy budget after holding every other reallocatable key fixed — the
- * same denominator `shareBuild` uses. `0` when the denominator is `0` (design.md §4.7).
+ * same denominator `shareBuild` uses. `0` when the denominator is `0`.
  */
 export function squadEnergyShare(
   bases: readonly HeroFarmBasis[],
@@ -234,7 +234,7 @@ export function squadEnergyShare(
 }
 
 /**
- * The plateau's `[min, max]` energy-share bounds (design.md §4.7): the maximal CONTIGUOUS run of
+ * The plateau's `[min, max]` energy-share bounds: the maximal CONTIGUOUS run of
  * `ladder` entries containing `winShare`'s own grid neighbourhood whose values are `>= peak x
  * (1 - tolerancePct/100)`, unioned with `winShare` itself. `winShare` always qualifies by
  * construction (its true value IS `peak`), so this never returns an empty or invented range —
@@ -284,7 +284,7 @@ export type FarmSearchOutcome = {
 };
 
 /**
- * The joint coordinate-descent search (design.md §4.4–§4.6): six seeds, then repeated
+ * The joint coordinate-descent search: six seeds, then repeated
  * (share-ladder pass + per-hero local search over `generateMoves()`) sweeps until a sweep
  * accepts nothing. `searchableIds` may be the whole searchable set (the joint solve) or a
  * narrowed subset (T9's frontier re-solves) — same loop either way.
@@ -365,7 +365,7 @@ export function runFarmSearch(
             evaluations += 1;
             // FIRST improvement, not best-improvement: a farm probe is a whole phase sweep,
             // roughly 600x a DPS probe, so paying 260 probes to advance one step is the wrong
-            // trade at that cost ratio (design.md §4.5).
+            // trade at that cost ratio.
             if (ev.value > winner.value * (1 + EPS_REL)) {
               winner = { name: winner.name, assignment: candAssignment, value: ev.value, pick: ev.pick, squad: ev.squad };
               applied = true;
@@ -393,7 +393,7 @@ export type FarmGateOutcome = {
 };
 
 /**
- * Tier 1's seed stage (design.md §4.8): the CURRENT build is scored on the FULL phase set; every
+ * Tier 1's seed stage: the CURRENT build is scored on the FULL phase set; every
  * other canonical seed is scored on a phase grid subsampled by `gatePhaseStride`. Subsampling
  * only the candidates means `gainPct` can only be UNDER-stated relative to the true optimum,
  * never over-stated — the lower-bound contract Tier 1 promises. No local search, no ladder —

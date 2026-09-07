@@ -48,7 +48,7 @@ function row(overrides: Partial<FarmRateRow> & { phase: number }): FarmRateRow {
 }
 
 describe('FARM_COLUMNS (matches the design column list, transcribed, not derived from the code)', () => {
-  // Transcribed from the PRD: "phase coordinate + flavour name, gate and lock badges,
+  // Transcribed from the requirement: "phase coordinate + flavour name, gate and lock badges,
   // mitigation %, gold/hr, item-chests/hr, keys/hr (signed), gems/hr, time-pieces/hr, XP/hr,
   // item-level band, estimated map clear time, the team one-shots-all-props indicator, and the
   // infeasibility flag." The board's fourth pass (2026-08-19) removed the cage-window column —
@@ -68,7 +68,7 @@ describe('FARM_COLUMNS (matches the design column list, transcribed, not derived
     'oneShot',
   ];
 
-  it('declares exactly the PRD column set, in order', () => {
+  it('declares exactly the required column set, in order', () => {
     expect(FARM_COLUMNS.map((column) => column.id)).toEqual(expectedIds);
   });
 

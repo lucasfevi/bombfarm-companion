@@ -3,8 +3,8 @@ import { CONSENT_TEXT_VERSION, initialConsent } from '@bombfarm/game-api';
 import type { SqliteDb } from '../storage/index.js';
 
 /**
- * Persists the consent record over the *existing* `account_meta` key/value table (design.md
- * §3.11) — no new table, no migration. One row, key `consent_v<version>`,
+ * Persists the consent record over the *existing* `account_meta` key/value table — no new
+ * table, no migration. One row, key `consent_v<version>`,
  * value = JSON of the record. Keying by `CONSENT_TEXT_VERSION` means a prior disclosure's grant
  * (or decline) row is left untouched under its own key rather than migrated: it stays as evidence
  * of what was previously agreed, and a read at the current version finds no row and falls back to

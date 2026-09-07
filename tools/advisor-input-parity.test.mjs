@@ -1,5 +1,5 @@
 /**
- * Layer 2 of the desktop/web parity proof (design.md §9). Reads
+ * Layer 2 of the desktop/web parity proof. Reads
  * `packages/domain/src/roster-dps.ts` and
  * `apps/web/src/shared/stores/selectors/advisor-selectors.ts` as text, extracts the object keys
  * each passes to `computeAdvisorPipeline`, and asserts the two sets are exactly equal. Home:

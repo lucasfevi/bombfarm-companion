@@ -106,7 +106,7 @@ describe('design-system-required aggregator', () => {
 });
 
 /**
- * (design.md §11 hazard 4) — the reuse boundary, checked from the source side
+ * Hazard 4 — the reuse boundary, checked from the source side
  * as a companion to `pnpm lint`'s `boundaries/element-types` rule (which is lint-enforced, not
  * grep-checked, per `docs/design-system.md`). This extends the file rather than replacing it —
  * every assertion above is unchanged.

@@ -1,6 +1,6 @@
 /**
- * The sixth instance of this repo's green-without-executing family (design.md §0 item 5, §11
- * hazard 7): `apps/desktop/playwright.config.ts` enumerates its spec files in a `testMatch`
+ * The sixth instance of this repo's green-without-executing family:
+ * `apps/desktop/playwright.config.ts` enumerates its spec files in a `testMatch`
  * array, so a new `*.spec.mjs` dropped into `tests/smoke/` without a matching entry is silently
  * never run — `pnpm test` and even `pnpm --filter @bombfarm/desktop test:smoke` stay green while
  * the new smoke never executes. A smoke that never ran is not evidence.

@@ -1,7 +1,7 @@
 /**
  * Per-hero and squad farm facts.
  *
- * Every field, every unit, every degenerate branch named in `design.md` §3.2/§3.3/§4.1/§4.2.
+ * Every field, every unit, every degenerate branch of the hero- and squad-fact contracts.
  * Exhaustive degenerate/boundary sweeps live in `farm-rate-degenerate.test.ts` (T9); this file
  * proves the formulas themselves, including the luck-peel identity against `peelSheetSources`.
  */
@@ -33,7 +33,7 @@ const { heroes, account } = loadFarmRateFixture();
  *  field against a direct `pipelineForHero` call has to use this, not `account`. */
 const priced = farmPricedAccount({ heroes, account });
 
-describe('computeHeroFarmFacts — the base pipeline call (design.md §0 trap #1)', () => {
+describe('computeHeroFarmFacts — the base pipeline call (trap #1)', () => {
   it('mitF === 1 on the base call — proves phase=1 + mitigationPct=0 never bakes in phase-1 mitigation', () => {
     for (const hero of heroes) {
       const pipeline = pipelineForHero(hero, account, 1, 0);
@@ -42,7 +42,7 @@ describe('computeHeroFarmFacts — the base pipeline call (design.md §0 trap #1
   });
 });
 
-describe('computeHeroFarmFacts — uptime is a fraction (design.md §0 trap #2)', () => {
+describe('computeHeroFarmFacts — uptime is a fraction (trap #2)', () => {
   it('uptime ∈ (0, 1] and equals pipeline.uptime / 100 for every enabled hero', () => {
     const facts = computeHeroFarmFacts({ heroes, account });
     expect(facts).toHaveLength(5);
@@ -55,7 +55,7 @@ describe('computeHeroFarmFacts — uptime is a fraction (design.md §0 trap #2)'
   });
 });
 
-describe('computeHeroFarmFacts — blocksPerBomb (design.md §0 trap #3)', () => {
+describe('computeHeroFarmFacts — blocksPerBomb (trap #3)', () => {
   it('blocksPerBomb === 1 + 0.5 × context.blastRange, and === 1.5 for every fixture hero (none carry Explosão Ampla)', () => {
     const facts = computeHeroFarmFacts({ heroes, account });
     for (const fact of facts) {
@@ -82,7 +82,7 @@ describe('computeHeroFarmFacts — cycleSecs = E[max(fuseSecs, hop/w)] + latency
 
   it('a speed-boosted copy converges on the fuse-bound floor — every hop but the shortest clears the fuse', () => {
     const jon = heroes.find((h) => h.name === 'Jon')!;
-    // design.md §2.5 / tasks.md T5: no fixture hero is naturally fuse-bound at this fixture's
+    // No fixture hero is naturally fuse-bound at this fixture's
     // speeds — constructed by boosting the birth speed roll well past every walk-bound crossover.
     const fastJon: HeroRecord = { ...jon, birth: { ...jon.birth!, speed: jon.birth!.speed * 50 } };
     const [fact] = computeHeroFarmFacts({ heroes: [fastJon], account });
@@ -149,7 +149,7 @@ describe('computeHeroFarmFacts — heroLuckPct peel identity', () => {
       const peeledLuck = lines.luck.hero + lines.luck.gear + lines.luck.ability;
 
       expect(Math.abs(fact.heroLuckPct - peeledLuck)).toBeLessThanOrEqual(1e-9);
-      // The peel's own skillTree line is the tree's flat share, verbatim (design.md §2.1 fact 5).
+      // The peel's own skillTree line is the tree's flat share, verbatim.
       expect(lines.luck.skillTree).toBe(treeLuckFlatPct);
     }
   });

@@ -29,7 +29,7 @@ describe('the fixture reproduces the measured frontier ordering', () => {
     expect(oneHero.paybackHours).not.toBeNull();
     expect(result.paybackHours).not.toBeNull();
     expect(oneHero.paybackHours!).toBeLessThan(result.paybackHours!);
-    // design.md §2.3: Bellatrix, +9.87%, 42,000 gold, 1.61h — recorded, not hardcoded as the
+    // Bellatrix, +9.87%, 42,000 gold, 1.61h — recorded, not hardcoded as the
     // pass/fail bar; the strict inequalities above are the actual assertions.
     expect(oneHero.heroIds).toEqual(['20402']); // Bellatrix
   });
@@ -184,7 +184,7 @@ describe('each frontier entry is a complete result on its own', () => {
 });
 
 describe('the frontier candidate ranking reproduces the exhaustive answer on the fixture', () => {
-  it("Bellatrix wins the 1-hero tier and Jon+Bellatrix wins the 2-hero tier — design.md §4.10's own verification", () => {
+  it("Bellatrix wins the 1-hero tier and Jon+Bellatrix wins the 2-hero tier — the frontier's own verification", () => {
     const result = solveFarmRespec({ heroes, account, maxPhase });
     const [oneHero, twoHero] = result.frontier;
     expect(oneHero.heroIds).toEqual(['20402']); // Bellatrix
@@ -196,7 +196,7 @@ describe('evaluations, frontier included, stay inside the bound', () => {
   it('evaluations <= FARM_OPT_FULL_MAX_EVALUATIONS on the fixture', () => {
     const result = solveFarmRespec({ heroes, account, maxPhase });
     expect(result.evaluations).toBeLessThanOrEqual(FARM_OPT_FULL_MAX_EVALUATIONS);
-    // Recorded, not asserted as a literal (design.md §0.1): the frontier adds real cost on top
+    // Recorded, not asserted as a literal: the frontier adds real cost on top
     // of the joint solve's own evaluations.
     expect(result.evaluations).toBeGreaterThan(0);
   });

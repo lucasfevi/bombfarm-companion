@@ -55,7 +55,7 @@ describe('farm-context', () => {
 });
 
 describe('farmContextForHero', () => {
-  it('matches computeAdvisorPipeline context for a fixture hero (AD-RGO-27)', () => {
+  it('matches computeAdvisorPipeline context for a fixture hero', () => {
     // (the ground-truth rule, class (b) — structural: the claim is that two independently-computed
     // contexts for the same hero agree, not any particular numeric value): re-pointed onto
     // the post-patch export's geared hero, Bellatrix L42 (8/8).

@@ -6,7 +6,7 @@ import {
   PLANNER_TAB_STORAGE_KEY,
 } from '@/features/planner/model/planner-tab';
 
-describe('planner-tab persistence (PTI-04)', () => {
+describe('planner-tab persistence', () => {
   const mem = new Map<string, string>();
 
   beforeEach(() => {

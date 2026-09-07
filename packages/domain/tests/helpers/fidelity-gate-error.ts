@@ -1,10 +1,10 @@
 /**
  * The fidelity gate's one error type. A `code` and not only a message: the
  * discrimination suite (T6) asserts on both, so a mutant that dies for the wrong reason cannot
- * pass (`design.md` §4.5 — "the fourth-instance failure this repo already paid for").
+ * pass — the fourth-instance failure this repo already paid for.
  */
 
-/** The closed set of ways the fidelity gate can fail (`design.md` §4.5). */
+/** The closed set of ways the fidelity gate can fail. */
 export type FidelityGateErrorCode =
   | 'fixtureMissing'
   | 'fixtureUnreadable'

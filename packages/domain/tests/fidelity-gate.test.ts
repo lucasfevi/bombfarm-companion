@@ -125,7 +125,7 @@ describe('runFidelityGate — degraded input short-circuits before any parsing',
   });
 });
 
-describe('provenance ladder (design §1.2) — cannot be neutered', () => {
+describe('provenance ladder — cannot be neutered', () => {
   it('has exactly three keys, each registering a non-empty assertion list', () => {
     expect(Object.keys(PROVENANCE_LADDER).sort()).toEqual(['api-assembled', 'export-derived', 'memory-assembled']);
     expect(PROVENANCE_LADDER['export-derived'].length).toBeGreaterThan(0);

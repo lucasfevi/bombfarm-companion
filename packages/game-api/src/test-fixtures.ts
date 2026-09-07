@@ -21,8 +21,8 @@ export function loadFixtureJson(name: FixtureName): Record<string, Record<string
 }
 
 /**
- * (T5) — package-local copy of `packages/domain/tests/helpers/require-fixture.ts`'s
- * `requireBuildOutput` shape (design §5.7). NOT re-pointed at the shared domain helper: unlike
+ * Package-local copy of `packages/domain/tests/helpers/require-fixture.ts`'s
+ * `requireBuildOutput` shape. NOT re-pointed at the shared domain helper: unlike
  * `apps/desktop`'s renderer tsconfig (no `rootDir`), `packages/game-api/tsconfig.json` sets
  * `"rootDir": "src"` and has no test-file exclusion, so `tsc -p tsconfig.json` fails with
  * TS6059 the moment ANY source file — including a `.test.ts` — imports something outside

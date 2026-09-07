@@ -91,7 +91,7 @@ describe('selectAdvisorPipeline', () => {
     expect(getAdvisorPipelineComputeCount()).toBe(1);
   });
 
-  it('persistence modules do not import advisor selectors (W5-08)', () => {
+  it('persistence modules do not import advisor selectors', () => {
     const dir = join(WEB_PACKAGE_ROOT, 'src/shared/stores/persistence');
     for (const file of readdirSync(dir)) {
       if (!file.endsWith('.ts')) continue;

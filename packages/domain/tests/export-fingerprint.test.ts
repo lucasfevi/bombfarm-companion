@@ -1,7 +1,7 @@
 /**
  * (T4) — the export corpus check and its three named red states.
  *
- * The spec's sharpest finding (spec.md Problem Statement) is that the PREVIOUS route fingerprint
+ * The sharpest finding is that the PREVIOUS route fingerprint
  * was authored from an already-drifted capture and its only cross-check was a subset assertion —
  * unfalsifiable on either an addition or a removal. This suite runs the opposite check: equality
  * modulo the fingerprint's own named allowance, over the real committed export corpus, with the

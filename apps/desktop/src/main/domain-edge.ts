@@ -2,8 +2,8 @@
 // (following the decision to build @bombfarm/domain to dist). This is a deliberately trivial
 // value import from the DIRECTORY subpath
 // `@bombfarm/domain/model` — the shape the OLD src-targeting `exports` map could not
-// express at all (design.md). F1's job is to prove the edge compiles and bundles;
-// F3 (mp3-auto-recompute) is what actually calls the planner engine from real account data.
+// express at all. This module's job is to prove the edge compiles and bundles; the
+// auto-recompute path is what actually calls the planner engine from real account data.
 import { fuseSeconds } from '@bombfarm/domain/model';
 
 /** Trivial wrapper — the point is that this compiles and bundles against the built package. */

@@ -111,11 +111,11 @@ export type AccountImportData = {
    * `skills.max_phase` when `account.max_phase` is not a finite number; `null` when neither is.
    * Normalized to an integer in `[1, WIKI_PHASE_LINES.length]`.
    *
-   * SPEC_DEVIATION (design.md §5.1 specifies this field as *required*, precisely so every
-   * construction site is a forced compile error). Kept optional instead: `apps/web/src/tests/
+   * DELIBERATE DEVIATION: this field was specified as *required*, precisely so every
+   * construction site is a forced compile error. Kept optional instead: `apps/web/src/tests/
    * {account-slice,persist-account}.test.ts` construct `AccountImportData` literals without this
-   * field, and both `spec.md` and `tasks.md` §0.5 forbid touching any file under
-   * `apps/web/src` in this item ("zero web source files in the diff"). A required field would
+   * field, and the change that introduced it was scoped to touch no file under
+   * `apps/web/src` ("zero web source files in the diff"). A required field would
    * force edits there to keep `pnpm typecheck` green, which the two constraints together rule
    * out. `mapAccountData`'s both return paths and `EMPTY_ACCOUNT_DATA` still set it explicitly on
    * every branch, so real production data always carries a concrete value — the optionality only
@@ -466,7 +466,7 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
 
 /**
  * A section the payload's `fidelity` block calls `resolved` but that carries no data at all is
- * treated as a programming error, not a silent downgrade (spec.md edge cases):
+ * treated as a programming error, not a silent downgrade:
  * surfaced as a warning, never thrown, never changing the derived grade (which stays a pure
  * function of `fidelity` alone in `deriveAccountFidelity`). The file adapter above never sets
  * `fidelity`, so this is provably empty on the file path.
@@ -474,7 +474,7 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
 function resolvedButAbsentWarnings(payload: AccountPayload): string[] {
   // Defensive by design (file header): a caller handing the typed entry point a malformed
   // payload (null, a primitive) degrades to "no fidelity asserted" rather than throwing,
-  // matching spec.md's edge case for `parseAccountPayload` too, not just the file adapter.
+  // matching the same edge case for `parseAccountPayload` too, not just the file adapter.
   if (payload === null || typeof payload !== 'object') return [];
   const fidelity = payload.fidelity;
   if (!fidelity) return [];
@@ -505,7 +505,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
 
   // Whole-file birth scan BEFORE any per-hero work — a partial birth block on
   // even one hero rejects the whole file rather than composing a sheet from an invented
-  // default (spec.md edge cases). "Any hero missing" (not "every hero missing") is the
+  // default. "Any hero missing" (not "every hero missing") is the
   // correct gate — a mixed save (some heroes with birth_stats, some without) still rejects.
   const missingBirthHeroNames: string[] = [];
   for (const rawHero of raw.heroes) {

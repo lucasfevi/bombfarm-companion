@@ -11,7 +11,7 @@ function loadFixture(name: string): unknown {
   return JSON.parse(fs.readFileSync(path.join(fixturesDir, name), 'utf8')) as unknown;
 }
 
-describe('INV-1 inventory parser', () => {
+describe('inventory parser', () => {
   it('accepts known bag shape with optional fields', () => {
     const bag = loadFixture('inventory-bag-v2.json');
     expect(classifyInventoryBag(bag)).toBe(true);
@@ -24,7 +24,7 @@ describe('INV-1 inventory parser', () => {
     expect(parsed.items[0]?.equippedOn).toBe('13788');
   });
 
-  it('INV-2 rejects garbage format-string false positives', () => {
+  it('rejects garbage format-string false positives', () => {
     const garbage = loadFixture('garbage-format-string.json');
     expect(classifyInventoryBag(garbage)).toBe(false);
     expect(parseInventoryBag(garbage).ok).toBe(false);

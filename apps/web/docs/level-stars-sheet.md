@@ -50,7 +50,7 @@ The per-★ share is the wiki's `gemas.mult_por_estrela` and it **moves between 
 `nakedFromBirth` never bakes the account skill tree in; a separate stage
 (`applySkillTree`) applies it exactly once, on top, to produce the displayed sheet.
 The pooled per-point bases this file's rescale helpers read
-from stay today's (`GAP-W2-01`-era) contaminated values until Wave 5 rewires import to
+from stay today's tree-contaminated values until import is rewired to
 call `nakedFromBirth` directly — this doc's rescale strategy is unaffected either way,
 since `rescaleNakedForLevel` / `rescaleNakedForStars` only ever touch `naked` as an
 opaque `SheetStats`, never re-deriving it from birth rolls.

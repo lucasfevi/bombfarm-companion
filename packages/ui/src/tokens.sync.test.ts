@@ -7,7 +7,7 @@ import { breakpoints, colorTokens, DEFAULT_HUE, motionTokens } from './tokens';
 const stylesPath = join(dirname(fileURLToPath(import.meta.url)), 'styles.css');
 const styles = readFileSync(stylesPath, 'utf8');
 
-/** Frozen MP1 planner palette — regression guard after token centralization (TOK-05). */
+/** Frozen planner palette — regression guard after token centralization. */
 const FROZEN_THEME_COLORS: Record<string, string> = {
   '--color-rar-0': '#9aa0a6',
   '--color-rar-1': '#7dce55',
@@ -27,8 +27,8 @@ function themeColor(name: string): string | undefined {
   return re.exec(styles)?.[1]?.trim();
 }
 
-describe('design tokens — CSS sync (TOK-04/05/06/08/12/13)', () => {
-  it('exports all WIN-1 breakpoint boundaries in TS and CSS', () => {
+describe('design tokens — CSS sync', () => {
+  it('exports all window breakpoint boundaries in TS and CSS', () => {
     expect(breakpoints).toEqual({
       compactMax: 1179,
       regularMin: 1180,
@@ -51,13 +51,13 @@ describe('design tokens — CSS sync (TOK-04/05/06/08/12/13)', () => {
     expect(styles).toContain('--duration-panel: 0ms');
   });
 
-  it('preserves toast animation token and keyframes (TOK-13)', () => {
+  it('preserves toast animation token and keyframes', () => {
     expect(styles).toContain('--animate-toast-in: toast-in 160ms ease-out');
     expect(styles).toContain('@keyframes toast-in');
     expect(styles).toMatch(/@keyframes toast-in[\s\S]*from[\s\S]*opacity:\s*0/);
   });
 
-  it('mirrors frozen @theme color values in styles.css (TOK-05)', () => {
+  it('mirrors frozen @theme color values in styles.css', () => {
     for (const [varName, expected] of Object.entries(FROZEN_THEME_COLORS)) {
       expect(themeColor(varName)).toBe(expected);
     }

@@ -26,7 +26,7 @@ export function resetAdvisorPipelineComputeCount(): void {
   resetAdvisorPipelineCache();
 }
 
-/** Zero-allocation dep read — stored references only (W5-07). */
+/** Zero-allocation dep read — stored references only. */
 export function readAdvisorDepTuple(state: PlannerStore): readonly unknown[] {
   return [
     state.naked,

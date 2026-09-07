@@ -100,7 +100,7 @@ function resolveStride(stride: number | null | undefined): number {
 }
 
 /** `{1, 1+stride, 1+2·stride, …} ∪ {upper}` — the trailing union keeps the range's own ceiling a
- *  candidate even when the stride does not land on it exactly (design.md §4.8's `Pg`). */
+ *  candidate even when the stride does not land on it exactly. */
 function candidatePhases(upper: number, stride: number): number[] {
   const phases: number[] = [];
   for (let phase = 1; phase <= upper; phase += stride) phases.push(phase);

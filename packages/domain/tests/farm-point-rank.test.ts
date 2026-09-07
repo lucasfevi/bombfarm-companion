@@ -213,7 +213,7 @@ describe('rankNextPointForFarm — cdr scores SMALL BUT POSITIVE under farm (it 
   });
 });
 
-describe('rankNextPointForFarm — design.md §4.4 edge/degenerate cases, full tuple', () => {
+describe('rankNextPointForFarm — edge/degenerate cases, full tuple', () => {
   const bellatrix = heroByName('Bellatrix');
 
   it('empty bases ⇒ emptyPool, rows/phase null, evaluations 0', () => {

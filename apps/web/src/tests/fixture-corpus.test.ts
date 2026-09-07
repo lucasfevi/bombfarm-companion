@@ -5,7 +5,7 @@
  *
  * Every red state below has been demonstrated manually (restore one deleted fixture / perturb one
  * byte / add one skip / add one keystone reference in a scratch state, observe the named failure,
- * revert) — see `docs/fixture-corpus.md` and `validation.md` for the observed messages.
+ * revert) — see `docs/fixture-corpus.md` and `docs/validation.md` for the observed messages.
  */
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';

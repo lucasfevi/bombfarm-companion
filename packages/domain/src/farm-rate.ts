@@ -335,7 +335,7 @@ export function returnBonusMultiplier(mode: ReturnBonusMode): number {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Per-hero facts (design.md §3.2, §4.1)
+// Per-hero facts
 // ---------------------------------------------------------------------------------------------
 
 export type HeroFarmFacts = {
@@ -460,7 +460,7 @@ function basesForAccount(
   return enabledHeroes.map((hero) => {
     // The sole HeroRecord entry to the pipeline. phase=1 (not null) + mitigationPct=0
     // is deliberate — `effectiveMitigationPct` only honors mitigationPct=0 when phase is a
-    // positive number; with `null` it substitutes phase 1's wiki mitigation instead (design.md §0).
+    // positive number; with `null` it substitutes phase 1's wiki mitigation instead.
     const pipeline = pipelineForHero(hero, account, 1, 0);
 
     const heroLuckPct = Math.max(0, pipeline.adjusted.luck - treeLuckFlatPct);
@@ -596,7 +596,7 @@ export function computeHeroFarmBases(input: FarmFactsInput): HeroFarmBasis[] {
  *
  * THE TRAP: `uptime` must repeat the pipeline's own two-step expression
  * `((100 × field) / (field + rest)) / 100`, not the algebraically-equal `field / (field + rest)`
- * — they are not bit-equal in IEEE754 (design.md §2.1). Do not "simplify" this.
+ * — they are not bit-equal in IEEE-754. Do not "simplify" this.
  */
 export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, number>): HeroFarmFacts {
   const sheet = buildCandidateSheet(basis.effective, basis.pts, basis.effectiveDelta, pts);
@@ -659,7 +659,7 @@ export function computeHeroFarmFacts(input: FarmFactsInput): HeroFarmFacts[] {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Squad facts (design.md §3.3, §4.2)
+// Squad facts
 // ---------------------------------------------------------------------------------------------
 
 export type SquadFarmFacts = {
@@ -983,7 +983,7 @@ function hitsPerSec(hero: HeroFarmFacts, ato: number): number {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Module-load prop table (design.md §2.2) — phase-independent, computed once, frozen.
+// Module-load prop table — phase-independent, computed once, frozen.
 // ---------------------------------------------------------------------------------------------
 
 type PropShare = { hpMult: number; share: number; goldMult: number };
@@ -1000,11 +1000,11 @@ const PROP_SHARES: readonly PropShare[] = WIKI_PROPS.map((prop) => ({
 /** Highest `hpMult` across `WIKI_PROPS` — the one-shot threshold multiplier. */
 const MAX_PROP_HP_MULT = WIKI_PROPS.reduce((max, prop) => Math.max(max, prop.hpMult), 0);
 
-/** `Σ share × goldRarityMult` — the phase-independent gold factor (`design.md` §2.2: `1.545`). */
+/** `Σ share × goldRarityMult` — the phase-independent gold factor (`1.545`). */
 const GOLD_SHARE_FACTOR = PROP_SHARES.reduce((sum, prop) => sum + prop.share * prop.goldMult, 0);
 
 // ---------------------------------------------------------------------------------------------
-// Rows (design.md §3.4, §4.3–§4.5)
+// Rows
 // ---------------------------------------------------------------------------------------------
 
 export type FarmRateOptions = {
@@ -1200,7 +1200,7 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   // the boss-free `3600 × propsPerSec` reads up to ~10% high on late gates, and stays positive on
   // a row whose boss the squad cannot kill at all (`clearSecs === Infinity`).
   // Non-gate rows keep the old expression verbatim: algebraically it is the same value, but the
-  // rearrangement is not bit-equal in IEEE754 and would churn every row (design.md §2.1).
+  // rearrangement is not bit-equal in IEEE-754 and would churn every row.
   const propsPerHour = line.gate ? cyclesPerHour * propCount : 3600 * propsPerSec;
 
   const eGold = line.goldComum * GOLD_SHARE_FACTOR;

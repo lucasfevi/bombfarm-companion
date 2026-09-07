@@ -77,7 +77,7 @@ export default tseslint.config(
           capture: ['feature'],
         },
         // Design-system + domain live in workspace packages (@bombfarm/ui, @bombfarm/domain)
-        // and are treated as external modules (see allow external policy below). CIV-DEBT-02.
+        // and are treated as external modules (see allow external policy below).
         { type: 'shared-game-art', pattern: 'src/shared/game-art' },
         { type: 'shared-context', pattern: 'src/shared/context' },
         { type: 'shared-stores', pattern: 'src/shared/stores' },

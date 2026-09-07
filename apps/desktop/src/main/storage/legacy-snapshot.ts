@@ -25,7 +25,7 @@ function isIsoTimestamp(value: unknown): value is string {
 
 /**
  * Reads and maps a pre-MP2 `last-snapshot.json` (`GameSnapshotPayload`) into a resolved-only
- * `AccountPayload`, suitable for feeding straight to `AccountStore.persist()` (design.md §7).
+ * `AccountPayload`, suitable for feeding straight to `AccountStore.persist()`.
  * `raw.state` -> `account`, `raw.inventory.items` -> `items`; `heroes`/`skills`/`casa` have no
  * legacy source and are left `missing`, never fabricated. Every imported section is stamped
  * from `mapped.takenAt ?? status.updatedAt`; if neither parses as ISO-8601, the file is
