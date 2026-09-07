@@ -1,5 +1,5 @@
 ---
-'@bombfarm/web': patch
+"@bombfarm/web": patch
 ---
 
 Price heroes with the same team auras on both per-hero surfaces. The phases explorer read the

@@ -1,5 +1,5 @@
 ---
-'@bombfarm/domain': minor
+"@bombfarm/domain": minor
 ---
 
 Value what one more level of each of a hero's abilities is worth to that hero, at a given phase,
