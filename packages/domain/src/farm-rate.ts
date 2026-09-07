@@ -315,6 +315,37 @@ export function cycleSecondsForHero(
 }
 
 /**
+ * Seconds between consecutive hero activations at the head of a clear. Heroes do not all start
+ * moving at once: they come up one at a time, ordered by their slot in the field roster.
+ *
+ * MEASURED at 0.500 s over 43 wave-starts — a 9-hero roster has its last hero moving at exactly
+ * 4.0 s. The captures behind it are held out of band, not in this repo.
+ */
+export const HERO_ACTIVATION_STAGGER_SEC = 0.5;
+
+/**
+ * Seconds a clear spends coming up to speed before any prop can fall:
+ * `stagger × (n − 1) / 2 + fuse`, for `n` heroes on the field.
+ *
+ * The staggered start costs `stagger/2 × n × (n − 1)` hero-seconds in total, so
+ * `stagger/2 × (n − 1)` per hero. The first bomb of the clear then burns its whole fuse on an
+ * empty field: zero explosions, zero hits, zero loot for ~1.8 s across 42 clears.
+ *
+ * NOT A DOUBLE COUNT of the steady-state cycle, which is the first thing anyone will suspect.
+ * {@link CYCLE_LATENCY_SEC} and {@link HOP1_CYCLE_SEC} are PER-BOMB terms living inside
+ * {@link cycleSecondsForHero}, and the fuse reaches that cycle only as part of
+ * `max(fuse, hop/w)` — a bomb whose fuse burns while the hero is already walking to the next
+ * plant. The ONE pipeline fill before the first kill overlaps nothing, so it is uncharged
+ * anywhere else.
+ *
+ * Validated against a head latency of 3.93 s median over 42 clears (x-intercept of the cumulative
+ * prop-kill curve, plateau 3.248 props/s, r² 0.998) against 3.96 s predicted at n = 9.
+ */
+export function clearHeadSeconds(heroesOnField: number, meanFuseSecs: number): number {
+  return (HERO_ACTIVATION_STAGGER_SEC * Math.max(0, heroesOnField - 1)) / 2 + meanFuseSecs;
+}
+
+/**
  * Fortuna's aura ceiling — the ability's own at-max value, derived from the ability catalog's
  * bundle rather than typed a second time: `LOOT_ABILITY_VALUES.fortuna.perLevel × .max`.
  */
@@ -738,6 +769,15 @@ export type SquadFarmFacts = {
   houseSlotDemand: number;
   /** Sorte as a FRACTION: `(uptime-weighted mean heroLuckPct + treeLuckFlatPct) / 100`. */
   sorteFraction: number;
+  /**
+   * Uptime-weighted mean bomb fuse over the pool, seconds — the fuse the head of a clear burns
+   * before its first kill (see {@link clearHeadSeconds}). `0` for an empty pool.
+   *
+   * On the unconstrained `uptime` basis, like {@link sorteFraction} and for the same reasons: it
+   * is a normalized AVERAGE, so the House's overcommit does not inflate it, and staying
+   * phase-independent keeps it out of `buildRow`'s per-phase loop.
+   */
+  meanFuseSecs: number;
   /** `1 + max(0, tree.teamCoinPct) / 100`. */
   teamCoinMult: number;
   /** `tree.luckFlatPct ?? 0`, percentage points — echoed for the board's breakdown tooltip. */
@@ -784,6 +824,9 @@ export function computeSquadFarmFacts(
   const heroLuckWeightedSum = heroFacts.reduce((sum, hero) => sum + hero.uptime * hero.heroLuckPct, 0);
   const sorteFraction = ((uptimeSum > 0 ? heroLuckWeightedSum / uptimeSum : 0) + treeLuckFlatPct) / 100;
 
+  const fuseWeightedSum = heroFacts.reduce((sum, hero) => sum + hero.uptime * hero.fuseSecs, 0);
+  const meanFuseSecs = uptimeSum > 0 ? fuseWeightedSum / uptimeSum : 0;
+
   const teamCoinMult = 1 + Math.max(0, account.tree.teamCoinPct ?? 0) / 100;
 
   const rawXpMult = account.tree.xpMult;
@@ -796,6 +839,7 @@ export function computeSquadFarmFacts(
     uptimeSum,
     houseSlotDemand: houseSlotDemandSum,
     sorteFraction,
+    meanFuseSecs,
     teamCoinMult,
     treeLuckFlatPct,
     xpMult,
@@ -1073,11 +1117,13 @@ export type FarmRateRow = {
    *  {@link gemsPerHour}, which stayed at `0.00005`. */
   stoneChestsPerHour: number;
   xpPerHour: number;
-  /** Props destroyed per hour, over the WHOLE cycle — on a gate that includes the boss, which
-   *  drops none. Always consistent with {@link clearSecs}: `cyclesPerHour × propsPerMap`. */
+  /** Props destroyed per hour, over the WHOLE cycle — including the head, and on a gate the boss,
+   *  neither of which drops any. Always consistent with {@link clearSecs}:
+   *  `cyclesPerHour × propsPerMap`. */
   propsPerHour: number;
   cyclesPerHour: number; // 0 when clearSecs is not finite
-  /** Seconds to clear the map (+ gate boss). `Infinity` when the squad cannot clear it. */
+  /** Seconds to clear the map, from the wave starting: {@link clearHeadSeconds} + the props
+   *  + a gate's boss. `Infinity` when the squad cannot clear it. */
   clearSecs: number;
   gateTimerSecs: number | null; // null on non-gate
   /** Every enabled hero one-shots every prop type. `false` for an empty pool. */
@@ -1234,16 +1280,18 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   const expectedHtk = shareDenom > 0 ? expectedHtkSum : Infinity;
 
   const propCount = propCountForAto(line.ato);
-  const clearSecs = propCount / propsPerSec + (line.gate ? 1 / bossPerSec : 0);
+  const clearSecs =
+    clearHeadSeconds(heroesOnField, squad.meanFuseSecs) +
+    propCount / propsPerSec +
+    (line.gate ? 1 / bossPerSec : 0);
   const cyclesPerHour = Number.isFinite(clearSecs) && clearSecs > 0 ? 3600 / clearSecs : 0;
 
-  // A gate cycle is the map PLUS the boss, and the boss drops no props. Deriving the hourly rate
-  // from the cycle rather than from `propsPerSec` is what keeps it consistent with `clearSecs` —
-  // the boss-free `3600 × propsPerSec` reads up to ~10% high on late gates, and stays positive on
-  // a row whose boss the squad cannot kill at all (`clearSecs === Infinity`).
-  // Non-gate rows keep the old expression verbatim: algebraically it is the same value, but the
-  // rearrangement is not bit-equal in IEEE754 and would churn every row.
-  const propsPerHour = line.gate ? cyclesPerHour * propCount : 3600 * propsPerSec;
+  // Every hourly rate is derived from the CYCLE, never from the steady-state `propsPerSec`. Two
+  // parts of a cycle drop no props — the head the squad spends coming up to speed, and a gate's
+  // boss — and `3600 × propsPerSec` bills neither. The gap grows as clears get shorter (the head
+  // is a fixed cost against a shrinking map), which is exactly where a farm board's
+  // recommendations live.
+  const propsPerHour = cyclesPerHour * propCount;
 
   const eGold = line.goldComum * GOLD_SHARE_FACTOR;
   const goldMult = squad.teamCoinMult * (1 + fortunaAura) * bonus;

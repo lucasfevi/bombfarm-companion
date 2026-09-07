@@ -11,12 +11,19 @@
  * `row.concurrencyScale` must not change per-hero *shares* (a hero's gold-ability effect is
  * independent of `fieldSlots` — the scale multiplies the whole squad rate uniformly). The House
  * allocation, unlike the field cap, DOES change shares: that is the point of it.
+ *
+ * NEITHER CEILING SCALES AN HOURLY RATE PROPORTIONALLY, and several cases below turn on it. Both
+ * scale the STEADY-STATE prop rate, and so the props-only part of a clear; the head the squad
+ * spends coming up to speed is a fixed cost every clear pays whatever the ceilings do. A
+ * throttled squad therefore loses strictly less of its gold per hour than of its props per
+ * second.
  */
 import { describe, expect, it } from 'vitest';
 import {
   computeSquadFarmFacts,
   computeFarmRateRow,
   computeHeroFarmFacts,
+  clearHeadSeconds,
   type HeroFarmFacts,
 } from '@bombfarm/domain/farm-rate';
 import { FUSE_FLOOR, STAT_CAPS } from '@bombfarm/domain/model';
@@ -52,7 +59,7 @@ function syntheticHero(overrides: Partial<HeroFarmFacts> & { heroId: string }): 
 const UNCONSTRAINED_HOUSE = { ...account, slots: 1000 };
 
 describe('field-slot cap (row.concurrencyScale)', () => {
-  it('heroesOnField > fieldSlots at uptime 1 ⇒ every rate scales by exactly fieldSlots / heroesOnField', () => {
+  it('heroesOnField > fieldSlots at uptime 1 ⇒ the props-only clear time scales by exactly heroesOnField / fieldSlots, and the hourly rates fall by less', () => {
     // uptime 1 ⇒ House demand 0 ⇒ the House ceiling is inert and heroesOnField === Σ uptime === 4.
     // uptime 1 also makes demand DETERMINISTIC — always exactly 4 heroes want the field — which is
     // the one case where the queue's E[min(c, X)] / E[X] collapses to the plain ratio of means.
@@ -78,9 +85,20 @@ describe('field-slot cap (row.concurrencyScale)', () => {
     const referenceRow = computeFarmRateRow(42, referenceSquad)!;
     expect(referenceRow.concurrencyScale).toBe(1);
 
-    expect(scaledRow.propsPerHour / referenceRow.propsPerHour).toBeCloseTo(3 / 4, 9);
-    expect(scaledRow.goldPerHour / referenceRow.goldPerHour).toBeCloseTo(3 / 4, 9);
-    expect(scaledRow.xpPerHour / referenceRow.xpPerHour).toBeCloseTo(3 / 4, 9);
+    // Both squads put the same 4 heroes on the field, so both pay the same head — and it is the
+    // props-only remainder, not the whole clear, that the scale acts on.
+    const head = clearHeadSeconds(scaledRow.heroesOnField, squad.meanFuseSecs);
+    expect(referenceRow.heroesOnField).toBe(scaledRow.heroesOnField);
+    expect((scaledRow.clearSecs - head) / (referenceRow.clearSecs - head)).toBeCloseTo(4 / 3, 9);
+
+    // So every hourly rate falls by STRICTLY LESS than 3/4: a throttled squad still gets its map
+    // started for the same seconds, and only the middle of the clear stretches.
+    const hourlyRatio = scaledRow.propsPerHour / referenceRow.propsPerHour;
+    expect(hourlyRatio).toBeGreaterThan(3 / 4);
+    expect(hourlyRatio).toBeLessThan(1);
+    expect(hourlyRatio).toBeCloseTo(referenceRow.clearSecs / scaledRow.clearSecs, 12);
+    expect(scaledRow.goldPerHour / referenceRow.goldPerHour).toBeCloseTo(hourlyRatio, 9);
+    expect(scaledRow.xpPerHour / referenceRow.xpPerHour).toBeCloseTo(hourlyRatio, 9);
   });
 
   it('heroesOnField < fieldSlots ⇒ scale 1, rates unchanged from the uncrowded reference', () => {
@@ -208,7 +226,15 @@ describe('House recovery-slot ceiling', () => {
     const halfSquad = computeSquadFarmFacts([solo], house(0.5));
     const halfRow = computeFarmRateRow(42, halfSquad)!;
     expect(halfRow.heroesOnField).toBeCloseTo(0.2 * (0.5 / 0.8), 12);
-    expect(halfRow.propsPerHour).toBeCloseTo(row.propsPerHour * (0.5 / 0.8), 9);
+
+    // The throttle is proportional in the props-only clear time, NOT in the hourly rate: a mean
+    // occupancy under one hero owes no activation stagger, so both clears pay the same one-fuse
+    // head and the halved squad loses less per hour than it loses per second.
+    const head = clearHeadSeconds(row.heroesOnField, squad.meanFuseSecs);
+    expect(head).toBe(halfSquad.meanFuseSecs);
+    expect((halfRow.clearSecs - head) / (row.clearSecs - head)).toBeCloseTo(0.8 / 0.5, 9);
+    expect(halfRow.propsPerHour / row.propsPerHour).toBeGreaterThan(0.5 / 0.8);
+    expect(halfRow.propsPerHour).toBeLessThan(row.propsPerHour);
   });
 
   it('an EMPTY pool: zero demand, zero heroes on field, scale 1 — no 0/0', () => {
@@ -223,7 +249,7 @@ describe('House recovery-slot ceiling', () => {
     expect(Number.isNaN(row.goldPerHour)).toBe(false);
   });
 
-  it('BOTH caps bind at once: heroesOnField/fieldSlots is the applied scale, not uptimeSum/fieldSlots (the double-charging error §554-556 warns against)', () => {
+  it('BOTH caps bind at once: the queue runs over heroesOnField, not uptimeSum — charging the same shortage twice', () => {
     // Four identical uptime-0.5 heroes: House demand 0.5 each, 2.0 total against a 1-slot House —
     // the allocator (tie-broken to roster order, since value density is identical) can only ever
     // pay for two of them. `fieldSlots: 0.5` then oversubscribes even THAT already-throttled
@@ -257,10 +283,15 @@ describe('House recovery-slot ceiling', () => {
     expect(row.concurrencyScale).toBeLessThan(squad.fieldSlots / row.heroesOnField);
 
     // The field-cap-only reference squad (same House constraint, field wide open) isolates the
-    // scale factor: propsPerHour must drop by exactly `concurrencyScale`, whatever it is.
+    // scale factor: the props-only clear time must stretch by exactly `concurrencyScale`,
+    // whatever it is. Not `propsPerHour` — both rows put the same 1.0 heroes on the field and so
+    // pay the same head, which the scale never reaches.
     const referenceRow = computeFarmRateRow(42, computeSquadFarmFacts(facts, { ...bothBinding, fieldSlots: 1000 }))!;
     expect(referenceRow.concurrencyScale).toBe(1);
-    expect(row.propsPerHour / referenceRow.propsPerHour).toBeCloseTo(row.concurrencyScale, 9);
+    const head = clearHeadSeconds(row.heroesOnField, squad.meanFuseSecs);
+    expect(referenceRow.heroesOnField).toBeCloseTo(row.heroesOnField, 12);
+    expect((referenceRow.clearSecs - head) / (row.clearSecs - head)).toBeCloseTo(row.concurrencyScale, 9);
+    expect(row.propsPerHour / referenceRow.propsPerHour).toBeGreaterThan(row.concurrencyScale);
   });
 
   it('a hero with ZERO field seconds (uptime 0) costs a full slot, delivers nothing, and is ranked last', () => {

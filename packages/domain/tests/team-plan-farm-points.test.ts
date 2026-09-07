@@ -21,6 +21,7 @@ import {
 import { runTeamPlan } from '@bombfarm/domain/team-plan';
 import { buildFarmObjective, isSquadScope } from '@bombfarm/domain/team-plan/farm-objective';
 import { farmPointsPass, FARM_POINTS_PASS_MAX_EVALUATIONS } from '@bombfarm/domain/team-plan/farm-points';
+import { loadoutForScoring } from '@bombfarm/domain/team-plan/evaluate';
 import { buildHeroPlanContexts } from '@bombfarm/domain/team-plan/hero-context';
 import { createScoreMemo } from '@bombfarm/domain/team-plan/score';
 import { REOPT_KEYS } from '@bombfarm/domain/points-reopt-core';
@@ -113,8 +114,10 @@ describe('the pass moves only what the plan is allowed to move', () => {
       const squad = contexts.contexts.filter((ctx) => isSquadScope(ctx.scope));
       const loadoutByHeroId: Record<string, Loadout> = {};
       const ptsByHeroId: Record<string, PointAlloc> = {};
+      for (const hero of fixture.teamPlanInput.heroes) {
+        loadoutByHeroId[hero.heroId] = loadoutForScoring(hero.loadout, 0);
+      }
       for (const ctx of squad) {
-        loadoutByHeroId[ctx.heroId] = ctx.loadout;
         ptsByHeroId[ctx.heroId] = ctx.pts;
       }
 

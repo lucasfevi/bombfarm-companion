@@ -591,6 +591,14 @@ same value as `3600 × propsPerSec` off a gate, but the rearrangement is not bit
 IEEE754, so the production expression branches on `line.gate` rather than being simplified.
 A diff here that touches a non-gate row means that branch was flattened.
 
+**That last sentence stopped being true on 2026-09-07, and the branch it guards is gone.** The
+head-of-clear term added a fixed cost to `clearSecs` on every row, so `clearSecs` is no longer
+`propCount / propsPerSec` off a gate and `3600 × propsPerSec` stopped being the same value as
+`cyclesPerHour × propCount`. `propsPerHour` is now derived from `cyclesPerHour` unconditionally —
+deliberately, and the flattening is what makes `farm-rate-gate-throughput.test.ts` hold on
+non-gate rows. Read the paragraph above as history: it explains why the branch once existed, not
+a rule anything still enforces.
+
 PREVIOUSLY RE-RECORDED 2026-08-23 for the crit-chance ability shape (Olho Clínico and Presságio Mortal
 restated in flat crit POINTS) and, on the gate rows only, the refreshed stone/time chest rates.
 Diffed field by field against the previous capture:

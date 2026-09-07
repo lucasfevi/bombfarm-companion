@@ -87,8 +87,14 @@ function screenedPhase(
 describe('no REPORTED phase is ever a screened one', () => {
   describe('rankNextPointForFarm', () => {
     /** The screen centres on the fifth world's opener and stops at 51; the full sweep finds 32,
-     *  and the two disagree about which of attack and cdr the next point should buy. */
-    const WITNESS = { fixture: 'save-20260819-11882-7heroes.json', poolSize: 1, maxPhase: 52 } as const;
+     *  and the two disagree about which stat the next point should buy.
+     *
+     *  A ONE-HERO POOL USED TO CARRY THIS, and stopped: charging every clear for the head the
+     *  squad spends coming up to speed reshaped the objective surface enough that the screen's
+     *  miss — still a miss, still 51 against 32 — no longer changes which stat wins. The guard
+     *  below asserts the discrimination first, so it reported that rather than passing on a case
+     *  proving nothing. Two heroes on the same capture, at the same ceiling, discriminate. */
+    const WITNESS = { fixture: 'save-20260819-11882-7heroes.json', poolSize: 2, maxPhase: 52 } as const;
 
     it('reports the full sweep phase and row order where the screen picks a different world', () => {
       const { heroes, account } = loadFarmRateFixture(WITNESS.fixture);
