@@ -51,11 +51,19 @@ export const heroEn = {
     "The rail's tint is a reading aid of ours, not a rule the game publishes.",
 
   heroDetailAbilitiesTitle: "Abilities",
-  heroDetailAbilitiesLevelOfMax: "Level {level} of {max}",
+  heroDetailAbilitiesLevelOfMax: "{level} of {max}",
   heroDetailAbilitiesEffect: "Modelled effect",
-  heroDetailAbilitiesNotModelled: "Not modelled",
-  heroDetailAbilitiesMaxed: "Already at maximum",
+  heroDetailAbilitiesOnSheetTag: "On sheet",
+  heroDetailAbilitiesNotModelled:
+    "The model carries no effect for this ability, so it cannot be priced.",
+  heroDetailAbilitiesMaxed: "Already at its maximum level, with no next level to buy.",
   heroDetailAbilitiesNextLevelGain: "One more level is worth {pct}% to this hero",
+  heroDetailAbilitiesAuraAtCeiling:
+    "Your roster is already at this aura's field-wide ceiling, so the next level buys nothing.",
+  heroDetailAbilitiesNotMeasured:
+    "The model carries this effect, but it lands outside what sustained damage per second measures.",
+  heroDetailAbilitiesNoBirthRoll:
+    "Without a birth roll this hero cannot be valued, so no ability of its can be priced.",
   heroDetailAbilitiesSlots: "Slots",
   heroDetailAbilitiesSlotsValue: "{used} of {max} for this rarity",
   heroDetailAbilitiesPoints: "Ability points",
@@ -63,6 +71,10 @@ export const heroEn = {
   heroDetailAbilitiesDeadPoints: "Dead points",
   heroDetailAbilitiesDeadPointsHint:
     "This hero's level is past what it can spend, so {count} points can never be used.",
+  heroDetailAbilitiesDeadPointsNone:
+    "Every level this hero gains still turns into a point it can spend.",
+  heroDetailAbilitiesDeadPointsAtCeiling:
+    "This hero holds exactly as many points as its slots can take; further levels add none.",
   heroDetailAbilitiesNone: "This hero owns no abilities.",
 
   heroDetailCombatTitle: "Combat",

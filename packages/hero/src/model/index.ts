@@ -22,5 +22,22 @@ export type {
   PlacementCertainty,
   StatRollRow,
 } from './birth-roll-panel';
+export {
+  abilityPanelAvailability,
+  abilityPointReadoutFor,
+  abilityRowsFor,
+  abilitySlotReadoutFor,
+  abilityValueText,
+  deadPointNote,
+} from './ability-panel';
+export type {
+  AbilityPointReadout,
+  AbilityRow,
+  AbilityRowText,
+  AbilitySlotReadout,
+  AbilityValueCopy,
+  DeadPointNotes,
+  DeadPointReading,
+} from './ability-panel';
 export { railTintFor } from './roll-rail-tint';
 export type { RollTint } from './roll-rail-tint';

@@ -55,6 +55,10 @@ import * as GameArt from '@bombfarm/game-art';
 // stops fitting, and the hook that reports which side of them the window is on. AppShell takes the
 // answer as a prop rather than measuring, so the same value drives the tabs and whatever the
 // caller puts in the actions slot.
+// abilGridClass / abilHeadClass / abilMetaClass / abilNameClass / abilTagClass / abilEffectClass
+// (2026-09-07): promoted from the `ability-card.recipe` subpath for the same reason as the class
+// constants above. They lay out an ability card's icon rail, name, tag and effect text, and the
+// hero abilities panel that draws them is `@bombfarm/hero`'s.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -127,6 +131,12 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'TooltipStatusBody',
   'WINDOW_CONTROLS_WIDTH',
   'WindowControls',
+  'abilEffectClass',
+  'abilGridClass',
+  'abilHeadClass',
+  'abilMetaClass',
+  'abilNameClass',
+  'abilTagClass',
   'abilityCardRecipe',
   'abilityChipRecipe',
   'accountStatListClass',

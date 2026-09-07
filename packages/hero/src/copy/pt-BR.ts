@@ -51,11 +51,19 @@ export const heroPtBR: HeroCopy = {
     "A cor da barra é um auxílio de leitura nosso, não uma regra publicada pelo jogo.",
 
   heroDetailAbilitiesTitle: "Habilidades",
-  heroDetailAbilitiesLevelOfMax: "Nível {level} de {max}",
+  heroDetailAbilitiesLevelOfMax: "{level} de {max}",
   heroDetailAbilitiesEffect: "Efeito modelado",
-  heroDetailAbilitiesNotModelled: "Não modelado",
-  heroDetailAbilitiesMaxed: "Já está no máximo",
+  heroDetailAbilitiesOnSheetTag: "Na ficha",
+  heroDetailAbilitiesNotModelled:
+    "O modelo não tem efeito para esta habilidade, então não dá para calcular quanto ela vale.",
+  heroDetailAbilitiesMaxed: "Já está no nível máximo; não existe próximo nível para comprar.",
   heroDetailAbilitiesNextLevelGain: "Mais um nível vale {pct}% para este herói",
+  heroDetailAbilitiesAuraAtCeiling:
+    "Seu time já está no teto desta aura em campo, então o próximo nível não compra nada.",
+  heroDetailAbilitiesNotMeasured:
+    "O modelo tem este efeito, mas ele cai fora do que o DPS sustentado consegue medir.",
+  heroDetailAbilitiesNoBirthRoll:
+    "Sem o sorteio de nascimento não dá para avaliar este herói, então nenhuma habilidade dele tem preço.",
   heroDetailAbilitiesSlots: "Espaços",
   heroDetailAbilitiesSlotsValue: "{used} de {max} para esta raridade",
   heroDetailAbilitiesPoints: "Pontos de habilidade",
@@ -63,6 +71,10 @@ export const heroPtBR: HeroCopy = {
   heroDetailAbilitiesDeadPoints: "Pontos mortos",
   heroDetailAbilitiesDeadPointsHint:
     "O nível deste herói passou do que ele consegue gastar, então {count} pontos nunca poderão ser usados.",
+  heroDetailAbilitiesDeadPointsNone:
+    "Cada nível que este herói ganha ainda vira um ponto que ele pode gastar.",
+  heroDetailAbilitiesDeadPointsAtCeiling:
+    "Este herói tem exatamente os pontos que os espaços dele aguentam; os próximos níveis não somam nada.",
   heroDetailAbilitiesNone: "Este herói não tem nenhuma habilidade.",
 
   heroDetailCombatTitle: "Combate",

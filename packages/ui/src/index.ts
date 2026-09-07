@@ -235,6 +235,12 @@ export {
 export {
   abilityCardRecipe,
   abilityChipRecipe,
+  abilEffectClass,
+  abilGridClass,
+  abilHeadClass,
+  abilMetaClass,
+  abilNameClass,
+  abilTagClass,
   type AbilityChipVariant,
 } from './ability-card.recipe';
 export { selectFieldRecipe, type SelectSize } from './select.recipe';
