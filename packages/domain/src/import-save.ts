@@ -15,6 +15,7 @@ import { isKnownSkin } from './wiki-assets';
 import {
   birthFromSave,
   hasUsableBirthStats,
+  readStatRanges,
   saveSheetUnits,
   treeTotalsFromSave,
 } from './save-units';
@@ -664,6 +665,10 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
     // sheetOther/loadout/tree — neither needs the save's `stats` block at all; only the
     // spent-points inversion below does.
     const birth: BirthStats = birthFromSave(rawHero.birth_stats as Record<string, unknown>);
+    // Read INSIDE the per-hero loop, deliberately — the bounds get no whole-file gate of their
+    // own. They enrich a sheet that is already correct without them, so a hero, a save, or a
+    // live account read carrying no `stat_ranges` imports exactly as it did before.
+    const statRanges = readStatRanges(rawHero.stat_ranges);
     const naked = nakedFromBirth(birth, level, stars, sheetOther);
     const gearedOverride = composeSheetFromBirth({
       birth,
@@ -749,6 +754,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
       marketable,
       skin,
       birth,
+      statRanges,
     };
 
     candidates.push({

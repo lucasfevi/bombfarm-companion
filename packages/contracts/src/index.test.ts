@@ -32,6 +32,7 @@ describe('contracts IPC surface', () => {
       'settings:setAlwaysOnTopMain',
       'settings:setAlwaysOnTopMini',
       'settings:setForgeWritesEnabled',
+      'settings:setRestartGameOnExit',
       'miniLive:open',
       'miniLive:close',
       'miniLive:getLayout',
@@ -176,6 +177,7 @@ describe('contracts IPC surface', () => {
     expect(DEFAULT_SETTINGS.alwaysOnTopMain).toBe(false);
     expect(DEFAULT_SETTINGS.alwaysOnTopMini).toBe(false);
     expect(DEFAULT_SETTINGS.forgeWritesEnabled).toBe(false);
+    expect(DEFAULT_SETTINGS.restartGameOnExit).toBe(false);
   });
 });
 

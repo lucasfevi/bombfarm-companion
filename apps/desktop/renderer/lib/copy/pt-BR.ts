@@ -85,6 +85,14 @@ export const ptBR: Copy = {
     'Desligado: a aba Forja planeja subidas e nunca rola. Ligado: o botão Forjar gasta ouro da sua conta, uma execução confirmada por vez.',
   settingsForgeWritesNotSavedTitle: 'Configuração da Forja alterada, mas não salva',
 
+  // settingsGame*/settingsRestartGameOnExit* — o único interruptor que deixa a Steam trazer o
+  // jogo de volta depois que ele fecha (desligado por padrão)
+  settingsGameSectionTitle: 'Jogo',
+  settingsRestartGameOnExitLabel: 'Reiniciar o Bomb Farm se ele fechar',
+  settingsRestartGameOnExitHelp:
+    'Com isto ligado, se o jogo fechar enquanto o companion já está aberto, a Steam inicia-o de novo. O companion não inicia o jogo ao abrir. Desligado por padrão.',
+  settingsRestartGameOnExitNotSavedTitle: 'Configuração do jogo alterada, mas não salva',
+
   // settingsConsent* — o controle de revogar o acesso à conta (Configurações só é alcançável já permitido)
   settingsConsentSectionTitle: 'Acesso à conta',
   settingsConsentStatusGranted: 'Acesso: permitido',

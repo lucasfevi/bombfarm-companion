@@ -1,4 +1,5 @@
 /** Domain-facing storage shapes (formerly `@/shared/lib/storage` types). */
+import type { StatRanges } from '../birth-sheet.js';
 import type { Loadout, SheetStats } from '../gear/types.js';
 import type { RankMode, RarityKey } from '../model/index.js';
 
@@ -115,6 +116,19 @@ export type HeroRecord = {
   marketable?: boolean;
   skin?: number;
   birth?: SheetStats;
+  /**
+   * The window each {@link birth} value was rolled inside, in planner units. Additive — absent
+   * on every record written before the importer read it, and it stays absent until that hero is
+   * imported again. No migration: absence is a valid state, not a record to repair.
+   *
+   * Deliberately the OPPOSITE posture to {@link birth}, and the difference is load-bearing. A
+   * hero whose birth roll is partial rejects the ENTIRE save, because the sheet mathematics
+   * cannot be composed from an invented default. These bounds compose nothing — they are
+   * enrichment layered on top of a sheet that is already correct — so a missing, partial or
+   * malformed block must never reject anything: not the hero, not the file, not the live account
+   * read, which has no file to re-export and would be left with nothing at all.
+   */
+  statRanges?: StatRanges;
   tree?: TreeState;
   teamBuffs?: Record<string, number>;
   context?: HeroContext;

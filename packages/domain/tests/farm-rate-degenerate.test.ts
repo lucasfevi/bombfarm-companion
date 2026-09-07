@@ -17,7 +17,7 @@ import {
   propCountForAto,
 } from '@bombfarm/domain/phase-wiki';
 import { hitsToKill, propHp } from '@bombfarm/domain/phases';
-import { mitigationFactor, EFF_IA } from '@bombfarm/domain/model';
+import { mitigationFactor, EFF_IA, FUSE_FLOOR, STAT_CAPS } from '@bombfarm/domain/model';
 import { DEFAULT_CASA_SLOTS } from '@bombfarm/domain/casa-slots';
 import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
 import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
@@ -30,6 +30,8 @@ function syntheticHero(overrides: Partial<HeroFarmFacts> & { heroId: string }): 
     avgHitBase: 100,
     penetrationPct: 0,
     fuseSecs: 2,
+    fuseFloorSecs: FUSE_FLOOR,
+    cdrCapPct: STAT_CAPS.cdr,
     walkSpeedCells: 2,
     cycleSecs: 2,
     plantsPerSec: 0.5,

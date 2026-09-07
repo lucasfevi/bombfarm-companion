@@ -18,16 +18,16 @@ const MS_PER_HOUR = 3_600_000;
 
 const generatedHoursAgo = (hours) => new Date(NOW_MS - hours * MS_PER_HOUR).toISOString();
 
-const entryQuotedHoursAgo = (hours) => ({
+const entryReadHoursAgo = (hours) => ({
   key: 'ember_luva#2',
-  nativeQuotedUtc: generatedHoursAgo(hours),
+  fetchedUtc: generatedHoursAgo(hours),
 });
 
 function snapshotBody(overrides = {}) {
   return JSON.stringify({
     schemaVersion: 3,
     generatedUtc: generatedHoursAgo(1),
-    entries: [entryQuotedHoursAgo(1)],
+    entries: [entryReadHoursAgo(1)],
     coverage: { marketRows: 1, keyedRows: 1, matchedCatalogKeys: 1, catalogKeys: 1440 },
     ...overrides,
   });
@@ -49,7 +49,7 @@ describe('the published snapshot alarm', () => {
     const stale = evaluate({ generatedUtc: generatedHoursAgo(MAX_AGE_HOURS + 3.2) });
     expect(stale.ok).toBe(false);
     expect(stale.failures).toEqual([
-      `the published snapshot has not advanced in 9.2 hours (threshold ${MAX_AGE_HOURS})`,
+      `the published snapshot has not advanced in 6.2 hours (threshold ${MAX_AGE_HOURS})`,
     ]);
   });
 
@@ -78,36 +78,98 @@ describe('the published snapshot alarm', () => {
     ]);
   });
 
-  it('fails a fresh, populated, matched snapshot whose prices have stopped moving', () => {
+  /**
+   * The reason this check is pointed at the rows rather than at the file: a pass whose
+   * enumeration reached nothing republishes the rows it already had, which advances
+   * `generatedUtc` while nothing in the file has been read since.
+   */
+  it('fails a fresh, populated, matched snapshot that has stopped reading anything', () => {
     const carriedForward = evaluate({
       generatedUtc: generatedHoursAgo(0.1),
-      entries: [entryQuotedHoursAgo(MAX_AGE_HOURS + 1.4), entryQuotedHoursAgo(MAX_AGE_HOURS + 9)],
+      entries: [entryReadHoursAgo(MAX_AGE_HOURS + 1.4), entryReadHoursAgo(MAX_AGE_HOURS + 9)],
     });
 
     expect(carriedForward.ok).toBe(false);
     expect(carriedForward.failures).toEqual([
-      `the published snapshot has priced nothing in 7.4 hours (threshold ${MAX_AGE_HOURS}), so it is carrying old prices forward`,
+      `most of the published snapshot has not been read in 8.2 hours (threshold ${MAX_AGE_HOURS}), so it is carrying old rows forward`,
     ]);
   });
 
-  it('dates the file by its freshest price, not its oldest', () => {
+  /**
+   * The witnessed shape, and the one a newest-row check cannot see: a file stamped six minutes
+   * old, 30 of 141 rows re-read within the hour and the other 111 carried from over twelve hours
+   * earlier. One freshly read row is not a freshly read file.
+   */
+  it('fails a snapshot in which a handful of rows are fresh and most are not', () => {
+    const barelySwept = evaluate({
+      generatedUtc: generatedHoursAgo(0.1),
+      entries: [
+        ...Array.from({ length: 30 }, () => entryReadHoursAgo(0.1)),
+        ...Array.from({ length: 111 }, () => entryReadHoursAgo(12.4)),
+      ],
+    });
+
+    expect(barelySwept.ok).toBe(false);
+    expect(barelySwept.failures).toEqual([
+      `most of the published snapshot has not been read in 12.4 hours (threshold ${MAX_AGE_HOURS}), so it is carrying old rows forward`,
+    ]);
+  });
+
+  /**
+   * Partial enumeration is normal and intended — a rate-limited pass advances coverage rather
+   * than discarding it — so an alarm that fires on a mildly partial run is one nobody reads.
+   */
+  it('passes a run that reached most rows and missed a few', () => {
+    const mostlySwept = evaluate({
+      generatedUtc: generatedHoursAgo(0.1),
+      entries: [
+        ...Array.from({ length: 120 }, () => entryReadHoursAgo(0.4)),
+        ...Array.from({ length: 21 }, () => entryReadHoursAgo(15.6)),
+      ],
+    });
+
+    expect(mostlySwept.ok).toBe(true);
+    expect(mostlySwept.medianReadingAgeHours).toBe(0.4);
+  });
+
+  it('dates the file by its median reading, not by either extreme', () => {
     const mixed = evaluate({
-      entries: [entryQuotedHoursAgo(MAX_AGE_HOURS + 40), entryQuotedHoursAgo(2)],
+      entries: [
+        entryReadHoursAgo(MAX_AGE_HOURS + 40),
+        entryReadHoursAgo(2),
+        entryReadHoursAgo(0.2),
+      ],
     });
     expect(mixed.ok).toBe(true);
-    expect(mixed.quoteAgeHours).toBe(2);
+    expect(mixed.medianReadingAgeHours).toBe(2);
   });
 
-  it('fails a snapshot in which nothing carries a readable price timestamp', () => {
-    expect(evaluate({ entries: [{ key: 'ember_luva#2', nativeQuotedUtc: null }] }).failures).toEqual(
-      ['the published snapshot carries no priced entry at all'],
-    );
-    expect(evaluate({ entries: [{ key: 'ember_luva#2' }] }).failures).toEqual([
-      'the published snapshot carries no priced entry at all',
+  it('averages the two middle rows when the file has an even number of them', () => {
+    const even = evaluate({
+      entries: [entryReadHoursAgo(0.5), entryReadHoursAgo(1), entryReadHoursAgo(2), entryReadHoursAgo(8)],
+    });
+    expect(even.medianReadingAgeHours).toBe(1.5);
+  });
+
+  /**
+   * A snapshot with no per-row timestamp leaves this check nothing to assert on, so it fails
+   * rather than passing: a monitor whose subject is absent is not a monitor that is satisfied.
+   */
+  it('fails a snapshot in which nothing carries a readable reading timestamp', () => {
+    expect(evaluate({ entries: [{ key: 'ember_luva#2', fetchedUtc: null }] }).failures).toEqual([
+      'the published snapshot carries no entry it can date at all',
     ]);
+    expect(evaluate({ entries: [{ key: 'ember_luva#2' }] }).failures).toEqual([
+      'the published snapshot carries no entry it can date at all',
+    ]);
+    // A native quote is not a substitute: it left the published file when quoting left the sweep.
+    expect(
+      evaluate({ entries: [{ key: 'ember_luva#2', nativeQuotedUtc: generatedHoursAgo(0.1) }] })
+        .failures,
+    ).toEqual(['the published snapshot carries no entry it can date at all']);
   });
 
-  it('says nothing about price age when there are no entries to price', () => {
+  it('says nothing about reading age when there are no entries at all', () => {
     expect(evaluate({ entries: [] }).failures).toEqual([
       'the published snapshot carries no entries',
     ]);
@@ -186,7 +248,7 @@ describe('what the alarm prints', () => {
     expect(renderSummary(evaluate())).toBe(
       [
         'the published snapshot advanced 1.0 hours ago',
-        'its freshest price is 1.0 hours old',
+        'its median row was read 1.0 hours ago',
         '1 entries, 1 catalog keys matched',
       ].join('\n'),
     );

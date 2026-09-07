@@ -321,6 +321,43 @@ describe('native versus converted quotes', () => {
     expect(resolveItemPrice(item, snapshot, 'BRL').quotedUtc).toBe('2026-08-29T12:00:00.000Z');
   });
 
+  it('converts for a row whose native quote the snapshot stopped carrying', () => {
+    const quoted = snapshotOf([
+      marketEntry({
+        hashName: 'Ember Sword',
+        lowestUsd: 10,
+        lowestNative: { BRL: 52 },
+        nativeQuotedUtc: '2026-08-29T12:00:00.000Z',
+      }),
+    ]);
+    expect(resolveItemPrice(item, quoted, 'BRL').basis).toBe('native');
+
+    const republished = buildSnapshot({
+      entries: [
+        marketEntry({
+          hashName: 'Ember Sword',
+          lowestUsd: 10,
+          fetchedUtc: '2026-08-30T00:00:00.000Z',
+        }),
+      ],
+      prior: quoted,
+      catalog: CATALOG,
+      fx: { USD: 1, BRL: 5 },
+      anomalies: [],
+      searchCalls: 1,
+      enumerationComplete: false,
+      now: () => Date.parse('2026-08-30T00:00:00.000Z'),
+    });
+
+    expect(resolveItemPrice(item, republished, 'BRL')).toMatchObject({
+      state: 'priced',
+      amount: 50,
+      currency: 'BRL',
+      basis: 'converted',
+      quotedUtc: '2026-08-30T00:00:00.000Z',
+    });
+  });
+
   it('reports no listing when the enumeration found none, even holding a native quote', () => {
     // priceoverview under-reports rather than over-reports, so the enumeration owns this call;
     // a stale quote must not resurrect supply that is gone.

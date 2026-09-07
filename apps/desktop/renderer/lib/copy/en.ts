@@ -83,6 +83,14 @@ export const en = {
     'Off: the Forge tab plans climbs and never rolls. On: the Forge button spends gold on your account, one confirmed run at a time.',
   settingsForgeWritesNotSavedTitle: 'Forge setting changed, but not saved',
 
+  // settingsGame*/settingsRestartGameOnExit* — the one switch that lets Steam bring the game
+  // back after it exits (off by default)
+  settingsGameSectionTitle: 'Game',
+  settingsRestartGameOnExitLabel: 'Restart Bomb Farm if it exits',
+  settingsRestartGameOnExitHelp:
+    'When this is on, if the game closes while the companion is already running, Steam starts it again. The companion will not start the game when it itself opens. Off by default.',
+  settingsRestartGameOnExitNotSavedTitle: 'Game setting changed, but not saved',
+
   // settingsConsent* — the account access revoke control (Settings is reachable only once granted)
   settingsConsentSectionTitle: 'Account access',
   settingsConsentStatusGranted: 'Access: allowed',

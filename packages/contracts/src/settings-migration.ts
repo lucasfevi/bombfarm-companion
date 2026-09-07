@@ -2,7 +2,7 @@ import type { AppSettings } from './index.js';
 import { DEFAULT_SETTINGS } from './index.js';
 import { isAppLocale } from './locale.js';
 
-type BooleanFlag = 'alwaysOnTopMain' | 'alwaysOnTopMini' | 'forgeWritesEnabled';
+type BooleanFlag = 'alwaysOnTopMain' | 'alwaysOnTopMini' | 'forgeWritesEnabled' | 'restartGameOnExit';
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -40,14 +40,21 @@ export function migrateStoredSettings(parsed: unknown): AppSettings | null {
       alwaysOnTopMain: false,
       alwaysOnTopMini: false,
       forgeWritesEnabled: false,
+      restartGameOnExit: false,
     };
   }
 
   const mainFlag = readBooleanFlag(parsed, 'alwaysOnTopMain');
   const miniFlag = readBooleanFlag(parsed, 'alwaysOnTopMini');
   const forgeWritesFlag = readBooleanFlag(parsed, 'forgeWritesEnabled');
+  const restartGameFlag = readBooleanFlag(parsed, 'restartGameOnExit');
 
-  if (mainFlag === 'invalid' || miniFlag === 'invalid' || forgeWritesFlag === 'invalid') {
+  if (
+    mainFlag === 'invalid' ||
+    miniFlag === 'invalid' ||
+    forgeWritesFlag === 'invalid' ||
+    restartGameFlag === 'invalid'
+  ) {
     return null;
   }
 
@@ -57,5 +64,6 @@ export function migrateStoredSettings(parsed: unknown): AppSettings | null {
     alwaysOnTopMain: mainFlag === 'missing' ? DEFAULT_SETTINGS.alwaysOnTopMain : mainFlag,
     alwaysOnTopMini: miniFlag === 'missing' ? DEFAULT_SETTINGS.alwaysOnTopMini : miniFlag,
     forgeWritesEnabled: forgeWritesFlag === 'missing' ? DEFAULT_SETTINGS.forgeWritesEnabled : forgeWritesFlag,
+    restartGameOnExit: restartGameFlag === 'missing' ? DEFAULT_SETTINGS.restartGameOnExit : restartGameFlag,
   };
 }

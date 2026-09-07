@@ -64,6 +64,7 @@ describe('broadcastEventToWindows', () => {
       alwaysOnTopMain: false,
       alwaysOnTopMini: true,
       forgeWritesEnabled: false,
+      restartGameOnExit: false,
     };
 
     broadcastEventToWindows([first, second], 'bfc:event:settings:changed', payload);

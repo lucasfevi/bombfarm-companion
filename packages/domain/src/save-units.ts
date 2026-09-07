@@ -9,8 +9,9 @@
  * percent here (× 100); `crit_dmg` is a multiplier in the save, excess percentage points
  * here (`(x − 1) × 100`) — e.g. Bellatrix's `1.67344467136338` → `67.344467136338…`.
  */
-import type { BirthStats, TreeSheetTotals } from './birth-sheet';
+import type { BirthStats, StatRanges, TreeSheetTotals } from './birth-sheet';
 import type { SheetStats } from './gear';
+import type { SheetKey } from './planner-constants';
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -67,11 +68,73 @@ const BIRTH_STATS_KEYS = [
  * WHEN a hero object carries a `birth_stats` block with all 8 save keys present and
  * finite THEN it can compose a birth sheet. A partial block — missing key
  * or a non-finite value (NaN, Infinity, string, null) — is NOT usable; the whole save
- * rejects rather than composing from an invented default (spec.md edge cases).
+ * rejects rather than composing from an invented default.
  */
 export function hasUsableBirthStats(hero: unknown): boolean {
   if (!isObject(hero)) return false;
   const birth = hero.birth_stats;
   if (!isObject(birth)) return false;
   return BIRTH_STATS_KEYS.every((key) => typeof birth[key] === 'number' && Number.isFinite(birth[key]));
+}
+
+type BirthStatsKey = (typeof BIRTH_STATS_KEYS)[number];
+
+/**
+ * Save key → planner key, NAMES ONLY. The arithmetic stays in {@link saveSheetUnits}, which is
+ * still the one conversion site. Typed over {@link BIRTH_STATS_KEYS} so a key added there fails
+ * to compile until it is projected here too.
+ */
+const SHEET_KEY_BY_SAVE_KEY: Record<BirthStatsKey, SheetKey> = {
+  dmg: 'attack',
+  energia: 'energy',
+  speed: 'speed',
+  penetration: 'penetration',
+  crit_chance: 'critChance',
+  cooldown_reduction: 'cdr',
+  crit_dmg: 'critDmg',
+  luck: 'luck',
+};
+
+/**
+ * The save's `stat_ranges` block — the window each birth value was rolled inside — in planner
+ * units. Per statistic and independently forgiving: a band that is not an object, is missing
+ * either endpoint, carries a non-finite endpoint, or does not satisfy `max > min` is DROPPED and
+ * the surviving statistics are still returned. An unknown key is ignored. Nothing survives, or
+ * the block is not an object at all, and the answer is `undefined`.
+ *
+ * Purely additive enrichment: unlike a birth roll, an unreadable block must never reject the
+ * hero or the file — no sheet mathematics depends on these bounds.
+ *
+ * Endpoint presence is established BEFORE conversion, and that ordering is the whole reason the
+ * surviving keys are tracked separately: {@link saveSheetUnits} substitutes `1` for an absent
+ * `crit_dmg` and converts it to `0`, so a key that was never in the payload would otherwise come
+ * back as a computed-looking `0 … 0` band that is fiction.
+ */
+export function readStatRanges(raw: unknown): StatRanges | undefined {
+  if (!isObject(raw)) return undefined;
+
+  const lows: Record<string, unknown> = {};
+  const highs: Record<string, unknown> = {};
+  const usable: BirthStatsKey[] = [];
+  for (const key of BIRTH_STATS_KEYS) {
+    const band = raw[key];
+    if (!isObject(band)) continue;
+    const { min, max } = band;
+    if (typeof min !== 'number' || !Number.isFinite(min)) continue;
+    if (typeof max !== 'number' || !Number.isFinite(max)) continue;
+    if (!(max > min)) continue;
+    lows[key] = min;
+    highs[key] = max;
+    usable.push(key);
+  }
+  if (usable.length === 0) return undefined;
+
+  const low = saveSheetUnits(lows);
+  const high = saveSheetUnits(highs);
+  const ranges: { -readonly [K in SheetKey]?: { min: number; max: number } } = {};
+  for (const key of usable) {
+    const sheetKey = SHEET_KEY_BY_SAVE_KEY[key];
+    ranges[sheetKey] = { min: low[sheetKey], max: high[sheetKey] };
+  }
+  return ranges;
 }

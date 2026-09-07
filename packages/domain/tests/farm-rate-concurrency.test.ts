@@ -19,6 +19,7 @@ import {
   computeHeroFarmFacts,
   type HeroFarmFacts,
 } from '@bombfarm/domain/farm-rate';
+import { FUSE_FLOOR, STAT_CAPS } from '@bombfarm/domain/model';
 import { loadFarmRateFixture, withAbilityLevels } from './helpers/farm-rate-fixtures';
 
 const { heroes, account } = loadFarmRateFixture();
@@ -29,6 +30,8 @@ function syntheticHero(overrides: Partial<HeroFarmFacts> & { heroId: string }): 
     avgHitBase: 100,
     penetrationPct: 0,
     fuseSecs: 2,
+    fuseFloorSecs: FUSE_FLOOR,
+    cdrCapPct: STAT_CAPS.cdr,
     walkSpeedCells: 2,
     cycleSecs: 2,
     plantsPerSec: 0.5,
