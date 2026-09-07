@@ -68,6 +68,34 @@ async function waitForAccountAutosave(page: Page): Promise<void> {
   });
 }
 
+/**
+ * Wait out the ONE roster write every import produces ~800ms later.
+ *
+ * The hero autosave bumps the ACTIVE hero's `updatedAt` after an import even though nothing about
+ * the hero changed, which replaces the `heroes` ARRAY. `readFarmDepTuple` holds `heroes` by
+ * reference and `farmDepsEqual` compares with `Object.is`, so that write makes any respec
+ * proposal solved before it stale — and the panel, which renders off the proposal, closes itself
+ * mid-test. Measured on both committed captures used here: hero[2] (the active one) and no other
+ * field. Every test below that opens the panel is racing that write and passing only by finishing
+ * first.
+ *
+ * Settle-based rather than "wait for the write": polling until the roster stops changing is
+ * correct whether or not the write happens, so fixing the underlying churn cannot break this.
+ */
+async function waitForRosterSettle(page: Page): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        const first = await page.evaluate(() => localStorage.getItem('bf-hp-heroes-v1'));
+        await page.waitForTimeout(900);
+        const second = await page.evaluate(() => localStorage.getItem('bf-hp-heroes-v1'));
+        return first === second;
+      },
+      { timeout: 15_000 },
+    )
+    .toBe(true);
+}
+
 async function captureSeededState(page: Page, lang: 'en' | 'pt'): Promise<SeededState> {
   await waitForAccountAutosave(page);
   const raw = await page.evaluate(() => ({
@@ -99,6 +127,7 @@ test.describe('Farm Respec Advisor', () => {
     await seedLocalStorage(page, { heroes: [], lang: 'en' });
     await page.goto('/farm');
     await importAccount486(page);
+    await waitForRosterSettle(page);
   });
 
   // 1. The toolbar is the Optimize control and nothing else — no figure is reported until the
@@ -293,6 +322,7 @@ test.describe('Farm Respec Advisor', () => {
     await page.locator('input[type="file"]').setInputFiles(accountNearOptimal);
     await page.getByRole('button', { name: /import \d+ hero/i }).click();
     await expect(page.getByRole('dialog')).toBeHidden();
+    await waitForRosterSettle(page);
 
     // The control is offered on this account too — that is the point of it being unconditional.
     await expect(optimizeButton(page)).toBeEnabled();
