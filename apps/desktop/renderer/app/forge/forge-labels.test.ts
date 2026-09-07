@@ -176,14 +176,38 @@ describe('forgeSpendVerdict', () => {
 
   it('reads under the expected figure as a gain, over it as a warning, and past the bad run as a loss', () => {
     expect(forgeSpendVerdict(400, forecast)).toBe('under');
-    expect(forgeSpendVerdict(999, forecast)).toBe('under');
-    expect(forgeSpendVerdict(1_001, forecast)).toBe('over');
+    expect(forgeSpendVerdict(990, forecast)).toBe('under');
+    expect(forgeSpendVerdict(1_010, forecast)).toBe('over');
     expect(forgeSpendVerdict(2_000, forecast)).toBe('over');
     expect(forgeSpendVerdict(2_001, forecast)).toBe('worse');
   });
 
-  it('calls a spend that landed on the expected figure neither under nor over', () => {
-    expect(forgeSpendVerdict(1_000, forecast)).toBe('exact');
+  it('calls a spend the printed percentage cannot tell apart from the plan neither under nor over', () => {
+    expect(forgeSpendVerdict(996, forecast)).toBe('exact');
+    expect(forgeSpendVerdict(1_004, forecast)).toBe('exact');
+  });
+
+  it('picks a side again the moment the percentage prints a digit, at half a percent either way', () => {
+    expect(forgeSpendVerdict(995, forecast)).toBe('under');
+    expect(forgeSpendVerdict(1_005, forecast)).toBe('over');
+  });
+
+  it('is reachable against a forecast no whole spend can equal', () => {
+    const measured = { gold: 486_379.99999993795, badRunGold: 1_327_900 };
+    expect(forgeSpendVerdict(486_380, measured)).toBe('exact');
+    expect(forgeSpendVerdict(488_000, measured)).toBe('exact');
+    expect(forgeSpendVerdict(489_000, measured)).toBe('over');
+  });
+
+  it('says exact for exactly the spends whose percentage the result block would print as a zero', () => {
+    const printed = forgeLabels(en, 'en', 'en').signedPercent;
+    for (let spent = 900; spent <= 1_100; spent += 1) {
+      const gap = printed((spent - forecast.gold) / forecast.gold);
+      expect([forgeSpendVerdict(spent, forecast) === 'exact', spent]).toEqual([
+        gap === '+0%' || gap === '−0%',
+        spent,
+      ]);
+    }
   });
 
   it('says all four outcomes in both languages, and never the same words for two of them', () => {

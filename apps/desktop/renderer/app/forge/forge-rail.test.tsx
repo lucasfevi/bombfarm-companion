@@ -201,11 +201,16 @@ describe('ForgeRail', () => {
     expect(gapTag(past)).toContain('text-down');
   });
 
-  it('calls a spend that landed on the expected figure exactly that, and prints no percentage at all', () => {
-    const html = renderRail(finished(650));
-    expect(verdictOf(html)).toBe('exact');
-    expect(html).not.toContain('data-testid="forge-against-gap"');
-    expect(verdictTextOf(html)).toBe(en.forgeAgainstExact);
+  it('prints no percentage at all when the difference would round to a zero, on either side of the plan', () => {
+    const short = renderRail(finished(648));
+    expect(verdictOf(short)).toBe('exact');
+    expect(short).not.toContain('data-testid="forge-against-gap"');
+    expect(verdictTextOf(short)).toBe(en.forgeAgainstExact);
+
+    const long = renderRail(finished(652));
+    expect(verdictOf(long)).toBe('exact');
+    expect(long).not.toContain('data-testid="forge-against-gap"');
+    expect(verdictTextOf(long)).toBe(en.forgeAgainstExact);
   });
 
   it('still reads as an outcome for a run cut short after one cheap roll, where the percentage nears −100%', () => {

@@ -117,17 +117,26 @@ export function forgeResultHeading(result: ForgeRunResult, t: Copy): { text: str
 
 export type ForgeSpendVerdict = 'exact' | 'under' | 'over' | 'worse';
 
+/** Whether the difference against the plan would print as a zero — the printed figure is a whole
+ *  signed percent, so anything inside half a percent of the expected figure rounds away. The
+ *  expected figure is a value iteration's float and a spend is a whole number of gold, so the two
+ *  are never identical; this is what "the same as the plan" can mean. */
+function gapRoundsToZero(spent: number, expected: number): boolean {
+  if (expected <= 0) return spent === expected;
+  return Math.round(Math.abs((100 * (spent - expected)) / expected)) === 0;
+}
+
 /**
- * How a run's spend stands against the plan it was made from. Landing on the expected figure is
- * neither under nor over, so it is its own answer rather than a signed zero picking a side of an
- * inequality; under it is a gain; over it but inside the bad run is the range the plan said to
- * prepare for; past the bad run is worse than the plan ever offered.
+ * How a run's spend stands against the plan it was made from. A spend the percentage cannot tell
+ * apart from the plan is neither under nor over, so it is its own answer rather than a `+0%` beside
+ * a phrase picking a side of an inequality; under is a gain; over but inside the bad run is the
+ * range the plan said to prepare for; past the bad run is worse than the plan ever offered.
  */
 export function forgeSpendVerdict(
   spent: number,
   forecast: { gold: number; badRunGold: number },
 ): ForgeSpendVerdict {
-  if (spent === forecast.gold) return 'exact';
+  if (gapRoundsToZero(spent, forecast.gold)) return 'exact';
   if (spent < forecast.gold) return 'under';
   return spent <= forecast.badRunGold ? 'over' : 'worse';
 }
