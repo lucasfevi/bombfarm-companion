@@ -1,0 +1,254 @@
+import { describe, expect, it } from 'vitest';
+import type { SheetStats } from '@bombfarm/domain/gear';
+import type { StatRanges } from '@bombfarm/domain/birth-sheet';
+import { SHEET_PANEL_KEYS, ZERO_PTS_TEMPLATE } from '@bombfarm/domain/planner-constants';
+import { LETTER_BANDS, boundaryCutPoint, rollQualityFor } from '@bombfarm/domain/roll-quality';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import {
+  birthRollAvailability,
+  gradePlacementFor,
+  gradeRailFor,
+  identityFlagsFor,
+  letterDisagreementFor,
+  nextLetterReadout,
+  statRollRowsFor,
+} from './birth-roll-panel';
+
+/**
+ * Every hero below rolls each of its eight statistics inside a 0–100 window, so a statistic's
+ * percentile IS its rolled value and the report's mean is that value exactly. The letters those
+ * means fall in are then read off `LETTER_BANDS` itself rather than restated here, so a future
+ * re-measurement of the corpus moves these tests with it instead of falsifying them.
+ */
+const FULL_BAND: StatRanges = Object.fromEntries(
+  SHEET_PANEL_KEYS.map((key) => [key, { min: 0, max: 100 }]),
+);
+
+function birthAt(percentile: number): SheetStats {
+  return {
+    ...ZERO_PTS_TEMPLATE,
+    ...Object.fromEntries(SHEET_PANEL_KEYS.map((key) => [key, percentile])),
+  };
+}
+
+function hero(fields: Partial<HeroRecord>): HeroRecord {
+  return {
+    id: 'hero-1',
+    name: 'Hero',
+    updatedAt: 0,
+    rarity: 'Comum',
+    level: 60,
+    stars: 0,
+    naked: { ...ZERO_PTS_TEMPLATE },
+    loadout: {},
+    altLoadout: null,
+    gearedOverride: { ...ZERO_PTS_TEMPLATE },
+    abilities: {},
+    pts: { ...ZERO_PTS_TEMPLATE },
+    ...fields,
+  };
+}
+
+/** A hero whose eight rolls all land on `percentile`, giving a report with that exact mean. */
+function rolledAt(percentile: number, rank?: string): HeroRecord {
+  return hero({ birth: birthAt(percentile), statRanges: FULL_BAND, ...(rank ? { rank } : {}) });
+}
+
+function reportFor(record: HeroRecord) {
+  const report = rollQualityFor(record);
+  if (report === undefined) throw new Error('fixture was expected to produce a report');
+  return report;
+}
+
+const cutPoints = LETTER_BANDS.boundaries.map(boundaryCutPoint);
+
+/** A mean comfortably inside the letter at `index`, away from either bracketed edge. */
+function insideLetter(index: number): number {
+  const low = index === 0 ? LETTER_BANDS.evidence[0].observedMin : LETTER_BANDS.boundaries[index - 1].max;
+  const high =
+    index === cutPoints.length
+      ? LETTER_BANDS.evidence[LETTER_BANDS.evidence.length - 1].observedMax
+      : LETTER_BANDS.boundaries[index].min;
+  return (low + high) / 2;
+}
+
+const TOP_LETTER_INDEX = LETTER_BANDS.letters.length - 1;
+const A_INDEX = TOP_LETTER_INDEX - 1;
+
+const oneDecimal = (value: number) => value.toFixed(1);
+
+describe('birthRollAvailability', () => {
+  it('a hero with a full report is available', () => {
+    const record = rolledAt(insideLetter(A_INDEX), LETTER_BANDS.letters[A_INDEX]);
+
+    expect(birthRollAvailability(record, reportFor(record))).toEqual({ kind: 'available' });
+  });
+
+  it('a hero with no birth roll is unavailable for that reason, carrying no percentile', () => {
+    const record = hero({ statRanges: FULL_BAND });
+
+    expect(rollQualityFor(record)).toBeUndefined();
+    // toEqual on the whole result, not a property probe: it also proves no number rode along.
+    expect(birthRollAvailability(record, rollQualityFor(record))).toEqual({
+      kind: 'unavailable',
+      reason: 'noBirthRoll',
+    });
+    expect(gradePlacementFor(rollQualityFor(record))).toBeUndefined();
+
+    const rows = statRollRowsFor(record, oneDecimal, oneDecimal);
+    expect(rows.map((row) => row.percentile)).toEqual(SHEET_PANEL_KEYS.map(() => undefined));
+    expect(rows.flatMap((row) => [row.value, row.band, row.position]).join(' ')).not.toMatch(/\d/);
+  });
+
+  it('a hero with no roll bounds is unavailable for a different reason', () => {
+    const withRolls = hero({ birth: birthAt(50) });
+    const withoutRolls = hero({ statRanges: FULL_BAND });
+
+    expect(birthRollAvailability(withRolls, rollQualityFor(withRolls))).toEqual({
+      kind: 'unavailable',
+      reason: 'noRollBounds',
+    });
+    expect(birthRollAvailability(withRolls, rollQualityFor(withRolls))).not.toEqual(
+      birthRollAvailability(withoutRolls, rollQualityFor(withoutRolls)),
+    );
+  });
+});
+
+describe('gradePlacementFor and letterDisagreementFor', () => {
+  it('a computed/stored letter disagreement is reported with the stored letter still present', () => {
+    const record = rolledAt(insideLetter(A_INDEX), LETTER_BANDS.letters[0]);
+    const report = reportFor(record);
+
+    expect(report.computedLetter).toBe(LETTER_BANDS.letters[A_INDEX]);
+    expect(letterDisagreementFor(report)).toEqual({
+      storedLetter: LETTER_BANDS.letters[0],
+      computedLetter: LETTER_BANDS.letters[A_INDEX],
+    });
+    const placement = gradePlacementFor(report);
+    expect(placement?.storedLetter).toBe(LETTER_BANDS.letters[0]);
+    expect(placement?.certainty).toEqual({ kind: 'uncertain', cause: 'letterDisagreement' });
+  });
+
+  it('an unknown stored letter is uncertain but is not a disagreement', () => {
+    const record = rolledAt(insideLetter(A_INDEX), 'Z');
+    const report = reportFor(record);
+
+    expect(letterDisagreementFor(report)).toBeUndefined();
+    const placement = gradePlacementFor(report);
+    expect(placement?.certainty).toEqual({ kind: 'uncertain', cause: 'unknownStoredLetter' });
+    // The rail cannot be read against a letter this table does not know, so it falls to ours.
+    expect(placement?.railLetter).toBe(LETTER_BANDS.letters[A_INDEX]);
+  });
+
+  it('sitting near a bracketed edge is neither of the two uncertain causes', () => {
+    const boundary = LETTER_BANDS.boundaries[A_INDEX - 1];
+    const mean = (boundary.min + boundary.max) / 2;
+    const record = rolledAt(mean, mean < boundaryCutPoint(boundary) ? boundary.below : boundary.above);
+    const report = reportFor(record);
+
+    expect(report.nearBoundary).toBe(true);
+    expect(letterDisagreementFor(report)).toBeUndefined();
+    expect(gradePlacementFor(report)?.certainty).toEqual({ kind: 'nearBoundary' });
+  });
+
+  it('a settled placement reads against the letter the game stored', () => {
+    const stored = LETTER_BANDS.letters[A_INDEX];
+    const placement = gradePlacementFor(reportFor(rolledAt(insideLetter(A_INDEX), stored)));
+
+    expect(placement?.certainty).toEqual({ kind: 'settled' });
+    expect(placement?.railLetter).toBe(stored);
+  });
+});
+
+describe('nextLetterReadout', () => {
+  it('renders the distance as a range with two distinct ends', () => {
+    const record = rolledAt(insideLetter(A_INDEX), LETTER_BANDS.letters[A_INDEX]);
+    const readout = nextLetterReadout(reportFor(record), oneDecimal);
+
+    expect(readout?.letter).toBe(LETTER_BANDS.letters[TOP_LETTER_INDEX]);
+    const ends = readout?.range.split('–') ?? [];
+    expect(ends).toHaveLength(2);
+    expect(ends[0]).not.toBe(ends[1]);
+    expect(Number(ends[0])).toBeLessThan(Number(ends[1]));
+  });
+
+  it('the top grade has no next letter and none is invented', () => {
+    const top = LETTER_BANDS.letters[TOP_LETTER_INDEX];
+    const report = reportFor(rolledAt(insideLetter(TOP_LETTER_INDEX), top));
+
+    expect(report.computedLetter).toBe(top);
+    expect(report.toNextLetter).toBeUndefined();
+    expect(nextLetterReadout(report, oneDecimal)).toBeUndefined();
+  });
+});
+
+describe('gradeRailFor', () => {
+  it('letter widths follow the measured cut points rather than even spacing', () => {
+    const rail = gradeRailFor(insideLetter(A_INDEX));
+    const widths = rail.segments.map((segment) => segment.endPct - segment.startPct);
+
+    expect(rail.segments.map((segment) => segment.letter)).toEqual([...LETTER_BANDS.letters]);
+    expect(rail.segments[0].startPct).toBe(0);
+    expect(rail.segments[rail.segments.length - 1].endPct).toBe(100);
+    // Even spacing would make all six equal; the corpus makes E by far the widest.
+    expect(Math.max(...widths)).toBe(widths[0]);
+    expect(new Set(widths.map((width) => width.toFixed(4))).size).toBeGreaterThan(1);
+  });
+
+  it('each boundary occupies width, because the evidence brackets it rather than locating it', () => {
+    const rail = gradeRailFor(insideLetter(A_INDEX));
+
+    expect(rail.boundaries).toHaveLength(LETTER_BANDS.boundaries.length);
+    for (const boundary of rail.boundaries) {
+      expect(boundary.endPct).toBeGreaterThan(boundary.startPct);
+    }
+  });
+
+  it('a hero outside every observed extreme stretches the domain instead of being clamped', () => {
+    const beyond = LETTER_BANDS.evidence[LETTER_BANDS.evidence.length - 1].observedMax + 5;
+    const rail = gradeRailFor(beyond);
+
+    expect(rail.domainMax).toBe(beyond);
+    expect(rail.markerPct).toBe(100);
+  });
+});
+
+describe('statRollRowsFor', () => {
+  it('places every statistic and marks a roll outside its own window', () => {
+    const record = hero({
+      birth: birthAt(40),
+      statRanges: { ...FULL_BAND, attack: { min: 0, max: 10 } },
+    });
+    const rows = statRollRowsFor(record, oneDecimal, oneDecimal);
+    const attack = rows.find((row) => row.key === 'attack');
+
+    expect(rows).toHaveLength(SHEET_PANEL_KEYS.length);
+    expect(attack?.outOfBand).toBe(true);
+    expect(attack?.band).toBe('0.0–10.0');
+    expect(rows.find((row) => row.key === 'energy')?.percentile).toBe(40);
+  });
+});
+
+describe('identityFlagsFor', () => {
+  it('reads the three flags by their three different absence rules', () => {
+    expect(identityFlagsFor(hero({}))).toEqual({
+      deployed: false,
+      battleAllowed: true,
+      marketable: 'unknown',
+    });
+    expect(identityFlagsFor(hero({ deployed: true, battleAllowed: false, marketable: false }))).toEqual(
+      { deployed: true, battleAllowed: false, marketable: 'no' },
+    );
+    expect(identityFlagsFor(hero({ marketable: true })).marketable).toBe('yes');
+  });
+});
+
+describe('the fixture bands really are the ones the assertions assume', () => {
+  it('a rolled value equals its percentile, so a mean is the value all eight rolled at', () => {
+    const mean = insideLetter(A_INDEX);
+    const record = rolledAt(mean, LETTER_BANDS.letters[A_INDEX]);
+
+    expect(reportFor(record).mean).toBeCloseTo(mean, 10);
+    expect(reportFor(record).contributingStats).toBe(SHEET_PANEL_KEYS.length);
+  });
+});

@@ -24,11 +24,16 @@ export const heroPtBR: HeroCopy = {
   heroDetailIdentityNotMarketable: "Não negociável",
 
   heroDetailRollTitle: "Sorteio de nascimento",
+  heroDetailRollQuality: "Qualidade do sorteio",
+  heroDetailRollColStat: "Atributo",
+  heroDetailRollColBand: "Faixa",
+  heroDetailRollColPosition: "Posição",
   heroDetailRollValue: "Sorteado",
   heroDetailRollBand: "Sorteado dentro de {range}",
   heroDetailRollPercentile: "{pct}% dentro da faixa",
   heroDetailRollGradePlacement: "Onde ele fica na nota {letter}",
   heroDetailRollToNextLetter: "A {range} pontos da nota {letter}",
+  heroDetailRollTopGrade: "Esta é a nota mais alta; não existe nada acima dela.",
   heroDetailRollNearEdge: "Este herói está perto da borda da sua nota.",
   heroDetailRollPermanent:
     "O sorteio de nascimento é permanente: nunca muda com nível, estrelas, equipamento ou pontos gastos.",
@@ -39,6 +44,8 @@ export const heroPtBR: HeroCopy = {
   heroDetailRollComputedDisagrees:
     "A qualidade que calculamos cai em uma letra diferente da que o jogo guardou.",
   heroDetailRollStoredLetterStands: "A letra guardada é a resposta do jogo e continua valendo.",
+  heroDetailRollStoredLetter: "Nota guardada",
+  heroDetailRollComputedLetter: "Nossa estimativa",
   heroDetailRollPlacementUncertain: "Leia a posição abaixo como incerta.",
   heroDetailRollTintIsOurs:
     "A cor da barra é um auxílio de leitura nosso, não uma regra publicada pelo jogo.",

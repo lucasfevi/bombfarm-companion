@@ -25,11 +25,16 @@ export const heroEn = {
   heroDetailIdentityNotMarketable: "Not marketable",
 
   heroDetailRollTitle: "Birth roll",
+  heroDetailRollQuality: "Roll quality",
+  heroDetailRollColStat: "Statistic",
+  heroDetailRollColBand: "Band",
+  heroDetailRollColPosition: "Position",
   heroDetailRollValue: "Rolled",
   heroDetailRollBand: "Rolled inside {range}",
   heroDetailRollPercentile: "{pct}% into its band",
   heroDetailRollGradePlacement: "Where it sits in grade {letter}",
   heroDetailRollToNextLetter: "{range} points from grade {letter}",
+  heroDetailRollTopGrade: "This is the top grade, with nothing above it.",
   heroDetailRollNearEdge: "This hero sits near the edge of its grade.",
   heroDetailRollPermanent:
     "The birth roll is permanent: it never changes with level, stars, gear or spent points.",
@@ -39,6 +44,8 @@ export const heroEn = {
   heroDetailRollComputedDisagrees:
     "The quality we compute lands on a different letter than the one the game stored.",
   heroDetailRollStoredLetterStands: "The stored letter is the game's answer and stands.",
+  heroDetailRollStoredLetter: "Stored grade",
+  heroDetailRollComputedLetter: "Our estimate",
   heroDetailRollPlacementUncertain: "Read the placement below as uncertain.",
   heroDetailRollTintIsOurs:
     "The rail's tint is a reading aid of ours, not a rule the game publishes.",

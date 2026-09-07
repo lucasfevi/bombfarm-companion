@@ -9,4 +9,5 @@ export type { HeroPickerSlot, HeroPickerSlotProps } from './phases-hero-switcher
 export { HeroCopyProvider, useHeroCopy } from './hero-copy-context';
 export type { HeroCopyValue } from './hero-copy-context';
 export { PhasesHeroPanel } from './phases-hero-panel';
+export { HeroIdentityRollPanel } from './hero-identity-roll-panel';
 export { PhasesHeroFitTable } from './phases-hero-fit-table';
