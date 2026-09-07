@@ -244,10 +244,18 @@ async function theRunBandIsInView(page) {
           if (Math.round(band.height) === 0) return 'collapsed';
           const above = Math.round(band.top - port.top);
           const below = Math.round(port.bottom - band.bottom);
-          if (above < 0) return `${String(-above)}px above the top`;
+          // The numbers ride along in the message: this has failed on a runner whose geometry
+          // differs from any dev machine, and a bare "not in view" costs a whole CI round trip to
+          // learn what a printed one says outright.
+          const where =
+            `band ${String(Math.round(band.height))}h at ${String(Math.round(band.top))}` +
+            `, port ${String(Math.round(port.height))}h at ${String(Math.round(port.top))}` +
+            `, scrollTop ${String(Math.round(main.scrollTop))}` +
+            `/${String(Math.round(main.scrollHeight))}`;
+          if (above < 0) return `${String(-above)}px above the top — ${where}`;
           // A band taller than the port stops at aligning its top, which is what the scroll
           // promises and all it can promise; anything shorter must fit whole.
-          if (below < 0 && band.height < port.height) return `${String(-below)}px below the bottom`;
+          if (below < 0 && band.height < port.height) return `${String(-below)}px below the bottom — ${where}`;
           return 'in view';
         }),
       { timeout: 10_000 },

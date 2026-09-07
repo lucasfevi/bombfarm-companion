@@ -140,6 +140,17 @@ export function ForgeRail({
     if (brought.current || height === undefined || height === 0) return;
     brought.current = true;
     bringBandIntoView(band.current, height);
+    // A second pass once the band has finished opening. The first runs against a box that is still
+    // a frame or two from its final place, and on a slow machine a smooth scroll started from a
+    // stale measurement can land short and stay there with nothing to correct it. This one measures
+    // what the band actually became, and is a no-op whenever the first already landed.
+    const settle = setTimeout(() => {
+      const opened = band.current?.getBoundingClientRect().height;
+      bringBandIntoView(band.current, opened === undefined || opened === 0 ? height : opened);
+    }, motionTokens.panelMs + 80);
+    return () => {
+      clearTimeout(settle);
+    };
   }, [run.status, height]);
 
   let content: ReactNode = null;
