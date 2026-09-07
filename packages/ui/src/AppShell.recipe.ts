@@ -19,7 +19,16 @@ export const appShellRootClass = 'flex h-dvh flex-col overflow-hidden bg-bg text
  * OS drags when `draggable` is on — enough to make the window stutter and snap while moving.
  */
 export const appShellHeaderClass =
-  'relative flex min-h-top shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-4 py-2.5';
+  'relative flex min-h-top shrink-0 items-center border-b border-line bg-surface px-[var(--shell-gutter)] pr-[calc(var(--shell-gutter)+var(--scrollbar))] py-2.5';
+
+/**
+ * The header's content, on `<main>`'s measure and with `<main>`'s gutter, so the brand starts
+ * exactly where the panels start and the actions end where they end. The bar element itself stays
+ * full-bleed: its border, background and drag strip are window chrome and belong to the window's
+ * width, not to the measure the content is read at.
+ */
+export const appShellBarClass =
+  'relative mx-auto flex w-full min-w-0 max-w-desktop items-center justify-between gap-3';
 
 /** Brand row — mark beside the lockup, same shape as the web's `SiteHeader` `<Link>`. */
 export const appShellBrandRowClass = 'flex shrink-0 items-center gap-2.5';
@@ -62,7 +71,8 @@ export const appShellDragStripClass = 'absolute top-0 right-0 bottom-0 left-0';
  * appears beside this one. Making this element the containing block brings them back inside the
  * only box allowed to scroll.
  */
-export const appShellMainClass = 'relative flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-6';
+export const appShellMainClass =
+  'relative flex min-h-0 flex-1 flex-col overflow-y-auto [scrollbar-gutter:stable] px-[var(--shell-gutter)] py-6';
 
 /**
  * The measure. Caps and centres the content while the scrollbar stays on `<main>` at the window
@@ -82,4 +92,8 @@ export const appShellMainClass = 'relative flex min-h-0 flex-1 flex-col overflow
 export const appShellMainInnerClass = 'mx-auto flex w-full min-h-0 max-w-desktop flex-1 flex-col';
 
 export const appShellStatusBarClass =
-  'flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 border-t border-line px-6 py-1 text-sm';
+  'shrink-0 border-t border-line px-[var(--shell-gutter)] pr-[calc(var(--shell-gutter)+var(--scrollbar))] py-1 text-sm';
+
+/** The status strip's content, on the same measure as the header's and `<main>`'s. */
+export const appShellStatusInnerClass =
+  'mx-auto flex w-full max-w-desktop flex-wrap items-center gap-x-4 gap-y-1';

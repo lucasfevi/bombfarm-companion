@@ -3,44 +3,51 @@
 import { useSyncExternalStore } from 'react';
 
 /**
- * How much of itself the top bar can still show.
+ * How much of itself the top bar can still show, in the order it gives things up.
  *
  * - `full` — brand lockup, worded tabs, every action spelled out in the bar.
- * - `actions-collapsed` — the secondary actions move behind one overflow button. The tabs keep
- *   their words, which is the half of the bar a player navigates by.
  * - `icon-tabs` — the tabs become glyphs (the active one keeps its label, so the screen is still
- *   named) and the brand shrinks to its mark.
+ *   named). A tab word stands in for a glyph the player learns once; an action behind a menu costs
+ *   a click every time it is used, so the tabs go first and the actions stay controls.
+ * - `brand-mark` — the brand shrinks to its mark, taking the product name, the suite tag and the
+ *   flavor badge with it. This is where the smallest window a player can drag to sits.
+ * - `actions-collapsed` — the secondary actions move behind one overflow button. Everything that
+ *   can give way has.
  */
-export type ShellDensity = 'full' | 'actions-collapsed' | 'icon-tabs';
+export type ShellDensity = 'full' | 'icon-tabs' | 'brand-mark' | 'actions-collapsed';
 
 /**
- * Both widths are the room the bar actually has — the window minus the strip the OS caption
- * buttons claim, which is ~136px on Windows and none elsewhere — and both were measured off the
- * rendered bar rather than picked: the tabs and the actions cluster are laid out at their natural
- * width and neither shrinks, so the first pixel one of them loses is the pixel they start
- * overlapping on. Portuguese is the binding language; its tab words are the longest either
- * language puts in the pill.
+ * All three widths are the room the bar actually has — the window minus the strip the OS caption
+ * buttons claim, which is ~136px on Windows and none elsewhere — and all three were measured off
+ * the rendered bar rather than picked: the brand, the tabs and the actions cluster are laid out at
+ * their natural width and none of them shrinks, so the first pixel one of them loses is the pixel
+ * they start overlapping on. Portuguese is the binding language; its tab words and its action
+ * labels are the longest either language puts in the bar.
  *
- * Brand 159 + tabs 512 + actions 340 + the padding and two gaps = 1055px for the whole bar, with
- * six tabs (the sixth, the Forge, added 66px to the five measured at 446). The margin above that
- * absorbs a font-rendering pass that measures a few pixels wider.
+ * Brand 159 + worded tabs 512 + actions 340 + the two gaps = 1040px of content, and the bar's
+ * content is 24px narrower than the room measured here (the shell gutter, less the caption strip
+ * the bar already holds clear) — so 1064px, with six tabs. The margin above that absorbs a
+ * font-rendering pass that measures a few pixels wider.
  */
-export const SHELL_ACTIONS_COLLAPSE_WIDTH = 1070;
+export const SHELL_ICON_TABS_WIDTH = 1080;
+
+/** The same sum with the tabs already down to glyphs: 159 + 351 + 340 + gaps = 878, so 902px. */
+export const SHELL_BRAND_MARK_WIDTH = 920;
 
 /**
- * The same sum with the actions already down to their one 38px button: 753px.
+ * And with the brand down to its mark as well: 34 + 351 + 340 + gaps = 753, so 777px.
  *
  * No window reaches this today — the desktop's own minimum is 960px, which leaves 824px of bar
- * even after the caption inset, and that is the stage above. It is kept because the sum it comes
- * from is not fixed: every tab added pushes both widths up, and a seventh destination brings this
- * one inside the range a window can be dragged to. The alternative is deleting it and writing it
- * again on the day a tab is added, against a bar that has already started overlapping.
+ * after the caption inset, and that is the stage above. It is kept because the sum it comes from
+ * is not fixed: every tab added pushes all three widths up, and a seventh destination brings this
+ * one inside the range a window can be dragged to.
  */
-export const SHELL_ICON_TABS_WIDTH = 770;
+export const SHELL_ACTIONS_COLLAPSE_WIDTH = 800;
 
 export function shellDensityFor(availableWidth: number): ShellDensity {
-  if (availableWidth < SHELL_ICON_TABS_WIDTH) return 'icon-tabs';
   if (availableWidth < SHELL_ACTIONS_COLLAPSE_WIDTH) return 'actions-collapsed';
+  if (availableWidth < SHELL_BRAND_MARK_WIDTH) return 'brand-mark';
+  if (availableWidth < SHELL_ICON_TABS_WIDTH) return 'icon-tabs';
   return 'full';
 }
 
@@ -53,7 +60,7 @@ function subscribe(onStoreChange: () => void): () => void {
 
 /**
  * The live density of the window this renderer is drawn in. Returns a string rather than a width
- * so React bails out of re-rendering for every pixel of a drag and only commits on the two
+ * so React bails out of re-rendering for every pixel of a drag and only commits on the three
  * transitions that change what is on screen.
  *
  * `overlayInset` is the room the OS caption buttons already took — see `SHELL_ICON_TABS_WIDTH`.

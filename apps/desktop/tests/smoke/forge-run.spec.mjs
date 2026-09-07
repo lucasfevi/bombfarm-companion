@@ -17,11 +17,11 @@ const desktopRoot = path.join(__dirname, '..', '..');
  * mark the chart holds open while a roll is in flight, the result heading, and the return to a
  * collapsed rail.
  *
- * The screen is sized by its content, so what the layout promises here is not that nothing
- * scrolls — the page is free to be taller than the window. It is that the bag is as tall as the
- * item and plan panels beside it, that the column holding those two never scrolls inside itself,
- * that the bag table is the one scroller on the screen, and that opening the ledger only ever
- * adds height below what is already drawn.
+ * The screen fills the window and then overflows downwards, so what the layout promises here is
+ * not that nothing scrolls — the page is free to be taller than the window. It is that the bag is
+ * at least as tall as the item and plan panels beside it, that the column holding those two never
+ * scrolls inside itself, that the bag table is the one scroller on the screen, and that opening
+ * the ledger moves nothing above it.
  *
  * `forge:inject` deliberately writes no ledger row — only a real run through the service does —
  * so the ledger at the foot of the screen stays empty through all three phases, and that is what
@@ -305,16 +305,18 @@ const SPLIT_MIN_HEIGHT = 460;
 
 /**
  * The column beside the bag grows to exactly what it draws — no scroller of its own, and no
- * scrollbar narrowing it — and the bag panel is as tall as that column, floored so an unpicked
- * bag is still worth reading. Polled rather than slept through: the column animates to its new
- * height, and a hidden window takes its time about it.
+ * scrollbar narrowing it — and the bag panel is as tall as the row, which is never shorter than
+ * that column and never shorter than the floor an unpicked bag is worth reading at. Not an
+ * equality: the row also takes whatever height the bands around it leave, so on a window with
+ * room to spare it is taller than both. Polled rather than slept through: the column animates to
+ * its new height, and a hidden window takes its time about it.
  */
-async function splitFollowsTheAside(page) {
+async function splitHoldsTheAside(page) {
   const settled = {
     asideHoldsItsContent: true,
     asideKeepsItsFullWidth: true,
     bagIsTheRowHeight: true,
-    rowFollowsTheAside: true,
+    rowIsAtLeastTheAside: true,
   };
   await expect
     .poll(
@@ -325,7 +327,7 @@ async function splitFollowsTheAside(page) {
           asideHoldsItsContent: aside.scrollHeight <= aside.clientHeight + 1,
           asideKeepsItsFullWidth: aside.clientWidth === aside.offsetWidth,
           bagIsTheRowHeight: bag.height === split.height,
-          rowFollowsTheAside: split.height === Math.max(aside.height, SPLIT_MIN_HEIGHT),
+          rowIsAtLeastTheAside: split.height >= Math.max(aside.height, SPLIT_MIN_HEIGHT),
         };
       },
       { timeout: 15_000 },
@@ -340,24 +342,40 @@ async function theBagScrolls(page) {
   expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight);
 }
 
-/** The screen is sized by its content now, so the page is free to be taller than the window —
- *  but only downwards. Opening the ledger adds to what `<main>` scrolls and moves nothing above
- *  it, which is the promise the old "nothing scrolls anywhere" rule was standing in for. */
-async function openingTheLedgerOnlyAdds(page, ledger) {
+/**
+ * The room the ledger needs comes out of the row's spare height first and out of the scroll once
+ * there is none left — which of the two depends only on how tall the window is, and either way
+ * nothing above the row moves and the piece beside the bag is untouched. Then it all comes back.
+ */
+async function openingTheLedgerTakesOnlyFromBelow(page, ledger) {
   const trigger = ledger.getByRole('button', { name: 'Run ledger' });
   const before = await boxesOf(page);
+
   await trigger.click();
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
-  await expect.poll(async () => (await boxesOf(page)).view.height).toBeGreaterThan(before.view.height);
+  await expect
+    .poll(async () => {
+      const now = await boxesOf(page);
+      return now.split.height < before.split.height || now.mainScroll > before.mainScroll;
+    })
+    .toBe(true);
+
   const after = await boxesOf(page);
-  expect(after.split).toEqual(before.split);
-  expect(after.mainScroll).toBeGreaterThanOrEqual(before.mainScroll);
-  await splitFollowsTheAside(page);
+  expect(after.split.pageTop, 'the row moved when the ledger opened').toBe(before.split.pageTop);
+  expect(after.aside.height, 'the piece beside the bag resized when the ledger opened').toBe(before.aside.height);
+  expect(after.split.height, 'the row grew to make room for the ledger').toBeLessThanOrEqual(before.split.height);
+  await splitHoldsTheAside(page);
 
   await trigger.click();
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
-  await expect.poll(async () => (await boxesOf(page)).view.height).toBe(before.view.height);
-  expect((await boxesOf(page)).split).toEqual(before.split);
+  // Both, and polled: the ledger animates shut, so the row is back at its height a beat before
+  // the region is back to its scroll.
+  await expect
+    .poll(async () => {
+      const now = await boxesOf(page);
+      return { split: now.split.height, scroll: now.mainScroll };
+    })
+    .toEqual({ split: before.split.height, scroll: before.mainScroll });
 }
 
 test.describe('forge run smoke', () => {
@@ -374,8 +392,8 @@ test.describe('forge run smoke', () => {
       const ledger = page.getByTestId('forge-ledger');
       await expect(rail).toHaveAttribute('data-state', 'collapsed');
       await expect(ledger).toHaveAttribute('data-state', 'empty');
-      await splitFollowsTheAside(page);
-      await openingTheLedgerOnlyAdds(page, ledger);
+      await splitHoldsTheAside(page);
+      await openingTheLedgerTakesOnlyFromBelow(page, ledger);
 
       // --- Running: the rail expands across the whole row, and the split keeps its shape ------
       expect(await inject(page, scriptedSteps(itemId))).toEqual({ ok: true });
@@ -391,7 +409,7 @@ test.describe('forge run smoke', () => {
       await page.waitForTimeout(400);
       await theRunBandIsInView(page);
       await railSpansTheRow(page);
-      await splitFollowsTheAside(page);
+      await splitHoldsTheAside(page);
       await shoot(page, testInfo, 'forge-run-running.png');
 
       // --- Between rolls: the chart holds the next roll's place rather than the header saying a
@@ -427,7 +445,7 @@ test.describe('forge run smoke', () => {
       await expect(rail.getByTestId('forge-result-climb')).toHaveText('+8 → +12');
       await page.waitForTimeout(400);
       await railSpansTheRow(page);
-      await splitFollowsTheAside(page);
+      await splitHoldsTheAside(page);
       await shoot(page, testInfo, 'forge-run-finished.png');
 
       // --- Done: the rail collapses to nothing, and the ledger below it is opened to show that
@@ -442,7 +460,7 @@ test.describe('forge run smoke', () => {
       await expect(ledger.getByText('No runs yet')).toBeVisible();
       await expect(ledger.getByTestId('forge-ledger-body')).toHaveCount(0);
       await page.waitForTimeout(400);
-      await splitFollowsTheAside(page);
+      await splitHoldsTheAside(page);
       await shoot(page, testInfo, 'forge-run-collapsed.png');
 
       const history = await page.evaluate(() => window.bfc.invoke('forge:history'));

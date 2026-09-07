@@ -86,7 +86,7 @@ async function withForge(run) {
     });
     try {
       await goToForge(page);
-      await run(page);
+      await run(page, app);
       await app.close();
     } finally {
       await app.close().catch(() => undefined);
@@ -100,6 +100,41 @@ async function withForge(run) {
 function figureOf(text) {
   return Number(text.replace(/,/g, ''));
 }
+
+/** Resizes the real `BrowserWindow` — Playwright's Electron support has no viewport emulation. */
+async function resize(app, page, width, height) {
+  await app.evaluate(({ BrowserWindow }, size) => {
+    const win = BrowserWindow.getAllWindows()[0];
+    win?.setMinimumSize(200, 200);
+    win?.setSize(size.width, size.height);
+  }, { width, height });
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await page.waitForTimeout(250);
+}
+
+/** The screen's foot against the region's, and whether the region has anything to scroll. */
+function footOfTheScreen(page) {
+  return page.evaluate(() => {
+    const main = document.querySelector('main');
+    const style = getComputedStyle(main);
+    const ledger = document.querySelector('[data-testid="forge-ledger"]');
+    const bag = document.querySelector('[data-testid="forge-bag-panel"]');
+    return {
+      // How much of the region is left under the last thing drawn, past the padding that is
+      // meant to be there. The defect this guards was ~600px of it on a 1400px window.
+      deadSpace: Math.round(
+        main.getBoundingClientRect().bottom -
+          parseFloat(style.paddingBottom) -
+          ledger.getBoundingClientRect().bottom,
+      ),
+      bagHeight: Math.round(bag.getBoundingClientRect().height),
+      scrolls: main.scrollHeight > main.clientHeight,
+    };
+  });
+}
+
+/** The floor the screen puts under the split so an unpicked bag is still worth reading. */
+const SPLIT_MIN_HEIGHT = 460;
 
 test.describe('forge plan smoke', () => {
   test('narrows to one hero, plans a climb on a piece, steps the target, and cannot forge on a fixture', async ({}, testInfo) => {
@@ -248,6 +283,29 @@ test.describe('forge plan smoke', () => {
       // Nothing rolling, so the rail takes no room; the ledger below says it has no runs.
       await expect(page.getByTestId('forge-rail')).toHaveAttribute('data-state', 'collapsed');
       await expect(page.getByTestId('forge-ledger')).toHaveAttribute('data-state', 'empty');
+    });
+  });
+
+  test('gives the bag the height the window has spare, and takes it back when the window has none', async ({}, testInfo) => {
+    testInfo.setTimeout(180_000);
+    await withForge(async (page, app) => {
+      // Tall enough to have room to spare. The bag is the screen's slack, so it takes all of it:
+      // the ledger lands on the foot of the region and there is nothing left to scroll.
+      await resize(app, page, 1280, 1400);
+      const tall = await footOfTheScreen(page);
+      expect(tall.deadSpace, `the screen stopped ${String(tall.deadSpace)}px short of the window`)
+        .toBeLessThanOrEqual(1);
+      expect(tall.deadSpace).toBeGreaterThanOrEqual(0);
+      expect(tall.bagHeight, 'the bag stayed at its floor in a window with room to spare')
+        .toBeGreaterThan(SPLIT_MIN_HEIGHT);
+      expect(tall.scrolls, 'a window with room to spare had something to scroll').toBe(false);
+
+      // Short enough to have none. The bag is back at its floor and the give goes the other way:
+      // the region scrolls rather than the row being squeezed under what it has to draw.
+      await resize(app, page, 1280, 640);
+      const short = await footOfTheScreen(page);
+      expect(short.bagHeight).toBe(SPLIT_MIN_HEIGHT);
+      expect(short.scrolls, 'a window too short for the screen had nothing to scroll').toBe(true);
     });
   });
 });

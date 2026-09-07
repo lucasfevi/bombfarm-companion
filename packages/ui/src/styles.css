@@ -40,6 +40,14 @@
      them readable as a pair. */
   --container-settings: 768px;
 
+  /* The shell's horizontal gutter, and the strip its one scroll region gives its scrollbar.
+     Named rather than spelled `px-6` in three places because the header and the status strip
+     have to reserve the scrollbar's width too: `<main>` is the only band that has a scrollbar,
+     and all three centre the same measure inside their own box, so a strip only one of them
+     gives up would leave the top bar five pixels right of the panels under it. */
+  --shell-gutter: 1.5rem;
+  --scrollbar: 10px;
+
   /* Window layout breakpoints — see docs/design-system.md. */
   --breakpoint-compact: 1180px;
   --breakpoint-wide: 1500px;
@@ -140,8 +148,8 @@
 
 /* Scrollbars — thin, hue-tinted to match the ochre UI chrome */
 *::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: var(--scrollbar);
+  height: var(--scrollbar);
 }
 
 *::-webkit-scrollbar-track {
