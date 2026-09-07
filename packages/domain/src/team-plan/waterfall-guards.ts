@@ -10,6 +10,7 @@
  */
 import type { PointAlloc } from '../gear/types';
 import type { InventoryItem } from '../inventory';
+import { wikiPhaseLine } from '../phase-wiki';
 import { evaluateRoster } from './evaluate';
 import { loadoutsFromAssignment, type AssignmentState } from './solver-assignment';
 import type {
@@ -23,12 +24,23 @@ import type {
 
 const EPS = 1e-9;
 
+/**
+ * The `FarmContext` every roster evaluation scores heroes in — the ONE definition, shared with
+ * `solver-search.ts`.
+ *
+ * A named `targetPhase` replaces the account's own phase AND its mitigation, taken from that
+ * phase's wiki row rather than carried over from the save: mitigation is a property of the phase
+ * being fought, so scoring damage at phase 400 with phase 151's mitigation would answer neither
+ * question. Without one this is the account exactly as the save reports it.
+ */
 export function farmFromAccount(input: TeamPlanInput): FarmContext {
+  const targetPhase = input.targetPhase;
+  const line = targetPhase != null && Number.isFinite(targetPhase) ? wikiPhaseLine(targetPhase) : undefined;
   return {
     houseIdx: input.account.houseIdx,
     houseLevel: input.account.houseLevel,
-    phase: input.account.phase,
-    mitigationPct: input.account.mitigationPct,
+    phase: line ? line.phase : input.account.phase,
+    mitigationPct: line ? line.mitig * 100 : input.account.mitigationPct,
     cycleSecs: input.account.cycleSecs,
     cycleSecsHouseIdx: input.account.cycleSecsHouseIdx,
     cycleSecsLevel: input.account.cycleSecsLevel,

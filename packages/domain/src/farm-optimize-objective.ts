@@ -93,13 +93,32 @@ export type FarmPhasePick = { phase: number; value: number; row: FarmRateRow };
 
 /** `exhaustive` forces the linear sweep, giving up the screen-and-refine speedup for an argmax
  *  that is proven rather than screened. Set it on every pick that becomes a REPORTED answer. */
-export type BestFarmPhaseOptions = FarmRateOptions & { phaseStride?: number; exhaustive?: boolean };
+export type BestFarmPhaseOptions = FarmRateOptions & {
+  phaseStride?: number;
+  exhaustive?: boolean;
+  /**
+   * One phase to price, instead of an argmax over any candidate set.
+   *
+   * Deliberately NOT filtered by `maxPhase`: a caller naming a phase is asking what the squad
+   * would earn holding it, which is a fair question about a phase the account has not unlocked
+   * yet. The row still reports `locked` so the caller can say so.
+   */
+  pinnedPhase?: number | null;
+};
 
 /** `null`/non-positive/non-finite ⇒ every phase in `[1, 600]`; a finite value ⇒ `[1, min(v, 600)]`. */
 function resolveUpperPhase(maxPhase: number | null | undefined): number {
   const ceiling = WIKI_PHASE_LINES.length;
   if (maxPhase == null || !Number.isFinite(maxPhase) || maxPhase <= 0) return ceiling;
   return Math.min(ceiling, Math.floor(maxPhase));
+}
+
+/** `null`/non-finite/out of `[1, 600]` ⇒ no pin. Fractional values round, matching `wikiPhaseLine`. */
+function resolvePinnedPhase(pinnedPhase: number | null | undefined): number | null {
+  if (pinnedPhase == null || !Number.isFinite(pinnedPhase)) return null;
+  const phase = Math.round(pinnedPhase);
+  if (phase < 1 || phase > WIKI_PHASE_LINES.length) return null;
+  return phase;
 }
 
 /** `null`/non-finite/`< 1` ⇒ no subsampling (every phase in range is a candidate). */
@@ -185,6 +204,10 @@ function scanPhases(
  * At the default stride the sweep is two-stage: screen the world openers, then refine one world
  * either side of the screen's winner. A subsampling `phaseStride`, or `exhaustive`, takes the
  * linear sweep instead.
+ *
+ * A `pinnedPhase` short-circuits all of that and reads exactly ONE row. It wins over every other
+ * option, `exhaustive` included: there is no argmax left to prove once the caller has named the
+ * phase, and this is the whole speedup — the sweep is ~96% of what a farm evaluation costs.
  */
 export function bestFarmPhase(
   squad: SquadFarmFacts,
@@ -192,10 +215,14 @@ export function bestFarmPhase(
   scales: FarmObjectiveScales,
   options?: BestFarmPhaseOptions,
 ): FarmPhasePick | null {
-  const upper = resolveUpperPhase(options?.maxPhase);
-  const stride = resolveStride(options?.phaseStride);
   const rowOptions = sanitizeRowOptions(options);
   const scan = (phases: readonly number[]) => scanPhases(phases, squad, objective, scales, rowOptions);
+
+  const pinned = resolvePinnedPhase(options?.pinnedPhase);
+  if (pinned !== null) return scan([pinned]);
+
+  const upper = resolveUpperPhase(options?.maxPhase);
+  const stride = resolveStride(options?.phaseStride);
 
   if (stride > 1 || options?.exhaustive === true) return scan(candidatePhases(upper, stride));
 

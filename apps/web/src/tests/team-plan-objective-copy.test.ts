@@ -107,6 +107,44 @@ describe('team plan objective copy', () => {
     expect(offenders).toEqual([]);
   });
 
+  /**
+   * The phase picker and the run summary's read-back render under BOTH objectives from a single
+   * key each, so they get no `…Dps`/`…Farm` pair to keep them apart — which means each string has
+   * to be true of a gold plan and a damage plan at once. A damage word in any of them is the same
+   * failure the bundle split exists to prevent, arriving through the one door the split does not
+   * cover.
+   */
+  const OBJECTIVE_NEUTRAL_KEYS = [
+    'teamPlanPhaseLabel',
+    'teamPlanPhaseAria',
+    'teamPlanPhaseNone',
+    'teamPlanPhaseSearchPlaceholder',
+    'teamPlanPhaseNoMatch',
+    'teamPlanPhaseMoreMatches',
+    'teamPlanPhaseHintNone',
+    'teamPlanPhaseHintChosen',
+    'teamPlanPhaseBeyondMax',
+    'teamPlanRunSummaryScoredPhase',
+    'teamPlanScoredPhaseChosen',
+    'teamPlanScoredPhaseAccount',
+    'teamPlanScoredPhaseSearched',
+    'teamPlanScoredPhaseUnreachable',
+    'teamPlanScoredPhaseNoneFeasible',
+  ] as const;
+
+  for (const lang of LANGS) {
+    it(`${lang}: the phase copy renders under both objectives, so it names neither`, () => {
+      for (const key of OBJECTIVE_NEUTRAL_KEYS) {
+        const text = STRINGS[lang][key];
+        expect(text, `${key} is missing`).toBeTruthy();
+        for (const pattern of DAMAGE_WORDS[lang]) {
+          expect(text, `${key}: "${text}" matched ${pattern}`).not.toMatch(pattern);
+        }
+        expect(text, `${key}: "${text}" names gold`).not.toMatch(GOLD_WORDS[lang]);
+      }
+    });
+  }
+
   it('red state: the scan above does catch a suffixed key in a component', () => {
     const pretendComponent = 'return <p>{t.teamPlanResultsHeaderFarm}</p>;';
     const suffixed = Object.keys(objectiveNamespace.en).filter((key) => /(Dps|Farm)$/.test(key));

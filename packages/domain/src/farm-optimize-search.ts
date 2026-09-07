@@ -12,9 +12,14 @@ import {
   type HeroFarmBasis,
   type SquadFarmAccount,
   type SquadFarmFacts,
-  type FarmRateOptions,
 } from './farm-rate';
-import { bestFarmPhase, type FarmObjectiveScales, type FarmPhasePick, type ResolvedFarmObjective } from './farm-optimize-objective';
+import {
+  bestFarmPhase,
+  type BestFarmPhaseOptions,
+  type FarmObjectiveScales,
+  type FarmPhasePick,
+  type ResolvedFarmObjective,
+} from './farm-optimize-objective';
 import type { SheetKey } from './planner-constants';
 
 const EPS_REL = 1e-9;
@@ -48,14 +53,15 @@ export type FarmCandidate = {
 
 /** ONE evaluation — the budget's unit: squad facts for a whole candidate assignment (zero
  *  pipeline calls), then the phase argmax over it. `value` is `-Infinity` when nothing is
- *  feasible under this assignment, never `NaN`. */
+ *  feasible under this assignment, never `NaN`. A `pinnedPhase` in `phaseOptions` collapses that
+ *  argmax to a single row, which is where nearly all of an evaluation's cost sits. */
 export function evaluateAssignment(
   bases: readonly HeroFarmBasis[],
   assignment: PtsAssignment | null,
   account: SquadFarmAccount,
   objective: ResolvedFarmObjective,
   scales: FarmObjectiveScales,
-  phaseOptions: FarmRateOptions & { phaseStride?: number },
+  phaseOptions: BestFarmPhaseOptions,
 ): { squad: SquadFarmFacts; pick: FarmPhasePick | null; value: number } {
   const squad = squadFactsFromBases(bases, assignment, account);
   const pick = bestFarmPhase(squad, objective, scales, phaseOptions);
@@ -297,7 +303,7 @@ export function runFarmSearch(
   account: SquadFarmAccount,
   objective: ResolvedFarmObjective,
   scales: FarmObjectiveScales,
-  phaseOptions: FarmRateOptions,
+  phaseOptions: BestFarmPhaseOptions,
   evaluationBudget: number,
 ): FarmSearchOutcome {
   const basesById = new Map(bases.map((b) => [b.heroId, b] as const));

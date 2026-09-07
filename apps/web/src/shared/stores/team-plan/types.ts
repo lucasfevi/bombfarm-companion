@@ -72,6 +72,9 @@ export function computeTeamPlanInputSignature(input: {
   /** `casa.cycle_secs` — moves every hero's duty cycle, so a change must re-run the plan. */
   houseCycleSecs: number | null;
   objective: TeamPlanObjective;
+  /** Resolved, not the raw slice field — the derived default moves when the Farm tab's phase does,
+   *  and a plan scored at the old one is as stale as one scored for the old objective. */
+  targetPhase: number | null;
 }): string {
   return JSON.stringify({
     heroIds: input.heroes.map((hero) => hero.id).sort(),
@@ -86,6 +89,7 @@ export function computeTeamPlanInputSignature(input: {
     houseIdx: input.houseIdx,
     houseCycleSecs: input.houseCycleSecs,
     objective: input.objective,
+    targetPhase: input.targetPhase,
   });
 }
 

@@ -22,7 +22,26 @@ export const en = {
   teamPlanOptimizingCancel: 'Cancel',
   teamPlanOptimizingProgressAria: 'Building team plan',
   teamPlanSetupSectionTitle: 'Search setup',
+  teamPlanPhaseLabel: 'Plan for phase',
+  teamPlanPhaseAria: 'Which phase this search plans for',
+  teamPlanPhaseNone: 'None',
+  teamPlanPhaseSearchPlaceholder: 'Difficulty, coordinate, or number',
+  teamPlanPhaseNoMatch: 'No phase matches that.',
+  teamPlanPhaseMoreMatches: 'Showing {shown} of {matched} — keep typing to narrow.',
+  teamPlanPhaseHintNone:
+    'No phase pinned. The search picks the best phase your squad can hold, and says which one it settled on.',
+  teamPlanPhaseHintChosen:
+    'Every figure below is scored at this phase, and nowhere else. Pinning one also makes the search much faster.',
+  teamPlanPhaseBeyondMax:
+    'Past the furthest phase your account has reached (#{max}) — this answers what the squad would earn if it could hold it.',
   teamPlanRunSummaryTitle: 'Search summary',
+  teamPlanRunSummaryScoredPhase: 'Scored at',
+  teamPlanScoredPhaseChosen: '{phase} — the phase you picked.',
+  teamPlanScoredPhaseAccount: '{phase} — where your account is now.',
+  teamPlanScoredPhaseSearched: '{phase} — picked automatically, the best this squad can hold.',
+  teamPlanScoredPhaseUnreachable:
+    '{phase} — this squad cannot clear it, so there is nothing for it to earn there.',
+  teamPlanScoredPhaseNoneFeasible: 'No phase this squad can clear was found.',
   teamPlanRunSummaryFieldStatus: 'Field status',
   teamPlanRunSummaryDuty: 'Battle load',
   teamPlanRunSummaryDutyValue: '{duty} of {slots} slots',
@@ -132,7 +151,27 @@ export const pt: typeof en = {
   teamPlanOptimizingCancel: 'Cancelar',
   teamPlanOptimizingProgressAria: 'Montando plano do time',
   teamPlanSetupSectionTitle: 'Configurar busca',
+  teamPlanPhaseLabel: 'Planejar para a fase',
+  teamPlanPhaseAria: 'Para qual fase esta busca planeja',
+  teamPlanPhaseNone: 'Nenhuma',
+  teamPlanPhaseSearchPlaceholder: 'Dificuldade, coordenada ou número',
+  teamPlanPhaseNoMatch: 'Nenhuma fase corresponde.',
+  teamPlanPhaseMoreMatches: 'Mostrando {shown} de {matched} — continue digitando para filtrar.',
+  teamPlanPhaseHintNone:
+    'Nenhuma fase fixada. A busca escolhe a melhor fase que seu esquadrão consegue sustentar, e informa qual foi.',
+  teamPlanPhaseHintChosen:
+    'Todos os números abaixo são calculados nesta fase, e em nenhuma outra. Fixar uma também deixa a busca muito mais rápida.',
+  teamPlanPhaseBeyondMax:
+    'Além da fase mais distante que sua conta alcançou (#{max}) — isto responde quanto o esquadrão renderia se conseguisse sustentá-la.',
   teamPlanRunSummaryTitle: 'Resumo da busca',
+  teamPlanRunSummaryScoredPhase: 'Calculado na fase',
+  teamPlanScoredPhaseChosen: '{phase} — a fase que você escolheu.',
+  teamPlanScoredPhaseAccount: '{phase} — onde sua conta está agora.',
+  teamPlanScoredPhaseSearched:
+    '{phase} — escolhida automaticamente, a melhor que este esquadrão sustenta.',
+  teamPlanScoredPhaseUnreachable:
+    '{phase} — este esquadrão não consegue limpá-la, então não há nada a render nela.',
+  teamPlanScoredPhaseNoneFeasible: 'Nenhuma fase que este esquadrão consiga limpar foi encontrada.',
   teamPlanRunSummaryFieldStatus: 'Situação do campo',
   teamPlanRunSummaryDuty: 'Carga de batalha',
   teamPlanRunSummaryDutyValue: '{duty} de {slots} slots',

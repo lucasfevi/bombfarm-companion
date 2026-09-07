@@ -2,6 +2,7 @@ import type { TeamPlanInput } from '@bombfarm/domain/team-plan/types';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 import { resolveHeroScope } from '@/shared/stores/team-plan/types';
 import { selectTreeSheetTotals } from '@/shared/stores/selectors/tree-sheet-selectors';
+import { selectTeamPlanTargetPhase } from '@/shared/stores/selectors/team-plan-selectors';
 
 export function buildTeamPlanInputFromStore(state: PlannerStore): TeamPlanInput {
   const treeSheet = selectTreeSheetTotals(state);
@@ -55,6 +56,9 @@ export function buildTeamPlanInputFromStore(state: PlannerStore): TeamPlanInput 
     ),
     forgeFloor: state.forgeFloor,
     objective: state.objective,
+    // Both objectives score here. Null is the objective's own default: gold sweeps for its best
+    // phase, damage stays on the account's own.
+    targetPhase: selectTeamPlanTargetPhase(state),
   };
 }
 

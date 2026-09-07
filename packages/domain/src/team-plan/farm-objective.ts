@@ -38,6 +38,7 @@ import {
   bestFarmPhase,
   farmObjectiveValue,
   resolveFarmObjective,
+  type BestFarmPhaseOptions,
   type FarmObjectiveScales,
   type ResolvedFarmObjective,
 } from '../farm-optimize-objective';
@@ -88,21 +89,32 @@ function farmContextFor(account: TeamPlanAccountInput): FarmContext {
 }
 
 /**
- * The phase ceiling, or a throw. There is no sane default: `FarmRateOptions` reads an absent
+ * The candidate phase set for the whole run: one named phase, or the sweep's ceiling.
+ *
+ * A named phase needs no ceiling — it is not a sweep, so there is nothing to bound — which is why
+ * `maxPhase` rides along only to set each row's `locked` flag and never to exclude the phase the
+ * caller asked about.
+ *
+ * Without one there is no sane default and this throws: `FarmRateOptions` reads an absent
  * `maxPhase` as the whole 600-row wiki table, and a squad optimised for phases the account has
- * never unlocked is a plan for someone else's account. A caller that asks for gold and cannot
- * say how far the account has got is a caller that has not been wired up yet.
+ * never unlocked is a plan for someone else's account.
  */
-function requireMaxPhase(account: TeamPlanAccountInput): number {
+function phaseOptionsFor(
+  account: TeamPlanAccountInput,
+  targetPhase: number | null | undefined,
+): BestFarmPhaseOptions {
   const maxPhase = account.maxPhase;
+  if (targetPhase != null && Number.isFinite(targetPhase)) {
+    return { maxPhase: maxPhase ?? null, pinnedPhase: targetPhase };
+  }
   if (typeof maxPhase !== 'number' || !Number.isFinite(maxPhase) || maxPhase < 1) {
     throw new Error(
-      "team-plan: objective 'farm' needs account.maxPhase (the account's highest unlocked " +
-        `phase); got ${JSON.stringify(maxPhase)}. Without it the plan would optimise the squad ` +
-        'across the whole 600-phase table.',
+      "team-plan: objective 'farm' needs either a targetPhase or account.maxPhase (the " +
+        `account's highest unlocked phase); got ${JSON.stringify(maxPhase)}. With neither, the ` +
+        'plan would optimise the squad across the whole 600-phase table.',
     );
   }
-  return maxPhase;
+  return { maxPhase };
 }
 
 function squadAccountFor(account: TeamPlanAccountInput): SquadFarmAccount {
@@ -170,8 +182,9 @@ export function buildFarmObjective(
   squadContexts: readonly HeroPlanContext[],
   account: TeamPlanAccountInput,
   loadoutByHeroId: Readonly<Record<string, Loadout>>,
+  targetPhase?: number | null,
 ): TeamPlanFarmObjective {
-  const maxPhase = requireMaxPhase(account);
+  const phaseOptions = phaseOptionsFor(account, targetPhase);
   const farm = farmContextFor(account);
   const auras = priceAuras(squadContexts, loadoutByHeroId, farm);
   const heroes: FrozenHeroFarmTerms[] = squadContexts.map((ctx) => ({
@@ -184,7 +197,7 @@ export function buildFarmObjective(
     auras,
     farm,
     account: squadAccountFor(account),
-    phaseOptions: { maxPhase },
+    phaseOptions,
     treeLuckFlatPct: account.treeSheet.luckFlatPct,
     heroes,
   };
@@ -283,6 +296,9 @@ function valueAt(
  * `bestFarmPhase` runs at its default stride, which screens the world openers and refines one
  * world either side. `exhaustive` is deliberately NOT passed — inside a search a screen miss only
  * bends the trajectory, and the sweep is the overwhelming majority of a farm evaluation's cost.
+ *
+ * With a pinned phase in `phaseOptions` there is no argmax and no screen: one row, and `phase`
+ * comes back `null` only when the squad cannot clear the phase it was told to price.
  */
 export function evaluateFarmObjective(
   objective: TeamPlanFarmObjective,
@@ -351,9 +367,11 @@ export function screenFarmObjective(
     );
   });
 
-  // No incumbent phase means the incumbent farms nothing, so there is no phase to price at.
-  // Phase 1 is the easiest one and therefore the one a move is likeliest to make feasible, which
-  // is exactly what the ranking needs to detect; a candidate that cannot hold it scores 0 and
-  // ranks last on its own.
-  return valueAt(objective, facts, basePhase ?? 1);
+  // A pinned phase is the only phase this run scores at, so the screen has to rank moves there
+  // too — falling back to the incumbent's phase would rank candidates on a question the
+  // evaluation never asks. No incumbent phase means the incumbent farms nothing, so there is no
+  // phase to price at; phase 1 is the easiest one and therefore the one a move is likeliest to
+  // make feasible, which is exactly what the ranking needs to detect, and a candidate that cannot
+  // hold it scores 0 and ranks last on its own.
+  return valueAt(objective, facts, objective.phaseOptions.pinnedPhase ?? basePhase ?? 1);
 }

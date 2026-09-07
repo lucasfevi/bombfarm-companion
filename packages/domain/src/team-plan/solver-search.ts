@@ -13,9 +13,9 @@ import {
   type GearMove,
 } from './solver-assignment';
 import { generateMoves } from './solver-moves';
+import { farmFromAccount } from './waterfall-guards';
 import type {
   EvaluateRosterInput,
-  FarmContext,
   TeamPlanInput,
   HeroPlanContext,
   RosterEvaluation,
@@ -158,18 +158,6 @@ function invariantCacheKey(
     .map(([id, pts]) => `${id}:${JSON.stringify(pts)}`)
     .join('|');
   return `${ptsPart}#${forgeFloor}`;
-}
-
-function farmFromAccount(input: TeamPlanInput): FarmContext {
-  return {
-    houseIdx: input.account.houseIdx,
-    houseLevel: input.account.houseLevel,
-    phase: input.account.phase,
-    mitigationPct: input.account.mitigationPct,
-    cycleSecs: input.account.cycleSecs,
-    cycleSecsHouseIdx: input.account.cycleSecsHouseIdx,
-    cycleSecsLevel: input.account.cycleSecsLevel,
-  };
 }
 
 export function evaluateAssignment(

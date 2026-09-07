@@ -10,14 +10,14 @@
 export const en = {
   teamPlanObjectiveLabel: 'Score for',
   teamPlanObjectiveAria: 'What this search scores a roster on',
-  teamPlanObjectiveOptionDamage: 'Damage',
-  teamPlanObjectiveOptionGold: 'Gold',
+  teamPlanObjectiveOptionDamage: 'DPS',
+  teamPlanObjectiveOptionGold: 'Gold / hr',
   teamPlanObjectiveHintDps:
     'Ranks builds by combined roster DPS. Gold per hour is not scored, and can fall.',
   teamPlanObjectiveHintFarm:
-    'Ranks builds by the gold per hour the squad brings in at the furthest phase it can hold. A roster that earns more can hit softer.',
+    'Ranks builds by the gold per hour the squad brings in at the phase beside this. A roster that earns more can hit softer.',
   teamPlanObjectiveFarmNeedsMaxPhase:
-    'Scoring for gold needs the furthest phase your account has reached, which this save did not carry. Re-import it, or score for damage.',
+    'Letting the search pick its own phase needs the furthest phase your account has reached, which this save did not carry. Pick a phase above, re-import the save, or score for damage.',
   teamPlanSetupSectionBodyDps:
     'Builds a plan of gear moves, forge work, and point resets for the heroes you mark Optimize — scored for combined roster DPS.',
   teamPlanSetupSectionBodyFarm:
@@ -57,14 +57,14 @@ export const en = {
 export const pt: typeof en = {
   teamPlanObjectiveLabel: 'Pontuar por',
   teamPlanObjectiveAria: 'O que esta busca usa para pontuar um roster',
-  teamPlanObjectiveOptionDamage: 'Dano',
-  teamPlanObjectiveOptionGold: 'Ouro',
+  teamPlanObjectiveOptionDamage: 'DPS',
+  teamPlanObjectiveOptionGold: 'Ouro / h',
   teamPlanObjectiveHintDps:
     'Classifica builds pelo DPS de roster combinado. O ouro por hora não é pontuado, e pode cair.',
   teamPlanObjectiveHintFarm:
-    'Classifica builds pelo ouro por hora que o esquadrão rende na fase mais distante que consegue sustentar. Um roster que rende mais pode bater mais fraco.',
+    'Classifica builds pelo ouro por hora que o esquadrão rende na fase ao lado. Um roster que rende mais pode bater mais fraco.',
   teamPlanObjectiveFarmNeedsMaxPhase:
-    'Pontuar por ouro exige a fase mais distante que sua conta alcançou, que este save não trouxe. Reimporte o save, ou pontue por dano.',
+    'Deixar a busca escolher a própria fase exige a fase mais distante que sua conta alcançou, que este save não trouxe. Escolha uma fase acima, reimporte o save, ou pontue por dano.',
   teamPlanSetupSectionBodyDps:
     'Monta um plano de movimentações de itens, forjas e resets de pontos para os heróis marcados como Otimizar — pontuado pelo DPS de roster combinado.',
   teamPlanSetupSectionBodyFarm:

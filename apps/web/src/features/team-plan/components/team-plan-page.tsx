@@ -77,7 +77,7 @@ export function TeamPlanPage({
 
   const setupAndScope = (
     <>
-      <TeamPlanToolbar t={t} runner={runner} />
+      <TeamPlanToolbar t={t} lang={lang} runner={runner} />
       <ScopeList t={t} lang={lang} />
     </>
   );

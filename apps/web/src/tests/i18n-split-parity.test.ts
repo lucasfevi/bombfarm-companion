@@ -398,9 +398,34 @@ const KEYS_REMOVED: readonly string[] = [
  * such page and passes nothing, so the shared panel names no destination there.
  * `farmRespecPointsOnly` is that advisor's own scope sentence, and lives in the shared farm copy
  * because it is true on both apps.
+ *
+ * The Team plan phase picker (2026-09-07) adds the control (`teamPlanPhaseLabel`,
+ * `teamPlanPhaseAria`, `teamPlanPhaseNone`, `teamPlanPhaseSearchPlaceholder`,
+ * `teamPlanPhaseNoMatch`, `teamPlanPhaseMoreMatches`), the two hints under it
+ * (`teamPlanPhaseHintNone`/`Chosen`), the note for a phase past the account's furthest
+ * (`teamPlanPhaseBeyondMax`), and the run summary's read-back of which phase the plan was scored
+ * at, one string per way the phase was arrived at (`teamPlanRunSummaryScoredPhase`,
+ * `teamPlanScoredPhaseChosen`, `teamPlanScoredPhaseAccount`, `teamPlanScoredPhaseSearched`,
+ * `teamPlanScoredPhaseUnreachable`, `teamPlanScoredPhaseNoneFeasible`). None of these are
+ * objective-suffixed: a phase is a phase under either objective, and the read-back reports one.
  */
 const KEYS_ADDED: readonly string[] = [
   'farmRespecPointsOnly',
+  'teamPlanPhaseLabel',
+  'teamPlanPhaseAria',
+  'teamPlanPhaseNone',
+  'teamPlanPhaseSearchPlaceholder',
+  'teamPlanPhaseNoMatch',
+  'teamPlanPhaseMoreMatches',
+  'teamPlanPhaseHintNone',
+  'teamPlanPhaseHintChosen',
+  'teamPlanPhaseBeyondMax',
+  'teamPlanRunSummaryScoredPhase',
+  'teamPlanScoredPhaseChosen',
+  'teamPlanScoredPhaseAccount',
+  'teamPlanScoredPhaseSearched',
+  'teamPlanScoredPhaseUnreachable',
+  'teamPlanScoredPhaseNoneFeasible',
   'teamPlanObjectiveLabel',
   'teamPlanObjectiveAria',
   'teamPlanObjectiveOptionDamage',

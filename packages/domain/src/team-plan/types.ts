@@ -1,5 +1,6 @@
 import type { BirthStats, TreeSheetTotals } from '../birth-sheet';
-import type { FarmRateOptions, HeroFarmFacts, SquadFarmAccount } from '../farm-rate';
+import type { BestFarmPhaseOptions } from '../farm-optimize-objective';
+import type { HeroFarmFacts, SquadFarmAccount } from '../farm-rate';
 import type { Loadout, PointAlloc, SheetStats } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import type {
@@ -189,10 +190,11 @@ export type TeamPlanAccountInput = {
    * defaults to 0 and `xpMult` (`skills.totals.xp_mult`, verbatim) to 1, both matching the
    * estimator. A DPS-mode plan is unaffected by all three.
    *
-   * `maxPhase` (`account.max_phase`) has NO default in farm mode — `runTeamPlan` refuses to plan
-   * for gold without it rather than fall back to the 600-phase table ceiling, which would
-   * optimise the squad for phases the account has never unlocked. Optional only because a
-   * DPS-mode caller genuinely has no use for it.
+   * `maxPhase` (`account.max_phase`) has no default in farm mode when the plan is left to find
+   * its own phase — `runTeamPlan` refuses to sweep the 600-phase table and optimise the squad for
+   * phases the account has never unlocked. {@link TeamPlanInput.targetPhase} removes that need
+   * entirely: a named phase is not a sweep, so gold scoring works on a record carrying no
+   * `max_phase` at all.
    */
   teamCoinPct?: number;
   xpMult?: number;
@@ -241,7 +243,9 @@ export type TeamPlanFarmObjective = {
   auras: Record<TeamBuffId, number>;
   farm: FarmContext;
   account: SquadFarmAccount;
-  phaseOptions: FarmRateOptions;
+  /** Carries `pinnedPhase` when {@link TeamPlanInput.targetPhase} named one, which is what turns
+   *  every evaluation's phase argmax into a single row read. */
+  phaseOptions: BestFarmPhaseOptions;
   treeLuckFlatPct: number;
   heroes: readonly FrozenHeroFarmTerms[];
 };
@@ -254,6 +258,18 @@ export type TeamPlanInput = {
   forgeFloor: number;
   /** Omitted ⇒ `'dps'`, the historical behaviour. See {@link TeamPlanObjective}. */
   objective?: TeamPlanObjective;
+  /**
+   * The one phase to plan for, under EITHER objective. Absent/`null` keeps the historical
+   * behaviour of each: farm sweeps for the best phase the squad can hold, damage scores at the
+   * account's own phase and mitigation.
+   *
+   * Named, both objectives score there and nowhere else — farm reads one phase row instead of
+   * the ~35 a screen-and-refine sweep reads, and damage swaps the account's mitigation for that
+   * phase's. A phase past `account.maxPhase` is allowed on purpose: "what would I earn if I
+   * could hold this" is a question worth answering, and {@link TeamPlan.scoredPhase} reports
+   * back which phase the answer is about.
+   */
+  targetPhase?: number | null;
 };
 
 /**
@@ -342,6 +358,24 @@ export type TeamPlan = {
   planDps: number;
   /** The forge floor the plan actually adopted — 0 when forging was rejected. */
   forgeFloorApplied: number;
+  /**
+   * The phase every figure above is about, and where that phase came from.
+   *
+   * `'chosen'` is `TeamPlanInput.targetPhase` verbatim. `'searched'` is the farm sweep's own
+   * argmax — the phase the plan picked for itself, and the only source a reader has to be told
+   * was automatic. `'account'` is the damage objective's default, the account's current phase.
+   *
+   * `null` only when there is no phase to name at all: a farm sweep that found nothing feasible
+   * anywhere, or a damage plan on a record carrying no current phase.
+   */
+  scoredPhase: number | null;
+  scoredPhaseSource: 'chosen' | 'searched' | 'account';
+  /**
+   * The squad cannot clear {@link scoredPhase}, so the gold figures are zero rather than small.
+   * Only ever true for a chosen phase in farm mode — a sweep never settles on a phase it cannot
+   * hold, and the damage objective has no feasibility notion.
+   */
+  scoredPhaseInfeasible: boolean;
   /** Internal split of the single `gear` step. EITHER may be negative; disclosure-only. */
   gearBreakdown: { forgeDelta: number; moveDelta: number };
   /** True when the gear step sits below today. The plan is only ahead once the resets land. */

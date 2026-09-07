@@ -18,6 +18,7 @@ import {
 import { loadoutsFromAssignment } from './solver-assignment';
 import { buildWaterfall } from './waterfall';
 import type {
+  RosterEvaluation,
   TeamPlan,
   TeamPlanFarmObjective,
   TeamPlanInput,
@@ -100,7 +101,41 @@ function farmObjectiveFor(
   if (squadContexts.length === 0) return undefined;
   const loadoutByHeroId: Record<string, Loadout> = {};
   for (const hero of input.heroes) loadoutByHeroId[hero.heroId] = loadoutForScoring(hero.loadout, 0);
-  return buildFarmObjective(squadContexts, input.account, loadoutByHeroId);
+  return buildFarmObjective(squadContexts, input.account, loadoutByHeroId, input.targetPhase);
+}
+
+/**
+ * Which phase the plan's figures are about, for the reader.
+ *
+ * The chosen phase is reported as chosen even when the squad cannot clear it — the answer to
+ * "what would I earn at phase 400" is allowed to be "nothing", and silently reporting some other
+ * phase instead would be a different plan wearing this one's number.
+ */
+function scoredPhaseReport(
+  input: TeamPlanInput,
+  farmObjective: TeamPlanFarmObjective | undefined,
+  finalEvaluation: RosterEvaluation,
+): Pick<TeamPlan, 'scoredPhase' | 'scoredPhaseSource' | 'scoredPhaseInfeasible'> {
+  const chosen = input.targetPhase;
+  if (chosen != null && Number.isFinite(chosen)) {
+    return {
+      scoredPhase: Math.round(chosen),
+      scoredPhaseSource: 'chosen',
+      scoredPhaseInfeasible: farmObjective !== undefined && finalEvaluation.farmPhase == null,
+    };
+  }
+  if (farmObjective) {
+    return {
+      scoredPhase: finalEvaluation.farmPhase ?? null,
+      scoredPhaseSource: 'searched',
+      scoredPhaseInfeasible: false,
+    };
+  }
+  return {
+    scoredPhase: input.account.phase,
+    scoredPhaseSource: 'account',
+    scoredPhaseInfeasible: false,
+  };
 }
 
 export function runTeamPlan(
@@ -214,6 +249,7 @@ export function runTeamPlan(
     currentDps: waterfall.steps[0]?.objective ?? 0,
     planDps: waterfall.steps[2]?.objective ?? 0,
     forgeFloorApplied: waterfall.forgeFloorApplied,
+    ...scoredPhaseReport(input, farmObjective, waterfall.finalEvaluation),
     gearBreakdown: waterfall.gearBreakdown,
     requiresFullPlan: waterfall.requiresFullPlan,
     gearDipDps: waterfall.gearDipDps,

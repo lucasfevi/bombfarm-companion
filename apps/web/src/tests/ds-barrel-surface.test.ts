@@ -86,6 +86,12 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   // `Select` — the two disagree on the type of `value` and on what a change is, and a union that
   // loose pushes the narrowing onto every call site. Base UI's select does the work.
   'SelectMultiple',
+  // `SearchSelect` / `searchSelectMatches` (2026-09-07): `Select`'s trigger and popup over a list
+  // too long to scroll, with a search field in the popup and a rendered-row cap. Base UI's
+  // combobox does the work; the matcher is exported beside it so a caller can test the query its
+  // own labels answer to without mounting the control.
+  'SearchSelect',
+  'searchSelectMatches',
   'SettingsRow',
   'SettingsSection',
   'Slider',

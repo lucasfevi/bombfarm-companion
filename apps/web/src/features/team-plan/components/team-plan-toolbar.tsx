@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { Button, Panel } from '@bombfarm/ui';
 import { panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui/panel-field.recipe';
-import type { Strings } from '@/shared/i18n';
+import type { Lang, Strings } from '@/shared/i18n';
 import type { TeamPlanRunner } from '@/features/team-plan/hooks/use-team-plan-runner';
 import {
   buildTeamPlanInputFromStore,
@@ -17,8 +17,17 @@ import {
 import { teamPlanObjectiveCopy } from '@/features/team-plan/model/objective-copy';
 import { ForgeFloorField } from './forge-floor-field';
 import { ObjectiveField } from './objective-field';
+import { PhaseField } from './phase-field';
 
-export function TeamPlanToolbar({ t, runner }: { t: Strings; runner: TeamPlanRunner }) {
+export function TeamPlanToolbar({
+  t,
+  lang,
+  runner,
+}: {
+  t: Strings;
+  lang: Lang;
+  runner: TeamPlanRunner;
+}) {
   const startRun = usePlannerStore((state) => state.startRun);
   const applyPlan = usePlannerStore((state) => state.applyPlan);
   const resolveRun = usePlannerStore((state) => state.resolveRun);
@@ -73,8 +82,9 @@ export function TeamPlanToolbar({ t, runner }: { t: Strings; runner: TeamPlanRun
           {t.teamPlanObjectiveFarmNeedsMaxPhase}
         </p>
       ) : null}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-6">
         <ObjectiveField t={t} copy={copy} />
+        <PhaseField t={t} lang={lang} />
         <ForgeFloorField t={t} />
         <Button
           type="button"
