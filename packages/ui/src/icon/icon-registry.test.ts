@@ -22,6 +22,9 @@ import { uiIconRegistry } from './ui-registry';
 // window-close — the header draws the window controls itself now, and the four arrive together
 // because they are one hairline set read as a group; splitting the close mark off to the existing
 // `x-mark` puts two stroke weights in one cluster. Budget 25 -> 29.
+// Desktop Heroes tab (2026-09-07): user-group — the seventh nav tab's glyph, chosen over the
+// single-figure alternative so it is not read as the Account tab's `user` at the glyph-only
+// widths; the budget moved to 30 with it.
 const MIGRATED_UI_NAMES = [
   'window',
   'signal',
@@ -30,6 +33,7 @@ const MIGRATED_UI_NAMES = [
   'user',
   'cog',
   'hammer',
+  'user-group',
   'ellipsis-horizontal',
   'layout-grid',
   'layout-list',
@@ -55,8 +59,8 @@ const MIGRATED_UI_NAMES = [
 ] as const;
 
 describe('icon registries — budget and membership', () => {
-  it('keeps uiIconRegistry within the 29-entry budget', () => {
-    expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(29);
+  it('keeps uiIconRegistry within the 30-entry budget', () => {
+    expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(30);
   });
 
   it('maps exactly the declared ui-chrome glyphs', () => {

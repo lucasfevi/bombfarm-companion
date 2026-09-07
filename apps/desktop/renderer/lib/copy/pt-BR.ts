@@ -571,6 +571,10 @@ export const ptBR: Copy = {
   farmStatColumn: 'Atributo',
   farmStatLuck: 'Sorte',
 
+  heroesNavLabel: 'Heróis',
+  heroesNeverReadTitle: 'Nada foi lido da sua conta ainda',
+  heroesNeverReadDescription: 'Abra o jogo com o companion em execução, e seus heróis aparecerão aqui.',
+
   heroAvatarCol: 'Avatar',
   heroBattleActive: 'Ativado',
   heroBattleActiveTitle: 'Ativado no rodízio',

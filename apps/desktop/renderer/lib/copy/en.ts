@@ -599,6 +599,12 @@ export const en = {
   farmStatColumn: 'Stat',
   farmStatLuck: 'Luck',
 
+  // heroes* — the Heroes screen's own chrome, distinct from the hero* vocabulary below, which is
+  // the shared per-hero field names the farm surfaces also read.
+  heroesNavLabel: 'Heroes',
+  heroesNeverReadTitle: 'Nothing read from your account yet',
+  heroesNeverReadDescription: 'Open the game with the companion running, and your heroes will appear here.',
+
   // hero*/gear*/import*/roster*/switch*/mode*/rank* — hero-identity vocabulary the farm screen's
   // roster surfaces read as one structural contract. Named exactly as that contract names them.
   heroAvatarCol: 'Avatar',

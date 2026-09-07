@@ -10,7 +10,14 @@ import type {
   UpdateStatus,
 } from '@bombfarm/contracts';
 import { DEFAULT_SETTINGS, idleUpdateStatus } from '@bombfarm/contracts';
-import { AppShell, BrandMark, StatusChip, useShellDensity, WINDOW_CONTROLS_WIDTH } from '@bombfarm/ui';
+import {
+  AppShell,
+  BrandMark,
+  EmptyState,
+  StatusChip,
+  useShellDensity,
+  WINDOW_CONTROLS_WIDTH,
+} from '@bombfarm/ui';
 // Proves the renderer can import @bombfarm/domain: a value import from a
 // FILE subpath that itself value-imports ./data/catalog.json, so a dist missing the JSON data
 // fails the static export build rather than surfacing later at runtime. It also carries a
@@ -428,6 +435,14 @@ function HomePageContent({
             </div>
           ) : activeNavId === 'farm' ? (
             <FarmView />
+          ) : activeNavId === 'heroes' ? (
+            <div data-testid="heroes-view" className="flex flex-1 flex-col">
+              <EmptyState
+                icon="user-group"
+                title={t.heroesNeverReadTitle}
+                description={t.heroesNeverReadDescription}
+              />
+            </div>
           ) : activeNavId === 'inventory' ? (
             <InventoryView />
           ) : activeNavId === 'forge' ? (

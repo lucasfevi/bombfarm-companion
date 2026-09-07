@@ -8,6 +8,7 @@ import {
   HiMiniMap,
   HiMiniSignal,
   HiMiniUser,
+  HiMiniUserGroup,
   HiMiniXMark,
   HiMiniCheck,
   HiMiniCheckCircle,
@@ -43,6 +44,12 @@ export const uiIconRegistry = {
   cog: HiMiniCog6Tooth,
   // The sixth desktop tab, the Forge — drawn as its glyph at the same widths as the five above.
   hammer: PiHammer,
+  // The seventh desktop tab, the Heroes screen. `HiMiniUserGroup` over `HiMiniUsers` by geometry,
+  // not by name: `user` above is one centred bust, and `HiMiniUsers` is one large figure with a
+  // small companion whose mass merges into that bust's shoulder at 16px, where these tabs are
+  // drawn without their words. `HiMiniUserGroup` puts three separate heads across the full width,
+  // so the silhouette stays plural at that size and no player takes it for the Account tab.
+  'user-group': HiMiniUserGroup,
   // The top bar's overflow trigger — the secondary actions, once they no longer fit beside the tabs
   'ellipsis-horizontal': HiMiniEllipsisHorizontal,
   // Inventory layout toggle — cards
