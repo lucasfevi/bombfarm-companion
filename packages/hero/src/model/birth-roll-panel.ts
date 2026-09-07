@@ -10,6 +10,7 @@ import { SHEET_PANEL_KEYS, type SheetKey } from '@bombfarm/domain/planner-consta
 import {
   LETTER_BANDS,
   boundaryCutPoint,
+  letterForRollQuality,
   statRollsFor,
   type RollQualityReport,
 } from '@bombfarm/domain/roll-quality';
@@ -71,7 +72,7 @@ export function gradePlacementFor(
     mean: report.mean,
     computedLetter: report.computedLetter,
     storedLetter: report.storedLetter,
-    railLetter: stored ?? report.computedLetter ?? LETTER_BANDS.letters[0],
+    railLetter: stored ?? letterForRollQuality(report.mean),
     certainty: certaintyOf(report),
   };
 }
@@ -141,8 +142,8 @@ export type GradeRail = {
  */
 export function gradeRailFor(mean: number): GradeRail {
   const evidence = LETTER_BANDS.evidence;
-  const domainMin = Math.min(evidence[0].observedMin, mean);
-  const domainMax = Math.max(evidence[evidence.length - 1].observedMax, mean);
+  const domainMin = Math.min(...evidence.map((band) => band.observedMin), mean);
+  const domainMax = Math.max(...evidence.map((band) => band.observedMax), mean);
   const span = domainMax - domainMin;
   const at = (value: number) => ((value - domainMin) / span) * 100;
   const cuts = LETTER_BANDS.boundaries.map(boundaryCutPoint);
@@ -152,8 +153,8 @@ export function gradeRailFor(mean: number): GradeRail {
     domainMax,
     segments: LETTER_BANDS.letters.map((letter, index) => ({
       letter,
-      startPct: index === 0 ? 0 : at(cuts[index - 1]),
-      endPct: index === cuts.length ? 100 : at(cuts[index]),
+      startPct: at(cuts[index - 1] ?? domainMin),
+      endPct: at(cuts[index] ?? domainMax),
     })),
     boundaries: LETTER_BANDS.boundaries.map((boundary) => ({
       below: boundary.below,
