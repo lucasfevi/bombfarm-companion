@@ -205,7 +205,9 @@ test.describe('top bar — degrades as the window narrows, and never overlaps it
     await expect(page.getByTestId('shell-coffee')).toBeVisible();
     await expect(page.getByTestId('open-mini')).toBeVisible();
     await expect(page.getByTestId('shell-overflow')).toHaveCount(0);
-    await expect(page.getByTestId('flavor-badge')).toBeVisible();
+    // Which build this is, drawn rather than merely reported over IPC — the boot smoke asserts
+    // the label, and this is the only spec that sets a width wide enough to see it.
+    await expect(page.getByTestId('flavor-badge')).toHaveText('DEV');
 
     for (const tab of (await tabs(page)).filter((tab) => !tab.active)) {
       expect(tab.text, 'an inactive tab kept its word instead of its glyph').toBe('');

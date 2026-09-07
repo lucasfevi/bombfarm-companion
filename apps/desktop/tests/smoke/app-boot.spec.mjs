@@ -72,7 +72,10 @@ test.describe('app boot smoke', () => {
         accountSource: 'fixture',
       });
 
-      await expect(page.getByTestId('flavor-badge')).toHaveText('DEV');
+      // `badgeLabel` above is this spec's claim about the build. Whether the bar draws that badge
+      // depends on how much room the bar has — it goes with the brand's words on a narrow window,
+      // and a CI runner's screen is narrow enough that no resize from here can widen past it.
+      // `top-bar-density.spec.mjs` owns that, at widths it sets itself.
       await expect(page.getByTestId('app-version')).toHaveText(/^v\d+\.\d+\.\d+/);
 
       // Accept, matching every other spec here: the app shows a permission gate with no nav

@@ -5,13 +5,30 @@
     "hookInstalled": true,
     "sawCommit": true,
     "ranges": {
-      "quietComponentRenders": [0, 0],
-      "oneItemChangeComponentRenders": [15500, 19000],
-      "oneItemChangeNetOfBackground": [15500, 19000]
+      "quietComponentRenders": [
+        0,
+        0
+      ],
+      "oneItemChangeComponentRenders": [
+        17500,
+        21000
+      ],
+      "oneItemChangeNetOfBackground": [
+        17500,
+        21000
+      ]
     }
   },
   "recordedOnly": {
-    "distinctComponentsObserved": [93, 94, 95, 96],
-    "note": "distinctComponents STOPPED BEING GATED, 2026-08-31, after the capture was read key by key instead of as a bare number. It counts distinct keys in the render tally, and in a production build those keys are MINIFIED identifiers — 'lj', 'dr', 'K' — because the collector reads `type.displayName || type.name`. Where the minifier hands two components the same short name, that name expands into one key per ancestor path, so a single component can contribute a dozen keys made of other minified names. 69 of the 96 keys in the capture that prompted this are exactly that, and the capture records them in `unminifiedComponentKeys`. The number therefore measures the bundler's name assignment, not the app's component set: a rename or a module-order shift anywhere merges or splits a key and moves it. Measured, not argued: one commit that added a single component to the Live screen (a screen the Inventory-change window does not even render) produced a capture in which 71 of 96 keys had a DIFFERENT string from its parent commit while the count and the structure were unchanged; and develop's own tip measured 94/16814 on CI and 96/17534 on a developer machine from the same source. This is the same non-portability that moved the gate 95 -> 93 and then 93 -> 94 within one day, each time recorded as though it were attributable. The counts are gated as RANGES instead, which is what they could always carry: a real regression here is the grid re-rendering an order of magnitude more, not a component type appearing. A quiet window is still exactly ZERO and is gated at zero, for a structural reason rather than an empirical one: the fixture ticker's ~100 commits per 5s all carry an identical body, so no account:changed is emitted at all. The one-item change (dropping a single gear item from a 221-item inventory) costs ~16800 on CI and ~17500 locally across 8 commits, because the grid re-renders all ~220 cards and their per-card subtrees for a change to one of them — a real, pre-existing property of that grid this instrument makes visible, not something any of these measurements introduced. The ranges hold both environments with margin. If a run lands outside them, that is a genuine finding to investigate rather than a number to widen."
+    "distinctComponentsObserved": [
+      93,
+      94,
+      95,
+      96,
+      108,
+      132,
+      156
+    ],
+    "note": "distinctComponents STOPPED BEING GATED, 2026-08-31, after the capture was read key by key instead of as a bare number. It counts distinct keys in the render tally, and in a production build those keys are MINIFIED identifiers — 'lj', 'dr', 'K' — because the collector reads `type.displayName || type.name`. Where the minifier hands two components the same short name, that name expands into one key per ancestor path, so a single component can contribute a dozen keys made of other minified names. 69 of the 96 keys in the capture that prompted this are exactly that, and the capture records them in `unminifiedComponentKeys`. The number therefore measures the bundler's name assignment, not the app's component set: a rename or a module-order shift anywhere merges or splits a key and moves it. Measured, not argued: one commit that added a single component to the Live screen (a screen the Inventory-change window does not even render) produced a capture in which 71 of 96 keys had a DIFFERENT string from its parent commit while the count and the structure were unchanged; and develop's own tip measured 94/16814 on CI and 96/17534 on a developer machine from the same source. This is the same non-portability that moved the gate 95 -> 93 and then 93 -> 94 within one day, each time recorded as though it were attributable. The counts are gated as RANGES instead, which is what they could always carry: a real regression here is the grid re-rendering an order of magnitude more, not a component type appearing. A quiet window is still exactly ZERO and is gated at zero, for a structural reason rather than an empirical one: the fixture ticker's ~100 commits per 5s all carry an identical body, so no account:changed is emitted at all. The one-item change (dropping a single gear item from a 221-item inventory) costs ~16800 on CI and ~17500 locally across 8 commits, because the grid re-renders all ~220 cards and their per-card subtrees for a change to one of them — a real, pre-existing property of that grid this instrument makes visible, not something any of these measurements introduced. The ranges hold both environments with margin. If a run lands outside them, that is a genuine finding to investigate rather than a number to widen. RE-CAPTURED 2026-09-07, and the reason is the top bar's stage order rather than the grid: the bar now drops its tab words before its actions, so a window under ~1216px draws six glyph tabs, and a glyph tab is named by a design-system tooltip — five Tooltip components per tab plus a provider, all of them re-rendering with the shell on an account change. Measured as a 2x2 on one machine, same fixture, same build mode: at a 1280px window develop and the change both read 19078, and at a 1024px window develop reads 18886 while the change reads 19526 (+640, +3.4%), with distinctComponents 108 -> 156 over the same pair. The change costs nothing where the tabs keep their words and costs the tooltips where they do not, which is the trade the stage order was reordered to make. CI runs at 1024px — develop's own CI number is 18886, the same figure that window reproduces here — so the runner sits on the glyph side of it. The band's old ceiling of 19000 was ALREADY exhausted before any of this: develop's tip measures 19078 at the 1280px default window, 78 over, and passed CI only because CI's screen is narrower. So the new band holds four measured points — 18886, 19078, 19526 — with the same shape of margin the old one had, rather than being widened to the smallest number that would go green."
   }
 }

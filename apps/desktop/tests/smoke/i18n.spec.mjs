@@ -112,6 +112,17 @@ function navButton(page, index) {
   return page.locator('nav[aria-label="Main"] button').nth(index);
 }
 
+/**
+ * The word a nav button carries, wherever the bar has put it. Asserted as the accessible name
+ * rather than as text because the bar draws a tab as a glyph once the window is too narrow to
+ * spell six of them, and moves the word to `aria-label` — which is the same word, still in the
+ * language under test, and is what a screen reader and this assertion both read. Text alone
+ * passes or fails on the width of the runner's screen, which is nothing to do with the language.
+ */
+function expectNavWord(page, index, word, options) {
+  return expect(navButton(page, index)).toHaveAccessibleName(word, options);
+}
+
 test.describe('language smoke — detected, switched in place, and remembered', () => {
   test('OS-detected PT-BR, live switch to English with no reload, zero account:changed, no layout shift, and English survives a restart', async () => {
     const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-i18n-'));
@@ -130,12 +141,12 @@ test.describe('language smoke — detected, switched in place, and remembered', 
 
         // --- The app opened in PT-BR, detected from the OS locale -----------------
         await expect(page1.locator('html')).toHaveAttribute('lang', 'pt-BR');
-        await expect(navButton(page1, 0)).toHaveText(pt('liveNavLabel'));
-        await expect(navButton(page1, 1)).toHaveText(pt('farmNavLabel'));
-        await expect(navButton(page1, 2)).toHaveText(pt('inventoryNavLabel'));
-        await expect(navButton(page1, 3)).toHaveText(pt('forgeNavLabel'));
-        await expect(navButton(page1, 4)).toHaveText(pt('accountNavLabel'));
-        await expect(navButton(page1, 5)).toHaveText(pt('settingsNavLabel'));
+        await expectNavWord(page1, 0, pt('liveNavLabel'));
+        await expectNavWord(page1, 1, pt('farmNavLabel'));
+        await expectNavWord(page1, 2, pt('inventoryNavLabel'));
+        await expectNavWord(page1, 3, pt('forgeNavLabel'));
+        await expectNavWord(page1, 4, pt('accountNavLabel'));
+        await expectNavWord(page1, 5, pt('settingsNavLabel'));
 
         // --- Navigate to Inventory; the no-layout-shift "before" measurement + the no-recompute sentinel ------
         await navButton(page1, 2).click();
@@ -164,12 +175,12 @@ test.describe('language smoke — detected, switched in place, and remembered', 
         await page1.getByRole('option', { name: pt('settingsLanguageOptionEnglish') }).click();
 
         // The SAME persistent nav node changed in place — Inventário -> Inventory.
-        await expect(navButton(page1, 0)).toHaveText(en('liveNavLabel'), { timeout: 10_000 });
-        await expect(navButton(page1, 1)).toHaveText(en('farmNavLabel'));
-        await expect(navButton(page1, 2)).toHaveText(en('inventoryNavLabel'));
-        await expect(navButton(page1, 3)).toHaveText(en('forgeNavLabel'));
-        await expect(navButton(page1, 4)).toHaveText(en('accountNavLabel'));
-        await expect(navButton(page1, 5)).toHaveText(en('settingsNavLabel'));
+        await expectNavWord(page1, 0, en('liveNavLabel'), { timeout: 10_000 });
+        await expectNavWord(page1, 1, en('farmNavLabel'));
+        await expectNavWord(page1, 2, en('inventoryNavLabel'));
+        await expectNavWord(page1, 3, en('forgeNavLabel'));
+        await expectNavWord(page1, 4, en('accountNavLabel'));
+        await expectNavWord(page1, 5, en('settingsNavLabel'));
 
         // No reload occurred — the sentinel stamped before the switch survived it.
         const sentinelAfter = await page1.evaluate(() => window.__bfcI18nSentinel);
@@ -215,9 +226,9 @@ test.describe('language smoke — detected, switched in place, and remembered', 
 
         // --- English persists, read from settings, not from the (still pt-BR) OS ---
         await expect(page2.locator('html')).toHaveAttribute('lang', 'en');
-        await expect(navButton(page2, 0)).toHaveText(en('liveNavLabel'));
-        await expect(navButton(page2, 1)).toHaveText(en('farmNavLabel'));
-        await expect(navButton(page2, 2)).toHaveText(en('inventoryNavLabel'));
+        await expectNavWord(page2, 0, en('liveNavLabel'));
+        await expectNavWord(page2, 1, en('farmNavLabel'));
+        await expectNavWord(page2, 2, en('inventoryNavLabel'));
       } finally {
         await app2.close().catch(() => undefined);
       }
