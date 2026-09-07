@@ -1,21 +1,21 @@
 /**
  * `AccountView` → the flat `FarmInputs` record `@bombfarm/farm/core` computes the farm board
- * from. Pure, no React import. `parseAccountPayload` is called from the RENDERER on purpose: main
- * detects that the account changed, the renderer is what recomputes from it, and a structural
- * guard fails the build if that identifier ever appears under `apps/desktop/src/main`.
+ * from. Pure, no React import.
  *
- * The per-section usability gate and the capture-time reads are `lib/account/account-facts.ts`'s,
- * imported rather than restated — the Account screen gates on the same rule, per panel.
+ * The roster and the account-wide block are `lib/account/account-roster.ts`'s, from one parse of
+ * the payload shared with every other screen that draws heroes. The per-section usability gate and
+ * the capture-time reads are `lib/account/account-facts.ts`'s, imported rather than restated — the
+ * Account screen gates on the same rule, per panel.
  */
 import { ACCOUNT_SECTIONS } from '@bombfarm/domain/account-fidelity';
-import { parseAccountPayload } from '@bombfarm/domain/import-save';
 import { computeTeamBuffsFromDeployed } from '@bombfarm/domain/team-buffs';
 import { canonicalStringify } from '@bombfarm/contracts';
 import type { AccountView } from '@bombfarm/contracts';
 import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { readFarmDepTuple, type FarmInputs } from '@bombfarm/farm/core';
-import { capturedAtOf, isSectionUsable, sectionFidelityOf } from '../account/account-facts';
+import { isSectionUsable, sectionFidelityOf } from '../account/account-facts';
+import { buildAccountRoster } from '../account/account-roster';
 
 // Re-exported, never redefined: the board's withhold gate IS that rule, and this module stays the
 // seam its own tests ask for it through.
@@ -48,10 +48,8 @@ export const DEFAULT_FARM_CONTROLS: FarmControls = Object.freeze({
 export function buildFarmInputs(view: AccountView, controls: FarmControls): FarmInputs | null {
   const payload = view.payload;
 
-  // `existing` is `[]`: the desktop keeps no local roster, so `matchedExistingId` is always
-  // `null` and `isGearRefresh` always `false`.
-  const parsed = parseAccountPayload(payload, []);
-  if (parsed.rejected !== null) return null;
+  const roster = buildAccountRoster(view);
+  if (roster === null) return null;
 
   // Every number the board prints is DPS-derived, so all five sections feed it: `heroes` and
   // `items` build the hero sheets, `skills`, `casa` and `account` the account-wide state around
@@ -62,21 +60,12 @@ export function buildFarmInputs(view: AccountView, controls: FarmControls): Farm
     return null;
   }
 
-  const heroesCapturedAt = capturedAtOf(payload, 'heroes');
-  const heroUpdatedAt = heroesCapturedAt === null ? Date.now() : Date.parse(heroesCapturedAt);
+  const heroes = roster.heroes;
+  const account = roster.account;
 
-  // Candidate completion is the only synthesis performed. `parseAccountPayload` returns records
-  // missing exactly two fields: `id` is the game's own stable hero id, and `updatedAt` is the
-  // heroes section's own capture time. No stat is ever synthesised.
-  const heroes: HeroRecord[] = parsed.candidates.map((candidate) => ({
-    ...candidate.record,
-    id: candidate.sourceId,
-    updatedAt: heroUpdatedAt,
-  }));
-
-  const tree = parsed.account.tree;
-  const houseIdx = parsed.account.houseIdx;
-  const houseLevel = parsed.account.houseLevel;
+  const tree = account.tree;
+  const houseIdx = account.houseIdx;
+  const houseLevel = account.houseLevel;
   if (tree === null || houseIdx === null || houseLevel === null) return null;
 
   return {
@@ -96,9 +85,9 @@ export function buildFarmInputs(view: AccountView, controls: FarmControls): Farm
     teamBuffsOverride: null,
     houseIdx,
     houseLevel,
-    slots: parsed.account.slots ?? undefined,
-    fieldSlots: parsed.account.fieldSlots ?? null,
-    houseCycleSecs: parsed.account.houseCycleSecs ?? null,
+    slots: account.slots ?? undefined,
+    fieldSlots: account.fieldSlots ?? null,
+    houseCycleSecs: account.houseCycleSecs ?? null,
     // The imported account data carries no anchor for the cycle measurement, and on the desktop
     // it does not need one: the measured cycle and the house configuration come out of the SAME
     // payload read, so the anchor IS the live value. Mirroring them keeps the House-rest
@@ -109,7 +98,7 @@ export function buildFarmInputs(view: AccountView, controls: FarmControls): Farm
     houseCycleSecsLevel: houseLevel,
     // A compute input, not a post-compute filter: it is what sets each row's `locked`. Left
     // null, every row reads unlocked and the unlocked-only filter silently stops filtering.
-    maxPhase: parsed.account.maxPhase ?? null,
+    maxPhase: account.maxPhase ?? null,
     farmPoolOverrides: controls.farmPoolOverrides,
     farmReturnBonus: controls.farmReturnBonus,
   };
