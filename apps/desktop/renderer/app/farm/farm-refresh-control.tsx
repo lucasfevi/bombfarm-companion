@@ -6,6 +6,10 @@
  * the age of the ACCOUNT the board was computed from, or the fact that the live account has moved
  * past it.
  *
+ * The press both re-solves the board and asks the app to go and read the account, so the button
+ * is working while EITHER is in flight, and a read that never started says so beside the button —
+ * to its left, where a line of any length leaves the button where the reader last saw it.
+ *
  * The age is the account read's, never the calculation's. Those coincide while the app is reading
  * the game normally and diverge without limit when it is not, and dating the line by the
  * calculation meant every press of this button reset it to "just now" over numbers that had not
@@ -20,6 +24,8 @@
 import { useEffect, useState } from 'react';
 import { Button, cn } from '@bombfarm/ui';
 import { sub, useCopy, type Copy } from '../../lib/copy';
+import { accountReadRefusalText } from '../../lib/account-read-labels';
+import type { AccountReadRequestState } from '../../lib/account/use-account-read-request';
 import { formatCapturedAt } from '../../lib/format';
 
 /** The shortest bucket `formatCapturedAt` prints is a minute, so a quarter of one is fast enough
@@ -50,11 +56,13 @@ export function FarmRefreshControl({
   capturedAt,
   stale,
   busy,
+  readState,
   onRefresh,
 }: {
   capturedAt: string | null;
   stale: boolean;
   busy: boolean;
+  readState: AccountReadRequestState;
   onRefresh: () => void;
 }) {
   const t = useCopy();
@@ -69,24 +77,36 @@ export function FarmRefreshControl({
     };
   }, []);
 
+  const working = busy || readState.kind === 'working';
+
   return (
-    <span data-testid="farm-refresh-control" className="flex flex-col items-end gap-0.5">
-      <Button
-        type="button"
-        variant="primary"
-        className="min-w-20"
-        data-testid="farm-refresh"
-        disabled={busy}
-        aria-busy={busy}
-        onClick={onRefresh}
-      >
-        {busy ? t.farmRefreshBusy : t.farmRefresh}
-      </Button>
-      <span
-        data-testid="farm-refresh-age"
-        className={cn('text-[11px] leading-none', stale ? 'text-warn' : 'text-muted')}
-      >
-        {farmRefreshAgeLine(capturedAt, stale, t, now)}
+    <span data-testid="farm-refresh-control" className="flex items-start justify-end gap-2">
+      {readState.kind === 'refused' ? (
+        <span
+          data-testid="farm-refresh-refusal"
+          className="text-warn max-w-52 pt-1.5 text-right text-[11px] leading-snug"
+        >
+          {accountReadRefusalText(readState.reason, t)}
+        </span>
+      ) : null}
+      <span className="flex flex-col items-end gap-0.5">
+        <Button
+          type="button"
+          variant="primary"
+          className="min-w-20"
+          data-testid="farm-refresh"
+          disabled={working}
+          aria-busy={working}
+          onClick={onRefresh}
+        >
+          {working ? t.farmRefreshBusy : t.farmRefresh}
+        </Button>
+        <span
+          data-testid="farm-refresh-age"
+          className={cn('text-[11px] leading-none', stale ? 'text-warn' : 'text-muted')}
+        >
+          {farmRefreshAgeLine(capturedAt, stale, t, now)}
+        </span>
       </span>
     </span>
   );

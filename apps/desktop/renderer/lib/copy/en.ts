@@ -421,14 +421,15 @@ export const en = {
   forgeStartUnknownItem: 'This piece is not in the account any more — refresh the bag',
   forgeStartBadTarget: 'The target is behind the piece now — refresh the bag',
   forgeStartUnavailable: 'The app is still starting — try again in a moment',
-  // forgeRefresh* — the bag's Refresh goes and reads the account, so it has the same reasons a
-  // read can fail, plus the floor that stops two presses becoming two reads. The last two reuse
-  // the forgeStart* lines above, which already say the same thing in the same words.
+  // accountRead* — every Refresh that goes and reads the account shares these, so they name no
+  // one screen's subject. They cover the reasons a read can fail, plus the floor that stops two
+  // presses becoming two reads. Two more reuse the forgeStart* lines above, which already say the
+  // same thing in the same words.
   forgeRefreshWorking: 'Reading…',
-  forgeRefreshRecent: 'Just read a moment ago — the bag is as fresh as it gets',
-  forgeRefreshFixture: 'No server to read from',
-  forgeRefreshNotConsented: 'Accept the account read in Settings to refresh the bag',
-  forgeRefreshGameNotRunning: 'Open the game to read the account again',
+  accountReadRecent: 'Just read a moment ago — the account is as fresh as it gets',
+  accountReadFixture: 'No server to read from',
+  accountReadNotConsented: 'Accept the account read in Settings to refresh',
+  accountReadGameNotRunning: 'Open the game to read the account again',
   // forgeLedger* — the run history at the foot of the screen. The header line is what the
   // section says with the table shut, so it carries the two figures worth knowing at a glance.
   forgeLedgerTitle: 'Run ledger',

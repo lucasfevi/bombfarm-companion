@@ -3,7 +3,7 @@ import { FORGE_MAX } from '@bombfarm/domain/forge';
 import { buildInventoryView, type InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { en } from '../../lib/copy/en';
 import { ptBR } from '../../lib/copy/pt-BR';
-import type { AccountReadRefusal, ForgeRunResult } from '@bombfarm/contracts';
+import type { ForgeRunResult } from '@bombfarm/contracts';
 import { FORGE_BANDS } from '../../lib/forge/forge-rows';
 import {
   BLANK,
@@ -12,7 +12,6 @@ import {
   forgeLabels,
   forgeLevel,
   forgeReasonText,
-  forgeRefreshRefusalText,
   forgeResultHeading,
   forgeRungLabel,
   forgeStartRefusalText,
@@ -91,39 +90,6 @@ describe('forgeStartRefusalText', () => {
     expect(forgeStartRefusalText('unknown_item', en)).toBe(en.forgeStartUnknownItem);
     expect(forgeStartRefusalText('bad_target', en)).toBe(en.forgeStartBadTarget);
     expect(forgeStartRefusalText('unavailable', en)).toBe(en.forgeStartUnavailable);
-  });
-});
-
-describe('forgeRefreshRefusalText', () => {
-  const REASONS: AccountReadRefusal[] = [
-    'rate_limited',
-    'offline',
-    'not_consented',
-    'game_not_running',
-    'token_unavailable',
-    'unavailable',
-  ];
-
-  it('has words for every reason a read can be refused, in both locales', () => {
-    for (const reason of REASONS) {
-      expect(forgeRefreshRefusalText(reason, en).length, `en is silent about ${reason}`).toBeGreaterThan(0);
-      expect(forgeRefreshRefusalText(reason, ptBR).length, `pt-BR is silent about ${reason}`).toBeGreaterThan(0);
-      expect(forgeRefreshRefusalText(reason, ptBR)).not.toBe(forgeRefreshRefusalText(reason, en));
-    }
-  });
-
-  it('tells the floor apart from the four reasons a read cannot happen at all', () => {
-    expect(forgeRefreshRefusalText('rate_limited', en)).toBe(en.forgeRefreshRecent);
-    expect(forgeRefreshRefusalText('offline', en)).toBe(en.forgeRefreshFixture);
-    expect(forgeRefreshRefusalText('not_consented', en)).toBe(en.forgeRefreshNotConsented);
-    expect(forgeRefreshRefusalText('game_not_running', en)).toBe(en.forgeRefreshGameNotRunning);
-    expect(forgeRefreshRefusalText('token_unavailable', en)).toBe(en.forgeStartTokenUnavailable);
-    expect(forgeRefreshRefusalText('unavailable', en)).toBe(en.forgeStartUnavailable);
-  });
-
-  it('says the floor in plain words rather than however many milliseconds are left on it', () => {
-    expect(forgeRefreshRefusalText('rate_limited', en)).not.toMatch(/\d/);
-    expect(forgeRefreshRefusalText('rate_limited', ptBR)).not.toMatch(/\d/);
   });
 });
 
