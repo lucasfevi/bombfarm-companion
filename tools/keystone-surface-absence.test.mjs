@@ -1,6 +1,6 @@
 /**
  * The repo-wide retired-identifier guard. Scans exactly the four
- * roots the requirement and its own clause table both name — `apps/web/**`,
+ * roots this guard's own stated scope names — `apps/web/**`,
  * `apps/desktop/**`, `packages/ui/**`, `tools/**` — never `packages/domain` (F2's surface, out of
  * F3's touch scope by the git protocol) and never repo-root `docs/` (outside the four stated
  * roots; this guard's two `docs/base-ui-first.md` / `docs/content-fit-ui.md` allowlist entries
