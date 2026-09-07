@@ -81,4 +81,8 @@ export {
 export type { OptimizeResultDisplay, PointsPreview } from './points-preview-copy';
 export { pointsPanelReading } from './points-panel';
 export type { PointsPanelReading } from './points-panel';
+export { formatBonus, gearBonusRows } from './gear-bonus-rows';
+export type { GearBonusRow } from './gear-bonus-rows';
+export { gearPanelReading } from './gear-panel';
+export type { GearPanelReading } from './gear-panel';
 export { renderTemplateWithPct } from './render-template-with-pct';

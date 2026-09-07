@@ -70,6 +70,10 @@ export {
   rosterIconTooltipTriggerClass,
   rarityTextClass,
   rarityDotClass,
+  slotStatClassName,
+  slotStatRowClass,
+  slotStatsGridClass,
+  slotsGridClass,
   type ArtFrameRecipeSize,
   type AbilityIconRecipeSize,
 } from './game-art.recipe';

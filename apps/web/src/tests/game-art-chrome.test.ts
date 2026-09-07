@@ -365,8 +365,8 @@ describe('import preview table chrome', () => {
 });
 
 describe('gear slot stats', () => {
-  const buildCol = read('features/planner/components/gear-slot-stats-grid.tsx');
-  const compareSrc = read('features/planner/components/gear-compare-section.tsx');
+  const buildCol = readHero('components/gear-slot-stats-grid.tsx');
+  const compareSrc = readHero('components/gear-compare-section.tsx');
 
   it('uses full stat labels in per-slot breakdown', () => {
     expect(buildCol).toContain('slotStatFullLabels');

@@ -29,7 +29,7 @@ const ALLOWLIST_FILES = new Set<string>([]);
 const MIGRATED_SIX = [
   'src/features/planner/components/planner-tabs.tsx::PlannerTabs',
   'src/features/planner/components/hero-abilities-tab.tsx::HeroAbilitiesTab',
-  'src/features/planner/components/gear-tab.tsx::GearTab',
+  '../../packages/hero/src/components/gear-tab.tsx::GearTab',
   'src/features/planner/components/advice-column.tsx::AdviceColumn',
   'src/features/planner/components/hero-strip.tsx::HeroStrip',
   'src/features/planner/components/hero-planner.tsx::HeroPlanner',

@@ -24,6 +24,10 @@ export {
   rosterIconTooltipTriggerClass,
   rarityTextClass,
   rarityDotClass,
+  slotStatClassName,
+  slotStatRowClass,
+  slotStatsGridClass,
+  slotsGridClass,
   type ArtFrameRecipeSize,
   type AbilityIconRecipeSize,
 } from '@bombfarm/game-art';

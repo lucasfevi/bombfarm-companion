@@ -1,18 +1,18 @@
 import { gearBonusDeltas, type GearBonuses } from '@bombfarm/domain/gear';
-import type { Strings } from '@/shared/i18n';
+import type { GearPanelCopy } from '../copy';
 
 export type GearBonusRow = {
   key: keyof GearBonuses;
   label: string;
   current: number;
-  clone?: number;
-  delta?: number;
+  clone?: number | undefined;
+  delta?: number | undefined;
   percent: boolean;
 };
 
 export function gearBonusRows(
   current: GearBonuses,
-  strings: Strings,
+  strings: GearPanelCopy,
   clone?: GearBonuses,
 ): GearBonusRow[] {
   const deltas = clone ? gearBonusDeltas(current, clone) : null;

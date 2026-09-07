@@ -30,18 +30,6 @@ export function slotChromeClassName(equipped: EquippedItem | null | undefined, c
   return cn(slotBase, equipped && slotFilled, changed && slotChanged);
 }
 
-export function slotStatClassName(equipped: EquippedItem | null | undefined): string {
-  return cn(
-    'flex min-h-[2.5em] flex-col gap-0.5 border border-dashed border-transparent bg-bg p-1.5 text-[11px] leading-snug tabular-nums',
-    artFrameRadiusClass,
-    equipped && 'border-solid border-line',
-  );
-}
-
-export const slotsGridClass = 'grid grid-cols-8 gap-1.5 max-[720px]:min-w-[720px]';
-export const slotStatsGridClass = `${slotsGridClass} mt-1.5`;
-export const slotStatRowClass =
-  'flex items-baseline justify-between gap-1.5 text-muted leading-snug [&_b]:shrink-0 [&_b]:font-semibold [&_b]:text-ink';
 const slotHeadLabelClass =
   'text-center text-[10px] leading-tight font-bold tracking-wider uppercase';
 

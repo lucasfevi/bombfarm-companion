@@ -206,6 +206,7 @@ export {
   metricScoreboardValueRecipe,
   metricScoreboardDeltaRecipe,
 } from './metric-scoreboard.recipe';
+export { maskRevealStyle } from './mask-reveal';
 // `statListMutedRowClass` and the phase-board/panel class constants beside it are on the root, not
 // left to the deep `panel-field.recipe` subpath: this package's `exports` map resolves a subpath to
 // an extensionless source path, which an app's tsconfig `paths` can complete but another package's
@@ -215,6 +216,7 @@ export {
   colClass,
   dialogDescClass,
   explainFormulaClass,
+  heroAbilHClass,
   heroAbilTitleClass,
   mutedClass,
   optimizeGroupButtonClass,

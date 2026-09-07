@@ -1,43 +1,64 @@
 'use client';
 
-import { useMemo } from 'react';
+import { Fragment, useMemo } from 'react';
 
-import { SLOTS, sumGearBonuses, type GearBonuses } from '@bombfarm/domain/gear';
+import type { AdvisorPipelineResult } from '@bombfarm/domain/advisor-pipeline';
+import { SLOTS, sumGearBonuses, type GearBonuses, type Loadout } from '@bombfarm/domain/gear';
 import { itemsEqual } from '@bombfarm/domain/loadout';
-import { useAppLang } from '@/shared/context/app-lang';
-import { formatNumber, numberFormatterFor } from '@/shared/lib/format-number';
-import { usePlannerStore, selectAdvisorPipeline } from '@/shared/stores';
-import { useHeroBuildActions } from '../hooks/use-hero-build-actions';
-import { Button, MetricScoreboard, type MetricScoreboardCell } from '@bombfarm/ui';
+import { slotsGridClass } from '@bombfarm/game-art';
 import {
+  Button,
+  MetricScoreboard,
+  formatNumber,
   heroAbilHClass,
   heroAbilTitleClass,
+  maskRevealStyle,
+  numberFormatterFor,
   tipClass,
-} from '@bombfarm/ui/panel-field.recipe';
-import { SlotEditor, slotsGridClass } from '@/features/gear';
-import { GearSlotStatsGrid } from './gear-slot-stats-grid';
+  type MetricScoreboardCell,
+} from '@bombfarm/ui';
 import { AnimatePresence, motion, MotionConfig } from 'motion/react';
-import { maskRevealStyle } from '@/shared/lib/mask-reveal';
+import type { GearPanelCopy, Lang } from '../copy';
+import { gearPanelReading } from '../model/gear-panel';
+import { GearSlotStatsGrid } from './gear-slot-stats-grid';
 import { GearTotalsTable } from './gear-totals-table';
+import type { GearSlotEditorSlot, SlotPatchHandler } from './gear-slots-grid';
 
 const compareRevealTransition = { duration: 0.4, ease: 'easeInOut' as const };
 
+/**
+ * The callbacks a host supplies to make the comparison editable. Absent, the same figures render
+ * with no control that changes either loadout — see `gearPanelReading`.
+ */
+export type GearCompareEditing = {
+  onPatchAltSlot: SlotPatchHandler;
+  onApplyAltGear: () => void;
+  onCopyGear: () => void;
+  onClearCompare: () => void;
+};
+
 /** Compare header + actions + alt-loadout grid + totals/scoreboard for the Items panel. */
-export function GearCompareSection() {
-  const { t, lang } = useAppLang();
+export function GearCompareSection({
+  t,
+  lang,
+  loadout,
+  altLoadout,
+  pipeline,
+  editing,
+  renderSlot,
+}: {
+  t: GearPanelCopy;
+  lang: Lang;
+  loadout: Loadout;
+  altLoadout: Loadout | null;
+  pipeline: AdvisorPipelineResult;
+  editing?: GearCompareEditing | undefined;
+  renderSlot?: GearSlotEditorSlot | undefined;
+}) {
   const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
-  const { setAltSlot, clearCompare, copyGear, applyAltGear } = useHeroBuildActions();
+  const reading = gearPanelReading({ editable: !!editing, hasSlotEditor: !!renderSlot });
 
-  const loadout = usePlannerStore((state) => state.loadout);
-  const altLoadout = usePlannerStore((state) => state.altLoadout);
-
-  const pipeline = usePlannerStore(selectAdvisorPipeline);
   const { B, dps, predHit, bDiff, bHitDiff } = pipeline;
-
-  const onPatchAltSlot = setAltSlot;
-  const onApplyAltGear = applyAltGear;
-  const onCopyGear = copyGear;
-  const onClearCompare = clearCompare;
 
   const hasGear = SLOTS.some((slot) => loadout[slot] != null);
   const gearBonuses = sumGearBonuses(loadout);
@@ -115,7 +136,7 @@ export function GearCompareSection() {
         <div className={heroAbilHClass}>
           <h3 className={heroAbilTitleClass}>{t.panelCompare}</h3>
           <AnimatePresence initial={false}>
-            {B && (
+            {reading.showCompareControls && editing && B && (
               <motion.div
                 key="compare-actions"
                 className="flex flex-wrap items-center gap-2"
@@ -124,13 +145,13 @@ export function GearCompareSection() {
                 exit={{ opacity: 0, x: 10 }}
                 transition={{ duration: 0.28, ease: 'easeOut' }}
               >
-                <Button type="button" variant="primary" onClick={onApplyAltGear}>
+                <Button type="button" variant="primary" onClick={editing.onApplyAltGear}>
                   {t.applyCompare}
                 </Button>
-                <Button type="button" onClick={onCopyGear}>
+                <Button type="button" onClick={editing.onCopyGear}>
                   {t.reCopy}
                 </Button>
-                <Button type="button" variant="ghost" onClick={onClearCompare}>
+                <Button type="button" variant="ghost" onClick={editing.onClearCompare}>
                   {t.clearCompare}
                 </Button>
               </motion.div>
@@ -148,10 +169,14 @@ export function GearCompareSection() {
               transition={compareRevealTransition}
               style={maskRevealStyle}
             >
-              <p className={tipClass}>{t.compareTip}</p>
-              <Button type="button" variant="primary" onClick={onCopyGear}>
-                {t.copyGear}
-              </Button>
+              {reading.showCompareControls && editing && (
+                <>
+                  <p className={tipClass}>{t.compareTip}</p>
+                  <Button type="button" variant="primary" onClick={editing.onCopyGear}>
+                    {t.copyGear}
+                  </Button>
+                </>
+              )}
             </motion.div>
           ) : (
             <motion.div
@@ -166,24 +191,25 @@ export function GearCompareSection() {
               {!hasGear && (
                 <MetricScoreboard cells={metricCells!} aria-label={metricsAriaLabel} />
               )}
-              <div className={slotsGridClass}>
-                {SLOTS.map((slot) => {
-                  const current = loadout[slot];
-                  const alt = altLoadout[slot];
-                  const changed = !itemsEqual(current, alt);
-                  return (
-                    <SlotEditor
-                      key={slot}
-                      slot={slot}
-                      equipped={alt}
-                      changed={changed}
-                      t={t}
-                      lang={lang}
-                      onPatch={onPatchAltSlot}
-                    />
-                  );
-                })}
-              </div>
+              {reading.showSlotEditors && editing && renderSlot && (
+                <div className={slotsGridClass}>
+                  {SLOTS.map((slot) => {
+                    const current = loadout[slot];
+                    const alt = altLoadout[slot];
+                    const changed = !itemsEqual(current, alt);
+                    return (
+                      <Fragment key={slot}>
+                        {renderSlot({
+                          slot,
+                          equipped: alt,
+                          changed,
+                          onPatch: editing.onPatchAltSlot,
+                        })}
+                      </Fragment>
+                    );
+                  })}
+                </div>
+              )}
               <GearSlotStatsGrid loadout={altLoadout} t={t} formatNumber={boundFormatNumber} />
             </motion.div>
           )}

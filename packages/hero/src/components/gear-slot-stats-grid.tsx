@@ -1,9 +1,9 @@
 'use client';
 
 import { SLOTS, itemValores, type Loadout } from '@bombfarm/domain/gear';
-import type { Strings } from '@/shared/i18n';
-import { mutedClass } from '@bombfarm/ui/panel-field.recipe';
-import { slotStatsGridClass, slotStatClassName, slotStatRowClass } from '@/features/gear';
+import { slotStatsGridClass, slotStatClassName, slotStatRowClass } from '@bombfarm/game-art';
+import { mutedClass } from '@bombfarm/ui';
+import type { GearPanelCopy } from '../copy';
 
 export function GearSlotStatsGrid({
   loadout,
@@ -11,7 +11,7 @@ export function GearSlotStatsGrid({
   formatNumber,
 }: {
   loadout: Loadout;
-  t: Strings;
+  t: GearPanelCopy;
   formatNumber: (n: number, d?: number) => string;
 }) {
   return (

@@ -1,8 +1,8 @@
 'use client';
 
 import type { GearBonuses } from '@bombfarm/domain/gear';
-import type { Strings } from '@/shared/i18n';
 import { DataTable } from '@bombfarm/ui';
+import type { GearPanelCopy } from '../copy';
 import { gearBonusRows, formatBonus } from '../model/gear-bonus-rows';
 
 /** Display-only totals — transposed ledger (stats as columns) so wide screens fill like a scoreboard. */
@@ -13,8 +13,8 @@ export function GearTotalsTable({
   formatNumber,
 }: {
   current: GearBonuses;
-  clone?: GearBonuses;
-  t: Strings;
+  clone?: GearBonuses | undefined;
+  t: GearPanelCopy;
   formatNumber: (n: number, d?: number) => string;
 }) {
   const comparing = Boolean(clone);
