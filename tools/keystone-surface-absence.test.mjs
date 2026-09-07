@@ -200,7 +200,10 @@ const CRIT_DMG_MULT_MAP = {
   // +7 (line numbers only): the next-point panel became a shared component, so its mode, its
   // setter and its ranked rows are read here and passed down. Both matches are unchanged in count
   // and in kind.
-  'apps/web/src/features/planner/components/advice-column.tsx': [52, 73],
+  // −14 (line numbers only): each shared panel below this column now subscribes to the store in
+  // its own connector file, so the reads that were staged here moved out. Both matches are
+  // unchanged in count and in kind.
+  'apps/web/src/features/planner/components/advice-column.tsx': [38, 59],
   // +16 (line number only): the House-ceiling fix added `fieldSlots`/`houseCycleSecs`, with
   // their doc comments, to `AccountShared` above this line. The match itself is unchanged in
   // count and in kind — still `normalizeTree`'s doc comment naming a stale key it discards.
@@ -268,7 +271,7 @@ const CRIT_DMG_MULT_MAP = {
   // Count and kind unchanged.
   // +3 more (line numbers only, last four): the note on the farm snapshot entry above, plus this
   // one. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 314, 319, 329, 338],
+  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 317, 322, 332, 341],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 

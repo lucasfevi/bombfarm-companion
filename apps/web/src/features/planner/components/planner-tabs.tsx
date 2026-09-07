@@ -3,17 +3,14 @@
 import { HeroTab } from './hero-tab';
 import { AdviceColumn } from './advice-column';
 import { HeroStrip } from './hero-strip';
-import { GearTab } from '@bombfarm/hero/components';
+import { GearTab } from './gear-tab';
 import { Tabs, Tooltip } from '@bombfarm/ui';
 import type { TabStatus } from '@bombfarm/domain/planner-tab-status';
 import { usePlannerTab } from '../hooks/use-planner-tab';
-import { useHeroBuildActions } from '../hooks/use-hero-build-actions';
-import { SlotEditor } from '@/features/gear';
 import { plannerStageClass } from '@bombfarm/ui/panel-field.recipe';
 import { useAppLang } from '@/shared/context/app-lang';
 import {
   usePlannerStore,
-  selectAdvisorPipeline,
   selectSetupReady,
   selectHeroTabStatus,
   selectGearTabStatus,
@@ -28,18 +25,13 @@ function statusProp(status: TabStatus) {
 }
 
 export function PlannerTabs() {
-  const { t, lang } = useAppLang();
+  const { t } = useAppLang();
   const setupReady = usePlannerStore(selectSetupReady);
   const heroTabStatus = usePlannerStore(selectHeroTabStatus);
   const gearTabStatus = usePlannerStore(selectGearTabStatus);
   const pointsTabStatus = usePlannerStore(selectPointsTabStatus);
   const noHeroYet = usePlannerStore(selectShouldShowEmptyState);
   const { tab, setTab } = usePlannerTab(setupReady);
-
-  const pipeline = usePlannerStore(selectAdvisorPipeline);
-  const loadout = usePlannerStore((state) => state.loadout);
-  const altLoadout = usePlannerStore((state) => state.altLoadout);
-  const { setSlot, setAltSlot, clearCompare, copyGear, applyAltGear } = useHeroBuildActions();
 
   return (
     <div className={plannerStageClass}>
@@ -66,30 +58,7 @@ export function PlannerTabs() {
               <HeroTab />
             </Tabs.Panel>
             <Tabs.Panel value="gear">
-              <GearTab
-                t={t}
-                lang={lang}
-                loadout={loadout}
-                altLoadout={altLoadout}
-                pipeline={pipeline}
-                editing={{
-                  onPatchSlot: setSlot,
-                  onPatchAltSlot: setAltSlot,
-                  onApplyAltGear: applyAltGear,
-                  onCopyGear: copyGear,
-                  onClearCompare: clearCompare,
-                }}
-                renderSlot={({ slot, equipped, changed, onPatch }) => (
-                  <SlotEditor
-                    slot={slot}
-                    equipped={equipped}
-                    changed={changed}
-                    t={t}
-                    lang={lang}
-                    onPatch={onPatch}
-                  />
-                )}
-              />
+              <GearTab />
             </Tabs.Panel>
             <Tabs.Panel value="points">
               <AdviceColumn />

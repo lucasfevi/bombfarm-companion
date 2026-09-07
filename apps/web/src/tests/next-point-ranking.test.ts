@@ -70,7 +70,7 @@ describe('next-point-ranking.tsx — the mode select', () => {
   // The panel takes the ranked result as an input now, so the store wiring it used to do itself
   // lives at the call site. Both halves of the assertion below keep their subject: the selector is
   // still what feeds the rows, and the panel still never reaches for the raw pipeline.
-  const callSite = read('src/features/planner/components/advice-column.tsx');
+  const callSite = read('src/features/planner/components/next-point-panel.tsx');
 
   it('offers exactly dps and farm — the retired oneshot option is gone', () => {
     expect(source).toContain('<option value="dps">');

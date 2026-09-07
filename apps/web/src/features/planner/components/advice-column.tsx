@@ -1,33 +1,19 @@
 'use client';
 
-import { useAppLang } from '@/shared/context/app-lang';
-import {
-  usePlannerStore,
-  selectAdvisorPipeline,
-  selectNextPointRanking,
-  runHeroFarmOptimize,
-} from '@/shared/stores';
+import { usePlannerStore, selectAdvisorPipeline } from '@/shared/stores';
 import type { PipelineFacts } from '@bombfarm/domain/stat-breakdown';
-import { NextPointRanking, PointsTable, SheetTable } from '@bombfarm/hero/components';
 import { adviceSplitClass, colClass } from '@bombfarm/ui/panel-field.recipe';
+import { PointsPanel } from './points-panel';
+import { NextPointPanel } from './next-point-panel';
+import { SheetPanel } from './sheet-panel';
 import { EffectiveStatsPanel } from './effective-stats-panel';
 
 export function AdviceColumn() {
-  const { t, lang } = useAppLang();
   const pipeline = usePlannerStore(selectAdvisorPipeline);
   const activeHeroId = usePlannerStore((state) => state.activeHeroId);
-  const birth = usePlannerStore((state) => state.birth);
   const level = usePlannerStore((state) => state.level);
   const stars = usePlannerStore((state) => state.stars);
   const pts = usePlannerStore((state) => state.pts);
-  const setPts = usePlannerStore((state) => state.setPts);
-  const loadout = usePlannerStore((state) => state.loadout);
-  const heroBattleAllowed = usePlannerStore((state) => state.heroBattleAllowed);
-  const optimizeMode = usePlannerStore((state) => state.optimizeMode);
-  const setOptimizeMode = usePlannerStore((state) => state.setOptimizeMode);
-  const rankMode = usePlannerStore((state) => state.rankMode);
-  const setRankMode = usePlannerStore((state) => state.setRankMode);
-  const nextPointRanking = usePlannerStore(selectNextPointRanking);
   const naked = usePlannerStore((state) => state.naked);
   const geared = usePlannerStore((state) => state.gearedOverride);
   const treeSpeed = usePlannerStore((state) => state.treeSpeed);
@@ -94,38 +80,11 @@ export function AdviceColumn() {
             {/* Remount on hero switch — the cleanest way to reset PointsTable's local preview
                 state per hero without an effect. Keying makes the reset a consequence of identity
                 changing. */}
-            <PointsTable
-              key={activeHeroId ?? 'none'}
-              t={t}
-              lang={lang}
-              level={level}
-              pts={pts}
-              pipeline={pipeline}
-              heroBattleAllowed={heroBattleAllowed}
-              editing={{
-                onPts: setPts,
-                optimizeMode,
-                onOptimizeModeChange: setOptimizeMode,
-                // Read through getState() rather than a subscription: the farm search needs the
-                // whole rotation pool, and subscribing this column to it would drag a roster-wide
-                // dependency onto a screen that renders one hero.
-                runFarmOptimize: () => runHeroFarmOptimize(usePlannerStore.getState()),
-              }}
-            />
-            <NextPointRanking
-              t={t}
-              lang={lang}
-              ranking={nextPointRanking}
-              rankMode={rankMode}
-              onRankMode={setRankMode}
-            />
+            <PointsPanel key={activeHeroId ?? 'none'} />
+            <NextPointPanel />
           </div>
 
-          <SheetTable
-            t={t}
-            lang={lang}
-            input={{ birth, level, stars, sheetOther, loadout, pts, tree: treeSheet }}
-          />
+          <SheetPanel />
           <EffectiveStatsPanel facts={facts} />
         </>
     </div>
