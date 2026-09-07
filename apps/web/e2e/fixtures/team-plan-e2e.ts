@@ -10,8 +10,8 @@ const INVENTORY_KEY = 'bf-hp-inventory-v1';
 const PLANNER_STORAGE_KEYS = [HEROES_KEY, ACCOUNT_KEY, INVENTORY_KEY, ACTIVE_KEY] as const;
 
 export async function gotoTeamPlan(page: Page) {
-  await page.goto('/team-plan');
-  await expect(page.getByRole('region', { name: /Team plan/i })).toBeVisible();
+  await page.goto('/optimizer');
+  await expect(page.getByRole('region', { name: /Optimizer/i })).toBeVisible();
 }
 
 export function scopePanel(page: Page) {
@@ -64,7 +64,7 @@ export async function setE2eForceError(page: Page, enabled: boolean) {
 }
 
 export async function setAccountForgeFloor(page: Page, forgeFloor: number) {
-  await page.goto('/team-plan');
+  await page.goto('/optimizer');
   await page.evaluate(
     ({ key, floor }) => {
       const raw = localStorage.getItem(key);

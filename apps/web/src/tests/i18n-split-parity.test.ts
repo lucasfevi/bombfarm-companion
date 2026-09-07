@@ -188,6 +188,7 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  * string because the unit differs (dps against gold/h) and a template cannot carry a unit.
  */
 const KEYS_REMOVED: readonly string[] = [
+  'navTeamPlan',
   'teamPlanSetupSectionBody',
   'teamPlanRunSummaryRegimeHintSaturated',
   'teamPlanTotalGainValue',
@@ -422,6 +423,7 @@ const KEYS_REMOVED: readonly string[] = [
  * not: the restriction is on what the plan may propose, not on how it scores.
  */
 const KEYS_ADDED: readonly string[] = [
+  'navOptimizer',
   'farmRespecPointsOnly',
   'teamPlanPhaseLabel',
   'teamPlanPhaseAria',
@@ -841,6 +843,16 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   // "not guaranteed to be the best that exists" clause — `farmRespecBestFound` says that on every
   // result now — and no longer calls the bound a time budget, which it never was.
   'farmRespecBudgetExhausted',
+  // The page is renamed Team plan -> Optimizer (2026-09-07), URL `/team-plan` -> `/optimizer`.
+  // The nav label changes key as well and is declared above; these carry the page's own name in
+  // their text. The explain section is retitled to match and its opening sentence no longer says
+  // the search scores for DPS, which stopped being the only objective. `teamPlanFarmAdvisorPointer`
+  // also names the page and is NOT listed here: it is already declared added above, and an added
+  // key's value is unconstrained by the comparison.
+  'teamPlanPageLandmark',
+  'teamPlanPageTitle',
+  'explainSections.8.h',
+  'explainSections.8.p.0',
 ];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {

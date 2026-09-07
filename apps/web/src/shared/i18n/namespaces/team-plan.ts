@@ -1,7 +1,7 @@
 export const en = {
-  navTeamPlan: 'Team plan',
-  teamPlanPageLandmark: 'Team plan',
-  teamPlanPageTitle: 'Team plan',
+  navOptimizer: 'Optimizer',
+  teamPlanPageLandmark: 'Optimizer',
+  teamPlanPageTitle: 'Optimizer',
   teamPlanEmptyNoRosterTitle: 'Import heroes first',
   teamPlanEmptyNoRosterBody:
     'Export your save in Bomb Farm, then use Import in the top bar to load your roster and item inventory.',
@@ -145,9 +145,9 @@ export const en = {
 };
 
 export const pt: typeof en = {
-  navTeamPlan: 'Plano do time',
-  teamPlanPageLandmark: 'Plano do time',
-  teamPlanPageTitle: 'Plano do time',
+  navOptimizer: 'Otimizador',
+  teamPlanPageLandmark: 'Otimizador',
+  teamPlanPageTitle: 'Otimizador',
   teamPlanEmptyNoRosterTitle: 'Importe heróis primeiro',
   teamPlanEmptyNoRosterBody:
     'Exporte o save no Bomb Farm e use Importar na barra superior para carregar o roster e o inventário de itens.',

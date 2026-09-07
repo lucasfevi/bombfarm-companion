@@ -28,7 +28,7 @@ Browser-level smoke and visual baselines for the static export. Unit math stays 
 > and dead-points line, the import dialog's checkbox-free layout and sync summary, and the
 > updated quick-guide copy. All of it is currently covered by smoke specs only.
 >
-> **`/team-plan` (roster gear optimizer):** no committed visual baseline yet. The visual
+> **`/optimizer` (roster gear optimizer):** no committed visual baseline yet. The visual
 > project remains globally `describe.skip`; agents may not run `test:e2e:update` or accept
 > baselines. Before enabling `e2e/visual.spec.ts` for this route, a human should review:
 > empty states (no roster / no inventory / all leave alone), the three-column scope board
@@ -37,10 +37,10 @@ Browser-level smoke and visual baselines for the static export. Unit math stays 
 > seed + elapsed seconds) + gain scoreboard / waterfall (no Today `+0`; no negative respec
 > recommendation) + expandable per-hero rows with proposed gear (including kept existing
 > items labeled as no-change) and point-reset details, and
-> disclosures callouts. The Team plan page does not write heroes (no alt-loadout push). Smoke
+> disclosures callouts. The Optimizer page does not write heroes (no alt-loadout push). Smoke
 > coverage lives under `e2e/team-plan-*.spec.ts`.
 >
-> **`/farm` (Farm Ranking board):** no committed visual baseline, same `/team-plan`
+> **`/farm` (Farm Ranking board):** no committed visual baseline, same `/optimizer`
 > precedent — the visual project stays globally `describe.skip` and agents may not run
 > `test:e2e:update` or accept baselines. Before enabling `e2e/visual.spec.ts` for this route, a
 > human should review: the rotation-pool chip row, the four filter controls (unlocked-only,
@@ -53,7 +53,7 @@ Browser-level smoke and visual baselines for the static export. Unit math stays 
 > scenarios plus a keyboard-operability pass) and the two edited pre-existing specs
 > (`e2e/phases-page.spec.ts`, `e2e/app-shell-nav.spec.ts`).
 >
-> **`/farm` (Farm Respec Advisor):** no committed visual baseline, same `/team-plan` and `/farm`
+> **`/farm` (Farm Respec Advisor):** no committed visual baseline, same `/optimizer` and `/farm`
 > Ranking board precedent above — the visual project stays globally `describe.skip` and agents may
 > not run `test:e2e:update` or accept baselines. Before enabling `e2e/visual.spec.ts` for this
 > surface, a human should review: the toolbar (objective `Select`, Optimize button idle/busy

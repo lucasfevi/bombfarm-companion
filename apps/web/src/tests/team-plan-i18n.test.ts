@@ -22,7 +22,7 @@ const SANCTIONED_HEADER: Record<Lang, { dps: string; farm: string }> = {
 
 function allTeamPlanValues(lang: Lang): string[] {
   const fromStrings = Object.entries(STRINGS[lang])
-    .filter(([key]) => key.startsWith('teamPlan') || key === 'navTeamPlan')
+    .filter(([key]) => key.startsWith('teamPlan') || key === 'navOptimizer')
     .map(([, value]) => value);
   return fromStrings.filter((value): value is string => typeof value === 'string');
 }
@@ -69,7 +69,7 @@ describe('team-plan i18n namespace', () => {
   });
 
   it('includes nav label in chrome-adjacent namespace keys', () => {
-    expect(STRINGS.en.navTeamPlan).toBe('Team plan');
-    expect(STRINGS.pt.navTeamPlan).toBe('Plano do time');
+    expect(STRINGS.en.navOptimizer).toBe('Optimizer');
+    expect(STRINGS.pt.navOptimizer).toBe('Otimizador');
   });
 });

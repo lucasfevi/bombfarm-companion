@@ -1,5 +1,5 @@
 /**
- * The Team plan page's objective control, and every string on that page whose wording depends on
+ * The Optimizer page's objective control, and every string on that page whose wording depends on
  * which objective the search was scoring.
  *
  * Split out of `team-plan.ts` because the `…Dps`/`…Farm` pairs are read as pairs — through
@@ -54,7 +54,7 @@ export const en = {
   teamPlanForgeSkippedNoteFarm:
     'Forging to your minimum was left out of this plan — it did not improve the squad’s gold per hour.',
   /** Rendered on the FARM page, beside the respec advisor's own scope sentence. */
-  teamPlanFarmAdvisorPointer: 'For gear moves and forge work as well, use the Team plan page.',
+  teamPlanFarmAdvisorPointer: 'For gear moves and forge work as well, use the Optimizer page.',
 };
 
 export const pt: typeof en = {
@@ -101,5 +101,5 @@ export const pt: typeof en = {
   teamPlanForgeSkippedNoteFarm:
     'A forja até o seu mínimo ficou de fora deste plano — ela não melhorou o ouro por hora do esquadrão.',
   teamPlanFarmAdvisorPointer:
-    'Para movimentações de itens e forjas também, use a página Plano do time.',
+    'Para movimentações de itens e forjas também, use a página Otimizador.',
 };
