@@ -134,6 +134,19 @@ export type RosterRegime = 'underSaturated' | 'saturated';
  */
 export type TeamPlanObjective = 'dps' | 'farm';
 
+/**
+ * Which kinds of change the plan is allowed to propose — a different axis from
+ * {@link ScopeState}, which says WHICH HEROES the search may touch. This says WHAT it may do to
+ * them, and the two compose: a `'points'` plan over three Optimize heroes re-spends those three
+ * heroes' stat points and moves nobody's gear.
+ *
+ * `'points'` forbids the gear climb AND the forge floor — a plan that may not move gear may not
+ * order forge work either, since a forge is gear work the player has to go and do. `'gear'`
+ * forbids every stat-point pass. Under both, the forbidden half must be absent from the plan
+ * rather than merely hidden by the caller: no move list, no forge list, no point resets.
+ */
+export type TeamPlanAllowedChanges = 'points' | 'gear' | 'both';
+
 export type RosterEvaluation = {
   objective: number;
   regime: RosterRegime;
@@ -259,6 +272,12 @@ export type TeamPlanInput = {
   /** Omitted ⇒ `'dps'`, the historical behaviour. See {@link TeamPlanObjective}. */
   objective?: TeamPlanObjective;
   /**
+   * Omitted ⇒ `'both'`, the historical behaviour. Honoured under EITHER objective — the
+   * restriction is on what the plan may ask the player to do, not on how it scores.
+   * See {@link TeamPlanAllowedChanges}.
+   */
+  allowedChanges?: TeamPlanAllowedChanges;
+  /**
    * The one phase to plan for, under EITHER objective. Absent/`null` keeps the historical
    * behaviour of each: farm sweeps for the best phase the squad can hold, damage scores at the
    * account's own phase and mitigation.
@@ -358,6 +377,12 @@ export type TeamPlan = {
   planDps: number;
   /** The forge floor the plan actually adopted — 0 when forging was rejected. */
   forgeFloorApplied: number;
+  /**
+   * What this plan was allowed to change, resolved. Reported back because a plan outlives the
+   * control that produced it: an empty forge list means "forging did not pay" under `'both'` and
+   * "forging was never on the table" under `'points'`, and only the plan itself can say which.
+   */
+  allowedChanges: TeamPlanAllowedChanges;
   /**
    * The phase every figure above is about, and where that phase came from.
    *

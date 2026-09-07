@@ -11,10 +11,12 @@ import {
 } from '@/features/team-plan/model/build-team-plan-input';
 import {
   usePlannerStore,
+  selectTeamPlanAllowedChanges,
   selectTeamPlanObjective,
   selectTeamPlanFarmUnavailable,
 } from '@/shared/stores';
 import { teamPlanObjectiveCopy } from '@/features/team-plan/model/objective-copy';
+import { AllowedChangesField } from './allowed-changes-field';
 import { ForgeFloorField } from './forge-floor-field';
 import { ObjectiveField } from './objective-field';
 import { PhaseField } from './phase-field';
@@ -34,6 +36,7 @@ export function TeamPlanToolbar({
   const runStatus = usePlannerStore((state) => state.runStatus);
   const scopeEmpty = usePlannerStore((state) => countOptimizeScopeHeroes(state) === 0);
   const objective = usePlannerStore(selectTeamPlanObjective);
+  const allowedChanges = usePlannerStore(selectTeamPlanAllowedChanges);
   const farmUnavailable = usePlannerStore(selectTeamPlanFarmUnavailable);
   const copy = teamPlanObjectiveCopy(t, objective);
   const farmBlocked = objective === 'farm' && farmUnavailable;
@@ -82,15 +85,21 @@ export function TeamPlanToolbar({
           {t.teamPlanObjectiveFarmNeedsMaxPhase}
         </p>
       ) : null}
-      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-6">
-        {/* The fields align on their TOPS, not the row's bottom: each carries a hint of its own
-            length below the control, so bottom-aligning three of them steps the controls down
-            like a staircase. Their labels are one line and share a class, so a shared top edge
-            puts every control on the same line. */}
+      {/* The button centres against the field block rather than sitting on its bottom edge — the
+          fields' hints are of different lengths, so the row's bottom is wherever the longest hint
+          ends and has nothing to do with where the button belongs. */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-6">
+        {/* The fields align on their TOPS, not the row's centre or bottom: each carries a hint of
+            its own length below the control, so aligning them any other way steps the controls
+            down like a staircase. Their labels are one line and share a class, so a shared top
+            edge puts every control on the same line. */}
         <div className="flex min-w-0 flex-1 flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:gap-6">
           <ObjectiveField t={t} copy={copy} />
           <PhaseField t={t} lang={lang} />
-          <ForgeFloorField t={t} />
+          <AllowedChangesField t={t} />
+          {/* A points-only plan is scored at the items' real forge levels and orders no forge
+              work, so a floor the player can still set would be a control that does nothing. */}
+          {allowedChanges === 'points' ? null : <ForgeFloorField t={t} />}
         </div>
         <Button
           type="button"

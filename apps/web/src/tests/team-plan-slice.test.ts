@@ -278,6 +278,38 @@ describe('team-plan slice', () => {
     expect(selectLiveTeamPlanInputSignature(usePlannerStore.getState())).not.toBe(farmSignature);
   });
 
+  it('allowedChanges defaults to both', () => {
+    expect(usePlannerStore.getState().allowedChanges).toBe('both');
+  });
+
+  it('setAllowedChanges drops a displayed plan and disowns the run that produced it', () => {
+    usePlannerStore.setState({
+      plan: { steps: [] } as never,
+      planInputSignature: 'sig',
+      runId: 'run-1',
+      runStatus: 'done',
+    });
+    usePlannerStore.getState().setAllowedChanges('points');
+    expect(usePlannerStore.getState().allowedChanges).toBe('points');
+    expect(usePlannerStore.getState().plan).toBeNull();
+    expect(usePlannerStore.getState().planInputSignature).toBeNull();
+    expect(usePlannerStore.getState().runId).toBeNull();
+    expect(usePlannerStore.getState().runStatus).toBe('idle');
+  });
+
+  it('setAllowedChanges is a no-op when the setting is unchanged', () => {
+    usePlannerStore.setState({ planInputSignature: 'sig', runId: 'run-1', runStatus: 'done' });
+    usePlannerStore.getState().setAllowedChanges('both');
+    expect(usePlannerStore.getState().planInputSignature).toBe('sig');
+    expect(usePlannerStore.getState().runId).toBe('run-1');
+  });
+
+  it('allowedChanges is part of the plan input signature', () => {
+    const bothSignature = selectLiveTeamPlanInputSignature(usePlannerStore.getState());
+    usePlannerStore.getState().setAllowedChanges('gear');
+    expect(selectLiveTeamPlanInputSignature(usePlannerStore.getState())).not.toBe(bothSignature);
+  });
+
   it('startRun and resolveRun track run id', () => {
     usePlannerStore.getState().startRun('run-1');
     expect(usePlannerStore.getState().runStatus).toBe('running');

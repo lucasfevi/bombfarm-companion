@@ -413,6 +413,13 @@ const KEYS_REMOVED: readonly string[] = [
  * `teamPlanScoredPhaseChosen`, `teamPlanScoredPhaseAccount`, `teamPlanScoredPhaseSearched`,
  * `teamPlanScoredPhaseUnreachable`, `teamPlanScoredPhaseNoneFeasible`). None of these are
  * objective-suffixed: a phase is a phase under either objective, and the read-back reports one.
+ *
+ * The Team plan allowed-changes control (2026-09-07) adds the picker (`…Label`, `…Aria`, and its
+ * three options `…OptionBoth`/`…OptionPoints`/`…OptionGear`), a hint per setting
+ * (`…HintBoth`/`…HintPoints`/`…HintGear`), and the two Assumptions & limits lines that tell a
+ * reader a restricted plan's empty list is a restriction and not a finding
+ * (`…NotePoints`/`…NoteGear`). Not objective-suffixed, for the same reason the phase strings are
+ * not: the restriction is on what the plan may propose, not on how it scores.
  */
 const KEYS_ADDED: readonly string[] = [
   'farmRespecPointsOnly',
@@ -431,6 +438,16 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanScoredPhaseSearched',
   'teamPlanScoredPhaseUnreachable',
   'teamPlanScoredPhaseNoneFeasible',
+  'teamPlanAllowedChangesLabel',
+  'teamPlanAllowedChangesAria',
+  'teamPlanAllowedChangesOptionBoth',
+  'teamPlanAllowedChangesOptionPoints',
+  'teamPlanAllowedChangesOptionGear',
+  'teamPlanAllowedChangesHintBoth',
+  'teamPlanAllowedChangesHintPoints',
+  'teamPlanAllowedChangesHintGear',
+  'teamPlanAllowedChangesNotePoints',
+  'teamPlanAllowedChangesNoteGear',
   'teamPlanObjectiveLabel',
   'teamPlanObjectiveAria',
   'teamPlanObjectiveOptionDamage',

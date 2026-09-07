@@ -56,6 +56,10 @@ export function buildTeamPlanInputFromStore(state: PlannerStore): TeamPlanInput 
     ),
     forgeFloor: state.forgeFloor,
     objective: state.objective,
+    // Which kinds of change the plan may propose. The domain drops the forge floor above to 0 by
+    // itself when gear is off the table, so this field alone decides it — the store's stored
+    // floor is never suppressed here.
+    allowedChanges: state.allowedChanges,
     // Both objectives score here. Null is the objective's own default: gold sweeps for its best
     // phase, damage stays on the account's own.
     targetPhase: selectTeamPlanTargetPhase(state),

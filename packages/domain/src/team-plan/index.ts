@@ -5,6 +5,7 @@ export type {
   ForgeAction,
   TeamPlan,
   TeamPlanAccountInput,
+  TeamPlanAllowedChanges,
   TeamPlanBlockedResult,
   TeamPlanFarmObjective,
   TeamPlanHeroInput,
@@ -24,6 +25,7 @@ export type {
 } from './types';
 
 export { PASSAGEM_BASTAO_WINDOW_SEC, passagemBastaoMult, unmodelledAbilitiesInScope } from './ability-extras';
+export { mayMoveGear, mayRespendPoints } from './allowed-changes';
 export { computeRosterAuras } from './auras';
 export { AURA_FIXED_POINT_ROUNDS, evaluateRoster } from './evaluate';
 export {

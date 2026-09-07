@@ -57,6 +57,7 @@ export {
   selectInventoryItems,
   selectScopeByHeroId,
   selectForgeFloor,
+  selectTeamPlanAllowedChanges,
   selectTeamPlanObjective,
   selectTeamPlanFarmUnavailable,
   selectTeamPlanTargetPhase,

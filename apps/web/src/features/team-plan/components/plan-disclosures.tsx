@@ -1,6 +1,7 @@
 'use client';
 
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
+import { mayMoveGear, mayRespendPoints } from '@bombfarm/domain/team-plan';
 import { abilityName } from '@bombfarm/domain/game-labels';
 import { Panel } from '@bombfarm/ui';
 import { panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
@@ -24,7 +25,11 @@ export function PlanDisclosures({
   const unmodelled = plan.disclosures.unmodelledAbilities
     .map((row) => `${abilityName(row.abilityId, lang)} (${row.heroNames.join(', ')})`)
     .join('; ');
-  const forgeSkipped = requestedForgeFloor > 0 && plan.forgeFloorApplied === 0;
+  // Read off the PLAN, not the live control: a plan outlives the setting that produced it, and
+  // these two lines are the difference between "forging did not pay" and "forging was never on
+  // the table" — only the plan knows which of those its empty forge list means.
+  const gearAllowed = mayMoveGear(plan.allowedChanges);
+  const forgeSkipped = gearAllowed && requestedForgeFloor > 0 && plan.forgeFloorApplied === 0;
 
   return (
     <Panel>
@@ -56,14 +61,20 @@ export function PlanDisclosures({
             })}
           </p>
         ) : null}
-        <p className="m-0">
-          {sub(t.teamPlanExcludedItems, {
-            market: String(plan.disclosures.marketBlockedItemCount),
-            unresolved: String(plan.disclosures.unresolvedDefItemCount),
-            foreign: String(plan.disclosures.foreignOwnedItemCount),
-          })}
-        </p>
+        {gearAllowed ? (
+          <p className="m-0">
+            {sub(t.teamPlanExcludedItems, {
+              market: String(plan.disclosures.marketBlockedItemCount),
+              unresolved: String(plan.disclosures.unresolvedDefItemCount),
+              foreign: String(plan.disclosures.foreignOwnedItemCount),
+            })}
+          </p>
+        ) : null}
         {forgeSkipped ? <p className="m-0">{copy.forgeSkippedNote}</p> : null}
+        {!gearAllowed ? <p className="m-0">{t.teamPlanAllowedChangesNotePoints}</p> : null}
+        {!mayRespendPoints(plan.allowedChanges) ? (
+          <p className="m-0">{t.teamPlanAllowedChangesNoteGear}</p>
+        ) : null}
       </div>
     </Panel>
   );

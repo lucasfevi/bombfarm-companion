@@ -108,11 +108,11 @@ describe('team plan objective copy', () => {
   });
 
   /**
-   * The phase picker and the run summary's read-back render under BOTH objectives from a single
-   * key each, so they get no `…Dps`/`…Farm` pair to keep them apart — which means each string has
-   * to be true of a gold plan and a damage plan at once. A damage word in any of them is the same
-   * failure the bundle split exists to prevent, arriving through the one door the split does not
-   * cover.
+   * The phase picker, the allowed-changes control and the run summary's read-back render under
+   * BOTH objectives from a single key each, so they get no `…Dps`/`…Farm` pair to keep them apart
+   * — which means each string has to be true of a gold plan and a damage plan at once. A damage
+   * word in any of them is the same failure the bundle split exists to prevent, arriving through
+   * the one door the split does not cover.
    */
   const OBJECTIVE_NEUTRAL_KEYS = [
     'teamPlanPhaseLabel',
@@ -130,6 +130,16 @@ describe('team plan objective copy', () => {
     'teamPlanScoredPhaseSearched',
     'teamPlanScoredPhaseUnreachable',
     'teamPlanScoredPhaseNoneFeasible',
+    'teamPlanAllowedChangesLabel',
+    'teamPlanAllowedChangesAria',
+    'teamPlanAllowedChangesOptionBoth',
+    'teamPlanAllowedChangesOptionPoints',
+    'teamPlanAllowedChangesOptionGear',
+    'teamPlanAllowedChangesHintBoth',
+    'teamPlanAllowedChangesHintPoints',
+    'teamPlanAllowedChangesHintGear',
+    'teamPlanAllowedChangesNotePoints',
+    'teamPlanAllowedChangesNoteGear',
   ] as const;
 
   for (const lang of LANGS) {

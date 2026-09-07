@@ -18,10 +18,13 @@ export const en = {
     'Ranks builds by the gold per hour the squad brings in at the phase beside this. A roster that earns more can hit softer.',
   teamPlanObjectiveFarmNeedsMaxPhase:
     'Letting the search pick its own phase needs the furthest phase your account has reached, which this save did not carry. Pick a phase above, re-import the save, or score for damage.',
+  /** No longer enumerates gear moves, forge work and point resets: the Allowed changes control
+   *  below decides which of those a plan may contain, so listing all three here promises chores a
+   *  restricted plan will never produce. */
   teamPlanSetupSectionBodyDps:
-    'Builds a plan of gear moves, forge work, and point resets for the heroes you mark Optimize — scored for combined roster DPS.',
+    'Builds a plan for the heroes you mark Optimize, out of the changes you allow below — scored for combined roster DPS.',
   teamPlanSetupSectionBodyFarm:
-    'Builds a plan of gear moves, forge work, and point resets for the heroes you mark Optimize — scored for the gold per hour the squad brings in.',
+    'Builds a plan for the heroes you mark Optimize, out of the changes you allow below — scored for the gold per hour the squad brings in.',
   teamPlanRunSummaryRegimeHintSaturatedDps:
     'More field demand than battle slots — roster DPS is shared across who can fight at once.',
   teamPlanRunSummaryRegimeHintSaturatedFarm:
@@ -66,9 +69,9 @@ export const pt: typeof en = {
   teamPlanObjectiveFarmNeedsMaxPhase:
     'Deixar a busca escolher a própria fase exige a fase mais distante que sua conta alcançou, que este save não trouxe. Escolha uma fase acima, reimporte o save, ou pontue por dano.',
   teamPlanSetupSectionBodyDps:
-    'Monta um plano de movimentações de itens, forjas e resets de pontos para os heróis marcados como Otimizar — pontuado pelo DPS de roster combinado.',
+    'Monta um plano para os heróis marcados como Otimizar, com as mudanças que você permitir abaixo — pontuado pelo DPS de roster combinado.',
   teamPlanSetupSectionBodyFarm:
-    'Monta um plano de movimentações de itens, forjas e resets de pontos para os heróis marcados como Otimizar — pontuado pelo ouro por hora que o esquadrão rende.',
+    'Monta um plano para os heróis marcados como Otimizar, com as mudanças que você permitir abaixo — pontuado pelo ouro por hora que o esquadrão rende.',
   teamPlanRunSummaryRegimeHintSaturatedDps:
     'Há mais demanda de campo do que slots de batalha — o DPS do roster é dividido entre quem pode lutar ao mesmo tempo.',
   teamPlanRunSummaryRegimeHintSaturatedFarm:

@@ -46,6 +46,7 @@ function plan(pointResets: TeamPlan['pointResets']): TeamPlan {
     currentDps: 0,
     planDps: 0,
     forgeFloorApplied: 0,
+    allowedChanges: 'both',
     scoredPhase: null,
     scoredPhaseSource: 'account',
     scoredPhaseInfeasible: false,

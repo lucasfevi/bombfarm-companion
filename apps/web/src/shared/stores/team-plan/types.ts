@@ -1,6 +1,7 @@
 import type { InventoryItem, InventorySnapshot } from '@bombfarm/domain/inventory';
 import type {
   TeamPlan as DomainTeamPlan,
+  TeamPlanAllowedChanges,
   TeamPlanObjective,
 } from '@bombfarm/domain/team-plan/types';
 import { FORJA_MAX } from '@bombfarm/domain/gear';
@@ -16,6 +17,14 @@ export const DEFAULT_TEAM_PLAN_OBJECTIVE: TeamPlanObjective = 'farm';
 
 export function isTeamPlanObjective(value: unknown): value is TeamPlanObjective {
   return value === 'dps' || value === 'farm';
+}
+
+/** Both kinds of change on the table — the same default the domain applies when the field is
+ *  absent, restated here because this is where the control's initial value comes from. */
+export const DEFAULT_TEAM_PLAN_ALLOWED_CHANGES: TeamPlanAllowedChanges = 'both';
+
+export function isTeamPlanAllowedChanges(value: unknown): value is TeamPlanAllowedChanges {
+  return value === 'points' || value === 'gear' || value === 'both';
 }
 
 export type TeamPlanRunStatus = 'idle' | 'running' | 'done' | 'blocked' | 'error';
@@ -75,6 +84,7 @@ export function computeTeamPlanInputSignature(input: {
   /** Resolved, not the raw slice field — the derived default moves when the Farm tab's phase does,
    *  and a plan scored at the old one is as stale as one scored for the old objective. */
   targetPhase: number | null;
+  allowedChanges: TeamPlanAllowedChanges;
 }): string {
   return JSON.stringify({
     heroIds: input.heroes.map((hero) => hero.id).sort(),
@@ -90,6 +100,7 @@ export function computeTeamPlanInputSignature(input: {
     houseCycleSecs: input.houseCycleSecs,
     objective: input.objective,
     targetPhase: input.targetPhase,
+    allowedChanges: input.allowedChanges,
   });
 }
 

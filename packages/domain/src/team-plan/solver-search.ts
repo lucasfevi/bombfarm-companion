@@ -2,6 +2,7 @@ import type { InventoryItem } from '../inventory';
 import type { Loadout } from '../gear/types';
 import { SLOTS } from '../gear/catalog';
 import { findGateCandidate, optimizeBuild } from '../points-reopt';
+import { mayMoveGear, mayRespendPoints } from './allowed-changes';
 import { evaluateRoster, screenRosterObjective, scoringLoadoutsFor } from './evaluate';
 import { farmPointsPass, FARM_POINTS_PASS_MAX_EVALUATIONS } from './farm-points';
 import {
@@ -432,20 +433,29 @@ export function runSeedSearch(input: SeedRunnerInput): SeedResult {
   );
   let rounds = 0;
   let prevObjective = evaluation.objective;
+  const gearAllowed = mayMoveGear(input.gearInput.allowedChanges);
+  const pointsAllowed = mayRespendPoints(input.gearInput.allowedChanges);
 
   for (let round = 0; round < MAX_ROUNDS && !input.budget.exhausted; round++) {
-    const gearResult = gearPass(
-      assignment,
-      input.contexts,
-      ptsByHeroId,
-      input.gearInput,
-      input.itemById,
-      input.budget,
-      evaluation,
-      input.farmObjective,
-    );
-    assignment = gearResult.assignment;
-    evaluation = gearResult.evaluation;
+    if (gearAllowed) {
+      const gearResult = gearPass(
+        assignment,
+        input.contexts,
+        ptsByHeroId,
+        input.gearInput,
+        input.itemById,
+        input.budget,
+        evaluation,
+        input.farmObjective,
+      );
+      assignment = gearResult.assignment;
+      evaluation = gearResult.evaluation;
+    }
+    rounds += 1;
+    // `gearPass` returns a local optimum of the full neighbourhood at these points, so with the
+    // points frozen a second round provably finds nothing — and would pay for another whole
+    // neighbourhood screen to discover that.
+    if (!pointsAllowed) break;
     const prePointsObjective = evaluation.objective;
     const prePointsVector = ptsByHeroId;
     const nextPts = input.farmObjective
@@ -470,34 +480,35 @@ export function runSeedSearch(input: SeedRunnerInput): SeedResult {
     } else {
       ptsByHeroId = prePointsVector;
     }
-    rounds += 1;
     const improvement =
       prevObjective > 0 ? (evaluation.objective - prevObjective) / prevObjective : evaluation.objective;
     if (improvement < IMPROVEMENT_EPSILON) break;
     prevObjective = evaluation.objective;
   }
 
-  const ptsBeforeFinal = ptsByHeroId;
-  const evalBeforeFinal = evaluation;
-  ptsByHeroId = input.farmObjective
-    ? farmPointsFor(input, input.farmObjective, assignment, ptsByHeroId)
-    : pointsPass(evaluation, input.contexts, ptsByHeroId, true);
-  const afterFinalPts = evaluateAssignment(
-    assignment,
-    input.contexts,
-    ptsByHeroId,
-    input.gearInput,
-    input.itemById,
-    input.budget,
-    input.farmObjective,
-  );
-  // Same guard as the round loop's, on the last pass: never recommend a respec that lowers the
-  // very objective it was chosen for.
-  if (afterFinalPts.objective + 1e-9 >= evalBeforeFinal.objective) {
-    evaluation = afterFinalPts;
-  } else {
-    ptsByHeroId = ptsBeforeFinal;
-    evaluation = evalBeforeFinal;
+  if (pointsAllowed) {
+    const ptsBeforeFinal = ptsByHeroId;
+    const evalBeforeFinal = evaluation;
+    ptsByHeroId = input.farmObjective
+      ? farmPointsFor(input, input.farmObjective, assignment, ptsByHeroId)
+      : pointsPass(evaluation, input.contexts, ptsByHeroId, true);
+    const afterFinalPts = evaluateAssignment(
+      assignment,
+      input.contexts,
+      ptsByHeroId,
+      input.gearInput,
+      input.itemById,
+      input.budget,
+      input.farmObjective,
+    );
+    // Same guard as the round loop's, on the last pass: never recommend a respec that lowers the
+    // very objective it was chosen for.
+    if (afterFinalPts.objective + 1e-9 >= evalBeforeFinal.objective) {
+      evaluation = afterFinalPts;
+    } else {
+      ptsByHeroId = ptsBeforeFinal;
+      evaluation = evalBeforeFinal;
+    }
   }
 
   return { name: input.name, assignment, evaluation, ptsByHeroId, rounds };

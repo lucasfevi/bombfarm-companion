@@ -25,7 +25,9 @@ export const en = {
   teamPlanPhaseLabel: 'Plan for phase',
   teamPlanPhaseAria: 'Which phase this search plans for',
   teamPlanPhaseNone: 'None',
-  teamPlanPhaseSearchPlaceholder: 'Difficulty, coordinate, or number',
+  /** Three examples, one per search route: a difficulty word, a phase the way the game writes it,
+   *  a bare number. Cheaper to read than naming the routes, and the words are the search itself. */
+  teamPlanPhaseSearchPlaceholder: 'Hard, Normal 2-1, or 151',
   teamPlanPhaseNoMatch: 'No phase matches that.',
   teamPlanPhaseMoreMatches: 'Showing {shown} of {matched} — keep typing to narrow.',
   teamPlanPhaseHintNone:
@@ -57,6 +59,21 @@ export const en = {
   teamPlanForgeFloorAria: 'Minimum forge level assumed for every item in the pool',
   teamPlanForgeFloorHint:
     'Every item is scored as if forged to at least this level. Anything lower shows up as a forge chore on that hero.',
+  teamPlanAllowedChangesLabel: 'Allowed changes',
+  teamPlanAllowedChangesAria: 'Which kinds of change this plan may propose',
+  teamPlanAllowedChangesOptionBoth: 'Gear and points',
+  teamPlanAllowedChangesOptionPoints: 'Points only',
+  teamPlanAllowedChangesOptionGear: 'Gear only',
+  teamPlanAllowedChangesHintBoth:
+    'The plan may move gear, order forge work, and re-spend stat points.',
+  teamPlanAllowedChangesHintPoints:
+    'Stat points only. No gear moves and no forge work — the search never even prices them.',
+  teamPlanAllowedChangesHintGear:
+    'Gear only. No point resets, so no respec cost either.',
+  teamPlanAllowedChangesNotePoints:
+    'You limited this plan to stat points, so it proposes no gear moves and no forge work — the search never considered them, and a plan allowed to move gear could find more.',
+  teamPlanAllowedChangesNoteGear:
+    'You limited this plan to gear, so it proposes no point resets — the search never considered them, and a plan allowed to re-spend points could find more.',
   teamPlanScopeSectionTitle: 'Hero scope',
   teamPlanScopeOptimize: 'Optimize',
   teamPlanScopeDonate: 'Donate',
@@ -154,7 +171,7 @@ export const pt: typeof en = {
   teamPlanPhaseLabel: 'Planejar para a fase',
   teamPlanPhaseAria: 'Para qual fase esta busca planeja',
   teamPlanPhaseNone: 'Nenhuma',
-  teamPlanPhaseSearchPlaceholder: 'Dificuldade, coordenada ou número',
+  teamPlanPhaseSearchPlaceholder: 'Difícil, Normal 2-1 ou 151',
   teamPlanPhaseNoMatch: 'Nenhuma fase corresponde.',
   teamPlanPhaseMoreMatches: 'Mostrando {shown} de {matched} — continue digitando para filtrar.',
   teamPlanPhaseHintNone:
@@ -187,6 +204,21 @@ export const pt: typeof en = {
   teamPlanForgeFloorAria: 'Nível mínimo de forja assumido para cada item no pool',
   teamPlanForgeFloorHint:
     'Cada item conta como se estivesse forjado pelo menos até este nível. Itens mais baixos aparecem como tarefas de forja em cada herói.',
+  teamPlanAllowedChangesLabel: 'Mudanças permitidas',
+  teamPlanAllowedChangesAria: 'Que tipos de mudança este plano pode propor',
+  teamPlanAllowedChangesOptionBoth: 'Itens e pontos',
+  teamPlanAllowedChangesOptionPoints: 'Só pontos',
+  teamPlanAllowedChangesOptionGear: 'Só itens',
+  teamPlanAllowedChangesHintBoth:
+    'O plano pode movimentar itens, pedir forjas e redistribuir pontos.',
+  teamPlanAllowedChangesHintPoints:
+    'Só pontos. Sem movimentações de itens e sem forjas — a busca nem chega a avaliá-las.',
+  teamPlanAllowedChangesHintGear:
+    'Só itens. Sem resets de pontos, então também sem custo de respec.',
+  teamPlanAllowedChangesNotePoints:
+    'Você limitou este plano a pontos, então ele não propõe movimentações de itens nem forjas — a busca nunca as considerou, e um plano livre para mexer em itens poderia achar mais.',
+  teamPlanAllowedChangesNoteGear:
+    'Você limitou este plano a itens, então ele não propõe resets de pontos — a busca nunca os considerou, e um plano livre para redistribuir pontos poderia achar mais.',
   teamPlanScopeSectionTitle: 'Escopo por herói',
   teamPlanScopeOptimize: 'Otimizar',
   teamPlanScopeDonate: 'Doar',

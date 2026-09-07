@@ -103,26 +103,76 @@ test.describe('Team plan phase picker', () => {
 });
 
 /**
- * The three setup fields carry hints of different lengths under their controls, and the row they
- * sit in bottom-aligns its children. Left alone that stepped the controls down a staircase —
+ * The setup fields carry hints of different lengths under their controls, and the row they sit in
+ * used to bottom-align its children. Left alone that stepped the controls down a staircase —
  * measured 202 / 220 / 230 px before the fields were grouped to share a top edge.
  */
-test.describe('the setup fields sit on one line', () => {
-  test('Score for, Plan for phase and Min forge share a control baseline', async ({ page }) => {
-    await seedLocalStorage(page, teamPlanFixtureSeed('en'));
-    await gotoTeamPlan(page);
+const SETUP_FIELDS = /Score for|Plan for phase|Allowed changes|Min forge/i;
 
-    const tops = await page.evaluate(() =>
+function setupFieldBoxes(page: Page) {
+  return page.evaluate(
+    (pattern) =>
       [...document.querySelectorAll('label')]
-        .filter((label) => /Score for|Plan for phase|Min forge/i.test(label.textContent ?? ''))
+        .filter((label) => new RegExp(pattern, 'i').test(label.textContent ?? ''))
         .map((label) => {
           const control = label.querySelector('select, input, [role="combobox"], button');
-          return Math.round(control?.getBoundingClientRect().top ?? -1);
+          const rect = control?.getBoundingClientRect();
+          return {
+            label: (label.querySelector('span')?.textContent ?? '').trim(),
+            top: Math.round(rect?.top ?? -1),
+            height: Math.round(rect?.height ?? -1),
+          };
         }),
-    );
+    SETUP_FIELDS.source,
+  );
+}
 
-    expect(tops).toHaveLength(3);
+test.describe('the setup fields sit on one line', () => {
+  test.beforeEach(async ({ page }) => {
+    await seedLocalStorage(page, teamPlanFixtureSeed('en'));
+    await gotoTeamPlan(page);
+  });
+
+  test('every setup field shares a control baseline', async ({ page }) => {
+    const boxes = await setupFieldBoxes(page);
+    const tops = boxes.map((box) => box.top);
+
+    expect(boxes).toHaveLength(4);
     expect(tops[0]).toBeGreaterThan(0);
     expect(new Set(tops).size, `controls stepped down: ${tops.join(' / ')}`).toBe(1);
+  });
+
+  /**
+   * The forge stepper's buttons are the only setup control that is not a bordered field, and they
+   * inherit their type from the uppercase field label rather than the row — so left alone they
+   * render ten pixels short of their neighbours. Height is the measurable half of that.
+   */
+  test('the forge stepper is as tall as the fields beside it', async ({ page }) => {
+    const heights = (await setupFieldBoxes(page)).map((box) => box.height);
+    expect(new Set(heights).size, `control heights differ: ${heights.join(' / ')}`).toBe(1);
+  });
+
+  /**
+   * The button used to sit on the row's bottom edge, which is wherever the LONGEST hint happens to
+   * end — 33.75px below the row's centre, and moving with the copy.
+   */
+  test('Build team plan is centred against the fields, not stuck to the row’s bottom edge', async ({
+    page,
+  }) => {
+    const offset = await page.evaluate(() => {
+      const button = [...document.querySelectorAll('button')].find((candidate) =>
+        /Build team plan/i.test(candidate.textContent ?? ''),
+      );
+      const row = button?.parentElement;
+      if (!button || !row) return null;
+      const buttonRect = button.getBoundingClientRect();
+      const rowRect = row.getBoundingClientRect();
+      return (
+        buttonRect.top + buttonRect.height / 2 - (rowRect.top + rowRect.height / 2)
+      );
+    });
+
+    expect(offset).not.toBeNull();
+    expect(Math.abs(offset ?? Infinity)).toBeLessThanOrEqual(0.5);
   });
 });

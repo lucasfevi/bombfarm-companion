@@ -1,6 +1,7 @@
 import type { Loadout } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import { unmodelledAbilitiesInScope } from './ability-extras';
+import { mayMoveGear } from './allowed-changes';
 import { loadoutForScoring } from './evaluate';
 import { buildFarmObjective, isSquadScope } from './farm-objective';
 import { buildHeroPlanContexts } from './hero-context';
@@ -20,6 +21,7 @@ import { buildWaterfall } from './waterfall';
 import type {
   RosterEvaluation,
   TeamPlan,
+  TeamPlanAllowedChanges,
   TeamPlanFarmObjective,
   TeamPlanInput,
   TeamPlanResult,
@@ -138,11 +140,26 @@ function scoredPhaseReport(
   };
 }
 
+/**
+ * The input the whole run below reads, with the forge floor zeroed when gear is off the table.
+ *
+ * Zeroing here rather than at each of the four places a floor is read is what makes "no gear
+ * work" a property of the run instead of a rule every consumer has to remember: the pool, every
+ * evaluation, `chooseGearCandidate`'s candidate list and `buildForgeList` all take their floor
+ * from this one field, and at 0 each of them independently degenerates to the no-forge case.
+ */
+function planInputFor(input: TeamPlanInput, allowedChanges: TeamPlanAllowedChanges): TeamPlanInput {
+  const forgeFloor = mayMoveGear(allowedChanges) ? input.forgeFloor : 0;
+  return { ...input, allowedChanges, forgeFloor };
+}
+
 export function runTeamPlan(
-  input: TeamPlanInput,
+  rawInput: TeamPlanInput,
   options?: { maxEvaluations?: number; beamWidth?: number },
 ): TeamPlanResult {
   const started = performance.now();
+  const allowedChanges: TeamPlanAllowedChanges = rawInput.allowedChanges ?? 'both';
+  const input = planInputFor(rawInput, allowedChanges);
   const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
   if (built.blocked) {
     return { blocked: true, heroNames: built.heroNames };
@@ -182,13 +199,12 @@ export function runTeamPlan(
     budget,
     farmObjective,
   );
-  const seeds = buildSeedAssignments(
-    baseAssignment,
-    contexts,
-    input,
-    itemById,
-    currentEval,
-  );
+  // Every seed past the first is a DIFFERENT gear assignment, and the climb that would normally
+  // earn its keep is skipped when gear is off the table — so an alternative seed would survive
+  // untouched and ship as a move list the player never allowed.
+  const seeds = mayMoveGear(allowedChanges)
+    ? buildSeedAssignments(baseAssignment, contexts, input, itemById, currentEval)
+    : [{ name: 'current', assignment: baseAssignment }];
 
   let best = runSeedSearch({
     name: seeds[0].name,
@@ -249,6 +265,7 @@ export function runTeamPlan(
     currentDps: waterfall.steps[0]?.objective ?? 0,
     planDps: waterfall.steps[2]?.objective ?? 0,
     forgeFloorApplied: waterfall.forgeFloorApplied,
+    allowedChanges,
     ...scoredPhaseReport(input, farmObjective, waterfall.finalEvaluation),
     gearBreakdown: waterfall.gearBreakdown,
     requiresFullPlan: waterfall.requiresFullPlan,

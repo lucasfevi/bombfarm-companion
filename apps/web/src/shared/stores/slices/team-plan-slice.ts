@@ -10,12 +10,14 @@ import type {
 } from '@/shared/stores/team-plan/types';
 import type {
   TeamPlan as DomainTeamPlan,
+  TeamPlanAllowedChanges,
   TeamPlanObjective,
 } from '@bombfarm/domain/team-plan/types';
 import {
   buildDefaultScopeMap,
   clampForgeFloor,
   computeTeamPlanInputSignature,
+  DEFAULT_TEAM_PLAN_ALLOWED_CHANGES,
   DEFAULT_TEAM_PLAN_OBJECTIVE,
   mergeScopeForRoster,
 } from '@/shared/stores/team-plan/types';
@@ -27,6 +29,9 @@ export type TeamPlanSlice = {
   scopeByHeroId: Record<string, ScopeState>;
   forgeFloor: number;
   objective: TeamPlanObjective;
+  /** Which kinds of change the plan may propose — gear work, stat-point resets, or both. A
+   *  different axis from `scopeByHeroId`, which decides WHICH HEROES the search may touch. */
+  allowedChanges: TeamPlanAllowedChanges;
   /** The phase both objectives score at, or `null` for the objective's own default. Read through
    *  `selectTeamPlanTargetPhase`, never directly — it is a default until `targetPhaseChosen`. */
   targetPhase: number | null;
@@ -44,6 +49,7 @@ export type TeamPlanSlice = {
   setScope: (heroId: string, scope: ScopeState) => void;
   setForgeFloor: (value: number) => void;
   setObjective: (value: TeamPlanObjective) => void;
+  setAllowedChanges: (value: TeamPlanAllowedChanges) => void;
   setTargetPhase: (value: number | null) => void;
   startRun: (runId: string) => void;
   resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
@@ -72,6 +78,7 @@ export const createTeamPlanSlice: StateCreator<
   scopeByHeroId: {},
   forgeFloor: 10,
   objective: DEFAULT_TEAM_PLAN_OBJECTIVE,
+  allowedChanges: DEFAULT_TEAM_PLAN_ALLOWED_CHANGES,
   targetPhase: null,
   targetPhaseChosen: false,
   runStatus: 'idle',
@@ -152,6 +159,20 @@ export const createTeamPlanSlice: StateCreator<
     if (get().objective === value) return;
     set({
       objective: value,
+      plan: null,
+      planInputSignature: null,
+      runStatus: 'idle',
+      runId: null,
+    });
+  },
+
+  // Clears outright for the same reason `setObjective` does, and one of its own: a plan built
+  // under a wider setting carries chores the narrower one forbids, so leaving it on screen under
+  // a "stale" banner would show a move list the current setting says the player may not be given.
+  setAllowedChanges: (value) => {
+    if (get().allowedChanges === value) return;
+    set({
+      allowedChanges: value,
       plan: null,
       planInputSignature: null,
       runStatus: 'idle',
@@ -243,5 +264,6 @@ export function selectLiveTeamPlanInputSignature(state: PlannerStore): string {
     houseCycleSecs: state.houseCycleSecs,
     objective: state.objective,
     targetPhase: selectTeamPlanTargetPhase(state),
+    allowedChanges: state.allowedChanges,
   });
 }

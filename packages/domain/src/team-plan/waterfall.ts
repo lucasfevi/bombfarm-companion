@@ -6,6 +6,7 @@ import { canonicalizeAssignment } from './canonicalize-assignment';
 import { evaluateRoster } from './evaluate';
 import { optimizeBuild } from '../points-reopt';
 import { respecCostGold } from '../respec-cost';
+import { mayRespendPoints } from './allowed-changes';
 import {
   buildInitialAssignment,
   type AssignmentState,
@@ -268,6 +269,12 @@ export function buildWaterfall(input: BuildWaterfallInput): WaterfallResult {
   const pts = currentPtsByHeroId(gearInput);
   const rosterIds = new Set(gearInput.heroes.map((h) => h.heroId));
 
+  // A plan barred from re-spending points offers the respec step the vector it already has, so
+  // `acceptPointResets` finds no hero whose allocation moved and accepts none. Asserted here
+  // rather than left to the search returning an unchanged vector: that is a property of how the
+  // search happens to be seeded, and this is the rule.
+  const respecPts = mayRespendPoints(gearInput.allowedChanges) ? finalPtsByHeroId : pts;
+
   const chosen = chooseGearCandidate({
     contexts,
     gearInput,
@@ -275,7 +282,7 @@ export function buildWaterfall(input: BuildWaterfallInput): WaterfallResult {
     baselineAssignment: currentAssignment,
     planAssignment,
     currentPts: pts,
-    finalPtsByHeroId,
+    finalPtsByHeroId: respecPts,
     rosterHeroIds: rosterIds,
     farmObjective,
   });
@@ -346,7 +353,7 @@ export function buildWaterfall(input: BuildWaterfallInput): WaterfallResult {
     pointResets: buildPointResets(
       respec.acceptedHeroIds,
       pts,
-      finalPtsByHeroId,
+      respecPts,
       gearEvaluation,
       respec.evaluation,
       respec.gainByHeroId,

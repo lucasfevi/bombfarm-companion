@@ -27,6 +27,10 @@ export function selectTeamPlanObjective(state: PlannerStore) {
   return state.objective;
 }
 
+export function selectTeamPlanAllowedChanges(state: PlannerStore) {
+  return state.allowedChanges;
+}
+
 /**
  * A gold plan left to find its own phase sweeps the phases the account has unlocked, and
  * `runTeamPlan` refuses to guess that ceiling: with no `max_phase` on the record there is nothing
