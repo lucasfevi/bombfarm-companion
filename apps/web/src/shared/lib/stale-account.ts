@@ -20,7 +20,7 @@
  *  `keystones` list a pre-removal record may still carry. */
 export const RETIRED_TREE_FIELDS = ['abisso', 'abissoBase', 'critDmgMult', 'glassCannon', 'tempoDobrado', 'keystones'] as const;
 
-/** Every key a drop clears — the public `bf-hp-*` keys (design §5.6) plus the legacy `bf-pa-*`
+/** Every key a drop clears — the public `bf-hp-*` keys plus the legacy `bf-pa-*`
  *  keys `loadHeroes`/`loadAccountShared`/`getActiveHeroId` still migrate from. Includes
  *  `bf-hp-active-hero-v1`: a pointer into a roster that is being deleted is a dangling id, and
  *  leaving it would let `getActiveHeroId` migrate a legacy pointer back in. */

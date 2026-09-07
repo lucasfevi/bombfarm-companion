@@ -1,7 +1,7 @@
 import type { AccountFidelity, AccountPayload, AccountSection } from './account-payload.js';
 
 /**
- * `accountChangeKey` — tier 0 of the two-tier change detection (design.md). It
+ * `accountChangeKey` — tier 0 of the two-tier change detection. It
  * gates **both** main's `account:changed` emit and the renderer's accept gate with the same
  * answer to "did anything in this `AccountPayload` actually change?"
  *
@@ -52,7 +52,7 @@ export function canonicalStringify(value: unknown): string {
  *
  * **Same key** implies the five section bodies, statuses, `missingKeys` and presence are all
  * structurally identical — and, because `parseAccountPayload` is pure (`import-save.ts` has
- * zero `Date.now`/`Math.random`/`performance.now` calls, design.md §2.5), every value
+ * zero `Date.now`/`Math.random`/`performance.now` calls), every value
  * `pipelineForHero` would derive from the payload is identical too. **Different key** does not
  * imply a *planning-relevant* difference — tier 1 (`heroChangeKey`/`sharedChangeKey` in
  * `hero-advice.ts`) is the exact answer to that question. This tier's only job is to never miss
@@ -70,7 +70,7 @@ export function canonicalStringify(value: unknown): string {
  * **Canonical, not insertion-order.** A producer that re-materialises a section body with a
  * different key order (same values) must not look like a change — an insertion-order key would
  * make it one, and the failure would go unnoticed while every "a change is detected" test stays green
- * (design.md §2.4's last probe).
+ * (the probe table's last row).
  */
 export function accountChangeKey(payload: AccountPayload): string {
   const fidelity: AccountFidelity | undefined = payload.fidelity;

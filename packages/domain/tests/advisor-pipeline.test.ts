@@ -395,7 +395,7 @@ describe('computeAdvisorPipeline', () => {
     expect(penRank?.gainPct).toBe(0);
   });
 
-  it('spentDelta counts luck points against the level budget (BSPW2-AC-29)', () => {
+  it('spentDelta counts luck points against the level budget', () => {
     const pts = { ...ZERO_PTS(), attack: 2, luck: 4 };
     const out = computeAdvisorPipeline(baseInput({ pts }));
     expect(out.spentDelta).toBe(6);

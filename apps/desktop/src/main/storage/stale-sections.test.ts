@@ -129,7 +129,7 @@ describe('judgeStoredSection', () => {
   });
 
   it('TRIGGER 2 is an ADDED-key check only: a skills body merely missing refunds is NOT dropped on shape alone', () => {
-    // Design §5.5: "neither [trigger] is 'the new keys are missing' — that's the export path's
+    // The rule: "neither [trigger] is 'the new keys are missing' — that's the export path's
     // question, not this one." A body missing a key the store never required is not, by itself,
     // evidence of staleness — plenty of this store's OWN test suite seeds partial bodies like
     // this deliberately, and none of that is retired-mechanic drift.

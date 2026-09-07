@@ -1,6 +1,6 @@
 /**
  * T5 — `checkShape` over the real committed route bodies. The `an unknown extra key ->
- * ok:true` case below is INVERTED, not deleted (design §2.1): the old assertion actively asserted
+ * ok:true` case below is INVERTED, not deleted: the old assertion actively asserted
  * the bug this feature exists to fix — a shape.ts header that said "an extra key is additive and
  * logged, never a failure." It no longer is.
  */

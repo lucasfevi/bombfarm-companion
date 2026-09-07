@@ -89,7 +89,7 @@ function unavailableRestore(status: AccountStoreStatus, reason: AccountStoreReas
 }
 
 /**
- * The whole feature over the `SqliteDb` port (design.md §5). `open` is the result of
+ * The whole feature over the `SqliteDb` port. `open` is the result of
  * `openAccountDatabase` — its own status/reason propagate untouched when the store cannot
  * read anything (schema too new, no binding, not writable). `restore()` never constructs a
  * `resolved` section — every section it returns is built from row presence alone.
@@ -305,7 +305,7 @@ export function createAccountStore(open: OpenResult, deps: AccountStoreDeps = {}
    * whether the file yielded anything importable, so a later boot never re-attempts even if
    * the file is still present. Reuses `persist()` verbatim — the legacy payload is just
    * another resolved-only `AccountPayload`, so every imported section is served `stale`
-   * automatically, the same way any other persisted section is (design §7).
+   * automatically, the same way any other persisted section is.
    */
   function maybeImportLegacySnapshot(): void {
     if (!db || !deps.userDataDir) {

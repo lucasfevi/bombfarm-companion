@@ -45,7 +45,7 @@ function optimizeContexts(contexts: HeroPlanContext[]): HeroPlanContext[] {
 }
 
 /**
- * Three move families in deterministic order (AD-RGO-02):
+ * Three move families in deterministic order:
  * assign spare → slot, swap same slot between two heroes, unassign to pool.
  */
 export function generateMoves(input: GenerateMovesInput): GearMove[] {

@@ -99,7 +99,7 @@ export function resolveStartupLocale(input: {
   // player reads PT-BR far more comfortably than English, and this is a fully overridable default,
   // so this is the one place in the resolution where a judgement call exists — stated
   // here, once, and asserted by name in locale.test.ts, rather than left as an unwritten
-  // `startsWith` nobody wrote down (spec.md edge case).
+  // `startsWith` nobody wrote down (an unwritten edge case).
   if (primary === 'pt') {
     return { locale: 'pt-BR', source: 'system' };
   }

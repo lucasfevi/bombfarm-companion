@@ -45,7 +45,7 @@ describe('phases-view-storage', () => {
   });
 
   // Farm Ranking T2: the additive farmPool / farmReturnBonus normalize table.
-  describe('farmPool / farmReturnBonus normalize (design §6.1)', () => {
+  describe('farmPool / farmReturnBonus normalize', () => {
     it('the literal shipped payload {"phase":151} loads with the phase preserved, pool empty, bonus off', () => {
       vi.stubGlobal('localStorage', memoryLocalStorage());
       localStorage.setItem('bf-hp-phases-view-v1', '{"phase":151}');

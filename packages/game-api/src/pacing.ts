@@ -4,8 +4,8 @@ import type { RequestOutcome } from './request.js';
  * Read pacing — single-flight with a min gap and cycle interval, and two bounded backoff ladders
  * instead of a storm: one for cooldown, one for 401/403. Every value
  * here is **unmeasured** — the
- * server's actual read-rate tolerance has never been measured (spec.md, Assumptions & Open
- * Questions). Each constant below carries its own provenance comment for exactly that reason: a
+ * server's actual read-rate tolerance has never been measured. Each constant below carries
+ * its own provenance comment for exactly that reason: a
  * bare number here is how an invented figure becomes folklore (`pacing.test.ts` reads this
  * source and fails if any value loses its comment).
  *

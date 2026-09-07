@@ -28,8 +28,8 @@ import { hasApplicableGain } from '../model/points-preview-copy';
  * Preview `{ pts, result }` is `useState` here — never a store field, never
  * `localStorage`. It is cleared by the SAME handler every `pts` mutation goes through
  * (`handlePtsMutate`) and, per-hero, by keying this whole component on `activeHeroId` at its
- * call site (`AdviceColumn`) — a remount, not an effect (design.md: "a useEffect-free
- * consequence of keying"; an effect keyed on `pts` would also fire on Apply and discard the
+ * call site (`AdviceColumn`) — a remount, not an effect: a useEffect-free
+ * consequence of keying (an effect keyed on `pts` would also fire on Apply and discard the
  * vector it just committed).
  */
 export function PointsTable() {

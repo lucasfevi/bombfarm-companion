@@ -95,7 +95,7 @@ describe('abilityName / abilityEffectText', () => {
     expect(abilityEffectText('no_such_ability', 'pt')).toBe('no_such_ability');
   });
 
-  it('does not rename ability ids (EGT-03)', () => {
+  it('does not rename ability ids', () => {
     expect(ABILITIES.map((a) => a.id)).toEqual([
       'bateria_extra',
       'caca_hero',

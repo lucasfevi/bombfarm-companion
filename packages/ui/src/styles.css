@@ -40,7 +40,7 @@
      them readable as a pair. */
   --container-settings: 768px;
 
-  /* WIN-1 layout breakpoints (DESIGN_SYSTEM §4). */
+  /* Window layout breakpoints — see docs/design-system.md. */
   --breakpoint-compact: 1180px;
   --breakpoint-wide: 1500px;
 
@@ -65,7 +65,7 @@
   font-family: var(--font);
   font-optical-sizing: auto;
 
-  /* WIN-1 numeric bounds for JS / raw CSS (compact < 1180, wide > 1500). */
+  /* Window numeric bounds for JS / raw CSS (compact < 1180, wide > 1500). */
   --breakpoint-compact-max: 1179px;
   --breakpoint-regular-min: 1180px;
   --breakpoint-regular-max: 1500px;

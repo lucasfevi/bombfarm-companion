@@ -1,5 +1,5 @@
 /**
- * The degraded-input guard (design §4.2). Decides, before any comparison, whether a
+ * The degraded-input guard. Decides, before any comparison, whether a
  * live capture is even gradeable.
  */
 import type { AccountFidelity, AccountPayload, AccountSection, SectionFidelity } from '@bombfarm/contracts';

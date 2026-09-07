@@ -17,7 +17,7 @@ function loadFixture(name: string): RawGameState {
   return JSON.parse(fs.readFileSync(path.join(fixturesDir, name), 'utf8')) as RawGameState;
 }
 
-describe('STA-7 damage attribution', () => {
+describe('damage attribution', () => {
   it('uses unique ft ownership when heroes have distinct cooldown_reduction', () => {
     const heroes: RawHeroRecord[] = [
       { id: '1', stats: { cooldown_reduction: 0.1 } },

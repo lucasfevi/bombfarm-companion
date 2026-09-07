@@ -249,7 +249,7 @@ function buildHeroEntries(
 /**
  * Gold/hr and chests/hr at a squad's OWN best-over-phase rate for each currency independently —
  * decoupled from whatever phase the ACTIVE objective recommends. This is what makes
- * `paybackHours` "always denominated in GOLD whatever the objective" (design.md §4.11): a
+ * `paybackHours` always denominated in GOLD whatever the objective: a
  * chest-focused solve still reports each side's real gold ceiling, not gold-at-the-chest-phase.
  * Not counted toward `evaluations` — informational read-out, zero pipeline calls.
  */
@@ -375,7 +375,7 @@ function buildTerminalResult(params: {
   account: AccountShared;
   phaseOptions: FarmRateOptions;
   /** null for emptyPool/allDegenerate (no squad to describe); a trivial point-plateau for
-   *  noBudget, where the search never ran (design.md §7: "reported around current"). */
+   *  noBudget, where the search never ran — reported around current. */
   plateau: FarmRespecPlateau | null;
   tier: 'gate' | 'full';
   gainIsLowerBound: boolean;
@@ -411,7 +411,7 @@ function buildTerminalResult(params: {
   });
 }
 
-/** `(changed in the joint optimum) desc, then budget desc, then heroId asc` (design.md §4.10). */
+/** `(changed in the joint optimum) desc, then budget desc, then heroId asc`. */
 function rankFrontierCandidates(
   heroEntries: readonly FarmRespecHeroEntry[],
   searchableIds: readonly string[],
@@ -462,7 +462,7 @@ function buildFrontierEntry(
 }
 
 /**
- * The cost frontier (design.md §4.10): best 1-hero and best 2-hero respec, each RE-SOLVED with
+ * The cost frontier: best 1-hero and best 2-hero respec, each RE-SOLVED with
  * every other hero pinned to current — never truncated from the joint optimum. Candidates are
  * ranked once, deterministically, and only the top `FARM_OPT_FRONTIER_CANDIDATES` are considered,
  * which bounds the cost to at most `FARM_OPT_FRONTIER_CANDIDATES + C(FARM_OPT_FRONTIER_CANDIDATES, 2)`
@@ -559,9 +559,9 @@ type FarmRespecSetup =
 
 /**
  * The shared prefix both tiers run: resolve the objective, extract the basis, and handle the
- * three degenerate fast paths (`emptyPool`, `allDegenerate`, `noBudget`) identically — design.md
- * §7's own requirement that "every §7 degenerate row returns the same outcome from the gate as
- * from the full solve". Returns either a finished terminal result or everything the real search
+ * three degenerate fast paths (`emptyPool`, `allDegenerate`, `noBudget`) identically — every
+ * degenerate row must return the same outcome from the gate as from the full solve.
+ * Returns either a finished terminal result or everything the real search
  * needs to proceed.
  */
 function prepareFarmRespecSolve(
@@ -620,7 +620,7 @@ function prepareFarmRespecSolve(
   }
 
   // Scales: the current build's own best over the candidate phase set, per currency, computed
-  // once then frozen (design.md §4.1). Not counted toward `evaluations` — it is
+  // once then frozen. Not counted toward `evaluations` — it is
   // objective-normalization setup, not a candidate the search is choosing between. This is the
   // SAME independent per-currency read-out `goldChestReadout` computes for display, so the two
   // are derived together rather than duplicating the phase scan.
@@ -638,8 +638,8 @@ function prepareFarmRespecSolve(
   if (searchableIds.length === 0) {
     const currentPick = bestFarmPhase(currentSquad, objective, scales, phaseOptions);
     // No search ran (nothing was searchable), so there is no ladder to read a plateau from — a
-    // trivial point-plateau at the current build's own energy share (design.md §7: "reported
-    // around current" for the every-hero-out-of-budget case).
+    // trivial point-plateau at the current build's own energy share — reported around
+    // current, for the every-hero-out-of-budget case.
     const noBudgetShare = squadEnergyShare(bases, searchableIds, budgetById, null);
     return {
       kind: 'terminal',
@@ -696,7 +696,7 @@ export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
   const proposedPick = search.winner.pick;
   const outcome: FarmRespecOutcome = proposedPick === null ? 'noFeasiblePhase' : keptCurrent ? 'nothingToGain' : 'improved';
 
-  // The plateau (design.md §4.7) — a pure read-out of the final sweep's ladder, ZERO extra
+  // The plateau — a pure read-out of the final sweep's ladder, ZERO extra
   // evaluations. `peak` is the winner's own value: by construction no ladder entry out-scores it.
   const winShare = squadEnergyShare(bases, searchableIds, budgetById, search.winner.assignment);
   const currentShare = squadEnergyShare(bases, searchableIds, budgetById, null);
@@ -709,9 +709,9 @@ export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
     proposedEnergyShare: winShare,
   };
 
-  // The cost frontier (design.md §4.10): only when the joint solve actually found something
+  // The cost frontier: only when the joint solve actually found something
   // better — a frontier under keptCurrent would advise spending gold for zero gain. Shares the
-  // budget the joint solve left over (design.md §4.9).
+  // budget the joint solve left over.
   let frontier: FarmRespecFrontierEntry[] = [];
   let frontierEvaluations = 0;
   let frontierBudgetExhausted = false;
@@ -787,7 +787,7 @@ export function gateFarmRespec(input: FarmRespecInput): FarmRespecResult {
   const keptCurrent = heroEntries.every((h) => !h.changed);
 
   // The current build's own evaluation — scored on the FULL phase set, never subsampled, so a
-  // ratio against it can only UNDER-state the true gain (design.md §4.8's lower-bound contract).
+  // ratio against it can only UNDER-state the true gain — the lower-bound contract.
   const currentPick = gate.currentEval.pick;
   const proposedPick = gate.winner.pick;
   const outcome: FarmRespecOutcome = proposedPick === null ? 'noFeasiblePhase' : keptCurrent ? 'nothingToGain' : 'improved';

@@ -20,7 +20,7 @@ export type PoolEntry = {
   level: number;
   /** The item's own stored forge level (lowest among the grouped ids). */
   upgrade: number;
-  /** `min(FORJA_MAX, max(upgrade, forgeFloor))` — what scoring uses (AD-RGO-06). */
+  /** `min(FORJA_MAX, max(upgrade, forgeFloor))` — what scoring uses. */
   effectiveUpgrade: number;
   slot: string;
   count: number;

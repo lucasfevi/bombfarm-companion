@@ -1,5 +1,5 @@
 /**
- * The cross-source comparator (design §4.3).
+ * The cross-source comparator.
  *
  * Order is a requirement, not an implementation detail: rejection → roster membership →
  * per-hero sheet compare → account-level equality. A roster mismatch must never let a single
@@ -15,7 +15,7 @@ import { FidelityGateError } from './fidelity-gate-error';
 const SHEET_BLOCKS = ['naked', 'gearedOverride', 'birth'] as const;
 type SheetBlock = (typeof SHEET_BLOCKS)[number];
 
-/** Non-sheet `record` fields compared for EXACT equality (design §4.3 rule 3). */
+/** Non-sheet `record` fields compared for EXACT equality. */
 const EXACT_RECORD_FIELDS = ['level', 'stars', 'rarity', 'pts', 'loadout', 'abilities', 'statPointsAvailable'] as const;
 
 export interface CompareCounts {
@@ -246,7 +246,7 @@ export function compareRawHeroFields(live: AccountPayload, exported: AccountPayl
 /**
  * Compares a live-sourced `ParseResult` against an export-sourced `ParseResult` of the same
  * account. Throws `FidelityGateError` on the first disagreement; returns the executed-work
- * counts on success (design §4.3 step 5).
+ * counts on success.
  */
 export function compareAccountResults(live: ParseResult, exported: ParseResult, opts: CompareOptions = {}): CompareCounts {
   if (live.rejected) {

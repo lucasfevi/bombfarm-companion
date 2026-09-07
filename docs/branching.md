@@ -29,7 +29,7 @@ for commit subjects. The branch then reads like the commit that will land it.
 ```
 
 Good: `feat/rotation-pool-redesign`, `fix/stale-vip-window`, `docs/comments-hard-truth`.
-Bad: `comments`, `lucas/wip`, `feat/ACS-06`, `claude/code-comment-policy-924368`.
+Bad: `comments`, `lucas/wip`, `feat/issue-243`, `claude/code-comment-policy-924368`.
 
 Exempt: `main`, `develop`, `release/next`, and `backup/*` snapshots.
 

@@ -11,7 +11,7 @@ async function importSampleSave(page: import('@playwright/test').Page) {
   await page.getByRole('button', { name: /importar \d+ herói/i }).click();
 }
 
-/** PW-05: core client flow — sole chromium project (color-independent). */
+/** Core client flow — sole chromium project (color-independent). */
 test.describe('core client flow', () => {
   test('footer shows a stable app version label on every route', async ({ page }) => {
     await page.goto('/');
@@ -70,13 +70,13 @@ test.describe('core client flow', () => {
   test('import → select → level/stars → DPS updates → explain toggle', async ({ page }) => {
     await page.goto('/');
 
-    // PW-05.1 — empty workspace visible; hero strip metrics hidden
+    // Step 1 — empty workspace visible; hero strip metrics hidden
     const empty = page.getByRole('region', { name: /nenhum herói adicionado/i });
     await expect(empty).toBeVisible();
     const sustainedLabel = page.getByText('DPS efetivo', { exact: true });
     await expect(sustainedLabel).toBeHidden();
 
-    // PW-05.2 — real import path
+    // Step 2 — real import path
     await importSampleSave(page);
 
     await expect(empty).toBeHidden();
@@ -86,7 +86,7 @@ test.describe('core client flow', () => {
     await expect(heroStrip).toBeVisible();
     await expect(heroStrip.getByText('Cora')).toBeVisible();
 
-    // PW-05.3 — switch hero via picker, capture Sustained, level-up + stars, assert value changed
+    // Step 3 — switch hero via picker, capture Sustained, level-up + stars, assert value changed
     await heroStrip.getByRole('button', { name: /trocar herói/i }).click();
     const picker = page.getByRole('dialog', { name: /trocar herói/i });
     await expect(picker).toBeVisible();
@@ -105,7 +105,7 @@ test.describe('core client flow', () => {
 
     await expect(sustainedValue).not.toHaveText(before);
 
-    // PW-05.4 — explain disclosure open/close (Collapsible trigger button, ui-accordion)
+    // Step 4 — explain disclosure open/close (Collapsible trigger button, ui-accordion)
     const explainTrigger = page.getByRole('button', { name: /como calculamos tudo/i });
     // The footer carries a permanent wiki art-credit link with the same accessible
     // name, so page-wide visibility is always true. Count instead: the disclosure
@@ -120,7 +120,7 @@ test.describe('core client flow', () => {
   });
 
   /**
-   * PW-05.5 negative check (discrimination):
+   * Step 5 negative check (discrimination):
    * Feeding invalid JSON shows the invalid-JSON error and does NOT create roster rows.
    * Sabotage that would make the happy path fail: skip confirm / use bad file → no Cora row.
    */

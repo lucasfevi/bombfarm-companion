@@ -29,7 +29,7 @@ the per-file manifest.
 
 ## 2. Why the old corpus is gone
 
-Under `AD-062`'s positive discriminator (`skills.refunds` / `skills.totals.vagas_campo` /
+Under the positive discriminator (`skills.refunds` / `skills.totals.vagas_campo` /
 `skills.totals.bag_tabs_bonus` — post-patch-only keys), **every one of the 41 pre-patch capture
 files was an invalid save**: all 41 carried `keystones`, `abisso_base` and `crit_dmg_mult`
 (pre-patch-only keys), and none carried any of the three new keys. That is the exact input
@@ -63,7 +63,7 @@ SHEET_KEYS` is restated as one line in the new `fixture-corpus.test.ts` guard (b
 
 **`abisso-damage-mult.test.ts`'s gating/clamping describes call `computeCombatMults` directly on
 keystone math `F2` deletes anyway** — recorded as lost, not rescued into a surviving file (spec's
-default: whole-file deletion, OQ-2).
+default: whole-file deletion).
 
 **The `point-inference` and `sheet-peel` corpus-anchored claims have the strongest available
 replacement**: §6 below, the round-trip invariant.
@@ -71,7 +71,7 @@ replacement**: §6 below, the round-trip invariant.
 ### Other deletions recorded here
 
 - **`account-source-parity.test.ts`'s three inline `ParseResult` digests** (`toMatchInlineSnapshot`
-  at the old lines 27/32/37) — `AD-068`: they are SHA-256 hashes of *our own output* captured
+  at the old lines 27/32/37) — they are SHA-256 hashes of *our own output* captured
   against a pre-refactor HEAD. Deleted, never regenerated; regenerating them against a new
   fixture would assert nothing. The `__snapshots__/account-source-parity.test.ts.snap` file
   (whose only entry was keyed by the deleted `vera-01-points-reset.json`) was deleted in the
@@ -82,22 +82,22 @@ replacement**: §6 below, the round-trip invariant.
   new substrate, so it was deleted rather than re-pointed onto an unverified subject.
 - **`luck-sheet.test.ts`'s `luck per-point value against Wave 0 fixtures` block** (2 tests, Vera
   ★0 and Bellatrix ★1) — the point-delta before/after family (§5).
-- **`ability-catalog.test.ts`'s AC-20** (Korin, id 43040, `golpe_brutal` rank 1 recomposition
+- **`ability-catalog.test.ts`'s Korin recomposition case** (id 43040, `golpe_brutal` rank 1
   proof) — no hero in either post-patch capture owned `golpe_brutal` at the time (scanned
   exhaustively). **That is no longer true of the corpus**: four captures now carry the ability,
   `save-20260818-12heroes.json` (Doran 20/20) and `save-20260823-13heroes-crit-points.json`
   (`Buff S #1` 20/20) among them, and the flat shape is asserted directly in
-  `points-within-level-budget.test.ts`. Whether AC-20 itself should be re-instated on one of them
+  `points-within-level-budget.test.ts`. Whether that case itself should be re-instated on one of them
   is an open call, not settled by this correction.
-- **`ability-catalog.test.ts`'s AC-02** re-measured, not deleted: the payload's 8 heroes own 11
+- **`ability-catalog.test.ts`'s distinct-ability-code count** re-measured, not deleted: the payload's 8 heroes own 11
   distinct ability codes, not the deleted fixture's 13 — **two codes lose their in-fixture slot
   check** (the claim itself still re-points cleanly for the 11 that remain).
 - **`ability-point-budget.test.ts`'s dead-point boundary case** (`Bram L49 Incomum → 40 spendable
   / 9 dead`, `Torin L45 → 40 / 5`) — no hero on either post-patch corpus file exceeds
   `quota × 20`; replaced with real rows from the new corpus, all with `dead: 0`. The synthetic
-  Mítico L100 case (`AD-BSP-23a`) still demonstrates the boundary math directly.
+  Mítico L100 case still demonstrates the boundary math directly.
 - **`derive.test.ts`'s crit-damage-specific double-count discrimination** — every post-patch
-  capture has `crit_dmg_add: 0` in `skills.totals`, so AC-30/AC-31/AC-32 can no longer
+  capture has `crit_dmg_add: 0` in `skills.totals`, so those three discrimination cases can no longer
   discriminate a crit-damage-specific doubling bug the way the deleted crit-dmg-tree fixture
   could. The `critChance`/`energy`/`speed`/`attack` axes of the same assertions still
   discriminate (their tree percentages are nonzero on the re-pointed hero).
@@ -110,7 +110,7 @@ replacement**: §6 below, the round-trip invariant.
   fixture can reproduce a whole-account pre-`birth_stats` shape any more. The reject-gate LOGIC
   stays covered by `account-source-parity.test.ts`'s synthetic multi-hero missing-`birth_stats`
   cases.
-- **`import-save.test.ts` (web): AC-28** (a known ability code at level 0 pushes no issue) — no
+- **`import-save.test.ts` (web): the level-0 ability case** (a known ability code at level 0 pushes no issue) — no
   ability entry at level 0 exists in either post-patch capture (every entry is level ≥ 17).
 - **`import-inventory-sync.test.ts` (web): the Abisso half of a real-fixture disclosure test** —
   `treeAbisso`/`treeAbissoBase` flowing from a real save's `abisso_base` is unreproducible (no
@@ -119,7 +119,7 @@ replacement**: §6 below, the round-trip invariant.
 - **`apps/web/e2e/team-plan-disclosures.spec.ts`'s `saturated account shows saturation callout`
   test** was found RED on the new corpus during T7 (its `slots: 2` override was tuned for the
   deleted 11-hero fixture's ~2.5–3.2 `sumDuty` range) and was fixed by an orchestrator ruling
-  that extended `AD-069`'s three-file exception to this fourth `apps/web/e2e/**` file. On the
+  that extended the three-file exception to this fourth `apps/web/e2e/**` file. On the
   5-hero export, `slots` alone can no longer force the saturated regime — this roster's own
   `sumDuty` tops out at ~0.99 at the export's real house, strictly below the minimum `slots`
   value `evaluateRoster` clamps to. `duty = fieldSeconds / (fieldSeconds + restSeconds)`
@@ -127,10 +127,10 @@ replacement**: §6 below, the round-trip invariant.
   maxed house (Casa V, level 20 — the shortest rest in `HOUSES`), which measures `sumDuty` ~2.12
   and clears `slots: 1` with better than 2x margin. `e2e-smoke` is 132/132.
 
-## 4. The three named accepted losses (`AD-061`)
+## 4. The three named accepted losses
 
-Each attributed to `AD-061` (the patch made the underlying account unrecapturable), each naming
-`D25`'s wiki detector (**F5**) as the *replacement for the deleted coverage, not a bonus
+Each accepted for the same reason (the patch made the underlying account unrecapturable), each
+naming the wiki detector as the *replacement for the deleted coverage, not a bonus
 deliverable*:
 
 1. **Deleting `abisso-damage-mult.test.ts` unpins the committed `phases.json` mitigation table.**
@@ -155,20 +155,20 @@ That structurally kills every family below; none of them can be rebuilt from a s
 | Ability-slot coverage | `bellatrix-02-pts-each-1.json` (13 owned codes) | The new corpus's 8 payload heroes own 11 distinct codes. (This cell used to add "no hero owns `golpe_brutal` at all" — false since 2026-08-18: four captures carry it.) | Any account owning the missing codes |
 | Dead ability points | `bellatrix-02-pts-each-1.json` (Bram L49 Incomum → 9 dead) | No post-patch corpus hero exceeds `quota × 20` | A low-rarity hero above level 40 |
 | Pre-`birth_stats` whole-file reject | `gale-01-points-reset.json` (16 heroes, 0 with `birth_stats`) | Every post-patch export carries `birth_stats` on every hero by construction | Not restorable — the field predates the keystone patch entirely |
-| High-phase mitigation | `phase-151.json` | `max_phase` caps at 42 post-wipe | Out of scope — `AD-061` accepts this loss permanently; see §4 |
+| High-phase mitigation | `phase-151.json` | `max_phase` caps at 42 post-wipe | Out of scope — this loss is accepted permanently; see §4 |
 
 ## 6. What replaced the point-delta family, and its one residual gap
 
-`packages/domain/tests/point-roundtrip.test.ts` (T4, `AD-071`, both trees) — a new, stronger
+`packages/domain/tests/point-roundtrip.test.ts` (both trees) — a new, stronger
 claim than the deleted before/after family. **The non-circularity argument in full:** the game
 observes each hero's `stats` object directly and writes it into the export. That is a game
 observation, not our output — `@bombfarm/domain` has to *land on it*. The forward chain
 (`nakedFromBirth` → `applyPoints` → `applySkillTree`, wired as `composeSheetFromBirth`) consumes
 `inferSpentPoints`'s recovered point split only as an intermediate; the split is never the
-assertion target. `AD-068` is satisfied: the expected value in every comparison is the game's own
+assertion target. Non-circularity is satisfied: the expected value in every comparison is the game's own
 reading, never our own model's output pasted back in.
 
-The bar (`AD-071`, measured, not assumed): literal bit-exactness (`Object.is` on every hero) is
+The bar (measured, not assumed): literal bit-exactness (`Object.is` on every hero) is
 unachievable — residuals of ~1e-15 to ~4e-12 from IEEE-754 association order differing between
 the game's own accumulation and this forward chain's. Four claims instead, together stronger than
 either a bare `Object.is` or a bare tolerance: (A) all 13 heroes have zero inference issues — it
@@ -205,7 +205,7 @@ exact integer, and `level − stat_points_available` leaves exactly 2):
 
 Same Δ off different rolls ⇒ flat, and `10 / 2 = 5`. With `POINT_GAIN.critDmgFlat` Bellatrix
 solves to exactly 2 with zero issues, and all 13 corpus heroes are issue-free. The fixture was
-never edited — the model moved to meet it, which is the direction `AD-068` requires.
+never edited — the model moved to meet it, which is the direction non-circularity requires.
 
 The same unit error sat in the Golpe Brutal ability (`+4` flat per level, not 4% of the roll); see
 `packages/domain/tests/points-within-level-budget.test.ts` for the level-ceiling invariant that
@@ -223,8 +223,8 @@ non-corpus test files (`advisor-pipeline.test.ts`, `storage-abisso-base-compat.t
 keystone functionality with synthetic (non-fixture) data. `F1` never touches
 `packages/domain/src`, so that functionality and its coverage are correctly untouched. The guard
 therefore asserts **total-match stability across the whole tracked tree**, failing in either
-direction — the operative part of MFR-15 AC-4 — rather than a narrower, permanently-red
-per-surface check. `validation.md`'s author must re-derive this number independently before
+direction — the operative part of the requirement — rather than a narrower, permanently-red
+per-surface check. The validating author must re-derive this number independently before
 reading the committed constant.
 
 ## 9. The crit-chance/CDR shape reverted twice in five days (issue #132)

@@ -29,8 +29,8 @@ import { extractHero, loadFixtureJson, treeTotalsFromSave } from './helpers/shee
 
 // (the ground-truth rule, class (b) — structural, using real heroes as generic input rather than
 // pinning any of their captured values as an expected output): re-pointed onto
-// payload-20260812-8heroes.json's 8 real heroes (design.md §6.2 — "the largest single
-// re-point in the feature"). The deleted 21 hero-name literals spanned two now-deleted
+// payload-20260812-8heroes.json's 8 real heroes — the largest single
+// re-point in the feature. The deleted 21 hero-name literals spanned two now-deleted
 // fixtures; every assertion below (reoptDps >= currentDps, tier monotonicity, budget
 // conservation, …) is a comparative invariant that holds for any real hero, so it re-points
 // onto the smaller 8-hero set without loss — no hero identity or numeric value from the
@@ -246,7 +246,7 @@ describe('findGateCandidate — Tier 1', () => {
     expect(resultSum).toBe(budget - result.unallocated);
   });
 
-  it('(GAP-W2-01): pts.luck=0 vs a hostile pts.luck=9999 produce byte-identical DPS entries', () => {
+  it('pts.luck=0 vs a hostile pts.luck=9999 produce byte-identical DPS entries', () => {
     const { pts, effective, effectiveDelta } = syntheticHero();
     const honest = gate({ pts: { ...pts, luck: 0 }, effective, effectiveDelta, context });
     const hostile = gate({ pts: { ...pts, luck: 9999 }, effective, effectiveDelta, context });
@@ -329,7 +329,7 @@ describe('findGateCandidate — Tier 1', () => {
 });
 
 /**
- * The bilinear-ridge scenario (design.md's Neighbourhood argument). All 80
+ * The bilinear-ridge scenario for the neighbourhood argument. All 80
  * budget points sit in attack (a real, valuable stat, not a zero-delta decoy) so any
  * neighbourhood transfer away from it has a genuine opportunity cost; crit chance/dmg start
  * near zero. `S5`'s restricted-greedy first phase accumulates up to `floor(B/2) = 40` points

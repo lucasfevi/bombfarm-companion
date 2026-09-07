@@ -211,7 +211,7 @@ function rebuildCorruptFile(
 
 /**
  * Opens the account SQLite database (or `:memory:`), classifying every way it can fail into
- * one discriminated `OpenResult` (design.md §3). Never throws.
+ * one discriminated `OpenResult`. Never throws.
  */
 export function openAccountDatabase(dbPath: string, deps: OpenAccountDatabaseDeps = {}): OpenResult {
   const open = deps.open ?? defaultSqliteOpener;

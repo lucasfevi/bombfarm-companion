@@ -169,7 +169,7 @@ describe('rankNextPoint', () => {
     expect(ranking[0].gainPct).toBeGreaterThanOrEqual(ranking[6].gainPct);
   });
 
-  it('BASE_ROLLS does not influence the ranking when effectiveDeltas is supplied (L-02, GAP-W2-01)', () => {
+  it('BASE_ROLLS does not influence the ranking when effectiveDeltas is supplied', () => {
     // The behavioural property, not a grep: a hostile rarity ('Mítico' on a Comum-rolled
     // sheet — the rarities have very different BASE_ROLLS) must produce a byte-identical
     // ranking to the honest 'Comum' rarity, proving `deltaForStat` never falls back to

@@ -5,7 +5,7 @@
  * `consent:changed` events) and `AGENTS.md` makes `@bombfarm/contracts` the one home for IPC
  * types both processes import from.
  *
- * SPEC_DEVIATION: design.md §4.2 frames this type as "declared in packages/game-api, re-exported
+ * DELIBERATE DEVIATION: this type was specified as "declared in packages/game-api, re-exported
  * from @bombfarm/contracts". Literally re-exporting FROM game-api would require contracts to
  * depend on game-api for the type — but game-api already depends on contracts for
  * `AccountSection`, so that would be a circular package dependency neither `tsc` nor `pnpm -r

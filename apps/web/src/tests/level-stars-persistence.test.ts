@@ -53,7 +53,7 @@ function memoryLocalStorage() {
   };
 }
 
-describe('persistence: level/stars geared upgrades (PERS-01/02)', () => {
+describe('persistence: level/stars geared upgrades', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', memoryLocalStorage());
   });
@@ -62,7 +62,7 @@ describe('persistence: level/stars geared upgrades (PERS-01/02)', () => {
     vi.unstubAllGlobals();
   });
 
-  it('PERS-01/02: upsert + reload keeps upgraded level, naked, and gearedOverride', () => {
+  it('upsert + reload keeps upgraded level, naked, and gearedOverride', () => {
     const loadout = weaponLoadout();
     const other = { ...emptySheetOther(), penetration: 20 };
     const n0 = naked();
@@ -111,7 +111,7 @@ describe('persistence: level/stars geared upgrades (PERS-01/02)', () => {
     expect(reloaded!.gearedOverride.attack).not.toBeCloseTo(geared.attack, 4);
   });
 
-  it('PERS-01/02: stars upgrade round-trips through normalizeHero JSON reload', () => {
+  it('stars upgrade round-trips through normalizeHero JSON reload', () => {
     const loadout = weaponLoadout();
     const other = emptySheetOther();
     const n0 = naked();

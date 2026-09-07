@@ -238,7 +238,7 @@ describe('wiki-drift.yml — writes nothing under packages/**, no commit, no PR'
 
 // =============================================================================================
 // Zero third-party imports across tools/wiki-drift/*.mjs — pure predicate, red state
-// demonstrated against a fixture string (design §5.6), independent of the T7 per-file scan.
+// demonstrated against a fixture string, independent of the per-file scan.
 // =============================================================================================
 
 function noThirdPartyImports(source) {

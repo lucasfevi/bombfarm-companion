@@ -7,7 +7,7 @@
  * flat top-level key list checked as a subset: `Object.keys(body)` at the top level only, missing
  * keys fatal, added keys silently logged and never gated. That model is structurally incapable of
  * seeing a nested removal, a nested addition, or an addition anywhere — which is exactly how the
- * 2026-08-13 game patch got past it (spec.md's Problem Statement).
+ * 2026-08-13 game patch got past it.
  *
  * This module replaces it with a **declared-path** engine: every level names its complete key set
  * plus two named, enumerated escapes (`optional` — the game legitimately varies; `allowance` — our
@@ -158,7 +158,7 @@ export function assertOptionalKeyWitnessedBothWays(
   }
 }
 
-// --- The shared level catalogue (design §2.3) -----------------------------------------------
+// --- The shared level catalogue -------------------------------------------------------------
 //
 // Measured from `packages/game-api/src/__fixtures__/api-bodies.json` (API, scrubbed 2026-08-12)
 // and `packages/domain/tests/fixtures/sheet-math/save-20260813-5heroes.json` (export, scrubbed
@@ -252,7 +252,7 @@ const ITEM_LEVEL: SchemaLevel = {
     'equip_slot',
     'in_stash',
   ],
-  // Measured (design §2.4): `/inventory.items` 27 with `slot` / 3 without (all category 4);
+  // Measured: `/inventory.items` 27 with `slot` / 3 without (all category 4);
   // `save.items` 17 with / 5 without. Genuine game variance, not our artifact — `optional`, not
   // `allowance`. `assertOptionalKeyWitnessedBothWays` keeps this escape from ever going dead.
   //
@@ -289,7 +289,7 @@ export const SCHEMA_LEVELS = {
 
 /**
  * `save.account` — the export's own account block. A strict subset of the five API route's
- * `/state` body (design §2.3): `account_id`/`player_name` are declared `allowance`, never
+ * `/state` body: `account_id`/`player_name` are declared `allowance`, never
  * `keys`, because the committed export fixture is scrubbed of both (`scrubPersonalFields`,
  * `packages/domain/tests/helpers/fidelity-pair.ts`) — same scrub, same reason as `/state`.
  */
