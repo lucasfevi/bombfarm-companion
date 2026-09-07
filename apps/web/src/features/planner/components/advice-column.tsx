@@ -1,11 +1,15 @@
 'use client';
 
 import { useAppLang } from '@/shared/context/app-lang';
-import { usePlannerStore, selectAdvisorPipeline, runHeroFarmOptimize } from '@/shared/stores';
+import {
+  usePlannerStore,
+  selectAdvisorPipeline,
+  selectNextPointRanking,
+  runHeroFarmOptimize,
+} from '@/shared/stores';
 import type { PipelineFacts } from '@bombfarm/domain/stat-breakdown';
-import { PointsTable, SheetTable } from '@bombfarm/hero/components';
+import { NextPointRanking, PointsTable, SheetTable } from '@bombfarm/hero/components';
 import { adviceSplitClass, colClass } from '@bombfarm/ui/panel-field.recipe';
-import { NextPointRanking } from './next-point-ranking';
 import { EffectiveStatsPanel } from './effective-stats-panel';
 
 export function AdviceColumn() {
@@ -21,6 +25,9 @@ export function AdviceColumn() {
   const heroBattleAllowed = usePlannerStore((state) => state.heroBattleAllowed);
   const optimizeMode = usePlannerStore((state) => state.optimizeMode);
   const setOptimizeMode = usePlannerStore((state) => state.setOptimizeMode);
+  const rankMode = usePlannerStore((state) => state.rankMode);
+  const setRankMode = usePlannerStore((state) => state.setRankMode);
+  const nextPointRanking = usePlannerStore(selectNextPointRanking);
   const naked = usePlannerStore((state) => state.naked);
   const geared = usePlannerStore((state) => state.gearedOverride);
   const treeSpeed = usePlannerStore((state) => state.treeSpeed);
@@ -85,8 +92,8 @@ export function AdviceColumn() {
       <>
           <div className={adviceSplitClass}>
             {/* Remount on hero switch — the cleanest way to reset PointsTable's local preview
-                state per hero without an effect — a useEffect-free
-                consequence of keying. */}
+                state per hero without an effect. Keying makes the reset a consequence of identity
+                changing. */}
             <PointsTable
               key={activeHeroId ?? 'none'}
               t={t}
@@ -105,7 +112,13 @@ export function AdviceColumn() {
                 runFarmOptimize: () => runHeroFarmOptimize(usePlannerStore.getState()),
               }}
             />
-            <NextPointRanking />
+            <NextPointRanking
+              t={t}
+              lang={lang}
+              ranking={nextPointRanking}
+              rankMode={rankMode}
+              onRankMode={setRankMode}
+            />
           </div>
 
           <SheetTable

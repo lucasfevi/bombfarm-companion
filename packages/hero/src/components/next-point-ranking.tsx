@@ -1,18 +1,18 @@
 'use client';
 
-import { type RankMode } from '@bombfarm/domain/model';
+import { type PointValue, type RankMode } from '@bombfarm/domain/model';
 import type { FarmPointRankOutcome } from '@bombfarm/domain/farm-point-rank';
-import { useAppLang } from '@/shared/context/app-lang';
-import { formatNumber } from '@/shared/lib/format-number';
-import { usePlannerStore, selectNextPointRanking } from '@/shared/stores';
-import type { Strings, Lang } from '@/shared/i18n';
-import { Bar, Panel, Select } from '@bombfarm/ui';
 import {
+  Bar,
+  Panel,
+  Select,
   barRowClass,
+  formatNumber,
   panelHClass,
   panelTitleClass,
   rankModeSelectClass,
-} from '@bombfarm/ui/panel-field.recipe';
+} from '@bombfarm/ui';
+import type { Lang, StatPanelCopy } from '../copy';
 
 /**
  * Signed, mode-neutral gain string. For a non-negative value this is byte-identical to the
@@ -36,19 +36,42 @@ export function barPercent(gainPct: number, bestGainPct: number): number {
 
 /** emptyPool/heroNotInPool: no rotation to rank against at all. allDegenerate/noBaseline: a
  *  pool exists but nothing in it produces a usable rate. Two rendered notes, five outcomes. */
-export function fallbackNoteText(outcome: FarmPointRankOutcome, strings: Strings): string {
+export function fallbackNoteText(outcome: FarmPointRankOutcome, strings: StatPanelCopy): string {
   if (outcome === 'emptyPool' || outcome === 'heroNotInPool') return strings.rankFarmNoPool;
   return strings.rankFarmNoRate;
 }
 
-export function NextPointRanking() {
-  const { t, lang } = useAppLang();
-  const rankMode = usePlannerStore((state) => state.rankMode);
-  const setRankMode = usePlannerStore((state) => state.setRankMode);
-  const { rows, fallback, addedToPool } = usePlannerStore(selectNextPointRanking);
-  const best = rows[0];
+/**
+ * AN INPUT, NEVER COMPUTED HERE. The farm mode is scored against a rotation pool the host composes
+ * above the per-hero pipeline — its enabled set, its live editor draft, its max phase — so ranking
+ * from inside this package would drag that host state into a shared component.
+ *
+ * `fallback` is what makes a farm mode that could not be answered legible: it names the outcome and
+ * `rows` still carries the damage ranking, so "farming was asked for and is unavailable, here is
+ * why" is a different state from "the ranking is empty". A host cannot express the first by sending
+ * no rows.
+ */
+export type NextPointRankingInput = {
+  readonly rows: readonly PointValue[];
+  readonly fallback: FarmPointRankOutcome | null;
+  readonly addedToPool: boolean;
+};
 
-  const onRankMode = setRankMode;
+export function NextPointRanking({
+  t,
+  lang,
+  ranking,
+  rankMode,
+  onRankMode,
+}: {
+  t: StatPanelCopy;
+  lang: Lang;
+  ranking: NextPointRankingInput;
+  rankMode: RankMode;
+  onRankMode: (next: RankMode) => void;
+}) {
+  const { rows, fallback, addedToPool } = ranking;
+  const best = rows[0];
 
   return (
     <Panel>
@@ -65,16 +88,17 @@ export function NextPointRanking() {
           <option value="farm">{t.modeFarm}</option>
         </Select>
       </div>
-      {rows.map((row) => (
-        <div className={barRowClass} key={row.stat}>
-          <span>{t.statFull[row.stat]}</span>
-          <Bar
-            percent={barPercent(row.gainPct, best.gainPct)}
-            variant={row === best ? 'best' : 'fill'}
-          />
-          <b>{formatSignedGainPct(row.gainPct, lang)}</b>
-        </div>
-      ))}
+      {best &&
+        rows.map((row) => (
+          <div className={barRowClass} key={row.stat}>
+            <span>{t.statFull[row.stat]}</span>
+            <Bar
+              percent={barPercent(row.gainPct, best.gainPct)}
+              variant={row === best ? 'best' : 'fill'}
+            />
+            <b>{formatSignedGainPct(row.gainPct, lang)}</b>
+          </div>
+        ))}
       {fallback != null ? (
         <p className="m-0 mt-1 text-[11px] text-muted">{fallbackNoteText(fallback, t)}</p>
       ) : addedToPool ? (

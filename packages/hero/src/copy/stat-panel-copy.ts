@@ -1,9 +1,10 @@
 import type { SheetKey } from '@bombfarm/domain/planner-constants';
 
 /**
- * What the sheet, points and stat-breakdown panels print: stat names, the peeled-sheet column
- * headings, the points table's counters and step labels, the Optimize-build controls and their
- * result notices, and the breakdown's source, note, term and formula vocabulary.
+ * What the sheet, points, next-point and stat-breakdown panels print: stat names, the peeled-sheet
+ * column headings, the points table's counters and step labels, the Optimize-build controls and
+ * their result notices, the next-point ranking's heading and its two farm-unavailable notes, and
+ * the breakdown's source, note, term and formula vocabulary.
  *
  * Host-supplied, in the same idiom as `RosterCopy`: no values live here, and a host passes
  * the flat dictionary it already has. Every one of these is vocabulary a host already prints —
@@ -45,6 +46,11 @@ export type StatPanelCopy = {
   colPerPt: string;
   colAfter: string;
   colPreview: string;
+
+  metricNextPoint: string;
+  rankFarmNoPool: string;
+  rankFarmNoRate: string;
+  rankFarmAddedToPool: string;
 
   modeDps: string;
   modeFarm: string;

@@ -67,6 +67,9 @@ import * as GameArt from '@bombfarm/game-art';
 // heroAbilHClass / maskRevealStyle (2026-09-07): promoted for the same reason as the class
 // constants above. They lay out a sub-heading row and fade a collapsible's growing edge, and the
 // Items panel and its loadout comparison, which draw both, are `@bombfarm/hero`'s now.
+// barRowClass / rankModeSelectClass (2026-09-07): promoted for the same reason again. They lay out
+// a labelled gain bar and size the mode select beside a panel heading, and the next-point ranking
+// panel that draws them is `@bombfarm/hero`'s now.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -150,6 +153,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'accountStatListClass',
   'accordionRecipe',
   'barRecipe',
+  'barRowClass',
   'breakpoints',
   'buttonRecipe',
   'chipRecipe',
@@ -194,6 +198,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'phasesBoardPropsClass',
   'phasesBoardRosterClass',
   'phasesBoardRosterSpanClass',
+  'rankModeSelectClass',
   'selectFieldRecipe',
   'setupBannerRecipe',
   'shellDensityFor',

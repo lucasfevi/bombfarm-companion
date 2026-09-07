@@ -32,3 +32,5 @@ export { GearSlotStatsGrid } from './gear-slot-stats-grid';
 export { GearTotalsTable } from './gear-totals-table';
 export { GearCompareSection } from './gear-compare-section';
 export type { GearCompareEditing } from './gear-compare-section';
+export { NextPointRanking, barPercent, fallbackNoteText, formatSignedGainPct } from './next-point-ranking';
+export type { NextPointRankingInput } from './next-point-ranking';

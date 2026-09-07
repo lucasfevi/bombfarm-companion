@@ -190,7 +190,10 @@ const CRIT_DMG_MULT_MAP = {
   // `farmObjective` row above this section with a prose paragraph, a net +1 line. Match itself is
   // unchanged in count and in kind.
   'apps/web/docs/local-data-compat.md': [110, 118],
-  'apps/web/src/features/planner/components/advice-column.tsx': [45, 66],
+  // +7 (line numbers only): the next-point panel became a shared component, so its mode, its
+  // setter and its ranked rows are read here and passed down. Both matches are unchanged in count
+  // and in kind.
+  'apps/web/src/features/planner/components/advice-column.tsx': [52, 73],
   // +16 (line number only): the House-ceiling fix added `fieldSlots`/`houseCycleSecs`, with
   // their doc comments, to `AccountShared` above this line. The match itself is unchanged in
   // count and in kind — still `normalizeTree`'s doc comment naming a stale key it discards.
@@ -258,7 +261,7 @@ const CRIT_DMG_MULT_MAP = {
   // Count and kind unchanged.
   // +3 more (line numbers only, last four): the note on the farm snapshot entry above, plus this
   // one. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 304, 309, 319, 328],
+  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 307, 312, 322, 331],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 

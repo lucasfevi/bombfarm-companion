@@ -11,12 +11,16 @@ import {
   formatSignedGainPct,
   barPercent,
   fallbackNoteText,
-} from '@/features/planner/components/next-point-ranking';
+} from '@bombfarm/hero/components';
 import { STRINGS } from '@/shared/i18n';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
 function read(relativePath: string): string {
   return readFileSync(`${WEB_PACKAGE_ROOT}/${relativePath}`, 'utf8');
+}
+
+function readHero(relativePath: string): string {
+  return readFileSync(`${WEB_PACKAGE_ROOT}/../../packages/hero/src/${relativePath}`, 'utf8');
 }
 
 describe('formatSignedGainPct', () => {
@@ -62,7 +66,11 @@ describe('fallbackNoteText', () => {
 });
 
 describe('next-point-ranking.tsx — the mode select', () => {
-  const source = read('src/features/planner/components/next-point-ranking.tsx');
+  const source = readHero('components/next-point-ranking.tsx');
+  // The panel takes the ranked result as an input now, so the store wiring it used to do itself
+  // lives at the call site. Both halves of the assertion below keep their subject: the selector is
+  // still what feeds the rows, and the panel still never reaches for the raw pipeline.
+  const callSite = read('src/features/planner/components/advice-column.tsx');
 
   it('offers exactly dps and farm — the retired oneshot option is gone', () => {
     expect(source).toContain('<option value="dps">');
@@ -80,7 +88,7 @@ describe('next-point-ranking.tsx — the mode select', () => {
   });
 
   it('rows come from selectNextPointRanking, not the raw advisor pipeline', () => {
-    expect(source).toContain('selectNextPointRanking');
+    expect(callSite).toContain('selectNextPointRanking');
     expect(source).not.toContain('selectAdvisorPipeline');
   });
 
