@@ -50,12 +50,25 @@ function useChartWidth(): { ref: (node: HTMLDivElement | null) => void; width: n
   return { ref: setNode, width };
 }
 
-export function ForgeChart({ start, target, steps }: { start: number; target: number; steps: readonly ForgeStepEvent[] }) {
+/** Opacity while a reader has asked for no motion, between the pulse's own two ends. */
+const GHOST_STILL = 0.45;
+
+export function ForgeChart({
+  start,
+  target,
+  steps,
+  pending,
+}: {
+  start: number;
+  target: number;
+  steps: readonly ForgeStepEvent[];
+  pending: boolean;
+}) {
   const t = useCopy();
   const { ref, width } = useChartWidth();
   const geometry = useMemo(
-    () => forgeChartGeometry({ width, window: forgeChartWindow(width), start, target, steps }),
-    [width, start, target, steps],
+    () => forgeChartGeometry({ width, window: forgeChartWindow(width), start, target, steps, pending }),
+    [width, start, target, steps, pending],
   );
 
   return (
@@ -111,6 +124,23 @@ export function ForgeChart({ start, target, steps }: { start: number; target: nu
             aria-label={forgeMarkLabel(point, t)}
           />
         ))}
+
+        {/* The roll in flight, standing where it will land on the axis at the level it is leaving
+            from. It and its stub pulse as one, and the real mark takes its place at the same x, so
+            a settling roll reads as a fill-in rather than a blink. */}
+        {geometry.ghost ? (
+          <g
+            data-testid="forge-chart-ghost"
+            className="text-accent motion-safe:animate-forge-ghost"
+            opacity={GHOST_STILL}
+            stroke="currentColor"
+            strokeWidth={geometry.lineWidth}
+            fill="none"
+          >
+            <line x1={geometry.ghost.fromX} x2={geometry.ghost.x} y1={geometry.ghost.y} y2={geometry.ghost.y} strokeDasharray={DASH} />
+            <circle cx={geometry.ghost.x} cy={geometry.ghost.y} r={geometry.markRadius} role="img" aria-label={t.forgeMarkPending} />
+          </g>
+        ) : null}
       </svg>
     </div>
   );

@@ -38,6 +38,7 @@ import { useAccountView } from '../../lib/account/use-account-view';
 import {
   EMPTY_FORGE_FILTER,
   filterForgeItems,
+  forgeAnyEquipped,
   forgeHeroIds,
   forgeRarities,
   forgeSlots,
@@ -177,6 +178,7 @@ export function ForgeView({
   );
   const slots = useMemo(() => forgeSlots(gear, SLOTS), [gear]);
   const rarities = useMemo(() => forgeRarities(gear), [gear]);
+  const anyEquipped = useMemo(() => forgeAnyEquipped(gear), [gear]);
 
   // Filtered here, ordered and windowed by the table — which mounts only the rows on screen, so
   // the whole bag can be handed over rather than capped at a row count nobody chose.
@@ -348,6 +350,7 @@ export function ForgeView({
           onFilterChange={setForgeFilter}
           slots={slots}
           rarities={rarities}
+          anyEquipped={anyEquipped}
           shown={shown.length}
           total={gear.length}
           heroHint={heroHint}

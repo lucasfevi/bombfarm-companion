@@ -168,13 +168,13 @@ describe('a full climb', () => {
     expect(h.sleeps).toEqual([h.gate.nextForgeDelayMs(() => 0.5)]);
   });
 
-  it('announces every gap before waiting it out, whatever its length, so the screen decides what to say', async () => {
+  it('announces every call before making it — the first with no gap at all — so the screen can hold its place', async () => {
     const h = harness({ script: [{ upgrade: 9 }, { upgrade: 10 }, { upgrade: 11 }] });
     h.service.start({ ...REQUEST, target: 11 });
     await untilDone(h.events);
     const pauses = h.events.filter((event): event is Extract<ForgeEvent, { type: 'pause' }> => event.type === 'pause');
-    expect(pauses.map((pause) => pause.ms)).toEqual(h.sleeps);
-    expect(h.events.map((event) => event.type)).toEqual(['step', 'pause', 'step', 'pause', 'step', 'done']);
+    expect(pauses.map((pause) => pause.ms)).toEqual([0, ...h.sleeps]);
+    expect(h.events.map((event) => event.type)).toEqual(['pause', 'step', 'pause', 'step', 'pause', 'step', 'done']);
   });
 
   it('reads a critical from the server, not from the odds, and lands the piece where the server put it', async () => {

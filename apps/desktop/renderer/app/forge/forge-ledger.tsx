@@ -23,6 +23,7 @@ import {
   type ForgeLedgerSort,
   type ForgeLedgerSortKey,
 } from '../../lib/forge/forge-ledger-rows';
+import { ForgeGold } from './forge-gold';
 import { forgeLevel, forgeStopText, type ForgeLabels } from './forge-labels';
 
 type Column = { key: ForgeLedgerSortKey; label: string; align: 'left' | 'right' };
@@ -94,7 +95,13 @@ export function ForgeLedger({
               data-testid="forge-ledger-summary"
               className="text-xs font-normal tracking-normal normal-case tabular-nums text-muted"
             >
-              {sub(t.forgeLedgerSummary, { runs: history.totals.runs, spent: labels.gold(history.totals.spent) })}
+              {sub(t.forgeLedgerSummary, { runs: history.totals.runs })}
+            </span>
+            <span
+              data-testid="forge-ledger-summary-gold"
+              className="text-xs font-normal tracking-normal normal-case tabular-nums text-muted"
+            >
+              <ForgeGold>{sub(t.forgeLedgerGold, { spent: labels.gold(history.totals.spent) })}</ForgeGold>
             </span>
           </span>
         </Collapsible.Trigger>
@@ -158,8 +165,8 @@ export function ForgeLedger({
                           <DataTable.Cell align="right" numeric>
                             {labels.count(row.safeJumps)}
                           </DataTable.Cell>
-                          <DataTable.Cell align="right" numeric>
-                            {labels.gold(row.spent)}
+                          <DataTable.Cell align="right" numeric data-testid="forge-ledger-gold">
+                            <ForgeGold>{labels.gold(row.spent)}</ForgeGold>
                           </DataTable.Cell>
                           <DataTable.Cell align="right" nowrap numeric>
                             {formatAge(row.durationMs, t)}
@@ -175,10 +182,12 @@ export function ForgeLedger({
                 <span data-testid="forge-ledger-totals" className="tabular-nums text-muted">
                   {sub(t.forgeLedgerTotals, {
                     runs: history.totals.runs,
-                    spent: labels.gold(history.totals.spent),
                     rolls: labels.count(history.totals.rolls),
                     fails: labels.count(history.totals.fails),
                   })}
+                </span>
+                <span data-testid="forge-ledger-totals-gold" className="tabular-nums text-muted">
+                  <ForgeGold>{sub(t.forgeLedgerGold, { spent: labels.gold(history.totals.spent) })}</ForgeGold>
                 </span>
                 <Button type="button" variant="text" className="ml-auto" data-testid="forge-ledger-clear" onClick={onClearHistory}>
                   {t.forgeLedgerClear}

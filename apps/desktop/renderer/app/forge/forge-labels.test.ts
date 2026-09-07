@@ -15,9 +15,9 @@ import {
   forgeResultHeading,
   forgeRungLabel,
   forgeStartRefusalText,
+  forgeSpendTone,
   forgeStatRows,
   forgeStopText,
-  forgeWornText,
 } from './forge-labels';
 
 const ROWS = [
@@ -170,12 +170,26 @@ describe('forgeBandText', () => {
   });
 });
 
-describe('forgeWornText', () => {
-  it('names the three cuts through who is wearing what', () => {
-    expect(forgeWornText('all', en)).toBe('Worn or not');
-    expect(forgeWornText('worn', en)).toBe('Worn by a hero');
-    expect(forgeWornText('spare', en)).toBe('Nobody wearing it');
-    expect(forgeWornText('spare', ptBR)).toBe('Ninguém usando');
+describe('forgeSpendTone', () => {
+  const forecast = { gold: 1_000, badRunGold: 2_000 };
+
+  it('reads under the expected figure as a gain, over it as a warning, and past the bad run as a loss', () => {
+    expect(forgeSpendTone(400, forecast)).toBe('up');
+    expect(forgeSpendTone(1_000, forecast)).toBe('up');
+    expect(forgeSpendTone(1_001, forecast)).toBe('warn');
+    expect(forgeSpendTone(2_000, forecast)).toBe('warn');
+    expect(forgeSpendTone(2_001, forecast)).toBe('down');
+  });
+});
+
+describe('the difference against the plan', () => {
+  it('prints a whole signed percent, with a real minus sign, in both languages', () => {
+    const english = forgeLabels(en, 'en', 'en');
+    const portuguese = forgeLabels(ptBR, 'pt', 'pt-BR');
+    expect(english.signedPercent(0.234)).toBe('+23%');
+    expect(english.signedPercent(-0.121)).toBe('−12%');
+    expect(english.signedPercent(0)).toBe('+0%');
+    expect(portuguese.signedPercent(-0.5)).toBe('−50%');
   });
 });
 

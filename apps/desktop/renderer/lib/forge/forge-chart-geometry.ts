@@ -32,9 +32,22 @@ export type ForgeChartStep = {
 
 export type ForgeChartPoint = ForgeChartStep & { readonly x: number; readonly y: number };
 
+/**
+ * Where the roll in flight will land on the x axis, at the level the piece stands on now — the
+ * one thing about it that is already known. `fromX` is the mark it follows, so the stub between
+ * them is horizontal: the height it ends at is exactly what has not happened yet.
+ */
+export type ForgeChartGhost = {
+  readonly x: number;
+  readonly y: number;
+  readonly fromX: number;
+  readonly attempt: number;
+};
+
 export type ForgeChartGeometry = {
   readonly path: string;
   readonly points: readonly ForgeChartPoint[];
+  readonly ghost: ForgeChartGhost | null;
   readonly floor: { readonly y: number; readonly level: number } | null;
   readonly target: { readonly y: number; readonly level: number };
   readonly ticks: readonly { readonly x: number; readonly attempt: number }[];
@@ -51,6 +64,9 @@ export type ForgeChartInput = {
   readonly start: number;
   readonly target: number;
   readonly steps: readonly ForgeChartStep[];
+  /** A roll has been asked for and has not landed. Its slot is reserved on the axis, so the mark
+   *  that fills it never lands outside the box the marks before it were spaced into. */
+  readonly pending?: boolean;
 };
 
 function round(value: number): number {
@@ -72,7 +88,7 @@ function tickEvery(spacing: number): number {
   return TICK_STEPS.find((step) => step * spacing >= MIN_TICK_GAP) ?? WIDEST_TICK_STEP;
 }
 
-export function forgeChartGeometry({ width, window: held, start, target, steps }: ForgeChartInput): ForgeChartGeometry {
+export function forgeChartGeometry({ width, window: held, start, target, steps, pending = false }: ForgeChartInput): ForgeChartGeometry {
   const kept = clamp(Math.floor(held), 1, Number.MAX_SAFE_INTEGER);
   const dropped = Math.max(0, steps.length - kept);
   const shown = steps.slice(dropped);
@@ -80,7 +96,7 @@ export function forgeChartGeometry({ width, window: held, start, target, steps }
    *  line is a real transition rather than a gap. */
   const entryLevel = steps[dropped - 1]?.to ?? start;
   const entryAttempt = (shown[0]?.attempt ?? 1) - 1;
-  const span = Math.max(Math.min(MIN_SPAN, kept), shown.length);
+  const span = Math.max(Math.min(MIN_SPAN, kept), shown.length + (pending ? 1 : 0));
 
   const levels = [entryLevel, target, ...shown.map((step) => step.to)];
   const lowest = Math.min(...levels);
@@ -100,6 +116,13 @@ export function forgeChartGeometry({ width, window: held, start, target, steps }
     ' ',
   );
 
+  const last = points[points.length - 1];
+  const standingOn = last?.to ?? entryLevel;
+  const nextAttempt = (last?.attempt ?? entryAttempt) + 1;
+  const ghost = pending
+    ? { x: x(nextAttempt), y: y(standingOn), fromX: last?.x ?? x(entryAttempt), attempt: nextAttempt }
+    : null;
+
   const every = tickEvery(spacing);
   const ticks: { x: number; attempt: number }[] = [];
   for (let attempt = Math.ceil(entryAttempt / every) * every; attempt <= entryAttempt + span; attempt += every) {
@@ -109,6 +132,7 @@ export function forgeChartGeometry({ width, window: held, start, target, steps }
   return {
     path,
     points,
+    ghost,
     floor: FORGE_SAFE >= lowest && FORGE_SAFE <= highest ? { y: y(FORGE_SAFE), level: FORGE_SAFE } : null,
     target: { y: y(target), level: target },
     ticks,

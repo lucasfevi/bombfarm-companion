@@ -8,6 +8,7 @@ import { inventoryFieldClass } from '@bombfarm/game-art';
 import { Bar, Button, cn, Panel, PanelHeader, StatList, Stepper, type StatListItem } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
 import type { ForgePlan, ForgePlanForecast } from '../../lib/forge/use-forge-plan';
+import { ForgeGold } from './forge-gold';
 import {
   BLANK,
   forgeLevel,
@@ -157,9 +158,21 @@ export function ForgePlanPanel({
 
   const facts: StatListItem[] = [
     { id: 'rolls', label: t.forgeFactRolls, value: <span data-testid="forge-fact-rolls">{forecast ? labels.rolls(forecast.rolls) : BLANK}</span> },
-    { id: 'gold', label: t.forgeFactGold, value: <span data-testid="forge-fact-gold">{forecast ? labels.gold(forecast.gold) : BLANK}</span> },
-    { id: 'bad-run', label: t.forgeFactBadRun, value: <span data-testid="forge-fact-bad-run">{forecast ? labels.gold(forecast.badRunGold) : BLANK}</span> },
-    { id: 'wallet', label: t.forgeFactWallet, value: <span data-testid="forge-fact-wallet">{walletGold === null ? BLANK : labels.gold(walletGold)}</span> },
+    {
+      id: 'gold',
+      label: t.forgeFactGold,
+      value: <span data-testid="forge-fact-gold">{forecast ? <ForgeGold>{labels.gold(forecast.gold)}</ForgeGold> : BLANK}</span>,
+    },
+    {
+      id: 'bad-run',
+      label: t.forgeFactBadRun,
+      value: <span data-testid="forge-fact-bad-run">{forecast ? <ForgeGold>{labels.gold(forecast.badRunGold)}</ForgeGold> : BLANK}</span>,
+    },
+    {
+      id: 'wallet',
+      label: t.forgeFactWallet,
+      value: <span data-testid="forge-fact-wallet">{walletGold === null ? BLANK : <ForgeGold>{labels.gold(walletGold)}</ForgeGold>}</span>,
+    },
   ];
 
   return (

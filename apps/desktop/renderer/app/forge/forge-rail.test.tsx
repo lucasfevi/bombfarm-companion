@@ -42,14 +42,19 @@ function running(): ForgeRunState {
   return state;
 }
 
-function finished(): ForgeRunState {
+/** The run's plan expects 650 and calls 1,200 a bad run, so the spend picks the tone. */
+function finished(spent = 800): ForgeRunState {
   return forgeRunReducer(running(), {
     kind: 'done',
     event: {
       runId: 'r1',
-      result: { itemId: 'g1', from: 8, to: 12, target: 12, stop: 'target', reached: true, rolls: 8, fails: 1, crits: 0, safeJumps: 0, spent: 800, walletAfter: 5_000, durationMs: 12_000 },
+      result: { itemId: 'g1', from: 8, to: 12, target: 12, stop: 'target', reached: true, rolls: 8, fails: 1, crits: 0, safeJumps: 0, spent, walletAfter: 5_000, durationMs: 12_000 },
     },
   });
+}
+
+function deltaTag(html: string): string {
+  return /<span[^>]*data-testid="forge-against-delta"[^>]*>/.exec(html)?.[0] ?? '';
 }
 
 function renderRail(run: ForgeRunState): string {
@@ -75,8 +80,8 @@ function railCancelTag(html: string): string {
   return /<button[^>]*data-testid="forge-rail-cancel"[^>]*>/.exec(html)?.[0] ?? '';
 }
 
-function pacingTag(html: string): string {
-  return /<span[^>]*data-testid="forge-rail-pausing"[^>]*>/.exec(html)?.[0] ?? '';
+function ghostTag(html: string): string {
+  return /<g[^>]*data-testid="forge-chart-ghost"[^>]*>/.exec(html)?.[0] ?? '';
 }
 
 describe('forgeRailState', () => {
@@ -103,7 +108,7 @@ describe('ForgeRail', () => {
     expect(html).toContain('data-testid="forge-rail-level"');
     expect(html).toMatch(/forge-rail-level[^>]*>\+12</);
     expect(html).toContain('8 rolls');
-    expect(html).toContain('800 gold');
+    expect(html).toMatch(/forge-rail-spent[^>]*>.*?800 gold/);
     expect(html).toContain('wallet 5,000');
     expect(html).toContain('data-testid="forge-chart"');
     expect(html).not.toContain('data-testid="forge-recent"');
@@ -113,19 +118,33 @@ describe('ForgeRail', () => {
     expect(railCancelTag(html)).not.toContain(' disabled=""');
   });
 
-  it('keeps the pacing word drawn but unseen between gaps, so nothing beside it moves when a gap comes', () => {
-    const html = renderRail(running());
-    expect(pacingTag(html)).toContain('invisible');
-    expect(pacingTag(html)).not.toContain('data-pausing');
-    expect(html).toContain(en.forgeRailPausing);
+  it('says nothing in the header about the gap between rolls — the chart carries it now', () => {
+    const html = renderRail(forgeRunReducer(running(), { kind: 'pause', event: { runId: 'r1', ms: 9_000 } }));
+    expect(html).not.toContain('data-testid="forge-rail-pausing"');
+    expect(html).not.toContain('pausing');
   });
 
-  it('shows the pacing word on a gap long enough to look like nothing is happening', () => {
-    const html = renderRail(forgeRunReducer(running(), { kind: 'pause', event: { runId: 'r1', ms: 9_000 } }));
-    expect(pacingTag(html)).toContain('data-pausing="true"');
-    expect(pacingTag(html)).not.toContain('invisible');
-    expect(html).toContain(en.forgeRailPausing);
-    expect(html).toContain('motion-safe:animate-pulse');
+  it('marks where the roll in flight will land, pulsing, and draws nothing there once it has landed', () => {
+    expect(ghostTag(renderRail(running()))).toBe('');
+    const html = renderRail(forgeRunReducer(running(), { kind: 'pause', event: { runId: 'r1', ms: 40 } }));
+    expect(ghostTag(html)).toContain('motion-safe:animate-forge-ghost');
+    expect(ghostTag(html)).toContain('text-accent');
+    expect(ghostTag(html)).toContain('fill="none"');
+    expect(html).toContain(`aria-label="${en.forgeMarkPending}"`);
+  });
+
+  it('marks the very first roll too, before the run has anything else to draw', () => {
+    const started = forgeRunReducer(IDLE_FORGE_RUN, {
+      kind: 'start',
+      runId: 'r1',
+      itemId: 'g1',
+      target: 12,
+      from: 8,
+      plan: null,
+    });
+    const html = renderRail(forgeRunReducer(started, { kind: 'pause', event: { runId: 'r1', ms: 0 } }));
+    expect(ghostTag(html)).toContain('motion-safe:animate-forge-ghost');
+    expect(html).not.toContain('data-outcome=');
   });
 
   it('says the cancel landed and stops taking presses once it has been asked for', () => {
@@ -142,12 +161,45 @@ describe('ForgeRail', () => {
     expect(html).toMatch(/forge-result-heading[^>]*>Reached \+12</);
     expect(html).toMatch(/forge-result-climb[^>]*>\+8 → \+12</);
     expect(html).toMatch(/forge-result-rolls[^>]*>8 · 1 · 0</);
-    expect(html).toContain('spent 800');
-    expect(html).toContain('expected 650');
-    expect(html).toContain('a bad run 1,200');
+    expect(html).toMatch(/forge-against-spent[^>]*>spent .*?800/);
+    expect(html).toContain('expected ');
+    expect(html).toContain('650');
+    expect(html).toContain('a bad run ');
+    expect(html).toContain('1,200');
     expect(html).toContain('data-testid="forge-done"');
     expect(html).not.toContain('data-testid="forge-result-wallet"');
     expect(html).not.toContain('data-testid="forge-bought"');
+  });
+
+  it('says how far the spend ran from the plan, and tints it by which of the plan\'s two figures it passed', () => {
+    const under = renderRail(finished(520));
+    expect(deltaTag(under)).toContain('data-tone="up"');
+    expect(deltaTag(under)).toContain('text-up');
+    expect(under).toMatch(/forge-against-delta[^>]*>−20% vs expected</);
+
+    const over = renderRail(finished(800));
+    expect(deltaTag(over)).toContain('data-tone="warn"');
+    expect(over).toMatch(/forge-against-delta[^>]*>\+23% vs expected</);
+
+    const past = renderRail(finished(1_950));
+    expect(deltaTag(past)).toContain('data-tone="down"');
+    expect(past).toMatch(/forge-against-delta[^>]*>\+200% vs expected</);
+  });
+
+  it('has no plan to compare against for a run it did not start, and prints no difference', () => {
+    const adopted = forgeRunReducer(
+      forgeRunReducer(IDLE_FORGE_RUN, { kind: 'step', event: step(1, 8, 9), adopt: null }),
+      {
+        kind: 'done',
+        event: {
+          runId: 'r1',
+          result: { itemId: 'g1', from: 8, to: 9, target: 9, stop: 'target', reached: true, rolls: 1, fails: 0, crits: 0, safeJumps: 0, spent: 100, walletAfter: 5_000, durationMs: 900 },
+        },
+      },
+    );
+    const html = renderRail(adopted);
+    expect(html).toContain('data-state="none"');
+    expect(html).not.toContain('data-testid="forge-against-delta"');
   });
 });
 
@@ -197,7 +249,8 @@ function renderLedger(history: ForgeHistoryResult, defaultOpen = true): string {
 describe('ForgeLedger', () => {
   it('reads its two figures with the table shut, so the section is worth having closed', () => {
     const html = renderLedger(HISTORY, false);
-    expect(html).toMatch(/forge-ledger-summary[^>]*>2 runs · 10,400 gold</);
+    expect(html).toMatch(/forge-ledger-summary"[^>]*>2 runs</);
+    expect(html).toMatch(/forge-ledger-summary-gold[^>]*>.*?10,400 gold/);
     expect(html).toContain('Run ledger');
     expect(html).not.toContain('data-testid="forge-ledger-body"');
   });
@@ -218,8 +271,19 @@ describe('ForgeLedger', () => {
     expect(climbs).toEqual(['+8 → +12', '+8 → +10']);
     const outcomes = [...html.matchAll(/data-testid="forge-ledger-outcome"[^>]*>([^<]+)</g)].map((match) => match[1]);
     expect(outcomes).toEqual(['Reached', 'Gold budget']);
-    expect(html).toMatch(/forge-ledger-totals[^>]*>2 runs · 10,400 gold · 13 rolls · 2 fails</);
+    expect(html).toMatch(/forge-ledger-totals"[^>]*>2 runs · 13 rolls · 2 fails</);
+    expect(html).toMatch(/forge-ledger-totals-gold[^>]*>.*?10,400 gold/);
     expect(html).not.toContain('Wallet after');
+  });
+
+  it('marks every gold figure with the coin and leaves the counts beside them bare', () => {
+    const html = renderLedger(HISTORY);
+    // One coin in each row's gold cell, one in the totals, one in the header summary — and
+    // nowhere near the run, roll and fail counts standing beside them.
+    const coins = [...html.matchAll(/<img [^>]*icon_gold\.png/g)].length;
+    expect(coins).toBe(HISTORY.rows.length + 2);
+    expect(html).toMatch(/forge-ledger-gold[^>]*>.*?icon_gold\.png/);
+    expect(html).toMatch(/forge-ledger-totals"[^>]*>[^<]*<\/span>/);
   });
 });
 

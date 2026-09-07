@@ -72,14 +72,15 @@ export interface ForgeRunResult {
 }
 
 /**
- * A gap the run is about to take before its next roll, pushed the moment the gap is drawn and
- * before it is waited out. The run decides its own gaps so its calls do not fall into a fixed
- * beat; nothing outside is holding it back, and a cooldown the server asks for ends a run rather
- * than pausing one. How long a gap is worth saying anything about is the renderer's to decide.
+ * A roll is pending: pushed before every call, the moment the gap ahead of it is drawn and before
+ * it is waited out. The run decides its own gaps so its calls do not fall into a fixed beat;
+ * nothing outside is holding it back, and a cooldown the server asks for ends a run rather than
+ * pausing one. The first call of a run takes no gap and carries `ms: 0`, so a screen watching
+ * these knows a roll is in flight from the first one onwards.
  */
 export interface ForgePauseEvent {
   runId: string;
-  /** How long the run will wait before the next roll, in milliseconds. */
+  /** How long the run will wait before the next roll, in milliseconds; `0` for no wait at all. */
   ms: number;
 }
 

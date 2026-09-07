@@ -1,13 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ForgeDoneEvent, ForgeStepEvent } from '@bombfarm/contracts';
-import {
-  FORGE_PAUSE_WORTH_SAYING_MS,
-  forgeRunReducer,
-  IDLE_FORGE_RUN,
-  rungTally,
-  shouldAdoptLiveAfter,
-  type ForgeRunState,
-} from './forge-run-reducer';
+import { forgeRunReducer, IDLE_FORGE_RUN, rungTally, shouldAdoptLiveAfter, type ForgeRunState } from './forge-run-reducer';
 
 function step(overrides: Partial<ForgeStepEvent>): ForgeStepEvent {
   return {
@@ -142,35 +135,39 @@ describe('forgeRunReducer', () => {
     expect(adopted.run.cancelRequested).toBe(false);
   });
 
-  it('says nothing about a gap short enough to pass for the roll itself', () => {
-    const state = forgeRunReducer(started(), { kind: 'pause', event: { runId: 'r1', ms: FORGE_PAUSE_WORTH_SAYING_MS - 1 } });
-    if (state.status !== 'running') throw new Error('expected a running state');
-    expect(state.run.pausingMs).toBeNull();
-    expect(state).toEqual(started());
+  it('holds a roll as pending however short the gap before it, including no gap at all', () => {
+    for (const ms of [0, 40, 900, 9_000]) {
+      const paused = forgeRunReducer(started(), { kind: 'pause', event: { runId: 'r1', ms } });
+      if (paused.status !== 'running') throw new Error('expected a running state');
+      expect(paused.run.rollPending, `a gap of ${String(ms)}ms`).toBe(true);
+    }
   });
 
-  it('holds a gap long enough to look like nothing is happening, and the next step clears it', () => {
-    const paused = forgeRunReducer(started(), { kind: 'pause', event: { runId: 'r1', ms: 9_000 } });
-    if (paused.status !== 'running') throw new Error('expected a running state');
-    expect(paused.run.pausingMs).toBe(9_000);
+  it('opens a run with nothing pending, and the roll that lands clears the one it was waiting on', () => {
+    const start = started();
+    if (start.status !== 'running') throw new Error('expected a running state');
+    expect(start.run.rollPending).toBe(false);
 
+    const paused = forgeRunReducer(start, { kind: 'pause', event: { runId: 'r1', ms: 0 } });
     const rolled = forgeRunReducer(paused, { kind: 'step', event: step({}), adopt: null });
     if (rolled.status !== 'running') throw new Error('expected a running state');
-    expect(rolled.run.pausingMs).toBeNull();
+    expect(rolled.run.rollPending).toBe(false);
     expect(rolled.run.steps).toHaveLength(1);
   });
 
-  it('clears the gap when the run finishes, so a rail redrawn from the finished run says nothing', () => {
+  it('clears the pending roll when the run finishes, so a rail redrawn from it waits on nothing', () => {
     const paused = forgeRunReducer(started(), { kind: 'pause', event: { runId: 'r1', ms: 9_000 } });
     const finished = forgeRunReducer(paused, { kind: 'done', event: DONE });
     if (finished.status !== 'done') throw new Error('expected a done state');
-    expect(finished.run.pausingMs).toBeNull();
+    expect(finished.run.rollPending).toBe(false);
   });
 
-  it('ignores a gap belonging to another run, and one with nothing rolling', () => {
+  it('ignores a gap belonging to another run, one with nothing rolling, and a second for the same roll', () => {
     const running = started();
     expect(forgeRunReducer(running, { kind: 'pause', event: { runId: 'other', ms: 9_000 } })).toBe(running);
     expect(forgeRunReducer(IDLE_FORGE_RUN, { kind: 'pause', event: { runId: 'r1', ms: 9_000 } })).toBe(IDLE_FORGE_RUN);
+    const paused = forgeRunReducer(running, { kind: 'pause', event: { runId: 'r1', ms: 900 } });
+    expect(forgeRunReducer(paused, { kind: 'pause', event: { runId: 'r1', ms: 900 } })).toBe(paused);
   });
 
   it('ignores a cancel with nothing rolling', () => {

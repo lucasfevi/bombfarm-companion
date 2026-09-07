@@ -116,6 +116,40 @@ describe('forgeChartGeometry', () => {
     expect(chart.points[0]?.x).toBeLessThan(chart.right);
   });
 
+  it('holds the pending roll a slot past the last mark, at the level the piece stands on now', () => {
+    const chart = forgeChartGeometry({ width: WIDTH, window: 30, start: 8, target: 12, steps: STEPS, pending: true });
+    const last = chart.points[2];
+    expect(last).toBeTruthy();
+    if (!last || !chart.ghost) throw new Error('expected a last point and a ghost');
+    expect(chart.ghost.attempt).toBe(4);
+    expect(chart.ghost.y).toBe(last.y);
+    expect(chart.ghost.fromX).toBe(last.x);
+    expect(chart.ghost.x).toBeGreaterThan(last.x);
+  });
+
+  it('holds the very first roll of a run at the level the climb starts from, with nothing drawn yet', () => {
+    const chart = forgeChartGeometry({ width: WIDTH, window: 30, start: 8, target: 12, steps: [], pending: true });
+    expect(chart.points).toHaveLength(0);
+    if (!chart.ghost) throw new Error('expected a ghost');
+    expect(chart.ghost.attempt).toBe(1);
+    expect(chart.ghost.y).toBe(chart.axisY);
+    expect(chart.ghost.fromX).toBe(chart.left);
+    expect(chart.ghost.x).toBeGreaterThan(chart.left);
+  });
+
+  it('reserves the pending roll its own slot, so the mark that fills it lands inside the box', () => {
+    const full = forgeChartGeometry({ width: WIDTH, window: 45, start: 8, target: 12, steps: climb(45), pending: true });
+    if (!full.ghost) throw new Error('expected a ghost');
+    expect(full.points).toHaveLength(45);
+    expect(full.ghost.x).toBe(full.right);
+    expect(full.points[44]?.x).toBeLessThan(full.right);
+  });
+
+  it('draws no ghost with no roll pending, whether or not the run has rolled yet', () => {
+    expect(geometry(STEPS, 30).ghost).toBeNull();
+    expect(geometry([], 30).ghost).toBeNull();
+  });
+
   it('keeps every coordinate inside the measured box', () => {
     const chart = forgeChartGeometry({ width: WIDTH, window: 45, start: 0, target: 15, steps: climb(91) });
     for (const point of chart.points) {

@@ -13,9 +13,9 @@ const desktopRoot = path.join(__dirname, '..', '..');
  * arrives through `forge:inject`, the test-only channel that pushes a scripted sequence through
  * the same `forge:event` seam the real service uses. What is proved here is everything on the
  * renderer's side of that seam: the rail's states in order, that the rail spans the whole row as
- * it expands while the split below it keeps its shape, the tally's quiet-rung collapsing, the word
- * the header shows while a run is between rolls, the result heading, and the return to a collapsed
- * rail.
+ * it expands while the split below it keeps its shape, the tally's quiet-rung collapsing, the
+ * mark the chart holds open while a roll is in flight, the result heading, and the return to a
+ * collapsed rail.
  *
  * The screen is sized by its content, so what the layout promises here is not that nothing
  * scrolls — the page is free to be taller than the window. It is that the bag is as tall as the
@@ -149,8 +149,8 @@ function scriptedSteps(itemId) {
   }));
 }
 
-/** Long enough to be worth a word — the renderer's own threshold is 1.5s. */
-const LONG_PAUSE_MS = 9_000;
+/** An ordinary gap between rolls; the screen holds the next roll's place whatever its length. */
+const GAP_MS = 900;
 
 function scriptedPause(ms) {
   return { type: 'pause', runId: RUN_ID, ms };
@@ -195,23 +195,15 @@ async function shoot(page, testInfo, name) {
   await page.screenshot({ path: testInfo.outputPath(name) });
 }
 
-/** Where every other figure in the running header sits, so the word that comes and goes between
- *  rolls can be proved to move none of them. */
-function headerBoxes(page) {
+/** Where the pending roll's mark stands and where the last real mark stands, in the chart's own
+ *  coordinates — the ghost holds the slot the next mark will take, so it sits past the last one. */
+function markPositions(page) {
   return page.evaluate(() => {
-    const box = (testid) => {
-      const element = document.querySelector(`[data-testid="${testid}"]`);
-      if (element === null) return null;
-      const rect = element.getBoundingClientRect();
-      return { x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width) };
-    };
+    const cx = (node) => (node === null ? null : Number(node.getAttribute('cx')));
+    const marks = [...document.querySelectorAll('[data-testid="forge-chart"] circle[data-outcome]')];
     return {
-      level: box('forge-rail-level'),
-      target: box('forge-rail-target'),
-      rolls: box('forge-rail-rolls'),
-      spent: box('forge-rail-spent'),
-      wallet: box('forge-rail-wallet'),
-      cancel: box('forge-rail-cancel'),
+      ghost: cx(document.querySelector('[data-testid="forge-chart-ghost"] circle')),
+      lastMark: cx(marks[marks.length - 1] ?? null),
     };
   });
 }
@@ -352,28 +344,21 @@ test.describe('forge run smoke', () => {
       await splitFollowsTheAside(page);
       await shoot(page, testInfo, 'forge-run-running.png');
 
-      // --- Between rolls: a run paces itself, and a long gap says so rather than looking frozen.
-      //     The header's own figures are measured either side of it: the word is drawn all along
-      //     and only made visible, so nothing beside it may move as it appears or goes. ---------
-      const pausing = rail.getByTestId('forge-rail-pausing');
-      await expect(pausing).toBeHidden();
-      const headerBefore = await headerBoxes(page);
-      expect(await inject(page, [scriptedPause(LONG_PAUSE_MS)])).toEqual({ ok: true });
-      await expect(pausing).toBeVisible();
-      await expect(pausing).toHaveText('pausing...');
-      expect(await headerBoxes(page)).toEqual(headerBefore);
+      // --- Between rolls: the chart holds the next roll's place rather than the header saying a
+      //     word. There is no threshold to clear — an ordinary gap gets the mark too — and the
+      //     header keeps the word it never had. -------------------------------------------------
+      const ghost = page.getByTestId('forge-chart-ghost');
+      await expect(ghost).toHaveCount(0);
+      await expect(rail.getByTestId('forge-rail-pausing')).toHaveCount(0);
 
-      // A gap short enough to pass for the roll itself says nothing at all, and puts the header
-      // back exactly where it was.
-      expect(await inject(page, [scriptedPause(900)])).toEqual({ ok: true });
-      await expect(pausing).toBeHidden();
-      expect(await headerBoxes(page)).toEqual(headerBefore);
+      expect(await inject(page, [scriptedPause(GAP_MS)])).toEqual({ ok: true });
+      await expect(ghost).toBeVisible();
+      const { ghost: ghostX, lastMark } = await markPositions(page);
+      expect(ghostX).toBeGreaterThan(lastMark);
 
-      // And the roll the gap was waiting for clears the word.
-      expect(await inject(page, [scriptedPause(LONG_PAUSE_MS)])).toEqual({ ok: true });
-      await expect(pausing).toBeVisible();
+      // And the roll the gap was waiting for takes the slot the ghost was holding.
       expect(await inject(page, [scriptedSteps(itemId)[7]])).toEqual({ ok: true });
-      await expect(pausing).toBeHidden();
+      await expect(ghost).toHaveCount(0);
 
       // --- Cancelled: main honours it between rolls, so the press has to be visible at once ----
       await rail.getByTestId('forge-rail-cancel').click();
@@ -401,7 +386,8 @@ test.describe('forge run smoke', () => {
       await rail.getByTestId('forge-done').click();
       await expect(rail).toHaveAttribute('data-state', 'collapsed', { timeout: 5_000 });
       await expect(ledger).toHaveAttribute('data-state', 'empty');
-      await expect(ledger.getByTestId('forge-ledger-summary')).toHaveText('0 runs · 0 gold');
+      await expect(ledger.getByTestId('forge-ledger-summary')).toHaveText('0 runs');
+      await expect(ledger.getByTestId('forge-ledger-summary-gold')).toHaveText('0 gold');
       await ledger.getByRole('button', { name: 'Run ledger' }).click();
       await expect(ledger.getByText('No runs yet')).toBeVisible();
       await expect(ledger.getByTestId('forge-ledger-body')).toHaveCount(0);

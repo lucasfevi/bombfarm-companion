@@ -14,7 +14,7 @@ import type { ItemIdentityLabels } from '@bombfarm/game-art';
 import type { InventoryViewItem, InventoryViewStat } from '@bombfarm/domain/inventory-view';
 import { sub, type Copy } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
-import { FORGE_BAND_RANGE, type ForgeBand, type ForgeWorn } from '../../lib/forge/forge-rows';
+import { FORGE_BAND_RANGE, type ForgeBand } from '../../lib/forge/forge-rows';
 import { inventoryLabels } from '../inventory/inventory-labels';
 
 export const BLANK = '—';
@@ -115,6 +115,16 @@ export function forgeResultHeading(result: ForgeRunResult, t: Copy): { text: str
   }
 }
 
+/**
+ * How a run's spend stands against the plan it was made from. At or under the expected figure is
+ * a gain; over it but inside the bad run is the range the plan said to prepare for; past the bad
+ * run is worse than the plan ever offered.
+ */
+export function forgeSpendTone(spent: number, forecast: { gold: number; badRunGold: number }): ForgeResultTone {
+  if (spent <= forecast.gold) return 'up';
+  return spent <= forecast.badRunGold ? 'warn' : 'down';
+}
+
 /** Why a run ended, short enough for a ledger cell — the rung it stopped on is the row's own
  *  climb column, so this says only what stopped it. */
 export function forgeStopText(stop: ForgeStopReason, t: Copy): string {
@@ -151,17 +161,6 @@ export function forgeBandText(band: ForgeBand | null, t: Copy): string {
   if (to === null) return sub(t.forgeBandFrom, { level: forgeLevel(from) });
   if (to === from) return sub(t.forgeBandOnly, { level: forgeLevel(from) });
   return sub(t.forgeBandRange, { from: forgeLevel(from), to: forgeLevel(to) });
-}
-
-export function forgeWornText(worn: ForgeWorn, t: Copy): string {
-  switch (worn) {
-    case 'all':
-      return t.forgeWornAny;
-    case 'worn':
-      return t.forgeWornEquipped;
-    case 'spare':
-      return t.forgeWornSpare;
-  }
 }
 
 export type ForgeStatRow = {
@@ -224,8 +223,9 @@ export interface ForgeLabels extends ItemIdentityLabels<InventoryViewItem> {
   multiplier: (upgrade: number) => string;
   /** A chance as the game prints it: `50%`. */
   chance: (fraction: number) => string;
+  /** A difference as a signed whole percent: `+23%`, `−12%`. */
+  signedPercent: (fraction: number) => string;
   band: (band: ForgeBand | null) => string;
-  worn: (worn: ForgeWorn) => string;
   span: (target: number) => string;
   warning: (target: number, safeJumps: number | null) => string;
   statsNote: (nowUpgrade: number, targetUpgrade: number) => string;
@@ -236,6 +236,10 @@ export function forgeLabels(t: Copy, lang: DomainLang, locale: AppLocale): Forge
   const bcp47 = BCP47_BY_LOCALE[locale];
   const chance = (fraction: number) =>
     new Intl.NumberFormat(bcp47, { style: 'percent', maximumFractionDigits: 0 }).format(fraction);
+  const signedPercent = (fraction: number) =>
+    new Intl.NumberFormat(bcp47, { style: 'percent', maximumFractionDigits: 0, signDisplay: 'always' })
+      .format(fraction)
+      .replace(/^-/, '−');
   const gold = (amount: number) => formatCount(amount, locale);
   const multiplier = (upgrade: number) => decimals(upgradeMult(upgrade), 2, locale);
 
@@ -252,8 +256,8 @@ export function forgeLabels(t: Copy, lang: DomainLang, locale: AppLocale): Forge
     rolls: (value) => decimals(value, 1, locale),
     multiplier,
     chance,
+    signedPercent,
     band: (band) => forgeBandText(band, t),
-    worn: (worn) => forgeWornText(worn, t),
     span: (target) =>
       target <= FORGE_SAFE ? t.forgeSpanSafe : sub(t.forgeSpanRisky, { chance: chance(forgeChance(target)) }),
     warning: (target, safeJumps) =>

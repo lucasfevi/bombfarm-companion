@@ -20,7 +20,7 @@ const HERO = {
   inField: true,
 };
 
-function renderToolbar(overrides: { filter?: ForgeFilter } = {}): string {
+function renderToolbar(overrides: { filter?: ForgeFilter; anyEquipped?: boolean } = {}): string {
   return renderToStaticMarkup(
     createElement(CopyProvider, {
       locale: 'en',
@@ -30,6 +30,7 @@ function renderToolbar(overrides: { filter?: ForgeFilter } = {}): string {
         onFilterChange: () => {},
         slots: ['arma'],
         rarities: [2],
+        anyEquipped: overrides.anyEquipped ?? true,
         shown: 3,
         total: 9,
         heroHint: null,
@@ -83,31 +84,50 @@ describe('ForgeToolbar', () => {
     expect(html).not.toContain(en.farmRefresh);
   });
 
-  it('leads on the hero, groups the three narrowing dropdowns behind it, and ends on the one field that grows', () => {
+  it('opens on the search field alone, then the dropdowns, then the chips', () => {
     const html = renderToolbar({ filter: { ...EMPTY_FORGE_FILTER, forge: 'at8' } });
     const order = [
+      en.forgeSearchLabel,
       en.inventoryFilterHeroLabel,
-      en.forgeWornLabel,
       en.forgeSlotLabel,
       en.forgeBandLabel,
-      en.forgeSearchLabel,
     ].map((label) => positionOf(html, `aria-label="${label}"`));
     expect(order).toEqual([...order].sort((a, b) => a - b));
-    // Clear closes the row, after the field that takes the width left over.
-    expect(positionOf(html, 'data-testid="forge-clear-filter"')).toBeGreaterThan(
-      positionOf(html, `aria-label="${en.forgeSearchLabel}"`),
-    );
+    // The count and Clear close the dropdown row; the chips come after all of it.
+    const clear = positionOf(html, 'data-testid="forge-clear-filter"');
+    expect(clear).toBeGreaterThan(positionOf(html, 'data-testid="forge-result-count"'));
+    expect(positionOf(html, 'data-testid="forge-equipped-chip"')).toBeGreaterThan(clear);
   });
 
-  it('gives the growing field the width nothing else claims, and every control one height', () => {
+  it('gives the search field the whole of its own row, and every field one height', () => {
     const html = renderToolbar();
-    expect(tagOf(html, 'forge-toolbar')).not.toContain('ml-auto');
     const search = new RegExp(`<input[^>]*aria-label="${en.forgeSearchLabel}"[^>]*>`).exec(html)?.[0] ?? '';
-    expect(search).toContain('flex-1');
+    expect(search).toContain('w-full');
     expect(search).toContain('h-[30px]');
-    for (const label of [en.forgeWornLabel, en.forgeSlotLabel, en.forgeBandLabel]) {
+    for (const label of [en.inventoryFilterHeroLabel, en.forgeSlotLabel, en.forgeBandLabel]) {
       expect(new RegExp(`<[a-z]+[^>]*aria-label="${label}"[^>]*>`).exec(html)?.[0] ?? '').toContain('h-[30px]');
     }
+  });
+
+  it('collapses who-wears-it into one chip, pressed or not, and offers none where nothing is worn', () => {
+    const off = renderToolbar();
+    expect(tagOf(off, 'forge-equipped-chip')).toContain('aria-pressed="false"');
+    expect(off).toContain(en.inventoryFilterEquipped);
+    const on = renderToolbar({ filter: { ...EMPTY_FORGE_FILTER, worn: true } });
+    expect(tagOf(on, 'forge-equipped-chip')).toContain('aria-pressed="true"');
+    expect(renderToolbar({ anyEquipped: false })).not.toContain('data-testid="forge-equipped-chip"');
+  });
+
+  it('drops the chip once a hero is chosen, because every row is then one they wear', () => {
+    const html = renderToolbar({ filter: { ...EMPTY_FORGE_FILTER, heroId: HERO.id } });
+    expect(html).not.toContain('data-testid="forge-equipped-chip"');
+    expect(html).toContain(`aria-label="${en.inventoryFilterHeroLabel}"`);
+  });
+
+  it('offers no third state that could only ever empty the table', () => {
+    const html = renderToolbar();
+    expect(html).not.toContain('Nobody wearing it');
+    expect(html).not.toContain('data-testid="forge-worn-implied"');
   });
 
   it('shouts through CSS, so the Portuguese label is a sentence in the copy file', () => {

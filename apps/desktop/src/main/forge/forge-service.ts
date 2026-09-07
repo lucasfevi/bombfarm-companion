@@ -187,11 +187,9 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
           break;
         }
 
-        if (calls > 0) {
-          const gapMs = deps.gate.nextForgeDelayMs(random);
-          deps.emit({ type: 'pause', runId, ms: gapMs });
-          await deps.sleep(gapMs);
-        }
+        const gapMs = calls > 0 ? deps.gate.nextForgeDelayMs(random) : 0;
+        deps.emit({ type: 'pause', runId, ms: gapMs });
+        if (gapMs > 0) await deps.sleep(gapMs);
 
         const route = step.kind === 'safe' ? FORGE_ROUTES.forgeToSafe : FORGE_ROUTES.forge;
         let outcome: RequestOutcome;

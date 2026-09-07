@@ -36,15 +36,15 @@ export function forgeBandHolds(band: ForgeBand, upgrade: number): boolean {
   return upgrade >= from && (to === null || upgrade <= to);
 }
 
-/** Whether a piece is on a hero right now. */
-export type ForgeWorn = 'all' | 'worn' | 'spare';
-
 export type ForgeFilter = {
   /** The save's hero id; `null` is the whole bag. */
   readonly heroId: string | null;
   readonly text: string;
   readonly slot: string | null;
-  readonly worn: ForgeWorn;
+  /** On, only the pieces a hero is wearing right now. Off is the whole bag, worn or not — there
+   *  is no third state, because "nobody wearing it" plus a chosen hero is a cut that can only
+   *  ever show nothing. */
+  readonly worn: boolean;
   /** The stretch of the ladder a row must already stand on; `null` is every rung. */
   readonly forge: ForgeBand | null;
   readonly rarities: readonly number[];
@@ -54,7 +54,7 @@ export const EMPTY_FORGE_FILTER: ForgeFilter = {
   heroId: null,
   text: '',
   slot: null,
-  worn: 'all',
+  worn: false,
   forge: null,
   rarities: [],
 };
@@ -64,7 +64,7 @@ export function isEmptyForgeFilter(filter: ForgeFilter): boolean {
     filter.heroId === null &&
     filter.text.trim() === '' &&
     filter.slot === null &&
-    filter.worn === 'all' &&
+    !filter.worn &&
     filter.forge === null &&
     filter.rarities.length === 0
   );
@@ -91,8 +91,7 @@ export function filterForgeItems(
 
   return gear.filter((item) => {
     if (filter.heroId !== null && item.equippedBy !== filter.heroId) return false;
-    if (filter.worn === 'worn' && item.equippedBy === null) return false;
-    if (filter.worn === 'spare' && item.equippedBy !== null) return false;
+    if (filter.worn && item.equippedBy === null) return false;
     if (filter.slot !== null && item.slot !== filter.slot) return false;
     if (filter.forge !== null && !forgeBandHolds(filter.forge, item.upgrade)) return false;
     if (rarities && !rarities.has(item.rarityIdx)) return false;
@@ -115,6 +114,11 @@ export function forgeHeroIds(
 export function forgeSlots(gear: readonly InventoryViewItem[], order: readonly string[]): string[] {
   const present = new Set(gear.flatMap((item) => (item.slot === null ? [] : [item.slot])));
   return order.filter((slot) => present.has(slot));
+}
+
+/** Whether the Equipped chip has anything to narrow to — offered only when it has. */
+export function forgeAnyEquipped(gear: readonly InventoryViewItem[]): boolean {
+  return gear.some((item) => item.equippedBy !== null);
 }
 
 export function forgeRarities(gear: readonly InventoryViewItem[]): number[] {

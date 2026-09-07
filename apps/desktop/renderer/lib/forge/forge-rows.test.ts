@@ -4,6 +4,7 @@ import {
   EMPTY_FORGE_FILTER,
   FORGE_BANDS,
   filterForgeItems,
+  forgeAnyEquipped,
   forgeBandHolds,
   forgeHeroIds,
   forgeRarities,
@@ -80,10 +81,13 @@ describe('filterForgeItems', () => {
     }
   });
 
-  it('splits the bag into what a hero is wearing and what nobody is', () => {
-    expect(ids({ worn: 'worn' })).toEqual(['sword', 'helm']);
-    expect(ids({ worn: 'spare' })).toEqual(['boots', 'ring', 'amulet', 'chest']);
-    expect(ids({ worn: 'all' })).toEqual(ALL_GEAR);
+  it('narrows to what a hero is wearing, and off is the whole bag rather than the rest of it', () => {
+    expect(ids({ worn: true })).toEqual(['sword', 'helm']);
+    expect(ids({ worn: false })).toEqual(ALL_GEAR);
+  });
+
+  it('cannot be asked for a hero\'s pieces that nobody wears — the two cuts only ever narrow', () => {
+    expect(ids({ heroId: 'h1', worn: true })).toEqual(['sword']);
   });
 
   it('matches every word of the search, ignoring case and accents', () => {
@@ -94,7 +98,7 @@ describe('filterForgeItems', () => {
   it('knows an empty filter', () => {
     expect(isEmptyForgeFilter(EMPTY_FORGE_FILTER)).toBe(true);
     expect(isEmptyForgeFilter({ ...EMPTY_FORGE_FILTER, forge: '12to14' })).toBe(false);
-    expect(isEmptyForgeFilter({ ...EMPTY_FORGE_FILTER, worn: 'spare' })).toBe(false);
+    expect(isEmptyForgeFilter({ ...EMPTY_FORGE_FILTER, worn: true })).toBe(false);
   });
 });
 
@@ -116,5 +120,11 @@ describe('the toolbar\'s own options', () => {
       'bota',
     ]);
     expect(forgeRarities(GEAR)).toEqual([0, 2, 4]);
+  });
+
+  it('offers the equipped chip only for a bag that holds a piece somebody is wearing', () => {
+    expect(forgeAnyEquipped(GEAR)).toBe(true);
+    expect(forgeAnyEquipped(GEAR.filter((item) => item.equippedBy === null))).toBe(false);
+    expect(forgeAnyEquipped([])).toBe(false);
   });
 });

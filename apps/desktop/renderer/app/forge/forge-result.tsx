@@ -5,7 +5,8 @@ import { Bar, Button, cn, StatList, type StatListItem } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
 import { formatAge } from '../../lib/format';
 import type { ForgeRunPlan } from '../../lib/forge/forge-run-reducer';
-import { forgeLevel, forgeResultHeading, type ForgeLabels, type ForgeResultTone } from './forge-labels';
+import { ForgeGold } from './forge-gold';
+import { forgeLevel, forgeResultHeading, forgeSpendTone, type ForgeLabels, type ForgeResultTone } from './forge-labels';
 
 const TONE_CLASS: Record<ForgeResultTone, string> = { up: 'text-up', warn: 'text-warn', down: 'text-down' };
 
@@ -13,7 +14,7 @@ const TONE_CLASS: Record<ForgeResultTone, string> = { up: 'text-up', warn: 'text
  *  with the track's end. */
 const BAR_HEADROOM = 1.05;
 
-function AgainstPlan({ spent, plan, gold }: { spent: number; plan: ForgeRunPlan | null; gold: (amount: number) => string }) {
+function AgainstPlan({ spent, plan, labels }: { spent: number; plan: ForgeRunPlan | null; labels: ForgeLabels }) {
   const t = useCopy();
   const forecast = plan?.forecast ?? null;
   if (forecast === null) {
@@ -23,16 +24,27 @@ function AgainstPlan({ spent, plan, gold }: { spent: number; plan: ForgeRunPlan 
       </p>
     );
   }
+  const gold = labels.gold;
   const scale = Math.max(spent, forecast.gold, forecast.badRunGold, 1) * BAR_HEADROOM;
   const percent = (amount: number) => (100 * amount) / scale;
+  const tone = forgeSpendTone(spent, forecast);
   return (
     <div data-testid="forge-against-plan" data-state="plan" className="flex flex-col gap-1">
       <div className="flex flex-wrap gap-x-3 text-xs">
         <span data-testid="forge-against-spent" className="font-semibold text-ink">
-          {sub(t.forgeAgainstSpent, { gold: gold(spent) })}
+          {t.forgeAgainstSpent} <ForgeGold>{gold(spent)}</ForgeGold>
         </span>
-        <span className="text-muted">{sub(t.forgeAgainstExpected, { gold: gold(forecast.gold) })}</span>
-        <span className="text-muted">{sub(t.forgeAgainstBadRun, { gold: gold(forecast.badRunGold) })}</span>
+        {forecast.gold > 0 ? (
+          <span data-testid="forge-against-delta" data-tone={tone} className={cn('font-semibold', TONE_CLASS[tone])}>
+            {sub(t.forgeAgainstDelta, { percent: labels.signedPercent((spent - forecast.gold) / forecast.gold) })}
+          </span>
+        ) : null}
+        <span className="text-muted">
+          {t.forgeAgainstExpected} <ForgeGold>{gold(forecast.gold)}</ForgeGold>
+        </span>
+        <span className="text-muted">
+          {t.forgeAgainstBadRun} <ForgeGold>{gold(forecast.badRunGold)}</ForgeGold>
+        </span>
       </div>
       <div className="relative">
         <Bar percent={percent(spent)} variant={spent <= forecast.gold ? 'best' : 'fill'} />
@@ -82,7 +94,7 @@ export function ForgeResult({
         <StatList items={facts} aria-label={t.forgeResultClimb} />
         <div className="flex flex-col gap-1">
           <span className="text-[11px] tracking-[0.04em] text-muted uppercase">{t.forgeAgainstPlanTitle}</span>
-          <AgainstPlan spent={result.spent} plan={plan} gold={labels.gold} />
+          <AgainstPlan spent={result.spent} plan={plan} labels={labels} />
         </div>
       </div>
       <div className="flex justify-end">

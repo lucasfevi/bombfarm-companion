@@ -160,17 +160,15 @@ test.describe('forge plan smoke', () => {
       await expect(forgeBand).toHaveText('Any forge');
       await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBe(before);
 
-      // Worn and spare split the bag between them, and neither is the whole of it.
-      const worn = page.getByRole('combobox', { name: 'Filter by who wears it' });
-      await worn.click();
-      await page.getByRole('option', { name: 'Worn by a hero' }).click();
+      // Who wears it is one chip now, not a three-state dropdown: pressed narrows to the worn
+      // pieces, and letting it go is the whole bag again rather than the rest of it.
+      await expect(page.getByRole('combobox', { name: 'Filter by who wears it' })).toHaveCount(0);
+      const equipped = view.getByTestId('forge-equipped-chip');
+      await expect(equipped).toHaveAttribute('aria-pressed', 'false');
+      await equipped.click();
+      await expect(equipped).toHaveAttribute('aria-pressed', 'true');
       await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBeLessThan(before);
-      const wornRows = await rowCount(page);
-      await worn.click();
-      await page.getByRole('option', { name: 'Nobody wearing it' }).click();
-      await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBe(before - wornRows);
-      await worn.click();
-      await page.getByRole('option', { name: 'Worn or not' }).click();
+      await equipped.click();
       await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBe(before);
 
       // Virtualized: the fixture's gear does not fit the pane, and what does not fit is not in
@@ -191,10 +189,9 @@ test.describe('forge plan smoke', () => {
       expect(await rows(page).count()).toBe(wornByHero);
       await expect(view.getByTestId('forge-hero-hint')).toContainText(/^Showing what .+ wears$/);
 
-      // A hero already means "worn, by that hero", so the worn filter stops offering a second
-      // cut and says why instead of quietly emptying the table.
-      await expect(page.getByRole('combobox', { name: 'Filter by who wears it' })).toBeDisabled();
-      await expect(view.getByTestId('forge-worn-implied')).toBeVisible();
+      // A hero already means "worn, by that hero", so the chip that would repeat that cut is not
+      // on the screen at all — the line beside the chips is what says the bag is already narrowed.
+      await expect(view.getByTestId('forge-equipped-chip')).toHaveCount(0);
 
       // The first row is the hero's highest forge; clicking it names the piece in the item panel.
       const first = rows(page).first();

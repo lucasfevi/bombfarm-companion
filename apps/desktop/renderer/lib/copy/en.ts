@@ -365,11 +365,6 @@ export const en = {
   forgeBandOnly: '{level} only',
   forgeBandRange: '{from} to {to}',
   forgeBandFrom: '{level} and higher',
-  forgeWornLabel: 'Filter by who wears it',
-  forgeWornAny: 'Worn or not',
-  forgeWornEquipped: 'Worn by a hero',
-  forgeWornSpare: 'Nobody wearing it',
-  forgeWornImplied: 'A hero is chosen, so every piece here is one they wear',
   forgeHeroHint: 'Showing what {hero} wears',
   forgeTableCaption: 'Every piece of gear on the account, ranked by forge level',
   forgeRowSelect: 'Plan a climb for {item}',
@@ -422,7 +417,10 @@ export const en = {
   // forgeLedger* — the run history at the foot of the screen. The header line is what the
   // section says with the table shut, so it carries the two figures worth knowing at a glance.
   forgeLedgerTitle: 'Run ledger',
-  forgeLedgerSummary: '{runs} runs · {spent} gold',
+  forgeLedgerSummary: '{runs} runs',
+  // Its own clause rather than part of the two lines above, so the coin beside it marks the gold
+  // and not the run and roll counts standing next to it.
+  forgeLedgerGold: '{spent} gold',
   forgeLedgerCaption: 'Every forge run this app has made on the account, newest first',
   forgeLedgerEmptyTitle: 'No runs yet',
   forgeLedgerEmptyDescription: 'A run started from the plan panel is kept here.',
@@ -436,7 +434,7 @@ export const en = {
   forgeLedgerColumnSafeJumps: 'Safe jumps',
   forgeLedgerColumnGold: 'Gold',
   forgeLedgerColumnDuration: 'Duration',
-  forgeLedgerTotals: '{runs} runs · {spent} gold · {rolls} rolls · {fails} fails',
+  forgeLedgerTotals: '{runs} runs · {rolls} rolls · {fails} fails',
   forgeLedgerClear: 'Clear the ledger',
   forgeLedgerClearTitle: 'Clear the forge ledger?',
   forgeLedgerClearDescription: 'Every past run and the totals go with it. The gold was spent either way.',
@@ -456,9 +454,6 @@ export const en = {
   forgeRailRolls: '{rolls} rolls',
   forgeRailSpent: '{spent} gold',
   forgeRailWallet: 'wallet {wallet}',
-  // A run leaves a gap between its rolls on purpose. The word says the next roll is coming — never
-  // that anything is holding the run back, because nothing is.
-  forgeRailPausing: 'pausing',
   forgeRailTallyCaption: 'Rolls by rung',
   forgeRailTallyRung: 'Rung',
   forgeRailTallyRolls: 'Rolls',
@@ -471,6 +466,9 @@ export const en = {
   forgeMarkCritical: 'critical',
   forgeMarkFail: 'missed',
   forgeMarkSafe: 'safe jump',
+  // A run leaves a gap between its rolls on purpose, and the chart holds the next roll's place
+  // while it is in flight — never that anything is holding the run back, because nothing is.
+  forgeMarkPending: 'rolling',
   // The result block, in the player's terms: what happened and what it cost against the plan.
   forgeResultReached: 'Reached {level}',
   forgeResultCancelled: 'Stopped at {level} — cancelled after roll {rolls}',
@@ -484,9 +482,12 @@ export const en = {
   forgeResultRolls: 'Rolls · fails · crits',
   forgeResultDuration: 'Duration',
   forgeAgainstPlanTitle: 'Against the plan',
-  forgeAgainstSpent: 'spent {gold}',
-  forgeAgainstExpected: 'expected {gold}',
-  forgeAgainstBadRun: 'a bad run {gold}',
+  // Bare labels: each figure's amount is drawn beside its label rather than substituted into it,
+  // so the coin marking it as gold stands next to the number and not in front of the word.
+  forgeAgainstSpent: 'spent',
+  forgeAgainstExpected: 'expected',
+  forgeAgainstBadRun: 'a bad run',
+  forgeAgainstDelta: '{percent} vs expected',
   forgeAgainstNoPlan: 'No plan to compare against — this run was not started from the panel',
   forgeDone: 'Done',
 
