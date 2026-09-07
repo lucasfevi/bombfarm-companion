@@ -16,6 +16,7 @@ import {
   Banner,
   Button,
   EmptyState,
+  Num,
   Panel,
   cn,
   colClass,
@@ -27,21 +28,25 @@ import {
 import { HeroIdentityChip } from '@bombfarm/game-art';
 import {
   HeroAbilitiesPanel,
+  HeroCopyProvider,
   HeroIdentityRollPanel,
   HeroPickerDialogView,
+  PhasesHeroPanel,
 } from '@bombfarm/hero/components';
 import { abilityGainFor, type AbilityGain } from '@bombfarm/domain/ability-gain';
 import { statLabel } from '@bombfarm/domain/game-labels';
+import { pipelineForHero } from '@bombfarm/domain/roster-dps';
 import type { SheetKey } from '@bombfarm/domain/planner-constants';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
-import { rosterCopyFrom, useHeroDetailCopy } from '../screen-copy';
+import { farmScreenCopy, rosterCopyFrom, useFarmCopy, useHeroDetailCopy } from '../screen-copy';
 import { heroesScreenModel, type HeroesScreenModel } from './heroes-screen-model';
 import { rollQualityText, type RosterHeroRow } from './hero-roster-order';
 import { resolveSelectedHeroId, selectedRow } from './hero-selection';
-import { clampToKnownPhase } from './hero-phase';
-import { heroComputeInputs } from './hero-compute-inputs';
+import { readHeroPhase, shownHeroPhase } from './hero-phase';
+import { useFarmSelectedPhase } from './use-farm-selected-phase';
+import { heroFigures, type HeroFigures } from './hero-figures';
 import { cachedAbilityGains, createAbilityGainCache } from './ability-gain-cache';
 
 type RosterModel = Extract<HeroesScreenModel, { kind: 'roster' }>;
@@ -115,8 +120,14 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   const { lang } = useLocale();
   const t = useCopy();
   const heroCopy = useHeroDetailCopy();
+  const farmCopy = useFarmCopy();
   const [pickedHeroId, setPickedHeroId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  // View-local, and stored nowhere: leaving the screen unmounts this and the next visit opens on
+  // the Farm selection again. It outlives a hero switch on purpose — comparing two heroes at one
+  // phase is the reason to override at all.
+  const [overridePhase, setOverridePhase] = useState<number | null>(null);
+  const farmPhase = useFarmSelectedPhase();
 
   const { rows, roster } = model;
   // Re-resolved on every render rather than mirrored into an effect: the roster arrives from a
@@ -125,23 +136,24 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   const selectedId = resolveSelectedHeroId(pickedHeroId, rows);
   const active = selectedRow(selectedId, rows) ?? rows[0];
 
-  const inputs = useMemo(
-    () => heroComputeInputs(roster, clampToKnownPhase(roster.account.phase)),
-    [roster],
+  const phaseReading = useMemo(
+    () => readHeroPhase(farmPhase, overridePhase),
+    [farmPhase, overridePhase],
   );
+  const figures = useMemo(() => heroFigures(phaseReading, roster), [phaseReading, roster]);
 
   const gainsCache = useRef(createAbilityGainCache());
   const abilityGains =
-    inputs === null
-      ? NO_ABILITY_GAINS
-      : cachedAbilityGains(
+    figures.kind === 'at'
+      ? cachedAbilityGains(
           gainsCache.current,
           abilityGainFor,
           active.hero,
-          inputs.account,
-          inputs.phase,
-          inputs.mitigationPct,
-        );
+          figures.inputs.account,
+          figures.inputs.phase,
+          figures.inputs.mitigationPct,
+        )
+      : NO_ABILITY_GAINS;
 
   const boundStatLabel = useCallback(
     (key: SheetKey) => sheetKeyLabel(key, lang, t.farmStatLuck),
@@ -149,6 +161,7 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   );
   const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
   const pickerCopy = useMemo(() => rosterCopyFrom(t), [t]);
+  const panelCopy = useMemo(() => farmScreenCopy(farmCopy, t), [farmCopy, t]);
   const heroes = useMemo(() => rows.map((row) => row.hero), [rows]);
 
   const onSelectHeroId = useCallback((heroId: string) => {
@@ -163,6 +176,10 @@ function HeroesRoster({ model }: { model: RosterModel }) {
     setPickerOpen(true);
   }, []);
 
+  const onClearOverride = useCallback(() => {
+    setOverridePhase(null);
+  }, []);
+
   return (
     // Rail beside detail above 1100px, detail alone below it — the same side-by-side-or-stacked
     // threshold the phase board's own roster row is drawn at.
@@ -170,27 +187,35 @@ function HeroesRoster({ model }: { model: RosterModel }) {
       <div className="min-w-0 max-[1099px]:hidden">
         <RosterRail rows={rows} selectedId={active.id} onSelectHeroId={onSelectHeroId} />
       </div>
-      <div className={cn(colClass, 'min-w-0')}>
-        {/* The rail's stand-in below that width: the same roster, reached through the picker. */}
-        <Panel className="min-[1100px]:hidden">
-          <div className={panelHClass}>
-            <h2 className={panelTitleClass}>{t.heroesRosterTitle}</h2>
-            <Button variant="ghost" onClick={onOpenPicker}>
-              {t.switchHeroShort}
-            </Button>
-          </div>
-          <HeroIdentityChip hero={active.hero} fallbackName={active.hero.name} lang={lang} />
-        </Panel>
-        <HeroIdentityRollPanel
-          hero={active.hero}
-          rollQuality={active.report}
-          t={heroCopy}
-          lang={lang}
-          statLabel={boundStatLabel}
-        />
-        <HeroAbilitiesPanel hero={active.hero} abilityGains={abilityGains} t={heroCopy} lang={lang} />
-        <FiguresWithheldNotice withheld={inputs === null} />
-      </div>
+      <HeroCopyProvider t={panelCopy} lang={lang}>
+        <div className={cn(colClass, 'min-w-0')}>
+          {/* The rail's stand-in below that width: the same roster, reached through the picker. */}
+          <Panel className="min-[1100px]:hidden">
+            <div className={panelHClass}>
+              <h2 className={panelTitleClass}>{t.heroesRosterTitle}</h2>
+              <Button variant="ghost" onClick={onOpenPicker}>
+                {t.switchHeroShort}
+              </Button>
+            </div>
+            <HeroIdentityChip hero={active.hero} fallbackName={active.hero.name} lang={lang} />
+          </Panel>
+          <HeroIdentityRollPanel
+            hero={active.hero}
+            rollQuality={active.report}
+            t={heroCopy}
+            lang={lang}
+            statLabel={boundStatLabel}
+          />
+          <PhaseControl
+            phase={shownHeroPhase(phaseReading, overridePhase)}
+            overridden={overridePhase !== null}
+            onOverridePhase={setOverridePhase}
+            onClearOverride={onClearOverride}
+          />
+          <HeroCombat heroes={heroes} hero={active.hero} figures={figures} onSelectHero={onSelectHero} />
+          <HeroAbilitiesPanel hero={active.hero} abilityGains={abilityGains} t={heroCopy} lang={lang} />
+        </div>
+      </HeroCopyProvider>
       <HeroPickerDialogView
         open={pickerOpen}
         onOpenChange={setPickerOpen}
@@ -207,14 +232,88 @@ function HeroesRoster({ model }: { model: RosterModel }) {
  *  on every render rather than a fresh one that re-renders it. */
 const NO_ABILITY_GAINS: readonly AbilityGain[] = Object.freeze([]);
 
-function FiguresWithheldNotice({ withheld }: { withheld: boolean }) {
+function PhaseControl({
+  phase,
+  overridden,
+  onOverridePhase,
+  onClearOverride,
+}: {
+  phase: number;
+  overridden: boolean;
+  onOverridePhase: (phase: number) => void;
+  onClearOverride: () => void;
+}) {
   const t = useCopy();
-  if (!withheld) return null;
+
   return (
-    <Banner tone="warn" title={t.heroesFiguresWithheldTitle}>
-      {t.heroesFiguresWithheldDescription}
-    </Banner>
+    <Panel focus>
+      <div className={panelHClass}>
+        <h2 className={panelTitleClass}>{t.heroesPhaseTitle}</h2>
+      </div>
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="flex w-29 shrink-0 flex-col gap-[3px] text-[11px] tracking-[0.03em] text-muted uppercase">
+          <span>{t.heroesPhaseLabel}</span>
+          <Num value={phase} onChange={onOverridePhase} step={1} decimals={0} />
+        </label>
+        <Button variant="ghost" onClick={onClearOverride} disabled={!overridden}>
+          {t.heroesPhaseUseFarm}
+        </Button>
+      </div>
+    </Panel>
   );
+}
+
+/**
+ * The phase-scoped half of the detail. `PhasesHeroPanel` names the phase it was computed at and
+ * whether that phase came from the Farm screen or from this screen's own override — which is why
+ * the selection travels with the figures rather than being restated here.
+ */
+function HeroCombat({
+  heroes,
+  hero,
+  figures,
+  onSelectHero,
+}: {
+  heroes: HeroRecord[];
+  hero: HeroRecord;
+  figures: HeroFigures;
+  onSelectHero: (hero: HeroRecord) => void;
+}) {
+  const t = useCopy();
+  const combat = useMemo(
+    () =>
+      figures.kind === 'at'
+        ? pipelineForHero(hero, figures.inputs.account, figures.inputs.phase, figures.inputs.mitigationPct)
+        : null,
+    [hero, figures],
+  );
+
+  switch (figures.kind) {
+    case 'pending':
+      return null;
+    case 'unknownPhase':
+      return (
+        <Banner tone="warn" title={t.heroesPhaseUnknownTitle}>
+          {t.heroesPhaseUnknownDescription}
+        </Banner>
+      );
+    case 'withheld':
+      return (
+        <Banner tone="warn" title={t.heroesFiguresWithheldTitle}>
+          {t.heroesFiguresWithheldDescription}
+        </Banner>
+      );
+    default:
+      return (
+        <PhasesHeroPanel
+          heroes={heroes}
+          hero={hero}
+          combat={combat}
+          phaseSelection={figures.selection}
+          onSelectHero={onSelectHero}
+        />
+      );
+  }
 }
 
 function RosterRail({

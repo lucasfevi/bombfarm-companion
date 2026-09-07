@@ -581,6 +581,11 @@ export const ptBR: Copy = {
   heroesRollQualityLabel: 'Sorteio',
   heroesFiguresWithheldTitle: 'Ainda não foi lido o bastante da sua conta',
   heroesFiguresWithheldDescription: 'Os números de cada herói precisam da sua árvore de habilidades e da sua Casa. Deixe o jogo aberto por um instante e eles vão aparecer.',
+  heroesPhaseTitle: 'Fase a que estes números se referem',
+  heroesPhaseLabel: 'Fase',
+  heroesPhaseUseFarm: 'Voltar para a fase do Farm',
+  heroesPhaseUnknownTitle: 'Esta não é uma fase que o app conhece',
+  heroesPhaseUnknownDescription: 'Escolha uma fase que o jogo tenha de verdade, e os números voltam.',
 
   heroAvatarCol: 'Avatar',
   heroBattleActive: 'Ativado',

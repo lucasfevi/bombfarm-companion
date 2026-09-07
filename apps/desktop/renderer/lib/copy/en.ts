@@ -611,6 +611,11 @@ export const en = {
   heroesRollQualityLabel: 'Roll',
   heroesFiguresWithheldTitle: 'Not enough of your account has been read',
   heroesFiguresWithheldDescription: 'The per-hero numbers need your skill tree and your House. Leave the game open for a moment and they will fill in.',
+  heroesPhaseTitle: 'Phase these numbers are for',
+  heroesPhaseLabel: 'Phase',
+  heroesPhaseUseFarm: 'Back to your Farm phase',
+  heroesPhaseUnknownTitle: 'That is not a phase this app knows',
+  heroesPhaseUnknownDescription: 'Pick a phase the game actually has, and the numbers come back.',
 
   // hero*/gear*/import*/roster*/switch*/mode*/rank* — hero-identity vocabulary the farm screen's
   // roster surfaces read as one structural contract. Named exactly as that contract names them.
