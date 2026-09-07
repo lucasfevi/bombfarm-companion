@@ -282,7 +282,6 @@ export function inventoryTableLabels(
     searchText: grid.searchText,
     column: {
       name: strings.inventorySortName,
-      slot: strings.inventoryColumnSlot,
       forge: strings.inventoryColumnForge,
       count: strings.inventorySortCount,
       value: strings.inventorySortValue,

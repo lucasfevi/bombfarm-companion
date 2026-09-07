@@ -114,6 +114,13 @@ test.describe('forge plan smoke', () => {
       // A bag-slot counter is not what this screen is deciding about, and it is gone.
       await expect(view.getByTestId('forge-bag')).toHaveCount(0);
 
+      // Three columns, in this order. A slot column is not among them: the name already reads
+      // "Set · Slot", so one would print half of every name a second time beside it — and the
+      // width it took is what squeezed the name at the window's minimum.
+      const headers = page.locator('[data-testid="inventory-table-scroll"] thead th');
+      await expect(headers).toHaveText(['Name', 'Forge', 'Equipped by']);
+      await expect(page.getByRole('columnheader', { name: 'Slot' })).toHaveCount(0);
+
       // The bag opens forged-first, and the Forge header says so.
       const forgeHeader = page.getByRole('columnheader', { name: 'Forge' });
       await expect(forgeHeader).toHaveAttribute('aria-sort', 'descending');

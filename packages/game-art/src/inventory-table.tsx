@@ -50,7 +50,6 @@ import {
  */
 export type InventoryTableColumnId =
   | 'name'
-  | 'slot'
   | 'forge'
   | 'count'
   | 'value'
@@ -79,8 +78,6 @@ export interface InventoryTableLabels extends ItemIdentityLabels<InventoryViewIt
   /** `null` when the item is loose, or when the caller has no roster. Absent drops the column. */
   equippedBy?: ((item: InventoryViewItem) => InventoryEquippedBy | null) | undefined;
   gold: (amount: number) => string;
-  /** The gear slot, already localized. Required by a host that asks for the slot column. */
-  slotName?: ((item: InventoryViewItem) => string) | undefined;
   /** What free-text search matches against for one item. */
   searchText: (item: InventoryViewItem) => string;
   column: InventoryTableColumnLabels;
@@ -138,7 +135,7 @@ export interface InventoryTableProps {
  * Numbers read best largest-first, names smallest-first — so a column's first click sorts the way
  * a reader expects it to without having to click twice.
  */
-const ASCENDING_FIRST: ReadonlySet<InventorySortKey> = new Set<InventorySortKey>(['name', 'slot']);
+const ASCENDING_FIRST: ReadonlySet<InventorySortKey> = new Set<InventorySortKey>(['name']);
 
 /**
  * What activating a column header does. Re-picking the column that already leads flips it;
@@ -178,7 +175,6 @@ const COLUMN_SHAPE: Record<
   { align: ColumnAlign; sortKey: InventorySortKey | null; width: string | undefined }
 > = {
   name: { align: 'left', sortKey: 'name', width: undefined },
-  slot: { align: 'left', sortKey: 'slot', width: '8rem' },
   forge: { align: 'right', sortKey: 'forge', width: '5.5rem' },
   count: { align: 'right', sortKey: 'count', width: '5rem' },
   value: { align: 'right', sortKey: 'value', width: '8rem' },
@@ -319,12 +315,6 @@ const InventoryTableRow = memo(function InventoryTableRow({
           <DataTable.RowHeader key={column.id}>
             <NameCell item={item} labels={labels} onSelect={onSelectRow} />
           </DataTable.RowHeader>
-        );
-      case 'slot':
-        return (
-          <DataTable.Cell key={column.id} nowrap>
-            {labels.slotName?.(item) || <Blank />}
-          </DataTable.Cell>
         );
       case 'forge':
         return (

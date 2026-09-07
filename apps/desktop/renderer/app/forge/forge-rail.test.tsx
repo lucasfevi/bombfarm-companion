@@ -53,8 +53,20 @@ function finished(spent = 800): ForgeRunState {
   });
 }
 
-function deltaTag(html: string): string {
-  return /<span[^>]*data-testid="forge-against-delta"[^>]*>/.exec(html)?.[0] ?? '';
+function gapTag(html: string): string {
+  return /<span[^>]*data-testid="forge-against-gap"[^>]*>/.exec(html)?.[0] ?? '';
+}
+
+function verdictOf(html: string): string | undefined {
+  return /data-testid="forge-against-plan"[^>]*data-verdict="([a-z]+)"/.exec(html)?.[1];
+}
+
+function gapOf(html: string): string | undefined {
+  return /data-testid="forge-against-gap"[^>]*>([^<]+)</.exec(html)?.[1];
+}
+
+function verdictTextOf(html: string): string | undefined {
+  return /data-testid="forge-against-verdict"[^>]*>([^<]+)</.exec(html)?.[1];
 }
 
 function renderRail(run: ForgeRunState): string {
@@ -162,28 +174,45 @@ describe('ForgeRail', () => {
     expect(html).toMatch(/forge-result-climb[^>]*>\+8 → \+12</);
     expect(html).toMatch(/forge-result-rolls[^>]*>8 · 1 · 0</);
     expect(html).toMatch(/forge-against-spent[^>]*>spent .*?800/);
-    expect(html).toContain('expected ');
-    expect(html).toContain('650');
-    expect(html).toContain('a bad run ');
-    expect(html).toContain('1,200');
+    expect(html).toMatch(/forge-against-expected[^>]*>expected .*?650/);
+    expect(html).toMatch(/forge-against-bad-run[^>]*>a bad run .*?1,200/);
     expect(html).toContain('data-testid="forge-done"');
     expect(html).not.toContain('data-testid="forge-result-wallet"');
     expect(html).not.toContain('data-testid="forge-bought"');
   });
 
-  it('says how far the spend ran from the plan, and tints it by which of the plan\'s two figures it passed', () => {
+  it('leads with the percentage, says what it means, and tints both by which of the plan\'s two figures the spend passed', () => {
     const under = renderRail(finished(520));
-    expect(deltaTag(under)).toContain('data-tone="up"');
-    expect(deltaTag(under)).toContain('text-up');
-    expect(under).toMatch(/forge-against-delta[^>]*>−20% vs expected</);
+    expect(verdictOf(under)).toBe('under');
+    expect(gapOf(under)).toBe('−20%');
+    expect(verdictTextOf(under)).toBe(en.forgeAgainstUnder);
+    expect(gapTag(under)).toContain('text-up');
 
     const over = renderRail(finished(800));
-    expect(deltaTag(over)).toContain('data-tone="warn"');
-    expect(over).toMatch(/forge-against-delta[^>]*>\+23% vs expected</);
+    expect(verdictOf(over)).toBe('over');
+    expect(gapOf(over)).toBe('+23%');
+    expect(verdictTextOf(over)).toBe(en.forgeAgainstOver);
+    expect(gapTag(over)).toContain('text-warn');
 
     const past = renderRail(finished(1_950));
-    expect(deltaTag(past)).toContain('data-tone="down"');
-    expect(past).toMatch(/forge-against-delta[^>]*>\+200% vs expected</);
+    expect(verdictOf(past)).toBe('worse');
+    expect(gapOf(past)).toBe('+200%');
+    expect(verdictTextOf(past)).toBe(en.forgeAgainstWorse);
+    expect(gapTag(past)).toContain('text-down');
+  });
+
+  it('calls a spend that landed on the expected figure exactly that, and prints no percentage at all', () => {
+    const html = renderRail(finished(650));
+    expect(verdictOf(html)).toBe('exact');
+    expect(html).not.toContain('data-testid="forge-against-gap"');
+    expect(verdictTextOf(html)).toBe(en.forgeAgainstExact);
+  });
+
+  it('still reads as an outcome for a run cut short after one cheap roll, where the percentage nears −100%', () => {
+    const html = renderRail(finished(7));
+    expect(verdictOf(html)).toBe('under');
+    expect(gapOf(html)).toBe('−99%');
+    expect(verdictTextOf(html)).toBe(en.forgeAgainstUnder);
   });
 
   it('has no plan to compare against for a run it did not start, and prints no difference', () => {
@@ -199,7 +228,8 @@ describe('ForgeRail', () => {
     );
     const html = renderRail(adopted);
     expect(html).toContain('data-state="none"');
-    expect(html).not.toContain('data-testid="forge-against-delta"');
+    expect(html).not.toContain('data-testid="forge-against-gap"');
+    expect(html).not.toContain('data-testid="forge-against-verdict"');
   });
 });
 

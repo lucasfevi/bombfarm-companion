@@ -35,11 +35,9 @@ const labels: InventoryTableLabels = {
   itemLevel: (item) => (item.level > 0 ? `Lv ${item.level}` : ''),
   itemForge: (item) => (item.upgrade > 0 ? `+${item.upgrade}` : ''),
   gold: (amount) => String(amount),
-  slotName: (item) => item.slot ?? '',
   searchText: (item) => NAMES[item.defId] ?? item.defId,
   column: {
     name: 'Item',
-    slot: 'Slot',
     forge: 'Forge',
     count: 'Qty',
     value: 'Gold',
@@ -302,8 +300,8 @@ describe('InventoryTable columns', () => {
   });
 
   it('draws the set a host asks for, in the order it asked for', () => {
-    const html = render({ columns: ['name', 'slot', 'forge'] });
-    expect(headCells(html).map((cell) => cell.label)).toEqual(['Item', 'Slot', 'Forge']);
+    const html = render({ columns: ['name', 'forge', 'count'] });
+    expect(headCells(html).map((cell) => cell.label)).toEqual(['Item', 'Forge', 'Qty']);
     expect(html).toContain('+2');
   });
 

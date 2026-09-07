@@ -15,7 +15,8 @@ import {
   forgeResultHeading,
   forgeRungLabel,
   forgeStartRefusalText,
-  forgeSpendTone,
+  forgeSpendVerdict,
+  forgeSpendVerdictText,
   forgeStatRows,
   forgeStopText,
 } from './forge-labels';
@@ -170,15 +171,29 @@ describe('forgeBandText', () => {
   });
 });
 
-describe('forgeSpendTone', () => {
+describe('forgeSpendVerdict', () => {
   const forecast = { gold: 1_000, badRunGold: 2_000 };
 
   it('reads under the expected figure as a gain, over it as a warning, and past the bad run as a loss', () => {
-    expect(forgeSpendTone(400, forecast)).toBe('up');
-    expect(forgeSpendTone(1_000, forecast)).toBe('up');
-    expect(forgeSpendTone(1_001, forecast)).toBe('warn');
-    expect(forgeSpendTone(2_000, forecast)).toBe('warn');
-    expect(forgeSpendTone(2_001, forecast)).toBe('down');
+    expect(forgeSpendVerdict(400, forecast)).toBe('under');
+    expect(forgeSpendVerdict(999, forecast)).toBe('under');
+    expect(forgeSpendVerdict(1_001, forecast)).toBe('over');
+    expect(forgeSpendVerdict(2_000, forecast)).toBe('over');
+    expect(forgeSpendVerdict(2_001, forecast)).toBe('worse');
+  });
+
+  it('calls a spend that landed on the expected figure neither under nor over', () => {
+    expect(forgeSpendVerdict(1_000, forecast)).toBe('exact');
+  });
+
+  it('says all four outcomes in both languages, and never the same words for two of them', () => {
+    for (const words of [en, ptBR]) {
+      const said = (['exact', 'under', 'over', 'worse'] as const).map((verdict) =>
+        forgeSpendVerdictText(verdict, words),
+      );
+      expect(new Set(said).size).toBe(said.length);
+      for (const phrase of said) expect(phrase.length).toBeGreaterThan(0);
+    }
   });
 });
 

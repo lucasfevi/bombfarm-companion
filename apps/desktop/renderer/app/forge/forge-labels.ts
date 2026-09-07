@@ -115,14 +115,34 @@ export function forgeResultHeading(result: ForgeRunResult, t: Copy): { text: str
   }
 }
 
+export type ForgeSpendVerdict = 'exact' | 'under' | 'over' | 'worse';
+
 /**
- * How a run's spend stands against the plan it was made from. At or under the expected figure is
- * a gain; over it but inside the bad run is the range the plan said to prepare for; past the bad
- * run is worse than the plan ever offered.
+ * How a run's spend stands against the plan it was made from. Landing on the expected figure is
+ * neither under nor over, so it is its own answer rather than a signed zero picking a side of an
+ * inequality; under it is a gain; over it but inside the bad run is the range the plan said to
+ * prepare for; past the bad run is worse than the plan ever offered.
  */
-export function forgeSpendTone(spent: number, forecast: { gold: number; badRunGold: number }): ForgeResultTone {
-  if (spent <= forecast.gold) return 'up';
-  return spent <= forecast.badRunGold ? 'warn' : 'down';
+export function forgeSpendVerdict(
+  spent: number,
+  forecast: { gold: number; badRunGold: number },
+): ForgeSpendVerdict {
+  if (spent === forecast.gold) return 'exact';
+  if (spent < forecast.gold) return 'under';
+  return spent <= forecast.badRunGold ? 'over' : 'worse';
+}
+
+export function forgeSpendVerdictText(verdict: ForgeSpendVerdict, t: Copy): string {
+  switch (verdict) {
+    case 'exact':
+      return t.forgeAgainstExact;
+    case 'under':
+      return t.forgeAgainstUnder;
+    case 'over':
+      return t.forgeAgainstOver;
+    case 'worse':
+      return t.forgeAgainstWorse;
+  }
 }
 
 /** Why a run ended, short enough for a ledger cell — the rung it stopped on is the row's own

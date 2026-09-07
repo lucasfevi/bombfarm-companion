@@ -54,7 +54,7 @@ describe('resolveForgeScreen', () => {
 
 describe('DEFAULT_FORGE_SORT', () => {
   it('opens on a column the bag table itself carries, since its headers are the only ordering here', () => {
-    for (const term of DEFAULT_FORGE_SORT) expect(['name', 'slot', 'forge']).toContain(term.key);
+    for (const term of DEFAULT_FORGE_SORT) expect(['name', 'forge']).toContain(term.key);
   });
 });
 
