@@ -90,6 +90,14 @@ export {
   selectFormatNumber,
 } from '@/shared/stores/selectors/hero-selectors';
 export {
+  selectDraftHeroRecord,
+  selectHeroRollQuality,
+  selectHeroAbilityGains,
+  resetHeroPanelCaches,
+  getHeroAbilityGainsComputeCount,
+  resetHeroAbilityGainsComputeCount,
+} from '@/shared/stores/selectors/hero-panel-selectors';
+export {
   selectPlannerTabStatuses,
   selectSetupReady,
   selectHeroTabStatus,

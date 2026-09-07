@@ -1,6 +1,6 @@
 'use client';
 
-import { HeroAbilitiesTab } from './hero-abilities-tab';
+import { HeroTab } from './hero-tab';
 import { AdviceColumn } from './advice-column';
 import { HeroStrip } from './hero-strip';
 import { GearTab } from '@bombfarm/hero/components';
@@ -63,7 +63,7 @@ export function PlannerTabs() {
           </Tabs.List>
           <Tabs.Panels>
             <Tabs.Panel value="hero">
-              <HeroAbilitiesTab />
+              <HeroTab />
             </Tabs.Panel>
             <Tabs.Panel value="gear">
               <GearTab
