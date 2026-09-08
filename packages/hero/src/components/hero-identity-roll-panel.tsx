@@ -61,6 +61,30 @@ const UNAVAILABLE_NOTE: Record<PanelUnavailableReason, HeroCopyKey> = {
   noAbilities: 'heroDetailAbilitiesNone',
 };
 
+type IdentityFact = {
+  readonly id: string;
+  readonly label: string;
+  readonly value: string;
+  readonly valueClass?: string | undefined;
+};
+
+function FactTile({ fact }: { fact: IdentityFact }) {
+  return (
+    <div className="min-w-0 border border-line px-2.5 py-1.5">
+      <p className={sectionTitleClass}>{fact.label}</p>
+      <p
+        className={cn(
+          numericClass,
+          'mt-1 truncate text-sm leading-none font-bold',
+          fact.valueClass ?? 'text-ink',
+        )}
+      >
+        {fact.value}
+      </p>
+    </div>
+  );
+}
+
 function RollRail({ percentile }: { percentile: number }) {
   return (
     <span className="mt-1 block h-1 w-full overflow-hidden bg-bg" aria-hidden="true">
@@ -157,217 +181,189 @@ export function HeroIdentityRollPanel({
   };
   const placementNoteKey = placement === undefined ? null : PLACEMENT_NOTE[placement.certainty.kind];
 
+  const facts: readonly IdentityFact[] = [
+    {
+      id: 'rarity',
+      label: t.heroDetailIdentityRarity,
+      value: rarityLabel(hero.rarity, lang),
+      valueClass: rarityTextClass(rarityIndex),
+    },
+    {
+      // Painted in the colour the game paints this grade, so the letter reads the same here as on
+      // the hero's own card.
+      id: 'grade',
+      label: t.heroDetailIdentityGrade,
+      value: hero.rank ?? UNKNOWN,
+      valueClass: heroRankTextClass(hero.rank),
+    },
+    { id: 'level', label: t.heroDetailIdentityLevel, value: formatNumber(hero.level, lang, 0) },
+    {
+      id: 'power',
+      label: t.heroDetailIdentityPower,
+      value: heroPowerTextFor(hero, (value) => formatNumber(value, lang, 0)),
+    },
+    ...(placement === undefined
+      ? []
+      : [
+          {
+            id: 'quality',
+            label: t.heroDetailRollQuality,
+            value: formatNumber(placement.mean, lang, 1),
+          },
+        ]),
+    ...(marketValue.kind === 'value' && formatAmount !== undefined
+      ? [
+          {
+            id: 'marketValue',
+            label: t.heroDetailIdentityMarketValue,
+            value: formatAmount(marketValue.amount, marketValue.currency),
+            valueClass: 'text-up',
+          },
+        ]
+      : []),
+    {
+      id: 'marketable',
+      label: t.heroDetailIdentityMarketable,
+      value: marketableLabel[marketable],
+    },
+  ];
+
   return (
     <Panel className="min-w-0">
       <div className={panelHClass}>
         <h2 className={panelTitleClass}>{t.heroDetailIdentityTitle}</h2>
       </div>
 
-      {/* Two halves side by side once the panel itself is wide enough — its own width, not the
-          viewport's, because this panel sits in a detail column on one host and inside a tab strip
-          on the other, and a wide window says nothing about the room it actually has. Identity is
-          a stack of short label/value rows and needs a column, not a page; the roll table is four
-          columns and a rail, and takes the rest. */}
+      {/* How many facts sit on a row is decided by the panel's own width, not the viewport's:
+          this panel sits in a detail column on one host and inside a tab strip on the other, and
+          a wide window says nothing about the room it actually has. The rail and the table then
+          run the full width — the rail's boundaries are intervals, and only at full width do they
+          read as intervals rather than lines. */}
       <div className="@container">
-        <div className="grid gap-x-6 gap-y-4 @min-[52rem]:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
-          <div className="min-w-0">
-            <div className="flex items-center gap-3">
-              <HeroAvatar
-                skin={hero.skin ?? 0}
-                rarityIdx={rarityIndex}
-                size="lg"
-                name={hero.name}
-                className="shrink-0"
-              />
-              <div className="min-w-0">
-                <p
-                  className={cn(
-                    'truncate text-base leading-none font-bold',
-                    rarityTextClass(rarityIndex) ?? 'text-ink',
-                  )}
-                >
-                  {hero.name}
-                </p>
-                {starCount > 0 ? (
-                  <p
-                    className="mt-1 text-[11px] leading-none text-rar-4"
-                    aria-label={formatNumber(starCount, lang, 0)}
-                  >
-                    {'★'.repeat(starCount)}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-
-            <StatList
-              className="mt-3"
-              items={[
-                {
-                  id: 'rarity',
-                  label: t.heroDetailIdentityRarity,
-                  value: (
-                    <span className={cn('font-bold', rarityTextClass(rarityIndex) ?? 'text-ink')}>
-                      {rarityLabel(hero.rarity, lang)}
-                    </span>
-                  ),
-                },
-                {
-                  id: 'grade',
-                  label: t.heroDetailIdentityGrade,
-                  // Painted in the colour the game paints this grade, so the letter reads the same
-                  // here as on the hero's own card.
-                  value: (
-                    <span
-                      className={cn(
-                        numericClass,
-                        'font-bold',
-                        heroRankTextClass(hero.rank) ?? 'text-ink',
-                      )}
-                    >
-                      {hero.rank ?? UNKNOWN}
-                    </span>
-                  ),
-                },
-                {
-                  id: 'level',
-                  label: t.heroDetailIdentityLevel,
-                  value: <span className={numericClass}>{formatNumber(hero.level, lang, 0)}</span>,
-                },
-                {
-                  id: 'power',
-                  label: t.heroDetailIdentityPower,
-                  value: (
-                    <span className={numericClass}>
-                      {heroPowerTextFor(hero, (value) => formatNumber(value, lang, 0))}
-                    </span>
-                  ),
-                },
-                {
-                  id: 'marketable',
-                  label: t.heroDetailIdentityMarketable,
-                  value: marketableLabel[marketable],
-                },
-                ...(marketValue.kind === 'value' && formatAmount !== undefined
-                  ? [
-                      {
-                        id: 'marketValue',
-                        label: t.heroDetailIdentityMarketValue,
-                        value: (
-                          <span className={cn(numericClass, 'font-bold text-up')}>
-                            {formatAmount(marketValue.amount, marketValue.currency)}
-                          </span>
-                        ),
-                      },
-                    ]
-                  : []),
-              ]}
+        <div className="flex flex-col gap-3 @min-[40rem]:flex-row @min-[40rem]:items-center">
+          <div className="flex shrink-0 items-center gap-3 @min-[40rem]:w-56">
+            <HeroAvatar
+              skin={hero.skin ?? 0}
+              rarityIdx={rarityIndex}
+              size="lg"
+              name={hero.name}
+              className="shrink-0"
             />
+            <div className="min-w-0">
+              <p
+                className={cn(
+                  'truncate text-base leading-none font-bold',
+                  rarityTextClass(rarityIndex) ?? 'text-ink',
+                )}
+              >
+                {hero.name}
+              </p>
+              {starCount > 0 ? (
+                <p
+                  className="mt-1 text-[11px] leading-none text-rar-4"
+                  aria-label={formatNumber(starCount, lang, 0)}
+                >
+                  {'★'.repeat(starCount)}
+                </p>
+              ) : null}
+            </div>
           </div>
 
-          <div className="min-w-0">
-            <h3 className={sectionTitleClass}>{t.heroDetailRollTitle}</h3>
-            <p className={cn(tipClass, 'mt-1.5')}>{t.heroDetailRollPermanent}</p>
+          <div className="grid min-w-0 flex-1 grid-cols-2 gap-2 @min-[30rem]:grid-cols-3 @min-[52rem]:grid-cols-4 @min-[72rem]:grid-cols-6">
+            {facts.map((fact) => (
+              <FactTile key={fact.id} fact={fact} />
+            ))}
+          </div>
+        </div>
 
-            {availability.kind === 'unavailable' ? (
-              <p className={tipClass}>{t[UNAVAILABLE_NOTE[availability.reason]]}</p>
-            ) : null}
+        <h3 className={cn(sectionTitleClass, 'mt-5')}>{t.heroDetailRollTitle}</h3>
+        <p className={cn(tipClass, 'mt-1.5')}>{t.heroDetailRollPermanent}</p>
 
-            {placement === undefined ? null : (
+        {availability.kind === 'unavailable' ? (
+          <p className={tipClass}>{t[UNAVAILABLE_NOTE[availability.reason]]}</p>
+        ) : null}
+
+        {placement === undefined ? null : (
+          <>
+            <h3 className={cn(sectionTitleClass, 'mt-4')}>
+              {sub(t.heroDetailRollGradePlacement, { letter: placement.railLetter })}
+            </h3>
+            <GradeRailView mean={placement.mean} />
+            {placementNoteKey === null ? null : <p className={tipClass}>{t[placementNoteKey]}</p>}
+            <p className={tipClass}>
+              {nextLetter === undefined
+                ? t.heroDetailRollTopGrade
+                : sub(t.heroDetailRollToNextLetter, {
+                    range: nextLetter.range,
+                    letter: nextLetter.letter,
+                  })}
+            </p>
+
+            {disagreement === undefined ? null : (
               <>
+                <p className={tipClass}>{t.heroDetailRollComputedDisagrees}</p>
+                <p className={tipClass}>{t.heroDetailRollStoredLetterStands}</p>
                 <StatList
-                  className="mt-2"
+                  className="mt-1"
                   items={[
                     {
-                      id: 'quality',
-                      label: t.heroDetailRollQuality,
-                      value: (
-                        <span className={numericClass}>{formatNumber(placement.mean, lang, 1)}</span>
-                      ),
+                      id: 'stored',
+                      label: t.heroDetailRollStoredLetter,
+                      value: <span className={numericClass}>{disagreement.storedLetter}</span>,
+                    },
+                    {
+                      id: 'computed',
+                      label: t.heroDetailRollComputedLetter,
+                      value: <span className={numericClass}>{disagreement.computedLetter}</span>,
                     },
                   ]}
                 />
-
-                <DataTable.Root className="mt-2 border border-line">
-                  <DataTable.Table>
-                    <DataTable.Head>
-                      <DataTable.Row>
-                        <DataTable.Header scope="col">{t.heroDetailRollColStat}</DataTable.Header>
-                        <DataTable.Header scope="col" align="right">
-                          {t.heroDetailRollColBand}
-                        </DataTable.Header>
-                        <DataTable.Header scope="col" align="right">
-                          {t.heroDetailRollValue}
-                        </DataTable.Header>
-                        <DataTable.Header scope="col" align="right">
-                          {t.heroDetailRollColPosition}
-                        </DataTable.Header>
-                      </DataTable.Row>
-                    </DataTable.Head>
-                    <DataTable.Body>
-                      {rows.map((row) => (
-                        <DataTable.Row key={row.key}>
-                          <DataTable.Cell>{statLabel(row.key)}</DataTable.Cell>
-                          <DataTable.Cell align="right" numeric>
-                            {row.band}
-                          </DataTable.Cell>
-                          <DataTable.Cell align="right" numeric>
-                            {row.value}
-                          </DataTable.Cell>
-                          <DataTable.Cell
-                            align="right"
-                            numeric
-                            className={row.outOfBand ? 'text-warn' : undefined}
-                          >
-                            {row.position}
-                            {row.percentile === undefined ? null : (
-                              <RollRail percentile={row.percentile} />
-                            )}
-                          </DataTable.Cell>
-                        </DataTable.Row>
-                      ))}
-                    </DataTable.Body>
-                  </DataTable.Table>
-                </DataTable.Root>
-
-                <h3 className={cn(sectionTitleClass, 'mt-4')}>
-                  {sub(t.heroDetailRollGradePlacement, { letter: placement.railLetter })}
-                </h3>
-                <GradeRailView mean={placement.mean} />
-                {placementNoteKey === null ? null : <p className={tipClass}>{t[placementNoteKey]}</p>}
-                <p className={tipClass}>
-                  {nextLetter === undefined
-                    ? t.heroDetailRollTopGrade
-                    : sub(t.heroDetailRollToNextLetter, {
-                        range: nextLetter.range,
-                        letter: nextLetter.letter,
-                      })}
-                </p>
-
-                {disagreement === undefined ? null : (
-                  <>
-                    <p className={tipClass}>{t.heroDetailRollComputedDisagrees}</p>
-                    <p className={tipClass}>{t.heroDetailRollStoredLetterStands}</p>
-                    <StatList
-                      className="mt-1"
-                      items={[
-                        {
-                          id: 'stored',
-                          label: t.heroDetailRollStoredLetter,
-                          value: <span className={numericClass}>{disagreement.storedLetter}</span>,
-                        },
-                        {
-                          id: 'computed',
-                          label: t.heroDetailRollComputedLetter,
-                          value: <span className={numericClass}>{disagreement.computedLetter}</span>,
-                        },
-                      ]}
-                    />
-                  </>
-                )}
               </>
             )}
-          </div>
-        </div>
+
+            <DataTable.Root className="mt-4 border border-line">
+              <DataTable.Table>
+                <DataTable.Head>
+                  <DataTable.Row>
+                    <DataTable.Header scope="col">{t.heroDetailRollColStat}</DataTable.Header>
+                    <DataTable.Header scope="col" align="right">
+                      {t.heroDetailRollColBand}
+                    </DataTable.Header>
+                    <DataTable.Header scope="col" align="right">
+                      {t.heroDetailRollValue}
+                    </DataTable.Header>
+                    <DataTable.Header scope="col" align="right">
+                      {t.heroDetailRollColPosition}
+                    </DataTable.Header>
+                  </DataTable.Row>
+                </DataTable.Head>
+                <DataTable.Body>
+                  {rows.map((row) => (
+                    <DataTable.Row key={row.key}>
+                      <DataTable.Cell>{statLabel(row.key)}</DataTable.Cell>
+                      <DataTable.Cell align="right" numeric>
+                        {row.band}
+                      </DataTable.Cell>
+                      <DataTable.Cell align="right" numeric>
+                        {row.value}
+                      </DataTable.Cell>
+                      <DataTable.Cell
+                        align="right"
+                        numeric
+                        className={row.outOfBand ? 'text-warn' : undefined}
+                      >
+                        {row.position}
+                        {row.percentile === undefined ? null : (
+                          <RollRail percentile={row.percentile} />
+                        )}
+                      </DataTable.Cell>
+                    </DataTable.Row>
+                  ))}
+                </DataTable.Body>
+              </DataTable.Table>
+            </DataTable.Root>
+          </>
+        )}
       </div>
     </Panel>
   );
