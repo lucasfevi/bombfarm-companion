@@ -1,5 +1,155 @@
 # @bombfarm/web
 
+## 0.18.0
+
+### Minor Changes
+
+- ae89de0: Rename the Team plan page to **Optimizer**, and its URL from `/team-plan` to `/optimizer`.
+
+  The page stopped being about one thing when it gained a farm objective: it now searches for gold per hour or for combined DPS, at a phase you choose, moving gear or points or both. "Team plan" named the artifact it produces rather than what it does, and "Optimizer" is what the Farm board's own button has always called it.
+
+  `/team-plan` keeps working. It is a redirect stub that replaces itself with `/optimizer` — the same shape `/phases` has used since the Farm rename, so a link shared before today still lands, is not indexed, and does not trap the Back button.
+
+  The output is still a team plan: the button still says Build team plan, and the results section is still named for the plan it produced. What changed is the name of the tool, not the name of the thing it builds.
+
+- ae89de0: Let the Team plan propose only the kind of change you are willing to make, and tidy the setup bar it sits on.
+
+  **Allowed changes.** A plan used to do both things at once: move and forge gear, and re-spend stat points. A new control on the search setup bar offers gear and points (the default, and what every existing plan did), points only, or gear only. It is a different axis from Hero scope, which decides which heroes the search may touch rather than what it may do to them, and it is honoured under both objectives.
+
+  The restriction reaches the search itself rather than the results on screen. Points only skips the gear climb, drops the forge floor to zero, and runs the search from the roster exactly as it stands, so the plan comes back with no move list and no forge list — and the Min forge control leaves the setup bar, since a floor a plan is never scored at is a control that does nothing. Gear only skips every stat-point pass, so no point reset can survive into the plan. A restricted plan says so in Assumptions & limits, which matters because an empty forge list otherwise reads as "forging did not pay" when it means "forging was never on the table".
+
+  **Layout.** The forge stepper's `−` and `+` were 24px tall next to 34px fields, and rendered at the field label's 11px uppercase type because they inherited it; they now match the row. The Build team plan button was pinned to the bottom edge of the setup row — which is wherever the longest hint under a field happens to end — and now sits centred against the fields, 33.75px higher on the reference build.
+
+  **Copy.** The phase picker's search box said "Difficulty, coordinate, or number", which named a thing the game does not call a coordinate; it now shows one example per route — `Hard, Normal 2-1, or 151`. The setup panel's own sentence no longer promises gear moves, forge work and point resets up front, since the new control decides which of those a plan may contain.
+
+- ae89de0: Let the Team plan search be scored for gold per hour, and make that the default.
+
+  The page has always maximised the roster's duty-weighted sustained damage. That quantity is not
+  what a farming account earns, and following the plan could leave a player farming worse than
+  before. The search has been able to score for gold for a while; nothing on screen could ask for
+  it. There is now a **Score for** control on the search setup panel with two settings, Gold and
+  Damage, and it starts on Gold.
+
+  Only the web planner's default changes. The shared search keeps damage as its own default, so
+  every other caller is byte-identical.
+
+  Changing the setting drops any plan already on screen rather than flagging it stale, and disowns a
+  search still running. A gold plan and a damage plan report different quantities in different
+  units, so leaving one under the other's heading would print a wrong number, not merely an old one.
+
+  Every string on the page that named the quantity being reported now exists twice, once per
+  setting, and a gold plan reports gold per hour throughout: the total gain reads `gold/h` rather
+  than `dps`, the results heading, the field-saturation notes, the temporarily-behind line and the
+  skipped-forge note all follow. Both languages. The page reads those strings only through a single
+  resolver, and a test fails if any component reaches around it or if a damage word appears in a
+  gold-mode string.
+
+  Scoring for gold needs the furthest phase the account has reached, and the search refuses to guess
+  it. A save that did not carry one now says so and offers damage instead of failing mid-search.
+
+  Separately, the Farm page's respec advisor now states its own scope: it moves stat points, and
+  never gear or forge work. The web planner adds that the Team plan page covers the rest. The
+  desktop app has no such page, so the shared panel names no destination there.
+
+- ae89de0: Team plan: plan for one phase, under either objective
+
+  The Team plan page gains a **Plan for phase** picker beside Score for, and both objectives now
+  answer the question for that phase and nowhere else. The objective options are relabelled to the
+  units they report — **Gold / hr** and **DPS**.
+
+  **What changes per objective.** With a phase named, gold per hour is priced at that phase instead
+  of at the best one the squad can hold, and the damage objective scores the roster against that
+  phase's own mitigation instead of the account's. With the picker on **None** nothing changes:
+  gold sweeps as before and the plan now says which phase it settled on and that it picked it
+  itself; damage stays on the account's own phase.
+
+  The picker holds all 600 phases and is searchable by the three things a player knows a phase by —
+  the difficulty word (`Normal`), the in-game coordinate (`Normal 2-1`) and the bare number (`151`).
+  It matches on the game's own coordinate label and never on the wiki's flavour names, which diverge
+  from the client past world 2. Fifty matching rows are drawn at a time with a note saying how many
+  more matched.
+
+  **It is also a large speed-up.** The phase argmax is ~96% of what one farm evaluation costs, and a
+  named phase collapses it to a single wiki row — measured at exactly 1 row per evaluation, against
+  19/28/35 for the same three accounts unpinned. Whole-plan wall clock, same machine, gold objective,
+  phase pinned to the one the sweep would have chosen:
+
+  | account                  | heroes | gold, no phase | gold, phase named |
+  | ------------------------ | ------ | -------------- | ----------------- |
+  | 7-hero capture           | 7      | 0.83 s         | 0.46 s            |
+  | 13-hero capture          | 13     | 11.6 s         | 2.3 s             |
+  | 13-hero capture (deeper) | 13     | 20.8 s         | 10.6 s            |
+  | 15-hero capture          | 15     | 23.7 s         | 11.4 s            |
+
+  Gold mode used to cost 2.4x-6.2x what damage mode costs on the same account; with a phase named it
+  costs 1.1x-2.0x. The remainder is gear scoring, which both objectives share and which pinning a
+  phase cannot touch.
+
+  **Two smaller consequences.** A phase past the furthest one the account has reached is allowed and
+  labelled as such — "what would I earn if I could hold this" is a fair question. And gold scoring no
+  longer needs the save to carry a furthest phase at all, as long as a phase is named: that
+  requirement bounded a sweep, and there is no sweep left to bound. The toolbar warning and the
+  disabled Optimize button now appear only while the picker is on None.
+
+### Patch Changes
+
+- ae89de0: Stop an import from leaving a hero of the _previous_ account in your roster.
+
+  The hero autosave is debounced by 700ms. Importing a save inside that window replaced the roster while a write staged against the old one was still pending, and that late write appended its hero to the roster it no longer belonged to — a 4-hero save became 5 heroes, the extra one carrying the id of an account you had just replaced. It was persisted, so it survived a reload.
+
+  A draft autosave may now only update a hero the roster still holds. Creating roster entries was never its job.
+
+  The visible symptom this was found through: the Farm Respec panel closing itself a moment after you opened it. The roster array is what the board keys its proposal on, so an appended hero silently invalidated a solve you had just asked for.
+
+- ae89de0: Make the Farm Respec Advisor's Optimize button permanent, and drop the background estimate that
+  used to decide whether it appeared at all.
+
+  The board ran a fast estimate on every roster change and showed the control only when that
+  estimate cleared 1%. The estimate is a deliberate lower bound, and it under-reports badly: across
+  the committed captures it recovered between 33% and 70% of the gain the real search finds, so an
+  account with a genuine double-digit respec available could be told nothing and offered no way to
+  ask. Raising the bar would have made that worse, not better. The estimate is gone entirely — one
+  whole tier of the solver, its memo, its dependency tuple and its toolbar callout — and Optimize is
+  now always pressable, on any roster, whatever the board thinks.
+
+  The 5% floor moves onto the number it can actually speak for. Pressing Optimize runs the full
+  search as before; if the best build it finds is worth less than 5% more gold per hour, the panel
+  says so and names the figure it found, rather than laying out a per-hero respec that costs more
+  than it returns. A build that is already optimal and one that is merely close now give the same
+  honest answer. Above the floor nothing changes: the gain, the phase, the cost, the payback, the
+  per-hero split and the cheaper-respec frontier all render exactly as before.
+
+- ae89de0: Three things the Optimizer page was saying that were not true.
+
+  **It never moves Luck, and never said so.** The point search runs over `HeroSheet`, and Luck is not part of it — no plan can shift a point into or out of Luck in either direction. That is fine under DPS, where Luck earns nothing. Under Gold / hr it is a real limit worth stating: Luck raises drop rates and therefore gold per hour, so the page was optimizing gold while holding one of its inputs still. Assumptions & limits now says so, in both directions, whenever a plan could have moved points at all.
+
+  **"No phase pinned" described only half of what happens.** The hint said the search would pick the best phase the squad can hold and report which — true when scoring gold, false when scoring DPS, where an unpinned phase means the account's own current phase and no search at all. Since None is the default, that was the state most DPS users saw. The hint is now a pair, and each half describes what its objective actually does.
+
+  **The Optimize button's accessible name ignored Allowed changes.** It read "Build a team plan of gear moves and point resets" whatever the setting, so someone using a screen reader on a points-only plan was told it would move gear. The visible label is unchanged; the accessible name now names only the work the current setting permits.
+
+- ae89de0: Two things review caught on the Optimizer.
+
+  **The per-hero table was printing DPS under a gold-per-hour heading.** When you score for gold, the total above says gold/hr and the per-hero Before/After columns are DPS — they are a different quantity and they do not add up to that total. The note under the table said the opposite, claiming those figures were "what the search actually optimizes against", which is true only when you score for damage. The note is now written per objective and says plainly that a squad's earning rate is a rate the whole rotation produces and does not divide per hero.
+
+  **Importing a second account left the editor pointed at a hero from the first.** The hero being edited is not in the new roster, and nothing re-pointed the editor at one that is — so until the page was reloaded, or a hero was clicked in the strip, every autosave had nothing valid to write. It used to write anyway, appending the stranded hero back into the roster; that was fixed separately, and this closes the other half by pointing the editor at the new roster's strongest hero, the same rule a first import already uses.
+
+- Updated dependencies [ae89de0]
+- Updated dependencies [ae89de0]
+- Updated dependencies [ae89de0]
+- Updated dependencies [ae89de0]
+- Updated dependencies [ae89de0]
+- Updated dependencies [ae89de0]
+- Updated dependencies [ae89de0]
+- Updated dependencies [ae89de0]
+- Updated dependencies [cbb8a8a]
+- Updated dependencies [ae89de0]
+  - @bombfarm/domain@1.0.0
+  - @bombfarm/farm@1.0.0
+  - @bombfarm/ui@0.12.0
+  - @bombfarm/account@0.2.2
+  - @bombfarm/game-art@0.4.1
+  - @bombfarm/hero@0.1.2
+
 ## 0.17.1
 
 ### Patch Changes

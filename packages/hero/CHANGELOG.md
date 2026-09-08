@@ -1,5 +1,22 @@
 # @bombfarm/hero
 
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies [ae89de0]
+- Updated dependencies [ae89de0]
+- Updated dependencies [ae89de0]
+- Updated dependencies [ae89de0]
+- Updated dependencies [ae89de0]
+- Updated dependencies [ae89de0]
+- Updated dependencies [ae89de0]
+- Updated dependencies [cbb8a8a]
+- Updated dependencies [ae89de0]
+  - @bombfarm/domain@1.0.0
+  - @bombfarm/ui@0.12.0
+  - @bombfarm/game-art@0.4.1
+
 ## 0.1.1
 
 ### Patch Changes

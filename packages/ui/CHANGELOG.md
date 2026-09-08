@@ -1,5 +1,83 @@
 # @bombfarm/ui
 
+## 0.12.0
+
+### Minor Changes
+
+- ae89de0: Team plan: plan for one phase, under either objective
+
+  The Team plan page gains a **Plan for phase** picker beside Score for, and both objectives now
+  answer the question for that phase and nowhere else. The objective options are relabelled to the
+  units they report — **Gold / hr** and **DPS**.
+
+  **What changes per objective.** With a phase named, gold per hour is priced at that phase instead
+  of at the best one the squad can hold, and the damage objective scores the roster against that
+  phase's own mitigation instead of the account's. With the picker on **None** nothing changes:
+  gold sweeps as before and the plan now says which phase it settled on and that it picked it
+  itself; damage stays on the account's own phase.
+
+  The picker holds all 600 phases and is searchable by the three things a player knows a phase by —
+  the difficulty word (`Normal`), the in-game coordinate (`Normal 2-1`) and the bare number (`151`).
+  It matches on the game's own coordinate label and never on the wiki's flavour names, which diverge
+  from the client past world 2. Fifty matching rows are drawn at a time with a note saying how many
+  more matched.
+
+  **It is also a large speed-up.** The phase argmax is ~96% of what one farm evaluation costs, and a
+  named phase collapses it to a single wiki row — measured at exactly 1 row per evaluation, against
+  19/28/35 for the same three accounts unpinned. Whole-plan wall clock, same machine, gold objective,
+  phase pinned to the one the sweep would have chosen:
+
+  | account                  | heroes | gold, no phase | gold, phase named |
+  | ------------------------ | ------ | -------------- | ----------------- |
+  | 7-hero capture           | 7      | 0.83 s         | 0.46 s            |
+  | 13-hero capture          | 13     | 11.6 s         | 2.3 s             |
+  | 13-hero capture (deeper) | 13     | 20.8 s         | 10.6 s            |
+  | 15-hero capture          | 15     | 23.7 s         | 11.4 s            |
+
+  Gold mode used to cost 2.4x-6.2x what damage mode costs on the same account; with a phase named it
+  costs 1.1x-2.0x. The remainder is gear scoring, which both objectives share and which pinning a
+  phase cannot touch.
+
+  **Two smaller consequences.** A phase past the furthest one the account has reached is allowed and
+  labelled as such — "what would I earn if I could hold this" is a fair question. And gold scoring no
+  longer needs the save to carry a furthest phase at all, as long as a phase is named: that
+  requirement bounded a sweep, and there is no sweep left to bound. The toolbar warning and the
+  disabled Optimize button now appear only while the picker is on None.
+
+- cbb8a8a: The top bar gives up its tab words before it gives up a control, and its content sits on the same
+  measure as the panels under it.
+
+  **The order it degrades in is reversed.** A narrowing window used to collapse Open mini, the
+  referral chip, the coffee link and the PT/EN toggle into one overflow button first, and keep every
+  tab spelled out well past that. That was backwards: a tab word stands in for a glyph the player
+  learns once and then reads at a glance, while an action behind a menu costs a click every single
+  time it is used. Now the tabs drop to glyphs first, then the brand lockup drops to its mark, and
+  the actions are the last thing to collapse.
+
+  **At the smallest window the app can be dragged to, every action is still its own control.** That
+  window — 960px, less the strip the OS caption buttons take — used to sit in the collapsed shape.
+  It now sits one stage above it, with glyph tabs, the brand mark, and all five actions in the bar;
+  the overflow button appears only below the app's own minimum, which is where the shape was always
+  meant to be a floor rather than something a player meets. Each stage's width was re-measured off
+  the rendered bar in Portuguese, the language whose words are longest.
+
+  **The bar and the status strip line up with the content.** Both were full-bleed, so on a wide
+  window the brand and the version line stood in the window's corners while the panels were inset by
+  the measure's gutter. Both now draw their content on the content measure, keeping their border and
+  background across the full window, and all three reserve the same strip for the one scrollbar — so
+  the top bar starts exactly where the panels start. The content region also holds that scrollbar's
+  gutter open permanently, so a panel that grows past the window height no longer narrows the page
+  as its scrollbar appears.
+
+  **The Forge screen fills the window.** Its bag was sized by the column of panels beside it and
+  nothing else, so on a tall window the screen stopped where that column stopped — a 1400px-tall
+  window drew a 460px bag and then ~600px of empty background above the run ledger. The bag row is
+  now the screen's slack: it takes whatever height the toolbar, the run band and the ledger leave,
+  so a taller window reads more of the bag instead of more background. The give stays
+  one-directional — a window too short for the piece and the plan lets the page scroll rather than
+  squeezing the bag under them — and opening the run ledger takes its room from the bag's spare
+  height first, moving nothing above it.
+
 ## 0.11.0
 
 ### Minor Changes
