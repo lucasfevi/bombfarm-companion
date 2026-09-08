@@ -30,6 +30,7 @@ import {
   type MarketQuoteTarget,
   type SettingsWriteResult,
   type UpdateStatus,
+  type WindowStateView,
 } from '@bombfarm/contracts';
 import { createPacingGate, initialConsent, isGranted, trayTextFor } from '@bombfarm/game-api';
 import { createAccountNotifier, resolveAccountView, resolveCachedAccountView } from './account-view.js';
@@ -414,6 +415,31 @@ function registerIpcHandlers(): void {
       return listForgeHistory();
     },
     'forge:inject': (events: unknown) => forgeInjector?.inject(events) ?? { ok: false },
+    'window:minimize': () => {
+      mainWindow?.minimize();
+      return null;
+    },
+    'window:toggleMaximize': (): WindowStateView => {
+      if (!mainWindow || mainWindow.isDestroyed()) {
+        return { maximized: false };
+      }
+      if (mainWindow.isMaximized()) {
+        mainWindow.unmaximize();
+      } else {
+        mainWindow.maximize();
+      }
+      return { maximized: mainWindow.isMaximized() };
+    },
+    // `close()`, never `destroy()` or `app.quit()`: what a close means is the shell lifecycle's
+    // decision, and on Windows with a tray present it hides the window instead of ending the
+    // process. A caption button that quit outright would be a second, contradictory answer.
+    'window:close': () => {
+      mainWindow?.close();
+      return null;
+    },
+    'window:getState': (): WindowStateView => ({
+      maximized: mainWindow?.isMaximized() ?? false,
+    }),
     'miniLive:open': () => {
       if (isMiniAvailable()) {
         miniLiveController?.open();
@@ -486,12 +512,10 @@ async function createMainWindow(): Promise<void> {
     show: false,
     title: env.productName,
     icon: path.join(__dirname, '../../assets/icon.ico'),
+    // Hidden title bar with no `titleBarOverlay`: the header draws its own caption buttons
+    // (`WindowControls`), which the OS overlay cannot be asked to do — Windows fixes those
+    // buttons at 47px wide and only their height and colours are configurable.
     titleBarStyle: 'hidden',
-    // `--surface`/`--ink` (packages/ui/src/styles.css) as sRGB hex — Electron's titleBarOverlay
-    // can't take `oklch()`. Height matches AppShell's own header token (`--spacing-top`, 58px),
-    // not the OS caption default, so the overlay's Minimize/Maximize/Close buttons sit centred
-    // against it.
-    titleBarOverlay: { color: '#261d19', symbolColor: '#efe6e1', height: 58 },
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.cjs'),
       contextIsolation: true,
@@ -693,9 +717,11 @@ function attachWindowLayoutPersistence(): void {
   });
   mainWindow.on('maximize', () => {
     persistMainWindowLayout(true);
+    emitEvent('window:changed', { maximized: true });
   });
   mainWindow.on('unmaximize', () => {
     persistMainWindowLayout(true);
+    emitEvent('window:changed', { maximized: false });
   });
   mainWindow.on('hide', () => {
     persistMainWindowLayout(true);

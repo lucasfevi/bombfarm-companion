@@ -330,6 +330,12 @@ export interface MiniLiveLayoutView {
 
 export type MiniLiveLayoutPatch = MiniLiveLayoutView;
 
+/** What the main window's own caption buttons have to draw: the maximize control is a restore
+ *  control while the window is maximized, and nothing else about the window changes their shape. */
+export interface WindowStateView {
+  maximized: boolean;
+}
+
 /** Where the account the renderer reads came from. A fixture has no server behind it, so
  *  nothing that would send a write can run against one. */
 export type AccountSource = 'server' | 'fixture';
@@ -377,6 +383,14 @@ export interface IpcChannels {
   'settings:setAlwaysOnTopMini': { args: [boolean]; result: SettingsWriteResult };
   'settings:setForgeWritesEnabled': { args: [boolean]; result: SettingsWriteResult };
   'settings:setRestartGameOnExit': { args: [boolean]; result: SettingsWriteResult };
+  /** The main window's caption buttons, drawn in the header rather than by the OS. Zero-arg like
+   *  the consent quartet — the channel name is the verb. `window:close` asks the window to close
+   *  and does not decide what that means: the shell's own close handler still answers it, so on
+   *  Windows with a tray this hides rather than quits. */
+  'window:minimize': { args: []; result: null };
+  'window:toggleMaximize': { args: []; result: WindowStateView };
+  'window:close': { args: []; result: null };
+  'window:getState': { args: []; result: WindowStateView };
   'miniLive:open': { args: []; result: null };
   'miniLive:close': { args: []; result: null };
   'miniLive:getLayout': { args: []; result: MiniLiveLayoutView };
@@ -449,6 +463,10 @@ export const IPC_CHANNELS = [
   'settings:setAlwaysOnTopMini',
   'settings:setForgeWritesEnabled',
   'settings:setRestartGameOnExit',
+  'window:minimize',
+  'window:toggleMaximize',
+  'window:close',
+  'window:getState',
   'miniLive:open',
   'miniLive:close',
   'miniLive:getLayout',
@@ -486,7 +504,8 @@ export type IpcEventChannel =
   | 'updates:changed'
   | 'market:changed'
   | 'settings:changed'
-  | 'forge:event';
+  | 'forge:event'
+  | 'window:changed';
 
 export interface IpcEvents {
   'game:status': GameStatusInfo;
@@ -514,6 +533,10 @@ export interface IpcEvents {
   /** Every call a forge run makes, as it settles, then one `done`. The step's `to` is the
    *  server's answer, never an inference from the odds. */
   'forge:event': ForgeEvent;
+  /** Fired on every maximize and unmaximize of the main window, so the header's own caption
+   *  buttons follow a state change the OS made (a double-clicked title bar, a snap, Win+Up)
+   *  and not only the ones they asked for. */
+  'window:changed': WindowStateView;
 }
 
 export const IPC_EVENT_CHANNELS = [
@@ -525,6 +548,7 @@ export const IPC_EVENT_CHANNELS = [
   'market:changed',
   'settings:changed',
   'forge:event',
+  'window:changed',
 ] as const satisfies readonly IpcEventChannel[];
 
 export function isIpcChannel(value: string): value is IpcInvokeChannel {

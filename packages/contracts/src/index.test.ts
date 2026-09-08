@@ -33,6 +33,10 @@ describe('contracts IPC surface', () => {
       'settings:setAlwaysOnTopMini',
       'settings:setForgeWritesEnabled',
       'settings:setRestartGameOnExit',
+      'window:minimize',
+      'window:toggleMaximize',
+      'window:close',
+      'window:getState',
       'miniLive:open',
       'miniLive:close',
       'miniLive:getLayout',
@@ -73,6 +77,7 @@ describe('contracts IPC surface', () => {
       'market:changed',
       'settings:changed',
       'forge:event',
+      'window:changed',
     ]);
   });
 

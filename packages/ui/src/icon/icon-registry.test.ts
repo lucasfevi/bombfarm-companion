@@ -18,6 +18,10 @@ import { uiIconRegistry } from './ui-registry';
 // 24-entry budget exactly, so the next glyph is a conversation rather than a quiet addition.
 // Desktop Forge tab (2026-09-04): hammer — the sixth nav tab's glyph, which is what the
 // conversation above was for; the budget moved to 25 with it.
+// Desktop caption buttons (2026-09-08): window-minimize, window-maximize, window-restore,
+// window-close — the header draws the window controls itself now, and the four arrive together
+// because they are one hairline set read as a group; splitting the close mark off to the existing
+// `x-mark` puts two stroke weights in one cluster. Budget 25 -> 29.
 const MIGRATED_UI_NAMES = [
   'window',
   'signal',
@@ -44,11 +48,15 @@ const MIGRATED_UI_NAMES = [
   'lock-closed',
   'sort-ascending',
   'sort-descending',
+  'window-minimize',
+  'window-maximize',
+  'window-restore',
+  'window-close',
 ] as const;
 
 describe('icon registries — budget and membership', () => {
-  it('keeps uiIconRegistry within the 25-entry budget', () => {
-    expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(25);
+  it('keeps uiIconRegistry within the 29-entry budget', () => {
+    expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(29);
   });
 
   it('maps exactly the declared ui-chrome glyphs', () => {

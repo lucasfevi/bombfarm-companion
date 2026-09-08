@@ -49,11 +49,23 @@ export const appShellFlavorBadgeClass =
 export const appShellActionsClass = 'flex shrink-0 items-center gap-2';
 
 /**
- * Sits behind the header's content; the content wrappers are positioned so they paint above it.
- * `right-0` is the default rather than an omission: an inline `right` only narrows it to clear the
- * OS caption buttons, and without a right edge to start from the strip would collapse to no width
- * at all — a header with nothing to grab — whenever that inset is unknown.
+ * The caption cluster, pinned to the window's own top-right corner rather than laid out in the
+ * bar — where the OS drew its buttons, and where a hand reaching to close a window goes.
+ *
+ * Out of flow on purpose. In flow it would be one more item in the bar's row, which narrows the
+ * bar's slot and pulls the capped measure off centre; the brand would stop starting where the
+ * panels below it start. Absolute takes it out of that arithmetic entirely and leaves the bar
+ * exactly as it was laid out.
+ *
+ * `top-0 right-0` is already the window's corner and needs no offset against the header's padding:
+ * a positioned child resolves against the padding EDGE, which is the element's outer edge, with
+ * the padding inside it. Negating the padding here does not reach the corner, it overshoots past
+ * it — measured once at 34px off the right and 10px above the top, with the close button off
+ * screen entirely.
  */
+export const appShellWindowControlsClass = 'absolute top-0 right-0 flex items-start';
+
+/** Sits behind the header's content; the content wrappers are positioned so they paint above it. */
 export const appShellDragStripClass = 'absolute top-0 right-0 bottom-0 left-0';
 
 /**

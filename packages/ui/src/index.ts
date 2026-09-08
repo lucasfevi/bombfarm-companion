@@ -36,6 +36,9 @@ export {
 } from './format-number';
 export { AppShell } from './AppShell';
 export type { AppShellProps, AppShellNavItem } from './AppShell';
+export { WindowControls } from './window-controls';
+export type { WindowControlsLabels, WindowControlsProps } from './window-controls';
+export { WINDOW_CONTROLS_WIDTH } from './window-controls.recipe';
 export { BrandMark } from './brand-mark';
 export type { BrandMarkProps } from './brand-mark';
 export { AppNav } from './app-nav';

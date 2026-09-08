@@ -2,6 +2,7 @@ import type { CSSProperties, PropsWithChildren, ReactNode } from 'react';
 import { AppNav } from './app-nav';
 import type { IconName } from './icon';
 import type { ShellDensity } from './shell-density';
+import { WINDOW_CONTROLS_WIDTH } from './window-controls.recipe';
 import {
   appShellActionsClass,
   appShellBarClass,
@@ -17,6 +18,7 @@ import {
   appShellRootClass,
   appShellStatusBarClass,
   appShellStatusInnerClass,
+  appShellWindowControlsClass,
 } from './AppShell.recipe';
 
 export interface AppShellNavItem {
@@ -58,8 +60,12 @@ export interface AppShellProps extends PropsWithChildren {
    * window by its chrome.
    */
   draggable?: boolean;
-  /** Width (px) the OS caption buttons claim on the right edge, alongside `draggable`. */
-  overlayInset?: number;
+  /**
+   * The window's caption buttons, drawn at the end of the actions cluster — e.g. the desktop's
+   * `WindowControls`. Renders nothing when omitted, which is what a surface whose window controls
+   * belong to the OS wants.
+   */
+  windowControls?: ReactNode;
 }
 
 /** `-webkit-app-region` has no Tailwind utility and isn't a standard CSS property TypeScript knows. */
@@ -72,8 +78,8 @@ interface AppRegionStyle extends CSSProperties {
  * itself. Chromium builds the draggable region as a polygon over every `app-region` element, so
  * marking the header and then un-marking each interactive child makes that region a many-sided
  * shape recomputed against the whole subtree; one static rectangle with nothing inside it does
- * not. It also has to stop short of `overlayInset`, because the OS already claims that strip for
- * its caption buttons and two claims on the same pixels is what makes a drag stick and jump.
+ * not. It spans the whole header: the caption buttons are the actions cluster's own children now,
+ * and that cluster is already excused from the region below.
  */
 const DRAG_STRIP_STYLE: AppRegionStyle = { WebkitAppRegion: 'drag' };
 
@@ -85,14 +91,15 @@ const DRAG_STRIP_STYLE: AppRegionStyle = { WebkitAppRegion: 'drag' };
 const NO_DRAG_STYLE: AppRegionStyle = { WebkitAppRegion: 'no-drag' };
 
 /**
- * The right padding the bar's content needs to stay out of the OS caption buttons, given that the
+ * The right padding the bar's content needs to stay out of the caption buttons, given that the
  * content is already inset from the window edge by the measure's own right gutter. Above the
  * measure that gutter is wider than the buttons and this resolves to zero, which is the point: a
- * maximized window lines the actions up with the panels below rather than holding a strip clear
- * twice. `100%` resolves against the header's content box, so the subtraction is the live gutter.
+ * wide window lines the actions up with the panels below rather than holding a strip clear twice,
+ * and the buttons keep the corner to themselves. `100%` resolves against the header's content
+ * box, so the subtraction is the live gutter.
  */
-function captionClearance(overlayInset: number): string {
-  return `max(0px, ${overlayInset}px - (100% - min(var(--container-desktop), 100%)) / 2 - var(--shell-gutter) - var(--scrollbar))`;
+function captionClearance(): string {
+  return `max(0px, ${WINDOW_CONTROLS_WIDTH}px - (100% - min(var(--container-desktop), 100%)) / 2 - var(--shell-gutter) - var(--scrollbar))`;
 }
 
 /**
@@ -115,7 +122,7 @@ export function AppShell({
   progress,
   version,
   draggable = false,
-  overlayInset,
+  windowControls,
   children,
 }: AppShellProps) {
   const navItems = items.map((item) => ({
@@ -127,16 +134,13 @@ export function AppShell({
   const iconTabs = density !== 'full';
   const brandMarkOnly = density === 'brand-mark' || density === 'actions-collapsed';
 
-  const dragStripStyle = overlayInset
-    ? { ...DRAG_STRIP_STYLE, right: overlayInset }
-    : DRAG_STRIP_STYLE;
-  const barStyle = overlayInset ? { paddingRight: captionClearance(overlayInset) } : undefined;
   const interactiveStyle = draggable ? NO_DRAG_STYLE : undefined;
+  const barStyle = windowControls ? { paddingRight: captionClearance() } : undefined;
 
   return (
     <div className={appShellRootClass}>
       <header className={appShellHeaderClass}>
-        {draggable ? <div aria-hidden className={appShellDragStripClass} style={dragStripStyle} /> : null}
+        {draggable ? <div aria-hidden className={appShellDragStripClass} style={DRAG_STRIP_STYLE} /> : null}
         <div className={appShellBarClass} style={barStyle}>
           <div className="flex min-w-0 items-center gap-4">
             <div className={appShellBrandRowClass} style={interactiveStyle}>
@@ -168,6 +172,11 @@ export function AppShell({
             </div>
           ) : null}
         </div>
+        {windowControls ? (
+          <div className={appShellWindowControlsClass} style={interactiveStyle}>
+            {windowControls}
+          </div>
+        ) : null}
       </header>
 
       <main className={appShellMainClass}>

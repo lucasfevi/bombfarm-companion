@@ -175,6 +175,14 @@ export const en = {
   miniLiveAxisHorizontalLabel: 'Side by side',
   miniLiveLastSectionNote: 'At least one panel must stay on',
 
+  // windowControl* — the header's own caption buttons, which are icon-only, so each key is the
+  // control's accessible name. Maximize and restore are two names for one button: which one it is
+  // depends on whether the window is already maximized.
+  windowControlMinimizeAria: 'Minimize',
+  windowControlMaximizeAria: 'Maximize',
+  windowControlRestoreAria: 'Restore down',
+  windowControlCloseAria: 'Close to tray',
+
   liveStatusLiveLabel: 'Streaming live from the game',
   liveStatusNotLiveLabel: 'Not live — showing the last known state',
 
