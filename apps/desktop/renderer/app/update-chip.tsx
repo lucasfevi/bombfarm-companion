@@ -15,7 +15,7 @@ interface ChipContent {
 
 /** The three phases a player can act on. Every other phase — `idle`, `checking`, `not-available`,
  *  `error`, `disabled` — belongs to the Settings section alone: a footer that announced a routine
- *  six-hourly check, or an error nobody asked for, would be noise in permanent furniture. */
+ *  background check, or an error nobody asked for, would be noise in permanent furniture. */
 function chipContent(status: UpdateStatus, t: Copy): ChipContent | null {
   switch (status.phase) {
     case 'available':

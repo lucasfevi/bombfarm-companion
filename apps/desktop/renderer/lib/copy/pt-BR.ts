@@ -118,7 +118,7 @@ export const ptBR: Copy = {
   settingsUpdatesChannelHelp: 'Canal de atualização: {channel}.',
   settingsUpdatesCheckLabel: 'Procurar atualizações',
   settingsUpdatesCheckHelp:
-    'Também procura sozinho pouco depois de o app abrir, e a cada seis horas enquanto ele ficar aberto.',
+    'Também procura sozinho pouco depois de o app abrir, e a cada vinte minutos enquanto ele ficar aberto.',
   settingsUpdatesCheckAction: 'Procurar agora',
   settingsUpdatesDownloadLabel: 'Uma versão nova está esperando',
   settingsUpdatesDownloadHelp: 'Baixar não interrompe nada — você instala quando quiser.',

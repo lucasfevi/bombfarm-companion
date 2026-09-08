@@ -117,7 +117,8 @@ export const en = {
   settingsUpdatesCurrentVersionLabel: 'Installed version',
   settingsUpdatesChannelHelp: 'Update channel: {channel}.',
   settingsUpdatesCheckLabel: 'Check for updates',
-  settingsUpdatesCheckHelp: 'Also checks on its own shortly after the app opens, and every six hours it stays open.',
+  settingsUpdatesCheckHelp:
+    'Also checks on its own shortly after the app opens, and every twenty minutes it stays open.',
   settingsUpdatesCheckAction: 'Check now',
   settingsUpdatesDownloadLabel: 'A new version is waiting',
   settingsUpdatesDownloadHelp: 'Downloading does not interrupt anything — you install it when you are ready.',

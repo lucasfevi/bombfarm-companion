@@ -274,7 +274,7 @@ function HomePageContent({
       .catch(() => {});
 
     // Every transition arrives here, including the ones nobody clicked for: download progress
-    // and the six-hourly background check.
+    // and the periodic background check.
     return bridge.on('updates:changed', setUpdateStatus);
   }, []);
 
