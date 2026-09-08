@@ -17,8 +17,8 @@ import { useSyncExternalStore } from 'react';
 export type ShellDensity = 'full' | 'icon-tabs' | 'brand-mark' | 'actions-collapsed';
 
 /**
- * All three widths are the room the bar actually has — the window minus the strip the OS caption
- * buttons claim, which is ~136px on Windows and none elsewhere — and all three were measured off
+ * All three widths are the room the bar actually has — the window minus the strip the caption
+ * buttons claim, which is `WINDOW_CONTROLS_WIDTH` wherever the header draws them — and all three were measured off
  * the rendered bar rather than picked: the brand, the tabs and the actions cluster are laid out at
  * their natural width and none of them shrinks, so the first pixel one of them loses is the pixel
  * they start overlapping on. Portuguese is the binding language; its tab words and its action
@@ -63,15 +63,15 @@ function subscribe(onStoreChange: () => void): () => void {
  * so React bails out of re-rendering for every pixel of a drag and only commits on the three
  * transitions that change what is on screen.
  *
- * `overlayInset` is the room the OS caption buttons already took — see `SHELL_ICON_TABS_WIDTH`.
+ * `captionInset` is the room the caption buttons already took — see `SHELL_ICON_TABS_WIDTH`.
  * The server snapshot is `full` because a prerendered static export has no window to measure; the
  * desktop's own header is empty until the first IPC answer arrives, well after hydration, so
  * nothing is ever painted at the wrong density.
  */
-export function useShellDensity(overlayInset = 0): ShellDensity {
+export function useShellDensity(captionInset = 0): ShellDensity {
   return useSyncExternalStore(
     subscribe,
-    () => shellDensityFor(window.innerWidth - overlayInset),
+    () => shellDensityFor(window.innerWidth - captionInset),
     () => 'full' as const,
   );
 }

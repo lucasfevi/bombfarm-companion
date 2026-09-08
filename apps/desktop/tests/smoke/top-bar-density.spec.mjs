@@ -23,8 +23,12 @@ const ICON_TABS_WINDOW = 1120;
 const MIN_WINDOW = 960;
 /** Below the minimum, reachable only by lifting it as `resize` does. The overflow stage lives
  *  here: glyph tabs, a brand mark and all five actions still fit at the real minimum, so the stage
- *  is a floor under a future smaller window rather than one a player meets today. */
-const ACTIONS_COLLAPSED_WINDOW = 900;
+ *  is a floor under a future smaller window rather than one a player meets today.
+ *
+ *  A probe, not a boundary: the stage starts where the window minus the caption cluster falls
+ *  under `SHELL_ACTIONS_COLLAPSE_WIDTH`, so this has to stay under that sum plus the cluster's
+ *  own width and moves whenever either does. */
+const ACTIONS_COLLAPSED_WINDOW = 860;
 /** Narrower still. Six glyph tabs, a mark and a menu stop fitting below ~610px, which is 350px
  *  past the smallest window that exists. */
 const NARROWEST_MEASURED = 640;
@@ -109,6 +113,12 @@ function topBar(page) {
       brand: box(leftGroup.children[0]),
       nav: box(document.querySelector('nav[aria-label="Main"]')),
       actions: box(actions),
+      caption: {
+        ...box(document.querySelector('[data-testid="window-controls"]')),
+        top: Math.round(
+          document.querySelector('[data-testid="window-controls"]').getBoundingClientRect().top,
+        ),
+      },
     };
   });
 }
@@ -168,6 +178,15 @@ test.describe('top bar — degrades as the window narrows, and never overlaps it
         bar.contentRight,
       );
       expect(bar.headerOverflow, `the header overflowed at ${where}`).toBeLessThanOrEqual(0);
+
+      // The caption buttons are out of flow, so nothing in the bar shrinks around them — the
+      // clearance the bar holds is the only thing keeping the last action out from under the
+      // close button, and it is a computed value that a gutter change can quietly invalidate.
+      expect(bar.actions.right, `the actions ran under the caption buttons at ${where}`).toBeLessThanOrEqual(
+        bar.caption.left,
+      );
+      expect(bar.caption.right, `the caption buttons left the window corner at ${where}`).toBe(width);
+      expect(bar.caption.top, `the caption buttons dropped off the top edge at ${where}`).toBe(0);
     }
   });
 

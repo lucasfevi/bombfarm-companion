@@ -117,7 +117,8 @@ export const en = {
   settingsUpdatesCurrentVersionLabel: 'Installed version',
   settingsUpdatesChannelHelp: 'Update channel: {channel}.',
   settingsUpdatesCheckLabel: 'Check for updates',
-  settingsUpdatesCheckHelp: 'Also checks on its own shortly after the app opens, and every six hours it stays open.',
+  settingsUpdatesCheckHelp:
+    'Also checks on its own shortly after the app opens, and every twenty minutes it stays open.',
   settingsUpdatesCheckAction: 'Check now',
   settingsUpdatesDownloadLabel: 'A new version is waiting',
   settingsUpdatesDownloadHelp: 'Downloading does not interrupt anything — you install it when you are ready.',
@@ -174,6 +175,14 @@ export const en = {
   miniLiveAxisVerticalLabel: 'Stacked',
   miniLiveAxisHorizontalLabel: 'Side by side',
   miniLiveLastSectionNote: 'At least one panel must stay on',
+
+  // windowControl* — the header's own caption buttons, which are icon-only, so each key is the
+  // control's accessible name. Maximize and restore are two names for one button: which one it is
+  // depends on whether the window is already maximized.
+  windowControlMinimizeAria: 'Minimize',
+  windowControlMaximizeAria: 'Maximize',
+  windowControlRestoreAria: 'Restore down',
+  windowControlCloseAria: 'Close to tray',
 
   liveStatusLiveLabel: 'Streaming live from the game',
   liveStatusNotLiveLabel: 'Not live — showing the last known state',
@@ -496,11 +505,11 @@ export const en = {
   forgeResultError: 'Stopped by an error at {level}',
   forgeResultClimb: 'Climb',
   forgeResultRolls: 'Rolls · fails · crits',
+  forgeResultSpent: 'Spent',
   forgeResultDuration: 'Duration',
   forgeAgainstPlanTitle: 'Against the plan',
   // Bare labels: each figure's amount is drawn beside its label rather than substituted into it,
   // so the coin marking it as gold stands next to the number and not in front of the word.
-  forgeAgainstSpent: 'spent',
   forgeAgainstExpected: 'expected',
   forgeAgainstBadRun: 'a bad run',
   forgeAgainstUnder: 'under what the plan expected',
@@ -561,7 +570,7 @@ export const en = {
   accountHoldingsPartial: 'part of the account only',
   accountHoldingsCoverage: '{priced} of {eligible} sellable things priced right now',
   accountHoldingsMissing: 'Not counted here: {rows}.',
-  accountHoldingsPricesUpdated: 'prices {age}',
+  accountHoldingsPricesOldest: 'oldest price {age}',
   accountHoldingsUnpriced: 'not listed',
   accountHoldingsInventory: 'Inventory',
   accountHoldingsInventoryCoverage: '{priced} of {eligible} tradable items priced',

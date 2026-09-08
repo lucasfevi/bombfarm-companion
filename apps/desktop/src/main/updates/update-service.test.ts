@@ -119,13 +119,21 @@ describe('createUpdateService: start()', () => {
     expect(h.applied).toEqual({ autoDownload: false, autoInstallOnAppQuit: false, channel: 'latest' });
   });
 
-  it('schedules the first check after the launch delay and repeats every six hours', () => {
+  /**
+   * The interval is pinned exactly rather than bounded, because the number is a judgement and not
+   * a constraint: the Settings help text promises this cadence in two languages, so a change here
+   * that leaves the copy behind makes the app lie about itself. Both ends are wrong for a reason
+   * worth re-reading before moving it — slack enough and an app left open sits on a release for
+   * most of a day, tight enough and it polls the feed for latency no player can act on, since
+   * downloading and restarting both stay manual.
+   */
+  it('schedules the first check after the launch delay and repeats every twenty minutes', () => {
     const h = harness();
     h.service.start();
 
     expect(h.timers.once).toEqual([[expect.any(Function), FIRST_CHECK_DELAY_MS]]);
     expect(h.timers.every).toEqual([[expect.any(Function), CHECK_INTERVAL_MS]]);
-    expect(CHECK_INTERVAL_MS).toBe(6 * 60 * 60 * 1000);
+    expect(CHECK_INTERVAL_MS).toBe(20 * 60 * 1000);
   });
 
   it('is idempotent — a second start() adds no second pair of timers', () => {
@@ -158,7 +166,7 @@ describe('createUpdateService: start()', () => {
     expect(h.calls.check).toBe(2);
   });
 
-  it('the launch check and the six-hourly one collapse into one when they coincide', async () => {
+  it('the launch check and the background one collapse into one when they coincide', async () => {
     // Both timers can come due in the same tick; the second must not start a second HTTP check
     // against the release feed while the first is still open.
     const h = harness({ onCheck: () => new Promise(() => {}) });

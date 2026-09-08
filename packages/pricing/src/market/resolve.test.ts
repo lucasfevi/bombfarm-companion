@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { CatalogView } from './reconcile.js';
-import { resolveHeroPrice, resolveItemPrice, resolveKey, resolveSkinPrice } from './resolve.js';
+import type { ResolvedPrice } from './resolve.js';
+import {
+  oldestQuotedUtc,
+  resolveHeroPrice,
+  resolveItemPrice,
+  resolveKey,
+  resolveSkinPrice,
+} from './resolve.js';
 import { buildSnapshot } from './snapshot.js';
 import type { MarketEntry } from './types.js';
 import { MARKET_APP_ID, categoryKey, heroPriceKey, priceKey } from './types.js';
@@ -369,5 +376,46 @@ describe('native versus converted quotes', () => {
       state: 'no-listing',
       amount: null,
     });
+  });
+});
+
+describe('oldestQuotedUtc', () => {
+  const quoted = (quotedUtc: string | null): ResolvedPrice => ({
+    state: quotedUtc == null ? 'no-listing' : 'priced',
+    key: priceKey('ember_arma', 1),
+    hashName: 'Ember Weapon',
+    listingUrl: null,
+    lowestUsd: quotedUtc == null ? null : 2,
+    amount: quotedUtc == null ? null : 10,
+    currency: 'BRL',
+    basis: 'converted',
+    quotedUtc,
+    listings: 1,
+    alternateHashNames: [],
+  });
+
+  it('picks the oldest stamp, whatever order the prices arrive in', () => {
+    const stamps = [
+      '2026-09-07T19:06:00.000Z',
+      '2026-09-07T12:41:00.000Z',
+      '2026-09-07T18:15:00.000Z',
+    ];
+
+    expect(oldestQuotedUtc(stamps.map(quoted))).toBe('2026-09-07T12:41:00.000Z');
+    expect(oldestQuotedUtc([...stamps].reverse().map(quoted))).toBe('2026-09-07T12:41:00.000Z');
+  });
+
+  it('skips what it cannot date rather than treating it as the oldest thing there is', () => {
+    expect(oldestQuotedUtc([quoted(null), quoted('2026-09-07T12:41:00.000Z')])).toBe(
+      '2026-09-07T12:41:00.000Z',
+    );
+    expect(oldestQuotedUtc([quoted('whenever'), quoted('2026-09-07T12:41:00.000Z')])).toBe(
+      '2026-09-07T12:41:00.000Z',
+    );
+  });
+
+  it('has no answer for an empty list or for prices none of which is dated', () => {
+    expect(oldestQuotedUtc([])).toBeNull();
+    expect(oldestQuotedUtc([quoted(null), quoted('whenever')])).toBeNull();
   });
 });

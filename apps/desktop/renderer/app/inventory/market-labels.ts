@@ -1,4 +1,6 @@
 import type { MarketPriceLabels, MarketPriceView } from '@bombfarm/game-art';
+import type { ResolvedPrice } from '@bombfarm/pricing';
+import { oldestQuotedUtc } from '@bombfarm/pricing';
 import { BCP47_BY_LOCALE, type AppLocale } from '@bombfarm/contracts';
 import { sub, type Copy } from '../../lib/copy';
 
@@ -51,4 +53,28 @@ export function marketPriceLabels(
       }),
     unpriced: (state) => (state === 'no-listing' ? t.marketNoListings : t.marketNotOnMarket),
   };
+}
+
+/**
+ * How old the prices behind a summary figure are, dated by the oldest of them, or null when not
+ * one of them is dated and there is nothing honest to say.
+ *
+ * It takes the prices rather than a timestamp on purpose. Saying so in `quoteAge`'s prose above did
+ * not work: the snapshot's own publish time is in reach where these lines are drawn and reads like
+ * the answer, and that is the value the Account screen passed. It is not the answer — a
+ * rate-limited run republishes the file while leaving individual quotes hours older, so the
+ * publish time dates the publish and not any price shown. Given only resolved prices, that number
+ * is not one this can be handed.
+ *
+ * The oldest rather than the newest or the typical: it is the only age true of every row the line
+ * sits above, and a summary contradicting the rows beneath it is the defect this replaced.
+ */
+export function priceFreshness(
+  prices: readonly ResolvedPrice[],
+  t: Copy,
+  now = Date.now(),
+): string | null {
+  const oldest = oldestQuotedUtc(prices);
+  if (oldest == null) return null;
+  return sub(t.accountHoldingsPricesOldest, { age: quoteAge(oldest, t, now) });
 }

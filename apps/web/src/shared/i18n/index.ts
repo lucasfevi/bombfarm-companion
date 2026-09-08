@@ -3,7 +3,7 @@ export { loadLang, saveLang } from './lang';
 export { sub, parseEmphasis } from './format';
 export {
   formatMoney,
-  formatPricesUpdated,
+  formatPriceFreshness,
   formatQuoteAge,
   formatQuoteTooltip,
   formatUnpricedLabel,

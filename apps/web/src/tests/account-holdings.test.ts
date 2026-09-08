@@ -10,6 +10,7 @@ import {
   buildSnapshot,
   categoryKey,
   heroPriceKey,
+  holdingsPrices,
   priceKey,
   resolveItemPrice,
 } from '@bombfarm/pricing';
@@ -25,7 +26,7 @@ import {
 } from '@/features/account/model/account-holdings';
 import { inventoryTotals } from '@/features/inventory/model/use-inventory-prices';
 import { INVENTORY_VIEW_KEY, loadInventoryView } from '@/shared/lib/inventory-view-storage';
-import { STRINGS } from '@/shared/i18n';
+import { STRINGS, formatPriceFreshness, formatQuoteAge } from '@/shared/i18n';
 import type { Lang } from '@/shared/i18n';
 
 const CATALOG: CatalogView = {
@@ -484,6 +485,7 @@ describe('the inventory figure is one computation on both screens', () => {
       total: fromAccount.amount,
       priced: fromAccount.priced,
       tradable: fromAccount.eligible,
+      prices: fromAccount.prices,
     });
   });
 
@@ -506,7 +508,7 @@ describe('the inventory figure is one computation on both screens', () => {
       total += price.amount;
     }
 
-    expect(inventoryTotals(INVENTORY, SNAPSHOT)).toEqual({ total, priced, tradable });
+    expect(inventoryTotals(INVENTORY, SNAPSHOT)).toMatchObject({ total, priced, tradable });
   });
 
   it('has nothing to report on either screen without a snapshot', () => {
@@ -604,5 +606,52 @@ describe('the inventory column link opens the Inventory as the player left it', 
 
     expect(inventoryFromStorage(loadInventoryView())).toBeNull();
     expect(inventoryFromStorage({ version: 1, importedAt: 1, items: [] })).toEqual([]);
+  });
+});
+
+describe('how old a summary says the prices under it are', () => {
+  /**
+   * The shape production was in when this was measured: the snapshot had been republished twelve
+   * minutes earlier while every row in it still carried a reading taken 6.6 hours before that,
+   * because a run of rate-limited passes had collected nothing and carried the rows forward.
+   */
+  const REPUBLISHED = '2026-09-07T19:18:00.000Z';
+  const ROWS_READ = '2026-09-07T12:41:00.000Z';
+  const NOW = Date.parse(REPUBLISHED) + 12 * 60_000;
+
+  const CARRIED_FORWARD: MarketSnapshot = buildSnapshot({
+    entries: [
+      marketEntry({
+        hashName: 'Ember Weapon',
+        key: priceKey('ember_arma', 1),
+        lowestUsd: 2,
+        fetchedUtc: ROWS_READ,
+      }),
+    ],
+    prior: null,
+    catalog: CATALOG,
+    fx: { USD: 1, BRL: 5 },
+    anomalies: [],
+    searchCalls: 1,
+    enumerationComplete: false,
+    now: () => Date.parse(REPUBLISHED),
+  });
+
+  const line = () =>
+    formatPriceFreshness(holdingsPrices(holdingsOf(INVENTORY, null, CARRIED_FORWARD)), 'en', NOW);
+
+  it('reads the age of the prices, not the age of the file that carried them', () => {
+    expect(CARRIED_FORWARD.generatedUtc).toBe(REPUBLISHED);
+    expect(formatQuoteAge(CARRIED_FORWARD.generatedUtc, 'en', NOW)).toBe('12 min ago');
+
+    expect(line()).toBe('Oldest price read 6 h ago');
+  });
+
+  it('leaves each row saying when its own price was read', () => {
+    const prices = holdingsPrices(holdingsOf(INVENTORY, null, CARRIED_FORWARD));
+    const priced = prices.filter((price) => price.state === 'priced');
+
+    expect(priced).not.toEqual([]);
+    for (const price of priced) expect(price.quotedUtc).toBe(ROWS_READ);
   });
 });

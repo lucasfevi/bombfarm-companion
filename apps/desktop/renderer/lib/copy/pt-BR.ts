@@ -118,7 +118,7 @@ export const ptBR: Copy = {
   settingsUpdatesChannelHelp: 'Canal de atualização: {channel}.',
   settingsUpdatesCheckLabel: 'Procurar atualizações',
   settingsUpdatesCheckHelp:
-    'Também procura sozinho pouco depois de o app abrir, e a cada seis horas enquanto ele ficar aberto.',
+    'Também procura sozinho pouco depois de o app abrir, e a cada vinte minutos enquanto ele ficar aberto.',
   settingsUpdatesCheckAction: 'Procurar agora',
   settingsUpdatesDownloadLabel: 'Uma versão nova está esperando',
   settingsUpdatesDownloadHelp: 'Baixar não interrompe nada — você instala quando quiser.',
@@ -175,6 +175,14 @@ export const ptBR: Copy = {
   miniLiveAxisVerticalLabel: 'Empilhado',
   miniLiveAxisHorizontalLabel: 'Em linha',
   miniLiveLastSectionNote: 'Pelo menos um painel precisa permanecer ligado',
+
+  // windowControl* — os botões de janela do próprio cabeçalho, que são só de ícone, então cada
+  // chave é o nome acessível do controle. Maximizar e restaurar são dois nomes para um botão:
+  // qual deles vale depende de a janela já estar maximizada.
+  windowControlMinimizeAria: 'Minimizar',
+  windowControlMaximizeAria: 'Maximizar',
+  windowControlRestoreAria: 'Restaurar tamanho',
+  windowControlCloseAria: 'Fechar para a bandeja',
 
   liveStatusLiveLabel: 'Transmitindo ao vivo do jogo',
   liveStatusNotLiveLabel: 'Não ao vivo — mostrando o último estado conhecido',
@@ -478,9 +486,9 @@ export const ptBR: Copy = {
   forgeResultError: 'Parada por um erro em {level}',
   forgeResultClimb: 'Subida',
   forgeResultRolls: 'Rolagens · falhas · críticos',
+  forgeResultSpent: 'Gasto',
   forgeResultDuration: 'Duração',
   forgeAgainstPlanTitle: 'Contra o plano',
-  forgeAgainstSpent: 'gasto',
   forgeAgainstExpected: 'esperado',
   forgeAgainstBadRun: 'uma má sequência',
   forgeAgainstUnder: 'abaixo do que o plano esperava',
@@ -538,7 +546,7 @@ export const ptBR: Copy = {
   accountHoldingsPartial: 'apenas parte da conta',
   accountHoldingsCoverage: '{priced} de {eligible} coisas vendáveis com preço agora',
   accountHoldingsMissing: 'Fora desta conta: {rows}.',
-  accountHoldingsPricesUpdated: 'preços {age}',
+  accountHoldingsPricesOldest: 'preço mais antigo {age}',
   accountHoldingsUnpriced: 'sem oferta',
   accountHoldingsInventory: 'Inventário',
   accountHoldingsInventoryCoverage: '{priced} de {eligible} itens negociáveis com preço',

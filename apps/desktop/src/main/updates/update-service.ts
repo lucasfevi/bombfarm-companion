@@ -6,7 +6,13 @@ import { classifyUpdateError, updateErrorMessage } from './update-error.js';
 /** The delay before the first automatic check, so a launch never competes with window paint,
  *  storage open and the first game poll for the same few seconds. */
 export const FIRST_CHECK_DELAY_MS = 30_000;
-export const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
+
+/** How long an app left open can sit on a version that has already shipped. The release feed is
+ *  an unauthenticated CDN read of a few kilobytes, so the cost of asking is not what sets this —
+ *  what does is that nothing downstream is automatic: the player still chooses to download and
+ *  still chooses to restart. Minutes of notice are therefore worth having and seconds are not,
+ *  and a tighter interval would only buy latency no one can act on any sooner. */
+export const CHECK_INTERVAL_MS = 20 * 60 * 1000;
 
 /** The slice of `electron-updater`'s `autoUpdater` this service uses, so the state machine can be
  *  driven by a fake in tests without an Electron process. */
@@ -114,7 +120,7 @@ export function createUpdateService(deps: UpdateServiceDeps): UpdateService {
 
   async function check(): Promise<UpdateStatus> {
     // `ready` is terminal until restart, and a check mid-download would race the transfer it
-    // would invalidate. Both return the current status rather than throwing: the six-hourly timer
+    // would invalidate. Both return the current status rather than throwing: the background timer
     // fires regardless of what the player is doing.
     if (!enabled || checkInFlight || downloadInFlight || status.phase === 'downloading' || status.phase === 'ready') {
       return status;

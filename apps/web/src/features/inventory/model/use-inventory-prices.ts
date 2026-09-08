@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import type { MarketPriceLabels, InventoryTotalsLabels } from '@bombfarm/game-art';
 import type { InventoryEntry, InventoryView, InventoryViewItem } from '@bombfarm/domain/inventory-view';
-import type { MarketSnapshot } from '@bombfarm/pricing';
+import type { MarketSnapshot, ResolvedPrice } from '@bombfarm/pricing';
 import { accountHoldings, resolveItemPrice } from '@bombfarm/pricing';
 import { useAppLang } from '@/shared/context/app-lang';
 import { useMarketSnapshot } from '@/shared/hooks/use-market-snapshot';
@@ -23,6 +23,11 @@ export interface InventoryTotals {
   priced: number;
   /** Items the game permits selling — the only ones that could ever carry a price. */
   tradable: number;
+  /**
+   * What the market said about each row, carried out of the same resolution the sum came from so
+   * the freshness line above the figure can date itself by the prices it covers.
+   */
+  prices: ResolvedPrice[];
 }
 
 /**
@@ -46,7 +51,12 @@ export function inventoryTotals(
     snapshot,
     currency: CURRENCY,
   });
-  return { total: inventory.amount, priced: inventory.priced, tradable: inventory.eligible };
+  return {
+    total: inventory.amount,
+    priced: inventory.priced,
+    tradable: inventory.eligible,
+    prices: inventory.prices,
+  };
 }
 
 /**
@@ -59,7 +69,7 @@ export function inventoryTotals(
  */
 export function useInventoryPrices(view: InventoryView) {
   const { t, lang } = useAppLang();
-  const { snapshot, generatedUtc, refresh, isRefreshing } = useMarketSnapshot();
+  const { snapshot, refresh, isRefreshing } = useMarketSnapshot();
 
   const priceOfItem = useMemo(
     () =>
@@ -118,7 +128,6 @@ export function useInventoryPrices(view: InventoryView) {
     totals,
     priceLabels,
     totalsLabels,
-    generatedUtc,
     refresh,
     isRefreshing,
   };

@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { en } from '../../lib/copy/en';
-import { marketPriceLabels, quoteAge } from './market-labels';
+import { marketPriceLabels, priceFreshness, quoteAge } from './market-labels';
 import type { MarketPriceView } from '@bombfarm/game-art';
+import type { ResolvedPrice } from '@bombfarm/pricing';
 
 const NOW = Date.parse('2026-09-02T12:00:00.000Z');
 const at = (offsetMs: number) => new Date(NOW + offsetMs).toISOString();
@@ -56,5 +57,49 @@ describe('marketPriceLabels', () => {
     expect(labels.title(nativePrice(at(5_000)))).toBe(
       'Lowest listing on Steam, in BRL — quoted just now',
     );
+  });
+});
+
+describe('priceFreshness', () => {
+  const quoted = (quotedUtc: string | null): ResolvedPrice => ({
+    state: quotedUtc == null ? 'no-listing' : 'priced',
+    key: 'iron_sword:2',
+    hashName: 'Iron Sword (Rare)',
+    listingUrl: null,
+    lowestUsd: quotedUtc == null ? null : 3,
+    amount: quotedUtc == null ? null : 3,
+    currency: 'BRL',
+    basis: 'converted',
+    quotedUtc,
+    listings: 1,
+    alternateHashNames: [],
+  });
+
+  it('dates the line by the oldest price it covers, not the newest and not the typical', () => {
+    const mostlyFresh = [
+      quoted(at(-12 * 60_000)),
+      quoted(at(-12 * 60_000)),
+      quoted(at(-397 * 60_000)),
+    ];
+
+    expect(priceFreshness(mostlyFresh, en, NOW)).toBe('oldest price 6 h ago');
+  });
+
+  it('says nothing at all rather than a claim about prices none of which is dated', () => {
+    expect(priceFreshness([], en, NOW)).toBeNull();
+    expect(priceFreshness([quoted(null), quoted('whenever')], en, NOW)).toBeNull();
+  });
+
+  it('will not accept the timestamp of the file the prices arrived in', () => {
+    const publishedUtc = at(-12 * 60_000);
+
+    // What the Account screen used to pass. `tsc` is the assertion here: make this call legal and
+    // the directive becomes unused, which is itself a compile error.
+    // @ts-expect-error a summary is dated by the prices it summarises or not at all
+    priceFreshness(publishedUtc, en, NOW);
+
+    // And the two claims are not interchangeable — the file's age is the shape production was in.
+    expect(quoteAge(publishedUtc, en, NOW)).toBe('12 min ago');
+    expect(priceFreshness([quoted(at(-397 * 60_000))], en, NOW)).toBe('oldest price 6 h ago');
   });
 });
