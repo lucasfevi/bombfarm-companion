@@ -107,8 +107,6 @@ export const en = {
   teamPlanRunSeedBestItemFirst: 'started with the best items first',
   teamPlanRunSeedFallback: 'started from an alternate setup',
   teamPlanHeroDeltaTitle: 'Per-hero changes',
-  teamPlanHeroDeltaNote:
-    'The before/after totals above are combat-effective — team auras are applied and aren’t clamped to the game’s display caps (100% crit chance, 80% cooldown reduction); that’s deliberate, since this uncapped, aura-inclusive view is what the search actually optimizes against. Below, Hero sheet mirrors what the game’s own panel shows (capped); Combat stats keeps that same uncapped view.',
   teamPlanColBefore: 'Before',
   teamPlanColAfter: 'After',
   teamPlanColDelta: 'Δ',
@@ -253,8 +251,6 @@ export const pt: typeof en = {
   teamPlanRunSeedBestItemFirst: 'começou pelos melhores itens',
   teamPlanRunSeedFallback: 'começou por uma montagem alternativa',
   teamPlanHeroDeltaTitle: 'Mudanças por herói',
-  teamPlanHeroDeltaNote:
-    'Os totais antes/depois acima são de combate — as auras de time são aplicadas e não seguem os tetos de exibição do jogo (100% de chance de crítico, 80% de redução de recarga); é proposital, pois essa visão sem teto e com auras é o que a busca realmente otimiza. Abaixo, Ficha do herói reflete o que o painel do jogo mostra (com teto); Stats de combate mantém essa mesma visão sem teto.',
   teamPlanColBefore: 'Antes',
   teamPlanColAfter: 'Depois',
   teamPlanColDelta: 'Δ',

@@ -19,6 +19,14 @@ export const en = {
     'Points already in Luck stay put — this search never moves Luck, in either direction.',
   teamPlanLuckFrozenFarm:
     'Points already in Luck stay put — this search never moves Luck, in either direction, even though Luck raises drop rates and so gold per hour.',
+  /** The per-hero rows are `perHero[].sustained` — DPS — whatever the roster was scored on
+   *  (`waterfall.ts`). Under gold that is a DIFFERENT quantity from the total above it, and the
+   *  rows do not sum to it, so the farm half has to say so rather than claim they are the thing
+   *  the search optimized. */
+  teamPlanHeroDeltaNoteDps:
+    'The before/after totals above are combat-effective — team auras are applied and aren’t clamped to the game’s display caps (100% crit chance, 80% cooldown reduction); that’s deliberate, since this uncapped, aura-inclusive view is what the search actually optimizes against. Below, Hero sheet mirrors what the game’s own panel shows (capped); Combat stats keeps that same uncapped view.',
+  teamPlanHeroDeltaNoteFarm:
+    'These per-hero figures are DPS, not gold per hour — this search scored the squad’s earning rate, which is a rate the whole rotation produces and does not divide per hero, so these will not add up to the total above. They are combat-effective: team auras are applied and aren’t clamped to the game’s display caps (100% crit chance, 80% cooldown reduction). Below, Hero sheet mirrors what the game’s own panel shows (capped); Combat stats keeps that same uncapped view.',
   teamPlanObjectiveLabel: 'Score for',
   teamPlanObjectiveAria: 'What this search scores a roster on',
   teamPlanObjectiveOptionDamage: 'DPS',
@@ -77,6 +85,10 @@ export const pt: typeof en = {
     'Pontos já em Sorte ficam onde estão — esta busca nunca mexe em Sorte, em nenhuma direção.',
   teamPlanLuckFrozenFarm:
     'Pontos já em Sorte ficam onde estão — esta busca nunca mexe em Sorte, em nenhuma direção, mesmo que Sorte aumente as chances de drop e portanto o ouro por hora.',
+  teamPlanHeroDeltaNoteDps:
+    'Os totais de antes/depois acima são de combate efetivo — as auras de time estão aplicadas e não são limitadas aos tetos de exibição do jogo (100% de chance de crítico, 80% de redução de recarga); isso é proposital, pois essa visão sem teto e com auras é o que a busca realmente otimiza. Abaixo, Ficha do herói espelha o que o próprio painel do jogo mostra (com teto); Stats de combate mantém a mesma visão sem teto.',
+  teamPlanHeroDeltaNoteFarm:
+    'Estes números por herói são DPS, não ouro por hora — esta busca pontuou o ganho do esquadrão, que é uma taxa que toda a rotação produz e não se divide por herói, então eles não vão somar o total acima. São de combate efetivo: as auras de time estão aplicadas e não são limitadas aos tetos de exibição do jogo (100% de chance de crítico, 80% de redução de recarga). Abaixo, Ficha do herói espelha o que o próprio painel do jogo mostra (com teto); Stats de combate mantém a mesma visão sem teto.',
   teamPlanObjectiveLabel: 'Pontuar por',
   teamPlanObjectiveAria: 'O que esta busca usa para pontuar um roster',
   teamPlanObjectiveOptionDamage: 'DPS',

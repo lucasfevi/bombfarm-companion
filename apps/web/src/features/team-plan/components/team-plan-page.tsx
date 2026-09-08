@@ -168,7 +168,7 @@ export function TeamPlanPage({
                     copy={objectiveCopy}
                   />
                   <WaterfallPanel t={t} lang={lang} plan={displayPlan} copy={objectiveCopy} />
-                  <HeroDeltaTable t={t} lang={lang} plan={displayPlan} />
+                  <HeroDeltaTable t={t} lang={lang} plan={displayPlan} copy={objectiveCopy} />
                   <PlanDisclosures
                     t={t}
                     lang={lang}

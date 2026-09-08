@@ -192,6 +192,10 @@ const KEYS_REMOVED: readonly string[] = [
   // Split into `…Both`/`…Points`/`…Gear` (in `KEYS_ADDED`): the one string named gear moves and
   // point resets whatever Allowed changes was set to.
   'teamPlanOptimizeAria',
+  // Split into a Dps/Farm pair (in `KEYS_ADDED`): the per-hero rows are DPS whatever the roster
+  // was scored on, so under gold this note claimed figures were "what the search actually
+  // optimizes against" when they are a different quantity from the total above them.
+  'teamPlanHeroDeltaNote',
   'teamPlanSetupSectionBody',
   'teamPlanRunSummaryRegimeHintSaturated',
   'teamPlanTotalGainValue',
@@ -437,6 +441,8 @@ const KEYS_ADDED: readonly string[] = [
   // rates, and so gold per hour, is being held still while gold per hour is optimized.
   'teamPlanLuckFrozenDps',
   'teamPlanLuckFrozenFarm',
+  'teamPlanHeroDeltaNoteDps',
+  'teamPlanHeroDeltaNoteFarm',
   'farmRespecPointsOnly',
   'teamPlanPhaseLabel',
   'teamPlanPhaseAria',

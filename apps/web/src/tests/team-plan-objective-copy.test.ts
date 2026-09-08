@@ -39,12 +39,30 @@ function sourceFiles(dir: string): string[] {
 
 describe('team plan objective copy', () => {
   for (const lang of LANGS) {
+    /**
+     * One field is exempt, and it is the reason the rule exists rather than an escape from it.
+     * The per-hero rows are `perHero[].sustained` — DPS — whatever the roster was scored on, so
+     * under gold this note's whole job is to say that out loud: naming DPS is what stops the
+     * reader adding those figures up and expecting the gold total above them.
+     */
+    const DAMAGE_WORD_EXEMPT = new Set(['heroDeltaNote']);
+
     it(`${lang}: no farm-mode string carries a damage word`, () => {
       for (const [field, text] of bundleEntries(lang, 'farm')) {
+        if (DAMAGE_WORD_EXEMPT.has(field)) continue;
         for (const pattern of DAMAGE_WORDS[lang]) {
           expect(text, `${field}: "${text}" matched ${pattern}`).not.toMatch(pattern);
         }
       }
+    });
+
+    // The exemption is only defensible while the note actually does the job it claims: say the
+    // figures are DPS, and say they are not the gold total. An exemption that stopped being used
+    // for that would be a hole.
+    it(`${lang}: the exempt farm note names DPS and denies it is the scored figure`, () => {
+      const { heroDeltaNote } = teamPlanObjectiveCopy(STRINGS[lang], 'farm');
+      expect(heroDeltaNote).toMatch(DAMAGE_WORDS[lang][0]);
+      expect(heroDeltaNote).toMatch(GOLD_WORDS[lang]);
     });
 
     // Without this the check above passes on an empty or accidentally-neutered dps bundle, which

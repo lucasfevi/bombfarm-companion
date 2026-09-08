@@ -24,6 +24,7 @@ export type TeamPlanObjectiveCopy = {
   forgeSkippedNote: string;
   phaseHintNone: string;
   luckFrozenNote: string;
+  heroDeltaNote: string;
 };
 
 export function teamPlanObjectiveCopy(
@@ -44,6 +45,7 @@ export function teamPlanObjectiveCopy(
         forgeSkippedNote: strings.teamPlanForgeSkippedNoteFarm,
         phaseHintNone: strings.teamPlanPhaseHintNoneFarm,
         luckFrozenNote: strings.teamPlanLuckFrozenFarm,
+        heroDeltaNote: strings.teamPlanHeroDeltaNoteFarm,
       }
     : {
         setupSectionBody: strings.teamPlanSetupSectionBodyDps,
@@ -58,5 +60,6 @@ export function teamPlanObjectiveCopy(
         forgeSkippedNote: strings.teamPlanForgeSkippedNoteDps,
         phaseHintNone: strings.teamPlanPhaseHintNoneDps,
         luckFrozenNote: strings.teamPlanLuckFrozenDps,
+        heroDeltaNote: strings.teamPlanHeroDeltaNoteDps,
       };
 }
