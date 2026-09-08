@@ -6,6 +6,7 @@ export {
   gradePlacementFor,
   gradeRailFor,
   heroPowerTextFor,
+  marketTileReadingFor,
   marketValueReadingFor,
   marketableReadingFor,
   letterDisagreementFor,
@@ -15,6 +16,7 @@ export {
 export type {
   FlagReading,
   HeroMarketPrice,
+  MarketTileReading,
   MarketValueReading,
   GradePlacement,
   GradeRail,

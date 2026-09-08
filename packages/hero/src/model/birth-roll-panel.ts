@@ -259,6 +259,33 @@ export type MarketValueReading =
  * it is not known to be sellable, so it gets no figure either. Absent quote, absent row: a blank
  * value beside a label reads as "worth nothing".
  */
+/**
+ * The one thing the panel says about selling this hero.
+ *
+ * A price and a tradability flag are the same fact at different resolutions, so they share a tile
+ * rather than each taking one: a quote already says the hero is sellable, and a tile labelled
+ * "marketable" whose value is the word "marketable" says nothing twice. The three unpriced answers
+ * stay distinct — cannot be sold, can be sold but nothing is quoted, and nobody has asked the game
+ * yet — because collapsing them would report an unasked hero as account-bound.
+ */
+export type MarketTileReading =
+  | { readonly kind: 'value'; readonly amount: number; readonly currency: string }
+  | { readonly kind: 'sellable' }
+  | { readonly kind: 'notSellable' }
+  | { readonly kind: 'unknown' };
+
+export function marketTileReadingFor(
+  marketable: FlagReading,
+  price: HeroMarketPrice | null | undefined,
+): MarketTileReading {
+  if (marketable === 'unknown') return { kind: 'unknown' };
+  if (marketable === 'no') return { kind: 'notSellable' };
+  const value = marketValueReadingFor(marketable, price);
+  return value.kind === 'value'
+    ? { kind: 'value', amount: value.amount, currency: value.currency }
+    : { kind: 'sellable' };
+}
+
 export function marketValueReadingFor(
   marketable: FlagReading,
   price: HeroMarketPrice | null | undefined,

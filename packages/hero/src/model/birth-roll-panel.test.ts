@@ -9,6 +9,7 @@ import {
   gradePlacementFor,
   gradeRailFor,
   heroPowerTextFor,
+  marketTileReadingFor,
   marketValueReadingFor,
   marketableReadingFor,
   letterDisagreementFor,
@@ -338,5 +339,39 @@ describe('marketValueReadingFor', () => {
       amount: 0,
       currency: 'BRL',
     });
+  });
+});
+
+describe('marketTileReadingFor', () => {
+  const priced = { amount: 1.23, currency: 'BRL' };
+
+  it('prints the quote when there is one', () => {
+    expect(marketTileReadingFor('yes', priced)).toEqual({ kind: 'value', amount: 1.23, currency: 'BRL' });
+  });
+
+  it('says sellable when the hero can be sold but nothing is quoted', () => {
+    expect(marketTileReadingFor('yes', null)).toEqual({ kind: 'sellable' });
+    expect(marketTileReadingFor('yes', { amount: null, currency: 'BRL' })).toEqual({ kind: 'sellable' });
+  });
+
+  it('says not sellable for an account-bound hero, even with a price in hand', () => {
+    // The discriminating case: a rarity lookup would price it, and it must still not be quoted.
+    expect(marketTileReadingFor('no', priced)).toEqual({ kind: 'notSellable' });
+  });
+
+  it('keeps unasked apart from account-bound', () => {
+    expect(marketTileReadingFor('unknown', priced)).toEqual({ kind: 'unknown' });
+    expect(marketTileReadingFor('unknown', priced)).not.toEqual(marketTileReadingFor('no', priced));
+  });
+
+  it('gives four distinct answers, so one tile can carry what two used to', () => {
+    const kinds = [
+      marketTileReadingFor('yes', priced).kind,
+      marketTileReadingFor('yes', null).kind,
+      marketTileReadingFor('no', priced).kind,
+      marketTileReadingFor('unknown', priced).kind,
+    ];
+
+    expect(new Set(kinds).size).toBe(4);
   });
 });

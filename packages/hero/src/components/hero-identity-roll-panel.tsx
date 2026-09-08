@@ -23,13 +23,13 @@ import {
   gradePlacementFor,
   gradeRailFor,
   heroPowerTextFor,
-  marketValueReadingFor,
+  marketTileReadingFor,
   marketableReadingFor,
   letterDisagreementFor,
   nextLetterReadout,
   railTintFor,
   statRollRowsFor,
-  type FlagReading,
+  type MarketTileReading,
   type HeroMarketPrice,
   type PlacementCertainty,
   type RollTint,
@@ -165,7 +165,7 @@ export function HeroIdentityRollPanel({
   const disagreement = letterDisagreementFor(rollQuality);
   const nextLetter = nextLetterReadout(rollQuality, (value) => formatNumber(value, lang, 1));
   const marketable = marketableReadingFor(hero);
-  const marketValue = marketValueReadingFor(marketable, marketPrice);
+  const marketTile = marketTileReadingFor(marketable, marketPrice);
   const rows = statRollRowsFor(
     hero,
     (value) => formatNumber(value, lang, 2),
@@ -174,11 +174,15 @@ export function HeroIdentityRollPanel({
 
   const rarityIndex = RARITIES.indexOf(hero.rarity);
   const starCount = Math.max(0, Math.min(MAX_STARS, Math.round(hero.stars)));
-  const marketableLabel: Record<FlagReading, string> = {
-    yes: t.heroDetailIdentityMarketable,
-    no: t.heroDetailIdentityNotMarketable,
+  const MARKET_TILE_TEXT: Record<Exclude<MarketTileReading['kind'], 'value'>, string> = {
+    sellable: t.heroDetailIdentityMarketable,
+    notSellable: t.heroDetailIdentityNotMarketable,
     unknown: UNKNOWN,
   };
+  const marketTileValue =
+    marketTile.kind === 'value' && formatAmount !== undefined
+      ? formatAmount(marketTile.amount, marketTile.currency)
+      : MARKET_TILE_TEXT[marketTile.kind === 'value' ? 'sellable' : marketTile.kind];
   const placementNoteKey = placement === undefined ? null : PLACEMENT_NOTE[placement.certainty.kind];
 
   const facts: readonly IdentityFact[] = [
@@ -211,20 +215,11 @@ export function HeroIdentityRollPanel({
             value: formatNumber(placement.mean, lang, 1),
           },
         ]),
-    ...(marketValue.kind === 'value' && formatAmount !== undefined
-      ? [
-          {
-            id: 'marketValue',
-            label: t.heroDetailIdentityMarketValue,
-            value: formatAmount(marketValue.amount, marketValue.currency),
-            valueClass: 'text-up',
-          },
-        ]
-      : []),
     {
-      id: 'marketable',
-      label: t.heroDetailIdentityMarketable,
-      value: marketableLabel[marketable],
+      id: 'market',
+      label: t.heroDetailIdentityMarketValue,
+      value: marketTileValue,
+      ...(marketTile.kind === 'value' ? { valueClass: 'text-up' } : {}),
     },
   ];
 
