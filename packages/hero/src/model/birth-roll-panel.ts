@@ -15,6 +15,7 @@ import {
   type RollQualityReport,
 } from '@bombfarm/domain/roll-quality';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import { SHEET_PCT_KEYS } from './breakdown-labels';
 import type { PanelAvailability } from '../core';
 
 /** What a cell prints when the report could place nothing there. Never a zero, which would read
@@ -177,6 +178,17 @@ export type StatRollRow = {
   readonly outOfBand: boolean;
 };
 
+/**
+ * Whether a rolled statistic is a percentage, and so prints with a `%`.
+ *
+ * Reads the set the sheet table and the breakdown already read rather than listing the keys again:
+ * a statistic that gained or lost its unit in one place would otherwise keep the old one here, and
+ * a bare `3,16` beside a banded `2,00–6,00` reads as a count rather than a rate.
+ */
+export function rollValueIsPercent(key: SheetKey): boolean {
+  return SHEET_PCT_KEYS.has(key);
+}
+
 export function statRollRowsFor(
   hero: HeroRecord,
   formatValue: (value: number) => string,
@@ -186,10 +198,16 @@ export function statRollRowsFor(
   return SHEET_PANEL_KEYS.map((key) => {
     const roll = perStat[key];
     const band = roll.band;
+    // One trailing `%` on the band rather than one per end: the range is a single quantity, and
+    // `2,00%–6,00%` reads as two separate readings that happen to sit together.
+    const unit = rollValueIsPercent(key) ? '%' : '';
     return {
       key,
-      value: roll.value === undefined ? NOT_PLACED : formatValue(roll.value),
-      band: band === undefined ? NOT_PLACED : `${formatValue(band.min)}–${formatValue(band.max)}`,
+      value: roll.value === undefined ? NOT_PLACED : `${formatValue(roll.value)}${unit}`,
+      band:
+        band === undefined
+          ? NOT_PLACED
+          : `${formatValue(band.min)}–${formatValue(band.max)}${unit}`,
       position: roll.percentile === undefined ? NOT_PLACED : formatPercent(roll.percentile),
       percentile: roll.percentile,
       outOfBand: roll.outOfBand === true,

@@ -11,6 +11,7 @@ import {
   identityFlagsFor,
   letterDisagreementFor,
   nextLetterReadout,
+  rollValueIsPercent,
   statRollRowsFor,
 } from './birth-roll-panel';
 
@@ -226,6 +227,46 @@ describe('statRollRowsFor', () => {
     expect(attack?.outOfBand).toBe(true);
     expect(attack?.band).toBe('0.0–10.0');
     expect(rows.find((row) => row.key === 'energy')?.percentile).toBe(40);
+  });
+
+  it('prints a percentage sign on the rate statistics and on none of the counts', () => {
+    const rows = statRollRowsFor(hero({ birth: birthAt(40), statRanges: FULL_BAND }), oneDecimal, oneDecimal);
+    const rowFor = (key: (typeof SHEET_PANEL_KEYS)[number]) => rows.find((row) => row.key === key);
+
+    for (const key of SHEET_PANEL_KEYS.filter(rollValueIsPercent)) {
+      expect(rowFor(key)?.value, `${key} rolled value`).toMatch(/%$/);
+      expect(rowFor(key)?.band, `${key} band`).toMatch(/%$/);
+    }
+    for (const key of SHEET_PANEL_KEYS.filter((key) => !rollValueIsPercent(key))) {
+      expect(rowFor(key)?.value, `${key} rolled value`).not.toContain('%');
+      expect(rowFor(key)?.band, `${key} band`).not.toContain('%');
+    }
+  });
+
+  it('non-vacuity: both populations exist, so neither loop above passes by being empty', () => {
+    const rates = SHEET_PANEL_KEYS.filter(rollValueIsPercent);
+    const counts = SHEET_PANEL_KEYS.filter((key) => !rollValueIsPercent(key));
+
+    expect(rates.length).toBeGreaterThan(0);
+    expect(counts.length).toBeGreaterThan(0);
+    // Attack is the one every reader recognises as a count, and crit chance as a rate.
+    expect(counts).toContain('attack');
+    expect(rates).toContain('critChance');
+  });
+
+  it('marks the band once rather than at both ends, so a range reads as one quantity', () => {
+    const rows = statRollRowsFor(hero({ birth: birthAt(40), statRanges: FULL_BAND }), oneDecimal, oneDecimal);
+
+    expect(rows.find((row) => row.key === 'critChance')?.band).toBe('0.0–100.0%');
+  });
+
+  it('leaves an unplaceable statistic as the stated absence, with no stray unit', () => {
+    const rows = statRollRowsFor(hero({}), oneDecimal, oneDecimal);
+
+    for (const row of rows) {
+      expect(row.value).not.toContain('%');
+      expect(row.band).not.toContain('%');
+    }
   });
 });
 
