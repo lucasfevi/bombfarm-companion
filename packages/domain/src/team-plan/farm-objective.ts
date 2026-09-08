@@ -300,6 +300,31 @@ function valueAt(
  * With a pinned phase in `phaseOptions` there is no argmax and no screen: one row, and `phase`
  * comes back `null` only when the squad cannot clear the phase it was told to price.
  */
+/**
+ * The same objective, with its phase argmax swept exhaustively instead of screened.
+ *
+ * `bestFarmPhase`'s screen-and-refine is a heuristic: an opener's own score does not bound its
+ * world's peak, so it can settle a world or two away from the true argmax. That is the right
+ * trade for the SEARCH, which spends thousands of evaluations and only needs a good path — a rare
+ * miss costs it a slightly worse candidate. It is the wrong trade for the handful of evaluations
+ * whose numbers the player actually reads: the reported phase IS the advice, and a miss there is
+ * a recommendation to farm the wrong world.
+ *
+ * Measured over randomized point vectors on the committed captures, the screen disagrees with the
+ * exhaustive argmax on about 2% of squad states, worst case 2.85% of the objective — and in one
+ * of those it named phase 51 where the true peak is 33.
+ *
+ * Applied to the waterfall only. Its evaluations are a fixed handful per run rather than a
+ * fraction of the budget, so sweeping them costs nothing measurable, and running the DECISION and
+ * the REPORT on one basis is what keeps the waterfall's "never below today" guarantee true of the
+ * figures that are printed rather than of a screened comparison behind them.
+ *
+ * A pinned phase makes this a no-op: there is no argmax to sweep.
+ */
+export function exhaustiveFarmObjective(objective: TeamPlanFarmObjective): TeamPlanFarmObjective {
+  return { ...objective, phaseOptions: { ...objective.phaseOptions, exhaustive: true } };
+}
+
 export function evaluateFarmObjective(
   objective: TeamPlanFarmObjective,
   loadoutByHeroId: Readonly<Record<string, Loadout>>,

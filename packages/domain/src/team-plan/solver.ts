@@ -3,7 +3,7 @@ import type { InventoryItem } from '../inventory';
 import { unmodelledAbilitiesInScope } from './ability-extras';
 import { mayMoveGear } from './allowed-changes';
 import { loadoutForScoring } from './evaluate';
-import { buildFarmObjective, isSquadScope } from './farm-objective';
+import { buildFarmObjective, exhaustiveFarmObjective, isSquadScope } from './farm-objective';
 import { buildHeroPlanContexts } from './hero-context';
 import { buildPool } from './pool';
 import { createScoreMemo } from './score';
@@ -234,6 +234,9 @@ export function runTeamPlan(
     }
   }
 
+  // Exhaustive from here down: the search above may screen its phase argmax, but every figure
+  // below is one the player reads. See `exhaustiveFarmObjective`.
+  const reportedObjective = farmObjective ? exhaustiveFarmObjective(farmObjective) : undefined;
   const waterfall = buildWaterfall({
     gearInput: input,
     contexts,
@@ -241,7 +244,7 @@ export function runTeamPlan(
     planAssignment: best.assignment,
     finalPtsByHeroId: best.ptsByHeroId,
     itemById,
-    farmObjective,
+    farmObjective: reportedObjective,
   });
 
   // The waterfall is the decision point (AC-RGO monotonicity fix) — it may reject the search's
@@ -266,7 +269,7 @@ export function runTeamPlan(
     planDps: waterfall.steps[2]?.objective ?? 0,
     forgeFloorApplied: waterfall.forgeFloorApplied,
     allowedChanges,
-    ...scoredPhaseReport(input, farmObjective, waterfall.finalEvaluation),
+    ...scoredPhaseReport(input, reportedObjective, waterfall.finalEvaluation),
     gearBreakdown: waterfall.gearBreakdown,
     requiresFullPlan: waterfall.requiresFullPlan,
     gearDipDps: waterfall.gearDipDps,
