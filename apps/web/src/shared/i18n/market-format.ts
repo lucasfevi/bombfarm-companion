@@ -15,7 +15,15 @@ function normalizeSpaces(text: string): string {
   return text.replace(/[\u00A0\u202F]/g, ' ');
 }
 
-export function formatMoney(amount: number, lang: Lang, currency = 'BRL'): string {
+/**
+ * The currency the published market snapshot quotes in, and so the one every price this app shows
+ * is read in. `@bombfarm/contracts` owns the canonical value, but this app's tsconfig aliases that
+ * package to its source, whose Node-style specifiers the bundler cannot resolve — so the web names
+ * it here rather than dragging that barrel into the browser bundle.
+ */
+export const MARKET_CURRENCY = 'BRL';
+
+export function formatMoney(amount: number, lang: Lang, currency: string = MARKET_CURRENCY): string {
   return normalizeSpaces(
     new Intl.NumberFormat(LOCALES[lang], { style: 'currency', currency }).format(amount),
   );

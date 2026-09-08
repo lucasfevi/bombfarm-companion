@@ -8,7 +8,7 @@ import { colClass } from '@bombfarm/ui/panel-field.recipe';
 import { resolveHeroPrice } from '@bombfarm/pricing';
 import { useAppLang } from '@/shared/context/app-lang';
 import { useMarketSnapshot } from '@/shared/hooks/use-market-snapshot';
-import { formatMoney } from '@/shared/i18n';
+import { MARKET_CURRENCY, formatMoney } from '@/shared/i18n';
 import {
   usePlannerStore,
   selectDraftHeroRecord,
@@ -40,6 +40,7 @@ export function HeroTab() {
     () => (hero == null ? null : resolveHeroPrice(
             { rarity: RARITIES.indexOf(hero.rarity), marketable: hero.marketable ?? false },
             snapshot,
+            MARKET_CURRENCY,
           )),
     [hero, snapshot],
   );

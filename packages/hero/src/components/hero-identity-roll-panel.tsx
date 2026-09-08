@@ -187,9 +187,14 @@ export function HeroIdentityRollPanel({
                 >
                   {hero.name}
                 </p>
-                <p className={cn('mt-1 text-[11px] leading-none text-muted', numericClass)}>
-                  {'★'.repeat(starCount)}
-                </p>
+                {starCount > 0 ? (
+                  <p
+                    className="mt-1 text-[11px] leading-none text-rar-4"
+                    aria-label={formatNumber(starCount, lang, 0)}
+                  >
+                    {'★'.repeat(starCount)}
+                  </p>
+                ) : null}
               </div>
             </div>
 
@@ -226,20 +231,6 @@ export function HeroIdentityRollPanel({
                   id: 'level',
                   label: t.heroDetailIdentityLevel,
                   value: <span className={numericClass}>{formatNumber(hero.level, lang, 0)}</span>,
-                },
-                {
-                  id: 'stars',
-                  label: t.heroDetailIdentityStars,
-                  // Stars are a count the game draws rather than writes, so draw them — except at
-                  // zero, where there is nothing to draw and a bare 0 is the only way to say none.
-                  value:
-                    starCount === 0 ? (
-                      <span className={numericClass}>{formatNumber(0, lang, 0)}</span>
-                    ) : (
-                      <span className="text-rar-4" aria-label={formatNumber(starCount, lang, 0)}>
-                        {'★'.repeat(starCount)}
-                      </span>
-                    ),
                 },
                 {
                   id: 'marketable',

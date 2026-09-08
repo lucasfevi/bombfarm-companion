@@ -16,7 +16,6 @@ export const heroEn = {
   heroDetailIdentityRarity: "Rarity",
   heroDetailIdentityGrade: "Grade",
   heroDetailIdentityLevel: "Level",
-  heroDetailIdentityStars: "Stars",
   heroDetailIdentityMarketable: "Marketable",
   heroDetailIdentityNotMarketable: "Not marketable",
   heroDetailIdentityMarketValue: "Market value",

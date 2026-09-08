@@ -40,6 +40,7 @@ import {
 import { resolveHeroPrice } from '@bombfarm/pricing';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { formatMoney } from '../../lib/format';
+import { HOLDINGS_CURRENCY } from '../../lib/account/account-holdings';
 import { useMarketSnapshot } from '../../lib/market/use-market-snapshot';
 import { abilityGainFor, type AbilityGain } from '@bombfarm/domain/ability-gain';
 import type { AdvisorPipelineResult } from '@bombfarm/domain/advisor-pipeline';
@@ -208,6 +209,7 @@ function HeroesRoster({ model }: { model: RosterModel }) {
       resolveHeroPrice(
         { rarity: RARITIES.indexOf(active.hero.rarity), marketable: active.hero.marketable ?? false },
         snapshot,
+        HOLDINGS_CURRENCY,
       ),
     [active.hero, snapshot],
   );
