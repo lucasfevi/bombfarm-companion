@@ -19,7 +19,7 @@
  * check #206 asks for, and it is why these came back rather than being deleted.
  */
 import { describe, expect, it } from 'vitest';
-import { solveFarmRespec } from '@bombfarm/domain/farm-optimize';
+import { solveFarmRespec, FARM_RESPEC_MIN_GAIN_PCT } from '@bombfarm/domain/farm-optimize';
 import { resolveFarmObjective, bestFarmPhase, type FarmObjectiveScales } from '@bombfarm/domain/farm-optimize-objective';
 import { computeHeroFarmBases, heroFactsFromBasis, squadFactsFromBases, type HeroFarmBasis } from '@bombfarm/domain/farm-rate';
 import { reoptBudget, REOPT_KEYS } from '@bombfarm/domain/points-reopt-core';
@@ -118,7 +118,7 @@ describe('the recommended phase reproduces the measured band', () => {
   // evidence about the optimizer's headroom rather than a number copied off one run, which is
   // why this came back instead of being deleted (issue #206).
   it('gainPct exceeds FARM_RESPEC_MIN_GAIN_PCT and sits inside the recorded band [4, 9]', () => {
-    expect(solved.gainPct).toBeGreaterThan(1); // FARM_RESPEC_MIN_GAIN_PCT
+    expect(solved.gainPct).toBeGreaterThan(FARM_RESPEC_MIN_GAIN_PCT);
     expect(solved.gainPct).toBeGreaterThanOrEqual(4);
     expect(solved.gainPct).toBeLessThanOrEqual(9);
   });

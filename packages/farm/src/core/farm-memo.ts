@@ -17,24 +17,19 @@ import type { FarmInputs } from './farm-inputs';
 import {
   computeFarmProposedRows,
   computeFarmRanking,
-  computeFarmRespecGate,
   farmDepsEqual,
   readFarmDepTuple,
-  readFarmRespecDepTuple,
   runFarmRespecSolve,
   type FarmRankingResult,
-  type FarmRespecGate,
 } from './farm-compute';
 
 export type FarmRankingMemo = {
   /** The board's ranking rows, memoized on {@link readFarmDepTuple}. */
   rows(inputs: FarmInputs): FarmRankingResult;
-  /** Tier 1 — the always-on respec gate, memoized on {@link readFarmRespecDepTuple}. */
-  gate(inputs: FarmInputs): FarmRespecGate;
   /** The rows for an already-solved proposed squad, memoized on the squad plus the only two
    *  other inputs the table reads (`maxPhase`, `farmReturnBonus`). */
   boardRows(inputs: FarmInputs, proposedSquad: SquadFarmFacts): FarmRankingResult;
-  /** Tier 2 — counted, never memoized. Every call solves again. */
+  /** The on-demand solve — counted, never memoized. Every call solves again. */
   solve(inputs: FarmInputs): FarmRespecResult;
   /** Drops all three caches, leaving every counter alone. */
   reset(): void;
@@ -42,8 +37,6 @@ export type FarmRankingMemo = {
   /** Zeroes the rows counter AND drops all three caches — a counter reset that left a warm
    *  cache behind would report zero computes for a board that never recomputed. */
   resetRowsComputeCount(): void;
-  gateComputeCount(): number;
-  resetGateComputeCount(): void;
   boardRowsComputeCount(): number;
   resetBoardRowsComputeCount(): void;
   solveCount(): number;
@@ -54,17 +47,14 @@ type Entry<T> = { deps: readonly unknown[]; value: T };
 
 export function createFarmRankingMemo(): FarmRankingMemo {
   let rowsCache: Entry<FarmRankingResult> | null = null;
-  let gateCache: Entry<FarmRespecGate> | null = null;
   let boardRowsCache: Entry<FarmRankingResult> | null = null;
 
   let rowsComputes = 0;
-  let gateComputes = 0;
   let boardRowsComputes = 0;
   let solves = 0;
 
   function reset(): void {
     rowsCache = null;
-    gateCache = null;
     boardRowsCache = null;
   }
 
@@ -77,17 +67,6 @@ export function createFarmRankingMemo(): FarmRankingMemo {
       rowsComputes += 1;
       const value = computeFarmRanking(inputs);
       rowsCache = { deps, value };
-      return value;
-    },
-
-    gate(inputs) {
-      const deps = readFarmRespecDepTuple(inputs);
-      if (gateCache && farmDepsEqual(gateCache.deps, deps)) {
-        return gateCache.value;
-      }
-      gateComputes += 1;
-      const value = computeFarmRespecGate(inputs);
-      gateCache = { deps, value };
       return value;
     },
 
@@ -113,12 +92,6 @@ export function createFarmRankingMemo(): FarmRankingMemo {
     resetRowsComputeCount() {
       rowsComputes = 0;
       reset();
-    },
-
-    gateComputeCount: () => gateComputes,
-    resetGateComputeCount() {
-      gateComputes = 0;
-      gateCache = null;
     },
 
     boardRowsComputeCount: () => boardRowsComputes,

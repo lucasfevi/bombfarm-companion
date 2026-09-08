@@ -72,6 +72,9 @@ function seedFromCapture(capturePath: string, lang: 'en' | 'pt'): SeededState {
       },
       slots: account.slots ?? 6,
       forgeFloor: 10,
+      // The gold objective refuses to plan without a phase ceiling, and it is the page's default,
+      // so a seed without this one field would put every team-plan spec on the blocked path.
+      maxPhase: account.maxPhase ?? null,
     },
     inventory: { version: 1, importedAt: Date.now(), items: inventory },
     lang,

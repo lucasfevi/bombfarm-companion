@@ -189,16 +189,17 @@ function afterPaint(): Promise<void> {
   });
 }
 
-describe('the respec advisor — a cheap gate with the board, an expensive solve on demand', () => {
-  it('the gate is settled with the board, so nothing about the advisor is derived while painting', () => {
+describe('the respec advisor — nothing on the paint path, an expensive solve on demand', () => {
+  it('a settled board carries no advisor product at all — the screen paints without one', () => {
     const { store, open } = createFarmSnapshotStore();
     const opened = viewAtLevel(10);
     open(opened.view, opened.key, CONTROLS);
 
     const state = store.getState();
     if (state.status !== 'ready') throw new Error('expected ready');
-    expect(state.gate).toBeDefined();
-    expect(state.gate.reason).toBeNull();
+    expect(Object.keys(state).sort()).toEqual(
+      ['board', 'capturedAt', 'controls', 'inputs', 'sourceKey', 'status'].sort(),
+    );
   });
 
   it('opening the screen never solves — the advisor is idle until it is asked', () => {

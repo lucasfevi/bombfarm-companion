@@ -2,26 +2,27 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { emptyLoadout } from '@bombfarm/domain/gear';
 import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
-import { gateFarmRespec, type FarmRespecResult } from '@bombfarm/domain/farm-optimize';
+import {
+  solveFarmRespec,
+  FARM_RESPEC_MIN_GAIN_PCT,
+  type FarmRespecResult,
+} from '@bombfarm/domain/farm-optimize';
 import { normalizeHero, type AccountShared } from '@/shared/lib/storage';
 import {
-  computeFarmRespecShouldSurface,
+  isFarmRespecWorthMaking,
   getFarmRankingComputeCount,
-  getFarmRespecGateComputeCount,
   getFarmRespecRowsComputeCount,
   getFarmRespecSolveCount,
   readFarmDepTuple,
   readFarmRespecDepTuple,
   resetFarmRankingCache,
   resetFarmRankingComputeCount,
-  resetFarmRespecGateComputeCount,
   resetFarmRespecRowsComputeCount,
   resetFarmRespecSolveCount,
   runFarmRespecSolve,
   selectFarmBoardRows,
   selectFarmPoolEntries,
   selectFarmRankingRows,
-  selectFarmRespecGate,
   selectFarmRespecIsStale,
   selectFarmRespecStatus,
   selectFarmRespecView,
@@ -61,7 +62,6 @@ function farmHero(id: string, overrides: Partial<{ battleAllowed: boolean }> = {
  *  untouched. */
 function resetAllFarmCaches() {
   resetFarmRankingComputeCount();
-  resetFarmRespecGateComputeCount();
   resetFarmRespecSolveCount();
   resetFarmRespecRowsComputeCount();
 }
@@ -70,16 +70,14 @@ describe('selectFarmRankingRows', () => {
   beforeEach(() => {
     resetPlannerStoreForTests();
     resetFarmRankingComputeCount();
-    resetFarmRespecGateComputeCount();
-    resetFarmRespecSolveCount();
+      resetFarmRespecSolveCount();
     resetFarmRespecRowsComputeCount();
   });
 
   afterEach(() => {
     resetPlannerStoreForTests();
     resetFarmRankingComputeCount();
-    resetFarmRespecGateComputeCount();
-    resetFarmRespecSolveCount();
+      resetFarmRespecSolveCount();
     resetFarmRespecRowsComputeCount();
   });
 
@@ -465,7 +463,7 @@ describe('readFarmRespecDepTuple', () => {
   });
 });
 
-describe('selectFarmRespecGate (Tier 1)', () => {
+describe('the solve is reachable from any roster state — there is no gate in front of it', () => {
   beforeEach(() => {
     resetPlannerStoreForTests();
     resetAllFarmCaches();
@@ -473,64 +471,47 @@ describe('selectFarmRespecGate (Tier 1)', () => {
 
   afterEach(() => {
     resetPlannerStoreForTests();
-    resetAllFarmCaches();
   });
 
-  it('empty roster short-circuits to no-roster WITHOUT calling gateFarmRespec', () => {
-    // gateFarmRespec's return type always populates `result`; a null result here is the proof
-    // the domain call never happened, not merely that the reason field was set.
-    const gate = selectFarmRespecGate(usePlannerStore.getState());
-    expect(gate.reason).toBe('no-roster');
-    expect(gate.result).toBeNull();
-    expect(gate.shouldSurface).toBe(false);
+  // These three used to assert that a cheap pre-check REFUSED to run on a degenerate roster.
+  // There is no pre-check any more, so what is asserted instead is that the solve itself answers
+  // for each of those rosters with a named outcome rather than throwing or inventing a
+  // recommendation. Optimize is always pressable, so every one of these is reachable.
+  it('an empty roster solves to the emptyPool outcome', () => {
+    const result = runFarmRespecSolve(usePlannerStore.getState());
+    expect(result.outcome).toBe('emptyPool');
+    expect(result.gainPct).toBe(0);
   });
 
-  it('every hero disabled short-circuits to no-heroes-enabled WITHOUT calling gateFarmRespec', () => {
+  it('every hero disabled solves to the emptyPool outcome', () => {
     usePlannerStore.getState().hydrateRoster([farmHero('a', { battleAllowed: false })], null);
-    const gate = selectFarmRespecGate(usePlannerStore.getState());
-    expect(gate.reason).toBe('no-heroes-enabled');
-    expect(gate.result).toBeNull();
-    expect(gate.shouldSurface).toBe(false);
+    const result = runFarmRespecSolve(usePlannerStore.getState());
+    expect(result.outcome).toBe('emptyPool');
   });
 
-  it('a farmPoolOverrides override of false on an otherwise-allowed hero also short-circuits to no-heroes-enabled', () => {
+  it('a farmPoolOverrides override of false on an otherwise-allowed hero also solves to emptyPool', () => {
     usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
     usePlannerStore.getState().setFarmHeroEnabled('a', false);
-    const gate = selectFarmRespecGate(usePlannerStore.getState());
-    expect(gate.reason).toBe('no-heroes-enabled');
+    const result = runFarmRespecSolve(usePlannerStore.getState());
+    expect(result.outcome).toBe('emptyPool');
   });
 
-  it('N invocations with unchanged deps -> 1 compute, same object identity', () => {
-    usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
-    const a = selectFarmRespecGate(usePlannerStore.getState());
-    const b = selectFarmRespecGate(usePlannerStore.getState());
-    const c = selectFarmRespecGate(usePlannerStore.getState());
-    expect(getFarmRespecGateComputeCount()).toBe(1);
-    expect(a).toBe(b);
-    expect(b).toBe(c);
-  });
-
-  it('resetFarmRespecGateComputeCount forces a recompute even with structurally-equal deps', () => {
-    usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
-    selectFarmRespecGate(usePlannerStore.getState());
-    resetFarmRespecGateComputeCount();
-    selectFarmRespecGate(usePlannerStore.getState());
-    expect(getFarmRespecGateComputeCount()).toBe(1);
-  });
-
-  it('(structural) shouldSurface is gainPct alone — paybackHours never gates, at any value including null', () => {
+  it('(structural) worth-making is gainPct alone — paybackHours never withholds, at any value including null', () => {
     expect(
-      computeFarmRespecShouldSurface({ gainPct: 5, paybackHours: null } as FarmRespecResult),
+      isFarmRespecWorthMaking({ gainPct: FARM_RESPEC_MIN_GAIN_PCT, paybackHours: null } as FarmRespecResult),
     ).toBe(true);
     expect(
-      computeFarmRespecShouldSurface({ gainPct: 0.9, paybackHours: 0.1 } as FarmRespecResult),
+      isFarmRespecWorthMaking({
+        gainPct: FARM_RESPEC_MIN_GAIN_PCT - 0.1,
+        paybackHours: 0.1,
+      } as FarmRespecResult),
     ).toBe(false);
   });
 
   it('(structural) a hand-forced out-of-range blend weight clamps to 1 without throwing', () => {
     let result: FarmRespecResult | undefined;
     expect(() => {
-      result = gateFarmRespec({
+      result = solveFarmRespec({
         heroes: [farmHero('a')],
         account: MINIMAL_ACCOUNT,
         enabledHeroIds: ['a'],
@@ -543,18 +524,20 @@ describe('selectFarmRespecGate (Tier 1)', () => {
     expect(result?.objective.kind).toBe('gold');
   });
 
-  describe('every one of the 15 tuple members drives a gate recompute, and NEVER a solve', () => {
+  // The load-bearing half of the check this replaced. Every dependency change must be free of
+  // advisor work: the board re-ranks, and NOTHING solves until the button is pressed.
+  describe('every one of the 15 tuple members re-ranks the board, and NEVER solves', () => {
     beforeEach(() => {
       usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
-      selectFarmRespecGate(usePlannerStore.getState());
+      selectFarmRankingRows(usePlannerStore.getState());
     });
 
     for (const { name, mutate } of respecTupleMutators()) {
       it(name, () => {
-        const gateBefore = getFarmRespecGateComputeCount();
+        const rowsBefore = getFarmRankingComputeCount();
         mutate();
-        selectFarmRespecGate(usePlannerStore.getState());
-        expect(getFarmRespecGateComputeCount()).toBe(gateBefore + 1);
+        selectFarmRankingRows(usePlannerStore.getState());
+        expect(getFarmRankingComputeCount()).toBe(rowsBefore + 1);
         expect(getFarmRespecSolveCount()).toBe(0);
       });
     }
@@ -572,11 +555,13 @@ describe('runFarmRespecSolve (Tier 2 — a plain function, not a selector)', () 
     resetAllFarmCaches();
   });
 
-  it('increments the solve counter and returns a full-tier result', () => {
+  it('increments the solve counter and returns a searched result', () => {
     usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
     const result = runFarmRespecSolve(usePlannerStore.getState());
     expect(getFarmRespecSolveCount()).toBe(1);
-    expect(result.tier).toBe('full');
+    // Non-vacuity: the search RAN. A short-circuited terminal result spends no evaluations.
+    expect(result.evaluations).toBeGreaterThan(0);
+    expect(result.outcome).toBe('improved');
   });
 
   it('has no memo of its own — every call solves again; idempotency is the slice action\'s job', () => {
@@ -710,17 +695,14 @@ describe('resetFarmRankingCache clears all three caches', () => {
     resetAllFarmCaches();
   });
 
-  it('forces a recompute of both the ranking rows and the Tier 1 gate', () => {
+  it('forces a recompute of the ranking rows', () => {
     usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
     selectFarmRankingRows(usePlannerStore.getState());
-    selectFarmRespecGate(usePlannerStore.getState());
 
     resetFarmRankingCache();
 
     selectFarmRankingRows(usePlannerStore.getState());
-    selectFarmRespecGate(usePlannerStore.getState());
     expect(getFarmRankingComputeCount()).toBe(2);
-    expect(getFarmRespecGateComputeCount()).toBe(2);
   });
 
   it('also forces a recompute of the board-rows (re-rank) cache', () => {

@@ -6,6 +6,8 @@ import { mutedClass, panelHClass, panelTitleClass } from '@bombfarm/ui/panel-fie
 import type { Strings, Lang } from '@/shared/i18n';
 import { parseEmphasis, sub } from '@/shared/i18n';
 import { formatNumber } from '@/shared/lib/format-number';
+import { formatPhaseLabel } from '@/shared/lib/phase-label';
+import type { TeamPlanObjectiveCopy } from '@/features/team-plan/model/objective-copy';
 
 function formatElapsedSeconds(elapsedMs: number, lang: Lang): string {
   return formatNumber(elapsedMs / 1000, lang, 1);
@@ -26,6 +28,26 @@ function seedStartLabel(strings: Strings, seedUsed: string): string {
   }
 }
 
+/**
+ * What the plan was scored against, in one sentence: the phase, and where that phase came from.
+ * The automatic case has to say so — a figure the player did not ask for at a phase they did not
+ * pick reads as a claim about their own account otherwise.
+ */
+function scoredPhaseHint(strings: Strings, lang: Lang, plan: TeamPlan): string | null {
+  if (plan.scoredPhase == null) {
+    return plan.scoredPhaseSource === 'searched' ? strings.teamPlanScoredPhaseNoneFeasible : null;
+  }
+  const phase = formatPhaseLabel(plan.scoredPhase, lang);
+  if (plan.scoredPhaseInfeasible) return sub(strings.teamPlanScoredPhaseUnreachable, { phase });
+  if (plan.scoredPhaseSource === 'searched') {
+    return sub(strings.teamPlanScoredPhaseSearched, { phase });
+  }
+  if (plan.scoredPhaseSource === 'account') {
+    return sub(strings.teamPlanScoredPhaseAccount, { phase });
+  }
+  return sub(strings.teamPlanScoredPhaseChosen, { phase });
+}
+
 function emphasizedLine(text: string) {
   return parseEmphasis(text).map((part, index) =>
     part.kind === 'em' ? (
@@ -43,17 +65,21 @@ export function TeamPlanRunSummary({
   lang,
   plan,
   ranOnMainThread,
+  copy,
 }: {
   t: Strings;
   lang: Lang;
   plan: TeamPlan;
   ranOnMainThread: boolean;
+  copy: TeamPlanObjectiveCopy;
 }) {
   const saturated = plan.regime === 'saturated';
   const regimeLabel = saturated ? t.teamPlanRegimeSaturated : t.teamPlanRegimeUnderSaturated;
   const regimeHint = saturated
-    ? t.teamPlanRunSummaryRegimeHintSaturated
+    ? copy.regimeHintSaturated
     : t.teamPlanRunSummaryRegimeHintUnder;
+
+  const phaseHint = scoredPhaseHint(t, lang, plan);
 
   const metaLine = sub(t.teamPlanRunMetaFooter, {
     seconds: formatElapsedSeconds(plan.run.elapsedMs, lang),
@@ -68,6 +94,11 @@ export function TeamPlanRunSummary({
         <h2 className={panelTitleClass}>{t.teamPlanRunSummaryTitle}</h2>
       </div>
       <div className="space-y-3 text-[13px]" role="status">
+        {phaseHint ? (
+          <p className={`m-0 ${plan.scoredPhaseInfeasible ? 'text-warn' : 'text-ink'}`}>
+            <strong>{t.teamPlanRunSummaryScoredPhase}:</strong> {phaseHint}
+          </p>
+        ) : null}
         <div>
           <p className="m-0 text-ink">
             <strong>{t.teamPlanRunSummaryFieldStatus}:</strong> {regimeLabel}

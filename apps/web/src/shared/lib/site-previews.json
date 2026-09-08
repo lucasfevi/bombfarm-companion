@@ -13,12 +13,12 @@
     "cardHeadline": ["Every phase, ranked by", "what it pays you."],
     "cardChips": ["Gold/hr", "XP/hr", "Drop odds", "Clear time"]
   },
-  "teamPlan": {
-    "eyebrow": "Team plan",
-    "title": "Team plan — Bomb Farm Companion",
-    "description": "Plan gear moves, forge work and point resets across your whole Bomb Farm roster at once — scored for combined DPS, not one hero at a time.",
+  "optimizer": {
+    "eyebrow": "Optimizer",
+    "title": "Optimizer — Bomb Farm Companion",
+    "description": "Plan gear moves, forge work and point resets across your whole Bomb Farm roster at once — scored for gold per hour or for combined DPS, not one hero at a time.",
     "cardHeadline": ["One plan for the", "whole roster."],
-    "cardChips": ["Gear moves", "Forge work", "Point resets", "Combined DPS"]
+    "cardChips": ["Gear moves", "Forge work", "Point resets", "Gold/hr or DPS"]
   },
   "inventory": {
     "eyebrow": "Inventory",

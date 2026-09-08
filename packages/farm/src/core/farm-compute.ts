@@ -21,7 +21,6 @@ import {
 // respecCostGold is not imported either: every cost this surface renders is already a field on a
 // FarmRespecResult/FarmRespecHeroEntry.
 import {
-  gateFarmRespec,
   solveFarmRespec,
   FARM_RESPEC_MIN_GAIN_PCT,
   type FarmRespecResult,
@@ -199,14 +198,13 @@ export function computeFarmProposedRows(
 }
 
 // -------------------------------------------------------------------------------------------
-// Farm Respec Advisor — Tier 1 gate and Tier 2 on-demand solve.
+// Farm Respec Advisor — the on-demand solve.
 // -------------------------------------------------------------------------------------------
 
 /**
- * The gate/solve dependency tuple. With the objective picker gone, the Respec Advisor's
- * recommendation depends on nothing the ranking board doesn't already — this is currently
- * identical to {@link readFarmDepTuple}, kept as its own named entry point so the Tier 1/Tier 2
- * call sites read "the respec deps", not a re-derivation of the ranking ones.
+ * The solve's dependency tuple. The recommendation depends on nothing the ranking board doesn't
+ * already — this is currently identical to {@link readFarmDepTuple}, kept as its own named entry
+ * point so the call sites read "the respec deps", not a re-derivation of the ranking ones.
  */
 export function readFarmRespecDepTuple(inputs: FarmInputs) {
   return readFarmDepTuple(inputs);
@@ -222,51 +220,24 @@ function buildFarmRespecInput(inputs: FarmInputs, enabledHeroIds: readonly strin
   };
 }
 
-export type FarmRespecGateReason = 'no-roster' | 'no-heroes-enabled' | 'gate-failed';
-
-export type FarmRespecGate = {
-  /** null when `reason` is set. */
-  result: FarmRespecResult | null;
-  reason: FarmRespecGateReason | null;
-  /** `result != null && result.gainPct >= FARM_RESPEC_MIN_GAIN_PCT`. `paybackHours` is NOT read
-   *  here, at any value including null — gain is the only gate. */
-  shouldSurface: boolean;
-};
-
-/** The one expression `shouldSurface` is built from. `paybackHours` is deliberately never read
- *  here, at any value including `null` — gain alone gates the recommendation; payback is
- *  reported, never used to suppress it. Exported so this exact formula, not a re-derivation of
- *  it, is what the visibility test drives. */
-export function computeFarmRespecShouldSurface(result: FarmRespecResult): boolean {
+/**
+ * The one expression the "is this respec worth making" decision is built from. `paybackHours` is
+ * deliberately never read here, at any value including `null` — gain alone decides, and payback
+ * is reported beside the recommendation, never used to withhold it. Exported so this exact
+ * formula, not a re-derivation of it, is what the panel and its tests both drive.
+ */
+export function isFarmRespecWorthMaking(result: FarmRespecResult): boolean {
   return result.gainPct >= FARM_RESPEC_MIN_GAIN_PCT;
 }
 
-export function computeFarmRespecGate(inputs: FarmInputs): FarmRespecGate {
-  // The empty-pool short-circuits are repeated BEFORE the domain call, never delegated —
-  // mirrors computeFarmRanking above, and saves a pipeline call the gate would otherwise spend
-  // reporting the same named-nothing answer.
-  if (inputs.heroes.length === 0) {
-    return { result: null, reason: 'no-roster', shouldSurface: false };
-  }
-  const enabledHeroIds = resolveEnabledHeroIds(inputs);
-  if (enabledHeroIds.length === 0) {
-    return { result: null, reason: 'no-heroes-enabled', shouldSurface: false };
-  }
-  try {
-    const result = gateFarmRespec(buildFarmRespecInput(inputs, enabledHeroIds));
-    return { result, reason: null, shouldSurface: computeFarmRespecShouldSurface(result) };
-  } catch {
-    // Caught at THIS boundary only. The gate never throws by contract; this renders a named
-    // degraded state instead of a silent absence.
-    return { result: null, reason: 'gate-failed', shouldSurface: false };
-  }
-}
+/** The floor {@link isFarmRespecWorthMaking} applies, re-exported so the rest of the package can
+ *  name it in copy without a second runtime import of the domain solver (guard (g)). */
+export const FARM_RESPEC_WORTH_MAKING_PCT = FARM_RESPEC_MIN_GAIN_PCT;
 
 /**
- * Tier 2 — the on-demand full solve. A PLAIN FUNCTION: not a selector, not memoized, and never
- * called during render. Its one caller must be an explicit user event (the Optimize button).
- * Calling this anywhere on the dependency-driven render path is the exact hazard the split
- * between this file's two tiers exists to prevent.
+ * The full solve. A PLAIN FUNCTION: not a selector, not memoized, and never called during
+ * render. Its one caller must be an explicit user event (the Optimize button) — it costs
+ * seconds on a large roster, and nothing on the dependency-driven render path may reach it.
  */
 export function runFarmRespecSolve(inputs: FarmInputs): FarmRespecResult {
   const enabledHeroIds = resolveEnabledHeroIds(inputs);

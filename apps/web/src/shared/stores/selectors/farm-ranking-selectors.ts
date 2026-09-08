@@ -25,17 +25,16 @@
  */
 import {
   buildAccount as buildFarmAccount,
-  computeFarmRespecShouldSurface,
   createFarmRankingMemo,
   deriveFarmPoolEntries,
   farmDepsEqual,
+  isFarmRespecWorthMaking,
   readFarmDepTuple as readFarmInputsDepTuple,
   readFarmRespecDepTuple as readFarmInputsRespecDepTuple,
   resolveEnabledHeroIds as resolveEnabledHeroIdsFor,
   type FarmInputs,
   type FarmPoolEntry,
   type FarmRankingResult,
-  type FarmRespecGate,
 } from '@bombfarm/farm/core';
 import type { FarmRespecResult } from '@bombfarm/domain/farm-optimize';
 import type { AccountShared } from '@/shared/lib/storage';
@@ -43,13 +42,11 @@ import type { PlannerStore } from '@/shared/stores/planner-store';
 import type { FarmRespecProposal, FarmRespecStatus } from '@/shared/stores/slices/phases-slice';
 import { selectEffectiveTeamBuffs } from '@/shared/stores/selectors/account-selectors';
 
-export { computeFarmRespecShouldSurface, deriveFarmPoolEntries };
+export { deriveFarmPoolEntries, isFarmRespecWorthMaking };
 export type {
   FarmPoolEntry,
   FarmRankingReason,
   FarmRankingResult,
-  FarmRespecGate,
-  FarmRespecGateReason,
 } from '@bombfarm/farm/core';
 
 /** One instance for this app. The desktop app owns its own — no cache, and no compute counter,
@@ -122,7 +119,7 @@ export function selectFarmRankingRows(state: PlannerStore): FarmRankingResult {
 }
 
 // -------------------------------------------------------------------------------------------
-// Farm Respec Advisor — Tier 1 gate, Tier 2 on-demand solve, staleness, and the board's
+// Farm Respec Advisor — the on-demand solve, staleness, and the board's
 // re-rank row source.
 // -------------------------------------------------------------------------------------------
 
@@ -132,23 +129,11 @@ export function readFarmRespecDepTuple(state: PlannerStore) {
   return readFarmInputsRespecDepTuple(toFarmInputs(state));
 }
 
-export function getFarmRespecGateComputeCount(): number {
-  return memo.gateComputeCount();
-}
-
-export function resetFarmRespecGateComputeCount(): void {
-  memo.resetGateComputeCount();
-}
-
 /**
  * Tier 1. Same shape as {@link selectFarmRankingRows}, over the same
  * {@link readFarmDepTuple}-derived tuple. Returns the SAME object identity on a cache hit and
  * must be subscribed to WITHOUT `useShallow`, for the identical reason.
  */
-export function selectFarmRespecGate(state: PlannerStore): FarmRespecGate {
-  return memo.gate(toFarmInputs(state));
-}
-
 export function getFarmRespecSolveCount(): number {
   return memo.solveCount();
 }

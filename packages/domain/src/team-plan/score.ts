@@ -63,13 +63,25 @@ function auraSignature(auras: Record<TeamBuffId, number>): string {
   return out;
 }
 
+/**
+ * The `FarmContext` belongs in the key because a run can hold TWO of them: the DPS objective
+ * scores against the account's own phase and mitigation, and the farm objective scores against
+ * phase 1 / mitigation 0. Leave it out and a roster whose aura vector happens to be all-zero —
+ * which it is whenever no scoped hero carries a team-buff ability — collides across the two, and
+ * one pass is served the other's sheet.
+ */
+function farmSignature(farm: FarmContext): string {
+  return `${farm.houseIdx}:${farm.houseLevel}:${farm.phase}:${farm.mitigationPct}:${farm.cycleSecs ?? ''}:${farm.cycleSecsHouseIdx ?? ''}:${farm.cycleSecsLevel ?? ''}`;
+}
+
 function memoKey(
   heroId: string,
   loadout: Loadout,
   pts: PointAlloc,
   auras: Record<TeamBuffId, number>,
+  farm: FarmContext,
 ): string {
-  return `${heroId}|${loadoutSignature(loadout)}|${ptsSignature(pts)}|${auraSignature(auras)}`;
+  return `${heroId}|${loadoutSignature(loadout)}|${ptsSignature(pts)}|${auraSignature(auras)}|${farmSignature(farm)}`;
 }
 
 export function createScoreMemo(maxEntries = TEAM_PLAN_MAX_SCORE_MEMO_ENTRIES): ScoreMemo {
@@ -84,7 +96,7 @@ export function scoreHeroLoadout(
   farm: FarmContext,
   memo?: ScoreMemo,
 ): HeroScore {
-  const key = memoKey(ctx.heroId, loadout, pts, auras);
+  const key = memoKey(ctx.heroId, loadout, pts, auras, farm);
   if (memo) {
     const hit = memo.entries.get(key);
     if (hit) return hit;

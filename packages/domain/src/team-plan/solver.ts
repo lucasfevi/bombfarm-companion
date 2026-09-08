@@ -1,6 +1,9 @@
 import type { Loadout } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import { unmodelledAbilitiesInScope } from './ability-extras';
+import { mayMoveGear } from './allowed-changes';
+import { loadoutForScoring } from './evaluate';
+import { buildFarmObjective, exhaustiveFarmObjective, isSquadScope } from './farm-objective';
 import { buildHeroPlanContexts } from './hero-context';
 import { buildPool } from './pool';
 import { createScoreMemo } from './score';
@@ -15,7 +18,15 @@ import {
 } from './solver-search';
 import { loadoutsFromAssignment } from './solver-assignment';
 import { buildWaterfall } from './waterfall';
-import type { TeamPlan, TeamPlanInput, TeamPlanResult, HeroPlanContext } from './types';
+import type {
+  RosterEvaluation,
+  TeamPlan,
+  TeamPlanAllowedChanges,
+  TeamPlanFarmObjective,
+  TeamPlanInput,
+  TeamPlanResult,
+  HeroPlanContext,
+} from './types';
 
 export {
   TEAM_PLAN_BEAM_WIDTH,
@@ -66,16 +77,89 @@ function evaluateCurrentAssignment(
   assignment: ReturnType<typeof buildInitialAssignment>,
   itemById: ReadonlyMap<string, InventoryItem>,
   budget: SolverBudget,
+  farmObjective?: TeamPlanFarmObjective,
 ) {
   const ptsByHeroId = currentPtsByHeroId(input);
-  return evaluateAssignment(assignment, contexts, ptsByHeroId, input, itemById, budget);
+  return evaluateAssignment(assignment, contexts, ptsByHeroId, input, itemById, budget, farmObjective);
+}
+
+/**
+ * The farm objective's once-per-run setup, or `undefined` in DPS mode.
+ *
+ * Built over the whole SQUAD rather than the search's optimize scope — a hero the player left
+ * alone still farms — while the search below still only moves gear the pool gives it.
+ *
+ * Seeded from the roster AS IT STANDS — the current loadout at forge floor 0, not the baseline
+ * assignment — because the team auras it freezes are priced from every hero's uptime today. That
+ * is the same starting point the farm estimator reads off the save, which is what lets the two
+ * agree exactly before the search moves anything.
+ */
+function farmObjectiveFor(
+  input: TeamPlanInput,
+  contexts: HeroPlanContext[],
+): TeamPlanFarmObjective | undefined {
+  if (input.objective !== 'farm') return undefined;
+  const squadContexts = contexts.filter((ctx) => isSquadScope(ctx.scope));
+  if (squadContexts.length === 0) return undefined;
+  const loadoutByHeroId: Record<string, Loadout> = {};
+  for (const hero of input.heroes) loadoutByHeroId[hero.heroId] = loadoutForScoring(hero.loadout, 0);
+  return buildFarmObjective(squadContexts, input.account, loadoutByHeroId, input.targetPhase);
+}
+
+/**
+ * Which phase the plan's figures are about, for the reader.
+ *
+ * The chosen phase is reported as chosen even when the squad cannot clear it — the answer to
+ * "what would I earn at phase 400" is allowed to be "nothing", and silently reporting some other
+ * phase instead would be a different plan wearing this one's number.
+ */
+function scoredPhaseReport(
+  input: TeamPlanInput,
+  farmObjective: TeamPlanFarmObjective | undefined,
+  finalEvaluation: RosterEvaluation,
+): Pick<TeamPlan, 'scoredPhase' | 'scoredPhaseSource' | 'scoredPhaseInfeasible'> {
+  const chosen = input.targetPhase;
+  if (chosen != null && Number.isFinite(chosen)) {
+    return {
+      scoredPhase: Math.round(chosen),
+      scoredPhaseSource: 'chosen',
+      scoredPhaseInfeasible: farmObjective !== undefined && finalEvaluation.farmPhase == null,
+    };
+  }
+  if (farmObjective) {
+    return {
+      scoredPhase: finalEvaluation.farmPhase ?? null,
+      scoredPhaseSource: 'searched',
+      scoredPhaseInfeasible: false,
+    };
+  }
+  return {
+    scoredPhase: input.account.phase,
+    scoredPhaseSource: 'account',
+    scoredPhaseInfeasible: false,
+  };
+}
+
+/**
+ * The input the whole run below reads, with the forge floor zeroed when gear is off the table.
+ *
+ * Zeroing here rather than at each of the four places a floor is read is what makes "no gear
+ * work" a property of the run instead of a rule every consumer has to remember: the pool, every
+ * evaluation, `chooseGearCandidate`'s candidate list and `buildForgeList` all take their floor
+ * from this one field, and at 0 each of them independently degenerates to the no-forge case.
+ */
+function planInputFor(input: TeamPlanInput, allowedChanges: TeamPlanAllowedChanges): TeamPlanInput {
+  const forgeFloor = mayMoveGear(allowedChanges) ? input.forgeFloor : 0;
+  return { ...input, allowedChanges, forgeFloor };
 }
 
 export function runTeamPlan(
-  input: TeamPlanInput,
+  rawInput: TeamPlanInput,
   options?: { maxEvaluations?: number; beamWidth?: number },
 ): TeamPlanResult {
   const started = performance.now();
+  const allowedChanges: TeamPlanAllowedChanges = rawInput.allowedChanges ?? 'both';
+  const input = planInputFor(rawInput, allowedChanges);
   const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
   if (built.blocked) {
     return { blocked: true, heroNames: built.heroNames };
@@ -106,20 +190,21 @@ export function runTeamPlan(
     beamWidth: options?.beamWidth ?? TEAM_PLAN_BEAM_WIDTH,
   };
 
+  const farmObjective = farmObjectiveFor(input, contexts);
   const currentEval = evaluateCurrentAssignment(
     input,
     contexts,
     baseAssignment,
     itemById,
     budget,
+    farmObjective,
   );
-  const seeds = buildSeedAssignments(
-    baseAssignment,
-    contexts,
-    input,
-    itemById,
-    currentEval,
-  );
+  // Every seed past the first is a DIFFERENT gear assignment, and the climb that would normally
+  // earn its keep is skipped when gear is off the table — so an alternative seed would survive
+  // untouched and ship as a move list the player never allowed.
+  const seeds = mayMoveGear(allowedChanges)
+    ? buildSeedAssignments(baseAssignment, contexts, input, itemById, currentEval)
+    : [{ name: 'current', assignment: baseAssignment }];
 
   let best = runSeedSearch({
     name: seeds[0].name,
@@ -129,6 +214,7 @@ export function runTeamPlan(
     gearInput: input,
     itemById,
     budget,
+    farmObjective,
   });
 
   for (let i = 1; i < seeds.length && !budget.exhausted; i++) {
@@ -141,12 +227,16 @@ export function runTeamPlan(
       gearInput: input,
       itemById,
       budget,
+      farmObjective,
     });
     if (candidate.evaluation.objective > best.evaluation.objective + 1e-9) {
       best = candidate;
     }
   }
 
+  // Exhaustive from here down: the search above may screen its phase argmax, but every figure
+  // below is one the player reads. See `exhaustiveFarmObjective`.
+  const reportedObjective = farmObjective ? exhaustiveFarmObjective(farmObjective) : undefined;
   const waterfall = buildWaterfall({
     gearInput: input,
     contexts,
@@ -154,6 +244,7 @@ export function runTeamPlan(
     planAssignment: best.assignment,
     finalPtsByHeroId: best.ptsByHeroId,
     itemById,
+    farmObjective: reportedObjective,
   });
 
   // The waterfall is the decision point (AC-RGO monotonicity fix) — it may reject the search's
@@ -177,6 +268,8 @@ export function runTeamPlan(
     currentDps: waterfall.steps[0]?.objective ?? 0,
     planDps: waterfall.steps[2]?.objective ?? 0,
     forgeFloorApplied: waterfall.forgeFloorApplied,
+    allowedChanges,
+    ...scoredPhaseReport(input, reportedObjective, waterfall.finalEvaluation),
     gearBreakdown: waterfall.gearBreakdown,
     requiresFullPlan: waterfall.requiresFullPlan,
     gearDipDps: waterfall.gearDipDps,

@@ -1,7 +1,7 @@
 /**
- * The farm-respec solver's public surface: result types, `solveFarmRespec` (Tier 2, on demand)
- * and `gateFarmRespec` (Tier 1, always-on). Both turn a roster + account + objective into a
- * joint per-hero build x phase recommendation, bounded by a named, exported evaluation budget.
+ * The farm-respec solver's public surface: result types and `solveFarmRespec`, which turns a
+ * roster + account + objective into a joint per-hero build x phase recommendation, bounded by a
+ * named, exported evaluation budget. It runs only when the player asks for it.
  *
  * Every exported function here is pure: same arguments, same result, no memo cache, no
  * module-level mutable state, no clock, no `Math.random`. Re-running the solver on its own
@@ -34,7 +34,6 @@ import { reoptBudget, REOPT_KEYS } from './points-reopt-core';
 import { respecCostGold } from './respec-cost';
 import {
   runFarmSearch,
-  runFarmGateSeeds,
   squadEnergyShare,
   derivePlateauBounds,
   compareFarmCandidates,
@@ -44,18 +43,14 @@ import {
   FARM_OPT_JOINT_BUDGET_SHARE,
   FARM_OPT_PLATEAU_TOLERANCE_PCT,
   FARM_OPT_FRONTIER_CANDIDATES,
-  FARM_OPT_GATE_PHASE_STRIDE,
-  FARM_OPT_GATE_MAX_EVALUATIONS,
 } from './farm-optimize-search';
 
 export {
   FARM_OPT_MAX_SWEEPS,
-  FARM_OPT_GATE_PHASE_STRIDE,
   FARM_OPT_SEED_ENERGY_SHARES,
   FARM_OPT_PLATEAU_SHARES,
   FARM_OPT_PLATEAU_TOLERANCE_PCT,
   FARM_OPT_FRONTIER_CANDIDATES,
-  FARM_OPT_GATE_MAX_EVALUATIONS,
   FARM_OPT_FULL_MAX_EVALUATIONS,
   FARM_OPT_JOINT_BUDGET_SHARE,
 } from './farm-optimize-search';
@@ -69,8 +64,10 @@ export type {
   FarmPhasePick,
 } from './farm-optimize-objective';
 
-/** PERCENT. The only gate on whether a recommendation is surfaced. Payback never gates. */
-export const FARM_RESPEC_MIN_GAIN_PCT = 1;
+/** PERCENT. The floor a SOLVED gain must clear for the panel to lay out a recommendation; under
+ *  it the panel says the respec is not worth making and shows no per-hero changes. The objective
+ *  is gold, so this reads as a gold/hr floor. Payback never gates, at any value. */
+export const FARM_RESPEC_MIN_GAIN_PCT = 5;
 
 export type FarmRespecOutcome =
   | 'improved' // a strictly better build was found
@@ -136,9 +133,6 @@ export type FarmRespecFrontierEntry = {
 
 export type FarmRespecResult = {
   objective: ResolvedFarmObjective;
-  tier: 'gate' | 'full';
-  /** true for Tier 1 (a lower bound), false for Tier 2 (best found). */
-  gainIsLowerBound: boolean;
   outcome: FarmRespecOutcome;
   keptCurrent: boolean;
 
@@ -257,7 +251,7 @@ function goldChestReadout(
   squad: SquadFarmFacts,
   phaseOptions: FarmRateOptions,
 ): { goldPerHour: number; chestsPerHour: number } {
-  const scales = farmObjectiveScales(squad, phaseOptions);
+  const scales = farmObjectiveScales(squad, { ...phaseOptions, exhaustive: true });
   return { goldPerHour: scales.goldScale, chestsPerHour: scales.chestScale };
 }
 
@@ -283,8 +277,6 @@ function assembleResult(params: {
   budgetExhausted: boolean;
   winningSeed: string;
   sweeps: number;
-  tier: 'gate' | 'full';
-  gainIsLowerBound: boolean;
   frontier: FarmRespecFrontierEntry[];
   plateau: FarmRespecPlateau | null;
 }): FarmRespecResult {
@@ -302,8 +294,6 @@ function assembleResult(params: {
     budgetExhausted,
     winningSeed,
     sweeps,
-    tier,
-    gainIsLowerBound,
     frontier,
     plateau,
   } = params;
@@ -336,8 +326,6 @@ function assembleResult(params: {
 
   return {
     objective,
-    tier,
-    gainIsLowerBound,
     outcome,
     keptCurrent,
     recommendedPhase,
@@ -375,14 +363,12 @@ function buildTerminalResult(params: {
   account: AccountShared;
   phaseOptions: FarmRateOptions;
   /** null for emptyPool/allDegenerate (no squad to describe); a trivial point-plateau for
-   *  noBudget, where the search never ran — reported around current. */
+   *  noBudget, where the search never ran and the plateau is reported around current. */
   plateau: FarmRespecPlateau | null;
-  tier: 'gate' | 'full';
-  gainIsLowerBound: boolean;
   currentFactsById?: ReadonlyMap<string, HeroFarmFacts>;
   budgetById?: ReadonlyMap<string, number>;
 }): FarmRespecResult {
-  const { bases, objective, outcome, evaluation, evaluations, account, phaseOptions, plateau, tier, gainIsLowerBound } = params;
+  const { bases, objective, outcome, evaluation, evaluations, account, phaseOptions, plateau } = params;
   const currentFactsById =
     params.currentFactsById ?? new Map(bases.map((b) => [b.heroId, heroFactsFromBasis(b, b.pts)] as const));
   const budgetById = params.budgetById ?? new Map(bases.map((b) => [b.heroId, reoptBudget(b.pts, b.level)] as const));
@@ -404,8 +390,6 @@ function buildTerminalResult(params: {
     budgetExhausted: false,
     winningSeed: 'current',
     sweeps: 0,
-    tier,
-    gainIsLowerBound,
     frontier: [],
     plateau,
   });
@@ -434,13 +418,18 @@ function buildFrontierEntry(
   bases: readonly HeroFarmBasis[],
   currentFactsById: ReadonlyMap<string, HeroFarmFacts>,
   budgetById: ReadonlyMap<string, number>,
+  objective: ResolvedFarmObjective,
+  scales: FarmObjectiveScales,
   phaseOptions: FarmRateOptions,
   currentObjective: number,
   currentGoldPerHour: number,
 ): FarmRespecFrontierEntry {
   const heroEntries = buildHeroEntries(bases, currentFactsById, budgetById, search.winner.assignment);
-  const recommendedPhase = search.winner.pick ? search.winner.pick.phase : null;
-  const proposedObjective = search.winner.pick ? search.winner.pick.value : 0;
+  // Re-derived rather than read off `search.winner.pick`, for the reason `solveFarmRespec` gives
+  // below: `gainPct` divides this by an exhaustive `currentObjective`.
+  const pick = bestFarmPhase(search.winner.squad, objective, scales, { ...phaseOptions, exhaustive: true });
+  const recommendedPhase = pick ? pick.phase : null;
+  const proposedObjective = pick ? pick.value : 0;
   const readout = goldChestReadout(search.winner.squad, phaseOptions);
   const gainPct = currentObjective > 0 ? Math.max(0, (proposedObjective / currentObjective - 1) * 100) : 0;
   const respecCostGoldTotal = heroEntries.filter((h) => h.changed).reduce((sum, h) => sum + h.respecCostGold, 0);
@@ -522,7 +511,7 @@ function computeFrontier(params: {
       compareFarmCandidates(candidate.search.winner, best.search.winner, bases) < 0 ? candidate : best,
     );
     frontier.push(
-      buildFrontierEntry(winner.heroIds, winner.search, bases, currentFactsById, budgetById, phaseOptions, currentObjective, currentGoldPerHour),
+      buildFrontierEntry(winner.heroIds, winner.search, bases, currentFactsById, budgetById, objective, scales, phaseOptions, currentObjective, currentGoldPerHour),
     );
   }
 
@@ -531,7 +520,7 @@ function computeFrontier(params: {
       compareFarmCandidates(candidate.search.winner, best.search.winner, bases) < 0 ? candidate : best,
     );
     frontier.push(
-      buildFrontierEntry(winner.heroIds, winner.search, bases, currentFactsById, budgetById, phaseOptions, currentObjective, currentGoldPerHour),
+      buildFrontierEntry(winner.heroIds, winner.search, bases, currentFactsById, budgetById, objective, scales, phaseOptions, currentObjective, currentGoldPerHour),
     );
   }
 
@@ -558,17 +547,11 @@ type FarmRespecSetup =
     };
 
 /**
- * The shared prefix both tiers run: resolve the objective, extract the basis, and handle the
- * three degenerate fast paths (`emptyPool`, `allDegenerate`, `noBudget`) identically — every
- * degenerate row must return the same outcome from the gate as from the full solve.
- * Returns either a finished terminal result or everything the real search
- * needs to proceed.
+ * The solve's shared prefix: resolve the objective, extract the basis, and handle the three
+ * degenerate fast paths (`emptyPool`, `allDegenerate`, `noBudget`). Returns either a finished
+ * terminal result or everything the real search needs to proceed.
  */
-function prepareFarmRespecSolve(
-  input: FarmRespecInput,
-  tier: 'gate' | 'full',
-  gainIsLowerBound: boolean,
-): FarmRespecSetup {
+function prepareFarmRespecSolve(input: FarmRespecInput): FarmRespecSetup {
   const objective = resolveFarmObjective(input.objective);
   const bases = computeHeroFarmBases({
     heroes: input.heroes,
@@ -589,8 +572,6 @@ function prepareFarmRespecSolve(
         account: input.account,
         phaseOptions,
         plateau: null,
-        tier,
-        gainIsLowerBound,
       }),
     };
   }
@@ -611,8 +592,6 @@ function prepareFarmRespecSolve(
         account: input.account,
         phaseOptions,
         plateau: null,
-        tier,
-        gainIsLowerBound,
         currentFactsById,
         budgetById,
       }),
@@ -636,10 +615,10 @@ function prepareFarmRespecSolve(
     .map((b) => b.heroId);
 
   if (searchableIds.length === 0) {
-    const currentPick = bestFarmPhase(currentSquad, objective, scales, phaseOptions);
+    const currentPick = bestFarmPhase(currentSquad, objective, scales, { ...phaseOptions, exhaustive: true });
     // No search ran (nothing was searchable), so there is no ladder to read a plateau from — a
-    // trivial point-plateau at the current build's own energy share — reported around
-    // current, for the every-hero-out-of-budget case.
+    // trivial point-plateau at the current build's own energy share, which is what the
+    // every-hero-out-of-budget case reports.
     const noBudgetShare = squadEnergyShare(bases, searchableIds, budgetById, null);
     return {
       kind: 'terminal',
@@ -658,8 +637,6 @@ function prepareFarmRespecSolve(
           currentEnergyShare: noBudgetShare,
           proposedEnergyShare: noBudgetShare,
         },
-        tier,
-        gainIsLowerBound,
         currentFactsById,
         budgetById,
       }),
@@ -671,7 +648,7 @@ function prepareFarmRespecSolve(
 
 /** Tier 2 — the on-demand joint solve. Bounded by `FARM_OPT_FULL_MAX_EVALUATIONS`. Pure. */
 export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
-  const setup = prepareFarmRespecSolve(input, 'full', false);
+  const setup = prepareFarmRespecSolve(input);
   if (setup.kind === 'terminal') return setup.result;
   const { bases, objective, phaseOptions, currentFactsById, budgetById, currentSquad, scales, searchableIds } = setup;
 
@@ -692,8 +669,12 @@ export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
 
   // Recomputed independently of the search's own 'current' seed so the CURRENT side of the
   // result never depends on internal search bookkeeping — zero pipeline calls, not counted.
-  const currentPick = bestFarmPhase(currentSquad, objective, scales, phaseOptions);
-  const proposedPick = search.winner.pick;
+  // Both sides re-run the phase argmax exhaustively: the search's thousands of in-flight picks
+  // may take the screen-and-refine shortcut, but a rare screen miss must only cost a slightly
+  // worse search path, never a wrong REPORTED phase.
+  const reportedPhaseOptions = { ...phaseOptions, exhaustive: true };
+  const currentPick = bestFarmPhase(currentSquad, objective, scales, reportedPhaseOptions);
+  const proposedPick = bestFarmPhase(search.winner.squad, objective, scales, reportedPhaseOptions);
   const outcome: FarmRespecOutcome = proposedPick === null ? 'noFeasiblePhase' : keptCurrent ? 'nothingToGain' : 'improved';
 
   // The plateau — a pure read-out of the final sweep's ladder, ZERO extra
@@ -709,9 +690,9 @@ export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
     proposedEnergyShare: winShare,
   };
 
-  // The cost frontier: only when the joint solve actually found something
-  // better — a frontier under keptCurrent would advise spending gold for zero gain. Shares the
-  // budget the joint solve left over.
+  // The cost frontier: only when the joint solve actually found something better — a frontier
+  // under keptCurrent would advise spending gold for zero gain. Shares the budget the joint
+  // solve left over.
   let frontier: FarmRespecFrontierEntry[] = [];
   let frontierEvaluations = 0;
   let frontierBudgetExhausted = false;
@@ -754,63 +735,8 @@ export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
     budgetExhausted: search.budgetExhausted || frontierBudgetExhausted,
     winningSeed: search.winningSeedName,
     sweeps: search.sweeps,
-    tier: 'full',
-    gainIsLowerBound: false,
     frontier,
     plateau,
   });
 }
 
-/**
- * Tier 1 — the always-on gate. Seeds only, subsampled phase grid for candidates and the FULL
- * set for the current build, so `gainPct` is a genuine LOWER BOUND. `frontier` is always empty;
- * `plateau` is always null. Bounded by `FARM_OPT_GATE_MAX_EVALUATIONS`. Pure.
- */
-export function gateFarmRespec(input: FarmRespecInput): FarmRespecResult {
-  const setup = prepareFarmRespecSolve(input, 'gate', true);
-  if (setup.kind === 'terminal') return setup.result;
-  const { bases, objective, phaseOptions, currentFactsById, budgetById, currentSquad, scales, searchableIds } = setup;
-
-  const gate = runFarmGateSeeds(
-    bases,
-    searchableIds,
-    budgetById,
-    input.account,
-    objective,
-    scales,
-    phaseOptions,
-    FARM_OPT_GATE_PHASE_STRIDE,
-    FARM_OPT_GATE_MAX_EVALUATIONS,
-  );
-
-  const heroEntries = buildHeroEntries(bases, currentFactsById, budgetById, gate.winner.assignment);
-  const keptCurrent = heroEntries.every((h) => !h.changed);
-
-  // The current build's own evaluation — scored on the FULL phase set, never subsampled, so a
-  // ratio against it can only UNDER-state the true gain — the lower-bound contract.
-  const currentPick = gate.currentEval.pick;
-  const proposedPick = gate.winner.pick;
-  const outcome: FarmRespecOutcome = proposedPick === null ? 'noFeasiblePhase' : keptCurrent ? 'nothingToGain' : 'improved';
-
-  return assembleResult({
-    objective,
-    outcome,
-    keptCurrent: outcome === 'noFeasiblePhase' ? true : keptCurrent,
-    heroEntries,
-    currentPick,
-    proposedPick,
-    currentSquad,
-    proposedSquad: gate.winner.squad,
-    phaseOptions,
-    evaluations: gate.evaluations,
-    // The gate's own bound (<= 1 + 5 = 6) sits well inside FARM_OPT_GATE_MAX_EVALUATIONS (64) by
-    // construction — there is no truncation path to signal.
-    budgetExhausted: false,
-    winningSeed: gate.winner.name,
-    sweeps: 0,
-    tier: 'gate',
-    gainIsLowerBound: true,
-    frontier: [],
-    plateau: null,
-  });
-}

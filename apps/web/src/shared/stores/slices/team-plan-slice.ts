@@ -8,11 +8,17 @@ import type {
   InventorySnapshot,
   ScopeState,
 } from '@/shared/stores/team-plan/types';
-import type { TeamPlan as DomainTeamPlan } from '@bombfarm/domain/team-plan/types';
+import type {
+  TeamPlan as DomainTeamPlan,
+  TeamPlanAllowedChanges,
+  TeamPlanObjective,
+} from '@bombfarm/domain/team-plan/types';
 import {
   buildDefaultScopeMap,
   clampForgeFloor,
   computeTeamPlanInputSignature,
+  DEFAULT_TEAM_PLAN_ALLOWED_CHANGES,
+  DEFAULT_TEAM_PLAN_OBJECTIVE,
   mergeScopeForRoster,
 } from '@/shared/stores/team-plan/types';
 
@@ -22,6 +28,16 @@ export type TeamPlanSlice = {
   inventory: InventorySnapshot;
   scopeByHeroId: Record<string, ScopeState>;
   forgeFloor: number;
+  objective: TeamPlanObjective;
+  /** Which kinds of change the plan may propose — gear work, stat-point resets, or both. A
+   *  different axis from `scopeByHeroId`, which decides WHICH HEROES the search may touch. */
+  allowedChanges: TeamPlanAllowedChanges;
+  /** The phase both objectives score at, or `null` for the objective's own default. Read through
+   *  `selectTeamPlanTargetPhase`, never directly — it is a default until `targetPhaseChosen`. */
+  targetPhase: number | null;
+  /** `true` once the player has picked from the phase control, None included — the same
+   *  choice-vs-default split `phasesViewPhaseChosen` makes on the Farm tab. */
+  targetPhaseChosen: boolean;
   runStatus: TeamPlanRunStatus;
   runId: string | null;
   plan: TeamPlan;
@@ -32,6 +48,9 @@ export type TeamPlanSlice = {
   replaceInventoryFromImport: (items: InventoryItem[]) => void;
   setScope: (heroId: string, scope: ScopeState) => void;
   setForgeFloor: (value: number) => void;
+  setObjective: (value: TeamPlanObjective) => void;
+  setAllowedChanges: (value: TeamPlanAllowedChanges) => void;
+  setTargetPhase: (value: number | null) => void;
   startRun: (runId: string) => void;
   resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
   applyPlan: (runId: string, plan: DomainTeamPlan) => void;
@@ -58,6 +77,10 @@ export const createTeamPlanSlice: StateCreator<
   inventory: EMPTY_INVENTORY,
   scopeByHeroId: {},
   forgeFloor: 10,
+  objective: DEFAULT_TEAM_PLAN_OBJECTIVE,
+  allowedChanges: DEFAULT_TEAM_PLAN_ALLOWED_CHANGES,
+  targetPhase: null,
+  targetPhaseChosen: false,
   runStatus: 'idle',
   runId: null,
   plan: null,
@@ -128,6 +151,52 @@ export const createTeamPlanSlice: StateCreator<
     set({ forgeFloor: next });
   },
 
+  // Clears outright rather than marking stale, the way setScope does: the two objectives report
+  // different quantities in different units, so a plan built for one renders as a wrong number
+  // under the other's copy. Dropping runId with it also disowns a run already in flight, whose
+  // answer would otherwise land under the objective the user has since switched away from.
+  setObjective: (value) => {
+    if (get().objective === value) return;
+    set({
+      objective: value,
+      plan: null,
+      planInputSignature: null,
+      runStatus: 'idle',
+      runId: null,
+    });
+  },
+
+  // Clears outright for the same reason `setObjective` does, and one of its own: a plan built
+  // under a wider setting carries chores the narrower one forbids, so leaving it on screen under
+  // a "stale" banner would show a move list the current setting says the player may not be given.
+  setAllowedChanges: (value) => {
+    if (get().allowedChanges === value) return;
+    set({
+      allowedChanges: value,
+      plan: null,
+      planInputSignature: null,
+      runStatus: 'idle',
+      runId: null,
+    });
+  },
+
+  // Clears the plan for the same reason `setObjective` does: the figures on screen are about one
+  // phase, and re-labelling them with another is how a plan comes to describe a fight it never
+  // scored. The FIRST pick of the phase the derived default already sits on must still flip
+  // `targetPhaseChosen` and stop tracking the Farm tab, so this is not a bare equality check.
+  setTargetPhase: (value) => {
+    const next = value == null || !Number.isFinite(value) ? null : Math.max(1, Math.min(600, Math.round(value)));
+    if (get().targetPhase === next && get().targetPhaseChosen) return;
+    const wasResolved = selectTeamPlanTargetPhase(get());
+    set({
+      targetPhase: next,
+      targetPhaseChosen: true,
+      ...(wasResolved !== next
+        ? { plan: null, planInputSignature: null, runStatus: 'idle' as const, runId: null }
+        : {}),
+    });
+  },
+
   startRun: (runId) => {
     if (get().runId === runId && get().runStatus === 'running') return;
     set({ runId, runStatus: 'running' });
@@ -169,6 +238,20 @@ export const createTeamPlanSlice: StateCreator<
   },
 });
 
+/**
+ * The phase the Team plan actually scores at.
+ *
+ * Until the player picks one, this tracks what they were already looking at: the Farm tab's phase
+ * when that was a genuine choice (`phasesViewPhaseChosen`, never the value alone — the tab's
+ * unchosen default is phase 1 and would otherwise read as "plan for phase 1"), else the phase the
+ * save says the account is on. `null` means neither exists, or the player picked None.
+ */
+export function selectTeamPlanTargetPhase(state: PlannerStore): number | null {
+  if (state.targetPhaseChosen) return state.targetPhase;
+  if (state.phasesViewPhaseChosen) return state.phasesViewPhase;
+  return state.phase;
+}
+
 export function selectLiveTeamPlanInputSignature(state: PlannerStore): string {
   return computeTeamPlanInputSignature({
     heroes: state.heroes,
@@ -179,5 +262,8 @@ export function selectLiveTeamPlanInputSignature(state: PlannerStore): string {
     treeDanoTotal: state.treeDanoTotal,
     houseIdx: state.houseIdx,
     houseCycleSecs: state.houseCycleSecs,
+    objective: state.objective,
+    targetPhase: selectTeamPlanTargetPhase(state),
+    allowedChanges: state.allowedChanges,
   });
 }

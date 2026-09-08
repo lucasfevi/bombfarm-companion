@@ -20,7 +20,7 @@
  * expose this is going away, and the invariant has to outlive both.
  */
 import { describe, expect, it } from 'vitest';
-import { solveFarmRespec, gateFarmRespec } from '@bombfarm/domain/farm-optimize';
+import { solveFarmRespec } from '@bombfarm/domain/farm-optimize';
 import { computeHeroFarmBases } from '@bombfarm/domain/farm-rate';
 import { runFarmSearch } from '@bombfarm/domain/farm-optimize-search';
 import { resolveFarmObjective } from '@bombfarm/domain/farm-optimize-objective';
@@ -109,10 +109,10 @@ describe('no proposal exceeds the hero own reoptBudget, even from an over-spent 
   });
 
   for (const extra of [1, 6, 40]) {
-    it(`the gate, one hero over-spent by ${extra} points`, () => {
+    it(`the solve, one hero over-spent by ${extra} points`, () => {
       const roster = heroes.map((hero, index) => (index === 0 ? overSpend(hero, extra) : hero));
       expect(budgetOf(roster[0].pts)).toBeGreaterThan(reoptBudget(roster[0].pts, roster[0].level));
-      expectWithinBudget(gateFarmRespec({ heroes: roster, account, maxPhase }));
+      expectWithinBudget(solveFarmRespec({ heroes: roster, account, maxPhase }));
     });
   }
 });

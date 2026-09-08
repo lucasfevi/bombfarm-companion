@@ -74,6 +74,12 @@ export {
   type SelectMultipleProps,
   type SelectMultipleHeader,
 } from './select';
+export {
+  SearchSelect,
+  searchSelectMatches,
+  type SearchSelectProps,
+  type SearchSelectOption,
+} from './search-select';
 export { Switch, type SwitchProps } from './switch';
 export { Accordion } from './accordion';
 export type {

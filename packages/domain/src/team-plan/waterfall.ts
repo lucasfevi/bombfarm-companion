@@ -6,6 +6,7 @@ import { canonicalizeAssignment } from './canonicalize-assignment';
 import { evaluateRoster } from './evaluate';
 import { optimizeBuild } from '../points-reopt';
 import { respecCostGold } from '../respec-cost';
+import { mayRespendPoints } from './allowed-changes';
 import {
   buildInitialAssignment,
   type AssignmentState,
@@ -19,6 +20,7 @@ import type {
   HeroPlanContext,
   MoveAction,
   RosterEvaluation,
+  TeamPlanFarmObjective,
   WaterfallStep,
 } from './types';
 
@@ -32,8 +34,8 @@ export type WaterfallResult = {
     heroId: string;
     ptsBefore: Record<string, number>;
     pts: Record<string, number>;
-    gainPct: number;
-    rosterGainDps: number;
+    heroGainDpsPct: number;
+    rosterGainObjective: number;
     resetCostGold: number;
   }[];
   perHero: TeamPlanPerHeroRow[];
@@ -57,6 +59,7 @@ export type BuildWaterfallInput = {
   planAssignment: AssignmentState;
   finalPtsByHeroId: Record<string, PointAlloc>;
   itemById: ReadonlyMap<string, InventoryItem>;
+  farmObjective?: TeamPlanFarmObjective;
 };
 
 function currentPtsByHeroId(input: TeamPlanInput): Record<string, PointAlloc> {
@@ -177,9 +180,9 @@ function buildPointResets(
   gainByHeroId: Record<string, number>,
   heroLevelById: ReadonlyMap<string, number>,
 ): WaterfallResult['pointResets'] {
-  // A listed reset MAY show a negative gainPct: acceptPointResets accepts against the ROSTER
-  // objective, so a hero can be kept even when it personally loses sustained DPS. Do not floor
-  // this at 0 and do not filter on it — that filter is what caused the original bug.
+  // A listed reset MAY show a negative heroGainDpsPct: acceptPointResets accepts against the
+  // ROSTER objective, so a hero can be kept even when it personally loses sustained DPS. Do not
+  // floor this at 0 and do not filter on it — that filter is what caused the original bug.
   //
   // Emitted in ACCEPTANCE order (acceptedHeroIds, as produced by the greedy loop in
   // acceptPointResets) — NOT sorted by heroId. Acceptance order is a real priority ranking: it
@@ -187,14 +190,14 @@ function buildPointResets(
   return acceptedHeroIds.map((heroId) => {
     const before = gearStateEval.perHero[heroId]?.sustained ?? 0;
     const after = respecStateEval.perHero[heroId]?.sustained ?? 0;
-    const gainPct = before > 0 ? (after / before - 1) * 100 : 0;
+    const heroGainDpsPct = before > 0 ? (after / before - 1) * 100 : 0;
     const level = heroLevelById.get(heroId) ?? 0;
     return {
       heroId,
       ptsBefore: currentPtsByHeroId[heroId] ?? {},
       pts: finalPtsByHeroId[heroId] ?? {},
-      gainPct,
-      rosterGainDps: gainByHeroId[heroId] ?? 0,
+      heroGainDpsPct,
+      rosterGainObjective: gainByHeroId[heroId] ?? 0,
       // Confirmed real in-game cost. Ability resets cost the same again, separately, but we never
       // recommend ability resets here. Display-only — never enters the objective or any filter.
       resetCostGold: respecCostGold(level),
@@ -261,10 +264,16 @@ function buildPerHeroTable(
 }
 
 export function buildWaterfall(input: BuildWaterfallInput): WaterfallResult {
-  const { gearInput, contexts, currentAssignment, planAssignment, finalPtsByHeroId, itemById } =
+  const { gearInput, contexts, currentAssignment, planAssignment, finalPtsByHeroId, itemById, farmObjective } =
     input;
   const pts = currentPtsByHeroId(gearInput);
   const rosterIds = new Set(gearInput.heroes.map((h) => h.heroId));
+
+  // A plan barred from re-spending points offers the respec step the vector it already has, so
+  // `acceptPointResets` finds no hero whose allocation moved and accepts none. Asserted here
+  // rather than left to the search returning an unchanged vector: that is a property of how the
+  // search happens to be seeded, and this is the rule.
+  const respecPts = mayRespendPoints(gearInput.allowedChanges) ? finalPtsByHeroId : pts;
 
   const chosen = chooseGearCandidate({
     contexts,
@@ -273,8 +282,9 @@ export function buildWaterfall(input: BuildWaterfallInput): WaterfallResult {
     baselineAssignment: currentAssignment,
     planAssignment,
     currentPts: pts,
-    finalPtsByHeroId,
+    finalPtsByHeroId: respecPts,
     rosterHeroIds: rosterIds,
+    farmObjective,
   });
   const { candidate, gearEvaluation, respec, todayEvaluation } = chosen;
   const todayObjective = todayEvaluation.objective;
@@ -305,6 +315,7 @@ export function buildWaterfall(input: BuildWaterfallInput): WaterfallResult {
       gearInput,
       itemById,
       gearInput.forgeFloor,
+      farmObjective,
     ).objective;
     forgeDelta = baselineAtFloor - todayObjective;
     moveDelta = gearObjective - baselineAtFloor;
@@ -342,7 +353,7 @@ export function buildWaterfall(input: BuildWaterfallInput): WaterfallResult {
     pointResets: buildPointResets(
       respec.acceptedHeroIds,
       pts,
-      finalPtsByHeroId,
+      respecPts,
       gearEvaluation,
       respec.evaluation,
       respec.gainByHeroId,

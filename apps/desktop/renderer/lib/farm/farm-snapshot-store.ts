@@ -16,19 +16,16 @@
  * carried by `begin` or `refresh`, both user-initiated. There is no arrival a live tick could
  * dispatch, so no live tick can move this state — asserted in the test by reading this source.
  */
-import type { FarmInputs, FarmRankingResult, FarmRespecGate } from '@bombfarm/farm/core';
+import type { FarmInputs, FarmRankingResult } from '@bombfarm/farm/core';
 import type { FarmControls } from './farm-inputs';
 
 /**
- * One compute's settled products: the board, the inputs it was computed from, the first-tier
- * respec gate over those same inputs, and the age of the account they all came from. The gate is
- * cheap and rides along with the compute rather than being re-derived while the screen paints —
- * the expensive second tier is a button press, and lives nowhere near here.
+ * One compute's settled products: the board, the inputs it was computed from, and the age of the
+ * account they all came from. The respec solve is a button press and lives nowhere near here.
  */
 export type FarmSettledBoard = {
   readonly board: FarmRankingResult;
   readonly inputs: FarmInputs;
-  readonly gate: FarmRespecGate;
   /**
    * ISO-8601 capture time of the ACCOUNT these numbers were computed from — the oldest across its
    * five sections — not the moment the compute ran. The two diverge exactly when it matters: a
@@ -112,7 +109,6 @@ export function settledBoard(state: FarmSnapshotState): FarmSettledBoard | null 
     return {
       board: state.board,
       inputs: state.inputs,
-      gate: state.gate,
       capturedAt: state.capturedAt,
     };
   }
@@ -130,7 +126,7 @@ export function settledBoard(state: FarmSnapshotState): FarmSettledBoard | null 
  * 2. `refresh` ⇒ adopts the view it was handed. Nothing to do only when a board for that exact
  *    account and those exact controls is already on screen.
  * 3. `controls` ⇒ recomputes against the frozen `sourceKey`, never a newer one. Ignored from
- *    `idle` (no frozen view) and from `unavailable` (the gate that produced that reason reads no
+ *    `idle` (no frozen view) and from `unavailable` (that reason reads no
  *    control, so a recompute lands on the same reason).
  * 4. `computed` ⇒ **discarded** unless the state is still waiting for exactly this compute — the
  *    same latest-wins rule the account seam's own reducer follows. Controls are compared by
@@ -182,7 +178,6 @@ export function accept(state: FarmSnapshotState, arrival: FarmSnapshotArrival): 
         status: 'ready',
         board: arrival.outcome.board,
         inputs: arrival.outcome.inputs,
-        gate: arrival.outcome.gate,
         capturedAt: arrival.outcome.capturedAt,
         controls: arrival.controls,
         sourceKey: arrival.sourceKey,

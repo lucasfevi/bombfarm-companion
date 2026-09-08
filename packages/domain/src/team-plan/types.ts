@@ -1,4 +1,6 @@
 import type { BirthStats, TreeSheetTotals } from '../birth-sheet';
+import type { BestFarmPhaseOptions } from '../farm-optimize-objective';
+import type { HeroFarmFacts, SquadFarmAccount } from '../farm-rate';
 import type { Loadout, PointAlloc, SheetStats } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import type {
@@ -105,9 +107,9 @@ export type HeroScore = {
 
 /**
  * Cache of per-hero scores, keyed by everything `scoreHeroLoadout` reads that can vary within
- * one run: `heroId | loadout | pts | auras`. The rest of its inputs — the `HeroPlanContext` a
- * `heroId` resolves to, and the `FarmContext` — are fixed for a whole `runTeamPlan`, which is
- * exactly the scope a memo may span. Never share one across two different inputs.
+ * one run: `heroId | loadout | pts | auras | farm`. Only the `HeroPlanContext` a `heroId`
+ * resolves to is fixed for a whole `runTeamPlan`, which is exactly the scope a memo may span.
+ * Never share one across two different inputs.
  *
  * FIFO-bounded, same reasoning as the solver's evaluation cache: a cache must never grow with
  * the evaluation budget. Eviction can only cost time, never change a result — the key
@@ -120,6 +122,31 @@ export type ScoreMemo = {
 
 export type RosterRegime = 'underSaturated' | 'saturated';
 
+/**
+ * What "better" means to the Team Plan's search.
+ *
+ * `'dps'` is the roster's duty-weighted sustained damage — the historical objective, and still
+ * the default. `'farm'` is the squad's best achievable gold per hour. They are different
+ * orderings over the same gear and points, and they disagree in SIGN and not merely in degree: a
+ * damage-mode plan that lifts roster damage by tens of percent can lower the gold the account
+ * earns. The measured figures live in this change's changeset, where each carries the capture it
+ * came from and that capture's date.
+ */
+export type TeamPlanObjective = 'dps' | 'farm';
+
+/**
+ * Which kinds of change the plan is allowed to propose — a different axis from
+ * {@link ScopeState}, which says WHICH HEROES the search may touch. This says WHAT it may do to
+ * them, and the two compose: a `'points'` plan over three Optimize heroes re-spends those three
+ * heroes' stat points and moves nobody's gear.
+ *
+ * `'points'` forbids the gear climb AND the forge floor — a plan that may not move gear may not
+ * order forge work either, since a forge is gear work the player has to go and do. `'gear'`
+ * forbids every stat-point pass. Under both, the forbidden half must be absent from the plan
+ * rather than merely hidden by the caller: no move list, no forge list, no point resets.
+ */
+export type TeamPlanAllowedChanges = 'points' | 'gear' | 'both';
+
 export type RosterEvaluation = {
   objective: number;
   regime: RosterRegime;
@@ -127,6 +154,14 @@ export type RosterEvaluation = {
   slots: number;
   perHero: Record<string, HeroScore>;
   auras: Record<TeamBuffId, number>;
+  /**
+   * Farm mode only: the phase `objective` was measured at, and the per-hero farm facts it was
+   * measured from. Absent in DPS mode, and `farmPhase` is `null` when no phase is feasible.
+   * `screenRosterObjective` reads both — it rescores only the heroes a move touches and prices
+   * the incumbent's phase alone, rather than sweeping the phase table per screened move.
+   */
+  farmPhase?: number | null;
+  farmFacts?: readonly HeroFarmFacts[];
 };
 
 export type TeamPlanHeroInput = {
@@ -162,6 +197,70 @@ export type TeamPlanAccountInput = {
   /** See {@link FarmContext.cycleSecsHouseIdx}/`cycleSecsLevel`. */
   cycleSecsHouseIdx?: number | null;
   cycleSecsLevel?: number | null;
+  /**
+   * The three account-level terms only the FARM objective reads, none of which the DPS objective
+   * has ever needed. `teamCoinPct` (`skills.totals.team_coin × 100`, the tree's gold multiplier)
+   * defaults to 0 and `xpMult` (`skills.totals.xp_mult`, verbatim) to 1, both matching the
+   * estimator. A DPS-mode plan is unaffected by all three.
+   *
+   * `maxPhase` (`account.max_phase`) has no default in farm mode when the plan is left to find
+   * its own phase — `runTeamPlan` refuses to sweep the 600-phase table and optimise the squad for
+   * phases the account has never unlocked. {@link TeamPlanInput.targetPhase} removes that need
+   * entirely: a named phase is not a sweep, so gold scoring works on a record carrying no
+   * `max_phase` at all.
+   */
+  teamCoinPct?: number;
+  xpMult?: number;
+  maxPhase?: number | null;
+};
+
+/**
+ * The build-independent half of one hero's farm basis, extracted once per run.
+ *
+ * `dmgMult` and the two loot ability levels are functions of the hero's abilities and the frozen
+ * team auras alone — no gear, no points — so they survive every candidate the search tries. The
+ * build-DEPENDENT half (the effective sheet, its per-point deltas, and the farm `Context`) comes
+ * from the scorer per evaluation and is combined with this.
+ */
+export type FrozenHeroFarmTerms = {
+  /** The very `HeroPlanContext` the run was built from — fixed for a whole `runTeamPlan`, which
+   *  is also the exact lifetime of the objective holding it. */
+  ctx: HeroPlanContext;
+  dmgMult: number;
+  /**
+   * Present exactly for a squad hero the search may not re-gear. Nothing supplies a loadout for
+   * such a hero per evaluation — the assignment only covers optimize scope — so the objective
+   * carries the one it will farm with for the whole run.
+   */
+  fixedLoadout?: Loadout;
+};
+
+/**
+ * Everything a farm-mode evaluation needs that does not move as the search reassigns gear or
+ * points: the rotation-priced team auras, the phase-1/zero-mitigation farm context the farm
+ * estimator prices every hero against, the account terms the squad reduction reads, and the
+ * per-hero frozen terms above (in roster order).
+ *
+ * `heroes` is the SQUAD, not the search's scope. A hero the player left alone still fields, still
+ * takes a House slot and still earns gold, and House allocation, `uptimeSum` and `sorteFraction`
+ * are all nonlinear in who is present — so pricing the squad without it answers a question about
+ * a roster the player is not running. What scope decides is which of these heroes the search may
+ * MOVE gear onto, which is the same split `farm-hero-optimize.ts` already makes.
+ *
+ * Frozen deliberately, and for the same reason the respec optimizer freezes them: the auras are a
+ * function of every hero's uptime, uptime moves with the build, and re-pricing them per candidate
+ * would cost a pipeline pass per candidate. The residual is second-order — only Fôlego reaches
+ * uptime at all, and a roster whose Fôlego total sits at its cap has no sensitivity left.
+ */
+export type TeamPlanFarmObjective = {
+  auras: Record<TeamBuffId, number>;
+  farm: FarmContext;
+  account: SquadFarmAccount;
+  /** Carries `pinnedPhase` when {@link TeamPlanInput.targetPhase} named one, which is what turns
+   *  every evaluation's phase argmax into a single row read. */
+  phaseOptions: BestFarmPhaseOptions;
+  treeLuckFlatPct: number;
+  heroes: readonly FrozenHeroFarmTerms[];
 };
 
 export type TeamPlanInput = {
@@ -170,6 +269,26 @@ export type TeamPlanInput = {
   account: TeamPlanAccountInput;
   scopeByHeroId: Record<string, ScopeState>;
   forgeFloor: number;
+  /** Omitted ⇒ `'dps'`, the historical behaviour. See {@link TeamPlanObjective}. */
+  objective?: TeamPlanObjective;
+  /**
+   * Omitted ⇒ `'both'`, the historical behaviour. Honoured under EITHER objective — the
+   * restriction is on what the plan may ask the player to do, not on how it scores.
+   * See {@link TeamPlanAllowedChanges}.
+   */
+  allowedChanges?: TeamPlanAllowedChanges;
+  /**
+   * The one phase to plan for, under EITHER objective. Absent/`null` keeps the historical
+   * behaviour of each: farm sweeps for the best phase the squad can hold, damage scores at the
+   * account's own phase and mitigation.
+   *
+   * Named, both objectives score there and nowhere else — farm reads one phase row instead of
+   * the ~35 a screen-and-refine sweep reads, and damage swaps the account's mitigation for that
+   * phase's. A phase past `account.maxPhase` is allowed on purpose: "what would I earn if I
+   * could hold this" is a question worth answering, and {@link TeamPlan.scoredPhase} reports
+   * back which phase the answer is about.
+   */
+  targetPhase?: number | null;
 };
 
 /**
@@ -236,10 +355,15 @@ export type TeamPlan = {
      *  the hero's live points instead pairs {@link pts} with a start nothing here measured. */
     ptsBefore: Record<string, number>;
     pts: Record<string, number>;
-    /** Per-hero sustained % change, MAY be negative — the roster can still gain. Not floored. */
-    gainPct: number;
-    /** Marginal ROSTER objective gain at the moment this reset was accepted. Display-only. */
-    rosterGainDps: number;
+    /**
+     * Per-hero sustained DPS % change, MAY be negative — the roster can still gain. Not floored.
+     * DPS in BOTH objective modes: the farm objective replaces only the scalar the search
+     * compares, and leaves `perHero` describing the roster's damage state.
+     */
+    heroGainDpsPct: number;
+    /** Marginal ROSTER objective gain at the moment this reset was accepted — sustained damage
+     *  under the DPS objective, gold per hour under the farm one. Display-only. */
+    rosterGainObjective: number;
     /** `heroLevel * 1000` gold. Display-only — never in the objective, never a filter or gate. */
     resetCostGold: number;
   }[];
@@ -253,6 +377,30 @@ export type TeamPlan = {
   planDps: number;
   /** The forge floor the plan actually adopted — 0 when forging was rejected. */
   forgeFloorApplied: number;
+  /**
+   * What this plan was allowed to change, resolved. Reported back because a plan outlives the
+   * control that produced it: an empty forge list means "forging did not pay" under `'both'` and
+   * "forging was never on the table" under `'points'`, and only the plan itself can say which.
+   */
+  allowedChanges: TeamPlanAllowedChanges;
+  /**
+   * The phase every figure above is about, and where that phase came from.
+   *
+   * `'chosen'` is `TeamPlanInput.targetPhase` verbatim. `'searched'` is the farm sweep's own
+   * argmax — the phase the plan picked for itself, and the only source a reader has to be told
+   * was automatic. `'account'` is the damage objective's default, the account's current phase.
+   *
+   * `null` only when there is no phase to name at all: a farm sweep that found nothing feasible
+   * anywhere, or a damage plan on a record carrying no current phase.
+   */
+  scoredPhase: number | null;
+  scoredPhaseSource: 'chosen' | 'searched' | 'account';
+  /**
+   * The squad cannot clear {@link scoredPhase}, so the gold figures are zero rather than small.
+   * Only ever true for a chosen phase in farm mode — a sweep never settles on a phase it cannot
+   * hold, and the damage objective has no feasibility notion.
+   */
+  scoredPhaseInfeasible: boolean;
   /** Internal split of the single `gear` step. EITHER may be negative; disclosure-only. */
   gearBreakdown: { forgeDelta: number; moveDelta: number };
   /** True when the gear step sits below today. The plan is only ahead once the resets land. */
@@ -307,4 +455,14 @@ export type EvaluateRosterInput = {
    * the search to reuse the ~14 heroes a neighbouring assignment leaves untouched.
    */
   scoreMemo?: ScoreMemo;
+  /**
+   * The resolved farm objective, or absent for `'dps'`.
+   *
+   * ONE field rather than a `'dps' | 'farm'` tag beside a bridge: the bridge is derived once from
+   * the whole `TeamPlanInput` and carries every frozen term a farm evaluation needs, so a
+   * separate tag could only ever contradict it. `TeamPlanObjective` stays the caller-facing knob
+   * on {@link TeamPlanInput}; `runTeamPlan` turns `'farm'` into this and nothing else selects the
+   * mode below that point.
+   */
+  farmObjective?: TeamPlanFarmObjective;
 };

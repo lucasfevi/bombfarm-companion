@@ -17,6 +17,7 @@ import {
   resolvePhaseChange,
   type FarmRespecProposal,
 } from './farm-respec-view';
+import { FARM_RESPEC_WORTH_MAKING_PCT } from '../core';
 
 function heroEntry(overrides: Partial<FarmRespecHeroEntry> = {}): FarmRespecHeroEntry {
   return {
@@ -160,10 +161,17 @@ describe('farm-respec-view', () => {
   });
 
   describe('resolvePanelState', () => {
-    function proposal(outcome: FarmRespecOutcome, budgetExhausted = false): FarmRespecProposal {
+    const OVER = FARM_RESPEC_WORTH_MAKING_PCT + 1;
+    const UNDER = FARM_RESPEC_WORTH_MAKING_PCT - 1;
+
+    function proposal(
+      outcome: FarmRespecOutcome,
+      budgetExhausted = false,
+      gainPct = OVER,
+    ): FarmRespecProposal {
       return {
         deps: [],
-        result: { outcome, budgetExhausted } as FarmRespecResult,
+        result: { outcome, budgetExhausted, gainPct } as FarmRespecResult,
       };
     }
 
@@ -192,8 +200,29 @@ describe('farm-respec-view', () => {
       },
     );
 
-    it('"nothingToGain" is NOT terminal — it resolves as a normal result', () => {
-      const view = proposal('nothingToGain');
+    // Not terminal — the search RAN and settled; there is simply nothing worth doing. It shares
+    // the below-threshold banner with a small-but-real gain rather than the "no recommendation
+    // possible" one, because those are different answers to the player.
+    it('"nothingToGain" is NOT terminal — its 0% gain resolves as below the floor', () => {
+      const view = proposal('nothingToGain', false, 0);
+      expect(resolvePanelState(view, 'done')).toEqual({
+        kind: 'belowThreshold',
+        gainPct: 0,
+        floorPct: FARM_RESPEC_WORTH_MAKING_PCT,
+      });
+    });
+
+    it('a solved gain under the floor resolves to {kind: "belowThreshold"}, carrying both figures', () => {
+      const view = proposal('improved', false, UNDER);
+      expect(resolvePanelState(view, 'done')).toEqual({
+        kind: 'belowThreshold',
+        gainPct: UNDER,
+        floorPct: FARM_RESPEC_WORTH_MAKING_PCT,
+      });
+    });
+
+    it('a gain exactly ON the floor is worth making — the comparison is inclusive', () => {
+      const view = proposal('improved', false, FARM_RESPEC_WORTH_MAKING_PCT);
       expect(resolvePanelState(view, 'done').kind).toBe('result');
     });
   });

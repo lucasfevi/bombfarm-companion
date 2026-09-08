@@ -1,27 +1,38 @@
 'use client';
 
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
+import { mayMoveGear, mayRespendPoints } from '@bombfarm/domain/team-plan';
 import { abilityName } from '@bombfarm/domain/game-labels';
 import { Panel } from '@bombfarm/ui';
 import { panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
 import type { Lang, Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
+import type { TeamPlanObjectiveCopy } from '@/features/team-plan/model/objective-copy';
 
 export function PlanDisclosures({
   t,
   lang,
   plan,
   requestedForgeFloor,
+  copy,
 }: {
   t: Strings;
   lang: Lang;
   plan: TeamPlan;
   requestedForgeFloor: number;
+  copy: TeamPlanObjectiveCopy;
 }) {
   const unmodelled = plan.disclosures.unmodelledAbilities
     .map((row) => `${abilityName(row.abilityId, lang)} (${row.heroNames.join(', ')})`)
     .join('; ');
-  const forgeSkipped = requestedForgeFloor > 0 && plan.forgeFloorApplied === 0;
+  // Read off the PLAN, not the live control: a plan outlives the setting that produced it, and
+  // these two lines are the difference between "forging did not pay" and "forging was never on
+  // the table" — only the plan knows which of those its empty forge list means.
+  const gearAllowed = mayMoveGear(plan.allowedChanges);
+  // Luck is outside the reallocatable budget in both directions, which is only worth saying to
+  // someone whose plan could have moved points at all.
+  const pointsAllowed = mayRespendPoints(plan.allowedChanges);
+  const forgeSkipped = gearAllowed && requestedForgeFloor > 0 && plan.forgeFloorApplied === 0;
 
   return (
     <Panel>
@@ -31,15 +42,15 @@ export function PlanDisclosures({
       <div className="space-y-3 text-[13px] text-muted">
         {plan.regime === 'saturated' ? (
           <p className="m-0 rounded-sm border border-warn/40 bg-[color-mix(in_oklch,var(--warn)_8%,transparent)] px-3 py-2 text-ink">
-            {sub(t.teamPlanSaturationCallout, {
+            {sub(copy.saturationCallout, {
               duty: String(plan.sumDuty.toFixed(2)),
               slots: String(plan.slots),
             })}
           </p>
         ) : null}
-        <p className="m-0">{t.teamPlanAuraDisclosure}</p>
+        <p className="m-0">{copy.auraDisclosure}</p>
         <p className="m-0">
-          {sub(t.teamPlanPlannerDivergence, {
+          {sub(copy.plannerDivergence, {
             ability: abilityName('passagem_bastao', lang),
           })}
         </p>
@@ -53,14 +64,19 @@ export function PlanDisclosures({
             })}
           </p>
         ) : null}
-        <p className="m-0">
-          {sub(t.teamPlanExcludedItems, {
-            market: String(plan.disclosures.marketBlockedItemCount),
-            unresolved: String(plan.disclosures.unresolvedDefItemCount),
-            foreign: String(plan.disclosures.foreignOwnedItemCount),
-          })}
-        </p>
-        {forgeSkipped ? <p className="m-0">{t.teamPlanForgeSkippedNote}</p> : null}
+        {gearAllowed ? (
+          <p className="m-0">
+            {sub(t.teamPlanExcludedItems, {
+              market: String(plan.disclosures.marketBlockedItemCount),
+              unresolved: String(plan.disclosures.unresolvedDefItemCount),
+              foreign: String(plan.disclosures.foreignOwnedItemCount),
+            })}
+          </p>
+        ) : null}
+        {pointsAllowed ? <p className="m-0">{copy.luckFrozenNote}</p> : null}
+        {forgeSkipped ? <p className="m-0">{copy.forgeSkippedNote}</p> : null}
+        {!gearAllowed ? <p className="m-0">{t.teamPlanAllowedChangesNotePoints}</p> : null}
+        {!pointsAllowed ? <p className="m-0">{t.teamPlanAllowedChangesNoteGear}</p> : null}
       </div>
     </Panel>
   );

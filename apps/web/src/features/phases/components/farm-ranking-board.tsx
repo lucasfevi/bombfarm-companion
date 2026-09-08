@@ -7,7 +7,6 @@ import {
   deriveFarmPoolEntries,
   selectFarmBoardRows,
   selectFarmReRankActive,
-  selectFarmRespecGate,
   selectFarmRespecView,
   selectFarmReturnBonus,
   selectFieldSlots,
@@ -24,7 +23,7 @@ import {
  * identical screen from its own state, and a second connector per component would put four
  * subscriptions where this one already carries them.
  *
- * `selectFarmBoardRows`, `selectFarmRespecGate` and `selectFarmRespecView` are read WITHOUT
+ * `selectFarmBoardRows` and `selectFarmRespecView` are read WITHOUT
  * `useShallow` — each returns a stable identity on a cache hit, and shallow-comparing 600 rows on
  * every write would defeat the memo they exist to protect.
  */
@@ -42,7 +41,6 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
   const fieldSlots = usePlannerStore(selectFieldSlots);
   const currentPhase = usePlannerStore(selectPhasesViewPhase);
   const phasesViewPhaseChosen = usePlannerStore(selectPhasesViewPhaseChosen);
-  const respecGate = usePlannerStore(selectFarmRespecGate);
   const respecView = usePlannerStore(selectFarmRespecView);
   const respecStatus = usePlannerStore((state) => state.farmRespecStatus);
   const respecPanelOpen = usePlannerStore((state) => state.farmRespecPanelOpen);
@@ -70,7 +68,6 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
         phasesViewPhaseChosen,
         statLabels: { column: t.colStat, full: t.statFull },
         respec: {
-          gate: respecGate,
           view: respecView,
           status: respecStatus,
           panelOpen: respecPanelOpen,
@@ -85,6 +82,7 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
         setFarmRespecReRank,
         runFarmRespec,
       }}
+      slots={{ respecScopeNote: t.teamPlanFarmAdvisorPointer }}
     />
   );
 }

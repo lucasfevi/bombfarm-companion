@@ -4,15 +4,14 @@ import type { FarmRateRow } from '@bombfarm/domain/farm-rate';
 import { FARM_RESPEC_MIN_GAIN_PCT } from '@bombfarm/domain/farm-optimize';
 import { importHeroes } from '@/shared/lib/storage';
 import {
+  isFarmRespecWorthMaking,
   readFarmRespecDepTuple,
   resetFarmRankingCache,
   resetFarmRankingComputeCount,
-  resetFarmRespecGateComputeCount,
   resetFarmRespecRowsComputeCount,
   resetFarmRespecSolveCount,
   runFarmRespecSolve,
   selectFarmBoardRows,
-  selectFarmRespecGate,
 } from '@/shared/stores/selectors/farm-ranking-selectors';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
 import { holdSuiteUntilInRegime } from '../../../../packages/domain/tests/helpers/capture-regime';
@@ -59,40 +58,31 @@ describe('Farm Respec Advisor — fixture integration (save-20260819-11882-7hero
     resetPlannerStoreForTests();
     resetFarmRankingCache();
     resetFarmRankingComputeCount();
-    resetFarmRespecGateComputeCount();
     resetFarmRespecSolveCount();
     resetFarmRespecRowsComputeCount();
     importFixtureIntoStore();
   });
 
   /**
-   * INVERTED, and the inversion is the finding (issue #206). This used to assert the banner stays
-   * QUIET, and the reason had been traced in the comment it carried: the retired capture's own
-   * current build was ILLEGAL, so once the search clamped candidates to the legal point budget the
-   * illegal build out-scored everything reachable and Tier 1 honestly reported no gain — 0%.
+   * INVERTED, and the inversion is the finding (issue #206). This used to assert the advisor
+   * stays QUIET, and the reason had been traced in the comment it carried: the retired capture's
+   * own current build was ILLEGAL, so once the search clamped candidates to the legal point
+   * budget the illegal build out-scored everything reachable and the solver honestly reported no
+   * gain — 0%.
    *
-   * On a legal account the advisor does what it is for. Tier 1's lower bound clears the 1%
-   * threshold comfortably and the banner surfaces. Both directions are asserted rather than the
-   * one that happens to hold: `shouldSurface` must agree with the comparison against the
-   * threshold, so this stays a real test whichever side a future account lands on.
+   * On a legal account the advisor does what it is for. Both directions are asserted rather than
+   * the one that happens to hold: the worth-making verdict must agree with the comparison
+   * against the floor, so this stays a real test whichever side a future account lands on.
    */
-  it('Tier 1 surfaces on a legal account, and shouldSurface agrees with the threshold', () => {
-    const gate = selectFarmRespecGate(usePlannerStore.getState());
-    expect(gate.reason).toBeNull();
-    expect(gate.result).not.toBeNull();
-    expect(gate.result!.gainPct).toBeGreaterThan(FARM_RESPEC_MIN_GAIN_PCT);
-    expect(gate.shouldSurface).toBe(gate.result!.gainPct >= FARM_RESPEC_MIN_GAIN_PCT);
-    expect(gate.shouldSurface).toBe(true);
-    // Non-vacuity: the gate RAN and reached a considered terminal state rather than erroring
-    // into a default — a null reason and a non-null outcome together prove it.
-    expect(gate.result!.outcome).toBe('improved');
-  });
-
-  it('Tier 1 is a lower bound: gainIsLowerBound is true and its gain never exceeds Tier 2\'s', () => {
-    const gate = selectFarmRespecGate(usePlannerStore.getState());
+  it('the solve finds a real gain on a legal account, and the verdict agrees with the floor', () => {
     const solve = runFarmRespecSolve(usePlannerStore.getState());
-    expect(gate.result?.gainIsLowerBound).toBe(true);
-    expect(gate.result!.gainPct).toBeLessThanOrEqual(solve.gainPct);
+    expect(solve.gainPct).toBeGreaterThan(FARM_RESPEC_MIN_GAIN_PCT);
+    expect(isFarmRespecWorthMaking(solve)).toBe(solve.gainPct >= FARM_RESPEC_MIN_GAIN_PCT);
+    expect(isFarmRespecWorthMaking(solve)).toBe(true);
+    // Non-vacuity: the search RAN and reached a considered outcome rather than erroring into a
+    // default — spent evaluations and an 'improved' outcome together prove it.
+    expect(solve.evaluations).toBeGreaterThan(0);
+    expect(solve.outcome).toBe('improved');
   });
 
   // The 26-28 band was a property of the retired capture's own strength, not of the advisor.

@@ -238,4 +238,75 @@ describe('hero draft persistence subscription', () => {
 
     expect(loadHeroes()[0]?.statRanges).toEqual(statRanges);
   });
+  function heroNamed(id: string, sourceId: string, name: string) {
+    return normalizeHero({
+      id,
+      name,
+      sourceId,
+      updatedAt: 1,
+      rarity: 'Raro',
+      level: 1,
+      stars: 0,
+      naked: { attack: 10, energy: 10, speed: 10, critChance: 0, critDmg: 10, penetration: 0, cdr: 0, luck: 0 },
+      gearedOverride: { attack: 10, energy: 10, speed: 10, critChance: 0, critDmg: 10, penetration: 0, cdr: 0, luck: 0 },
+    });
+  }
+
+  /**
+   * The autosave is debounced by 700ms, so a roster replacement can land while a write staged
+   * against the OLD roster is still pending. `setHeroes` is what the shell's import handler calls
+   * to swap the roster in, and it does not touch `activeHeroId` — the shell re-points that
+   * separately, and only when its pick is truthy. A writer that fires in between therefore stages
+   * an id the roster no longer holds, and `upsertHero` APPENDS an id it cannot find: a hero from
+   * the account the player just replaced reappears in the new roster.
+   *
+   * Observed in the browser before this guard: importing a 13-hero save and then a 4-hero save
+   * left the roster with FIVE heroes, the fifth carrying the previous account's id prefix.
+   */
+  it('a write staged before a roster swap does not resurrect its hero', () => {
+    const old = heroNamed('old-1', 'src-old', 'FromOldAccount');
+    usePlannerStore.getState().hydrateRoster([old], 'old-1');
+    usePlannerStore.getState().applyHero(old);
+    usePlannerStore.getState().setBooted(true);
+    usePlannerStore.getState().unlockPersist();
+    vi.advanceTimersByTime(AUTOSAVE_MS);
+    usePlannerStore.getState().consumeSkipHeroToast();
+
+    // An edit arms the writer against the roster as it stands...
+    usePlannerStore.getState().setHeroLevel(9);
+    // ...and the import swaps the roster under it, leaving `activeHeroId` pointing at a hero the
+    // new roster does not contain.
+    usePlannerStore.getState().setHeroes([heroNamed('new-1', 'src-new', 'FromNewAccount')]);
+    expect(usePlannerStore.getState().activeHeroId).toBe('old-1');
+
+    vi.advanceTimersByTime(AUTOSAVE_MS * 2);
+
+    expect(usePlannerStore.getState().heroes.map((entry) => entry.id)).toEqual(['new-1']);
+    // `setHeroes` swaps state only — the import path persists separately — so a DROPPED write
+    // leaves storage exactly as the last real save left it. The bug's signature is storage
+    // GROWING to two entries as `upsertHero` appends the id it could not find.
+    expect(loadHeroes().map((entry) => entry.id)).toEqual(['old-1']);
+  });
+
+  /**
+   * `heroes` is member 0 of `readFarmDepTuple`, compared with `Object.is`, so the appended hero
+   * also invalidated any farm respec proposal solved against the array — the panel a player had
+   * just opened closed itself.
+   */
+  it('a dropped stale write leaves the roster array identity alone', () => {
+    const old = heroNamed('old-1', 'src-old', 'FromOldAccount');
+    usePlannerStore.getState().hydrateRoster([old], 'old-1');
+    usePlannerStore.getState().applyHero(old);
+    usePlannerStore.getState().setBooted(true);
+    usePlannerStore.getState().unlockPersist();
+    vi.advanceTimersByTime(AUTOSAVE_MS);
+    usePlannerStore.getState().consumeSkipHeroToast();
+
+    usePlannerStore.getState().setHeroLevel(9);
+    usePlannerStore.getState().setHeroes([heroNamed('new-1', 'src-new', 'FromNewAccount')]);
+
+    const beforeFire = usePlannerStore.getState().heroes;
+    vi.advanceTimersByTime(AUTOSAVE_MS * 2);
+    expect(usePlannerStore.getState().heroes).toBe(beforeFire);
+  });
 });

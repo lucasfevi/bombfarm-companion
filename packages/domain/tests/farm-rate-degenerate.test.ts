@@ -7,6 +7,7 @@ import {
   computeHeroFarmFacts,
   computeSquadFarmFacts,
   computeFarmRateRow,
+  clearHeadSeconds,
   type HeroFarmFacts,
 } from '@bombfarm/domain/farm-rate';
 import {
@@ -181,11 +182,11 @@ describe('gate over timer, and the strict > boundary (edge cases)', () => {
     // Construction: an astronomically large avgHit one-shots every prop AND the boss, so
     // eHtk === bossHtk === 1 exactly (Math.ceil of a value in (0,1] is 1). That collapses
     // clearSecs to a single-hero closed form the test can invert exactly:
-    //   clearSecs = (propCount × eHtk + bossHtk) / (plantsPerSec × blocksPerBomb × EFF_IA × uptime)
+    //   clearSecs = head + (propCount × eHtk + bossHtk) / (plantsPerSec × blocksPerBomb × EFF_IA × uptime)
     // solved here for plantsPerSec given a target clearSecs, then fed back through the real
     // computeFarmRateRow. A tiny (1e-6s) offset on each side absorbs floating-point rounding
-    // while still proving the comparison is strict ">" and not ">=" ("exactly the gate
-    // timer ⇒ infeasible false").
+    // while still proving the comparison is strict ">" and not ">=" — exactly the gate timer is
+    // feasible.
     const line = wikiPhaseLine(10)!;
     const gateTimerSecs = GATE_SECS_POR_ATO[line.ato - 1]!;
     const propCount = propCountForAto(line.ato);
@@ -197,8 +198,13 @@ describe('gate over timer, and the strict > boundary (edge cases)', () => {
     expect(eHtk).toBe(1);
     expect(bossHtk).toBe(1);
 
+    // One hero at uptime 1 puts exactly 1 on the field, so the head is the opening fuse alone —
+    // no activation stagger with nobody to stagger behind.
+    const fuseSecs = syntheticHero({ heroId: 'probe' }).fuseSecs;
+    const headSecs = clearHeadSeconds(1, fuseSecs);
+
     function buildSquad(targetClearSecs: number) {
-      const requiredRate = (propCount * eHtk + bossHtk) / targetClearSecs;
+      const requiredRate = (propCount * eHtk + bossHtk) / (targetClearSecs - headSecs);
       const plantsPerSec = requiredRate / EFF_IA;
       const hero: HeroFarmFacts = syntheticHero({ heroId: 'boundary', avgHitBase, plantsPerSec, blocksPerBomb: 1, uptime: 1 });
       return computeSquadFarmFacts([hero], { ...account, slots: 1000 });

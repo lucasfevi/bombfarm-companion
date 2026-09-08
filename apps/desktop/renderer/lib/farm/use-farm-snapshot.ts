@@ -125,9 +125,8 @@ export function createFarmSnapshotStore(): {
     if (view === null) return;
 
     const inputs = buildFarmInputs(view, controls);
-    // The gate is the cheap first tier and rides along with the board it belongs to, so nothing
-    // about the advisor is derived while the screen paints. The expensive second tier is
-    // `runRespec` below, and only a button press reaches it.
+    // Nothing about the advisor is derived while the screen paints: the solve is `runRespec`
+    // below, and only a button press reaches it.
     const outcome: FarmComputeOutcome =
       inputs === null
         ? { ok: false, reason: 'incomplete-account' }
@@ -135,7 +134,6 @@ export function createFarmSnapshotStore(): {
             ok: true,
             board: memo.rows(inputs),
             inputs,
-            gate: memo.gate(inputs),
             // The account's own capture time, never `Date.now()`: this compute is the only thing
             // that just happened, and dating the board by it is what let a recompute over an
             // account the app had stopped re-reading present itself as current.

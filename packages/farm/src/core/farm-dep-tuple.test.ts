@@ -147,12 +147,13 @@ describe('each dep-tuple member invalidates the memo, and nothing else does', ()
     });
   }
 
-  it('the Tier 1 gate is memoized over the same tuple', () => {
+  // The solve is deliberately NOT memoized — every press re-solves. This asserts the counter
+  // moves on each call, so a memo quietly added to the on-demand path fails here rather than
+  // silently serving a stale proposal after the roster changed.
+  it('the on-demand solve is never memoized — every call counts', () => {
     const memo = createFarmRankingMemo();
-    memo.gate(baseInputs());
-    memo.gate(baseInputs());
-    expect(memo.gateComputeCount()).toBe(1);
-    memo.gate({ ...baseInputs(), maxPhase: 42 });
-    expect(memo.gateComputeCount()).toBe(2);
+    memo.solve(baseInputs());
+    memo.solve(baseInputs());
+    expect(memo.solveCount()).toBe(2);
   });
 });
