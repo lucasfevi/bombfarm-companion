@@ -6,9 +6,11 @@ import { heroLevelLabel } from '@bombfarm/domain/game-labels';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import {
   abilityPanelAvailability,
+  abilityPanelReading,
   abilityPointReadoutFor,
   abilityRowsFor,
   abilitySlotReadoutFor,
+  abilityStepAvailability,
   abilityValueText,
   deadPointNote,
   type AbilityRowText,
@@ -230,5 +232,50 @@ describe('deadPointNote', () => {
     ] as const) {
       expect(deadPointNote(reading, NOTES).trim(), reading.kind).not.toBe('');
     }
+  });
+});
+
+describe('abilityPanelReading', () => {
+  it('a host that supplies the callbacks gets both controls', () => {
+    expect(abilityPanelReading({ editable: true })).toEqual({
+      showReset: true,
+      showRankControls: true,
+    });
+  });
+
+  it('a host that supplies none gets the same figures and no control at all', () => {
+    expect(abilityPanelReading({ editable: false })).toEqual({
+      showReset: false,
+      showRankControls: false,
+    });
+  });
+});
+
+describe('abilityStepAvailability', () => {
+  const room = { level: 3, max: 20, spent: 10, budget: 40 };
+
+  it('both ways for an ability with room to move and a budget to spend', () => {
+    expect(abilityStepAvailability(room)).toEqual({ canDecrease: true, canIncrease: true });
+  });
+
+  it('an unspent ability cannot go below zero', () => {
+    expect(abilityStepAvailability({ ...room, level: 0 }).canDecrease).toBe(false);
+  });
+
+  it('an ability at its own maximum cannot be bought again, budget or not', () => {
+    expect(abilityStepAvailability({ ...room, level: 20 }).canIncrease).toBe(false);
+  });
+
+  it('a hero that has spent its whole budget cannot buy a level it otherwise has room for', () => {
+    expect(abilityStepAvailability({ ...room, spent: 40 }).canIncrease).toBe(false);
+  });
+
+  it('an over-budget hero cannot buy either — spending past the budget is not a licence', () => {
+    expect(abilityStepAvailability({ ...room, spent: 41 }).canIncrease).toBe(false);
+  });
+
+  it('the two ceilings are independent: at max with budget left, and at budget below max', () => {
+    expect(abilityStepAvailability({ ...room, level: 20, spent: 10 }).canIncrease).toBe(false);
+    expect(abilityStepAvailability({ ...room, level: 3, spent: 40 }).canIncrease).toBe(false);
   });
 });

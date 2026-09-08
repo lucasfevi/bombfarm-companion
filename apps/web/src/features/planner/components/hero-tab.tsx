@@ -15,17 +15,18 @@ import {
   selectHeroAbilityGains,
   selectHeroRollQuality,
 } from '@/shared/stores';
-import { HeroAbilitiesTab } from './hero-abilities-tab';
+import { useHeroBuildActions } from '../hooks/use-hero-build-actions';
 
 /**
- * The workspace's Hero tab: who the hero is and how its birth roll landed, the ability editor it
- * has always carried, and what one more level of each ability is worth.
+ * The workspace's Hero tab: who the hero is and how its birth roll landed, and one abilities panel
+ * that both prices each ability's next level and lets you buy it.
  *
- * The two shared panels are read-only by construction — they take no editing callbacks, so the
- * ability ranks stay editable in exactly one place.
+ * The abilities panel is the desktop's own, handed the editing callbacks the desktop does not
+ * supply — so both apps draw one panel from one implementation, and only this one can write.
  */
 export function HeroTab() {
   const { t, lang } = useAppLang();
+  const { setAbilityLevel, resetAbilities } = useHeroBuildActions();
   const hero = usePlannerStore(selectDraftHeroRecord);
   const rollQuality = usePlannerStore(selectHeroRollQuality);
   const abilityGains = usePlannerStore(selectHeroAbilityGains);
@@ -60,8 +61,19 @@ export function HeroTab() {
         marketPrice={marketPrice}
         formatAmount={formatAmount}
       />
-      <HeroAbilitiesTab />
-      <HeroAbilitiesPanel hero={hero} abilityGains={abilityGains} t={heroCopy} lang={lang} />
+      <HeroAbilitiesPanel
+        hero={hero}
+        abilityGains={abilityGains}
+        t={heroCopy}
+        lang={lang}
+        editing={{
+          onAbilityLevel: setAbilityLevel,
+          onReset: resetAbilities,
+          resetLabel: t.reset,
+          levelAbbrev: t.rankLv,
+          tip: t.abilitiesTip,
+        }}
+      />
     </div>
   );
 }

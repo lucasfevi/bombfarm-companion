@@ -68,7 +68,7 @@ Failed `localStorage` writes return `false`, notify `onStorageWriteError`, and s
 
 ## The ≤8 props rule (strict since W7)
 
-W5-migrated planner components (`PlannerTabs`, `HeroAbilitiesTab`, `GearTab` — W6 split of the former `BuildColumn` — `AccountColumn`, `AdviceColumn`, `HeroStrip`, composer) must declare **≤ 8 props**. Repo-wide enforcement is a Vitest inventory (`src/tests/mod-17-max-props.test.ts`).
+W5-migrated planner components (`PlannerTabs`, `GearTab` — W6 split of the former `BuildColumn` — `AccountColumn`, `AdviceColumn`, `HeroStrip`, composer) must declare **≤ 8 props**. Repo-wide enforcement is a Vitest inventory (`src/tests/mod-17-max-props.test.ts`).
 
 **W7 closed this**: `ALLOWLIST_FILES` is **empty** and the rule is strict. The `Switch` / `Select` entries were removed not by changing those components but by fixing the counter — the rule counts only a component's **own non-DOM props**, excluding native HTML/ARIA attributes and surfaces inherited via `ComponentPropsWithoutRef`. The rule targets prop-drilled god-components, not DOM pass-through primitives. The migrated six must never join an allowlist.
 

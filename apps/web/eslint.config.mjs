@@ -437,7 +437,6 @@ export default tseslint.config(
   {
     files: [
       'src/app/_shell/site-header.tsx',
-      'src/features/planner/components/hero-abilities-tab.tsx',
       'src/features/planner/components/hero-strip-identity.tsx',
       'src/features/planner/components/hero-strip-metrics.tsx',
     ],

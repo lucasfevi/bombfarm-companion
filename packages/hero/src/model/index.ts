@@ -27,17 +27,21 @@ export type {
 } from './birth-roll-panel';
 export {
   abilityPanelAvailability,
+  abilityPanelReading,
   abilityPointReadoutFor,
   abilityRowsFor,
   abilitySlotReadoutFor,
+  abilityStepAvailability,
   abilityValueText,
   deadPointNote,
 } from './ability-panel';
 export type {
+  AbilityPanelReading,
   AbilityPointReadout,
   AbilityRow,
   AbilityRowText,
   AbilitySlotReadout,
+  AbilityStepAvailability,
   AbilityValueCopy,
   DeadPointNotes,
   DeadPointReading,

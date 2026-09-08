@@ -6,7 +6,9 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { AbilityIcon } from '@bombfarm/game-art';
 import {
   AbilityCard,
+  Button,
   Panel,
+  RankControl,
   StatList,
   abilEffectClass,
   abilGridClass,
@@ -23,9 +25,11 @@ import {
 import { sub, type HeroCopy, type Lang } from '../copy';
 import {
   abilityPanelAvailability,
+  abilityPanelReading,
   abilityPointReadoutFor,
   abilityRowsFor,
   abilitySlotReadoutFor,
+  abilityStepAvailability,
   deadPointNote,
 } from '../model';
 
@@ -43,7 +47,25 @@ const READING_CLASS: Record<AbilityGainState['kind'], string> = {
 };
 
 /**
- * What this hero's abilities do, and where its next ability point is worth spending.
+ * The callbacks a host supplies to make the panel editable. Absent, the same figures render with
+ * no way to change them — see `abilityPanelReading`.
+ *
+ * The three strings ride along rather than living in this package's dictionary because each is
+ * vocabulary its host already prints elsewhere: Reset labels a control on several other panels,
+ * the level abbreviation is the game's own and appears on every item row, and the guidance
+ * paragraph cross-references the host's neighbouring panels by name.
+ */
+export type AbilityPanelEditing = {
+  onAbilityLevel: (abilityId: string, next: number) => void;
+  onReset: () => void;
+  resetLabel: string;
+  levelAbbrev: string;
+  tip: string;
+};
+
+/**
+ * What this hero's abilities do, where its next ability point is worth spending, and — for a host
+ * that asks for it — the steppers that spend it.
  *
  * Every judgement it prints is made by an exported function in `../model` and proved there; this
  * file only arranges the results. It takes `t`/`lang` as props rather than reading
@@ -55,12 +77,15 @@ export function HeroAbilitiesPanel({
   abilityGains,
   t,
   lang,
+  editing,
 }: {
   hero: HeroRecord;
   abilityGains: readonly AbilityGain[];
   t: HeroCopy;
   lang: Lang;
+  editing?: AbilityPanelEditing | undefined;
 }) {
+  const reading = abilityPanelReading({ editable: !!editing });
   const availability = abilityPanelAvailability(abilityGains);
   const slots = abilitySlotReadoutFor(hero);
   const points = abilityPointReadoutFor(hero);
@@ -91,6 +116,11 @@ export function HeroAbilitiesPanel({
     <Panel className="min-w-0">
       <div className={panelHClass}>
         <h2 className={panelTitleClass}>{t.heroDetailAbilitiesTitle}</h2>
+        {reading.showReset && editing ? (
+          <Button type="button" onClick={editing.onReset}>
+            {editing.resetLabel}
+          </Button>
+        ) : null}
       </div>
 
       <StatList
@@ -103,6 +133,18 @@ export function HeroAbilitiesPanel({
                 {sub(t.heroDetailAbilitiesSlotsValue, {
                   used: formatNumber(slots.used, lang, 0),
                   max: formatNumber(slots.quota, lang, 0),
+                })}
+              </span>
+            ),
+          },
+          {
+            id: 'granted',
+            label: t.heroDetailAbilitiesGranted,
+            value: (
+              <span className={numericClass}>
+                {sub(t.heroDetailAbilitiesGrantedValue, {
+                  granted: formatNumber(points.granted, lang, 0),
+                  spendable: formatNumber(points.spendable, lang, 0),
                 })}
               </span>
             ),
@@ -127,44 +169,68 @@ export function HeroAbilitiesPanel({
         ]}
       />
       <p className={tipClass}>{deadNote}</p>
+      {editing === undefined ? null : <p className={tipClass}>{editing.tip}</p>}
 
       {availability.kind === 'unavailable' ? (
         <p className={tipClass}>{t.heroDetailAbilitiesNone}</p>
       ) : (
         <div className={cn(abilGridClass, 'mt-3')}>
-          {rows.map((row) => (
-            <AbilityCard
-              key={row.abilityId}
-              selected={row.spent}
-              onSheet={row.onSheet}
-              lockedOut={false}
-            >
-              <div className={abilHeadClass}>
-                <AbilityIcon
-                  code={row.abilityId}
-                  size="xl"
-                  level={row.level}
-                  max={row.max}
-                  className="shrink-0 self-start"
-                />
-                <div className={abilMetaClass}>
-                  <span className={abilNameClass}>
-                    {abilityName(row.abilityId, lang)}
-                    {row.onSheet ? (
-                      <em className={abilTagClass}>{t.heroDetailAbilitiesOnSheetTag}</em>
-                    ) : null}
-                  </span>
-                  <span className={cn('text-[11px] leading-1.3 text-muted', numericClass)}>
-                    {row.levelText}
-                  </span>
-                  <span className={abilEffectClass}>{abilityEffectText(row.abilityId, lang)}</span>
+          {rows.map((row) => {
+            const name = abilityName(row.abilityId, lang);
+            const step = abilityStepAvailability({
+              level: row.level,
+              max: row.max,
+              spent: points.spent,
+              budget: points.spendable,
+            });
+            return (
+              <AbilityCard
+                key={row.abilityId}
+                selected={row.spent}
+                onSheet={row.onSheet}
+                lockedOut={false}
+              >
+                <div className={abilHeadClass}>
+                  <AbilityIcon
+                    code={row.abilityId}
+                    size="xl"
+                    level={row.level}
+                    max={row.max}
+                    className="shrink-0 self-start"
+                  />
+                  <div className={abilMetaClass}>
+                    <span className={abilNameClass}>
+                      {name}
+                      {row.onSheet ? (
+                        <em className={abilTagClass}>{t.heroDetailAbilitiesOnSheetTag}</em>
+                      ) : null}
+                    </span>
+                    <span className={cn('text-[11px] leading-1.3 text-muted', numericClass)}>
+                      {row.levelText}
+                    </span>
+                    <span className={abilEffectClass}>{abilityEffectText(row.abilityId, lang)}</span>
+                  </div>
                 </div>
-              </div>
-              <p className={cn('mt-auto text-[11px] leading-1.3', READING_CLASS[row.reading])}>
-                {row.valueText}
-              </p>
-            </AbilityCard>
-          ))}
+                <p className={cn('mt-auto text-[11px] leading-1.3', READING_CLASS[row.reading])}>
+                  {row.valueText}
+                </p>
+                {reading.showRankControls && editing ? (
+                  <RankControl
+                    className="mt-2"
+                    value={row.level}
+                    max={row.max}
+                    label={name}
+                    lvLabel={editing.levelAbbrev}
+                    disabledDec={!step.canDecrease}
+                    disabledInc={!step.canIncrease}
+                    onChange={(next) => {
+                      editing.onAbilityLevel(row.abilityId, next);
+                    }}
+                  />
+                ) : null}
+              </AbilityCard>
+            );
+          })}
         </div>
       )}
     </Panel>

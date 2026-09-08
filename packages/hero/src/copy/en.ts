@@ -61,6 +61,8 @@ export const heroEn = {
     "Without a birth roll this hero cannot be valued, so no ability of its can be priced.",
   heroDetailAbilitiesSlots: "Slots",
   heroDetailAbilitiesSlotsValue: "{used} of {max} for this rarity",
+  heroDetailAbilitiesGranted: "Points granted",
+  heroDetailAbilitiesGrantedValue: "{granted} granted, {spendable} spendable",
   heroDetailAbilitiesPoints: "Ability points",
   heroDetailAbilitiesPointsValue: "{spent} of {budget} spent",
   heroDetailAbilitiesDeadPoints: "Dead points",

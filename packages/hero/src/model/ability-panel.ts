@@ -152,6 +152,44 @@ export function abilityPointReadoutFor(hero: HeroRecord): AbilityPointReadout {
   };
 }
 
+/**
+ * Which of the panel's controls a host gets. Editing is optional: a host that supplies the
+ * callbacks gets the rank steppers and the Reset button it always had, and a host that supplies
+ * none gets the same figures with no way to change them.
+ *
+ * It is a function rather than a condition inside the JSX because this package renders no
+ * component in a test — logic in JSX here is logic nothing can prove.
+ */
+export type AbilityPanelReading = {
+  showReset: boolean;
+  showRankControls: boolean;
+};
+
+export function abilityPanelReading(input: { editable: boolean }): AbilityPanelReading {
+  const { editable } = input;
+  return { showReset: editable, showRankControls: editable };
+}
+
+export type AbilityStepAvailability = {
+  readonly canDecrease: boolean;
+  readonly canIncrease: boolean;
+};
+
+/**
+ * Which way one ability's rank may move. Two independent ceilings stop a purchase — the ability's
+ * own maximum level, and the hero's point budget — and a hero can sit against either without
+ * sitting against the other, so neither implies the other.
+ */
+export function abilityStepAvailability(input: {
+  level: number;
+  max: number;
+  spent: number;
+  budget: number;
+}): AbilityStepAvailability {
+  const { level, max, spent, budget } = input;
+  return { canDecrease: level > 0, canIncrease: level < max && spent < budget };
+}
+
 export type DeadPointNotes = {
   readonly none: string;
   readonly atCeiling: string;

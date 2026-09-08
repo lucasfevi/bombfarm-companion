@@ -250,15 +250,16 @@ describe('item icon meta glyphs', () => {
   });
 });
 
-describe('abilities tab chrome', () => {
-  const buildCol = read('features/planner/components/hero-abilities-tab.tsx');
+describe('abilities panel chrome', () => {
+  // One panel draws the ability cards for both apps now, so its chrome is read where it lives.
+  const abilities = readHero('components/hero-abilities-panel.tsx');
   const itemIcon = readGameArt('item-icon.tsx');
 
   it('shows ability icons at xl size with n/20 progress', () => {
-    expect(buildCol).toContain('AbilityIcon');
-    expect(buildCol).toMatch(/AbilityIcon[\s\S]*size="xl"/);
-    expect(buildCol).toMatch(/level=\{level\}/);
-    expect(buildCol).toMatch(/max=\{ability\.max\}/);
+    expect(abilities).toContain('AbilityIcon');
+    expect(abilities).toMatch(/AbilityIcon[\s\S]*size="xl"/);
+    expect(abilities).toMatch(/level=\{row\.level\}/);
+    expect(abilities).toMatch(/max=\{row\.max\}/);
   });
 
   it('does not overlay rarity crystals on item art', () => {

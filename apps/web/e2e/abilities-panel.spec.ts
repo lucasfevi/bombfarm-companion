@@ -43,8 +43,9 @@ test.describe('abilities panel (ABX residual)', () => {
 
     const heroPanel = page.locator('[data-slot="tabs-panel"][data-state="active"]');
     await expect(heroPanel.getByText(/\d+ habilidades · \d+ pontos/i)).toHaveCount(0);
-    await expect(heroPanel.getByText(/\d+ \/ \d+ habilidades/i)).toBeVisible();
-    await expect(heroPanel.getByText(/\d+ \/ \d+ pontos/i)).toBeVisible();
+    // One panel counts the slots and the points now, in the wording the desktop already used.
+    await expect(heroPanel.getByText(/\d+ de \d+ para esta raridade/i)).toBeVisible();
+    await expect(heroPanel.getByText(/\d+ de \d+ gastos/i)).toBeVisible();
 
     const reset = heroPanel
       .getByRole('heading', { name: /^habilidades$/i })
@@ -85,10 +86,10 @@ test.describe('abilities panel (ABX residual)', () => {
     const panel = page.locator('[data-slot="tabs-panel"][data-state="active"]');
     await expect(panel.getByText(/49 granted/i)).toBeVisible();
     await expect(panel.getByText(/40 spendable/i)).toBeVisible();
-    await expect(panel.getByText(/9 granted but unusable/i)).toBeVisible();
+    await expect(panel.getByText(/so 9 points can never be used/i)).toBeVisible();
   });
 
-  test('granted-but-unusable note stays mounted but invisible when nothing is dead', async ({ page }) => {
+  test('nothing dead is stated as its own sentence, not as a hidden note', async ({ page }) => {
     // Raro quota is 3 slots x 20 = 60 spendable; level 20 grants far less than that -> dead=0.
     const heroed = {
       ...importedRoster,
@@ -103,11 +104,12 @@ test.describe('abilities panel (ABX residual)', () => {
     await openAbilitiesTab(page, 'en');
 
     const panel = page.locator('[data-slot="tabs-panel"][data-state="active"]');
-    // /\d+ granted but unusable/ (not the bare phrase) distinguishes this note from the
-    // abilitiesTip paragraph, which also contains the same words in prose.
-    const deadNote = panel.getByText(/\d+ granted but unusable/i);
-    await expect(deadNote).toHaveCount(1);
-    await expect(deadNote).not.toBeVisible();
+    // A hero wasting nothing gets its own sentence rather than a hidden copy of the warning: the
+    // three dead-point readings each say something different, and none of them is silence.
+    await expect(panel.getByText(/can never be used/i)).toHaveCount(0);
+    await expect(
+      panel.getByText(/Every level this hero gains still turns into a point it can spend/i),
+    ).toBeVisible();
     await expect(panel.getByText(/20 granted/i)).toBeVisible();
     await expect(panel.getByText(/20 spendable/i)).toBeVisible();
   });

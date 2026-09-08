@@ -61,6 +61,8 @@ export const heroPtBR: HeroCopy = {
     "Sem o sorteio de nascimento não dá para avaliar este herói, então nenhuma habilidade dele tem preço.",
   heroDetailAbilitiesSlots: "Espaços",
   heroDetailAbilitiesSlotsValue: "{used} de {max} para esta raridade",
+  heroDetailAbilitiesGranted: "Pontos concedidos",
+  heroDetailAbilitiesGrantedValue: "{granted} concedidos, {spendable} utilizáveis",
   heroDetailAbilitiesPoints: "Pontos de habilidade",
   heroDetailAbilitiesPointsValue: "{spent} de {budget} gastos",
   heroDetailAbilitiesDeadPoints: "Pontos mortos",
