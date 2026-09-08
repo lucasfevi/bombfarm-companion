@@ -1,10 +1,12 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import type { ForgeRunResult } from '@bombfarm/contracts';
 import { Bar, Button, cn, StatList, type StatListItem } from '@bombfarm/ui';
 import { useCopy } from '../../lib/copy';
 import { formatAge } from '../../lib/format';
 import type { ForgeRunPlan } from '../../lib/forge/forge-run-reducer';
+import { ForgeRailRow } from './forge-climb';
 import { ForgeGold } from './forge-gold';
 import {
   forgeLevel,
@@ -76,8 +78,6 @@ function AgainstPlan({ spent, plan, labels }: { spent: number; plan: ForgeRunPla
         <span aria-hidden className="absolute inset-y-0 w-px bg-down" style={{ left: `${String(percent(forecast.badRunGold))}%` }} />
       </div>
       <p data-testid="forge-against-figures" className="m-0 flex flex-wrap items-baseline gap-x-1.5 text-[11px] text-muted">
-        <Figure testId="forge-against-spent" label={t.forgeAgainstSpent} amount={gold(spent)} />
-        {MIDDOT}
         <Figure testId="forge-against-expected" label={t.forgeAgainstExpected} amount={gold(forecast.gold)} />
         {MIDDOT}
         <Figure testId="forge-against-bad-run" label={t.forgeAgainstBadRun} amount={gold(forecast.badRunGold)} />
@@ -90,11 +90,14 @@ export function ForgeResult({
   result,
   plan,
   labels,
+  climb,
   onDone,
 }: {
   result: ForgeRunResult;
   plan: ForgeRunPlan | null;
   labels: ForgeLabels;
+  /** The climb that produced this result, kept on screen under the totals it explains. */
+  climb?: ReactNode;
   onDone: () => void;
 }) {
   const t = useCopy();
@@ -113,6 +116,15 @@ export function ForgeResult({
         <span data-testid="forge-result-rolls">{`${labels.count(result.rolls)} · ${labels.count(result.fails)} · ${labels.count(result.crits)}`}</span>
       ),
     },
+    {
+      id: 'spent',
+      label: t.forgeResultSpent,
+      value: (
+        <span data-testid="forge-result-spent">
+          <ForgeGold>{labels.gold(result.spent)}</ForgeGold>
+        </span>
+      ),
+    },
     { id: 'duration', label: t.forgeResultDuration, value: <span data-testid="forge-result-duration">{formatAge(result.durationMs, t)}</span> },
   ];
 
@@ -121,13 +133,17 @@ export function ForgeResult({
       <h3 data-testid="forge-result-heading" className={cn('m-0', 'text-sm', 'font-semibold', TONE_CLASS[heading.tone])}>
         {heading.text}
       </h3>
-      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <StatList items={facts} aria-label={t.forgeResultClimb} />
-        <div className="flex flex-col gap-1">
+      {/* The wide side over the chart, the narrow one over the tally: the plan's bar is a length
+          to be read against a scale, like the climb under it, and the facts are a short column of
+          label-and-figure, like the rung rows under them. */}
+      <ForgeRailRow>
+        <div className="flex min-w-0 flex-col gap-1">
           <span className="text-[11px] tracking-[0.04em] text-muted uppercase">{t.forgeAgainstPlanTitle}</span>
           <AgainstPlan spent={result.spent} plan={plan} labels={labels} />
         </div>
-      </div>
+        <StatList items={facts} aria-label={t.forgeResultClimb} />
+      </ForgeRailRow>
+      {climb}
       <div className="flex justify-end">
         <Button type="button" variant="primary" data-testid="forge-done" onClick={onDone}>
           {t.forgeDone}

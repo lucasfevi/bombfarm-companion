@@ -111,6 +111,7 @@ describe('ForgeRail', () => {
     expect(stateOf(html)).toBe('collapsed');
     expect(html).toContain('height:0');
     expect(html).not.toContain('data-testid="forge-result"');
+    expect(html).not.toContain('data-testid="forge-climb"');
     expect(html).not.toContain('data-testid="forge-chart"');
   });
 
@@ -173,12 +174,58 @@ describe('ForgeRail', () => {
     expect(html).toMatch(/forge-result-heading[^>]*>Reached \+12</);
     expect(html).toMatch(/forge-result-climb[^>]*>\+8 → \+12</);
     expect(html).toMatch(/forge-result-rolls[^>]*>8 · 1 · 0</);
-    expect(html).toMatch(/forge-against-spent[^>]*>spent .*?800/);
+    expect(html).toMatch(/forge-result-spent[^>]*>.*?icon_gold\.png.*?>800</);
     expect(html).toMatch(/forge-against-expected[^>]*>expected .*?650/);
     expect(html).toMatch(/forge-against-bad-run[^>]*>a bad run .*?1,200/);
     expect(html).toContain('data-testid="forge-done"');
     expect(html).not.toContain('data-testid="forge-result-wallet"');
     expect(html).not.toContain('data-testid="forge-bought"');
+  });
+
+  it('keeps the climb and its rolls-by-rung tally under the finished result, drawn the same way the live run drew them', () => {
+    const html = renderRail(finished());
+    expect(html).toContain('data-testid="forge-climb"');
+    expect(html).toContain('data-testid="forge-chart"');
+    const rungs = [...html.matchAll(/data-testid="forge-tally-rung"[^>]*>([^<]+)</g)].map((match) => match[1]);
+    expect(rungs).toEqual(['+9…+11', '+12']);
+    const fails = [...html.matchAll(/data-testid="forge-tally-fails"[^>]*>([^<]+)</g)].map((match) => match[1]);
+    expect(fails).toEqual(['0', '1']);
+  });
+
+  it('breaks its two rows on the same edge — the plan over the chart, the facts over the tally', () => {
+    const html = renderRail(finished());
+    const columns = [...html.matchAll(/class="(grid gap-3 md:grid-cols-\[[^"]+)"/g)].map((match) => match[1]);
+    expect(columns).toHaveLength(2);
+    expect(columns[0]).toBe(columns[1]);
+    expect(html.indexOf('data-testid="forge-against-plan"')).toBeLessThan(html.indexOf('<dl'));
+    expect(html.indexOf('data-testid="forge-chart"')).toBeLessThan(html.indexOf('data-testid="forge-tally"'));
+  });
+
+  it('holds no roll open on the finished climb — the run is over, so nothing is still in flight', () => {
+    const paused = forgeRunReducer(running(), { kind: 'pause', event: { runId: 'r1', ms: 9_000 } });
+    expect(ghostTag(renderRail(paused))).toContain('motion-safe:animate-forge-ghost');
+    const html = renderRail(
+      forgeRunReducer(paused, {
+        kind: 'done',
+        event: {
+          runId: 'r1',
+          result: { itemId: 'g1', from: 8, to: 12, target: 12, stop: 'cancelled', reached: false, rolls: 8, fails: 1, crits: 0, safeJumps: 0, spent: 800, walletAfter: 5_000, durationMs: 12_000 },
+        },
+      }),
+    );
+    expect(html).toContain('data-testid="forge-chart"');
+    expect(ghostTag(html)).toBe('');
+  });
+
+  it('reads the spend among the run\'s own facts, between the rolls and how long they took, and not under the plan\'s bar', () => {
+    const html = renderRail(finished());
+    expect(html).toMatch(/forge-result-spent[^>]*>.*?icon_gold\.png.*?>800</);
+    expect(html).not.toContain('data-testid="forge-against-spent"');
+    const labels = [...html.matchAll(/<dt>([^<]+)<\/dt>/g)].map((match) => match[1]);
+    expect(labels).toEqual([en.forgeResultClimb, en.forgeResultRolls, en.forgeResultSpent, en.forgeResultDuration]);
+    const figures = /data-testid="forge-against-figures"[^>]*>(.*?)<\/p>/s.exec(html)?.[1] ?? '';
+    expect(figures).toContain(en.forgeAgainstExpected);
+    expect(figures).toContain(en.forgeAgainstBadRun);
   });
 
   it('leads with the percentage, says what it means, and tints both by which of the plan\'s two figures the spend passed', () => {
@@ -235,6 +282,8 @@ describe('ForgeRail', () => {
     expect(html).toContain('data-state="none"');
     expect(html).not.toContain('data-testid="forge-against-gap"');
     expect(html).not.toContain('data-testid="forge-against-verdict"');
+    // What the run cost is a fact about the run, so it still reads with no plan to compare to.
+    expect(html).toMatch(/forge-result-spent[^>]*>.*?icon_gold\.png.*?>100</);
   });
 });
 
