@@ -34,9 +34,15 @@ jobs:
 
       # No dependency install: the checker imports only Node built-ins, and an install step here
       # would multiply this job's one billed minute by an order of magnitude.
+      #
+      # `package-manager-cache` must stay off for exactly that reason. It defaults on, detects pnpm
+      # from the lockfile, and then fails the step looking for a pnpm this job never installs — so
+      # the job dies before the checker runs while still reporting a red check, which reads like an
+      # alarm that fired.
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
+          package-manager-cache: false
 
       - name: Check the published snapshot
         run: node tools/market-snapshot/freshness.mjs
