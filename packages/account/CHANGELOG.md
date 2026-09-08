@@ -1,5 +1,13 @@
 # @bombfarm/account
 
+## 0.2.3
+
+### Patch Changes
+
+- Updated dependencies [f3a35b8]
+  - @bombfarm/ui@0.12.1
+  - @bombfarm/domain@1.0.1
+
 ## 0.2.2
 
 ### Patch Changes

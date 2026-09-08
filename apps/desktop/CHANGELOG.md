@@ -1,5 +1,67 @@
 # @bombfarm/desktop
 
+## 0.14.0
+
+### Minor Changes
+
+- f3a35b8: Draw the window's minimize, maximize and close buttons in the header, at a third of their size.
+
+  **Smaller, because they are ours now.** The three buttons in the top-right corner were drawn by
+  Windows, which fixes them at 47px wide and lets an app change only their height and their colours.
+  They are now 28px squares drawn by the app — the same control the compact Live window already uses
+  for its own close — in the header's own muted ink, lifting to a soft wash under the cursor rather
+  than to the OS's flat grey. They keep the window's top-right corner, flush with both edges, where
+  the OS drew them and where a hand reaching to close a window goes.
+
+  **Close still hides to the tray.** The button asks the window to close and nothing more, so the
+  same rule answers it as before: with the tray running, closing hides the window and leaves the app
+  collecting live data behind it. Nothing here quits the app; the tray's own Quit still does.
+
+  **The middle button says which one it is.** It shows the restore mark and announces itself as
+  "Restore down" whenever the window is maximized, and it follows the window rather than its own
+  last click — snapping to an edge, double-clicking the header or pressing Win+Up all move it.
+
+  The top bar's collapse widths are unchanged, but the cluster claims 36px less room than the OS
+  buttons did, so the tabs and actions keep their full shape on a slightly narrower window.
+
+### Patch Changes
+
+- ed310fb: Keep the climb on screen when a forge run finishes, and read the spend among the run's own facts.
+
+  While a run is rolling, the Forge band draws the climb — a dot per call, stepping up and dropping back on a fail — beside a tally of rolls, fails and gold by rung. The moment the run ended, both were replaced by the summary alone: `26 · 8 · 0` and a percentage against the plan, with no trace of the shape that produced them. The run you had just watched for a minute was gone at exactly the point you wanted to read it. The finished panel now carries both, unchanged, until you press Done.
+
+  What the run cost has moved with them. It used to sit under the plan's bar as the first of three figures, which made it read as a term in that comparison rather than as a fact about the run — and a run started outside the panel, with no plan to compare against, printed no spend at all. It is now a row of its own between the roll counts and the duration, and the plan's line carries only the two figures it is measuring you against.
+
+  The panel is one grid rather than two. The plan's bar takes the wide side directly above the chart, and the four facts take the narrow side above the rung tally, so both rows break on the same edge: two lengths read against a scale on the left, two short columns of label and figure on the right.
+
+- 11bf45f: Date the "how old are these prices" line by the prices it covers instead of by the file that carried them. **Both apps were understating price age by hours.** Measured 2026-09-07, the Account and Inventory summaries read "Prices updated 12 minutes ago" over rows that were 6.6 hours old — and each of those rows was already saying so correctly, so the summary contradicted the list beneath it.
+
+  The published snapshot's `generatedUtc` is the age of the publish, not of any price in it. A rate-limited collection advances part of the sweep and carries the rest forward untouched, so the file is rewritten every run while individual quotes stay where they were; roughly thirteen consecutive passes collected nothing and republished, and every one of them reported success.
+
+  The rule was already written down and did not hold: all three summary call sites passed `generatedUtc` into a parameter named `quotedUtc`, because that value is in reach wherever such a line is drawn and reads like the answer. So the fix is the signature, not the callers. `formatPriceFreshness` (web) and `priceFreshness` (desktop) now take the resolved prices they summarise and derive the age themselves, and a snapshot-level timestamp is no longer a value either will accept.
+
+  The line states the **oldest** price it covers — "Oldest price read 6 h ago", "Preço mais antigo lido há 6 h" — because that is the only age true of every row above which it sits. Where no price it covers is dated, it draws nothing rather than an empty claim. Per-item rows are unchanged: each still reports its own quote's timestamp.
+
+- ad9d943: Notice a new version within twenty minutes of it shipping, instead of within six hours.
+
+  An installed app checks the release feed shortly after it opens and then on a timer, and that timer was six-hourly. Opening the app has always been the fast path, so the wait only ever fell on an app left running — which is most of them, for a companion that sits beside the game all day. A release published in the morning could stay invisible until the evening.
+
+  Nothing else about updating changes: the check still only _tells_ you, downloading is still a button you press, and installing still waits for a restart you choose. That is also why the new interval is twenty minutes rather than one — the notice is worth having sooner, but no amount of extra polling gets a version installed any faster than you decide to install it.
+
+- Updated dependencies [11bf45f]
+- Updated dependencies [f3a35b8]
+- Updated dependencies [ad9d943]
+  - @bombfarm/pricing@0.2.2
+  - @bombfarm/contracts@0.7.1
+  - @bombfarm/ui@0.12.1
+  - @bombfarm/domain@1.0.1
+  - @bombfarm/game-api@0.4.2
+  - @bombfarm/game-data@0.0.14
+  - @bombfarm/account@0.2.3
+  - @bombfarm/farm@1.0.1
+  - @bombfarm/game-art@0.4.2
+  - @bombfarm/hero@0.1.3
+
 ## 0.13.0
 
 ### Minor Changes
