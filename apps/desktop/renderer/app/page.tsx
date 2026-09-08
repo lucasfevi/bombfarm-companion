@@ -10,7 +10,7 @@ import type {
   UpdateStatus,
 } from '@bombfarm/contracts';
 import { DEFAULT_SETTINGS, idleUpdateStatus } from '@bombfarm/contracts';
-import { AppShell, BrandMark, StatusChip, useShellDensity } from '@bombfarm/ui';
+import { AppShell, BrandMark, StatusChip, useShellDensity, WINDOW_CONTROLS_WIDTH } from '@bombfarm/ui';
 // Proves the renderer can import @bombfarm/domain: a value import from a
 // FILE subpath that itself value-imports ./data/catalog.json, so a dist missing the JSON data
 // fails the static export build rather than surfacing later at runtime. It also carries a
@@ -19,9 +19,9 @@ import { rarityLabel } from '@bombfarm/domain/game-labels';
 import type { ConsentRecord } from '@bombfarm/game-api';
 import { CopyProvider, useCopy, useLocale, type Copy } from '../lib/copy';
 import { formatAge } from '../lib/format';
-import { useOverlayInset } from '../lib/window-overlay';
 import { navItemsFor } from './nav-items';
 import { ShellActions } from './shell-actions';
+import { ShellWindowControls } from './shell-window-controls';
 import { ConsentGate, isConsentGateVisible } from './consent-gate';
 import { ConsentModal } from './consent-modal';
 import { UpdateChip } from './update-chip';
@@ -209,10 +209,10 @@ function HomePageContent({
 }) {
   const t = useCopy();
   const { lang } = useLocale();
-  const overlayInset = useOverlayInset();
-  // The OS caption buttons are subtracted before the bar is judged: on Windows they take ~136px
-  // the header can never draw in, and on every other platform they take none.
-  const density = useShellDensity(overlayInset);
+  // The caption cluster is subtracted before the bar is judged: it sits at the end of the same
+  // row and never shrinks, so the room the tabs and actions are competing for is what is left
+  // after it.
+  const density = useShellDensity(WINDOW_CONTROLS_WIDTH);
   const [activeNavId, setActiveNavId] = useState(DEFAULT_NAV_ID);
   const [environment, setEnvironment] = useState<AppEnvironmentInfo | null>(null);
   const [status, setStatus] = useState<GameStatusInfo | null>(null);
@@ -334,7 +334,7 @@ function HomePageContent({
         onNavigate={setActiveNavId}
         brand={<BrandMark />}
         draggable
-        overlayInset={overlayInset}
+        windowControls={<ShellWindowControls />}
         actions={
           <ShellActions
             density={density}

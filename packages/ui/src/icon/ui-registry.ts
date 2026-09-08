@@ -21,6 +21,12 @@ import {
   HiMiniWindow,
 } from 'react-icons/hi2';
 import { BiCoffee, BiCopy } from 'react-icons/bi';
+import {
+  VscChromeClose,
+  VscChromeMaximize,
+  VscChromeMinimize,
+  VscChromeRestore,
+} from 'react-icons/vsc';
 import { PiHammer, PiSortAscending, PiSortDescending } from 'react-icons/pi';
 import type { IconGlyph } from './types';
 
@@ -81,4 +87,12 @@ export const uiIconRegistry = {
   // mark. Verify by geometry, not by the import name, if this is ever revisited.
   'sort-ascending': PiSortDescending,
   'sort-descending': PiSortAscending,
+  // The desktop's own caption buttons. All four come from one hairline set on purpose: these are
+  // read as a group at 12px in the corner of the window, where a heavier close mark beside a
+  // 1px minimize rule reads as a misalignment rather than as emphasis. `x-mark` is the wrong
+  // glyph here for that reason alone, not because it means something else.
+  'window-minimize': VscChromeMinimize,
+  'window-maximize': VscChromeMaximize,
+  'window-restore': VscChromeRestore,
+  'window-close': VscChromeClose,
 } as const satisfies Record<string, IconGlyph>;

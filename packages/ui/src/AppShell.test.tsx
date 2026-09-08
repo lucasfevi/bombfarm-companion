@@ -205,26 +205,66 @@ describe('AppShell', () => {
     expect(out).not.toContain('app-region');
   });
 
-  it('stops the drag handle short of the room reserved for the OS caption buttons', () => {
-    const out = html({ items: NAV_ITEMS, draggable: true, overlayInset: 140, children: 'body' });
-    const stripMatch = out.match(/<div aria-hidden="true"[^>]*style="([^"]*)"><\/div>/);
-    expect(stripMatch?.[1]).toMatch(/right:\s*140px/);
-    expect(stripMatch?.[1]).toMatch(/-webkit-app-region:\s*drag/);
-  });
-
-  it('holds the caption-button strip clear of the bar, net of the measure gutter it already has', () => {
-    const out = html({ items: NAV_ITEMS, overlayInset: 140, children: 'body' });
-    // On the bar rather than the header: the header is full-bleed chrome, and padding there would
-    // shift the content off the measure everything below it is read at.
-    expect(out.match(/<header[^>]*style="([^"]*)"/)?.[1] ?? '').not.toMatch(/padding-right/);
-    const barMatch = out.match(/<header[^>]*>.*?<div class="[^"]*max-w-desktop[^"]*" style="([^"]*)"/);
-    expect(barMatch?.[1]).toContain('140px');
-    expect(barMatch?.[1]).toContain('var(--container-desktop)');
-  });
-
-  it('asks for no clearance at all when the window has no caption buttons over it', () => {
-    const out = html({ items: NAV_ITEMS, children: 'body' });
+  it('lets the drag handle span the whole header, now that nothing else claims those pixels', () => {
+    const out = html({ items: NAV_ITEMS, draggable: true, children: 'body' });
+    const stripMatch = out.match(/<div aria-hidden="true"[^>]*class="([^"]*)"/);
+    expect(stripMatch?.[1]).toContain('right-0');
     expect(out).not.toContain('padding-right');
+  });
+
+  it('excuses the caption cluster from the drag handle in its own right', () => {
+    // It is the header's child, not the actions wrapper's, so the wrapper's mark does not cover
+    // it. Unmarked, the window manager would take the press and no button would ever fire.
+    const out = html({
+      items: NAV_ITEMS,
+      draggable: true,
+      actions: createElement('span', { 'data-testid': 'actions-slot' }, 'PT/EN'),
+      windowControls: createElement('span', { 'data-testid': 'caption-slot' }, 'controls'),
+      children: 'body',
+    });
+    expect(out).toContain('data-testid="caption-slot"');
+    // Brand row, nav wrapper, actions wrapper, caption cluster.
+    expect(out.match(/-webkit-app-region:\s*no-drag/g) ?? []).toHaveLength(4);
+  });
+
+  it('renders the caption cluster with no actions beside it', () => {
+    const out = html({
+      items: NAV_ITEMS,
+      windowControls: createElement('span', { 'data-testid': 'caption-slot' }, 'controls'),
+      children: 'body',
+    });
+    expect(out).toContain('data-testid="caption-slot"');
+  });
+
+  it('pins the caption cluster to the window corner, outside the capped bar', () => {
+    // Full-bleed chrome, like the border and the background: the buttons belong to the window's
+    // own top-right corner, not to the measure the content below is read at.
+    const out = html({
+      items: NAV_ITEMS,
+      actions: createElement('span', { 'data-testid': 'actions-slot' }, 'PT/EN'),
+      windowControls: createElement('span', { 'data-testid': 'caption-slot' }, 'controls'),
+      children: 'body',
+    });
+    const cluster = out.match(/<div class="(absolute[^"]*)"[^>]*><span data-testid="caption-slot"/);
+    expect(cluster?.[1], 'the cluster is not pinned to the corner').toContain('top-0');
+    expect(cluster?.[1]).toContain('right-0');
+    // The actions wrapper closes on its own content: nothing of the cluster is laid out in it,
+    // and so nothing of the cluster is inside the capped bar either.
+    expect(out).toContain('<span data-testid="actions-slot">PT/EN</span></div>');
+  });
+
+  it('holds the bar clear of the cluster it cannot see, and asks for nothing without one', () => {
+    // The cluster is out of flow, so the bar does not shrink around it — the clearance is the
+    // only thing keeping the last action from sliding under the close button.
+    const withControls = html({
+      items: NAV_ITEMS,
+      windowControls: createElement('span', null, 'controls'),
+      children: 'body',
+    });
+    const barStyle = withControls.match(/<div class="[^"]*max-w-desktop[^"]*" style="([^"]*)"/)?.[1];
+    expect(barStyle).toContain('var(--container-desktop)');
+    expect(barStyle).toContain('padding-right');
+    expect(html({ items: NAV_ITEMS, children: 'body' })).not.toContain('padding-right');
   });
 
   it('draws the header and the status strip on the same measure as main, so they line up', () => {

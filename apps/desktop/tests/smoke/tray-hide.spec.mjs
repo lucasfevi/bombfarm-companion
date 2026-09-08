@@ -113,6 +113,26 @@ test.describe('tray hide smoke', () => {
     }
   });
 
+  test('the header close button hides to tray rather than ending the process', async () => {
+    const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-tray-caption-'));
+    let app;
+
+    try {
+      let page;
+      ({ app, page } = await launchTrayApp(userDataDir));
+
+      await page.getByTestId('window-close').click();
+      await expect.poll(() => isMainWindowVisible(app), { timeout: 15_000 }).toBe(false);
+
+      await trayShow(app);
+      await expect.poll(() => isMainWindowVisible(app), { timeout: 15_000 }).toBe(true);
+      await expect(page.getByTestId('live-view')).toBeVisible({ timeout: 15_000 });
+    } finally {
+      await app?.close().catch(() => undefined);
+      fs.rmSync(userDataDir, { recursive: true, force: true });
+    }
+  });
+
   test('second-instance-style show while hidden surfaces the main window', async () => {
     const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-tray-second-'));
     let app;

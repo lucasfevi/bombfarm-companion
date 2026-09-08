@@ -176,6 +176,14 @@ export const ptBR: Copy = {
   miniLiveAxisHorizontalLabel: 'Em linha',
   miniLiveLastSectionNote: 'Pelo menos um painel precisa permanecer ligado',
 
+  // windowControl* — os botões de janela do próprio cabeçalho, que são só de ícone, então cada
+  // chave é o nome acessível do controle. Maximizar e restaurar são dois nomes para um botão:
+  // qual deles vale depende de a janela já estar maximizada.
+  windowControlMinimizeAria: 'Minimizar',
+  windowControlMaximizeAria: 'Maximizar',
+  windowControlRestoreAria: 'Restaurar tamanho',
+  windowControlCloseAria: 'Fechar para a bandeja',
+
   liveStatusLiveLabel: 'Transmitindo ao vivo do jogo',
   liveStatusNotLiveLabel: 'Não ao vivo — mostrando o último estado conhecido',
 

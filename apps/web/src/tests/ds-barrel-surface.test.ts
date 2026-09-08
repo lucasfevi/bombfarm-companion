@@ -125,6 +125,8 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'TipLabel',
   'Tooltip',
   'TooltipStatusBody',
+  'WINDOW_CONTROLS_WIDTH',
+  'WindowControls',
   'abilityCardRecipe',
   'abilityChipRecipe',
   'accountStatListClass',
