@@ -503,7 +503,7 @@ export interface IpcEvents {
   'account:changed': AccountView;
   'live:event': LiveEvent;
   /** Every transition of the updater state machine, including the ones nobody asked for
-   *  (download progress, the six-hourly background check). */
+   *  (download progress, the periodic background check). */
   'updates:changed': UpdateStatus;
   /** Fired whenever main adopts a different snapshot body, or merges a fresh per-item quote into
    *  the one it holds. A check that changed nothing (a 304, a failed fetch) does not fire it. */
