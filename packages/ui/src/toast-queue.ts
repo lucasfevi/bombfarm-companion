@@ -18,7 +18,7 @@ export type ToastVariant = 'success' | 'error' | 'warning' | 'info' | 'progress'
 /** §11 — "max 3 visible at once... collapse into a '+N more' affordance". */
 export const MAX_VISIBLE_TOASTS = 3;
 
-/** §11 NTF-2 — NotificationCenter ring buffer, "last ~50". */
+/** NotificationCenter ring buffer, "last ~50". */
 export const NOTIFICATION_BUFFER_LIMIT = 50;
 
 /** §11 — "an optional single action button... never more than one". */
@@ -40,7 +40,7 @@ export type ToastInput = {
    * Explicit auto-dismiss override in ms (or `null` to force manual dismiss).
    * Honoured only for `success`/`info` — `warning`/`error`/`progress` never
    * auto-expire on a timer regardless of this value (§11). Wiring
-   * this to a user preference is M5 SET-1; here it is just a prop.
+   * this to a user preference is future work; here it is just a prop.
    */
   autoDismissMs?: number | null;
 };

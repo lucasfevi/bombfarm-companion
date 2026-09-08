@@ -34,7 +34,7 @@ test.describe('Team plan optimize run', () => {
     await seedLocalStorage(page, teamPlanFixtureSeed('en'));
     await gotoTeamPlan(page);
     const button = page.getByRole('button', {
-      name: /Build a team plan of gear moves and point resets/i,
+      name: /^Build a team plan of /i,
     });
     await button.click();
     await button.click({ force: true });

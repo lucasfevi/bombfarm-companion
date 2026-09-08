@@ -7,17 +7,25 @@
  */
 import { generateMoves, REOPT_FULL_MAX_SWEEPS } from './points-reopt-search';
 import { clampPtsToBudget, REOPT_KEYS } from './points-reopt-core';
-import { squadFactsFromBases, type HeroFarmBasis, type SquadFarmFacts, type FarmRateOptions } from './farm-rate';
-import { bestFarmPhase, type FarmObjectiveScales, type FarmPhasePick, type ResolvedFarmObjective } from './farm-optimize-objective';
+import {
+  squadFactsFromBases,
+  type HeroFarmBasis,
+  type SquadFarmAccount,
+  type SquadFarmFacts,
+} from './farm-rate';
+import {
+  bestFarmPhase,
+  type BestFarmPhaseOptions,
+  type FarmObjectiveScales,
+  type FarmPhasePick,
+  type ResolvedFarmObjective,
+} from './farm-optimize-objective';
 import type { SheetKey } from './planner-constants';
-import type { AccountShared } from './shims/storage';
 
 const EPS_REL = 1e-9;
 
 /** Outer coordinate-descent sweep bound. */
 export const FARM_OPT_MAX_SWEEPS = 8;
-/** Every N-th phase is probed by Tier 1's CANDIDATE sweeps (never the current build's). */
-export const FARM_OPT_GATE_PHASE_STRIDE = 5;
 /** Canonical seed energy shares, in seed order. */
 export const FARM_OPT_SEED_ENERGY_SHARES: readonly number[] = [0.25, 0.5, 0.75];
 /** The share-ladder move family AND the plateau probe grid: 0, 0.05, … 1.00. */
@@ -28,8 +36,6 @@ export const FARM_OPT_PLATEAU_SHARES: readonly number[] = [
 export const FARM_OPT_PLATEAU_TOLERANCE_PCT = 1;
 /** How many heroes are candidates for each frontier tier. */
 export const FARM_OPT_FRONTIER_CANDIDATES = 3;
-/** Evaluation bound for the whole Tier 1 gate. */
-export const FARM_OPT_GATE_MAX_EVALUATIONS = 64;
 /** Evaluation bound for the whole Tier 2 call — joint solve plus every frontier re-solve. */
 export const FARM_OPT_FULL_MAX_EVALUATIONS = 8_000;
 /** Share of the Tier 2 bound reserved for the joint solve; the rest funds the frontier. */
@@ -47,14 +53,15 @@ export type FarmCandidate = {
 
 /** ONE evaluation — the budget's unit: squad facts for a whole candidate assignment (zero
  *  pipeline calls), then the phase argmax over it. `value` is `-Infinity` when nothing is
- *  feasible under this assignment, never `NaN`. */
+ *  feasible under this assignment, never `NaN`. A `pinnedPhase` in `phaseOptions` collapses that
+ *  argmax to a single row, which is where nearly all of an evaluation's cost sits. */
 export function evaluateAssignment(
   bases: readonly HeroFarmBasis[],
   assignment: PtsAssignment | null,
-  account: AccountShared,
+  account: SquadFarmAccount,
   objective: ResolvedFarmObjective,
   scales: FarmObjectiveScales,
-  phaseOptions: FarmRateOptions & { phaseStride?: number },
+  phaseOptions: BestFarmPhaseOptions,
 ): { squad: SquadFarmFacts; pick: FarmPhasePick | null; value: number } {
   const squad = squadFactsFromBases(bases, assignment, account);
   const pick = bestFarmPhase(squad, objective, scales, phaseOptions);
@@ -95,7 +102,7 @@ function lexicographicCompare(a: PtsAssignment, b: PtsAssignment, bases: readonl
 }
 
 /**
- * The total tie-break order (design.md §4.6): higher objective value; then fewer
+ * The total tie-break order: higher objective value; then fewer
  * points moved from the current vectors; then fewer heroes changed; then lexicographic by
  * `(heroId ascending, REOPT_KEYS declaration order)`. `compare(a, b) < 0` means `a` wins.
  */
@@ -122,7 +129,7 @@ function pickBestCandidate(candidates: readonly FarmCandidate[], bases: readonly
   return best;
 }
 
-/** The six seeds, in this fixed order (design.md §4.4). The `current` vector is always first
+/** The six seeds, in this fixed order. The `current` vector is always first
  *  and wins ties. Heroes outside the searchable set keep `basis.pts` in every seed. */
 const SEED_DEFS: readonly { name: string; energyShare: number | null }[] = [
   { name: 'current', energyShare: null },
@@ -166,7 +173,7 @@ function buildSeedAssignment(
   return assignment;
 }
 
-/** `shareBuild` (design.md §4.5): holds every non-attack/energy key at the incumbent's value and
+/** `shareBuild`: holds every non-attack/energy key at the incumbent's value and
  *  re-splits only the attack+energy pool at the given squad energy share. */
 function shareBuild(
   bases: readonly HeroFarmBasis[],
@@ -205,7 +212,7 @@ function orderSearchableHeroes(searchableIds: readonly string[], budgetById: Rea
 /**
  * The squad's aggregate energy share over the searchable set: `Σ energy / Σ pool`, where `pool`
  * is each hero's attack+energy budget after holding every other reallocatable key fixed — the
- * same denominator `shareBuild` uses. `0` when the denominator is `0` (design.md §4.7).
+ * same denominator `shareBuild` uses. `0` when the denominator is `0`.
  */
 export function squadEnergyShare(
   bases: readonly HeroFarmBasis[],
@@ -234,7 +241,7 @@ export function squadEnergyShare(
 }
 
 /**
- * The plateau's `[min, max]` energy-share bounds (design.md §4.7): the maximal CONTIGUOUS run of
+ * The plateau's `[min, max]` energy-share bounds: the maximal CONTIGUOUS run of
  * `ladder` entries containing `winShare`'s own grid neighbourhood whose values are `>= peak x
  * (1 - tolerancePct/100)`, unioned with `winShare` itself. `winShare` always qualifies by
  * construction (its true value IS `peak`), so this never returns an empty or invented range —
@@ -284,7 +291,7 @@ export type FarmSearchOutcome = {
 };
 
 /**
- * The joint coordinate-descent search (design.md §4.4–§4.6): six seeds, then repeated
+ * The joint coordinate-descent search: six seeds, then repeated
  * (share-ladder pass + per-hero local search over `generateMoves()`) sweeps until a sweep
  * accepts nothing. `searchableIds` may be the whole searchable set (the joint solve) or a
  * narrowed subset (T9's frontier re-solves) — same loop either way.
@@ -293,10 +300,10 @@ export function runFarmSearch(
   bases: readonly HeroFarmBasis[],
   searchableIds: readonly string[],
   budgetById: ReadonlyMap<string, number>,
-  account: AccountShared,
+  account: SquadFarmAccount,
   objective: ResolvedFarmObjective,
   scales: FarmObjectiveScales,
-  phaseOptions: FarmRateOptions,
+  phaseOptions: BestFarmPhaseOptions,
   evaluationBudget: number,
 ): FarmSearchOutcome {
   const basesById = new Map(bases.map((b) => [b.heroId, b] as const));
@@ -365,7 +372,7 @@ export function runFarmSearch(
             evaluations += 1;
             // FIRST improvement, not best-improvement: a farm probe is a whole phase sweep,
             // roughly 600x a DPS probe, so paying 260 probes to advance one step is the wrong
-            // trade at that cost ratio (design.md §4.5).
+            // trade at that cost ratio.
             if (ev.value > winner.value * (1 + EPS_REL)) {
               winner = { name: winner.name, assignment: candAssignment, value: ev.value, pick: ev.pick, squad: ev.squad };
               applied = true;
@@ -384,51 +391,3 @@ export function runFarmSearch(
   return { winner, winningSeedName, evaluations, sweeps, budgetExhausted, ladder };
 }
 
-export type FarmGateOutcome = {
-  winner: FarmCandidate;
-  /** The current build's own evaluation, on the FULL phase set — the gate's reference point AND
-   *  one of the candidates the comparator picks among. */
-  currentEval: { squad: SquadFarmFacts; pick: FarmPhasePick | null; value: number };
-  evaluations: number;
-};
-
-/**
- * Tier 1's seed stage (design.md §4.8): the CURRENT build is scored on the FULL phase set; every
- * other canonical seed is scored on a phase grid subsampled by `gatePhaseStride`. Subsampling
- * only the candidates means `gainPct` can only be UNDER-stated relative to the true optimum,
- * never over-stated — the lower-bound contract Tier 1 promises. No local search, no ladder —
- * seeds only, `<= 1 + 5` evaluations.
- */
-export function runFarmGateSeeds(
-  bases: readonly HeroFarmBasis[],
-  searchableIds: readonly string[],
-  budgetById: ReadonlyMap<string, number>,
-  account: AccountShared,
-  objective: ResolvedFarmObjective,
-  scales: FarmObjectiveScales,
-  phaseOptions: FarmRateOptions,
-  gatePhaseStride: number,
-  evaluationBudget: number,
-): FarmGateOutcome {
-  const searchableSet = new Set(searchableIds);
-  let evaluations = 0;
-
-  const currentEval = evaluateAssignment(bases, null, account, objective, scales, phaseOptions);
-  evaluations += 1;
-
-  const candidates: FarmCandidate[] = [
-    { name: 'current', assignment: new Map(), value: currentEval.value, pick: currentEval.pick, squad: currentEval.squad },
-  ];
-
-  for (const seedDef of SEED_DEFS) {
-    if (seedDef.energyShare === null) continue; // 'current' is already evaluated above, at full resolution.
-    if (evaluations >= evaluationBudget) break;
-    const assignment = buildSeedAssignment(bases, searchableSet, budgetById, seedDef.energyShare);
-    const ev = evaluateAssignment(bases, assignment, account, objective, scales, { ...phaseOptions, phaseStride: gatePhaseStride });
-    evaluations += 1;
-    candidates.push({ name: seedDef.name, assignment, value: ev.value, pick: ev.pick, squad: ev.squad });
-  }
-
-  const winner = pickBestCandidate(candidates, bases);
-  return { winner, currentEval, evaluations };
-}

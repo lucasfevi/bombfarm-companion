@@ -108,7 +108,7 @@ describe('guard (a) — zero advisor-pipeline calls under the board tree', () =>
 // types a row prop, and in the return-bonus control. A pure `import type` erases at compile time
 // (zero bundle bytes, zero possibility of carrying a re-implemented computation), so it is
 // allowed anywhere. These guards' real teeth is that no SECOND file may import a RUNTIME binding
-// (computeFarmRates, gateFarmRespec and their siblings), and that apps/web may import none at
+// (computeFarmRates, solveFarmRespec and their siblings), and that apps/web may import none at
 // all now that the compute itself lives in the package.
 //
 // The web half is a ZERO assertion, which is the one shape that can pass while checking nothing.
@@ -448,10 +448,10 @@ describe('guard (h) — no research-private identifier or path in apps/web, @bom
 });
 
 // ---------------------------------------------------------------------------------------------
-// (i) No useShallow wrapping the three new farm respec selectors.
+// (i) No useShallow wrapping the farm respec selectors.
 // ---------------------------------------------------------------------------------------------
-describe('guard (i) — no useShallow on the new farm respec selectors', () => {
-  const GUARDED_SELECTORS = ['selectFarmBoardRows', 'selectFarmRespecGate', 'selectFarmRespecView'];
+describe('guard (i) — no useShallow on the farm respec selectors', () => {
+  const GUARDED_SELECTORS = ['selectFarmBoardRows', 'selectFarmRespecView'];
 
   function findUseShallowWrap(text: string, selectorName: string): boolean {
     return new RegExp(`useShallow\\([^)]*${selectorName}`).test(text);
@@ -463,7 +463,7 @@ describe('guard (i) — no useShallow on the new farm respec selectors', () => {
     ).toBe(true);
   });
 
-  it('green state: no source file wraps selectFarmBoardRows, selectFarmRespecGate or selectFarmRespecView in useShallow', () => {
+  it('green state: no source file wraps selectFarmBoardRows or selectFarmRespecView in useShallow', () => {
     const files = walkFiles(
       path.join(WEB_PACKAGE_ROOT, 'src'),
       (name) => name.endsWith('.ts') || name.endsWith('.tsx'),
@@ -497,7 +497,6 @@ describe('guard (j) — the farm screen’s store reads happen in its two connec
   const BOARD_SELECTORS = [
     'selectFarmBoardRows',
     'selectFarmReRankActive',
-    'selectFarmRespecGate',
     'selectFarmRespecView',
   ];
 

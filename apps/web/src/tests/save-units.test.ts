@@ -2,7 +2,7 @@
  * The single shared unit-conversion site. Every assertion
  * here is a hand-computed literal, never a round-trip through another converter — a shared
  * converter that only proves itself against its own inverse could cancel its own error on
- * both sides (design.md's stated risk).
+ * both sides — the stated risk.
  */
 import { describe, expect, it } from 'vitest';
 import { birthFromSave, hasUsableBirthStats, saveSheetUnits, treeTotalsFromSave } from '@bombfarm/domain/save-units';

@@ -23,7 +23,7 @@ import {
 } from '@bombfarm/domain/gear';
 import { BASE_ROLLS, POINT_GAIN, STAT_LABELS, rankNextPoint, type Context, type HeroSheet } from '@bombfarm/domain/model';
 
-// Wave 6 (BSPW6-AC-24) rewrites this block's W2 assertion: SHEET_DISPLAY_KEYS
+// A later revision rewrote this block's original assertion: SHEET_DISPLAY_KEYS
 // (7, combat/mismatch) no longer stands alone — SHEET_PANEL_KEYS (8, display surfaces) now
 // exists beside it, and Luck displays via the latter, not the former.
 describe('SHEET_PANEL_KEYS / SHEET_DISPLAY_KEYS — the 8/7 split', () => {
@@ -166,7 +166,7 @@ describe('POINT_GAIN.luckPctOfBase', () => {
 // `luck per-point value against Wave 0 fixtures` describe block (2 tests, Vera ★0 and
 // Bellatrix ★1) compared two REAL observations of the SAME hero before/after spending exactly
 // one Luck point (`vera-01` -> `vera-02`, `bellatrix-01` -> `bellatrix-02`). This is the
-// point-delta before/after family design.md §10 / the spec's Assumptions table names as
+// point-delta before/after family that is
 // unreproducible: every post-wipe corpus hero has `stat_points_available: 0` (every point is
 // already spent), so no zero-point "before" state exists to pair with a "+1 point" state.
 // `point-roundtrip.test.ts` (T4) is the replacement — a stronger, corpus-anchored

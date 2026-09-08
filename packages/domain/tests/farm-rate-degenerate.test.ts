@@ -7,6 +7,7 @@ import {
   computeHeroFarmFacts,
   computeSquadFarmFacts,
   computeFarmRateRow,
+  clearHeadSeconds,
   type HeroFarmFacts,
 } from '@bombfarm/domain/farm-rate';
 import {
@@ -109,7 +110,7 @@ describe('all heroes degenerate', () => {
   });
 });
 
-describe('one degenerate hero among healthy ones (design.md §4.6)', () => {
+describe('one degenerate hero among healthy ones', () => {
   it('the degenerate hero contributes 0; the healthy ones still produce a normal, finite row', () => {
     const facts: HeroFarmFacts[] = [
       syntheticHero({ heroId: 'healthy-1', avgHitBase: 500, uptime: 0.3 }),
@@ -127,7 +128,7 @@ describe('one degenerate hero among healthy ones (design.md §4.6)', () => {
   });
 });
 
-describe('w <= 0 (design.md §4.6)', () => {
+describe('w <= 0', () => {
   it('cycleSecs Infinity, plantsPerSec 0, degenerate true — a hero that cannot reach the next plant contributes nothing', () => {
     const jon = heroes.find((h) => h.name === 'Jon')!;
     const stillJon: HeroRecord = { ...jon, birth: { ...jon.birth!, speed: 0 } };
@@ -145,7 +146,7 @@ describe('w <= 0 (design.md §4.6)', () => {
   });
 });
 
-describe('avgHitBase <= 0 (design.md §4.6)', () => {
+describe('avgHitBase <= 0', () => {
   it('the hero is degenerate, contributes 0 to every squad sum, and produces no NaN in expectedHtk/share/goldPerHour', () => {
     const facts: HeroFarmFacts[] = [syntheticHero({ heroId: 'zero-hit', avgHitBase: 0, degenerate: true })];
     const squad = computeSquadFarmFacts(facts, account);
@@ -157,7 +158,7 @@ describe('avgHitBase <= 0 (design.md §4.6)', () => {
   });
 });
 
-describe('gate over timer, and the strict > boundary (design.md §4.6, spec.md Edge Cases)', () => {
+describe('gate over timer, and the strict > boundary (edge cases)', () => {
   const PROP_WEIGHT_TOTAL = WIKI_PROPS.reduce((sum, prop) => sum + prop.weight, 0);
   function handEHtk(stoneHp: number, avgHit: number): number {
     return WIKI_PROPS.reduce(
@@ -181,11 +182,11 @@ describe('gate over timer, and the strict > boundary (design.md §4.6, spec.md E
     // Construction: an astronomically large avgHit one-shots every prop AND the boss, so
     // eHtk === bossHtk === 1 exactly (Math.ceil of a value in (0,1] is 1). That collapses
     // clearSecs to a single-hero closed form the test can invert exactly:
-    //   clearSecs = (propCount × eHtk + bossHtk) / (plantsPerSec × blocksPerBomb × EFF_IA × uptime)
+    //   clearSecs = head + (propCount × eHtk + bossHtk) / (plantsPerSec × blocksPerBomb × EFF_IA × uptime)
     // solved here for plantsPerSec given a target clearSecs, then fed back through the real
     // computeFarmRateRow. A tiny (1e-6s) offset on each side absorbs floating-point rounding
-    // while still proving the comparison is strict ">" and not ">=" (spec.md: "exactly the gate
-    // timer ⇒ infeasible false").
+    // while still proving the comparison is strict ">" and not ">=" — exactly the gate timer is
+    // feasible.
     const line = wikiPhaseLine(10)!;
     const gateTimerSecs = GATE_SECS_POR_ATO[line.ato - 1]!;
     const propCount = propCountForAto(line.ato);
@@ -197,8 +198,13 @@ describe('gate over timer, and the strict > boundary (design.md §4.6, spec.md E
     expect(eHtk).toBe(1);
     expect(bossHtk).toBe(1);
 
+    // One hero at uptime 1 puts exactly 1 on the field, so the head is the opening fuse alone —
+    // no activation stagger with nobody to stagger behind.
+    const fuseSecs = syntheticHero({ heroId: 'probe' }).fuseSecs;
+    const headSecs = clearHeadSeconds(1, fuseSecs);
+
     function buildSquad(targetClearSecs: number) {
-      const requiredRate = (propCount * eHtk + bossHtk) / targetClearSecs;
+      const requiredRate = (propCount * eHtk + bossHtk) / (targetClearSecs - headSecs);
       const plantsPerSec = requiredRate / EFF_IA;
       const hero: HeroFarmFacts = syntheticHero({ heroId: 'boundary', avgHitBase, plantsPerSec, blocksPerBomb: 1, uptime: 1 });
       return computeSquadFarmFacts([hero], { ...account, slots: 1000 });
@@ -241,7 +247,7 @@ describe('account.slots absent', () => {
   });
 });
 
-describe('negative tree.teamCoinPct (spec.md Edge Cases)', () => {
+describe('negative tree.teamCoinPct', () => {
   it('is clamped at 0 before use — teamCoinMult is exactly 1', () => {
     const heroFacts = computeHeroFarmFacts({ heroes, account });
     const negativeAccount: AccountShared = { ...account, tree: { ...account.tree, teamCoinPct: -50 } };
@@ -252,7 +258,7 @@ describe('negative tree.teamCoinPct (spec.md Edge Cases)', () => {
   });
 });
 
-describe('tree.luckFlatPct undefined (spec.md Edge Cases)', () => {
+describe('tree.luckFlatPct undefined', () => {
   it('is treated as 0 — sorteFraction is the uptime-weighted hero average alone', () => {
     const heroFacts = computeHeroFarmFacts({ heroes, account });
     const noLuckAccount: AccountShared = { ...account, tree: { ...account.tree, luckFlatPct: undefined } };
@@ -263,7 +269,7 @@ describe('tree.luckFlatPct undefined (spec.md Edge Cases)', () => {
   });
 });
 
-describe('duplicate hero ids in heroes[] (spec.md Edge Cases)', () => {
+describe('duplicate hero ids in heroes[]', () => {
   it('both are counted — HeroRecord.id uniqueness is not enforced here', () => {
     const jon = heroes.find((h) => h.name === 'Jon')!;
     const dupedHeroes = [...heroes, { ...jon }];
@@ -273,7 +279,7 @@ describe('duplicate hero ids in heroes[] (spec.md Edge Cases)', () => {
   });
 });
 
-describe('phase 600 (hp 5.25e11) stays finite (spec.md Edge Cases)', () => {
+describe('phase 600 (hp 5.25e11) stays finite', () => {
   it('a very large hp underflows propsPerHour toward 0 but never produces Infinity/NaN off a healthy squad', () => {
     const heroFacts = computeHeroFarmFacts({ heroes, account });
     const squad = computeSquadFarmFacts(heroFacts, account);
@@ -288,7 +294,7 @@ describe('phase 600 (hp 5.25e11) stays finite (spec.md Edge Cases)', () => {
   });
 });
 
-describe("non-gate keysPerHour is 0, not -0, when the squad is degenerate (spec.md Edge Cases)", () => {
+describe("non-gate keysPerHour is 0, not -0, when the squad is degenerate", () => {
   it('Object.is(row.keysPerHour, -0) is false', () => {
     const squad = computeSquadFarmFacts([], account);
     const row = computeFarmRateRow(42, squad)!;

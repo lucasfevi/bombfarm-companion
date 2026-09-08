@@ -38,8 +38,8 @@ describe('Farm Ranking board — testids present', () => {
     ['farm-ranking-table.tsx', 'farm-sort-live'],
     ['farm-respec-toolbar.tsx', 'farm-respec-toolbar'],
     ['farm-respec-toolbar.tsx', 'farm-respec-optimize'],
-    ['farm-respec-headline.tsx', 'farm-respec-headline'],
     ['farm-respec-panel.tsx', 'farm-respec-panel'],
+    ['farm-respec-panel.tsx', 'farm-respec-below-threshold-banner'],
     ['farm-respec-panel.tsx', 'farm-respec-close'],
     ['farm-respec-metrics.tsx', 'farm-respec-metrics'],
     ['farm-respec-metrics.tsx', 'farm-respec-metric-gold'],
@@ -121,10 +121,14 @@ describe('Farm Ranking board — the four empty states render no numeric cell', 
   });
 });
 
-describe('Farm Respec Advisor toolbar — visibility, controls and layout stability', () => {
-  it('renders nothing below the gain threshold and when the gate has no roster/heroes-enabled reason — the early return exists', () => {
+describe('Farm Respec Advisor toolbar — always available, controls and layout stability', () => {
+  // The inverse of the check this replaced. Optimize used to be hidden until a background
+  // estimate vouched for it, which meant an under-reporting estimate could leave a player with
+  // a worthwhile respec and no way to ask for it. There is no early return left to reinstate.
+  it('renders unconditionally — no early return, and nothing that could gate the control', () => {
     const source = read('farm-respec-toolbar.tsx');
-    expect(source).toMatch(/if \(!degraded && !gate\.shouldSurface\) return null;/);
+    expect(source).not.toMatch(/return null/);
+    expect(source).not.toMatch(/shouldSurface|gate\./);
   });
 
   it('no objective picker remains — Optimize is the only control in the toolbar', () => {
@@ -145,29 +149,14 @@ describe('Farm Respec Advisor toolbar — visibility, controls and layout stabil
     expect(source).toMatch(/className="min-w-\d+"/);
   });
 
-  it('the only visibility input is the gate\'s own shouldSurface flag — nothing here reads the payback duration', () => {
+  it('reads no result figure at all — every number the advisor has belongs to the panel', () => {
     const source = read('farm-respec-toolbar.tsx');
-    expect(source).not.toMatch(/paybackHours/);
+    expect(source).not.toMatch(/paybackHours|gainPct|formatGainPct/);
   });
 
-  it('the gate-failed reason renders a named degraded note, with Optimize still enabled', () => {
+  it('takes only status and panelOpen — the host subscribes to nothing else for it', () => {
     const source = read('farm-respec-toolbar.tsx');
-    expect(source).toContain("gate.reason === 'gate-failed'");
-    expect(source).toContain('{t.farmRespecGateFailed}');
-  });
-
-  it('takes the gate as a prop — the host subscribes, the toolbar does not', () => {
-    const source = read('farm-respec-toolbar.tsx');
-    expect(source).toContain('gate: FarmRespecGate');
-    expect(source).toContain('const { gate, status, panelOpen } = data;');
-  });
-
-  // The headline is the lower-bound gain and nothing else — the phase, the cost and the payback
-  // are the panel's metric tiles now, not four facts crammed into one toolbar line.
-  it('the headline shows the lower-bound gain alone', () => {
-    const source = read('farm-respec-headline.tsx');
-    expect(source).toContain('t.farmRespecHeadlineGain');
-    expect(source).not.toMatch(/formatPhaseLabel|formatGold|formatHours|resolvePaybackKind/);
+    expect(source).toContain('const { status, panelOpen } = data;');
   });
 });
 
@@ -503,7 +492,7 @@ describe('the components are prop-driven — no store, no host module', () => {
   });
 
   it('the scan reaches every component in this tree, subdirectories included', () => {
-    expect(componentFiles.length).toBe(27);
+    expect(componentFiles.length).toBe(26);
     expect(componentFiles).toContain('farm-ranking-board.tsx');
     expect(componentFiles).toContain('farm-respec-panel.tsx');
     expect(componentFiles).toContain('phases-explorer.tsx');

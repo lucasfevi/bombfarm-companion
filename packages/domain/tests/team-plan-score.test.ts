@@ -74,7 +74,7 @@ describe('scoreHeroLoadout', () => {
     spy.mockRestore();
   });
 
-  it('folego_mineiro in auras yields strictly higher duty than zero auras (AD-RGO-27)', () => {
+  it('folego_mineiro in auras yields strictly higher duty than zero auras', () => {
     const raw = loadFixtureJson('save-20260813-5heroes.json');
     const hero = extractHero(raw, 'Bellatrix', 42);
     const account = accountFromFixture(raw);

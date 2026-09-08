@@ -80,7 +80,7 @@ export type FarmContextForHeroInput = {
   cycleSecsLevel?: number | null;
 };
 
-/** Shared per-hero farm `Context` — AD-RGO-27 drain path for advisor + team-plan scorer. */
+/** Shared per-hero farm `Context` — the one drain path for advisor + team-plan scorer. */
 export function farmContextForHero(input: FarmContextForHeroInput): Context {
   const mitPct = effectiveMitigationPct({
     phase: input.phase ?? null,

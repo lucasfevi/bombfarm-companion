@@ -144,7 +144,12 @@ markdown, commit messages, branch names, changesets, and PR/issue text**:
 | `it('MSG-24 store failure ≠ drop')` | `it('store failure ≠ drop')` |
 
 **Genuine external standards are fine and must not be "cleaned":** `SHA-256`, `UTF-8`, `BCP-47`,
-`ISO-8601`, `RFC-*`. They share the shape and are not planning ids.
+`ISO-8601`, `IEEE-754`, `RFC-*`. They share the shape and are not planning ids. So are the
+numbering schemes **this repo publishes itself** — `ADR-*` (`apps/web/docs/adr/`), `CMT-*`
+([`docs/comments.md`](docs/comments.md)), `MOD-*` ([`docs/naming.md`](docs/naming.md)), `DS-*`
+([`docs/design-system.md`](docs/design-system.md)): the rule is about references only the private
+planning tree can resolve, and these resolve here. Adding a prefix to that list means committing
+to publish its definition.
 
 **Two deliberate exceptions.** Guard sources and their red-state fixtures must name the tokens they
 forbid — `tools/`'s hygiene guards and `pre-push-guard.test.mjs`'s `feat/ACS-06` fixture are code,
@@ -155,11 +160,17 @@ before anyone counted, and two prior leaks happened *despite* an explicit instru
 authoring prompt. Once a PR exists, GitHub pins its history at `refs/pull/N/head` and a force-push
 hides the leak without removing it. **Scrub before opening the PR, not after.**
 
-Before pushing:
+**A guard enforces this now**, over both shapes, across `apps`, `packages`, `tools`, `docs` and
+`.changeset` — `tools/planning-reference-hygiene.test.mjs`, part of `pnpm test`. It carries the
+exemptions above, skips regex character classes (`[A-Z0-9]{8}` is not `Z0-9`), and names the guard
+sources that are allowed to spell what they forbid. Run it directly while scrubbing:
 
 ```bash
-git grep -nIP "\b(?!SHA-|UTF-|BCP-|ISO-|RFC-)[A-Z][A-Z0-9]{1,6}-[0-9]{1,3}[a-z]?\b" -- apps packages tools
+npx vitest run --project tools planning-reference-hygiene
 ```
+
+Published release notes are out of scope (`CHANGELOG.md`): `changeset version` copies that prose
+verbatim out of `.changeset/`, so the changeset is guarded and the changelog is left as history.
 
 ## Comments
 

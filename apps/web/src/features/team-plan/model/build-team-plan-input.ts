@@ -2,6 +2,7 @@ import type { TeamPlanInput } from '@bombfarm/domain/team-plan/types';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 import { resolveHeroScope } from '@/shared/stores/team-plan/types';
 import { selectTreeSheetTotals } from '@/shared/stores/selectors/tree-sheet-selectors';
+import { selectTeamPlanTargetPhase } from '@/shared/stores/selectors/team-plan-selectors';
 
 export function buildTeamPlanInputFromStore(state: PlannerStore): TeamPlanInput {
   const treeSheet = selectTreeSheetTotals(state);
@@ -39,6 +40,11 @@ export function buildTeamPlanInputFromStore(state: PlannerStore): TeamPlanInput 
       // The (house, level) `cycleSecs` above is anchored to — see `AccountSlice.houseCycleSecsHouseIdx`.
       cycleSecsHouseIdx: state.houseCycleSecsHouseIdx,
       cycleSecsLevel: state.houseCycleSecsLevel,
+      // Read by the farm objective only, and it refuses to plan without `maxPhase` — supplied
+      // here so a caller switching a plan to gold cannot silently get the 600-phase ceiling.
+      teamCoinPct: state.treeTeamCoinPct,
+      xpMult: state.treeXpMult,
+      maxPhase: state.maxPhase,
     },
     // Must match the scope board: missing keys use battleAllowed defaults (Donate when
     // disabled), never a hard-coded Optimize — that silently scored Donate-looking heroes.
@@ -49,6 +55,14 @@ export function buildTeamPlanInputFromStore(state: PlannerStore): TeamPlanInput 
       }),
     ),
     forgeFloor: state.forgeFloor,
+    objective: state.objective,
+    // Which kinds of change the plan may propose. The domain drops the forge floor above to 0 by
+    // itself when gear is off the table, so this field alone decides it — the store's stored
+    // floor is never suppressed here.
+    allowedChanges: state.allowedChanges,
+    // Both objectives score here. Null is the objective's own default: gold sweeps for its best
+    // phase, damage stays on the account's own.
+    targetPhase: selectTeamPlanTargetPhase(state),
   };
 }
 

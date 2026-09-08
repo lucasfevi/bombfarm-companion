@@ -120,9 +120,10 @@ export function optimizeHeroForFarm(input: HeroFarmOptimizeInput): HeroFarmOptim
   // The frozen normalizers AND the gold/chest read-out are the same per-currency scan, derived
   // together rather than swept twice.
   const currentSquad = squadFactsFromBases(bases, null, account);
-  const currentReadout = farmObjectiveScales(currentSquad, phaseOptions);
+  const reportedOptions = { ...phaseOptions, exhaustive: true };
+  const currentReadout = farmObjectiveScales(currentSquad, reportedOptions);
   const scales: FarmObjectiveScales = currentReadout;
-  const currentPick = bestFarmPhase(currentSquad, objective, scales, phaseOptions);
+  const currentPick = bestFarmPhase(currentSquad, objective, scales, reportedOptions);
   const currentPhase = currentPick ? currentPick.phase : null;
   const currentObjective = currentPick ? currentPick.value : 0;
   const currentGold = currentReadout.goldScale;
@@ -151,7 +152,9 @@ export function optimizeHeroForFarm(input: HeroFarmOptimizeInput): HeroFarmOptim
   const proposedSource = search.winner.assignment.get(heroId) ?? basis.pts;
   const pts: Record<SheetKey, number> = { ...proposedSource, luck: basis.pts.luck };
   const changed = REOPT_KEYS.some((key) => pts[key] !== basis.pts[key]);
-  const proposedPick = search.winner.pick;
+  // Re-derived rather than read off `search.winner.pick`: the search's own picks may take the
+  // screen-and-refine shortcut, and `gainPct` divides this by an exhaustive `currentObjective`.
+  const proposedPick = bestFarmPhase(search.winner.squad, objective, scales, reportedOptions);
   const proposedObjective = proposedPick ? proposedPick.value : 0;
   const outcome: HeroFarmOptimizeOutcome =
     proposedPick === null ? 'noFeasiblePhase' : changed ? 'improved' : 'nothingToGain';
@@ -172,7 +175,7 @@ export function optimizeHeroForFarm(input: HeroFarmOptimizeInput): HeroFarmOptim
     recommendedPhase: outcome === 'improved' && proposedPick ? proposedPick.phase : currentPhase,
     currentGoldPerHour: currentGold,
     proposedGoldPerHour:
-      outcome === 'improved' ? farmObjectiveScales(search.winner.squad, phaseOptions).goldScale : currentGold,
+      outcome === 'improved' ? farmObjectiveScales(search.winner.squad, reportedOptions).goldScale : currentGold,
     evaluations: search.evaluations,
     budgetExhausted: search.budgetExhausted,
   };

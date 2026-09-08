@@ -54,19 +54,6 @@ describe('createFarmRankingMemo instances are isolated', () => {
     expect(fromSecond).not.toBe(fromFirst);
   });
 
-  it('a warm gate cache on one instance does not satisfy another', () => {
-    const first = createFarmRankingMemo();
-    const second = createFarmRankingMemo();
-
-    first.gate(inputs());
-    first.gate(inputs());
-    expect(first.gateComputeCount()).toBe(1);
-    expect(second.gateComputeCount()).toBe(0);
-
-    second.gate(inputs());
-    expect(second.gateComputeCount()).toBe(1);
-  });
-
   it('the solve counter is per instance', () => {
     const first = createFarmRankingMemo();
     const second = createFarmRankingMemo();

@@ -101,7 +101,7 @@ describe('computeFarmRateTable — purity', () => {
   });
 });
 
-describe('computeFarmRateTable — leaf helpers agree with computePhaseIntelGlobal (design.md §2.4)', () => {
+describe('computeFarmRateTable — leaf helpers agree with computePhaseIntelGlobal', () => {
   it('mitigationPct, itemLevelLabel, jaulaEarlyCapPct, jaulaWindowSecs match on a 12-phase sample', () => {
     const samplePhases = [1, 10, 42, 50, 100, 150, 200, 250, 300, 400, 500, 600];
     const rows = computeFarmRateTable(squad);
@@ -116,7 +116,7 @@ describe('computeFarmRateTable — leaf helpers agree with computePhaseIntelGlob
   });
 });
 
-describe('computeFarmRateTable — jaula window is constant across every row (design.md §2.4.1)', () => {
+describe('computeFarmRateTable — jaula window is constant across every row', () => {
   it('jaulaWindowSecs is identical for all 600 rows and equals JAULA.janelaSecs — never JAULA.janelaSecsVip', () => {
     const rows = computeFarmRateTable(squad);
     for (const row of rows) {

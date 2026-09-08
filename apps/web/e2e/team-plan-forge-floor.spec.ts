@@ -31,11 +31,11 @@ test.describe('Team plan min forge', () => {
     await expect(await readForgeFloorValue(page)).toBe('15');
 
     await seedLocalStorage(page, seedWithForgeFloor(99));
-    await page.goto('/team-plan');
+    await page.goto('/optimizer');
     await expect(await readForgeFloorValue(page)).toBe('15');
 
     await seedLocalStorage(page, seedWithForgeFloor(-1));
-    await page.goto('/team-plan');
+    await page.goto('/optimizer');
     await expect(await readForgeFloorValue(page)).toBe('0');
   });
 
@@ -56,7 +56,7 @@ test.describe('Team plan min forge', () => {
     await page.getByRole('button', { name: /^Import/i }).click();
     await page.locator('input[type="file"]').setInputFiles(sampleSave);
     await page.getByRole('button', { name: /import \d+ hero/i }).click();
-    await page.goto('/team-plan');
+    await page.goto('/optimizer');
     await expect(await readForgeFloorValue(page)).toBe('12');
   });
 });

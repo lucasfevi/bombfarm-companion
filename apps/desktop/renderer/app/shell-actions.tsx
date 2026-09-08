@@ -1,11 +1,11 @@
 /**
  * The top bar's right-hand cluster, in the two shapes it has room for.
  *
- * At `full` density every action is its own control beside the tabs. Below that the cluster is one
- * overflow button: the actions are secondary — nothing here is a destination — so they are what
- * gives way first, and the tabs keep their words down to a much narrower window than they
- * otherwise could. The cluster never renders both shapes at once, so a control has exactly one
- * place in the document at any width.
+ * The cluster keeps every action as its own control until the bar is at its narrowest, past the
+ * width where the tabs have already dropped to glyphs: a tab loses a word standing in for a glyph
+ * the player learns once, while an action behind a menu costs a click every time it is used. Only
+ * then does the cluster become one overflow button. It never renders both shapes at once, so a
+ * control has exactly one place in the document at any width.
  */
 'use client';
 
@@ -132,7 +132,7 @@ export interface ShellActionsProps {
 export function ShellActions({ density, granted, locale, onLocaleChange }: ShellActionsProps) {
   const t = useCopy();
 
-  if (density !== 'full') {
+  if (density === 'actions-collapsed') {
     return <ShellOverflowMenu granted={granted} locale={locale} onLocaleChange={onLocaleChange} />;
   }
 

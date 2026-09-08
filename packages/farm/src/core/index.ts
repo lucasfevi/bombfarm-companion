@@ -10,10 +10,10 @@ export {
   buildAccount,
   computeFarmProposedRows,
   computeFarmRanking,
-  computeFarmRespecGate,
-  computeFarmRespecShouldSurface,
   deriveFarmPoolEntries,
+  FARM_RESPEC_WORTH_MAKING_PCT,
   farmDepsEqual,
+  isFarmRespecWorthMaking,
   readFarmDepTuple,
   readFarmRespecDepTuple,
   resolveEnabledHeroIds,
@@ -23,8 +23,6 @@ export type {
   FarmPoolEntry,
   FarmRankingReason,
   FarmRankingResult,
-  FarmRespecGate,
-  FarmRespecGateReason,
 } from './farm-compute';
 export { createFarmRankingMemo } from './farm-memo';
 export type { FarmRankingMemo } from './farm-memo';

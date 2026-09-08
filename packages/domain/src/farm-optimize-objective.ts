@@ -57,10 +57,15 @@ export type FarmObjectiveScales = { goldScale: number; chestScale: number };
  * set, independent of the other. Two sweeps. Reused verbatim by `bestFarmPhase`'s callers who
  * need a `'blend'` objective's scales, and by `farm-optimize.ts`'s own gold/chests read-out —
  * the SAME per-currency scan, not a second copy of it.
+ *
+ * `exhaustive` propagates to both sweeps. It matters twice over here: these two figures ARE the
+ * reported gold/hr and chests/hr, and under `'blend'` they are the normalizer every other value
+ * in the solve is divided by, so a screen miss would shift the whole objective rather than one
+ * row.
  */
 export function farmObjectiveScales(
   squad: SquadFarmFacts,
-  options?: FarmRateOptions & { phaseStride?: number },
+  options?: BestFarmPhaseOptions,
 ): FarmObjectiveScales {
   const dummyScales: FarmObjectiveScales = { goldScale: 1, chestScale: 1 };
   const goldPick = bestFarmPhase(squad, resolveFarmObjective({ kind: 'gold' }), dummyScales, options);
@@ -86,11 +91,34 @@ export function farmObjectiveValue(
 
 export type FarmPhasePick = { phase: number; value: number; row: FarmRateRow };
 
+/** `exhaustive` forces the linear sweep, giving up the screen-and-refine speedup for an argmax
+ *  that is proven rather than screened. Set it on every pick that becomes a REPORTED answer. */
+export type BestFarmPhaseOptions = FarmRateOptions & {
+  phaseStride?: number;
+  exhaustive?: boolean;
+  /**
+   * One phase to price, instead of an argmax over any candidate set.
+   *
+   * Deliberately NOT filtered by `maxPhase`: a caller naming a phase is asking what the squad
+   * would earn holding it, which is a fair question about a phase the account has not unlocked
+   * yet. The row still reports `locked` so the caller can say so.
+   */
+  pinnedPhase?: number | null;
+};
+
 /** `null`/non-positive/non-finite ⇒ every phase in `[1, 600]`; a finite value ⇒ `[1, min(v, 600)]`. */
 function resolveUpperPhase(maxPhase: number | null | undefined): number {
   const ceiling = WIKI_PHASE_LINES.length;
   if (maxPhase == null || !Number.isFinite(maxPhase) || maxPhase <= 0) return ceiling;
   return Math.min(ceiling, Math.floor(maxPhase));
+}
+
+/** `null`/non-finite/out of `[1, 600]` ⇒ no pin. Fractional values round, matching `wikiPhaseLine`. */
+function resolvePinnedPhase(pinnedPhase: number | null | undefined): number | null {
+  if (pinnedPhase == null || !Number.isFinite(pinnedPhase)) return null;
+  const phase = Math.round(pinnedPhase);
+  if (phase < 1 || phase > WIKI_PHASE_LINES.length) return null;
+  return phase;
 }
 
 /** `null`/non-finite/`< 1` ⇒ no subsampling (every phase in range is a candidate). */
@@ -100,7 +128,7 @@ function resolveStride(stride: number | null | undefined): number {
 }
 
 /** `{1, 1+stride, 1+2·stride, …} ∪ {upper}` — the trailing union keeps the range's own ceiling a
- *  candidate even when the stride does not land on it exactly (design.md §4.8's `Pg`). */
+ *  candidate even when the stride does not land on it exactly. */
 function candidatePhases(upper: number, stride: number): number[] {
   const phases: number[] = [];
   for (let phase = 1; phase <= upper; phase += stride) phases.push(phase);
@@ -109,34 +137,53 @@ function candidatePhases(upper: number, stride: number): number[] {
 }
 
 /**
+ * A world is ten phases and every one of the wiki's 60 gates is a phase ending in 0, so 1, 11,
+ * 21, … are each the first phase after a boss — where the economy steps, and hardest at an act
+ * boundary: `hp` holds flat at 5250 across phase 50 while `goldComum` doubles, 188 → 375.
+ *
+ * That makes the openers a useful SCREEN and nothing more. An opener's own score does not bound
+ * its world's peak, so a world whose opener screens low can still hold the global best — measured
+ * at 0.5% of randomized squad states, costing up to 1.6% of the objective when it happens. The
+ * screen is therefore confined to the search, where a miss only bends the search trajectory;
+ * every REPORTED pick passes `exhaustive` and is resolved by the full sweep.
+ */
+const PHASES_PER_WORLD = 10;
+
+function worldOpenerPhases(upper: number): number[] {
+  const phases: number[] = [];
+  for (let phase = 1; phase <= upper; phase += PHASES_PER_WORLD) phases.push(phase);
+  if (phases[phases.length - 1] !== upper) phases.push(upper);
+  return phases;
+}
+
+function phasesAroundWorld(center: number, upper: number): number[] {
+  const phases: number[] = [];
+  const from = Math.max(1, center - PHASES_PER_WORLD);
+  const to = Math.min(upper, center + PHASES_PER_WORLD);
+  for (let phase = from; phase <= to; phase++) phases.push(phase);
+  return phases;
+}
+
+/**
  * `null`/non-positive/non-finite `maxPhase` is normalized to `null` before it reaches
  * `computeFarmRateRow`, so a row's own `locked` flag agrees with the "no row excluded for being
  * locked" contract: a `maxPhase` of `0`/`-1`/`NaN` means "absent", not "lock everything".
  */
-function sanitizeRowOptions(options: (FarmRateOptions & { phaseStride?: number }) | undefined): FarmRateOptions {
+function sanitizeRowOptions(options: BestFarmPhaseOptions | undefined): FarmRateOptions {
   const maxPhase = options?.maxPhase;
   const sanitizedMaxPhase = maxPhase != null && Number.isFinite(maxPhase) && maxPhase > 0 ? maxPhase : null;
   return { returnBonus: options?.returnBonus, maxPhase: sanitizedMaxPhase };
 }
 
-/**
- * `argmax` over the candidate phase set of `farmObjectiveValue`, skipping `infeasible` rows
- * and non-finite values — an infeasible phase is never recommended regardless of its nominal
- * rate. Ties keep the LOWER phase — a lower phase is already unlocked and cheaper to hold.
- * `null` when nothing is feasible.
- */
-export function bestFarmPhase(
+function scanPhases(
+  phases: readonly number[],
   squad: SquadFarmFacts,
   objective: ResolvedFarmObjective,
   scales: FarmObjectiveScales,
-  options?: FarmRateOptions & { phaseStride?: number },
+  rowOptions: FarmRateOptions,
 ): FarmPhasePick | null {
-  const upper = resolveUpperPhase(options?.maxPhase);
-  const stride = resolveStride(options?.phaseStride);
-  const rowOptions = sanitizeRowOptions(options);
-
   let best: FarmPhasePick | null = null;
-  for (const phase of candidatePhases(upper, stride)) {
+  for (const phase of phases) {
     const row = computeFarmRateRow(phase, squad, rowOptions);
     if (row === null || row.infeasible) continue;
     const value = farmObjectiveValue(row, objective, scales);
@@ -146,4 +193,44 @@ export function bestFarmPhase(
     }
   }
   return best;
+}
+
+/**
+ * `argmax` over the candidate phase set of `farmObjectiveValue`, skipping `infeasible` rows
+ * and non-finite values — an infeasible phase is never recommended regardless of its nominal
+ * rate. Ties keep the LOWER phase — a lower phase is already unlocked and cheaper to hold.
+ * `null` when nothing is feasible.
+ *
+ * At the default stride the sweep is two-stage: screen the world openers, then refine one world
+ * either side of the screen's winner. A subsampling `phaseStride`, or `exhaustive`, takes the
+ * linear sweep instead.
+ *
+ * A `pinnedPhase` short-circuits all of that and reads exactly ONE row. It wins over every other
+ * option, `exhaustive` included: there is no argmax left to prove once the caller has named the
+ * phase, and this is the whole speedup — the sweep is ~96% of what a farm evaluation costs.
+ */
+export function bestFarmPhase(
+  squad: SquadFarmFacts,
+  objective: ResolvedFarmObjective,
+  scales: FarmObjectiveScales,
+  options?: BestFarmPhaseOptions,
+): FarmPhasePick | null {
+  const rowOptions = sanitizeRowOptions(options);
+  const scan = (phases: readonly number[]) => scanPhases(phases, squad, objective, scales, rowOptions);
+
+  const pinned = resolvePinnedPhase(options?.pinnedPhase);
+  if (pinned !== null) return scan([pinned]);
+
+  const upper = resolveUpperPhase(options?.maxPhase);
+  const stride = resolveStride(options?.phaseStride);
+
+  if (stride > 1 || options?.exhaustive === true) return scan(candidatePhases(upper, stride));
+
+  const screened = scan(worldOpenerPhases(upper));
+  // No opener is feasible, so the screen has nothing to refine around — but a phase between two
+  // openers still might be, and `null` must mean "nothing feasible anywhere", not "none screened".
+  if (screened === null) return scan(candidatePhases(upper, 1));
+  // The refine window contains the screened phase itself, so this can only match or beat the
+  // screen — no second comparison against it is needed.
+  return scan(phasesAroundWorld(screened.phase, upper));
 }

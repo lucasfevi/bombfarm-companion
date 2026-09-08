@@ -1,5 +1,5 @@
 /**
- * The probe table IS the test (design.md §2.4, tasks.md T1). Every row is one `it`; the red
+ * The probe table IS the test. Every row is one `it`; the red
  * state each row exists to catch is demonstrated at the bottom rather than merely claimed.
  */
 import { describe, expect, it } from 'vitest';
@@ -35,7 +35,7 @@ function basePayload(capturedAt: string): AccountPayload {
   };
 }
 
-describe('accountChangeKey — the probe table (design.md §2.4)', () => {
+describe('accountChangeKey — the probe table', () => {
   it('capturedAt changed on all five sections, bodies identical ⇒ same key', () => {
     const a = accountChangeKey(basePayload(CAPTURED_AT_A));
     const b = accountChangeKey(basePayload(CAPTURED_AT_B));
@@ -150,7 +150,7 @@ describe('accountChangeKey — the probe table (design.md §2.4)', () => {
     expect(accountChangeKey(ordered)).toBe(accountChangeKey(reordered));
 
     // The insertion-order variant WOULD have differed — this is why canonical is worth its cost
-    // (design.md's two-tier change detection), not just an assertion that the real function happens to agree.
+    // (the two-tier change detection), not just an assertion that the real function happens to agree.
     expect(JSON.stringify(ordered)).not.toBe(JSON.stringify(reordered));
   });
 

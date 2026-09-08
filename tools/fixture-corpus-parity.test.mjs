@@ -27,7 +27,7 @@ function trackedFiles() {
  * cross-package source scans (`design-system-gate.test.mjs`, `ci-desktop-paths.test.mjs`,
  * `web-domain-source-resolution.test.mjs`). Every red state below has been demonstrated
  * manually in a scratch state (perturb one byte, restore a deleted fixture, add one skip, add
- * one keystone reference) — see `docs/fixture-corpus.md` / `validation.md` for the observed
+ * one keystone reference) — see `docs/fixture-corpus.md` / `docs/validation.md` for the observed
  * failure messages.
  */
 describe('cross-package fixture corpus parity', () => {
@@ -170,8 +170,8 @@ describe('cross-package fixture corpus parity', () => {
     }
   });
 
-  // The full identifier list this guard names. Matches are counted the same way tasks.md's
-  // own baseline was captured: `git grep -ncE '<pattern>' | sum(field 2)`. Unchanged since F1 —
+  // The full identifier list this guard names. Matches are counted the same way the
+  // original baseline was captured: `git grep -ncE '<pattern>' | sum(field 2)`. Unchanged since F1 —
   // T11 re-measures the constant and adds the per-file packages/domain map
   // below; it does not touch the pattern or the counting method.
   const PATTERN =

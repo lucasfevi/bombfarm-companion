@@ -24,7 +24,7 @@ describe('hero-draft slice', () => {
     resetPlannerStoreForTests();
   });
 
-  it('object-valued setters preserve identity on equal writes (W5-05)', () => {
+  it('object-valued setters preserve identity on equal writes', () => {
     const naked = usePlannerStore.getState().naked;
     usePlannerStore.getState().setNaked(naked);
     expect(usePlannerStore.getState().naked).toBe(naked);

@@ -114,4 +114,34 @@ describe('buildTeamPlanInputFromStore scope defaults', () => {
     const input = buildTeamPlanInputFromStore(usePlannerStore.getState());
     expect(input.scopeByHeroId).toEqual({ 'src-bench': 'optimize' });
   });
+
+  // The one seam where a picker that stores its value correctly still reaches nothing.
+  it.each(['both', 'points', 'gear'] as const)(
+    'carries allowedChanges %s through to the solver input',
+    (allowedChanges) => {
+      usePlannerStore.getState().hydrateRoster([hero('opt')], 'opt');
+      usePlannerStore.setState({
+        inventory: { version: 1, importedAt: 0, items: [] },
+        forgeFloor: 10,
+      });
+      usePlannerStore.getState().setAllowedChanges(allowedChanges);
+
+      expect(buildTeamPlanInputFromStore(usePlannerStore.getState()).allowedChanges).toBe(
+        allowedChanges,
+      );
+    },
+  );
+
+  // The forge floor is NOT suppressed here — the domain drops it to 0 itself when gear is off the
+  // table. Two places zeroing it is two places for one of them to stop.
+  it('leaves the forge floor alone when the plan may not move gear', () => {
+    usePlannerStore.getState().hydrateRoster([hero('opt')], 'opt');
+    usePlannerStore.setState({
+      inventory: { version: 1, importedAt: 0, items: [] },
+      forgeFloor: 10,
+    });
+    usePlannerStore.getState().setAllowedChanges('points');
+
+    expect(buildTeamPlanInputFromStore(usePlannerStore.getState()).forgeFloor).toBe(10);
+  });
 });

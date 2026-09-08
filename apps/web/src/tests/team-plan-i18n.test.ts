@@ -9,14 +9,20 @@ const BANNED_OPTIMALITY: Record<Lang, RegExp[]> = {
   pt: [/\b[oó]tim[oa]\b/i, /\bmelhor poss[ií]vel\b/i, /\bm[aá]ximo\b/i],
 };
 
-const SANCTIONED_HEADER: Record<Lang, string> = {
-  en: 'Best roster DPS found by this search',
-  pt: 'Melhor DPS de roster encontrado por esta busca',
+const SANCTIONED_HEADER: Record<Lang, { dps: string; farm: string }> = {
+  en: {
+    dps: 'Best roster DPS found by this search',
+    farm: 'Best gold per hour found by this search',
+  },
+  pt: {
+    dps: 'Melhor DPS de roster encontrado por esta busca',
+    farm: 'Melhor ouro por hora encontrado por esta busca',
+  },
 };
 
 function allTeamPlanValues(lang: Lang): string[] {
   const fromStrings = Object.entries(STRINGS[lang])
-    .filter(([key]) => key.startsWith('teamPlan') || key === 'navTeamPlan')
+    .filter(([key]) => key.startsWith('teamPlan') || key === 'navOptimizer')
     .map(([, value]) => value);
   return fromStrings.filter((value): value is string => typeof value === 'string');
 }
@@ -33,9 +39,11 @@ describe('team-plan i18n namespace', () => {
     }
   });
 
-  it('uses the sanctioned results header in both languages', () => {
-    expect(STRINGS.en.teamPlanResultsHeader).toBe(SANCTIONED_HEADER.en);
-    expect(STRINGS.pt.teamPlanResultsHeader).toBe(SANCTIONED_HEADER.pt);
+  it('uses the sanctioned results header in both languages, per objective', () => {
+    expect(STRINGS.en.teamPlanResultsHeaderDps).toBe(SANCTIONED_HEADER.en.dps);
+    expect(STRINGS.en.teamPlanResultsHeaderFarm).toBe(SANCTIONED_HEADER.en.farm);
+    expect(STRINGS.pt.teamPlanResultsHeaderDps).toBe(SANCTIONED_HEADER.pt.dps);
+    expect(STRINGS.pt.teamPlanResultsHeaderFarm).toBe(SANCTIONED_HEADER.pt.farm);
   });
 
   for (const lang of LANGS) {
@@ -53,7 +61,7 @@ describe('team-plan i18n namespace', () => {
       'teamPlanPageTitle',
       'teamPlanOptimize',
       'teamPlanScopeDonate',
-      'teamPlanSaturationCallout',
+      'teamPlanSaturationCalloutDps',
     ] as const;
     for (const key of keys) {
       expect(STRINGS.pt[key]).not.toBe(STRINGS.en[key]);
@@ -61,7 +69,7 @@ describe('team-plan i18n namespace', () => {
   });
 
   it('includes nav label in chrome-adjacent namespace keys', () => {
-    expect(STRINGS.en.navTeamPlan).toBe('Team plan');
-    expect(STRINGS.pt.navTeamPlan).toBe('Plano do time');
+    expect(STRINGS.en.navOptimizer).toBe('Optimizer');
+    expect(STRINGS.pt.navOptimizer).toBe('Otimizador');
   });
 });

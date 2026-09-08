@@ -16,6 +16,7 @@ import type {
   FarmRespecOutcome,
   FarmRespecResult,
 } from '@bombfarm/domain/farm-optimize';
+import { FARM_RESPEC_WORTH_MAKING_PCT, isFarmRespecWorthMaking } from '../core';
 
 /**
  * The on-demand result, keyed by the EXACT dependency tuple that produced it — the staleness key
@@ -100,13 +101,18 @@ export type FarmRespecPanelState =
   | { kind: 'solving' }
   | { kind: 'failed' }
   | { kind: 'terminal'; outcome: FarmRespecOutcome }
+  | { kind: 'belowThreshold'; gainPct: number; floorPct: number }
   | { kind: 'result'; result: FarmRespecResult; budgetExhausted: boolean };
 
 /**
  * Every branch the panel can be in, collapsed into one discriminated value so the component has
- * no `if`/`switch` of its own over `status`/`outcome`. The four terminal outcomes are unreachable
- * behind the Tier 1 gate in normal play (each carries `gainPct: 0`) but render a single named
- * state rather than a blank panel if the seam is ever reached anyway.
+ * no `if`/`switch` of its own over `status`/`outcome`. Optimize is always available, so every
+ * one of these is reachable in normal play — including the four terminal outcomes and a solve
+ * that simply found nothing worth doing.
+ *
+ * `belowThreshold` covers `nothingToGain` too: that outcome carries `gainPct: 0`, which is under
+ * any floor, so a perfect build and a barely-improvable one give the same honest answer instead
+ * of two near-identical panels.
  */
 export function resolvePanelState(
   view: FarmRespecProposal | null,
@@ -122,6 +128,9 @@ export function resolvePanelState(
   const { result } = view;
   if (TERMINAL_OUTCOMES.includes(result.outcome)) {
     return { kind: 'terminal', outcome: result.outcome };
+  }
+  if (!isFarmRespecWorthMaking(result)) {
+    return { kind: 'belowThreshold', gainPct: result.gainPct, floorPct: FARM_RESPEC_WORTH_MAKING_PCT };
   }
   return { kind: 'result', result, budgetExhausted: result.budgetExhausted };
 }

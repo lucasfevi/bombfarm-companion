@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 /**
- * W6-12 — at most one React component declaration per `.tsx` file.
+ * At most one React component declaration per `.tsx` file.
  * Stories excluded. Namespace `index.ts` files are not scanned (not components).
  *
  * Component = PascalCase `function` declaration, or PascalCase `const` bound to

@@ -1,5 +1,5 @@
 /**
- * Every degenerate and boundary case from `design.md` §7, each pinned to the FULL tuple
+ * Every degenerate and boundary case, each pinned to the FULL tuple
  * (`outcome`, `keptCurrent`, `recommendedPhase`, `gainPct`, `heroes.length`, `frontier.length`,
  * `plateau`, `evaluations`), plus the objective weight/kind sweep at the solver boundary and a
  * finite-value sweep over every result this file produces.

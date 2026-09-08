@@ -20,6 +20,7 @@ import * as advice from '@/shared/i18n/namespaces/advice';
 import * as breakdown from '@/shared/i18n/namespaces/breakdown';
 import * as phases from '@/shared/i18n/namespaces/phases';
 import * as teamPlan from '@/shared/i18n/namespaces/team-plan';
+import * as teamPlanObjective from '@/shared/i18n/namespaces/team-plan-objective';
 import * as importNs from '@/shared/i18n/namespaces/import';
 import * as stats from '@/shared/i18n/namespaces/stats';
 import * as market from '@/shared/i18n/namespaces/market';
@@ -177,8 +178,33 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  * That notice is reworded and gains `farmRankingContentionTitleMaxSlots` /
  * `farmRankingContentionDescMaxSlots` (2026-08-27) — see the `KEYS_ADDED` note above for why both
  * original strings change.
+ * The Team plan objective control (2026-09-06) lets a player score the search for gold per hour
+ * instead of combined roster damage, and defaults to gold. Nine strings on that page named the
+ * quantity being reported, so each is replaced by a `…Dps`/`…Farm` pair in `KEYS_ADDED` and the
+ * unsuffixed original loses its reader: `teamPlanSetupSectionBody`,
+ * `teamPlanRunSummaryRegimeHintSaturated`, `teamPlanTotalGainValue`, `teamPlanResultsHeader`,
+ * `teamPlanGearDipNote`, `teamPlanSaturationCallout`, `teamPlanAuraDisclosure`,
+ * `teamPlanPlannerDivergence` and `teamPlanForgeSkippedNote`. A pair rather than one templated
+ * string because the unit differs (dps against gold/h) and a template cannot carry a unit.
  */
 const KEYS_REMOVED: readonly string[] = [
+  'navTeamPlan',
+  // Split into `…Both`/`…Points`/`…Gear` (in `KEYS_ADDED`): the one string named gear moves and
+  // point resets whatever Allowed changes was set to.
+  'teamPlanOptimizeAria',
+  // Split into a Dps/Farm pair (in `KEYS_ADDED`): the per-hero rows are DPS whatever the roster
+  // was scored on, so under gold this note claimed figures were "what the search actually
+  // optimizes against" when they are a different quantity from the total above them.
+  'teamPlanHeroDeltaNote',
+  'teamPlanSetupSectionBody',
+  'teamPlanRunSummaryRegimeHintSaturated',
+  'teamPlanTotalGainValue',
+  'teamPlanResultsHeader',
+  'teamPlanGearDipNote',
+  'teamPlanSaturationCallout',
+  'teamPlanAuraDisclosure',
+  'teamPlanPlannerDivergence',
+  'teamPlanForgeSkippedNote',
   'importSyncSummary',
   'importRemovedNote',
   'accountTargetPropHint',
@@ -199,6 +225,8 @@ const KEYS_REMOVED: readonly string[] = [
   'farmRespecPaybackNoGoldGain',
   'farmRespecHeadlinePhase',
   'farmRespecHeadlineCost',
+  'farmRespecHeadlineGain',
+  'farmRespecGateFailed',
   'farmRespecObjectiveLabel',
   'farmRespecObjectiveGold',
   'farmRespecObjectiveBlend',
@@ -373,8 +401,99 @@ const KEYS_REMOVED: readonly string[] = [
  * a drawing of the desktop app's compact Live window; every label inside the drawing and its
  * controls is mirrored from the desktop shell in `live-replica-copy.ts` instead, under the drift
  * guard, so only the three strings the web page says in its own voice live here.
+ * The Team plan objective control (2026-09-06) adds the control itself — `teamPlanObjectiveLabel`,
+ * `teamPlanObjectiveAria`, `teamPlanObjectiveOptionDamage`, `teamPlanObjectiveOptionGold`, the hint
+ * under it (`teamPlanObjectiveHintDps`/`Farm`) and the warning shown when a record carries no
+ * furthest-phase for gold to be priced against (`teamPlanObjectiveFarmNeedsMaxPhase`) — plus the
+ * `…Dps`/`…Farm` half of each string listed in `KEYS_REMOVED`. `teamPlanFarmAdvisorPointer` is the
+ * one that renders elsewhere: the Farm page's respec advisor now states that it moves stat points
+ * only, and the web planner appends this pointer to the Team plan page. The desktop app has no
+ * such page and passes nothing, so the shared panel names no destination there.
+ * `farmRespecPointsOnly` is that advisor's own scope sentence, and lives in the shared farm copy
+ * because it is true on both apps.
+ *
+ * The Team plan phase picker (2026-09-07) adds the control (`teamPlanPhaseLabel`,
+ * `teamPlanPhaseAria`, `teamPlanPhaseNone`, `teamPlanPhaseSearchPlaceholder`,
+ * `teamPlanPhaseNoMatch`, `teamPlanPhaseMoreMatches`), the two hints under it
+ * (`teamPlanPhaseHintNone`/`Chosen`), the note for a phase past the account's furthest
+ * (`teamPlanPhaseBeyondMax`), and the run summary's read-back of which phase the plan was scored
+ * at, one string per way the phase was arrived at (`teamPlanRunSummaryScoredPhase`,
+ * `teamPlanScoredPhaseChosen`, `teamPlanScoredPhaseAccount`, `teamPlanScoredPhaseSearched`,
+ * `teamPlanScoredPhaseUnreachable`, `teamPlanScoredPhaseNoneFeasible`). None of these are
+ * objective-suffixed: a phase is a phase under either objective, and the read-back reports one.
+ *
+ * The Team plan allowed-changes control (2026-09-07) adds the picker (`…Label`, `…Aria`, and its
+ * three options `…OptionBoth`/`…OptionPoints`/`…OptionGear`), a hint per setting
+ * (`…HintBoth`/`…HintPoints`/`…HintGear`), and the two Assumptions & limits lines that tell a
+ * reader a restricted plan's empty list is a restriction and not a finding
+ * (`…NotePoints`/`…NoteGear`). Not objective-suffixed, for the same reason the phase strings are
+ * not: the restriction is on what the plan may propose, not on how it scores.
  */
 const KEYS_ADDED: readonly string[] = [
+  'navOptimizer',
+  'teamPlanOptimizeAriaBoth',
+  'teamPlanOptimizeAriaPoints',
+  'teamPlanOptimizeAriaGear',
+  'teamPlanPhaseHintNoneDps',
+  'teamPlanPhaseHintNoneFarm',
+  // Luck is not part of `HeroSheet`, so no points search can reach it in either direction. The
+  // page had never said so, which matters most under the gold objective: a stat that raises drop
+  // rates, and so gold per hour, is being held still while gold per hour is optimized.
+  'teamPlanLuckFrozenDps',
+  'teamPlanLuckFrozenFarm',
+  'teamPlanHeroDeltaNoteDps',
+  'teamPlanHeroDeltaNoteFarm',
+  'farmRespecPointsOnly',
+  'teamPlanPhaseLabel',
+  'teamPlanPhaseAria',
+  'teamPlanPhaseNone',
+  'teamPlanPhaseSearchPlaceholder',
+  'teamPlanPhaseNoMatch',
+  'teamPlanPhaseMoreMatches',
+  'teamPlanPhaseHintChosen',
+  'teamPlanPhaseBeyondMax',
+  'teamPlanRunSummaryScoredPhase',
+  'teamPlanScoredPhaseChosen',
+  'teamPlanScoredPhaseAccount',
+  'teamPlanScoredPhaseSearched',
+  'teamPlanScoredPhaseUnreachable',
+  'teamPlanScoredPhaseNoneFeasible',
+  'teamPlanAllowedChangesLabel',
+  'teamPlanAllowedChangesAria',
+  'teamPlanAllowedChangesOptionBoth',
+  'teamPlanAllowedChangesOptionPoints',
+  'teamPlanAllowedChangesOptionGear',
+  'teamPlanAllowedChangesHintBoth',
+  'teamPlanAllowedChangesHintPoints',
+  'teamPlanAllowedChangesHintGear',
+  'teamPlanAllowedChangesNotePoints',
+  'teamPlanAllowedChangesNoteGear',
+  'teamPlanObjectiveLabel',
+  'teamPlanObjectiveAria',
+  'teamPlanObjectiveOptionDamage',
+  'teamPlanObjectiveOptionGold',
+  'teamPlanObjectiveHintDps',
+  'teamPlanObjectiveHintFarm',
+  'teamPlanObjectiveFarmNeedsMaxPhase',
+  'teamPlanFarmAdvisorPointer',
+  'teamPlanSetupSectionBodyDps',
+  'teamPlanSetupSectionBodyFarm',
+  'teamPlanRunSummaryRegimeHintSaturatedDps',
+  'teamPlanRunSummaryRegimeHintSaturatedFarm',
+  'teamPlanTotalGainValueDps',
+  'teamPlanTotalGainValueFarm',
+  'teamPlanResultsHeaderDps',
+  'teamPlanResultsHeaderFarm',
+  'teamPlanGearDipNoteDps',
+  'teamPlanGearDipNoteFarm',
+  'teamPlanSaturationCalloutDps',
+  'teamPlanSaturationCalloutFarm',
+  'teamPlanAuraDisclosureDps',
+  'teamPlanAuraDisclosureFarm',
+  'teamPlanPlannerDivergenceDps',
+  'teamPlanPlannerDivergenceFarm',
+  'teamPlanForgeSkippedNoteDps',
+  'teamPlanForgeSkippedNoteFarm',
   'downloadScreenForgeTitle',
   'downloadScreenForgeItem1',
   'downloadScreenForgeItem2',
@@ -410,6 +529,8 @@ const KEYS_ADDED: readonly string[] = [
   'marketAgeUnknown',
   'accountMissingFieldsTitle',
   'accountMissingFieldsBody',
+  'farmRespecNotWorthTitle',
+  'farmRespecNotWorthDesc',
   'referralNoticeTitle',
   'referralNoticeBody',
   'referralNoticeReward',
@@ -740,6 +861,16 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   // "not guaranteed to be the best that exists" clause — `farmRespecBestFound` says that on every
   // result now — and no longer calls the bound a time budget, which it never was.
   'farmRespecBudgetExhausted',
+  // The page is renamed Team plan -> Optimizer (2026-09-07), URL `/team-plan` -> `/optimizer`.
+  // The nav label changes key as well and is declared above; these carry the page's own name in
+  // their text. The explain section is retitled to match and its opening sentence no longer says
+  // the search scores for DPS, which stopped being the only objective. `teamPlanFarmAdvisorPointer`
+  // also names the page and is NOT listed here: it is already declared added above, and an added
+  // key's value is unconstrained by the comparison.
+  'teamPlanPageLandmark',
+  'teamPlanPageTitle',
+  'explainSections.8.h',
+  'explainSections.8.p.0',
 ];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {
@@ -784,6 +915,7 @@ const namespaces = [
   ['breakdown', breakdown],
   ['phases', phases],
   ['teamPlan', teamPlan],
+  ['teamPlanObjective', teamPlanObjective],
   ['import', importNs],
   ['stats', stats],
   ['market', market],

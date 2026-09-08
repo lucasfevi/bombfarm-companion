@@ -69,7 +69,7 @@ test.describe('Team plan page states', () => {
     await page.getByRole('button', { name: /^Cancel$/i }).click();
     await expect(page.getByRole('dialog', { name: /Building plan/i })).toBeHidden();
     await expect(
-      page.getByRole('button', { name: /Build a team plan of gear moves and point resets/i }),
+      page.getByRole('button', { name: /^Build a team plan of /i }),
     ).toBeEnabled();
   });
 });

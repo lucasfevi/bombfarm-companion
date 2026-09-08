@@ -22,7 +22,7 @@
  * flagged `data-limited`, not removed — no "+N more" concept).
  *
  * That is a second, competing source of truth and a second timer engine,
- * directly contradicting this feature's design (`design.md`: the pure
+ * directly contradicting this feature's design: the pure
  * reducer in `toast-queue.ts` is the single source of truth for coalescing /
  * overflow / expiry / threshold-announcement policy, and the provider owns
  * *exactly one* `setTimeout`). Using `Toast.Root` would mean mirroring every

@@ -14,6 +14,13 @@ export function formatGainPct(value: number, lang: Lang): string {
   return formatNumber(value, lang, 1);
 }
 
+/** The worth-making floor, whole percents. It is a policy constant rather than a measurement, so
+ *  it carries no decimal — "5%", never "5.0%", which reads as a number something measured. */
+export function formatFloorPct(value: number, lang: Lang): string {
+  if (!Number.isFinite(value)) return '—';
+  return formatNumber(value, lang, 0);
+}
+
 /** A gold amount, whole numbers only (in-game gold has no fractional unit). */
 export function formatGold(value: number, lang: Lang): string {
   if (!Number.isFinite(value)) return '—';

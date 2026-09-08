@@ -75,10 +75,9 @@ import { ForgeToolbar, type ForgeHeroOption } from './forge-toolbar';
 
 type Bridge = NonNullable<Window['bfc']>;
 
-/** The floor under the split, in px. With nothing picked the column beside the bag is a short
- *  empty state — 188px — and a row measured from that alone would leave four bag rows showing.
- *  460 holds fifteen rows under the sticky header and still keeps the whole unpicked screen
- *  inside the default 1280x800 window with the ledger shut: 670px drawn into 709px of region. */
+/** The floor under the split, in px, for a window too short to give it more. With nothing picked
+ *  the column beside the bag is a short empty state — 188px — and a row measured from that alone
+ *  would leave four bag rows showing. 460 holds fifteen rows under the sticky header. */
 const SPLIT_MIN_HEIGHT = 460;
 
 function bridgeOf(): Bridge | null {
@@ -344,7 +343,7 @@ export function ForgeView({
   }
 
   return (
-    <div data-testid="forge-view" className="flex flex-col gap-3">
+    <div data-testid="forge-view" className="flex min-h-0 flex-1 flex-col gap-3">
       <Panel className="shrink-0">
         <PanelHeader title={t.forgeTitle} />
         <ForgeToolbar
@@ -373,14 +372,20 @@ export function ForgeView({
 
       <ForgeRail run={run} gold={labels.gold} labels={labels} onCancel={onCancel} onDone={onDone} />
 
-      {/* The right column sizes the row; the bag matches it. The bag Panel is taken out of flow
-          so the whole bag cannot contribute its height to an `auto` grid row, leaving the row
-          measured by the piece and the plan beside it — floored by `SPLIT_MIN_HEIGHT` so the bag
-          is still worth reading before anything is picked. Being absolute also gives the Panel a
-          definite height to bound the table's own scroller against. */}
+      {/* The row is the screen's slack: it takes whatever height the bands around it leave, and
+          the bag fills it, so a tall window reads more of the bag rather than ending in dead
+          space. Below that it is sized by the right column — the bag Panel is taken out of flow
+          so the whole bag cannot contribute its height to the row, leaving it measured by the
+          piece and the plan beside it, and floored by `SPLIT_MIN_HEIGHT` so the bag is still
+          worth reading before anything is picked. Being absolute also gives the Panel a definite
+          height to bound the table's own scroller against.
+
+          `shrink-0` on every band, this one included, is what keeps the give one-directional: a
+          window too short for the plan lets `<main>` scroll rather than squeezing the row under
+          what the column beside it draws. */}
       <div
         data-testid="forge-split"
-        className="grid grid-cols-[minmax(0,1fr)_372px] gap-3"
+        className="grid shrink-0 grow grid-cols-[minmax(0,1fr)_372px] gap-3"
         style={{ gridTemplateRows: `minmax(${String(SPLIT_MIN_HEIGHT)}px, auto)` }}
       >
         <div className="relative">

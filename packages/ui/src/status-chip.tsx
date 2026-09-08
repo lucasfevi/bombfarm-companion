@@ -1,7 +1,7 @@
 import { chipRecipe, type ChipVariant } from './chip.recipe';
 import { cn } from './cn';
 
-/** INV-1 game-connection states — the single vocabulary every desktop surface reads. */
+/** Game-connection states — the single vocabulary every desktop surface reads. */
 export type GameConnectionStatus = 'connected' | 'not_running' | 'stale';
 
 export interface StatusChipProps {
@@ -20,7 +20,7 @@ const STATUS_TONE: Record<GameConnectionStatus, ChipVariant> = {
 };
 
 /**
- * StatusChip — single implementation of INV-1 connection states.
+ * StatusChip — single implementation of the connection states.
  * Built on `chipRecipe` (reuses `small-active` / `small-warn`, extends with the
  * additive `small-muted` tone for `not_running`) rather than a parallel chip.
  * The dot is decorative and carries no text node so `role="status"` text stays

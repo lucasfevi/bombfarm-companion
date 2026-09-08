@@ -1,5 +1,5 @@
 /**
- * Layer 1 of the desktop/web parity proof (design.md §9). One committed
+ * Layer 1 of the desktop/web parity proof. One committed
  * fixture payload, through the source-neutral entry point (`parseAccountPayload`) and the
  * exported `pipelineForHero`, compared against a `computeAdvisorPipeline` call
  * assembled field-for-field with `apps/web/src/shared/stores/selectors/advisor-selectors.ts`'s

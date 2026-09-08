@@ -5,6 +5,7 @@ import { Accordion, Panel, Tooltip } from '@bombfarm/ui';
 import { panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui/panel-field.recipe';
 import { accordionStackClass } from '@bombfarm/ui/accordion.recipe';
 import type { Lang, Strings } from '@/shared/i18n';
+import type { TeamPlanObjectiveCopy } from '@/features/team-plan/model/objective-copy';
 import { sub } from '@/shared/i18n';
 import { usePlannerStore, selectHeroes, selectInventoryItems } from '@/shared/stores';
 import { shortHeroRecordId } from '@/shared/lib/hero-identity';
@@ -17,7 +18,17 @@ import { AbbreviatedNumber } from './abbreviated-number';
 const metricLabelClass = 'text-[9px] font-bold leading-none tracking-[0.06em] text-muted uppercase';
 const metricValueClass = 'font-mono text-[13px] font-semibold leading-none tabular-nums';
 
-export function HeroDeltaTable({ t, lang, plan }: { t: Strings; lang: Lang; plan: TeamPlan }) {
+export function HeroDeltaTable({
+  t,
+  lang,
+  plan,
+  copy,
+}: {
+  t: Strings;
+  lang: Lang;
+  plan: TeamPlan;
+  copy: TeamPlanObjectiveCopy;
+}) {
   const heroes = usePlannerStore(selectHeroes);
   const inventory = usePlannerStore(selectInventoryItems);
   const heroByScopeKey = new Map(heroes.map((hero) => [hero.sourceId ?? hero.id, hero]));
@@ -50,7 +61,7 @@ export function HeroDeltaTable({ t, lang, plan }: { t: Strings; lang: Lang; plan
       <div className={panelHClass}>
         <h2 className={panelTitleClass}>{t.teamPlanHeroDeltaTitle}</h2>
       </div>
-      <p className={tipClass}>{t.teamPlanHeroDeltaNote}</p>
+      <p className={tipClass}>{copy.heroDeltaNote}</p>
       <Tooltip.Provider delay={200} closeDelay={80}>
         <Accordion.Root
           key={accordionKey}

@@ -1,10 +1,10 @@
 import type { CSSProperties, PropsWithChildren, ReactNode } from 'react';
 import { AppNav } from './app-nav';
-import { cn } from './cn';
 import type { IconName } from './icon';
 import type { ShellDensity } from './shell-density';
 import {
   appShellActionsClass,
+  appShellBarClass,
   appShellBrandClass,
   appShellBrandNameClass,
   appShellBrandRowClass,
@@ -16,12 +16,14 @@ import {
   appShellMainInnerClass,
   appShellRootClass,
   appShellStatusBarClass,
+  appShellStatusInnerClass,
 } from './AppShell.recipe';
 
 export interface AppShellNavItem {
   id: string;
   label: string;
-  /** Drawn in place of the label at `icon-tabs` density; an item without one keeps its words. */
+  /** Drawn in place of the label once the bar is too narrow to spell every tab; an item without
+   *  one keeps its words. */
   icon?: IconName;
 }
 
@@ -56,7 +58,7 @@ export interface AppShellProps extends PropsWithChildren {
    * window by its chrome.
    */
   draggable?: boolean;
-  /** Right padding (px) held clear for OS caption buttons, alongside `draggable`. */
+  /** Width (px) the OS caption buttons claim on the right edge, alongside `draggable`. */
   overlayInset?: number;
 }
 
@@ -81,6 +83,17 @@ const DRAG_STRIP_STYLE: AppRegionStyle = { WebkitAppRegion: 'drag' };
  * a click has to say so, or the window manager claims the press before the button ever sees it.
  */
 const NO_DRAG_STYLE: AppRegionStyle = { WebkitAppRegion: 'no-drag' };
+
+/**
+ * The right padding the bar's content needs to stay out of the OS caption buttons, given that the
+ * content is already inset from the window edge by the measure's own right gutter. Above the
+ * measure that gutter is wider than the buttons and this resolves to zero, which is the point: a
+ * maximized window lines the actions up with the panels below rather than holding a strip clear
+ * twice. `100%` resolves against the header's content box, so the subtraction is the live gutter.
+ */
+function captionClearance(overlayInset: number): string {
+  return `max(0px, ${overlayInset}px - (100% - min(var(--container-desktop), 100%)) / 2 - var(--shell-gutter) - var(--scrollbar))`;
+}
 
 /**
  * AppShell — sticky top bar (brand + nav pill + actions) over a single scrolling `<main>`, plus a
@@ -111,47 +124,50 @@ export function AppShell({
     active: item.id === activeId,
     ...(item.icon === undefined ? {} : { icon: item.icon }),
   }));
-  const iconTabs = density === 'icon-tabs';
+  const iconTabs = density !== 'full';
+  const brandMarkOnly = density === 'brand-mark' || density === 'actions-collapsed';
 
-  const headerStyle = overlayInset ? { paddingRight: overlayInset } : undefined;
   const dragStripStyle = overlayInset
     ? { ...DRAG_STRIP_STYLE, right: overlayInset }
     : DRAG_STRIP_STYLE;
+  const barStyle = overlayInset ? { paddingRight: captionClearance(overlayInset) } : undefined;
   const interactiveStyle = draggable ? NO_DRAG_STYLE : undefined;
 
   return (
     <div className={appShellRootClass}>
-      <header className={appShellHeaderClass} style={headerStyle}>
+      <header className={appShellHeaderClass}>
         {draggable ? <div aria-hidden className={appShellDragStripClass} style={dragStripStyle} /> : null}
-        <div className="relative flex min-w-0 items-center gap-4">
-          <div className={appShellBrandRowClass} style={interactiveStyle}>
-            {brand}
-            {iconTabs ? null : (
-              <>
-                <div className={appShellBrandClass}>
-                  <div className={appShellBrandNameClass}>{title}</div>
-                  {suiteTag ? <div className={appShellBrandTagClass}>{suiteTag}</div> : null}
-                </div>
-                {badge ? (
-                  <span data-testid="flavor-badge" className={appShellFlavorBadgeClass}>
-                    {badge}
-                  </span>
-                ) : null}
-              </>
-            )}
+        <div className={appShellBarClass} style={barStyle}>
+          <div className="flex min-w-0 items-center gap-4">
+            <div className={appShellBrandRowClass} style={interactiveStyle}>
+              {brand}
+              {brandMarkOnly ? null : (
+                <>
+                  <div className={appShellBrandClass}>
+                    <div className={appShellBrandNameClass}>{title}</div>
+                    {suiteTag ? <div className={appShellBrandTagClass}>{suiteTag}</div> : null}
+                  </div>
+                  {badge ? (
+                    <span data-testid="flavor-badge" className={appShellFlavorBadgeClass}>
+                      {badge}
+                    </span>
+                  ) : null}
+                </>
+              )}
+            </div>
+            {navItems.length > 0 ? (
+              <div style={interactiveStyle}>
+                <AppNav items={navItems} onSelect={onNavigate} compact={iconTabs} />
+              </div>
+            ) : null}
           </div>
-          {navItems.length > 0 ? (
-            <div style={interactiveStyle}>
-              <AppNav items={navItems} onSelect={onNavigate} compact={iconTabs} />
+
+          {actions ? (
+            <div className={appShellActionsClass} style={interactiveStyle}>
+              {actions}
             </div>
           ) : null}
         </div>
-
-        {actions ? (
-          <div className={cn(appShellActionsClass, 'relative')} style={interactiveStyle}>
-            {actions}
-          </div>
-        ) : null}
       </header>
 
       <main className={appShellMainClass}>
@@ -159,9 +175,13 @@ export function AppShell({
       </main>
 
       <footer className={appShellStatusBarClass}>
-        {status ? <div className="flex items-center gap-2">{status}</div> : null}
-        {progress ? <div className="flex items-center gap-2">{progress}</div> : null}
-        {version ? <div className="ml-auto flex items-center gap-2">{version}</div> : null}
+        {status || progress || version ? (
+          <div className={appShellStatusInnerClass}>
+            {status ? <div className="flex items-center gap-2">{status}</div> : null}
+            {progress ? <div className="flex items-center gap-2">{progress}</div> : null}
+            {version ? <div className="ml-auto flex items-center gap-2">{version}</div> : null}
+          </div>
+        ) : null}
       </footer>
     </div>
   );

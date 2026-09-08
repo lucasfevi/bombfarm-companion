@@ -310,7 +310,7 @@ function FarmScreen({
   const t = useCopy();
   const { lang } = useLocale();
   const farmCopy = useFarmCopy();
-  const { board, inputs, gate, capturedAt } = snapshot;
+  const { board, inputs, capturedAt } = snapshot;
 
   const screenCopy = useMemo(() => farmScreenCopy(farmCopy, t), [farmCopy, t]);
 
@@ -359,7 +359,7 @@ function FarmScreen({
       currentPhase: view.phase,
       phasesViewPhaseChosen: view.phaseChosen,
       statLabels,
-      respec: { gate, view: proposal, status: respec.status, panelOpen: respec.panelOpen },
+      respec: { view: proposal, status: respec.status, panelOpen: respec.panelOpen },
       tableScrollportHeightPx: view.tableScrollportHeightPx,
     }),
     [
@@ -372,7 +372,6 @@ function FarmScreen({
       view.phaseChosen,
       view.tableScrollportHeightPx,
       statLabels,
-      gate,
       proposal,
       respec.status,
       respec.panelOpen,

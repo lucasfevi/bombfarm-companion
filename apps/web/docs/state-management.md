@@ -1,7 +1,7 @@
 # State management
 
 **Status:** hard truth — accepted 2026-07-30 (W8, hard-truth promotion)  
-**Sources:** modular-architecture W4 (store foundation); programme PRD persistence section
+**Sources:** the store-foundation work, and the persistence requirements it was written against
 
 Convention for the Zustand store waves (W4–W5). Written so those waves can implement against a single doc; promotion is W8 per [`hard-truths.md`](../../../docs/hard-truths.md).
 
@@ -93,4 +93,4 @@ an effect, a subscription, or a write-on-render ever running.
 ## What the store claims (post-W8)
 
 - **Claims:** `zustand` root store; session/account/roster/phases/hero-draft; explicit persistence; the roster-hydration, autosave, storage-failure, and `_bag`-removal fixes; `AppLangProvider` removed (`useAppLang` reads session); `_bag` / dual autosave effects gone; memoized `selectAdvisorPipeline`; prop bags / god-hook / `AppShellBridgeProvider` deleted.
-- **Measured in W8, and not what the PRD predicted:** the store migration did **not** collapse render fan-out. Raw `componentRenders` moved under ±1.1% on every scenario, and the profiler re-run gate failed on two of four before a later decision recorded the raw threshold as non-comparable across the W6/W7 decomposition. What the store **did** deliver is measured commit-duration improvement (−24% to −38% on three of four scenarios) plus the memoized-selector and single-write-autosave invariants. Claim the durations and the invariants; do not claim a re-render collapse.
+- **Measured, and not what was predicted:** the store migration did **not** collapse render fan-out. Raw `componentRenders` moved under ±1.1% on every scenario, and the profiler re-run gate failed on two of four before a later decision recorded the raw threshold as non-comparable across the W6/W7 decomposition. What the store **did** deliver is measured commit-duration improvement (−24% to −38% on three of four scenarios) plus the memoized-selector and single-write-autosave invariants. Claim the durations and the invariants; do not claim a re-render collapse.

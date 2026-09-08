@@ -55,10 +55,10 @@ function sheetAbilityFlatFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct):
 /**
  * Reconstruct lv1 ★0 roll by peeling level / stars / sheet-ability factors from naked.
  *
- * `naked` here is today's contaminated (tree-inclusive) value (GAP-W4-01) — this function
+ * `naked` here is today's contaminated (tree-inclusive) value — this function
  * deliberately gains NO tree divisor (consistent with `derive`). The
- * returned "birth" figure therefore still carries a residual tree contamination until Wave 5
- * writes a genuinely tree-free `naked` via `nakedFromBirth`; `pushBirthThenGear`'s tree/gear
+ * returned "birth" figure therefore still carries a residual tree contamination until a
+ * genuinely tree-free `naked` is written via `nakedFromBirth`; `pushBirthThenGear`'s tree/gear
  * split (below) works regardless, because it is anchored to the *observed* `naked`/`geared`
  * values rather than to this peeled figure.
  */

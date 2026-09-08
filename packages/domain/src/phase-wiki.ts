@@ -71,7 +71,7 @@ export const WIKI_SOURCE_PULLED_AT: string = wiki.sourcePulledAt;
 /** `YYYY-MM-DD` — the date the emitter ran. May be later than the pull date (stale-input emit). */
 export const WIKI_EMITTED_AT: string = wiki.emittedAt;
 
-/** Per-prop drop fractions, all five in one object because FR-3 reads them together.
+/** Per-prop drop fractions, all five in one object because the farm-rate model reads them together.
  *  Sourced from the bundle's `drops` block:
  *    chest ← `drops.chestDropRate`       0.001    — item/hero chest, ANY phase
  *    key   ← `drops.keyDropRate`         0.001    — ready key, NON-gate phases only
@@ -151,7 +151,7 @@ export type WikiGems = {
 export const WIKI_GEMS: WikiGems = wiki.gems;
 
 /** [ato-1][rank-1] — P(rank | gem chest), per difficulty. 5 rows × 3 columns, each row sums to 1.
- *  Alias of `WIKI_GEMS.rankDistByAto`, exported flat because it is the term FR-3 reads. */
+ *  Alias of `WIKI_GEMS.rankDistByAto`, exported flat because it is the term farm-rate reads. */
 export const GEM_RANK_DIST_BY_ATO: readonly (readonly number[])[] = WIKI_GEMS.rankDistByAto;
 
 /** Alias of `WIKI_GEMS.list`. */
@@ -169,7 +169,7 @@ export type LootAbilityValue = {
    * (`habilidades[].max`), kept verbatim so the export and the payload agree.
    * At-max effect = `perLevel * max`:
    *   veia_ouro 0.02 × 20 = +40%   ·   fortuna 0.005 × 20 = +10%
-   * Both reproduce the PRD's independently-stated at-max values, and a domain test asserts
+   * Both reproduce the independently-published at-max values, and a domain test asserts
    * the products so a future `max` semantics change cannot pass silently.
    */
   max: number;

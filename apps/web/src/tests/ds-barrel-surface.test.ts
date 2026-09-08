@@ -50,10 +50,11 @@ import * as GameArt from '@bombfarm/game-art';
 // Menu (2026-09-02): the compound wrap over Base UI's menu, dressed with the popup chrome Select
 // already draws. Added for the desktop top bar's overflow button; the barrel had no popup control
 // that lists commands, which is how one nearly got hand-rolled.
-// useShellDensity / shellDensityFor / SHELL_ACTIONS_COLLAPSE_WIDTH / SHELL_ICON_TABS_WIDTH
-// (2026-09-02): the two widths at which a top bar stops fitting, and the hook that reports which
-// side of them the window is on. AppShell takes the answer as a prop rather than measuring, so the
-// same value drives the tabs and whatever the caller puts in the actions slot.
+// useShellDensity / shellDensityFor / SHELL_ACTIONS_COLLAPSE_WIDTH / SHELL_BRAND_MARK_WIDTH /
+// SHELL_ICON_TABS_WIDTH (2026-09-02, third width added 2026-09-07): the widths at which a top bar
+// stops fitting, and the hook that reports which side of them the window is on. AppShell takes the
+// answer as a prop rather than measuring, so the same value drives the tabs and whatever the
+// caller puts in the actions slot.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -93,12 +94,19 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'SaveBar',
   'SegmentedToggle',
   'SHELL_ACTIONS_COLLAPSE_WIDTH',
+  'SHELL_BRAND_MARK_WIDTH',
   'SHELL_ICON_TABS_WIDTH',
   'Select',
   // `SelectMultiple` (2026-08-27): its own component rather than a `multiple?: boolean` branch on
   // `Select` — the two disagree on the type of `value` and on what a change is, and a union that
   // loose pushes the narrowing onto every call site. Base UI's select does the work.
   'SelectMultiple',
+  // `SearchSelect` / `searchSelectMatches` (2026-09-07): `Select`'s trigger and popup over a list
+  // too long to scroll, with a search field in the popup and a rendered-row cap. Base UI's
+  // combobox does the work; the matcher is exported beside it so a caller can test the query its
+  // own labels answer to without mounting the control.
+  'SearchSelect',
+  'searchSelectMatches',
   'SettingsRow',
   'SettingsSection',
   'Slider',

@@ -27,6 +27,19 @@ Ubiquitous language for the companion's game model. Terms only — no implementa
   and every drop chance are boosted (+40%, +80% VIP). Only multiplies what the player
   destroys while it runs.
 
+## Team Plan
+
+- **Plan objective** — what the Team Plan's search treats as "better" when it decides where gear
+  and stat points should go. Two of them: **DPS**, the roster's duty-weighted sustained damage,
+  and **Farm**, the squad's gold per hour at the best phase it can hold. They order the same
+  roster differently, and can disagree in sign.
+- **Allowed changes** — which kinds of change a Team Plan may propose: gear work (moving items
+  and forging them), stat-point resets, or both. Independent of the plan objective, which decides
+  what "better" means rather than what the plan may ask for, and of hero scope, which decides
+  which heroes it may touch rather than what it may do to them.
+- **Hero scope** — per hero, whether the Team Plan may re-equip them (Optimize), strip them for
+  parts (Donate), or must not touch them at all (Leave alone).
+
 ## Loot
 
 - **Sorte (field luck)** — the loot-chance multiplier: average luck of on-field heroes plus the

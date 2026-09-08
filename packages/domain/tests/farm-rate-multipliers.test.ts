@@ -3,7 +3,7 @@
  *
  * Seven cases, each a single-variable delta against a shared baseline, each asserting both the
  * column that must move AND `toBe`-level equality on the columns that must not. Proves the two
- * do-not-"fix" asymmetries from `design.md` §4.2/§4.4: Sorte moves chest/key/gem/time and never
+ * do-not-"fix" asymmetries: Sorte moves chest/key/gem/time and never
  * gold/xp; the gold chain (team_coin/fortuna/veia_ouro) moves gold and never chest/key/gem/xp.
  */
 import { describe, expect, it } from 'vitest';
@@ -12,6 +12,8 @@ import {
   computeSquadFarmFacts,
   computeFarmRateRow,
   FORTUNA_AURA_CAP,
+  HERO_ACTIVATION_STAGGER_SEC,
+  type FarmRateRow,
   type HeroFarmFacts,
   type SquadFarmFacts,
 } from '@bombfarm/domain/farm-rate';
@@ -165,7 +167,7 @@ describe('Gold tracks team_coin / fortuna / veia_ouro, never Sorte', () => {
 
     const line = wikiPhaseLine(42)!;
     const share = heroShare(baseFacts, jon.id, line);
-    // The fixture carries no veia_ouro anywhere (design.md §2.5), so goldSelfMix_base === 1
+    // The fixture carries no veia_ouro anywhere, so goldSelfMix_base === 1
     // exactly (Σ share_h × 1 = Σ share_h = 1) — baseRow.goldPerHour already IS
     // propsPerHour × E_gold × goldMult, so the delta reduces to this one clean expression.
     const expectedGold = baseRow.goldPerHour * (1 + share * LOOT_ABILITY_VALUES.veia_ouro.perLevel * delta);
@@ -183,7 +185,7 @@ describe('Gold tracks team_coin / fortuna / veia_ouro, never Sorte', () => {
     expect(boostedRow.xpPerHour).toBe(baseRow.xpPerHour);
   });
 
-  it('five heroes maxed on fortuna (full uptime) hit FORTUNA_AURA_CAP exactly (0.10); a sixth maxed hero leaves goldPerHour byte-identical', () => {
+  it('five heroes maxed on fortuna (full uptime) hit FORTUNA_AURA_CAP exactly (0.10); a sixth maxed hero adds no aura and no props, and costs only the head of the clear', () => {
     // Both ceilings lifted, for the same reason: with the fixture's own 3 field slots, ADDING a
     // 6th hero's uptime would also move `row.concurrencyScale` (a real, separate effect — more
     // bodies competing for the same field slots), which would confound the "cap binds" claim
@@ -210,8 +212,18 @@ describe('Gold tracks team_coin / fortuna / veia_ouro, never Sorte', () => {
     expect(rowSix.concurrencyScale).toBe(1);
     expect(rowSix.fortunaAura).toBe(FORTUNA_AURA_CAP);
 
-    expect(rowSix.goldPerHour).toBe(rowFive.goldPerHour);
-    expect(rowSix.propsPerHour).toBe(rowFive.propsPerHour);
+    // PER CLEAR the sixth hero changes nothing: its aura is over the cap and it destroys no props.
+    const perClear = (row: FarmRateRow, rate: number) => (rate * row.clearSecs) / 3600;
+    expect(perClear(rowSix, rowSix.goldPerHour) / perClear(rowFive, rowFive.goldPerHour)).toBeCloseTo(1, 12);
+    expect(perClear(rowSix, rowSix.propsPerHour) / perClear(rowFive, rowFive.propsPerHour)).toBeCloseTo(1, 12);
+
+    // PER HOUR it is not free, and that is the one thing a sixth body always costs: it takes a
+    // slot in the field roster, so the wave needs another half-stagger to come up and every clear
+    // is that much longer.
+    expect(rowSix.heroesOnField).toBe(rowFive.heroesOnField + 1);
+    expect(rowSix.clearSecs - rowFive.clearSecs).toBeCloseTo(HERO_ACTIVATION_STAGGER_SEC / 2, 12);
+    expect(rowSix.goldPerHour).toBeLessThan(rowFive.goldPerHour);
+    expect(rowSix.propsPerHour).toBeLessThan(rowFive.propsPerHour);
   });
 
   it('fortuna below the cap: fortunaAura === Σ uptime_h × 0.005 × level_h exactly (unnormalized sum) when the House does not throttle', () => {

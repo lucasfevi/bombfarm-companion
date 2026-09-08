@@ -25,6 +25,7 @@ import {
   computeSquadFarmFacts,
   computeFarmRateRow,
   FORTUNA_AURA_CAP,
+  HERO_ACTIVATION_STAGGER_SEC,
   type HeroFarmFacts,
 } from '@bombfarm/domain/farm-rate';
 import {
@@ -205,12 +206,24 @@ function handComputeRow(stoneHp: number, mitig: number, goldComum: number, phase
     return sum + share * goldSelf;
   }, 0);
 
+  // The head of the clear, re-derived from the stagger constant rather than by calling
+  // `clearHeadSeconds`: half the stagger per hero past the first, plus the one bomb fuse that
+  // burns before anything can explode.
+  const meanFuseSecs =
+    heroFacts.reduce((sum: number, hero: HeroFarmFacts) => sum + hero.uptime * hero.fuseSecs, 0) /
+    squad.uptimeSum;
+  // `max(0, …)` because a mean occupancy under one hero has no second hero to queue behind, and
+  // the fixture's House ceiling puts it there (0.66 on field): an unclamped term would hand the
+  // clear NEGATIVE startup seconds.
+  const headSecs =
+    (HERO_ACTIVATION_STAGGER_SEC * Math.max(0, heroesOnField - 1)) / 2 + meanFuseSecs;
+
   const propCount = propCountForAto(ato);
-  const clearSecs = propCount / propsPerSec + (gate ? 1 / bossPerSec : 0);
+  const clearSecs = headSecs + propCount / propsPerSec + (gate ? 1 / bossPerSec : 0);
   const cyclesPerHour = Number.isFinite(clearSecs) && clearSecs > 0 ? 3600 / clearSecs : 0;
-  // The boss is part of a gate cycle and drops nothing, so the hourly prop rate follows the
-  // cycle, not the raw prop rate. Non-gate keeps the plain expression bit-for-bit.
-  const propsPerHour = gate ? cyclesPerHour * propCount : 3600 * propsPerSec;
+  // The head, and on a gate the boss, are seconds of the cycle that drop nothing, so every
+  // hourly rate follows the cycle rather than the steady-state prop rate.
+  const propsPerHour = cyclesPerHour * propCount;
 
   const eGold = goldComum * goldShareFactor;
   const goldMult = squad.teamCoinMult * (1 + fortunaAura) * 1; // bonus = 1 ('off')
@@ -239,7 +252,7 @@ function handComputeRow(stoneHp: number, mitig: number, goldComum: number, phase
 describe('phase 42 — non-gate hand-computed values', () => {
   const line = wikiPhaseLine(42)!;
 
-  it('published inputs: hp and mitig match spec.md exactly; ato/gate/propCount as stated', () => {
+  it('published inputs: hp and mitig match the published values exactly; ato/gate/propCount as stated', () => {
     expect(line.hp).toBe(2475);
     expect(line.mitig).toBeCloseTo(0.04353923205342237, 15);
     expect(line.ato).toBe(1);
@@ -292,7 +305,7 @@ describe('phase 42 — non-gate hand-computed values', () => {
     expect(squad.xpMult).not.toBe(1);
   });
 
-  it('clearSecs and cyclesPerHour match propCount / propsPerSec (no gate boss term)', () => {
+  it('clearSecs and cyclesPerHour match the head + propCount / propsPerSec (no gate boss term)', () => {
     expect(Math.abs(row.clearSecs - hand.clearSecs) / hand.clearSecs).toBeLessThan(TOL);
     expect(Math.abs(row.cyclesPerHour - hand.cyclesPerHour) / hand.cyclesPerHour).toBeLessThan(TOL);
   });
@@ -301,7 +314,7 @@ describe('phase 42 — non-gate hand-computed values', () => {
 describe('phase 10 — gate hand-computed values', () => {
   const line = wikiPhaseLine(10)!;
 
-  it('published inputs: hp and mitig match spec.md exactly; ato/gate/timer as stated', () => {
+  it('published inputs: hp and mitig match the published values exactly; ato/gate/timer as stated', () => {
     expect(line.hp).toBe(122);
     expect(line.mitig).toBeCloseTo(0.01736227045075125, 15);
     expect(line.ato).toBe(1);
@@ -320,7 +333,7 @@ describe('phase 10 — gate hand-computed values', () => {
     expect(Math.abs(row.xpPerHour - hand.xpPerHour) / hand.xpPerHour).toBeLessThan(TOL);
   });
 
-  it('cyclesPerHour includes the boss term (propCount/propsPerSec + 1/bossPerSec)', () => {
+  it('cyclesPerHour includes the boss term (head + propCount/propsPerSec + 1/bossPerSec)', () => {
     expect(Math.abs(row.clearSecs - hand.clearSecs) / hand.clearSecs).toBeLessThan(TOL);
     expect(Math.abs(row.cyclesPerHour - hand.cyclesPerHour) / hand.cyclesPerHour).toBeLessThan(TOL);
   });
@@ -374,7 +387,7 @@ describe('phase 10 — gate hand-computed values', () => {
   });
 });
 
-describe('gold-share factor — independent cross-check against the raw prop table (design.md §2.2)', () => {
+describe('gold-share factor — independent cross-check against the raw prop table', () => {
   it('Σ share × goldRarityMult, derived from the live WIKI_PROPS table, is what both hand rows use', () => {
     // NOTE: the design's illustrative figure for this factor was 1.545 — that predates the 2026-08-14
     // wiki re-pull (same staleness as the goldComum values noted at the top of this file). The

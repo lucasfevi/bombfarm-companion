@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { Banner, Button } from '@bombfarm/ui';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { sub, type Lang } from '@bombfarm/hero/copy';
@@ -9,6 +10,7 @@ import {
   type FarmRespecProposal,
   type FarmRespecStatus,
 } from '../model/farm-respec-view';
+import { formatFloorPct, formatGainPct } from '../model/farm-respec-format';
 import { FarmRespecMetrics } from './farm-respec-metrics';
 import { FarmRespecHeroGrid } from './farm-respec-hero-grid';
 import { FarmRespecFrontier } from './farm-respec-frontier';
@@ -37,11 +39,20 @@ export function FarmRespecPanel({
   lang,
   data,
   onClose,
+  scopeNote,
 }: {
   t: FarmCopy;
   lang: Lang;
   data: FarmRespecPanelData;
   onClose: () => void;
+  /**
+   * Host-supplied continuation of {@link FarmCopy.farmRespecPointsOnly}, drawn right after it.
+   * Where the rest of the optimisation lives is the HOST's fact, not this package's: the web
+   * planner has a Team plan page to send a player to and the desktop app has no such screen, so
+   * a pointer written here would be false on one of the two apps. Omitted, the panel still states
+   * its own scope and simply names no destination.
+   */
+  scopeNote?: ReactNode;
 }) {
   const { view, status, panelOpen, heroes, statLabels } = data;
 
@@ -77,6 +88,11 @@ export function FarmRespecPanel({
         </Button>
       </div>
 
+      <p className="m-0 text-[11px] text-muted" data-testid="farm-respec-points-only">
+        {t.farmRespecPointsOnly}
+        {scopeNote ? <> {scopeNote}</> : null}
+      </p>
+
       {panelState.kind === 'solving' ? (
         <Banner tone="warn" data-testid="farm-respec-solving">
           {t.farmRespecOptimizeBusy}
@@ -93,6 +109,21 @@ export function FarmRespecPanel({
           data-testid="farm-respec-terminal-banner"
         >
           {t.farmRespecTerminalDesc}
+        </Banner>
+      ) : panelState.kind === 'belowThreshold' ? (
+        // The search ran and finished; the answer is simply that the gold is better left
+        // unspent. The gain it did find is named rather than hidden — a player who asked
+        // deserves the number — but no per-hero split is laid out, because acting on one
+        // would cost more than it returns.
+        <Banner
+          tone="ok"
+          title={t.farmRespecNotWorthTitle}
+          data-testid="farm-respec-below-threshold-banner"
+        >
+          {sub(t.farmRespecNotWorthDesc, {
+            gain: formatGainPct(panelState.gainPct, lang),
+            floor: formatFloorPct(panelState.floorPct, lang),
+          })}
         </Banner>
       ) : (
         <>

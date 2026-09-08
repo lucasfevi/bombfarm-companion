@@ -178,7 +178,7 @@ function expectedCappedTotal(
 }
 
 export function computeTeamBuffsOverRotation(
-  heroes: readonly HeroRecord[],
+  heroes: readonly Pick<HeroRecord, 'abilities'>[],
   presence: readonly number[] | null,
 ): Record<TeamBuffId, number> {
   const out = zeroTeamBuffs();

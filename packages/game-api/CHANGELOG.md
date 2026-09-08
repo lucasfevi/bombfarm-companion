@@ -1,5 +1,19 @@
 # @bombfarm/game-api
 
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies [ae89de0]
+- Updated dependencies [ae89de0]
+- Updated dependencies [ae89de0]
+- Updated dependencies [ae89de0]
+- Updated dependencies [ae89de0]
+- Updated dependencies [ae89de0]
+- Updated dependencies [ae89de0]
+- Updated dependencies [ae89de0]
+  - @bombfarm/domain@1.0.0
+
 ## 0.4.0
 
 ### Minor Changes

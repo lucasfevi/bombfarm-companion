@@ -68,7 +68,7 @@ function extractQuotedListLines(text) {
   return out;
 }
 
-describe('fidelity-gate-required aggregator (design.md R-2/R-3)', () => {
+describe('fidelity-gate-required aggregator', () => {
   const workflowText = readFileSync(CI_FIDELITY_PATH, 'utf8');
   const jobBlock = extractJobBlock(workflowText, 'fidelity-gate-required');
 
@@ -171,7 +171,7 @@ describe('path-filter parity', () => {
 });
 
 // ---------------------------------------------------------------------------------------------
-// Source guards over the F4 test files (design §5 devices 5 and 6; T9's own scope)
+// Source guards over the fidelity-gate test files (anti-self-greening devices 5 and 6)
 // ---------------------------------------------------------------------------------------------
 
 const F4_HELPERS = [

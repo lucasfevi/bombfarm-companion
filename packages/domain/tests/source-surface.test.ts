@@ -35,7 +35,7 @@ const SELF_FILENAME = 'source-surface.test.ts';
  * `packages/domain/src` pattern — deliberately case-insensitive and singular
  * `keystone`, so it also catches a stale cross-reference to the name of a deleted test file.
  * Includes the bare `critDmgMult` identifier, whose ONLY surviving occurrences are
- * the pinned 12-line combat pass-through (design §2.5) — everything else naming it was deleted.
+ * the pinned 12-line combat pass-through — everything else naming it was deleted.
  */
 const SRC_PATTERN =
   /keystone|abisso|glass.?cannon|tempo.?dobrado|critDmgMult|crit_dmg_mult|abissoBase|abisso_base/i;
@@ -96,7 +96,7 @@ function listFiles(dir: string, acc: string[] = []): string[] {
 }
 
 /**
- * `packages/domain/src` — the surviving `critDmgMult` combat pass-through (design §2.5). Every
+ * `packages/domain/src` — the surviving `critDmgMult` combat pass-through. Every
  * deleted-arm term is gone; this always-`1` chain is the one keystone-shaped identifier the
  * spec's own Assumption keeps (removing it would be an unrelated public-signature change to
  * `derive()`). Re-measured against the tree at every T5-T9 commit, not copied from a document.
@@ -136,7 +136,10 @@ const SRC_ALLOWLIST: Record<string, number[]> = {
   // +1 (line number only): the `cycleSecs` pass-through added one line above this hit.
   // +2 more: the House-ceiling regression repair's `cycleSecsHouseIdx`/`cycleSecsLevel`
   // pass-through (PR #86 finding, house.ts:38) added two more lines above it.
-  'team-plan/score.ts': [138],
+  // +12 (line number only): keying the score memo on the `FarmContext` too — a run holds two of
+  // them once the farm objective exists — added a signature builder and its doc comment above
+  // this hit.
+  'team-plan/score.ts': [150],
 };
 
 /**

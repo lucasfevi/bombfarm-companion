@@ -44,7 +44,7 @@ function ptsWithResets(
 
 // (the ground-truth rule, class (b) — structural): re-pointed onto save-20260819-11882-7heroes.json
 // (default subject) and save-20260819-11882-7heroes.json (forge-specific assertions, per
-// design.md §6.3 — the payload's uniform-0 upgrades cannot exercise a forge/no-forge choice).
+// the payload's uniform-0 upgrades cannot exercise a forge/no-forge choice).
 describe('buildWaterfall', () => {
   // Finding 4: the roster objective's saturation cap must read `account.fieldSlots` (FIELD
   // concurrency), never `account.slots` (HOUSE recovery) — a real save can carry both, disagreeing
@@ -91,7 +91,7 @@ describe('buildWaterfall', () => {
   it('includes forge entries for items below forgeFloor on the fixture', () => {
     // (the ground-truth rule, class (a)): forge-specific — takes save-20260819-11882-7heroes.json (item
     // upgrades {0, 8}), not the default payload subject, whose upgrades are uniformly 0 and
-    // so cannot exercise a genuine forge/no-forge choice (design.md §6.3).
+    // so cannot exercise a genuine forge/no-forge choice.
     const { plan } = waterfallFromFixture(TEAM_PLAN_FIXTURE);
     expect(plan.forgeList.length).toBeGreaterThan(0);
     expect(plan.forgeFloorApplied).toBeGreaterThan(0);

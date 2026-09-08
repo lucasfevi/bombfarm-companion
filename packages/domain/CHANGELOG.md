@@ -1,5 +1,194 @@
 # @bombfarm/domain
 
+## 1.0.0
+
+### Major Changes
+
+- ae89de0: Make the Farm Respec Advisor's Optimize button permanent, and drop the background estimate that
+  used to decide whether it appeared at all.
+
+  The board ran a fast estimate on every roster change and showed the control only when that
+  estimate cleared 1%. The estimate is a deliberate lower bound, and it under-reports badly: across
+  the committed captures it recovered between 33% and 70% of the gain the real search finds, so an
+  account with a genuine double-digit respec available could be told nothing and offered no way to
+  ask. Raising the bar would have made that worse, not better. The estimate is gone entirely — one
+  whole tier of the solver, its memo, its dependency tuple and its toolbar callout — and Optimize is
+  now always pressable, on any roster, whatever the board thinks.
+
+  The 5% floor moves onto the number it can actually speak for. Pressing Optimize runs the full
+  search as before; if the best build it finds is worth less than 5% more gold per hour, the panel
+  says so and names the figure it found, rather than laying out a per-hero respec that costs more
+  than it returns. A build that is already optimal and one that is merely close now give the same
+  honest answer. Above the floor nothing changes: the gain, the phase, the cost, the payback, the
+  per-hero split and the cheaper-respec frontier all render exactly as before.
+
+### Minor Changes
+
+- ae89de0: Let the Team plan propose only the kind of change you are willing to make, and tidy the setup bar it sits on.
+
+  **Allowed changes.** A plan used to do both things at once: move and forge gear, and re-spend stat points. A new control on the search setup bar offers gear and points (the default, and what every existing plan did), points only, or gear only. It is a different axis from Hero scope, which decides which heroes the search may touch rather than what it may do to them, and it is honoured under both objectives.
+
+  The restriction reaches the search itself rather than the results on screen. Points only skips the gear climb, drops the forge floor to zero, and runs the search from the roster exactly as it stands, so the plan comes back with no move list and no forge list — and the Min forge control leaves the setup bar, since a floor a plan is never scored at is a control that does nothing. Gear only skips every stat-point pass, so no point reset can survive into the plan. A restricted plan says so in Assumptions & limits, which matters because an empty forge list otherwise reads as "forging did not pay" when it means "forging was never on the table".
+
+  **Layout.** The forge stepper's `−` and `+` were 24px tall next to 34px fields, and rendered at the field label's 11px uppercase type because they inherited it; they now match the row. The Build team plan button was pinned to the bottom edge of the setup row — which is wherever the longest hint under a field happens to end — and now sits centred against the fields, 33.75px higher on the reference build.
+
+  **Copy.** The phase picker's search box said "Difficulty, coordinate, or number", which named a thing the game does not call a coordinate; it now shows one example per route — `Hard, Normal 2-1, or 151`. The setup panel's own sentence no longer promises gear moves, forge work and point resets up front, since the new control decides which of those a plan may contain.
+
+- ae89de0: Give the Team Plan a second objective: gold per hour, alongside the damage one it has always had.
+
+  The plan has only ever maximised the roster's duty-weighted sustained damage, and that quantity is
+  not what a farming account earns. On the newest capture in the corpus the plan raises damage by
+  2.2% and moves gold per hour by **−0.08%**; on an older, much richer one it raises damage by 63.6%
+  across 120 gear moves and moves gold per hour by **−3.32%**. A player who farms, and who follows
+  the plan, can end up farming worse than before they started.
+
+  Under the new objective the same search maximises what the Farm Ranking board would print for the
+  squad at its own best phase. On that same newest capture it reaches +0.50% gold per hour where the
+  damage plan loses 0.08%; on the two richer older ones, +7.1% and +3.4% from gear alone, and +23.4%
+  and +14.5% once its point resets land too.
+
+  **Where those numbers come from.** The two double-digit figures are measured on captures taken
+  2026-08-23 and 2026-08-22, both of which predate the 2026-08-28 damage rebalance and are therefore
+  withdrawn as sources of a game-model number. They are quoted for scale, not as a promise. The
+  +0.50% / −0.08% pair is measured on the 2026-08-31 capture, which is in regime; the only other
+  in-regime capture is a fresh four-hero account with nothing worth moving, and it plans no change
+  under either objective. The gain assertions in the test suite run on the in-regime pair only, and
+  say so mechanically rather than by a hand-kept list.
+
+  The objective is threaded as a mode and **the default is unchanged**. A caller that says nothing,
+  and a caller that asks for damage, get byte-identical plans — same moves, same forges, same point
+  resets, same proposed loadouts — verified against the parent commit across every committed capture
+  at both forge floors and at the full evaluation budget. Nothing user-facing selects the new mode
+  yet. Three of those plans are now pinned as golden values, so a future drift in damage mode fails
+  a test rather than passing one that only compares the new code to itself.
+
+  The squad the farm objective prices is every hero the player will field, which is not the same set
+  as the heroes the search may re-gear: a hero left alone still farms, still takes a House slot and
+  still earns gold, and House allocation and field luck are nonlinear in who is present. With three
+  heroes left alone, pricing only the search's own scope reads 32% to 69% below the Farm board.
+  Donate-scope heroes do leave the squad, matching the estimator's own rule for a hero the game will
+  not field.
+
+  Gold per hour is computed through the farm estimator's own chain rather than a second copy of it,
+  and the two agree exactly (not within a tolerance) on an unchanged roster: same per-hero facts,
+  same recommended phase, same rate, on every committed capture and on mixed-scope rosters. Team
+  auras are priced by the estimator's rotation weighting and then frozen for the search, the same
+  approximation the respec optimizer already makes.
+
+  Farm mode requires the account's highest unlocked phase and refuses to plan without it, rather
+  than falling back to the 600-row phase table and optimising the squad for phases the account has
+  never reached.
+
+  The phase argmax is the overwhelming majority of a farm evaluation's cost, so the search's cheap
+  move screen prices the incumbent's phase alone instead of sweeping the table. That screen has been
+  checked rather than assumed: with the beam switched off entirely — every move fully evaluated, 13.5
+  to 30 times the evaluations — the plans are identical on the captures tried, and the screen's top
+  24 contained the globally best move every time. Measured at the default budget, a farm-mode run is
+  no slower than a damage-mode one; it costs more per evaluation and converges in far fewer.
+
+- ae89de0: Make the Team Plan's stat-point pass optimize for gold per hour when the plan's objective is farm.
+
+  The farm objective landed first, but only the gear moves answered to it. The point pass still ran
+  the damage optimizer in both modes, and farm mode merely accepted or rejected whatever it proposed.
+  On the newest committed account that left the plan proposing no point changes at all: the damage
+  pass found nothing the farm objective would take.
+
+  The pass now runs the same joint search the Farm page's respec advisor runs, over the same bases,
+  scoped to the heroes the plan may move. One solve rather than a per-hero loop, because gold per
+  hour is a rate the whole rotation produces — House allocation, field luck and the phase argmax are
+  all nonlinear in who is present, so one hero's points change what every other hero's points are
+  worth, and a per-hero loop would pay a phase sweep each to answer a question none of them sees
+  whole. Heroes the search may not re-spend still count toward the rate; they simply get no budget.
+
+  Measured on the two captures at or past the 2026-08-28 damage boundary, against the same plan's
+  gear alone: **+11.51% gold per hour where the plan previously found nothing, and +2.84% on the
+  smaller account**. On two older captures, whose absolute figures the sheet-math regime gate no
+  longer vouches for, the same comparison moves +23.43% to +34.57% and +14.50% to +24.47%.
+
+  Farm mode costs more time for it — 2.4x to 7.8x a damage-mode plan on the same account, 19 s at
+  the worst measured, against a 250,000-evaluation ceiling nothing came close to reaching. The
+  default objective is still damage, and damage-mode plans are byte-identical.
+
+- ae89de0: Team plan: plan for one phase, under either objective
+
+  The Team plan page gains a **Plan for phase** picker beside Score for, and both objectives now
+  answer the question for that phase and nowhere else. The objective options are relabelled to the
+  units they report — **Gold / hr** and **DPS**.
+
+  **What changes per objective.** With a phase named, gold per hour is priced at that phase instead
+  of at the best one the squad can hold, and the damage objective scores the roster against that
+  phase's own mitigation instead of the account's. With the picker on **None** nothing changes:
+  gold sweeps as before and the plan now says which phase it settled on and that it picked it
+  itself; damage stays on the account's own phase.
+
+  The picker holds all 600 phases and is searchable by the three things a player knows a phase by —
+  the difficulty word (`Normal`), the in-game coordinate (`Normal 2-1`) and the bare number (`151`).
+  It matches on the game's own coordinate label and never on the wiki's flavour names, which diverge
+  from the client past world 2. Fifty matching rows are drawn at a time with a note saying how many
+  more matched.
+
+  **It is also a large speed-up.** The phase argmax is ~96% of what one farm evaluation costs, and a
+  named phase collapses it to a single wiki row — measured at exactly 1 row per evaluation, against
+  19/28/35 for the same three accounts unpinned. Whole-plan wall clock, same machine, gold objective,
+  phase pinned to the one the sweep would have chosen:
+
+  | account                  | heroes | gold, no phase | gold, phase named |
+  | ------------------------ | ------ | -------------- | ----------------- |
+  | 7-hero capture           | 7      | 0.83 s         | 0.46 s            |
+  | 13-hero capture          | 13     | 11.6 s         | 2.3 s             |
+  | 13-hero capture (deeper) | 13     | 20.8 s         | 10.6 s            |
+  | 15-hero capture          | 15     | 23.7 s         | 11.4 s            |
+
+  Gold mode used to cost 2.4x-6.2x what damage mode costs on the same account; with a phase named it
+  costs 1.1x-2.0x. The remainder is gear scoring, which both objectives share and which pinning a
+  phase cannot touch.
+
+  **Two smaller consequences.** A phase past the furthest one the account has reached is allowed and
+  labelled as such — "what would I earn if I could hold this" is a fair question. And gold scoring no
+  longer needs the save to carry a furthest phase at all, as long as a phase is named: that
+  requirement bounded a sweep, and there is no sweep left to bound. The toolbar warning and the
+  disabled Optimize button now appear only while the picker is on None.
+
+### Patch Changes
+
+- ae89de0: Charge every clear for the seconds the squad spends coming up to speed, and derive the hourly rates from the clear time rather than from the steady-state prop rate. **Every gold/hr, chest/hr, key/hr, gem/hr and XP/hr figure the Farm board prints goes down** — they were running high, and by more than the size of this correction suggests, because the error was cancelling against a second one.
+
+  A clear does not start at full throughput. Heroes activate one at a time down the field roster, 0.500s apart, so the last hero of a nine-strong roster is not moving until 4.0s; and the first bomb planted burns its whole fuse on an empty field, killing nothing for another ~1.8s. Measured head latency is 3.93s median over 42 clears, against 3.96s the model now predicts for that roster size. None of it was charged anywhere: the cadence model's latency terms are per-bomb and the fuse only ever reached it overlapped with the walk to the next plant.
+
+  Across the committed captures the median row loses between 0.6% and 11.3% of its gold/hr, largest on strong rosters. The term is a fixed cost per clear, so it hurts fast clears far more than slow ones — 21.9% at the fastest unlocked row on a 13-hero capture against 0.5% at its slowest — which systematically pushes recommendations toward higher phases. One capture's recommended farm phase moves 69 to 73, and another's 31 to 51.
+
+  The throughput anchor moves from 7.5% above its measured gold/hr to 6.2% below it. That is a smaller number hiding less: the old +7.5% was a 7% concurrency shortfall multiplying a 15% cadence overshoot, and what remains is the concurrency term alone.
+
+- ae89de0: The phase the Optimizer tells you to farm is now the best one, not the best one a shortcut found.
+
+  Scoring for gold sweeps every phase to find the one your squad earns most at. That sweep has a fast path — check each world's opening phase, then look closely around the best of them — which is the right trade while the search is trying thousands of builds, because a near miss just costs it a slightly worse candidate. It was the wrong trade for the answer you read: a world's opening phase does not tell you what its best phase is worth, so the shortcut can settle a world or two away.
+
+  Measured on the committed captures over randomized point spreads, it disagreed with a full sweep on about 2% of squad states, and in one of them named **phase 51 where the true best is 33** — 2% of the gold, and two worlds off the advice.
+
+  The plan's own figures are now taken from a full sweep. The search keeps its fast path, so runs do not get slower in any way you would notice: the sweep now runs a handful of extra times per plan, against the thousands of evaluations the search itself spends.
+
+- ae89de0: Speed up the farm respec search by screening the phase table one world at a time instead of
+  sweeping it row by row.
+
+  The phase argmax was 96% of the cost of a farm evaluation, and the solver runs thousands of them
+  per press of Optimize. It scanned every phase from 1 to the account's ceiling, once per candidate
+  build. The phase table has structure that scan ignored: a world is ten phases long and the tenth
+  is its gate, so phases 1, 11, 21 and so on are each the first phase after a boss — the point where
+  the economics step, and hardest at an act boundary, where monster HP holds flat across the gate
+  while the gold per prop doubles (188 to 375 from phase 50 to 51). The search now evaluates the
+  openers, then refines every phase within one world either side of the best of them.
+
+  Screening is a heuristic, not a shortcut to the same answer: an opener's score does not bound its
+  world's peak, so a world that screens low can still hold the best phase. Measured over randomized
+  squad states it picks a different phase 0.5% of the time, costing up to 1.6% of the objective when
+  it does. The screen is therefore confined to the search, where a miss only sends it down a
+  slightly worse path. Every phase the app reports — the recommended and current phase, the gold and
+  chest rates, the gain, the payback, the plateau, the cheaper-respec frontier, and the Next Point
+  ranking — is resolved by the full linear sweep, unchanged.
+
+  On the committed captures the search reads between 1.27x and 4.21x fewer phase rows, the saving
+  growing with the account's phase ceiling.
+
 ## 0.12.0
 
 ### Minor Changes

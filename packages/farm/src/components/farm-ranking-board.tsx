@@ -7,7 +7,7 @@ import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { sub, type Lang } from '@bombfarm/hero/copy';
 import type { FarmCopy } from '../copy';
-import type { FarmPoolEntry, FarmRankingResult, FarmRespecGate } from '../core';
+import type { FarmPoolEntry, FarmRankingResult } from '../core';
 import type { FarmRespecProposal, FarmRespecStatus } from '../model/farm-respec-view';
 import {
   applyFarmFilters,
@@ -30,9 +30,8 @@ import { FarmRespecPanel } from './farm-respec-panel';
 import { FarmRespecRerankToggle } from './farm-respec-rerank-toggle';
 import type { FarmStatLabels } from './stat-labels';
 
-/** The advisor's four values, grouped so the board's own bag stays about the ranking. */
+/** The advisor's three values, grouped so the board's own bag stays about the ranking. */
 export type FarmRespecBoardData = {
-  gate: FarmRespecGate;
   /** Already narrowed to a FRESH proposal by the host — a stale one arrives as `null`. */
   view: FarmRespecProposal | null;
   status: FarmRespecStatus;
@@ -75,6 +74,9 @@ export type FarmRankingBoardData = {
  */
 export type FarmRankingBoardSlots = {
   headerOverlay?: ReactNode;
+  /** Passed straight to the respec panel's `scopeNote` — see that component for why it is the
+   *  host's to write. */
+  respecScopeNote?: ReactNode;
 };
 
 export type FarmRankingBoardActions = {
@@ -229,8 +231,7 @@ export function FarmRankingBoardView({
       ) : null}
       <FarmRespecToolbar
         t={t}
-        lang={lang}
-        data={{ gate: respec.gate, status: respec.status, panelOpen: respec.panelOpen }}
+        data={{ status: respec.status, panelOpen: respec.panelOpen }}
         onOptimize={runFarmRespec}
       />
       <FarmRespecPanel
@@ -244,6 +245,7 @@ export function FarmRankingBoardView({
           statLabels,
         }}
         onClose={() => setFarmRespecPanelOpen(false)}
+        scopeNote={slots?.respecScopeNote}
       />
       {result.reason !== 'no-roster' ? (
         <div className="mb-2 flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">

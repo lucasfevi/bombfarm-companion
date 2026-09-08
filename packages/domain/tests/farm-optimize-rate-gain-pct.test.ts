@@ -2,7 +2,7 @@
  * `goldGainPct` / `chestsGainPct` — signed percent change on each currency's own rate, current ->
  * proposed. Unlike `gainPct` (the ACTIVE objective's value, clamped `>= 0` by construction),
  * these two are deliberately UNCLAMPED: whichever currency is not being optimized can legitimately
- * fall (design.md's own "gives up N gold/hr for this objective" case), and a clamped-to-zero
+ * fall (the "gives up N gold/hr for this objective" case), and a clamped-to-zero
  * percent next to that figure would contradict it.
  */
 import { describe, expect, it } from 'vitest';

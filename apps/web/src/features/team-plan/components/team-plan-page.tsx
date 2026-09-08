@@ -11,9 +11,11 @@ import {
   selectInventoryItems,
   selectTeamPlanIsStale,
   selectForgeFloor,
+  selectTeamPlanObjective,
 } from '@/shared/stores';
 import { resolveHeroScope } from '@/shared/stores/team-plan/types';
 import { useTeamPlanRunner } from '@/features/team-plan/hooks/use-team-plan-runner';
+import { teamPlanObjectiveCopy } from '@/features/team-plan/model/objective-copy';
 import { TeamPlanEmptyPanel } from './team-plan-empty';
 import { TeamPlanToolbar } from './team-plan-toolbar';
 import { TeamPlanRunSummary } from './team-plan-run-summary';
@@ -40,11 +42,13 @@ export function TeamPlanPage({
   const scopeByHeroId = usePlannerStore((state) => state.scopeByHeroId);
   const isStale = usePlannerStore(selectTeamPlanIsStale);
   const forgeFloor = usePlannerStore(selectForgeFloor);
+  const objective = usePlannerStore(selectTeamPlanObjective);
   const clearPlan = usePlannerStore((state) => state.clearPlan);
   const runner = useTeamPlanRunner();
   const resultsRef = useRef<HTMLElement | null>(null);
   const wasRunningRef = useRef(false);
 
+  const objectiveCopy = teamPlanObjectiveCopy(t, objective);
   const hasRoster = heroes.length > 0;
   const hasInventory = inventory.length > 0;
   const optimizeCount = heroes.filter(
@@ -73,7 +77,7 @@ export function TeamPlanPage({
 
   const setupAndScope = (
     <>
-      <TeamPlanToolbar t={t} runner={runner} />
+      <TeamPlanToolbar t={t} lang={lang} runner={runner} />
       <ScopeList t={t} lang={lang} />
     </>
   );
@@ -161,14 +165,16 @@ export function TeamPlanPage({
                     lang={lang}
                     plan={displayPlan}
                     ranOnMainThread={runner.ranOnMainThread}
+                    copy={objectiveCopy}
                   />
-                  <WaterfallPanel t={t} lang={lang} plan={displayPlan} />
-                  <HeroDeltaTable t={t} lang={lang} plan={displayPlan} />
+                  <WaterfallPanel t={t} lang={lang} plan={displayPlan} copy={objectiveCopy} />
+                  <HeroDeltaTable t={t} lang={lang} plan={displayPlan} copy={objectiveCopy} />
                   <PlanDisclosures
                     t={t}
                     lang={lang}
                     plan={displayPlan}
                     requestedForgeFloor={forgeFloor}
+                    copy={objectiveCopy}
                   />
                 </div>
               </section>

@@ -18,7 +18,7 @@ so every app that imports it gets both the tokens and the chrome that dresses th
 no `prefers-color-scheme` toggle. Primitives reference tokens **only** through Tailwind theme utilities
 (`bg-surface`, `text-muted`, `border-line`, …) or `color-mix(... var(--token) ...)`
 arbitrary values — never hardcoded palette literals (the one documented exception is the Ko-fi
-brand button, `AD-003`).
+brand button).
 
 | Group | Tokens |
 | --- | --- |
@@ -35,7 +35,7 @@ Because the token block is self-contained it is the first thing extractable as
 
 Bare-element `table` / `th` / `td` rules in `packages/ui/src/styles.css`'s `@layer base` are **base
 element styling**, not a design-system primitive and not a named CSS exception — see
-[`css-exceptions.md`](css-exceptions.md) (TW-07). **All planner tables** use the `DataTable`
+[`css-exceptions.md`](css-exceptions.md). **All planner tables** use the `DataTable`
 compound primitive under `design-system/` (`scrollable` for sticky lists that fill the parent or
 optionally `maxRows`/`minRows` rem caps; sticky heads are `z-20` with `border-separate` so row chrome
 cannot overlay labels; `Header sortable` for sort chrome). Do not hand-roll `<table>` markup in feature code.
@@ -58,6 +58,7 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 | `Bar` | `<div>` | `pct` + `variant`: `fill` \| `best` | `bar.recipe.ts` |
 | `Num` | `@base-ui/react/button` spin + `<input type="number">` | composite numeric field — left chevron steppers, right-aligned value; hide native spinners | `stepper.recipe.ts` (`num*`) |
 | `Select` | `@base-ui/react/select` | `size`: `default` \| `compact`; left chevron trigger; **ported popup** (themed options) | `select.recipe.ts` |
+| `SearchSelect` | `@base-ui/react/combobox` | single-select over a list too long to scroll: `Select`'s trigger and popup, plus a search field INSIDE the popup and a rendered-row cap (`limit`, default 50) with an `overflowLabel` note saying how many matched. Filtering is the primitive's own (accent-insensitive, every query token must appear in the label), not Base UI's `filter` — only the side doing the matching knows the match count the note reports. Options are `{ value, label }` and the label is the whole search surface, so whatever a caller wants found has to be visible in the row | `search-select.recipe.ts` + `select.recipe.ts` |
 | `Switch` | `@base-ui/react/switch` | boolean on/off; Root + Thumb; planner token track/thumb | `switch.recipe.ts` |
 | `Accordion` | `@base-ui/react/accordion` | compound `Root`/`Item`/`Header`/`Trigger`/`Panel`; `multiple`; Trigger `tone`: `section` \| `row`, `size`: `default` \| `compact`; `Panel` open/close animates via Motion (`motion/react`), not a CSS transition — see [`animation.md`](animation.md) | `accordion.recipe.ts` |
 | `Collapsible` | `@base-ui/react/collapsible` | compound `Root`/`Trigger`/`Panel`; controlled `open` / uncontrolled `defaultOpen`; shared Trigger `tone`/`size`; `Panel` animates via Motion — see [`animation.md`](animation.md) | `accordion.recipe.ts` |
@@ -101,7 +102,7 @@ under an app's own public root.
 
 **Roster picker interaction:** each hero row is **one keyboard tab stop** (`<tr tabIndex={0}>` + `aria-label`, no `role="button"`). Gear/ability icon tooltips use DS `Tooltip.Trigger` as `type="button"` with `tabIndex={-1}` — hover/pointer supplementary detail without nested tab traps. Row `Enter`/`Space` still selects the hero; icon clicks `stopPropagation` so tooltips never fire row pick.
 
-**Tooltip trigger nested inside another interactive control:** `Tooltip.Trigger` renders a `<button>` by default, which is invalid HTML nested inside another `<button>` (e.g. an `Accordion.Trigger` row). Swap the rendered tag via `render={<span />}` instead of `type="button"` — see `AbbreviatedNumber` (`apps/web/src/features/team-plan/components/abbreviated-number.tsx`), which shows a `formatCompactNumber` value's exact figure on hover/focus from inside a Team plan Accordion row. Pair with `tabIndex={-1}` (via a `disableFocus` prop) when the trigger sits inside an already-focusable ancestor, matching the icon-tooltip convention above.
+**Tooltip trigger nested inside another interactive control:** `Tooltip.Trigger` renders a `<button>` by default, which is invalid HTML nested inside another `<button>` (e.g. an `Accordion.Trigger` row). Swap the rendered tag via `render={<span />}` instead of `type="button"` — see `AbbreviatedNumber` (`apps/web/src/features/team-plan/components/abbreviated-number.tsx`), which shows a `formatCompactNumber` value's exact figure on hover/focus from inside an Optimizer Accordion row. Pair with `tabIndex={-1}` (via a `disableFocus` prop) when the trigger sits inside an already-focusable ancestor, matching the icon-tooltip convention above.
 
 **Roster columns:** avatar (unsorted) · rank · name+★ · rarity · lv · power · gear · abilities · status. Table avatars use `lg` (same width token as gear/ability). Switch-hero / import name uses `text-base leading-none font-bold` (same as the planner hero strip); rarity uses `text-sm leading-none font-bold`. Disabled (`battleAllowed === false`) rows use `rosterInactiveChromeClass` (`opacity-55 grayscale`) on scan chrome; the status toggle stays full chroma.
 
@@ -197,7 +198,7 @@ under `packages/ui/src/`, not a single module — e.g. `dialog/`, not `dialog.ts
   own file each, calling the real part they forward to, and the namespace `index.ts` re-exports them
   alongside the compound object so the barrel line is unaffected.
 
-This convention is **AD-021** and applies to every future compound primitive.
+This convention applies to every future compound primitive.
 
 ## cva conventions
 

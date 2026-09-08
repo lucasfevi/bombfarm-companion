@@ -39,7 +39,7 @@ export type TreeState = {
    * Additive on `bf-hp-account-v1` — optional (not `number`) so pre-Wave-5 literals (e.g.
    * `e2e/fixtures/seed.ts`, out of this wave's touch scope) keep typechecking; every read
    * site defaults absence to `0` and `normalizeTree`'s rebuild fills it on load. Import-sourced
-   * only; no Account UI field yet (CARRY-05).
+   * only; no Account UI field yet.
    */
   luckFlatPct?: number;
   /**

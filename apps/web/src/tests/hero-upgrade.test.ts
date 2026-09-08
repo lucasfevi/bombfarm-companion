@@ -39,7 +39,7 @@ function weaponLoadout(): Loadout {
   return loadout;
 }
 
-describe('canLevelUp / canStarUp (CTA-03)', () => {
+describe('canLevelUp / canStarUp', () => {
   it('disables Level-up at max level HERO_MAX_LEVEL', () => {
     expect(canLevelUp(HERO_MAX_LEVEL - 1)).toBe(true);
     expect(canLevelUp(HERO_MAX_LEVEL)).toBe(false);
@@ -56,7 +56,7 @@ describe('canLevelUp / canStarUp (CTA-03)', () => {
   });
 });
 
-describe('CTA +1 shares rescale path with stepper (CTA-01/02/04)', () => {
+describe('CTA +1 shares rescale path with stepper', () => {
   it('Level-up +1 equals stepper target level+1 for naked and geared', () => {
     const loadout = weaponLoadout();
     const other = emptySheetOther();
@@ -86,7 +86,7 @@ describe('CTA +1 shares rescale path with stepper (CTA-01/02/04)', () => {
     expect(viaCta.naked.energy).toBeCloseTo(n0.energy * oneStarRatio, 8);
   });
 
-  it('at max, next step is a no-op target (CTA-03 no thrash)', () => {
+  it('at max, next step is a no-op target (no thrash)', () => {
     const loadout = weaponLoadout();
     const other = emptySheetOther();
     const n0 = naked();

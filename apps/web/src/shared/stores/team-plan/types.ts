@@ -1,8 +1,31 @@
 import type { InventoryItem, InventorySnapshot } from '@bombfarm/domain/inventory';
-import type { TeamPlan as DomainTeamPlan } from '@bombfarm/domain/team-plan/types';
+import type {
+  TeamPlan as DomainTeamPlan,
+  TeamPlanAllowedChanges,
+  TeamPlanObjective,
+} from '@bombfarm/domain/team-plan/types';
 import { FORJA_MAX } from '@bombfarm/domain/gear';
 
 export type ScopeState = 'optimize' | 'donate' | 'leaveAlone';
+
+/**
+ * What this app asks the search to score, which is NOT the domain's own default. `runTeamPlan`
+ * keeps `'dps'` when the field is absent, so every other caller stays byte-identical; the web
+ * planner supplies gold instead, because a roster tuned for damage can farm measurably worse.
+ */
+export const DEFAULT_TEAM_PLAN_OBJECTIVE: TeamPlanObjective = 'farm';
+
+export function isTeamPlanObjective(value: unknown): value is TeamPlanObjective {
+  return value === 'dps' || value === 'farm';
+}
+
+/** Both kinds of change on the table — the same default the domain applies when the field is
+ *  absent, restated here because this is where the control's initial value comes from. */
+export const DEFAULT_TEAM_PLAN_ALLOWED_CHANGES: TeamPlanAllowedChanges = 'both';
+
+export function isTeamPlanAllowedChanges(value: unknown): value is TeamPlanAllowedChanges {
+  return value === 'points' || value === 'gear' || value === 'both';
+}
 
 export type TeamPlanRunStatus = 'idle' | 'running' | 'done' | 'blocked' | 'error';
 
@@ -57,6 +80,11 @@ export function computeTeamPlanInputSignature(input: {
   houseIdx: number;
   /** `casa.cycle_secs` — moves every hero's duty cycle, so a change must re-run the plan. */
   houseCycleSecs: number | null;
+  objective: TeamPlanObjective;
+  /** Resolved, not the raw slice field — the derived default moves when the Farm tab's phase does,
+   *  and a plan scored at the old one is as stale as one scored for the old objective. */
+  targetPhase: number | null;
+  allowedChanges: TeamPlanAllowedChanges;
 }): string {
   return JSON.stringify({
     heroIds: input.heroes.map((hero) => hero.id).sort(),
@@ -70,6 +98,9 @@ export function computeTeamPlanInputSignature(input: {
     treeDanoTotal: input.treeDanoTotal,
     houseIdx: input.houseIdx,
     houseCycleSecs: input.houseCycleSecs,
+    objective: input.objective,
+    targetPhase: input.targetPhase,
+    allowedChanges: input.allowedChanges,
   });
 }
 

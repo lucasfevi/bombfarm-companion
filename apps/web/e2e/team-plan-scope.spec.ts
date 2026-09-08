@@ -62,7 +62,7 @@ test.describe('Team plan hero scope', () => {
     }
     await expect(page.getByRole('heading', { name: /Nothing in scope/i })).toBeVisible();
     await expect(
-      page.getByRole('button', { name: /Build a team plan of gear moves and point resets/i }),
+      page.getByRole('button', { name: /^Build a team plan of /i }),
     ).toBeDisabled();
   });
 

@@ -1,6 +1,6 @@
 /**
  * Dependency-injected — no Electron import anywhere in this file or in `account-view.ts` itself
- * (design.md, the single-source change-signal decision). Fakes stand in for `GameReaderService`/`ConsentStore`/
+ * (the single-source change-signal decision). Fakes stand in for `GameReaderService`/`ConsentStore`/
  * `AccountRefreshHandle`/`AccountStore` via the structural interfaces `account-view.ts` declares.
  */
 import { describe, expect, it, vi } from 'vitest';
@@ -289,7 +289,7 @@ describe('createAccountNotifier — the single-source change-signal rule, point 
     expect(notifier.getSuppressedCount()).toBe(0);
   });
 
-  it('the emitted view equals resolveAccountView\'s output for the SAME producer state (design.md §2.3 — the push and the pull carry the same thing)', () => {
+  it('the emitted view equals resolveAccountView\'s output for the SAME producer state (the push and the pull carry the same thing)', () => {
     const view = makeView(makePayload());
     const emit = vi.fn();
     const deps = {

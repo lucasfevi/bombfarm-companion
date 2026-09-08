@@ -19,6 +19,26 @@ import { sub } from '@/shared/i18n';
 import { workspaceShellClass } from '@bombfarm/ui/panel-field.recipe';
 import { usePlannerStore, selectStrings, commitActiveHero } from '@/shared/stores';
 
+/**
+ * Who the editor should be pointed at after an import, never `null` for a non-empty roster.
+ *
+ * `pickHeroAfterImport` answers `null` when the hero being edited is absent from the imported
+ * roster — which is every import of a DIFFERENT account. Left unhandled, `activeHeroId` stayed on
+ * a hero the roster no longer holds, and the draft autosave then had nothing valid to write: it
+ * used to append that stranded hero back into the new roster, and now declines the write
+ * instead, silently. `reconcileActiveHero` repairs the same state, but only on the next
+ * `loadHeroes()`, so in-session the editor stayed stranded until the player clicked a hero.
+ *
+ * Falling back to the rule a FIRST import already uses — the roster's strongest hero — keeps one
+ * policy for "no hero to carry over" instead of two.
+ */
+export function pickHeroAfterImportOrStrongest(
+  merged: HeroRecord[],
+  activeHeroId: string | null,
+): HeroRecord | null {
+  return pickHeroAfterImport(merged, activeHeroId) ?? pickHeroAfterImport(merged, null);
+}
+
 export function AppShellInner({
   children,
   planner,
@@ -66,7 +86,7 @@ export function AppShellInner({
     }) => {
       const { heroes: merged, created, updated, account, accountMissingRequired } = result;
       setHeroes(merged);
-      const picked = pickHeroAfterImport(merged, usePlannerStore.getState().activeHeroId);
+      const picked = pickHeroAfterImportOrStrongest(merged, usePlannerStore.getState().activeHeroId);
       if (picked) commitActiveHero(picked);
       if (account) applyAccountImport(account, accountMissingRequired);
       const strings = selectStrings(usePlannerStore.getState());

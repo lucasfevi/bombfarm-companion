@@ -5,7 +5,7 @@
 //
 // Already enforced this for its own capture pair (`loadFidelityPair` throws
 // `unscrubbedFixture`), which left the legacy `sheet-math` fixtures as the inconsistent
-// case (F4 design.md R-6). This walks the whole fixtures tree instead of a named list, so a
+// case. This walks the whole fixtures tree instead of a named list, so a
 // future capture dropped into any fixture directory is covered without editing this test.
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';

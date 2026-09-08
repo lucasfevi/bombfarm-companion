@@ -1,4 +1,4 @@
-// Architectural guard (design.md Risks row 4): `@bombfarm/contracts` must be imported
+// Architectural guard: `@bombfarm/contracts` must be imported
 // type-only everywhere under packages/domain/src. `apps/web/next.config.ts`'s
 // `transpilePackages` lists only `@bombfarm/domain` and `@bombfarm/ui` — a runtime
 // (value) import of `@bombfarm/contracts` from domain source would resolve to an

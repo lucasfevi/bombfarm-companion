@@ -1,5 +1,5 @@
 /**
- * Unit tests for tools/measure-bundle-lib.mjs helpers - W1G-06.
+ * Unit tests for tools/measure-bundle-lib.mjs helpers.
  */
 // @ts-nocheck — imports a dependency-free .mjs helper without a declaration file.
 import { describe, expect, it } from 'vitest'

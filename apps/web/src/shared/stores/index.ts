@@ -57,6 +57,10 @@ export {
   selectInventoryItems,
   selectScopeByHeroId,
   selectForgeFloor,
+  selectTeamPlanAllowedChanges,
+  selectTeamPlanObjective,
+  selectTeamPlanFarmUnavailable,
+  selectTeamPlanTargetPhase,
 } from '@/shared/stores/selectors/team-plan-selectors';
 export type { TeamPlanSlice } from '@/shared/stores/slices/team-plan-slice';
 export {
@@ -102,15 +106,12 @@ export {
   selectFarmRankingRows,
   selectFarmPoolEntries,
   deriveFarmPoolEntries,
+  isFarmRespecWorthMaking,
   selectFarmReturnBonus,
   resetFarmRankingCache,
   getFarmRankingComputeCount,
   resetFarmRankingComputeCount,
   readFarmRespecDepTuple,
-  computeFarmRespecShouldSurface,
-  selectFarmRespecGate,
-  getFarmRespecGateComputeCount,
-  resetFarmRespecGateComputeCount,
   runFarmRespecSolve,
   getFarmRespecSolveCount,
   resetFarmRespecSolveCount,
@@ -126,8 +127,6 @@ export type {
   FarmRankingResult,
   FarmRankingReason,
   FarmPoolEntry,
-  FarmRespecGate,
-  FarmRespecGateReason,
 } from '@/shared/stores/selectors/farm-ranking-selectors';
 export {
   selectFarmPoolBases,
