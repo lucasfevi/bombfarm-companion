@@ -1,5 +1,5 @@
 ---
-'@bombfarm/domain': minor
+"@bombfarm/domain": minor
 ---
 
 Stop the Optimizer handing a hero worse gear than it is holding. Its dominance rule compared two
