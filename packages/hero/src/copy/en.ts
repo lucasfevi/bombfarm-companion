@@ -17,12 +17,9 @@ export const heroEn = {
   heroDetailIdentityGrade: "Grade",
   heroDetailIdentityLevel: "Level",
   heroDetailIdentityStars: "Stars",
-  heroDetailIdentityDeployed: "Deployed",
-  heroDetailIdentityNotDeployed: "Not deployed",
-  heroDetailIdentityAllowed: "Allowed",
-  heroDetailIdentityNotAllowed: "Not allowed",
   heroDetailIdentityMarketable: "Marketable",
   heroDetailIdentityNotMarketable: "Not marketable",
+  heroDetailIdentityMarketValue: "Market value",
 
   heroDetailRollTitle: "Birth roll",
   heroDetailRollQuality: "Roll quality",

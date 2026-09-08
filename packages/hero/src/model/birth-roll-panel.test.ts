@@ -8,7 +8,8 @@ import {
   birthRollAvailability,
   gradePlacementFor,
   gradeRailFor,
-  identityFlagsFor,
+  marketValueReadingFor,
+  marketableReadingFor,
   letterDisagreementFor,
   nextLetterReadout,
   rollValueIsPercent,
@@ -270,17 +271,11 @@ describe('statRollRowsFor', () => {
   });
 });
 
-describe('identityFlagsFor', () => {
-  it('reads the three flags by their three different absence rules', () => {
-    expect(identityFlagsFor(hero({}))).toEqual({
-      deployed: false,
-      battleAllowed: true,
-      marketable: 'unknown',
-    });
-    expect(identityFlagsFor(hero({ deployed: true, battleAllowed: false, marketable: false }))).toEqual(
-      { deployed: true, battleAllowed: false, marketable: 'no' },
-    );
-    expect(identityFlagsFor(hero({ marketable: true })).marketable).toBe('yes');
+describe('marketableReadingFor', () => {
+  it('keeps not-asked apart from not-sellable, rather than reading absence as no', () => {
+    expect(marketableReadingFor(hero({}))).toBe('unknown');
+    expect(marketableReadingFor(hero({ marketable: false }))).toBe('no');
+    expect(marketableReadingFor(hero({ marketable: true }))).toBe('yes');
   });
 });
 
@@ -291,5 +286,40 @@ describe('the fixture bands really are the ones the assertions assume', () => {
 
     expect(reportFor(record).mean).toBeCloseTo(mean, 10);
     expect(reportFor(record).contributingStats).toBe(SHEET_PANEL_KEYS.length);
+  });
+});
+
+describe('marketValueReadingFor', () => {
+  const priced = { amount: 1.23, currency: 'USD' };
+
+  it('prints the figure for a hero the game will let go', () => {
+    expect(marketValueReadingFor('yes', priced)).toEqual({
+      kind: 'value',
+      amount: 1.23,
+      currency: 'USD',
+    });
+  });
+
+  it('quotes nothing for an account-bound hero, which a rarity lookup would still price', () => {
+    // The discriminating case: the price is present and valid, and must still not be shown.
+    expect(marketValueReadingFor('no', priced)).toEqual({ kind: 'hidden' });
+  });
+
+  it('quotes nothing while tradability is unknown, rather than assuming it is sellable', () => {
+    expect(marketValueReadingFor('unknown', priced)).toEqual({ kind: 'hidden' });
+  });
+
+  it('hides the row when nothing was quoted, rather than printing an empty value', () => {
+    expect(marketValueReadingFor('yes', null)).toEqual({ kind: 'hidden' });
+    expect(marketValueReadingFor('yes', undefined)).toEqual({ kind: 'hidden' });
+    expect(marketValueReadingFor('yes', { amount: null, currency: 'USD' })).toEqual({ kind: 'hidden' });
+  });
+
+  it('keeps a genuine zero, which is a quote and not an absence', () => {
+    expect(marketValueReadingFor('yes', { amount: 0, currency: 'BRL' })).toEqual({
+      kind: 'value',
+      amount: 0,
+      currency: 'BRL',
+    });
   });
 });

@@ -68,6 +68,7 @@ export {
   iconMetaGlyphRecipe,
   rosterInactiveChromeClass,
   rosterIconTooltipTriggerClass,
+  heroRankTextClass,
   rarityTextClass,
   rarityDotClass,
   slotStatClassName,

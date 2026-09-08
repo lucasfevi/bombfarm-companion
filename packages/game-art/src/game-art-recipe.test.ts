@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { LETTER_BANDS } from '@bombfarm/domain/roll-quality';
 import {
   artFrameRecipe,
+  heroRankTextClass,
+  rarityTextClass,
   abilityIconRecipe,
   iconMetaGlyphRecipe,
   rosterIconTooltipTriggerClass,
@@ -54,5 +57,36 @@ describe('game-art.recipe', () => {
   it('rosterInactiveChromeClass desaturates shelved heroes', () => {
     expect(rosterInactiveChromeClass).toContain('grayscale');
     expect(rosterInactiveChromeClass).toContain('opacity-55');
+  });
+});
+
+describe('heroRankTextClass', () => {
+  it('walks the same six-step colour ladder the rarities use, one step per grade', () => {
+    const classes = LETTER_BANDS.letters.map((letter) => heroRankTextClass(letter));
+
+    // The claim is the pairing, not the palette: grade i is painted in rarity i's colour.
+    expect(classes).toEqual(LETTER_BANDS.letters.map((_, index) => rarityTextClass(index)));
+    // And the ladder really is six distinct colours, so the assertion above is not six nulls.
+    expect(new Set(classes).size).toBe(LETTER_BANDS.letters.length);
+    expect(classes.every((value) => typeof value === 'string')).toBe(true);
+  });
+
+  it('paints the lowest and the highest grade differently, in the ladder direction', () => {
+    const lowest = LETTER_BANDS.letters[0];
+    const highest = LETTER_BANDS.letters[LETTER_BANDS.letters.length - 1];
+
+    expect(heroRankTextClass(lowest)).toBe(rarityTextClass(0));
+    expect(heroRankTextClass(highest)).toBe(rarityTextClass(LETTER_BANDS.letters.length - 1));
+    expect(heroRankTextClass(lowest)).not.toBe(heroRankTextClass(highest));
+  });
+
+  it('leaves a grade the table does not know uncoloured rather than painting it the bottom one', () => {
+    expect(heroRankTextClass('Z')).toBeUndefined();
+    expect(heroRankTextClass(undefined)).toBeUndefined();
+    expect(heroRankTextClass('')).toBeUndefined();
+  });
+
+  it('reads a grade the game padded with spaces', () => {
+    expect(heroRankTextClass(' S ')).toBe(heroRankTextClass('S'));
   });
 });

@@ -218,21 +218,38 @@ export function statRollRowsFor(
 export type FlagReading = 'yes' | 'no' | 'unknown';
 
 /**
- * Three flags with three different absence rules, which is why they are read here rather than
- * inline. `battleAllowed` defaults to allowed, matching every other roster surface. `marketable`
- * is genuinely three-state: absence means nobody has asked the game yet, and collapsing it into
- * `no` would report a whole roster as account-bound.
+ * Whether the game will let this hero be sold, read here rather than inline because it is
+ * genuinely three-state: absence means nobody has asked the game yet, and collapsing it into `no`
+ * would report a whole roster as account-bound.
  */
-export type IdentityFlags = {
-  readonly deployed: boolean;
-  readonly battleAllowed: boolean;
-  readonly marketable: FlagReading;
+export function marketableReadingFor(hero: HeroRecord): FlagReading {
+  return hero.marketable === undefined ? 'unknown' : hero.marketable ? 'yes' : 'no';
+}
+
+/** What a host resolved a hero to on the market. `amount` is null when nothing was quoted. */
+export type HeroMarketPrice = {
+  readonly amount: number | null;
+  readonly currency: string;
 };
 
-export function identityFlagsFor(hero: HeroRecord): IdentityFlags {
-  return {
-    deployed: hero.deployed === true,
-    battleAllowed: hero.battleAllowed ?? true,
-    marketable: hero.marketable === undefined ? 'unknown' : hero.marketable ? 'yes' : 'no',
-  };
+export type MarketValueReading =
+  | { readonly kind: 'hidden' }
+  | { readonly kind: 'value'; readonly amount: number; readonly currency: string };
+
+/**
+ * Whether to print what this hero is worth, and how much.
+ *
+ * A price only means anything for a hero the game will actually let go: an account-bound hero has
+ * a rarity, so a lookup by rarity WOULD return a number for it, and printing that would quote a
+ * sale nobody can make. A hero whose tradability nobody has asked about yet is the same case —
+ * it is not known to be sellable, so it gets no figure either. Absent quote, absent row: a blank
+ * value beside a label reads as "worth nothing".
+ */
+export function marketValueReadingFor(
+  marketable: FlagReading,
+  price: HeroMarketPrice | null | undefined,
+): MarketValueReading {
+  if (marketable !== 'yes') return { kind: 'hidden' };
+  if (price == null || price.amount == null) return { kind: 'hidden' };
+  return { kind: 'value', amount: price.amount, currency: price.currency };
 }

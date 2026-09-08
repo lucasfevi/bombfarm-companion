@@ -16,12 +16,9 @@ export const heroPtBR: HeroCopy = {
   heroDetailIdentityGrade: "Nota",
   heroDetailIdentityLevel: "Nível",
   heroDetailIdentityStars: "Estrelas",
-  heroDetailIdentityDeployed: "Em campo",
-  heroDetailIdentityNotDeployed: "Fora de campo",
-  heroDetailIdentityAllowed: "Liberado",
-  heroDetailIdentityNotAllowed: "Bloqueado",
   heroDetailIdentityMarketable: "Negociável",
   heroDetailIdentityNotMarketable: "Não negociável",
+  heroDetailIdentityMarketValue: "Valor no mercado",
 
   heroDetailRollTitle: "Sorteio de nascimento",
   heroDetailRollQuality: "Qualidade do sorteio",

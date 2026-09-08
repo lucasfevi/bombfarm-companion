@@ -5,7 +5,7 @@ import { MAX_STARS } from '@bombfarm/domain/gear';
 import { RARITIES, type SheetKey } from '@bombfarm/domain/planner-constants';
 import type { RollQualityReport } from '@bombfarm/domain/roll-quality';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import { HeroAvatar, rarityTextClass } from '@bombfarm/game-art';
+import { HeroAvatar, heroRankTextClass, rarityTextClass } from '@bombfarm/game-art';
 import {
   DataTable,
   Panel,
@@ -22,12 +22,14 @@ import {
   birthRollAvailability,
   gradePlacementFor,
   gradeRailFor,
-  identityFlagsFor,
+  marketValueReadingFor,
+  marketableReadingFor,
   letterDisagreementFor,
   nextLetterReadout,
   railTintFor,
   statRollRowsFor,
   type FlagReading,
+  type HeroMarketPrice,
   type PlacementCertainty,
   type RollTint,
 } from '../model';
@@ -120,18 +122,25 @@ export function HeroIdentityRollPanel({
   t,
   lang,
   statLabel,
+  marketPrice,
+  formatAmount,
 }: {
   hero: HeroRecord;
   rollQuality: RollQualityReport | undefined;
   t: HeroCopy;
   lang: Lang;
   statLabel: (key: SheetKey) => string;
+  /** What the host resolved this hero to on the market, when it has a snapshot to resolve against. */
+  marketPrice?: HeroMarketPrice | null | undefined;
+  /** The host's own money formatting — this package prints no currency of its own. */
+  formatAmount?: ((value: number, currency: string) => string) | undefined;
 }) {
   const availability = birthRollAvailability(hero, rollQuality);
   const placement = gradePlacementFor(rollQuality);
   const disagreement = letterDisagreementFor(rollQuality);
   const nextLetter = nextLetterReadout(rollQuality, (value) => formatNumber(value, lang, 1));
-  const flags = identityFlagsFor(hero);
+  const marketable = marketableReadingFor(hero);
+  const marketValue = marketValueReadingFor(marketable, marketPrice);
   const rows = statRollRowsFor(
     hero,
     (value) => formatNumber(value, lang, 2),
@@ -139,6 +148,7 @@ export function HeroIdentityRollPanel({
   );
 
   const rarityIndex = RARITIES.indexOf(hero.rarity);
+  const starCount = Math.max(0, Math.min(MAX_STARS, Math.round(hero.stars)));
   const marketableLabel: Record<FlagReading, string> = {
     yes: t.heroDetailIdentityMarketable,
     no: t.heroDetailIdentityNotMarketable,
@@ -178,7 +188,7 @@ export function HeroIdentityRollPanel({
                   {hero.name}
                 </p>
                 <p className={cn('mt-1 text-[11px] leading-none text-muted', numericClass)}>
-                  {'★'.repeat(Math.max(0, Math.min(MAX_STARS, Math.round(hero.stars))))}
+                  {'★'.repeat(starCount)}
                 </p>
               </div>
             </div>
@@ -186,11 +196,31 @@ export function HeroIdentityRollPanel({
             <StatList
               className="mt-3"
               items={[
-                { id: 'rarity', label: t.heroDetailIdentityRarity, value: rarityLabel(hero.rarity, lang) },
+                {
+                  id: 'rarity',
+                  label: t.heroDetailIdentityRarity,
+                  value: (
+                    <span className={cn('font-bold', rarityTextClass(rarityIndex) ?? 'text-ink')}>
+                      {rarityLabel(hero.rarity, lang)}
+                    </span>
+                  ),
+                },
                 {
                   id: 'grade',
                   label: t.heroDetailIdentityGrade,
-                  value: <span className={numericClass}>{hero.rank ?? UNKNOWN}</span>,
+                  // Painted in the colour the game paints this grade, so the letter reads the same
+                  // here as on the hero's own card.
+                  value: (
+                    <span
+                      className={cn(
+                        numericClass,
+                        'font-bold',
+                        heroRankTextClass(hero.rank) ?? 'text-ink',
+                      )}
+                    >
+                      {hero.rank ?? UNKNOWN}
+                    </span>
+                  ),
                 },
                 {
                   id: 'level',
@@ -200,27 +230,35 @@ export function HeroIdentityRollPanel({
                 {
                   id: 'stars',
                   label: t.heroDetailIdentityStars,
-                  value: <span className={numericClass}>{formatNumber(hero.stars, lang, 0)}</span>,
-                },
-                {
-                  id: 'deployed',
-                  label: t.heroDetailIdentityDeployed,
-                  value: flags.deployed
-                    ? t.heroDetailIdentityDeployed
-                    : t.heroDetailIdentityNotDeployed,
-                },
-                {
-                  id: 'allowed',
-                  label: t.heroDetailIdentityAllowed,
-                  value: flags.battleAllowed
-                    ? t.heroDetailIdentityAllowed
-                    : t.heroDetailIdentityNotAllowed,
+                  // Stars are a count the game draws rather than writes, so draw them — except at
+                  // zero, where there is nothing to draw and a bare 0 is the only way to say none.
+                  value:
+                    starCount === 0 ? (
+                      <span className={numericClass}>{formatNumber(0, lang, 0)}</span>
+                    ) : (
+                      <span className="text-rar-4" aria-label={formatNumber(starCount, lang, 0)}>
+                        {'★'.repeat(starCount)}
+                      </span>
+                    ),
                 },
                 {
                   id: 'marketable',
                   label: t.heroDetailIdentityMarketable,
-                  value: marketableLabel[flags.marketable],
+                  value: marketableLabel[marketable],
                 },
+                ...(marketValue.kind === 'value' && formatAmount !== undefined
+                  ? [
+                      {
+                        id: 'marketValue',
+                        label: t.heroDetailIdentityMarketValue,
+                        value: (
+                          <span className={cn(numericClass, 'font-bold text-up')}>
+                            {formatAmount(marketValue.amount, marketValue.currency)}
+                          </span>
+                        ),
+                      },
+                    ]
+                  : []),
               ]}
             />
           </div>

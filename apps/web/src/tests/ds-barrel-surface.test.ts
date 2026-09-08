@@ -305,6 +305,7 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'abilityIconRecipe',
   'artFrameRadiusClass',
   'artFrameRecipe',
+  'heroRankTextClass',
   'iconMetaGlyphRecipe',
   'inventoryBadgeRecipe',
   'inventoryCardRecipe',

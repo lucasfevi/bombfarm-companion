@@ -37,6 +37,10 @@ import {
   PointsTable,
   SheetTable,
 } from '@bombfarm/hero/components';
+import { resolveHeroPrice } from '@bombfarm/pricing';
+import { RARITIES } from '@bombfarm/domain/planner-constants';
+import { formatMoney } from '../../lib/format';
+import { useMarketSnapshot } from '../../lib/market/use-market-snapshot';
 import { abilityGainFor, type AbilityGain } from '@bombfarm/domain/ability-gain';
 import type { AdvisorPipelineResult } from '@bombfarm/domain/advisor-pipeline';
 import { statLabel } from '@bombfarm/domain/game-labels';
@@ -133,7 +137,7 @@ function HeroesScreenFrame({ children }: { children: ReactNode }) {
 }
 
 function HeroesRoster({ model }: { model: RosterModel }) {
-  const { lang } = useLocale();
+  const { lang, locale } = useLocale();
   const t = useCopy();
   const heroCopy = useHeroDetailCopy();
   const farmCopy = useFarmCopy();
@@ -195,6 +199,22 @@ function HeroesRoster({ model }: { model: RosterModel }) {
     [lang, t],
   );
   const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
+
+  // A hero's market identity is its rarity alone, so this needs no item def. The panel is handed
+  // the number rather than the snapshot, so it carries none of the market vocabulary itself.
+  const { snapshot } = useMarketSnapshot();
+  const marketPrice = useMemo(
+    () =>
+      resolveHeroPrice(
+        { rarity: RARITIES.indexOf(active.hero.rarity), marketable: active.hero.marketable ?? false },
+        snapshot,
+      ),
+    [active.hero, snapshot],
+  );
+  const formatAmount = useCallback(
+    (value: number, currency: string) => formatMoney(value, locale, currency),
+    [locale],
+  );
   const pickerCopy = useMemo(() => rosterCopyFrom(t), [t]);
   const panelCopy = useMemo(() => farmScreenCopy(farmCopy, t), [farmCopy, t]);
   const heroes = useMemo(() => rows.map((row) => row.hero), [rows]);
@@ -240,6 +260,8 @@ function HeroesRoster({ model }: { model: RosterModel }) {
             t={heroCopy}
             lang={lang}
             statLabel={boundStatLabel}
+            marketPrice={marketPrice}
+            formatAmount={formatAmount}
           />
           <PhaseControl
             phase={shownHeroPhase(phaseReading, overridePhase)}

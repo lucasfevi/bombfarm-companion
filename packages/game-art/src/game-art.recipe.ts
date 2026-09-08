@@ -1,5 +1,6 @@
 import { cva } from 'class-variance-authority';
 import type { EquippedItem } from '@bombfarm/domain/gear';
+import { LETTER_BANDS } from '@bombfarm/domain/roll-quality';
 import { cn } from '@bombfarm/ui';
 
 /** Shared corner radius for wiki-sourced hero/item inventory frames. */
@@ -162,6 +163,26 @@ export function rarityTextClass(index: number): string | undefined {
 /** Rarity index → dot/background colour class. `undefined` for an out-of-range index. */
 export function rarityDotClass(index: number): string | undefined {
   return rarityDotClasses[index];
+}
+
+/**
+ * Hero grade letter → the colour the game itself prints that grade in.
+ *
+ * The game paints grades on the SAME six-step ladder it paints rarities on, one step per letter
+ * from the bottom: E reads grey like Comum, D green like Incomum, C blue like Raro, B purple like
+ * Épico, A gold like Lendária, S red like Mítico. Read off the game's own hero cards, where a
+ * green "Rank D" sits beside a blue "Rare" and a purple "Rank B" beside a green "Uncommon" — the
+ * two ladders are the same colours indexed independently, which is why this reuses
+ * `rarityTextClass` rather than declaring a second palette that could drift from it.
+ *
+ * The letters come from the domain's own grade table, so a grade added or renamed there moves this
+ * with it instead of leaving a letter uncoloured. `undefined` for a letter that table does not
+ * know, which reads as no colour rather than as the bottom grade's.
+ */
+export function heroRankTextClass(rank: string | undefined): string | undefined {
+  if (rank === undefined) return undefined;
+  const index = LETTER_BANDS.letters.indexOf(rank.trim());
+  return index === -1 ? undefined : rarityTextClass(index);
 }
 
 /**
