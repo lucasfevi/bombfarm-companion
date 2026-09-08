@@ -22,7 +22,7 @@ export const heroEn = {
 
   heroDetailRollTitle: "Birth roll",
   heroDetailRollQuality: "Roll quality",
-  heroDetailRollColStat: "Statistic",
+  heroDetailRollColStat: "Stat",
   heroDetailRollColBand: "Band",
   heroDetailRollColPosition: "Position",
   heroDetailRollValue: "Rolled",
@@ -43,8 +43,6 @@ export const heroEn = {
   heroDetailRollStoredLetter: "Stored grade",
   heroDetailRollComputedLetter: "Our estimate",
   heroDetailRollPlacementUncertain: "Read the placement below as uncertain.",
-  heroDetailRollTintIsOurs:
-    "The rail's tint is a reading aid of ours, not a rule the game publishes.",
 
   heroDetailAbilitiesTitle: "Abilities",
   heroDetailAbilitiesLevelOfMax: "{level} of {max}",

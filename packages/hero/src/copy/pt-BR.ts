@@ -43,8 +43,6 @@ export const heroPtBR: HeroCopy = {
   heroDetailRollStoredLetter: "Nota guardada",
   heroDetailRollComputedLetter: "Nossa estimativa",
   heroDetailRollPlacementUncertain: "Leia a posição abaixo como incerta.",
-  heroDetailRollTintIsOurs:
-    "A cor da barra é um auxílio de leitura nosso, não uma regra publicada pelo jogo.",
 
   heroDetailAbilitiesTitle: "Habilidades",
   heroDetailAbilitiesLevelOfMax: "{level} de {max}",

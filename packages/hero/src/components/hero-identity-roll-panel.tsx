@@ -256,7 +256,7 @@ export function HeroIdentityRollPanel({
 
           <div className="min-w-0">
             <h3 className={sectionTitleClass}>{t.heroDetailRollTitle}</h3>
-            <p className={tipClass}>{t.heroDetailRollPermanent}</p>
+            <p className={cn(tipClass, 'mt-1.5')}>{t.heroDetailRollPermanent}</p>
 
             {availability.kind === 'unavailable' ? (
               <p className={tipClass}>{t[UNAVAILABLE_NOTE[availability.reason]]}</p>
@@ -283,10 +283,10 @@ export function HeroIdentityRollPanel({
                       <DataTable.Row>
                         <DataTable.Header scope="col">{t.heroDetailRollColStat}</DataTable.Header>
                         <DataTable.Header scope="col" align="right">
-                          {t.heroDetailRollValue}
+                          {t.heroDetailRollColBand}
                         </DataTable.Header>
                         <DataTable.Header scope="col" align="right">
-                          {t.heroDetailRollColBand}
+                          {t.heroDetailRollValue}
                         </DataTable.Header>
                         <DataTable.Header scope="col" align="right">
                           {t.heroDetailRollColPosition}
@@ -298,10 +298,10 @@ export function HeroIdentityRollPanel({
                         <DataTable.Row key={row.key}>
                           <DataTable.Cell>{statLabel(row.key)}</DataTable.Cell>
                           <DataTable.Cell align="right" numeric>
-                            {row.value}
+                            {row.band}
                           </DataTable.Cell>
                           <DataTable.Cell align="right" numeric>
-                            {row.band}
+                            {row.value}
                           </DataTable.Cell>
                           <DataTable.Cell
                             align="right"
@@ -318,7 +318,6 @@ export function HeroIdentityRollPanel({
                     </DataTable.Body>
                   </DataTable.Table>
                 </DataTable.Root>
-                <p className={tipClass}>{t.heroDetailRollTintIsOurs}</p>
 
                 <h3 className={cn(sectionTitleClass, 'mt-4')}>
                   {sub(t.heroDetailRollGradePlacement, { letter: placement.railLetter })}
