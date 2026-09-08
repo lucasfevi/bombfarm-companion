@@ -2,6 +2,7 @@ export {
   ArtFrame,
   type ArtFrameSize,
   HeroAvatar,
+  heroRankToneClass,
   HeroIdentity,
   type HeroIdentityVariant,
   HeroIdentityChip,

@@ -194,3 +194,16 @@ export const rosterIconTooltipTriggerClass =
 
 /** Shelved-hero mute — apply to scan chrome, not the status toggle. */
 export const rosterInactiveChromeClass = 'opacity-55 grayscale';
+
+/**
+ * The colour to paint a hero's grade in, absent and unrecognised cases included.
+ *
+ * Every surface that shows a grade needs the same three answers — the game's colour for a grade
+ * the table knows, the accent for one it does not, and the muted tone for a hero with no grade at
+ * all — so they read it here instead of each repeating the ternary. They did repeat it, in ten
+ * places, which is how nine of them kept one flat accent after the ladder arrived.
+ */
+export function heroRankToneClass(rank: string | undefined): string {
+  if (!rank?.trim()) return 'text-muted';
+  return heroRankTextClass(rank) ?? 'text-accent';
+}

@@ -69,6 +69,7 @@ export {
   rosterInactiveChromeClass,
   rosterIconTooltipTriggerClass,
   heroRankTextClass,
+  heroRankToneClass,
   rarityTextClass,
   rarityDotClass,
   slotStatClassName,
