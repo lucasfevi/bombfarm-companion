@@ -22,6 +22,7 @@ import {
   birthRollAvailability,
   gradePlacementFor,
   gradeRailFor,
+  heroPowerTextFor,
   marketValueReadingFor,
   marketableReadingFor,
   letterDisagreementFor,
@@ -231,6 +232,15 @@ export function HeroIdentityRollPanel({
                   id: 'level',
                   label: t.heroDetailIdentityLevel,
                   value: <span className={numericClass}>{formatNumber(hero.level, lang, 0)}</span>,
+                },
+                {
+                  id: 'power',
+                  label: t.heroDetailIdentityPower,
+                  value: (
+                    <span className={numericClass}>
+                      {heroPowerTextFor(hero, (value) => formatNumber(value, lang, 0))}
+                    </span>
+                  ),
                 },
                 {
                   id: 'marketable',

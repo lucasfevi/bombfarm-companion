@@ -5,6 +5,7 @@ export {
   birthRollAvailability,
   gradePlacementFor,
   gradeRailFor,
+  heroPowerTextFor,
   marketValueReadingFor,
   marketableReadingFor,
   letterDisagreementFor,

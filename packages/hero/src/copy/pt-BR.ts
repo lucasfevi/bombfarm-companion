@@ -15,6 +15,7 @@ export const heroPtBR: HeroCopy = {
   heroDetailIdentityRarity: "Raridade",
   heroDetailIdentityGrade: "Nota",
   heroDetailIdentityLevel: "Nível",
+  heroDetailIdentityPower: "Poder",
   heroDetailIdentityMarketable: "Negociável",
   heroDetailIdentityNotMarketable: "Não negociável",
   heroDetailIdentityMarketValue: "Valor no mercado",

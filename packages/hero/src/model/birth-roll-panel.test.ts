@@ -8,6 +8,7 @@ import {
   birthRollAvailability,
   gradePlacementFor,
   gradeRailFor,
+  heroPowerTextFor,
   marketValueReadingFor,
   marketableReadingFor,
   letterDisagreementFor,
@@ -276,6 +277,22 @@ describe('marketableReadingFor', () => {
     expect(marketableReadingFor(hero({}))).toBe('unknown');
     expect(marketableReadingFor(hero({ marketable: false }))).toBe('no');
     expect(marketableReadingFor(hero({ marketable: true }))).toBe('yes');
+  });
+});
+
+describe('heroPowerTextFor', () => {
+  const groupThousands = (value: number) => value.toLocaleString('en-US');
+
+  it('prints the figure the save recorded', () => {
+    expect(heroPowerTextFor(hero({ power: 12345 }), groupThousands)).toBe('12,345');
+  });
+
+  it('prints an em dash for a hero nobody imported a power for, never a zero', () => {
+    expect(heroPowerTextFor(hero({}), groupThousands)).toBe('—');
+  });
+
+  it('prints a recorded zero as a zero — the figure is known, and it is nought', () => {
+    expect(heroPowerTextFor(hero({ power: 0 }), groupThousands)).toBe('0');
   });
 });
 

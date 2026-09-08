@@ -215,6 +215,20 @@ export function statRollRowsFor(
   });
 }
 
+/**
+ * The power the save recorded for this hero, or the em dash.
+ *
+ * A hero carrying no figure has not been read from a save that reports one — which is a different
+ * fact from a hero of no power. Printing a zero would rank an unread hero below every hero on the
+ * roster, so absence prints as absence.
+ */
+export function heroPowerTextFor(
+  hero: HeroRecord,
+  formatPower: (value: number) => string,
+): string {
+  return hero.power == null ? NOT_PLACED : formatPower(hero.power);
+}
+
 export type FlagReading = 'yes' | 'no' | 'unknown';
 
 /**
