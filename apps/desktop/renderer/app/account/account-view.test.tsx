@@ -1,9 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { AccountFidelity, AccountPayload, AccountView as AccountViewData } from '@bombfarm/contracts';
 import type { MarketEntry, MarketSnapshot } from '@bombfarm/pricing';
-import { SKIN_CATEGORY, categoryKey, heroPriceKey, priceKey } from '@bombfarm/pricing';
+import { SKIN_CATEGORY, categoryKey, heroPriceKey, holdingsPrices, priceKey } from '@bombfarm/pricing';
 import { HoldingsRow, type HoldingsComponentId } from '@bombfarm/account/holdings';
 import { Accordion } from '@bombfarm/ui';
 import { en } from '../../lib/copy/en';
@@ -478,5 +478,62 @@ describe('the account-read states every screen shares', () => {
     const markup = html();
     expect(markup).toContain(en.errorAccountReadFailed);
     expect(markup).toContain('data-account-error-detail="ECONNRESET"');
+  });
+});
+
+describe('how old the holdings footnote says the prices under it are', () => {
+  /**
+   * The shape production was in when this was measured: the snapshot had been republished twelve
+   * minutes earlier while every row in it still carried a reading taken 6.6 hours before that,
+   * because a run of rate-limited passes had collected nothing and carried the rows forward.
+   */
+  const REPUBLISHED = '2026-09-07T19:18:00.000Z';
+  const ROWS_READ = '2026-09-07T12:41:00.000Z';
+
+  beforeEach(() => {
+    const carried = snapshot();
+    carried.generatedUtc = REPUBLISHED;
+    for (const row of carried.entries) row.fetchedUtc = ROWS_READ;
+
+    marketState.current = {
+      status: 'ready',
+      applied: 1,
+      view: {
+        snapshot: carried,
+        source: 'cache',
+        publishedUtc: REPUBLISHED,
+        adoptedUtc: REPUBLISHED,
+        checkedUtc: REPUBLISHED,
+        lastError: null,
+      },
+    };
+
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.parse(REPUBLISHED) + 12 * 60_000);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('states the age of the prices, not the age of the file that carried them', () => {
+    expect(slots(html(), 'account-holdings-footnote')).toEqual(['oldest price 6 h ago']);
+  });
+
+  it('leaves every priced row dated by its own reading', () => {
+    const account = accountState.current;
+    const market = marketState.current;
+    if (account.status !== 'loaded' || market.status !== 'ready') {
+      throw new Error('the fixtures above are a loaded account and a snapshot in hand');
+    }
+
+    const holdings = accountHoldingsFrom(
+      accountFactsFrom(account.view).holdings,
+      market.view.snapshot,
+    );
+    const priced = holdingsPrices(holdings).filter((price) => price.state === 'priced');
+
+    expect(priced).not.toEqual([]);
+    for (const price of priced) expect(price.quotedUtc).toBe(ROWS_READ);
   });
 });

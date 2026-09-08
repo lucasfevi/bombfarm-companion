@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { accountHoldings, boughtSkinsWorn } from './holdings.js';
+import { accountHoldings, boughtSkinsWorn, holdingsPrices } from './holdings.js';
 import type { CatalogView } from './reconcile.js';
 import { buildSnapshot } from './snapshot.js';
 import type { MarketEntry } from './types.js';
@@ -303,5 +303,21 @@ describe('accountHoldings — the price behind every figure', () => {
       holdings.total,
     );
     expect(summed.filter((price) => price.amount != null)).toHaveLength(holdings.priced);
+  });
+});
+
+describe('holdingsPrices', () => {
+  it('hands back every price the total was summed from, all three components together', () => {
+    const holdings = holdingsOf([PRICED_ITEM, UNLISTED_ITEM], [PRICED_HERO], [ROYAL_SENTINEL]);
+
+    expect(holdingsPrices(holdings)).toEqual([
+      ...holdings.inventory.prices,
+      ...holdings.heroes.prices,
+      ...holdings.skins.prices,
+    ]);
+  });
+
+  it('is empty when every component was withheld, so a caller has nothing to date a line by', () => {
+    expect(holdingsPrices(holdingsOf(null, null, null))).toEqual([]);
   });
 });

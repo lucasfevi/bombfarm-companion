@@ -11,7 +11,7 @@ export const en = {
 
   marketRefreshLabel: "Refresh",
   marketRefreshName: "Refresh market prices",
-  marketPricesUpdated: "Prices updated {age}",
+  marketPricesOldest: "Oldest price read {age}",
 
   marketAgeJustNow: "just now",
   marketAgeMinutes: "{value} min ago",
@@ -31,7 +31,7 @@ export const pt: typeof en = {
 
   marketRefreshLabel: "Atualizar",
   marketRefreshName: "Atualizar os preços do mercado",
-  marketPricesUpdated: "Preços atualizados {age}",
+  marketPricesOldest: "Preço mais antigo lido {age}",
 
   marketAgeJustNow: "agora mesmo",
   marketAgeMinutes: "há {value} min",

@@ -13,7 +13,6 @@ export type MarketSnapshotStatus = 'loading' | 'ready' | 'empty' | 'error';
 export interface UseMarketSnapshotResult {
   snapshot: MarketSnapshot | null;
   status: MarketSnapshotStatus;
-  generatedUtc: string | null;
   refresh: () => void;
   isRefreshing: boolean;
   error: MarketSnapshotErrorKind | null;
@@ -65,7 +64,6 @@ export function useMarketSnapshot(): UseMarketSnapshotResult {
   return {
     snapshot,
     status: resolveMarketStatus(settled, snapshot, error),
-    generatedUtc: snapshot?.generatedUtc ?? null,
     refresh,
     isRefreshing,
     error,

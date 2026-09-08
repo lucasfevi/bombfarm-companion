@@ -51,6 +51,16 @@ const runsTheChecker = (text) =>
   /run: node tools\/market-snapshot\/freshness\.mjs\s*$/m.test(stripCommentLines(text));
 const noInstallStep = (text) => !/run:\s*(pnpm|npm|yarn)\s+install/.test(stripCommentLines(text));
 
+/**
+ * `setup-node` caches the package manager by default, and caching one means running one. This job
+ * installs none, so the default turned the setup step into a hard failure that killed the run
+ * before the checker was reached — ten consecutive red checks that had evaluated nothing, which
+ * reads exactly like an alarm firing. The opt-out is pinned here because nothing else would notice
+ * it going away.
+ */
+const optsOutOfPackageManagerCache = (text) =>
+  /package-manager-cache:\s*false/.test(stripCommentLines(text));
+
 const noEscapeHatch = (text) => {
   const code = stripCommentLines(text);
   return (
@@ -94,6 +104,18 @@ describe('the staleness alarm workflow', () => {
 
     expect(noInstallStep(workflow)).toBe(true);
     expect(noInstallStep(`${workflow}\n      - run: pnpm install --frozen-lockfile\n`)).toBe(false);
+  });
+
+  it('turns off the package-manager cache it has no package manager for, so setup cannot kill the run', () => {
+    expect(optsOutOfPackageManagerCache(workflow)).toBe(true);
+    expect(
+      optsOutOfPackageManagerCache(workflow.replace(/\n\s*package-manager-cache: false/, '')),
+    ).toBe(false);
+    expect(
+      optsOutOfPackageManagerCache(
+        workflow.replace('package-manager-cache: false', 'package-manager-cache: true'),
+      ),
+    ).toBe(false);
   });
 
   it('reads only, and never reaches Steam', () => {

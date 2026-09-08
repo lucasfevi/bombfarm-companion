@@ -562,7 +562,7 @@ export const en = {
   accountHoldingsPartial: 'part of the account only',
   accountHoldingsCoverage: '{priced} of {eligible} sellable things priced right now',
   accountHoldingsMissing: 'Not counted here: {rows}.',
-  accountHoldingsPricesUpdated: 'prices {age}',
+  accountHoldingsPricesOldest: 'oldest price {age}',
   accountHoldingsUnpriced: 'not listed',
   accountHoldingsInventory: 'Inventory',
   accountHoldingsInventoryCoverage: '{priced} of {eligible} tradable items priced',

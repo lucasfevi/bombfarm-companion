@@ -158,3 +158,11 @@ export function accountHoldings({
     complete: withheld.length === 0,
   };
 }
+
+/**
+ * Every price behind an account's total, across all three components — what a summary line drawn
+ * over that total is actually summarising.
+ */
+export function holdingsPrices(holdings: AccountHoldings): ResolvedPrice[] {
+  return HOLDING_COMPONENTS.flatMap((component) => holdings[component].prices);
+}

@@ -17,13 +17,14 @@ import { AccountScreenLayout } from '@bombfarm/account/layout';
 import { AccountHouseView, AccountIdentityView, AccountTreeView } from '@bombfarm/account/panels';
 import { HoldingsView } from '@bombfarm/account/holdings';
 import { Banner, Button, EmptyState, colClass } from '@bombfarm/ui';
+import { holdingsPrices } from '@bombfarm/pricing';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { formatCapturedAt } from '../../lib/format';
 import { useAccountView } from '../../lib/account/use-account-view';
 import { accountFactsFrom } from '../../lib/account/account-facts';
 import { accountHoldingsFrom, holdingsComponents } from '../../lib/account/account-holdings';
 import { useMarketSnapshot } from '../../lib/market/use-market-snapshot';
-import { quoteAge } from '../inventory/market-labels';
+import { priceFreshness } from '../inventory/market-labels';
 import {
   accountHoldingsLabels,
   accountHouseLabels,
@@ -35,7 +36,7 @@ export function AccountView({ onOpenInventory }: { onOpenInventory: () => void }
   const t = useCopy();
   const { lang, locale } = useLocale();
   const accountViewState = useAccountView();
-  const { state: marketState, snapshot } = useMarketSnapshot();
+  const { snapshot } = useMarketSnapshot();
 
   const view = accountViewState.status === 'loaded' ? accountViewState.view : null;
   const facts = useMemo(() => (view === null ? null : accountFactsFrom(view)), [view]);
@@ -92,9 +93,7 @@ export function AccountView({ onOpenInventory }: { onOpenInventory: () => void }
     );
   }
 
-  const publishedUtc = marketState.status === 'ready' ? marketState.view.publishedUtc : null;
-  const priceAge =
-    publishedUtc === null ? null : sub(t.accountHoldingsPricesUpdated, { age: quoteAge(publishedUtc, t) });
+  const priceAge = priceFreshness(holdingsPrices(holdings), t);
   const nothingReadable = facts.identity === null && facts.house === null && facts.tree === null;
 
   return (

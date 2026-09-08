@@ -77,6 +77,7 @@ export { quoteNative, type QuoteDeps, type QuoteFetchResult, type QuoteResult } 
 export {
   keyForItem,
   marketEntryFor,
+  oldestQuotedUtc,
   resolveHeroPrice,
   resolveItemPrice,
   resolveKey,
@@ -91,6 +92,7 @@ export {
   HOLDING_COMPONENTS,
   accountHoldings,
   boughtSkinsWorn,
+  holdingsPrices,
   type AccountHoldings,
   type AccountHoldingsInput,
   type HoldingComponent,
