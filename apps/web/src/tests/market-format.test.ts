@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import type { ResolvedPrice } from '@bombfarm/pricing';
 import {
   STRINGS,
   formatMoney,
-  formatPricesUpdated,
+  formatPriceFreshness,
   formatQuoteAge,
   formatQuoteTooltip,
   formatUnpricedLabel,
@@ -57,10 +58,46 @@ describe('formatQuoteAge', () => {
   });
 });
 
-describe('formatPricesUpdated', () => {
-  it('dates the line by the quote it was given', () => {
-    expect(formatPricesUpdated(minutesAgo(6 * 60), 'en', NOW)).toBe('Prices updated 6 h ago');
-    expect(formatPricesUpdated(minutesAgo(6 * 60), 'pt', NOW)).toBe('Preços atualizados há 6 h');
+const quoted = (quotedUtc: string | null): ResolvedPrice => ({
+  state: quotedUtc == null ? 'no-listing' : 'priced',
+  key: 'ember_arma:1',
+  hashName: 'Ember Weapon',
+  listingUrl: null,
+  lowestUsd: quotedUtc == null ? null : 2,
+  amount: quotedUtc == null ? null : 10,
+  currency: 'BRL',
+  basis: 'converted',
+  quotedUtc,
+  listings: 1,
+  alternateHashNames: [],
+});
+
+describe('formatPriceFreshness', () => {
+  it('dates the line by the oldest price it covers, not the newest and not the typical', () => {
+    const mostlyFresh = [quoted(minutesAgo(12)), quoted(minutesAgo(12)), quoted(minutesAgo(397))];
+
+    expect(formatPriceFreshness(mostlyFresh, 'en', NOW)).toBe('Oldest price read 6 h ago');
+    expect(formatPriceFreshness(mostlyFresh, 'pt', NOW)).toBe('Preço mais antigo lido há 6 h');
+  });
+
+  it('says nothing at all rather than a claim about prices none of which is dated', () => {
+    expect(formatPriceFreshness([], 'en', NOW)).toBeNull();
+    expect(formatPriceFreshness([quoted(null), quoted('whenever')], 'en', NOW)).toBeNull();
+  });
+
+  it('will not accept the timestamp of the file the prices arrived in', () => {
+    const generatedUtc = minutesAgo(12);
+
+    // What all three call sites used to pass. `tsc` is the assertion here: make this call legal
+    // and the directive becomes unused, which is itself a compile error.
+    // @ts-expect-error a summary is dated by the prices it summarises or not at all
+    formatPriceFreshness(generatedUtc, 'en', NOW);
+
+    // And the two claims are not interchangeable — the file's age is the shape production was in.
+    expect(formatQuoteAge(generatedUtc, 'en', NOW)).toBe('12 min ago');
+    expect(formatPriceFreshness([quoted(minutesAgo(397))], 'en', NOW)).toBe(
+      'Oldest price read 6 h ago',
+    );
   });
 });
 

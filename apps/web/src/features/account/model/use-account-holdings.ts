@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { HoldingsViewProps } from '@bombfarm/account/holdings';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
+import { holdingsPrices } from '@bombfarm/pricing';
 import { useAppLang } from '@/shared/context/app-lang';
 import { useMarketSnapshot } from '@/shared/hooks/use-market-snapshot';
-import { formatPricesUpdated } from '@/shared/i18n';
+import { formatPriceFreshness } from '@/shared/i18n';
 import { loadInventoryView } from '@/shared/lib/inventory-view-storage';
 import { selectHeroes, usePlannerStore } from '@/shared/stores';
 import {
@@ -26,7 +27,7 @@ import {
  */
 export function useAccountHoldings(): Omit<HoldingsViewProps, 'inventoryLink' | 'className'> {
   const { t, lang } = useAppLang();
-  const { snapshot, generatedUtc } = useMarketSnapshot();
+  const { snapshot } = useMarketSnapshot();
   const heroes = usePlannerStore(selectHeroes);
   // The store's import stamp is the change signal, not the data: an import writes both the store
   // and the stored inventory, so re-reading on it keeps the two in step. Read in an effect, never
@@ -49,6 +50,6 @@ export function useAccountHoldings(): Omit<HoldingsViewProps, 'inventoryLink' | 
   return {
     ...holdingsComponents(holdings, sellable, lang),
     labels,
-    footnote: generatedUtc == null ? undefined : formatPricesUpdated(generatedUtc, lang),
+    footnote: formatPriceFreshness(holdingsPrices(holdings), lang) ?? undefined,
   };
 }

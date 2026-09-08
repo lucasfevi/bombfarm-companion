@@ -422,6 +422,15 @@ const KEYS_REMOVED: readonly string[] = [
  * `teamPlanScoredPhaseUnreachable`, `teamPlanScoredPhaseNoneFeasible`). None of these are
  * objective-suffixed: a phase is a phase under either objective, and the read-back reports one.
  *
+ * The honest price-freshness fix (2026-09-08) replaces `marketPricesUpdated` with
+ * `marketPricesOldest`, reworded from "Prices updated {age}" to "Oldest price read {age}". The old
+ * line was dated by the published file's own timestamp, which is the age of the publish and not of
+ * any price shown — a rate-limited collection republishes the file while carrying individual
+ * quotes forward untouched, so the summary read minutes while the rows beneath it were hours. The
+ * line now takes the resolved prices it covers and states the oldest, the only age true of every
+ * row above which it sits. `marketPricesUpdated` leaves this list rather than joining
+ * `KEYS_REMOVED`: it postdates the frozen fixture and only ever lived here.
+ *
  * The Team plan allowed-changes control (2026-09-07) adds the picker (`…Label`, `…Aria`, and its
  * three options `…OptionBoth`/`…OptionPoints`/`…OptionGear`), a hint per setting
  * (`…HintBoth`/`…HintPoints`/`…HintGear`), and the two Assumptions & limits lines that tell a
@@ -521,7 +530,7 @@ const KEYS_ADDED: readonly string[] = [
   'marketQuoteConvertedTooltip',
   'marketRefreshLabel',
   'marketRefreshName',
-  'marketPricesUpdated',
+  'marketPricesOldest',
   'marketAgeJustNow',
   'marketAgeMinutes',
   'marketAgeHours',

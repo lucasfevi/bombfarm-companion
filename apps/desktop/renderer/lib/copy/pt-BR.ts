@@ -538,7 +538,7 @@ export const ptBR: Copy = {
   accountHoldingsPartial: 'apenas parte da conta',
   accountHoldingsCoverage: '{priced} de {eligible} coisas vendáveis com preço agora',
   accountHoldingsMissing: 'Fora desta conta: {rows}.',
-  accountHoldingsPricesUpdated: 'preços {age}',
+  accountHoldingsPricesOldest: 'preço mais antigo {age}',
   accountHoldingsUnpriced: 'sem oferta',
   accountHoldingsInventory: 'Inventário',
   accountHoldingsInventoryCoverage: '{priced} de {eligible} itens negociáveis com preço',

@@ -13,7 +13,7 @@ import type { InventoryView } from '@bombfarm/domain/inventory-view';
 import { useAppLang } from '@/shared/context/app-lang';
 import { usePlannerStore } from '@/shared/stores';
 import { inventoryViewFromStorage, loadInventoryView } from '@/shared/lib/inventory-view-storage';
-import { formatPricesUpdated } from '@/shared/i18n';
+import { formatPriceFreshness } from '@/shared/i18n';
 import { inventoryLabels, inventoryTableLabels } from '../model/inventory-labels';
 import { useInventoryPrices } from '../model/use-inventory-prices';
 import { useFillsViewport } from '../model/use-fills-viewport';
@@ -106,8 +106,8 @@ export function InventoryPage() {
 
         {/* No refresh control here: the planner has no way to ask Steam anything, so a button
             could only re-download the same published file and would promise a freshness it
-            cannot deliver. The stamp says how old the prices are, which is the whole truth
-            available. */}
+            cannot deliver. The stamp says how old the oldest price shown is, which is the whole
+            truth available. */}
         {prices.totals ? (
           <InventoryTotals
             total={prices.totals.total}
@@ -116,7 +116,7 @@ export function InventoryPage() {
             tradable={prices.totals.tradable}
             labels={prices.totalsLabels}
             className="mb-3"
-            footnote={formatPricesUpdated(prices.generatedUtc, lang)}
+            footnote={formatPriceFreshness(prices.totals.prices, lang) ?? undefined}
           />
         ) : null}
 

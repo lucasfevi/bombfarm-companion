@@ -140,6 +140,12 @@ It makes one GET of a public file, so it never calls Steam and installs nothing,
 that the snapshot has not advanced rather than guessing why. The threshold lives once, in
 `tools/market-snapshot/freshness.mjs`.
 
+**Because it installs nothing, `setup-node` must be told not to cache a package manager.** That
+input defaults on, detects pnpm from the lockfile, and fails the step looking for a pnpm this job
+never installs — which killed the run before the checker executed for ten consecutive hours while
+still posting a red check. A monitor red for a reason nobody reads is worse than none: it looks
+exactly like an alarm firing, so the state it is meant to announce becomes invisible.
+
 ## Enumerate first, then ask what things are
 
 The sweep is two passes, and the order is the whole design.
@@ -237,6 +243,26 @@ carries `nativeQuotedUtc` of its own rather than being dated by the run that pub
 How wrong an inherited quote gets is why none is: `Gold Ring Lv 20 (Rare)` went $2.80 to $1.10
 inside one six-hour window, and a carried-over `R$ 14,46` would have gone on being shown against a
 real `R$ 5,75`.
+
+### A figure is dated by the prices under it, never by the file
+
+`generatedUtc` is the age of the *publish*. A rate-limited pass advances part of the sweep and
+carries the rest forward, so the file is rewritten while individual quotes stay hours older —
+measured 2026-09-07, the file was twelve minutes old and every row in it 6.6 hours old. Both apps
+said "twelve minutes" over rows that each correctly said "6.6 hours", so the summary contradicted
+the list beneath it.
+
+Saying so in a doc comment did not prevent it; all three summary call sites passed `generatedUtc`
+anyway, because it is in reach wherever such a line is drawn and reads like the answer. So the two
+formatters — `formatPriceFreshness` in the web planner, `priceFreshness` in the desktop shell —
+take the resolved prices they summarise and derive the age themselves. A snapshot-level timestamp
+is no longer a value either will accept, which is checked at compile time rather than by review.
+
+**They state the oldest price, not the newest or the typical**, because that is the only age true
+of every row the line sits above. This is the opposite choice from the alarm above, and for the
+opposite reason: the alarm must not fire on a row the enumeration keeps missing, while a summary
+must not claim a freshness some row it covers does not have. Prices none of which is dated produce
+no line at all rather than an empty claim.
 
 ## Only the rows that trade get a call of their own
 
@@ -488,6 +514,7 @@ shape of a handful of fresh rows among a stale majority fails, and a run that re
 missed a few passes, because an alarm that fires on healthy behaviour is one nobody reads.
 
 `tools/market-snapshot-freshness-workflow.test.mjs` holds the alarm to its shape: a live hourly
-schedule, one time-boxed read-only job with no escape hatch, and every field the checker claims to
-read still being read. It also pins the alarm's URL to the two shipped clients' own, so moving the
-publish target cannot leave the monitor watching an address nothing uses.
+schedule, one time-boxed read-only job with no escape hatch, the package-manager cache left off in
+a job that installs no package manager, and every field the checker claims to read still being
+read. It also pins the alarm's URL to the two shipped clients' own, so moving the publish target
+cannot leave the monitor watching an address nothing uses.

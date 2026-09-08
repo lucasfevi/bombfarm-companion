@@ -213,3 +213,24 @@ export function marketEntryFor(
   if (position == null) return null;
   return snapshot.entries[position] ?? null;
 }
+
+/**
+ * The oldest quote among resolved prices, or null when not one of them is dated.
+ *
+ * A line summarising many prices can only honestly claim the age of the oldest it covers. The rows
+ * behind one total routinely differ by hours: a rate-limited pass advances part of the sweep and
+ * carries the rest forward untouched, so the snapshot is republished while individual quotes stay
+ * where they were. Unpriced results carry no timestamp and date nothing.
+ */
+export function oldestQuotedUtc(prices: Iterable<ResolvedPrice>): string | null {
+  let oldest: string | null = null;
+  let oldestMs = Number.POSITIVE_INFINITY;
+  for (const price of prices) {
+    if (price.quotedUtc == null) continue;
+    const quotedMs = Date.parse(price.quotedUtc);
+    if (Number.isNaN(quotedMs) || quotedMs >= oldestMs) continue;
+    oldestMs = quotedMs;
+    oldest = price.quotedUtc;
+  }
+  return oldest;
+}
