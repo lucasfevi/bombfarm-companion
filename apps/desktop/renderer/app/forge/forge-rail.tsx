@@ -11,15 +11,15 @@
  * reader confirms the spend and nothing appears to happen. A run starting brings it into view —
  * and only a run starting, and only when some part of it is out of view.
  */
-import { useEffect, useMemo, useRef, type ReactNode } from 'react';
-import { Button, DataTable, motionTokens, Panel } from '@bombfarm/ui';
+import { useEffect, useRef, type ReactNode } from 'react';
+import { Button, motionTokens, Panel } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
-import { rungTally, type ForgeRunActive, type ForgeRunState } from '../../lib/forge/forge-run-reducer';
+import type { ForgeRunActive, ForgeRunState } from '../../lib/forge/forge-run-reducer';
 import { bringBandIntoView } from '../../lib/forge/run-into-view';
 import { useContentHeight } from '../../lib/forge/use-content-height';
-import { ForgeChart } from './forge-chart';
+import { ForgeClimb } from './forge-climb';
 import { ForgeGold } from './forge-gold';
-import { BLANK, forgeLevel, forgeRungLabel, type ForgeLabels } from './forge-labels';
+import { BLANK, forgeLevel, type ForgeLabels } from './forge-labels';
 import { ForgeResult } from './forge-result';
 
 export type ForgeRailState = 'collapsed' | 'running' | 'finished';
@@ -32,7 +32,6 @@ export function forgeRailState(run: ForgeRunState): ForgeRailState {
 
 function Running({ run, gold, onCancel }: { run: ForgeRunActive; gold: (amount: number) => string; onCancel: () => void }) {
   const t = useCopy();
-  const rows = useMemo(() => rungTally(run.steps), [run.steps]);
 
   return (
     <Panel className="flex flex-col gap-3">
@@ -65,51 +64,7 @@ function Running({ run, gold, onCancel }: { run: ForgeRunActive; gold: (amount: 
         </Button>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <div className="flex min-w-0 flex-col">
-          <ForgeChart start={run.from} target={run.target} steps={run.steps} pending={run.rollPending} />
-        </div>
-
-        <DataTable.Root>
-          <DataTable.Table data-testid="forge-tally">
-            <DataTable.Caption>{t.forgeRailTallyCaption}</DataTable.Caption>
-            <DataTable.Head>
-              <DataTable.Row>
-                <DataTable.Header scope="col">{t.forgeRailTallyRung}</DataTable.Header>
-                <DataTable.Header scope="col" align="right">
-                  {t.forgeRailTallyRolls}
-                </DataTable.Header>
-                <DataTable.Header scope="col" align="right">
-                  {t.forgeRailTallyFails}
-                </DataTable.Header>
-                <DataTable.Header scope="col" align="right">
-                  {t.forgeRailTallyGold}
-                </DataTable.Header>
-              </DataTable.Row>
-            </DataTable.Head>
-            <DataTable.Body>
-              {rows.map((row) => (
-                <DataTable.Row key={row.from} data-testid="forge-tally-row">
-                  <DataTable.RowHeader>
-                    <span data-testid="forge-tally-rung" className="font-mono tabular-nums">
-                      {forgeRungLabel(row)}
-                    </span>
-                  </DataTable.RowHeader>
-                  <DataTable.Cell align="right" numeric data-testid="forge-tally-rolls">
-                    {row.rolls}
-                  </DataTable.Cell>
-                  <DataTable.Cell align="right" numeric className={row.fails > 0 ? 'text-down' : undefined} data-testid="forge-tally-fails">
-                    {row.fails}
-                  </DataTable.Cell>
-                  <DataTable.Cell align="right" numeric data-testid="forge-tally-gold">
-                    <ForgeGold>{gold(row.gold)}</ForgeGold>
-                  </DataTable.Cell>
-                </DataTable.Row>
-              ))}
-            </DataTable.Body>
-          </DataTable.Table>
-        </DataTable.Root>
-      </div>
+      <ForgeClimb from={run.from} target={run.target} steps={run.steps} pending={run.rollPending} gold={gold} />
     </Panel>
   );
 }
@@ -158,7 +113,13 @@ export function ForgeRail({
   else if (run.status === 'done') {
     content = (
       <Panel>
-        <ForgeResult result={run.result} plan={run.run.plan} labels={labels} onDone={onDone} />
+        <ForgeResult
+          result={run.result}
+          plan={run.run.plan}
+          labels={labels}
+          onDone={onDone}
+          climb={<ForgeClimb from={run.run.from} target={run.run.target} steps={run.run.steps} pending={false} gold={gold} />}
+        />
       </Panel>
     );
   }

@@ -14,8 +14,8 @@ const desktopRoot = path.join(__dirname, '..', '..');
  * the same `forge:event` seam the real service uses. What is proved here is everything on the
  * renderer's side of that seam: the rail's states in order, that the rail spans the whole row as
  * it expands while the split below it keeps its shape, the tally's quiet-rung collapsing, the
- * mark the chart holds open while a roll is in flight, the result heading, and the return to a
- * collapsed rail.
+ * mark the chart holds open while a roll is in flight, the result heading over the chart and
+ * tally that outlive the run, and the return to a collapsed rail.
  *
  * The screen fills the window and then overflows downwards, so what the layout promises here is
  * not that nothing scrolls — the page is free to be taller than the window. It is that the bag is
@@ -438,11 +438,16 @@ test.describe('forge run smoke', () => {
         'Cancelling — waiting for the roll in flight to settle',
       );
 
-      // --- Finished: the result block, still spanning the row above an unchanged split --------
+      // --- Finished: the result block over the climb it came from, still spanning the row above
+      //     an unchanged split. The chart and the tally survive the run ending — the totals are
+      //     read against the shape that produced them, not on their own. --------------------------
       expect(await inject(page, [scriptedDone(itemId)])).toEqual({ ok: true });
       await expect(rail).toHaveAttribute('data-state', 'finished');
       await expect(rail.getByTestId('forge-result-heading')).toHaveText('Reached +12');
       await expect(rail.getByTestId('forge-result-climb')).toHaveText('+8 → +12');
+      await expect(rail.getByTestId('forge-chart')).toBeVisible();
+      await expect(rail.getByTestId('forge-tally-rung')).toHaveText(['+9…+11', '+12']);
+      await expect(ghost).toHaveCount(0);
       await page.waitForTimeout(400);
       await railSpansTheRow(page);
       await splitHoldsTheAside(page);
@@ -453,6 +458,7 @@ test.describe('forge run smoke', () => {
       //     a run through the real service is the only thing that fills this table. ------------
       await rail.getByTestId('forge-done').click();
       await expect(rail).toHaveAttribute('data-state', 'collapsed', { timeout: 5_000 });
+      await expect(rail.getByTestId('forge-chart')).toHaveCount(0);
       await expect(ledger).toHaveAttribute('data-state', 'empty');
       await expect(ledger.getByTestId('forge-ledger-summary')).toHaveText('0 runs');
       await expect(ledger.getByTestId('forge-ledger-summary-gold')).toHaveText('0 gold');

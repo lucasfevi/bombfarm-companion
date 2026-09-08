@@ -497,11 +497,11 @@ export const en = {
   forgeResultError: 'Stopped by an error at {level}',
   forgeResultClimb: 'Climb',
   forgeResultRolls: 'Rolls · fails · crits',
+  forgeResultSpent: 'Spent',
   forgeResultDuration: 'Duration',
   forgeAgainstPlanTitle: 'Against the plan',
   // Bare labels: each figure's amount is drawn beside its label rather than substituted into it,
   // so the coin marking it as gold stands next to the number and not in front of the word.
-  forgeAgainstSpent: 'spent',
   forgeAgainstExpected: 'expected',
   forgeAgainstBadRun: 'a bad run',
   forgeAgainstUnder: 'under what the plan expected',
