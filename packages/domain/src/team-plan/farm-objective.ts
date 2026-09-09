@@ -102,10 +102,11 @@ function farmContextFor(account: TeamPlanAccountInput): FarmContext {
 function phaseOptionsFor(
   account: TeamPlanAccountInput,
   targetPhase: number | null | undefined,
+  ignoreFieldCrowding: boolean,
 ): BestFarmPhaseOptions {
   const maxPhase = account.maxPhase;
   if (targetPhase != null && Number.isFinite(targetPhase)) {
-    return { maxPhase: maxPhase ?? null, pinnedPhase: targetPhase };
+    return { maxPhase: maxPhase ?? null, pinnedPhase: targetPhase, ignoreFieldCrowding };
   }
   if (typeof maxPhase !== 'number' || !Number.isFinite(maxPhase) || maxPhase < 1) {
     throw new Error(
@@ -114,7 +115,7 @@ function phaseOptionsFor(
         'plan would optimise the squad across the whole 600-phase table.',
     );
   }
-  return { maxPhase };
+  return { maxPhase, ignoreFieldCrowding };
 }
 
 function squadAccountFor(account: TeamPlanAccountInput): SquadFarmAccount {
@@ -183,8 +184,9 @@ export function buildFarmObjective(
   account: TeamPlanAccountInput,
   loadoutByHeroId: Readonly<Record<string, Loadout>>,
   targetPhase?: number | null,
+  ignoreFieldCrowding = false,
 ): TeamPlanFarmObjective {
-  const phaseOptions = phaseOptionsFor(account, targetPhase);
+  const phaseOptions = phaseOptionsFor(account, targetPhase, ignoreFieldCrowding);
   const farm = farmContextFor(account);
   const auras = priceAuras(squadContexts, loadoutByHeroId, farm);
   const heroes: FrozenHeroFarmTerms[] = squadContexts.map((ctx) => ({

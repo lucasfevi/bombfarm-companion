@@ -20,6 +20,7 @@ import * as advice from '@/shared/i18n/namespaces/advice';
 import * as breakdown from '@/shared/i18n/namespaces/breakdown';
 import * as phases from '@/shared/i18n/namespaces/phases';
 import * as teamPlan from '@/shared/i18n/namespaces/team-plan';
+import * as teamPlanGearFlow from '@/shared/i18n/namespaces/team-plan-gear-flow';
 import * as teamPlanObjective from '@/shared/i18n/namespaces/team-plan-objective';
 import * as importNs from '@/shared/i18n/namespaces/import';
 import * as stats from '@/shared/i18n/namespaces/stats';
@@ -439,6 +440,19 @@ const KEYS_REMOVED: readonly string[] = [
  * not: the restriction is on what the plan may propose, not on how it scores.
  */
 const KEYS_ADDED: readonly string[] = [
+  // The Optimizer's field-crowding opt-out (2026-09-09) and the removals section that made it
+  // necessary. The plan could always take gear off a hero and hand it back — on a field that
+  // cannot seat everyone, a weak hero wearing less crowds the others out less — but the page
+  // rendered no row for it, so the piece simply vanished off the hero's card. The removals now
+  // show on the hero they came off, with the reason, and the toggle plans without that term.
+  'teamPlanIgnoreCrowdingLabel',
+  'teamPlanIgnoreCrowdingAria',
+  'teamPlanIgnoreCrowdingHintOff',
+  'teamPlanIgnoreCrowdingHintOn',
+  'teamPlanFlowRemovedHeading',
+  'teamPlanFlowRowRemovedToInventory',
+  'teamPlanFlowRemovedWhyCrowded',
+  'teamPlanFlowRemovedWhyOther',
   'navOptimizer',
   'teamPlanOptimizeAriaBoth',
   'teamPlanOptimizeAriaPoints',
@@ -924,6 +938,7 @@ const namespaces = [
   ['breakdown', breakdown],
   ['phases', phases],
   ['teamPlan', teamPlan],
+  ['teamPlanGearFlow', teamPlanGearFlow],
   ['teamPlanObjective', teamPlanObjective],
   ['import', importNs],
   ['stats', stats],

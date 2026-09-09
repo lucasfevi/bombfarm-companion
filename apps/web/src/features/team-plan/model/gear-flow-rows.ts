@@ -148,3 +148,27 @@ export function groupGearFlowRows(rows: GearFlowRow[], heroOrder: string[]): Gea
   }
   return groups;
 }
+
+/**
+ * The items each hero LOSES, keyed by the hero they come off.
+ *
+ * `groupGearFlowRows` parks every item with no destination in one trailing `null` group, and the
+ * results page renders per hero — so without this re-keying a piece the plan takes off a hero is
+ * shown nowhere at all, and the hero's card simply loses a slot with no explanation. Rows with no
+ * origin hero (spare stock the plan never placed) are not losses and are dropped.
+ */
+export function removedRowsByOriginHero(
+  groups: readonly GearFlowGroup[],
+): Map<string, GearFlowRow[]> {
+  const byOrigin = new Map<string, GearFlowRow[]>();
+  for (const group of groups) {
+    if (group.heroId) continue;
+    for (const row of group.rows) {
+      if (!row.originHeroId) continue;
+      const list = byOrigin.get(row.originHeroId);
+      if (list) list.push(row);
+      else byOrigin.set(row.originHeroId, [row]);
+    }
+  }
+  return byOrigin;
+}

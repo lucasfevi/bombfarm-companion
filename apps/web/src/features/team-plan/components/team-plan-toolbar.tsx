@@ -20,6 +20,7 @@ import {
 import { teamPlanObjectiveCopy } from '@/features/team-plan/model/objective-copy';
 import { AllowedChangesField } from './allowed-changes-field';
 import { ForgeFloorField } from './forge-floor-field';
+import { IgnoreCrowdingField } from './ignore-crowding-field';
 import { ObjectiveField } from './objective-field';
 import { PhaseField } from './phase-field';
 
@@ -113,6 +114,7 @@ export function TeamPlanToolbar({
           {/* A points-only plan is scored at the items' real forge levels and orders no forge
               work, so a floor the player can still set would be a control that does nothing. */}
           {allowedChanges === 'points' ? null : <ForgeFloorField t={t} />}
+          <IgnoreCrowdingField t={t} />
         </div>
         <Button
           type="button"

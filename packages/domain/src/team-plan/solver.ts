@@ -103,7 +103,13 @@ function farmObjectiveFor(
   if (squadContexts.length === 0) return undefined;
   const loadoutByHeroId: Record<string, Loadout> = {};
   for (const hero of input.heroes) loadoutByHeroId[hero.heroId] = loadoutForScoring(hero.loadout, 0);
-  return buildFarmObjective(squadContexts, input.account, loadoutByHeroId, input.targetPhase);
+  return buildFarmObjective(
+    squadContexts,
+    input.account,
+    loadoutByHeroId,
+    input.targetPhase,
+    input.ignoreFieldCrowding,
+  );
 }
 
 /**
