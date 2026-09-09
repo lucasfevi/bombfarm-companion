@@ -23,6 +23,8 @@ export const heroEn = {
 
   heroDetailRollTitle: "Birth roll",
   heroDetailRollQuality: "Roll quality",
+  heroDetailRollQualityNote:
+    "The average of this hero's eight roll percentiles: for each statistic, how far into its own band the roll landed. 50 is an average roll everywhere, 90 is near the top of every band.",
   heroDetailRollColStat: "Stat",
   heroDetailRollColBand: "Band",
   heroDetailRollColPosition: "Position",
@@ -30,8 +32,6 @@ export const heroEn = {
   heroDetailRollBand: "Rolled inside {range}",
   heroDetailRollPercentile: "{pct}% into its band",
   heroDetailRollGradePlacement: "Where it sits in grade {letter}",
-  heroDetailRollToNextLetter: "{range} points from grade {letter}",
-  heroDetailRollTopGrade: "This is the top grade, with nothing above it.",
   heroDetailRollNearEdge: "This hero sits near the edge of its grade.",
   heroDetailRollPermanent:
     "The birth roll is permanent: it never changes with level, stars, gear or spent points.",

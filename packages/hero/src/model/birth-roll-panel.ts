@@ -199,7 +199,8 @@ export function statRollRowsFor(
     const roll = perStat[key];
     const band = roll.band;
     // One trailing `%` on the band rather than one per end: the range is a single quantity, and
-    // `2,00%–6,00%` reads as two separate readings that happen to sit together.
+    // `2,00%–6,00%` reads as two separate readings that happen to sit together. The dash
+    // is spaced because unspaced it crowds the digits either side into one run.
     const unit = rollValueIsPercent(key) ? '%' : '';
     return {
       key,
@@ -207,7 +208,7 @@ export function statRollRowsFor(
       band:
         band === undefined
           ? NOT_PLACED
-          : `${formatValue(band.min)}–${formatValue(band.max)}${unit}`,
+          : `${formatValue(band.min)} – ${formatValue(band.max)}${unit}`,
       position: roll.percentile === undefined ? NOT_PLACED : formatPercent(roll.percentile),
       percentile: roll.percentile,
       outOfBand: roll.outOfBand === true,
@@ -260,30 +261,26 @@ export type MarketValueReading =
  * value beside a label reads as "worth nothing".
  */
 /**
- * The one thing the panel says about selling this hero.
+ * The one thing the panel says about selling this hero: what it fetches, or that it cannot be sold.
  *
  * A price and a tradability flag are the same fact at different resolutions, so they share a tile
- * rather than each taking one: a quote already says the hero is sellable, and a tile labelled
- * "marketable" whose value is the word "marketable" says nothing twice. The three unpriced answers
- * stay distinct — cannot be sold, can be sold but nothing is quoted, and nobody has asked the game
- * yet — because collapsing them would report an unasked hero as account-bound.
+ * rather than each taking one — a quote already says the hero is sellable. The tile answers with a
+ * figure only when there is a real one to give; every other case reads as not sellable, which is
+ * the answer a player can act on. Nothing here claims a hero IS sellable without saying for how
+ * much, because that tells them nothing they can use.
  */
 export type MarketTileReading =
   | { readonly kind: 'value'; readonly amount: number; readonly currency: string }
-  | { readonly kind: 'sellable' }
-  | { readonly kind: 'notSellable' }
-  | { readonly kind: 'unknown' };
+  | { readonly kind: 'notSellable' };
 
 export function marketTileReadingFor(
   marketable: FlagReading,
   price: HeroMarketPrice | null | undefined,
 ): MarketTileReading {
-  if (marketable === 'unknown') return { kind: 'unknown' };
-  if (marketable === 'no') return { kind: 'notSellable' };
   const value = marketValueReadingFor(marketable, price);
   return value.kind === 'value'
     ? { kind: 'value', amount: value.amount, currency: value.currency }
-    : { kind: 'sellable' };
+    : { kind: 'notSellable' };
 }
 
 export function marketValueReadingFor(

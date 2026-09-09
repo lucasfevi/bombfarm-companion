@@ -207,3 +207,27 @@ export function heroRankToneClass(rank: string | undefined): string {
   if (!rank?.trim()) return 'text-muted';
   return heroRankTextClass(rank) ?? 'text-accent';
 }
+
+/** Literal rarity washes so Tailwind's JIT scanner sees every class. */
+const raritySoftBgClasses = [
+  'bg-rar-0/10',
+  'bg-rar-1/10',
+  'bg-rar-2/10',
+  'bg-rar-3/10',
+  'bg-rar-4/10',
+  'bg-rar-5/10',
+] as const;
+
+/**
+ * A wash of the colour this grade is printed in, for a surface that wants to carry the grade
+ * without competing with what is drawn on it.
+ *
+ * Deliberately a tenth: the grade rail draws letters, boundary bands and a marker over this, and
+ * anything stronger turns the ground into another thing to read. `undefined` for a grade the
+ * table does not know, which leaves the surface its own background rather than inventing one.
+ */
+export function heroRankSoftBgClass(rank: string | undefined): string | undefined {
+  if (!rank?.trim()) return undefined;
+  const index = LETTER_BANDS.letters.indexOf(rank.trim());
+  return index === -1 ? undefined : raritySoftBgClasses[index];
+}

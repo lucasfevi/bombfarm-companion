@@ -874,6 +874,12 @@ const KEYS_ADDED: readonly string[] = [
  * screen-reader text behind each header's icon.
  */
 const PROSE_EDITED_PATHS: readonly string[] = [
+  // The planner's first tab (2026-09-09) was named for the only panel it held. It now carries the
+  // hero's identity and birth roll as well, so it is named for the hero: `tabHero` Abilities ->
+  // Hero. Its warning title moves with it — the badge reports a default sheet as well as unspent
+  // ability points, so "Abilities need attention" under-reported it even before the rename.
+  'tabHero',
+  'tabHeroWarnTitle',
   'treeDano',
   'treeCrit',
   'treeCritDmg',

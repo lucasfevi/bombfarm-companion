@@ -22,6 +22,8 @@ export const heroPtBR: HeroCopy = {
 
   heroDetailRollTitle: "Sorteio de nascimento",
   heroDetailRollQuality: "Qualidade do sorteio",
+  heroDetailRollQualityNote:
+    "A média dos oito percentis do sorteio: para cada atributo, o quanto ele avançou dentro da própria faixa. 50 é um sorteio mediano em tudo, 90 é perto do topo de todas as faixas.",
   heroDetailRollColStat: "Atributo",
   heroDetailRollColBand: "Faixa",
   heroDetailRollColPosition: "Posição",
@@ -29,8 +31,6 @@ export const heroPtBR: HeroCopy = {
   heroDetailRollBand: "Sorteado dentro de {range}",
   heroDetailRollPercentile: "{pct}% dentro da faixa",
   heroDetailRollGradePlacement: "Onde ele fica na nota {letter}",
-  heroDetailRollToNextLetter: "A {range} pontos da nota {letter}",
-  heroDetailRollTopGrade: "Esta é a nota mais alta; não existe nada acima dela.",
   heroDetailRollNearEdge: "Este herói está perto da borda da sua nota.",
   heroDetailRollPermanent:
     "O sorteio de nascimento é permanente: nunca muda com nível, estrelas, equipamento ou pontos gastos.",

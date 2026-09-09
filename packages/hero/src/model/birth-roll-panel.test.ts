@@ -228,7 +228,7 @@ describe('statRollRowsFor', () => {
 
     expect(rows).toHaveLength(SHEET_PANEL_KEYS.length);
     expect(attack?.outOfBand).toBe(true);
-    expect(attack?.band).toBe('0.0–10.0');
+    expect(attack?.band).toBe('0.0 – 10.0');
     expect(rows.find((row) => row.key === 'energy')?.percentile).toBe(40);
   });
 
@@ -260,7 +260,7 @@ describe('statRollRowsFor', () => {
   it('marks the band once rather than at both ends, so a range reads as one quantity', () => {
     const rows = statRollRowsFor(hero({ birth: birthAt(40), statRanges: FULL_BAND }), oneDecimal, oneDecimal);
 
-    expect(rows.find((row) => row.key === 'critChance')?.band).toBe('0.0–100.0%');
+    expect(rows.find((row) => row.key === 'critChance')?.band).toBe('0.0 – 100.0%');
   });
 
   it('leaves an unplaceable statistic as the stated absence, with no stray unit', () => {
@@ -349,29 +349,27 @@ describe('marketTileReadingFor', () => {
     expect(marketTileReadingFor('yes', priced)).toEqual({ kind: 'value', amount: 1.23, currency: 'BRL' });
   });
 
-  it('says sellable when the hero can be sold but nothing is quoted', () => {
-    expect(marketTileReadingFor('yes', null)).toEqual({ kind: 'sellable' });
-    expect(marketTileReadingFor('yes', { amount: null, currency: 'BRL' })).toEqual({ kind: 'sellable' });
-  });
-
   it('says not sellable for an account-bound hero, even with a price in hand', () => {
     // The discriminating case: a rarity lookup would price it, and it must still not be quoted.
     expect(marketTileReadingFor('no', priced)).toEqual({ kind: 'notSellable' });
   });
 
-  it('keeps unasked apart from account-bound', () => {
-    expect(marketTileReadingFor('unknown', priced)).toEqual({ kind: 'unknown' });
-    expect(marketTileReadingFor('unknown', priced)).not.toEqual(marketTileReadingFor('no', priced));
+  it('says not sellable when the hero could be sold but nothing is quoted', () => {
+    // A figure is the only thing a player can act on, so "sellable, amount unknown" is not an
+    // answer this tile gives — it would read as a price of nothing.
+    expect(marketTileReadingFor('yes', null)).toEqual({ kind: 'notSellable' });
+    expect(marketTileReadingFor('yes', { amount: null, currency: 'BRL' })).toEqual({ kind: 'notSellable' });
   });
 
-  it('gives four distinct answers, so one tile can carry what two used to', () => {
-    const kinds = [
-      marketTileReadingFor('yes', priced).kind,
-      marketTileReadingFor('yes', null).kind,
-      marketTileReadingFor('no', priced).kind,
-      marketTileReadingFor('unknown', priced).kind,
-    ];
+  it('says not sellable while tradability is unknown, rather than guessing either way', () => {
+    expect(marketTileReadingFor('unknown', priced)).toEqual({ kind: 'notSellable' });
+  });
 
-    expect(new Set(kinds).size).toBe(4);
+  it('keeps a genuine zero, which is a quote and not an absence', () => {
+    expect(marketTileReadingFor('yes', { amount: 0, currency: 'BRL' })).toEqual({
+      kind: 'value',
+      amount: 0,
+      currency: 'BRL',
+    });
   });
 });

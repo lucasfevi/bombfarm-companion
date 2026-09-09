@@ -11,7 +11,7 @@ test.describe('planner tabs IA (PTI)', () => {
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
 
-    for (const name of [/^Abilities$/i, /^Gear$/i, /^Points$/i]) {
+    for (const name of [/^Hero$/i, /^Gear$/i, /^Points$/i]) {
       await expect(page.getByRole('tab', { name })).toBeVisible();
     }
     await expect(page.getByRole('tab', { name: /^Check$/i })).toHaveCount(0);
@@ -91,7 +91,7 @@ test.describe('planner tabs IA (PTI)', () => {
     // retired with the read-only birth→Total Stats table; Points owns the only warn tier.
     await expect(page.getByRole('tab', { name: /^Gear$/i }).locator('[data-tab-badge="warn"]')).toHaveCount(0);
     await expect(page.getByRole('tab', { name: /^Gear$/i }).locator('[data-tab-badge="soft"]')).toBeVisible();
-    await expect(page.getByRole('tab', { name: /^Abilities$/i }).locator('[data-tab-badge="soft"]')).toBeVisible();
+    await expect(page.getByRole('tab', { name: /^Hero$/i }).locator('[data-tab-badge="soft"]')).toBeVisible();
     await expect(page.locator('[data-tab-status-banner]')).toHaveCount(0);
 
     await page.getByRole('tab', { name: /^Gear$/i }).hover();
@@ -101,7 +101,7 @@ test.describe('planner tabs IA (PTI)', () => {
     // The mismatch issue string (tabGearMismatch) was deleted with the warn tier.
     await expect(gearTip.getByText(/match items \+ points/i)).toHaveCount(0);
 
-    await page.getByRole('tab', { name: /^Abilities$/i }).hover();
+    await page.getByRole('tab', { name: /^Hero$/i }).hover();
     const abilitiesTip = page.locator('[data-slot="tooltip-popup"][data-open]');
     await expect(abilitiesTip).toBeVisible();
     await expect(abilitiesTip.getByText(/ability points/i)).toBeVisible();

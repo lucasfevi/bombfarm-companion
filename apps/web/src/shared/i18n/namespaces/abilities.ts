@@ -1,8 +1,8 @@
 export const en = {
   heroNameAria: "Hero name",
   setupNeedUnspentAbilities: "Spend remaining ability points ({left} left of {max})",
-  tabHero: "Abilities",
-  tabHeroWarnTitle: "Abilities need attention",
+  tabHero: "Hero",
+  tabHeroWarnTitle: "This hero needs attention",
   panelHero: "Hero",
   panelAbilities: "Abilities",
   abilitiesPicker: "Ability picker",
@@ -29,8 +29,8 @@ export const en = {
 export const pt: typeof en = {
   heroNameAria: "Nome do herói",
   setupNeedUnspentAbilities: "Gaste os pontos de habilidade restantes ({left} de {max})",
-  tabHero: "Habilidades",
-  tabHeroWarnTitle: "Habilidades precisam de atenção",
+  tabHero: "Herói",
+  tabHeroWarnTitle: "Este herói precisa de atenção",
   panelHero: "Herói",
   panelAbilities: "Habilidades",
   abilitiesPicker: "Seletor de habilidades",

@@ -5,10 +5,16 @@ import { MAX_STARS } from '@bombfarm/domain/gear';
 import { RARITIES, type SheetKey } from '@bombfarm/domain/planner-constants';
 import type { RollQualityReport } from '@bombfarm/domain/roll-quality';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import { HeroAvatar, heroRankTextClass, rarityTextClass } from '@bombfarm/game-art';
+import {
+  HeroAvatar,
+  heroRankSoftBgClass,
+  heroRankTextClass,
+  rarityTextClass,
+} from '@bombfarm/game-art';
 import {
   DataTable,
   Panel,
+  Tooltip,
   StatList,
   cn,
   formatNumber,
@@ -26,10 +32,8 @@ import {
   marketTileReadingFor,
   marketableReadingFor,
   letterDisagreementFor,
-  nextLetterReadout,
   railTintFor,
   statRollRowsFor,
-  type MarketTileReading,
   type HeroMarketPrice,
   type PlacementCertainty,
   type RollTint,
@@ -66,10 +70,13 @@ type IdentityFact = {
   readonly label: string;
   readonly value: string;
   readonly valueClass?: string | undefined;
+  /** Shown on hover and focus. For a figure this app derives rather than reads off the save, so a
+   *  player can tell what it is a measure of before trusting it. */
+  readonly note?: string | undefined;
 };
 
 function FactTile({ fact }: { fact: IdentityFact }) {
-  return (
+  const tile = (
     <div className="min-w-0 border border-line px-2.5 py-1.5">
       <p className={sectionTitleClass}>{fact.label}</p>
       <p
@@ -82,6 +89,20 @@ function FactTile({ fact }: { fact: IdentityFact }) {
         {fact.value}
       </p>
     </div>
+  );
+
+  if (fact.note === undefined) return tile;
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger render={tile} />
+      <Tooltip.Portal>
+        <Tooltip.Positioner sideOffset={6}>
+          <Tooltip.Popup>
+            <p className="m-0 max-w-[36ch]">{fact.note}</p>
+          </Tooltip.Popup>
+        </Tooltip.Positioner>
+      </Tooltip.Portal>
+    </Tooltip.Root>
   );
 }
 
@@ -101,11 +122,16 @@ function RollRail({ percentile }: { percentile: number }) {
  * share of the measured scale. Each boundary is painted as a band rather than a line because that
  * is the shape of the evidence — the corpus locates it inside an interval and no closer.
  */
-function GradeRailView({ mean }: { mean: number }) {
+function GradeRailView({ mean, railLetter }: { mean: number; railLetter: string }) {
   const rail = gradeRailFor(mean);
 
   return (
-    <div className="relative mt-1 h-6 w-full overflow-hidden border border-line bg-bg">
+    <div
+      className={cn(
+        'relative mt-1 h-6 w-full overflow-hidden border border-line bg-bg',
+        heroRankSoftBgClass(railLetter),
+      )}
+    >
       {rail.segments.map((segment) => (
         <span
           key={segment.letter}
@@ -163,7 +189,6 @@ export function HeroIdentityRollPanel({
   const availability = birthRollAvailability(hero, rollQuality);
   const placement = gradePlacementFor(rollQuality);
   const disagreement = letterDisagreementFor(rollQuality);
-  const nextLetter = nextLetterReadout(rollQuality, (value) => formatNumber(value, lang, 1));
   const marketable = marketableReadingFor(hero);
   const marketTile = marketTileReadingFor(marketable, marketPrice);
   const rows = statRollRowsFor(
@@ -174,15 +199,10 @@ export function HeroIdentityRollPanel({
 
   const rarityIndex = RARITIES.indexOf(hero.rarity);
   const starCount = Math.max(0, Math.min(MAX_STARS, Math.round(hero.stars)));
-  const MARKET_TILE_TEXT: Record<Exclude<MarketTileReading['kind'], 'value'>, string> = {
-    sellable: t.heroDetailIdentityMarketable,
-    notSellable: t.heroDetailIdentityNotMarketable,
-    unknown: UNKNOWN,
-  };
   const marketTileValue =
     marketTile.kind === 'value' && formatAmount !== undefined
       ? formatAmount(marketTile.amount, marketTile.currency)
-      : MARKET_TILE_TEXT[marketTile.kind === 'value' ? 'sellable' : marketTile.kind];
+      : t.heroDetailIdentityNotMarketable;
   const placementNoteKey = placement === undefined ? null : PLACEMENT_NOTE[placement.certainty.kind];
 
   const facts: readonly IdentityFact[] = [
@@ -213,6 +233,7 @@ export function HeroIdentityRollPanel({
             id: 'quality',
             label: t.heroDetailRollQuality,
             value: formatNumber(placement.mean, lang, 1),
+            note: t.heroDetailRollQualityNote,
           },
         ]),
     {
@@ -283,16 +304,8 @@ export function HeroIdentityRollPanel({
             <h3 className={cn(sectionTitleClass, 'mt-4')}>
               {sub(t.heroDetailRollGradePlacement, { letter: placement.railLetter })}
             </h3>
-            <GradeRailView mean={placement.mean} />
+            <GradeRailView mean={placement.mean} railLetter={placement.railLetter} />
             {placementNoteKey === null ? null : <p className={tipClass}>{t[placementNoteKey]}</p>}
-            <p className={tipClass}>
-              {nextLetter === undefined
-                ? t.heroDetailRollTopGrade
-                : sub(t.heroDetailRollToNextLetter, {
-                    range: nextLetter.range,
-                    letter: nextLetter.letter,
-                  })}
-            </p>
 
             {disagreement === undefined ? null : (
               <>
