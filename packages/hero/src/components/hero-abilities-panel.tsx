@@ -105,13 +105,17 @@ export function HeroAbilitiesPanel({
   return (
     <Panel className="min-w-0">
       <div className={panelHClass}>
-        <h2 className={panelTitleClass}>{t.heroDetailAbilitiesTitle}</h2>
-        <span className={cn(numericClass, 'text-xs text-muted')}>
-          {sub(t.heroDetailAbilitiesPointsValue, {
-            spent: formatNumber(points.spent, lang, 0),
-            budget: formatNumber(points.spendable, lang, 0),
-          })}
-        </span>
+        {/* One group, so the header's `justify-between` sees the heading and the Reset button
+            rather than stranding the figure in the middle of the bar. */}
+        <div className="flex min-w-0 items-baseline gap-2.5">
+          <h2 className={panelTitleClass}>{t.heroDetailAbilitiesTitle}</h2>
+          <span className={cn(numericClass, 'text-xs text-muted')}>
+            {sub(t.heroDetailAbilitiesPointsValue, {
+              spent: formatNumber(points.spent, lang, 0),
+              budget: formatNumber(points.spendable, lang, 0),
+            })}
+          </span>
+        </div>
         {reading.showReset && editing ? (
           <Button type="button" onClick={editing.onReset}>
             {editing.resetLabel}

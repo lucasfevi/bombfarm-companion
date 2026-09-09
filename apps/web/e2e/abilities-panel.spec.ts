@@ -48,9 +48,11 @@ test.describe('abilities panel (ABX residual)', () => {
     await expect(heroPanel.getByText(/\d+ de \d+ gastos/i)).toBeVisible();
     await expect(heroPanel.getByText(/para esta raridade/i)).toHaveCount(0);
 
+    // Walk up to the header row rather than to the heading's own parent: the heading now shares a
+    // group with the spend figure, so its parent is that group and Reset is a level above it.
     const reset = heroPanel
       .getByRole('heading', { name: /^habilidades$/i })
-      .locator('xpath=..')
+      .locator('xpath=ancestor::*[button][1]')
       .getByRole('button', { name: /^Zerar$/i });
     await expect(reset).toBeVisible();
     await expect(reset).toHaveClass(/border-line/);
