@@ -61,7 +61,7 @@ import {
   parseMiniLiveLayoutPatch,
   type WindowLayoutStore,
 } from './game-api/window-layout-store.js';
-import { nodeHttpsTransport } from './game-api/https-transport.js';
+import { companionUserAgent, createNodeHttpsTransport } from './game-api/https-transport.js';
 import { readSessionToken, sessionCfgPath } from './game-api/session-token-file.js';
 import { createTriggeredRefresh, type TriggeredRefresh } from './game-api/triggered-refresh.js';
 import { createLiveFastPublisher, type LiveFastPublisher } from './live-source/live-fast-publisher.js';
@@ -967,6 +967,10 @@ async function bootstrap(): Promise<void> {
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   });
 
+  // One transport for both the read cycle and the forge run, so they identify themselves
+  // identically. `app.getVersion()` is the packaged app's own version.
+  const gameApiTransport = createNodeHttpsTransport(companionUserAgent(app.getVersion()));
+
   // Declared before accountRefresh so its onView callback can close over it;
   // assigned once every producer it reads (gameReader, consentStore, accountRefresh) exists.
   // Both producers below "ping" the notifier and ignore their own payload argument for that call
@@ -978,7 +982,7 @@ async function bootstrap(): Promise<void> {
 
   accountRefresh = createAccountRefresh({
     consentStore,
-    transport: nodeHttpsTransport,
+    transport: gameApiTransport,
     gate,
     store: accountStore,
     log,
@@ -1012,7 +1016,7 @@ async function bootstrap(): Promise<void> {
     consentStore,
     readToken,
     settings: () => currentSettings,
-    transport: nodeHttpsTransport,
+    transport: gameApiTransport,
     gate,
     accountSource: currentAccountSource,
     isGameRunning: () => gameReader?.isGameProcessRunning() ?? false,
