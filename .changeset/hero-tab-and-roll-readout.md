@@ -1,7 +1,7 @@
 ---
-'@bombfarm/hero': minor
-'@bombfarm/game-art': minor
-'@bombfarm/web': minor
+"@bombfarm/hero": minor
+"@bombfarm/game-art": minor
+"@bombfarm/web": minor
 ---
 
 Name the planner's first tab for the hero rather than for one of the panels inside it, now that

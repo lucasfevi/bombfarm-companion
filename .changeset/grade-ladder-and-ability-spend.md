@@ -1,7 +1,7 @@
 ---
-'@bombfarm/hero': minor
-'@bombfarm/game-art': minor
-'@bombfarm/web': minor
+"@bombfarm/hero": minor
+"@bombfarm/game-art": minor
+"@bombfarm/web": minor
 ---
 
 Paint each band of the grade scale in the colour the game prints that grade in, so the six read
