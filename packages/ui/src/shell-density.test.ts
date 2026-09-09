@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { WINDOW_CONTROLS_WIDTH } from './window-controls.recipe';
 import {
   SHELL_ACTIONS_COLLAPSE_WIDTH,
   SHELL_BRAND_MARK_WIDTH,
@@ -26,8 +27,11 @@ describe('shellDensityFor', () => {
   });
 
   it('keeps the actions as controls at the smallest window a player can drag to', () => {
-    // 960px is `createMainWindow`'s own `minWidth`, less the strip the OS caption buttons take.
-    expect(shellDensityFor(960 - 136)).toBe('brand-mark');
+    // 960px is `createMainWindow`'s own `minWidth`, less the strip the caption cluster takes.
+    // Read from the cluster's own constant rather than written out: the OS drew those buttons at
+    // 136px until the header took the job over at 100, and a number copied here would still say
+    // 136 — landing this assertion in a band the running app never reaches.
+    expect(shellDensityFor(960 - WINDOW_CONTROLS_WIDTH)).toBe('brand-mark');
   });
 
   it('never runs out of answers, however small the window gets', () => {
