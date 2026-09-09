@@ -3,15 +3,12 @@
  *
  * Nothing here re-prices an ability — the domain owns that, from one model. What lives here is
  * every judgement the panel would otherwise take inside JSX, where no test in this repository can
- * reach it: which of the six gain states a row is stating, whether this hero holds points it can
- * never spend, and whether there is an ability list to draw at all.
+ * reach it: which of the six gain states a row is stating, how much of its point budget is
+ * spent, and whether there is an ability list to draw at all.
  */
 import type { AbilityGain, AbilityGainState } from '@bombfarm/domain/ability-gain';
-import { heroAbilitySlotsUsed } from '@bombfarm/domain/hero-abilities';
 import {
   ABILITIES,
-  ABILITY_LEVEL_MAX,
-  ABILITY_QUOTA,
   abilityPointBudget,
   isSheetAbility,
 } from '@bombfarm/domain/model';
@@ -101,54 +98,22 @@ export function abilityPanelAvailability(gains: readonly AbilityGain[]): PanelAv
   return { kind: 'available' };
 }
 
-export type AbilitySlotReadout = {
-  readonly used: number;
-  readonly quota: number;
-  readonly full: boolean;
-};
-
-export function abilitySlotReadoutFor(hero: HeroRecord): AbilitySlotReadout {
-  const used = heroAbilitySlotsUsed(hero.abilities);
-  const quota = ABILITY_QUOTA[hero.rarity];
-  return { used, quota, full: used >= quota };
-}
-
-/**
- * Three readings, not a count. A hero below its slot ceiling still turns each new level into a
- * spendable point; one sitting exactly on the ceiling has lost nothing yet but gains nothing from
- * the next level either; one past it carries points it can never use. All three report zero or
- * near-zero dead points, and collapsing them would print the same reassuring line for a hero that
- * is fine and one that is about to start wasting every level it earns.
- */
-export type DeadPointReading =
-  | { readonly kind: 'none'; readonly count: 0 }
-  | { readonly kind: 'atCeiling'; readonly count: 0 }
-  | { readonly kind: 'dead'; readonly count: number };
-
 export type AbilityPointReadout = {
   /** `ability_points_total === level` — points granted. */
   readonly granted: number;
   readonly spendable: number;
   readonly spent: number;
-  readonly dead: DeadPointReading;
 };
 
 export function abilityPointReadoutFor(hero: HeroRecord): AbilityPointReadout {
   const granted = hero.level;
   const spendable = abilityPointBudget(hero.rarity, hero.level);
   const spent = Object.values(hero.abilities).reduce((total, level) => total + level, 0);
-  const deadCount = granted - spendable;
 
   return {
     granted,
     spendable,
     spent,
-    dead:
-      deadCount > 0
-        ? { kind: 'dead', count: deadCount }
-        : granted === ABILITY_QUOTA[hero.rarity] * ABILITY_LEVEL_MAX
-          ? { kind: 'atCeiling', count: 0 }
-          : { kind: 'none', count: 0 },
   };
 }
 
@@ -190,19 +155,3 @@ export function abilityStepAvailability(input: {
   return { canDecrease: level > 0, canIncrease: level < max && spent < budget };
 }
 
-export type DeadPointNotes = {
-  readonly none: string;
-  readonly atCeiling: string;
-  readonly dead: (count: number) => string;
-};
-
-export function deadPointNote(reading: DeadPointReading, notes: DeadPointNotes): string {
-  switch (reading.kind) {
-    case 'none':
-      return notes.none;
-    case 'atCeiling':
-      return notes.atCeiling;
-    case 'dead':
-      return notes.dead(reading.count);
-  }
-}

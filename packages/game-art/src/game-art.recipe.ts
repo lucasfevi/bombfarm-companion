@@ -208,26 +208,39 @@ export function heroRankToneClass(rank: string | undefined): string {
   return heroRankTextClass(rank) ?? 'text-accent';
 }
 
-/** Literal rarity washes so Tailwind's JIT scanner sees every class. */
-const raritySoftBgClasses = [
-  'bg-rar-0/10',
-  'bg-rar-1/10',
-  'bg-rar-2/10',
-  'bg-rar-3/10',
-  'bg-rar-4/10',
-  'bg-rar-5/10',
+/** Literal rarity washes so Tailwind's JIT scanner sees every class. Two strengths: the quiet one
+ *  a band uses to say which grade it is, and the one the hero's own grade uses to say so louder. */
+const rarityBandClasses = [
+  'bg-rar-0/12',
+  'bg-rar-1/12',
+  'bg-rar-2/12',
+  'bg-rar-3/12',
+  'bg-rar-4/12',
+  'bg-rar-5/12',
+] as const;
+
+const rarityBandActiveClasses = [
+  'bg-rar-0/30',
+  'bg-rar-1/30',
+  'bg-rar-2/30',
+  'bg-rar-3/30',
+  'bg-rar-4/30',
+  'bg-rar-5/30',
 ] as const;
 
 /**
- * A wash of the colour this grade is printed in, for a surface that wants to carry the grade
- * without competing with what is drawn on it.
+ * The fill for one grade's band on a grade scale — the colour the game prints that grade in, at a
+ * strength that leaves whatever is drawn over it readable.
  *
- * Deliberately a tenth: the grade rail draws letters, boundary bands and a marker over this, and
- * anything stronger turns the ground into another thing to read. `undefined` for a grade the
- * table does not know, which leaves the surface its own background rather than inventing one.
+ * Six bands side by side ARE the ladder, so each carries its own colour rather than the scale
+ * carrying one: a player reading left to right sees grey climb to red, which is the same order the
+ * game shows them. `active` is the grade the hero actually holds, lifted enough to find at a
+ * glance without turning the other five into noise. `undefined` for a grade the table does not
+ * know, which leaves the band its own background rather than inventing one.
  */
-export function heroRankSoftBgClass(rank: string | undefined): string | undefined {
+export function heroRankBandClass(rank: string | undefined, active = false): string | undefined {
   if (!rank?.trim()) return undefined;
   const index = LETTER_BANDS.letters.indexOf(rank.trim());
-  return index === -1 ? undefined : raritySoftBgClasses[index];
+  if (index === -1) return undefined;
+  return active ? rarityBandActiveClasses[index] : rarityBandClasses[index];
 }

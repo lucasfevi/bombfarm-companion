@@ -7,7 +7,7 @@ import type { RollQualityReport } from '@bombfarm/domain/roll-quality';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import {
   HeroAvatar,
-  heroRankSoftBgClass,
+  heroRankBandClass,
   heroRankTextClass,
   rarityTextClass,
 } from '@bombfarm/game-art';
@@ -118,39 +118,45 @@ function RollRail({ percentile }: { percentile: number }) {
 }
 
 /**
- * The rail is drawn from `LETTER_BANDS`' own cut points, so a letter's share of the width is its
- * share of the measured scale. Each boundary is painted as a band rather than a line because that
- * is the shape of the evidence — the corpus locates it inside an interval and no closer.
+ * The grade scale, drawn to the measured table: a letter's share of the width is its share of the
+ * scale, so E spans far more of it than C does because that is what the corpus says.
+ *
+ * Each band carries the colour the game prints its own grade in, so the six read left to right as
+ * the ladder they are; the hero's own grade is the one lifted out of them. Each boundary is a band
+ * rather than a line because that is the shape of the evidence — the corpus locates it inside an
+ * interval and no closer — and it is drawn over the grades it separates, being about both.
  */
 function GradeRailView({ mean, railLetter }: { mean: number; railLetter: string }) {
   const rail = gradeRailFor(mean);
 
   return (
-    <div
-      className={cn(
-        'relative mt-1 h-6 w-full overflow-hidden border border-line bg-bg',
-        heroRankSoftBgClass(railLetter),
-      )}
-    >
-      {rail.segments.map((segment) => (
-        <span
-          key={segment.letter}
-          className="absolute inset-y-0 flex items-center justify-center border-l border-line text-[10px] font-bold text-muted first:border-l-0"
-          style={{ left: `${segment.startPct}%`, width: `${segment.endPct - segment.startPct}%` }}
-        >
-          {segment.letter}
-        </span>
-      ))}
+    <div className="relative mt-1.5 h-7 w-full overflow-hidden rounded-sm border border-line bg-bg">
+      {rail.segments.map((segment) => {
+        const active = segment.letter === railLetter;
+        return (
+          <span
+            key={segment.letter}
+            className={cn(
+              'absolute inset-y-0 flex items-center justify-center text-[10px] font-bold tracking-[0.08em]',
+              heroRankBandClass(segment.letter, active),
+              active ? heroRankTextClass(segment.letter) : 'text-muted',
+            )}
+            style={{ left: `${segment.startPct}%`, width: `${segment.endPct - segment.startPct}%` }}
+          >
+            {segment.letter}
+          </span>
+        );
+      })}
       {rail.boundaries.map((boundary) => (
         <span
           key={`${boundary.below}${boundary.above}`}
           aria-hidden="true"
-          className="absolute inset-y-0 bg-warn/25"
+          className="absolute inset-y-0 bg-bg/30"
           style={{ left: `${boundary.startPct}%`, width: `${boundary.endPct - boundary.startPct}%` }}
         />
       ))}
       <span
-        className="absolute inset-y-0 w-0.5 bg-accent"
+        className="absolute inset-y-0 w-0.5 bg-ink"
         style={{ left: `${rail.markerPct}%` }}
         aria-hidden="true"
       />

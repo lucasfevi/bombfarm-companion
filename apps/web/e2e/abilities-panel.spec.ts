@@ -43,9 +43,10 @@ test.describe('abilities panel (ABX residual)', () => {
 
     const heroPanel = page.locator('[data-slot="tabs-panel"][data-state="active"]');
     await expect(heroPanel.getByText(/\d+ habilidades · \d+ pontos/i)).toHaveCount(0);
-    // One panel counts the slots and the points now, in the wording the desktop already used.
-    await expect(heroPanel.getByText(/\d+ de \d+ para esta raridade/i)).toBeVisible();
+    // One figure now: how much of the budget is spent. The slot count and the granted/spendable
+    // split went with the dead-point total they existed to explain.
     await expect(heroPanel.getByText(/\d+ de \d+ gastos/i)).toBeVisible();
+    await expect(heroPanel.getByText(/para esta raridade/i)).toHaveCount(0);
 
     const reset = heroPanel
       .getByRole('heading', { name: /^habilidades$/i })
@@ -68,9 +69,12 @@ test.describe('abilities panel (ABX residual)', () => {
     await expect(page.getByRole('heading', { name: /^Ability picker$/i })).toHaveCount(0);
   });
 
-  test('granted vs spendable ability points — the Bram worked case: L49 -> 40 spendable, 9 dead', async ({
+  test('the spend counts against what this hero can spend, not against its level', async ({
     page,
   }) => {
+    // The Bram worked case: an Incomum hero at L49 is granted 49 points but can only ever place
+    // 40 of them (2 slots x 20). The readout has to name 40, or it invites a player to chase nine
+    // points that cannot be spent — which is exactly what the retired dead-point row said out loud.
     const heroed = {
       ...importedRoster,
       lang: 'en' as const,
@@ -84,34 +88,8 @@ test.describe('abilities panel (ABX residual)', () => {
     await openHeroTab(page, 'en');
 
     const panel = page.locator('[data-slot="tabs-panel"][data-state="active"]');
-    await expect(panel.getByText(/49 granted/i)).toBeVisible();
-    await expect(panel.getByText(/40 spendable/i)).toBeVisible();
-    await expect(panel.getByText(/so 9 points can never be used/i)).toBeVisible();
-  });
-
-  test('nothing dead is stated as its own sentence, not as a hidden note', async ({ page }) => {
-    // Raro quota is 3 slots x 20 = 60 spendable; level 20 grants far less than that -> dead=0.
-    const heroed = {
-      ...importedRoster,
-      lang: 'en' as const,
-      heroes: importedRoster.heroes.map((h) =>
-        h.id === 'seed-cora' ? { ...h, rarity: 'Raro' as const, level: 20 } : h,
-      ),
-    };
-    await seedLocalStorage(page, heroed);
-    await page.goto('/');
-    await selectSavedHero(page, 'Cora');
-    await openHeroTab(page, 'en');
-
-    const panel = page.locator('[data-slot="tabs-panel"][data-state="active"]');
-    // A hero wasting nothing gets its own sentence rather than a hidden copy of the warning: the
-    // three dead-point readings each say something different, and none of them is silence.
-    await expect(panel.getByText(/can never be used/i)).toHaveCount(0);
-    await expect(
-      panel.getByText(/Every level this hero gains still turns into a point it can spend/i),
-    ).toBeVisible();
-    await expect(panel.getByText(/20 granted/i)).toBeVisible();
-    await expect(panel.getByText(/20 spendable/i)).toBeVisible();
+    await expect(panel.getByText(/of 40 spent/i)).toBeVisible();
+    await expect(panel.getByText(/of 49 spent/i)).toHaveCount(0);
   });
 
   test('stepping a sheet crit-chance ability preserves the hero\'s own roll, not the rarity midpoint', async ({
@@ -180,7 +158,7 @@ test.describe('abilities panel (ABX residual)', () => {
     await expect(critRow).not.toContainText('9.06');
   });
 
-  test('imported hero identity lives in hero strip; tab is abilities-only', async ({ page }) => {
+  test('the hero strip still names the hero, and the tab holds no second editable identity', async ({ page }) => {
     await seedLocalStorage(page, importedRoster);
     await page.goto('/');
     await selectSavedHero(page, 'Cora');

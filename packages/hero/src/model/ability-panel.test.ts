@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import type { AbilityGain, AbilityGainState } from '@bombfarm/domain/ability-gain';
-import { ABILITY_LEVEL_MAX, ABILITY_QUOTA } from '@bombfarm/domain/model';
 import { ZERO_PTS_TEMPLATE } from '@bombfarm/domain/planner-constants';
 import { heroLevelLabel } from '@bombfarm/domain/game-labels';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
@@ -9,10 +8,8 @@ import {
   abilityPanelReading,
   abilityPointReadoutFor,
   abilityRowsFor,
-  abilitySlotReadoutFor,
   abilityStepAvailability,
   abilityValueText,
-  deadPointNote,
   type AbilityRowText,
   type AbilityValueCopy,
 } from './ability-panel';
@@ -156,47 +153,10 @@ describe('abilityPanelAvailability', () => {
   });
 });
 
-describe('abilitySlotReadoutFor', () => {
-  it('counts the pool against the rarity quota', () => {
-    const readout = abilitySlotReadoutFor(
-      hero({ rarity: 'Raro', abilities: { grito_guerra: 4, veia_ouro: 0 } }),
-    );
-    expect(readout).toEqual({ used: 2, quota: ABILITY_QUOTA.Raro, full: false });
-  });
-
-  it('a pool at its quota reads as full', () => {
-    const readout = abilitySlotReadoutFor(hero({ rarity: 'Comum', abilities: { fortuna: 1 } }));
-    expect(readout).toEqual({ used: 1, quota: 1, full: true });
-  });
-});
 
 describe('abilityPointReadoutFor', () => {
-  it('a hero below its slot ceiling has no dead points and is not at the ceiling either', () => {
-    const readout = abilityPointReadoutFor(
-      hero({ rarity: 'Comum', level: 12, abilities: { grito_guerra: 5 } }),
-    );
-    expect(readout).toEqual({
-      granted: 12,
-      spendable: 12,
-      spent: 5,
-      dead: { kind: 'none', count: 0 },
-    });
-  });
 
-  it('a hero exactly on its ceiling is told apart from one below it, though both waste nothing', () => {
-    const ceiling = ABILITY_QUOTA.Comum * ABILITY_LEVEL_MAX;
-    const readout = abilityPointReadoutFor(hero({ rarity: 'Comum', level: ceiling }));
-    expect(readout.dead).toEqual({ kind: 'atCeiling', count: 0 });
-    expect(readout.spendable).toBe(ceiling);
-  });
 
-  it('a hero past its ceiling carries the difference as points it can never spend', () => {
-    const readout = abilityPointReadoutFor(
-      hero({ rarity: 'Comum', level: ABILITY_QUOTA.Comum * ABILITY_LEVEL_MAX + 9 }),
-    );
-    expect(readout.dead).toEqual({ kind: 'dead', count: 9 });
-    expect(readout.spendable).toBe(ABILITY_QUOTA.Comum * ABILITY_LEVEL_MAX);
-  });
 
   it('sums the levels actually spent across the pool', () => {
     const readout = abilityPointReadoutFor(
@@ -207,33 +167,6 @@ describe('abilityPointReadoutFor', () => {
   });
 });
 
-describe('deadPointNote', () => {
-  const NOTES = {
-    none: 'every level still buys a point',
-    atCeiling: 'this hero has reached what its slots can hold',
-    dead: (count: number) => `${String(count)} points can never be used`,
-  };
-
-  it('gives the three readings three different sentences', () => {
-    const rendered = [
-      deadPointNote({ kind: 'none', count: 0 }, NOTES),
-      deadPointNote({ kind: 'atCeiling', count: 0 }, NOTES),
-      deadPointNote({ kind: 'dead', count: 9 }, NOTES),
-    ];
-    expect(new Set(rendered).size).toBe(3);
-    expect(rendered[2]).toContain('9');
-  });
-
-  it('never returns a blank', () => {
-    for (const reading of [
-      { kind: 'none', count: 0 },
-      { kind: 'atCeiling', count: 0 },
-      { kind: 'dead', count: 1 },
-    ] as const) {
-      expect(deadPointNote(reading, NOTES).trim(), reading.kind).not.toBe('');
-    }
-  });
-});
 
 describe('abilityPanelReading', () => {
   it('a host that supplies the callbacks gets both controls', () => {

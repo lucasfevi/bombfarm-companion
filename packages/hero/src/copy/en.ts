@@ -59,19 +59,8 @@ export const heroEn = {
     "The model carries this effect, but it lands outside what sustained damage per second measures.",
   heroDetailAbilitiesNoBirthRoll:
     "Without a birth roll this hero cannot be valued, so no ability of its can be priced.",
-  heroDetailAbilitiesSlots: "Slots",
-  heroDetailAbilitiesSlotsValue: "{used} of {max} for this rarity",
-  heroDetailAbilitiesGranted: "Points granted",
-  heroDetailAbilitiesGrantedValue: "{granted} granted, {spendable} spendable",
   heroDetailAbilitiesPoints: "Ability points",
   heroDetailAbilitiesPointsValue: "{spent} of {budget} spent",
-  heroDetailAbilitiesDeadPoints: "Dead points",
-  heroDetailAbilitiesDeadPointsHint:
-    "This hero's level is past what it can spend, so {count} points can never be used.",
-  heroDetailAbilitiesDeadPointsNone:
-    "Every level this hero gains still turns into a point it can spend.",
-  heroDetailAbilitiesDeadPointsAtCeiling:
-    "This hero holds exactly as many points as its slots can take; further levels add none.",
   heroDetailAbilitiesNone: "This hero owns no abilities.",
 
   heroDetailCombatTitle: "Combat",

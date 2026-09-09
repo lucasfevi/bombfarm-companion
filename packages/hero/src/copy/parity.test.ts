@@ -61,9 +61,9 @@ describe('heroEn/heroPtBR placeholder parity', () => {
 
   it('the placeholder scan reaches keys that really carry tokens', () => {
     expect([...placeholderSet(heroEn.heroDetailRollPercentile)]).toEqual(['pct']);
-    expect([...placeholderSet(heroEn.heroDetailAbilitiesSlotsValue)].sort()).toEqual([
-      'max',
-      'used',
+    expect([...placeholderSet(heroEn.heroDetailAbilitiesPointsValue)].sort()).toEqual([
+      'budget',
+      'spent',
     ]);
   });
 

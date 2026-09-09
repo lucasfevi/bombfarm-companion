@@ -59,19 +59,8 @@ export const heroPtBR: HeroCopy = {
     "O modelo tem este efeito, mas ele cai fora do que o DPS sustentado consegue medir.",
   heroDetailAbilitiesNoBirthRoll:
     "Sem o sorteio de nascimento não dá para avaliar este herói, então nenhuma habilidade dele tem preço.",
-  heroDetailAbilitiesSlots: "Espaços",
-  heroDetailAbilitiesSlotsValue: "{used} de {max} para esta raridade",
-  heroDetailAbilitiesGranted: "Pontos concedidos",
-  heroDetailAbilitiesGrantedValue: "{granted} concedidos, {spendable} utilizáveis",
   heroDetailAbilitiesPoints: "Pontos de habilidade",
   heroDetailAbilitiesPointsValue: "{spent} de {budget} gastos",
-  heroDetailAbilitiesDeadPoints: "Pontos mortos",
-  heroDetailAbilitiesDeadPointsHint:
-    "O nível deste herói passou do que ele consegue gastar, então {count} pontos nunca poderão ser usados.",
-  heroDetailAbilitiesDeadPointsNone:
-    "Cada nível que este herói ganha ainda vira um ponto que ele pode gastar.",
-  heroDetailAbilitiesDeadPointsAtCeiling:
-    "Este herói tem exatamente os pontos que os espaços dele aguentam; os próximos níveis não somam nada.",
   heroDetailAbilitiesNone: "Este herói não tem nenhuma habilidade.",
 
   heroDetailCombatTitle: "Combate",

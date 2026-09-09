@@ -880,6 +880,10 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   // ability points, so "Abilities need attention" under-reported it even before the rename.
   'tabHero',
   'tabHeroWarnTitle',
+  // The abilities panel stopped printing a slot count, a granted/spendable split and a dead-point
+  // total, so the tip's opening sentence — which explained the budget behind them — went with
+  // them. What it still names is which abilities reach the hero's in-game stats.
+  'abilitiesTip',
   'treeDano',
   'treeCrit',
   'treeCritDmg',

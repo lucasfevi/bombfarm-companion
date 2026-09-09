@@ -32,21 +32,16 @@ export {
   abilityPanelReading,
   abilityPointReadoutFor,
   abilityRowsFor,
-  abilitySlotReadoutFor,
   abilityStepAvailability,
   abilityValueText,
-  deadPointNote,
 } from './ability-panel';
 export type {
   AbilityPanelReading,
   AbilityPointReadout,
   AbilityRow,
   AbilityRowText,
-  AbilitySlotReadout,
   AbilityStepAvailability,
   AbilityValueCopy,
-  DeadPointNotes,
-  DeadPointReading,
 } from './ability-panel';
 export {
   fuseNote,

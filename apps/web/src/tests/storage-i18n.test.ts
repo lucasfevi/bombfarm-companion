@@ -399,9 +399,9 @@ describe('sheet ability copy (on-sheet names follow Lang)', () => {
     expect(t.abilitiesTip).toMatch(/Ponta de Diamante/);
     expect(t.abilitiesTip).toMatch(/Golpe Brutal/);
     expect(t.abilitiesTip).toMatch(/stats do herói no jogo/);
-    // the budget rule is min(level, slots x 20) — "slots x 10" is falsified.
-    expect(t.abilitiesTip).toMatch(/slots da raridade × 20/);
-    expect(t.abilitiesTip).not.toMatch(/× 10/);
+    // The tip used to state the budget rule and this pinned its arithmetic. The panel no longer
+    // prints a budget explanation, so there is no prose left to pin — the rule itself is guarded
+    // where it is computed, against worked heroes, in the domain's own point-budget suite.
     expect(t.sheetAbilityTag).toBe('Altera atributos');
     expect(t.sheetTip).toMatch(/Ponta de Diamante/);
     expect(t.sheetTip).toMatch(/save/i);
@@ -414,9 +414,7 @@ describe('sheet ability copy (on-sheet names follow Lang)', () => {
     expect(t.abilitiesTip).toMatch(/Keen Eye/);
     expect(t.abilitiesTip).toMatch(/Brutal Strike/);
     expect(t.abilitiesTip).toMatch(/in-game stats/);
-    // the budget rule is min(level, slots x 20) — "slots x 10" is falsified.
-    expect(t.abilitiesTip).toMatch(/rarity slots × 20/);
-    expect(t.abilitiesTip).not.toMatch(/× 10/);
+    // See the PT case above for why the budget rule is no longer pinned in this prose.
     expect(t.sheetAbilityTag).toBe('Affects stats');
     expect(t.sheetTip).toMatch(/Diamond Tip/);
     expect(t.abilitiesTip).not.toMatch(/Ponta de Diamante|Olho Clínico/);

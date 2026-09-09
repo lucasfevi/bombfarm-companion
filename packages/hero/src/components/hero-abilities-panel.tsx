@@ -9,7 +9,6 @@ import {
   Button,
   Panel,
   RankControl,
-  StatList,
   abilEffectClass,
   abilGridClass,
   abilHeadClass,
@@ -28,9 +27,7 @@ import {
   abilityPanelReading,
   abilityPointReadoutFor,
   abilityRowsFor,
-  abilitySlotReadoutFor,
   abilityStepAvailability,
-  deadPointNote,
 } from '../model';
 
 /** Gains and point counts are columns a player reads down, and the sans face this app ships has
@@ -87,7 +84,6 @@ export function HeroAbilitiesPanel({
 }) {
   const reading = abilityPanelReading({ editable: !!editing });
   const availability = abilityPanelAvailability(abilityGains);
-  const slots = abilitySlotReadoutFor(hero);
   const points = abilityPointReadoutFor(hero);
   const rows = abilityRowsFor(abilityGains, {
     level: (level, max) =>
@@ -105,17 +101,17 @@ export function HeroAbilitiesPanel({
       unavailable: t.heroDetailAbilitiesNoBirthRoll,
     },
   });
-  const deadNote = deadPointNote(points.dead, {
-    none: t.heroDetailAbilitiesDeadPointsNone,
-    atCeiling: t.heroDetailAbilitiesDeadPointsAtCeiling,
-    dead: (count) =>
-      sub(t.heroDetailAbilitiesDeadPointsHint, { count: formatNumber(count, lang, 0) }),
-  });
 
   return (
     <Panel className="min-w-0">
       <div className={panelHClass}>
         <h2 className={panelTitleClass}>{t.heroDetailAbilitiesTitle}</h2>
+        <span className={cn(numericClass, 'text-xs text-muted')}>
+          {sub(t.heroDetailAbilitiesPointsValue, {
+            spent: formatNumber(points.spent, lang, 0),
+            budget: formatNumber(points.spendable, lang, 0),
+          })}
+        </span>
         {reading.showReset && editing ? (
           <Button type="button" onClick={editing.onReset}>
             {editing.resetLabel}
@@ -123,52 +119,6 @@ export function HeroAbilitiesPanel({
         ) : null}
       </div>
 
-      <StatList
-        items={[
-          {
-            id: 'slots',
-            label: t.heroDetailAbilitiesSlots,
-            value: (
-              <span className={numericClass}>
-                {sub(t.heroDetailAbilitiesSlotsValue, {
-                  used: formatNumber(slots.used, lang, 0),
-                  max: formatNumber(slots.quota, lang, 0),
-                })}
-              </span>
-            ),
-          },
-          {
-            id: 'granted',
-            label: t.heroDetailAbilitiesGranted,
-            value: (
-              <span className={numericClass}>
-                {sub(t.heroDetailAbilitiesGrantedValue, {
-                  granted: formatNumber(points.granted, lang, 0),
-                  spendable: formatNumber(points.spendable, lang, 0),
-                })}
-              </span>
-            ),
-          },
-          {
-            id: 'points',
-            label: t.heroDetailAbilitiesPoints,
-            value: (
-              <span className={numericClass}>
-                {sub(t.heroDetailAbilitiesPointsValue, {
-                  spent: formatNumber(points.spent, lang, 0),
-                  budget: formatNumber(points.spendable, lang, 0),
-                })}
-              </span>
-            ),
-          },
-          {
-            id: 'dead',
-            label: t.heroDetailAbilitiesDeadPoints,
-            value: <span className={numericClass}>{formatNumber(points.dead.count, lang, 0)}</span>,
-          },
-        ]}
-      />
-      <p className={tipClass}>{deadNote}</p>
       {editing === undefined ? null : <p className={tipClass}>{editing.tip}</p>}
 
       {availability.kind === 'unavailable' ? (
