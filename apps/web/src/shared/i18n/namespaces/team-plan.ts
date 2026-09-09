@@ -74,6 +74,12 @@ export const en = {
     'You limited this plan to stat points, so it proposes no gear moves and no forge work — the search never considered them, and a plan allowed to move gear could find more.',
   teamPlanAllowedChangesNoteGear:
     'You limited this plan to gear, so it proposes no point resets — the search never considered them, and a plan allowed to re-spend points could find more.',
+  teamPlanIgnoreCrowdingLabel: 'Keep every hero geared',
+  teamPlanIgnoreCrowdingAria: 'Score as if the field always had room, and fill every empty slot',
+  teamPlanIgnoreCrowdingHintOff:
+    'The field seats a limited number of heroes, so a hero taking more field time crowds the others out. The plan prices that, which is why it can ask you to remove gear.',
+  teamPlanIgnoreCrowdingHintOn:
+    'Scoring as if the field always had room. Gear can never make a hero score worse, and every empty slot gets filled if you own something that fits — but the totals now describe a field that never makes heroes queue, so they read higher than the roster really earns.',
   teamPlanScopeSectionTitle: 'Hero scope',
   teamPlanScopeOptimize: 'Optimize',
   teamPlanScopeDonate: 'Donate',
@@ -121,10 +127,6 @@ export const en = {
   teamPlanHeroBreakdownGearEmpty: 'No proposed items for this hero.',
   teamPlanHeroBreakdownPointsTitle: 'Point reset',
   teamPlanHeroBreakdownPointsEmpty: 'No point reset is recommended for this hero.',
-  teamPlanFlowLocationInventory: 'Inventory',
-  teamPlanFlowRowFromLabel: 'From',
-  teamPlanFlowRowExisting: 'Existing item — no change',
-  teamPlanFlowRowForge: 'Forge from +{from} to +{to}',
   teamPlanDisclosuresTitle: 'Assumptions & limits',
   teamPlanUnmodelledAbilities: 'Unmodelled abilities in scope: {list}',
   teamPlanLoadoutDrift:
@@ -218,6 +220,12 @@ export const pt: typeof en = {
     'Você limitou este plano a pontos, então ele não propõe movimentações de itens nem forjas — a busca nunca as considerou, e um plano livre para mexer em itens poderia achar mais.',
   teamPlanAllowedChangesNoteGear:
     'Você limitou este plano a itens, então ele não propõe resets de pontos — a busca nunca os considerou, e um plano livre para redistribuir pontos poderia achar mais.',
+  teamPlanIgnoreCrowdingLabel: 'Manter todos equipados',
+  teamPlanIgnoreCrowdingAria: 'Calcular como se o campo sempre tivesse vaga, e preencher todos os espaços vazios',
+  teamPlanIgnoreCrowdingHintOff:
+    'O campo comporta um número limitado de heróis, então um herói que fica mais tempo em campo tira espaço dos outros. O plano cobra por isso, e é por isso que ele pode pedir para tirar um item.',
+  teamPlanIgnoreCrowdingHintOn:
+    'Calculando como se o campo sempre tivesse vaga. Nenhum item piora a pontuação de um herói, e todo espaço vazio é preenchido se você tiver algo que sirva — mas os totais passam a descrever um campo em que ninguém fica na fila, então ficam acima do que o time realmente rende.',
   teamPlanScopeSectionTitle: 'Escopo por herói',
   teamPlanScopeOptimize: 'Otimizar',
   teamPlanScopeDonate: 'Doar',
@@ -265,10 +273,6 @@ export const pt: typeof en = {
   teamPlanHeroBreakdownGearEmpty: 'Nenhum item proposto para este herói.',
   teamPlanHeroBreakdownPointsTitle: 'Reset de pontos',
   teamPlanHeroBreakdownPointsEmpty: 'Nenhum reset de pontos é recomendado para este herói.',
-  teamPlanFlowLocationInventory: 'Inventário',
-  teamPlanFlowRowFromLabel: 'De',
-  teamPlanFlowRowExisting: 'Item atual — sem mudança',
-  teamPlanFlowRowForge: 'Forjar de +{from} para +{to}',
   teamPlanDisclosuresTitle: 'Premissas e limites',
   teamPlanUnmodelledAbilities: 'Habilidades não modeladas no escopo: {list}',
   teamPlanLoadoutDrift:

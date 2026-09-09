@@ -289,6 +289,21 @@ export type TeamPlanInput = {
    * back which phase the answer is about.
    */
   targetPhase?: number | null;
+  /**
+   * Score as if the field always had room, and keep every hero geared.
+   *
+   * Omitted ⇒ `false`, the honest model. On a field that cannot seat the whole roster at once,
+   * a hero taking more field time crowds the others out, so gear that raises its uptime can lower
+   * the roster objective — and a plan reading that faithfully proposes stripping gear off a weak
+   * hero and leaving the slot empty. Set here, both objectives drop that term, so more gear can
+   * never score worse, and the plan fills every empty slot it has an item for.
+   *
+   * The answer is deliberately not the roster's true throughput: it is what the squad would earn
+   * if the field never made heroes queue. That is the right question for a player who rotates
+   * heroes in buckets rather than fielding one fixed line-up, and the wrong one for a player
+   * asking what their whole roster earns as it stands.
+   */
+  ignoreFieldCrowding?: boolean;
 };
 
 /**
@@ -465,4 +480,6 @@ export type EvaluateRosterInput = {
    * mode below that point.
    */
   farmObjective?: TeamPlanFarmObjective;
+  /** See {@link TeamPlanInput.ignoreFieldCrowding}. */
+  ignoreFieldCrowding?: boolean;
 };

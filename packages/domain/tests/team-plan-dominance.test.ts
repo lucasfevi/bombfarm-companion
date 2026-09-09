@@ -278,3 +278,79 @@ describe('polishDominatedPlacements', () => {
     expect(polished.slots[heroId]?.amuleto).toBe(clayId);
   });
 });
+
+describe('ignoreFieldCrowding', () => {
+  const heroId = 'hero';
+  const clayId = 'clay-epic';
+  const itemById = new Map<string, InventoryItem>([
+    [clayId, itemFor(clayId, CLAY_AMULET.defId, 3, CLAY_AMULET.level, 12, 'amuleto')],
+  ]);
+  const contexts = [heroCtx(heroId, 90)];
+
+  function gearInputWith(ignoreFieldCrowding: boolean): TeamPlanInput {
+    return {
+      heroes: [],
+      inventory: [...itemById.values()],
+      account: {
+        treeSheet: { danoStatic: 1, energyPct: 0, speedPct: 0, critChancePct: 0, critDmgPct: 0, luckFlatPct: 0 },
+        houseIdx: 0,
+        houseLevel: 1,
+        phase: 10,
+        mitigationPct: 0,
+        slots: 3,
+        fieldSlots: 3,
+        cycleSecs: null,
+        cycleSecsHouseIdx: null,
+        cycleSecsLevel: null,
+        maxPhase: 100,
+      },
+      scopeByHeroId: { [heroId]: 'optimize' as const },
+      forgeFloor: 12,
+      objective: 'dps' as const,
+      allowedChanges: 'both' as const,
+      targetPhase: null,
+      ignoreFieldCrowding,
+    } as unknown as TeamPlanInput;
+  }
+
+  const emptySlots = () => Object.fromEntries(SLOTS.map((slot) => [slot, null]));
+  const currentPts = { [heroId]: contexts[0]!.pts };
+
+  it('fills a slot the plan leaves empty, which is the whole point of asking for it', () => {
+    const assignment: AssignmentState = {
+      slots: { [heroId]: emptySlots() },
+      pool: new Set([clayId]),
+    };
+
+    const polished = polishDominatedPlacements({
+      contexts,
+      gearInput: gearInputWith(true),
+      itemById,
+      baselineAssignment: assignment,
+      planAssignment: assignment,
+      currentPts,
+      floor: 12,
+    });
+
+    expect(polished.slots[heroId]?.amuleto).toBe(clayId);
+  });
+
+  it('leaves that same empty slot alone when the flag is off, so no chore is invented', () => {
+    const assignment: AssignmentState = {
+      slots: { [heroId]: emptySlots() },
+      pool: new Set([clayId]),
+    };
+
+    const polished = polishDominatedPlacements({
+      contexts,
+      gearInput: gearInputWith(false),
+      itemById,
+      baselineAssignment: assignment,
+      planAssignment: assignment,
+      currentPts,
+      floor: 12,
+    });
+
+    expect(polished.slots[heroId]?.amuleto).toBeNull();
+  });
+});

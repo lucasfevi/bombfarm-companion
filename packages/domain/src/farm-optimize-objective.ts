@@ -172,7 +172,11 @@ function phasesAroundWorld(center: number, upper: number): number[] {
 function sanitizeRowOptions(options: BestFarmPhaseOptions | undefined): FarmRateOptions {
   const maxPhase = options?.maxPhase;
   const sanitizedMaxPhase = maxPhase != null && Number.isFinite(maxPhase) && maxPhase > 0 ? maxPhase : null;
-  return { returnBonus: options?.returnBonus, maxPhase: sanitizedMaxPhase };
+  return {
+    returnBonus: options?.returnBonus,
+    maxPhase: sanitizedMaxPhase,
+    ignoreFieldCrowding: options?.ignoreFieldCrowding,
+  };
 }
 
 function scanPhases(

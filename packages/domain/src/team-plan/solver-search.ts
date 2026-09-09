@@ -188,6 +188,7 @@ export function evaluateAssignment(
     forgeFloor: input.forgeFloor,
     scoreMemo: budget.scoreMemo,
     farmObjective,
+    ignoreFieldCrowding: input.ignoreFieldCrowding,
   };
   const result = evaluateRoster(evalInput);
   // Stop memoising once the cap is reached rather than evicting: the search keeps running and

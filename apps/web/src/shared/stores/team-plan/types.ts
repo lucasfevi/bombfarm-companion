@@ -85,6 +85,7 @@ export function computeTeamPlanInputSignature(input: {
    *  and a plan scored at the old one is as stale as one scored for the old objective. */
   targetPhase: number | null;
   allowedChanges: TeamPlanAllowedChanges;
+  ignoreFieldCrowding: boolean;
 }): string {
   return JSON.stringify({
     heroIds: input.heroes.map((hero) => hero.id).sort(),
@@ -101,6 +102,7 @@ export function computeTeamPlanInputSignature(input: {
     objective: input.objective,
     targetPhase: input.targetPhase,
     allowedChanges: input.allowedChanges,
+    ignoreFieldCrowding: input.ignoreFieldCrowding,
   });
 }
 

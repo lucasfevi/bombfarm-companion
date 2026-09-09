@@ -1098,6 +1098,19 @@ export type FarmRateOptions = {
   returnBonus?: ReturnBonusMode;
   /** `account.max_phase`. `null`/omitted ⇒ every row `locked: false`. */
   maxPhase?: number | null;
+  /**
+   * Price the field as if it always had room, i.e. hold `concurrencyScale` at 1.
+   *
+   * A DELIBERATE MIS-PRICING, offered because the true one answers a question some players are
+   * not asking. On a field that cannot seat everyone, giving a weak hero more Energia raises its
+   * uptime, which raises the queue's contention and lowers the served fraction for the WHOLE
+   * squad — so the honest model can score a hero higher wearing less, and a plan built on it says
+   * to strip gear off. A player who rotates heroes in buckets, or who simply wants every hero
+   * geared, is asking what the squad earns without that crowding, and this answers that instead.
+   *
+   * Off by default: this is the caller opting out of a term, never a correction to it.
+   */
+  ignoreFieldCrowding?: boolean;
 };
 
 export type FarmRateRow = {
@@ -1253,7 +1266,10 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
 
   // Constraint 2 — the field queue, applied to what the House can actually keep fed (never to the
   // unconstrained `uptimeSum`, which would double-charge the same shortage).
-  const fieldQueue = heroesOnField > 0 ? fieldQueueOutcome(effectiveUptime, squad.fieldSlots) : UNCONTENDED_FIELD;
+  const fieldQueue =
+    heroesOnField > 0 && !options.ignoreFieldCrowding
+      ? fieldQueueOutcome(effectiveUptime, squad.fieldSlots)
+      : UNCONTENDED_FIELD;
   const concurrencyScale = fieldQueue.servedFraction;
   const fieldContention = fieldQueue.contention;
 

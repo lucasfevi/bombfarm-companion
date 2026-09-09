@@ -57,15 +57,32 @@ function applyPassagem(score: HeroScore, rank: number): HeroScore {
   };
 }
 
+/**
+ * `ignoreFieldCrowding` keeps the roster on the unsaturated sum however much duty it asks for.
+ *
+ * The saturated branch below divides by `sumDuty`, so a hero taking more field time dilutes the
+ * average and can lower the objective while gaining DPS itself — the same shape the farm
+ * objective's served fraction has, and the same reason a plan built on it strips gear. The
+ * `regime` it reports is still the true one: the caller opted out of the term, not out of knowing.
+ */
 function objectiveFromScores(
   scores: Record<string, HeroScore>,
   contexts: EvaluateRosterInput['contexts'],
   sumDuty: number,
   slots: number,
+  ignoreFieldCrowding = false,
 ): { objective: number; regime: RosterRegime } {
   const optimizeIds = contexts.filter((c) => c.scope === 'optimize').map((c) => c.heroId);
   if (optimizeIds.length === 0) {
     return { objective: 0, regime: 'underSaturated' };
+  }
+
+  if (ignoreFieldCrowding) {
+    let objective = 0;
+    for (const id of optimizeIds) {
+      objective += scores[id]?.sustained ?? 0;
+    }
+    return { objective, regime: sumDuty < slots ? 'underSaturated' : 'saturated' };
   }
 
   if (sumDuty < slots) {
@@ -143,7 +160,7 @@ export function screenRosterObjective(
     scores[heroId] = applyPassagem(raw, ctx.abilities.passagem_bastao ?? 0);
   }
 
-  return objectiveFromScores(scores, input.contexts, sumDuty, slots).objective;
+  return objectiveFromScores(scores, input.contexts, sumDuty, slots, input.ignoreFieldCrowding).objective;
 }
 
 export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
@@ -190,7 +207,13 @@ export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
     }
   }
 
-  const { objective, regime } = objectiveFromScores(perHero, input.contexts, sumDuty, slots);
+  const { objective, regime } = objectiveFromScores(
+    perHero,
+    input.contexts,
+    sumDuty,
+    slots,
+    input.ignoreFieldCrowding,
+  );
   const auras = computeRosterAuras(input.contexts, duties);
   const evaluation: RosterEvaluation = { objective, regime, sumDuty, slots, perHero, auras };
   if (!input.farmObjective) return evaluation;

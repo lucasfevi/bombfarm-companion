@@ -32,6 +32,9 @@ export type TeamPlanSlice = {
   /** Which kinds of change the plan may propose — gear work, stat-point resets, or both. A
    *  different axis from `scopeByHeroId`, which decides WHICH HEROES the search may touch. */
   allowedChanges: TeamPlanAllowedChanges;
+  /** Score as if the field always had room, and keep every hero geared. A deliberate
+   *  mis-pricing the player opts into — see the domain field of the same name. */
+  ignoreFieldCrowding: boolean;
   /** The phase both objectives score at, or `null` for the objective's own default. Read through
    *  `selectTeamPlanTargetPhase`, never directly — it is a default until `targetPhaseChosen`. */
   targetPhase: number | null;
@@ -50,6 +53,7 @@ export type TeamPlanSlice = {
   setForgeFloor: (value: number) => void;
   setObjective: (value: TeamPlanObjective) => void;
   setAllowedChanges: (value: TeamPlanAllowedChanges) => void;
+  setIgnoreFieldCrowding: (value: boolean) => void;
   setTargetPhase: (value: number | null) => void;
   startRun: (runId: string) => void;
   resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
@@ -79,6 +83,7 @@ export const createTeamPlanSlice: StateCreator<
   forgeFloor: 10,
   objective: DEFAULT_TEAM_PLAN_OBJECTIVE,
   allowedChanges: DEFAULT_TEAM_PLAN_ALLOWED_CHANGES,
+  ignoreFieldCrowding: false,
   targetPhase: null,
   targetPhaseChosen: false,
   runStatus: 'idle',
@@ -180,6 +185,20 @@ export const createTeamPlanSlice: StateCreator<
     });
   },
 
+  // Clears outright, like every other setting that reshapes the search rather than shifting its
+  // numbers: this one changes what the objective MEANS, so the figures from the previous run are
+  // answers to a different question, not stale answers to this one.
+  setIgnoreFieldCrowding: (value) => {
+    if (get().ignoreFieldCrowding === value) return;
+    set({
+      ignoreFieldCrowding: value,
+      plan: null,
+      planInputSignature: null,
+      runStatus: 'idle',
+      runId: null,
+    });
+  },
+
   // Clears the plan for the same reason `setObjective` does: the figures on screen are about one
   // phase, and re-labelling them with another is how a plan comes to describe a fight it never
   // scored. The FIRST pick of the phase the derived default already sits on must still flip
@@ -265,5 +284,6 @@ export function selectLiveTeamPlanInputSignature(state: PlannerStore): string {
     objective: state.objective,
     targetPhase: selectTeamPlanTargetPhase(state),
     allowedChanges: state.allowedChanges,
+    ignoreFieldCrowding: state.ignoreFieldCrowding,
   });
 }

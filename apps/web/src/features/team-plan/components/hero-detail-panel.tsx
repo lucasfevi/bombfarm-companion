@@ -5,10 +5,9 @@ import type { PointAlloc } from '@bombfarm/domain/gear';
 import { accordionLedgerBodyClass } from '@bombfarm/ui/accordion.recipe';
 import type { Lang, Strings } from '@/shared/i18n';
 import type { HeroRecord } from '@/shared/lib/storage';
-import type { GearFlowRow } from '@/features/team-plan/model/gear-flow-rows';
 import { HeroStatBreakdown } from './hero-stat-breakdown';
 import { HeroPointBreakdown } from './hero-point-breakdown';
-import { HeroProposedGear } from './hero-proposed-gear';
+import { HeroProposedGear, type HeroGearFlow } from './hero-proposed-gear';
 
 const sectionTitleClass = 'm-0 mb-1.5 text-[10px] font-bold tracking-[0.08em] text-accent uppercase';
 
@@ -26,7 +25,7 @@ export function HeroDetailPanel({
   t,
   lang,
   stats,
-  flowRows,
+  gear,
   heroByScopeKey,
   heroNameFallback,
   pointsReset,
@@ -34,7 +33,7 @@ export function HeroDetailPanel({
   t: Strings;
   lang: Lang;
   stats: HeroDetailPanelStats;
-  flowRows: GearFlowRow[];
+  gear: HeroGearFlow;
   heroByScopeKey: Map<string, HeroRecord>;
   heroNameFallback: (heroId: string) => string;
   pointsReset: { before: PointAlloc; after: PointAlloc; level: number } | null;
@@ -47,7 +46,7 @@ export function HeroDetailPanel({
           <HeroProposedGear
             t={t}
             lang={lang}
-            flowRows={flowRows}
+            gear={gear}
             heroByScopeKey={heroByScopeKey}
             heroNameFallback={heroNameFallback}
           />

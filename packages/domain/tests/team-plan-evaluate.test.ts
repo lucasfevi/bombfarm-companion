@@ -317,6 +317,68 @@ describe('evaluateRoster', () => {
     expect(result.objective).toBeCloseTo(expected, 6);
   });
 
+  it('ignoreFieldCrowding scores the same roster as the plain sum, and still reports it saturated', () => {
+    // The saturated branch divides by sumDuty, so a hero taking more field time dilutes the
+    // average and can lower the objective while gaining DPS itself. Opting out drops that term
+    // WITHOUT hiding the regime — the reader is still told the field cannot seat everyone.
+    const makeCtx = (id: string, energy: number): HeroPlanContext => ({
+      heroId: id,
+      name: id,
+      level: 50,
+      stars: 0,
+      rarity: 'Raro',
+      birth: {
+        attack: 300,
+        energy,
+        speed: 55,
+        critChance: 10,
+        critDmg: 80,
+        penetration: 5,
+        cdr: 4,
+        luck: 0,
+      },
+      sheetOther: { speed: 0, critChanceFlat: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
+      mods: {
+        drainMult: 1,
+        penetrationPp: 0,
+        rangeCells: 0,
+        dmgMult: 1,
+        gateAttackMult: 1,
+        sheetCritChanceFlat: 0,
+        sheetPenetrationRaw: 0,
+        sheetCritDmgFlat: 0,
+      },
+      treeSheet: {
+        danoStatic: 1,
+        energyPct: 0,
+        speedPct: 0,
+        critChancePct: 0,
+        critDmgPct: 0,
+        luckFlatPct: 0,
+      },
+      scope: 'optimize',
+      abilities: {},
+      pts: ZERO_PTS(),
+    });
+    const base: EvaluateRosterInput = {
+      contexts: [makeCtx('a', 2000), makeCtx('b', 2000), makeCtx('c', 2000)],
+      loadoutsByHeroId: { a: {}, b: {}, c: {} },
+      ptsByHeroId: { a: ZERO_PTS(), b: ZERO_PTS(), c: ZERO_PTS() },
+      slots: 1,
+      farm: { houseIdx: 0, houseLevel: 1, phase: 1, mitigationPct: 6.7 },
+      forgeFloor: 0,
+    };
+
+    const honest = evaluateRoster(base);
+    const roomy = evaluateRoster({ ...base, ignoreFieldCrowding: true });
+
+    expect(honest.regime).toBe('saturated');
+    expect(roomy.regime).toBe('saturated');
+    const sumSustained = Object.values(roomy.perHero).reduce((sum, s) => sum + s.sustained, 0);
+    expect(roomy.objective).toBeCloseTo(sumSustained, 6);
+    expect(roomy.objective).toBeGreaterThan(honest.objective);
+  });
+
   it('saturated regime at exactly sumDuty === slots boundary', () => {
     const ctx: HeroPlanContext = {
       heroId: 'a',

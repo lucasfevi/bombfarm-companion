@@ -67,6 +67,7 @@ export function evaluateAt(
     farm: farmFromAccount(gearInput),
     forgeFloor,
     farmObjective,
+    ignoreFieldCrowding: gearInput.ignoreFieldCrowding,
   };
   return evaluateRoster(evalInput);
 }
@@ -91,19 +92,24 @@ export type PolishDominatedInput = {
  * FREE piece beats outright, and the search has no reason to correct it. That is what a player
  * sees as "the optimizer ignored my epic amulet".
  *
- * SUBSTITUTIONS ONLY, NEVER NEW CHORES. Only slots the plan is already changing are considered,
- * so this swaps what a chore hands over and never adds one — a plan that touches no gear stays a
- * plan that touches no gear.
+ * SUBSTITUTIONS ONLY, NEVER NEW CHORES — unless the run asked for the opposite. Normally only
+ * slots the plan is already changing are considered, so this swaps what a chore hands over and
+ * never adds one, and a plan that touches no gear stays a plan that touches no gear. Under
+ * `ignoreFieldCrowding` the player has asked for every hero to end up geared, so an empty slot
+ * becomes fair game too and the new chore is the point rather than a side effect.
  *
  * STILL EVALUATED, because dominance is not monotone in the objective. More energy raises a
  * hero's uptime, and on a field already saturated more uptime raises queue contention and can
  * lower the served fraction. A strictly better piece can therefore score slightly worse, so each
- * substitution is scored and kept only when the objective holds.
+ * substitution is scored and kept only when the objective holds. (Under `ignoreFieldCrowding` that
+ * term is gone and the check passes by construction — it is kept because the guard, not the
+ * caller's flag, is what makes this pass safe.)
  */
 export function polishDominatedPlacements(input: PolishDominatedInput): AssignmentState {
   const { contexts, gearInput, itemById, baselineAssignment, planAssignment, currentPts, floor, farmObjective } = input;
   const optimize = contexts.filter((ctx) => ctx.scope === 'optimize');
   const heroOrder = [...optimize].sort((a, b) => a.heroId.localeCompare(b.heroId));
+  const fillEmptySlots = gearInput.ignoreFieldCrowding === true;
 
   let assignment = planAssignment;
   let best = evaluateAt(contexts, assignment, currentPts, gearInput, itemById, floor, farmObjective).objective;
@@ -111,13 +117,14 @@ export function polishDominatedPlacements(input: PolishDominatedInput): Assignme
   for (const ctx of heroOrder) {
     for (const slot of SLOTS) {
       const placedId = assignment.slots[ctx.heroId]?.[slot];
-      if (!placedId) continue;
+      if (!placedId && !fillEmptySlots) continue;
       // A slot the plan leaves exactly as the player has it today is not this pass's business:
       // improving it would invent a chore the search did not ask for.
-      if (baselineAssignment.slots[ctx.heroId]?.[slot] === placedId) continue;
-      const placed = itemById.get(placedId);
-      if (!placed?.slot) continue;
-      const placedStats = statsForEntry(poolEntryForItem(placed, floor));
+      if (placedId && baselineAssignment.slots[ctx.heroId]?.[slot] === placedId) continue;
+      const placed = placedId ? itemById.get(placedId) : null;
+      if (placedId && !placed?.slot) continue;
+      // An empty slot compares as an item that rolls nothing, so every eligible piece beats it.
+      const placedStats = placed ? statsForEntry(poolEntryForItem(placed, floor)) : new Map<string, number>();
 
       let winner: { itemId: string; stats: ReadonlyMap<string, number> } | null = null;
       for (const freeId of [...assignment.pool].sort()) {
