@@ -45,6 +45,11 @@ const GRANTED = grantedConsent('2026-08-12T13:15:38.000Z');
 const DECLINED = consentRecord({ decision: 'declined' });
 const UNASKED = consentRecord({ decision: 'unasked' });
 
+/** A built request's path carries `account_id`; fixtures and call assertions key on the route. */
+function routeOf(path: string): string {
+  return path.split('?')[0] ?? '';
+}
+
 function noopLog(): { info: () => void; warn: () => void; error: () => void } {
   return { info: () => undefined, warn: () => undefined, error: () => undefined };
 }
@@ -223,8 +228,8 @@ const BODIES: Record<string, Record<string, unknown>> = {
 
 function okTransport(calls: string[] = []): HttpTransport {
   return (req) => {
-    calls.push(req.path);
-    return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[req.path] ?? {}) });
+    calls.push(routeOf(req.path));
+    return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[routeOf(req.path)] ?? {}) });
   };
 }
 
@@ -297,7 +302,7 @@ describe('account-refresh — unasked consent', () => {
       store,
       consentStore: fixedConsentStore(UNASKED),
       transport: (req) => {
-        transportCalls.push(req.path);
+        transportCalls.push(routeOf(req.path));
         return Promise.reject(new Error('transport must never be called while unasked'));
       },
       readToken: throwingReadToken(),
@@ -323,7 +328,7 @@ describe('account-refresh — a grant that predates the current disclosure', () 
       store,
       consentStore: fixedConsentStore({ ...GRANTED, textVersion: CONSENT_TEXT_VERSION - 1 }),
       transport: (req) => {
-        transportCalls.push(req.path);
+        transportCalls.push(routeOf(req.path));
         return Promise.reject(new Error('transport must never be called under a superseded grant'));
       },
       readToken: throwingReadToken(),
@@ -442,7 +447,7 @@ describe('account-refresh — game not running', () => {
       store,
       consentStore: fixedConsentStore(GRANTED),
       transport: (req) => {
-        transportCalls.push(req.path);
+        transportCalls.push(routeOf(req.path));
         return Promise.reject(new Error('transport must never be called while the game is not running'));
       },
       readToken,
@@ -531,7 +536,7 @@ describe('account-refresh — game not running', () => {
         store,
         consentStore: fixedConsentStore(DECLINED),
         transport: (req) => {
-          transportCalls.push(req.path);
+          transportCalls.push(routeOf(req.path));
           return Promise.reject(new Error('transport must never be called while consent is declined'));
         },
         readToken: throwingReadToken(),
@@ -639,10 +644,10 @@ describe('account-refresh — the game-running flag is read fresh at commit time
     const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
     let gameRunning = true;
     const transport: HttpTransport = (req) => {
-      if (req.path === '/roster') {
+      if (routeOf(req.path) === '/roster') {
         gameRunning = false;
       }
-      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[req.path] ?? {}) });
+      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[routeOf(req.path)] ?? {}) });
     };
     const deps = baseDeps({
       store,
@@ -698,13 +703,13 @@ describe('account-refresh — revoke mid-cycle', () => {
     let releaseRoster: ((res: HttpResponse) => void) | null = null;
 
     const transport: HttpTransport = (req) => {
-      transportCalls.push(req.path);
-      if (req.path === '/roster') {
+      transportCalls.push(routeOf(req.path));
+      if (routeOf(req.path) === '/roster') {
         return new Promise((resolve) => {
           releaseRoster = resolve;
         });
       }
-      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[req.path] ?? {}) });
+      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[routeOf(req.path)] ?? {}) });
     };
 
     const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
@@ -838,10 +843,10 @@ describe('account-refresh — a failed roster is served as stale with the STORED
     // Second cycle: /roster now fails; every other route still resolves.
     now = '2026-08-12T00:02:00.000Z';
     const failingTransport: HttpTransport = (req) => {
-      if (req.path === '/roster') {
+      if (routeOf(req.path) === '/roster') {
         return Promise.resolve({ status: 500, body: 'boom' });
       }
-      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[req.path] ?? {}) });
+      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[routeOf(req.path)] ?? {}) });
     };
     const deps2 = baseDeps({
       store,
@@ -873,10 +878,10 @@ describe('account-refresh — a drifted section is logged with path-qualified ke
     driftedState.some_future_key = sentinelGold;
 
     const transport: HttpTransport = (req) => {
-      if (req.path === '/state') {
+      if (routeOf(req.path) === '/state') {
         return Promise.resolve({ status: 200, body: JSON.stringify(driftedState) });
       }
-      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[req.path] ?? {}) });
+      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[routeOf(req.path)] ?? {}) });
     };
 
     const { log, records } = createLogSpy();
@@ -915,10 +920,10 @@ describe('account-refresh — a drifted section is logged with path-qualified ke
     const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
 
     const transport: HttpTransport = (req) => {
-      if (req.path === '/roster') {
+      if (routeOf(req.path) === '/roster') {
         return Promise.resolve({ status: 500, body: '' });
       }
-      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[req.path] ?? {}) });
+      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[routeOf(req.path)] ?? {}) });
     };
 
     const { log, records } = createLogSpy();
@@ -979,5 +984,29 @@ describe('account-refresh — applyPatch, the seam a forge run lands its result 
       }),
     ).toBeNull();
     expect(called).toBe(false);
+  });
+});
+
+describe('account-refresh — the account travels in the query, the way the game client sends it', () => {
+  it('requests all five routes with account_id in the query string, in ROUTES order', async () => {
+    const rawPaths: string[] = [];
+    const transport: HttpTransport = (req) => {
+      rawPaths.push(req.path);
+      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[routeOf(req.path)] ?? {}) });
+    };
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+    const deps = baseDeps({ store, consentStore: fixedConsentStore(GRANTED), transport, readToken });
+
+    await createAccountRefresh(deps).refreshNow();
+
+    expect(rawPaths).toEqual([
+      '/state?account_id=486',
+      '/roster?account_id=486',
+      '/skill/state?account_id=486',
+      '/rotation?account_id=486',
+      '/inventory?account_id=486',
+    ]);
   });
 });
