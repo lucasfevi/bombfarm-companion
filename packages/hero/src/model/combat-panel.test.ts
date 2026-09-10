@@ -8,6 +8,7 @@ import {
   propTableReadingFor,
   stageLabelFor,
   type FuseSource,
+  combatFiguresShown,
 } from './combat-panel';
 
 /** The shape the pipeline reports today: the floor is twice the base cycle at the 80% cap, so the
@@ -142,5 +143,42 @@ describe('propTableReadingFor', () => {
 
   it('a stage with props hands the rows through untouched', () => {
     expect(propTableReadingFor([ROW])).toEqual({ kind: 'rows', rows: [ROW] });
+  });
+});
+
+describe('combatFiguresShown', () => {
+  it('prints every figure for a host that draws no breakdown beside it', () => {
+    expect(combatFiguresShown({ breakdownShownElsewhere: false })).toEqual([
+      'pen',
+      'damageThrough',
+      'normalHit',
+      'critHit',
+      'avgHit',
+      'fieldTime',
+      'fuse',
+      'fuseFloor',
+      'cdrCap',
+      'uptime',
+      'activeDps',
+      'sustainedDps',
+    ]);
+  });
+
+  it('drops the eight the breakdown states with their ledgers, keeping the four only it says', () => {
+    expect(combatFiguresShown({ breakdownShownElsewhere: true })).toEqual([
+      'pen',
+      'avgHit',
+      'fuseFloor',
+      'cdrCap',
+    ]);
+  });
+
+  it('never drops a figure the breakdown has no row for', () => {
+    // The discriminating case: `avgHit`, `fuseFloor`, `cdrCap` and the penetration verdict have
+    // no counterpart in BREAKDOWN_DERIVED_IDS, so dropping one would lose it from the screen.
+    const withBreakdown = combatFiguresShown({ breakdownShownElsewhere: true });
+    for (const id of ['pen', 'avgHit', 'fuseFloor', 'cdrCap'] as const) {
+      expect(withBreakdown).toContain(id);
+    }
   });
 });

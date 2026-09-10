@@ -12,12 +12,15 @@
  * sits behind the consent gate with every other screen.
  */
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import {
   Banner,
   Button,
   EmptyState,
   Num,
   Panel,
+  Tabs,
+  adviceSplitClass,
   cn,
   colClass,
   numberFormatterFor,
@@ -25,7 +28,11 @@ import {
   panelTitleClass,
   type Lang,
 } from '@bombfarm/ui';
-import { HeroIdentityChip } from '@bombfarm/game-art';
+import {
+  HeroIdentityChip,
+  InventoryLayoutToggle,
+  rosterInactiveChromeClass,
+} from '@bombfarm/game-art';
 import {
   GearTab,
   HeroAbilitiesPanel,
@@ -37,6 +44,7 @@ import {
   PointsTable,
   SheetTable,
 } from '@bombfarm/hero/components';
+import type { HeroMarketPrice } from '@bombfarm/hero/model';
 import { resolveHeroPrice } from '@bombfarm/pricing';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { formatMoney } from '../../lib/format';
@@ -68,6 +76,16 @@ import { resolveSelectedHeroId, selectedRow } from './hero-selection';
 import { readHeroPhase, shownHeroPhase } from './hero-phase';
 import { useFarmSelectedPhase } from './use-farm-selected-phase';
 import { heroFigures, type HeroFigures } from './hero-figures';
+import { RosterCards } from './roster-cards';
+import { RosterToolbar } from './roster-toolbar';
+import { heroPickOutcome, type RosterViewMode } from './roster-view-mode';
+import {
+  rosterRowsShown,
+  DEFAULT_ROSTER_SORT,
+  EMPTY_ROSTER_FILTER,
+  type RosterFilter,
+  type RosterSort,
+} from './roster-order';
 import { cachedAbilityGains, createAbilityGainCache } from './ability-gain-cache';
 
 type RosterModel = Extract<HeroesScreenModel, { kind: 'roster' }>;
@@ -144,6 +162,14 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   const farmCopy = useFarmCopy();
   const [pickedHeroId, setPickedHeroId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  // View-local and stored nowhere, like the phase override and the rank mode below it: the board
+  // is a way of looking at the roster you are in now, not a setting about this account.
+  const [viewMode, setViewMode] = useState<RosterViewMode>('list');
+  // The roster's order and narrowing, view-local like the mode itself: they are ways of looking
+  // at the roster you are in now, not settings about this account. Shared by both presentations,
+  // so switching between them never changes which heroes are on screen.
+  const [rosterSort, setRosterSort] = useState<RosterSort>(DEFAULT_ROSTER_SORT);
+  const [rosterFilter, setRosterFilter] = useState<RosterFilter>(EMPTY_ROSTER_FILTER);
   // View-local, and stored nowhere: leaving the screen unmounts this and the next visit opens on
   // the Farm selection again. It outlives a hero switch on purpose — comparing two heroes at one
   // phase is the reason to override at all.
@@ -221,13 +247,35 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   const panelCopy = useMemo(() => farmScreenCopy(farmCopy, t), [farmCopy, t]);
   const heroes = useMemo(() => rows.map((row) => row.hero), [rows]);
 
-  const onSelectHeroId = useCallback((heroId: string) => {
-    setPickedHeroId(heroId);
-  }, []);
+  const onSelectHeroId = useCallback(
+    (heroId: string) => {
+      const outcome = heroPickOutcome(viewMode, heroId);
+      setPickedHeroId(outcome.heroId);
+      if (outcome.showDetail) setViewMode('list');
+    },
+    [viewMode],
+  );
 
   const onSelectHero = useCallback((hero: HeroRecord) => {
     setPickedHeroId(hero.id);
   }, []);
+
+  // What either presentation draws. `active` is resolved from the WHOLE roster above, so
+  // narrowing the list never changes which hero the detail beside it is about — a filter is a
+  // question about the roster, not a hero switch.
+  const shownRows = useMemo(
+    () => rosterRowsShown(rows, rosterFilter, rosterSort),
+    [rows, rosterFilter, rosterSort],
+  );
+  const toolbarActions = useMemo(
+    () => ({ onSort: setRosterSort, onFilter: setRosterFilter }),
+    [],
+  );
+
+  const viewToggleLabels = useMemo(
+    () => ({ group: t.heroesViewLabel, cards: t.heroesViewCards, list: t.heroesViewList }),
+    [t],
+  );
 
   const onOpenPicker = useCallback(() => {
     setPickerOpen(true);
@@ -237,60 +285,101 @@ function HeroesRoster({ model }: { model: RosterModel }) {
     setOverridePhase(null);
   }, []);
 
+  const toolbar = (
+    <div className="flex min-w-0 flex-wrap items-center justify-between gap-2.5">
+      <RosterToolbar
+        rows={rows}
+        sort={rosterSort}
+        filter={rosterFilter}
+        actions={toolbarActions}
+      />
+      {/* The Inventory's own control, for the same two shapes: one pair of glyphs means one
+          thing wherever this app switches between a board and a list. */}
+      <InventoryLayoutToggle layout={viewMode} onChange={setViewMode} labels={viewToggleLabels} />
+    </div>
+  );
+
   return (
-    // Rail beside detail above 1100px, detail alone below it — the same side-by-side-or-stacked
-    // threshold the phase board's own roster row is drawn at.
-    <div className="grid min-h-0 flex-1 grid-cols-1 gap-2.5 min-[1100px]:grid-cols-[19rem_minmax(0,1fr)]">
-      <div className="min-w-0 max-[1099px]:hidden">
-        <RosterRail rows={rows} selectedId={active.id} onSelectHeroId={onSelectHeroId} />
-      </div>
-      <HeroCopyProvider t={panelCopy} lang={lang}>
-        <div className={cn(colClass, 'min-w-0')}>
-          {/* The rail's stand-in below that width: the same roster, reached through the picker. */}
-          <Panel className="min-[1100px]:hidden">
-            <div className={panelHClass}>
-              <h2 className={panelTitleClass}>{t.heroesRosterTitle}</h2>
-              <Button variant="ghost" onClick={onOpenPicker}>
-                {t.switchHeroShort}
-              </Button>
-            </div>
-            <HeroIdentityChip hero={active.hero} fallbackName={active.hero.name} lang={lang} />
-          </Panel>
-          <HeroIdentityRollPanel
-            hero={active.hero}
-            rollQuality={active.report}
-            t={heroCopy}
-            lang={lang}
-            statLabel={boundStatLabel}
-            marketPrice={marketPrice}
-            formatAmount={formatAmount}
-          />
-          <PhaseControl
-            phase={shownHeroPhase(phaseReading, overridePhase)}
-            overridden={overridePhase !== null}
-            onOverridePhase={setOverridePhase}
-            onClearOverride={onClearOverride}
-          />
-          <HeroCombat
-            heroes={heroes}
-            hero={active.hero}
-            combat={combat}
-            figures={figures}
-            onSelectHero={onSelectHero}
-          />
-          <HeroAbilitiesPanel hero={active.hero} abilityGains={abilityGains} t={heroCopy} lang={lang} />
-          {figures.kind === 'at' && combat && (
-            <HeroReference
-              hero={active.hero}
-              account={figures.inputs.account}
-              combat={combat}
-              rankMode={rankMode}
-              onRankMode={setRankMode}
-              formatNumber={boundFormatNumber}
-            />
+    <div className={cn(colClass, 'min-h-0 flex-1')}>
+      {toolbar}
+      {/* One presentation at a time, cross-faded: `mode="wait"` lets the outgoing one finish
+          before the incoming one lays out, which is what keeps a board of twenty-two cards from
+          measuring itself against a rail that is still on screen. `reducedMotion="user"` turns
+          the whole thing off for a reader who asked for that. */}
+      <MotionConfig reducedMotion="user">
+        <AnimatePresence mode="wait" initial={false}>
+          {viewMode === 'cards' ? (
+            <motion.div
+              key="cards"
+              className="min-w-0"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+            >
+              <RosterCards
+                rows={shownRows}
+                selectedId={active.id}
+                onSelectHeroId={onSelectHeroId}
+                statLabel={boundStatLabel}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="list"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              // Rail beside detail above 1100px, detail alone below it — the same
+              // side-by-side-or-stacked threshold the phase board's own roster row is drawn at.
+              className="grid min-h-0 grid-cols-1 gap-2.5 min-[1100px]:grid-cols-[19rem_minmax(0,1fr)]"
+            >
+              <div className="min-w-0 max-[1099px]:hidden">
+                <RosterRail
+                  rows={shownRows}
+                  selectedId={active.id}
+                  onSelectHeroId={onSelectHeroId}
+                />
+              </div>
+              <HeroCopyProvider t={panelCopy} lang={lang}>
+                <div className={cn(colClass, 'min-w-0')}>
+                  {/* The rail's stand-in below that width: the same roster, reached through the picker. */}
+                  <Panel className="min-[1100px]:hidden">
+                    <div className={panelHClass}>
+                      <h2 className={panelTitleClass}>{t.heroesRosterTitle}</h2>
+                      <Button variant="ghost" onClick={onOpenPicker}>
+                        {t.switchHeroShort}
+                      </Button>
+                    </div>
+                    <HeroIdentityChip hero={active.hero} fallbackName={active.hero.name} lang={lang} />
+                  </Panel>
+                  <HeroDetailTabs
+                    active={active}
+                    heroes={heroes}
+                    heroCopy={heroCopy}
+                    lang={lang}
+                    abilityGains={abilityGains}
+                    combat={combat}
+                    figures={figures}
+                    phase={shownHeroPhase(phaseReading, overridePhase)}
+                    overridden={overridePhase !== null}
+                    onOverridePhase={setOverridePhase}
+                    onClearOverride={onClearOverride}
+                    rankMode={rankMode}
+                    onRankMode={setRankMode}
+                    statLabel={boundStatLabel}
+                    formatNumber={boundFormatNumber}
+                    marketPrice={marketPrice}
+                    formatAmount={formatAmount}
+                    onSelectHero={onSelectHero}
+                  />
+                </div>
+              </HeroCopyProvider>
+            </motion.div>
           )}
-        </div>
-      </HeroCopyProvider>
+        </AnimatePresence>
+      </MotionConfig>
       <HeroPickerDialogView
         open={pickerOpen}
         onOpenChange={setPickerOpen}
@@ -301,6 +390,171 @@ function HeroesRoster({ model }: { model: RosterModel }) {
       />
     </div>
   );
+}
+
+/**
+ * The detail pane's four stages, grouped the way the web planner groups its three.
+ *
+ * Hero, Gear and Points hold what the planner's tabs of those names hold, panel for panel — both
+ * apps draw them from one implementation, so a player who has learned one has learned the other.
+ * Combat is the fourth because this screen computes something the planner has no tab for: the
+ * phase-scoped figures, which over there are folded into the hero strip above the tab list. The
+ * phase control lives on it, beside the figures it was added for.
+ *
+ * Which stage is open is view-local and stored nowhere, like the phase override and the rank mode
+ * beside it — leaving the screen and coming back opens on the hero again.
+ */
+function HeroDetailTabs({
+  active,
+  heroes,
+  heroCopy,
+  lang,
+  abilityGains,
+  combat,
+  figures,
+  phase,
+  overridden,
+  onOverridePhase,
+  onClearOverride,
+  rankMode,
+  onRankMode,
+  statLabel: boundStatLabel,
+  formatNumber,
+  marketPrice,
+  formatAmount,
+  onSelectHero,
+}: {
+  active: RosterHeroRow;
+  heroes: HeroRecord[];
+  heroCopy: ReturnType<typeof useHeroDetailCopy>;
+  lang: Lang;
+  abilityGains: readonly AbilityGain[];
+  combat: AdvisorPipelineResult | null;
+  figures: HeroFigures;
+  phase: number;
+  overridden: boolean;
+  onOverridePhase: (phase: number) => void;
+  onClearOverride: () => void;
+  rankMode: RankMode;
+  onRankMode: (next: RankMode) => void;
+  statLabel: (key: SheetKey) => string;
+  formatNumber: (n: number, d?: number) => string;
+  marketPrice: HeroMarketPrice | null;
+  formatAmount: (value: number, currency: string) => string;
+  onSelectHero: (hero: HeroRecord) => void;
+}) {
+  const t = useCopy();
+  const statCopy = useStatPanelCopy();
+  const [tab, setTab] = useState('hero');
+
+  return (
+    <Tabs.Root value={tab} onValueChange={setTab}>
+      <Tabs.List>
+        <Tabs.Tab value="hero">{t.heroesTabHero}</Tabs.Tab>
+        <Tabs.Tab value="combat">{t.heroesTabCombat}</Tabs.Tab>
+        <Tabs.Tab value="gear">{t.heroesTabGear}</Tabs.Tab>
+        <Tabs.Tab value="points">{t.heroesTabPoints}</Tabs.Tab>
+      </Tabs.List>
+      <Tabs.Panels>
+        <Tabs.Panel value="hero">
+          <div className={colClass}>
+            <HeroIdentityRollPanel
+              hero={active.hero}
+              rollQuality={active.report}
+              t={heroCopy}
+              lang={lang}
+              statLabel={boundStatLabel}
+              marketPrice={marketPrice}
+              formatAmount={formatAmount}
+            />
+            <HeroAbilitiesPanel
+              hero={active.hero}
+              abilityGains={abilityGains}
+              t={heroCopy}
+              lang={lang}
+            />
+          </div>
+        </Tabs.Panel>
+        <Tabs.Panel value="combat">
+          <div className={colClass}>
+            {/* The phase the figures below were computed at. It is the only control on this
+                screen that changes what a stage prints, and it changes Points as well as this
+                one — Points has no control of its own and follows whatever is set here. */}
+            <PhaseControl
+              phase={phase}
+              overridden={overridden}
+              onOverridePhase={onOverridePhase}
+              onClearOverride={onClearOverride}
+            />
+            <HeroCombat
+              heroes={heroes}
+              hero={active.hero}
+              combat={combat}
+              figures={figures}
+              onSelectHero={onSelectHero}
+            />
+            {/* The combat sheet those figures were computed from — beside them rather than at the
+                bottom of Points, where it was the one phase-scoped panel in a stage of sheet
+                arithmetic. */}
+            {figures.kind === 'at' && combat ? (
+              <HeroEffectiveStats
+                t={statCopy}
+                facts={effectiveFacts(active.hero, figures.inputs.account, combat)}
+                formatNumber={formatNumber}
+              />
+            ) : null}
+          </div>
+        </Tabs.Panel>
+        <Tabs.Panel value="gear">
+          {figures.kind === 'at' && combat ? (
+            <HeroGear hero={active.hero} combat={combat} />
+          ) : (
+            <FiguresNotice figures={figures} />
+          )}
+        </Tabs.Panel>
+        <Tabs.Panel value="points">
+          {figures.kind === 'at' && combat ? (
+            <HeroReference
+              hero={active.hero}
+              combat={combat}
+              rankMode={rankMode}
+              onRankMode={onRankMode}
+            />
+          ) : (
+            <FiguresNotice figures={figures} />
+          )}
+        </Tabs.Panel>
+      </Tabs.Panels>
+    </Tabs.Root>
+  );
+}
+
+/**
+ * Why a phase-scoped stage has nothing to print.
+ *
+ * Every stage but Hero is computed at a phase, so the three fail together and for the same two
+ * reasons. Saying so on the stage the player is actually looking at is what keeps an unreadable
+ * phase from reading as a blank panel.
+ */
+function FiguresNotice({ figures }: { figures: HeroFigures }) {
+  const t = useCopy();
+
+  switch (figures.kind) {
+    case 'pending':
+      return null;
+    case 'unknownPhase':
+      return (
+        <Banner tone="warn" title={t.heroesPhaseUnknownTitle}>
+          {t.heroesPhaseUnknownDescription}
+        </Banner>
+      );
+    default:
+      return (
+        <Banner tone="warn" title={t.heroesFiguresWithheldTitle}>
+          {t.heroesFiguresWithheldDescription}
+        </Banner>
+      );
+  }
 }
 
 /** One frozen empty array, so a screen with nothing to compute hands the panel the same reference
@@ -356,40 +610,67 @@ function HeroCombat({
   figures: HeroFigures;
   onSelectHero: (hero: HeroRecord) => void;
 }) {
-  const t = useCopy();
+  if (figures.kind !== 'at') return <FiguresNotice figures={figures} />;
 
-  switch (figures.kind) {
-    case 'pending':
-      return null;
-    case 'unknownPhase':
-      return (
-        <Banner tone="warn" title={t.heroesPhaseUnknownTitle}>
-          {t.heroesPhaseUnknownDescription}
-        </Banner>
-      );
-    case 'withheld':
-      return (
-        <Banner tone="warn" title={t.heroesFiguresWithheldTitle}>
-          {t.heroesFiguresWithheldDescription}
-        </Banner>
-      );
-    default:
-      return (
-        <PhasesHeroPanel
-          heroes={heroes}
-          hero={hero}
-          combat={combat}
-          phaseSelection={figures.selection}
-          onSelectHero={onSelectHero}
-        />
-      );
-  }
+  return (
+    <PhasesHeroPanel
+      heroes={heroes}
+      hero={hero}
+      combat={combat}
+      phaseSelection={figures.selection}
+      onSelectHero={onSelectHero}
+      breakdownShownElsewhere
+    />
+  );
 }
 
 /**
- * The reference half of the detail: what to spend the next point on, then the tables the answer is
- * read out of — points placed, the stat sheet they build, the items feeding it, and finally how
- * each combat figure above was arrived at.
+ * What the per-statistic breakdown reads: one hero, the account it shares, and the pipeline run
+ * they produced. A plain function rather than a hook, so the Combat stage can build it at the
+ * point of use without a second pipeline run.
+ */
+function effectiveFacts(
+  hero: HeroRecord,
+  account: AccountShared,
+  combat: AdvisorPipelineResult,
+): PipelineFacts {
+  return {
+    geared: hero.gearedOverride,
+    adjusted: combat.adjusted,
+    pts: hero.pts,
+    delta: combat.pointDelta,
+    effective: combat.effective,
+    mods: combat.mods,
+    sheetOther: combat.sheetOther,
+    naked: hero.naked,
+    level: hero.level,
+    stars: hero.stars,
+    attackMult: combat.attackMult,
+    energyMult: combat.energyMult,
+    speedMult: combat.speedMult,
+    critDmgMult: combat.critDmgMult,
+    teamCritFlat: combat.teamCritFlat,
+    treeSpeed: account.tree.speed,
+    treeCritChance: account.tree.critChance,
+    treeCritDmg: account.tree.critDmg,
+    treeEnergy: account.tree.energy,
+    treeLuckFlatPct: combat.treeSheet.luckFlatPct,
+    context: combat.context,
+    dmgMult: combat.dmgMult,
+    treeDanoTotal: account.tree.danoTotal,
+    // The planner's Math-check override, which this app has no surface for.
+    extraDmgPct: 0,
+    active: combat.active,
+    dps: combat.dps,
+    uptime: combat.uptime,
+    rest: combat.rest,
+  };
+}
+
+/**
+ * The Points stage: the points placed and what to spend the next one on, then the stat sheet they
+ * build. Stacked in the planner's own order, and the first pair sits side by side at the same
+ * width the planner pairs them at.
  *
  * Every one of these panels takes its editing callbacks as optional props, and this screen passes
  * none. That is the whole read-only posture: no stepper, no Reset, no Optimize build, no slot
@@ -398,80 +679,42 @@ function HeroCombat({
  */
 function HeroReference({
   hero,
-  account,
   combat,
   rankMode,
   onRankMode,
-  formatNumber,
 }: {
   hero: HeroRecord;
-  account: AccountShared;
   combat: AdvisorPipelineResult;
   rankMode: RankMode;
   onRankMode: (next: RankMode) => void;
-  formatNumber: (n: number, d?: number) => string;
 }) {
   const { lang } = useLocale();
   const statCopy = useStatPanelCopy();
-  const gearCopy = useGearPanelCopy();
 
   const ranking = useMemo(
     () => heroNextPointRanking(rankMode, combat.ranking),
     [rankMode, combat],
   );
 
-  const facts: PipelineFacts = useMemo(
-    () => ({
-      geared: hero.gearedOverride,
-      adjusted: combat.adjusted,
-      pts: hero.pts,
-      delta: combat.pointDelta,
-      effective: combat.effective,
-      mods: combat.mods,
-      sheetOther: combat.sheetOther,
-      naked: hero.naked,
-      level: hero.level,
-      stars: hero.stars,
-      attackMult: combat.attackMult,
-      energyMult: combat.energyMult,
-      speedMult: combat.speedMult,
-      critDmgMult: combat.critDmgMult,
-      teamCritFlat: combat.teamCritFlat,
-      treeSpeed: account.tree.speed,
-      treeCritChance: account.tree.critChance,
-      treeCritDmg: account.tree.critDmg,
-      treeEnergy: account.tree.energy,
-      treeLuckFlatPct: combat.treeSheet.luckFlatPct,
-      context: combat.context,
-      dmgMult: combat.dmgMult,
-      treeDanoTotal: account.tree.danoTotal,
-      // The planner's Math-check override, which this app has no surface for.
-      extraDmgPct: 0,
-      active: combat.active,
-      dps: combat.dps,
-      uptime: combat.uptime,
-      rest: combat.rest,
-    }),
-    [hero, account, combat],
-  );
-
   return (
-    <>
-      <NextPointRanking
-        t={statCopy}
-        lang={lang}
-        ranking={ranking}
-        rankMode={rankMode}
-        onRankMode={onRankMode}
-      />
-      <PointsTable
-        t={statCopy}
-        lang={lang}
-        level={hero.level}
-        pts={hero.pts}
-        pipeline={combat}
-        heroBattleAllowed={hero.battleAllowed !== false}
-      />
+    <div className={colClass}>
+      <div className={adviceSplitClass}>
+        <PointsTable
+          t={statCopy}
+          lang={lang}
+          level={hero.level}
+          pts={hero.pts}
+          pipeline={combat}
+          heroBattleAllowed={hero.battleAllowed !== false}
+        />
+        <NextPointRanking
+          t={statCopy}
+          lang={lang}
+          ranking={ranking}
+          rankMode={rankMode}
+          onRankMode={onRankMode}
+        />
+      </div>
       <SheetTable
         t={statCopy}
         lang={lang}
@@ -485,15 +728,23 @@ function HeroReference({
           tree: combat.treeSheet,
         }}
       />
-      <GearTab
-        t={gearCopy}
-        lang={lang}
-        loadout={hero.loadout}
-        altLoadout={hero.altLoadout}
-        pipeline={combat}
-      />
-      <HeroEffectiveStats t={statCopy} facts={facts} formatNumber={formatNumber} />
-    </>
+    </div>
+  );
+}
+
+/** The Gear stage — the planner's own Items panel, handed no editing callback. */
+function HeroGear({ hero, combat }: { hero: HeroRecord; combat: AdvisorPipelineResult }) {
+  const { lang } = useLocale();
+  const gearCopy = useGearPanelCopy();
+
+  return (
+    <GearTab
+      t={gearCopy}
+      lang={lang}
+      loadout={hero.loadout}
+      altLoadout={hero.altLoadout}
+      pipeline={combat}
+    />
   );
 }
 
@@ -543,6 +794,8 @@ function RosterRailRow({
   selected: boolean;
   onSelectHeroId: (heroId: string) => void;
 }) {
+  const inactiveChrome = row.hero.battleAllowed === false ? rosterInactiveChromeClass : undefined;
+
   return (
     <li>
       <button
@@ -569,10 +822,14 @@ function RosterRailRow({
             : 'hover:bg-[color-mix(in_oklch,var(--accent)_6%,transparent)]',
         )}
       >
-        <HeroIdentityChip hero={row.hero} fallbackName={row.hero.name} lang={lang} />
+        {/* A shelved hero is greyed here exactly as it is on the board and in the picker. The
+            mute rides on the row's contents, never on the row's own selection chrome. */}
+        <span className={cn('flex', 'min-w-0', 'flex-1', 'items-center', 'gap-2', inactiveChrome)}>
+          <HeroIdentityChip hero={row.hero} fallbackName={row.hero.name} lang={lang} />
+        </span>
         {/* Roll quality is a column players read down, and the sans face this app ships has no
             tabular figures — so the mono face is what actually keeps the digits in line. */}
-        <span className="shrink-0 font-mono text-xs tabular-nums text-muted">
+        <span className={cn('shrink-0', 'font-mono', 'text-xs', 'tabular-nums', 'text-muted', inactiveChrome)}>
           {rollQualityText(row, lang)}
         </span>
       </button>

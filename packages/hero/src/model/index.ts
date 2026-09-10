@@ -50,8 +50,10 @@ export {
   penetrationReadingFor,
   propTableReadingFor,
   stageLabelFor,
+  combatFiguresShown,
 } from './combat-panel';
 export type {
+  CombatFigureId,
   FuseNotes,
   FuseReadout,
   FuseSource,
@@ -66,6 +68,7 @@ export { railTintFor } from './roll-rail-tint';
 export type { RollTint } from './roll-rail-tint';
 export {
   SHEET_PCT_KEYS,
+  sheetStatUnit,
   derivedLabel,
   formatBreakdownValue,
   groupLabel,

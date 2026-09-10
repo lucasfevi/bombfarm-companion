@@ -44,7 +44,11 @@ export function GearTab({
   renderSlot?: GearSlotEditorSlot | undefined;
 }) {
   const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
-  const reading = gearPanelReading({ editable: !!editing, hasSlotEditor: !!renderSlot });
+  const reading = gearPanelReading({
+    editable: !!editing,
+    hasSlotEditor: !!renderSlot,
+    hasAltLoadout: !!altLoadout,
+  });
 
   const hasGear = SLOTS.some((slot) => loadout[slot] != null);
 

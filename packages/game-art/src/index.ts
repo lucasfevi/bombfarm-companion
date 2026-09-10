@@ -54,6 +54,7 @@ export { HeroGearIcons } from './hero-gear-icons';
 export { GoldValue } from './gold-value';
 export {
   MarketPrice,
+  SteamGlyph,
   type MarketPriceLabels,
   type MarketPriceView,
 } from './market-price';

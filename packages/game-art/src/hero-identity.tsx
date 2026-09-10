@@ -114,7 +114,13 @@ export function HeroIdentity({
             {rarity}
             <span className="shrink-0 text-muted">
               {level === undefined ? '' : heroLevelLabel(level, lang)}
-              <span aria-hidden> · </span>#{shortId}
+              {/* The separator belongs to the id, not to the level — a caller that passes no id
+                  was printing a bare `Nv 55 · #`. */}
+              {shortId === undefined ? null : (
+                <>
+                  <span aria-hidden> · </span>#{shortId}
+                </>
+              )}
             </span>
           </div>
         )}

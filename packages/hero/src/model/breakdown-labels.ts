@@ -23,6 +23,17 @@ export const SHEET_PCT_KEYS: ReadonlySet<SheetPanelKey> = new Set([
   'luck',
 ]);
 
+/**
+ * The unit a sheet statistic prints in: `%` for the rate stats, nothing for the counts.
+ *
+ * Reads the set the sheet table, the breakdown and the roll table already read rather than
+ * listing the keys again — a statistic that gained or lost its unit in one place would otherwise
+ * keep the old one here, and a bare `45,45` in a column of rates reads as a count.
+ */
+export function sheetStatUnit(key: SheetKey): string {
+  return SHEET_PCT_KEYS.has(key) ? '%' : '';
+}
+
 export function derivedLabel(strings: StatPanelCopy, statId: Exclude<BreakdownStatId, SheetKey>): string {
   switch (statId) {
     case 'mitF':

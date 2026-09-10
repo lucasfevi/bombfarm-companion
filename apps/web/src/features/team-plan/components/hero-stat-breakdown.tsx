@@ -3,6 +3,7 @@
 import { gameSheetView } from '@bombfarm/domain/model';
 import { SHEET_PANEL_KEYS } from '@bombfarm/domain/planner-constants';
 import type { TeamPlanHeroStats } from '@bombfarm/domain/team-plan/types';
+import { sheetStatUnit } from '@bombfarm/hero/model';
 import { DeltaTable, type DeltaTableRow } from '@bombfarm/ui';
 import type { Strings } from '@/shared/i18n';
 
@@ -31,7 +32,9 @@ function statRows(
 ): DeltaTableRow[] {
   return keys.map((key) => ({
     id: key,
-    label: strings.statShort[key],
+    // The unit rides on the label here, not on the figure: `DeltaTable` formats its own numbers
+    // from one shared decimals setting and has no per-row unit to hand them.
+    label: `${strings.statShort[key]}${sheetStatUnit(key) === '' ? '' : ` ${sheetStatUnit(key)}`}`,
     now: before[key],
     target: after[key],
   }));

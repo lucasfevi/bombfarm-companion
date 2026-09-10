@@ -245,11 +245,18 @@ export function marketableReadingFor(hero: HeroRecord): FlagReading {
 export type HeroMarketPrice = {
   readonly amount: number | null;
   readonly currency: string;
+  /** The Steam listing the figure was read off, when the host resolved one. */
+  readonly listingUrl?: string | null;
 };
 
 export type MarketValueReading =
   | { readonly kind: 'hidden' }
-  | { readonly kind: 'value'; readonly amount: number; readonly currency: string };
+  | {
+      readonly kind: 'value';
+      readonly amount: number;
+      readonly currency: string;
+      readonly listingUrl: string | null;
+    };
 
 /**
  * Whether to print what this hero is worth, and how much.
@@ -270,7 +277,14 @@ export type MarketValueReading =
  * much, because that tells them nothing they can use.
  */
 export type MarketTileReading =
-  | { readonly kind: 'value'; readonly amount: number; readonly currency: string }
+  | {
+      readonly kind: 'value';
+      readonly amount: number;
+      readonly currency: string;
+      /** Where the player can check it. A figure a player cannot go and verify is worth less
+       *  than one they can, and this app quotes a market it does not own. */
+      readonly listingUrl: string | null;
+    }
   | { readonly kind: 'notSellable' };
 
 export function marketTileReadingFor(
@@ -279,7 +293,12 @@ export function marketTileReadingFor(
 ): MarketTileReading {
   const value = marketValueReadingFor(marketable, price);
   return value.kind === 'value'
-    ? { kind: 'value', amount: value.amount, currency: value.currency }
+    ? {
+        kind: 'value',
+        amount: value.amount,
+        currency: value.currency,
+        listingUrl: value.listingUrl,
+      }
     : { kind: 'notSellable' };
 }
 
@@ -289,5 +308,10 @@ export function marketValueReadingFor(
 ): MarketValueReading {
   if (marketable !== 'yes') return { kind: 'hidden' };
   if (price == null || price.amount == null) return { kind: 'hidden' };
-  return { kind: 'value', amount: price.amount, currency: price.currency };
+  return {
+    kind: 'value',
+    amount: price.amount,
+    currency: price.currency,
+    listingUrl: price.listingUrl ?? null,
+  };
 }

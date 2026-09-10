@@ -8,6 +8,7 @@ describe('pointsPanelReading', () => {
       showPointSteppers: true,
       showPreviewActions: true,
       showResetAdvice: true,
+      mountResetAdvice: true,
     });
   });
 
@@ -16,7 +17,10 @@ describe('pointsPanelReading', () => {
       showReset: true,
       showPointSteppers: true,
       showPreviewActions: true,
+      // Still mounted: the line holds its space so the panel does not reflow when the hero is
+      // re-enabled and the advice comes back.
       showResetAdvice: false,
+      mountResetAdvice: true,
     });
   });
 
@@ -26,6 +30,9 @@ describe('pointsPanelReading', () => {
       showPointSteppers: false,
       showPreviewActions: false,
       showResetAdvice: false,
+      // Nor the blank line: with no Optimize build the advice can never appear, so holding
+      // space for it is a gap under the heading that never fills.
+      mountResetAdvice: false,
     });
   });
 
@@ -33,5 +40,19 @@ describe('pointsPanelReading', () => {
     for (const heroBattleAllowed of [true, false]) {
       expect(pointsPanelReading({ editable: false, heroBattleAllowed }).showResetAdvice).toBe(false);
     }
+  });
+});
+
+describe('the reserved advice line', () => {
+  it('is held open only where the advice can appear at all', () => {
+    // The discriminating pair: both hide the line, and only one of them can ever show it again.
+    expect(pointsPanelReading({ editable: true, heroBattleAllowed: false })).toMatchObject({
+      showResetAdvice: false,
+      mountResetAdvice: true,
+    });
+    expect(pointsPanelReading({ editable: false, heroBattleAllowed: true })).toMatchObject({
+      showResetAdvice: false,
+      mountResetAdvice: false,
+    });
   });
 });

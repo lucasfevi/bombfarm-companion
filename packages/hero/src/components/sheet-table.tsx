@@ -19,6 +19,7 @@ import {
   tipClass,
 } from '@bombfarm/ui';
 import type { Lang, StatPanelCopy } from '../copy';
+import { sheetStatUnit } from '../model/breakdown-labels';
 
 const STAGE_DELTA_KEYS = [
   'deltaLevel',
@@ -35,10 +36,11 @@ function formatStageCell(
   value: number,
   format: (n: number, d?: number) => string,
   asDelta: boolean,
+  unit = '',
 ): string {
   if (asDelta && Math.abs(value) < 1e-9) return '—';
-  if (!asDelta) return format(value, 2);
-  const abs = format(Math.abs(value), 2);
+  if (!asDelta) return `${format(value, 2)}${unit}`;
+  const abs = `${format(Math.abs(value), 2)}${unit}`;
   return value < 0 ? `−${abs}` : `+${abs}`;
 }
 
@@ -49,9 +51,13 @@ function formatStageCell(
  * (`deltaCap` is exactly 0 there); otherwise the in-game value plus how much is being wasted,
  * e.g. `100.00 (−77.95)`.
  */
-function formatOverCapCell(row: SheetStageRow, format: (n: number, d?: number) => string): string {
+function formatOverCapCell(
+  row: SheetStageRow,
+  format: (n: number, d?: number) => string,
+  unit: string,
+): string {
   if (row.deltaCap === 0) return '—';
-  return `${format(row.cappedTotal, 2)} (${formatStageCell(row.deltaCap, format, true)})`;
+  return `${format(row.cappedTotal, 2)}${unit} (${formatStageCell(row.deltaCap, format, true, unit)})`;
 }
 
 /** `peelSheetStages`' own input, with a birth roll the panel may not have yet. */
@@ -139,22 +145,23 @@ export function SheetTable({
           <DataTable.Body>
             {SHEET_PANEL_KEYS.map((statKey) => {
               const row: SheetStageRow | null = stages ? stages[statKey] : null;
+              const unit = sheetStatUnit(statKey);
               return (
                 <DataTable.Row key={statKey}>
                   <DataTable.Cell className="truncate">{t.statShort[statKey]}</DataTable.Cell>
                   <DataTable.Cell align="right" numeric className={mutedClass}>
-                    {row ? formatStageCell(row.birth, boundFormatNumber, false) : '—'}
+                    {row ? formatStageCell(row.birth, boundFormatNumber, false, unit) : '—'}
                   </DataTable.Cell>
                   {STAGE_DELTA_KEYS.map((deltaKey) => (
                     <DataTable.Cell key={deltaKey} align="right" numeric className={mutedClass}>
-                      {row ? formatStageCell(row[deltaKey], boundFormatNumber, true) : '—'}
+                      {row ? formatStageCell(row[deltaKey], boundFormatNumber, true, unit) : '—'}
                     </DataTable.Cell>
                   ))}
                   <DataTable.Cell align="right" numeric>
-                    <b>{row ? formatStageCell(row.total, boundFormatNumber, false) : '—'}</b>
+                    <b>{row ? formatStageCell(row.total, boundFormatNumber, false, unit) : '—'}</b>
                   </DataTable.Cell>
                   <DataTable.Cell align="right" numeric className={mutedClass}>
-                    {row ? formatOverCapCell(row, boundFormatNumber) : '—'}
+                    {row ? formatOverCapCell(row, boundFormatNumber, unit) : '—'}
                   </DataTable.Cell>
                 </DataTable.Row>
               );

@@ -56,7 +56,11 @@ export function GearCompareSection({
   renderSlot?: GearSlotEditorSlot | undefined;
 }) {
   const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
-  const reading = gearPanelReading({ editable: !!editing, hasSlotEditor: !!renderSlot });
+  const reading = gearPanelReading({
+    editable: !!editing,
+    hasSlotEditor: !!renderSlot,
+    hasAltLoadout: !!altLoadout,
+  });
 
   const { B, dps, predHit, bDiff, bHitDiff } = pipeline;
 
@@ -132,6 +136,7 @@ export function GearCompareSection({
         </MotionConfig>
       )}
 
+      {!reading.showCompare ? null : (
       <MotionConfig reducedMotion="user">
         <div className={heroAbilHClass}>
           <h3 className={heroAbilTitleClass}>{t.panelCompare}</h3>
@@ -215,6 +220,7 @@ export function GearCompareSection({
           )}
         </AnimatePresence>
       </MotionConfig>
+      )}
     </>
   );
 }

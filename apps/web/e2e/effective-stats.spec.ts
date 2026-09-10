@@ -18,7 +18,7 @@ function pointsStage(page: Page, lang: 'en' | 'pt') {
 }
 
 function effectivePanel(page: Page, lang: 'en' | 'pt') {
-  const title = lang === 'en' ? /^Effective stats$/i : /^Stats efetivos$/i;
+  const title = lang === 'en' ? /^Effective stats$/i : /^Atributos efetivos$/i;
   return activePanel(page).locator('section').filter({
     has: page.getByRole('heading', { name: title, level: 2 }),
   });
@@ -88,7 +88,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     await expect(headingsPt.nth(0)).toHaveText(/^Pontos$/);
     await expect(headingsPt.nth(1)).toHaveText(/^Próximo ponto$/);
     await expect(headingsPt.nth(2)).toHaveText(/^Atributos$/);
-    await expect(headingsPt.nth(3)).toHaveText(/^Stats efetivos$/);
+    await expect(headingsPt.nth(3)).toHaveText(/^Atributos efetivos$/);
   });
 
   test('hides sheet-group rows that match hero-sheet Total; shows combat deltas + derived', async ({
@@ -341,10 +341,11 @@ test.describe('effective stats panel (EST / ESB)', () => {
     // Stats composes from birth now, not from gearedOverride: birth.luck 20 × starsMult(2)
     // = 30 (Δ stars +10.00), then the tree's flat luckFlatPct 3 (Δ tree +3.00) → Total 33.00.
     // The 30 tracks STAR_MULT_PER_STAR — it was 40 while a ★ was worth 0.5 of base.
-    await expect(luckRow.locator('td').nth(1)).toHaveText('20.00');
+    // Each figure carries its own unit now — the row is named `Luck`, not `Luck %`.
+    await expect(luckRow.locator('td').nth(1)).toHaveText('20.00%');
     // Total is second-to-last: an "Over cap" column now trails it (rendered "—" for a stat
     // under its cap, and Luck has no cap at all), so `.last()` would read that instead.
-    await expect(luckRow.locator('td').nth(-2)).toHaveText('33.00');
+    await expect(luckRow.locator('td').nth(-2)).toHaveText('33.00%');
 
     const panel = effectivePanel(page, 'en');
     await expect(panel.getByRole('button', { name: /Show breakdown of Luck/i })).toHaveCount(0);

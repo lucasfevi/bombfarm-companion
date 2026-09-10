@@ -106,7 +106,7 @@ export const pt: typeof en = {
   forgeLevel: "Forja",
   sheetTip: "Breakdown da ficha do herói no jogo a partir do save: roll ao nascer até nível, estrelas, habilidades de ficha (Olho Clínico, Ponta de Diamante, Golpe Brutal), gear, pontos gastos e árvore de habilidades. O Total é a soma sem teto do modelo; quando chance de crítico ou redução de recarga passam do teto de exibição do jogo, Acima do teto mostra quanto está sendo desperdiçado.",
   sheetTipNeedBirth: "Este herói ainda não tem roll ao nascer guardado — reimporte seu save para o planner remontar a ficha pela origem. Heróis locais antigos precisam de um import novo.",
-  colStat: "Stat",
+  colStat: "Atributo",
   colSheetBirth: "Ao nascer",
   colSheetDeltaLevel: "Δ nível",
   colSheetDeltaStars: "Δ estrela",
