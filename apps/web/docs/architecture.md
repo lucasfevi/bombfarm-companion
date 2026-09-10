@@ -29,7 +29,7 @@ Six feature slices, each with a required `index.ts` public-API barrel — nothin
 
 | Slice | Owns |
 | --- | --- |
-| `planner/` | Composer, tab stage (`PlannerTabs`), per-tab panels (Abilities / Gear / Account / Points), hero-draft action hooks, `planner-tab` model |
+| `planner/` | Composer, tab stage (`PlannerTabs`), per-tab panels (Abilities / Gear / Account / Points), hero-draft action hooks, `planner-tab` model, and the roster rail/board connector (`RosterWorkspace` + `use-roster-view`) — the views themselves are `@bombfarm/hero`'s, shared with the desktop Heroes screen, and picking a hero from either is a draft write, which is why the connector lives here rather than in `roster/` |
 | `account/` | Account column — house/level, plain-text skill-tree totals (import-sourced, read-only), team buffs, and the holdings section (what the account could sell). The panels themselves are drawn by `@bombfarm/account` (`packages/account/src/panels`, `packages/account/src/holdings`, `packages/account/src/layout`), prop-driven and language-blind, so the desktop app renders the same ones — the layout included, so moving a region is one edit rather than two; this slice keeps the store reads, the labels and `model/account-holdings.tsx` that feed them |
 | `gear/` | `SlotEditor`, gear slots grid, gear domain UI |
 | `roster/` | Roster table / sort / open-state hooks (see the dead-code note below), hero picker |
@@ -65,7 +65,7 @@ File-size lint budgets (also `error`, not a "rough target"): general `src/` file
 
 ## Routes
 
-- `/` — Web planner (import-only roster, tab stage: Abilities / Gear / Account / Points). Workspace lives in the `@planner` slot.
+- `/` — Web planner (import-only roster, tab stage: Abilities / Gear / Account / Points). Workspace lives in the `@planner` slot. The roster is drawn beside it as a 19rem rail above 1100px, or over it as a board of cards; below that width the rail is not drawn and the hero strip's picker dialog is the way to switch hero.
 - `/farm` — Farm page: the Farm Ranking board (`FarmRankingBoard`, `src/features/phases/components/farm-ranking-board.tsx`) above the pre-existing phase explorer. Route moved here from `/phases`; the feature slice, its internal identifiers (`phases-slice.ts`, the `phases` i18n namespace, `src/features/phases/`) and the `bf-hp-phases-view-v1` key all deliberately keep their pre-rename names — the word "Farm" reads fine untranslated in both languages, so only the URL and the nav label changed. The screen's copy and its pure model/format layer live in `@bombfarm/farm` (`packages/farm/src/copy`, `packages/farm/src/model`) so the desktop app can render the same screen; `src/features/phases/components/` and the store slice stay here. Phase picker is **independent** of the account's farm phase until the user clicks **Use as farm phase** (`packages/farm/src/model/phases-page.ts` → `bf-hp-account-v1`). The planner slot stays mounted but hidden.
 - `/phases` — Redirect stub (`src/app/phases/page.tsx`). Lives **outside** the `(app)` route group deliberately, since `output: 'export'` means there is no server-side `redirects()`: a `'use client'` page that calls `router.replace('/farm')` in a `useEffect`, with a visible `<a href="/farm">` fallback and a `<noscript>` meta-refresh for the no-JS case. `replace`, not `push`, so the browser's Back button does not bounce back to `/phases`.
 
