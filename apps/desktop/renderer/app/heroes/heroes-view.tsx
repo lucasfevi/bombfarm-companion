@@ -74,6 +74,13 @@ import { useFarmSelectedPhase } from './use-farm-selected-phase';
 import { heroFigures, type HeroFigures } from './hero-figures';
 import { RosterCards } from './roster-cards';
 import { heroPickOutcome, type RosterViewMode } from './roster-view-mode';
+import {
+  rosterBoardRows,
+  DEFAULT_ROSTER_SORT,
+  EMPTY_ROSTER_FILTER,
+  type RosterBoardFilter,
+  type RosterSort,
+} from './roster-board-order';
 import { cachedAbilityGains, createAbilityGainCache } from './ability-gain-cache';
 
 type RosterModel = Extract<HeroesScreenModel, { kind: 'roster' }>;
@@ -153,6 +160,10 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   // View-local and stored nowhere, like the phase override and the rank mode below it: the board
   // is a way of looking at the roster you are in now, not a setting about this account.
   const [viewMode, setViewMode] = useState<RosterViewMode>('list');
+  // The board's own order and narrowing, view-local like the mode itself: they are ways of
+  // looking at the roster you are in now, not settings about this account.
+  const [boardSort, setBoardSort] = useState<RosterSort>(DEFAULT_ROSTER_SORT);
+  const [boardFilter, setBoardFilter] = useState<RosterBoardFilter>(EMPTY_ROSTER_FILTER);
   // View-local, and stored nowhere: leaving the screen unmounts this and the next visit opens on
   // the Farm selection again. It outlives a hero switch on purpose — comparing two heroes at one
   // phase is the reason to override at all.
@@ -243,6 +254,15 @@ function HeroesRoster({ model }: { model: RosterModel }) {
     setPickedHeroId(hero.id);
   }, []);
 
+  const boardRows = useMemo(
+    () => rosterBoardRows(rows, boardFilter, boardSort),
+    [rows, boardFilter, boardSort],
+  );
+  const boardActions = useMemo(
+    () => ({ onSort: setBoardSort, onFilter: setBoardFilter }),
+    [],
+  );
+
   const viewToggleLabels = useMemo(
     () => ({ group: t.heroesViewLabel, cards: t.heroesViewCards, list: t.heroesViewList }),
     [t],
@@ -284,9 +304,13 @@ function HeroesRoster({ model }: { model: RosterModel }) {
             >
               <RosterCards
                 rows={rows}
+                shown={boardRows}
                 selectedId={active.id}
                 onSelectHeroId={onSelectHeroId}
                 statLabel={boundStatLabel}
+                sort={boardSort}
+                filter={boardFilter}
+                actions={boardActions}
               />
             </motion.div>
           ) : (
