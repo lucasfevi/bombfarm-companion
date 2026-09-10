@@ -63,6 +63,16 @@ const BAR_LABEL_CHARS = 3;
  * three and four makes the card about half as wide, which is what puts five of them on a row and
  * lets the board do what it is for: the whole roster in one look.
  */
+/**
+ * The card's whole width: four gear tiles, the three gaps between them, and the card's own
+ * padding — `4 × w-12 + 3 × gap-0.5 + 2 × p-2.5`.
+ *
+ * Fixed rather than a share of the row, because the gear row is the widest thing a card holds and
+ * anything wider is empty space inside every card at once. The board then fits as many as the
+ * window has room for instead of stretching a fixed few.
+ */
+const CARD_WIDTH = '13.625rem';
+
 const ROLL_BARS_PER_ROW = cn('grid', 'grid-cols-4', 'gap-1');
 const ABILITIES_PER_ROW = cn('grid', 'w-fit', 'grid-cols-3', 'gap-0.5');
 const GEAR_PER_ROW = cn('grid', 'w-fit', 'grid-cols-4', 'gap-0.5');
@@ -97,7 +107,8 @@ export function RosterCards({
       </div>
       <Tooltip.Provider delay={200} closeDelay={80}>
         <ul
-          className="m-0 grid list-none grid-cols-1 gap-2.5 p-0 min-[640px]:grid-cols-2 min-[980px]:grid-cols-3 min-[1320px]:grid-cols-4 min-[1660px]:grid-cols-5"
+          className="m-0 grid list-none justify-start gap-2.5 p-0"
+          style={{ gridTemplateColumns: `repeat(auto-fill, ${CARD_WIDTH})` }}
           aria-label={t.heroesRosterListLabel}
         >
           {rows.map((row, index) => (
@@ -188,7 +199,7 @@ const HeroCard = memo(function HeroCard({
           : 'hover:bg-[color-mix(in_oklch,var(--accent)_6%,transparent)]',
       )}
     >
-      <div className={cn('flex', 'min-w-0', 'flex-col', 'gap-2.5', inactiveChrome)}>
+      <div className={cn('flex', 'min-w-0', 'flex-1', 'flex-col', 'gap-2.5', inactiveChrome)}>
         <div className="flex min-w-0 items-center justify-between gap-2">
           <HeroIdentityChip hero={hero} fallbackName={hero.name} lang={lang} />
           {/* Roll quality is the figure a player reads down a roster, and the sans face this app
@@ -208,7 +219,10 @@ const HeroCard = memo(function HeroCard({
           />
         </CardSection>
 
-        <CardSection title={t.rosterColGear}>
+        {/* Pushed to the floor of the card. Cards in one row are the same height, so a hero
+            whose abilities take two rows and one whose take a single row still line their gear
+            up with each other rather than each starting wherever its own abilities ended. */}
+        <CardSection title={t.rosterColGear} className="mt-auto">
           <HeroGearIcons
             loadout={hero.loadout}
             lang={lang}
@@ -223,9 +237,17 @@ const HeroCard = memo(function HeroCard({
   );
 });
 
-function CardSection({ title, children }: { title: string; children: ReactNode }) {
+function CardSection({
+  title,
+  children,
+  className,
+}: {
+  title: string;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="min-w-0">
+    <div className={cn('min-w-0', className)}>
       <h3 className="m-0 mb-1 text-[10px] font-bold tracking-[0.08em] text-muted uppercase">
         {title}
       </h3>

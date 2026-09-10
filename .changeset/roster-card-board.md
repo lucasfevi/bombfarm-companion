@@ -16,7 +16,10 @@ reading behind every bar is on the bar's own tooltip, so the compact form loses 
 
 A hero you have taken out of the rotation is greyed rather than hidden, so it can still be
 compared against the ones that are in. The three groups wrap at four, three and four rather than
-filling the width, which halves the card and puts five of them on a row.
+filling the width, and a card is exactly as wide as the gear row it holds — so the board fits as
+many as the window has room for rather than stretching a fixed few, six across at 1500px. Gear
+sits on the floor of every card, so it lines up across a row whatever height the abilities above
+it took.
 
 **Picking a hero from the board opens it.** The board fills the screen, so the detail is not
 beside it — clicking a card selects that hero and returns you to the list, where the detail is.
