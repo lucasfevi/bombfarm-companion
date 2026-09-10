@@ -4,6 +4,7 @@ import { memo } from 'react';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
+import { heroRankToneClass } from '@bombfarm/game-art';
 import { cn, DataTable } from '@bombfarm/ui';
 import {
   HeroAvatar,
@@ -86,7 +87,7 @@ export const HeroPickerRow = memo(function HeroPickerRow({
       <DataTable.Cell
         className={cn(
           'max-[560px]:hidden text-xl leading-none font-black tracking-tight',
-          hero.rank?.trim() ? 'text-accent' : 'text-muted',
+          heroRankToneClass(hero.rank),
           inactiveChrome,
         )}
       >

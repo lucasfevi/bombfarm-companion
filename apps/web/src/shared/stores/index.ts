@@ -20,6 +20,7 @@ export {
 } from '@/shared/stores/selectors/session-selectors';
 export {
   selectAccountShared,
+  selectAccountSharedForCombat,
   selectAccountTuple,
   selectTreeDanoTotal,
   selectTreeCritChance,
@@ -91,6 +92,14 @@ export {
   selectFormatNumber,
 } from '@/shared/stores/selectors/hero-selectors';
 export {
+  selectDraftHeroRecord,
+  selectHeroRollQuality,
+  selectHeroAbilityGains,
+  resetHeroPanelCaches,
+  getHeroAbilityGainsComputeCount,
+  resetHeroAbilityGainsComputeCount,
+} from '@/shared/stores/selectors/hero-panel-selectors';
+export {
   selectPlannerTabStatuses,
   selectSetupReady,
   selectHeroTabStatus,
@@ -101,6 +110,8 @@ export {
 export {
   selectPhasesViewPhase,
   selectPhasesViewPhaseChosen,
+  selectCombatPhase,
+  selectCombatMitigationPct,
 } from '@/shared/stores/selectors/phases-selectors';
 export { selectTreeSheetTotals } from '@/shared/stores/selectors/tree-sheet-selectors';
 export {

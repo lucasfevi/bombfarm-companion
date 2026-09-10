@@ -10,7 +10,13 @@ import type {
   UpdateStatus,
 } from '@bombfarm/contracts';
 import { DEFAULT_SETTINGS, idleUpdateStatus } from '@bombfarm/contracts';
-import { AppShell, BrandMark, StatusChip, useShellDensity, WINDOW_CONTROLS_WIDTH } from '@bombfarm/ui';
+import {
+  AppShell,
+  BrandMark,
+  StatusChip,
+  useShellDensity,
+  WINDOW_CONTROLS_WIDTH,
+} from '@bombfarm/ui';
 // Proves the renderer can import @bombfarm/domain: a value import from a
 // FILE subpath that itself value-imports ./data/catalog.json, so a dist missing the JSON data
 // fails the static export build rather than surfacing later at runtime. It also carries a
@@ -27,6 +33,7 @@ import { ConsentModal } from './consent-modal';
 import { UpdateChip } from './update-chip';
 import { LiveView } from './live/live-view';
 import { FarmView } from './farm/farm-view';
+import { HeroesView } from './heroes/heroes-view';
 import { InventoryView } from './inventory/inventory-view';
 import { ForgeView } from './forge/forge-view';
 import { AccountView } from './account/account-view';
@@ -428,6 +435,8 @@ function HomePageContent({
             </div>
           ) : activeNavId === 'farm' ? (
             <FarmView />
+          ) : activeNavId === 'heroes' ? (
+            <HeroesView />
           ) : activeNavId === 'inventory' ? (
             <InventoryView />
           ) : activeNavId === 'forge' ? (

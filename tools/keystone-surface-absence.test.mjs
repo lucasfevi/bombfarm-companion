@@ -1,6 +1,6 @@
 /**
  * The repo-wide retired-identifier guard. Scans exactly the four
- * roots the requirement and its own clause table both name — `apps/web/**`,
+ * roots this guard's own stated scope names — `apps/web/**`,
  * `apps/desktop/**`, `packages/ui/**`, `tools/**` — never `packages/domain` (F2's surface, out of
  * F3's touch scope by the git protocol) and never repo-root `docs/` (outside the four stated
  * roots; this guard's two `docs/base-ui-first.md` / `docs/content-fit-ui.md` allowlist entries
@@ -173,6 +173,13 @@ const ALLOWLIST = [
  * on another) fails by name. `packages/ui` has zero lines and needs no entry.
  */
 const CRIT_DMG_MULT_MAP = {
+  // New file for this token: the Heroes screen assembles `PipelineFacts` for the per-statistic
+  // breakdown, and the kept combat pass-through is one of its rows. Read off the pipeline result,
+  // never off a tree state.
+  'apps/desktop/renderer/app/heroes/heroes-view.tsx': [438],
+  // The shared roster builder's own account fixture, same kind as the two farm entries below: a
+  // raw save-shaped skills block handed to the parser, not a field the app reads.
+  'apps/desktop/renderer/lib/account/account-roster.test.ts': [39],
   'apps/desktop/renderer/lib/account/account-view-store.test.ts': [34],
   // The desktop farm adapter's own account fixtures, same kind as the account-view entry above:
   // a raw save-shaped skills block, not a field the app reads.
@@ -190,6 +197,12 @@ const CRIT_DMG_MULT_MAP = {
   // `farmObjective` row above this section with a prose paragraph, a net +1 line. Match itself is
   // unchanged in count and in kind.
   'apps/web/docs/local-data-compat.md': [110, 118],
+  // +7 (line numbers only): the next-point panel became a shared component, so its mode, its
+  // setter and its ranked rows are read here and passed down. Both matches are unchanged in count
+  // and in kind.
+  // −14 (line numbers only): each shared panel below this column now subscribes to the store in
+  // its own connector file, so the reads that were staged here moved out. Both matches are
+  // unchanged in count and in kind.
   'apps/web/src/features/planner/components/advice-column.tsx': [38, 59],
   // +16 (line number only): the House-ceiling fix added `fieldSlots`/`houseCycleSecs`, with
   // their doc comments, to `AccountShared` above this line. The match itself is unchanged in
@@ -258,7 +271,7 @@ const CRIT_DMG_MULT_MAP = {
   // Count and kind unchanged.
   // +3 more (line numbers only, last four): the note on the farm snapshot entry above, plus this
   // one. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 304, 309, 319, 328],
+  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 317, 322, 332, 341],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 

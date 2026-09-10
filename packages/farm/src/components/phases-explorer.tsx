@@ -3,11 +3,7 @@
 import { useCallback, useMemo, type ReactNode } from 'react';
 import { colClass, phasesBoardClass, phasesBoardRosterClass } from '@bombfarm/ui';
 import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
-import {
-  computeHeroPhaseFitFromRecord,
-  rankRosterByDps,
-  sumTopDps,
-} from '@bombfarm/domain/roster-dps';
+import { pipelineForHero, rankRosterByDps, sumTopDps } from '@bombfarm/domain/roster-dps';
 import { DEFAULT_CASA_SLOTS } from '@bombfarm/domain/casa-slots';
 import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { Lang } from '@bombfarm/hero/copy';
@@ -157,9 +153,9 @@ export function PhasesExplorerView({
 
   const activeHero = heroes.find((hero) => hero.id === activeHeroId) ?? heroes[0];
 
-  const heroFit =
+  const combat =
     intel && activeHero
-      ? computeHeroPhaseFitFromRecord(activeHero, account, intel.phase, intel.mitigationPct)
+      ? pipelineForHero(activeHero, account, intel.phase, intel.mitigationPct)
       : null;
 
   const onPhase = useCallback(
@@ -189,7 +185,8 @@ export function PhasesExplorerView({
                 <PhasesHeroPanel
                   heroes={heroes}
                   hero={activeHero}
-                  heroFit={heroFit}
+                  combat={combat}
+                  phaseSelection={{ kind: 'farmScreen', phase: intel.phase }}
                   onSelectHero={onSelectHero}
                   renderPicker={slots?.renderPicker}
                 />

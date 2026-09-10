@@ -5,9 +5,8 @@ import {
   accordionLedgerBodyClass,
   accordionStackClass,
 } from '@bombfarm/ui/accordion.recipe';
-import { derivedLabel, formatBreakdownValue, isSheetKey, rowValue } from '../model/breakdown-labels';
-import { LedgerBody } from './stat-breakdown-ledger';
-import { FormulaBody } from './stat-breakdown-formula';
+import { FormulaBody, LedgerBody } from '@bombfarm/hero/components';
+import { derivedLabel, formatBreakdownValue, isSheetKey, rowValue } from '@bombfarm/hero/model';
 
 export function EffectiveStatGroup({
   t,

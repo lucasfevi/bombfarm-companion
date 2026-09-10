@@ -599,6 +599,29 @@ export const en = {
   farmStatColumn: 'Stat',
   farmStatLuck: 'Luck',
 
+  // heroes* — the Heroes screen's own chrome, distinct from the hero* vocabulary below, which is
+  // the shared per-hero field names the farm surfaces also read.
+  heroesNavLabel: 'Heroes',
+  heroesNeverReadTitle: 'Nothing read from your account yet',
+  heroesNeverReadDescription: 'Open the game with the companion running, and your heroes will appear here.',
+  heroesNoneTitle: 'This account has no heroes',
+  heroesNoneDescription: 'Your account was read, and it holds nobody to show here yet.',
+  heroesRosterTitle: 'Your roster',
+  heroesRosterListLabel: 'Your heroes, best birth roll first',
+  heroesRollQualityLabel: 'Roll',
+  heroesFiguresWithheldTitle: 'Not enough of your account has been read',
+  heroesFiguresWithheldDescription: 'The per-hero numbers need your skill tree and your House. Leave the game open for a moment and they will fill in.',
+  heroesPhaseTitle: 'Phase these numbers are for',
+  heroesPhaseLabel: 'Phase',
+  heroesPhaseUseFarm: 'Back to your Farm phase',
+  heroesPhaseUnknownTitle: 'That is not a phase this app knows',
+  heroesPhaseUnknownDescription: 'Pick a phase the game actually has, and the numbers come back.',
+  heroesEffectiveTitle: 'Effective stats',
+  heroesEffectiveTip: 'Includes gear, points, skill tree, abilities and team buffs.',
+  heroesEffectiveGroupSheet: 'Sheet stats',
+  heroesEffectiveGroupDerived: 'Derived combat',
+  heroesEffectiveTriggerAria: 'Show breakdown of {stat}',
+
   // hero*/gear*/import*/roster*/switch*/mode*/rank* — hero-identity vocabulary the farm screen's
   // roster surfaces read as one structural contract. Named exactly as that contract names them.
   heroAvatarCol: 'Avatar',

@@ -5,7 +5,7 @@ import { heroLevelLabel, rarityLabel } from '@bombfarm/domain/game-labels';
 import type { Lang } from '@bombfarm/domain/shims/i18n';
 import { cn } from '@bombfarm/ui';
 import { HeroAvatar } from './hero-avatar';
-import { rarityTextClass } from './game-art.recipe';
+import { heroRankToneClass, rarityTextClass } from './game-art.recipe';
 import type { ArtFrameSize } from './art-frame';
 
 /** `ArtFrame`'s own middle-of-the-road default (Raro) — tints the frame when there is no rarity
@@ -82,7 +82,10 @@ export function HeroIdentity({
           <span
             className={cn(
               'shrink-0 text-[13px] leading-none font-black tracking-tight',
-              rank?.trim() ? 'text-accent' : 'text-muted',
+              // The grade in the colour the game prints it. A grade the table does not know keeps
+              // the old accent rather than falling to the muted tone the no-grade case uses —
+              // unrecognised is not the same fact as absent.
+              heroRankToneClass(rank),
             )}
           >
             {rank?.trim() || '—'}

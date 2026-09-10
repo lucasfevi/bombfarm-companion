@@ -72,14 +72,14 @@ describe('account form UX chrome', () => {
 
 describe('planner tabs IA (PTI-*)', () => {
   const tabLabels = {
-    tabHero: { en: 'Abilities', pt: 'Habilidades' },
+    tabHero: { en: 'Hero', pt: 'Herói' },
     tabGear: { en: 'Gear', pt: 'Equipamento' },
     tabPoints: { en: 'Points', pt: 'Pontos' },
     // Farm Ranking (T1): renamed Phases -> Farm, identical in both languages.
     navPhases: { en: 'Farm', pt: 'Farm' },
     navPlanner: { en: 'Planner', pt: 'Planner' },
     navAccount: { en: 'Account', pt: 'Conta' },
-    tabHeroWarnTitle: { en: 'Abilities need attention', pt: 'Habilidades precisam de atenção' },
+    tabHeroWarnTitle: { en: 'This hero needs attention', pt: 'Este herói precisa de atenção' },
     tabGearWarnTitle: { en: 'Gear needs attention', pt: 'Equipamento precisa de atenção' },
   } as const;
 
@@ -118,13 +118,16 @@ describe('planner tabs IA (PTI-*)', () => {
     expect('expandAll' in STRINGS.pt).toBe(false);
   });
 
-  it('first tab label matches Abilities panel title (hero strip owns identity)', () => {
-    expect(STRINGS.en.tabHero).toBe(STRINGS.en.panelAbilities);
-    expect(STRINGS.pt.tabHero).toBe(STRINGS.pt.panelAbilities);
-    expect(STRINGS.en.panelAbilities).toBe('Abilities');
-    expect(STRINGS.pt.panelAbilities).toBe('Habilidades');
-    expect(STRINGS.en.panelAbilities).not.toMatch(/^\d+ ·/);
-    expect(STRINGS.pt.panelAbilities).not.toMatch(/^\d+ ·/);
+  it('first tab is named for the hero, not for one of the panels inside it', () => {
+    // It used to equal the Abilities panel title, because abilities were the only thing the tab
+    // held and identity lived in the strip above. The tab now carries identity and the birth roll
+    // too, so naming it after one panel would under-report the other two.
+    expect(STRINGS.en.tabHero).toBe('Hero');
+    expect(STRINGS.pt.tabHero).toBe('Herói');
+    expect(STRINGS.en.tabHero).not.toBe(STRINGS.en.panelAbilities);
+    expect(STRINGS.pt.tabHero).not.toBe(STRINGS.pt.panelAbilities);
+    expect(STRINGS.en.tabHero).not.toMatch(/^\d+ ·/);
+    expect(STRINGS.pt.tabHero).not.toMatch(/^\d+ ·/);
   });
 
   it('hero identity chrome labels (name + rank)', () => {
@@ -396,9 +399,9 @@ describe('sheet ability copy (on-sheet names follow Lang)', () => {
     expect(t.abilitiesTip).toMatch(/Ponta de Diamante/);
     expect(t.abilitiesTip).toMatch(/Golpe Brutal/);
     expect(t.abilitiesTip).toMatch(/stats do herói no jogo/);
-    // the budget rule is min(level, slots x 20) — "slots x 10" is falsified.
-    expect(t.abilitiesTip).toMatch(/slots da raridade × 20/);
-    expect(t.abilitiesTip).not.toMatch(/× 10/);
+    // The tip used to state the budget rule and this pinned its arithmetic. The panel no longer
+    // prints a budget explanation, so there is no prose left to pin — the rule itself is guarded
+    // where it is computed, against worked heroes, in the domain's own point-budget suite.
     expect(t.sheetAbilityTag).toBe('Altera atributos');
     expect(t.sheetTip).toMatch(/Ponta de Diamante/);
     expect(t.sheetTip).toMatch(/save/i);
@@ -411,9 +414,7 @@ describe('sheet ability copy (on-sheet names follow Lang)', () => {
     expect(t.abilitiesTip).toMatch(/Keen Eye/);
     expect(t.abilitiesTip).toMatch(/Brutal Strike/);
     expect(t.abilitiesTip).toMatch(/in-game stats/);
-    // the budget rule is min(level, slots x 20) — "slots x 10" is falsified.
-    expect(t.abilitiesTip).toMatch(/rarity slots × 20/);
-    expect(t.abilitiesTip).not.toMatch(/× 10/);
+    // See the PT case above for why the budget rule is no longer pinned in this prose.
     expect(t.sheetAbilityTag).toBe('Affects stats');
     expect(t.sheetTip).toMatch(/Diamond Tip/);
     expect(t.abilitiesTip).not.toMatch(/Ponta de Diamante|Olho Clínico/);

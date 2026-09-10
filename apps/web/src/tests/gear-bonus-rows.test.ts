@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gearBonusRows, formatBonus } from '@/features/planner/model/gear-bonus-rows';
+import { gearBonusRows, formatBonus } from '@bombfarm/hero/model';
 import { STRINGS } from '@/shared/i18n';
 import type { GearBonuses } from '@bombfarm/domain/gear';
 

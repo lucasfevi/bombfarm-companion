@@ -206,15 +206,23 @@ export {
   metricScoreboardValueRecipe,
   metricScoreboardDeltaRecipe,
 } from './metric-scoreboard.recipe';
+export { maskRevealStyle } from './mask-reveal';
 // `statListMutedRowClass` and the phase-board/panel class constants beside it are on the root, not
 // left to the deep `panel-field.recipe` subpath: this package's `exports` map resolves a subpath to
 // an extensionless source path, which an app's tsconfig `paths` can complete but another package's
 // own `tsc` cannot. The phases panels that lay out that board are `@bombfarm/farm`'s now.
 export {
   accountStatListClass,
+  barRowClass,
   colClass,
   dialogDescClass,
+  explainFormulaClass,
+  heroAbilHClass,
   heroAbilTitleClass,
+  mutedClass,
+  optimizeGroupButtonClass,
+  optimizeGroupClass,
+  optimizeGroupSelectClass,
   panelHClass,
   panelRecipe,
   panelTitleClass,
@@ -226,17 +234,30 @@ export {
   phasesBoardPropsClass,
   phasesBoardRosterClass,
   phasesBoardRosterSpanClass,
+  rankModeSelectClass,
   setupBannerRecipe,
   statListMutedRowClass,
   tipClass,
+  warnClass,
   type PanelVariant,
   type SetupBannerVariant,
 } from './panel-field.recipe';
 export {
   abilityCardRecipe,
   abilityChipRecipe,
+  abilEffectClass,
+  abilGridClass,
+  abilHeadClass,
+  abilMetaClass,
+  abilNameClass,
+  abilTagClass,
   type AbilityChipVariant,
 } from './ability-card.recipe';
 export { selectFieldRecipe, type SelectSize } from './select.recipe';
 export { switchRootRecipe, type SwitchSize } from './switch.recipe';
-export { accordionRecipe, type AccordionVariant } from './accordion.recipe';
+export {
+  accordionRecipe,
+  accordionLedgerBodyClass,
+  accordionStackClass,
+  type AccordionVariant,
+} from './accordion.recipe';

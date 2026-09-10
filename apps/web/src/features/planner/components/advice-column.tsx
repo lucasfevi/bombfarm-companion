@@ -3,9 +3,9 @@
 import { usePlannerStore, selectAdvisorPipeline } from '@/shared/stores';
 import type { PipelineFacts } from '@bombfarm/domain/stat-breakdown';
 import { adviceSplitClass, colClass } from '@bombfarm/ui/panel-field.recipe';
-import { PointsTable } from './points-table';
-import { NextPointRanking } from './next-point-ranking';
-import { SheetTable } from './sheet-table';
+import { PointsPanel } from './points-panel';
+import { NextPointPanel } from './next-point-panel';
+import { SheetPanel } from './sheet-panel';
 import { EffectiveStatsPanel } from './effective-stats-panel';
 
 export function AdviceColumn() {
@@ -78,13 +78,13 @@ export function AdviceColumn() {
       <>
           <div className={adviceSplitClass}>
             {/* Remount on hero switch — the cleanest way to reset PointsTable's local preview
-                state per hero without an effect — a useEffect-free
-                consequence of keying. */}
-            <PointsTable key={activeHeroId ?? 'none'} />
-            <NextPointRanking />
+                state per hero without an effect. Keying makes the reset a consequence of identity
+                changing. */}
+            <PointsPanel key={activeHeroId ?? 'none'} />
+            <NextPointPanel />
           </div>
 
-          <SheetTable />
+          <SheetPanel />
           <EffectiveStatsPanel facts={facts} />
         </>
     </div>

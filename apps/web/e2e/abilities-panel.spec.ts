@@ -10,8 +10,8 @@ function heroWithAbilities(abilities: Record<string, number>): SeededState {
   };
 }
 
-async function openAbilitiesTab(page: import('@playwright/test').Page, lang: 'pt' | 'en' = 'pt') {
-  await page.getByRole('tab', { name: lang === 'en' ? /^abilities$/i : /^habilidades$/i }).click();
+async function openHeroTab(page: import('@playwright/test').Page, lang: 'pt' | 'en' = 'pt') {
+  await page.getByRole('tab', { name: lang === 'en' ? /^hero$/i : /^herói$/i }).click();
 }
 
 test.describe('abilities panel (ABX residual)', () => {
@@ -19,7 +19,7 @@ test.describe('abilities panel (ABX residual)', () => {
     await seedLocalStorage(page, importedRoster);
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await openAbilitiesTab(page);
+    await openHeroTab(page);
 
     await expect(page.getByText(/Olho Clínico, Ponta de Diamante e Golpe Brutal alteram/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /\+1$/ }).first()).toBeVisible();
@@ -29,7 +29,7 @@ test.describe('abilities panel (ABX residual)', () => {
     await seedLocalStorage(page, heroWithAbilities({}));
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await openAbilitiesTab(page);
+    await openHeroTab(page);
 
     await expect(page.getByText(/Olho Clínico, Ponta de Diamante e Golpe Brutal alteram/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /\+1$/ })).toHaveCount(0);
@@ -39,16 +39,20 @@ test.describe('abilities panel (ABX residual)', () => {
     await seedLocalStorage(page, importedRoster);
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await openAbilitiesTab(page);
+    await openHeroTab(page);
 
     const heroPanel = page.locator('[data-slot="tabs-panel"][data-state="active"]');
     await expect(heroPanel.getByText(/\d+ habilidades · \d+ pontos/i)).toHaveCount(0);
-    await expect(heroPanel.getByText(/\d+ \/ \d+ habilidades/i)).toBeVisible();
-    await expect(heroPanel.getByText(/\d+ \/ \d+ pontos/i)).toBeVisible();
+    // One figure now: how much of the budget is spent. The slot count and the granted/spendable
+    // split went with the dead-point total they existed to explain.
+    await expect(heroPanel.getByText(/\d+ de \d+ gastos/i)).toBeVisible();
+    await expect(heroPanel.getByText(/para esta raridade/i)).toHaveCount(0);
 
+    // Walk up to the header row rather than to the heading's own parent: the heading now shares a
+    // group with the spend figure, so its parent is that group and Reset is a level above it.
     const reset = heroPanel
       .getByRole('heading', { name: /^habilidades$/i })
-      .locator('xpath=..')
+      .locator('xpath=ancestor::*[button][1]')
       .getByRole('button', { name: /^Zerar$/i });
     await expect(reset).toBeVisible();
     await expect(reset).toHaveClass(/border-line/);
@@ -61,15 +65,18 @@ test.describe('abilities panel (ABX residual)', () => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await openAbilitiesTab(page, 'en');
+    await openHeroTab(page, 'en');
 
     await expect(page.getByText(/Keen Eye, Diamond Tip and Brutal Strike/i)).toBeVisible();
     await expect(page.getByRole('heading', { name: /^Ability picker$/i })).toHaveCount(0);
   });
 
-  test('granted vs spendable ability points — the Bram worked case: L49 -> 40 spendable, 9 dead', async ({
+  test('the spend counts against what this hero can spend, not against its level', async ({
     page,
   }) => {
+    // The Bram worked case: an Incomum hero at L49 is granted 49 points but can only ever place
+    // 40 of them (2 slots x 20). The readout has to name 40, or it invites a player to chase nine
+    // points that cannot be spent — which is exactly what the retired dead-point row said out loud.
     const heroed = {
       ...importedRoster,
       lang: 'en' as const,
@@ -80,36 +87,11 @@ test.describe('abilities panel (ABX residual)', () => {
     await seedLocalStorage(page, heroed);
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await openAbilitiesTab(page, 'en');
+    await openHeroTab(page, 'en');
 
     const panel = page.locator('[data-slot="tabs-panel"][data-state="active"]');
-    await expect(panel.getByText(/49 granted/i)).toBeVisible();
-    await expect(panel.getByText(/40 spendable/i)).toBeVisible();
-    await expect(panel.getByText(/9 granted but unusable/i)).toBeVisible();
-  });
-
-  test('granted-but-unusable note stays mounted but invisible when nothing is dead', async ({ page }) => {
-    // Raro quota is 3 slots x 20 = 60 spendable; level 20 grants far less than that -> dead=0.
-    const heroed = {
-      ...importedRoster,
-      lang: 'en' as const,
-      heroes: importedRoster.heroes.map((h) =>
-        h.id === 'seed-cora' ? { ...h, rarity: 'Raro' as const, level: 20 } : h,
-      ),
-    };
-    await seedLocalStorage(page, heroed);
-    await page.goto('/');
-    await selectSavedHero(page, 'Cora');
-    await openAbilitiesTab(page, 'en');
-
-    const panel = page.locator('[data-slot="tabs-panel"][data-state="active"]');
-    // /\d+ granted but unusable/ (not the bare phrase) distinguishes this note from the
-    // abilitiesTip paragraph, which also contains the same words in prose.
-    const deadNote = panel.getByText(/\d+ granted but unusable/i);
-    await expect(deadNote).toHaveCount(1);
-    await expect(deadNote).not.toBeVisible();
-    await expect(panel.getByText(/20 granted/i)).toBeVisible();
-    await expect(panel.getByText(/20 spendable/i)).toBeVisible();
+    await expect(panel.getByText(/of 40 spent/i)).toBeVisible();
+    await expect(panel.getByText(/of 49 spent/i)).toHaveCount(0);
   });
 
   test('stepping a sheet crit-chance ability preserves the hero\'s own roll, not the rarity midpoint', async ({
@@ -147,7 +129,7 @@ test.describe('abilities panel (ABX residual)', () => {
     await seedLocalStorage(page, heroed);
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await openAbilitiesTab(page, 'en');
+    await openHeroTab(page, 'en');
 
     await page.getByRole('button', { name: /^Keen Eye \+1$/i }).click();
 
@@ -178,11 +160,11 @@ test.describe('abilities panel (ABX residual)', () => {
     await expect(critRow).not.toContainText('9.06');
   });
 
-  test('imported hero identity lives in hero strip; tab is abilities-only', async ({ page }) => {
+  test('the hero strip still names the hero, and the tab holds no second editable identity', async ({ page }) => {
     await seedLocalStorage(page, importedRoster);
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await openAbilitiesTab(page);
+    await openHeroTab(page);
 
     const heroStrip = page.getByRole('region', { name: /herói atual/i });
     // Stars render as an aria-hidden span inside the same <p>, so the node's

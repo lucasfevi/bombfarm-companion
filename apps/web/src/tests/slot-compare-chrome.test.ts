@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { slotChromeClassName, slotStatClassName } from '@/features/gear/components/slot-editor';
+import { slotChromeClassName } from '@/features/gear/components/slot-editor';
+import { slotStatClassName } from '@/shared/game-art';
 import { STRINGS, sub } from '@/shared/i18n';
 import { setsForLevel, type EquippedItem } from '@bombfarm/domain/gear';
 import { setName } from '@bombfarm/domain/game-labels';

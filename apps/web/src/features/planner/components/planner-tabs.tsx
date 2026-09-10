@@ -1,9 +1,9 @@
 'use client';
 
-import { HeroAbilitiesTab } from './hero-abilities-tab';
-import { GearTab } from './gear-tab';
+import { HeroTab } from './hero-tab';
 import { AdviceColumn } from './advice-column';
 import { HeroStrip } from './hero-strip';
+import { GearTab } from './gear-tab';
 import { Tabs, Tooltip } from '@bombfarm/ui';
 import type { TabStatus } from '@bombfarm/domain/planner-tab-status';
 import { usePlannerTab } from '../hooks/use-planner-tab';
@@ -55,7 +55,7 @@ export function PlannerTabs() {
           </Tabs.List>
           <Tabs.Panels>
             <Tabs.Panel value="hero">
-              <HeroAbilitiesTab />
+              <HeroTab />
             </Tabs.Panel>
             <Tabs.Panel value="gear">
               <GearTab />

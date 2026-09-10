@@ -55,6 +55,25 @@ import * as GameArt from '@bombfarm/game-art';
 // stops fitting, and the hook that reports which side of them the window is on. AppShell takes the
 // answer as a prop rather than measuring, so the same value drives the tabs and whatever the
 // caller puts in the actions slot.
+// abilGridClass / abilHeadClass / abilMetaClass / abilNameClass / abilTagClass / abilEffectClass
+// (2026-09-07): promoted from the `ability-card.recipe` subpath for the same reason as the class
+// constants above. They lay out an ability card's icon rail, name, tag and effect text, and the
+// hero abilities panel that draws them is `@bombfarm/hero`'s.
+// mutedClass / warnClass / explainFormulaClass / the three optimizeGroup* classes (2026-09-07):
+// promoted from the `panel-field.recipe` subpath for the same reason as the class constants
+// above. They tone a panel's secondary and over-budget text, box a substituted formula, and weld
+// the Optimize button to its target Select — and the sheet, points and stat-breakdown panels that
+// draw them are `@bombfarm/hero`'s now.
+// heroAbilHClass / maskRevealStyle (2026-09-07): promoted for the same reason as the class
+// constants above. They lay out a sub-heading row and fade a collapsible's growing edge, and the
+// Items panel and its loadout comparison, which draw both, are `@bombfarm/hero`'s now.
+// barRowClass / rankModeSelectClass (2026-09-07): promoted for the same reason again. They lay out
+// a labelled gain bar and size the mode select beside a panel heading, and the next-point ranking
+// panel that draws them is `@bombfarm/hero`'s now.
+// accordionStackClass / accordionLedgerBodyClass (2026-09-07): promoted from the
+// `accordion.recipe` subpath, beside `accordionRecipe` which was already here. They space a
+// stack of accordion rows and pad an opened one's body — the per-statistic breakdown the desktop
+// Heroes screen now draws needs both, and that app imports the barrel, not deep paths.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -127,11 +146,20 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'TooltipStatusBody',
   'WINDOW_CONTROLS_WIDTH',
   'WindowControls',
+  'abilEffectClass',
+  'abilGridClass',
+  'abilHeadClass',
+  'abilMetaClass',
+  'abilNameClass',
+  'abilTagClass',
   'abilityCardRecipe',
   'abilityChipRecipe',
   'accountStatListClass',
   'accordionRecipe',
+  'accordionLedgerBodyClass',
+  'accordionStackClass',
   'barRecipe',
+  'barRowClass',
   'breakpoints',
   'buttonRecipe',
   'chipRecipe',
@@ -145,6 +173,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'dataTableHeadButtonClass',
   'dataTableHeadClass',
   'dialogDescClass',
+  'explainFormulaClass',
   'fileDropZoneRecipe',
   'formatCompactNumber',
   'formatNumber',
@@ -152,12 +181,18 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   // components which receive an injected formatter ships beside them.
   'numberFormatterFor',
   'compactNumberFormatterFor',
+  'heroAbilHClass',
   'heroAbilTitleClass',
   'initialToastQueueState',
+  'maskRevealStyle',
   'metricScoreboardDeltaRecipe',
   'metricScoreboardValueRecipe',
   'motionTokens',
+  'mutedClass',
   'nextExpiryDeadline',
+  'optimizeGroupButtonClass',
+  'optimizeGroupClass',
+  'optimizeGroupSelectClass',
   'panelHClass',
   'panelRecipe',
   'panelTitleClass',
@@ -169,6 +204,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'phasesBoardPropsClass',
   'phasesBoardRosterClass',
   'phasesBoardRosterSpanClass',
+  'rankModeSelectClass',
   'selectFieldRecipe',
   'setupBannerRecipe',
   'shellDensityFor',
@@ -182,6 +218,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'tooltipPopupRecipe',
   'useShellDensity',
   'useToast',
+  'warnClass',
 ].sort();
 
 describe('design-system barrel surface (frozen)', () => {
@@ -232,6 +269,12 @@ describe('design-system barrel surface (frozen)', () => {
 // draws that whole block, and the three had no callers once it did.
 // `inventoryTableSelectedRowClass` arrives in their place, for the row a picker screen is
 // currently planning against.
+//
+// The four gear-slot classes (2026-09-07): the eight-across slot grid, the stats grid under it, one
+// stat row, and the chrome of one stat box. They live here rather than in `@bombfarm/ui` because
+// `slotStatClassName` composes `artFrameRadiusClass`, which is this package's and which the design
+// system cannot import — the dependency runs this way — and because the `inventory*` family beside
+// them is the same item-tile vocabulary. The Items panel that draws them is `@bombfarm/hero`'s now.
 const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'AbilityIcon',
   'ArtFrame',
@@ -262,6 +305,9 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'abilityIconRecipe',
   'artFrameRadiusClass',
   'artFrameRecipe',
+  'heroRankBandClass',
+  'heroRankTextClass',
+  'heroRankToneClass',
   'iconMetaGlyphRecipe',
   'inventoryBadgeRecipe',
   'inventoryCardRecipe',
@@ -296,6 +342,10 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'rarityTextClass',
   'rosterIconTooltipTriggerClass',
   'rosterInactiveChromeClass',
+  'slotStatClassName',
+  'slotStatRowClass',
+  'slotStatsGridClass',
+  'slotsGridClass',
 ].sort();
 
 describe('game-art barrel surface (frozen)', () => {

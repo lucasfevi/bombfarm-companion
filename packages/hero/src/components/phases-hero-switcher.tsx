@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { HeroAvatar, rarityTextClass } from '@bombfarm/game-art';
+import { HeroAvatar, heroRankToneClass, rarityTextClass } from '@bombfarm/game-art';
 import { cn, Icon, Tooltip } from '@bombfarm/ui';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
@@ -69,7 +69,7 @@ export function PhasesHeroSwitcherView({
           <span
             className={cn(
               'shrink-0 text-xl leading-none font-black tracking-tight',
-              hero.rank ? 'text-accent' : 'text-muted',
+              heroRankToneClass(hero.rank),
             )}
             aria-label={t.heroRank}
           >

@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from 'react';
-import { HeroAvatar, rarityTextClass } from '@bombfarm/game-art';
+import { HeroAvatar, heroRankToneClass, rarityTextClass } from '@bombfarm/game-art';
+import { cn } from '@bombfarm/ui';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
 import { heroLevelLabel } from '@bombfarm/domain/game-labels';
 import { useCopy, useLocale } from '../../lib/copy';
@@ -99,7 +100,7 @@ function MiniHeroRow({
       </span>
 
       <span className="flex min-w-0 items-baseline gap-1.5">
-        <span className="min-w-3 shrink-0 text-[10px] leading-none font-bold text-accent">{rank ?? ''}</span>
+        <span className={cn('min-w-3', 'shrink-0', 'text-[10px]', 'leading-none', 'font-bold', heroRankToneClass(rank ?? undefined))}>{rank ?? ''}</span>
         <span
           data-testid={`live-hero-row-${hero.id}-name`}
           className="min-w-0 flex-1 truncate text-[11px] leading-none"
