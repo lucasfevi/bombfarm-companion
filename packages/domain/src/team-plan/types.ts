@@ -379,7 +379,9 @@ export type TeamPlan = {
     /** Marginal ROSTER objective gain at the moment this reset was accepted — sustained damage
      *  under the DPS objective, gold per hour under the farm one. Display-only. */
     rosterGainObjective: number;
-    /** `heroLevel * 1000` gold. Display-only — never in the objective, never a filter or gate. */
+    /** `heroLevel * 1000` gold, or 0 when {@link pts} only ADDS to {@link ptsBefore} — placing
+     *  points the game already granted costs nothing, since the gold buys back what is already
+     *  committed. Display-only — never in the objective, never a filter or gate. */
     resetCostGold: number;
   }[];
   perHero: TeamPlanPerHeroRow[];
