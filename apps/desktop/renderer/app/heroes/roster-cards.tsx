@@ -11,26 +11,18 @@
  *
  * Read-only, like every other panel on this screen. A card selects a hero and changes nothing.
  */
-import { memo, useMemo, type ReactNode, type SyntheticEvent } from 'react';
+import { memo, type ReactNode, type SyntheticEvent } from 'react';
 import { motion } from 'motion/react';
-import { abilityName } from '@bombfarm/domain/game-labels';
 import { RARITIES, SHEET_PANEL_KEYS, type SheetKey } from '@bombfarm/domain/planner-constants';
 import {
-  AbilityIcon,
   HeroAbilityIcons,
   HeroGearIcons,
   HeroIdentity,
-  inventorySortDirectionClass,
-  inventorySortGroupClass,
-  inventorySortSelectClass,
   rosterInactiveChromeClass,
 } from '@bombfarm/game-art';
 import { railTintFor, statRollRowsFor, type RollTint } from '@bombfarm/hero/model';
 import {
-  Icon,
   Panel,
-  Select,
-  Switch,
   Tooltip,
   cn,
   formatCompactNumber,
@@ -39,15 +31,8 @@ import {
   panelTitleClass,
   type Lang,
 } from '@bombfarm/ui';
-import { sub, useCopy, useLocale, type CopyKey } from '../../lib/copy';
+import { sub, useCopy, useLocale } from '../../lib/copy';
 import { rollQualityText, type RosterHeroRow } from './hero-roster-order';
-import {
-  ROSTER_SORT_KEYS,
-  abilityFilterOptions,
-  type RosterBoardFilter,
-  type RosterSort,
-  type RosterSortKey,
-} from './roster-board-order';
 
 /** What a bar prints when the domain could place nothing — never a zero-length bar, which reads
  *  as the worst possible roll rather than as an absence of evidence. */
@@ -101,27 +86,15 @@ function stopCardActivation(event: SyntheticEvent) {
 
 export function RosterCards({
   rows,
-  shown,
   selectedId,
   onSelectHeroId,
   statLabel,
-  sort,
-  filter,
-  actions,
 }: {
-  /** The whole roster — what the ability filter is offered against. */
+  /** Already filtered and ordered — the toolbar that did both sits above this panel. */
   rows: readonly RosterHeroRow[];
-  /** What survived the filter, in the chosen order. */
-  shown: readonly RosterHeroRow[];
   selectedId: string;
   onSelectHeroId: (heroId: string) => void;
   statLabel: (key: SheetKey) => string;
-  sort: RosterSort;
-  filter: RosterBoardFilter;
-  actions: {
-    onSort: (next: RosterSort) => void;
-    onFilter: (next: RosterBoardFilter) => void;
-  };
 }) {
   const t = useCopy();
   const { lang } = useLocale();
@@ -130,7 +103,9 @@ export function RosterCards({
     <Panel className="min-w-0">
       <div className={panelHClass}>
         <h2 className={panelTitleClass}>{t.heroesRosterTitle}</h2>
-        <BoardToolbar rows={rows} sort={sort} filter={filter} actions={actions} />
+        <span className="text-[10px] font-bold tracking-[0.08em] text-muted uppercase">
+          {t.heroesRollQualityLabel}
+        </span>
       </div>
       <Tooltip.Provider delay={200} closeDelay={80}>
         <ul
@@ -138,7 +113,7 @@ export function RosterCards({
           style={{ gridTemplateColumns: `repeat(auto-fill, ${CARD_WIDTH})` }}
           aria-label={t.heroesRosterListLabel}
         >
-          {shown.map((row, index) => (
+          {rows.map((row, index) => (
             <HeroCard
               key={row.id}
               row={row}
@@ -153,183 +128,6 @@ export function RosterCards({
       </Tooltip.Provider>
     </Panel>
   );
-}
-
-/**
- * What the board is ordered by, whether shelved heroes are on it, and which abilities it is
- * narrowed to.
- *
- * The sort pair is the Inventory's own control — a key and a direction sharing one outline — for
- * the same reason the layout glyphs are: one shape, one meaning, wherever this app sorts a grid.
- */
-function BoardToolbar({
-  rows,
-  sort,
-  filter,
-  actions,
-}: {
-  rows: readonly RosterHeroRow[];
-  sort: RosterSort;
-  filter: RosterBoardFilter;
-  actions: {
-    onSort: (next: RosterSort) => void;
-    onFilter: (next: RosterBoardFilter) => void;
-  };
-}) {
-  const t = useCopy();
-  const { lang } = useLocale();
-  const ascending = sort.direction === 'asc';
-  const options = useMemo(
-    () => abilityFilterOptions(rows, filter.abilityIds),
-    [rows, filter.abilityIds],
-  );
-
-  return (
-    <div className="flex min-w-0 flex-wrap items-center justify-end gap-2.5">
-      <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-[11px] text-muted">
-        <Switch
-          checked={filter.hideDisabled}
-          onCheckedChange={(next) => {
-            actions.onFilter({ ...filter, hideDisabled: next });
-          }}
-          aria-label={t.heroesBoardHideDisabled}
-        />
-        {t.heroesBoardHideDisabled}
-      </label>
-      <span className={inventorySortGroupClass}>
-        <Select
-          size="compact"
-          value={sort.key}
-          onChange={(event) => {
-            actions.onSort({ ...sort, key: event.target.value as RosterSortKey });
-          }}
-          aria-label={t.heroesBoardSortLabel}
-          className={inventorySortSelectClass}
-        >
-          {ROSTER_SORT_KEYS.map((key) => (
-            <option key={key} value={key}>
-              {t[SORT_KEY_LABEL[key]]}
-            </option>
-          ))}
-        </Select>
-        {/* The design-system tooltip, never the native `title`, exactly as the Inventory's own
-            direction button does it. */}
-        <Tooltip.Root>
-          <Tooltip.Trigger
-            type="button"
-            onClick={() => {
-              actions.onSort({ ...sort, direction: ascending ? 'desc' : 'asc' });
-            }}
-            aria-label={ascending ? t.heroesBoardSortAscending : t.heroesBoardSortDescending}
-            className={inventorySortDirectionClass}
-          >
-            <Icon name={ascending ? 'sort-ascending' : 'sort-descending'} size="sm" />
-          </Tooltip.Trigger>
-          <Tooltip.Portal>
-            <Tooltip.Positioner sideOffset={6}>
-              <Tooltip.Popup>
-                <p className="m-0 text-xs text-ink">
-                  {ascending ? t.heroesBoardSortAscending : t.heroesBoardSortDescending}
-                </p>
-              </Tooltip.Popup>
-            </Tooltip.Positioner>
-          </Tooltip.Portal>
-        </Tooltip.Root>
-      </span>
-      <AbilityFilterStrip options={options} filter={filter} lang={lang} onFilter={actions.onFilter} />
-    </div>
-  );
-}
-
-/**
- * Every ability in the game as a row of icons: press one to keep only the heroes that own it.
- *
- * The ones no hero on this roster owns are drawn dimmed and cannot be pressed — a filter that
- * empties the board is not an answer, and their presence is itself the answer to "which of these
- * do I have none of", which a list of only what you own cannot give.
- */
-function AbilityFilterStrip({
-  options,
-  filter,
-  lang,
-  onFilter,
-}: {
-  options: readonly { id: string; owned: boolean; selected: boolean }[];
-  filter: RosterBoardFilter;
-  lang: Lang;
-  onFilter: (next: RosterBoardFilter) => void;
-}) {
-  const t = useCopy();
-
-  return (
-    <span
-      role="group"
-      aria-label={t.heroesBoardAbilityFilterLabel}
-      className={cn('flex', 'flex-wrap', 'items-center', 'gap-0.5')}
-    >
-      {options.map((option) => {
-        const name = abilityName(option.id, lang);
-        const label = option.owned
-          ? sub(t.heroesBoardAbilityFilterOption, { ability: name })
-          : sub(t.heroesBoardAbilityFilterAbsent, { ability: name });
-        return (
-          <Tooltip.Root key={option.id}>
-            <Tooltip.Trigger
-              type="button"
-              aria-pressed={option.selected}
-              aria-label={label}
-              disabled={!option.owned}
-              data-testid={`heroes-ability-filter-${option.id}`}
-              onClick={() => {
-                onFilter({ ...filter, abilityIds: toggleAbility(filter.abilityIds, option.id) });
-              }}
-              // The border is always there and always the same width, so pressing one moves
-              // nothing; only its colour changes. An `outline` with an offset draws outside the
-              // button instead — over the icons either side of it, and clipped by the strip.
-              className={cn(
-                'rounded-sm',
-                'border',
-                'bg-transparent',
-                'p-px',
-                'focus-visible:[outline:2px_solid_var(--accent)]',
-                option.owned ? 'cursor-pointer' : cn('cursor-default', 'opacity-30', 'grayscale'),
-                option.selected
-                  ? cn('border-accent', 'bg-[color-mix(in_oklch,var(--accent)_18%,transparent)]')
-                  : 'border-transparent',
-              )}
-            >
-              <AbilityIcon code={option.id} size="xs" />
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Positioner sideOffset={6}>
-                <Tooltip.Popup>
-                  <p className="m-0 font-semibold text-ink">{name}</p>
-                  <p className="m-0 text-xs text-muted">{label}</p>
-                </Tooltip.Popup>
-              </Tooltip.Positioner>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-        );
-      })}
-    </span>
-  );
-}
-
-/** Exhaustive by construction: a seventh sort key is a compile error here rather than a blank
- *  option in the menu. */
-const SORT_KEY_LABEL: Record<RosterSortKey, CopyKey> = {
-  roll: 'heroesBoardSortRoll',
-  power: 'heroesBoardSortPower',
-  level: 'heroesBoardSortLevel',
-  rarity: 'heroesBoardSortRarity',
-  rank: 'heroesBoardSortRank',
-  stars: 'heroesBoardSortStars',
-};
-
-function toggleAbility(selected: readonly string[], abilityId: string): readonly string[] {
-  return selected.includes(abilityId)
-    ? selected.filter((id) => id !== abilityId)
-    : [...selected, abilityId];
 }
 
 /**

@@ -3,12 +3,12 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import {
   abilityFilterOptions,
   filterRosterRows,
-  rosterBoardRows,
+  rosterRowsShown,
   sortRosterRows,
   toggleAbilityFilter,
   DEFAULT_ROSTER_SORT,
   EMPTY_ROSTER_FILTER,
-} from './roster-board-order';
+} from './roster-order';
 import type { RosterHeroRow } from './hero-roster-order';
 
 function row(
@@ -137,25 +137,25 @@ describe('filterRosterRows', () => {
     // read as a broken control.
     const shown = filterRosterRows(roster, {
       abilityIds: ['olho_clinico', 'golpe_brutal'],
-      hideDisabled: false,
+      activeOnly: false,
     });
     expect(shown.map((r) => r.id)).toEqual(['keen', 'brutal', 'both']);
   });
 
   it('narrows to one ability', () => {
-    const shown = filterRosterRows(roster, { abilityIds: ['golpe_brutal'], hideDisabled: false });
+    const shown = filterRosterRows(roster, { abilityIds: ['golpe_brutal'], activeOnly: false });
     expect(shown.map((r) => r.id)).toEqual(['brutal', 'both']);
   });
 
   it('drops heroes taken out of the rotation when asked', () => {
-    const shown = filterRosterRows(roster, { abilityIds: [], hideDisabled: true });
+    const shown = filterRosterRows(roster, { abilityIds: [], activeOnly: true });
     expect(shown.map((r) => r.id)).toEqual(['keen', 'brutal', 'both']);
   });
 
   it('treats an unset battleAllowed as in the rotation, never as disabled', () => {
     // Absence means the read has not said; dropping those would hide most of a roster.
     const unset = [row('quiet', { name: 'Quiet', abilities: {} })];
-    expect(filterRosterRows(unset, { abilityIds: [], hideDisabled: true })).toHaveLength(1);
+    expect(filterRosterRows(unset, { abilityIds: [], activeOnly: true })).toHaveLength(1);
   });
 
   it('applies both narrowings together', () => {
@@ -165,7 +165,7 @@ describe('filterRosterRows', () => {
     ];
     const shown = filterRosterRows(disabledKeen, {
       abilityIds: ['olho_clinico'],
-      hideDisabled: true,
+      activeOnly: true,
     });
     expect(shown.map((r) => r.id)).toEqual(['on']);
   });
@@ -208,16 +208,16 @@ describe('toggleAbilityFilter', () => {
   });
 });
 
-describe('rosterBoardRows', () => {
+describe('rosterRowsShown', () => {
   it('narrows first, then orders what survived', () => {
     const rows = [
       row('weak-keen', { name: 'W', power: 10, abilities: { olho_clinico: 1 } }),
       row('strong-other', { name: 'S', power: 999, abilities: { golpe_brutal: 1 } }),
       row('mid-keen', { name: 'M', power: 500, abilities: { olho_clinico: 1 } }),
     ];
-    const shown = rosterBoardRows(
+    const shown = rosterRowsShown(
       rows,
-      { abilityIds: ['olho_clinico'], hideDisabled: false },
+      { abilityIds: ['olho_clinico'], activeOnly: false },
       { key: 'power', direction: 'desc' },
     );
     // The strongest hero is filtered out, so it cannot lead the board it is not on.

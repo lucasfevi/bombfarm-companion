@@ -28,7 +28,11 @@ import {
   panelTitleClass,
   type Lang,
 } from '@bombfarm/ui';
-import { HeroIdentityChip, InventoryLayoutToggle } from '@bombfarm/game-art';
+import {
+  HeroIdentityChip,
+  InventoryLayoutToggle,
+  rosterInactiveChromeClass,
+} from '@bombfarm/game-art';
 import {
   GearTab,
   HeroAbilitiesPanel,
@@ -73,14 +77,15 @@ import { readHeroPhase, shownHeroPhase } from './hero-phase';
 import { useFarmSelectedPhase } from './use-farm-selected-phase';
 import { heroFigures, type HeroFigures } from './hero-figures';
 import { RosterCards } from './roster-cards';
+import { RosterToolbar } from './roster-toolbar';
 import { heroPickOutcome, type RosterViewMode } from './roster-view-mode';
 import {
-  rosterBoardRows,
+  rosterRowsShown,
   DEFAULT_ROSTER_SORT,
   EMPTY_ROSTER_FILTER,
-  type RosterBoardFilter,
+  type RosterFilter,
   type RosterSort,
-} from './roster-board-order';
+} from './roster-order';
 import { cachedAbilityGains, createAbilityGainCache } from './ability-gain-cache';
 
 type RosterModel = Extract<HeroesScreenModel, { kind: 'roster' }>;
@@ -160,10 +165,11 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   // View-local and stored nowhere, like the phase override and the rank mode below it: the board
   // is a way of looking at the roster you are in now, not a setting about this account.
   const [viewMode, setViewMode] = useState<RosterViewMode>('list');
-  // The board's own order and narrowing, view-local like the mode itself: they are ways of
-  // looking at the roster you are in now, not settings about this account.
-  const [boardSort, setBoardSort] = useState<RosterSort>(DEFAULT_ROSTER_SORT);
-  const [boardFilter, setBoardFilter] = useState<RosterBoardFilter>(EMPTY_ROSTER_FILTER);
+  // The roster's order and narrowing, view-local like the mode itself: they are ways of looking
+  // at the roster you are in now, not settings about this account. Shared by both presentations,
+  // so switching between them never changes which heroes are on screen.
+  const [rosterSort, setRosterSort] = useState<RosterSort>(DEFAULT_ROSTER_SORT);
+  const [rosterFilter, setRosterFilter] = useState<RosterFilter>(EMPTY_ROSTER_FILTER);
   // View-local, and stored nowhere: leaving the screen unmounts this and the next visit opens on
   // the Farm selection again. It outlives a hero switch on purpose — comparing two heroes at one
   // phase is the reason to override at all.
@@ -254,12 +260,15 @@ function HeroesRoster({ model }: { model: RosterModel }) {
     setPickedHeroId(hero.id);
   }, []);
 
-  const boardRows = useMemo(
-    () => rosterBoardRows(rows, boardFilter, boardSort),
-    [rows, boardFilter, boardSort],
+  // What either presentation draws. `active` is resolved from the WHOLE roster above, so
+  // narrowing the list never changes which hero the detail beside it is about — a filter is a
+  // question about the roster, not a hero switch.
+  const shownRows = useMemo(
+    () => rosterRowsShown(rows, rosterFilter, rosterSort),
+    [rows, rosterFilter, rosterSort],
   );
-  const boardActions = useMemo(
-    () => ({ onSort: setBoardSort, onFilter: setBoardFilter }),
+  const toolbarActions = useMemo(
+    () => ({ onSort: setRosterSort, onFilter: setRosterFilter }),
     [],
   );
 
@@ -276,17 +285,23 @@ function HeroesRoster({ model }: { model: RosterModel }) {
     setOverridePhase(null);
   }, []);
 
-  const viewToggle = (
-    // The Inventory's own control, for the same two shapes: one pair of glyphs means one thing
-    // wherever this app lets you switch between a list and a board of cards.
-    <div className="flex justify-end">
+  const toolbar = (
+    <div className="flex min-w-0 flex-wrap items-center justify-between gap-2.5">
+      <RosterToolbar
+        rows={rows}
+        sort={rosterSort}
+        filter={rosterFilter}
+        actions={toolbarActions}
+      />
+      {/* The Inventory's own control, for the same two shapes: one pair of glyphs means one
+          thing wherever this app switches between a board and a list. */}
       <InventoryLayoutToggle layout={viewMode} onChange={setViewMode} labels={viewToggleLabels} />
     </div>
   );
 
   return (
     <div className={cn(colClass, 'min-h-0 flex-1')}>
-      {viewToggle}
+      {toolbar}
       {/* One presentation at a time, cross-faded: `mode="wait"` lets the outgoing one finish
           before the incoming one lays out, which is what keeps a board of twenty-two cards from
           measuring itself against a rail that is still on screen. `reducedMotion="user"` turns
@@ -303,14 +318,10 @@ function HeroesRoster({ model }: { model: RosterModel }) {
               transition={{ duration: 0.2, ease: 'easeOut' }}
             >
               <RosterCards
-                rows={rows}
-                shown={boardRows}
+                rows={shownRows}
                 selectedId={active.id}
                 onSelectHeroId={onSelectHeroId}
                 statLabel={boundStatLabel}
-                sort={boardSort}
-                filter={boardFilter}
-                actions={boardActions}
               />
             </motion.div>
           ) : (
@@ -325,7 +336,11 @@ function HeroesRoster({ model }: { model: RosterModel }) {
               className="grid min-h-0 grid-cols-1 gap-2.5 min-[1100px]:grid-cols-[19rem_minmax(0,1fr)]"
             >
               <div className="min-w-0 max-[1099px]:hidden">
-                <RosterRail rows={rows} selectedId={active.id} onSelectHeroId={onSelectHeroId} />
+                <RosterRail
+                  rows={shownRows}
+                  selectedId={active.id}
+                  onSelectHeroId={onSelectHeroId}
+                />
               </div>
               <HeroCopyProvider t={panelCopy} lang={lang}>
                 <div className={cn(colClass, 'min-w-0')}>
@@ -779,6 +794,8 @@ function RosterRailRow({
   selected: boolean;
   onSelectHeroId: (heroId: string) => void;
 }) {
+  const inactiveChrome = row.hero.battleAllowed === false ? rosterInactiveChromeClass : undefined;
+
   return (
     <li>
       <button
@@ -805,10 +822,14 @@ function RosterRailRow({
             : 'hover:bg-[color-mix(in_oklch,var(--accent)_6%,transparent)]',
         )}
       >
-        <HeroIdentityChip hero={row.hero} fallbackName={row.hero.name} lang={lang} />
+        {/* A shelved hero is greyed here exactly as it is on the board and in the picker. The
+            mute rides on the row's contents, never on the row's own selection chrome. */}
+        <span className={cn('flex', 'min-w-0', 'flex-1', 'items-center', 'gap-2', inactiveChrome)}>
+          <HeroIdentityChip hero={row.hero} fallbackName={row.hero.name} lang={lang} />
+        </span>
         {/* Roll quality is a column players read down, and the sans face this app ships has no
             tabular figures — so the mono face is what actually keeps the digits in line. */}
-        <span className="shrink-0 font-mono text-xs tabular-nums text-muted">
+        <span className={cn('shrink-0', 'font-mono', 'text-xs', 'tabular-nums', 'text-muted', inactiveChrome)}>
           {rollQualityText(row, lang)}
         </span>
       </button>

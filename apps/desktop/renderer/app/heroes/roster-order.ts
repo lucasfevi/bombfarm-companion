@@ -1,10 +1,9 @@
 /**
- * How the card board orders and narrows the roster.
+ * How the Heroes screen orders and narrows its roster, in either presentation.
  *
- * The rail has exactly one order — best birth roll first — because it answers "who am I looking
- * at". The board is a comparison surface, so it answers whichever question is being asked: which
- * heroes are strongest, which are furthest levelled, which own a given ability. That is the whole
- * reason these live here and not on the rail.
+ * One toolbar governs both: whichever question is being asked — which heroes are strongest, which
+ * are furthest levelled, which own a given ability — is asked of the list and the board alike, so
+ * switching between them never changes what is on screen, only its shape.
  *
  * Every comparator is TOTAL. Roll quality already had this rule for its own reason — heroes tie
  * on it constantly — and it applies to all six: rarity has six values across a roster of twenty,
@@ -29,13 +28,14 @@ export type RosterSort = {
 /** Best first, which is what every one of the six keys means by "descending". */
 export const DEFAULT_ROSTER_SORT: RosterSort = { key: 'roll', direction: 'desc' };
 
-export type RosterBoardFilter = {
+export type RosterFilter = {
   /** Heroes owning ANY of these. Empty means every hero — never "no hero". */
   readonly abilityIds: readonly string[];
-  readonly hideDisabled: boolean;
+  /** Keep only heroes the account has enabled for battle. */
+  readonly activeOnly: boolean;
 };
 
-export const EMPTY_ROSTER_FILTER: RosterBoardFilter = { abilityIds: [], hideDisabled: false };
+export const EMPTY_ROSTER_FILTER: RosterFilter = { abilityIds: [], activeOnly: false };
 
 /**
  * The sortable figure behind one key, or `undefined` when the account has not told us.
@@ -133,20 +133,20 @@ export function toggleAbilityFilter(
  */
 export function filterRosterRows(
   rows: readonly RosterHeroRow[],
-  filter: RosterBoardFilter,
+  filter: RosterFilter,
 ): readonly RosterHeroRow[] {
   const wanted = new Set(filter.abilityIds);
   return rows.filter((row) => {
-    if (filter.hideDisabled && row.hero.battleAllowed === false) return false;
+    if (filter.activeOnly && row.hero.battleAllowed === false) return false;
     if (wanted.size === 0) return true;
     return heroAbilityIds(row.hero.abilities).some((id) => wanted.has(id));
   });
 }
 
-/** Filter first, then order what survived — the board draws exactly this. */
-export function rosterBoardRows(
+/** Filter first, then order what survived — both presentations draw exactly this. */
+export function rosterRowsShown(
   rows: readonly RosterHeroRow[],
-  filter: RosterBoardFilter,
+  filter: RosterFilter,
   sort: RosterSort,
 ): readonly RosterHeroRow[] {
   return sortRosterRows(filterRosterRows(rows, filter), sort);

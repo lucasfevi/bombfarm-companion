@@ -22,13 +22,19 @@ many as the window has room for rather than stretching a fixed few, six across a
 sits on the floor of every card, so it lines up across a row whatever height the abilities above
 it took.
 
-**The board is ordered and narrowed from its own toolbar.** Sort by birth roll, power, level,
+**One toolbar orders and narrows both presentations.** Sort by birth roll, power, level,
 rarity, grade or stars, either way up — the Inventory's own sort control, a key and a direction
 sharing one outline. A hero whose figure the account has not carried sorts last in both
 directions rather than ranking as the weakest on the roster. Beside it, every ability in the game
 as a row of icons: press one to keep only the heroes that own it. The ones no hero here owns are
 dimmed and cannot be pressed, which is itself the answer to "which of these do I have none of".
-And one switch drops the shelved heroes from the board entirely.
+And one switch keeps only the heroes that are active.
+
+All of it applies to the list as well as the board — they are two shapes of one roster, so
+switching between them never changes which heroes are on screen. The list greys a shelved hero
+the way the board and the picker already do. Which hero the detail is about never moves: a filter
+is a question about the roster, not a hero switch, so a hero filtered off the list still holds the
+panel beside it.
 
 **Picking a hero from the board opens it.** The board fills the screen, so the detail is not
 beside it — clicking a card selects that hero and returns you to the list, where the detail is.
