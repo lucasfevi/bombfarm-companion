@@ -12,6 +12,7 @@
  * sits behind the consent gate with every other screen.
  */
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import {
   Banner,
   Button,
@@ -53,7 +54,7 @@ import { pipelineForHero } from '@bombfarm/domain/roster-dps';
 import type { PipelineFacts } from '@bombfarm/domain/stat-breakdown';
 import type { SheetKey } from '@bombfarm/domain/planner-constants';
 import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
-import { useCopy, useLocale } from '../../lib/copy';
+import { sub, useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
 import {
   farmScreenCopy,
@@ -71,6 +72,13 @@ import { resolveSelectedHeroId, selectedRow } from './hero-selection';
 import { readHeroPhase, shownHeroPhase } from './hero-phase';
 import { useFarmSelectedPhase } from './use-farm-selected-phase';
 import { heroFigures, type HeroFigures } from './hero-figures';
+import { RosterCards } from './roster-cards';
+import {
+  heroPickOutcome,
+  nextRosterViewMode,
+  rosterToggleLabel,
+  type RosterViewMode,
+} from './roster-view-mode';
 import { cachedAbilityGains, createAbilityGainCache } from './ability-gain-cache';
 
 type RosterModel = Extract<HeroesScreenModel, { kind: 'roster' }>;
@@ -147,6 +155,9 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   const farmCopy = useFarmCopy();
   const [pickedHeroId, setPickedHeroId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  // View-local and stored nowhere, like the phase override and the rank mode below it: the board
+  // is a way of looking at the roster you are in now, not a setting about this account.
+  const [viewMode, setViewMode] = useState<RosterViewMode>('rail');
   // View-local, and stored nowhere: leaving the screen unmounts this and the next visit opens on
   // the Farm selection again. It outlives a hero switch on purpose — comparing two heroes at one
   // phase is the reason to override at all.
@@ -224,12 +235,21 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   const panelCopy = useMemo(() => farmScreenCopy(farmCopy, t), [farmCopy, t]);
   const heroes = useMemo(() => rows.map((row) => row.hero), [rows]);
 
-  const onSelectHeroId = useCallback((heroId: string) => {
-    setPickedHeroId(heroId);
-  }, []);
+  const onSelectHeroId = useCallback(
+    (heroId: string) => {
+      const outcome = heroPickOutcome(viewMode, heroId);
+      setPickedHeroId(outcome.heroId);
+      if (outcome.showDetail) setViewMode('rail');
+    },
+    [viewMode],
+  );
 
   const onSelectHero = useCallback((hero: HeroRecord) => {
     setPickedHeroId(hero.id);
+  }, []);
+
+  const onToggleView = useCallback(() => {
+    setViewMode(nextRosterViewMode);
   }, []);
 
   const onOpenPicker = useCallback(() => {
@@ -240,47 +260,97 @@ function HeroesRoster({ model }: { model: RosterModel }) {
     setOverridePhase(null);
   }, []);
 
+  const viewToggle = (
+    <div className="flex justify-end">
+      <Button
+        variant="ghost"
+        onClick={onToggleView}
+        aria-label={sub(t.heroesViewToggleAria, {
+          view: rosterToggleLabel(viewMode, { rail: t.heroesViewList, board: t.heroesViewCards }),
+        })}
+      >
+        {rosterToggleLabel(viewMode, { rail: t.heroesViewList, board: t.heroesViewCards })}
+      </Button>
+    </div>
+  );
+
   return (
-    // Rail beside detail above 1100px, detail alone below it — the same side-by-side-or-stacked
-    // threshold the phase board's own roster row is drawn at.
-    <div className="grid min-h-0 flex-1 grid-cols-1 gap-2.5 min-[1100px]:grid-cols-[19rem_minmax(0,1fr)]">
-      <div className="min-w-0 max-[1099px]:hidden">
-        <RosterRail rows={rows} selectedId={active.id} onSelectHeroId={onSelectHeroId} />
-      </div>
-      <HeroCopyProvider t={panelCopy} lang={lang}>
-        <div className={cn(colClass, 'min-w-0')}>
-          {/* The rail's stand-in below that width: the same roster, reached through the picker. */}
-          <Panel className="min-[1100px]:hidden">
-            <div className={panelHClass}>
-              <h2 className={panelTitleClass}>{t.heroesRosterTitle}</h2>
-              <Button variant="ghost" onClick={onOpenPicker}>
-                {t.switchHeroShort}
-              </Button>
-            </div>
-            <HeroIdentityChip hero={active.hero} fallbackName={active.hero.name} lang={lang} />
-          </Panel>
-          <HeroDetailTabs
-            active={active}
-            heroes={heroes}
-            heroCopy={heroCopy}
-            lang={lang}
-            abilityGains={abilityGains}
-            combat={combat}
-            figures={figures}
-            phase={shownHeroPhase(phaseReading, overridePhase)}
-            overridden={overridePhase !== null}
-            onOverridePhase={setOverridePhase}
-            onClearOverride={onClearOverride}
-            rankMode={rankMode}
-            onRankMode={setRankMode}
-            statLabel={boundStatLabel}
-            formatNumber={boundFormatNumber}
-            marketPrice={marketPrice}
-            formatAmount={formatAmount}
-            onSelectHero={onSelectHero}
-          />
-        </div>
-      </HeroCopyProvider>
+    <div className={cn(colClass, 'min-h-0 flex-1')}>
+      {viewToggle}
+      {/* One presentation at a time, cross-faded: `mode="wait"` lets the outgoing one finish
+          before the incoming one lays out, which is what keeps a board of twenty-two cards from
+          measuring itself against a rail that is still on screen. `reducedMotion="user"` turns
+          the whole thing off for a reader who asked for that. */}
+      <MotionConfig reducedMotion="user">
+        <AnimatePresence mode="wait" initial={false}>
+          {viewMode === 'board' ? (
+            <motion.div
+              key="board"
+              className="min-w-0"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+            >
+              <RosterCards
+                rows={rows}
+                selectedId={active.id}
+                onSelectHeroId={onSelectHeroId}
+                statLabel={boundStatLabel}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="rail"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              // Rail beside detail above 1100px, detail alone below it — the same
+              // side-by-side-or-stacked threshold the phase board's own roster row is drawn at.
+              className="grid min-h-0 grid-cols-1 gap-2.5 min-[1100px]:grid-cols-[19rem_minmax(0,1fr)]"
+            >
+              <div className="min-w-0 max-[1099px]:hidden">
+                <RosterRail rows={rows} selectedId={active.id} onSelectHeroId={onSelectHeroId} />
+              </div>
+              <HeroCopyProvider t={panelCopy} lang={lang}>
+                <div className={cn(colClass, 'min-w-0')}>
+                  {/* The rail's stand-in below that width: the same roster, reached through the picker. */}
+                  <Panel className="min-[1100px]:hidden">
+                    <div className={panelHClass}>
+                      <h2 className={panelTitleClass}>{t.heroesRosterTitle}</h2>
+                      <Button variant="ghost" onClick={onOpenPicker}>
+                        {t.switchHeroShort}
+                      </Button>
+                    </div>
+                    <HeroIdentityChip hero={active.hero} fallbackName={active.hero.name} lang={lang} />
+                  </Panel>
+                  <HeroDetailTabs
+                    active={active}
+                    heroes={heroes}
+                    heroCopy={heroCopy}
+                    lang={lang}
+                    abilityGains={abilityGains}
+                    combat={combat}
+                    figures={figures}
+                    phase={shownHeroPhase(phaseReading, overridePhase)}
+                    overridden={overridePhase !== null}
+                    onOverridePhase={setOverridePhase}
+                    onClearOverride={onClearOverride}
+                    rankMode={rankMode}
+                    onRankMode={setRankMode}
+                    statLabel={boundStatLabel}
+                    formatNumber={boundFormatNumber}
+                    marketPrice={marketPrice}
+                    formatAmount={formatAmount}
+                    onSelectHero={onSelectHero}
+                  />
+                </div>
+              </HeroCopyProvider>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </MotionConfig>
       <HeroPickerDialogView
         open={pickerOpen}
         onOpenChange={setPickerOpen}
