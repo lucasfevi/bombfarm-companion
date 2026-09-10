@@ -1,5 +1,27 @@
 /** `@bombfarm/hero/model` — the view models and formatting the hero components render from. */
 export { compareRosterHeroes, gearCountOf } from './roster-compare';
+export { orderByRollQuality, rollQualityText } from './roster-rows';
+export type { RosterHeroRow } from './roster-rows';
+export {
+  ROSTER_BOARD_SORT_KEYS,
+  DEFAULT_ROSTER_BOARD_SORT,
+  EMPTY_ROSTER_BOARD_FILTER,
+  abilityFilterOptions,
+  filterRosterRows,
+  pressAbilityFilter,
+  rosterRowsShown,
+  sortRosterRows,
+  toggleAbilityFilter,
+} from './roster-board-order';
+export type {
+  RosterAbilityFilterOption,
+  RosterBoardFilter,
+  RosterBoardSort,
+  RosterBoardSortDirection,
+  RosterBoardSortKey,
+} from './roster-board-order';
+export { heroPickOutcome } from './roster-view-mode';
+export type { HeroPickOutcome, RosterViewMode } from './roster-view-mode';
 export { formatClearTime } from './format-clear-time';
 export {
   birthRollAvailability,

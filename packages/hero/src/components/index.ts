@@ -4,6 +4,10 @@ export type { RosterSortDir, RosterSortKey } from './hero-picker/roster-sort-hea
 export { HeroPickerDialogView } from './hero-picker/hero-picker-dialog';
 export type { HeroPickerActions, HeroPickerData } from './hero-picker/hero-picker-dialog';
 export { HeroActiveToggle } from './hero-picker/hero-active-toggle';
+export { RosterRail } from './roster-board/roster-rail';
+export { RosterCards } from './roster-board/roster-cards';
+export { RosterToolbar } from './roster-board/roster-toolbar';
+export type { RosterToolbarActions } from './roster-board/roster-toolbar';
 export { PhasesHeroSwitcherView } from './phases-hero-switcher';
 export type { HeroPickerSlot, HeroPickerSlotProps } from './phases-hero-switcher';
 export { HeroCopyProvider, useHeroCopy } from './hero-copy-context';

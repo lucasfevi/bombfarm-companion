@@ -3,13 +3,14 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import {
   abilityFilterOptions,
   filterRosterRows,
+  pressAbilityFilter,
   rosterRowsShown,
   sortRosterRows,
   toggleAbilityFilter,
-  DEFAULT_ROSTER_SORT,
-  EMPTY_ROSTER_FILTER,
-} from './roster-order';
-import type { RosterHeroRow } from './hero-roster-order';
+  DEFAULT_ROSTER_BOARD_SORT,
+  EMPTY_ROSTER_BOARD_FILTER,
+} from './roster-board-order';
+import type { RosterHeroRow } from './roster-rows';
 
 function row(
   id: string,
@@ -116,7 +117,7 @@ describe('sortRosterRows', () => {
 
   it('defaults to best birth roll first, which is the order the rail already uses', () => {
     const rows = [row('low', { name: 'L' }, 30), row('high', { name: 'H' }, 70)];
-    expect(sortRosterRows(rows, DEFAULT_ROSTER_SORT).map((r) => r.id)).toEqual(['high', 'low']);
+    expect(sortRosterRows(rows, DEFAULT_ROSTER_BOARD_SORT).map((r) => r.id)).toEqual(['high', 'low']);
   });
 });
 
@@ -129,7 +130,7 @@ describe('filterRosterRows', () => {
   ];
 
   it('keeps every hero when nothing is selected', () => {
-    expect(filterRosterRows(roster, EMPTY_ROSTER_FILTER)).toHaveLength(4);
+    expect(filterRosterRows(roster, EMPTY_ROSTER_BOARD_FILTER)).toHaveLength(4);
   });
 
   it('narrows to heroes owning ANY of the selected abilities, not all of them', () => {
@@ -205,6 +206,34 @@ describe('toggleAbilityFilter', () => {
 
   it('returns to where it started after two presses', () => {
     expect(toggleAbilityFilter(toggleAbilityFilter(['b'], 'a'), 'a')).toEqual(['b']);
+  });
+});
+
+describe('pressAbilityFilter', () => {
+  it('toggles a tile the roster owns, exactly as pressing it should', () => {
+    expect(pressAbilityFilter([], { id: 'a', owned: true, selected: false })).toEqual(['a']);
+    expect(pressAbilityFilter(['a', 'b'], { id: 'a', owned: true, selected: true })).toEqual(['b']);
+  });
+
+  it('refuses a tile no hero on this roster owns, which would filter the roster down to nothing', () => {
+    // The discriminating case, and the reason this is not `toggleAbilityFilter` at the call site:
+    // the tile stays pressable in the DOM (its tooltip needs hover, so it cannot be `disabled`),
+    // and selecting an unowned ability leaves a roster of zero heroes and a dimmed tile as the
+    // only way back.
+    expect(pressAbilityFilter([], { id: 'nobody-owns-it', owned: false, selected: false })).toEqual(
+      [],
+    );
+  });
+
+  it('returns the selection UNCHANGED on a refusal, so a re-render is not provoked either', () => {
+    const selected = ['a'];
+    expect(pressAbilityFilter(selected, { id: 'z', owned: false, selected: false })).toBe(selected);
+  });
+
+  it('still takes a refused ability back OUT if one was somehow selected', () => {
+    // Belt and braces on the shape of the guard: it must not become "unowned means untouchable",
+    // which would strand a selection made before the roster changed under it.
+    expect(pressAbilityFilter(['z'], { id: 'z', owned: false, selected: true })).toEqual(['z']);
   });
 });
 

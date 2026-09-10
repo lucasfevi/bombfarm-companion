@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import type { RosterHeroRow } from './hero-roster-order';
+import type { RosterHeroRow } from '@bombfarm/hero/model';
 import { defaultSelectedHeroId, resolveSelectedHeroId, selectedRow } from './hero-selection';
 
 /** Only `id` is read by these three rules, so the row carries nothing else it does not need. */

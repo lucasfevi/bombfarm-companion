@@ -4,9 +4,15 @@ import { describe, expect, it } from 'vitest';
 import type { AccountPayload, AccountView } from '@bombfarm/contracts';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { rollQualityFor } from '@bombfarm/domain/roll-quality';
+import { orderByRollQuality, rollQualityText, type RosterHeroRow } from '@bombfarm/hero/model';
 import { buildAccountRoster } from '../../lib/account/account-roster';
-import { orderByRollQuality, rollQualityText, type RosterHeroRow } from './hero-roster-order';
 
+/**
+ * The ordering itself is `@bombfarm/hero`'s and shared with the web planner; this proves it
+ * against a REAL account rather than against heroes written to suit it — the committed offline
+ * payload, parsed by this app's own roster builder, which is the only place a roster with genuine
+ * birth bounds on it exists in this repo.
+ */
 const OFFLINE_FIXTURE = path.join(__dirname, '..', '..', '..', 'tests', 'fixtures', 'account-offline.json');
 
 function offlineHeroes(): HeroRecord[] {

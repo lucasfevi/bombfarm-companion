@@ -9,7 +9,7 @@
  * the 19rem column: eight roll bars and sixteen icons do not fit in a rail, and shrunk until they
  * do they stop being readable, which is the only thing this view is for.
  *
- * Read-only, like every other panel on this screen. A card selects a hero and changes nothing.
+ * Read-only. A card selects a hero and changes nothing.
  */
 import { memo, type ReactNode, type SyntheticEvent } from 'react';
 import { motion } from 'motion/react';
@@ -20,7 +20,6 @@ import {
   HeroIdentity,
   rosterInactiveChromeClass,
 } from '@bombfarm/game-art';
-import { railTintFor, statRollRowsFor, type RollTint } from '@bombfarm/hero/model';
 import {
   Panel,
   Tooltip,
@@ -29,10 +28,10 @@ import {
   formatNumber,
   panelHClass,
   panelTitleClass,
-  type Lang,
 } from '@bombfarm/ui';
-import { sub, useCopy, useLocale } from '../../lib/copy';
-import { rollQualityText, type RosterHeroRow } from './hero-roster-order';
+import { sub, type Lang, type RosterBoardCopy } from '../../copy';
+import { railTintFor, rollQualityText, statRollRowsFor } from '../../model';
+import type { RollTint, RosterHeroRow } from '../../model';
 
 /** What a bar prints when the domain could place nothing — never a zero-length bar, which reads
  *  as the worst possible roll rather than as an absence of evidence. */
@@ -89,16 +88,17 @@ export function RosterCards({
   selectedId,
   onSelectHeroId,
   statLabel,
+  t,
+  lang,
 }: {
   /** Already filtered and ordered — the toolbar that did both sits above this panel. */
   rows: readonly RosterHeroRow[];
   selectedId: string;
   onSelectHeroId: (heroId: string) => void;
   statLabel: (key: SheetKey) => string;
+  t: RosterBoardCopy;
+  lang: Lang;
 }) {
-  const t = useCopy();
-  const { lang } = useLocale();
-
   return (
     <Panel className="min-w-0">
       <div className={panelHClass}>
@@ -118,6 +118,7 @@ export function RosterCards({
               key={row.id}
               row={row}
               lang={lang}
+              t={t}
               selected={row.id === selectedId}
               index={index}
               onSelectHeroId={onSelectHeroId}
@@ -135,10 +136,15 @@ export function RosterCards({
  * while the hero objects keep their identity, so a shallow compare skips every card whose hero
  * and selection did not move. A board draws the whole roster at once, which is exactly the case
  * where that boundary pays.
+ *
+ * It is written out by hand rather than left to the React Compiler, which does not run over a
+ * package a host lists in `transpilePackages` — so a component that reaches a host this way keeps
+ * only the memoisation its own source spells.
  */
 const HeroCard = memo(function HeroCard({
   row,
   lang,
+  t,
   selected,
   index,
   onSelectHeroId,
@@ -146,12 +152,12 @@ const HeroCard = memo(function HeroCard({
 }: {
   row: RosterHeroRow;
   lang: Lang;
+  t: RosterBoardCopy;
   selected: boolean;
   index: number;
   onSelectHeroId: (heroId: string) => void;
   statLabel: (key: SheetKey) => string;
 }) {
-  const t = useCopy();
   const { hero } = row;
   // A hero taken out of the rotation is still on the board — greyed rather than hidden, so it can
   // be compared with the ones that are in. The mute rides on the contents, never on the card's
@@ -234,7 +240,7 @@ const HeroCard = memo(function HeroCard({
           </span>
         </div>
 
-        <RollStrip row={row} statLabel={statLabel} />
+        <RollStrip row={row} statLabel={statLabel} t={t} lang={lang} />
 
         <CardSection title={t.rosterColAbilities}>
           <HeroAbilityIcons
@@ -293,12 +299,14 @@ function CardSection({
 function RollStrip({
   row,
   statLabel,
+  t,
+  lang,
 }: {
   row: RosterHeroRow;
   statLabel: (key: SheetKey) => string;
+  t: RosterBoardCopy;
+  lang: Lang;
 }) {
-  const t = useCopy();
-  const { lang } = useLocale();
   const statRows = statRollRowsFor(
     row.hero,
     (value) => formatNumber(value, lang, 2),

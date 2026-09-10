@@ -9,7 +9,7 @@
 import type { AccountViewState } from '../../lib/account/account-view-store';
 import { buildAccountRoster, type AccountRoster } from '../../lib/account/account-roster';
 import { capturedAtOf } from '../../lib/account/account-facts';
-import { orderByRollQuality, type RosterHeroRow } from './hero-roster-order';
+import { orderByRollQuality, type RosterHeroRow } from '@bombfarm/hero/model';
 
 export type HeroesScreenModel =
   | { readonly kind: 'loading' }
