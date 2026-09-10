@@ -107,14 +107,14 @@ jobs:
         run: >
           pnpm --filter @bombfarm/contracts --filter @bombfarm/ui
           --filter @bombfarm/game-data --filter @bombfarm/game-api --filter @bombfarm/pricing
-          --filter @bombfarm/domain --filter @bombfarm/tap-runtime
+          --filter @bombfarm/domain --filter @bombfarm/tap-runtime --filter @bombfarm/game-art
           --filter @bombfarm/farm --filter @bombfarm/hero --filter @bombfarm/desktop typecheck
 
       - name: Lint desktop + deps
         run: >
           pnpm --filter @bombfarm/contracts --filter @bombfarm/ui
           --filter @bombfarm/game-data --filter @bombfarm/game-api --filter @bombfarm/pricing
-          --filter @bombfarm/domain --filter @bombfarm/tap-runtime
+          --filter @bombfarm/domain --filter @bombfarm/tap-runtime --filter @bombfarm/game-art
           --filter @bombfarm/farm --filter @bombfarm/hero --filter @bombfarm/desktop lint
 
       # apps/desktop/src/main/domain-edge.test.ts asserts against the esbuild main-process
