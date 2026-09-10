@@ -1,23 +1,23 @@
 {
   "captureMode": "prod-profile",
   "fixture": "importedRoster",
-  "_note": "REFRESHED (9) for the hero identity panel drawing the hero's ability pool (2026-09-10), per docs/react-performance.md rule 10's deliberate-change path - never by widening the guard, which compares exactly on purpose. Every scenario moved UP, which the previous refresh noted is the direction a render leak moves one, so this was measured rather than argued: P-02 7046->7206 (+160), P-03 12643->12915 (+272), P-04 6922->7034 (+112), P-05 2214->2262 (+48). The cause is one structural addition. The identity panel now renders HeroAbilityIcons under the portrait, and the fixture hero owns two abilities, each wrapped in the design-system tooltip - 8 component paths per ability, so 16 component instances that were not mounted before. Every delta is exactly 16 x that scenario's own commit count: P-02 16x10=160, P-03 16x17=272, P-04 16x7=112, P-05 16x3=48. Read off the capture's own renderTally rather than inferred: filtering the paths that pass through HeroAbilityIcons and under HeroIdentityRollPanel sums to exactly the delta in all four - 160, 272, 112 and 48. P-04 needs that second filter because it opens the hero picker, whose own rows have carried an abilities column all along; those 215 renders are pre-existing and are not part of the delta. A constant instance count across four scenarios with different interactions and different commit counts is the signature of a structural addition; a leak scales with what invalidates, not with commits. The PR's other web-facing changes add no components: the Preview column and the reset-advice line are withdrawn only on a read-only host, the gear comparison only where no second loadout can exist, and the unit change puts a suffix on figures already rendered. Captured on the host with PERF_FORCE=1 after perf:build:profile, all four deterministic across 7 repetitions, and the four medians reproduce this PR's CI run exactly.",
+  "_note": "REFRESHED (10) for the roster rail and board arriving on the planner (2026-09-10), per docs/react-performance.md rule 10's deliberate-change path - never by widening the guard, which compares exactly on purpose. All four scenarios moved UP: P-02 7206->8962 (+1756), P-03 12915->15736 (+2821), P-04 7034->7650 (+616), P-05 2262->2542 (+280). Measured, not argued, and measured against a CONTROL: develop's tip was captured on the same host with the same method and reproduced the outgoing baseline exactly on all four scenarios (7206/12915/7034/2262), so the two captures are directly comparable and the deltas below are this PR's own. Commit counts are IDENTICAL in both captures (10/17/7/3) - the interaction shape did not change, only how much each commit draws, which is the signature of a structural addition rather than a leak; a leak scales with what invalidates, and would have moved the commit count or the per-commit figure or both. The dominant cause is one component: the roster toolbar's ability filter strip, which draws every ability in the game as a design-system tooltip trigger - 20 tiles at ~8.7 component paths each, and it is now mounted above the planner on every commit. Its added renders are EXACTLY 174 x that scenario's commit count in all four: 174x10=1740, 174x17=2958, 174x7=1218, 174x3=522. A constant that holds across four scenarios with different interactions and different commit counts is a structural constant. The rail adds ~10 per commit on top (101/180/70/30) - three seeded heroes and a panel - and the workspace's own presence wrappers a few more. Read off each capture's own renderTally, path by path, after normalising away the wrapper chain the workspace inserts above the tab stage. A smaller reduction runs the other way and is why the net is below the gross: -491/-812/-869/-354 across the pre-existing planner subtrees (HeroStrip, HeroTab, PointsPreviewActions, EffectiveStatsPanel). The reading, not proven here: the strip and the tab stage are now passed INTO RosterWorkspace as element props rather than written inline in PlannerTabs, so the React Compiler holds each in its own memo slot with no dependencies, and a PlannerTabs re-render driven by one of its five store reads no longer rebuilds them. That is a bail-out point the tree did not have before. Captured on the host with PERF_FORCE=1 after perf:build:profile, all four deterministic across 7 repetitions in both captures.",
   "scenarios": [
     {
       "id": "P-02",
-      "medianComponentRenders": 7206
+      "medianComponentRenders": 8962
     },
     {
       "id": "P-03",
-      "medianComponentRenders": 12915
+      "medianComponentRenders": 15736
     },
     {
       "id": "P-04",
-      "medianComponentRenders": 7034
+      "medianComponentRenders": 7650
     },
     {
       "id": "P-05",
-      "medianComponentRenders": 2262
+      "medianComponentRenders": 2542
     }
   ]
 }
