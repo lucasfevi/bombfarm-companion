@@ -157,6 +157,9 @@ function AbilityFilterStrip({
         const label = option.owned
           ? sub(t.heroesAbilityFilterOption, { ability: name })
           : sub(t.heroesAbilityFilterAbsent, { ability: name });
+        const selectedFrameClass = option.selected
+          ? cn('border-accent', 'bg-[color-mix(in_oklch,var(--accent)_28%,transparent)]')
+          : '';
         return (
           <Tooltip.Root key={option.id}>
             <Tooltip.Trigger
@@ -171,22 +174,20 @@ function AbilityFilterStrip({
                   abilityIds: toggleAbilityFilter(filter.abilityIds, option.id),
                 });
               }}
-              // The border is always there and always the same width, so pressing one moves
-              // nothing; only its colour changes. An `outline` with an offset draws outside the
-              // button instead — over the icons either side of it, and clipped by the strip.
+              // Pressed is marked by recolouring the icon's own frame, never by a frame on the
+              // button: the icon already draws one, so a second would read as two concentric
+              // frames and make the pressed icon wider than its neighbours. An `outline` grows
+              // it the same way, and would fight the focus ring for the same property.
               className={cn(
                 'rounded-sm',
-                'border',
+                'border-0',
                 'bg-transparent',
-                'p-px',
+                'p-0',
                 'focus-visible:[outline:2px_solid_var(--accent)]',
                 option.owned ? 'cursor-pointer' : cn('cursor-default', 'opacity-30', 'grayscale'),
-                option.selected
-                  ? cn('border-accent', 'bg-[color-mix(in_oklch,var(--accent)_18%,transparent)]')
-                  : 'border-transparent',
               )}
             >
-              <AbilityIcon code={option.id} size="xs" />
+              <AbilityIcon code={option.id} size="xs" className={selectedFrameClass} />
             </Tooltip.Trigger>
             <Tooltip.Portal>
               <Tooltip.Positioner sideOffset={6}>
