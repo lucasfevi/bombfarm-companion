@@ -23,3 +23,12 @@ earn its keep against the objective — more damage can clear a phase faster tha
 and cost gold — so a point that buys nothing stays where it is rather than being spent for the
 sake of it. The level ceiling is untouched: no proposal has ever been allowed to exceed it, and
 none does now.
+
+Placing those points is also free, and the advisor now says so. A respec buys back points already
+committed, so a proposal that only ADDS commits none and owes nothing — but the Farm page charged
+a flat 1000 gold per hero level on every hero whose build changed at all. That was correct while
+every move was a transfer, because anything that changed also took a point off something; it stops
+being correct the moment a proposal can be pure addition. On a settled roster, a hero banking eight
+points was quoted 44,000 gold for a plan that takes nothing away from it. The headline respec cost
+and the payback it feeds now count only the heroes that actually have to buy one, and the Team
+Plan's per-hero reset cost is 0 for the same case.

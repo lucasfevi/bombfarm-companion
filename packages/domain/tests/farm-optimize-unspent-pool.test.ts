@@ -23,6 +23,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { solveFarmRespec, type FarmRespecResult } from '@bombfarm/domain/farm-optimize';
+import { requiresPointReset, respecCostGold } from '@bombfarm/domain/respec-cost';
 import { budgetOf, reoptBudget } from '@bombfarm/domain/points-reopt-core';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
@@ -115,5 +116,70 @@ describe('an unspent pool is placed, not left banked', () => {
         `${entry.heroName} proposed ${budgetOf(entry.proposedPts)} having spent ${budgetOf(entry.currentPts)}`,
       ).toBeGreaterThanOrEqual(budgetOf(entry.currentPts));
     }
+  });
+});
+
+/**
+ * Placing an unplaced pool is FREE — the respec gold buys back points already committed, and an
+ * add-only proposal commits none. Before the fix above this case could not arise (every move was a
+ * transfer, so anything that changed also took a point off something), which is why the advisor
+ * could charge a flat `1000 x level` on every changed hero and always be right. It is not right
+ * any more, and these are the same constructions that make it happen.
+ */
+describe('a proposal that only adds unplaced points is not charged a respec', () => {
+  for (const banked of [4, 8]) {
+    it(`a hero banking ${banked} points is offered them for nothing`, () => {
+      const result = solveFarmRespec({ heroes: rosterBanking(banked), account, maxPhase });
+      const entry = entryFor(result, TARGET.name);
+
+      expect(entry.changed, `${entry.heroName} was offered no change at all`).toBe(true);
+      expect(
+        requiresPointReset(entry.currentPts, entry.proposedPts),
+        `${entry.heroName} is proposed a vector that takes a point away, so this case is not add-only`,
+      ).toBe(false);
+      expect(entry.requiresReset).toBe(false);
+      // The PRICE of a reset at that level is still reported — what changes is who owes it.
+      expect(entry.respecCostGold).toBe(respecCostGold(entry.level));
+
+      const charged = result.heroes
+        .filter((hero) => hero.changed && hero.requiresReset)
+        .reduce((sum, hero) => sum + hero.respecCostGold, 0);
+      expect(result.respecCostGold, 'the headline cost is still charging this hero').toBe(charged);
+    });
+  }
+
+  it('a hero that has to give a point up still pays', () => {
+    const result = solveFarmRespec({ heroes, account, maxPhase });
+    const payers = result.heroes.filter((hero) => hero.changed && hero.requiresReset);
+    expect(payers.length, 'this fixture proposes no reallocation, so the case is untested').toBeGreaterThan(0);
+    for (const hero of payers) {
+      expect(hero.respecCostGold).toBe(respecCostGold(hero.level));
+    }
+    expect(result.respecCostGold).toBe(payers.reduce((sum, hero) => sum + hero.respecCostGold, 0));
+  });
+});
+
+describe('requiresPointReset', () => {
+  const before = { attack: 10, energy: 8, speed: 3, critChance: 0, critDmg: 0, penetration: 0, cdr: 0, luck: 7 };
+
+  it('is false for an unchanged vector', () => {
+    expect(requiresPointReset(before, { ...before })).toBe(false);
+  });
+
+  it('is false when every key only grows', () => {
+    expect(requiresPointReset(before, { ...before, attack: 11, cdr: 4 })).toBe(false);
+  });
+
+  it('is true as soon as one key drops, however small', () => {
+    expect(requiresPointReset(before, { ...before, speed: 2, attack: 11 })).toBe(true);
+  });
+
+  it('reads Luck too — it is outside the reallocatable budget, not outside the cost', () => {
+    expect(requiresPointReset(before, { ...before, luck: 6 })).toBe(true);
+  });
+
+  it('treats a missing key as zero rather than throwing', () => {
+    expect(requiresPointReset({}, {})).toBe(false);
+    expect(requiresPointReset({ attack: 1 }, {})).toBe(true);
   });
 });
