@@ -14,7 +14,12 @@
 import { memo, type ReactNode, type SyntheticEvent } from 'react';
 import { motion } from 'motion/react';
 import { SHEET_PANEL_KEYS, type SheetKey } from '@bombfarm/domain/planner-constants';
-import { HeroAbilityIcons, HeroGearIcons, HeroIdentityChip } from '@bombfarm/game-art';
+import {
+  HeroAbilityIcons,
+  HeroGearIcons,
+  HeroIdentityChip,
+  rosterInactiveChromeClass,
+} from '@bombfarm/game-art';
 import { railTintFor, statRollRowsFor, type RollTint } from '@bombfarm/hero/model';
 import {
   Panel,
@@ -46,9 +51,21 @@ const TINT_CLASS: Record<RollTint, string> = {
 const CARD_STAGGER_SECONDS = 0.022;
 const CARD_STAGGER_CAP = 12;
 
-/** Three letters tell eight bars apart once the tooltip carries the full name, and it is what
- *  keeps the strip legible at an eighth of a card's width. */
+/** Three letters tell the bars apart once the tooltip carries the full name, and it is what
+ *  keeps the strip legible at a quarter of a card's width. */
 const BAR_LABEL_CHARS = 3;
+
+/**
+ * Each group wraps at a fixed count rather than filling the width.
+ *
+ * Eight gear tiles in one row set the card's width on their own — every card was then as wide as
+ * its widest row and only three fitted across a large window. Wrapping the three groups at four,
+ * three and four makes the card about half as wide, which is what puts five of them on a row and
+ * lets the board do what it is for: the whole roster in one look.
+ */
+const ROLL_BARS_PER_ROW = cn('grid', 'grid-cols-4', 'gap-1');
+const ABILITIES_PER_ROW = cn('grid', 'w-fit', 'grid-cols-3', 'gap-0.5');
+const GEAR_PER_ROW = cn('grid', 'w-fit', 'grid-cols-4', 'gap-0.5');
 
 /** The icon groups inside a card carry their own tooltip triggers. A click on one is about that
  *  icon, not about picking the hero. */
@@ -80,7 +97,7 @@ export function RosterCards({
       </div>
       <Tooltip.Provider delay={200} closeDelay={80}>
         <ul
-          className="m-0 grid list-none grid-cols-1 gap-2.5 p-0 min-[760px]:grid-cols-2 min-[1500px]:grid-cols-3 min-[1960px]:grid-cols-4"
+          className="m-0 grid list-none grid-cols-1 gap-2.5 p-0 min-[640px]:grid-cols-2 min-[980px]:grid-cols-3 min-[1320px]:grid-cols-4 min-[1660px]:grid-cols-5"
           aria-label={t.heroesRosterListLabel}
         >
           {rows.map((row, index) => (
@@ -123,6 +140,10 @@ const HeroCard = memo(function HeroCard({
 }) {
   const t = useCopy();
   const { hero } = row;
+  // A hero taken out of the rotation is still on the board — greyed rather than hidden, so it can
+  // be compared with the ones that are in. The mute rides on the contents, never on the card's
+  // own border, which is what says which hero is selected.
+  const inactiveChrome = hero.battleAllowed === false ? rosterInactiveChromeClass : undefined;
 
   return (
     <motion.li
@@ -167,31 +188,37 @@ const HeroCard = memo(function HeroCard({
           : 'hover:bg-[color-mix(in_oklch,var(--accent)_6%,transparent)]',
       )}
     >
-      <div className="flex min-w-0 items-center justify-between gap-2">
-        <HeroIdentityChip hero={hero} fallbackName={hero.name} lang={lang} />
-        {/* Roll quality is the figure a player reads down a roster, and the sans face this app
-            ships has no tabular figures — so the mono face is what keeps the digits in line. */}
-        <span className="shrink-0 font-mono text-sm font-bold tabular-nums text-muted">
-          {rollQualityText(row, lang)}
-        </span>
+      <div className={cn('flex', 'min-w-0', 'flex-col', 'gap-2.5', inactiveChrome)}>
+        <div className="flex min-w-0 items-center justify-between gap-2">
+          <HeroIdentityChip hero={hero} fallbackName={hero.name} lang={lang} />
+          {/* Roll quality is the figure a player reads down a roster, and the sans face this app
+              ships has no tabular figures — so the mono face is what keeps the digits in line. */}
+          <span className="shrink-0 font-mono text-sm font-bold tabular-nums text-muted">
+            {rollQualityText(row, lang)}
+          </span>
+        </div>
+
+        <RollStrip row={row} statLabel={statLabel} />
+
+        <CardSection title={t.rosterColAbilities}>
+          <HeroAbilityIcons
+            abilities={hero.abilities}
+            lang={lang}
+            className={ABILITIES_PER_ROW}
+          />
+        </CardSection>
+
+        <CardSection title={t.rosterColGear}>
+          <HeroGearIcons
+            loadout={hero.loadout}
+            lang={lang}
+            className={GEAR_PER_ROW}
+            emptySlotAriaLabel={(slotName) => sub(t.gearSlotEmptyAria, { slot: slotName })}
+            emptySlotTip={t.gearSlotEmptyTip}
+            lvLabel={t.importColLevel}
+          />
+        </CardSection>
       </div>
-
-      <RollStrip row={row} statLabel={statLabel} />
-
-      <CardSection title={t.rosterColAbilities}>
-        <HeroAbilityIcons abilities={hero.abilities} lang={lang} />
-      </CardSection>
-
-      <CardSection title={t.rosterColGear}>
-        <HeroGearIcons
-          loadout={hero.loadout}
-          lang={lang}
-          className="flex-wrap"
-          emptySlotAriaLabel={(slotName) => sub(t.gearSlotEmptyAria, { slot: slotName })}
-          emptySlotTip={t.gearSlotEmptyTip}
-          lvLabel={t.importColLevel}
-        />
-      </CardSection>
     </motion.li>
   );
 });
@@ -234,7 +261,7 @@ function RollStrip({
 
   return (
     <div
-      className="grid grid-cols-8 gap-1"
+      className={ROLL_BARS_PER_ROW}
       role="group"
       aria-label={`${t.heroesRollQualityLabel} · ${row.hero.name}`}
     >

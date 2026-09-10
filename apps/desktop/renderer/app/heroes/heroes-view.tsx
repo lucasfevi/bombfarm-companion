@@ -28,7 +28,7 @@ import {
   panelTitleClass,
   type Lang,
 } from '@bombfarm/ui';
-import { HeroIdentityChip } from '@bombfarm/game-art';
+import { HeroIdentityChip, InventoryLayoutToggle } from '@bombfarm/game-art';
 import {
   GearTab,
   HeroAbilitiesPanel,
@@ -54,7 +54,7 @@ import { pipelineForHero } from '@bombfarm/domain/roster-dps';
 import type { PipelineFacts } from '@bombfarm/domain/stat-breakdown';
 import type { SheetKey } from '@bombfarm/domain/planner-constants';
 import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
-import { sub, useCopy, useLocale } from '../../lib/copy';
+import { useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
 import {
   farmScreenCopy,
@@ -73,12 +73,7 @@ import { readHeroPhase, shownHeroPhase } from './hero-phase';
 import { useFarmSelectedPhase } from './use-farm-selected-phase';
 import { heroFigures, type HeroFigures } from './hero-figures';
 import { RosterCards } from './roster-cards';
-import {
-  heroPickOutcome,
-  nextRosterViewMode,
-  rosterToggleLabel,
-  type RosterViewMode,
-} from './roster-view-mode';
+import { heroPickOutcome, type RosterViewMode } from './roster-view-mode';
 import { cachedAbilityGains, createAbilityGainCache } from './ability-gain-cache';
 
 type RosterModel = Extract<HeroesScreenModel, { kind: 'roster' }>;
@@ -157,7 +152,7 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   // View-local and stored nowhere, like the phase override and the rank mode below it: the board
   // is a way of looking at the roster you are in now, not a setting about this account.
-  const [viewMode, setViewMode] = useState<RosterViewMode>('rail');
+  const [viewMode, setViewMode] = useState<RosterViewMode>('list');
   // View-local, and stored nowhere: leaving the screen unmounts this and the next visit opens on
   // the Farm selection again. It outlives a hero switch on purpose — comparing two heroes at one
   // phase is the reason to override at all.
@@ -239,7 +234,7 @@ function HeroesRoster({ model }: { model: RosterModel }) {
     (heroId: string) => {
       const outcome = heroPickOutcome(viewMode, heroId);
       setPickedHeroId(outcome.heroId);
-      if (outcome.showDetail) setViewMode('rail');
+      if (outcome.showDetail) setViewMode('list');
     },
     [viewMode],
   );
@@ -248,9 +243,10 @@ function HeroesRoster({ model }: { model: RosterModel }) {
     setPickedHeroId(hero.id);
   }, []);
 
-  const onToggleView = useCallback(() => {
-    setViewMode(nextRosterViewMode);
-  }, []);
+  const viewToggleLabels = useMemo(
+    () => ({ group: t.heroesViewLabel, cards: t.heroesViewCards, list: t.heroesViewList }),
+    [t],
+  );
 
   const onOpenPicker = useCallback(() => {
     setPickerOpen(true);
@@ -261,16 +257,10 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   }, []);
 
   const viewToggle = (
+    // The Inventory's own control, for the same two shapes: one pair of glyphs means one thing
+    // wherever this app lets you switch between a list and a board of cards.
     <div className="flex justify-end">
-      <Button
-        variant="ghost"
-        onClick={onToggleView}
-        aria-label={sub(t.heroesViewToggleAria, {
-          view: rosterToggleLabel(viewMode, { rail: t.heroesViewList, board: t.heroesViewCards }),
-        })}
-      >
-        {rosterToggleLabel(viewMode, { rail: t.heroesViewList, board: t.heroesViewCards })}
-      </Button>
+      <InventoryLayoutToggle layout={viewMode} onChange={setViewMode} labels={viewToggleLabels} />
     </div>
   );
 
@@ -283,9 +273,9 @@ function HeroesRoster({ model }: { model: RosterModel }) {
           the whole thing off for a reader who asked for that. */}
       <MotionConfig reducedMotion="user">
         <AnimatePresence mode="wait" initial={false}>
-          {viewMode === 'board' ? (
+          {viewMode === 'cards' ? (
             <motion.div
-              key="board"
+              key="cards"
               className="min-w-0"
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -301,7 +291,7 @@ function HeroesRoster({ model }: { model: RosterModel }) {
             </motion.div>
           ) : (
             <motion.div
-              key="rail"
+              key="list"
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
