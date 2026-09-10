@@ -283,13 +283,19 @@ function AbilityFilterStrip({
               onClick={() => {
                 onFilter({ ...filter, abilityIds: toggleAbility(filter.abilityIds, option.id) });
               }}
+              // The border is always there and always the same width, so pressing one moves
+              // nothing; only its colour changes. An `outline` with an offset draws outside the
+              // button instead — over the icons either side of it, and clipped by the strip.
               className={cn(
                 'rounded-sm',
-                'border-0',
+                'border',
                 'bg-transparent',
-                'p-0',
+                'p-px',
+                'focus-visible:[outline:2px_solid_var(--accent)]',
                 option.owned ? 'cursor-pointer' : cn('cursor-default', 'opacity-30', 'grayscale'),
-                option.selected && 'outline-2 outline-offset-1 outline-accent',
+                option.selected
+                  ? cn('border-accent', 'bg-[color-mix(in_oklch,var(--accent)_18%,transparent)]')
+                  : 'border-transparent',
               )}
             >
               <AbilityIcon code={option.id} size="xs" />
@@ -356,7 +362,9 @@ const HeroCard = memo(function HeroCard({
 
   return (
     <motion.li
-      layout
+      // Deliberately NOT `layout`. A layout animation moves an element by transform-scaling it,
+      // and a card is a box of fixed-size icons: they stretch with the box for the length of the
+      // animation and snap back at the end. Re-ordering the board settles instantly instead.
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{
@@ -391,10 +399,13 @@ const HeroCard = memo(function HeroCard({
         'border',
         'p-2.5',
         'focus-visible:[outline:2px_solid_var(--accent)] focus-visible:[outline-offset:-2px]',
+        // Opaque, not transparent: cards fade over one another while the board is arriving, and
+        // a see-through card shows the one behind it straight through its own gear.
+        'bg-bg',
         selected ? 'border-accent' : 'border-line',
         selected
-          ? 'bg-[color-mix(in_oklch,var(--accent)_10%,transparent)]'
-          : 'hover:bg-[color-mix(in_oklch,var(--accent)_6%,transparent)]',
+          ? 'bg-[color-mix(in_oklch,var(--accent)_10%,var(--bg))]'
+          : 'hover:bg-[color-mix(in_oklch,var(--accent)_6%,var(--bg))]',
       )}
     >
       <div className={cn('flex', 'min-w-0', 'flex-1', 'flex-col', 'gap-2.5', inactiveChrome)}>

@@ -586,7 +586,7 @@ export const ptBR: Copy = {
   heroesBoardSortStars: 'Estrelas',
   heroesBoardSortAscending: 'Pior primeiro',
   heroesBoardSortDescending: 'Melhor primeiro',
-  heroesBoardHideDisabled: 'Só quem está no rodízio',
+  heroesBoardHideDisabled: 'Só os escalados',
   heroesBoardAbilityFilterLabel: 'Filtrar por habilidade',
   heroesBoardAbilityFilterOption: 'Só heróis com {ability}',
   heroesBoardAbilityFilterAbsent: 'Nenhum herói aqui tem {ability}',
