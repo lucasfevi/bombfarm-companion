@@ -159,12 +159,14 @@ export function PointsTable({
           {sub(t.pointsOverBudgetWarning, { spent: spentDelta, level })}
         </p>
       )}
-      <PointsResetAdvice
-        t={t}
-        resetAdvice={resetAdvice}
-        formatNumber={boundFormatNumber}
-        enabled={reading.showResetAdvice}
-      />
+      {reading.mountResetAdvice && (
+        <PointsResetAdvice
+          t={t}
+          resetAdvice={resetAdvice}
+          formatNumber={boundFormatNumber}
+          enabled={reading.showResetAdvice}
+        />
+      )}
       <DataTable.Root>
         <DataTable.Table className="table-fixed">
           <colgroup>

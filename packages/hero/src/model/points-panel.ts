@@ -8,6 +8,11 @@
  * a control the reader cannot reach; with it, the line stays governed by `heroBattleAllowed`
  * alone, exactly as it was before editing became optional.
  *
+ * `mountResetAdvice` is the difference between "nothing to say right now" and "nothing to say
+ * ever". The line keeps its space while it is hidden, so the panel does not reflow when a reset
+ * starts or stops being worth it — but a host with no Optimize build can never show it, and
+ * reserving a blank line for it there is a gap under the heading that never fills.
+ *
  * It is a function rather than a ternary inside the panel because this package renders no
  * component in a test — logic in JSX here is logic nothing can prove.
  */
@@ -16,6 +21,7 @@ export type PointsPanelReading = {
   showPointSteppers: boolean;
   showPreviewActions: boolean;
   showResetAdvice: boolean;
+  mountResetAdvice: boolean;
 };
 
 export function pointsPanelReading(input: {
@@ -28,5 +34,6 @@ export function pointsPanelReading(input: {
     showPointSteppers: editable,
     showPreviewActions: editable,
     showResetAdvice: editable && heroBattleAllowed,
+    mountResetAdvice: editable,
   };
 }

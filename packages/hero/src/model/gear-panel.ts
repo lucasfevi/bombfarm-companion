@@ -13,21 +13,29 @@
  * A host that supplies neither gets the same figures — totals, per-slot stats, the compare
  * scoreboard — with no control that changes either loadout.
  *
+ * `showCompare` is whether to draw the comparison AT ALL. A comparison needs a second loadout,
+ * and the only way one comes into being is a host copying the current gear into a clone and
+ * editing it. So a host with no callbacks and no clone already in hand can never fill that
+ * section, and drawing it leaves a heading with nothing under it.
+ *
  * It is a function rather than a pair of conditions inside the JSX because this package renders no
  * component in a test — logic in JSX here is logic nothing can prove.
  */
 export type GearPanelReading = {
   showSlotEditors: boolean;
   showCompareControls: boolean;
+  showCompare: boolean;
 };
 
 export function gearPanelReading(input: {
   editable: boolean;
   hasSlotEditor: boolean;
+  hasAltLoadout?: boolean;
 }): GearPanelReading {
-  const { editable, hasSlotEditor } = input;
+  const { editable, hasSlotEditor, hasAltLoadout = false } = input;
   return {
     showSlotEditors: editable && hasSlotEditor,
     showCompareControls: editable,
+    showCompare: editable || hasAltLoadout,
   };
 }

@@ -19,6 +19,65 @@ import type { PhaseSelection } from '../core';
  * them alone, and a consumer deriving one from another would go on printing a self-consistent,
  * wrong readout.
  */
+/**
+ * Which of the hero-combat figures this host should print.
+ *
+ * Eight of them are also `BREAKDOWN_DERIVED_IDS`, so a host that draws the per-statistic
+ * breakdown beside this panel states each one twice — once bare here and once, with the ledger
+ * that produced it, there. The bare copy is the one worth dropping: it is the same number with
+ * less behind it.
+ *
+ * What survives either way is what only this panel says: whether the hero pierces the phase,
+ * the average hit its build lands, the floor its fuse cannot go under and the ceiling its
+ * cooldown reduction stops paying at, and the prop table underneath.
+ */
+export type CombatFigureId =
+  | 'pen'
+  | 'damageThrough'
+  | 'normalHit'
+  | 'critHit'
+  | 'avgHit'
+  | 'fieldTime'
+  | 'fuse'
+  | 'fuseFloor'
+  | 'cdrCap'
+  | 'uptime'
+  | 'activeDps'
+  | 'sustainedDps';
+
+const ALSO_IN_THE_BREAKDOWN: ReadonlySet<CombatFigureId> = new Set([
+  'damageThrough',
+  'normalHit',
+  'critHit',
+  'fieldTime',
+  'fuse',
+  'uptime',
+  'activeDps',
+  'sustainedDps',
+]);
+
+const COMBAT_FIGURE_ORDER: readonly CombatFigureId[] = [
+  'pen',
+  'damageThrough',
+  'normalHit',
+  'critHit',
+  'avgHit',
+  'fieldTime',
+  'fuse',
+  'fuseFloor',
+  'cdrCap',
+  'uptime',
+  'activeDps',
+  'sustainedDps',
+];
+
+export function combatFiguresShown(input: {
+  breakdownShownElsewhere: boolean;
+}): readonly CombatFigureId[] {
+  if (!input.breakdownShownElsewhere) return COMBAT_FIGURE_ORDER;
+  return COMBAT_FIGURE_ORDER.filter((id) => !ALSO_IN_THE_BREAKDOWN.has(id));
+}
+
 export type FuseSource = Pick<
   AdvisorPipelineResult,
   'fuseSecs' | 'fuseFloorSecs' | 'cdrCapPct' | 'fuseAtFloor'

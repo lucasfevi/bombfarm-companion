@@ -66,6 +66,8 @@ describe('the panels answer read-only to what this screen supplies', () => {
       showPointSteppers: false,
       showPreviewActions: false,
       showResetAdvice: false,
+      // Not even the blank line it holds open for itself where it CAN appear.
+      mountResetAdvice: false,
     });
   });
 
@@ -73,6 +75,9 @@ describe('the panels answer read-only to what this screen supplies', () => {
     expect(gearPanelReading({ editable: false, hasSlotEditor: false })).toEqual({
       showSlotEditors: false,
       showCompareControls: false,
+      // And no comparison section at all: with no Copy gear button there is never a second
+      // loadout to compare against, so the heading would stand over nothing.
+      showCompare: false,
     });
   });
 });

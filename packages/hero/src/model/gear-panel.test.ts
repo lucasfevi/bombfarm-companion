@@ -6,6 +6,7 @@ describe('gearPanelReading', () => {
     expect(gearPanelReading({ editable: true, hasSlotEditor: true })).toEqual({
       showSlotEditors: true,
       showCompareControls: true,
+      showCompare: true,
     });
   });
 
@@ -13,6 +14,7 @@ describe('gearPanelReading', () => {
     expect(gearPanelReading({ editable: true, hasSlotEditor: false })).toEqual({
       showSlotEditors: false,
       showCompareControls: true,
+      showCompare: true,
     });
   });
 
@@ -20,13 +22,31 @@ describe('gearPanelReading', () => {
     expect(gearPanelReading({ editable: false, hasSlotEditor: false })).toEqual({
       showSlotEditors: false,
       showCompareControls: false,
+      showCompare: false,
     });
+  });
+
+  it('draws no comparison for a host that can neither make one nor was handed one', () => {
+    // The failure this is about: a heading with nothing under it. A read-only host has no Copy
+    // gear button to create the clone the comparison needs, so the section can never fill.
+    expect(
+      gearPanelReading({ editable: false, hasSlotEditor: false, hasAltLoadout: false }).showCompare,
+    ).toBe(false);
+  });
+
+  it('draws the comparison read-only when a clone already exists to compare against', () => {
+    // Figures without controls, the same posture every other panel takes: the alt loadout is
+    // there, so there is something to show even with no way to change it.
+    expect(
+      gearPanelReading({ editable: false, hasSlotEditor: false, hasAltLoadout: true }),
+    ).toEqual({ showSlotEditors: false, showCompareControls: false, showCompare: true });
   });
 
   it('an injected editor without callbacks never renders — it could not commit a patch', () => {
     expect(gearPanelReading({ editable: false, hasSlotEditor: true })).toEqual({
       showSlotEditors: false,
       showCompareControls: false,
+      showCompare: false,
     });
   });
 });

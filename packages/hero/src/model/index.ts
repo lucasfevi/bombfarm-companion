@@ -50,8 +50,10 @@ export {
   penetrationReadingFor,
   propTableReadingFor,
   stageLabelFor,
+  combatFiguresShown,
 } from './combat-panel';
 export type {
+  CombatFigureId,
   FuseNotes,
   FuseReadout,
   FuseSource,

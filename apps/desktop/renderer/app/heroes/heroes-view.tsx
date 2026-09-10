@@ -520,6 +520,7 @@ function HeroCombat({
       combat={combat}
       phaseSelection={figures.selection}
       onSelectHero={onSelectHero}
+      breakdownShownElsewhere
     />
   );
 }

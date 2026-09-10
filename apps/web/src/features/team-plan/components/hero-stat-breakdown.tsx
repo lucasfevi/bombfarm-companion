@@ -32,6 +32,8 @@ function statRows(
 ): DeltaTableRow[] {
   return keys.map((key) => ({
     id: key,
+    // The unit rides on the label here, not on the figure: `DeltaTable` formats its own numbers
+    // from one shared decimals setting and has no per-row unit to hand them.
     label: `${strings.statShort[key]}${sheetStatUnit(key) === '' ? '' : ` ${sheetStatUnit(key)}`}`,
     now: before[key],
     target: after[key],

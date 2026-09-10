@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 
 import {
   Panel,
@@ -17,6 +17,7 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { heroCopyFor, sub } from '../copy';
 import type { PhaseSelection } from '../core';
 import {
+  combatFiguresShown,
   formatClearTime,
   fuseNote,
   fuseReadoutFor,
@@ -24,6 +25,7 @@ import {
   penetrationReadingFor,
   propTableReadingFor,
   stageLabelFor,
+  type CombatFigureId,
 } from '../model';
 import { useHeroCopy } from './hero-copy-context';
 import { PhasesHeroSwitcherView, type HeroPickerSlot } from './phases-hero-switcher';
@@ -47,6 +49,7 @@ export function PhasesHeroPanel({
   phaseSelection,
   onSelectHero,
   renderPicker,
+  breakdownShownElsewhere = false,
 }: {
   heroes: HeroRecord[];
   hero: HeroRecord;
@@ -54,6 +57,9 @@ export function PhasesHeroPanel({
   phaseSelection: PhaseSelection;
   onSelectHero: (h: HeroRecord) => void;
   renderPicker?: HeroPickerSlot | undefined;
+  /** Set by a host that draws the per-statistic breakdown beside this panel: the eight figures
+   *  that appear there too are dropped here, so each is stated once, where its ledger is. */
+  breakdownShownElsewhere?: boolean | undefined;
 }) {
   const { t, lang } = useHeroCopy();
   const detail = heroCopyFor(lang);
@@ -83,12 +89,20 @@ export function PhasesHeroPanel({
         onSelectHero={onSelectHero}
         renderPicker={renderPicker}
       />
-      {combat ? <CombatFigures combat={combat} /> : null}
+      {combat ? (
+        <CombatFigures combat={combat} breakdownShownElsewhere={breakdownShownElsewhere} />
+      ) : null}
     </Panel>
   );
 }
 
-function CombatFigures({ combat }: { combat: AdvisorPipelineResult }) {
+function CombatFigures({
+  combat,
+  breakdownShownElsewhere,
+}: {
+  combat: AdvisorPipelineResult;
+  breakdownShownElsewhere: boolean;
+}) {
   const { t, lang } = useHeroCopy();
   const detail = heroCopyFor(lang);
   const fuse = fuseReadoutFor(combat);
@@ -99,68 +113,72 @@ function CombatFigures({ combat }: { combat: AdvisorPipelineResult }) {
     <span className={numericClass}>{formatNumber(value, lang, digits)}</span>
   );
 
+  const shown = new Set(combatFiguresShown({ breakdownShownElsewhere }));
+  const rows: { id: CombatFigureId; label: string; value: ReactNode }[] = [
+    {
+      id: 'pen',
+      label: t.phasesPenetration,
+      value: (
+        <span className={penetration.kind === 'covered' ? 'text-up' : undefined}>
+          {penetrationNote(penetration, {
+            covered: t.phasesPenOk,
+            short: (gapPct) =>
+              sub(t.phasesPenShort, { gap: formatNumber(gapPct, lang, 1) }),
+          })}
+        </span>
+      ),
+    },
+    {
+      id: 'damageThrough',
+      label: detail.heroDetailCombatDamageThrough,
+      value: number(combat.mitF * 100, 1),
+    },
+    { id: 'normalHit', label: t.phasesNormalHit, value: number(combat.predHit, 0) },
+    { id: 'critHit', label: t.phasesCritHit, value: number(combat.predCrit, 0) },
+    { id: 'avgHit', label: t.phasesAvgHit, value: number(combat.avgHit, 0) },
+    {
+      id: 'fieldTime',
+      label: t.phasesFieldTime,
+      value: <span className={numericClass}>{formatClearTime(combat.fieldSecs)}</span>,
+    },
+    {
+      id: 'fuse',
+      label: detail.heroDetailCombatFuseTime,
+      value: number(fuse.secs, 2),
+    },
+    {
+      id: 'fuseFloor',
+      label: detail.heroDetailCombatFuseFloor,
+      value: number(fuse.floorSecs, 2),
+    },
+    {
+      id: 'cdrCap',
+      label: detail.heroDetailCombatCdrCeiling,
+      value: number(fuse.capPct, 0),
+    },
+    {
+      // `uptime` is already a percentage — `(100 * field) / (field + rest)` — so it is
+      // printed, not scaled. Scaling it again read 4.495,4 for a hero on field 45% of
+      // the time.
+      id: 'uptime',
+      label: detail.heroDetailCombatUptime,
+      value: number(combat.uptime, 1),
+    },
+    {
+      id: 'activeDps',
+      label: detail.heroDetailCombatActiveDps,
+      value: number(combat.active, 0),
+    },
+    {
+      id: 'sustainedDps',
+      label: detail.heroDetailCombatSustainedDps,
+      value: number(combat.dps, 0),
+    },
+  ];
+
   return (
     <>
-      <StatList
-        items={[
-          {
-            id: 'pen',
-            label: t.phasesPenetration,
-            value: (
-              <span className={penetration.kind === 'covered' ? 'text-up' : undefined}>
-                {penetrationNote(penetration, {
-                  covered: t.phasesPenOk,
-                  short: (gapPct) =>
-                    sub(t.phasesPenShort, { gap: formatNumber(gapPct, lang, 1) }),
-                })}
-              </span>
-            ),
-          },
-          {
-            id: 'damageThrough',
-            label: detail.heroDetailCombatDamageThrough,
-            value: number(combat.mitF * 100, 1),
-          },
-          { id: 'normalHit', label: t.phasesNormalHit, value: number(combat.predHit, 0) },
-          { id: 'critHit', label: t.phasesCritHit, value: number(combat.predCrit, 0) },
-          { id: 'avgHit', label: t.phasesAvgHit, value: number(combat.avgHit, 0) },
-          {
-            id: 'fieldTime',
-            label: t.phasesFieldTime,
-            value: <span className={numericClass}>{formatClearTime(combat.fieldSecs)}</span>,
-          },
-          {
-            id: 'fuse',
-            label: detail.heroDetailCombatFuseTime,
-            value: number(fuse.secs, 2),
-          },
-          {
-            id: 'fuseFloor',
-            label: detail.heroDetailCombatFuseFloor,
-            value: number(fuse.floorSecs, 2),
-          },
-          {
-            id: 'cdrCap',
-            label: detail.heroDetailCombatCdrCeiling,
-            value: number(fuse.capPct, 0),
-          },
-          {
-            id: 'uptime',
-            label: detail.heroDetailCombatUptime,
-            value: number(combat.uptime * 100, 1),
-          },
-          {
-            id: 'activeDps',
-            label: detail.heroDetailCombatActiveDps,
-            value: number(combat.active, 0),
-          },
-          {
-            id: 'sustainedDps',
-            label: detail.heroDetailCombatSustainedDps,
-            value: number(combat.dps, 0),
-          },
-        ]}
-      />
+      <StatList items={rows.filter((row) => shown.has(row.id))} />
       <p className={tipClass}>
         {fuseNote(fuse, {
           atCeiling: detail.heroDetailCombatCdrCeilingReached,

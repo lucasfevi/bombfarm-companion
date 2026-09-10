@@ -137,7 +137,10 @@ test.describe('abilities panel (ABX residual)', () => {
     const stats = page.locator('[data-slot="tabs-panel"][data-state="active"]').locator('section').filter({
       has: page.getByRole('heading', { name: /^Stats$/i, level: 2 }),
     });
-    const critRow = stats.locator('tr').filter({ hasText: /^Crit %/ });
+    // `Crit` then straight into a figure, which is what tells it from `Crit dmg`: the rows are
+    // named without their unit now, so a bare /^Crit/ matches both. `hasText` reads
+    // `textContent`, which runs the cells together with no separator — hence no space here.
+    const critRow = stats.locator('tr').filter({ hasText: /^Crit\d/ });
     // RE-POINTED for the 2026-08-23 patch, which made Keen Eye a FLAT +2 crit points per rank
     // (see the `critChanceFlat` ability kind). That changes WHICH cell discriminates: a flat
     // addend is identical whether the hero's own roll or the rarity midpoint feeds it, so the
@@ -148,14 +151,14 @@ test.describe('abilities panel (ABX residual)', () => {
     // that roll through (11.56, NOT the midpoint bug's ~9.06). The ability cell is still asserted
     // — as the constant it now is, so a regression that made it roll-dependent again would fail
     // here rather than pass quietly.
-    await expect(critRow.locator('td').nth(1)).toHaveText('9.51');
+    await expect(critRow.locator('td').nth(1)).toHaveText('9.51%');
     // The ability's own cell is now the SAME for every roll, so it is asserted as a constant
     // rather than as the discriminator it used to be.
-    await expect(critRow.locator('td').nth(4)).toHaveText('+2.00');
+    await expect(critRow.locator('td').nth(4)).toHaveText('+2.00%');
     // The discriminator moved to Birth and Total: the midpoint bug would show 7.05 and a Total
     // near 9.06, where preserving Cora's own roll gives 9.51 and 11.56 (the extra 0.05 is her
     // skill-tree crit node, the row's other non-dash cell).
-    await expect(critRow.locator('td').nth(8)).toHaveText('11.56');
+    await expect(critRow.locator('td').nth(8)).toHaveText('11.56%');
     await expect(critRow).not.toContainText('7.05');
     await expect(critRow).not.toContainText('9.06');
   });
