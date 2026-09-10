@@ -158,6 +158,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'accordionRecipe',
   'accordionLedgerBodyClass',
   'accordionStackClass',
+  'adviceSplitClass',
   'barRecipe',
   'barRowClass',
   'breakpoints',
@@ -228,6 +229,11 @@ describe('design-system barrel surface (frozen)', () => {
   });
 });
 
+// adviceSplitClass (2026-09-09): it pairs the points table with the next-point ranking beside it,
+// and the desktop's Heroes screen now stacks that pair the way the planner's Points tab does. Two
+// shells draw it now, and the desktop renderer reads every layout class off this root rather than
+// off the `panel-field.recipe` subpath.
+//
 // HeroIdentity (L4, desktop/web UI sync): the avatar+rank/name/rarity/level primitive extracted
 // from HeroIdentityChip so a caller without a full HeroRecord (a live roster join, mid-flight)
 // can render the same identity block. HeroIdentityChip stays as a thin HeroRecord adapter over it.

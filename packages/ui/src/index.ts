@@ -213,6 +213,7 @@ export { maskRevealStyle } from './mask-reveal';
 // own `tsc` cannot. The phases panels that lay out that board are `@bombfarm/farm`'s now.
 export {
   accountStatListClass,
+  adviceSplitClass,
   barRowClass,
   colClass,
   dialogDescClass,

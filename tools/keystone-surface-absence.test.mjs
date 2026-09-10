@@ -176,7 +176,7 @@ const CRIT_DMG_MULT_MAP = {
   // New file for this token: the Heroes screen assembles `PipelineFacts` for the per-statistic
   // breakdown, and the kept combat pass-through is one of its rows. Read off the pipeline result,
   // never off a tree state.
-  'apps/desktop/renderer/app/heroes/heroes-view.tsx': [438],
+  'apps/desktop/renderer/app/heroes/heroes-view.tsx': [551],
   // The shared roster builder's own account fixture, same kind as the two farm entries below: a
   // raw save-shaped skills block handed to the parser, not a field the app reads.
   'apps/desktop/renderer/lib/account/account-roster.test.ts': [39],

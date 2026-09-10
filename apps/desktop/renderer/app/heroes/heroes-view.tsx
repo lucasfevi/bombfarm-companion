@@ -18,6 +18,8 @@ import {
   EmptyState,
   Num,
   Panel,
+  Tabs,
+  adviceSplitClass,
   cn,
   colClass,
   numberFormatterFor,
@@ -37,6 +39,7 @@ import {
   PointsTable,
   SheetTable,
 } from '@bombfarm/hero/components';
+import type { HeroMarketPrice } from '@bombfarm/hero/model';
 import { resolveHeroPrice } from '@bombfarm/pricing';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { formatMoney } from '../../lib/format';
@@ -256,39 +259,31 @@ function HeroesRoster({ model }: { model: RosterModel }) {
             </div>
             <HeroIdentityChip hero={active.hero} fallbackName={active.hero.name} lang={lang} />
           </Panel>
-          <HeroIdentityRollPanel
-            hero={active.hero}
-            rollQuality={active.report}
-            t={heroCopy}
-            lang={lang}
-            statLabel={boundStatLabel}
-            marketPrice={marketPrice}
-            formatAmount={formatAmount}
-          />
+          {/* Above the strip rather than on a tab: the phase governs every figure Combat, Gear and
+              Points print, and a control that decides what three stages are saying cannot be
+              reachable from only one of them. */}
           <PhaseControl
             phase={shownHeroPhase(phaseReading, overridePhase)}
             overridden={overridePhase !== null}
             onOverridePhase={setOverridePhase}
             onClearOverride={onClearOverride}
           />
-          <HeroCombat
+          <HeroDetailTabs
+            active={active}
             heroes={heroes}
-            hero={active.hero}
+            heroCopy={heroCopy}
+            lang={lang}
+            abilityGains={abilityGains}
             combat={combat}
             figures={figures}
+            rankMode={rankMode}
+            onRankMode={setRankMode}
+            statLabel={boundStatLabel}
+            formatNumber={boundFormatNumber}
+            marketPrice={marketPrice}
+            formatAmount={formatAmount}
             onSelectHero={onSelectHero}
           />
-          <HeroAbilitiesPanel hero={active.hero} abilityGains={abilityGains} t={heroCopy} lang={lang} />
-          {figures.kind === 'at' && combat && (
-            <HeroReference
-              hero={active.hero}
-              account={figures.inputs.account}
-              combat={combat}
-              rankMode={rankMode}
-              onRankMode={setRankMode}
-              formatNumber={boundFormatNumber}
-            />
-          )}
         </div>
       </HeroCopyProvider>
       <HeroPickerDialogView
@@ -301,6 +296,142 @@ function HeroesRoster({ model }: { model: RosterModel }) {
       />
     </div>
   );
+}
+
+/**
+ * The detail pane's four stages, grouped the way the web planner groups its three.
+ *
+ * Hero, Gear and Points hold what the planner's tabs of those names hold, panel for panel — both
+ * apps draw them from one implementation, so a player who has learned one has learned the other.
+ * Combat is the fourth because this screen computes something the planner has no tab for: the
+ * phase-scoped figures, which over there are folded into the hero strip above the tab list.
+ *
+ * Which stage is open is view-local and stored nowhere, like the phase override and the rank mode
+ * beside it — leaving the screen and coming back opens on the hero again.
+ */
+function HeroDetailTabs({
+  active,
+  heroes,
+  heroCopy,
+  lang,
+  abilityGains,
+  combat,
+  figures,
+  rankMode,
+  onRankMode,
+  statLabel: boundStatLabel,
+  formatNumber,
+  marketPrice,
+  formatAmount,
+  onSelectHero,
+}: {
+  active: RosterHeroRow;
+  heroes: HeroRecord[];
+  heroCopy: ReturnType<typeof useHeroDetailCopy>;
+  lang: Lang;
+  abilityGains: readonly AbilityGain[];
+  combat: AdvisorPipelineResult | null;
+  figures: HeroFigures;
+  rankMode: RankMode;
+  onRankMode: (next: RankMode) => void;
+  statLabel: (key: SheetKey) => string;
+  formatNumber: (n: number, d?: number) => string;
+  marketPrice: HeroMarketPrice | null;
+  formatAmount: (value: number, currency: string) => string;
+  onSelectHero: (hero: HeroRecord) => void;
+}) {
+  const t = useCopy();
+  const [tab, setTab] = useState('hero');
+
+  return (
+    <Tabs.Root value={tab} onValueChange={setTab}>
+      <Tabs.List>
+        <Tabs.Tab value="hero">{t.heroesTabHero}</Tabs.Tab>
+        <Tabs.Tab value="combat">{t.heroesTabCombat}</Tabs.Tab>
+        <Tabs.Tab value="gear">{t.heroesTabGear}</Tabs.Tab>
+        <Tabs.Tab value="points">{t.heroesTabPoints}</Tabs.Tab>
+      </Tabs.List>
+      <Tabs.Panels>
+        <Tabs.Panel value="hero">
+          <div className={colClass}>
+            <HeroIdentityRollPanel
+              hero={active.hero}
+              rollQuality={active.report}
+              t={heroCopy}
+              lang={lang}
+              statLabel={boundStatLabel}
+              marketPrice={marketPrice}
+              formatAmount={formatAmount}
+            />
+            <HeroAbilitiesPanel
+              hero={active.hero}
+              abilityGains={abilityGains}
+              t={heroCopy}
+              lang={lang}
+            />
+          </div>
+        </Tabs.Panel>
+        <Tabs.Panel value="combat">
+          <HeroCombat
+            heroes={heroes}
+            hero={active.hero}
+            combat={combat}
+            figures={figures}
+            onSelectHero={onSelectHero}
+          />
+        </Tabs.Panel>
+        <Tabs.Panel value="gear">
+          {figures.kind === 'at' && combat ? (
+            <HeroGear hero={active.hero} combat={combat} />
+          ) : (
+            <FiguresNotice figures={figures} />
+          )}
+        </Tabs.Panel>
+        <Tabs.Panel value="points">
+          {figures.kind === 'at' && combat ? (
+            <HeroReference
+              hero={active.hero}
+              account={figures.inputs.account}
+              combat={combat}
+              rankMode={rankMode}
+              onRankMode={onRankMode}
+              formatNumber={formatNumber}
+            />
+          ) : (
+            <FiguresNotice figures={figures} />
+          )}
+        </Tabs.Panel>
+      </Tabs.Panels>
+    </Tabs.Root>
+  );
+}
+
+/**
+ * Why a phase-scoped stage has nothing to print.
+ *
+ * Every stage but Hero is computed at a phase, so the three fail together and for the same two
+ * reasons. Saying so on the stage the player is actually looking at is what keeps an unreadable
+ * phase from reading as a blank panel.
+ */
+function FiguresNotice({ figures }: { figures: HeroFigures }) {
+  const t = useCopy();
+
+  switch (figures.kind) {
+    case 'pending':
+      return null;
+    case 'unknownPhase':
+      return (
+        <Banner tone="warn" title={t.heroesPhaseUnknownTitle}>
+          {t.heroesPhaseUnknownDescription}
+        </Banner>
+      );
+    default:
+      return (
+        <Banner tone="warn" title={t.heroesFiguresWithheldTitle}>
+          {t.heroesFiguresWithheldDescription}
+        </Banner>
+      );
+  }
 }
 
 /** One frozen empty array, so a screen with nothing to compute hands the panel the same reference
@@ -356,40 +487,23 @@ function HeroCombat({
   figures: HeroFigures;
   onSelectHero: (hero: HeroRecord) => void;
 }) {
-  const t = useCopy();
+  if (figures.kind !== 'at') return <FiguresNotice figures={figures} />;
 
-  switch (figures.kind) {
-    case 'pending':
-      return null;
-    case 'unknownPhase':
-      return (
-        <Banner tone="warn" title={t.heroesPhaseUnknownTitle}>
-          {t.heroesPhaseUnknownDescription}
-        </Banner>
-      );
-    case 'withheld':
-      return (
-        <Banner tone="warn" title={t.heroesFiguresWithheldTitle}>
-          {t.heroesFiguresWithheldDescription}
-        </Banner>
-      );
-    default:
-      return (
-        <PhasesHeroPanel
-          heroes={heroes}
-          hero={hero}
-          combat={combat}
-          phaseSelection={figures.selection}
-          onSelectHero={onSelectHero}
-        />
-      );
-  }
+  return (
+    <PhasesHeroPanel
+      heroes={heroes}
+      hero={hero}
+      combat={combat}
+      phaseSelection={figures.selection}
+      onSelectHero={onSelectHero}
+    />
+  );
 }
 
 /**
- * The reference half of the detail: what to spend the next point on, then the tables the answer is
- * read out of — points placed, the stat sheet they build, the items feeding it, and finally how
- * each combat figure above was arrived at.
+ * The Points stage: the points placed and what to spend the next one on, then the stat sheet they
+ * build, then how each combat figure was arrived at. Stacked in the planner's own order, and the
+ * first pair sits side by side at the same width the planner pairs them at.
  *
  * Every one of these panels takes its editing callbacks as optional props, and this screen passes
  * none. That is the whole read-only posture: no stepper, no Reset, no Optimize build, no slot
@@ -413,7 +527,6 @@ function HeroReference({
 }) {
   const { lang } = useLocale();
   const statCopy = useStatPanelCopy();
-  const gearCopy = useGearPanelCopy();
 
   const ranking = useMemo(
     () => heroNextPointRanking(rankMode, combat.ranking),
@@ -456,22 +569,24 @@ function HeroReference({
   );
 
   return (
-    <>
-      <NextPointRanking
-        t={statCopy}
-        lang={lang}
-        ranking={ranking}
-        rankMode={rankMode}
-        onRankMode={onRankMode}
-      />
-      <PointsTable
-        t={statCopy}
-        lang={lang}
-        level={hero.level}
-        pts={hero.pts}
-        pipeline={combat}
-        heroBattleAllowed={hero.battleAllowed !== false}
-      />
+    <div className={colClass}>
+      <div className={adviceSplitClass}>
+        <PointsTable
+          t={statCopy}
+          lang={lang}
+          level={hero.level}
+          pts={hero.pts}
+          pipeline={combat}
+          heroBattleAllowed={hero.battleAllowed !== false}
+        />
+        <NextPointRanking
+          t={statCopy}
+          lang={lang}
+          ranking={ranking}
+          rankMode={rankMode}
+          onRankMode={onRankMode}
+        />
+      </div>
       <SheetTable
         t={statCopy}
         lang={lang}
@@ -485,15 +600,24 @@ function HeroReference({
           tree: combat.treeSheet,
         }}
       />
-      <GearTab
-        t={gearCopy}
-        lang={lang}
-        loadout={hero.loadout}
-        altLoadout={hero.altLoadout}
-        pipeline={combat}
-      />
       <HeroEffectiveStats t={statCopy} facts={facts} formatNumber={formatNumber} />
-    </>
+    </div>
+  );
+}
+
+/** The Gear stage — the planner's own Items panel, handed no editing callback. */
+function HeroGear({ hero, combat }: { hero: HeroRecord; combat: AdvisorPipelineResult }) {
+  const { lang } = useLocale();
+  const gearCopy = useGearPanelCopy();
+
+  return (
+    <GearTab
+      t={gearCopy}
+      lang={lang}
+      loadout={hero.loadout}
+      altLoadout={hero.altLoadout}
+      pipeline={combat}
+    />
   );
 }
 

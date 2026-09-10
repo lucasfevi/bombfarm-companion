@@ -2,10 +2,12 @@
 
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { MAX_STARS } from '@bombfarm/domain/gear';
+import { heroAbilitySlotsUsed } from '@bombfarm/domain/hero-abilities';
 import { RARITIES, type SheetKey } from '@bombfarm/domain/planner-constants';
 import type { RollQualityReport } from '@bombfarm/domain/roll-quality';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import {
+  HeroAbilityIcons,
   HeroAvatar,
   heroRankBandClass,
   heroRankTextClass,
@@ -205,6 +207,7 @@ export function HeroIdentityRollPanel({
 
   const rarityIndex = RARITIES.indexOf(hero.rarity);
   const starCount = Math.max(0, Math.min(MAX_STARS, Math.round(hero.stars)));
+  const abilitySlots = heroAbilitySlotsUsed(hero.abilities);
   const marketTileValue =
     marketTile.kind === 'value' && formatAmount !== undefined
       ? formatAmount(marketTile.amount, marketTile.currency)
@@ -262,33 +265,40 @@ export function HeroIdentityRollPanel({
           run the full width — the rail's boundaries are intervals, and only at full width do they
           read as intervals rather than lines. */}
       <div className="@container">
-        <div className="flex flex-col gap-3 @min-[40rem]:flex-row @min-[40rem]:items-center">
-          <div className="flex shrink-0 items-center gap-3 @min-[40rem]:w-56">
-            <HeroAvatar
-              skin={hero.skin ?? 0}
-              rarityIdx={rarityIndex}
-              size="lg"
-              name={hero.name}
-              className="shrink-0"
-            />
-            <div className="min-w-0">
-              <p
-                className={cn(
-                  'truncate text-base leading-none font-bold',
-                  rarityTextClass(rarityIndex) ?? 'text-ink',
-                )}
-              >
-                {hero.name}
-              </p>
-              {starCount > 0 ? (
+        <div className="flex flex-col gap-3 @min-[40rem]:flex-row @min-[40rem]:items-start">
+          <div className="flex shrink-0 flex-col gap-2.5 @min-[40rem]:w-56">
+            <div className="flex items-center gap-3">
+              <HeroAvatar
+                skin={hero.skin ?? 0}
+                rarityIdx={rarityIndex}
+                size="lg"
+                name={hero.name}
+                className="shrink-0"
+              />
+              <div className="min-w-0">
                 <p
-                  className="mt-1 text-[11px] leading-none text-rar-4"
-                  aria-label={formatNumber(starCount, lang, 0)}
+                  className={cn(
+                    'truncate text-base leading-none font-bold',
+                    rarityTextClass(rarityIndex) ?? 'text-ink',
+                  )}
                 >
-                  {'★'.repeat(starCount)}
+                  {hero.name}
                 </p>
-              ) : null}
+                {starCount > 0 ? (
+                  <p
+                    className="mt-1 text-[11px] leading-none text-rar-4"
+                    aria-label={formatNumber(starCount, lang, 0)}
+                  >
+                    {'★'.repeat(starCount)}
+                  </p>
+                ) : null}
+              </div>
             </div>
+            {/* The pool at a glance — icon and level only. What each one does, what its next
+                level is worth, and the points to buy it are the abilities panel's job. A hero with
+                no pool draws nothing: the strip's own em-dash stands in for a missing value in a
+                table cell, and under an avatar it would read as one. */}
+            {abilitySlots > 0 ? <HeroAbilityIcons abilities={hero.abilities} lang={lang} /> : null}
           </div>
 
           <div className="grid min-w-0 flex-1 grid-cols-2 gap-2 @min-[30rem]:grid-cols-3 @min-[52rem]:grid-cols-4 @min-[72rem]:grid-cols-6">
