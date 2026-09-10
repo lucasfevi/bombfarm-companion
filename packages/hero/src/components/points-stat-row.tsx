@@ -3,6 +3,7 @@
 import { clampPointStep, type SheetKey } from '@bombfarm/domain/planner-constants';
 import { Button, DataTable, Stepper, cn, mutedClass } from '@bombfarm/ui';
 import { sub, type StatPanelCopy } from '../copy';
+import { sheetStatUnit } from '../model/breakdown-labels';
 
 /** −5 / +5 buttons: the `Button` `default` variant, narrowed to a compact fixed-height pill
  *  (content-fit-ui.md — sized for "−5"/"+5", not the variant's default text-button padding). */
@@ -29,6 +30,7 @@ export function PointsStatRow({
   values,
   onPts,
   formatNumber,
+  showPreview,
 }: {
   t: StatPanelCopy;
   statKey: SheetKey;
@@ -38,10 +40,14 @@ export function PointsStatRow({
   /** Absent on a host that renders the row read-only: the step controls give way to the count. */
   onPts?: ((next: Record<SheetKey, number>) => void) | undefined;
   formatNumber: (n: number, d?: number) => string;
+  /** Whether the table drew a preview column to fill. A host with no search to run never has a
+   *  preview, and an always-empty column is width taken from the figures beside it. */
+  showPreview: boolean;
 }) {
   const label = t.statFull[statKey];
   const step = (delta: number) => onPts?.(clampPointStep(pts, statKey, delta, level));
   const { perPt: perPtValue, after: afterValue, preview: previewValue } = values;
+  const unit = sheetStatUnit(statKey);
 
   return (
     <DataTable.Row>
@@ -77,22 +83,32 @@ export function PointsStatRow({
           <span className="font-mono tabular-nums">{formatNumber(pts[statKey], 0)}</span>
         )}
       </DataTable.Cell>
-      {/* Sheet magnitudes at 2 dp (Points Δ per point and after). */}
+      {/* Sheet magnitudes at 2 dp (Points Δ per point and after), in the stat's own unit. */}
       <DataTable.Cell align="right" numeric className={mutedClass}>
         {formatNumber(perPtValue, 2)}
+        {unit}
       </DataTable.Cell>
       <DataTable.Cell align="right" numeric>
-        <b>{formatNumber(afterValue, 2)}</b>
+        <b>
+          {formatNumber(afterValue, 2)}
+          {unit}
+        </b>
       </DataTable.Cell>
-      {/* Always mounted, fixed <col> width — toggles invisible, never mount/unmount. */}
-      <DataTable.Cell
-        align="right"
-        numeric
-        className={cn('text-accent', previewValue === null && 'invisible')}
-        aria-hidden={previewValue === null}
-      >
-        <b>{formatNumber(previewValue ?? afterValue, 2)}</b>
-      </DataTable.Cell>
+      {/* Always mounted where the column exists, fixed <col> width — toggles invisible, never
+          mount/unmount. */}
+      {showPreview ? (
+        <DataTable.Cell
+          align="right"
+          numeric
+          className={cn('text-accent', previewValue === null && 'invisible')}
+          aria-hidden={previewValue === null}
+        >
+          <b>
+            {formatNumber(previewValue ?? afterValue, 2)}
+            {unit}
+          </b>
+        </DataTable.Cell>
+      ) : null}
     </DataTable.Row>
   );
 }

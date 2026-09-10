@@ -308,6 +308,9 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'ItemIdentity',
   'PropIcon',
   'SpriteLoop',
+  // SteamGlyph (2026-09-10): the Steam mark was private to MarketPrice until the hero identity
+  // panel's market tile became a link to the same place. One destination, one mark.
+  'SteamGlyph',
   'abilityIconRecipe',
   'artFrameRadiusClass',
   'artFrameRecipe',

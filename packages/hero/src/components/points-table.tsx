@@ -173,7 +173,7 @@ export function PointsTable({
             {/* content-fit-ui.md: widened for the 2 dp precision sweep. */}
             <col className="w-16" />
             <col className="w-24" />
-            <col className="w-24" />
+            {reading.showPreviewActions ? <col className="w-24" /> : null}
           </colgroup>
           <DataTable.Head>
             <DataTable.Row>
@@ -181,7 +181,10 @@ export function PointsTable({
               <DataTable.Header align="center">Δ</DataTable.Header>
               <DataTable.Header align="right">{t.colPerPt}</DataTable.Header>
               <DataTable.Header align="right">{t.colAfter}</DataTable.Header>
-              <DataTable.Header align="right">{t.colPreview}</DataTable.Header>
+              {/* The optimizer's proposal, so only where there is an optimizer to make one. */}
+              {reading.showPreviewActions ? (
+                <DataTable.Header align="right">{t.colPreview}</DataTable.Header>
+              ) : null}
             </DataTable.Row>
           </DataTable.Head>
           <DataTable.Body>
@@ -199,6 +202,7 @@ export function PointsTable({
                 }}
                 onPts={reading.showPointSteppers ? handlePtsMutate : undefined}
                 formatNumber={boundFormatNumber}
+                showPreview={reading.showPreviewActions}
               />
             ))}
           </DataTable.Body>

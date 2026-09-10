@@ -66,6 +66,7 @@ export { railTintFor } from './roll-rail-tint';
 export type { RollTint } from './roll-rail-tint';
 export {
   SHEET_PCT_KEYS,
+  sheetStatUnit,
   derivedLabel,
   formatBreakdownValue,
   groupLabel,

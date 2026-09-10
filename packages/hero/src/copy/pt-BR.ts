@@ -31,7 +31,6 @@ export const heroPtBR: HeroCopy = {
   heroDetailRollBand: "Sorteado dentro de {range}",
   heroDetailRollPercentile: "{pct}% dentro da faixa",
   heroDetailRollGradePlacement: "Onde ele fica na nota {letter}",
-  heroDetailRollNearEdge: "Este herói está perto da borda da sua nota.",
   heroDetailRollPermanent:
     "O sorteio de nascimento é permanente: nunca muda com nível, estrelas, equipamento ou pontos gastos.",
   heroDetailRollNoBirthRoll:

@@ -90,7 +90,7 @@ describe('planner tabs IA (PTI-*)', () => {
     panelSheet: { en: 'Stats', pt: 'Atributos' },
     panelAccount: { en: 'Account', pt: 'Conta' },
     panelPoints: { en: 'Points', pt: 'Pontos' },
-    panelEffective: { en: 'Effective stats', pt: 'Stats efetivos' },
+    panelEffective: { en: 'Effective stats', pt: 'Atributos efetivos' },
   } as const;
 
   it('tab labels have no numeric prefixes', () => {
@@ -318,7 +318,7 @@ describe('explain-tab copy (advice-column IA alignment)', () => {
     expect(STRINGS.en.explainSections[0].p[1]).toMatch(/level power/);
     expect(STRINGS.pt.explainSections[0].p[1]).toMatch(/A Conta compartilha Casa/);
     expect(STRINGS.pt.explainSections[0].p[1]).toMatch(/Fases/);
-    expect(STRINGS.pt.explainSections[0].p[1]).toMatch(/Stats efetivos/);
+    expect(STRINGS.pt.explainSections[0].p[1]).toMatch(/Atributos efetivos/);
     expect(STRINGS.pt.explainSections[0].p[1]).toMatch(/poder de nível/);
   });
 
@@ -549,7 +549,7 @@ describe('portuguese UX glossary (PTUX)', () => {
     expect(STRINGS.pt.reCopy).toBe('Copiar novamente');
     expect(STRINGS.pt.factMissing).toBe('Multiplicador que falta');
     expect(STRINGS.pt.cycleSerial).toBe('Em série');
-    expect(STRINGS.pt.statShort.cdr).toBe('Redução de recarga (%)');
+    expect(STRINGS.pt.statShort.cdr).toBe('Redução de recarga');
     expect(STRINGS.pt.statFull.cdr).toBe('Redução de recarga');
     expect(STRINGS.pt.slotStatFullLabels.cooldown).toBe('Redução de recarga');
     // No bare CDR / Cooldown leftovers in PT chrome labels.
@@ -578,7 +578,7 @@ describe('portuguese UX glossary (PTUX)', () => {
     expect(STRINGS.en.reCopy).toBe('Re-copy');
     expect(STRINGS.en.factMissing).toBe('Missing multiplier');
     expect(STRINGS.en.colHits).toBe('Hits');
-    expect(STRINGS.en.statShort.cdr).toBe('CDR %');
+    expect(STRINGS.en.statShort.cdr).toBe('CDR');
     expect(STRINGS.en.off).toBe('off');
     expect(STRINGS.en.gateTimer).toBe('Timer');
     expect(STRINGS.en.compareHit).toBe('Hit');
@@ -609,7 +609,7 @@ describe('portuguese UX glossary (PTUX)', () => {
     expect(STRINGS.pt.factMissing).toBe('Multiplicador que falta');
     expect(STRINGS.pt.cycleSerial).toBe('Em série');
     expect(STRINGS.pt.explainSections[2].p[0]).toMatch(/Modelo em série/);
-    expect(STRINGS.pt.statShort.cdr).toBe('Redução de recarga (%)');
+    expect(STRINGS.pt.statShort.cdr).toBe('Redução de recarga');
     expect(STRINGS.pt.statFull.cdr).toBe('Redução de recarga');
     expect(STRINGS.pt.slotStatFullLabels.cooldown).toBe('Redução de recarga');
     expect(STRINGS.pt.slotStatLabels.cooldown).toBe('Recarga');

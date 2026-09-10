@@ -590,7 +590,7 @@ export const ptBR: Copy = {
   heroesPhaseUseFarm: 'Voltar para a fase do Farm',
   heroesPhaseUnknownTitle: 'Esta não é uma fase que o app conhece',
   heroesPhaseUnknownDescription: 'Escolha uma fase que o jogo tenha de verdade, e os números voltam.',
-  heroesEffectiveTitle: 'Stats efetivos',
+  heroesEffectiveTitle: 'Atributos efetivos',
   heroesEffectiveTip: 'Inclui equipamento, pontos, árvore, habilidades e buffs de time.',
   heroesEffectiveGroupSheet: 'Stats da ficha',
   heroesEffectiveGroupDerived: 'Combate derivado',

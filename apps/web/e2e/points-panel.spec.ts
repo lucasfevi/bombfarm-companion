@@ -64,7 +64,7 @@ function pointsPanel(page: import('@playwright/test').Page, lang: 'pt' | 'en' = 
 
 /**
  * Rows of the **Points** table only. The read-only Stats table shares this tab and repeats
- * every stat label (`statShort.cdr` is "Redução de recarga (%)", `luck` is "Sorte"), so a
+ * every stat label (`statShort.cdr` is "Redução de recarga", `luck` is "Sorte"), so a
  * panel-wide `locator('tr')` matches both tables — and positional `td` access then silently
  * reads a Stats cell. Scope to the Points section before indexing columns.
  */
@@ -187,8 +187,8 @@ test.describe('points panel UX', () => {
     await expect(panel.getByText(/41 \/ 38 pontos/i)).toHaveCount(0);
     await expect(panel.getByText(/38 \/ 38 pontos/i)).toBeVisible();
 
-    // −5 on Crit % (3 spent) floors at 0, not −2.
-    const critRow = panel.locator('tr').filter({ hasText: /^Crít %/ });
+    // −5 on crit chance (3 spent) floors at 0, not −2.
+    const critRow = panel.locator('tr').filter({ hasText: /^Crít/ });
     await critRow.getByRole('button', { name: /remover 5 pontos de chance de crítico/i }).click();
     await expect(panel.getByText(/35 \/ 38 pontos/i)).toBeVisible();
   });

@@ -18,7 +18,6 @@ is worth, and — in the planner — spends the point. A hero with no pool draws
 Points, where the column used to run identity → phase → combat → abilities → next point → points →
 sheet → items → effective stats without a break. Hero, Gear and Points hold what the planner's tabs
 of those names hold, panel for panel, so the two apps read the same way; Combat is the fourth
-because this screen computes the phase-scoped figures the planner folds into its hero strip. The
-phase control stays above the stages, since it decides what three of them are saying. Points also
-picks up the planner's own arrangement: the points table and the next-point ranking side by side,
-then the stat sheet, then the breakdown.
+because this screen computes the phase-scoped figures the planner folds into its hero strip, and
+it carries the phase control beside them. Points also picks up the planner's own arrangement: the
+points table and the next-point ranking side by side, then the stat sheet, then the breakdown.

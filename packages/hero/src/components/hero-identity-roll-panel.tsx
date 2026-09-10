@@ -9,6 +9,7 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import {
   HeroAbilityIcons,
   HeroAvatar,
+  SteamGlyph,
   heroRankBandClass,
   heroRankTextClass,
   rarityTextClass,
@@ -55,9 +56,11 @@ const TINT_CLASS: Record<RollTint, string> = {
   high: 'bg-up',
 };
 
+/** Only genuine uncertainty is worth a sentence. A placement near a boundary is still a
+ *  placement, and saying so on every such hero was a caveat that changed nothing a player does. */
 const PLACEMENT_NOTE: Record<PlacementCertainty['kind'], HeroCopyKey | null> = {
   settled: null,
-  nearBoundary: 'heroDetailRollNearEdge',
+  nearBoundary: null,
   uncertain: 'heroDetailRollPlacementUncertain',
 };
 
@@ -75,21 +78,42 @@ type IdentityFact = {
   /** Shown on hover and focus. For a figure this app derives rather than reads off the save, so a
    *  player can tell what it is a measure of before trusting it. */
   readonly note?: string | undefined;
+  /** The page this figure was read off, for a figure this app quotes from somewhere else. Opens
+   *  outside the app on both hosts. */
+  readonly href?: string | undefined;
 };
 
+/** `leading-none` shaves the descenders off a truncated line — `truncate` clips to the line box,
+ *  and at a line height of 1 the box is shorter than the face. */
+const factValueClass = 'mt-1 truncate text-sm leading-tight font-bold';
+
 function FactTile({ fact }: { fact: IdentityFact }) {
-  const tile = (
-    <div className="min-w-0 border border-line px-2.5 py-1.5">
-      <p className={sectionTitleClass}>{fact.label}</p>
-      <p
+  const value =
+    fact.href === undefined ? (
+      <p className={cn(numericClass, factValueClass, fact.valueClass ?? 'text-ink')}>
+        {fact.value}
+      </p>
+    ) : (
+      <a
+        href={fact.href}
+        target="_blank"
+        rel="noopener noreferrer"
         className={cn(
           numericClass,
-          'mt-1 truncate text-sm leading-none font-bold',
+          factValueClass,
+          'flex items-center gap-1.5 underline-offset-2 hover:underline focus-visible:underline',
           fact.valueClass ?? 'text-ink',
         )}
       >
-        {fact.value}
-      </p>
+        <SteamGlyph className="shrink-0" />
+        <span className="truncate">{fact.value}</span>
+      </a>
+    );
+
+  const tile = (
+    <div className="min-w-0 border border-line px-2.5 py-1.5">
+      <p className={sectionTitleClass}>{fact.label}</p>
+      {value}
     </div>
   );
 
@@ -250,6 +274,9 @@ export function HeroIdentityRollPanel({
       label: t.heroDetailIdentityMarketValue,
       value: marketTileValue,
       ...(marketTile.kind === 'value' ? { valueClass: 'text-up' } : {}),
+      ...(marketTile.kind === 'value' && marketTile.listingUrl !== null
+        ? { href: marketTile.listingUrl }
+        : {}),
     },
   ];
 
@@ -278,7 +305,7 @@ export function HeroIdentityRollPanel({
               <div className="min-w-0">
                 <p
                   className={cn(
-                    'truncate text-base leading-none font-bold',
+                    'truncate text-base leading-tight font-bold',
                     rarityTextClass(rarityIndex) ?? 'text-ink',
                   )}
                 >

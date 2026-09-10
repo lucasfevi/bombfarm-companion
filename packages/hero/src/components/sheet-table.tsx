@@ -19,6 +19,7 @@ import {
   tipClass,
 } from '@bombfarm/ui';
 import type { Lang, StatPanelCopy } from '../copy';
+import { sheetStatUnit } from '../model/breakdown-labels';
 
 const STAGE_DELTA_KEYS = [
   'deltaLevel',
@@ -141,7 +142,13 @@ export function SheetTable({
               const row: SheetStageRow | null = stages ? stages[statKey] : null;
               return (
                 <DataTable.Row key={statKey}>
-                  <DataTable.Cell className="truncate">{t.statShort[statKey]}</DataTable.Cell>
+                  {/* Nine figures to a row, so the unit goes on the name once rather than on
+                      every cell — the opposite trade from the Points table, whose one figure
+                      per row carries it. */}
+                  <DataTable.Cell className="truncate">
+                    {t.statShort[statKey]}
+                    {sheetStatUnit(statKey) === '' ? '' : ` ${sheetStatUnit(statKey)}`}
+                  </DataTable.Cell>
                   <DataTable.Cell align="right" numeric className={mutedClass}>
                     {row ? formatStageCell(row.birth, boundFormatNumber, false) : '—'}
                   </DataTable.Cell>

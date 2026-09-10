@@ -18,7 +18,7 @@ function pointsStage(page: Page, lang: 'en' | 'pt') {
 }
 
 function effectivePanel(page: Page, lang: 'en' | 'pt') {
-  const title = lang === 'en' ? /^Effective stats$/i : /^Stats efetivos$/i;
+  const title = lang === 'en' ? /^Effective stats$/i : /^Atributos efetivos$/i;
   return activePanel(page).locator('section').filter({
     has: page.getByRole('heading', { name: title, level: 2 }),
   });
@@ -88,7 +88,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     await expect(headingsPt.nth(0)).toHaveText(/^Pontos$/);
     await expect(headingsPt.nth(1)).toHaveText(/^Próximo ponto$/);
     await expect(headingsPt.nth(2)).toHaveText(/^Atributos$/);
-    await expect(headingsPt.nth(3)).toHaveText(/^Stats efetivos$/);
+    await expect(headingsPt.nth(3)).toHaveText(/^Atributos efetivos$/);
   });
 
   test('hides sheet-group rows that match hero-sheet Total; shows combat deltas + derived', async ({

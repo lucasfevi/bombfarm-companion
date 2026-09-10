@@ -887,7 +887,36 @@ const KEYS_ADDED: readonly string[] = [
  * time (e.g. "Chests / hr" -> "Item chest"); that wording now survives as the tooltip and
  * screen-reader text behind each header's icon.
  */
+/**
+ * Paths reworded in pt-BR ONLY, declared separately because `PROSE_EDITED_PATHS` above is
+ * checked against BOTH languages: a path listed there must differ from the fixture in `en` and
+ * in `pt`, so a fix that is genuinely one language's own could not be declared at all without
+ * inventing an English edit to match it.
+ *
+ * This does not loosen the comparison. `en` is still measured against `PROSE_EDITED_PATHS` alone
+ * and `pt` against both lists, so an undeclared drift in either language still fails, and a path
+ * put here rather than above is a claim — checked by the two assertions — that English did not
+ * change.
+ */
+const PROSE_EDITED_PATHS_PT_ONLY: readonly string[] = [
+  // The planner's pt-BR called a stat a "Stat" in the two places it names one as a heading —
+  // the sheet/points column and the Effective panel's title — while every label under them was
+  // translated. Both now say Atributo(s), matching the desktop's Heroes screen, and the pt
+  // walkthrough paragraph that names the panel follows it. English calls a stat a stat.
+  'colStat',
+  'panelEffective',
+];
+
 const PROSE_EDITED_PATHS: readonly string[] = [
+  // The Points table prints each figure in its own unit now (2026-09-10), so the four rate stats
+  // no longer carry a `%` in their NAME: `Crit %` -> `Crit`, `Crit dmg +%` -> `Crit dmg`,
+  // `Pen %` -> `Pen`, `CDR %` -> `CDR`, and their pt-BR counterparts. The sheet table and the
+  // team-plan stat breakdown, whose rows show many unitless figures at once, append the unit to
+  // the label themselves rather than to nine cells apiece.
+  'statShort.critChance',
+  'statShort.critDmg',
+  'statShort.penetration',
+  'statShort.cdr',
   // The planner's first tab (2026-09-09) was named for the only panel it held. It now carries the
   // hero's identity and birth roll as well, so it is named for the hero: `tabHero` Abilities ->
   // Hero. Its warning title moves with it — the badge reports a default sheet as well as unspent
@@ -1003,7 +1032,16 @@ describe('i18n split parity', () => {
 
   it('STRINGS.pt differs from the frozen fixture (minus declared-removed keys) at exactly the declared deltas', () => {
     const diffs = diffLeafPaths(STRINGS.pt, omitKeys(fixture.pt, KEYS_REMOVED)).sort();
-    expect(diffs).toEqual([...PROSE_EDITED_PATHS, ...KEYS_ADDED].sort());
+    expect(diffs).toEqual(
+      [...PROSE_EDITED_PATHS, ...PROSE_EDITED_PATHS_PT_ONLY, ...KEYS_ADDED].sort(),
+    );
+  });
+
+  it('a pt-only declaration really is pt-only — English matches the fixture at every one', () => {
+    const enDiffs = new Set(diffLeafPaths(STRINGS.en, omitKeys(fixture.en, KEYS_REMOVED)));
+    for (const path of PROSE_EDITED_PATHS_PT_ONLY) {
+      expect(enDiffs.has(path), `${path} is declared pt-only but English changed too`).toBe(false);
+    }
   });
 
   it('namespace key sets are pairwise disjoint', () => {

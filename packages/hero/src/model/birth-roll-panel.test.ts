@@ -308,13 +308,29 @@ describe('the fixture bands really are the ones the assertions assume', () => {
 });
 
 describe('marketValueReadingFor', () => {
-  const priced = { amount: 1.23, currency: 'USD' };
+  const LISTING = 'https://steamcommunity.com/market/listings/1/Rare%20Hero';
+  const priced = { amount: 1.23, currency: 'USD', listingUrl: LISTING };
 
   it('prints the figure for a hero the game will let go', () => {
     expect(marketValueReadingFor('yes', priced)).toEqual({
       kind: 'value',
       amount: 1.23,
       currency: 'USD',
+      listingUrl: LISTING,
+    });
+  });
+
+  it('carries the page the figure came from, so the reader can go and check it', () => {
+    const reading = marketValueReadingFor('yes', priced);
+    expect(reading.kind === 'value' && reading.listingUrl).toBe(LISTING);
+  });
+
+  it('resolves an unquoted listing to null rather than leaving the field absent', () => {
+    expect(marketValueReadingFor('yes', { amount: 1.23, currency: 'USD' })).toEqual({
+      kind: 'value',
+      amount: 1.23,
+      currency: 'USD',
+      listingUrl: null,
     });
   });
 
@@ -338,15 +354,36 @@ describe('marketValueReadingFor', () => {
       kind: 'value',
       amount: 0,
       currency: 'BRL',
+      listingUrl: null,
     });
   });
 });
 
 describe('marketTileReadingFor', () => {
-  const priced = { amount: 1.23, currency: 'BRL' };
+  const LISTING = 'https://steamcommunity.com/market/listings/1/Rare%20Hero';
+  const priced = { amount: 1.23, currency: 'BRL', listingUrl: LISTING };
 
   it('prints the quote when there is one', () => {
-    expect(marketTileReadingFor('yes', priced)).toEqual({ kind: 'value', amount: 1.23, currency: 'BRL' });
+    expect(marketTileReadingFor('yes', priced)).toEqual({
+      kind: 'value',
+      amount: 1.23,
+      currency: 'BRL',
+      listingUrl: LISTING,
+    });
+  });
+
+  it('hands over the listing, which is what makes the tile a link', () => {
+    const reading = marketTileReadingFor('yes', priced);
+    expect(reading.kind === 'value' && reading.listingUrl).toBe(LISTING);
+  });
+
+  it('quotes with no link when the host resolved no listing', () => {
+    expect(marketTileReadingFor('yes', { amount: 1.23, currency: 'BRL' })).toEqual({
+      kind: 'value',
+      amount: 1.23,
+      currency: 'BRL',
+      listingUrl: null,
+    });
   });
 
   it('says not sellable for an account-bound hero, even with a price in hand', () => {
@@ -370,6 +407,7 @@ describe('marketTileReadingFor', () => {
       kind: 'value',
       amount: 0,
       currency: 'BRL',
+      listingUrl: null,
     });
   });
 });

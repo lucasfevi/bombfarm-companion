@@ -43,7 +43,7 @@ const GEAR_PT = flatten(gearPanelPtBR);
  *
  * 'Stat', 'Clone', 'Total' and 'Farm' are loanwords carrying the same spelling in pt-BR, and
  * 'gear' is the one the Portuguese sheet tip beside them already uses. 'DPS' is an initialism.
- * 'Hit' and 'Critical Hit' are the game's own untranslated combat terms. 'Pen %' and '/pt'
+ * 'Hit' and 'Critical Hit' are the game's own untranslated combat terms. 'Pen' and '/pt'
  * abbreviate words that abbreviate identically in both languages — the unabbreviated
  * `statFull.penetration` beside the first one IS translated. The five formulas are symbolic
  * expressions whose every token happens to be language-neutral; the eight formulas beside them
@@ -51,7 +51,6 @@ const GEAR_PT = flatten(gearPanelPtBR);
  */
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly string[] = [
   'statShort.penetration',
-  'colStat',
   'colSheetDeltaGear',
   'colSheetTotal',
   'colPerPt',
@@ -117,7 +116,7 @@ describe('the flattened view really reaches inside the nested records', () => {
   it('every stat of both sheet records is its own compared member', () => {
     expect(STAT_EN['statFull.critChance']).toBe('Crit Chance');
     expect(STAT_PT['statFull.critChance']).toBe('Chance de Crítico');
-    expect(STAT_EN['statShort.cdr']).toBe('CDR %');
+    expect(STAT_EN['statShort.cdr']).toBe('CDR');
     expect(GEAR_PT['slotStatFullLabels.penetracao']).toBe('Penetração');
   });
 

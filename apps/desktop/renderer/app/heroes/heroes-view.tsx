@@ -259,15 +259,6 @@ function HeroesRoster({ model }: { model: RosterModel }) {
             </div>
             <HeroIdentityChip hero={active.hero} fallbackName={active.hero.name} lang={lang} />
           </Panel>
-          {/* Above the strip rather than on a tab: the phase governs every figure Combat, Gear and
-              Points print, and a control that decides what three stages are saying cannot be
-              reachable from only one of them. */}
-          <PhaseControl
-            phase={shownHeroPhase(phaseReading, overridePhase)}
-            overridden={overridePhase !== null}
-            onOverridePhase={setOverridePhase}
-            onClearOverride={onClearOverride}
-          />
           <HeroDetailTabs
             active={active}
             heroes={heroes}
@@ -276,6 +267,10 @@ function HeroesRoster({ model }: { model: RosterModel }) {
             abilityGains={abilityGains}
             combat={combat}
             figures={figures}
+            phase={shownHeroPhase(phaseReading, overridePhase)}
+            overridden={overridePhase !== null}
+            onOverridePhase={setOverridePhase}
+            onClearOverride={onClearOverride}
             rankMode={rankMode}
             onRankMode={setRankMode}
             statLabel={boundStatLabel}
@@ -304,7 +299,8 @@ function HeroesRoster({ model }: { model: RosterModel }) {
  * Hero, Gear and Points hold what the planner's tabs of those names hold, panel for panel — both
  * apps draw them from one implementation, so a player who has learned one has learned the other.
  * Combat is the fourth because this screen computes something the planner has no tab for: the
- * phase-scoped figures, which over there are folded into the hero strip above the tab list.
+ * phase-scoped figures, which over there are folded into the hero strip above the tab list. The
+ * phase control lives on it, beside the figures it was added for.
  *
  * Which stage is open is view-local and stored nowhere, like the phase override and the rank mode
  * beside it — leaving the screen and coming back opens on the hero again.
@@ -317,6 +313,10 @@ function HeroDetailTabs({
   abilityGains,
   combat,
   figures,
+  phase,
+  overridden,
+  onOverridePhase,
+  onClearOverride,
   rankMode,
   onRankMode,
   statLabel: boundStatLabel,
@@ -332,6 +332,10 @@ function HeroDetailTabs({
   abilityGains: readonly AbilityGain[];
   combat: AdvisorPipelineResult | null;
   figures: HeroFigures;
+  phase: number;
+  overridden: boolean;
+  onOverridePhase: (phase: number) => void;
+  onClearOverride: () => void;
   rankMode: RankMode;
   onRankMode: (next: RankMode) => void;
   statLabel: (key: SheetKey) => string;
@@ -341,6 +345,7 @@ function HeroDetailTabs({
   onSelectHero: (hero: HeroRecord) => void;
 }) {
   const t = useCopy();
+  const statCopy = useStatPanelCopy();
   const [tab, setTab] = useState('hero');
 
   return (
@@ -372,13 +377,34 @@ function HeroDetailTabs({
           </div>
         </Tabs.Panel>
         <Tabs.Panel value="combat">
-          <HeroCombat
-            heroes={heroes}
-            hero={active.hero}
-            combat={combat}
-            figures={figures}
-            onSelectHero={onSelectHero}
-          />
+          <div className={colClass}>
+            {/* The phase the figures below were computed at. It is the only control on this
+                screen that changes what a stage prints, and it changes Points as well as this
+                one — Points has no control of its own and follows whatever is set here. */}
+            <PhaseControl
+              phase={phase}
+              overridden={overridden}
+              onOverridePhase={onOverridePhase}
+              onClearOverride={onClearOverride}
+            />
+            <HeroCombat
+              heroes={heroes}
+              hero={active.hero}
+              combat={combat}
+              figures={figures}
+              onSelectHero={onSelectHero}
+            />
+            {/* The combat sheet those figures were computed from — beside them rather than at the
+                bottom of Points, where it was the one phase-scoped panel in a stage of sheet
+                arithmetic. */}
+            {figures.kind === 'at' && combat ? (
+              <HeroEffectiveStats
+                t={statCopy}
+                facts={effectiveFacts(active.hero, figures.inputs.account, combat)}
+                formatNumber={formatNumber}
+              />
+            ) : null}
+          </div>
         </Tabs.Panel>
         <Tabs.Panel value="gear">
           {figures.kind === 'at' && combat ? (
@@ -391,11 +417,9 @@ function HeroDetailTabs({
           {figures.kind === 'at' && combat ? (
             <HeroReference
               hero={active.hero}
-              account={figures.inputs.account}
               combat={combat}
               rankMode={rankMode}
               onRankMode={onRankMode}
-              formatNumber={formatNumber}
             />
           ) : (
             <FiguresNotice figures={figures} />
@@ -501,9 +525,52 @@ function HeroCombat({
 }
 
 /**
+ * What the per-statistic breakdown reads: one hero, the account it shares, and the pipeline run
+ * they produced. A plain function rather than a hook, so the Combat stage can build it at the
+ * point of use without a second pipeline run.
+ */
+function effectiveFacts(
+  hero: HeroRecord,
+  account: AccountShared,
+  combat: AdvisorPipelineResult,
+): PipelineFacts {
+  return {
+    geared: hero.gearedOverride,
+    adjusted: combat.adjusted,
+    pts: hero.pts,
+    delta: combat.pointDelta,
+    effective: combat.effective,
+    mods: combat.mods,
+    sheetOther: combat.sheetOther,
+    naked: hero.naked,
+    level: hero.level,
+    stars: hero.stars,
+    attackMult: combat.attackMult,
+    energyMult: combat.energyMult,
+    speedMult: combat.speedMult,
+    critDmgMult: combat.critDmgMult,
+    teamCritFlat: combat.teamCritFlat,
+    treeSpeed: account.tree.speed,
+    treeCritChance: account.tree.critChance,
+    treeCritDmg: account.tree.critDmg,
+    treeEnergy: account.tree.energy,
+    treeLuckFlatPct: combat.treeSheet.luckFlatPct,
+    context: combat.context,
+    dmgMult: combat.dmgMult,
+    treeDanoTotal: account.tree.danoTotal,
+    // The planner's Math-check override, which this app has no surface for.
+    extraDmgPct: 0,
+    active: combat.active,
+    dps: combat.dps,
+    uptime: combat.uptime,
+    rest: combat.rest,
+  };
+}
+
+/**
  * The Points stage: the points placed and what to spend the next one on, then the stat sheet they
- * build, then how each combat figure was arrived at. Stacked in the planner's own order, and the
- * first pair sits side by side at the same width the planner pairs them at.
+ * build. Stacked in the planner's own order, and the first pair sits side by side at the same
+ * width the planner pairs them at.
  *
  * Every one of these panels takes its editing callbacks as optional props, and this screen passes
  * none. That is the whole read-only posture: no stepper, no Reset, no Optimize build, no slot
@@ -512,18 +579,14 @@ function HeroCombat({
  */
 function HeroReference({
   hero,
-  account,
   combat,
   rankMode,
   onRankMode,
-  formatNumber,
 }: {
   hero: HeroRecord;
-  account: AccountShared;
   combat: AdvisorPipelineResult;
   rankMode: RankMode;
   onRankMode: (next: RankMode) => void;
-  formatNumber: (n: number, d?: number) => string;
 }) {
   const { lang } = useLocale();
   const statCopy = useStatPanelCopy();
@@ -531,41 +594,6 @@ function HeroReference({
   const ranking = useMemo(
     () => heroNextPointRanking(rankMode, combat.ranking),
     [rankMode, combat],
-  );
-
-  const facts: PipelineFacts = useMemo(
-    () => ({
-      geared: hero.gearedOverride,
-      adjusted: combat.adjusted,
-      pts: hero.pts,
-      delta: combat.pointDelta,
-      effective: combat.effective,
-      mods: combat.mods,
-      sheetOther: combat.sheetOther,
-      naked: hero.naked,
-      level: hero.level,
-      stars: hero.stars,
-      attackMult: combat.attackMult,
-      energyMult: combat.energyMult,
-      speedMult: combat.speedMult,
-      critDmgMult: combat.critDmgMult,
-      teamCritFlat: combat.teamCritFlat,
-      treeSpeed: account.tree.speed,
-      treeCritChance: account.tree.critChance,
-      treeCritDmg: account.tree.critDmg,
-      treeEnergy: account.tree.energy,
-      treeLuckFlatPct: combat.treeSheet.luckFlatPct,
-      context: combat.context,
-      dmgMult: combat.dmgMult,
-      treeDanoTotal: account.tree.danoTotal,
-      // The planner's Math-check override, which this app has no surface for.
-      extraDmgPct: 0,
-      active: combat.active,
-      dps: combat.dps,
-      uptime: combat.uptime,
-      rest: combat.rest,
-    }),
-    [hero, account, combat],
   );
 
   return (
@@ -600,7 +628,6 @@ function HeroReference({
           tree: combat.treeSheet,
         }}
       />
-      <HeroEffectiveStats t={statCopy} facts={facts} formatNumber={formatNumber} />
     </div>
   );
 }

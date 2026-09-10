@@ -32,7 +32,6 @@ export const heroEn = {
   heroDetailRollBand: "Rolled inside {range}",
   heroDetailRollPercentile: "{pct}% into its band",
   heroDetailRollGradePlacement: "Where it sits in grade {letter}",
-  heroDetailRollNearEdge: "This hero sits near the edge of its grade.",
   heroDetailRollPermanent:
     "The birth roll is permanent: it never changes with level, stars, gear or spent points.",
   heroDetailRollNoBirthRoll: "This hero has no birth roll, so there is nothing to place.",
