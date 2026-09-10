@@ -105,10 +105,10 @@ export default tseslint.config(
       '**/next-env.d.ts',
       // Tests are excluded from package tsconfigs; lint via web Vitest instead.
       // Stories are excluded too, but stay linted — see the stories block below.
-      // `packages/farm` is NOT here: it carries its own `tsconfig.eslint.json` that includes its
-      // tests, so they lint like every other test in the repo.
+      // `packages/farm` and `packages/game-art` are NOT here: each carries its own
+      // `tsconfig.eslint.json` that includes its tests, so they lint like every other test in
+      // the repo.
       'packages/ui/**/*.{test,spec}.{ts,tsx}',
-      'packages/game-art/**/*.{test,spec}.{ts,tsx}',
     ],
   },
   eslint.configs.recommended,
@@ -149,7 +149,11 @@ export default tseslint.config(
     extends: [...tseslint.configs.recommendedTypeChecked],
     languageOptions: {
       parserOptions: {
-        projectService: true,
+        // A dedicated project rather than `projectService`, for the reason spelled out on the
+        // farm block below: the package tsconfig excludes tests (they must not ship in `dist/`),
+        // and the service then errors on a test file belonging to no project. This one includes
+        // them, so they are linted like every other test here.
+        project: './packages/game-art/tsconfig.eslint.json',
         tsconfigRootDir: import.meta.dirname,
       },
       globals: globals.browser,
