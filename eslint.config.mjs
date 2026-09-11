@@ -100,7 +100,11 @@ export default tseslint.config(
       '**/out/**',
       '**/.next/**',
       '**/.next-dev/**',
-      '**/release/**',
+      // electron-builder's output dirs only. A bare `**/release/**` also swallowed the
+      // `tools/release/` SOURCE tree (release-rail automation), leaving 18 modules unlinted;
+      // pin the two build-output locations `.gitignore` names instead.
+      'release/**',
+      'apps/desktop/release/**',
       '**/node_modules/**',
       '**/next-env.d.ts',
       // Tests are excluded from package tsconfigs; lint via web Vitest instead.
@@ -112,6 +116,17 @@ export default tseslint.config(
     ],
   },
   eslint.configs.recommended,
+  // The `tools/` guard and automation scripts are plain Node ESM, in no workspace package and no
+  // tsconfig, so they get the base recommended rules with Node globals — without this block they
+  // are a wall of false `no-undef` (process, URL, fetch, setTimeout, AbortSignal) that buries the
+  // real findings. Not type-checked: these files are outside every project's `tsconfig`.
+  {
+    files: ['tools/**/*.mjs'],
+    languageOptions: {
+      globals: globals.node,
+      sourceType: 'module',
+    },
+  },
   {
     files: companionNativePackages,
     extends: [...tseslint.configs.strictTypeChecked],
