@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import net from 'node:net';
@@ -54,6 +55,94 @@ if (parsedFlavor !== null) {
   process.exit(1);
 }
 
+/**
+ * `--pid <n>` attaches the app to one instance of the game when several are running; without it
+ * the app takes whichever instance launched first, exactly as before the flag existed.
+ * `pnpm dev:pids` lists the candidates. The flag is the ONLY way to pin: a `BFC_GAME_PID` already
+ * in the environment is dropped, not honoured — a pid left set in a PowerShell session from an
+ * earlier run belongs to a process that no longer exists, and a launch without the flag must
+ * behave the way it always has. An unusable value exits rather than falling back to "any
+ * instance", which is the failure the flag exists to prevent.
+ */
+function pinnedPidFromArgv(argv) {
+  const index = argv.findIndex((arg) => arg === '--pid' || arg.startsWith('--pid='));
+  if (index === -1) return null;
+  const arg = argv[index];
+  const raw = arg.startsWith('--pid=') ? arg.slice('--pid='.length) : argv[index + 1];
+  if (raw === undefined || raw.startsWith('--')) {
+    console.error('dev --pid needs a process id, e.g. --pid 12345. `pnpm dev:pids` lists the running instances.');
+    process.exit(1);
+  }
+  if (!/^[1-9][0-9]*$/.test(raw)) {
+    console.error(`dev --pid needs a positive integer, got "${raw}". \`pnpm dev:pids\` lists the running instances.`);
+    process.exit(1);
+  }
+  return raw;
+}
+
+const pinnedPid = pinnedPidFromArgv(process.argv);
+const inheritedPid = process.env.BFC_GAME_PID;
+delete process.env.BFC_GAME_PID;
+if (pinnedPid !== null) {
+  process.env.BFC_GAME_PID = pinnedPid;
+  if (inheritedPid !== undefined && inheritedPid !== '' && inheritedPid !== pinnedPid) {
+    console.log(`Attaching to game pid ${pinnedPid} (--pid)  <-- replaced BFC_GAME_PID=${inheritedPid} from your environment`);
+  } else {
+    console.log(`Attaching to game pid ${pinnedPid} (--pid)`);
+  }
+} else if (inheritedPid !== undefined && inheritedPid !== '') {
+  console.log(`Ignoring BFC_GAME_PID=${inheritedPid} from your environment: only --pid pins the game instance`);
+}
+
+/**
+ * `--sandbox <box>` starts Electron inside a Sandboxie box — for a second game instance that runs
+ * boxed, since the live tap's agent can only reach the companion from inside the same box. Only
+ * Electron goes in: the renderer dev server stays on the host, where its constant chunk writes
+ * and re-reads are not subject to the box's copy-on-write view of the tree, and is loaded over
+ * loopback as always.
+ *
+ * `Start.exe` does not pass its caller's environment into the box (measured: a variable set on
+ * the launcher came out unset inside), so every variable Electron needs is handed over with an
+ * explicit `/env:` switch. `/wait` keeps the launcher's lifetime tied to the boxed app — closing
+ * the app still stops the renderer server — but Ctrl+C on the launcher cannot reach into the box;
+ * a boxed app left running is closed from its own window.
+ */
+function sandboxFromArgv(argv) {
+  const index = argv.findIndex((arg) => arg === '--sandbox' || arg.startsWith('--sandbox='));
+  if (index === -1) return null;
+  const arg = argv[index];
+  const raw = arg.startsWith('--sandbox=') ? arg.slice('--sandbox='.length) : argv[index + 1];
+  if (raw === undefined || raw.startsWith('--')) {
+    console.error('dev --sandbox needs a Sandboxie box name, e.g. --sandbox MyBox');
+    process.exit(1);
+  }
+  if (!/^[A-Za-z0-9_]+$/.test(raw)) {
+    console.error(`dev --sandbox needs a Sandboxie box name (letters, digits, underscore), got "${raw}"`);
+    process.exit(1);
+  }
+  return raw;
+}
+
+function sandboxieStartExe() {
+  const programFiles = process.env.ProgramFiles ?? 'C:\\Program Files';
+  const candidates = [
+    path.join(programFiles, 'Sandboxie-Plus', 'Start.exe'),
+    path.join(programFiles, 'Sandboxie', 'Start.exe'),
+  ];
+  const found = candidates.find((candidate) => existsSync(candidate));
+  if (found === undefined) {
+    console.error(`dev --sandbox: Sandboxie's Start.exe was not found at ${candidates.join(' or ')}`);
+    process.exit(1);
+  }
+  return found;
+}
+
+const sandboxBox = sandboxFromArgv(process.argv);
+const sandboxieStart = sandboxBox === null ? null : sandboxieStartExe();
+if (sandboxBox !== null) {
+  console.log(`Starting Electron inside Sandboxie box "${sandboxBox}" (--sandbox); the renderer dev server stays on the host`);
+}
+
 // Another session's dev server — the web planner on 3000, say — is left alone and the renderer
 // moves up a port. It has to be settled here, before Next starts: Next falls back to the next
 // port by itself, but then the wait below would be answered by the other server and Electron
@@ -105,15 +194,33 @@ const rendererUrl = `http://127.0.0.1:${DEV_PORT}`;
 
 console.log(`Starting Electron (${flavor}) → ${rendererUrl}`);
 
-electronProc = run(electronBin, ['.'], {
+const electronLaunchEnv = {
+  ...electronEnv,
+  NODE_ENV: 'development',
+  BFC_FLAVOR: flavor,
+  BFC_RENDERER_URL: rendererUrl,
+};
+
+/** Everything Electron reads from its environment, as `Start.exe /env:` switches — see
+ *  {@link sandboxFromArgv} for why the box does not simply inherit it. */
+function boxedEnvSwitches(env) {
+  return Object.entries(env)
+    .filter(([name, value]) => (name === 'NODE_ENV' || name.startsWith('BFC_')) && value !== undefined)
+    .map(([name, value]) => `/env:${name}=${value}`);
+}
+
+const electronLaunch =
+  sandboxieStart === null
+    ? { command: electronBin, args: ['.'] }
+    : {
+        command: sandboxieStart,
+        args: [`/box:${sandboxBox}`, '/wait', ...boxedEnvSwitches(electronLaunchEnv), electronBin, desktopRoot],
+      };
+
+electronProc = run(electronLaunch.command, electronLaunch.args, {
   cwd: desktopRoot,
   // Do not set windowsHide — CREATE_NO_WINDOW can keep the BrowserWindow invisible on Windows.
-  env: {
-    ...electronEnv,
-    NODE_ENV: 'development',
-    BFC_FLAVOR: flavor,
-    BFC_RENDERER_URL: rendererUrl,
-  },
+  env: electronLaunchEnv,
 });
 
 electronProc.on('error', (err) => {

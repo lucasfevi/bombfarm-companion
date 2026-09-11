@@ -240,7 +240,7 @@ export class GameReaderService {
    */
   private async currentGamePid(): Promise<number | null> {
     if (this.gamePid !== null && isProcessAlive(this.gamePid)) return this.gamePid;
-    this.gamePid = await findProcessIdAsync(this.config.processName);
+    this.gamePid = await findProcessIdAsync(this.config.processName, { isPackaged: this.isPackaged });
     return this.gamePid;
   }
 
