@@ -117,6 +117,12 @@ jobs:
           --filter @bombfarm/domain --filter @bombfarm/tap-runtime --filter @bombfarm/game-art
           --filter @bombfarm/farm --filter @bombfarm/hero --filter @bombfarm/desktop lint
 
+      # The `pnpm -r lint` fan-out above only reaches workspace packages; tools/ is not one, so
+      # its guard and automation scripts are linted by their own root script. This job already
+      # path-filters tools/** and eslint.config.mjs, so a change under either reaches this step.
+      - name: Lint tools scripts
+        run: pnpm run lint:tools
+
       # apps/desktop/src/main/domain-edge.test.ts asserts against the esbuild main-process
       # bundle (that domain code is actually inlined into it) and fails loudly in CI when it's
       # missing rather than skipping. build:electron is esbuild, not electron-builder, so
