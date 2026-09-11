@@ -4,9 +4,9 @@ import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { AccountReadRefusal } from '@bombfarm/contracts';
-import { STRINGS, sub } from '../../lib/copy';
-import { accountReadRefusalText } from '../../lib/account-read-labels';
-import { FarmRefreshControl, farmRefreshAgeLine } from './farm-refresh-control';
+import { STRINGS, sub } from '../lib/copy';
+import { accountReadRefusalText } from '../lib/account-read-labels';
+import { AccountRefreshControl, accountRefreshAgeLine } from './account-refresh-control';
 
 const en = STRINGS.en;
 
@@ -14,9 +14,9 @@ function minutesAgo(minutes: number): string {
   return new Date(Date.now() - minutes * 60_000).toISOString();
 }
 
-function render(props: Partial<Parameters<typeof FarmRefreshControl>[0]> = {}) {
+function render(props: Partial<Parameters<typeof AccountRefreshControl>[0]> = {}) {
   return renderToStaticMarkup(
-    createElement(FarmRefreshControl, {
+    createElement(AccountRefreshControl, {
       capturedAt: minutesAgo(0),
       stale: false,
       busy: false,
@@ -27,13 +27,13 @@ function render(props: Partial<Parameters<typeof FarmRefreshControl>[0]> = {}) {
   );
 }
 
-describe('FarmRefreshControl — one control, always present, two states', () => {
+describe('AccountRefreshControl — one control, always present, two states', () => {
   it('offers the refresh whether or not the snapshot has gone out of date', () => {
-    expect(render({ stale: false })).toContain('data-testid="farm-refresh"');
-    expect(render({ stale: true })).toContain('data-testid="farm-refresh"');
+    expect(render({ stale: false })).toContain('data-testid="account-refresh"');
+    expect(render({ stale: true })).toContain('data-testid="account-refresh"');
   });
 
-  it('states the age of the account the board was computed from, while the live account still agrees with it', () => {
+  it('states the age of the account the screen was computed from, while the live account still agrees with it', () => {
     expect(render({ capturedAt: minutesAgo(5) })).toContain(sub(en.farmRefreshedAge, { age: en.ageMinutes.replace('{n}', '5') }));
   });
 
@@ -49,7 +49,7 @@ describe('FarmRefreshControl — one control, always present, two states', () =>
 
   it('claims no age at all for an account that carries no readable capture time', () => {
     const html = render({ capturedAt: null });
-    expect(html).toContain('data-testid="farm-refresh-age"');
+    expect(html).toContain('data-testid="account-refresh-age"');
     expect(html).not.toContain(en.farmRefreshedAge.replace('{age}', ''));
     expect(html).not.toContain(en.ageJustNow);
   });
@@ -61,7 +61,7 @@ describe('FarmRefreshControl — one control, always present, two states', () =>
     expect(html).toContain('aria-busy="true"');
   });
 
-  it('is equally working while the account read is in flight, with the board already re-solved', () => {
+  it('is equally working while the account read is in flight, with the screen already re-solved', () => {
     const html = render({ busy: false, readState: { kind: 'working' } });
     expect(html).toContain(en.farmRefreshBusy);
     expect(html).toContain('disabled=""');
@@ -77,13 +77,13 @@ describe('FarmRefreshControl — one control, always present, two states', () =>
 
 /**
  * The press asks the app to go and read the account, so it can be answered by a read that never
- * started — and a board that re-solved over the same account it already had, with nothing said,
+ * started — and a screen that re-solved over the same account it already had, with nothing said,
  * is the stale answer this control exists to make impossible to misread.
  */
 describe('a press that started no read says why, beside the button', () => {
   it('says nothing about a read that is not being refused', () => {
-    expect(render()).not.toContain('data-testid="farm-refresh-refusal"');
-    expect(render({ readState: { kind: 'working' } })).not.toContain('data-testid="farm-refresh-refusal"');
+    expect(render()).not.toContain('data-testid="account-refresh-refusal"');
+    expect(render({ readState: { kind: 'working' } })).not.toContain('data-testid="account-refresh-refusal"');
   });
 
   it.each<AccountReadRefusal>([
@@ -96,7 +96,7 @@ describe('a press that started no read says why, beside the button', () => {
   ])('has words for %s, in the same wording every other screen uses', (reason) => {
     const html = render({ readState: { kind: 'refused', reason } });
     expect(html).toContain(accountReadRefusalText(reason, en));
-    expect(html).toContain('data-testid="farm-refresh-refusal"');
+    expect(html).toContain('data-testid="account-refresh-refusal"');
   });
 
   it('leaves the button pressable — a refusal is not a read in flight', () => {
@@ -105,14 +105,14 @@ describe('a press that started no read says why, beside the button', () => {
     expect(html).not.toContain('disabled=""');
   });
 
-  it('still states the age of the account the board was computed from', () => {
+  it('still states the age of the account the screen was computed from', () => {
     const html = render({ capturedAt: minutesAgo(5), readState: { kind: 'refused', reason: 'offline' } });
     expect(html).toContain(sub(en.farmRefreshedAge, { age: en.ageMinutes.replace('{n}', '5') }));
   });
 });
 
 /**
- * The regression this control was rewritten for. The board recomputes from whatever account the
+ * The regression this control was rewritten for. A screen recomputes from whatever account the
  * renderer holds, and when the app has lost its ability to re-read the game that account stops
  * moving — so pressing Refresh produced a brand-new calculation over hours-old numbers. Dating the
  * line by the calculation made every such press read "just now"; dating it by the account read
@@ -121,9 +121,9 @@ describe('a press that started no read says why, beside the button', () => {
 describe('the age line dates the account read, never the calculation', () => {
   const t = STRINGS.en;
 
-  it('an account read three hours ago still reads as three hours old, however recently the board was computed', () => {
+  it('an account read three hours ago still reads as three hours old, however recently the screen was computed', () => {
     const now = Date.now();
-    const line = farmRefreshAgeLine(new Date(now - 3 * 3_600_000).toISOString(), false, t, now);
+    const line = accountRefreshAgeLine(new Date(now - 3 * 3_600_000).toISOString(), false, t, now);
     expect(line).toBe(sub(t.farmRefreshedAge, { age: t.ageHours.replace('{n}', '3') }));
     expect(line).not.toContain(t.ageJustNow);
   });
@@ -132,17 +132,17 @@ describe('the age line dates the account read, never the calculation', () => {
     const capturedAt = new Date(Date.now() - 40 * 60_000).toISOString();
     const firstComputeAt = Date.now();
     const secondComputeAt = firstComputeAt + 60_000;
-    expect(farmRefreshAgeLine(capturedAt, false, t, firstComputeAt)).toBe(
+    expect(accountRefreshAgeLine(capturedAt, false, t, firstComputeAt)).toBe(
       sub(t.farmRefreshedAge, { age: t.ageMinutes.replace('{n}', '40') }),
     );
-    expect(farmRefreshAgeLine(capturedAt, false, t, secondComputeAt)).toBe(
+    expect(accountRefreshAgeLine(capturedAt, false, t, secondComputeAt)).toBe(
       sub(t.farmRefreshedAge, { age: t.ageMinutes.replace('{n}', '41') }),
     );
   });
 });
 
 describe('the Farm screen mounts the control unconditionally, over the board heading line', () => {
-  const source = readFileSync(path.join(__dirname, 'farm-view.tsx'), 'utf8')
+  const source = readFileSync(path.join(__dirname, 'farm', 'farm-view.tsx'), 'utf8')
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/\/\/.*$/gm, '');
 
@@ -152,7 +152,7 @@ describe('the Farm screen mounts the control unconditionally, over the board hea
 
   it('hands the control to the board as its header slot, with no staleness gate around it', () => {
     expect(source).toContain('headerOverlay: (');
-    expect(source).toContain('<FarmRefreshControl');
+    expect(source).toContain('<AccountRefreshControl');
     expect(source).not.toMatch(/\{stale \?/);
   });
 
