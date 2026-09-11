@@ -473,35 +473,40 @@ function HeroDetailTabs({
           </div>
         </Tabs.Panel>
         <Tabs.Panel value="combat">
-          <div className={colClass}>
-            {/* The phase the figures below were computed at. It is the only control on this
-                screen that changes what a stage prints, and it changes Points as well as this
-                one — Points has no control of its own and follows whatever is set here. */}
-            <CombatPhasePanel
-              phase={phase}
-              overridden={overridden}
-              onOverridePhase={onOverridePhase}
-              onClearOverride={onClearOverride}
-              lang={lang}
-            />
-            <HeroCombat
-              heroes={heroes}
-              hero={active.hero}
-              combat={combat}
-              figures={figures}
-              onSelectHero={onSelectHero}
-            />
-            {/* The combat sheet those figures were computed from — beside them rather than at the
-                bottom of Points, where it was the one phase-scoped panel in a stage of sheet
-                arithmetic. */}
-            {figures.kind === 'at' && combat ? (
-              <HeroEffectiveStats
-                t={statCopy}
-                facts={effectiveFacts(active.hero, figures.inputs.account, combat)}
-                formatNumber={formatNumber}
+          {/* Mounted only while shown: the stage holds no state of its own (the phase override
+              lives above it), and its picker and breakdown would otherwise re-render on every
+              account read while another stage is open. */}
+          {tab === 'combat' ? (
+            <div className={colClass}>
+              {/* The phase the figures below were computed at. It is the only control on this
+                  screen that changes what a stage prints, and it changes Points as well as this
+                  one — Points has no control of its own and follows whatever is set here. */}
+              <CombatPhasePanel
+                phase={phase}
+                overridden={overridden}
+                onOverridePhase={onOverridePhase}
+                onClearOverride={onClearOverride}
+                lang={lang}
               />
-            ) : null}
-          </div>
+              <HeroCombat
+                heroes={heroes}
+                hero={active.hero}
+                combat={combat}
+                figures={figures}
+                onSelectHero={onSelectHero}
+              />
+              {/* The combat sheet those figures were computed from — beside them rather than at the
+                  bottom of Points, where it was the one phase-scoped panel in a stage of sheet
+                  arithmetic. */}
+              {figures.kind === 'at' && combat ? (
+                <HeroEffectiveStats
+                  t={statCopy}
+                  facts={effectiveFacts(active.hero, figures.inputs.account, combat)}
+                  formatNumber={formatNumber}
+                />
+              ) : null}
+            </div>
+          ) : null}
         </Tabs.Panel>
         <Tabs.Panel value="gear">
           {figures.kind === 'at' && combat ? (

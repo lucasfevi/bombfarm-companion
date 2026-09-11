@@ -179,9 +179,10 @@ const CRIT_DMG_MULT_MAP = {
   // -5 (line number only): the roster rail, board and toolbar moved into `@bombfarm/hero` so the
   // web planner draws the same ones, which took their definitions and two imports out of this
   // file. Match itself is unchanged in count and in kind.
-  // -32 (line number only): the phase control moved into `@bombfarm/farm` so the web planner
-  // draws the same one, which took its definition out of this file. Unchanged in count and kind.
-  'apps/desktop/renderer/app/heroes/heroes-view.tsx': [618],
+  // -27 (line number only): the phase control moved into `@bombfarm/farm` so the web planner
+  // draws the same one, which took its definition out of this file, and the Combat stage is
+  // mounted only while shown. Unchanged in count and kind.
+  'apps/desktop/renderer/app/heroes/heroes-view.tsx': [623],
   // The shared roster builder's own account fixture, same kind as the two farm entries below: a
   // raw save-shaped skills block handed to the parser, not a field the app reads.
   'apps/desktop/renderer/lib/account/account-roster.test.ts': [39],
@@ -281,7 +282,7 @@ const CRIT_DMG_MULT_MAP = {
   // one. Count and kind unchanged.
   // +5 more (line numbers only, last four): the two notes above on the phase control and the
   // pipeline-facts hook moving. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 327, 332, 342, 351],
+  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 328, 333, 343, 352],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 

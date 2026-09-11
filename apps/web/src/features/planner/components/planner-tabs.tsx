@@ -61,7 +61,10 @@ export function PlannerTabs() {
                 <HeroTab />
               </Tabs.Panel>
               <Tabs.Panel value="combat">
-                <CombatTab />
+                {/* Mounted only while shown: the tab holds no state of its own (the phase pick
+                    lives in the store), and its picker and breakdown would otherwise re-render
+                    on every edit made on the other three tabs. */}
+                {tab === 'combat' ? <CombatTab /> : null}
               </Tabs.Panel>
               <Tabs.Panel value="gear">
                 <GearTab />
