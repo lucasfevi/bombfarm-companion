@@ -57,10 +57,11 @@ if (parsedFlavor !== null) {
 
 /**
  * `--pid <n>` attaches the app to one instance of the game when several are running; without it
- * the app takes whichever instance launched first. `pnpm dev:pids` lists the candidates. The
- * flag BEATS a `BFC_GAME_PID` already in the environment — a pid left set in a PowerShell session
- * from an earlier run belongs to a process that no longer exists, and must not quietly win over
- * the one typed into this command. An unusable value exits rather than falling back to "any
+ * the app takes whichever instance launched first, exactly as before the flag existed.
+ * `pnpm dev:pids` lists the candidates. The flag is the ONLY way to pin: a `BFC_GAME_PID` already
+ * in the environment is dropped, not honoured — a pid left set in a PowerShell session from an
+ * earlier run belongs to a process that no longer exists, and a launch without the flag must
+ * behave the way it always has. An unusable value exits rather than falling back to "any
  * instance", which is the failure the flag exists to prevent.
  */
 function pinnedPidFromArgv(argv) {
@@ -80,16 +81,17 @@ function pinnedPidFromArgv(argv) {
 }
 
 const pinnedPid = pinnedPidFromArgv(process.argv);
+const inheritedPid = process.env.BFC_GAME_PID;
+delete process.env.BFC_GAME_PID;
 if (pinnedPid !== null) {
-  const displaced = process.env.BFC_GAME_PID;
   process.env.BFC_GAME_PID = pinnedPid;
-  if (displaced !== undefined && displaced !== '' && displaced !== pinnedPid) {
-    console.log(`Attaching to game pid ${pinnedPid} (--pid)  <-- replaced BFC_GAME_PID=${displaced} from your environment`);
+  if (inheritedPid !== undefined && inheritedPid !== '' && inheritedPid !== pinnedPid) {
+    console.log(`Attaching to game pid ${pinnedPid} (--pid)  <-- replaced BFC_GAME_PID=${inheritedPid} from your environment`);
   } else {
     console.log(`Attaching to game pid ${pinnedPid} (--pid)`);
   }
-} else if (process.env.BFC_GAME_PID) {
-  console.log(`Attaching to game pid ${process.env.BFC_GAME_PID} (BFC_GAME_PID from your environment)`);
+} else if (inheritedPid !== undefined && inheritedPid !== '') {
+  console.log(`Ignoring BFC_GAME_PID=${inheritedPid} from your environment: only --pid pins the game instance`);
 }
 
 /**

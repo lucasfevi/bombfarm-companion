@@ -48,15 +48,27 @@ function parseProcessId(out: string): number | null {
   return Number.isFinite(pid) && pid > 0 ? pid : null;
 }
 
+/** Where a process lookup runs. `isPackaged` defaults to `true` — the direction in which an
+ *  omitted argument costs a developer a flag rather than pinning an installed app. */
+export interface ProcessLookupContext {
+  readonly env?: NodeJS.ProcessEnv;
+  readonly isPackaged?: boolean;
+}
+
 /**
  * `BFC_GAME_PID` pins every lookup to one process, for a machine running more than one instance
  * of the game — without it each lookup takes the first process carrying the game's name, which
  * is whichever instance launched first. Absent or blank means no pin. A value that is not a
  * positive integer throws rather than being ignored, because ignoring it would silently attach
  * to the wrong instance, the exact failure the variable exists to prevent.
+ *
+ * A packaged app never pins: like the fixture reader and the user-data override, the variable is
+ * honoured only when `isPackaged === false`, so an installed build cannot be redirected by a
+ * value left in someone's environment.
  */
-export function pinnedGamePid(env: NodeJS.ProcessEnv = process.env): number | null {
-  const raw = env.BFC_GAME_PID?.trim();
+export function pinnedGamePid(context: ProcessLookupContext = {}): number | null {
+  if (context.isPackaged ?? true) return null;
+  const raw = (context.env ?? process.env).BFC_GAME_PID?.trim();
   if (raw === undefined || raw === '') return null;
   if (!/^[1-9][0-9]*$/.test(raw)) {
     throw new Error(`BFC_GAME_PID must be a positive integer, got "${raw}"`);
@@ -68,15 +80,15 @@ export function pinnedGamePid(env: NodeJS.ProcessEnv = process.env): number | nu
  * The one PowerShell expression every process lookup starts from: the game's processes by name,
  * narrowed to the pinned pid when there is one. Callers append their own `Select-Object`.
  */
-export function gameProcessQuery(processName: string, env: NodeJS.ProcessEnv = process.env): string {
+export function gameProcessQuery(processName: string, context: ProcessLookupContext = {}): string {
   const baseName = stripExeSuffix(processName);
   const byName = `Get-Process -Name '${baseName}' -ErrorAction SilentlyContinue`;
-  const pid = pinnedGamePid(env);
+  const pid = pinnedGamePid(context);
   return pid === null ? byName : `${byName} | Where-Object { $_.Id -eq ${String(pid)} }`;
 }
 
-function findProcessIdScript(processName: string): string {
-  return `(${gameProcessQuery(processName)} | Select-Object -First 1 -ExpandProperty Id)`;
+function findProcessIdScript(processName: string, context: ProcessLookupContext): string {
+  return `(${gameProcessQuery(processName, context)} | Select-Object -First 1 -ExpandProperty Id)`;
 }
 
 /**
@@ -88,7 +100,10 @@ function findProcessIdScript(processName: string): string {
  * Never rejects: {@link runPowerShellAsync} resolves to `''` on a spawn failure or non-zero exit,
  * which parses to `null` — the same "nothing found" every caller already handles.
  */
-export async function findProcessIdAsync(processName: string): Promise<number | null> {
-  return parseProcessId(await runPowerShellAsync(findProcessIdScript(processName)));
+export async function findProcessIdAsync(
+  processName: string,
+  context: ProcessLookupContext = {},
+): Promise<number | null> {
+  return parseProcessId(await runPowerShellAsync(findProcessIdScript(processName, context)));
 }
 

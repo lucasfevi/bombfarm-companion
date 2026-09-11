@@ -41,35 +41,52 @@ describe('stripExeSuffix', () => {
   });
 });
 
+const unpackaged = (env: NodeJS.ProcessEnv) => ({ env, isPackaged: false });
+
 describe('pinnedGamePid', () => {
   it('is no pin when BFC_GAME_PID is absent or blank', () => {
-    expect(pinnedGamePid({})).toBeNull();
-    expect(pinnedGamePid({ BFC_GAME_PID: '' })).toBeNull();
-    expect(pinnedGamePid({ BFC_GAME_PID: '   ' })).toBeNull();
+    expect(pinnedGamePid(unpackaged({}))).toBeNull();
+    expect(pinnedGamePid(unpackaged({ BFC_GAME_PID: '' }))).toBeNull();
+    expect(pinnedGamePid(unpackaged({ BFC_GAME_PID: '   ' }))).toBeNull();
   });
 
   it('reads a positive integer, tolerating surrounding whitespace', () => {
-    expect(pinnedGamePid({ BFC_GAME_PID: '12345' })).toBe(12345);
-    expect(pinnedGamePid({ BFC_GAME_PID: ' 42 ' })).toBe(42);
+    expect(pinnedGamePid(unpackaged({ BFC_GAME_PID: '12345' }))).toBe(12345);
+    expect(pinnedGamePid(unpackaged({ BFC_GAME_PID: ' 42 ' }))).toBe(42);
   });
 
   it('throws on anything else rather than silently attaching to whichever instance comes first', () => {
     for (const raw of ['abc', '0', '-3', '12.5', '1e3', '0x10']) {
-      expect(() => pinnedGamePid({ BFC_GAME_PID: raw })).toThrow(/BFC_GAME_PID/);
+      expect(() => pinnedGamePid(unpackaged({ BFC_GAME_PID: raw }))).toThrow(/BFC_GAME_PID/);
     }
+  });
+
+  it('never pins a packaged app, however the variable is set — an installed build is not redirectable from the environment', () => {
+    expect(pinnedGamePid({ env: { BFC_GAME_PID: '12345' }, isPackaged: true })).toBeNull();
+    expect(() => pinnedGamePid({ env: { BFC_GAME_PID: 'abc' }, isPackaged: true })).not.toThrow();
+  });
+
+  it('treats an omitted isPackaged as packaged, so a caller that forgets the flag cannot pin by accident', () => {
+    expect(pinnedGamePid({ env: { BFC_GAME_PID: '12345' } })).toBeNull();
   });
 });
 
 describe('gameProcessQuery', () => {
   it('looks the game up by name alone when nothing is pinned', () => {
-    expect(gameProcessQuery('BombFarm.exe', {})).toBe(
+    expect(gameProcessQuery('BombFarm.exe', unpackaged({}))).toBe(
       "Get-Process -Name 'BombFarm' -ErrorAction SilentlyContinue",
     );
   });
 
   it('narrows the same lookup to the pinned pid, so a pid of another program never matches', () => {
-    expect(gameProcessQuery('BombFarm.exe', { BFC_GAME_PID: '777' })).toBe(
+    expect(gameProcessQuery('BombFarm.exe', unpackaged({ BFC_GAME_PID: '777' }))).toBe(
       "Get-Process -Name 'BombFarm' -ErrorAction SilentlyContinue | Where-Object { $_.Id -eq 777 }",
+    );
+  });
+
+  it('is the unpinned query for a packaged app even with the variable set', () => {
+    expect(gameProcessQuery('BombFarm.exe', { env: { BFC_GAME_PID: '777' }, isPackaged: true })).toBe(
+      "Get-Process -Name 'BombFarm' -ErrorAction SilentlyContinue",
     );
   });
 });

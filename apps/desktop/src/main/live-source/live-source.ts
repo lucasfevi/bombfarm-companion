@@ -292,11 +292,11 @@ export interface LiveSourceDeps {
   ) => TapHandle;
 }
 
-function createProcessLister(): ProcessLister {
+function createProcessLister(isPackaged: boolean): ProcessLister {
   return {
     async list(processName: string): Promise<readonly TapTargetProcess[]> {
       try {
-        const script = `${gameProcessQuery(processName)} | Select-Object Id,ProcessName | ConvertTo-Json -Compress`;
+        const script = `${gameProcessQuery(processName, { isPackaged })} | Select-Object Id,ProcessName | ConvertTo-Json -Compress`;
         const out = await runPowerShellAsync(script);
         if (!out) return [];
         const parsed: unknown = JSON.parse(out);
@@ -411,7 +411,7 @@ function createDefaultTapFactory(deps: {
     const tap = new Tap({
       processName: deps.processName,
       runtime: new RuntimePort({ log: deps.log }),
-      processes: createProcessLister(),
+      processes: createProcessLister(deps.isPackaged),
       candidates: createHookCandidateSource({
         cacheDir: path.join(deps.userDataDir, 'live-hook-cache'),
         image: createProcessImageSource({ log: deps.log }),
