@@ -61,13 +61,13 @@ export const en = {
   teamPlanSaturationCalloutFarm:
     'Your field is full (battle load {duty} vs {slots} slots). The squad’s earning rate is shared across who can fight at once — advice only; this page will not bench or donate heroes for you.',
   teamPlanAuraDisclosureDps:
-    'Team auras here come from the scoped roster, exclude the hero being scored, and are weighted by each carrier’s duty. The Account tab’s manual Team buffs are ignored on this page but still drive the Planner’s own DPS.',
+    'Team auras here come from the scoped roster, exclude the hero being scored, and are weighted by each carrier’s duty. The Combat tab’s aura switches are ignored on this page but still drive the Planner’s own DPS.',
   teamPlanAuraDisclosureFarm:
-    'Team auras here come from the scoped roster, exclude the hero being scored, and are weighted by each carrier’s duty. The Account tab’s manual Team buffs are ignored on this page, though the Planner page still reads them.',
+    'Team auras here come from the scoped roster, exclude the hero being scored, and are weighted by each carrier’s duty. The Combat tab’s aura switches are ignored on this page, though the Planner page still follows them.',
   teamPlanPlannerDivergenceDps:
-    'Planner DPS can differ from this page when roster-derived auras replace manual Team buffs, or when {ability} is modelled here only.',
+    'Planner DPS can differ from this page when roster-derived auras replace the Combat tab’s aura switches, or when {ability} is modelled here only.',
   teamPlanPlannerDivergenceFarm:
-    'The Planner’s own figures can differ from this page when roster-derived auras replace manual Team buffs, or when {ability} is modelled here only.',
+    'The Planner’s own figures can differ from this page when roster-derived auras replace the Combat tab’s aura switches, or when {ability} is modelled here only.',
   teamPlanForgeSkippedNoteDps:
     'Forging to your minimum was left out of this plan — it did not improve roster DPS.',
   teamPlanForgeSkippedNoteFarm:
@@ -120,13 +120,13 @@ export const pt: typeof en = {
   teamPlanSaturationCalloutFarm:
     'Seu campo está lotado (carga de batalha {duty} vs {slots} slots). O ganho por hora do esquadrão é dividido entre quem pode lutar ao mesmo tempo — só orientação; esta página não banca nem doa heróis por você.',
   teamPlanAuraDisclosureDps:
-    'Auras de time aqui vêm do roster no escopo, excluem o herói pontuado e são ponderadas pelo duty de cada portador. Os buffs manuais da aba Conta são ignorados nesta página, mas ainda movem o DPS do Planner.',
+    'Auras de time aqui vêm do roster no escopo, excluem o herói pontuado e são ponderadas pelo duty de cada portador. Os interruptores de aura da aba Combate são ignorados nesta página, mas ainda movem o DPS do Planner.',
   teamPlanAuraDisclosureFarm:
-    'Auras de time aqui vêm do roster no escopo, excluem o herói pontuado e são ponderadas pelo duty de cada portador. Os buffs manuais da aba Conta são ignorados nesta página, embora a página do Planner ainda os leia.',
+    'Auras de time aqui vêm do roster no escopo, excluem o herói pontuado e são ponderadas pelo duty de cada portador. Os interruptores de aura da aba Combate são ignorados nesta página, embora a página do Planner ainda os siga.',
   teamPlanPlannerDivergenceDps:
-    'O DPS do Planner pode divergir quando auras derivadas do roster substituem buffs manuais, ou quando {ability} é modelada só aqui.',
+    'O DPS do Planner pode divergir quando auras derivadas do roster substituem os interruptores de aura da aba Combate, ou quando {ability} é modelada só aqui.',
   teamPlanPlannerDivergenceFarm:
-    'Os números do próprio Planner podem divergir desta página quando auras derivadas do roster substituem buffs manuais, ou quando {ability} é modelada só aqui.',
+    'Os números do próprio Planner podem divergir desta página quando auras derivadas do roster substituem os interruptores de aura da aba Combate, ou quando {ability} é modelada só aqui.',
   teamPlanForgeSkippedNoteDps:
     'A forja até o seu mínimo ficou de fora deste plano — ela não melhorou o DPS do roster.',
   teamPlanForgeSkippedNoteFarm:

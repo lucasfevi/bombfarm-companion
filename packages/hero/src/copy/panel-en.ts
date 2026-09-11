@@ -99,7 +99,7 @@ export const statPanelEn = {
   bdSrcPoints: 'Points',
   bdSrcTree: 'Skill tree',
   bdSrcAbilities: 'Abilities',
-  bdSrcTeam: 'Team buffs',
+  bdSrcTeam: 'Team auras',
   bdSrcAbilitiesTeam: 'Abilities + Team',
   bdSrcHero: 'Hero',
   bdSrcAbility: 'Ability',
