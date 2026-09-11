@@ -190,6 +190,11 @@ const CRIT_DMG_MULT_MAP = {
   // +1 (line number only): the farm snapshot's capture-time regression tests added an import of
   // `settledBoard` above this fixture. Match itself is unchanged in count and in kind.
   'apps/desktop/renderer/lib/farm/use-farm-snapshot.test.ts': [46],
+  // New files for this token: the Optimizer tab's own inputs mapper and store tests reuse the
+  // same raw save-shaped skills block the farm adapter's fixtures above already do — the parser
+  // input, not a field either module reads.
+  'apps/desktop/renderer/lib/optimizer/optimizer-inputs.test.ts': [39],
+  'apps/desktop/renderer/lib/optimizer/use-optimizer-snapshot.test.ts': [43],
   'apps/desktop/src/main/storage/account-store-restore.test.ts': [510, 543, 561, 594],
   'apps/desktop/src/main/storage/stale-sections.test.ts': [66, 81, 84, 88, 98, 105, 111, 123, 128, 164, 224],
   'apps/desktop/src/main/storage/stale-sections.ts': [11],
@@ -274,7 +279,9 @@ const CRIT_DMG_MULT_MAP = {
   // Count and kind unchanged.
   // +3 more (line numbers only, last four): the note on the farm snapshot entry above, plus this
   // one. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 320, 325, 335, 344],
+  // +12/+7/+7 (line numbers only, last four): the Optimizer tab's two new map entries and their
+  // explanatory comment, above this point. Count and kind unchanged.
+  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 327, 332, 342, 351],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 
