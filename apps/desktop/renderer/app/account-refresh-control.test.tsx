@@ -168,3 +168,35 @@ describe('the Farm screen mounts the control unconditionally, over the board hea
     expect(source).toContain('useAccountReadRequest(adoptLive)');
   });
 });
+
+/**
+ * The Optimizer screen's own twin of the block above. Its connector is two files — the early
+ * states and the storage/open wiring in `optimizer-view.tsx`, the memo bags and the control in
+ * `optimizer-screen.tsx` — so the source scan reads both concatenated: the invariants are about
+ * the connector as a whole, not about which of the two files a given line happens to sit in.
+ */
+describe('the Optimizer screen mounts the control unconditionally, over the page title', () => {
+  const source =
+    readFileSync(path.join(__dirname, 'optimizer', 'optimizer-view.tsx'), 'utf8') +
+    readFileSync(path.join(__dirname, 'optimizer', 'optimizer-screen.tsx'), 'utf8');
+
+  it('the scan reads real files', () => {
+    expect(source).toMatch(/export function OptimizerView/);
+    expect(source).toMatch(/export function OptimizerScreen/);
+  });
+
+  it('hands the control to the package screen as its header slot, with no staleness gate around it', () => {
+    expect(source).toContain('headerOverlay: (');
+    expect(source).toContain('<AccountRefreshControl');
+    expect(source).not.toMatch(/\{stale \?/);
+  });
+
+  it('refreshes through the screen\'s one recompute path, never a second call into the store', () => {
+    const refreshCalls = source.match(/\brefresh\(\)/g) ?? [];
+    expect(refreshCalls).toHaveLength(1);
+  });
+
+  it('asks the app to go and read the account, not only to re-solve from the one in hand', () => {
+    expect(source).toContain('useAccountReadRequest(adoptLive)');
+  });
+});
