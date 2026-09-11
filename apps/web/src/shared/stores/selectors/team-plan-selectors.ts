@@ -1,3 +1,4 @@
+import type { TeamPlanControls, TeamPlanInputs } from '@bombfarm/team-plan/core';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 import {
   selectLiveTeamPlanInputSignature,
@@ -5,6 +6,44 @@ import {
 } from '@/shared/stores/slices/team-plan-slice';
 
 export { selectTeamPlanTargetPhase };
+
+export function selectTeamPlanInputs(state: PlannerStore): TeamPlanInputs {
+  return {
+    heroes: state.heroes,
+    inventory: state.inventory,
+    treeDanoTotal: state.treeDanoTotal,
+    treeEnergy: state.treeEnergy,
+    treeSpeed: state.treeSpeed,
+    treeCritChance: state.treeCritChance,
+    treeCritDmg: state.treeCritDmg,
+    treeLuckFlatPct: state.treeLuckFlatPct,
+    treeTeamCoinPct: state.treeTeamCoinPct,
+    treeXpMult: state.treeXpMult,
+    houseIdx: state.houseIdx,
+    houseLevel: state.houseLevel,
+    phase: state.phase,
+    mitigationPct: state.mitigationPct,
+    slots: state.slots,
+    fieldSlots: state.fieldSlots,
+    houseCycleSecs: state.houseCycleSecs,
+    houseCycleSecsHouseIdx: state.houseCycleSecsHouseIdx,
+    houseCycleSecsLevel: state.houseCycleSecsLevel,
+    maxPhase: state.maxPhase,
+    farmChosenPhase: state.phasesViewPhaseChosen ? state.phasesViewPhase : null,
+  };
+}
+
+export function selectTeamPlanControls(state: PlannerStore): TeamPlanControls {
+  return {
+    scopeByHeroId: state.scopeByHeroId,
+    forgeFloor: state.forgeFloor,
+    objective: state.objective,
+    allowedChanges: state.allowedChanges,
+    ignoreFieldCrowding: state.ignoreFieldCrowding,
+    targetPhase: state.targetPhase,
+    targetPhaseChosen: state.targetPhaseChosen,
+  };
+}
 
 export function selectTeamPlanIsStale(state: PlannerStore): boolean {
   if (state.planInputSignature == null) return false;
