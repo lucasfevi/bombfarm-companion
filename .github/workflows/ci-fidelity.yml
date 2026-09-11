@@ -1,10 +1,10 @@
 name: CI Fidelity
 
-# MP2 F4 (LHP-13) — the cross-source fidelity gate: packages/domain/tests/fidelity-*.test.ts
-# proves the live-sourced path is held to the export-sourced path's standard. Path-filtered,
-# with its own required check — ci-desktop.yml and ci-web.yml both run this suite incidentally
-# (defence in depth) but neither is FID-08's exact path union and both pass on `skipped`
-# (design.md TD-5, R-2).
+# The cross-source fidelity gate: packages/domain/tests/fidelity-*.test.ts proves the
+# live-sourced path is held to the export-sourced path's standard. Path-filtered, with its own
+# required check — ci-desktop.yml and ci-web.yml both run this suite incidentally (defence in
+# depth) but neither runs the gate's exact path union, and both pass on `skipped` rather than
+# failing when the suite does not run.
 
 on:
   workflow_dispatch:
@@ -72,20 +72,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # packages/domain resolves @bombfarm/contracts through node_modules -> dist/index.d.ts
-      # (AD-020), same as ci-desktop.yml's and ci-web.yml's existing contracts-build step.
+      # packages/domain resolves @bombfarm/contracts through node_modules -> dist/index.d.ts,
+      # same as ci-desktop.yml's and ci-web.yml's existing contracts-build step.
       - name: Build contracts (domain type dependency)
         run: pnpm --filter @bombfarm/contracts build
 
-      # AD-021/AD-027: no domain test file is typechecked by the package's own `typecheck`
-      # script (its tsconfig.json only includes src/**/*.ts). This is the only static check
-      # that reaches the fidelity gate's own code (tasks.md's Gate Check Commands notes).
+      # No domain test file is typechecked by the package's own `typecheck` script (its
+      # tsconfig.json only includes src/**/*.ts). This is the only static check that reaches
+      # the fidelity gate's own code.
       - name: Typecheck the fidelity-gate test files
         run: pnpm --filter @bombfarm/domain exec tsc -p tsconfig.typecheck.json --noEmit
 
       # Deliberately no "pass with no tests found" flag and no error-swallowing retry: verified
-      # on develop that a filename filter matching zero files exits 1 (tasks.md), so a
-      # renamed-away suite fails this job rather than reporting green.
+      # on develop that a filename filter matching zero files exits 1, so a renamed-away suite
+      # fails this job rather than reporting green.
       - name: Fidelity suite (packages/domain, "fidelity" filename filter)
         run: pnpm vitest run --project @bombfarm/domain fidelity
 
@@ -111,7 +111,7 @@ jobs:
         run: pnpm --filter @bombfarm/pricing build
 
       # The guard on this workflow itself (tools/fidelity-gate.test.mjs) and the no-skip source
-      # guard over the six F4 files both live in the tools project.
+      # guard over the fidelity-gate source files both live in the tools project.
       - name: Fidelity gate guard (tools project)
         run: pnpm vitest run --project tools
 
@@ -128,8 +128,7 @@ jobs:
       # Deliberately NOT the ci-desktop-required idiom (which only checks failure/cancelled and
       # treats skipped as pass unconditionally): this gate must fail when the path filter
       # matched but the job did not run at all — skipped or cancelled — not just when it
-      # actively failed. A gate that reports success for "never ran" is worse than no gate
-      # (SBC-19/AD-018, design.md R-2).
+      # actively failed. A gate that reports success for "never ran" is worse than no gate.
       - name: Require the fidelity gate suite when the filter matched
         if: needs.changes.outputs.fidelity == 'true' && needs.fidelity-gate.result != 'success'
         run: |
