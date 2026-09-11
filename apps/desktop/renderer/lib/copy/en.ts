@@ -586,7 +586,8 @@ export const en = {
   accountHoldingsSkinsWorn: 'A bought skin counts once however many heroes wear it, and only while one of them still does — dress every hero back to a birth skin and this figure falls with nothing sold.',
 
   // farm* — the Farm screen's own chrome. The board and the phase panels print their own
-  // dictionary, which the farm package ships; these are the strings only this app owns.
+  // dictionary, which the farm package ships; these are the strings only this app owns — and the
+  // sentence the respec panel uses to point at the Optimizer tab.
   farmNavLabel: 'Farm',
   farmRefresh: 'Refresh',
   farmRefreshBusy: 'Working…',
@@ -594,6 +595,7 @@ export const en = {
   farmRefreshStale: 'out of date',
   farmUnavailableTitle: 'Not enough of your account has been read',
   farmUnavailableDescription: 'The board needs every part of your account. Open the game with the companion running and leave it open for a moment.',
+  farmRespecOptimizerPointer: 'For item moves and forges too, open the Optimizer tab.',
   // The stat vocabulary the farm screen borrows from this app. Every other stat name comes from
   // the game data itself; loot-facing Luck is the one the shared map does not carry.
   farmStatColumn: 'Stat',
@@ -641,6 +643,25 @@ export const en = {
   heroesEffectiveGroupSheet: 'Sheet stats',
   heroesEffectiveGroupDerived: 'Derived combat',
   heroesEffectiveTriggerAria: 'Show breakdown of {stat}',
+
+  // optimizer* — the Optimizer screen's own chrome. The setup panel, scope board and results
+  // print the dictionary the team-plan package ships; these are the strings whose truth depends
+  // on this host: the tab's name, the reasons a screen is empty, the sentences that name the
+  // desktop's other screens.
+  optimizerNavLabel: 'Optimizer',
+  optimizerUnavailableDescription: 'The planner needs every part of your account. Open the game with the companion running and leave it open for a moment.',
+  optimizerEmptyNoRosterTitle: 'No heroes on this account',
+  optimizerEmptyNoRosterBody: 'Your account was read and holds no heroes, so there is nothing to plan for yet.',
+  optimizerEmptyNoInventoryTitle: 'No gear items on this account',
+  optimizerEmptyNoInventoryBody: 'Your account was read and holds no gear, so there is nothing to move or forge yet.',
+  optimizerEmptyAllLeaveAloneTitle: 'Nothing in scope',
+  optimizerEmptyAllLeaveAloneBody: 'Set at least one hero to Optimize before running a plan.',
+  optimizerBlockedBody: 'These heroes carry no birth roll in the account read, so the search cannot score them: {heroes}.',
+  optimizerFarmNeedsMaxPhase: 'Letting the search pick its own phase needs the furthest phase your account has reached, which this read did not carry. Pick a phase above, or score for damage.',
+  optimizerAuraDisclosureDps: 'Team auras here come from the scoped roster, exclude the hero being scored, and are weighted by each carrier’s duty. The Farm and Heroes screens price auras from the deployed roster instead, so their DPS can differ from this screen’s.',
+  optimizerAuraDisclosureFarm: 'Team auras here come from the scoped roster, exclude the hero being scored, and are weighted by each carrier’s duty. The Farm and Heroes screens price auras from the deployed roster instead, so their gold figures can differ from this screen’s.',
+  optimizerDivergenceDps: 'The Heroes screen’s DPS can differ from this screen when auras are priced from the deployed roster rather than the scoped one, or when {ability} is modelled here only.',
+  optimizerDivergenceFarm: 'The Farm screen’s own figures can differ from this screen when auras are priced from the deployed roster rather than the scoped one, or when {ability} is modelled here only.',
 
   // hero*/gear*/import*/roster*/switch*/mode*/rank* — hero-identity vocabulary the farm screen's
   // roster surfaces read as one structural contract. Named exactly as that contract names them.
