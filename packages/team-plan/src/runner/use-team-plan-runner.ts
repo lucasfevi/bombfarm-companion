@@ -3,24 +3,34 @@ import type { TeamPlanInput } from '@bombfarm/domain/team-plan/types';
 import {
   createTeamPlanRunner,
   type TeamPlanRunner,
+  type TeamPlanRunnerHandle,
   type TeamPlanWorkerFactory,
-} from '@/features/team-plan/hooks/team-plan-runner-core';
+} from './team-plan-runner-core';
 
 export type {
   TeamPlanRunner,
+  TeamPlanRunnerHandle,
+  TeamPlanRunnerState,
   TeamPlanRunStatus,
   TeamPlanWorkerFactory,
   TeamPlanWorkerLike,
-} from '@/features/team-plan/hooks/team-plan-runner-core';
+} from './team-plan-runner-core';
 
 export { createTeamPlanRunner };
 
-export function useTeamPlanRunner(options?: { createWorker?: TeamPlanWorkerFactory }) {
-  const runnerRef = useRef<
-    (TeamPlanRunner & { subscribe(listener: () => void): () => void }) | undefined
-  >(undefined);
+export function useTeamPlanRunner(options?: {
+  /** A host-built runner (window-lifetime singleton) — the hook subscribes to it instead of
+   *  creating its own, so a solve survives the hook's owner unmounting. Absent: creates one. */
+  runner?: TeamPlanRunnerHandle;
+  createWorker?: TeamPlanWorkerFactory;
+}) {
+  const runnerRef = useRef<TeamPlanRunnerHandle | undefined>(undefined);
   if (!runnerRef.current) {
-    runnerRef.current = createTeamPlanRunner(options);
+    runnerRef.current =
+      options?.runner ??
+      createTeamPlanRunner(
+        options?.createWorker !== undefined ? { createWorker: options.createWorker } : undefined,
+      );
   }
   const [, bumpVersion] = useState(0);
   const subscribeRef = useRef(
@@ -39,7 +49,7 @@ export function useTeamPlanRunner(options?: { createWorker?: TeamPlanWorkerFacto
     runnerRef.current?.cancel();
   }, []);
 
-  const runner = runnerRef.current;
+  const runner: TeamPlanRunner = runnerRef.current;
   return {
     run,
     cancel,

@@ -14,7 +14,7 @@ import {
   selectTeamPlanObjective,
 } from '@/shared/stores';
 import { resolveHeroScope } from '@/shared/stores/team-plan/types';
-import { useTeamPlanRunner } from '@/features/team-plan/hooks/use-team-plan-runner';
+import { useTeamPlanRunner } from '@bombfarm/team-plan/runner';
 import { teamPlanObjectiveCopy } from '@/features/team-plan/model/objective-copy';
 import { TeamPlanEmptyPanel } from './team-plan-empty';
 import { TeamPlanToolbar } from './team-plan-toolbar';

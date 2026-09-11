@@ -1,12 +1,60 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { runTeamPlan } from '@bombfarm/domain/team-plan';
-import type { TeamPlan, TeamPlanInput } from '@bombfarm/domain/team-plan/types';
-import {
-  createTeamPlanRunner,
-  type TeamPlanWorkerLike,
-} from '@/features/team-plan/hooks/use-team-plan-runner';
-import type { TeamPlanWorkerResponse } from '@/features/team-plan/worker/team-plan.worker';
-import { teamPlanInputFromFixture } from './helpers/team-plan-fixture';
+import { parseSaveFile } from '@bombfarm/domain/import-save';
+import { treeTotalsFromSave } from '@bombfarm/domain/save-units';
+import type { TeamPlan, TeamPlanHeroInput, TeamPlanInput } from '@bombfarm/domain/team-plan/types';
+import { createTeamPlanRunner, type TeamPlanWorkerLike } from './use-team-plan-runner';
+import type { TeamPlanWorkerResponse } from './team-plan.worker';
+
+const FIXTURES_DIR = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '../../../domain/tests/fixtures/sheet-math',
+);
+
+function loadFixtureJson(filename: string): Record<string, unknown> {
+  return JSON.parse(readFileSync(join(FIXTURES_DIR, filename), 'utf8')) as Record<string, unknown>;
+}
+
+function teamPlanInputFromFixture(file: string, forgeFloor = 10): TeamPlanInput {
+  const raw = loadFixtureJson(file);
+  const { inventory, candidates, account } = parseSaveFile(raw, []);
+  const totals = (raw.skills as { totals: Record<string, unknown> }).totals;
+  const treeSheet = treeTotalsFromSave(totals);
+  const heroes: TeamPlanHeroInput[] = candidates
+    .filter((c) => !c.blocked)
+    .map((c) => ({
+      heroId: c.sourceId,
+      name: c.name,
+      level: c.level,
+      stars: c.record.stars,
+      rarity: c.rarity,
+      birth: c.record.birth,
+      abilities: c.record.abilities,
+      pts: c.record.pts,
+      loadout: c.record.loadout,
+      battleAllowed: c.record.battleAllowed,
+      statPointsAvailable: c.record.statPointsAvailable,
+    }));
+  const scopeByHeroId = Object.fromEntries(heroes.map((h) => [h.heroId, 'optimize' as const]));
+  return {
+    heroes,
+    inventory,
+    account: {
+      treeSheet,
+      houseIdx: account.houseIdx ?? 0,
+      houseLevel: account.houseLevel ?? 1,
+      phase: 1,
+      mitigationPct: 6.7,
+      slots: account.slots ?? 9,
+      fieldSlots: account.fieldSlots ?? account.slots ?? 9,
+    },
+    scopeByHeroId,
+    forgeFloor,
+  };
+}
 
 function cloneJson<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;

@@ -6,7 +6,7 @@ import { mayMoveGear, mayRespendPoints } from '@bombfarm/domain/team-plan';
 import type { TeamPlanAllowedChanges } from '@bombfarm/domain/team-plan/types';
 import { panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui/panel-field.recipe';
 import type { Lang, Strings } from '@/shared/i18n';
-import type { TeamPlanRunner } from '@/features/team-plan/hooks/use-team-plan-runner';
+import type { TeamPlanRunner } from '@bombfarm/team-plan/runner';
 import {
   buildTeamPlanInputFromStore,
   countOptimizeScopeHeroes,

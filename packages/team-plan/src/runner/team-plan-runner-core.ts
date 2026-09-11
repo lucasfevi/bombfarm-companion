@@ -1,12 +1,10 @@
 import { runTeamPlan } from '@bombfarm/domain/team-plan';
 import type { TeamPlan, TeamPlanInput, TeamPlanResult } from '@bombfarm/domain/team-plan/types';
-import type {
-  TeamPlanWorkerRequest,
-  TeamPlanWorkerResponse,
-} from '@/features/team-plan/worker/team-plan.worker';
-import { createTeamPlanWorkerModule } from '@/features/team-plan/worker/register-chunk';
+import type { TeamPlanRunStatus } from '../core/run-status';
+import type { TeamPlanWorkerRequest, TeamPlanWorkerResponse } from './team-plan.worker';
+import { createTeamPlanWorkerModule } from './register-chunk';
 
-export type TeamPlanRunStatus = 'idle' | 'running' | 'done' | 'blocked' | 'error';
+export type { TeamPlanRunStatus } from '../core/run-status';
 
 export type TeamPlanWorkerLike = {
   postMessage: (message: TeamPlanWorkerRequest) => void;
@@ -30,6 +28,8 @@ export type TeamPlanRunner = TeamPlanRunnerState & {
   run: (input: TeamPlanInput) => void;
   cancel: () => void;
 };
+
+export type TeamPlanRunnerHandle = TeamPlanRunner & { subscribe(listener: () => void): () => void };
 
 const E2E_MAX_EVAL_KEY = 'bf-e2e-team-plan-max-eval';
 const E2E_FORCE_ERROR_KEY = 'bf-e2e-team-plan-force-error';
@@ -74,7 +74,7 @@ function applyResult(
 
 export function createTeamPlanRunner(options?: {
   createWorker?: TeamPlanWorkerFactory;
-}): TeamPlanRunner & { subscribe(listener: () => void): () => void } {
+}): TeamPlanRunnerHandle {
   let state: TeamPlanRunnerState = {
     status: 'idle',
     plan: null,
@@ -117,9 +117,10 @@ export function createTeamPlanRunner(options?: {
       return;
     }
     try {
+      const maxEvaluations = readE2eMaxEvaluations();
       const result = runTeamPlan(
         input,
-        readE2eMaxEvaluations() ? { maxEvaluations: readE2eMaxEvaluations() } : undefined,
+        maxEvaluations !== undefined ? { maxEvaluations } : undefined,
       );
       if (state.runId !== runId) return;
       setState({
@@ -216,11 +217,12 @@ export function createTeamPlanRunner(options?: {
         runOnMainThread(runId, input);
       };
       worker.onmessage = (event) => handleWorkerMessage(runId, event.data);
+      const maxEvaluations = readE2eMaxEvaluations();
       worker.postMessage({
         kind: 'run',
         runId,
         input,
-        maxEvaluations: readE2eMaxEvaluations(),
+        ...(maxEvaluations !== undefined ? { maxEvaluations } : {}),
         forceError: readE2eForceError(),
       });
     },
