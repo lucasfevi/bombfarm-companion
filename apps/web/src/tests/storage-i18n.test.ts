@@ -194,8 +194,7 @@ describe('effective stats panel chrome (EST-*)', () => {
       'bdFormulaCriticalHit',
       'bdFormulaCritFactor',
       'bdFormulaFuse',
-      'bdFormulaBombsSerial',
-      'bdFormulaBombsWiki',
+      'bdFormulaBombs',
       'bdFormulaField',
       'bdFormulaRest',
       'bdFormulaUptime',
@@ -212,8 +211,9 @@ describe('effective stats panel chrome (EST-*)', () => {
       'bdTermCc',
       'bdTermCd',
       'bdTermCdr',
+      'bdTermCycle',
       'bdTermWalk',
-      'bdTermSf',
+      'bdTermBand',
       'bdTermDrain',
       'bdTermRestSeconds',
       'bdTermField',
@@ -332,14 +332,21 @@ describe('explain-tab copy (advice-column IA alignment)', () => {
     }
   });
 
-  it('explains synced farm phase and serial cycle knobs', () => {
+  it('explains synced farm phase and the measured bomb cycle — no serial or wiki model left', () => {
     expect(STRINGS.en.explainSections[1].p[0]).toMatch(/synced farm phase/);
-    expect(STRINGS.en.explainSections[2].p[0]).toMatch(/Walk delay/);
+    expect(STRINGS.en.explainSections[2].p[0]).toMatch(/walk speed/i);
+    expect(STRINGS.en.explainSections[2].p[0]).toMatch(/Speed shortens every hop/);
     expect(STRINGS.en.explainSections[2].p[1]).toMatch(/Blocks per bomb/);
-    expect(STRINGS.en.explainSections[2].p[2]).toMatch(/Wiki bombs/);
+    expect(STRINGS.en.explainSections[2].p[2]).toMatch(/One cycle model/);
+    expect(STRINGS.en.explainSections[2].code).toMatch(/max\(fuse, hop \/ walk\)/);
     expect(STRINGS.pt.explainSections[1].p[0]).toMatch(/fase de farm sincronizada/);
-    expect(STRINGS.pt.explainSections[2].p[0]).toMatch(/caminhada/i);
-    expect(STRINGS.pt.explainSections[2].p[2]).toMatch(/Wiki/);
+    expect(STRINGS.pt.explainSections[2].p[0]).toMatch(/velocidade de caminhada/i);
+    expect(STRINGS.pt.explainSections[2].p[2]).toMatch(/Um único modelo de ciclo/);
+    for (const lang of ['en', 'pt'] as const) {
+      const section = STRINGS[lang].explainSections[2];
+      const cadenceText = [section.p[0], section.p[2], section.code ?? ''].join(' ');
+      expect(cadenceText).not.toMatch(/serial|em série|wiki|walk delay|atraso de caminhada|0\.15/i);
+    }
   });
 
   it('section 1 describes the read-only Stats table on Points using its actual column names (explain-math.md rule 2)', () => {
@@ -618,7 +625,7 @@ describe('portuguese UX glossary (PTUX)', () => {
     expect(STRINGS.pt.reCopy).toBe('Copiar novamente');
     expect(STRINGS.pt.factMissing).toBe('Multiplicador que falta');
     expect(STRINGS.pt.cycleSerial).toBe('Em série');
-    expect(STRINGS.pt.explainSections[2].p[0]).toMatch(/Modelo em série/);
+    expect(STRINGS.pt.explainSections[2].p[0]).toMatch(/Ciclo de bomba medido/);
     expect(STRINGS.pt.statShort.cdr).toBe('Redução de recarga');
     expect(STRINGS.pt.statFull.cdr).toBe('Redução de recarga');
     expect(STRINGS.pt.slotStatFullLabels.cooldown).toBe('Redução de recarga');

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { abilityMods, levelPowerMult, mitigationFactor, type Context } from '@bombfarm/domain/model';
+import {
+  abilityMods,
+  cycleSecondsForHero,
+  GRID_SPEED_COEF,
+  levelPowerMult,
+  mitigationFactor,
+  type Context,
+} from '@bombfarm/domain/model';
 import { combineDrainRate } from '@bombfarm/domain/drain';
 import { emptySheetOther, starsMult, type SheetOtherPct, type SheetStats } from '@bombfarm/domain/gear';
 import { computeCombatMults, derive } from '@bombfarm/domain/derive';
@@ -22,8 +29,7 @@ const baseCtx = (): Context => ({
   restSeconds: 12 * 60,
   mitigation: 0.067,
   blastRange: 1,
-  cycleModel: 'serial',
-  walkDelay: 0.15,
+  ato: 1,
   drainMult: 1,
 });
 
@@ -251,7 +257,12 @@ function assertFormulasMatch(facts: PipelineFacts): void {
                 : id === 'fuse'
                   ? Math.max(2 * (1 - facts.effective.cdr / 100), 0.4)
                   : id === 'bombsPerSecond'
-                    ? 1 / (Math.max(2 * (1 - facts.effective.cdr / 100), 0.4) + facts.context.walkDelay)
+                    ? 1 /
+                      cycleSecondsForHero(
+                        Math.max(2 * (1 - facts.effective.cdr / 100), 0.4),
+                        facts.effective.speed * GRID_SPEED_COEF,
+                        facts.context.ato,
+                      )
                     : id === 'fieldSeconds'
                       ? facts.effective.energy / facts.context.drainMult
                       : id === 'rest'

@@ -133,7 +133,7 @@ type HeroRecordEntry = {
     restSeconds: string;
     mitigation: string;
     blastRange: string;
-    walkDelay: string;
+    ato: string;
     drainMult: string;
   };
   derive: {
@@ -489,7 +489,7 @@ function recordHero(
       restSeconds: num(context.restSeconds),
       mitigation: num(context.mitigation),
       blastRange: num(context.blastRange),
-      walkDelay: num(context.walkDelay),
+      ato: num(context.ato),
       drainMult: num(context.drainMult),
     },
     derive: {

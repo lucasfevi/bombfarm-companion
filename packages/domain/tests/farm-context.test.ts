@@ -3,9 +3,8 @@ import {
   effectiveFarmPhase,
   effectiveMitigationPct,
   effectiveTargetProp,
+  effectiveFarmAto,
   farmContextForHero,
-  FARM_CYCLE_MODEL,
-  FARM_WALK_DELAY_SEC,
   isTargetPropUnset,
 } from '@bombfarm/domain/farm-context';
 import { abilityMods } from '@bombfarm/domain/model';
@@ -41,9 +40,12 @@ describe('farm-context', () => {
     expect(mit).toBeCloseTo(1, 5);
   });
 
-  it('exposes fixed cycle constants', () => {
-    expect(FARM_CYCLE_MODEL).toBe('serial');
-    expect(FARM_WALK_DELAY_SEC).toBe(0.15);
+  it('prices the bomb cycle at the farm phase’s own difficulty band, phase 1’s when unset', () => {
+    expect(effectiveFarmAto(null)).toBe(1);
+    expect(effectiveFarmAto(0)).toBe(1);
+    expect(effectiveFarmAto(26)).toBe(phaseMapCoord(26)!.ato);
+    expect(effectiveFarmAto(51)).toBe(phaseMapCoord(51)!.ato);
+    expect(effectiveFarmAto(600)).toBe(5);
   });
 
   it('detects unset target prop', () => {

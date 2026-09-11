@@ -397,9 +397,10 @@ test.describe('points panel preview / apply', () => {
 
 test.describe('points panel reset advice gain line + Optimize build result', () => {
   // pts.cdr = level is a deliberately bad single-stat dump — confirmed directly against
-  // computeAdvisorPipeline (not guessed): resetAdvice.recommend is true with a ~251% gate
-  // gainPct for this seeded hero. pts.attack = level is confirmed the opposite: recommend is
-  // false, gainPct ~0.
+  // computeAdvisorPipeline (not guessed): resetAdvice.recommend is true with a ~188% gate
+  // gainPct for this seeded hero (~251% before the measured bomb cycle replaced the serial
+  // one, under which CDR past the walk buys nothing). pts.attack = level is confirmed the
+  // opposite: recommend is false, gainPct ~0.
   test('gain line shows when a reset is worth it, naming Optimize build', async ({ page }) => {
     const pts = { ...zeroPts(), cdr: 38 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));

@@ -111,11 +111,11 @@ export const en = {
     {
       h: "3 · Bombs per second",
       p: [
-        "Default Serial model (measured frame by frame in combat recordings): each hero keeps exactly one live bomb; only one bomb may occupy a cell at a time. Fuse time is 2 s reduced by CDR with a 0.4 s floor (20% of cycle / 80% CDR cap) — this is why CDR is a real damage stat here. Walk delay (serial only) covers retreat out of blast range plus travel to the next plant — default 0.15 s is a lower bound; dodge AI often adds more, especially with wide Explosão Ampla.",
+        "Measured bomb cycle: each hero keeps one live bomb and walks to its next plant while the fuse burns, so the time between plants is whichever is longer — the fuse or the walk — plus a short re-targeting pause. Fuse time is 2 s reduced by CDR with a 0.4 s floor (20% of cycle / 80% CDR cap). Walk time is the hop to the next plant divided by walk speed (Speed × 0.0386 cells/s), averaged over the hop lengths measured in real clears and packed closer on denser difficulties — so Speed shortens every hop the fuse does not already cover, and CDR pays until the walk takes over.",
         "Blocks per bomb uses the wiki expected coefficient (1 + 0.5 × range ≈ 2.5 at max range), not the geometric cross maximum (~13 cells). Early in a map, packed props can yield much higher burst DPS; the last corner prop caps at ~2 simultaneous bombers.",
-        "The legacy Wiki bombs/s model remains available as an account-level toggle for comparison.",
+        "One cycle model prices every figure the planner prints: this hero's bombs/s, the Points ranking, the Optimizer and the Farm page's clear time all read the same cycle at the same difficulty.",
       ],
-      code: "serial: bombs/s = 1 / (max(2 × (1 − min(cdr, 80%)), 0.4) + walk)\nwiki:   bombs/s = (0.3 + 0.12 × speed × 0.0386) × stamina(energy)",
+      code: "fuse    = max(2 × (1 − min(cdr, 80%)), 0.4)\nwalk    = speed × 0.0386 cells/s\ncycle   = avg over hops of max(fuse, hop / walk) + 0.39\nbombs/s = 1 / cycle",
     },
     {
       h: "4 · Active DPS",
@@ -253,11 +253,11 @@ export const pt: typeof en = {
     {
       h: "3 · Bombas por segundo",
       p: [
-        "Modelo em série (padrão, medido quadro a quadro em gravações de combate): cada herói mantém exatamente uma bomba ativa; só pode haver uma bomba por célula. O pavio é 2 s reduzido pela redução de recarga, com piso de 0.4 s (20% do ciclo / teto de 80%) — por isso redução de recarga conta de verdade no dano. A caminhada (só no modelo em série) inclui sair do alcance da explosão e ir até o próximo plantio — o padrão 0.15 s é um piso; a IA de esquiva costuma somar mais, sobretudo com Explosão Ampla larga.",
+        "Ciclo de bomba medido: cada herói mantém uma bomba ativa e caminha até o próximo plantio enquanto o pavio queima, então o tempo entre plantios é o que for mais longo — o pavio ou a caminhada — mais uma pausa curta para mirar. O pavio é 2 s reduzido pela redução de recarga, com piso de 0.4 s (20% do ciclo / teto de 80%). A caminhada é o salto até o próximo plantio dividido pela velocidade de caminhada (Velocidade × 0,0386 células/s), em média sobre os saltos medidos em limpezas reais e mais curtos em dificuldades mais densas — então Velocidade encurta todo salto que o pavio ainda não cobre, e redução de recarga rende até a caminhada passar a mandar.",
         "Blocos por bomba usa o coeficiente esperado da wiki (1 + 0.5 × alcance ≈ 2.5 no máximo), não o máximo geométrico da cruz (~13 células). No início do mapa, props densos geram burst bem acima do DPS sustentado; o último prop no canto limita a ~2 bombardeiros simultâneos.",
-        "O modo Wiki de bombas/s permanece disponível como opção a nível de conta só para comparação.",
+        "Um único modelo de ciclo precifica tudo que o planner mostra: as bombas/s deste herói, o ranking de Pontos, o Otimizador e o tempo de limpeza da página Farm leem o mesmo ciclo na mesma dificuldade.",
       ],
-      code: "série: bombas/s = 1 / (max(2 × (1 − min(cdr, 80%)), 0.4) + caminhada)\nwiki:  bombas/s = (0.3 + 0.12 × vel × 0.0386) × stamina(energia)",
+      code: "pavio     = max(2 × (1 − min(cdr, 80%)), 0.4)\ncaminhada = vel × 0.0386 células/s\nciclo     = média nos saltos de max(pavio, salto / caminhada) + 0.39\nbombas/s  = 1 / ciclo",
     },
     {
       h: "4 · DPS ativo",
