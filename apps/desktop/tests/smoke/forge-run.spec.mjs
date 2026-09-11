@@ -15,7 +15,8 @@ const desktopRoot = path.join(__dirname, '..', '..');
  * renderer's side of that seam: the rail's states in order, that the rail spans the whole row as
  * it expands while the split below it keeps its shape, the tally's quiet-rung collapsing, the
  * mark the chart holds open while a roll is in flight, the result heading over the chart and
- * tally that outlive the run, and the return to a collapsed rail.
+ * tally that outlive the run, and the return to a collapsed rail — and that none of it is lost
+ * by looking at another tab mid-run, including an event that lands while the screen is away.
  *
  * The screen fills the window and then overflows downwards, so what the layout promises here is
  * not that nothing scrolls — the page is free to be taller than the window. It is that the bag is
@@ -412,11 +413,26 @@ test.describe('forge run smoke', () => {
       await splitHoldsTheAside(page);
       await shoot(page, testInfo, 'forge-run-running.png');
 
+      // --- Away and back: the shell unmounts the screen while another tab is up, and the run has
+      //     to be exactly where it was on return — the climb so far, and a gap that opened while
+      //     nobody was looking, drawn as the ghost the chart would have held had the screen been
+      //     up the whole time. ----------------------------------------------------------------
+      const ghost = page.getByTestId('forge-chart-ghost');
+      await page.getByRole('button', { name: 'Inventory' }).click();
+      await expect(page.getByTestId('forge-view')).toHaveCount(0);
+      expect(await inject(page, [scriptedPause(GAP_MS)])).toEqual({ ok: true });
+      await goToForge(page);
+      await expect(rail).toHaveAttribute('data-state', 'running');
+      await expect(rail.getByTestId('forge-rail-level')).toHaveText('+12');
+      await expect(rail.getByTestId('forge-tally-rung')).toHaveText(['+9…+11', '+12']);
+      await expect(rail.getByTestId('forge-tally-row').nth(0).getByTestId('forge-tally-rolls')).toHaveText('6');
+      await expect(ghost).toBeVisible();
+      expect(await inject(page, [scriptedSteps(itemId)[7]])).toEqual({ ok: true });
+      await expect(ghost).toHaveCount(0);
+
       // --- Between rolls: the chart holds the next roll's place rather than the header saying a
       //     word. There is no threshold to clear — an ordinary gap gets the mark too — and the
       //     header keeps the word it never had. -------------------------------------------------
-      const ghost = page.getByTestId('forge-chart-ghost');
-      await expect(ghost).toHaveCount(0);
       await expect(rail.getByTestId('forge-rail-pausing')).toHaveCount(0);
 
       expect(await inject(page, [scriptedPause(GAP_MS)])).toEqual({ ok: true });
