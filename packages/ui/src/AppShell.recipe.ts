@@ -70,10 +70,7 @@ export const appShellDragStripClass = 'absolute top-0 right-0 bottom-0 left-0';
 
 /**
  * `min-h-0` lets this flex child actually shrink so `overflow-y-auto` scrolls instead of growing
- * the viewport — the window itself must never scroll. A flex column so the inner measure can claim
- * the height with `flex-1` rather than a percentage: a `height: 100%` child of this box is pinned
- * to the viewport while its own content is taller, and the excess escapes to the document, which
- * then scrolls behind the one scrollbar this element is supposed to own.
+ * the viewport — the window itself must never scroll.
  *
  * `relative` is what actually holds that second scrollbar shut, and it is load-bearing rather than
  * decorative. `sr-only` is `position: absolute`, so every screen-reader label in the tree resolves
@@ -90,18 +87,25 @@ export const appShellMainClass =
  * The measure. Caps and centres the content while the scrollbar stays on `<main>` at the window
  * edge, so a wide window grows the background rather than the panels.
  *
- * `min-h-0` is what makes `flex-1` here mean "the region's height" rather than "at least my
- * content's height". A flex item's automatic minimum size is its content, so without it this box
- * was as tall as whatever the tab rendered — and a tab that bounds itself with `min-h-0` and
- * `flex-1` all the way down still had nothing definite to be bounded BY, so its own table
- * scrollers never engaged and `<main>` scrolled the whole screen instead. Measured on the Forge
- * tab: 7,127px of box inside a 709px region, with a full-height bag table that never scrolled.
+ * At least the region's height, and as tall as the tab beyond that. The floor (`min-h-full`, which
+ * resolves because `<main>`'s flexed height is definite) is what a tab that fills the region
+ * measures itself against; the growth is what puts `<main>`'s end padding under a tall tab, and
+ * `shrink-0` is what allows it — a flex item's default minimum is its content, but naming a
+ * minimum replaces that, and `<main>`'s column would otherwise shrink this box back to the floor
+ * rather than let it overflow. This box used to be pinned to the region instead, with `min-h-0` and
+ * `flex-1`, and every taller tab overflowed it — a scroll container lays its end padding out after
+ * its in-flow children, and overflow past them is measured on its own, so the `pb-6` was never
+ * reached: scrolled to the bottom, the last panel sat on the status strip's border while the header
+ * kept its gap.
  *
- * A tab that is genuinely taller than the region is unaffected: it overflows this box, nothing
- * here clips, and the overflow still counts toward `<main>`'s scrollable area, which is the one
- * scrollbar in the app.
+ * A tab whose content is taller than it wants to be — a bag table with its own scroller — cannot
+ * sit in flow here, or its content height is what this box grows to. It takes the region's height
+ * out of flow instead, `absolute inset-0` in the positioned wrapper the desktop puts around its
+ * tabs, and contributes nothing to this box's height. A tab that merely grows INTO the region
+ * (`flex-1`, no `min-h-0`) is fine in flow: it is region-tall when it fits and content-tall when
+ * it does not, and its content is bounded either way.
  */
-export const appShellMainInnerClass = 'mx-auto flex w-full min-h-0 max-w-desktop flex-1 flex-col';
+export const appShellMainInnerClass = 'mx-auto flex w-full min-h-full max-w-desktop shrink-0 flex-col';
 
 export const appShellStatusBarClass =
   'shrink-0 border-t border-line px-[var(--shell-gutter)] pr-[calc(var(--shell-gutter)+var(--scrollbar))] py-1 text-sm';

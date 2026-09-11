@@ -235,4 +235,63 @@ test.describe('shell measure — one scrollbar, two columns, capped and centred 
       expect(await documentScrollRange(page)).toEqual({ x: 0, y: 0 });
     }
   });
+
+  /** The tab's distance from the header at the top of the scroll and from the status strip at the
+   *  bottom of it. The tab's own box is measured, not `<main>`'s padding: the failure this guards
+   *  against left the padding in the stylesheet and the panel on the strip's border regardless. */
+  function verticalGaps(page, testId) {
+    return page.evaluate((id) => {
+      const main = document.querySelector('main');
+      const tab = document.querySelector(`[data-testid="${id}"]`);
+      const header = document.querySelector('header').getBoundingClientRect();
+      const strip = document.querySelector('footer').getBoundingClientRect();
+      main.scrollTop = 0;
+      const aboveTab = Math.round(tab.getBoundingClientRect().top - header.bottom);
+      main.scrollTop = main.scrollHeight;
+      const belowTab = Math.round(strip.top - tab.getBoundingClientRect().bottom);
+      main.scrollTop = 0;
+      const padding = getComputedStyle(main);
+      const region = main.clientHeight - parseFloat(padding.paddingTop) - parseFloat(padding.paddingBottom);
+      return { aboveTab, belowTab, tabHeight: Math.round(tab.getBoundingClientRect().height), region: Math.round(region) };
+    }, testId);
+  }
+
+  test('a tab taller than the region ends as far above the status strip as it starts below the header', async () => {
+    await page.locator('nav[aria-label="Main"] button').last().click();
+    await expect(page.getByTestId('settings-view')).toBeVisible({ timeout: 15_000 });
+    for (const size of [MIN_WINDOW, { width: 1280, height: 800 }]) {
+      await resize(app, page, size.width, size.height);
+      const gaps = await verticalGaps(page, 'settings-view');
+      expect(gaps.tabHeight, `settings fit the region at ${size.height}px — nothing to scroll`).toBeGreaterThan(gaps.region);
+      // Within a pixel, as the centring checks above: the strip's border lands on a half pixel.
+      expect(
+        Math.abs(gaps.belowTab - gaps.aboveTab),
+        `the last section sat ${gaps.belowTab}px from the strip and ${gaps.aboveTab}px from the header at ${size.width}x${size.height}`,
+      ).toBeLessThanOrEqual(1);
+      expect(gaps.aboveTab).toBeGreaterThan(0);
+    }
+  });
+
+  test('a tab that fills the region fills it exactly, and leaves <main> nothing to scroll', async () => {
+    // Found by what it renders rather than by its place in the nav, which the language switched
+    // above has renamed: the tab is the one whose click puts `inventory-view` on screen.
+    const tabs = page.locator('nav[aria-label="Main"] button');
+    for (let i = 0; i < (await tabs.count()); i++) {
+      await tabs.nth(i).click();
+      if (await page.getByTestId('inventory-view').isVisible()) break;
+    }
+    await expect(page.getByTestId('inventory-view')).toBeVisible({ timeout: 15_000 });
+
+    for (const size of [MIN_WINDOW, { width: 1280, height: 1000 }]) {
+      await resize(app, page, size.width, size.height);
+      const gaps = await verticalGaps(page, 'inventory-view');
+      expect(gaps.tabHeight, `inventory did not fill the region at ${size.height}px`).toBe(gaps.region);
+      expect(Math.abs(gaps.belowTab - gaps.aboveTab)).toBeLessThanOrEqual(1);
+      const mainScroll = await page.evaluate(() => {
+        const main = document.querySelector('main');
+        return main.scrollHeight - main.clientHeight;
+      });
+      expect(mainScroll, `<main> scrolled under a tab that bounds itself at ${size.height}px`).toBe(0);
+    }
+  });
 });

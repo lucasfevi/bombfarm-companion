@@ -343,7 +343,7 @@ export function ForgeView({
   }
 
   return (
-    <div data-testid="forge-view" className="flex min-h-0 flex-1 flex-col gap-3">
+    <div data-testid="forge-view" className="flex flex-1 flex-col gap-3">
       <Panel className="shrink-0">
         <PanelHeader title={t.forgeTitle} />
         <ForgeToolbar
