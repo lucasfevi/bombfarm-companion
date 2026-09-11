@@ -1,6 +1,7 @@
 'use client';
 
 import { HeroTab } from './hero-tab';
+import { CombatTab } from './combat-tab';
 import { AdviceColumn } from './advice-column';
 import { HeroStrip } from './hero-strip';
 import { RosterWorkspace } from './roster-workspace';
@@ -43,6 +44,7 @@ export function PlannerTabs() {
               <Tabs.Tab value="hero" badge={heroTabStatus.badge} status={statusProp(heroTabStatus)}>
                 {t.tabHero}
               </Tabs.Tab>
+              <Tabs.Tab value="combat">{t.tabCombat}</Tabs.Tab>
               <Tabs.Tab value="gear" badge={gearTabStatus.badge} status={statusProp(gearTabStatus)}>
                 {t.tabGear}
               </Tabs.Tab>
@@ -57,6 +59,9 @@ export function PlannerTabs() {
             <Tabs.Panels>
               <Tabs.Panel value="hero">
                 <HeroTab />
+              </Tabs.Panel>
+              <Tabs.Panel value="combat">
+                <CombatTab />
               </Tabs.Panel>
               <Tabs.Panel value="gear">
                 <GearTab />

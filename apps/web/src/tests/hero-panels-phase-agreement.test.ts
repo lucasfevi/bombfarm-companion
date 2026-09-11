@@ -12,6 +12,7 @@ import { join } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { emptyLoadout } from '@bombfarm/domain/gear';
 import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
+import { WIKI_PHASE_LINES, wikiPhaseLine } from '@bombfarm/domain/phase-wiki';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
 import { pipelineForHero } from '@bombfarm/domain/roster-dps';
 import type { AdvisorPipelineResult } from '@bombfarm/domain/advisor-pipeline';
@@ -22,6 +23,7 @@ import {
   selectAdvisorPipeline,
   selectEffectiveTeamBuffs,
   selectCombatPhase,
+  selectCombatPhaseSelection,
   selectPhasesViewPhase,
   usePlannerStore,
   type PlannerStore,
@@ -208,6 +210,71 @@ describe('the hero workspace and the phases explorer read one phase', () => {
         state.mitigationPct,
       ),
     );
+  });
+});
+
+/**
+ * The planner's Combat tab may ask about a phase of its own. That pick moves every figure the
+ * planner prints, and nothing the explorer prints: the two are one player's two questions about
+ * the same account, and answering one must not re-answer the other.
+ */
+describe('a phase picked on the planner’s Combat tab', () => {
+  beforeEach(() => {
+    resetPlannerStoreForTests();
+    hydrateOneHero();
+    usePlannerStore.getState().setPhasesViewPhase(137);
+  });
+
+  it('moves the planner onto that phase, with the wiki line’s own mitigation', () => {
+    usePlannerStore.getState().setPlannerPhaseOverride(42);
+    const state = usePlannerStore.getState();
+
+    expect(selectCombatPhase(state)).toBe(42);
+    expect(selectCombatPhaseSelection(state)).toEqual({ kind: 'override', phase: 42 });
+    expect(selectAdvisorPipeline(state)).toEqual(
+      pipelineForHero(
+        state.heroes[0],
+        selectAccountSharedForCombat(state),
+        42,
+        wikiPhaseLine(42)!.mitig * 100,
+      ),
+    );
+  });
+
+  it('leaves the explorer on the phase it was showing', () => {
+    usePlannerStore.getState().setPlannerPhaseOverride(42);
+    const state = usePlannerStore.getState();
+
+    expect(selectPhasesViewPhase(state)).toBe(137);
+    expect(figures(explorerCombat(state))).not.toEqual(figures(selectAdvisorPipeline(state)));
+  });
+
+  it('clearing it hands the planner back to the explorer’s phase, and the two agree again', () => {
+    usePlannerStore.getState().setPlannerPhaseOverride(42);
+    usePlannerStore.getState().setPlannerPhaseOverride(null);
+    const state = usePlannerStore.getState();
+
+    expect(selectCombatPhase(state)).toBe(137);
+    expect(selectCombatPhaseSelection(state)).toEqual({ kind: 'farmScreen', phase: 137 });
+    expect(figures(selectAdvisorPipeline(state))).toEqual(figures(explorerCombat(state)));
+  });
+
+  it('a phase past the wiki’s last row lands on the last phase, as every lookup beneath does', () => {
+    usePlannerStore.getState().setPlannerPhaseOverride(9_000);
+    const state = usePlannerStore.getState();
+
+    expect(selectCombatPhase(state)).toBe(WIKI_PHASE_LINES.length);
+    expect(selectCombatPhaseSelection(state)).toEqual({
+      kind: 'override',
+      phase: WIKI_PHASE_LINES.length,
+    });
+  });
+
+  it('picking the phase the app already answers for is not a pick, and reads as none', () => {
+    usePlannerStore.getState().setPlannerPhaseOverride(137);
+    const state = usePlannerStore.getState();
+
+    expect(selectCombatPhaseSelection(state)).toEqual({ kind: 'farmScreen', phase: 137 });
   });
 });
 

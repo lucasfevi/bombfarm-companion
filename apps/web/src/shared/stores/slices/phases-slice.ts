@@ -39,6 +39,14 @@ export type PhasesSlice = {
   farmRespecReRank: boolean;
   /** EPHEMERAL — lets the player close the panel without turning re-rank on. */
   farmRespecPanelOpen: boolean;
+  /**
+   * EPHEMERAL — the planner's Combat tab asking about a phase other than the one the app would
+   * choose on its own (`selectCombatPhase`). `null` while no such pick is in force. Never
+   * persisted and never written into the phases explorer's own selection: the two are one
+   * player's two questions about the same account, and answering one must not re-answer the
+   * other.
+   */
+  plannerPhaseOverride: number | null;
 
   hydratePhasesView: (view: PhasesViewState) => void;
   setPhasesViewPhase: (phase: number) => void;
@@ -48,6 +56,8 @@ export type PhasesSlice = {
   setFarmReturnBonus: (mode: ReturnBonusMode) => void;
   setFarmRespecReRank: (active: boolean) => void;
   setFarmRespecPanelOpen: (open: boolean) => void;
+  /** `null` clears the pick and hands the planner back to `selectCombatPhase`'s own answer. */
+  setPlannerPhaseOverride: (phase: number | null) => void;
   /** Runs Tier 2 on demand, off the render path — see the action body for the full contract. */
   runFarmRespec: () => void;
 };
@@ -86,6 +96,7 @@ export const createPhasesSlice: StateCreator<
     farmRespecStatus: 'idle',
     farmRespecReRank: false,
     farmRespecPanelOpen: false,
+    plannerPhaseOverride: null,
 
     hydratePhasesView: (view) => {
       set({
@@ -146,6 +157,11 @@ export const createPhasesSlice: StateCreator<
     setFarmRespecPanelOpen: (open) => {
       if (get().farmRespecPanelOpen === open) return;
       set({ farmRespecPanelOpen: open });
+    },
+
+    setPlannerPhaseOverride: (phase) => {
+      if (get().plannerPhaseOverride === phase) return;
+      set({ plannerPhaseOverride: phase });
     },
 
     /**

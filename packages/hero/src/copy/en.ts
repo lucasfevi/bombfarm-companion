@@ -85,6 +85,14 @@ export const heroEn = {
   heroDetailCombatCdrCeilingReached: "Further cooldown reduction buys nothing.",
   heroDetailCombatNoProps: "There are no props on this phase.",
 
+  heroDetailPhaseTitle: "Phase these numbers are for",
+  heroDetailPhaseLabel: "Phase",
+  heroDetailPhaseAria: "Which phase these numbers are computed at",
+  heroDetailPhaseUseCurrent: "Back to your current phase",
+  heroDetailPhaseSearchPlaceholder: "Hard, Normal 2-1, or 151",
+  heroDetailPhaseNoMatch: "No phase matches that.",
+  heroDetailPhaseMoreMatches: "Showing {shown} of {matched} — keep typing to narrow.",
+
   heroDetailSheetTitle: "Statistic sheet",
   heroDetailPointsTitle: "Points spent",
   heroDetailBreakdownTitle: "Per-statistic breakdown",

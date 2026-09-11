@@ -1,6 +1,5 @@
-import { WIKI_PHASE_LINES } from '@bombfarm/domain/phase-wiki';
+import { phaseSearchOptions } from '@bombfarm/farm';
 import type { SearchSelectOption } from '@bombfarm/ui';
-import { formatPhaseLabel } from '@/shared/lib/phase-label';
 import type { Lang } from '@/shared/i18n';
 
 /**
@@ -9,22 +8,9 @@ import type { Lang } from '@/shared/i18n';
  */
 export const TEAM_PLAN_PHASE_NONE = '';
 
-/**
- * Every phase, labelled the way the game names it — `Normal 1-1 (#51)`, the app's one spelling
- * (`formatPhaseLabel`).
- *
- * The label is also the whole search surface, which is why it carries the difficulty word, the
- * coordinate AND the number: those are the three things a player knows a phase by, and each is
- * matched by `SearchSelect` against this one string. The wiki's flavour names are deliberately
- * absent — they diverge from the client past world 2, so a search that found a phase by one would
- * be finding it by a name the game does not use.
- */
+/** Every phase under the app's one phase spelling (`phaseSearchOptions`), behind a "None" row. */
 export function teamPlanPhaseOptions(lang: Lang, noneLabel: string): SearchSelectOption[] {
-  const phases = WIKI_PHASE_LINES.map((line) => ({
-    value: String(line.phase),
-    label: formatPhaseLabel(line.phase, lang),
-  }));
-  return [{ value: TEAM_PLAN_PHASE_NONE, label: noneLabel }, ...phases];
+  return [{ value: TEAM_PLAN_PHASE_NONE, label: noneLabel }, ...phaseSearchOptions(lang)];
 }
 
 /** The control's string value for a stored phase, and back. */

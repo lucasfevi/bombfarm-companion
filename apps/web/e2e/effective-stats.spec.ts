@@ -6,6 +6,12 @@ async function openPointsTab(page: Page, lang: 'en' | 'pt') {
   await page.getByRole('tab', { name }).click();
 }
 
+/** The Effective panel lives on Combat, beside the figures it explains — Points keeps the rest. */
+async function openCombatTab(page: Page, lang: 'en' | 'pt') {
+  const name = lang === 'en' ? /^combat$/i : /^combate$/i;
+  await page.getByRole('tab', { name }).click();
+}
+
 function activePanel(page: Page) {
   return page.locator('[data-slot="tabs-panel"][data-state="active"]');
 }
@@ -68,7 +74,9 @@ const EN_DERIVED = [
 ] as const;
 
 test.describe('effective stats panel (EST / ESB)', () => {
-  test('Points tab stacks Points / Next point / Stats / Effective (EN + PT)', async ({ page }) => {
+  test('Points stacks Points / Next point / Stats; Effective closes the Combat tab (EN + PT)', async ({
+    page,
+  }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
@@ -76,19 +84,29 @@ test.describe('effective stats panel (EST / ESB)', () => {
 
     const stage = pointsStage(page, 'en');
     const headings = stage.getByRole('heading', { level: 2 });
+    await expect(headings).toHaveCount(3);
     await expect(headings.nth(0)).toHaveText(/^Points$/);
     await expect(headings.nth(1)).toHaveText(/^Next point$/);
     await expect(headings.nth(2)).toHaveText(/^Stats$/);
-    await expect(headings.nth(3)).toHaveText(/^Effective stats$/);
+
+    await openCombatTab(page, 'en');
+    await expect(activePanel(page).getByRole('heading', { level: 2 }).last()).toHaveText(
+      /^Effective stats$/,
+    );
 
     await page.getByRole('group', { name: 'Language' }).getByRole('button', { name: 'PT' }).click();
     await openPointsTab(page, 'pt');
     const stagePt = pointsStage(page, 'pt');
     const headingsPt = stagePt.getByRole('heading', { level: 2 });
+    await expect(headingsPt).toHaveCount(3);
     await expect(headingsPt.nth(0)).toHaveText(/^Pontos$/);
     await expect(headingsPt.nth(1)).toHaveText(/^Próximo ponto$/);
     await expect(headingsPt.nth(2)).toHaveText(/^Atributos$/);
-    await expect(headingsPt.nth(3)).toHaveText(/^Atributos efetivos$/);
+
+    await openCombatTab(page, 'pt');
+    await expect(activePanel(page).getByRole('heading', { level: 2 }).last()).toHaveText(
+      /^Atributos efetivos$/,
+    );
   });
 
   test('hides sheet-group rows that match hero-sheet Total; shows combat deltas + derived', async ({
@@ -97,7 +115,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await openPointsTab(page, 'en');
+    await openCombatTab(page, 'en');
 
     const panel = effectivePanel(page, 'en');
     // Default Cora has no combat sheet mults — sheet group is omitted entirely.
@@ -114,7 +132,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     });
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await openPointsTab(page, 'en');
+    await openCombatTab(page, 'en');
     const panelDelta = effectivePanel(page, 'en');
     await expect(panelDelta.getByRole('heading', { name: /Sheet stats/i, level: 3 })).toBeVisible();
     for (const label of EN_COMBAT_SHEET_LABELS) {
@@ -131,7 +149,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     await expect(panelDelta.getByRole('button', { name: /Show breakdown of Critical factor/i })).toBeVisible();
 
     await page.getByRole('group', { name: 'Language' }).getByRole('button', { name: 'PT' }).click();
-    await openPointsTab(page, 'pt');
+    await openCombatTab(page, 'pt');
     const panelPt = effectivePanel(page, 'pt');
     await expect(panelPt.getByRole('heading', { name: /Stats da ficha/i, level: 3 })).toBeVisible();
     for (const label of PT_COMBAT_SHEET_LABELS) {
@@ -152,7 +170,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     await expect(pointsTab.locator('[data-tab-badge="soft"]')).toBeVisible();
     await expect(pointsTab.getByText(/^setup$/i)).toHaveCount(0);
 
-    await openPointsTab(page, 'en');
+    await openCombatTab(page, 'en');
     const effective = effectivePanel(page, 'en');
     await expect(effective).not.toHaveClass(/shadow-\[inset_3px_0_0_var\(--accent\)\]/);
     await expect(effective).not.toHaveClass(/opacity-\[0\.78\]/);
@@ -175,17 +193,19 @@ test.describe('effective stats panel (EST / ESB)', () => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
+    await openCombatTab(page, 'en');
+
+    const hitButton = () =>
+      effectivePanel(page, 'en').getByRole('button', { name: /Show breakdown of Hit/i });
+    const hitBefore = await hitButton().textContent();
+
     await openPointsTab(page, 'en');
-
-    const panel = effectivePanel(page, 'en');
-    const hitBtn = panel.getByRole('button', { name: /Show breakdown of Hit/i });
-    const hitBefore = await hitBtn.textContent();
-
     const stage = pointsStage(page, 'en');
     const attackStepper = stage.locator('tr').filter({ hasText: /^Attack/ });
     await attackStepper.getByRole('button', { name: /\+/ }).click();
 
-    const hitAfter = await hitBtn.textContent();
+    await openCombatTab(page, 'en');
+    const hitAfter = await hitButton().textContent();
     expect(hitAfter).not.toBe(hitBefore);
   });
 
@@ -197,7 +217,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     });
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await openPointsTab(page, 'en');
+    await openCombatTab(page, 'en');
 
     const panel = effectivePanel(page, 'en');
     const attackBtn = panel.getByRole('button', { name: /Show breakdown of Attack/i });
@@ -264,7 +284,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     await seedLocalStorage(page, seeded('pt'));
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await page.getByRole('tab', { name: /^pontos$/i }).click();
+    await openCombatTab(page, 'pt');
     const ptPanel = effectivePanel(page, 'pt');
     await ptPanel.getByRole('button', { name: /Ver detalhamento de Chance de Crítico/i }).click();
     await expect(ptPanel.getByText(/^Herói$/i).first()).toBeVisible();
@@ -275,7 +295,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     await seedLocalStorage(page, seeded('en'));
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await openPointsTab(page, 'en');
+    await openCombatTab(page, 'en');
     const enPanel = effectivePanel(page, 'en');
     await enPanel.getByRole('button', { name: /Show breakdown of Crit Chance/i }).click();
     await expect(enPanel.getByText(/^Hero$/i).first()).toBeVisible();
@@ -347,6 +367,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     // under its cap, and Luck has no cap at all), so `.last()` would read that instead.
     await expect(luckRow.locator('td').nth(-2)).toHaveText('33.00%');
 
+    await openCombatTab(page, 'en');
     const panel = effectivePanel(page, 'en');
     await expect(panel.getByRole('button', { name: /Show breakdown of Luck/i })).toHaveCount(0);
   });
@@ -355,7 +376,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
-    await openPointsTab(page, 'en');
+    await openCombatTab(page, 'en');
 
     const panel = effectivePanel(page, 'en');
     const hitBtn = panel.getByRole('button', { name: /Show breakdown of Hit/i });

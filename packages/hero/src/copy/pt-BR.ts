@@ -86,6 +86,14 @@ export const heroPtBR: HeroCopy = {
   heroDetailCombatCdrCeilingReached: "Mais redução de recarga não compra nada.",
   heroDetailCombatNoProps: "Não há props nesta fase.",
 
+  heroDetailPhaseTitle: "Fase a que estes números se referem",
+  heroDetailPhaseLabel: "Fase",
+  heroDetailPhaseAria: "Em qual fase estes números são calculados",
+  heroDetailPhaseUseCurrent: "Voltar para a sua fase atual",
+  heroDetailPhaseSearchPlaceholder: "Difícil, Normal 2-1 ou 151",
+  heroDetailPhaseNoMatch: "Nenhuma fase corresponde.",
+  heroDetailPhaseMoreMatches: "Mostrando {shown} de {matched} — continue digitando para filtrar.",
+
   heroDetailSheetTitle: "Ficha de atributos",
   heroDetailPointsTitle: "Pontos gastos",
   heroDetailBreakdownTitle: "Detalhe por atributo",
