@@ -95,6 +95,9 @@ importers:
       '@bombfarm/tap-runtime':
         specifier: workspace:*
         version: link:../../packages/tap-runtime
+      '@bombfarm/team-plan':
+        specifier: workspace:*
+        version: link:../../packages/team-plan
       '@bombfarm/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -184,6 +187,9 @@ importers:
       '@bombfarm/pricing':
         specifier: workspace:*
         version: link:../../packages/pricing
+      '@bombfarm/team-plan':
+        specifier: workspace:*
+        version: link:../../packages/team-plan
       '@bombfarm/ui':
         specifier: workspace:*
         version: link:../../packages/ui

@@ -16,6 +16,7 @@ on:
       - 'packages/game-art/**'
       - 'packages/hero/**'
       - 'packages/pricing/**'
+      - 'packages/team-plan/**'
       - 'packages/ui/**'
       - 'docs/**'
       - 'pnpm-lock.yaml'
@@ -59,6 +60,7 @@ jobs:
               - 'packages/game-art/**'
               - 'packages/hero/**'
               - 'packages/pricing/**'
+              - 'packages/team-plan/**'
               - 'packages/ui/**'
               - 'docs/**'
               - 'pnpm-lock.yaml'
@@ -109,15 +111,17 @@ jobs:
       - name: Build domain (its own packaging test needs dist)
         run: pnpm --filter @bombfarm/domain build
 
-      - name: Typecheck web + domain + ui + game-art + farm + hero
+      - name: Typecheck web + domain + ui + game-art + farm + hero + team-plan
         run: >
           pnpm --filter @bombfarm/domain --filter @bombfarm/ui --filter @bombfarm/game-art
-          --filter @bombfarm/farm --filter @bombfarm/hero --filter @bombfarm/web typecheck
+          --filter @bombfarm/farm --filter @bombfarm/hero --filter @bombfarm/team-plan
+          --filter @bombfarm/web typecheck
 
-      - name: Lint web + domain + ui + game-art + farm + hero
+      - name: Lint web + domain + ui + game-art + farm + hero + team-plan
         run: >
           pnpm --filter @bombfarm/domain --filter @bombfarm/ui --filter @bombfarm/game-art
-          --filter @bombfarm/farm --filter @bombfarm/hero --filter @bombfarm/web lint
+          --filter @bombfarm/farm --filter @bombfarm/hero --filter @bombfarm/team-plan
+          --filter @bombfarm/web lint
 
       # Domain tests need no build output, so they stay ahead of the (slow) build to keep
       # fast feedback on the most common failures.

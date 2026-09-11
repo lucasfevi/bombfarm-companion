@@ -29,6 +29,8 @@
       "@bombfarm/farm/*": ["../../packages/farm/src/*"],
       "@bombfarm/hero": ["../../packages/hero/src/index.ts"],
       "@bombfarm/hero/*": ["../../packages/hero/src/*"],
+      "@bombfarm/team-plan": ["../../packages/team-plan/src/index.ts"],
+      "@bombfarm/team-plan/*": ["../../packages/team-plan/src/*"],
       "@bombfarm/contracts": ["../../packages/contracts/src/index.ts"]
     }
   },

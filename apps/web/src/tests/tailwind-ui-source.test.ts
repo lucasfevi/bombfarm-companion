@@ -49,7 +49,7 @@ const APP_STYLESHEETS = [
   { app: 'apps/desktop', path: resolve(here, '../../../desktop/renderer/app/globals.css') },
 ] as const;
 
-const SOURCED_PACKAGES = ['ui', 'game-art', 'farm', 'hero'] as const;
+const SOURCED_PACKAGES = ['ui', 'game-art', 'farm', 'hero', 'account', 'team-plan'] as const;
 
 function sourceGlobFor(pkg: string): RegExp {
   return new RegExp(String.raw`@source\s+['"][^'"]*packages/${pkg}/src/\*\*/\*\.\{ts,tsx\}['"]`);
