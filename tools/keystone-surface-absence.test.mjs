@@ -179,7 +179,7 @@ const CRIT_DMG_MULT_MAP = {
   // -5 (line number only): the roster rail, board and toolbar moved into `@bombfarm/hero` so the
   // web planner draws the same ones, which took their definitions and two imports out of this
   // file. Match itself is unchanged in count and in kind.
-  'apps/desktop/renderer/app/heroes/heroes-view.tsx': [646],
+  'apps/desktop/renderer/app/heroes/heroes-view.tsx': [650],
   // The shared roster builder's own account fixture, same kind as the two farm entries below: a
   // raw save-shaped skills block handed to the parser, not a field the app reads.
   'apps/desktop/renderer/lib/account/account-roster.test.ts': [39],

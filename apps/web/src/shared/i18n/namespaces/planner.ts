@@ -33,7 +33,7 @@ export const en = {
   // "Enabled"/"Disabled" is this app's own word for the same hero flag the desktop calls active,
   // so the filter that keeps only those heroes says Enabled here and Active there.
   heroesRosterTitle: "Your roster",
-  heroesRosterListLabel: "Your heroes, best birth roll first",
+  heroesRosterListLabel: "Your heroes",
   heroesRollQualityLabel: "Roll",
   heroesViewLabel: "Layout",
   heroesViewCards: "Cards",
@@ -85,7 +85,7 @@ export const pt: typeof en = {
   heroStripStatus: "Status",
   rosterColStatus: "Status",
   heroesRosterTitle: "Seu elenco",
-  heroesRosterListLabel: "Seus heróis, do melhor sorteio de nascimento para o pior",
+  heroesRosterListLabel: "Seus heróis",
   heroesRollQualityLabel: "Sorteio",
   heroesViewLabel: "Layout",
   heroesViewCards: "Cartões",

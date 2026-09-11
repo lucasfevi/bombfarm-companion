@@ -115,9 +115,15 @@ describe('sortRosterRows', () => {
     expect(rows.map((r) => r.id)).toEqual(['b', 'a']);
   });
 
-  it('defaults to best birth roll first, which is the order the rail already uses', () => {
-    const rows = [row('low', { name: 'L' }, 30), row('high', { name: 'H' }, 70)];
-    expect(sortRosterRows(rows, DEFAULT_ROSTER_BOARD_SORT).map((r) => r.id)).toEqual(['high', 'low']);
+  it('defaults to strongest first, whatever the rows arrived sorted by', () => {
+    const rows = [
+      row('rolled', { name: 'R', power: 1_000 }, 90),
+      row('strong', { name: 'S', power: 50_000 }, 20),
+    ];
+    expect(sortRosterRows(rows, DEFAULT_ROSTER_BOARD_SORT).map((r) => r.id)).toEqual([
+      'strong',
+      'rolled',
+    ]);
   });
 });
 
