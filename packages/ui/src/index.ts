@@ -205,6 +205,9 @@ export { barRecipe, type BarVariant } from './bar.recipe';
 export {
   metricScoreboardValueRecipe,
   metricScoreboardDeltaRecipe,
+  metricScoreboardCellClass,
+  metricScoreboardLabelClass,
+  metricScoreboardRowClass,
 } from './metric-scoreboard.recipe';
 export { maskRevealStyle } from './mask-reveal';
 // `statListMutedRowClass` and the phase-board/panel class constants beside it are on the root, not

@@ -10,16 +10,17 @@
 import { describe, expect, it } from 'vitest';
 import { searchSelectMatches, type SearchSelectOption } from '@bombfarm/ui';
 import { WIKI_PHASE_LINES, PHASE_NAMES } from '@bombfarm/domain/phase-wiki';
-import { STRINGS, type Lang } from '@/shared/i18n';
+import type { Lang } from '@bombfarm/hero/copy';
+import { teamPlanCopyFor } from '../copy';
 import {
   phaseFromOptionValue,
   phaseOptionValue,
   TEAM_PLAN_PHASE_NONE,
   teamPlanPhaseOptions,
-} from '@/features/team-plan/model/phase-options';
+} from './phase-options';
 
 function optionsFor(lang: Lang): SearchSelectOption[] {
-  return teamPlanPhaseOptions(lang, STRINGS[lang].teamPlanPhaseNone);
+  return teamPlanPhaseOptions(lang, teamPlanCopyFor(lang).teamPlanPhaseNone);
 }
 
 function matches(lang: Lang, query: string): SearchSelectOption[] {
@@ -30,7 +31,10 @@ describe('team plan phase options', () => {
   it('offers every wiki phase, plus None as a real option ahead of them', () => {
     const options = optionsFor('en');
     expect(options).toHaveLength(WIKI_PHASE_LINES.length + 1);
-    expect(options[0]).toEqual({ value: TEAM_PLAN_PHASE_NONE, label: STRINGS.en.teamPlanPhaseNone });
+    expect(options[0]).toEqual({
+      value: TEAM_PLAN_PHASE_NONE,
+      label: teamPlanCopyFor('en').teamPlanPhaseNone,
+    });
     expect(options[1].label).toBe('Easy 1-1 (#1)');
   });
 

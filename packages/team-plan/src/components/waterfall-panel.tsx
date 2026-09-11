@@ -2,19 +2,17 @@
 
 import type { ReactNode } from 'react';
 import type { TeamPlan as DomainTeamPlan, WaterfallStep } from '@bombfarm/domain/team-plan/types';
-import { Panel, Tooltip, cn } from '@bombfarm/ui';
-import { panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
-import type { Strings, Lang } from '@/shared/i18n';
-import { sub } from '@/shared/i18n';
-import { formatCompactNumber, formatNumber } from '@/shared/lib/format-number';
-import type { TeamPlanObjectiveCopy } from '@/features/team-plan/model/objective-copy';
+import { Panel, Tooltip, cn, formatCompactNumber, formatNumber, panelHClass, panelTitleClass } from '@bombfarm/ui';
+import { sub, type Lang } from '@bombfarm/hero/copy';
+import type { TeamPlanCopy } from '../copy';
+import type { TeamPlanObjectiveCopy } from '../model/objective-copy';
 import { AbbreviatedNumber } from './abbreviated-number';
 import { StepCell } from './step-cell';
 
-const stepLabels: Record<WaterfallStep['id'], (strings: Strings) => string> = {
-  today: (strings) => strings.teamPlanStepToday,
-  gear: (strings) => strings.teamPlanStepGear,
-  respec: (strings) => strings.teamPlanStepRespec,
+const stepLabels: Record<WaterfallStep['id'], (t: TeamPlanCopy) => string> = {
+  today: (t) => t.teamPlanStepToday,
+  gear: (t) => t.teamPlanStepGear,
+  respec: (t) => t.teamPlanStepRespec,
 };
 
 function withDeltaPlaceholder(template: string, delta: ReactNode) {
@@ -34,7 +32,7 @@ export function WaterfallPanel({
   plan,
   copy,
 }: {
-  t: Strings;
+  t: TeamPlanCopy;
   lang: Lang;
   plan: DomainTeamPlan;
   copy: TeamPlanObjectiveCopy;
@@ -98,9 +96,10 @@ export function WaterfallPanel({
                 <StepCell
                   key={step.id}
                   label={stepLabels[step.id](t)}
-                  value={<AbbreviatedNumber value={step.objective} lang={lang} />}
-                  delta={showDelta ? <AbbreviatedNumber value={step.delta} lang={lang} signed /> : null}
+                  objective={step.objective}
+                  delta={showDelta ? step.delta : null}
                   deltaTone={step.delta < 0 ? 'down' : 'up'}
+                  lang={lang}
                 />
               );
             })}

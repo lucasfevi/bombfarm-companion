@@ -3,11 +3,10 @@
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
 import { mayMoveGear, mayRespendPoints } from '@bombfarm/domain/team-plan';
 import { abilityName } from '@bombfarm/domain/game-labels';
-import { Panel } from '@bombfarm/ui';
-import { panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
-import type { Lang, Strings } from '@/shared/i18n';
-import { sub } from '@/shared/i18n';
-import type { TeamPlanObjectiveCopy } from '@/features/team-plan/model/objective-copy';
+import { Panel, panelHClass, panelTitleClass } from '@bombfarm/ui';
+import { sub, type Lang } from '@bombfarm/hero/copy';
+import type { TeamPlanCopy } from '../copy';
+import type { TeamPlanObjectiveCopy } from '../model/objective-copy';
 
 export function PlanDisclosures({
   t,
@@ -16,7 +15,7 @@ export function PlanDisclosures({
   requestedForgeFloor,
   copy,
 }: {
-  t: Strings;
+  t: TeamPlanCopy;
   lang: Lang;
   plan: TeamPlan;
   requestedForgeFloor: number;

@@ -74,6 +74,10 @@ import * as GameArt from '@bombfarm/game-art';
 // `accordion.recipe` subpath, beside `accordionRecipe` which was already here. They space a
 // stack of accordion rows and pad an opened one's body — the per-statistic breakdown the desktop
 // Heroes screen now draws needs both, and that app imports the barrel, not deep paths.
+// metricScoreboardCellClass / metricScoreboardLabelClass / metricScoreboardRowClass
+// (2026-09-11): promoted from the `metric-scoreboard.recipe` subpath, beside the two recipes
+// already here, for the same reason as every promotion above. They lay out a waterfall step's
+// cell, and the optimizer screen that draws them moved into `@bombfarm/team-plan`.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -186,7 +190,10 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'heroAbilTitleClass',
   'initialToastQueueState',
   'maskRevealStyle',
+  'metricScoreboardCellClass',
   'metricScoreboardDeltaRecipe',
+  'metricScoreboardLabelClass',
+  'metricScoreboardRowClass',
   'metricScoreboardValueRecipe',
   'motionTokens',
   'mutedClass',

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
 import type { TeamPlan, TeamPlanPerHeroRow } from '@bombfarm/domain/team-plan/types';
-import { pointsResetView } from '@/features/team-plan/model/points-reset-view';
+import { pointsResetView } from './points-reset-view';
 
 const ZERO_STATS = {
   attack: 0,

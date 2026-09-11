@@ -1,5 +1,5 @@
 import type { TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
-import type { Strings } from '@/shared/i18n';
+import type { TeamPlanScreenCopy } from '../copy';
 
 /**
  * Every string on this page whose wording depends on what the search was scoring.
@@ -28,7 +28,7 @@ export type TeamPlanObjectiveCopy = {
 };
 
 export function teamPlanObjectiveCopy(
-  strings: Strings,
+  strings: TeamPlanScreenCopy,
   objective: TeamPlanObjective,
 ): TeamPlanObjectiveCopy {
   return objective === 'farm'

@@ -15,15 +15,15 @@ import {
 } from '@/shared/stores';
 import { resolveHeroScope } from '@/shared/stores/team-plan/types';
 import { useTeamPlanRunner } from '@bombfarm/team-plan/runner';
-import { teamPlanObjectiveCopy } from '@/features/team-plan/model/objective-copy';
-import { TeamPlanEmptyPanel } from './team-plan-empty';
+import { teamPlanObjectiveCopy } from '@bombfarm/team-plan/model';
+import { TeamPlanEmptyPanel } from '@bombfarm/team-plan/components/team-plan-empty-panel';
+import { TeamPlanRunSummary } from '@bombfarm/team-plan/components/team-plan-run-summary';
+import { TeamPlanOptimizingModal } from '@bombfarm/team-plan/components/team-plan-optimizing-modal';
+import { WaterfallPanel } from '@bombfarm/team-plan/components/waterfall-panel';
+import { PlanDisclosures } from '@bombfarm/team-plan/components/plan-disclosures';
 import { TeamPlanToolbar } from './team-plan-toolbar';
-import { TeamPlanRunSummary } from './team-plan-run-summary';
-import { TeamPlanOptimizingModal } from './team-plan-optimizing-modal';
 import { ScopeList } from './scope-list';
-import { WaterfallPanel } from './waterfall-panel';
 import { HeroDeltaTable } from './hero-delta-table';
-import { PlanDisclosures } from './plan-disclosures';
 
 export function TeamPlanPage({
   t,
@@ -101,15 +101,13 @@ export function TeamPlanPage({
           <TeamPlanEmptyPanel
             title={t.teamPlanEmptyNoRosterTitle}
             body={t.teamPlanEmptyNoRosterBody}
-            cta={t.teamPlanImportCta}
-            onImport={onImport}
+            action={{ label: t.teamPlanImportCta, onPress: onImport }}
           />
         ) : !hasInventory ? (
           <TeamPlanEmptyPanel
             title={t.teamPlanEmptyNoInventoryTitle}
             body={t.teamPlanEmptyNoInventoryBody}
-            cta={t.teamPlanImportCta}
-            onImport={onImport}
+            action={{ label: t.teamPlanImportCta, onPress: onImport }}
           />
         ) : allLeaveAlone ? (
           <div className="flex flex-col gap-4">
@@ -117,8 +115,7 @@ export function TeamPlanPage({
             <TeamPlanEmptyPanel
               title={t.teamPlanEmptyAllLeaveAloneTitle}
               body={t.teamPlanEmptyAllLeaveAloneBody}
-              cta={t.teamPlanImportCta}
-              onImport={onImport}
+              action={{ label: t.teamPlanImportCta, onPress: onImport }}
             />
           </div>
         ) : (

@@ -17,7 +17,7 @@ import {
   selectTeamPlanObjective,
   selectTeamPlanFarmUnavailable,
 } from '@/shared/stores';
-import { teamPlanObjectiveCopy } from '@/features/team-plan/model/objective-copy';
+import { teamPlanObjectiveCopy } from '@bombfarm/team-plan/model';
 import { AllowedChangesField } from './allowed-changes-field';
 import { ForgeFloorField } from './forge-floor-field';
 import { IgnoreCrowdingField } from './ignore-crowding-field';

@@ -5,19 +5,14 @@ import { Accordion, Panel, Tooltip } from '@bombfarm/ui';
 import { panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui/panel-field.recipe';
 import { accordionStackClass } from '@bombfarm/ui/accordion.recipe';
 import type { Lang, Strings } from '@/shared/i18n';
-import type { TeamPlanObjectiveCopy } from '@/features/team-plan/model/objective-copy';
+import type { TeamPlanObjectiveCopy } from '@bombfarm/team-plan/model';
 import { sub } from '@/shared/i18n';
 import { usePlannerStore, selectHeroes, selectInventoryItems } from '@/shared/stores';
 import { shortHeroRecordId } from '@/shared/lib/hero-identity';
-import {
-  buildGearFlowRows,
-  groupGearFlowRows,
-  removedRowsByOriginHero,
-} from '@/features/team-plan/model/gear-flow-rows';
-import { pointsResetView } from '@/features/team-plan/model/points-reset-view';
+import { buildGearFlowRows, groupGearFlowRows, removedRowsByOriginHero, pointsResetView } from '@bombfarm/team-plan/model';
 import { HeroIdentityChip } from '@/shared/game-art';
-import { HeroDetailPanel } from './hero-detail-panel';
-import { AbbreviatedNumber } from './abbreviated-number';
+import { HeroDetailPanel } from '@bombfarm/team-plan/components/hero-detail-panel';
+import { AbbreviatedNumber } from '@bombfarm/team-plan/components/abbreviated-number';
 
 const metricLabelClass = 'text-[9px] font-bold leading-none tracking-[0.06em] text-muted uppercase';
 const metricValueClass = 'font-mono text-[13px] font-semibold leading-none tabular-nums';

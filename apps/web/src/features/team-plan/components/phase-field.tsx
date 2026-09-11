@@ -3,15 +3,11 @@
 import { useMemo } from 'react';
 import { SearchSelect } from '@bombfarm/ui';
 import type { Strings, Lang } from '@/shared/i18n';
-import type { TeamPlanObjectiveCopy } from '@/features/team-plan/model/objective-copy';
+import type { TeamPlanObjectiveCopy } from '@bombfarm/team-plan/model';
 import { sub } from '@/shared/i18n';
 import { usePlannerStore, selectTeamPlanTargetPhase } from '@/shared/stores';
 import { formatNumber } from '@/shared/lib/format-number';
-import {
-  phaseFromOptionValue,
-  phaseOptionValue,
-  teamPlanPhaseOptions,
-} from '@/features/team-plan/model/phase-options';
+import { phaseFromOptionValue, phaseOptionValue, teamPlanPhaseOptions } from '@bombfarm/team-plan/model';
 
 const fieldLabelClass =
   'flex min-w-0 flex-col gap-[3px] text-[11px] tracking-[0.03em] text-muted uppercase';

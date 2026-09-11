@@ -1,19 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button, Dialog } from '@bombfarm/ui';
-import { dialogDescClass } from '@bombfarm/ui/panel-field.recipe';
-import type { Strings } from '@/shared/i18n';
-import { sub } from '@/shared/i18n';
+import { Button, Dialog, dialogDescClass } from '@bombfarm/ui';
+import { sub } from '@bombfarm/hero/copy';
+import type { TeamPlanCopy } from '../copy';
+import { formatElapsed } from '../model/optimizing-elapsed';
 import { Hero6BombActivationSprite } from './hero6-bomb-activation-sprite';
-
-function formatElapsed(elapsedMs: number): string {
-  const totalSec = Math.floor(elapsedMs / 1000);
-  const min = Math.floor(totalSec / 60);
-  const sec = totalSec % 60;
-  if (min <= 0) return `${sec}s`;
-  return `${min}:${String(sec).padStart(2, '0')}`;
-}
 
 export function TeamPlanOptimizingModal({
   open,
@@ -21,7 +13,7 @@ export function TeamPlanOptimizingModal({
   onCancel,
 }: {
   open: boolean;
-  t: Strings;
+  t: TeamPlanCopy;
   onCancel: () => void;
 }) {
   const [elapsedMs, setElapsedMs] = useState(0);

@@ -1,7 +1,7 @@
 import { WIKI_PHASE_LINES } from '@bombfarm/domain/phase-wiki';
 import type { SearchSelectOption } from '@bombfarm/ui';
-import { formatPhaseLabel } from '@/shared/lib/phase-label';
-import type { Lang } from '@/shared/i18n';
+import { formatPhaseLabel } from '@bombfarm/farm';
+import type { Lang } from '@bombfarm/hero/copy';
 
 /**
  * "None" is a real option with a real value, not the absence of one: a picker whose only way back

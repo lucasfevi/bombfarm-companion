@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import type { TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
 import { STRINGS, type Lang } from '@/shared/i18n';
 import * as objectiveNamespace from '@/shared/i18n/namespaces/team-plan-objective';
-import { teamPlanObjectiveCopy } from '@/features/team-plan/model/objective-copy';
+import { teamPlanObjectiveCopy } from '@bombfarm/team-plan/model';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
 const LANGS: Lang[] = ['en', 'pt'];
@@ -110,10 +110,7 @@ describe('team plan objective copy', () => {
     const suffixed = Object.keys(objectiveNamespace.en).filter((key) => /(Dps|Farm)$/.test(key));
     expect(suffixed.length).toBeGreaterThanOrEqual(18);
 
-    const allowed = [
-      join('shared', 'i18n', 'namespaces', 'team-plan-objective.ts'),
-      join('features', 'team-plan', 'model', 'objective-copy.ts'),
-    ];
+    const allowed = [join('shared', 'i18n', 'namespaces', 'team-plan-objective.ts')];
     const offenders: string[] = [];
     for (const file of sourceFiles(join(WEB_PACKAGE_ROOT, 'src'))) {
       if (allowed.some((suffix) => file.endsWith(suffix))) continue;

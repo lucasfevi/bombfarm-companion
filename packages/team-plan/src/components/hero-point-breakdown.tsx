@@ -4,7 +4,8 @@ import { SHEET_PANEL_KEYS } from '@bombfarm/domain/planner-constants';
 import { pointsExceedLevel, spentPointsOf } from '@bombfarm/domain/point-inference';
 import type { PointAlloc } from '@bombfarm/domain/gear';
 import { DeltaTable, type DeltaTableRow } from '@bombfarm/ui';
-import { sub, type Strings } from '@/shared/i18n';
+import { sub, type StatPanelCopy } from '@bombfarm/hero/copy';
+import type { TeamPlanCopy } from '../copy';
 
 export function HeroPointBreakdown({
   t,
@@ -12,7 +13,7 @@ export function HeroPointBreakdown({
   pointsAfter,
   level,
 }: {
-  t: Strings;
+  t: StatPanelCopy & TeamPlanCopy;
   pointsBefore: PointAlloc;
   pointsAfter: PointAlloc;
   /** The hero's own level — the ceiling the BEFORE column is checked against. */

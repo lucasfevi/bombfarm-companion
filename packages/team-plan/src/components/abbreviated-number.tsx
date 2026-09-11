@@ -1,8 +1,8 @@
 'use client';
 
-import { Tooltip, cn } from '@bombfarm/ui';
-import { rosterIconTooltipTriggerClass } from '@/shared/game-art';
-import { formatCompactNumber, formatNumber, type Lang } from '@/shared/lib/format-number';
+import { Tooltip, cn, formatCompactNumber, formatNumber } from '@bombfarm/ui';
+import { rosterIconTooltipTriggerClass } from '@bombfarm/game-art';
+import type { Lang } from '@bombfarm/hero/copy';
 
 /**
  * A `formatCompactNumber` value whose exact figure shows in a themed tooltip on hover/focus.

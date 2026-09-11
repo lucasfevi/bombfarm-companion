@@ -2,8 +2,8 @@
 
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { cn } from '@bombfarm/ui';
-import { rarityTextClass } from '@/shared/game-art';
-import type { HeroRecord } from '@/shared/lib/storage';
+import { rarityTextClass } from '@bombfarm/game-art';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { MAX_STARS } from '@bombfarm/domain/gear';
 
 /** `{rarityColor}Name ★★★ Lv {level}` — condensed hero identity for a card's "From" line. */

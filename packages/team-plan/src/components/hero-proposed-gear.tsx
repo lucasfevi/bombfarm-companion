@@ -1,16 +1,12 @@
 'use client';
 
 import { formatItemRosterTooltip } from '@bombfarm/domain/game-labels';
-import { cn, Tooltip } from '@bombfarm/ui';
-import { mutedClass } from '@bombfarm/ui/panel-field.recipe';
-import { ItemIcon, rosterIconTooltipTriggerClass } from '@/shared/game-art';
-import type { Lang, Strings } from '@/shared/i18n';
-import { sub } from '@/shared/i18n';
-import type { HeroRecord } from '@/shared/lib/storage';
-import {
-  isKeptExistingGearFlowRow,
-  type GearFlowRow,
-} from '@/features/team-plan/model/gear-flow-rows';
+import { cn, Tooltip, mutedClass } from '@bombfarm/ui';
+import { ItemIcon, rosterIconTooltipTriggerClass } from '@bombfarm/game-art';
+import { sub, type Lang, type RosterCopy } from '@bombfarm/hero/copy';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import { isKeptExistingGearFlowRow, type GearFlowRow } from '../model/gear-flow-rows';
+import type { TeamPlanCopy } from '../copy';
 import { HeroOriginTag } from './hero-origin-tag';
 
 /**
@@ -37,7 +33,7 @@ export function HeroProposedGear({
   heroByScopeKey,
   heroNameFallback,
 }: {
-  t: Strings;
+  t: RosterCopy & TeamPlanCopy;
   lang: Lang;
   gear: HeroGearFlow;
   heroByScopeKey: Map<string, HeroRecord>;

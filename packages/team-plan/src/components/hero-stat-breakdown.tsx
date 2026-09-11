@@ -5,7 +5,10 @@ import { SHEET_PANEL_KEYS } from '@bombfarm/domain/planner-constants';
 import type { TeamPlanHeroStats } from '@bombfarm/domain/team-plan/types';
 import { sheetStatUnit } from '@bombfarm/hero/model';
 import { DeltaTable, type DeltaTableRow } from '@bombfarm/ui';
-import type { Strings } from '@/shared/i18n';
+import type { StatPanelCopy } from '@bombfarm/hero/copy';
+import type { TeamPlanCopy } from '../copy';
+
+type Copy = StatPanelCopy & TeamPlanCopy;
 
 /** `HeroSheet` fields shown in the Combat grid, in display order (no Luck — see below). */
 const BREAKDOWN_STAT_KEYS = SHEET_PANEL_KEYS.filter(
@@ -25,7 +28,7 @@ const SHEET_ONLY_STAT_KEYS = SHEET_PANEL_KEYS as readonly (keyof TeamPlanHeroSta
 const subheadingClass = 'm-0 mb-1 text-[9px] font-bold leading-none tracking-[0.06em] text-muted uppercase';
 
 function statRows(
-  strings: Strings,
+  t: Copy,
   before: TeamPlanHeroStats,
   after: TeamPlanHeroStats,
   keys: readonly (keyof TeamPlanHeroStats)[],
@@ -34,7 +37,7 @@ function statRows(
     id: key,
     // The unit rides on the label here, not on the figure: `DeltaTable` formats its own numbers
     // from one shared decimals setting and has no per-row unit to hand them.
-    label: `${strings.statShort[key]}${sheetStatUnit(key) === '' ? '' : ` ${sheetStatUnit(key)}`}`,
+    label: `${t.statShort[key]}${sheetStatUnit(key) === '' ? '' : ` ${sheetStatUnit(key)}`}`,
     now: before[key],
     target: after[key],
   }));
@@ -69,7 +72,7 @@ function capSheetStats(stats: TeamPlanHeroStats): TeamPlanHeroStats {
  * (combat-effective, uncapped — same basis `predictHitDamage`'s `hit` was computed against).
  */
 function hitRows(
-  strings: Strings,
+  t: Copy,
   hitBefore: number,
   hitAfter: number,
   combatBefore: TeamPlanHeroStats,
@@ -78,13 +81,13 @@ function hitRows(
   return [
     {
       id: 'hitNormal',
-      label: strings.teamPlanHeroHitNormal,
+      label: t.teamPlanHeroHitNormal,
       now: hitBefore,
       target: hitAfter,
     },
     {
       id: 'hitCritical',
-      label: strings.teamPlanHeroHitCritical,
+      label: t.teamPlanHeroHitCritical,
       now: hitBefore * (1 + combatBefore.critDmg / 100),
       target: hitAfter * (1 + combatAfter.critDmg / 100),
     },
@@ -100,7 +103,7 @@ export function HeroStatBreakdown({
   hitBefore,
   hitAfter,
 }: {
-  t: Strings;
+  t: Copy;
   sheetBefore: TeamPlanHeroStats;
   sheetAfter: TeamPlanHeroStats;
   combatBefore: TeamPlanHeroStats;

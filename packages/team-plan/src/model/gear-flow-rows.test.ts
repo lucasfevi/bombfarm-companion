@@ -6,7 +6,7 @@ import {
   groupGearFlowRows,
   isKeptExistingGearFlowRow,
   removedRowsByOriginHero,
-} from '@/features/team-plan/model/gear-flow-rows';
+} from './gear-flow-rows';
 
 function item(partial: Partial<InventoryItem> & Pick<InventoryItem, 'id' | 'defId'>): InventoryItem {
   return {

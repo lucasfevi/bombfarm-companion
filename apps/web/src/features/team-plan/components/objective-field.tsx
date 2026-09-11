@@ -4,7 +4,7 @@ import { Select } from '@bombfarm/ui';
 import type { Strings } from '@/shared/i18n';
 import { usePlannerStore, selectTeamPlanObjective } from '@/shared/stores';
 import { isTeamPlanObjective } from '@/shared/stores/team-plan/types';
-import type { TeamPlanObjectiveCopy } from '@/features/team-plan/model/objective-copy';
+import type { TeamPlanObjectiveCopy } from '@bombfarm/team-plan/model';
 
 const fieldLabelClass =
   'flex min-w-0 flex-col gap-[3px] text-[11px] tracking-[0.03em] text-muted uppercase';

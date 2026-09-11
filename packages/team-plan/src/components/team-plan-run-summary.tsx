@@ -1,52 +1,12 @@
 'use client';
 
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
-import { Panel } from '@bombfarm/ui';
-import { mutedClass, panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
-import type { Strings, Lang } from '@/shared/i18n';
-import { parseEmphasis, sub } from '@/shared/i18n';
-import { formatNumber } from '@/shared/lib/format-number';
-import { formatPhaseLabel } from '@/shared/lib/phase-label';
-import type { TeamPlanObjectiveCopy } from '@/features/team-plan/model/objective-copy';
-
-function formatElapsedSeconds(elapsedMs: number, lang: Lang): string {
-  return formatNumber(elapsedMs / 1000, lang, 1);
-}
-
-function seedStartLabel(strings: Strings, seedUsed: string): string {
-  switch (seedUsed) {
-    case 'current':
-      return strings.teamPlanRunSeedCurrent;
-    case 'greedyHeroDps':
-      return strings.teamPlanRunSeedGreedyHeroDps;
-    case 'greedySlotValue':
-      return strings.teamPlanRunSeedGreedySlotValue;
-    case 'bestItemFirst':
-      return strings.teamPlanRunSeedBestItemFirst;
-    default:
-      return strings.teamPlanRunSeedFallback;
-  }
-}
-
-/**
- * What the plan was scored against, in one sentence: the phase, and where that phase came from.
- * The automatic case has to say so — a figure the player did not ask for at a phase they did not
- * pick reads as a claim about their own account otherwise.
- */
-function scoredPhaseHint(strings: Strings, lang: Lang, plan: TeamPlan): string | null {
-  if (plan.scoredPhase == null) {
-    return plan.scoredPhaseSource === 'searched' ? strings.teamPlanScoredPhaseNoneFeasible : null;
-  }
-  const phase = formatPhaseLabel(plan.scoredPhase, lang);
-  if (plan.scoredPhaseInfeasible) return sub(strings.teamPlanScoredPhaseUnreachable, { phase });
-  if (plan.scoredPhaseSource === 'searched') {
-    return sub(strings.teamPlanScoredPhaseSearched, { phase });
-  }
-  if (plan.scoredPhaseSource === 'account') {
-    return sub(strings.teamPlanScoredPhaseAccount, { phase });
-  }
-  return sub(strings.teamPlanScoredPhaseChosen, { phase });
-}
+import { Panel, formatNumber, mutedClass, panelHClass, panelTitleClass } from '@bombfarm/ui';
+import { sub, type Lang } from '@bombfarm/hero/copy';
+import type { TeamPlanCopy } from '../copy';
+import { parseEmphasis } from '../copy';
+import type { TeamPlanObjectiveCopy } from '../model/objective-copy';
+import { formatElapsedSeconds, scoredPhaseHint, seedStartLabel } from '../model/run-summary-copy';
 
 function emphasizedLine(text: string) {
   return parseEmphasis(text).map((part, index) =>
@@ -67,7 +27,7 @@ export function TeamPlanRunSummary({
   ranOnMainThread,
   copy,
 }: {
-  t: Strings;
+  t: TeamPlanCopy;
   lang: Lang;
   plan: TeamPlan;
   ranOnMainThread: boolean;
