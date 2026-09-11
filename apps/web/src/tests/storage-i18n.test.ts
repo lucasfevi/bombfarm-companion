@@ -141,10 +141,10 @@ describe('planner tabs IA (PTI-*)', () => {
 describe('effective stats panel chrome (EST-*)', () => {
   it('effectiveTip clarifies post-pipeline sources in EN and PT', () => {
     expect(STRINGS.en.effectiveTip).toBe(
-      'Includes gear, points, skill tree, abilities, and team buffs.',
+      'Includes gear, points, skill tree, abilities, and team auras.',
     );
     expect(STRINGS.pt.effectiveTip).toBe(
-      'Inclui equipamento, pontos, árvore, habilidades e buffs de time.',
+      'Inclui equipamento, pontos, árvore, habilidades e auras de time.',
     );
   });
 
@@ -311,15 +311,25 @@ describe('explain-tab copy (advice-column IA alignment)', () => {
     expect(explainJoined('pt')).not.toMatch(/\bContexto\b/);
   });
 
-  it('points farm phase at Phases page and Account for House', () => {
+  it('points farm phase at the Farm page, team auras at the Combat tab, and Account for House', () => {
     expect(STRINGS.en.explainSections[0].p[1]).toMatch(/Account shares House/);
-    expect(STRINGS.en.explainSections[0].p[1]).toMatch(/Phases page/);
+    expect(STRINGS.en.explainSections[0].p[1]).toMatch(/Farm page/);
+    expect(STRINGS.en.explainSections[0].p[1]).toMatch(/Combat tab/);
     expect(STRINGS.en.explainSections[0].p[1]).toMatch(/Effective stats/);
     expect(STRINGS.en.explainSections[0].p[1]).toMatch(/level power/);
     expect(STRINGS.pt.explainSections[0].p[1]).toMatch(/A Conta compartilha Casa/);
-    expect(STRINGS.pt.explainSections[0].p[1]).toMatch(/Fases/);
+    expect(STRINGS.pt.explainSections[0].p[1]).toMatch(/página Farm/);
+    expect(STRINGS.pt.explainSections[0].p[1]).toMatch(/aba Combate/);
     expect(STRINGS.pt.explainSections[0].p[1]).toMatch(/Atributos efetivos/);
     expect(STRINGS.pt.explainSections[0].p[1]).toMatch(/poder de nível/);
+  });
+
+  it('never sends the reader to the retired Account "Team buffs" control or "Use as farm phase" button', () => {
+    for (const lang of ['en', 'pt'] as const) {
+      const everyString = JSON.stringify(STRINGS[lang]);
+      expect(everyString).not.toMatch(/team buff|buffs? de time/i);
+      expect(everyString).not.toMatch(/use as farm phase|usar como fase de farm/i);
+    }
   });
 
   it('explains synced farm phase and serial cycle knobs', () => {
