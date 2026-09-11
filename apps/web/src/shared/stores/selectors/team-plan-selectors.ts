@@ -1,11 +1,12 @@
-import type { TeamPlanControls, TeamPlanInputs } from '@bombfarm/team-plan/core';
-import type { PlannerStore } from '@/shared/stores/planner-store';
 import {
-  selectLiveTeamPlanInputSignature,
-  selectTeamPlanTargetPhase,
-} from '@/shared/stores/slices/team-plan-slice';
-
-export { selectTeamPlanTargetPhase };
+  computeTeamPlanInputSignature,
+  isFarmObjectiveUnavailable,
+  isTeamPlanStale,
+  resolveTeamPlanTargetPhase,
+  type TeamPlanControls,
+  type TeamPlanInputs,
+} from '@bombfarm/team-plan/core';
+import type { PlannerStore } from '@/shared/stores/planner-store';
 
 export function selectTeamPlanInputs(state: PlannerStore): TeamPlanInputs {
   return {
@@ -45,9 +46,22 @@ export function selectTeamPlanControls(state: PlannerStore): TeamPlanControls {
   };
 }
 
+/**
+ * Which phase the Team plan actually scores at.
+ *
+ * Until the player picks one, this tracks what they were already looking at: the Farm tab's phase
+ * when that was a genuine choice, else the phase the save says the account is on. `null` means
+ * neither exists, or the player picked None.
+ */
+export function selectTeamPlanTargetPhase(state: PlannerStore): number | null {
+  return resolveTeamPlanTargetPhase(selectTeamPlanInputs(state), selectTeamPlanControls(state));
+}
+
 export function selectTeamPlanIsStale(state: PlannerStore): boolean {
-  if (state.planInputSignature == null) return false;
-  return state.planInputSignature !== selectLiveTeamPlanInputSignature(state);
+  return isTeamPlanStale(
+    state.planInputSignature,
+    computeTeamPlanInputSignature(selectTeamPlanInputs(state), selectTeamPlanControls(state)),
+  );
 }
 
 export function selectInventoryItems(state: PlannerStore) {
@@ -81,5 +95,5 @@ export function selectTeamPlanIgnoreFieldCrowding(state: PlannerStore) {
  * is only ever true while the phase control sits on None.
  */
 export function selectTeamPlanFarmUnavailable(state: PlannerStore): boolean {
-  return state.maxPhase == null && selectTeamPlanTargetPhase(state) == null;
+  return isFarmObjectiveUnavailable(state.maxPhase, selectTeamPlanTargetPhase(state));
 }
