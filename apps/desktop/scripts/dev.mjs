@@ -4,10 +4,11 @@ import { fileURLToPath } from 'node:url';
 import net from 'node:net';
 import process from 'node:process';
 import { parseFlavorToken } from '@bombfarm/contracts';
+import { findFreePort } from './dev-port.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..');
-const DEV_PORT = Number(process.env.BFC_RENDERER_PORT ?? 3000);
+const PREFERRED_PORT = Number(process.env.BFC_RENDERER_PORT ?? 3000);
 
 /** Spawn without `shell: true` so paths with spaces (e.g. `Lucas Vieira`) stay intact. */
 function run(command, args, options = {}) {
@@ -39,17 +40,6 @@ function waitForPort(port, timeoutMs = 60_000) {
   });
 }
 
-function isPortFree(port) {
-  return new Promise((resolve) => {
-    const server = net.createServer();
-    server.once('error', () => resolve(false));
-    server.once('listening', () => {
-      server.close(() => resolve(true));
-    });
-    server.listen(port, '127.0.0.1');
-  });
-}
-
 // Dev launcher defaults unpackaged runs to dev; any other token must be valid.
 const rawFlavor = process.env.BFC_FLAVOR;
 const parsedFlavor = parseFlavorToken(rawFlavor);
@@ -64,11 +54,17 @@ if (parsedFlavor !== null) {
   process.exit(1);
 }
 
-if (!(await isPortFree(DEV_PORT))) {
-  console.error(
-    `Port ${DEV_PORT} is already in use. Stop the other process (or set BFC_RENDERER_PORT) and retry.`,
-  );
+// Another session's dev server — the web planner on 3000, say — is left alone and the renderer
+// moves up a port. It has to be settled here, before Next starts: Next falls back to the next
+// port by itself, but then the wait below would be answered by the other server and Electron
+// would open on that instead.
+const DEV_PORT = await findFreePort(PREFERRED_PORT);
+if (DEV_PORT === null) {
+  console.error(`No free port from ${PREFERRED_PORT} upwards. Set BFC_RENDERER_PORT and retry.`);
   process.exit(1);
+}
+if (DEV_PORT !== PREFERRED_PORT) {
+  console.log(`Port ${PREFERRED_PORT} is in use by another process; using ${DEV_PORT} for the renderer instead.`);
 }
 
 // Invoke Next via node + local CLI so Windows does not re-parse paths through cmd.exe.

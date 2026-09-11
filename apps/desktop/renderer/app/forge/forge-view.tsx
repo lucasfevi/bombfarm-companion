@@ -8,17 +8,16 @@
  * finishes, so the bag shows the level the server just returned. The run itself lives in main;
  * this screen asks for it, watches it, and draws it.
  *
- * The filter, the order, the piece in hand and the plan live in the screen's store rather than in
- * this component: the shell unmounts a tab the player leaves, and none of that should be lost by
- * looking at another screen.
+ * The filter, the order, the piece in hand, the plan and the run itself live in the screen's two
+ * stores rather than in this component: the shell unmounts a tab the player leaves, and none of
+ * that should be lost by looking at another screen.
  */
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   canonicalStringify,
   EMPTY_FORGE_HISTORY,
   type AccountSource,
   type AccountView,
-  type ForgeEvent,
   type ForgeHistoryResult,
   type ForgeStartReason,
 } from '@bombfarm/contracts';
@@ -46,14 +45,8 @@ import {
   gearOf,
   isEmptyForgeFilter,
 } from '../../lib/forge/forge-rows';
-import {
-  forgeRunReducer,
-  IDLE_FORGE_RUN,
-  shouldAdoptLiveAfter,
-  type ForgeRunAdoption,
-  type ForgeRunPlan,
-  type ForgeRunState,
-} from '../../lib/forge/forge-run-reducer';
+import { shouldAdoptLiveAfter, type ForgeRunPlan, type ForgeRunState } from '../../lib/forge/forge-run-reducer';
+import { dispatchForgeRun, setForgeRunAdoption, useForgeRun } from '../../lib/forge/forge-run-store';
 import {
   resolveForgeScreen,
   selectForgePiece,
@@ -200,11 +193,13 @@ export function ForgeView({
 
   const planControls = useForgePlan(selected, plan, setForgePlan);
 
-  const [run, dispatchRun] = useReducer(forgeRunReducer, IDLE_FORGE_RUN);
+  const run = useForgeRun();
   const runRef = useRef<ForgeRunState>(run);
   runRef.current = run;
-  const selectionRef = useRef<ForgeRunAdoption | null>(null);
-  selectionRef.current = selected === null ? null : { itemId: selected.id, plan: { forecast: planControls.forecast } };
+  const selectedId = selected?.id ?? null;
+  useEffect(() => {
+    setForgeRunAdoption(selectedId === null ? null : { itemId: selectedId, plan: { forecast: planControls.forecast } });
+  }, [selectedId, planControls.forecast]);
 
   const { ref: asideRef, height: asideHeight } = useContentHeight();
 
@@ -222,14 +217,7 @@ export function ForgeView({
   }, []);
 
   useEffect(() => {
-    const bridge = bridgeOf();
-    if (!bridge) return;
     loadHistory();
-    return bridge.on('forge:event', (event: ForgeEvent) => {
-      if (event.type === 'done') dispatchRun({ kind: 'done', event });
-      else if (event.type === 'pause') dispatchRun({ kind: 'pause', event });
-      else dispatchRun({ kind: 'step', event, adopt: selectionRef.current });
-    });
   }, [loadHistory]);
 
   const previousStatus = useRef(run.status);
@@ -245,7 +233,7 @@ export function ForgeView({
     if (run.status !== 'dismissed') return;
     const timer = setTimeout(
       () => {
-        dispatchRun({ kind: 'settle' });
+        dispatchForgeRun({ kind: 'settle' });
       },
       prefersReducedMotion() ? 0 : motionTokens.panelMs,
     );
@@ -266,7 +254,7 @@ export function ForgeView({
     void bridge.invoke('forge:start', request).then((result) => {
       if (result.ok) {
         setStartRefusal(null);
-        dispatchRun({ kind: 'start', runId: result.runId, itemId: selected.id, target: request.target, from: selected.upgrade, plan: planNow });
+        dispatchForgeRun({ kind: 'start', runId: result.runId, itemId: selected.id, target: request.target, from: selected.upgrade, plan: planNow });
       } else {
         setStartRefusal(result.reason);
       }
@@ -280,12 +268,12 @@ export function ForgeView({
     const bridge = bridgeOf();
     const current = runRef.current;
     if (!bridge || current.status !== 'running' || current.run.cancelRequested) return;
-    dispatchRun({ kind: 'cancel' });
+    dispatchForgeRun({ kind: 'cancel' });
     void bridge.invoke('forge:cancel', current.run.runId);
   }, []);
 
   const onDone = useCallback(() => {
-    dispatchRun({ kind: 'dismiss' });
+    dispatchForgeRun({ kind: 'dismiss' });
   }, []);
 
   const onClearHistory = useCallback(() => {
