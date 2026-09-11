@@ -48,9 +48,35 @@ function parseProcessId(out: string): number | null {
   return Number.isFinite(pid) && pid > 0 ? pid : null;
 }
 
-function findProcessIdScript(processName: string): string {
+/**
+ * `BFC_GAME_PID` pins every lookup to one process, for a machine running more than one instance
+ * of the game — without it each lookup takes the first process carrying the game's name, which
+ * is whichever instance launched first. Absent or blank means no pin. A value that is not a
+ * positive integer throws rather than being ignored, because ignoring it would silently attach
+ * to the wrong instance, the exact failure the variable exists to prevent.
+ */
+export function pinnedGamePid(env: NodeJS.ProcessEnv = process.env): number | null {
+  const raw = env.BFC_GAME_PID?.trim();
+  if (raw === undefined || raw === '') return null;
+  if (!/^[1-9][0-9]*$/.test(raw)) {
+    throw new Error(`BFC_GAME_PID must be a positive integer, got "${raw}"`);
+  }
+  return Number(raw);
+}
+
+/**
+ * The one PowerShell expression every process lookup starts from: the game's processes by name,
+ * narrowed to the pinned pid when there is one. Callers append their own `Select-Object`.
+ */
+export function gameProcessQuery(processName: string, env: NodeJS.ProcessEnv = process.env): string {
   const baseName = stripExeSuffix(processName);
-  return `(Get-Process -Name '${baseName}' -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty Id)`;
+  const byName = `Get-Process -Name '${baseName}' -ErrorAction SilentlyContinue`;
+  const pid = pinnedGamePid(env);
+  return pid === null ? byName : `${byName} | Where-Object { $_.Id -eq ${String(pid)} }`;
+}
+
+function findProcessIdScript(processName: string): string {
+  return `(${gameProcessQuery(processName)} | Select-Object -First 1 -ExpandProperty Id)`;
 }
 
 /**

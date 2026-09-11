@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isProcessAlive, stripExeSuffix } from './process.js';
+import { gameProcessQuery, isProcessAlive, pinnedGamePid, stripExeSuffix } from './process.js';
 
 /**
  * The real function, not a mock. `isProcessAlive` is what the game reader's recurring tick uses
@@ -38,5 +38,38 @@ describe('stripExeSuffix', () => {
 
   it('leaves an .exe that is not the suffix alone', () => {
     expect(stripExeSuffix('exe.game')).toBe('exe.game');
+  });
+});
+
+describe('pinnedGamePid', () => {
+  it('is no pin when BFC_GAME_PID is absent or blank', () => {
+    expect(pinnedGamePid({})).toBeNull();
+    expect(pinnedGamePid({ BFC_GAME_PID: '' })).toBeNull();
+    expect(pinnedGamePid({ BFC_GAME_PID: '   ' })).toBeNull();
+  });
+
+  it('reads a positive integer, tolerating surrounding whitespace', () => {
+    expect(pinnedGamePid({ BFC_GAME_PID: '12345' })).toBe(12345);
+    expect(pinnedGamePid({ BFC_GAME_PID: ' 42 ' })).toBe(42);
+  });
+
+  it('throws on anything else rather than silently attaching to whichever instance comes first', () => {
+    for (const raw of ['abc', '0', '-3', '12.5', '1e3', '0x10']) {
+      expect(() => pinnedGamePid({ BFC_GAME_PID: raw })).toThrow(/BFC_GAME_PID/);
+    }
+  });
+});
+
+describe('gameProcessQuery', () => {
+  it('looks the game up by name alone when nothing is pinned', () => {
+    expect(gameProcessQuery('BombFarm.exe', {})).toBe(
+      "Get-Process -Name 'BombFarm' -ErrorAction SilentlyContinue",
+    );
+  });
+
+  it('narrows the same lookup to the pinned pid, so a pid of another program never matches', () => {
+    expect(gameProcessQuery('BombFarm.exe', { BFC_GAME_PID: '777' })).toBe(
+      "Get-Process -Name 'BombFarm' -ErrorAction SilentlyContinue | Where-Object { $_.Id -eq 777 }",
+    );
   });
 });
