@@ -177,7 +177,7 @@ test.describe('display precision sweep', () => {
     await seedLocalStorage(page, seeded);
     await page.goto('/');
     await selectSavedHero(page, 'Precision');
-    await page.getByRole('tab', { name: /^Points$/i }).click();
+    await page.getByRole('tab', { name: /^Combat$/i }).click();
 
     const effective = activePanel(page).locator('section').filter({
       has: page.getByRole('heading', { name: /^Effective stats$/i, level: 2 }),
@@ -196,7 +196,7 @@ test.describe('display precision sweep', () => {
     await seedLocalStorage(page, seeded);
     await page.goto('/');
     await selectSavedHero(page, 'Precision');
-    await page.getByRole('tab', { name: /^Points$/i }).click();
+    await page.getByRole('tab', { name: /^Combat$/i }).click();
 
     const effective = activePanel(page).locator('section').filter({
       has: page.getByRole('heading', { name: /^Effective stats$/i, level: 2 }),

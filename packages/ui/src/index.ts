@@ -254,7 +254,7 @@ export {
   abilTagClass,
   type AbilityChipVariant,
 } from './ability-card.recipe';
-export { selectFieldRecipe, type SelectSize } from './select.recipe';
+export { selectFieldHeightClass, selectFieldRecipe, type SelectSize } from './select.recipe';
 export { switchRootRecipe, type SwitchSize } from './switch.recipe';
 export {
   accordionRecipe,

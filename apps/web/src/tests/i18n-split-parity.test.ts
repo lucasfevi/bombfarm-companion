@@ -55,10 +55,7 @@ import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
  * entries and gives the mechanism a fresh floor to accumulate from.
  */
 const fixturePath = join(WEB_PACKAGE_ROOT, 'src/tests/fixtures/i18n-strings-main.json');
-const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
-  en: Strings;
-  pt: Strings;
-};
+const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as { en: Strings; pt: Strings };
 
 /**
  * Declare deltas here. A feature that changes `STRINGS` in a way that would otherwise fail one
@@ -440,6 +437,9 @@ const KEYS_REMOVED: readonly string[] = [
  * not: the restriction is on what the plan may propose, not on how it scores.
  */
 const KEYS_ADDED: readonly string[] = [
+  // The planner's Combat tab (2026-09-11): the one string this app adds for the desktop's fourth
+  // stage; the phase control's own words ship with the panel, in the package that draws it.
+  'tabCombat',
   // The roster rail and board (2026-09-10). The planner had no roster surface of its own — the
   // hero strip's picker dialog was the only way to see the account at once — so it now draws the
   // same rail, board and toolbar the desktop app's Heroes screen does, from one implementation.

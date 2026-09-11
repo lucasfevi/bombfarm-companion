@@ -5,12 +5,15 @@ import { cva, type VariantProps } from 'class-variance-authority';
  * Trigger matches `Num`: bordered shell, left chevron affix on `bg-bg-2`.
  */
 
+/** A control drawn beside a default-size select field takes this too, so the pair sits flush. */
+export const selectFieldHeightClass = 'min-h-[34px]';
+
 export const selectFieldRecipe = cva(
   'inline-flex w-full min-w-0 items-stretch overflow-hidden rounded-sm border border-line bg-bg text-ink outline-none select-none data-[popup-open]:border-accent focus-visible:border-accent',
   {
     variants: {
       size: {
-        default: 'min-h-[34px] text-[13px]',
+        default: `${selectFieldHeightClass} text-[13px]`,
         compact: 'min-h-[26px] text-[11px]',
       },
     },
