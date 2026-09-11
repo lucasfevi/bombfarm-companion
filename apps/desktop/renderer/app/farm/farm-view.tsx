@@ -402,8 +402,9 @@ function FarmScreen({
           onRefresh={refresh.onRefresh}
         />
       ),
+      respecScopeNote: t.farmRespecOptimizerPointer,
     }),
-    [capturedAt, refresh],
+    [capturedAt, refresh, t],
   );
 
   const explorerData = useMemo(
