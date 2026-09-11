@@ -13,11 +13,11 @@ import type { Lang } from '@bombfarm/hero/copy';
 import { AbbreviatedNumber } from './abbreviated-number';
 
 /**
- * One cell per waterfall step, re-rendered with the panel. `memo()` here is load-bearing, not
- * redundant: this package is transpiled by each host's own bundler, so the React Compiler never
- * runs over it — only a hand boundary protects a sibling cell from re-rendering when another
- * step's own value changes. `objective`/`delta` are primitives rather than the `ReactNode`s the
- * web version passed, so the shallow prop compare this depends on is real.
+ * It is written out by hand rather than left to the React Compiler, which does not run over a
+ * package a host lists in `transpilePackages` — so a component that reaches a host this way keeps
+ * only the memoisation its own source spells. One cell per waterfall step, re-rendered with the
+ * panel: `objective`/`delta` are primitives rather than the `ReactNode`s the web version passed,
+ * so the shallow prop compare this boundary depends on is real.
  */
 export const StepCell = memo(function StepCell({
   label,
