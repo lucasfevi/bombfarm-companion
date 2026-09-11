@@ -597,7 +597,7 @@ export const ptBR: Copy = {
   heroesTabGear: 'Equipamento',
   heroesTabPoints: 'Pontos',
   heroesRosterTitle: 'Seu elenco',
-  heroesRosterListLabel: 'Seus heróis, do melhor sorteio de nascimento para o pior',
+  heroesRosterListLabel: 'Seus heróis',
   heroesRollQualityLabel: 'Sorteio',
   heroesFiguresWithheldTitle: 'Ainda não foi lido o bastante da sua conta',
   heroesFiguresWithheldDescription: 'Os números de cada herói precisam da sua árvore de habilidades e da sua Casa. Deixe o jogo aberto por um instante e eles vão aparecer.',

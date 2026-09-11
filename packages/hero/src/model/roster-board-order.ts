@@ -16,7 +16,7 @@ import { LETTER_BANDS } from '@bombfarm/domain/roll-quality';
 import { heroAbilityIds } from '@bombfarm/domain/hero-abilities';
 import type { RosterHeroRow } from './roster-rows';
 
-export const ROSTER_BOARD_SORT_KEYS = ['roll', 'power', 'level', 'rarity', 'rank', 'stars'] as const;
+export const ROSTER_BOARD_SORT_KEYS = ['power', 'roll', 'level', 'rarity', 'rank', 'stars'] as const;
 export type RosterBoardSortKey = (typeof ROSTER_BOARD_SORT_KEYS)[number];
 export type RosterBoardSortDirection = 'asc' | 'desc';
 
@@ -25,8 +25,12 @@ export type RosterBoardSort = {
   readonly direction: RosterBoardSortDirection;
 };
 
-/** Best first, which is what every one of the six keys means by "descending". */
-export const DEFAULT_ROSTER_BOARD_SORT: RosterBoardSort = { key: 'roll', direction: 'desc' };
+/**
+ * Strongest first. Power is the game's own one-number summary of a hero, so the roster opens in
+ * that order and the other five keys are questions asked of it. "Descending" means best first for
+ * every one of the six.
+ */
+export const DEFAULT_ROSTER_BOARD_SORT: RosterBoardSort = { key: 'power', direction: 'desc' };
 
 export type RosterBoardFilter = {
   /** Heroes owning ANY of these. Empty means every hero — never "no hero". */

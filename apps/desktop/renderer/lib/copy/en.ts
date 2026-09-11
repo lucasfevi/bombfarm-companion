@@ -627,7 +627,7 @@ export const en = {
   heroesTabGear: 'Gear',
   heroesTabPoints: 'Points',
   heroesRosterTitle: 'Your roster',
-  heroesRosterListLabel: 'Your heroes, best birth roll first',
+  heroesRosterListLabel: 'Your heroes',
   heroesRollQualityLabel: 'Roll',
   heroesFiguresWithheldTitle: 'Not enough of your account has been read',
   heroesFiguresWithheldDescription: 'The per-hero numbers need your skill tree and your House. Leave the game open for a moment and they will fill in.',

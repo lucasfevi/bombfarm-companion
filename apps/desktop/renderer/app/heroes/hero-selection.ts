@@ -9,7 +9,7 @@
 import type { RosterHeroRow } from '@bombfarm/hero/model';
 
 /**
- * The hero at the top of the list — which, on this screen, is the best-rolled one.
+ * The hero at the top of the list — the strongest, until the toolbar is told to order it otherwise.
  *
  * The rule is "whatever the list is showing first", not a second ranking of its own: a default
  * that named a hero the player has to scroll to would read as an arbitrary pick, and a detail pane

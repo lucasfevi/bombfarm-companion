@@ -46,8 +46,9 @@ import {
 import {
   DEFAULT_ROSTER_BOARD_SORT,
   EMPTY_ROSTER_BOARD_FILTER,
+  filterRosterRows,
   heroPickOutcome,
-  rosterRowsShown,
+  sortRosterRows,
 } from '@bombfarm/hero/model';
 import type {
   HeroMarketPrice,
@@ -181,11 +182,14 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   const farmPhase = useFarmSelectedPhase();
 
   const { rows, roster } = model;
+  // The whole roster in the order the toolbar asks for, before any narrowing: the default
+  // selection is whichever hero that order puts first, and a filter must not move it.
+  const orderedRows = useMemo(() => sortRosterRows(rows, rosterSort), [rows, rosterSort]);
   // Re-resolved on every render rather than mirrored into an effect: the roster arrives from a
   // fresh parse on every account read, and a selection stored as anything but an id would follow
   // the list's shape instead of the hero's identity.
-  const selectedId = resolveSelectedHeroId(pickedHeroId, rows);
-  const active = selectedRow(selectedId, rows) ?? rows[0];
+  const selectedId = resolveSelectedHeroId(pickedHeroId, orderedRows);
+  const active = selectedRow(selectedId, orderedRows) ?? rows[0];
 
   const phaseReading = useMemo(
     () => readHeroPhase(farmPhase, overridePhase),
@@ -266,8 +270,8 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   // narrowing the list never changes which hero the detail beside it is about — a filter is a
   // question about the roster, not a hero switch.
   const shownRows = useMemo(
-    () => rosterRowsShown(rows, rosterFilter, rosterSort),
-    [rows, rosterFilter, rosterSort],
+    () => filterRosterRows(orderedRows, rosterFilter),
+    [orderedRows, rosterFilter],
   );
   const toolbarActions = useMemo(
     () => ({ onSort: setRosterSort, onFilter: setRosterFilter, onViewMode: setViewMode }),

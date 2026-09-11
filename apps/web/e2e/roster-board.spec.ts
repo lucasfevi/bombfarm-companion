@@ -42,12 +42,12 @@ async function showList(page: Page) {
 }
 
 test.describe('roster rail and board', () => {
-  test('the rail lists every hero, best birth roll first', async ({ page }) => {
+  test('the rail lists every hero, strongest first', async ({ page }) => {
     await openPlanner(page);
     expect(await railIds(page)).toEqual([
       'board-ayla',
-      'board-shelved',
       'board-doran',
+      'board-shelved',
       'board-nessa',
     ]);
   });
