@@ -525,6 +525,55 @@ importers:
         specifier: ^3.2.4
         version: 3.2.7(@types/debug@4.1.13)(@types/node@22.20.1)(happy-dom@20.11.15)(lightningcss@1.32.0)(terser@5.49.0)
 
+  packages/team-plan:
+    dependencies:
+      '@bombfarm/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@bombfarm/farm':
+        specifier: workspace:*
+        version: link:../farm
+      '@bombfarm/game-art':
+        specifier: workspace:*
+        version: link:../game-art
+      '@bombfarm/hero':
+        specifier: workspace:*
+        version: link:../hero
+      '@bombfarm/ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@dnd-kit/core':
+        specifier: ^6.3.1
+        version: 6.3.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@dnd-kit/utilities':
+        specifier: ^3.2.2
+        version: 3.2.2(react@19.2.7)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.1.8
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.1.6
+        version: 19.2.3(@types/react@19.2.17)
+      class-variance-authority:
+        specifier: ^0.7.1
+        version: 0.7.1
+      happy-dom:
+        specifier: ^20.0.0
+        version: 20.11.15
+      react:
+        specifier: ^19.1.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.1.0
+        version: 19.2.7(react@19.2.7)
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@22.20.1)(happy-dom@20.11.15)(lightningcss@1.32.0)(terser@5.49.0)
+
   packages/ui:
     dependencies:
       '@fontsource-variable/ibm-plex-sans':
