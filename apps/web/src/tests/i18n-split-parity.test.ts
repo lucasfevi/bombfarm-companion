@@ -55,10 +55,7 @@ import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
  * entries and gives the mechanism a fresh floor to accumulate from.
  */
 const fixturePath = join(WEB_PACKAGE_ROOT, 'src/tests/fixtures/i18n-strings-main.json');
-const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
-  en: Strings;
-  pt: Strings;
-};
+const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as { en: Strings; pt: Strings };
 
 /**
  * Declare deltas here. A feature that changes `STRINGS` in a way that would otherwise fail one
@@ -440,10 +437,8 @@ const KEYS_REMOVED: readonly string[] = [
  * not: the restriction is on what the plan may propose, not on how it scores.
  */
 const KEYS_ADDED: readonly string[] = [
-  // The planner's Combat tab (2026-09-11). The desktop app's Heroes screen had a fourth stage the
-  // planner did not: the phase the figures are for, one hero against it, and the per-statistic
-  // breakdown — which here sat at the bottom of Points. One tab name is the only string this
-  // app adds; the phase control's own words ship with the panel, in the package that draws it.
+  // The planner's Combat tab (2026-09-11): the one string this app adds for the desktop's fourth
+  // stage; the phase control's own words ship with the panel, in the package that draws it.
   'tabCombat',
   // The roster rail and board (2026-09-10). The planner had no roster surface of its own — the
   // hero strip's picker dialog was the only way to see the account at once — so it now draws the
@@ -997,6 +992,16 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   'teamPlanPageTitle',
   'explainSections.8.h',
   'explainSections.8.p.0',
+  // Team auras get their own switches on the Combat tab (2026-09-11), and the Account page
+  // stopped drawing a "Team buffs" control before that. Four strings still sent the reader to
+  // that control — `abilitiesTip` and `explainSections.0.p.1` (both already declared above), the
+  // "what the app does not model" paragraph and the Optimizer paragraph — and now point at the
+  // Combat tab instead; `explainSections.0.p.1` also stops describing a "Use as farm phase"
+  // control that no longer exists. The rest are the term itself: every player-facing "team buff"
+  // / "buffs de time" now says "team aura" / "auras de time", so the explain block does not
+  // switch vocabulary between one paragraph and the next.
+  // One line: the blanket `src/tests/**` max-lines cap (650) sits one line above this file.
+  'bdSrcTeam', 'effectiveTip', 'missingHint', 'explainSections.0.code', 'explainSections.1.p.0', 'explainSections.5.p.0', 'explainSections.7.p.1', 'explainSections.8.p.1',
 ];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {

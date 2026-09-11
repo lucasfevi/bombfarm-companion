@@ -41,7 +41,7 @@ import {
 } from '@bombfarm/domain/live';
 import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
 import { xpPerProp } from '@bombfarm/domain/phase-wiki';
-import { runPowerShellAsync, runPowerShellSync, stripExeSuffix } from '../game-reader/process.js';
+import { gameProcessQuery, runPowerShellAsync, runPowerShellSync } from '../game-reader/process.js';
 import { EarningsFold } from './earnings-fold.js';
 import { createFrameCapture, readFrameCaptureEnabledFromEnv } from './frame-capture.js';
 import { FrameRing } from './frame-ring.js';
@@ -292,12 +292,11 @@ export interface LiveSourceDeps {
   ) => TapHandle;
 }
 
-function createProcessLister(): ProcessLister {
+function createProcessLister(isPackaged: boolean): ProcessLister {
   return {
     async list(processName: string): Promise<readonly TapTargetProcess[]> {
-      const baseName = stripExeSuffix(processName);
       try {
-        const script = `Get-Process -Name '${baseName}' -ErrorAction SilentlyContinue | Select-Object Id,ProcessName | ConvertTo-Json -Compress`;
+        const script = `${gameProcessQuery(processName, { isPackaged })} | Select-Object Id,ProcessName | ConvertTo-Json -Compress`;
         const out = await runPowerShellAsync(script);
         if (!out) return [];
         const parsed: unknown = JSON.parse(out);
@@ -412,7 +411,7 @@ function createDefaultTapFactory(deps: {
     const tap = new Tap({
       processName: deps.processName,
       runtime: new RuntimePort({ log: deps.log }),
-      processes: createProcessLister(),
+      processes: createProcessLister(deps.isPackaged),
       candidates: createHookCandidateSource({
         cacheDir: path.join(deps.userDataDir, 'live-hook-cache'),
         image: createProcessImageSource({ log: deps.log }),

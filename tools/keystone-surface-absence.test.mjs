@@ -181,7 +181,7 @@ const CRIT_DMG_MULT_MAP = {
   // file. Match itself is unchanged in count and in kind.
   // -32 (line number only): the phase control moved into `@bombfarm/farm` so the web planner
   // draws the same one, which took its definition out of this file. Unchanged in count and kind.
-  'apps/desktop/renderer/app/heroes/heroes-view.tsx': [614],
+  'apps/desktop/renderer/app/heroes/heroes-view.tsx': [618],
   // The shared roster builder's own account fixture, same kind as the two farm entries below: a
   // raw save-shaped skills block handed to the parser, not a field the app reads.
   'apps/desktop/renderer/lib/account/account-roster.test.ts': [39],

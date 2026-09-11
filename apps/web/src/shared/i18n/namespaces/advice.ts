@@ -10,7 +10,7 @@ export const en = {
   tabPoints: "Points",
   panelPoints: "Points",
   panelEffective: "Effective stats",
-  effectiveTip: "Includes gear, points, skill tree, abilities, and team buffs.",
+  effectiveTip: "Includes gear, points, skill tree, abilities, and team auras.",
   effectiveFuse: "Fuse",
   effectiveRest: "Rest",
   effectiveMitF: "Mitigation factor",
@@ -85,7 +85,7 @@ export const en = {
   off: "off",
   mathCheckAligned: "Aligned",
   mathCheckObsMissing: "Needs observed hit value",
-  missingHint: " → War Cry / team buffs / extra ≈ {x}%",
+  missingHint: " → War Cry / team auras / extra ≈ {x}%",
   explainTitle: "How the math works",
   accordionExpandAria: "Expand",
   accordionCollapseAria: "Collapse",
@@ -96,15 +96,15 @@ export const en = {
       h: "1 · From your birth roll to effective stats",
       p: [
         "Your birth roll — the hero's hidden per-rarity stats — is the starting point, read straight from your save. Stars multiply intrinsic Attack, Energy, Crit %, Crit Dmg, Penetration and CDR by (1 + 0.25 × ★); Speed is unchanged. From there the sheet is built from four source lines, matching the game's own math: Hero (birth roll, level, stars, spent points), Gear (equipped items), Ability (sheet abilities like Keen Eye, Diamond Tip, Brutal Strike) and Skill tree (applied once). Luck is an eighth sheet stat — it feeds loot odds, not this DPS math, so it never appears in the rankings below.",
-        "Skill points add a fixed share per point: Attack gains +10 × level power (+4% per level from the wiki) or +8 energy per point, while Speed 2%, Crit chance 2%, Penetration 2%, CDR 2% and Luck 3% add a fixed share of the base roll per point. Crit damage is the exception — a flat +5 percentage points per point, the same for every hero regardless of its roll. Crit chance caps at 100%; CDR caps at 80% (20% of cycle remains). The skill tree (total damage already includes squad + compound/multiplied damage; also crit chance, crit damage, speed, energy, Luck as a flat add) applies once, then abilities and team buffs multiply in. Account shares House, Skill tree and Team buffs across heroes; your farm phase (and its mitigation) sync from the Phases page via Use as farm phase. The Effective stats panel on the Combat tab shows the resulting combat sheet plus Fuse and Rest, at the phase picked there.",
+        "Skill points add a fixed share per point: Attack gains +10 × level power (+4% per level from the wiki) or +8 energy per point, while Speed 2%, Crit chance 2%, Penetration 2%, CDR 2% and Luck 3% add a fixed share of the base roll per point. Crit damage is the exception — a flat +5 percentage points per point, the same for every hero regardless of its roll. Crit chance caps at 100%; CDR caps at 80% (20% of cycle remains). The skill tree (total damage already includes squad + compound/multiplied damage; also crit chance, crit damage, speed, energy, Luck as a flat add) applies once, then abilities and team auras multiply in. Account shares House and Skill tree across heroes; team auras come from the other heroes in your roster, and the Combat tab lets you switch each one on or off. Your farm phase (and its mitigation) is the one your Farm page is set to, unless you pick another phase on the Combat tab. Panel Effective stats shows the resulting combat sheet plus Fuse and Rest.",
         "The read-only Stats panel on the Points tab breaks that same birth-to-Total chain into columns instead of four bundled lines: Birth, then the marginal contribution of each step — Δ level, Δ stars, Δ ability, Δ gear, Δ points, Δ tree — summing to Total, the same number the rest of this math uses everywhere else. It moved here from the Gear tab and is no longer something you type in; Gear only holds your equipped items now.",
       ],
-      code: "birth roll × stars → Hero + Gear + Ability\nafter points = + points × per-point gain\neffective = × skill tree (once) × abilities × team buffs",
+      code: "birth roll × stars → Hero + Gear + Ability\nafter points = + points × per-point gain\neffective = × skill tree (once) × abilities × team auras",
     },
     {
       h: "2 · One hit",
       p: [
-        "A bomb hit starts from effective attack, loses damage to the phase mitigation (from your synced farm phase, reduced by your penetration) and is multiplied by your total damage bonuses (skill tree, abilities, team buffs, and any extra damage % stored on the account). Crits multiply the hit by (1 + crit damage). For DPS we use the average hit.",
+        "A bomb hit starts from effective attack, loses damage to the phase mitigation (from your synced farm phase, reduced by your penetration) and is multiplied by your total damage bonuses (skill tree, abilities, team auras, and any extra damage % stored on the account). Crits multiply the hit by (1 + crit damage). For DPS we use the average hit.",
       ],
       code: "hit  = attack × (1 − mit × (1 − pen)) × total_dmg\ncrit = hit × (1 + critDmg)\navg  = hit × (1 + min(critChance, 100%) × critDmg)",
     },
@@ -135,7 +135,7 @@ export const en = {
     {
       h: "6 · Next point ranking and reset advice",
       p: [
-        "For each stat we simulate spending exactly one point on the effective combat sheet (after gear, tree, and team bonuses), recompute sustained DPS from scratch and rank stats by % gain. Stats already at a hard cap (crit chance 100%, CDR 80%) score zero. Farm mode ranks the same point differently: it scores how much your whole farming rotation's gold or chests per hour improves at that rotation's best unlocked phase, not just this hero's own damage. Luck sits outside this ranking — it's loot-facing, not scored for DPS.",
+        "For each stat we simulate spending exactly one point on the effective combat sheet (after gear, tree, and team auras), recompute sustained DPS from scratch and rank stats by % gain. Stats already at a hard cap (crit chance 100%, CDR 80%) score zero. Farm mode ranks the same point differently: it scores how much your whole farming rotation's gold or chests per hour improves at that rotation's best unlocked phase, not just this hero's own damage. Luck sits outside this ranking — it's loot-facing, not scored for DPS.",
         "Two checks look further ahead. A fast, automatic gate compares your current spend against a quick reallocation search; if it finds at least a 1% sustained-DPS gain, the hero strip shows a warn border and the Points tab shows a possible gain — always phrased as a lower bound (\"at least ~X%\"), never a guaranteed number. Optimize build on the Points tab runs a slower, on-demand search from several starting points and reports the best allocation it actually found for that hero; that number can land above the automatic gate's estimate, and it is never claimed to be the true optimum — only the best this particular search reached. Apply preview writes the found points to your build without touching your save; a real in-game reset is still what makes it count.",
       ],
     },
@@ -149,14 +149,14 @@ export const en = {
       h: "8 · What the app does not model",
       p: [
         "Loot abilities (Lapidary Eye, Gold Vein), Hero Hunter, Ghost and Baton Pass are outside the DPS math. Ability crit bonuses apply as % of the base roll, per the Heroes page rule.",
-        "If in-game damage still diverges from the model, check Team buffs in Account (another hero’s War Cry is a common ~20% / 40% gap).",
+        "If in-game damage still diverges from the model, check the team aura switches on the Combat tab (another hero’s War Cry is a common ~20% / 40% gap).",
       ],
     },
     {
       h: "9 · Optimizer",
       p: [
         "The Optimizer page searches forge upgrades, gear moves, and point resets across a scoped roster, scored for whichever objective you pick. Gold per hour reads the Farm model at one phase; DPS is the best combined sustained roster DPS this search can find — the same uptime-weighted number the advisor uses, summed over every hero you mark Optimize. Donate puts a hero's items in the shared pool without changing their build; Leave alone removes them from the search.",
-        "Each in-scope hero carries a duty weight (drainMult) from energy drain and house rest time. Team auras on that page are recomputed from the scoped roster, exclude the scored hero, and blend by duty — manual Account Team buffs are ignored there but still apply in the Planner. When Σ duty exceeds field slots, throughput uses the fair-share saturated regime; otherwise heroes keep their full active DPS.",
+        "Each in-scope hero carries a duty weight (drainMult) from energy drain and house rest time. Team auras on that page are recomputed from the scoped roster, exclude the scored hero, and blend by duty — the Combat tab’s aura switches do not reach that page, though the Planner still follows them. When Σ duty exceeds field slots, throughput uses the fair-share saturated regime; otherwise heroes keep their full active DPS.",
         "The search treats every pool item as forged up to at least your minimum forge. Results are shown as three steps — today, gear, optional point resets — with forge and move details on each hero. The final result and the point-reset step never lose ground compared to today; the gear step can dip below today for a moment before the point resets catch it back up, and the page tells you plainly when that happens. A hero can still personally lose DPS when that trade grows the roster total. Copy always says the best roster DPS found by this search, never a claim of true optimality.",
       ],
       code: "objective = Σ sustainedDPS × duty (saturated: fair-share active-DPS)\neffectiveUpgrade = max(upgrade, forgeFloor)",
@@ -174,7 +174,7 @@ export const pt: typeof en = {
   tabPoints: "Pontos",
   panelPoints: "Pontos",
   panelEffective: "Atributos efetivos",
-  effectiveTip: "Inclui equipamento, pontos, árvore, habilidades e buffs de time.",
+  effectiveTip: "Inclui equipamento, pontos, árvore, habilidades e auras de time.",
   effectiveFuse: "Pavio",
   effectiveRest: "Descanso",
   effectiveMitF: "Fator de mitigação",
@@ -227,7 +227,7 @@ export const pt: typeof en = {
   off: "fora",
   mathCheckAligned: "Alinhado",
   mathCheckObsMissing: "Falta o hit observado",
-  missingHint: " → Grito de Guerra / buffs de time / extra ≈ {x}%",
+  missingHint: " → Grito de Guerra / auras de time / extra ≈ {x}%",
   explainTitle: "Como calculamos tudo",
   accordionExpandAria: "Expandir",
   accordionCollapseAria: "Recolher",
@@ -238,15 +238,15 @@ export const pt: typeof en = {
       h: "1 · Do roll de nascimento aos stats efetivos",
       p: [
         "O roll de nascimento do herói — os stats ocultos por raridade — é o ponto de partida, lido direto do seu save. Estrelas multiplicam Ataque, Energia, Chance de crítico, Dano crítico, Penetração e Red. de cooldown intrínsecos por (1 + 0,25 × ★); Velocidade não muda. A partir daí a ficha é construída em quatro linhas de origem, iguais às do próprio jogo: Herói (roll de nascimento, nível, estrelas, pontos gastos), Equipamento (itens equipados), Habilidade (habilidades de ficha como Olho Clínico, Ponta de Diamante, Golpe Brutal) e Árvore de habilidades (aplicada uma única vez). Sorte é um oitavo stat de ficha — alimenta a sorte de loot, não essa conta de DPS, então nunca aparece nos rankings abaixo.",
-        "Os pontos somam uma fração fixa por ponto: Ataque ganha +10 × poder de nível (+4% por nível na wiki) ou +8 de energia por ponto; Velocidade 2%, Chance de crítico 2%, Penetração 2%, Redução de recarga 2% e Sorte 3% ganham uma fração fixa do roll base por ponto. Dano crítico é a exceção — soma fixa de +5 pontos percentuais por ponto, igual para todo herói independente do roll. Chance de crítico tem teto de 100%; redução de recarga tem teto de 80% (20% do ciclo permanece). A árvore de habilidades (o dano total já inclui dano de esquadrão + dano composto/multiplicado; também chance de crítico, dano crítico, velocidade, energia, Sorte como soma fixa) aplica uma única vez, depois habilidades e buffs de time multiplicam o resultado. A Conta compartilha Casa, Árvore de habilidades e Buffs de time entre heróis; a fase de farm (e a mitigação) sincronizam pela página Fases com Usar como fase de farm. O painel Atributos efetivos, na aba Combate, mostra a ficha de combate resultante, além de Pavio e Descanso, na fase escolhida ali.",
+        "Os pontos somam uma fração fixa por ponto: Ataque ganha +10 × poder de nível (+4% por nível na wiki) ou +8 de energia por ponto; Velocidade 2%, Chance de crítico 2%, Penetração 2%, Redução de recarga 2% e Sorte 3% ganham uma fração fixa do roll base por ponto. Dano crítico é a exceção — soma fixa de +5 pontos percentuais por ponto, igual para todo herói independente do roll. Chance de crítico tem teto de 100%; redução de recarga tem teto de 80% (20% do ciclo permanece). A árvore de habilidades (o dano total já inclui dano de esquadrão + dano composto/multiplicado; também chance de crítico, dano crítico, velocidade, energia, Sorte como soma fixa) aplica uma única vez, depois habilidades e auras de time multiplicam o resultado. A Conta compartilha Casa e Árvore de habilidades entre heróis; as auras de time vêm dos outros heróis do seu roster, e a aba Combate deixa você ligar ou desligar cada uma. A fase de farm (e a mitigação) é a que está na sua página Farm, a menos que você escolha outra fase na aba Combate. O painel Atributos efetivos mostra a ficha de combate resultante, além de Pavio e Descanso.",
         "O painel Atributos, agora na aba Pontos, quebra essa mesma cadeia do nascimento ao Total em colunas em vez de quatro linhas agrupadas: Ao nascer, depois a contribuição marginal de cada etapa — Δ nível, Δ estrela, Δ habilidade, Δ gear, Δ pontos, Δ árvore — somando até o Total, o mesmo número que o resto dessa conta usa em todo o resto. Ele veio da aba Equipamento e não é mais algo que você digita; Equipamento agora só guarda seus itens equipados.",
       ],
-      code: "roll de nascimento × estrelas → Herói + Equipamento + Habilidade\ndepois dos pontos = + pontos × ganho por ponto\nefetivo = × árvore de habilidades (uma vez) × habilidades × buffs",
+      code: "roll de nascimento × estrelas → Herói + Equipamento + Habilidade\ndepois dos pontos = + pontos × ganho por ponto\nefetivo = × árvore de habilidades (uma vez) × habilidades × auras de time",
     },
     {
       h: "2 · Um acerto",
       p: [
-        "O acerto de uma bomba parte do ataque efetivo, perde dano para a mitigação da fase (da fase de farm sincronizada, reduzida pela sua penetração) e é multiplicado pelos bônus de dano total (árvore, habilidades, buffs de time e qualquer dano extra % salvo na conta). Críticos multiplicam o acerto por (1 + dano crítico). No DPS usamos o acerto médio.",
+        "O acerto de uma bomba parte do ataque efetivo, perde dano para a mitigação da fase (da fase de farm sincronizada, reduzida pela sua penetração) e é multiplicado pelos bônus de dano total (árvore, habilidades, auras de time e qualquer dano extra % salvo na conta). Críticos multiplicam o acerto por (1 + dano crítico). No DPS usamos o acerto médio.",
       ],
       code: "acerto = ataque × (1 − mit × (1 − pen)) × dano_total\ncrít   = acerto × (1 + danoCrit)\nmédio  = acerto × (1 + min(chanceCrit, 100%) × danoCrit)",
     },
@@ -277,7 +277,7 @@ export const pt: typeof en = {
     {
       h: "6 · Ranking do próximo ponto e conselho de reset",
       p: [
-        "Para cada atributo simulamos gastar exatamente um ponto na ficha efetiva de combate (depois de equipamento, árvore e buffs de time), recalculamos o DPS efetivo do zero e ordenamos pelo ganho %. Stats já no teto (chance de crítico 100%, redução de recarga 80%) pontuam zero. O modo Farm ordena o mesmo ponto de outro jeito: ele mede quanto ouro ou baús por hora a sua rotação de farm inteira ganha, na melhor fase desbloqueada dessa rotação — não só o dano desse herói. Sorte fica fora desse ranking — é voltada a loot, não entra na conta de DPS.",
+        "Para cada atributo simulamos gastar exatamente um ponto na ficha efetiva de combate (depois de equipamento, árvore e auras de time), recalculamos o DPS efetivo do zero e ordenamos pelo ganho %. Stats já no teto (chance de crítico 100%, redução de recarga 80%) pontuam zero. O modo Farm ordena o mesmo ponto de outro jeito: ele mede quanto ouro ou baús por hora a sua rotação de farm inteira ganha, na melhor fase desbloqueada dessa rotação — não só o dano desse herói. Sorte fica fora desse ranking — é voltada a loot, não entra na conta de DPS.",
         "Duas checagens olham mais à frente. Uma checagem rápida e automática compara seu gasto atual com uma realocação rápida; se encontra um ganho de pelo menos 1% no DPS efetivo, a faixa do herói mostra uma borda de alerta e a aba Pontos mostra um possível ganho — sempre como um piso (\"pelo menos ~X%\"), nunca um número garantido. Otimizar build, na aba Pontos, roda uma busca mais lenta e sob demanda a partir de vários pontos de partida e mostra a melhor alocação que essa busca realmente encontrou para aquele herói; esse número pode ficar acima da estimativa da checagem automática, e nunca é apresentado como o ótimo verdadeiro — só o melhor que essa busca específica alcançou. Aplicar prévia grava os pontos encontrados na sua build sem tocar no seu save; um reset de verdade no jogo ainda é o que faz valer.",
       ],
     },
@@ -291,14 +291,14 @@ export const pt: typeof en = {
       h: "8 · O que o app não modela",
       p: [
         "Habilidades de loot (Olho de Lapidador, Veia de Ouro), Caça-Hero, Fantasma e Passagem de Bastão ficam fora da conta de DPS. Bônus de crítico de habilidades entram como % do roll base, pela regra da página Heróis.",
-        "Se o dano no jogo ainda divergir do modelo, confira Buffs de time em Conta (Grito de Guerra de outro herói é um gap comum de ~20% / 40%).",
+        "Se o dano no jogo ainda divergir do modelo, confira os interruptores de aura de time na aba Combate (Grito de Guerra de outro herói é um gap comum de ~20% / 40%).",
       ],
     },
     {
       h: "9 · Otimizador",
       p: [
         "A página Otimizador busca upgrades de forja, movimentações de itens e resets de pontos num roster com escopo, pontuando pelo objetivo que você escolher. Ouro por hora lê o modelo de Farm numa fase; DPS é o melhor DPS efetivo combinado que essa busca conseguir encontrar — o mesmo número com peso de tempo em campo que o conselheiro usa, somado sobre cada herói marcado como Otimizar. Doar coloca os itens do herói no pool compartilhado sem mudar a build; Deixar quieto remove o herói da busca.",
-        "Cada herói no escopo carrega um peso de duty (drainMult) a partir do gasto de energia e do tempo de descanso da casa. As auras de time nessa página são recalculadas a partir do roster em escopo, excluem o herói pontuado e misturam por duty — os buffs manuais de time em Conta são ignorados ali, mas ainda valem no Planner. Quando Σ duty passa dos slots de campo, o throughput usa o regime saturado de DPS ativo justo; caso contrário, cada herói mantém o DPS ativo integral.",
+        "Cada herói no escopo carrega um peso de duty (drainMult) a partir do gasto de energia e do tempo de descanso da casa. As auras de time nessa página são recalculadas a partir do roster em escopo, excluem o herói pontuado e misturam por duty — os interruptores de aura da aba Combate não chegam a essa página, mas o Planner continua seguindo eles. Quando Σ duty passa dos slots de campo, o throughput usa o regime saturado de DPS ativo justo; caso contrário, cada herói mantém o DPS ativo integral.",
         "A busca trata cada item do pool como forjado pelo menos até a forja mínima. O resultado aparece em três passos — hoje, itens, resets de pontos opcionais — com detalhes de forja e movimento em cada herói. O resultado final e o passo de reset de pontos nunca ficam abaixo de hoje; o passo de itens pode cair por um momento antes que os resets de pontos recuperem, e a página avisa claramente quando isso acontece. Um herói ainda pode perder DPS pessoalmente quando essa troca aumenta o total do roster. O texto sempre diz o melhor DPS de roster encontrado por essa busca, nunca uma garantia de ótimo verdadeiro.",
       ],
       code: "objetivo = Σ DPS efetivo × duty (saturado: DPS ativo justo)\neffectiveUpgrade = max(upgrade, forgeFloor)",
