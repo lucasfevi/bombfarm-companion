@@ -13,7 +13,7 @@ import { canonicalStringify } from '@bombfarm/contracts';
 import type { InventoryItem } from '@bombfarm/domain/inventory';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 
-/** 32-bit FNV-1a, unsigned. */
+/** 32-bit FNV1a (the Fowler–Noll–Vo hash, "a" variant), unsigned. */
 function fnv1a32(value: string): number {
   let hash = 0x811c9dc5;
   for (let index = 0; index < value.length; index += 1) {

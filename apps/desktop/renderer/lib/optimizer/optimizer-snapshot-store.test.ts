@@ -199,7 +199,7 @@ describe('computed — latest wins, everything else is discarded', () => {
 
 /**
  * A recompute is not a reason to blank the screen — the setup panel and scope board stay mounted
- * and busy instead (DOP-17).
+ * and busy instead.
  */
 describe('a recompute keeps the snapshot already on screen', () => {
   it('the first compute has nothing to carry — that is the only genuine loading state', () => {
