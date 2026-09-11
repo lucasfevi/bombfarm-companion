@@ -145,6 +145,9 @@ const BODIES: Record<string, Record<string, unknown>> = {
     bag_tabs: 4,
     bag_capacity: 100,
     items_count: 2,
+    client_can_sell: true,
+    sell_phase: 120,
+    sell_mode: 'todos',
   },
   '/roster': { heroes: [fullHero()] },
   '/skill/state': {
