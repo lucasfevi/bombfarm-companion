@@ -18,6 +18,7 @@ import {
   statPanelCopyFor,
   type GearPanelCopy,
   type HeroCopy,
+  type RosterBoardCopy,
   type RosterCopy,
   type StatPanelCopy,
 } from '@bombfarm/hero/copy';
@@ -58,6 +59,39 @@ export function rosterCopyFrom(t: Copy): RosterCopy {
     switchHero: t.switchHero,
     switchHeroDesc: t.switchHeroDesc,
     switchHeroShort: t.switchHeroShort,
+  };
+}
+
+/**
+ * The hero-identity vocabulary above plus the words a roster rail, board and toolbar add to it —
+ * their headings, the six sort keys and the ability filter's two readings.
+ *
+ * Same key-by-key spelling as `rosterCopyFrom`, and for the same reason: a spread would let an
+ * app key shadow one of these silently, and would stop the typecheck naming the key when the
+ * contract gains a member.
+ */
+export function rosterBoardCopyFrom(t: Copy): RosterBoardCopy {
+  return {
+    ...rosterCopyFrom(t),
+    heroesRosterTitle: t.heroesRosterTitle,
+    heroesRosterListLabel: t.heroesRosterListLabel,
+    heroesRollQualityLabel: t.heroesRollQualityLabel,
+    heroesViewLabel: t.heroesViewLabel,
+    heroesViewCards: t.heroesViewCards,
+    heroesViewList: t.heroesViewList,
+    heroesSortLabel: t.heroesSortLabel,
+    heroesSortRoll: t.heroesSortRoll,
+    heroesSortPower: t.heroesSortPower,
+    heroesSortLevel: t.heroesSortLevel,
+    heroesSortRarity: t.heroesSortRarity,
+    heroesSortRank: t.heroesSortRank,
+    heroesSortStars: t.heroesSortStars,
+    heroesSortAscending: t.heroesSortAscending,
+    heroesSortDescending: t.heroesSortDescending,
+    heroesFilterActiveHeroes: t.heroesFilterActiveHeroes,
+    heroesAbilityFilterLabel: t.heroesAbilityFilterLabel,
+    heroesAbilityFilterOption: t.heroesAbilityFilterOption,
+    heroesAbilityFilterAbsent: t.heroesAbilityFilterAbsent,
   };
 }
 

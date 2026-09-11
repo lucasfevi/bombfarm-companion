@@ -1,5 +1,5 @@
 /**
- * How the Heroes screen orders and narrows its roster, in either presentation.
+ * How a roster surface orders and narrows its heroes, in either presentation.
  *
  * One toolbar governs both: whichever question is being asked — which heroes are strongest, which
  * are furthest levelled, which own a given ability — is asked of the list and the board alike, so
@@ -14,28 +14,28 @@ import { ABILITIES } from '@bombfarm/domain/model';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { LETTER_BANDS } from '@bombfarm/domain/roll-quality';
 import { heroAbilityIds } from '@bombfarm/domain/hero-abilities';
-import type { RosterHeroRow } from './hero-roster-order';
+import type { RosterHeroRow } from './roster-rows';
 
-export const ROSTER_SORT_KEYS = ['roll', 'power', 'level', 'rarity', 'rank', 'stars'] as const;
-export type RosterSortKey = (typeof ROSTER_SORT_KEYS)[number];
-export type RosterSortDirection = 'asc' | 'desc';
+export const ROSTER_BOARD_SORT_KEYS = ['roll', 'power', 'level', 'rarity', 'rank', 'stars'] as const;
+export type RosterBoardSortKey = (typeof ROSTER_BOARD_SORT_KEYS)[number];
+export type RosterBoardSortDirection = 'asc' | 'desc';
 
-export type RosterSort = {
-  readonly key: RosterSortKey;
-  readonly direction: RosterSortDirection;
+export type RosterBoardSort = {
+  readonly key: RosterBoardSortKey;
+  readonly direction: RosterBoardSortDirection;
 };
 
 /** Best first, which is what every one of the six keys means by "descending". */
-export const DEFAULT_ROSTER_SORT: RosterSort = { key: 'roll', direction: 'desc' };
+export const DEFAULT_ROSTER_BOARD_SORT: RosterBoardSort = { key: 'roll', direction: 'desc' };
 
-export type RosterFilter = {
+export type RosterBoardFilter = {
   /** Heroes owning ANY of these. Empty means every hero — never "no hero". */
   readonly abilityIds: readonly string[];
   /** Keep only heroes the account has enabled for battle. */
   readonly activeOnly: boolean;
 };
 
-export const EMPTY_ROSTER_FILTER: RosterFilter = { abilityIds: [], activeOnly: false };
+export const EMPTY_ROSTER_BOARD_FILTER: RosterBoardFilter = { abilityIds: [], activeOnly: false };
 
 /**
  * The sortable figure behind one key, or `undefined` when the account has not told us.
@@ -44,7 +44,7 @@ export const EMPTY_ROSTER_FILTER: RosterFilter = { abilityIds: [], activeOnly: f
  * both directions below, rather than ranking as the weakest hero on the roster — the same reason
  * roll quality reports "not placed" instead of zero.
  */
-function figureFor(row: RosterHeroRow, key: RosterSortKey): number | undefined {
+function figureFor(row: RosterHeroRow, key: RosterBoardSortKey): number | undefined {
   const { hero } = row;
   switch (key) {
     case 'roll':
@@ -68,7 +68,7 @@ function figureFor(row: RosterHeroRow, key: RosterSortKey): number | undefined {
 
 export function sortRosterRows(
   rows: readonly RosterHeroRow[],
-  sort: RosterSort,
+  sort: RosterBoardSort,
 ): readonly RosterHeroRow[] {
   const sign = sort.direction === 'asc' ? 1 : -1;
   return [...rows].sort((left, right) => {
@@ -83,7 +83,7 @@ export function sortRosterRows(
   });
 }
 
-export type AbilityFilterOption = {
+export type RosterAbilityFilterOption = {
   readonly id: string;
   /** False when no hero on this roster owns it — shown anyway, so the board says what exists in
    *  the game as well as what you have. */
@@ -101,7 +101,7 @@ export type AbilityFilterOption = {
 export function abilityFilterOptions(
   rows: readonly RosterHeroRow[],
   selected: readonly string[],
-): readonly AbilityFilterOption[] {
+): readonly RosterAbilityFilterOption[] {
   const owned = new Set<string>();
   for (const row of rows) {
     for (const id of heroAbilityIds(row.hero.abilities)) owned.add(id);
@@ -125,6 +125,24 @@ export function toggleAbilityFilter(
 }
 
 /**
+ * What pressing one tile of the ability strip leaves — the toggle above, except on a tile no hero
+ * owns, which changes nothing.
+ *
+ * The refusal is HERE rather than on the tile because the tile cannot refuse it. An unowned tile
+ * is drawn dimmed and marked `disabled`, and the design-system tooltip drops that attribute on
+ * purpose: a disabled element receives no hover, and the tooltip naming the ability is the whole
+ * reason unowned abilities are shown at all. So the tile stays pressable in the DOM, and without
+ * this the press went through — selecting an ability nobody owns, which is a filter that matches
+ * no hero and empties the roster to a screen with no way back but the same dimmed tile.
+ */
+export function pressAbilityFilter(
+  selected: readonly string[],
+  option: RosterAbilityFilterOption,
+): readonly string[] {
+  return option.owned ? toggleAbilityFilter(selected, option.id) : selected;
+}
+
+/**
  * The rows a filter leaves.
  *
  * Abilities narrow by ANY rather than ALL. A hero owns at most six of twenty, so intersecting two
@@ -133,7 +151,7 @@ export function toggleAbilityFilter(
  */
 export function filterRosterRows(
   rows: readonly RosterHeroRow[],
-  filter: RosterFilter,
+  filter: RosterBoardFilter,
 ): readonly RosterHeroRow[] {
   const wanted = new Set(filter.abilityIds);
   return rows.filter((row) => {
@@ -146,8 +164,8 @@ export function filterRosterRows(
 /** Filter first, then order what survived — both presentations draw exactly this. */
 export function rosterRowsShown(
   rows: readonly RosterHeroRow[],
-  filter: RosterFilter,
-  sort: RosterSort,
+  filter: RosterBoardFilter,
+  sort: RosterBoardSort,
 ): readonly RosterHeroRow[] {
   return sortRosterRows(filterRosterRows(rows, filter), sort);
 }

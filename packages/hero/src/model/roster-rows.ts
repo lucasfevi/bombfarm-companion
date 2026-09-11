@@ -1,5 +1,5 @@
 /**
- * The order the Heroes screen lists a roster in, and the roll-quality reading each row prints.
+ * The order a roster surface lists heroes in, and the roll-quality reading each row prints.
  *
  * `rollQualityFor` is run ONCE per hero here and the report is carried on the row, so the list and
  * the detail panel beside it read the same number rather than each deriving its own.

@@ -8,6 +8,7 @@ import type { StatPanelCopy } from './stat-panel-copy';
 
 export { sub } from './format';
 export type { RosterCopy } from './roster-copy';
+export type { RosterBoardCopy } from './roster-board-copy';
 export type { HeroPanelCopy } from './hero-panel-copy';
 export type { StatPanelCopy } from './stat-panel-copy';
 export type { GearPanelCopy } from './gear-panel-copy';

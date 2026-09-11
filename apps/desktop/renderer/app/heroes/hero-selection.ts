@@ -6,7 +6,7 @@
  * the one the player clicked in. A selection held as a position in that list would silently become
  * a selection of a different hero; these two rules hold it by identity instead.
  */
-import type { RosterHeroRow } from './hero-roster-order';
+import type { RosterHeroRow } from '@bombfarm/hero/model';
 
 /**
  * The hero at the top of the list — which, on this screen, is the best-rolled one.

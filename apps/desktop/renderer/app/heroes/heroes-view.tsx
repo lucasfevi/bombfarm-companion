@@ -28,11 +28,7 @@ import {
   panelTitleClass,
   type Lang,
 } from '@bombfarm/ui';
-import {
-  HeroIdentityChip,
-  InventoryLayoutToggle,
-  rosterInactiveChromeClass,
-} from '@bombfarm/game-art';
+import { HeroIdentityChip } from '@bombfarm/game-art';
 import {
   GearTab,
   HeroAbilitiesPanel,
@@ -42,9 +38,24 @@ import {
   NextPointRanking,
   PhasesHeroPanel,
   PointsTable,
+  RosterCards,
+  RosterRail,
+  RosterToolbar,
   SheetTable,
 } from '@bombfarm/hero/components';
-import type { HeroMarketPrice } from '@bombfarm/hero/model';
+import {
+  DEFAULT_ROSTER_BOARD_SORT,
+  EMPTY_ROSTER_BOARD_FILTER,
+  heroPickOutcome,
+  rosterRowsShown,
+} from '@bombfarm/hero/model';
+import type {
+  HeroMarketPrice,
+  RosterBoardFilter,
+  RosterBoardSort,
+  RosterHeroRow,
+  RosterViewMode,
+} from '@bombfarm/hero/model';
 import { resolveHeroPrice } from '@bombfarm/pricing';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { formatMoney } from '../../lib/format';
@@ -62,6 +73,7 @@ import { useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
 import {
   farmScreenCopy,
+  rosterBoardCopyFrom,
   rosterCopyFrom,
   useFarmCopy,
   useGearPanelCopy,
@@ -71,21 +83,10 @@ import {
 import { heroNextPointRanking } from './hero-detail-panels';
 import { HeroEffectiveStats } from './hero-effective-stats';
 import { heroesScreenModel, type HeroesScreenModel } from './heroes-screen-model';
-import { rollQualityText, type RosterHeroRow } from './hero-roster-order';
 import { resolveSelectedHeroId, selectedRow } from './hero-selection';
 import { readHeroPhase, shownHeroPhase } from './hero-phase';
 import { useFarmSelectedPhase } from './use-farm-selected-phase';
 import { heroFigures, type HeroFigures } from './hero-figures';
-import { RosterCards } from './roster-cards';
-import { RosterToolbar } from './roster-toolbar';
-import { heroPickOutcome, type RosterViewMode } from './roster-view-mode';
-import {
-  rosterRowsShown,
-  DEFAULT_ROSTER_SORT,
-  EMPTY_ROSTER_FILTER,
-  type RosterFilter,
-  type RosterSort,
-} from './roster-order';
 import { cachedAbilityGains, createAbilityGainCache } from './ability-gain-cache';
 
 type RosterModel = Extract<HeroesScreenModel, { kind: 'roster' }>;
@@ -168,8 +169,8 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   // The roster's order and narrowing, view-local like the mode itself: they are ways of looking
   // at the roster you are in now, not settings about this account. Shared by both presentations,
   // so switching between them never changes which heroes are on screen.
-  const [rosterSort, setRosterSort] = useState<RosterSort>(DEFAULT_ROSTER_SORT);
-  const [rosterFilter, setRosterFilter] = useState<RosterFilter>(EMPTY_ROSTER_FILTER);
+  const [rosterSort, setRosterSort] = useState<RosterBoardSort>(DEFAULT_ROSTER_BOARD_SORT);
+  const [rosterFilter, setRosterFilter] = useState<RosterBoardFilter>(EMPTY_ROSTER_BOARD_FILTER);
   // View-local, and stored nowhere: leaving the screen unmounts this and the next visit opens on
   // the Farm selection again. It outlives a hero switch on purpose — comparing two heroes at one
   // phase is the reason to override at all.
@@ -244,6 +245,7 @@ function HeroesRoster({ model }: { model: RosterModel }) {
     [locale],
   );
   const pickerCopy = useMemo(() => rosterCopyFrom(t), [t]);
+  const rosterCopy = useMemo(() => rosterBoardCopyFrom(t), [t]);
   const panelCopy = useMemo(() => farmScreenCopy(farmCopy, t), [farmCopy, t]);
   const heroes = useMemo(() => rows.map((row) => row.hero), [rows]);
 
@@ -268,13 +270,8 @@ function HeroesRoster({ model }: { model: RosterModel }) {
     [rows, rosterFilter, rosterSort],
   );
   const toolbarActions = useMemo(
-    () => ({ onSort: setRosterSort, onFilter: setRosterFilter }),
+    () => ({ onSort: setRosterSort, onFilter: setRosterFilter, onViewMode: setViewMode }),
     [],
-  );
-
-  const viewToggleLabels = useMemo(
-    () => ({ group: t.heroesViewLabel, cards: t.heroesViewCards, list: t.heroesViewList }),
-    [t],
   );
 
   const onOpenPicker = useCallback(() => {
@@ -285,23 +282,17 @@ function HeroesRoster({ model }: { model: RosterModel }) {
     setOverridePhase(null);
   }, []);
 
-  const toolbar = (
-    <div className="flex min-w-0 flex-wrap items-center justify-between gap-2.5">
+  return (
+    <div className={cn(colClass, 'min-h-0 flex-1')}>
       <RosterToolbar
         rows={rows}
         sort={rosterSort}
         filter={rosterFilter}
+        viewMode={viewMode}
         actions={toolbarActions}
+        t={rosterCopy}
+        lang={lang}
       />
-      {/* The Inventory's own control, for the same two shapes: one pair of glyphs means one
-          thing wherever this app switches between a board and a list. */}
-      <InventoryLayoutToggle layout={viewMode} onChange={setViewMode} labels={viewToggleLabels} />
-    </div>
-  );
-
-  return (
-    <div className={cn(colClass, 'min-h-0 flex-1')}>
-      {toolbar}
       {/* One presentation at a time, cross-faded: `mode="wait"` lets the outgoing one finish
           before the incoming one lays out, which is what keeps a board of twenty-two cards from
           measuring itself against a rail that is still on screen. `reducedMotion="user"` turns
@@ -322,6 +313,8 @@ function HeroesRoster({ model }: { model: RosterModel }) {
                 selectedId={active.id}
                 onSelectHeroId={onSelectHeroId}
                 statLabel={boundStatLabel}
+                t={rosterCopy}
+                lang={lang}
               />
             </motion.div>
           ) : (
@@ -340,6 +333,8 @@ function HeroesRoster({ model }: { model: RosterModel }) {
                   rows={shownRows}
                   selectedId={active.id}
                   onSelectHeroId={onSelectHeroId}
+                  t={rosterCopy}
+                  lang={lang}
                 />
               </div>
               <HeroCopyProvider t={panelCopy} lang={lang}>
@@ -745,94 +740,5 @@ function HeroGear({ hero, combat }: { hero: HeroRecord; combat: AdvisorPipelineR
       altLoadout={hero.altLoadout}
       pipeline={combat}
     />
-  );
-}
-
-function RosterRail({
-  rows,
-  selectedId,
-  onSelectHeroId,
-}: {
-  rows: readonly RosterHeroRow[];
-  selectedId: string;
-  onSelectHeroId: (heroId: string) => void;
-}) {
-  const t = useCopy();
-  const { lang } = useLocale();
-
-  return (
-    <Panel className="min-w-0">
-      <div className={panelHClass}>
-        <h2 className={panelTitleClass}>{t.heroesRosterTitle}</h2>
-        <span className="text-[10px] font-bold tracking-[0.08em] text-muted uppercase">
-          {t.heroesRollQualityLabel}
-        </span>
-      </div>
-      <ul className="m-0 flex list-none flex-col gap-0.5 p-0" aria-label={t.heroesRosterListLabel}>
-        {rows.map((row) => (
-          <RosterRailRow
-            key={row.id}
-            row={row}
-            lang={lang}
-            selected={row.id === selectedId}
-            onSelectHeroId={onSelectHeroId}
-          />
-        ))}
-      </ul>
-    </Panel>
-  );
-}
-
-function RosterRailRow({
-  row,
-  lang,
-  selected,
-  onSelectHeroId,
-}: {
-  row: RosterHeroRow;
-  lang: Lang;
-  selected: boolean;
-  onSelectHeroId: (heroId: string) => void;
-}) {
-  const inactiveChrome = row.hero.battleAllowed === false ? rosterInactiveChromeClass : undefined;
-
-  return (
-    <li>
-      <button
-        type="button"
-        data-testid={`heroes-roster-row-${row.id}`}
-        aria-current={selected ? 'true' : undefined}
-        onClick={() => {
-          onSelectHeroId(row.id);
-        }}
-        className={cn(
-          'flex',
-          'w-full',
-          'min-w-0',
-          'cursor-pointer',
-          'items-center',
-          'justify-between',
-          'gap-2',
-          'rounded-sm',
-          'px-1.5',
-          'py-1',
-          'text-left',
-          selected
-            ? 'bg-[color-mix(in_oklch,var(--accent)_10%,transparent)] shadow-[inset_3px_0_0_var(--accent)]'
-            : 'hover:bg-[color-mix(in_oklch,var(--accent)_6%,transparent)]',
-        )}
-      >
-        {/* A shelved hero is greyed here exactly as it is on the board and in the picker. The
-            mute rides on the row's contents, never on the row's own selection chrome. */}
-        <span className={cn('flex', 'min-w-0', 'flex-1', 'items-center', 'gap-2', inactiveChrome)}>
-          <HeroIdentityChip hero={row.hero} fallbackName={row.hero.name} lang={lang} />
-        </span>
-        {/* Roll quality is a column players read down, and the sans face this app ships has no
-            tabular figures — so the mono face is what actually keeps the digits in line. */}
-        <span className={cn('shrink-0', 'font-mono', 'text-xs', 'tabular-nums', 'text-muted', inactiveChrome)}>
-          {rollQualityText(row, lang)}
-        </span>
-      </button>
-    </li>
   );
 }

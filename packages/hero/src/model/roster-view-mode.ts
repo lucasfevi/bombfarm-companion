@@ -1,6 +1,5 @@
 /**
- * Which of the two roster presentations the Heroes screen is showing, and what picking a hero
- * does in each.
+ * Which of the two roster presentations a host is showing, and what picking a hero does in each.
  *
  * Named `list`/`cards` after the shared control that switches them — the same pair of glyphs the
  * Inventory switches its own two layouts with — so one word means one thing in both screens.
