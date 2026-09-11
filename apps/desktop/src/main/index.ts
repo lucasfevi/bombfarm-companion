@@ -953,7 +953,7 @@ async function bootstrap(): Promise<void> {
 
   gameKeepAlive = createGameKeepAlive({
     clock: { now: () => Date.now(), setTimeout, clearTimeout },
-    processPresent: createProcessPresencePort(),
+    processPresent: createProcessPresencePort({ isPackaged: resolveAppEnv().isPackaged }),
     askSteam: () => askSteam(createSteamLaunchDeps()),
     log: (event, detail) => {
       log.info({ scope: 'main', event, ...detail });

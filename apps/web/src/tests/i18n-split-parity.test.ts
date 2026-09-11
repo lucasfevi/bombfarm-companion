@@ -992,6 +992,16 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   'teamPlanPageTitle',
   'explainSections.8.h',
   'explainSections.8.p.0',
+  // Team auras get their own switches on the Combat tab (2026-09-11), and the Account page
+  // stopped drawing a "Team buffs" control before that. Four strings still sent the reader to
+  // that control — `abilitiesTip` and `explainSections.0.p.1` (both already declared above), the
+  // "what the app does not model" paragraph and the Optimizer paragraph — and now point at the
+  // Combat tab instead; `explainSections.0.p.1` also stops describing a "Use as farm phase"
+  // control that no longer exists. The rest are the term itself: every player-facing "team buff"
+  // / "buffs de time" now says "team aura" / "auras de time", so the explain block does not
+  // switch vocabulary between one paragraph and the next.
+  // One line: the blanket `src/tests/**` max-lines cap (650) sits one line above this file.
+  'bdSrcTeam', 'effectiveTip', 'missingHint', 'explainSections.0.code', 'explainSections.1.p.0', 'explainSections.5.p.0', 'explainSections.7.p.1', 'explainSections.8.p.1',
 ];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {

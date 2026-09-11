@@ -25,6 +25,8 @@ The companion reads your account and never modifies the game client. Its one wri
 ```bash
 pnpm install
 pnpm dev          # desktop shell
+pnpm dev --pid <n>  # ...attached to one of several running game instances; pnpm dev:pids lists them
+pnpm dev --sandbox <box> --pid <n>  # ...with Electron inside a Sandboxie box, for a game instance that runs boxed
 pnpm dev:web      # web planner only
 ```
 

@@ -6,7 +6,7 @@ import type { SteamAskOutcome } from './steam-launch.js';
 import { createGameKeepAlive, createProcessPresencePort, type GameKeepAliveClock } from './keep-alive-runtime.js';
 
 const process_ = vi.hoisted(() => ({
-  findProcessIdAsync: vi.fn<(processName: string) => Promise<number | null>>(),
+  findProcessIdAsync: vi.fn<(processName: string, context?: { isPackaged?: boolean }) => Promise<number | null>>(),
   isProcessAlive: vi.fn<(pid: number) => boolean>(),
 }));
 
@@ -368,7 +368,7 @@ describe('the production presence port', () => {
   it('re-checks a pid it already holds instead of listing the processes again', async () => {
     process_.findProcessIdAsync.mockResolvedValue(4_242);
     process_.isProcessAlive.mockReturnValue(true);
-    const isPresent = createProcessPresencePort();
+    const isPresent = createProcessPresencePort({ isPackaged: true });
 
     await expect(isPresent()).resolves.toBe(true);
     await expect(isPresent()).resolves.toBe(true);
@@ -381,7 +381,7 @@ describe('the production presence port', () => {
   it('falls back to the listing once the pid it held is gone, and reports absence', async () => {
     process_.findProcessIdAsync.mockResolvedValueOnce(4_242).mockResolvedValueOnce(null);
     process_.isProcessAlive.mockReturnValue(false);
-    const isPresent = createProcessPresencePort();
+    const isPresent = createProcessPresencePort({ isPackaged: true });
 
     await expect(isPresent()).resolves.toBe(true);
     await expect(isPresent()).resolves.toBe(false);
@@ -392,15 +392,15 @@ describe('the production presence port', () => {
   it('watches the game the app already names, and honours the same environment override', async () => {
     process_.findProcessIdAsync.mockResolvedValue(null);
 
-    await createProcessPresencePort()();
-    expect(process_.findProcessIdAsync).toHaveBeenLastCalledWith('BombFarm.exe');
+    await createProcessPresencePort({ isPackaged: true })();
+    expect(process_.findProcessIdAsync).toHaveBeenLastCalledWith('BombFarm.exe', { isPackaged: true });
 
     process.env.BFC_GAME_PROCESS = 'some-other-build.exe';
-    await createProcessPresencePort()();
-    expect(process_.findProcessIdAsync).toHaveBeenLastCalledWith('some-other-build.exe');
+    await createProcessPresencePort({ isPackaged: true })();
+    expect(process_.findProcessIdAsync).toHaveBeenLastCalledWith('some-other-build.exe', { isPackaged: true });
 
-    await createProcessPresencePort('explicit.exe')();
-    expect(process_.findProcessIdAsync).toHaveBeenLastCalledWith('explicit.exe');
+    await createProcessPresencePort({ processName: 'explicit.exe', isPackaged: false })();
+    expect(process_.findProcessIdAsync).toHaveBeenLastCalledWith('explicit.exe', { isPackaged: false });
   });
 });
 

@@ -98,7 +98,7 @@ export const statPanelPtBR: StatPanelCopy = {
   bdSrcPoints: 'Pontos',
   bdSrcTree: 'Árvore',
   bdSrcAbilities: 'Habilidades',
-  bdSrcTeam: 'Buffs de time',
+  bdSrcTeam: 'Auras de time',
   bdSrcAbilitiesTeam: 'Habilidades + Time',
   bdSrcHero: 'Herói',
   bdSrcAbility: 'Habilidade',
