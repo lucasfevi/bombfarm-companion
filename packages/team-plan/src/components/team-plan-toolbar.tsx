@@ -35,6 +35,14 @@ export function TeamPlanToolbar({
   const farmBlocked = data.controls.objective === 'farm' && farmUnavailable;
   const scopeEmpty = countOptimizeScopeHeroes(data.inputs.heroes, data.controls.scopeByHeroId) === 0;
   const handledRunId = useRef<string | null>(null);
+  // A run that falls back to the main thread computes synchronously inside the same click that
+  // started it, so React's automatic batching can coalesce the 'running' and the terminal state
+  // into the ONE render this effect sees — this ref makes `startRun` fire for a runId exactly
+  // once regardless of whether an intermediate 'running' render happened to exist to observe.
+  // Without it, a host whose `applyPlan`/`resolveRun` key off the runId `startRun` recorded (so a
+  // later Refresh mid-run cannot silently re-key an in-flight plan) never sees that runId at all,
+  // and silently drops the finished plan.
+  const startedRunId = useRef<string | null>(null);
 
   const handleOptimize = useCallback(() => {
     if (countOptimizeScopeHeroes(data.inputs.heroes, data.controls.scopeByHeroId) === 0) return;
@@ -46,10 +54,11 @@ export function TeamPlanToolbar({
   useEffect(() => {
     const runId = runner.runId;
     if (!runId) return;
-    if (runner.status === 'running') {
+    if (startedRunId.current !== runId) {
+      startedRunId.current = runId;
       actions.startRun(runId);
-      return;
     }
+    if (runner.status === 'running') return;
     if (handledRunId.current === runId) return;
     handledRunId.current = runId;
     if (runner.status === 'done' && runner.plan) {
