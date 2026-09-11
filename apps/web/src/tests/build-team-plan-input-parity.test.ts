@@ -6,12 +6,13 @@
  * deep-equality pin is the permanent snapshot from then on.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { buildTeamPlanInput } from '@bombfarm/team-plan/core';
+import { buildTeamPlanInput, computeTeamPlanInputSignature } from '@bombfarm/team-plan/core';
 import { buildTeamPlanInputFromStore } from '@/features/team-plan/model/build-team-plan-input';
 import {
   selectTeamPlanControls,
   selectTeamPlanInputs,
 } from '@/shared/stores/selectors/team-plan-selectors';
+import { selectLiveTeamPlanInputSignature } from '@/shared/stores/slices/team-plan-slice';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
 
 function memoryLocalStorage() {
@@ -112,6 +113,21 @@ describe('the package builder deep-equals the store builder', () => {
       forgeFloor: 12,
     });
     parityHolds();
+  });
+
+  it('computeTeamPlanInputSignature produces the same string as the store selector', () => {
+    usePlannerStore.getState().hydrateRoster([hero('a'), hero('b', false)], 'a');
+    usePlannerStore.setState({
+      scopeByHeroId: { a: 'optimize' },
+      inventory: { version: 1, importedAt: 3, items: [] },
+      forgeFloor: 12,
+    });
+    const state = usePlannerStore.getState();
+    const fromPackage = computeTeamPlanInputSignature(
+      selectTeamPlanInputs(state),
+      selectTeamPlanControls(state),
+    );
+    expect(fromPackage).toBe(selectLiveTeamPlanInputSignature(state));
   });
 
   it('for a chosen target phase', () => {
