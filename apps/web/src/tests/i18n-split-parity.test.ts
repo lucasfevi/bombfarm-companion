@@ -877,6 +877,16 @@ const KEYS_ADDED: readonly string[] = [
   'downloadScreenAccountItem3',
   'downloadScreenAccountItem4',
   'downloadScreenAccountItem5',
+
+  // The download page's eighth screen card (2026-09-11). The desktop app gained an Optimizer
+  // tab — the roster gear and points planner, run from the live account — and the page that
+  // describes the app's screens describes that one too, in the app's own tab order. The spacer
+  // cell that squared a seven-card grid goes with it: eight cards fill two and four columns.
+  'downloadScreenOptimizerTitle',
+  'downloadScreenOptimizerItem1',
+  'downloadScreenOptimizerItem2',
+  'downloadScreenOptimizerItem3',
+  'downloadScreenOptimizerItem4',
 ];
 
 /**
