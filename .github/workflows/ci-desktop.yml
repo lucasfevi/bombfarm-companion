@@ -118,7 +118,7 @@ jobs:
           --filter @bombfarm/farm --filter @bombfarm/hero --filter @bombfarm/desktop lint
 
       # apps/desktop/src/main/domain-edge.test.ts asserts against the esbuild main-process
-      # bundle (MDW-03: domain code is actually inlined) and fails loudly in CI when it's
+      # bundle (that domain code is actually inlined into it) and fails loudly in CI when it's
       # missing rather than skipping. build:electron is esbuild, not electron-builder, so
       # it's fast and needs no platform-specific packaging step here.
       - name: Build desktop electron bundle
