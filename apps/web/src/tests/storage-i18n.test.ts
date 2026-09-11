@@ -562,10 +562,8 @@ describe('portuguese UX glossary (PTUX)', () => {
     expect(STRINGS.pt.colHits).toBe('Hits');
     expect(STRINGS.pt.compareHit).toBe('Hit');
     expect(STRINGS.pt.metricUptime).toBe('Tempo ativo');
-    expect(STRINGS.pt.walkS).toBe('Caminhada (s)');
     expect(STRINGS.pt.reCopy).toBe('Copiar novamente');
     expect(STRINGS.pt.factMissing).toBe('Multiplicador que falta');
-    expect(STRINGS.pt.cycleSerial).toBe('Em série');
     expect(STRINGS.pt.statShort.cdr).toBe('Redução de recarga');
     expect(STRINGS.pt.statFull.cdr).toBe('Redução de recarga');
     expect(STRINGS.pt.slotStatFullLabels.cooldown).toBe('Redução de recarga');
@@ -590,8 +588,6 @@ describe('portuguese UX glossary (PTUX)', () => {
     expect(STRINGS.en.metricHit).toBe('Hit');
     expect(STRINGS.en.metricSustained).toBe('Sustained DPS');
     expect(STRINGS.en.metricActive).toBe('Active DPS');
-    expect(STRINGS.en.cycleSerial).toBe('Serial');
-    expect(STRINGS.en.walkS).toBe('Walk s');
     expect(STRINGS.en.reCopy).toBe('Re-copy');
     expect(STRINGS.en.factMissing).toBe('Missing multiplier');
     expect(STRINGS.en.colHits).toBe('Hits');
@@ -620,11 +616,9 @@ describe('portuguese UX glossary (PTUX)', () => {
     expect(STRINGS.pt.colHits).toBe('Hits');
     expect(STRINGS.pt.compareHit).toBe('Hit');
     expect(STRINGS.pt.factPred).toBe('Previsto / critical hit');
-    // Walk / copy / missing mult / serial / CDR family
-    expect(STRINGS.pt.walkS).toBe('Caminhada (s)');
+    // Copy / missing mult / cycle / CDR family
     expect(STRINGS.pt.reCopy).toBe('Copiar novamente');
     expect(STRINGS.pt.factMissing).toBe('Multiplicador que falta');
-    expect(STRINGS.pt.cycleSerial).toBe('Em série');
     expect(STRINGS.pt.explainSections[2].p[0]).toMatch(/Ciclo de bomba medido/);
     expect(STRINGS.pt.statShort.cdr).toBe('Redução de recarga');
     expect(STRINGS.pt.statFull.cdr).toBe('Redução de recarga');

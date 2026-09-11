@@ -258,8 +258,10 @@ const KEYS_REMOVED: readonly string[] = [
   // One bombing-cadence model (2026-09-11): the Bombs/s breakdown stops switching between a
   // serial and a wiki formula and prints the one measured cycle (`bdFormulaBombs`, in
   // `KEYS_ADDED`), so the two per-model expressions and the wiki formula's stamina-factor term
-  // have no reader left. One line: this file sits at the `src/tests/**` max-lines cap.
-  'resetAdviceRosterHero', 'bdFormulaBombsSerial', 'bdFormulaBombsWiki', 'bdTermSf',
+  // have no reader left. The retired Context panel's cycle-model control — `cycle`,
+  // `cycleSerial`, `cycleWiki`, `walkS` — had already lost its screen and now loses the model it
+  // named. One line: this file sits at the `src/tests/**` max-lines cap.
+  'resetAdviceRosterHero', 'bdFormulaBombsSerial', 'bdFormulaBombsWiki', 'bdTermSf', 'cycle', 'cycleSerial', 'cycleWiki', 'walkS',
 ];
 
 /**

@@ -3,6 +3,7 @@
 "@bombfarm/web": minor
 "@bombfarm/desktop": minor
 "@bombfarm/hero": patch
+"@bombfarm/farm": patch
 ---
 
 Price every DPS figure on one bombing-cadence model — the Farm page's measured one — and retire
