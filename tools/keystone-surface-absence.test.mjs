@@ -187,7 +187,7 @@ const CRIT_DMG_MULT_MAP = {
   // +1 (line number only): the farm snapshot's capture-time regression tests added an import of
   // `settledBoard` above this fixture. Match itself is unchanged in count and in kind.
   'apps/desktop/renderer/lib/farm/use-farm-snapshot.test.ts': [46],
-  'apps/desktop/src/main/storage/account-store-restore.test.ts': [507, 540, 558, 591],
+  'apps/desktop/src/main/storage/account-store-restore.test.ts': [510, 543, 561, 594],
   'apps/desktop/src/main/storage/stale-sections.test.ts': [66, 81, 84, 88, 98, 105, 111, 123, 128, 164, 224],
   'apps/desktop/src/main/storage/stale-sections.ts': [11],
   // +2 (line numbers only) from the House/field-slots untangling follow-up: two new

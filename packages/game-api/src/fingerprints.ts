@@ -23,7 +23,8 @@ import {
  * The required key sets below are the real top-level (and now nested) keys of the
  * 2026-08-12 anchor-calibration capture, taken out of band, then scrubbed and copied into
  * `src/__fixtures__/api-bodies.json` — each fingerprint below names that artifact and capture
- * directly via `sourceArtifact`, rather than only in this file-level comment.
+ * directly via `sourceArtifact`, rather than only in this file-level comment. `/state` is the one
+ * level re-anchored since (see `STATE_SELL_GATE_KEYS`); its fixture body carries the later keys.
  *
  * `account_id` and `player_name` are declared `allowance` (never `keys`) on `/state`: they are the
  * two fields the scrub removes (matching this file's own committed fixture), and requiring them
@@ -34,6 +35,26 @@ export type RouteFingerprint = SchemaFingerprint;
 const GAME_BUILD = '0.1.0.0+2026-08-11T21:38:23Z';
 const CAPTURED_AT = '2026-08-12T13:15:38.000Z';
 const SOURCE_ARTIFACT = 'packages/game-api/src/__fixtures__/api-bodies.json — 2026-08-12 capture';
+
+/**
+ * `/state` alone is anchored on two observations: its first thirteen keys are the 2026-08-12
+ * capture's, and the three sell-gate keys were added by a later game build and observed on every
+ * `/state` body of a 2026-09-10 live capture that is held out of band. That capture recorded no
+ * build id, so the account fingerprint's `gameBuild` names both builds by what is known of them,
+ * and its `capturedAt` is the later observation — the date the declared key set became true.
+ */
+const STATE_GAME_BUILD = `${GAME_BUILD}, plus an unrecorded later build that added the sell-gate keys`;
+const STATE_CAPTURED_AT = '2026-09-10T00:00:00.000Z';
+const STATE_SOURCE_ARTIFACT =
+  `${SOURCE_ARTIFACT}, with client_can_sell/sell_phase/sell_mode carried over from a 2026-09-10 ` +
+  'live observation held out of band';
+
+/** The account-level gate on selling to the Steam market, added by the game after the 2026-08-12
+ *  anchor capture: `client_can_sell` (boolean), `sell_phase` (a phase number) and `sell_mode` (a
+ *  string; the observed value is the Portuguese `todos`, "all"). Required keys, never `optional`:
+ *  every observed `/state` body carries all three, so an absence is a real removal to report, not
+ *  variance to tolerate. Nothing reads them yet. */
+export const STATE_SELL_GATE_KEYS = ['client_can_sell', 'sell_phase', 'sell_mode'] as const;
 
 /** `/rotation.heroes[]` — a sixth declared element level, distinct from the export/API roster
  *  hero. One variant across 8 elements in the committed corpus. */
@@ -68,6 +89,7 @@ const STATE_LEVEL: SchemaLevel = {
     'bag_tabs',
     'bag_capacity',
     'items_count',
+    ...STATE_SELL_GATE_KEYS,
   ],
   allowance: ['account_id', 'player_name'],
 };
@@ -97,9 +119,9 @@ export const ROUTE_FINGERPRINTS: Readonly<Record<AccountSection, RouteFingerprin
   account: {
     root: 'account',
     level: STATE_LEVEL,
-    gameBuild: GAME_BUILD,
-    capturedAt: CAPTURED_AT,
-    sourceArtifact: SOURCE_ARTIFACT,
+    gameBuild: STATE_GAME_BUILD,
+    capturedAt: STATE_CAPTURED_AT,
+    sourceArtifact: STATE_SOURCE_ARTIFACT,
   },
   heroes: {
     root: 'heroes',
