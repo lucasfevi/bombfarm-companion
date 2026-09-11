@@ -1,13 +1,11 @@
 'use client';
 
 import { useMemo } from 'react';
-import { SearchSelect } from '@bombfarm/ui';
-import type { Strings, Lang } from '@/shared/i18n';
-import type { TeamPlanObjectiveCopy } from '@bombfarm/team-plan/model';
-import { sub } from '@/shared/i18n';
-import { usePlannerStore, selectTeamPlanTargetPhase } from '@/shared/stores';
-import { formatNumber } from '@/shared/lib/format-number';
-import { phaseFromOptionValue, phaseOptionValue, teamPlanPhaseOptions } from '@bombfarm/team-plan/model';
+import { SearchSelect, formatNumber } from '@bombfarm/ui';
+import { sub, type Lang } from '@bombfarm/hero/copy';
+import type { TeamPlanCopy } from '../copy';
+import type { TeamPlanObjectiveCopy } from '../model/objective-copy';
+import { phaseFromOptionValue, phaseOptionValue, teamPlanPhaseOptions } from '../model/phase-options';
 
 const fieldLabelClass =
   'flex min-w-0 flex-col gap-[3px] text-[11px] tracking-[0.03em] text-muted uppercase';
@@ -17,21 +15,23 @@ export function PhaseField({
   t,
   lang,
   copy,
+  value,
+  maxPhase,
+  onChange,
 }: {
-  t: Strings;
+  t: TeamPlanCopy;
   lang: Lang;
   copy: TeamPlanObjectiveCopy;
+  value: number | null;
+  maxPhase: number | null;
+  onChange: (value: number | null) => void;
 }) {
-  const targetPhase = usePlannerStore(selectTeamPlanTargetPhase);
-  const maxPhase = usePlannerStore((state) => state.maxPhase);
-  const setTargetPhase = usePlannerStore((state) => state.setTargetPhase);
-
   const options = useMemo(
     () => teamPlanPhaseOptions(lang, t.teamPlanPhaseNone),
     [lang, t.teamPlanPhaseNone],
   );
 
-  const beyondReach = targetPhase != null && maxPhase != null && targetPhase > maxPhase;
+  const beyondReach = value != null && maxPhase != null && value > maxPhase;
 
   return (
     <div className="min-w-0 max-w-sm flex-1">
@@ -40,8 +40,8 @@ export function PhaseField({
         <SearchSelect
           aria-label={t.teamPlanPhaseAria}
           options={options}
-          value={phaseOptionValue(targetPhase)}
-          onValueChange={(next) => setTargetPhase(phaseFromOptionValue(next))}
+          value={phaseOptionValue(value)}
+          onValueChange={(next) => onChange(phaseFromOptionValue(next))}
           searchPlaceholder={t.teamPlanPhaseSearchPlaceholder}
           emptyLabel={t.teamPlanPhaseNoMatch}
           overflowLabel={(shown, matched) =>
@@ -53,7 +53,7 @@ export function PhaseField({
         />
       </label>
       <p className="m-0 mt-2 text-[12px] text-muted">
-        {targetPhase == null ? copy.phaseHintNone : t.teamPlanPhaseHintChosen}
+        {value == null ? copy.phaseHintNone : t.teamPlanPhaseHintChosen}
       </p>
       {beyondReach ? (
         <p className="m-0 mt-1 text-[12px] text-warn" role="status">

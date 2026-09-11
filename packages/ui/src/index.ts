@@ -243,6 +243,7 @@ export {
   statListMutedRowClass,
   tipClass,
   warnClass,
+  workspaceClass,
   type PanelVariant,
   type SetupBannerVariant,
 } from './panel-field.recipe';

@@ -56,9 +56,11 @@ describe('@bombfarm/team-plan imports from neither host app', () => {
   });
 
   it('the scan reaches this package\'s sources — it is not passing over an empty set', () => {
-    const names = sourceFiles(PACKAGE_SRC).map((abs) => path.basename(abs));
-    expect(names).toContain('index.ts');
+    const files = sourceFiles(PACKAGE_SRC);
+    const names = files.map((abs) => path.basename(abs));
+    expect(names).toContain('team-plan-screen.tsx');
     expect(names).toContain(SELF_EXCLUDED_FILE);
+    expect(files.length).toBeGreaterThanOrEqual(40);
   });
 
   it('the package manifest declares no host-app dependency', () => {

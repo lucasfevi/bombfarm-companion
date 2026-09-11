@@ -4,8 +4,8 @@ import type { TeamPlanHeroStats } from '@bombfarm/domain/team-plan/types';
 import type { PointAlloc } from '@bombfarm/domain/gear';
 import { accordionLedgerBodyClass } from '@bombfarm/ui';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import type { Lang, RosterCopy, StatPanelCopy } from '@bombfarm/hero/copy';
-import type { TeamPlanCopy } from '../copy';
+import type { Lang } from '@bombfarm/hero/copy';
+import type { TeamPlanScreenCopy } from '../copy';
 import { HeroStatBreakdown } from './hero-stat-breakdown';
 import { HeroPointBreakdown } from './hero-point-breakdown';
 import { HeroProposedGear, type HeroGearFlow } from './hero-proposed-gear';
@@ -31,7 +31,7 @@ export function HeroDetailPanel({
   heroNameFallback,
   pointsReset,
 }: {
-  t: RosterCopy & StatPanelCopy & TeamPlanCopy;
+  t: TeamPlanScreenCopy;
   lang: Lang;
   stats: HeroDetailPanelStats;
   gear: HeroGearFlow;

@@ -2,9 +2,10 @@
 
 import { useDroppable } from '@dnd-kit/core';
 import { cn } from '@bombfarm/ui';
-import type { HeroRecord } from '@/shared/lib/storage';
-import type { ScopeState } from '@/shared/stores/team-plan/types';
-import type { Lang, Strings } from '@/shared/i18n';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import type { Lang } from '@bombfarm/hero/copy';
+import type { ScopeState } from '../core/hero-scope';
+import type { TeamPlanCopy } from '../copy';
 import { ScopeHeroCard } from './scope-hero-card';
 
 export function ScopeColumn({
@@ -22,7 +23,7 @@ export function ScopeColumn({
   tip: string;
   heroes: HeroRecord[];
   scopeByHeroId: Record<string, ScopeState>;
-  t: Strings;
+  t: TeamPlanCopy;
   lang: Lang;
   onScope: (heroId: string, scope: ScopeState) => void;
 }) {
@@ -61,7 +62,7 @@ export function ScopeColumn({
               scope={scopeByHeroId[hero.id] ?? scope}
               t={t}
               lang={lang}
-              onScope={(next) => onScope(hero.id, next)}
+              onScope={onScope}
             />
           ))
         )}

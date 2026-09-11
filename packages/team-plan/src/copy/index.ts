@@ -12,7 +12,7 @@ import { teamPlanObjectivePairsEn } from './objective-en';
 import { teamPlanObjectivePairsPtBR } from './objective-pt-BR';
 import { teamPlanGearFlowEn } from './gear-flow-en';
 import { teamPlanGearFlowPtBR } from './gear-flow-pt-BR';
-import type { Lang } from '@bombfarm/hero/copy';
+import type { Lang, RosterCopy, StatPanelCopy } from '@bombfarm/hero/copy';
 import type { TeamPlanHostCopy } from './host-copy';
 
 export { teamPlanPageEn } from './en';
@@ -45,8 +45,14 @@ export const teamPlanPtBR: TeamPlanCopy = {
 export type TeamPlanCopy = { readonly [K in keyof typeof teamPlanEn]: string };
 export type TeamPlanCopyKey = keyof TeamPlanCopy;
 
-/** What the screen takes: the package's own dictionary plus every host-owned string. */
-export type TeamPlanScreenCopy = TeamPlanCopy & TeamPlanHostCopy;
+/**
+ * What the screen takes: the package's own dictionary, every host-owned string, and the
+ * hero-identity/stat-panel vocabulary the per-hero breakdown panels read from deep in the tree
+ * (`RosterCopy` for a hero's rank/rarity chip, `StatPanelCopy` for the shared stat-table labels)
+ * — the same two contracts `@bombfarm/hero`'s own panels take, so a host that already draws the
+ * Heroes screen supplies nothing new here.
+ */
+export type TeamPlanScreenCopy = TeamPlanCopy & TeamPlanHostCopy & RosterCopy & StatPanelCopy;
 
 export const TEAM_PLAN_STRINGS: Record<Lang, TeamPlanCopy> = { en: teamPlanEn, pt: teamPlanPtBR };
 

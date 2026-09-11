@@ -159,10 +159,11 @@ function collectHits(files: string[]): Hit[] {
 describe('max props (error, non-DOM props only, no allowlist)', () => {
   const files = walk(PACKAGE_SRC);
 
-  it('the scan reaches this package\'s sources — it is not passing over an empty set', () => {
-    // Until later tasks land the components, the scan sees only the scaffold's own .tsx
-    // fixtures (none yet) — assert it at least finds this file's directory correctly.
-    expect(Array.isArray(files)).toBe(true);
+  it('the scan reaches this package\'s components — it is not passing over an empty set', () => {
+    const names = files.map((abs) => path.basename(abs));
+    expect(names).toContain('team-plan-screen.tsx');
+    expect(names).toContain('scope-column.tsx');
+    expect(files.length).toBeGreaterThanOrEqual(20);
   });
 
   it('red state: a fabricated nine-prop component is counted over the budget', () => {

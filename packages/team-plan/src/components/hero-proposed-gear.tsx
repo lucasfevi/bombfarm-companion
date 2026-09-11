@@ -3,10 +3,10 @@
 import { formatItemRosterTooltip } from '@bombfarm/domain/game-labels';
 import { cn, Tooltip, mutedClass } from '@bombfarm/ui';
 import { ItemIcon, rosterIconTooltipTriggerClass } from '@bombfarm/game-art';
-import { sub, type Lang, type RosterCopy } from '@bombfarm/hero/copy';
+import { sub, type Lang } from '@bombfarm/hero/copy';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { isKeptExistingGearFlowRow, type GearFlowRow } from '../model/gear-flow-rows';
-import type { TeamPlanCopy } from '../copy';
+import type { TeamPlanScreenCopy } from '../copy';
 import { HeroOriginTag } from './hero-origin-tag';
 
 /**
@@ -33,7 +33,7 @@ export function HeroProposedGear({
   heroByScopeKey,
   heroNameFallback,
 }: {
-  t: RosterCopy & TeamPlanCopy;
+  t: TeamPlanScreenCopy;
   lang: Lang;
   gear: HeroGearFlow;
   heroByScopeKey: Map<string, HeroRecord>;

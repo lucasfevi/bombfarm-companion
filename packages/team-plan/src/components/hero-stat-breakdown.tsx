@@ -5,10 +5,9 @@ import { SHEET_PANEL_KEYS } from '@bombfarm/domain/planner-constants';
 import type { TeamPlanHeroStats } from '@bombfarm/domain/team-plan/types';
 import { sheetStatUnit } from '@bombfarm/hero/model';
 import { DeltaTable, type DeltaTableRow } from '@bombfarm/ui';
-import type { StatPanelCopy } from '@bombfarm/hero/copy';
-import type { TeamPlanCopy } from '../copy';
+import type { TeamPlanScreenCopy } from '../copy';
 
-type Copy = StatPanelCopy & TeamPlanCopy;
+type Copy = TeamPlanScreenCopy;
 
 /** `HeroSheet` fields shown in the Combat grid, in display order (no Luck — see below). */
 const BREAKDOWN_STAT_KEYS = SHEET_PANEL_KEYS.filter(
