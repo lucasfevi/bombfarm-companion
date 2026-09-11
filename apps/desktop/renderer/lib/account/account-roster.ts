@@ -10,14 +10,19 @@
  * lists heroes must not have to invent a pool override or a return-bonus mode to see them.
  */
 import { parseAccountPayload, type AccountImportData } from '@bombfarm/domain/import-save';
+import type { InventoryItem } from '@bombfarm/domain/inventory';
 import type { AccountView } from '@bombfarm/contracts';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { capturedAtOf } from './account-facts';
 
-/** One parse of one account read: its completed roster, and the account-wide values beside it. */
+/** One parse of one account read: its completed roster, the account-wide values beside it, and
+ *  the gear-only pool the same parse produced. */
 export type AccountRoster = {
   readonly heroes: HeroRecord[];
   readonly account: AccountImportData;
+  /** The gear-only pool the same parse produced — what the optimizer moves and forges. The
+   *  Inventory screen draws `inventoryView`, a different list on purpose. */
+  readonly inventory: InventoryItem[];
 };
 
 /** `null` when the payload did not parse at all — never a partial roster over the heroes that did. */
@@ -41,5 +46,5 @@ export function buildAccountRoster(view: AccountView): AccountRoster | null {
     updatedAt,
   }));
 
-  return { heroes, account: parsed.account };
+  return { heroes, account: parsed.account, inventory: parsed.inventory };
 }

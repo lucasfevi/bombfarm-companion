@@ -155,3 +155,24 @@ describe('the account-wide block comes from the same parse as the roster', () =>
     expect(roster.account).toEqual(parseAccountPayload(payload, []).account);
   });
 });
+
+describe('the gear-only pool of the same parse, surfaced beside the roster', () => {
+  it('the committed offline account yields its 137 gear items, each with a string id and defId', () => {
+    const roster = required(buildAccountRoster(viewOf(offlinePayload())), 'expected a roster');
+    expect(roster.inventory).toHaveLength(137);
+    for (const item of roster.inventory) {
+      expect(typeof item.id).toBe('string');
+      expect(typeof item.defId).toBe('string');
+    }
+  });
+
+  it('an account with no items yields an empty pool rather than throwing', () => {
+    const roster = required(buildAccountRoster(viewOf(basePayload())), 'expected a roster');
+    expect(roster.inventory).toEqual([]);
+  });
+
+  it('calls parseAccountPayload exactly once', () => {
+    const source = readFileSync(path.join(__dirname, 'account-roster.ts'), 'utf8');
+    expect(source.match(/parseAccountPayload\(/g)).toHaveLength(1);
+  });
+});
