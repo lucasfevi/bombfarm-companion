@@ -18,11 +18,21 @@ import {
   statPanelCopyFor,
   type GearPanelCopy,
   type HeroCopy,
+  type Lang,
   type RosterBoardCopy,
   type RosterCopy,
   type StatPanelCopy,
 } from '@bombfarm/hero/copy';
+import {
+  teamPlanEn,
+  teamPlanPtBR,
+  type TeamPlanCopy,
+  type TeamPlanHostCopy,
+  type TeamPlanScreenCopy,
+} from '@bombfarm/team-plan/copy';
 import { useLocale, type Copy } from '../lib/copy';
+
+export type { TeamPlanScreenCopy };
 
 /** Re-exported so a screen naming one of these contracts in a prop type does not have to import
  *  a package dictionary module of its own — the one-module rule above covers types too. */
@@ -129,4 +139,54 @@ export function useGearPanelCopy(): GearPanelCopy {
  *  plain composition rather than a second cache to keep correct. */
 export function farmScreenCopy(farm: FarmCopy, t: Copy): FarmScreenCopy {
   return { ...farm, ...rosterCopyFrom(t) };
+}
+
+/** The package's own dictionary in the app's language — the two objects the package exports,
+ *  picked by the same `DomainLang` every other package dictionary here is picked by. */
+export function useTeamPlanCopy(): TeamPlanCopy {
+  return useLocale().lang === 'en' ? teamPlanEn : teamPlanPtBR;
+}
+
+/**
+ * The host half of the optimizer's dictionary, key by key — a spread would let an app key shadow a
+ * package string silently and stop the typecheck naming the key when the contract gains a member.
+ */
+export function optimizerHostCopyFrom(t: Copy): TeamPlanHostCopy {
+  return {
+    teamPlanEmptyNoRosterTitle: t.optimizerEmptyNoRosterTitle,
+    teamPlanEmptyNoRosterBody: t.optimizerEmptyNoRosterBody,
+    teamPlanEmptyNoInventoryTitle: t.optimizerEmptyNoInventoryTitle,
+    teamPlanEmptyNoInventoryBody: t.optimizerEmptyNoInventoryBody,
+    teamPlanEmptyAllLeaveAloneTitle: t.optimizerEmptyAllLeaveAloneTitle,
+    teamPlanEmptyAllLeaveAloneBody: t.optimizerEmptyAllLeaveAloneBody,
+    teamPlanBlockedBody: t.optimizerBlockedBody,
+    teamPlanObjectiveFarmNeedsMaxPhase: t.optimizerFarmNeedsMaxPhase,
+    teamPlanAuraDisclosureDps: t.optimizerAuraDisclosureDps,
+    teamPlanAuraDisclosureFarm: t.optimizerAuraDisclosureFarm,
+    teamPlanPlannerDivergenceDps: t.optimizerDivergenceDps,
+    teamPlanPlannerDivergenceFarm: t.optimizerDivergenceFarm,
+    teamPlanFarmAdvisorPointer: t.farmRespecOptimizerPointer,
+  };
+}
+
+/**
+ * The package's dictionary plus this app's thirteen host strings, plus the hero-identity and
+ * stat-panel vocabulary the per-hero breakdown panels deep in the screen read
+ * (`TeamPlanScreenCopy` is `TeamPlanCopy & TeamPlanHostCopy & RosterCopy & StatPanelCopy` — the
+ * same two contracts `@bombfarm/hero`'s own panels take). Memoised by the caller; allocates on
+ * every call by design, like `farmScreenCopy`.
+ *
+ * SPEC_DEVIATION: an earlier sketch of this function returned only `TeamPlanCopy &
+ * TeamPlanHostCopy`; the package as it landed widened `TeamPlanScreenCopy` to also require
+ * `RosterCopy` and `StatPanelCopy` (the same widening `apps/web`'s connector accounts for), so
+ * this composes those two in as well, key by key / via the existing package-default hooks — never
+ * a spread of the app dictionary itself into the contract.
+ */
+export function optimizerScreenCopy(teamPlan: TeamPlanCopy, t: Copy, lang: Lang): TeamPlanScreenCopy {
+  return {
+    ...teamPlan,
+    ...optimizerHostCopyFrom(t),
+    ...rosterCopyFrom(t),
+    ...statPanelCopyFor(lang),
+  };
 }
