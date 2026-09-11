@@ -12,8 +12,9 @@ import { fileURLToPath } from 'node:url';
 const PACKAGE_SRC = fileURLToPath(new URL('.', import.meta.url));
 const PACKAGE_ROOT = path.join(PACKAGE_SRC, '..');
 
-/** This guard's own file, which necessarily spells the specifiers it forbids. */
-const SELF_EXCLUDED_FILE = 'host-independence.test.ts';
+/** This guard's own file, and `components/host-blind.test.ts` — both necessarily spell the
+ *  specifiers they forbid in their own red-state fixtures. */
+const SELF_EXCLUDED_FILES = new Set(['host-independence.test.ts', 'host-blind.test.ts']);
 
 const HOST_SPECIFIER_RE =
   /['"](?:@\/[^'"]*|(?:\.\.\/)+apps\/(?:web|desktop)[^'"]*|apps\/(?:web|desktop)\/[^'"]*)['"]/;
@@ -59,7 +60,7 @@ describe('@bombfarm/team-plan imports from neither host app', () => {
     const files = sourceFiles(PACKAGE_SRC);
     const names = files.map((abs) => path.basename(abs));
     expect(names).toContain('team-plan-screen.tsx');
-    expect(names).toContain(SELF_EXCLUDED_FILE);
+    expect(names).toContain('host-independence.test.ts');
     expect(files.length).toBeGreaterThanOrEqual(40);
   });
 
@@ -72,7 +73,7 @@ describe('@bombfarm/team-plan imports from neither host app', () => {
     const offenders: string[] = [];
     for (const abs of sourceFiles(PACKAGE_SRC)) {
       const rel = path.relative(PACKAGE_SRC, abs).split(path.sep).join('/');
-      if (rel === SELF_EXCLUDED_FILE) continue;
+      if (SELF_EXCLUDED_FILES.has(path.basename(rel))) continue;
       const hit = findHostImport(fs.readFileSync(abs, 'utf8'));
       if (hit) {
         offenders.push(
