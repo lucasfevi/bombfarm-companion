@@ -614,7 +614,7 @@ export const ptBR: Copy = {
   heroesEffectiveTriggerAria: 'Ver detalhamento de {stat}',
 
   optimizerNavLabel: 'Otimizador',
-  optimizerUnavailableDescription: 'O planejador precisa de todas as partes da sua conta. Abra o jogo com o companion em execução e deixe aberto por um instante.',
+  optimizerUnavailableDescription: 'O otimizador precisa de todas as partes da sua conta. Abra o jogo com o companion em execução e deixe aberto por um instante.',
   optimizerEmptyNoRosterTitle: 'Nenhum herói nesta conta',
   optimizerEmptyNoRosterBody: 'Sua conta foi lida e não tem heróis, então ainda não há o que planejar.',
   optimizerEmptyNoInventoryTitle: 'Nenhum equipamento nesta conta',

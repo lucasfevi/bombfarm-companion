@@ -649,7 +649,7 @@ export const en = {
   // on this host: the tab's name, the reasons a screen is empty, the sentences that name the
   // desktop's other screens.
   optimizerNavLabel: 'Optimizer',
-  optimizerUnavailableDescription: 'The planner needs every part of your account. Open the game with the companion running and leave it open for a moment.',
+  optimizerUnavailableDescription: 'The optimizer needs every part of your account. Open the game with the companion running and leave it open for a moment.',
   optimizerEmptyNoRosterTitle: 'No heroes on this account',
   optimizerEmptyNoRosterBody: 'Your account was read and holds no heroes, so there is nothing to plan for yet.',
   optimizerEmptyNoInventoryTitle: 'No gear items on this account',

@@ -1,6 +1,6 @@
 /**
- * The one module in this renderer allowed to import `@bombfarm/farm/copy` or `@bombfarm/hero/copy`
- * — a structural guard in `src/main/source-guards.test.ts` fails the build if a second one appears.
+ * The one module in this renderer allowed to import `@bombfarm/farm/copy`, `@bombfarm/hero/copy`
+ * or `@bombfarm/team-plan/copy` — a structural guard in `src/main/source-guards.test.ts` fails the build if a second one appears.
  * It serves every screen drawn from a package's own views, not just the farm board, which is why
  * it sits beside the screens rather than inside one of them.
  *
