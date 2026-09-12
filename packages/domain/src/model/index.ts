@@ -4,21 +4,18 @@
 // Sustained (farming) DPS per hero:
 //   activeDPS = dano_avg × bombas/s × blocos/bomba × eficiência_IA
 //   dano_avg  = ataque × (1 − mitig × (1 − pen)) × (1 + critChance × critDmg)
-//   bombas/s  = (0.3 + 0.12 × velocidade_grid) × sf
-//   velocidade_grid = velocidade × 0.0386
-//   sf        = 0.5 + 0.5 × (1 − 1/(1 + 0.15 × stamina)), stamina = 2 + 0.02 × energia
+//   bombas/s  = 1 / cycle,  cycle = E[max(fuse, hop / w)] + latency   (cadence.ts)
+//   fuse      = 2 × (1 − cdr) floored at 0.4s ("piso de 20% do ciclo" — the floor
+//               lands exactly at the 80% CDR cap)
+//   w         = velocidade × 0.0386 cells/s; hop drawn from a measured histogram
+//               rescaled to the phase's difficulty band
 //   duty      = energia / (energia + rest)   [1 energy/sec drain; rest = house T]
 //   DPS       = activeDPS × duty
 //
-// Cycle model (frame analysis of a 42s combat recording, 2026-07-20, corrected):
-// blob-deduped tracking shows serial bombing — one live bomb per hero, the next
-// plant lands 0.0–0.5s after the previous explosion (avg 6.7 concurrent bombs
-// for 9 heroes; measured cycle ≈ fuse + ~0.15s). The wiki bombas/s formula
-// predicts a slower cycle than measured and appears stale post-rebalance.
-// Serial model: rate = 1/(ft + walkDelay), ft = 2 × (1 − cdr) floored at 0.4s
-// ("piso de 20% do ciclo" / CDR teto 80% — floor lands exactly at the 80% stat
-// cap). Under this model CDR is a real throughput stat through the full cap.
-// The legacy wiki-formula mode is kept as a toggle for comparison.
+// One cadence model serves every DPS figure — the advisor, the next-point
+// ranking, the team-plan scorer and the phase-farm board. The wiki's
+// `(0.3 + 0.12 × velocidade_grid) × sf` rate and the later serial
+// `1 / (fuse + walk)` model are both retired (apps/web/docs/adr/016).
 
 // Public barrel for shared/domain/model — split by concern (W7). Every
 // pre-split export is re-exported here so `@/shared/domain/model` keeps
@@ -38,7 +35,6 @@ export {
 
 export type {
   HeroSheet,
-  CycleModel,
   Context,
   StatKey,
   PointValue,
@@ -50,7 +46,6 @@ export type {
 export { STAT_LABELS } from './types';
 
 export {
-  staminaFactor,
   FUSE_FLOOR,
   fuseSeconds,
   marginalFuseSeconds,
@@ -71,6 +66,16 @@ export {
   GRID_SPEED_COEF,
   EFF_IA,
 } from './combat';
+
+export {
+  HOP_DISTRIBUTION,
+  CYCLE_LATENCY_SEC,
+  HOP1_CYCLE_SEC,
+  HOP_FIT_ATO,
+  HOP_DENSITY_EXPONENT,
+  hopScaleForAto,
+  cycleSecondsForHero,
+} from './cadence';
 
 export { rankNextPoint, energySwitchPoint, RANK_STATS } from './points-rank';
 

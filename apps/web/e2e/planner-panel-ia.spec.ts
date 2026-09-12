@@ -172,7 +172,8 @@ test.describe('planner tabs IA (PTI)', () => {
 
 test.describe('HeroStrip reset-advice warn chrome', () => {
   // Confirmed directly against computeAdvisorPipeline (not guessed): pts.cdr = level fires the
-  // reset gate (~251% gainPct) on this seeded hero; pts.attack = level does not (~0%).
+  // reset gate (~188% gainPct under the measured bomb cycle; ~251% under the retired serial
+  // one) on this seeded hero; pts.attack = level does not (~0%).
   function heroStripHero(pts: Record<string, number>, battleAllowed?: boolean) {
     return {
       ...importedRoster,

@@ -107,8 +107,7 @@ export type StatPanelCopy = {
   bdFormulaCriticalHit: string;
   bdFormulaCritFactor: string;
   bdFormulaFuse: string;
-  bdFormulaBombsSerial: string;
-  bdFormulaBombsWiki: string;
+  bdFormulaBombs: string;
   bdFormulaField: string;
   bdFormulaRest: string;
   bdFormulaUptime: string;
@@ -125,8 +124,9 @@ export type StatPanelCopy = {
   bdTermCd: string;
   bdTermCc: string;
   bdTermCdr: string;
+  bdTermCycle: string;
   bdTermWalk: string;
-  bdTermSf: string;
+  bdTermBand: string;
   bdTermDrain: string;
   bdTermRestSeconds: string;
   bdTermField: string;

@@ -208,8 +208,7 @@ describe('luck never reaches DPS scoring', () => {
       restSeconds: 600,
       mitigation: 0.1,
       blastRange: 1,
-      cycleModel: 'serial',
-      walkDelay: 0.15,
+      ato: 1,
       drainMult: 1,
     };
     // A variable (not a fresh literal) of the wider Record<SheetKey, number> shape —

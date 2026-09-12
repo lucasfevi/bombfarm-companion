@@ -92,13 +92,13 @@ describe('DPS next-point ranking — golden fixture (pre-deletion, pinned byte-f
   it('Gale L48 (geared) — full ranking pinned to full precision, energy first', () => {
     const result = pipelineForHero(heroByName('Gale'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
-      { stat: 'energy', gainPct: 1.7311496794442327 },
-      { stat: 'attack', gainPct: 1.7125841501893335 },
+      { stat: 'energy', gainPct: 1.731149679444255 },
+      { stat: 'attack', gainPct: 1.7193730221849446 },
+      { stat: 'speed', gainPct: 1.073190750541042 },
       { stat: 'critDmg', gainPct: 0.4459730294051445 },
-      { stat: 'critChance', gainPct: 0.09916082858885122 },
-      { stat: 'cdr', gainPct: 0.04603364218642714 },
-      { stat: 'penetration', gainPct: 0.0019944659124915276 },
-      { stat: 'speed', gainPct: 0 },
+      { stat: 'critChance', gainPct: 0.09916082858880682 },
+      { stat: 'cdr', gainPct: 0.01350607505610224 },
+      { stat: 'penetration', gainPct: 0.001994465912513732 },
     ]);
   });
 
@@ -110,13 +110,13 @@ describe('DPS next-point ranking — golden fixture (pre-deletion, pinned byte-f
   it('Kael L2 (naked) — full ranking pinned to full precision, attack dominant', () => {
     const result = pipelineForHero(heroByName('Kael'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
-      { stat: 'attack', gainPct: 15.948186475064418 },
+      { stat: 'attack', gainPct: 15.948186475064375 },
       { stat: 'energy', gainPct: 7.106169237061066 },
+      { stat: 'speed', gainPct: 1.1173450961979858 },
       { stat: 'critDmg', gainPct: 0.21177885060466028 },
-      { stat: 'critChance', gainPct: 0.038417584566374785 },
-      { stat: 'cdr', gainPct: 0.030742187784227326 },
-      { stat: 'penetration', gainPct: 0.00040830708942785066 },
-      { stat: 'speed', gainPct: 0 },
+      { stat: 'critChance', gainPct: 0.03841758456635258 },
+      { stat: 'cdr', gainPct: 0.008736710587298191 },
+      { stat: 'penetration', gainPct: 0.0004083070894500551 },
     ]);
   });
 });
@@ -126,8 +126,7 @@ describe('DPS next-point ranking — CDR marginal-fuse special case (golden, pre
     restSeconds: 12 * 60,
     mitigation: 0.067,
     blastRange: 1,
-    cycleModel: 'serial',
-    walkDelay: 0.15,
+    ato: 1,
     drainMult: 1,
   });
 
@@ -148,7 +147,7 @@ describe('DPS next-point ranking — CDR marginal-fuse special case (golden, pre
     const ranking = rankNextPoint(sampleHero(), baseCtx());
     const cdr = ranking.find((r) => r.stat === 'cdr')!;
     expect(cdr.gainPct).toBeGreaterThan(0);
-    expect(cdr.gainPct).toBe(0.05130836326321386);
+    expect(cdr.gainPct).toBe(0.013615513971942939);
   });
 
   it('cdr at the 80% cap: exactly zero gain, pinned to full precision', () => {
@@ -162,13 +161,13 @@ describe('DPS next-point ranking — CDR marginal-fuse special case (golden, pre
     const withBareObject = rankNextPoint(sampleHero(), baseCtx(), {});
     expect(pick(withBareObject)).toEqual(pick(withNoOptions));
     expect(pick(withNoOptions)).toEqual([
-      { stat: 'attack', gainPct: 2.499999999999991 },
-      { stat: 'energy', gainPct: 0.9381107491856833 },
+      { stat: 'attack', gainPct: 2.499999999999969 },
+      { stat: 'speed', gainPct: 1.07671627058179 },
+      { stat: 'energy', gainPct: 0.9381107491856611 },
       { stat: 'critDmg', gainPct: 0.5474452554744547 },
       { stat: 'critChance', gainPct: 0.10218978102187748 },
-      { stat: 'cdr', gainPct: 0.05130836326321386 },
-      { stat: 'penetration', gainPct: 0.003570058399771092 },
-      { stat: 'speed', gainPct: 0 },
+      { stat: 'cdr', gainPct: 0.013615513971942939 },
+      { stat: 'penetration', gainPct: 0.0035700583997488877 },
     ]);
   });
 });

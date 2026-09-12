@@ -255,7 +255,13 @@ const KEYS_REMOVED: readonly string[] = [
   // planner, advice the hero strip's warn border and the Points panel's own gain line already
   // carry for the hero being looked at. Its two strings have no reader left.
   'resetAdviceRosterBanner',
-  'resetAdviceRosterHero',
+  // One bombing-cadence model (2026-09-11): the Bombs/s breakdown stops switching between a
+  // serial and a wiki formula and prints the one measured cycle (`bdFormulaBombs`, in
+  // `KEYS_ADDED`), so the two per-model expressions and the wiki formula's stamina-factor term
+  // have no reader left. The retired Context panel's cycle-model control — `cycle`,
+  // `cycleSerial`, `cycleWiki`, `walkS` — had already lost its screen and now loses the model it
+  // named. One line: this file sits at the `src/tests/**` max-lines cap.
+  'resetAdviceRosterHero', 'bdFormulaBombsSerial', 'bdFormulaBombsWiki', 'bdTermSf', 'cycle', 'cycleSerial', 'cycleWiki', 'walkS',
 ];
 
 /**
@@ -464,7 +470,10 @@ const KEYS_ADDED: readonly string[] = [
   'heroesFilterActiveHeroes',
   'heroesAbilityFilterLabel',
   'heroesAbilityFilterOption',
-  'heroesAbilityFilterAbsent',
+  // One bombing-cadence model (2026-09-11): the Bombs/s breakdown's single expression and the
+  // two glossary tips its new tokens need — the measured cycle itself and the difficulty band
+  // whose prop density sets the hop lengths. One line: this file sits at the max-lines cap.
+  'heroesAbilityFilterAbsent', 'bdFormulaBombs', 'bdTermCycle', 'bdTermBand',
   // The Optimizer's field-crowding opt-out (2026-09-09) and the removals section that made it
   // necessary. The plan could always take gear off a hero and hand it back — on a field that
   // cannot seat everyone, a weak hero wearing less crowds the others out less — but the page
@@ -1001,13 +1010,19 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   // / "buffs de time" now says "team aura" / "auras de time", so the explain block does not
   // switch vocabulary between one paragraph and the next.
   // One line: the blanket `src/tests/**` max-lines cap (650) sits one line above this file.
-  'bdSrcTeam', 'effectiveTip', 'missingHint', 'explainSections.0.code', 'explainSections.1.p.0', 'explainSections.5.p.0', 'explainSections.7.p.1', 'explainSections.8.p.1',
   // Team auras priced one way (2026-09-12): the Optimizer paragraph (`explainSections.8.p.1`,
   // declared above) stops saying its totals "exclude the scored hero" — false since every
   // carrier's own rank started counting — and says they are weighted by predicted uptime, the
   // Farm board's own form; `effectiveTip` (declared above) now names the aura switches that sit
   // above the panel it captions. The two Optimizer disclosures that said the same are in
   // `KEYS_ADDED`, so their values are unconstrained here. No new entry.
+  // Also on that line — one bombing-cadence model (2026-09-11): the "Bombs per second" explain section stops
+  // describing a serial fuse-plus-0.15 s cycle with a wiki toggle beside it and describes the
+  // measured cycle — max(fuse, hop / walk speed) over measured hop lengths — whose code block
+  // follows; its third paragraph now says the same cycle prices every figure the planner
+  // prints. `bdTermWalk` stops naming a walk DELAY and names the walk SPEED the cycle divides by.
+  // One line: this file sits at the max-lines cap.
+  'bdSrcTeam', 'effectiveTip', 'missingHint', 'explainSections.0.code', 'explainSections.1.p.0', 'explainSections.5.p.0', 'explainSections.7.p.1', 'explainSections.8.p.1', 'explainSections.2.p.0', 'explainSections.2.p.2', 'explainSections.2.code', 'bdTermWalk',
 ];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {

@@ -233,8 +233,12 @@ const CRIT_DMG_MULT_MAP = {
   // +2 (line numbers only): the star-multiplier change (0.5 -> 0.25) added two explanatory
   // lines to the expectation above the last three hits. Still FOURTEEN matches,
   // unchanged in kind.
+  // −1 (line numbers only): the one-cadence-model change replaced the fixture Context's two
+  // serial-cycle fields with one difficulty-band field above every hit. Still FOURTEEN matches,
+  // unchanged in kind. The same one-line shrink moves points-reopt.test.ts below by −1, and
+  // stat-breakdown.test.ts by +6 net (its model import grew by seven lines for the same change).
   'apps/web/src/tests/derive.test.ts': [
-    71, 73, 134, 162, 200, 230, 254, 293, 307, 359, 398, 436, 482, 514,
+    70, 72, 133, 161, 199, 229, 253, 292, 306, 358, 397, 435, 481, 513,
   ],
   // +8 (line number only) on the second hit: a second entry, with its rationale comment, joined
   // COMPUTED_PATH_ALLOWLIST above this line when the 2026-08-31 soulbound capture landed. Both
@@ -242,9 +246,9 @@ const CRIT_DMG_MULT_MAP = {
   'apps/web/src/tests/fixture-corpus.test.ts': [23, 83],
   'apps/web/src/tests/fixtures/sheet-math/README.md': [6],
   'apps/web/src/tests/fixtures/storage-roundtrip-20260729.json': [3],
-  'apps/web/src/tests/points-reopt.test.ts': [106, 489],
+  'apps/web/src/tests/points-reopt.test.ts': [105, 488],
   'apps/web/src/tests/stale-account-drop.test.ts': [32, 73, 74, 79, 90],
-  'apps/web/src/tests/stat-breakdown.test.ts': [126, 176, 202],
+  'apps/web/src/tests/stat-breakdown.test.ts': [132, 182, 208],
   // +1 (line number only): PR #139's rewrite of the "existing empty state" comment above line
   // 109 added a net one line. Match itself is unchanged in count and in kind.
   'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [40, 108],
@@ -282,7 +286,9 @@ const CRIT_DMG_MULT_MAP = {
   // one. Count and kind unchanged.
   // +5 more (line numbers only, last four): the two notes above on the phase control and the
   // pipeline-facts hook moving. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 328, 333, 343, 352],
+  // +4 more (line numbers only, last four): the one-cadence-model note on the derive.test.ts
+  // entry above. Count and kind unchanged.
+  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 334, 339, 349, 358],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 

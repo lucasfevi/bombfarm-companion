@@ -15,14 +15,11 @@ export interface HeroSheet {
   energyPerPoint: number;
 }
 
-export type CycleModel = 'serial' | 'wiki';
-
 export interface Context {
   restSeconds: number;
   mitigation: number; // 0..1 phase mitigation
   blastRange: number; // alcance; blocos/bomba = 1 + 0.5 × range. Base 1 for every hero, raised only by Explosão Ampla.
-  cycleModel: CycleModel;
-  walkDelay: number; // seconds between explosion and next plant (serial model)
+  ato: number; // difficulty band (1..5) of the phase being priced — selects the bomb cycle's hop histogram
   drainMult: number; // energy drain multiplier (<1 with Bateria Extra / Fôlego)
 }
 

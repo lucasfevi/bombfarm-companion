@@ -95,7 +95,7 @@ export function rankNextPoint(hero: HeroSheet, context: Context, optionsOrBases?
     if (Object.keys(patch).length === 0) return 0;
     const next = { ...hero, ...patch };
     // Fuse floor (0.4s) lands at the 80% CDR cap — rank with linear fuse until cap.
-    if (stat === 'cdr' && hero.cdr < STAT_CAPS.cdr - 1e-9 && context.cycleModel === 'serial') {
+    if (stat === 'cdr' && hero.cdr < STAT_CAPS.cdr - 1e-9) {
       const curFuse = marginalFuseSeconds(hero.cdr);
       const nextFuse = marginalFuseSeconds(next.cdr);
       const curMarginal = sustainedDpsWithFuse(hero, context, curFuse);
