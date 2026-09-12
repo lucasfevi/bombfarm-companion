@@ -93,6 +93,19 @@ export const heroEn = {
   heroDetailPhaseNoMatch: "No phase matches that.",
   heroDetailPhaseMoreMatches: "Showing {shown} of {matched} — keep typing to narrow.",
 
+  heroDetailAurasTitle: "Team auras",
+  heroDetailAurasTip:
+    "Only this hero's own aura counts until you switch the others on. A switched-on aura counts every other hero in rotation that carries it, as if they stood on the field the whole time. The Farm screen and the Optimizer price the same auras by each carrier's predicted uptime instead, so their figures can differ from these.",
+  heroDetailAuraOwn: "Own: {value}",
+  heroDetailAuraOthersOne: "{value} from one other hero",
+  heroDetailAuraOthersMany: "{value} from {count} other heroes",
+  heroDetailAuraNoCarriers: "No other hero in rotation carries it.",
+  heroDetailAuraSwitchAria: "Count the other carriers of {name}",
+  heroDetailAuraUnitAttack: "+{value}% attack",
+  heroDetailAuraUnitCrit: "+{value} crit points",
+  heroDetailAuraUnitSpeed: "+{value}% speed",
+  heroDetailAuraUnitDrain: "−{value}% energy drain",
+
   heroDetailSheetTitle: "Statistic sheet",
   heroDetailPointsTitle: "Points spent",
   heroDetailBreakdownTitle: "Per-statistic breakdown",

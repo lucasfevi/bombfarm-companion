@@ -42,6 +42,7 @@ import {
   RosterRail,
   RosterToolbar,
   SheetTable,
+  TeamAuraSwitchesPanel,
 } from '@bombfarm/hero/components';
 import {
   DEFAULT_ROSTER_BOARD_SORT,
@@ -69,7 +70,9 @@ import type { RankMode } from '@bombfarm/domain/model';
 import { pipelineForHero } from '@bombfarm/domain/roster-dps';
 import type { PipelineFacts } from '@bombfarm/domain/stat-breakdown';
 import type { SheetKey } from '@bombfarm/domain/planner-constants';
-import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import { noTeamAuraSwitches, type TeamAuraSwitches, type TeamBuffId } from '@bombfarm/domain/team-buffs';
+import { accountAroundHero, type AccountBlock } from '../../lib/account/account-shared';
 import { useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
 import {
@@ -179,6 +182,15 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   // Which target the next-point ranking is read against. View-local and stored nowhere, like the
   // phase override above — it changes what this screen prints, never anything on the account.
   const [rankMode, setRankMode] = useState<RankMode>('dps');
+  // Which team auras the rest of the roster is counted for, on top of the shown hero's own. All
+  // off on every visit, like the phase override: a what-if that outlived the screen would inflate
+  // every figure here with no control in sight to explain it.
+  const [auraSwitches, setAuraSwitches] = useState<TeamAuraSwitches>(noTeamAuraSwitches);
+  const onAuraSwitch = useCallback((buffId: TeamBuffId, enabled: boolean) => {
+    setAuraSwitches((current) =>
+      current[buffId] === enabled ? current : { ...current, [buffId]: enabled },
+    );
+  }, []);
   const farmPhase = useFarmSelectedPhase();
 
   const { rows, roster } = model;
@@ -197,32 +209,38 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   );
   const figures = useMemo(() => heroFigures(phaseReading, roster), [phaseReading, roster]);
 
+  // The shown hero's own account: the shared block with its own aura total overlaid — its own
+  // aura always, the rest of the roster's through the switches above.
+  const heroAccount = useMemo(
+    () =>
+      figures.kind === 'at'
+        ? accountAroundHero(figures.inputs.account, active.hero, roster.heroes, auraSwitches)
+        : null,
+    [active.hero, figures, roster.heroes, auraSwitches],
+  );
+
   // One pipeline run for the whole detail pane. Every panel below the identity panel reads off it
   // — combat, the ranking, the stat sheet, the items and the breakdown — so running it once here
   // is what keeps a hero switch from costing five identical runs.
   const combat = useMemo(
     () =>
-      figures.kind === 'at'
-        ? pipelineForHero(
-            active.hero,
-            figures.inputs.account,
-            figures.inputs.phase,
-            figures.inputs.mitigationPct,
-          )
+      figures.kind === 'at' && heroAccount
+        ? pipelineForHero(active.hero, heroAccount, figures.inputs.phase, figures.inputs.mitigationPct)
         : null,
-    [active.hero, figures],
+    [active.hero, figures, heroAccount],
   );
 
   const gainsCache = useRef(createAbilityGainCache());
   const abilityGains =
-    figures.kind === 'at'
+    figures.kind === 'at' && heroAccount
       ? cachedAbilityGains(
           gainsCache.current,
           abilityGainFor,
           active.hero,
-          figures.inputs.account,
+          heroAccount,
           figures.inputs.phase,
           figures.inputs.mitigationPct,
+          [figures.inputs.account, auraSwitches],
         )
       : NO_ABILITY_GAINS;
 
@@ -365,6 +383,9 @@ function HeroesRoster({ model }: { model: RosterModel }) {
                     overridden={overridePhase !== null}
                     onOverridePhase={setOverridePhase}
                     onClearOverride={onClearOverride}
+                    roster={roster.heroes}
+                    auraSwitches={auraSwitches}
+                    onAuraSwitch={onAuraSwitch}
                     rankMode={rankMode}
                     onRankMode={setRankMode}
                     statLabel={boundStatLabel}
@@ -413,6 +434,9 @@ function HeroDetailTabs({
   overridden,
   onOverridePhase,
   onClearOverride,
+  roster,
+  auraSwitches,
+  onAuraSwitch,
   rankMode,
   onRankMode,
   statLabel: boundStatLabel,
@@ -432,6 +456,9 @@ function HeroDetailTabs({
   overridden: boolean;
   onOverridePhase: (phase: number) => void;
   onClearOverride: () => void;
+  roster: readonly HeroRecord[];
+  auraSwitches: TeamAuraSwitches;
+  onAuraSwitch: (buffId: TeamBuffId, on: boolean) => void;
   rankMode: RankMode;
   onRankMode: (next: RankMode) => void;
   statLabel: (key: SheetKey) => string;
@@ -486,6 +513,16 @@ function HeroDetailTabs({
                 overridden={overridden}
                 onOverridePhase={onOverridePhase}
                 onClearOverride={onClearOverride}
+                lang={lang}
+              />
+              {/* The auras those figures count. Off, the hero is priced alone but for its own aura;
+                  on, the rest of the roster's carriers join at full presence. Beside the phase
+                  because both are what-ifs about the same figures, held the same way. */}
+              <TeamAuraSwitchesPanel
+                hero={active.hero}
+                roster={roster}
+                switches={auraSwitches}
+                onSwitch={onAuraSwitch}
                 lang={lang}
               />
               <HeroCombat
@@ -603,7 +640,7 @@ function HeroCombat({
  */
 function effectiveFacts(
   hero: HeroRecord,
-  account: AccountShared,
+  account: AccountBlock,
   combat: AdvisorPipelineResult,
 ): PipelineFacts {
   return {

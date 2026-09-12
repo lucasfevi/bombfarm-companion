@@ -11,8 +11,8 @@ import { rollQualityFor, type RollQualityReport } from '@bombfarm/domain/roll-qu
 import type { HeroRecord } from '@/shared/lib/storage';
 import {
   selectAccountShared,
-  selectAccountSharedForCombat,
-  selectEffectiveTeamBuffs,
+  selectActiveHeroAccount,
+  selectActiveHeroTeamBuffs,
 } from '@/shared/stores/selectors/account-selectors';
 import {
   selectCombatMitigationPct,
@@ -74,13 +74,13 @@ export function selectHeroRollQuality(state: PlannerStore): RollQualityReport | 
   return result;
 }
 
-const abilityGainAccount = selectAccountSharedForCombat;
+const abilityGainAccount = selectActiveHeroAccount;
 
 function readAbilityGainDepTuple(state: PlannerStore): readonly unknown[] {
   return [
     selectDraftHeroRecord(state),
     selectAccountShared(state),
-    selectEffectiveTeamBuffs(state),
+    selectActiveHeroTeamBuffs(state),
     selectCombatPhase(state),
     selectCombatMitigationPct(state),
   ] as const;

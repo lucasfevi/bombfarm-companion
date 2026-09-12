@@ -11,7 +11,7 @@ Canonical keys (current):
 | --- | --- |
 | `bf-hp-heroes-v1` | `HeroRecord[]` |
 | `bf-hp-active-hero-v1` | active hero id |
-| `bf-hp-account-v1` | `AccountShared` (tree, team buffs, context, slots, fieldSlots, houseCycleSecs, forgeFloor) |
+| `bf-hp-account-v1` | `AccountShared` (tree, context, slots, fieldSlots, houseCycleSecs, forgeFloor); a record's `teamBuffs` / `teamBuffsOverride` are discarded on load |
 | `bf-hp-inventory-v1` | `InventorySnapshot` (`version`, `importedAt`, `items[]`) |
 | `bf-hp-gear-scope-v1` | Optimizer per-hero scope map (`Record<heroId, ScopeState>`) — see below |
 

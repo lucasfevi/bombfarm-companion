@@ -182,14 +182,14 @@ const CRIT_DMG_MULT_MAP = {
   // -27 (line number only): the phase control moved into `@bombfarm/farm` so the web planner
   // draws the same one, which took its definition out of this file, and the Combat stage is
   // mounted only while shown. Unchanged in count and kind.
-  'apps/desktop/renderer/app/heroes/heroes-view.tsx': [623],
+  'apps/desktop/renderer/app/heroes/heroes-view.tsx': [660],
   // The shared roster builder's own account fixture, same kind as the two farm entries below: a
   // raw save-shaped skills block handed to the parser, not a field the app reads.
   'apps/desktop/renderer/lib/account/account-roster.test.ts': [39],
   'apps/desktop/renderer/lib/account/account-view-store.test.ts': [34],
   // The desktop farm adapter's own account fixtures, same kind as the account-view entry above:
   // a raw save-shaped skills block, not a field the app reads.
-  'apps/desktop/renderer/lib/farm/farm-inputs.test.ts': [38, 150],
+  'apps/desktop/renderer/lib/farm/farm-inputs.test.ts': [38, 142],
   // +1 (line number only): the farm snapshot's capture-time regression tests added an import of
   // `settledBoard` above this fixture. Match itself is unchanged in count and in kind.
   'apps/desktop/renderer/lib/farm/use-farm-snapshot.test.ts': [46],
@@ -227,7 +227,7 @@ const CRIT_DMG_MULT_MAP = {
   // +12 more (line number only): issue #141's required-save-field check added the
   // `missingRequiredFields` field with its doc comment, and the domain import that types it,
   // above this line. Match itself is unchanged in count and in kind.
-  'apps/web/src/shared/lib/account-shared.ts': [199],
+  'apps/web/src/shared/lib/account-shared.ts': [184],
   'apps/web/src/shared/lib/stale-account.ts': [21],
   'apps/web/src/tests/advisor-pipeline.test.ts': [85],
   // +2 (line numbers only): the star-multiplier change (0.5 -> 0.25) added two explanatory
@@ -247,7 +247,7 @@ const CRIT_DMG_MULT_MAP = {
   'apps/web/src/tests/stat-breakdown.test.ts': [126, 176, 202],
   // +1 (line number only): issue #132's rewrite of the "existing empty state" comment above line
   // 109 added a net one line. Match itself is unchanged in count and in kind.
-  'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [40, 110],
+  'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [40, 108],
   'apps/web/src/tests/storage-stat-points-available-compat.test.ts': [104],
   // +12 (line numbers only) from the corpus-parity repurpose and the skip-counting fix's
   // comments above both hits. Count and kind unchanged.

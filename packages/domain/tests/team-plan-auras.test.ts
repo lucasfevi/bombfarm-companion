@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { combineTeamAuraPct } from '@bombfarm/domain/derive';
-import { TEAM_BUFF_CAP } from '@bombfarm/domain/team-buffs';
+import { TEAM_BUFF_CAP, computeTeamBuffsOverRotation } from '@bombfarm/domain/team-buffs';
 import { computeRosterAuras } from '@bombfarm/domain/team-plan/auras';
 import type { HeroPlanContext } from '@bombfarm/domain/team-plan/types';
 
@@ -81,14 +81,14 @@ describe('computeRosterAuras', () => {
     expect(auras.grito_guerra).toBe(20);
   });
 
-  it('donate and leaveAlone heroes contribute no aura', () => {
+  it('a leave-alone hero fields, so its aura counts at its duty; a donated one does not, whatever duty it is handed', () => {
     const contexts = [
       ctx('opt', 'optimize', { grito_guerra: 10 }),
       ctx('don', 'donate', { grito_guerra: 10 }),
       ctx('leave', 'leaveAlone', { grito_guerra: 10 }),
     ];
-    const auras = computeRosterAuras(contexts, { opt: 1, don: 1, leave: 1 });
-    expect(auras.grito_guerra).toBe(1 * 10 * 1);
+    const auras = computeRosterAuras(contexts, { opt: 1, don: 1, leave: 0.5 });
+    expect(auras.grito_guerra).toBe(1 * 10 * 1 + 1 * 10 * 0.5);
   });
 
   it('halving carrier duty halves aura contribution', () => {
@@ -98,15 +98,28 @@ describe('computeRosterAuras', () => {
     expect(half.folego_mineiro).toBe(full.folego_mineiro / 2);
   });
 
-  it('raw sum can exceed the aura cap; combineTeamAuraPct applies the cap once (Fault 4)', () => {
+  it('two full-time carriers over the cap read the cap, and the downstream clamp is then a no-op', () => {
     const contexts = [
       ctx('a', 'optimize', { grito_guerra: 60 }),
       ctx('b', 'optimize', { grito_guerra: 60 }),
     ];
     const auras = computeRosterAuras(contexts, { a: 1, b: 1 });
-    expect(auras.grito_guerra).toBeGreaterThan(TEAM_BUFF_CAP.grito_guerra);
+    expect(auras.grito_guerra).toBe(TEAM_BUFF_CAP.grito_guerra);
     const combined = combineTeamAuraPct(0, auras.grito_guerra, TEAM_BUFF_CAP.grito_guerra);
     expect(combined).toBe(TEAM_BUFF_CAP.grito_guerra);
+  });
+
+  it('two PART-time carriers over the cap read the expected capped total, not the clamped average — the same form as computeTeamBuffsOverRotation', () => {
+    const contexts = [
+      ctx('a', 'optimize', { grito_guerra: 20 }),
+      ctx('b', 'optimize', { grito_guerra: 20 }),
+    ];
+    const duty = { a: 0.6, b: 0.6 };
+    const auras = computeRosterAuras(contexts, duty);
+    // Clamping the duty-weighted sum gave min(20, 12 + 12) = 20, asserting a carrier is always
+    // on the field. Independently present carriers leave it empty 16% of the time: 0.84 × 20.
+    expect(auras.grito_guerra).toBeCloseTo(0.84 * 20, 12);
+    expect(auras).toEqual(computeTeamBuffsOverRotation(contexts, [0.6, 0.6]));
   });
 
   it('covers all four TEAM_BUFF_ABILITY_IDS', () => {

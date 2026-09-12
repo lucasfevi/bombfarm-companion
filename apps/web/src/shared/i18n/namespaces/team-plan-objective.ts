@@ -61,9 +61,9 @@ export const en = {
   teamPlanSaturationCalloutFarm:
     'Your field is full (battle load {duty} vs {slots} slots). The squad’s earning rate is shared across who can fight at once — advice only; this page will not bench or donate heroes for you.',
   teamPlanAuraDisclosureDps:
-    'Team auras here come from the scoped roster, exclude the hero being scored, and are weighted by each carrier’s duty. The Combat tab’s aura switches are ignored on this page but still drive the Planner’s own DPS.',
+    'Team auras here come from the scoped roster, each carrier weighted by its predicted uptime. The Combat tab’s aura switches are ignored on this page but still drive the Planner’s own DPS.',
   teamPlanAuraDisclosureFarm:
-    'Team auras here come from the scoped roster, exclude the hero being scored, and are weighted by each carrier’s duty. The Combat tab’s aura switches are ignored on this page, though the Planner page still follows them.',
+    'Team auras here come from the scoped roster, each carrier weighted by its predicted uptime. The Combat tab’s aura switches are ignored on this page, though the Planner page still follows them.',
   teamPlanPlannerDivergenceDps:
     'Planner DPS can differ from this page when roster-derived auras replace the Combat tab’s aura switches, or when {ability} is modelled here only.',
   teamPlanPlannerDivergenceFarm:
@@ -120,9 +120,9 @@ export const pt: typeof en = {
   teamPlanSaturationCalloutFarm:
     'Seu campo está lotado (carga de batalha {duty} vs {slots} slots). O ganho por hora do esquadrão é dividido entre quem pode lutar ao mesmo tempo — só orientação; esta página não banca nem doa heróis por você.',
   teamPlanAuraDisclosureDps:
-    'Auras de time aqui vêm do roster no escopo, excluem o herói pontuado e são ponderadas pelo duty de cada portador. Os interruptores de aura da aba Combate são ignorados nesta página, mas ainda movem o DPS do Planner.',
+    'Auras de time aqui vêm do roster no escopo, cada portador ponderado pelo seu tempo ativo previsto. Os interruptores de aura da aba Combate são ignorados nesta página, mas ainda movem o DPS do Planner.',
   teamPlanAuraDisclosureFarm:
-    'Auras de time aqui vêm do roster no escopo, excluem o herói pontuado e são ponderadas pelo duty de cada portador. Os interruptores de aura da aba Combate são ignorados nesta página, embora a página do Planner ainda os siga.',
+    'Auras de time aqui vêm do roster no escopo, cada portador ponderado pelo seu tempo ativo previsto. Os interruptores de aura da aba Combate são ignorados nesta página, embora a página do Planner ainda os siga.',
   teamPlanPlannerDivergenceDps:
     'O DPS do Planner pode divergir quando auras derivadas do roster substituem os interruptores de aura da aba Combate, ou quando {ability} é modelada só aqui.',
   teamPlanPlannerDivergenceFarm:

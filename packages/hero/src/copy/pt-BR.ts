@@ -94,6 +94,19 @@ export const heroPtBR: HeroCopy = {
   heroDetailPhaseNoMatch: "Nenhuma fase corresponde.",
   heroDetailPhaseMoreMatches: "Mostrando {shown} de {matched} — continue digitando para filtrar.",
 
+  heroDetailAurasTitle: "Auras de time",
+  heroDetailAurasTip:
+    "Só a aura do próprio herói conta até você ligar as outras. Uma aura ligada conta todos os outros heróis em rotação que a têm, como se ficassem em campo o tempo todo. A tela Farm e o Otimizador precificam as mesmas auras pelo tempo ativo previsto de cada portador, então os números deles podem diferir destes.",
+  heroDetailAuraOwn: "Própria: {value}",
+  heroDetailAuraOthersOne: "{value} de um outro herói",
+  heroDetailAuraOthersMany: "{value} de {count} outros heróis",
+  heroDetailAuraNoCarriers: "Nenhum outro herói em rotação tem essa aura.",
+  heroDetailAuraSwitchAria: "Contar os outros portadores de {name}",
+  heroDetailAuraUnitAttack: "+{value}% de ataque",
+  heroDetailAuraUnitCrit: "+{value} pontos de crítico",
+  heroDetailAuraUnitSpeed: "+{value}% de velocidade",
+  heroDetailAuraUnitDrain: "−{value}% de gasto de energia",
+
   heroDetailSheetTitle: "Ficha de atributos",
   heroDetailPointsTitle: "Pontos gastos",
   heroDetailBreakdownTitle: "Detalhe por atributo",

@@ -8,9 +8,12 @@
  * screen, and a cache holding only the current pair would recompute the whole panel every time the
  * player looked back at a hero they had already opened.
  *
- * The account block is the invalidation key. It is rebuilt from the payload on every account read
- * that actually changed something, so a cache entry can never outlive the numbers it was computed
- * from — which is the failure a per-hero-id cache alone would have.
+ * `computedFrom` is the invalidation key — the references every cached reading was computed from,
+ * compared one by one. The screen hands it the account block, rebuilt from the payload on every
+ * account read that actually changed something, and the aura switches, so a cache entry can never
+ * outlive the numbers it was computed from — which is the failure a per-hero-id cache alone would
+ * have. It is NOT the per-hero `account` itself: that one is derived per hero (its own auras are
+ * overlaid on the block), so keying on it would empty the cache on every hero switch.
  */
 import type { AbilityGain } from '@bombfarm/domain/ability-gain';
 import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
@@ -23,12 +26,20 @@ export type AbilityGainCompute = (
 ) => readonly AbilityGain[];
 
 export type AbilityGainCache = {
-  account: AccountShared | null;
+  computedFrom: readonly unknown[] | null;
   entries: Map<string, readonly AbilityGain[]>;
 };
 
 export function createAbilityGainCache(): AbilityGainCache {
-  return { account: null, entries: new Map() };
+  return { computedFrom: null, entries: new Map() };
+}
+
+function sameReferences(left: readonly unknown[] | null, right: readonly unknown[]): boolean {
+  return (
+    left !== null &&
+    left.length === right.length &&
+    left.every((value, index) => Object.is(value, right[index]))
+  );
 }
 
 export function cachedAbilityGains(
@@ -38,9 +49,10 @@ export function cachedAbilityGains(
   account: AccountShared,
   phase: number,
   mitigationPct: number,
+  computedFrom: readonly unknown[],
 ): readonly AbilityGain[] {
-  if (cache.account !== account) {
-    cache.account = account;
+  if (!sameReferences(cache.computedFrom, computedFrom)) {
+    cache.computedFrom = computedFrom;
     cache.entries.clear();
   }
 

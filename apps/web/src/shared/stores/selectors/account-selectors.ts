@@ -1,6 +1,7 @@
 import type { PlannerStore } from '@/shared/stores/planner-store';
 import type { AccountShared } from '@/shared/lib/storage';
-import { computeTeamBuffsFromDeployed, type TeamBuffId } from '@bombfarm/domain/team-buffs';
+import type { AccountShared as CombatAccount } from '@bombfarm/domain/shims/storage';
+import { computeTeamBuffsAroundHero, type TeamBuffId } from '@bombfarm/domain/team-buffs';
 
 export const selectTreeDanoTotal = (state: PlannerStore) => state.treeDanoTotal;
 export const selectTreeCritChance = (state: PlannerStore) => state.treeCritChance;
@@ -10,10 +11,6 @@ export const selectTreeEnergy = (state: PlannerStore) => state.treeEnergy;
 export const selectTreeTeamCoinPct = (state: PlannerStore) => state.treeTeamCoinPct;
 export const selectTreeLuckFlatPct = (state: PlannerStore) => state.treeLuckFlatPct;
 export const selectTreeXpMult = (state: PlannerStore) => state.treeXpMult;
-/** The user's explicit override, or `null` when the panel has never been touched (issue #132)
- *  — read this directly only to decide whether an override is active; combat math should read
- *  {@link selectEffectiveTeamBuffs} instead. */
-export const selectTeamBuffsOverride = (state: PlannerStore) => state.teamBuffsOverride;
 export const selectHouseIdx = (state: PlannerStore) => state.houseIdx;
 export const selectHouseLevel = (state: PlannerStore) => state.houseLevel;
 export const selectFarmPhase = (state: PlannerStore) => state.phase;
@@ -35,39 +32,47 @@ export const selectTreeFieldSlotsBonus = (state: PlannerStore) => state.treeFiel
 export const selectTreeBagTabsBonus = (state: PlannerStore) => state.treeBagTabsBonus;
 
 /**
- * The roster-wide team-buffs total every combat computation should actually use (issue #132):
- * the explicit override when one is set, else DERIVED from the deployed roster
- * (`computeTeamBuffsFromDeployed`) — never a stored field that silently starts at zero. A hero
- * carrying a team aura otherwise got no benefit from it until a user found the auto-fill button;
- * deriving by default closes that gap without taking away the override as a deliberate "what if"
- * planning affordance.
+ * The team-aura total every per-hero figure on the planner prices the ACTIVE hero against: its
+ * own aura always, plus each other fielded carrier at full presence for every aura whose Combat
+ * tab switch is on (`computeTeamBuffsAroundHero`). Read off the hero's PERSISTED record, so an
+ * edit to its own rank reaches the live preview through `substituteHeroAbilities` (the advisor's
+ * `previewTeamBuffs`), exactly as it did against the old roster total.
  *
- * Module-level single-entry cache (matching `selectAdvisorPipeline`/
- * `selectFarmRankingRows`) — returns the SAME reference while neither `state.heroes` nor
- * `state.teamBuffsOverride` changed, so every dep tuple that used to read `state.teamBuffs`
- * directly can depend on this selector's result instead of listing `heroes`/`teamBuffsOverride`
- * separately.
+ * Module-level single-entry cache (matching `selectAdvisorPipeline`/`selectFarmRankingRows`) —
+ * returns the SAME reference while none of `state.heroes`, `state.activeHeroId` and
+ * `state.teamAuraSwitches` changed, so a dep tuple can list this result in place of the three.
  */
-let effectiveTeamBuffsCache: {
+let activeHeroTeamBuffsCache: {
   heroes: PlannerStore['heroes'];
-  override: PlannerStore['teamBuffsOverride'];
+  activeHeroId: PlannerStore['activeHeroId'];
+  switches: PlannerStore['teamAuraSwitches'];
   result: Record<TeamBuffId, number>;
 } | null = null;
 
-export function resetEffectiveTeamBuffsCache(): void {
-  effectiveTeamBuffsCache = null;
+export function resetActiveHeroTeamBuffsCache(): void {
+  activeHeroTeamBuffsCache = null;
 }
 
-export function selectEffectiveTeamBuffs(state: PlannerStore): Record<TeamBuffId, number> {
+export function selectActiveHeroTeamBuffs(state: PlannerStore): Record<TeamBuffId, number> {
   if (
-    effectiveTeamBuffsCache &&
-    Object.is(effectiveTeamBuffsCache.heroes, state.heroes) &&
-    Object.is(effectiveTeamBuffsCache.override, state.teamBuffsOverride)
+    activeHeroTeamBuffsCache &&
+    Object.is(activeHeroTeamBuffsCache.heroes, state.heroes) &&
+    Object.is(activeHeroTeamBuffsCache.activeHeroId, state.activeHeroId) &&
+    Object.is(activeHeroTeamBuffsCache.switches, state.teamAuraSwitches)
   ) {
-    return effectiveTeamBuffsCache.result;
+    return activeHeroTeamBuffsCache.result;
   }
-  const result = state.teamBuffsOverride ?? computeTeamBuffsFromDeployed(state.heroes);
-  effectiveTeamBuffsCache = { heroes: state.heroes, override: state.teamBuffsOverride, result };
+  const active = state.heroes.find((hero) => hero.id === state.activeHeroId) ?? {
+    id: state.activeHeroId ?? '',
+    abilities: {},
+  };
+  const result = computeTeamBuffsAroundHero(active, state.heroes, state.teamAuraSwitches);
+  activeHeroTeamBuffsCache = {
+    heroes: state.heroes,
+    activeHeroId: state.activeHeroId,
+    switches: state.teamAuraSwitches,
+    result,
+  };
   return result;
 }
 
@@ -79,7 +84,7 @@ let accountSharedTuple: ReturnType<typeof selectAccountTuple> | null = null;
 export function clearAccountSharedSelectorCache(): void {
   accountSharedCache = null;
   accountSharedTuple = null;
-  resetEffectiveTeamBuffsCache();
+  resetActiveHeroTeamBuffsCache();
 }
 
 /**
@@ -114,11 +119,6 @@ export function selectAccountShared(state: PlannerStore): AccountShared {
       fieldSlotsBonus: state.treeFieldSlotsBonus,
       bagTabsBonus: state.treeBagTabsBonus,
     },
-    // `teamBuffs` is deprecated (see AccountShared's own doc comment) — written only so an old
-    // app build reading this file sees a plausible value, never read back for the override
-    // decision by this build. `teamBuffsOverride` is the authoritative field.
-    teamBuffs: state.teamBuffsOverride ?? {},
-    teamBuffsOverride: state.teamBuffsOverride,
     context: {
       houseIdx: state.houseIdx,
       houseLevel: state.houseLevel,
@@ -160,7 +160,6 @@ export function selectAccountTuple(state: PlannerStore) {
     state.treeGeoMult,
     state.treeFieldSlotsBonus,
     state.treeBagTabsBonus,
-    state.teamBuffsOverride,
     state.houseIdx,
     state.houseLevel,
     state.phase,
@@ -180,35 +179,30 @@ export function selectAccountTuple(state: PlannerStore) {
   ] as const;
 }
 
-let accountSharedForCombatCache: AccountShared | null = null;
+let activeHeroAccountCache: CombatAccount | null = null;
 
 /**
- * The account to COMPUTE against, as opposed to the one to persist.
- *
- * `selectAccountShared` carries `teamBuffsOverride ?? {}` because that is the field storage holds:
- * an absent override is absent, and writing a derived total back would persist a number nobody
- * typed. Combat cannot use that shape — an account whose carriers are deployed but whose override
- * was never set would be priced with no team auras at all, so the same hero answers differently on
- * two screens. This overlays the derived roster total for readers that compute, and leaves the
- * persistence path reading the stored field.
+ * The account a per-hero figure for the ACTIVE hero computes against, as opposed to the one to
+ * persist: {@link selectAccountShared} holds no aura total (storage never did anything but carry a
+ * stale one), so the per-hero total is overlaid here for the readers that price one hero. The
+ * roster-wide readers have their own overlay, `selectRosterAccount`, priced over the rotation.
  */
-export function selectAccountSharedForCombat(state: PlannerStore): AccountShared {
+export function selectActiveHeroAccount(state: PlannerStore): CombatAccount {
   const shared = selectAccountShared(state);
-  const teamBuffs = selectEffectiveTeamBuffs(state);
-  if (shared.teamBuffs === teamBuffs) return shared;
+  const teamBuffs = selectActiveHeroTeamBuffs(state);
   if (
-    accountSharedForCombatCache &&
-    accountSharedForCombatCache.teamBuffs === teamBuffs &&
-    Object.is(accountSharedForCombatCache.context, shared.context)
+    activeHeroAccountCache &&
+    activeHeroAccountCache.teamBuffs === teamBuffs &&
+    Object.is(activeHeroAccountCache.context, shared.context)
   ) {
-    return accountSharedForCombatCache;
+    return activeHeroAccountCache;
   }
-  accountSharedForCombatCache = { ...shared, teamBuffs };
-  return accountSharedForCombatCache;
+  activeHeroAccountCache = { ...shared, teamBuffs };
+  return activeHeroAccountCache;
 }
 
-export function resetAccountSharedForCombatCache(): void {
-  accountSharedForCombatCache = null;
+export function resetActiveHeroAccountCache(): void {
+  activeHeroAccountCache = null;
 }
 
 export type { TeamBuffId };

@@ -12,7 +12,7 @@ import {
   usePlannerStore,
   selectHeroes,
   selectActiveHeroId,
-  selectAccountSharedForCombat,
+  selectRosterAccount,
   selectFarmBoardRows,
   selectPhasesViewPhase,
   commitActiveHero,
@@ -31,7 +31,7 @@ export function PhasesExplorer({ t, lang }: { t: Strings; lang: Lang }) {
   const setPhasesViewPhase = usePlannerStore((state) => state.setPhasesViewPhase);
   const heroes = usePlannerStore(selectHeroes);
   const activeHeroId = usePlannerStore(selectActiveHeroId);
-  const account = usePlannerStore(useShallow(selectAccountSharedForCombat));
+  const account = usePlannerStore(useShallow(selectRosterAccount));
   const farmRows = usePlannerStore(selectFarmBoardRows);
 
   const selectHero = useCallback((hero: HeroRecord) => {

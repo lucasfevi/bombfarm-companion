@@ -20,7 +20,7 @@ export {
 } from '@/shared/stores/selectors/session-selectors';
 export {
   selectAccountShared,
-  selectAccountSharedForCombat,
+  selectActiveHeroAccount,
   selectAccountTuple,
   selectTreeDanoTotal,
   selectTreeCritChance,
@@ -30,9 +30,8 @@ export {
   selectTreeTeamCoinPct,
   selectTreeLuckFlatPct,
   selectTreeXpMult,
-  selectTeamBuffsOverride,
-  selectEffectiveTeamBuffs,
-  resetEffectiveTeamBuffsCache,
+  selectActiveHeroTeamBuffs,
+  resetActiveHeroTeamBuffsCache,
   selectHouseIdx,
   selectHouseLevel,
   selectHouseCycleSecs,
@@ -114,6 +113,7 @@ export {
   selectCombatPhase,
   selectCombatPhaseSelection,
   selectCombatMitigationPct,
+  selectTeamAuraSwitches,
 } from '@/shared/stores/selectors/phases-selectors';
 export { selectTreeSheetTotals } from '@/shared/stores/selectors/tree-sheet-selectors';
 export {
@@ -136,6 +136,9 @@ export {
   selectFarmBoardRows,
   getFarmRespecRowsComputeCount,
   resetFarmRespecRowsComputeCount,
+  selectRosterTeamBuffs,
+  selectRosterAccount,
+  resetRosterAccountCache,
 } from '@/shared/stores/selectors/farm-ranking-selectors';
 export type {
   FarmRankingResult,

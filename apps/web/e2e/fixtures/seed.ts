@@ -198,7 +198,6 @@ export const importedRoster: SeededState = {
       energy: 0.52,
       teamCoinPct: 0,
     },
-    teamBuffs: {},
     context: {
       houseIdx: 2,
       houseLevel: 6,

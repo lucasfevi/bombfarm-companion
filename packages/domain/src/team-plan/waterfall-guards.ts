@@ -15,7 +15,7 @@ import { wikiPhaseLine } from '../phase-wiki';
 import { dominates, statsForEntry } from './dominance';
 import { evaluateRoster } from './evaluate';
 import { eligibleForHero, poolEntryForItem } from './pool';
-import { applyMove, loadoutsFromAssignment, type AssignmentState } from './solver-assignment';
+import { applyMove, squadLoadouts, type AssignmentState } from './solver-assignment';
 import type {
   EvaluateRosterInput,
   FarmContext,
@@ -61,7 +61,7 @@ export function evaluateAt(
 ): RosterEvaluation {
   const evalInput: EvaluateRosterInput = {
     contexts,
-    loadoutsByHeroId: loadoutsFromAssignment(assignment, itemById),
+    loadoutsByHeroId: squadLoadouts(assignment, itemById, contexts, gearInput.heroes),
     ptsByHeroId,
     slots: gearInput.account.fieldSlots,
     farm: farmFromAccount(gearInput),
