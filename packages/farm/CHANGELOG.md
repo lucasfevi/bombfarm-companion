@@ -1,5 +1,141 @@
 # @bombfarm/farm
 
+## 1.1.0
+
+### Minor Changes
+
+- 579684a: A Combat tab on the planner, and one phase picker for it on both apps.
+
+  **The planner has the desktop app's fourth stage now.** Hero, Combat, Gear, Points — the same
+  four the desktop Heroes screen draws, from the same implementations. Combat holds the phase the
+  figures are for, one hero against that phase (whether it pierces the mitigation, the average hit,
+  the fuse floor, the cooldown-reduction ceiling, the prop table), and the per-statistic breakdown,
+  which moves here from the bottom of Points. Picking a phase on it moves every figure the planner
+  prints — the hero strip, Gear and Points read the same numbers — and leaves the Farm page's own
+  selection alone.
+
+  **The phase picker is the optimizer's.** Type `Hard 1-1`, `Normal 2-1` or `151` and pick the
+  phase, on the desktop as on the planner, instead of stepping a number box. The button beside it
+  reads **Back to your current phase** and stands as tall as the picker.
+
+- 5dffa73: Price team auras one way on every screen, and give a hero's own screen its switches.
+
+  **The same hero printed a different DPS on every screen, and a different one on every account
+  read.** The Heroes screen and the planner's Combat tab priced team auras off a snapshot of
+  whoever happened to be standing on the field when the account was read, so the number moved as
+  the rotation turned — on one real roster it read 22–33% low for every hero, on another 4.7% high.
+  The Optimizer's damage objective summed each carrier's rank by its duty and clamped afterwards,
+  which held two part-time carriers of one capped aura at the cap the whole time; the gold
+  objective and the Farm board took the expected value of the capped sum instead.
+
+  **Every screen that rotates a roster now prices auras the Farm board's way**: each carrier the
+  game will field, weighted by the uptime the model predicts for it, the cap taken inside the
+  expectation. The Optimizer's damage objective moves onto it — on a roster with one carrier per
+  aura nothing changes; three Fôlego carriers that summed to 60 against a cap of 20 move a plan's
+  DPS by −3.7% — and, like the gold objective, it now counts a hero you leave alone: that hero
+  still fields, so its aura reaches the rest of the roster at the duty its untouched build sustains.
+  Only a donated hero is out, on both. The phase explorer beside the Farm board prices the same
+  way, on both apps, so it and the board agree.
+
+  **A hero's own screen asks a narrower question, and gets a control.** The Heroes screen and the
+  Combat tab price one hero on the field: its own aura always counts, and every other carrier is a
+  what-if behind a switch — off, the hero is priced alone; on, that aura counts every other hero in
+  rotation that carries it, as if they stood on the field the whole time. The four switches sit
+  beside the phase picker, say what they assume, and say where the uptime-weighted figures live
+  instead. They reset on every visit, like the phase pick.
+
+  **The stored aura total is gone.** The planner used to keep a hand-typed override that no screen
+  has offered a field for since August, and a snapshot that went stale on the next read; a saved
+  account still carrying either loads with both discarded. A Farm board that was still being priced
+  against such an override — a number no control could show or clear — now prices the roster like
+  every other.
+
+### Patch Changes
+
+- b0f4431: Say each combat figure once, and stop drawing three sections that could never fill.
+
+  **A hero's field time was reported as 4.495,4%.** `uptime` is already a percentage — field seconds
+  over field plus rest, times 100 — and the combat panel multiplied it by 100 again. A hero on field
+  45% of the time read `4.495,4`. It reads `45,0` now, and this was wrong on the phase explorer too.
+
+  **The Combat stage stated eight figures twice.** Damage through, normal hit, critical hit, field
+  time, fuse, uptime and both DPS figures appeared bare in the hero panel and again, each with the
+  ledger that produced it, in the breakdown below. The bare copy is gone: it was the same number
+  with less behind it. What the hero panel still says is what only it says — whether the hero
+  pierces the phase, the average hit its build lands, the floor its fuse cannot go under, the
+  ceiling its cooldown reduction stops paying at, and the prop table.
+
+  **Three empty sections, on any screen that cannot fill them.** A gear comparison needs a second
+  loadout, which only a Copy gear button can create, so a read-only screen drew a heading over
+  nothing. The Points panel held a blank line open for reset advice that names a button that screen
+  does not have. Both now appear only where something can fill them — as the Preview column already
+  does. The advice line still holds its space on the planner, where it comes and goes.
+
+  **The stat sheet puts its units on the figures**, like the Points table beside it: `1.680,00%`
+  under a row named `Crít`, not `1.680,00` under `Crít %`. The team-plan breakdown keeps the unit on
+  the label, because its table formats its own numbers and has nowhere to put one.
+
+- 30428ba: Price every DPS figure on one bombing-cadence model — the Farm page's measured one — and retire
+  the advisor's serial model.
+
+  **Two models printed DPS.** The hero strip, the Points ranking, the reset-advice gate, the Combat
+  stage on both apps and the Optimizer's damage objective read a serial cycle, `1 / (fuse + 0.15 s)`,
+  in which Speed did not appear: a Speed point ranked at 0% forever and Marcha Acelerada was worth
+  nothing. The Farm page read a measured cycle — the longer of the fuse and the walk to the next
+  plant, averaged over hop lengths measured in real clears and packed closer on denser difficulties
+  — so a hero's bombs per second on the Combat stage and its plants per second on the Farm page, at
+  the same phase, were two different numbers.
+
+  **Now there is one.** The advisor's bombs per second is the inverse of the Farm page's cycle at
+  the farm phase's own difficulty band. Speed shortens every hop the fuse does not already cover,
+  and is a real next-point candidate (about 1.1% a point on a typical hero). Cooldown reduction pays
+  only on the hops where the fuse is the longer leg — observed directly: a hero that reaches its
+  next target before its previous bomb has gone off waits on the cell and plants a fifth of a
+  second after the fuse ends, and when one hero was respecced from 12% to 28% cooldown reduction
+  that waiting time moved with her fuse, one for one, while a second hero's did not. Where the
+  crossover falls depends on walk speed and on the field; the model puts it near 53% for a hero
+  walking two cells a second, and past it the point scores zero, where the serial model had it
+  paying through to the 80% cap. Nothing is measured past 28%, and the same capture found the model
+  overstating how much of a fast hero's field is fuse-bound, so a fast hero's cooldown figure reads
+  high rather than low. A build with every point in cooldown still trips the reset gate — harder
+  than before.
+
+  **Every DPS figure moves, on both apps**, typically down by about a third at mid cooldown
+  reduction; the Bombs/s breakdown prints the one formula with the fuse, walk speed, band and
+  resulting cycle substituted, and the "How the math works" text describes the measured cycle.
+
+  **The accepted cost:** the measured cycle's approximations — a hop histogram fitted at one
+  difficulty band and scaled to the others, a density term that runs optimistic at the easiest band,
+  latency constants calibrated on squad clears — now reach per-hero figures. Those are errors of
+  degree; Speed doing nothing was an error of kind. A hero priced alone is priced at squad density,
+  as the Farm page already priced it.
+
+- Updated dependencies [306d2d0]
+- Updated dependencies [b0f4431]
+- Updated dependencies [579684a]
+- Updated dependencies [16c218d]
+- Updated dependencies [306d2d0]
+- Updated dependencies [306d2d0]
+- Updated dependencies [306d2d0]
+- Updated dependencies [b0f4431]
+- Updated dependencies [b0f4431]
+- Updated dependencies [306d2d0]
+- Updated dependencies [306d2d0]
+- Updated dependencies [306d2d0]
+- Updated dependencies [047ce89]
+- Updated dependencies [306d2d0]
+- Updated dependencies [30428ba]
+- Updated dependencies [fcc507e]
+- Updated dependencies [306d2d0]
+- Updated dependencies [61ee478]
+- Updated dependencies [6fe7247]
+- Updated dependencies [843027d]
+- Updated dependencies [5dffa73]
+  - @bombfarm/domain@1.1.0
+  - @bombfarm/hero@0.2.0
+  - @bombfarm/ui@0.12.2
+  - @bombfarm/game-art@0.5.0
+
 ## 1.0.1
 
 ### Patch Changes

@@ -1,5 +1,24 @@
 # @bombfarm/account
 
+## 0.2.4
+
+### Patch Changes
+
+- Updated dependencies [306d2d0]
+- Updated dependencies [579684a]
+- Updated dependencies [16c218d]
+- Updated dependencies [b0f4431]
+- Updated dependencies [306d2d0]
+- Updated dependencies [306d2d0]
+- Updated dependencies [047ce89]
+- Updated dependencies [30428ba]
+- Updated dependencies [fcc507e]
+- Updated dependencies [306d2d0]
+- Updated dependencies [6fe7247]
+- Updated dependencies [5dffa73]
+  - @bombfarm/domain@1.1.0
+  - @bombfarm/ui@0.12.2
+
 ## 0.2.3
 
 ### Patch Changes

@@ -1,5 +1,51 @@
 # @bombfarm/game-api
 
+## 0.4.3
+
+### Patch Changes
+
+- c064321: Treat a refusal the server names in the body as a failure, at any HTTP status. The server reports
+  maintenance, bans, terms and dead sessions as `{"error":"CODE"}`, and does so on otherwise-normal
+  responses — the game client screens every response for it before its own handlers run. We only
+  looked at status codes, so a 200 carrying `{"error":"SERVER_LOCKED"}` parsed as a perfectly good
+  JSON object and was committed as account state on three of the five sections.
+
+  Such a response is now `api_error`, carrying the code, and the four codes that mean the session is
+  over (`NO_TOKEN`, `BAD_TOKEN`, `WRONG_ACCOUNT`, `SESSION_EXPIRED`) are treated as `unauthorized`
+  so the pacing gate halts instead of retrying with a dead token. The code is logged with the failed
+  section, so a maintenance window is diagnosable rather than a generic error.
+
+- a750407: Declare the three keys the game added to the account body: `client_can_sell`, `sell_phase` and
+  `sell_mode`, the account-level gate on selling to the Steam market. The `/state` fingerprint names
+  a complete key set, so an undeclared addition was fatal to the shape check, and two things had
+  been quietly wrong since the game shipped them: every account refresh reported the section as
+  drifted, so its fidelity could never read `full`, and the wire tap discarded every `/state` body
+  the game client itself fetched as unidentifiable — 13 of the 24 bodies observed in a five-minute
+  session — instead of using them.
+
+  They are required keys, not an optional escape: every observed `/state` body carries all three,
+  so an absence is a real removal to report, not variance to tolerate. Nothing reads them yet.
+
+- c064321: Stamp forge writes with an idempotency key, the same one the game client uses:
+  `request_id=c<uptime ms>-<sequence>-<random 0..999999>`. The game sends one on every POST and
+  reuses it when it re-sends, which is what lets the server discard a duplicate rather than charge
+  for it twice. A forge roll spends real currency, so a write that is ever retried must carry the id
+  it was built with rather than a fresh one — the key is generated once per roll, and the sequence
+  is monotonic for the life of the service.
+- c064321: Shape account-scoped requests the way the game client does. `account_id` now travels as the first
+  query parameter on every read and forge route, and the `X-Account-Id` header is gone. The game
+  sends only `Authorization`, `Accept`, `Host` and `Connection`, and carries the account in the query
+  on every route — the server cross-checks it against the account the bearer token resolves to, which
+  is what its `WRONG_ACCOUNT` error reports. Both request builders now assert their complete header
+  set rather than individual headers, so a future addition cannot slip in unnoticed.
+- Updated dependencies [306d2d0]
+- Updated dependencies [16c218d]
+- Updated dependencies [047ce89]
+- Updated dependencies [30428ba]
+- Updated dependencies [fcc507e]
+- Updated dependencies [5dffa73]
+  - @bombfarm/domain@1.1.0
+
 ## 0.4.2
 
 ### Patch Changes
