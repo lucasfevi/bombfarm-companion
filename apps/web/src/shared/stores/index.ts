@@ -113,6 +113,7 @@ export {
   selectCombatPhase,
   selectCombatPhaseSelection,
   selectCombatMitigationPct,
+  selectTeamAuraSwitches,
 } from '@/shared/stores/selectors/phases-selectors';
 export { selectTreeSheetTotals } from '@/shared/stores/selectors/tree-sheet-selectors';
 export {

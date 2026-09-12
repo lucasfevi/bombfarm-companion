@@ -1002,6 +1002,12 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   // switch vocabulary between one paragraph and the next.
   // One line: the blanket `src/tests/**` max-lines cap (650) sits one line above this file.
   'bdSrcTeam', 'effectiveTip', 'missingHint', 'explainSections.0.code', 'explainSections.1.p.0', 'explainSections.5.p.0', 'explainSections.7.p.1', 'explainSections.8.p.1',
+  // Team auras priced one way (2026-09-12): the Optimizer paragraph (`explainSections.8.p.1`,
+  // declared above) stops saying its totals "exclude the scored hero" — false since every
+  // carrier's own rank started counting — and says they are weighted by predicted uptime, the
+  // Farm board's own form; `effectiveTip` (declared above) now names the aura switches that sit
+  // above the panel it captions. The two Optimizer disclosures that said the same are in
+  // `KEYS_ADDED`, so their values are unconstrained here. No new entry.
 ];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {

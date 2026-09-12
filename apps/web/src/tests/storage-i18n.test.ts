@@ -141,10 +141,10 @@ describe('planner tabs IA (PTI-*)', () => {
 describe('effective stats panel chrome (EST-*)', () => {
   it('effectiveTip clarifies post-pipeline sources in EN and PT', () => {
     expect(STRINGS.en.effectiveTip).toBe(
-      'Includes gear, points, skill tree, abilities, and team auras.',
+      'Includes gear, points, skill tree, abilities, and the team auras switched on above.',
     );
     expect(STRINGS.pt.effectiveTip).toBe(
-      'Inclui equipamento, pontos, árvore, habilidades e auras de time.',
+      'Inclui equipamento, pontos, árvore, habilidades e as auras de time ligadas acima.',
     );
   });
 

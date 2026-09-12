@@ -27,6 +27,7 @@ import {
   FARM_RESPEC_MIN_GAIN_PCT,
   type FarmRespecResult,
 } from '@bombfarm/domain/farm-optimize';
+import type { AccountShared } from '@bombfarm/domain/shims/storage';
 import type { FarmInputs } from './farm-inputs';
 
 export type FarmRankingReason = 'no-roster' | 'no-heroes-enabled' | 'compute-failed';
@@ -152,6 +153,12 @@ export function computeFarmTeamBuffs(inputs: FarmInputs): Record<string, number>
     account: buildAccount(inputs),
     enabledHeroIds: resolveEnabledHeroIds(inputs),
   });
+}
+
+/** {@link buildAccount} with {@link computeFarmTeamBuffs} overlaid — the account a ROSTER-WIDE
+ *  figure beside the board computes against. */
+export function buildRosterAccount(inputs: FarmInputs): AccountShared {
+  return { ...buildAccount(inputs), teamBuffs: computeFarmTeamBuffs(inputs) };
 }
 
 export function computeFarmRanking(inputs: FarmInputs): FarmRankingResult {

@@ -8,6 +8,7 @@
 export type { FarmInputs } from './farm-inputs';
 export {
   buildAccount,
+  buildRosterAccount,
   computeFarmProposedRows,
   computeFarmRanking,
   computeFarmTeamBuffs,

@@ -159,13 +159,13 @@ describe('account slice', () => {
     };
 
     it('normalizeAccount writes neither field, whatever the record carried', () => {
-      const shared = normalizeAccount(legacyRecord as Partial<AccountShared>);
+      const shared = normalizeAccount(legacyRecord);
       expect('teamBuffs' in shared).toBe(false);
       expect('teamBuffsOverride' in shared).toBe(false);
     });
 
     it('hydrating such a record leaves no override in the store, and the rest of it intact', () => {
-      usePlannerStore.getState().hydrateAccount(normalizeAccount(legacyRecord as Partial<AccountShared>));
+      usePlannerStore.getState().hydrateAccount(normalizeAccount(legacyRecord));
       const state = usePlannerStore.getState() as unknown as Record<string, unknown>;
       expect('teamBuffsOverride' in state).toBe(false);
       expect(state.treeDanoTotal).toBe(sampleTree.danoTotal);

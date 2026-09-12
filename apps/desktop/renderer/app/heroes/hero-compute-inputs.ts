@@ -7,12 +7,12 @@
  * rather than a partially-defaulted record.
  */
 import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
-import type { AccountShared } from '@bombfarm/domain/shims/storage';
-import { buildAccountShared } from '../../lib/account/account-shared';
+import { buildAccountBlock, type AccountBlock } from '../../lib/account/account-shared';
 import type { AccountRoster } from '../../lib/account/account-roster';
 
 export type HeroComputeInputs = {
-  readonly account: AccountShared;
+  /** The block every hero shares; each hero's own aura total is overlaid at the pipeline call. */
+  readonly account: AccountBlock;
   readonly phase: number;
   readonly mitigationPct: number;
 };
@@ -23,7 +23,7 @@ export function heroComputeInputs(
 ): HeroComputeInputs | null {
   if (phase === null) return null;
 
-  const account = buildAccountShared(roster);
+  const account = buildAccountBlock(roster);
   if (account === null) return null;
 
   const intel = computePhaseIntelGlobal(phase);

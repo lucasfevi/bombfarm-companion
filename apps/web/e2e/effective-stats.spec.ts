@@ -156,6 +156,40 @@ test.describe('effective stats panel (EST / ESB)', () => {
     }
   });
 
+  test('another hero’s aura reaches the Effective panel only through its Combat tab switch, and then in full', async ({
+    page,
+  }) => {
+    // Lorne carries rank-20 War Cry and Cora carries none: with the switch off Cora is priced
+    // alone (no sheet row leaves Total), on she reads Lorne's whole +20% as if he never left.
+    await seedLocalStorage(page, {
+      ...importedRoster,
+      lang: 'en',
+      heroes: importedRoster.heroes.map((h) =>
+        h.id === 'seed-lorne' ? { ...h, abilities: { ...h.abilities, grito_guerra: 20 } } : h,
+      ),
+    });
+    await page.goto('/');
+    await selectSavedHero(page, 'Cora');
+    await openCombatTab(page, 'en');
+
+    const auras = activePanel(page).getByTestId('team-aura-switches');
+    const warCry = auras.getByTestId('team-aura-grito_guerra');
+    await expect(warCry).toContainText(/\+20% attack from one other hero/i);
+    const toggle = warCry.getByRole('switch');
+    await expect(toggle).not.toBeChecked();
+    await expect(effectivePanel(page, 'en').getByRole('heading', { name: /Sheet stats/i, level: 3 })).toHaveCount(0);
+
+    await toggle.click();
+    await expect(toggle).toBeChecked();
+    const panel = effectivePanel(page, 'en');
+    await expect(panel.getByRole('heading', { name: /Sheet stats/i, level: 3 })).toBeVisible();
+    await expect(panel.getByRole('button', { name: /Show breakdown of Attack/i })).toBeVisible();
+    // An aura no other hero carries has nothing to switch on, and says so instead.
+    const miner = auras.getByTestId('team-aura-folego_mineiro');
+    await expect(miner).toContainText(/No other hero in rotation carries it/i);
+    await expect(miner.getByRole('switch')).toHaveCount(0);
+  });
+
   test('Points tab soft-badges when setup incomplete; Effective stays neutral', async ({ page }) => {
     await seedLocalStorage(page, {
       ...importedRoster,

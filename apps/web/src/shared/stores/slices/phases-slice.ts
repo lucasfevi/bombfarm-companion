@@ -66,7 +66,7 @@ export type PhasesSlice = {
   setFarmRespecPanelOpen: (open: boolean) => void;
   /** `null` clears the pick and hands the planner back to `selectCombatPhase`'s own answer. */
   setPlannerPhaseOverride: (phase: number | null) => void;
-  setTeamAuraSwitch: (buffId: TeamBuffId, on: boolean) => void;
+  setTeamAuraSwitch: (buffId: TeamBuffId, enabled: boolean) => void;
   /** Runs Tier 2 on demand, off the render path — see the action body for the full contract. */
   runFarmRespec: () => void;
 };
@@ -174,10 +174,10 @@ export const createPhasesSlice: StateCreator<
       set({ plannerPhaseOverride: phase });
     },
 
-    setTeamAuraSwitch: (buffId, on) => {
+    setTeamAuraSwitch: (buffId, enabled) => {
       const current = get().teamAuraSwitches;
-      if (current[buffId] === on) return;
-      set({ teamAuraSwitches: { ...current, [buffId]: on } });
+      if (current[buffId] === enabled) return;
+      set({ teamAuraSwitches: { ...current, [buffId]: enabled } });
     },
 
     /**
