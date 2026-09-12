@@ -495,6 +495,11 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanPhaseHintNoneFarm',
   'teamPlanHeroDeltaNoteDps',
   'teamPlanHeroDeltaNoteFarm',
+  // The per-hero row names its figures as DPS, so the three headers stop reading as a bare
+  // before/after of something unnamed; the breakdown tables keep the short labels.
+  'teamPlanColDpsBefore',
+  'teamPlanColDpsAfter',
+  'teamPlanColDpsDelta',
   'farmRespecPointsOnly',
   'teamPlanPhaseLabel',
   'teamPlanPhaseAria',

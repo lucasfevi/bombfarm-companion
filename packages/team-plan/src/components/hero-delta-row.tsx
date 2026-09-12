@@ -63,15 +63,15 @@ export const HeroDeltaRow = memo(function HeroDeltaRow({
           <HeroIdentityChip hero={hero} fallbackName={row.heroName} lang={lang} />
           <div className="ml-auto flex items-center gap-3">
             <div className="flex flex-col items-end gap-0.5">
-              <span className={metricLabelClass}>{t.teamPlanColBefore}</span>
+              <span className={metricLabelClass}>{t.teamPlanColDpsBefore}</span>
               <AbbreviatedNumber value={row.before} lang={lang} className={metricValueClass} disableFocus />
             </div>
             <div className="flex flex-col items-end gap-0.5">
-              <span className={metricLabelClass}>{t.teamPlanColAfter}</span>
+              <span className={metricLabelClass}>{t.teamPlanColDpsAfter}</span>
               <AbbreviatedNumber value={row.after} lang={lang} className={metricValueClass} disableFocus />
             </div>
             <div className="flex flex-col items-end gap-0.5">
-              <span className={metricLabelClass}>{t.teamPlanColDelta}</span>
+              <span className={metricLabelClass}>{t.teamPlanColDpsDelta}</span>
               <AbbreviatedNumber
                 lang={lang}
                 value={row.delta}

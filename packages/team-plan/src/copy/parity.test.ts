@@ -16,6 +16,7 @@ import { teamPlanEn, teamPlanPtBR } from './index';
  *
  * `teamPlanObjectiveOptionDamage` ('DPS'): the initialism, spelled the same in both.
  * `teamPlanColDelta` ('Δ'): the Greek letter, not a word.
+ * `teamPlanColDpsDelta` ('Δ DPS'): the letter and the initialism.
  * `teamPlanTotalGainValueDps` ('{delta} dps ({pct}%)'): every word is already an abbreviation or a
  * placeholder — nothing left to translate.
  * `teamPlanHeroRowLabel` ('{name} · Lv {level} · #{id}'): three placeholders and a separator, no
@@ -24,6 +25,7 @@ import { teamPlanEn, teamPlanPtBR } from './index';
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof teamPlanEn)[] = [
   'teamPlanObjectiveOptionDamage',
   'teamPlanColDelta',
+  'teamPlanColDpsDelta',
   'teamPlanTotalGainValueDps',
   'teamPlanHeroRowLabel',
 ];
