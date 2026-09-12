@@ -34,7 +34,7 @@ export function PhaseField({
   const beyondReach = value != null && maxPhase != null && value > maxPhase;
 
   return (
-    <div className="min-w-0 max-w-sm flex-1">
+    <div className="min-w-52 max-w-sm flex-1">
       <label className={fieldLabelClass}>
         <span>{t.teamPlanPhaseLabel}</span>
         <SearchSelect

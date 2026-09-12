@@ -31,7 +31,7 @@ export function ForgeFloorField({
   onChange: (value: number) => void;
 }) {
   return (
-    <div className="min-w-0 max-w-sm flex-1">
+    <div className="min-w-30 max-w-sm flex-1">
       <label className={fieldLabelClass}>
         <span>{t.teamPlanForgeFloorLabel}</span>
         <Stepper

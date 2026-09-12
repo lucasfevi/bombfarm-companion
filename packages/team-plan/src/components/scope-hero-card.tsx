@@ -103,7 +103,7 @@ export const ScopeHeroCard = memo(function ScopeHeroCard({
             <span className={cn('truncate font-bold', rarityTextClass(rarIdx) ?? 'text-muted')}>
               {rarityLabel(hero.rarity, lang)}
             </span>
-            <span className="shrink-0 text-muted">
+            <span className="min-w-0 truncate text-muted">
               Lv {hero.level}
               <span aria-hidden> · </span>#{shortId}
             </span>

@@ -22,7 +22,7 @@ export function ObjectiveField({
   onChange: (value: TeamPlanObjective) => void;
 }) {
   return (
-    <div className="min-w-0 max-w-sm flex-1">
+    <div className="min-w-26 max-w-sm flex-1">
       <label className={fieldLabelClass}>
         <span>{t.teamPlanObjectiveLabel}</span>
         <Select

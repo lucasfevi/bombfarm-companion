@@ -20,7 +20,7 @@ export function AllowedChangesField({
   onChange: (value: TeamPlanAllowedChanges) => void;
 }) {
   return (
-    <div className="min-w-0 max-w-sm flex-1">
+    <div className="min-w-38 max-w-sm flex-1">
       <label className={fieldLabelClass}>
         <span>{t.teamPlanAllowedChangesLabel}</span>
         <Select

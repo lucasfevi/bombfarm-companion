@@ -24,7 +24,7 @@ export function IgnoreCrowdingField({
   onChange: (value: boolean) => void;
 }) {
   return (
-    <div className="min-w-0 max-w-sm flex-1">
+    <div className="min-w-44 max-w-sm flex-1">
       <label className={fieldLabelClass}>
         <span>{t.teamPlanIgnoreCrowdingLabel}</span>
         <span className="flex h-9 items-center">
