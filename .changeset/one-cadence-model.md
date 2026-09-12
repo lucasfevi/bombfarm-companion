@@ -20,14 +20,16 @@ the same phase, were two different numbers.
 **Now there is one.** The advisor's bombs per second is the inverse of the Farm page's cycle at
 the farm phase's own difficulty band. Speed shortens every hop the fuse does not already cover,
 and is a real next-point candidate (about 1.1% a point on a typical hero). Cooldown reduction pays
-only on the hops where the fuse is the longer leg — measured, on one hero respecced from 12% to
-28% cooldown reduction with a second hero as control: her fuse-bound hops shortened by the fuse
-change and her walk-bound hops did not move. Where that crossover falls depends on walk speed
-and on the field; the model puts it near 53% for a hero walking two cells a second, and past it
-the point scores zero, where the serial model had it paying through to the 80% cap. Nothing is
-measured past 28%, and the same capture found the model overstating how much of a fast hero's
-field is fuse-bound, so a fast hero's cooldown figure reads high rather than low. A build with
-every point in cooldown still trips the reset gate — harder than before.
+only on the hops where the fuse is the longer leg — observed directly: a hero that reaches its
+next target before its previous bomb has gone off waits on the cell and plants a fifth of a
+second after the fuse ends, and when one hero was respecced from 12% to 28% cooldown reduction
+that waiting time moved with her fuse, one for one, while a second hero's did not. Where the
+crossover falls depends on walk speed and on the field; the model puts it near 53% for a hero
+walking two cells a second, and past it the point scores zero, where the serial model had it
+paying through to the 80% cap. Nothing is measured past 28%, and the same capture found the model
+overstating how much of a fast hero's field is fuse-bound, so a fast hero's cooldown figure reads
+high rather than low. A build with every point in cooldown still trips the reset gate — harder
+than before.
 
 **Every DPS figure moves, on both apps**, typically down by about a third at mid cooldown
 reduction; the Bombs/s breakdown prints the one formula with the fuse, walk speed, band and
