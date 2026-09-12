@@ -5,6 +5,7 @@ import {
   type ReturnBonusMode,
 } from '@/shared/lib/phases-view-storage';
 import type { FarmRespecProposal, FarmRespecStatus } from '@bombfarm/farm';
+import { noTeamAuraSwitches, type TeamAuraSwitches, type TeamBuffId } from '@bombfarm/domain/team-buffs';
 import { scheduleAfterPaint } from '@/shared/lib/schedule-after-paint';
 // Legal intra-element import (boundaries/elements declares one `shared-stores` element covering
 // both slices/ and selectors/) — the reverse edge of the same shape already ships in
@@ -47,6 +48,13 @@ export type PhasesSlice = {
    * other.
    */
   plannerPhaseOverride: number | null;
+  /**
+   * EPHEMERAL — which team auras the Combat tab counts the REST of the roster for, on top of the
+   * active hero's own (`computeTeamBuffsAroundHero`). All off on every load, like the phase
+   * override beside it: a what-if that outlived the session would inflate every per-hero figure
+   * with no control in sight to explain it.
+   */
+  teamAuraSwitches: TeamAuraSwitches;
 
   hydratePhasesView: (view: PhasesViewState) => void;
   setPhasesViewPhase: (phase: number) => void;
@@ -58,6 +66,7 @@ export type PhasesSlice = {
   setFarmRespecPanelOpen: (open: boolean) => void;
   /** `null` clears the pick and hands the planner back to `selectCombatPhase`'s own answer. */
   setPlannerPhaseOverride: (phase: number | null) => void;
+  setTeamAuraSwitch: (buffId: TeamBuffId, on: boolean) => void;
   /** Runs Tier 2 on demand, off the render path — see the action body for the full contract. */
   runFarmRespec: () => void;
 };
@@ -97,6 +106,7 @@ export const createPhasesSlice: StateCreator<
     farmRespecReRank: false,
     farmRespecPanelOpen: false,
     plannerPhaseOverride: null,
+    teamAuraSwitches: noTeamAuraSwitches(),
 
     hydratePhasesView: (view) => {
       set({
@@ -162,6 +172,12 @@ export const createPhasesSlice: StateCreator<
     setPlannerPhaseOverride: (phase) => {
       if (get().plannerPhaseOverride === phase) return;
       set({ plannerPhaseOverride: phase });
+    },
+
+    setTeamAuraSwitch: (buffId, on) => {
+      const current = get().teamAuraSwitches;
+      if (current[buffId] === on) return;
+      set({ teamAuraSwitches: { ...current, [buffId]: on } });
     },
 
     /**

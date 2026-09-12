@@ -105,7 +105,6 @@ describe('inventory storage adapter', () => {
         energy: 0,
         teamCoinPct: 5,
       },
-      teamBuffs: { grito_guerra: 3 },
       context: {
         houseIdx: 1,
         houseLevel: 4,
@@ -119,7 +118,6 @@ describe('inventory storage adapter', () => {
       slots: DEFAULT_CASA_SLOTS,
       forgeFloor: 10,
       tree: { danoTotal: 2, teamCoinPct: 5 },
-      teamBuffs: { grito_guerra: 3 },
       context: legacy.context,
     });
   });
@@ -159,7 +157,6 @@ describe('inventory storage adapter', () => {
         energy: 0,
         teamCoinPct: 0,
       },
-      teamBuffs: {},
       context: {
         houseIdx: 2,
         houseLevel: 5,

@@ -662,10 +662,8 @@ describe('normalizeAccount', () => {
   it('merges tree / context defaults', () => {
     const a = normalizeAccount({
       tree: { ...DEFAULT_TREE(), danoTotal: 1.25 },
-      teamBuffs: { grito_guerra: 20 },
     });
     expect(a.tree.danoTotal).toBe(1.25);
-    expect(a.teamBuffs.grito_guerra).toBe(20);
     expect(a.context.phase).toBe(DEFAULT_CONTEXT().phase);
   });
 });

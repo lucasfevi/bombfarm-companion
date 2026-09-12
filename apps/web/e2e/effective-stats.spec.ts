@@ -45,16 +45,19 @@ const EN_COMBAT_SHEET_LABELS = ['Attack', 'Speed', 'Crit Chance'] as const;
 
 const PT_COMBAT_SHEET_LABELS = ['Ataque', 'Velocidade', 'Chance de Crítico'] as const;
 
-/** Account team buffs that push sheet stats off Total so they still appear under Effective. */
-function combatSheetDeltaAccount(base: NonNullable<typeof importedRoster.account>) {
+/**
+ * Cora's own team-aura ranks, which push sheet stats off Total so they still appear under
+ * Effective. A hero's own aura always counts on its own screen; the rest of the roster's only
+ * reach it through the Combat tab's switches, which stay off here.
+ */
+function combatSheetDeltaRoster(base: typeof importedRoster) {
   return {
     ...base,
-    teamBuffs: {
-      ...base.teamBuffs,
-      grito_guerra: 10,
-      marcha_acelerada: 10,
-      pressagio_mortal: 5,
-    },
+    heroes: base.heroes.map((h) =>
+      h.id === 'seed-cora'
+        ? { ...h, abilities: { ...h.abilities, grito_guerra: 10, marcha_acelerada: 10, pressagio_mortal: 5 } }
+        : h,
+    ),
   };
 }
 
@@ -125,11 +128,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
       await expect(panel.getByRole('button', { name: new RegExp(label, 'i') }).first()).toBeVisible();
     }
 
-    await seedLocalStorage(page, {
-      ...importedRoster,
-      lang: 'en',
-      account: combatSheetDeltaAccount(importedRoster.account!),
-    });
+    await seedLocalStorage(page, { ...combatSheetDeltaRoster(importedRoster), lang: 'en' });
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
@@ -210,11 +209,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
   });
 
   test('expand sheet row shows ledger; expand derived shows formula', async ({ page }) => {
-    await seedLocalStorage(page, {
-      ...importedRoster,
-      lang: 'en',
-      account: combatSheetDeltaAccount(importedRoster.account!),
-    });
+    await seedLocalStorage(page, { ...combatSheetDeltaRoster(importedRoster), lang: 'en' });
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
@@ -259,7 +254,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
                 ...h,
                 naked,
                 gearedOverride: { ...naked, critChance: 15 },
-                abilities: { olho_clinico: 10 },
+                abilities: { olho_clinico: 10, pressagio_mortal: 5 },
                 pts: {
                   attack: 0,
                   energy: 0,
@@ -276,7 +271,6 @@ test.describe('effective stats panel (EST / ESB)', () => {
         account: {
           ...importedRoster.account!,
           tree: { ...importedRoster.account!.tree!, critChance: 6 },
-          teamBuffs: { ...importedRoster.account!.teamBuffs, pressagio_mortal: 5 },
         },
       };
     }
