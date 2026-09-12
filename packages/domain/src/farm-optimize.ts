@@ -9,7 +9,7 @@
  * for. `pts.luck` is never touched: Luck sits outside the seven reallocatable stat keys
  * structurally, not by a runtime check.
  */
-import type { HeroRecord, AccountShared } from './shims/storage';
+import type { HeroRecord } from './shims/storage';
 import type { SheetKey } from './planner-constants';
 import {
   computeHeroFarmBases,
@@ -18,6 +18,7 @@ import {
   type HeroFarmBasis,
   type HeroFarmFacts,
   type SquadFarmFacts,
+  type FarmAccount,
   type FarmRateOptions,
   type ReturnBonusMode,
 } from './farm-rate';
@@ -212,7 +213,7 @@ export type FarmRespecResult = {
 
 export type FarmRespecInput = {
   heroes: readonly HeroRecord[];
-  account: AccountShared;
+  account: FarmAccount;
   /** Rotation pool. Same semantics as `FarmFactsInput`: null/omitted ⇒ `battleAllowed !== false`;
    *  an explicit `[]` is an EMPTY pool; unknown ids are ignored. */
   enabledHeroIds?: readonly string[] | null;
@@ -375,7 +376,7 @@ function buildTerminalResult(params: {
   outcome: FarmRespecOutcome;
   evaluation: { pick: FarmPhasePick | null; squad: SquadFarmFacts } | null;
   evaluations: number;
-  account: AccountShared;
+  account: FarmAccount;
   phaseOptions: FarmRateOptions;
   /** null for emptyPool/allDegenerate (no squad to describe); a trivial point-plateau for
    *  noBudget, where the search never ran and the plateau is reported around current. */
@@ -480,7 +481,7 @@ function computeFrontier(params: {
   currentFactsById: ReadonlyMap<string, HeroFarmFacts>;
   budgetById: ReadonlyMap<string, number>;
   searchableIds: readonly string[];
-  account: AccountShared;
+  account: FarmAccount;
   objective: ResolvedFarmObjective;
   scales: FarmObjectiveScales;
   phaseOptions: FarmRateOptions;

@@ -1,33 +1,24 @@
-import {
-  TEAM_BUFF_ABILITY_IDS,
-  TEAM_BUFF_PER_LEVEL,
-  zeroTeamBuffs,
-  type TeamBuffId,
-} from '../team-buffs';
+import { computeTeamBuffsOverRotation, type TeamBuffId } from '../team-buffs';
 import type { HeroPlanContext } from './types';
 
 /**
- * The roster-wide, duty-weighted aura total EVERY optimize-scope hero experiences — nobody is
- * excluded (issue #132): a hero's own rank counts toward the total exactly like every other
- * carrier's, at that hero's own duty (from the previous fixed-point round). Because the result
- * no longer depends on which hero is asking, callers should compute it ONCE per round rather
- * than once per hero — `evaluateRoster` does exactly that.
+ * The roster-wide aura total EVERY optimize-scope hero experiences — nobody is excluded (issue
+ * #132): a hero's own rank counts toward the total exactly like every other carrier's, at that
+ * hero's own duty (from the previous fixed-point round). Because the result does not depend on
+ * which hero is asking, callers compute it ONCE per round — `evaluateRoster` does exactly that.
+ *
+ * A duty-map adapter over `computeTeamBuffsOverRotation`, so the damage objective prices auras
+ * in the same form as the gold objective and the Farm board: the expected value of the CAPPED
+ * sum over independently present carriers. Summing rank × duty and clamping afterwards, which
+ * this did before, asserted that two part-time carriers of one capped aura keep it at the cap
+ * the whole time — true of a staggered rotation, not of a hand-played one.
  */
 export function computeRosterAuras(
   contexts: HeroPlanContext[],
   dutyByHeroId: Record<string, number>,
 ): Record<TeamBuffId, number> {
-  const out = zeroTeamBuffs();
-  for (const buffId of TEAM_BUFF_ABILITY_IDS) {
-    const perLevel = TEAM_BUFF_PER_LEVEL[buffId];
-    let sum = 0;
-    for (const ctx of contexts) {
-      if (ctx.scope !== 'optimize') continue;
-      const rank = ctx.abilities[buffId] ?? 0;
-      const duty = dutyByHeroId[ctx.heroId] ?? 0;
-      sum += perLevel * rank * duty;
-    }
-    out[buffId] = sum;
-  }
-  return out;
+  const presence = contexts.map((ctx) =>
+    ctx.scope === 'optimize' ? (dutyByHeroId[ctx.heroId] ?? 0) : 0,
+  );
+  return computeTeamBuffsOverRotation(contexts, presence);
 }

@@ -32,17 +32,16 @@
  * concurrency. This module read the former as the latter until the fix — harmless on account 486
  * only because the field cap was not binding, but it capped a 6-wide field at 3.
  *
- * TEAM AURAS ARE PRICED OVER THE ROTATION, NOT OFF THE DEPLOYED LINE-UP. `account.teamBuffs` is a
- * snapshot of whoever is standing on the field right now — the correct quantity for the advisor
- * and the team-plan scorer, both of which price one fixed line-up, and the wrong one here. This
- * board rotates a whole pool through the House for hours, so a carrier supplies its aura only for
- * its own share of wall clock. {@link computeHeroFarmBases} therefore re-derives the four combat
- * auras from the ENABLED POOL's own ability ranks, weighted by each hero's uptime
- * (`computeTeamBuffsOverRotation`), and pays a second pipeline pass per hero to do it. Reading the
- * snapshot instead over-predicted gold/hr by 2.6 points on account 486, whose lone rank-20 Grito
- * carrier is on the field 59% of the time and had its +20% attack applied to 100% of every row —
- * and would have UNDER-predicted it by as much on the same roster had the heroes parked on the
- * field at import time been the ones carrying nothing.
+ * TEAM AURAS ARE PRICED OVER THE ROTATION, NOT OFF THE DEPLOYED LINE-UP. This board rotates a
+ * whole pool through the House for hours, so a carrier supplies its aura only for its own share
+ * of wall clock. {@link computeHeroFarmBases} therefore derives the four combat auras from the
+ * ENABLED POOL's own ability ranks, weighted by each hero's uptime
+ * (`computeTeamBuffsOverRotation`), and pays a second pipeline pass per hero to do it; the
+ * caller's account carries no aura total at all ({@link FarmAccount}). Reading a snapshot of the
+ * deployed line-up instead over-predicted gold/hr by 2.6 points on account 486, whose lone rank-20
+ * Grito carrier is on the field 59% of the time and had its +20% attack applied to 100% of every
+ * row — and would have UNDER-predicted it by as much on the same roster had the heroes parked on
+ * the field at import time been the ones carrying nothing.
  *
  * SORTE-AVERAGE VS FORTUNA-SUM ASYMMETRY — DO NOT "FIX": Sorte (`SquadFarmFacts.sorteFraction`)
  * is a normalized, uptime-weighted AVERAGE of hero-only luck plus the tree's flat share
@@ -418,9 +417,15 @@ export type HeroFarmFacts = {
   degenerate: boolean;
 };
 
+/**
+ * The account a farm board is priced against: every `AccountShared` field but `teamBuffs`, which
+ * this module derives itself over the rotation ({@link farmTeamBuffs}) and so does not take.
+ */
+export type FarmAccount = Omit<AccountShared, 'teamBuffs'>;
+
 export type FarmFactsInput = {
   heroes: readonly HeroRecord[];
-  account: AccountShared;
+  account: FarmAccount;
   /**
    * The rotation pool. `null`/omitted ⇒ every hero with `battleAllowed !== false`.
    * An explicit `[]` means an EMPTY pool, not "use the default". Ids not present in `heroes` are
@@ -597,20 +602,16 @@ function presenceWeightForBasis(basis: HeroFarmBasis): number {
  *
  * SEEDED FROM THE POOL, NOT FROM WHO IS DEPLOYED. Pass 1 uses the enabled pool's own at-best
  * total, so nothing the board prints depends on which heroes happened to be standing on the field
- * at import time. That dependence WAS the defect: `account.teamBuffs` is a snapshot of the
- * deployed line-up, and reading it here applied a deployed carrier's aura to 100% of a rotation it
- * is present for a fraction of (and, in the mirror case, withheld a pooled carrier's aura
- * entirely). Toggling a carrier out of the rotation pool now correctly removes its aura too.
- *
- * ONE PASS, VERBATIM, WHEN THE TOTAL IS HAND-TYPED. `account.teamBuffsOverride` marks a
- * deliberate "assume this much aura" what-if with no carrier attribution behind it to weight, so
- * it reaches the pipeline untouched and this collapses back to N calls.
+ * at import time. That dependence WAS the defect: a deployed-line-up snapshot read here applied a
+ * deployed carrier's aura to 100% of a rotation it is present for a fraction of (and, in the
+ * mirror case, withheld a pooled carrier's aura entirely). Toggling a carrier out of the rotation
+ * pool now correctly removes its aura too. Whatever `teamBuffs` the caller's account carries is
+ * not read at all.
  */
 function priceTeamBuffs(
   enabledHeroes: readonly HeroRecord[],
-  account: AccountShared,
+  account: FarmAccount,
 ): Record<string, number> {
-  if (account.teamBuffsOverride != null) return account.teamBuffs;
   const atFullPresence = computeTeamBuffsOverRotation(enabledHeroes, null);
   const seeded = basesForAccount(enabledHeroes, { ...account, teamBuffs: atFullPresence });
   return computeTeamBuffsOverRotation(enabledHeroes, seeded.map(presenceWeightForBasis));
@@ -1387,7 +1388,7 @@ export function computeFarmRateTable(squad: SquadFarmFacts, options: FarmRateOpt
 }
 
 /** Convenience for item C: facts + squad + table in one call. See {@link computeHeroFarmBases}
- *  for the pipeline-call count (`2N`, or `N` when `account.teamBuffsOverride` is set). */
+ *  for the pipeline-call count (`2N`). */
 export function computeFarmRates(
   input: FarmFactsInput & FarmRateOptions,
 ): { heroFacts: HeroFarmFacts[]; squad: SquadFarmFacts; rows: FarmRateRow[] } {
