@@ -20,8 +20,8 @@
  * whose three Fôlego carriers had summed to 60 against a cap of 20, moved −3.7% and dropped two
  * point resets while keeping every gear move. Nothing else was touched.
  *
- * RE-RECORDED AGAIN 2026-09-12, on top of the aura-form re-record above, when the advisor adopted the farm board's measured bomb cycle
- * (apps/web/docs/adr/016). Every DPS the scorer reads moved — the serial fuse-plus-0.15 s cycle
+ * RE-RECORDED AGAIN 2026-09-12, on top of the aura-form re-record above, when the advisor
+ * adopted the farm board's measured bomb cycle (apps/web/docs/adr/016). Every DPS the scorer reads moved — the serial fuse-plus-0.15 s cycle
  * ran ~1.4x faster than the measured one at these rosters' CDR — and with Speed now a real
  * throughput stat and CDR no longer paying past the walk, the plans themselves changed shape
  * (move counts, digests). Same method as the original recording: `runTeamPlan` at its default
@@ -73,24 +73,24 @@ const GOLDENS = [
   {
     file: 'save-20260823-13heroes-crit-points.json',
     forgeFloor: 10,
-    currentDps: 46004.894648682864,
-    planDps: 71765.76609370016,
-    moves: 124,
+    currentDps: 45934.50450371702,
+    planDps: 71668.78478631108,
+    moves: 122,
     forges: 18,
     pointResets: 11,
     seedUsed: 'current',
-    loadoutDigest: '445d0100d46492b6',
+    loadoutDigest: 'df148c822c3fa3e8',
   },
   {
     file: 'save-20260831-13heroes-soulbound.json',
     forgeFloor: 10,
-    currentDps: 5766.716659055295,
-    planDps: 6305.3734813573465,
-    moves: 60,
+    currentDps: 5553.585149341687,
+    planDps: 6063.96508245437,
+    moves: 56,
     forges: 69,
-    pointResets: 8,
+    pointResets: 9,
     seedUsed: 'greedyHeroDps',
-    loadoutDigest: 'd2c74cf7a7aa4325',
+    loadoutDigest: '256adbb6df5cd986',
   },
 ];
 
