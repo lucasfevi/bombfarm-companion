@@ -60,7 +60,7 @@ function ctx(
 }
 
 describe('computeRosterAuras', () => {
-  it('sums perLevel × rank × duty across EVERY optimize hero, excluding nobody (issue #132)', () => {
+  it('sums perLevel × rank × duty across EVERY optimize hero, excluding nobody (PR #139)', () => {
     const contexts = [
       ctx('a', 'optimize', { grito_guerra: 10 }),
       ctx('b', 'optimize', { grito_guerra: 5 }),
@@ -72,7 +72,7 @@ describe('computeRosterAuras', () => {
     expect(auras.grito_guerra).toBe(1 * 10 * 0.5 + 1 * 5 * 0.8);
   });
 
-  it('a carrier’s own rank counts toward the total exactly like every other carrier’s (issue #132)', () => {
+  it('a carrier’s own rank counts toward the total exactly like every other carrier’s (PR #139)', () => {
     const contexts = [ctx('self', 'optimize', { grito_guerra: 20 })];
     const auras = computeRosterAuras(contexts, { self: 1 });
     // The OLD exclude-based signature returned 0 here (the sole carrier excluded from its own

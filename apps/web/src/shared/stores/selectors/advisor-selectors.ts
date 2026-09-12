@@ -53,7 +53,7 @@ export function readAdvisorDepTuple(state: PlannerStore): readonly unknown[] {
     // (`selectActiveHeroTeamBuffs`).
     selectActiveHeroTeamBuffs(state),
     // The active hero's own team-aura ranks are folded into that total at combine time
-    // (issue #132's substitution, `substituteHeroAbilities`), not by `abilityMods` any more — so
+    // (PR #139's substitution, `substituteHeroAbilities`), not by `abilityMods` any more — so
     // a change to EITHER the roster (the active hero's last-persisted ranks) or `activeHeroId`
     // itself (switching heroes) must invalidate this cache exactly like `state.abilities` above.
     state.heroes,
@@ -77,7 +77,7 @@ export function readAdvisorDepTuple(state: PlannerStore): readonly unknown[] {
 }
 
 /**
- * The active hero's own team-aura ranks substituted into its per-hero total (issue #132):
+ * The active hero's own team-aura ranks substituted into its per-hero total (PR #139):
  * `abilityMods` no longer folds a team aura into a hero's own mods at all, so the ONLY way an
  * edit to the active hero's own Grito/Marcha/Fôlego/Presságio rank reaches the live preview is
  * through this substitution. `selectActiveHeroTeamBuffs` reads the roster's PERSISTED ranks —

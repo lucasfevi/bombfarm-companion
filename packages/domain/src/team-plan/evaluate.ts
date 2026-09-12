@@ -146,7 +146,7 @@ export function screenRosterObjective(
   const scores: Record<string, HeroScore> = { ...base.perHero };
   let sumDuty = base.sumDuty;
   // The incumbent's duties are fixed for this whole call (only `sumDuty` and `scores` accumulate
-  // as `changedHeroIds` is walked) — every hero reads the SAME roster total (issue #132), so this
+  // as `changedHeroIds` is walked) — every hero reads the SAME roster total (PR #139), so this
   // is computed once, not once per changed hero.
   const auras = computeRosterAuras(input.contexts, base.dutyByHeroId);
 
@@ -202,7 +202,7 @@ export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
     const roundScores: Record<string, HeroScore> = {};
     const nextDuties: Record<string, number> = {};
 
-    // Every hero reads the SAME roster total this round (issue #132) — `duties` is fixed for
+    // Every hero reads the SAME roster total this round (PR #139) — `duties` is fixed for
     // the whole round (only `nextDuties` accumulates as heroes are scored), so this is hoisted
     // out of the per-hero loop below rather than recomputed once per hero.
     const roundAuras = computeRosterAuras(input.contexts, duties);

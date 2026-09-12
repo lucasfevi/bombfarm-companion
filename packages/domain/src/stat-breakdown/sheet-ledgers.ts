@@ -21,7 +21,7 @@ export function ledgerAttack(facts: PipelineFacts): StatBreakdown {
   // contract, so the 'tree' step is sourced from the sheet, not added on top of it.
   pushBirthThenGear(steps, 'attack', facts, (facts.treeDanoTotal - 1) * 100);
   pushAdd(steps, 'points', facts.pts.attack * facts.delta.attack);
-  // Grito de Guerra is a team aura (issue #132) — `facts.attackMult` is already the full roster
+  // Grito de Guerra is a team aura (PR #139) — `facts.attackMult` is already the full roster
   // total, capped; there is no "own" share for a hero's own mods to contribute, so the note's
   // own/team split degenerates to own=0 (ownMult=1, identity) by construction.
   const { note, split } = teamMultNote(facts.attackMult, 1, TEAM_BUFF_CAP.grito_guerra);
@@ -50,7 +50,7 @@ export function ledgerSpeed(facts: PipelineFacts): StatBreakdown {
     baseSpeed,
   );
 
-  // Marcha Acelerada is a team aura (issue #132) — same reasoning as ledgerAttack above.
+  // Marcha Acelerada is a team aura (PR #139) — same reasoning as ledgerAttack above.
   const { note, split } = teamMultNote(facts.speedMult, 1, TEAM_BUFF_CAP.marcha_acelerada);
   pushMul(steps, 'abilitiesTeam', facts.speedMult, note, split);
   return { kind: 'ledger', total: facts.effective.speed, steps };
@@ -70,7 +70,7 @@ export function ledgerCritChance(facts: PipelineFacts): StatBreakdown {
     facts.pts.critChance * POINT_GAIN.critChancePctOfBase * 100,
     baseCrit,
   );
-  // Presságio Mortal is a team aura (issue #132) — `facts.teamCritFlat` is already the full
+  // Presságio Mortal is a team aura (PR #139) — `facts.teamCritFlat` is already the full
   // roster total, capped; there is no separate "own" line to add alongside it. Flat crit points
   // since the 2026-08-23 patch, so it is a plain addend rather than a share of the roll.
   pushAdd(steps, 'team', facts.teamCritFlat, teamAddNote(facts.teamCritFlat, TEAM_BUFF_CAP.pressagio_mortal));

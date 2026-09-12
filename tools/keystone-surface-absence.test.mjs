@@ -220,7 +220,7 @@ const CRIT_DMG_MULT_MAP = {
   // `houseCycleSecsHouseIdx`/`houseCycleSecsLevel`, with their doc comment, above this line too.
   // +9 more (line number only): the XP-multiplier feature added `TreeState.xpMult`, with its
   // doc comment, above this line too. Match itself is unchanged in count and in kind.
-  // +19 more (line number only): issue #132's derived-vs-override team-buffs split added the
+  // +19 more (line number only): PR #139's derived-vs-override team-buffs split added the
   // deprecation doc comment on `teamBuffs`, the new `teamBuffsOverride` field with its own doc
   // comment, and the `normalizeTeamBuffsOverride` migration helper with its doc comment, all
   // above this line. Match itself is unchanged in count and in kind.
@@ -245,7 +245,7 @@ const CRIT_DMG_MULT_MAP = {
   'apps/web/src/tests/points-reopt.test.ts': [106, 489],
   'apps/web/src/tests/stale-account-drop.test.ts': [32, 73, 74, 79, 90],
   'apps/web/src/tests/stat-breakdown.test.ts': [126, 176, 202],
-  // +1 (line number only): issue #132's rewrite of the "existing empty state" comment above line
+  // +1 (line number only): PR #139's rewrite of the "existing empty state" comment above line
   // 109 added a net one line. Match itself is unchanged in count and in kind.
   'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [40, 108],
   'apps/web/src/tests/storage-stat-points-available-compat.test.ts': [104],
@@ -263,7 +263,7 @@ const CRIT_DMG_MULT_MAP = {
   // (clause-A allowlist entries and this self-map entry itself). Count and kind unchanged.
   // +2 more (line numbers only) from the XP-multiplier feature's account-shared.ts entry above
   // gaining its two-line explanation. Count and kind unchanged.
-  // +4 more (line numbers only) from issue #132's account-shared.ts entry and the legacy-drop
+  // +4 more (line numbers only) from PR #139's account-shared.ts entry and the legacy-drop
   // suite entry just above, +2 lines each. Count and kind unchanged.
   // +3 more (line numbers only) from the Farm Respec Advisor objective picker removal's own
   // explanatory comment above the local-data-compat.md entry. Count and kind unchanged.

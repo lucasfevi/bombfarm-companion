@@ -662,7 +662,7 @@ refit (0.5 → 0.124). Diffed field by field against the previous capture:
   `fortunaAura`) is untouched. `concurrencyScale` staying put confirms the field cap is still
   not binding on this corpus; `fortunaAura` staying put confirms no hero here carries Fortuna.
 
-RE-RECORDED 2026-08-19 (second pass) for issue #132's team-aura roster shape. This fixture's
+RE-RECORDED 2026-08-19 (second pass) for PR #139's team-aura roster shape. This fixture's
 `account.teamBuffs` is `zeroTeamBuffs()` (farm-rate-fixtures.ts reproduces production's
 post-import default, before the team-buffs auto-fill button is ever pressed), and Jon (the
 corpus's only Fôlego de Mineiro carrier, rank 18) previously had his own rank silently boost

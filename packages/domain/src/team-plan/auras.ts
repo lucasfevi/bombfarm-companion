@@ -15,7 +15,7 @@ export function isSquadScope(scope: HeroPlanContext['scope']): boolean {
 
 /**
  * The roster-wide aura total EVERY fielded hero experiences — nobody on the rotation is excluded
- * (issue #132): a carrier's own rank counts toward the total exactly like every other carrier's,
+ * (PR #139): a carrier's own rank counts toward the total exactly like every other carrier's,
  * at that hero's own duty (from the previous fixed-point round). A hero the player leaves alone
  * still stands on the field, so its aura counts too, at the duty its untouched build sustains;
  * only a donated hero, which the game will not field, is out. Because the result does not depend

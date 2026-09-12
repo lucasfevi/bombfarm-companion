@@ -102,7 +102,7 @@ function listFiles(dir: string, acc: string[] = []): string[] {
  * `derive()`). Re-measured against the tree at every T5-T9 commit, not copied from a document.
  */
 const SRC_ALLOWLIST: Record<string, number[]> = {
-  // Line numbers only — still SIX matches, unchanged in kind. Re-measured after issue #132's
+  // Line numbers only — still SIX matches, unchanged in kind. Re-measured after PR #139's
   // team-aura rewrite across three passes: (1) replaced `stackTeamBonusMult`/
   // `TEAM_MULT_BONUS_CAP` with `combineTeamAuraPct` and removed `teamGateMult`; (2) folded
   // Presságio's own rank into the same capped combination and removed the now-redundant
@@ -118,7 +118,7 @@ const SRC_ALLOWLIST: Record<string, number[]> = {
   // tree rather than resolved to either side: this branch's House-cycle plumbing
   // (`houseCycleSecs`, then `houseCycleSecsHouseIdx`/`houseCycleSecsLevel`) and #87's farm-objective
   // rank mode each inserted lines above these hits, so BOTH pins were stale after the merge —
-  // 341 from here and 325 from develop are each correct only in isolation. Issue #132's crit-
+  // 341 from here and 325 from develop are each correct only in isolation. PR #139's crit-
   // combination fix removed the `combatCritChancePctOfBase` pass-through line, shifting the
   // last hit down by one.
   // +3 (line numbers only): surfacing `fieldSecs` on the pipeline result added a documented

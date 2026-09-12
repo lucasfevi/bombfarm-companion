@@ -58,7 +58,7 @@ describe('computeCombatMults', () => {
     expect('treeEnergy' in input).toBe(false);
   });
 
-  it('the field is a property of the roster, not the hero: a rank-20 carrier and a non-carrier read the SAME total (issue #132)', () => {
+  it('the field is a property of the roster, not the hero: a rank-20 carrier and a non-carrier read the SAME total (PR #139)', () => {
     // RETIRED the old "stacks own Grito + other heroes' Grito additively" pin (a real
     // math-check screenshot at +20% own / +20% team → ×1.4): that screenshot's 40% total
     // exceeds Grito's confirmed cap (20%) and predates abilityMods folding a team aura into a
@@ -104,7 +104,7 @@ describe('computeCombatMults', () => {
   });
 });
 
-describe('team aura faults (issue #132)', () => {
+describe('team aura faults (PR #139)', () => {
   it('Fault 2/4: two rank-20 Fôlego carriers cap the drain total at ONE carrier’s worth', () => {
     // Jon and Doran both carry folego_mineiro 20. Under the confirmed rule the field total is
     // min(cap, 20+20) = 20 (the cap), not 40 and not the old double-counted 0.64 drain

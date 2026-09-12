@@ -68,7 +68,7 @@ export const TEAM_BUFF_FIELDS = [
 
 /**
  * Sums each team-wide ability's contribution (perLevel × level) across EVERY deployed hero,
- * excluding nobody — the aura is a property of the field (issue #132), so every hero standing
+ * excluding nobody — the aura is a property of the field (PR #139), so every hero standing
  * in it (carrier or not) experiences the same total. Returns the raw, UNCAPPED sum: the cap
  * ({@link TEAM_BUFF_CAP}) is applied once, at the combination site (`computeCombatMults`), not
  * here.
