@@ -267,7 +267,7 @@ describe('serializeBaseline — deterministic emission', () => {
   it('emits sorted keys, 2-space indent, trailing newline', () => {
     const text = serializeBaseline(validBaseline());
     expect(text.endsWith('\n')).toBe(true);
-    expect(text).toMatch(/^\{\n  "capturedAt"/);
+    expect(text).toMatch(/^\{\n {2}"capturedAt"/);
   });
 
   it('byte round-trip: serialize(read(serialize(b)).baseline) === serialize(b)', () => {

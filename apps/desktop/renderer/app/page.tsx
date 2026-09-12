@@ -10,7 +10,13 @@ import type {
   UpdateStatus,
 } from '@bombfarm/contracts';
 import { DEFAULT_SETTINGS, idleUpdateStatus } from '@bombfarm/contracts';
-import { AppShell, BrandMark, StatusChip, useShellDensity, WINDOW_CONTROLS_WIDTH } from '@bombfarm/ui';
+import {
+  AppShell,
+  BrandMark,
+  StatusChip,
+  useShellDensity,
+  WINDOW_CONTROLS_WIDTH,
+} from '@bombfarm/ui';
 // Proves the renderer can import @bombfarm/domain: a value import from a
 // FILE subpath that itself value-imports ./data/catalog.json, so a dist missing the JSON data
 // fails the static export build rather than surfacing later at runtime. It also carries a
@@ -27,6 +33,7 @@ import { ConsentModal } from './consent-modal';
 import { UpdateChip } from './update-chip';
 import { LiveView } from './live/live-view';
 import { FarmView } from './farm/farm-view';
+import { HeroesView } from './heroes/heroes-view';
 import { InventoryView } from './inventory/inventory-view';
 import { ForgeView } from './forge/forge-view';
 import { AccountView } from './account/account-view';
@@ -383,13 +390,11 @@ function HomePageContent({
             whichever tab happens to be showing — six smoke specs wait on it purely as a boot
             signal. The probe beside it proves a @bombfarm/domain value and the active language
             reached the DOM; it renders nothing a player sees. */}
-        {/* `min-h-0` is what lets a screen fill the scroll region instead of growing past it. A
-            flex item's automatic minimum size is its content, so without this every tab was as
-            tall as its contents and `<main>` scrolled whatever the tab did with `min-h-0` and
-            `flex-1` inside — the bag table's own scroller had nothing to be a scroller inside of.
-            A tab that is genuinely taller than the region still overflows this box and still
-            scrolls `<main>`, because nothing here clips. */}
-        <div data-testid="app-ready" className="flex min-h-0 flex-1 flex-col gap-4">
+        {/* Fills the shell's measure, which is at least the region and as tall as the tab beyond
+            that — never pinned to the region, or a taller tab overflows it past `<main>`'s end
+            padding. `relative` is what a screen that fills the region positions itself against
+            (`absolute inset-0`) so its own scrollers, not `<main>`, take its height. */}
+        <div data-testid="app-ready" className="relative flex flex-1 flex-col gap-4">
           <span data-testid="domain-label-probe" className="sr-only">
             {rarityLabel('Comum', lang)}
           </span>
@@ -428,6 +433,8 @@ function HomePageContent({
             </div>
           ) : activeNavId === 'farm' ? (
             <FarmView />
+          ) : activeNavId === 'heroes' ? (
+            <HeroesView />
           ) : activeNavId === 'inventory' ? (
             <InventoryView />
           ) : activeNavId === 'forge' ? (

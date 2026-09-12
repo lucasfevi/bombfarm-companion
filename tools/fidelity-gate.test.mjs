@@ -19,7 +19,7 @@ function extractJobBlock(workflowText, jobName) {
 
   let endIndex = lines.length;
   for (let i = startIndex + 1; i < lines.length; i += 1) {
-    if (/^  [A-Za-z0-9_-]+:\s*$/.test(lines[i])) {
+    if (/^ {2}[A-Za-z0-9_-]+:\s*$/.test(lines[i])) {
       endIndex = i;
       break;
     }
@@ -37,7 +37,7 @@ function extractSteps(jobBlock) {
   const steps = [];
   let current = [];
   for (const line of lines) {
-    if (/^      - (name|uses):/.test(line)) {
+    if (/^ {6}- (name|uses):/.test(line)) {
       if (current.length > 0) steps.push(current.join('\n'));
       current = [line];
     } else if (current.length > 0) {

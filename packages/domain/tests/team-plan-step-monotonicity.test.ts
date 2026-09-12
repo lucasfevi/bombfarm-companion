@@ -103,7 +103,12 @@ function assertStepInvariants(result: ReturnType<typeof runTeamPlan>, input: Tea
   const levelByHeroId = new Map(input.heroes.map((hero) => [hero.heroId, hero.level]));
   for (const reset of plan.pointResets) {
     const level = levelByHeroId.get(reset.heroId) ?? 0;
-    expect(reset.resetCostGold).toBe(level * 1000);
+    // A proposal that only ADDS is the player placing an unspent pool, which needs no reset
+    // bought — so the charge is the level price or nothing, never something in between.
+    const takesAPointAway = Object.keys(reset.ptsBefore).some(
+      (key) => (reset.pts[key] ?? 0) < (reset.ptsBefore[key] ?? 0),
+    );
+    expect(reset.resetCostGold).toBe(takesAPointAway ? level * 1000 : 0);
   }
 }
 

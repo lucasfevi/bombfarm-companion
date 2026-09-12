@@ -21,10 +21,17 @@ import { requireFixture } from './helpers/require-fixture';
 
 const DOMAIN_ROOT = join(__dirname, '..');
 const FARM_RATE_SRC = join(DOMAIN_ROOT, 'src', 'farm-rate.ts');
+/** The hop histogram and its cycle moved here when the cadence model became the advisor's too. */
+const CADENCE_SRC = join(DOMAIN_ROOT, 'src', 'model', 'cadence.ts');
 
 function loadSource(): string | null {
   if (!requireFixture(FARM_RATE_SRC, 'farm-rate.ts source scan')) return null;
   return readFileSync(FARM_RATE_SRC, 'utf8');
+}
+
+function loadCadenceSource(): string | null {
+  if (!requireFixture(CADENCE_SRC, 'model/cadence.ts source scan')) return null;
+  return readFileSync(CADENCE_SRC, 'utf8');
 }
 
 describe('store-agnosticism — no framework, storage or clock/randomness import', () => {
@@ -98,7 +105,7 @@ describe('HOP_DISTRIBUTION — provenance-carrying, and a distribution rather th
   });
 
   it('its JSDoc carries the capture provenance and the Jensen reason for being a distribution', () => {
-    const source = loadSource();
+    const source = loadCadenceSource();
     if (!source) return;
     const docBlock = source.slice(0, source.indexOf('export const HOP_DISTRIBUTION'));
     expect(docBlock).toMatch(/capture-486-r3/i);

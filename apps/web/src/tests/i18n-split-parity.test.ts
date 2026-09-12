@@ -20,6 +20,7 @@ import * as advice from '@/shared/i18n/namespaces/advice';
 import * as breakdown from '@/shared/i18n/namespaces/breakdown';
 import * as phases from '@/shared/i18n/namespaces/phases';
 import * as teamPlan from '@/shared/i18n/namespaces/team-plan';
+import * as teamPlanGearFlow from '@/shared/i18n/namespaces/team-plan-gear-flow';
 import * as teamPlanObjective from '@/shared/i18n/namespaces/team-plan-objective';
 import * as importNs from '@/shared/i18n/namespaces/import';
 import * as stats from '@/shared/i18n/namespaces/stats';
@@ -54,10 +55,7 @@ import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
  * entries and gives the mechanism a fresh floor to accumulate from.
  */
 const fixturePath = join(WEB_PACKAGE_ROOT, 'src/tests/fixtures/i18n-strings-main.json');
-const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
-  en: Strings;
-  pt: Strings;
-};
+const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as { en: Strings; pt: Strings };
 
 /**
  * Declare deltas here. A feature that changes `STRINGS` in a way that would otherwise fail one
@@ -257,7 +255,13 @@ const KEYS_REMOVED: readonly string[] = [
   // planner, advice the hero strip's warn border and the Points panel's own gain line already
   // carry for the hero being looked at. Its two strings have no reader left.
   'resetAdviceRosterBanner',
-  'resetAdviceRosterHero',
+  // One bombing-cadence model (2026-09-11): the Bombs/s breakdown stops switching between a
+  // serial and a wiki formula and prints the one measured cycle (`bdFormulaBombs`, in
+  // `KEYS_ADDED`), so the two per-model expressions and the wiki formula's stamina-factor term
+  // have no reader left. The retired Context panel's cycle-model control — `cycle`,
+  // `cycleSerial`, `cycleWiki`, `walkS` — had already lost its screen and now loses the model it
+  // named. One line: this file sits at the `src/tests/**` max-lines cap.
+  'resetAdviceRosterHero', 'bdFormulaBombsSerial', 'bdFormulaBombsWiki', 'bdTermSf', 'cycle', 'cycleSerial', 'cycleWiki', 'walkS',
 ];
 
 /**
@@ -439,6 +443,50 @@ const KEYS_REMOVED: readonly string[] = [
  * not: the restriction is on what the plan may propose, not on how it scores.
  */
 const KEYS_ADDED: readonly string[] = [
+  // The planner's Combat tab (2026-09-11): the one string this app adds for the desktop's fourth
+  // stage; the phase control's own words ship with the panel, in the package that draws it.
+  'tabCombat',
+  // The roster rail and board (2026-09-10). The planner had no roster surface of its own — the
+  // hero strip's picker dialog was the only way to see the account at once — so it now draws the
+  // same rail, board and toolbar the desktop app's Heroes screen does, from one implementation.
+  // Nineteen strings, and every one of them is this app's own word rather than a copy of the
+  // desktop's: the filter that keeps only the heroes in rotation says "Enabled heroes" here,
+  // because "Enabled"/"Disabled" is what this planner has always called that flag.
+  'heroesRosterTitle',
+  'heroesRosterListLabel',
+  'heroesRollQualityLabel',
+  'heroesViewLabel',
+  'heroesViewCards',
+  'heroesViewList',
+  'heroesSortLabel',
+  'heroesSortRoll',
+  'heroesSortPower',
+  'heroesSortLevel',
+  'heroesSortRarity',
+  'heroesSortRank',
+  'heroesSortStars',
+  'heroesSortAscending',
+  'heroesSortDescending',
+  'heroesFilterActiveHeroes',
+  'heroesAbilityFilterLabel',
+  'heroesAbilityFilterOption',
+  // One bombing-cadence model (2026-09-11): the Bombs/s breakdown's single expression and the
+  // two glossary tips its new tokens need — the measured cycle itself and the difficulty band
+  // whose prop density sets the hop lengths. One line: this file sits at the max-lines cap.
+  'heroesAbilityFilterAbsent', 'bdFormulaBombs', 'bdTermCycle', 'bdTermBand',
+  // The Optimizer's field-crowding opt-out (2026-09-09) and the removals section that made it
+  // necessary. The plan could always take gear off a hero and hand it back — on a field that
+  // cannot seat everyone, a weak hero wearing less crowds the others out less — but the page
+  // rendered no row for it, so the piece simply vanished off the hero's card. The removals now
+  // show on the hero they came off, with the reason, and the toggle plans without that term.
+  'teamPlanIgnoreCrowdingLabel',
+  'teamPlanIgnoreCrowdingAria',
+  'teamPlanIgnoreCrowdingHintOff',
+  'teamPlanIgnoreCrowdingHintOn',
+  'teamPlanFlowRemovedHeading',
+  'teamPlanFlowRowRemovedToInventory',
+  'teamPlanFlowRemovedWhyCrowded',
+  'teamPlanFlowRemovedWhyOther',
   'navOptimizer',
   'teamPlanOptimizeAriaBoth',
   'teamPlanOptimizeAriaPoints',
@@ -804,6 +852,40 @@ const KEYS_ADDED: readonly string[] = [
   'accountHoldingsSkinsCoverage',
   'accountHoldingsSkinsWithheld',
   'accountHoldingsSkinsWorn',
+  /**
+   * The download page's screen list catches up with the app (2026-09-07). It advertised four
+   * screens while the desktop app shipped seven: Farm and Account were added to the app and never
+   * added here, and Heroes is new. The three new cards are numbered keys for the same reason the
+   * original four are — an array diffs as one leaf path per element in the value comparisons but
+   * as the bare key name in the key-name comparison, so one entry could not satisfy both.
+   *
+   * Heroes carries six items rather than the four or five its neighbours do because the screen
+   * genuinely holds six separable readings of one hero, and folding two together would have
+   * described a screen that does less than it does.
+   *
+   * The cards are ordered as the app's own tab strip orders them, so a reader who installs it
+   * meets the screens in the sequence this page introduced them. Nothing ties the two together,
+   * so that ordering is a fact about this file only.
+   */
+  'downloadScreenFarmTitle',
+  'downloadScreenFarmItem1',
+  'downloadScreenFarmItem2',
+  'downloadScreenFarmItem3',
+  'downloadScreenFarmItem4',
+  'downloadScreenFarmItem5',
+  'downloadScreenHeroesTitle',
+  'downloadScreenHeroesItem1',
+  'downloadScreenHeroesItem2',
+  'downloadScreenHeroesItem3',
+  'downloadScreenHeroesItem4',
+  'downloadScreenHeroesItem5',
+  'downloadScreenHeroesItem6',
+  'downloadScreenAccountTitle',
+  'downloadScreenAccountItem1',
+  'downloadScreenAccountItem2',
+  'downloadScreenAccountItem3',
+  'downloadScreenAccountItem4',
+  'downloadScreenAccountItem5',
 ];
 
 /**
@@ -839,7 +921,46 @@ const KEYS_ADDED: readonly string[] = [
  * time (e.g. "Chests / hr" -> "Item chest"); that wording now survives as the tooltip and
  * screen-reader text behind each header's icon.
  */
+/**
+ * Paths reworded in pt-BR ONLY, declared separately because `PROSE_EDITED_PATHS` above is
+ * checked against BOTH languages: a path listed there must differ from the fixture in `en` and
+ * in `pt`, so a fix that is genuinely one language's own could not be declared at all without
+ * inventing an English edit to match it.
+ *
+ * This does not loosen the comparison. `en` is still measured against `PROSE_EDITED_PATHS` alone
+ * and `pt` against both lists, so an undeclared drift in either language still fails, and a path
+ * put here rather than above is a claim — checked by the two assertions — that English did not
+ * change.
+ */
+const PROSE_EDITED_PATHS_PT_ONLY: readonly string[] = [
+  // The planner's pt-BR called a stat a "Stat" in the two places it names one as a heading —
+  // the sheet/points column and the Effective panel's title — while every label under them was
+  // translated. Both now say Atributo(s), matching the desktop's Heroes screen, and the pt
+  // walkthrough paragraph that names the panel follows it. English calls a stat a stat.
+  'colStat',
+  'panelEffective',
+];
+
 const PROSE_EDITED_PATHS: readonly string[] = [
+  // The Points table prints each figure in its own unit now (2026-09-10), so the four rate stats
+  // no longer carry a `%` in their NAME: `Crit %` -> `Crit`, `Crit dmg +%` -> `Crit dmg`,
+  // `Pen %` -> `Pen`, `CDR %` -> `CDR`, and their pt-BR counterparts. The sheet table and the
+  // team-plan stat breakdown, whose rows show many unitless figures at once, append the unit to
+  // the label themselves rather than to nine cells apiece.
+  'statShort.critChance',
+  'statShort.critDmg',
+  'statShort.penetration',
+  'statShort.cdr',
+  // The planner's first tab (2026-09-09) was named for the only panel it held. It now carries the
+  // hero's identity and birth roll as well, so it is named for the hero: `tabHero` Abilities ->
+  // Hero. Its warning title moves with it — the badge reports a default sheet as well as unspent
+  // ability points, so "Abilities need attention" under-reported it even before the rename.
+  'tabHero',
+  'tabHeroWarnTitle',
+  // The abilities panel stopped printing a slot count, a granted/spendable split and a dead-point
+  // total, so the tip's opening sentence — which explained the budget behind them — went with
+  // them. What it still names is which abilities reach the hero's in-game stats.
+  'abilitiesTip',
   'treeDano',
   'treeCrit',
   'treeCritDmg',
@@ -880,6 +1001,28 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   'teamPlanPageTitle',
   'explainSections.8.h',
   'explainSections.8.p.0',
+  // Team auras get their own switches on the Combat tab (2026-09-11), and the Account page
+  // stopped drawing a "Team buffs" control before that. Four strings still sent the reader to
+  // that control — `abilitiesTip` and `explainSections.0.p.1` (both already declared above), the
+  // "what the app does not model" paragraph and the Optimizer paragraph — and now point at the
+  // Combat tab instead; `explainSections.0.p.1` also stops describing a "Use as farm phase"
+  // control that no longer exists. The rest are the term itself: every player-facing "team buff"
+  // / "buffs de time" now says "team aura" / "auras de time", so the explain block does not
+  // switch vocabulary between one paragraph and the next.
+  // One line: the blanket `src/tests/**` max-lines cap (650) sits one line above this file.
+  // Team auras priced one way (2026-09-12): the Optimizer paragraph (`explainSections.8.p.1`,
+  // declared above) stops saying its totals "exclude the scored hero" — false since every
+  // carrier's own rank started counting — and says they are weighted by predicted uptime, the
+  // Farm board's own form; `effectiveTip` (declared above) now names the aura switches that sit
+  // above the panel it captions. The two Optimizer disclosures that said the same are in
+  // `KEYS_ADDED`, so their values are unconstrained here. No new entry.
+  // Also on that line — one bombing-cadence model (2026-09-11): the "Bombs per second" explain section stops
+  // describing a serial fuse-plus-0.15 s cycle with a wiki toggle beside it and describes the
+  // measured cycle — max(fuse, hop / walk speed) over measured hop lengths — whose code block
+  // follows; its third paragraph now says the same cycle prices every figure the planner
+  // prints. `bdTermWalk` stops naming a walk DELAY and names the walk SPEED the cycle divides by.
+  // One line: this file sits at the max-lines cap.
+  'bdSrcTeam', 'effectiveTip', 'missingHint', 'explainSections.0.code', 'explainSections.1.p.0', 'explainSections.5.p.0', 'explainSections.7.p.1', 'explainSections.8.p.1', 'explainSections.2.p.0', 'explainSections.2.p.2', 'explainSections.2.code', 'bdTermWalk',
 ];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {
@@ -924,6 +1067,7 @@ const namespaces = [
   ['breakdown', breakdown],
   ['phases', phases],
   ['teamPlan', teamPlan],
+  ['teamPlanGearFlow', teamPlanGearFlow],
   ['teamPlanObjective', teamPlanObjective],
   ['import', importNs],
   ['stats', stats],
@@ -944,7 +1088,16 @@ describe('i18n split parity', () => {
 
   it('STRINGS.pt differs from the frozen fixture (minus declared-removed keys) at exactly the declared deltas', () => {
     const diffs = diffLeafPaths(STRINGS.pt, omitKeys(fixture.pt, KEYS_REMOVED)).sort();
-    expect(diffs).toEqual([...PROSE_EDITED_PATHS, ...KEYS_ADDED].sort());
+    expect(diffs).toEqual(
+      [...PROSE_EDITED_PATHS, ...PROSE_EDITED_PATHS_PT_ONLY, ...KEYS_ADDED].sort(),
+    );
+  });
+
+  it('a pt-only declaration really is pt-only — English matches the fixture at every one', () => {
+    const enDiffs = new Set(diffLeafPaths(STRINGS.en, omitKeys(fixture.en, KEYS_REMOVED)));
+    for (const path of PROSE_EDITED_PATHS_PT_ONLY) {
+      expect(enDiffs.has(path), `${path} is declared pt-only but English changed too`).toBe(false);
+    }
   });
 
   it('namespace key sets are pairwise disjoint', () => {

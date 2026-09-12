@@ -138,7 +138,7 @@ describe('rank-20 migration', () => {
   );
 
   it('marcha_acelerada at rank 13 is 2.405, not the naive-halved 2.6', () => {
-    // Marcha Acelerada is a team aura (issue #132) — abilityMods no longer folds it into a
+    // Marcha Acelerada is a team aura (PR #139) — abilityMods no longer folds it into a
     // hero's own mods at all; TEAM_BUFF_PER_LEVEL is the live rate the roster-wide total uses.
     expect(TEAM_BUFF_PER_LEVEL.marcha_acelerada * 13).toBeCloseTo(2.405, 10);
     // Naive halving (0.2 x 13 = 2.6) is outside tolerance of the correct 0.185 x 13 = 2.405.
@@ -147,7 +147,7 @@ describe('rank-20 migration', () => {
 
   it('every changed SELF ability at rank 13 matches perLevel x 13, not old-value x 13', () => {
     // Grito de Guerra, Marcha Acelerada, Fôlego de Mineiro and Presságio Mortal are team auras
-    // (issue #132) — abilityMods no longer folds any of them into a hero's own mods, so they
+    // (PR #139) — abilityMods no longer folds any of them into a hero's own mods, so they
     // are covered by TEAM_BUFF_PER_LEVEL (above) and the MID_CURVE_ABILITIES catalog check
     // instead of here. This test is now SELF abilities only.
     expect(abilityMods({ bateria_extra: 13 }).drainMult).toBeCloseTo(1 - 13 / 100, 10);
@@ -159,7 +159,7 @@ describe('rank-20 migration', () => {
     expect(abilityMods({ detonacao_dupla: 13 }).dmgMult).toBeCloseTo(1 + (19.5 / 100) * 0.5, 10);
   });
 
-  it('a hero\'s own rank in a team aura never touches that hero\'s own AbilityMods (issue #132)', () => {
+  it('a hero\'s own rank in a team aura never touches that hero\'s own AbilityMods (PR #139)', () => {
     const mods = abilityMods({
       grito_guerra: 20,
       marcha_acelerada: 20,

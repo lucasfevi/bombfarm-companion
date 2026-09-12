@@ -44,6 +44,13 @@ describe('identifyObservedBody: never guesses', () => {
     expect(identifyObservedBody(body)).toEqual({ kind: 'unidentified' });
   });
 
+  it('returns unidentified for a /state body from before the sell gate — the tap no longer accepts the thirteen-key shape', () => {
+    if (!bodies) return;
+    const { client_can_sell, sell_phase, sell_mode, ...preSellGate } = required(bodies['/state'], 'missing /state body');
+    expect([client_can_sell, sell_phase, sell_mode].every((value) => value !== undefined)).toBe(true);
+    expect(identifyObservedBody(preSellGate)).toEqual({ kind: 'unidentified' });
+  });
+
   it('returns unidentified for a non-object body without throwing', () => {
     expect(identifyObservedBody('not an object')).toEqual({ kind: 'unidentified' });
     expect(identifyObservedBody(null)).toEqual({ kind: 'unidentified' });

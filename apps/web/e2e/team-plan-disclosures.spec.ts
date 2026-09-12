@@ -50,7 +50,7 @@ test.describe('Team plan disclosures', () => {
 
     const panel = disclosuresPanel(page);
     await expect(panel.getByText(/scoped roster/i)).toBeVisible();
-    await expect(panel.getByText(/Account tab.*Team buffs/i)).toBeVisible();
+    await expect(panel.getByText(/aura switches are ignored on this page/i)).toBeVisible();
     await expect(panel.getByText(/Baton Pass/i)).toBeVisible();
   });
 

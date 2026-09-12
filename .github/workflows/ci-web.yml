@@ -1,6 +1,6 @@
 name: CI Web
 
-# Path-filtered web quality including next build (CIV-DEBT-01) before Vercel deploy.
+# Path-filtered web quality including next build before Vercel deploy.
 
 on:
   workflow_dispatch:
@@ -109,15 +109,15 @@ jobs:
       - name: Build domain (its own packaging test needs dist)
         run: pnpm --filter @bombfarm/domain build
 
-      - name: Typecheck web + domain + ui + farm + hero
+      - name: Typecheck web + domain + ui + game-art + farm + hero
         run: >
-          pnpm --filter @bombfarm/domain --filter @bombfarm/ui --filter @bombfarm/farm
-          --filter @bombfarm/hero --filter @bombfarm/web typecheck
+          pnpm --filter @bombfarm/domain --filter @bombfarm/ui --filter @bombfarm/game-art
+          --filter @bombfarm/farm --filter @bombfarm/hero --filter @bombfarm/web typecheck
 
-      - name: Lint web + domain + ui + farm + hero
+      - name: Lint web + domain + ui + game-art + farm + hero
         run: >
-          pnpm --filter @bombfarm/domain --filter @bombfarm/ui --filter @bombfarm/farm
-          --filter @bombfarm/hero --filter @bombfarm/web lint
+          pnpm --filter @bombfarm/domain --filter @bombfarm/ui --filter @bombfarm/game-art
+          --filter @bombfarm/farm --filter @bombfarm/hero --filter @bombfarm/web lint
 
       # Domain tests need no build output, so they stay ahead of the (slow) build to keep
       # fast feedback on the most common failures.
@@ -194,7 +194,7 @@ jobs:
       # failure/cancelled and treats skipped as pass unconditionally): this gate
       # must fail when the path filter matched but the job did not run at all —
       # skipped or cancelled — not just when it actively failed. A gate that
-      # reports success for "never ran" is worse than no gate (SBC-19/AD-018).
+      # reports success for "never ran" is worse than no gate.
       - name: Require design-system suite when the filter matched
         if: needs.changes.outputs.web == 'true' && needs.design-system.result != 'success'
         run: |

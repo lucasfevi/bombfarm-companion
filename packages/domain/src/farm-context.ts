@@ -1,15 +1,8 @@
 import type { AbilityMods, Context } from './model';
-import type { CycleModel } from './model';
 import type { HeroContext } from './shims/storage';
 import { combineDrainRate } from './drain';
 import { resolveHouseRestSeconds } from './model/house';
-import { wikiPhaseLine } from './phase-wiki';
-
-/** Fixed serial bomb cycle — not user-editable. */
-export const FARM_CYCLE_MODEL = 'serial' as const satisfies CycleModel;
-
-/** Default walk delay between explosion and next plant (serial model). */
-export const FARM_WALK_DELAY_SEC = 0.15;
+import { phaseMapCoord, wikiPhaseLine } from './phase-wiki';
 
 /**
  * Ranking / HTK prop default — Stone (Account default). Single source for the four sites
@@ -30,6 +23,11 @@ export function effectiveMitigationPct(context: Pick<HeroContext, 'phase' | 'mit
   if (context.phase != null && context.phase > 0) return context.mitigationPct;
   const line = wikiPhaseLine(1);
   return line ? line.mitig * 100 : context.mitigationPct;
+}
+
+/** Difficulty band the bomb cycle is priced at — the farm phase's own, phase 1's when unset. */
+export function effectiveFarmAto(phase: number | null | undefined): number {
+  return phaseMapCoord(effectiveFarmPhase(phase))?.ato ?? 1;
 }
 
 /** Ranking / HTK prop — Stone when unset (Account default). */
@@ -97,8 +95,7 @@ export function farmContextForHero(input: FarmContextForHeroInput): Context {
     restSeconds: rest,
     mitigation: mitPct / 100,
     blastRange: 1 + input.mods.rangeCells,
-    cycleModel: FARM_CYCLE_MODEL,
-    walkDelay: FARM_WALK_DELAY_SEC,
+    ato: effectiveFarmAto(input.phase),
     drainMult: combineDrainRate(input.mods.drainMult, input.teamDrainMult),
   };
 }

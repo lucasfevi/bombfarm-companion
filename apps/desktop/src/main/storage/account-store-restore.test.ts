@@ -60,7 +60,7 @@ function cleanSkillsBody(totalsOverrides: Record<string, unknown> = {}): Record<
   };
 }
 
-/** A post-patch `account` section body (`SECTION_FINGERPRINTS.account`'s 13 `STATE_LEVEL` keys)
+/** A post-patch `account` section body (`SECTION_FINGERPRINTS.account`'s 16 `STATE_LEVEL` keys)
  *  — the schema gate now drops a stored section whose body doesn't
  *  match its fingerprint, so every fixture below that predates this file's F4 tests had to move
  *  off the old `{phase: N}` shorthand onto a schema-conforming body. Each test still puts its
@@ -82,6 +82,9 @@ function cleanAccountBody(overrides: Record<string, unknown> = {}): Record<strin
     bag_tabs: 1,
     bag_capacity: 100,
     items_count: 0,
+    client_can_sell: true,
+    sell_phase: 120,
+    sell_mode: 'todos',
     ...overrides,
   };
 }

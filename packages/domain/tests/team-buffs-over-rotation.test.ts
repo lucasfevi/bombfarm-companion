@@ -3,8 +3,8 @@
  * fixed deployed line-up shows.
  *
  * A team aura is a property of the field, so it exists only while a carrier is standing in it.
- * `computeTeamBuffsFromDeployed` answers "what is the aura right now", which is what the advisor
- * and the team-plan scorer want. The Farm Ranking board prices a pool cycling through the House
+ * `computeTeamBuffsFromDeployed` answers "what is the aura right now", which only the Live
+ * screen's drain readout wants. Every board and objective prices a pool cycling through the House
  * for hours, where a carrier at uptime 0.58 supplies its aura for 58% of the run and nothing for
  * the other 42% — a different question, answered here.
  *

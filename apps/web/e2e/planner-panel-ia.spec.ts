@@ -6,14 +6,13 @@ function activePanel(page: import('@playwright/test').Page) {
 }
 
 test.describe('planner tabs IA (PTI)', () => {
-  test('tab list exposes Abilities / Gear / Points (no Check, no Account)', async ({ page }) => {
+  test('tab list exposes Hero / Combat / Gear / Points (no Check, no Account)', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
 
-    for (const name of [/^Abilities$/i, /^Gear$/i, /^Points$/i]) {
-      await expect(page.getByRole('tab', { name })).toBeVisible();
-    }
+    const tabs = page.getByRole('tab');
+    await expect(tabs).toHaveText([/^Hero$/i, /^Combat$/i, /^Gear$/i, /^Points$/i]);
     await expect(page.getByRole('tab', { name: /^Check$/i })).toHaveCount(0);
     // Account left the tab strip for a nav route of its own.
     await expect(page.getByRole('tab', { name: /^Account$/i })).toHaveCount(0);
@@ -22,7 +21,7 @@ test.describe('planner tabs IA (PTI)', () => {
     ).toBeVisible();
   });
 
-  test('Points tab stacks Points / Next point then Stats then Effective', async ({ page }) => {
+  test('Points tab stacks Points / Next point then Stats; Effective moved to Combat', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
@@ -32,8 +31,49 @@ test.describe('planner tabs IA (PTI)', () => {
     await expect(stage.getByRole('heading', { name: /^Points$/i, level: 2 })).toBeVisible();
     await expect(stage.getByRole('heading', { name: /^Next point$/i, level: 2 })).toBeVisible();
     await expect(stage.getByRole('heading', { name: /^Stats$/i, level: 2 })).toBeVisible();
-    await expect(stage.getByRole('heading', { name: /^Effective stats$/i, level: 2 })).toBeVisible();
+    await expect(stage.getByRole('heading', { name: /^Effective stats$/i, level: 2 })).toHaveCount(0);
     await expect(stage.getByRole('heading', { name: /^Math check$/i })).toHaveCount(0);
+  });
+
+  test('Combat tab stacks the phase control, the hero against it, then Effective', async ({ page }) => {
+    await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+    await page.goto('/');
+    await selectSavedHero(page, 'Cora');
+
+    await page.getByRole('tab', { name: /^Combat$/i }).click();
+    const stage = activePanel(page);
+    const headings = stage.getByRole('heading', { level: 2 });
+    await expect(headings.nth(0)).toHaveText(/^Phase these numbers are for$/i);
+    await expect(headings.last()).toHaveText(/^Effective stats$/i);
+    await expect(stage.getByRole('combobox', { name: /which phase these numbers/i })).toBeVisible();
+    // Nothing to go back to until a phase is picked here.
+    await expect(stage.getByRole('button', { name: /^Back to your current phase$/i })).toBeDisabled();
+  });
+
+  test('picking a phase on Combat moves the strip, and Back returns it', async ({ page }) => {
+    await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+    await page.goto('/');
+    await selectSavedHero(page, 'Cora');
+    const hit = page.getByRole('region', { name: /current hero/i }).getByText(/^Hit$/i).locator('..');
+    const hitBefore = await hit.textContent();
+
+    await page.getByRole('tab', { name: /^Combat$/i }).click();
+    const stage = activePanel(page);
+    await stage.getByRole('combobox', { name: /which phase these numbers/i }).click();
+    await expect(page.getByRole('listbox')).toBeVisible();
+    await page.keyboard.type('Hard 1-1');
+    await page.getByRole('option', { name: 'Hard 1-1 (#151)' }).click();
+    await expect(page.getByRole('listbox')).toHaveCount(0);
+    await expect(stage.getByText(/^Phase 151$/)).toBeVisible();
+    await expect(stage.getByText(/different phase than your Farm screen/i)).toBeVisible();
+    expect(await hit.textContent()).not.toBe(hitBefore);
+
+    const back = stage.getByRole('button', { name: /^Back to your current phase$/i });
+    await expect(back).toBeEnabled();
+    await back.click();
+    await expect(back).toBeDisabled();
+    await expect(stage.getByText(/^Phase 151$/)).toHaveCount(0);
+    expect(await hit.textContent()).toBe(hitBefore);
   });
 
   test('Gear tab includes Items subsection (Stats lives on Points)', async ({ page }) => {
@@ -91,7 +131,7 @@ test.describe('planner tabs IA (PTI)', () => {
     // retired with the read-only birth→Total Stats table; Points owns the only warn tier.
     await expect(page.getByRole('tab', { name: /^Gear$/i }).locator('[data-tab-badge="warn"]')).toHaveCount(0);
     await expect(page.getByRole('tab', { name: /^Gear$/i }).locator('[data-tab-badge="soft"]')).toBeVisible();
-    await expect(page.getByRole('tab', { name: /^Abilities$/i }).locator('[data-tab-badge="soft"]')).toBeVisible();
+    await expect(page.getByRole('tab', { name: /^Hero$/i }).locator('[data-tab-badge="soft"]')).toBeVisible();
     await expect(page.locator('[data-tab-status-banner]')).toHaveCount(0);
 
     await page.getByRole('tab', { name: /^Gear$/i }).hover();
@@ -101,7 +141,7 @@ test.describe('planner tabs IA (PTI)', () => {
     // The mismatch issue string (tabGearMismatch) was deleted with the warn tier.
     await expect(gearTip.getByText(/match items \+ points/i)).toHaveCount(0);
 
-    await page.getByRole('tab', { name: /^Abilities$/i }).hover();
+    await page.getByRole('tab', { name: /^Hero$/i }).hover();
     const abilitiesTip = page.locator('[data-slot="tooltip-popup"][data-open]');
     await expect(abilitiesTip).toBeVisible();
     await expect(abilitiesTip.getByText(/ability points/i)).toBeVisible();
@@ -132,7 +172,8 @@ test.describe('planner tabs IA (PTI)', () => {
 
 test.describe('HeroStrip reset-advice warn chrome', () => {
   // Confirmed directly against computeAdvisorPipeline (not guessed): pts.cdr = level fires the
-  // reset gate (~251% gainPct) on this seeded hero; pts.attack = level does not (~0%).
+  // reset gate (~188% gainPct under the measured bomb cycle; ~251% under the retired serial
+  // one) on this seeded hero; pts.attack = level does not (~0%).
   function heroStripHero(pts: Record<string, number>, battleAllowed?: boolean) {
     return {
       ...importedRoster,

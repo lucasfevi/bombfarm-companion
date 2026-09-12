@@ -117,7 +117,7 @@ export function createGameKeepAlive(deps: GameKeepAliveDeps): GameKeepAlive {
   };
 }
 
-export function createProcessPresencePort(processName?: string): () => Promise<boolean> {
+export function createProcessPresencePort(options: { processName?: string; isPackaged: boolean }): () => Promise<boolean> {
   let lastPid: number | null = null;
 
   return async () => {
@@ -125,7 +125,10 @@ export function createProcessPresencePort(processName?: string): () => Promise<b
       return true;
     }
 
-    lastPid = await findProcessIdAsync(processName ?? process.env.BFC_GAME_PROCESS ?? DEFAULT_GAME_PROCESS_NAME);
+    lastPid = await findProcessIdAsync(
+      options.processName ?? process.env.BFC_GAME_PROCESS ?? DEFAULT_GAME_PROCESS_NAME,
+      { isPackaged: options.isPackaged },
+    );
     return lastPid !== null;
   };
 }

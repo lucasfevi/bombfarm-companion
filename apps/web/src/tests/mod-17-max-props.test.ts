@@ -25,11 +25,11 @@ const MAX_PROPS = 8;
 const ALLOWLIST_FILES = new Set<string>([]);
 
 /** W5-migrated components — must stay ≤8 and never live under ALLOWLIST_FILES.
- *  `AccountColumn` left the list when the Account page replaced it with focused panels. */
+ *  `AccountColumn` left the list when the Account page replaced it with focused panels, and
+ *  `HeroAbilitiesTab` left it when the shared abilities panel absorbed the editor it was. */
 const MIGRATED_SIX = [
   'src/features/planner/components/planner-tabs.tsx::PlannerTabs',
-  'src/features/planner/components/hero-abilities-tab.tsx::HeroAbilitiesTab',
-  'src/features/planner/components/gear-tab.tsx::GearTab',
+  '../../packages/hero/src/components/gear-tab.tsx::GearTab',
   'src/features/planner/components/advice-column.tsx::AdviceColumn',
   'src/features/planner/components/hero-strip.tsx::HeroStrip',
   'src/features/planner/components/hero-planner.tsx::HeroPlanner',

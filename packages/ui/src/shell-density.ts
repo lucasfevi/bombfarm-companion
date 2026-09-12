@@ -24,25 +24,32 @@ export type ShellDensity = 'full' | 'icon-tabs' | 'brand-mark' | 'actions-collap
  * they start overlapping on. Portuguese is the binding language; its tab words and its action
  * labels are the longest either language puts in the bar.
  *
- * Brand 159 + worded tabs 512 + actions 340 + the two gaps = 1040px of content, and the bar's
+ * Brand 159 + worded tabs 589 + actions 340 + the two gaps = 1117px of content, and the bar's
  * content is 24px narrower than the room measured here (the shell gutter, less the caption strip
- * the bar already holds clear) — so 1064px, with six tabs. The margin above that absorbs a
- * font-rendering pass that measures a few pixels wider.
+ * the bar already holds clear) — so 1141px, with seven tabs. The seventh added 77px to the six
+ * measured at 512: the strip was re-rendered at its real geometry in the binding language and came
+ * back 534.4px worded and 611.1px with the tab in, rather than being estimated from a word length.
+ * The margin above that absorbs a font-rendering pass that measures a few pixels wider.
  */
-export const SHELL_ICON_TABS_WIDTH = 1080;
-
-/** The same sum with the tabs already down to glyphs: 159 + 351 + 340 + gaps = 878, so 902px. */
-export const SHELL_BRAND_MARK_WIDTH = 920;
+export const SHELL_ICON_TABS_WIDTH = 1157;
 
 /**
- * And with the brand down to its mark as well: 34 + 351 + 340 + gaps = 753, so 777px.
+ * The same sum with the tabs already down to glyphs: 159 + 387 + 340 + gaps = 914, so 938px.
  *
- * No window reaches this today — the desktop's own minimum is 960px, which leaves 824px of bar
- * after the caption inset, and that is the stage above. It is kept because the sum it comes from
- * is not fixed: every tab added pushes all three widths up, and a seventh destination brings this
- * one inside the range a window can be dragged to.
+ * A glyph tab costs far less than a worded one, so the seventh adds 36px here against 77px above —
+ * measured the same way, at the compact geometry where the active tab keeps its word.
  */
-export const SHELL_ACTIONS_COLLAPSE_WIDTH = 800;
+export const SHELL_BRAND_MARK_WIDTH = 956;
+
+/**
+ * And with the brand down to its mark as well: 34 + 387 + 340 + gaps = 789, so 813px.
+ *
+ * No window reaches this today — the desktop's own minimum is 960px, which leaves 860px of bar
+ * after the caption inset, and that is the stage above. It is kept because the sum it comes from
+ * is not fixed: every tab added pushes all three widths up, and an eighth destination would bring
+ * this one inside the range a window can be dragged to.
+ */
+export const SHELL_ACTIONS_COLLAPSE_WIDTH = 836;
 
 export function shellDensityFor(availableWidth: number): ShellDensity {
   if (availableWidth < SHELL_ACTIONS_COLLAPSE_WIDTH) return 'actions-collapsed';

@@ -258,7 +258,6 @@ export function loadAccountShared(): AccountShared {
     (activeId ? heroes.find((hero) => hero.id === activeId) : undefined) ?? heroes[0] ?? null;
   const seeded = normalizeAccount({
     tree: donor?.tree,
-    teamBuffs: donor?.teamBuffs,
     context: donor?.context,
   });
   saveAccountShared(seeded);

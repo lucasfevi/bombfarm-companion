@@ -1,5 +1,152 @@
 # @bombfarm/domain
 
+## 1.1.0
+
+### Minor Changes
+
+- 306d2d0: Value what one more level of each of a hero's abilities is worth to that hero, at a given phase,
+  by re-running the same combat model rather than adding a second formula for the same quantity.
+  Team-wide auras are priced through the roster total they actually act on, so levelling one is not
+  reported as worth nothing. Four outcomes stay distinct in the data — a gain, already at maximum,
+  the field already at that aura's ceiling, and an effect the damage-per-second measure does not
+  reach — so no ability that does something can render as a plain zero.
+- 16c218d: Stop the Optimizer handing a hero worse gear than it is holding. Its dominance rule compared two
+  pieces only within one item definition, on the premise that sets differ in which stats they roll
+  and so are incomparable. That premise no longer holds: every slot's thirty sets roll the same
+  stats in the same order, and a roll is `statBase × nivelMult[level] × forja`, so within a slot an
+  item is fully described by (level, rarity, forge) and the set name is cosmetic. A clay amulet beats
+  a coal one of equal rarity and forge outright — and the search was still offering the coal.
+
+  Dominance is now read off the catalog's own scaled rolls instead of asserted, so it degrades to
+  "incomparable" by itself if a set ever does roll differently again. It is applied per hero level,
+  because a dominated piece may be the only one an under-levelled hero can equip.
+
+  Comparing across sets also fixes a second, quieter symptom. The gold objective is flat over wide
+  plateaus — hero damage reaches it through an integer hits-to-kill, and Luck does not reach it at
+  all — so a swap chain that pays for itself elsewhere could leave a hero holding gear a free piece
+  beats outright, with no gain available to make the search correct it. Where the plan is already
+  changing a slot, it now hands over the best piece it could; slots the plan leaves alone stay
+  alone, so no chore is invented, and each substitution is still scored, because more Energia raises
+  uptime and on a saturated field that can cost more than the piece gains.
+
+- 047ce89: Show the gear an Optimizer plan takes OFF a hero, say why, and let you plan without the reason.
+
+  The plan could always unequip a piece and hand it back with nobody taking it, and the page rendered
+  no row for it: the item vanished off the hero's card and was mentioned nowhere, because the
+  "returns to inventory" group the model already built was filtered out before it reached the screen.
+  Those removals now appear on the hero they came off, and carry their reason.
+
+  The reason is field crowding. Where the field cannot seat the whole roster at once, a hero taking
+  more field time crowds the others out, so gear that raises its uptime lowers the roster's own
+  score — faithfully modelled, and the honest answer to "what does my roster earn as it stands". It
+  is the wrong answer for a player who rotates heroes in buckets, and it reads as the optimizer
+  ignoring an item. **Keep every hero geared** drops that term from both objectives, so more gear can
+  never score worse, and fills every empty slot the plan has an item for. The totals it produces
+  describe a field that never makes heroes queue, so they read higher than the roster really earns —
+  the control says so, and the reported field status stays the true one either way.
+
+  On a 13-hero roster the honest plan left eleven slots empty that it owned gear for, three of them
+  helmets; with the toggle on it leaves none, and every remaining gap is a piece the hero is too
+  low-level to equip.
+
+- 30428ba: Price every DPS figure on one bombing-cadence model — the Farm page's measured one — and retire
+  the advisor's serial model.
+
+  **Two models printed DPS.** The hero strip, the Points ranking, the reset-advice gate, the Combat
+  stage on both apps and the Optimizer's damage objective read a serial cycle, `1 / (fuse + 0.15 s)`,
+  in which Speed did not appear: a Speed point ranked at 0% forever and Marcha Acelerada was worth
+  nothing. The Farm page read a measured cycle — the longer of the fuse and the walk to the next
+  plant, averaged over hop lengths measured in real clears and packed closer on denser difficulties
+  — so a hero's bombs per second on the Combat stage and its plants per second on the Farm page, at
+  the same phase, were two different numbers.
+
+  **Now there is one.** The advisor's bombs per second is the inverse of the Farm page's cycle at
+  the farm phase's own difficulty band. Speed shortens every hop the fuse does not already cover,
+  and is a real next-point candidate (about 1.1% a point on a typical hero). Cooldown reduction pays
+  only on the hops where the fuse is the longer leg — observed directly: a hero that reaches its
+  next target before its previous bomb has gone off waits on the cell and plants a fifth of a
+  second after the fuse ends, and when one hero was respecced from 12% to 28% cooldown reduction
+  that waiting time moved with her fuse, one for one, while a second hero's did not. Where the
+  crossover falls depends on walk speed and on the field; the model puts it near 53% for a hero
+  walking two cells a second, and past it the point scores zero, where the serial model had it
+  paying through to the 80% cap. Nothing is measured past 28%, and the same capture found the model
+  overstating how much of a fast hero's field is fuse-bound, so a fast hero's cooldown figure reads
+  high rather than low. A build with every point in cooldown still trips the reset gate — harder
+  than before.
+
+  **Every DPS figure moves, on both apps**, typically down by about a third at mid cooldown
+  reduction; the Bombs/s breakdown prints the one formula with the fuse, walk speed, band and
+  resulting cycle substituted, and the "How the math works" text describes the measured cycle.
+
+  **The accepted cost:** the measured cycle's approximations — a hop histogram fitted at one
+  difficulty band and scaled to the others, a density term that runs optimistic at the easiest band,
+  latency constants calibrated on squad clears — now reach per-hero figures. Those are errors of
+  degree; Speed doing nothing was an error of kind. A hero priced alone is priced at squad density,
+  as the Farm page already priced it.
+
+- fcc507e: Make the Optimizer spend the stat points a hero has not placed yet, instead of only reshuffling
+  the ones it already spent. A level-102 hero holding 52 unspent points was offered a rearrangement
+  of the other 50 and nothing else — the points it had banked were never mentioned, never priced,
+  and never appeared in the plan at all.
+
+  The gold search had no move that could place them. Every move in its per-hero neighbourhood is a
+  transfer, so a vector's total never changes; five of its six seeds ARE built from the hero's whole
+  level pool, but each is a squad-wide assignment at one shared energy share, so it wins or loses
+  for every hero at once. The sixth carries each hero's current total. That left one route to a
+  banked point — a squad-wide re-split good enough to beat the incumbent on every other hero's
+  account too — which a large pool sometimes tipped and a small one never did. On a roster already
+  settled at the optimizer's own advice, banks of 1 to 12 points were dropped in full; on the
+  account that surfaced this, a bank of 52 was dropped as well. The damage objective was unaffected:
+  its seeds are built per hero, so a full-pool seed can win on its own merit.
+
+  The per-hero neighbourhood now carries a family that places unplaced points, whole pool first so
+  one accepted move settles it and the transfer family spreads it from there. Placement still has to
+  earn its keep against the objective — more damage can clear a phase faster than the field refills
+  and cost gold — so a point that buys nothing stays where it is rather than being spent for the
+  sake of it. The level ceiling is untouched: no proposal has ever been allowed to exceed it, and
+  none does now.
+
+  Placing those points is also free, and the advisor now says so. A respec buys back points already
+  committed, so a proposal that only ADDS commits none and owes nothing — but the Farm page charged
+  a flat 1000 gold per hero level on every hero whose build changed at all. That was correct while
+  every move was a transfer, because anything that changed also took a point off something; it stops
+  being correct the moment a proposal can be pure addition. On a settled roster, a hero banking eight
+  points was quoted 44,000 gold for a plan that takes nothing away from it. The headline respec cost
+  and the payback it feeds now count only the heroes that actually have to buy one, and the Team
+  Plan's per-hero reset cost is 0 for the same case.
+
+- 5dffa73: Price team auras one way on every screen, and give a hero's own screen its switches.
+
+  **The same hero printed a different DPS on every screen, and a different one on every account
+  read.** The Heroes screen and the planner's Combat tab priced team auras off a snapshot of
+  whoever happened to be standing on the field when the account was read, so the number moved as
+  the rotation turned — on one real roster it read 22–33% low for every hero, on another 4.7% high.
+  The Optimizer's damage objective summed each carrier's rank by its duty and clamped afterwards,
+  which held two part-time carriers of one capped aura at the cap the whole time; the gold
+  objective and the Farm board took the expected value of the capped sum instead.
+
+  **Every screen that rotates a roster now prices auras the Farm board's way**: each carrier the
+  game will field, weighted by the uptime the model predicts for it, the cap taken inside the
+  expectation. The Optimizer's damage objective moves onto it — on a roster with one carrier per
+  aura nothing changes; three Fôlego carriers that summed to 60 against a cap of 20 move a plan's
+  DPS by −3.7% — and, like the gold objective, it now counts a hero you leave alone: that hero
+  still fields, so its aura reaches the rest of the roster at the duty its untouched build sustains.
+  Only a donated hero is out, on both. The phase explorer beside the Farm board prices the same
+  way, on both apps, so it and the board agree.
+
+  **A hero's own screen asks a narrower question, and gets a control.** The Heroes screen and the
+  Combat tab price one hero on the field: its own aura always counts, and every other carrier is a
+  what-if behind a switch — off, the hero is priced alone; on, that aura counts every other hero in
+  rotation that carries it, as if they stood on the field the whole time. The four switches sit
+  beside the phase picker, say what they assume, and say where the uptime-weighted figures live
+  instead. They reset on every visit, like the phase pick.
+
+  **The stored aura total is gone.** The planner used to keep a hand-typed override that no screen
+  has offered a field for since August, and a snapshot that went stale on the next read; a saved
+  account still carrying either loads with both discarded. A Farm board that was still being priced
+  against such an override — a number no control could show or clear — now prices the roster like
+  every other.
+
 ## 1.0.1
 
 ### Patch Changes

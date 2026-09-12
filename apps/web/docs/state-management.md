@@ -22,7 +22,7 @@ Each slice exports its state type, initial state, and actions. Actions are **ver
 | Slice | Owner wave | Notes |
 | --- | --- | --- |
 | session | W4 | lang, toast, persist gate / skip-toast one-shots |
-| account | W4 | tree, team buffs, farm context |
+| account | W4 | tree, farm context |
 | roster | W4 | heroes + activeHeroId — sole in-memory roster |
 | phases | W4 | explorer view phase (`bf-hp-phases-view-v1`) |
 | hero-draft | **W5** | active hero edit fields — not in W4 |
@@ -68,7 +68,7 @@ Failed `localStorage` writes return `false`, notify `onStorageWriteError`, and s
 
 ## The ≤8 props rule (strict since W7)
 
-W5-migrated planner components (`PlannerTabs`, `HeroAbilitiesTab`, `GearTab` — W6 split of the former `BuildColumn` — `AccountColumn`, `AdviceColumn`, `HeroStrip`, composer) must declare **≤ 8 props**. Repo-wide enforcement is a Vitest inventory (`src/tests/mod-17-max-props.test.ts`).
+W5-migrated planner components (`PlannerTabs`, `GearTab` — W6 split of the former `BuildColumn` — `AccountColumn`, `AdviceColumn`, `HeroStrip`, composer) must declare **≤ 8 props**. Repo-wide enforcement is a Vitest inventory (`src/tests/mod-17-max-props.test.ts`).
 
 **W7 closed this**: `ALLOWLIST_FILES` is **empty** and the rule is strict. The `Switch` / `Select` entries were removed not by changing those components but by fixing the counter — the rule counts only a component's **own non-DOM props**, excluding native HTML/ARIA attributes and surfaces inherited via `ComponentPropsWithoutRef`. The rule targets prop-drilled god-components, not DOM pass-through primitives. The migrated six must never join an allowlist.
 

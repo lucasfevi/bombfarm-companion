@@ -216,8 +216,9 @@ They do not collide.
 - **Different user data.** Flavors already separate them — `Bomb Farm Companion (Dev)` against
   `Bomb Farm Companion`. Nothing the dev build writes reaches the real install's database.
 - **Different renderer port.** Offline mode defaults to **3100**, not 3000, so it also coexists
-  with `pnpm dev:web`. `dev.mjs` exits rather than sharing a port, so this is the difference
-  between working and a startup error.
+  with `pnpm dev:web`. A port another process already answers on is never shared: `dev.mjs` moves
+  the renderer up to the next free one and says so — so `pnpm dev` beside a web planner session on
+  3000 opens on 3001, and never on the web planner.
 - **No contention for the game process.** Replay mode never lists processes and never loads the
   instrumentation runtime. Two builds hooking one process is a situation that simply cannot arise.
 

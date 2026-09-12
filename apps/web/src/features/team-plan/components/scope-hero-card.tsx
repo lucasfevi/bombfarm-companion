@@ -4,7 +4,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { Select, cn } from '@bombfarm/ui';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
-import { HeroAvatar, rarityTextClass } from '@/shared/game-art';
+import { HeroAvatar, heroRankToneClass, rarityTextClass } from '@/shared/game-art';
 import type { HeroRecord } from '@/shared/lib/storage';
 import type { ScopeState } from '@/shared/stores/team-plan/types';
 import type { Lang, Strings } from '@/shared/i18n';
@@ -73,7 +73,7 @@ export function ScopeHeroCard({
             <span
               className={cn(
                 'shrink-0 text-[15px] leading-none font-black tracking-tight',
-                hero.rank?.trim() ? 'text-accent' : 'text-muted',
+                heroRankToneClass(hero.rank),
               )}
             >
               {hero.rank?.trim() || '—'}

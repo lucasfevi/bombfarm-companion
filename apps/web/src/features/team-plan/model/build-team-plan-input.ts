@@ -60,6 +60,9 @@ export function buildTeamPlanInputFromStore(state: PlannerStore): TeamPlanInput 
     // itself when gear is off the table, so this field alone decides it — the store's stored
     // floor is never suppressed here.
     allowedChanges: state.allowedChanges,
+    // Both objectives drop their field-crowding term under this, and the plan fills every empty
+    // slot it has an item for — see the domain field for why that is an opt-in mis-pricing.
+    ignoreFieldCrowding: state.ignoreFieldCrowding,
     // Both objectives score here. Null is the objective's own default: gold sweeps for its best
     // phase, damage stays on the account's own.
     targetPhase: selectTeamPlanTargetPhase(state),

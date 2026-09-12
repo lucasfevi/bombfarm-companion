@@ -43,7 +43,7 @@ export type ComputeCombatMultsInput = {
  * an others-only figure. `ownPct` stays as a parameter (rather than deleting it and inlining
  * `Math.min`) so every call site names what it is doing: `computeCombatMults` below always
  * passes `0`, because `teamBuffs` already carries every carrier including this hero (see
- * `computeTeamBuffsFromDeployed` / `substituteHeroAbilities`, `team-buffs.ts`) — there is no
+ * `computeTeamBuffsOverRotation` / `computeTeamBuffsAroundHero`, `team-buffs.ts`) — there is no
  * separate "own" term left to add. The cap is per ability ({@link TEAM_BUFF_CAP}), not a single
  * global figure — an earlier version of this comment cited `combate.team_mult_bonus_cap` as the
  * source of a single +100% cap, but that key does not exist in the live wiki payload or in this
@@ -69,7 +69,7 @@ export function teamDrainMultFromTeamBuffs(teamBuffs: Record<TeamBuffId, number>
  * factors applied once by `applySkillTree`, not a second time on top of the combat sheet.
  *
  * `teamBuffs` must be the FULL roster total for every aura, including whichever hero `mods`
- * belongs to — `abilityMods` never folds a team aura into a hero's own mods (issue #132), so
+ * belongs to — `abilityMods` never folds a team aura into a hero's own mods (PR #139), so
  * there is nothing left for this function to add back on top. Contra o Relógio ("gate power")
  * is a self ability, not a team aura (its wiki `kind` is `gate_power`, not `team_*`) —
  * `gateAttackMult` reads `mods` alone, same as before.

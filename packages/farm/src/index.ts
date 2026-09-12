@@ -7,5 +7,6 @@
  * after-paint scheduler both hosts drive the compute through.
  */
 export { formatPhaseLabel } from './model/phase-label';
+export { phaseFromSearchValue, phaseSearchOptions, phaseSearchValue } from './model/phase-options';
 export { scheduleAfterPaint } from './model/schedule-after-paint';
 export type { FarmRespecProposal, FarmRespecStatus } from './model/farm-respec-view';

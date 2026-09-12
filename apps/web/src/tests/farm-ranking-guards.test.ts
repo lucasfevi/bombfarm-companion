@@ -525,7 +525,7 @@ describe('guard (j) — the farm screen’s store reads happen in its two connec
   it('the explorer connector renders the package view and holds the explorer’s own store reads', () => {
     const source = fs.readFileSync(path.join(WEB_PACKAGE_ROOT, EXPLORER_CONNECTOR), 'utf8');
     expect(source).toContain('PhasesExplorerView');
-    for (const selector of ['selectPhasesViewPhase', 'selectAccountShared', 'selectHeroes']) {
+    for (const selector of ['selectPhasesViewPhase', 'selectRosterAccount', 'selectHeroes']) {
       expect(source, `${EXPLORER_CONNECTOR} must subscribe to ${selector}`).toContain(selector);
     }
   });

@@ -68,11 +68,18 @@ export const TEAM_BUFF_FIELDS = [
 
 /**
  * Sums each team-wide ability's contribution (perLevel × level) across EVERY deployed hero,
- * excluding nobody — the aura is a property of the field (issue #132), so every hero standing
+ * excluding nobody — the aura is a property of the field (PR #139), so every hero standing
  * in it (carrier or not) experiences the same total. Returns the raw, UNCAPPED sum: the cap
  * ({@link TEAM_BUFF_CAP}) is applied once, at the combination site (`computeCombatMults`), not
- * here — storing the raw figure lets the UI field this feeds show the true total even when it
- * exceeds the cap, rather than silently rounding it off before the user ever sees it.
+ * here.
+ *
+ * THE FIELD AS IT IS, NOT AS IT IS PLANNED. `deployed` is the game's own `in_field` at the moment
+ * the account was read, so this is the aura the live field is actually running under — the
+ * quantity the Live screen's drain readout wants and nothing else does. No planning screen prices
+ * against it: a board or optimizer rotating a pool through the House reads
+ * {@link computeTeamBuffsOverRotation}, and a per-hero figure reads
+ * {@link computeTeamBuffsAroundHero}. Reading this snapshot on those screens made the same hero
+ * print a different DPS on every account read, as the rotation turned.
  */
 export function computeTeamBuffsFromDeployed(
   heroes: readonly Pick<HeroRecord, 'deployed' | 'abilities'>[],
@@ -86,40 +93,6 @@ export function computeTeamBuffsFromDeployed(
   return out;
 }
 
-/**
- * The same sum as {@link computeTeamBuffsFromDeployed}, but over a ROTATION rather than over a
- * single deployed line-up: each hero's contribution is weighted by `presence[i]`, the fraction of
- * wall clock it is expected to actually stand on the field.
- *
- * WHY A WEIGHTED SUM AND NOT THE DEPLOYED SNAPSHOT. A team aura is a property of the field, so it
- * exists only while a carrier is standing in it. `computeTeamBuffsFromDeployed` answers "what is
- * the aura right now", which is what the advisor and the team-plan scorer want — they price one
- * fixed line-up. The Farm Ranking board prices a POOL cycling through the House over hours, where
- * a carrier at uptime 0.58 supplies its aura for 58% of the run and nothing for the other 42%.
- * Reading the snapshot there applied one hero's aura to every hour of a rotation it was absent
- * from for most of, which over-predicted gold/hr on a Grito-carrying roster and — the mirror case,
- * equally wrong — under-predicted it whenever the heroes parked on the field at import time
- * happened to be the ones carrying nothing.
- *
- * `presence` is index-aligned with `heroes`; `null` means full presence (weight 1 for everyone),
- * which reproduces the roster's at-best total. Each weight is clamped to `[0, 1]`.
- *
- * CAPPED HERE, unlike {@link computeTeamBuffsFromDeployed}, which leaves the clamp to
- * `computeCombatMults`. Applying it downstream is what that function wants, because its input is a
- * single instant in which the carriers either are or are not present. Over a rotation the cap has
- * to be taken INSIDE the expectation ({@link expectedCappedTotal}) — `E[min(cap, X)]`, not
- * `min(cap, E[X])` — or two half-present carriers read as one permanently present one. The
- * downstream clamp then finds an already-capped value and is a no-op, so nothing double-clamps.
- *
- * THE APPROXIMATION THAT REMAINS, stated plainly: presence is treated as INDEPENDENT across
- * carriers. It is not, quite — a House rotation staggers heroes a little on its own, and an
- * automated one staggers them deliberately. Independence is the neutral reading between those and
- * the one a hand-played account is closest to. What survives is the linearity gap: this is still
- * `aura(E[presence])` per carrier, exact wherever the aura enters the model linearly (Fôlego does,
- * since field seconds are energy over a time-averaged drain rate) and approximate for Grito, whose
- * attack term reaches throughput through the `Math.ceil` in `hitsToKill`. A lone rank-20 Grito
- * carrier at uptime 0.578 prices at 11.57 where live telemetry measures 11.82.
- */
 /**
  * Carrier count past which {@link expectedCappedTotal} stops enumerating and falls back to the
  * uncapped weighted sum. The distribution has at most `2^k` support points, so 20 carriers is
@@ -145,22 +118,15 @@ const COVERAGE_ENUMERATION_LIMIT = 20;
  *
  * Exact rather than approximated: the support is enumerated carrier by carrier. Contributions are
  * usually equal (rank-20 across the board), so the distribution collapses hard and the walk stays
- * far below its `2^k` worst case. Guarded by {@link COVERAGE_ENUMERATION_LIMIT}.
+ * far below its `2^k` worst case. Called only once its caller has found a cap in reach and
+ * fewer carriers than {@link COVERAGE_ENUMERATION_LIMIT}.
  */
 function expectedCappedTotal(
   contributions: readonly { value: number; presence: number }[],
   cap: number,
 ): number {
-  const active = contributions.filter((c) => c.value > 0 && c.presence > 0);
-  if (active.length === 0) return 0;
-
-  const weightedSum = active.reduce((sum, c) => sum + c.value * c.presence, 0);
-  if (active.length > COVERAGE_ENUMERATION_LIMIT) return weightedSum;
-  // No cap in reach — the expectation is linear and the sum is already exact.
-  if (!Number.isFinite(cap) || active.reduce((sum, c) => sum + c.value, 0) <= cap) return weightedSum;
-
   let dist = new Map<number, number>([[0, 1]]);
-  for (const { value, presence } of active) {
+  for (const { value, presence } of contributions) {
     const next = new Map<number, number>();
     for (const [total, prob] of dist) {
       // Clamp as we go: everything at or above the cap is the same outcome, which is what keeps
@@ -177,6 +143,55 @@ function expectedCappedTotal(
   return expected;
 }
 
+function presenceAt(presence: readonly number[] | null, index: number): number {
+  const raw = presence == null ? 1 : presence[index];
+  return Number.isFinite(raw) ? Math.min(1, Math.max(0, raw)) : 0;
+}
+
+/**
+ * The same sum as {@link computeTeamBuffsFromDeployed}, but over a ROTATION rather than over a
+ * single deployed line-up: each hero's contribution is weighted by `presence[i]`, the fraction of
+ * wall clock it is expected to actually stand on the field.
+ *
+ * THE ONE FORM EVERY ROSTER-WIDE FIGURE IS PRICED IN. The Farm board on both apps, the
+ * Optimizer's gold objective and its damage objective (`computeRosterAuras`, a duty-map adapter
+ * over this) all read this function, so the same roster carries the same aura total on every
+ * screen that rotates it. Only the per-hero screens depart from it, deliberately and with their
+ * own control — see {@link computeTeamBuffsAroundHero}.
+ *
+ * WHY A WEIGHTED SUM AND NOT THE DEPLOYED SNAPSHOT. A team aura is a property of the field, so it
+ * exists only while a carrier is standing in it. A board pricing a POOL cycling through the House
+ * over hours has a carrier at uptime 0.58 supplying its aura for 58% of the run and nothing for
+ * the other 42%. Reading the deployed snapshot there applied one hero's aura to every hour of a
+ * rotation it was absent from for most of, which over-predicted gold/hr on a Grito-carrying roster
+ * and — the mirror case, equally wrong — under-predicted it whenever the heroes parked on the field
+ * at import time happened to be the ones carrying nothing.
+ *
+ * `presence` is index-aligned with `heroes`; `null` means full presence (weight 1 for everyone),
+ * which reproduces the roster's at-best total. Each weight is clamped to `[0, 1]`.
+ *
+ * CAPPED HERE, unlike {@link computeTeamBuffsFromDeployed}, which leaves the clamp to
+ * `computeCombatMults`. Applying it downstream is what that function wants, because its input is a
+ * single instant in which the carriers either are or are not present. Over a rotation the cap has
+ * to be taken INSIDE the expectation ({@link expectedCappedTotal}) — `E[min(cap, X)]`, not
+ * `min(cap, E[X])` — or two half-present carriers read as one permanently present one. The
+ * downstream clamp then finds an already-capped value and is a no-op, so nothing double-clamps.
+ *
+ * THE APPROXIMATION THAT REMAINS, stated plainly: presence is treated as INDEPENDENT across
+ * carriers. It is not, quite — a House rotation staggers heroes a little on its own, and an
+ * automated one staggers them deliberately. Independence is the neutral reading between those and
+ * the one a hand-played account is closest to. What survives is the linearity gap: this is still
+ * `aura(E[presence])` per carrier, exact wherever the aura enters the model linearly (Fôlego does,
+ * since field seconds are energy over a time-averaged drain rate) and approximate for Grito, whose
+ * attack term reaches throughput through the `Math.ceil` in `hitsToKill`. A lone rank-20 Grito
+ * carrier at uptime 0.578 prices at 11.57 where live telemetry measures 11.82.
+ *
+ * ALLOCATION-FREE ON THE COMMON PATH. The optimizer calls this once per fixed-point round per
+ * roster evaluation, tens of thousands of times a solve; building a contribution record per hero
+ * per aura there cost it ~18% of a 13-hero run. The linear weighted sum needs nothing built, so
+ * the carriers are only materialised for {@link expectedCappedTotal} once a cap is actually in
+ * reach — which on a real roster is one aura, if any.
+ */
 export function computeTeamBuffsOverRotation(
   heroes: readonly Pick<HeroRecord, 'abilities'>[],
   presence: readonly number[] | null,
@@ -184,14 +199,105 @@ export function computeTeamBuffsOverRotation(
   const out = zeroTeamBuffs();
   for (const buffId of TEAM_BUFF_ABILITY_IDS) {
     const perLevel = TEAM_BUFF_PER_LEVEL[buffId];
-    const contributions = heroes.map((hero, index) => {
-      const raw = presence == null ? 1 : presence[index];
-      return {
-        value: perLevel * (hero.abilities[buffId] ?? 0),
-        presence: Number.isFinite(raw) ? Math.min(1, Math.max(0, raw)) : 0,
-      };
-    });
-    out[buffId] = expectedCappedTotal(contributions, TEAM_BUFF_CAP[buffId] ?? Infinity);
+    const cap = TEAM_BUFF_CAP[buffId] ?? Infinity;
+    let weightedSum = 0;
+    let atBest = 0;
+    let carriers = 0;
+    for (let index = 0; index < heroes.length; index++) {
+      const value = perLevel * (heroes[index].abilities[buffId] ?? 0);
+      if (!(value > 0)) continue;
+      const weight = presenceAt(presence, index);
+      if (!(weight > 0)) continue;
+      weightedSum += value * weight;
+      atBest += value;
+      carriers++;
+    }
+    // No cap in reach — the expectation is linear and the sum is already exact.
+    if (carriers === 0 || carriers > COVERAGE_ENUMERATION_LIMIT || !(atBest > cap)) {
+      out[buffId] = weightedSum;
+      continue;
+    }
+    const contributions: { value: number; presence: number }[] = [];
+    for (let index = 0; index < heroes.length; index++) {
+      const value = perLevel * (heroes[index].abilities[buffId] ?? 0);
+      const weight = presenceAt(presence, index);
+      if (value > 0 && weight > 0) contributions.push({ value, presence: weight });
+    }
+    out[buffId] = expectedCappedTotal(contributions, cap);
+  }
+  return out;
+}
+
+/** Which of the four auras a per-hero screen counts the REST of the roster for. */
+export type TeamAuraSwitches = Record<TeamBuffId, boolean>;
+
+export function noTeamAuraSwitches(): TeamAuraSwitches {
+  return {
+    grito_guerra: false,
+    pressagio_mortal: false,
+    marcha_acelerada: false,
+    folego_mineiro: false,
+  };
+}
+
+/**
+ * One aura as seen from one hero's seat: what the hero itself brings, and what every OTHER hero
+ * the game will field would add at full presence, over `carriers` of them.
+ */
+export type TeamAuraAroundHero = {
+  readonly own: number;
+  readonly others: number;
+  readonly carriers: number;
+};
+
+type RosterAuraHero = Pick<HeroRecord, 'id' | 'abilities' | 'battleAllowed'>;
+
+/**
+ * The roster's four auras from one hero's seat — the figures a per-hero screen's aura switches
+ * are labelled with. `others` counts heroes with `battleAllowed !== false` other than `hero`
+ * itself; the hero's own rank is `own`, whatever its own flag says, since the screen is pricing it
+ * as fielded. Both are raw perLevel × rank sums, uncapped like every other total in this module.
+ */
+export function teamAurasAroundHero(
+  hero: Pick<HeroRecord, 'id' | 'abilities'>,
+  roster: readonly RosterAuraHero[],
+): Record<TeamBuffId, TeamAuraAroundHero> {
+  const others = roster.filter((other) => other.id !== hero.id && other.battleAllowed !== false);
+  const out = {} as Record<TeamBuffId, TeamAuraAroundHero>;
+  for (const buffId of TEAM_BUFF_ABILITY_IDS) {
+    const perLevel = TEAM_BUFF_PER_LEVEL[buffId];
+    const carriers = others.filter((other) => (other.abilities[buffId] ?? 0) > 0);
+    out[buffId] = {
+      own: perLevel * (hero.abilities[buffId] ?? 0),
+      others: carriers.reduce((total, other) => total + perLevel * (other.abilities[buffId] ?? 0), 0),
+      carriers: carriers.length,
+    };
+  }
+  return out;
+}
+
+/**
+ * The aura total a PER-HERO screen prices one hero against: the hero's own contribution always,
+ * plus — for each aura switched on — every other fielded carrier's rank at FULL presence.
+ *
+ * WHY NOT THE ROTATION FORM. {@link computeTeamBuffsOverRotation} answers "what does this roster
+ * average over hours", which is a roster question. A hero's detail screen asks a narrower one —
+ * "what does THIS hero do on the field" — and there the only aura it certainly stands under is
+ * its own. Whether a given other carrier is beside it is a what-if, so it is a switch: off, the
+ * hero is priced alone; on, the carrier is assumed present the whole time, the at-best reading
+ * rather than a fraction the player would have to guess at. The screen says so beside the
+ * switches. Returns the raw, UNCAPPED sum like {@link computeTeamBuffsFromDeployed}: the clamp is
+ * `computeCombatMults`'s.
+ */
+export function computeTeamBuffsAroundHero(
+  hero: Pick<HeroRecord, 'id' | 'abilities'>,
+  roster: readonly RosterAuraHero[],
+  switches: TeamAuraSwitches,
+): Record<TeamBuffId, number> {
+  const around = teamAurasAroundHero(hero, roster);
+  const out = zeroTeamBuffs();
+  for (const buffId of TEAM_BUFF_ABILITY_IDS) {
+    out[buffId] = around[buffId].own + (switches[buffId] ? around[buffId].others : 0);
   }
   return out;
 }

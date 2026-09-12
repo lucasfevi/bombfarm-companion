@@ -1,6 +1,6 @@
 /**
  * The repo-wide retired-identifier guard. Scans exactly the four
- * roots the requirement and its own clause table both name — `apps/web/**`,
+ * roots this guard's own stated scope names — `apps/web/**`,
  * `apps/desktop/**`, `packages/ui/**`, `tools/**` — never `packages/domain` (F2's surface, out of
  * F3's touch scope by the git protocol) and never repo-root `docs/` (outside the four stated
  * roots; this guard's two `docs/base-ui-first.md` / `docs/content-fit-ui.md` allowlist entries
@@ -173,14 +173,27 @@ const ALLOWLIST = [
  * on another) fails by name. `packages/ui` has zero lines and needs no entry.
  */
 const CRIT_DMG_MULT_MAP = {
+  // New file for this token: the Heroes screen assembles `PipelineFacts` for the per-statistic
+  // breakdown, and the kept combat pass-through is one of its rows. Read off the pipeline result,
+  // never off a tree state.
+  // -5 (line number only): the roster rail, board and toolbar moved into `@bombfarm/hero` so the
+  // web planner draws the same ones, which took their definitions and two imports out of this
+  // file. Match itself is unchanged in count and in kind.
+  // -27 (line number only): the phase control moved into `@bombfarm/farm` so the web planner
+  // draws the same one, which took its definition out of this file, and the Combat stage is
+  // mounted only while shown. Unchanged in count and kind.
+  'apps/desktop/renderer/app/heroes/heroes-view.tsx': [660],
+  // The shared roster builder's own account fixture, same kind as the two farm entries below: a
+  // raw save-shaped skills block handed to the parser, not a field the app reads.
+  'apps/desktop/renderer/lib/account/account-roster.test.ts': [39],
   'apps/desktop/renderer/lib/account/account-view-store.test.ts': [34],
   // The desktop farm adapter's own account fixtures, same kind as the account-view entry above:
   // a raw save-shaped skills block, not a field the app reads.
-  'apps/desktop/renderer/lib/farm/farm-inputs.test.ts': [38, 150],
+  'apps/desktop/renderer/lib/farm/farm-inputs.test.ts': [38, 142],
   // +1 (line number only): the farm snapshot's capture-time regression tests added an import of
   // `settledBoard` above this fixture. Match itself is unchanged in count and in kind.
   'apps/desktop/renderer/lib/farm/use-farm-snapshot.test.ts': [46],
-  'apps/desktop/src/main/storage/account-store-restore.test.ts': [507, 540, 558, 591],
+  'apps/desktop/src/main/storage/account-store-restore.test.ts': [510, 543, 561, 594],
   'apps/desktop/src/main/storage/stale-sections.test.ts': [66, 81, 84, 88, 98, 105, 111, 123, 128, 164, 224],
   'apps/desktop/src/main/storage/stale-sections.ts': [11],
   // +2 (line numbers only) from the House/field-slots untangling follow-up: two new
@@ -190,7 +203,16 @@ const CRIT_DMG_MULT_MAP = {
   // `farmObjective` row above this section with a prose paragraph, a net +1 line. Match itself is
   // unchanged in count and in kind.
   'apps/web/docs/local-data-compat.md': [110, 118],
-  'apps/web/src/features/planner/components/advice-column.tsx': [38, 59],
+  // +7 (line numbers only): the next-point panel became a shared component, so its mode, its
+  // setter and its ranked rows are read here and passed down. Both matches are unchanged in count
+  // and in kind.
+  // −14 (line numbers only): each shared panel below this column now subscribes to the store in
+  // its own connector file, so the reads that were staged here moved out. Both matches are
+  // unchanged in count and in kind.
+  // Moved (2026-09-11): the facts the breakdown reads left `advice-column.tsx` for a hook the
+  // planner's Combat tab calls, so the two matches — the destructure and the facts field — now
+  // sit in `use-pipeline-facts.ts`. Unchanged in count and in kind.
+  'apps/web/src/features/planner/hooks/use-pipeline-facts.ts': [34, 55],
   // +16 (line number only): the House-ceiling fix added `fieldSlots`/`houseCycleSecs`, with
   // their doc comments, to `AccountShared` above this line. The match itself is unchanged in
   // count and in kind — still `normalizeTree`'s doc comment naming a stale key it discards.
@@ -198,21 +220,25 @@ const CRIT_DMG_MULT_MAP = {
   // `houseCycleSecsHouseIdx`/`houseCycleSecsLevel`, with their doc comment, above this line too.
   // +9 more (line number only): the XP-multiplier feature added `TreeState.xpMult`, with its
   // doc comment, above this line too. Match itself is unchanged in count and in kind.
-  // +19 more (line number only): issue #132's derived-vs-override team-buffs split added the
+  // +19 more (line number only): PR #139's derived-vs-override team-buffs split added the
   // deprecation doc comment on `teamBuffs`, the new `teamBuffsOverride` field with its own doc
   // comment, and the `normalizeTeamBuffsOverride` migration helper with its doc comment, all
   // above this line. Match itself is unchanged in count and in kind.
   // +12 more (line number only): issue #141's required-save-field check added the
   // `missingRequiredFields` field with its doc comment, and the domain import that types it,
   // above this line. Match itself is unchanged in count and in kind.
-  'apps/web/src/shared/lib/account-shared.ts': [199],
+  'apps/web/src/shared/lib/account-shared.ts': [184],
   'apps/web/src/shared/lib/stale-account.ts': [21],
   'apps/web/src/tests/advisor-pipeline.test.ts': [85],
   // +2 (line numbers only): the star-multiplier change (0.5 -> 0.25) added two explanatory
   // lines to the expectation above the last three hits. Still FOURTEEN matches,
   // unchanged in kind.
+  // −1 (line numbers only): the one-cadence-model change replaced the fixture Context's two
+  // serial-cycle fields with one difficulty-band field above every hit. Still FOURTEEN matches,
+  // unchanged in kind. The same one-line shrink moves points-reopt.test.ts below by −1, and
+  // stat-breakdown.test.ts by +6 net (its model import grew by seven lines for the same change).
   'apps/web/src/tests/derive.test.ts': [
-    71, 73, 134, 162, 200, 230, 254, 293, 307, 359, 398, 436, 482, 514,
+    70, 72, 133, 161, 199, 229, 253, 292, 306, 358, 397, 435, 481, 513,
   ],
   // +8 (line number only) on the second hit: a second entry, with its rationale comment, joined
   // COMPUTED_PATH_ALLOWLIST above this line when the 2026-08-31 soulbound capture landed. Both
@@ -220,12 +246,12 @@ const CRIT_DMG_MULT_MAP = {
   'apps/web/src/tests/fixture-corpus.test.ts': [23, 83],
   'apps/web/src/tests/fixtures/sheet-math/README.md': [6],
   'apps/web/src/tests/fixtures/storage-roundtrip-20260729.json': [3],
-  'apps/web/src/tests/points-reopt.test.ts': [106, 489],
+  'apps/web/src/tests/points-reopt.test.ts': [105, 488],
   'apps/web/src/tests/stale-account-drop.test.ts': [32, 73, 74, 79, 90],
-  'apps/web/src/tests/stat-breakdown.test.ts': [126, 176, 202],
-  // +1 (line number only): issue #132's rewrite of the "existing empty state" comment above line
+  'apps/web/src/tests/stat-breakdown.test.ts': [132, 182, 208],
+  // +1 (line number only): PR #139's rewrite of the "existing empty state" comment above line
   // 109 added a net one line. Match itself is unchanged in count and in kind.
-  'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [40, 110],
+  'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [40, 108],
   'apps/web/src/tests/storage-stat-points-available-compat.test.ts': [104],
   // +12 (line numbers only) from the corpus-parity repurpose and the skip-counting fix's
   // comments above both hits. Count and kind unchanged.
@@ -241,7 +267,7 @@ const CRIT_DMG_MULT_MAP = {
   // (clause-A allowlist entries and this self-map entry itself). Count and kind unchanged.
   // +2 more (line numbers only) from the XP-multiplier feature's account-shared.ts entry above
   // gaining its two-line explanation. Count and kind unchanged.
-  // +4 more (line numbers only) from issue #132's account-shared.ts entry and the legacy-drop
+  // +4 more (line numbers only) from PR #139's account-shared.ts entry and the legacy-drop
   // suite entry just above, +2 lines each. Count and kind unchanged.
   // +3 more (line numbers only) from the Farm Respec Advisor objective picker removal's own
   // explanatory comment above the local-data-compat.md entry. Count and kind unchanged.
@@ -258,7 +284,11 @@ const CRIT_DMG_MULT_MAP = {
   // Count and kind unchanged.
   // +3 more (line numbers only, last four): the note on the farm snapshot entry above, plus this
   // one. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 304, 309, 319, 328],
+  // +5 more (line numbers only, last four): the two notes above on the phase control and the
+  // pipeline-facts hook moving. Count and kind unchanged.
+  // +4 more (line numbers only, last four): the one-cadence-model note on the derive.test.ts
+  // entry above. Count and kind unchanged.
+  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 334, 339, 349, 358],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 

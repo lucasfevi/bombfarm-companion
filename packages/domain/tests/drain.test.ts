@@ -6,8 +6,7 @@ const baseCtx = (): Context => ({
   restSeconds: 12 * 60,
   mitigation: 0.067,
   blastRange: 1,
-  cycleModel: 'serial',
-  walkDelay: 0.15,
+  ato: 1,
   drainMult: 1,
 });
 

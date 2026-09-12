@@ -1,0 +1,174 @@
+'use client';
+
+import { useMemo } from 'react';
+
+import {
+  peelSheetStages,
+  type PeelSheetStagesInput,
+  type SheetStageRow,
+} from '@bombfarm/domain/sheet-stages';
+import { SHEET_PANEL_KEYS } from '@bombfarm/domain/planner-constants';
+import {
+  DataTable,
+  FieldRequired,
+  Panel,
+  mutedClass,
+  numberFormatterFor,
+  panelHClass,
+  panelTitleClass,
+  tipClass,
+} from '@bombfarm/ui';
+import type { Lang, StatPanelCopy } from '../copy';
+import { sheetStatUnit } from '../model/breakdown-labels';
+
+const STAGE_DELTA_KEYS = [
+  'deltaLevel',
+  'deltaStars',
+  'deltaAbility',
+  'deltaGear',
+  'deltaPoints',
+  'deltaTree',
+] as const;
+
+type StageDeltaKey = (typeof STAGE_DELTA_KEYS)[number];
+
+function formatStageCell(
+  value: number,
+  format: (n: number, d?: number) => string,
+  asDelta: boolean,
+  unit = '',
+): string {
+  if (asDelta && Math.abs(value) < 1e-9) return '—';
+  if (!asDelta) return `${format(value, 2)}${unit}`;
+  const abs = `${format(Math.abs(value), 2)}${unit}`;
+  return value < 0 ? `−${abs}` : `+${abs}`;
+}
+
+/**
+ * The game's display clamp (`STAT_CAPS.critChance`/`.cdr`, `gameSheetView`), shown as its own
+ * column rather than folded into Total — Total must stay the uncapped telescoping sum (see
+ * `SheetStageRow`'s doc comment in `sheet-stages.ts`). `—` when the row sits at/under the cap
+ * (`deltaCap` is exactly 0 there); otherwise the in-game value plus how much is being wasted,
+ * e.g. `100.00 (−77.95)`.
+ */
+function formatOverCapCell(
+  row: SheetStageRow,
+  format: (n: number, d?: number) => string,
+  unit: string,
+): string {
+  if (row.deltaCap === 0) return '—';
+  return `${format(row.cappedTotal, 2)}${unit} (${formatStageCell(row.deltaCap, format, true, unit)})`;
+}
+
+/** `peelSheetStages`' own input, with a birth roll the panel may not have yet. */
+export type SheetTableInput = Omit<PeelSheetStagesInput, 'birth'> & {
+  birth: PeelSheetStagesInput['birth'] | undefined;
+};
+
+export function SheetTable({
+  t,
+  lang,
+  input,
+}: {
+  t: StatPanelCopy;
+  lang: Lang;
+  input: SheetTableInput;
+}) {
+  const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
+
+  const { birth, level, stars, sheetOther, loadout, pts, tree } = input;
+
+  const stages = birth
+    ? peelSheetStages({
+        birth,
+        level,
+        stars,
+        sheetOther,
+        loadout,
+        pts,
+        tree,
+      })
+    : null;
+
+  const missingBirth = !birth;
+
+  const deltaHeaders: { key: StageDeltaKey; label: string }[] = [
+    { key: 'deltaLevel', label: t.colSheetDeltaLevel },
+    { key: 'deltaStars', label: t.colSheetDeltaStars },
+    { key: 'deltaAbility', label: t.colSheetDeltaAbility },
+    { key: 'deltaGear', label: t.colSheetDeltaGear },
+    { key: 'deltaPoints', label: t.colSheetDeltaPoints },
+    { key: 'deltaTree', label: t.colSheetDeltaTree },
+  ];
+
+  return (
+    <Panel>
+      <div className={panelHClass}>
+        <h2 className={panelTitleClass}>{t.panelSheet}</h2>
+        <FieldRequired show={missingBirth}>{t.fieldRequired}</FieldRequired>
+      </div>
+      <p className={tipClass}>{missingBirth ? t.sheetTipNeedBirth : t.sheetTip}</p>
+      <DataTable.Root scrollable maxRows={11} className="overflow-x-auto">
+        <DataTable.Table className="table-fixed min-w-4xl">
+          <colgroup>
+            <col className="w-30" />
+            <col className="w-22" />
+            {STAGE_DELTA_KEYS.map((key) => (
+              <col key={key} className="w-21" />
+            ))}
+            <col className="w-22" />
+            <col className="w-28" />
+          </colgroup>
+          <DataTable.Head>
+            <DataTable.Row>
+              <DataTable.Header>{t.colStat}</DataTable.Header>
+              <DataTable.Header align="right">{t.colSheetBirth}</DataTable.Header>
+              {/* `DataTable.Header` spreads `title` onto its own `<th>`, so these two are native
+                  tooltips the lint rule cannot see. A design-system Tooltip here costs ~8% more
+                  component renders across four measured planner scenarios — this table re-renders
+                  on every edit and each heading becomes a whole tooltip subtree — so they are
+                  tracked with the app's other native tooltips rather than converted here.
+
+                  The rule does not fire on them: it inspects lowercase DOM elements, and this is a
+                  capitalised component that happens to forward the prop. */}
+              {deltaHeaders.map(({ key, label }) => (
+                <DataTable.Header key={key} align="right" title={label}>
+                  <span className="min-w-0 truncate">{label}</span>
+                </DataTable.Header>
+              ))}
+              <DataTable.Header align="right">{t.colSheetTotal}</DataTable.Header>
+              <DataTable.Header align="right" title={t.colSheetOverCap}>
+                <span className="min-w-0 truncate">{t.colSheetOverCap}</span>
+              </DataTable.Header>
+            </DataTable.Row>
+          </DataTable.Head>
+          <DataTable.Body>
+            {SHEET_PANEL_KEYS.map((statKey) => {
+              const row: SheetStageRow | null = stages ? stages[statKey] : null;
+              const unit = sheetStatUnit(statKey);
+              return (
+                <DataTable.Row key={statKey}>
+                  <DataTable.Cell className="truncate">{t.statShort[statKey]}</DataTable.Cell>
+                  <DataTable.Cell align="right" numeric className={mutedClass}>
+                    {row ? formatStageCell(row.birth, boundFormatNumber, false, unit) : '—'}
+                  </DataTable.Cell>
+                  {STAGE_DELTA_KEYS.map((deltaKey) => (
+                    <DataTable.Cell key={deltaKey} align="right" numeric className={mutedClass}>
+                      {row ? formatStageCell(row[deltaKey], boundFormatNumber, true, unit) : '—'}
+                    </DataTable.Cell>
+                  ))}
+                  <DataTable.Cell align="right" numeric>
+                    <b>{row ? formatStageCell(row.total, boundFormatNumber, false, unit) : '—'}</b>
+                  </DataTable.Cell>
+                  <DataTable.Cell align="right" numeric className={mutedClass}>
+                    {row ? formatOverCapCell(row, boundFormatNumber, unit) : '—'}
+                  </DataTable.Cell>
+                </DataTable.Row>
+              );
+            })}
+          </DataTable.Body>
+        </DataTable.Table>
+      </DataTable.Root>
+    </Panel>
+  );
+}

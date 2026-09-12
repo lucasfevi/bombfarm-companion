@@ -109,6 +109,12 @@ function hero( partial: Partial<HeroRecord> & Pick<HeroRecord, 'id' | 'name'>): 
     power: partial.power,
     deployed: partial.deployed ?? false,
     battleAllowed: partial.battleAllowed,
+    // Both stay ABSENT unless a caller supplies them, which is a valid record and the one every
+    // seed written before the roster board used. Spelled `?? undefined` rather than omitted: a
+    // hero the helper silently dropped these from reports no birth roll at all, and a roster of
+    // those is a board of dashes that looks like a broken screen rather than an empty one.
+    birth: partial.birth ?? undefined,
+    statRanges: partial.statRanges ?? undefined,
   };
 }
 
@@ -192,7 +198,6 @@ export const importedRoster: SeededState = {
       energy: 0.52,
       teamCoinPct: 0,
     },
-    teamBuffs: {},
     context: {
       houseIdx: 2,
       houseLevel: 6,
@@ -270,6 +275,132 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
     },
   );
 }
+
+/**
+ * The roster the board is for: birth rolls, ability pools and gear that actually differ.
+ *
+ * `importedRoster` cannot serve here and is deliberately left alone. Its heroes carry no `birth`
+ * and no `statRanges`, so `rollQualityFor` places nothing on any of them — every roll bar is empty
+ * and the roll sort has nothing to order by, which would make a green spec about a board that is
+ * showing dashes. Every perf and visual baseline is expressed against that roster too.
+ *
+ * The eight windows are the game's own published ranks for a common hero, in planner units
+ * (`saveSheetUnits`: crit chance, CDR and luck are percent, crit damage is percent ABOVE ×1).
+ * The three heroes are placed high, middle and low inside them on purpose, so "best roll first"
+ * has a visible answer and reversing the direction visibly reverses it.
+ */
+const COMMON_BIRTH_WINDOWS: NonNullable<HeroRecord['statRanges']> = {
+  attack: { min: 150, max: 200 },
+  energy: { min: 140, max: 240 },
+  speed: { min: 48.5, max: 53.5 },
+  penetration: { min: 1, max: 4 },
+  critChance: { min: 4, max: 10 },
+  critDmg: { min: 50, max: 80 },
+  cdr: { min: 1, max: 4 },
+  luck: { min: 2, max: 10 },
+};
+
+/** A birth roll placed at one fraction of every window — 1 is the top of each, 0 the floor. */
+function birthAt(fraction: number): NonNullable<HeroRecord['birth']> {
+  const at = (key: keyof typeof COMMON_BIRTH_WINDOWS) => {
+    const band = COMMON_BIRTH_WINDOWS[key];
+    if (band === undefined) throw new Error(`no window for ${key}`);
+    return band.min + (band.max - band.min) * fraction;
+  };
+  return {
+    attack: at('attack'),
+    energy: at('energy'),
+    speed: at('speed'),
+    penetration: at('penetration'),
+    critChance: at('critChance'),
+    critDmg: at('critDmg'),
+    cdr: at('cdr'),
+    luck: at('luck'),
+  };
+}
+
+function gear(defPrefix: string, level: number, upgrade: number) {
+  const piece = (slot: string) => ({ defId: `${defPrefix}_${slot}`, rarityIdx: 3, level, upgrade });
+  return {
+    arma: piece('arma'),
+    elmo: piece('elmo'),
+    anel: piece('anel'),
+    amuleto: null,
+    peito: piece('peito'),
+    calca: piece('calca'),
+    luva: null,
+    bota: piece('bota'),
+  };
+}
+
+/**
+ * Four heroes whose roll, power, level, rarity, grade and ability pool all order differently, one
+ * of them out of the rotation — so a spec can tell each sort key apart from the others, and can
+ * see that a shelved hero is drawn muted rather than dropped.
+ */
+export const rosterBoard: SeededState = {
+  ...importedRoster,
+  heroes: [
+    hero({
+      id: 'board-ayla',
+      name: 'Ayla',
+      level: 80,
+      stars: 3,
+      rank: 'S',
+      rarity: 'Épico',
+      sourceId: '3001',
+      power: 91250,
+      birth: birthAt(0.9),
+      statRanges: COMMON_BIRTH_WINDOWS,
+      loadout: gear('ember', 220, 8),
+      abilities: { olho_clinico: 20, ponta_diamante: 12, misericordia: 6 },
+    }),
+    hero({
+      id: 'board-doran',
+      name: 'Doran',
+      level: 62,
+      stars: 1,
+      rank: 'B',
+      rarity: 'Raro',
+      sourceId: '3002',
+      power: 41800,
+      birth: birthAt(0.5),
+      statRanges: COMMON_BIRTH_WINDOWS,
+      loadout: gear('gold', 150, 3),
+      abilities: { detonacao_dupla: 15, marcha_acelerada: 4 },
+    }),
+    hero({
+      id: 'board-nessa',
+      name: 'Nessa',
+      level: 95,
+      stars: 0,
+      rank: 'D',
+      rarity: 'Comum',
+      sourceId: '3003',
+      power: 12400,
+      birth: birthAt(0.15),
+      statRanges: COMMON_BIRTH_WINDOWS,
+      loadout: gear('coal', 90, 0),
+      abilities: { contra_relogio: 8 },
+    }),
+    hero({
+      id: 'board-shelved',
+      name: 'Torvin',
+      level: 40,
+      stars: 2,
+      rank: 'A',
+      rarity: 'Raro',
+      sourceId: '3004',
+      power: 25600,
+      battleAllowed: false,
+      birth: birthAt(0.7),
+      statRanges: COMMON_BIRTH_WINDOWS,
+      loadout: gear('gold', 120, 5),
+      abilities: { explosao_ampla: 10 },
+    }),
+  ],
+  activeHeroId: 'board-doran',
+};
 
 /** Pick a seeded hero via the hero strip picker dialog. */
 export async function selectSavedHero(page: Page, name: string) {

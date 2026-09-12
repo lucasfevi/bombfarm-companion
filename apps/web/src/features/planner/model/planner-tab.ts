@@ -1,4 +1,4 @@
-export const PLANNER_TAB_IDS = ['hero', 'gear', 'points'] as const;
+export const PLANNER_TAB_IDS = ['hero', 'combat', 'gear', 'points'] as const;
 export type PlannerTabId = (typeof PLANNER_TAB_IDS)[number];
 
 export const PLANNER_TAB_STORAGE_KEY = 'bf-hp-planner-tab-v1';

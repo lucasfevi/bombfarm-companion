@@ -45,6 +45,7 @@ describe('team-plan point budget — waterfall.ts finalPtsFromOptimizeBuild', ()
       slots: 0,
       perHero: { [ctx.heroId]: score },
       auras: zeroTeamBuffs(),
+      dutyByHeroId: { [ctx.heroId]: score.duty },
     };
 
     const first = finalPtsFromOptimizeBuild([ctx], evaluation, { [ctx.heroId]: ZERO_PTS() });
@@ -79,6 +80,7 @@ describe('team-plan point budget — waterfall.ts finalPtsFromOptimizeBuild', ()
       slots: 0,
       perHero: { [ctx.heroId]: score },
       auras: zeroTeamBuffs(),
+      dutyByHeroId: { [ctx.heroId]: score.duty },
     };
 
     const out = finalPtsFromOptimizeBuild([ctx], evaluation, { [ctx.heroId]: ZERO_PTS() });

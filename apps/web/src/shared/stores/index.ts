@@ -20,6 +20,7 @@ export {
 } from '@/shared/stores/selectors/session-selectors';
 export {
   selectAccountShared,
+  selectActiveHeroAccount,
   selectAccountTuple,
   selectTreeDanoTotal,
   selectTreeCritChance,
@@ -29,9 +30,8 @@ export {
   selectTreeTeamCoinPct,
   selectTreeLuckFlatPct,
   selectTreeXpMult,
-  selectTeamBuffsOverride,
-  selectEffectiveTeamBuffs,
-  resetEffectiveTeamBuffsCache,
+  selectActiveHeroTeamBuffs,
+  resetActiveHeroTeamBuffsCache,
   selectHouseIdx,
   selectHouseLevel,
   selectHouseCycleSecs,
@@ -58,6 +58,7 @@ export {
   selectScopeByHeroId,
   selectForgeFloor,
   selectTeamPlanAllowedChanges,
+  selectTeamPlanIgnoreFieldCrowding,
   selectTeamPlanObjective,
   selectTeamPlanFarmUnavailable,
   selectTeamPlanTargetPhase,
@@ -90,6 +91,14 @@ export {
   selectFormatNumber,
 } from '@/shared/stores/selectors/hero-selectors';
 export {
+  selectDraftHeroRecord,
+  selectHeroRollQuality,
+  selectHeroAbilityGains,
+  resetHeroPanelCaches,
+  getHeroAbilityGainsComputeCount,
+  resetHeroAbilityGainsComputeCount,
+} from '@/shared/stores/selectors/hero-panel-selectors';
+export {
   selectPlannerTabStatuses,
   selectSetupReady,
   selectHeroTabStatus,
@@ -100,6 +109,11 @@ export {
 export {
   selectPhasesViewPhase,
   selectPhasesViewPhaseChosen,
+  selectCurrentPhase,
+  selectCombatPhase,
+  selectCombatPhaseSelection,
+  selectCombatMitigationPct,
+  selectTeamAuraSwitches,
 } from '@/shared/stores/selectors/phases-selectors';
 export { selectTreeSheetTotals } from '@/shared/stores/selectors/tree-sheet-selectors';
 export {
@@ -122,6 +136,9 @@ export {
   selectFarmBoardRows,
   getFarmRespecRowsComputeCount,
   resetFarmRespecRowsComputeCount,
+  selectRosterTeamBuffs,
+  selectRosterAccount,
+  resetRosterAccountCache,
 } from '@/shared/stores/selectors/farm-ranking-selectors';
 export type {
   FarmRankingResult,

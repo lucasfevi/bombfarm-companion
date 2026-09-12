@@ -100,18 +100,33 @@ export default tseslint.config(
       '**/out/**',
       '**/.next/**',
       '**/.next-dev/**',
-      '**/release/**',
+      // electron-builder's output dirs only. A bare `**/release/**` also swallowed the
+      // `tools/release/` SOURCE tree (release-rail automation), leaving 18 modules unlinted;
+      // pin the two build-output locations `.gitignore` names instead.
+      'release/**',
+      'apps/desktop/release/**',
       '**/node_modules/**',
       '**/next-env.d.ts',
       // Tests are excluded from package tsconfigs; lint via web Vitest instead.
       // Stories are excluded too, but stay linted — see the stories block below.
-      // `packages/farm` is NOT here: it carries its own `tsconfig.eslint.json` that includes its
-      // tests, so they lint like every other test in the repo.
+      // `packages/farm` and `packages/game-art` are NOT here: each carries its own
+      // `tsconfig.eslint.json` that includes its tests, so they lint like every other test in
+      // the repo.
       'packages/ui/**/*.{test,spec}.{ts,tsx}',
-      'packages/game-art/**/*.{test,spec}.{ts,tsx}',
     ],
   },
   eslint.configs.recommended,
+  // The `tools/` guard and automation scripts are plain Node ESM, in no workspace package and no
+  // tsconfig, so they get the base recommended rules with Node globals — without this block they
+  // are a wall of false `no-undef` (process, URL, fetch, setTimeout, AbortSignal) that buries the
+  // real findings. Not type-checked: these files are outside every project's `tsconfig`.
+  {
+    files: ['tools/**/*.mjs'],
+    languageOptions: {
+      globals: globals.node,
+      sourceType: 'module',
+    },
+  },
   {
     files: companionNativePackages,
     extends: [...tseslint.configs.strictTypeChecked],
@@ -149,7 +164,11 @@ export default tseslint.config(
     extends: [...tseslint.configs.recommendedTypeChecked],
     languageOptions: {
       parserOptions: {
-        projectService: true,
+        // A dedicated project rather than `projectService`, for the reason spelled out on the
+        // farm block below: the package tsconfig excludes tests (they must not ship in `dist/`),
+        // and the service then errors on a test file belonging to no project. This one includes
+        // them, so they are linted like every other test here.
+        project: './packages/game-art/tsconfig.eslint.json',
         tsconfigRootDir: import.meta.dirname,
       },
       globals: globals.browser,

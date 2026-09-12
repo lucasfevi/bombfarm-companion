@@ -15,22 +15,28 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..', '..');
 const ACCOUNT_FULL_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-full.json');
 
-/** Wide enough to spell every word in the bar. */
-const FULL_WINDOW = 1280;
+/** Wide enough to spell every word in the bar. 1320, not the 1280 six tabs were happy at: the
+ *  seventh took the whole-bar sum to 1157, and 1280 leaves only 23px over it — inside the range a
+ *  font-rendering pass moves. */
+const FULL_WINDOW = 1320;
 /** Inside the band where the tabs are glyphs and everything else is untouched. */
 const ICON_TABS_WINDOW = 1120;
 /** `createMainWindow`'s own `minWidth` — the narrowest window a player can drag to. */
 const MIN_WINDOW = 960;
 /** Below the minimum, reachable only by lifting it as `resize` does. The overflow stage lives
- *  here: glyph tabs, a brand mark and all five actions still fit at the real minimum, so the stage
- *  is a floor under a future smaller window rather than one a player meets today.
+ *  here: glyph tabs, a brand mark and all five actions still fit at the real minimum, seven tabs
+ *  included, so the stage is a floor under a future smaller window rather than one a player meets
+ *  today.
  *
  *  A probe, not a boundary: the stage starts where the window minus the caption cluster falls
  *  under `SHELL_ACTIONS_COLLAPSE_WIDTH`, so this has to stay under that sum plus the cluster's
  *  own width and moves whenever either does. */
 const ACTIONS_COLLAPSED_WINDOW = 860;
-/** Narrower still. Six glyph tabs, a mark and a menu stop fitting below ~610px, which is 350px
- *  past the smallest window that exists. */
+/** Narrower still. The seventh glyph widened the tab strip 354.6px to 390.6px, taking the width at
+ *  which the tabs and the overflow menu stop fitting from ~540px to ~576px — so this probe clears
+ *  the seven-tab floor by 64px, where a six-tab probe 20px above the old one would have sat under
+ *  it. That is the failure the launch suite caught once: the actions cluster painted over the last
+ *  tab. */
 const NARROWEST_MEASURED = 640;
 
 async function launchApp() {
@@ -64,7 +70,7 @@ async function launchApp() {
   await expect(consentModal).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('consent-accept').click();
   await expect(consentModal).toBeHidden({ timeout: 15_000 });
-  await expect(page.locator('nav[aria-label="Main"] button')).toHaveCount(6, { timeout: 30_000 });
+  await expect(page.locator('nav[aria-label="Main"] button')).toHaveCount(7, { timeout: 30_000 });
 
   // Portuguese, because it is the binding language: its tab words and its action labels are the
   // longest either language puts in the bar, so a width that fits here fits in English too. The
@@ -279,7 +285,7 @@ test.describe('top bar — degrades as the window narrows, and never overlaps it
     await resize(app, page, NARROWEST_MEASURED);
     const rendered = await tabs(page);
 
-    expect(rendered).toHaveLength(6);
+    expect(rendered).toHaveLength(7);
     const active = rendered.filter((tab) => tab.active);
     expect(active).toHaveLength(1);
     expect(active[0].text, 'the current screen lost its name').not.toBe('');
@@ -303,7 +309,15 @@ test.describe('top bar — degrades as the window narrows, and never overlaps it
 
   test('every tab still reaches its screen at the narrowest width the bar is drawn at', async () => {
     await resize(app, page, NARROWEST_MEASURED);
-    const screens = ['live-view', 'farm-view', 'inventory-view', 'forge-view', 'account-view', 'settings-view'];
+    const screens = [
+      'live-view',
+      'farm-view',
+      'heroes-view',
+      'inventory-view',
+      'forge-view',
+      'account-view',
+      'settings-view',
+    ];
 
     for (const [index, testId] of screens.entries()) {
       await page.locator('nav[aria-label="Main"] button').nth(index).click();

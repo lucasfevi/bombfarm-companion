@@ -164,15 +164,15 @@ describe('computeAdvisorPipeline', () => {
     expect(out.bDiff).not.toBe(0);
   });
 
-  it('builds a Context matching house rest and fixed serial cycle', () => {
+  it('builds a Context carrying house rest and the farm phase’s difficulty band for the bomb cycle', () => {
     const out = computeAdvisorPipeline(
       baseInput({ houseIdx: 0, houseLevel: 1, mitigationPct: 10 }),
     );
     const context: Context = out.context;
     expect(context.restSeconds).toBe(1200);
     expect(context.mitigation).toBeCloseTo(0.1, 6);
-    expect(context.walkDelay).toBe(0.15);
-    expect(context.cycleModel).toBe('serial');
+    expect(context.ato).toBe(1);
+    expect(computeAdvisorPipeline(baseInput({ phase: 51 })).context.ato).toBe(2);
   });
 
   it('uses phase 1 HP when farm phase is null', () => {
@@ -311,9 +311,11 @@ describe('computeAdvisorPipeline', () => {
     expect(critRank?.gainPct).toBe(0);
   });
 
-  it('ranks CDR with positive gain at 70% effective CDR (below 80% cap)', () => {
-    const naked = { ...sampleNaked(), cdr: 50 };
-    const geared = { ...naked, cdr: 70 };
+  // Re-pinned from 70% to 40% CDR: under the measured cycle a fuse pays only while it exceeds the
+  // walk to the next plant, and at speed 55 the shortest walked hop already covers a 70% fuse.
+  it('ranks CDR with positive gain at 40% effective CDR — the fuse still exceeds the shortest walked hop', () => {
+    const naked = { ...sampleNaked(), cdr: 20 };
+    const geared = { ...naked, cdr: 40 };
     const out = computeAdvisorPipeline(
       baseInput({
         naked,
@@ -323,7 +325,7 @@ describe('computeAdvisorPipeline', () => {
         stars: 1,
       }),
     );
-    expect(out.effective.cdr).toBeCloseTo(70, 1);
+    expect(out.effective.cdr).toBeCloseTo(40, 1);
     const cdrRank = out.ranking.find((r) => r.stat === 'cdr');
     expect(cdrRank?.gainPct).toBeGreaterThan(0);
   });

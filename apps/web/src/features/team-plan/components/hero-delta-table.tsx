@@ -9,7 +9,11 @@ import type { TeamPlanObjectiveCopy } from '@/features/team-plan/model/objective
 import { sub } from '@/shared/i18n';
 import { usePlannerStore, selectHeroes, selectInventoryItems } from '@/shared/stores';
 import { shortHeroRecordId } from '@/shared/lib/hero-identity';
-import { buildGearFlowRows, groupGearFlowRows } from '@/features/team-plan/model/gear-flow-rows';
+import {
+  buildGearFlowRows,
+  groupGearFlowRows,
+  removedRowsByOriginHero,
+} from '@/features/team-plan/model/gear-flow-rows';
 import { pointsResetView } from '@/features/team-plan/model/points-reset-view';
 import { HeroIdentityChip } from '@/shared/game-art';
 import { HeroDetailPanel } from './hero-detail-panel';
@@ -44,6 +48,7 @@ export function HeroDeltaTable({
   const flowRowsByHero = new Map(
     flowGroups.filter((group) => group.heroId).map((group) => [group.heroId as string, group.rows]),
   );
+  const removedRowsByHero = removedRowsByOriginHero(flowGroups);
 
   const firstHeroId = plan.perHero[0]?.heroId;
   // Remount when a new plan lands so the first row opens again after Optimize.
@@ -122,7 +127,11 @@ export function HeroDeltaTable({
                       hitBefore: row.hitBefore,
                       hitAfter: row.hitAfter,
                     }}
-                    flowRows={flowRowsByHero.get(row.heroId) ?? []}
+                    gear={{
+                      rows: flowRowsByHero.get(row.heroId) ?? [],
+                      removed: removedRowsByHero.get(row.heroId) ?? [],
+                      crowdedField: plan.regime === 'saturated',
+                    }}
                     heroByScopeKey={heroByScopeKey}
                     heroNameFallback={heroNameFallback}
                     pointsReset={pointsReset}

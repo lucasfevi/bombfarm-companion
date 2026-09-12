@@ -5,6 +5,7 @@ import {
   buildGearFlowRows,
   groupGearFlowRows,
   isKeptExistingGearFlowRow,
+  removedRowsByOriginHero,
 } from '@/features/team-plan/model/gear-flow-rows';
 
 function item(partial: Partial<InventoryItem> & Pick<InventoryItem, 'id' | 'defId'>): InventoryItem {
@@ -158,5 +159,54 @@ describe('buildGearFlowRows — kept existing items', () => {
       ]),
     );
     expect(groups[0]?.rows).toHaveLength(2);
+  });
+});
+
+describe('removedRowsByOriginHero', () => {
+  it('keys an item the plan hands back by the hero it came off', () => {
+    const inventory = [item({ id: 'helm', defId: 'coal_elmo', slot: 'elmo', equippedBy: 'hero-a' })];
+    const plan = emptyPlan({
+      moveList: [
+        {
+          phase: 'unequip',
+          itemId: 'helm',
+          defId: 'coal_elmo',
+          slot: 'elmo',
+          fromHeroId: 'hero-a',
+          toHeroId: null,
+        },
+      ],
+    });
+    const groups = groupGearFlowRows(buildGearFlowRows(plan, inventory), ['hero-a']);
+
+    expect(removedRowsByOriginHero(groups).get('hero-a')?.map((row) => row.itemId)).toEqual(['helm']);
+  });
+
+  it('ignores spare stock the plan never placed, which nobody lost', () => {
+    const inventory = [item({ id: 'spare', defId: 'coal_elmo', slot: 'elmo' })];
+    const groups = groupGearFlowRows(buildGearFlowRows(emptyPlan(), inventory), ['hero-a']);
+
+    expect(removedRowsByOriginHero(groups).size).toBe(0);
+  });
+
+  it('does not count an item that moves to another hero as a loss', () => {
+    // It shows on the DESTINATION hero's card as "From hero-a", so listing it as a loss too would
+    // report one move twice — the removals section is only for gear nobody ends up wearing.
+    const inventory = [item({ id: 'helm', defId: 'coal_elmo', slot: 'elmo', equippedBy: 'hero-a' })];
+    const plan = emptyPlan({
+      moveList: [
+        {
+          phase: 'equip',
+          itemId: 'helm',
+          defId: 'coal_elmo',
+          slot: 'elmo',
+          fromHeroId: 'hero-a',
+          toHeroId: 'hero-b',
+        },
+      ],
+    });
+    const groups = groupGearFlowRows(buildGearFlowRows(plan, inventory), ['hero-a', 'hero-b']);
+
+    expect(removedRowsByOriginHero(groups).size).toBe(0);
   });
 });

@@ -16,7 +16,7 @@ import {
   selectHeroSkin,
 } from '@/shared/stores';
 import { HeroActiveToggle } from '@/features/roster';
-import { HeroAvatar, rarityTextClass } from '@/shared/game-art';
+import { HeroAvatar, heroRankToneClass, rarityTextClass } from '@/shared/game-art';
 import { MAX_STARS } from '@bombfarm/domain/gear';
 
 export function HeroStripIdentity({ onOpenPicker }: { onOpenPicker: () => void }) {
@@ -53,7 +53,7 @@ export function HeroStripIdentity({ onOpenPicker }: { onOpenPicker: () => void }
             <span
               className={cn(
                 'shrink-0 text-xl leading-none font-black tracking-tight',
-                heroRank ? 'text-accent' : 'text-muted',
+                heroRankToneClass(heroRank),
               )}
               aria-label={t.heroRank}
             >

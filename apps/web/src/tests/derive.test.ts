@@ -11,8 +11,7 @@ const baseCtx = (): Context => ({
   restSeconds: 12 * 60,
   mitigation: 0.067,
   blastRange: 1,
-  cycleModel: 'serial',
-  walkDelay: 0.15,
+  ato: 1,
   drainMult: 1,
 });
 
@@ -38,7 +37,7 @@ const ZERO_TREE: TreeSheetTotals = {
 };
 
 describe('computeCombatMults', () => {
-  it('applies the roster-wide team-buffs total and the hero’s own SELF ability mods (issue #132)', () => {
+  it('applies the roster-wide team-buffs total and the hero’s own SELF ability mods (PR #139)', () => {
     // Team auras (Grito/Marcha/Fôlego/Presságio) never reach a hero's own AbilityMods any more
     // — `teamBuffs` is the roster-wide total (already including this hero, if it carries any of
     // them) and is the SOLE source for all four. `mods.gateAttackMult`/`dmgMult` stay own-only
@@ -92,7 +91,7 @@ describe('computeCombatMults', () => {
     expect('treeTempoDobrado' in input).toBe(false);
   });
 
-  it('the field is a property of the roster, not the hero: carrier and non-carrier read the same total (issue #132)', () => {
+  it('the field is a property of the roster, not the hero: carrier and non-carrier read the same total (PR #139)', () => {
     // A rank-20 carrier and a non-carrier standing in the SAME field both read the SAME
     // teamBuffs — computeCombatMults never adds anything extra for the carrier, because
     // abilityMods never gave it anything to add. This is the shape fix itself: no own-vs-

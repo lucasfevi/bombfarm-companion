@@ -1,6 +1,6 @@
 {
   "name": "@bombfarm/desktop",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "private": true,
   "description": "Bomb Farm Companion desktop shell",
   "repository": {
@@ -19,6 +19,7 @@
     "dev": "pnpm build:electron && node scripts/dev.mjs",
     "dev:offline": "node scripts/dev-offline.mjs",
     "dev:capture": "node scripts/dev-capture.mjs",
+    "dev:pids": "node scripts/list-game-pids.mjs",
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p renderer/tsconfig.json --noEmit",
     "lint": "pnpm --dir ../.. exec eslint apps/desktop/src apps/desktop/renderer",
     "test:smoke": "playwright test -c playwright.config.ts --project=electron-smoke",

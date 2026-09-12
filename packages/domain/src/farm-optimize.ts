@@ -9,7 +9,7 @@
  * for. `pts.luck` is never touched: Luck sits outside the seven reallocatable stat keys
  * structurally, not by a runtime check.
  */
-import type { HeroRecord, AccountShared } from './shims/storage';
+import type { HeroRecord } from './shims/storage';
 import type { SheetKey } from './planner-constants';
 import {
   computeHeroFarmBases,
@@ -18,6 +18,7 @@ import {
   type HeroFarmBasis,
   type HeroFarmFacts,
   type SquadFarmFacts,
+  type FarmAccount,
   type FarmRateOptions,
   type ReturnBonusMode,
 } from './farm-rate';
@@ -31,7 +32,7 @@ import {
   type FarmPhasePick,
 } from './farm-optimize-objective';
 import { reoptBudget, REOPT_KEYS } from './points-reopt-core';
-import { respecCostGold } from './respec-cost';
+import { requiresPointReset, respecCostGold } from './respec-cost';
 import {
   runFarmSearch,
   squadEnergyShare,
@@ -90,9 +91,14 @@ export type FarmRespecHeroEntry = {
   changed: boolean;
   /** `Σ |proposed − current|` over the seven reallocatable keys. 0 when unchanged. */
   pointsMoved: number;
-  /** ABSOLUTE GOLD, `1000 × level`, reported for EVERY hero — for an unchanged hero this is the
-   *  gold the player is told they need NOT spend. Only changed heroes enter the top-level total. */
+  /** ABSOLUTE GOLD, `1000 × level` — what a respec for this hero COSTS, reported for EVERY hero
+   *  whether or not this proposal needs one. For an unchanged hero it is the gold the player is
+   *  told they need NOT spend; {@link requiresReset} says whether a changed hero pays it. */
   respecCostGold: number;
+  /** Whether acting on {@link proposedPts} needs a respec bought — false when the proposal only
+   *  ADDS points, which is the player placing a pool the game already granted, for free. Only
+   *  `changed && requiresReset` heroes enter the top-level cost. */
+  requiresReset: boolean;
   /** The estimator's own verdict — a degenerate hero is excluded from the search and pinned. */
   degenerate: boolean;
   /** False when the hero is degenerate or its budget is 0; such heroes are pinned to current. */
@@ -162,11 +168,18 @@ export type FarmRespecResult = {
    *  the gold objective where chests can legitimately fall. 0 when `currentChestsPerHour <= 0`. */
   chestsGainPct: number;
 
-  /** ABSOLUTE GOLD, summed over CHANGED heroes only. 0 when `keptCurrent`. */
+  /** ABSOLUTE GOLD, summed over heroes that both CHANGED and need a reset bought to act on it.
+   *  0 when `keptCurrent`, and 0 for a proposal that only ADDS unplaced points — see
+   *  `FarmRespecHeroEntry.requiresReset`. */
   respecCostGold: number;
   /** ABSOLUTE GOLD, the mirror of `respecCostGold`: summed over UNCHANGED heroes, the respec
    *  cost the player does NOT have to pay because those builds are already right. 0 when every
-   *  hero changed. */
+   *  hero changed.
+   *
+   *  These two no longer partition the roster: a hero whose proposal only adds unplaced points is
+   *  in neither, because it pays nothing AND its build is not already right. The copy above each
+   *  group names the heroes it is summed over, so neither figure may quietly absorb the third
+   *  case — `farm-optimize-unchanged-cost.test.ts` owns that accounting. */
   unchangedRespecCostGold: number;
   /** HOURS. `respecCostGold / (proposedGoldPerHour - currentGoldPerHour)`, always denominated in
    *  GOLD whatever the objective. null when the denominator is `<= 0` or non-finite — reachable
@@ -200,7 +213,7 @@ export type FarmRespecResult = {
 
 export type FarmRespecInput = {
   heroes: readonly HeroRecord[];
-  account: AccountShared;
+  account: FarmAccount;
   /** Rotation pool. Same semantics as `FarmFactsInput`: null/omitted ⇒ `battleAllowed !== false`;
    *  an explicit `[]` is an EMPTY pool; unknown ids are ignored. */
   enabledHeroIds?: readonly string[] | null;
@@ -234,6 +247,7 @@ function buildHeroEntries(
       changed,
       pointsMoved,
       respecCostGold: respecCostGold(basis.level),
+      requiresReset: requiresPointReset(basis.pts, proposedPts),
       degenerate: facts.degenerate,
       searchable: !facts.degenerate && budget > 0,
     };
@@ -316,7 +330,9 @@ function assembleResult(params: {
   const goldGainPct = signedPctChange(currentGoldPerHour, proposedGoldPerHour);
   const chestsGainPct = signedPctChange(currentChestsPerHour, proposedChestsPerHour);
 
-  const respecCostGoldTotal = heroEntries.filter((h) => h.changed).reduce((sum, h) => sum + h.respecCostGold, 0);
+  const respecCostGoldTotal = heroEntries
+    .filter((h) => h.changed && h.requiresReset)
+    .reduce((sum, h) => sum + h.respecCostGold, 0);
   const unchangedRespecCostGold = heroEntries
     .filter((h) => !h.changed)
     .reduce((sum, h) => sum + h.respecCostGold, 0);
@@ -360,7 +376,7 @@ function buildTerminalResult(params: {
   outcome: FarmRespecOutcome;
   evaluation: { pick: FarmPhasePick | null; squad: SquadFarmFacts } | null;
   evaluations: number;
-  account: AccountShared;
+  account: FarmAccount;
   phaseOptions: FarmRateOptions;
   /** null for emptyPool/allDegenerate (no squad to describe); a trivial point-plateau for
    *  noBudget, where the search never ran and the plateau is reported around current. */
@@ -432,7 +448,9 @@ function buildFrontierEntry(
   const proposedObjective = pick ? pick.value : 0;
   const readout = goldChestReadout(search.winner.squad, phaseOptions);
   const gainPct = currentObjective > 0 ? Math.max(0, (proposedObjective / currentObjective - 1) * 100) : 0;
-  const respecCostGoldTotal = heroEntries.filter((h) => h.changed).reduce((sum, h) => sum + h.respecCostGold, 0);
+  const respecCostGoldTotal = heroEntries
+    .filter((h) => h.changed && h.requiresReset)
+    .reduce((sum, h) => sum + h.respecCostGold, 0);
   const deltaGold = readout.goldPerHour - currentGoldPerHour;
   const paybackHours = deltaGold > 0 && Number.isFinite(deltaGold) ? respecCostGoldTotal / deltaGold : null;
 
@@ -463,7 +481,7 @@ function computeFrontier(params: {
   currentFactsById: ReadonlyMap<string, HeroFarmFacts>;
   budgetById: ReadonlyMap<string, number>;
   searchableIds: readonly string[];
-  account: AccountShared;
+  account: FarmAccount;
   objective: ResolvedFarmObjective;
   scales: FarmObjectiveScales;
   phaseOptions: FarmRateOptions;

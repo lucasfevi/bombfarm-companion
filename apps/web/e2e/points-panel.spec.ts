@@ -64,7 +64,7 @@ function pointsPanel(page: import('@playwright/test').Page, lang: 'pt' | 'en' = 
 
 /**
  * Rows of the **Points** table only. The read-only Stats table shares this tab and repeats
- * every stat label (`statShort.cdr` is "Redução de recarga (%)", `luck` is "Sorte"), so a
+ * every stat label (`statShort.cdr` is "Redução de recarga", `luck` is "Sorte"), so a
  * panel-wide `locator('tr')` matches both tables — and positional `td` access then silently
  * reads a Stats cell. Scope to the Points section before indexing columns.
  */
@@ -187,8 +187,8 @@ test.describe('points panel UX', () => {
     await expect(panel.getByText(/41 \/ 38 pontos/i)).toHaveCount(0);
     await expect(panel.getByText(/38 \/ 38 pontos/i)).toBeVisible();
 
-    // −5 on Crit % (3 spent) floors at 0, not −2.
-    const critRow = panel.locator('tr').filter({ hasText: /^Crít %/ });
+    // −5 on crit chance (3 spent) floors at 0, not −2.
+    const critRow = panel.locator('tr').filter({ hasText: /^Crít/ });
     await critRow.getByRole('button', { name: /remover 5 pontos de chance de crítico/i }).click();
     await expect(panel.getByText(/35 \/ 38 pontos/i)).toBeVisible();
   });
@@ -397,9 +397,10 @@ test.describe('points panel preview / apply', () => {
 
 test.describe('points panel reset advice gain line + Optimize build result', () => {
   // pts.cdr = level is a deliberately bad single-stat dump — confirmed directly against
-  // computeAdvisorPipeline (not guessed): resetAdvice.recommend is true with a ~251% gate
-  // gainPct for this seeded hero. pts.attack = level is confirmed the opposite: recommend is
-  // false, gainPct ~0.
+  // computeAdvisorPipeline (not guessed): resetAdvice.recommend is true with a ~188% gate
+  // gainPct for this seeded hero (~251% before the measured bomb cycle replaced the serial
+  // one, under which CDR past the walk buys nothing). pts.attack = level is confirmed the
+  // opposite: recommend is false, gainPct ~0.
   test('gain line shows when a reset is worth it, naming Optimize build', async ({ page }) => {
     const pts = { ...zeroPts(), cdr: 38 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));

@@ -1,0 +1,11 @@
+{
+  // Same file set as tsconfig.eslint.json minus vitest.config.ts, which imports the root
+  // worker-cap module and so fails TS6059 against this package's rootDir. Lint tolerates that
+  // file because it never emits; tsc does not.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules", "dist"]
+}

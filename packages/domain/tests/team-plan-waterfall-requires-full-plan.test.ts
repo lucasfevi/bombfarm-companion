@@ -37,12 +37,13 @@ vi.mock('@bombfarm/domain/team-plan/evaluate', () => ({
       slots: input.slots,
       perHero: {},
       auras: {} as RosterEvaluation['auras'],
+      dutyByHeroId: {},
     };
   }),
 }));
 
-function pts(attack: number): PointAlloc {
-  return { attack, energy: 0, speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0, luck: 0 };
+function pts(attack: number, energy = 0): PointAlloc {
+  return { attack, energy, speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0, luck: 0 };
 }
 
 function emptySlots(): Record<string, string | null> {
@@ -51,7 +52,11 @@ function emptySlots(): Record<string, string | null> {
 
 describe('buildWaterfall requiresFullPlan / gearDipDps (mocked evaluateRoster)', () => {
   it('discloses a transient gear-step dip that the respec recovers past today', () => {
-    const currentPts: Record<string, PointAlloc> = { hero1: pts(0) };
+    // A real REALLOCATION, not pure addition: the 40 Energia points come off, which is what makes
+    // a reset something the player has to buy. `resetCostGold` is 0 for an add-only proposal —
+    // `farm-optimize-unspent-pool.test.ts` owns that case — so a vector that only grew would make
+    // the cost assertion below vacuous.
+    const currentPts: Record<string, PointAlloc> = { hero1: pts(0, 40) };
     const finalPtsByHeroId: Record<string, PointAlloc> = { hero1: pts(100) };
 
     const baselineAssignment: AssignmentState = { slots: { hero1: emptySlots() }, pool: new Set() };

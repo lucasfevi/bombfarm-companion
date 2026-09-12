@@ -3,10 +3,10 @@
 import { DataTable, formatNumber } from '@bombfarm/ui';
 import { PropIcon } from '@bombfarm/game-art';
 import { propLabel } from '@bombfarm/domain/game-labels';
-import type { HeroPhaseFit } from '@bombfarm/domain/phase-intel';
+import type { PropHtkRow } from '@bombfarm/domain/advisor-tables';
 import { useHeroCopy } from './hero-copy-context';
 
-export function PhasesHeroFitTable({ propHits }: { propHits: HeroPhaseFit['propHits'] }) {
+export function PhasesHeroFitTable({ propRows }: { propRows: readonly PropHtkRow[] }) {
   const { t, lang } = useHeroCopy();
 
   return (
@@ -24,7 +24,7 @@ export function PhasesHeroFitTable({ propHits }: { propHits: HeroPhaseFit['propH
           </DataTable.Row>
         </DataTable.Head>
         <DataTable.Body>
-          {propHits.map((row) => (
+          {propRows.map((row) => (
             <DataTable.Row
               key={row.name}
               className="border-b border-[color-mix(in_oklch,var(--line)_70%,transparent)]"

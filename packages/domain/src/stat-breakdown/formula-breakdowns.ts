@@ -1,9 +1,11 @@
 import {
   bombsPerSecond,
   critFactor,
+  cycleSecondsForHero,
   fieldSeconds,
   FUSE_FLOOR,
   fuseSeconds,
+  GRID_SPEED_COEF,
   mitigationFactor,
   predictHitDamage,
 } from '../model';
@@ -94,19 +96,13 @@ export function formulaFuse(facts: PipelineFacts): FormulaBreakdown {
 
 export function formulaBombs(facts: PipelineFacts): FormulaBreakdown {
   const value = bombsPerSecond(facts.effective, facts.context);
-  if (facts.context.cycleModel === 'serial') {
-    const fuse = fuseSeconds(facts.effective.cdr);
-    return {
-      kind: 'formula',
-      expressionKey: 'bdFormulaBombsSerial',
-      substituted: `1 / (${formatBreakdownNumber(fuse, 2)} + ${formatBreakdownNumber(facts.context.walkDelay, 2)}) = ${formatBreakdownNumber(value, 2)}/s`,
-      value,
-    };
-  }
+  const fuse = fuseSeconds(facts.effective.cdr);
+  const walk = facts.effective.speed * GRID_SPEED_COEF;
+  const cycle = cycleSecondsForHero(fuse, walk, facts.context.ato);
   return {
     kind: 'formula',
-    expressionKey: 'bdFormulaBombsWiki',
-    substituted: `(0.3 + 0.12 × ${formatBreakdownNumber(facts.effective.speed, 1)} × 0.0386) × sf(${formatBreakdownNumber(facts.effective.energy, 1)}) = ${formatBreakdownNumber(value, 2)}/s`,
+    expressionKey: 'bdFormulaBombs',
+    substituted: `1 / cycle(${formatBreakdownNumber(fuse, 2)}s, ${formatBreakdownNumber(walk, 2)}/s, ${facts.context.ato}) = 1 / ${formatBreakdownNumber(cycle, 2)}s = ${formatBreakdownNumber(value, 2)}/s`,
     value,
   };
 }

@@ -3,6 +3,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { heroAvatarSrc } from '@bombfarm/domain/wiki-assets';
 import { STRINGS, sub } from '../../lib/copy';
+import { heroRankToneClass } from '@bombfarm/game-art';
 import { HeroRow } from './hero-row';
 
 const en = STRINGS.en;
@@ -48,17 +49,35 @@ describe('HeroRow', () => {
     expect(html).toContain('>—<');
   });
 
-  it('renders the rank letter in accent when present, and an em dash in muted when absent', () => {
+  it('renders the grade in the colour the game gives it, and an em dash in muted when absent', () => {
     const withGrade = renderToStaticMarkup(
       createElement(HeroRow, { state: 'on-field', hero: { id: 'hero-7', name: 'Astra', grade: 'S' } }),
     );
     const withoutGrade = renderToStaticMarkup(
       createElement(HeroRow, { state: 'on-field', hero: { id: 'hero-7', name: 'Astra' } }),
     );
-    expect(withGrade).toContain('text-accent');
+    // Asserted against the shared ladder rather than a literal, so a re-measured palette moves this
+    // test with it instead of falsifying it.
+    expect(withGrade).toContain(heroRankToneClass('S'));
     expect(withGrade).toContain('>S<');
-    expect(withoutGrade).not.toContain('text-accent');
+    // The flat accent this used to print is what the ladder replaced; a known grade must not fall
+    // back to it.
+    expect(withGrade).not.toContain('text-accent');
+    expect(withoutGrade).toContain('text-muted');
     expect(withoutGrade).toContain('>—<');
+  });
+
+  it('gives a different colour to a different grade, so the assertion above is not one flat tone', () => {
+    const s = renderToStaticMarkup(
+      createElement(HeroRow, { state: 'on-field', hero: { id: 'hero-7', name: 'Astra', grade: 'S' } }),
+    );
+    const d = renderToStaticMarkup(
+      createElement(HeroRow, { state: 'on-field', hero: { id: 'hero-7', name: 'Astra', grade: 'D' } }),
+    );
+
+    expect(heroRankToneClass('S')).not.toBe(heroRankToneClass('D'));
+    expect(s).toContain(heroRankToneClass('S'));
+    expect(d).toContain(heroRankToneClass('D'));
   });
 
   it('renders the hero name in sentence case, never uppercased by class or markup', () => {

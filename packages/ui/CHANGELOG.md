@@ -1,5 +1,84 @@
 # @bombfarm/ui
 
+## 0.12.2
+
+### Patch Changes
+
+- 579684a: A Combat tab on the planner, and one phase picker for it on both apps.
+
+  **The planner has the desktop app's fourth stage now.** Hero, Combat, Gear, Points — the same
+  four the desktop Heroes screen draws, from the same implementations. Combat holds the phase the
+  figures are for, one hero against that phase (whether it pierces the mitigation, the average hit,
+  the fuse floor, the cooldown-reduction ceiling, the prop table), and the per-statistic breakdown,
+  which moves here from the bottom of Points. Picking a phase on it moves every figure the planner
+  prints — the hero strip, Gear and Points read the same numbers — and leaves the Farm page's own
+  selection alone.
+
+  **The phase picker is the optimizer's.** Type `Hard 1-1`, `Normal 2-1` or `151` and pick the
+  phase, on the desktop as on the planner, instead of stepping a number box. The button beside it
+  reads **Back to your current phase** and stands as tall as the picker.
+
+- b0f4431: Show a hero's abilities beside its identity, and give the desktop hero screen the planner's stages.
+
+  **The ability pool now sits under the portrait.** The identity panel's left column holds the
+  portrait, name and stars with the pool below them — each ability's icon and its level out of 20,
+  nothing else. Which abilities a hero owns and how far each is levelled is the first thing you check
+  about a hero, and until now it meant scrolling past the birth roll to reach the abilities panel.
+  That panel is unchanged and still the place that says what each ability does, what its next level
+  is worth, and — in the planner — spends the point. A hero with no pool draws no strip.
+
+  **The desktop hero screen is four stages instead of one long column.** Hero, Combat, Gear and
+  Points, where the column used to run identity → phase → combat → abilities → next point → points →
+  sheet → items → effective stats without a break. Hero, Gear and Points hold what the planner's tabs
+  of those names hold, panel for panel, so the two apps read the same way; Combat is the fourth
+  because this screen computes the phase-scoped figures the planner folds into its hero strip, and
+  it carries the phase control beside them. Points also picks up the planner's own arrangement: the
+  points table and the next-point ranking side by side, then the stat sheet, then the breakdown.
+
+- 306d2d0: Show a hero's stat sheet, its items and its best next stat point on the Heroes screen.
+
+  **The whole reference half of a hero's detail is on the desktop now.** Under the combat and
+  abilities panels the screen already drew, it adds what to spend your next stat point on, the points
+  this hero has placed, the stat sheet peeled apart from the birth roll through level, stars,
+  abilities, gear, points and skill tree, everything the hero is wearing with each slot's
+  contribution and the totals, and finally where each combat figure came from — an expandable row per
+  number, showing either the running ledger that builds it or the formula it is substituted into.
+
+  **It reads your account and changes nothing.** Every one of those panels can be edited elsewhere;
+  here none of them is. No stat steppers, no Reset, no Optimize build, no item editor, and the gear
+  comparison shows the figures with nothing that could rewrite either loadout. The one control on the
+  whole half is the target the next-point ranking is read against.
+
+  **Ranking for farming says why it cannot answer, instead of going blank.** That ranking is scored
+  against a farming rotation, which this screen does not compose — so asking for it keeps the damage
+  ranking on screen and says plainly that there is no rotation to rank against, rather than showing
+  an empty list that reads as "nothing is worth a point".
+
+  **Both languages, from one place.** All 125 of these labels, headings and notes now ship with the
+  panels themselves in English and Brazilian Portuguese, so the desktop and the web planner cannot
+  drift into saying different things about the same number.
+
+- 306d2d0: Add the Heroes tab.
+
+  **A new tab, between Farm and Inventory.** The nav now reads Live · Farm · Heroes · Inventory ·
+  Forge · Account · Settings. It sits beside the farm board because that is where per-hero numbers
+  are read today. The screen itself arrives in the next change; for now the tab shows the honest
+  "nothing read from your account yet" empty state, in both languages.
+
+  **The top bar gives up its words a little sooner.** A seventh tab makes the worded strip about
+  77px wider, so the two widths the bar degrades at moved with it — the actions collapse behind one
+  button below 1147px of bar, and the tabs fall back to their glyphs below 847px. The smallest
+  window a player can drag to now lands in the glyph stage rather than just above it: the tabs show
+  their icons, and the tab you are on still shows its name.
+
+- 306d2d0: Wake one planner panel at a time again, and commit once per edit instead of twice.
+
+  Moving the panels into a shared package left their hosts holding the subscriptions on their behalf, so a store change re-rendered the hero strip and every sibling tab alongside the panel that actually read it. Each panel now has its own connector, which subscribes to exactly what that panel needs.
+
+  The same move also cost the design system's Select its stable option list: it handed Base UI a fresh `items` array on every render, and Base UI republished it from a layout effect, re-rendering the trigger's value in a second commit. Any interaction on a panel holding a Select therefore committed twice — spending a stat point cost roughly twice the component renders it should. The option list now keeps its identity while the options are unchanged.
+
+- 6fe7247: A screen taller than the window now ends as far above the status strip as it starts below the header. Scrolled to the bottom, the last panel on Farm, Heroes, Account, Forge and Settings sat on the strip's border; the shell's content measure was pinned to the window's height, and a taller screen overflowed it past the padding that draws the gap.
+
 ## 0.12.1
 
 ### Patch Changes

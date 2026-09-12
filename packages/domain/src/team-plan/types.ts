@@ -155,6 +155,12 @@ export type RosterEvaluation = {
   perHero: Record<string, HeroScore>;
   auras: Record<TeamBuffId, number>;
   /**
+   * The duty every fielded hero's aura was weighted by in the last round — the optimize heroes'
+   * from `perHero`, plus the leave-alone heroes', which `perHero` does not carry because nothing
+   * they score reaches the objective. `screenRosterObjective` prices its candidates off this map.
+   */
+  dutyByHeroId: Record<string, number>;
+  /**
    * Farm mode only: the phase `objective` was measured at, and the per-hero farm facts it was
    * measured from. Absent in DPS mode, and `farmPhase` is `null` when no phase is feasible.
    * `screenRosterObjective` reads both — it rescores only the heroes a move touches and prices
@@ -289,6 +295,21 @@ export type TeamPlanInput = {
    * back which phase the answer is about.
    */
   targetPhase?: number | null;
+  /**
+   * Score as if the field always had room, and keep every hero geared.
+   *
+   * Omitted ⇒ `false`, the honest model. On a field that cannot seat the whole roster at once,
+   * a hero taking more field time crowds the others out, so gear that raises its uptime can lower
+   * the roster objective — and a plan reading that faithfully proposes stripping gear off a weak
+   * hero and leaving the slot empty. Set here, both objectives drop that term, so more gear can
+   * never score worse, and the plan fills every empty slot it has an item for.
+   *
+   * The answer is deliberately not the roster's true throughput: it is what the squad would earn
+   * if the field never made heroes queue. That is the right question for a player who rotates
+   * heroes in buckets rather than fielding one fixed line-up, and the wrong one for a player
+   * asking what their whole roster earns as it stands.
+   */
+  ignoreFieldCrowding?: boolean;
 };
 
 /**
@@ -364,7 +385,9 @@ export type TeamPlan = {
     /** Marginal ROSTER objective gain at the moment this reset was accepted — sustained damage
      *  under the DPS objective, gold per hour under the farm one. Display-only. */
     rosterGainObjective: number;
-    /** `heroLevel * 1000` gold. Display-only — never in the objective, never a filter or gate. */
+    /** `heroLevel * 1000` gold, or 0 when {@link pts} only ADDS to {@link ptsBefore} — placing
+     *  points the game already granted costs nothing, since the gold buys back what is already
+     *  committed. Display-only — never in the objective, never a filter or gate. */
     resetCostGold: number;
   }[];
   perHero: TeamPlanPerHeroRow[];
@@ -465,4 +488,6 @@ export type EvaluateRosterInput = {
    * mode below that point.
    */
   farmObjective?: TeamPlanFarmObjective;
+  /** See {@link TeamPlanInput.ignoreFieldCrowding}. */
+  ignoreFieldCrowding?: boolean;
 };

@@ -159,7 +159,7 @@ export interface AbilityMods {
 /**
  * Team auras — Grito de Guerra (`attackPct`), Marcha Acelerada (`speedPct`), Fôlego de Mineiro
  * (`drainPct`) and Presságio Mortal (`critChanceFlat`, not `onSheet`) — never reach a
- * hero's own `AbilityMods` (issue #132). Under the confirmed rule a team aura is a property of
+ * hero's own `AbilityMods` (PR #139). Under the confirmed rule a team aura is a property of
  * the FIELD: every deployed hero experiences the SAME capped roster total (`team-buffs.ts`,
  * `computeCombatMults`), carrier or not, so there is no "this hero's own share" for `abilityMods`
  * to fold in — doing so was exactly the double-count this rewrite removed. Their four

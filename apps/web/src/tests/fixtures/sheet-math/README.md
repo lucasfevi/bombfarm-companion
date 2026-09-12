@@ -29,12 +29,12 @@ that file lands later in this feature — expected, not a defect of this manifes
 | Field | Value |
 | --- | --- |
 | Source capture | `packages/domain/tests/fixtures/api/assembled-payload-before.json` (already committed to this repo; byte copy, unmodified) |
-| Capture date | 2026-08-12 |
+| Capture date | 2026-08-12 — the `account` block additionally carries the three sell-gate keys (`client_can_sell`, `sell_phase`, `sell_mode`) the game added later, transcribed into the source `/state` fixture from a 2026-09-10 observation so the fingerprint corpus stays exact |
 | Account | API-assembled `AccountPayload`, `phase: 21`, `max_phase: 33` — 8 heroes (5 battle-allowed: Nyx L25 8/8, Bellatrix L27 8/8, Cora L22 4/8, Wren L24 3/8, Devin L5 naked; 3 not battle-allowed: Lyra L3, Mira L3, Bryn L3, all naked) |
 | Capture log entry | none — this fixture predates MP5 and has no dedicated capture-log entry; it was already committed and already scrubbed of `account_id`/`player_name` (`D19`) before this feature. Recorded as a limitation, not papered over |
 | Scrub | none applied by this feature — the source file was already scrubbed when it was committed |
 | SHA-256 (unscrubbed source) | not applicable — no unscrubbed predecessor exists in either repo; the earliest committed form is already scrubbed |
-| SHA-256 (committed file) | `d9bfac297f188a10ff6885d00844a9f99c21e2a1171f667ea9d8ee4783003435` (identical to `packages/domain/tests/fixtures/api/assembled-payload-before.json`, checked by `tools/fixture-corpus-parity.test.mjs`) |
+| SHA-256 (committed file) | `e45f9bc57af515752ec68c15e6f3966b15a34eaae56a5d890143b11512450697` (identical to `packages/domain/tests/fixtures/api/assembled-payload-before.json`, checked by `tools/fixture-corpus-parity.test.mjs`) |
 | May prove | whole-roster round trip with **zero** inference issues on all 8 heroes; battle-allowed vs. not-battle-allowed hero handling; the larger inventory (27 catalogued items) for team-plan search and import-sync assertions |
 | May **not** prove | save-file shape (no `export_version`/`generated_at`); the duplicate-hero-name a11y case (all 8 names are distinct); item-upgrade variety for forge assertions (every upgrade is `0`); high-phase mitigation; before/after point deltas, ability-toggle or gear-swap pairs (same single-snapshot limits as the export) |
 
