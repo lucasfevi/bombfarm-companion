@@ -93,10 +93,11 @@ export function loadFarmRateFixture(
       luckFlatPct: tree.luckFlatPct,
       xpMult: tree.xpMult,
     },
-    // issue #132: production derives the roster-wide aura total from the deployed roster by
-    // default (`computeTeamBuffsFromDeployed`) rather than starting it at zero — this fixture
-    // reproduces that default instead of the pre-fix zero, so every derived expectation reflects
-    // the auras this fixture's own heroes actually carry.
+    // The farm-rate module never reads this field — it prices the auras itself, over the rotation
+    // (`farmTeamBuffs`). It is filled from the capture's own deployed line-up so a suite that
+    // hands this account straight to `pipelineForHero` prices the auras the capture was taken
+    // under rather than none; a suite comparing against farm-rate's own facts must use
+    // `farmPricedAccount` instead (see `farm-basis-parity.test.ts`).
     teamBuffs: computeTeamBuffsFromDeployed(heroes),
     context: {
       houseIdx: accountData.houseIdx ?? 0,

@@ -179,14 +179,17 @@ const CRIT_DMG_MULT_MAP = {
   // -5 (line number only): the roster rail, board and toolbar moved into `@bombfarm/hero` so the
   // web planner draws the same ones, which took their definitions and two imports out of this
   // file. Match itself is unchanged in count and in kind.
-  'apps/desktop/renderer/app/heroes/heroes-view.tsx': [650],
+  // -27 (line number only): the phase control moved into `@bombfarm/farm` so the web planner
+  // draws the same one, which took its definition out of this file, and the Combat stage is
+  // mounted only while shown. Unchanged in count and kind.
+  'apps/desktop/renderer/app/heroes/heroes-view.tsx': [660],
   // The shared roster builder's own account fixture, same kind as the two farm entries below: a
   // raw save-shaped skills block handed to the parser, not a field the app reads.
   'apps/desktop/renderer/lib/account/account-roster.test.ts': [39],
   'apps/desktop/renderer/lib/account/account-view-store.test.ts': [34],
   // The desktop farm adapter's own account fixtures, same kind as the account-view entry above:
   // a raw save-shaped skills block, not a field the app reads.
-  'apps/desktop/renderer/lib/farm/farm-inputs.test.ts': [38, 150],
+  'apps/desktop/renderer/lib/farm/farm-inputs.test.ts': [38, 142],
   // +1 (line number only): the farm snapshot's capture-time regression tests added an import of
   // `settledBoard` above this fixture. Match itself is unchanged in count and in kind.
   'apps/desktop/renderer/lib/farm/use-farm-snapshot.test.ts': [46],
@@ -211,7 +214,10 @@ const CRIT_DMG_MULT_MAP = {
   // −14 (line numbers only): each shared panel below this column now subscribes to the store in
   // its own connector file, so the reads that were staged here moved out. Both matches are
   // unchanged in count and in kind.
-  'apps/web/src/features/planner/components/advice-column.tsx': [38, 59],
+  // Moved (2026-09-11): the facts the breakdown reads left `advice-column.tsx` for a hook the
+  // planner's Combat tab calls, so the two matches — the destructure and the facts field — now
+  // sit in `use-pipeline-facts.ts`. Unchanged in count and in kind.
+  'apps/web/src/features/planner/hooks/use-pipeline-facts.ts': [34, 55],
   // +16 (line number only): the House-ceiling fix added `fieldSlots`/`houseCycleSecs`, with
   // their doc comments, to `AccountShared` above this line. The match itself is unchanged in
   // count and in kind — still `normalizeTree`'s doc comment naming a stale key it discards.
@@ -226,7 +232,7 @@ const CRIT_DMG_MULT_MAP = {
   // +12 more (line number only): issue #141's required-save-field check added the
   // `missingRequiredFields` field with its doc comment, and the domain import that types it,
   // above this line. Match itself is unchanged in count and in kind.
-  'apps/web/src/shared/lib/account-shared.ts': [199],
+  'apps/web/src/shared/lib/account-shared.ts': [184],
   'apps/web/src/shared/lib/stale-account.ts': [21],
   'apps/web/src/tests/advisor-pipeline.test.ts': [85],
   // +2 (line numbers only): the star-multiplier change (0.5 -> 0.25) added two explanatory
@@ -246,7 +252,7 @@ const CRIT_DMG_MULT_MAP = {
   'apps/web/src/tests/stat-breakdown.test.ts': [126, 176, 202],
   // +1 (line number only): issue #132's rewrite of the "existing empty state" comment above line
   // 109 added a net one line. Match itself is unchanged in count and in kind.
-  'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [40, 110],
+  'apps/web/src/tests/storage-legacy-keystone-fields.test.ts': [40, 108],
   'apps/web/src/tests/storage-stat-points-available-compat.test.ts': [104],
   // +12 (line numbers only) from the corpus-parity repurpose and the skip-counting fix's
   // comments above both hits. Count and kind unchanged.
@@ -279,9 +285,10 @@ const CRIT_DMG_MULT_MAP = {
   // Count and kind unchanged.
   // +3 more (line numbers only, last four): the note on the farm snapshot entry above, plus this
   // one. Count and kind unchanged.
-  // +12/+7/+7 (line numbers only, last four): the Optimizer tab's two new map entries and their
-  // explanatory comment, above this point. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 327, 332, 342, 351],
+  // +5 more (line numbers only, last four): the two notes above on the phase control and the
+  // pipeline-facts hook moving, then the Optimizer tab's two map entries and their comment.
+  // Count and kind unchanged.
+  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 334, 339, 349, 358],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 

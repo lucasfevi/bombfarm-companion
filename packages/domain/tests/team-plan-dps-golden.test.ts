@@ -11,6 +11,15 @@
  * A failure here is a change in what damage mode recommends. That may be intended — but it is
  * never a side effect, and re-recording these is a deliberate act with its own reasoning.
  *
+ * RE-RECORDED ONCE, when the damage objective moved onto the same aura form as the gold objective
+ * and the Farm board (the expected value of the CAPPED sum over independently present carriers,
+ * `computeTeamBuffsOverRotation`, in place of clamping the duty-weighted sum). The 7-hero
+ * capture carries one carrier per aura and did not move. The two 13-hero captures each field several
+ * part-time carriers of one capped aura, which the old form held at the cap the whole time:
+ * crit-points moved −0.15% on both DPS figures with the plan itself byte-identical; soulbound,
+ * whose three Fôlego carriers had summed to 60 against a cap of 20, moved −3.7% and dropped two
+ * point resets while keeping every gear move. Nothing else was touched.
+ *
  * NOT regime-bound: the claim is "this code still plans what it planned", an identity between two
  * revisions of the same arithmetic, not a statement about what the game rewards.
  */
@@ -57,8 +66,8 @@ const GOLDENS = [
   {
     file: 'save-20260823-13heroes-crit-points.json',
     forgeFloor: 10,
-    currentDps: 64670.63470873365,
-    planDps: 100591.78827844442,
+    currentDps: 64571.66678255393,
+    planDps: 100463.73075727368,
     moves: 110,
     forges: 17,
     pointResets: 11,
@@ -68,11 +77,11 @@ const GOLDENS = [
   {
     file: 'save-20260831-13heroes-soulbound.json',
     forgeFloor: 10,
-    currentDps: 8266.568367302578,
-    planDps: 9035.626885788633,
+    currentDps: 7963.068783581081,
+    planDps: 8690.407658610899,
     moves: 64,
     forges: 69,
-    pointResets: 10,
+    pointResets: 8,
     seedUsed: 'greedyHeroDps',
     loadoutDigest: '86db9ea653aa59e3',
   },

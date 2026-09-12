@@ -155,6 +155,12 @@ export type RosterEvaluation = {
   perHero: Record<string, HeroScore>;
   auras: Record<TeamBuffId, number>;
   /**
+   * The duty every fielded hero's aura was weighted by in the last round — the optimize heroes'
+   * from `perHero`, plus the leave-alone heroes', which `perHero` does not carry because nothing
+   * they score reaches the objective. `screenRosterObjective` prices its candidates off this map.
+   */
+  dutyByHeroId: Record<string, number>;
+  /**
    * Farm mode only: the phase `objective` was measured at, and the per-hero farm facts it was
    * measured from. Absent in DPS mode, and `farmPhase` is `null` when no phase is feasible.
    * `screenRosterObjective` reads both — it rescores only the heroes a move touches and prices

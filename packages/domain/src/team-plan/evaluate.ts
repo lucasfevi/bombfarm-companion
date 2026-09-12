@@ -4,12 +4,14 @@ import { computeRosterAuras } from './auras';
 import { evaluateFarmObjective, screenFarmObjective } from './farm-objective';
 import { effectiveUpgrade } from './pool';
 import { createScoreMemo, scoreHeroLoadout } from './score';
+import type { TeamBuffId } from '../team-buffs';
 import type {
   EvaluateRosterInput,
   HeroPlanContext,
   HeroScore,
   RosterEvaluation,
   RosterRegime,
+  ScoreMemo,
 } from './types';
 
 export const AURA_FIXED_POINT_ROUNDS = 4;
@@ -141,14 +143,12 @@ export function screenRosterObjective(
   }
 
   const slots = Math.max(1, Math.round(input.slots));
-  const duties: Record<string, number> = {};
-  for (const [heroId, score] of Object.entries(base.perHero)) duties[heroId] = score.duty;
   const scores: Record<string, HeroScore> = { ...base.perHero };
   let sumDuty = base.sumDuty;
-  // `duties` above is fixed for this whole call (only `sumDuty` and `scores` accumulate as
-  // `changedHeroIds` is walked) — every hero reads the SAME roster total (issue #132), so this
+  // The incumbent's duties are fixed for this whole call (only `sumDuty` and `scores` accumulate
+  // as `changedHeroIds` is walked) — every hero reads the SAME roster total (issue #132), so this
   // is computed once, not once per changed hero.
-  const auras = computeRosterAuras(input.contexts, duties);
+  const auras = computeRosterAuras(input.contexts, base.dutyByHeroId);
 
   for (const heroId of changedHeroIds) {
     const ctx = input.contexts.find((candidate) => candidate.heroId === heroId);
@@ -163,10 +163,27 @@ export function screenRosterObjective(
   return objectiveFromScores(scores, input.contexts, sumDuty, slots, input.ignoreFieldCrowding).objective;
 }
 
+/**
+ * A leave-alone hero's loadout is priced as it stands — no forge floor, since the search never
+ * touches its gear — and only for the duty its aura is weighted by; nothing it scores reaches the
+ * objective. `loadoutsByHeroId` must carry it, the same contract the gold objective's bridge has:
+ * absent, the hero is priced naked, which the gold objective tolerates the same way.
+ */
+function leaveAloneDuty(
+  ctx: HeroPlanContext,
+  input: EvaluateRosterInput,
+  auras: Record<TeamBuffId, number>,
+  memo: ScoreMemo,
+): number {
+  const loadout = input.loadoutsByHeroId[ctx.heroId] ?? {};
+  return scoreHeroLoadout(ctx, loadout, ctx.pts, auras, input.farm, memo).duty;
+}
+
 export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
   const slots = Math.max(1, Math.round(input.slots));
   const memo = input.scoreMemo ?? createScoreMemo();
   const optimizeContexts = input.contexts.filter((ctx) => ctx.scope === 'optimize');
+  const leaveAloneContexts = input.contexts.filter((ctx) => ctx.scope === 'leaveAlone');
   // Loop-invariant: the forge-floored loadout depends only on the input loadout and the forge
   // floor, neither of which the fixed-point rounds touch. Building it inside the round loop
   // rebuilt every hero's loadout four times per evaluation for nothing.
@@ -199,6 +216,12 @@ export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
       sumDuty += raw.duty;
     }
 
+    // A leave-alone hero fields too (`isSquadScope`), so its aura is weighted by its own duty —
+    // which the round's auras move through Fôlego like everyone else's, hence per round.
+    for (const ctx of leaveAloneContexts) {
+      nextDuties[ctx.heroId] = leaveAloneDuty(ctx, input, roundAuras, memo);
+    }
+
     Object.assign(duties, nextDuties);
     perHero = roundScores;
 
@@ -215,7 +238,15 @@ export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
     input.ignoreFieldCrowding,
   );
   const auras = computeRosterAuras(input.contexts, duties);
-  const evaluation: RosterEvaluation = { objective, regime, sumDuty, slots, perHero, auras };
+  const evaluation: RosterEvaluation = {
+    objective,
+    regime,
+    sumDuty,
+    slots,
+    perHero,
+    auras,
+    dutyByHeroId: duties,
+  };
   if (!input.farmObjective) return evaluation;
 
   // The farm objective replaces the scalar the solver compares, and nothing else: `regime`,

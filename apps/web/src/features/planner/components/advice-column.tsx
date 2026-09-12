@@ -1,92 +1,25 @@
 'use client';
 
-import { usePlannerStore, selectAdvisorPipeline } from '@/shared/stores';
-import type { PipelineFacts } from '@bombfarm/domain/stat-breakdown';
+import { usePlannerStore } from '@/shared/stores';
 import { adviceSplitClass, colClass } from '@bombfarm/ui/panel-field.recipe';
 import { PointsPanel } from './points-panel';
 import { NextPointPanel } from './next-point-panel';
 import { SheetPanel } from './sheet-panel';
-import { EffectiveStatsPanel } from './effective-stats-panel';
 
 export function AdviceColumn() {
-  const pipeline = usePlannerStore(selectAdvisorPipeline);
   const activeHeroId = usePlannerStore((state) => state.activeHeroId);
-  const level = usePlannerStore((state) => state.level);
-  const stars = usePlannerStore((state) => state.stars);
-  const pts = usePlannerStore((state) => state.pts);
-  const naked = usePlannerStore((state) => state.naked);
-  const geared = usePlannerStore((state) => state.gearedOverride);
-  const treeSpeed = usePlannerStore((state) => state.treeSpeed);
-  const treeCritChance = usePlannerStore((state) => state.treeCritChance);
-  const treeCritDmg = usePlannerStore((state) => state.treeCritDmg);
-  const treeEnergy = usePlannerStore((state) => state.treeEnergy);
-  const treeDanoTotal = usePlannerStore((state) => state.treeDanoTotal);
-
-  const {
-    pointDelta,
-    adjusted,
-    effective,
-    mods,
-    sheetOther,
-    context,
-    active,
-    dps,
-    uptime,
-    attackMult,
-    energyMult,
-    speedMult,
-    critDmgMult,
-    teamCritFlat,
-    rest,
-    dmgMult,
-    treeSheet,
-  } = pipeline;
-
-  const facts: PipelineFacts = {
-    geared,
-    adjusted,
-    pts,
-    delta: pointDelta,
-    effective,
-    mods,
-    sheetOther,
-    naked,
-    level,
-    stars,
-    attackMult,
-    energyMult,
-    speedMult,
-    critDmgMult,
-    teamCritFlat,
-    treeSpeed,
-    treeCritChance,
-    treeCritDmg,
-    treeEnergy,
-    treeLuckFlatPct: treeSheet.luckFlatPct,
-    context,
-    dmgMult,
-    treeDanoTotal,
-    extraDmgPct: 0,
-    active,
-    dps,
-    uptime,
-    rest,
-  };
 
   return (
     <div className={colClass}>
-      <>
-          <div className={adviceSplitClass}>
-            {/* Remount on hero switch — the cleanest way to reset PointsTable's local preview
-                state per hero without an effect. Keying makes the reset a consequence of identity
-                changing. */}
-            <PointsPanel key={activeHeroId ?? 'none'} />
-            <NextPointPanel />
-          </div>
+      <div className={adviceSplitClass}>
+        {/* Remount on hero switch — the cleanest way to reset PointsTable's local preview
+            state per hero without an effect. Keying makes the reset a consequence of identity
+            changing. */}
+        <PointsPanel key={activeHeroId ?? 'none'} />
+        <NextPointPanel />
+      </div>
 
-          <SheetPanel />
-          <EffectiveStatsPanel facts={facts} />
-        </>
+      <SheetPanel />
     </div>
   );
 }

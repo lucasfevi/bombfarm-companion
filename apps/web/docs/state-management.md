@@ -22,7 +22,7 @@ Each slice exports its state type, initial state, and actions. Actions are **ver
 | Slice | Owner wave | Notes |
 | --- | --- | --- |
 | session | W4 | lang, toast, persist gate / skip-toast one-shots |
-| account | W4 | tree, team buffs, farm context |
+| account | W4 | tree, farm context |
 | roster | W4 | heroes + activeHeroId — sole in-memory roster |
 | phases | W4 | explorer view phase (`bf-hp-phases-view-v1`) |
 | hero-draft | **W5** | active hero edit fields — not in W4 |

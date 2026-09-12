@@ -5,6 +5,8 @@ import { cachedAbilityGains, createAbilityGainCache, type AbilityGainCompute } f
 const ALPHA = { id: 'alpha' } as HeroRecord;
 const BETA = { id: 'beta' } as HeroRecord;
 const ACCOUNT = {} as AccountShared;
+const BLOCK = {};
+const SWITCHES = {};
 
 function counting(): { compute: AbilityGainCompute; calls: string[] } {
   const calls: string[] = [];
@@ -20,8 +22,8 @@ describe('cachedAbilityGains', () => {
     const cache = createAbilityGainCache();
     const { compute, calls } = counting();
 
-    const first = cachedAbilityGains(cache, compute, ALPHA, ACCOUNT, 51, 30);
-    const second = cachedAbilityGains(cache, compute, ALPHA, ACCOUNT, 51, 30);
+    const first = cachedAbilityGains(cache, compute, ALPHA, ACCOUNT, 51, 30, [BLOCK, SWITCHES]);
+    const second = cachedAbilityGains(cache, compute, ALPHA, ACCOUNT, 51, 30, [BLOCK, SWITCHES]);
 
     expect(calls).toEqual(['alpha 51']);
     expect(second).toBe(first);
@@ -31,20 +33,20 @@ describe('cachedAbilityGains', () => {
     const cache = createAbilityGainCache();
     const { compute, calls } = counting();
 
-    cachedAbilityGains(cache, compute, ALPHA, ACCOUNT, 51, 30);
-    cachedAbilityGains(cache, compute, ALPHA, ACCOUNT, 60, 33);
-    cachedAbilityGains(cache, compute, ALPHA, ACCOUNT, 51, 30);
+    cachedAbilityGains(cache, compute, ALPHA, ACCOUNT, 51, 30, [BLOCK, SWITCHES]);
+    cachedAbilityGains(cache, compute, ALPHA, ACCOUNT, 60, 33, [BLOCK, SWITCHES]);
+    cachedAbilityGains(cache, compute, ALPHA, ACCOUNT, 51, 30, [BLOCK, SWITCHES]);
 
     expect(calls).toEqual(['alpha 51', 'alpha 60']);
   });
 
-  it('keys on the hero, so switching back to a hero already opened costs nothing', () => {
+  it('keys on the hero, so switching back to a hero already opened costs nothing — even though each hero is handed its own account', () => {
     const cache = createAbilityGainCache();
     const { compute, calls } = counting();
 
-    cachedAbilityGains(cache, compute, ALPHA, ACCOUNT, 51, 30);
-    cachedAbilityGains(cache, compute, BETA, ACCOUNT, 51, 30);
-    cachedAbilityGains(cache, compute, ALPHA, ACCOUNT, 51, 30);
+    cachedAbilityGains(cache, compute, ALPHA, {} as AccountShared, 51, 30, [BLOCK, SWITCHES]);
+    cachedAbilityGains(cache, compute, BETA, {} as AccountShared, 51, 30, [BLOCK, SWITCHES]);
+    cachedAbilityGains(cache, compute, ALPHA, {} as AccountShared, 51, 30, [BLOCK, SWITCHES]);
 
     expect(calls).toEqual(['alpha 51', 'beta 51']);
   });
@@ -53,10 +55,20 @@ describe('cachedAbilityGains', () => {
     const cache = createAbilityGainCache();
     const { compute, calls } = counting();
 
-    cachedAbilityGains(cache, compute, ALPHA, ACCOUNT, 51, 30);
-    cachedAbilityGains(cache, compute, ALPHA, {} as AccountShared, 51, 30);
+    cachedAbilityGains(cache, compute, ALPHA, ACCOUNT, 51, 30, [BLOCK, SWITCHES]);
+    cachedAbilityGains(cache, compute, ALPHA, ACCOUNT, 51, 30, [{}, SWITCHES]);
 
     expect(calls).toEqual(['alpha 51', 'alpha 51']);
     expect(cache.entries.size).toBe(1);
+  });
+
+  it('throws every entry away when an aura switch moves — the auras every reading was priced against changed', () => {
+    const cache = createAbilityGainCache();
+    const { compute, calls } = counting();
+
+    cachedAbilityGains(cache, compute, ALPHA, ACCOUNT, 51, 30, [BLOCK, SWITCHES]);
+    cachedAbilityGains(cache, compute, ALPHA, ACCOUNT, 51, 30, [BLOCK, {}]);
+
+    expect(calls).toEqual(['alpha 51', 'alpha 51']);
   });
 });

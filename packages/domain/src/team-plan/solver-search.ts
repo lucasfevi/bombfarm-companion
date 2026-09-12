@@ -10,6 +10,7 @@ import {
   cloneAssignment,
   heroLoadoutFromAssignment,
   loadoutsFromAssignment,
+  squadLoadouts,
   type AssignmentState,
   type GearMove,
 } from './solver-assignment';
@@ -178,7 +179,7 @@ export function evaluateAssignment(
 
   budget.evaluations += 1;
   if (budget.evaluations >= budget.maxEvaluations) budget.exhausted = true;
-  const loadouts = loadoutsFromAssignment(assignment, itemById);
+  const loadouts = squadLoadouts(assignment, itemById, contexts, input.heroes);
   const evalInput: EvaluateRosterInput = {
     contexts,
     loadoutsByHeroId: loadouts,

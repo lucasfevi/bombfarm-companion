@@ -7,17 +7,23 @@
  * no rotation pool and no return-bonus mode to state, so it composes the block directly from the
  * roster instead of inventing farm controls to get at it.
  *
+ * The block carries no team-aura total. A per-hero screen prices each hero from its own seat —
+ * its own aura always, the rest of the roster's through the screen's switches — so the total is
+ * overlaid per hero by {@link accountAroundHero}, over the one block every hero shares.
+ *
  * Nothing here fills a missing value with a default: there is no `DEFAULT_TREE()` in
  * `apps/desktop` and there must not be one, so an account whose skill tree or House was not read
  * yields `null` and the panels derived from it withhold, rather than printing a plausible-looking
  * number from an invented one.
  */
-import { computeTeamBuffsFromDeployed } from '@bombfarm/domain/team-buffs';
-import type { AccountShared } from '@bombfarm/domain/shims/storage';
+import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
+import { computeTeamBuffsAroundHero, type TeamAuraSwitches } from '@bombfarm/domain/team-buffs';
 import type { AccountRoster } from './account-roster';
 
-export function buildAccountShared(roster: AccountRoster): AccountShared | null {
-  const { heroes, account } = roster;
+export type AccountBlock = Omit<AccountShared, 'teamBuffs'>;
+
+export function buildAccountBlock(roster: AccountRoster): AccountBlock | null {
+  const { account } = roster;
   const { tree, houseIdx, houseLevel } = account;
   if (tree === null || houseIdx === null || houseLevel === null) return null;
 
@@ -31,10 +37,6 @@ export function buildAccountShared(roster: AccountRoster): AccountShared | null 
       teamCoinPct: tree.teamCoinPct ?? 0,
       luckFlatPct: tree.luckFlatPct,
     },
-    // Always derived from this same roster, never an override: there is no team-buffs UI on the
-    // desktop, so there is nothing for an override to record.
-    teamBuffs: computeTeamBuffsFromDeployed(heroes),
-    teamBuffsOverride: null,
     // `phase` and `mitigationPct` are the caller's, passed per call: this block is shared by every
     // hero on the screen and must not carry one hero's stage.
     context: {
@@ -56,4 +58,15 @@ export function buildAccountShared(roster: AccountRoster): AccountShared | null 
     houseCycleSecsLevel: houseLevel,
     maxPhase: account.maxPhase ?? null,
   };
+}
+
+/** The block with ONE hero's team-aura total overlaid — the account that hero's figures compute
+ *  against (`computeTeamBuffsAroundHero`). */
+export function accountAroundHero(
+  block: AccountBlock,
+  hero: Pick<HeroRecord, 'id' | 'abilities'>,
+  roster: readonly Pick<HeroRecord, 'id' | 'abilities' | 'battleAllowed'>[],
+  switches: TeamAuraSwitches,
+): AccountShared {
+  return { ...block, teamBuffs: computeTeamBuffsAroundHero(hero, roster, switches) };
 }

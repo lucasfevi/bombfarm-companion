@@ -61,7 +61,6 @@ function seedFromCapture(capturePath: string, lang: 'en' | 'pt'): SeededState {
         energy: account.tree?.energy ?? 0,
         teamCoinPct: account.tree?.teamCoinPct ?? 0,
       },
-      teamBuffs: {},
       context: {
         houseIdx: account.houseIdx ?? 1,
         houseLevel: account.houseLevel ?? 6,

@@ -1,23 +1,23 @@
 {
   "captureMode": "prod-profile",
   "fixture": "importedRoster",
-  "_note": "REFRESHED (10) for the roster rail and board arriving on the planner (2026-09-10), per docs/react-performance.md rule 10's deliberate-change path - never by widening the guard, which compares exactly on purpose. All four scenarios moved UP: P-02 7206->8962 (+1756), P-03 12915->15736 (+2821), P-04 7034->7650 (+616), P-05 2262->2542 (+280). Measured, not argued, and measured against a CONTROL: develop's tip was captured on the same host with the same method and reproduced the outgoing baseline exactly on all four scenarios (7206/12915/7034/2262), so the two captures are directly comparable and the deltas below are this PR's own. Commit counts are IDENTICAL in both captures (10/17/7/3) - the interaction shape did not change, only how much each commit draws, which is the signature of a structural addition rather than a leak; a leak scales with what invalidates, and would have moved the commit count or the per-commit figure or both. The dominant cause is one component: the roster toolbar's ability filter strip, which draws every ability in the game as a design-system tooltip trigger - 20 tiles at ~8.7 component paths each, and it is now mounted above the planner on every commit. Its added renders are EXACTLY 174 x that scenario's commit count in all four: 174x10=1740, 174x17=2958, 174x7=1218, 174x3=522. A constant that holds across four scenarios with different interactions and different commit counts is a structural constant. The rail adds ~10 per commit on top (101/180/70/30) - three seeded heroes and a panel - and the workspace's own presence wrappers a few more. Read off each capture's own renderTally, path by path, after normalising away the wrapper chain the workspace inserts above the tab stage. A smaller reduction runs the other way and is why the net is below the gross: -491/-812/-869/-354 across the pre-existing planner subtrees (HeroStrip, HeroTab, PointsPreviewActions, EffectiveStatsPanel). The reading, not proven here: the strip and the tab stage are now passed INTO RosterWorkspace as element props rather than written inline in PlannerTabs, so the React Compiler holds each in its own memo slot with no dependencies, and a PlannerTabs re-render driven by one of its five store reads no longer rebuilds them. That is a bail-out point the tree did not have before. Captured on the host with PERF_FORCE=1 after perf:build:profile, all four deterministic across 7 repetitions in both captures.",
+  "_note": "REFRESHED (11) for the planner's Combat tab (2026-09-11), per docs/react-performance.md rule 10's deliberate-change path - never by widening the guard, which compares exactly on purpose. All four scenarios moved DOWN: P-02 8962->7942 (-1020), P-03 15736->14002 (-1734), P-04 7650->7335 (-315), P-05 2542->2408 (-134). Measured against a CONTROL: develop's tip (843027d9) was captured on the same host with the same method and reproduced the outgoing baseline exactly on all four scenarios (8962/15736/7650/2542), so the deltas are this change's own. Two causes, both structural. The Effective stats panel left the Points tab for the new Combat tab, so the Points-tab scenarios no longer redraw its accordion rows on every commit. And the Combat tab's content - the phase picker over every phase, the hero panel and the breakdown - is mounted only while Combat is the active tab; the tab primitive keeps inactive panels mounted, and the first CI run of this change measured the cost of leaving it mounted: every scenario moved UP instead (P-02 +832, P-03 +1429, P-04 +560, P-05 +241), because the picker and the breakdown re-rendered on every edit made on the other tabs. Mounting on demand removed that and the panel's own former cost with it. Captured on the host with PERF_FORCE=1 after perf:build:profile, deterministic across 7 repetitions.",
   "scenarios": [
     {
       "id": "P-02",
-      "medianComponentRenders": 8962
+      "medianComponentRenders": 7942
     },
     {
       "id": "P-03",
-      "medianComponentRenders": 15736
+      "medianComponentRenders": 14002
     },
     {
       "id": "P-04",
-      "medianComponentRenders": 7650
+      "medianComponentRenders": 7335
     },
     {
       "id": "P-05",
-      "medianComponentRenders": 2542
+      "medianComponentRenders": 2408
     }
   ]
 }

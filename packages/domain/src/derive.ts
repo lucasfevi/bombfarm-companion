@@ -43,7 +43,7 @@ export type ComputeCombatMultsInput = {
  * an others-only figure. `ownPct` stays as a parameter (rather than deleting it and inlining
  * `Math.min`) so every call site names what it is doing: `computeCombatMults` below always
  * passes `0`, because `teamBuffs` already carries every carrier including this hero (see
- * `computeTeamBuffsFromDeployed` / `substituteHeroAbilities`, `team-buffs.ts`) — there is no
+ * `computeTeamBuffsOverRotation` / `computeTeamBuffsAroundHero`, `team-buffs.ts`) — there is no
  * separate "own" term left to add. The cap is per ability ({@link TEAM_BUFF_CAP}), not a single
  * global figure — an earlier version of this comment cited `combate.team_mult_bonus_cap` as the
  * source of a single +100% cap, but that key does not exist in the live wiki payload or in this

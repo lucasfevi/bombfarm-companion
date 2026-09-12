@@ -16,7 +16,7 @@
  * a design note.
  */
 import { squadFactsFromBases, type HeroFarmBasis } from './farm-rate';
-import type { ReturnBonusMode } from './farm-rate';
+import type { FarmAccount, ReturnBonusMode } from './farm-rate';
 import {
   resolveFarmObjective,
   bestFarmPhase,
@@ -28,7 +28,6 @@ import {
 } from './farm-optimize-objective';
 import { RANK_STATS, STAT_LABELS, type PointValue } from './model';
 import type { SheetKey } from './planner-constants';
-import type { AccountShared } from './shims/storage';
 
 export { computeHeroFarmBases, type HeroFarmBasis } from './farm-rate';
 
@@ -68,7 +67,7 @@ export type FarmPointRankInput = {
   /** The rotation pool's bases, INCLUDING the ranked hero, in the order the caller wants
    *  summed (squad reductions are float sums, so order is part of the contract). */
   bases: readonly HeroFarmBasis[];
-  account: AccountShared;
+  account: FarmAccount;
   /** The hero whose next point is being ranked. Must appear in `bases`. */
   heroId: string;
   /** Default `{ kind: 'gold' }`. */

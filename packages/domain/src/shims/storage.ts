@@ -36,15 +36,13 @@ export type HeroContext = {
 
 export type AccountShared = {
   tree: TreeState;
-  teamBuffs: Record<string, number>;
   /**
-   * Set when {@link teamBuffs} is a hand-typed total rather than one derived from the roster.
-   * Only `farm-rate.ts` reads it, and only to decide whether it may re-derive the auras over the
-   * rotation: a typed number is a deliberate "assume this much aura" what-if and must reach the
-   * board verbatim, where a derived one is a snapshot of whoever happens to be deployed and is
-   * the wrong quantity for a board that rotates a whole pool through the field.
+   * The team-aura totals THIS pipeline call prices against — never a stored account fact. The
+   * caller computes them for the screen at hand (`team-buffs.ts`): a rotating board prices the
+   * pool over its uptimes, a per-hero screen prices one hero's seat, and the farm-rate module
+   * ignores whatever it is handed and derives its own.
    */
-  teamBuffsOverride?: Record<string, number> | null;
+  teamBuffs: Record<string, number>;
   context: HeroContext;
   /**
    * HOUSE RECOVERY slots (`casa.slots`) — how many heroes the House refills at a time. NOT the

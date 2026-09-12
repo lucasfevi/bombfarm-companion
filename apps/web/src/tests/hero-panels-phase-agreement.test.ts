@@ -12,16 +12,21 @@ import { join } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { emptyLoadout } from '@bombfarm/domain/gear';
 import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
+import { WIKI_PHASE_LINES, wikiPhaseLine } from '@bombfarm/domain/phase-wiki';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
 import { pipelineForHero } from '@bombfarm/domain/roster-dps';
+import { TEAM_BUFF_PER_LEVEL } from '@bombfarm/domain/team-buffs';
 import type { AdvisorPipelineResult } from '@bombfarm/domain/advisor-pipeline';
 import { normalizeHero } from '@/shared/lib/storage';
 import {
   resetPlannerStoreForTests,
-  selectAccountSharedForCombat,
+  selectActiveHeroAccount,
+  selectActiveHeroTeamBuffs,
   selectAdvisorPipeline,
-  selectEffectiveTeamBuffs,
+  selectRosterAccount,
+  selectRosterTeamBuffs,
   selectCombatPhase,
+  selectCombatPhaseSelection,
   selectPhasesViewPhase,
   usePlannerStore,
   type PlannerStore,
@@ -77,7 +82,7 @@ function hydrateOneHero(): void {
  * assemble it: the phases-view phase, through `computePhaseIntelGlobal`, into `pipelineForHero`.
  */
 function explorerCombat(state: PlannerStore): AdvisorPipelineResult {
-  const account = selectAccountSharedForCombat(state);
+  const account = selectRosterAccount(state);
   const intel = computePhaseIntelGlobal(selectPhasesViewPhase(state), {
     teamCoinPct: account.tree.teamCoinPct ?? 0,
     xpMult: account.tree.xpMult ?? 1,
@@ -107,59 +112,59 @@ function figures(combat: AdvisorPipelineResult) {
 }
 
 /**
- * A roster whose deployed hero carries a team aura and whose override was never set — the state a
- * real account is in before anyone finds the auto-fill control. The aura total is DERIVED from the
- * deployed roster, so a surface reading the stored override alone prices the hero with no auras at
- * all and answers differently from one that derives.
+ * The active hero carries a team aura, and a second, benched hero carries the same one — the
+ * roster on which the two surfaces answer two different questions. The Combat tab prices the
+ * hero's own seat: its own aura in full, the other carrier only through its switch and then at
+ * full presence. The explorer beside the Farm board prices the rotation: every fielded carrier
+ * weighted by its predicted uptime, whoever happened to be deployed.
  */
-function hydrateDeployedAuraCarrier(): void {
+function hydrateTwoAuraCarriers(): void {
   const state = usePlannerStore.getState();
-  const carrier = normalizeHero({
-    ...state.heroes[0],
-    id: 'h1',
-    deployed: true,
-    abilities: { grito_guerra: 12 },
-  });
-  state.hydrateRoster([carrier], 'h1');
-  state.applyHero(carrier);
+  const own = normalizeHero({ ...state.heroes[0], id: 'h1', deployed: true, abilities: { grito_guerra: 12 } });
+  const other = normalizeHero({ ...state.heroes[0], id: 'h2', deployed: false, abilities: { grito_guerra: 20 } });
+  state.hydrateRoster([own, other], 'h1');
+  state.applyHero(own);
 }
 
-describe('the two surfaces agree on team auras, not only on the phase', () => {
+describe('the two surfaces price team auras for their own question', () => {
   beforeEach(() => {
     resetPlannerStoreForTests();
     hydrateOneHero();
-    hydrateDeployedAuraCarrier();
-  });
-
-  it('non-vacuity: the deployed carrier really does produce a non-zero aura total', () => {
-    const derived = selectEffectiveTeamBuffs(usePlannerStore.getState());
-
-    expect(usePlannerStore.getState().teamBuffsOverride ?? null).toBeNull();
-    expect(derived.grito_guerra).toBeGreaterThan(0);
-  });
-
-  it('agrees with no override set, which is the state a real account is in', () => {
+    hydrateTwoAuraCarriers();
     usePlannerStore.getState().setPhasesViewPhase(137);
+  });
+
+  it('the Combat tab counts the active hero’s own aura in full, and nobody else’s while the switches are off', () => {
+    const tab = selectActiveHeroTeamBuffs(usePlannerStore.getState());
+    expect(tab.grito_guerra).toBe(12 * TEAM_BUFF_PER_LEVEL.grito_guerra);
+  });
+
+  it('the explorer weights every fielded carrier by its uptime, so its total sits between nothing and the pool’s at-best sum', () => {
+    const roster = selectRosterTeamBuffs(usePlannerStore.getState());
+    expect(roster.grito_guerra).toBeGreaterThan(0);
+    expect(roster.grito_guerra).toBeLessThan((12 + 20) * TEAM_BUFF_PER_LEVEL.grito_guerra);
+  });
+
+  it('the two therefore print different figures for the same hero at the same phase, by design', () => {
+    const state = usePlannerStore.getState();
+    expect(figures(selectAdvisorPipeline(state)).normalHit).not.toBe(figures(explorerCombat(state)).normalHit);
+    expect(figures(selectAdvisorPipeline(state)).targetHp).toBe(figures(explorerCombat(state)).targetHp);
+  });
+
+  it('a switch lets the other carrier onto the Combat tab at full presence, and moves the figures', () => {
+    const before = figures(selectAdvisorPipeline(usePlannerStore.getState()));
+    usePlannerStore.getState().setTeamAuraSwitch('grito_guerra', true);
     const state = usePlannerStore.getState();
 
-    expect(figures(selectAdvisorPipeline(state))).toEqual(figures(explorerCombat(state)));
+    expect(selectActiveHeroTeamBuffs(state).grito_guerra).toBe((12 + 20) * TEAM_BUFF_PER_LEVEL.grito_guerra);
+    expect(figures(selectAdvisorPipeline(state)).normalHit).toBeGreaterThan(before.normalHit);
+    expect(figures(explorerCombat(state))).toEqual(figures(explorerCombat(state)));
   });
 
-  it('the aura is actually priced in, so the agreement is not two zeros matching', () => {
-    usePlannerStore.getState().setPhasesViewPhase(137);
-    const state = usePlannerStore.getState();
-    const withAura = figures(explorerCombat(state));
-
-    const withoutAura = figures(
-      pipelineForHero(
-        state.heroes[0],
-        { ...selectAccountSharedForCombat(state), teamBuffs: {} },
-        selectCombatPhase(state),
-        state.mitigationPct,
-      ),
-    );
-
-    expect(withAura.normalHit).not.toBe(withoutAura.normalHit);
+  it('the switch reaches nothing the explorer prints', () => {
+    const before = figures(explorerCombat(usePlannerStore.getState()));
+    usePlannerStore.getState().setTeamAuraSwitch('grito_guerra', true);
+    expect(figures(explorerCombat(usePlannerStore.getState()))).toEqual(before);
   });
 });
 
@@ -203,11 +208,76 @@ describe('the hero workspace and the phases explorer read one phase', () => {
     expect(selectAdvisorPipeline(state)).toEqual(
       pipelineForHero(
         state.heroes[0],
-        selectAccountSharedForCombat(state),
+        selectActiveHeroAccount(state),
         ACCOUNT_FARM_PHASE,
         state.mitigationPct,
       ),
     );
+  });
+});
+
+/**
+ * The planner's Combat tab may ask about a phase of its own. That pick moves every figure the
+ * planner prints, and nothing the explorer prints: the two are one player's two questions about
+ * the same account, and answering one must not re-answer the other.
+ */
+describe('a phase picked on the planner’s Combat tab', () => {
+  beforeEach(() => {
+    resetPlannerStoreForTests();
+    hydrateOneHero();
+    usePlannerStore.getState().setPhasesViewPhase(137);
+  });
+
+  it('moves the planner onto that phase, with the wiki line’s own mitigation', () => {
+    usePlannerStore.getState().setPlannerPhaseOverride(42);
+    const state = usePlannerStore.getState();
+
+    expect(selectCombatPhase(state)).toBe(42);
+    expect(selectCombatPhaseSelection(state)).toEqual({ kind: 'override', phase: 42 });
+    expect(selectAdvisorPipeline(state)).toEqual(
+      pipelineForHero(
+        state.heroes[0],
+        selectActiveHeroAccount(state),
+        42,
+        wikiPhaseLine(42)!.mitig * 100,
+      ),
+    );
+  });
+
+  it('leaves the explorer on the phase it was showing', () => {
+    usePlannerStore.getState().setPlannerPhaseOverride(42);
+    const state = usePlannerStore.getState();
+
+    expect(selectPhasesViewPhase(state)).toBe(137);
+    expect(figures(explorerCombat(state))).not.toEqual(figures(selectAdvisorPipeline(state)));
+  });
+
+  it('clearing it hands the planner back to the explorer’s phase, and the two agree again', () => {
+    usePlannerStore.getState().setPlannerPhaseOverride(42);
+    usePlannerStore.getState().setPlannerPhaseOverride(null);
+    const state = usePlannerStore.getState();
+
+    expect(selectCombatPhase(state)).toBe(137);
+    expect(selectCombatPhaseSelection(state)).toEqual({ kind: 'farmScreen', phase: 137 });
+    expect(figures(selectAdvisorPipeline(state))).toEqual(figures(explorerCombat(state)));
+  });
+
+  it('a phase past the wiki’s last row lands on the last phase, as every lookup beneath does', () => {
+    usePlannerStore.getState().setPlannerPhaseOverride(9_000);
+    const state = usePlannerStore.getState();
+
+    expect(selectCombatPhase(state)).toBe(WIKI_PHASE_LINES.length);
+    expect(selectCombatPhaseSelection(state)).toEqual({
+      kind: 'override',
+      phase: WIKI_PHASE_LINES.length,
+    });
+  });
+
+  it('picking the phase the app already answers for is not a pick, and reads as none', () => {
+    usePlannerStore.getState().setPlannerPhaseOverride(137);
+    const state = usePlannerStore.getState();
+
+    expect(selectCombatPhaseSelection(state)).toEqual({ kind: 'farmScreen', phase: 137 });
   });
 });
 

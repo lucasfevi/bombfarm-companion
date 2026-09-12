@@ -80,8 +80,8 @@ jobs:
       # ci-desktop-required one (which checks only failure/cancelled and treats skipped
       # as pass): this must fail when the job did not run at all — skipped or cancelled —
       # not just when it actively failed. A gate that reports success for "never ran" is
-      # worse than no gate (SBC-19/AD-018), and this repo has a documented history of
-      # exactly that. There is no path filter here so `line-endings` should always run;
+      # worse than no gate, and this repo has a documented history of exactly that. There
+      # is no path filter here so `line-endings` should always run;
       # this is the belt-and-braces that proves it did.
       - name: Require the line-ending guard to have actually run and passed
         if: needs.line-endings.result != 'success'

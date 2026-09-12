@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { emptyLoadout } from '@bombfarm/domain/gear';
-import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
 import {
   solveFarmRespec,
   FARM_RESPEC_MIN_GAIN_PCT,
   type FarmRespecResult,
 } from '@bombfarm/domain/farm-optimize';
-import { normalizeHero, type AccountShared } from '@/shared/lib/storage';
+import { normalizeHero } from '@/shared/lib/storage';
+import type { FarmAccount } from '@bombfarm/domain/farm-rate';
 import {
   isFarmRespecWorthMaking,
   getFarmRankingComputeCount,
@@ -234,12 +234,6 @@ describe('selectFarmRankingRows', () => {
       );
     });
 
-    it('teamBuffsOverride', () => {
-      expectRecompute(() =>
-        usePlannerStore.getState().setTeamBuffsOverride({ ...zeroTeamBuffs(), grito_guerra: 3 }),
-      );
-    });
-
     it('houseIdx', () => {
       expectRecompute(() => usePlannerStore.getState().setHouseIdx(2));
     });
@@ -313,9 +307,8 @@ describe('selectFarmPoolEntries / selectFarmReturnBonus', () => {
   });
 });
 
-const MINIMAL_ACCOUNT: AccountShared = {
+const MINIMAL_ACCOUNT: FarmAccount = {
   tree: { danoTotal: 1, critChance: 0, critDmg: 0, speed: 0, energy: 0, teamCoinPct: 0, luckFlatPct: 0 },
-  teamBuffs: {},
   context: { houseIdx: 0, houseLevel: 0, phase: null, mitigationPct: 1, rankMode: 'dps', targetProp: 'stone' },
   slots: 9,
   maxPhase: null,
@@ -404,10 +397,6 @@ function respecTupleMutators(): { name: string; mutate: () => void }[] {
           phase: null,
         }),
     },
-    {
-      name: 'teamBuffsOverride',
-      mutate: () => usePlannerStore.getState().setTeamBuffsOverride({ ...zeroTeamBuffs(), grito_guerra: 3 }),
-    },
     { name: 'houseIdx', mutate: () => usePlannerStore.getState().setHouseIdx(2) },
     { name: 'houseLevel', mutate: () => usePlannerStore.getState().setHouseLevel(4) },
     {
@@ -451,14 +440,15 @@ describe('readFarmRespecDepTuple', () => {
     resetAllFarmCaches();
   });
 
-  // 19 ranking members since the House-ceiling fix added `fieldSlots` and `houseCycleSecs` to
-  // `readFarmDepTuple`, and its regression repair added `houseCycleSecsHouseIdx`/
-  // `houseCycleSecsLevel`. With the objective picker gone, readFarmRespecDepTuple no longer
-  // appends anything of its own — it is currently identical to readFarmDepTuple.
-  it('has 19 members, identical to readFarmDepTuple', () => {
+  // 18 ranking members since the House-ceiling fix added `fieldSlots` and `houseCycleSecs` to
+  // `readFarmDepTuple`, its regression repair added `houseCycleSecsHouseIdx`/
+  // `houseCycleSecsLevel`, and the team-aura total left (the board derives it from `heroes`).
+  // With the objective picker gone, readFarmRespecDepTuple no longer appends anything of its
+  // own — it is currently identical to readFarmDepTuple.
+  it('has 18 members, identical to readFarmDepTuple', () => {
     usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
     const tuple = readFarmRespecDepTuple(usePlannerStore.getState());
-    expect(tuple).toHaveLength(19);
+    expect(tuple).toHaveLength(18);
     expect(tuple).toEqual(readFarmDepTuple(usePlannerStore.getState()));
   });
 });
@@ -526,7 +516,7 @@ describe('the solve is reachable from any roster state — there is no gate in f
 
   // The load-bearing half of the check this replaced. Every dependency change must be free of
   // advisor work: the board re-ranks, and NOTHING solves until the button is pressed.
-  describe('every one of the 15 tuple members re-ranks the board, and NEVER solves', () => {
+  describe('every one of the 14 tuple members re-ranks the board, and NEVER solves', () => {
     beforeEach(() => {
       usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
       selectFarmRankingRows(usePlannerStore.getState());

@@ -9,10 +9,9 @@ import type { FarmInputs } from './farm-inputs';
  * never as "A and B report different numbers", which a single shared instance could also satisfy.
  */
 
-/** Hoisted: the tuple compares these three by reference, so a cache hit is only possible when
- *  every `inputs()` call hands back the same three objects. */
+/** Hoisted: the tuple compares these two by reference, so a cache hit is only possible when
+ *  every `inputs()` call hands back the same two objects. */
 const HEROES: FarmInputs['heroes'] = [];
-const TEAM_BUFFS: FarmInputs['effectiveTeamBuffs'] = {};
 const POOL_OVERRIDES: FarmInputs['farmPoolOverrides'] = {};
 
 function inputs(): FarmInputs {
@@ -25,8 +24,6 @@ function inputs(): FarmInputs {
     treeEnergy: 0,
     treeTeamCoinPct: 0,
     treeLuckFlatPct: 0,
-    effectiveTeamBuffs: TEAM_BUFFS,
-    teamBuffsOverride: null,
     houseIdx: 0,
     houseLevel: 0,
     slots: 9,

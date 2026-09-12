@@ -37,6 +37,7 @@ vi.mock('@bombfarm/domain/team-plan/evaluate', () => ({
       slots: input.slots,
       perHero: {},
       auras: {} as RosterEvaluation['auras'],
+      dutyByHeroId: {},
     };
   }),
 }));

@@ -35,7 +35,7 @@ describe('planner-tab persistence', () => {
   });
 
   it('accepts only locked tab ids', () => {
-    expect(PLANNER_TAB_IDS).toEqual(['hero', 'gear', 'points']);
+    expect(PLANNER_TAB_IDS).toEqual(['hero', 'combat', 'gear', 'points']);
     expect(isPlannerTabId('points')).toBe(true);
     expect(isPlannerTabId('items')).toBe(false);
     // Account is a nav route of its own now, not a planner tab.

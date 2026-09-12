@@ -8,23 +8,23 @@
  * enforces it (farm-ranking-guards.test.ts, guards (f) and (g)). Type-only imports of
  * `FarmRateRow`/`ReturnBonusMode`/`FarmRespecResult` erase at compile time and stay allowed.
  *
- * PRODUCER OBLIGATION, unchanged by the move and still owed by this app. Three tuple members are
- * compared by REFERENCE (`Object.is`) inside the package: `state.heroes`, the effective team
- * buffs, and `state.farmPoolOverrides`. A fresh-but-equal array or object reads exactly like a
+ * PRODUCER OBLIGATION, unchanged by the move and still owed by this app. Two tuple members are
+ * compared by REFERENCE (`Object.is`) inside the package: `state.heroes` and
+ * `state.farmPoolOverrides`. A fresh-but-equal array or object reads exactly like a
  * real edit — it drops a live respec proposal with no error surfaced. For `heroes` that
  * obligation is met by every roster producer in `shared/lib/storage.ts` — `patchHeroInList` (the
  * 700ms autosave path, the guard that cost the most to find), `importHeroes` (the save-import
  * path), and `writeHeroBattleAllowed` (`stores/persistence/persist-roster.ts`) — each returning
  * the SAME array when nothing changed. The matching consumer half is `commitRoster` in
  * `stores/slices/roster-slice.ts`, the single writer of `state.heroes`, which declines to `set`
- * on an unchanged reference. A new roster producer owes both halves. `selectEffectiveTeamBuffs`
- * holds the same contract through its own single-entry cache.
+ * on an unchanged reference. A new roster producer owes both halves.
  *
  * `toFarmInputs` allocating a fresh object per call does NOT threaten any of that: the memo
- * never keys on that object, it keys on the 19 fields read out of it.
+ * never keys on that object, it keys on the 18 fields read out of it.
  */
 import {
   buildAccount as buildFarmAccount,
+  computeFarmTeamBuffs,
   createFarmRankingMemo,
   deriveFarmPoolEntries,
   farmDepsEqual,
@@ -37,10 +37,11 @@ import {
   type FarmRankingResult,
 } from '@bombfarm/farm/core';
 import type { FarmRespecResult } from '@bombfarm/domain/farm-optimize';
-import type { AccountShared } from '@/shared/lib/storage';
+import type { FarmAccount } from '@bombfarm/domain/farm-rate';
+import type { AccountShared as CombatAccount } from '@bombfarm/domain/shims/storage';
 import type { PlannerStore } from '@/shared/stores/planner-store';
+import { selectAccountShared } from '@/shared/stores/selectors/account-selectors';
 import type { FarmRespecProposal, FarmRespecStatus } from '@/shared/stores/slices/phases-slice';
-import { selectEffectiveTeamBuffs } from '@/shared/stores/selectors/account-selectors';
 
 export { deriveFarmPoolEntries, isFarmRespecWorthMaking };
 export type {
@@ -67,8 +68,6 @@ function toFarmInputs(state: PlannerStore): FarmInputs {
     treeEnergy: state.treeEnergy,
     treeTeamCoinPct: state.treeTeamCoinPct,
     treeLuckFlatPct: state.treeLuckFlatPct,
-    effectiveTeamBuffs: selectEffectiveTeamBuffs(state),
-    teamBuffsOverride: state.teamBuffsOverride,
     houseIdx: state.houseIdx,
     houseLevel: state.houseLevel,
     slots: state.slots,
@@ -82,7 +81,7 @@ function toFarmInputs(state: PlannerStore): FarmInputs {
   };
 }
 
-/** The 19 planner edits the board must react to. See the package's own header for what each
+/** The 18 planner edits the board must react to. See the package's own header for what each
  *  member is there to catch and why a missing one fails silently. */
 export function readFarmDepTuple(state: PlannerStore) {
   return readFarmInputsDepTuple(toFarmInputs(state));
@@ -104,8 +103,48 @@ export function resolveEnabledHeroIds(state: PlannerStore): string[] {
   return resolveEnabledHeroIdsFor(toFarmInputs(state));
 }
 
-export function buildAccount(state: PlannerStore): AccountShared {
+export function buildAccount(state: PlannerStore): FarmAccount {
   return buildFarmAccount(toFarmInputs(state));
+}
+
+let rosterTeamBuffsCache: { deps: readonly unknown[]; result: Record<string, number> } | null = null;
+let rosterAccountCache: CombatAccount | null = null;
+
+export function resetRosterAccountCache(): void {
+  rosterTeamBuffsCache = null;
+  rosterAccountCache = null;
+}
+
+/**
+ * The team-aura totals the Farm board prices against, for the roster-wide readers that sit beside
+ * it (the phases explorer's squad ranking) — every pooled carrier weighted by its own predicted
+ * uptime, so the explorer and the board agree on the same roster. Memoized on the board's own
+ * dep tuple: it costs a pipeline pass per pooled hero.
+ */
+export function selectRosterTeamBuffs(state: PlannerStore): Record<string, number> {
+  const deps = readFarmDepTuple(state);
+  if (rosterTeamBuffsCache && farmDepsEqual(rosterTeamBuffsCache.deps, deps)) {
+    return rosterTeamBuffsCache.result;
+  }
+  const result = computeFarmTeamBuffs(toFarmInputs(state));
+  rosterTeamBuffsCache = { deps, result };
+  return result;
+}
+
+/** {@link selectAccountShared} with {@link selectRosterTeamBuffs} overlaid — the account a
+ *  ROSTER-WIDE figure computes against. A per-hero figure reads `selectActiveHeroAccount`. */
+export function selectRosterAccount(state: PlannerStore): CombatAccount {
+  const shared = selectAccountShared(state);
+  const teamBuffs = selectRosterTeamBuffs(state);
+  if (
+    rosterAccountCache &&
+    rosterAccountCache.teamBuffs === teamBuffs &&
+    Object.is(rosterAccountCache.context, shared.context)
+  ) {
+    return rosterAccountCache;
+  }
+  rosterAccountCache = { ...shared, teamBuffs };
+  return rosterAccountCache;
 }
 
 /**

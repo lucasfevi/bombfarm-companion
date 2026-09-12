@@ -37,8 +37,7 @@ beforeEach(() => {
  * TWO passes per hero, not one — `computeHeroFarmBases` prices the team auras over the rotation,
  * which needs every hero's uptime, which only the pipeline produces (see that function's own
  * note). The invariant this file guards is unchanged and is the one in its title: the count is a
- * fixed multiple of ROSTER SIZE and never a function of the 600 rows. `N` when
- * `account.teamBuffsOverride` is set — a hand-typed total needs no second pass to weight.
+ * fixed multiple of ROSTER SIZE and never a function of the 600 rows.
  */
 const PASSES_PER_HERO = 2;
 
@@ -47,12 +46,6 @@ describe('energySwitchPointCallCount — a function of roster size, not row coun
     const { heroes, account } = loadFarmRateFixture();
     computeFarmRates({ heroes, account });
     expect(energySwitchPointCallCount).toBe(PASSES_PER_HERO * 5);
-  });
-
-  it('an explicit teamBuffs override collapses to ONE pass per hero', () => {
-    const { heroes, account } = loadFarmRateFixture();
-    computeFarmRates({ heroes, account: { ...account, teamBuffsOverride: { grito_guerra: 20 } } });
-    expect(energySwitchPointCallCount).toBe(5);
   });
 
   it('the same 5-hero roster over a SINGLE phase still bumps the counter exactly 2x5 times — the count is a function of roster size alone', () => {

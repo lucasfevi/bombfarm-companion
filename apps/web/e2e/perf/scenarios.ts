@@ -25,6 +25,7 @@ export type Scenario = {
 
 const TAB_NAME: Record<PlannerTabId, RegExp> = {
   hero: /herói|heroi|hero/i,
+  combat: /combate|combat/i,
   gear: /equipamento|gear/i,
   points: /pontos|points/i,
 }

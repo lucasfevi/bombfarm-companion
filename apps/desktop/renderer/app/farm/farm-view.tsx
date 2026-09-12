@@ -33,7 +33,7 @@ import {
 } from '@bombfarm/farm/components';
 import { HeroPickerDialogView, type HeroPickerSlotProps } from '@bombfarm/hero/components';
 import {
-  buildAccount,
+  buildRosterAccount,
   deriveFarmPoolEntries,
   type FarmInputs,
   type FarmRankingResult,
@@ -332,7 +332,9 @@ function FarmScreen({
     [heroes, inputs],
   );
 
-  const account = useMemo(() => buildAccount(inputs), [inputs]);
+  // The explorer's squad ranking prices team auras the way the board beside it does: every pooled
+  // carrier weighted by its predicted uptime.
+  const account = useMemo(() => buildRosterAccount(inputs), [inputs]);
 
   // Both read the proposal through the same freshness derivation, so the table can never be
   // captioned as showing a build the panel is no longer allowed to describe.

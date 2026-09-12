@@ -17,7 +17,6 @@ import {
   Banner,
   Button,
   EmptyState,
-  Num,
   Panel,
   Tabs,
   adviceSplitClass,
@@ -29,6 +28,7 @@ import {
   type Lang,
 } from '@bombfarm/ui';
 import { HeroIdentityChip } from '@bombfarm/game-art';
+import { CombatPhasePanel } from '@bombfarm/farm/components';
 import {
   GearTab,
   HeroAbilitiesPanel,
@@ -42,6 +42,7 @@ import {
   RosterRail,
   RosterToolbar,
   SheetTable,
+  TeamAuraSwitchesPanel,
 } from '@bombfarm/hero/components';
 import {
   DEFAULT_ROSTER_BOARD_SORT,
@@ -69,7 +70,9 @@ import type { RankMode } from '@bombfarm/domain/model';
 import { pipelineForHero } from '@bombfarm/domain/roster-dps';
 import type { PipelineFacts } from '@bombfarm/domain/stat-breakdown';
 import type { SheetKey } from '@bombfarm/domain/planner-constants';
-import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import { noTeamAuraSwitches, type TeamAuraSwitches, type TeamBuffId } from '@bombfarm/domain/team-buffs';
+import { accountAroundHero, type AccountBlock } from '../../lib/account/account-shared';
 import { useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
 import {
@@ -179,6 +182,15 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   // Which target the next-point ranking is read against. View-local and stored nowhere, like the
   // phase override above — it changes what this screen prints, never anything on the account.
   const [rankMode, setRankMode] = useState<RankMode>('dps');
+  // Which team auras the rest of the roster is counted for, on top of the shown hero's own. All
+  // off on every visit, like the phase override: a what-if that outlived the screen would inflate
+  // every figure here with no control in sight to explain it.
+  const [auraSwitches, setAuraSwitches] = useState<TeamAuraSwitches>(noTeamAuraSwitches);
+  const onAuraSwitch = useCallback((buffId: TeamBuffId, enabled: boolean) => {
+    setAuraSwitches((current) =>
+      current[buffId] === enabled ? current : { ...current, [buffId]: enabled },
+    );
+  }, []);
   const farmPhase = useFarmSelectedPhase();
 
   const { rows, roster } = model;
@@ -197,32 +209,38 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   );
   const figures = useMemo(() => heroFigures(phaseReading, roster), [phaseReading, roster]);
 
+  // The shown hero's own account: the shared block with its own aura total overlaid — its own
+  // aura always, the rest of the roster's through the switches above.
+  const heroAccount = useMemo(
+    () =>
+      figures.kind === 'at'
+        ? accountAroundHero(figures.inputs.account, active.hero, roster.heroes, auraSwitches)
+        : null,
+    [active.hero, figures, roster.heroes, auraSwitches],
+  );
+
   // One pipeline run for the whole detail pane. Every panel below the identity panel reads off it
   // — combat, the ranking, the stat sheet, the items and the breakdown — so running it once here
   // is what keeps a hero switch from costing five identical runs.
   const combat = useMemo(
     () =>
-      figures.kind === 'at'
-        ? pipelineForHero(
-            active.hero,
-            figures.inputs.account,
-            figures.inputs.phase,
-            figures.inputs.mitigationPct,
-          )
+      figures.kind === 'at' && heroAccount
+        ? pipelineForHero(active.hero, heroAccount, figures.inputs.phase, figures.inputs.mitigationPct)
         : null,
-    [active.hero, figures],
+    [active.hero, figures, heroAccount],
   );
 
   const gainsCache = useRef(createAbilityGainCache());
   const abilityGains =
-    figures.kind === 'at'
+    figures.kind === 'at' && heroAccount
       ? cachedAbilityGains(
           gainsCache.current,
           abilityGainFor,
           active.hero,
-          figures.inputs.account,
+          heroAccount,
           figures.inputs.phase,
           figures.inputs.mitigationPct,
+          [figures.inputs.account, auraSwitches],
         )
       : NO_ABILITY_GAINS;
 
@@ -365,6 +383,9 @@ function HeroesRoster({ model }: { model: RosterModel }) {
                     overridden={overridePhase !== null}
                     onOverridePhase={setOverridePhase}
                     onClearOverride={onClearOverride}
+                    roster={roster.heroes}
+                    auraSwitches={auraSwitches}
+                    onAuraSwitch={onAuraSwitch}
                     rankMode={rankMode}
                     onRankMode={setRankMode}
                     statLabel={boundStatLabel}
@@ -394,11 +415,9 @@ function HeroesRoster({ model }: { model: RosterModel }) {
 /**
  * The detail pane's four stages, grouped the way the web planner groups its three.
  *
- * Hero, Gear and Points hold what the planner's tabs of those names hold, panel for panel — both
- * apps draw them from one implementation, so a player who has learned one has learned the other.
- * Combat is the fourth because this screen computes something the planner has no tab for: the
- * phase-scoped figures, which over there are folded into the hero strip above the tab list. The
- * phase control lives on it, beside the figures it was added for.
+ * Hero, Combat, Gear and Points hold what the planner's tabs of those names hold, panel for
+ * panel — both apps draw them from one implementation, so a player who has learned one has
+ * learned the other. The phase control lives on Combat, beside the figures it was added for.
  *
  * Which stage is open is view-local and stored nowhere, like the phase override and the rank mode
  * beside it — leaving the screen and coming back opens on the hero again.
@@ -415,6 +434,9 @@ function HeroDetailTabs({
   overridden,
   onOverridePhase,
   onClearOverride,
+  roster,
+  auraSwitches,
+  onAuraSwitch,
   rankMode,
   onRankMode,
   statLabel: boundStatLabel,
@@ -434,6 +456,9 @@ function HeroDetailTabs({
   overridden: boolean;
   onOverridePhase: (phase: number) => void;
   onClearOverride: () => void;
+  roster: readonly HeroRecord[];
+  auraSwitches: TeamAuraSwitches;
+  onAuraSwitch: (buffId: TeamBuffId, on: boolean) => void;
   rankMode: RankMode;
   onRankMode: (next: RankMode) => void;
   statLabel: (key: SheetKey) => string;
@@ -475,34 +500,50 @@ function HeroDetailTabs({
           </div>
         </Tabs.Panel>
         <Tabs.Panel value="combat">
-          <div className={colClass}>
-            {/* The phase the figures below were computed at. It is the only control on this
-                screen that changes what a stage prints, and it changes Points as well as this
-                one — Points has no control of its own and follows whatever is set here. */}
-            <PhaseControl
-              phase={phase}
-              overridden={overridden}
-              onOverridePhase={onOverridePhase}
-              onClearOverride={onClearOverride}
-            />
-            <HeroCombat
-              heroes={heroes}
-              hero={active.hero}
-              combat={combat}
-              figures={figures}
-              onSelectHero={onSelectHero}
-            />
-            {/* The combat sheet those figures were computed from — beside them rather than at the
-                bottom of Points, where it was the one phase-scoped panel in a stage of sheet
-                arithmetic. */}
-            {figures.kind === 'at' && combat ? (
-              <HeroEffectiveStats
-                t={statCopy}
-                facts={effectiveFacts(active.hero, figures.inputs.account, combat)}
-                formatNumber={formatNumber}
+          {/* Mounted only while shown: the stage holds no state of its own (the phase override
+              lives above it), and its picker and breakdown would otherwise re-render on every
+              account read while another stage is open. */}
+          {tab === 'combat' ? (
+            <div className={colClass}>
+              {/* The phase the figures below were computed at. It is the only control on this
+                  screen that changes what a stage prints, and it changes Points as well as this
+                  one — Points has no control of its own and follows whatever is set here. */}
+              <CombatPhasePanel
+                phase={phase}
+                overridden={overridden}
+                onOverridePhase={onOverridePhase}
+                onClearOverride={onClearOverride}
+                lang={lang}
               />
-            ) : null}
-          </div>
+              {/* The auras those figures count. Off, the hero is priced alone but for its own aura;
+                  on, the rest of the roster's carriers join at full presence. Beside the phase
+                  because both are what-ifs about the same figures, held the same way. */}
+              <TeamAuraSwitchesPanel
+                hero={active.hero}
+                roster={roster}
+                switches={auraSwitches}
+                onSwitch={onAuraSwitch}
+                lang={lang}
+              />
+              <HeroCombat
+                heroes={heroes}
+                hero={active.hero}
+                combat={combat}
+                figures={figures}
+                onSelectHero={onSelectHero}
+              />
+              {/* The combat sheet those figures were computed from — beside them rather than at the
+                  bottom of Points, where it was the one phase-scoped panel in a stage of sheet
+                  arithmetic. */}
+              {figures.kind === 'at' && combat ? (
+                <HeroEffectiveStats
+                  t={statCopy}
+                  facts={effectiveFacts(active.hero, figures.inputs.account, combat)}
+                  formatNumber={formatNumber}
+                />
+              ) : null}
+            </div>
+          ) : null}
         </Tabs.Panel>
         <Tabs.Panel value="gear">
           {figures.kind === 'at' && combat ? (
@@ -560,37 +601,6 @@ function FiguresNotice({ figures }: { figures: HeroFigures }) {
  *  on every render rather than a fresh one that re-renders it. */
 const NO_ABILITY_GAINS: readonly AbilityGain[] = Object.freeze([]);
 
-function PhaseControl({
-  phase,
-  overridden,
-  onOverridePhase,
-  onClearOverride,
-}: {
-  phase: number;
-  overridden: boolean;
-  onOverridePhase: (phase: number) => void;
-  onClearOverride: () => void;
-}) {
-  const t = useCopy();
-
-  return (
-    <Panel focus>
-      <div className={panelHClass}>
-        <h2 className={panelTitleClass}>{t.heroesPhaseTitle}</h2>
-      </div>
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex w-29 shrink-0 flex-col gap-[3px] text-[11px] tracking-[0.03em] text-muted uppercase">
-          <span>{t.heroesPhaseLabel}</span>
-          <Num value={phase} onChange={onOverridePhase} step={1} decimals={0} />
-        </label>
-        <Button variant="ghost" onClick={onClearOverride} disabled={!overridden}>
-          {t.heroesPhaseUseFarm}
-        </Button>
-      </div>
-    </Panel>
-  );
-}
-
 /**
  * The phase-scoped half of the detail. `PhasesHeroPanel` names the phase it was computed at and
  * whether that phase came from the Farm screen or from this screen's own override — which is why
@@ -630,7 +640,7 @@ function HeroCombat({
  */
 function effectiveFacts(
   hero: HeroRecord,
-  account: AccountShared,
+  account: AccountBlock,
   combat: AdvisorPipelineResult,
 ): PipelineFacts {
   return {

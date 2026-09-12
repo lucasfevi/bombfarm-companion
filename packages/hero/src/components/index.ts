@@ -13,6 +13,7 @@ export type { HeroPickerSlot, HeroPickerSlotProps } from './phases-hero-switcher
 export { HeroCopyProvider, useHeroCopy } from './hero-copy-context';
 export type { HeroCopyValue } from './hero-copy-context';
 export { PhasesHeroPanel } from './phases-hero-panel';
+export { TeamAuraSwitchesPanel } from './team-aura-switches-panel';
 export { HeroIdentityRollPanel } from './hero-identity-roll-panel';
 export { HeroAbilitiesPanel } from './hero-abilities-panel';
 export type { AbilityPanelEditing } from './hero-abilities-panel';

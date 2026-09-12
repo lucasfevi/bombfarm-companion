@@ -25,9 +25,9 @@ import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import {
   DEFAULT_CONTEXT,
   DEFAULT_TREE,
-  type AccountShared,
   type HeroRecord,
 } from '@/shared/lib/storage';
+import type { AccountShared } from '@bombfarm/domain/shims/storage';
 
 /** Luck is in PERCENTAGE POINTS on a sheet, the same convention `farm-rate.ts` documents. */
 const sheet = (luck: number): SheetStats => ({

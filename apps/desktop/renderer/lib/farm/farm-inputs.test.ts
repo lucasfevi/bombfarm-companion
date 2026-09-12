@@ -120,14 +120,6 @@ describe('candidate completion is the only synthesis performed', () => {
   });
 });
 
-describe('team buffs are derived from this roster and are never an override', () => {
-  it('teamBuffsOverride is null — there is no team-buffs UI on the desktop for one to come from', () => {
-    const inputs = required(buildFarmInputs(viewOf(basePayload()), DEFAULT_FARM_CONTROLS), 'expected inputs');
-    expect(inputs.teamBuffsOverride).toBeNull();
-    expect(Object.values(inputs.effectiveTeamBuffs).every((value) => Number.isFinite(value))).toBe(true);
-  });
-});
-
 describe('the House cycle anchor mirrors the live house configuration', () => {
   it('houseCycleSecsHouseIdx/Level equal houseIdx/houseLevel, because both come from one payload read', () => {
     const inputs = required(buildFarmInputs(offlineFixtureView(), DEFAULT_FARM_CONTROLS), 'expected inputs');

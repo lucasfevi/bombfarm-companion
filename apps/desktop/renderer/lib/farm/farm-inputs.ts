@@ -8,7 +8,6 @@
  * Account screen gates on the same rule, per panel.
  */
 import { ACCOUNT_SECTIONS } from '@bombfarm/domain/account-fidelity';
-import { computeTeamBuffsFromDeployed } from '@bombfarm/domain/team-buffs';
 import { canonicalStringify } from '@bombfarm/contracts';
 import type { AccountView } from '@bombfarm/contracts';
 import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
@@ -77,12 +76,6 @@ export function buildFarmInputs(view: AccountView, controls: FarmControls): Farm
     treeEnergy: tree.energy,
     treeTeamCoinPct: tree.teamCoinPct ?? 0,
     treeLuckFlatPct: tree.luckFlatPct,
-    // Always derived from this same roster, never an override: there is no team-buffs UI on the
-    // desktop, so there is nothing for an override to record. A stored zero here would leave
-    // every carrier reading zero benefit from its own aura, with no field on screen to correct
-    // it.
-    effectiveTeamBuffs: computeTeamBuffsFromDeployed(heroes),
-    teamBuffsOverride: null,
     houseIdx,
     houseLevel,
     slots: account.slots ?? undefined,
@@ -118,13 +111,13 @@ function withoutCaptureTime(hero: HeroRecord): Record<string, unknown> {
 
 /**
  * A value identity for everything the farm board recomputes from — `readFarmDepTuple`'s
- * nineteen members, compared as values rather than as references.
+ * eighteen members, compared as values rather than as references.
  *
  * `@bombfarm/farm/core` compares that tuple with `Object.is` and places the matching obligation
- * on the host app: the three object members (`heroes`, `effectiveTeamBuffs`,
- * `farmPoolOverrides`) must keep their identity across a read that changed nothing. This app
- * cannot honour it — {@link buildFarmInputs} re-parses the payload and allocates two of the
- * three afresh on every account read — so it answers the question by value instead.
+ * on the host app: the two object members (`heroes`, `farmPoolOverrides`) must keep their
+ * identity across a read that changed nothing. This app cannot honour it —
+ * {@link buildFarmInputs} re-parses the payload and allocates the roster afresh on every account
+ * read — so it answers the question by value instead.
  */
 export function farmBoardDepKey(inputs: FarmInputs): string {
   const [heroes, ...rest] = readFarmDepTuple(inputs);

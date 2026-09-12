@@ -79,6 +79,9 @@ import * as GameArt from '@bombfarm/game-art';
 // every promotion above. The first three lay out a waterfall step's cell; `workspaceClass` sizes
 // the optimizer screen's own workspace column. The optimizer screen that draws them moved into
 // `@bombfarm/team-plan`.
+// selectFieldHeightClass (2026-09-11): the default select field's height, named so a control
+// drawn beside one can take the same — the combat phase panel's Back button stands as tall as
+// the phase picker it follows, and that panel is `@bombfarm/farm`'s.
 const FROZEN_BARREL_VALUE_EXPORTS = [
   'AbilityCard',
   'Accordion',
@@ -214,6 +217,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'phasesBoardRosterClass',
   'phasesBoardRosterSpanClass',
   'rankModeSelectClass',
+  'selectFieldHeightClass',
   'selectFieldRecipe',
   'setupBannerRecipe',
   'shellDensityFor',

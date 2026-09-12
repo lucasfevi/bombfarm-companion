@@ -23,8 +23,6 @@ function inputsWith(overrides: Partial<FarmInputs> = {}): FarmInputs {
     treeEnergy: 0,
     treeTeamCoinPct: 0,
     treeLuckFlatPct: 0,
-    effectiveTeamBuffs: {},
-    teamBuffsOverride: null,
     houseIdx: 0,
     houseLevel: 1,
     slots: undefined,
@@ -106,10 +104,9 @@ describe('a proposal is renderable only against the inputs it was solved from', 
   });
 
   it('an equal-by-value tuple read again is still the same proposal — a re-render is not an edit', () => {
-    // The three members compared by REFERENCE, held so both records carry the same ones.
+    // The two members compared by REFERENCE, held so both records carry the same ones.
     const byReference = {
       heroes: [] as FarmInputs['heroes'],
-      effectiveTeamBuffs: {} as FarmInputs['effectiveTeamBuffs'],
       farmPoolOverrides: {},
     };
     const state = solved(inputsWith(byReference));

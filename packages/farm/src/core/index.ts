@@ -8,8 +8,10 @@
 export type { FarmInputs } from './farm-inputs';
 export {
   buildAccount,
+  buildRosterAccount,
   computeFarmProposedRows,
   computeFarmRanking,
+  computeFarmTeamBuffs,
   deriveFarmPoolEntries,
   FARM_RESPEC_WORTH_MAKING_PCT,
   farmDepsEqual,
