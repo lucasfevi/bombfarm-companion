@@ -60,10 +60,6 @@ export const teamPlanPageEn = {
     'Stat points only. No gear moves and no forge work — the search never even prices them.',
   teamPlanAllowedChangesHintGear:
     'Gear only. No point resets, so no respec cost either.',
-  teamPlanAllowedChangesNotePoints:
-    'You limited this plan to stat points, so it proposes no gear moves and no forge work — the search never considered them, and a plan allowed to move gear could find more.',
-  teamPlanAllowedChangesNoteGear:
-    'You limited this plan to gear, so it proposes no point resets — the search never considered them, and a plan allowed to re-spend points could find more.',
   teamPlanIgnoreCrowdingLabel: 'Keep every hero geared',
   teamPlanIgnoreCrowdingAria: 'Score as if the field always had room, and fill every empty slot',
   teamPlanIgnoreCrowdingHintOff:
@@ -117,12 +113,6 @@ export const teamPlanPageEn = {
   teamPlanHeroBreakdownGearEmpty: 'No proposed items for this hero.',
   teamPlanHeroBreakdownPointsTitle: 'Point reset',
   teamPlanHeroBreakdownPointsEmpty: 'No point reset is recommended for this hero.',
-  teamPlanDisclosuresTitle: 'Assumptions & limits',
-  teamPlanUnmodelledAbilities: 'Unmodelled abilities in scope: {list}',
-  teamPlanLoadoutDrift:
-    'Stored loadout differs from the inventory snapshot for: {heroes}. This page treats the inventory as authoritative.',
-  teamPlanExcludedItems:
-    'Excluded from the pool — market-blocked: {market}, unresolved items: {unresolved}, foreign owners: {foreign}.',
   teamPlanStaleNotice:
     'Inputs changed since this plan was computed — run Build team plan again to refresh.',
   teamPlanBlockedTitle: 'Cannot run — missing birth stats',

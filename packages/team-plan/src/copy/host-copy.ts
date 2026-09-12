@@ -22,13 +22,6 @@ export type TeamPlanHostCopy = {
   /** The remedy shown when gold scoring has no furthest phase to sweep to — points at whichever
    *  screen each host uses to import or re-read the account's `max_phase`. */
   teamPlanObjectiveFarmNeedsMaxPhase: string;
-  /** Names the Account tab, a surface each host draws differently (or, on the desktop, not at
-   *  all under that name). */
-  teamPlanAuraDisclosureDps: string;
-  teamPlanAuraDisclosureFarm: string;
-  /** Names the Planner page/screen, which only the web has. */
-  teamPlanPlannerDivergenceDps: string;
-  teamPlanPlannerDivergenceFarm: string;
   /** Points a reader at "the Optimizer page" from the farm advisor — a cross-screen pointer whose
    *  wording depends on what the host calls that screen and whether it draws this sentence at
    *  all. */

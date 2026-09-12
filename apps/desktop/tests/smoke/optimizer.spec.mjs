@@ -200,7 +200,6 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
     await expect(page.getByRole('heading', { name: /^Search summary$/i, level: 2 })).toBeVisible();
     await expect(page.getByRole('heading', { name: /^Gain breakdown$/i, level: 2 })).toBeVisible();
     await expect(page.getByRole('heading', { name: /Per-hero changes/i, level: 2 })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /^Assumptions & limits$/i, level: 2 })).toBeVisible();
 
     await expect(page.getByText(MAIN_THREAD_FALLBACK_TEXT)).toHaveCount(0);
   });

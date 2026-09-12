@@ -108,7 +108,7 @@ describe('team plan objective copy', () => {
    */
   it('no source file outside the namespace and the resolver reads a suffixed key', () => {
     const suffixed = Object.keys(objectiveNamespace.en).filter((key) => /(Dps|Farm)$/.test(key));
-    expect(suffixed.length).toBeGreaterThanOrEqual(18);
+    expect(suffixed.length).toBeGreaterThanOrEqual(16);
 
     const allowed = [join('shared', 'i18n', 'namespaces', 'team-plan-objective.ts')];
     const offenders: string[] = [];
@@ -152,8 +152,6 @@ describe('team plan objective copy', () => {
     'teamPlanAllowedChangesHintBoth',
     'teamPlanAllowedChangesHintPoints',
     'teamPlanAllowedChangesHintGear',
-    'teamPlanAllowedChangesNotePoints',
-    'teamPlanAllowedChangesNoteGear',
     // The three Optimize arias name the KIND of work a plan may contain, never what it is scored
     // on, so all three render under either objective.
     'teamPlanOptimizeAriaBoth',

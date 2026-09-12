@@ -5,10 +5,6 @@ export const teamPlanObjectivePairsPtBR: TeamPlanObjectivePairsCopy = {
     'Nenhuma fase fixada. O dano é pontuado na fase em que sua conta está agora.',
   teamPlanPhaseHintNoneFarm:
     'Nenhuma fase fixada. A busca escolhe a melhor fase que seu esquadrão aguenta, e diz qual ficou.',
-  teamPlanLuckFrozenDps:
-    'Pontos já em Sorte ficam onde estão — esta busca nunca mexe em Sorte, em nenhuma direção.',
-  teamPlanLuckFrozenFarm:
-    'Pontos já em Sorte ficam onde estão — esta busca nunca mexe em Sorte, em nenhuma direção, mesmo que Sorte aumente as chances de drop e portanto o ouro por hora.',
   teamPlanHeroDeltaNoteDps:
     'Os totais de antes/depois acima são de combate efetivo — as auras de time estão aplicadas e não são limitadas aos tetos de exibição do jogo (100% de chance de crítico, 80% de redução de recarga); isso é proposital, pois essa visão sem teto e com auras é o que a busca realmente otimiza. Abaixo, Ficha do herói espelha o que o próprio painel do jogo mostra (com teto); Stats de combate mantém a mesma visão sem teto.',
   teamPlanHeroDeltaNoteFarm:
@@ -37,12 +33,4 @@ export const teamPlanObjectivePairsPtBR: TeamPlanObjectivePairsCopy = {
     'Temporariamente atrás em {delta} dps — o passo Resetar pontos leva além de hoje.',
   teamPlanGearDipNoteFarm:
     'Temporariamente atrás em {delta} ouro/h — o passo Resetar pontos leva além de hoje.',
-  teamPlanSaturationCalloutDps:
-    'Seu campo está lotado (carga de batalha {duty} vs {slots} slots). O DPS do roster é dividido entre quem pode lutar ao mesmo tempo — só orientação; esta página não banca nem doa heróis por você.',
-  teamPlanSaturationCalloutFarm:
-    'Seu campo está lotado (carga de batalha {duty} vs {slots} slots). O ganho por hora do esquadrão é dividido entre quem pode lutar ao mesmo tempo — só orientação; esta página não banca nem doa heróis por você.',
-  teamPlanForgeSkippedNoteDps:
-    'A forja até o seu mínimo ficou de fora deste plano — ela não melhorou o DPS do roster.',
-  teamPlanForgeSkippedNoteFarm:
-    'A forja até o seu mínimo ficou de fora deste plano — ela não melhorou o ouro por hora do esquadrão.',
 };

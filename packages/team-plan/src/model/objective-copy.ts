@@ -18,12 +18,7 @@ export type TeamPlanObjectiveCopy = {
   totalGainValue: string;
   resultsHeader: string;
   gearDipNote: string;
-  saturationCallout: string;
-  auraDisclosure: string;
-  plannerDivergence: string;
-  forgeSkippedNote: string;
   phaseHintNone: string;
-  luckFrozenNote: string;
   heroDeltaNote: string;
 };
 
@@ -39,12 +34,7 @@ export function teamPlanObjectiveCopy(
         totalGainValue: strings.teamPlanTotalGainValueFarm,
         resultsHeader: strings.teamPlanResultsHeaderFarm,
         gearDipNote: strings.teamPlanGearDipNoteFarm,
-        saturationCallout: strings.teamPlanSaturationCalloutFarm,
-        auraDisclosure: strings.teamPlanAuraDisclosureFarm,
-        plannerDivergence: strings.teamPlanPlannerDivergenceFarm,
-        forgeSkippedNote: strings.teamPlanForgeSkippedNoteFarm,
         phaseHintNone: strings.teamPlanPhaseHintNoneFarm,
-        luckFrozenNote: strings.teamPlanLuckFrozenFarm,
         heroDeltaNote: strings.teamPlanHeroDeltaNoteFarm,
       }
     : {
@@ -54,12 +44,7 @@ export function teamPlanObjectiveCopy(
         totalGainValue: strings.teamPlanTotalGainValueDps,
         resultsHeader: strings.teamPlanResultsHeaderDps,
         gearDipNote: strings.teamPlanGearDipNoteDps,
-        saturationCallout: strings.teamPlanSaturationCalloutDps,
-        auraDisclosure: strings.teamPlanAuraDisclosureDps,
-        plannerDivergence: strings.teamPlanPlannerDivergenceDps,
-        forgeSkippedNote: strings.teamPlanForgeSkippedNoteDps,
         phaseHintNone: strings.teamPlanPhaseHintNoneDps,
-        luckFrozenNote: strings.teamPlanLuckFrozenDps,
         heroDeltaNote: strings.teamPlanHeroDeltaNoteDps,
       };
 }

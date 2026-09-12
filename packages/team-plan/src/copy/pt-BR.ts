@@ -62,10 +62,6 @@ export const teamPlanPagePtBR: TeamPlanPageCopy = {
     'Só pontos. Sem movimentações de itens e sem forjas — a busca nem chega a avaliá-las.',
   teamPlanAllowedChangesHintGear:
     'Só itens. Sem resets de pontos, então também sem custo de respec.',
-  teamPlanAllowedChangesNotePoints:
-    'Você limitou este plano a pontos, então ele não propõe movimentações de itens nem forjas — a busca nunca as considerou, e um plano livre para mexer em itens poderia achar mais.',
-  teamPlanAllowedChangesNoteGear:
-    'Você limitou este plano a itens, então ele não propõe resets de pontos — a busca nunca os considerou, e um plano livre para redistribuir pontos poderia achar mais.',
   teamPlanIgnoreCrowdingLabel: 'Manter todos equipados',
   teamPlanIgnoreCrowdingAria: 'Calcular como se o campo sempre tivesse vaga, e preencher todos os espaços vazios',
   teamPlanIgnoreCrowdingHintOff:
@@ -119,12 +115,6 @@ export const teamPlanPagePtBR: TeamPlanPageCopy = {
   teamPlanHeroBreakdownGearEmpty: 'Nenhum item proposto para este herói.',
   teamPlanHeroBreakdownPointsTitle: 'Reset de pontos',
   teamPlanHeroBreakdownPointsEmpty: 'Nenhum reset de pontos é recomendado para este herói.',
-  teamPlanDisclosuresTitle: 'Premissas e limites',
-  teamPlanUnmodelledAbilities: 'Habilidades não modeladas no escopo: {list}',
-  teamPlanLoadoutDrift:
-    'O loadout salvo difere do inventário para: {heroes}. Esta página usa o inventário como verdade.',
-  teamPlanExcludedItems:
-    'Fora do pool — bloqueados no mercado: {market}, itens sem definição: {unresolved}, donos fora do roster: {foreign}.',
   teamPlanStaleNotice:
     'Os inputs mudaram desde este plano — rode Montar plano do time de novo para atualizar.',
   teamPlanBlockedTitle: 'Não foi possível rodar — falta roll de nascimento',

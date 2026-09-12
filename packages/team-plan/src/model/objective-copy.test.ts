@@ -5,7 +5,7 @@ import { teamPlanObjectiveCopy } from './objective-copy';
 
 type Lang = 'en' | 'pt';
 
-/** The thirteen host members, inline — this package ships no host implementation of its own. */
+/** The nine host members, inline — this package ships no host implementation of its own. */
 const TEST_HOST_COPY_EN: TeamPlanHostCopy = {
   teamPlanEmptyNoRosterTitle: 'Import heroes first',
   teamPlanEmptyNoRosterBody: 'Export your save, then import to load your roster.',
@@ -15,10 +15,6 @@ const TEST_HOST_COPY_EN: TeamPlanHostCopy = {
   teamPlanEmptyAllLeaveAloneBody: 'Set at least one hero to Optimize.',
   teamPlanBlockedBody: 'Re-export your save for: {heroes}.',
   teamPlanObjectiveFarmNeedsMaxPhase: 'Pick a phase, re-import the save, or score for damage.',
-  teamPlanAuraDisclosureDps: 'Team auras drive the Planner DPS too.',
-  teamPlanAuraDisclosureFarm: 'Team auras, though the Planner page still reads them.',
-  teamPlanPlannerDivergenceDps: 'Planner DPS can differ from this page.',
-  teamPlanPlannerDivergenceFarm: "The Planner's own figures can differ.",
   teamPlanFarmAdvisorPointer: 'For gear moves and forge work as well, use the Optimizer page.',
 };
 
@@ -31,10 +27,6 @@ const TEST_HOST_COPY_PT: TeamPlanHostCopy = {
   teamPlanEmptyAllLeaveAloneBody: 'Marque pelo menos um herói como Otimizar.',
   teamPlanBlockedBody: 'Reexporte o save para: {heroes}.',
   teamPlanObjectiveFarmNeedsMaxPhase: 'Escolha uma fase, reimporte o save, ou pontue por dano.',
-  teamPlanAuraDisclosureDps: 'Auras de time também movem o DPS do Planner.',
-  teamPlanAuraDisclosureFarm: 'Auras de time, embora a página do Planner ainda os leia.',
-  teamPlanPlannerDivergenceDps: 'O DPS do Planner pode divergir desta página.',
-  teamPlanPlannerDivergenceFarm: 'Os números do próprio Planner podem divergir.',
   teamPlanFarmAdvisorPointer: 'Para movimentações de itens e forjas também, use a página Otimizador.',
 };
 

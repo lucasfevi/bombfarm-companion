@@ -430,13 +430,6 @@ export type TeamPlan = {
   requiresFullPlan: boolean;
   /** How far below today the gear step sits, as a POSITIVE number. 0 when requiresFullPlan is false. */
   gearDipDps: number;
-  disclosures: {
-    unmodelledAbilities: { abilityId: string; heroNames: string[] }[];
-    loadoutDriftHeroNames: string[];
-    foreignOwnedItemCount: number;
-    marketBlockedItemCount: number;
-    unresolvedDefItemCount: number;
-  };
   run: {
     rounds: number;
     evaluations: number;

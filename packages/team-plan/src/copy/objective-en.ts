@@ -12,13 +12,6 @@ export const teamPlanObjectivePairsEn = {
     'No phase pinned. Damage is scored at the phase your account is on now.',
   teamPlanPhaseHintNoneFarm:
     'No phase pinned. The search picks the best phase your squad can hold, and says which one it settled on.',
-  /** Rendered only when a plan may respend points at all. Luck is not part of `HeroSheet`, so no
-   *  points search can reach it in either direction — worth saying under damage (your Luck is
-   *  safe) and worth saying louder under gold (a stat that earns is being held still). */
-  teamPlanLuckFrozenDps:
-    'Points already in Luck stay put — this search never moves Luck, in either direction.',
-  teamPlanLuckFrozenFarm:
-    'Points already in Luck stay put — this search never moves Luck, in either direction, even though Luck raises drop rates and so gold per hour.',
   /** The per-hero rows are `perHero[].sustained` — DPS — whatever the roster was scored on
    *  (`waterfall.ts`). Under gold that is a DIFFERENT quantity from the total above it, and the
    *  rows do not sum to it, so the farm half has to say so rather than claim they are the thing
@@ -54,12 +47,4 @@ export const teamPlanObjectivePairsEn = {
     'Temporarily behind by {delta} dps — the Reset points step brings it past today.',
   teamPlanGearDipNoteFarm:
     'Temporarily behind by {delta} gold/h — the Reset points step brings it past today.',
-  teamPlanSaturationCalloutDps:
-    'Your field is full (battle load {duty} vs {slots} slots). Roster DPS is shared across who can fight at once — advice only; this page will not bench or donate heroes for you.',
-  teamPlanSaturationCalloutFarm:
-    'Your field is full (battle load {duty} vs {slots} slots). The squad’s earning rate is shared across who can fight at once — advice only; this page will not bench or donate heroes for you.',
-  teamPlanForgeSkippedNoteDps:
-    'Forging to your minimum was left out of this plan — it did not improve roster DPS.',
-  teamPlanForgeSkippedNoteFarm:
-    'Forging to your minimum was left out of this plan — it did not improve the squad’s gold per hour.',
 } as const;

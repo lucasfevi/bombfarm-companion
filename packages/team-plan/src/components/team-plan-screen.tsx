@@ -20,7 +20,6 @@ import { TeamPlanRunSummary } from './team-plan-run-summary';
 import { TeamPlanOptimizingModal } from './team-plan-optimizing-modal';
 import { WaterfallPanel } from './waterfall-panel';
 import { HeroDeltaTable } from './hero-delta-table';
-import { PlanDisclosures } from './plan-disclosures';
 
 export type TeamPlanScreenData = {
   inputs: TeamPlanInputs;
@@ -190,13 +189,6 @@ export function TeamPlanScreenView({
                     copy={objectiveCopy}
                     heroes={heroes}
                     inventoryItems={inventoryItems}
-                  />
-                  <PlanDisclosures
-                    t={t}
-                    lang={lang}
-                    plan={displayPlan}
-                    requestedForgeFloor={controls.forgeFloor}
-                    copy={objectiveCopy}
                   />
                 </div>
               </section>

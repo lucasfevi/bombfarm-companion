@@ -256,6 +256,15 @@ const KEYS_REMOVED: readonly string[] = [
   // carry for the hero being looked at. Its two strings have no reader left.
   'resetAdviceRosterBanner',
   'resetAdviceRosterHero',
+  // The Optimizer's assumptions-and-limits panel is withdrawn (2026-09-12): its content was
+  // judged technical and useless to a player, and the rest of the results section is unchanged.
+  // The Dps/Farm-suffixed saturation/aura/divergence/forge-skipped/luck-frozen/allowed-changes
+  // strings that also fed only that panel never reached a fixture re-baseline, so they simply
+  // leave `KEYS_ADDED` below rather than joining this list.
+  'teamPlanDisclosuresTitle',
+  'teamPlanUnmodelledAbilities',
+  'teamPlanLoadoutDrift',
+  'teamPlanExcludedItems',
 ];
 
 /**
@@ -484,11 +493,6 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanOptimizeAriaGear',
   'teamPlanPhaseHintNoneDps',
   'teamPlanPhaseHintNoneFarm',
-  // Luck is not part of `HeroSheet`, so no points search can reach it in either direction. The
-  // page had never said so, which matters most under the gold objective: a stat that raises drop
-  // rates, and so gold per hour, is being held still while gold per hour is optimized.
-  'teamPlanLuckFrozenDps',
-  'teamPlanLuckFrozenFarm',
   'teamPlanHeroDeltaNoteDps',
   'teamPlanHeroDeltaNoteFarm',
   'farmRespecPointsOnly',
@@ -514,8 +518,6 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanAllowedChangesHintBoth',
   'teamPlanAllowedChangesHintPoints',
   'teamPlanAllowedChangesHintGear',
-  'teamPlanAllowedChangesNotePoints',
-  'teamPlanAllowedChangesNoteGear',
   'teamPlanObjectiveLabel',
   'teamPlanObjectiveAria',
   'teamPlanObjectiveOptionDamage',
@@ -534,14 +536,6 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanResultsHeaderFarm',
   'teamPlanGearDipNoteDps',
   'teamPlanGearDipNoteFarm',
-  'teamPlanSaturationCalloutDps',
-  'teamPlanSaturationCalloutFarm',
-  'teamPlanAuraDisclosureDps',
-  'teamPlanAuraDisclosureFarm',
-  'teamPlanPlannerDivergenceDps',
-  'teamPlanPlannerDivergenceFarm',
-  'teamPlanForgeSkippedNoteDps',
-  'teamPlanForgeSkippedNoteFarm',
   'downloadScreenForgeTitle',
   'downloadScreenForgeItem1',
   'downloadScreenForgeItem2',
@@ -1016,8 +1010,9 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   // declared above) stops saying its totals "exclude the scored hero" — false since every
   // carrier's own rank started counting — and says they are weighted by predicted uptime, the
   // Farm board's own form; `effectiveTip` (declared above) now names the aura switches that sit
-  // above the panel it captions. The two Optimizer disclosures that said the same are in
-  // `KEYS_ADDED`, so their values are unconstrained here. No new entry.
+  // above the panel it captions. The two Optimizer disclosures that said the same were in
+  // `KEYS_ADDED` and are now withdrawn along with the panel that rendered them (2026-09-12) — see
+  // the panel-removal note in `KEYS_REMOVED` above. No new entry.
 ];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {

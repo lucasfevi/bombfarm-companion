@@ -620,10 +620,6 @@ export const ptBR: Copy = {
   optimizerEmptyAllLeaveAloneBody: 'Marque pelo menos um herói como Otimizar antes de rodar um plano.',
   optimizerBlockedBody: 'Estes heróis não têm roll de nascimento na leitura da conta, então a busca não consegue pontuá-los: {heroes}.',
   optimizerFarmNeedsMaxPhase: 'Deixar a busca escolher a própria fase exige a fase mais distante que sua conta alcançou, que esta leitura não trouxe. Escolha uma fase acima, ou pontue por dano.',
-  optimizerAuraDisclosureDps: 'Auras de time aqui são precificadas pelo roster em rotação — todo herói que você não doa, cada um ponderado pelo seu tempo ativo previsto — do mesmo jeito que a tela Farm. A tela Heróis precifica a vaga de um herói só, com os interruptores de aura, então o DPS dela pode divergir desta tela.',
-  optimizerAuraDisclosureFarm: 'Auras de time aqui são precificadas pelo roster em rotação — todo herói que você não doa, cada um ponderado pelo seu tempo ativo previsto — do mesmo jeito que a tela Farm. A tela Heróis precifica a vaga de um herói só, com os interruptores de aura, então os números dela podem divergir desta tela.',
-  optimizerDivergenceDps: 'O DPS da tela Heróis pode divergir desta tela quando os interruptores de aura contam os outros portadores em campo o tempo todo em vez de pelo tempo ativo, ou quando {ability} é modelada só aqui.',
-  optimizerDivergenceFarm: 'Os números da tela Farm podem divergir desta tela quando o pool de rotação de lá e o escopo daqui discordam sobre quem vai a campo, ou quando {ability} é modelada só aqui.',
 
   heroAvatarCol: 'Avatar',
   heroBattleActive: 'Ativado',
