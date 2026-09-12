@@ -655,10 +655,10 @@ export const en = {
   optimizerEmptyAllLeaveAloneBody: 'Set at least one hero to Optimize before running a plan.',
   optimizerBlockedBody: 'These heroes carry no birth roll in the account read, so the search cannot score them: {heroes}.',
   optimizerFarmNeedsMaxPhase: 'Letting the search pick its own phase needs the furthest phase your account has reached, which this read did not carry. Pick a phase above, or score for damage.',
-  optimizerAuraDisclosureDps: 'Team auras here come from the scoped roster, exclude the hero being scored, and are weighted by each carrier’s duty. The Farm and Heroes screens price auras from the deployed roster instead, so their DPS can differ from this screen’s.',
-  optimizerAuraDisclosureFarm: 'Team auras here come from the scoped roster, exclude the hero being scored, and are weighted by each carrier’s duty. The Farm and Heroes screens price auras from the deployed roster instead, so their gold figures can differ from this screen’s.',
-  optimizerDivergenceDps: 'The Heroes screen’s DPS can differ from this screen when auras are priced from the deployed roster rather than the scoped one, or when {ability} is modelled here only.',
-  optimizerDivergenceFarm: 'The Farm screen’s own figures can differ from this screen when auras are priced from the deployed roster rather than the scoped one, or when {ability} is modelled here only.',
+  optimizerAuraDisclosureDps: 'Team auras here are priced over the roster in rotation — every hero you do not donate, each weighted by its predicted uptime — the same way the Farm screen prices them. The Heroes screen prices one hero’s seat with its aura switches instead, so its DPS can differ from this screen’s.',
+  optimizerAuraDisclosureFarm: 'Team auras here are priced over the roster in rotation — every hero you do not donate, each weighted by its predicted uptime — the same way the Farm screen prices them. The Heroes screen prices one hero’s seat with its aura switches instead, so its figures can differ from this screen’s.',
+  optimizerDivergenceDps: 'The Heroes screen’s DPS can differ from this screen when its aura switches count the other carriers at full presence rather than by uptime, or when {ability} is modelled here only.',
+  optimizerDivergenceFarm: 'The Farm screen’s figures can differ from this screen when its rotation pool and the scope here disagree on who fields, or when {ability} is modelled here only.',
 
   // hero*/gear*/import*/roster*/switch*/mode*/rank* — hero-identity vocabulary the farm screen's
   // roster surfaces read as one structural contract. Named exactly as that contract names them.
