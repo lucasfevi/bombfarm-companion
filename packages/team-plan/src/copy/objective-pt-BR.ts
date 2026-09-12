@@ -6,9 +6,9 @@ export const teamPlanObjectivePairsPtBR: TeamPlanObjectivePairsCopy = {
   teamPlanPhaseHintNoneFarm:
     'Nenhuma fase fixada. A busca escolhe a melhor fase que seu esquadrão aguenta, e diz qual ficou.',
   teamPlanHeroDeltaNoteDps:
-    'Os totais de antes/depois acima são de combate efetivo — as auras de time estão aplicadas e não são limitadas aos tetos de exibição do jogo (100% de chance de crítico, 80% de redução de recarga); isso é proposital, pois essa visão sem teto e com auras é o que a busca realmente otimiza. Abaixo, Ficha do herói espelha o que o próprio painel do jogo mostra (com teto); Stats de combate mantém a mesma visão sem teto.',
+    'Estes números por herói são DPS de combate efetivo, com as auras de time aplicadas. Abaixo, Ficha do herói espelha o que o próprio painel do jogo mostra; Stats de combate é a visão que a busca pontuou.',
   teamPlanHeroDeltaNoteFarm:
-    'Estes números por herói são DPS, não ouro por hora — esta busca pontuou o ganho do esquadrão, que é uma taxa que toda a rotação produz e não se divide por herói, então eles não vão somar o total acima. São de combate efetivo: as auras de time estão aplicadas e não são limitadas aos tetos de exibição do jogo (100% de chance de crítico, 80% de redução de recarga). Abaixo, Ficha do herói espelha o que o próprio painel do jogo mostra (com teto); Stats de combate mantém a mesma visão sem teto.',
+    'Estes números por herói são DPS, não ouro por hora — esta busca pontuou o ganho do esquadrão, que é uma taxa que toda a rotação produz e não se divide por herói, então eles não vão somar o total acima. As auras de time estão aplicadas. Abaixo, Ficha do herói espelha o que o próprio painel do jogo mostra; Stats de combate é a visão que a busca pontuou.',
   teamPlanObjectiveLabel: 'Pontuar por',
   teamPlanObjectiveAria: 'O que esta busca usa para pontuar um roster',
   teamPlanObjectiveOptionDamage: 'DPS',

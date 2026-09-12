@@ -17,9 +17,9 @@ export const teamPlanObjectivePairsEn = {
    *  rows do not sum to it, so the farm half has to say so rather than claim they are the thing
    *  the search optimized. */
   teamPlanHeroDeltaNoteDps:
-    'The before/after totals above are combat-effective — team auras are applied and aren’t clamped to the game’s display caps (100% crit chance, 80% cooldown reduction); that’s deliberate, since this uncapped, aura-inclusive view is what the search actually optimizes against. Below, Hero sheet mirrors what the game’s own panel shows (capped); Combat stats keeps that same uncapped view.',
+    'These per-hero figures are combat-effective DPS, with team auras applied. Below, Hero sheet mirrors what the game’s own panel shows; Combat stats is the view the search scored.',
   teamPlanHeroDeltaNoteFarm:
-    'These per-hero figures are DPS, not gold per hour — this search scored the squad’s earning rate, which is a rate the whole rotation produces and does not divide per hero, so these will not add up to the total above. They are combat-effective: team auras are applied and aren’t clamped to the game’s display caps (100% crit chance, 80% cooldown reduction). Below, Hero sheet mirrors what the game’s own panel shows (capped); Combat stats keeps that same uncapped view.',
+    'These per-hero figures are DPS, not gold per hour — this search scored the squad’s earning rate, which is a rate the whole rotation produces and does not divide per hero, so they will not add up to the total above. Team auras are applied. Below, Hero sheet mirrors what the game’s own panel shows; Combat stats is the view the search scored.',
   teamPlanObjectiveLabel: 'Score for',
   teamPlanObjectiveAria: 'What this search scores a roster on',
   teamPlanObjectiveOptionDamage: 'DPS',
