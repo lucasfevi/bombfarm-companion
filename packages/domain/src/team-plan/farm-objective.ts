@@ -45,6 +45,7 @@ import {
 import { computeCombatMults } from '../derive';
 import { fieldSeconds } from '../model';
 import { computeTeamBuffsOverRotation, type TeamBuffId } from '../team-buffs';
+import { isSquadScope } from './auras';
 import { scoreHeroLoadout } from './score';
 import type { Loadout, PointAlloc } from '../gear/types';
 import type {
@@ -161,17 +162,8 @@ function priceAuras(
   return computeTeamBuffsOverRotation(squadContexts, presence);
 }
 
-/**
- * Which of the plan's heroes are on the rotation the objective prices.
- *
- * Optimize and leave-alone both farm; only donate does not. That matches the estimator's own
- * rule, which drops a hero the game will not field (`battleAllowed === false`) — the very
- * condition the plan turns into a default donate scope. An explicit Donate says the player is
- * stripping the hero for parts, so it leaves the rotation too.
- */
-export function isSquadScope(scope: HeroPlanContext['scope']): boolean {
-  return scope === 'optimize' || scope === 'leaveAlone';
-}
+/** The rule both objectives share now lives beside the aura total that applies it. */
+export { isSquadScope };
 
 /**
  * The once-per-run setup, over the SQUAD in roster order (see {@link TeamPlanFarmObjective}).

@@ -20,8 +20,10 @@ objective and the Farm board took the expected value of the capped sum instead.
 game will field, weighted by the uptime the model predicts for it, the cap taken inside the
 expectation. The Optimizer's damage objective moves onto it — on a roster with one carrier per
 aura nothing changes; three Fôlego carriers that summed to 60 against a cap of 20 move a plan's
-DPS by −3.7%. The phase explorer beside the Farm board prices the same way, on both apps, so it
-and the board agree.
+DPS by −3.7% — and, like the gold objective, it now counts a hero you leave alone: that hero
+still fields, so its aura reaches the rest of the roster at the duty its untouched build sustains.
+Only a donated hero is out, on both. The phase explorer beside the Farm board prices the same
+way, on both apps, so it and the board agree.
 
 **A hero's own screen asks a narrower question, and gets a control.** The Heroes screen and the
 Combat tab price one hero on the field: its own aura always counts, and every other carrier is a

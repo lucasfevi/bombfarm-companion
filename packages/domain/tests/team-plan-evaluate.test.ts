@@ -487,7 +487,7 @@ describe('evaluateRoster', () => {
     expect(typeof result.auras.grito_guerra).toBe('number');
   });
 
-  it('leaveAlone hero excluded from perHero', () => {
+  it('leaveAlone hero excluded from perHero, but carried in dutyByHeroId — it still fields', () => {
     const input = fixtureEvaluation('payload-20260812-8heroes.json');
     const firstId = input.contexts[0]!.heroId;
     const scoped = {
@@ -498,5 +498,25 @@ describe('evaluateRoster', () => {
     };
     const result = evaluateRoster(scoped);
     expect(result.perHero[firstId]).toBeUndefined();
+    expect(result.dutyByHeroId[firstId]).toBeGreaterThan(0);
+  });
+
+  it('a leave-alone carrier’s aura reaches every optimize hero, and a donated carrier’s does not', () => {
+    const input = fixtureEvaluation('payload-20260812-8heroes.json');
+    const carrierId = input.contexts[0]!.heroId;
+    const withScope = (scope: 'leaveAlone' | 'donate') => ({
+      ...input,
+      contexts: input.contexts.map((c) =>
+        c.heroId === carrierId
+          ? { ...c, scope, abilities: { ...c.abilities, grito_guerra: 20 } }
+          : { ...c, scope: 'optimize' as const },
+      ),
+    });
+    const leftAlone = evaluateRoster(withScope('leaveAlone'));
+    const donated = evaluateRoster(withScope('donate'));
+    expect(donated.auras.grito_guerra).toBe(0);
+    expect(leftAlone.auras.grito_guerra).toBeGreaterThan(0);
+    expect(leftAlone.auras.grito_guerra).toBeLessThanOrEqual(20);
+    expect(leftAlone.objective).toBeGreaterThan(donated.objective);
   });
 });

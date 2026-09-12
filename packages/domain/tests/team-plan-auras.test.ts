@@ -81,14 +81,14 @@ describe('computeRosterAuras', () => {
     expect(auras.grito_guerra).toBe(20);
   });
 
-  it('donate and leaveAlone heroes contribute no aura', () => {
+  it('a leave-alone hero fields, so its aura counts at its duty; a donated one does not, whatever duty it is handed', () => {
     const contexts = [
       ctx('opt', 'optimize', { grito_guerra: 10 }),
       ctx('don', 'donate', { grito_guerra: 10 }),
       ctx('leave', 'leaveAlone', { grito_guerra: 10 }),
     ];
-    const auras = computeRosterAuras(contexts, { opt: 1, don: 1, leave: 1 });
-    expect(auras.grito_guerra).toBe(1 * 10 * 1);
+    const auras = computeRosterAuras(contexts, { opt: 1, don: 1, leave: 0.5 });
+    expect(auras.grito_guerra).toBe(1 * 10 * 1 + 1 * 10 * 0.5);
   });
 
   it('halving carrier duty halves aura contribution', () => {
