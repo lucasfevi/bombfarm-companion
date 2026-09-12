@@ -56,11 +56,19 @@ before the cap — feeds the same cycle, through `sustainedDpsWithFuse`.
   team-plan damage golden, the clear-time ratio, the e2e gate figures — is re-baselined in the
   same change, each with its reason in the diff.
 - **Speed is a real next-point candidate.** It ranks third on every fixture hero (≈1.1% per
-  point) and Marcha Acelerada is worth something. Correspondingly, **CDR stops paying once the
-  walk covers the fuse**: a shorter fuse only shortens the cycle on hops the hero would otherwise
-  wait through, so for a hero at `w ≈ 2` cells/s the CDR point scores 0% from ~53% CDR upward,
-  where the serial model had it paying through to the 80% cap. A CDR-dumped build still trips the
-  reset gate — harder, in fact.
+  point) and Marcha Acelerada is worth something. Correspondingly, **CDR pays only on the hops
+  where the fuse is the longer leg**: a shorter fuse does nothing for a hop the hero would spend
+  walking anyway. That split was measured on 2026-09-12 — two heroes fielded alone, one of them
+  respecced from 11.9% to 28.3% CDR with gear held: her fuse-bound hops shortened by the fuse
+  change (−0.32 ± 0.42 s against −0.33 modelled, the other hero as control), her walk-bound hops
+  did not move, and the observed fuse was `2 × (1 − CDR)` to three decimals. Where the crossover
+  falls depends on the hero's walk speed and on the field: the model puts it at ~53% CDR for
+  `w ≈ 2` cells/s and 65–79% for gear-boosted speeds, and above it the CDR point scores 0%, where
+  the serial model had it paying through to the 80% cap. Nothing has been measured past ~28%
+  CDR. The same capture showed the shipped hop histogram overstating how much of a fast hero's
+  field is fuse-bound (≈50% measured against 87–89% implied), so a fast hero's CDR figure reads
+  high, not low. A CDR-dumped build still trips the reset gate — harder, in fact. The capture is
+  held out of band, not in this repo.
 - **The cadence model's approximations now reach per-hero figures.** The hop histogram is fitted
   at one band and scaled to the others by a measured density exponent; the density term runs
   optimistic at the easiest band; the latency and adjacent-hop constants are fitted against squad
