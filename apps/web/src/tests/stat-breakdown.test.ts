@@ -319,7 +319,7 @@ describe('stat-breakdown builder', () => {
     }
   });
 
-  it('F5 — uncapped team: ownTeamSplit note (issue #132: own is always 0, the hero’s own rank never reaches abilityMods)', () => {
+  it('F5 — uncapped team: ownTeamSplit note (PR #139: own is always 0, the hero’s own rank never reaches abilityMods)', () => {
     // Grito de Guerra is a team aura — a hero's own rank (5, here, to prove it is harmlessly
     // ignored) never reaches abilityMods, so the roster-wide team total (10) alone drives
     // attackMult 1.10, under Grito's 20 cap.

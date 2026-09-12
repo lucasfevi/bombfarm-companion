@@ -141,7 +141,7 @@ describe('bombs / DPS', () => {
 
 describe('abilityMods', () => {
   it('stacks modeled combat effects (W3 rank-20 perLevel values)', () => {
-    // grito_guerra and pressagio_mortal are team auras (issue #132) — abilityMods never folds
+    // grito_guerra and pressagio_mortal are team auras (PR #139) — abilityMods never folds
     // them into a hero's own mods, so they are included here only to prove they are harmlessly
     // ignored (no field they used to populate moves).
     const m = abilityMods({

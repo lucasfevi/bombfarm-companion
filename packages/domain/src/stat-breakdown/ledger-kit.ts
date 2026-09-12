@@ -255,7 +255,7 @@ export function teamMultNote(
  * multiplying — Presságio Mortal's crit points since the 2026-08-23 patch. `amount` and `cap`
  * are in the same flat units. There is no own/team split to report: a team aura is a property
  * of the field, so every deployed hero reads the same roster total and the "own" share is 0 by
- * construction (issue #132), which is exactly what {@link teamMultNote} degenerates to too.
+ * construction (PR #139), which is exactly what {@link teamMultNote} degenerates to too.
  */
 export function teamAddNote(amount: number, cap: number): LedgerNote | undefined {
   return amount >= cap - EPS ? 'capped' : undefined;

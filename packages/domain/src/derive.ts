@@ -69,7 +69,7 @@ export function teamDrainMultFromTeamBuffs(teamBuffs: Record<TeamBuffId, number>
  * factors applied once by `applySkillTree`, not a second time on top of the combat sheet.
  *
  * `teamBuffs` must be the FULL roster total for every aura, including whichever hero `mods`
- * belongs to — `abilityMods` never folds a team aura into a hero's own mods (issue #132), so
+ * belongs to — `abilityMods` never folds a team aura into a hero's own mods (PR #139), so
  * there is nothing left for this function to add back on top. Contra o Relógio ("gate power")
  * is a self ability, not a team aura (its wiki `kind` is `gate_power`, not `team_*`) —
  * `gateAttackMult` reads `mods` alone, same as before.
