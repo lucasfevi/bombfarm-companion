@@ -115,7 +115,6 @@ export type AdvisorPipelineResult = {
   attackMult: number;
   energyMult: number;
   speedMult: number;
-  critDmgMult: number;
   teamCritFlat: number;
   /** The whole skill tree, once — surfaced for Wave 6's breakdown. */
   treeSheet: TreeSheetTotals;
@@ -239,7 +238,6 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     speedMult,
     gateAttackMult,
     energyMult,
-    critDmgMult,
     teamCritFlat,
     teamDrainMult,
     dmgMult,
@@ -268,7 +266,6 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     attackMult,
     energyMult,
     speedMult,
-    critDmgMult,
     teamCritFlat,
     treeSheet,
     penetrationPp: mods.penetrationPp,
@@ -375,7 +372,6 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     attackMult,
     energyMult,
     speedMult,
-    critDmgMult,
     teamCritFlat,
     treeSheet,
     A: equippedResult,

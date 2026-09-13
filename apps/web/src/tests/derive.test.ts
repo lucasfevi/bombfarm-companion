@@ -66,17 +66,13 @@ describe('computeCombatMults', () => {
     // Contra o Relógio is a self ability, not a team aura (Fault 1) — gateAttackMult reads
     // `mods` alone, unaffected by teamBuffs.
     expect(m.gateAttackMult).toBeCloseTo(1.2, 6);
-    // Glass Cannon no longer exists (MP5 removed all five keystones; TreeSheetTotals.glassCannon
-    // was deleted with it) — energyMult/critDmgMult are permanent identity here now.
     expect(m.energyMult).toBe(1);
-    expect(m.critDmgMult).toBe(1);
     // `dmgMult` is exactly `mods.dmgMult × (1 + extraDmgPct/100)`.
     expect(m.dmgMult).toBeCloseTo(1.15 * 1.1, 6);
   });
 
-  it('the ComputeCombatMultsInput type no longer accepts a tree damage/energy/keystone term', () => {
-    // Compile-time guard: `treeDanoTotal` / `treeEnergy` / `treeGlassCannon` / `treeTempoDobrado`
-    // must be gone from the type, not merely unused. This assigns a value of the exact input
+  it('the ComputeCombatMultsInput type no longer accepts a tree damage/energy term', () => {
+    // Compile-time guard: `treeDanoTotal` / `treeEnergy` must be gone from the type, not merely unused. This assigns a value of the exact input
     // shape `computeCombatMults` accepts; adding any of them back would fail `pnpm typecheck`,
     // not this assertion.
     const mods = abilityMods({});
@@ -87,8 +83,6 @@ describe('computeCombatMults', () => {
     };
     expect('treeDanoTotal' in input).toBe(false);
     expect('treeEnergy' in input).toBe(false);
-    expect('treeGlassCannon' in input).toBe(false);
-    expect('treeTempoDobrado' in input).toBe(false);
   });
 
   it('the field is a property of the roster, not the hero: carrier and non-carrier read the same total (PR #139)', () => {
@@ -130,7 +124,6 @@ describe('computeCombatMults', () => {
     expect(m.attackMult).toBe(1);
     expect(m.speedMult).toBe(1);
     expect(m.energyMult).toBe(1);
-    expect(m.critDmgMult).toBe(1);
     expect(m.dmgMult).toBe(1);
     expect(m.teamDrainMult).toBe(1);
   });
@@ -158,7 +151,6 @@ describe('derive', () => {
       attackMult: mults.attackMult,
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
-      critDmgMult: mults.critDmgMult,
       teamCritFlat: mults.teamCritFlat,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
@@ -196,7 +188,6 @@ describe('derive', () => {
       attackMult: mults.attackMult,
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
-      critDmgMult: mults.critDmgMult,
       teamCritFlat: mults.teamCritFlat,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
@@ -226,7 +217,6 @@ describe('derive', () => {
       attackMult: 1,
       energyMult: 1,
       speedMult: 1,
-      critDmgMult: 1,
       teamCritFlat: 0,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
@@ -250,7 +240,6 @@ describe('derive', () => {
       attackMult: 1,
       energyMult: 1,
       speedMult: 1,
-      critDmgMult: 1,
       teamCritFlat: 0,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
@@ -289,7 +278,6 @@ describe('derive', () => {
     expect(mults.attackMult).toBe(1);
     expect(mults.speedMult).toBe(1);
     expect(mults.energyMult).toBe(1);
-    expect(mults.critDmgMult).toBe(1);
     expect(mults.dmgMult).toBe(1);
 
     const result = derive({
@@ -303,7 +291,6 @@ describe('derive', () => {
       attackMult: mults.attackMult,
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
-      critDmgMult: mults.critDmgMult,
       teamCritFlat: 0,
       treeSheet,
       penetrationPp: 0,
@@ -355,7 +342,6 @@ describe('derive', () => {
       attackMult: mults.attackMult,
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
-      critDmgMult: mults.critDmgMult,
       teamCritFlat: 0,
       treeSheet,
       penetrationPp: 0,
@@ -394,7 +380,6 @@ describe('derive', () => {
       attackMult: 1,
       energyMult: 1,
       speedMult: 1,
-      critDmgMult: 1,
       teamCritFlat: 0,
       treeSheet: tree,
       penetrationPp: 0,
@@ -432,7 +417,6 @@ describe('derive', () => {
       attackMult: 1,
       energyMult: 1,
       speedMult: 1,
-      critDmgMult: 1,
       teamCritFlat: 0,
       treeSheet: tree,
       penetrationPp: 0,
@@ -478,7 +462,6 @@ describe('derive', () => {
       attackMult: 1,
       energyMult: 1,
       speedMult: 1,
-      critDmgMult: 1,
       teamCritFlat: 0,
       treeSheet: tree,
       penetrationPp: 0,
@@ -510,7 +493,6 @@ describe('derive', () => {
       attackMult: 1,
       energyMult: 1,
       speedMult: 1,
-      critDmgMult: 1,
       teamCritFlat: 0,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,

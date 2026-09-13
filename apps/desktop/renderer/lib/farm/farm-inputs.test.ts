@@ -35,7 +35,7 @@ function basePayload(fidelity: AccountFidelity = resolvedFidelity()): AccountPay
   return {
     account: { phase: 60, max_phase: 88 },
     heroes: [minimalRawHero('h1', 'Alpha')],
-    skills: { totals: { dmg_static: 1.5, crit_dmg_mult: 1 } },
+    skills: { totals: { dmg_static: 1.5 } },
     casa: { active_casa: 1, levels: [10] },
     items: [],
     fidelity,
@@ -139,7 +139,7 @@ describe('maxPhase reaches the compute', () => {
     const payload: AccountPayload = {
       ...basePayload(),
       account: { phase: 60 },
-      skills: { totals: { dmg_static: 1.5, crit_dmg_mult: 1 }, max_phase: 44 },
+      skills: { totals: { dmg_static: 1.5 }, max_phase: 44 },
     };
     const inputs = required(buildFarmInputs(viewOf(payload), DEFAULT_FARM_CONTROLS), 'expected inputs');
     expect(inputs.maxPhase).toBe(44);

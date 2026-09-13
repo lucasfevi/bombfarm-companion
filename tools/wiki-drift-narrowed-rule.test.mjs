@@ -109,9 +109,10 @@ describe('Clause A — no HTTP client call targeting the wiki host, anywhere und
 
 /**
  * Measured directly against this tree (`git grep -c "wiki\.bombfarm\.net" -- apps packages`):
- * 7 files, 11 matches. It was 8 files / 12 matches until the runtime URL builder in
+ * 6 files, 9 matches. It was 8 files / 12 matches until the runtime URL builder in
  * `packages/game-data/src/parsers/inventory.ts` was deleted — item art is bundled-only, so no
- * shipped code composes a wiki URL any more. Every remaining entry is a credit link, an i18n
+ * shipped code composes a wiki URL any more — and 7 / 11 until the domain package's orphaned
+ * copy of the i18n parity fixture was deleted. Every remaining entry is a credit link, an i18n
  * string, a test title, a provenance comment, or the `WIKI_URL` constant itself. The measured
  * tree is the authority here, per this repo's own precedent for reconciling docs against it.
  */
@@ -122,7 +123,6 @@ const HOSTNAME_CENSUS = [
   { file: 'apps/web/src/tests/game-art-chrome.test.ts', count: 1, owner: "test title naming the wiki host" },
   { file: 'packages/domain/src/model/index.ts', count: 1, owner: 'provenance comment' },
   { file: 'packages/domain/src/wiki-assets.ts', count: 1, owner: 'WIKI_URL constant declaration' },
-  { file: 'packages/domain/tests/fixtures/i18n-strings-main.json', count: 2, owner: 'i18n parity fixture' },
 ];
 
 function actualHostnameCensus() {
@@ -135,13 +135,13 @@ function actualHostnameCensus() {
   return counts;
 }
 
-describe('Clause B — the hostname census: 7 files, exact per-file counts, an owner for each', () => {
-  it('the census is exactly the enumerated set, 7 entries, each with a positive count and an owner', () => {
-    expect(HOSTNAME_CENSUS.length).toBe(7);
+describe('Clause B — the hostname census: 6 files, exact per-file counts, an owner for each', () => {
+  it('the census is exactly the enumerated set, 6 entries, each with a positive count and an owner', () => {
+    expect(HOSTNAME_CENSUS.length).toBe(6);
     expect(HOSTNAME_CENSUS.every((e) => e.file && e.count > 0 && e.owner)).toBe(true);
   });
 
-  it('git grep -c "wiki\\.bombfarm\\.net" -- apps packages reports exactly these 7 files with these exact counts', () => {
+  it('git grep -c "wiki\\.bombfarm\\.net" -- apps packages reports exactly these 6 files with these exact counts', () => {
     const actual = actualHostnameCensus();
     const expectedFiles = HOSTNAME_CENSUS.map((e) => e.file).sort();
     const actualFiles = Object.keys(actual).sort();

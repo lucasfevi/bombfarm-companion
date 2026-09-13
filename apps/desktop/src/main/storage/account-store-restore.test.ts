@@ -504,10 +504,10 @@ describe('createAccountStore().restore()', () => {
 
     // --- (T10): the stale-section drop ---
 
-    it('per-section: a keystone-carrying skills row is dropped and its row deleted; a clean sibling heroes row survives byte-identical', () => {
+    it('per-section: a skills row carrying a retired totals key is dropped and its row deleted; a clean sibling heroes row survives byte-identical', () => {
       const open = openTestAccountDb(binding);
       if (!open.db) throw new Error('expected a usable db');
-      const staleSkillsBody = cleanSkillsBody({ keystones: [], abisso_base: 1.05, crit_dmg_mult: 2 });
+      const staleSkillsBody = cleanSkillsBody({ retired_list: [], retired_base: 1.05, retired_mult: 2 });
       const cleanHeroesBody = [cleanHero('h1', 'Bellatrix')];
       seedSectionRow(open.db, '', 'skills', staleSkillsBody, '2026-08-12T00:00:00.000Z');
       seedSectionRow(open.db, '', 'heroes', cleanHeroesBody, '2026-08-12T00:00:01.000Z');
@@ -540,7 +540,7 @@ describe('createAccountStore().restore()', () => {
     it('idempotent: a second restore() after a drop reports the same result and drops nothing further', () => {
       const open = openTestAccountDb(binding);
       if (!open.db) throw new Error('expected a usable db');
-      seedSectionRow(open.db, '', 'skills', cleanSkillsBody({ crit_dmg_mult: 1 }), '2026-08-12T00:00:00.000Z');
+      seedSectionRow(open.db, '', 'skills', cleanSkillsBody({ retired_mult: 1 }), '2026-08-12T00:00:00.000Z');
       seedSectionRow(open.db, '', 'heroes', [cleanHero('h1', 'Bellatrix')], '2026-08-12T00:00:01.000Z');
 
       const { log, records } = createLogSpy();
@@ -558,7 +558,7 @@ describe('createAccountStore().restore()', () => {
     it('store failure ≠ drop: a failing DELETE during cleanup still reports the section missing and never throws', () => {
       const open = openTestAccountDb(binding);
       if (!open.db) throw new Error('expected a usable db');
-      seedSectionRow(open.db, '', 'skills', cleanSkillsBody({ crit_dmg_mult: 1 }), '2026-08-12T00:00:00.000Z');
+      seedSectionRow(open.db, '', 'skills', cleanSkillsBody({ retired_mult: 1 }), '2026-08-12T00:00:00.000Z');
       const realDb = open.db;
       const wrappedOpen = { ...open, db: wrapFailingDelete(realDb) };
 
@@ -591,7 +591,7 @@ describe('createAccountStore().restore()', () => {
         open.db,
         '',
         'skills',
-        cleanSkillsBody({ crit_dmg_mult: 1, dmg_static: sentinelGold }),
+        cleanSkillsBody({ retired_mult: 1, dmg_static: sentinelGold }),
         '2026-08-12T00:00:00.000Z',
       );
 

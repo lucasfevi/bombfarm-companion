@@ -82,7 +82,6 @@ describe('computeAdvisorPipeline', () => {
     expect(out.attackMult).toBeGreaterThan(0);
     expect(out.energyMult).toBeGreaterThan(0);
     expect(out.speedMult).toBeGreaterThan(0);
-    expect(out.critDmgMult).toBeGreaterThan(0);
     expect(out.teamCritFlat).toBeGreaterThanOrEqual(0);
   });
 

@@ -126,7 +126,6 @@ type HeroRecordEntry = {
     speedMult: string;
     gateAttackMult: string;
     energyMult: string;
-    critDmgMult: string;
     dmgMult: string;
   };
   farmContextForHero: {
@@ -346,7 +345,6 @@ function recordHero(
     attackMult: mults.attackMult,
     energyMult: mults.energyMult,
     speedMult: mults.speedMult,
-    critDmgMult: mults.critDmgMult,
     teamCritFlat: mults.teamCritFlat,
     treeSheet: tree,
     penetrationPp: mods.penetrationPp,
@@ -411,7 +409,6 @@ function recordHero(
     attackMult: pipelineResult.attackMult,
     energyMult: pipelineResult.energyMult,
     speedMult: pipelineResult.speedMult,
-    critDmgMult: pipelineResult.critDmgMult,
     teamCritFlat: pipelineResult.teamCritFlat,
     treeSpeed: pipelineResult.treeSheet.speedPct,
     treeCritChance: pipelineResult.treeSheet.critChancePct,
@@ -482,7 +479,6 @@ function recordHero(
       speedMult: num(mults.speedMult),
       gateAttackMult: num(mults.gateAttackMult),
       energyMult: num(mults.energyMult),
-      critDmgMult: num(mults.critDmgMult),
       dmgMult: num(mults.dmgMult),
     },
     farmContextForHero: {
