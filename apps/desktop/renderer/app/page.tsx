@@ -36,6 +36,7 @@ import { FarmView } from './farm/farm-view';
 import { HeroesView } from './heroes/heroes-view';
 import { InventoryView } from './inventory/inventory-view';
 import { ForgeView } from './forge/forge-view';
+import { OptimizerView } from './optimizer/optimizer-view';
 import { AccountView } from './account/account-view';
 import { ConsentSection } from './settings/consent-section';
 import { ForgeSection } from './settings/forge-section';
@@ -439,6 +440,8 @@ function HomePageContent({
             <InventoryView />
           ) : activeNavId === 'forge' ? (
             <ForgeView forgeWritesEnabled={forgeWritesEnabled} accountSource={environment?.accountSource ?? null} />
+          ) : activeNavId === 'optimizer' ? (
+            <OptimizerView />
           ) : activeNavId === 'account' ? (
             <AccountView
               onOpenInventory={() => {

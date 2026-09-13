@@ -1,7 +1,7 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { teamPlanFixtureSeed } from './fixtures/team-plan-seed';
 import { seedLocalStorage } from './fixtures/seed';
-import { clickOptimize, disclosuresPanel, gotoTeamPlan, waitForOptimizeDone } from './fixtures/team-plan-e2e';
+import { gotoTeamPlan } from './fixtures/team-plan-e2e';
 
 /** DS Select is a Base UI combobox — not a native `<select>`. */
 function allowedChangesCombobox(page: Page): Locator {
@@ -63,30 +63,5 @@ test.describe('Team plan allowed changes', () => {
     await expect(forgeFloorField(page)).toHaveCount(0);
     await pickAllowedChanges(page, /^Gear and points$/);
     await expect(forgeFloorField(page)).toBeVisible();
-  });
-
-  test('a points-only plan says so, and lists no gear chores', async ({ page }) => {
-    await pickAllowedChanges(page, /^Points only$/);
-    await clickOptimize(page);
-    await waitForOptimizeDone(page);
-
-    await expect(disclosuresPanel(page).getByText(/You limited this plan to stat points/i)).toBeVisible();
-    // The forge-skipped line claims forging "did not improve" the objective — it was never tried.
-    await expect(disclosuresPanel(page).getByText(/Forging to your minimum was left out/i)).toHaveCount(0);
-  });
-
-  test('a gear-only plan says so', async ({ page }) => {
-    await pickAllowedChanges(page, /^Gear only$/);
-    await clickOptimize(page);
-    await waitForOptimizeDone(page);
-
-    await expect(disclosuresPanel(page).getByText(/You limited this plan to gear/i)).toBeVisible();
-  });
-
-  test('an unrestricted plan carries neither restriction note', async ({ page }) => {
-    await clickOptimize(page);
-    await waitForOptimizeDone(page);
-
-    await expect(disclosuresPanel(page).getByText(/You limited this plan to/i)).toHaveCount(0);
   });
 });

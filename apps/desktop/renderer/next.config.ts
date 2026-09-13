@@ -16,6 +16,7 @@ const nextConfig: NextConfig = {
     '@bombfarm/game-art',
     '@bombfarm/farm',
     '@bombfarm/hero',
+    '@bombfarm/team-plan',
   ],
 };
 

@@ -192,7 +192,7 @@ describe('the per-statistic breakdown on this read', () => {
 describe('the optimizer on this read', () => {
   it('names the runed heroes in scope, and none of the others, so no gain is justified by a rune unnamed', () => {
     const input = teamPlanInputFromFixture(FILE);
-    // Two heroes are enough for the disclosure and keep the search short: one runed on the sheet
+    // Two heroes are enough for the list and keep the search short: one runed on the sheet
     // (Jon, attack) and one runed only off it (a fresh gold rune on WB;PA, who carries none).
     const jon = input.heroes.find((hero) => hero.name === 'Jon')!;
     const wbpa = input.heroes.find((hero) => hero.name === 'WB;PA')!;
@@ -202,7 +202,7 @@ describe('the optimizer on this read', () => {
     input.scopeByHeroId = { [jon.heroId]: 'optimize', [wbpa.heroId]: 'optimize' };
     const result = runTeamPlan(input);
     if (result.blocked) throw new Error(`expected a plan, got ${JSON.stringify(result)}`);
-    expect(result.plan.disclosures.runedHeroNames).toEqual(['Jon']);
+    expect(result.plan.runedHeroNames).toEqual(['Jon']);
   });
 });
 

@@ -25,6 +25,9 @@ import { uiIconRegistry } from './ui-registry';
 // Desktop Heroes tab (2026-09-07): user-group — the seventh nav tab's glyph, chosen over the
 // single-figure alternative so it is not read as the Account tab's `user` at the glyph-only
 // widths; the budget moved to 30 with it.
+// Desktop Optimizer tab (2026-09-11): sparkles — the eighth nav tab's glyph, chosen over sliders,
+// a trending arrow and a wrench so it is read as neither Settings, earnings nor Forge at the
+// glyph-only widths; the budget moved to 31 with it.
 const MIGRATED_UI_NAMES = [
   'window',
   'signal',
@@ -34,6 +37,7 @@ const MIGRATED_UI_NAMES = [
   'cog',
   'hammer',
   'user-group',
+  'sparkles',
   'ellipsis-horizontal',
   'layout-grid',
   'layout-list',
@@ -59,8 +63,8 @@ const MIGRATED_UI_NAMES = [
 ] as const;
 
 describe('icon registries — budget and membership', () => {
-  it('keeps uiIconRegistry within the 30-entry budget', () => {
-    expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(30);
+  it('keeps uiIconRegistry within the 31-entry budget', () => {
+    expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(31);
   });
 
   it('maps exactly the declared ui-chrome glyphs', () => {

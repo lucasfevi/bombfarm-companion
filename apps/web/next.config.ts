@@ -95,6 +95,7 @@ const nextConfig: NextConfig = {
     '@bombfarm/game-art',
     '@bombfarm/farm',
     '@bombfarm/hero',
+    '@bombfarm/team-plan',
   ],
   // Pin Turbopack's resolve root to the pnpm workspace root.
   // apps/web alone breaks when `next` is hoisted to the repo root (`Next.js package not found`).
