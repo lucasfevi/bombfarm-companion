@@ -12,7 +12,8 @@ import {
 
 const INPUTS = {} as TeamPlanInputs;
 const CAPTURED_AT = '2026-08-12T00:00:00.000Z';
-const SETTLED = { ok: true, inputs: INPUTS, capturedAt: CAPTURED_AT } as const;
+const LEFT_OUT = [{ id: 'h9', name: 'Blocked Hero' }] as const;
+const SETTLED = { ok: true, inputs: INPUTS, capturedAt: CAPTURED_AT, leftOut: LEFT_OUT } as const;
 
 function computing(sourceKey: string, farmChosenPhase: number | null = null): OptimizerSnapshotState {
   return acceptOptimizer(initialOptimizerSnapshotState, { kind: 'begin', sourceKey, farmChosenPhase });
@@ -176,6 +177,7 @@ describe('computed — latest wins, everything else is discarded', () => {
       status: 'ready',
       inputs: INPUTS,
       capturedAt: CAPTURED_AT,
+      leftOut: LEFT_OUT,
       sourceKey: 'key-a',
       farmChosenPhase: 10,
     });
@@ -210,7 +212,7 @@ describe('a recompute keeps the snapshot already on screen', () => {
   it('a Farm-phase-only re-take keeps the settled inputs renderable while the new ones are computed', () => {
     const recomputing = acceptOptimizer(ready('key-a', 10), { kind: 'begin', sourceKey: 'key-a', farmChosenPhase: 20 });
     expect(recomputing.status).toBe('computing');
-    expect(settledSnapshot(recomputing)).toEqual({ inputs: INPUTS, capturedAt: CAPTURED_AT });
+    expect(settledSnapshot(recomputing)).toEqual({ inputs: INPUTS, capturedAt: CAPTURED_AT, leftOut: LEFT_OUT });
   });
 
   it('the carried inputs are the SAME object, not a copy', () => {

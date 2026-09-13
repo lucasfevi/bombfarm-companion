@@ -63,6 +63,13 @@ function payloadWithGold(level: number, gold: string): AccountPayload {
   return { ...payload, account: { ...payload.account, gold } };
 }
 
+function payloadWithBlockedSecondHero(level: number): AccountPayload {
+  const payload = payloadAtLevel(level);
+  const blocked = rawHero('h2', level);
+  delete (blocked as Record<string, unknown>).stats;
+  return { ...payload, heroes: [...(payload.heroes as unknown[]), blocked] };
+}
+
 describe('the snapshot store computes once and does not follow the live account', () => {
   it('start() wires nothing — nothing can feed this store but its own actions', () => {
     const { store } = createOptimizerStore();
@@ -109,6 +116,17 @@ describe('the snapshot store computes once and does not follow the live account'
       expect(tick.key).not.toBe(opened.key);
     }
     expect(store.getState()).toBe(snapshot);
+  });
+
+  it('carries leftOut on the settled snapshot, named for a hero the account read could not read the points of', () => {
+    const { store, open } = createOptimizerStore();
+    const { view, key } = viewOf(payloadWithBlockedSecondHero(10));
+
+    open(view, key, null);
+    const state = store.getState();
+    if (state.status !== 'ready') throw new Error('expected ready');
+    expect(state.leftOut).toEqual([{ id: 'h2', name: 'Alpha' }]);
+    expect(state.inputs.heroes.some((hero) => hero.id === 'h2')).toBe(false);
   });
 
   it('an explicit refresh adopts the account the ticks moved to, and leaves any plan alone', () => {
@@ -212,9 +230,9 @@ describe('the exposed runner falls back to the main thread when the worker canno
     const OFFLINE_FIXTURE = path.join(__dirname, '..', '..', '..', 'tests', 'fixtures', 'account-offline.json');
     const payload = JSON.parse(readFileSync(OFFLINE_FIXTURE, 'utf8')) as AccountPayload;
     const view: AccountView = { payload, gameRunning: false, store: { status: 'ok', reason: null, binding: 'better-sqlite3' } };
-    const inputs = buildOptimizerInputs(view, null);
-    if (inputs === null) throw new Error('expected inputs from the offline fixture');
-    const input = buildTeamPlanInput(inputs, DEFAULT_TEAM_PLAN_CONTROLS);
+    const result = buildOptimizerInputs(view, null);
+    if (result === null) throw new Error('expected inputs from the offline fixture');
+    const input = buildTeamPlanInput(result.inputs, DEFAULT_TEAM_PLAN_CONTROLS);
 
     const { runner } = createOptimizerStore();
     runner.run(input);

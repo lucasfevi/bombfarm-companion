@@ -21,7 +21,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Banner, EmptyState, colClass } from '@bombfarm/ui';
 import { scheduleAfterPaint } from '@bombfarm/farm';
-import { useCopy } from '../../lib/copy';
+import { sub, useCopy } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
 import { useAccountReadRequest } from '../../lib/account/use-account-read-request';
 import { settledSnapshot } from '../../lib/optimizer/optimizer-snapshot-store';
@@ -138,6 +138,11 @@ export function OptimizerView() {
 
   return (
     <div data-testid="optimizer-view" className={colClass} aria-busy={busy}>
+      {settled.leftOut.length > 0 && (
+        <Banner tone="warn" title={t.optimizerLeftOutTitle} data-testid="optimizer-left-out">
+          {sub(t.optimizerLeftOutBody, { heroes: settled.leftOut.map((hero) => hero.name).join(', ') })}
+        </Banner>
+      )}
       <OptimizerScreen
         snapshot={settled}
         controls={controls}

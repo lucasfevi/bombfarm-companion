@@ -31,6 +31,15 @@ export function mitigationPctFor(phase: number | null): number {
   return +((line?.mitig ?? 0.01) * 100).toFixed(2);
 }
 
+/** A hero the search left out because the account read could not tell it how many stat points
+ *  that hero has spent — named, so the screen can tell the player which ones and why. */
+export type OptimizerLeftOutHero = { readonly id: string; readonly name: string };
+
+export type OptimizerInputsResult = {
+  readonly inputs: TeamPlanInputs;
+  readonly leftOut: readonly OptimizerLeftOutHero[];
+};
+
 /**
  * `null` when the record must not be built at all. Nothing here ever fills a missing value with a
  * default: there is no `DEFAULT_TREE()` in `apps/desktop` and there must not be one, so a missing
@@ -40,7 +49,7 @@ export function mitigationPctFor(phase: number | null): number {
 export function buildOptimizerInputs(
   view: AccountView,
   farmChosenPhase: number | null,
-): TeamPlanInputs | null {
+): OptimizerInputsResult | null {
   const payload = view.payload;
 
   const roster = buildAccountRoster(view);
@@ -60,9 +69,15 @@ export function buildOptimizerInputs(
   if (tree === null || houseIdx === null || houseLevel === null) return null;
   if (typeof account.slots !== 'number' || !Number.isFinite(account.slots)) return null;
 
-  const heroes = roster.heroes.map((hero) => ({ ...hero, updatedAt: heroContentStamp(hero) }));
+  // A hero whose spent points the parser could not recover carries a zeroed `pts` (see
+  // `AccountRoster.pointsUnrecovered`), so the search must never see it — it would read as a
+  // hero with nothing spent and propose spending it all over again.
+  const leftOutIds = new Set(roster.pointsUnrecovered.map((hero) => hero.id));
+  const heroes = roster.heroes
+    .filter((hero) => !leftOutIds.has(hero.id))
+    .map((hero) => ({ ...hero, updatedAt: heroContentStamp(hero) }));
 
-  return {
+  const inputs: TeamPlanInputs = {
     heroes,
     inventory: {
       version: 1,
@@ -89,6 +104,8 @@ export function buildOptimizerInputs(
     maxPhase: account.maxPhase ?? null,
     farmChosenPhase,
   };
+
+  return { inputs, leftOut: roster.pointsUnrecovered };
 }
 
 /**

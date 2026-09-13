@@ -27,6 +27,13 @@ vi.mock('../../lib/optimizer/use-optimizer-snapshot', async (importOriginal) => 
   return { ...actual, useOptimizerSnapshot: () => optimizerState.current };
 });
 
+// The settled-state tests below exist only to prove this connector's own banner logic — mounting
+// the real package screen needs a full TeamPlanInputs, a runner and a plan store this file has no
+// reason to fake.
+vi.mock('./optimizer-screen', () => ({
+  OptimizerScreen: () => createElement('div', { 'data-testid': 'optimizer-screen-stub' }),
+}));
+
 const { OptimizerView } = await import('./optimizer-view');
 
 function render() {
@@ -104,6 +111,51 @@ describe('the four early states each render their own copy key', () => {
     };
     const html = render();
     expect(html).toContain(en.shellLoadingLabel);
+  });
+});
+
+function readyOptimizerHook(leftOut: { id: string; name: string }[]): OptimizerSnapshotHook {
+  return {
+    ...idleOptimizerHook(),
+    hasAccount: true,
+    state: {
+      status: 'ready',
+      sourceKey: 'k1',
+      farmChosenPhase: null,
+      inputs: {} as never,
+      capturedAt: null,
+      leftOut,
+    },
+  };
+}
+
+function loadedAccountState(): AccountViewState {
+  return {
+    status: 'loaded',
+    key: 'k1',
+    applied: 1,
+    view: { payload: {}, gameRunning: false, store: { status: 'ok', reason: null, binding: 'better-sqlite3' } } as never,
+  };
+}
+
+describe('the left-out-heroes banner', () => {
+  it('names every left-out hero when the settled snapshot carries them', () => {
+    accountState.current = loadedAccountState();
+    optimizerState.current = readyOptimizerHook([
+      { id: 'h1', name: 'Rowan' },
+      { id: 'h2', name: 'Perrin' },
+    ]);
+    const html = render();
+    expect(html).toContain('data-testid="optimizer-left-out"');
+    expect(html).toContain(en.optimizerLeftOutTitle);
+    expect(html).toContain('Rowan, Perrin');
+  });
+
+  it('is absent when nothing was left out', () => {
+    accountState.current = loadedAccountState();
+    optimizerState.current = readyOptimizerHook([]);
+    const html = render();
+    expect(html).not.toContain('data-testid="optimizer-left-out"');
   });
 });
 

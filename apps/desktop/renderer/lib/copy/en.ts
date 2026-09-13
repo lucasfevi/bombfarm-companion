@@ -653,8 +653,10 @@ export const en = {
   optimizerEmptyNoInventoryBody: 'Your account was read and holds no gear, so there is nothing to move or forge yet.',
   optimizerEmptyAllLeaveAloneTitle: 'Nothing in scope',
   optimizerEmptyAllLeaveAloneBody: 'Set at least one hero to Optimize before running a plan.',
-  optimizerBlockedBody: 'These heroes carry no birth roll in the account read, so the search cannot score them: {heroes}.',
+  optimizerBlockedBody: 'The account read is missing what the search needs for {heroes}, so it cannot score them.',
   optimizerFarmNeedsMaxPhase: 'Letting the search pick its own phase needs the furthest phase your account has reached, which this read did not carry. Pick a phase above, or score for damage.',
+  optimizerLeftOutTitle: 'Some heroes were left out of the search',
+  optimizerLeftOutBody: 'The app could not read the spent stat points of {heroes} from the account, so they are left out of this search: not on the scope board, not in the plan.',
 
   // hero*/gear*/import*/roster*/switch*/mode*/rank* — hero-identity vocabulary the farm screen's
   // roster surfaces read as one structural contract. Named exactly as that contract names them.

@@ -173,7 +173,10 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
     fs.rmSync(runDir, { recursive: true, force: true });
   });
 
-  test('opens with the setup panel, thirteen heroes in Optimize, and the account\'s age', async () => {
+  // The checked-in fixture already carries eight heroes a sheet-inversion mismatch blocks (see
+  // `account-roster.test.ts`), so only five of its thirteen ever reach the scope board — the
+  // other eight are named in the left-out banner instead.
+  test('opens with the setup panel, five heroes in Optimize, and the account\'s age', async () => {
     await openOptimizer(page);
 
     await expect(page.getByRole('region', { name: /Optimizer/i })).toBeVisible();
@@ -181,10 +184,11 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
     await expect(page.getByRole('heading', { name: /^Hero scope$/i, level: 2 })).toBeVisible();
 
     const optimizeColumn = page.locator('[data-scope-column="optimize"]');
-    await expect(optimizeColumn.locator('article')).toHaveCount(13);
+    await expect(optimizeColumn.locator('article')).toHaveCount(5);
     await expect(page.locator('[data-scope-column="donate"] article')).toHaveCount(0);
     await expect(page.locator('[data-scope-column="leaveAlone"] article')).toHaveCount(0);
 
+    await expect(page.getByTestId('optimizer-left-out')).toBeVisible();
     await expect(page.getByTestId('account-refresh-age')).toContainText('account read');
   });
 
@@ -302,7 +306,64 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
     await page.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
     await openOptimizer(page);
 
-    await expect(page.locator('[data-scope-column="optimize"] article')).toHaveCount(13);
+    await expect(page.locator('[data-scope-column="optimize"] article')).toHaveCount(5);
     await expect(page.getByTestId('optimizer-view').locator('[role="alert"]')).toHaveCount(0);
+  });
+});
+
+test.describe('a hero whose spent points the account read could not recover', () => {
+  /** @type {import('@playwright/test').ElectronApplication} */
+  let app;
+  /** @type {import('@playwright/test').Page} */
+  let page;
+  let runDir;
+  let fixtureFile;
+
+  // The fixture already carries eight heroes a sheet-inversion mismatch blocks (see
+  // `account-roster.test.ts`) — deleting Rowan's `stats` block adds a ninth, through the other
+  // mechanism this fix also has to catch, leaving four in Optimize rather than the usual five.
+  test.beforeAll(async () => {
+    runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-optimizer-left-out-'));
+    fixtureFile = path.join(runDir, 'account.json');
+
+    const payload = JSON.parse(fs.readFileSync(ACCOUNT_OFFLINE_FIXTURE, 'utf8'));
+    const blockedHero = payload.heroes.find((hero) => hero.id === '71038');
+    if (!blockedHero) throw new Error('optimizer.spec.mjs: fixture has no hero 71038 to block');
+    delete blockedHero.stats;
+    fs.writeFileSync(fixtureFile, JSON.stringify(payload));
+
+    ({ app, page } = await launchApp({
+      BFC_GAME_READER: 'fixture',
+      BFC_FIXTURE_ACCOUNT_FILE: fixtureFile,
+      BFC_LIVE_SOURCE: 'replay',
+      BFC_USER_DATA_DIR: path.join(runDir, 'user-data'),
+    }));
+    await acceptConsent(page);
+  });
+
+  test.afterAll(async () => {
+    await app?.close().catch(() => undefined);
+    fs.rmSync(runDir, { recursive: true, force: true });
+  });
+
+  test('the banner names the hero, the scope board omits it, and Optimize still solves', async () => {
+    await openOptimizer(page);
+
+    const banner = page.getByTestId('optimizer-left-out');
+    await expect(banner).toBeVisible();
+    await expect(banner).toContainText('Rowan');
+    await expect(banner).toContainText(en('optimizerLeftOutTitle'));
+
+    const optimizeColumn = page.locator('[data-scope-column="optimize"]');
+    await expect(optimizeColumn.locator('article')).toHaveCount(4);
+    await expect(optimizeColumn.getByText('Rowan')).toHaveCount(0);
+
+    await page.evaluate(() => localStorage.setItem('bf-e2e-team-plan-max-eval', '300'));
+    const optimizeButton = page.getByRole('button', { name: OPTIMIZE_BUTTON });
+    await expect(optimizeButton).toBeEnabled();
+    await optimizeButton.click();
+    await waitForOptimizeDone(page);
+
+    await expect(page.getByRole('heading', { name: /^Plan results$/i, level: 2 })).toBeVisible();
   });
 });

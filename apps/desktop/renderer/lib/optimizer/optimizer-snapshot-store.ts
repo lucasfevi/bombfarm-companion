@@ -17,10 +17,11 @@
  * test by reading this source.
  */
 import type { TeamPlanInputs } from '@bombfarm/team-plan/core';
+import type { OptimizerLeftOutHero } from './optimizer-inputs';
 
 /**
- * One compute's settled products: the inputs it was built from, and the age of the account they
- * came from.
+ * One compute's settled products: the inputs it was built from, the age of the account they came
+ * from, and the heroes left out of those inputs.
  */
 export type OptimizerSettledSnapshot = {
   readonly inputs: TeamPlanInputs;
@@ -32,6 +33,10 @@ export type OptimizerSettledSnapshot = {
    * the account carries no readable capture time at all.
    */
   readonly capturedAt: string | null;
+  /** Heroes `buildOptimizerInputs` excluded from `inputs.heroes` because their spent points could
+   *  not be read — part of the snapshot, not the controls, and deliberately absent from
+   *  `optimizerDepKey`: the roster the heroes came from already drives that key. */
+  readonly leftOut: readonly OptimizerLeftOutHero[];
 };
 
 /**
@@ -106,7 +111,7 @@ export function snapshotSourceKey(state: OptimizerSnapshotState): string | null 
  */
 export function settledSnapshot(state: OptimizerSnapshotState): OptimizerSettledSnapshot | null {
   if (state.status === 'ready') {
-    return { inputs: state.inputs, capturedAt: state.capturedAt };
+    return { inputs: state.inputs, capturedAt: state.capturedAt, leftOut: state.leftOut };
   }
   if (state.status === 'computing') return state.previous;
   return null;
@@ -181,6 +186,7 @@ export function acceptOptimizer(
         farmChosenPhase: arrival.farmChosenPhase,
         inputs: arrival.outcome.inputs,
         capturedAt: arrival.outcome.capturedAt,
+        leftOut: arrival.outcome.leftOut,
       };
     }
   }

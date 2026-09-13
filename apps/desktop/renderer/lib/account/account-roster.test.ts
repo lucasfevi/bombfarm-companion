@@ -156,6 +156,62 @@ describe('the account-wide block comes from the same parse as the roster', () =>
   });
 });
 
+function rawHeroMissingStats(id: string, name: string): Record<string, unknown> {
+  const hero: Record<string, unknown> = { ...rawHero(id, name) };
+  delete hero.stats;
+  return hero;
+}
+
+describe('pointsUnrecovered — candidates the parser blocked', () => {
+  it('is empty when every candidate parses cleanly', () => {
+    const payload = basePayload([rawHero('h1', 'Alpha'), rawHero('h2', 'Beta')]);
+    const roster = required(buildAccountRoster(viewOf(payload)), 'expected a roster');
+    expect(roster.pointsUnrecovered).toEqual([]);
+  });
+
+  it('names a hero missing its stats block, and still carries it in heroes with zeroed points', () => {
+    const payload = basePayload([rawHero('h1', 'Alpha'), rawHeroMissingStats('h2', 'Beta')]);
+    const roster = required(buildAccountRoster(viewOf(payload)), 'expected a roster');
+    expect(roster.pointsUnrecovered).toEqual([{ id: 'h2', name: 'Beta' }]);
+
+    const hero = roster.heroes.find((candidate) => candidate.id === 'h2');
+    expect(hero).toBeDefined();
+    expect(Object.values(hero?.pts ?? {}).every((value) => value === 0)).toBe(true);
+  });
+
+  it('lists more than one blocked hero, in roster order', () => {
+    const payload = basePayload([
+      rawHero('h1', 'Alpha'),
+      rawHeroMissingStats('h2', 'Beta'),
+      rawHeroMissingStats('h3', 'Gamma'),
+    ]);
+    const roster = required(buildAccountRoster(viewOf(payload)), 'expected a roster');
+    expect(roster.pointsUnrecovered).toEqual([
+      { id: 'h2', name: 'Beta' },
+      { id: 'h3', name: 'Gamma' },
+    ]);
+  });
+
+  // Not a fixture staleness bug: this is the SAME defect the guard above proves against a
+  // synthetic hero, already present in the checked-in capture — a sheet-inversion mismatch a
+  // later game update introduced, over-spending the budget rather than leaving `stats` absent.
+  // Pinned here so a fixture refresh that quietly fixes it is a visible test change, not a silent
+  // loss of coverage.
+  it('the checked-in offline fixture already carries eight, from a sheet-inversion mismatch', () => {
+    const roster = required(buildAccountRoster(viewOf(offlinePayload())), 'expected a roster');
+    expect(roster.pointsUnrecovered).toEqual([
+      { id: '41990', name: 'Jon' },
+      { id: '52562', name: 'Bellatrix' },
+      { id: '45497', name: 'Buff S #1' },
+      { id: '72601', name: 'WB #1' },
+      { id: '73099', name: 'Buff L #1' },
+      { id: '74555', name: 'WB #3' },
+      { id: '76184', name: 'Buff FL #1' },
+      { id: '59925-roster', name: 'Manco #2' },
+    ]);
+  });
+});
+
 describe('the gear-only pool of the same parse, surfaced beside the roster', () => {
   it('the committed offline account yields its 137 gear items, each with a string id and defId', () => {
     const roster = required(buildAccountRoster(viewOf(offlinePayload())), 'expected a roster');

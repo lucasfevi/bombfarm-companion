@@ -23,6 +23,10 @@ export type AccountRoster = {
   /** The gear-only pool the same parse produced — what the optimizer moves and forges. The
    *  Inventory screen draws `inventoryView`, a different list on purpose. */
   readonly inventory: InventoryItem[];
+  /** Candidates `parseAccountPayload` blocked, in roster order. A blocked candidate's `record.pts`
+   *  is zeroed by the parser, so a screen that spends points must not treat it as a hero with none
+   *  spent — `heroes` above still carries it, for the screens that only list heroes. */
+  readonly pointsUnrecovered: readonly { id: string; name: string }[];
 };
 
 /** `null` when the payload did not parse at all — never a partial roster over the heroes that did. */
@@ -46,5 +50,9 @@ export function buildAccountRoster(view: AccountView): AccountRoster | null {
     updatedAt,
   }));
 
-  return { heroes, account: parsed.account, inventory: parsed.inventory };
+  const pointsUnrecovered = parsed.candidates
+    .filter((candidate) => candidate.blocked)
+    .map((candidate) => ({ id: candidate.sourceId, name: candidate.name }));
+
+  return { heroes, account: parsed.account, inventory: parsed.inventory, pointsUnrecovered };
 }

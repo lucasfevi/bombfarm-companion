@@ -100,11 +100,11 @@ export function createOptimizerStore(): {
     const view = frozenView;
     if (view === null) return;
 
-    const inputs = buildOptimizerInputs(view, farmChosenPhase);
+    const built = buildOptimizerInputs(view, farmChosenPhase);
     const outcome: OptimizerComputeOutcome =
-      inputs === null
+      built === null
         ? { ok: false, reason: 'incomplete-account' }
-        : { ok: true, inputs, capturedAt: oldestCaptureOf(view.payload) };
+        : { ok: true, inputs: built.inputs, leftOut: built.leftOut, capturedAt: oldestCaptureOf(view.payload) };
     dispatch({ kind: 'computed', sourceKey, farmChosenPhase, outcome });
   }
 
@@ -165,7 +165,7 @@ export function optimizerSnapshotStale(state: OptimizerSnapshotState, liveView: 
   const settled = settledSnapshot(state);
   if (settled === null || liveView === null) return false;
   const live = buildOptimizerInputs(liveView, settled.inputs.farmChosenPhase);
-  const liveDepKey = live === null ? LIVE_ACCOUNT_INCOMPLETE : optimizerDepKey(live);
+  const liveDepKey = live === null ? LIVE_ACCOUNT_INCOMPLETE : optimizerDepKey(live.inputs);
   return optimizerDepKey(settled.inputs) !== liveDepKey;
 }
 
