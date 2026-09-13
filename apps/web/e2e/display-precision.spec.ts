@@ -59,7 +59,6 @@ function precisionHero(): SeededState {
     ],
     activeHeroId: 'seed-precision',
     lang: 'en',
-    guideHidden: true,
     account: {
       tree: {
         danoTotal: 1,

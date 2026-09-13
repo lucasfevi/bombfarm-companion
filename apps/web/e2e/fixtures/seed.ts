@@ -3,14 +3,13 @@ import type { AccountShared, HeroRecord } from '../../src/shared/lib/storage';
 import type { PhasesViewState } from '../../src/shared/lib/phases-view-storage';
 import type { InventorySnapshot } from '@bombfarm/domain/inventory';
 
-/** Keys mirror `src/shared/lib/storage.ts` + i18n/guide chrome — keep in sync. */
+/** Keys mirror `src/shared/lib/storage.ts` + i18n chrome — keep in sync. */
 const HEROES_KEY = 'bf-hp-heroes-v1';
 const ACTIVE_KEY = 'bf-hp-active-hero-v1';
 const ACCOUNT_KEY = 'bf-hp-account-v1';
 const INVENTORY_KEY = 'bf-hp-inventory-v1';
 const PHASES_VIEW_KEY = 'bf-hp-phases-view-v1';
 const LANG_KEY = 'bf_lang';
-const GUIDE_HIDDEN_KEY = 'bf_guide_hidden';
 const REFERRAL_NOTICE_HIDDEN_KEY = 'bf_referral_notice_hidden';
 
 /**
@@ -39,8 +38,6 @@ export type SeededState = {
   account?: AccountShared;
   inventory?: InventorySnapshot;
   lang?: 'pt' | 'en';
-  /** When true (default), suppress the first-run guide overlay. */
-  guideHidden?: boolean;
   /** When true (default), suppress the first-run referral notice below the topbar. */
   referralNoticeHidden?: boolean;
   /** Seeds bf-hp-phases-view-v1 — phase, farmPool and farmReturnBonus. */
@@ -188,7 +185,6 @@ export const importedRoster: SeededState = {
   ],
   activeHeroId: 'seed-cora',
   lang: 'pt',
-  guideHidden: true,
   account: {
     tree: {
       danoTotal: 1.96,
@@ -212,10 +208,7 @@ export const importedRoster: SeededState = {
   },
 };
 
-/**
- * Writes planner storage keys before app JS runs.
- * App truth: `bf_guide_hidden === '1'` hides the guide overlay (see client-app-shell.tsx).
- */
+/** Writes planner storage keys before app JS runs. */
 export async function seedLocalStorage(page: Page, state: SeededState): Promise<void> {
   const payload = {
     heroes: state.heroes,
@@ -223,10 +216,8 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
     account: state.account ?? null,
     inventory: state.inventory ?? null,
     lang: state.lang ?? 'pt',
-    // Default hide guide; only show when guideHidden is explicitly false.
-    guideHidden: state.guideHidden !== false,
-    // Same default as the guide: a first-run notice on top of every seeded page would
-    // shift the layout every other spec measures.
+    // Hidden by default: a first-run notice on top of every seeded page would shift the
+    // layout every other spec measures.
     referralNoticeHidden: state.referralNoticeHidden !== false,
     phasesView: state.phasesView ?? null,
   };
@@ -238,7 +229,6 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
       account,
       inventory,
       lang,
-      guideHidden,
       referralNoticeHidden,
       phasesView,
       keys,
@@ -251,7 +241,6 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
       if (inventory) localStorage.setItem(keys.inventory, JSON.stringify(inventory));
       else localStorage.removeItem(keys.inventory);
       localStorage.setItem(keys.lang, lang);
-      localStorage.setItem(keys.guideHidden, guideHidden ? '1' : '0');
       localStorage.setItem(keys.referralNoticeHidden, referralNoticeHidden ? '1' : '0');
       if (phasesView) localStorage.setItem(keys.phasesView, JSON.stringify(phasesView));
       else localStorage.removeItem(keys.phasesView);
@@ -267,7 +256,6 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
         account: ACCOUNT_KEY,
         inventory: INVENTORY_KEY,
         lang: LANG_KEY,
-        guideHidden: GUIDE_HIDDEN_KEY,
         referralNoticeHidden: REFERRAL_NOTICE_HIDDEN_KEY,
         phasesView: PHASES_VIEW_KEY,
         migrationMarkers: [...MIGRATION_MARKER_KEYS],

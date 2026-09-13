@@ -12,7 +12,7 @@ import { importedRoster, seedLocalStorage, selectSavedHero } from './fixtures/se
  */
 test.describe.skip('visual baselines', () => {
   test('empty workspace', async ({ page }) => {
-    await seedLocalStorage(page, { heroes: [], lang: 'pt', guideHidden: true });
+    await seedLocalStorage(page, { heroes: [], lang: 'pt' });
     await page.goto('/');
     await expect(page.getByRole('region', { name: /nenhum herói adicionado/i })).toBeVisible();
     await expect(page).toHaveScreenshot('empty-workspace.png', {

@@ -77,6 +77,5 @@ function seedFromCapture(capturePath: string, lang: 'en' | 'pt'): SeededState {
     },
     inventory: { version: 1, importedAt: Date.now(), items: inventory },
     lang,
-    guideHidden: true,
   };
 }
