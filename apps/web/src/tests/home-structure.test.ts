@@ -26,8 +26,25 @@ function sourceFilesMentioning(tokens: readonly string[]): string[] {
     });
 }
 
+function homeImportSpecifiers(): { file: string; specifier: string }[] {
+  return walk(join(SRC_ROOT, 'features/home')).flatMap((full) => {
+    const file = relative(SRC_ROOT, full).split(sep).join('/');
+    const text = readFileSync(full, 'utf8');
+    return Array.from(text.matchAll(/from '([^']+)'/g), (match) => ({ file, specifier: match[1] }));
+  });
+}
+
 describe('home structure', () => {
   it("no file under the web source mentions the guide's storage key or component", () => {
     expect(sourceFilesMentioning(['bf_guide_hidden', 'GuideSection'])).toEqual([]);
+  });
+
+  it("the home feature imports nothing from the optimizer's hooks or worker", () => {
+    const specifiers = homeImportSpecifiers();
+
+    expect(specifiers.length).toBeGreaterThan(0);
+    expect(
+      specifiers.filter(({ specifier }) => /features\/team-plan\/(hooks|worker)/.test(specifier)),
+    ).toEqual([]);
   });
 });
