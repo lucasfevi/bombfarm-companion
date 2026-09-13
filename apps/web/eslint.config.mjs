@@ -191,7 +191,7 @@ export default tseslint.config(
       ],
       // W5: ≤8 props — enforced by src/tests/mod-17-max-props.test.ts
       // (warn-equivalent allowlist for DS Switch/Select; W7 burns allowlist).
-      // Cross-feature allowlist is five dated edges only (Approach A / Q-1).
+      // Cross-feature allowlist is six dated edges only (Approach A / Q-1).
       'boundaries/element-types': [
         'error',
         {
@@ -272,6 +272,15 @@ export default tseslint.config(
               from: { element: { type: 'feature', captured: { feature: 'home' } } },
               allow: {
                 to: { element: { type: 'feature', captured: { feature: 'account' } } },
+              },
+            },
+            // Allowlisted cross-feature edge, 2026-09-13 (home → download model): the front page's
+            // Live card reads the latest release and the releases URL through the download
+            // barrel's model exports — never its components, and never the Live replica.
+            {
+              from: { element: { type: 'feature', captured: { feature: 'home' } } },
+              allow: {
+                to: { element: { type: 'feature', captured: { feature: 'download' } } },
               },
             },
             // game-art → i18n / lib (DS + domain via @bombfarm/* externals)
