@@ -234,78 +234,63 @@ export function computeTeamBuffsOverRotation(
   return out;
 }
 
-/** Which of the standing auras a per-hero screen counts the REST of the roster for. */
+/** Which team auras a per-hero screen prices at their cap, on top of the hero's own. */
 export type TeamAuraSwitches = Record<TeamBuffId, boolean>;
 
 export function noTeamAuraSwitches(): TeamAuraSwitches {
-  return {
-    grito_guerra: false,
-    pressagio_mortal: false,
-    marcha_acelerada: false,
-    folego_mineiro: false,
-    brecha: false,
-  };
+  return Object.fromEntries(TEAM_BUFF_ABILITY_IDS.map((buffId) => [buffId, false])) as TeamAuraSwitches;
 }
 
 /**
- * One aura as seen from one hero's seat: what the hero itself brings, and what every OTHER hero
- * the game will field would add at full presence, over `carriers` of them.
+ * One team aura from one hero's seat. `own` is the hero's own rank in aura units (perLevel ×
+ * rank); `carried` is whether that is above zero; `on` is whether the aura reaches the hero's
+ * figures at all; `pricedAt` is the raw total the pipeline is handed (capped downstream by
+ * `computeCombatMults`, like every other total in this module).
  */
-export type TeamAuraAroundHero = {
+export type TeamAuraSeat = {
   readonly own: number;
-  readonly others: number;
-  readonly carriers: number;
+  readonly cap: number;
+  readonly carried: boolean;
+  readonly on: boolean;
+  readonly pricedAt: number;
 };
 
-type RosterAuraHero = Pick<HeroRecord, 'id' | 'abilities' | 'battleAllowed'>;
-
 /**
- * The roster's standing auras from one hero's seat — the figures a per-hero screen's aura switches
- * are labelled with. `others` counts heroes with `battleAllowed !== false` other than `hero`
- * itself; the hero's own rank is `own`, whatever its own flag says, since the screen is pricing it
- * as fielded. Both are raw perLevel × rank sums, uncapped like every other total in this module.
+ * Every team aura the game has, from one hero's seat. The hero's own aura is always on at its
+ * own rank — it is the hero's ability, and the hero stands in the field it buffs. Any other aura
+ * is a what-if behind a switch: on, it is priced at its field-wide cap, whoever would carry it,
+ * so the roster is not an input here at all. A carried rank plus its switch tops up to the cap
+ * for the same reason — the cap is a property of the field, not a sum over carriers.
  */
 export function teamAurasAroundHero(
-  hero: Pick<HeroRecord, 'id' | 'abilities'>,
-  roster: readonly RosterAuraHero[],
-): Record<TeamBuffId, TeamAuraAroundHero> {
-  const others = roster.filter((other) => other.id !== hero.id && other.battleAllowed !== false);
-  const out = {} as Record<TeamBuffId, TeamAuraAroundHero>;
+  hero: Pick<HeroRecord, 'abilities'>,
+  switches: TeamAuraSwitches,
+): Record<TeamBuffId, TeamAuraSeat> {
+  const out = {} as Record<TeamBuffId, TeamAuraSeat>;
   for (const buffId of TEAM_BUFF_ABILITY_IDS) {
-    const perLevel = TEAM_BUFF_PER_LEVEL[buffId];
-    const carriers = others.filter((other) => (other.abilities[buffId] ?? 0) > 0);
+    const own = TEAM_BUFF_PER_LEVEL[buffId] * (hero.abilities[buffId] ?? 0);
+    const cap = TEAM_BUFF_CAP[buffId];
+    const carried = own > 0;
+    const switched = switches[buffId] === true;
     out[buffId] = {
-      own: perLevel * (hero.abilities[buffId] ?? 0),
-      others: carriers.reduce((total, other) => total + perLevel * (other.abilities[buffId] ?? 0), 0),
-      carriers: carriers.length,
+      own,
+      cap,
+      carried,
+      on: carried || switched,
+      pricedAt: switched ? Math.max(own, cap) : own,
     };
   }
   return out;
 }
 
-/**
- * The aura total a PER-HERO screen prices one hero against: the hero's own contribution always,
- * plus — for each aura switched on — every other fielded carrier's rank at FULL presence.
- *
- * WHY NOT THE ROTATION FORM. {@link computeTeamBuffsOverRotation} answers "what does this roster
- * average over hours", which is a roster question. A hero's detail screen asks a narrower one —
- * "what does THIS hero do on the field" — and there the only aura it certainly stands under is
- * its own. Whether a given other carrier is beside it is a what-if, so it is a switch: off, the
- * hero is priced alone; on, the carrier is assumed present the whole time, the at-best reading
- * rather than a fraction the player would have to guess at. The screen says so beside the
- * switches. Returns the raw, UNCAPPED sum like {@link computeTeamBuffsFromDeployed}: the clamp is
- * `computeCombatMults`'s.
- */
+/** The aura total a per-hero screen prices one hero against — `pricedAt` per aura. */
 export function computeTeamBuffsAroundHero(
-  hero: Pick<HeroRecord, 'id' | 'abilities'>,
-  roster: readonly RosterAuraHero[],
+  hero: Pick<HeroRecord, 'abilities'>,
   switches: TeamAuraSwitches,
 ): Record<TeamBuffId, number> {
-  const around = teamAurasAroundHero(hero, roster);
+  const around = teamAurasAroundHero(hero, switches);
   const out = zeroTeamBuffs();
-  for (const buffId of TEAM_BUFF_ABILITY_IDS) {
-    out[buffId] = around[buffId].own + (switches[buffId] ? around[buffId].others : 0);
-  }
+  for (const buffId of TEAM_BUFF_ABILITY_IDS) out[buffId] = around[buffId].pricedAt;
   return out;
 }
 

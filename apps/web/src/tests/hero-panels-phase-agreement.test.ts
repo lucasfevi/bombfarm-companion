@@ -15,7 +15,7 @@ import { computePhaseIntelGlobal } from '@bombfarm/domain/phase-intel';
 import { WIKI_PHASE_LINES, wikiPhaseLine } from '@bombfarm/domain/phase-wiki';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
 import { pipelineForHero } from '@bombfarm/domain/roster-dps';
-import { TEAM_BUFF_PER_LEVEL } from '@bombfarm/domain/team-buffs';
+import { TEAM_BUFF_CAP, TEAM_BUFF_PER_LEVEL } from '@bombfarm/domain/team-buffs';
 import type { AdvisorPipelineResult } from '@bombfarm/domain/advisor-pipeline';
 import { normalizeHero } from '@/shared/lib/storage';
 import {
@@ -28,6 +28,7 @@ import {
   selectCombatPhase,
   selectCombatPhaseSelection,
   selectPhasesViewPhase,
+  selectTeamAuraDpsDeltas,
   usePlannerStore,
   type PlannerStore,
 } from '@/shared/stores';
@@ -114,9 +115,9 @@ function figures(combat: AdvisorPipelineResult) {
 /**
  * The active hero carries a team aura, and a second, benched hero carries the same one — the
  * roster on which the two surfaces answer two different questions. The Combat tab prices the
- * hero's own seat: its own aura in full, the other carrier only through its switch and then at
- * full presence. The explorer beside the Farm board prices the rotation: every fielded carrier
- * weighted by its predicted uptime, whoever happened to be deployed.
+ * hero's own seat: its own aura at its rank, any other aura only through its switch and then at
+ * its cap, whoever carries it. The explorer beside the Farm board prices the rotation: every
+ * fielded carrier weighted by its predicted uptime, whoever happened to be deployed.
  */
 function hydrateTwoAuraCarriers(): void {
   const state = usePlannerStore.getState();
@@ -134,9 +135,10 @@ describe('the two surfaces price team auras for their own question', () => {
     usePlannerStore.getState().setPhasesViewPhase(137);
   });
 
-  it('the Combat tab counts the active hero’s own aura in full, and nobody else’s while the switches are off', () => {
+  it('the Combat tab counts the active hero’s own aura at its rank, and no other aura while the switches are off', () => {
     const tab = selectActiveHeroTeamBuffs(usePlannerStore.getState());
     expect(tab.grito_guerra).toBe(12 * TEAM_BUFF_PER_LEVEL.grito_guerra);
+    expect(tab.folego_mineiro).toBe(0);
   });
 
   it('the explorer weights every fielded carrier by its uptime, so its total sits between nothing and the pool’s at-best sum', () => {
@@ -151,19 +153,54 @@ describe('the two surfaces price team auras for their own question', () => {
     expect(figures(selectAdvisorPipeline(state)).targetHp).toBe(figures(explorerCombat(state)).targetHp);
   });
 
-  it('a switch lets the other carrier onto the Combat tab at full presence, and moves the figures', () => {
+  it('a switch prices an aura nobody on the roster carries at its cap, and moves the figures', () => {
     const before = figures(selectAdvisorPipeline(usePlannerStore.getState()));
-    usePlannerStore.getState().setTeamAuraSwitch('grito_guerra', true);
+    usePlannerStore.getState().setTeamAuraSwitch('folego_mineiro', true);
     const state = usePlannerStore.getState();
 
-    expect(selectActiveHeroTeamBuffs(state).grito_guerra).toBe((12 + 20) * TEAM_BUFF_PER_LEVEL.grito_guerra);
-    expect(figures(selectAdvisorPipeline(state)).normalHit).toBeGreaterThan(before.normalHit);
-    expect(figures(explorerCombat(state))).toEqual(figures(explorerCombat(state)));
+    expect(selectActiveHeroTeamBuffs(state).folego_mineiro).toBe(TEAM_BUFF_CAP.folego_mineiro);
+    expect(figures(selectAdvisorPipeline(state)).uptime).toBeGreaterThan(before.uptime);
+    expect(figures(selectAdvisorPipeline(state)).dps).toBeGreaterThan(before.dps);
+  });
+
+  it('a carried aura plus its switch reads the cap, not the roster’s sum', () => {
+    usePlannerStore.getState().setTeamAuraSwitch('grito_guerra', true);
+    expect(selectActiveHeroTeamBuffs(usePlannerStore.getState()).grito_guerra).toBe(TEAM_BUFF_CAP.grito_guerra);
+  });
+
+  it('the row’s "+x% if on" is the move sustained DPS makes when the switch is flipped', () => {
+    const before = selectAdvisorPipeline(usePlannerStore.getState()).dps;
+    const promised = selectTeamAuraDpsDeltas(usePlannerStore.getState()).folego_mineiro;
+    usePlannerStore.getState().setTeamAuraSwitch('folego_mineiro', true);
+    const after = selectAdvisorPipeline(usePlannerStore.getState()).dps;
+
+    expect(promised).toBeGreaterThan(0);
+    expect(promised).toBeCloseTo((after / before - 1) * 100, 9);
+    expect(selectTeamAuraDpsDeltas(usePlannerStore.getState()).folego_mineiro).toBeCloseTo(
+      (before / after - 1) * 100,
+      9,
+    );
+  });
+
+  it('the deltas are cached on the pipeline’s own dependency tuple', () => {
+    const first = selectTeamAuraDpsDeltas(usePlannerStore.getState());
+    expect(selectTeamAuraDpsDeltas(usePlannerStore.getState())).toBe(first);
+    usePlannerStore.getState().setTeamAuraSwitch('folego_mineiro', true);
+    expect(selectTeamAuraDpsDeltas(usePlannerStore.getState())).not.toBe(first);
+  });
+
+  it('"Back to your current phase" drops the switches with the phase pick', () => {
+    usePlannerStore.getState().setPlannerPhaseOverride(137);
+    usePlannerStore.getState().setTeamAuraSwitch('folego_mineiro', true);
+    usePlannerStore.getState().clearPlannerWhatIfs();
+    const state = usePlannerStore.getState();
+    expect(state.plannerPhaseOverride).toBeNull();
+    expect(Object.values(state.teamAuraSwitches).some(Boolean)).toBe(false);
   });
 
   it('the switch reaches nothing the explorer prints', () => {
     const before = figures(explorerCombat(usePlannerStore.getState()));
-    usePlannerStore.getState().setTeamAuraSwitch('grito_guerra', true);
+    usePlannerStore.getState().setTeamAuraSwitch('folego_mineiro', true);
     expect(figures(explorerCombat(usePlannerStore.getState()))).toEqual(before);
   });
 });

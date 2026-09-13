@@ -8,7 +8,7 @@
  * roster instead of inventing farm controls to get at it.
  *
  * The block carries no team-aura total. A per-hero screen prices each hero from its own seat —
- * its own aura always, the rest of the roster's through the screen's switches — so the total is
+ * its own aura always, any other at its cap through the screen's switches — so the total is
  * overlaid per hero by {@link accountAroundHero}, over the one block every hero shares.
  *
  * Nothing here fills a missing value with a default: there is no `DEFAULT_TREE()` in
@@ -70,12 +70,12 @@ export function buildAccountBlock(roster: AccountRoster): AccountBlock | null {
 export function accountAroundHero(
   block: AccountBlock,
   hero: Pick<HeroRecord, 'id' | 'abilities'>,
-  roster: readonly Pick<HeroRecord, 'id' | 'abilities' | 'battleAllowed' | 'deployed'>[],
   switches: TeamAuraSwitches,
+  roster: readonly Pick<HeroRecord, 'id' | 'deployed'>[],
 ): AccountShared {
   return {
     ...block,
-    teamBuffs: computeTeamBuffsAroundHero(hero, roster, switches),
+    teamBuffs: computeTeamBuffsAroundHero(hero, switches),
     fieldAllies: fieldAlliesAroundHero(hero, roster),
   };
 }

@@ -115,3 +115,5 @@ export type { GearBonusRow } from './gear-bonus-rows';
 export { gearPanelReading } from './gear-panel';
 export type { GearPanelReading } from './gear-panel';
 export { renderTemplateWithPct } from './render-template-with-pct';
+export { drainNoteFor, ownAbilityRowsFor, teamAuraRowsFor } from './abilities-auras-panel';
+export type { DrainNote, OwnAbilityRow, OwnAbilityStatus, TeamAuraRow } from './abilities-auras-panel';

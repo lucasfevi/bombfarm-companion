@@ -24,6 +24,8 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof heroEn)[] = [
   'heroDetailCombatProps',
   // "XP" is the game's own token in both languages.
   'heroDetailRuneAxisXp',
+  // "Aura" is spelled the same in both languages.
+  'heroDetailAurasColumnAura',
 ];
 
 function placeholderSet(value: string): Set<string> {

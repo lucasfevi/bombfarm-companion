@@ -37,9 +37,9 @@ export const selectTreeBagTabsBonus = (state: PlannerStore) => state.treeBagTabs
 
 /**
  * The team-aura total every per-hero figure on the planner prices the ACTIVE hero against: its
- * own aura always, plus each other fielded carrier at full presence for every aura whose Combat
- * tab switch is on (`computeTeamBuffsAroundHero`). Read off the hero's PERSISTED record, so an
- * edit to its own rank reaches the live preview through `substituteHeroAbilities` (the advisor's
+ * own aura always at its rank, plus every aura whose Combat tab switch is on at its cap
+ * (`computeTeamBuffsAroundHero`). Read off the hero's PERSISTED record, so an edit to its own
+ * rank reaches the live preview through `substituteHeroAbilities` (the advisor's
  * `previewTeamBuffs`), exactly as it did against the old roster total.
  *
  * Module-level single-entry cache (matching `selectAdvisorPipeline`/`selectFarmRankingRows`) —
@@ -66,11 +66,8 @@ export function selectActiveHeroTeamBuffs(state: PlannerStore): Record<TeamBuffI
   ) {
     return activeHeroTeamBuffsCache.result;
   }
-  const active = state.heroes.find((hero) => hero.id === state.activeHeroId) ?? {
-    id: state.activeHeroId ?? '',
-    abilities: {},
-  };
-  const result = computeTeamBuffsAroundHero(active, state.heroes, state.teamAuraSwitches);
+  const active = state.heroes.find((hero) => hero.id === state.activeHeroId) ?? { abilities: {} };
+  const result = computeTeamBuffsAroundHero(active, state.teamAuraSwitches);
   activeHeroTeamBuffsCache = {
     heroes: state.heroes,
     activeHeroId: state.activeHeroId,

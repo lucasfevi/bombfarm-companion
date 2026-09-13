@@ -47,11 +47,12 @@ function heroByName(name: string): HeroRecord {
   return hero;
 }
 
-/** The account a hero's own screen prices it on: its own auras, no other carrier switched on. */
+/** The account a hero's own screen prices it on: its own auras, no switch on, the roster's
+ *  deployed heroes beside it. */
 function ownSeat(hero: HeroRecord, roster: readonly HeroRecord[] = heroes): AccountShared {
   return {
     ...account,
-    teamBuffs: computeTeamBuffsAroundHero(hero, roster, noTeamAuraSwitches()),
+    teamBuffs: computeTeamBuffsAroundHero(hero, noTeamAuraSwitches()),
     fieldAllies: fieldAlliesAroundHero(hero, roster),
   };
 }
@@ -106,8 +107,8 @@ describe('Brecha — the fifth standing team aura', () => {
     const carrier = withAbilityLevels(heroByName('IDK'), { brecha: 7 });
     const onField: HeroRecord = { ...carrier, deployed: true };
     const offField: HeroRecord = { ...carrier, deployed: false };
-    const deployed = computeTeamBuffsAroundHero(onField, heroes, noTeamAuraSwitches());
-    const benched = computeTeamBuffsAroundHero(offField, heroes, noTeamAuraSwitches());
+    const deployed = computeTeamBuffsAroundHero(onField, noTeamAuraSwitches());
+    const benched = computeTeamBuffsAroundHero(offField, noTeamAuraSwitches());
     expect(deployed.brecha).toBe(7);
     expect(benched).toEqual(deployed);
   });

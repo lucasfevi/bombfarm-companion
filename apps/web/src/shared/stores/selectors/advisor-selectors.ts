@@ -1,8 +1,10 @@
 import {
   computeAdvisorPipeline,
+  type AdvisorPipelineInput,
   type AdvisorPipelineResult,
 } from '@bombfarm/domain/advisor-pipeline';
-import { substituteHeroAbilities } from '@bombfarm/domain/team-buffs';
+import { teamAuraDpsDeltas } from '@bombfarm/domain/team-aura-deltas';
+import { substituteHeroAbilities, type TeamBuffId } from '@bombfarm/domain/team-buffs';
 import {
   selectActiveHeroFieldAllies,
   selectActiveHeroTeamBuffs,
@@ -19,9 +21,11 @@ import type { PlannerStore } from '@/shared/stores/planner-store';
  */
 let advisorPipelineComputeCount = 0;
 let cache: { deps: readonly unknown[]; result: AdvisorPipelineResult } | null = null;
+let auraDeltasCache: { deps: readonly unknown[]; result: Record<TeamBuffId, number> } | null = null;
 
 export function resetAdvisorPipelineCache(): void {
   cache = null;
+  auraDeltasCache = null;
 }
 
 export function getAdvisorPipelineComputeCount(): number {
@@ -105,13 +109,8 @@ function depsEqual(left: readonly unknown[], right: readonly unknown[]): boolean
   return true;
 }
 
-export function selectAdvisorPipeline(state: PlannerStore): AdvisorPipelineResult {
-  const deps = readAdvisorDepTuple(state);
-  if (cache && depsEqual(cache.deps, deps)) {
-    return cache.result;
-  }
-  advisorPipelineComputeCount += 1;
-  const result = computeAdvisorPipeline({
+function advisorInput(state: PlannerStore): AdvisorPipelineInput {
+  return {
     naked: state.naked,
     geared: state.gearedOverride,
     loadout: state.loadout,
@@ -140,8 +139,32 @@ export function selectAdvisorPipeline(state: PlannerStore): AdvisorPipelineResul
     targetProp: state.targetProp,
     birth: state.birth,
     runes: state.runes,
-  });
+  };
+}
+
+export function selectAdvisorPipeline(state: PlannerStore): AdvisorPipelineResult {
+  const deps = readAdvisorDepTuple(state);
+  if (cache && depsEqual(cache.deps, deps)) {
+    return cache.result;
+  }
+  advisorPipelineComputeCount += 1;
+  const result = computeAdvisorPipeline(advisorInput(state));
   cache = { deps, result };
+  return result;
+}
+
+/**
+ * What each aura switch on the Combat tab would do to sustained DPS — one extra pipeline run per
+ * aura, cached on the same dependency tuple as the pipeline itself, and only computed while
+ * something (the Combat tab's aura section) actually reads it.
+ */
+export function selectTeamAuraDpsDeltas(state: PlannerStore): Record<TeamBuffId, number> {
+  const deps = readAdvisorDepTuple(state);
+  if (auraDeltasCache && depsEqual(auraDeltasCache.deps, deps)) {
+    return auraDeltasCache.result;
+  }
+  const result = teamAuraDpsDeltas(advisorInput(state), selectAdvisorPipeline(state).dps);
+  auraDeltasCache = { deps, result };
   return result;
 }
 

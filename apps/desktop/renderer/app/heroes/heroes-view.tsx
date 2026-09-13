@@ -30,6 +30,7 @@ import {
 import { HeroIdentityChip } from '@bombfarm/game-art';
 import { CombatPhasePanel } from '@bombfarm/farm/components';
 import {
+  AbilitiesAurasPanel,
   GearTab,
   HeroAbilitiesPanel,
   HeroCopyProvider,
@@ -42,7 +43,6 @@ import {
   RosterRail,
   RosterToolbar,
   SheetTable,
-  TeamAuraSwitchesPanel,
 } from '@bombfarm/hero/components';
 import {
   DEFAULT_ROSTER_BOARD_SORT,
@@ -67,11 +67,17 @@ import { abilityGainFor, type AbilityGain } from '@bombfarm/domain/ability-gain'
 import type { AdvisorPipelineResult } from '@bombfarm/domain/advisor-pipeline';
 import { statLabel } from '@bombfarm/domain/game-labels';
 import type { RankMode } from '@bombfarm/domain/model';
-import { pipelineForHero } from '@bombfarm/domain/roster-dps';
+import { advisorInputForHero, pipelineForHero } from '@bombfarm/domain/roster-dps';
 import type { PipelineFacts } from '@bombfarm/domain/stat-breakdown';
 import type { SheetKey } from '@bombfarm/domain/planner-constants';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import { noTeamAuraSwitches, type TeamAuraSwitches, type TeamBuffId } from '@bombfarm/domain/team-buffs';
+import { teamAuraDpsDeltas } from '@bombfarm/domain/team-aura-deltas';
+import {
+  noTeamAuraSwitches,
+  zeroTeamBuffs,
+  type TeamAuraSwitches,
+  type TeamBuffId,
+} from '@bombfarm/domain/team-buffs';
 import { accountAroundHero, type AccountBlock } from '../../lib/account/account-shared';
 import { useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
@@ -182,9 +188,9 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   // Which target the next-point ranking is read against. View-local and stored nowhere, like the
   // phase override above — it changes what this screen prints, never anything on the account.
   const [rankMode, setRankMode] = useState<RankMode>('dps');
-  // Which team auras the rest of the roster is counted for, on top of the shown hero's own. All
-  // off on every visit, like the phase override: a what-if that outlived the screen would inflate
-  // every figure here with no control in sight to explain it.
+  // Which team auras the shown hero is priced under at their cap, on top of its own. All off on
+  // every visit, like the phase override: a what-if that outlived the screen would inflate every
+  // figure here with no control in sight to explain it.
   const [auraSwitches, setAuraSwitches] = useState<TeamAuraSwitches>(noTeamAuraSwitches);
   const onAuraSwitch = useCallback((buffId: TeamBuffId, enabled: boolean) => {
     setAuraSwitches((current) =>
@@ -213,13 +219,13 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   );
 
   // The shown hero's own account: the shared block with its own aura total overlaid — its own
-  // aura always, the rest of the roster's through the switches above.
+  // aura always, any other at its cap through the switches above.
   const heroAccount = useMemo(
     () =>
       figures.kind === 'at'
-        ? accountAroundHero(figures.inputs.account, active.hero, roster.heroes, auraSwitches)
+        ? accountAroundHero(figures.inputs.account, active.hero, auraSwitches, roster.heroes)
         : null,
-    [active.hero, figures, roster.heroes, auraSwitches],
+    [active.hero, figures, auraSwitches, roster.heroes],
   );
 
   // One pipeline run for the whole detail pane. Every panel below the identity panel reads off it
@@ -231,6 +237,18 @@ function HeroesRoster({ model }: { model: RosterModel }) {
         ? pipelineForHero(active.hero, heroAccount, figures.inputs.phase, figures.inputs.mitigationPct)
         : null,
     [active.hero, figures, heroAccount],
+  );
+
+  // What each aura switch would do to sustained DPS: one more run per aura, on the same input.
+  const auraDeltas = useMemo(
+    () =>
+      figures.kind === 'at' && heroAccount && combat
+        ? teamAuraDpsDeltas(
+            advisorInputForHero(active.hero, heroAccount, figures.inputs.phase, figures.inputs.mitigationPct),
+            combat.dps,
+          )
+        : NO_AURA_DELTAS,
+    [active.hero, figures, heroAccount, combat],
   );
 
   const gainsCache = useRef(createAbilityGainCache());
@@ -303,8 +321,11 @@ function HeroesRoster({ model }: { model: RosterModel }) {
     setPickerOpen(true);
   }, []);
 
+  // "Back to your current phase" drops the aura switches with the phase pick: the two are the
+  // same kind of what-if, and a reader clearing one expects the figures to be the account's.
   const onClearOverride = useCallback(() => {
     setOverridePhase(null);
+    setAuraSwitches(noTeamAuraSwitches());
   }, []);
 
   return (
@@ -386,8 +407,8 @@ function HeroesRoster({ model }: { model: RosterModel }) {
                     overridden={overridePhase !== null}
                     onOverridePhase={setOverridePhase}
                     onClearOverride={onClearOverride}
-                    roster={roster.heroes}
                     auraSwitches={auraSwitches}
+                    auraDeltas={auraDeltas}
                     onAuraSwitch={onAuraSwitch}
                     rankMode={rankMode}
                     onRankMode={setRankMode}
@@ -437,8 +458,8 @@ function HeroDetailTabs({
   overridden,
   onOverridePhase,
   onClearOverride,
-  roster,
   auraSwitches,
+  auraDeltas,
   onAuraSwitch,
   rankMode,
   onRankMode,
@@ -459,8 +480,8 @@ function HeroDetailTabs({
   overridden: boolean;
   onOverridePhase: (phase: number) => void;
   onClearOverride: () => void;
-  roster: readonly HeroRecord[];
   auraSwitches: TeamAuraSwitches;
+  auraDeltas: Record<TeamBuffId, number>;
   onAuraSwitch: (buffId: TeamBuffId, on: boolean) => void;
   rankMode: RankMode;
   onRankMode: (next: RankMode) => void;
@@ -518,16 +539,6 @@ function HeroDetailTabs({
                 onClearOverride={onClearOverride}
                 lang={lang}
               />
-              {/* The auras those figures count. Off, the hero is priced alone but for its own aura;
-                  on, the rest of the roster's carriers join at full presence. Beside the phase
-                  because both are what-ifs about the same figures, held the same way. */}
-              <TeamAuraSwitchesPanel
-                hero={active.hero}
-                roster={roster}
-                switches={auraSwitches}
-                onSwitch={onAuraSwitch}
-                lang={lang}
-              />
               <HeroCombat
                 heroes={heroes}
                 hero={active.hero}
@@ -543,6 +554,19 @@ function HeroDetailTabs({
                   t={statCopy}
                   facts={effectiveFacts(active.hero, figures.inputs.account, combat)}
                   formatNumber={formatNumber}
+                />
+              ) : null}
+              {/* What those figures were priced with, last: the hero's own abilities, and every
+                  team aura the game has behind a switch. A switch is a what-if held like the
+                  phase pick above, and it reaches Gear and Points as the phase does. */}
+              {figures.kind === 'at' ? (
+                <AbilitiesAurasPanel
+                  hero={active.hero}
+                  phase={figures.inputs.phase}
+                  switches={auraSwitches}
+                  deltas={auraDeltas}
+                  onSwitch={onAuraSwitch}
+                  lang={lang}
                 />
               ) : null}
             </div>
@@ -609,6 +633,8 @@ function FiguresNotice({ figures }: { figures: HeroFigures }) {
 /** One frozen empty array, so a screen with nothing to compute hands the panel the same reference
  *  on every render rather than a fresh one that re-renders it. */
 const NO_ABILITY_GAINS: readonly AbilityGain[] = Object.freeze([]);
+
+const NO_AURA_DELTAS: Record<TeamBuffId, number> = Object.freeze(zeroTeamBuffs());
 
 /**
  * The phase-scoped half of the detail. `PhasesHeroPanel` names the phase it was computed at and
