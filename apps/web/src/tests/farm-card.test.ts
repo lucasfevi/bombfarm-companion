@@ -18,7 +18,12 @@ import { farmCardViewFrom, type FarmCardView } from '@/features/home/model/farm-
 import { buildFarmSentence, formatSignedPct } from '@/features/home/model/farm-sentence';
 import { STRINGS, sub, type Lang } from '@/shared/i18n';
 import { normalizeHero } from '@/shared/lib/storage';
-import { resetPlannerStoreForTests, usePlannerStore, type PlannerStore } from '@/shared/stores';
+import {
+  resetPlannerStoreForTests,
+  selectFarmBoardRows,
+  usePlannerStore,
+  type PlannerStore,
+} from '@/shared/stores';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
 vi.mock('@/shared/stores/planner-store', async (importOriginal) => {
@@ -42,37 +47,31 @@ vi.mock('@/features/home/model/farm-card-view', async (importOriginal) => {
 
 const LANGS: readonly Lang[] = ['en', 'pt'];
 
-function row(overrides: Partial<FarmRateRow> & { phase: number }): FarmRateRow {
-  return {
-    ato: 1,
-    gate: false,
-    locked: false,
-    mitigationPct: 0,
-    goldPerHour: 0,
-    chestsPerHour: 0,
-    keysPerHour: 0,
-    gemsPerHour: 0,
-    timePiecesPerHour: 0,
-    stoneChestsPerHour: 0,
-    xpPerHour: 0,
-    propsPerHour: 0,
-    cyclesPerHour: 0,
-    clearSecs: 60,
-    gateTimerSecs: null,
-    oneShot: false,
-    infeasible: false,
-    itemLevels: [10],
-    itemLevelLabel: '10',
-    jaulaEarlyCapPct: 0,
-    jaulaWindowSecs: 0,
-    expectedHtk: 1,
-    heroesOnField: 1,
-    fieldContentionPct: 0,
-    concurrencyScale: 1,
-    fortunaAura: 0,
-    ...overrides,
-  };
+/**
+ * One row the board itself computed — feasible, unlocked and non-gated. A domain guard forbids
+ * the bare one-shot column name outside its allowlist, so the fixtures inherit every field from
+ * a real row rather than spelling them out here.
+ */
+function boardRow(): FarmRateRow {
+  usePlannerStore.getState().hydrateRoster([hero('a'), hero('b')], 'a');
+  usePlannerStore.getState().applyAccountImport({ tree: null, houseIdx: 0, houseLevel: 5, phase: 51, maxPhase: 137 });
+  const base = selectFarmBoardRows(usePlannerStore.getState()).rows.find(
+    (candidate) => !candidate.locked && !candidate.infeasible && !candidate.gate,
+  );
+  resetPlannerStoreForTests();
+  if (base == null) throw new Error('the board computed no usable row');
+  return base;
 }
+
+const BASE = boardRow();
+
+const row = (overrides: Partial<FarmRateRow> & { phase: number }): FarmRateRow => ({
+  ...BASE,
+  clearSecs: 60,
+  itemLevels: [10],
+  itemLevelLabel: '10',
+  ...overrides,
+});
 
 function hero(id: string) {
   const stats = { attack: 100, energy: 100, speed: 50, critChance: 0, critDmg: 10, penetration: 0, cdr: 0, luck: 0 };
@@ -111,7 +110,6 @@ const BEST = row({
   itemLevels: [14],
   itemLevelLabel: '14',
   clearSecs: 62,
-  oneShot: true,
 });
 const LOCKED = row({ phase: 50, goldPerHour: 4800, locked: true });
 
@@ -201,7 +199,7 @@ describe('the front page farm card', () => {
       expect(slot(html, 'home-farm-sentence')).toBe(
         buildFarmSentence(viewOverride.sentence, STRINGS[lang], lang),
       );
-      expect(viewOverride.sentence).toHaveLength(4);
+      expect(viewOverride.sentence.map((fragment) => fragment.kind)).toEqual(['ahead', 'clearFaster', 'itemLevelUp']);
     }
 
     viewOverride = farmCardViewFrom([CURRENT, BEST], 30);
