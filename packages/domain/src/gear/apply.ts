@@ -28,8 +28,12 @@ function sharedReverse(geared: number, gearPct: number, otherPct: number): numbe
  * Olho, gear crit +3.7869%) and Jon (+15.1474%) both solve to exactly zero spent crit-chance
  * points under this shape, and to fractional negatives if the +40 rides inside the pool.
  *
- * There is no `otherPct` parameter because no crit-chance source is a pool fraction any more;
- * a future one would want {@link sharedForward}'s divisor restored around this.
+ * Penetration took the same shape at the 2026-09-02 patch: Ponta de Diamante's points sit
+ * outside the pool that gear (~5× on a geared hero) and spent points scale — the 2026-09-13
+ * live read leaves a residual of exactly 20 once the ability is held out.
+ *
+ * There is no `otherPct` parameter because no crit-chance or penetration source is a pool
+ * fraction any more; a future one would want {@link sharedForward}'s divisor restored around this.
  */
 function flatOutsidePoolForward(naked: number, gearPct: number, flat: number): number {
   const flatClamped = Math.max(0, flat);
@@ -45,8 +49,9 @@ function flatOutsidePoolReverse(sheet: number, gearPct: number, flat: number): n
 /**
  * Apply gear onto a naked (unequipped) sheet.
  * Ataque is flat; Energia multiplies (no sheet-ability energy % today).
- * Speed / pen / CDR use the shared pool with `other` (sheet abilities); crit chance pools the
- * birth roll only, with Olho Clínico's flat points held out ({@link flatOutsidePoolForward}).
+ * Speed / CDR use the shared pool with `other` (sheet abilities); crit chance and penetration
+ * pool the birth roll only, with Olho Clínico's and Ponta de Diamante's flat points held out
+ * ({@link flatOutsidePoolForward}).
  * Items never roll crit damage.
  */
 export function applyGear(
@@ -61,7 +66,7 @@ export function applyGear(
     speed: sharedForward(naked.speed, bonuses.speedPct, other.speed),
     critChance: flatOutsidePoolForward(naked.critChance, bonuses.critPct, other.critChanceFlat),
     critDmg: naked.critDmg,
-    penetration: sharedForward(naked.penetration, bonuses.penPct, other.penetration),
+    penetration: flatOutsidePoolForward(naked.penetration, bonuses.penPct, other.penetration),
     cdr: sharedForward(naked.cdr, bonuses.cdrPct, other.cdr),
     luck: sharedForward(naked.luck, bonuses.luckPct, 0),
   };
@@ -81,7 +86,7 @@ export function reverseGear(
     speed: sharedReverse(geared.speed, bonuses.speedPct, other.speed),
     critChance: flatOutsidePoolReverse(geared.critChance, bonuses.critPct, other.critChanceFlat),
     critDmg: geared.critDmg,
-    penetration: sharedReverse(geared.penetration, bonuses.penPct, other.penetration),
+    penetration: flatOutsidePoolReverse(geared.penetration, bonuses.penPct, other.penetration),
     cdr: sharedReverse(geared.cdr, bonuses.cdrPct, other.cdr),
     luck: sharedReverse(geared.luck, bonuses.luckPct, 0),
   };
@@ -139,7 +144,7 @@ export function applyPoints(
     // ability (already inside `naked` via `other.critDmgFlat`) and the stat point add raw
     // planner percentage points. See POINT_GAIN.critDmgFlat.
     critDmg: naked.critDmg + pts.critDmg * POINT_GAIN.critDmgFlat,
-    penetration: sharedForward(
+    penetration: flatOutsidePoolForward(
       naked.penetration,
       bonuses.penPct + pts.penetration * POINT_GAIN.penetrationPctOfBase,
       other.penetration,
@@ -187,7 +192,7 @@ export function reverseSheet(
       other.critChanceFlat,
     ),
     critDmg: sheet.critDmg - pts.critDmg * POINT_GAIN.critDmgFlat,
-    penetration: sharedReverse(
+    penetration: flatOutsidePoolReverse(
       sheet.penetration,
       bonuses.penPct + pts.penetration * POINT_GAIN.penetrationPctOfBase,
       other.penetration,

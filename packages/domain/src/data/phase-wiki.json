@@ -1,7 +1,7 @@
 {
-  "syncedAt": "2026-09-02",
-  "sourcePulledAt": "2026-09-02T21:48:46.860Z",
-  "emittedAt": "2026-09-02",
+  "syncedAt": "2026-09-13",
+  "sourcePulledAt": "2026-09-13T17:30:01.768Z",
+  "emittedAt": "2026-09-13",
   "source": "official-wiki-export",
   "props": [
     {
@@ -143,8 +143,8 @@
     "timechestDropRate": 0.001,
     "stoneChestDropRate": 0.0005,
     "keyGateCost": 1,
-    "bonusAdd": 0.4,
-    "bonusAddVip": 0.8,
+    "bonusAdd": 0.5,
+    "bonusAddVip": 1,
     "bonusCapSecs": 28800
   },
   "timechestRarityByAto": [

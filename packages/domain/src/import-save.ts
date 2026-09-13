@@ -656,7 +656,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
     const sheetOther = {
       ...emptySheetOther(),
       critChanceFlat: mods.sheetCritChanceFlat,
-      penetration: mods.sheetPenetrationRaw,
+      penetration: mods.sheetPenetrationFlat,
       critDmgFlat: mods.sheetCritDmgFlat,
     };
 

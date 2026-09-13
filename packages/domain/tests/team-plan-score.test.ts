@@ -112,7 +112,7 @@ describe('scoreHeroLoadout', () => {
         dmgMult: 1,
         gateAttackMult: 1,
         sheetCritChanceFlat: 0,
-        sheetPenetrationRaw: 0,
+        sheetPenetrationFlat: 0,
         sheetCritDmgFlat: 0,
       },
       treeSheet: {
@@ -238,7 +238,7 @@ describe('scoreHeroLoadout', () => {
         dmgMult: 1,
         gateAttackMult: 1,
         sheetCritChanceFlat: 0,
-        sheetPenetrationRaw: 0,
+        sheetPenetrationFlat: 0,
         sheetCritDmgFlat: 0,
       },
       treeSheet: {

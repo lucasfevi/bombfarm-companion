@@ -269,7 +269,7 @@ describe('Gold tracks team_coin / fortuna / veia_ouro, never Sorte', () => {
 });
 
 describe('Return bonus multiplies gold/XP/drops only — structure is untouched', () => {
-  it("'off' → 'on' → 'vip' scales gold, xp and the four drop rates by exactly 1 / 1.4 / 1.8; structural fields are byte-identical", () => {
+  it("'off' → 'on' → 'vip' scales gold, xp and the four drop rates by exactly 1 / 1.5 / 2; structural fields are byte-identical", () => {
     const heroFacts = computeHeroFarmFacts({ heroes, account });
     const squad = computeSquadFarmFacts(heroFacts, account);
 
@@ -285,8 +285,8 @@ describe('Return bonus multiplies gold/XP/drops only — structure is untouched'
       'stoneChestsPerHour',
       'xpPerHour',
     ] as const) {
-      expect(on[field] / off[field]).toBeCloseTo(1.4, 9);
-      expect(vip[field] / off[field]).toBeCloseTo(1.8, 9);
+      expect(on[field] / off[field]).toBeCloseTo(1.5, 9);
+      expect(vip[field] / off[field]).toBeCloseTo(2, 9);
     }
 
     for (const field of ['propsPerHour', 'clearSecs', 'cyclesPerHour', 'expectedHtk', 'oneShot', 'infeasible'] as const) {
@@ -306,7 +306,7 @@ describe('Return bonus multiplies gold/XP/drops only — structure is untouched'
     const squad = computeSquadFarmFacts(heroFacts, account);
     const off = computeFarmRateRow(42, squad, { returnBonus: 'off' })!;
     const on = computeFarmRateRow(42, squad, { returnBonus: 'on' })!;
-    expect(on.keysPerHour / off.keysPerHour).toBeCloseTo(1.4, 9);
+    expect(on.keysPerHour / off.keysPerHour).toBeCloseTo(1.5, 9);
   });
 });
 

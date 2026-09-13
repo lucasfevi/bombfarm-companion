@@ -10,7 +10,7 @@ export function recomputeGearedSheet(
   const sheetOther = {
     ...emptySheetOther(),
     critChanceFlat: mods.sheetCritChanceFlat,
-    penetration: mods.sheetPenetrationRaw,
+    penetration: mods.sheetPenetrationFlat,
     critDmgFlat: mods.sheetCritDmgFlat,
   };
   return applyGear(hero.naked, hero.loadout, sheetOther);

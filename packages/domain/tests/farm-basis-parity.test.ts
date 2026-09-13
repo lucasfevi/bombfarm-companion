@@ -133,9 +133,9 @@ describe('pipeline-call count — the basis is extracted once and never re-deriv
     resetEnergySwitchPointCallCount();
   });
 
-  it('computeHeroFarmBases costs 2x|enabled| (rotation-priced auras); 200 subsequent heroFactsFromBasis calls cost 0', () => {
+  it('computeHeroFarmBases costs |enabled| (the auras are a closed-form layer on the one pass); 200 subsequent heroFactsFromBasis calls cost 0', () => {
     const bases = computeHeroFarmBases({ heroes, account });
-    expect(energySwitchPointCallCount).toBe(2 * heroes.length);
+    expect(energySwitchPointCallCount).toBe(heroes.length);
 
     resetEnergySwitchPointCallCount();
     for (let i = 0; i < 200; i++) {

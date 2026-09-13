@@ -103,7 +103,7 @@ test.describe('Farm Respec Advisor', () => {
 
   // 1. The toolbar is the Optimize control and nothing else — no figure is reported until the
   // player asks. The recommended phase is the panel's Phase tile, so the band is asserted there.
-  test('the toolbar offers Optimize and reports no figure; the panel names a phase in 59-63', async ({ page }) => {
+  test('the toolbar offers Optimize and reports no figure; the panel names a phase in 54-58', async ({ page }) => {
     await expect(toolbar(page)).toBeVisible();
     await expect(optimizeButton(page)).toBeEnabled();
     // Before the press the toolbar carries the button label and no number of any kind: no gain,
@@ -118,18 +118,20 @@ test.describe('Farm Respec Advisor', () => {
     expect(phases.length, `no phase number found in "${phaseText}"`).toBeGreaterThan(0);
     // The tile reads `current -> recommended`; the recommendation is the last one it prints.
     const recommended = phases[phases.length - 1];
-    // The solver lands on 61 for this account, up from 55 before every clear was charged for the
-    // seconds the squad spends coming up to speed: that head is a fixed cost, so it hurts a quick
-    // low-phase clear far more than a long one and the phase worth farming rises. (55 was itself
-    // up from 52, when the 2026-08-28 damage patch made weapons worth five times as much.)
+    // The solver lands on 56 for this account, down from 61 after the 2026-09-13 wiki refresh:
+    // the seeded Diamond Tip carrier keeps a flat +12 penetration where the old shape multiplied
+    // its roll by 13, Misericórdia executes at 0.75%/level instead of 1.25%, and the search now
+    // prices the Marcha carrier's aura at each candidate. (61 was up from 55 once every clear was
+    // charged for the seconds the squad spends coming up to speed, and 55 from 52 when the
+    // 2026-08-28 damage patch made weapons worth five times as much.)
     // Asserted as a narrow band rather than a point so a last-digit move in an unrelated constant
     // does not fail a test about the UI.
     //
     // This band is a UI anchor, not a measurement. The capture behind it is out of regime for
     // sheet math (see `docs/fixture-corpus.md` §13), so the number is here to keep the assertion
     // from going vacuous, and it moves whenever the model does.
-    expect(recommended).toBeGreaterThanOrEqual(59);
-    expect(recommended).toBeLessThanOrEqual(63);
+    expect(recommended).toBeGreaterThanOrEqual(54);
+    expect(recommended).toBeLessThanOrEqual(58);
   });
 
   test('the panel says it moves points only, and points at the Optimizer page for the rest', async ({ page }) => {
@@ -214,7 +216,7 @@ test.describe('Farm Respec Advisor', () => {
 
   // 5. Re-rank moves the top-ranked phase into the recommended band, closes the panel, and marks the
   // table as showing the proposed build. Same band, and the same caveat, as the Phase tile above.
-  test('re-rank moves the top-ranked phase into 59-63, closes the panel, and marks the table', async ({ page }) => {
+  test('re-rank moves the top-ranked phase into 54-58, closes the panel, and marks the table', async ({ page }) => {
     const beforePhase = await firstRowPhase(page);
 
     await optimizeButton(page).click();
@@ -227,8 +229,8 @@ test.describe('Farm Respec Advisor', () => {
 
     const afterPhase = await firstRowPhase(page);
     expect(afterPhase).not.toBe(beforePhase);
-    expect(afterPhase).toBeGreaterThanOrEqual(59);
-    expect(afterPhase).toBeLessThanOrEqual(63);
+    expect(afterPhase).toBeGreaterThanOrEqual(54);
+    expect(afterPhase).toBeLessThanOrEqual(58);
   });
 
   // 6. Invalidation: with re-rank on, changing an input reverts everything — no stale figure.
