@@ -124,16 +124,12 @@ export function peelSheetSources(input: PeelSheetSourcesInput): SheetSourceLines
     ability: Math.max(0, sheetOther.critDmgFlat),
     skillTree: tree.critDmgPct,
   };
-  // skills.totals has no node for penetration or cdr — tree line is exactly 0.
-  const penetration = pooledLines(
-    birth.penetration,
-    star,
-    sheetOther.penetration,
-    bonuses.penPct,
-    POINT_GAIN.penetrationPctOfBase,
-    pts.penetration,
-    0,
-  );
+  // skills.totals has no node for penetration or cdr — tree line is exactly 0. Penetration's
+  // ability line is flat like crit chance's: Ponta de Diamante's points ride outside the pool.
+  const penetration: SourceLines = {
+    ...pooledLines(birth.penetration, star, 0, bonuses.penPct, POINT_GAIN.penetrationPctOfBase, pts.penetration, 0),
+    ability: Math.max(0, sheetOther.penetration),
+  };
   const cdr = pooledLines(birth.cdr, star, sheetOther.cdr, bonuses.cdrPct, POINT_GAIN.cdrPctOfBase, pts.cdr, 0);
   // Luck's tree term is a flat percentage-point addend, not base × pct.
   const luck: SourceLines = {

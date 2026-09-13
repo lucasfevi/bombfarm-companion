@@ -98,7 +98,10 @@ export {
 import { buildCandidateSheet } from './points-reopt-core';
 import { pipelineForHero } from './roster-dps';
 import { DEFAULT_CASA_SLOTS } from './casa-slots';
-import { computeTeamBuffsOverRotation } from './team-buffs';
+import { computeTeamBuffsOverRotation, zeroTeamBuffs, type TeamBuffId } from './team-buffs';
+import { teamAuraLayer, teamDrainMultFromTeamBuffs } from './team-aura-layer';
+import { combineDrainRate } from './drain';
+import { abilityMods } from './model/abilities';
 import type { SheetKey } from './planner-constants';
 import {
   DROP_RATES,
@@ -291,6 +294,26 @@ export type HeroFarmBasis = {
   fortunaLevel: number;
   /** `1 + 0.5 × context.blastRange` — ability-driven, build-independent, precomputed. */
   blocksPerBomb: number;
+  /**
+   * The same pipeline output with every team aura OFF, kept so {@link squadFactsFromBases} can
+   * re-price the auras for any candidate assignment (see {@link priceAuraLayer}). Absent on a
+   * basis assembled by another producer (the Team Plan's farm objective), which then keeps the
+   * aura layer it was built with.
+   */
+  auraFree?: AuraFreeFarmTerms;
+};
+
+/**
+ * One hero's pipeline terms with the team auras held at zero — the base the aura layer is applied
+ * to. `selfDrainMult` is the hero's own drain reduction (Bateria Extra) — the pipeline's own
+ * input to {@link combineDrainRate}, kept so Fôlego can be combined with it per candidate.
+ */
+export type AuraFreeFarmTerms = {
+  effective: HeroSheet;
+  effectiveDelta: EffectiveDeltas;
+  context: Context;
+  selfDrainMult: number;
+  abilities: Record<string, number>;
 };
 
 /**
@@ -311,6 +334,7 @@ export type HeroFarmBasisParts = {
   adjustedLuckPct: number;
   treeLuckFlatPct: number;
   abilities: Record<string, number>;
+  auraFree?: AuraFreeFarmTerms;
 };
 
 /**
@@ -334,24 +358,28 @@ export function heroFarmBasisFromParts(parts: HeroFarmBasisParts): HeroFarmBasis
     veiaOuroLevel: clampAbilityLevel(parts.abilities.veia_ouro ?? 0),
     fortunaLevel: clampAbilityLevel(parts.abilities.fortuna ?? 0),
     blocksPerBomb: 1 + 0.5 * parts.context.blastRange,
+    ...(parts.auraFree ? { auraFree: parts.auraFree } : {}),
   };
 }
 
 /**
- * One `pipelineForHero` call per enabled hero, against whatever `account.teamBuffs` it is handed.
- * Order follows `heroes`. {@link computeHeroFarmBases} is the entry point; this is its pass.
+ * One `pipelineForHero` call per enabled hero, with every team aura OFF. Order follows `heroes`.
+ * The bases come back at the identity aura layer, carrying their aura-free terms;
+ * {@link computeHeroFarmBases} prices the layer on afterwards. Whatever `teamBuffs` the caller's
+ * account carries is not read.
  */
-function basesForAccount(
+function auraFreeBasesForAccount(
   enabledHeroes: readonly HeroRecord[],
-  account: AccountShared,
+  account: FarmAccount,
 ): HeroFarmBasis[] {
   const treeLuckFlatPct = account.tree.luckFlatPct ?? 0;
+  const auraFreeAccount: AccountShared = { ...account, teamBuffs: zeroTeamBuffs() };
 
   return enabledHeroes.map((hero) => {
     // The sole HeroRecord entry to the pipeline. phase=1 (not null) + mitigationPct=0
     // is deliberate — `effectiveMitigationPct` only honors mitigationPct=0 when phase is a
     // positive number; with `null` it substitutes phase 1's wiki mitigation instead.
-    const pipeline = pipelineForHero(hero, account, 1, 0);
+    const pipeline = pipelineForHero(hero, auraFreeAccount, 1, 0);
 
     return heroFarmBasisFromParts({
       heroId: hero.id,
@@ -365,13 +393,97 @@ function basesForAccount(
       adjustedLuckPct: pipeline.adjusted.luck,
       treeLuckFlatPct,
       abilities: hero.abilities,
+      auraFree: {
+        effective: pipeline.effective,
+        effectiveDelta: pipeline.A.effectiveDelta,
+        context: pipeline.context,
+        selfDrainMult: abilityMods(hero.abilities).drainMult,
+        abilities: hero.abilities,
+      },
     });
   });
 }
 
 /**
- * The presence weight one basis contributes to the rotation's aura total: its own duty cycle
- * `F/(F+T)` at its own points, the same quantity {@link HeroFarmFacts.uptime} carries.
+ * What the four team auras do to one hero's pipeline terms, in closed form. The pipeline applies
+ * them as the LAST step of `derive`: Grito multiplies attack (and so the attack per point), Marcha
+ * multiplies speed (and its delta), Presságio adds flat crit points, and Fôlego combines with the
+ * hero's own drain reduction ({@link combineDrainRate}) — nothing else in the sheet or the farm
+ * `Context` reads them. Applying the same four operations to the aura-free terms reproduces the
+ * pipeline's output bit for bit, which is what lets a candidate assignment be priced with its
+ * own aura totals at zero pipeline calls.
+ */
+function priceAuraLayer(
+  basis: HeroFarmBasis,
+  teamBuffs: Record<TeamBuffId, number>,
+): HeroFarmBasis {
+  const base = basis.auraFree;
+  if (base === undefined) return basis;
+  const mults = teamAuraLayer(teamBuffs);
+  return {
+    ...basis,
+    effective: {
+      ...base.effective,
+      attack: base.effective.attack * mults.attackMult,
+      speed: base.effective.speed * mults.speedMult,
+      critChance: base.effective.critChance + mults.teamCritFlat,
+      attackPerPoint: base.effective.attackPerPoint * mults.attackMult,
+    },
+    effectiveDelta: {
+      ...base.effectiveDelta,
+      attack: base.effectiveDelta.attack * mults.attackMult,
+      speed: base.effectiveDelta.speed * mults.speedMult,
+    },
+    context: {
+      ...base.context,
+      drainMult: combineDrainRate(base.selfDrainMult, mults.teamDrainMult),
+    },
+  };
+}
+
+/**
+ * The presence weight one hero contributes to the rotation's aura total AT A CANDIDATE VECTOR:
+ * its own duty cycle `F/(F+T)` there, seeded — like the pipeline's own first pass — off the pool's
+ * at-best Fôlego total. Only energy reaches the field time, and no aura touches energy, so the
+ * aura-free terms give it exactly.
+ */
+function presenceAt(
+  basis: HeroFarmBasis,
+  base: AuraFreeFarmTerms,
+  pts: Record<SheetKey, number>,
+  atFullPresenceDrainMult: number,
+): number {
+  const sheet = buildCandidateSheet(base.effective, basis.pts, base.effectiveDelta, pts);
+  const drainMult = combineDrainRate(base.selfDrainMult, atFullPresenceDrainMult);
+  const field = sheet.energy / drainMult;
+  return (100 * field) / (field + base.context.restSeconds) / 100;
+}
+
+function hasAuraFreeTerms(basis: HeroFarmBasis): basis is HeroFarmBasis & { auraFree: AuraFreeFarmTerms } {
+  return basis.auraFree !== undefined;
+}
+
+/**
+ * The rotation-weighted aura totals for a candidate assignment over bases that carry their
+ * aura-free terms — the same two-step pricing {@link computeHeroFarmBases} documents, as pure
+ * scalar math: presence at the pool's at-best total, then the totals at those presences.
+ */
+function priceTeamBuffsForAssignment(
+  bases: readonly (HeroFarmBasis & { auraFree: AuraFreeFarmTerms })[],
+  ptsByHeroId: ReadonlyMap<string, Record<SheetKey, number>> | null,
+): Record<TeamBuffId, number> {
+  const carriers = bases.map((basis) => ({ abilities: basis.auraFree.abilities }));
+  const atFullPresence = computeTeamBuffsOverRotation(carriers, null);
+  const atFullPresenceDrainMult = teamDrainMultFromTeamBuffs(atFullPresence);
+  const presence = bases.map((basis) =>
+    presenceAt(basis, basis.auraFree, ptsByHeroId?.get(basis.heroId) ?? basis.pts, atFullPresenceDrainMult),
+  );
+  return computeTeamBuffsOverRotation(carriers, presence);
+}
+
+/**
+ * WHY THE PRESENCE WEIGHT IS THE UNCONSTRAINED DUTY CYCLE. {@link presenceAt} weighs a carrier by
+ * `F/(F+T)` at its points, the same quantity {@link HeroFarmFacts.uptime} carries.
  *
  * Deliberately NOT `uptime x activity` (the House-ALLOCATED basis `heroesOnField` and
  * `fortunaAura` use). `activity` is decided per phase by {@link allocateHouseSlots}, so weighting
@@ -384,31 +496,27 @@ function basesForAccount(
  * against a 7.34-slot demand) the lone Grito carrier's unconstrained uptime is 0.578 against a
  * live-measured field presence of 0.591, so the term is inside 3% of measurement there.
  *
- * Reads `basis.effective` rather than rebuilding the sheet: `heroFactsFromBasis(b, b.pts)` is
- * documented to reproduce exactly that sheet, and only the weight is wanted here.
  */
-function presenceWeightForBasis(basis: HeroFarmBasis): number {
-  const field = fieldSeconds(basis.effective, basis.context);
-  return (100 * field) / (field + basis.context.restSeconds) / 100;
-}
 
 /**
- * TWO PIPELINE PASSES PER HERO, NOT ONE — and never a third. Team auras are a property of the
- * field ({@link computeTeamBuffsOverRotation}), so on a board that rotates a pool through the
- * House each carrier supplies its aura only for its own share of wall clock. Pricing that needs
- * every hero's uptime, and uptime comes out of the pipeline, so the two are mutually dependent:
+ * ONE PIPELINE PASS PER HERO, WITH THE AURAS OFF — then the aura layer in closed form. Team auras
+ * are a property of the field ({@link computeTeamBuffsOverRotation}), so on a board that rotates
+ * a pool through the House each carrier supplies its aura only for its own share of wall clock.
+ * Pricing that needs every hero's uptime, and uptime moves with the aura totals (Fôlego reaches
+ * `Context.drainMult`), so the two are mutually dependent:
  *
- *   pass 1  auras at FULL presence (the pool's at-best total) -> each hero's uptime
- *   pass 2  auras weighted by those uptimes -> the bases actually returned
+ *   step 1  auras at FULL presence (the pool's at-best total) -> each hero's uptime
+ *   step 2  auras weighted by those uptimes -> the layer the bases are priced at
  *
- * FIXED AT TWO, deliberately, rather than iterated to a fixed point. Only Fôlego closes the loop
- * at all (it is the sole aura reaching `Context.drainMult`, and so the sole one reaching uptime);
- * Grito, Marcha and Presságio move attack, speed and crit, none of which touch `fieldSeconds`. So
- * the residual is second-order in one scalar, and the loop is at its least sensitive exactly where
- * rosters land in practice — a Fôlego total at or above its cap has no sensitivity left at all.
- * A convergence loop would buy that second order back at the price of a call count that is no
- * longer a fixed multiple of roster size, which is the invariant `farm-rate-perf-guard.test.ts`
- * exists to hold: 2N, never a function of the 600 rows.
+ * FIXED AT TWO STEPS, deliberately, rather than iterated to a fixed point. Only Fôlego closes the
+ * loop at all; Grito, Marcha and Presságio move attack, speed and crit, none of which touch
+ * `fieldSeconds`. So the residual is second-order in one scalar, and the loop is at its least
+ * sensitive exactly where rosters land in practice — a Fôlego total at or above its cap has no
+ * sensitivity left at all. Both steps are scalar math over the aura-free terms
+ * ({@link priceAuraLayer}), which is what keeps the call count the invariant
+ * `farm-rate-perf-guard.test.ts` holds: N, never a function of the 600 rows — and what lets
+ * {@link squadFactsFromBases} run the same two steps again for every candidate assignment, so a
+ * search prices a move's effect on the auras rather than holding them at the starting build.
  *
  * SEEDED FROM THE POOL, NOT FROM WHO IS DEPLOYED. Pass 1 uses the enabled pool's own at-best
  * total, so nothing the board prints depends on which heroes happened to be standing on the field
@@ -421,10 +529,8 @@ function presenceWeightForBasis(basis: HeroFarmBasis): number {
 function priceTeamBuffs(
   enabledHeroes: readonly HeroRecord[],
   account: FarmAccount,
-): Record<string, number> {
-  const atFullPresence = computeTeamBuffsOverRotation(enabledHeroes, null);
-  const seeded = basesForAccount(enabledHeroes, { ...account, teamBuffs: atFullPresence });
-  return computeTeamBuffsOverRotation(enabledHeroes, seeded.map(presenceWeightForBasis));
+): Record<TeamBuffId, number> {
+  return priceTeamBuffsForAssignment(auraFreeBasesForAccount(enabledHeroes, account).filter(hasAuraFreeTerms), null);
 }
 
 /**
@@ -438,8 +544,9 @@ function priceTeamBuffs(
  * against a direct `pipelineForHero` call must hand that call THESE buffs, or it compares two
  * different accounts and calls the difference a regression.
  *
- * Costs `N` pipeline calls when called on its own (the seeding pass). Callers that also want the
- * bases should call {@link computeHeroFarmBases}, which shares the pass rather than repeating it.
+ * Costs `N` pipeline calls when called on its own (the aura-free pass). Callers that also want
+ * the bases should call {@link computeHeroFarmBases}, which shares the pass rather than repeating
+ * it.
  */
 export function farmTeamBuffs(input: FarmFactsInput): Record<string, number> {
   const { heroes, account, enabledHeroIds } = input;
@@ -455,23 +562,21 @@ export function farmPricedAccount(input: FarmFactsInput): AccountShared {
 export function computeHeroFarmBases(input: FarmFactsInput): HeroFarmBasis[] {
   const { heroes, account, enabledHeroIds } = input;
   const enabledHeroes = resolveEnabledHeroes(heroes, enabledHeroIds);
-  const teamBuffs = priceTeamBuffs(enabledHeroes, account);
-  return basesForAccount(enabledHeroes, { ...account, teamBuffs });
+  const auraFreeBases = auraFreeBasesForAccount(enabledHeroes, account).filter(hasAuraFreeTerms);
+  const teamBuffs = priceTeamBuffsForAssignment(auraFreeBases, null);
+  return auraFreeBases.map((basis) => priceAuraLayer(basis, teamBuffs));
 }
 
 /**
  * Facts for ANY candidate 8-key vector. Pure scalar math; zero pipeline calls.
  * `heroFactsFromBasis(b, b.pts)` is byte-identical to `computeHeroFarmFacts`'s entry for `b`.
  *
- * TEAM AURAS ARE FROZEN AT THE BASIS, like every other pipeline-derived term here. The rotation
- * pricing in {@link computeHeroFarmBases} reads every hero's uptime, and uptime moves with the
- * point vector (energy buys field seconds), so a candidate vector strictly speaking implies its
- * own aura totals. Re-pricing them per candidate would cost a pipeline call per candidate and
- * delete the entire reason this function exists. It is held fixed instead, exactly as
- * `basis.context`, `basis.dmgMult` and the Grito factor already baked into `basis.effective` are.
- * The error is second-order and one-sided-small: only Fôlego reaches uptime at all, a respec moves
- * uptime by a few percent at most, and a Fôlego total sitting at its cap — where multi-carrier
- * rosters land — has no sensitivity left whatsoever.
+ * TEAM AURAS ARE READ AS THIS BASIS CARRIES THEM. The rotation pricing reads every hero's uptime,
+ * and uptime moves with the point vector (energy buys field seconds), so a candidate vector
+ * strictly speaking implies its own aura totals — but one hero's facts cannot know the rest of
+ * the squad. {@link squadFactsFromBases} is the entry that does, and it re-prices the layer for
+ * the whole assignment before calling this ({@link priceAuraLayer}); a caller pricing one hero
+ * alone gets the layer the basis was built at, which is exact at `basis.pts`.
  *
  * THE TRAP: `uptime` must repeat the pipeline's own two-step expression
  * `((100 × field) / (field + rest)) / 100`, not the algebraically-equal `field / (field + rest)`
@@ -522,17 +627,29 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
 /**
  * Squad facts for a whole candidate assignment, keyed by hero id. Heroes absent from the map
  * use their own `basis.pts`. Zero pipeline calls.
+ *
+ * THE AURAS FOLLOW THE ASSIGNMENT. Over bases that carry their aura-free terms (every basis
+ * {@link computeHeroFarmBases} returns) the team-aura layer is priced again for THIS assignment —
+ * a carrier that buys energy is present more, and its aura reaches the field more — so a search
+ * scores exactly what a rebuild of the roster at its proposal would score. Bases from another
+ * producer keep the layer they were built with.
  */
 export function squadFactsFromBases(
   bases: readonly HeroFarmBasis[],
   ptsByHeroId: ReadonlyMap<string, Record<SheetKey, number>> | null,
   account: SquadFarmAccount,
 ): SquadFarmFacts {
-  const heroFacts = bases.map((basis) => heroFactsFromBasis(basis, ptsByHeroId?.get(basis.heroId) ?? basis.pts));
+  const priced = bases.every(hasAuraFreeTerms)
+    ? (() => {
+        const teamBuffs = priceTeamBuffsForAssignment(bases, ptsByHeroId);
+        return bases.map((basis) => priceAuraLayer(basis, teamBuffs));
+      })()
+    : bases;
+  const heroFacts = priced.map((basis) => heroFactsFromBasis(basis, ptsByHeroId?.get(basis.heroId) ?? basis.pts));
   return computeSquadFarmFacts(heroFacts, account);
 }
 
-/** {@link computeHeroFarmBases}'s call count (2N, or N on an override). Order follows `heroes`. */
+/** {@link computeHeroFarmBases}'s call count (N). Order follows `heroes`. */
 export function computeHeroFarmFacts(input: FarmFactsInput): HeroFarmFacts[] {
   return computeHeroFarmBases(input).map((basis) => heroFactsFromBasis(basis, basis.pts));
 }

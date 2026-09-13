@@ -56,22 +56,27 @@ export type GearBonuses = {
  * Non-item bonuses already baked into the unequipped sheet. Today that is sheet abilities only
  * (e.g. Olho Clínico, Ponta de Diamante). Tree / Marcha / team buffs are combat-only — not in here.
  *
- * `speed` / `critChance` / `penetration` / `cdr` are **fractions of the rolled base**
- * (wiki `final = base × (1 + Σ)`). `critDmgFlat` is the one exception and is named for it:
- * crit damage is flat-additive in this game, so it carries raw planner percentage points
- * (`SheetStats.critDmg` units) that are ADDED to the sheet, never multiplied against the roll.
- * See `POINT_GAIN.critDmgFlat` for the measurement that settled it.
+ * `speed` / `cdr` are **fractions of the rolled base** (wiki `final = base × (1 + Σ)`) — and
+ * today nothing feeds either. `critChanceFlat`, `critDmgFlat` and `penetration` are flat addends
+ * in the sheet's own units, ADDED after the star factor and held outside the pool that gear and
+ * spent points scale, never multiplied against the roll. See `POINT_GAIN.critDmgFlat` and the
+ * `critChanceFlat` / `penetrationPp` ability kinds for the three measurements.
  */
 export type SheetOtherPct = {
   speed: number;
   /**
    * FLAT crit-chance percentage points (planner units) — an addend held OUTSIDE the shared
-   * pool, unlike `speed`/`penetration`/`cdr`, which are pool fractions. Olho Clínico is the
-   * only source; see the `critChanceFlat` ability kind for the measurement.
+   * pool, unlike `speed`/`cdr`, which are pool fractions. Olho Clínico is the only source; see
+   * the `critChanceFlat` ability kind for the measurement.
    */
   critChanceFlat: number;
   /** FLAT crit-damage percentage points (planner units) — an addend, not a pool fraction. */
   critDmgFlat: number;
+  /**
+   * FLAT penetration points — an addend outside the shared pool, the same placement as
+   * `critChanceFlat`. Ponta de Diamante is the only source; it multiplied the roll until the
+   * 2026-09-02 patch (see the `penetrationPp` ability kind's on-sheet note).
+   */
   penetration: number;
   cdr: number;
 };

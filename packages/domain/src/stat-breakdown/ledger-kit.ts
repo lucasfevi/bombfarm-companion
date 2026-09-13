@@ -33,10 +33,9 @@ function sheetOtherFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct): numbe
   switch (statKey) {
     case 'speed':
       return otherPct.speed;
-    case 'penetration':
-      return otherPct.penetration;
     case 'cdr':
       return otherPct.cdr;
+    case 'penetration':
     case 'critChance':
     case 'critDmg':
     case 'attack':
@@ -49,6 +48,7 @@ function sheetOtherFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct): numbe
 function sheetAbilityFlatFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct): number {
   if (statKey === 'critDmg') return Math.max(0, otherPct.critDmgFlat);
   if (statKey === 'critChance') return Math.max(0, otherPct.critChanceFlat);
+  if (statKey === 'penetration') return Math.max(0, otherPct.penetration);
   return 0;
 }
 
@@ -63,7 +63,8 @@ function sheetAbilityFlatFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct):
  * values rather than to this peeled figure.
  */
 export function birthFromNaked(statKey: SheetDisplayKey, facts: PipelineFacts): number {
-  // Peel the flat sheet-ability addend (crit damage only) before the multiplicative peels.
+  // Peel the flat sheet-ability addend (crit damage, crit chance, penetration) before the
+  // multiplicative peels.
   const naked = facts.naked[statKey] - sheetAbilityFlatFor(statKey, facts.sheetOther);
   const levelMult = levelPowerMult(facts.level);
   const starMult = starsMult(facts.stars);
@@ -131,7 +132,7 @@ export function pushBirthThenGear(
   if (other > EPS) {
     pushMul(steps, 'sheetAbilities', otherFactor(other), sheetAbilityNote(statKey));
   }
-  // Crit damage's and crit chance's sheet abilities are flat addends, not pool factors.
+  // Crit damage's, crit chance's and penetration's sheet abilities are flat addends, not pool factors.
   const abilityFlat = sheetAbilityFlatFor(statKey, facts.sheetOther);
   if (abilityFlat > EPS) {
     pushAdd(steps, 'sheetAbilities', abilityFlat, sheetAbilityNote(statKey));

@@ -27,6 +27,12 @@
  * (move counts, digests). Same method as the original recording: `runTeamPlan` at its default
  * budget on the same three captures, forge floor 10.
  *
+ * RE-RECORDED A THIRD TIME 2026-09-12, for a game-data change rather than a code one: the wiki
+ * published Misericórdia at 0.75% of HP per level (was 1.25%), and the `executePct` kind prices
+ * that threshold into every carrier's DPS. currentDps moved −4.2% (7 heroes), −5.9% (crit-points)
+ * and −1.0% (soulbound); the 7-hero plan is byte-identical, the two 13-hero plans each dropped a
+ * few moves (122 → 118, 56 → 54) and soulbound gained one point reset. Same method again.
+ *
  * NOT regime-bound: the claim is "this code still plans what it planned", an identity between two
  * revisions of the same arithmetic, not a statement about what the game rewards.
  */
@@ -62,8 +68,8 @@ const GOLDENS = [
   {
     file: 'save-20260819-11882-7heroes.json',
     forgeFloor: 10,
-    currentDps: 2851.295161129321,
-    planDps: 3383.6954409476884,
+    currentDps: 2730.7816982560526,
+    planDps: 3245.9126570147837,
     moves: 20,
     forges: 40,
     pointResets: 5,
@@ -73,24 +79,24 @@ const GOLDENS = [
   {
     file: 'save-20260823-13heroes-crit-points.json',
     forgeFloor: 10,
-    currentDps: 45934.50450371702,
-    planDps: 71668.78478631108,
-    moves: 122,
+    currentDps: 43204.307484230594,
+    planDps: 67612.8844235377,
+    moves: 118,
     forges: 18,
     pointResets: 11,
     seedUsed: 'current',
-    loadoutDigest: 'df148c822c3fa3e8',
+    loadoutDigest: 'cdf8f8d268a527bf',
   },
   {
     file: 'save-20260831-13heroes-soulbound.json',
     forgeFloor: 10,
-    currentDps: 5553.585149341687,
-    planDps: 6063.96508245437,
-    moves: 56,
+    currentDps: 5498.891711943429,
+    planDps: 6001.207742594982,
+    moves: 54,
     forges: 69,
-    pointResets: 9,
+    pointResets: 10,
     seedUsed: 'greedyHeroDps',
-    loadoutDigest: '256adbb6df5cd986',
+    loadoutDigest: '038fbd4f97c3195c',
   },
 ];
 

@@ -41,9 +41,9 @@ describe('nakedAfterSheetAbilityChange', () => {
     const prevMods = abilityMods({});
     const nextMods = abilityMods({ ponta_diamante: 10 }); // +1pp/level onSheet=true.
     const result = nakedAfterSheetAbilityChange(custom, 'penetrationPp', prevMods, nextMods);
-    const expected = rescaleNakedPen(custom, prevMods.sheetPenetrationRaw, nextMods.sheetPenetrationRaw);
+    const expected = rescaleNakedPen(custom, prevMods.sheetPenetrationFlat, nextMods.sheetPenetrationFlat);
     expect(result.penetration).toBeCloseTo(expected.penetration, 10);
-    expect(nextMods.sheetPenetrationRaw).toBeCloseTo(10, 6);
+    expect(nextMods.sheetPenetrationFlat).toBeCloseTo(10, 6);
   });
 
   it('critDmgFlat dispatches to rescaleNakedCritDmg', () => {

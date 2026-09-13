@@ -79,9 +79,9 @@ describe('stored ability levels survive the rank-20 catalog migration', () => {
     // perLevel 0.2 double-counted value (4.0) that a stale catalog would have produced
     // for a rank the old max: 10 catalog was never meant to accept.
     expect(mods.rangeCells).toBeCloseTo(2.0, 10);
-    // ponta_diamante @ 10, perLevel 1.0 (W3) -> sheetPenetrationRaw = 10, not the old
+    // ponta_diamante @ 10, perLevel 1.0 (W3) -> sheetPenetrationFlat = 10, not the old
     // perLevel 2.0 value (20).
-    expect(mods.sheetPenetrationRaw).toBeCloseTo(10, 10);
+    expect(mods.sheetPenetrationFlat).toBeCloseTo(10, 10);
   });
 
   it('the storage key stays bf-hp-heroes-v1 (additive change, no -v2 bump)', () => {

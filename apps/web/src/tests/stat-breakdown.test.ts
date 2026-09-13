@@ -104,7 +104,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     ({
       ...emptySheetOther(),
       critChanceFlat: mods.sheetCritChanceFlat,
-      penetration: mods.sheetPenetrationRaw,
+      penetration: mods.sheetPenetrationFlat,
       critDmgFlat: mods.sheetCritDmgFlat,
     } satisfies SheetOtherPct);
 
@@ -422,10 +422,13 @@ describe('stat-breakdown builder', () => {
     const pen = buildStatBreakdown('penetration', facts);
     expect(pen.kind).toBe('ledger');
     if (pen.kind === 'ledger') {
+      expect(pen.steps.map((s) => s.source)).toEqual(['base', 'stars', 'sheetAbilities']);
       const sheet = pen.steps.find((s) => s.source === 'sheetAbilities');
       expect(sheet?.note).toBe('diamondTip');
-      // ponta_diamante @10, W3 perLevel 1.0 -> raw Σ 10 (was 20 pre-W3).
-      expect(sheet?.amount).toBeCloseTo(11, 6);
+      // ponta_diamante @10, perLevel 1.0 -> a FLAT +10 penetration points since the 2026-09-02
+      // patch, so this step is an ADD like Keen Eye's above, not the ×11 pool multiply it was.
+      expect(sheet?.op).toBe('+');
+      expect(sheet?.amount).toBeCloseTo(10, 6);
     }
   });
 

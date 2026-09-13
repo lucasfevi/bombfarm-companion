@@ -35,12 +35,12 @@ const CAPTURE = 'save-20260819-11882-7heroes.json';
 const MAX_PHASE = 52;
 
 /** Regenerated rather than pasted: the vector is 7 heroes x 7 keys, and the seed reproduces it in
- *  three lines. Trial 7 of this sequence is the disagreement. */
+ *  three lines. Trial 17 of this sequence is the disagreement. */
 function witnessPoints(squad: readonly { heroId: string; pts: PointAlloc }[]): Record<string, PointAlloc> {
   let seed = 12345;
   const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
   let vector: Record<string, PointAlloc> = {};
-  for (let trial = 0; trial <= 7; trial++) {
+  for (let trial = 0; trial <= 17; trial++) {
     vector = {};
     for (const ctx of squad) {
       const alloc = { ...ctx.pts };

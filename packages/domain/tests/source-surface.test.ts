@@ -113,7 +113,7 @@ const SRC_ALLOWLIST: Record<string, number[]> = {
   // +9 (line numbers only): extracting `teamDrainMultFromTeamBuffs` (so the live field
   // countdown's multiplier resolver could reuse the Fôlego de Mineiro cap/floor arithmetic
   // instead of reimplementing it) added a function and its doc comment above these hits.
-  'derive.ts': [26, 89, 107, 155, 210, 221],
+  'derive.ts': [27, 64, 82, 130, 186, 197],
   // Line numbers only — still FOUR matches, unchanged in kind. Re-measured against the merged
   // tree rather than resolved to either side: this branch's House-cycle plumbing
   // (`houseCycleSecs`, then `houseCycleSecsHouseIdx`/`houseCycleSecsLevel`) and #87's farm-objective

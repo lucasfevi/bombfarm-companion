@@ -17,7 +17,7 @@ import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
-  ABILITIES_RESTATED_2026_08_23,
+  ABILITIES_RESTATED_BY_BOUNDARY,
   ALL_MECHANICS,
   CAPTURE_REGISTRY,
   MECHANICS,
@@ -160,40 +160,47 @@ describe('capture registry — every waiver is verified against the capture, not
     expect(waived.length, 'no waivers to verify — delete this block if waivers are gone').toBeGreaterThan(0);
   });
 
-  it.each(waived.map(([path]) => path))('%s owns none of the abilities the 2026-08-23 patch restated', (path) => {
+  it.each(waived.map(([path]) => path))('%s owns none of the abilities the boundaries it waives restated', (path) => {
     const row = CAPTURE_REGISTRY[path];
     const boundariesWaived = new Set(Object.keys(row.waivers ?? {}).map((m) => MECHANICS[m as keyof typeof MECHANICS].since));
-    expect(
-      [...boundariesWaived],
-      'this block only knows how to verify the 2026-08-23 restatement; a waiver against another ' +
-        'boundary needs its own precondition check here before it may be trusted',
-    ).toEqual(['2026-08-23']);
-
     const parsed: unknown = JSON.parse(readFileSync(join(FIXTURES_DIR, path), 'utf8'));
     const heroes = (parsed as { heroes: { name?: unknown; abilities?: { code?: unknown }[] }[] }).heroes;
-    const owners: string[] = [];
-    for (const hero of heroes) {
-      for (const ability of hero.abilities ?? []) {
-        if (ABILITIES_RESTATED_2026_08_23.includes(ability.code as (typeof ABILITIES_RESTATED_2026_08_23)[number])) {
-          owners.push(`${String(hero.name)} owns ${String(ability.code)}`);
+
+    for (const boundary of boundariesWaived) {
+      const restated: readonly string[] | undefined =
+        ABILITIES_RESTATED_BY_BOUNDARY[boundary as keyof typeof ABILITIES_RESTATED_BY_BOUNDARY];
+      expect(
+        restated,
+        `this block only knows how to verify an ability restatement; a waiver against the ${boundary} ` +
+          'boundary needs its own precondition check here before it may be trusted',
+      ).toBeDefined();
+
+      const owners: string[] = [];
+      for (const hero of heroes) {
+        for (const ability of hero.abilities ?? []) {
+          if (restated!.includes(String(ability.code))) {
+            owners.push(`${String(hero.name)} owns ${String(ability.code)}`);
+          }
         }
       }
+      expect(
+        owners,
+        `${path} waives the ${boundary} boundary on the grounds that no hero owns a restated ` +
+          `ability, and these do:\n${owners.join('\n')}`,
+      ).toEqual([]);
     }
-    expect(
-      owners,
-      `${path} waives the 2026-08-23 boundary on the grounds that no hero owns a restated ` +
-        `ability, and these do:\n${owners.join('\n')}`,
-    ).toEqual([]);
   });
 });
 
 describe('capture registry — the derived exclusion lists', () => {
   /**
-   * The 2026-08-28 damage boundary took the corpus down to ONE admissible sheet capture. Every
-   * other committed capture has at least one equipped weapon, and the weapon 5x reaches all of
-   * them, so none can be waived past it the way three were waived past 2026-08-23.
+   * The 2026-08-28 damage boundary took the corpus down to the two captures past it: every other
+   * committed capture has at least one equipped weapon, and the weapon 5x reaches all of them, so
+   * none can be waived past it the way three were waived past 2026-08-23. The 2026-09-02 Ponta de
+   * Diamante boundary then moved `sheet` again, and those two ARE waived past it — no hero on
+   * either owns the ability — so the list did not grow.
    */
-  it('capturesOutOfRegimeFor("sheet") is every capture but the one past 2026-08-28', () => {
+  it('capturesOutOfRegimeFor("sheet") is every capture but the two past 2026-08-28 that no ponta_diamante hero reaches', () => {
     expect(capturesOutOfRegimeFor('sheet')).toEqual([
       'api/assembled-payload-after.json',
       'api/assembled-payload-before.json',
@@ -213,7 +220,7 @@ describe('capture registry — the derived exclusion lists', () => {
     ]);
   });
 
-  it('a later boundary excludes more than an earlier one — cooldown (2026-08-18) admits what sheet (2026-08-28) refuses', () => {
+  it('a later boundary excludes more than an earlier one — cooldown (2026-08-18) admits what sheet (2026-09-02) refuses', () => {
     const sheet = new Set(capturesOutOfRegimeFor('sheet'));
     const cooldown = capturesOutOfRegimeFor('cooldown');
     for (const path of cooldown) expect(sheet, `${path} refused for cooldown but admitted for sheet`).toContain(path);

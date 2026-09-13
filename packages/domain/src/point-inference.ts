@@ -87,6 +87,8 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
   // Subtracted, not divided: Olho Clínico's crit points are a flat addend outside the pool.
   const critChanceFlat = Math.max(0, sheetOther.critChanceFlat);
   const baseCritChance = naked.critChance - critChanceFlat;
+  const penetrationFlat = Math.max(0, sheetOther.penetration);
+  const basePenetration = naked.penetration - penetrationFlat;
 
   // Invert applySkillTree to recover the pre-tree (gear + points) pool subtotal.
   const pool = {
@@ -131,11 +133,12 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
     // ability and the point are both flat addends, so the point count is a plain division of
     // the residual. Items never roll crit damage, so there is no gear term to peel either.
     critDmg: (pool.critDmg - naked.critDmg) / POINT_GAIN.critDmgFlat,
+    // Same peel as crit chance: Ponta de Diamante's points ride outside the pool.
     penetration: solveShared(
-      pool.penetration,
-      naked.penetration,
+      pool.penetration - penetrationFlat,
+      basePenetration,
       bonuses.penPct,
-      sheetOther.penetration,
+      0,
       POINT_GAIN.penetrationPctOfBase,
     ),
     cdr: solveShared(pool.cdr, naked.cdr, bonuses.cdrPct, sheetOther.cdr, POINT_GAIN.cdrPctOfBase),
