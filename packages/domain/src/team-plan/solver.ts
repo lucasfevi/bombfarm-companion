@@ -1,6 +1,5 @@
 import type { Loadout } from '../gear/types';
 import type { InventoryItem } from '../inventory';
-import { unmodelledAbilitiesInScope } from './ability-extras';
 import { mayMoveGear } from './allowed-changes';
 import { loadoutForScoring } from './evaluate';
 import { buildFarmObjective, exhaustiveFarmObjective, isSquadScope } from './farm-objective';
@@ -36,37 +35,6 @@ export {
   IMPROVEMENT_EPSILON,
 } from './solver-search';
 import { hasRuneOnSheet } from '../runes';
-
-function loadoutDriftHeroNames(input: TeamPlanInput): string[] {
-  const itemByHeroSlot = new Map<string, InventoryItem>();
-  for (const item of input.inventory) {
-    if (!item.equippedBy || !item.slot) continue;
-    itemByHeroSlot.set(`${item.equippedBy}|${item.slot}`, item);
-  }
-  const drifted: string[] = [];
-  for (const hero of input.heroes) {
-    let differs = false;
-    for (const [slot, equipped] of Object.entries(hero.loadout)) {
-      const inv = itemByHeroSlot.get(`${hero.heroId}|${slot}`);
-      if (!equipped && !inv) continue;
-      if (!equipped || !inv) {
-        differs = true;
-        break;
-      }
-      if (
-        equipped.defId !== inv.defId ||
-        equipped.rarityIdx !== inv.rarityIdx ||
-        equipped.level !== inv.level ||
-        equipped.upgrade !== inv.upgrade
-      ) {
-        differs = true;
-        break;
-      }
-    }
-    if (differs) drifted.push(hero.name);
-  }
-  return drifted;
-}
 
 function currentPtsByHeroId(input: TeamPlanInput): Record<string, import('../gear/types').PointAlloc> {
   return Object.fromEntries(input.heroes.map((hero) => [hero.heroId, hero.pts]));
@@ -280,16 +248,9 @@ export function runTeamPlan(
     gearBreakdown: waterfall.gearBreakdown,
     requiresFullPlan: waterfall.requiresFullPlan,
     gearDipDps: waterfall.gearDipDps,
-    disclosures: {
-      unmodelledAbilities: unmodelledAbilitiesInScope(contexts),
-      loadoutDriftHeroNames: loadoutDriftHeroNames(input),
-      runedHeroNames: contexts
-        .filter((ctx) => ctx.scope !== 'leaveAlone' && hasRuneOnSheet(ctx.runes))
-        .map((ctx) => ctx.name),
-      foreignOwnedItemCount: gearPool.excluded.foreignOwner,
-      marketBlockedItemCount: gearPool.excluded.marketBlocked,
-      unresolvedDefItemCount: gearPool.excluded.unresolvedDef,
-    },
+    runedHeroNames: contexts
+      .filter((ctx) => ctx.scope !== 'leaveAlone' && hasRuneOnSheet(ctx.runes))
+      .map((ctx) => ctx.name),
     run: {
       rounds: best.rounds,
       evaluations: budget.evaluations,

@@ -1,5 +1,4 @@
 import { ABILITIES } from '../model';
-import type { HeroPlanContext } from './types';
 
 /** Seconds the pulse lasts once it fires — the wiki's `combate.swap_dmg_secs`. */
 export const PASSAGEM_BASTAO_WINDOW_SEC = 120;
@@ -53,41 +52,6 @@ export function passagemBastaoMult(
   const cycleSeconds = fieldSecondsValue / dutyValue;
   const pulsingEntries = Math.min(1, cycleSeconds / PASSAGEM_BASTAO_COOLDOWN_SEC);
   return 1 + 0.04 * rank * (window / fieldSecondsValue) * pulsingEntries;
-}
-
-const UNMODELLED_IDS = ['matilha', 'brecha', 'caca_hero', 'fantasma'] as const;
-
-export type UnmodelledAbilityEntry = {
-  abilityId: string;
-  heroNames: string[];
-  assumptionBased?: boolean;
-};
-
-/** Heroes carrying unmodelled / assumption-based abilities for unmodelled-ability disclosures. */
-export function unmodelledAbilitiesInScope(contexts: HeroPlanContext[]): UnmodelledAbilityEntry[] {
-  const out: UnmodelledAbilityEntry[] = [];
-
-  for (const abilityId of UNMODELLED_IDS) {
-    const heroNames = contexts
-      .filter((ctx) => ctx.scope === 'optimize' && (ctx.abilities[abilityId] ?? 0) >= 1)
-      .map((ctx) => ctx.name);
-    if (heroNames.length > 0) {
-      out.push({ abilityId, heroNames });
-    }
-  }
-
-  const bastaoNames = contexts
-    .filter((ctx) => ctx.scope === 'optimize' && (ctx.abilities.passagem_bastao ?? 0) >= 1)
-    .map((ctx) => ctx.name);
-  if (bastaoNames.length > 0) {
-    out.push({
-      abilityId: 'passagem_bastao',
-      heroNames: bastaoNames,
-      assumptionBased: true,
-    });
-  }
-
-  return out;
 }
 
 /** The boundary this helper respects: the shared catalog stays `kind: 'none'`. */

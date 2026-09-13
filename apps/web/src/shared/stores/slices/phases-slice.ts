@@ -9,7 +9,7 @@ import { noTeamAuraSwitches, type TeamAuraSwitches, type TeamBuffId } from '@bom
 import { scheduleAfterPaint } from '@/shared/lib/schedule-after-paint';
 // Legal intra-element import (boundaries/elements declares one `shared-stores` element covering
 // both slices/ and selectors/) — the reverse edge of the same shape already ships in
-// team-plan-selectors.ts, which imports from team-plan-slice.ts.
+// team-plan-slice.ts, which imports from team-plan-selectors.ts.
 import {
   readFarmRespecDepTuple,
   runFarmRespecSolve,

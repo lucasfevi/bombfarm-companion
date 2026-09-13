@@ -25,7 +25,7 @@ Dependency direction is one-way and downward: `app` → `features` → `shared`.
 
 ### Feature slices (`src/features/`)
 
-Six feature slices, each with a required `index.ts` public-API barrel — nothing outside a feature may deep-import past that barrel (`boundaries/entry-point`, error):
+Seven feature slices, each with a required `index.ts` public-API barrel — nothing outside a feature may deep-import past that barrel (`boundaries/entry-point`, error):
 
 | Slice | Owns |
 | --- | --- |
@@ -34,6 +34,7 @@ Six feature slices, each with a required `index.ts` public-API barrel — nothin
 | `gear/` | `SlotEditor`, gear slots grid, gear domain UI |
 | `roster/` | Roster table / sort / open-state hooks (see the dead-code note below), hero picker |
 | `phases/` | Farm Ranking board + phase explorer + phase page-state model — slice name kept from the pre-rename `/phases` route (deliberate, see the routes section below) |
+| `team-plan/` | Connector for the optimizer route — store → `@bombfarm/team-plan/core` inputs and controls, action wiring, the empty-state panels with the import dialog as their action. The screen, runner and rules are the package's. |
 | `import/` | Import-heroes dialog |
 
 **Dead-code note (recorded, not removed — out of this doc's scope to fix):** `RosterTable`/`RosterRow`/`useRosterSort`/`useRosterOpen`/`roster-table-head.tsx` under `features/roster/` are exported from `roster/index.ts` but have zero importers anywhere in `src/app/**` or `src/features/**`. The live "switch hero" UI is `HeroPickerDialog` → `HeroPickerTable` → `HeroPickerRow`, a separate, unmemoized sibling. Dead-code removal is a separate concern from memo retirement.

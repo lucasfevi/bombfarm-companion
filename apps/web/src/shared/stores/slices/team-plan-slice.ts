@@ -1,6 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { InventoryItem } from '@bombfarm/domain/inventory';
 import { normalizeInventorySnapshot } from '@bombfarm/domain/inventory';
+import { applyTeamPlanControlChange, type TeamPlanControlChange } from '@bombfarm/team-plan/core';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 import type {
   TeamPlan,
@@ -21,6 +22,13 @@ import {
   DEFAULT_TEAM_PLAN_OBJECTIVE,
   mergeScopeForRoster,
 } from '@/shared/stores/team-plan/types';
+// Legal intra-element import (boundaries/elements declares one `shared-stores` element covering
+// both slices/ and selectors/) — the reverse edge of the same shape already ships in
+// phases-slice.ts, which imports from farm-ranking-selectors.ts.
+import {
+  selectTeamPlanControls,
+  selectTeamPlanInputs,
+} from '@/shared/stores/selectors/team-plan-selectors';
 
 const EMPTY_INVENTORY: InventorySnapshot = { version: 1, importedAt: 0, items: [] };
 
@@ -72,218 +80,125 @@ function scopeMapsEqual(
   return leftKeys.every((key) => left[key] === right[key]);
 }
 
+const CLEARED_PLAN = {
+  plan: null,
+  planInputSignature: null,
+  runStatus: 'idle',
+  runId: null,
+} as const;
+
 export const createTeamPlanSlice: StateCreator<
   PlannerStore,
   [['zustand/subscribeWithSelector', never]],
   [],
   TeamPlanSlice
-> = (set, get) => ({
-  inventory: EMPTY_INVENTORY,
-  scopeByHeroId: {},
-  forgeFloor: 10,
-  objective: DEFAULT_TEAM_PLAN_OBJECTIVE,
-  allowedChanges: DEFAULT_TEAM_PLAN_ALLOWED_CHANGES,
-  ignoreFieldCrowding: false,
-  targetPhase: null,
-  targetPhaseChosen: false,
-  runStatus: 'idle',
-  runId: null,
-  plan: null,
-  planInputSignature: null,
-
-  hydrateInventory: (snapshot, forgeFloor) => {
-    const normalized = normalizeInventorySnapshot(snapshot);
-    const clampedFloor = clampForgeFloor(forgeFloor);
-    const scopeByHeroId = buildDefaultScopeMap(get().heroes);
-    set({
-      inventory: normalized,
-      forgeFloor: clampedFloor,
-      scopeByHeroId,
-      plan: null,
-      planInputSignature: null,
-      runStatus: 'idle',
-      runId: null,
+> = (set, get) => {
+  // Every setter that reshapes the search rather than shifting its numbers routes through here:
+  // the classification (no-op / clamp / clear-versus-stale) lives in the package, this slice
+  // restates none of it.
+  const applyChange = (change: TeamPlanControlChange) => {
+    const state = get();
+    const inputs = selectTeamPlanInputs(state);
+    const next = applyTeamPlanControlChange(selectTeamPlanControls(state), change, {
+      heroes: inputs.heroes,
+      farmChosenPhase: inputs.farmChosenPhase,
+      phase: inputs.phase,
     });
-  },
+    if (!next) return;
+    set({ ...next.controls, ...(next.clearsPlan ? CLEARED_PLAN : {}) });
+  };
 
-  // Merges persisted scope choices over the battleAllowed-derived defaults, for heroes still on
-  // the roster. Runs once at boot, after `hydrateInventory` has already set the defaults — without
-  // this, a page reload silently forgot every Donate/Leave alone choice.
-  hydrateScope: (persisted) => {
-    set({ scopeByHeroId: mergeScopeForRoster(get().heroes, persisted) });
-  },
+  return {
+    inventory: EMPTY_INVENTORY,
+    scopeByHeroId: {},
+    forgeFloor: 10,
+    objective: DEFAULT_TEAM_PLAN_OBJECTIVE,
+    allowedChanges: DEFAULT_TEAM_PLAN_ALLOWED_CHANGES,
+    ignoreFieldCrowding: false,
+    targetPhase: null,
+    targetPhaseChosen: false,
+    runStatus: 'idle',
+    runId: null,
+    plan: null,
+    planInputSignature: null,
 
-  replaceInventoryFromImport: (items) => {
-    const snapshot: InventorySnapshot = {
-      version: 1,
-      importedAt: Date.now(),
-      items: [...items],
-    };
-    set({
-      inventory: snapshot,
-      plan: null,
-      planInputSignature: null,
-      runStatus: 'idle',
-      runId: null,
-    });
-  },
+    hydrateInventory: (snapshot, forgeFloor) => {
+      const normalized = normalizeInventorySnapshot(snapshot);
+      const clampedFloor = clampForgeFloor(forgeFloor);
+      const scopeByHeroId = buildDefaultScopeMap(get().heroes);
+      set({
+        inventory: normalized,
+        forgeFloor: clampedFloor,
+        scopeByHeroId,
+        ...CLEARED_PLAN,
+      });
+    },
 
-  // Clears any existing plan outright rather than just marking it stale: scope moves a hero
-  // in or out of the search entirely, so the last plan's per-hero rows, proposed items, and
-  // battle load can reference a hero that's no longer in scope. A "stale" banner over that is
-  // misleading — it reads as "still counted" — so this matches hydrateInventory's pattern of
-  // clearing outright on inputs that reshape the problem, not just shift its numbers.
-  // Always rewrite the *full* roster map (defaults + prior choices + this move). A partial
-  // map left Donate-looking heroes (UI default) as Optimize in the solver input.
-  setScope: (heroId, scope) => {
-    const heroes = get().heroes;
-    const previous = get().scopeByHeroId;
-    const previousResolved = mergeScopeForRoster(heroes, previous);
-    const next = { ...previousResolved, [heroId]: scope };
-    if (scopeMapsEqual(previous, next)) return;
-    const assignmentChanged = previousResolved[heroId] !== scope;
-    set({
-      scopeByHeroId: next,
-      ...(assignmentChanged
-        ? { plan: null, planInputSignature: null, runStatus: 'idle' as const, runId: null }
-        : {}),
-    });
-  },
+    // Merges persisted scope choices over the battleAllowed-derived defaults, for heroes still on
+    // the roster. Runs once at boot, after `hydrateInventory` has already set the defaults —
+    // without this, a page reload silently forgot every Donate/Leave alone choice.
+    hydrateScope: (persisted) => {
+      set({ scopeByHeroId: mergeScopeForRoster(get().heroes, persisted) });
+    },
 
-  setForgeFloor: (value) => {
-    const next = clampForgeFloor(value);
-    if (get().forgeFloor === next) return;
-    set({ forgeFloor: next });
-  },
+    replaceInventoryFromImport: (items) => {
+      const snapshot: InventorySnapshot = {
+        version: 1,
+        importedAt: Date.now(),
+        items: [...items],
+      };
+      set({ inventory: snapshot, ...CLEARED_PLAN });
+    },
 
-  // Clears outright rather than marking stale, the way setScope does: the two objectives report
-  // different quantities in different units, so a plan built for one renders as a wrong number
-  // under the other's copy. Dropping runId with it also disowns a run already in flight, whose
-  // answer would otherwise land under the objective the user has since switched away from.
-  setObjective: (value) => {
-    if (get().objective === value) return;
-    set({
-      objective: value,
-      plan: null,
-      planInputSignature: null,
-      runStatus: 'idle',
-      runId: null,
-    });
-  },
+    setScope: (heroId, scope) => applyChange({ kind: 'scope', heroId, scope }),
+    setForgeFloor: (value) => applyChange({ kind: 'forgeFloor', value }),
+    setObjective: (value) => applyChange({ kind: 'objective', value }),
+    setAllowedChanges: (value) => applyChange({ kind: 'allowedChanges', value }),
+    setIgnoreFieldCrowding: (value) => applyChange({ kind: 'ignoreFieldCrowding', value }),
+    setTargetPhase: (value) => applyChange({ kind: 'targetPhase', value }),
 
-  // Clears outright for the same reason `setObjective` does, and one of its own: a plan built
-  // under a wider setting carries chores the narrower one forbids, so leaving it on screen under
-  // a "stale" banner would show a move list the current setting says the player may not be given.
-  setAllowedChanges: (value) => {
-    if (get().allowedChanges === value) return;
-    set({
-      allowedChanges: value,
-      plan: null,
-      planInputSignature: null,
-      runStatus: 'idle',
-      runId: null,
-    });
-  },
+    startRun: (runId) => {
+      if (get().runId === runId && get().runStatus === 'running') return;
+      set({ runId, runStatus: 'running' });
+    },
 
-  // Clears outright, like every other setting that reshapes the search rather than shifting its
-  // numbers: this one changes what the objective MEANS, so the figures from the previous run are
-  // answers to a different question, not stale answers to this one.
-  setIgnoreFieldCrowding: (value) => {
-    if (get().ignoreFieldCrowding === value) return;
-    set({
-      ignoreFieldCrowding: value,
-      plan: null,
-      planInputSignature: null,
-      runStatus: 'idle',
-      runId: null,
-    });
-  },
+    resolveRun: (runId, status) => {
+      if (get().runId !== runId) return;
+      set({ runStatus: status });
+    },
 
-  // Clears the plan for the same reason `setObjective` does: the figures on screen are about one
-  // phase, and re-labelling them with another is how a plan comes to describe a fight it never
-  // scored. The FIRST pick of the phase the derived default already sits on must still flip
-  // `targetPhaseChosen` and stop tracking the Farm tab, so this is not a bare equality check.
-  setTargetPhase: (value) => {
-    const next = value == null || !Number.isFinite(value) ? null : Math.max(1, Math.min(600, Math.round(value)));
-    if (get().targetPhase === next && get().targetPhaseChosen) return;
-    const wasResolved = selectTeamPlanTargetPhase(get());
-    set({
-      targetPhase: next,
-      targetPhaseChosen: true,
-      ...(wasResolved !== next
-        ? { plan: null, planInputSignature: null, runStatus: 'idle' as const, runId: null }
-        : {}),
-    });
-  },
+    applyPlan: (runId, plan) => {
+      if (get().runId !== runId) return;
+      set({
+        plan,
+        planInputSignature: selectLiveTeamPlanInputSignature(get()),
+        runStatus: 'done',
+        runId,
+      });
+    },
 
-  startRun: (runId) => {
-    if (get().runId === runId && get().runStatus === 'running') return;
-    set({ runId, runStatus: 'running' });
-  },
+    clearPlan: () => {
+      if (
+        get().plan === null &&
+        get().planInputSignature === null &&
+        get().runStatus === 'idle' &&
+        get().runId === null
+      ) {
+        return;
+      }
+      set({ plan: null, planInputSignature: null, runStatus: 'idle', runId: null });
+    },
 
-  resolveRun: (runId, status) => {
-    if (get().runId !== runId) return;
-    set({ runStatus: status });
-  },
-
-  applyPlan: (runId, plan) => {
-    if (get().runId !== runId) return;
-    set({
-      plan,
-      planInputSignature: selectLiveTeamPlanInputSignature(get()),
-      runStatus: 'done',
-      runId,
-    });
-  },
-
-  clearPlan: () => {
-    if (
-      get().plan === null &&
-      get().planInputSignature === null &&
-      get().runStatus === 'idle' &&
-      get().runId === null
-    ) {
-      return;
-    }
-    set({ plan: null, planInputSignature: null, runStatus: 'idle', runId: null });
-  },
-
-  // Keep prior per-hero choices; seed defaults only for heroes missing from the map (import /
-  // roster churn). Never wipe Donate/Leave alone back to battleAllowed defaults.
-  syncScopeForRoster: () => {
-    const next = mergeScopeForRoster(get().heroes, get().scopeByHeroId);
-    if (scopeMapsEqual(get().scopeByHeroId, next)) return;
-    set({ scopeByHeroId: next });
-  },
-});
-
-/**
- * The phase the Team plan actually scores at.
- *
- * Until the player picks one, this tracks what they were already looking at: the Farm tab's phase
- * when that was a genuine choice (`phasesViewPhaseChosen`, never the value alone — the tab's
- * unchosen default is phase 1 and would otherwise read as "plan for phase 1"), else the phase the
- * save says the account is on. `null` means neither exists, or the player picked None.
- */
-export function selectTeamPlanTargetPhase(state: PlannerStore): number | null {
-  if (state.targetPhaseChosen) return state.targetPhase;
-  if (state.phasesViewPhaseChosen) return state.phasesViewPhase;
-  return state.phase;
-}
+    // Keep prior per-hero choices; seed defaults only for heroes missing from the map (import /
+    // roster churn). Never wipe Donate/Leave alone back to battleAllowed defaults.
+    syncScopeForRoster: () => {
+      const next = mergeScopeForRoster(get().heroes, get().scopeByHeroId);
+      if (scopeMapsEqual(get().scopeByHeroId, next)) return;
+      set({ scopeByHeroId: next });
+    },
+  };
+};
 
 export function selectLiveTeamPlanInputSignature(state: PlannerStore): string {
-  return computeTeamPlanInputSignature({
-    heroes: state.heroes,
-    inventory: state.inventory,
-    scopeByHeroId: state.scopeByHeroId,
-    forgeFloor: state.forgeFloor,
-    slots: state.slots,
-    treeDanoTotal: state.treeDanoTotal,
-    houseIdx: state.houseIdx,
-    houseCycleSecs: state.houseCycleSecs,
-    objective: state.objective,
-    targetPhase: selectTeamPlanTargetPhase(state),
-    allowedChanges: state.allowedChanges,
-    ignoreFieldCrowding: state.ignoreFieldCrowding,
-  });
+  return computeTeamPlanInputSignature(selectTeamPlanInputs(state), selectTeamPlanControls(state));
 }

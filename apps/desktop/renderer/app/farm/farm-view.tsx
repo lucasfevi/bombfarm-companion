@@ -56,7 +56,7 @@ import { freshProposal, reRankActive, type FarmRespecState } from '../../lib/far
 import { useFarmSnapshot } from '../../lib/farm/use-farm-snapshot';
 import { useFarmTableHeight } from '../../lib/farm/use-farm-table-height';
 import { farmScreenCopy, useFarmCopy } from '../screen-copy';
-import { FarmRefreshControl } from './farm-refresh-control';
+import { AccountRefreshControl } from '../account-refresh-control';
 
 const DEFAULT_PHASE = 1;
 
@@ -410,7 +410,7 @@ function FarmScreen({
   const boardSlots = useMemo<FarmRankingBoardSlots>(
     () => ({
       headerOverlay: (
-        <FarmRefreshControl
+        <AccountRefreshControl
           capturedAt={capturedAt}
           stale={refresh.stale}
           busy={refresh.busy}
@@ -418,8 +418,9 @@ function FarmScreen({
           onRefresh={refresh.onRefresh}
         />
       ),
+      respecScopeNote: t.farmRespecOptimizerPointer,
     }),
-    [capturedAt, refresh],
+    [capturedAt, refresh, t],
   );
 
   const explorerData = useMemo(

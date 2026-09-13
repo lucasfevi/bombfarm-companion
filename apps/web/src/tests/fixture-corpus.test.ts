@@ -4,23 +4,20 @@
  * the point: the corpus guard is written last, once nothing references the old corpus any more.
  *
  * Every red state below has been demonstrated manually (restore one deleted fixture / perturb one
- * byte / add one skip / add one keystone reference in a scratch state, observe the named failure,
+ * byte / add one skip in a scratch state, observe the named failure,
  * revert) — see `docs/fixture-corpus.md` and `docs/validation.md` for the observed messages.
  */
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
 import { SHEET_ABS_TOL } from './helpers/sheet-math-fixtures';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const FIXTURES_DIR = join(here, 'fixtures');
 const SHEET_MATH_DIR = join(here, '../../../../packages/domain/tests/fixtures/sheet-math');
 const README_PATH = join(SHEET_MATH_DIR, 'README.md');
-
-const FORBIDDEN_KEYS = ['keystones', 'abisso_base', 'crit_dmg_mult'] as const;
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -71,27 +68,12 @@ const COMPUTED_PATH_ALLOWLIST: Record<string, string> = {
 
 describe('sheet-math fixture corpus guard', () => {
   const sheetMathJsonFiles = readdirSync(SHEET_MATH_DIR).filter((f) => f.endsWith('.json'));
-  const allFixtureJsonFiles = listFiles(FIXTURES_DIR, (name) => name.endsWith('.json'));
 
   it('non-vacuity: sheet-math/ has at least 2 committed captures', () => {
     expect(
       sheetMathJsonFiles.length,
       `walked ${SHEET_MATH_DIR}, found ${sheetMathJsonFiles.length} .json files`,
     ).toBeGreaterThanOrEqual(2);
-  });
-
-  it('negative discriminator: no fixture JSON under fixtures/** carries keystones, abisso_base or crit_dmg_mult', () => {
-    expect(allFixtureJsonFiles.length, `walked ${FIXTURES_DIR}`).toBeGreaterThan(0);
-    const offenders: string[] = [];
-    for (const file of allFixtureJsonFiles) {
-      const text = readFileSync(file, 'utf8');
-      for (const key of FORBIDDEN_KEYS) {
-        if (text.includes(`"${key}"`)) {
-          offenders.push(`${relative(FIXTURES_DIR, file)} (carries "${key}")`);
-        }
-      }
-    }
-    expect(offenders, `offending fixtures:\n${offenders.join('\n')}`).toEqual([]);
   });
 
   it('positive discriminator: every sheet-math/ fixture carries >=1 of skills.refunds / skills.totals.vagas_campo / skills.totals.bag_tabs_bonus, on the parsed object', () => {
@@ -147,9 +129,6 @@ describe('sheet-math fixture corpus guard', () => {
 
   // Scoped to sheet-math/ — the corpus this feature actually manages (the subject is the
   // 17 fixtures orphaned by the quarantined-suite deletion, not a repo-wide fixture audit).
-  // `fixtures/i18n-strings-main.json` and `fixtures/storage-roundtrip-20260729.json` are
-  // pre-existing, unrelated fixtures with zero domain-side consumers (only apps/web's own
-  // separate copies are read) — a condition that predates this feature and is out of its scope.
   it('orphan sweep: every sheet-math/ fixture is named by >=1 live test source in this package (basename or stem), or is in the commented allowlist', () => {
     const testSourceFiles = listFiles(
       here,

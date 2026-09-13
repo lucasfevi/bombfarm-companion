@@ -159,18 +159,18 @@ describe('Copy guard — no player-facing literal outside lib/copy/', () => {
    * halves for everything else.
    *
    * The pattern covers every package that supplies a screen's copy, not just the one the first
-   * such screen was named after: the roster half of the dictionary lives in `@bombfarm/hero`, and a
-   * guard matching one specifier would let a second module reach the other while still reporting
-   * green.
+   * such screen was named after: the roster half of the dictionary lives in `@bombfarm/hero`, and
+   * the optimizer's half lives in `@bombfarm/team-plan` — a guard matching one specifier would let
+   * a second module reach another while still reporting green.
    */
   const SCREEN_COPY_MODULE = join(RENDERER_ROOT, 'app', 'screen-copy.ts');
-  const SCREEN_COPY_IMPORT = /from\s*['"]@bombfarm\/(?:farm|hero)\/copy['"]/;
+  const SCREEN_COPY_IMPORT = /from\s*['"]@bombfarm\/(?:farm|hero|team-plan)\/copy['"]/;
 
   function screenCopyImporters(files: readonly { path: string; source: string }[]): string[] {
     return files.filter((file) => SCREEN_COPY_IMPORT.test(stripComments(file.source))).map((file) => file.path);
   }
 
-  it('only app/screen-copy.ts imports the farm and hero dictionaries', () => {
+  it('only app/screen-copy.ts imports the farm, hero and team-plan dictionaries', () => {
     const importers = screenCopyImporters(readAll(RENDERER_ROOT, ['.ts', '.tsx']));
     expect(
       importers,
@@ -189,6 +189,13 @@ describe('Copy guard — no player-facing literal outside lib/copy/', () => {
   it('red state demonstrated: a second module reaching for the hero dictionary is caught', () => {
     const fixture = [
       { path: 'second.tsx', source: "import type { RosterCopy } from '@bombfarm/hero/copy';" },
+    ];
+    expect(screenCopyImporters(fixture)).toEqual(['second.tsx']);
+  });
+
+  it('red state demonstrated: a second module reaching for the team-plan dictionary is caught', () => {
+    const fixture = [
+      { path: 'second.tsx', source: "import { teamPlanEn } from '@bombfarm/team-plan/copy';" },
     ];
     expect(screenCopyImporters(fixture)).toEqual(['second.tsx']);
   });

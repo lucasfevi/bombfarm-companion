@@ -57,7 +57,19 @@ This was open since the Compiler landed: keep hand memoization "until profiler p
 
 The remaining 20 `useCallback` hits either feed no `memo()` consumer at all (an unmemoized child re-renders identically regardless of prop-reference identity, so there is no boundary redundancy to prove or disprove) or are non-render-stability callbacks — context-value identity (`tooltip-root.tsx`, `tabs-root.tsx`) or an effect/subscription dependency (`use-tabs-panels-height.ts`) — which rule 6 never covered in the first place (those are correctness devices, not memoization). **Zero retirements landed.** Ledger summary: 22 KEEP, 0 RETIRE.
 
-**Forward rule, unchanged:** no blanket deletion of the surviving boundaries, and no new hand `memo`/`useCallback` added without the same per-boundary profiler A/B this finding required — the Compiler owns memoization for everything that hasn't already earned an exception the hard way.
+**Forward rule, unchanged:** no blanket deletion of the surviving boundaries, and no new hand `memo`/`useCallback` added without the same per-boundary profiler A/B this finding required — the Compiler owns memoization for everything that hasn't already earned an exception the hard way. That rule governs `apps/web`, where the Compiler runs; a shared package a host lists in `transpilePackages` is the documented exception — see the table below.
+
+## Package memo boundaries
+
+The React Compiler runs over `apps/web`'s own source, never over a workspace package a host transpiles — so a component that reaches a host that way keeps only the memoisation its own source spells out by hand. These boundaries are load-bearing for that reason, not because each was proven by the same per-boundary A/B rule 6 requires for `apps/web`; a board or a table draws every row/card/cell at once, which is exactly the shape a hand `memo()` protects.
+
+| Component | Package | File | Why |
+| --- | --- | --- | --- |
+| `HeroPickerRow` | `@bombfarm/hero` | `src/components/hero-picker/hero-picker-row.tsx` | One row per hero in the switch-hero dialog's table. |
+| `HeroCard` | `@bombfarm/hero` | `src/components/roster-board/roster-cards.tsx` | One card per hero on the roster board. |
+| `ScopeHeroCard` | `@bombfarm/team-plan` | `src/components/scope-hero-card.tsx` | One card per hero on the optimizer's scope board. |
+| `HeroDeltaRow` | `@bombfarm/team-plan` | `src/components/hero-delta-row.tsx` | One row per hero in the optimizer's results. |
+| `StepCell` | `@bombfarm/team-plan` | `src/components/step-cell.tsx` | One cell per waterfall step, re-rendered with the results panel. |
 
 ## Layout
 

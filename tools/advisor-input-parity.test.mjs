@@ -8,9 +8,7 @@
  * deliberately dumb text slicing, not a full parse, matching `tools/ci-desktop-paths.test.mjs`
  * and `tools/design-system-gate.test.mjs`.
  *
- * The single documented exception, `treeCritDmgMult`, closed: the field was
- * removed from both surfaces along with the rest of the deleted keystone mechanics, so the two
- * key sets are equal with no pinned exception. This test still fails if the gap
+ * The two key sets are equal with no pinned exception. This test still fails if the gap
  * **widens** (a new field forwarded by one path only) — demonstrated below.
  */
 import { readFileSync } from 'node:fs';
