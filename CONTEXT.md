@@ -121,3 +121,16 @@ Ubiquitous language for the companion's game model. Terms only — no implementa
   has left the account, so holdings count what is on someone's back and nothing else. A skin
   gone from the roster is gone from the value, and the screen says so rather than leaving the
   reader to notice a figure that dropped.
+
+## Home
+
+- **Home** — the web planner's front page, at `/`: one section card per section, filled from
+  the last import. Named *Home* in EN and *Início* in PT.
+- **Section card** — a card on Home that shows a compressed version of one section's page and
+  links to it. A card that lacks an input names the input; it never fills the gap with a
+  default or a wiki figure.
+- **Best phase** — the phase with the highest estimated gold/hr among those the account can
+  enter, under the current rotation pool and Return Bonus setting. What the Farm card compares
+  the current phase against. A locked phase that would beat it is a *push target*.
+- **Roster DPS ranking** — the roster sorted by each hero's solo DPS at the resolved phase.
+  The Farm page's top-9 table and the Planner card draw the same ranking.
