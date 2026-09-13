@@ -112,6 +112,7 @@ export {
   selectPhasesViewPhase,
   selectPhasesViewPhaseChosen,
   selectCurrentPhase,
+  selectCurrentPhaseMitigationPct,
   selectCombatPhase,
   selectCombatPhaseSelection,
   selectCombatMitigationPct,
