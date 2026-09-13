@@ -1,6 +1,6 @@
 /**
  * Telescoping sheet stages for the read-only Stats panel: Birth + Δ level / stars /
- * ability / gear / points / tree = Total (`composeSheetFromBirth`).
+ * ability / gear / points / tree / rune = Total (`composeSheetFromBirth`).
  *
  * Distinct from {@link peelSheetSources}, which mirrors the game's four-line tooltip
  * (Hero bundles birth+points). These stages match the composition pipeline order so
@@ -17,13 +17,14 @@ import { levelPowerMult } from './model/combat';
 import { SHEET_KEYS, type SheetKey } from './planner-constants';
 import { capSheetValue } from './sheet-view';
 import type { SheetStats } from './gear/types';
+import { applyRuneMultipliers, runeSheetMultipliers } from './runes';
 
 /**
- * One sheet key's birth absolute + six marginal Δs + composed Total, plus the game's display
+ * One sheet key's birth absolute + seven marginal Δs + composed Total, plus the game's display
  * cap surfaced as its own pair of columns rather than folded into `total`.
  *
  * `total` stays UNCAPPED on purpose (see `birth-sheet.ts`'s `composeSheetFromBirth` doc
- * comment) — it must keep equalling `composeSheetFromBirth`'s output and the six Δs above must
+ * comment) — it must keep equalling `composeSheetFromBirth`'s output and the seven Δs above must
  * keep summing to it, both asserted in `sheet-stages.test.ts`. `deltaCap` is the
  * extra, always-non-positive Δ the game's display clamp applies on top (`0` under the cap);
  * `cappedTotal = total + deltaCap` is what the game's own exported sheet shows
@@ -37,6 +38,8 @@ export type SheetStageRow = {
   deltaGear: number;
   deltaPoints: number;
   deltaTree: number;
+  /** The hero's timed runes (`runes.ts`) — exactly 0 on a hero carrying none. */
+  deltaRune: number;
   total: number;
   /** ≤ 0; exactly 0 under the cap. The game's display clamp, shown as its own Δ. */
   deltaCap: number;
@@ -87,6 +90,7 @@ function stageRow(
   afterAbility: number,
   afterGear: number,
   afterPoints: number,
+  afterTree: number,
   total: number,
 ): SheetStageRow {
   const cappedTotal = capSheetValue(key, total);
@@ -97,7 +101,8 @@ function stageRow(
     deltaAbility: afterAbility - afterStars,
     deltaGear: afterGear - afterAbility,
     deltaPoints: afterPoints - afterGear,
-    deltaTree: total - afterPoints,
+    deltaTree: afterTree - afterPoints,
+    deltaRune: total - afterTree,
     total,
     deltaCap: cappedTotal - total,
     cappedTotal,
@@ -105,17 +110,19 @@ function stageRow(
 }
 
 /**
- * Peel one composed sheet into Birth + six Δ columns that sum to Total.
+ * Peel one composed sheet into Birth + seven Δ columns that sum to Total.
  * Uses the same inputs as {@link composeSheetFromBirth}.
  */
 export function peelSheetStages(input: PeelSheetStagesInput): SheetStageTable {
   const { birth, level, stars, sheetOther, loadout, pts, tree } = input;
+  const runes = input.runes ?? [];
   const afterLevel = sheetAfterLevel(birth, level);
   const afterStars = sheetAfterStars(birth, level, stars);
   const afterAbility = nakedFromBirth(birth, level, stars, sheetOther);
   const afterGear = applyGear(afterAbility, loadout, sheetOther);
   const afterPoints = applyPoints(afterAbility, loadout, pts, sheetOther, level, stars);
-  const total = applySkillTree(afterPoints, afterAbility, sheetOther, tree);
+  const afterTree = applySkillTree(afterPoints, afterAbility, sheetOther, tree);
+  const total = runes.length === 0 ? afterTree : applyRuneMultipliers(afterTree, tree, runeSheetMultipliers(runes));
 
   const out = {} as SheetStageTable;
   for (const key of SHEET_KEYS) {
@@ -127,6 +134,7 @@ export function peelSheetStages(input: PeelSheetStagesInput): SheetStageTable {
       afterAbility[key],
       afterGear[key],
       afterPoints[key],
+      afterTree[key],
       total[key],
     );
   }

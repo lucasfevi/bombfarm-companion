@@ -20,9 +20,10 @@ Ubiquitous language for the companion's game model. Terms only — no implementa
 - **One-shot** — a hero's average hit destroys a prop in a single blast. When the whole
   rotation pool one-shots every prop type on a phase, throughput is plant-rate-bound, not
   damage-bound.
-- **Cadence model** — the measured bomb-cycle model: cycle time ≈ max(fuse time, walk
-  time between plants). Supersedes the serial fuse+constant model for farm-rate estimation
-  only; the advisor keeps the serial model.
+- **Cadence model** — the measured bomb-cycle model: cycle time ≈ max(fuse time, walk time
+  between plants), so Speed shortens every hop the fuse does not already cover. The one bombing
+  model behind every DPS figure the companion prints; the earlier serial fuse-plus-constant
+  model is retired.
 - **Return Bonus (Bônus de Retorno)** — banked offline time (cap 8h) during which gold, XP,
   and every drop chance are boosted (+40%, +80% VIP). Only multiplies what the player
   destroys while it runs.
@@ -88,6 +89,15 @@ Ubiquitous language for the companion's game model. Terms only — no implementa
   Several heroes may hold drafts at once, and each is flagged.
 - **Out of date (draft)** — a draft whose Live values have since moved in a field that draft
   touches. Judged per hero: another hero changing must never flag this one.
+- **Team aura** — an ability whose effect is a property of the **field**: every hero standing in
+  it receives the same total, summed over the carriers present and capped per aura. The one
+  player-facing word for Grito de Guerra, Fôlego de Mineiro, Marcha Acelerada, Presságio Mortal
+  and any aura added later; never *team buff*.
+- **Own ability** — an ability whose effect reaches only the hero that has it, and is always in
+  force for that hero. Not a team aura even when it touches the same figure one does: Bateria
+  Extra and Fôlego de Mineiro both cut energy spent, and only the second is an aura.
+- **Field** — the heroes standing in a phase at once: the deployed heroes plus the hero whose
+  figures are being read, who is on it by definition. Team auras are summed over the field.
 
 ## Market value
 

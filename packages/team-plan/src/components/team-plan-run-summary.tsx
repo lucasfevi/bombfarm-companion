@@ -76,6 +76,11 @@ export function TeamPlanRunSummary({
           <p className={`m-0 mt-1 ${mutedClass}`}>{t.teamPlanRunSummaryDutyHint}</p>
         </div>
         <p className={`m-0 ${mutedClass}`}>{emphasizedLine(metaLine)}</p>
+        {plan.runedHeroNames.length > 0 ? (
+          <p className={`m-0 ${mutedClass}`}>
+            {sub(t.teamPlanRunedHeroes, { heroes: plan.runedHeroNames.join(', ') })}
+          </p>
+        ) : null}
         {plan.run.budgetExhausted ? (
           <p className="m-0 text-warn">{t.teamPlanBudgetExhausted}</p>
         ) : null}

@@ -569,6 +569,8 @@ export const ptBR: Copy = {
   farmUnavailableTitle: 'Ainda falta ler parte da sua conta',
   farmUnavailableDescription: 'O quadro precisa de todas as partes da sua conta. Abra o jogo com o companion em execução e deixe aberto por um instante.',
   farmRespecOptimizerPointer: 'Para movimentações de itens e forjas também, abra a aba Otimizador.',
+  farmLeftOutTitle: 'Alguns heróis ficaram fora do quadro',
+  farmLeftOutBody: 'O app não conseguiu ler os pontos de atributo gastos de {heroes} na conta, então as taxas deles não podem ser calculadas e eles ficam fora deste quadro.',
   farmStatColumn: 'Atributo',
   farmStatLuck: 'Sorte',
 
@@ -602,6 +604,8 @@ export const ptBR: Copy = {
   heroesRollQualityLabel: 'Sorteio',
   heroesFiguresWithheldTitle: 'Ainda não foi lido o bastante da sua conta',
   heroesFiguresWithheldDescription: 'Os números de cada herói precisam da sua árvore de habilidades e da sua Casa. Deixe o jogo aberto por um instante e eles vão aparecer.',
+  heroesPointsUnreadTitle: 'Os pontos de atributo gastos deste herói não puderam ser lidos',
+  heroesPointsUnreadDescription: 'A ficha que o jogo informou para este herói não fecha com o modelo atual, então os pontos, os números de equipamento e os de combate ficam retidos em vez de desenhados como se ele não tivesse gasto nenhum.',
   heroesPhaseUnknownTitle: 'Esta não é uma fase que o app conhece',
   heroesPhaseUnknownDescription: 'Escolha uma fase que o jogo tenha de verdade, e os números voltam.',
   heroesEffectiveTitle: 'Atributos efetivos',

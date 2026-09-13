@@ -1,4 +1,5 @@
 import type { BirthStats, TreeSheetTotals } from '../birth-sheet';
+import type { HeroRune } from '../runes';
 import type { BestFarmPhaseOptions } from '../farm-optimize-objective';
 import type { HeroFarmFacts, SquadFarmAccount } from '../farm-rate';
 import type { Loadout, PointAlloc, SheetStats } from '../gear/types';
@@ -74,6 +75,8 @@ export type HeroPlanContext = {
   scope: ScopeState;
   abilities: Record<string, number>;
   pts: PointAlloc;
+  /** The hero's timed rune buffs, folded into every sheet the scorer composes for it. */
+  runes: readonly HeroRune[];
 };
 
 export type HeroScore = {
@@ -181,6 +184,8 @@ export type TeamPlanHeroInput = {
   pts: PointAlloc;
   loadout: Loadout;
   battleAllowed?: boolean;
+  /** Absent reads as none. */
+  runes?: readonly HeroRune[] | undefined;
 };
 
 export type TeamPlanAccountInput = {
@@ -430,6 +435,12 @@ export type TeamPlan = {
   requiresFullPlan: boolean;
   /** How far below today the gear step sits, as a POSITIVE number. 0 when requiresFullPlan is false. */
   gearDipDps: number;
+  /**
+   * Heroes in scope carrying a timed rune on a sheet statistic. The plan prices today's
+   * sheet, rune included, but a rune is not something the plan can buy — so wherever the plan
+   * explains a gain, these are the heroes whose gain is partly the rune's and expires with it.
+   */
+  runedHeroNames: string[];
   run: {
     rounds: number;
     evaluations: number;

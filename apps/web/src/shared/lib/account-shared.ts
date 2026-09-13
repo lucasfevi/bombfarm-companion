@@ -74,9 +74,9 @@ export type HeroContext = {
   rankMode: RankMode;
   /** Highlighted row in the prop hits-to-kill table — null until set on Account. */
   targetProp: string | null;
-  /** @deprecated always serial — ignored on load. */
+  /** @deprecated the bomb cycle is the measured one, not a stored choice — ignored on load. */
   cycleModel?: 'serial' | 'wiki';
-  /** @deprecated use {@link FARM_WALK_DELAY_SEC} — ignored on load. */
+  /** @deprecated the measured cycle has no constant walk delay — ignored on load. */
   walkDelay?: number;
   /** @deprecated dropped — ignored on load. */
   extraDmgPct?: number;

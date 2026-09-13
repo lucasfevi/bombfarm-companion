@@ -23,8 +23,11 @@ export const FORMULA_GLOSSARY: Partial<Record<string, GlossEntry[]>> = {
     { tokens: ['cd'], tipKey: 'bdTermCd' },
   ],
   bdFormulaFuse: [{ tokens: ['cdr'], tipKey: 'bdTermCdr' }],
-  bdFormulaBombsSerial: [{ tokens: ['walk', 'caminhada'], tipKey: 'bdTermWalk' }],
-  bdFormulaBombsWiki: [{ tokens: ['sf'], tipKey: 'bdTermSf' }],
+  bdFormulaBombs: [
+    { tokens: ['cycle', 'ciclo'], tipKey: 'bdTermCycle' },
+    { tokens: ['walk', 'caminhada'], tipKey: 'bdTermWalk' },
+    { tokens: ['band', 'ato'], tipKey: 'bdTermBand' },
+  ],
   bdFormulaField: [{ tokens: ['drain', 'dreno'], tipKey: 'bdTermDrain' }],
   bdFormulaRest: [{ tokens: ['restSeconds', 'descansoSegundos'], tipKey: 'bdTermRestSeconds' }],
   bdFormulaUptime: [

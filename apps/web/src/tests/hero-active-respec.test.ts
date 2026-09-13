@@ -85,8 +85,6 @@ describe('disabled heroes and automatic respec advice', () => {
           houseLevel: 6,
           phase: 1,
           mitigationPct: 1,
-          cycleModel: 'serial',
-          walkDelay: 0.15,
           extraDmgPct: 0,
           rankMode: 'dps',
           targetProp: 'bush',

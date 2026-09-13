@@ -316,6 +316,8 @@ describe('cross-package fixture corpus parity', () => {
     'packages/domain/tests/fixtures/storage-roundtrip-20260729.json': 1,
     'packages/domain/tests/helpers/invariance-record.ts': 4,
     'packages/domain/tests/points-reopt.test.ts': 2,
+    // Builds a `PipelineFacts` literal by hand, so it spells the crit-damage combat-mult field once.
+    'packages/domain/tests/runes-live-read.test.ts': 1,
     'packages/domain/tests/source-surface.test.ts': 6,
     'packages/domain/tests/stat-breakdown.test.ts': 2,
   };

@@ -42,8 +42,9 @@ import { statLabel } from '@bombfarm/domain/game-labels';
 import { SHEET_KEYS, type SheetKey } from '@bombfarm/domain/planner-constants';
 import type { ReturnBonusMode, SquadFarmFacts } from '@bombfarm/domain/farm-rate';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import { useCopy, useLocale } from '../../lib/copy';
+import { sub, useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
+import { buildAccountRoster } from '../../lib/account/account-roster';
 import {
   useAccountReadRequest,
   type AccountReadRequestState,
@@ -191,6 +192,14 @@ export function FarmView() {
     ],
   );
 
+  // Named above the board rather than priced on it: a hero whose spent points could not be read
+  // is left out by `buildFarmInputs`, and a row that silently vanished would read as an account
+  // that lost a hero. Read off the live account, not the snapshot — the roster is what says so.
+  const leftOut = useMemo(
+    () => (account.status === 'loaded' ? (buildAccountRoster(account.view)?.pointsUnrecovered ?? []) : []),
+    [account],
+  );
+
   const tableScrollportHeightPx = useFarmTableHeight();
   const settled = useMemo(() => settledBoard(state), [state]);
   const busy = state.status === 'computing';
@@ -253,6 +262,11 @@ export function FarmView() {
       className={colClass}
       aria-busy={busy}
     >
+      {leftOut.length > 0 ? (
+        <Banner tone="warn" title={t.farmLeftOutTitle} data-testid="farm-left-out">
+          {sub(t.farmLeftOutBody, { heroes: leftOut.map((hero) => hero.name).join(', ') })}
+        </Banner>
+      ) : null}
       <FarmScreen
         snapshot={settled}
         view={{ phase, phaseChosen, activeHeroId, tableScrollportHeightPx }}

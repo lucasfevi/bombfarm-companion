@@ -296,6 +296,22 @@
       "maxLevel": 20
     }
   },
+  "runes": {
+    "axes": ["attack", "energy", "speed", "crit", "critdmg", "cdr", "xp", "gold"],
+    "statIndexByAxis": {
+      "attack": 0,
+      "energy": 1,
+      "speed": 2,
+      "crit": 4,
+      "critdmg": 5,
+      "cdr": 7
+    },
+    "strengthByRarity": [0.05, 0.09, 0.13, 0.17, 0.21, 0.25],
+    "durationPlaySecs": 86400,
+    "capPlaySecs": 259200,
+    "capRunes": 3,
+    "marketMinRarity": 2
+  },
   "itemPorFase": [
     {
       "min": 1,

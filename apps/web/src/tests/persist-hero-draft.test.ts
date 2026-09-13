@@ -142,9 +142,9 @@ describe('hero draft persistence subscription', () => {
     expect(setItem).not.toHaveBeenCalled();
   });
 
-  it('selectHeroDraftTuple has 21 members (includes birth, statRanges, marketable and statPointsAvailable; obsHit/obsCrit gone)', () => {
+  it('selectHeroDraftTuple has 22 members (includes birth, statRanges, runes, marketable and statPointsAvailable; obsHit/obsCrit gone)', () => {
     const tuple = selectHeroDraftTuple(usePlannerStore.getState());
-    expect(tuple).toHaveLength(21);
+    expect(tuple).toHaveLength(22);
   });
 
   it('an edit to a hero carrying roll bounds saves them back — reload from storage still has them', () => {

@@ -12,6 +12,7 @@ import {
 import type { TreeSheetTotals } from './birth-sheet';
 import { starsMult, type SheetOtherPct, type SheetStats } from './gear';
 import { SHEET_KEYS, type SheetKey } from './planner-constants';
+import { runeSheetMultipliers, type HeroRune } from './runes';
 import { TEAM_BUFF_CAP, type TeamBuffId } from './team-buffs';
 
 export type CombatMults = {
@@ -69,7 +70,7 @@ export function teamDrainMultFromTeamBuffs(teamBuffs: Record<TeamBuffId, number>
  * factors applied once by `applySkillTree`, not a second time on top of the combat sheet.
  *
  * `teamBuffs` must be the FULL roster total for every aura, including whichever hero `mods`
- * belongs to — `abilityMods` never folds a team aura into a hero's own mods (issue #132), so
+ * belongs to — `abilityMods` never folds a team aura into a hero's own mods (PR #139), so
  * there is nothing left for this function to add back on top. Contra o Relógio ("gate power")
  * is a self ability, not a team aura (its wiki `kind` is `gate_power`, not `team_*`) —
  * `gateAttackMult` reads `mods` alone, same as before.
@@ -115,6 +116,12 @@ export type DeriveInput = {
   context: Context;
   dmgMult: number;
   mitigationPct: number;
+  /**
+   * The runes already folded into `geared`. A rune multiplies the point too (`runes.ts`), so
+   * every per-point delta below carries its axis's factor — except energy, whose factor rides
+   * in `gem` the same way `energia_add` does.
+   */
+  runes?: readonly HeroRune[] | undefined;
 };
 
 export type DeriveResult = {
@@ -160,6 +167,7 @@ export function derive(input: DeriveInput): DeriveResult {
     dmgMult,
     mitigationPct,
   } = input;
+  const rune = runeSheetMultipliers(input.runes ?? []);
 
   const gem = naked.energy > 0 ? gearedX.energy / naked.energy : 1;
   // Shared pool: +1 pt adds naked×perPt/(1+O), not naked×perPt.
@@ -188,14 +196,14 @@ export function derive(input: DeriveInput): DeriveResult {
     // the per-point gain by it too, or attack points would under-count against the sheet.
     // `delta.attack` has no `gem` analogue (energy's own ratio-based factor), so this
     // explicit `danoStatic` factor is NOT redundant and stays exactly as-is.
-    attack: atkPt * treeSheet.danoStatic,
+    attack: atkPt * treeSheet.danoStatic * rune.attack,
     energy: POINT_GAIN.energyNative * gem * star,
-    speed: (POINT_GAIN.speedPctOfBase * naked.speed) / oSpeed,
-    critChance: POINT_GAIN.critChancePctOfBase * baseCrit,
+    speed: ((POINT_GAIN.speedPctOfBase * naked.speed) / oSpeed) * rune.speed,
+    critChance: POINT_GAIN.critChancePctOfBase * baseCrit * rune.critChance,
     // Flat — no `naked.critDmg` factor and no shared-pool divisor (POINT_GAIN.critDmgFlat).
-    critDmg: POINT_GAIN.critDmgFlat,
+    critDmg: POINT_GAIN.critDmgFlat * rune.critDmg,
     penetration: (POINT_GAIN.penetrationPctOfBase * naked.penetration) / oPen,
-    cdr: (POINT_GAIN.cdrPctOfBase * naked.cdr) / oCdr,
+    cdr: ((POINT_GAIN.cdrPctOfBase * naked.cdr) / oCdr) * rune.cdr,
     // Luck has no `other` term — no divisor, unlike the shared-pool stats above.
     luck: POINT_GAIN.luckPctOfBase * naked.luck,
   };
@@ -210,8 +218,8 @@ export function derive(input: DeriveInput): DeriveResult {
     critDmg: adjusted.critDmg * critDmgMult,
     penetration: adjusted.penetration + penetrationPp,
     cdr: adjusted.cdr,
-    attackPerPoint: atkPt * treeSheet.danoStatic * attackMult,
-    energyPerPoint: POINT_GAIN.energyNative * gem * star * energyMult,
+    attackPerPoint: delta.attack * attackMult,
+    energyPerPoint: delta.energy * energyMult,
   };
   const effectiveDelta: Record<SheetKey, number> = {
     attack: effective.attackPerPoint,

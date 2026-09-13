@@ -32,6 +32,7 @@ export type StatPanelCopy = {
   colSheetDeltaGear: string;
   colSheetDeltaPoints: string;
   colSheetDeltaTree: string;
+  colSheetDeltaRune: string;
   colSheetTotal: string;
   colSheetOverCap: string;
 
@@ -93,6 +94,7 @@ export type StatPanelCopy = {
   bdSrcAbilities: string;
   bdSrcTeam: string;
   bdSrcAbilitiesTeam: string;
+  bdSrcRune: string;
   bdSrcHero: string;
   bdSrcAbility: string;
   bdNoteCapped: string;
@@ -100,6 +102,8 @@ export type StatPanelCopy = {
   bdNoteKeenEye: string;
   bdNoteDiamondTip: string;
   bdNoteBrutalStrike: string;
+  /** `{hours}` — play hours left on the rune that expires first. */
+  bdNoteRune: string;
 
   bdFormulaMitF: string;
   bdFormulaDmg: string;
@@ -107,8 +111,7 @@ export type StatPanelCopy = {
   bdFormulaCriticalHit: string;
   bdFormulaCritFactor: string;
   bdFormulaFuse: string;
-  bdFormulaBombsSerial: string;
-  bdFormulaBombsWiki: string;
+  bdFormulaBombs: string;
   bdFormulaField: string;
   bdFormulaRest: string;
   bdFormulaUptime: string;
@@ -125,8 +128,9 @@ export type StatPanelCopy = {
   bdTermCd: string;
   bdTermCc: string;
   bdTermCdr: string;
+  bdTermCycle: string;
   bdTermWalk: string;
-  bdTermSf: string;
+  bdTermBand: string;
   bdTermDrain: string;
   bdTermRestSeconds: string;
   bdTermField: string;

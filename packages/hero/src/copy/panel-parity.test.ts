@@ -46,7 +46,7 @@ const GEAR_PT = flatten(gearPanelPtBR);
  * 'Hit' and 'Critical Hit' are the game's own untranslated combat terms. 'Pen' and '/pt'
  * abbreviate words that abbreviate identically in both languages — the unabbreviated
  * `statFull.penetration` beside the first one IS translated. The five formulas are symbolic
- * expressions whose every token happens to be language-neutral; the eight formulas beside them
+ * expressions whose every token happens to be language-neutral; the seven formulas beside them
  * that do contain a translatable word are all translated.
  */
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly string[] = [

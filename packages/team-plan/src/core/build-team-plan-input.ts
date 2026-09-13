@@ -28,6 +28,7 @@ export function buildTeamPlanInput(
     pts: hero.pts,
     loadout: hero.loadout,
     ...(hero.battleAllowed !== undefined ? { battleAllowed: hero.battleAllowed } : {}),
+    runes: hero.runes,
   }));
 
   return {

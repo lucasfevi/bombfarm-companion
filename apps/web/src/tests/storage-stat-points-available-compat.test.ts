@@ -89,7 +89,7 @@ describe('legacy statPointsAvailable compat (unspent-points wave)', () => {
       teamBuffs: zeroTeamBuffs(),
       extraDmgPct: 0,
     });
-    const context = { restSeconds: 19 * 60, mitigation: 0.067, blastRange: 1, cycleModel: 'serial' as const, walkDelay: 0.15, drainMult: 1 };
+    const context = { restSeconds: 19 * 60, mitigation: 0.067, blastRange: 1, ato: 1, drainMult: 1 };
     const derived = derive({
       geared: hero.gearedOverride,
       naked: hero.naked,

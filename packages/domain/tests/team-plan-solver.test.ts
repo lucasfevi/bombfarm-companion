@@ -111,6 +111,12 @@ describe('runTeamPlan', () => {
     expect(result.plan.slots).toBeGreaterThanOrEqual(1);
   });
 
+  it('reports no runed heroes on a fixture with none', () => {
+    const result = runTeamPlan(teamPlanInputFromFixture(TEAM_PLAN_FIXTURE));
+    assertOk(result);
+    expect(result.plan.runedHeroNames).toEqual([]);
+  });
+
   it('records elapsedMs as a non-negative number', () => {
     const result = runTeamPlan(teamPlanInputFromFixture(TEAM_PLAN_FIXTURE));
     assertOk(result);

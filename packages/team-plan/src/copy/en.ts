@@ -116,6 +116,8 @@ export const teamPlanPageEn = {
   teamPlanHeroBreakdownGearEmpty: 'No proposed items for this hero.',
   teamPlanHeroBreakdownPointsTitle: 'Point reset',
   teamPlanHeroBreakdownPointsEmpty: 'No point reset is recommended for this hero.',
+  teamPlanRunedHeroes:
+    'Timed runes are counted on: {heroes}. A gain on them is partly the rune’s and goes when it expires — the plan cannot buy one back.',
   teamPlanStaleNotice:
     'Inputs changed since this plan was computed — run Build team plan again to refresh.',
   teamPlanBlockedTitle: 'Cannot run — missing birth stats',

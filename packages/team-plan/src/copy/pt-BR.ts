@@ -118,6 +118,8 @@ export const teamPlanPagePtBR: TeamPlanPageCopy = {
   teamPlanHeroBreakdownGearEmpty: 'Nenhum item proposto para este herói.',
   teamPlanHeroBreakdownPointsTitle: 'Reset de pontos',
   teamPlanHeroBreakdownPointsEmpty: 'Nenhum reset de pontos é recomendado para este herói.',
+  teamPlanRunedHeroes:
+    'Runas temporárias contam em: {heroes}. Um ganho neles é em parte da runa e some quando ela expira — o plano não consegue comprar outra.',
   teamPlanStaleNotice:
     'Os inputs mudaram desde este plano — rode Montar plano do time de novo para atualizar.',
   teamPlanBlockedTitle: 'Não foi possível rodar — falta roll de nascimento',

@@ -21,6 +21,13 @@ export const heroEn = {
   heroDetailIdentityNotMarketable: "Not marketable",
   heroDetailIdentityMarketValue: "Market value",
 
+  heroDetailRunesTitle: "Runes",
+  heroDetailRunesTip:
+    "Timed buffs the game is applying to this hero right now. Every figure on this screen counts them, and each one goes when its play time runs out.",
+  heroDetailRuneValue: "+{pct}% · {hours} h of play left",
+  heroDetailRuneAxisXp: "XP",
+  heroDetailRuneAxisGold: "Gold",
+
   heroDetailRollTitle: "Birth roll",
   heroDetailRollQuality: "Roll quality",
   heroDetailRollQualityNote:

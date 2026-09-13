@@ -1,5 +1,5 @@
 /**
- * Roster-level team-aura acceptance tests (issue #132, judgement call #3). The old
+ * Roster-level team-aura acceptance tests (PR #139, judgement call #3). The old
  * `computeTeamBuffsFromDeployed(heroes, excludeHeroId)` excluded one hero from the stored
  * total, so which hero happened to be "active" when the total was computed changed the answer
  * every OTHER hero read. The fixed shape: the stored total excludes nobody, and a live editor
@@ -49,7 +49,7 @@ function experiencedPct(total: Record<TeamBuffId, number>, buffId: 'folego_minei
   return buffId === 'folego_mineiro' ? (1 - mults.teamDrainMult) * 100 : (mults.attackMult - 1) * 100;
 }
 
-describe('computeTeamBuffsFromDeployed — the roster-wide total (issue #132)', () => {
+describe('computeTeamBuffsFromDeployed — the roster-wide total (PR #139)', () => {
   it('excludes nobody: sums every deployed hero, including whichever one a caller might otherwise call "active"', () => {
     const a = hero('a', { grito_guerra: 10 });
     const b = hero('b', { grito_guerra: 5, marcha_acelerada: 10 });
@@ -86,7 +86,7 @@ describe('computeTeamBuffsFromDeployed — the roster-wide total (issue #132)', 
   });
 });
 
-describe('acceptance: the field is a property of the roster, not of whichever hero is asking (issue #132)', () => {
+describe('acceptance: the field is a property of the roster, not of whichever hero is asking (PR #139)', () => {
   it('one carrier at rank 20 deployed alone receives 20', () => {
     const total = computeTeamBuffsFromDeployed([hero('a', { folego_mineiro: 20 })]);
     expect(experiencedPct(total, 'folego_mineiro')).toBeCloseTo(20, 6);

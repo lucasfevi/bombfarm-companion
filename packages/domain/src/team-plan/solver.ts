@@ -34,6 +34,7 @@ export {
   MAX_ROUNDS,
   IMPROVEMENT_EPSILON,
 } from './solver-search';
+import { hasRuneOnSheet } from '../runes';
 
 function currentPtsByHeroId(input: TeamPlanInput): Record<string, import('../gear/types').PointAlloc> {
   return Object.fromEntries(input.heroes.map((hero) => [hero.heroId, hero.pts]));
@@ -247,6 +248,9 @@ export function runTeamPlan(
     gearBreakdown: waterfall.gearBreakdown,
     requiresFullPlan: waterfall.requiresFullPlan,
     gearDipDps: waterfall.gearDipDps,
+    runedHeroNames: contexts
+      .filter((ctx) => ctx.scope !== 'leaveAlone' && hasRuneOnSheet(ctx.runes))
+      .map((ctx) => ctx.name),
     run: {
       rounds: best.rounds,
       evaluations: budget.evaluations,

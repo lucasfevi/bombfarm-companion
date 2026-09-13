@@ -310,9 +310,11 @@ describe('SCHEMA_LEVELS — the shared catalogue, key sets written as literals',
     expect(SCHEMA_LEVELS.hero.children).toBeUndefined();
   });
 
-  it('hero: `soulbound` is an optional escape, never a required key — the game emits it only on bound heroes', () => {
-    expect(SCHEMA_LEVELS.hero.optional).toEqual(['soulbound']);
+  it('hero: `soulbound`, `runas` and `export_lock_secs` are optional escapes, never required keys — the game emits each only on some heroes', () => {
+    expect(SCHEMA_LEVELS.hero.optional).toEqual(['soulbound', 'runas', 'export_lock_secs']);
     expect(SCHEMA_LEVELS.hero.keys).not.toContain('soulbound');
+    expect(SCHEMA_LEVELS.hero.keys).not.toContain('runas');
+    expect(SCHEMA_LEVELS.hero.keys).not.toContain('export_lock_secs');
   });
 
   it('item: the measured 17-key set with the enumerated optional escapes `slot` and `soulbound` (27/3 API split, 17/5 export split)', () => {

@@ -4,6 +4,7 @@ import {
   type TreeSheetTotals,
 } from './birth-sheet';
 import { projectGearedOntoLoadout, type Loadout, type SheetOtherPct, type SheetStats } from './gear';
+import type { HeroRune } from './runes';
 
 export type ResolveDeriveSheetsInput = {
   naked: SheetStats;
@@ -24,6 +25,8 @@ export type ResolveDeriveSheetsInput = {
    * geared) so Points After / DPS stay aligned with Stats Total after level/stars/tree edits.
    */
   birth?: BirthStats | null;
+  /** Folded into the recomposed `geared` when `birth` is present; the stored sheet already carries them. */
+  runes?: readonly HeroRune[] | undefined;
 };
 
 export type ResolvedDeriveSheets = {
@@ -53,6 +56,7 @@ export function resolveDeriveSheets(input: ResolveDeriveSheetsInput): ResolvedDe
     treeEnergy,
     treeLuckFlatPct,
     birth,
+    runes,
   } = input;
 
   const treeSheet: TreeSheetTotals = {
@@ -74,6 +78,7 @@ export function resolveDeriveSheets(input: ResolveDeriveSheetsInput): ResolvedDe
         sheetOther,
         loadout,
         tree: treeSheet,
+        runes,
       })
     : null;
 
@@ -105,6 +110,7 @@ export function resolveCloneGeared(input: {
   level: number;
   stars: number;
   treeSheet: TreeSheetTotals;
+  runes?: readonly HeroRune[] | undefined;
 }): SheetStats {
   if (input.birth) {
     return sheetsFromBirth({
@@ -114,6 +120,7 @@ export function resolveCloneGeared(input: {
       sheetOther: input.sheetOther,
       loadout: input.altLoadout,
       tree: input.treeSheet,
+      runes: input.runes,
     }).geared;
   }
   return projectGearedOntoLoadout(

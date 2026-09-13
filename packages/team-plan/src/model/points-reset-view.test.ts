@@ -53,6 +53,7 @@ function plan(pointResets: TeamPlan['pointResets']): TeamPlan {
     gearBreakdown: { forgeDelta: 0, moveDelta: 0 },
     requiresFullPlan: false,
     gearDipDps: 0,
+    runedHeroNames: [],
     run: { rounds: 0, evaluations: 0, budgetExhausted: false, elapsedMs: 0, seedUsed: 'current' },
   };
 }

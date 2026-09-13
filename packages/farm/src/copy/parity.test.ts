@@ -14,7 +14,7 @@ import { farmPtBR } from './pt-BR';
  * one). Kept deliberately short and reviewed: a future addition here is a reviewed diff, never a
  * silent weakening of the "no leakage" assertion below.
  *
- * `phaseHelp` ('wiki') / `cycleWiki` ('Wiki'): names the wiki itself, a proper noun in both.
+ * `phaseHelp` ('wiki'): names the wiki itself, a proper noun in both.
  * `colHp` ('HP') / `farmRankingColXp` ('XP') / `mitPct` ('Mit %'): the game's own abbreviations,
  * spelled the same either way — 'Mitigação' abbreviates to 'Mit' exactly as 'Mitigation' does.
  * `colHits` ('Hits'): the loanword the pt-BR copy already uses for a hit elsewhere in this table.
@@ -25,7 +25,6 @@ import { farmPtBR } from './pt-BR';
  */
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof farmEn)[] = [
   'phaseHelp',
-  'cycleWiki',
   'colHp',
   'colHits',
   'mitPct',
