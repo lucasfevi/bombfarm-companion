@@ -13,8 +13,9 @@ import { SHEET_KEYS } from '../planner-constants';
  * The naked (unequipped, in-game) sheet midpoints per rarity. Attack scales with level
  * and stars; Energy / Crit % / Crit Dmg / Pen / CDR / Luck scale with stars; Speed does not.
  * Luck has no `other` term and no level term.
- * The two flat sheet-ability addends (Olho Clínico's crit points, Golpe Brutal's crit damage)
- * are added after the star factor rather than pooled, matching `nakedFromBirth`.
+ * The three flat sheet-ability addends (Olho Clínico's crit points, Golpe Brutal's crit damage,
+ * Ponta de Diamante's penetration points) are added after the star factor rather than pooled,
+ * matching `nakedFromBirth`.
  */
 export function defaultNaked(
   rarity: RarityKey,
@@ -32,7 +33,7 @@ export function defaultNaked(
     // Flat sheet-ability addends, applied after the star factor — match `nakedFromBirth`.
     critChance: base.critChance * mult + otherClamped(other.critChanceFlat),
     critDmg: base.critDmg * mult + otherClamped(other.critDmgFlat),
-    penetration: base.penetration * (1 + otherClamped(other.penetration)) * mult,
+    penetration: base.penetration * mult + otherClamped(other.penetration),
     cdr: base.cdr * (1 + otherClamped(other.cdr)) * mult,
     // Star-scaled, no `other` term and level-independent.
     luck: base.luck * mult,
@@ -49,17 +50,21 @@ export function rescaleNakedForLevel(
   return ratio === 1 ? naked : { ...naked, attack: naked.attack * ratio };
 }
 
-/** Spending/removing a sheet pen ability (e.g. Ponta de Diamante) rescales naked pen by the other-ratio. */
+/**
+ * Spending/removing the sheet pen ability (Ponta de Diamante) swaps its FLAT addend on the naked
+ * sheet — the hero's own roll is preserved, exactly like `rescaleNakedCritChance`. It was a
+ * ratio rescale while the ability multiplied the roll; the 2026-09-02 patch made it points (see
+ * the `penetrationPp` ability kind's on-sheet note).
+ */
 export function rescaleNakedPen(
   naked: SheetStats,
-  oldOtherRaw: number,
-  newOtherRaw: number,
+  oldFlat: number,
+  newFlat: number,
 ): SheetStats {
-  const oldO = Math.max(0, oldOtherRaw);
-  const newO = Math.max(0, newOtherRaw);
-  if (oldO === newO) return naked;
-  const ratio = (1 + newO) / (1 + oldO);
-  return { ...naked, penetration: naked.penetration * ratio };
+  const oldF = Math.max(0, oldFlat);
+  const newF = Math.max(0, newFlat);
+  if (oldF === newF) return naked;
+  return { ...naked, penetration: naked.penetration - oldF + newF };
 }
 
 /**
@@ -117,7 +122,7 @@ export function nakedAfterSheetAbilityChange(
     case 'critChanceFlat':
       return rescaleNakedCritChance(naked, prevMods.sheetCritChanceFlat, nextMods.sheetCritChanceFlat);
     case 'penetrationPp':
-      return rescaleNakedPen(naked, prevMods.sheetPenetrationRaw, nextMods.sheetPenetrationRaw);
+      return rescaleNakedPen(naked, prevMods.sheetPenetrationFlat, nextMods.sheetPenetrationFlat);
     case 'critDmgFlat':
       return rescaleNakedCritDmg(naked, prevMods.sheetCritDmgFlat, nextMods.sheetCritDmgFlat);
     default:

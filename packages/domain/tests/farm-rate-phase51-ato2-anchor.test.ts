@@ -8,6 +8,12 @@
  * the comparison is a claim about today's game. The samples are a fresh measurement, held out of
  * band — in combat-throughput notes, not in this repo.
  *
+ * ONE CONSTANT HAS MOVED UNDER IT SINCE: the 2026-09-12 wiki publishes Misericórdia at 0.75% of
+ * HP per level (was 1.25%), and four of these heroes carry it. The three rate pins below were
+ * re-pinned to the new arithmetic (clear time +0.2%, gold/hr −0.2%), not refitted — the same
+ * treatment the Baton Pass pricing got. The capture predates the change, so the measured side
+ * still describes the larger threshold; the residuals carry that until the pair is re-anchored.
+ *
  * WHY THE PREVIOUS PAIR WAS RETIRED RATHER THAN RE-FITTED. It read `save-20260818-12heroes.json`
  * against 61 clears logged beside it, and both predate the 2026-08-23 patch. That patch changed
  * the crit-chance ABILITIES' shape (see the `critChanceFlat` ability kind), so today's sheet math
@@ -185,15 +191,15 @@ describe('nothing binds on this account — the structural change since the reti
 });
 
 describe('the resulting rates', () => {
-  it('clearSecs is 27.92s — ~1.6% above the measured arithmetic mean of 27.483s', () => {
+  it('clearSecs is 27.98s — ~1.8% above the measured arithmetic mean of 27.483s', () => {
     // 24.3685s / -11.3% before the clear was charged for its head, and 23.886s before the FIFO
     // field queue took 2% of this roster's throughput. The head is 3.553s here: 7.3648 heroes
     // coming up 0.5s apart, then the opening bomb's 1.9619s uptime-weighted fuse burning on an
     // empty field.
-    expect(row.clearSecs).toBeCloseTo(27.9216, 3);
+    expect(row.clearSecs).toBeCloseTo(27.9809, 3);
 
     const residual = row.clearSecs / OBSERVED_CLEAR_SECS - 1;
-    expect(residual).toBeCloseTo(0.0160, 3);
+    expect(residual).toBeCloseTo(0.0181, 3);
 
     // The model now clears SLOWER than the measurement rather than faster — a sign change, not a
     // shrunken magnitude, which is what makes the head term a correction rather than a fudge
@@ -201,14 +207,14 @@ describe('the resulting rates', () => {
     expect(row.clearSecs).toBeGreaterThan(OBSERVED_CLEAR_SECS);
   });
 
-  it('goldPerHour is ~17.86M — ~6.2% BELOW the measured 19,033,500, where it was 7.5% above', () => {
+  it('goldPerHour is ~17.82M — ~6.4% BELOW the measured 19,033,500, where it was 7.5% above', () => {
     // Left as a point comparison rather than a tolerance band, so that any UNRELATED move (a wiki
     // refresh, a sheet-math change) shows up as a change to THIS number, distinct from the
     // tracked residual itself.
-    expect(row.goldPerHour).toBeCloseTo(17_857_044, -3);
+    expect(row.goldPerHour).toBeCloseTo(17_819_180, -3);
 
     const residual = row.goldPerHour / OBSERVED_GOLD_PER_HOUR - 1;
-    expect(residual).toBeCloseTo(-0.0618, 3);
+    expect(residual).toBeCloseTo(-0.0638, 3);
   });
 
   it('the gold residual is now the presence term ALONE — the cancellation this file exists to catch is gone', () => {
@@ -220,7 +226,7 @@ describe('the resulting rates', () => {
     const cadence = goldFactor / presence;
 
     expect(presence).toBeCloseTo(0.93072, 4);
-    expect(cadence).toBeCloseTo(1.00802, 4);
+    expect(cadence).toBeCloseTo(1.00589, 4);
     // It was 1.15500, and 0.93072 × 1.15500 = 1.07499 — an error of 15% and an error of 7% in
     // opposite directions, reading as a 7.5% overshoot.
     expect(0.93072 * 1.155).toBeCloseTo(1.07499, 4);

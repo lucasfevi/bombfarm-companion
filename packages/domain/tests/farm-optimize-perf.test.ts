@@ -23,25 +23,25 @@ beforeEach(() => {
   resetEnergySwitchPointCallCount();
 });
 
-/** `computeHeroFarmBases` prices team auras over the rotation, which costs a second pass per
- *  hero — see its own note, and `farm-rate-perf-guard.test.ts`, which owns this constant's
- *  rationale. What matters here is unchanged: the count follows the POOL, never the candidate
- *  count the solver evaluates. */
-const PASSES_PER_HERO = 2;
+/** `computeHeroFarmBases` prices team auras over the rotation as a closed-form layer on its one
+ *  aura-free pass per hero — see its own note, and `farm-rate-perf-guard.test.ts`, which owns
+ *  this constant's rationale. What matters here is unchanged: the count follows the POOL, never
+ *  the candidate count the solver evaluates. */
+const PASSES_PER_HERO = 1;
 
 describe('pipeline calls equal the enabled-hero count, regardless of candidates evaluated', () => {
-  it('a full Tier 2 solve on the 5-hero fixture bumps the counter exactly 2x5 times', () => {
+  it('a full Tier 2 solve on the 5-hero fixture bumps the counter exactly 1x5 times', () => {
     solveFarmRespec({ heroes, account, maxPhase });
     expect(energySwitchPointCallCount).toBe(PASSES_PER_HERO * 5);
   });
 
-  it('a 2-hero pool bumps the counter exactly 2x2 times', () => {
+  it('a 2-hero pool bumps the counter exactly 1x2 times', () => {
     const twoIds = heroes.slice(0, 2).map((h) => h.id);
     solveFarmRespec({ heroes, account, maxPhase, enabledHeroIds: twoIds });
     expect(energySwitchPointCallCount).toBe(PASSES_PER_HERO * 2);
   });
 
-  it('a 1-hero pool bumps the counter exactly 2x1 times', () => {
+  it('a 1-hero pool bumps the counter exactly 1x1 times', () => {
     const oneId = heroes.slice(0, 1).map((h) => h.id);
     solveFarmRespec({ heroes, account, maxPhase, enabledHeroIds: oneId });
     expect(energySwitchPointCallCount).toBe(PASSES_PER_HERO * 1);

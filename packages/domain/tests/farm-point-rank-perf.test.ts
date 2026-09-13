@@ -24,17 +24,18 @@ beforeEach(() => {
   resetEnergySwitchPointCallCount();
 });
 
-/** See `farm-rate-perf-guard.test.ts` — rotation-priced team auras cost a second pass per hero. */
-const PASSES_PER_HERO = 2;
+/** See `farm-rate-perf-guard.test.ts` — the rotation-priced team auras are a closed-form layer on
+ *  the one aura-free pass per hero. */
+const PASSES_PER_HERO = 1;
 
 describe('pipeline-call sensor', () => {
-  it('basis extraction spends exactly two pipeline calls per enabled hero (5-hero pool)', () => {
+  it('basis extraction spends exactly one pipeline call per enabled hero (5-hero pool)', () => {
     resetEnergySwitchPointCallCount();
     computeHeroFarmBases({ heroes, account });
     expect(energySwitchPointCallCount).toBe(PASSES_PER_HERO * heroes.length);
   });
 
-  it('a two-hero pool spends exactly 2x2 — rules out a hardcoded constant', () => {
+  it('a two-hero pool spends exactly 1x2 — rules out a hardcoded constant', () => {
     const twoIds = heroes.slice(0, 2).map((h) => h.id);
     resetEnergySwitchPointCallCount();
     computeHeroFarmBases({ heroes, account, enabledHeroIds: twoIds });

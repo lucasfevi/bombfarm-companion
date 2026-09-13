@@ -93,12 +93,16 @@ describe('no REPORTED phase is ever a screened one', () => {
      *  squad spends coming up to speed reshaped the objective surface enough that the screen's
      *  miss — still a miss, still 51 against 32 — no longer changes which stat wins. The guard
      *  below asserts the discrimination first, so it reported that rather than passing on a case
-     *  proving nothing. Two heroes on the same capture, at the same ceiling, discriminate. */
-    const WITNESS = { fixture: 'save-20260819-11882-7heroes.json', poolSize: 2, maxPhase: 52 } as const;
+     *  proving nothing. Two heroes on the same capture, at the same ceiling, discriminate.
+     *
+     *  NAMED, NOT SLICED, since the team auras began following the pool: the first two heroes of
+     *  this capture no longer discriminate once their aura layer is priced over the pair rather
+     *  than inherited from the seven; Kael and Ulric do (screen 52, sweep 32). */
+    const WITNESS = { fixture: 'save-20260819-11882-7heroes.json', heroIds: ['51605', '52834'], maxPhase: 52 } as const;
 
     it('reports the full sweep phase and row order where the screen picks a different world', () => {
       const { heroes, account } = loadFarmRateFixture(WITNESS.fixture);
-      const bases = computeHeroFarmBases({ heroes, account }).slice(0, WITNESS.poolSize);
+      const bases = computeHeroFarmBases({ heroes, account, enabledHeroIds: WITNESS.heroIds });
       const squad = squadFactsFromBases(bases, null, account);
       const gold = OBJECTIVES.gold;
 
@@ -189,12 +193,12 @@ describe('no REPORTED phase is ever a screened one', () => {
   });
 
   describe('optimizeHeroForFarm', () => {
-    /** A two-hero rotation of a committed capture: the screen stops at 76, the full sweep finds
-     *  67. The hero has nothing to gain, so this is the CURRENT side's read-out. */
+    /** A two-hero rotation of a committed capture: the screen stops at 57, the full sweep finds
+     *  63. The assertion is on the CURRENT side's read-out, whatever the search then finds. */
     const WITNESS = {
       fixture: 'save-20260825-11heroes-one-shot-spread.json',
-      heroIds: ['30140', '81033'],
-      heroId: '81033',
+      heroIds: ['39855', '41990'],
+      heroId: '41990',
       maxPhase: 85,
     } as const;
 

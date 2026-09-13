@@ -17,7 +17,7 @@ function sheetOtherFromAbilities(abilities: Record<string, number>) {
   return {
     ...emptySheetOther(),
     critChanceFlat: mods.sheetCritChanceFlat,
-    penetration: mods.sheetPenetrationRaw,
+    penetration: mods.sheetPenetrationFlat,
     critDmgFlat: mods.sheetCritDmgFlat,
   };
 }

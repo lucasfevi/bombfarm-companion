@@ -111,7 +111,8 @@ export function ledgerCritDmg(facts: PipelineFacts): StatBreakdown {
 
 export function ledgerPenetration(facts: PipelineFacts): StatBreakdown {
   const steps: LedgerStep[] = [];
-  const basePen = facts.naked.penetration / (1 + facts.sheetOther.penetration);
+  // Ponta de Diamante's points are flat and outside the pool, like Olho Clínico's above.
+  const basePen = facts.naked.penetration - Math.max(0, facts.sheetOther.penetration);
   pushBirthThenGear(steps, 'penetration', facts);
   pushAddPctOfBase(
     steps,

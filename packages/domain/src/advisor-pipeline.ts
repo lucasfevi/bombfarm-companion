@@ -208,7 +208,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   const sheetOther: SheetOtherPct = {
     ...emptySheetOther(),
     critChanceFlat: mods.sheetCritChanceFlat,
-    penetration: mods.sheetPenetrationRaw,
+    penetration: mods.sheetPenetrationFlat,
     critDmgFlat: mods.sheetCritDmgFlat,
   };
 
