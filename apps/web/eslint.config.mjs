@@ -191,7 +191,7 @@ export default tseslint.config(
       ],
       // W5: ≤8 props — enforced by src/tests/mod-17-max-props.test.ts
       // (warn-equivalent allowlist for DS Switch/Select; W7 burns allowlist).
-      // Cross-feature allowlist is four dated edges only (Approach A / Q-1).
+      // Cross-feature allowlist is five dated edges only (Approach A / Q-1).
       'boundaries/element-types': [
         'error',
         {
@@ -263,6 +263,15 @@ export default tseslint.config(
               from: { element: { type: 'feature', captured: { feature: 'phases' } } },
               allow: {
                 to: { element: { type: 'feature', captured: { feature: 'roster' } } },
+              },
+            },
+            // Allowlisted cross-feature edge, 2026-09-13 (home → account model): the front page's
+            // cards print the Account page's own field labels, figure formatters and holdings
+            // figures, read through the account barrel's model exports — never its components.
+            {
+              from: { element: { type: 'feature', captured: { feature: 'home' } } },
+              allow: {
+                to: { element: { type: 'feature', captured: { feature: 'account' } } },
               },
             },
             // game-art → i18n / lib (DS + domain via @bombfarm/* externals)
