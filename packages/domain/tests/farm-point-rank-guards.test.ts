@@ -121,6 +121,11 @@ describe('guard (c) — no retired one-shot identifier survives, with a consider
     },
     { file: join(WEB_SRC_ROOT, 'tests/farm-ranking-view.test.ts'), reason: 'tests the oneShot column' },
     { file: join(WEB_SRC_ROOT, 'tests/phases.test.ts'), reason: "tests oneshotGapPct ('oneshot gap' in a test title)" },
+    {
+      file: join(WEB_SRC_ROOT, 'features/home/model/farm-card-view.ts'),
+      reason: "reads FarmRateRow.oneShot for the front page's phase comparison sentence",
+    },
+    { file: join(WEB_SRC_ROOT, 'tests/farm-card-view.test.ts'), reason: 'oneShot in its row fixtures' },
     // `tests/fixtures/i18n-strings-main.json` was allowlisted here while it was a frozen snapshot
     // still carrying the retired `modeOneshot` / `setupNeedTargetProp` strings. The 2026-08-17
     // re-baseline regenerated it from live STRINGS, which no longer contain them: the file went
