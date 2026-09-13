@@ -98,7 +98,7 @@ function activePanel(page: Page) {
 test.describe('display precision sweep', () => {
   test('sheet table Birth column renders at 2 dp for a known fixture value', async ({ page }) => {
     await seedLocalStorage(page, precisionHero());
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Precision');
     await page.getByRole('tab', { name: /^Points$/i }).click();
 
@@ -116,7 +116,7 @@ test.describe('display precision sweep', () => {
 
   test('sheet table shows a Luck row', async ({ page }) => {
     await seedLocalStorage(page, precisionHero());
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Precision');
     await page.getByRole('tab', { name: /^Points$/i }).click();
 
@@ -130,7 +130,7 @@ test.describe('display precision sweep', () => {
 
   test('sheet table is read-only — no geared Num spinbuttons', async ({ page }) => {
     await seedLocalStorage(page, precisionHero());
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Precision');
     await page.getByRole('tab', { name: /^Points$/i }).click();
 
@@ -142,7 +142,7 @@ test.describe('display precision sweep', () => {
 
   test('sheet table Total for Speed includes Δ points at 2 dp', async ({ page }) => {
     await seedLocalStorage(page, precisionHero());
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Precision');
     await page.getByRole('tab', { name: /^Points$/i }).click();
 
@@ -157,7 +157,7 @@ test.describe('display precision sweep', () => {
 
   test('Points table After column renders at 2 dp', async ({ page }) => {
     await seedLocalStorage(page, precisionHero());
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Precision');
     await page.getByRole('tab', { name: /^Points$/i }).click();
 
@@ -178,7 +178,7 @@ test.describe('display precision sweep', () => {
     // packages/domain/src/team-buffs.ts), so this seed reads as an unclamped rank.
     const seeded = withOwnAura(precisionHero(), { marcha_acelerada: 8 });
     await seedLocalStorage(page, seeded);
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Precision');
     await page.getByRole('tab', { name: /^Combat$/i }).click();
 
@@ -193,7 +193,7 @@ test.describe('display precision sweep', () => {
   test('ledger step amounts (pctOfBase term) render at 2 dp', async ({ page }) => {
     const seeded = withOwnAura(precisionHero(), { marcha_acelerada: 20 });
     await seedLocalStorage(page, seeded);
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Precision');
     await page.getByRole('tab', { name: /^Combat$/i }).click();
 

@@ -16,7 +16,7 @@ test.describe.configure({ mode: 'serial' })
 async function bootSettled(page: import('@playwright/test').Page) {
   await installCollector(page)
   await seedLocalStorage(page, importedRoster)
-  await page.goto('/')
+  await page.goto('/planner')
   const heroStrip = page.getByRole('region', { name: /herói atual|current hero/i })
   await expect(heroStrip).toBeVisible({ timeout: 60_000 })
   // Force applyHero via the picker — StrictMode + collector can race the boot microtask.

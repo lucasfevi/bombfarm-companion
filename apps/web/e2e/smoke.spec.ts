@@ -14,7 +14,7 @@ async function importSampleSave(page: import('@playwright/test').Page) {
 /** Core client flow — sole chromium project (color-independent). */
 test.describe('core client flow', () => {
   test('footer shows a stable app version label on every route', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/planner');
 
     const version = page.getByTestId('app-version');
     await expect(version).toBeVisible();
@@ -34,7 +34,7 @@ test.describe('core client flow', () => {
 
   test('long version label fits the footer slot without clipping', async ({ page }) => {
     const longLabel = 'v0.10.0-dev.abcdef1';
-    await page.goto('/');
+    await page.goto('/planner');
 
     const version = page.getByTestId('app-version');
     await version.evaluate((element, label) => {
@@ -68,7 +68,7 @@ test.describe('core client flow', () => {
   });
 
   test('import → select → level/stars → DPS updates → explain toggle', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/planner');
 
     // Step 1 — empty workspace visible; hero strip metrics hidden
     const empty = page.getByRole('region', { name: /nenhum herói adicionado/i });
@@ -125,7 +125,7 @@ test.describe('core client flow', () => {
    * Sabotage that would make the happy path fail: skip confirm / use bad file → no Cora row.
    */
   test('invalid import does not create roster rows', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/planner');
     const empty = page.getByRole('region', { name: /nenhum herói adicionado/i });
     await expect(empty).toBeVisible();
 
@@ -151,7 +151,7 @@ test.describe('core client flow', () => {
   });
 
   test('hero picker gear column shows eight slot icons', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/planner');
     await importSampleSave(page);
 
     const heroStrip = page.getByRole('region', { name: /herói atual/i });
@@ -170,7 +170,7 @@ test.describe('core client flow', () => {
    * be absent by design, so "the picker opens" no longer implies the switch is in it.
    */
   test('hero picker carries the planner enable/disable switch, one per row', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/planner');
     await importSampleSave(page);
 
     const heroStrip = page.getByRole('region', { name: /herói atual/i });

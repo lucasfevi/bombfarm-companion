@@ -194,7 +194,7 @@ test.describe('perf measurement driver', () => {
 
     await installCollector(page)
     await seedLocalStorage(page, FIXTURE)
-    await page.goto('/')
+    await page.goto('/planner')
     await expect(page.getByRole('region', { name: /herói atual|current hero/i })).toBeVisible({
       timeout: 60_000,
     })

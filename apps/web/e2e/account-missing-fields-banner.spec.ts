@@ -19,7 +19,7 @@ function seedWith(missingRequiredFields?: string[]): SeededState {
 test.describe('missing required save fields', () => {
   test('names the fields under the header, on the planner and on Farm alike', async ({ page }) => {
     await seedLocalStorage(page, seedWith(['houseLevel', 'maxPhase']));
-    await page.goto('/');
+    await page.goto('/planner');
 
     const banner = page.getByTestId('account-missing-fields-banner');
     await expect(banner).toBeVisible();
@@ -41,7 +41,7 @@ test.describe('missing required save fields', () => {
 
   test('stays silent for an account stored before the rule existed', async ({ page }) => {
     await seedLocalStorage(page, seedWith());
-    await page.goto('/');
+    await page.goto('/planner');
     await expect(page.locator('header')).toBeVisible();
 
     await expect(page.getByTestId('account-missing-fields-banner')).toHaveCount(0);
@@ -49,7 +49,7 @@ test.describe('missing required save fields', () => {
 
   test('stays silent after an import that carried every required field', async ({ page }) => {
     await seedLocalStorage(page, seedWith([]));
-    await page.goto('/');
+    await page.goto('/planner');
     await expect(page.locator('header')).toBeVisible();
 
     await expect(page.getByTestId('account-missing-fields-banner')).toHaveCount(0);
