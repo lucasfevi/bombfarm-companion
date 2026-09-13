@@ -81,9 +81,13 @@ import {
   fieldSeconds,
   HOP_FIT_ATO,
   cycleSecondsForHero,
+  passagemBastaoFieldPulse,
+  passagemBastaoPresence,
   type Context,
   type HeroSheet,
   type EffectiveDeltas,
+  type PassagemBastaoCarrier,
+  type PassagemBastaoFieldPulse,
 } from './model';
 import { atoIndex } from './model/cadence';
 export {
@@ -220,6 +224,18 @@ export type HeroFarmFacts = {
   blocksPerBomb: number;
   /** House duty cycle as a FRACTION 0..1 (the pipeline reports this as a percent). */
   uptime: number;
+  /**
+   * This hero's Passagem de Bastão, when it carries one: the rank, and the share of wall clock
+   * its entry pulse keeps the whole field lit ({@link passagemBastaoPresence}, at this hero's own
+   * stint length and duty). Reads {@link uptime} as the duty, the same unconstrained `F/(F+T)`
+   * the auras' presence weights use; a House that binds only lengthens the cycle, which the
+   * cooldown term is already saturated against. The squad folds every carrier into one
+   * {@link SquadFarmFacts.entryPulse}.
+   *
+   * OPTIONAL, and absent means not a carrier, so a hand-built `HeroFarmFacts` prices as it
+   * always has. `computeHeroFarmFacts` populates it for every carrier.
+   */
+  passagemBastao?: PassagemBastaoCarrier;
   /** Hero-only Sorte in PERCENTAGE POINTS — the tree's flat share peeled out. */
   heroLuckPct: number;
   /** `abilities.veia_ouro`, clamped to `[0, ABILITY_LEVEL_MAX]`. */
@@ -292,6 +308,7 @@ export type HeroFarmBasis = {
   /** Clamped ability levels — build-independent. */
   veiaOuroLevel: number;
   fortunaLevel: number;
+  passagemBastaoLevel: number;
   /** `1 + 0.5 × context.blastRange` — ability-driven, build-independent, precomputed. */
   blocksPerBomb: number;
   /**
@@ -357,6 +374,7 @@ export function heroFarmBasisFromParts(parts: HeroFarmBasisParts): HeroFarmBasis
     heroLuckPct: Math.max(0, parts.adjustedLuckPct - parts.treeLuckFlatPct),
     veiaOuroLevel: clampAbilityLevel(parts.abilities.veia_ouro ?? 0),
     fortunaLevel: clampAbilityLevel(parts.abilities.fortuna ?? 0),
+    passagemBastaoLevel: clampAbilityLevel(parts.abilities.passagem_bastao ?? 0),
     blocksPerBomb: 1 + 0.5 * parts.context.blastRange,
     ...(parts.auraFree ? { auraFree: parts.auraFree } : {}),
   };
@@ -600,6 +618,10 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
   const plantsPerSec = plantsPerSecByAto[HOP_FIT_ATO - 1];
   const field = fieldSeconds(sheet, basis.context);
   const uptime = (100 * field) / (field + basis.context.restSeconds) / 100;
+  const passagemBastao =
+    basis.passagemBastaoLevel > 0
+      ? { rank: basis.passagemBastaoLevel, presence: passagemBastaoPresence(field, uptime) }
+      : undefined;
   const degenerate = !(avgHitBase > 0) || !(plantsPerSec > 0);
 
   const facts: HeroFarmFacts = {
@@ -620,6 +642,7 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
     veiaOuroLevel: basis.veiaOuroLevel,
     fortunaLevel: basis.fortunaLevel,
     degenerate,
+    ...(passagemBastao ? { passagemBastao } : {}),
   };
   return facts;
 }
@@ -706,6 +729,14 @@ export type SquadFarmFacts = {
    * phase-independent keeps it out of `buildRow`'s per-phase loop.
    */
   meanFuseSecs: number;
+  /**
+   * Passagem de Bastão over the whole pool — the field's damage multiplier by level and the share
+   * of wall clock it holds each ({@link passagemBastaoFieldPulse}). A team aura that is up in
+   * pulses, so it is priced as the auras are: each carrier's pulse present for its own share of
+   * wall clock, overlaps summed and capped inside the expectation. Phase-independent, hence on
+   * the squad; the row layer prices every hero's hit through every level.
+   */
+  entryPulse: PassagemBastaoFieldPulse;
   /** `1 + max(0, tree.teamCoinPct) / 100`. */
   teamCoinMult: number;
   /** `tree.luckFlatPct ?? 0`, percentage points — echoed for the board's breakdown tooltip. */
@@ -755,6 +786,10 @@ export function computeSquadFarmFacts(
   const fuseWeightedSum = heroFacts.reduce((sum, hero) => sum + hero.uptime * hero.fuseSecs, 0);
   const meanFuseSecs = uptimeSum > 0 ? fuseWeightedSum / uptimeSum : 0;
 
+  const entryPulse = passagemBastaoFieldPulse(
+    heroFacts.flatMap((hero) => (hero.passagemBastao ? [hero.passagemBastao] : [])),
+  );
+
   const teamCoinMult = 1 + Math.max(0, account.tree.teamCoinPct ?? 0) / 100;
 
   const rawXpMult = account.tree.xpMult;
@@ -768,6 +803,7 @@ export function computeSquadFarmFacts(
     houseSlotDemand: houseSlotDemandSum,
     sorteFraction,
     meanFuseSecs,
+    entryPulse,
     teamCoinMult,
     treeLuckFlatPct,
     xpMult,
@@ -996,6 +1032,25 @@ function hitsPerSec(hero: HeroFarmFacts, ato: number): number {
   return plantsPerSecForAto(hero, ato) * hero.blocksPerBomb * EFF_IA;
 }
 
+/**
+ * Hits per kill as the hero's prop RATE sees them over a field that sits at each pulse level for
+ * its share of wall clock: the rate is `hps × Σ_level p / htk(hit × mult)`, so the single figure
+ * the rate divides by is that harmonic blend. Every level goes through the hits-to-kill step on
+ * its own hit — a time-averaged hit would credit a threshold the field crosses at no level it
+ * actually sits at. A pool without a carrier has the one level at ×1 and returns the step's own
+ * figure untouched: it must price bit for bit as it did before the pulse existed.
+ */
+function pulseBlendedHtk(
+  pulse: PassagemBastaoFieldPulse,
+  standingHit: number,
+  htkFor: (hit: number) => number,
+): number {
+  if (pulse.levels.length === 1) return htkFor(standingHit * pulse.levels[0].mult);
+  let rateShare = 0;
+  for (const level of pulse.levels) rateShare += level.probability / htkFor(standingHit * level.mult);
+  return 1 / rateShare;
+}
+
 // ---------------------------------------------------------------------------------------------
 // Module-load prop table — phase-independent, computed once, frozen.
 // ---------------------------------------------------------------------------------------------
@@ -1151,14 +1206,21 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   const perHero = squad.heroes.map((hero) => {
     const mitF = mitigationFactor(line.mitig, hero.penetrationPct);
     const avgHit = hero.avgHitBase * mitF;
-    const eHtk = PROP_SHARES.reduce(
-      (sum, prop) => sum + prop.share * hitsToKill(avgHit, propHp(line.hp, prop.hpMult)),
-      0,
+    const pulse = squad.entryPulse;
+    const eHtk = pulseBlendedHtk(pulse, avgHit, (hit) =>
+      PROP_SHARES.reduce(
+        (sum, prop) => sum + prop.share * hitsToKill(hit, propHp(line.hp, prop.hpMult)),
+        0,
+      ),
     );
-    const bossHtk = hitsToKill(avgHit, propHp(line.hp, BOSS_HP_MULT_WIKI));
+    const bossHtk = pulseBlendedHtk(pulse, avgHit, (hit) =>
+      hitsToKill(hit, propHp(line.hp, BOSS_HP_MULT_WIKI)),
+    );
     const hps = hitsPerSec(hero, line.ato);
     return {
-      avgHit,
+      // The hit the hero lands at the LOWEST level the field ever sits at. `oneShot` reads this:
+      // a hero that one-shots only while a pulse is up is not a one-shot hero.
+      floorHit: avgHit * pulse.levels[0].mult,
       eHtk,
       fullTerm: (hps * hero.uptime) / eHtk,
       fullBossTerm: (hps * hero.uptime) / bossHtk,
@@ -1251,7 +1313,7 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   const xpPerHour = propsPerHour * xpPerProp(line.phase) * squad.xpMult * bonus;
 
   const maxPropHp = line.hp * MAX_PROP_HP_MULT;
-  const oneShot = perHero.length > 0 && perHero.every((hero) => hero.avgHit >= maxPropHp);
+  const oneShot = perHero.length > 0 && perHero.every((hero) => hero.floorHit >= maxPropHp);
   const gateTimerSecs = line.gate ? (GATE_SECS_POR_ATO[line.ato - 1] ?? null) : null;
   const infeasible =
     (line.gate && gateTimerSecs != null && clearSecs > gateTimerSecs) ||

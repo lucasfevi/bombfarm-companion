@@ -175,10 +175,11 @@ describe('rank-20 migration', () => {
     expect(abilityMods({ explosao_ampla: 20 }).rangeCells).toBeCloseTo(2, 10);
   });
 
-  it('passagem_bastao is rank-20 damage-on-enter copy and stays unmodeled', () => {
+  it('passagem_bastao is rank-20 damage-on-enter copy and stays off the sheet — the Farm board and the Optimizer price the pulse', () => {
     const def = ABILITIES.find((a) => a.id === 'passagem_bastao')!;
     expect(def.max).toBe(20);
     expect(def.effect).toEqual({ kind: 'none' });
+    expect(def.effectText).not.toMatch(/não modelado/);
     expect(def.effectText).toMatch(/4%/);
     expect(def.effectText).toMatch(/120/);
     expect(def.effectText).not.toMatch(/velocidade/i);

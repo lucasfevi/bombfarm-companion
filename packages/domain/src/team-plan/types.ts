@@ -158,6 +158,12 @@ export type RosterEvaluation = {
   perHero: Record<string, HeroScore>;
   auras: Record<TeamBuffId, number>;
   /**
+   * Passagem de Bastão over the rotation in the last round, as the expected field-wide damage
+   * multiplier every `perHero` DPS figure was scaled by — `1` without a fielded carrier.
+   * `screenRosterObjective` prices its candidates against this incumbent figure.
+   */
+  entryPulseMult: number;
+  /**
    * The duty every fielded hero's aura was weighted by in the last round — the optimize heroes'
    * from `perHero`, plus the leave-alone heroes', which `perHero` does not carry because nothing
    * they score reaches the objective. `screenRosterObjective` prices its candidates off this map.

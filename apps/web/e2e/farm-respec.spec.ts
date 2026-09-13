@@ -216,8 +216,11 @@ test.describe('Farm Respec Advisor', () => {
 
   // 5. Re-rank moves the top-ranked phase into the recommended band, closes the panel, and marks the
   // table as showing the proposed build. Same band, and the same caveat, as the Phase tile above.
+  // Two witnesses that the table was re-priced: the top row's phase moves, and the gold figure on
+  // it changes — the figure the re-rank exists to show.
   test('re-rank moves the top-ranked phase into 54-58, closes the panel, and marks the table', async ({ page }) => {
     const beforePhase = await firstRowPhase(page);
+    const beforeGold = await page.getByTestId(`farm-row-gold-${beforePhase}`).textContent();
 
     await optimizeButton(page).click();
     await expect(panel(page)).toBeVisible();
@@ -231,6 +234,8 @@ test.describe('Farm Respec Advisor', () => {
     expect(afterPhase).not.toBe(beforePhase);
     expect(afterPhase).toBeGreaterThanOrEqual(54);
     expect(afterPhase).toBeLessThanOrEqual(58);
+    const afterGold = await page.getByTestId(`farm-row-gold-${afterPhase}`).textContent();
+    expect(afterGold).not.toBe(beforeGold);
   });
 
   // 6. Invalidation: with re-rank on, changing an input reverts everything — no stale figure.

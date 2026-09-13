@@ -79,6 +79,20 @@ export {
 
 export { rankNextPoint, energySwitchPoint, RANK_STATS } from './points-rank';
 
+export type {
+  PassagemBastaoCarrier,
+  PassagemBastaoFieldPulse,
+  PassagemBastaoLevel,
+} from './passagem-bastao';
+export {
+  PASSAGEM_BASTAO_PER_RANK,
+  PASSAGEM_BASTAO_WINDOW_SEC,
+  PASSAGEM_BASTAO_COOLDOWN_SEC,
+  PASSAGEM_BASTAO_CAP,
+  passagemBastaoPresence,
+  passagemBastaoFieldPulse,
+} from './passagem-bastao';
+
 export type { BirthStats, TreeSheetTotals, ComposeSheetFromBirthInput } from '../birth-sheet';
 export {
   nakedFromBirth,

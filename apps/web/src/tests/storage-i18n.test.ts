@@ -141,10 +141,10 @@ describe('planner tabs IA (PTI-*)', () => {
 describe('effective stats panel chrome (EST-*)', () => {
   it('effectiveTip clarifies post-pipeline sources in EN and PT', () => {
     expect(STRINGS.en.effectiveTip).toBe(
-      'Includes gear, points, skill tree, abilities, and the team auras switched on above.',
+      'Includes gear, points, skill tree, abilities, and the team auras switched on above. Baton Pass is not counted here; the Farm page and the Optimizer count its entry pulse.',
     );
     expect(STRINGS.pt.effectiveTip).toBe(
-      'Inclui equipamento, pontos, árvore, habilidades e as auras de time ligadas acima.',
+      'Inclui equipamento, pontos, árvore, habilidades e as auras de time ligadas acima. Passagem de Bastão não entra aqui; a página Farm e o Otimizador contam o pulso de entrada dela.',
     );
   });
 

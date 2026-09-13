@@ -525,3 +525,45 @@ describe('evaluateRoster', () => {
     expect(leftAlone.objective).toBeGreaterThan(donated.objective);
   });
 });
+
+describe('Passagem de Bastão is a field-wide pulse, priced like the auras', () => {
+  const input = fixtureEvaluation('payload-20260812-8heroes.json');
+  const carrierId = input.contexts[0]!.heroId;
+  const withCarrier = (scope: HeroPlanContext['scope'], rank: number): EvaluateRosterInput => ({
+    ...input,
+    contexts: input.contexts.map((c) =>
+      c.heroId === carrierId
+        ? { ...c, scope, abilities: { ...c.abilities, passagem_bastao: rank } }
+        : { ...c, scope: 'optimize' as const, abilities: { ...c.abilities, passagem_bastao: 0 } },
+    ),
+  });
+
+  it('reports ×1 without a carrier, and every hero scores as it would with none', () => {
+    const result = evaluateRoster(withCarrier('optimize', 0));
+    expect(result.entryPulseMult).toBe(1);
+  });
+
+  it('one carrier lifts EVERY optimize hero by the same expected multiplier, carrier or not', () => {
+    const without = evaluateRoster(withCarrier('optimize', 0));
+    const withPulse = evaluateRoster(withCarrier('optimize', 20));
+    const carrier = withPulse.perHero[carrierId]!;
+    const presence = 120 / (carrier.fieldSeconds / carrier.duty);
+    expect(withPulse.entryPulseMult).toBeCloseTo(1 + 0.8 * presence, 9);
+    expect(withPulse.entryPulseMult).toBeGreaterThan(1);
+    for (const [heroId, score] of Object.entries(withPulse.perHero)) {
+      const before = without.perHero[heroId]!;
+      expect(score.sustained / before.sustained).toBeCloseTo(withPulse.entryPulseMult, 9);
+      expect(score.active / before.active).toBeCloseTo(withPulse.entryPulseMult, 9);
+      expect(score.duty).toBe(before.duty);
+    }
+    expect(withPulse.objective / without.objective).toBeCloseTo(withPulse.entryPulseMult, 9);
+  });
+
+  it('a leave-alone carrier lights the field; a donated one does not', () => {
+    const leftAlone = evaluateRoster(withCarrier('leaveAlone', 20));
+    const donated = evaluateRoster(withCarrier('donate', 20));
+    expect(donated.entryPulseMult).toBe(1);
+    expect(leftAlone.entryPulseMult).toBeGreaterThan(1);
+    expect(leftAlone.objective).toBeGreaterThan(donated.objective);
+  });
+});

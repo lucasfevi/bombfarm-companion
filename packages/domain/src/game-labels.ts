@@ -186,8 +186,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '−1% TEAM energy spent/level',
   },
   passagem_bastao: {
-    pt: '+4% de Dano ao ENTRAR no rodízio (dura 120s)/nível (não modelado)',
-    en: '+4% Damage on ENTERING rotation (lasts 120s)/level (not modeled)',
+    pt: '+4% de Dano do TIME ao ENTRAR no rodízio (dura 120s)/nível (só no Farm e no Otimizador)',
+    en: '+4% TEAM Damage on ENTERING rotation (lasts 120s)/level (Farm and Optimizer only)',
   },
   olho_lapidador: {
     pt: '+2.5% chance de subir a raridade do drop do herói que destruiu o objeto/nível (loot, não vale para Jaulas)',

@@ -45,6 +45,7 @@ describe('team-plan point budget — waterfall.ts finalPtsFromOptimizeBuild', ()
       slots: 0,
       perHero: { [ctx.heroId]: score },
       auras: zeroTeamBuffs(),
+      entryPulseMult: 1,
       dutyByHeroId: { [ctx.heroId]: score.duty },
     };
 
@@ -80,6 +81,7 @@ describe('team-plan point budget — waterfall.ts finalPtsFromOptimizeBuild', ()
       slots: 0,
       perHero: { [ctx.heroId]: score },
       auras: zeroTeamBuffs(),
+      entryPulseMult: 1,
       dutyByHeroId: { [ctx.heroId]: score.duty },
     };
 

@@ -100,7 +100,10 @@ export const ABILITIES: AbilityDef[] = [
   { id: 'olho_clinico', name: 'Olho Clínico', max: 20, effectText: '+2 pontos de chance de crítico/nível (valor fixo, altera atributos)', effect: { kind: 'critChanceFlat', perLevel: 2, onSheet: true } },
   { id: 'detonacao_dupla', name: 'Detonação Dupla', max: 20, effectText: '+1.5% chance de 2ª explosão (50% dano)/nível', effect: { kind: 'secondBlastPct', perLevel: 1.5 } },
   { id: 'folego_mineiro', name: 'Fôlego de Mineiro', max: 20, effectText: '−1% energia gasta do TIME/nível', effect: { kind: 'drainPct', perLevel: 1 } },
-  { id: 'passagem_bastao', name: 'Passagem de Bastão', max: 20, effectText: '+4% de Dano ao ENTRAR no rodízio (dura 120s)/nível (não modelado)', effect: { kind: 'none' } },
+  // A team aura that is up in pulses, not a sheet stat: `kind: 'none'` here, and the Farm board
+  // and the Optimizer price it over the rotation (`model/passagem-bastao.ts`). Not in
+  // `TEAM_BUFF_ABILITY_IDS` either: those four are standing multipliers the sheet carries.
+  { id: 'passagem_bastao', name: 'Passagem de Bastão', max: 20, effectText: '+4% de Dano do TIME ao ENTRAR no rodízio (dura 120s)/nível (só no Farm e no Otimizador)', effect: { kind: 'none' } },
   // 2026-08-23 patch restated the scope: it upgrades the drop of the hero that destroyed the
   // object, and does not apply to Jaulas. The per-level rate is unchanged (wiki 0.025).
   { id: 'olho_lapidador', name: 'Olho de Lapidador', max: 20, effectText: '+2.5% chance de subir a raridade do drop do herói que destruiu o objeto/nível (loot, não vale para Jaulas)', effect: { kind: 'none' } },

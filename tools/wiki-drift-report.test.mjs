@@ -241,20 +241,23 @@ describe('ARTIFACT_BACKED_SECTIONS — a wiki value held as a source constant is
   it('data.combate names the source files carrying its coefficients', () => {
     expect(ARTIFACT_BACKED_SECTIONS['data.combate']).toEqual([
       'packages/domain/src/model/combat.ts',
-      'packages/domain/src/team-plan/ability-extras.ts',
+      'packages/domain/src/model/passagem-bastao.ts',
     ]);
   });
 
   it('those two really do hold the combat constants named', () => {
     const combat = readFileSync(join(root, '../packages/domain/src/model/combat.ts'), 'utf8');
-    const extras = readFileSync(
-      join(root, '../packages/domain/src/team-plan/ability-extras.ts'),
+    const passagem = readFileSync(
+      join(root, '../packages/domain/src/model/passagem-bastao.ts'),
       'utf8',
     );
     expect(combat).toContain('GRID_SPEED_COEF');
     expect(combat).toContain('EFF_IA');
-    expect(extras).toContain('PASSAGEM_BASTAO_WINDOW_SEC');
-    expect(extras).toContain('PASSAGEM_BASTAO_COOLDOWN_SEC');
+    // The values, not re-exports of them: a barrel that spells the names would pass a bare
+    // `toContain` while the drift report sent a reader to a file holding no number.
+    expect(passagem).toMatch(/PASSAGEM_BASTAO_PER_RANK = 0\.04/);
+    expect(passagem).toMatch(/PASSAGEM_BASTAO_WINDOW_SEC = 120/);
+    expect(passagem).toMatch(/PASSAGEM_BASTAO_COOLDOWN_SEC = 600/);
   });
 });
 

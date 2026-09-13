@@ -638,7 +638,7 @@ export const en = {
   heroesPhaseUnknownTitle: 'That is not a phase this app knows',
   heroesPhaseUnknownDescription: 'Pick a phase the game actually has, and the numbers come back.',
   heroesEffectiveTitle: 'Effective stats',
-  heroesEffectiveTip: 'Includes gear, points, skill tree, abilities and the team auras switched on above.',
+  heroesEffectiveTip: 'Includes gear, points, skill tree, abilities and the team auras switched on above. Baton Pass is not counted here; the Farm and Optimizer screens count its entry pulse.',
   heroesEffectiveGroupSheet: 'Sheet stats',
   heroesEffectiveGroupDerived: 'Derived combat',
   heroesEffectiveTriggerAria: 'Show breakdown of {stat}',

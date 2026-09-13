@@ -1024,6 +1024,11 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   // prints. `bdTermWalk` stops naming a walk DELAY and names the walk SPEED the cycle divides by.
   // One line: this file sits at the max-lines cap.
   'bdSrcTeam', 'effectiveTip', 'missingHint', 'explainSections.0.code', 'explainSections.1.p.0', 'explainSections.5.p.0', 'explainSections.7.p.1', 'explainSections.8.p.1', 'explainSections.2.p.0', 'explainSections.2.p.2', 'explainSections.2.code', 'bdTermWalk',
+  // Baton Pass priced on the Farm board (2026-09-12): the "what the app does not model"
+  // paragraph stops listing it as outside every figure — the Farm page and the Optimizer count
+  // its entry pulse, the Planner's own DPS still does not — and `effectiveTip` (declared above)
+  // says which of the two this panel is. The Optimizer disclosures are in `KEYS_ADDED`.
+  'explainSections.7.p.0',
 ];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {

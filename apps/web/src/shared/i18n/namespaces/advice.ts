@@ -10,7 +10,7 @@ export const en = {
   tabPoints: "Points",
   panelPoints: "Points",
   panelEffective: "Effective stats",
-  effectiveTip: "Includes gear, points, skill tree, abilities, and the team auras switched on above.",
+  effectiveTip: "Includes gear, points, skill tree, abilities, and the team auras switched on above. Baton Pass is not counted here; the Farm page and the Optimizer count its entry pulse.",
   effectiveFuse: "Fuse",
   effectiveRest: "Rest",
   effectiveMitF: "Mitigation factor",
@@ -148,7 +148,7 @@ export const en = {
     {
       h: "8 · What the app does not model",
       p: [
-        "Loot abilities (Lapidary Eye, Gold Vein), Hero Hunter, Ghost and Baton Pass are outside the DPS math. Ability crit bonuses apply as % of the base roll, per the Heroes page rule.",
+        "Loot abilities (Lapidary Eye, Gold Vein), Hero Hunter and Ghost are outside the DPS math, and so is Baton Pass on this page — the Farm page and the Optimizer count it as a team aura that comes in pulses: each carrier lights the whole field for 120 s of every rotation cycle, overlapping pulses summed and capped like the other auras. Ability crit bonuses apply as % of the base roll, per the Heroes page rule.",
         "If in-game damage still diverges from the model, check the team aura switches on the Combat tab (another hero’s War Cry is a common ~20% / 40% gap).",
       ],
     },
@@ -174,7 +174,7 @@ export const pt: typeof en = {
   tabPoints: "Pontos",
   panelPoints: "Pontos",
   panelEffective: "Atributos efetivos",
-  effectiveTip: "Inclui equipamento, pontos, árvore, habilidades e as auras de time ligadas acima.",
+  effectiveTip: "Inclui equipamento, pontos, árvore, habilidades e as auras de time ligadas acima. Passagem de Bastão não entra aqui; a página Farm e o Otimizador contam o pulso de entrada dela.",
   effectiveFuse: "Pavio",
   effectiveRest: "Descanso",
   effectiveMitF: "Fator de mitigação",
@@ -290,7 +290,7 @@ export const pt: typeof en = {
     {
       h: "8 · O que o app não modela",
       p: [
-        "Habilidades de loot (Olho de Lapidador, Veia de Ouro), Caça-Hero, Fantasma e Passagem de Bastão ficam fora da conta de DPS. Bônus de crítico de habilidades entram como % do roll base, pela regra da página Heróis.",
+        "Habilidades de loot (Olho de Lapidador, Veia de Ouro), Caça-Hero e Fantasma ficam fora da conta de DPS, e Passagem de Bastão também nesta página — a página Farm e o Otimizador contam como uma aura de time que vem em pulsos: cada portador acende o campo inteiro por 120 s a cada ciclo de rotação, pulsos sobrepostos somados e capados como as outras auras. Bônus de crítico de habilidades entram como % do roll base, pela regra da página Heróis.",
         "Se o dano no jogo ainda divergir do modelo, confira os interruptores de aura de time na aba Combate (Grito de Guerra de outro herói é um gap comum de ~20% / 40%).",
       ],
     },
