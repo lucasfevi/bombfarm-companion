@@ -29,8 +29,7 @@ const ROOT = resolve(here, '..', '..', '..');
 const SEED_SAVE = 'apps/web/e2e/fixtures/sample-save.json';
 
 /**
- * DATED CAPTURES — excluded, with the reason, the same way `fixture-corpus.test.ts` excludes
- * `rejection/pre-update-save.json` by name rather than by widening its rule.
+ * DATED CAPTURES — excluded by name, with the reason, rather than by widening the rule.
  *
  * Each entry is a capture of the live game on a recorded date, and every one of those dates falls
  * BEFORE the 2026-08-15 patch that re-keyed the whole level→set map (it moved every one of the 30

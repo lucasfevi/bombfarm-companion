@@ -103,7 +103,6 @@ export interface PipelineFacts {
   attackMult: number;
   energyMult: number;
   speedMult: number;
-  critDmgMult: number;
   teamCritFlat: number;
   treeSpeed: number;
   treeCritChance: number;

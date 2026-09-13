@@ -11,23 +11,11 @@ import { STRINGS, type Lang } from '@/shared/i18n';
 const LANGS: Lang[] = ['en', 'pt'];
 
 /**
- * Case-insensitive. Covers: keystone names/vocab, keystone node ids, any 4-digit-2-digit-2-digit
- * date, a bare digit-version token, and every raw schema field path this feature's own
- * discriminator reads — none of which may leak into player-facing copy (docs/i18n.md's
- * plain-language rule).
+ * Case-insensitive. Covers: any 4-digit-2-digit-2-digit date, a bare digit-version token, and
+ * every raw schema field path this feature's own discriminator reads — none of which may leak
+ * into player-facing copy (docs/i18n.md's plain-language rule).
  */
 const FORBIDDEN_TOKENS = [
-  'keystone',
-  'abisso',
-  'glass cannon',
-  'tempo dobrado',
-  'juro composto',
-  'sorte composta',
-  'D15',
-  'C15',
-  'V15',
-  'O15',
-  'S15',
   'skills.',
   'totals.',
   'refunds',

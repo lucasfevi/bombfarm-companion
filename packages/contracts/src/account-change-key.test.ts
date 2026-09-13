@@ -68,7 +68,7 @@ describe('accountChangeKey — the probe table', () => {
         skills: {
           status: 'degraded',
           capturedAt: CAPTURED_AT_A,
-          missingKeys: ['totals.dmg_static', 'totals.crit_dmg_mult'],
+          missingKeys: ['totals.dmg_static', 'totals.crit_dmg_add'],
           addedKeys: [],
         },
       },

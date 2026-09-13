@@ -20,9 +20,7 @@
   ],
   "skills": {
     "totals": {
-      "keystones": [],
-      "abisso_base": 0,
-      "crit_dmg_mult": 1
+      "dmg_static": 1
     }
   }
 }

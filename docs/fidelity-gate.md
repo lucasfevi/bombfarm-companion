@@ -2,7 +2,7 @@
 
 **Status (2026-08-13, MP5 F1):** the committed pair was re-captured from the post-patch
 2026-08-13 export after `mp5-fixture-rebaseline` deleted the pre-wipe corpus the old pair was
-built from (the 2026-08-13 patch removed all five keystones and wiped every account). The
+built from (the 2026-08-13 patch wiped every account). The
 reference account is now **5 heroes**, `account 486`, phase 24 / max_phase 42 — the same account
 `sheet-math/save-20260813-5heroes.json` documents; `export-capture.json` is byte-identical to
 that fixture. `pair.json → live.source` is still `"export-derived"`, so the cross-source

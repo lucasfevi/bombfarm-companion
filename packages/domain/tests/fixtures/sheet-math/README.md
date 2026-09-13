@@ -5,8 +5,8 @@ directly by relative path rather than holding a copy of its own, and
 `tools/fixture-corpus-parity.test.mjs` fails if one is ever committed there again.
 
 Every fixture here satisfies the positive discriminator: it carries at least one of
-`skills.refunds`, `skills.totals.vagas_campo`, `skills.totals.bag_tabs_bonus`, and none of
-`keystones`, `abisso_base`, `crit_dmg_mult` — enforced by `fixture-corpus.test.ts`.
+`skills.refunds`, `skills.totals.vagas_campo`, `skills.totals.bag_tabs_bonus` — enforced by
+`fixture-corpus.test.ts`.
 
 For what this deletion cost, the unreproducible fixture families it replaced, and the round-trip
 invariant's one accepted residual gap, see
@@ -20,7 +20,7 @@ that file lands later in this feature — expected, not a defect of this manifes
 | Source capture | live save export, captured externally from the game client |
 | Capture date | 2026-08-13 |
 | Account | 486 (post-wipe), `phase: 24`, `max_phase: 42` — 5 heroes: Jon L38 (4/8 geared), Bellatrix L42 (8/8 geared), Perrin L4 (naked), Perrin L3 (naked), Lyra L2 (naked) |
-| Capture log entry | *Keystone removal + account wipe*, 2026-08-13 row (tracked externally to this repo) |
+| Capture log entry | *Game patch + account wipe*, 2026-08-13 row (tracked externally to this repo) |
 | Scrub | `account.account_id`, `account.player_name` removed via `scrubPersonalFields` (`packages/domain/tests/helpers/fidelity-pair.ts`) — nothing else changed |
 | SHA-256 (unscrubbed source) | `fb87b0051bf6842af1a691493d9a52e7baa6ca6f582d1916778c147b4b017b04` |
 | SHA-256 (committed file) | `f6fe17e5d246f9b873b95fc0a51ead10a596cf061272b3b53ab5c3f344393694` |

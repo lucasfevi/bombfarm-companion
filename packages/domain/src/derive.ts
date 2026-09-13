@@ -23,7 +23,6 @@ export type CombatMults = {
   speedMult: number;
   gateAttackMult: number;
   energyMult: number;
-  critDmgMult: number;
   dmgMult: number;
 };
 
@@ -86,7 +85,6 @@ export function computeCombatMults(input: ComputeCombatMultsInput): CombatMults 
     speedMult: 1 + marchaPct / 100,
     gateAttackMult: mods.gateAttackMult,
     energyMult: 1,
-    critDmgMult: 1,
     dmgMult: mods.dmgMult * (1 + extraDmgPct / 100),
   };
 }
@@ -104,7 +102,6 @@ export type DeriveInput = {
   attackMult: number;
   energyMult: number;
   speedMult: number;
-  critDmgMult: number;
   /** The hero's own Presságio rank already folded in and capped, one resolved value in FLAT
    *  crit points — see `CombatMults.teamCritFlat`. There is no separate "own" input here,
    *  matching `attackMult`/`speedMult`: the combination happens once, in `computeCombatMults`. */
@@ -152,7 +149,6 @@ export function derive(input: DeriveInput): DeriveResult {
     attackMult,
     energyMult,
     speedMult,
-    critDmgMult,
     teamCritFlat,
     treeSheet,
     penetrationPp,
@@ -207,7 +203,7 @@ export function derive(input: DeriveInput): DeriveResult {
     energy: adjusted.energy * energyMult,
     speed: adjusted.speed * speedMult,
     critChance: adjusted.critChance + teamCritFlat,
-    critDmg: adjusted.critDmg * critDmgMult,
+    critDmg: adjusted.critDmg,
     penetration: adjusted.penetration + penetrationPp,
     cdr: adjusted.cdr,
     attackPerPoint: atkPt * treeSheet.danoStatic * attackMult,
@@ -218,7 +214,7 @@ export function derive(input: DeriveInput): DeriveResult {
     energy: effective.energyPerPoint,
     speed: delta.speed * speedMult,
     critChance: delta.critChance,
-    critDmg: delta.critDmg * critDmgMult,
+    critDmg: delta.critDmg,
     penetration: delta.penetration,
     cdr: delta.cdr,
     // No combat multiplier — Luck never reaches DPS scoring.

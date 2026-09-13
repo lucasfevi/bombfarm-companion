@@ -229,8 +229,7 @@ export function baseSave() {
     },
     // MP5 F4: post-patch skills shape — parseSaveFile's positive discriminator on the new keys
     // requires skills.refunds / skills.totals.vagas_campo / skills.totals.bag_tabs_bonus to be
-    // present, or the whole file is rejected. No retired keystone field survives here (F2/F3's
-    // own removal).
+    // present, or the whole file is rejected.
     skills: {
       refunds: {},
       totals: {

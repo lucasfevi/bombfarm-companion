@@ -58,15 +58,11 @@ const EXCEPTIONS: Record<string, string> = {
     "export-capture.json's paired live-memory read; same provenance as that entry",
   'fidelity-gate/pair.json':
     'the machine-readable provenance manifest itself (capturedAt/gameBuild) for the two files above',
-  'i18n-strings-main.json':
-    "pre-existing i18n fixture with zero domain-side consumer of this copy — apps/web owns the live one this mirrors (see fixture-corpus.test.ts's orphan-sweep comment)",
   'live-capture-energy-fractions.json':
     'a live memory-scan capture consumed by live/field-countdown.test.ts, named for its content rather than the save-/payload- convention',
   'rejection/pre-update-save.json':
-    'a purpose-built rejection fixture that must contain the retired fields verbatim to prove parseSaveFile rejects a save shaped like this',
-  'rejection/truncated-save.json': 'sibling rejection fixture — an empty skills.totals, no retired fields to carry',
-  'storage-roundtrip-20260729.json':
-    "pre-existing storage-roundtrip snapshot with zero domain-side consumer of this copy — apps/web owns the live one this mirrors (see fixture-corpus.test.ts's orphan-sweep comment)",
+    'a purpose-built rejection fixture shaped like a pre-2026-08-13 export, to prove parseSaveFile rejects it',
+  'rejection/truncated-save.json': 'sibling rejection fixture — an empty skills.totals',
 };
 
 
