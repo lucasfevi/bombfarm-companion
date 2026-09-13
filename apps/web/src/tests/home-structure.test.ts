@@ -48,6 +48,15 @@ describe('home structure', () => {
     ).toEqual([]);
   });
 
+  it("the home feature imports no other feature's components", () => {
+    const specifiers = homeImportSpecifiers();
+
+    expect(specifiers.length).toBeGreaterThan(0);
+    expect(
+      specifiers.filter(({ specifier }) => /features\/(?!home)[a-z-]+\/components\//.test(specifier)),
+    ).toEqual([]);
+  });
+
   it('the home feature never imports the pricing package', () => {
     const specifiers = homeImportSpecifiers();
 
