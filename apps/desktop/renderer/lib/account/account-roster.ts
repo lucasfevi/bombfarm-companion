@@ -18,7 +18,15 @@ import { capturedAtOf } from './account-facts';
 export type AccountRoster = {
   readonly heroes: HeroRecord[];
   readonly account: AccountImportData;
+  /** Candidates `parseAccountPayload` blocked, in roster order. A blocked candidate's `record.pts`
+   *  is zeroed by the parser, so a screen that spends or prices points must not treat it as a hero
+   *  with none spent — `heroes` above still carries it, for the screens that only list heroes. */
+  readonly pointsUnrecovered: readonly { id: string; name: string }[];
 };
+
+export function hasUnrecoveredPoints(roster: AccountRoster, heroId: string): boolean {
+  return roster.pointsUnrecovered.some((hero) => hero.id === heroId);
+}
 
 /** `null` when the payload did not parse at all — never a partial roster over the heroes that did. */
 export function buildAccountRoster(view: AccountView): AccountRoster | null {
@@ -41,5 +49,9 @@ export function buildAccountRoster(view: AccountView): AccountRoster | null {
     updatedAt,
   }));
 
-  return { heroes, account: parsed.account };
+  const pointsUnrecovered = parsed.candidates
+    .filter((candidate) => candidate.blocked)
+    .map((candidate) => ({ id: candidate.sourceId, name: candidate.name }));
+
+  return { heroes, account: parsed.account, pointsUnrecovered };
 }

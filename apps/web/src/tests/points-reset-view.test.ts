@@ -56,6 +56,7 @@ function plan(pointResets: TeamPlan['pointResets']): TeamPlan {
     disclosures: {
       unmodelledAbilities: [],
       loadoutDriftHeroNames: [],
+      runedHeroNames: [],
       foreignOwnedItemCount: 0,
       marketBlockedItemCount: 0,
       unresolvedDefItemCount: 0,

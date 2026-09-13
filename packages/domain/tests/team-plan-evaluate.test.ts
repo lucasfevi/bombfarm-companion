@@ -175,6 +175,7 @@ describe('evaluateRoster', () => {
         luckFlatPct: 0,
       },
       scope: 'optimize',
+      runes: [],
       abilities: { folego_mineiro: folego },
       pts: ZERO_PTS(),
     });
@@ -233,6 +234,7 @@ describe('evaluateRoster', () => {
         luckFlatPct: 0,
       },
       scope: 'optimize',
+      runes: [],
       abilities: {},
       pts: ZERO_PTS(),
     };
@@ -292,6 +294,7 @@ describe('evaluateRoster', () => {
         luckFlatPct: 0,
       },
       scope: 'optimize',
+      runes: [],
       abilities: {},
       pts: ZERO_PTS(),
     });
@@ -357,6 +360,7 @@ describe('evaluateRoster', () => {
         luckFlatPct: 0,
       },
       scope: 'optimize',
+      runes: [],
       abilities: {},
       pts: ZERO_PTS(),
     });
@@ -416,6 +420,7 @@ describe('evaluateRoster', () => {
         luckFlatPct: 0,
       },
       scope: 'optimize',
+      runes: [],
       abilities: {},
       pts: ZERO_PTS(),
     };

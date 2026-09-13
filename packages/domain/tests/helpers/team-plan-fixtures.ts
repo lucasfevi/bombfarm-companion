@@ -67,6 +67,7 @@ export function teamPlanInputFromFixture(file: string, forgeFloor = 10): TeamPla
       loadout: c.record.loadout,
       battleAllowed: c.record.battleAllowed,
       statPointsAvailable: c.record.statPointsAvailable,
+      runes: c.record.runes,
     }));
   const scopeByHeroId = Object.fromEntries(heroes.map((h) => [h.heroId, 'optimize' as const]));
   return {

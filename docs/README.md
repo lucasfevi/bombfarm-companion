@@ -33,6 +33,7 @@ These are **current truth**. Do not invent planning/spec paths in this repo.
 | [wire-vocabulary.md](wire-vocabulary.md) | Generated — the wire-to-domain vocabulary tables for the `/rotation` route and the live combat frame; regenerate with `pnpm generate:wire-vocabulary` |
 | [live-logging.md](live-logging.md) | The shared log's dedup/redaction guarantees, the frame ring, and the two dev-gated captures — raw bytes for replay fixtures, and observed bodies and frames for finding out what the game actually sends |
 | [offline-dev-mode.md](offline-dev-mode.md) | `pnpm dev:offline` — the desktop app with no game and no server: fixture account, replayed live capture, and why it is not a mock server |
+| [hero-runes.md](hero-runes.md) | Hero runes: the timed stat buff on the account read — where it enters the sheet arithmetic (fitted, per axis), how every figure treats a buff that expires, and the two axes nothing prices yet |
 
 ## Web-only
 

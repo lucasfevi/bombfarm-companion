@@ -35,6 +35,7 @@ export {
   MAX_ROUNDS,
   IMPROVEMENT_EPSILON,
 } from './solver-search';
+import { hasRuneOnSheet } from '../runes';
 
 function loadoutDriftHeroNames(input: TeamPlanInput): string[] {
   const itemByHeroSlot = new Map<string, InventoryItem>();
@@ -282,6 +283,9 @@ export function runTeamPlan(
     disclosures: {
       unmodelledAbilities: unmodelledAbilitiesInScope(contexts),
       loadoutDriftHeroNames: loadoutDriftHeroNames(input),
+      runedHeroNames: contexts
+        .filter((ctx) => ctx.scope !== 'leaveAlone' && hasRuneOnSheet(ctx.runes))
+        .map((ctx) => ctx.name),
       foreignOwnedItemCount: gearPool.excluded.foreignOwner,
       marketBlockedItemCount: gearPool.excluded.marketBlocked,
       unresolvedDefItemCount: gearPool.excluded.unresolvedDef,

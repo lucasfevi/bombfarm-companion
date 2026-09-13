@@ -73,6 +73,7 @@ export function readAdvisorDepTuple(state: PlannerStore): readonly unknown[] {
     // toggle for no reason — the pipeline's ranking output cannot change from it.
     state.targetProp,
     state.birth,
+    state.runes,
   ] as const;
 }
 
@@ -132,6 +133,7 @@ export function selectAdvisorPipeline(state: PlannerStore): AdvisorPipelineResul
     rankMode: state.rankMode,
     targetProp: state.targetProp,
     birth: state.birth,
+    runes: state.runes,
   });
   cache = { deps, result };
   return result;

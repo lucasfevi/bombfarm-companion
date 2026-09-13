@@ -36,6 +36,7 @@ function heroCtx(heroId: string, level: number): HeroPlanContext {
     heroId,
     name: heroId,
     level,
+    runes: [],
     stars: 0,
     rarity: 'Raro',
     birth: {

@@ -594,6 +594,8 @@ export const en = {
   farmRefreshStale: 'out of date',
   farmUnavailableTitle: 'Not enough of your account has been read',
   farmUnavailableDescription: 'The board needs every part of your account. Open the game with the companion running and leave it open for a moment.',
+  farmLeftOutTitle: 'Some heroes are left off the board',
+  farmLeftOutBody: 'The app could not read the spent stat points of {heroes} from the account, so their rates cannot be priced and they are left off this board.',
   // The stat vocabulary the farm screen borrows from this app. Every other stat name comes from
   // the game data itself; loot-facing Luck is the one the shared map does not carry.
   farmStatColumn: 'Stat',
@@ -631,6 +633,8 @@ export const en = {
   heroesRollQualityLabel: 'Roll',
   heroesFiguresWithheldTitle: 'Not enough of your account has been read',
   heroesFiguresWithheldDescription: 'The per-hero numbers need your skill tree and your House. Leave the game open for a moment and they will fill in.',
+  heroesPointsUnreadTitle: "This hero's spent stat points could not be read",
+  heroesPointsUnreadDescription: 'The sheet the game reported for this hero does not add up under the current model, so its points, gear figures and combat numbers are withheld rather than drawn as if it had spent none.',
   heroesPhaseUnknownTitle: 'That is not a phase this app knows',
   heroesPhaseUnknownDescription: 'Pick a phase the game actually has, and the numbers come back.',
   heroesEffectiveTitle: 'Effective stats',

@@ -13,6 +13,7 @@ function ctx(
     heroId,
     name: heroId,
     level: 50,
+    runes: [],
     stars: 0,
     rarity: 'Raro',
     birth: {

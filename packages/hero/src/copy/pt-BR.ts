@@ -20,6 +20,13 @@ export const heroPtBR: HeroCopy = {
   heroDetailIdentityNotMarketable: "Não negociável",
   heroDetailIdentityMarketValue: "Valor no mercado",
 
+  heroDetailRunesTitle: "Runas",
+  heroDetailRunesTip:
+    "Bônus temporários que o jogo está aplicando a este herói agora. Todos os números desta tela contam com eles, e cada um some quando o tempo de jogo acaba.",
+  heroDetailRuneValue: "+{pct}% · {hours} h de jogo restantes",
+  heroDetailRuneAxisXp: "XP",
+  heroDetailRuneAxisGold: "Ouro",
+
   heroDetailRollTitle: "Sorteio de nascimento",
   heroDetailRollQuality: "Qualidade do sorteio",
   heroDetailRollQualityNote:

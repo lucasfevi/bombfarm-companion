@@ -14,6 +14,7 @@ import {
 } from '@bombfarm/domain/gear';
 import { ZERO_PTS, type SheetKey } from '@bombfarm/domain/planner-constants';
 import type { StatRanges } from '@bombfarm/domain/birth-sheet';
+import type { HeroRune } from '@bombfarm/domain/runes';
 import type { HeroRecord } from '@/shared/lib/storage';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 
@@ -37,6 +38,11 @@ export type HeroDraftSlice = {
    * never reported.
    */
   statRanges: StatRanges | undefined;
+  /**
+   * The hero's timed rune buffs, carried through the draft untouched like the roll bounds: only
+   * import writes them, and absence survives as absence so the autosave hands back what it loaded.
+   */
+  runes: readonly HeroRune[] | undefined;
   heroSourceId: string | undefined;
   heroRank: string | undefined;
   heroPower: number | undefined;
@@ -93,6 +99,7 @@ export const defaultHeroDraftFields = (): Pick<
   | 'pts'
   | 'birth'
   | 'statRanges'
+  | 'runes'
   | 'heroSourceId'
   | 'heroRank'
   | 'heroPower'
@@ -115,6 +122,7 @@ export const defaultHeroDraftFields = (): Pick<
   pts: ZERO_PTS(),
   birth: undefined,
   statRanges: undefined,
+  runes: undefined,
   heroSourceId: undefined,
   heroRank: undefined,
   heroPower: undefined,
@@ -254,6 +262,7 @@ export const createHeroDraftSlice: StateCreator<
       pts: hero.pts ?? ZERO_PTS(),
       birth: hero.birth,
       statRanges: hero.statRanges,
+      runes: hero.runes,
       heroSourceId: hero.sourceId,
       heroRank: hero.rank,
       heroPower: hero.power,
@@ -285,6 +294,7 @@ export const createHeroDraftSlice: StateCreator<
       pts: state.pts,
       birth: state.birth,
       statRanges: state.statRanges,
+      runes: state.runes,
       sourceId: state.heroSourceId,
       rank: state.heroRank,
       power: state.heroPower,

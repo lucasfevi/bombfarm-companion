@@ -125,6 +125,8 @@ export function sourceLabel(strings: StatPanelCopy, source: LedgerSource): strin
       return strings.bdSrcTeam;
     case 'abilitiesTeam':
       return strings.bdSrcAbilitiesTeam;
+    case 'rune':
+      return strings.bdSrcRune;
   }
 }
 
@@ -148,6 +150,7 @@ export function groupLabel(strings: StatPanelCopy, source: LedgerSource): string
     case 'skillTree':
       return strings.bdSrcTree;
     case 'combat':
+    case 'rune':
       return sourceLabel(strings, source);
   }
 }
@@ -167,5 +170,8 @@ export function ledgerStepNote(
   if (step.note === 'keenEye') return strings.bdNoteKeenEye;
   if (step.note === 'diamondTip') return strings.bdNoteDiamondTip;
   if (step.note === 'brutalStrike') return strings.bdNoteBrutalStrike;
+  if (step.source === 'rune' && step.runePlaySecondsLeft !== undefined) {
+    return sub(strings.bdNoteRune, { hours: formatNumber(step.runePlaySecondsLeft / 3600, 0) });
+  }
   return null;
 }

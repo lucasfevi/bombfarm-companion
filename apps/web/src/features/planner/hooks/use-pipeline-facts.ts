@@ -17,6 +17,7 @@ export function usePipelineFacts(): PipelineFacts {
   const treeCritDmg = usePlannerStore((state) => state.treeCritDmg);
   const treeEnergy = usePlannerStore((state) => state.treeEnergy);
   const treeDanoTotal = usePlannerStore((state) => state.treeDanoTotal);
+  const runes = usePlannerStore((state) => state.runes);
 
   const {
     pointDelta,
@@ -65,5 +66,6 @@ export function usePipelineFacts(): PipelineFacts {
     dps,
     uptime,
     rest,
+    runes,
   };
 }

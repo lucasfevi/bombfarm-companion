@@ -473,7 +473,8 @@ const KEYS_ADDED: readonly string[] = [
   // One bombing-cadence model (2026-09-11): the Bombs/s breakdown's single expression and the
   // two glossary tips its new tokens need — the measured cycle itself and the difficulty band
   // whose prop density sets the hop lengths. One line: this file sits at the max-lines cap.
-  'heroesAbilityFilterAbsent', 'bdFormulaBombs', 'bdTermCycle', 'bdTermBand',
+  // Hero runes (2026-09-13): the sheet's rune Δ column and the breakdown's rune step. One line.
+  'heroesAbilityFilterAbsent', 'bdFormulaBombs', 'bdTermCycle', 'bdTermBand', 'colSheetDeltaRune', 'bdSrcRune', 'bdNoteRune', 'teamPlanRunedHeroes',
   // The Optimizer's field-crowding opt-out (2026-09-09) and the removals section that made it
   // necessary. The plan could always take gear off a hero and hand it back — on a field that
   // cannot seat everyone, a weak hero wearing less crowds the others out less — but the page

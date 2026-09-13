@@ -131,6 +131,8 @@ export const en = {
   teamPlanUnmodelledAbilities: 'Unmodelled abilities in scope: {list}',
   teamPlanLoadoutDrift:
     'Stored loadout differs from the inventory snapshot for: {heroes}. This page treats the inventory as authoritative.',
+  teamPlanRunedHeroes:
+    'Timed runes are counted on: {heroes}. A gain on them is partly the rune’s and goes when it expires — the plan cannot buy one back.',
   teamPlanExcludedItems:
     'Excluded from the pool — market-blocked: {market}, unresolved items: {unresolved}, foreign owners: {foreign}.',
   teamPlanStaleNotice:
@@ -277,6 +279,8 @@ export const pt: typeof en = {
   teamPlanUnmodelledAbilities: 'Habilidades não modeladas no escopo: {list}',
   teamPlanLoadoutDrift:
     'O loadout salvo difere do inventário para: {heroes}. Esta página usa o inventário como verdade.',
+  teamPlanRunedHeroes:
+    'Runas temporárias contam em: {heroes}. Um ganho neles é em parte da runa e some quando ela expira — o plano não consegue comprar outra.',
   teamPlanExcludedItems:
     'Fora do pool — bloqueados no mercado: {market}, itens sem definição: {unresolved}, donos fora do roster: {foreign}.',
   teamPlanStaleNotice:

@@ -123,6 +123,7 @@ function collectSubjects(): Subject[] {
         tree,
         sheet: hero.sheet,
         statPointsAvailable: hero.statPointsAvailable,
+        runes: hero.runes,
       });
       subjects.push({
         file: label,
@@ -152,10 +153,11 @@ describe('spent stat points never exceed the hero level (corpus sweep)', () => {
     const byFile = new Map<string, number>();
     for (const s of SUBJECTS) byFile.set(s.file, (byFile.get(s.file) ?? 0) + 1);
     expect(Object.fromEntries([...byFile].sort()), `walked ${FIXTURES_DIR}`).toEqual({
+      'sheet-math/payload-20260913-20heroes-runes.json': 20,
       'sheet-math/save-20260828-4heroes-postpatch.json': 4,
       'sheet-math/save-20260831-13heroes-soulbound.json': 13,
     });
-    expect(SUBJECTS.length).toBe(17);
+    expect(SUBJECTS.length).toBe(37);
     const dirs = new Set(SUBJECTS.map((s) => s.file.split('/')[0]));
     expect(dirs, `capture directories reached: ${[...dirs].join(', ')}`).toEqual(new Set(['sheet-math']));
   });

@@ -21,16 +21,17 @@ import {
 import type { Lang, StatPanelCopy } from '../copy';
 import { sheetStatUnit } from '../model/breakdown-labels';
 
-const STAGE_DELTA_KEYS = [
-  'deltaLevel',
-  'deltaStars',
-  'deltaAbility',
-  'deltaGear',
-  'deltaPoints',
-  'deltaTree',
-] as const;
+/** Drawn only for a hero carrying a rune — a column of `—` on every other hero is noise. */
+const RUNE_DELTA_KEY = 'deltaRune' as const;
 
-type StageDeltaKey = (typeof STAGE_DELTA_KEYS)[number];
+type StageDeltaKey =
+  | 'deltaLevel'
+  | 'deltaStars'
+  | 'deltaAbility'
+  | 'deltaGear'
+  | 'deltaPoints'
+  | 'deltaTree'
+  | typeof RUNE_DELTA_KEY;
 
 function formatStageCell(
   value: number,
@@ -76,7 +77,7 @@ export function SheetTable({
 }) {
   const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
 
-  const { birth, level, stars, sheetOther, loadout, pts, tree } = input;
+  const { birth, level, stars, sheetOther, loadout, pts, tree, runes } = input;
 
   const stages = birth
     ? peelSheetStages({
@@ -87,10 +88,12 @@ export function SheetTable({
         loadout,
         pts,
         tree,
+        runes,
       })
     : null;
 
   const missingBirth = !birth;
+  const showRune = runes !== undefined && runes.length > 0;
 
   const deltaHeaders: { key: StageDeltaKey; label: string }[] = [
     { key: 'deltaLevel', label: t.colSheetDeltaLevel },
@@ -99,7 +102,9 @@ export function SheetTable({
     { key: 'deltaGear', label: t.colSheetDeltaGear },
     { key: 'deltaPoints', label: t.colSheetDeltaPoints },
     { key: 'deltaTree', label: t.colSheetDeltaTree },
+    ...(showRune ? [{ key: RUNE_DELTA_KEY, label: t.colSheetDeltaRune }] : []),
   ];
+  const deltaKeys = deltaHeaders.map((header) => header.key);
 
   return (
     <Panel>
@@ -113,7 +118,7 @@ export function SheetTable({
           <colgroup>
             <col className="w-30" />
             <col className="w-22" />
-            {STAGE_DELTA_KEYS.map((key) => (
+            {deltaKeys.map((key) => (
               <col key={key} className="w-21" />
             ))}
             <col className="w-22" />
@@ -152,7 +157,7 @@ export function SheetTable({
                   <DataTable.Cell align="right" numeric className={mutedClass}>
                     {row ? formatStageCell(row.birth, boundFormatNumber, false, unit) : '—'}
                   </DataTable.Cell>
-                  {STAGE_DELTA_KEYS.map((deltaKey) => (
+                  {deltaKeys.map((deltaKey) => (
                     <DataTable.Cell key={deltaKey} align="right" numeric className={mutedClass}>
                       {row ? formatStageCell(row[deltaKey], boundFormatNumber, true, unit) : '—'}
                     </DataTable.Cell>
