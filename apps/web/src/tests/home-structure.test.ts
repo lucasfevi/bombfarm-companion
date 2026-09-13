@@ -47,4 +47,11 @@ describe('home structure', () => {
       specifiers.filter(({ specifier }) => /features\/team-plan\/(hooks|worker)/.test(specifier)),
     ).toEqual([]);
   });
+
+  it('the home feature never imports the pricing package', () => {
+    const specifiers = homeImportSpecifiers();
+
+    expect(specifiers.length).toBeGreaterThan(0);
+    expect(specifiers.filter(({ specifier }) => specifier.startsWith('@bombfarm/pricing'))).toEqual([]);
+  });
 });
