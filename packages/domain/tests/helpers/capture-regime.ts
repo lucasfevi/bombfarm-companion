@@ -70,6 +70,9 @@ export const REGIME_BOUNDARIES = {
   '2026-08-28':
     'weapons gained a flat 5x on the Dano ladder (`itens.arma_dmg_mult`), and the ladder itself '  +
     'gained a step every 50 item levels (`itens.dmg_step_niveis`) - 186 of 240 def Dano values moved',
+  '2026-09-02':
+    'Ponta de Diamante was restated from a multiplier on the penetration roll (x21 at rank 20) to ' +
+    'flat penetration POINTS held outside the gear/points pool',
 } as const;
 
 export type RegimeBoundary = keyof typeof REGIME_BOUNDARIES;
@@ -81,6 +84,18 @@ export type RegimeBoundary = keyof typeof REGIME_BOUNDARIES;
  * believing the prose.
  */
 export const ABILITIES_RESTATED_2026_08_23 = ['olho_clinico', 'pressagio_mortal'] as const;
+
+/**
+ * The one ability the 2026-09-02 patch restated, in the same sense: a capture predating that
+ * boundary on which no hero owns it cannot have moved when it did.
+ */
+export const ABILITIES_RESTATED_2026_09_02 = ['ponta_diamante'] as const;
+
+/** Every boundary a waiver may be granted against, and the abilities whose absence grants it. */
+export const ABILITIES_RESTATED_BY_BOUNDARY = {
+  '2026-08-23': ABILITIES_RESTATED_2026_08_23,
+  '2026-09-02': ABILITIES_RESTATED_2026_09_02,
+} as const satisfies Partial<Record<RegimeBoundary, readonly string[]>>;
 
 /**
  * What a value assertion can be ABOUT, and the boundary each one's numbers must be at or past.
@@ -110,8 +125,12 @@ export const MECHANICS = {
     since: '2026-08-28',
     what: 'the Dano a gear item contributes, and how it scales with item level',
   },
+  penetration: {
+    since: '2026-09-02',
+    what: "the penetration column's ability term",
+  },
   sheet: {
-    since: '2026-08-28',
+    since: '2026-09-02',
     what: 'a whole composed hero sheet, or anything derived from one (throughput, ranking, team plans)',
   },
 } as const satisfies Record<string, { since: RegimeBoundary; what: string }>;
@@ -224,11 +243,17 @@ export const CAPTURE_REGISTRY: Record<string, CaptureRow> = {
     note:
       'The one-shot SPREAD: nine geared late-level heroes that one-shot a phase-42 prop and two ' +
       'naked young ones (Hale L2, Joric L5) that do not, on a roster carrying three rank-20 ' +
-      'olho_clinico heroes. The only committed capture holding both sides of that contrast.',
+      'olho_clinico heroes. The only committed capture holding both sides of that contrast. Also ' +
+      'the only value-retained capture with a ponta_diamante hero (IDK, 20/20), whose penetration ' +
+      'still reproduces under the pre-2026-09-02 x21 reading — the boundary is what keeps it out.',
   },
   'sheet-math/save-20260828-4heroes-postpatch.json': {
     capturedOn: '2026-08-28',
     retention: 'value',
+    waivers: {
+      penetration: 'no hero owns ponta_diamante, so the 2026-09-02 restatement cannot reach this roster',
+      sheet: 'no hero owns ponta_diamante, so the 2026-09-02 restatement cannot reach this roster',
+    },
     note:
       'The only capture past the 2026-08-28 damage boundary, and the witness that the weapon 5x ' +
       'is the GAME and not just the wiki: two heroes wear an ember_arma exporting value 96.25 ' +
@@ -240,6 +265,10 @@ export const CAPTURE_REGISTRY: Record<string, CaptureRow> = {
   'sheet-math/save-20260831-13heroes-soulbound.json': {
     capturedOn: '2026-08-31',
     retention: 'value',
+    waivers: {
+      penetration: 'no hero owns ponta_diamante, so the 2026-09-02 restatement cannot reach this roster',
+      sheet: 'no hero owns ponta_diamante, so the 2026-09-02 restatement cannot reach this roster',
+    },
     note:
       'Past every boundary above, and the only capture carrying the `soulbound` flag the game ' +
       'began emitting on 2026-08-29 — witnessed both ways on heroes and on items. The second ' +

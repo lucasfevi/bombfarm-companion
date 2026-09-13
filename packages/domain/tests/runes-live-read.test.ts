@@ -6,10 +6,10 @@
  * sheet to float precision — and it is asserted BOTH ways: with the field ignored, the same six
  * heroes over-recover and are blocked, so the capture proves the mechanic rather than tolerating it.
  *
- * One hero, Minato, carries an exported penetration the model has never reproduced (`64.1`
- * against a composed ~19 — present on the pre-rune read of the same account and untouched by
- * this work), so his penetration column is the one cell held out of the round-trip below and his
- * issue list is the one allowed to be non-empty, with exactly that content.
+ * Minato (rank-20 Ponta de Diamante) is also the witness that the ability adds flat points
+ * outside the pool — his exported 64.1 reproduces exactly once it is modelled that way
+ * (`ponta-diamante-flat.test.ts`), so no cell is held out of the round-trip below and every issue
+ * list is empty.
  */
 import { describe, expect, it } from 'vitest';
 import { computeAdvisorPipeline } from '@bombfarm/domain/advisor-pipeline';
@@ -66,15 +66,8 @@ describe('the 2026-09-13 live read — runes modelled', () => {
     }
   });
 
-  it('the six runed heroes invert with no issue at all (Minato: only his pre-existing penetration gap)', () => {
+  it('the six runed heroes invert with no issue at all', () => {
     for (const candidate of parsed.candidates) {
-      if (candidate.name === 'Minato') {
-        expect(candidate.pointIssues.map((issue) => issue.kind + ':' + ('key' in issue ? issue.key : ''))).toEqual([
-          'nonIntegerPoints:penetration',
-          'negativePoints:penetration',
-        ]);
-        continue;
-      }
       expect(candidate.pointIssues, candidate.name).toEqual([]);
     }
   });
@@ -94,7 +87,6 @@ describe('the 2026-09-13 live read — runes modelled', () => {
         runes: candidate.record.runes,
       });
       for (const key of SHEET_KEYS) {
-        if (candidate.name === 'Minato' && key === 'penetration') continue;
         const observed = hero.sheet[key];
         const relative = Math.abs(capSheetValue(key, composed[key]) - observed) / Math.max(1, Math.abs(observed));
         expect(relative, `${candidate.name}.${key}`).toBeLessThan(1e-9);

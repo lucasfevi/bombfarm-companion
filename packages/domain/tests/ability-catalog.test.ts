@@ -114,7 +114,7 @@ describe('rank-20 migration', () => {
       citation: 'wiki habilidades 2026-08-23 (published; no capture owns this ability)',
     },
     { id: 'ponta_diamante', perLevel: 1, wikiTotalAtCap: 20, citation: 'wiki Grimório ability table' },
-    { id: 'misericordia', perLevel: 1.25, wikiTotalAtCap: 25, citation: 'wiki Grimório ability table' },
+    { id: 'misericordia', perLevel: 0.75, wikiTotalAtCap: 15, citation: 'wiki Grimório ability table, 2026-09-12 pull' },
     { id: 'explosao_ampla', perLevel: 0.1, wikiTotalAtCap: 2, citation: 'wiki Grimório ability table' },
     { id: 'contra_relogio', perLevel: 2, wikiTotalAtCap: 40, citation: 'wiki Grimório ability table' },
     {
@@ -151,8 +151,8 @@ describe('rank-20 migration', () => {
     // are covered by TEAM_BUFF_PER_LEVEL (above) and the MID_CURVE_ABILITIES catalog check
     // instead of here. This test is now SELF abilities only.
     expect(abilityMods({ bateria_extra: 13 }).drainMult).toBeCloseTo(1 - 13 / 100, 10);
-    expect(abilityMods({ ponta_diamante: 13 }).sheetPenetrationRaw).toBeCloseTo(13, 10);
-    expect(abilityMods({ misericordia: 13 }).dmgMult).toBeCloseTo(1 / (1 - 16.25 / 100), 10);
+    expect(abilityMods({ ponta_diamante: 13 }).sheetPenetrationFlat).toBeCloseTo(13, 10);
+    expect(abilityMods({ misericordia: 13 }).dmgMult).toBeCloseTo(1 / (1 - 9.75 / 100), 10);
     expect(abilityMods({ explosao_ampla: 13 }).rangeCells).toBeCloseTo(1.3, 10);
     expect(abilityMods({ contra_relogio: 13 }).gateAttackMult).toBeCloseTo(1.26, 10);
     expect(abilityMods({ olho_clinico: 13 }).sheetCritChanceFlat).toBeCloseTo(2 * 13, 10);

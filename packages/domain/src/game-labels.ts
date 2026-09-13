@@ -162,8 +162,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '+1 Penetration (points)/level',
   },
   misericordia: {
-    pt: 'executa rocha < 1.25%/nível',
-    en: 'executes rock < 1.25%/level',
+    pt: 'executa rocha < 0.75%/nível',
+    en: 'executes rock < 0.75%/level',
   },
   explosao_ampla: {
     pt: '+0.1 raio da explosão/nível',

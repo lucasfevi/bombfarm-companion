@@ -170,16 +170,16 @@ describe('abilityMods', () => {
     });
     expect(m.drainMult).toBeCloseTo(0.95, 6);
     expect(m.penetrationPp).toBe(0);
-    expect(m.sheetPenetrationRaw).toBe(3);
+    expect(m.sheetPenetrationFlat).toBe(3);
     // FLAT crit points since the 2026-08-23 patch: 10 x 2.
     expect(m.sheetCritChanceFlat).toBeCloseTo(20, 6);
   });
 
   it('treats Ponta de Diamante as on-sheet raw Σ (not combat penetrationPp)', () => {
     expect(isSheetAbility(ABILITIES.find((a) => a.id === 'ponta_diamante')!)).toBe(true);
-    expect(abilityMods({ ponta_diamante: 0 }).sheetPenetrationRaw).toBe(0);
-    expect(abilityMods({ ponta_diamante: 1 }).sheetPenetrationRaw).toBe(1);
-    expect(abilityMods({ ponta_diamante: 20 }).sheetPenetrationRaw).toBe(20);
+    expect(abilityMods({ ponta_diamante: 0 }).sheetPenetrationFlat).toBe(0);
+    expect(abilityMods({ ponta_diamante: 1 }).sheetPenetrationFlat).toBe(1);
+    expect(abilityMods({ ponta_diamante: 20 }).sheetPenetrationFlat).toBe(20);
     expect(abilityMods({ ponta_diamante: 10 }).penetrationPp).toBe(0);
   });
 

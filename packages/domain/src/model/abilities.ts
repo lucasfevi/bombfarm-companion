@@ -34,7 +34,7 @@ export type AbilityEffect =
    * two abilities, not the point.
    */
   | { kind: 'critChanceFlat'; perLevel: number; onSheet?: boolean }
-  | { kind: 'penetrationPp'; perLevel: number; onSheet?: boolean } // onSheet = raw Σ on hero sheet
+  | { kind: 'penetrationPp'; perLevel: number; onSheet?: boolean } // onSheet = flat points on the hero sheet, outside the gear/points pool
   | { kind: 'rangeCells'; perLevel: number }
   | { kind: 'secondBlastPct'; perLevel: number } // chance of 2nd blast at 50% dmg
   | { kind: 'executePct'; perLevel: number } // executes rock below threshold
@@ -80,8 +80,17 @@ export const ABILITIES: AbilityDef[] = [
   // applied to the same field of the same table.
   { id: 'pressagio_mortal', name: 'Presságio Mortal', max: 20, effectText: '+1 ponto de chance de crítico do TIME/nível (valor fixo)', effect: { kind: 'critChanceFlat', perLevel: 1 } },
   { id: 'fantasma', name: 'Fantasma', max: 20, effectText: 'atravessa rocha; +0.05% Ataque de passagem/nível (não modelado)', effect: { kind: 'none' } },
+  // FLAT points, held outside the gear/points pool — the shape the 2026-09-02 patch gave it
+  // ("os pontos de Penetração agora são adicionados diretamente"). MEASURED on the 2026-09-13
+  // live read: Minato (★2, rank 20) exports 64.118 penetration against 44.118 composed without
+  // the ability — a residual of exactly 20, so the addend is neither star-scaled nor inside a
+  // pool his gear multiplies ~5×. Before the patch it multiplied the roll (×21 at rank 20), and
+  // that pre-patch capture is registered as such.
   { id: 'ponta_diamante', name: 'Ponta de Diamante', max: 20, effectText: '+1 Penetração (pontos)/nível', effect: { kind: 'penetrationPp', perLevel: 1, onSheet: true } },
-  { id: 'misericordia', name: 'Misericórdia', max: 20, effectText: 'executa rocha < 1.25%/nível', effect: { kind: 'executePct', perLevel: 1.25 } },
+  // Live wiki `per_level` 0.0125 → 0.0075 between the 2026-09-02 and 2026-09-12 pulls (15% of
+  // HP at cap, was 25%). The same wiki edit records the 2026-09-01 semantics: below the threshold
+  // the rock is destroyed — which is what `executePct` always priced.
+  { id: 'misericordia', name: 'Misericórdia', max: 20, effectText: 'executa rocha < 0.75%/nível', effect: { kind: 'executePct', perLevel: 0.75 } },
   { id: 'explosao_ampla', name: 'Explosão Ampla', max: 20, effectText: '+0.1 raio da explosão/nível', effect: { kind: 'rangeCells', perLevel: 0.1 } },
   { id: 'contra_relogio', name: 'Contra o Relógio', max: 20, effectText: '+2% Ataque em fase de tempo/nível', effect: { kind: 'gateAttackPct', perLevel: 2 } },
   // 2026-08-23 patch: +40 crit POINTS at max rank, i.e. +2 per level flat (live wiki
@@ -145,8 +154,9 @@ export interface AbilityMods {
   /** Olho Clínico — FLAT crit-chance percentage points (planner units), already on the hero
    *  sheet. Feeds `SheetOtherPct.critChanceFlat` as an addend held OUTSIDE the shared pool. */
   sheetCritChanceFlat: number;
-  /** Ponta de Diamante etc. — raw Σ units on the unequipped sheet (+1 per level). */
-  sheetPenetrationRaw: number;
+  /** Ponta de Diamante — FLAT penetration points (+1 per level), already on the hero sheet.
+   *  Feeds `SheetOtherPct.penetration` as an addend held OUTSIDE the shared pool. */
+  sheetPenetrationFlat: number;
   penetrationPp: number;
   /** Golpe Brutal — FLAT crit-damage percentage points (planner units), already on the hero
    *  sheet. Feeds `SheetOtherPct.critDmgFlat` as an addend, NOT a pool fraction. */
@@ -170,7 +180,7 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
   const mods: AbilityMods = {
     drainMult: 1,
     sheetCritChanceFlat: 0,
-    sheetPenetrationRaw: 0,
+    sheetPenetrationFlat: 0,
     penetrationPp: 0,
     sheetCritDmgFlat: 0,
     rangeCells: 0,
@@ -191,7 +201,7 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
         // else: Presságio Mortal (team) — see the module doc above.
         break;
       case 'penetrationPp':
-        if (effect.onSheet) mods.sheetPenetrationRaw += effect.perLevel * count;
+        if (effect.onSheet) mods.sheetPenetrationFlat += effect.perLevel * count;
         else mods.penetrationPp += effect.perLevel * count;
         break;
       case 'critDmgFlat':
