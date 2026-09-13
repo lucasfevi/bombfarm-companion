@@ -1,5 +1,6 @@
 /** Domain-facing storage shapes (formerly `@/shared/lib/storage` types). */
 import type { StatRanges } from '../birth-sheet.js';
+import type { HeroRune } from '../runes.js';
 import type { Loadout, SheetStats } from '../gear/types.js';
 import type { RankMode, RarityKey } from '../model/index.js';
 
@@ -127,6 +128,13 @@ export type HeroRecord = {
    * read, which has no file to re-export and would be left with nothing at all.
    */
   statRanges?: StatRanges;
+  /**
+   * The timed rune buffs the hero carried when it was read (`heroes[].runas`), already folded
+   * into {@link gearedOverride}. Absent on a record written before the importer read them, and
+   * every reader treats absence as an empty list (`runesOf`, `runes.ts`); the importer writes the
+   * list on every candidate, empty or not.
+   */
+  runes?: readonly HeroRune[] | undefined;
   tree?: TreeState;
   teamBuffs?: Record<string, number>;
   context?: HeroContext;

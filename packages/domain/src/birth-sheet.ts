@@ -12,6 +12,7 @@ import { applyPoints } from './gear/apply';
 import { starsMult } from './gear/catalog';
 import type { Loadout, PointAlloc, SheetOtherPct, SheetStats } from './gear/types';
 import { ZERO_PTS, type SheetKey } from './planner-constants';
+import { applyRuneMultipliers, runeSheetMultipliers, type HeroRune } from './runes';
 
 /**
  * lv1 ★0 rolls in PLANNER units (already unit-converted — crit chance/luck/CDR are
@@ -144,11 +145,14 @@ export type ComposeSheetFromBirthInput = {
   loadout: Loadout;
   pts: PointAlloc;
   tree: TreeSheetTotals;
+  /** The hero's timed rune buffs — absent or empty composes the sheet exactly as before. */
+  runes?: readonly HeroRune[] | undefined;
 };
 
 /**
  * The full birth → displayed-sheet chain: `nakedFromBirth` → `applyPoints` (existing
- * shared pool) → `applySkillTree`. Reuses `applyPoints` rather than reimplementing the
+ * shared pool) → `applySkillTree` → the runes (`runes.ts`, last: they multiply what the
+ * game has already built). Reuses `applyPoints` rather than reimplementing the
  * pool — the tree `_add` keys are algebraically additive pool members, so this
  * composition is exact through the existing gear/points machinery.
  *
@@ -173,7 +177,9 @@ export function composeSheetFromBirth(input: ComposeSheetFromBirthInput): SheetS
     input.level,
     input.stars,
   );
-  return applySkillTree(pooled, naked, input.sheetOther, input.tree);
+  const withTree = applySkillTree(pooled, naked, input.sheetOther, input.tree);
+  if (!input.runes || input.runes.length === 0) return withTree;
+  return applyRuneMultipliers(withTree, input.tree, runeSheetMultipliers(input.runes));
 }
 
 /**

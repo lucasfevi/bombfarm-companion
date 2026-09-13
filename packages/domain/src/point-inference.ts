@@ -9,6 +9,7 @@ import { POINT_GAIN, STAT_CAPS } from './model/rarity-constants';
 import { composeAttack, starsMult, sumGearBonuses } from './gear/catalog';
 import type { Loadout, SheetOtherPct, SheetStats } from './gear/types';
 import { SHEET_KEYS, type SheetKey } from './planner-constants';
+import { runeSheetMultipliers, stripRuneMultipliers, type HeroRune } from './runes';
 
 /**
  * Six orders of magnitude above the measured worst residual (8.9e-13) and six
@@ -40,9 +41,15 @@ export type InferSpentPointsInput = {
   sheetOther: SheetOtherPct;
   loadout: Loadout;
   tree: TreeSheetTotals;
-  /** The observed, tree-inclusive sheet (post gear + points + tree) to solve `pts` from. */
+  /** The observed, tree-inclusive sheet (post gear + points + tree + runes) to solve `pts` from. */
   sheet: SheetStats;
   statPointsAvailable: number;
+  /**
+   * The runes on the hero when `sheet` was read. Taken back off the sheet before the inversion
+   * — a rune's `+p` would otherwise be charged to spent points and push the recovered vector
+   * past the budget, which is exactly how every runed hero on the first live read was blocked.
+   */
+  runes?: readonly HeroRune[] | undefined;
 };
 
 function poolFactor(percent: number): number {
@@ -80,7 +87,11 @@ export function pointsExceedLevel(pts: Record<SheetKey, number>, level: number):
 }
 
 export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceResult {
-  const { birth, level, stars, sheetOther, loadout, tree, sheet, statPointsAvailable } = input;
+  const { birth, level, stars, sheetOther, loadout, tree, statPointsAvailable } = input;
+  const sheet =
+    input.runes && input.runes.length > 0
+      ? stripRuneMultipliers(input.sheet, tree, runeSheetMultipliers(input.runes))
+      : input.sheet;
 
   const naked = nakedFromBirth(birth, level, stars, sheetOther);
   const baseSpeed = naked.speed / poolFactor(sheetOther.speed);
@@ -154,8 +165,11 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
   // spurious `negativePoints` issue for what is really cap saturation, not a data problem —
   // `saturatedStats` (below) is the existing channel for surfacing "this stat sits at its cap"
   // whenever the recovered budget doesn't reconcile.
-  if (sheet.critChance >= STAT_CAPS.critChance - CAP_EPS && raw.critChance < 0) raw.critChance = 0;
-  if (sheet.cdr >= STAT_CAPS.cdr - CAP_EPS && raw.cdr < 0) raw.cdr = 0;
+  // Saturation is read off the sheet AS OBSERVED — the clamp is a property of the displayed
+  // value, and a rune taken off a capped value lands below the cap without un-saturating it.
+  const observed = input.sheet;
+  if (observed.critChance >= STAT_CAPS.critChance - CAP_EPS && raw.critChance < 0) raw.critChance = 0;
+  if (observed.cdr >= STAT_CAPS.cdr - CAP_EPS && raw.cdr < 0) raw.cdr = 0;
 
   const issues: PointInferenceIssue[] = [];
   const pts = {} as Record<SheetKey, number>;
@@ -181,8 +195,8 @@ export function inferSpentPoints(input: InferSpentPointsInput): PointInferenceRe
   const budget = Math.max(0, level - statPointsAvailable);
   if (recovered !== budget) {
     const saturatedStats: ('critChance' | 'cdr')[] = [];
-    if (sheet.critChance >= STAT_CAPS.critChance - CAP_EPS) saturatedStats.push('critChance');
-    if (sheet.cdr >= STAT_CAPS.cdr - CAP_EPS) saturatedStats.push('cdr');
+    if (observed.critChance >= STAT_CAPS.critChance - CAP_EPS) saturatedStats.push('critChance');
+    if (observed.cdr >= STAT_CAPS.cdr - CAP_EPS) saturatedStats.push('cdr');
     issues.push({
       kind: 'budgetMismatch',
       recovered,

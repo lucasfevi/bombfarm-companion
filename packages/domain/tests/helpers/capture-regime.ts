@@ -278,6 +278,17 @@ export const CAPTURE_REGISTRY: Record<string, CaptureRow> = {
       'hero holds an unspent stat point (Orin and Devin, 1 each). Does NOT reach the 50-level ' +
       'Dano step: its items top out at level 30.',
   },
+  'sheet-math/payload-20260913-20heroes-runes.json': {
+    capturedOn: '2026-09-13',
+    retention: 'value',
+    note:
+      'A live account read (AccountPayload, not a save export) and the only capture carrying ' +
+      '`runas` — six of twenty heroes hold timed rune buffs, one of them on every axis at once. ' +
+      'With runes modelled all twenty invert to whole-number points landing exactly on level; ' +
+      'with the field ignored the same six are blocked, so the fixture witnesses the mechanic ' +
+      'both ways. Also the first in-regime capture with starred heroes (★1 and ★2), the latest ' +
+      'phase (91, max_phase 230) and the largest tree (crit_dmg_add 0.68, dmg_static 3.88).',
+  },
   'farm-rate/save-20260815-486-7heroes.json': {
     capturedOn: '2026-08-15',
     retention: 'structural',

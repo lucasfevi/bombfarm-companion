@@ -14,6 +14,7 @@ function ctx(name: string, abilities: Record<string, number>, scope: HeroPlanCon
     heroId: name,
     name,
     level: 50,
+    runes: [],
     stars: 0,
     rarity: 'Raro',
     birth: {

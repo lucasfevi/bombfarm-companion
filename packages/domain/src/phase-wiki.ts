@@ -150,6 +150,25 @@ export type WikiGems = {
 };
 export const WIKI_GEMS: WikiGems = wiki.gems;
 
+/**
+ * ← `runas`. `strengthByRarity` is `forca` (a fraction per rarity index 0–5), the two spans are
+ * `duracao_play_secs` / `cap_play_secs` (play time, not wall time), `capRunes` is `cap_runas` and
+ * `marketMinRarity` is `market_min_rarity`. `axes` is `eixos` in `idx` order, and
+ * `statIndexByAxis` its `stat` field — the game's own stat index, absent for xp and gold, which
+ * are not sheet statistics. The bundle does not carry `dist_por_faixa` (the drop distribution by
+ * band) or `total`: nothing in the app prices a rune drop.
+ */
+export type WikiRunes = {
+  axes: readonly string[];
+  statIndexByAxis: Readonly<Record<string, number>>;
+  strengthByRarity: readonly number[];
+  durationPlaySecs: number;
+  capPlaySecs: number;
+  capRunes: number;
+  marketMinRarity: number;
+};
+export const WIKI_RUNES: WikiRunes = wiki.runes;
+
 /** [ato-1][rank-1] — P(rank | gem chest), per difficulty. 5 rows × 3 columns, each row sums to 1.
  *  Alias of `WIKI_GEMS.rankDistByAto`, exported flat because it is the term farm-rate reads. */
 export const GEM_RANK_DIST_BY_ATO: readonly (readonly number[])[] = WIKI_GEMS.rankDistByAto;

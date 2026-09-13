@@ -73,6 +73,7 @@ export function pipelineForHero(
     rankMode: context.rankMode,
     targetProp: context.targetProp,
     birth: hero.birth,
+    runes: hero.runes,
   });
 }
 

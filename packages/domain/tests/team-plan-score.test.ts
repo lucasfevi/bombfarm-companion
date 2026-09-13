@@ -91,6 +91,7 @@ describe('scoreHeroLoadout', () => {
       heroId: 'z',
       name: 'Zero',
       level: 10,
+      runes: [],
       stars: 0,
       rarity: 'Comum',
       birth: {
@@ -216,6 +217,7 @@ describe('scoreHeroLoadout', () => {
       heroId: 'pt-dbl-count',
       name: 'PointDoubleCount',
       level: 40,
+      runes: [],
       stars: 3,
       rarity: 'Épico',
       birth: {

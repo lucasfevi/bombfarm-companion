@@ -20,6 +20,7 @@ import { spentPointsOf } from './point-inference';
 import type { SheetKey } from './planner-constants';
 import { computeCombatMults, derive, type DeriveResult } from './derive';
 import { applySkillTree, type BirthStats, type TreeSheetTotals } from './birth-sheet';
+import { applyRuneMultipliers, runeSheetMultipliers, type HeroRune } from './runes';
 import { resolveCloneGeared, resolveDeriveSheets } from './advisor-pipeline-sheets';
 import {
   effectiveFarmPhase,
@@ -99,6 +100,8 @@ export type AdvisorPipelineInput = {
    * geared) so Points After / DPS stay aligned with Stats Total after level/stars/tree edits.
    */
   birth?: BirthStats | null;
+  /** The hero's timed rune buffs (`runes.ts`); absent reads as none. */
+  runes?: readonly HeroRune[] | undefined;
 };
 
 export type AdvisorPipelineResult = {
@@ -195,6 +198,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     targetProp,
     birth,
   } = input;
+  const runes = input.runes ?? [];
 
   const farmPhase = effectiveFarmPhase(phase);
   const mitPct = effectiveMitigationPct({ phase, mitigationPct });
@@ -222,6 +226,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     treeEnergy,
     treeLuckFlatPct,
     birth,
+    runes,
   });
 
   const mults = computeCombatMults({
@@ -270,6 +275,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     context,
     dmgMult,
     mitigationPct: mitPct,
+    runes,
   } as const;
 
   const equippedResult = derive({ ...deriveArgs, geared: gearedForDerive });
@@ -292,6 +298,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
           level,
           stars,
           treeSheet,
+          runes,
         }),
       })
     : null;
@@ -326,11 +333,15 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   // projection used by the Gear tab's sheet-mismatch check) would silently diverge from
   // `adjusted` by exactly the tree's factor for every hero with any spent attack/energy
   // point, false-triggering a "sheet mismatch" warning that has nothing to do with gear.
-  const expectedSheet = applySkillTree(
-    applyPoints(nakedForDerive, loadout, pts, sheetOther, level, stars),
-    nakedForDerive,
-    sheetOther,
+  const expectedSheet = applyRuneMultipliers(
+    applySkillTree(
+      applyPoints(nakedForDerive, loadout, pts, sheetOther, level, stars),
+      nakedForDerive,
+      sheetOther,
+      treeSheet,
+    ),
     treeSheet,
+    runeSheetMultipliers(runes),
   );
 
   const propRows: PropHtkRow[] = propHtkRows(stoneHp, avgHit, targetProp);

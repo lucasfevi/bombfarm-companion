@@ -24,6 +24,7 @@ export function selectHeroDraftTuple(state: PlannerStore) {
     state.pts,
     state.birth,
     state.statRanges,
+    state.runes,
     state.heroSourceId,
     state.heroRank,
     state.heroPower,

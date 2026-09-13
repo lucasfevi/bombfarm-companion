@@ -65,6 +65,7 @@ const TOP_LEVEL_KEYS = [
   'timechestRarityByAto',
   'gems',
   'lootAbilities',
+  'runes',
   'itemPorFase',
   'xpFaseIni',
   'xpFaseFim',
@@ -91,6 +92,19 @@ const GEMS_KEYS = ['chestDropRate', 'perRank', 'rankDistByAto', 'list'];
 const GEMS_LIST_ITEM_KEYS = ['defId', 'name', 'rank', 'rarity'];
 const LOOT_ABILITIES_KEYS = ['veia_ouro', 'fortuna', 'olho_lapidador'];
 const LOOT_ABILITY_ITEM_KEYS = ['code', 'kind', 'perLevel', 'maxLevel'];
+// Hero runes (live wiki key `runas`): the eight axes in `idx` order, the game's stat index for
+// the six that are sheet statistics, the strength per rarity and the play-time spans.
+const RUNES_KEYS = [
+  'axes',
+  'statIndexByAxis',
+  'strengthByRarity',
+  'durationPlaySecs',
+  'capPlaySecs',
+  'capRunes',
+  'marketMinRarity',
+];
+const RUNES_AXES = ['attack', 'energy', 'speed', 'crit', 'critdmg', 'cdr', 'xp', 'gold'];
+const RUNES_SHEET_AXES = ['attack', 'energy', 'speed', 'crit', 'critdmg', 'cdr'];
 const JAULA_KEYS = ['adiantaProbPorAto', 'janelaSecs', 'janelaSecsVip', 'hpMult'];
 const LINE_KEYS = ['phase', 'hp', 'mitig', 'goldComum', 'gate', 'ato', 'mundo', 'estrela', 'xpProp'];
 const PROP_KEYS = ['name', 'hpMult', 'weight', 'rarity'];
@@ -211,6 +225,14 @@ function validateBundle(bundle) {
       }
     }
   }
+  if (bundle?.runes) {
+    const r = keySetErrors(bundle.runes, RUNES_KEYS, 'runes');
+    addedKeys.push(...r.added);
+    removedKeys.push(...r.removed);
+    const statIndex = keySetErrors(bundle.runes.statIndexByAxis, RUNES_SHEET_AXES, 'runes.statIndexByAxis');
+    addedKeys.push(...statIndex.added);
+    removedKeys.push(...statIndex.removed);
+  }
   if (bundle?.jaula) {
     const r = keySetErrors(bundle.jaula, JAULA_KEYS, 'jaula');
     addedKeys.push(...r.added);
@@ -277,6 +299,12 @@ function validateBundle(bundle) {
     dimensionErrors.push(
       `gems.rankDistByAto.length: expected 5, got ${bundle.gems.rankDistByAto.length}`,
     );
+  }
+  if (bundle?.runes && JSON.stringify(bundle.runes.axes) !== JSON.stringify(RUNES_AXES)) {
+    dimensionErrors.push(`runes.axes: expected ${JSON.stringify(RUNES_AXES)}, got ${JSON.stringify(bundle.runes.axes)}`);
+  }
+  if (Array.isArray(bundle?.runes?.strengthByRarity) && bundle.runes.strengthByRarity.length !== 6) {
+    dimensionErrors.push(`runes.strengthByRarity.length: expected 6, got ${bundle.runes.strengthByRarity.length}`);
   }
   if (bundle?.lootAbilities && Object.keys(bundle.lootAbilities).length !== 3) {
     dimensionErrors.push(
