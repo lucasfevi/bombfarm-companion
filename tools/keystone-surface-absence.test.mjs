@@ -182,7 +182,7 @@ const CRIT_DMG_MULT_MAP = {
   // -27 (line number only): the phase control moved into `@bombfarm/farm` so the web planner
   // draws the same one, which took its definition out of this file, and the Combat stage is
   // mounted only while shown. Unchanged in count and kind.
-  'apps/desktop/renderer/app/heroes/heroes-view.tsx': [660],
+  'apps/desktop/renderer/app/heroes/heroes-view.tsx': [669],
   // The shared roster builder's own account fixture, same kind as the two farm entries below: a
   // raw save-shaped skills block handed to the parser, not a field the app reads.
   'apps/desktop/renderer/lib/account/account-roster.test.ts': [39],
@@ -202,7 +202,7 @@ const CRIT_DMG_MULT_MAP = {
   // +1 more (line number only): the Farm Respec Advisor objective picker's removal replaced the
   // `farmObjective` row above this section with a prose paragraph, a net +1 line. Match itself is
   // unchanged in count and in kind.
-  'apps/web/docs/local-data-compat.md': [110, 118],
+  'apps/web/docs/local-data-compat.md': [111, 119],
   // +7 (line numbers only): the next-point panel became a shared component, so its mode, its
   // setter and its ranked rows are read here and passed down. Both matches are unchanged in count
   // and in kind.
@@ -212,7 +212,7 @@ const CRIT_DMG_MULT_MAP = {
   // Moved (2026-09-11): the facts the breakdown reads left `advice-column.tsx` for a hook the
   // planner's Combat tab calls, so the two matches — the destructure and the facts field — now
   // sit in `use-pipeline-facts.ts`. Unchanged in count and in kind.
-  'apps/web/src/features/planner/hooks/use-pipeline-facts.ts': [34, 55],
+  'apps/web/src/features/planner/hooks/use-pipeline-facts.ts': [35, 56],
   // +16 (line number only): the House-ceiling fix added `fieldSlots`/`houseCycleSecs`, with
   // their doc comments, to `AccountShared` above this line. The match itself is unchanged in
   // count and in kind — still `normalizeTree`'s doc comment naming a stale key it discards.

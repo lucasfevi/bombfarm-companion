@@ -46,6 +46,7 @@ function emptyPlan(overrides: Partial<TeamPlan> = {}): TeamPlan {
     disclosures: {
       unmodelledAbilities: [],
       loadoutDriftHeroNames: [],
+      runedHeroNames: [],
       foreignOwnedItemCount: 0,
       marketBlockedItemCount: 0,
       unresolvedDefItemCount: 0,

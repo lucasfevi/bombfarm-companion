@@ -16,13 +16,14 @@ export function SheetPanel() {
   const stars = usePlannerStore((state) => state.stars);
   const loadout = usePlannerStore((state) => state.loadout);
   const pts = usePlannerStore((state) => state.pts);
+  const runes = usePlannerStore((state) => state.runes);
   const { sheetOther, treeSheet } = usePlannerStore(selectAdvisorPipeline);
 
   return (
     <SheetTable
       t={t}
       lang={lang}
-      input={{ birth, level, stars, sheetOther, loadout, pts, tree: treeSheet }}
+      input={{ birth, level, stars, sheetOther, loadout, pts, tree: treeSheet, runes }}
     />
   );
 }

@@ -18,6 +18,7 @@ export function buildTeamPlanInputFromStore(state: PlannerStore): TeamPlanInput 
     pts: hero.pts,
     loadout: hero.loadout,
     battleAllowed: hero.battleAllowed,
+    runes: hero.runes,
   }));
 
   return {
