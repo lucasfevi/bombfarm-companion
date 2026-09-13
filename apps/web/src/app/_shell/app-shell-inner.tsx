@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import { SITE_SECTIONS, isSiteSectionActive } from '@/shared/lib/site-sections';
 import { useAppLang } from '@/shared/context/app-lang';
 import { SiteHeader } from './site-header';
-import { GuideSection } from './guide-section';
 import { ReferralNotice } from './referral-notice';
 import { readReferralNoticeHidden, writeReferralNoticeHidden } from './referral-notice-storage';
 import { ImportHeroesDialog } from '@/features/import';
@@ -63,13 +62,6 @@ export function AppShellInner({
 
   /** Snapshot taken when the dialog opens — avoids reading a mutating roster mid-dialog. */
   const [importExisting, setImportExisting] = useState<HeroRecord[]>([]);
-  const [showGuide, setShowGuide] = useState(() => {
-    try {
-      return localStorage.getItem('bf_guide_hidden') !== '1';
-    } catch {
-      return true;
-    }
-  });
   const [showReferralNotice, setShowReferralNotice] = useState(() => !readReferralNoticeHidden());
 
   useEffect(() => {
@@ -103,25 +95,9 @@ export function AppShellInner({
     writeReferralNoticeHidden();
   }
 
-  function toggleGuide(next: boolean) {
-    setShowGuide(next);
-    try {
-      localStorage.setItem('bf_guide_hidden', next ? '0' : '1');
-    } catch {
-      /* private mode */
-    }
-  }
-
   return (
     <div className="min-h-screen pb-10">
-      <SiteHeader
-        t={t}
-        lang={lang}
-        showGuide={onSectionPage ? undefined : showGuide}
-        onImport={openImportDialog}
-        onToggleGuide={onSectionPage ? undefined : toggleGuide}
-        onLangChange={setLang}
-      />
+      <SiteHeader t={t} lang={lang} onImport={openImportDialog} onLangChange={setLang} />
 
       {showReferralNotice ? <ReferralNotice t={t} onDismiss={dismissReferralNotice} /> : null}
 
@@ -135,8 +111,6 @@ export function AppShellInner({
         lang={lang}
         onImported={handleImported}
       />
-
-      {!onSectionPage && showGuide ? <GuideSection t={t} onHide={() => toggleGuide(false)} /> : null}
 
       <div className={workspaceShellClass}>
         {onSectionPage ? children : null}

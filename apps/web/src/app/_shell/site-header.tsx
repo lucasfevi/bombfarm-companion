@@ -20,16 +20,12 @@ import {
 export function SiteHeader({
   t,
   lang,
-  showGuide,
   onImport,
-  onToggleGuide,
   onLangChange,
 }: {
   t: Strings;
   lang: Lang;
-  showGuide?: boolean;
   onImport?: () => void;
-  onToggleGuide?: (next: boolean) => void;
   onLangChange: (lang: Lang) => void;
 }) {
   const pathname = usePathname();
@@ -84,17 +80,6 @@ export function SiteHeader({
           {onImport ? (
             <Button type="button" onClick={onImport}>
               {t.importHeroesBtn}
-            </Button>
-          ) : null}
-          {onToggleGuide != null && showGuide != null ? (
-            <Button
-              type="button"
-              variant={showGuide ? 'help-on' : 'help'}
-              onClick={() => onToggleGuide(!showGuide)}
-              title={t.guideToggleTitle}
-              aria-label={t.guideToggleTitle}
-            >
-              ?
             </Button>
           ) : null}
           {/* Code only — the tooltip carries the why, the footer the full copy. */}

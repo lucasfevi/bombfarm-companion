@@ -192,6 +192,9 @@ const KEYS_REMOVED: readonly string[] = [
   // plan gives nothing shows eight named empty cards and the sentence that stood in for them has
   // no reader left; its per-slot replacement is `teamPlanFlowSlotEmpty` (in `KEYS_ADDED`).
   'teamPlanHeroBreakdownGearEmpty',
+  // The quick guide leaves with the front page (2026-09-13): its section, its header toggle and
+  // its four strings had no reader left.
+  'guideToggleTitle', 'guideTitle', 'guideSteps', 'hide',
   // Split into `…Both`/`…Points`/`…Gear` (in `KEYS_ADDED`): the one string named gear moves and
   // point resets whatever Allowed changes was set to.
   'teamPlanOptimizeAria',
