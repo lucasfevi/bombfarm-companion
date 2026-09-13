@@ -640,7 +640,7 @@ export const en = {
   heroesPhaseUnknownTitle: 'That is not a phase this app knows',
   heroesPhaseUnknownDescription: 'Pick a phase the game actually has, and the numbers come back.',
   heroesEffectiveTitle: 'Effective stats',
-  heroesEffectiveTip: 'Includes gear, points, skill tree, abilities and the team auras switched on above.',
+  heroesEffectiveTip: 'Includes gear, points, skill tree, abilities and the team auras switched on below.',
   heroesEffectiveGroupSheet: 'Sheet stats',
   heroesEffectiveGroupDerived: 'Derived combat',
   heroesEffectiveTriggerAria: 'Show breakdown of {stat}',

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { AccountPayload, AccountView } from '@bombfarm/contracts';
 import { buildAccountRoster, type AccountRoster } from './account-roster';
-import { TEAM_BUFF_PER_LEVEL, noTeamAuraSwitches } from '@bombfarm/domain/team-buffs';
+import { TEAM_BUFF_CAP, TEAM_BUFF_PER_LEVEL, noTeamAuraSwitches } from '@bombfarm/domain/team-buffs';
 import { accountAroundHero, buildAccountBlock } from './account-shared';
 
 const OFFLINE_FIXTURE = path.join(__dirname, '..', '..', '..', 'tests', 'fixtures', 'account-offline.json');
@@ -64,18 +64,19 @@ describe('buildAccountBlock', () => {
 describe('accountAroundHero', () => {
   const block = buildAccountBlock(offlineRoster());
   if (block === null) throw new Error('expected the committed offline account to build a block');
-  const me = { id: 'me', abilities: { grito_guerra: 4 } };
-  const other = { id: 'other', abilities: { grito_guerra: 20 }, battleAllowed: true };
+  const me = { abilities: { grito_guerra: 4 } };
 
-  it('counts the hero’s own aura with every switch off, and nothing of anyone else’s', () => {
-    const account = accountAroundHero(block, me, [me, other], noTeamAuraSwitches());
+  it('counts the hero’s own aura at its rank with every switch off, and no other aura at all', () => {
+    const account = accountAroundHero(block, me, noTeamAuraSwitches());
     expect(account.teamBuffs.grito_guerra).toBe(4 * TEAM_BUFF_PER_LEVEL.grito_guerra);
+    expect(account.teamBuffs.folego_mineiro).toBe(0);
     expect(account.tree).toBe(block.tree);
   });
 
-  it('lets another fielded carrier in at full presence once its aura is switched on', () => {
-    const switches = { ...noTeamAuraSwitches(), grito_guerra: true };
-    const account = accountAroundHero(block, me, [me, other], switches);
-    expect(account.teamBuffs.grito_guerra).toBe(24 * TEAM_BUFF_PER_LEVEL.grito_guerra);
+  it('prices a switched-on aura at its cap, whether or not the hero carries it', () => {
+    const switches = { ...noTeamAuraSwitches(), grito_guerra: true, folego_mineiro: true };
+    const account = accountAroundHero(block, me, switches);
+    expect(account.teamBuffs.grito_guerra).toBe(TEAM_BUFF_CAP.grito_guerra);
+    expect(account.teamBuffs.folego_mineiro).toBe(TEAM_BUFF_CAP.folego_mineiro);
   });
 });

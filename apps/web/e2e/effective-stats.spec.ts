@@ -47,8 +47,8 @@ const PT_COMBAT_SHEET_LABELS = ['Ataque', 'Velocidade', 'Chance de Crítico'] as
 
 /**
  * Cora's own team-aura ranks, which push sheet stats off Total so they still appear under
- * Effective. A hero's own aura always counts on its own screen; the rest of the roster's only
- * reach it through the Combat tab's switches, which stay off here.
+ * Effective. A hero's own aura always counts on its own screen; any other aura only reaches it
+ * through the Combat tab's switches, which stay off here.
  */
 function combatSheetDeltaRoster(base: typeof importedRoster) {
   return {
@@ -77,7 +77,7 @@ const EN_DERIVED = [
 ] as const;
 
 test.describe('effective stats panel (EST / ESB)', () => {
-  test('Points stacks Points / Next point / Stats; Effective closes the Combat tab (EN + PT)', async ({
+  test('Points stacks Points / Next point / Stats; Effective sits last but for the aura section on Combat (EN + PT)', async ({
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
@@ -93,9 +93,9 @@ test.describe('effective stats panel (EST / ESB)', () => {
     await expect(headings.nth(2)).toHaveText(/^Stats$/);
 
     await openCombatTab(page, 'en');
-    await expect(activePanel(page).getByRole('heading', { level: 2 }).last()).toHaveText(
-      /^Effective stats$/,
-    );
+    const combatHeadings = activePanel(page).getByRole('heading', { level: 2 });
+    await expect(combatHeadings.nth(-2)).toHaveText(/^Effective stats$/);
+    await expect(combatHeadings.last()).toHaveText(/^Abilities & auras$/);
 
     await page.getByRole('group', { name: 'Language' }).getByRole('button', { name: 'PT' }).click();
     await openPointsTab(page, 'pt');
@@ -107,9 +107,9 @@ test.describe('effective stats panel (EST / ESB)', () => {
     await expect(headingsPt.nth(2)).toHaveText(/^Atributos$/);
 
     await openCombatTab(page, 'pt');
-    await expect(activePanel(page).getByRole('heading', { level: 2 }).last()).toHaveText(
-      /^Atributos efetivos$/,
-    );
+    const combatHeadingsPt = activePanel(page).getByRole('heading', { level: 2 });
+    await expect(combatHeadingsPt.nth(-2)).toHaveText(/^Atributos efetivos$/);
+    await expect(combatHeadingsPt.last()).toHaveText(/^Habilidades e auras$/);
   });
 
   test('hides sheet-group rows that match hero-sheet Total; shows combat deltas + derived', async ({
@@ -156,25 +156,19 @@ test.describe('effective stats panel (EST / ESB)', () => {
     }
   });
 
-  test('another hero’s aura reaches the Effective panel only through its Combat tab switch, and then in full', async ({
+  test('a team aura reaches the Effective panel only through its Combat tab switch, and then at its cap', async ({
     page,
   }) => {
-    // Lorne carries rank-20 War Cry and Cora carries none: with the switch off Cora is priced
-    // alone (no sheet row leaves Total), on she reads Lorne's whole +20% as if he never left.
-    await seedLocalStorage(page, {
-      ...importedRoster,
-      lang: 'en',
-      heroes: importedRoster.heroes.map((h) =>
-        h.id === 'seed-lorne' ? { ...h, abilities: { ...h.abilities, grito_guerra: 20 } } : h,
-      ),
-    });
+    // Cora carries no War Cry: with the switch off she is priced alone (no sheet row leaves
+    // Total); on, she reads the aura's whole +20% cap, whoever would carry it.
+    await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
 
-    const auras = activePanel(page).getByTestId('team-aura-switches');
+    const auras = activePanel(page).getByTestId('abilities-auras');
     const warCry = auras.getByTestId('team-aura-grito_guerra');
-    await expect(warCry).toContainText(/\+20% attack from one other hero/i);
+    await expect(warCry).toContainText(/\+20% attack/i);
     const toggle = warCry.getByRole('switch');
     await expect(toggle).not.toBeChecked();
     await expect(effectivePanel(page, 'en').getByRole('heading', { name: /Sheet stats/i, level: 3 })).toHaveCount(0);
@@ -184,10 +178,6 @@ test.describe('effective stats panel (EST / ESB)', () => {
     const panel = effectivePanel(page, 'en');
     await expect(panel.getByRole('heading', { name: /Sheet stats/i, level: 3 })).toBeVisible();
     await expect(panel.getByRole('button', { name: /Show breakdown of Attack/i })).toBeVisible();
-    // An aura no other hero carries has nothing to switch on, and says so instead.
-    const miner = auras.getByTestId('team-aura-folego_mineiro');
-    await expect(miner).toContainText(/No other hero in rotation carries it/i);
-    await expect(miner.getByRole('switch')).toHaveCount(0);
   });
 
   test('Points tab soft-badges when setup incomplete; Effective stays neutral', async ({ page }) => {
