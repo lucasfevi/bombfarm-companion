@@ -42,6 +42,7 @@ export function buildHeroPlanContext(
     scope,
     abilities: hero.abilities,
     pts: hero.pts,
+    runes: hero.runes ?? [],
   };
 }
 
@@ -97,6 +98,7 @@ export function gearedSheetFromContext(
     loadout,
     pts,
     tree: ctx.treeSheet,
+    runes: ctx.runes,
   });
 }
 

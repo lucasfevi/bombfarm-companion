@@ -118,6 +118,7 @@ describe('runTeamPlan', () => {
     expect(result.plan.disclosures.marketBlockedItemCount).toBeGreaterThanOrEqual(0);
     expect(result.plan.disclosures.foreignOwnedItemCount).toBeGreaterThanOrEqual(0);
     expect(result.plan.disclosures.unresolvedDefItemCount).toBeGreaterThanOrEqual(0);
+    expect(result.plan.disclosures.runedHeroNames).toEqual([]);
   });
 
   it('surfaces an item with an unresolvable defId in unresolvedDefItemCount', () => {
