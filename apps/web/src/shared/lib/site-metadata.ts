@@ -26,12 +26,12 @@ export type SectionPreview = {
 export const SECTION_PREVIEWS: Record<SiteSection, SectionPreview> = previews;
 
 /**
- * `planner` for `/`, the path without its slash for everything else — so the image file and the
+ * `home` for `/`, the path without its slash for everything else — so the image file and the
  * route it belongs to can never be paired up wrong.
  */
 export function sectionSlug(section: SiteSection): string {
   const href = SITE_SECTION_HREF[section];
-  return href === '/' ? 'planner' : href.slice(1);
+  return href === '/' ? 'home' : href.slice(1);
 }
 
 export function sectionOgImagePath(section: SiteSection): string {
