@@ -49,8 +49,8 @@ export type PhasesSlice = {
    */
   plannerPhaseOverride: number | null;
   /**
-   * EPHEMERAL — which team auras the Combat tab counts the REST of the roster for, on top of the
-   * active hero's own (`computeTeamBuffsAroundHero`). All off on every load, like the phase
+   * EPHEMERAL — which team auras the Combat tab prices the active hero under at their cap, on top
+   * of the hero's own (`computeTeamBuffsAroundHero`). All off on every load, like the phase
    * override beside it: a what-if that outlived the session would inflate every per-hero figure
    * with no control in sight to explain it.
    */
@@ -67,6 +67,8 @@ export type PhasesSlice = {
   /** `null` clears the pick and hands the planner back to `selectCombatPhase`'s own answer. */
   setPlannerPhaseOverride: (phase: number | null) => void;
   setTeamAuraSwitch: (buffId: TeamBuffId, enabled: boolean) => void;
+  /** "Back to your current phase": drops the phase pick AND every aura switch in one write. */
+  clearPlannerWhatIfs: () => void;
   /** Runs Tier 2 on demand, off the render path — see the action body for the full contract. */
   runFarmRespec: () => void;
 };
@@ -178,6 +180,13 @@ export const createPhasesSlice: StateCreator<
       const current = get().teamAuraSwitches;
       if (current[buffId] === enabled) return;
       set({ teamAuraSwitches: { ...current, [buffId]: enabled } });
+    },
+
+    clearPlannerWhatIfs: () => {
+      const current = get();
+      const switched = Object.values(current.teamAuraSwitches).some(Boolean);
+      if (current.plannerPhaseOverride === null && !switched) return;
+      set({ plannerPhaseOverride: null, teamAuraSwitches: noTeamAuraSwitches() });
     },
 
     /**

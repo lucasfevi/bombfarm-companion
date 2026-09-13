@@ -608,7 +608,7 @@ export const ptBR: Copy = {
   heroesPhaseUnknownTitle: 'Esta não é uma fase que o app conhece',
   heroesPhaseUnknownDescription: 'Escolha uma fase que o jogo tenha de verdade, e os números voltam.',
   heroesEffectiveTitle: 'Atributos efetivos',
-  heroesEffectiveTip: 'Inclui equipamento, pontos, árvore, habilidades e as auras de time ligadas acima.',
+  heroesEffectiveTip: 'Inclui equipamento, pontos, árvore, habilidades e as auras de time ligadas abaixo.',
   heroesEffectiveGroupSheet: 'Stats da ficha',
   heroesEffectiveGroupDerived: 'Combate derivado',
   heroesEffectiveTriggerAria: 'Ver detalhamento de {stat}',

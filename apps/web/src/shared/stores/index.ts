@@ -72,6 +72,7 @@ export {
 export {
   selectDps,
   selectAdvisorPipeline,
+  selectTeamAuraDpsDeltas,
   getAdvisorPipelineComputeCount,
   resetAdvisorPipelineCache,
   resetAdvisorPipelineComputeCount,

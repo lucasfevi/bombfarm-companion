@@ -182,7 +182,8 @@ const CRIT_DMG_MULT_MAP = {
   // -27 (line number only): the phase control moved into `@bombfarm/farm` so the web planner
   // draws the same one, which took its definition out of this file, and the Combat stage is
   // mounted only while shown. Unchanged in count and kind.
-  'apps/desktop/renderer/app/heroes/heroes-view.tsx': [669],
+  // +26 (line number only): the Abilities & auras section closed the Combat stage. Same match.
+  'apps/desktop/renderer/app/heroes/heroes-view.tsx': [695],
   // The shared roster builder's own account fixture, same kind as the two farm entries below: a
   // raw save-shaped skills block handed to the parser, not a field the app reads.
   'apps/desktop/renderer/lib/account/account-roster.test.ts': [39],
@@ -288,7 +289,7 @@ const CRIT_DMG_MULT_MAP = {
   // pipeline-facts hook moving. Count and kind unchanged.
   // +4 more (line numbers only, last four): the one-cadence-model note on the derive.test.ts
   // entry above. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 334, 339, 349, 358],
+  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 335, 340, 350, 359],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 

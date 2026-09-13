@@ -2,7 +2,8 @@
  * Layer 2 of the desktop/web parity proof. Reads
  * `packages/domain/src/roster-dps.ts` and
  * `apps/web/src/shared/stores/selectors/advisor-selectors.ts` as text, extracts the object keys
- * each passes to `computeAdvisorPipeline`, and asserts the two sets are exactly equal. Home:
+ * each builds its `AdvisorPipelineInput` from (`advisorInputForHero` / `advisorInput`, the one
+ * literal each file hands `computeAdvisorPipeline`), and asserts the two sets are exactly equal. Home:
  * `tools/`, so `apps/web` gains zero files for this guard —
  * deliberately dumb text slicing, not a full parse, matching `tools/ci-desktop-paths.test.mjs`
  * and `tools/design-system-gate.test.mjs`.
@@ -22,21 +23,22 @@ const ROSTER_DPS_PATH = join(root, 'packages/domain/src/roster-dps.ts');
 const ADVISOR_SELECTORS_PATH = join(root, 'apps/web/src/shared/stores/selectors/advisor-selectors.ts');
 
 /**
- * Extracts the top-level object keys passed to a `computeAdvisorPipeline({ ... })` call —
- * balanced-brace slicing from the call site, then one `key:` per line inside it. Both source
- * files format this call as one property per line, which is what makes line-based extraction
+ * Extracts the top-level object keys of the literal a named input-building function returns —
+ * balanced-brace slicing from its `return {`, then one `key:` per line inside it. Both source
+ * files format that literal as one property per line, which is what makes line-based extraction
  * reliable here (the same "dumb text slicing" convention as this repo's other source-text
  * guards).
  */
-function extractPipelineInputKeys(source, callName) {
-  const callIndex = source.indexOf(`${callName}(`);
-  if (callIndex === -1) {
-    throw new Error(`could not find a "${callName}(" call site`);
+function extractPipelineInputKeys(source, functionName) {
+  const functionIndex = source.indexOf(`function ${functionName}(`);
+  if (functionIndex === -1) {
+    throw new Error(`could not find a "function ${functionName}(" definition`);
   }
-  const openBraceIndex = source.indexOf('{', callIndex);
-  if (openBraceIndex === -1) {
-    throw new Error(`could not find the opening brace for "${callName}("`);
+  const returnIndex = source.indexOf('return {', functionIndex);
+  if (returnIndex === -1) {
+    throw new Error(`could not find the returned literal of "${functionName}("`);
   }
+  const openBraceIndex = source.indexOf('{', returnIndex);
 
   let depth = 0;
   let closeBraceIndex = -1;
@@ -51,7 +53,7 @@ function extractPipelineInputKeys(source, callName) {
     }
   }
   if (closeBraceIndex === -1) {
-    throw new Error(`unbalanced braces reading "${callName}("'s argument object`);
+    throw new Error(`unbalanced braces reading "${functionName}("'s returned object`);
   }
 
   const objectBody = source.slice(openBraceIndex + 1, closeBraceIndex);
@@ -71,12 +73,12 @@ function extractPipelineInputKeys(source, callName) {
   return keys;
 }
 
-describe('advisor-selectors.ts and roster-dps.ts pass source-derived-equal keys to computeAdvisorPipeline', () => {
+describe('advisor-selectors.ts and roster-dps.ts build source-derived-equal inputs for computeAdvisorPipeline', () => {
   const rosterDpsSource = readFileSync(ROSTER_DPS_PATH, 'utf8');
   const advisorSelectorsSource = readFileSync(ADVISOR_SELECTORS_PATH, 'utf8');
 
-  const rosterDpsKeys = new Set(extractPipelineInputKeys(rosterDpsSource, 'computeAdvisorPipeline'));
-  const advisorSelectorsKeys = new Set(extractPipelineInputKeys(advisorSelectorsSource, 'computeAdvisorPipeline'));
+  const rosterDpsKeys = new Set(extractPipelineInputKeys(rosterDpsSource, 'advisorInputForHero'));
+  const advisorSelectorsKeys = new Set(extractPipelineInputKeys(advisorSelectorsSource, 'advisorInput'));
 
   it('both extractions actually found a real, non-trivial key set (sanity — otherwise this test proves nothing)', () => {
     expect(rosterDpsKeys.size).toBeGreaterThan(10);
