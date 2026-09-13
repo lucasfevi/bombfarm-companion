@@ -54,8 +54,18 @@ describe('ownAbilityReadout — the model’s own arithmetic read back', () => {
   });
 
   it('an unmodelled ability, or an unknown id, reads as none', () => {
-    expect(ownAbilityReadout('passagem_bastao', 10)).toEqual({ kind: 'none' });
+    expect(ownAbilityReadout('caca_hero', 10)).toEqual({ kind: 'none' });
     expect(ownAbilityReadout('not_an_ability', 10)).toEqual({ kind: 'none' });
+  });
+
+  it("Matilha reads as damage per ally, Passagem de Bastão as team damage on entering — neither off abilityMods' dmgMult", () => {
+    expect(ownAbilityReadout('matilha', 10)).toEqual({ kind: 'packDmgPctPerAlly', value: 5 });
+    expect(ownAbilityReadout('passagem_bastao', 10)).toEqual({ kind: 'teamPulseDmgPct', value: 40 });
+    expect(abilityMods({ matilha: 10, passagem_bastao: 10 }).dmgMult).toBe(1);
+  });
+
+  it('Brecha as a team aura reads in penetration points at the amount asked for', () => {
+    expect(teamAuraReadout('brecha', 20)).toEqual({ kind: 'penetrationPoints', value: 20 });
   });
 
   it('a team aura asked for as an own ability reads at its own rank in aura units', () => {

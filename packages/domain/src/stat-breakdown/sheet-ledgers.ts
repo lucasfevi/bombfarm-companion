@@ -120,7 +120,8 @@ export function ledgerPenetration(facts: PipelineFacts): StatBreakdown {
     facts.pts.penetration * POINT_GAIN.penetrationPctOfBase * 100,
     basePen,
   );
-  pushAdd(steps, 'abilities', facts.mods.penetrationPp);
+  // Brecha is a team aura, flat points like Presságio Mortal's — the full roster total, capped.
+  pushAdd(steps, 'team', facts.teamPenFlat, teamAddNote(facts.teamPenFlat, TEAM_BUFF_CAP.brecha));
   return { kind: 'ledger', total: facts.effective.penetration, steps };
 }
 

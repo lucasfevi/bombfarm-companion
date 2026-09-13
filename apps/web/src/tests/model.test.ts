@@ -150,7 +150,6 @@ describe('abilityMods', () => {
       pressagio_mortal: 4,
     });
     expect(m.drainMult).toBeCloseTo(0.95, 6);
-    expect(m.penetrationPp).toBe(0);
     expect(m.sheetPenetrationFlat).toBe(3);
     // FLAT crit points since the 2026-08-23 patch: 10 x 2.
     expect(m.sheetCritChanceFlat).toBeCloseTo(20, 6);
@@ -161,7 +160,6 @@ describe('abilityMods', () => {
     expect(abilityMods({ ponta_diamante: 0 }).sheetPenetrationFlat).toBe(0);
     expect(abilityMods({ ponta_diamante: 1 }).sheetPenetrationFlat).toBe(1);
     expect(abilityMods({ ponta_diamante: 20 }).sheetPenetrationFlat).toBe(20);
-    expect(abilityMods({ ponta_diamante: 10 }).penetrationPp).toBe(0);
   });
 
   it('models Explosão Ampla as +0.1 rangeCells per level, +2 at rank 20 (W3: 0.2 → 0.1)', () => {

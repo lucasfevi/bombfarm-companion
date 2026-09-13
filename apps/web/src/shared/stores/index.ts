@@ -21,6 +21,7 @@ export {
 export {
   selectAccountShared,
   selectActiveHeroAccount,
+  selectActiveHeroFieldAllies,
   selectAccountTuple,
   selectTreeDanoTotal,
   selectTreeCritChance,

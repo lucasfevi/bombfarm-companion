@@ -33,7 +33,7 @@ import {
 } from '@bombfarm/domain/team-plan/farm-objective';
 import { buildHeroPlanContexts } from '@bombfarm/domain/team-plan/hero-context';
 import { createScoreMemo, scoreHeroLoadout } from '@bombfarm/domain/team-plan/score';
-import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
+import { TEAM_BUFF_ABILITY_IDS, zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import { runTeamPlan } from '@bombfarm/domain/team-plan';
 import type { Loadout, PointAlloc } from '@bombfarm/domain/gear/types';
 import type {
@@ -79,14 +79,9 @@ const GAIN_CAPTURES = [
 // one-line re-point, and a red is what prompts it.
 for (const file of GAIN_CAPTURES) assertInRegime(`sheet-math/${file}`, 'sheet');
 
-/** Every ability the team-aura pricing reads. Strip all four and the aura vector is all-zero,
+/** Every ability the team-aura pricing reads. Strip them all and the aura vector is all-zero,
  *  which is the state under which two differently-contexted score keys can collide. */
-const TEAM_AURA_ABILITIES = [
-  'grito_guerra',
-  'pressagio_mortal',
-  'marcha_acelerada',
-  'folego_mineiro',
-];
+const TEAM_AURA_ABILITIES = [...TEAM_BUFF_ABILITY_IDS];
 
 type Bridged = {
   objective: TeamPlanFarmObjective;

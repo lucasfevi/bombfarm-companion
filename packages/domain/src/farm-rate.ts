@@ -34,7 +34,7 @@
  *
  * TEAM AURAS ARE PRICED OVER THE ROTATION, NOT OFF THE DEPLOYED LINE-UP. This board rotates a
  * whole pool through the House for hours, so a carrier supplies its aura only for its own share
- * of wall clock. {@link computeHeroFarmBases} therefore derives the four combat auras from the
+ * of wall clock. {@link computeHeroFarmBases} therefore derives the standing combat auras from the
  * ENABLED POOL's own ability ranks, weighted by each hero's uptime
  * (`computeTeamBuffsOverRotation`), and pays a second pipeline pass per hero to do it; the
  * caller's account carries no aura total at all ({@link FarmAccount}). Reading a snapshot of the
@@ -81,9 +81,15 @@ import {
   fieldSeconds,
   HOP_FIT_ATO,
   cycleSecondsForHero,
+  alliesOverRotation,
+  matilhaMult,
+  passagemBastaoFieldPulse,
+  passagemBastaoPresence,
   type Context,
   type HeroSheet,
   type EffectiveDeltas,
+  type PassagemBastaoCarrier,
+  type PassagemBastaoFieldPulse,
 } from './model';
 import { atoIndex } from './model/cadence';
 export {
@@ -220,6 +226,18 @@ export type HeroFarmFacts = {
   blocksPerBomb: number;
   /** House duty cycle as a FRACTION 0..1 (the pipeline reports this as a percent). */
   uptime: number;
+  /**
+   * This hero's Passagem de Bastão, when it carries one: the rank, and the share of wall clock
+   * its entry pulse keeps the whole field lit ({@link passagemBastaoPresence}, at this hero's own
+   * stint length and duty). Reads {@link uptime} as the duty, the same unconstrained `F/(F+T)`
+   * the auras' presence weights use; a House that binds only lengthens the cycle, which the
+   * cooldown term is already saturated against. The squad folds every carrier into one
+   * {@link SquadFarmFacts.entryPulse}.
+   *
+   * OPTIONAL, and absent means not a carrier, so a hand-built `HeroFarmFacts` prices as it
+   * always has. `computeHeroFarmFacts` populates it for every carrier.
+   */
+  passagemBastao?: PassagemBastaoCarrier;
   /** Hero-only Sorte in PERCENTAGE POINTS — the tree's flat share peeled out. */
   heroLuckPct: number;
   /** `abilities.veia_ouro`, clamped to `[0, ABILITY_LEVEL_MAX]`. */
@@ -285,13 +303,15 @@ export type HeroFarmBasis = {
   /** The hero's farm `Context`. `drainMult`, `restSeconds` and `blastRange` are read;
    *  `mitigation` is 0 here and is never read — the row layer applies phase mitigation. */
   context: Context;
-  /** Ability/team damage multiplier — build-independent. */
+  /** Ability damage multiplier, Matilha's pack factor at the field the basis was priced for
+   *  included — a function of the abilities and the field size, never of gear or points. */
   dmgMult: number;
   /** Hero-only Sorte, PERCENTAGE POINTS. Frozen: luck is outside the reallocatable budget. */
   heroLuckPct: number;
   /** Clamped ability levels — build-independent. */
   veiaOuroLevel: number;
   fortunaLevel: number;
+  passagemBastaoLevel: number;
   /** `1 + 0.5 × context.blastRange` — ability-driven, build-independent, precomputed. */
   blocksPerBomb: number;
   /**
@@ -304,15 +324,18 @@ export type HeroFarmBasis = {
 };
 
 /**
- * One hero's pipeline terms with the team auras held at zero — the base the aura layer is applied
- * to. `selfDrainMult` is the hero's own drain reduction (Bateria Extra) — the pipeline's own
- * input to {@link combineDrainRate}, kept so Fôlego can be combined with it per candidate.
+ * One hero's pipeline terms with the team auras held at zero and the hero alone on the field —
+ * the base the aura layer is applied to. `selfDrainMult` is the hero's own drain reduction
+ * (Bateria Extra) — the pipeline's own input to {@link combineDrainRate}, kept so Fôlego can be
+ * combined with it per candidate. `dmgMult` is the pipeline's with no ally beside the hero, so
+ * Matilha's pack factor can be priced at the field each candidate assignment sustains.
  */
 export type AuraFreeFarmTerms = {
   effective: HeroSheet;
   effectiveDelta: EffectiveDeltas;
   context: Context;
   selfDrainMult: number;
+  dmgMult: number;
   abilities: Record<string, number>;
 };
 
@@ -357,23 +380,24 @@ export function heroFarmBasisFromParts(parts: HeroFarmBasisParts): HeroFarmBasis
     heroLuckPct: Math.max(0, parts.adjustedLuckPct - parts.treeLuckFlatPct),
     veiaOuroLevel: clampAbilityLevel(parts.abilities.veia_ouro ?? 0),
     fortunaLevel: clampAbilityLevel(parts.abilities.fortuna ?? 0),
+    passagemBastaoLevel: clampAbilityLevel(parts.abilities.passagem_bastao ?? 0),
     blocksPerBomb: 1 + 0.5 * parts.context.blastRange,
     ...(parts.auraFree ? { auraFree: parts.auraFree } : {}),
   };
 }
 
 /**
- * One `pipelineForHero` call per enabled hero, with every team aura OFF. Order follows `heroes`.
- * The bases come back at the identity aura layer, carrying their aura-free terms;
- * {@link computeHeroFarmBases} prices the layer on afterwards. Whatever `teamBuffs` the caller's
- * account carries is not read.
+ * One `pipelineForHero` call per enabled hero, with every team aura OFF and no ally on the field.
+ * Order follows `heroes`. The bases come back at the identity aura layer, carrying their
+ * aura-free terms; {@link computeHeroFarmBases} prices the layer on afterwards. Whatever
+ * `teamBuffs` or `fieldAllies` the caller's account carries is not read.
  */
 function auraFreeBasesForAccount(
   enabledHeroes: readonly HeroRecord[],
   account: FarmAccount,
 ): HeroFarmBasis[] {
   const treeLuckFlatPct = account.tree.luckFlatPct ?? 0;
-  const auraFreeAccount: AccountShared = { ...account, teamBuffs: zeroTeamBuffs() };
+  const auraFreeAccount: AccountShared = { ...account, teamBuffs: zeroTeamBuffs(), fieldAllies: 0 };
 
   return enabledHeroes.map((hero) => {
     // The sole HeroRecord entry to the pipeline. phase=1 (not null) + mitigationPct=0
@@ -398,35 +422,45 @@ function auraFreeBasesForAccount(
         effectiveDelta: pipeline.A.effectiveDelta,
         context: pipeline.context,
         selfDrainMult: abilityMods(hero.abilities).drainMult,
+        dmgMult: pipeline.dmgMult,
         abilities: hero.abilities,
       },
     });
   });
 }
 
+/** The rotation's aura totals and, per hero, the allies Matilha sees beside it — one priced
+ *  field for one candidate assignment. */
+type FieldLayer = {
+  teamBuffs: Record<TeamBuffId, number>;
+  alliesByHeroId: ReadonlyMap<string, number>;
+};
+
 /**
- * What the four team auras do to one hero's pipeline terms, in closed form. The pipeline applies
- * them as the LAST step of `derive`: Grito multiplies attack (and so the attack per point), Marcha
- * multiplies speed (and its delta), Presságio adds flat crit points, and Fôlego combines with the
- * hero's own drain reduction ({@link combineDrainRate}) — nothing else in the sheet or the farm
- * `Context` reads them. Applying the same four operations to the aura-free terms reproduces the
- * pipeline's output bit for bit, which is what lets a candidate assignment be priced with its
- * own aura totals at zero pipeline calls.
+ * What the team auras and the field size do to one hero's pipeline terms, in closed form. The
+ * pipeline applies the auras as the LAST step of `derive`: Grito multiplies attack (and so the
+ * attack per point), Marcha multiplies speed (and its delta), Presságio adds flat crit points,
+ * Brecha adds flat penetration points, and Fôlego combines with the hero's own drain reduction
+ * ({@link combineDrainRate}) — nothing else in the sheet or the farm `Context` reads them.
+ * Matilha's pack factor multiplies `dmgMult` at the allies the rotation keeps beside the
+ * carrier. Applying the same operations to the aura-free terms reproduces the pipeline's output
+ * bit for bit, which is what lets a candidate assignment be priced with its own field at zero
+ * pipeline calls.
  */
-function priceAuraLayer(
-  basis: HeroFarmBasis,
-  teamBuffs: Record<TeamBuffId, number>,
-): HeroFarmBasis {
+function priceAuraLayer(basis: HeroFarmBasis, field: FieldLayer): HeroFarmBasis {
   const base = basis.auraFree;
   if (base === undefined) return basis;
-  const mults = teamAuraLayer(teamBuffs);
+  const mults = teamAuraLayer(field.teamBuffs);
+  const packRatePerAlly = abilityMods(base.abilities).packDmgPctPerAlly / 100;
   return {
     ...basis,
+    dmgMult: base.dmgMult * matilhaMult(packRatePerAlly, field.alliesByHeroId.get(basis.heroId) ?? 0),
     effective: {
       ...base.effective,
       attack: base.effective.attack * mults.attackMult,
       speed: base.effective.speed * mults.speedMult,
       critChance: base.effective.critChance + mults.teamCritFlat,
+      penetration: base.effective.penetration + mults.teamPenFlat,
       attackPerPoint: base.effective.attackPerPoint * mults.attackMult,
     },
     effectiveDelta: {
@@ -463,22 +497,34 @@ function hasAuraFreeTerms(basis: HeroFarmBasis): basis is HeroFarmBasis & { aura
   return basis.auraFree !== undefined;
 }
 
+/** `account.fieldSlots ?? account.slots ?? DEFAULT_CASA_SLOTS` — see {@link SquadFarmFacts.fieldSlots}
+ *  for why the House-slot rung is a back-compat fallback rather than a synonym. */
+function resolveFieldSlots(account: Pick<AccountShared, 'slots' | 'fieldSlots'>): number {
+  return account.fieldSlots ?? account.slots ?? DEFAULT_CASA_SLOTS;
+}
+
 /**
- * The rotation-weighted aura totals for a candidate assignment over bases that carry their
- * aura-free terms — the same two-step pricing {@link computeHeroFarmBases} documents, as pure
- * scalar math: presence at the pool's at-best total, then the totals at those presences.
+ * The rotation-weighted field for a candidate assignment over bases that carry their aura-free
+ * terms — the same two-step pricing {@link computeHeroFarmBases} documents, as pure scalar math:
+ * presence at the pool's at-best total, then the aura totals at those presences, and from the
+ * same presences each carrier's Matilha allies ({@link alliesOverRotation}).
  */
-function priceTeamBuffsForAssignment(
+function priceFieldForAssignment(
   bases: readonly (HeroFarmBasis & { auraFree: AuraFreeFarmTerms })[],
   ptsByHeroId: ReadonlyMap<string, Record<SheetKey, number>> | null,
-): Record<TeamBuffId, number> {
+  fieldSlots: number,
+): FieldLayer {
   const carriers = bases.map((basis) => ({ abilities: basis.auraFree.abilities }));
   const atFullPresence = computeTeamBuffsOverRotation(carriers, null);
   const atFullPresenceDrainMult = teamDrainMultFromTeamBuffs(atFullPresence);
   const presence = bases.map((basis) =>
     presenceAt(basis, basis.auraFree, ptsByHeroId?.get(basis.heroId) ?? basis.pts, atFullPresenceDrainMult),
   );
-  return computeTeamBuffsOverRotation(carriers, presence);
+  const alliesByHeroId = new Map<string, number>();
+  bases.forEach((basis, index) => {
+    alliesByHeroId.set(basis.heroId, alliesOverRotation(presence, index, fieldSlots));
+  });
+  return { teamBuffs: computeTeamBuffsOverRotation(carriers, presence), alliesByHeroId };
 }
 
 /**
@@ -530,7 +576,8 @@ function priceTeamBuffs(
   enabledHeroes: readonly HeroRecord[],
   account: FarmAccount,
 ): Record<TeamBuffId, number> {
-  return priceTeamBuffsForAssignment(auraFreeBasesForAccount(enabledHeroes, account).filter(hasAuraFreeTerms), null);
+  const bases = auraFreeBasesForAccount(enabledHeroes, account).filter(hasAuraFreeTerms);
+  return priceFieldForAssignment(bases, null, resolveFieldSlots(account)).teamBuffs;
 }
 
 /**
@@ -563,8 +610,8 @@ export function computeHeroFarmBases(input: FarmFactsInput): HeroFarmBasis[] {
   const { heroes, account, enabledHeroIds } = input;
   const enabledHeroes = resolveEnabledHeroes(heroes, enabledHeroIds);
   const auraFreeBases = auraFreeBasesForAccount(enabledHeroes, account).filter(hasAuraFreeTerms);
-  const teamBuffs = priceTeamBuffsForAssignment(auraFreeBases, null);
-  return auraFreeBases.map((basis) => priceAuraLayer(basis, teamBuffs));
+  const field = priceFieldForAssignment(auraFreeBases, null, resolveFieldSlots(account));
+  return auraFreeBases.map((basis) => priceAuraLayer(basis, field));
 }
 
 /**
@@ -600,6 +647,10 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
   const plantsPerSec = plantsPerSecByAto[HOP_FIT_ATO - 1];
   const field = fieldSeconds(sheet, basis.context);
   const uptime = (100 * field) / (field + basis.context.restSeconds) / 100;
+  const passagemBastao =
+    basis.passagemBastaoLevel > 0
+      ? { rank: basis.passagemBastaoLevel, presence: passagemBastaoPresence(field, uptime) }
+      : undefined;
   const degenerate = !(avgHitBase > 0) || !(plantsPerSec > 0);
 
   const facts: HeroFarmFacts = {
@@ -620,6 +671,7 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
     veiaOuroLevel: basis.veiaOuroLevel,
     fortunaLevel: basis.fortunaLevel,
     degenerate,
+    ...(passagemBastao ? { passagemBastao } : {}),
   };
   return facts;
 }
@@ -641,8 +693,8 @@ export function squadFactsFromBases(
 ): SquadFarmFacts {
   const priced = bases.every(hasAuraFreeTerms)
     ? (() => {
-        const teamBuffs = priceTeamBuffsForAssignment(bases, ptsByHeroId);
-        return bases.map((basis) => priceAuraLayer(basis, teamBuffs));
+        const field = priceFieldForAssignment(bases, ptsByHeroId, resolveFieldSlots(account));
+        return bases.map((basis) => priceAuraLayer(basis, field));
       })()
     : bases;
   const heroFacts = priced.map((basis) => heroFactsFromBasis(basis, ptsByHeroId?.get(basis.heroId) ?? basis.pts));
@@ -706,6 +758,14 @@ export type SquadFarmFacts = {
    * phase-independent keeps it out of `buildRow`'s per-phase loop.
    */
   meanFuseSecs: number;
+  /**
+   * Passagem de Bastão over the whole pool — the field's damage multiplier by level and the share
+   * of wall clock it holds each ({@link passagemBastaoFieldPulse}). A team aura that is up in
+   * pulses, so it is priced as the auras are: each carrier's pulse present for its own share of
+   * wall clock, overlaps summed and capped inside the expectation. Phase-independent, hence on
+   * the squad; the row layer prices every hero's hit through every level.
+   */
+  entryPulse: PassagemBastaoFieldPulse;
   /** `1 + max(0, tree.teamCoinPct) / 100`. */
   teamCoinMult: number;
   /** `tree.luckFlatPct ?? 0`, percentage points — echoed for the board's breakdown tooltip. */
@@ -744,7 +804,7 @@ export function computeSquadFarmFacts(
   account: SquadFarmAccount,
 ): SquadFarmFacts {
   const houseSlots = account.slots ?? DEFAULT_CASA_SLOTS;
-  const fieldSlots = account.fieldSlots ?? account.slots ?? DEFAULT_CASA_SLOTS;
+  const fieldSlots = resolveFieldSlots(account);
   const uptimeSum = heroFacts.reduce((sum, hero) => sum + hero.uptime, 0);
   const houseSlotDemandSum = heroFacts.reduce((sum, hero) => sum + houseSlotDemand(hero), 0);
   const treeLuckFlatPct = account.tree.luckFlatPct ?? 0;
@@ -754,6 +814,10 @@ export function computeSquadFarmFacts(
 
   const fuseWeightedSum = heroFacts.reduce((sum, hero) => sum + hero.uptime * hero.fuseSecs, 0);
   const meanFuseSecs = uptimeSum > 0 ? fuseWeightedSum / uptimeSum : 0;
+
+  const entryPulse = passagemBastaoFieldPulse(
+    heroFacts.flatMap((hero) => (hero.passagemBastao ? [hero.passagemBastao] : [])),
+  );
 
   const teamCoinMult = 1 + Math.max(0, account.tree.teamCoinPct ?? 0) / 100;
 
@@ -768,6 +832,7 @@ export function computeSquadFarmFacts(
     houseSlotDemand: houseSlotDemandSum,
     sorteFraction,
     meanFuseSecs,
+    entryPulse,
     teamCoinMult,
     treeLuckFlatPct,
     xpMult,
@@ -996,6 +1061,25 @@ function hitsPerSec(hero: HeroFarmFacts, ato: number): number {
   return plantsPerSecForAto(hero, ato) * hero.blocksPerBomb * EFF_IA;
 }
 
+/**
+ * Hits per kill as the hero's prop RATE sees them over a field that sits at each pulse level for
+ * its share of wall clock: the rate is `hps × Σ_level p / htk(hit × mult)`, so the single figure
+ * the rate divides by is that harmonic blend. Every level goes through the hits-to-kill step on
+ * its own hit — a time-averaged hit would credit a threshold the field crosses at no level it
+ * actually sits at. A pool without a carrier has the one level at ×1 and returns the step's own
+ * figure untouched: it must price bit for bit as it did before the pulse existed.
+ */
+function pulseBlendedHtk(
+  pulse: PassagemBastaoFieldPulse,
+  standingHit: number,
+  htkFor: (hit: number) => number,
+): number {
+  if (pulse.levels.length === 1) return htkFor(standingHit * pulse.levels[0].mult);
+  let rateShare = 0;
+  for (const level of pulse.levels) rateShare += level.probability / htkFor(standingHit * level.mult);
+  return 1 / rateShare;
+}
+
 // ---------------------------------------------------------------------------------------------
 // Module-load prop table — phase-independent, computed once, frozen.
 // ---------------------------------------------------------------------------------------------
@@ -1151,14 +1235,21 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   const perHero = squad.heroes.map((hero) => {
     const mitF = mitigationFactor(line.mitig, hero.penetrationPct);
     const avgHit = hero.avgHitBase * mitF;
-    const eHtk = PROP_SHARES.reduce(
-      (sum, prop) => sum + prop.share * hitsToKill(avgHit, propHp(line.hp, prop.hpMult)),
-      0,
+    const pulse = squad.entryPulse;
+    const eHtk = pulseBlendedHtk(pulse, avgHit, (hit) =>
+      PROP_SHARES.reduce(
+        (sum, prop) => sum + prop.share * hitsToKill(hit, propHp(line.hp, prop.hpMult)),
+        0,
+      ),
     );
-    const bossHtk = hitsToKill(avgHit, propHp(line.hp, BOSS_HP_MULT_WIKI));
+    const bossHtk = pulseBlendedHtk(pulse, avgHit, (hit) =>
+      hitsToKill(hit, propHp(line.hp, BOSS_HP_MULT_WIKI)),
+    );
     const hps = hitsPerSec(hero, line.ato);
     return {
-      avgHit,
+      // The hit the hero lands at the LOWEST level the field ever sits at. `oneShot` reads this:
+      // a hero that one-shots only while a pulse is up is not a one-shot hero.
+      floorHit: avgHit * pulse.levels[0].mult,
       eHtk,
       fullTerm: (hps * hero.uptime) / eHtk,
       fullBossTerm: (hps * hero.uptime) / bossHtk,
@@ -1251,7 +1342,7 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   const xpPerHour = propsPerHour * xpPerProp(line.phase) * squad.xpMult * bonus;
 
   const maxPropHp = line.hp * MAX_PROP_HP_MULT;
-  const oneShot = perHero.length > 0 && perHero.every((hero) => hero.avgHit >= maxPropHp);
+  const oneShot = perHero.length > 0 && perHero.every((hero) => hero.floorHit >= maxPropHp);
   const gateTimerSecs = line.gate ? (GATE_SECS_POR_ATO[line.ato - 1] ?? null) : null;
   const infeasible =
     (line.gate && gateTimerSecs != null && clearSecs > gateTimerSecs) ||

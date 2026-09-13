@@ -27,6 +27,8 @@ const UNIT_KEY: Record<ReadoutKind, keyof HeroCopy> = {
   rangeCells: 'heroDetailAuraUnitRange',
   dmgMult: 'heroDetailAuraUnitDmgMult',
   gateAttackPct: 'heroDetailAuraUnitGateAttack',
+  packDmgPctPerAlly: 'heroDetailAuraUnitPackPerAlly',
+  teamPulseDmgPct: 'heroDetailAuraUnitPulse',
 };
 
 /** Marcha's per-level step is 0.185%, a multiplier lands on 1.09, a radius on 1.0; the rest move
@@ -41,6 +43,8 @@ const UNIT_DECIMALS: Record<ReadoutKind, number> = {
   rangeCells: 1,
   dmgMult: 2,
   gateAttackPct: 0,
+  packDmgPctPerAlly: 1,
+  teamPulseDmgPct: 0,
 };
 
 const STATUS_KEY: Record<OwnAbilityStatus, keyof HeroCopy> = {

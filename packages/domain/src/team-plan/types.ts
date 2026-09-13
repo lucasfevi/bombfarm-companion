@@ -158,6 +158,12 @@ export type RosterEvaluation = {
   perHero: Record<string, HeroScore>;
   auras: Record<TeamBuffId, number>;
   /**
+   * Passagem de Bastão over the rotation in the last round, as the expected field-wide damage
+   * multiplier every `perHero` DPS figure was scaled by — `1` without a fielded carrier.
+   * `screenRosterObjective` prices its candidates against this incumbent figure.
+   */
+  entryPulseMult: number;
+  /**
    * The duty every fielded hero's aura was weighted by in the last round — the optimize heroes'
    * from `perHero`, plus the leave-alone heroes', which `perHero` does not carry because nothing
    * they score reaches the objective. `screenRosterObjective` prices its candidates off this map.
@@ -228,10 +234,10 @@ export type TeamPlanAccountInput = {
 /**
  * The build-independent half of one hero's farm basis, extracted once per run.
  *
- * `dmgMult` and the two loot ability levels are functions of the hero's abilities and the frozen
- * team auras alone — no gear, no points — so they survive every candidate the search tries. The
- * build-DEPENDENT half (the effective sheet, its per-point deltas, and the farm `Context`) comes
- * from the scorer per evaluation and is combined with this.
+ * `dmgMult` and the two loot ability levels are functions of the hero's abilities, the frozen
+ * team auras and the frozen field size alone — no gear, no points — so they survive every
+ * candidate the search tries. The build-DEPENDENT half (the effective sheet, its per-point
+ * deltas, and the farm `Context`) comes from the scorer per evaluation and is combined with this.
  */
 export type FrozenHeroFarmTerms = {
   /** The very `HeroPlanContext` the run was built from — fixed for a whole `runTeamPlan`, which

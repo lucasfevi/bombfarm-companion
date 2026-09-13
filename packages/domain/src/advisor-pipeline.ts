@@ -8,10 +8,13 @@ import {
   fuseSeconds,
   FUSE_FLOOR,
   STAT_CAPS,
+  passagemBastaoFieldPulse,
+  passagemBastaoPresence,
   type AbilityMods,
   type Context,
   type HeroSheet,
   type PointValue,
+  type PassagemBastaoFieldPulse,
   type RankMode,
   type RarityKey,
 } from './model';
@@ -67,6 +70,12 @@ export type AdvisorPipelineInput = {
   /** `skills.totals.luck_add × 100` — flat Luck percentage points. */
   treeLuckFlatPct: number;
   teamBuffs: Record<TeamBuffId, number>;
+  /**
+   * Other heroes on the field beside this one — Matilha's allies. Per-call like `teamBuffs`: a
+   * per-hero screen counts the deployed heroes other than the hero (the hero is on the field by
+   * definition), a rotating board derives its own from the pool's uptimes. Absent reads as none.
+   */
+  fieldAllies?: number;
   houseIdx: number;
   houseLevel: number;
   /**
@@ -116,6 +125,19 @@ export type AdvisorPipelineResult = {
   energyMult: number;
   speedMult: number;
   teamCritFlat: number;
+  teamPenFlat: number;
+  /** Matilha's pack factor inside `dmgMult`, at `fieldAllies`. */
+  packMult: number;
+  /** The allies `packMult` was priced at — echoed so a breakdown can name the field size. */
+  fieldAllies: number;
+  /**
+   * The hero's OWN Passagem de Bastão as a pulse over its own rotation cycle — up for
+   * `passagemBastaoPresence(fieldSecs, uptime)` of wall clock at `1 + 0.04 × rank`, and the
+   * standing `×1` the rest. `[{ mult: 1, probability: 1 }]` for a hero without the ability.
+   * `dps` and `active` below already carry its expectation; the hits do not — a hit is a step
+   * the Farm board prices per level, and this screen prints the standing one.
+   */
+  entryPulse: PassagemBastaoFieldPulse;
   /** The whole skill tree, once — surfaced for Wave 6's breakdown. */
   treeSheet: TreeSheetTotals;
   A: DeriveResult;
@@ -163,6 +185,18 @@ export type AdvisorPipelineResult = {
   gateRows: GateRow[];
   resetAdvice: ResetAdvice;
 };
+
+/**
+ * The hero's own Passagem de Bastão on its own screen: one carrier, its own stint, the same rule
+ * the Farm board and the Optimizer price every carrier with (`passagemBastaoFieldPulse`). The
+ * other carriers' pulses are not counted here — a per-hero screen has no stint for them, the
+ * rotating surfaces do — so this is the "own aura always on" half of the per-hero form and
+ * nothing more.
+ */
+function ownEntryPulse(rank: number, fieldSecs: number, duty: number): PassagemBastaoFieldPulse {
+  if (!(rank > 0) || !(fieldSecs > 0) || !(duty > 0)) return passagemBastaoFieldPulse([]);
+  return passagemBastaoFieldPulse([{ rank, presence: passagemBastaoPresence(fieldSecs, duty) }]);
+}
 
 /**
  * Pure advisor math: derive A/B, expected sheet, point ranking, energy switch,
@@ -228,10 +262,12 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     runes,
   });
 
+  const fieldAllies = input.fieldAllies ?? 0;
   const mults = computeCombatMults({
     mods,
     teamBuffs,
     extraDmgPct: 0,
+    fieldAllies,
   });
   const {
     attackMult,
@@ -239,7 +275,9 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     gateAttackMult,
     energyMult,
     teamCritFlat,
+    teamPenFlat,
     teamDrainMult,
+    packMult,
     dmgMult,
   } = mults;
 
@@ -268,7 +306,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     speedMult,
     teamCritFlat,
     treeSheet,
-    penetrationPp: mods.penetrationPp,
+    penetrationPp: teamPenFlat,
     context,
     dmgMult,
     mitigationPct: mitPct,
@@ -277,8 +315,11 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
 
   const equippedResult = derive({ ...deriveArgs, geared: gearedForDerive });
   const { delta: pointDelta, adjusted, effective } = equippedResult;
-  const dps = equippedResult.dps;
-  const active = equippedResult.active;
+  const field = fieldSeconds(effective, context);
+  const uptime = (100 * field) / (field + rest);
+  const entryPulse = ownEntryPulse(abilities.passagem_bastao ?? 0, field, uptime / 100);
+  const dps = equippedResult.dps * entryPulse.expectedMult;
+  const active = equippedResult.active * entryPulse.expectedMult;
   const predHit = equippedResult.hit;
   // Birth-backed: recompose clone from birth (same path as Apply to current).
   // Without birth: project the observed sheet so typed drift stays a 0% delta
@@ -299,7 +340,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
         }),
       })
     : null;
-  const bDiff = cloneResult ? (cloneResult.dps / dps - 1) * 100 || 0 : 0;
+  const bDiff = cloneResult ? ((cloneResult.dps * entryPulse.expectedMult) / dps - 1) * 100 || 0 : 0;
   const bHitDiff = cloneResult ? (cloneResult.hit / predHit - 1) * 100 || 0 : 0;
 
   const line = phaseLine(farmPhase);
@@ -318,8 +359,6 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   const eSwitch = energySwitchPoint(effective, context);
   const best = ranking[0];
   const spentDelta = spentPointsOf(pts);
-  const field = fieldSeconds(effective, context);
-  const uptime = (100 * field) / (field + rest);
 
   const mitF = mitigationFactor(mitPct / 100, effective.penetration);
   const predCrit = predHit * (1 + effective.critDmg / 100);
@@ -373,6 +412,10 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     energyMult,
     speedMult,
     teamCritFlat,
+    teamPenFlat,
+    packMult,
+    fieldAllies,
+    entryPulse,
     treeSheet,
     A: equippedResult,
     B: cloneResult,

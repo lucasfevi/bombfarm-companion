@@ -106,7 +106,7 @@ function realHeroDerive(file: string, name: string, level: number) {
     speedMult: mults.speedMult,
     teamCritFlat: mults.teamCritFlat,
     treeSheet: tree,
-    penetrationPp: mods.penetrationPp,
+    penetrationPp: mults.teamPenFlat,
     context,
     dmgMult: mults.dmgMult,
     mitigationPct: 6.7,

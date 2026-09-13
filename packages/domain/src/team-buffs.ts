@@ -2,25 +2,27 @@ import { ABILITIES } from './model';
 import type { HeroRecord } from './shims/storage';
 
 /**
- * The team auras this planner MODELS — not every `team_*`-kind ability the wiki lists.
- * `contra_relogio` ("Contra o Relógio") is excluded on purpose: the wiki's own `kind` prefix
- * (`gate_power`, not `team_*`), its "Só ele" scope column, and this catalog's `effectText`
- * (missing the "do TIME" every genuine aura below carries) all agree it is self-scoped, not a
- * team aura. `fortuna`/`brecha` are genuine `team_gold`/`team_pen` auras missing from this list,
- * but both carry `effect: { kind: 'none' }` and nothing downstream reads them —
- * adding them here would be new modelling, not a fix.
+ * The STANDING team auras this planner models — the ones a hero's sheet carries as a multiplier
+ * or an addend for as long as a carrier is on the field. Not every `team_*`-kind ability the
+ * wiki lists: `contra_relogio` ("Contra o Relógio") is excluded on purpose — the wiki's own
+ * `kind` prefix (`gate_power`, not `team_*`), its "Só ele" scope column, and this catalog's
+ * `effectText` (missing the "do TIME" every genuine aura below carries) all agree it is
+ * self-scoped. `fortuna` is a genuine `team_gold` aura priced by the farm board's loot layer,
+ * not the sheet. `passagem_bastao` is a team aura too, but one that is up in PULSES rather than
+ * standing, so it has its own rule (`model/passagem-bastao.ts`) instead of a slot here.
  */
 export const TEAM_BUFF_ABILITY_IDS = [
   'grito_guerra',
   'pressagio_mortal',
   'marcha_acelerada',
   'folego_mineiro',
+  'brecha',
 ] as const;
 
 export type TeamBuffId = (typeof TEAM_BUFF_ABILITY_IDS)[number];
 
 /**
- * `ABILITIES` lookup for the four team buffs, resolved once at module load.
+ * `ABILITIES` lookup for the standing team buffs, resolved once at module load.
  *
  * The linear `ABILITIES.find` this replaces ran per buff id per aura computation — 14% of a
  * team-plan run's CPU by profile, since `computeRosterAuras` is called once per hero per
@@ -36,17 +38,19 @@ export const TEAM_BUFF_PER_LEVEL: Record<TeamBuffId, number> = Object.fromEntrie
 
 /**
  * Each aura's own maximum — the confirmed field-wide cap every carrier's COMBINED rank clamps
- * at (two rank-20 Fôlego carriers give -20%, same as one rank-20 carrier alone). For these four
+ * at (two rank-20 Fôlego carriers give -20%, same as one rank-20 carrier alone). For these five
  * abilities this equals `max rank (20) × perLevel`, but is stored as a literal per ability
  * rather than computed from that formula: `matilha`'s published cap
  * (`combate.pack_dmg_cap: 0.9`) does NOT follow it, so `max × perLevel` is a reading, not a law
- * safe to lean on for an ability not yet checked against the wiki's own cap field.
+ * safe to lean on for an ability not yet checked against the wiki's own cap field. Brecha's 20 is
+ * the wiki's own "+20 no teto" (2026-09-13).
  */
 export const TEAM_BUFF_CAP: Record<TeamBuffId, number> = {
   grito_guerra: 20,
   pressagio_mortal: 20,
   marcha_acelerada: 3.7,
   folego_mineiro: 20,
+  brecha: 20,
 };
 
 export function zeroTeamBuffs(): Record<TeamBuffId, number> {
@@ -55,6 +59,7 @@ export function zeroTeamBuffs(): Record<TeamBuffId, number> {
     pressagio_mortal: 0,
     marcha_acelerada: 0,
     folego_mineiro: 0,
+    brecha: 0,
   };
 }
 
@@ -64,6 +69,7 @@ export const TEAM_BUFF_FIELDS = [
   { id: 'pressagio_mortal', label: 'Presságio Mortal', hint: 'Crit pts', step: 1 },
   { id: 'marcha_acelerada', label: 'Marcha Acelerada', hint: 'Speed %', step: 0.1 },
   { id: 'folego_mineiro', label: 'Fôlego de Mineiro', hint: 'Drain −%', step: 1 },
+  { id: 'brecha', label: 'Brecha', hint: 'Pen pts', step: 1 },
 ] as const satisfies readonly { id: TeamBuffId; label: string; hint: string; step: number }[];
 
 /**
@@ -286,6 +292,19 @@ export function computeTeamBuffsAroundHero(
   const out = zeroTeamBuffs();
   for (const buffId of TEAM_BUFF_ABILITY_IDS) out[buffId] = around[buffId].pricedAt;
   return out;
+}
+
+/**
+ * The field one hero's own screen prices it on, counted as allies: the DEPLOYED heroes other
+ * than the hero itself. The hero is on the field by definition — whether or not the game has it
+ * deployed right now — so it is never counted among its own allies, and nobody else's flag is
+ * read but `deployed`. Matilha's input on a per-hero screen (`AccountShared.fieldAllies`).
+ */
+export function fieldAlliesAroundHero(
+  hero: Pick<HeroRecord, 'id'>,
+  roster: readonly Pick<HeroRecord, 'id' | 'deployed'>[],
+): number {
+  return roster.filter((other) => other.id !== hero.id && other.deployed === true).length;
 }
 
 /**

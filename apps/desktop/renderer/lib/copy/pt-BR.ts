@@ -609,7 +609,7 @@ export const ptBR: Copy = {
   heroesPhaseUnknownTitle: 'Esta não é uma fase que o app conhece',
   heroesPhaseUnknownDescription: 'Escolha uma fase que o jogo tenha de verdade, e os números voltam.',
   heroesEffectiveTitle: 'Atributos efetivos',
-  heroesEffectiveTip: 'Inclui equipamento, pontos, árvore, habilidades e as auras de time ligadas abaixo.',
+  heroesEffectiveTip: 'Inclui equipamento, pontos, árvore, habilidades e as auras de time ligadas abaixo. Passagem de Bastão conta o pulso do próprio herói no tempo em campo dele; os pulsos dos outros portadores entram nas telas Farm e Otimizador. Matilha conta os heróis em campo ao lado deste.',
   heroesEffectiveGroupSheet: 'Stats da ficha',
   heroesEffectiveGroupDerived: 'Combate derivado',
   heroesEffectiveTriggerAria: 'Ver detalhamento de {stat}',

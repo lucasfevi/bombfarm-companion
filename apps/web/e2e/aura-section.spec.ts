@@ -9,7 +9,7 @@ import { importedRoster, seedLocalStorage, selectSavedHero } from './fixtures/se
  * War Cry and Miner's Breath are the auras asserted on. The seed roster stores crit in save
  * units, so Deadly Omen's delta is not a figure to pin here.
  */
-const TEAM_AURA_IDS = ['grito_guerra', 'pressagio_mortal', 'marcha_acelerada', 'folego_mineiro'] as const;
+const TEAM_AURA_IDS = ['grito_guerra', 'pressagio_mortal', 'marcha_acelerada', 'folego_mineiro', 'brecha'] as const;
 
 /** Lorne carries War Cry at rank 12; Cora carries no team aura at all. */
 const roster = {
@@ -98,7 +98,11 @@ test.describe('abilities & auras section', () => {
     }
     await expect(section.getByTestId('team-aura-grito_guerra').getByTestId('team-aura-delta')).toHaveText(/\+\d+\.\d% if on/);
     await expect(section.getByTestId('own-ability-detonacao_dupla')).toContainText(/×1\.\d\d dmg/);
-    await expect(section.getByTestId('own-ability-passagem_bastao').getByTestId('own-ability-status')).toHaveText(/not modelled/i);
+    // Baton Pass is the hero's own since the abilities pass: its pulse is priced over Cora's own
+    // stint, and the row reads the team damage the pulse carries — rank 10 × 4%.
+    const batonPass = section.getByTestId('own-ability-passagem_bastao');
+    await expect(batonPass.getByTestId('own-ability-status')).toHaveText(/^own$/i);
+    await expect(batonPass).toContainText(/\+40% team dmg on entering/);
 
     await selectSavedHero(page, 'Lorne');
     const lorneSection = auraSection(page);

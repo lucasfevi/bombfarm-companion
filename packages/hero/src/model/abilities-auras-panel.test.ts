@@ -56,6 +56,8 @@ describe('ownAbilityRowsFor', () => {
     detonacao_dupla: 12,
     contra_relogio: 8,
     passagem_bastao: 10,
+    matilha: 6,
+    caca_hero: 3,
     misericordia: 0,
     grito_guerra: 5,
   };
@@ -68,6 +70,8 @@ describe('ownAbilityRowsFor', () => {
       'detonacao_dupla',
       'contra_relogio',
       'passagem_bastao',
+      'matilha',
+      'caca_hero',
     ]);
   });
 
@@ -90,9 +94,21 @@ describe('ownAbilityRowsFor', () => {
 
   it('an ability the model carries no effect for is "not modelled"', () => {
     const rows = ownAbilityRowsFor({ abilities }, phaseWhere(false));
-    expect(rows.find((row) => row.abilityId === 'passagem_bastao')).toMatchObject({
+    expect(rows.find((row) => row.abilityId === 'caca_hero')).toMatchObject({
       effect: { kind: 'none' },
       status: 'notModelled',
+    });
+  });
+
+  it("Matilha and Passagem de Bastão are the hero's own, read in their own units", () => {
+    const rows = ownAbilityRowsFor({ abilities }, phaseWhere(false));
+    expect(rows.find((row) => row.abilityId === 'matilha')).toMatchObject({
+      effect: { kind: 'packDmgPctPerAlly', value: 3 },
+      status: 'own',
+    });
+    expect(rows.find((row) => row.abilityId === 'passagem_bastao')).toMatchObject({
+      effect: { kind: 'teamPulseDmgPct', value: 40 },
+      status: 'own',
     });
   });
 });

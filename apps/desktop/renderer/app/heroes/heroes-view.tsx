@@ -223,9 +223,9 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   const heroAccount = useMemo(
     () =>
       figures.kind === 'at'
-        ? accountAroundHero(figures.inputs.account, active.hero, auraSwitches)
+        ? accountAroundHero(figures.inputs.account, active.hero, auraSwitches, roster.heroes)
         : null,
-    [active.hero, figures, auraSwitches],
+    [active.hero, figures, auraSwitches, roster.heroes],
   );
 
   // One pipeline run for the whole detail pane. Every panel below the identity panel reads off it
@@ -693,6 +693,8 @@ function effectiveFacts(
     energyMult: combat.energyMult,
     speedMult: combat.speedMult,
     teamCritFlat: combat.teamCritFlat,
+    teamPenFlat: combat.teamPenFlat,
+    packMult: combat.packMult,
     treeSpeed: account.tree.speed,
     treeCritChance: account.tree.critChance,
     treeCritDmg: account.tree.critDmg,

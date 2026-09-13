@@ -74,20 +74,35 @@ function farmSignature(farm: FarmContext): string {
   return `${farm.houseIdx}:${farm.houseLevel}:${farm.phase}:${farm.mitigationPct}:${farm.cycleSecs ?? ''}:${farm.cycleSecsHouseIdx ?? ''}:${farm.cycleSecsLevel ?? ''}`;
 }
 
+/**
+ * Matilha's allies join the key only for a carrier. The figure moves whenever ANY other hero's
+ * duty does, so keying every hero on it would miss the memo on nearly every round for a roster
+ * that carries no Matilha at all — and a non-carrier's score does not read it.
+ */
+function alliesSignature(ctx: HeroPlanContext, fieldAllies: number): string {
+  return ctx.mods.packDmgPctPerAlly > 0 ? `${fieldAllies}` : '';
+}
+
 function memoKey(
-  heroId: string,
+  ctx: HeroPlanContext,
   loadout: Loadout,
   pts: PointAlloc,
   auras: Record<TeamBuffId, number>,
   farm: FarmContext,
+  fieldAllies: number,
 ): string {
-  return `${heroId}|${loadoutSignature(loadout)}|${ptsSignature(pts)}|${auraSignature(auras)}|${farmSignature(farm)}`;
+  return `${ctx.heroId}|${loadoutSignature(loadout)}|${ptsSignature(pts)}|${auraSignature(auras)}|${farmSignature(farm)}|${alliesSignature(ctx, fieldAllies)}`;
 }
 
 export function createScoreMemo(maxEntries = TEAM_PLAN_MAX_SCORE_MEMO_ENTRIES): ScoreMemo {
   return { entries: new Map(), maxEntries };
 }
 
+/**
+ * `fieldAllies` is the number of other heroes on the field beside this one — Matilha's allies,
+ * priced as `computeCombatMults` prices them. Omitted reads as none; every objective that rotates
+ * a roster supplies its own reading (`evaluate.ts`, `farm-objective.ts`).
+ */
 export function scoreHeroLoadout(
   ctx: HeroPlanContext,
   loadout: Loadout,
@@ -95,8 +110,9 @@ export function scoreHeroLoadout(
   auras: Record<TeamBuffId, number>,
   farm: FarmContext,
   memo?: ScoreMemo,
+  fieldAllies = 0,
 ): HeroScore {
-  const key = memoKey(ctx.heroId, loadout, pts, auras, farm);
+  const key = memoKey(ctx, loadout, pts, auras, farm, fieldAllies);
   if (memo) {
     const hit = memo.entries.get(key);
     if (hit) return hit;
@@ -123,6 +139,7 @@ export function scoreHeroLoadout(
     mods: ctx.mods,
     teamBuffs: auras,
     extraDmgPct: 0,
+    fieldAllies,
   });
 
   const context = farmContextForHero({
@@ -150,7 +167,7 @@ export function scoreHeroLoadout(
     speedMult: mults.speedMult,
     teamCritFlat: mults.teamCritFlat,
     treeSheet: ctx.treeSheet,
-    penetrationPp: ctx.mods.penetrationPp,
+    penetrationPp: mults.teamPenFlat,
     context,
     dmgMult: mults.dmgMult,
     mitigationPct: farm.mitigationPct,

@@ -125,6 +125,8 @@ export const heroEn = {
   heroDetailAuraUnitRange: "+{value} range",
   heroDetailAuraUnitDmgMult: "×{value} dmg",
   heroDetailAuraUnitGateAttack: "+{value}% on gates",
+  heroDetailAuraUnitPackPerAlly: "+{value}% dmg per ally",
+  heroDetailAuraUnitPulse: "+{value}% team dmg on entering",
   heroDetailAurasNoOwnAbilities: "This hero has no ability of its own in force.",
   heroDetailAurasDrainNote:
     "Drain reductions add: −{own}% own and −{team}% team make −{total}%.",

@@ -186,8 +186,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '−1% TEAM energy spent/level',
   },
   passagem_bastao: {
-    pt: '+4% de Dano ao ENTRAR no rodízio (dura 120s)/nível (não modelado)',
-    en: '+4% Damage on ENTERING rotation (lasts 120s)/level (not modeled)',
+    pt: '+4% de Dano do TIME ao ENTRAR no rodízio (dura 120s)/nível',
+    en: '+4% TEAM Damage on ENTERING rotation (lasts 120s)/level',
   },
   olho_lapidador: {
     pt: '+2.5% chance de subir a raridade do drop do herói que destruiu o objeto/nível (loot, não vale para Jaulas)',
@@ -206,16 +206,16 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '+4% crit damage/level (flat, affects stats)',
   },
   matilha: {
-    pt: '+2% dano por aliado na rotação/nível, +40% no teto (não modelado)',
-    en: '+2% dmg per ally in rotation/level, +40% at cap (not modeled)',
+    pt: '+0.5% dano por aliado em campo/nível, +90% no teto',
+    en: '+0.5% damage per ally on the field/level, +90% at cap',
   },
   fortuna: {
     pt: '+0.5% ouro do TIME/nível, +10% no teto (loot, aura capada)',
     en: '+0.5% TEAM gold/level, +10% at cap (loot, capped aura)',
   },
   brecha: {
-    pt: '+1 Penetração/nível, +20 no teto (herói na ficha: não comprovado)',
-    en: '+1 Penetration/level, +20 at cap (on-sheet status not proven)',
+    pt: '+1 ponto de Penetração do TIME/nível, +20 no teto',
+    en: '+1 TEAM Penetration point/level, +20 at cap',
   },
 };
 

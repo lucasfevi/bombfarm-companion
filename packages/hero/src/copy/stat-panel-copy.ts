@@ -122,6 +122,7 @@ export type StatPanelCopy = {
   bdTermPen: string;
   bdTermAbl: string;
   bdTermExtra: string;
+  bdTermPack: string;
   bdTermAtk: string;
   bdTermMitigation: string;
   bdTermDamage: string;

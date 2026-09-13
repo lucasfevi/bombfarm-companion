@@ -483,7 +483,8 @@ const KEYS_ADDED: readonly string[] = [
   // two glossary tips its new tokens need — the measured cycle itself and the difficulty band
   // whose prop density sets the hop lengths. One line: this file sits at the max-lines cap.
   // Hero runes (2026-09-13): the sheet's rune Δ column and the breakdown's rune step. One line.
-  'heroesAbilityFilterAbsent', 'bdFormulaBombs', 'bdTermCycle', 'bdTermBand', 'colSheetDeltaRune', 'bdSrcRune', 'bdNoteRune', 'teamPlanRunedHeroes',
+  // Abilities pass (2026-09-13): the damage formula's Pack (Matilha) term gets a glossary tip.
+  'heroesAbilityFilterAbsent', 'bdFormulaBombs', 'bdTermCycle', 'bdTermBand', 'colSheetDeltaRune', 'bdSrcRune', 'bdNoteRune', 'teamPlanRunedHeroes', 'bdTermPack',
   // The Optimizer's field-crowding opt-out (2026-09-09) and the removals section that made it
   // necessary. The plan could always take gear off a hero and hand it back — on a field that
   // cannot seat everyone, a weak hero wearing less crowds the others out less — but the page
@@ -1034,6 +1035,13 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   // prints. `bdTermWalk` stops naming a walk DELAY and names the walk SPEED the cycle divides by.
   // One line: this file sits at the max-lines cap.
   'bdSrcTeam', 'effectiveTip', 'missingHint', 'explainSections.0.code', 'explainSections.1.p.0', 'explainSections.5.p.0', 'explainSections.7.p.1', 'explainSections.8.p.1', 'explainSections.2.p.0', 'explainSections.2.p.2', 'explainSections.2.code', 'bdTermWalk',
+  // Abilities pass (2026-09-13): the "what the app does not model" paragraph stops listing
+  // Baton Pass — a team aura in pulses, counted for the hero's own pulse here and for every
+  // carrier on the Farm page and the Optimizer — and describes Pack (Matilha, per deployed ally)
+  // and Breach (Brecha, flat team penetration points); `effectiveTip` (declared above) says the
+  // same in one line, and `bdFormulaDmg` gains its `pack` factor. Optimizer disclosures are in
+  // `KEYS_ADDED`.
+  'explainSections.7.p.0', 'bdFormulaDmg',
 ];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {

@@ -19,6 +19,10 @@ export type AbilityEffectReadout =
   | { kind: 'dmgMult'; value: number }
   /** Contra o Relógio — attack that reaches the timed-gate table only. */
   | { kind: 'gateAttackPct'; value: number }
+  /** Matilha — damage % PER ALLY beside the hero; the field size turns it into a multiplier. */
+  | { kind: 'packDmgPctPerAlly'; value: number }
+  /** Passagem de Bastão — TEAM damage % while the hero's entry pulse is up. */
+  | { kind: 'teamPulseDmgPct'; value: number }
   | { kind: 'none' };
 
 const ABILITY_BY_ID = new Map(ABILITIES.map((ability) => [ability.id, ability]));
@@ -49,6 +53,10 @@ function readoutKind(effect: AbilityEffect): AbilityEffectReadout['kind'] {
       return 'dmgMult';
     case 'gateAttackPct':
       return 'gateAttackPct';
+    case 'packDmgPct':
+      return 'packDmgPctPerAlly';
+    case 'teamPulseDmgPct':
+      return 'teamPulseDmgPct';
     case 'none':
       return 'none';
   }
@@ -64,7 +72,8 @@ export function teamAuraReadout(buffId: TeamBuffId, amount: number): AbilityEffe
 /**
  * One of the hero's own abilities at `rank`, read off `abilityMods` itself so the readout is the
  * model's own arithmetic and not a second copy of it. A team aura asked for here reads as its own
- * rank in aura units, since `abilityMods` deliberately carries none of the four.
+ * rank in aura units, since `abilityMods` deliberately carries none of them — Passagem de Bastão
+ * included, whose pulse is priced over a stint rather than folded into the mods.
  */
 export function ownAbilityReadout(abilityId: string, rank: number): AbilityEffectReadout {
   if (isTeamBuffId(abilityId)) return teamAuraReadout(abilityId, TEAM_BUFF_PER_LEVEL[abilityId] * rank);
@@ -78,7 +87,7 @@ export function ownAbilityReadout(abilityId: string, rank: number): AbilityEffec
     case 'critPoints':
       return { kind, value: mods.sheetCritChanceFlat };
     case 'penetrationPoints':
-      return { kind, value: mods.sheetPenetrationFlat + mods.penetrationPp };
+      return { kind, value: mods.sheetPenetrationFlat };
     case 'critDmgPct':
       return { kind, value: mods.sheetCritDmgFlat };
     case 'rangeCells':
@@ -87,6 +96,10 @@ export function ownAbilityReadout(abilityId: string, rank: number): AbilityEffec
       return { kind, value: mods.dmgMult };
     case 'gateAttackPct':
       return { kind, value: (mods.gateAttackMult - 1) * 100 };
+    case 'packDmgPctPerAlly':
+      return { kind, value: mods.packDmgPctPerAlly };
+    case 'teamPulseDmgPct':
+      return { kind, value: 'perLevel' in definition.effect ? definition.effect.perLevel * rank : 0 };
     case 'attackPct':
     case 'speedPct':
     case 'none':

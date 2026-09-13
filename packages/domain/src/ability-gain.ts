@@ -19,8 +19,8 @@
  * indistinguishable from "every ability on this hero is worthless". A hero with no birth roll
  * gets {@link AbilityGainState} `unavailable` for every ability instead.
  *
- * TEAM AURAS ARE SUBSTITUTED, NOT BUMPED. `abilityMods` never folds a team aura into a hero's
- * own mods — `computeCombatMults` reads all four only from the roster-wide total — so raising
+ * TEAM AURAS ARE SUBSTITUTED, NOT BUMPED. `abilityMods` never folds a standing team aura into a
+ * hero's own mods — `computeCombatMults` reads them only from the roster-wide total — so raising
  * `grito_guerra` on the hero record alone produces a byte-identical run. Each priced level is
  * therefore applied to the account's aura total too, via `substituteHeroAbilities`, which is the
  * real benefit the carrier receives: the aura is a property of the field and its carrier stands
@@ -50,10 +50,10 @@ export type AbilityGainState =
   /**
    * The model carries this ability's effect, a next level is buyable, and re-running the model
    * with it returned an IDENTICAL figure — so the effect lands somewhere sustained DPS does not
-   * measure. `contra_relogio`'s attack bonus reaches only the timed-phase table, and
-   * `marcha_acelerada`'s team speed is discarded by the serial cycle model, which prices cadence
-   * as `1 / (fuse + walk delay)`. Both are worth something a player can read in the ability text,
-   * so reporting `gainPct: 0` for them would read as "this ability does nothing" — the one thing
+   * measure. `contra_relogio`'s attack bonus reaches only the timed-phase table, and `matilha`'s
+   * pack bonus needs an ally beside the hero, which a screen pricing the hero alone has none of.
+   * Both are worth something a player can read in the ability text, so reporting `gainPct: 0`
+   * for them would read as "this ability does nothing" — the one thing
    * a four-state union exists to prevent. Derived from the run rather than from a list of ability
    * ids, so an ability that lands here later needs no edit.
    */

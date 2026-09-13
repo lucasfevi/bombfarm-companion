@@ -44,6 +44,13 @@ export type AccountShared = {
    * ignores whatever it is handed and derives its own.
    */
   teamBuffs: Record<string, number>;
+  /**
+   * Other heroes on the field beside the one THIS pipeline call prices — Matilha's allies. Per
+   * call like `teamBuffs`, never a stored account fact: a per-hero screen counts the deployed
+   * heroes other than the hero, and the farm-rate module derives its own from the pool's
+   * uptimes. Absent reads as none.
+   */
+  fieldAllies?: number;
   context: HeroContext;
   /**
    * HOUSE RECOVERY slots (`casa.slots`) — how many heroes the House refills at a time. NOT the

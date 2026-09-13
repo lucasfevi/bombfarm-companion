@@ -64,10 +64,16 @@ describe('buildAccountBlock', () => {
 describe('accountAroundHero', () => {
   const block = buildAccountBlock(offlineRoster());
   if (block === null) throw new Error('expected the committed offline account to build a block');
-  const me = { abilities: { grito_guerra: 4 } };
+  const me = { id: 'me', abilities: { grito_guerra: 4 } };
+  const roster = [
+    { id: 'me', deployed: false },
+    { id: 'a', deployed: true },
+    { id: 'b', deployed: true },
+    { id: 'c', deployed: false },
+  ];
 
   it('counts the hero’s own aura at its rank with every switch off, and no other aura at all', () => {
-    const account = accountAroundHero(block, me, noTeamAuraSwitches());
+    const account = accountAroundHero(block, me, noTeamAuraSwitches(), roster);
     expect(account.teamBuffs.grito_guerra).toBe(4 * TEAM_BUFF_PER_LEVEL.grito_guerra);
     expect(account.teamBuffs.folego_mineiro).toBe(0);
     expect(account.tree).toBe(block.tree);
@@ -75,8 +81,13 @@ describe('accountAroundHero', () => {
 
   it('prices a switched-on aura at its cap, whether or not the hero carries it', () => {
     const switches = { ...noTeamAuraSwitches(), grito_guerra: true, folego_mineiro: true };
-    const account = accountAroundHero(block, me, switches);
+    const account = accountAroundHero(block, me, switches, roster);
     expect(account.teamBuffs.grito_guerra).toBe(TEAM_BUFF_CAP.grito_guerra);
     expect(account.teamBuffs.folego_mineiro).toBe(TEAM_BUFF_CAP.folego_mineiro);
+  });
+
+  it('counts the heroes the game has deployed beside the hero as its allies, never the hero itself', () => {
+    expect(accountAroundHero(block, me, noTeamAuraSwitches(), roster).fieldAllies).toBe(2);
+    expect(accountAroundHero(block, { ...me, id: 'a' }, noTeamAuraSwitches(), roster).fieldAllies).toBe(1);
   });
 });

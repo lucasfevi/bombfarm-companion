@@ -24,7 +24,6 @@ export type {
   WaterfallStep,
 } from './types';
 
-export { PASSAGEM_BASTAO_WINDOW_SEC, passagemBastaoMult } from './ability-extras';
 export { mayMoveGear, mayRespendPoints } from './allowed-changes';
 export { computeRosterAuras } from './auras';
 export { AURA_FIXED_POINT_ROUNDS, evaluateRoster } from './evaluate';
