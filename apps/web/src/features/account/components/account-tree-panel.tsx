@@ -20,6 +20,7 @@ import {
   selectTreeTeamCoinPct,
   selectTreeXpMult,
 } from '@/shared/stores';
+import { formatLuckPoints, formatTreePercent } from '../model/tree-figure-format';
 
 export function AccountTreePanel() {
   const { t, lang } = useAppLang();
@@ -72,9 +73,9 @@ export function AccountTreePanel() {
         luck: t.accountLuckFlat,
         xp: t.treeXpMult,
         bagTabs: t.accountBagTabs,
-        percent: (value) => `+${formatNumber(value, lang, 2)}%`,
+        percent: (value) => formatTreePercent(value, lang),
         multiplier: (value) => `×${formatNumber(value, lang, 3)}`,
-        luckPoints: (value) => `+${formatNumber(value, lang, 2)} pp`,
+        luckPoints: (value) => formatLuckPoints(value, lang),
         bonus: (value) => `+${value}`,
         totalDamageTip: (squadDamagePct, geoMultiplier, total) =>
           sub(t.accountTotalDmgTip, {

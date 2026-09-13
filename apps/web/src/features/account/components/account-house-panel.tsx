@@ -14,11 +14,7 @@ import {
   selectHouseLevel,
   selectSlots,
 } from '@/shared/stores';
-
-function restText(totalSeconds: number): string {
-  const { minutes, seconds } = splitHouseRest(totalSeconds);
-  return `${minutes} min ${seconds} s`;
-}
+import { formatHouseRest } from '../model/house-rest-text';
 
 /** A signed duration, dropping the minutes part when the gap is under a minute. */
 function restDeltaText(deltaSeconds: number): string {
@@ -69,7 +65,7 @@ export function AccountHousePanel() {
         houseName: (houseIndex) => houseLabel(houseIndex, lang),
         nextHouseHeading: (houseName) => sub(t.accountNextHouse, { house: houseName }),
         levelOfMax: (level, maxLevel) => `${level} / ${maxLevel}`,
-        cycleDuration: restText,
+        cycleDuration: formatHouseRest,
         cycleDelta: restDeltaText,
         slotsDelta: slotsDeltaText,
       }}
