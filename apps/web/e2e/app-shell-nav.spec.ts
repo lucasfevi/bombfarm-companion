@@ -57,6 +57,21 @@ test.describe('App shell navigation', () => {
     await expect(page.getByRole('dialog')).toBeVisible();
   });
 
+  test('direct load of / renders Home and hides the planner', async ({ page }) => {
+    await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+    await page.goto('/');
+
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Your account, at a glance' }),
+    ).toBeVisible();
+    await expect(page.getByRole('region', { name: /current hero/i })).toBeHidden();
+
+    const links = page.getByRole('navigation', { name: 'Main sections' }).getByRole('link');
+    await expect(links.first()).toHaveText(/^Home$/i);
+    await expect(links.first()).toHaveAttribute('aria-current', 'page');
+    await expect(links.nth(1)).not.toHaveAttribute('aria-current', 'page');
+  });
+
   test('direct load of /farm renders the farm route, not the planner', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/farm');
