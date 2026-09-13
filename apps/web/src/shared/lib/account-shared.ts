@@ -147,6 +147,11 @@ export type AccountShared = {
    * hold a `null` the rule would flag, and it must keep working until the user re-imports.
    */
   missingRequiredFields?: readonly RequiredAccountField[] | null;
+  /**
+   * Epoch ms of the last `applyAccountImport`, whatever the payload carried. Absent on a record
+   * written before the stamp existed — no migration backfills it, the next import writes it.
+   */
+  importedAt?: number;
 };
 
 export const DEFAULT_TREE = (): TreeState => ({
@@ -288,6 +293,10 @@ function normalizeMaxPhase(raw?: number | null): number | null {
   return Math.max(1, Math.min(600, Math.round(raw)));
 }
 
+function normalizeImportedAt(raw: unknown): number | null {
+  return typeof raw === 'number' && Number.isFinite(raw) && raw > 0 ? raw : null;
+}
+
 /**
  * A fixed-field rebuild, so a record's stale keys are discarded rather than spread through. The
  * two team-aura fields older records carry (`teamBuffs`, a snapshot of whoever was deployed at
@@ -297,6 +306,7 @@ function normalizeMaxPhase(raw?: number | null): number | null {
  */
 export function normalizeAccount(raw?: Partial<AccountShared> | null): AccountShared {
   const missing = toRequiredAccountFields(raw?.missingRequiredFields);
+  const importedAt = normalizeImportedAt(raw?.importedAt);
   return {
     tree: normalizeTree(raw?.tree),
     context: normalizeContext(raw?.context),
@@ -311,5 +321,6 @@ export function normalizeAccount(raw?: Partial<AccountShared> | null): AccountSh
     accountId: normalizeIdentityText(raw?.accountId),
     // Omitted rather than `null` when absent on `raw` — see `selectAccountShared`.
     ...(missing != null ? { missingRequiredFields: missing } : {}),
+    ...(importedAt != null ? { importedAt } : {}),
   };
 }

@@ -75,6 +75,8 @@ export type AccountSlice = {
   accountId: string | null;
   /** See {@link AccountShared.missingRequiredFields} for what `null` vs `[]` mean. */
   missingRequiredFields: readonly RequiredAccountField[] | null;
+  /** Epoch ms of the last import; `null` until one happens in this browser. */
+  importedAt: number | null;
 
   setHouseIdx: (value: number) => void;
   setHouseLevel: (value: number) => void;
@@ -123,6 +125,7 @@ export const createAccountSlice: StateCreator<
   playerName: null,
   accountId: null,
   missingRequiredFields: null,
+  importedAt: null,
 
   setHouseIdx: (value) => {
     if (get().houseIdx === value) return;
@@ -184,6 +187,7 @@ export const createAccountSlice: StateCreator<
       playerName: shared.playerName ?? null,
       accountId: shared.accountId ?? null,
       missingRequiredFields: shared.missingRequiredFields ?? null,
+      importedAt: shared.importedAt ?? null,
     });
   },
 
@@ -254,6 +258,7 @@ export const createAccountSlice: StateCreator<
     // `[]`, never `null`: reaching this function means an import happened, so "never checked"
     // is over even when the caller supplies no verdict.
     patch.missingRequiredFields = missingRequired ?? [];
+    patch.importedAt = Date.now();
     if (Object.keys(patch).length > 0) set(patch);
   },
 });
