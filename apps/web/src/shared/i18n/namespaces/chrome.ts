@@ -2,6 +2,7 @@ export const en = {
   tagline: "build → gear → points",
   appSuiteTag: "Companion",
   siteNavAria: "Main sections",
+  navHome: "Home",
   navPlanner: "Planner",
   // Value is "Farm" in both languages — the rename's whole point (the word
   // works untranslated). Key name stays navPhases (i18n.md rule 3 — id stability).
@@ -52,6 +53,7 @@ export const pt: typeof en = {
   tagline: "build → equipamento → pontos",
   appSuiteTag: "Companion",
   siteNavAria: "Seções principais",
+  navHome: "Início",
   navPlanner: "Planner",
   // Deliberately identical to EN — "Farm" reads fine untranslated. Not a
   // missed-translation bug; do not "fix" this to "Fazenda".
