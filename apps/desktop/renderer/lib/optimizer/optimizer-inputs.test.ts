@@ -37,7 +37,7 @@ function basePayload(fidelity: AccountFidelity = resolvedFidelity()): AccountPay
   return {
     account: { phase: 60, max_phase: 88, gold: 100 },
     heroes: [minimalRawHero('h1', 'Alpha')],
-    skills: { totals: { dmg_static: 1.5, crit_dmg_mult: 1 } },
+    skills: { totals: { dmg_static: 1.5 } },
     casa: { active_casa: 1, levels: [10] },
     items: [{ id: 'i1', def_id: 'g1', rarity: 0, level: 1, upgrade: 0 }],
     fidelity,

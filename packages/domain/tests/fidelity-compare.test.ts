@@ -255,9 +255,7 @@ describe('compareAccountResults — account-level equality', () => {
     expect(err.message).toContain('tree.danoTotal');
   });
 
-  // Re-pointed from tree.critDmgMult onto tree.critChance (T4) — a surviving
-  // TreeSheetTotals member. See the previous case's comment for why makeAccount() itself is
-  // untouched here.
+  // See the previous case's comment for why makeAccount() itself is untouched here.
   it('accountMismatch names tree.critChance on a mismatch', () => {
     const live = makeResult({ account: makeAccount({ tree: { ...makeAccount().tree!, critChance: 2 } }) });
     const exported = makeResult({ account: makeAccount({ tree: { ...makeAccount().tree!, critChance: 1 } }) });

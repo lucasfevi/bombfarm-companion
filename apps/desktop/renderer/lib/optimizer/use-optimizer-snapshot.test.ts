@@ -40,7 +40,7 @@ function payloadAtLevel(level: number): AccountPayload {
   return {
     account: { phase: 12, max_phase: 20, gold: '1' },
     heroes: [rawHero('h1', level)],
-    skills: { totals: { dmg_static: 1.5, crit_dmg_mult: 1 } },
+    skills: { totals: { dmg_static: 1.5 } },
     casa: { active_casa: 1, levels: [10] },
     items: [],
     fidelity: fidelityAt('2026-08-12T00:00:00.000Z'),

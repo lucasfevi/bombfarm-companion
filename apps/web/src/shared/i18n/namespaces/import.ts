@@ -41,7 +41,7 @@ export const en = {
   importRejectedNotASaveFile: "This file doesn't look like a BombFarm save-file export.",
   importRejectedMissingBirthStats: "This save is missing birth stats needed for accurate points for: {names}. Re-export from an updated game version.",
   // The positive-discriminator rejection — deliberately generic. Names no
-  // keystone, node id, version, date or field path, so it stays accurate after the next patch.
+  // retired mechanic, node id, version, date or field path, so it stays accurate after the next patch.
   importRejectedUnsupportedShape: "The planner can't use this save file. Export a fresh save from the game and import that one.",
   // A blocked candidate used to be dimmed and nothing else, which reads as a rendering glitch
   // rather than an explanation. Every way a hero can block — gear the catalog does not know, a

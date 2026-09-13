@@ -36,17 +36,6 @@ describe('account slice', () => {
     expect(s.targetProp).toBe('stone');
   });
 
-  // The three keystone setters are unrepresentable, not merely avoided: absent from
-  // AccountSlice's TYPE (a TS2339 compile error to reference one — proven by
-  // `pnpm --filter @bombfarm/web typecheck`) AND `undefined` on the runtime store object. The
-  // type check alone does not prove the runtime object; this asserts it directly.
-  it('setTreeGlassCannon / setTreeTempoDobrado / setTreeAbisso are undefined at runtime', () => {
-    const state = usePlannerStore.getState() as unknown as Record<string, unknown>;
-    expect(state.setTreeGlassCannon).toBeUndefined();
-    expect(state.setTreeTempoDobrado).toBeUndefined();
-    expect(state.setTreeAbisso).toBeUndefined();
-  });
-
   it('applyAccountImport writes luckFlatPct (no per-field tree setter)', () => {
     usePlannerStore.getState().applyAccountImport({
       tree: { ...sampleTree, luckFlatPct: 5.3 },

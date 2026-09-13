@@ -25,7 +25,7 @@ import {
 import { DEFAULT_TARGET_PROP } from '@bombfarm/domain/farm-context';
 
 export type TreeState = {
-  /** Squad damage × from the tree UI — already includes GEO / compound / keystone damage mults. */
+  /** Squad damage × from the tree UI — already includes GEO / compound damage mults. */
   danoTotal: number;
   critChance: number;
   /** Crit damage bonus as % of base roll (g_crit_dmg). */
@@ -180,10 +180,10 @@ export const DEFAULT_ACCOUNT = (): AccountShared => ({
 
 /**
  * Fixed-field-list rebuild (the `normalizeHero`/`obsHit`/`obsCrit` pattern) — every field is
- * named explicitly, so any stale/unknown key on `raw` (a pre-change record's `glassCannon`,
- * `tempoDobrado`, `abisso`, `abissoBase`, `critDmgMult`, or the older `geo`) is silently
- * discarded rather than spread through. This matters: a spread merge (`{ ...base,
- * ...rest }`) would let those keys leak into the result even after they left `TreeState`.
+ * named explicitly, so any stale/unknown key on `raw` (a field a game patch retired, or the
+ * older `geo`) is silently discarded rather than spread through. This matters: a spread merge
+ * (`{ ...base, ...rest }`) would let those keys leak into the result even after they left
+ * `TreeState`.
  */
 function normalizeTree(raw?: Partial<TreeState> | null): TreeState {
   const base = DEFAULT_TREE();

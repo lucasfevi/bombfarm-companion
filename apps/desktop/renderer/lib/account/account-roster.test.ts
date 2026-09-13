@@ -36,7 +36,7 @@ function basePayload(heroes: unknown[] = [rawHero('h1', 'Alpha')]): AccountPaylo
   return {
     account: { phase: 60, max_phase: 88 },
     heroes,
-    skills: { totals: { dmg_static: 1.5, crit_dmg_mult: 1 } },
+    skills: { totals: { dmg_static: 1.5 } },
     casa: { active_casa: 1, levels: [10] },
     items: [],
     fidelity: resolvedFidelity(),

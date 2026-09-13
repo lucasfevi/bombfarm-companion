@@ -1,6 +1,6 @@
 # Base UI first
 
-**Status:** reference (durable) · **Source:** `account-house-keystones` Switch polish (2026-07-22); reinforces [`design-system.md`](design-system.md)
+**Status:** reference (durable) · **Source:** the Account panel's Switch polish (2026-07-22); reinforces [`design-system.md`](design-system.md)
 
 Interactive controls should wrap [`@base-ui/react`](https://base-ui.com/react/components) when an equivalent exists, then dress with cva + planner tokens — not invent parallel Button/checkbox patterns.
 
