@@ -256,21 +256,13 @@ test.describe('account page — what the rework removed', () => {
     await expect(page.getByRole('tab', { name: /^Gear$/i })).toBeVisible();
   });
 
-  test('no keystone control survives anywhere on the page', async ({ page }) => {
-    // Carried over from the retired account-panel spec: the 2026-08-13 patch removed all five
-    // keystones, and this is the DOM-level proof that the Account surface grew none back. The
-    // page is read-only now, so the switch/checkbox assertions double as a "still no controls"
-    // guard.
+  test('the read-only page renders no switch or checkbox in either language', async ({ page }) => {
     for (const lang of ['en', 'pt'] as const) {
       await openAccount(page, lang);
       const main = page.locator('main');
-      await expect(main.locator('[data-keystone-control]')).toHaveCount(0);
       await expect(main.locator('[data-switch]')).toHaveCount(0);
       await expect(main.getByRole('switch')).toHaveCount(0);
       await expect(main.getByRole('checkbox')).toHaveCount(0);
-      for (const name of [/Abisso/i, /Glass Cannon/i, /Tempo Dobrado/i]) {
-        await expect(main.getByLabel(name)).toHaveCount(0);
-      }
     }
   });
 });

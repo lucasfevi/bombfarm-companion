@@ -58,6 +58,15 @@ export function IncludedScreens({ t }: { t: Strings }) {
           ]}
         />
         <ScreenCard
+          title={t.downloadScreenOptimizerTitle}
+          items={[
+            t.downloadScreenOptimizerItem1,
+            t.downloadScreenOptimizerItem2,
+            t.downloadScreenOptimizerItem3,
+            t.downloadScreenOptimizerItem4,
+          ]}
+        />
+        <ScreenCard
           title={t.downloadScreenAccountTitle}
           items={[
             t.downloadScreenAccountItem1,
@@ -76,10 +85,6 @@ export function IncludedScreens({ t }: { t: Strings }) {
             t.downloadScreenSettingsItem4,
           ]}
         />
-        {/* The grid draws its dividers as a line-coloured backdrop showing through 1px gaps, so a
-            trailing empty cell reads as a solid block of that colour. Seven cards leave exactly one
-            at both two and four columns, and none at one. */}
-        <div aria-hidden className="hidden bg-bg md:block" />
       </div>
     </section>
   );

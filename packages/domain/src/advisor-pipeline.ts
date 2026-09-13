@@ -124,7 +124,6 @@ export type AdvisorPipelineResult = {
   attackMult: number;
   energyMult: number;
   speedMult: number;
-  critDmgMult: number;
   teamCritFlat: number;
   teamPenFlat: number;
   /** Matilha's pack factor inside `dmgMult`, at `fieldAllies`. */
@@ -275,7 +274,6 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     speedMult,
     gateAttackMult,
     energyMult,
-    critDmgMult,
     teamCritFlat,
     teamPenFlat,
     teamDrainMult,
@@ -306,7 +304,6 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     attackMult,
     energyMult,
     speedMult,
-    critDmgMult,
     teamCritFlat,
     treeSheet,
     penetrationPp: teamPenFlat,
@@ -414,7 +411,6 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     attackMult,
     energyMult,
     speedMult,
-    critDmgMult,
     teamCritFlat,
     teamPenFlat,
     packMult,

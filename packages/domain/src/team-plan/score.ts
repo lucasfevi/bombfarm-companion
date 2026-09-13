@@ -165,7 +165,6 @@ export function scoreHeroLoadout(
     attackMult: mults.attackMult,
     energyMult: mults.energyMult,
     speedMult: mults.speedMult,
-    critDmgMult: mults.critDmgMult,
     teamCritFlat: mults.teamCritFlat,
     treeSheet: ctx.treeSheet,
     penetrationPp: mults.teamPenFlat,

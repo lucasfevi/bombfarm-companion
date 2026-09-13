@@ -104,8 +104,10 @@ describe('Brecha — the fifth standing team aura', () => {
 
   it('counts the carrier\'s own rank on its own seat whether or not the game has it deployed', () => {
     const carrier = withAbilityLevels(heroByName('IDK'), { brecha: 7 });
-    const deployed = computeTeamBuffsAroundHero({ ...carrier, deployed: true }, heroes, noTeamAuraSwitches());
-    const benched = computeTeamBuffsAroundHero({ ...carrier, deployed: false }, heroes, noTeamAuraSwitches());
+    const onField: HeroRecord = { ...carrier, deployed: true };
+    const offField: HeroRecord = { ...carrier, deployed: false };
+    const deployed = computeTeamBuffsAroundHero(onField, heroes, noTeamAuraSwitches());
+    const benched = computeTeamBuffsAroundHero(offField, heroes, noTeamAuraSwitches());
     expect(deployed.brecha).toBe(7);
     expect(benched).toEqual(deployed);
   });

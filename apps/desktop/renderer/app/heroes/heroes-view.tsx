@@ -666,7 +666,6 @@ function effectiveFacts(
     attackMult: combat.attackMult,
     energyMult: combat.energyMult,
     speedMult: combat.speedMult,
-    critDmgMult: combat.critDmgMult,
     teamCritFlat: combat.teamCritFlat,
     teamPenFlat: combat.teamPenFlat,
     packMult: combat.packMult,

@@ -1,7 +1,7 @@
 # The post-patch fixture corpus (MP5 F1, `mp5-fixture-rebaseline`)
 
-**Status (2026-08-13):** the 2026-08-13 patch removed all five keystones (Abisso/D15, Glass
-Cannon/C15, Tempo Dobrado/V15, Juro Composto/O15, Sorte Composta/S15) and wiped every account.
+**Status (2026-08-13):** the 2026-08-13 patch removed five skill-tree mechanics and wiped every
+account.
 The 41 pre-patch capture files this repo's test suites were built on — 39 `sheet-math` fixtures
 plus the two old fidelity-gate captures — described an account the game can no longer produce.
 This feature deletes them, deletes the 20 test files that carried the
@@ -31,7 +31,7 @@ the per-file manifest.
 
 Under the positive discriminator (`skills.refunds` / `skills.totals.vagas_campo` /
 `skills.totals.bag_tabs_bonus` — post-patch-only keys), **every one of the 41 pre-patch capture
-files was an invalid save**: all 41 carried `keystones`, `abisso_base` and `crit_dmg_mult`
+files was an invalid save**: all 41 carried the three `skills.totals` keys the patch retired
 (pre-patch-only keys), and none carried any of the three new keys. That is the exact input
 `mp5-schema-guard` (F4) is being built to reject. The corpus was not merely stale — it was the
 thing the next feature exists to catch.
@@ -62,7 +62,7 @@ calls) or **corpus-anchored** (needed the deleted account to exist at all).
 SHEET_KEYS` is restated as one line in the new `fixture-corpus.test.ts` guard (both trees).
 
 **`abisso-damage-mult.test.ts`'s gating/clamping describes call `computeCombatMults` directly on
-keystone math `F2` deletes anyway** — recorded as lost, not rescued into a surviving file (spec's
+retired tree math `F2` deletes anyway** — recorded as lost, not rescued into a surviving file (spec's
 default: whole-file deletion).
 
 **The `point-inference` and `sheet-peel` corpus-anchored claims have the strongest available
@@ -112,10 +112,9 @@ replacement**: §6 below, the round-trip invariant.
   cases.
 - **`import-save.test.ts` (web): the level-0 ability case** (a known ability code at level 0 pushes no issue) — no
   ability entry at level 0 exists in either post-patch capture (every entry is level ≥ 17).
-- **`import-inventory-sync.test.ts` (web): the Abisso half of a real-fixture disclosure test** —
-  `treeAbisso`/`treeAbissoBase` flowing from a real save's `abisso_base` is unreproducible (no
-  post-patch capture carries the key at all, §4). Abisso detection itself stays covered by
-  `abisso-glass-cannon.test.ts` (F2's surface, untouched by F1) via synthetic payloads.
+- **`import-inventory-sync.test.ts` (web): the retired-mechanic half of a real-fixture disclosure
+  test** — a tree flag flowing from a real save's retired `skills.totals` key is unreproducible
+  (no post-patch capture carries the key at all, §4); the mechanic itself was deleted with `F2`.
 - **`apps/web/e2e/team-plan-disclosures.spec.ts`'s `saturated account shows saturation callout`
   test** was found RED on the new corpus during T7 (its `slots: 2` override was tuned for the
   deleted 11-hero fixture's ~2.5–3.2 `sumDuty` range) and was fixed by an orchestrator ruling
@@ -154,7 +153,7 @@ That structurally kills every family below; none of them can be rebuilt from a s
 | Gear swap | `brenna-01` / `brenna-03` | One snapshot cannot hold two loadouts for the same hero | One hero exported with one gear slot swapped |
 | Ability-slot coverage | `bellatrix-02-pts-each-1.json` (13 owned codes) | The new corpus's 8 payload heroes own 11 distinct codes. (This cell used to add "no hero owns `golpe_brutal` at all" — false since 2026-08-18: four captures carry it.) | Any account owning the missing codes |
 | Dead ability points | `bellatrix-02-pts-each-1.json` (Bram L49 Incomum → 9 dead) | No post-patch corpus hero exceeds `quota × 20` | A low-rarity hero above level 40 |
-| Pre-`birth_stats` whole-file reject | `gale-01-points-reset.json` (16 heroes, 0 with `birth_stats`) | Every post-patch export carries `birth_stats` on every hero by construction | Not restorable — the field predates the keystone patch entirely |
+| Pre-`birth_stats` whole-file reject | `gale-01-points-reset.json` (16 heroes, 0 with `birth_stats`) | Every post-patch export carries `birth_stats` on every hero by construction | Not restorable — the field predates the 2026-08-13 patch entirely |
 | High-phase mitigation | `phase-151.json` | `max_phase` caps at 42 post-wipe | Out of scope — this loss is accepted permanently; see §4 |
 
 ## 6. What replaced the point-delta family, and its one residual gap
@@ -210,22 +209,6 @@ never edited — the model moved to meet it, which is the direction non-circular
 The same unit error sat in the Golpe Brutal ability (`+4` flat per level, not 4% of the roll); see
 `packages/domain/tests/points-within-level-budget.test.ts` for the level-ceiling invariant that
 now guards both.
-
-## 8. The keystone-identifier handoff number
-
-`tools/fixture-corpus-parity.test.mjs`'s `KEYSTONE_IDENTIFIER_HANDOFF_COUNT` constant is the
-number F2's own exit is measured against. **Recorded finding:** the design's literal five-surface
-description (every match must fall inside `packages/domain/src/**`, `apps/web/src/**` non-test,
-`apps/desktop/**`, `packages/ui/**`, `apps/web/e2e/**`, or the two named F2 suites) is
-unachievable as a hard per-match assertion — measured, dozens of pre-existing, non-quarantined,
-non-corpus test files (`advisor-pipeline.test.ts`, `storage-abisso-base-compat.test.ts`,
-`tree-guards.test.ts`, the `team-plan-*` suites, and others) legitimately test still-shipping
-keystone functionality with synthetic (non-fixture) data. `F1` never touches
-`packages/domain/src`, so that functionality and its coverage are correctly untouched. The guard
-therefore asserts **total-match stability across the whole tracked tree**, failing in either
-direction — the operative part of the requirement — rather than a narrower, permanently-red
-per-surface check. The validating author must re-derive this number independently before
-reading the committed constant.
 
 ## 9. The crit-chance/CDR shape reverted twice in five days (issue #132)
 

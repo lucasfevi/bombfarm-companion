@@ -78,7 +78,7 @@ describe('selectAdvisorPipeline', () => {
   // of `state.heroes` (the active hero's last-persisted ranks) against `state.abilities` (the
   // live draft) into `selectActiveHeroTeamBuffs(state)` (the hero's own aura plus the switches')
   // — both new deps must invalidate the cache exactly like `state.abilities` already does.
-  it('dep tuple has exactly 29 members in spec order (this change dropped the 5 keystone-derived entries: treeGlassCannon, treeCritDmgMult, treeTempoDobrado, treeAbisso, treeAbissoBase; statPointsAvailable dropped with the level-pool budget; rankMode dropped because computeAdvisorPipeline no longer reads it; the House-ceiling fix added houseCycleSecs and its regression repair added houseCycleSecsHouseIdx/houseCycleSecsLevel; PR #139 added heroes/activeHeroId for the team-buffs substitution; hero runes added `runes`; Matilha added the deployed allies beside the active hero — all seven are pipeline inputs, so an edit to any MUST recompute)', () => {
+  it('dep tuple has exactly 29 members in spec order (statPointsAvailable dropped with the level-pool budget; rankMode dropped because computeAdvisorPipeline no longer reads it; the House-ceiling fix added houseCycleSecs and its regression repair added houseCycleSecsHouseIdx/houseCycleSecsLevel; PR #139 added heroes/activeHeroId for the team-buffs substitution; hero runes added `runes` — all six are pipeline inputs, so an edit to any MUST recompute; Matilha added the deployed allies beside the active hero — a pipeline input, so an edit to it MUST recompute)', () => {
     const tuple = readAdvisorDepTuple(usePlannerStore.getState());
     expect(tuple).toHaveLength(29);
   });

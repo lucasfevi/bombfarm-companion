@@ -126,11 +126,7 @@ function buildFixture(opts: FixtureOpts = {}) {
   // would make `derive`'s single-application `effective` disagree with a ledger that (rightly)
   // shows a 'tree' step — bake the SAME single application into the default fixture so the two
   // stay consistent, matching what a real save's `stats` block already does.
-  //
-  // MP5 removed all five keystones (Glass Cannon / Tempo Dobrado included); their sheet-math
-  // corrections no longer exist anywhere in the pipeline, so this fixture builder no longer
-  // takes or applies them — `computeCombatMults.energyMult/critDmgMult` are permanent identity,
-  // and `speedMult` never carried Tempo. Matches `applySkillTree` exactly (birth-sheet.ts).
+  // Matches `applySkillTree` exactly (birth-sheet.ts).
   function poolBump(value: number, otherPct: number, treePct: number): number {
     return value + (treePct / 100) * (value / (1 + otherPct));
   }
@@ -179,7 +175,6 @@ function buildFixture(opts: FixtureOpts = {}) {
     attackMult: mults.attackMult,
     energyMult: mults.energyMult,
     speedMult: mults.speedMult,
-    critDmgMult: mults.critDmgMult,
     teamCritFlat: mults.teamCritFlat,
     treeSheet,
     penetrationPp: mults.teamPenFlat,
@@ -205,7 +200,6 @@ function buildFixture(opts: FixtureOpts = {}) {
     attackMult: mults.attackMult,
     energyMult: mults.energyMult,
     speedMult: mults.speedMult,
-    critDmgMult: mults.critDmgMult,
     teamCritFlat: mults.teamCritFlat,
     teamPenFlat: mults.teamPenFlat,
     packMult: mults.packMult,

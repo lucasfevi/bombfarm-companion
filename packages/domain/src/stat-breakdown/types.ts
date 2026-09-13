@@ -109,7 +109,6 @@ export interface PipelineFacts {
   attackMult: number;
   energyMult: number;
   speedMult: number;
-  critDmgMult: number;
   teamCritFlat: number;
   /** The roster's capped Brecha total in flat penetration points (`CombatMults.teamPenFlat`). */
   teamPenFlat: number;

@@ -74,6 +74,11 @@ import * as GameArt from '@bombfarm/game-art';
 // `accordion.recipe` subpath, beside `accordionRecipe` which was already here. They space a
 // stack of accordion rows and pad an opened one's body — the per-statistic breakdown the desktop
 // Heroes screen now draws needs both, and that app imports the barrel, not deep paths.
+// metricScoreboardCellClass / metricScoreboardLabelClass / metricScoreboardRowClass /
+// workspaceClass (2026-09-11): promoted from their respective subpaths for the same reason as
+// every promotion above. The first three lay out a waterfall step's cell; `workspaceClass` sizes
+// the optimizer screen's own workspace column. The optimizer screen that draws them moved into
+// `@bombfarm/team-plan`.
 // selectFieldHeightClass (2026-09-11): the default select field's height, named so a control
 // drawn beside one can take the same — the combat phase panel's Back button stands as tall as
 // the phase picker it follows, and that panel is `@bombfarm/farm`'s.
@@ -189,7 +194,10 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'heroAbilTitleClass',
   'initialToastQueueState',
   'maskRevealStyle',
+  'metricScoreboardCellClass',
   'metricScoreboardDeltaRecipe',
+  'metricScoreboardLabelClass',
+  'metricScoreboardRowClass',
   'metricScoreboardValueRecipe',
   'motionTokens',
   'mutedClass',
@@ -224,6 +232,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'useShellDensity',
   'useToast',
   'warnClass',
+  'workspaceClass',
 ].sort();
 
 describe('design-system barrel surface (frozen)', () => {

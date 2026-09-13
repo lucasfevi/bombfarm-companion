@@ -36,9 +36,8 @@ Browser-level smoke and visual baselines for the static export. Unit math stays 
 > optimizing modal (hero6 bomb-activation loop, Cancel), post-run Run summary (plain-language
 > seed + elapsed seconds) + gain scoreboard / waterfall (no Today `+0`; no negative respec
 > recommendation) + expandable per-hero rows with proposed gear (including kept existing
-> items labeled as no-change) and point-reset details, and
-> disclosures callouts. The Optimizer page does not write heroes (no alt-loadout push). Smoke
-> coverage lives under `e2e/team-plan-*.spec.ts`.
+> items labeled as no-change) and point-reset details. The Optimizer page does not write
+> heroes (no alt-loadout push). Smoke coverage lives under `e2e/team-plan-*.spec.ts`.
 >
 > **`/farm` (Farm Ranking board):** no committed visual baseline, same `/optimizer`
 > precedent — the visual project stays globally `describe.skip` and agents may not run

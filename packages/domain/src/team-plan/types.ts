@@ -441,19 +441,12 @@ export type TeamPlan = {
   requiresFullPlan: boolean;
   /** How far below today the gear step sits, as a POSITIVE number. 0 when requiresFullPlan is false. */
   gearDipDps: number;
-  disclosures: {
-    unmodelledAbilities: { abilityId: string; heroNames: string[] }[];
-    loadoutDriftHeroNames: string[];
-    /**
-     * Heroes in scope carrying a timed rune on a sheet statistic. The plan prices today's
-     * sheet, rune included, but a rune is not something the plan can buy — so wherever the plan
-     * explains a gain, these are the heroes whose gain is partly the rune's and expires with it.
-     */
-    runedHeroNames: string[];
-    foreignOwnedItemCount: number;
-    marketBlockedItemCount: number;
-    unresolvedDefItemCount: number;
-  };
+  /**
+   * Heroes in scope carrying a timed rune on a sheet statistic. The plan prices today's
+   * sheet, rune included, but a rune is not something the plan can buy — so wherever the plan
+   * explains a gain, these are the heroes whose gain is partly the rune's and expires with it.
+   */
+  runedHeroNames: string[];
   run: {
     rounds: number;
     evaluations: number;

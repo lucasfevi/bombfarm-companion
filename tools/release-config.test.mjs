@@ -22,6 +22,7 @@ const WORKSPACE_PACKAGES = [
   { name: '@bombfarm/hero', path: 'packages/hero/package.json' },
   { name: '@bombfarm/pricing', path: 'packages/pricing/package.json' },
   { name: '@bombfarm/tap-runtime', path: 'packages/tap-runtime/package.json' },
+  { name: '@bombfarm/team-plan', path: 'packages/team-plan/package.json' },
   { name: '@bombfarm/ui', path: 'packages/ui/package.json' },
 ];
 
@@ -79,7 +80,7 @@ describe('workspace package privacy', () => {
 });
 
 describe('changeset package selector coverage', () => {
-  it('offers the same thirteen workspace packages changesets would version', async () => {
+  it('offers the same fourteen workspace packages changesets would version', async () => {
     const { getPackages } = await import('@manypkg/get-packages');
     const { packages } = await getPackages(root);
     const discoveredNames = packages
@@ -91,7 +92,7 @@ describe('changeset package selector coverage', () => {
     );
 
     expect(discoveredNames).toEqual(expectedNames);
-    expect(discoveredNames).toHaveLength(13);
+    expect(discoveredNames).toHaveLength(14);
   });
 });
 

@@ -54,6 +54,12 @@ const accountPackage = ['packages/account/**/*.{ts,tsx}'];
  */
 const heroPackage = ['packages/hero/**/*.{ts,tsx}'];
 
+/**
+ * `team-plan` holds the optimizer screen, out of `apps/web/src/features/team-plan/` — same
+ * planner-origin tree, same relaxed tier.
+ */
+const teamPlanPackage = ['packages/team-plan/**/*.{ts,tsx}'];
+
 /** Ban raw react-icons / SVG imports outside the Icon seam. */
 const rawIconImportRule = [
   'error',
@@ -257,6 +263,26 @@ export default tseslint.config(
     },
   },
   {
+    files: teamPlanPackage,
+    extends: [...tseslint.configs.recommendedTypeChecked],
+    languageOptions: {
+      parserOptions: {
+        // A dedicated project rather than `projectService`: the package tsconfig excludes tests
+        // (they must not ship in `dist/`), and the service then errors on a test file belonging
+        // to no project. This one includes them, so they are linted like every other test here.
+        project: './packages/team-plan/tsconfig.eslint.json',
+        tsconfigRootDir: import.meta.dirname,
+      },
+      globals: globals.browser,
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+    },
+  },
+  {
     files: ['apps/desktop/src/**/*.ts'],
     extends: [...tseslint.configs.strictTypeChecked],
     languageOptions: {
@@ -289,7 +315,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}', 'packages/hero/**/*.{ts,tsx}', 'apps/desktop/renderer/**/*.{ts,tsx}'],
+    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}', 'packages/hero/**/*.{ts,tsx}', 'packages/team-plan/**/*.{ts,tsx}', 'apps/desktop/renderer/**/*.{ts,tsx}'],
     plugins: { 'react-hooks': reactHooks },
     languageOptions: {
       globals: globals.browser,
@@ -299,17 +325,17 @@ export default tseslint.config(
     },
   },
   {
-    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}', 'packages/hero/**/*.{ts,tsx}', 'apps/desktop/renderer/**/*.{ts,tsx}'],
+    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}', 'packages/hero/**/*.{ts,tsx}', 'packages/team-plan/**/*.{ts,tsx}', 'apps/desktop/renderer/**/*.{ts,tsx}'],
     plugins: { react },
     rules: { 'react/forbid-dom-props': nativeTooltipRule },
   },
   {
-    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}', 'packages/hero/**/*.{ts,tsx}'],
+    files: ['packages/ui/**/*.{ts,tsx}', 'packages/game-art/**/*.{ts,tsx}', 'packages/farm/**/*.{ts,tsx}', 'packages/hero/**/*.{ts,tsx}', 'packages/team-plan/**/*.{ts,tsx}'],
     plugins: { tailwindcss: eslintPluginTailwindcss },
     settings: {
       tailwindcss: {
         // Web app owns the Tailwind v4 entry; recipes in packages/ui, packages/game-art,
-        // packages/farm and packages/hero are scanned from there.
+        // packages/farm, packages/hero and packages/team-plan are scanned from there.
         cssConfigPath: webTailwindCss,
       },
     },
@@ -339,7 +365,7 @@ export default tseslint.config(
     rules: { 'no-restricted-imports': rawIconImportRule },
   },
   {
-    files: ['packages/farm/**/*.{ts,tsx}', 'packages/hero/**/*.{ts,tsx}'],
+    files: ['packages/farm/**/*.{ts,tsx}', 'packages/hero/**/*.{ts,tsx}', 'packages/team-plan/**/*.{ts,tsx}'],
     rules: { 'no-restricted-imports': rawIconImportRule },
   },
   // Stories sit outside packages/ui/tsconfig.json, so they cannot carry type-aware

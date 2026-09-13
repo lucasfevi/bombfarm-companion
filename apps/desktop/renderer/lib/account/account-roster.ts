@@ -10,14 +10,19 @@
  * lists heroes must not have to invent a pool override or a return-bonus mode to see them.
  */
 import { parseAccountPayload, type AccountImportData } from '@bombfarm/domain/import-save';
+import type { InventoryItem } from '@bombfarm/domain/inventory';
 import type { AccountView } from '@bombfarm/contracts';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { capturedAtOf } from './account-facts';
 
-/** One parse of one account read: its completed roster, and the account-wide values beside it. */
+/** One parse of one account read: its completed roster, the account-wide values beside it, and
+ *  the gear-only pool the same parse produced. */
 export type AccountRoster = {
   readonly heroes: HeroRecord[];
   readonly account: AccountImportData;
+  /** The gear-only pool the same parse produced — what the optimizer moves and forges. The
+   *  Inventory screen draws `inventoryView`, a different list on purpose. */
+  readonly inventory: InventoryItem[];
   /** Candidates `parseAccountPayload` blocked, in roster order. A blocked candidate's `record.pts`
    *  is zeroed by the parser, so a screen that spends or prices points must not treat it as a hero
    *  with none spent — `heroes` above still carries it, for the screens that only list heroes. */
@@ -53,5 +58,5 @@ export function buildAccountRoster(view: AccountView): AccountRoster | null {
     .filter((candidate) => candidate.blocked)
     .map((candidate) => ({ id: candidate.sourceId, name: candidate.name }));
 
-  return { heroes, account: parsed.account, pointsUnrecovered };
+  return { heroes, account: parsed.account, inventory: parsed.inventory, pointsUnrecovered };
 }

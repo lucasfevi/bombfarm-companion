@@ -1,0 +1,202 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import type { AccountReadRefusal } from '@bombfarm/contracts';
+import { STRINGS, sub } from '../lib/copy';
+import { accountReadRefusalText } from '../lib/account-read-labels';
+import { AccountRefreshControl, accountRefreshAgeLine } from './account-refresh-control';
+
+const en = STRINGS.en;
+
+function minutesAgo(minutes: number): string {
+  return new Date(Date.now() - minutes * 60_000).toISOString();
+}
+
+function render(props: Partial<Parameters<typeof AccountRefreshControl>[0]> = {}) {
+  return renderToStaticMarkup(
+    createElement(AccountRefreshControl, {
+      capturedAt: minutesAgo(0),
+      stale: false,
+      busy: false,
+      readState: { kind: 'idle' },
+      onRefresh: () => {},
+      ...props,
+    }),
+  );
+}
+
+describe('AccountRefreshControl — one control, always present, two states', () => {
+  it('offers the refresh whether or not the snapshot has gone out of date', () => {
+    expect(render({ stale: false })).toContain('data-testid="account-refresh"');
+    expect(render({ stale: true })).toContain('data-testid="account-refresh"');
+  });
+
+  it('states the age of the account the screen was computed from, while the live account still agrees with it', () => {
+    expect(render({ capturedAt: minutesAgo(5) })).toContain(sub(en.farmRefreshedAge, { age: en.ageMinutes.replace('{n}', '5') }));
+  });
+
+  it('reads as freshly read for the first minute rather than as a zero', () => {
+    expect(render({ capturedAt: minutesAgo(0) })).toContain(sub(en.farmRefreshedAge, { age: en.ageJustNow }));
+  });
+
+  it('says the numbers are out of date instead of their age once the live account has moved past them', () => {
+    const html = render({ stale: true, capturedAt: minutesAgo(5) });
+    expect(html).toContain(en.farmRefreshStale);
+    expect(html).not.toContain(en.farmRefreshedAge.replace('{age}', ''));
+  });
+
+  it('claims no age at all for an account that carries no readable capture time', () => {
+    const html = render({ capturedAt: null });
+    expect(html).toContain('data-testid="account-refresh-age"');
+    expect(html).not.toContain(en.farmRefreshedAge.replace('{age}', ''));
+    expect(html).not.toContain(en.ageJustNow);
+  });
+
+  it('says it is working and refuses a second press while a recompute is in flight', () => {
+    const html = render({ busy: true });
+    expect(html).toContain(en.farmRefreshBusy);
+    expect(html).toContain('disabled=""');
+    expect(html).toContain('aria-busy="true"');
+  });
+
+  it('is equally working while the account read is in flight, with the screen already re-solved', () => {
+    const html = render({ busy: false, readState: { kind: 'working' } });
+    expect(html).toContain(en.farmRefreshBusy);
+    expect(html).toContain('disabled=""');
+    expect(html).toContain('aria-busy="true"');
+  });
+
+  it('is pressable again once the recompute has settled', () => {
+    const html = render({ busy: false });
+    expect(html).toContain(en.farmRefresh);
+    expect(html).not.toContain('disabled=""');
+  });
+});
+
+/**
+ * The press asks the app to go and read the account, so it can be answered by a read that never
+ * started — and a screen that re-solved over the same account it already had, with nothing said,
+ * is the stale answer this control exists to make impossible to misread.
+ */
+describe('a press that started no read says why, beside the button', () => {
+  it('says nothing about a read that is not being refused', () => {
+    expect(render()).not.toContain('data-testid="account-refresh-refusal"');
+    expect(render({ readState: { kind: 'working' } })).not.toContain('data-testid="account-refresh-refusal"');
+  });
+
+  it.each<AccountReadRefusal>([
+    'rate_limited',
+    'offline',
+    'not_consented',
+    'game_not_running',
+    'token_unavailable',
+    'unavailable',
+  ])('has words for %s, in the same wording every other screen uses', (reason) => {
+    const html = render({ readState: { kind: 'refused', reason } });
+    expect(html).toContain(accountReadRefusalText(reason, en));
+    expect(html).toContain('data-testid="account-refresh-refusal"');
+  });
+
+  it('leaves the button pressable — a refusal is not a read in flight', () => {
+    const html = render({ readState: { kind: 'refused', reason: 'rate_limited' } });
+    expect(html).toContain(en.farmRefresh);
+    expect(html).not.toContain('disabled=""');
+  });
+
+  it('still states the age of the account the screen was computed from', () => {
+    const html = render({ capturedAt: minutesAgo(5), readState: { kind: 'refused', reason: 'offline' } });
+    expect(html).toContain(sub(en.farmRefreshedAge, { age: en.ageMinutes.replace('{n}', '5') }));
+  });
+});
+
+/**
+ * The regression this control was rewritten for. A screen recomputes from whatever account the
+ * renderer holds, and when the app has lost its ability to re-read the game that account stops
+ * moving — so pressing Refresh produced a brand-new calculation over hours-old numbers. Dating the
+ * line by the calculation made every such press read "just now"; dating it by the account read
+ * cannot, whatever the compute did.
+ */
+describe('the age line dates the account read, never the calculation', () => {
+  const t = STRINGS.en;
+
+  it('an account read three hours ago still reads as three hours old, however recently the screen was computed', () => {
+    const now = Date.now();
+    const line = accountRefreshAgeLine(new Date(now - 3 * 3_600_000).toISOString(), false, t, now);
+    expect(line).toBe(sub(t.farmRefreshedAge, { age: t.ageHours.replace('{n}', '3') }));
+    expect(line).not.toContain(t.ageJustNow);
+  });
+
+  it('two computes a minute apart over the SAME account read report the same age, not two fresh ones', () => {
+    const capturedAt = new Date(Date.now() - 40 * 60_000).toISOString();
+    const firstComputeAt = Date.now();
+    const secondComputeAt = firstComputeAt + 60_000;
+    expect(accountRefreshAgeLine(capturedAt, false, t, firstComputeAt)).toBe(
+      sub(t.farmRefreshedAge, { age: t.ageMinutes.replace('{n}', '40') }),
+    );
+    expect(accountRefreshAgeLine(capturedAt, false, t, secondComputeAt)).toBe(
+      sub(t.farmRefreshedAge, { age: t.ageMinutes.replace('{n}', '41') }),
+    );
+  });
+});
+
+describe('the Farm screen mounts the control unconditionally, over the board heading line', () => {
+  const source = readFileSync(path.join(__dirname, 'farm', 'farm-view.tsx'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\/\/.*$/gm, '');
+
+  it('the scan reads a real file', () => {
+    expect(source).toMatch(/export function FarmView/);
+  });
+
+  it('hands the control to the board as its header slot, with no staleness gate around it', () => {
+    expect(source).toContain('headerOverlay: (');
+    expect(source).toContain('<AccountRefreshControl');
+    expect(source).not.toMatch(/\{stale \?/);
+  });
+
+  it('refreshes through the screen\'s one recompute path, never a second call into the store', () => {
+    const refreshCalls = source.match(/\brefresh\(/g) ?? [];
+    expect(refreshCalls).toHaveLength(1);
+  });
+
+  // The defect this was rewritten for: the press re-solved the board from whatever account the
+  // renderer already held, so a gear change made seconds earlier could not reach it however many
+  // times it was pressed.
+  it('asks the app to go and read the account, not only to re-solve from the one in hand', () => {
+    expect(source).toContain('useAccountReadRequest(adoptLive)');
+  });
+});
+
+/**
+ * The Optimizer screen's own twin of the block above. Its connector is two files — the early
+ * states and the storage/open wiring in `optimizer-view.tsx`, the memo bags and the control in
+ * `optimizer-screen.tsx` — so the source scan reads both concatenated: the invariants are about
+ * the connector as a whole, not about which of the two files a given line happens to sit in.
+ */
+describe('the Optimizer screen mounts the control unconditionally, over the page title', () => {
+  const source =
+    readFileSync(path.join(__dirname, 'optimizer', 'optimizer-view.tsx'), 'utf8') +
+    readFileSync(path.join(__dirname, 'optimizer', 'optimizer-screen.tsx'), 'utf8');
+
+  it('the scan reads real files', () => {
+    expect(source).toMatch(/export function OptimizerView/);
+    expect(source).toMatch(/export function OptimizerScreen/);
+  });
+
+  it('hands the control to the package screen as its header slot, with no staleness gate around it', () => {
+    expect(source).toContain('headerOverlay: (');
+    expect(source).toContain('<AccountRefreshControl');
+    expect(source).not.toMatch(/\{stale \?/);
+  });
+
+  it('refreshes through the screen\'s one recompute path, never a second call into the store', () => {
+    const refreshCalls = source.match(/\brefresh\(\)/g) ?? [];
+    expect(refreshCalls).toHaveLength(1);
+  });
+
+  it('asks the app to go and read the account, not only to re-solve from the one in hand', () => {
+    expect(source).toContain('useAccountReadRequest(adoptLive)');
+  });
+});
