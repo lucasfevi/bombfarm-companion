@@ -93,6 +93,8 @@ export {
   passagemBastaoFieldPulse,
 } from './passagem-bastao';
 
+export { MATILHA_PER_RANK_PER_ALLY, MATILHA_CAP, matilhaMult, alliesOverRotation } from './matilha';
+
 export type { BirthStats, TreeSheetTotals, ComposeSheetFromBirthInput } from '../birth-sheet';
 export {
   nakedFromBirth,

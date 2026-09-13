@@ -113,6 +113,7 @@ export const heroPtBR: HeroCopy = {
   heroDetailAuraUnitCrit: "+{value} pontos de crítico",
   heroDetailAuraUnitSpeed: "+{value}% de velocidade",
   heroDetailAuraUnitDrain: "−{value}% de gasto de energia",
+  heroDetailAuraUnitPenetration: "+{value} pontos de penetração",
 
   heroDetailSheetTitle: "Ficha de atributos",
   heroDetailPointsTitle: "Pontos gastos",

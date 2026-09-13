@@ -668,6 +668,8 @@ function effectiveFacts(
     speedMult: combat.speedMult,
     critDmgMult: combat.critDmgMult,
     teamCritFlat: combat.teamCritFlat,
+    teamPenFlat: combat.teamPenFlat,
+    packMult: combat.packMult,
     treeSpeed: account.tree.speed,
     treeCritChance: account.tree.critChance,
     treeCritDmg: account.tree.critDmg,

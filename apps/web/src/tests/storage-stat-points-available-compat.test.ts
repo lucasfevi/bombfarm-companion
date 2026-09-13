@@ -104,7 +104,7 @@ describe('legacy statPointsAvailable compat (unspent-points wave)', () => {
       critDmgMult: mults.critDmgMult,
       teamCritFlat: mults.teamCritFlat,
       treeSheet: { danoStatic: 1, energyPct: 0, speedPct: 0, critChancePct: 0, critDmgPct: 0, luckFlatPct: 0 },
-      penetrationPp: mods.penetrationPp,
+      penetrationPp: mults.teamPenFlat,
       context,
       dmgMult: mults.dmgMult,
       mitigationPct: 6.7,

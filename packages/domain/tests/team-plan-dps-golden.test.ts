@@ -33,6 +33,18 @@
  * and −1.0% (soulbound); the 7-hero plan is byte-identical, the two 13-hero plans each dropped a
  * few moves (122 → 118, 56 → 54) and soulbound gained one point reset. Same method again.
  *
+ * RE-RECORDED A FOURTH TIME 2026-09-13, for the abilities pass — three abilities the objective
+ * had never priced. Passagem de Bastão became the field-wide pulse the wiki's scope column says
+ * it is (every hero on the field lit for 120 s of each carrier's rotation cycle, priced like the
+ * auras) in place of a multiplier on the carrier's own hits; the 7-hero capture's one rank-6
+ * carrier lifts both DPS figures +2.2% with the plan byte-identical, and crit-points' rank-20
+ * carrier lifts today's DPS +5.2% and the plan's +4.4%, with six fewer moves and a new loadout
+ * digest — the carrier's stint now moves every hero's score, not just its own. Soulbound carries
+ * no Baton Pass and no Brecha; what moved it +5.5% / +5.2% is Matilha — Jon's rank 20 and Nyx's
+ * rank 8, each priced at the allies its rotation keeps beside it — and the plan changed shape
+ * with it: 37 moves for 54, one fewer forge, two fewer point resets, and the seed that won went
+ * from the greedy per-hero seed back to the roster as it stands. Same method again.
+ *
  * NOT regime-bound: the claim is "this code still plans what it planned", an identity between two
  * revisions of the same arithmetic, not a statement about what the game rewards.
  */
@@ -68,8 +80,8 @@ const GOLDENS = [
   {
     file: 'save-20260819-11882-7heroes.json',
     forgeFloor: 10,
-    currentDps: 2730.7816982560526,
-    planDps: 3245.9126570147837,
+    currentDps: 2790.210159891838,
+    planDps: 3316.9354467552575,
     moves: 20,
     forges: 40,
     pointResets: 5,
@@ -79,24 +91,24 @@ const GOLDENS = [
   {
     file: 'save-20260823-13heroes-crit-points.json',
     forgeFloor: 10,
-    currentDps: 43204.307484230594,
-    planDps: 67612.8844235377,
-    moves: 118,
+    currentDps: 45459.16519724657,
+    planDps: 70558.72634133865,
+    moves: 112,
     forges: 18,
     pointResets: 11,
     seedUsed: 'current',
-    loadoutDigest: 'cdf8f8d268a527bf',
+    loadoutDigest: 'df9ebf69f5367bc8',
   },
   {
     file: 'save-20260831-13heroes-soulbound.json',
     forgeFloor: 10,
-    currentDps: 5498.891711943429,
-    planDps: 6001.207742594982,
-    moves: 54,
-    forges: 69,
-    pointResets: 10,
-    seedUsed: 'greedyHeroDps',
-    loadoutDigest: '038fbd4f97c3195c',
+    currentDps: 5798.730447486583,
+    planDps: 6312.744998349591,
+    moves: 37,
+    forges: 68,
+    pointResets: 8,
+    seedUsed: 'current',
+    loadoutDigest: '8b0a3d02618aedb7',
   },
 ];
 

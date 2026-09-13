@@ -1,7 +1,11 @@
 import type { PlannerStore } from '@/shared/stores/planner-store';
 import type { AccountShared } from '@/shared/lib/storage';
 import type { AccountShared as CombatAccount } from '@bombfarm/domain/shims/storage';
-import { computeTeamBuffsAroundHero, type TeamBuffId } from '@bombfarm/domain/team-buffs';
+import {
+  computeTeamBuffsAroundHero,
+  fieldAlliesAroundHero,
+  type TeamBuffId,
+} from '@bombfarm/domain/team-buffs';
 
 export const selectTreeDanoTotal = (state: PlannerStore) => state.treeDanoTotal;
 export const selectTreeCritChance = (state: PlannerStore) => state.treeCritChance;
@@ -74,6 +78,14 @@ export function selectActiveHeroTeamBuffs(state: PlannerStore): Record<TeamBuffI
     result,
   };
   return result;
+}
+
+/**
+ * The deployed heroes beside the active one — the field its own screen prices Matilha on
+ * (`fieldAlliesAroundHero`). A count, so it needs no cache: a changed value changes the dep.
+ */
+export function selectActiveHeroFieldAllies(state: PlannerStore): number {
+  return fieldAlliesAroundHero({ id: state.activeHeroId ?? '' }, state.heroes);
 }
 
 /** Nested AccountShared for persistence writes — inverse of hydrateAccount. */
@@ -190,14 +202,16 @@ let activeHeroAccountCache: CombatAccount | null = null;
 export function selectActiveHeroAccount(state: PlannerStore): CombatAccount {
   const shared = selectAccountShared(state);
   const teamBuffs = selectActiveHeroTeamBuffs(state);
+  const fieldAllies = selectActiveHeroFieldAllies(state);
   if (
     activeHeroAccountCache &&
     activeHeroAccountCache.teamBuffs === teamBuffs &&
+    activeHeroAccountCache.fieldAllies === fieldAllies &&
     Object.is(activeHeroAccountCache.context, shared.context)
   ) {
     return activeHeroAccountCache;
   }
-  activeHeroAccountCache = { ...shared, teamBuffs };
+  activeHeroAccountCache = { ...shared, teamBuffs, fieldAllies };
   return activeHeroAccountCache;
 }
 

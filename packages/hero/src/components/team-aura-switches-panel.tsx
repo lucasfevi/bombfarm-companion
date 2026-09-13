@@ -17,19 +17,21 @@ const UNIT_KEY: Record<TeamBuffId, keyof HeroCopy> = {
   pressagio_mortal: 'heroDetailAuraUnitCrit',
   marcha_acelerada: 'heroDetailAuraUnitSpeed',
   folego_mineiro: 'heroDetailAuraUnitDrain',
+  brecha: 'heroDetailAuraUnitPenetration',
 };
 
-/** Marcha's per-level step is 0.185%, so its totals need the second decimal; the other three
- *  move in whole units. */
+/** Marcha's per-level step is 0.185%, so its totals need the second decimal; the others move
+ *  in whole units. */
 const UNIT_DECIMALS: Record<TeamBuffId, number> = {
   grito_guerra: 0,
   pressagio_mortal: 0,
   marcha_acelerada: 2,
   folego_mineiro: 0,
+  brecha: 0,
 };
 
 /**
- * The four team auras from one hero's seat, and a switch per aura for the rest of the roster.
+ * The standing team auras from one hero's seat, and a switch per aura for the rest of the roster.
  *
  * A hero's detail screen prices the hero alone: its own aura always counts, and every other
  * fielded carrier is a what-if behind its switch — on, at full presence. The tip says so, and

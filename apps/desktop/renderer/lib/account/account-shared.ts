@@ -17,10 +17,14 @@
  * number from an invented one.
  */
 import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
-import { computeTeamBuffsAroundHero, type TeamAuraSwitches } from '@bombfarm/domain/team-buffs';
+import {
+  computeTeamBuffsAroundHero,
+  fieldAlliesAroundHero,
+  type TeamAuraSwitches,
+} from '@bombfarm/domain/team-buffs';
 import type { AccountRoster } from './account-roster';
 
-export type AccountBlock = Omit<AccountShared, 'teamBuffs'>;
+export type AccountBlock = Omit<AccountShared, 'teamBuffs' | 'fieldAllies'>;
 
 export function buildAccountBlock(roster: AccountRoster): AccountBlock | null {
   const { account } = roster;
@@ -60,13 +64,18 @@ export function buildAccountBlock(roster: AccountRoster): AccountBlock | null {
   };
 }
 
-/** The block with ONE hero's team-aura total overlaid — the account that hero's figures compute
- *  against (`computeTeamBuffsAroundHero`). */
+/** The block with ONE hero's field overlaid — its team-aura total (`computeTeamBuffsAroundHero`)
+ *  and the deployed heroes beside it (`fieldAlliesAroundHero`) — the account that hero's figures
+ *  compute against. */
 export function accountAroundHero(
   block: AccountBlock,
   hero: Pick<HeroRecord, 'id' | 'abilities'>,
-  roster: readonly Pick<HeroRecord, 'id' | 'abilities' | 'battleAllowed'>[],
+  roster: readonly Pick<HeroRecord, 'id' | 'abilities' | 'battleAllowed' | 'deployed'>[],
   switches: TeamAuraSwitches,
 ): AccountShared {
-  return { ...block, teamBuffs: computeTeamBuffsAroundHero(hero, roster, switches) };
+  return {
+    ...block,
+    teamBuffs: computeTeamBuffsAroundHero(hero, roster, switches),
+    fieldAllies: fieldAlliesAroundHero(hero, roster),
+  };
 }

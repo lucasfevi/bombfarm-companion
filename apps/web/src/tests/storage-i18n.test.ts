@@ -141,10 +141,10 @@ describe('planner tabs IA (PTI-*)', () => {
 describe('effective stats panel chrome (EST-*)', () => {
   it('effectiveTip clarifies post-pipeline sources in EN and PT', () => {
     expect(STRINGS.en.effectiveTip).toBe(
-      'Includes gear, points, skill tree, abilities, and the team auras switched on above. Baton Pass is not counted here; the Farm page and the Optimizer count its entry pulse.',
+      'Includes gear, points, skill tree, abilities, and the team auras switched on above. Baton Pass counts this hero’s own pulse over its own stint; the other carriers’ pulses are counted on the Farm page and the Optimizer. Pack counts the heroes deployed beside this one.',
     );
     expect(STRINGS.pt.effectiveTip).toBe(
-      'Inclui equipamento, pontos, árvore, habilidades e as auras de time ligadas acima. Passagem de Bastão não entra aqui; a página Farm e o Otimizador contam o pulso de entrada dela.',
+      'Inclui equipamento, pontos, árvore, habilidades e as auras de time ligadas acima. Passagem de Bastão conta o pulso do próprio herói no tempo em campo dele; os pulsos dos outros portadores entram na página Farm e no Otimizador. Matilha conta os heróis em campo ao lado deste.',
     );
   });
 
@@ -205,6 +205,7 @@ describe('effective stats panel chrome (EST-*)', () => {
       'bdTermTree',
       'bdTermAbl',
       'bdTermExtra',
+      'bdTermPack',
       'bdTermAtk',
       'bdTermMitigation',
       'bdTermDamage',

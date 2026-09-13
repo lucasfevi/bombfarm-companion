@@ -158,7 +158,7 @@ describe('evaluateRoster', () => {
       sheetOther: { speed: 0, critChanceFlat: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       mods: {
         drainMult: 1,
-        penetrationPp: 0,
+        packDmgPctPerAlly: 0,
         rangeCells: 0,
         dmgMult: 1,
         gateAttackMult: 1,
@@ -217,7 +217,7 @@ describe('evaluateRoster', () => {
       sheetOther: { speed: 0, critChanceFlat: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       mods: {
         drainMult: 1,
-        penetrationPp: 0,
+        packDmgPctPerAlly: 0,
         rangeCells: 0,
         dmgMult: 1,
         gateAttackMult: 1,
@@ -277,7 +277,7 @@ describe('evaluateRoster', () => {
       sheetOther: { speed: 0, critChanceFlat: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       mods: {
         drainMult: 1,
-        penetrationPp: 0,
+        packDmgPctPerAlly: 0,
         rangeCells: 0,
         dmgMult: 1,
         gateAttackMult: 1,
@@ -343,7 +343,7 @@ describe('evaluateRoster', () => {
       sheetOther: { speed: 0, critChanceFlat: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       mods: {
         drainMult: 1,
-        penetrationPp: 0,
+        packDmgPctPerAlly: 0,
         rangeCells: 0,
         dmgMult: 1,
         gateAttackMult: 1,
@@ -403,7 +403,7 @@ describe('evaluateRoster', () => {
       sheetOther: { speed: 0, critChanceFlat: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       mods: {
         drainMult: 1,
-        penetrationPp: 0,
+        packDmgPctPerAlly: 0,
         rangeCells: 0,
         dmgMult: 1,
         gateAttackMult: 1,

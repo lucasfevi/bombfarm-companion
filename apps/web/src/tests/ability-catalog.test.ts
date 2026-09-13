@@ -20,7 +20,7 @@ const readSrc = (rel: string) => readFileSync(resolve(root, rel), 'utf8');
 
 const IDENTITY_MODS = {
   drainMult: 1,
-  penetrationPp: 0,
+  packDmgPctPerAlly: 0,
   rangeCells: 0,
   dmgMult: 1,
   gateAttackMult: 1,
@@ -78,12 +78,13 @@ describe('catalog completeness (T2)', () => {
     }
   });
 
-  it('brecha is { kind: none }, not penetrationPp — on-sheet status not proven', () => {
+  it("brecha is team penetration points — penetrationPp without onSheet, never the carrier's own sheet", () => {
     const brecha = ABILITIES.find((a) => a.id === 'brecha');
-    expect(brecha?.effect).toEqual({ kind: 'none' });
+    expect(brecha?.effect).toEqual({ kind: 'penetrationPp', perLevel: 1 });
+    expect(abilityMods({ brecha: 20 }).sheetPenetrationFlat).toBe(0);
   });
 
-  it("SHEET_ABILITIES is unchanged by the three new kind:'none' entries (re-asserted)", () => {
+  it("SHEET_ABILITIES is unchanged — a team aura's points are not a sheet ability's (re-asserted)", () => {
     expect(SHEET_ABILITIES.map((a) => a.id)).toEqual(['ponta_diamante', 'olho_clinico', 'golpe_brutal']);
   });
 });
@@ -175,10 +176,10 @@ describe('rank-20 migration', () => {
     expect(abilityMods({ explosao_ampla: 20 }).rangeCells).toBeCloseTo(2, 10);
   });
 
-  it('passagem_bastao is rank-20 damage-on-enter copy and stays off the sheet — the Farm board and the Optimizer price the pulse', () => {
+  it('passagem_bastao is rank-20 damage-on-enter copy — a team pulse the sheet never carries', () => {
     const def = ABILITIES.find((a) => a.id === 'passagem_bastao')!;
     expect(def.max).toBe(20);
-    expect(def.effect).toEqual({ kind: 'none' });
+    expect(def.effect).toEqual({ kind: 'teamPulseDmgPct', perLevel: 4 });
     expect(def.effectText).not.toMatch(/não modelado/);
     expect(def.effectText).toMatch(/4%/);
     expect(def.effectText).toMatch(/120/);
@@ -229,7 +230,7 @@ describe('golpe_brutal — critDmgFlat (flat crit damage, POINT_GAIN.critDmgFlat
     expect(mods.sheetCritDmgFlat).toBe(52);
     expect(mods.drainMult).toBe(IDENTITY_MODS.drainMult);
     expect(mods.gateAttackMult).toBe(IDENTITY_MODS.gateAttackMult);
-    expect(mods.penetrationPp).toBe(IDENTITY_MODS.penetrationPp);
+    expect(mods.packDmgPctPerAlly).toBe(IDENTITY_MODS.packDmgPctPerAlly);
     expect(mods.rangeCells).toBe(IDENTITY_MODS.rangeCells);
     expect(mods.dmgMult).toBe(IDENTITY_MODS.dmgMult);
   });

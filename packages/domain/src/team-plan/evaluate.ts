@@ -1,5 +1,6 @@
 import type { Loadout } from '../gear/types';
 import {
+  alliesOverRotation,
   passagemBastaoFieldPulse,
   passagemBastaoPresence,
   type PassagemBastaoCarrier,
@@ -56,6 +57,27 @@ export function scoringLoadoutsFor(
 }
 
 type Stint = { fieldSeconds: number; duty: number };
+
+/**
+ * Matilha's allies for every hero on the rotation, from the duties the auras are weighted by:
+ * each other squad hero beside the carrier for its own duty, capped by the field's other slots
+ * (`alliesOverRotation`). Like the aura total it reads the PREVIOUS round's duties, since a
+ * hero's damage is priced before its own stint this round is known.
+ */
+function alliesByHeroId(
+  contexts: readonly HeroPlanContext[],
+  dutyByHeroId: Readonly<Record<string, number>>,
+  slots: number,
+): Record<string, number> {
+  const presence = contexts.map((ctx) =>
+    isSquadScope(ctx.scope) ? (dutyByHeroId[ctx.heroId] ?? 0) : 0,
+  );
+  const out: Record<string, number> = {};
+  contexts.forEach((ctx, index) => {
+    out[ctx.heroId] = alliesOverRotation(presence, index, slots);
+  });
+  return out;
+}
 
 /**
  * Passagem de Bastão over the rotation, priced as the auras are (`computeRosterAuras`): every
@@ -179,13 +201,14 @@ export function screenRosterObjective(
   // is computed once, not once per changed hero. The incumbent's field pulse is reused the same
   // way: a move changes a carrier's stint by a few percent, and the pulse it lights by less.
   const auras = computeRosterAuras(input.contexts, base.dutyByHeroId);
+  const allies = alliesByHeroId(input.contexts, base.dutyByHeroId, slots);
 
   for (const heroId of changedHeroIds) {
     const ctx = input.contexts.find((candidate) => candidate.heroId === heroId);
     if (!ctx || ctx.scope !== 'optimize') continue;
     const loadout = loadoutForScoring(input.loadoutsByHeroId[heroId] ?? {}, input.forgeFloor);
     const pts = input.ptsByHeroId[heroId] ?? ctx.pts;
-    const raw = scoreHeroLoadout(ctx, loadout, pts, auras, input.farm, input.scoreMemo);
+    const raw = scoreHeroLoadout(ctx, loadout, pts, auras, input.farm, input.scoreMemo, allies[heroId]);
     sumDuty += raw.duty - (base.perHero[heroId]?.duty ?? 0);
     scores[heroId] = applyFieldPulse(raw, base.entryPulseMult);
   }
@@ -205,9 +228,10 @@ function leaveAloneStint(
   input: EvaluateRosterInput,
   auras: Record<TeamBuffId, number>,
   memo: ScoreMemo,
+  fieldAllies: number,
 ): Stint {
   const loadout = input.loadoutsByHeroId[ctx.heroId] ?? {};
-  const score = scoreHeroLoadout(ctx, loadout, ctx.pts, auras, input.farm, memo);
+  const score = scoreHeroLoadout(ctx, loadout, ctx.pts, auras, input.farm, memo, fieldAllies);
   return { fieldSeconds: score.fieldSeconds, duty: score.duty };
 }
 
@@ -239,11 +263,12 @@ export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
     // the whole round (only `nextDuties` accumulates as heroes are scored), so this is hoisted
     // out of the per-hero loop below rather than recomputed once per hero.
     const roundAuras = computeRosterAuras(input.contexts, duties);
+    const roundAllies = alliesByHeroId(input.contexts, duties, slots);
     const stints: Record<string, Stint> = {};
     for (const ctx of optimizeContexts) {
       const loadout = scoringLoadouts[ctx.heroId];
       const pts = input.ptsByHeroId[ctx.heroId] ?? ctx.pts;
-      const raw = scoreHeroLoadout(ctx, loadout, pts, roundAuras, input.farm, memo);
+      const raw = scoreHeroLoadout(ctx, loadout, pts, roundAuras, input.farm, memo, roundAllies[ctx.heroId]);
       roundScores[ctx.heroId] = raw;
       stints[ctx.heroId] = raw;
       nextDuties[ctx.heroId] = raw.duty;
@@ -253,7 +278,7 @@ export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
     // A leave-alone hero fields too (`isSquadScope`), so its aura is weighted by its own duty —
     // which the round's auras move through Fôlego like everyone else's, hence per round.
     for (const ctx of leaveAloneContexts) {
-      const stint = leaveAloneStint(ctx, input, roundAuras, memo);
+      const stint = leaveAloneStint(ctx, input, roundAuras, memo, roundAllies[ctx.heroId]);
       stints[ctx.heroId] = stint;
       nextDuties[ctx.heroId] = stint.duty;
     }

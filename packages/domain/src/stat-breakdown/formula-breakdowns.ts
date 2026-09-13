@@ -31,12 +31,13 @@ export function formulaMitF(facts: PipelineFacts): FormulaBreakdown {
  */
 export function formulaDmg(facts: PipelineFacts): FormulaBreakdown {
   const abl = facts.mods.dmgMult;
+  const pack = facts.packMult;
   const extra = 1 + facts.extraDmgPct / 100;
   const value = facts.dmgMult;
   return {
     kind: 'formula',
     expressionKey: 'bdFormulaDmg',
-    substituted: `${formatBreakdownNumber(abl, 3)} × ${formatBreakdownNumber(extra, 3)} = ${formatBreakdownNumber(value, 3)}`,
+    substituted: `${formatBreakdownNumber(abl, 3)} × ${formatBreakdownNumber(pack, 3)} × ${formatBreakdownNumber(extra, 3)} = ${formatBreakdownNumber(value, 3)}`,
     value,
   };
 }

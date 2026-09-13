@@ -234,10 +234,10 @@ export type TeamPlanAccountInput = {
 /**
  * The build-independent half of one hero's farm basis, extracted once per run.
  *
- * `dmgMult` and the two loot ability levels are functions of the hero's abilities and the frozen
- * team auras alone — no gear, no points — so they survive every candidate the search tries. The
- * build-DEPENDENT half (the effective sheet, its per-point deltas, and the farm `Context`) comes
- * from the scorer per evaluation and is combined with this.
+ * `dmgMult` and the two loot ability levels are functions of the hero's abilities, the frozen
+ * team auras and the frozen field size alone — no gear, no points — so they survive every
+ * candidate the search tries. The build-DEPENDENT half (the effective sheet, its per-point
+ * deltas, and the farm `Context`) comes from the scorer per evaluation and is combined with this.
  */
 export type FrozenHeroFarmTerms = {
   /** The very `HeroPlanContext` the run was built from — fixed for a whole `runTeamPlan`, which

@@ -3,7 +3,10 @@ import {
   type AdvisorPipelineResult,
 } from '@bombfarm/domain/advisor-pipeline';
 import { substituteHeroAbilities } from '@bombfarm/domain/team-buffs';
-import { selectActiveHeroTeamBuffs } from '@/shared/stores/selectors/account-selectors';
+import {
+  selectActiveHeroFieldAllies,
+  selectActiveHeroTeamBuffs,
+} from '@/shared/stores/selectors/account-selectors';
 import {
   selectCombatMitigationPct,
   selectCombatPhase,
@@ -52,6 +55,8 @@ export function readAdvisorDepTuple(state: PlannerStore): readonly unknown[] {
     // reference that only changes when the roster, the active hero or a switch actually does
     // (`selectActiveHeroTeamBuffs`).
     selectActiveHeroTeamBuffs(state),
+    // The deployed heroes beside the active one — Matilha's allies (`fieldAlliesAroundHero`).
+    selectActiveHeroFieldAllies(state),
     // The active hero's own team-aura ranks are folded into that total at combine time
     // (PR #139's substitution, `substituteHeroAbilities`), not by `abilityMods` any more — so
     // a change to EITHER the roster (the active hero's last-persisted ranks) or `activeHeroId`
@@ -123,6 +128,7 @@ export function selectAdvisorPipeline(state: PlannerStore): AdvisorPipelineResul
     treeEnergy: state.treeEnergy,
     treeLuckFlatPct: state.treeLuckFlatPct,
     teamBuffs: previewTeamBuffs(state),
+    fieldAllies: selectActiveHeroFieldAllies(state),
     houseIdx: state.houseIdx,
     houseLevel: state.houseLevel,
     houseCycleSecs: state.houseCycleSecs,

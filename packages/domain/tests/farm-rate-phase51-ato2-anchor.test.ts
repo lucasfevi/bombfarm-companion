@@ -200,15 +200,16 @@ describe('nothing binds on this account — the structural change since the reti
 });
 
 describe('the resulting rates', () => {
-  it('clearSecs is 27.65s — ~0.6% above the measured arithmetic mean of 27.483s', () => {
+  it('clearSecs is 27.70s — ~0.8% above the measured arithmetic mean of 27.483s', () => {
     // 24.3685s / -11.3% before the clear was charged for its head, 23.886s before the FIFO
     // field queue took 2% of this roster's throughput, and 27.9809s before the one Baton Pass
-    // carrier's field-wide pulse was priced. The head is 3.553s here: 7.3648 heroes coming up
-    // 0.5s apart, then the opening bomb's 1.9619s uptime-weighted fuse burning on an empty field.
-    expect(row.clearSecs).toBeCloseTo(27.6501, 3);
+    // carrier's field-wide pulse was priced (this roster carries no Brecha or Matilha, so the
+    // abilities pass moved it by that pulse alone). The head is 3.553s here: 7.3648 heroes coming
+    // up 0.5s apart, then the opening bomb's 1.9619s uptime-weighted fuse burning on an empty field.
+    expect(row.clearSecs).toBeCloseTo(27.7041, 3);
 
     const residual = row.clearSecs / OBSERVED_CLEAR_SECS - 1;
-    expect(residual).toBeCloseTo(0.0061, 3);
+    expect(residual).toBeCloseTo(0.008, 3);
 
     // The model now clears SLOWER than the measurement rather than faster — a sign change, not a
     // shrunken magnitude, which is what makes the head term a correction rather than a fudge
@@ -216,14 +217,14 @@ describe('the resulting rates', () => {
     expect(row.clearSecs).toBeGreaterThan(OBSERVED_CLEAR_SECS);
   });
 
-  it('goldPerHour is ~18.03M — ~5.3% BELOW the measured 19,033,500, where it was 7.5% above', () => {
+  it('goldPerHour is ~18.00M — ~5.4% BELOW the measured 19,033,500, where it was 7.5% above', () => {
     // Left as a point comparison rather than a tolerance band, so that any UNRELATED move (a wiki
     // refresh, a sheet-math change) shows up as a change to THIS number, distinct from the
     // tracked residual itself. 17,819,180 before the entry pulse was priced.
-    expect(row.goldPerHour).toBeCloseTo(18_032_419, -3);
+    expect(row.goldPerHour).toBeCloseTo(17_997_272, -3);
 
     const residual = row.goldPerHour / OBSERVED_GOLD_PER_HOUR - 1;
-    expect(residual).toBeCloseTo(-0.0526, 3);
+    expect(residual).toBeCloseTo(-0.0544, 3);
   });
 
   it('the gold residual is now the presence term ALONE — the cancellation this file exists to catch is gone', () => {
@@ -235,11 +236,11 @@ describe('the resulting rates', () => {
     const cadence = goldFactor / presence;
 
     expect(presence).toBeCloseTo(0.93072, 4);
-    expect(cadence).toBeCloseTo(1.01792, 4);
+    expect(cadence).toBeCloseTo(1.01594, 4);
     // It was 1.15500, and 0.93072 × 1.15500 = 1.07499 — an error of 15% and an error of 7% in
     // opposite directions, reading as a 7.5% overshoot.
     expect(0.93072 * 1.155).toBeCloseTo(1.07499, 4);
-    // +0.8% before Baton Pass was priced, +1.8% with the field-wide pulse: the ability credits
+    // +0.6% before Baton Pass was priced, +1.6% with the field-wide pulse: the ability credits
     // this roster 1.0% more cadence than this window's gold supports, in the direction the
     // header's upper-bound caveat predicts. Recorded rather than fitted away — the comparator's
     // own sub-windows disagree by far more than that — but a term that took the cadence residual

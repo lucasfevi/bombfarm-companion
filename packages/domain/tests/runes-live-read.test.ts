@@ -141,6 +141,8 @@ describe('the per-statistic breakdown on this read', () => {
     speedMult: combat.speedMult,
     critDmgMult: combat.critDmgMult,
     teamCritFlat: combat.teamCritFlat,
+    teamPenFlat: combat.teamPenFlat,
+    packMult: combat.packMult,
     treeSpeed: tree.speed_add * 100,
     treeCritChance: tree.crit_chance_add * 100,
     treeCritDmg: tree.crit_dmg_add * 100,

@@ -112,6 +112,7 @@ export const heroEn = {
   heroDetailAuraUnitCrit: "+{value} crit points",
   heroDetailAuraUnitSpeed: "+{value}% speed",
   heroDetailAuraUnitDrain: "−{value}% energy drain",
+  heroDetailAuraUnitPenetration: "+{value} penetration points",
 
   heroDetailSheetTitle: "Statistic sheet",
   heroDetailPointsTitle: "Points spent",

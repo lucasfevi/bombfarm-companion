@@ -281,7 +281,6 @@ describe('defaultNaked (static naked sheet)', () => {
       [10, 13],
     ] as const) {
       const mods = abilityMods(rank > 0 ? { ponta_diamante: rank } : {});
-      expect(mods.penetrationPp).toBe(0);
       expect(mods.sheetPenetrationFlat).toBe(1 * rank);
       const rescaled = rescaleNakedPen(nakedBase, 0, mods.sheetPenetrationFlat);
       expect(rescaled.penetration).toBeCloseTo(expected, 6);

@@ -15,6 +15,7 @@ import { describe, expect, it } from 'vitest';
 import { emptyLoadout, emptySheet } from '@bombfarm/domain/gear';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
 import {
+  TEAM_BUFF_ABILITY_IDS,
   TEAM_BUFF_CAP,
   TEAM_BUFF_PER_LEVEL,
   computeTeamBuffsFromDeployed,
@@ -149,11 +150,9 @@ describe('every aura id is priced, and an empty roster is a total function', () 
     }
   });
 
-  it('prices all four auras from one roster, each against its own cap', () => {
-    const roster = [
-      hero('a', { grito_guerra: 20, folego_mineiro: 20, marcha_acelerada: 20, pressagio_mortal: 20 }),
-      hero('b', { grito_guerra: 20, folego_mineiro: 20, marcha_acelerada: 20, pressagio_mortal: 20 }),
-    ];
+  it('prices every standing aura from one roster, each against its own cap', () => {
+    const allAtMax = Object.fromEntries(TEAM_BUFF_ABILITY_IDS.map((id) => [id, 20]));
+    const roster = [hero('a', allAtMax), hero('b', allAtMax)];
     const out = computeTeamBuffsOverRotation(roster, [1, 1]);
     for (const [id, cap] of Object.entries(TEAM_BUFF_CAP)) {
       expect(out[id as keyof typeof TEAM_BUFF_CAP]).toBeCloseTo(cap, 9);

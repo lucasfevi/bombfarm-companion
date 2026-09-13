@@ -242,15 +242,17 @@ describe('ARTIFACT_BACKED_SECTIONS — a wiki value held as a source constant is
     expect(ARTIFACT_BACKED_SECTIONS['data.combate']).toEqual([
       'packages/domain/src/model/combat.ts',
       'packages/domain/src/model/passagem-bastao.ts',
+      'packages/domain/src/model/matilha.ts',
     ]);
   });
 
-  it('those two really do hold the combat constants named', () => {
+  it('those three really do hold the combat constants named', () => {
     const combat = readFileSync(join(root, '../packages/domain/src/model/combat.ts'), 'utf8');
     const passagem = readFileSync(
       join(root, '../packages/domain/src/model/passagem-bastao.ts'),
       'utf8',
     );
+    const matilha = readFileSync(join(root, '../packages/domain/src/model/matilha.ts'), 'utf8');
     expect(combat).toContain('GRID_SPEED_COEF');
     expect(combat).toContain('EFF_IA');
     // The values, not re-exports of them: a barrel that spells the names would pass a bare
@@ -258,6 +260,22 @@ describe('ARTIFACT_BACKED_SECTIONS — a wiki value held as a source constant is
     expect(passagem).toMatch(/PASSAGEM_BASTAO_PER_RANK = 0\.04/);
     expect(passagem).toMatch(/PASSAGEM_BASTAO_WINDOW_SEC = 120/);
     expect(passagem).toMatch(/PASSAGEM_BASTAO_COOLDOWN_SEC = 600/);
+    expect(matilha).toMatch(/MATILHA_CAP = 0\.9/);
+  });
+
+  // Third instance: the ability catalog's per-level rates are hand-maintained in source, and the
+  // capture that backed the drift check sat two rate changes stale before anyone read it there.
+  it('data.habilidades names the catalog and the two rule modules beside the generated JSON', () => {
+    expect(ARTIFACT_BACKED_SECTIONS['data.habilidades']).toEqual([
+      'packages/domain/src/data/phase-wiki.json',
+      'packages/domain/src/model/abilities.ts',
+      'packages/domain/src/model/passagem-bastao.ts',
+      'packages/domain/src/model/matilha.ts',
+    ]);
+    const abilities = readFileSync(join(root, '../packages/domain/src/model/abilities.ts'), 'utf8');
+    const matilha = readFileSync(join(root, '../packages/domain/src/model/matilha.ts'), 'utf8');
+    expect(abilities).toMatch(/id: 'misericordia'.*perLevel: 0\.75/);
+    expect(matilha).toMatch(/MATILHA_PER_RANK_PER_ALLY = 0\.005/);
   });
 });
 

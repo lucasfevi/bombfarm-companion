@@ -98,8 +98,10 @@ describe('abilityGainFor — states that are not a gain', () => {
   });
 
   it('reports an ability the model does not carry as not-modelled, without running the model', () => {
-    const hale = heroByName('Hale');
-    expect(heroAbilityIds(hale.abilities)).toEqual(['passagem_bastao']);
+    // Hale's whole pool is Passagem de Bastão, which the model prices now — so the pool is
+    // swapped for one unmodelled ability to keep the "no model run at all" claim testable.
+    const hale = { ...heroByName('Hale'), abilities: { caca_hero: 4 } };
+    expect(heroAbilityIds(hale.abilities)).toEqual(['caca_hero']);
 
     resetEnergySwitchPointCallCount();
     const rows = abilityGainFor(hale, account, PHASE, MITIGATION_PCT);

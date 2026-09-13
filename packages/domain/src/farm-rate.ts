@@ -34,7 +34,7 @@
  *
  * TEAM AURAS ARE PRICED OVER THE ROTATION, NOT OFF THE DEPLOYED LINE-UP. This board rotates a
  * whole pool through the House for hours, so a carrier supplies its aura only for its own share
- * of wall clock. {@link computeHeroFarmBases} therefore derives the four combat auras from the
+ * of wall clock. {@link computeHeroFarmBases} therefore derives the standing combat auras from the
  * ENABLED POOL's own ability ranks, weighted by each hero's uptime
  * (`computeTeamBuffsOverRotation`), and pays a second pipeline pass per hero to do it; the
  * caller's account carries no aura total at all ({@link FarmAccount}). Reading a snapshot of the
@@ -81,6 +81,8 @@ import {
   fieldSeconds,
   HOP_FIT_ATO,
   cycleSecondsForHero,
+  alliesOverRotation,
+  matilhaMult,
   passagemBastaoFieldPulse,
   passagemBastaoPresence,
   type Context,
@@ -301,7 +303,8 @@ export type HeroFarmBasis = {
   /** The hero's farm `Context`. `drainMult`, `restSeconds` and `blastRange` are read;
    *  `mitigation` is 0 here and is never read — the row layer applies phase mitigation. */
   context: Context;
-  /** Ability/team damage multiplier — build-independent. */
+  /** Ability damage multiplier, Matilha's pack factor at the field the basis was priced for
+   *  included — a function of the abilities and the field size, never of gear or points. */
   dmgMult: number;
   /** Hero-only Sorte, PERCENTAGE POINTS. Frozen: luck is outside the reallocatable budget. */
   heroLuckPct: number;
@@ -321,15 +324,18 @@ export type HeroFarmBasis = {
 };
 
 /**
- * One hero's pipeline terms with the team auras held at zero — the base the aura layer is applied
- * to. `selfDrainMult` is the hero's own drain reduction (Bateria Extra) — the pipeline's own
- * input to {@link combineDrainRate}, kept so Fôlego can be combined with it per candidate.
+ * One hero's pipeline terms with the team auras held at zero and the hero alone on the field —
+ * the base the aura layer is applied to. `selfDrainMult` is the hero's own drain reduction
+ * (Bateria Extra) — the pipeline's own input to {@link combineDrainRate}, kept so Fôlego can be
+ * combined with it per candidate. `dmgMult` is the pipeline's with no ally beside the hero, so
+ * Matilha's pack factor can be priced at the field each candidate assignment sustains.
  */
 export type AuraFreeFarmTerms = {
   effective: HeroSheet;
   effectiveDelta: EffectiveDeltas;
   context: Context;
   selfDrainMult: number;
+  dmgMult: number;
   abilities: Record<string, number>;
 };
 
@@ -381,17 +387,17 @@ export function heroFarmBasisFromParts(parts: HeroFarmBasisParts): HeroFarmBasis
 }
 
 /**
- * One `pipelineForHero` call per enabled hero, with every team aura OFF. Order follows `heroes`.
- * The bases come back at the identity aura layer, carrying their aura-free terms;
- * {@link computeHeroFarmBases} prices the layer on afterwards. Whatever `teamBuffs` the caller's
- * account carries is not read.
+ * One `pipelineForHero` call per enabled hero, with every team aura OFF and no ally on the field.
+ * Order follows `heroes`. The bases come back at the identity aura layer, carrying their
+ * aura-free terms; {@link computeHeroFarmBases} prices the layer on afterwards. Whatever
+ * `teamBuffs` or `fieldAllies` the caller's account carries is not read.
  */
 function auraFreeBasesForAccount(
   enabledHeroes: readonly HeroRecord[],
   account: FarmAccount,
 ): HeroFarmBasis[] {
   const treeLuckFlatPct = account.tree.luckFlatPct ?? 0;
-  const auraFreeAccount: AccountShared = { ...account, teamBuffs: zeroTeamBuffs() };
+  const auraFreeAccount: AccountShared = { ...account, teamBuffs: zeroTeamBuffs(), fieldAllies: 0 };
 
   return enabledHeroes.map((hero) => {
     // The sole HeroRecord entry to the pipeline. phase=1 (not null) + mitigationPct=0
@@ -416,35 +422,45 @@ function auraFreeBasesForAccount(
         effectiveDelta: pipeline.A.effectiveDelta,
         context: pipeline.context,
         selfDrainMult: abilityMods(hero.abilities).drainMult,
+        dmgMult: pipeline.dmgMult,
         abilities: hero.abilities,
       },
     });
   });
 }
 
+/** The rotation's aura totals and, per hero, the allies Matilha sees beside it — one priced
+ *  field for one candidate assignment. */
+type FieldLayer = {
+  teamBuffs: Record<TeamBuffId, number>;
+  alliesByHeroId: ReadonlyMap<string, number>;
+};
+
 /**
- * What the four team auras do to one hero's pipeline terms, in closed form. The pipeline applies
- * them as the LAST step of `derive`: Grito multiplies attack (and so the attack per point), Marcha
- * multiplies speed (and its delta), Presságio adds flat crit points, and Fôlego combines with the
- * hero's own drain reduction ({@link combineDrainRate}) — nothing else in the sheet or the farm
- * `Context` reads them. Applying the same four operations to the aura-free terms reproduces the
- * pipeline's output bit for bit, which is what lets a candidate assignment be priced with its
- * own aura totals at zero pipeline calls.
+ * What the team auras and the field size do to one hero's pipeline terms, in closed form. The
+ * pipeline applies the auras as the LAST step of `derive`: Grito multiplies attack (and so the
+ * attack per point), Marcha multiplies speed (and its delta), Presságio adds flat crit points,
+ * Brecha adds flat penetration points, and Fôlego combines with the hero's own drain reduction
+ * ({@link combineDrainRate}) — nothing else in the sheet or the farm `Context` reads them.
+ * Matilha's pack factor multiplies `dmgMult` at the allies the rotation keeps beside the
+ * carrier. Applying the same operations to the aura-free terms reproduces the pipeline's output
+ * bit for bit, which is what lets a candidate assignment be priced with its own field at zero
+ * pipeline calls.
  */
-function priceAuraLayer(
-  basis: HeroFarmBasis,
-  teamBuffs: Record<TeamBuffId, number>,
-): HeroFarmBasis {
+function priceAuraLayer(basis: HeroFarmBasis, field: FieldLayer): HeroFarmBasis {
   const base = basis.auraFree;
   if (base === undefined) return basis;
-  const mults = teamAuraLayer(teamBuffs);
+  const mults = teamAuraLayer(field.teamBuffs);
+  const packRatePerAlly = abilityMods(base.abilities).packDmgPctPerAlly / 100;
   return {
     ...basis,
+    dmgMult: base.dmgMult * matilhaMult(packRatePerAlly, field.alliesByHeroId.get(basis.heroId) ?? 0),
     effective: {
       ...base.effective,
       attack: base.effective.attack * mults.attackMult,
       speed: base.effective.speed * mults.speedMult,
       critChance: base.effective.critChance + mults.teamCritFlat,
+      penetration: base.effective.penetration + mults.teamPenFlat,
       attackPerPoint: base.effective.attackPerPoint * mults.attackMult,
     },
     effectiveDelta: {
@@ -481,22 +497,34 @@ function hasAuraFreeTerms(basis: HeroFarmBasis): basis is HeroFarmBasis & { aura
   return basis.auraFree !== undefined;
 }
 
+/** `account.fieldSlots ?? account.slots ?? DEFAULT_CASA_SLOTS` — see {@link SquadFarmFacts.fieldSlots}
+ *  for why the House-slot rung is a back-compat fallback rather than a synonym. */
+function resolveFieldSlots(account: Pick<AccountShared, 'slots' | 'fieldSlots'>): number {
+  return account.fieldSlots ?? account.slots ?? DEFAULT_CASA_SLOTS;
+}
+
 /**
- * The rotation-weighted aura totals for a candidate assignment over bases that carry their
- * aura-free terms — the same two-step pricing {@link computeHeroFarmBases} documents, as pure
- * scalar math: presence at the pool's at-best total, then the totals at those presences.
+ * The rotation-weighted field for a candidate assignment over bases that carry their aura-free
+ * terms — the same two-step pricing {@link computeHeroFarmBases} documents, as pure scalar math:
+ * presence at the pool's at-best total, then the aura totals at those presences, and from the
+ * same presences each carrier's Matilha allies ({@link alliesOverRotation}).
  */
-function priceTeamBuffsForAssignment(
+function priceFieldForAssignment(
   bases: readonly (HeroFarmBasis & { auraFree: AuraFreeFarmTerms })[],
   ptsByHeroId: ReadonlyMap<string, Record<SheetKey, number>> | null,
-): Record<TeamBuffId, number> {
+  fieldSlots: number,
+): FieldLayer {
   const carriers = bases.map((basis) => ({ abilities: basis.auraFree.abilities }));
   const atFullPresence = computeTeamBuffsOverRotation(carriers, null);
   const atFullPresenceDrainMult = teamDrainMultFromTeamBuffs(atFullPresence);
   const presence = bases.map((basis) =>
     presenceAt(basis, basis.auraFree, ptsByHeroId?.get(basis.heroId) ?? basis.pts, atFullPresenceDrainMult),
   );
-  return computeTeamBuffsOverRotation(carriers, presence);
+  const alliesByHeroId = new Map<string, number>();
+  bases.forEach((basis, index) => {
+    alliesByHeroId.set(basis.heroId, alliesOverRotation(presence, index, fieldSlots));
+  });
+  return { teamBuffs: computeTeamBuffsOverRotation(carriers, presence), alliesByHeroId };
 }
 
 /**
@@ -548,7 +576,8 @@ function priceTeamBuffs(
   enabledHeroes: readonly HeroRecord[],
   account: FarmAccount,
 ): Record<TeamBuffId, number> {
-  return priceTeamBuffsForAssignment(auraFreeBasesForAccount(enabledHeroes, account).filter(hasAuraFreeTerms), null);
+  const bases = auraFreeBasesForAccount(enabledHeroes, account).filter(hasAuraFreeTerms);
+  return priceFieldForAssignment(bases, null, resolveFieldSlots(account)).teamBuffs;
 }
 
 /**
@@ -581,8 +610,8 @@ export function computeHeroFarmBases(input: FarmFactsInput): HeroFarmBasis[] {
   const { heroes, account, enabledHeroIds } = input;
   const enabledHeroes = resolveEnabledHeroes(heroes, enabledHeroIds);
   const auraFreeBases = auraFreeBasesForAccount(enabledHeroes, account).filter(hasAuraFreeTerms);
-  const teamBuffs = priceTeamBuffsForAssignment(auraFreeBases, null);
-  return auraFreeBases.map((basis) => priceAuraLayer(basis, teamBuffs));
+  const field = priceFieldForAssignment(auraFreeBases, null, resolveFieldSlots(account));
+  return auraFreeBases.map((basis) => priceAuraLayer(basis, field));
 }
 
 /**
@@ -664,8 +693,8 @@ export function squadFactsFromBases(
 ): SquadFarmFacts {
   const priced = bases.every(hasAuraFreeTerms)
     ? (() => {
-        const teamBuffs = priceTeamBuffsForAssignment(bases, ptsByHeroId);
-        return bases.map((basis) => priceAuraLayer(basis, teamBuffs));
+        const field = priceFieldForAssignment(bases, ptsByHeroId, resolveFieldSlots(account));
+        return bases.map((basis) => priceAuraLayer(basis, field));
       })()
     : bases;
   const heroFacts = priced.map((basis) => heroFactsFromBasis(basis, ptsByHeroId?.get(basis.heroId) ?? basis.pts));
@@ -775,7 +804,7 @@ export function computeSquadFarmFacts(
   account: SquadFarmAccount,
 ): SquadFarmFacts {
   const houseSlots = account.slots ?? DEFAULT_CASA_SLOTS;
-  const fieldSlots = account.fieldSlots ?? account.slots ?? DEFAULT_CASA_SLOTS;
+  const fieldSlots = resolveFieldSlots(account);
   const uptimeSum = heroFacts.reduce((sum, hero) => sum + hero.uptime, 0);
   const houseSlotDemandSum = heroFacts.reduce((sum, hero) => sum + houseSlotDemand(hero), 0);
   const treeLuckFlatPct = account.tree.luckFlatPct ?? 0;

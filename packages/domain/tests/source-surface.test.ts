@@ -113,7 +113,10 @@ const SRC_ALLOWLIST: Record<string, number[]> = {
   // +9 (line numbers only): extracting `teamDrainMultFromTeamBuffs` (so the live field
   // countdown's multiplier resolver could reuse the Fôlego de Mineiro cap/floor arithmetic
   // instead of reimplementing it) added a function and its doc comment above these hits.
-  'derive.ts': [28, 65, 83, 137, 194, 205],
+  // +4/+11/+12/+14/+14/+14 (line numbers only): the abilities pass added the Matilha import, the
+  // `teamPenFlat`/`packMult` combat-mult fields, the field-allies input and the pack factor above
+  // these hits. Still SIX matches, unchanged in kind.
+  'derive.ts': [32, 76, 95, 151, 208, 219],
   // Line numbers only — still FOUR matches, unchanged in kind. Re-measured against the merged
   // tree rather than resolved to either side: this branch's House-cycle plumbing
   // (`houseCycleSecs`, then `houseCycleSecsHouseIdx`/`houseCycleSecsLevel`) and #87's farm-objective
@@ -129,7 +132,10 @@ const SRC_ALLOWLIST: Record<string, number[]> = {
   // +3/+16/+18 (line numbers only): reporting the fuse time with its floor and cooldown cap added
   // three imports, a documented block of four fields on the result type, and one computed local
   // above the returned object. Still FOUR matches, unchanged in kind.
-  'advisor-pipeline.ts': [118, 242, 271, 378],
+  // +9/+36/+38/+39 (line numbers only): the abilities pass added the field-allies input, the
+  // Brecha/pack/pulse result fields and the hero's own entry pulse above these hits. Still FOUR
+  // matches, unchanged in kind.
+  'advisor-pipeline.ts': [127, 278, 309, 417],
   // +1 (line number only): the flat-crit-damage fix's `brutalStrike` LedgerNote arm
   // (review item 5, PR #90) added one line above this hit.
   'stat-breakdown/types.ts': [112],
@@ -139,7 +145,9 @@ const SRC_ALLOWLIST: Record<string, number[]> = {
   // +12 (line number only): keying the score memo on the `FarmContext` too — a run holds two of
   // them once the farm objective exists — added a signature builder and its doc comment above
   // this hit.
-  'team-plan/score.ts': [151],
+  // +17 (line number only): Matilha's allies joined the memo key — a signature builder, its doc
+  // comment and the scorer's new parameter sit above this hit.
+  'team-plan/score.ts': [168],
 };
 
 /**

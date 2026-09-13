@@ -65,9 +65,9 @@ export const en = {
   teamPlanAuraDisclosureFarm:
     'Team auras here come from the scoped roster, each carrier weighted by its predicted uptime. The Combat tab’s aura switches are ignored on this page, though the Planner page still follows them.',
   teamPlanPlannerDivergenceDps:
-    'Planner DPS can differ from this page when roster-derived auras replace the Combat tab’s aura switches, or because {ability} is counted here and not in the Planner.',
+    'Planner DPS can differ from this page when roster-derived auras replace the Combat tab’s aura switches, or because {ability} is counted here for every carrier and in the Planner for the hero’s own pulse only.',
   teamPlanPlannerDivergenceFarm:
-    'The Planner’s own figures can differ from this page when roster-derived auras replace the Combat tab’s aura switches, or because {ability} is counted here and on the Farm page, and not in the Planner.',
+    'The Planner’s own figures can differ from this page when roster-derived auras replace the Combat tab’s aura switches, or because {ability} is counted here and on the Farm page for every carrier, and in the Planner for the hero’s own pulse only.',
   teamPlanForgeSkippedNoteDps:
     'Forging to your minimum was left out of this plan — it did not improve roster DPS.',
   teamPlanForgeSkippedNoteFarm:
@@ -124,9 +124,9 @@ export const pt: typeof en = {
   teamPlanAuraDisclosureFarm:
     'Auras de time aqui vêm do roster no escopo, cada portador ponderado pelo seu tempo ativo previsto. Os interruptores de aura da aba Combate são ignorados nesta página, embora a página do Planner ainda os siga.',
   teamPlanPlannerDivergenceDps:
-    'O DPS do Planner pode divergir quando auras derivadas do roster substituem os interruptores de aura da aba Combate, ou porque {ability} entra aqui e não no Planner.',
+    'O DPS do Planner pode divergir quando auras derivadas do roster substituem os interruptores de aura da aba Combate, ou porque {ability} entra aqui para todos os portadores e no Planner só com o pulso do próprio herói.',
   teamPlanPlannerDivergenceFarm:
-    'Os números do próprio Planner podem divergir desta página quando auras derivadas do roster substituem os interruptores de aura da aba Combate, ou porque {ability} entra aqui e na página Farm, e não no Planner.',
+    'Os números do próprio Planner podem divergir desta página quando auras derivadas do roster substituem os interruptores de aura da aba Combate, ou porque {ability} entra aqui e na página Farm para todos os portadores, e no Planner só com o pulso do próprio herói.',
   teamPlanForgeSkippedNoteDps:
     'A forja até o seu mínimo ficou de fora deste plano — ela não melhorou o DPS do roster.',
   teamPlanForgeSkippedNoteFarm:

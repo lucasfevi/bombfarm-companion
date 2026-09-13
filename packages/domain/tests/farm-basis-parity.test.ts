@@ -61,8 +61,11 @@ describe('heroFactsFromBasis(b, b.pts) — identity with computeHeroFarmFacts, e
   });
 
   it('does NOT short-circuit on pts === basis.pts (same object identity still goes through the full reconstruction)', () => {
+    // The same pool on both sides: a basis carries the field its pool priced it in (the auras and
+    // the allies beside it), so a one-hero pool would reconstruct a different field, not a
+    // different code path.
     const [basis] = computeHeroFarmBases({ heroes, account });
-    const [fact] = computeHeroFarmFacts({ heroes: [heroes[0]], account });
+    const [fact] = computeHeroFarmFacts({ heroes, account });
     // Passing the exact same object reference as `basis.pts` — a short-circuit implementation
     // would still need to produce the identical result, so this alone does not distinguish the
     // two; it is asserted together with the capture-then-compare suite above, which would catch

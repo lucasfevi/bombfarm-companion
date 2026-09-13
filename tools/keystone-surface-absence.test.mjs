@@ -212,7 +212,9 @@ const CRIT_DMG_MULT_MAP = {
   // Moved (2026-09-11): the facts the breakdown reads left `advice-column.tsx` for a hook the
   // planner's Combat tab calls, so the two matches — the destructure and the facts field — now
   // sit in `use-pipeline-facts.ts`. Unchanged in count and in kind.
-  'apps/web/src/features/planner/hooks/use-pipeline-facts.ts': [35, 56],
+  // +2 (second line number only): the abilities pass destructures `teamPenFlat` and `packMult`
+  // off the pipeline above the facts field. Unchanged in count and in kind.
+  'apps/web/src/features/planner/hooks/use-pipeline-facts.ts': [35, 58],
   // +16 (line number only): the House-ceiling fix added `fieldSlots`/`houseCycleSecs`, with
   // their doc comments, to `AccountShared` above this line. The match itself is unchanged in
   // count and in kind — still `normalizeTree`'s doc comment naming a stale key it discards.
@@ -288,7 +290,9 @@ const CRIT_DMG_MULT_MAP = {
   // pipeline-facts hook moving. Count and kind unchanged.
   // +4 more (line numbers only, last four): the one-cadence-model note on the derive.test.ts
   // entry above. Count and kind unchanged.
-  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 334, 339, 349, 358],
+  // +4 more (line numbers only, last four): the abilities-pass note on the pipeline-facts hook
+  // entry above, and this note. Count and kind unchanged.
+  'tools/keystone-surface-absence.test.mjs': [13, 166, 169, 338, 343, 353, 362],
   'tools/save-acceptance-guards.test.mjs': [53],
 };
 

@@ -10,7 +10,7 @@ export const en = {
   tabPoints: "Points",
   panelPoints: "Points",
   panelEffective: "Effective stats",
-  effectiveTip: "Includes gear, points, skill tree, abilities, and the team auras switched on above. Baton Pass is not counted here; the Farm page and the Optimizer count its entry pulse.",
+  effectiveTip: "Includes gear, points, skill tree, abilities, and the team auras switched on above. Baton Pass counts this hero’s own pulse over its own stint; the other carriers’ pulses are counted on the Farm page and the Optimizer. Pack counts the heroes deployed beside this one.",
   effectiveFuse: "Fuse",
   effectiveRest: "Rest",
   effectiveMitF: "Mitigation factor",
@@ -148,7 +148,7 @@ export const en = {
     {
       h: "8 · What the app does not model",
       p: [
-        "Loot abilities (Lapidary Eye, Gold Vein), Hero Hunter and Ghost are outside the DPS math, and so is Baton Pass on this page — the Farm page and the Optimizer count it as a team aura that comes in pulses: each carrier lights the whole field for 120 s of every rotation cycle, overlapping pulses summed and capped like the other auras. Ability crit bonuses apply as % of the base roll, per the Heroes page rule.",
+        "Loot abilities (Lapidary Eye, Gold Vein), Hero Hunter and Ghost are outside the DPS math. Baton Pass is a team aura that comes in pulses — each carrier lights the whole field for 120 s of every rotation cycle, overlapping pulses summed and capped like the other auras; this page counts only this hero’s own pulse over its own stint, while the Farm page and the Optimizer count every carrier’s. Pack multiplies this hero’s damage by +0.5% per level for each hero deployed beside it, capped at +90%. Breach is a team aura of flat penetration points, capped at 20 like Deadly Omen’s crit points. Ability crit bonuses apply as % of the base roll, per the Heroes page rule.",
         "If in-game damage still diverges from the model, check the team aura switches on the Combat tab (another hero’s War Cry is a common ~20% / 40% gap).",
       ],
     },
@@ -174,7 +174,7 @@ export const pt: typeof en = {
   tabPoints: "Pontos",
   panelPoints: "Pontos",
   panelEffective: "Atributos efetivos",
-  effectiveTip: "Inclui equipamento, pontos, árvore, habilidades e as auras de time ligadas acima. Passagem de Bastão não entra aqui; a página Farm e o Otimizador contam o pulso de entrada dela.",
+  effectiveTip: "Inclui equipamento, pontos, árvore, habilidades e as auras de time ligadas acima. Passagem de Bastão conta o pulso do próprio herói no tempo em campo dele; os pulsos dos outros portadores entram na página Farm e no Otimizador. Matilha conta os heróis em campo ao lado deste.",
   effectiveFuse: "Pavio",
   effectiveRest: "Descanso",
   effectiveMitF: "Fator de mitigação",
@@ -290,7 +290,7 @@ export const pt: typeof en = {
     {
       h: "8 · O que o app não modela",
       p: [
-        "Habilidades de loot (Olho de Lapidador, Veia de Ouro), Caça-Hero e Fantasma ficam fora da conta de DPS, e Passagem de Bastão também nesta página — a página Farm e o Otimizador contam como uma aura de time que vem em pulsos: cada portador acende o campo inteiro por 120 s a cada ciclo de rotação, pulsos sobrepostos somados e capados como as outras auras. Bônus de crítico de habilidades entram como % do roll base, pela regra da página Heróis.",
+        "Habilidades de loot (Olho de Lapidador, Veia de Ouro), Caça-Hero e Fantasma ficam fora da conta de DPS. Passagem de Bastão é uma aura de time que vem em pulsos — cada portador acende o campo inteiro por 120 s a cada ciclo de rotação, pulsos sobrepostos somados e capados como as outras auras; esta página conta só o pulso do próprio herói no tempo em campo dele, enquanto a página Farm e o Otimizador contam o de todos os portadores. Matilha multiplica o dano deste herói em +0,5% por nível para cada herói em campo ao lado dele, com teto de +90%. Brecha é uma aura de time de pontos fixos de penetração, com teto de 20 como os pontos de crítico do Presságio Mortal. Bônus de crítico de habilidades entram como % do roll base, pela regra da página Heróis.",
         "Se o dano no jogo ainda divergir do modelo, confira os interruptores de aura de time na aba Combate (Grito de Guerra de outro herói é um gap comum de ~20% / 40%).",
       ],
     },

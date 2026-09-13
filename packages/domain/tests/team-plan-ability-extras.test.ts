@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, passagemBastaoFieldPulse } from '@bombfarm/domain/model';
-import {
-  passagemBastaoCatalogUnmodelled,
-  unmodelledAbilitiesInScope,
-} from '@bombfarm/domain/team-plan/ability-extras';
+import { ABILITIES, abilityMods, passagemBastaoFieldPulse } from '@bombfarm/domain/model';
+import { unmodelledAbilitiesInScope } from '@bombfarm/domain/team-plan/ability-extras';
 import type { HeroPlanContext } from '@bombfarm/domain/team-plan/types';
 
 function ctx(name: string, abilities: Record<string, number>, scope: HeroPlanContext['scope'] = 'optimize'): HeroPlanContext {
@@ -27,7 +24,7 @@ function ctx(name: string, abilities: Record<string, number>, scope: HeroPlanCon
     sheetOther: { speed: 0, critChanceFlat: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
     mods: {
       drainMult: 1,
-      penetrationPp: 0,
+      packDmgPctPerAlly: 0,
       rangeCells: 0,
       dmgMult: 1,
       gateAttackMult: 1,
@@ -59,45 +56,46 @@ function ctx(name: string, abilities: Record<string, number>, scope: HeroPlanCon
 }
 
 describe('the boundary against the shared catalog', () => {
-  it('ABILITIES passagem_bastao stays kind none while the rule prices the pulse on rates', () => {
-    // The sheet never carries the pulse; the Farm board and the Optimizer price it themselves.
-    expect(ABILITIES.find((a) => a.id === 'passagem_bastao')?.effect.kind).toBe('none');
-    expect(passagemBastaoCatalogUnmodelled()).toBe(true);
+  it('passagem_bastao is a team pulse in the catalog and never reaches a carrier\'s own mods', () => {
+    // The sheet never carries the pulse; the rotating surfaces and the hero's own screen price
+    // it through `passagemBastaoFieldPulse` instead.
+    expect(ABILITIES.find((a) => a.id === 'passagem_bastao')?.effect).toEqual({
+      kind: 'teamPulseDmgPct',
+      perLevel: 4,
+    });
+    expect(abilityMods({ passagem_bastao: 20 })).toEqual(abilityMods({}));
     expect(passagemBastaoFieldPulse([{ rank: 20, presence: 1 }]).expectedMult).toBe(1.8);
   });
 });
 
 describe('unmodelledAbilitiesInScope', () => {
-  it('lists matilha, brecha, caca_hero, fantasma with carrier names', () => {
-    const contexts = [
-      ctx('A', { matilha: 5 }),
-      ctx('B', { brecha: 3 }),
-      ctx('C', { caca_hero: 1 }),
-      ctx('D', { fantasma: 2 }),
-    ];
+  it('lists caca_hero and fantasma with carrier names', () => {
+    const contexts = [ctx('C', { caca_hero: 1 }), ctx('D', { fantasma: 2 })];
     const list = unmodelledAbilitiesInScope(contexts);
-    expect(list.find((e) => e.abilityId === 'matilha')?.heroNames).toEqual(['A']);
-    expect(list.find((e) => e.abilityId === 'brecha')?.heroNames).toEqual(['B']);
     expect(list.find((e) => e.abilityId === 'caca_hero')?.heroNames).toEqual(['C']);
     expect(list.find((e) => e.abilityId === 'fantasma')?.heroNames).toEqual(['D']);
   });
 
-  it('does not list passagem_bastao — it is priced over the rotation like the team auras', () => {
-    const list = unmodelledAbilitiesInScope([ctx('Hero', { passagem_bastao: 10 })]);
-    expect(list.find((e) => e.abilityId === 'passagem_bastao')).toBeUndefined();
+  it('does not list the three abilities the objectives now price — matilha, brecha, passagem_bastao', () => {
+    const list = unmodelledAbilitiesInScope([
+      ctx('Pack', { matilha: 5 }),
+      ctx('Breach', { brecha: 3 }),
+      ctx('Baton', { passagem_bastao: 10 }),
+    ]);
+    expect(list).toEqual([]);
   });
 
   it('ignores donate and leaveAlone heroes', () => {
     const list = unmodelledAbilitiesInScope([
-      ctx('Opt', { matilha: 1 }, 'optimize'),
-      ctx('Don', { matilha: 1 }, 'donate'),
-      ctx('Leave', { matilha: 1 }, 'leaveAlone'),
+      ctx('Opt', { caca_hero: 1 }, 'optimize'),
+      ctx('Don', { caca_hero: 1 }, 'donate'),
+      ctx('Leave', { caca_hero: 1 }, 'leaveAlone'),
     ]);
-    expect(list.find((e) => e.abilityId === 'matilha')?.heroNames).toEqual(['Opt']);
+    expect(list.find((e) => e.abilityId === 'caca_hero')?.heroNames).toEqual(['Opt']);
   });
 
   it('ignores rank 0 abilities', () => {
-    const list = unmodelledAbilitiesInScope([ctx('Hero', { matilha: 0 })]);
-    expect(list.find((e) => e.abilityId === 'matilha')).toBeUndefined();
+    const list = unmodelledAbilitiesInScope([ctx('Hero', { caca_hero: 0 })]);
+    expect(list.find((e) => e.abilityId === 'caca_hero')).toBeUndefined();
   });
 });

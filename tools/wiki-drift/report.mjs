@@ -23,13 +23,13 @@ export const TRACKER_MARKER = '<!-- bfc-wiki-drift-tracker -->';
 export const ARTIFACT_BACKED_SECTIONS = {
   // GRID_SPEED_COEF from `grid_speed_coef`, EFF_IA from `eff_ia`, the level-power step from
   // `level_power`, the blocks-per-bomb and second-blast coefficients (model/combat.ts);
-  // PASSAGEM_BASTAO_PER_RANK from `swap_dmg_pct`, PASSAGEM_BASTAO_WINDOW_SEC from
-  // `swap_dmg_secs` and PASSAGEM_BASTAO_COOLDOWN_SEC from `swap_dmg_cooldown_secs`
-  // (model/passagem-bastao.ts). All hand-maintained constants — this section reaches no
-  // generated JSON.
+  // PASSAGEM_BASTAO_WINDOW_SEC from `swap_dmg_secs` and PASSAGEM_BASTAO_COOLDOWN_SEC from
+  // `swap_dmg_cooldown_secs` (model/passagem-bastao.ts); MATILHA_CAP from `pack_dmg_cap`
+  // (model/matilha.ts). All hand-maintained constants — this section reaches no generated JSON.
   'data.combate': [
     'packages/domain/src/model/combat.ts',
     'packages/domain/src/model/passagem-bastao.ts',
+    'packages/domain/src/model/matilha.ts',
   ],
   // lines, gateSecsPorAto (phase-wiki.json); lines (phases.json)
   'data.fases': ['packages/domain/src/data/phase-wiki.json', 'packages/domain/src/data/phases.json'],
@@ -42,8 +42,16 @@ export const ARTIFACT_BACKED_SECTIONS = {
   'data.herois': ['packages/domain/src/data/phase-wiki.json'],
   // WIKI_GEMS: chestDropRate, rankDistByAto, list — also aliased as GEM_RANK_DIST_BY_ATO / GEM_LIST
   'data.gemas': ['packages/domain/src/data/phase-wiki.json'],
-  // LOOT_ABILITY_VALUES / lootAbilities
-  'data.habilidades': ['packages/domain/src/data/phase-wiki.json'],
+  // LOOT_ABILITY_VALUES / lootAbilities (phase-wiki.json); every combat ability's `per_level`
+  // as the catalog's `effect.perLevel` (model/abilities.ts), PASSAGEM_BASTAO_PER_RANK from
+  // `swap_dmg`'s row (model/passagem-bastao.ts) and MATILHA_PER_RANK_PER_ALLY from `pack_dmg`'s
+  // (model/matilha.ts) — hand-maintained, so a drift here is a catalog edit, not a regeneration.
+  'data.habilidades': [
+    'packages/domain/src/data/phase-wiki.json',
+    'packages/domain/src/model/abilities.ts',
+    'packages/domain/src/model/passagem-bastao.ts',
+    'packages/domain/src/model/matilha.ts',
+  ],
   // DROP_RATES.time / drops.timechestDropRate, TIMECHEST_RARITY_BY_ATO / timechestRarityByAto
   // (phase-wiki.json); FIELD_SLOTS_MAX from `campo`, CASA_SLOTS_PER_HOUSE / CASA_SLOTS_MAX from
   // `casas[].slots` (casa-slots.ts); HOUSES cycle endpoints from `casas[].cycle_secs_base` /

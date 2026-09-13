@@ -111,6 +111,10 @@ export interface PipelineFacts {
   speedMult: number;
   critDmgMult: number;
   teamCritFlat: number;
+  /** The roster's capped Brecha total in flat penetration points (`CombatMults.teamPenFlat`). */
+  teamPenFlat: number;
+  /** Matilha's pack factor inside `dmgMult` (`CombatMults.packMult`). */
+  packMult: number;
   treeSpeed: number;
   treeCritChance: number;
   treeCritDmg: number;

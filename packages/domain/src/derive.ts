@@ -13,6 +13,7 @@ import type { TreeSheetTotals } from './birth-sheet';
 import { starsMult, type SheetOtherPct, type SheetStats } from './gear';
 import { SHEET_KEYS, type SheetKey } from './planner-constants';
 import { runeSheetMultipliers, type HeroRune } from './runes';
+import { matilhaMult } from './model/matilha';
 import type { TeamBuffId } from './team-buffs';
 import { teamAuraLayer } from './team-aura-layer';
 
@@ -21,11 +22,17 @@ export type CombatMults = {
   /** The roster-wide Presságio total in FLAT crit points, already clamped at
    *  `TEAM_BUFF_CAP.pressagio_mortal` — the single value `derive()` adds to the sheet. */
   teamCritFlat: number;
+  /** The roster-wide Brecha total in FLAT penetration points, already clamped at
+   *  `TEAM_BUFF_CAP.brecha` — `derive()`'s `penetrationPp`. */
+  teamPenFlat: number;
   attackMult: number;
   speedMult: number;
   gateAttackMult: number;
   energyMult: number;
   critDmgMult: number;
+  /** Matilha's capped pack factor at this field size (`matilhaMult`) — a factor of `dmgMult`,
+   *  surfaced so a breakdown can print it as its own term. */
+  packMult: number;
   dmgMult: number;
 };
 
@@ -37,6 +44,8 @@ export type ComputeCombatMultsInput = {
   mods: AbilityMods;
   teamBuffs: Record<TeamBuffId, number>;
   extraDmgPct: number;
+  /** Other heroes on the field beside this one — Matilha's allies. Absent reads as none. */
+  fieldAllies?: number;
 };
 
 export { combineTeamAuraPct, teamDrainMultFromTeamBuffs } from './team-aura-layer';
@@ -55,15 +64,18 @@ export { combineTeamAuraPct, teamDrainMultFromTeamBuffs } from './team-aura-laye
 export function computeCombatMults(input: ComputeCombatMultsInput): CombatMults {
   const { mods, teamBuffs, extraDmgPct } = input;
   const auras = teamAuraLayer(teamBuffs);
+  const packMult = matilhaMult(mods.packDmgPctPerAlly / 100, input.fieldAllies ?? 0);
   return {
     teamDrainMult: auras.teamDrainMult,
     teamCritFlat: auras.teamCritFlat,
+    teamPenFlat: auras.teamPenFlat,
     attackMult: auras.attackMult,
     speedMult: auras.speedMult,
     gateAttackMult: mods.gateAttackMult,
     energyMult: 1,
     critDmgMult: 1,
-    dmgMult: mods.dmgMult * (1 + extraDmgPct / 100),
+    packMult,
+    dmgMult: mods.dmgMult * packMult * (1 + extraDmgPct / 100),
   };
 }
 
@@ -87,6 +99,8 @@ export type DeriveInput = {
   teamCritFlat: number;
   /** The whole skill tree, once — replaces the four scattered tree inputs. */
   treeSheet: TreeSheetTotals;
+  /** FLAT penetration points added after the sheet — the roster's capped Brecha total
+   *  (`CombatMults.teamPenFlat`), the same shape as `teamCritFlat`. */
   penetrationPp: number;
   context: Context;
   dmgMult: number;

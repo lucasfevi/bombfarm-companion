@@ -59,6 +59,7 @@ export function pipelineForHero(
     treeEnergy: account.tree.energy,
     treeLuckFlatPct: account.tree.luckFlatPct ?? 0,
     teamBuffs: account.teamBuffs,
+    fieldAllies: account.fieldAllies ?? 0,
     houseIdx: context.houseIdx,
     houseLevel: context.houseLevel,
     houseCycleSecs: account.houseCycleSecs ?? null,
