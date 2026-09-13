@@ -59,7 +59,12 @@ export function buildFarmInputs(view: AccountView, controls: FarmControls): Farm
     return null;
   }
 
-  const heroes = roster.heroes;
+  // A hero whose spent points the parser could not recover carries a zeroed `pts`
+  // (`AccountRoster.pointsUnrecovered`), so the board must never price it — it would read as a
+  // hero with nothing spent and print a rate built on an invented sheet. Left off the board, and
+  // named above it by the screen.
+  const leftOutIds = new Set(roster.pointsUnrecovered.map((hero) => hero.id));
+  const heroes = roster.heroes.filter((hero) => !leftOutIds.has(hero.id));
   const account = roster.account;
 
   const tree = account.tree;

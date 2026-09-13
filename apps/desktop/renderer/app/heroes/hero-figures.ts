@@ -8,7 +8,7 @@
  * put a wrong explanation under a blank panel.
  */
 import type { PhaseSelection } from '@bombfarm/hero/core';
-import type { AccountRoster } from '../../lib/account/account-roster';
+import { hasUnrecoveredPoints, type AccountRoster } from '../../lib/account/account-roster';
 import { heroComputeInputs, type HeroComputeInputs } from './hero-compute-inputs';
 import type { HeroPhaseReading } from './hero-phase';
 
@@ -16,15 +16,19 @@ export type HeroFigures =
   | { readonly kind: 'pending' }
   | { readonly kind: 'unknownPhase' }
   | { readonly kind: 'withheld' }
+  /** The account was read, but this hero's spent points could not be — every figure below the
+   *  identity panel is built on them, so none may be drawn from the zeroed vector. */
+  | { readonly kind: 'pointsUnread' }
   | {
       readonly kind: 'at';
       readonly selection: PhaseSelection;
       readonly inputs: HeroComputeInputs;
     };
 
-export function heroFigures(reading: HeroPhaseReading, roster: AccountRoster): HeroFigures {
+export function heroFigures(reading: HeroPhaseReading, roster: AccountRoster, heroId: string): HeroFigures {
   if (reading.kind === 'pending') return { kind: 'pending' };
   if (reading.kind === 'unknown') return { kind: 'unknownPhase' };
+  if (hasUnrecoveredPoints(roster, heroId)) return { kind: 'pointsUnread' };
 
   const inputs = heroComputeInputs(roster, reading.selection.phase);
   if (inputs === null) return { kind: 'withheld' };
