@@ -1,6 +1,7 @@
 import type { AbilityMods, Context, HeroSheet } from '../model';
 import type { SheetOtherPct, SheetStats } from '../gear';
 import type { SheetKey, SheetPanelKey } from '../planner-constants';
+import type { HeroRune } from '../runes';
 
 export type BreakdownStatId =
   | SheetPanelKey
@@ -28,7 +29,8 @@ export type LedgerSource =
   | 'tree'
   | 'abilities'
   | 'team'
-  | 'abilitiesTeam';
+  | 'abilitiesTeam'
+  | 'rune';
 export type LedgerNote =
   | 'capped'
   | 'ownTeamSplit'
@@ -39,9 +41,10 @@ export type LedgerNote =
 /**
  * The four in-game lines, plus a `combat` bucket for the multiplicative sources that
  * sit below the sheet (`abilities` / `team` / `abilitiesTeam`) — real combat bonuses, not one
- * of the four sheet-building lines.
+ * of the four sheet-building lines — and `rune`, the timed buff the game applies on top of the
+ * sheet it built from those four (`runes.ts`).
  */
-export type LedgerGroup = 'hero' | 'gear' | 'ability' | 'skillTree' | 'combat';
+export type LedgerGroup = 'hero' | 'gear' | 'ability' | 'skillTree' | 'combat' | 'rune';
 
 /**
  * Exhaustive map from every `LedgerSource` to the game line it belongs to.
@@ -61,6 +64,7 @@ export const LEDGER_SOURCE_GROUP: Record<LedgerSource, LedgerGroup> = {
   abilities: 'combat',
   team: 'combat',
   abilitiesTeam: 'combat',
+  rune: 'rune',
 };
 
 export interface LedgerStep {
@@ -74,6 +78,8 @@ export interface LedgerStep {
   splitTeam?: number;
   /** When set, UI shows `percent% × base` instead of a bare additive amount. */
   pctOfBase?: { percent: number; base: number };
+  /** `rune` steps only: play-seconds until the rune expires — the buff is transient. */
+  runePlaySecondsLeft?: number;
 }
 
 export interface FormulaBreakdown {
@@ -121,4 +127,6 @@ export interface PipelineFacts {
   dps: number;
   uptime: number;
   rest: number;
+  /** The hero's timed runes, already inside `geared`/`adjusted`/`effective`; absent reads as none. */
+  runes?: readonly HeroRune[] | undefined;
 }

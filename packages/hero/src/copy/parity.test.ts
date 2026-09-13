@@ -22,6 +22,8 @@ import { heroPtBR } from './pt-BR';
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof heroEn)[] = [
   'heroDetailCombatDps',
   'heroDetailCombatProps',
+  // "XP" is the game's own token in both languages.
+  'heroDetailRuneAxisXp',
 ];
 
 function placeholderSet(value: string): Set<string> {

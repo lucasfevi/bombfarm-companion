@@ -536,6 +536,7 @@ describe('LEDGER_SOURCE_GROUP is exhaustive over LedgerSource', () => {
     'abilities',
     'team',
     'abilitiesTeam',
+    'rune',
   ];
 
   it('every LedgerSource union member has a mapped LedgerGroup', () => {

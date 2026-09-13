@@ -4,6 +4,7 @@ import { abilityMods } from '@bombfarm/domain/model';
 import type { Loadout, SheetStats } from '@bombfarm/domain/gear';
 import { applyGear, emptyLoadout, emptySheet, emptySheetOther } from '@bombfarm/domain/gear';
 import { mergeImportedHero } from '@bombfarm/domain/import-merge';
+import { normalizeHeroRunes, type HeroRune } from '@bombfarm/domain/runes';
 import { normalizePointAlloc, normalizeSheetStats } from '@bombfarm/domain/sheet-normalize';
 import { normalizeSkin } from '@bombfarm/domain/wiki-assets';
 import {
@@ -115,6 +116,13 @@ export type HeroRecord = {
    * read, which has no file to re-export and would be left with nothing at all.
    */
   statRanges?: StatRanges;
+  /**
+   * The timed rune buffs the hero carried when it was read, already folded into
+   * {@link gearedOverride}. Additive, and absence stays absence on load — same posture as
+   * {@link statRanges}, for the same reason: a record loads and re-serializes byte-identically,
+   * and the importer is the only writer. Readers take absence as none (`runesOf`, `runes.ts`).
+   */
+  runes?: readonly HeroRune[];
   /** @deprecated migrated into AccountShared — kept only for old saves. */
   tree?: TreeState;
   /** @deprecated migrated into AccountShared — kept only for old saves. */
@@ -172,6 +180,7 @@ export function normalizeHero(raw: Partial<HeroRecord> & Pick<HeroRecord, 'id' |
     skin: normalizeSkin(raw.skin),
     birth: raw.birth ? normalizeSheetStats(raw.birth) : undefined,
     statRanges: raw.statRanges,
+    runes: raw.runes === undefined ? undefined : normalizeHeroRunes(raw.runes),
   };
 }
 

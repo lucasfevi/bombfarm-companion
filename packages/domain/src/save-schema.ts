@@ -229,7 +229,13 @@ const HERO_LEVEL: SchemaLevel = {
   // the flag only on bound records (3 of 10 heroes across the 2026-08-29..08-31 exports, always
   // literal `true`, never `false`), so requiring it would turn this into a missing-key report and
   // degrade the section.
-  optional: ['soulbound'],
+  //
+  // `runas` is the hero's list of timed rune buffs (`runes.ts`), emitted only while the hero
+  // carries one (6 of 20 heroes on the 2026-09-13 live read, never an empty list). `export_lock_secs`
+  // appeared on the same read (2 of 20 heroes, a positive number of seconds); nothing in the app
+  // reads it, and it is declared here only so the heroes section stops reporting it as drift on
+  // every refresh.
+  optional: ['soulbound', 'runas', 'export_lock_secs'],
 };
 
 const ITEM_LEVEL: SchemaLevel = {

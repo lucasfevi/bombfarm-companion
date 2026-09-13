@@ -116,6 +116,7 @@ export function scoreHeroLoadout(
     loadout,
     pts: ZERO_PTS(),
     tree: ctx.treeSheet,
+    runes: ctx.runes,
   });
 
   const mults = computeCombatMults({
@@ -154,6 +155,7 @@ export function scoreHeroLoadout(
     context,
     dmgMult: mults.dmgMult,
     mitigationPct: farm.mitigationPct,
+    runes: ctx.runes,
   });
 
   const fieldSecondsValue = fieldSeconds(deriveResult.effective, context);

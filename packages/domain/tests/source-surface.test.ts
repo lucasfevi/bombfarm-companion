@@ -113,7 +113,7 @@ const SRC_ALLOWLIST: Record<string, number[]> = {
   // +9 (line numbers only): extracting `teamDrainMultFromTeamBuffs` (so the live field
   // countdown's multiplier resolver could reuse the Fôlego de Mineiro cap/floor arithmetic
   // instead of reimplementing it) added a function and its doc comment above these hits.
-  'derive.ts': [26, 89, 107, 155, 210, 221],
+  'derive.ts': [27, 90, 108, 162, 218, 229],
   // Line numbers only — still FOUR matches, unchanged in kind. Re-measured against the merged
   // tree rather than resolved to either side: this branch's House-cycle plumbing
   // (`houseCycleSecs`, then `houseCycleSecsHouseIdx`/`houseCycleSecsLevel`) and #87's farm-objective
@@ -129,17 +129,17 @@ const SRC_ALLOWLIST: Record<string, number[]> = {
   // +3/+16/+18 (line numbers only): reporting the fuse time with its floor and cooldown cap added
   // three imports, a documented block of four fields on the result type, and one computed local
   // above the returned object. Still FOUR matches, unchanged in kind.
-  'advisor-pipeline.ts': [115, 237, 266, 367],
+  'advisor-pipeline.ts': [118, 242, 271, 378],
   // +1 (line number only): the flat-crit-damage fix's `brutalStrike` LedgerNote arm
   // (review item 5, PR #90) added one line above this hit.
-  'stat-breakdown/types.ts': [106],
+  'stat-breakdown/types.ts': [112],
   // +1 (line number only): the `cycleSecs` pass-through added one line above this hit.
   // +2 more: the House-ceiling regression repair's `cycleSecsHouseIdx`/`cycleSecsLevel`
   // pass-through (PR #86 finding, house.ts:38) added two more lines above it.
   // +12 (line number only): keying the score memo on the `FarmContext` too — a run holds two of
   // them once the farm objective exists — added a signature builder and its doc comment above
   // this hit.
-  'team-plan/score.ts': [150],
+  'team-plan/score.ts': [151],
 };
 
 /**

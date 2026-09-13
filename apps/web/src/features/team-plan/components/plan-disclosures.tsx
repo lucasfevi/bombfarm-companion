@@ -64,6 +64,11 @@ export function PlanDisclosures({
             })}
           </p>
         ) : null}
+        {plan.disclosures.runedHeroNames.length > 0 ? (
+          <p className="m-0">
+            {sub(t.teamPlanRunedHeroes, { heroes: plan.disclosures.runedHeroNames.join(', ') })}
+          </p>
+        ) : null}
         {gearAllowed ? (
           <p className="m-0">
             {sub(t.teamPlanExcludedItems, {

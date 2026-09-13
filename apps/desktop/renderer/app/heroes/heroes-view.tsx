@@ -207,7 +207,10 @@ function HeroesRoster({ model }: { model: RosterModel }) {
     () => readHeroPhase(farmPhase, overridePhase),
     [farmPhase, overridePhase],
   );
-  const figures = useMemo(() => heroFigures(phaseReading, roster), [phaseReading, roster]);
+  const figures = useMemo(
+    () => heroFigures(phaseReading, roster, active.hero.id),
+    [phaseReading, roster, active.hero.id],
+  );
 
   // The shown hero's own account: the shared block with its own aura total overlaid — its own
   // aura always, the rest of the roster's through the switches above.
@@ -588,6 +591,12 @@ function FiguresNotice({ figures }: { figures: HeroFigures }) {
           {t.heroesPhaseUnknownDescription}
         </Banner>
       );
+    case 'pointsUnread':
+      return (
+        <Banner tone="warn" title={t.heroesPointsUnreadTitle}>
+          {t.heroesPointsUnreadDescription}
+        </Banner>
+      );
     default:
       return (
         <Banner tone="warn" title={t.heroesFiguresWithheldTitle}>
@@ -673,6 +682,7 @@ function effectiveFacts(
     dps: combat.dps,
     uptime: combat.uptime,
     rest: combat.rest,
+    runes: hero.runes,
   };
 }
 
@@ -735,6 +745,7 @@ function HeroReference({
           loadout: hero.loadout,
           pts: hero.pts,
           tree: combat.treeSheet,
+          runes: hero.runes,
         }}
       />
     </div>
