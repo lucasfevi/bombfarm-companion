@@ -1,12 +1,17 @@
 import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { createTabScrollMemory } from './tab-scroll-memory';
 
+/** Longer than any open animation a tab plays on mount (the accordion panels take 0.4s). */
+const RESTORE_WINDOW_MS = 1000;
+
 /**
  * `useState` for the active tab, with the scroller's offset remembered per tab. The outgoing
  * tab's offset is read in the setter, before React commits — by the time an effect could look,
  * the old content is gone and the scroller has already been clamped. The incoming tab's offset
- * is put back in a layout effect, on the first commit that draws it, so the frame the player
- * sees is already where they left it; content shorter than that offset clamps to its own end.
+ * is put back in a layout effect, on the first commit that draws it, and then again as the
+ * content grows: panels that animate open start at no height, so the first commit is shorter
+ * than the page settles to and a single set would be clamped. The player scrolling themselves
+ * ends the restore at once.
  */
 export function useTabScrollMemory(
   initialTabId: string,
@@ -28,8 +33,35 @@ export function useTabScrollMemory(
 
   useLayoutEffect(() => {
     const element = scroller.current;
-    if (element !== null) element.scrollTop = memoryRef.current.enter(activeTabId);
+    if (element === null) return;
+    return restoreScrollTop(element, memoryRef.current.enter(activeTabId));
   }, [activeTabId, scroller]);
 
   return [activeTabId, setActiveTabId];
 }
+
+function restoreScrollTop(element: HTMLElement, wanted: number): () => void {
+  element.scrollTop = wanted;
+  const measure = element.firstElementChild;
+  if (element.scrollTop === wanted || measure === null || typeof ResizeObserver === 'undefined') {
+    return () => {};
+  }
+
+  const observer = new ResizeObserver(() => {
+    element.scrollTop = wanted;
+    if (element.scrollTop === wanted) stop();
+  });
+  const deadline = window.setTimeout(() => {
+    stop();
+  }, RESTORE_WINDOW_MS);
+  function stop(): void {
+    observer.disconnect();
+    window.clearTimeout(deadline);
+    for (const type of PLAYER_SCROLL_EVENTS) element.removeEventListener(type, stop);
+  }
+  for (const type of PLAYER_SCROLL_EVENTS) element.addEventListener(type, stop, { passive: true });
+  observer.observe(measure);
+  return stop;
+}
+
+const PLAYER_SCROLL_EVENTS = ['wheel', 'pointerdown', 'touchstart', 'keydown'] as const;

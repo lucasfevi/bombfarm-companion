@@ -212,6 +212,17 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
   // The shell unmounts a tab the player leaves. The rows they had open and how far down they
   // were are both state of the visit, and a Forge round trip is the visit's normal shape.
   test('the open rows and the scroll offset survive a trip to the Forge tab and back', async () => {
+    // With the OS animations on: the panels animate open on mount, which is the case the offset
+    // restore has to hold through, and a machine that reduces motion would pass this vacuously.
+    // Motion reads the preference once, as the renderer loads, so the page is reloaded under the
+    // emulation and the plan solved again. A hidden window (`BFC_HIDE_WINDOWS=1`) still passes
+    // vacuously: no animation frame runs there, so the panel is at its full height at once.
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.reload();
+    await page.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
+    await openOptimizer(page);
+    await page.getByRole('button', { name: OPTIMIZE_BUTTON }).click();
+    await waitForOptimizeDone(page);
     const heroRows = () =>
       page
         .getByRole('heading', { name: /Per-hero changes/i, level: 2 })
@@ -223,6 +234,8 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
     await heroRows().nth(1).click();
     await expect(heroRows().first()).toHaveAttribute('aria-expanded', 'false');
     await expect(heroRows().nth(1)).toHaveAttribute('aria-expanded', 'true');
+    // The second row's panel animates open over 0.4s; the offset is read once it has settled.
+    await page.waitForTimeout(600);
 
     const scrolledTo = await page.evaluate(() => {
       const main = document.querySelector('main');
@@ -238,7 +251,11 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
     await openOptimizer(page);
     await expect(heroRows().first()).toHaveAttribute('aria-expanded', 'false');
     await expect(heroRows().nth(1)).toHaveAttribute('aria-expanded', 'true');
-    expect(await page.evaluate(() => document.querySelector('main').scrollTop)).toBe(scrolledTo);
+    // The open panel animates in again on mount, so the offset is put back as the page grows and
+    // is only expected once it has settled — a single set on the first frame would be clamped.
+    await expect.poll(() => page.evaluate(() => document.querySelector('main').scrollTop), { timeout: 5_000 }).toBe(
+      scrolledTo,
+    );
 
     // Back to the default before the tests below read the first row.
     await heroRows().nth(1).click();
