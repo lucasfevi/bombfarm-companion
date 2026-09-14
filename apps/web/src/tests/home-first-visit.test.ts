@@ -32,27 +32,31 @@ describe('the front page on a first visit', () => {
     resetPlannerStoreForTests();
   });
 
-  it('prints the eyebrow, the title, one sentence, one primary button and the hint in that order, in both locales', () => {
+  it('is one accent panel: eyebrow, a headline with its accent, one sentence on the left; one primary button and the hint on the right, in both locales', () => {
     for (const lang of LANGS) {
       usePlannerStore.setState({ lang });
       const strings = STRINGS[lang];
       const html = render();
       const markers = [
         `>${strings.homeFirstVisitEyebrow}</p>`,
-        `<h2 class="`,
-        `>${strings.homeFirstVisitTitle}</h2>`,
+        `<h1 class="`,
+        `>${strings.homeFirstVisitTitle} <span class="text-accent">${strings.homeFirstVisitTitleAccent}</span></h1>`,
         `>${escaped(strings.homeFirstVisitBody)}</p>`,
         `>${strings.homeFirstVisitButton}</button>`,
         `>${escaped(strings.homeFirstVisitHint)}</p>`,
       ];
       const positions = markers.map((marker) => html.indexOf(marker));
 
-      expect(html.startsWith('<div ')).toBe(true);
+      expect(html.startsWith('<section ')).toBe(true);
       expect(html).toContain('data-testid="home-first-visit"');
+      expect(html).toMatch(/<section[^>]*class="[^"]*var\(--accent\)_35%[^"]*"/);
+      expect(html).toMatch(/<section[^>]*class="[^"]*var\(--accent\)_7%[^"]*"/);
+      expect(html).toMatch(/<section[^>]*class="[^"]*min-\[720px\]:grid-cols-\[minmax\(0,1fr\)_auto\][^"]*"/);
       expect(positions.every((position) => position >= 0)).toBe(true);
       expect(positions).toEqual([...positions].sort((left, right) => left - right));
       expect(html.match(/<p /g)).toHaveLength(3);
-      expect(html.match(/<h2 /g)).toHaveLength(1);
+      expect(html.match(/<h1 /g)).toHaveLength(1);
+      expect(html).not.toContain('<h2');
       expect(html.indexOf(`>${strings.homeFirstVisitEyebrow}</p>`)).toBeGreaterThan(
         html.indexOf('font-mono text-[11px] tracking-[0.17em] text-accent uppercase'),
       );
@@ -71,6 +75,6 @@ describe('the front page on a first visit', () => {
     expect(source).toContain('usePlannerStore((state) => state.openImportDialog)');
     expect(source.match(/onClick=/g)).toEqual(['onClick=']);
     expect(source).toContain('onClick={openImportDialog}');
-    expect(source).toContain('<Button variant="primary" onClick={openImportDialog}>');
+    expect(source).toContain("buttonRecipe({ variant: 'primary' })");
   });
 });

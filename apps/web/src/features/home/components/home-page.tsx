@@ -25,13 +25,19 @@ export function HomePage() {
 
   return (
     <div className={workspaceClass}>
-      <div>
-        <h1 className="m-0 text-2xl font-extrabold tracking-tight text-balance text-ink">
-          {t.homeTitle}
-        </h1>
-        <p className="m-0 mt-1 max-w-[60ch] text-muted">{t.homeSubtitle}</p>
-      </div>
-      {firstVisit ? <HomeFirstVisit /> : <HomeStatusStrip />}
+      {firstVisit ? (
+        <HomeFirstVisit />
+      ) : (
+        <>
+          <div>
+            <h1 className="m-0 text-2xl font-extrabold tracking-tight text-balance text-ink">
+              {t.homeTitle}
+            </h1>
+            <p className="m-0 mt-1 max-w-[60ch] text-muted">{t.homeSubtitle}</p>
+          </div>
+          <HomeStatusStrip />
+        </>
+      )}
       <div
         className="grid grid-cols-1 items-stretch gap-4 min-[720px]:grid-cols-2 min-[1100px]:grid-cols-4"
         data-testid="home-grid"

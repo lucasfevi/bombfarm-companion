@@ -82,8 +82,10 @@ test.describe('Home', () => {
   }) => {
     await openEmptyHome(page);
 
-    await expect(page.getByRole('heading', { level: 1, name: 'Your account, at a glance' })).toBeVisible();
-    await expect(page.getByTestId('home-first-visit')).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Your account, at a glance' })).toHaveCount(0);
+    await expect(
+      page.getByTestId('home-first-visit').getByRole('heading', { level: 1, name: 'Your Bomb Farm account, worked out.' }),
+    ).toBeVisible();
     await expect(page.getByTestId('home-status-strip')).toHaveCount(0);
     await expect(page.getByRole('article')).toHaveCount(6);
     await expect(needsCards(page)).toHaveCount(5);

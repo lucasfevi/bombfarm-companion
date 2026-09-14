@@ -92,6 +92,8 @@ describe('the front page', () => {
     const empty = render();
     expect(empty).toContain('data-testid="home-first-visit"');
     expect(empty).not.toContain('data-testid="home-status-strip"');
+    expect(empty).not.toContain(`>${STRINGS.en.homeTitle}</h1>`);
+    expect(empty.match(/<h1 /g)).toHaveLength(1);
     expect(articleLabels(empty)).toHaveLength(6);
 
     usePlannerStore.setState({ heroes: [hero('a')] });
