@@ -9,6 +9,7 @@ import type { TeamPlanScreenCopy } from '../copy';
 import { HeroStatBreakdown } from './hero-stat-breakdown';
 import { HeroPointBreakdown } from './hero-point-breakdown';
 import { HeroProposedGear, type HeroGearFlow } from './hero-proposed-gear';
+import { HeroForgeQueue } from './hero-forge-queue';
 
 const sectionTitleClass = 'm-0 mb-1.5 text-[10px] font-bold tracking-[0.08em] text-accent uppercase';
 
@@ -42,15 +43,18 @@ export function HeroDetailPanel({
   return (
     <div className={accordionLedgerBodyClass}>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <section className="min-w-0">
-          <h3 className={sectionTitleClass}>{t.teamPlanHeroBreakdownGearTitle}</h3>
-          <HeroProposedGear
-            t={t}
-            lang={lang}
-            gear={gear}
-            heroByScopeKey={heroByScopeKey}
-            heroNameFallback={heroNameFallback}
-          />
+        <section className="flex min-w-0 flex-col gap-3">
+          <div>
+            <h3 className={sectionTitleClass}>{t.teamPlanHeroBreakdownGearTitle}</h3>
+            <HeroProposedGear
+              t={t}
+              lang={lang}
+              gear={gear}
+              heroByScopeKey={heroByScopeKey}
+              heroNameFallback={heroNameFallback}
+            />
+          </div>
+          <HeroForgeQueue t={t} lang={lang} rows={gear.rows} />
         </section>
         <div className="flex min-w-0 flex-col gap-4">
           <section className="min-w-0">

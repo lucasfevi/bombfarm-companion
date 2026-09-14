@@ -6,7 +6,9 @@ import { Panel, Tooltip, cn, formatCompactNumber, formatNumber, panelHClass, pan
 import { sub, type Lang } from '@bombfarm/hero/copy';
 import type { TeamPlanCopy } from '../copy';
 import type { TeamPlanObjectiveCopy } from '../model/objective-copy';
+import { scoredPhaseHint, scoredPhaseMovedFrom, scoredPhaseValue } from '../model/run-summary-copy';
 import { AbbreviatedNumber } from './abbreviated-number';
+import { FactCell } from './fact-cell';
 import { StepCell } from './step-cell';
 
 const stepLabels: Record<WaterfallStep['id'], (t: TeamPlanCopy) => string> = {
@@ -31,12 +33,16 @@ export function WaterfallPanel({
   lang,
   plan,
   copy,
+  accountPhase,
 }: {
   t: TeamPlanCopy;
   lang: Lang;
   plan: DomainTeamPlan;
   copy: TeamPlanObjectiveCopy;
+  /** The account's own phase, so the phase card can say when the plan is about another one. */
+  accountPhase: number | null;
 }) {
+  const saturated = plan.regime === 'saturated';
   const totalDelta = plan.planDps - plan.currentDps;
   const totalPct = plan.currentDps > 0 ? (totalDelta / plan.currentDps) * 100 : 0;
   const totalSign = totalDelta >= 0 ? '+' : '';
@@ -103,6 +109,27 @@ export function WaterfallPanel({
                 />
               );
             })}
+          </div>
+
+          <div className="grid grid-cols-1 gap-px sm:grid-cols-2">
+            <FactCell
+              testId="team-plan-phase-card"
+              label={t.teamPlanWaterfallPhaseLabel}
+              value={scoredPhaseValue(lang, plan)}
+              valueTone={plan.scoredPhaseInfeasible ? 'warn' : 'ink'}
+              tag={scoredPhaseMovedFrom(t, lang, plan, accountPhase)}
+              note={scoredPhaseHint(t, plan)}
+            />
+            <FactCell
+              testId="team-plan-battle-load-card"
+              label={t.teamPlanRunSummaryDuty}
+              value={sub(t.teamPlanRunSummaryDutyValue, {
+                duty: formatNumber(plan.sumDuty, lang, 2),
+                slots: String(plan.slots),
+              })}
+              tag={saturated ? t.teamPlanRegimeSaturated : t.teamPlanRegimeUnderSaturated}
+              tagTone={saturated ? 'warn' : 'up'}
+            />
           </div>
         </div>
       </Tooltip.Provider>

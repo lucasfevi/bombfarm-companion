@@ -6,6 +6,7 @@ import net from 'node:net';
 import process from 'node:process';
 import { parseFlavorToken } from '@bombfarm/contracts';
 import { findFreePort } from './dev-port.mjs';
+import { terminateBoxedElectron } from './dev-sandbox.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..');
@@ -104,8 +105,10 @@ if (pinnedPid !== null) {
  * `Start.exe` does not pass its caller's environment into the box (measured: a variable set on
  * the launcher came out unset inside), so every variable Electron needs is handed over with an
  * explicit `/env:` switch. `/wait` keeps the launcher's lifetime tied to the boxed app — closing
- * the app still stops the renderer server — but Ctrl+C on the launcher cannot reach into the box;
- * a boxed app left running is closed from its own window.
+ * the app still stops the renderer server. The other direction needs help: the `Start.exe` the
+ * launcher spawns is not the boxed Electron's parent, so killing it on Ctrl+C left the boxed app
+ * running, tapping the game, with its renderer server gone. Shutdown now asks Sandboxie which pids
+ * are in the box and terminates the Electron ones from the host — see {@link terminateBoxedElectron}.
  */
 function sandboxFromArgv(argv) {
   const index = argv.findIndex((arg) => arg === '--sandbox' || arg.startsWith('--sandbox='));
@@ -158,8 +161,26 @@ if (DEV_PORT !== PREFERRED_PORT) {
 
 // Invoke Next via node + local CLI so Windows does not re-parse paths through cmd.exe.
 const nextCli = path.join(desktopRoot, 'node_modules', 'next', 'dist', 'bin', 'next');
+const electronBin =
+  process.platform === 'win32'
+    ? path.join(desktopRoot, 'node_modules', 'electron', 'dist', 'electron.exe')
+    : path.join(desktopRoot, 'node_modules', '.bin', 'electron');
 /** @type {import('node:child_process').ChildProcess | null} */
 let electronProc = null;
+
+const stopElectron = () => {
+  if (sandboxBox !== null && sandboxieStart !== null) {
+    try {
+      const closed = terminateBoxedElectron({ startExe: sandboxieStart, box: sandboxBox, electronBin });
+      if (closed.length > 0) {
+        console.log(`Closed Electron inside Sandboxie box "${sandboxBox}" (pid ${closed.join(', ')})`);
+      }
+    } catch (err) {
+      console.error(`Could not close Electron inside Sandboxie box "${sandboxBox}"; close it from its own window.`, err);
+    }
+  }
+  electronProc?.kill('SIGTERM');
+};
 
 const nextDev = run(process.execPath, [nextCli, 'dev', 'renderer', '--port', String(DEV_PORT)], {
   cwd: desktopRoot,
@@ -172,17 +193,12 @@ const nextDev = run(process.execPath, [nextCli, 'dev', 'renderer', '--port', Str
 
 nextDev.on('exit', (code) => {
   if (code && code !== 0) {
-    electronProc?.kill('SIGTERM');
+    stopElectron();
     process.exit(code);
   }
 });
 
 await waitForPort(DEV_PORT);
-
-const electronBin =
-  process.platform === 'win32'
-    ? path.join(desktopRoot, 'node_modules', 'electron', 'dist', 'electron.exe')
-    : path.join(desktopRoot, 'node_modules', '.bin', 'electron');
 
 // Cursor/VS Code set ELECTRON_RUN_AS_NODE in their terminal env; that breaks a real Electron app.
 const {
@@ -231,7 +247,7 @@ electronProc.on('error', (err) => {
 
 const shutdown = () => {
   nextDev.kill('SIGTERM');
-  electronProc?.kill('SIGTERM');
+  stopElectron();
 };
 
 process.on('SIGINT', shutdown);

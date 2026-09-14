@@ -12,14 +12,6 @@ export const teamPlanObjectivePairsEn = {
     'No phase pinned. Damage is scored at the phase your account is on now.',
   teamPlanPhaseHintNoneFarm:
     'No phase pinned. The search picks the best phase your squad can hold, and says which one it settled on.',
-  /** The per-hero rows are `perHero[].sustained` — DPS — whatever the roster was scored on
-   *  (`waterfall.ts`). Under gold that is a DIFFERENT quantity from the total above it, and the
-   *  rows do not sum to it, so the farm half has to say so rather than claim they are the thing
-   *  the search optimized. */
-  teamPlanHeroDeltaNoteDps:
-    'These per-hero figures are combat-effective DPS, with team auras applied. Below, Hero sheet mirrors what the game’s own panel shows; Combat stats is the view the search scored.',
-  teamPlanHeroDeltaNoteFarm:
-    'These per-hero figures are DPS, not gold per hour — this search scored the squad’s earning rate, which is a rate the whole rotation produces and does not divide per hero, so they will not add up to the total above. Team auras are applied. Below, Hero sheet mirrors what the game’s own panel shows; Combat stats is the view the search scored.',
   teamPlanObjectiveLabel: 'Score for',
   teamPlanObjectiveAria: 'What this search scores a roster on',
   teamPlanObjectiveOptionDamage: 'DPS',

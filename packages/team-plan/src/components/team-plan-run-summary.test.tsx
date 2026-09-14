@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
 import { teamPlanEn } from '../copy';
 import { teamPlanObjectiveCopy } from '../model/objective-copy';
-import { TeamPlanRunSummary } from './team-plan-run-summary';
+import { TeamPlanRunSummary, TeamPlanRunSummaryBody } from './team-plan-run-summary';
 
 function plan(overrides: Partial<TeamPlan> = {}): TeamPlan {
   return {
@@ -33,26 +33,45 @@ function plan(overrides: Partial<TeamPlan> = {}): TeamPlan {
   };
 }
 
-function render(givenPlan: TeamPlan) {
-  return renderToStaticMarkup(
-    createElement(TeamPlanRunSummary, {
-      t: teamPlanEn,
-      lang: 'en',
-      plan: givenPlan,
-      ranOnMainThread: false,
-      copy: teamPlanObjectiveCopy(teamPlanEn, 'dps'),
-    }),
-  );
+function props(givenPlan: TeamPlan, ranOnMainThread = false) {
+  return {
+    t: teamPlanEn,
+    lang: 'en' as const,
+    plan: givenPlan,
+    ranOnMainThread,
+    copy: teamPlanObjectiveCopy(teamPlanEn, 'dps'),
+  };
 }
 
-describe('TeamPlanRunSummary — runed-heroes line', () => {
+function renderBody(givenPlan: TeamPlan) {
+  return renderToStaticMarkup(createElement(TeamPlanRunSummaryBody, props(givenPlan)));
+}
+
+describe('TeamPlanRunSummary — folded by default', () => {
+  it('renders the title as a heading that opens the fold, and none of the body', () => {
+    const html = renderToStaticMarkup(createElement(TeamPlanRunSummary, props(plan())));
+    expect(html).toMatch(/<h2[^>]*><button[^>]*>.*Search summary/);
+    expect(html).not.toContain('team-plan-run-summary-body');
+    expect(html).not.toContain('search passes');
+  });
+
+  it('keeps a search cut short, and a search run on the main thread, outside the fold', () => {
+    const cutShort = plan({ run: { ...plan().run, budgetExhausted: true } });
+    const html = renderToStaticMarkup(createElement(TeamPlanRunSummary, props(cutShort, true)));
+    expect(html).toContain(teamPlanEn.teamPlanBudgetExhausted);
+    expect(html).toContain(teamPlanEn.teamPlanMainThreadFallback);
+    expect(html).not.toContain('team-plan-run-summary-body');
+  });
+});
+
+describe('TeamPlanRunSummaryBody — runed-heroes line', () => {
   it('is absent when the plan names no runed heroes', () => {
-    const html = render(plan({ runedHeroNames: [] }));
+    const html = renderBody(plan({ runedHeroNames: [] }));
     expect(html).not.toContain('Timed runes');
   });
 
   it('names every runed hero, joined by comma, when the plan lists some', () => {
-    const html = render(plan({ runedHeroNames: ['Jon', 'WB;PA'] }));
+    const html = renderBody(plan({ runedHeroNames: ['Jon', 'WB;PA'] }));
     expect(html).toContain('Timed runes are counted on: Jon, WB;PA.');
   });
 });

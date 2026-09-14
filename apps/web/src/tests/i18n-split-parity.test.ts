@@ -194,12 +194,17 @@ const KEYS_REMOVED: readonly string[] = [
   // Split into `…Both`/`…Points`/`…Gear` (in `KEYS_ADDED`): the one string named gear moves and
   // point resets whatever Allowed changes was set to.
   'teamPlanOptimizeAria',
-  // Split into a Dps/Farm pair (in `KEYS_ADDED`): the per-hero rows are DPS whatever the roster
-  // was scored on, so under gold this note claimed figures were "what the search actually
-  // optimizes against" when they are a different quantity from the total above them.
+  // Was split into a Dps/Farm pair (2026-09-06) because the per-hero rows are DPS whatever the
+  // roster was scored on; the pair was deleted outright (2026-09-13) — the paragraph explained a
+  // table whose column headers already name DPS, and it led the panel.
   'teamPlanHeroDeltaNote',
   'teamPlanSetupSectionBody',
   'teamPlanRunSummaryRegimeHintSaturated',
+  'teamPlanRunSummaryFieldStatus',
+  // The hero row's Combat stats table (2026-09-14): with the sheet table capped only at the
+  // game's own display caps, the two tables agreed on most rows and the second one went; the hit
+  // damage rows below it still read the combat-effective figures.
+  'teamPlanHeroBreakdownStatsCombatTitle',
   'teamPlanTotalGainValue',
   'teamPlanResultsHeader',
   'teamPlanGearDipNote',
@@ -433,11 +438,15 @@ const KEYS_REMOVED: readonly string[] = [
  * `teamPlanPhaseAria`, `teamPlanPhaseNone`, `teamPlanPhaseSearchPlaceholder`,
  * `teamPlanPhaseNoMatch`, `teamPlanPhaseMoreMatches`), the two hints under it
  * (`teamPlanPhaseHintNone`/`Chosen`), the note for a phase past the account's furthest
- * (`teamPlanPhaseBeyondMax`), and the run summary's read-back of which phase the plan was scored
- * at, one string per way the phase was arrived at (`teamPlanRunSummaryScoredPhase`,
- * `teamPlanScoredPhaseChosen`, `teamPlanScoredPhaseAccount`, `teamPlanScoredPhaseSearched`,
- * `teamPlanScoredPhaseUnreachable`, `teamPlanScoredPhaseNoneFeasible`). None of these are
- * objective-suffixed: a phase is a phase under either objective, and the read-back reports one.
+ * (`teamPlanPhaseBeyondMax`), and the read-back of which phase the plan was scored at, one string
+ * per way the phase was arrived at (`teamPlanScoredPhaseChosen`, `teamPlanScoredPhaseAccount`,
+ * `teamPlanScoredPhaseSearched`, `teamPlanScoredPhaseUnreachable`,
+ * `teamPlanScoredPhaseNoneFeasible`). None of these are objective-suffixed: a phase is a phase
+ * under either objective, and the read-back reports one. The read-back moved (2026-09-13) from a
+ * sentence at the top of the run summary to a card on the gain breakdown — `teamPlanWaterfallPhaseLabel`
+ * heads it and `teamPlanWaterfallPhaseFrom` names the account's own phase when the plan is about
+ * another — and its neighbour, the field-status line, became the battle-load card's tag, so
+ * `teamPlanRunSummaryFieldStatus` has no reader left (in `KEYS_REMOVED`).
  *
  * The honest price-freshness fix (2026-09-08) replaces `marketPricesUpdated` with
  * `marketPricesOldest`, reworded from "Prices updated {age}" to "Oldest price read {age}". The old
@@ -511,8 +520,6 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanOptimizeAriaGear',
   'teamPlanPhaseHintNoneDps',
   'teamPlanPhaseHintNoneFarm',
-  'teamPlanHeroDeltaNoteDps',
-  'teamPlanHeroDeltaNoteFarm',
   // The per-hero row names its figures as DPS, so the three headers stop reading as a bare
   // before/after of something unnamed; the breakdown tables keep the short labels.
   'teamPlanColDpsBefore',
@@ -527,7 +534,8 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanPhaseMoreMatches',
   'teamPlanPhaseHintChosen',
   'teamPlanPhaseBeyondMax',
-  'teamPlanRunSummaryScoredPhase',
+  'teamPlanWaterfallPhaseLabel',
+  'teamPlanWaterfallPhaseFrom',
   'teamPlanScoredPhaseChosen',
   'teamPlanScoredPhaseAccount',
   'teamPlanScoredPhaseSearched',
@@ -904,6 +912,9 @@ const KEYS_ADDED: readonly string[] = [
   'downloadScreenOptimizerItem2',
   'downloadScreenOptimizerItem3',
   'downloadScreenOptimizerItem4',
+  // The Optimizer's forge queue (2026-09-13): every forge chore among a hero's proposed items,
+  // drawn as its ladder and priced from the forge table. One line: this file sits at its cap.
+  'teamPlanForgeQueueHeading', 'teamPlanForgeQueueLadderAria', 'teamPlanForgeQueueRolls', 'teamPlanForgeQueueSafeJumpOne', 'teamPlanForgeQueueSafeJumpMany', 'teamPlanForgeQueueGold', 'teamPlanForgeQueueTotal', 'teamPlanForgeQueueNoForecast', 'teamPlanForgeQueueLegend',
 ];
 
 /**

@@ -3,11 +3,10 @@
 import { useMemo } from 'react';
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
 import type { InventoryItem } from '@bombfarm/domain/inventory';
-import { Accordion, Panel, Tooltip, accordionStackClass, panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui';
+import { Accordion, Panel, Tooltip, accordionStackClass, panelHClass, panelTitleClass } from '@bombfarm/ui';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { Lang } from '@bombfarm/hero/copy';
 import type { TeamPlanScreenCopy } from '../copy';
-import type { TeamPlanObjectiveCopy } from '../model/objective-copy';
 import { buildGearFlowRows, groupGearFlowRows, removedRowsByOriginHero } from '../model/gear-flow-rows';
 import { HeroDeltaRow, type HeroDeltaRoster } from './hero-delta-row';
 import type { HeroGearFlow } from './hero-proposed-gear';
@@ -16,14 +15,12 @@ export function HeroDeltaTable({
   t,
   lang,
   plan,
-  copy,
   heroes,
   inventoryItems,
 }: {
   t: TeamPlanScreenCopy;
   lang: Lang;
   plan: TeamPlan;
-  copy: TeamPlanObjectiveCopy;
   heroes: readonly HeroRecord[];
   inventoryItems: readonly InventoryItem[];
 }) {
@@ -73,7 +70,6 @@ export function HeroDeltaTable({
       <div className={panelHClass}>
         <h2 className={panelTitleClass}>{t.teamPlanHeroDeltaTitle}</h2>
       </div>
-      <p className={tipClass}>{copy.heroDeltaNote}</p>
       <Tooltip.Provider delay={200} closeDelay={80}>
         <Accordion.Root
           key={accordionKey}

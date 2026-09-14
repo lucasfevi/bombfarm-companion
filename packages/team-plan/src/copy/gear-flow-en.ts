@@ -18,4 +18,14 @@ export const teamPlanGearFlowEn = {
     'No other hero in scope can use it, so it waits in your inventory.',
   teamPlanFlowRowForge: 'Forge from +{from} to +{to}',
   teamPlanFlowSlotEmpty: 'No item proposed',
+  teamPlanForgeQueueHeading: 'Forge queue',
+  teamPlanForgeQueueLadderAria: 'Forge ladder for {item}: +{from} to +{to}',
+  teamPlanForgeQueueRolls: '≈ {rolls} rolls',
+  teamPlanForgeQueueSafeJumpOne: '1 safe jump',
+  teamPlanForgeQueueSafeJumpMany: '{count} safe jumps',
+  teamPlanForgeQueueGold: '≈ {gold} gold',
+  teamPlanForgeQueueTotal: 'Expected for all {count}',
+  teamPlanForgeQueueNoForecast: 'No estimate — this item level is not on the forge table.',
+  teamPlanForgeQueueLegend:
+    'Solid: up to +8 in one safe jump, which cannot fail. Fading: each roll past +8 — the lighter the segment, the lower its chance; a failed roll drops back to +8 (a failed +15 drops to +0). Figures are expected values over many attempts.',
 } as const;

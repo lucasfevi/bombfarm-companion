@@ -27,14 +27,15 @@ export const teamPlanPageEn = {
   teamPlanPhaseBeyondMax:
     'Past the furthest phase your account has reached (#{max}) — this answers what the squad would earn if it could hold it.',
   teamPlanRunSummaryTitle: 'Search summary',
-  teamPlanRunSummaryScoredPhase: 'Scored at',
-  teamPlanScoredPhaseChosen: '{phase} — the phase you picked.',
-  teamPlanScoredPhaseAccount: '{phase} — where your account is now.',
-  teamPlanScoredPhaseSearched: '{phase} — picked automatically, the best this squad can hold.',
+  teamPlanWaterfallPhaseLabel: 'Phase',
+  /** Under the phase card's value, only when the plan's phase is not the account's own. */
+  teamPlanWaterfallPhaseFrom: 'was {phase}',
+  teamPlanScoredPhaseChosen: 'The phase you picked.',
+  teamPlanScoredPhaseAccount: 'Where your account is now.',
+  teamPlanScoredPhaseSearched: 'Picked automatically — the best this squad can hold.',
   teamPlanScoredPhaseUnreachable:
-    '{phase} — this squad cannot clear it, so there is nothing for it to earn there.',
+    'This squad cannot clear it, so there is nothing for it to earn there.',
   teamPlanScoredPhaseNoneFeasible: 'No phase this squad can clear was found.',
-  teamPlanRunSummaryFieldStatus: 'Field status',
   teamPlanRunSummaryDuty: 'Battle load',
   teamPlanRunSummaryDutyValue: '{duty} of {slots} slots',
   teamPlanRunSummaryDutyHint:
@@ -108,7 +109,6 @@ export const teamPlanPageEn = {
   teamPlanHeroDeltaExpandAria: 'Detailed breakdown for {name}',
   teamPlanHeroBreakdownStatsTitle: 'Stat breakdown',
   teamPlanHeroBreakdownStatsSheetTitle: 'Hero sheet',
-  teamPlanHeroBreakdownStatsCombatTitle: 'Combat stats',
   teamPlanHeroBreakdownHitTitle: 'Hit damage',
   teamPlanHeroHitNormal: 'Normal hit',
   teamPlanHeroHitCritical: 'Critical hit',

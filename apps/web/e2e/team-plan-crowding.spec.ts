@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { teamPlanFixtureSeed } from './fixtures/team-plan-seed';
 import { seedLocalStorage } from './fixtures/seed';
-import { clickOptimize, gotoTeamPlan, waitForOptimizeDone } from './fixtures/team-plan-e2e';
+import { clickOptimize, gotoTeamPlan, openFieldHelp, waitForOptimizeDone } from './fixtures/team-plan-e2e';
 
 test.describe('Team plan field-crowding opt-out', () => {
   test('the control explains which question the next run answers', async ({ page }) => {
@@ -12,12 +12,14 @@ test.describe('Team plan field-crowding opt-out', () => {
       name: /Score as if the field always had room/i,
     });
     await expect(toggle).toBeVisible();
-    await expect(page.getByText(/which is why it can ask you to remove gear/i)).toBeVisible();
+    const help = /^Keep every hero geared: /i;
+    await expect(await openFieldHelp(page, help)).toContainText(/which is why it can ask you to remove gear/i);
 
     await toggle.click();
 
-    await expect(page.getByText(/Scoring as if the field always had room/i)).toBeVisible();
-    await expect(page.getByText(/which is why it can ask you to remove gear/i)).toHaveCount(0);
+    const after = await openFieldHelp(page, help);
+    await expect(after).toContainText(/Scoring as if the field always had room/i);
+    await expect(after).not.toContainText(/which is why it can ask you to remove gear/i);
   });
 
   test('toggling it drops a finished plan, because the figures answer a different question', async ({
