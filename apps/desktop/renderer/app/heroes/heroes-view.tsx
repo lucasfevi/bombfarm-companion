@@ -38,7 +38,6 @@ import {
   HeroIdentityRollPanel,
   HeroPickerDialogView,
   NextPointRanking,
-  PhasesHeroPanel,
   PointsTable,
   RosterCards,
   RosterRail,
@@ -397,7 +396,6 @@ function HeroesRoster({ model }: { model: RosterModel }) {
                   </Panel>
                   <HeroDetailTabs
                     active={active}
-                    heroes={heroes}
                     heroCopy={heroCopy}
                     lang={lang}
                     abilityGains={abilityGains}
@@ -415,7 +413,6 @@ function HeroesRoster({ model }: { model: RosterModel }) {
                     statLabel={boundStatLabel}
                     marketPrice={marketPrice}
                     formatAmount={formatAmount}
-                    onSelectHero={onSelectHero}
                   />
                 </div>
               </HeroCopyProvider>
@@ -447,7 +444,6 @@ function HeroesRoster({ model }: { model: RosterModel }) {
  */
 function HeroDetailTabs({
   active,
-  heroes,
   heroCopy,
   lang,
   abilityGains,
@@ -465,10 +461,8 @@ function HeroDetailTabs({
   statLabel: boundStatLabel,
   marketPrice,
   formatAmount,
-  onSelectHero,
 }: {
   active: RosterHeroRow;
-  heroes: HeroRecord[];
   heroCopy: ReturnType<typeof useHeroDetailCopy>;
   lang: Lang;
   abilityGains: readonly AbilityGain[];
@@ -486,7 +480,6 @@ function HeroDetailTabs({
   statLabel: (key: SheetKey) => string;
   marketPrice: HeroMarketPrice | null;
   formatAmount: (value: number, currency: string) => string;
-  onSelectHero: (hero: HeroRecord) => void;
 }) {
   const t = useCopy();
   const statCopy = useStatPanelCopy();
@@ -536,13 +529,7 @@ function HeroDetailTabs({
                 onClearOverride={onClearOverride}
                 lang={lang}
               />
-              <HeroCombat
-                heroes={heroes}
-                hero={active.hero}
-                combat={combat}
-                figures={figures}
-                onSelectHero={onSelectHero}
-              />
+              {figures.kind !== 'at' ? <FiguresNotice figures={figures} /> : null}
               {/* The combat sheet those figures were computed from — beside them rather than at the
                   bottom of Points, where it was the one phase-scoped panel in a stage of sheet
                   arithmetic. */}
@@ -635,38 +622,6 @@ function FiguresNotice({ figures }: { figures: HeroFigures }) {
 const NO_ABILITY_GAINS: readonly AbilityGain[] = Object.freeze([]);
 
 const NO_AURA_DELTAS: Record<TeamBuffId, number> = Object.freeze(zeroTeamBuffs());
-
-/**
- * The phase-scoped half of the detail. `PhasesHeroPanel` names the phase it was computed at and
- * whether that phase came from the Farm screen or from this screen's own override — which is why
- * the selection travels with the figures rather than being restated here.
- */
-function HeroCombat({
-  heroes,
-  hero,
-  combat,
-  figures,
-  onSelectHero,
-}: {
-  heroes: HeroRecord[];
-  hero: HeroRecord;
-  combat: AdvisorPipelineResult | null;
-  figures: HeroFigures;
-  onSelectHero: (hero: HeroRecord) => void;
-}) {
-  if (figures.kind !== 'at') return <FiguresNotice figures={figures} />;
-
-  return (
-    <PhasesHeroPanel
-      heroes={heroes}
-      hero={hero}
-      combat={combat}
-      phaseSelection={figures.selection}
-      onSelectHero={onSelectHero}
-      breakdownShownElsewhere
-    />
-  );
-}
 
 /**
  * What the per-statistic breakdown reads: one hero, the account it shares, and the pipeline run

@@ -22,9 +22,9 @@ chips, and a note where the model has one (the fuse at its ceiling, an average h
 hit because crit chance is zero, what Field time would read without the team's Fôlego); a sheet
 stat shows its ledger grouped by game line. Hovering a card also lights the wires that feed it.
 The Mitigation factor card carries the penetration reading ("covers the phase" / "12.2% short of
-this phase") that the hero panel used to print; the hero panel on the Combat stage keeps only the
-phase note and the hero switcher, and the prop table is gone from that stage (the Farm page's
-hero panel keeps both). Under the pipeline, the seven combat sheet stats as a matrix — Hero
+this phase") that the hero panel used to print; that panel leaves the Combat stage altogether —
+the hero is the one the strip or the roster holds, and the prop table goes with it (the Farm
+page's hero panel keeps both). Under the pipeline, the seven combat sheet stats as a matrix — Hero
 (base, level, stars and points folded to one figure; hover for the four), Gear, Ability, Skill
 tree, Sheet total, Aura ×, Effective — always all seven rows, with "—" for an empty cell and "off"
 where an aura exists but its switch is off; a Rune × column appears only while a rune is on the

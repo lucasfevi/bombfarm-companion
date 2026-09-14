@@ -47,7 +47,6 @@ export function PhasesHeroPanel({
   phaseSelection,
   onSelectHero,
   renderPicker,
-  breakdownShownElsewhere = false,
 }: {
   heroes: HeroRecord[];
   hero: HeroRecord;
@@ -55,10 +54,6 @@ export function PhasesHeroPanel({
   phaseSelection: PhaseSelection;
   onSelectHero: (h: HeroRecord) => void;
   renderPicker?: HeroPickerSlot | undefined;
-  /** Set by a host that draws the combat breakdown beside this panel: every figure and the prop
-   *  table appear there, each with what it is computed from, so this panel keeps only the stage
-   *  and the hero switcher. */
-  breakdownShownElsewhere?: boolean | undefined;
 }) {
   const { t, lang } = useHeroCopy();
   const detail = heroCopyFor(lang);
@@ -88,7 +83,7 @@ export function PhasesHeroPanel({
         onSelectHero={onSelectHero}
         renderPicker={renderPicker}
       />
-      {combat && !breakdownShownElsewhere ? <CombatFigures combat={combat} /> : null}
+      {combat ? <CombatFigures combat={combat} /> : null}
     </Panel>
   );
 }
