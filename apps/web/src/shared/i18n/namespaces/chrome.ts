@@ -12,7 +12,7 @@ export const en = {
   guideSteps: [
     {
       t: "1 · Export",
-      d: "In BombFarm, export your save file — a .json with your account, heroes and items. No need to reset points first: the planner reads each hero's birth roll straight from the save, so your current spend stays intact. If a reset is actually worth it, the app tells you — look for the warn border on the hero strip and the gain line on the <em>Points</em> tab. Everything is read locally in your browser; nothing is uploaded anywhere.",
+      d: "In BombFarm, open <em>Settings → Privacy</em> and click <em>Download</em> next to \"Download a copy of my data\" — that is your save file, a .json with your account, heroes and items. No need to reset points first: the planner reads each hero's birth roll straight from the save, so your current spend stays intact. If a reset is actually worth it, the app tells you — look for the warn border on the hero strip and the gain line on the <em>Points</em> tab. Everything is read locally in your browser; nothing is uploaded anywhere.",
     },
     {
       t: "2 · Import",
@@ -62,7 +62,7 @@ export const pt: typeof en = {
   guideSteps: [
     {
       t: "1 · Exportar",
-      d: "No BombFarm, exporte seu arquivo de save — um .json com sua conta, heróis e itens. Não precisa zerar os pontos antes: o planner lê o roll de nascimento de cada herói direto do save, então seu gasto atual fica intacto. Se um reset realmente valer a pena, o app avisa — veja a borda de alerta na faixa do herói e a linha de ganho na aba <em>Pontos</em>. Tudo é lido localmente no seu navegador; nada é enviado a lugar nenhum.",
+      d: "No BombFarm, abra <em>Configurações → Privacidade</em> e clique em <em>Baixar</em> ao lado de \"Baixar uma cópia dos meus dados\" — esse é o seu arquivo de save, um .json com sua conta, heróis e itens. Não precisa zerar os pontos antes: o planner lê o roll de nascimento de cada herói direto do save, então seu gasto atual fica intacto. Se um reset realmente valer a pena, o app avisa — veja a borda de alerta na faixa do herói e a linha de ganho na aba <em>Pontos</em>. Tudo é lido localmente no seu navegador; nada é enviado a lugar nenhum.",
     },
     {
       t: "2 · Importar",
