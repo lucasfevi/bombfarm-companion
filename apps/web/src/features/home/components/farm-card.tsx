@@ -95,7 +95,7 @@ export function FarmCard() {
         <Tooltip.Provider delay={200} closeDelay={80}>
           <FarmComparisonTable columns={columns} peakGoldPerHour={peak} sameLabel={t.homeCardFarmSame} />
           {notes.length > 0 ? (
-            <div className="mt-3 mb-3 grid gap-1 border-t border-[color-mix(in_oklch,var(--line)_60%,transparent)] pt-2.5 text-xs leading-normal text-muted">
+            <div className="mt-4 mb-4 grid gap-1.5 border-t border-[color-mix(in_oklch,var(--line)_60%,transparent)] pt-3.5 text-[13px] leading-normal text-muted">
               {notes.map((note) => (
                 <p key={note} className="m-0" data-testid="home-farm-note">
                   {note}

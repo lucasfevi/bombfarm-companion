@@ -25,7 +25,8 @@ const PILL_CLASS = {
 } as const;
 
 const BEST_TINT = 'bg-[color-mix(in_oklch,var(--accent)_7%,transparent)]';
-const LABEL_CLASS = 'pl-0 text-[10.5px] font-medium tracking-[0.04em] text-muted uppercase';
+const LABEL_CLASS = 'py-3 pl-0 text-[10.5px] font-medium tracking-[0.04em] text-muted uppercase';
+const FIGURE_CLASS = 'py-3 font-mono tabular-nums';
 
 export function FarmComparisonTable({
   columns,
@@ -70,7 +71,7 @@ export function FarmComparisonTable({
             {columns.map((column) => (
               <th
                 key={column.id}
-                className={cn('border-b border-line px-2 pt-1.5 pb-2.5 text-left align-top font-normal normal-case', column.id === 'best' && cn(BEST_TINT, 'border-b-[color-mix(in_oklch,var(--accent)_45%,var(--line))]'))}
+                className={cn('border-b border-line px-2 pt-2 pb-3.5 text-left align-top font-normal normal-case', column.id === 'best' && cn(BEST_TINT, 'border-b-[color-mix(in_oklch,var(--accent)_45%,var(--line))]'))}
                 data-testid={`home-farm-${column.id}`}
               >
                 <span
@@ -92,18 +93,20 @@ export function FarmComparisonTable({
           <DataTable.Row>
             <DataTable.RowHeader className={LABEL_CLASS}>{t.homeCardFarmRowGold}</DataTable.RowHeader>
             {columns.map((column) => (
-              <DataTable.Cell key={column.id} className={cn(cellClass(column), 'pt-3 pb-2.5')}>
+              <DataTable.Cell key={column.id} className={cn(cellClass(column), 'pt-4 pb-3.5')}>
                 <span
                   className={cn('block font-mono text-xl font-bold tabular-nums', column.row.locked ? 'text-muted' : 'text-gold')}
                   data-testid={`home-farm-${column.id}-gold`}
                 >
                   {formatRatePerHour(column.row.goldPerHour, lang)}
                 </span>
-                <Bar
-                  percent={peakGoldPerHour > 0 ? (column.row.goldPerHour / peakGoldPerHour) * 100 : 0}
-                  variant={column.id === 'best' ? 'best' : 'fill'}
-                  className={cn('mt-2', column.row.locked ? 'bg-muted' : 'bg-gold')}
-                />
+                <div className="mt-2.5">
+                  <Bar
+                    percent={peakGoldPerHour > 0 ? (column.row.goldPerHour / peakGoldPerHour) * 100 : 0}
+                    variant={column.id === 'best' ? 'best' : 'fill'}
+                    className={column.row.locked ? 'bg-muted' : 'bg-gold'}
+                  />
+                </div>
               </DataTable.Cell>
             ))}
           </DataTable.Row>
@@ -112,7 +115,7 @@ export function FarmComparisonTable({
             {columns.map((column) => (
               <DataTable.Cell
                 key={column.id}
-                className={cn(cellClass(column), 'font-mono tabular-nums', !column.row.locked && 'text-info')}
+                className={cn(cellClass(column), FIGURE_CLASS, !column.row.locked && 'text-info')}
                 data-testid={`home-farm-${column.id}-xp`}
               >
                 {formatRatePerHour(column.row.xpPerHour, lang)}
@@ -124,7 +127,7 @@ export function FarmComparisonTable({
             {columns.map((column) => (
               <DataTable.Cell
                 key={column.id}
-                className={cn(cellClass(column), 'font-mono tabular-nums')}
+                className={cn(cellClass(column), FIGURE_CLASS)}
                 data-testid={`home-farm-${column.id}-items`}
               >
                 {formatBand(column.row.itemLevelLabel)}
@@ -136,7 +139,7 @@ export function FarmComparisonTable({
             {columns.map((column) => (
               <DataTable.Cell
                 key={column.id}
-                className={cn(cellClass(column), 'font-mono tabular-nums')}
+                className={cn(cellClass(column), FIGURE_CLASS)}
                 data-testid={`home-farm-${column.id}-clear`}
               >
                 {formatClearTime(column.row.clearSecs)}
@@ -146,7 +149,7 @@ export function FarmComparisonTable({
           <DataTable.Row>
             <DataTable.RowHeader className={LABEL_CLASS}>{t.homeCardFarmRowVs}</DataTable.RowHeader>
             {columns.map((column) => (
-              <DataTable.Cell key={column.id} nowrap={false} className={cn(cellClass(column), 'pt-3')} data-testid={`home-farm-${column.id}-vs`}>
+              <DataTable.Cell key={column.id} nowrap={false} className={cn(cellClass(column), 'pt-4 pb-3')} data-testid={`home-farm-${column.id}-vs`}>
                 {column.vs === 'here' ? (
                   <span className="text-xs text-muted">{t.homeCardFarmHere}</span>
                 ) : column.vs === 'same' ? (
@@ -162,7 +165,7 @@ export function FarmComparisonTable({
                     >
                       {formatSignedPct(column.vs.pct, lang)}
                     </span>
-                    <span className="mt-1 block text-[10.5px] text-muted">{column.vs.against}</span>
+                    <span className="mt-1.5 block text-[10.5px] text-muted">{column.vs.against}</span>
                   </>
                 )}
               </DataTable.Cell>
