@@ -4,18 +4,12 @@ import { formatPhaseCoord } from '@bombfarm/domain/phase-wiki';
 import { Tooltip, formatNumber } from '@bombfarm/ui';
 import { useAppLang } from '@/shared/context/app-lang';
 import { sub, type Strings } from '@/shared/i18n';
-import { selectFarmReturnBonus, usePlannerStore, type PlannerStore } from '@/shared/stores';
+import { usePlannerStore } from '@/shared/stores';
 import { selectFarmCardRows, type FarmOutlookTile } from '../model/farm-card-view';
 import { buildFarmSentence } from '../model/farm-sentence';
 import { selectAccountUsable, selectHasRoster } from '../model/home-selectors';
 import { FarmComparisonTable, type FarmComparisonColumn } from './farm-comparison-table';
 import { HomeSectionCard } from './home-section-card';
-
-const RETURN_BONUS_KEY = {
-  off: 'farmRankingReturnBonusOff',
-  on: 'farmRankingReturnBonusOn',
-  vip: 'farmRankingReturnBonusVip',
-} as const satisfies Record<PlannerStore['farmReturnBonus'], keyof Strings>;
 
 function lockLine(tile: FarmOutlookTile, strings: Strings, phase: string): string | null {
   if (!tile.row.locked) return null;
@@ -29,7 +23,6 @@ export function FarmCard() {
   const view = usePlannerStore(selectFarmCardRows);
   const hasRoster = usePlannerStore(selectHasRoster);
   const accountUsable = usePlannerStore(selectAccountUsable);
-  const returnBonus = usePlannerStore(selectFarmReturnBonus);
   const { currentRow, bestRow, pushTargetRow, nextItemLevel, nextDifficulty } = view;
   const ready = hasRoster && accountUsable && currentRow != null && bestRow != null;
 
@@ -77,14 +70,12 @@ export function FarmCard() {
       section="farm"
       state={ready ? 'ready' : 'needs'}
       context={t.homeCardFarmContext}
+      bodyClassName="flex flex-col justify-center"
       footer={
         ready ? (
           <>
             <p className="m-0">{t.homeCardFarmFooterRanked}</p>
             {pushLine ? <p className="m-0">{pushLine}</p> : null}
-            <p className="m-0">
-              {t.farmRankingReturnBonusLabel} {t[RETURN_BONUS_KEY[returnBonus]]}
-            </p>
           </>
         ) : (
           t.homeCardFarmNeeds

@@ -263,36 +263,22 @@ describe('the front page farm card', () => {
     expect(footerLines(render())).toEqual([
       STRINGS.en.homeCardFarmFooterRanked,
       sub(STRINGS.en.homeCardFarmFooterPush, { phase: 50, pct: '60.0' }),
-      `${STRINGS.en.farmRankingReturnBonusLabel} ${STRINGS.en.farmRankingReturnBonusOff}`,
     ]);
 
     viewOverride = farmCardViewFrom([CURRENT, BEST, row({ phase: 50, goldPerHour: 3000, locked: true })], 10);
-    expect(footerLines(render())).toEqual([
-      STRINGS.en.homeCardFarmFooterRanked,
-      `${STRINGS.en.farmRankingReturnBonusLabel} ${STRINGS.en.farmRankingReturnBonusOff}`,
-    ]);
+    expect(footerLines(render())).toEqual([STRINGS.en.homeCardFarmFooterRanked]);
 
     usePlannerStore.setState({ lang: 'pt' });
     expect(footerLines(render())[0]).toBe(STRINGS.pt.homeCardFarmFooterRanked);
   });
 
-  it("the last footer line is the board's Return Bonus label and value", () => {
+  it('the footer never states the Return Bonus setting', () => {
     usableAccount();
     viewOverride = farmCardViewFrom([CURRENT, BEST], 10);
-
-    for (const [mode, key] of [
-      ['off', 'farmRankingReturnBonusOff'],
-      ['on', 'farmRankingReturnBonusOn'],
-      ['vip', 'farmRankingReturnBonusVip'],
-    ] as const) {
+    for (const mode of ['off', 'on', 'vip'] as const) {
       usePlannerStore.getState().setFarmReturnBonus(mode);
-      for (const lang of LANGS) {
-        usePlannerStore.setState({ lang });
-        const lines = footerLines(render());
-        expect(lines[lines.length - 1]).toBe(
-          `${STRINGS[lang].farmRankingReturnBonusLabel} ${STRINGS[lang][key]}`,
-        );
-      }
+      usePlannerStore.setState({ lang: 'en' });
+      expect(textOf(render())).not.toContain(STRINGS.en.farmRankingReturnBonusLabel);
     }
   });
 
