@@ -1069,10 +1069,11 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   // same in one line, and `bdFormulaDmg` gains its `pack` factor. Optimizer disclosures are in
   // `KEYS_ADDED`.
   'explainSections.7.p.0', 'bdFormulaDmg',
-  // Where the save file comes from (2026-09-13): the import dialog's description and the quick
-  // guide's Export step both told the reader to "export your save file" without saying where the
-  // game keeps that control. Both now name it — Settings → Privacy, "Download a copy of my data".
-  'importDialogDesc', 'guideSteps.0.d',
+  // Where the save file comes from (2026-09-13): the import dialog's description told the reader
+  // to "export your save file" without saying where the game keeps that control. It now names
+  // it — Settings → Privacy, "Download a copy of my data". (The quick guide's step said the same
+  // and left with the guide; it is in `KEYS_REMOVED`.)
+  'importDialogDesc',
 ];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {
