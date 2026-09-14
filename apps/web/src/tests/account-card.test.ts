@@ -4,11 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HoldingsViewProps } from '@bombfarm/account/holdings';
 import { houseLabel } from '@bombfarm/domain/game-labels';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
-import { HOUSES, HOUSE_MAX_LEVEL, resolveHouseRestSeconds } from '@bombfarm/domain/model';
+import { HOUSE_MAX_LEVEL, resolveHouseRestSeconds } from '@bombfarm/domain/model';
 import { formatPhaseLabel } from '@bombfarm/farm/model/farm-ranking-format';
 import type { MarketSnapshot } from '@bombfarm/pricing';
 import { buildSnapshot, categoryKey, heroPriceKey, priceKey } from '@bombfarm/pricing';
-import { formatHouseRest, formatLuckPoints, formatTreePercent } from '@/features/account';
+import { formatHouseRest } from '@/features/account';
 import {
   accountHoldingsFrom,
   holdingsComponents,
@@ -152,8 +152,6 @@ const openingOf = (html: string, testId: string) =>
 const body = (html: string) =>
   html.slice(openingOf(html, 'home-card-body'), openingOf(html, 'home-card-footer'));
 const footer = (html: string) => textOf(html.slice(openingOf(html, 'home-card-footer')));
-const slot = (html: string, testId: string) =>
-  new RegExp(`data-testid="${testId}"[^>]*>([^<]*)<`).exec(html)?.[1] ?? null;
 const slots = (html: string, testId: string) =>
   [...html.matchAll(new RegExp(`data-testid="${testId}"[^>]*>([^<]*)<`, 'g'))].map((match) => match[1]);
 const escaped = (text: string) => text.replace(/'/g, '&#x27;');
@@ -169,7 +167,7 @@ describe('the front page account card', () => {
     resetPlannerStoreForTests();
   });
 
-  it("prints the nine account rows in order with the Account page's labels and formatters", () => {
+  it("prints six rows — the account's value first — with the Account page's labels and formatters, and no footer", () => {
     for (const lang of LANGS) {
       usePlannerStore.setState({ ...ACCOUNT, lang });
       snapshot = SNAPSHOT;
@@ -181,93 +179,52 @@ describe('the front page account card', () => {
       expect(html).toContain('data-home-card-state="ready"');
       expect(html).toContain(`>${strings.homeCardAccountContext}<`);
       expect(slots(html, 'home-account-label')).toEqual([
+        strings.homeCardAccountValue,
         strings.accountCurrentPhase,
         strings.accountMaxPhase,
         strings.house,
-        strings.houseLevelLabel,
-        strings.accountHouseCycle,
         strings.accountCasaSlots,
-        strings.accountFieldSlots,
-        strings.accountSquadDmg,
-        strings.accountLuckFlat,
+        strings.accountHouseCycle,
       ]);
+      expect(holdings.total).toBe(90);
       expect(slots(html, 'home-account-value')).toEqual([
+        formatMoney(90, lang, 'BRL'),
         formatPhaseLabel(51, lang),
         formatPhaseLabel(137, lang),
-        houseLabel(2, lang),
-        `7 / ${HOUSE_MAX_LEVEL}`,
-        formatHouseRest(rest),
+        sub(strings.homeCardAccountHouse, { house: houseLabel(2, lang), level: 7, max: HOUSE_MAX_LEVEL }),
         '3',
-        '6',
-        formatTreePercent(12.345, lang),
-        formatLuckPoints(3.5, lang),
+        formatHouseRest(rest),
       ]);
       expect(formatHouseRest(rest)).toBe('15 min 13 s');
-      expect(footer(html)).toBe(sub(strings.accountNextHouse, { house: houseLabel(3, lang) }));
-    }
-
-    usePlannerStore.setState({ lang: 'en', fieldSlots: null, houseIdx: HOUSES.length - 1 });
-    const maxed = render();
-    expect(slots(maxed, 'home-account-value')[6]).toBe('—');
-    expect(footer(maxed)).toBe(sub(STRINGS.en.homeCardAccountHouseMaxed, { house: houseLabel(HOUSES.length - 1, 'en') }));
-  });
-
-  it("the Account card's total equals the holdings hook's total, formatted the way the panel formats it", () => {
-    for (const lang of LANGS) {
-      usePlannerStore.setState({ ...ACCOUNT, lang });
-      snapshot = SNAPSHOT;
-      holdings = holdingsFor(SNAPSHOT, lang);
-      const html = render();
-
-      expect(holdings.total).toBe(90);
-      expect(html).toContain(`>${STRINGS[lang].accountHoldingsTotal}<`);
-      expect(slot(html, 'home-account-total')).toBe(holdings.labels.amount(90, holdings.currency));
-      expect(slot(html, 'home-account-total')).toBe(formatMoney(90, lang, 'BRL'));
-      expect(slot(html, 'home-account-partial')).toBeNull();
-      expect(slot(html, 'home-account-inventory')).toBe(formatMoney(10, lang, 'BRL'));
-      expect(slot(html, 'home-account-heroes')).toBe(formatMoney(50, lang, 'BRL'));
-      expect(slot(html, 'home-account-skins')).toBe(formatMoney(30, lang, 'BRL'));
-      expect(body(html)).toContain(`>${STRINGS[lang].accountHoldingsInventory}<`);
-      expect(body(html)).toContain(`>${STRINGS[lang].accountHoldingsHeroes}<`);
-      expect(body(html)).toContain(`>${STRINGS[lang].accountHoldingsSkins}<`);
+      expect(footer(html)).toBe('');
+      expect(html).not.toContain('home-account-total');
+      expect(html).not.toContain(strings.accountHoldingsTotal);
+      expect(html).not.toContain(strings.accountFieldSlots);
+      expect(html).not.toContain(strings.accountSquadDmg);
+      expect(html).not.toContain(strings.accountLuckFlat);
     }
   });
 
-  it('a heroes component the market cannot price shows its withheld label', () => {
-    for (const lang of LANGS) {
-      usePlannerStore.setState({ ...ACCOUNT, lang });
-      snapshot = SNAPSHOT;
-      holdings = holdingsFor(SNAPSHOT, lang, null);
-      const strings = STRINGS[lang];
-      const html = render();
-
-      expect(holdings.heroes.withheld).toBe(true);
-      expect(slot(html, 'home-account-heroes')).toBe(strings.accountHoldingsHeroesWithheld);
-      expect(slot(html, 'home-account-partial')).toBe(strings.accountHoldingsPartial);
-      expect(slot(html, 'home-account-total')).toBe(formatMoney(holdings.total, lang, 'BRL'));
-      expect(slot(html, 'home-account-inventory')).toBe(formatMoney(10, lang, 'BRL'));
-    }
-
-    holdings = holdingsFor(SNAPSHOT, 'en', priceableHeroes(ROSTER), null);
-    usePlannerStore.setState({ lang: 'en' });
-    expect(slot(render(), 'home-account-inventory')).toBe(STRINGS.en.accountHoldingsInventoryWithheld);
+  it("the value row is the holdings hook's total whether or not a component is withheld", () => {
+    usePlannerStore.setState({ ...ACCOUNT, lang: 'en' });
+    snapshot = SNAPSHOT;
+    holdings = holdingsFor(SNAPSHOT, 'en', null);
+    expect(holdings.heroes.withheld).toBe(true);
+    expect(slots(render(), 'home-account-value')[0]).toBe(formatMoney(holdings.total, 'en', 'BRL'));
+    expect(render()).not.toContain(STRINGS.en.accountHoldingsPartial);
   });
 
-  it("with no snapshot every money slot reads 'not listed' and no currency string appears", () => {
+  it("with no snapshot the value row reads 'not listed' and no currency string appears", () => {
     for (const lang of LANGS) {
       usePlannerStore.setState({ ...ACCOUNT, lang });
       snapshot = null;
       holdings = holdingsFor(null, lang);
-      const unpriced = STRINGS[lang].accountHoldingsUnpriced;
       const html = render();
 
       expect(html).toContain('data-home-card-state="ready"');
-      expect(slot(html, 'home-account-total')).toBe(unpriced);
-      expect(slot(html, 'home-account-inventory')).toBe(unpriced);
-      expect(slot(html, 'home-account-heroes')).toBe(unpriced);
-      expect(slot(html, 'home-account-skins')).toBe(unpriced);
+      expect(slots(html, 'home-account-value')[0]).toBe(STRINGS[lang].accountHoldingsUnpriced);
       expect(html).not.toContain('R$');
-      expect(slots(html, 'home-account-value')).toHaveLength(9);
+      expect(slots(html, 'home-account-value')).toHaveLength(6);
     }
   });
 

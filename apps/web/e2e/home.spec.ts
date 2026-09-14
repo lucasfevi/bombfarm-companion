@@ -157,7 +157,7 @@ test.describe('Home', () => {
     const total = await pageTotal.innerText();
 
     await openSection(page, 'Home');
-    await expect(page.getByTestId('home-account-total')).toHaveText(total);
+    await expect(page.getByTestId('home-account-value').first()).toHaveText(total);
   });
 
   test('the grid folds from two rows to one column, the farm table scrolls inside its card, and the page never scrolls sideways', async ({
