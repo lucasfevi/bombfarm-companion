@@ -85,10 +85,12 @@ export function TeamPlanToolbar({
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
           <div className="min-w-0 flex-1">
             <div className={panelHClass}>
-              <h2 className={`${panelTitleClass} flex items-center gap-1.5`}>
-                {t.teamPlanSetupSectionTitle}
+              {/* The glyph sits beside the heading, not inside it, so the heading's accessible
+                  name stays the title alone rather than the title plus the whole intro. */}
+              <div className="flex items-center gap-1.5">
+                <h2 className={panelTitleClass}>{t.teamPlanSetupSectionTitle}</h2>
                 <InfoTip label={t.teamPlanSetupSectionTitle} tip={copy.setupSectionBody} />
-              </h2>
+              </div>
             </div>
             {farmBlocked ? (
               <p className="m-0 mb-2 text-[13px] text-warn" role="status">
