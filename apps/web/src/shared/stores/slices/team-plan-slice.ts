@@ -3,6 +3,7 @@ import type { InventoryItem } from '@bombfarm/domain/inventory';
 import { normalizeInventorySnapshot } from '@bombfarm/domain/inventory';
 import { applyTeamPlanControlChange, type TeamPlanControlChange } from '@bombfarm/team-plan/core';
 import type { HeroRecord } from '@/shared/lib/storage';
+import { removeTeamPlanEnvelope, type TeamPlanEnvelope } from '@/shared/lib/team-plan-storage';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 import type {
   TeamPlan,
@@ -29,6 +30,7 @@ import {
 import {
   selectTeamPlanControls,
   selectTeamPlanInputs,
+  selectTeamPlanTargetPhase,
 } from '@/shared/stores/selectors/team-plan-selectors';
 
 const EMPTY_INVENTORY: InventorySnapshot = { version: 1, importedAt: 0, items: [] };
@@ -63,6 +65,7 @@ export type TeamPlanSlice = {
 
   hydrateInventory: (snapshot: InventorySnapshot, forgeFloor: number) => void;
   hydrateScope: (persisted: Record<string, ScopeState>) => void;
+  restoreTeamPlan: (envelope: TeamPlanEnvelope | null) => void;
   replaceInventoryFromImport: (items: InventoryItem[]) => void;
   setScope: (heroId: string, scope: ScopeState) => void;
   setForgeFloor: (value: number) => void;
@@ -151,6 +154,26 @@ export const createTeamPlanSlice: StateCreator<
     // without this, a page reload silently forgot every Donate/Leave alone choice.
     hydrateScope: (persisted) => {
       set({ scopeByHeroId: mergeScopeForRoster(get().heroes, persisted) });
+    },
+
+    restoreTeamPlan: (envelope) => {
+      if (envelope === null) return;
+      const state = get();
+      const solvedUnderLiveControls =
+        envelope.objective === state.objective &&
+        envelope.allowedChanges === state.allowedChanges &&
+        envelope.ignoreFieldCrowding === state.ignoreFieldCrowding &&
+        envelope.targetPhase === selectTeamPlanTargetPhase(state);
+      if (!solvedUnderLiveControls) {
+        removeTeamPlanEnvelope();
+        return;
+      }
+      set({
+        plan: envelope.plan,
+        planInputSignature: envelope.signature,
+        runStatus: 'done',
+        runId: null,
+      });
     },
 
     replaceInventoryFromImport: (items) => {
