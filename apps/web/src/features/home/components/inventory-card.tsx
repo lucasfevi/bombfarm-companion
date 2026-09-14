@@ -64,27 +64,25 @@ export function InventoryCard() {
           ? formatMoney(holdings.inventory.amount, lang, holdings.currency)
           : t.accountHoldingsUnpriced}
       </p>
-      <ul className="m-0 grid list-none grid-cols-2 gap-2 p-0">
+      <ul className="m-0 grid list-none gap-1.5 p-0">
         {COUNTED_KINDS.map((kind) => {
           const group = view?.groups.find((candidate) => candidate.kind === kind);
           return (
             <li
               key={kind}
-              className="flex items-center gap-2.5 rounded-sm border border-line bg-surface px-2.5 py-2"
+              className="flex items-center gap-2.5 rounded-sm border border-line bg-surface px-2.5 py-1.5"
               data-testid="home-inventory-tile"
             >
-              <span className="grid size-8 shrink-0 place-items-center" aria-hidden="true">
+              <span className="grid size-7 shrink-0 place-items-center" aria-hidden="true">
                 {GROUP_EMBLEM_SRC[kind] ? (
-                  <img src={GROUP_EMBLEM_SRC[kind]} alt="" className="size-8 object-contain" draggable={false} />
+                  <img src={GROUP_EMBLEM_SRC[kind]} alt="" className="size-7 object-contain" draggable={false} />
                 ) : null}
               </span>
-              <span className="flex min-w-0 flex-col">
-                <span className="font-mono text-lg leading-none font-bold tabular-nums" data-testid="home-inventory-count">
-                  {group?.count ?? 0}
-                </span>
-                <span className="mt-1 text-xs leading-tight text-muted" data-testid="home-inventory-kind">
-                  {t[GROUP_LABEL_KEY[kind]]}
-                </span>
+              <span className="min-w-0 flex-1 truncate text-sm text-muted" data-testid="home-inventory-kind">
+                {t[GROUP_LABEL_KEY[kind]]}
+              </span>
+              <span className="font-mono text-base font-bold tabular-nums" data-testid="home-inventory-count">
+                {group?.count ?? 0}
               </span>
             </li>
           );
