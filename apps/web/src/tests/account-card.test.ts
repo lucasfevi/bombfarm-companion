@@ -8,7 +8,7 @@ import { HOUSE_MAX_LEVEL, resolveHouseRestSeconds } from '@bombfarm/domain/model
 import { formatPhaseLabel } from '@bombfarm/farm/model/farm-ranking-format';
 import type { MarketSnapshot } from '@bombfarm/pricing';
 import { buildSnapshot, categoryKey, heroPriceKey, priceKey } from '@bombfarm/pricing';
-import { formatHouseRest } from '@/features/account';
+import { formatHouseRest, formatLuckPoints, formatTreePercent } from '@/features/account';
 import { formatNumber } from '@/shared/lib/format-number';
 import {
   accountHoldingsFrom,
@@ -144,6 +144,9 @@ const ACCOUNT = {
   treeSquadDmgPct: 12.345,
   treeLuckFlatPct: 3.5,
   treeDanoTotal: 2.345,
+  treeEnergy: 52,
+  treeSpeed: 2.7,
+  treeTeamCoinPct: 18.5,
   missingRequiredFields: [],
 } satisfies Partial<PlannerStore>;
 
@@ -171,7 +174,7 @@ describe('the front page account card', () => {
     resetPlannerStoreForTests();
   });
 
-  it("prints eight rows — the account's value first, in the inventory figure's style — and the footer points at the page", () => {
+  it("prints twelve rows — the account's value first, in the inventory figure's style, the tree's bonuses last — and the footer points at the page", () => {
     for (const lang of LANGS) {
       usePlannerStore.setState({ ...ACCOUNT, lang });
       snapshot = SNAPSHOT;
@@ -191,6 +194,10 @@ describe('the front page account card', () => {
         strings.accountFieldSlots,
         strings.accountHouseCycle,
         strings.treeDano,
+        strings.treeEnergy,
+        strings.treeSpeed,
+        strings.accountLuckFlat,
+        strings.treeTeamCoin,
       ]);
       expect(holdings.total).toBe(90);
       expect(slots(html, 'home-account-value')).toEqual([
@@ -202,6 +209,10 @@ describe('the front page account card', () => {
         '6',
         formatHouseRest(rest),
         `×${formatNumber(ACCOUNT.treeDanoTotal, lang, 3)}`,
+        formatTreePercent(ACCOUNT.treeEnergy, lang),
+        formatTreePercent(ACCOUNT.treeSpeed, lang),
+        formatLuckPoints(ACCOUNT.treeLuckFlatPct, lang),
+        formatTreePercent(ACCOUNT.treeTeamCoinPct, lang),
       ]);
       expect(formatHouseRest(rest)).toBe('15 min 13 s');
       expect(tag(html, 'home-account-value')).toContain('text-accent');
@@ -210,7 +221,6 @@ describe('the front page account card', () => {
       expect(html).not.toContain('home-account-total');
       expect(html).not.toContain(strings.accountHoldingsTotal);
       expect(html).not.toContain(strings.accountSquadDmg);
-      expect(html).not.toContain(strings.accountLuckFlat);
     }
   });
 
@@ -233,7 +243,7 @@ describe('the front page account card', () => {
       expect(html).toContain('data-home-card-state="ready"');
       expect(slots(html, 'home-account-value')[0]).toBe(STRINGS[lang].accountHoldingsUnpriced);
       expect(html).not.toContain('R$');
-      expect(slots(html, 'home-account-value')).toHaveLength(8);
+      expect(slots(html, 'home-account-value')).toHaveLength(12);
     }
   });
 

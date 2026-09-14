@@ -3,7 +3,7 @@
 import { houseLabel } from '@bombfarm/domain/game-labels';
 import { HOUSE_MAX_LEVEL, resolveHouseRestSeconds } from '@bombfarm/domain/model';
 import { formatPhaseLabel } from '@bombfarm/farm/model/farm-ranking-format';
-import { formatHouseRest, useAccountHoldings } from '@/features/account';
+import { formatHouseRest, formatLuckPoints, formatTreePercent, useAccountHoldings } from '@/features/account';
 import { useAppLang } from '@/shared/context/app-lang';
 import { useMarketSnapshot } from '@/shared/hooks/use-market-snapshot';
 import { formatMoney, sub } from '@/shared/i18n';
@@ -19,6 +19,10 @@ import {
   selectFieldSlots,
   selectSlots,
   selectTreeDanoTotal,
+  selectTreeEnergy,
+  selectTreeLuckFlatPct,
+  selectTreeSpeed,
+  selectTreeTeamCoinPct,
   usePlannerStore,
 } from '@/shared/stores';
 import { selectAccountUsable } from '../model/home-selectors';
@@ -35,6 +39,10 @@ export function AccountCard() {
   const slots = usePlannerStore(selectSlots);
   const fieldSlots = usePlannerStore(selectFieldSlots);
   const danoTotal = usePlannerStore(selectTreeDanoTotal);
+  const energy = usePlannerStore(selectTreeEnergy);
+  const speed = usePlannerStore(selectTreeSpeed);
+  const luckFlatPct = usePlannerStore(selectTreeLuckFlatPct);
+  const teamCoinPct = usePlannerStore(selectTreeTeamCoinPct);
   const houseCycleSecs = usePlannerStore(selectHouseCycleSecs);
   const cycleHouseIdx = usePlannerStore(selectHouseCycleSecsHouseIdx);
   const cycleLevel = usePlannerStore(selectHouseCycleSecsLevel);
@@ -55,6 +63,10 @@ export function AccountCard() {
     [t.accountFieldSlots, fieldSlots == null ? '—' : String(fieldSlots)],
     [t.accountHouseCycle, formatHouseRest(restSeconds)],
     [t.treeDano, `×${formatNumber(danoTotal, lang, 3)}`],
+    [t.treeEnergy, formatTreePercent(energy, lang)],
+    [t.treeSpeed, formatTreePercent(speed, lang)],
+    [t.accountLuckFlat, formatLuckPoints(luckFlatPct, lang)],
+    [t.treeTeamCoin, formatTreePercent(teamCoinPct, lang)],
   ];
 
   return (
