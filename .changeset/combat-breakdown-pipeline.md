@@ -45,3 +45,10 @@ Both panels on the Combat tab and stage now carry their explanation behind an in
 the title, the way the Optimizer's setup bar does, instead of an intro paragraph; the Effective
 stats explanation no longer describes how Baton Pass is counted. The info glyph is a design-system
 primitive now, `InfoTip`, and the Optimizer draws it from there.
+
+A hero's own Baton Pass pulse now reaches every figure a per-hero screen prints, not only the
+DPS pair: Hit, Critical hit and Average hit carry the pulse's expectation over wall clock, and the
+Damage multiplier card names the pulse as its own factor — so switching Baton Pass on moves Hit
+the way it moves Sustained DPS. Hits-to-kill still reads the unpulsed hit (a threshold is crossed
+at a level the field sits at, never at the average of two), and the Farm board's pricing is
+untouched.
