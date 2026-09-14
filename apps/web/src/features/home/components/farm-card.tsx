@@ -70,7 +70,6 @@ export function FarmCard() {
       section="farm"
       state={ready ? 'ready' : 'needs'}
       context={t.homeCardFarmContext}
-      bodyClassName="flex flex-col justify-center"
       footer={
         ready ? (
           <>
