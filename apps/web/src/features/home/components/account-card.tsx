@@ -7,6 +7,7 @@ import { formatHouseRest, useAccountHoldings } from '@/features/account';
 import { useAppLang } from '@/shared/context/app-lang';
 import { useMarketSnapshot } from '@/shared/hooks/use-market-snapshot';
 import { formatMoney, sub } from '@/shared/i18n';
+import { formatNumber } from '@/shared/lib/format-number';
 import {
   selectFarmPhase,
   selectHouseCycleSecs,
@@ -15,7 +16,9 @@ import {
   selectHouseIdx,
   selectHouseLevel,
   selectMaxPhase,
+  selectFieldSlots,
   selectSlots,
+  selectTreeDanoTotal,
   usePlannerStore,
 } from '@/shared/stores';
 import { selectAccountUsable } from '../model/home-selectors';
@@ -30,6 +33,8 @@ export function AccountCard() {
   const houseIdx = usePlannerStore(selectHouseIdx);
   const houseLevel = usePlannerStore(selectHouseLevel);
   const slots = usePlannerStore(selectSlots);
+  const fieldSlots = usePlannerStore(selectFieldSlots);
+  const danoTotal = usePlannerStore(selectTreeDanoTotal);
   const houseCycleSecs = usePlannerStore(selectHouseCycleSecs);
   const cycleHouseIdx = usePlannerStore(selectHouseCycleSecsHouseIdx);
   const cycleLevel = usePlannerStore(selectHouseCycleSecsLevel);
@@ -37,16 +42,19 @@ export function AccountCard() {
   const { snapshot } = useMarketSnapshot();
 
   const restSeconds = resolveHouseRestSeconds(houseCycleSecs, houseIdx, houseLevel, cycleHouseIdx, cycleLevel);
-  const rows: [string, string][] = [
+  const rows: (readonly [string, string] | readonly [string, string, 'accent'])[] = [
     [
       t.homeCardAccountValue,
       snapshot == null ? t.accountHoldingsUnpriced : formatMoney(holdings.total, lang, holdings.currency),
+      'accent',
     ],
     [t.accountCurrentPhase, phase == null ? '—' : formatPhaseLabel(phase, lang)],
     [t.accountMaxPhase, maxPhase == null ? '—' : formatPhaseLabel(maxPhase, lang)],
     [t.house, sub(t.homeCardAccountHouse, { house: houseLabel(houseIdx, lang), level: houseLevel, max: HOUSE_MAX_LEVEL })],
-    [t.accountCasaSlots, String(slots)],
+    [t.homeCardAccountHouseSlots, String(slots)],
+    [t.accountFieldSlots, fieldSlots == null ? '—' : String(fieldSlots)],
     [t.accountHouseCycle, formatHouseRest(restSeconds)],
+    [t.treeDano, `×${formatNumber(danoTotal, lang, 3)}`],
   ];
 
   return (
@@ -54,7 +62,7 @@ export function AccountCard() {
       section="account"
       state={accountUsable ? 'ready' : 'needs'}
       context={t.homeCardAccountContext}
-      footer={accountUsable ? null : t.homeCardAccountNeeds}
+      footer={accountUsable ? t.homeCardAccountMore : t.homeCardAccountNeeds}
     >
       <HomeKeyValues rows={rows} testId="home-account" />
     </HomeSectionCard>

@@ -9,6 +9,7 @@ import { formatPhaseLabel } from '@bombfarm/farm/model/farm-ranking-format';
 import type { MarketSnapshot } from '@bombfarm/pricing';
 import { buildSnapshot, categoryKey, heroPriceKey, priceKey } from '@bombfarm/pricing';
 import { formatHouseRest } from '@/features/account';
+import { formatNumber } from '@/shared/lib/format-number';
 import {
   accountHoldingsFrom,
   holdingsComponents,
@@ -142,6 +143,7 @@ const ACCOUNT = {
   houseCycleSecsLevel: 7,
   treeSquadDmgPct: 12.345,
   treeLuckFlatPct: 3.5,
+  treeDanoTotal: 2.345,
   missingRequiredFields: [],
 } satisfies Partial<PlannerStore>;
 
@@ -152,6 +154,8 @@ const openingOf = (html: string, testId: string) =>
 const body = (html: string) =>
   html.slice(openingOf(html, 'home-card-body'), openingOf(html, 'home-card-footer'));
 const footer = (html: string) => textOf(html.slice(openingOf(html, 'home-card-footer')));
+const tag = (html: string, testId: string) =>
+  html.slice(html.lastIndexOf('<', html.indexOf(`data-testid="${testId}"`)), html.indexOf('>', html.indexOf(`data-testid="${testId}"`)) + 1);
 const slots = (html: string, testId: string) =>
   [...html.matchAll(new RegExp(`data-testid="${testId}"[^>]*>([^<]*)<`, 'g'))].map((match) => match[1]);
 const escaped = (text: string) => text.replace(/'/g, '&#x27;');
@@ -167,7 +171,7 @@ describe('the front page account card', () => {
     resetPlannerStoreForTests();
   });
 
-  it("prints six rows — the account's value first — with the Account page's labels and formatters, and no footer", () => {
+  it("prints eight rows — the account's value first, in the inventory figure's style — and the footer points at the page", () => {
     for (const lang of LANGS) {
       usePlannerStore.setState({ ...ACCOUNT, lang });
       snapshot = SNAPSHOT;
@@ -183,8 +187,10 @@ describe('the front page account card', () => {
         strings.accountCurrentPhase,
         strings.accountMaxPhase,
         strings.house,
-        strings.accountCasaSlots,
+        strings.homeCardAccountHouseSlots,
+        strings.accountFieldSlots,
         strings.accountHouseCycle,
+        strings.treeDano,
       ]);
       expect(holdings.total).toBe(90);
       expect(slots(html, 'home-account-value')).toEqual([
@@ -193,13 +199,16 @@ describe('the front page account card', () => {
         formatPhaseLabel(137, lang),
         sub(strings.homeCardAccountHouse, { house: houseLabel(2, lang), level: 7, max: HOUSE_MAX_LEVEL }),
         '3',
+        '6',
         formatHouseRest(rest),
+        `×${formatNumber(ACCOUNT.treeDanoTotal, lang, 3)}`,
       ]);
       expect(formatHouseRest(rest)).toBe('15 min 13 s');
-      expect(footer(html)).toBe('');
+      expect(tag(html, 'home-account-value')).toContain('text-accent');
+      expect(tag(html, 'home-account-value')).toContain('text-2xl');
+      expect(footer(html)).toBe(strings.homeCardAccountMore);
       expect(html).not.toContain('home-account-total');
       expect(html).not.toContain(strings.accountHoldingsTotal);
-      expect(html).not.toContain(strings.accountFieldSlots);
       expect(html).not.toContain(strings.accountSquadDmg);
       expect(html).not.toContain(strings.accountLuckFlat);
     }
@@ -224,7 +233,7 @@ describe('the front page account card', () => {
       expect(html).toContain('data-home-card-state="ready"');
       expect(slots(html, 'home-account-value')[0]).toBe(STRINGS[lang].accountHoldingsUnpriced);
       expect(html).not.toContain('R$');
-      expect(slots(html, 'home-account-value')).toHaveLength(6);
+      expect(slots(html, 'home-account-value')).toHaveLength(8);
     }
   });
 
