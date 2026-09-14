@@ -80,13 +80,21 @@ describe('the front page card shell', () => {
     );
     expect(source).not.toContain('onClick');
     expect(source.match(/href=/g)).toHaveLength(1);
-    expect(source).toMatch(/<Link href=\{SITE_SECTION_HREF\[section\]\}>/);
+    expect(source).toContain('href={SITE_SECTION_HREF[section]}');
+  });
+
+  it('a card that still needs a save carries no link to its section', () => {
+    const html = render({ state: 'needs', footer: 'Needs your heroes' });
+
+    expect(html).not.toContain('<a ');
+    expect(html).not.toContain(STRINGS.en.homeOpenLink);
   });
 
   it('a card in its needs state hides its body from assistive tech, renders the outline and prints only the needs line', () => {
     const html = render({ state: 'needs', footer: 'Needs your heroes' });
 
     expect(html).toContain('data-home-card-state="needs"');
+    expect(html).not.toContain('<a ');
     expect(body(html)).toMatch(/^<div aria-hidden="true"/);
     expect(body(html)).toContain('data-testid="home-card-outline"');
     expect(body(html)).not.toContain('7 fields filled');

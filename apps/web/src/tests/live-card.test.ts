@@ -5,9 +5,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { emptyLoadout } from '@bombfarm/domain/gear';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
-import { RELEASES_URL } from '@/features/download';
 import type { LatestRelease } from '@/features/download/model/latest-release';
 import { LiveCard } from '@/features/home/components/live-card';
+import { SITE_SECTION_HREF } from '@/shared/lib/site-sections';
 import { STRINGS, sub, type Lang } from '@/shared/i18n';
 import { normalizeHero } from '@/shared/lib/storage';
 import { resetPlannerStoreForTests, usePlannerStore, type PlannerStore } from '@/shared/stores';
@@ -100,18 +100,17 @@ describe('the front page live card', () => {
       const html = render();
 
       expect(html).toContain('data-home-card-state="ready"');
-      expect(html).toContain(`>${strings.homeCardLiveContext}<`);
+      expect(html).not.toContain(strings.homeOpenLink);
       expect(body(html)).toContain(`<p class="m-0 text-sm">${strings.homeCardLiveBody}</p>`);
-      expect(trustLines(html)).toEqual([
-        strings.homeCardLiveTrustReads,
-        strings.downloadTrustPermission,
-        strings.downloadTrustUpdates,
-      ]);
-      expect(anchor(html)).toContain(`href="${RELEASES_URL}"`);
+      expect(html.startsWith(`<article aria-label="${strings.downloadHeaderCta}"`)).toBe(true);
+      expect(html).toContain(`>${strings.downloadHeaderCta}</h2>`);
+      expect(trustLines(html)).toEqual([strings.downloadTrustPermission, strings.downloadTrustUpdates]);
+      expect(html).not.toContain('never writes');
+      expect(anchor(html)).toContain(`href="${SITE_SECTION_HREF.download}"`);
       expect(textOf(anchor(html))).toBe(strings.downloadCta);
       expect(anchor(html)).not.toMatch(/v\d/);
       expect(footer(html)).toBe(strings.downloadFileMetaPending);
-      expect(html.match(/<a /g)).toHaveLength(2);
+      expect(html.match(/<a /g)).toHaveLength(1);
     }
   });
 
@@ -123,7 +122,8 @@ describe('the front page live card', () => {
       const strings = STRINGS[lang];
       const html = render();
 
-      expect(anchor(html)).toContain(`href="${RELEASE.downloadUrl}"`);
+      expect(anchor(html)).toContain(`href="${SITE_SECTION_HREF.download}"`);
+      expect(html).not.toContain(RELEASE.downloadUrl);
       expect(textOf(anchor(html))).toBe(`${strings.downloadCta}v${RELEASE.version}`);
       expect(footer(html)).toBe(
         sub(strings.downloadFileMeta, { file: RELEASE.fileName, size: RELEASE.sizeLabel }),

@@ -78,7 +78,7 @@ describe('the front page', () => {
         ...NAV_SECTIONS.filter((section) => section !== 'home').map(
           (section) => strings[SITE_SECTION_LABEL_KEY[section]],
         ),
-        strings.downloadNavLabel,
+        strings.downloadHeaderCta,
       ]);
       expect(html).toContain(`>${strings.homeTitle}</h1>`);
       expect(html).toContain(`>${strings.homeSubtitle}</p>`);

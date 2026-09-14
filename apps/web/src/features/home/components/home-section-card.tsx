@@ -21,27 +21,38 @@ export function HomeSectionCard({
   footer,
   children,
   bodyClassName,
+  title,
+  link = true,
 }: {
   section: HomeCardSection;
   state: HomeCardState;
-  context: string;
+  context?: string;
   footer: ReactNode;
   children: ReactNode;
   bodyClassName?: string;
+  /** The section's nav label unless the card has a longer name of its own. */
+  title?: string;
+  /** Off for a card whose body already carries the way into its section. */
+  link?: boolean;
 }) {
   const { t } = useAppLang();
   const needs = state === 'needs';
+  const heading = title ?? t[SITE_SECTION_LABEL_KEY[section]];
 
   return (
     <article
-      aria-label={t[SITE_SECTION_LABEL_KEY[section]]}
+      aria-label={heading}
       data-home-card-state={state}
       className={cn(panelRecipe(), 'flex h-full min-w-0 flex-col')}
     >
       <div className={panelHClass}>
-        <h2 className={panelTitleClass}>{t[SITE_SECTION_LABEL_KEY[section]]}</h2>
-        <span className={mutedClass}>{context}</span>
-        <Link href={SITE_SECTION_HREF[section]}>{t.homeOpenLink}</Link>
+        <h2 className={panelTitleClass}>{heading}</h2>
+        {context === undefined ? null : <span className={cn(mutedClass, 'min-w-0')}>{context}</span>}
+        {needs || !link ? null : (
+          <Link className="shrink-0 whitespace-nowrap" href={SITE_SECTION_HREF[section]}>
+            {t.homeOpenLink}
+          </Link>
+        )}
       </div>
       <div
         aria-hidden={needs || undefined}

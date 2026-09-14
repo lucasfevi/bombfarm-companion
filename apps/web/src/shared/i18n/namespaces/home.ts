@@ -45,9 +45,7 @@ export const en = {
   homeCardInventoryNeeds: "Needs your items — a save export carries them",
   homeCardAccountContext: "phase, House, tree and what it is all worth",
   homeCardAccountNeeds: "Needs your account data — a save export carries it",
-  homeCardLiveContext: "the desktop app, beside the game",
   homeCardLiveBody: "The Windows companion reads the running game and shows energy to full, when the next field clears, and measured gold and XP rates.",
-  homeCardLiveTrustReads: "Reads the game and never writes to it",
 };
 
 export const pt: typeof en = {
@@ -97,7 +95,5 @@ export const pt: typeof en = {
   homeCardInventoryNeeds: "Precisa dos seus itens — uma exportação do save traz todos",
   homeCardAccountContext: "fase, Casa, árvore e quanto tudo vale",
   homeCardAccountNeeds: "Precisa dos dados da sua conta — uma exportação do save traz todos",
-  homeCardLiveContext: "o app de desktop, ao lado do jogo",
   homeCardLiveBody: "O companion para Windows lê o jogo em execução e mostra a energia até encher, quando o próximo campo termina, e as taxas medidas de ouro e XP.",
-  homeCardLiveTrustReads: "Lê o jogo e nunca escreve nele",
 };

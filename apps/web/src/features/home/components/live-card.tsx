@@ -1,9 +1,11 @@
 'use client';
 
+import Link from 'next/link';
 import { buttonRecipe, cn } from '@bombfarm/ui';
-import { RELEASES_URL, useLatestRelease } from '@/features/download';
+import { useLatestRelease } from '@/features/download';
 import { useAppLang } from '@/shared/context/app-lang';
 import { sub } from '@/shared/i18n';
+import { SITE_SECTION_HREF } from '@/shared/lib/site-sections';
 import { HomeSectionCard } from './home-section-card';
 import { HomeTrustLine } from './home-trust-line';
 
@@ -15,7 +17,9 @@ export function LiveCard() {
     <HomeSectionCard
       section="download"
       state="ready"
-      context={t.homeCardLiveContext}
+      title={t.downloadHeaderCta}
+      link={false}
+      bodyClassName="flex flex-col gap-4 pb-4"
       footer={
         release === null
           ? t.downloadFileMetaPending
@@ -23,21 +27,20 @@ export function LiveCard() {
       }
     >
       <p className="m-0 text-sm">{t.homeCardLiveBody}</p>
-      <ul className="m-0 mt-3 grid list-none gap-1.5 p-0">
-        <HomeTrustLine>{t.homeCardLiveTrustReads}</HomeTrustLine>
+      <ul className="m-0 grid list-none gap-1.5 p-0">
         <HomeTrustLine>{t.downloadTrustPermission}</HomeTrustLine>
         <HomeTrustLine>{t.downloadTrustUpdates}</HomeTrustLine>
       </ul>
-      <a
-        className={cn(buttonRecipe({ variant: 'primary' }), 'mt-4')}
-        href={release?.downloadUrl ?? RELEASES_URL}
+      <Link
+        className={cn(buttonRecipe({ variant: 'primary' }), 'mt-auto self-start')}
+        href={SITE_SECTION_HREF.download}
         data-testid="home-live-download"
       >
         {t.downloadCta}
         {release === null ? null : (
           <span className="ml-2 font-mono text-xs opacity-70">v{release.version}</span>
         )}
-      </a>
+      </Link>
     </HomeSectionCard>
   );
 }

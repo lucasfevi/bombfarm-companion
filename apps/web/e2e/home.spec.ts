@@ -89,7 +89,7 @@ test.describe('Home', () => {
     await expect(page.getByTestId('home-status-strip')).toHaveCount(0);
     await expect(page.getByRole('article')).toHaveCount(6);
     await expect(needsCards(page)).toHaveCount(5);
-    await expect(card(page, 'Download')).toHaveAttribute('data-home-card-state', 'ready');
+    await expect(card(page, 'Download BombFarm Companion')).toHaveAttribute('data-home-card-state', 'ready');
 
     await expect(navLinks(page).first()).toHaveText('Home');
     await expect(navLinks(page).first()).toHaveAttribute('aria-current', 'page');
