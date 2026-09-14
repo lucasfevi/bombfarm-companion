@@ -10,18 +10,35 @@ import {
   predictHitDamage,
 } from '../model';
 import { formatBreakdownNumber } from './ledger-kit';
-import type { FormulaBreakdown, PipelineFacts } from './types';
+import type { FormulaBreakdown, FormulaPart, FormulaTerm, FormulaTermKey, PipelineFacts } from './types';
+
+function term(key: FormulaTermKey, value: number, digits: number): FormulaTerm {
+  return { key, value, text: formatBreakdownNumber(value, digits) };
+}
+
+/**
+ * A tagged template: the literal pieces between the terms are kept as plain strings, so
+ * `substituted` is the same characters a reader would type, and `parts` is that string with
+ * each term still knowing which input it was.
+ */
+function formula(expressionKey: string, value: number) {
+  return (strings: TemplateStringsArray, ...terms: (FormulaTerm | string)[]): FormulaBreakdown => {
+    const parts: FormulaPart[] = [];
+    strings.forEach((literal, index) => {
+      if (literal) parts.push(literal);
+      const next = terms[index];
+      if (next !== undefined) parts.push(next);
+    });
+    const substituted = parts.map((part) => (typeof part === 'string' ? part : part.text)).join('');
+    return { kind: 'formula', expressionKey, substituted, parts, value };
+  };
+}
 
 export function formulaMitF(facts: PipelineFacts): FormulaBreakdown {
   const mit = facts.context.mitigation;
   const pen = facts.effective.penetration;
   const value = mitigationFactor(mit, pen);
-  return {
-    kind: 'formula',
-    expressionKey: 'bdFormulaMitF',
-    substituted: `1 − ${formatBreakdownNumber(mit, 4)} × (1 − ${formatBreakdownNumber(pen, 1)}/100) = ${formatBreakdownNumber(value, 4)}`,
-    value,
-  };
+  return formula('bdFormulaMitF', value)`1 − ${term('phaseMit', mit, 4)} × (1 − ${term('penetration', pen, 1)}/100) = ${formatBreakdownNumber(value, 4)}`;
 }
 
 /**
@@ -34,65 +51,50 @@ export function formulaDmg(facts: PipelineFacts): FormulaBreakdown {
   const pack = facts.packMult;
   const extra = 1 + facts.extraDmgPct / 100;
   const value = facts.dmgMult;
-  return {
-    kind: 'formula',
-    expressionKey: 'bdFormulaDmg',
-    substituted: `${formatBreakdownNumber(abl, 3)} × ${formatBreakdownNumber(pack, 3)} × ${formatBreakdownNumber(extra, 3)} = ${formatBreakdownNumber(value, 3)}`,
-    value,
-  };
+  return formula('bdFormulaDmg', value)`${term('abilities', abl, 3)} × ${term('pack', pack, 3)} × ${term('extra', extra, 3)} = ${formatBreakdownNumber(value, 3)}`;
 }
 
-export function formulaHit(facts: PipelineFacts): FormulaBreakdown {
-  const atk = facts.effective.attack;
-  const pen = facts.effective.penetration;
-  const mitF = mitigationFactor(facts.context.mitigation, pen);
-  const value = predictHitDamage(atk, facts.context.mitigation, pen, facts.dmgMult);
-  return {
-    kind: 'formula',
-    expressionKey: 'bdFormulaHit',
-    substituted: `${formatBreakdownNumber(atk, 1)} × ${formatBreakdownNumber(mitF, 4)} × ${formatBreakdownNumber(facts.dmgMult, 3)} = ${formatBreakdownNumber(value, 0)}`,
-    value,
-  };
-}
-
-export function formulaCriticalHit(facts: PipelineFacts): FormulaBreakdown {
-  const hit = predictHitDamage(
+function hitDamage(facts: PipelineFacts): number {
+  return predictHitDamage(
     facts.effective.attack,
     facts.context.mitigation,
     facts.effective.penetration,
     facts.dmgMult,
   );
+}
+
+export function formulaHit(facts: PipelineFacts): FormulaBreakdown {
+  const atk = facts.effective.attack;
+  const mitF = mitigationFactor(facts.context.mitigation, facts.effective.penetration);
+  const value = hitDamage(facts);
+  return formula('bdFormulaHit', value)`${term('attack', atk, 1)} × ${term('mitF', mitF, 4)} × ${term('dmg', facts.dmgMult, 3)} = ${formatBreakdownNumber(value, 0)}`;
+}
+
+export function formulaCriticalHit(facts: PipelineFacts): FormulaBreakdown {
+  const hit = hitDamage(facts);
   const critDmg = facts.effective.critDmg;
   const value = hit * (1 + critDmg / 100);
-  return {
-    kind: 'formula',
-    expressionKey: 'bdFormulaCriticalHit',
-    substituted: `${formatBreakdownNumber(hit, 0)} × (1 + ${formatBreakdownNumber(critDmg, 1)}/100) = ${formatBreakdownNumber(value, 0)}`,
-    value,
-  };
+  return formula('bdFormulaCriticalHit', value)`${term('hit', hit, 0)} × (1 + ${term('critDmg', critDmg, 1)}/100) = ${formatBreakdownNumber(value, 0)}`;
+}
+
+export function formulaAvgHit(facts: PipelineFacts): FormulaBreakdown {
+  const hit = hitDamage(facts);
+  const factor = critFactor(facts.effective.critChance, facts.effective.critDmg);
+  const value = hit * factor;
+  return formula('bdFormulaAvgHit', value)`${term('hit', hit, 0)} × ${term('critFactor', factor, 3)} = ${formatBreakdownNumber(value, 0)}`;
 }
 
 export function formulaCritFactor(facts: PipelineFacts): FormulaBreakdown {
   const critChance = facts.effective.critChance;
   const critDmg = facts.effective.critDmg;
   const value = critFactor(critChance, critDmg);
-  return {
-    kind: 'formula',
-    expressionKey: 'bdFormulaCritFactor',
-    substituted: `1 + (${formatBreakdownNumber(critChance, 1)}/100) × (${formatBreakdownNumber(critDmg, 1)}/100) = ${formatBreakdownNumber(value, 3)}`,
-    value,
-  };
+  return formula('bdFormulaCritFactor', value)`1 + (${term('critChance', critChance, 1)}/100) × (${term('critDmg', critDmg, 1)}/100) = ${formatBreakdownNumber(value, 3)}`;
 }
 
 export function formulaFuse(facts: PipelineFacts): FormulaBreakdown {
   const cdr = facts.effective.cdr;
   const value = fuseSeconds(cdr);
-  return {
-    kind: 'formula',
-    expressionKey: 'bdFormulaFuse',
-    substituted: `max(2 × (1 − ${formatBreakdownNumber(cdr, 1)}/100), ${FUSE_FLOOR}) = ${formatBreakdownNumber(value, 2)}s`,
-    value,
-  };
+  return formula('bdFormulaFuse', value)`max(2 × (1 − ${term('cdr', cdr, 1)}/100), ${term('fuseFloor', FUSE_FLOOR, 1)}) = ${formatBreakdownNumber(value, 2)}s`;
 }
 
 export function formulaBombs(facts: PipelineFacts): FormulaBreakdown {
@@ -100,69 +102,38 @@ export function formulaBombs(facts: PipelineFacts): FormulaBreakdown {
   const fuse = fuseSeconds(facts.effective.cdr);
   const walk = facts.effective.speed * GRID_SPEED_COEF;
   const cycle = cycleSecondsForHero(fuse, walk, facts.context.ato);
-  return {
-    kind: 'formula',
-    expressionKey: 'bdFormulaBombs',
-    substituted: `1 / cycle(${formatBreakdownNumber(fuse, 2)}s, ${formatBreakdownNumber(walk, 2)}/s, ${facts.context.ato}) = 1 / ${formatBreakdownNumber(cycle, 2)}s = ${formatBreakdownNumber(value, 2)}/s`,
-    value,
-  };
+  return formula('bdFormulaBombs', value)`1 / cycle(${term('fuse', fuse, 2)}s, ${term('walk', walk, 2)}/s, ${term('band', facts.context.ato, 0)}) = 1 / ${term('cycle', cycle, 2)}s = ${formatBreakdownNumber(value, 2)}/s`;
 }
 
 export function formulaField(facts: PipelineFacts): FormulaBreakdown {
   const value = fieldSeconds(facts.effective, facts.context);
-  return {
-    kind: 'formula',
-    expressionKey: 'bdFormulaField',
-    substituted: `${formatBreakdownNumber(facts.effective.energy, 1)} / ${formatBreakdownNumber(facts.context.drainMult, 2)} = ${formatBreakdownNumber(value, 0)}s (${formatBreakdownNumber(value / 60, 1)}m)`,
-    value,
-  };
+  return formula('bdFormulaField', value)`${term('energy', facts.effective.energy, 1)} / ${term('drain', facts.context.drainMult, 2)} = ${formatBreakdownNumber(value, 0)}s (${formatBreakdownNumber(value / 60, 1)}m)`;
 }
 
 export function formulaRest(facts: PipelineFacts): FormulaBreakdown {
   const value = facts.rest / 60;
-  return {
-    kind: 'formula',
-    expressionKey: 'bdFormulaRest',
-    substituted: `${formatBreakdownNumber(facts.rest, 0)} / 60 = ${formatBreakdownNumber(value, 1)}m`,
-    value,
-  };
+  return formula('bdFormulaRest', value)`${term('restSeconds', facts.rest, 0)} / 60 = ${formatBreakdownNumber(value, 1)}m`;
 }
 
 export function formulaUptime(facts: PipelineFacts): FormulaBreakdown {
   const field = fieldSeconds(facts.effective, facts.context);
   const value = facts.uptime;
-  return {
-    kind: 'formula',
-    expressionKey: 'bdFormulaUptime',
-    substituted: `100 × ${formatBreakdownNumber(field, 0)} / (${formatBreakdownNumber(field, 0)} + ${formatBreakdownNumber(facts.rest, 0)}) = ${formatBreakdownNumber(value, 1)}%`,
-    value,
-  };
+  return formula('bdFormulaUptime', value)`100 × ${term('field', field, 0)} / (${term('field', field, 0)} + ${term('restSeconds', facts.rest, 0)}) = ${formatBreakdownNumber(value, 1)}%`;
 }
 
+/** The average hit already carries the damage multiplier (it is `hit × critFactor`), so the
+ *  multiplier is not a second factor here — `derive()` applies it once, to the same product. */
 export function formulaActive(facts: PipelineFacts): FormulaBreakdown {
   const effective = facts.effective;
-  const mitF = mitigationFactor(facts.context.mitigation, effective.penetration);
-  const factor = critFactor(effective.critChance, effective.critDmg);
-  const average = effective.attack * mitF * factor;
+  const average = hitDamage(facts) * critFactor(effective.critChance, effective.critDmg);
   const bombs = bombsPerSecond(effective, facts.context);
   const range = facts.context.blastRange;
   const value = facts.active;
-  return {
-    kind: 'formula',
-    expressionKey: 'bdFormulaActive',
-    substituted: `${formatBreakdownNumber(average, 0)} × ${formatBreakdownNumber(bombs, 2)} × (1 + 0.5 × ${formatBreakdownNumber(range, 1)}) × 0.9 × ${formatBreakdownNumber(facts.dmgMult, 3)} = ${formatBreakdownNumber(value, 0)}`,
-    value,
-  };
+  return formula('bdFormulaActive', value)`${term('avgHit', average, 0)} × ${term('bombs', bombs, 2)} × (1 + 0.5 × ${term('range', range, 1)}) × 0.9 = ${formatBreakdownNumber(value, 0)}`;
 }
 
 export function formulaSustained(facts: PipelineFacts): FormulaBreakdown {
   const field = fieldSeconds(facts.effective, facts.context);
   const value = facts.dps;
-  const active = facts.active;
-  return {
-    kind: 'formula',
-    expressionKey: 'bdFormulaSustained',
-    substituted: `${formatBreakdownNumber(active, 0)} × (${formatBreakdownNumber(field, 0)} / (${formatBreakdownNumber(field, 0)} + ${formatBreakdownNumber(facts.rest, 0)})) = ${formatBreakdownNumber(value, 0)}`,
-    value,
-  };
+  return formula('bdFormulaSustained', value)`${term('activeDps', facts.active, 0)} × (${term('field', field, 0)} / (${term('field', field, 0)} + ${term('restSeconds', facts.rest, 0)})) = ${formatBreakdownNumber(value, 0)}`;
 }

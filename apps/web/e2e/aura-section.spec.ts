@@ -44,10 +44,10 @@ async function stripSustainedDps(page: Page): Promise<number> {
   return Number((title ?? '').replace(/,/g, ''));
 }
 
-/** The Combat tab's Sustained DPS figure — the Effective panel's row, which the tab states once. */
+/** The Combat tab's Sustained DPS figure — the Effective panel's card, which the tab states once. */
 async function combatSustainedDps(page: Page): Promise<number> {
-  const row = activePanel(page).getByRole('button', { name: /Show breakdown of Sustained DPS/i });
-  const text = (await row.innerText()).replace(/,/g, '');
+  const card = activePanel(page).locator('[data-breakdown-card="sustainedDps"] [data-testid="breakdown-value"]');
+  const text = (await card.innerText()).replace(/,/g, '');
   const match = /(\d+(?:\.\d+)?)\s*$/.exec(text);
   if (!match) throw new Error(`no figure in "${text}"`);
   return Number(match[1]);

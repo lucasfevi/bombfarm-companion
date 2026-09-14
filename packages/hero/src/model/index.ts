@@ -72,10 +72,8 @@ export {
   penetrationReadingFor,
   propTableReadingFor,
   stageLabelFor,
-  combatFiguresShown,
 } from './combat-panel';
 export type {
-  CombatFigureId,
   FuseNotes,
   FuseReadout,
   FuseSource,
@@ -96,10 +94,10 @@ export {
   groupLabel,
   isSheetKey,
   ledgerStepNote,
+  ledgerStepText,
   rowValue,
   sourceLabel,
 } from './breakdown-labels';
-export { FORMULA_GLOSSARY, resolveFormulaTerms } from './formula-glossary';
 export {
   farmOptimizeNotice,
   farmOptimizeResultDisplay,
@@ -117,3 +115,31 @@ export type { GearPanelReading } from './gear-panel';
 export { renderTemplateWithPct } from './render-template-with-pct';
 export { drainNoteFor, ownAbilityRowsFor, teamAuraRowsFor } from './abilities-auras-panel';
 export type { DrainNote, OwnAbilityRow, OwnAbilityStatus, TeamAuraRow } from './abilities-auras-panel';
+export {
+  COMBAT_BREAKDOWN_CARDS,
+  COMBAT_BREAKDOWN_EDGES,
+  COMBAT_BREAKDOWN_ROWS,
+  cardBadgesFor,
+  cardForAbility,
+  cardInputChips,
+  cardInputs,
+  cardNoteFor,
+  ledgerLines,
+  matrixRowsFor,
+  matrixShowsRunes,
+  penetrationCardReading,
+  breakdownCardData,
+} from './combat-breakdown';
+export type {
+  BreakdownCardData,
+  BreakdownEdge,
+  BreakdownRow,
+  BreakdownRowId,
+  CardBadge,
+  CardInputChip,
+  CardNote,
+  LedgerLine,
+  MatrixCell,
+  MatrixRow,
+  PenetrationCardReading,
+} from './combat-breakdown';

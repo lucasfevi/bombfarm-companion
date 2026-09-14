@@ -26,6 +26,13 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof heroEn)[] = [
   'heroDetailRuneAxisXp',
   // "Aura" is spelled the same in both languages.
   'heroDetailAurasColumnAura',
+  'heroDetailBreakdownColAura',
+  // The breakdown's DPS row is the same initialism as `heroDetailCombatDps`; "hit" is the loanword
+  // the pt-BR copy already uses for the figure (`heroDetailBreakdownFormulaCriticalHit` reads
+  // "hit × …" in both); "extra" is the same word in both languages.
+  'heroDetailBreakdownRowDps',
+  'heroDetailBreakdownTermHit',
+  'heroDetailBreakdownTermExtra',
 ];
 
 function placeholderSet(value: string): Set<string> {

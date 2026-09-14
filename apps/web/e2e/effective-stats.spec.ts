@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 import { importedRoster, seedLocalStorage, selectSavedHero } from './fixtures/seed';
 
 async function openPointsTab(page: Page, lang: 'en' | 'pt') {
@@ -23,60 +23,93 @@ function pointsStage(page: Page, lang: 'en' | 'pt') {
   });
 }
 
-function effectivePanel(page: Page, lang: 'en' | 'pt') {
-  const title = lang === 'en' ? /^Effective stats$/i : /^Atributos efetivos$/i;
-  return activePanel(page).locator('section').filter({
-    has: page.getByRole('heading', { name: title, level: 2 }),
-  });
+function effectivePanel(page: Page) {
+  return activePanel(page).getByTestId('combat-breakdown');
 }
 
-/**
- * Sheet stats that `combatSheetDeltaAccount` actually pushes off sheet Total: Attack via
- * `grito_guerra`, Speed via `marcha_acelerada`, Crit Chance via `pressagio_mortal`.
- *
- * Crit Chance JOINED this list at the 2026-08-23 patch. `pressagio_mortal` used to be a
- * percentage of each hero's own crit-chance roll, and at the rank this fixture sets (5) it moved
- * Cora's effective crit by less than the panel's own display precision — so the row read equal to
- * Total and was hidden. The ability now grants FLAT crit points (see the `critChanceFlat` ability
- * kind), so rank 5 is +5 whole points on every hero and the row is visibly off Total. It still
- * also feeds the derived Critical factor / Critical Hit rows, which are asserted separately below.
- */
-const EN_COMBAT_SHEET_LABELS = ['Attack', 'Speed', 'Crit Chance'] as const;
+function card(page: Page, id: string): Locator {
+  return effectivePanel(page).locator(`[data-breakdown-card="${id}"]`);
+}
 
-const PT_COMBAT_SHEET_LABELS = ['Ataque', 'Velocidade', 'Chance de Crítico'] as const;
+function cardValue(page: Page, id: string): Locator {
+  return card(page, id).getByTestId('breakdown-value');
+}
+
+/** The face of a card — the hover and focus target that opens its popover. */
+function cardFace(page: Page, id: string): Locator {
+  return card(page, id).locator('[data-slot="tooltip-trigger"]').first();
+}
+
+/** Every figure the pipeline draws: the seven sheet stats, six factors, five per-hit and cadence
+ *  figures, two DPS figures. */
+const CARD_IDS = [
+  'attack',
+  'energy',
+  'speed',
+  'critChance',
+  'critDmg',
+  'penetration',
+  'cdr',
+  'dmg',
+  'mitF',
+  'critFactor',
+  'fuse',
+  'fieldSeconds',
+  'rest',
+  'hit',
+  'criticalHit',
+  'avgHit',
+  'bombsPerSecond',
+  'uptime',
+  'activeDps',
+  'sustainedDps',
+] as const;
+
+const EN_CARD_LABELS: Record<(typeof CARD_IDS)[number], string> = {
+  attack: 'Attack',
+  energy: 'Energy',
+  speed: 'Speed',
+  critChance: 'Crit Chance',
+  critDmg: 'Crit Damage',
+  penetration: 'Penetration',
+  cdr: 'Cooldown Red.',
+  dmg: 'Damage multiplier',
+  mitF: 'Mitigation factor',
+  critFactor: 'Critical factor',
+  fuse: 'Fuse',
+  fieldSeconds: 'Field time',
+  rest: 'Rest',
+  hit: 'Hit',
+  criticalHit: 'Critical Hit',
+  avgHit: 'Average hit',
+  bombsPerSecond: 'Bombs / s',
+  uptime: 'Uptime',
+  activeDps: 'Active DPS',
+  sustainedDps: 'Sustained DPS',
+};
 
 /**
- * Cora's own team-aura ranks, which push sheet stats off Total so they still appear under
- * Effective. A hero's own aura always counts on its own screen; any other aura only reaches it
- * through the Combat tab's switches, which stay off here.
+ * Cora with an own drain reduction, so the Field time card is reached by an own ability as well
+ * as by the team's Fôlego. The seed roster carries crit in save units, so no crit magnitude is
+ * asserted on it anywhere below.
  */
-function combatSheetDeltaRoster(base: typeof importedRoster) {
+function withExtraBattery(base: typeof importedRoster) {
   return {
     ...base,
     heroes: base.heroes.map((h) =>
-      h.id === 'seed-cora'
-        ? { ...h, abilities: { ...h.abilities, grito_guerra: 10, marcha_acelerada: 10, pressagio_mortal: 5 } }
-        : h,
+      h.id === 'seed-cora' ? { ...h, abilities: { ...h.abilities, bateria_extra: 5 } } : h,
     ),
   };
 }
 
-const EN_DERIVED = [
-  'Mitigation factor',
-  'Damage multiplier',
-  'Hit',
-  'Critical Hit',
-  'Critical factor',
-  'Fuse',
-  'Bombs / s',
-  'Field time',
-  'Rest',
-  'Uptime',
-  'Active DPS',
-  'Sustained DPS',
-] as const;
+async function expectAllCardsVisible(page: Page) {
+  for (const id of CARD_IDS) {
+    await expect(cardValue(page, id), id).toBeVisible();
+    await expect(cardValue(page, id), id).not.toHaveText('');
+  }
+}
 
-test.describe('effective stats panel (EST / ESB)', () => {
+test.describe('combat breakdown panel', () => {
   test('Points stacks Points / Next point / Stats; Effective sits last but for the aura section on Combat (EN + PT)', async ({
     page,
   }) => {
@@ -112,7 +145,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     await expect(combatHeadingsPt.last()).toHaveText(/^Habilidades e auras$/);
   });
 
-  test('hides sheet-group rows that match hero-sheet Total; shows combat deltas + derived', async ({
+  test('wide: all twenty figures are visible without a click, labelled, in four rows, and no accordion remains', async ({
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
@@ -120,72 +153,218 @@ test.describe('effective stats panel (EST / ESB)', () => {
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
 
-    const panel = effectivePanel(page, 'en');
-    // Default Cora has no combat sheet mults — sheet group is omitted entirely.
-    await expect(panel.getByRole('heading', { name: /Sheet stats/i, level: 3 })).toHaveCount(0);
-    await expect(panel.getByRole('heading', { name: /Derived combat/i, level: 3 })).toBeVisible();
-    for (const label of EN_DERIVED) {
-      await expect(panel.getByRole('button', { name: new RegExp(label, 'i') }).first()).toBeVisible();
+    await expectAllCardsVisible(page);
+    for (const id of CARD_IDS) {
+      await expect(card(page, id), id).toContainText(EN_CARD_LABELS[id]);
     }
-
-    await seedLocalStorage(page, { ...combatSheetDeltaRoster(importedRoster), lang: 'en' });
-    await page.goto('/planner');
-    await selectSavedHero(page, 'Cora');
-    await openCombatTab(page, 'en');
-    const panelDelta = effectivePanel(page, 'en');
-    await expect(panelDelta.getByRole('heading', { name: /Sheet stats/i, level: 3 })).toBeVisible();
-    for (const label of EN_COMBAT_SHEET_LABELS) {
-      await expect(panelDelta.getByRole('button', { name: new RegExp(label, 'i') }).first()).toBeVisible();
-    }
-    // Unchanged vs sheet Total (no combat mult) — stay hidden.
-    await expect(panelDelta.getByRole('button', { name: /Show breakdown of Penetration/i })).toHaveCount(0);
-    await expect(panelDelta.getByRole('button', { name: /Show breakdown of Luck/i })).toHaveCount(0);
-    // Crit Chance is the opposite case and is covered by EN_COMBAT_SHEET_LABELS above: the
-    // pressagio_mortal team buff moves the sheet stat itself now, AND the derived Critical factor
-    // row it feeds. Both are asserted, because a change that dropped one while keeping the other
-    // would still leave the panel looking plausible.
-    await expect(panelDelta.getByRole('button', { name: /Show breakdown of Crit Chance/i })).toHaveCount(1);
-    await expect(panelDelta.getByRole('button', { name: /Show breakdown of Critical factor/i })).toBeVisible();
-
-    await page.getByRole('group', { name: 'Language' }).getByRole('button', { name: 'PT' }).click();
-    await openCombatTab(page, 'pt');
-    const panelPt = effectivePanel(page, 'pt');
-    await expect(panelPt.getByRole('heading', { name: /Stats da ficha/i, level: 3 })).toBeVisible();
-    for (const label of PT_COMBAT_SHEET_LABELS) {
-      await expect(panelPt.getByRole('button', { name: new RegExp(label, 'i') }).first()).toBeVisible();
-    }
+    await expect(effectivePanel(page).locator('[data-breakdown-row]')).toHaveCount(4);
+    await expect(activePanel(page).locator('[data-slot^="accordion"]')).toHaveCount(0);
+    await expect(activePanel(page).getByRole('button', { name: /Show breakdown of/i })).toHaveCount(0);
+    // The wires are drawn on the wide layout, and Speed's card feeds Bombs/s.
+    const wires = effectivePanel(page).getByTestId('breakdown-wires');
+    await expect(wires).toBeVisible();
+    await expect(wires.locator('[data-edge-from="speed"][data-edge-to="bombsPerSecond"]')).toHaveCount(1);
   });
 
-  test('a team aura reaches the Effective panel only through its Combat tab switch, and then at its cap', async ({
-    page,
-  }) => {
-    // Cora carries no War Cry: with the switch off she is priced alone (no sheet row leaves
-    // Total); on, she reads the aura's whole +20% cap, whoever would carry it.
+  test('narrow (380px): the same twenty figures stack one per row, still without a click', async ({ page }) => {
+    await page.setViewportSize({ width: 380, height: 900 });
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
 
-    const auras = activePanel(page).getByTestId('abilities-auras');
-    const warCry = auras.getByTestId('team-aura-grito_guerra');
-    await expect(warCry).toContainText(/\+20% attack/i);
-    const toggle = warCry.getByRole('switch');
-    await expect(toggle).not.toBeChecked();
-    await expect(effectivePanel(page, 'en').getByRole('heading', { name: /Sheet stats/i, level: 3 })).toHaveCount(0);
+    await expectAllCardsVisible(page);
+    await expect(effectivePanel(page).locator('[data-breakdown-row]')).toHaveCount(4);
+    // Every card takes the panel's width: no two share a row.
+    const boxes = await Promise.all(CARD_IDS.map((id) => card(page, id).boundingBox()));
+    const tops = boxes.map((box) => box!.y);
+    expect(new Set(tops).size).toBe(CARD_IDS.length);
+    await expect(effectivePanel(page).getByTestId('breakdown-wires')).toBeHidden();
+    // The panel fits the viewport; its matrix scrolls inside its own box rather than pushing it.
+    const panelBox = await effectivePanel(page).boundingBox();
+    const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
+    expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(clientWidth);
+  });
 
-    await toggle.click();
-    await expect(toggle).toBeChecked();
-    const panel = effectivePanel(page, 'en');
-    await expect(panel.getByRole('heading', { name: /Sheet stats/i, level: 3 })).toBeVisible();
-    await expect(panel.getByRole('button', { name: /Show breakdown of Attack/i })).toBeVisible();
+  test('hovering Hit lights the wires from Attack, Mitigation factor and Damage multiplier', async ({ page }) => {
+    await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+    await page.goto('/planner');
+    await selectSavedHero(page, 'Cora');
+    await openCombatTab(page, 'en');
+
+    const wires = effectivePanel(page).getByTestId('breakdown-wires');
+    await expect(wires.locator('[data-lit="true"]')).toHaveCount(0);
+    await cardFace(page, 'hit').hover();
+    const lit = wires.locator('[data-lit="true"]');
+    await expect(lit).toHaveCount(3);
+    for (const from of ['attack', 'mitF', 'dmg']) {
+      await expect(wires.locator(`[data-edge-from="${from}"][data-edge-to="hit"][data-lit="true"]`)).toHaveCount(1);
+    }
+    await expect(card(page, 'attack')).toHaveAttribute('data-lit', 'true');
+    await expect(card(page, 'speed')).not.toHaveAttribute('data-lit', 'true');
+    // The popover opens on the same hover, with every term of the substituted formula named.
+    const popover = page.getByTestId('breakdown-popover-hit');
+    await expect(popover).toBeVisible();
+    await expect(popover.getByTestId('breakdown-formula')).toContainText(/attack/i);
+    await expect(popover.getByTestId('breakdown-formula')).toContainText(/mitigation factor/i);
+    await expect(popover.getByTestId('breakdown-formula')).toContainText(/damage multiplier/i);
+  });
+
+  test('the Field time popover names Energy, Extra Battery and Miner\'s Breath, on hover and on keyboard focus', async ({
+    page,
+  }) => {
+    await seedLocalStorage(page, { ...withExtraBattery(importedRoster), lang: 'en' });
+    await page.goto('/planner');
+    await selectSavedHero(page, 'Cora');
+    await openCombatTab(page, 'en');
+
+    await cardFace(page, 'fieldSeconds').hover();
+    const popover = page.getByTestId('breakdown-popover-fieldSeconds');
+    await expect(popover).toBeVisible();
+    const reads = popover.getByTestId('breakdown-reads');
+    await expect(reads).toContainText('Energy');
+    await expect(reads).toContainText('Extra Battery');
+    await expect(reads).toContainText("Miner's Breath");
+    await expect(popover.getByTestId('breakdown-formula')).toContainText(/energy/i);
+    await expect(popover.getByTestId('breakdown-formula')).toContainText(/drain/i);
+
+    await page.mouse.move(0, 0);
+    await expect(popover).toBeHidden();
+    // Keyboard focus: Fuse's card has no badge icons, so Tab from its face lands on Field time's.
+    await cardFace(page, 'fuse').focus();
+    await page.keyboard.press('Tab');
+    await expect(page.getByTestId('breakdown-popover-fieldSeconds')).toBeVisible();
+  });
+
+  test('narrow: the same Field time popover opens from the stacked card', async ({ page }) => {
+    await page.setViewportSize({ width: 380, height: 900 });
+    await seedLocalStorage(page, { ...withExtraBattery(importedRoster), lang: 'en' });
+    await page.goto('/planner');
+    await selectSavedHero(page, 'Cora');
+    await openCombatTab(page, 'en');
+
+    // Keyboard focus: Fuse's card has no badge icons, so Tab from its face lands on Field time's.
+    await cardFace(page, 'fuse').focus();
+    await page.keyboard.press('Tab');
+    const popover = page.getByTestId('breakdown-popover-fieldSeconds');
+    await expect(popover).toBeVisible();
+    await expect(popover.getByTestId('breakdown-reads')).toContainText("Miner's Breath");
+  });
+
+  test('a sheet card\'s popover is its ledger grouped by game line (EN + PT)', async ({ page }) => {
+    // Crit Chance exercises all four lines at once: a sheet ability (Olho Clínico), gear, a tree
+    // bonus, and the hero line. Its magnitude is not asserted — the seed's crit is in save units.
+    const naked = { attack: 200, energy: 300, speed: 50, critChance: 10, critDmg: 70, penetration: 5, cdr: 5, luck: 0 };
+    const zero = { attack: 0, energy: 0, speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0, luck: 0 };
+    function seeded(lang: 'en' | 'pt') {
+      return {
+        ...importedRoster,
+        lang,
+        heroes: importedRoster.heroes.map((h) =>
+          h.id === 'seed-cora'
+            ? { ...h, naked, gearedOverride: { ...naked, critChance: 15 }, abilities: { olho_clinico: 10, pressagio_mortal: 5 }, pts: zero }
+            : h,
+        ),
+        account: { ...importedRoster.account!, tree: { ...importedRoster.account!.tree!, critChance: 6 } },
+      };
+    }
+
+    await seedLocalStorage(page, seeded('en'));
+    await page.goto('/planner');
+    await selectSavedHero(page, 'Cora');
+    await openCombatTab(page, 'en');
+    await cardFace(page, 'critChance').hover();
+    const ledger = page.getByTestId('breakdown-popover-critChance').getByTestId('breakdown-ledger');
+    await expect(ledger.locator('[data-ledger-group="hero"]').first()).toContainText(/^Hero/);
+    await expect(ledger.locator('[data-ledger-group="ability"]')).toContainText(/^Ability/);
+    await expect(ledger.locator('[data-ledger-group="gear"]')).toContainText(/^Gear/);
+    await expect(ledger.locator('[data-ledger-group="skillTree"]')).toContainText(/^Skill tree/);
+
+    await seedLocalStorage(page, seeded('pt'));
+    await page.goto('/planner');
+    await selectSavedHero(page, 'Cora');
+    await openCombatTab(page, 'pt');
+    await cardFace(page, 'critChance').hover();
+    const ledgerPt = page.getByTestId('breakdown-popover-critChance').getByTestId('breakdown-ledger');
+    await expect(ledgerPt.locator('[data-ledger-group="hero"]').first()).toContainText(/^Herói/);
+    await expect(ledgerPt.locator('[data-ledger-group="ability"]')).toContainText(/^Habilidade/);
+    await expect(ledgerPt.locator('[data-ledger-group="gear"]')).toContainText(/^Itens/);
+    await expect(ledgerPt.locator('[data-ledger-group="skillTree"]')).toContainText(/^Árvore/);
+  });
+
+  test('the matrix lists all seven sheet stats for a hero whose auras move none of them, with "off" where a switch is off', async ({
+    page,
+  }) => {
+    await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+    await page.goto('/planner');
+    await selectSavedHero(page, 'Cora');
+    await openCombatTab(page, 'en');
+
+    const matrix = effectivePanel(page).getByTestId('breakdown-matrix');
+    await expect(matrix.locator('tbody tr')).toHaveCount(7);
+    for (const label of ['Attack', 'Energy', 'Speed', 'Crit Chance', 'Crit Damage', 'Penetration', 'Cooldown Red.']) {
+      await expect(matrix.getByRole('rowheader', { name: label })).toBeVisible();
+    }
+    await expect(matrix.getByRole('columnheader', { name: /^Aura ×$/ })).toBeVisible();
+    // Cora carries no War Cry: the aura cell on Attack says the switch is off, Energy has none.
+    await expect(matrix.locator('[data-matrix-row="attack"] [data-cell="off"]')).toHaveCount(1);
+    await expect(matrix.locator('[data-matrix-row="energy"] [data-cell="off"]')).toHaveCount(0);
+    await expect(matrix.getByRole('columnheader', { name: /Rune/ })).toHaveCount(0);
+  });
+
+  test('a team aura reaches the panel only through its Combat tab switch: the Attack card lights the icon and the matrix prices it', async ({
+    page,
+  }) => {
+    await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+    await page.goto('/planner');
+    await selectSavedHero(page, 'Cora');
+    await openCombatTab(page, 'en');
+
+    const attackBefore = await cardValue(page, 'attack').innerText();
+    await expect(card(page, 'attack').locator('[data-badge="grito_guerra"]')).toHaveAttribute('data-on', 'false');
+
+    const auras = activePanel(page).getByTestId('abilities-auras');
+    await auras.getByTestId('team-aura-grito_guerra').getByRole('switch').click();
+
+    await expect(card(page, 'attack').locator('[data-badge="grito_guerra"]')).toHaveAttribute('data-on', 'true');
+    await expect(cardValue(page, 'attack')).not.toHaveText(attackBefore);
+    const matrix = effectivePanel(page).getByTestId('breakdown-matrix');
+    await expect(matrix.locator('[data-matrix-row="attack"] [data-cell="off"]')).toHaveCount(0);
+    await expect(matrix.locator('[data-matrix-row="attack"]')).toContainText('× 1.200');
+  });
+
+  test('the Mitigation factor card carries the penetration reading, and the hero panel no longer prints it', async ({
+    page,
+  }) => {
+    await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+    await page.goto('/planner');
+    await selectSavedHero(page, 'Cora');
+    await openCombatTab(page, 'en');
+
+    await expect(card(page, 'mitF').getByTestId('breakdown-penetration')).toHaveText(/covers the phase|short of this phase/);
+    const stage = activePanel(page);
+    await expect(stage.getByText(/^Penetration vs phase$/i)).toHaveCount(0);
+    await expect(stage.getByRole('columnheader', { name: /^Hits$/i })).toHaveCount(0);
+  });
+
+  test('Hit updates when points change', async ({ page }) => {
+    await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+    await page.goto('/planner');
+    await selectSavedHero(page, 'Cora');
+    await openCombatTab(page, 'en');
+    const hitBefore = await cardValue(page, 'hit').innerText();
+
+    await openPointsTab(page, 'en');
+    const stage = pointsStage(page, 'en');
+    const attackStepper = stage.locator('tr').filter({ hasText: /^Attack/ });
+    await attackStepper.getByRole('button', { name: /\+/ }).click();
+
+    await openCombatTab(page, 'en');
+    await expect(cardValue(page, 'hit')).not.toHaveText(hitBefore);
   });
 
   test('Points tab soft-badges when setup incomplete; Effective stays neutral', async ({ page }) => {
-    await seedLocalStorage(page, {
-      ...importedRoster,
-      lang: 'en',
-      heroes: importedRoster.heroes,
-    });
+    await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
 
@@ -194,217 +373,8 @@ test.describe('effective stats panel (EST / ESB)', () => {
     await expect(pointsTab.getByText(/^setup$/i)).toHaveCount(0);
 
     await openCombatTab(page, 'en');
-    const effective = effectivePanel(page, 'en');
+    const effective = effectivePanel(page);
     await expect(effective).not.toHaveClass(/shadow-\[inset_3px_0_0_var\(--accent\)\]/);
     await expect(effective).not.toHaveClass(/opacity-\[0\.78\]/);
-  });
-
-  test('no Gates or Context headings in Points tab', async ({ page }) => {
-    await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
-    await selectSavedHero(page, 'Cora');
-    await openPointsTab(page, 'en');
-
-    const stage = pointsStage(page, 'en');
-    await expect(stage.getByRole('heading', { name: /^Gates$/i })).toHaveCount(0);
-    await expect(stage.getByRole('heading', { name: /^Context$/i })).toHaveCount(0);
-  });
-
-  test('Hit updates when points change (sheet Attack stays on Stats when equal to Total)', async ({
-    page,
-  }) => {
-    await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
-    await selectSavedHero(page, 'Cora');
-    await openCombatTab(page, 'en');
-
-    const hitButton = () =>
-      effectivePanel(page, 'en').getByRole('button', { name: /Show breakdown of Hit/i });
-    const hitBefore = await hitButton().textContent();
-
-    await openPointsTab(page, 'en');
-    const stage = pointsStage(page, 'en');
-    const attackStepper = stage.locator('tr').filter({ hasText: /^Attack/ });
-    await attackStepper.getByRole('button', { name: /\+/ }).click();
-
-    await openCombatTab(page, 'en');
-    const hitAfter = await hitButton().textContent();
-    expect(hitAfter).not.toBe(hitBefore);
-  });
-
-  test('expand sheet row shows ledger; expand derived shows formula', async ({ page }) => {
-    await seedLocalStorage(page, { ...combatSheetDeltaRoster(importedRoster), lang: 'en' });
-    await page.goto('/planner');
-    await selectSavedHero(page, 'Cora');
-    await openCombatTab(page, 'en');
-
-    const panel = effectivePanel(page, 'en');
-    const attackBtn = panel.getByRole('button', { name: /Show breakdown of Attack/i });
-    await attackBtn.click();
-    // Steps now name their GAME line (Hero/Gear/Ability/Skill tree,
-    // LEDGER_SOURCE_GROUP), not the raw source — Attack's base+level+stars+points steps all
-    // read "Hero" (the old "Level" line-item name is gone by design).
-    await expect(panel.getByText(/^Hero$/i).first()).toBeVisible();
-    await expect(panel.getByText(/^Gear$/i).first()).toBeVisible();
-
-    const fuseBtn = panel.getByRole('button', { name: /Show breakdown of Fuse/i });
-    await fuseBtn.click();
-    await expect(panel.locator('code').filter({ hasText: /max\(2/ })).toBeVisible();
-  });
-
-  test('EN+PT: a stat with a real sheet ability + tree bonus shows all four game lines: Hero / Gear / Ability / Skill tree', async ({
-    page,
-  }) => {
-    // Attack structurally never gets an Ability line (its sheetOther is hardcoded 0 in
-    // sheet-ledgers.ts) — Crit Chance does, via a sheet ability (Olho Clínico) and a tree
-    // bonus, so it is the stat that actually exercises all four lines at once.
-    const naked = {
-      attack: 200,
-      energy: 300,
-      speed: 50,
-      critChance: 10,
-      critDmg: 70,
-      penetration: 5,
-      cdr: 5,
-      luck: 0,
-    };
-    function seeded(lang: 'en' | 'pt') {
-      return {
-        ...importedRoster,
-        lang,
-        heroes: importedRoster.heroes.map((h) =>
-          h.id === 'seed-cora'
-            ? {
-                ...h,
-                naked,
-                gearedOverride: { ...naked, critChance: 15 },
-                abilities: { olho_clinico: 10, pressagio_mortal: 5 },
-                pts: {
-                  attack: 0,
-                  energy: 0,
-                  speed: 0,
-                  critChance: 0,
-                  critDmg: 0,
-                  penetration: 0,
-                  cdr: 0,
-                  luck: 0,
-                },
-              }
-            : h,
-        ),
-        account: {
-          ...importedRoster.account!,
-          tree: { ...importedRoster.account!.tree!, critChance: 6 },
-        },
-      };
-    }
-
-    await seedLocalStorage(page, seeded('pt'));
-    await page.goto('/planner');
-    await selectSavedHero(page, 'Cora');
-    await openCombatTab(page, 'pt');
-    const ptPanel = effectivePanel(page, 'pt');
-    await ptPanel.getByRole('button', { name: /Ver detalhamento de Chance de Crítico/i }).click();
-    await expect(ptPanel.getByText(/^Herói$/i).first()).toBeVisible();
-    await expect(ptPanel.getByText(/^Itens$/i).first()).toBeVisible();
-    await expect(ptPanel.getByText(/^Habilidade$/i).first()).toBeVisible();
-    await expect(ptPanel.getByText(/^Árvore$/i).first()).toBeVisible();
-
-    await seedLocalStorage(page, seeded('en'));
-    await page.goto('/planner');
-    await selectSavedHero(page, 'Cora');
-    await openCombatTab(page, 'en');
-    const enPanel = effectivePanel(page, 'en');
-    await enPanel.getByRole('button', { name: /Show breakdown of Crit Chance/i }).click();
-    await expect(enPanel.getByText(/^Hero$/i).first()).toBeVisible();
-    await expect(enPanel.getByText(/^Gear$/i).first()).toBeVisible();
-    await expect(enPanel.getByText(/^Ability$/i).first()).toBeVisible();
-    await expect(enPanel.getByText(/^Skill tree$/i).first()).toBeVisible();
-  });
-
-  test('Luck lives on Stats (sheet Total), not Effective when equal to Total', async ({ page }) => {
-    const naked = {
-      attack: 200,
-      energy: 300,
-      speed: 50,
-      critChance: 10,
-      critDmg: 70,
-      penetration: 5,
-      cdr: 5,
-      luck: 20,
-    };
-    // gearedOverride is the OBSERVED (tree-inclusive) sheet and still feeds roster/power,
-    // but it no longer drives the Stats table — that composes from `birth` (asserted below).
-    // Kept deliberately divergent from the composed Total so a regression that re-pointed
-    // Stats at gearedOverride would show up as 25.00 instead of 33.00.
-    const gearedOverride = { ...naked, luck: 25 };
-    const seeded = {
-      ...importedRoster,
-      lang: 'en' as const,
-      heroes: importedRoster.heroes.map((h) =>
-        h.id === 'seed-cora'
-          ? {
-              ...h,
-              naked,
-              birth: naked,
-              gearedOverride,
-              abilities: {},
-              pts: {
-                attack: 0,
-                energy: 0,
-                speed: 0,
-                critChance: 0,
-                critDmg: 0,
-                penetration: 0,
-                cdr: 0,
-                luck: 0,
-              },
-            }
-          : h,
-      ),
-      account: {
-        ...importedRoster.account!,
-        tree: { ...importedRoster.account!.tree!, luckFlatPct: 3 },
-      },
-    };
-    await seedLocalStorage(page, seeded);
-    await page.goto('/planner');
-    await selectSavedHero(page, 'Cora');
-    await openPointsTab(page, 'en');
-
-    const stats = activePanel(page).locator('section').filter({
-      has: page.getByRole('heading', { name: /^Stats$/i, level: 2 }),
-    });
-    const luckRow = stats.locator('tr').filter({ hasText: /^Luck/ });
-    // Stats composes from birth now, not from gearedOverride: birth.luck 20 × starsMult(2)
-    // = 30 (Δ stars +10.00), then the tree's flat luckFlatPct 3 (Δ tree +3.00) → Total 33.00.
-    // The 30 tracks STAR_MULT_PER_STAR — it was 40 while a ★ was worth 0.5 of base.
-    // Each figure carries its own unit now — the row is named `Luck`, not `Luck %`.
-    await expect(luckRow.locator('td').nth(1)).toHaveText('20.00%');
-    // Total is second-to-last: an "Over cap" column now trails it (rendered "—" for a stat
-    // under its cap, and Luck has no cap at all), so `.last()` would read that instead.
-    await expect(luckRow.locator('td').nth(-2)).toHaveText('33.00%');
-
-    await openCombatTab(page, 'en');
-    const panel = effectivePanel(page, 'en');
-    await expect(panel.getByRole('button', { name: /Show breakdown of Luck/i })).toHaveCount(0);
-  });
-
-  test('expand/collapse does not shift sibling value column (box metrics)', async ({ page }) => {
-    await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
-    await selectSavedHero(page, 'Cora');
-    await openCombatTab(page, 'en');
-
-    const panel = effectivePanel(page, 'en');
-    const hitBtn = panel.getByRole('button', { name: /Show breakdown of Hit/i });
-    const before = await hitBtn.boundingBox();
-    expect(before).toBeTruthy();
-
-    await panel.getByRole('button', { name: /Show breakdown of Fuse/i }).click();
-    const after = await hitBtn.boundingBox();
-    expect(after).toBeTruthy();
-    expect(Math.abs(after!.x + after!.width - (before!.x + before!.width))).toBeLessThan(2);
-    expect(Math.abs(after!.x - before!.x)).toBeLessThan(2);
   });
 });

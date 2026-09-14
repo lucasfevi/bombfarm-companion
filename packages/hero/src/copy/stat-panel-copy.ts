@@ -4,16 +4,12 @@ import type { SheetKey } from '@bombfarm/domain/planner-constants';
  * What the sheet, points, next-point and stat-breakdown panels print: stat names, the peeled-sheet
  * column headings, the points table's counters and step labels, the Optimize-build controls and
  * their result notices, the next-point ranking's heading and its two farm-unavailable notes, and
- * the breakdown's source, note, term and formula vocabulary.
+ * the breakdown's source and note vocabulary.
  *
  * Host-supplied, in the same idiom as `RosterCopy`: no values live here, and a host passes
  * the flat dictionary it already has. Every one of these is vocabulary a host already prints —
  * "Attack", "Reset", "Crit Chance" head half its other screens — so copying them into this
  * package's own dictionary would give each string two owners that nothing keeps in sync.
- *
- * The `bdFormula*` and `bdTerm*` members are looked up by key at runtime (a breakdown carries its
- * own `expressionKey`, and the glossary maps a token to a `tipKey`), so they are listed here
- * individually rather than reached through an index signature that would make every one optional.
  */
 export type StatPanelCopy = {
   statFull: Record<SheetKey, string>;
@@ -70,10 +66,13 @@ export type StatPanelCopy = {
   previewClearButton: string;
   previewRespecNote: string;
 
+  panelEffective: string;
+  effectiveTip: string;
   effectiveMitF: string;
   effectiveDmg: string;
   effectiveHit: string;
   effectiveCriticalHit: string;
+  effectiveAvgHit: string;
   effectiveCritFactor: string;
   effectiveFuse: string;
   effectiveBombsPerSec: string;
@@ -83,7 +82,6 @@ export type StatPanelCopy = {
   effectiveActiveDps: string;
   effectiveSustainedDps: string;
 
-  bdLedgerTotal: string;
   bdSrcBase: string;
   bdSrcLevel: string;
   bdSrcStars: string;
@@ -104,39 +102,4 @@ export type StatPanelCopy = {
   bdNoteBrutalStrike: string;
   /** `{hours}` — play hours left on the rune that expires first. */
   bdNoteRune: string;
-
-  bdFormulaMitF: string;
-  bdFormulaDmg: string;
-  bdFormulaHit: string;
-  bdFormulaCriticalHit: string;
-  bdFormulaCritFactor: string;
-  bdFormulaFuse: string;
-  bdFormulaBombs: string;
-  bdFormulaField: string;
-  bdFormulaRest: string;
-  bdFormulaUptime: string;
-  bdFormulaActive: string;
-  bdFormulaSustained: string;
-
-  bdTermMit: string;
-  bdTermPen: string;
-  bdTermAbl: string;
-  bdTermExtra: string;
-  bdTermPack: string;
-  bdTermAtk: string;
-  bdTermMitigation: string;
-  bdTermDamage: string;
-  bdTermCd: string;
-  bdTermCc: string;
-  bdTermCdr: string;
-  bdTermCycle: string;
-  bdTermWalk: string;
-  bdTermBand: string;
-  bdTermDrain: string;
-  bdTermRestSeconds: string;
-  bdTermField: string;
-  bdTermRestSecs: string;
-  bdTermAvg: string;
-  bdTermRange: string;
-  bdTermActiveDps: string;
 };

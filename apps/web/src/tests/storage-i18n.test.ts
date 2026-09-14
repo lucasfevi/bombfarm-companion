@@ -157,12 +157,13 @@ describe('effective stats panel chrome (EST-*)', () => {
     expect(STRINGS.pt.effectiveTargetHp).toBe('HP do alvo');
   });
 
-  it('defines breakdown derived labels, sources, notes, and formula keys', () => {
+  it('defines breakdown derived labels, sources and notes', () => {
     const keys = [
       'effectiveMitF',
       'effectiveDmg',
       'effectiveHit',
       'effectiveCriticalHit',
+      'effectiveAvgHit',
       'effectiveCritFactor',
       'effectiveBombsPerSec',
       'effectiveField',
@@ -179,49 +180,11 @@ describe('effective stats panel chrome (EST-*)', () => {
       'bdSrcAbilities',
       'bdSrcTeam',
       'bdSrcAbilitiesTeam',
-      'bdLedgerTotal',
       'bdNoteCapped',
       'bdNoteSplit',
       'bdNoteKeenEye',
       'bdNoteDiamondTip',
       'bdNoteBrutalStrike',
-      'bdGroupSheet',
-      'bdGroupDerived',
-      'bdTriggerAria',
-      'bdFormulaMitF',
-      'bdFormulaDmg',
-      'bdFormulaHit',
-      'bdFormulaCriticalHit',
-      'bdFormulaCritFactor',
-      'bdFormulaFuse',
-      'bdFormulaBombs',
-      'bdFormulaField',
-      'bdFormulaRest',
-      'bdFormulaUptime',
-      'bdFormulaActive',
-      'bdFormulaSustained',
-      'bdTermMit',
-      'bdTermPen',
-      'bdTermTree',
-      'bdTermAbl',
-      'bdTermExtra',
-      'bdTermPack',
-      'bdTermAtk',
-      'bdTermMitigation',
-      'bdTermDamage',
-      'bdTermCc',
-      'bdTermCd',
-      'bdTermCdr',
-      'bdTermCycle',
-      'bdTermWalk',
-      'bdTermBand',
-      'bdTermDrain',
-      'bdTermRestSeconds',
-      'bdTermField',
-      'bdTermRestSecs',
-      'bdTermAvg',
-      'bdTermRange',
-      'bdTermActiveDps',
     ] as const;
     for (const lang of ['en', 'pt'] as const) {
       for (const k of keys) {
@@ -230,8 +193,6 @@ describe('effective stats panel chrome (EST-*)', () => {
         expect(String(v).length).toBeGreaterThan(0);
       }
     }
-    expect(STRINGS.en.bdTriggerAria).toContain('{stat}');
-    expect(STRINGS.pt.bdTriggerAria).toContain('{stat}');
     expect(STRINGS.en.bdNoteSplit).toContain('{own}');
     expect(STRINGS.pt.bdNoteSplit).toContain('{team}');
   });
@@ -241,7 +202,6 @@ describe('effective stats panel chrome (EST-*)', () => {
     const ptCodes = STRINGS.pt.explainSections.map((s) => s.code).join('\n');
     expect(enCodes).toMatch(/critChance|critDmg|cdr|bombs\/s|walk/i);
     expect(ptCodes).toMatch(/cdr|bombs|walk|pavio|fuse|crit/i);
-    expect(STRINGS.en.bdFormulaFuse).toContain('0.4');
     expect(STRINGS.en.explainSections.some((s) => s.code?.includes('0.4'))).toBe(true);
   });
 });

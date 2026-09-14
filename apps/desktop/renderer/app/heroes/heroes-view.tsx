@@ -31,6 +31,7 @@ import { HeroIdentityChip } from '@bombfarm/game-art';
 import { CombatPhasePanel } from '@bombfarm/farm/components';
 import {
   AbilitiesAurasPanel,
+  CombatBreakdownPanel,
   GearTab,
   HeroAbilitiesPanel,
   HeroCopyProvider,
@@ -91,7 +92,6 @@ import {
   useStatPanelCopy,
 } from '../screen-copy';
 import { heroNextPointRanking } from './hero-detail-panels';
-import { HeroEffectiveStats } from './hero-effective-stats';
 import { heroesScreenModel, type HeroesScreenModel } from './heroes-screen-model';
 import { resolveSelectedHeroId, selectedRow } from './hero-selection';
 import { readHeroPhase, shownHeroPhase } from './hero-phase';
@@ -413,7 +413,6 @@ function HeroesRoster({ model }: { model: RosterModel }) {
                     rankMode={rankMode}
                     onRankMode={setRankMode}
                     statLabel={boundStatLabel}
-                    formatNumber={boundFormatNumber}
                     marketPrice={marketPrice}
                     formatAmount={formatAmount}
                     onSelectHero={onSelectHero}
@@ -464,7 +463,6 @@ function HeroDetailTabs({
   rankMode,
   onRankMode,
   statLabel: boundStatLabel,
-  formatNumber,
   marketPrice,
   formatAmount,
   onSelectHero,
@@ -486,7 +484,6 @@ function HeroDetailTabs({
   rankMode: RankMode;
   onRankMode: (next: RankMode) => void;
   statLabel: (key: SheetKey) => string;
-  formatNumber: (n: number, d?: number) => string;
   marketPrice: HeroMarketPrice | null;
   formatAmount: (value: number, currency: string) => string;
   onSelectHero: (hero: HeroRecord) => void;
@@ -550,10 +547,13 @@ function HeroDetailTabs({
                   bottom of Points, where it was the one phase-scoped panel in a stage of sheet
                   arithmetic. */}
               {figures.kind === 'at' && combat ? (
-                <HeroEffectiveStats
+                <CombatBreakdownPanel
                   t={statCopy}
                   facts={effectiveFacts(active.hero, figures.inputs.account, combat)}
-                  formatNumber={formatNumber}
+                  hero={active.hero}
+                  phase={figures.inputs.phase}
+                  switches={auraSwitches}
+                  lang={lang}
                 />
               ) : null}
               {/* What those figures were priced with, last: the hero's own abilities, and every

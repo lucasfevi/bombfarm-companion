@@ -86,7 +86,7 @@ describe('the components are prop-driven — no store, no host module', () => {
   });
 
   it('the scan reaches every component in this tree, subdirectories included', () => {
-    expect(componentFiles.length).toBe(29);
+    expect(componentFiles.length).toBe(31);
     expect(componentFiles).toContain('hero-identity-roll-panel.tsx');
     expect(componentFiles).toContain('abilities-auras-panel.tsx');
     expect(componentFiles).toContain('roster-board/roster-rail.tsx');
@@ -102,8 +102,10 @@ describe('the components are prop-driven — no store, no host module', () => {
     expect(componentFiles).toContain('points-preview-actions.tsx');
     expect(componentFiles).toContain('points-preview-notice.tsx');
     expect(componentFiles).toContain('points-reset-advice.tsx');
-    expect(componentFiles).toContain('stat-breakdown-formula.tsx');
-    expect(componentFiles).toContain('stat-breakdown-ledger.tsx');
+    expect(componentFiles).toContain('combat-breakdown-panel.tsx');
+    expect(componentFiles).toContain('combat-breakdown-card.tsx');
+    expect(componentFiles).toContain('combat-breakdown-wires.tsx');
+    expect(componentFiles).toContain('combat-breakdown-matrix.tsx');
     expect(componentFiles).toContain('gear-tab.tsx');
     expect(componentFiles).toContain('gear-slots-grid.tsx');
     expect(componentFiles).toContain('gear-slot-stats-grid.tsx');

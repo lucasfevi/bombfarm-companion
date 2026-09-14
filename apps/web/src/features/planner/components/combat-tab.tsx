@@ -5,6 +5,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { CombatPhasePanel } from '@bombfarm/farm/components';
 import {
   AbilitiesAurasPanel,
+  CombatBreakdownPanel,
   HeroCopyProvider,
   PhasesHeroPanel,
   type HeroPickerSlotProps,
@@ -24,7 +25,6 @@ import {
 } from '@/shared/stores';
 import { useHeroDraftActions } from '../hooks/use-hero-draft-actions';
 import { usePipelineFacts } from '../hooks/use-pipeline-facts';
-import { EffectiveStatsPanel } from './effective-stats-panel';
 
 /**
  * The workspace's Combat tab: the phase the figures are for, one hero against that phase, the
@@ -80,7 +80,14 @@ export function CombatTab() {
           breakdownShownElsewhere
         />
       </HeroCopyProvider>
-      <EffectiveStatsPanel facts={facts} />
+      <CombatBreakdownPanel
+        t={t}
+        facts={facts}
+        hero={hero}
+        phase={phase}
+        switches={auraSwitches}
+        lang={lang}
+      />
       <AbilitiesAurasPanel
         hero={hero}
         phase={phase}

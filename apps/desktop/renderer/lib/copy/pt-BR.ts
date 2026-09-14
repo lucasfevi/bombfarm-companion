@@ -608,11 +608,6 @@ export const ptBR: Copy = {
   heroesPointsUnreadDescription: 'A ficha que o jogo informou para este herói não fecha com o modelo atual, então os pontos, os números de equipamento e os de combate ficam retidos em vez de desenhados como se ele não tivesse gasto nenhum.',
   heroesPhaseUnknownTitle: 'Esta não é uma fase que o app conhece',
   heroesPhaseUnknownDescription: 'Escolha uma fase que o jogo tenha de verdade, e os números voltam.',
-  heroesEffectiveTitle: 'Atributos efetivos',
-  heroesEffectiveTip: 'Inclui equipamento, pontos, árvore, habilidades e as auras de time ligadas abaixo. Passagem de Bastão conta o pulso do próprio herói no tempo em campo dele; os pulsos dos outros portadores entram nas telas Farm e Otimizador. Matilha conta os heróis em campo ao lado deste.',
-  heroesEffectiveGroupSheet: 'Stats da ficha',
-  heroesEffectiveGroupDerived: 'Combate derivado',
-  heroesEffectiveTriggerAria: 'Ver detalhamento de {stat}',
 
   optimizerNavLabel: 'Otimizador',
   optimizerUnavailableDescription: 'O otimizador precisa de todas as partes da sua conta. Abra o jogo com o companion em execução e deixe aberto por um instante.',

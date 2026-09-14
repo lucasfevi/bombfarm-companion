@@ -639,11 +639,6 @@ export const en = {
   heroesPointsUnreadDescription: 'The sheet the game reported for this hero does not add up under the current model, so its points, gear figures and combat numbers are withheld rather than drawn as if it had spent none.',
   heroesPhaseUnknownTitle: 'That is not a phase this app knows',
   heroesPhaseUnknownDescription: 'Pick a phase the game actually has, and the numbers come back.',
-  heroesEffectiveTitle: 'Effective stats',
-  heroesEffectiveTip: 'Includes gear, points, skill tree, abilities and the team auras switched on below. Baton Pass counts this hero’s own pulse over its own stint; the other carriers’ pulses are counted on the Farm and Optimizer screens. Pack counts the heroes deployed beside this one.',
-  heroesEffectiveGroupSheet: 'Sheet stats',
-  heroesEffectiveGroupDerived: 'Derived combat',
-  heroesEffectiveTriggerAria: 'Show breakdown of {stat}',
 
   // optimizer* — the Optimizer screen's own chrome. The setup panel, scope board and results
   // print the dictionary the team-plan package ships; these are the strings whose truth depends

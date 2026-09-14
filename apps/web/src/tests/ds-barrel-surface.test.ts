@@ -72,8 +72,8 @@ import * as GameArt from '@bombfarm/game-art';
 // panel that draws them is `@bombfarm/hero`'s now.
 // accordionStackClass / accordionLedgerBodyClass (2026-09-07): promoted from the
 // `accordion.recipe` subpath, beside `accordionRecipe` which was already here. They space a
-// stack of accordion rows and pad an opened one's body — the per-statistic breakdown the desktop
-// Heroes screen now draws needs both, and that app imports the barrel, not deep paths.
+// stack of accordion rows and pad an opened one's body — the Optimizer's per-hero detail, which both
+// apps draw from `@bombfarm/team-plan`, needs both, and the desktop imports the barrel, not deep paths.
 // metricScoreboardCellClass / metricScoreboardLabelClass / metricScoreboardRowClass /
 // workspaceClass (2026-09-11): promoted from their respective subpaths for the same reason as
 // every promotion above. The first three lay out a waterfall step's cell; `workspaceClass` sizes
