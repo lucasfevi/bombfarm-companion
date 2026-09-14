@@ -10,8 +10,10 @@ import {
   panelTitleClass,
 } from '@bombfarm/ui/panel-field.recipe';
 import { useAppLang } from '@/shared/context/app-lang';
+import { usePlannerStore } from '@/shared/stores';
 import { SITE_SECTION_HREF, SITE_SECTION_LABEL_KEY } from '@/shared/lib/site-sections';
 import type { HomeCardSection, HomeCardState } from '../model/home-card-state';
+import { selectFirstVisit } from '../model/home-selectors';
 import { HomeCardOutline } from './home-card-outline';
 
 export function HomeSectionCard({
@@ -36,6 +38,7 @@ export function HomeSectionCard({
   link?: boolean;
 }) {
   const { t } = useAppLang();
+  const firstVisit = usePlannerStore(selectFirstVisit);
   const needs = state === 'needs';
   const heading = title ?? t[SITE_SECTION_LABEL_KEY[section]];
 
@@ -46,8 +49,10 @@ export function HomeSectionCard({
       className={cn(panelRecipe(), 'flex h-full min-w-0 flex-col')}
     >
       <div className={panelHClass}>
-        <h2 className={panelTitleClass}>{heading}</h2>
-        {context === undefined ? null : <span className={cn(mutedClass, 'min-w-0')}>{context}</span>}
+        <h2 className={cn(panelTitleClass, 'shrink-0')}>{heading}</h2>
+        {context === undefined ? null : (
+          <span className={cn(mutedClass, 'min-w-0 truncate')}>{context}</span>
+        )}
         {needs || !link ? null : (
           <Link className="shrink-0 whitespace-nowrap" href={SITE_SECTION_HREF[section]}>
             {t.homeOpenLink}
@@ -62,7 +67,7 @@ export function HomeSectionCard({
         {needs ? <HomeCardOutline kind={section} /> : children}
       </div>
       <div className={mutedClass} data-testid="home-card-footer">
-        {footer}
+        {needs && firstVisit ? null : footer}
       </div>
     </article>
   );

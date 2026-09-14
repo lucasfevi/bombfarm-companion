@@ -77,7 +77,7 @@ describe('the front page optimizer card', () => {
         | 'teamPlanEmptyAllLeaveAloneTitle'
         | 'teamPlanObjectiveFarmNeedsMaxPhase';
     }[] = [
-      { name: 'no roster', arrange: () => {}, key: 'teamPlanEmptyNoRosterTitle' },
+      { name: 'no roster', arrange: () => usePlannerStore.setState({ phase: 51 }), key: 'teamPlanEmptyNoRosterTitle' },
       {
         name: 'no inventory',
         arrange: () => state().hydrateRoster([hero], 'a'),

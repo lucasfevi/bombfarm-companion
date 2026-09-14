@@ -273,8 +273,10 @@ describe('the front page farm card', () => {
       );
     };
 
+    expect(textOf(render().slice(openingOf(render(), 'home-card-footer')))).toBe('');
+
     for (const lang of LANGS) {
-      usePlannerStore.setState({ lang });
+      usePlannerStore.setState({ lang, phase: 51 });
       expectNeeds(render(), lang);
     }
 

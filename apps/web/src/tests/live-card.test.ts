@@ -8,7 +8,7 @@ import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
 import type { LatestRelease } from '@/features/download/model/latest-release';
 import { LiveCard } from '@/features/home/components/live-card';
 import { SITE_SECTION_HREF } from '@/shared/lib/site-sections';
-import { STRINGS, sub, type Lang } from '@/shared/i18n';
+import { STRINGS, type Lang } from '@/shared/i18n';
 import { normalizeHero } from '@/shared/lib/storage';
 import { resetPlannerStoreForTests, usePlannerStore, type PlannerStore } from '@/shared/stores';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
@@ -109,7 +109,7 @@ describe('the front page live card', () => {
       expect(anchor(html)).toContain(`href="${SITE_SECTION_HREF.download}"`);
       expect(textOf(anchor(html))).toBe(strings.downloadCta);
       expect(anchor(html)).not.toMatch(/v\d/);
-      expect(footer(html)).toBe(strings.downloadFileMetaPending);
+      expect(footer(html)).toBe('');
       expect(html.match(/<a /g)).toHaveLength(1);
     }
   });
@@ -125,9 +125,9 @@ describe('the front page live card', () => {
       expect(anchor(html)).toContain(`href="${SITE_SECTION_HREF.download}"`);
       expect(html).not.toContain(RELEASE.downloadUrl);
       expect(textOf(anchor(html))).toBe(`${strings.downloadCta}v${RELEASE.version}`);
-      expect(footer(html)).toBe(
-        sub(strings.downloadFileMeta, { file: RELEASE.fileName, size: RELEASE.sizeLabel }),
-      );
+      expect(footer(html)).toBe('');
+      expect(html).not.toContain(RELEASE.fileName);
+      expect(anchor(html).slice(0, anchor(html).indexOf('>'))).toContain(' w-full ');
     }
   });
 

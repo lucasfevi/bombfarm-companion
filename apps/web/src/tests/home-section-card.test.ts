@@ -91,6 +91,10 @@ describe('the front page card shell', () => {
   });
 
   it('a card in its needs state hides its body from assistive tech, renders the outline and prints only the needs line', () => {
+    const untouched = render({ state: 'needs', footer: 'Needs your heroes' });
+    expect(footer(untouched)).toBe('');
+
+    usePlannerStore.setState({ phase: 51 });
     const html = render({ state: 'needs', footer: 'Needs your heroes' });
 
     expect(html).toContain('data-home-card-state="needs"');

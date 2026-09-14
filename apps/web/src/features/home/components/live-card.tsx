@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { buttonRecipe, cn } from '@bombfarm/ui';
 import { useLatestRelease } from '@/features/download';
 import { useAppLang } from '@/shared/context/app-lang';
-import { sub } from '@/shared/i18n';
 import { SITE_SECTION_HREF } from '@/shared/lib/site-sections';
 import { HomeSectionCard } from './home-section-card';
 import { HomeTrustLine } from './home-trust-line';
@@ -19,12 +18,8 @@ export function LiveCard() {
       state="ready"
       title={t.downloadHeaderCta}
       link={false}
-      bodyClassName="flex flex-col gap-4 pb-4"
-      footer={
-        release === null
-          ? t.downloadFileMetaPending
-          : sub(t.downloadFileMeta, { file: release.fileName, size: release.sizeLabel })
-      }
+      bodyClassName="flex flex-col gap-4"
+      footer={null}
     >
       <p className="m-0 text-sm">{t.homeCardLiveBody}</p>
       <ul className="m-0 grid list-none gap-1.5 p-0">
@@ -32,7 +27,7 @@ export function LiveCard() {
         <HomeTrustLine>{t.downloadTrustUpdates}</HomeTrustLine>
       </ul>
       <Link
-        className={cn(buttonRecipe({ variant: 'primary' }), 'mt-auto self-start')}
+        className={cn(buttonRecipe({ variant: 'primary' }), 'mt-auto h-auto w-full justify-center py-3.5 text-base')}
         href={SITE_SECTION_HREF.download}
         data-testid="home-live-download"
       >

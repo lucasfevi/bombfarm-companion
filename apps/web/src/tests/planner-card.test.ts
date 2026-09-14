@@ -126,8 +126,10 @@ describe('the front page planner card', () => {
   });
 
   it('an empty store is in its needs state and prints only the needs line', () => {
+    expect(textOf(footer(render()))).toBe('');
+
     for (const lang of LANGS) {
-      usePlannerStore.setState({ lang });
+      usePlannerStore.setState({ lang, phase: 51 });
       const html = render();
 
       expect(html).toContain('data-home-card-state="needs"');

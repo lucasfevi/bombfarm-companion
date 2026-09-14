@@ -96,7 +96,7 @@ export function AppShellInner({
   }
 
   return (
-    <div className="min-h-screen pb-10">
+    <div className="flex min-h-screen flex-col pb-10">
       <SiteHeader t={t} lang={lang} onImport={openImportDialog} onLangChange={setLang} />
 
       {showReferralNotice ? <ReferralNotice t={t} onDismiss={dismissReferralNotice} /> : null}
@@ -112,7 +112,7 @@ export function AppShellInner({
         onImported={handleImported}
       />
 
-      <div className={workspaceShellClass}>
+      <div className={`${workspaceShellClass} flex-1`}>
         {onSectionPage ? children : null}
         <div hidden={onSectionPage} aria-hidden={onSectionPage} inert={onSectionPage ? true : undefined}>
           {planner}

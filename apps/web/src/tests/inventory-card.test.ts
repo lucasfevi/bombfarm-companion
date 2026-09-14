@@ -223,9 +223,14 @@ describe('the front page inventory card', () => {
   it('without stored inventory rows the card is in its needs state', () => {
     const empty = buildInventoryView([]);
 
+    inventoryView = null;
+    snapshot = SNAPSHOT;
+    holdings = holdingsFor(empty, SNAPSHOT, 'en');
+    expect(footer(render())).toBe('');
+
     for (const view of [null, empty]) {
       for (const lang of LANGS) {
-        usePlannerStore.setState({ lang });
+        usePlannerStore.setState({ lang, phase: 51 });
         inventoryView = view;
         snapshot = SNAPSHOT;
         holdings = holdingsFor(empty, SNAPSHOT, lang);

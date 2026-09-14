@@ -279,8 +279,12 @@ describe('the front page account card', () => {
       expect(footer(html)).toBe(escaped(STRINGS[lang].homeCardAccountNeeds));
     };
 
+    snapshot = SNAPSHOT;
+    holdings = holdingsFor(SNAPSHOT, 'en');
+    expect(footer(render())).toBe('');
+
     for (const lang of LANGS) {
-      usePlannerStore.setState({ lang });
+      usePlannerStore.setState({ lang, phase: 51 });
       snapshot = SNAPSHOT;
       holdings = holdingsFor(SNAPSHOT, lang);
       expectNeeds(lang);
