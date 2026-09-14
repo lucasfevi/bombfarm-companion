@@ -502,7 +502,7 @@ export const ptBR: Copy = {
   forgeQueueAddAria: 'Pôr {item} na fila de forja, até {target}',
   forgeQueueAddedAria: '{item} está na fila de forja, até {target}',
   forgeQueueTitle: 'Fila de forja',
-  forgeQueueWaiting: '{count} na espera',
+  forgeQueueForged: '{done}/{total} forjadas',
   forgeQueueRolling: 'rolando',
   forgeQueueProgress: '{rolls} rolagens · {spent} ouro',
   forgeQueueStopped: 'Parou — {reason}',

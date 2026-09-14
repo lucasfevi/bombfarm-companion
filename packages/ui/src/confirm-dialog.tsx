@@ -43,11 +43,15 @@ export function ConfirmDialog({
       <Dialog.Portal>
         <Dialog.Backdrop />
         <Dialog.Popup className="!max-h-none !w-[min(92vw,420px)] !p-4">
-          <Dialog.Head>
-            <Dialog.Title>{title}</Dialog.Title>
+          {/* The close sits in the popup's own corner rather than inside the padding, so it
+              reads as the box's control and the title keeps the full line. */}
+          <span className="absolute top-2 right-2">
             <Dialog.Close aria-label={cancelLabel}>
               <Icon name="x-mark" />
             </Dialog.Close>
+          </span>
+          <Dialog.Head className="pr-6">
+            <Dialog.Title>{title}</Dialog.Title>
           </Dialog.Head>
           {description ? (
             <p className={dialogDescClass}>{description}</p>

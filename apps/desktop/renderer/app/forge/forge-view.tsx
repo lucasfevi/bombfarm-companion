@@ -428,7 +428,14 @@ export function ForgeView({
                 onCancel={onCancel}
               />
             )}
-            <ForgeQueuePanel queue={queue} rows={queueRows} labels={labels} onRemove={removeFromForgeQueue} />
+            <ForgeQueuePanel
+              queue={queue}
+              rows={queueRows}
+              labels={labels}
+              onRemove={removeFromForgeQueue}
+              forgeWritesEnabled={forgeWritesEnabled}
+              accountSource={accountSource}
+            />
           </div>
         </div>
       </div>

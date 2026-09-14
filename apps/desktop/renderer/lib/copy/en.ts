@@ -518,15 +518,15 @@ export const en = {
   forgeAgainstExact: 'exactly what the plan expected',
   forgeAgainstNoPlan: 'No plan to compare against — this run was not started from the panel',
   forgeDone: 'Done',
-  // forgeQueue* — the forge queue: pieces added from the Optimizer's hero rows, forged in turn
-  // by the footer's Start. The footer names the queue, the piece rolling and what stopped it;
-  // the Forge tab lists the pieces waiting.
+  // forgeQueue* — the forge queue: pieces added from the Optimizer's hero rows or the Forge plan
+  // panel, forged in turn by Start. The band under the top bar names the queue, the piece rolling
+  // and what stopped it; the Forge tab lists the pieces waiting and carries the same controls.
   forgeQueueAdd: 'Add to queue',
   forgeQueueAdded: 'Queued',
   forgeQueueAddAria: 'Add {item} to the forge queue, to {target}',
   forgeQueueAddedAria: '{item} is in the forge queue, to {target}',
   forgeQueueTitle: 'Forge queue',
-  forgeQueueWaiting: '{count} waiting',
+  forgeQueueForged: '{done}/{total} forged',
   forgeQueueRolling: 'rolling',
   forgeQueueProgress: '{rolls} rolls · {spent} gold',
   forgeQueueStopped: 'Stopped — {reason}',

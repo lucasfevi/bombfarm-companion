@@ -10,9 +10,10 @@ const ACCOUNT_OFFLINE_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-
 
 /**
  * The forge queue end to end in the real app, without a server: a piece added from an Optimizer
- * hero row reaches the shell's footer and the Forge tab's list, the footer's Start explains why a
- * fixture account cannot start it — the same words the Forge button uses — a piece removed on the
- * Forge tab leaves both, and the queue is still there after the app is closed and opened again.
+ * hero row reaches the band under the top bar and the Forge tab's list, Start — in the band and
+ * on the Forge tab's panel alike — explains why a fixture account cannot start it in the same
+ * words the Forge button uses, a piece removed on the Forge tab leaves both, and the queue is
+ * still there after the app is closed and opened again.
  *
  * What is not proved here is a run starting: main refuses one against a fixture account, so the
  * chain from Start through main's `done` to the next piece is the queue store's own unit tests,
@@ -115,11 +116,11 @@ test.describe('the forge queue, fed from the Optimizer', () => {
     fs.rmSync(runDir, { recursive: true, force: true });
   });
 
-  test('the footer draws nothing while the queue is empty', async () => {
-    await expect(page.getByTestId('forge-queue-status')).toHaveCount(0);
+  test('the band draws nothing while the queue is empty', async () => {
+    await expect(page.getByTestId('forge-queue-bar')).toHaveCount(0);
   });
 
-  test('a piece added on a hero row reaches the footer, with Start explaining the fixture', async ({}, testInfo) => {
+  test('a piece added on a hero row reaches the band, with Start explaining the fixture', async ({}, testInfo) => {
     await openOptimizer(page);
     const entries = await optimizeUntilQueued(page);
 
@@ -129,15 +130,15 @@ test.describe('the forge queue, fed from the Optimizer', () => {
     await expect(add).toHaveAttribute('data-queued', 'true');
     await expect(add).toHaveText(readCopyValue('forgeQueueAdded'));
 
-    const status = page.getByTestId('forge-queue-status');
-    await expect(status).toBeVisible();
-    await expect(status.getByTestId('forge-queue-waiting')).toHaveText('1 waiting');
-    await expect(status.getByTestId('forge-queue-start')).toBeDisabled();
-    await expect(status.getByTestId('forge-queue-reason')).toHaveText(readCopyValue('forgeReasonFixture'));
+    const bar = page.getByTestId('forge-queue-bar');
+    await expect(bar).toBeVisible();
+    await expect(bar.getByTestId('forge-queue-count')).toHaveText('0/1 forged');
+    await expect(bar.getByTestId('forge-queue-start')).toBeDisabled();
+    await expect(bar.getByTestId('forge-queue-reason')).toHaveText(readCopyValue('forgeReasonFixture'));
 
     // Pressing the same entry again changes nothing: one entry per piece.
     await add.click();
-    await expect(status.getByTestId('forge-queue-waiting')).toHaveText('1 waiting');
+    await expect(bar.getByTestId('forge-queue-count')).toHaveText('0/1 forged');
     await add.scrollIntoViewIfNeeded();
     await shoot(page, testInfo, 'optimizer-queued.png');
   });
@@ -146,12 +147,19 @@ test.describe('the forge queue, fed from the Optimizer', () => {
     const entries = page.getByTestId('team-plan-forge-queue-item');
     expect(await entries.count()).toBeGreaterThanOrEqual(2);
     await entries.nth(1).getByTestId('forge-queue-add').click();
-    await expect(page.getByTestId('forge-queue-waiting')).toHaveText('2 waiting');
+    await expect(page.getByTestId('forge-queue-count')).toHaveText('0/2 forged');
 
     await openForge(page);
     const rows = page.getByTestId('forge-queue-row');
     await expect(rows).toHaveCount(2);
     await expect(rows.first().getByTestId('forge-queue-remove')).toBeVisible();
+
+    // The panel carries the queue's own Start, gated the same way as the band's.
+    const panelStart = page.getByTestId('forge-queue-panel').getByTestId('forge-queue-start');
+    await expect(panelStart).toBeDisabled();
+    await expect(page.getByTestId('forge-queue-panel').getByTestId('forge-queue-reason')).toHaveText(
+      readCopyValue('forgeReasonFixture'),
+    );
     await shoot(page, testInfo, 'forge-tab-queue.png');
   });
 
@@ -176,7 +184,7 @@ test.describe('the forge queue, fed from the Optimizer', () => {
     await expect(add).toHaveAttribute('data-queued', 'true');
     await expect(rows).toHaveCount(before + 1);
     await expect(rows.last()).toHaveAttribute('data-item-id', itemId);
-    await expect(page.getByTestId('forge-queue-waiting')).toHaveText(`${String(before + 1)} waiting`);
+    await expect(page.getByTestId('forge-queue-count')).toHaveText(`0/${String(before + 1)} forged`);
 
     // Stepping the target un-queues the button (the queue holds the old target) and pressing
     // it again moves the target rather than adding a second row.
@@ -188,7 +196,7 @@ test.describe('the forge queue, fed from the Optimizer', () => {
     await shoot(page, testInfo, 'forge-plan-queued.png');
   });
 
-  test('removing a piece on the Forge tab takes it off the footer, and the panel goes with the last one', async () => {
+  test('removing a piece on the Forge tab takes it off the band, and the panel goes with the last one', async () => {
     await openForge(page);
     const rows = page.getByTestId('forge-queue-row');
     const before = await rows.count();
@@ -198,9 +206,9 @@ test.describe('the forge queue, fed from the Optimizer', () => {
     await expect(rows).toHaveCount(before - 1);
     if (before - 1 === 0) {
       await expect(page.getByTestId('forge-queue-panel')).toHaveCount(0);
-      await expect(page.getByTestId('forge-queue-status')).toHaveCount(0);
+      await expect(page.getByTestId('forge-queue-bar')).toHaveCount(0);
     } else {
-      await expect(page.getByTestId('forge-queue-waiting')).toHaveText(`${String(before - 1)} waiting`);
+      await expect(page.getByTestId('forge-queue-count')).toHaveText(`0/${String(before - 1)} forged`);
     }
   });
 
@@ -211,7 +219,7 @@ test.describe('the forge queue, fed from the Optimizer', () => {
     await expect(entries.first()).toBeVisible({ timeout: 20_000 });
     const add = entries.first().getByTestId('forge-queue-add');
     if ((await add.getAttribute('data-queued')) !== 'true') await add.click();
-    const waiting = await page.getByTestId('forge-queue-waiting').textContent();
+    const waiting = await page.getByTestId('forge-queue-count').textContent();
 
     await app.close();
     ({ app, page } = await launchApp({
@@ -220,10 +228,10 @@ test.describe('the forge queue, fed from the Optimizer', () => {
       BFC_USER_DATA_DIR: userDataDir,
     }));
 
-    const status = page.getByTestId('forge-queue-status');
+    const status = page.getByTestId('forge-queue-bar');
     await expect(status).toBeVisible({ timeout: 30_000 });
     await expect(status).toHaveAttribute('data-status', 'idle');
-    await expect(status.getByTestId('forge-queue-waiting')).toHaveText(waiting ?? '');
+    await expect(status.getByTestId('forge-queue-count')).toHaveText(waiting ?? '');
 
     await openForge(page);
     await expect(page.getByTestId('forge-queue-row').first()).toBeVisible();

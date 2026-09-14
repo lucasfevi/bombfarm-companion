@@ -22,6 +22,8 @@ export type ForgeQueueState = {
   /** The piece the queue has asked main to forge; `runId` is null until main answers. */
   readonly active: { readonly itemId: string; readonly runId: string | null } | null;
   readonly halt: ForgeQueueHalt | null;
+  /** Pieces this queue has forged to their target since it was last empty — the `2` of `2/5`. */
+  readonly forged: number;
 };
 
 export type ForgeQueueAction =
@@ -38,7 +40,7 @@ export type ForgeQueueAction =
   | { kind: 'sync'; upgrades: ReadonlyMap<string, number> }
   | { kind: 'restore'; pieces: readonly ForgeQueuePiece[] };
 
-export const EMPTY_FORGE_QUEUE: ForgeQueueState = { pieces: [], status: 'idle', active: null, halt: null };
+export const EMPTY_FORGE_QUEUE: ForgeQueueState = { pieces: [], status: 'idle', active: null, halt: null, forged: 0 };
 
 /** A refusal about the piece rather than the environment — it cannot be forged any more, so the
  *  queue drops it and moves on instead of halting. */
@@ -55,9 +57,10 @@ function without(pieces: readonly ForgeQueuePiece[], itemId: string): ForgeQueue
   return pieces.filter((piece) => piece.itemId !== itemId);
 }
 
-function afterHeadLeaves(state: ForgeQueueState, pieces: readonly ForgeQueuePiece[]): ForgeQueueState {
+function afterHeadLeaves(state: ForgeQueueState, pieces: readonly ForgeQueuePiece[], reached: boolean): ForgeQueueState {
   const status = state.status === 'running' && pieces.length > 0 ? 'running' : 'idle';
-  return { pieces, status, active: null, halt: null };
+  const forged = pieces.length === 0 ? 0 : state.forged + (reached ? 1 : 0);
+  return { pieces, status, active: null, halt: null, forged };
 }
 
 export function forgeQueueReducer(state: ForgeQueueState, action: ForgeQueueAction): ForgeQueueState {
@@ -77,8 +80,9 @@ export function forgeQueueReducer(state: ForgeQueueState, action: ForgeQueueActi
       if (state.active?.itemId === action.itemId) return state;
       const pieces = without(state.pieces, action.itemId);
       if (pieces.length === state.pieces.length) return state;
-      if (state.halt?.itemId === action.itemId) return { pieces, status: 'idle', active: null, halt: null };
-      return { ...state, pieces, status: pieces.length === 0 ? 'idle' : state.status };
+      const forged = pieces.length === 0 ? 0 : state.forged;
+      if (state.halt?.itemId === action.itemId) return { pieces, status: 'idle', active: null, halt: null, forged };
+      return { ...state, pieces, forged, status: pieces.length === 0 ? 'idle' : state.status };
     }
     case 'start':
       if (state.status === 'running' || state.pieces.length === 0) return state;
@@ -91,14 +95,14 @@ export function forgeQueueReducer(state: ForgeQueueState, action: ForgeQueueActi
       return { ...state, active: { itemId: action.itemId, runId: action.runId } };
     case 'refused': {
       if (state.active?.itemId !== action.itemId) return state;
-      if (refusalDropsPiece(action.reason)) return afterHeadLeaves(state, without(state.pieces, action.itemId));
+      if (refusalDropsPiece(action.reason)) return afterHeadLeaves(state, without(state.pieces, action.itemId), false);
       if (state.status !== 'running') return { ...state, active: null };
       return { ...state, status: 'halted', active: null, halt: { kind: 'refused', itemId: action.itemId, reason: action.reason } };
     }
     case 'done': {
       if (state.active === null || state.active.runId !== action.runId) return state;
       const { itemId } = state.active;
-      if (action.result.stop === 'target') return afterHeadLeaves(state, without(state.pieces, itemId));
+      if (action.result.stop === 'target') return afterHeadLeaves(state, without(state.pieces, itemId), true);
       if (state.status !== 'running' || action.result.stop === 'cancelled') {
         return { ...state, status: 'idle', active: null, halt: null };
       }
@@ -115,8 +119,9 @@ export function forgeQueueReducer(state: ForgeQueueState, action: ForgeQueueActi
       });
       if (pieces.length === state.pieces.length) return state;
       const haltGone = state.halt !== null && !pieces.some((piece) => piece.itemId === state.halt?.itemId);
-      if (haltGone) return { pieces, status: 'idle', active: null, halt: null };
-      return { ...state, pieces, status: pieces.length === 0 && state.active === null ? 'idle' : state.status };
+      const forged = pieces.length === 0 ? 0 : state.forged;
+      if (haltGone) return { pieces, status: 'idle', active: null, halt: null, forged };
+      return { ...state, pieces, forged, status: pieces.length === 0 && state.active === null ? 'idle' : state.status };
     }
     case 'restore':
       if (state !== EMPTY_FORGE_QUEUE || action.pieces.length === 0) return state;

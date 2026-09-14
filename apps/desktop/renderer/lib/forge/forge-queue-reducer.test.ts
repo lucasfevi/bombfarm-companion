@@ -111,6 +111,7 @@ describe('a run ending', () => {
     expect(next.status).toBe('running');
     expect(next.active).toBeNull();
     expect(next.pieces).toEqual([{ itemId: 'b', target: 8 }]);
+    expect(next.forged).toBe(1);
 
     const bInFlight = fold([{ kind: 'requested', itemId: 'b' }, { kind: 'started', itemId: 'b', runId: 'r2' }], next);
     const emptied = forgeQueueReducer(bInFlight, { kind: 'done', runId: 'r2', result: result('target', { itemId: 'b' }) });
@@ -145,6 +146,21 @@ describe('a run ending', () => {
     const settled = forgeQueueReducer(cancelled, { kind: 'done', runId: 'r1', result: result('target') });
     expect(settled.status).toBe('idle');
     expect(settled.pieces.map((piece) => piece.itemId)).toEqual(['b']);
+  });
+});
+
+describe('the forged count', () => {
+  it('counts pieces that reached their target, not ones dropped or stopped, and starts over once the queue empties', () => {
+    const one = forgeQueueReducer(aInFlight, { kind: 'done', runId: 'r1', result: result('target') });
+    const withC = forgeQueueReducer(one, { kind: 'add', itemId: 'c', target: 9 });
+    const bDropped = fold([{ kind: 'requested', itemId: 'b' }, { kind: 'refused', itemId: 'b', reason: 'bad_target' }], withC);
+    expect(bDropped.forged).toBe(1);
+    const cStopped = fold(
+      [{ kind: 'requested', itemId: 'c' }, { kind: 'started', itemId: 'c', runId: 'r3' }, { kind: 'done', runId: 'r3', result: result('budget', { itemId: 'c' }) }],
+      bDropped,
+    );
+    expect(cStopped.forged).toBe(1);
+    expect(forgeQueueReducer(cStopped, { kind: 'remove', itemId: 'c' }).forged).toBe(0);
   });
 });
 

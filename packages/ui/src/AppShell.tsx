@@ -13,6 +13,8 @@ import {
   appShellDragStripClass,
   appShellFlavorBadgeClass,
   appShellHeaderClass,
+  appShellBannerClass,
+  appShellBannerInnerClass,
   appShellMainClass,
   appShellMainInnerClass,
   appShellRootClass,
@@ -49,6 +51,8 @@ export interface AppShellProps extends PropsWithChildren {
   brand?: ReactNode;
   /** Right-hand header slot — e.g. the desktop's PT/EN `SegmentedToggle`. */
   actions?: ReactNode;
+  /** A band between the top bar and `<main>` — the desktop's forge queue. Absent renders nothing. */
+  banner?: ReactNode;
   /** Status-bar slots — absent ones render nothing (no empty boxes, no layout shift). */
   status?: ReactNode;
   /** Reserved for M4 pricing passes; renders nothing until a caller passes it. */
@@ -121,6 +125,7 @@ export function AppShell({
   onNavigate,
   brand,
   actions,
+  banner,
   status,
   progress,
   version,
@@ -182,6 +187,12 @@ export function AppShell({
           </div>
         ) : null}
       </header>
+
+      {banner ? (
+        <div data-testid="app-shell-banner" className={appShellBannerClass}>
+          <div className={appShellBannerInnerClass}>{banner}</div>
+        </div>
+      ) : null}
 
       <main ref={mainRef} className={appShellMainClass}>
         <div className={appShellMainInnerClass}>{children}</div>

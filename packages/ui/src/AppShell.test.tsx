@@ -148,6 +148,21 @@ describe('AppShell', () => {
     expect(out).not.toContain('data-testid="actions-slot"');
   });
 
+  it('draws the banner between the header and main, on the measure, and nothing at all without one', () => {
+    const out = html({
+      items: NAV_ITEMS,
+      banner: createElement('span', { 'data-testid': 'banner-slot' }, 'Forge queue'),
+      children: 'body',
+    });
+    const banner = out.indexOf('data-testid="app-shell-banner"');
+    expect(banner).toBeGreaterThan(out.indexOf('</header>'));
+    expect(banner).toBeLessThan(out.indexOf('<main'));
+    expect(out).toContain('data-testid="banner-slot"');
+    const measured = out.match(/class="[^"]*mx-auto[^"]*max-w-desktop[^"]*"/g) ?? [];
+    expect(measured, 'header bar, banner, main inner').toHaveLength(3);
+    expect(html({ items: NAV_ITEMS, children: 'body' })).not.toContain('data-testid="app-shell-banner"');
+  });
+
   it('produces no empty status-bar children when status/progress/version are all absent', () => {
     const out = html({ children: 'body' });
     expect(out).toMatch(/<footer[^>]*><\/footer>/);

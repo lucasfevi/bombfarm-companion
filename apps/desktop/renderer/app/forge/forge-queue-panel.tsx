@@ -2,26 +2,33 @@
 
 /**
  * The queued pieces on the Forge tab, in the order they will be forged, each with its target and
- * a way off the queue. The piece rolling stays — the footer's Cancel is how it stops — and a
- * piece the bag no longer holds is named by its id until the next account read drops it.
+ * a way off the queue, with the queue's own Start and Cancel under them. The piece rolling stays
+ * — Cancel is how it stops — and a piece the bag no longer holds is named by its id until the
+ * next account read drops it.
  */
+import type { AccountSource } from '@bombfarm/contracts';
 import { ItemIcon } from '@bombfarm/game-art';
 import { Button, Icon, Panel, PanelHeader, Tooltip, cn, mutedClass } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
 import type { ForgeQueueState } from '../../lib/forge/forge-queue-reducer';
 import type { ForgeQueueRow } from '../../lib/forge/forge-queue-view';
 import { forgeLevel, type ForgeLabels } from './forge-labels';
+import { ForgeQueueActions } from './forge-queue-actions';
 
 export function ForgeQueuePanel({
   queue,
   rows,
   labels,
   onRemove,
+  forgeWritesEnabled,
+  accountSource,
 }: {
   queue: ForgeQueueState;
   rows: readonly ForgeQueueRow[];
   labels: ForgeLabels;
   onRemove: (itemId: string) => void;
+  forgeWritesEnabled: boolean;
+  accountSource: AccountSource | null;
 }) {
   const t = useCopy();
   if (rows.length === 0) return null;
@@ -95,6 +102,13 @@ export function ForgeQueuePanel({
         </ol>
       </Tooltip.Provider>
       <p className={cn('m-0', mutedClass)}>{t.forgeQueuePanelCaption}</p>
+      <ForgeQueueActions
+        queue={queue}
+        rows={rows}
+        labels={labels}
+        forgeWritesEnabled={forgeWritesEnabled}
+        accountSource={accountSource}
+      />
     </Panel>
   );
 }
