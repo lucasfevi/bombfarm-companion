@@ -22,7 +22,7 @@ import {
   type PipelineFacts,
   type StatBreakdown,
 } from '@bombfarm/domain/stat-breakdown';
-import { TEAM_BUFF_ABILITY_IDS, teamAurasAroundHero, type TeamAuraSwitches } from '@bombfarm/domain/team-buffs';
+import { TEAM_AURA_SWITCH_IDS, teamAurasAroundHero, type TeamAuraSwitches } from '@bombfarm/domain/team-buffs';
 import type { Lang } from '../copy';
 import { ownAbilityRowsFor } from './abilities-auras-panel';
 
@@ -122,7 +122,7 @@ export function cardBadgesFor(
     badges.set(card, list);
   };
   const seats = teamAurasAroundHero(hero, switches);
-  for (const buffId of TEAM_BUFF_ABILITY_IDS) place(buffId, seats[buffId].on);
+  for (const auraId of TEAM_AURA_SWITCH_IDS) place(auraId, seats[auraId].on);
   for (const row of ownAbilityRowsFor(hero, phase)) {
     if (row.status === 'own') place(row.abilityId, true);
   }
@@ -191,7 +191,7 @@ function heroFigure(steps: readonly LedgerStep[]): number {
 function auraCell(key: SheetDisplayKey, steps: readonly LedgerStep[], auraOn: boolean): MatrixCell {
   const step = steps.find((candidate) => LEDGER_SOURCE_GROUP[candidate.source] === 'combat');
   if (step) return { kind: 'step', step };
-  const reached = TEAM_BUFF_ABILITY_IDS.some((buffId) => cardForAbility(buffId) === key);
+  const reached = TEAM_AURA_SWITCH_IDS.some((buffId) => cardForAbility(buffId) === key);
   if (!reached) return { kind: 'none' };
   return auraOn ? { kind: 'none' } : { kind: 'off' };
 }
@@ -205,7 +205,7 @@ export function matrixRowsFor(
   return SHEET_DISPLAY_KEYS.map((key) => {
     const breakdown = buildStatBreakdown(key, facts);
     const steps = breakdown.kind === 'ledger' ? breakdown.steps : [];
-    const auraOn = TEAM_BUFF_ABILITY_IDS.some((buffId) => cardForAbility(buffId) === key && seats[buffId].on);
+    const auraOn = TEAM_AURA_SWITCH_IDS.some((buffId) => cardForAbility(buffId) === key && seats[buffId].on);
     return {
       key,
       hero: {

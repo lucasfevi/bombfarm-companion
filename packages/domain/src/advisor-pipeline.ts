@@ -76,6 +76,12 @@ export type AdvisorPipelineInput = {
    * definition), a rotating board derives its own from the pool's uptimes. Absent reads as none.
    */
   fieldAllies?: number;
+  /**
+   * The rank the hero's own Passagem de Bastão pulse is priced at, at least — the cap rank while
+   * a per-hero screen's switch for it is on (`entryPulseRankFloor`). Absent reads as the hero's
+   * own rank alone.
+   */
+  entryPulseRankFloor?: number;
   houseIdx: number;
   houseLevel: number;
   /**
@@ -188,7 +194,8 @@ export type AdvisorPipelineResult = {
 
 /**
  * The hero's own Passagem de Bastão on its own screen: one carrier, its own stint, the same rule
- * the Farm board and the Optimizer price every carrier with (`passagemBastaoFieldPulse`). The
+ * the Farm board and the Optimizer price every carrier with (`passagemBastaoFieldPulse`), at the
+ * hero's own rank or the cap rank a switch asks for. The
  * other carriers' pulses are not counted here — a per-hero screen has no stint for them, the
  * rotating surfaces do — so this is the "own aura always on" half of the per-hero form and
  * nothing more.
@@ -317,7 +324,8 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   const { delta: pointDelta, adjusted, effective } = equippedResult;
   const field = fieldSeconds(effective, context);
   const uptime = (100 * field) / (field + rest);
-  const entryPulse = ownEntryPulse(abilities.passagem_bastao ?? 0, field, uptime / 100);
+  const entryPulseRank = Math.max(abilities.passagem_bastao ?? 0, input.entryPulseRankFloor ?? 0);
+  const entryPulse = ownEntryPulse(entryPulseRank, field, uptime / 100);
   const dps = equippedResult.dps * entryPulse.expectedMult;
   const active = equippedResult.active * entryPulse.expectedMult;
   const predHit = equippedResult.hit;

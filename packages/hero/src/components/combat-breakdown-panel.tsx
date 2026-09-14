@@ -4,7 +4,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { BreakdownStatId, PipelineFacts } from '@bombfarm/domain/stat-breakdown';
 import type { TeamAuraSwitches } from '@bombfarm/domain/team-buffs';
-import { Panel, Tooltip, cn, numberFormatterFor, panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui';
+import { InfoTip, Panel, Tooltip, cn, numberFormatterFor, panelHClass, panelTitleClass } from '@bombfarm/ui';
 import { heroCopyFor, type HeroCopy, type Lang, type StatPanelCopy } from '../copy';
 import { derivedLabel, formatBreakdownValue, isSheetKey, rowValue } from '../model/breakdown-labels';
 import {
@@ -94,13 +94,13 @@ export function CombatBreakdownPanel({
 
   return (
     <Panel className="@container min-w-0" data-testid="combat-breakdown">
-      <div className={panelHClass}>
-        <h2 className={panelTitleClass}>{t.panelEffective}</h2>
-      </div>
-      <p className={tipClass}>
-        {t.effectiveTip} {copy.heroDetailBreakdownHint}
-      </p>
       <Tooltip.Provider delay={200} closeDelay={100}>
+        <div className={panelHClass}>
+          <span className="flex items-center gap-1.5">
+            <h2 className={panelTitleClass}>{t.panelEffective}</h2>
+            <InfoTip label={t.panelEffective} tip={`${t.effectiveTip} ${copy.heroDetailBreakdownHint}`} />
+          </span>
+        </div>
         <div ref={rowsRef} className="relative flex flex-col gap-3 @min-[820px]:gap-7" data-testid="breakdown-pipeline">
           <CombatBreakdownWires containerRef={rowsRef} cards={cardElements} lit={lit} />
           {COMBAT_BREAKDOWN_ROWS.map((row) => (

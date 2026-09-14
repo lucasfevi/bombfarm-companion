@@ -129,8 +129,6 @@ export const heroPtBR: HeroCopy = {
   heroDetailAuraUnitPackPerAlly: "+{value}% de dano por aliado",
   heroDetailAuraUnitPulse: "+{value}% de dano do time ao entrar",
   heroDetailAurasNoOwnAbilities: "Este herói não tem nenhuma habilidade própria em vigor.",
-  heroDetailAurasDrainNote:
-    "As reduções de gasto somam: −{own}% própria e −{team}% do time dão −{total}%.",
 
   heroDetailBreakdownHint: "Passe o mouse ou foque um valor para ver a fórmula por trás dele e o que ele lê.",
   heroDetailBreakdownRowSheet: "Ficha",

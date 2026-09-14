@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef } from 'react';
-import { Button, Panel, Tooltip, panelHClass, panelTitleClass } from '@bombfarm/ui';
+import { Button, InfoTip, Panel, Tooltip, panelHClass, panelTitleClass } from '@bombfarm/ui';
 import type { Lang } from '@bombfarm/hero/copy';
 import { buildTeamPlanInput, countOptimizeScopeHeroes, isFarmObjectiveUnavailable } from '../core';
 import { resolveTeamPlanTargetPhase } from '../core/plan-lifecycle';
@@ -16,7 +16,6 @@ import { ForgeFloorField } from './forge-floor-field';
 import { IgnoreCrowdingField } from './ignore-crowding-field';
 import { ObjectiveField } from './objective-field';
 import { PhaseField } from './phase-field';
-import { InfoTip } from './setup-field';
 
 export function TeamPlanToolbar({
   t,

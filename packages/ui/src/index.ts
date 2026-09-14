@@ -108,6 +108,7 @@ export type {
 } from './tabs';
 export { FieldRequired, type FieldRequiredProps } from './field-required';
 export { HelpTip, type HelpTipProps } from './help-tip';
+export { InfoTip } from './info-tip';
 export { GlossaryTerm, type GlossaryTermProps } from './glossary-term';
 export { Tooltip, TooltipStatusBody } from './tooltip';
 export type {

@@ -80,7 +80,7 @@ export const statPanelPtBR: StatPanelCopy = {
   previewRespecNote: 'Aplicado no planner — use um reset de verdade no jogo para bater com essa build.',
   panelEffective: 'Atributos efetivos',
   effectiveTip:
-    'Inclui equipamento, pontos, árvore, habilidades e as auras de time ligadas abaixo. Passagem de Bastão conta o pulso do próprio herói no tempo em campo dele; os pulsos dos outros portadores entram nas telas Farm e Otimizador. Matilha conta os heróis em campo ao lado deste.',
+    'Inclui equipamento, pontos, árvore, habilidades e as auras de time ligadas abaixo. Matilha conta os heróis em campo ao lado deste.',
   effectiveMitF: 'Fator de mitigação',
   effectiveDmg: 'Multiplicador de dano',
   effectiveHit: 'Hit',

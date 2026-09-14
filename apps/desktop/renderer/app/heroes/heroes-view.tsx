@@ -73,10 +73,10 @@ import type { SheetKey } from '@bombfarm/domain/planner-constants';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { teamAuraDpsDeltas } from '@bombfarm/domain/team-aura-deltas';
 import {
+  TEAM_AURA_SWITCH_IDS,
   noTeamAuraSwitches,
-  zeroTeamBuffs,
   type TeamAuraSwitches,
-  type TeamBuffId,
+  type TeamAuraId,
 } from '@bombfarm/domain/team-buffs';
 import { accountAroundHero, type AccountBlock } from '../../lib/account/account-shared';
 import { useCopy, useLocale } from '../../lib/copy';
@@ -191,7 +191,7 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   // every visit, like the phase override: a what-if that outlived the screen would inflate every
   // figure here with no control in sight to explain it.
   const [auraSwitches, setAuraSwitches] = useState<TeamAuraSwitches>(noTeamAuraSwitches);
-  const onAuraSwitch = useCallback((buffId: TeamBuffId, enabled: boolean) => {
+  const onAuraSwitch = useCallback((buffId: TeamAuraId, enabled: boolean) => {
     setAuraSwitches((current) =>
       current[buffId] === enabled ? current : { ...current, [buffId]: enabled },
     );
@@ -473,8 +473,8 @@ function HeroDetailTabs({
   onOverridePhase: (phase: number) => void;
   onClearOverride: () => void;
   auraSwitches: TeamAuraSwitches;
-  auraDeltas: Record<TeamBuffId, number>;
-  onAuraSwitch: (buffId: TeamBuffId, on: boolean) => void;
+  auraDeltas: Record<TeamAuraId, number>;
+  onAuraSwitch: (buffId: TeamAuraId, on: boolean) => void;
   rankMode: RankMode;
   onRankMode: (next: RankMode) => void;
   statLabel: (key: SheetKey) => string;
@@ -621,7 +621,9 @@ function FiguresNotice({ figures }: { figures: HeroFigures }) {
  *  on every render rather than a fresh one that re-renders it. */
 const NO_ABILITY_GAINS: readonly AbilityGain[] = Object.freeze([]);
 
-const NO_AURA_DELTAS: Record<TeamBuffId, number> = Object.freeze(zeroTeamBuffs());
+const NO_AURA_DELTAS: Record<TeamAuraId, number> = Object.freeze(
+  Object.fromEntries(TEAM_AURA_SWITCH_IDS.map((auraId) => [auraId, 0])) as Record<TeamAuraId, number>,
+);
 
 /**
  * What the per-statistic breakdown reads: one hero, the account it shares, and the pipeline run

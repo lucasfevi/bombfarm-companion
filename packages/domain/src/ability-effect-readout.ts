@@ -1,5 +1,11 @@
 import { ABILITIES, abilityMods, type AbilityEffect } from './model';
-import { TEAM_BUFF_ABILITY_IDS, TEAM_BUFF_PER_LEVEL, type TeamBuffId } from './team-buffs';
+import {
+  TEAM_AURA_SWITCH_IDS,
+  TEAM_BUFF_ABILITY_IDS,
+  TEAM_BUFF_PER_LEVEL,
+  type TeamAuraId,
+  type TeamBuffId,
+} from './team-buffs';
 
 /**
  * An ability's effect as the combat model prices it, in the unit a reader can check against the
@@ -27,9 +33,15 @@ export type AbilityEffectReadout =
 
 const ABILITY_BY_ID = new Map(ABILITIES.map((ability) => [ability.id, ability]));
 const TEAM_BUFF_IDS = new Set<string>(TEAM_BUFF_ABILITY_IDS);
+const TEAM_AURA_IDS = new Set<string>(TEAM_AURA_SWITCH_IDS);
 
 export function isTeamBuffId(abilityId: string): abilityId is TeamBuffId {
   return TEAM_BUFF_IDS.has(abilityId);
+}
+
+/** The standing five plus Passagem de Bastão — every aura a per-hero screen keeps behind a switch. */
+export function isTeamAuraId(abilityId: string): abilityId is TeamAuraId {
+  return TEAM_AURA_IDS.has(abilityId);
 }
 
 function readoutKind(effect: AbilityEffect): AbilityEffectReadout['kind'] {
@@ -63,8 +75,8 @@ function readoutKind(effect: AbilityEffect): AbilityEffectReadout['kind'] {
 }
 
 /** A team aura at `amount` aura units (perLevel × rank, or a capped field total). */
-export function teamAuraReadout(buffId: TeamBuffId, amount: number): AbilityEffectReadout {
-  const definition = ABILITY_BY_ID.get(buffId);
+export function teamAuraReadout(auraId: TeamAuraId, amount: number): AbilityEffectReadout {
+  const definition = ABILITY_BY_ID.get(auraId);
   const kind = definition ? readoutKind(definition.effect) : 'none';
   return kind === 'none' ? { kind } : { kind, value: amount };
 }

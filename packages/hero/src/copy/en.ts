@@ -128,8 +128,6 @@ export const heroEn = {
   heroDetailAuraUnitPackPerAlly: "+{value}% dmg per ally",
   heroDetailAuraUnitPulse: "+{value}% team dmg on entering",
   heroDetailAurasNoOwnAbilities: "This hero has no ability of its own in force.",
-  heroDetailAurasDrainNote:
-    "Drain reductions add: −{own}% own and −{team}% team make −{total}%.",
 
   heroDetailBreakdownHint: "Hover or focus a figure for the formula behind it and what it reads.",
   heroDetailBreakdownRowSheet: "Sheet",

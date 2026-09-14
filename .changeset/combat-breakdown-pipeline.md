@@ -2,7 +2,9 @@
 "@bombfarm/hero": minor
 "@bombfarm/web": minor
 "@bombfarm/desktop": minor
-"@bombfarm/domain": patch
+"@bombfarm/domain": minor
+"@bombfarm/ui": minor
+"@bombfarm/team-plan": patch
 ---
 
 The Effective stats panel on the Combat tab (web planner) and the Combat stage (desktop Heroes
@@ -32,3 +34,14 @@ sheet. The panel's own width picks the layout: the pipeline at 820px and up, the
 stacked one per row under the same four labels below that. Average hit joins the derived
 breakdown as its own figure (hit × critical factor), and the Active DPS formula reads it rather
 than a second damage multiplier — no value moves.
+
+Baton Pass is now the sixth team aura behind a switch in the Abilities & auras section, beside
+the five standing ones: the hero's own rank counts on its own entry pulse and cannot be switched
+off; for a hero without it the switch prices that pulse at the field-wide cap (+80% for the
+window), whoever would carry it, and the row says what flipping it does to sustained DPS like the
+others. It leaves the own-abilities list. The drain-reductions note under the section is gone.
+
+Both panels on the Combat tab and stage now carry their explanation behind an info glyph beside
+the title, the way the Optimizer's setup bar does, instead of an intro paragraph; the Effective
+stats explanation no longer describes how Baton Pass is counted. The info glyph is a design-system
+primitive now, `InfoTip`, and the Optimizer draws it from there.

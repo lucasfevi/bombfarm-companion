@@ -51,6 +51,9 @@ export type AccountShared = {
    * uptimes. Absent reads as none.
    */
   fieldAllies?: number;
+  /** The rank the hero's own Passagem de Bastão pulse is priced at, at least — per call like
+   *  `fieldAllies`: the cap rank while a per-hero screen's switch is on, else absent. */
+  entryPulseRankFloor?: number;
   context: HeroContext;
   /**
    * HOUSE RECOVERY slots (`casa.slots`) — how many heroes the House refills at a time. NOT the

@@ -1,15 +1,14 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Panel, Switch, cn, formatNumber, panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui';
+import { InfoTip, Panel, Switch, Tooltip, cn, formatNumber, panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui';
 import type { AbilityEffectReadout } from '@bombfarm/domain/ability-effect-readout';
 import { abilityEffectText, abilityName } from '@bombfarm/domain/game-labels';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import type { TeamAuraSwitches, TeamBuffId } from '@bombfarm/domain/team-buffs';
+import type { TeamAuraId, TeamAuraSwitches } from '@bombfarm/domain/team-buffs';
 import { AbilityIcon } from '@bombfarm/game-art';
 import { heroCopyFor, sub, type HeroCopy, type Lang } from '../copy';
 import {
-  drainNoteFor,
   ownAbilityRowsFor,
   teamAuraRowsFor,
   type OwnAbilityStatus,
@@ -93,21 +92,24 @@ export function AbilitiesAurasPanel({
   hero: Pick<HeroRecord, 'abilities'>;
   phase: number;
   switches: TeamAuraSwitches;
-  deltas: Record<TeamBuffId, number>;
-  onSwitch: (buffId: TeamBuffId, enabled: boolean) => void;
+  deltas: Record<TeamAuraId, number>;
+  onSwitch: (buffId: TeamAuraId, enabled: boolean) => void;
   lang: Lang;
 }) {
   const t = heroCopyFor(lang);
   const auraRows = useMemo(() => teamAuraRowsFor(hero, switches, deltas), [hero, switches, deltas]);
   const ownRows = useMemo(() => ownAbilityRowsFor(hero, phase), [hero, phase]);
-  const drain = useMemo(() => drainNoteFor(hero, switches), [hero, switches]);
 
   return (
     <Panel data-testid="abilities-auras">
-      <div className={panelHClass}>
-        <h2 className={panelTitleClass}>{t.heroDetailAurasTitle}</h2>
-      </div>
-      <p className={tipClass}>{t.heroDetailAurasTip}</p>
+      <Tooltip.Provider delay={200} closeDelay={100}>
+        <div className={panelHClass}>
+          <span className="flex items-center gap-1.5">
+            <h2 className={panelTitleClass}>{t.heroDetailAurasTitle}</h2>
+            <InfoTip label={t.heroDetailAurasTitle} tip={t.heroDetailAurasTip} />
+          </span>
+        </div>
+      </Tooltip.Provider>
 
       <h3 className={groupHeadClass}>{t.heroDetailAurasTeamGroup}</h3>
       <div className={cn(rowClass, 'hidden border-t-0 py-0 sm:grid')} aria-hidden>
@@ -191,13 +193,6 @@ export function AbilitiesAurasPanel({
           ))}
         </ul>
       )}
-      <p className={cn(tipClass, 'mt-2 mb-0')}>
-        {sub(t.heroDetailAurasDrainNote, {
-          own: formatNumber(drain.own, lang, 0),
-          team: formatNumber(drain.team, lang, 0),
-          total: formatNumber(drain.total, lang, 0),
-        })}
-      </p>
     </Panel>
   );
 }

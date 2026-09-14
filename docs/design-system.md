@@ -65,6 +65,7 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 | `Tabs` | Motion (Animate UI animate/tabs) | compound `Root`/`List`/`Tab`/`Panels`/`Panel`; horizontal slide + auto-height; tab `status` tip via Tooltip; `MotionConfig reducedMotion="user"` — see [`animation.md`](animation.md) | inline Tailwind |
 | `FieldRequired` | `<span>` | always-mounted “required” badge; `show` toggles `invisible` (no CLS) | `panel-field.recipe.ts` (`reqClass`) |
 | `HelpTip` | Base UI `Popover` | always-mounted `?` help; `show` / `active` for status-linked tips | `help-popover.recipe.ts` |
+| `InfoTip` | DS `Tooltip` | bare info glyph beside a panel title or field label carrying its explanation on hover/focus, in place of an intro paragraph — promoted from the optimizer setup bar (2026-09-14) | inline Tailwind |
 | `Tooltip` | `@base-ui/react/tooltip` + Motion | compound `Provider`/`Root`/`Trigger`/`Portal`/`Positioner`/`Popup`/`Arrow`/`StatusBody`; Animate UI spring scale enter/exit — see [`animation.md`](animation.md) | `tooltip.recipe.ts` |
 | `DataTable` | `<table>` compound | `Root` (`scrollable` + optional `maxRows`/`minRows`), `Table`/`Head`/`Body`/`Row`/`Header`/`Cell`/`RowHeader`/`Caption`; sticky heads `z-20` + `border-separate`; `Header sortable` shows stacked ▲▼ when idle, single chevron when active | `data-table.recipe.ts` |
 | `GlossaryTerm` | DS `Tooltip` | inline dotted-underline formula token + tip | `glossary-term.recipe.ts` + `tooltip.recipe.ts` |

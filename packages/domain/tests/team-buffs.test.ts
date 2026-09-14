@@ -14,9 +14,12 @@ import {
 } from '@bombfarm/domain/derive';
 import { abilityMods } from '@bombfarm/domain/model';
 import {
+  PASSAGEM_BASTAO_RANK_CAP,
+  TEAM_AURA_SWITCH_IDS,
   TEAM_BUFF_ABILITY_IDS,
   TEAM_BUFF_CAP,
   computeTeamBuffsAroundHero,
+  entryPulseRankFloor,
   computeTeamBuffsFromDeployed,
   noTeamAuraSwitches,
   substituteHeroAbilities,
@@ -194,9 +197,10 @@ describe('substituteHeroAbilities', () => {
 describe('teamAurasAroundHero — every team aura from one hero’s seat', () => {
   it('lists every aura the game has, carried or not, so a missing aura still shows what it would be worth', () => {
     const around = teamAurasAroundHero(hero('me', { grito_guerra: 5 }), noTeamAuraSwitches());
-    expect(Object.keys(around).sort()).toEqual([...TEAM_BUFF_ABILITY_IDS].sort());
+    expect(Object.keys(around).sort()).toEqual([...TEAM_AURA_SWITCH_IDS].sort());
     expect(around.grito_guerra).toEqual({ own: 5, cap: 20, carried: true, on: true, pricedAt: 5 });
     expect(around.folego_mineiro).toEqual({ own: 0, cap: 20, carried: false, on: false, pricedAt: 0 });
+    expect(around.passagem_bastao).toEqual({ own: 0, cap: 80, carried: false, on: false, pricedAt: 0 });
   });
 
   it('the roster is not an input: two seats with the same abilities read the same, whoever else exists', () => {
@@ -225,8 +229,19 @@ describe('teamAurasAroundHero — every team aura from one hero’s seat', () =>
   });
 
   it('noTeamAuraSwitches is one entry per modelled aura, all off', () => {
-    expect(Object.keys(noTeamAuraSwitches()).sort()).toEqual([...TEAM_BUFF_ABILITY_IDS].sort());
+    expect(Object.keys(noTeamAuraSwitches()).sort()).toEqual([...TEAM_AURA_SWITCH_IDS].sort());
     expect(Object.values(noTeamAuraSwitches()).every((on) => on === false)).toBe(true);
+  });
+
+  it('Baton Pass sits behind a switch too: 4% per rank on the seat, the cap rank floor on the pulse while it is on', () => {
+    const off = teamAurasAroundHero(hero('me', { passagem_bastao: 10 }), noTeamAuraSwitches());
+    expect(off.passagem_bastao).toEqual({ own: 40, cap: 80, carried: true, on: true, pricedAt: 40 });
+    const switches = { ...noTeamAuraSwitches(), passagem_bastao: true };
+    expect(teamAurasAroundHero(hero('me', {}), switches).passagem_bastao).toEqual({ own: 0, cap: 80, carried: false, on: true, pricedAt: 80 });
+    expect(entryPulseRankFloor(noTeamAuraSwitches())).toBe(0);
+    expect(entryPulseRankFloor(switches)).toBe(PASSAGEM_BASTAO_RANK_CAP);
+    expect(PASSAGEM_BASTAO_RANK_CAP).toBe(20);
+    expect(computeTeamBuffsAroundHero(hero('me', {}), switches)).toEqual(zeroTeamBuffs());
   });
 });
 

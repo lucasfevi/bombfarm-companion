@@ -81,7 +81,7 @@ export const statPanelEn = {
   previewRespecNote: 'Applied on the planner — spend a real in-game reset to match this build.',
   panelEffective: 'Effective stats',
   effectiveTip:
-    'Includes gear, points, skill tree, abilities and the team auras switched on below. Baton Pass counts this hero’s own pulse over its own stint; the other carriers’ pulses are counted on the Farm and Optimizer screens. Pack counts the heroes deployed beside this one.',
+    'Includes gear, points, skill tree, abilities and the team auras switched on below. Pack counts the heroes deployed beside this one.',
   effectiveMitF: 'Mitigation factor',
   effectiveDmg: 'Damage multiplier',
   effectiveHit: 'Hit',

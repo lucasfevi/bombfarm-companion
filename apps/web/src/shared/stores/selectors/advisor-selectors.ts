@@ -4,7 +4,7 @@ import {
   type AdvisorPipelineResult,
 } from '@bombfarm/domain/advisor-pipeline';
 import { teamAuraDpsDeltas } from '@bombfarm/domain/team-aura-deltas';
-import { substituteHeroAbilities, type TeamBuffId } from '@bombfarm/domain/team-buffs';
+import { entryPulseRankFloor, substituteHeroAbilities, type TeamAuraId } from '@bombfarm/domain/team-buffs';
 import {
   selectActiveHeroFieldAllies,
   selectActiveHeroTeamBuffs,
@@ -21,7 +21,7 @@ import type { PlannerStore } from '@/shared/stores/planner-store';
  */
 let advisorPipelineComputeCount = 0;
 let cache: { deps: readonly unknown[]; result: AdvisorPipelineResult } | null = null;
-let auraDeltasCache: { deps: readonly unknown[]; result: Record<TeamBuffId, number> } | null = null;
+let auraDeltasCache: { deps: readonly unknown[]; result: Record<TeamAuraId, number> } | null = null;
 
 export function resetAdvisorPipelineCache(): void {
   cache = null;
@@ -61,6 +61,8 @@ export function readAdvisorDepTuple(state: PlannerStore): readonly unknown[] {
     selectActiveHeroTeamBuffs(state),
     // The deployed heroes beside the active one — Matilha's allies (`fieldAlliesAroundHero`).
     selectActiveHeroFieldAllies(state),
+    // Passagem de Bastão's switch reaches the pipeline as the rank floor of the hero's own pulse.
+    state.teamAuraSwitches.passagem_bastao,
     // The active hero's own team-aura ranks are folded into that total at combine time
     // (PR #139's substitution, `substituteHeroAbilities`), not by `abilityMods` any more — so
     // a change to EITHER the roster (the active hero's last-persisted ranks) or `activeHeroId`
@@ -128,6 +130,7 @@ function advisorInput(state: PlannerStore): AdvisorPipelineInput {
     treeLuckFlatPct: state.treeLuckFlatPct,
     teamBuffs: previewTeamBuffs(state),
     fieldAllies: selectActiveHeroFieldAllies(state),
+    entryPulseRankFloor: entryPulseRankFloor(state.teamAuraSwitches),
     houseIdx: state.houseIdx,
     houseLevel: state.houseLevel,
     houseCycleSecs: state.houseCycleSecs,
@@ -158,7 +161,7 @@ export function selectAdvisorPipeline(state: PlannerStore): AdvisorPipelineResul
  * aura, cached on the same dependency tuple as the pipeline itself, and only computed while
  * something (the Combat tab's aura section) actually reads it.
  */
-export function selectTeamAuraDpsDeltas(state: PlannerStore): Record<TeamBuffId, number> {
+export function selectTeamAuraDpsDeltas(state: PlannerStore): Record<TeamAuraId, number> {
   const deps = readAdvisorDepTuple(state);
   if (auraDeltasCache && depsEqual(auraDeltasCache.deps, deps)) {
     return auraDeltasCache.result;

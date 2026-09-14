@@ -106,6 +106,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'GlossaryTerm',
   'GlossedText',
   'HelpTip',
+  'InfoTip',
   'Icon',
   'iconSources',
   'isIconName',

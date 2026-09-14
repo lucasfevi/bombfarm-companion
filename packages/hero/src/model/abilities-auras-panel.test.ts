@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { wikiPhaseLine } from '@bombfarm/domain/phase-wiki';
-import { TEAM_BUFF_ABILITY_IDS, TEAM_BUFF_CAP, noTeamAuraSwitches, zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
-import { drainNoteFor, ownAbilityRowsFor, teamAuraRowsFor } from './abilities-auras-panel';
+import { TEAM_AURA_SWITCH_IDS, TEAM_BUFF_CAP, noTeamAuraSwitches, zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
+import { ownAbilityRowsFor, teamAuraRowsFor } from './abilities-auras-panel';
 
-const NO_DELTAS = zeroTeamBuffs();
+const NO_DELTAS = { ...zeroTeamBuffs(), passagem_bastao: 0 };
 
 function phaseWhere(gate: boolean): number {
   for (let phase = 1; phase <= 600; phase++) {
@@ -16,12 +16,28 @@ function phaseWhere(gate: boolean): number {
 describe('teamAuraRowsFor', () => {
   it('lists every team aura the game has, for a hero carrying none', () => {
     const rows = teamAuraRowsFor({ abilities: {} }, noTeamAuraSwitches(), NO_DELTAS);
-    expect(rows.map((row) => row.buffId)).toEqual([...TEAM_BUFF_ABILITY_IDS]);
+    expect(rows.map((row) => row.buffId)).toEqual([...TEAM_AURA_SWITCH_IDS]);
     for (const row of rows) {
       expect(row.carried).toBe(false);
       expect(row.on).toBe(false);
       expect(row.pricedAt).toBeNull();
     }
+  });
+
+  it('Baton Pass is the sixth switchable aura: the hero’s own pulse at its rank, or the cap when switched on', () => {
+    const own = teamAuraRowsFor({ abilities: { passagem_bastao: 10 } }, noTeamAuraSwitches(), NO_DELTAS);
+    expect(own.find((row) => row.buffId === 'passagem_bastao')).toMatchObject({
+      carried: true,
+      on: true,
+      pricedAt: { kind: 'teamPulseDmgPct', value: 40 },
+      cap: { kind: 'teamPulseDmgPct', value: 80 },
+    });
+    const switched = teamAuraRowsFor({ abilities: {} }, { ...noTeamAuraSwitches(), passagem_bastao: true }, NO_DELTAS);
+    expect(switched.find((row) => row.buffId === 'passagem_bastao')).toMatchObject({
+      carried: false,
+      on: true,
+      pricedAt: { kind: 'teamPulseDmgPct', value: 80 },
+    });
   });
 
   it('a carried aura is on at the hero’s rank and marked as the hero’s own', () => {
@@ -69,7 +85,6 @@ describe('ownAbilityRowsFor', () => {
       'explosao_ampla',
       'detonacao_dupla',
       'contra_relogio',
-      'passagem_bastao',
       'matilha',
       'caca_hero',
     ]);
@@ -100,30 +115,12 @@ describe('ownAbilityRowsFor', () => {
     });
   });
 
-  it("Matilha and Passagem de Bastão are the hero's own, read in their own units", () => {
+  it("Matilha is the hero's own, read in its own unit; Passagem de Bastão is an aura row, not an own one", () => {
     const rows = ownAbilityRowsFor({ abilities }, phaseWhere(false));
     expect(rows.find((row) => row.abilityId === 'matilha')).toMatchObject({
       effect: { kind: 'packDmgPctPerAlly', value: 3 },
       status: 'own',
     });
-    expect(rows.find((row) => row.abilityId === 'passagem_bastao')).toMatchObject({
-      effect: { kind: 'teamPulseDmgPct', value: 40 },
-      status: 'own',
-    });
-  });
-});
-
-describe('drainNoteFor', () => {
-  it('adds the hero’s own reduction to the team’s: −12% own and −20% team make −32%', () => {
-    const switches = { ...noTeamAuraSwitches(), folego_mineiro: true };
-    expect(drainNoteFor({ abilities: { bateria_extra: 12 } }, switches)).toEqual({ own: 12, team: 20, total: 32 });
-  });
-
-  it('reads the team half at the hero’s own Fôlego rank while its switch is off', () => {
-    expect(drainNoteFor({ abilities: { folego_mineiro: 7 } }, noTeamAuraSwitches())).toEqual({ own: 0, team: 7, total: 7 });
-  });
-
-  it('is all zeros for a hero with neither', () => {
-    expect(drainNoteFor({ abilities: {} }, noTeamAuraSwitches())).toEqual({ own: 0, team: 0, total: 0 });
+    expect(rows.find((row) => row.abilityId === 'passagem_bastao')).toBeUndefined();
   });
 });

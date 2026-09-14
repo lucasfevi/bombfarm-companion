@@ -5,12 +5,12 @@
  * hero's seat, `teamAuraDpsDeltas` what flipping it would do, and `ownAbilityReadout` reads the
  * model's own arithmetic back. What lives here is the judgements the panel would otherwise take
  * inside JSX: which auras carry a switch, what the delta column is saying, which of the hero's
- * own abilities are in force on this phase, and how the two drain reductions add.
+ * own abilities are in force on this phase.
  */
 import {
   ownAbilityReadout,
   teamAuraReadout,
-  isTeamBuffId,
+  isTeamAuraId,
   type AbilityEffectReadout,
 } from '@bombfarm/domain/ability-effect-readout';
 import { combineTeamAuraPct } from '@bombfarm/domain/derive';
@@ -18,14 +18,14 @@ import { heroAbilityIconEntries } from '@bombfarm/domain/hero-abilities';
 import { wikiPhaseLine } from '@bombfarm/domain/phase-wiki';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import {
-  TEAM_BUFF_ABILITY_IDS,
+  TEAM_AURA_SWITCH_IDS,
   teamAurasAroundHero,
   type TeamAuraSwitches,
-  type TeamBuffId,
+  type TeamAuraId,
 } from '@bombfarm/domain/team-buffs';
 
 export type TeamAuraRow = {
-  readonly buffId: TeamBuffId;
+  readonly buffId: TeamAuraId;
   /** The hero's own ability: on at the hero's rank, and no switch to turn it off. */
   readonly carried: boolean;
   readonly on: boolean;
@@ -39,10 +39,10 @@ export type TeamAuraRow = {
 export function teamAuraRowsFor(
   hero: Pick<HeroRecord, 'abilities'>,
   switches: TeamAuraSwitches,
-  deltas: Record<TeamBuffId, number>,
+  deltas: Record<TeamAuraId, number>,
 ): TeamAuraRow[] {
   const around = teamAurasAroundHero(hero, switches);
-  return TEAM_BUFF_ABILITY_IDS.map((buffId) => {
+  return TEAM_AURA_SWITCH_IDS.map((buffId) => {
     const seat = around[buffId];
     return {
       buffId,
@@ -81,24 +81,9 @@ function ownAbilityStatus(effect: AbilityEffectReadout, gatePhase: boolean): Own
 export function ownAbilityRowsFor(hero: Pick<HeroRecord, 'abilities'>, phase: number): OwnAbilityRow[] {
   const gatePhase = wikiPhaseLine(phase)?.gate === true;
   return heroAbilityIconEntries(hero.abilities)
-    .filter((entry) => entry.level > 0 && !isTeamBuffId(entry.id))
+    .filter((entry) => entry.level > 0 && !isTeamAuraId(entry.id))
     .map((entry) => {
       const effect = ownAbilityReadout(entry.id, entry.level);
       return { abilityId: entry.id, rank: entry.level, effect, status: ownAbilityStatus(effect, gatePhase) };
     });
-}
-
-export type DrainNote = { readonly own: number; readonly team: number; readonly total: number };
-
-/**
- * The two drain reductions and their sum, in percent: Bateria Extra's on the hero and Fôlego's
- * on the field add, so −12% own and −20% team make −32% — a reader who sees the two as one
- * thing would otherwise expect −30% or −29%.
- */
-export function drainNoteFor(hero: Pick<HeroRecord, 'abilities'>, switches: TeamAuraSwitches): DrainNote {
-  const own = ownAbilityReadout('bateria_extra', hero.abilities.bateria_extra ?? 0);
-  const folego = teamAurasAroundHero(hero, switches).folego_mineiro;
-  const ownPct = own.kind === 'drainPct' ? own.value : 0;
-  const teamPct = folego.on ? combineTeamAuraPct(0, folego.pricedAt, folego.cap) : 0;
-  return { own: ownPct, team: teamPct, total: ownPct + teamPct };
 }

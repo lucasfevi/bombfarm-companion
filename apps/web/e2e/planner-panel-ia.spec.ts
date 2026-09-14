@@ -66,15 +66,16 @@ test.describe('planner tabs IA (PTI)', () => {
     await page.keyboard.type('Hard 1-1');
     await page.getByRole('option', { name: 'Hard 1-1 (#151)' }).click();
     await expect(page.getByRole('listbox')).toHaveCount(0);
-    await expect(stage.getByText(/^Phase 151$/)).toBeVisible();
-    await expect(stage.getByText(/different phase than your Farm screen/i)).toBeVisible();
+    // The phase panel is the only place the stage names its phase now — the hero panel that
+    // restated it is gone.
+    await expect(stage.getByRole('combobox', { name: /which phase these numbers/i })).toContainText('#151');
     expect(await hit.textContent()).not.toBe(hitBefore);
 
     const back = stage.getByRole('button', { name: /^Back to your current phase$/i });
     await expect(back).toBeEnabled();
     await back.click();
     await expect(back).toBeDisabled();
-    await expect(stage.getByText(/^Phase 151$/)).toHaveCount(0);
+    await expect(stage.getByRole('combobox', { name: /which phase these numbers/i })).not.toContainText('#151');
     expect(await hit.textContent()).toBe(hitBefore);
   });
 
