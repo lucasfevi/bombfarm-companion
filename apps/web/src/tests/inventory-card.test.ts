@@ -165,7 +165,7 @@ describe('the front page inventory card', () => {
         expect(body(html)).not.toContain(strings.inventoryGroupOther);
         expect(holdings.footnote).toEqual(expect.stringContaining(strings.marketPricesOldest.split('{')[0]));
         expect(footer(html)).toBe(
-          `${sub(strings.accountHoldingsInventoryCoverage, {
+          `${sub(strings.homeCardInventoryCoverage, {
             priced: holdings.inventory.priced,
             eligible: holdings.inventory.eligible,
           })} · ${holdings.footnote}`,
@@ -191,7 +191,7 @@ describe('the front page inventory card', () => {
       expect(html).not.toContain('R$');
       expect(slots(html, 'home-inventory-count')).toEqual(['137', '2', '6', '70', '4', '2']);
       expect(footer(html)).toBe(
-        sub(strings.accountHoldingsInventoryCoverage, {
+        sub(strings.homeCardInventoryCoverage, {
           priced: holdings.inventory.priced,
           eligible: holdings.inventory.eligible,
         }),
@@ -213,7 +213,7 @@ describe('the front page inventory card', () => {
       formatMoney(holdings.inventory.amount, 'en', holdings.currency),
     );
     expect(footer(html)).toBe(
-      sub(STRINGS.en.accountHoldingsInventoryCoverage, {
+      sub(STRINGS.en.homeCardInventoryCoverage, {
         priced: holdings.inventory.priced,
         eligible: holdings.inventory.eligible,
       }),

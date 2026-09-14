@@ -74,7 +74,7 @@ export function HomeSectionCard({
       >
         {needs ? <HomeCardOutline kind={section} /> : children}
       </div>
-      <div className={mutedClass} data-testid="home-card-footer">
+      <div className={cn(mutedClass, 'pt-2')} data-testid="home-card-footer">
         {needs && firstVisit ? null : footer}
       </div>
     </article>

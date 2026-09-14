@@ -1,7 +1,8 @@
 'use client';
 
 import { ITEM_KINDS, type ItemKind } from '@bombfarm/domain/inventory-view';
-import { Bar } from '@bombfarm/ui';
+import type { DropRateId } from '@bombfarm/domain/phase-wiki';
+import { DropIcon, ItemIcon } from '@bombfarm/game-art';
 import { useAccountHoldings } from '@/features/account';
 import { useAppLang } from '@/shared/context/app-lang';
 import { useMarketSnapshot } from '@/shared/hooks/use-market-snapshot';
@@ -18,6 +19,17 @@ const GROUP_LABEL_KEY = {
   chest: 'inventoryGroupChest',
 } as const satisfies Record<Exclude<ItemKind, 'other'>, keyof Strings>;
 
+const DROP_ICON_ID = {
+  gem: 'gem',
+  key: 'key',
+  time: 'time',
+  stone: 'stone',
+  chest: 'chest',
+} as const satisfies Record<Exclude<ItemKind, 'other' | 'equipment'>, DropRateId>;
+
+/** The top difficulty's sprite, the way the Farm board's column headers draw theirs. */
+const ICON_BAND = 5;
+
 const COUNTED_KINDS = ITEM_KINDS.filter(
   (kind): kind is keyof typeof GROUP_LABEL_KEY => kind !== 'other',
 );
@@ -28,9 +40,8 @@ export function InventoryCard() {
   const holdings = useAccountHoldings();
   const { snapshot } = useMarketSnapshot();
   const ready = hasInventoryRows(view);
-  const peak = Math.max(0, ...COUNTED_KINDS.map((kind) => view?.groups.find((group) => group.kind === kind)?.count ?? 0));
 
-  const coverage = sub(t.accountHoldingsInventoryCoverage, {
+  const coverage = sub(t.homeCardInventoryCoverage, {
     priced: holdings.inventory.priced,
     eligible: holdings.inventory.eligible,
   });
@@ -52,24 +63,35 @@ export function InventoryCard() {
           ? formatMoney(holdings.inventory.amount, lang, holdings.currency)
           : t.accountHoldingsUnpriced}
       </p>
-      <dl className="m-0 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 text-sm">
+      <ul className="m-0 grid list-none grid-cols-2 gap-2 p-0">
         {COUNTED_KINDS.map((kind) => {
-          const count = view?.groups.find((group) => group.kind === kind)?.count ?? 0;
+          const group = view?.groups.find((candidate) => candidate.kind === kind);
+          const sample = group?.entries[0]?.item;
           return (
-            <div key={kind} className="contents">
-              <dt className="text-muted" data-testid="home-inventory-kind">
-                {t[GROUP_LABEL_KEY[kind]]}
-              </dt>
-              <dd className="m-0">
-                <Bar percent={peak > 0 ? (count / peak) * 100 : 0} className="bg-[color-mix(in_oklch,var(--accent)_55%,var(--bg-2))]" />
-              </dd>
-              <dd className="m-0 text-right font-mono tabular-nums" data-testid="home-inventory-count">
-                {count}
-              </dd>
-            </div>
+            <li
+              key={kind}
+              className="flex items-center gap-2.5 rounded-sm border border-line bg-surface px-2.5 py-2"
+              data-testid="home-inventory-tile"
+            >
+              <span className="grid size-8 shrink-0 place-items-center" aria-hidden="true">
+                {kind === 'equipment' ? (
+                  sample ? <ItemIcon item={sample} size="xs" /> : null
+                ) : (
+                  <DropIcon id={DROP_ICON_ID[kind]} ato={ICON_BAND} className="size-7" />
+                )}
+              </span>
+              <span className="flex min-w-0 flex-col">
+                <span className="font-mono text-lg leading-none font-bold tabular-nums" data-testid="home-inventory-count">
+                  {group?.count ?? 0}
+                </span>
+                <span className="mt-1 truncate text-xs text-muted" data-testid="home-inventory-kind">
+                  {t[GROUP_LABEL_KEY[kind]]}
+                </span>
+              </span>
+            </li>
           );
         })}
-      </dl>
+      </ul>
     </HomeSectionCard>
   );
 }

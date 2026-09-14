@@ -54,7 +54,8 @@ export function AccountCard() {
   const rows: [string, string][] = [
     [t.accountCurrentPhase, phase == null ? '—' : formatPhaseLabel(phase, lang)],
     [t.accountMaxPhase, maxPhase == null ? '—' : formatPhaseLabel(maxPhase, lang)],
-    [t.house, `${houseLabel(houseIdx, lang)} · ${sub(t.homeCardAccountHouseLevel, { level: houseLevel, max: HOUSE_MAX_LEVEL })}`],
+    [t.house, houseLabel(houseIdx, lang)],
+    [t.houseLevelLabel, `${houseLevel} / ${HOUSE_MAX_LEVEL}`],
     [t.accountHouseCycle, formatHouseRest(restSeconds)],
     [t.accountCasaSlots, String(slots)],
     [t.accountFieldSlots, fieldSlots == null ? '—' : String(fieldSlots)],

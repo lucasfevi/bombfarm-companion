@@ -169,7 +169,7 @@ describe('the front page account card', () => {
     resetPlannerStoreForTests();
   });
 
-  it("prints the eight account rows in order with the Account page's labels and formatters", () => {
+  it("prints the nine account rows in order with the Account page's labels and formatters", () => {
     for (const lang of LANGS) {
       usePlannerStore.setState({ ...ACCOUNT, lang });
       snapshot = SNAPSHOT;
@@ -184,6 +184,7 @@ describe('the front page account card', () => {
         strings.accountCurrentPhase,
         strings.accountMaxPhase,
         strings.house,
+        strings.houseLevelLabel,
         strings.accountHouseCycle,
         strings.accountCasaSlots,
         strings.accountFieldSlots,
@@ -193,7 +194,8 @@ describe('the front page account card', () => {
       expect(slots(html, 'home-account-value')).toEqual([
         formatPhaseLabel(51, lang),
         formatPhaseLabel(137, lang),
-        `${houseLabel(2, lang)} · ${sub(strings.homeCardAccountHouseLevel, { level: 7, max: HOUSE_MAX_LEVEL })}`,
+        houseLabel(2, lang),
+        `7 / ${HOUSE_MAX_LEVEL}`,
         formatHouseRest(rest),
         '3',
         '6',
@@ -206,7 +208,7 @@ describe('the front page account card', () => {
 
     usePlannerStore.setState({ lang: 'en', fieldSlots: null, houseIdx: HOUSES.length - 1 });
     const maxed = render();
-    expect(slots(maxed, 'home-account-value')[5]).toBe('—');
+    expect(slots(maxed, 'home-account-value')[6]).toBe('—');
     expect(footer(maxed)).toBe(sub(STRINGS.en.homeCardAccountHouseMaxed, { house: houseLabel(HOUSES.length - 1, 'en') }));
   });
 
@@ -265,7 +267,7 @@ describe('the front page account card', () => {
       expect(slot(html, 'home-account-heroes')).toBe(unpriced);
       expect(slot(html, 'home-account-skins')).toBe(unpriced);
       expect(html).not.toContain('R$');
-      expect(slots(html, 'home-account-value')).toHaveLength(8);
+      expect(slots(html, 'home-account-value')).toHaveLength(9);
     }
   });
 
