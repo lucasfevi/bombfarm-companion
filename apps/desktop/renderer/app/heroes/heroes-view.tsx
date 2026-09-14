@@ -31,13 +31,13 @@ import { HeroIdentityChip } from '@bombfarm/game-art';
 import { CombatPhasePanel } from '@bombfarm/farm/components';
 import {
   AbilitiesAurasPanel,
+  CombatBreakdownPanel,
   GearTab,
   HeroAbilitiesPanel,
   HeroCopyProvider,
   HeroIdentityRollPanel,
   HeroPickerDialogView,
   NextPointRanking,
-  PhasesHeroPanel,
   PointsTable,
   RosterCards,
   RosterRail,
@@ -73,10 +73,10 @@ import type { SheetKey } from '@bombfarm/domain/planner-constants';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { teamAuraDpsDeltas } from '@bombfarm/domain/team-aura-deltas';
 import {
+  TEAM_AURA_SWITCH_IDS,
   noTeamAuraSwitches,
-  zeroTeamBuffs,
   type TeamAuraSwitches,
-  type TeamBuffId,
+  type TeamAuraId,
 } from '@bombfarm/domain/team-buffs';
 import { accountAroundHero, type AccountBlock } from '../../lib/account/account-shared';
 import { useCopy, useLocale } from '../../lib/copy';
@@ -91,7 +91,6 @@ import {
   useStatPanelCopy,
 } from '../screen-copy';
 import { heroNextPointRanking } from './hero-detail-panels';
-import { HeroEffectiveStats } from './hero-effective-stats';
 import { heroesScreenModel, type HeroesScreenModel } from './heroes-screen-model';
 import { resolveSelectedHeroId, selectedRow } from './hero-selection';
 import { readHeroPhase, shownHeroPhase } from './hero-phase';
@@ -192,7 +191,7 @@ function HeroesRoster({ model }: { model: RosterModel }) {
   // every visit, like the phase override: a what-if that outlived the screen would inflate every
   // figure here with no control in sight to explain it.
   const [auraSwitches, setAuraSwitches] = useState<TeamAuraSwitches>(noTeamAuraSwitches);
-  const onAuraSwitch = useCallback((buffId: TeamBuffId, enabled: boolean) => {
+  const onAuraSwitch = useCallback((buffId: TeamAuraId, enabled: boolean) => {
     setAuraSwitches((current) =>
       current[buffId] === enabled ? current : { ...current, [buffId]: enabled },
     );
@@ -397,7 +396,6 @@ function HeroesRoster({ model }: { model: RosterModel }) {
                   </Panel>
                   <HeroDetailTabs
                     active={active}
-                    heroes={heroes}
                     heroCopy={heroCopy}
                     lang={lang}
                     abilityGains={abilityGains}
@@ -413,10 +411,8 @@ function HeroesRoster({ model }: { model: RosterModel }) {
                     rankMode={rankMode}
                     onRankMode={setRankMode}
                     statLabel={boundStatLabel}
-                    formatNumber={boundFormatNumber}
                     marketPrice={marketPrice}
                     formatAmount={formatAmount}
-                    onSelectHero={onSelectHero}
                   />
                 </div>
               </HeroCopyProvider>
@@ -448,7 +444,6 @@ function HeroesRoster({ model }: { model: RosterModel }) {
  */
 function HeroDetailTabs({
   active,
-  heroes,
   heroCopy,
   lang,
   abilityGains,
@@ -464,13 +459,10 @@ function HeroDetailTabs({
   rankMode,
   onRankMode,
   statLabel: boundStatLabel,
-  formatNumber,
   marketPrice,
   formatAmount,
-  onSelectHero,
 }: {
   active: RosterHeroRow;
-  heroes: HeroRecord[];
   heroCopy: ReturnType<typeof useHeroDetailCopy>;
   lang: Lang;
   abilityGains: readonly AbilityGain[];
@@ -481,15 +473,13 @@ function HeroDetailTabs({
   onOverridePhase: (phase: number) => void;
   onClearOverride: () => void;
   auraSwitches: TeamAuraSwitches;
-  auraDeltas: Record<TeamBuffId, number>;
-  onAuraSwitch: (buffId: TeamBuffId, on: boolean) => void;
+  auraDeltas: Record<TeamAuraId, number>;
+  onAuraSwitch: (buffId: TeamAuraId, on: boolean) => void;
   rankMode: RankMode;
   onRankMode: (next: RankMode) => void;
   statLabel: (key: SheetKey) => string;
-  formatNumber: (n: number, d?: number) => string;
   marketPrice: HeroMarketPrice | null;
   formatAmount: (value: number, currency: string) => string;
-  onSelectHero: (hero: HeroRecord) => void;
 }) {
   const t = useCopy();
   const statCopy = useStatPanelCopy();
@@ -539,21 +529,18 @@ function HeroDetailTabs({
                 onClearOverride={onClearOverride}
                 lang={lang}
               />
-              <HeroCombat
-                heroes={heroes}
-                hero={active.hero}
-                combat={combat}
-                figures={figures}
-                onSelectHero={onSelectHero}
-              />
+              {figures.kind !== 'at' ? <FiguresNotice figures={figures} /> : null}
               {/* The combat sheet those figures were computed from — beside them rather than at the
                   bottom of Points, where it was the one phase-scoped panel in a stage of sheet
                   arithmetic. */}
               {figures.kind === 'at' && combat ? (
-                <HeroEffectiveStats
+                <CombatBreakdownPanel
                   t={statCopy}
                   facts={effectiveFacts(active.hero, figures.inputs.account, combat)}
-                  formatNumber={formatNumber}
+                  hero={active.hero}
+                  phase={figures.inputs.phase}
+                  switches={auraSwitches}
+                  lang={lang}
                 />
               ) : null}
               {/* What those figures were priced with, last: the hero's own abilities, and every
@@ -634,39 +621,9 @@ function FiguresNotice({ figures }: { figures: HeroFigures }) {
  *  on every render rather than a fresh one that re-renders it. */
 const NO_ABILITY_GAINS: readonly AbilityGain[] = Object.freeze([]);
 
-const NO_AURA_DELTAS: Record<TeamBuffId, number> = Object.freeze(zeroTeamBuffs());
-
-/**
- * The phase-scoped half of the detail. `PhasesHeroPanel` names the phase it was computed at and
- * whether that phase came from the Farm screen or from this screen's own override — which is why
- * the selection travels with the figures rather than being restated here.
- */
-function HeroCombat({
-  heroes,
-  hero,
-  combat,
-  figures,
-  onSelectHero,
-}: {
-  heroes: HeroRecord[];
-  hero: HeroRecord;
-  combat: AdvisorPipelineResult | null;
-  figures: HeroFigures;
-  onSelectHero: (hero: HeroRecord) => void;
-}) {
-  if (figures.kind !== 'at') return <FiguresNotice figures={figures} />;
-
-  return (
-    <PhasesHeroPanel
-      heroes={heroes}
-      hero={hero}
-      combat={combat}
-      phaseSelection={figures.selection}
-      onSelectHero={onSelectHero}
-      breakdownShownElsewhere
-    />
-  );
-}
+const NO_AURA_DELTAS: Record<TeamAuraId, number> = Object.freeze(
+  Object.fromEntries(TEAM_AURA_SWITCH_IDS.map((auraId) => [auraId, 0])) as Record<TeamAuraId, number>,
+);
 
 /**
  * What the per-statistic breakdown reads: one hero, the account it shares, and the pipeline run
@@ -695,13 +652,14 @@ function effectiveFacts(
     teamCritFlat: combat.teamCritFlat,
     teamPenFlat: combat.teamPenFlat,
     packMult: combat.packMult,
+    entryPulseMult: combat.entryPulse.expectedMult,
     treeSpeed: account.tree.speed,
     treeCritChance: account.tree.critChance,
     treeCritDmg: account.tree.critDmg,
     treeEnergy: account.tree.energy,
     treeLuckFlatPct: combat.treeSheet.luckFlatPct,
     context: combat.context,
-    dmgMult: combat.dmgMult,
+    dmgMult: combat.dmgMult * combat.entryPulse.expectedMult,
     treeDanoTotal: account.tree.danoTotal,
     // The planner's Math-check override, which this app has no surface for.
     extraDmgPct: 0,

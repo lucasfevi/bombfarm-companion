@@ -25,6 +25,7 @@ export default defineConfig({
         'forge-run.spec.mjs',
         'forge-queue.spec.mjs',
         'optimizer.spec.mjs',
+        'heroes-combat.spec.mjs',
         'live-earnings-no-layout-shift.spec.mjs',
         'live-hero-row-no-layout-shift.spec.mjs',
         'live-state-summary-no-layout-shift.spec.mjs',

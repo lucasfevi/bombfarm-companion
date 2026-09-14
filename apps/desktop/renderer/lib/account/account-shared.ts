@@ -19,6 +19,7 @@
 import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
 import {
   computeTeamBuffsAroundHero,
+  entryPulseRankFloor,
   fieldAlliesAroundHero,
   type TeamAuraSwitches,
 } from '@bombfarm/domain/team-buffs';
@@ -64,9 +65,9 @@ export function buildAccountBlock(roster: AccountRoster): AccountBlock | null {
   };
 }
 
-/** The block with ONE hero's field overlaid — its team-aura total (`computeTeamBuffsAroundHero`)
- *  and the deployed heroes beside it (`fieldAlliesAroundHero`) — the account that hero's figures
- *  compute against. */
+/** The block with ONE hero's field overlaid — its team-aura total (`computeTeamBuffsAroundHero`),
+ *  the rank its own Passagem de Bastão pulse is priced at (`entryPulseRankFloor`) and the deployed
+ *  heroes beside it (`fieldAlliesAroundHero`) — the account that hero's figures compute against. */
 export function accountAroundHero(
   block: AccountBlock,
   hero: Pick<HeroRecord, 'id' | 'abilities'>,
@@ -76,6 +77,7 @@ export function accountAroundHero(
   return {
     ...block,
     teamBuffs: computeTeamBuffsAroundHero(hero, switches),
+    entryPulseRankFloor: entryPulseRankFloor(switches),
     fieldAllies: fieldAlliesAroundHero(hero, roster),
   };
 }

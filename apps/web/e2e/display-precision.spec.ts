@@ -171,7 +171,7 @@ test.describe('display precision sweep', () => {
     await expect(speedRow).toContainText('75.00');
   });
 
-  test('Effective panel sheet group renders combat-delta Speed at 2 dp', async ({ page }) => {
+  test('Effective panel renders the combat-effective Speed card at 2 dp', async ({ page }) => {
     // The hero's own Marcha rank adds a combat speed mult so Speed differs from sheet Total and
     // stays listed — a hero's own aura always counts on its own screen. Rank 8 is 8 × 0.185% =
     // +1.48%, well under Marcha's own cap (TEAM_BUFF_CAP.marcha_acelerada,
@@ -185,9 +185,9 @@ test.describe('display precision sweep', () => {
     const effective = activePanel(page).locator('section').filter({
       has: page.getByRole('heading', { name: /^Effective stats$/i, level: 2 }),
     });
-    const speedBtn = effective.getByRole('button', { name: /Show breakdown of Speed/i });
+    const speedCard = effective.locator('[data-breakdown-card="speed"] [data-testid="breakdown-value"]');
     // adjusted 75 × 1.0148 Marcha → 76.11
-    await expect(speedBtn).toContainText('76.11');
+    await expect(speedCard).toHaveText('76.11');
   });
 
   test('ledger step amounts (pctOfBase term) render at 2 dp', async ({ page }) => {
@@ -200,10 +200,11 @@ test.describe('display precision sweep', () => {
     const effective = activePanel(page).locator('section').filter({
       has: page.getByRole('heading', { name: /^Effective stats$/i, level: 2 }),
     });
-    await effective.getByRole('button', { name: /Show breakdown of Speed/i }).click();
+    await effective.locator('[data-breakdown-card="speed"] [data-slot="tooltip-trigger"]').first().hover();
+    const popover = page.getByTestId('breakdown-popover-speed');
 
     // The "points" step: 25 pts x 2%/pt of a 50.00 base -> "+ 50.00% × 50.00" (2 dp).
-    // Matches both the claim line and its "→ ... =" proof line — either is proof of 2 dp.
-    await expect(effective.getByText(/50\.00% × 50\.00/).first()).toBeVisible();
+    // The ledger line's claim — the popover opens on hover, the same one keyboard focus opens.
+    await expect(popover.getByText(/50\.00% × 50\.00/).first()).toBeVisible();
   });
 });

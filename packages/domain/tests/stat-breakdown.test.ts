@@ -252,6 +252,8 @@ function assertFormulasMatch(facts: PipelineFacts): void {
             ? hit
             : id === 'criticalHit'
               ? hit * (1 + facts.effective.critDmg / 100)
+              : id === 'avgHit'
+                ? hit * (1 + (facts.effective.critChance / 100) * (facts.effective.critDmg / 100))
               : id === 'critFactor'
                 ? 1 + (facts.effective.critChance / 100) * (facts.effective.critDmg / 100)
                 : id === 'fuse'
@@ -611,5 +613,46 @@ describe('ledgerLuck', () => {
     const abilityStep = bd.steps.find((s) => s.source === 'sheetAbilities');
     expect(abilityStep).toBeDefined();
     expect(abilityStep?.amount).toBe(0);
+  });
+});
+
+describe('formula parts', () => {
+  it('every derived formula is its parts joined, and every term carries a key and the text it prints as', () => {
+    const { facts } = buildFixture({
+      abilities: { detonacao_dupla: 5, bateria_extra: 5, explosao_ampla: 3 },
+      teamBuffs: { ...zeroTeamBuffs(), folego_mineiro: 10 },
+    });
+    for (const id of BREAKDOWN_DERIVED_IDS) {
+      const bd = buildStatBreakdown(id, facts);
+      expect(bd.kind).toBe('formula');
+      if (bd.kind !== 'formula') return;
+      const joined = bd.parts.map((part) => (typeof part === 'string' ? part : part.text)).join('');
+      expect(joined, id).toBe(bd.substituted);
+      const terms = bd.parts.filter((part) => typeof part !== 'string');
+      expect(terms.length, `${id} names no term`).toBeGreaterThan(0);
+      for (const term of terms) {
+        expect(term.key, id).toBeTruthy();
+        expect(Number.isFinite(term.value), `${id}.${term.key}`).toBe(true);
+      }
+    }
+  });
+
+  it('the average hit is the hit times the critical factor, and Active DPS reads it rather than a second damage multiplier', () => {
+    const { facts } = buildFixture({
+      pts: { ...ZERO_PTS(), critChance: 5, critDmg: 5 },
+      abilities: { detonacao_dupla: 10 },
+    });
+    const hit = buildStatBreakdown('hit', facts);
+    const avg = buildStatBreakdown('avgHit', facts);
+    const factor = buildStatBreakdown('critFactor', facts);
+    const active = buildStatBreakdown('activeDps', facts);
+    if (hit.kind !== 'formula' || avg.kind !== 'formula' || factor.kind !== 'formula' || active.kind !== 'formula') {
+      throw new Error('expected formulas');
+    }
+    expect(facts.dmgMult).toBeGreaterThan(1);
+    expect(avg.value).toBeCloseTo(hit.value * factor.value, 6);
+    const activeTerms = active.parts.filter((part) => typeof part !== 'string');
+    expect(activeTerms.map((term) => term.key)).toEqual(['avgHit', 'bombs', 'rangeMult', 'aiEfficiency']);
+    expect(activeTerms[0]?.value).toBeCloseTo(avg.value, 6);
   });
 });

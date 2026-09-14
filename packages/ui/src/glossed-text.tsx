@@ -23,9 +23,8 @@ export function splitGlossedTemplate(template: string, terms: ReadonlyMap<string
 }
 
 /**
- * Renders a template string with named terms wrapped in `GlossaryTerm` tooltips. Promoted from
- * the planner's `GlossedFormula` (W6) — the split/wrap mechanism only; the game vocabulary
- * (`FORMULA_GLOSSARY`, the `Strings` lookup) stays in the feature's `model/formula-glossary.ts`.
+ * Renders a template string with named terms wrapped in `GlossaryTerm` tooltips — the split/wrap
+ * mechanism only; the vocabulary is the caller's.
  */
 export function GlossedText({ template, terms, className }: GlossedTextProps) {
   if (terms.size === 0) {

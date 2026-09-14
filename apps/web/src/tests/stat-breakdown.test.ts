@@ -252,6 +252,8 @@ function assertFormulasMatch(facts: PipelineFacts): void {
             ? hit
             : id === 'criticalHit'
               ? hit * (1 + facts.effective.critDmg / 100)
+              : id === 'avgHit'
+                ? hit * (1 + (facts.effective.critChance / 100) * (facts.effective.critDmg / 100))
               : id === 'critFactor'
                 ? 1 + (facts.effective.critChance / 100) * (facts.effective.critDmg / 100)
                 : id === 'fuse'

@@ -5,7 +5,7 @@ import {
   type ReturnBonusMode,
 } from '@/shared/lib/phases-view-storage';
 import type { FarmRespecProposal, FarmRespecStatus } from '@bombfarm/farm';
-import { noTeamAuraSwitches, type TeamAuraSwitches, type TeamBuffId } from '@bombfarm/domain/team-buffs';
+import { noTeamAuraSwitches, type TeamAuraId, type TeamAuraSwitches } from '@bombfarm/domain/team-buffs';
 import { scheduleAfterPaint } from '@/shared/lib/schedule-after-paint';
 // Legal intra-element import (boundaries/elements declares one `shared-stores` element covering
 // both slices/ and selectors/) — the reverse edge of the same shape already ships in
@@ -66,7 +66,7 @@ export type PhasesSlice = {
   setFarmRespecPanelOpen: (open: boolean) => void;
   /** `null` clears the pick and hands the planner back to `selectCombatPhase`'s own answer. */
   setPlannerPhaseOverride: (phase: number | null) => void;
-  setTeamAuraSwitch: (buffId: TeamBuffId, enabled: boolean) => void;
+  setTeamAuraSwitch: (buffId: TeamAuraId, enabled: boolean) => void;
   /** "Back to your current phase": drops the phase pick AND every aura switch in one write. */
   clearPlannerWhatIfs: () => void;
   /** Runs Tier 2 on demand, off the render path — see the action body for the full contract. */

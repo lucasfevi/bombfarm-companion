@@ -9,6 +9,7 @@ export type BreakdownStatId =
   | 'dmg'
   | 'hit'
   | 'criticalHit'
+  | 'avgHit'
   | 'critFactor'
   | 'fuse'
   | 'bombsPerSecond'
@@ -82,10 +83,52 @@ export interface LedgerStep {
   runePlaySecondsLeft?: number;
 }
 
+/** Every input a derived figure's substituted formula names — a host labels each one. */
+export type FormulaTermKey =
+  | 'phaseMit'
+  | 'penetration'
+  | 'abilities'
+  | 'pack'
+  | 'extra'
+  | 'pulse'
+  | 'attack'
+  | 'mitF'
+  | 'dmg'
+  | 'hit'
+  | 'critChance'
+  | 'critDmg'
+  | 'critFactor'
+  | 'cdr'
+  | 'fuseFloor'
+  | 'fuse'
+  | 'walk'
+  | 'band'
+  | 'cycle'
+  | 'energy'
+  | 'drain'
+  | 'restSeconds'
+  | 'field'
+  | 'avgHit'
+  | 'bombs'
+  | 'rangeMult'
+  | 'aiEfficiency'
+  | 'activeDps';
+
+export interface FormulaTerm {
+  key: FormulaTermKey;
+  value: number;
+  /** `value` as `substituted` prints it. */
+  text: string;
+}
+
+/** `substituted`, cut into its literal operators and the terms between them, in order. */
+export type FormulaPart = string | FormulaTerm;
+
 export interface FormulaBreakdown {
   kind: 'formula';
   expressionKey: string;
   substituted: string;
+  parts: readonly FormulaPart[];
   value: number;
 }
 
@@ -114,6 +157,8 @@ export interface PipelineFacts {
   teamPenFlat: number;
   /** Matilha's pack factor inside `dmgMult` (`CombatMults.packMult`). */
   packMult: number;
+  /** The hero's own Baton Pass pulse averaged over wall clock, inside `dmgMult`; absent reads as 1. */
+  entryPulseMult?: number;
   treeSpeed: number;
   treeCritChance: number;
   treeCritDmg: number;

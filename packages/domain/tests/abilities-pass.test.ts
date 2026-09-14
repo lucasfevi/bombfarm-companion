@@ -200,18 +200,20 @@ describe('Passagem de Bastão — the sixth team aura, on the hero\'s own seat',
     });
   });
 
-  it('a hero\'s own screen and the Farm board agree on the pulsed hit for the same hero', () => {
+  it('a hero\'s own screen holds the pulse up for the whole stint; the Farm board discounts it to the window it lasts', () => {
     const carrier = withAbilityLevels(heroByName('IDK'), { passagem_bastao: 20 });
     const seat = pipelineForHero(carrier, { ...account, teamBuffs: zeroTeamBuffs(), fieldAllies: 0 }, PHASE, MITIGATION_PCT);
     const squad = computeSquadFarmFacts(computeHeroFarmFacts({ heroes: [carrier], account }), account);
 
-    expect(seat.entryPulse.levels.length).toBe(2);
-    expect(seat.entryPulse).toEqual(squad.entryPulse);
-    expect(seat.entryPulse.levels[1].mult).toBe(1.8);
-    expect(seat.entryPulse.expectedMult).toBeGreaterThan(1);
+    expect(seat.entryPulse.levels).toEqual([{ mult: 1.8, probability: 1 }]);
+    expect(seat.entryPulse.expectedMult).toBe(1.8);
+    expect(squad.entryPulse.levels.length).toBe(2);
+    expect(squad.entryPulse.levels[1].mult).toBe(1.8);
+    expect(squad.entryPulse.expectedMult).toBeGreaterThan(1);
+    expect(squad.entryPulse.expectedMult).toBeLessThan(seat.entryPulse.expectedMult);
   });
 
-  it('scales the hero\'s sustained DPS by the pulse\'s expectation, and leaves the standing hit alone', () => {
+  it('scales the hero\'s sustained DPS and its printed hit by the pulse\'s expectation; hits-to-kill and the standing multiplier stay unpulsed', () => {
     const hero = heroByName('IDK');
     const carrier = withAbilityLevels(hero, { passagem_bastao: 20 });
     const seat = { ...account, teamBuffs: zeroTeamBuffs(), fieldAllies: 0 };
@@ -221,7 +223,11 @@ describe('Passagem de Bastão — the sixth team aura, on the hero\'s own seat',
     expect(plain.entryPulse.expectedMult).toBe(1);
     expect(pulsed.dps).toBeCloseTo(plain.dps * pulsed.entryPulse.expectedMult, 8);
     expect(pulsed.active).toBeCloseTo(plain.active * pulsed.entryPulse.expectedMult, 8);
-    expect(pulsed.predHit).toBe(plain.predHit);
+    expect(pulsed.predHit).toBeCloseTo(plain.predHit * pulsed.entryPulse.expectedMult, 8);
+    expect(pulsed.avgHit).toBeCloseTo(plain.avgHit * pulsed.entryPulse.expectedMult, 8);
+    expect(pulsed.dmgMult).toBe(plain.dmgMult);
+    expect(pulsed.propRows).toEqual(plain.propRows);
+    expect(pulsed.bossHits).toBe(plain.bossHits);
     expect(pulsed.effective).toEqual(plain.effective);
   });
 

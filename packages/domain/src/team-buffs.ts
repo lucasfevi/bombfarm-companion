@@ -1,4 +1,4 @@
-import { ABILITIES } from './model';
+import { ABILITIES, PASSAGEM_BASTAO_CAP, PASSAGEM_BASTAO_PER_RANK } from './model';
 import type { HeroRecord } from './shims/storage';
 
 /**
@@ -9,7 +9,8 @@ import type { HeroRecord } from './shims/storage';
  * `effectText` (missing the "do TIME" every genuine aura below carries) all agree it is
  * self-scoped. `fortuna` is a genuine `team_gold` aura priced by the farm board's loot layer,
  * not the sheet. `passagem_bastao` is a team aura too, but one that is up in PULSES rather than
- * standing, so it has its own rule (`model/passagem-bastao.ts`) instead of a slot here.
+ * standing, so it has its own rule (`model/passagem-bastao.ts`) and joins the switches below
+ * (`TEAM_AURA_SWITCH_IDS`) rather than this list.
  */
 export const TEAM_BUFF_ABILITY_IDS = [
   'grito_guerra',
@@ -234,11 +235,25 @@ export function computeTeamBuffsOverRotation(
   return out;
 }
 
+/**
+ * Every team aura a per-hero screen offers behind a switch: the five standing ones and Passagem
+ * de Bastão, which is not a standing total (`computeTeamBuffsAroundHero` never carries it) but
+ * is priced at its cap on the hero's own entry pulse when switched on (`entryPulseRankFloor`).
+ */
+export const TEAM_AURA_SWITCH_IDS = [...TEAM_BUFF_ABILITY_IDS, 'passagem_bastao'] as const;
+
+export type TeamAuraId = (typeof TEAM_AURA_SWITCH_IDS)[number];
+
+const PASSAGEM_BASTAO_PER_LEVEL_PCT = PASSAGEM_BASTAO_PER_RANK * 100;
+const PASSAGEM_BASTAO_CAP_PCT = PASSAGEM_BASTAO_CAP * 100;
+/** The rank whose single pulse fills the field-wide cap — what the switch prices the pulse at. */
+export const PASSAGEM_BASTAO_RANK_CAP = Math.round(PASSAGEM_BASTAO_CAP / PASSAGEM_BASTAO_PER_RANK);
+
 /** Which team auras a per-hero screen prices at their cap, on top of the hero's own. */
-export type TeamAuraSwitches = Record<TeamBuffId, boolean>;
+export type TeamAuraSwitches = Record<TeamAuraId, boolean>;
 
 export function noTeamAuraSwitches(): TeamAuraSwitches {
-  return Object.fromEntries(TEAM_BUFF_ABILITY_IDS.map((buffId) => [buffId, false])) as TeamAuraSwitches;
+  return Object.fromEntries(TEAM_AURA_SWITCH_IDS.map((auraId) => [auraId, false])) as TeamAuraSwitches;
 }
 
 /**
@@ -265,14 +280,15 @@ export type TeamAuraSeat = {
 export function teamAurasAroundHero(
   hero: Pick<HeroRecord, 'abilities'>,
   switches: TeamAuraSwitches,
-): Record<TeamBuffId, TeamAuraSeat> {
-  const out = {} as Record<TeamBuffId, TeamAuraSeat>;
-  for (const buffId of TEAM_BUFF_ABILITY_IDS) {
-    const own = TEAM_BUFF_PER_LEVEL[buffId] * (hero.abilities[buffId] ?? 0);
-    const cap = TEAM_BUFF_CAP[buffId];
+): Record<TeamAuraId, TeamAuraSeat> {
+  const out = {} as Record<TeamAuraId, TeamAuraSeat>;
+  for (const auraId of TEAM_AURA_SWITCH_IDS) {
+    const perLevel = auraId === 'passagem_bastao' ? PASSAGEM_BASTAO_PER_LEVEL_PCT : TEAM_BUFF_PER_LEVEL[auraId];
+    const own = perLevel * (hero.abilities[auraId] ?? 0);
+    const cap = auraId === 'passagem_bastao' ? PASSAGEM_BASTAO_CAP_PCT : TEAM_BUFF_CAP[auraId];
     const carried = own > 0;
-    const switched = switches[buffId] === true;
-    out[buffId] = {
+    const switched = switches[auraId] === true;
+    out[auraId] = {
       own,
       cap,
       carried,
@@ -281,6 +297,15 @@ export function teamAurasAroundHero(
     };
   }
   return out;
+}
+
+/**
+ * The rank a per-hero screen prices the hero's OWN entry pulse at, at least: the cap rank while
+ * Passagem de Bastão's switch is on (`AdvisorPipelineInput.entryPulseRankFloor`), else the hero's
+ * own rank alone. The switch tops a carried rank up to the cap like every other aura's does.
+ */
+export function entryPulseRankFloor(switches: TeamAuraSwitches): number {
+  return switches.passagem_bastao === true ? PASSAGEM_BASTAO_RANK_CAP : 0;
 }
 
 /** The aura total a per-hero screen prices one hero against — `pricedAt` per aura. */

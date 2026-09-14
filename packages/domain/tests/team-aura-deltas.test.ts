@@ -9,9 +9,12 @@ import { computeAdvisorPipeline } from '@bombfarm/domain/advisor-pipeline';
 import { advisorInputForHero, pipelineForHero } from '@bombfarm/domain/roster-dps';
 import { flipTeamAura, teamAuraDpsDeltas } from '@bombfarm/domain/team-aura-deltas';
 import {
+  PASSAGEM_BASTAO_RANK_CAP,
+  TEAM_AURA_SWITCH_IDS,
   TEAM_BUFF_ABILITY_IDS,
   TEAM_BUFF_CAP,
   computeTeamBuffsAroundHero,
+  entryPulseRankFloor,
   noTeamAuraSwitches,
   zeroTeamBuffs,
 } from '@bombfarm/domain/team-buffs';
@@ -23,7 +26,11 @@ const PHASE = account.context.phase ?? 1;
 const MITIGATION_PCT = account.context.mitigationPct;
 
 function seated(hero: HeroRecord, switches = noTeamAuraSwitches()): AccountShared {
-  return { ...account, teamBuffs: computeTeamBuffsAroundHero(hero, switches) };
+  return {
+    ...account,
+    teamBuffs: computeTeamBuffsAroundHero(hero, switches),
+    entryPulseRankFloor: entryPulseRankFloor(switches),
+  };
 }
 
 const hero = heroes.find((candidate) => candidate.birth != null && (candidate.abilities.grito_guerra ?? 0) === 0);
@@ -45,7 +52,7 @@ describe('teamAuraDpsDeltas', () => {
   it('has one signed entry per modelled aura', () => {
     const input = advisorInputForHero(hero, seated(hero), PHASE, MITIGATION_PCT);
     const deltas = teamAuraDpsDeltas(input, computeAdvisorPipeline(input).dps);
-    expect(Object.keys(deltas).sort()).toEqual([...TEAM_BUFF_ABILITY_IDS].sort());
+    expect(Object.keys(deltas).sort()).toEqual([...TEAM_AURA_SWITCH_IDS].sort());
   });
 
   it('"+x% if on" for an absent War Cry equals the move sustained DPS makes when its switch is flipped on', () => {
@@ -86,8 +93,22 @@ describe('teamAuraDpsDeltas', () => {
     }
   });
 
+  it('Baton Pass flips the hero’s own entry pulse: an absent pulse is priced at the cap rank, a pulse in force is taken away', () => {
+    const off = pipelineForHero(hero, seated(hero), PHASE, MITIGATION_PCT);
+    const on = pipelineForHero(hero, seated(hero, { ...noTeamAuraSwitches(), passagem_bastao: true }), PHASE, MITIGATION_PCT);
+    expect(on.dps).toBeGreaterThan(off.dps);
+    const deltasOff = teamAuraDpsDeltas(advisorInputForHero(hero, seated(hero), PHASE, MITIGATION_PCT), off.dps);
+    expect(deltasOff.passagem_bastao).toBeCloseTo((on.dps / off.dps - 1) * 100, 9);
+
+    const carrier: HeroRecord = { ...hero, abilities: { ...hero.abilities, passagem_bastao: PASSAGEM_BASTAO_RANK_CAP } };
+    const withOwn = pipelineForHero(carrier, seated(carrier), PHASE, MITIGATION_PCT);
+    expect(withOwn.dps).toBeCloseTo(on.dps, 6);
+    const deltasOn = teamAuraDpsDeltas(advisorInputForHero(carrier, seated(carrier), PHASE, MITIGATION_PCT), withOwn.dps);
+    expect(deltasOn.passagem_bastao).toBeCloseTo((off.dps / withOwn.dps - 1) * 100, 9);
+  });
+
   it('reads all zeros against a zero baseline rather than dividing by it', () => {
     const input = advisorInputForHero(hero, seated(hero), PHASE, MITIGATION_PCT);
-    expect(teamAuraDpsDeltas(input, 0)).toEqual(zeroTeamBuffs());
+    expect(teamAuraDpsDeltas(input, 0)).toEqual({ ...zeroTeamBuffs(), passagem_bastao: 0 });
   });
 });

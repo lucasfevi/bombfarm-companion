@@ -1,6 +1,7 @@
 import { SHEET_PANEL_KEYS, type SheetKey, type SheetPanelKey } from '../planner-constants';
 import {
   formulaActive,
+  formulaAvgHit,
   formulaBombs,
   formulaCriticalHit,
   formulaCritFactor,
@@ -51,6 +52,7 @@ const FORMULA_BUILDERS: Record<
   dmg: formulaDmg,
   hit: formulaHit,
   criticalHit: formulaCriticalHit,
+  avgHit: formulaAvgHit,
   critFactor: formulaCritFactor,
   fuse: formulaFuse,
   bombsPerSecond: formulaBombs,
@@ -67,6 +69,7 @@ export const BREAKDOWN_DERIVED_IDS: readonly Exclude<BreakdownStatId, SheetKey>[
   'dmg',
   'hit',
   'criticalHit',
+  'avgHit',
   'critFactor',
   'fuse',
   'bombsPerSecond',

@@ -44,6 +44,8 @@ export function derivedLabel(strings: StatPanelCopy, statId: Exclude<BreakdownSt
       return strings.effectiveHit;
     case 'criticalHit':
       return strings.effectiveCriticalHit;
+    case 'avgHit':
+      return strings.effectiveAvgHit;
     case 'critFactor':
       return strings.effectiveCritFactor;
     case 'fuse':
@@ -80,9 +82,9 @@ export function formatBreakdownValue(
 ): string {
   if (statId === 'mitF') return `×${formatNumber(value, 4)}`;
   if (statId === 'dmg' || statId === 'critFactor') return `×${formatNumber(value, 3)}`;
-  if (statId === 'hit' || statId === 'criticalHit') return formatNumber(value, 0);
+  if (statId === 'hit' || statId === 'criticalHit' || statId === 'avgHit') return formatNumber(value, 0);
   if (statId === 'fuse') return `${formatNumber(value, 2)}s`;
-  if (statId === 'fieldSeconds') return `${formatNumber(value, 0)}s (${formatNumber(value / 60, 1)}m)`;
+  if (statId === 'fieldSeconds') return `${formatNumber(value / 60, 1)}m`;
   if (statId === 'rest') return `${formatNumber(value, 1)}m`;
   if (statId === 'bombsPerSecond') return `${formatNumber(value, 2)}/s`;
   if (statId === 'uptime') return `${formatNumber(value, 1)}%`;
@@ -174,4 +176,22 @@ export function ledgerStepNote(
     return sub(strings.bdNoteRune, { hours: formatNumber(step.runePlaySecondsLeft / 3600, 0) });
   }
   return null;
+}
+
+/**
+ * One ledger step as the claim it makes: the base roll bare, a `pctOfBase` step as
+ * `percent% × base`, a factor at 3 dp, an addend at 2 dp with its sign spelled out.
+ */
+export function ledgerStepText(
+  step: Extract<StatBreakdown, { kind: 'ledger' }>['steps'][number],
+  formatNumber: (n: number, d?: number) => string,
+): string {
+  if (step.source === 'base') return formatNumber(step.amount, 2);
+  if (step.pctOfBase) {
+    const term = `${formatNumber(Math.abs(step.pctOfBase.percent), 2)}% × ${formatNumber(step.pctOfBase.base, 2)}`;
+    return step.pctOfBase.percent < 0 ? `− ${term}` : `+ ${term}`;
+  }
+  if (step.op === '×') return `× ${formatNumber(step.amount, 3)}`;
+  if (step.amount < 0) return `− ${formatNumber(Math.abs(step.amount), 2)}`;
+  return `+ ${formatNumber(step.amount, 2)}`;
 }

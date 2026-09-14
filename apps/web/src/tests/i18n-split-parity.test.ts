@@ -284,6 +284,13 @@ const KEYS_REMOVED: readonly string[] = [
   'teamPlanUnmodelledAbilities',
   'teamPlanLoadoutDrift',
   'teamPlanExcludedItems',
+  // Combat breakdown (2026-09-13): the Effective stats accordions are replaced by a pipeline of
+  // cards over a sheet-stat matrix, drawn by the shared hero package from its own copy. The
+  // accordion's two group headings and its trigger aria, the ledger's total row, and the
+  // symbolic formula templates with the glossary tips their tokens opened — every figure now
+  // prints its substituted formula with each term named instead — all lose their reader.
+  // One line: this file sits at the max-lines cap.
+  'bdGroupSheet', 'bdGroupDerived', 'bdTriggerAria', 'bdLedgerTotal', 'bdFormulaMitF', 'bdFormulaDmg', 'bdFormulaHit', 'bdFormulaCriticalHit', 'bdFormulaCritFactor', 'bdFormulaFuse', 'bdFormulaField', 'bdFormulaRest', 'bdFormulaUptime', 'bdFormulaActive', 'bdFormulaSustained', 'bdTermMit', 'bdTermPen', 'bdTermTree', 'bdTermAbl', 'bdTermExtra', 'bdTermAtk', 'bdTermMitigation', 'bdTermDamage', 'bdTermCc', 'bdTermCd', 'bdTermCdr', 'bdTermWalk', 'bdTermDrain', 'bdTermRestSeconds', 'bdTermField', 'bdTermRestSecs', 'bdTermAvg', 'bdTermRange', 'bdTermActiveDps',
 ];
 
 /**
@@ -496,12 +503,11 @@ const KEYS_ADDED: readonly string[] = [
   'heroesFilterActiveHeroes',
   'heroesAbilityFilterLabel',
   'heroesAbilityFilterOption',
-  // One bombing-cadence model (2026-09-11): the Bombs/s breakdown's single expression and the
-  // two glossary tips its new tokens need — the measured cycle itself and the difficulty band
-  // whose prop density sets the hop lengths. One line: this file sits at the max-lines cap.
   // Hero runes (2026-09-13): the sheet's rune Δ column and the breakdown's rune step. One line.
-  // Abilities pass (2026-09-13): the damage formula's Pack (Matilha) term gets a glossary tip.
-  'heroesAbilityFilterAbsent', 'bdFormulaBombs', 'bdTermCycle', 'bdTermBand', 'colSheetDeltaRune', 'bdSrcRune', 'bdNoteRune', 'teamPlanRunedHeroes', 'bdTermPack',
+  // Combat breakdown (2026-09-13): the derived figures gain an Average hit card, so the host
+  // dictionary gains its label; the cadence model's and abilities pass's formula and glossary
+  // strings that were declared here left with the accordion (see `KEYS_REMOVED`). One line.
+  'heroesAbilityFilterAbsent', 'colSheetDeltaRune', 'bdSrcRune', 'bdNoteRune', 'teamPlanRunedHeroes', 'effectiveAvgHit',
   // The Optimizer's field-crowding opt-out (2026-09-09) and the removals section that made it
   // necessary. The plan could always take gear off a hero and hand it back — on a field that
   // cannot seat everyone, a weak hero wearing less crowds the others out less — but the page
@@ -1061,19 +1067,29 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   // follows; its third paragraph now says the same cycle prices every figure the planner
   // prints. `bdTermWalk` stops naming a walk DELAY and names the walk SPEED the cycle divides by.
   // One line: this file sits at the max-lines cap.
-  'bdSrcTeam', 'effectiveTip', 'missingHint', 'explainSections.0.code', 'explainSections.1.p.0', 'explainSections.5.p.0', 'explainSections.7.p.1', 'explainSections.8.p.1', 'explainSections.2.p.0', 'explainSections.2.p.2', 'explainSections.2.code', 'bdTermWalk',
+  'bdSrcTeam', 'effectiveTip', 'missingHint', 'explainSections.0.code', 'explainSections.1.p.0', 'explainSections.5.p.0', 'explainSections.7.p.1', 'explainSections.8.p.1', 'explainSections.2.p.0', 'explainSections.2.p.2', 'explainSections.2.code',
   // Abilities pass (2026-09-13): the "what the app does not model" paragraph stops listing
   // Baton Pass — a team aura in pulses, counted for the hero's own pulse here and for every
   // carrier on the Farm page and the Optimizer — and describes Pack (Matilha, per deployed ally)
   // and Breach (Brecha, flat team penetration points); `effectiveTip` (declared above) says the
   // same in one line, and `bdFormulaDmg` gains its `pack` factor. Optimizer disclosures are in
   // `KEYS_ADDED`.
-  'explainSections.7.p.0', 'bdFormulaDmg',
   // Where the save file comes from (2026-09-13): the import dialog's description told the reader
   // to "export your save file" without saying where the game keeps that control. It now names
   // it — Settings → Privacy, "Download a copy of my data". (The quick guide's step said the same
   // and left with the guide; it is in `KEYS_REMOVED`.)
   'importDialogDesc',
+  // Penetration reading (2026-09-14): the three strings that said penetration "covers" a phase once
+  // it matched the mitigation percentage, or that N% pen "ignores all mitigation". The game
+  // pierces a SHARE of the mitigation (`dano = ataque × (1 − mitig × (1 − pen/100))`), so only
+  // 100% penetration loses nothing; the hero panel now prints what each hit still loses and the
+  // phase fact's tip states the rule.
+  'phasesPenOk', 'phasesPenShort', 'phasesPenNeedHint',
+  // Combat breakdown (2026-09-13): `bdTermWalk` and `bdFormulaDmg`, declared reworded by the two
+  // passes above, leave with the accordion (`KEYS_REMOVED`); the walkthrough paragraph that named
+  // the Effective stats panel (`explainSections.0.p.0`, declared above) now describes the
+  // pipeline and the matrix, and the same panel's tip (`effectiveTip`, declared above) is unchanged.
+  'explainSections.7.p.0',
 ];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {

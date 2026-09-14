@@ -9,7 +9,6 @@ import {
   FUSE_FLOOR,
   STAT_CAPS,
   passagemBastaoFieldPulse,
-  passagemBastaoPresence,
   type AbilityMods,
   type Context,
   type HeroSheet,
@@ -76,6 +75,12 @@ export type AdvisorPipelineInput = {
    * definition), a rotating board derives its own from the pool's uptimes. Absent reads as none.
    */
   fieldAllies?: number;
+  /**
+   * The rank the hero's own Passagem de Bastão pulse is priced at, at least — the cap rank while
+   * a per-hero screen's switch for it is on (`entryPulseRankFloor`). Absent reads as the hero's
+   * own rank alone.
+   */
+  entryPulseRankFloor?: number;
   houseIdx: number;
   houseLevel: number;
   /**
@@ -119,6 +124,9 @@ export type AdvisorPipelineResult = {
   rest: number;
   context: Context;
   gateAttackMult: number;
+  /** Abilities × pack × extra — the standing multiplier, the pulse NOT folded in: the Farm board
+   *  prices the pulse per level through hits-to-kill and reads this as its base. A per-hero
+   *  screen multiplies it by `entryPulse.expectedMult`, which is what `predHit` carries. */
   dmgMult: number;
   /** Combat mults already computed by `computeCombatMults` — surfaced for breakdown (additive). */
   attackMult: number;
@@ -131,11 +139,12 @@ export type AdvisorPipelineResult = {
   /** The allies `packMult` was priced at — echoed so a breakdown can name the field size. */
   fieldAllies: number;
   /**
-   * The hero's OWN Passagem de Bastão as a pulse over its own rotation cycle — up for
-   * `passagemBastaoPresence(fieldSecs, uptime)` of wall clock at `1 + 0.04 × rank`, and the
-   * standing `×1` the rest. `[{ mult: 1, probability: 1 }]` for a hero without the ability.
-   * `dps` and `active` below already carry its expectation; the hits do not — a hit is a step
-   * the Farm board prices per level, and this screen prints the standing one.
+   * The hero's OWN Passagem de Bastão, HELD UP for the whole stint: `1 + 0.04 × rank` (capped at
+   * ×1.8) with probability 1, `[{ mult: 1, probability: 1 }]` for a hero without the ability. A
+   * per-hero screen answers "what is this hero worth with its pulse on", so the pulse is not
+   * discounted to the 120 s it lasts on each entry — that discount is the Farm board's and the
+   * Optimizer's, which price a rotation over wall clock. `dps`, `active` and the printed hits
+   * below carry it; hits-to-kill does not — a hit is a step the Farm board prices per level.
    */
   entryPulse: PassagemBastaoFieldPulse;
   /** The whole skill tree, once — surfaced for Wave 6's breakdown. */
@@ -187,15 +196,15 @@ export type AdvisorPipelineResult = {
 };
 
 /**
- * The hero's own Passagem de Bastão on its own screen: one carrier, its own stint, the same rule
- * the Farm board and the Optimizer price every carrier with (`passagemBastaoFieldPulse`). The
- * other carriers' pulses are not counted here — a per-hero screen has no stint for them, the
- * rotating surfaces do — so this is the "own aura always on" half of the per-hero form and
- * nothing more.
+ * The hero's own Passagem de Bastão on its own screen, held up for the whole stint — the same
+ * level rule the Farm board and the Optimizer price every carrier with
+ * (`passagemBastaoFieldPulse`) at presence 1, at the hero's own rank or the cap rank a switch
+ * asks for. The other carriers' pulses are not counted here — a per-hero screen has no stint
+ * for them, the rotating surfaces do.
  */
-function ownEntryPulse(rank: number, fieldSecs: number, duty: number): PassagemBastaoFieldPulse {
-  if (!(rank > 0) || !(fieldSecs > 0) || !(duty > 0)) return passagemBastaoFieldPulse([]);
-  return passagemBastaoFieldPulse([{ rank, presence: passagemBastaoPresence(fieldSecs, duty) }]);
+function ownEntryPulse(rank: number): PassagemBastaoFieldPulse {
+  if (!(rank > 0)) return passagemBastaoFieldPulse([]);
+  return passagemBastaoFieldPulse([{ rank, presence: 1 }]);
 }
 
 /**
@@ -317,10 +326,15 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   const { delta: pointDelta, adjusted, effective } = equippedResult;
   const field = fieldSeconds(effective, context);
   const uptime = (100 * field) / (field + rest);
-  const entryPulse = ownEntryPulse(abilities.passagem_bastao ?? 0, field, uptime / 100);
+  const entryPulseRank = Math.max(abilities.passagem_bastao ?? 0, input.entryPulseRankFloor ?? 0);
+  const entryPulse = ownEntryPulse(entryPulseRank);
   const dps = equippedResult.dps * entryPulse.expectedMult;
   const active = equippedResult.active * entryPulse.expectedMult;
-  const predHit = equippedResult.hit;
+  // The pulse is up for a share of wall clock, so the figures a hero's screen prints — the hit,
+  // its crit and average, the multiplier they carry — are the expectation over that clock. The
+  // hits-to-kill rows below deliberately are not: a threshold is crossed at a level the field
+  // sits at, never at the average of two (the Farm board's rule), so they read the unpulsed hit.
+  const predHit = equippedResult.hit * entryPulse.expectedMult;
   // Birth-backed: recompose clone from birth (same path as Apply to current).
   // Without birth: project the observed sheet so typed drift stays a 0% delta
   // when clone === current.
@@ -341,7 +355,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
       })
     : null;
   const bDiff = cloneResult ? ((cloneResult.dps * entryPulse.expectedMult) / dps - 1) * 100 || 0 : 0;
-  const bHitDiff = cloneResult ? (cloneResult.hit / predHit - 1) * 100 || 0 : 0;
+  const bHitDiff = cloneResult ? (cloneResult.hit / equippedResult.hit - 1) * 100 || 0 : 0;
 
   const line = phaseLine(farmPhase);
   const stoneHp = line?.hp ?? 0;
@@ -380,9 +394,10 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     runeSheetMultipliers(runes),
   );
 
-  const propRows: PropHtkRow[] = propHtkRows(stoneHp, avgHit, targetProp);
+  const htkHit = equippedResult.hit * critFactor(effective.critChance, effective.critDmg);
+  const propRows: PropHtkRow[] = propHtkRows(stoneHp, htkHit, targetProp);
   const bossHp = propHp(stoneHp, BOSS_HP_MULT);
-  const bossHits = hitsToKill(avgHit, bossHp);
+  const bossHits = hitsToKill(htkHit, bossHp);
   const avgPropHp = weightedAvgPropHp(stoneHp);
 
   const gateRows: GateRow[] = buildGateRows(effective, context, field, dmgMult, gateAttackMult);

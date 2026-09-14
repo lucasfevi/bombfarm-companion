@@ -35,7 +35,7 @@ test.describe('planner tabs IA (PTI)', () => {
     await expect(stage.getByRole('heading', { name: /^Math check$/i })).toHaveCount(0);
   });
 
-  test('Combat tab stacks the phase control, the hero against it, Effective, then the abilities and auras', async ({ page }) => {
+  test('Combat tab stacks the phase control, Effective, then the abilities and auras — no hero panel of its own', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
@@ -43,6 +43,7 @@ test.describe('planner tabs IA (PTI)', () => {
     await page.getByRole('tab', { name: /^Combat$/i }).click();
     const stage = activePanel(page);
     const headings = stage.getByRole('heading', { level: 2 });
+    await expect(headings).toHaveCount(3);
     await expect(headings.nth(0)).toHaveText(/^Phase these numbers are for$/i);
     await expect(headings.nth(-2)).toHaveText(/^Effective stats$/i);
     await expect(headings.last()).toHaveText(/^Abilities & auras$/i);
@@ -65,15 +66,16 @@ test.describe('planner tabs IA (PTI)', () => {
     await page.keyboard.type('Hard 1-1');
     await page.getByRole('option', { name: 'Hard 1-1 (#151)' }).click();
     await expect(page.getByRole('listbox')).toHaveCount(0);
-    await expect(stage.getByText(/^Phase 151$/)).toBeVisible();
-    await expect(stage.getByText(/different phase than your Farm screen/i)).toBeVisible();
+    // The phase panel is the only place the stage names its phase now — the hero panel that
+    // restated it is gone.
+    await expect(stage.getByRole('combobox', { name: /which phase these numbers/i })).toContainText('#151');
     expect(await hit.textContent()).not.toBe(hitBefore);
 
     const back = stage.getByRole('button', { name: /^Back to your current phase$/i });
     await expect(back).toBeEnabled();
     await back.click();
     await expect(back).toBeDisabled();
-    await expect(stage.getByText(/^Phase 151$/)).toHaveCount(0);
+    await expect(stage.getByRole('combobox', { name: /which phase these numbers/i })).not.toContainText('#151');
     expect(await hit.textContent()).toBe(hitBefore);
   });
 

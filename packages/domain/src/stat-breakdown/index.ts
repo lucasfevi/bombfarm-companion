@@ -17,6 +17,9 @@ export type {
   LedgerStep,
   LedgerGroup,
   FormulaBreakdown,
+  FormulaPart,
+  FormulaTerm,
+  FormulaTermKey,
   StatBreakdown,
   PipelineFacts,
 } from './types';

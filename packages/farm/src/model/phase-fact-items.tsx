@@ -85,7 +85,7 @@ export function mapFactItems(
       id: 'mit',
       label: strings.phasesMitigation,
       value: `${formatNumber(intel.mitigationPct, 1)}%`,
-      tip: sub(strings.phasesPenNeedHint, { pct: formatNumber(intel.penToZero, 1) }),
+      tip: strings.phasesPenNeedHint,
     },
     { id: 'props', label: strings.phasesPropCount, value: formatNumber(intel.propCount, 0) },
     {

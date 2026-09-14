@@ -8,7 +8,7 @@
  * whether there is a prop table to draw at all.
  */
 import type { AdvisorPipelineResult } from '@bombfarm/domain/advisor-pipeline';
-import { penGap } from '@bombfarm/domain/phase-intel';
+import { mitigationLossPct } from '@bombfarm/domain/phase-intel';
 import type { PropHtkRow } from '@bombfarm/domain/advisor-tables';
 import type { PhaseSelection } from '../core';
 
@@ -19,65 +19,6 @@ import type { PhaseSelection } from '../core';
  * them alone, and a consumer deriving one from another would go on printing a self-consistent,
  * wrong readout.
  */
-/**
- * Which of the hero-combat figures this host should print.
- *
- * Eight of them are also `BREAKDOWN_DERIVED_IDS`, so a host that draws the per-statistic
- * breakdown beside this panel states each one twice — once bare here and once, with the ledger
- * that produced it, there. The bare copy is the one worth dropping: it is the same number with
- * less behind it.
- *
- * What survives either way is what only this panel says: whether the hero pierces the phase,
- * the average hit its build lands, the floor its fuse cannot go under and the ceiling its
- * cooldown reduction stops paying at, and the prop table underneath.
- */
-export type CombatFigureId =
-  | 'pen'
-  | 'damageThrough'
-  | 'normalHit'
-  | 'critHit'
-  | 'avgHit'
-  | 'fieldTime'
-  | 'fuse'
-  | 'fuseFloor'
-  | 'cdrCap'
-  | 'uptime'
-  | 'activeDps'
-  | 'sustainedDps';
-
-const ALSO_IN_THE_BREAKDOWN: ReadonlySet<CombatFigureId> = new Set([
-  'damageThrough',
-  'normalHit',
-  'critHit',
-  'fieldTime',
-  'fuse',
-  'uptime',
-  'activeDps',
-  'sustainedDps',
-]);
-
-const COMBAT_FIGURE_ORDER: readonly CombatFigureId[] = [
-  'pen',
-  'damageThrough',
-  'normalHit',
-  'critHit',
-  'avgHit',
-  'fieldTime',
-  'fuse',
-  'fuseFloor',
-  'cdrCap',
-  'uptime',
-  'activeDps',
-  'sustainedDps',
-];
-
-export function combatFiguresShown(input: {
-  breakdownShownElsewhere: boolean;
-}): readonly CombatFigureId[] {
-  if (!input.breakdownShownElsewhere) return COMBAT_FIGURE_ORDER;
-  return COMBAT_FIGURE_ORDER.filter((id) => !ALSO_IN_THE_BREAKDOWN.has(id));
-}
-
 export type FuseSource = Pick<
   AdvisorPipelineResult,
   'fuseSecs' | 'fuseFloorSecs' | 'cdrCapPct' | 'fuseAtFloor'
@@ -132,9 +73,14 @@ export function stageLabelFor(selection: PhaseSelection, notes: StageNotes): Sta
   };
 }
 
+/**
+ * What the phase's mitigation still takes off each hit once penetration has pierced its share —
+ * `pierced` only at 100% penetration, since penetration pierces a percentage of the mitigation
+ * rather than subtracting points from it (`mitigationLossPct`).
+ */
 export type PenetrationReading =
-  | { readonly kind: 'covered' }
-  | { readonly kind: 'short'; readonly gapPct: number };
+  | { readonly kind: 'pierced' }
+  | { readonly kind: 'partial'; readonly lostPct: number; readonly penetrationPct: number; readonly mitigationPct: number };
 
 /** The two fields of the pipeline result this reading needs, narrowed so a test can state one
  *  without standing up a whole run. */
@@ -144,20 +90,22 @@ export type PenetrationSource = {
 };
 
 export function penetrationReadingFor(combat: PenetrationSource): PenetrationReading {
-  const gapPct = penGap(combat.context.mitigation * 100, combat.effective.penetration);
-  return gapPct > 0 ? { kind: 'short', gapPct } : { kind: 'covered' };
+  const mitigationPct = combat.context.mitigation * 100;
+  const penetrationPct = combat.effective.penetration;
+  const lostPct = mitigationLossPct(mitigationPct, penetrationPct);
+  return lostPct > 1e-9 ? { kind: 'partial', lostPct, penetrationPct, mitigationPct } : { kind: 'pierced' };
 }
 
 export type PenetrationNotes = {
-  readonly covered: string;
-  readonly short: (gapPct: number) => string;
+  readonly pierced: string;
+  readonly partial: (reading: Extract<PenetrationReading, { kind: 'partial' }>) => string;
 };
 
 export function penetrationNote(
   reading: PenetrationReading,
   notes: PenetrationNotes,
 ): string {
-  return reading.kind === 'covered' ? notes.covered : notes.short(reading.gapPct);
+  return reading.kind === 'pierced' ? notes.pierced : notes.partial(reading);
 }
 
 export type PropTableReading =

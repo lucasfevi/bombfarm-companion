@@ -17,7 +17,6 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { heroCopyFor, sub } from '../copy';
 import type { PhaseSelection } from '../core';
 import {
-  combatFiguresShown,
   formatClearTime,
   fuseNote,
   fuseReadoutFor,
@@ -25,7 +24,6 @@ import {
   penetrationReadingFor,
   propTableReadingFor,
   stageLabelFor,
-  type CombatFigureId,
 } from '../model';
 import { useHeroCopy } from './hero-copy-context';
 import { PhasesHeroSwitcherView, type HeroPickerSlot } from './phases-hero-switcher';
@@ -49,7 +47,6 @@ export function PhasesHeroPanel({
   phaseSelection,
   onSelectHero,
   renderPicker,
-  breakdownShownElsewhere = false,
 }: {
   heroes: HeroRecord[];
   hero: HeroRecord;
@@ -57,9 +54,6 @@ export function PhasesHeroPanel({
   phaseSelection: PhaseSelection;
   onSelectHero: (h: HeroRecord) => void;
   renderPicker?: HeroPickerSlot | undefined;
-  /** Set by a host that draws the per-statistic breakdown beside this panel: the eight figures
-   *  that appear there too are dropped here, so each is stated once, where its ledger is. */
-  breakdownShownElsewhere?: boolean | undefined;
 }) {
   const { t, lang } = useHeroCopy();
   const detail = heroCopyFor(lang);
@@ -89,20 +83,12 @@ export function PhasesHeroPanel({
         onSelectHero={onSelectHero}
         renderPicker={renderPicker}
       />
-      {combat ? (
-        <CombatFigures combat={combat} breakdownShownElsewhere={breakdownShownElsewhere} />
-      ) : null}
+      {combat ? <CombatFigures combat={combat} /> : null}
     </Panel>
   );
 }
 
-function CombatFigures({
-  combat,
-  breakdownShownElsewhere,
-}: {
-  combat: AdvisorPipelineResult;
-  breakdownShownElsewhere: boolean;
-}) {
+function CombatFigures({ combat }: { combat: AdvisorPipelineResult }) {
   const { t, lang } = useHeroCopy();
   const detail = heroCopyFor(lang);
   const fuse = fuseReadoutFor(combat);
@@ -113,17 +99,20 @@ function CombatFigures({
     <span className={numericClass}>{formatNumber(value, lang, digits)}</span>
   );
 
-  const shown = new Set(combatFiguresShown({ breakdownShownElsewhere }));
-  const rows: { id: CombatFigureId; label: string; value: ReactNode }[] = [
+  const rows: { id: string; label: string; value: ReactNode }[] = [
     {
       id: 'pen',
       label: t.phasesPenetration,
       value: (
-        <span className={penetration.kind === 'covered' ? 'text-up' : undefined}>
+        <span className={penetration.kind === 'pierced' ? 'text-up' : undefined}>
           {penetrationNote(penetration, {
-            covered: t.phasesPenOk,
-            short: (gapPct) =>
-              sub(t.phasesPenShort, { gap: formatNumber(gapPct, lang, 1) }),
+            pierced: t.phasesPenOk,
+            partial: ({ lostPct, penetrationPct, mitigationPct }) =>
+              sub(t.phasesPenShort, {
+                lost: formatNumber(lostPct, lang, 1),
+                pen: formatNumber(penetrationPct, lang, 1),
+                mit: formatNumber(mitigationPct, lang, 1),
+              }),
           })}
         </span>
       ),
@@ -178,7 +167,7 @@ function CombatFigures({
 
   return (
     <>
-      <StatList items={rows.filter((row) => shown.has(row.id))} />
+      <StatList items={rows} />
       <p className={tipClass}>
         {fuseNote(fuse, {
           atCeiling: detail.heroDetailCombatCdrCeilingReached,

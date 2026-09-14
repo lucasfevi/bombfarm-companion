@@ -9,7 +9,7 @@ import { importedRoster, seedLocalStorage, selectSavedHero } from './fixtures/se
  * War Cry and Miner's Breath are the auras asserted on. The seed roster stores crit in save
  * units, so Deadly Omen's delta is not a figure to pin here.
  */
-const TEAM_AURA_IDS = ['grito_guerra', 'pressagio_mortal', 'marcha_acelerada', 'folego_mineiro', 'brecha'] as const;
+const TEAM_AURA_IDS = ['grito_guerra', 'pressagio_mortal', 'marcha_acelerada', 'folego_mineiro', 'brecha', 'passagem_bastao'] as const;
 
 /** Lorne carries War Cry at rank 12; Cora carries no team aura at all. */
 const roster = {
@@ -44,10 +44,10 @@ async function stripSustainedDps(page: Page): Promise<number> {
   return Number((title ?? '').replace(/,/g, ''));
 }
 
-/** The Combat tab's Sustained DPS figure — the Effective panel's row, which the tab states once. */
+/** The Combat tab's Sustained DPS figure — the Effective panel's card, which the tab states once. */
 async function combatSustainedDps(page: Page): Promise<number> {
-  const row = activePanel(page).getByRole('button', { name: /Show breakdown of Sustained DPS/i });
-  const text = (await row.innerText()).replace(/,/g, '');
+  const card = activePanel(page).locator('[data-breakdown-card="sustainedDps"] [data-testid="breakdown-value"]');
+  const text = (await card.innerText()).replace(/,/g, '');
   const match = /(\d+(?:\.\d+)?)\s*$/.exec(text);
   if (!match) throw new Error(`no figure in "${text}"`);
   return Number(match[1]);
@@ -90,7 +90,7 @@ test.describe('abilities & auras section', () => {
 
     const section = auraSection(page);
     await expect(section.getByRole('heading', { name: /^Abilities & auras$/i, level: 2 })).toBeVisible();
-    for (const id of TEAM_AURA_IDS) {
+    for (const id of TEAM_AURA_IDS.filter((aura) => aura !== 'passagem_bastao')) {
       const row = section.getByTestId(`team-aura-${id}`);
       await expect(row).toBeVisible();
       await expect(row.getByRole('switch')).not.toBeChecked();
@@ -98,11 +98,13 @@ test.describe('abilities & auras section', () => {
     }
     await expect(section.getByTestId('team-aura-grito_guerra').getByTestId('team-aura-delta')).toHaveText(/\+\d+\.\d% if on/);
     await expect(section.getByTestId('own-ability-detonacao_dupla')).toContainText(/×1\.\d\d dmg/);
-    // Baton Pass is the hero's own since the abilities pass: its pulse is priced over Cora's own
-    // stint, and the row reads the team damage the pulse carries — rank 10 × 4%.
-    const batonPass = section.getByTestId('own-ability-passagem_bastao');
-    await expect(batonPass.getByTestId('own-ability-status')).toHaveText(/^own$/i);
-    await expect(batonPass).toContainText(/\+40% team dmg on entering/);
+    // Baton Pass is the sixth aura row. Cora carries it at rank 10, so it is her own — no switch —
+    // priced at the team damage her own entry pulse carries, rank 10 × 4%.
+    const batonPass = section.getByTestId('team-aura-passagem_bastao');
+    await expect(batonPass.getByRole('switch')).toHaveCount(0);
+    await expect(batonPass.getByTestId('team-aura-own')).toHaveText(/^own$/i);
+    await expect(batonPass.getByTestId('team-aura-priced-at')).toHaveText(/\+40% dmg, pulse held up/);
+    await expect(section.getByTestId('own-ability-passagem_bastao')).toHaveCount(0);
 
     await selectSavedHero(page, 'Lorne');
     const lorneSection = auraSection(page);
@@ -114,6 +116,19 @@ test.describe('abilities & auras section', () => {
     for (const id of TEAM_AURA_IDS.filter((aura) => aura !== 'grito_guerra')) {
       await expect(lorneSection.getByTestId(`team-aura-${id}`).getByRole('switch')).toHaveCount(1);
     }
+    // Lorne carries no Baton Pass: its switch prices her own entry pulse at the cap, and the
+    // Combat figure moves by what the row promised.
+    const lorneBaton = lorneSection.getByTestId('team-aura-passagem_bastao');
+    await expect(lorneBaton.getByTestId('team-aura-priced-at')).toHaveText('—');
+    const promised = await promisedDeltaPct(lorneBaton);
+    expect(promised).toBeGreaterThan(0);
+    const before = await combatSustainedDps(page);
+    await lorneBaton.getByRole('switch').click();
+    await expect(lorneBaton.getByRole('switch')).toBeChecked();
+    await expect(lorneBaton.getByTestId('team-aura-priced-at')).toHaveText(/\+80% dmg, pulse held up/);
+    await expect.poll(() => combatSustainedDps(page)).toBeGreaterThan(before);
+    const after = await combatSustainedDps(page);
+    expect(Math.abs((after / before - 1) * 100 - promised)).toBeLessThanOrEqual(moveTolerancePct(before, after));
   });
 
   test('switching War Cry on moves the strip and the Combat figure by the row’s own promise, and the Farm page not at all', async ({

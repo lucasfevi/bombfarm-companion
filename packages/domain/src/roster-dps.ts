@@ -61,6 +61,7 @@ export function advisorInputForHero(
     treeLuckFlatPct: account.tree.luckFlatPct ?? 0,
     teamBuffs: account.teamBuffs,
     fieldAllies: account.fieldAllies ?? 0,
+    entryPulseRankFloor: account.entryPulseRankFloor ?? 0,
     houseIdx: context.houseIdx,
     houseLevel: context.houseLevel,
     houseCycleSecs: account.houseCycleSecs ?? null,

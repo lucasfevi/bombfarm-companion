@@ -141,10 +141,10 @@ describe('planner tabs IA (PTI-*)', () => {
 describe('effective stats panel chrome (EST-*)', () => {
   it('effectiveTip clarifies post-pipeline sources in EN and PT', () => {
     expect(STRINGS.en.effectiveTip).toBe(
-      'Includes gear, points, skill tree, abilities, and the team auras switched on below. Baton Pass counts this hero’s own pulse over its own stint; the other carriers’ pulses are counted on the Farm page and the Optimizer. Pack counts the heroes deployed beside this one.',
+      'Includes gear, points, skill tree, abilities, and the team auras switched on below. Pack counts the heroes deployed beside this one.',
     );
     expect(STRINGS.pt.effectiveTip).toBe(
-      'Inclui equipamento, pontos, árvore, habilidades e as auras de time ligadas abaixo. Passagem de Bastão conta o pulso do próprio herói no tempo em campo dele; os pulsos dos outros portadores entram na página Farm e no Otimizador. Matilha conta os heróis em campo ao lado deste.',
+      'Inclui equipamento, pontos, árvore, habilidades e as auras de time ligadas abaixo. Matilha conta os heróis em campo ao lado deste.',
     );
   });
 
@@ -157,12 +157,13 @@ describe('effective stats panel chrome (EST-*)', () => {
     expect(STRINGS.pt.effectiveTargetHp).toBe('HP do alvo');
   });
 
-  it('defines breakdown derived labels, sources, notes, and formula keys', () => {
+  it('defines breakdown derived labels, sources and notes', () => {
     const keys = [
       'effectiveMitF',
       'effectiveDmg',
       'effectiveHit',
       'effectiveCriticalHit',
+      'effectiveAvgHit',
       'effectiveCritFactor',
       'effectiveBombsPerSec',
       'effectiveField',
@@ -179,49 +180,11 @@ describe('effective stats panel chrome (EST-*)', () => {
       'bdSrcAbilities',
       'bdSrcTeam',
       'bdSrcAbilitiesTeam',
-      'bdLedgerTotal',
       'bdNoteCapped',
       'bdNoteSplit',
       'bdNoteKeenEye',
       'bdNoteDiamondTip',
       'bdNoteBrutalStrike',
-      'bdGroupSheet',
-      'bdGroupDerived',
-      'bdTriggerAria',
-      'bdFormulaMitF',
-      'bdFormulaDmg',
-      'bdFormulaHit',
-      'bdFormulaCriticalHit',
-      'bdFormulaCritFactor',
-      'bdFormulaFuse',
-      'bdFormulaBombs',
-      'bdFormulaField',
-      'bdFormulaRest',
-      'bdFormulaUptime',
-      'bdFormulaActive',
-      'bdFormulaSustained',
-      'bdTermMit',
-      'bdTermPen',
-      'bdTermTree',
-      'bdTermAbl',
-      'bdTermExtra',
-      'bdTermPack',
-      'bdTermAtk',
-      'bdTermMitigation',
-      'bdTermDamage',
-      'bdTermCc',
-      'bdTermCd',
-      'bdTermCdr',
-      'bdTermCycle',
-      'bdTermWalk',
-      'bdTermBand',
-      'bdTermDrain',
-      'bdTermRestSeconds',
-      'bdTermField',
-      'bdTermRestSecs',
-      'bdTermAvg',
-      'bdTermRange',
-      'bdTermActiveDps',
     ] as const;
     for (const lang of ['en', 'pt'] as const) {
       for (const k of keys) {
@@ -230,8 +193,6 @@ describe('effective stats panel chrome (EST-*)', () => {
         expect(String(v).length).toBeGreaterThan(0);
       }
     }
-    expect(STRINGS.en.bdTriggerAria).toContain('{stat}');
-    expect(STRINGS.pt.bdTriggerAria).toContain('{stat}');
     expect(STRINGS.en.bdNoteSplit).toContain('{own}');
     expect(STRINGS.pt.bdNoteSplit).toContain('{team}');
   });
@@ -241,7 +202,6 @@ describe('effective stats panel chrome (EST-*)', () => {
     const ptCodes = STRINGS.pt.explainSections.map((s) => s.code).join('\n');
     expect(enCodes).toMatch(/critChance|critDmg|cdr|bombs\/s|walk/i);
     expect(ptCodes).toMatch(/cdr|bombs|walk|pavio|fuse|crit/i);
-    expect(STRINGS.en.bdFormulaFuse).toContain('0.4');
     expect(STRINGS.en.explainSections.some((s) => s.code?.includes('0.4'))).toBe(true);
   });
 });

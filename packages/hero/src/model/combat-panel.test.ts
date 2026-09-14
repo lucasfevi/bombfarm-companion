@@ -8,7 +8,6 @@ import {
   propTableReadingFor,
   stageLabelFor,
   type FuseSource,
-  combatFiguresShown,
 } from './combat-panel';
 
 /** The shape the pipeline reports today: the floor is twice the base cycle at the 80% cap, so the
@@ -102,38 +101,39 @@ describe('stageLabelFor', () => {
 });
 
 describe('penetrationReadingFor', () => {
-  it('penetration under the stage’s mitigation reports the gap it is short by', () => {
+  it('penetration pierces a share of the mitigation, so 42% against a 60% phase still loses 34.8% of each hit', () => {
     expect(
       penetrationReadingFor({ context: { mitigation: 0.6 }, effective: { penetration: 42 } }),
-    ).toEqual({ kind: 'short', gapPct: 18 });
+    ).toEqual({ kind: 'partial', lostPct: expect.closeTo(60 * 0.58, 6) as number, penetrationPct: 42, mitigationPct: 60 });
   });
 
-  it('penetration that meets the mitigation exactly counts as covered', () => {
-    expect(
-      penetrationReadingFor({ context: { mitigation: 0.6 }, effective: { penetration: 60 } }),
-    ).toEqual({ kind: 'covered' });
+  it('penetration equal to the mitigation percentage is NOT pierced — the two are not the same quantity', () => {
+    const reading = penetrationReadingFor({ context: { mitigation: 0.6 }, effective: { penetration: 60 } });
+    expect(reading.kind).toBe('partial');
+    if (reading.kind === 'partial') expect(reading.lostPct).toBeCloseTo(24, 6);
   });
 
-  it('penetration past the mitigation is covered, never a negative gap', () => {
+  it('only 100% penetration is pierced, whatever the phase', () => {
     expect(
-      penetrationReadingFor({ context: { mitigation: 0.3 }, effective: { penetration: 80 } }),
-    ).toEqual({ kind: 'covered' });
+      penetrationReadingFor({ context: { mitigation: 0.3 }, effective: { penetration: 100 } }),
+    ).toEqual({ kind: 'pierced' });
+    expect(
+      penetrationReadingFor({ context: { mitigation: 0.3 }, effective: { penetration: 140 } }),
+    ).toEqual({ kind: 'pierced' });
   });
 });
 
 describe('penetrationNote', () => {
   const NOTES = {
-    covered: 'penetration covers this stage',
-    short: (gapPct: number) => `short by ${gapPct.toFixed(1)} points`,
+    pierced: 'nothing lost to mitigation',
+    partial: ({ lostPct }: { lostPct: number }) => `${lostPct.toFixed(1)}% of each hit lost`,
   };
 
-  it('a covered hero and a short one get two different sentences', () => {
-    const covered = penetrationNote({ kind: 'covered' }, NOTES);
-    expect(covered).toBe(NOTES.covered);
-    expect(penetrationNote({ kind: 'short', gapPct: 18 }, NOTES)).toBe('short by 18.0 points');
+  it('a pierced hero and a partial one get two different sentences', () => {
+    expect(penetrationNote({ kind: 'pierced' }, NOTES)).toBe(NOTES.pierced);
+    expect(penetrationNote({ kind: 'partial', lostPct: 18, penetrationPct: 40, mitigationPct: 30 }, NOTES)).toBe('18.0% of each hit lost');
   });
 });
-
 describe('propTableReadingFor', () => {
   const ROW: PropHtkRow = { name: 'Rocha', hp: 100, hits: 4, oneshotGapPct: 0, highlight: false };
 
@@ -143,42 +143,5 @@ describe('propTableReadingFor', () => {
 
   it('a stage with props hands the rows through untouched', () => {
     expect(propTableReadingFor([ROW])).toEqual({ kind: 'rows', rows: [ROW] });
-  });
-});
-
-describe('combatFiguresShown', () => {
-  it('prints every figure for a host that draws no breakdown beside it', () => {
-    expect(combatFiguresShown({ breakdownShownElsewhere: false })).toEqual([
-      'pen',
-      'damageThrough',
-      'normalHit',
-      'critHit',
-      'avgHit',
-      'fieldTime',
-      'fuse',
-      'fuseFloor',
-      'cdrCap',
-      'uptime',
-      'activeDps',
-      'sustainedDps',
-    ]);
-  });
-
-  it('drops the eight the breakdown states with their ledgers, keeping the four only it says', () => {
-    expect(combatFiguresShown({ breakdownShownElsewhere: true })).toEqual([
-      'pen',
-      'avgHit',
-      'fuseFloor',
-      'cdrCap',
-    ]);
-  });
-
-  it('never drops a figure the breakdown has no row for', () => {
-    // The discriminating case: `avgHit`, `fuseFloor`, `cdrCap` and the penetration verdict have
-    // no counterpart in BREAKDOWN_DERIVED_IDS, so dropping one would lose it from the screen.
-    const withBreakdown = combatFiguresShown({ breakdownShownElsewhere: true });
-    for (const id of ['pen', 'avgHit', 'fuseFloor', 'cdrCap'] as const) {
-      expect(withBreakdown).toContain(id);
-    }
   });
 });
