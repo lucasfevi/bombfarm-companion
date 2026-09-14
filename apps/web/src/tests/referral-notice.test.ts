@@ -88,15 +88,13 @@ describe('referral notice wiring', () => {
     expect(notice).toContain('if (await copy()) onDismiss();');
   });
 
-  it('sits below the topbar and above the quick guide, on every route', () => {
+  it('sits below the topbar on every route', () => {
     const header = shell.indexOf('<SiteHeader');
     const noticeAt = shell.indexOf('<ReferralNotice');
-    const guide = shell.indexOf('<GuideSection');
     expect(header).toBeGreaterThan(-1);
     expect(noticeAt).toBeGreaterThan(header);
-    expect(guide).toBeGreaterThan(noticeAt);
-    // The guide is planner-only (`onSectionPage`); the notice is shown once for the browser,
-    // so gating it on a route would hide it from a first visit that lands on Farm or Account.
+    // The notice is shown once for the browser, so gating it on a route would hide it from a
+    // first visit that lands on Farm or Account.
     expect(shell).toContain('{showReferralNotice ? <ReferralNotice');
   });
 

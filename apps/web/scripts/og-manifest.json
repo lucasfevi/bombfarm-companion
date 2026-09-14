@@ -1,8 +1,23 @@
 {
   "renderedFrom": {
+    "home": {
+      "eyebrow": "Home",
+      "title": "Bomb Farm Companion",
+      "description": "Your Bomb Farm account at a glance — the roster ranked by DPS, the phase that pays most, the optimizer's plan and what it is all worth. Free, and the save never leaves your browser.",
+      "cardHeadline": [
+        "Your whole account,",
+        "on one screen."
+      ],
+      "cardChips": [
+        "Top heroes",
+        "Best phase",
+        "Optimizer plan",
+        "Market value"
+      ]
+    },
     "planner": {
       "eyebrow": "Planner",
-      "title": "Bomb Farm Companion",
+      "title": "Planner — Bomb Farm Companion",
       "description": "Import your Bomb Farm save and see what your next skill point is worth — every hero's geared stats, gear sets, points and DPS. Free, and the save never leaves your browser.",
       "cardHeadline": [
         "Know what your next point",

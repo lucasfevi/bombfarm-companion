@@ -6,6 +6,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { PhasesExplorerView } from '@bombfarm/farm/components';
 import type { HeroPickerSlotProps } from '@bombfarm/hero/components';
 import { HeroPickerDialog } from '@/features/roster';
+import { SITE_SECTION_HREF } from '@/shared/lib/site-sections';
 import type { HeroRecord } from '@/shared/lib/storage';
 import type { Lang, Strings } from '@/shared/i18n';
 import {
@@ -41,7 +42,7 @@ export function PhasesExplorer({ t, lang }: { t: Strings; lang: Lang }) {
   const slots = useMemo(
     () => ({
       emptyRosterAction: (
-        <Link href="/" className="text-accent underline-offset-2 hover:underline">
+        <Link href={SITE_SECTION_HREF.planner} className="text-accent underline-offset-2 hover:underline">
           {t.navPlanner}
         </Link>
       ),

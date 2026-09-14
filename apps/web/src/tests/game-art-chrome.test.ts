@@ -199,8 +199,9 @@ describe('hero ability icons', () => {
     expect(src).not.toContain('role="img"');
   });
 
-  it('shows n/max progress at lg size matching gear', () => {
-    expect(src).toContain('size="lg"');
+  it('shows n/max progress at lg size matching gear unless a caller asks for another', () => {
+    expect(src).toContain("size = 'lg'");
+    expect(src).toContain('size={size}');
     expect(src).toContain('level={level}');
     expect(src).toContain('max={max}');
     expect(src).toContain('${level}/${max}');

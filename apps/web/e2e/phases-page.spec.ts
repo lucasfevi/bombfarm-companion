@@ -16,8 +16,9 @@ test.describe('Phases page', () => {
     await expect(page.getByRole('link', { name: /^Planner$/i })).toBeVisible();
 
     const navLinks = page.getByRole('navigation', { name: 'Main sections' }).getByRole('link');
-    await expect(navLinks.first()).toHaveText(/^Planner$/i);
-    await expect(navLinks.nth(1)).toHaveText(/^Farm$/i);
+    await expect(navLinks.first()).toHaveText(/^Home$/i);
+    await expect(navLinks.nth(1)).toHaveText(/^Planner$/i);
+    await expect(navLinks.nth(2)).toHaveText(/^Farm$/i);
     await expect(page.getByRole('heading', { name: /^Map$/i, level: 2 })).toBeVisible();
     await expect(page.getByRole('heading', { name: /^Economy$/i, level: 2 })).toBeVisible();
     await expect(page.getByLabel(/^Difficulty$/i)).toBeVisible();

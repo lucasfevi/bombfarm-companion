@@ -81,7 +81,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page, 'en');
 
@@ -116,7 +116,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
 
@@ -129,7 +129,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     }
 
     await seedLocalStorage(page, { ...combatSheetDeltaRoster(importedRoster), lang: 'en' });
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
     const panelDelta = effectivePanel(page, 'en');
@@ -162,7 +162,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     // Cora carries no War Cry: with the switch off she is priced alone (no sheet row leaves
     // Total); on, she reads the aura's whole +20% cap, whoever would carry it.
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
 
@@ -186,7 +186,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
       lang: 'en',
       heroes: importedRoster.heroes,
     });
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
 
     const pointsTab = page.getByRole('tab', { name: /^points$/i });
@@ -201,7 +201,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
 
   test('no Gates or Context headings in Points tab', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page, 'en');
 
@@ -214,7 +214,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
 
@@ -234,7 +234,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
 
   test('expand sheet row shows ledger; expand derived shows formula', async ({ page }) => {
     await seedLocalStorage(page, { ...combatSheetDeltaRoster(importedRoster), lang: 'en' });
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
 
@@ -300,7 +300,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     }
 
     await seedLocalStorage(page, seeded('pt'));
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'pt');
     const ptPanel = effectivePanel(page, 'pt');
@@ -311,7 +311,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
     await expect(ptPanel.getByText(/^Árvore$/i).first()).toBeVisible();
 
     await seedLocalStorage(page, seeded('en'));
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
     const enPanel = effectivePanel(page, 'en');
@@ -368,7 +368,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
       },
     };
     await seedLocalStorage(page, seeded);
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page, 'en');
 
@@ -392,7 +392,7 @@ test.describe('effective stats panel (EST / ESB)', () => {
 
   test('expand/collapse does not shift sibling value column (box metrics)', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
 

@@ -26,6 +26,17 @@ export function selectCurrentPhase(state: PlannerStore): number {
 }
 
 /**
+ * The mitigation belonging to {@link selectCurrentPhase}: the explorer's pick carries the wiki
+ * line's own figure, and with no pick the account's stored figure stands. Untouched by the
+ * Combat tab's override, for the readers that must not follow it.
+ */
+export function selectCurrentPhaseMitigationPct(state: PlannerStore): number {
+  if (!state.phasesViewPhaseChosen) return state.mitigationPct;
+  const line = wikiPhaseLine(selectCurrentPhase(state));
+  return line ? line.mitig * 100 : state.mitigationPct;
+}
+
+/**
  * The one phase every per-hero combat figure in the planner is computed at: the Combat tab's own
  * pick while one is in force, otherwise {@link selectCurrentPhase}. The phases explorer keeps
  * reading its own selection, so a pick made on the planner never moves the explorer.

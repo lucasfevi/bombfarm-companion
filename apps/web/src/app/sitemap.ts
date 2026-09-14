@@ -14,6 +14,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return SITE_SECTIONS.map((section) => ({
     url: new URL(SITE_SECTION_HREF[section], SITE_URL).toString(),
     changeFrequency: 'weekly',
-    priority: section === 'planner' ? 1 : 0.8,
+    priority: section === 'home' ? 1 : 0.8,
   }));
 }

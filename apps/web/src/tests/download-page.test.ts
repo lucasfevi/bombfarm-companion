@@ -687,9 +687,9 @@ describe('site navigation', () => {
     }
   });
 
-  it('treats only the planner as an exact-path section', () => {
-    expect(isSiteSectionActive('planner', '/')).toBe(true);
-    expect(isSiteSectionActive('planner', '/farm')).toBe(false);
+  it('treats only the front page as an exact-path section', () => {
+    expect(isSiteSectionActive('home', '/')).toBe(true);
+    expect(isSiteSectionActive('planner', '/')).toBe(false);
     expect(isSiteSectionActive('download', '/download')).toBe(true);
     expect(isSiteSectionActive('download', '/')).toBe(false);
   });

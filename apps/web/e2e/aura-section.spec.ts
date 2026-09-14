@@ -84,7 +84,7 @@ test.describe('abilities & auras section', () => {
     page,
   }) => {
     await seedLocalStorage(page, roster);
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page);
 
@@ -120,7 +120,7 @@ test.describe('abilities & auras section', () => {
     page,
   }) => {
     await seedLocalStorage(page, roster);
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
 
     // The Farm page's own hero panel, for the same hero, in the same session — read before and
@@ -163,7 +163,7 @@ test.describe('abilities & auras section', () => {
 
   test('Miner’s Breath reaches the Points ranking, which reads the same pipeline', async ({ page }) => {
     await seedLocalStorage(page, roster);
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
 
     const before = await energyRankingText(page);
@@ -177,7 +177,7 @@ test.describe('abilities & auras section', () => {
 
   test('"Back to your current phase" clears the switches, and so does a reload', async ({ page }) => {
     await seedLocalStorage(page, roster);
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page);
 

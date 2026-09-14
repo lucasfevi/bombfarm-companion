@@ -27,7 +27,7 @@ function cardIds(page: Page) {
 async function openPlanner(page: Page) {
   await page.setViewportSize(RAIL_VIEWPORT);
   await seedLocalStorage(page, { ...rosterBoard, lang: 'en' });
-  await page.goto('/');
+  await page.goto('/planner');
   await expect(page.getByRole('button', { name: /^Cards$/i })).toBeVisible();
 }
 

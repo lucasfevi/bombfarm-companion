@@ -17,7 +17,7 @@ async function openHeroTab(page: import('@playwright/test').Page, lang: 'pt' | '
 test.describe('abilities panel (ABX residual)', () => {
   test('picker always visible on Hero tab; tip and grid shown', async ({ page }) => {
     await seedLocalStorage(page, importedRoster);
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openHeroTab(page);
 
@@ -27,7 +27,7 @@ test.describe('abilities panel (ABX residual)', () => {
 
   test('empty ability pool shows tip but no ability cards', async ({ page }) => {
     await seedLocalStorage(page, heroWithAbilities({}));
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openHeroTab(page);
 
@@ -37,7 +37,7 @@ test.describe('abilities panel (ABX residual)', () => {
 
   test('hero omits duplicate quota; reset uses default button chrome', async ({ page }) => {
     await seedLocalStorage(page, importedRoster);
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openHeroTab(page);
 
@@ -63,7 +63,7 @@ test.describe('abilities panel (ABX residual)', () => {
 
   test('EN chrome for picker', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openHeroTab(page, 'en');
 
@@ -85,7 +85,7 @@ test.describe('abilities panel (ABX residual)', () => {
       ),
     };
     await seedLocalStorage(page, heroed);
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openHeroTab(page, 'en');
 
@@ -127,7 +127,7 @@ test.describe('abilities panel (ABX residual)', () => {
       ),
     };
     await seedLocalStorage(page, heroed);
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openHeroTab(page, 'en');
 
@@ -165,7 +165,7 @@ test.describe('abilities panel (ABX residual)', () => {
 
   test('the hero strip still names the hero, and the tab holds no second editable identity', async ({ page }) => {
     await seedLocalStorage(page, importedRoster);
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openHeroTab(page);
 

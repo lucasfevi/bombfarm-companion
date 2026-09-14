@@ -50,7 +50,7 @@ async function seedWithRawRankMode(page: Page, rawRankMode: string): Promise<voi
 test.describe('next-point ranking mode — default, options, persistence', () => {
   test('a fresh profile with no stored account lands on Farm mode', async ({ page }) => {
     await seedLocalStorage(page, noAccountSeed());
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -59,7 +59,7 @@ test.describe('next-point ranking mode — default, options, persistence', () =>
 
   test('the select offers exactly two options, and neither is the retired one-shot mode', async ({ page }) => {
     await seedLocalStorage(page, importedRoster);
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -79,7 +79,7 @@ test.describe('next-point ranking mode — default, options, persistence', () =>
     // actual write back and re-seeding with it (the farm-ranking.spec.ts precedent) is what
     // proves hydration honours a stored value on load, rather than proving nothing.
     await seedLocalStorage(page, noAccountSeed());
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -95,7 +95,7 @@ test.describe('next-point ranking mode — default, options, persistence', () =>
     expect(JSON.parse(afterDps!).context.rankMode).toBe('dps');
 
     await seedLocalStorage(page, { ...importedRoster, account: JSON.parse(afterDps!) });
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
     await expect(nextPointCombobox(page)).toHaveText(/^DPS$/i);
@@ -106,7 +106,7 @@ test.describe('next-point ranking mode — default, options, persistence', () =>
     expect(JSON.parse(afterFarm!).context.rankMode).toBe('farm');
 
     await seedLocalStorage(page, { ...importedRoster, account: JSON.parse(afterFarm!) });
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
     await expect(nextPointCombobox(page)).toHaveText(/^Farm$/i);
@@ -114,7 +114,7 @@ test.describe('next-point ranking mode — default, options, persistence', () =>
 
   test('a profile seeded with the retired "oneshot" rankMode loads on Farm', async ({ page }) => {
     await seedWithRawRankMode(page, 'oneshot');
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -123,7 +123,7 @@ test.describe('next-point ranking mode — default, options, persistence', () =>
 
   test('a profile seeded with "dps" loads on DPS — a deliberate past choice is respected', async ({ page }) => {
     await seedWithRawRankMode(page, 'dps');
-    await page.goto('/');
+    await page.goto('/planner');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 

@@ -1,4 +1,7 @@
-/** `/` — planner workspace lives in the `@planner` parallel slot. */
-export default function HomePage() {
-  return null;
+'use client';
+
+import { HomePage } from '@/features/home';
+
+export default function HomeRoutePage() {
+  return <HomePage />;
 }

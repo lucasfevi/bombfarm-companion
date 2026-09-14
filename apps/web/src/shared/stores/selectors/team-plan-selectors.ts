@@ -1,5 +1,6 @@
 import {
   computeTeamPlanInputSignature,
+  countOptimizeScopeHeroes,
   isFarmObjectiveUnavailable,
   isTeamPlanStale,
   resolveTeamPlanTargetPhase,
@@ -96,4 +97,18 @@ export function selectTeamPlanIgnoreFieldCrowding(state: PlannerStore) {
  */
 export function selectTeamPlanFarmUnavailable(state: PlannerStore): boolean {
   return isFarmObjectiveUnavailable(state.maxPhase, selectTeamPlanTargetPhase(state));
+}
+
+export function selectOptimizeScopeHeroCount(state: PlannerStore): number {
+  return countOptimizeScopeHeroes(state.heroes, state.scopeByHeroId);
+}
+
+/** The exact conditions under which the Optimizer page's Optimize button is enabled. */
+export function selectTeamPlanInputsUsable(state: PlannerStore): boolean {
+  return (
+    state.heroes.length > 0 &&
+    state.inventory.items.length > 0 &&
+    selectOptimizeScopeHeroCount(state) > 0 &&
+    !(state.objective === 'farm' && selectTeamPlanFarmUnavailable(state))
+  );
 }

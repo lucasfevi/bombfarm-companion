@@ -16,7 +16,7 @@ async function openImportDialog(page: import('@playwright/test').Page) {
  */
 test.describe('import dialog reviews, does not curate', () => {
   test('has no selection checkboxes; status switches are read-only', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/planner');
     await openImportDialog(page);
     await page.locator('input[type="file"]').setInputFiles(sampleSave);
     await expect(page.getByRole('dialog').getByText('Cora')).toBeVisible();
@@ -28,7 +28,7 @@ test.describe('import dialog reviews, does not curate', () => {
   });
 
   test('confirm is enabled with no selection action required', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/planner');
     await openImportDialog(page);
     await page.locator('input[type="file"]').setInputFiles(sampleSave);
 
@@ -58,7 +58,7 @@ test.describe('import dialog reviews, does not curate', () => {
       ],
     };
     await seedLocalStorage(page, seeded);
-    await page.goto('/');
+    await page.goto('/planner');
 
     const heroStrip = page.getByRole('region', { name: /herói atual/i });
     await heroStrip.getByRole('button', { name: /trocar herói/i }).click();
@@ -97,7 +97,7 @@ test.describe('import dialog reviews, does not curate', () => {
         { ...importedRoster.heroes[0], id: 'seed-orphan', name: 'Orphan', sourceId: '9999' },
       ],
     });
-    await page.goto('/');
+    await page.goto('/planner');
     await page.getByRole('button', { name: /^Importar$/i }).click();
     await page.locator('input[type="file"]').setInputFiles(sampleSave);
     await expect(page.getByRole('dialog').getByText('Cora').first()).toBeVisible();
@@ -113,7 +113,7 @@ test.describe('import dialog reviews, does not curate', () => {
   test('a rejected save shows the rejection reason, not "no heroes found"', async ({
     page,
   }) => {
-    await page.goto('/');
+    await page.goto('/planner');
     await openImportDialog(page);
     await page.locator('input[type="file"]').setInputFiles({
       name: 'no-birth-stats.json',
@@ -196,7 +196,7 @@ test.describe('a hero the planner cannot rebuild explains itself', () => {
     );
 
   async function loadMixed(page: import('@playwright/test').Page) {
-    await page.goto('/');
+    await page.goto('/planner');
     await openImportDialog(page);
     await page
       .locator('input[type="file"]')

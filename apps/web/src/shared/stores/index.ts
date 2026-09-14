@@ -47,6 +47,7 @@ export {
   selectMaxPhase,
   selectPlayerName,
   selectAccountId,
+  selectAccountImportedAt,
   selectMissingRequiredFields,
   selectTreeSquadDmgPct,
   selectTreeGeoMult,
@@ -63,6 +64,8 @@ export {
   selectTeamPlanObjective,
   selectTeamPlanFarmUnavailable,
   selectTeamPlanTargetPhase,
+  selectOptimizeScopeHeroCount,
+  selectTeamPlanInputsUsable,
 } from '@/shared/stores/selectors/team-plan-selectors';
 export type { TeamPlanSlice } from '@/shared/stores/slices/team-plan-slice';
 export {
@@ -112,6 +115,7 @@ export {
   selectPhasesViewPhase,
   selectPhasesViewPhaseChosen,
   selectCurrentPhase,
+  selectCurrentPhaseMitigationPct,
   selectCombatPhase,
   selectCombatPhaseSelection,
   selectCombatMitigationPct,

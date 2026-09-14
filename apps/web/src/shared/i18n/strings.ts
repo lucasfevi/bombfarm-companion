@@ -15,6 +15,7 @@ import * as stats from './namespaces/stats';
 import * as inventory from './namespaces/inventory';
 import * as market from './namespaces/market';
 import * as download from './namespaces/download';
+import * as home from './namespaces/home';
 
 const en = {
   ...chrome.en,
@@ -33,6 +34,7 @@ const en = {
   ...inventory.en,
   ...market.en,
   ...download.en,
+  ...home.en,
 };
 const pt = {
   ...chrome.pt,
@@ -51,6 +53,7 @@ const pt = {
   ...inventory.pt,
   ...market.pt,
   ...download.pt,
+  ...home.pt,
 };
 
 export type Strings = typeof en;

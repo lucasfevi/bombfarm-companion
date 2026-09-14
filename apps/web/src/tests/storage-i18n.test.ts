@@ -246,63 +246,6 @@ describe('effective stats panel chrome (EST-*)', () => {
   });
 });
 
-describe('quick guide (import-only workflow)', () => {
-  const guideBodies = (lang: 'en' | 'pt') => STRINGS[lang].guideSteps.map((s) => s.d);
-
-  it('has four sequentially numbered steps in EN and PT', () => {
-    expect(STRINGS.en.guideSteps).toHaveLength(4);
-    expect(STRINGS.pt.guideSteps).toHaveLength(4);
-    expect(STRINGS.en.guideSteps.map((s) => s.t)).toEqual([
-      '1 · Export',
-      '2 · Import',
-      '3 · Points',
-      '4 · Compare & save',
-    ]);
-    expect(STRINGS.pt.guideSteps.map((s) => s.t)).toEqual([
-      '1 · Exportar',
-      '2 · Importar',
-      '3 · Pontos',
-      '4 · Comparar & salvar',
-    ]);
-  });
-
-  it('omits manual-setup chrome and Infer naked references', () => {
-    for (const lang of ['en', 'pt'] as const) {
-      const joined = guideBodies(lang).join('\n');
-      expect(joined).not.toMatch(/manual|Manual|manualmente|Configuração manual/i);
-      expect(joined).not.toMatch(/Infer naked|Inferir base/i);
-    }
-    expect(STRINGS.en).not.toHaveProperty('guideTabManual');
-    expect(STRINGS.en).not.toHaveProperty('guideImportSteps');
-    expect(STRINGS.en).not.toHaveProperty('emptyManualCta');
-  });
-
-  it('guide bodies omit Context setup instructions', () => {
-    for (const lang of ['en', 'pt'] as const) {
-      for (const body of guideBodies(lang)) {
-        expect(body).not.toMatch(/set <em>Context<\/em>|ajuste o <em>Contexto<\/em>/i);
-        expect(body).not.toMatch(/\bContext panel\b|\bpainel Contexto\b/i);
-      }
-    }
-  });
-
-  it('points step references hero strip next point, not the top bar', () => {
-    expect(STRINGS.en.guideSteps[2].d).toMatch(/<em>Next point<\/em>/);
-    expect(STRINGS.en.guideSteps[2].d).toMatch(/hero strip/i);
-    expect(STRINGS.en.guideSteps[2].d).not.toMatch(/top bar/i);
-    expect(STRINGS.pt.guideSteps[2].d).toMatch(/<em>Próximo ponto<\/em>/);
-    expect(STRINGS.pt.guideSteps[2].d).toMatch(/faixa do herói/i);
-    expect(STRINGS.pt.guideSteps[2].d).not.toMatch(/barra superior/i);
-  });
-
-  it('compare step mentions Phases in the top bar', () => {
-    expect(STRINGS.en.guideSteps[3].d).toMatch(/<em>Phases<\/em>/);
-    expect(STRINGS.en.guideSteps[3].d).toMatch(/top bar/i);
-    expect(STRINGS.pt.guideSteps[3].d).toMatch(/<em>Fases<\/em>/);
-    expect(STRINGS.pt.guideSteps[3].d).toMatch(/barra superior/i);
-  });
-});
-
 describe('explain-tab copy (advice-column IA alignment)', () => {
   const explainJoined = (lang: 'en' | 'pt') =>
     STRINGS[lang].explainSections.map((s) => `${s.h}\n${s.p.join('\n')}`).join('\n');
@@ -378,16 +321,10 @@ describe('explain-tab copy (advice-column IA alignment)', () => {
     expect(STRINGS.pt.explainSections[0].p[2]).toMatch(/Total/);
     expect(STRINGS.pt.explainSections[0].p[2]).toMatch(/aba Equipamento/);
 
-    // No explain/guide prose anywhere should still tell the player to type the geared sheet
+    // No explain prose anywhere should still tell the player to type the geared sheet
     // or claim Stats lives on Gear.
     expect(explainJoined('en')).not.toMatch(/type (in|the) geared sheet/i);
     expect(explainJoined('pt')).not.toMatch(/digite a ficha equipada/i);
-    for (const step of STRINGS.en.guideSteps) {
-      expect(step.d).not.toMatch(/type (in|the) geared sheet/i);
-    }
-    for (const step of STRINGS.pt.guideSteps) {
-      expect(step.d).not.toMatch(/digite a ficha equipada/i);
-    }
   });
 
   it('drops Gates / Need% from props-and-phases section', () => {
@@ -489,42 +426,6 @@ describe('PT template contracts after copy polish', () => {
     );
   });
 
-  it('parseEmphasis keeps balanced <em> on the PT guide Points step', () => {
-    const step = STRINGS.pt.guideSteps[2].d;
-    expect(step).toContain('<em>Próximo ponto</em>');
-    expect(step).toContain('<em>Pontos</em>');
-    expect(parseEmphasis(step)).toEqual([
-      {
-        kind: 'text',
-        value:
-          'O app já calcula sozinho o seu próximo melhor ponto — veja ',
-      },
-      { kind: 'em', value: 'Próximo ponto' },
-      {
-        kind: 'text',
-        value: ' na faixa do herói acima das abas. Aumente esse mesmo atributo no painel ',
-      },
-      { kind: 'em', value: 'Pontos' },
-      {
-        kind: 'text',
-        value: ' para ver o DPS subir e, no jogo, gaste o ponto de verdade para acompanhar.',
-      },
-    ]);
-  });
-
-  it('balances every <em> pair across PT guide copy', () => {
-    const guideCopy = STRINGS.pt.guideSteps.map((s) => s.d);
-    for (const text of guideCopy) {
-      const opens = (text.match(/<em>/g) ?? []).length;
-      const closes = (text.match(/<\/em>/g) ?? []).length;
-      expect(opens).toBe(closes);
-      // No leftover raw tags after parse
-      const rebuilt = parseEmphasis(text)
-        .map((p) => (p.kind === 'em' ? `<em>${p.value}</em>` : p.value))
-        .join('');
-      expect(rebuilt).toBe(text);
-    }
-  });
 });
 
 /** Flatten all string values under STRINGS.pt (nested objects + guide/explain arrays). */

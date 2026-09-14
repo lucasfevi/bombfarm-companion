@@ -1,4 +1,4 @@
-export type SiteSection = 'planner' | 'farm' | 'optimizer' | 'inventory' | 'account' | 'download';
+export type SiteSection = 'home' | 'planner' | 'farm' | 'optimizer' | 'inventory' | 'account' | 'download';
 
 /**
  * Every top-level route, in order.
@@ -8,6 +8,7 @@ export type SiteSection = 'planner' | 'farm' | 'optimizer' | 'inventory' | 'acco
  * `/download` first shipped unreachable.
  */
 export const SITE_SECTIONS: readonly SiteSection[] = [
+  'home',
   'planner',
   'farm',
   'optimizer',
@@ -25,7 +26,8 @@ export const NAV_SECTIONS: readonly SiteSection[] = SITE_SECTIONS.filter(
 );
 
 export const SITE_SECTION_HREF: Record<SiteSection, string> = {
-  planner: '/',
+  home: '/',
+  planner: '/planner',
   farm: '/farm',
   optimizer: '/optimizer',
   inventory: '/inventory',
@@ -38,6 +40,7 @@ export const SITE_SECTION_HREF: Record<SiteSection, string> = {
  * reach `shared/i18n`, and the consumers that index `Strings` with these already can.
  */
 export const SITE_SECTION_LABEL_KEY = {
+  home: 'navHome',
   planner: 'navPlanner',
   farm: 'navPhases',
   optimizer: 'navOptimizer',
@@ -48,6 +51,6 @@ export const SITE_SECTION_LABEL_KEY = {
 
 /** `/` matches only itself; every other section owns its prefix. */
 export function isSiteSectionActive(section: SiteSection, pathname: string): boolean {
-  if (section === 'planner') return pathname === '/';
+  if (section === 'home') return pathname === '/';
   return pathname.startsWith(SITE_SECTION_HREF[section]);
 }

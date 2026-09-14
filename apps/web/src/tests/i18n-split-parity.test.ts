@@ -27,6 +27,7 @@ import * as stats from '@/shared/i18n/namespaces/stats';
 import * as market from '@/shared/i18n/namespaces/market';
 import * as inventory from '@/shared/i18n/namespaces/inventory';
 import * as download from '@/shared/i18n/namespaces/download';
+import * as home from '@/shared/i18n/namespaces/home';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
 /**
@@ -191,6 +192,9 @@ const KEYS_REMOVED: readonly string[] = [
   // plan gives nothing shows eight named empty cards and the sentence that stood in for them has
   // no reader left; its per-slot replacement is `teamPlanFlowSlotEmpty` (in `KEYS_ADDED`).
   'teamPlanHeroBreakdownGearEmpty',
+  // The quick guide leaves with the front page (2026-09-13): its section, its header toggle and
+  // its four strings had no reader left.
+  'guideToggleTitle', 'guideTitle', 'guideSteps', 'hide',
   // Split into `…Both`/`…Points`/`…Gear` (in `KEYS_ADDED`): the one string named gear moves and
   // point resets whatever Allowed changes was set to.
   'teamPlanOptimizeAria',
@@ -915,6 +919,11 @@ const KEYS_ADDED: readonly string[] = [
   // The Optimizer's forge queue (2026-09-13): every forge chore among a hero's proposed items,
   // drawn as its ladder and priced from the forge table. One line: this file sits at its cap.
   'teamPlanForgeQueueHeading', 'teamPlanForgeQueueLadderAria', 'teamPlanForgeQueueRolls', 'teamPlanForgeQueueSafeJumpOne', 'teamPlanForgeQueueSafeJumpMany', 'teamPlanForgeQueueGold', 'teamPlanForgeQueueTotal', 'teamPlanForgeQueueNoForecast', 'teamPlanForgeQueueLegend',
+  /**
+   * The front page (2026-09-13): the `home` namespace and its nav label. Every key on one line
+   * because this file sits at the `src/tests/**` max-lines cap (see the line above `resetAdviceRosterHero`).
+   */
+  'navHome', 'homeTitle', 'homeSubtitle', 'homeOpenLink', 'homeStripPlayerUnknown', 'homeStripAccountIdUnknown', 'homeStripHeroes', 'homeStripItems', 'homeStripImported', 'homeStripImportedUnknown', 'homeStripImport', 'homeFirstVisitEyebrow', 'homeFirstVisitTitle', 'homeFirstVisitTitleAccent', 'homeFirstVisitBody', 'homeFirstVisitButton', 'homeFirstVisitHint', 'homeCardPlannerContext', 'homeCardPlannerColHero', 'homeCardPlannerColPower', 'homeCardPlannerColDps', 'homeCardPlannerFooterAccount', 'homeCardPlannerFooterChosen', 'homeCardPlannerMore', 'homeCardPlannerNeedsHeroes', 'homeCardPlannerMissingFields', 'homeCardFarmContext', 'homeCardFarmCurrent', 'homeCardFarmBest', 'homeCardFarmSame', 'homeCardFarmSentenceAhead', 'homeCardFarmSentenceBehind', 'homeCardFarmSentenceClearFaster', 'homeCardFarmSentenceClearSlower', 'homeCardFarmSentenceDropsKeepAdd', 'homeCardFarmSentenceDropsAdd', 'homeCardFarmSentenceDropsKeepLose', 'homeCardFarmSentenceDropsLose', 'homeCardFarmSentenceDropsSwap', 'homeCardFarmSentenceAnd', 'homeCardFarmSentenceLead', 'homeCardFarmRowGold', 'homeCardFarmRowXp', 'homeCardFarmRowItemLevels', 'homeCardFarmRowClearTime', 'homeCardFarmRowVs', 'homeCardFarmHere', 'homeCardFarmLockedGate', 'homeCardFarmLockedGateCannot', 'homeCardFarmLockedReach', 'homeCardFarmSentenceOneShotGained', 'homeCardFarmSentenceOneShotLost', 'homeCardFarmNextItemLevel', 'homeCardFarmNextItemLevelNone', 'homeCardFarmNextDifficulty', 'homeCardFarmNextDifficultyTop', 'homeCardFarmVsBest', 'homeCardFarmVsCurrent', 'homeCardFarmLocked', 'homeCardFarmFooterRanked', 'homeCardFarmFooterPush', 'homeCardFarmNeeds', 'homeCardOptimizerContext', 'homeCardOptimizerReady', 'homeCardOptimizerScope', 'homeCardOptimizerScopeValue', 'homeCardOptimizerPhaseAuto', 'homeCardAccountValue', 'homeCardAccountHouseSlots', 'homeCardAccountMore', 'homeCardAccountHouse', 'homeCardInventoryContext', 'homeCardInventoryNeeds', 'homeCardInventoryCoverage', 'homeCardAccountContext', 'homeCardAccountNeeds', 'homeCardLiveBody',
 ];
 
 /**
@@ -1060,10 +1069,11 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   // same in one line, and `bdFormulaDmg` gains its `pack` factor. Optimizer disclosures are in
   // `KEYS_ADDED`.
   'explainSections.7.p.0', 'bdFormulaDmg',
-  // Where the save file comes from (2026-09-13): the import dialog's description and the quick
-  // guide's Export step both told the reader to "export your save file" without saying where the
-  // game keeps that control. Both now name it — Settings → Privacy, "Download a copy of my data".
-  'importDialogDesc', 'guideSteps.0.d',
+  // Where the save file comes from (2026-09-13): the import dialog's description told the reader
+  // to "export your save file" without saying where the game keeps that control. It now names
+  // it — Settings → Privacy, "Download a copy of my data". (The quick guide's step said the same
+  // and left with the guide; it is in `KEYS_REMOVED`.)
+  'importDialogDesc',
 ];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {
@@ -1114,7 +1124,7 @@ const namespaces = [
   ['stats', stats],
   ['market', market],
   ['inventory', inventory],
-  ['download', download],
+  ['download', download], ['home', home],
 ] as const;
 
 describe('i18n split parity', () => {

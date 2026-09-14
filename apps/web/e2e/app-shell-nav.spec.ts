@@ -10,7 +10,7 @@ test.describe('App shell navigation', () => {
       if (req.url().includes('_avatar.png')) avatarRequests.push(req.url());
     });
 
-    await page.goto('/');
+    await page.goto('/planner');
     const heroStrip = page.getByRole('region', { name: /current hero/i });
     await expect(heroStrip).toBeVisible();
 
@@ -21,24 +21,32 @@ test.describe('App shell navigation', () => {
     await expect(heroStrip).toBeHidden();
 
     await page.getByRole('link', { name: /^Planner$/i }).click();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/planner$/);
     await expect(heroStrip).toBeVisible();
 
     // Keep-alive: the planner tree is never unmounted, so no avatar refetch.
     expect(avatarRequests.length).toBe(avatarsAfterFirstLoad);
   });
 
-  test('nav order is Planner then Farm and marks the active route', async ({ page }) => {
+  test('nav order is Home then Planner then Farm and marks the active route', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/');
+    await page.goto('/planner');
 
     const links = page.getByRole('navigation', { name: 'Main sections' }).getByRole('link');
-    await expect(links.first()).toHaveText(/^Planner$/i);
-    await expect(links.nth(1)).toHaveText(/^Farm$/i);
-    await expect(links.first()).toHaveAttribute('aria-current', 'page');
+    await expect(links).toHaveText([
+      /^Home$/i,
+      /^Planner$/i,
+      /^Farm$/i,
+      /^Optimizer$/i,
+      /^Inventory$/i,
+      /^Account$/i,
+    ]);
+    await expect(links.nth(1)).toHaveAttribute('aria-current', 'page');
+    await expect(links.first()).not.toHaveAttribute('aria-current', 'page');
 
     await page.getByRole('link', { name: /^Farm$/i }).click();
-    await expect(links.nth(1)).toHaveAttribute('aria-current', 'page');
+    await expect(links.nth(2)).toHaveAttribute('aria-current', 'page');
+    await expect(links.nth(1)).not.toHaveAttribute('aria-current', 'page');
   });
 
   test('import dialog opens from the shell on both routes', async ({ page }) => {
@@ -47,6 +55,21 @@ test.describe('App shell navigation', () => {
 
     await page.getByRole('button', { name: /^Import/i }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
+  });
+
+  test('direct load of / renders Home and hides the planner', async ({ page }) => {
+    await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+    await page.goto('/');
+
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Your account, at a glance' }),
+    ).toBeVisible();
+    await expect(page.getByRole('region', { name: /current hero/i })).toBeHidden();
+
+    const links = page.getByRole('navigation', { name: 'Main sections' }).getByRole('link');
+    await expect(links.first()).toHaveText(/^Home$/i);
+    await expect(links.first()).toHaveAttribute('aria-current', 'page');
+    await expect(links.nth(1)).not.toHaveAttribute('aria-current', 'page');
   });
 
   test('direct load of /farm renders the farm route, not the planner', async ({ page }) => {
