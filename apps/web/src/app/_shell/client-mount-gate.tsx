@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   attachPlannerPersistence,
+  attachTeamPlanRunnerSync,
   ensureTeamPlanSolver,
   hydratePlannerStore,
   usePlannerStore,
@@ -26,9 +27,13 @@ export function ClientMountGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     hydratePlannerStore();
     const detach = attachPlannerPersistence(usePlannerStore);
-    ensureTeamPlanSolver(createShellTeamPlanSolver);
+    const solver = ensureTeamPlanSolver(createShellTeamPlanSolver);
+    const detachSync = attachTeamPlanRunnerSync(usePlannerStore, solver);
     setReady(true);
-    return detach;
+    return () => {
+      detachSync();
+      detach();
+    };
   }, []);
 
   if (!ready) {

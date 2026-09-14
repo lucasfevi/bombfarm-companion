@@ -13,6 +13,7 @@ export {
   resetTeamPlanSolverForTests,
 } from '@/shared/stores/team-plan-solver';
 export type { TeamPlanSolver, TeamPlanSolverSnapshot } from '@/shared/stores/team-plan-solver';
+export { attachTeamPlanRunnerSync } from '@/shared/stores/team-plan-runner-sync';
 export type { SessionSlice } from '@/shared/stores/slices/session-slice';
 export type { AccountSlice } from '@/shared/stores/slices/account-slice';
 export type { RosterSlice } from '@/shared/stores/slices/roster-slice';
