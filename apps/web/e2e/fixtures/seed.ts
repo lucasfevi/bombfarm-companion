@@ -77,15 +77,20 @@ const zeroPts = () => ({
   luck: 0,
 });
 
+/**
+ * Every sheet below is in the planner's own units, not the save export's: crit chance, cooldown
+ * reduction and luck are percent, crit damage is percent OVER a normal hit (a ×1.62 hit is 62).
+ * Save fractions here read as a hero who never crits, and did for months.
+ */
 function hero( partial: Partial<HeroRecord> & Pick<HeroRecord, 'id' | 'name'>): HeroRecord {
   const geared = partial.gearedOverride ?? {
     attack: 500,
     energy: 300,
     speed: 50,
-    critChance: 0.1,
-    critDmg: 1.5,
+    critChance: 10,
+    critDmg: 50,
     penetration: 1,
-    cdr: 0.02,
+    cdr: 2,
     luck: 0,
   };
   return {
@@ -132,10 +137,10 @@ export const importedRoster: SeededState = {
         attack: 1470.4,
         energy: 836.4,
         speed: 50.3,
-        critChance: 0.127,
-        critDmg: 1.6236,
+        critChance: 12.7,
+        critDmg: 62.36,
         penetration: 1.1,
-        cdr: 0.0314,
+        cdr: 3.14,
         luck: 0,
       },
       abilities: { detonacao_dupla: 10, passagem_bastao: 10 },
@@ -153,10 +158,10 @@ export const importedRoster: SeededState = {
         attack: 150.5,
         energy: 202.3,
         speed: 49.7,
-        critChance: 0.1005,
-        critDmg: 1.547,
+        critChance: 10.05,
+        critDmg: 54.7,
         penetration: 1.53,
-        cdr: 0.0068,
+        cdr: 0.68,
         luck: 0,
       },
       abilities: { marcha_acelerada: 0, olho_clinico: 10 },
@@ -174,10 +179,10 @@ export const importedRoster: SeededState = {
         attack: 420,
         energy: 310,
         speed: 48.5,
-        critChance: 0.06,
-        critDmg: 1.5,
+        critChance: 6,
+        critDmg: 50,
         penetration: 65,
-        cdr: 0.02,
+        cdr: 2,
         luck: 0,
       },
       abilities: { ponta_diamante: 10 },
