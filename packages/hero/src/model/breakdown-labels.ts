@@ -84,7 +84,7 @@ export function formatBreakdownValue(
   if (statId === 'dmg' || statId === 'critFactor') return `×${formatNumber(value, 3)}`;
   if (statId === 'hit' || statId === 'criticalHit' || statId === 'avgHit') return formatNumber(value, 0);
   if (statId === 'fuse') return `${formatNumber(value, 2)}s`;
-  if (statId === 'fieldSeconds') return `${formatNumber(value, 0)}s (${formatNumber(value / 60, 1)}m)`;
+  if (statId === 'fieldSeconds') return `${formatNumber(value / 60, 1)}m`;
   if (statId === 'rest') return `${formatNumber(value, 1)}m`;
   if (statId === 'bombsPerSecond') return `${formatNumber(value, 2)}/s`;
   if (statId === 'uptime') return `${formatNumber(value, 1)}%`;
