@@ -7,15 +7,27 @@ import { matrixShowsRunes, type MatrixCell, type MatrixRow } from '../model/comb
 
 const headClass = 'px-2 py-1.5 text-right text-[9px] font-bold tracking-[0.08em] whitespace-nowrap text-muted uppercase';
 const cellClass = 'px-2 py-1.5 text-right font-mono text-[12px] tabular-nums whitespace-nowrap';
+/** Wide enough for `× 1.200` and `+ 20.00`, so a switch flipping the cell between those and "off" moves nothing. */
+const auraColumnClass = 'w-[6.5rem]';
 
-function Cell({ cell, off, formatNumber }: { cell: MatrixCell; off: string; formatNumber: (n: number, d?: number) => string }) {
+function Cell({
+  cell,
+  off,
+  formatNumber,
+  className,
+}: {
+  cell: MatrixCell;
+  off: string;
+  formatNumber: (n: number, d?: number) => string;
+  className?: string;
+}) {
   switch (cell.kind) {
     case 'step':
-      return <td className={cn(cellClass, cell.step.op === '×' && 'text-accent')}>{ledgerStepText(cell.step, formatNumber)}</td>;
+      return <td className={cn(cellClass, className, cell.step.op === '×' && 'text-accent')}>{ledgerStepText(cell.step, formatNumber)}</td>;
     case 'off':
-      return <td className={cn(cellClass, 'text-muted')} data-cell="off">{off}</td>;
+      return <td className={cn(cellClass, className, 'text-muted')} data-cell="off">{off}</td>;
     case 'none':
-      return <td className={cn(cellClass, 'text-muted')} data-cell="none">—</td>;
+      return <td className={cn(cellClass, className, 'text-muted')} data-cell="none">—</td>;
   }
 }
 
@@ -91,7 +103,7 @@ export function CombatBreakdownMatrix({
             <th className={headClass} scope="col">{copy.heroDetailBreakdownColTree}</th>
             {runes ? <th className={headClass} scope="col">{copy.heroDetailBreakdownColRune}</th> : null}
             <th className={cn(headClass, 'border-l border-line')} scope="col">{copy.heroDetailBreakdownColSheetTotal}</th>
-            <th className={headClass} scope="col">{copy.heroDetailBreakdownColAura}</th>
+            <th className={cn(headClass, auraColumnClass)} scope="col">{copy.heroDetailBreakdownColAura}</th>
             <th className={headClass} scope="col">{copy.heroDetailBreakdownColEffective}</th>
           </tr>
         </thead>
@@ -112,7 +124,7 @@ export function CombatBreakdownMatrix({
                   {formatNumber(row.sheetTotal, 2)}
                   {unit}
                 </td>
-                <Cell cell={row.aura} off={copy.heroDetailBreakdownAuraOff} formatNumber={formatNumber} />
+                <Cell cell={row.aura} off={copy.heroDetailBreakdownAuraOff} formatNumber={formatNumber} className={auraColumnClass} />
                 <td className={cn(cellClass, 'font-semibold text-ink')} data-testid="breakdown-effective">
                   {formatNumber(row.effective, 2)}
                   {unit}

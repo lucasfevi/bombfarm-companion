@@ -130,12 +130,8 @@ function GroupedLedger({
               ) : null;
             })}
           </span>
-          <span className="text-right font-mono tabular-nums text-accent">
-            {line.steps.map((step, stepIndex) => (
-              <span key={stepIndex} className="block">
-                {ledgerStepText(step, formatNumber)}
-              </span>
-            ))}
+          <span className="text-right font-mono whitespace-nowrap tabular-nums text-accent">
+            {line.steps.map((step) => ledgerStepText(step, formatNumber)).join(' ')}
           </span>
           <span className="text-right font-mono tabular-nums text-muted">{formatNumber(line.running, 2)}</span>
         </li>
