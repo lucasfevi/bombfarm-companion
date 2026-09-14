@@ -36,6 +36,8 @@ import { LiveView } from './live/live-view';
 import { FarmView } from './farm/farm-view';
 import { HeroesView } from './heroes/heroes-view';
 import { InventoryView } from './inventory/inventory-view';
+import { ForgeQueueBar, isForgeQueueShown } from './forge/forge-queue-bar';
+import { useForgeQueue } from '../lib/forge/forge-queue-store';
 import { ForgeView } from './forge/forge-view';
 import { OptimizerView } from './optimizer/optimizer-view';
 import { AccountView } from './account/account-view';
@@ -332,6 +334,9 @@ function HomePageContent({
   const consentLoaded = consent !== null;
   const gated = isConsentGateVisible(consent);
   const granted = consentLoaded && !gated;
+  // The shell draws the band only while there is a queue to show: an element that renders null
+  // would still claim the strip's height on every screen.
+  const forgeQueueShown = isForgeQueueShown(useForgeQueue());
 
   return (
     <>
@@ -366,6 +371,17 @@ function HomePageContent({
               t.shellLoadingLabel
             )}
           </span>
+        }
+        banner={
+          granted && forgeQueueShown ? (
+            <ForgeQueueBar
+              forgeWritesEnabled={forgeWritesEnabled}
+              accountSource={environment?.accountSource ?? null}
+              onOpenForge={() => {
+                setActiveNavId('forge');
+              }}
+            />
+          ) : null
         }
         version={
           environment ? (

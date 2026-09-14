@@ -9,7 +9,7 @@ import type { TeamPlanScreenCopy } from '../copy';
 import { HeroStatBreakdown } from './hero-stat-breakdown';
 import { HeroPointBreakdown } from './hero-point-breakdown';
 import { HeroProposedGear, type HeroGearFlow } from './hero-proposed-gear';
-import { HeroForgeQueue } from './hero-forge-queue';
+import { HeroForgeQueue, type ForgeQueueAction } from './hero-forge-queue';
 
 const sectionTitleClass = 'm-0 mb-1.5 text-[10px] font-bold tracking-[0.08em] text-accent uppercase';
 
@@ -31,6 +31,7 @@ export function HeroDetailPanel({
   heroByScopeKey,
   heroNameFallback,
   pointsReset,
+  forgeQueueAction,
 }: {
   t: TeamPlanScreenCopy;
   lang: Lang;
@@ -39,6 +40,7 @@ export function HeroDetailPanel({
   heroByScopeKey: Map<string, HeroRecord>;
   heroNameFallback: (heroId: string) => string;
   pointsReset: { before: PointAlloc; after: PointAlloc; level: number } | null;
+  forgeQueueAction: ForgeQueueAction | undefined;
 }) {
   return (
     <div className={accordionLedgerBodyClass}>
@@ -54,7 +56,7 @@ export function HeroDetailPanel({
               heroNameFallback={heroNameFallback}
             />
           </div>
-          <HeroForgeQueue t={t} lang={lang} rows={gear.rows} />
+          <HeroForgeQueue t={t} lang={lang} rows={gear.rows} action={forgeQueueAction} />
         </section>
         <div className="flex min-w-0 flex-col gap-4">
           <section className="min-w-0">

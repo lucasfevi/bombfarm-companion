@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { formatItemRosterTooltip } from '@bombfarm/domain/game-labels';
 import type { ForgeForecast } from '@bombfarm/domain/forge';
 import { cn, formatCompactNumber, formatNumber, mutedClass } from '@bombfarm/ui';
@@ -10,6 +10,12 @@ import { sub, type Lang } from '@bombfarm/hero/copy';
 import type { TeamPlanScreenCopy } from '../copy';
 import { buildForgeQueue, type ForgeLadderRung } from '../model/forge-queue';
 import type { GearFlowRow } from '../model/gear-flow-rows';
+
+/** One entry of a hero's forge queue, as a host's action sees it: the piece and the climb. */
+export type ForgeQueueEntryRef = { itemId: string; from: number; to: number };
+
+/** A host's control for one entry — the desktop's add-to-queue button. Absent on the web. */
+export type ForgeQueueAction = (entry: ForgeQueueEntryRef) => ReactNode;
 
 const rungClass: Record<ForgeLadderRung['kind'], string> = {
   held: 'bg-line',
@@ -59,10 +65,12 @@ export function HeroForgeQueue({
   t,
   lang,
   rows,
+  action,
 }: {
   t: TeamPlanScreenCopy;
   lang: Lang;
   rows: readonly GearFlowRow[];
+  action: ForgeQueueAction | undefined;
 }) {
   const queue = useMemo(() => buildForgeQueue(rows), [rows]);
   if (queue.entries.length === 0) return null;
@@ -89,6 +97,7 @@ export function HeroForgeQueue({
                   {forecast ? forecastLine(t, lang, forecast) : t.teamPlanForgeQueueNoForecast}
                 </span>
               </div>
+              {action ? <div className="shrink-0 self-center">{action({ itemId: row.itemId, from, to })}</div> : null}
             </li>
           );
         })}

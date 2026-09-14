@@ -11,6 +11,7 @@ import type { TeamPlanScreenCopy } from '../copy';
 import { pointsResetView } from '../model/points-reset-view';
 import { AbbreviatedNumber } from './abbreviated-number';
 import { HeroDetailPanel } from './hero-detail-panel';
+import type { ForgeQueueAction } from './hero-forge-queue';
 import type { HeroGearFlow } from './hero-proposed-gear';
 
 const metricLabelClass = 'text-[9px] font-bold leading-none tracking-[0.06em] text-muted uppercase';
@@ -35,6 +36,7 @@ export const HeroDeltaRow = memo(function HeroDeltaRow({
   row,
   roster,
   gear,
+  forgeQueueAction,
 }: {
   t: TeamPlanScreenCopy;
   lang: Lang;
@@ -42,6 +44,7 @@ export const HeroDeltaRow = memo(function HeroDeltaRow({
   row: TeamPlanPerHeroRow;
   roster: HeroDeltaRoster;
   gear: HeroGearFlow;
+  forgeQueueAction: ForgeQueueAction | undefined;
 }) {
   const hero = roster.heroByScopeKey.get(row.heroId);
   const disambiguatedName = hero
@@ -99,6 +102,7 @@ export const HeroDeltaRow = memo(function HeroDeltaRow({
           heroByScopeKey={roster.heroByScopeKey}
           heroNameFallback={roster.heroNameFallback}
           pointsReset={pointsReset}
+          forgeQueueAction={forgeQueueAction}
         />
       </Accordion.Panel>
     </Accordion.Item>

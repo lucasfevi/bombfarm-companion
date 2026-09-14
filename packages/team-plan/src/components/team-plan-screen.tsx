@@ -21,6 +21,7 @@ import { TeamPlanRunSummary } from './team-plan-run-summary';
 import { TeamPlanOptimizingModal } from './team-plan-optimizing-modal';
 import { WaterfallPanel } from './waterfall-panel';
 import { HeroDeltaTable } from './hero-delta-table';
+import type { ForgeQueueAction } from './hero-forge-queue';
 
 export type TeamPlanScreenData = {
   inputs: TeamPlanInputs;
@@ -59,6 +60,9 @@ export type TeamPlanScreenSlots = {
    *  the desktop puts its refresh control there, as it does on the farm board. Undefined renders
    *  nothing at all (no empty wrapper), so the web's DOM is unchanged. */
   headerOverlay?: ReactNode;
+  /** Drawn at the end of each entry of a hero's forge queue — the desktop puts its add-to-queue
+   *  control there. Undefined renders nothing at all, so the web's DOM is unchanged. */
+  forgeQueueAction?: ForgeQueueAction;
 };
 
 export function TeamPlanScreenView({
@@ -205,6 +209,7 @@ export function TeamPlanScreenView({
                     inventoryItems={inventoryItems}
                     openHeroIds={data.openHeroIds}
                     onOpenHeroIdsChange={actions.setOpenHeroIds}
+                    forgeQueueAction={slots.forgeQueueAction}
                   />
                 </div>
               </section>

@@ -80,6 +80,13 @@ export const appShellDragStripClass = 'absolute top-0 right-0 bottom-0 left-0';
  * appears beside this one. Making this element the containing block brings them back inside the
  * only box allowed to scroll.
  */
+/** A band under the top bar, above `<main>`, for something in progress the player should keep in
+ *  sight on every screen. Full-bleed chrome like the header; its content sits on the measure. */
+export const appShellBannerClass =
+  'shrink-0 border-b border-line bg-surface px-[var(--shell-gutter)] pr-[calc(var(--shell-gutter)+var(--scrollbar))] py-1.5 text-sm';
+
+export const appShellBannerInnerClass = 'mx-auto flex w-full max-w-desktop flex-wrap items-center gap-x-3 gap-y-1';
+
 export const appShellMainClass =
   'relative flex min-h-0 flex-1 flex-col overflow-y-auto [scrollbar-gutter:stable] px-[var(--shell-gutter)] py-6';
 

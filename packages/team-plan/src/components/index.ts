@@ -9,4 +9,5 @@ export {
   type TeamPlanScreenActions,
   type TeamPlanScreenSlots,
 } from './team-plan-screen';
+export { type ForgeQueueAction, type ForgeQueueEntryRef } from './hero-forge-queue';
 export { TeamPlanEmptyPanel } from './team-plan-empty-panel';

@@ -8,7 +8,7 @@
  * `STRINGS` maps `AppLocale -> Copy`; `CopyProvider` takes a required `locale` prop. `useCopy()`'s
  * signature and return type never change — that is the whole reason a hook was used.
  */
-import { createContext, createElement, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, createElement, Fragment, useContext, useMemo, type ReactNode } from 'react';
 import type {
   AppLocale,
   DomainLang,
@@ -95,6 +95,26 @@ export function sub(template: string, values: Record<string, string | number>): 
     const value = values[key];
     return value === undefined ? match : String(value);
   });
+}
+
+/**
+ * `sub` for a value that is an element rather than text — a gold figure carrying its coin inside
+ * a sentence. The template's words come back as strings and each placeholder as the node given
+ * for it, keyed for React; a placeholder with no value stays as written, as in `sub`.
+ */
+export function subNodes(template: string, values: Record<string, ReactNode>): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  template.split(/(\{\w+\})/).forEach((part, index) => {
+    if (part === '') return;
+    const key = /^\{(\w+)\}$/.exec(part)?.[1];
+    if (key === undefined) {
+      nodes.push(part);
+      return;
+    }
+    const value = values[key];
+    nodes.push(createElement(Fragment, { key: index }, value === undefined ? part : value));
+  });
+  return nodes;
 }
 
 interface CopyContextValue {
