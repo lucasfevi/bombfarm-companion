@@ -120,6 +120,9 @@ export const gearPanelEn = {
   fieldRequired: 'required',
   panelItems: 'Items',
   slotStats: 'Stats by slot',
+  gearSlotEmptyAria: '{slot} — empty',
+  gearSlotEmptyTip: 'Empty',
+  rankLv: 'Lv',
   slotStatFullLabels: {
     dmg: 'Damage',
     energia: 'Energy',

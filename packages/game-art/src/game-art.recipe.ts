@@ -128,17 +128,29 @@ export const emptyGearSlotClass = cn(
   artFrameRadiusClass,
 );
 
-export const slotsGridClass = 'grid grid-cols-8 gap-1.5 max-[720px]:min-w-[720px]';
-export const slotStatsGridClass = `${slotsGridClass} mt-1.5`;
+/** The eight slot cards as two rows of four, one shape at every width. Eight across left each card
+ *  ~106px on the widths the panel really gets and abbreviated every item name; four across holds a
+ *  name, a tier line and "Cooldown Reduction" unbroken. Each column stops at 13rem rather than
+ *  stretching to fill a wide panel, and under 720px the row keeps its width and scrolls sideways. */
+export const slotsGridClass =
+  'grid grid-cols-[repeat(4,minmax(0,13rem))] gap-1.5 max-[720px]:min-w-[36rem]';
 export const slotStatRowClass =
   'flex items-baseline justify-between gap-1.5 text-muted leading-snug [&_b]:shrink-0 [&_b]:font-semibold [&_b]:text-ink';
 
-export function slotStatClassName(equipped: EquippedItem | null | undefined): string {
-  return cn(
-    'flex min-h-[2.5em] flex-col gap-0.5 border border-dashed border-transparent bg-bg p-1.5 text-[11px] leading-snug tabular-nums',
-    artFrameRadiusClass,
-    equipped && 'border-solid border-line',
-  );
+const slotChromeBase = cn(
+  'relative flex flex-col gap-1 border border-dashed border-line bg-bg p-1.5 [&_[data-select]]:w-full',
+  artFrameRadiusClass,
+);
+const slotChromeChanged =
+  'shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--accent)_40%,transparent)]';
+
+/** One gear slot's card: neutral chrome, solid once filled — the rarity reads from the item frame
+ *  inside it. `changed` marks a clone slot that differs from the current gear. */
+export function slotChromeClassName(
+  equipped: EquippedItem | null | undefined,
+  changed = false,
+): string {
+  return cn(slotChromeBase, equipped && 'border-solid', changed && slotChromeChanged);
 }
 
 /** Literal rarity text colours so Tailwind's JIT scanner sees every class. */
