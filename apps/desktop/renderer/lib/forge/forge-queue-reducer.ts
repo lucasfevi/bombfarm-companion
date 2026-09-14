@@ -29,6 +29,8 @@ export type ForgeQueueState = {
 export type ForgeQueueAction =
   | { kind: 'add'; itemId: string; target: number }
   | { kind: 'remove'; itemId: string }
+  /** Every waiting piece leaves; the one in flight, if any, finishes on its own. */
+  | { kind: 'clear' }
   | { kind: 'start' }
   | { kind: 'requested'; itemId: string }
   | { kind: 'started'; itemId: string; runId: string }
@@ -83,6 +85,12 @@ export function forgeQueueReducer(state: ForgeQueueState, action: ForgeQueueActi
       const forged = pieces.length === 0 ? 0 : state.forged;
       if (state.halt?.itemId === action.itemId) return { pieces, status: 'idle', active: null, halt: null, forged };
       return { ...state, pieces, forged, status: pieces.length === 0 ? 'idle' : state.status };
+    }
+    case 'clear': {
+      const pieces = state.pieces.filter((piece) => state.active?.itemId === piece.itemId);
+      if (pieces.length === state.pieces.length) return state;
+      if (pieces.length === 0) return { pieces, status: 'idle', active: null, halt: null, forged: 0 };
+      return { ...state, pieces, halt: null };
     }
     case 'start':
       if (state.status === 'running' || state.pieces.length === 0) return state;

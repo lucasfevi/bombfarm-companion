@@ -13,7 +13,7 @@ import type { AccountSource } from '@bombfarm/contracts';
 import { Button, ConfirmDialog, cn } from '@bombfarm/ui';
 import { sub, subNodes, useCopy } from '../../lib/copy';
 import type { ForgeQueueState } from '../../lib/forge/forge-queue-reducer';
-import { cancelForgeQueue, startForgeQueue } from '../../lib/forge/forge-queue-store';
+import { cancelForgeQueue, clearForgeQueue, startForgeQueue } from '../../lib/forge/forge-queue-store';
 import { forgeQueueExpectedGold, type ForgeQueueRow } from '../../lib/forge/forge-queue-view';
 import { dispatchForgeRun, useForgeRun } from '../../lib/forge/forge-run-store';
 import { ForgeGold } from './forge-gold';
@@ -89,6 +89,7 @@ export function ForgeQueueActions({
 
   const stacked = layout === 'stacked';
   const buttonClass = cn(stacked && 'w-full');
+  const waiting = queue.pieces.length - (queue.active === null ? 0 : 1);
 
   return (
     <div
@@ -114,6 +115,17 @@ export function ForgeQueueActions({
           {queue.status === 'halted' ? t.forgeQueueResume : t.forgeQueueStart}
         </Button>
       )}
+      <Button
+        type="button"
+        variant="ghost"
+        className={buttonClass}
+        aria-label={t.forgeQueueClearAria}
+        data-testid="forge-queue-clear"
+        disabled={waiting === 0}
+        onClick={clearForgeQueue}
+      >
+        {t.forgeQueueClear}
+      </Button>
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}

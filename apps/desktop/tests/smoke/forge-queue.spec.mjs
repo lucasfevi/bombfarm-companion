@@ -241,4 +241,13 @@ test.describe('the forge queue, fed from the Optimizer', () => {
     await openForge(page);
     await expect(page.getByTestId('forge-queue-row').first()).toBeVisible();
   });
+
+  test('Clear on the panel empties the queue, and the band goes with it', async () => {
+    await openForge(page);
+    const panel = page.getByTestId('forge-queue-panel');
+    await expect(panel.getByTestId('forge-queue-row').first()).toBeVisible();
+    await panel.getByTestId('forge-queue-clear').click();
+    await expect(page.getByTestId('forge-queue-panel')).toHaveCount(0);
+    await expect(page.getByTestId('forge-queue-bar')).toHaveCount(0);
+  });
 });

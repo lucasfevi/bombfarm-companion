@@ -48,6 +48,17 @@ describe('adding and removing pieces', () => {
     expect(forgeQueueReducer(aInFlight, { kind: 'remove', itemId: 'a' })).toBe(aInFlight);
   });
 
+  it('clear takes every waiting piece off, and leaves the one in flight to finish', () => {
+    expect(forgeQueueReducer(twoWaiting, { kind: 'clear' })).toEqual({ ...EMPTY_FORGE_QUEUE, pieces: [] });
+    expect(forgeQueueReducer(EMPTY_FORGE_QUEUE, { kind: 'clear' })).toBe(EMPTY_FORGE_QUEUE);
+
+    const cleared = forgeQueueReducer(aInFlight, { kind: 'clear' });
+    expect(cleared.pieces).toEqual([{ itemId: 'a', target: 12 }]);
+    expect(cleared).toMatchObject({ status: 'running', active: { itemId: 'a', runId: 'r1' } });
+    const finished = forgeQueueReducer(cleared, { kind: 'done', runId: 'r1', result: result('target') });
+    expect(finished).toEqual({ ...EMPTY_FORGE_QUEUE, pieces: [] });
+  });
+
   it('removing the last waiting piece leaves an idle, empty queue', () => {
     const state = fold([{ kind: 'remove', itemId: 'a' }, { kind: 'remove', itemId: 'b' }], twoWaiting);
     expect(state).toEqual({ ...EMPTY_FORGE_QUEUE, pieces: [] });

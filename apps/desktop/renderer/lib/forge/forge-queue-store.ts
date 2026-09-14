@@ -32,6 +32,7 @@ export interface ForgeQueueStore {
   readonly start: () => void;
   readonly add: (itemId: string, target: number) => void;
   readonly remove: (itemId: string) => void;
+  readonly clear: () => void;
   readonly startQueue: () => void;
   /** Stops the queue and cancels the run in flight, if the queue started one. */
   readonly cancel: () => void;
@@ -97,6 +98,9 @@ export function createForgeQueueStore(deps: ForgeQueueStoreDeps): ForgeQueueStor
     remove: (itemId) => {
       apply({ kind: 'remove', itemId });
     },
+    clear: () => {
+      apply({ kind: 'clear' });
+    },
     startQueue: () => {
       apply({ kind: 'start' });
     },
@@ -139,6 +143,10 @@ export function addToForgeQueue(itemId: string, target: number): void {
 
 export function removeFromForgeQueue(itemId: string): void {
   sharedForgeQueueStore().remove(itemId);
+}
+
+export function clearForgeQueue(): void {
+  sharedForgeQueueStore().clear();
 }
 
 export function startForgeQueue(): void {

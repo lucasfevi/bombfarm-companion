@@ -535,6 +535,8 @@ export const en = {
   forgeQueueResume: 'Resume',
   forgeQueueCancel: 'Cancel',
   forgeQueueRemove: 'Remove {item} from the queue',
+  forgeQueueClear: 'Clear',
+  forgeQueueClearAria: 'Clear the forge queue',
   forgeQueueConfirmTitle: 'Start the forge queue?',
   forgeQueueConfirmOne: 'Forges {item} to {target} and spends gold on your account — about {gold} expected.',
   forgeQueueConfirmMany:

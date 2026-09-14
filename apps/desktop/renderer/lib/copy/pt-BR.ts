@@ -511,6 +511,8 @@ export const ptBR: Copy = {
   forgeQueueResume: 'Retomar',
   forgeQueueCancel: 'Cancelar',
   forgeQueueRemove: 'Tirar {item} da fila',
+  forgeQueueClear: 'Limpar',
+  forgeQueueClearAria: 'Limpar a fila de forja',
   forgeQueueConfirmTitle: 'Iniciar a fila de forja?',
   forgeQueueConfirmOne: 'Forja {item} até {target} e gasta ouro da sua conta — cerca de {gold} esperado.',
   forgeQueueConfirmMany:

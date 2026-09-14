@@ -23,8 +23,8 @@ cooldown, a refused item — and names the reason in the band; Resume picks up f
 A piece the bag no longer holds, or one already at its target, leaves the queue on its own.
 
 **The Forge tab lists it, feeds it and runs it.** A Forge queue panel beside the bag lists every
-queued piece with its climb, lets you take one off, and carries the same Start and Cancel as the
-band; the plan panel carries *Add to queue* under its Forge button — the piece in hand, at the
+queued piece with its climb, lets you take one off, and carries the same Start, Cancel and Clear
+as the band; the plan panel carries *Add to queue* under its Forge button — the piece in hand, at the
 target the panel shows. The waiting pieces survive a restart — restored paused, never started on
 their own.
 
