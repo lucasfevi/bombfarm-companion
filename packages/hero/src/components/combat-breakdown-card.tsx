@@ -31,6 +31,7 @@ const TERM_KEY: Record<FormulaTermKey, HeroCopyKey> = {
   abilities: 'heroDetailBreakdownTermAbilities',
   pack: 'heroDetailBreakdownTermPack',
   extra: 'heroDetailBreakdownTermExtra',
+  pulse: 'heroDetailBreakdownTermPulse',
   attack: 'heroDetailBreakdownTermAttack',
   mitF: 'heroDetailBreakdownTermMitF',
   dmg: 'heroDetailBreakdownTermDmg',

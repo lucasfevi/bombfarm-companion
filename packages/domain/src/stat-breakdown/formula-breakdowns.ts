@@ -50,8 +50,12 @@ export function formulaDmg(facts: PipelineFacts): FormulaBreakdown {
   const abl = facts.mods.dmgMult;
   const pack = facts.packMult;
   const extra = 1 + facts.extraDmgPct / 100;
+  const pulse = facts.entryPulseMult ?? 1;
   const value = facts.dmgMult;
-  return formula('bdFormulaDmg', value)`${term('abilities', abl, 3)} × ${term('pack', pack, 3)} × ${term('extra', extra, 3)} = ${formatBreakdownNumber(value, 3)}`;
+  if (pulse === 1) {
+    return formula('bdFormulaDmg', value)`${term('abilities', abl, 3)} × ${term('pack', pack, 3)} × ${term('extra', extra, 3)} = ${formatBreakdownNumber(value, 3)}`;
+  }
+  return formula('bdFormulaDmg', value)`${term('abilities', abl, 3)} × ${term('pack', pack, 3)} × ${term('extra', extra, 3)} × ${term('pulse', pulse, 3)} = ${formatBreakdownNumber(value, 3)}`;
 }
 
 function hitDamage(facts: PipelineFacts): number {

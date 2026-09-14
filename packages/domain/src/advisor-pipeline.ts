@@ -125,6 +125,9 @@ export type AdvisorPipelineResult = {
   rest: number;
   context: Context;
   gateAttackMult: number;
+  /** Abilities × pack × extra — the standing multiplier, the pulse NOT folded in: the Farm board
+   *  prices the pulse per level through hits-to-kill and reads this as its base. A per-hero
+   *  screen multiplies it by `entryPulse.expectedMult`, which is what `predHit` carries. */
   dmgMult: number;
   /** Combat mults already computed by `computeCombatMults` — surfaced for breakdown (additive). */
   attackMult: number;
@@ -328,7 +331,11 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   const entryPulse = ownEntryPulse(entryPulseRank, field, uptime / 100);
   const dps = equippedResult.dps * entryPulse.expectedMult;
   const active = equippedResult.active * entryPulse.expectedMult;
-  const predHit = equippedResult.hit;
+  // The pulse is up for a share of wall clock, so the figures a hero's screen prints — the hit,
+  // its crit and average, the multiplier they carry — are the expectation over that clock. The
+  // hits-to-kill rows below deliberately are not: a threshold is crossed at a level the field
+  // sits at, never at the average of two (the Farm board's rule), so they read the unpulsed hit.
+  const predHit = equippedResult.hit * entryPulse.expectedMult;
   // Birth-backed: recompose clone from birth (same path as Apply to current).
   // Without birth: project the observed sheet so typed drift stays a 0% delta
   // when clone === current.
@@ -349,7 +356,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
       })
     : null;
   const bDiff = cloneResult ? ((cloneResult.dps * entryPulse.expectedMult) / dps - 1) * 100 || 0 : 0;
-  const bHitDiff = cloneResult ? (cloneResult.hit / predHit - 1) * 100 || 0 : 0;
+  const bHitDiff = cloneResult ? (cloneResult.hit / equippedResult.hit - 1) * 100 || 0 : 0;
 
   const line = phaseLine(farmPhase);
   const stoneHp = line?.hp ?? 0;
@@ -388,9 +395,10 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     runeSheetMultipliers(runes),
   );
 
-  const propRows: PropHtkRow[] = propHtkRows(stoneHp, avgHit, targetProp);
+  const htkHit = equippedResult.hit * critFactor(effective.critChance, effective.critDmg);
+  const propRows: PropHtkRow[] = propHtkRows(stoneHp, htkHit, targetProp);
   const bossHp = propHp(stoneHp, BOSS_HP_MULT);
-  const bossHits = hitsToKill(avgHit, bossHp);
+  const bossHits = hitsToKill(htkHit, bossHp);
   const avgPropHp = weightedAvgPropHp(stoneHp);
 
   const gateRows: GateRow[] = buildGateRows(effective, context, field, dmgMult, gateAttackMult);

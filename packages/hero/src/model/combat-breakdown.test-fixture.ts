@@ -14,6 +14,7 @@ import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { PipelineFacts } from '@bombfarm/domain/stat-breakdown';
 import {
   computeTeamBuffsAroundHero,
+  entryPulseRankFloor,
   fieldAlliesAroundHero,
   noTeamAuraSwitches,
   type TeamAuraSwitches,
@@ -90,6 +91,7 @@ export function factsForHero(
     ...fixture.account,
     context: { ...fixture.account.context, phase },
     teamBuffs: computeTeamBuffsAroundHero(hero, switches),
+    entryPulseRankFloor: entryPulseRankFloor(switches),
     fieldAllies: fieldAlliesAroundHero(hero, fixture.heroes),
   };
   const mitigationPct = phaseLine(phase)?.mitig;
@@ -112,13 +114,14 @@ export function factsForHero(
     teamCritFlat: combat.teamCritFlat,
     teamPenFlat: combat.teamPenFlat,
     packMult: combat.packMult,
+    entryPulseMult: combat.entryPulse.expectedMult,
     treeSpeed: fixture.account.tree.speed,
     treeCritChance: fixture.account.tree.critChance,
     treeCritDmg: fixture.account.tree.critDmg,
     treeEnergy: fixture.account.tree.energy,
     treeLuckFlatPct: combat.treeSheet.luckFlatPct,
     context: combat.context,
-    dmgMult: combat.dmgMult,
+    dmgMult: combat.dmgMult * combat.entryPulse.expectedMult,
     treeDanoTotal: fixture.account.tree.danoTotal,
     extraDmgPct: 0,
     active: combat.active,

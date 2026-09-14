@@ -211,7 +211,7 @@ describe('Passagem de Bastão — the sixth team aura, on the hero\'s own seat',
     expect(seat.entryPulse.expectedMult).toBeGreaterThan(1);
   });
 
-  it('scales the hero\'s sustained DPS by the pulse\'s expectation, and leaves the standing hit alone', () => {
+  it('scales the hero\'s sustained DPS and its printed hit by the pulse\'s expectation; hits-to-kill and the standing multiplier stay unpulsed', () => {
     const hero = heroByName('IDK');
     const carrier = withAbilityLevels(hero, { passagem_bastao: 20 });
     const seat = { ...account, teamBuffs: zeroTeamBuffs(), fieldAllies: 0 };
@@ -221,7 +221,11 @@ describe('Passagem de Bastão — the sixth team aura, on the hero\'s own seat',
     expect(plain.entryPulse.expectedMult).toBe(1);
     expect(pulsed.dps).toBeCloseTo(plain.dps * pulsed.entryPulse.expectedMult, 8);
     expect(pulsed.active).toBeCloseTo(plain.active * pulsed.entryPulse.expectedMult, 8);
-    expect(pulsed.predHit).toBe(plain.predHit);
+    expect(pulsed.predHit).toBeCloseTo(plain.predHit * pulsed.entryPulse.expectedMult, 8);
+    expect(pulsed.avgHit).toBeCloseTo(plain.avgHit * pulsed.entryPulse.expectedMult, 8);
+    expect(pulsed.dmgMult).toBe(plain.dmgMult);
+    expect(pulsed.propRows).toEqual(plain.propRows);
+    expect(pulsed.bossHits).toBe(plain.bossHits);
     expect(pulsed.effective).toEqual(plain.effective);
   });
 

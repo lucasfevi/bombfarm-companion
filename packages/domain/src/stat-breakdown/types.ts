@@ -90,6 +90,7 @@ export type FormulaTermKey =
   | 'abilities'
   | 'pack'
   | 'extra'
+  | 'pulse'
   | 'attack'
   | 'mitF'
   | 'dmg'
@@ -155,6 +156,8 @@ export interface PipelineFacts {
   teamPenFlat: number;
   /** Matilha's pack factor inside `dmgMult` (`CombatMults.packMult`). */
   packMult: number;
+  /** The hero's own Baton Pass pulse averaged over wall clock, inside `dmgMult`; absent reads as 1. */
+  entryPulseMult?: number;
   treeSpeed: number;
   treeCritChance: number;
   treeCritDmg: number;

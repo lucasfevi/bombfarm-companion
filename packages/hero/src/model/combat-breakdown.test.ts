@@ -229,3 +229,23 @@ describe('the notes a card carries', () => {
     }
   });
 });
+
+describe('the Baton Pass switch on the pipeline', () => {
+  it('lands on the Damage multiplier card as a named pulse term, and Hit moves with it', () => {
+    const on = { ...switchesOff, passagem_bastao: true };
+    const before = factsForHero(fixture, minato);
+    const after = factsForHero(fixture, minato, on);
+    expect(after.dmgMult).toBeGreaterThan(before.dmgMult);
+    const dmg = buildStatBreakdown('dmg', after);
+    const hit = buildStatBreakdown('hit', after);
+    const plainHit = buildStatBreakdown('hit', before);
+    if (dmg.kind !== 'formula' || hit.kind !== 'formula' || plainHit.kind !== 'formula') throw new Error('expected formulas');
+    expect(dmg.parts.filter((part) => typeof part !== 'string').map((part) => part.key)).toContain('pulse');
+    expect(dmg.value).toBeCloseTo(after.dmgMult, 9);
+    expect(hit.value).toBeGreaterThan(plainHit.value);
+    expect(cardBadgesFor(minato, fixture.phase, on).get('dmg')?.find((badge) => badge.abilityId === 'passagem_bastao')?.on).toBe(true);
+    const offDmg = buildStatBreakdown('dmg', before);
+    if (offDmg.kind !== 'formula') throw new Error('expected formula');
+    expect(offDmg.parts.filter((part) => typeof part !== 'string').map((part) => part.key)).not.toContain('pulse');
+  });
+});
