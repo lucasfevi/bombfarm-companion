@@ -134,3 +134,8 @@ Ubiquitous language for the companion's game model. Terms only — no implementa
   the current phase against. A locked phase that would beat it is a *push target*.
 - **Roster DPS ranking** — the roster sorted by each hero's solo DPS at the resolved phase.
   The Farm page's top-9 table and the Planner card draw the same ranking.
+- **Next item level** — the first phase that drops one item level above the best phase's
+  highest, priced in gold/hr against the best phase. It may be locked; the Farm card shows it
+  anyway, with what stands in the way.
+- **Next difficulty** — the first phase of the difficulty after the current phase's, priced in
+  gold/hr against the current phase. Absent at the last difficulty.

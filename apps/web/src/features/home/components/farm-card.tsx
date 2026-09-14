@@ -1,12 +1,15 @@
 'use client';
 
+import { gameDifficultyLabel } from '@bombfarm/domain/phase-wiki';
 import { Tooltip, cn, formatNumber } from '@bombfarm/ui';
+import { mutedClass } from '@bombfarm/ui/panel-field.recipe';
 import { useAppLang } from '@/shared/context/app-lang';
 import { sub, type Strings } from '@/shared/i18n';
 import { selectFarmReturnBonus, usePlannerStore, type PlannerStore } from '@/shared/stores';
 import { selectFarmCardRows } from '../model/farm-card-view';
 import { buildFarmSentence, formatSignedPct } from '../model/farm-sentence';
 import { selectAccountUsable, selectHasRoster } from '../model/home-selectors';
+import { FarmOutlookTile } from './farm-outlook-tile';
 import { FarmPhaseTile } from './farm-phase-tile';
 import { HomeSectionCard } from './home-section-card';
 
@@ -93,6 +96,36 @@ export function FarmCard() {
               {sentence}
             </p>
           ) : null}
+          <div className="mt-4 grid grid-cols-1 gap-3 border-t border-line pt-4 min-[720px]:grid-cols-2">
+            {view.nextItemLevel?.kind === 'tile' ? (
+              <FarmOutlookTile
+                title={t.homeCardFarmNextItemLevel}
+                tile={view.nextItemLevel.tile}
+                testId="home-farm-next-item-level"
+              />
+            ) : (
+              <div className="flex min-w-0 flex-col gap-1" data-testid="home-farm-next-item-level">
+                <p className={cn('m-0 text-xs', mutedClass)}>{t.homeCardFarmNextItemLevel}</p>
+                <p className="m-0 text-sm">{t.homeCardFarmNextItemLevelNone}</p>
+              </div>
+            )}
+            {view.nextDifficulty?.kind === 'tile' ? (
+              <FarmOutlookTile
+                title={t.homeCardFarmNextDifficulty}
+                tile={view.nextDifficulty.tile}
+                testId="home-farm-next-difficulty"
+              />
+            ) : (
+              <div className="flex min-w-0 flex-col gap-1" data-testid="home-farm-next-difficulty">
+                <p className={cn('m-0 text-xs', mutedClass)}>{t.homeCardFarmNextDifficulty}</p>
+                <p className="m-0 text-sm">
+                  {sub(t.homeCardFarmNextDifficultyTop, {
+                    difficulty: gameDifficultyLabel(view.nextDifficulty?.ato ?? currentRow.ato, lang),
+                  })}
+                </p>
+              </div>
+            )}
+          </div>
         </Tooltip.Provider>
       ) : null}
     </HomeSectionCard>

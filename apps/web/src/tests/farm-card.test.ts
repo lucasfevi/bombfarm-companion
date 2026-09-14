@@ -104,7 +104,7 @@ const CURRENT = row({
 });
 const BEST = row({
   phase: 30,
-  ato: 3,
+  ato: 2,
   goldPerHour: 3000,
   xpPerHour: 51_000,
   itemLevels: [14],
@@ -112,6 +112,9 @@ const BEST = row({
   clearSecs: 62,
 });
 const LOCKED = row({ phase: 50, goldPerHour: 4800, locked: true });
+const GATE = row({ phase: 150, ato: 2, gate: true, goldPerHour: 100, locked: true, infeasible: true });
+const NEXT_LEVEL = row({ phase: 101, ato: 2, goldPerHour: 2700, itemLevels: [14, 16], itemLevelLabel: '14–16', locked: true });
+const NEXT_ATO = row({ phase: 151, ato: 3, goldPerHour: 600, itemLevels: [20], itemLevelLabel: '20', locked: true });
 
 function usableAccount(): void {
   usePlannerStore.getState().hydrateRoster([hero('a')], 'a');
@@ -184,6 +187,47 @@ describe('the front page farm card', () => {
       expect(html).toContain(`<span class="sr-only">${strings.farmRankingGateBadge}</span>`);
       expect(barWidths(html)).toEqual(['40%', '100%']);
     }
+  });
+
+  it('the two outlook tiles price the next item level against best and the next difficulty against current, with their lock lines', () => {
+    usableAccount();
+    viewOverride = farmCardViewFrom([CURRENT, BEST, NEXT_LEVEL, GATE, NEXT_ATO], 10);
+
+    for (const lang of LANGS) {
+      usePlannerStore.setState({ lang });
+      const strings = STRINGS[lang];
+      const html = render();
+      const level = html.slice(openingOf(html, 'home-farm-next-item-level'), openingOf(html, 'home-farm-next-difficulty'));
+      const ato = html.slice(openingOf(html, 'home-farm-next-difficulty'), openingOf(html, 'home-card-footer'));
+
+      expect(textOf(level)).toContain(strings.homeCardFarmNextItemLevel);
+      expect(level).toContain(`>${formatPhaseLabel(101, lang)}<`);
+      expect(level).toContain(`>${formatRatePerHour(2700, lang)}<`);
+      expect(level).toContain(`>${formatSignedPct(-10, lang)}<`);
+      expect(textOf(level)).toContain(strings.homeCardFarmVsBest);
+      expect(textOf(level)).toContain(strings.homeCardFarmLocked);
+      expect(textOf(level)).toContain(sub(strings.homeCardFarmReachFirst, { phase: 101 }));
+
+      expect(textOf(ato)).toContain(strings.homeCardFarmNextDifficulty);
+      expect(ato).toContain(`>${formatPhaseLabel(151, lang)}<`);
+      expect(ato).toContain(`>${formatRatePerHour(600, lang)}<`);
+      expect(ato).toContain(`>${formatSignedPct(-50, lang)}<`);
+      expect(textOf(ato)).toContain(strings.homeCardFarmVsCurrent);
+      expect(textOf(ato)).toContain(escaped(sub(strings.homeCardFarmClearGateCannot, { gate: 150 })));
+    }
+  });
+
+  it('the outlook slots say so when no higher item level or no next difficulty exists', () => {
+    usableAccount();
+    const top = row({ phase: 451, ato: 5, goldPerHour: 1000, itemLevels: [99], itemLevelLabel: '99' });
+    viewOverride = farmCardViewFrom([top], 451);
+    usePlannerStore.setState({ lang: 'en' });
+    const html = render();
+
+    expect(textOf(html)).toContain(STRINGS.en.homeCardFarmNextItemLevelNone);
+    expect(textOf(html)).toContain(
+      sub(STRINGS.en.homeCardFarmNextDifficultyTop, { difficulty: gameDifficultyLabel(5, 'en') }),
+    );
   });
 
   it('the pill and the sentence appear only when the phases differ', () => {

@@ -11,6 +11,21 @@ export type FarmSentenceFragment =
 
 export type FarmCardPillTone = 'up' | 'down' | 'neutral';
 
+/** What stands between the account and a locked phase: the first gate it has not cleared. */
+export type FarmOutlookBlock = { gate: number; gateInfeasible: boolean } | null;
+
+export type FarmOutlookTile = {
+  row: FarmRateRow;
+  /** Gold/hr against the phase the tile is a step from. */
+  against: 'best' | 'current';
+  pct: number;
+  tone: FarmCardPillTone;
+  block: FarmOutlookBlock;
+};
+
+export type FarmNextItemLevel = { kind: 'tile'; tile: FarmOutlookTile } | { kind: 'none' };
+export type FarmNextDifficulty = { kind: 'tile'; tile: FarmOutlookTile } | { kind: 'top'; ato: number };
+
 export type FarmCardView = {
   currentRow: FarmRateRow | null;
   bestRow: FarmRateRow | null;
@@ -18,6 +33,8 @@ export type FarmCardView = {
   pill: { tone: FarmCardPillTone; pct: number | null };
   barPercent: { current: number; best: number };
   sentence: FarmSentenceFragment[];
+  nextItemLevel: FarmNextItemLevel | null;
+  nextDifficulty: FarmNextDifficulty | null;
 };
 
 const NO_TILES: FarmCardView = {
@@ -27,7 +44,46 @@ const NO_TILES: FarmCardView = {
   pill: { tone: 'neutral', pct: null },
   barPercent: { current: 0, best: 0 },
   sentence: [],
+  nextItemLevel: null,
+  nextDifficulty: null,
 };
+
+function topBand(row: FarmRateRow): number {
+  return row.itemLevels.length > 0 ? Math.max(...row.itemLevels) : 0;
+}
+
+function toneOf(pct: number): FarmCardPillTone {
+  return pct > 0 ? 'up' : pct < 0 ? 'down' : 'neutral';
+}
+
+function blockFor(rows: readonly FarmRateRow[], target: FarmRateRow): FarmOutlookBlock {
+  if (!target.locked) return null;
+  const gate = rows.find((row) => row.gate && row.locked && row.phase < target.phase);
+  return gate ? { gate: gate.phase, gateInfeasible: gate.infeasible } : null;
+}
+
+function outlookTile(
+  rows: readonly FarmRateRow[],
+  row: FarmRateRow,
+  against: 'best' | 'current',
+  reference: FarmRateRow,
+): FarmOutlookTile {
+  const pct = ((row.goldPerHour - reference.goldPerHour) / reference.goldPerHour) * 100;
+  return { row, against, pct, tone: toneOf(pct), block: blockFor(rows, row) };
+}
+
+export function nextItemLevelFrom(rows: readonly FarmRateRow[], best: FarmRateRow): FarmNextItemLevel {
+  const bestTop = topBand(best);
+  const row = rows.find((candidate) => topBand(candidate) > bestTop);
+  return row ? { kind: 'tile', tile: outlookTile(rows, row, 'best', best) } : { kind: 'none' };
+}
+
+export function nextDifficultyFrom(rows: readonly FarmRateRow[], current: FarmRateRow): FarmNextDifficulty {
+  const row = rows.find((candidate) => candidate.ato === current.ato + 1);
+  return row
+    ? { kind: 'tile', tile: outlookTile(rows, row, 'current', current) }
+    : { kind: 'top', ato: current.ato };
+}
 
 function lowestBand(row: FarmRateRow): number {
   return row.itemLevels.length > 0 ? Math.min(...row.itemLevels) : 0;
@@ -62,6 +118,9 @@ export function farmCardViewFrom(rows: readonly FarmRateRow[], phase: number | n
     pushCandidate && bestRow && pushCandidate.goldPerHour > bestRow.goldPerHour ? pushCandidate : null;
 
   if (currentRow == null || bestRow == null) return NO_TILES;
+  const byPhase = [...rows].sort((left, right) => left.phase - right.phase);
+  const nextItemLevel = nextItemLevelFrom(byPhase, bestRow);
+  const nextDifficulty = nextDifficultyFrom(byPhase, currentRow);
   if (bestRow.phase === currentRow.phase) {
     return {
       currentRow,
@@ -70,6 +129,8 @@ export function farmCardViewFrom(rows: readonly FarmRateRow[], phase: number | n
       pill: { tone: 'neutral', pct: null },
       barPercent: { current: 100, best: 100 },
       sentence: [],
+      nextItemLevel,
+      nextDifficulty,
     };
   }
   const pct = ((bestRow.goldPerHour - currentRow.goldPerHour) / currentRow.goldPerHour) * 100;
@@ -78,12 +139,14 @@ export function farmCardViewFrom(rows: readonly FarmRateRow[], phase: number | n
     currentRow,
     bestRow,
     pushTargetRow,
-    pill: { tone: pct > 0 ? 'up' : pct < 0 ? 'down' : 'neutral', pct },
+    pill: { tone: toneOf(pct), pct },
     barPercent: {
       current: (currentRow.goldPerHour / peak) * 100,
       best: (bestRow.goldPerHour / peak) * 100,
     },
     sentence: sentenceFragments(currentRow, bestRow),
+    nextItemLevel,
+    nextDifficulty,
   };
 }
 

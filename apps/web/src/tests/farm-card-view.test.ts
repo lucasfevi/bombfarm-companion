@@ -267,8 +267,76 @@ describe('the front page’s current-versus-best phase view', () => {
     expect(withBonus.currentRow!.goldPerHour).toBeGreaterThan(oneHero.currentRow!.goldPerHour);
   });
 
+  it('the next item level is the first phase whose top item level beats the best phase, priced against best', () => {
+    const rows = [
+      row({ phase: 61, goldPerHour: 100, itemLevels: [40] }),
+      row({ phase: 87, goldPerHour: 400, itemLevels: [40, 50] }),
+      row({ phase: 95, goldPerHour: 380, itemLevels: [40, 50] }),
+      row({ phase: 101, goldPerHour: 390, itemLevels: [50, 60] }),
+      row({ phase: 121, goldPerHour: 500, itemLevels: [60, 70], locked: true }),
+    ];
+    const view = farmCardViewFrom(rows, 61);
+
+    expect(view.bestRow?.phase).toBe(87);
+    expect(view.nextItemLevel).toEqual({
+      kind: 'tile',
+      tile: { row: rows[3], against: 'best', pct: -2.5, tone: 'down', block: null },
+    });
+  });
+
+  it('with no higher item level on the board the next-item-level slot says so', () => {
+    const rows = [row({ phase: 10, goldPerHour: 100, itemLevels: [10] }), row({ phase: 20, goldPerHour: 90, itemLevels: [10] })];
+    expect(farmCardViewFrom(rows, 10).nextItemLevel).toEqual({ kind: 'none' });
+  });
+
+  it("the next difficulty is that difficulty's first phase, priced against the current phase, top difficulty named when there is none", () => {
+    const rows = [
+      row({ phase: 91, ato: 2, goldPerHour: 200 }),
+      row({ phase: 150, ato: 2, gate: true, goldPerHour: 150, locked: true, infeasible: true }),
+      row({ phase: 151, ato: 3, goldPerHour: 116, locked: true }),
+      row({ phase: 152, ato: 3, goldPerHour: 300, locked: true }),
+    ];
+    const view = farmCardViewFrom(rows, 91);
+
+    expect(view.nextDifficulty).toEqual({
+      kind: 'tile',
+      tile: { row: rows[2], against: 'current', pct: -42, tone: 'down', block: { gate: 150, gateInfeasible: true } },
+    });
+
+    const top = farmCardViewFrom([row({ phase: 451, ato: 5, goldPerHour: 200 })], 451);
+    expect(top.nextDifficulty).toEqual({ kind: 'top', ato: 5 });
+  });
+
+  it('a locked target names the first uncleared gate before it, a clearable one plainly, and none when no gate is in the way', () => {
+    const clearable = farmCardViewFrom(
+      [
+        row({ phase: 91, ato: 2, goldPerHour: 200 }),
+        row({ phase: 150, ato: 2, gate: true, goldPerHour: 150, locked: true }),
+        row({ phase: 151, ato: 3, goldPerHour: 300, locked: true }),
+      ],
+      91,
+    );
+    expect(clearable.nextDifficulty).toMatchObject({ tile: { block: { gate: 150, gateInfeasible: false } } });
+
+    const noGate = farmCardViewFrom(
+      [
+        row({ phase: 91, ato: 2, goldPerHour: 200, itemLevels: [40, 50] }),
+        row({ phase: 101, ato: 2, goldPerHour: 210, itemLevels: [50, 60], locked: true }),
+      ],
+      91,
+    );
+    expect(noGate.nextItemLevel).toMatchObject({ tile: { row: { phase: 101 }, block: null } });
+
+    const unlocked = farmCardViewFrom(
+      [row({ phase: 91, ato: 2, goldPerHour: 200, itemLevels: [40] }), row({ phase: 101, ato: 2, goldPerHour: 190, itemLevels: [50] })],
+      91,
+    );
+    expect(unlocked.nextItemLevel).toMatchObject({ tile: { block: null } });
+    expect(unlocked.nextItemLevel).toMatchObject({ tile: { row: { locked: false } } });
+  });
+
   it('no current row, no unlocked feasible row, or an empty board leaves both tiles null', () => {
-    const nothing = { currentRow: null, bestRow: null, pushTargetRow: null };
+    const nothing = { currentRow: null, bestRow: null, pushTargetRow: null, nextItemLevel: null, nextDifficulty: null };
 
     expect(farmCardViewFrom(board, 999)).toMatchObject(nothing);
     expect(
