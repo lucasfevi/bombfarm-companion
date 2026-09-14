@@ -36,6 +36,7 @@ import { LiveView } from './live/live-view';
 import { FarmView } from './farm/farm-view';
 import { HeroesView } from './heroes/heroes-view';
 import { InventoryView } from './inventory/inventory-view';
+import { ForgeQueueStatus } from './forge/forge-queue-status';
 import { ForgeView } from './forge/forge-view';
 import { OptimizerView } from './optimizer/optimizer-view';
 import { AccountView } from './account/account-view';
@@ -366,6 +367,11 @@ function HomePageContent({
               t.shellLoadingLabel
             )}
           </span>
+        }
+        progress={
+          granted ? (
+            <ForgeQueueStatus forgeWritesEnabled={forgeWritesEnabled} accountSource={environment?.accountSource ?? null} />
+          ) : null
         }
         version={
           environment ? (

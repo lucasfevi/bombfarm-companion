@@ -9,6 +9,7 @@ import { useCallback, useMemo, useRef } from 'react';
 import {
   TeamPlanScreenView,
   TeamPlanEmptyPanel,
+  type ForgeQueueEntryRef,
   type TeamPlanScreenActions,
   type TeamPlanScreenData,
   type TeamPlanScreenSlots,
@@ -25,6 +26,7 @@ import type { TeamPlanEmptyStateKind } from '@bombfarm/team-plan/model';
 import type { TeamPlanRunnerHandle, TeamPlanRunStatus } from '@bombfarm/team-plan/runner';
 import type { TeamPlan, TeamPlanAllowedChanges, TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import { formatItemRosterTooltip } from '@bombfarm/domain/game-labels';
 import { useCopy, useLocale } from '../../lib/copy';
 import type { AccountReadRequestState } from '../../lib/account/use-account-read-request';
 import type { OptimizerSettledSnapshot } from '../../lib/optimizer/optimizer-snapshot-store';
@@ -32,6 +34,7 @@ import type { OptimizerPlanState } from '../../lib/optimizer/optimizer-plan-stor
 import type { OptimizerView } from '../../lib/optimizer/optimizer-view-storage';
 import { optimizerScreenCopy, useTeamPlanCopy } from '../screen-copy';
 import { AccountRefreshControl } from '../account-refresh-control';
+import { ForgeQueueAdd } from './forge-queue-add';
 
 type OptimizerScreenRefresh = {
   stale: boolean;
@@ -168,8 +171,19 @@ export function OptimizerScreen({
     allLeaveAlone: [t.optimizerEmptyAllLeaveAloneTitle, t.optimizerEmptyAllLeaveAloneBody],
   };
 
+  const inventoryItems = inputs.inventory.items;
+  const forgeQueueAction = useCallback(
+    (entry: ForgeQueueEntryRef) => {
+      const item = inventoryItems.find((candidate) => candidate.id === entry.itemId);
+      const itemName = item === undefined ? entry.itemId : formatItemRosterTooltip({ ...item, upgrade: 0 }, lang, t.rankLv).title;
+      return <ForgeQueueAdd itemId={entry.itemId} target={entry.to} itemName={itemName} />;
+    },
+    [inventoryItems, lang, t.rankLv],
+  );
+
   const slots = useMemo<TeamPlanScreenSlots>(
     () => ({
+      forgeQueueAction,
       headerOverlay: (
         <AccountRefreshControl
           capturedAt={snapshot.capturedAt}
@@ -185,7 +199,7 @@ export function OptimizerScreen({
       },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- emptyTitleBody is derived from t each render
-    [snapshot.capturedAt, refresh, t],
+    [snapshot.capturedAt, refresh, t, forgeQueueAction],
   );
 
   return <TeamPlanScreenView t={screenCopy} lang={lang} data={data} actions={screenActions} slots={slots} runner={runner} />;

@@ -45,6 +45,8 @@ import {
   gearOf,
   isEmptyForgeFilter,
 } from '../../lib/forge/forge-rows';
+import { removeFromForgeQueue, useForgeQueue } from '../../lib/forge/forge-queue-store';
+import { resolveForgeQueue } from '../../lib/forge/forge-queue-view';
 import { shouldAdoptLiveAfter, type ForgeRunPlan, type ForgeRunState } from '../../lib/forge/forge-run-reducer';
 import { dispatchForgeRun, setForgeRunAdoption, useForgeRun } from '../../lib/forge/forge-run-store';
 import {
@@ -61,6 +63,7 @@ import { ForgeItemPanel } from './forge-item-panel';
 import { forgeButtonReason, forgeLabels } from './forge-labels';
 import { ForgeLedger } from './forge-ledger';
 import { ForgePlanPanel } from './forge-plan-panel';
+import { ForgeQueuePanel } from './forge-queue-panel';
 import { ForgeRefresh } from './forge-refresh';
 import { ForgeRail } from './forge-rail';
 import { FORGE_TABLE_COLUMNS, forgeTableLabels } from './forge-table-labels';
@@ -200,6 +203,9 @@ export function ForgeView({
   useEffect(() => {
     setForgeRunAdoption(selectedId === null ? null : { itemId: selectedId, plan: { forecast: planControls.forecast } });
   }, [selectedId, planControls.forecast]);
+
+  const queue = useForgeQueue();
+  const queueRows = useMemo(() => resolveForgeQueue(queue.pieces, gear), [queue.pieces, gear]);
 
   const { ref: asideRef, height: asideHeight } = useContentHeight();
 
@@ -422,6 +428,7 @@ export function ForgeView({
                 onCancel={onCancel}
               />
             )}
+            <ForgeQueuePanel queue={queue} rows={queueRows} labels={labels} onRemove={removeFromForgeQueue} />
           </div>
         </div>
       </div>

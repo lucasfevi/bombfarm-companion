@@ -9,6 +9,7 @@ import type { Lang } from '@bombfarm/hero/copy';
 import type { TeamPlanScreenCopy } from '../copy';
 import { buildGearFlowRows, groupGearFlowRows, removedRowsByOriginHero } from '../model/gear-flow-rows';
 import { HeroDeltaRow, type HeroDeltaRoster } from './hero-delta-row';
+import type { ForgeQueueAction } from './hero-forge-queue';
 import type { HeroGearFlow } from './hero-proposed-gear';
 
 /**
@@ -25,6 +26,7 @@ export function HeroDeltaTable({
   inventoryItems,
   openHeroIds,
   onOpenHeroIdsChange,
+  forgeQueueAction,
 }: {
   t: TeamPlanScreenCopy;
   lang: Lang;
@@ -33,6 +35,7 @@ export function HeroDeltaTable({
   inventoryItems: readonly InventoryItem[];
   openHeroIds: readonly string[] | null;
   onOpenHeroIdsChange: (heroIds: readonly string[]) => void;
+  forgeQueueAction: ForgeQueueAction | undefined;
 }) {
   const roster: HeroDeltaRoster = useMemo(() => {
     const heroByScopeKey = new Map(heroes.map((hero) => [hero.sourceId ?? hero.id, hero]));
@@ -86,6 +89,7 @@ export function HeroDeltaTable({
               row={row}
               roster={roster}
               gear={gearByHeroId.get(row.heroId) ?? { rows: [], removed: [], crowdedField: false }}
+              forgeQueueAction={forgeQueueAction}
             />
           ))}
         </Accordion.Root>

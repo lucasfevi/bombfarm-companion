@@ -518,6 +518,30 @@ export const en = {
   forgeAgainstExact: 'exactly what the plan expected',
   forgeAgainstNoPlan: 'No plan to compare against — this run was not started from the panel',
   forgeDone: 'Done',
+  // forgeQueue* — the forge queue: pieces added from the Optimizer's hero rows, forged in turn
+  // by the footer's Start. The footer names the queue, the piece rolling and what stopped it;
+  // the Forge tab lists the pieces waiting.
+  forgeQueueAdd: 'Add to queue',
+  forgeQueueAdded: 'Queued',
+  forgeQueueAddAria: 'Add {item} to the forge queue, to {target}',
+  forgeQueueAddedAria: '{item} is in the forge queue, to {target}',
+  forgeQueueTitle: 'Forge queue',
+  forgeQueueWaiting: '{count} waiting',
+  forgeQueueRolling: 'rolling',
+  forgeQueueProgress: '{rolls} rolls · {spent} gold',
+  forgeQueueStopped: 'Stopped — {reason}',
+  forgeQueueStart: 'Start',
+  forgeQueueResume: 'Resume',
+  forgeQueueCancel: 'Cancel',
+  forgeQueueRemove: 'Remove {item} from the queue',
+  forgeQueueConfirmTitle: 'Start the forge queue?',
+  forgeQueueConfirmOne: 'Forges {item} to {target} and spends gold on your account — about {gold} expected.',
+  forgeQueueConfirmMany:
+    'Forges {count} pieces in turn and spends gold on your account — about {gold} expected. The queue stops if a piece stops short of its target.',
+  forgeQueueConfirmNoEstimate: 'Spends gold on your account; no estimate for these pieces. The queue stops if a piece stops short of its target.',
+  forgeQueueConfirm: 'Start — spends gold',
+  forgeQueueConfirmCancel: 'Not now',
+  forgeQueuePanelCaption: 'Forged in turn from the top; a piece already at its target leaves on its own.',
 
   // account* — the Account screen: what the account could sell, who it belongs to, and what its
   // House and skill tree grant. The panels are shared drawings that take a label for every string
