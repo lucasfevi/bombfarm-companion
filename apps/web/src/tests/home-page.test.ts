@@ -7,7 +7,14 @@ import { HomePage } from '@/features/home';
 import { STRINGS, type Lang } from '@/shared/i18n';
 import { NAV_SECTIONS, SITE_SECTION_LABEL_KEY } from '@/shared/lib/site-sections';
 import { normalizeHero } from '@/shared/lib/storage';
-import { resetPlannerStoreForTests, usePlannerStore, type PlannerStore } from '@/shared/stores';
+import {
+  ensureTeamPlanSolver,
+  resetPlannerStoreForTests,
+  resetTeamPlanSolverForTests,
+  usePlannerStore,
+  type PlannerStore,
+} from '@/shared/stores';
+import type { TeamPlanSolver } from '@/shared/stores/team-plan-solver';
 
 vi.mock('@/shared/stores/planner-store', async (importOriginal) => {
   const real = await importOriginal<typeof import('@/shared/stores/planner-store')>();
@@ -37,6 +44,23 @@ function hero(id: string) {
   });
 }
 
+function idleSolver(): TeamPlanSolver {
+  return {
+    getSnapshot: () => ({
+      status: 'idle',
+      plan: null,
+      blockedHeroNames: [],
+      errorMessage: null,
+      ranOnMainThread: false,
+      runId: null,
+    }),
+    subscribe: () => () => {},
+    solve: () => {},
+    cancel: () => {},
+    runner: {} as TeamPlanSolver['runner'],
+  };
+}
+
 const render = () => renderToStaticMarkup(createElement(HomePage));
 
 const articleLabels = (html: string) =>
@@ -50,11 +74,14 @@ const wrapperClass = (html: string, slot: string) => {
 describe('the front page', () => {
   beforeEach(() => {
     resetPlannerStoreForTests();
+    resetTeamPlanSolverForTests();
+    ensureTeamPlanSolver(idleSolver);
     usePlannerStore.setState({ booted: true });
   });
 
   afterEach(() => {
     resetPlannerStoreForTests();
+    resetTeamPlanSolverForTests();
   });
 
   it('renders nothing until the store is booted', () => {
