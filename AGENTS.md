@@ -53,7 +53,9 @@ the Farm Respec panel closed itself ~700ms after opening — five e2e tests red 
 It builds the static export itself and takes ~2.5 minutes cold. Two things to know before reading
 its result: pass `E2E_PREBUILT=1` to skip the build when `apps/web/out` is genuinely current, and
 kill anything already listening on port 4321 first — `reuseExistingServer` is on outside CI, so a
-stale server silently serves an old export and the run describes code you are not testing.
+stale server silently serves an old export and the run describes code you are not testing. If
+that listener belongs to another session on the machine, do not kill it: set `E2E_PORT` (say
+`4322`) and the run serves and tests its own export there instead.
 
 ## Running the desktop app without the game
 

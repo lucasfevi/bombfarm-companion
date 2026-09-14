@@ -99,7 +99,7 @@ export function CombatBreakdownMatrix({
           {rows.map((row) => {
             const unit = SHEET_PCT_KEYS.has(row.key) ? '%' : '';
             return (
-              <tr key={row.key} className="border-b border-line last:border-b-0" data-matrix-row={row.key}>
+              <tr key={row.key} className="border-b border-line odd:bg-[color-mix(in_oklch,var(--ink)_5%,transparent)] last:border-b-0" data-matrix-row={row.key}>
                 <th scope="row" className="px-2 py-1.5 text-left text-[12px] font-medium whitespace-nowrap text-ink">
                   {t.statFull[row.key]}
                 </th>

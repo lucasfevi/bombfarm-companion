@@ -249,3 +249,12 @@ describe('the Baton Pass switch on the pipeline', () => {
     expect(offDmg.parts.filter((part) => typeof part !== 'string').map((part) => part.key)).not.toContain('pulse');
   });
 });
+
+describe('the Damage multiplier card says how Baton Pass is counted', () => {
+  it('carries the held-up note at the pulse’s percent while a pulse is on, and none without one', () => {
+    expect(cardNoteFor('dmg', factsForHero(fixture, minato), minato, switchesOff)).toBeNull();
+    const on = { ...switchesOff, passagem_bastao: true };
+    const note = cardNoteFor('dmg', factsForHero(fixture, minato, on), minato, on);
+    expect(note).toEqual({ kind: 'batonHeld', pct: expect.closeTo(80, 6) as number });
+  });
+});

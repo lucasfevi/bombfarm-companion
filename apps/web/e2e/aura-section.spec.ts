@@ -103,7 +103,7 @@ test.describe('abilities & auras section', () => {
     const batonPass = section.getByTestId('team-aura-passagem_bastao');
     await expect(batonPass.getByRole('switch')).toHaveCount(0);
     await expect(batonPass.getByTestId('team-aura-own')).toHaveText(/^own$/i);
-    await expect(batonPass.getByTestId('team-aura-priced-at')).toHaveText(/\+40% team dmg on entering/);
+    await expect(batonPass.getByTestId('team-aura-priced-at')).toHaveText(/\+40% team dmg, pulse held up/);
     await expect(section.getByTestId('own-ability-passagem_bastao')).toHaveCount(0);
 
     await selectSavedHero(page, 'Lorne');
@@ -125,7 +125,7 @@ test.describe('abilities & auras section', () => {
     const before = await combatSustainedDps(page);
     await lorneBaton.getByRole('switch').click();
     await expect(lorneBaton.getByRole('switch')).toBeChecked();
-    await expect(lorneBaton.getByTestId('team-aura-priced-at')).toHaveText(/\+80% team dmg on entering/);
+    await expect(lorneBaton.getByTestId('team-aura-priced-at')).toHaveText(/\+80% team dmg, pulse held up/);
     await expect.poll(() => combatSustainedDps(page)).toBeGreaterThan(before);
     const after = await combatSustainedDps(page);
     expect(Math.abs((after / before - 1) * 100 - promised)).toBeLessThanOrEqual(moveTolerancePct(before, after));

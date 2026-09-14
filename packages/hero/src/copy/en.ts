@@ -102,7 +102,7 @@ export const heroEn = {
 
   heroDetailAurasTitle: "Abilities & auras",
   heroDetailAurasTip:
-    "What the figures on this stage are priced with. A team aura is a property of the field, so everyone standing in it gets the same total, capped per aura. This hero's own aura counts at its rank and cannot be switched off; any other aura is off until you switch it on, and then counts at its cap, whoever carries it. The Farm screen and the Optimizer price the same auras by each carrier's predicted uptime instead, so their figures can differ from these.",
+    "What the figures on this stage are priced with. A team aura is a property of the field, so everyone standing in it gets the same total, capped per aura. This hero's own aura counts at its rank and cannot be switched off; any other aura is off until you switch it on, and then counts at its cap, whoever carries it. The Farm screen and the Optimizer price the same auras by each carrier's predicted uptime instead, so their figures can differ from these. Baton Pass is counted here as if its pulse never lapsed — the whole stint at its level, +80% at the cap — while the Farm screen and the Optimizer count only the 120 s each entry lights.",
   heroDetailAurasTeamGroup: "Team auras",
   heroDetailAurasOwnGroup: "Own abilities",
   heroDetailAurasColumnAura: "Aura",
@@ -126,10 +126,10 @@ export const heroEn = {
   heroDetailAuraUnitDmgMult: "×{value} dmg",
   heroDetailAuraUnitGateAttack: "+{value}% on gates",
   heroDetailAuraUnitPackPerAlly: "+{value}% dmg per ally",
-  heroDetailAuraUnitPulse: "+{value}% team dmg on entering",
+  heroDetailAuraUnitPulse: "+{value}% team dmg, pulse held up",
   heroDetailAurasNoOwnAbilities: "This hero has no ability of its own in force.",
 
-  heroDetailBreakdownHint: "Hover or focus a figure for the formula behind it and what it reads.",
+  heroDetailBreakdownHint: "Hover or focus a card's figure for the formula behind it and what it reads.",
   heroDetailBreakdownRowSheet: "Sheet",
   heroDetailBreakdownRowFactors: "Factors",
   heroDetailBreakdownRowPerHit: "Per hit · cadence",
@@ -152,7 +152,7 @@ export const heroEn = {
   heroDetailBreakdownTermAbilities: "abilities",
   heroDetailBreakdownTermPack: "pack",
   heroDetailBreakdownTermExtra: "extra",
-  heroDetailBreakdownTermPulse: "entry pulse",
+  heroDetailBreakdownTermPulse: "pulse, held up",
   heroDetailBreakdownTermAttack: "attack",
   heroDetailBreakdownTermMitF: "mitigation factor",
   heroDetailBreakdownTermDmg: "damage multiplier",
@@ -181,6 +181,8 @@ export const heroEn = {
     "The fuse cannot go below {floor}s; cooldown reduction stops paying at {cap}%.",
   heroDetailBreakdownNoteAvgHitEqualsHit: "Equal to Hit: crit chance is zero, so no hit crits.",
   heroDetailBreakdownNoteFieldWithoutTeamDrain: "Without the team's {name} this would be {secs}s.",
+  heroDetailBreakdownNoteBatonHeld:
+    "Baton Pass is counted as if its pulse never lapsed: the whole stint at +{pct}%. The Farm page and the Optimizer count only the 120 s each entry lights.",
   heroDetailBreakdownPenCovers: "covers the phase",
   heroDetailBreakdownPenShort: "{gap}% short of this phase",
   heroDetailBreakdownIconOff: "{name} — switched off",

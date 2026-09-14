@@ -74,6 +74,8 @@ function noteText(copy: HeroCopy, note: CardNote, lang: Lang, formatNumber: (n: 
       return sub(copy.heroDetailBreakdownNoteFuseFloor, { floor: formatNumber(note.floorSecs, 1), cap: formatNumber(note.capPct, 0) });
     case 'avgHitEqualsHit':
       return copy.heroDetailBreakdownNoteAvgHitEqualsHit;
+    case 'batonHeld':
+      return sub(copy.heroDetailBreakdownNoteBatonHeld, { pct: formatNumber(note.pct, 0) });
     case 'fieldWithoutTeamDrain':
       return sub(copy.heroDetailBreakdownNoteFieldWithoutTeamDrain, { name: abilityName(note.auraId, lang), secs: formatNumber(note.seconds, 0) });
     case 'penetration':
@@ -83,13 +85,13 @@ function noteText(copy: HeroCopy, note: CardNote, lang: Lang, formatNumber: (n: 
 
 function NamedFormula({ parts, copy }: { parts: readonly FormulaPart[]; copy: HeroCopy }) {
   return (
-    <p className="m-0 font-mono text-[11px] leading-1.7 break-words text-muted" data-testid="breakdown-formula">
+    <p className="m-0 font-mono text-[11px] leading-1.7 overflow-x-auto whitespace-nowrap text-muted" data-testid="breakdown-formula">
       {parts.map((part, index) =>
         typeof part === 'string' ? (
           <span key={index}>{part}</span>
         ) : (
           <span key={index} className="whitespace-nowrap">
-            <b className="font-semibold text-ink">{part.text}</b>
+            <b className="font-semibold text-accent">{part.text}</b>
             <span className="ml-0.5 font-sans text-[9px] tracking-[0.04em] uppercase">{copy[TERM_KEY[part.key]]}</span>
           </span>
         ),
@@ -135,7 +137,7 @@ function GroupedLedger({
               </span>
             ))}
           </span>
-          <span className="text-right font-mono font-semibold tabular-nums text-ink">{formatNumber(line.running, 2)}</span>
+          <span className="text-right font-mono tabular-nums text-muted">{formatNumber(line.running, 2)}</span>
         </li>
       ))}
     </ol>
@@ -263,7 +265,7 @@ export function CombatBreakdownCard({ card, label, value, text, lit, onLit, card
         <Tooltip.Trigger render={face} />
         <Tooltip.Portal>
           <Tooltip.Positioner side="bottom" sideOffset={6} anchor={rootRef}>
-            <Tooltip.Popup className="max-w-104" data-testid={`breakdown-popover-${id}`}>
+            <Tooltip.Popup className="w-max max-w-[min(92vw,40rem)]" data-testid={`breakdown-popover-${id}`}>
               <p className="m-0 mb-1 flex items-baseline justify-between gap-3 text-[12px] font-semibold text-ink">
                 <span>{label}</span>
                 <span className="font-mono tabular-nums">{value}</span>

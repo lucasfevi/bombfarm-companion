@@ -103,7 +103,7 @@ export const heroPtBR: HeroCopy = {
 
   heroDetailAurasTitle: "Habilidades e auras",
   heroDetailAurasTip:
-    "Com o que os números desta etapa são precificados. Uma aura de time é uma propriedade do campo: todo mundo que está nele recebe o mesmo total, com teto por aura. A aura do próprio herói conta no rank dele e não pode ser desligada; qualquer outra aura fica desligada até você ligar, e então conta no teto, seja quem for o portador. A tela Farm e o Otimizador precificam as mesmas auras pelo tempo ativo previsto de cada portador, então os números deles podem diferir destes.",
+    "Com o que os números desta etapa são precificados. Uma aura de time é uma propriedade do campo: todo mundo que está nele recebe o mesmo total, com teto por aura. A aura do próprio herói conta no rank dele e não pode ser desligada; qualquer outra aura fica desligada até você ligar, e então conta no teto, seja quem for o portador. A tela Farm e o Otimizador precificam as mesmas auras pelo tempo ativo previsto de cada portador, então os números deles podem diferir destes. A Passagem de Bastão conta aqui como se o pulso nunca acabasse — o tempo em campo inteiro no nível dela, +80% no teto — enquanto a tela Farm e o Otimizador contam só os 120 s que cada entrada acende.",
   heroDetailAurasTeamGroup: "Auras de time",
   heroDetailAurasOwnGroup: "Habilidades próprias",
   heroDetailAurasColumnAura: "Aura",
@@ -127,10 +127,10 @@ export const heroPtBR: HeroCopy = {
   heroDetailAuraUnitDmgMult: "×{value} de dano",
   heroDetailAuraUnitGateAttack: "+{value}% em portões",
   heroDetailAuraUnitPackPerAlly: "+{value}% de dano por aliado",
-  heroDetailAuraUnitPulse: "+{value}% de dano do time ao entrar",
+  heroDetailAuraUnitPulse: "+{value}% de dano do time, pulso mantido",
   heroDetailAurasNoOwnAbilities: "Este herói não tem nenhuma habilidade própria em vigor.",
 
-  heroDetailBreakdownHint: "Passe o mouse ou foque um valor para ver a fórmula por trás dele e o que ele lê.",
+  heroDetailBreakdownHint: "Passe o mouse ou foque o valor de um cartão para ver a fórmula por trás dele e o que ele lê.",
   heroDetailBreakdownRowSheet: "Ficha",
   heroDetailBreakdownRowFactors: "Fatores",
   heroDetailBreakdownRowPerHit: "Por hit · cadência",
@@ -153,7 +153,7 @@ export const heroPtBR: HeroCopy = {
   heroDetailBreakdownTermAbilities: "habilidades",
   heroDetailBreakdownTermPack: "matilha",
   heroDetailBreakdownTermExtra: "extra",
-  heroDetailBreakdownTermPulse: "pulso de entrada",
+  heroDetailBreakdownTermPulse: "pulso, mantido",
   heroDetailBreakdownTermAttack: "ataque",
   heroDetailBreakdownTermMitF: "fator de mitigação",
   heroDetailBreakdownTermDmg: "multiplicador de dano",
@@ -182,6 +182,8 @@ export const heroPtBR: HeroCopy = {
     "O pavio não desce de {floor}s; a redução de recarga para de pagar em {cap}%.",
   heroDetailBreakdownNoteAvgHitEqualsHit: "Igual ao Hit: a chance de crítico é zero, então nenhum hit é crítico.",
   heroDetailBreakdownNoteFieldWithoutTeamDrain: "Sem o {name} do time isto seria {secs}s.",
+  heroDetailBreakdownNoteBatonHeld:
+    "A Passagem de Bastão conta como se o pulso nunca acabasse: o tempo em campo inteiro a +{pct}%. A página Farm e o Otimizador contam só os 120 s que cada entrada acende.",
   heroDetailBreakdownPenCovers: "cobre a fase",
   heroDetailBreakdownPenShort: "{gap}% abaixo desta fase",
   heroDetailBreakdownIconOff: "{name} — desligada",

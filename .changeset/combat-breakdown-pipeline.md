@@ -52,3 +52,12 @@ Damage multiplier card names the pulse as its own factor — so switching Baton 
 the way it moves Sustained DPS. Hits-to-kill still reads the unpulsed hit (a threshold is crossed
 at a level the field sits at, never at the average of two), and the Farm board's pricing is
 untouched.
+
+On a hero's own screen Baton Pass is counted as if its pulse never lapsed — the whole stint at
+its level, +80% at the cap — because the screen answers what the hero is worth with the pulse on;
+the Farm page and the Optimizer keep counting only the 120 s each entry lights. The Damage
+multiplier card's popover says so, the aura row's figure reads "pulse held up", and the section's
+info glyph explains the difference. A line under the Effective stats title says a card's figure
+opens its formula on hover or focus; inside a popover the main figure stays white while every
+term, step and running total is accent or muted, and the popover grows to keep a formula on one
+line. The sheet-stat matrix is striped.

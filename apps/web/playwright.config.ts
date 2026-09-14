@@ -2,7 +2,9 @@ import { availableParallelism } from 'node:os';
 import { defineConfig, devices } from '@playwright/test';
 import { cappedWorkers } from '../../tools/cpu-budget.mjs';
 
-const PORT = 4321;
+// Another Bomb Farm session on the same machine may hold 4321 with a different export;
+// `E2E_PORT` lets a run serve its own build somewhere else instead of testing that one.
+const PORT = Number(process.env.E2E_PORT ?? 4321);
 const BASE_URL = `http://localhost:${PORT}`;
 const prebuilt = process.env.E2E_PREBUILT === '1';
 const blobReporter = process.env.PLAYWRIGHT_BLOB === '1';
@@ -88,12 +90,13 @@ export default defineConfig({
     ? perfProfile
       ? {
           command: 'node e2e/scripts/serve-static.mjs',
+          env: { PORT: String(PORT) },
           url: BASE_URL,
           reuseExistingServer: !process.env.CI,
           timeout: 30_000,
         }
       : {
-          command: 'pnpm exec next dev --port 4321',
+          command: `pnpm exec next dev --port ${PORT}`,
           url: BASE_URL,
           reuseExistingServer: !process.env.CI,
           timeout: 120_000,
@@ -102,6 +105,7 @@ export default defineConfig({
         command: prebuilt
           ? 'node e2e/scripts/serve-static.mjs'
           : 'pnpm build:e2e && node e2e/scripts/serve-static.mjs',
+        env: { PORT: String(PORT) },
         url: BASE_URL,
         reuseExistingServer: !process.env.CI,
         timeout: prebuilt ? 30_000 : 120_000,

@@ -200,15 +200,17 @@ describe('Passagem de Bastão — the sixth team aura, on the hero\'s own seat',
     });
   });
 
-  it('a hero\'s own screen and the Farm board agree on the pulsed hit for the same hero', () => {
+  it('a hero\'s own screen holds the pulse up for the whole stint; the Farm board discounts it to the window it lasts', () => {
     const carrier = withAbilityLevels(heroByName('IDK'), { passagem_bastao: 20 });
     const seat = pipelineForHero(carrier, { ...account, teamBuffs: zeroTeamBuffs(), fieldAllies: 0 }, PHASE, MITIGATION_PCT);
     const squad = computeSquadFarmFacts(computeHeroFarmFacts({ heroes: [carrier], account }), account);
 
-    expect(seat.entryPulse.levels.length).toBe(2);
-    expect(seat.entryPulse).toEqual(squad.entryPulse);
-    expect(seat.entryPulse.levels[1].mult).toBe(1.8);
-    expect(seat.entryPulse.expectedMult).toBeGreaterThan(1);
+    expect(seat.entryPulse.levels).toEqual([{ mult: 1.8, probability: 1 }]);
+    expect(seat.entryPulse.expectedMult).toBe(1.8);
+    expect(squad.entryPulse.levels.length).toBe(2);
+    expect(squad.entryPulse.levels[1].mult).toBe(1.8);
+    expect(squad.entryPulse.expectedMult).toBeGreaterThan(1);
+    expect(squad.entryPulse.expectedMult).toBeLessThan(seat.entryPulse.expectedMult);
   });
 
   it('scales the hero\'s sustained DPS and its printed hit by the pulse\'s expectation; hits-to-kill and the standing multiplier stay unpulsed', () => {
