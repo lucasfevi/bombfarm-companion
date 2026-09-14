@@ -1,2 +1,2 @@
-export { createTeamPlanWorkerModule } from '@bombfarm/team-plan/runner';
 export { TeamPlanPage } from './components/team-plan-page';
+export { buildTeamPlanInputFromStore } from './model/build-team-plan-input';

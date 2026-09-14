@@ -11,10 +11,10 @@ export type TeamPlanSolverSnapshot = {
 };
 
 export type TeamPlanSolver = {
-  getSnapshot(): TeamPlanSolverSnapshot;
-  subscribe(listener: () => void): () => void;
-  solve(): void;
-  cancel(): void;
+  getSnapshot: () => TeamPlanSolverSnapshot;
+  subscribe: (listener: () => void) => () => void;
+  solve: () => void;
+  cancel: () => void;
   runner: TeamPlanRunnerHandle;
 };
 
