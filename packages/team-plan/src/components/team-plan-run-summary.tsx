@@ -1,12 +1,12 @@
 'use client';
 
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
-import { Panel, formatNumber, mutedClass, panelHClass, panelTitleClass } from '@bombfarm/ui';
+import { Collapsible, Panel, formatNumber, mutedClass, panelTitleClass } from '@bombfarm/ui';
 import { sub, type Lang } from '@bombfarm/hero/copy';
 import type { TeamPlanCopy } from '../copy';
 import { parseEmphasis } from '../copy';
 import type { TeamPlanObjectiveCopy } from '../model/objective-copy';
-import { formatElapsedSeconds, scoredPhaseHint, seedStartLabel } from '../model/run-summary-copy';
+import { formatElapsedSeconds, seedStartLabel } from '../model/run-summary-copy';
 
 function emphasizedLine(text: string) {
   return parseEmphasis(text).map((part, index) =>
@@ -20,26 +20,49 @@ function emphasizedLine(text: string) {
   );
 }
 
-export function TeamPlanRunSummary({
-  t,
-  lang,
-  plan,
-  ranOnMainThread,
-  copy,
-}: {
+export type TeamPlanRunSummaryProps = {
   t: TeamPlanCopy;
   lang: Lang;
   plan: TeamPlan;
   ranOnMainThread: boolean;
   copy: TeamPlanObjectiveCopy;
-}) {
-  const saturated = plan.regime === 'saturated';
-  const regimeLabel = saturated ? t.teamPlanRegimeSaturated : t.teamPlanRegimeUnderSaturated;
-  const regimeHint = saturated
-    ? copy.regimeHintSaturated
-    : t.teamPlanRunSummaryRegimeHintUnder;
+};
 
-  const phaseHint = scoredPhaseHint(t, lang, plan);
+/**
+ * How the search went — the sentences behind the gain breakdown's cards, the run's own figures,
+ * and the rune caveat. Folded away by default: the phase and field load it used to lead with are
+ * cards on the breakdown now, and a reader who wants the rest opens it. The two notices that
+ * qualify the figures themselves — a search cut short, a search that ran on the main thread —
+ * stay outside the fold, since a hidden warning is no warning.
+ */
+export function TeamPlanRunSummary(props: TeamPlanRunSummaryProps) {
+  const { t, plan, ranOnMainThread } = props;
+  return (
+    <Panel data-testid="team-plan-run-summary">
+      <Collapsible.Root>
+        <h2 className={panelTitleClass}>
+          <Collapsible.Trigger tone="panel">{t.teamPlanRunSummaryTitle}</Collapsible.Trigger>
+        </h2>
+        <Collapsible.Panel>
+          <TeamPlanRunSummaryBody {...props} />
+        </Collapsible.Panel>
+      </Collapsible.Root>
+      {plan.run.budgetExhausted ? (
+        <p className="m-0 mt-2 text-[13px] text-warn" role="status">
+          {t.teamPlanBudgetExhausted}
+        </p>
+      ) : null}
+      {ranOnMainThread ? (
+        <p className={`m-0 mt-2 ${mutedClass}`} role="status">
+          {t.teamPlanMainThreadFallback}
+        </p>
+      ) : null}
+    </Panel>
+  );
+}
+
+export function TeamPlanRunSummaryBody({ t, lang, plan, copy }: TeamPlanRunSummaryProps) {
+  const regimeHint = plan.regime === 'saturated' ? copy.regimeHintSaturated : t.teamPlanRunSummaryRegimeHintUnder;
 
   const metaLine = sub(t.teamPlanRunMetaFooter, {
     seconds: formatElapsedSeconds(plan.run.elapsedMs, lang),
@@ -49,43 +72,15 @@ export function TeamPlanRunSummary({
   });
 
   return (
-    <Panel>
-      <div className={panelHClass}>
-        <h2 className={panelTitleClass}>{t.teamPlanRunSummaryTitle}</h2>
-      </div>
-      <div className="space-y-3 text-[13px]" role="status">
-        {phaseHint ? (
-          <p className={`m-0 ${plan.scoredPhaseInfeasible ? 'text-warn' : 'text-ink'}`}>
-            <strong>{t.teamPlanRunSummaryScoredPhase}:</strong> {phaseHint}
-          </p>
-        ) : null}
-        <div>
-          <p className="m-0 text-ink">
-            <strong>{t.teamPlanRunSummaryFieldStatus}:</strong> {regimeLabel}
-          </p>
-          <p className={`m-0 mt-1 ${mutedClass}`}>{regimeHint}</p>
-        </div>
-        <div>
-          <p className="m-0 text-ink">
-            <strong>{t.teamPlanRunSummaryDuty}:</strong>{' '}
-            {sub(t.teamPlanRunSummaryDutyValue, {
-              duty: formatNumber(plan.sumDuty, lang, 2),
-              slots: String(plan.slots),
-            })}
-          </p>
-          <p className={`m-0 mt-1 ${mutedClass}`}>{t.teamPlanRunSummaryDutyHint}</p>
-        </div>
-        <p className={`m-0 ${mutedClass}`}>{emphasizedLine(metaLine)}</p>
-        {plan.runedHeroNames.length > 0 ? (
-          <p className={`m-0 ${mutedClass}`}>
-            {sub(t.teamPlanRunedHeroes, { heroes: plan.runedHeroNames.join(', ') })}
-          </p>
-        ) : null}
-        {plan.run.budgetExhausted ? (
-          <p className="m-0 text-warn">{t.teamPlanBudgetExhausted}</p>
-        ) : null}
-        {ranOnMainThread ? <p className={`m-0 ${mutedClass}`}>{t.teamPlanMainThreadFallback}</p> : null}
-      </div>
-    </Panel>
+    <div className="space-y-2 pt-2.5 text-[13px]" role="status" data-testid="team-plan-run-summary-body">
+      <p className={`m-0 ${mutedClass}`}>{regimeHint}</p>
+      <p className={`m-0 ${mutedClass}`}>{t.teamPlanRunSummaryDutyHint}</p>
+      <p className={`m-0 ${mutedClass}`}>{emphasizedLine(metaLine)}</p>
+      {plan.runedHeroNames.length > 0 ? (
+        <p className={`m-0 ${mutedClass}`}>
+          {sub(t.teamPlanRunedHeroes, { heroes: plan.runedHeroNames.join(', ') })}
+        </p>
+      ) : null}
+    </div>
   );
 }

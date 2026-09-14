@@ -66,8 +66,8 @@ describe('teamPlanEn/teamPlanPtBR placeholder parity', () => {
   });
 
   it('red state demonstrated: renaming one placeholder in one language is caught', () => {
-    const mutated = teamPlanPtBR.teamPlanScoredPhaseChosen.replace('{phase}', '{fase}');
-    expect([...placeholderSet(teamPlanEn.teamPlanScoredPhaseChosen)]).not.toEqual([
+    const mutated = teamPlanPtBR.teamPlanWaterfallPhaseFrom.replace('{phase}', '{fase}');
+    expect([...placeholderSet(teamPlanEn.teamPlanWaterfallPhaseFrom)]).not.toEqual([
       ...placeholderSet(mutated),
     ]);
   });

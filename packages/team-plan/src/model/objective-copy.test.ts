@@ -56,28 +56,19 @@ function bundleEntries(lang: Lang, objective: TeamPlanObjective): [string, strin
 
 describe('teamPlanObjectiveCopy', () => {
   for (const lang of LANGS) {
-    const DAMAGE_WORD_EXEMPT = new Set(['heroDeltaNote']);
-
     it(`${lang}: no farm-mode string carries a damage word`, () => {
       for (const [field, text] of bundleEntries(lang, 'farm')) {
-        if (DAMAGE_WORD_EXEMPT.has(field)) continue;
         for (const pattern of DAMAGE_WORDS[lang]) {
           expect(text, `${field}: "${text}" matched ${pattern}`).not.toMatch(pattern);
         }
       }
     });
 
-    it(`${lang}: the exempt farm note names DPS and denies it is the scored figure`, () => {
-      const { heroDeltaNote } = teamPlanObjectiveCopy(SCREEN_COPY[lang], 'farm');
-      expect(heroDeltaNote).toMatch(DAMAGE_WORDS[lang][0]);
-      expect(heroDeltaNote).toMatch(GOLD_WORDS[lang]);
-    });
-
     it(`${lang}: the dps bundle still speaks of damage, so the farm check is not vacuous`, () => {
       const damageWorded = bundleEntries(lang, 'dps').filter(([, text]) =>
         DAMAGE_WORDS[lang].some((pattern) => pattern.test(text)),
       );
-      expect(damageWorded.length).toBeGreaterThanOrEqual(6);
+      expect(damageWorded.length).toBeGreaterThanOrEqual(5);
     });
 
     it(`${lang}: the farm-mode strings that report a figure name gold`, () => {

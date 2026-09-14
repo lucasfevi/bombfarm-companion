@@ -126,7 +126,7 @@ function bumpFirstHeroLevelAtomically(fixtureFilePath) {
 
 async function waitForOptimizeDone(page, timeout = 120_000) {
   await expect(page.getByRole('button', { name: OPTIMIZE_BUTTON })).toBeEnabled({ timeout });
-  await expect(page.getByText(/^Field status:/i)).toBeVisible({ timeout });
+  await expect(page.getByTestId('team-plan-battle-load-card')).toBeVisible({ timeout });
 }
 
 test.describe('the export ships the worker chunk', () => {
@@ -267,7 +267,7 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
   });
 
   test('forcing the worker factory to throw runs the same search on the main thread, labelled', async () => {
-    // Switches back to English first — the fallback sentence and "Field status:" are asserted in
+    // Switches back to English first — the fallback sentence and the optimize button are asserted in
     // one language rather than duplicating every regex for both; which language is active has
     // nothing to do with the worker-fallback mechanism under test here. This continues on the app
     // `Portuguese, per-card scope change…` relaunched — no relaunch of its own is needed, since

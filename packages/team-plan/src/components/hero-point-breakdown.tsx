@@ -25,7 +25,6 @@ export function HeroPointBreakdown({
     now: pointsBefore[key],
     target: pointsAfter[key],
   }));
-  if (rows.every((row) => row.now === 0 && row.target === 0)) return null;
   // BEFORE is the hero's own inferred allocation and is not clamped; AFTER comes from a search
   // that is (`resetBudget` / `reoptBudget`). So an over-budget hero renders a reset that appears
   // to lose a point, with the two columns disagreeing about how many the hero even has. Say so,
@@ -48,7 +47,7 @@ export function HeroPointBreakdown({
         }}
         rows={rows}
         decimals={0}
-        hideZeroRows
+        striped
       />
     </>
   );

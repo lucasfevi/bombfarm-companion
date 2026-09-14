@@ -70,3 +70,21 @@ export const HidesZeroRows: Story = {
     ],
   },
 };
+
+/** `striped` — every other row tinted, for the long stat ledgers on the Optimizer's hero rows. */
+export const Striped: Story = {
+  args: {
+    caption: 'Hero sheet',
+    columnLabels,
+    decimals: 2,
+    striped: true,
+    rows: [
+      { id: 'attack', label: 'Attack', now: 3419.47, target: 1460.72 },
+      { id: 'energy', label: 'Energy', now: 681.81, target: 1099.57 },
+      { id: 'speed', label: 'Speed', now: 52.05, target: 66.16 },
+      { id: 'luck', label: 'Luck %', now: 2.68, target: 2.84 },
+      { id: 'crit', label: 'Crit %', now: 8.82, target: 8.76 },
+      { id: 'critDmg', label: 'Crit dmg %', now: 67.13, target: 67.13 },
+    ],
+  },
+};

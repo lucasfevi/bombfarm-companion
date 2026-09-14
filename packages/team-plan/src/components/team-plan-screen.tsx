@@ -174,6 +174,13 @@ export function TeamPlanScreenView({
                   {t.teamPlanResultsSectionTitle}
                 </h2>
                 <div className="flex flex-col gap-4">
+                  <WaterfallPanel
+                    t={t}
+                    lang={lang}
+                    plan={displayPlan}
+                    copy={objectiveCopy}
+                    accountPhase={inputs.phase}
+                  />
                   <TeamPlanRunSummary
                     t={t}
                     lang={lang}
@@ -181,12 +188,10 @@ export function TeamPlanScreenView({
                     ranOnMainThread={runnerState.ranOnMainThread}
                     copy={objectiveCopy}
                   />
-                  <WaterfallPanel t={t} lang={lang} plan={displayPlan} copy={objectiveCopy} />
                   <HeroDeltaTable
                     t={t}
                     lang={lang}
                     plan={displayPlan}
-                    copy={objectiveCopy}
                     heroes={heroes}
                     inventoryItems={inventoryItems}
                   />
