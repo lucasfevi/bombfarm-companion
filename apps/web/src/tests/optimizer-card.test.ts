@@ -2,10 +2,11 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { emptyLoadout } from '@bombfarm/domain/gear';
+import { formatPhaseLabel } from '@bombfarm/domain/phase-wiki';
 import type { InventoryItem } from '@bombfarm/domain/inventory';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
 import { OptimizerCard } from '@/features/home/components/optimizer-card';
-import { STRINGS, type Lang } from '@/shared/i18n';
+import { STRINGS, sub, type Lang } from '@/shared/i18n';
 import { normalizeHero } from '@/shared/lib/storage';
 import { resetPlannerStoreForTests, usePlannerStore, type PlannerStore } from '@/shared/stores';
 
@@ -139,9 +140,25 @@ describe('the front page optimizer card', () => {
       usePlannerStore.setState({ lang });
       const html = render();
 
+      const strings = STRINGS[lang];
       expect(html).toContain('data-home-card-state="ready"');
-      expect(textOf(body(html))).toBe(STRINGS[lang].homeCardOptimizerReady);
-      expect(footer(html)).toBe('');
+      const labels = [...body(html).matchAll(/data-testid="home-optimizer-label"[^>]*>([^<]*)</g)].map((m) => m[1]);
+      const values = [...body(html).matchAll(/data-testid="home-optimizer-value"[^>]*>([^<]*)</g)].map((m) => m[1]);
+      expect(labels).toEqual([
+        strings.teamPlanObjectiveLabel,
+        strings.teamPlanAllowedChangesLabel,
+        strings.homeCardOptimizerScope,
+        strings.teamPlanForgeFloorLabel,
+        strings.teamPlanPhaseLabel,
+      ]);
+      expect(values).toEqual([
+        strings.teamPlanObjectiveOptionGold,
+        strings.teamPlanAllowedChangesOptionBoth,
+        sub(strings.homeCardOptimizerScopeValue, { count: 1, total: 1 }),
+        `+${state().forgeFloor}`,
+        formatPhaseLabel(51, lang),
+      ]);
+      expect(footer(html)).toBe(escaped(strings.homeCardOptimizerReady));
       expect(html.match(/<a /g)).toHaveLength(1);
       expect(html).not.toContain('<button');
       expect(state().runStatus).toBe('idle');

@@ -193,7 +193,7 @@ describe('the front page account card', () => {
       expect(slots(html, 'home-account-value')).toEqual([
         formatPhaseLabel(51, lang),
         formatPhaseLabel(137, lang),
-        `${houseLabel(2, lang)} · ${strings.houseLevelLabel} 7 / ${HOUSE_MAX_LEVEL}`,
+        `${houseLabel(2, lang)} · ${sub(strings.homeCardAccountHouseLevel, { level: 7, max: HOUSE_MAX_LEVEL })}`,
         formatHouseRest(rest),
         '3',
         '6',
@@ -207,7 +207,7 @@ describe('the front page account card', () => {
     usePlannerStore.setState({ lang: 'en', fieldSlots: null, houseIdx: HOUSES.length - 1 });
     const maxed = render();
     expect(slots(maxed, 'home-account-value')[5]).toBe('—');
-    expect(footer(maxed)).toBe(STRINGS.en.accountHouseTipMaxed);
+    expect(footer(maxed)).toBe(sub(STRINGS.en.homeCardAccountHouseMaxed, { house: houseLabel(HOUSES.length - 1, 'en') }));
   });
 
   it("the Account card's total equals the holdings hook's total, formatted the way the panel formats it", () => {

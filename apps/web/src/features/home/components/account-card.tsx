@@ -30,6 +30,7 @@ import {
   usePlannerStore,
 } from '@/shared/stores';
 import { selectAccountUsable } from '../model/home-selectors';
+import { HomeKeyValues } from './home-key-values';
 import { HomeSectionCard } from './home-section-card';
 
 export function AccountCard() {
@@ -53,7 +54,7 @@ export function AccountCard() {
   const rows: [string, string][] = [
     [t.accountCurrentPhase, phase == null ? '—' : formatPhaseLabel(phase, lang)],
     [t.accountMaxPhase, maxPhase == null ? '—' : formatPhaseLabel(maxPhase, lang)],
-    [t.house, `${houseLabel(houseIdx, lang)} · ${t.houseLevelLabel} ${houseLevel} / ${HOUSE_MAX_LEVEL}`],
+    [t.house, `${houseLabel(houseIdx, lang)} · ${sub(t.homeCardAccountHouseLevel, { level: houseLevel, max: HOUSE_MAX_LEVEL })}`],
     [t.accountHouseCycle, formatHouseRest(restSeconds)],
     [t.accountCasaSlots, String(slots)],
     [t.accountFieldSlots, fieldSlots == null ? '—' : String(fieldSlots)],
@@ -79,22 +80,11 @@ export function AccountCard() {
         accountUsable
           ? nextHouseIdx < HOUSES.length
             ? sub(t.accountNextHouse, { house: houseLabel(nextHouseIdx, lang) })
-            : t.accountHouseTipMaxed
+            : sub(t.homeCardAccountHouseMaxed, { house: houseLabel(houseIdx, lang) })
           : t.homeCardAccountNeeds
       }
     >
-      <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-        {rows.map(([label, value]) => (
-          <div key={label} className="contents">
-            <dt className={mutedClass} data-testid="home-account-label">
-              {label}
-            </dt>
-            <dd className="m-0 font-mono tabular-nums" data-testid="home-account-value">
-              {value}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <HomeKeyValues rows={rows} testId="home-account" />
       <p className={cn('m-0 mt-3 text-xs', mutedClass)}>{t.accountHoldingsTotal}</p>
       <p className="m-0 flex flex-wrap items-baseline gap-x-2">
         <span
@@ -109,11 +99,11 @@ export function AccountCard() {
           </span>
         ) : null}
       </p>
-      <dl className="m-0 mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
+      <dl className="m-0 mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-xs">
         {HOLDINGS_COMPONENTS.map((componentId) => (
           <div key={componentId} className="contents">
             <dt className={mutedClass}>{holdings.labels.components[componentId].title}</dt>
-            <dd className="m-0 font-mono tabular-nums" data-testid={`home-account-${componentId}`}>
+            <dd className="m-0 text-right font-mono tabular-nums" data-testid={`home-account-${componentId}`}>
               {componentValue(componentId, holdings[componentId])}
             </dd>
           </div>
