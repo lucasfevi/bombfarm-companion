@@ -27,7 +27,7 @@ export function LiveCard() {
         <HomeTrustLine>{t.downloadTrustUpdates}</HomeTrustLine>
       </ul>
       <Link
-        className={cn(buttonRecipe({ variant: 'primary' }), 'mt-auto h-auto w-full justify-center py-3.5 text-base')}
+        className={cn(buttonRecipe({ variant: 'primary' }), 'mt-auto flex h-auto w-full items-center justify-center py-3.5 text-base')}
         href={SITE_SECTION_HREF.download}
         data-testid="home-live-download"
       >
