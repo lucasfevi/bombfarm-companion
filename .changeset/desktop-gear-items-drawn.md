@@ -20,5 +20,9 @@ One card for both hosts. `GearSlotCard` lives in `@bombfarm/hero`; the shared It
 whenever a host supplies no slot editor, and the web planner's editor now wraps the same card,
 handing its level, rarity and forge selects in as the card's children — so the per-slot stats that
 used to sit in a second row under the editors now sit inside each card, under the item they
-belong to. The eight slots are laid out four across in two rows rather than eight across: at the
-widths the panel really gets, eight across left each card ~106px and abbreviated every item name.
+belong to. The eight slots lay out four across in two rows, centred, and go to one row of eight
+once the panel is 64rem wide — the widest the desktop shell lets it get — where each card still
+holds its name and every stat row unabbreviated.
+
+The totals table under the cards loses its "Damage (% of Attack)" column: no item in the current
+catalog carries a percent damage bonus, so it read +0.0% on every account.

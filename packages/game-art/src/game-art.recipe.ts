@@ -128,12 +128,15 @@ export const emptyGearSlotClass = cn(
   artFrameRadiusClass,
 );
 
-/** The eight slot cards as two rows of four, one shape at every width. Eight across left each card
- *  ~106px on the widths the panel really gets and abbreviated every item name; four across holds a
- *  name, a tier line and "Cooldown Reduction" unbroken. Each column stops at 13rem rather than
- *  stretching to fill a wide panel, and under 720px the row keeps its width and scrolls sideways. */
+/** The eight slot cards: four across, or eight across once the panel is 64rem wide — the desktop
+ *  shell caps this panel at 1096px of content (measured at a 1920px window), which is 131px a card
+ *  with the gaps, enough for the art, a name wrapped over two lines and every stat row unbroken.
+ *  Between those two shapes nothing else reads: a 5+3 or 6+2 fold leaves a slot under one it has
+ *  nothing to do with. Each column stops at 13rem, the measure the card is drawn for, and the grid
+ *  centres in a wider panel rather than stretching the cards or hugging one edge. Under 720px the
+ *  row keeps its width and scrolls sideways. The container is the panel the grid sits in. */
 export const slotsGridClass =
-  'grid grid-cols-[repeat(4,minmax(0,13rem))] gap-1.5 max-[720px]:min-w-[36rem]';
+  'grid grid-cols-[repeat(4,minmax(0,13rem))] justify-center gap-1.5 max-[720px]:min-w-[36rem] @min-[64rem]:grid-cols-[repeat(8,minmax(0,13rem))]';
 export const slotStatRowClass =
   'flex items-baseline justify-between gap-1.5 text-muted leading-snug [&_b]:shrink-0 [&_b]:font-semibold [&_b]:text-ink';
 

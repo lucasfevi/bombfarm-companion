@@ -54,7 +54,7 @@ export function GearTab({
 
   return (
     <main className={colClass}>
-      <Panel>
+      <Panel className="@container min-w-0">
         <div className={panelHClass}>
           <h2 className={panelTitleClass}>{t.panelItems}</h2>
           <FieldRequired show={!hasGear}>{t.fieldRequired}</FieldRequired>

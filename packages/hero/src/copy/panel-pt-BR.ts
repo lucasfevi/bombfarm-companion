@@ -132,7 +132,6 @@ export const gearPanelPtBR: GearPanelCopy = {
     cooldown: 'Redução de recarga',
   },
   gearTotals: 'Totais',
-  dmgPctLabel: 'Dano (% da Ataque)',
   panelCompare: 'Comparar equipamento',
   compareTip: 'Copia seu equipamento atual para um clone editável — troque itens no clone e veja o impacto no DPS na hora.',
   compareCurrent: 'Atual',

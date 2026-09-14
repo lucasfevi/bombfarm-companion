@@ -133,7 +133,6 @@ export const gearPanelEn = {
     cooldown: 'Cooldown Reduction',
   },
   gearTotals: 'Totals',
-  dmgPctLabel: 'Damage (% of Attack)',
   panelCompare: 'Gear compare',
   compareTip: 'Copies your current gear into an editable clone — change items on the clone and see the DPS impact instantly.',
   compareCurrent: 'Current',

@@ -76,11 +76,9 @@ export function GearSlotCard({ slot, equipped, lang, t, formatNumber, changed, c
         <ItemIcon item={equipped} size="xl" className="shrink-0" />
       </div>
       <div className="flex min-w-0 flex-col gap-0.5 text-center">
-        <span className="flex min-w-0 flex-wrap items-baseline justify-center gap-x-1">
-          <span className="min-w-0 text-sm font-semibold text-ink">{itemName(equipped, lang)}</span>
-          {equipped.upgrade > 0 ? (
-            <span className="shrink-0 text-sm font-semibold text-accent">+{equipped.upgrade}</span>
-          ) : null}
+        <span className="min-w-0 text-balance text-sm font-semibold text-ink">
+          {itemName(equipped, lang)}
+          {equipped.upgrade > 0 ? <span className="text-accent"> +{equipped.upgrade}</span> : null}
         </span>
         <span className="flex min-w-0 items-baseline justify-center gap-1 text-xs leading-none">
           <span className={cn('shrink-0 font-medium', tier)}>{itemRarityLabel(equipped.rarityIdx, lang)}</span>

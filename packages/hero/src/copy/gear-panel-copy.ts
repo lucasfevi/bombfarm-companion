@@ -39,7 +39,6 @@ export type GearPanelCopy = {
   };
 
   gearTotals: string;
-  dmgPctLabel: string;
 
   panelCompare: string;
   compareTip: string;

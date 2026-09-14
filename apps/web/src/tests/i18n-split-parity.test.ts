@@ -188,6 +188,9 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as { en: Strings; 
  */
 const KEYS_REMOVED: readonly string[] = [
   'navTeamPlan',
+  // The gear totals table's "Damage (% of Attack)" column (2026-09-14): no item in the current
+  // catalog carries a percent damage bonus, so the column read +0.0% on every account.
+  'dmgPctLabel',
   // The Optimizer's proposed-items grid draws every gear slot now (2026-09-14), so a hero the
   // plan gives nothing shows eight named empty cards and the sentence that stood in for them has
   // no reader left; its per-slot replacement is `teamPlanFlowSlotEmpty` (in `KEYS_ADDED`).
