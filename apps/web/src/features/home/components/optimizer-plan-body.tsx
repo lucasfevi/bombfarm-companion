@@ -29,8 +29,11 @@ export function OptimizerPlanBody({
 
   return (
     <>
-      <p className="m-0 text-xl font-bold tabular-nums text-ink" data-testid="home-optimizer-headline">
-        {sub(headline, { pct: signedPct(plan, lang) })}
+      <p className="m-0 flex flex-col" data-testid="home-optimizer-headline">
+        <span className="text-4xl font-bold leading-none text-up" data-testid="home-optimizer-gain">
+          {signedPct(plan, lang)}%
+        </span>{' '}
+        <span className="text-sm text-ink">{headline}</span>
       </p>
       <p className={cn(mutedClass, 'm-0 text-xs')} data-testid="home-optimizer-scored-at">
         {hint === null ? scoredAt : `${scoredAt} · ${hint}`}

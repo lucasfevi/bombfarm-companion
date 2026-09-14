@@ -73,6 +73,10 @@ const contextText = (html: string) =>
   /<span[^>]*>([^<]*)<\/span>/.exec(html.slice(0, openingOf(html, 'home-card-body')))?.[1] ?? null;
 const seePlanLink = (html: string) =>
   /<a [^>]*data-testid="home-optimizer-see-plan" href="\/optimizer">([^<]*)<\/a>/.exec(body(html))?.[1] ?? null;
+const gainText = (html: string) =>
+  /<span[^>]*data-testid="home-optimizer-gain"[^>]*>([^<]*)<\/span>/.exec(html)?.[1] ?? null;
+const gainClass = (html: string) =>
+  /<span class="([^"]*)" data-testid="home-optimizer-gain">/.exec(html)?.[1] ?? '';
 const lineText = (html: string, testId: string) =>
   textOf(new RegExp(`<p[^>]*data-testid="${testId}"[^>]*>(.*?)</p>`).exec(html)?.[1] ?? '');
 
@@ -352,8 +356,10 @@ describe('the front page optimizer card', () => {
       const html = render();
 
       expect(html).toContain('data-home-card-state="plan"');
+      expect(gainText(html)).toBe(lang === 'en' ? '+20.0%' : '+20,0%');
+      expect(gainClass(html).split(' ')).toContain('text-up');
       expect(lineText(html, 'home-optimizer-headline')).toBe(
-        sub(t.homeCardOptimizerHeadlineFarm, { pct: lang === 'en' ? '+20.0' : '+20,0' }),
+        `${gainText(html)} ${t.homeCardOptimizerHeadlineFarm}`,
       );
       expect(lineText(html, 'home-optimizer-scored-at')).toBe(
         `${sub(t.homeCardOptimizerScoredAt, { phase: scoredPhaseValue(lang, solved) })} · ${scoredPhaseHint(t, solved)}`,
@@ -380,10 +386,9 @@ describe('the front page optimizer card', () => {
       const html = render();
 
       expect(html).toContain('data-home-card-state="plan"');
-      expect(lineText(html, 'home-optimizer-headline')).toBe(
-        sub(t.homeCardOptimizerHeadlineDps, { pct: lang === 'en' ? '+20.0' : '+20,0' }),
-      );
-      expect(html).not.toContain(t.homeCardOptimizerHeadlineFarm.replace('{pct}', ''));
+      expect(gainText(html)).toBe(lang === 'en' ? '+20.0%' : '+20,0%');
+      expect(lineText(html, 'home-optimizer-headline')).toBe(`${gainText(html)} ${t.homeCardOptimizerHeadlineDps}`);
+      expect(html).not.toContain(t.homeCardOptimizerHeadlineFarm);
     }
   });
 });

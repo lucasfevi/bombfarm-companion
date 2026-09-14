@@ -39,12 +39,12 @@ describe('home copy', () => {
     }
   });
 
-  it("the optimizer card's keys carry a signed percent, an elapsed count and the phase placeholder in both locales", () => {
+  it("the optimizer card's keys carry an elapsed count and the phase placeholder, and the gain's label carries no number, in both locales", () => {
     const expected: Record<string, string[]> = {
       homeCardOptimizerRecalculating: [],
       homeCardOptimizerSearching: ['elapsed'],
-      homeCardOptimizerHeadlineFarm: ['pct'],
-      homeCardOptimizerHeadlineDps: ['pct'],
+      homeCardOptimizerHeadlineFarm: [],
+      homeCardOptimizerHeadlineDps: [],
       homeCardOptimizerScoredAt: ['phase'],
       homeCardOptimizerSeeFullPlan: [],
     };
