@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ABILITIES } from '@bombfarm/domain/model';
+import { ABILITIES, mitigationFactor } from '@bombfarm/domain/model';
 import { SHEET_DISPLAY_KEYS } from '@bombfarm/domain/planner-constants';
 import { BREAKDOWN_DERIVED_IDS, buildStatBreakdown, type BreakdownStatId } from '@bombfarm/domain/stat-breakdown';
 import { TEAM_BUFF_ABILITY_IDS, noTeamAuraSwitches } from '@bombfarm/domain/team-buffs';
@@ -183,16 +183,19 @@ describe('the sheet-stat matrix', () => {
 describe('the notes a card carries', () => {
   const facts = factsForHero(fixture, minato);
 
-  it('the Mitigation factor card reads the penetration verdict', () => {
+  it('the Mitigation factor card reads what the phase still takes off each hit — pierced only at 100% penetration', () => {
     const note = cardNoteFor('mitF', facts, minato, switchesOff);
     expect(note?.kind).toBe('penetration');
     if (note?.kind !== 'penetration') return;
-    const gap = facts.context.mitigation * 100 - facts.effective.penetration;
-    if (gap > 0) {
-      expect(note.reading.kind).toBe('short');
-      if (note.reading.kind === 'short') expect(note.reading.gapPct).toBeCloseTo(gap, 6);
+    const lost = (1 - mitigationFactor(facts.context.mitigation, facts.effective.penetration)) * 100;
+    if (facts.effective.penetration >= 100) {
+      expect(note.reading).toEqual({ kind: 'pierced' });
     } else {
-      expect(note.reading).toEqual({ kind: 'covers' });
+      expect(note.reading.kind).toBe('partial');
+      if (note.reading.kind === 'partial') {
+        expect(note.reading.lostPct).toBeCloseTo(lost, 6);
+        expect(note.reading.lostPct).toBeGreaterThan(0);
+      }
     }
   });
 

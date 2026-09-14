@@ -60,10 +60,21 @@ export function cardFormulaText(copy: HeroCopy, id: BreakdownStatId): string | n
   return key ? copy[key] : null;
 }
 
+/** The card's own line: what the phase still takes off each hit. */
 export function penetrationText(copy: HeroCopy, note: Extract<CardNote, { kind: 'penetration' }>, formatNumber: (n: number, d?: number) => string): string {
-  return note.reading.kind === 'covers'
+  return note.reading.kind === 'pierced'
     ? copy.heroDetailBreakdownPenCovers
-    : sub(copy.heroDetailBreakdownPenShort, { gap: formatNumber(note.reading.gapPct, 1) });
+    : sub(copy.heroDetailBreakdownPenShort, { lost: formatNumber(note.reading.lostPct, 1) });
+}
+
+/** The popover's sentence: the same loss with the rule that produced it. */
+function penetrationNoteText(copy: HeroCopy, note: Extract<CardNote, { kind: 'penetration' }>, formatNumber: (n: number, d?: number) => string): string {
+  if (note.reading.kind === 'pierced') return copy.heroDetailBreakdownNotePenPierced;
+  return sub(copy.heroDetailBreakdownNotePenPartial, {
+    lost: formatNumber(note.reading.lostPct, 1),
+    pen: formatNumber(note.reading.penetrationPct, 1),
+    mit: formatNumber(note.reading.mitigationPct, 1),
+  });
 }
 
 function noteText(copy: HeroCopy, note: CardNote, lang: Lang, formatNumber: (n: number, d?: number) => string): string {
@@ -79,7 +90,7 @@ function noteText(copy: HeroCopy, note: CardNote, lang: Lang, formatNumber: (n: 
     case 'fieldWithoutTeamDrain':
       return sub(copy.heroDetailBreakdownNoteFieldWithoutTeamDrain, { name: abilityName(note.auraId, lang), secs: formatNumber(note.seconds, 0) });
     case 'penetration':
-      return penetrationText(copy, note, formatNumber);
+      return penetrationNoteText(copy, note, formatNumber);
   }
 }
 
@@ -226,7 +237,7 @@ export function CombatBreakdownCard({ card, label, value, text, lit, onLit, card
         <span
           className={cn(
             'mt-0.5 text-[10px] leading-tight',
-            note?.kind === 'penetration' && note.reading.kind === 'covers' ? 'text-up' : 'text-down',
+            note?.kind === 'penetration' && note.reading.kind === 'pierced' ? 'text-up' : 'text-down',
           )}
           data-testid="breakdown-penetration"
         >
@@ -268,7 +279,7 @@ export function CombatBreakdownCard({ card, label, value, text, lit, onLit, card
               </p>
               {body}
               <InputChips chips={chips} heading={copy.heroDetailBreakdownReads} />
-              {note && note.kind !== 'penetration' ? (
+              {note ? (
                 <p className={cn('m-0 mt-2 text-[11px] leading-snug', mutedClass)}>{noteText(copy, note, lang, formatNumber)}</p>
               ) : null}
             </Tooltip.Popup>

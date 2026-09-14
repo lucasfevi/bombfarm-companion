@@ -77,7 +77,7 @@ describe('CombatBreakdownPanel', () => {
 
   it('the Mitigation factor card carries the penetration reading', () => {
     const card = cardMarkup(render('en'), 'mitF');
-    expect(card).toMatch(/data-testid="breakdown-penetration"[^>]*>(covers the phase|[\d.,]+% short of this phase)</);
+    expect(card).toMatch(/data-testid="breakdown-penetration"[^>]*>(nothing lost to mitigation|[\d.,]+% of each hit lost to mitigation)</);
   });
 
   it('a derived card prints its symbolic formula; a sheet card prints none', () => {

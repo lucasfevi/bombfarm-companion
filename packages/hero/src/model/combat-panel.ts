@@ -8,7 +8,7 @@
  * whether there is a prop table to draw at all.
  */
 import type { AdvisorPipelineResult } from '@bombfarm/domain/advisor-pipeline';
-import { penGap } from '@bombfarm/domain/phase-intel';
+import { mitigationLossPct } from '@bombfarm/domain/phase-intel';
 import type { PropHtkRow } from '@bombfarm/domain/advisor-tables';
 import type { PhaseSelection } from '../core';
 
@@ -73,9 +73,14 @@ export function stageLabelFor(selection: PhaseSelection, notes: StageNotes): Sta
   };
 }
 
+/**
+ * What the phase's mitigation still takes off each hit once penetration has pierced its share —
+ * `pierced` only at 100% penetration, since penetration pierces a percentage of the mitigation
+ * rather than subtracting points from it (`mitigationLossPct`).
+ */
 export type PenetrationReading =
-  | { readonly kind: 'covered' }
-  | { readonly kind: 'short'; readonly gapPct: number };
+  | { readonly kind: 'pierced' }
+  | { readonly kind: 'partial'; readonly lostPct: number; readonly penetrationPct: number; readonly mitigationPct: number };
 
 /** The two fields of the pipeline result this reading needs, narrowed so a test can state one
  *  without standing up a whole run. */
@@ -85,20 +90,22 @@ export type PenetrationSource = {
 };
 
 export function penetrationReadingFor(combat: PenetrationSource): PenetrationReading {
-  const gapPct = penGap(combat.context.mitigation * 100, combat.effective.penetration);
-  return gapPct > 0 ? { kind: 'short', gapPct } : { kind: 'covered' };
+  const mitigationPct = combat.context.mitigation * 100;
+  const penetrationPct = combat.effective.penetration;
+  const lostPct = mitigationLossPct(mitigationPct, penetrationPct);
+  return lostPct > 1e-9 ? { kind: 'partial', lostPct, penetrationPct, mitigationPct } : { kind: 'pierced' };
 }
 
 export type PenetrationNotes = {
-  readonly covered: string;
-  readonly short: (gapPct: number) => string;
+  readonly pierced: string;
+  readonly partial: (reading: Extract<PenetrationReading, { kind: 'partial' }>) => string;
 };
 
 export function penetrationNote(
   reading: PenetrationReading,
   notes: PenetrationNotes,
 ): string {
-  return reading.kind === 'covered' ? notes.covered : notes.short(reading.gapPct);
+  return reading.kind === 'pierced' ? notes.pierced : notes.partial(reading);
 }
 
 export type PropTableReading =

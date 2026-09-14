@@ -187,8 +187,11 @@ export const heroPtBR: HeroCopy = {
   heroDetailBreakdownNoteFieldWithoutTeamDrain: "Sem o {name} do time isto seria {secs}s.",
   heroDetailBreakdownNoteBatonHeld:
     "A Passagem de Bastão conta como se o pulso nunca acabasse: o tempo em campo inteiro a +{pct}%. A página Farm e o Otimizador contam só os 120 s que cada entrada acende.",
-  heroDetailBreakdownPenCovers: "cobre a fase",
-  heroDetailBreakdownPenShort: "{gap}% abaixo desta fase",
+  heroDetailBreakdownPenCovers: "nada perdido para a mitigação",
+  heroDetailBreakdownPenShort: "{lost}% de cada hit perdido para a mitigação",
+  heroDetailBreakdownNotePenPierced: "A penetração está em 100%, então a mitigação da fase não tira nada do hit.",
+  heroDetailBreakdownNotePenPartial:
+    "A penetração atravessa uma fração da mitigação da fase, não pontos dela: {pen}% dos {mit}% da fase são atravessados, então {lost}% de cada hit ainda se perde. Só 100% de penetração não perde nada.",
   heroDetailBreakdownIconOff: "{name} — desligada",
   heroDetailBreakdownMatrixTitle: "Atributos da ficha",
   heroDetailBreakdownColStat: "Atributo",

@@ -9,7 +9,6 @@
 import { ABILITIES, FUSE_FLOOR, STAT_CAPS, critFactor, fuseSeconds, type AbilityEffect } from '@bombfarm/domain/model';
 import { combineDrainRate } from '@bombfarm/domain/drain';
 import { abilityName } from '@bombfarm/domain/game-labels';
-import { penGap } from '@bombfarm/domain/phase-intel';
 import { SHEET_DISPLAY_KEYS, type SheetDisplayKey } from '@bombfarm/domain/planner-constants';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import {
@@ -25,6 +24,7 @@ import {
 import { TEAM_AURA_SWITCH_IDS, teamAurasAroundHero, type TeamAuraSwitches } from '@bombfarm/domain/team-buffs';
 import type { Lang } from '../copy';
 import { ownAbilityRowsFor } from './abilities-auras-panel';
+import { penetrationReadingFor, type PenetrationReading } from './combat-panel';
 
 export type BreakdownRowId = 'sheet' | 'factors' | 'perHit' | 'dps';
 
@@ -228,13 +228,10 @@ export function matrixShowsRunes(rows: readonly MatrixRow[]): boolean {
   return rows.some((row) => row.rune.kind === 'step');
 }
 
-export type PenetrationCardReading =
-  | { readonly kind: 'covers' }
-  | { readonly kind: 'short'; readonly gapPct: number };
+export type PenetrationCardReading = PenetrationReading;
 
 export function penetrationCardReading(facts: PipelineFacts): PenetrationCardReading {
-  const gapPct = penGap(facts.context.mitigation * 100, facts.effective.penetration);
-  return gapPct > 0 ? { kind: 'short', gapPct } : { kind: 'covers' };
+  return penetrationReadingFor(facts);
 }
 
 export type CardNote =

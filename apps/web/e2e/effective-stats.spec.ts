@@ -341,7 +341,7 @@ test.describe('combat breakdown panel', () => {
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
 
-    await expect(card(page, 'mitF').getByTestId('breakdown-penetration')).toHaveText(/covers the phase|short of this phase/);
+    await expect(card(page, 'mitF').getByTestId('breakdown-penetration')).toHaveText(/nothing lost to mitigation|of each hit lost to mitigation/);
     const stage = activePanel(page);
     await expect(stage.getByText(/^Penetration vs phase$/i)).toHaveCount(0);
     await expect(stage.getByRole('columnheader', { name: /^Hits$/i })).toHaveCount(0);

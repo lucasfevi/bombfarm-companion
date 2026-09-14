@@ -70,7 +70,6 @@ export type PhaseIntelGlobal = {
   phase: number;
   stoneHp: number;
   mitigationPct: number;
-  penToZero: number;
   gate: boolean;
   ato: number;
   atoLabel: string;
@@ -105,8 +104,15 @@ export type PhaseIntelGlobal = {
   squadLuckPct: number;
 };
 
-export function penGap(mitigationPct: number, penetrationPct: number): number {
-  return Math.max(0, mitigationPct - penetrationPct);
+/**
+ * Share of each hit the phase's mitigation still takes once penetration has pierced its part,
+ * in percent: `(1 − mitigationFactor) × 100`. Penetration pierces a PERCENTAGE of the mitigation
+ * (`dano = ataque × (1 − mitig × (1 − pen/100))`), so 42.6% penetration against an 8.36% phase
+ * still loses 4.8% of every hit; only 100% penetration loses nothing. Comparing the two raw
+ * percentages, as the old gap reading did, called that hero "covered".
+ */
+export function mitigationLossPct(mitigationPct: number, penetrationPct: number): number {
+  return (1 - mitigationFactor(mitigationPct / 100, penetrationPct)) * 100;
 }
 
 export function computePropSpawnRows(
@@ -184,7 +190,6 @@ export function computePhaseIntelGlobal(
     phase: line.phase,
     stoneHp,
     mitigationPct,
-    penToZero: mitigationPct,
     gate: line.gate,
     ato: line.ato,
     atoLabel: ATO_LABELS[atoIdx] ?? `Ato ${line.ato}`,
@@ -220,8 +225,8 @@ export type HeroPhaseFit = {
   heroId: string;
   heroName: string;
   penetration: number;
-  penGap: number;
-  penOk: boolean;
+  /** {@link mitigationLossPct} against this phase. */
+  mitigationLossPct: number;
   /** One non-crit bomb against this phase's mitigation. */
   normalHit: number;
   /** The same bomb on a crit — `normalHit × (1 + critDmg/100)`. */
@@ -248,7 +253,6 @@ export type HeroPhaseFitInput = {
 
 export function computeHeroPhaseFit(input: HeroPhaseFitInput): HeroPhaseFit {
   const { heroId, heroName, stoneHp, mitigationPct, penetration, normalHit, critHit, avgHit, fieldSecs } = input;
-  const penGapVal = penGap(mitigationPct, penetration);
   const propHits = PROPS.map((prop) => {
     const hitPoints = propHp(stoneHp, prop.hpMult);
     return { name: prop.name, hp: hitPoints, hits: hitsToKill(avgHit, hitPoints) };
@@ -257,8 +261,7 @@ export function computeHeroPhaseFit(input: HeroPhaseFitInput): HeroPhaseFit {
     heroId,
     heroName,
     penetration,
-    penGap: penGapVal,
-    penOk: penGapVal <= 0,
+    mitigationLossPct: mitigationLossPct(mitigationPct, penetration),
     normalHit,
     critHit,
     avgHit,

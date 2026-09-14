@@ -61,3 +61,11 @@ info glyph explains the difference. A line under the Effective stats title says 
 opens its formula on hover or focus; inside a popover the main figure stays white while every
 term, step and running total is accent or muted, and the popover grows to keep a formula on one
 line. The sheet-stat matrix is striped.
+
+The penetration reading told the wrong story. Penetration pierces a share of the phase's
+mitigation (`dano = ataque × (1 − mitig × (1 − pen/100))`), not points off it, so 42.6%
+penetration against an 8.36% phase still loses 4.8% of every hit — yet the hero panel called that
+"covering the phase" / "Fully piercing" because 42.6 ≥ 8.36, and the Phases page's mitigation tip
+said "8.4% pen ignores all mitigation". Both now say what the phase still takes off each hit
+("4.8% of each hit lost — 42.6% of the phase's 8.36% pierced"), "nothing lost" only at 100%, and
+the Mitigation factor card's popover spells the rule out.

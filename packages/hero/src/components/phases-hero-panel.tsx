@@ -104,11 +104,15 @@ function CombatFigures({ combat }: { combat: AdvisorPipelineResult }) {
       id: 'pen',
       label: t.phasesPenetration,
       value: (
-        <span className={penetration.kind === 'covered' ? 'text-up' : undefined}>
+        <span className={penetration.kind === 'pierced' ? 'text-up' : undefined}>
           {penetrationNote(penetration, {
-            covered: t.phasesPenOk,
-            short: (gapPct) =>
-              sub(t.phasesPenShort, { gap: formatNumber(gapPct, lang, 1) }),
+            pierced: t.phasesPenOk,
+            partial: ({ lostPct, penetrationPct, mitigationPct }) =>
+              sub(t.phasesPenShort, {
+                lost: formatNumber(lostPct, lang, 1),
+                pen: formatNumber(penetrationPct, lang, 1),
+                mit: formatNumber(mitigationPct, lang, 1),
+              }),
           })}
         </span>
       ),

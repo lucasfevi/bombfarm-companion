@@ -1079,6 +1079,12 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   // it — Settings → Privacy, "Download a copy of my data". (The quick guide's step said the same
   // and left with the guide; it is in `KEYS_REMOVED`.)
   'importDialogDesc',
+  // Penetration reading (2026-09-14): the three strings that said penetration "covers" a phase once
+  // it matched the mitigation percentage, or that N% pen "ignores all mitigation". The game
+  // pierces a SHARE of the mitigation (`dano = ataque × (1 − mitig × (1 − pen/100))`), so only
+  // 100% penetration loses nothing; the hero panel now prints what each hit still loses and the
+  // phase fact's tip states the rule.
+  'phasesPenOk', 'phasesPenShort', 'phasesPenNeedHint',
   // Combat breakdown (2026-09-13): `bdTermWalk` and `bdFormulaDmg`, declared reworded by the two
   // passes above, leave with the accordion (`KEYS_REMOVED`); the walkthrough paragraph that named
   // the Effective stats panel (`explainSections.0.p.0`, declared above) now describes the

@@ -186,8 +186,11 @@ export const heroEn = {
   heroDetailBreakdownNoteFieldWithoutTeamDrain: "Without the team's {name} this would be {secs}s.",
   heroDetailBreakdownNoteBatonHeld:
     "Baton Pass is counted as if its pulse never lapsed: the whole stint at +{pct}%. The Farm page and the Optimizer count only the 120 s each entry lights.",
-  heroDetailBreakdownPenCovers: "covers the phase",
-  heroDetailBreakdownPenShort: "{gap}% short of this phase",
+  heroDetailBreakdownPenCovers: "nothing lost to mitigation",
+  heroDetailBreakdownPenShort: "{lost}% of each hit lost to mitigation",
+  heroDetailBreakdownNotePenPierced: "Penetration is at 100%, so the phase’s mitigation takes nothing off a hit.",
+  heroDetailBreakdownNotePenPartial:
+    "Penetration pierces a share of the phase’s mitigation, not points off it: {pen}% of the phase’s {mit}% is pierced, so {lost}% of each hit is still lost. Only 100% penetration loses nothing.",
   heroDetailBreakdownIconOff: "{name} — switched off",
   heroDetailBreakdownMatrixTitle: "Sheet stats",
   heroDetailBreakdownColStat: "Stat",
