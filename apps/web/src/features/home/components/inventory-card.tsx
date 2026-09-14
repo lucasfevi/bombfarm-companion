@@ -1,7 +1,7 @@
 'use client';
 
 import { ITEM_KINDS, type ItemKind } from '@bombfarm/domain/inventory-view';
-import { ItemIcon, type ItemIconItem } from '@bombfarm/game-art';
+import { itemIconSrc, itemKindIconSrc } from '@bombfarm/domain/wiki-assets';
 import { useAccountHoldings } from '@/features/account';
 import { useAppLang } from '@/shared/context/app-lang';
 import { useMarketSnapshot } from '@/shared/hooks/use-market-snapshot';
@@ -20,15 +20,16 @@ const GROUP_LABEL_KEY = {
 
 const MYTHIC = 5;
 
-/** One fixed emblem per group: the mythic tier of each kind, and the level-300 mythic weapon for gear. */
-const GROUP_EMBLEM = {
-  equipment: { defId: 'void_arma', rarityIdx: MYTHIC, level: 300, upgrade: 0 },
-  gem: { defId: 'gem_amethyst', kind: 'gem', rarityIdx: MYTHIC, level: 0, upgrade: 0 },
-  key: { defId: 'map_key_mythic', kind: 'key', rarityIdx: MYTHIC, level: 0, upgrade: 0 },
-  time: { defId: 'time_part_mythic', kind: 'time', rarityIdx: MYTHIC, level: 0, upgrade: 0 },
-  stone: { defId: 'skill_stone_mythic', kind: 'stone', rarityIdx: MYTHIC, level: 0, upgrade: 0 },
-  chest: { defId: 'chest_item', kind: 'chest', rarityIdx: MYTHIC, level: 0, upgrade: 0 },
-} as const satisfies Record<Exclude<ItemKind, 'other'>, ItemIconItem>;
+/** One fixed emblem per group — the bare sprite, no plate: the mythic tier of each kind, and the
+ *  level-300 mythic weapon for gear. */
+const GROUP_EMBLEM_SRC = {
+  equipment: itemIconSrc('void_arma'),
+  gem: itemKindIconSrc('gem_amethyst', MYTHIC),
+  key: itemKindIconSrc('map_key_mythic', MYTHIC),
+  time: itemKindIconSrc('time_part_mythic', MYTHIC),
+  stone: itemKindIconSrc('skill_stone_mythic', MYTHIC),
+  chest: itemKindIconSrc('chest_item', MYTHIC),
+} as const satisfies Record<Exclude<ItemKind, 'other'>, string | null>;
 
 const COUNTED_KINDS = ITEM_KINDS.filter(
   (kind): kind is keyof typeof GROUP_LABEL_KEY => kind !== 'other',
@@ -73,7 +74,9 @@ export function InventoryCard() {
               data-testid="home-inventory-tile"
             >
               <span className="grid size-8 shrink-0 place-items-center" aria-hidden="true">
-                <ItemIcon item={GROUP_EMBLEM[kind]} size="xs" showLevel={false} showUpgrade={false} />
+                {GROUP_EMBLEM_SRC[kind] ? (
+                  <img src={GROUP_EMBLEM_SRC[kind]} alt="" className="size-8 object-contain" draggable={false} />
+                ) : null}
               </span>
               <span className="flex min-w-0 flex-col">
                 <span className="font-mono text-lg leading-none font-bold tabular-nums" data-testid="home-inventory-count">
