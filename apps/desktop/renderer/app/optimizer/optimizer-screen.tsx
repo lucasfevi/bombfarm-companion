@@ -24,6 +24,7 @@ import {
 import type { TeamPlanEmptyStateKind } from '@bombfarm/team-plan/model';
 import type { TeamPlanRunnerHandle, TeamPlanRunStatus } from '@bombfarm/team-plan/runner';
 import type { TeamPlan, TeamPlanAllowedChanges, TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { useCopy, useLocale } from '../../lib/copy';
 import type { AccountReadRequestState } from '../../lib/account/use-account-read-request';
 import type { OptimizerSettledSnapshot } from '../../lib/optimizer/optimizer-snapshot-store';
@@ -40,10 +41,11 @@ type OptimizerScreenRefresh = {
 };
 
 type OptimizerScreenActionsIn = {
-  startRun: (runId: string, signature: string) => void;
+  startRun: (runId: string, signature: string, heroes: readonly HeroRecord[]) => void;
   resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
   applyPlan: (runId: string, plan: TeamPlan) => void;
   clearPlan: () => void;
+  openHeroes: (heroIds: readonly string[]) => void;
 };
 
 export function OptimizerScreen({
@@ -101,6 +103,8 @@ export function OptimizerScreen({
   );
   const liveSignatureRef = useRef(liveSignature);
   liveSignatureRef.current = liveSignature;
+  const heroesRef = useRef(inputs.heroes);
+  heroesRef.current = inputs.heroes;
 
   const isStale = isTeamPlanStale(planState.signature, liveSignature);
 
@@ -109,11 +113,22 @@ export function OptimizerScreen({
       inputs,
       controls: mergedControls,
       plan: planState.plan,
+      planHeroes: planState.heroes,
       runStatus: planState.runStatus,
       runId: planState.runId,
       isStale,
+      openHeroIds: planState.openHeroIds,
     }),
-    [inputs, mergedControls, planState.plan, planState.runStatus, planState.runId, isStale],
+    [
+      inputs,
+      mergedControls,
+      planState.plan,
+      planState.heroes,
+      planState.runStatus,
+      planState.runId,
+      isStale,
+      planState.openHeroIds,
+    ],
   );
 
   const screenActions = useMemo<TeamPlanScreenActions>(
@@ -137,11 +152,12 @@ export function OptimizerScreen({
         onControlChange({ kind: 'targetPhase', value });
       },
       startRun: (runId: string) => {
-        actions.startRun(runId, liveSignatureRef.current);
+        actions.startRun(runId, liveSignatureRef.current, heroesRef.current);
       },
       resolveRun: actions.resolveRun,
       applyPlan: actions.applyPlan,
       clearPlan: actions.clearPlan,
+      setOpenHeroIds: actions.openHeroes,
     }),
     [onControlChange, actions],
   );

@@ -18,6 +18,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createTeamPlanRunner, type TeamPlanRunnerHandle, type TeamPlanRunStatus } from '@bombfarm/team-plan/runner';
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { AccountView } from '@bombfarm/contracts';
 import { createLazySingleton, createSharedStore, type SharedStore } from '../shared-store';
 import { useAccountView } from '../account/use-account-view';
@@ -43,10 +44,11 @@ export interface OptimizerSnapshotActions {
   readonly open: (view: AccountView, sourceKey: string, farmChosenPhase: number | null) => void;
   /** The player asked for the live account. Adopts it. */
   readonly refresh: (view: AccountView, sourceKey: string, farmChosenPhase: number | null) => void;
-  readonly startRun: (runId: string, signature: string) => void;
+  readonly startRun: (runId: string, signature: string, heroes: readonly HeroRecord[]) => void;
   readonly resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
   readonly applyPlan: (runId: string, plan: TeamPlan) => void;
   readonly clearPlan: () => void;
+  readonly openHeroes: (heroIds: readonly string[]) => void;
 }
 
 export function createOptimizerStore(): {
@@ -129,8 +131,8 @@ export function createOptimizerStore(): {
     refresh: (view, sourceKey, farmChosenPhase) => {
       adopt('refresh', view, sourceKey, farmChosenPhase);
     },
-    startRun: (runId, signature) => {
-      dispatchPlan({ kind: 'startRun', runId, signature });
+    startRun: (runId, signature, heroes) => {
+      dispatchPlan({ kind: 'startRun', runId, signature, heroes });
     },
     resolveRun: (runId, status) => {
       dispatchPlan({ kind: 'resolveRun', runId, status });
@@ -140,6 +142,9 @@ export function createOptimizerStore(): {
     },
     clearPlan: () => {
       dispatchPlan({ kind: 'clearPlan' });
+    },
+    openHeroes: (heroIds) => {
+      dispatchPlan({ kind: 'openHeroes', heroIds });
     },
   };
 }
@@ -181,10 +186,11 @@ export interface OptimizerSnapshotHook {
   readonly runner: TeamPlanRunnerHandle;
   readonly open: () => void;
   readonly refresh: () => void;
-  readonly startRun: (runId: string, signature: string) => void;
+  readonly startRun: (runId: string, signature: string, heroes: readonly HeroRecord[]) => void;
   readonly resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
   readonly applyPlan: (runId: string, plan: TeamPlan) => void;
   readonly clearPlan: () => void;
+  readonly openHeroes: (heroIds: readonly string[]) => void;
 }
 
 export function useOptimizerSnapshot(): OptimizerSnapshotHook {
@@ -228,8 +234,8 @@ export function useOptimizerSnapshot(): OptimizerSnapshotHook {
     sharedOptimizerStore().refresh(liveView, liveKey, loadFarmView().selectedPhase);
   }, [liveView, liveKey]);
 
-  const startRun = useCallback((runId: string, signature: string) => {
-    sharedOptimizerStore().startRun(runId, signature);
+  const startRun = useCallback((runId: string, signature: string, heroes: readonly HeroRecord[]) => {
+    sharedOptimizerStore().startRun(runId, signature, heroes);
   }, []);
 
   const resolveRun = useCallback((runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => {
@@ -242,6 +248,10 @@ export function useOptimizerSnapshot(): OptimizerSnapshotHook {
 
   const clearPlan = useCallback(() => {
     sharedOptimizerStore().clearPlan();
+  }, []);
+
+  const openHeroes = useCallback((heroIds: readonly string[]) => {
+    sharedOptimizerStore().openHeroes(heroIds);
   }, []);
 
   const stale = useMemo(() => optimizerSnapshotStale(state, liveView), [state, liveView]);
@@ -259,7 +269,8 @@ export function useOptimizerSnapshot(): OptimizerSnapshotHook {
       resolveRun,
       applyPlan,
       clearPlan,
+      openHeroes,
     }),
-    [state, planState, stale, liveKey, open, refresh, startRun, resolveRun, applyPlan, clearPlan],
+    [state, planState, stale, liveKey, open, refresh, startRun, resolveRun, applyPlan, clearPlan, openHeroes],
   );
 }

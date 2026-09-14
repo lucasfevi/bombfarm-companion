@@ -90,6 +90,7 @@ function navButton(page, index) {
   return page.locator('nav[aria-label="Main"] button').nth(index);
 }
 
+const FORGE_TAB_INDEX = 4;
 const OPTIMIZER_TAB_INDEX = 5;
 const SETTINGS_TAB_INDEX = 7;
 
@@ -208,6 +209,45 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
     await expect(page.getByText(MAIN_THREAD_FALLBACK_TEXT)).toHaveCount(0);
   });
 
+  // The shell unmounts a tab the player leaves. The rows they had open and how far down they
+  // were are both state of the visit, and a Forge round trip is the visit's normal shape.
+  test('the open rows and the scroll offset survive a trip to the Forge tab and back', async () => {
+    const heroRows = () =>
+      page
+        .getByRole('heading', { name: /Per-hero changes/i, level: 2 })
+        .locator('xpath=ancestor::section[1]')
+        .getByRole('button', { name: /^Detailed breakdown for/i });
+
+    await expect(heroRows().first()).toHaveAttribute('aria-expanded', 'true');
+    await heroRows().first().click();
+    await heroRows().nth(1).click();
+    await expect(heroRows().first()).toHaveAttribute('aria-expanded', 'false');
+    await expect(heroRows().nth(1)).toHaveAttribute('aria-expanded', 'true');
+
+    const scrolledTo = await page.evaluate(() => {
+      const main = document.querySelector('main');
+      main.scrollTop = main.scrollHeight;
+      return main.scrollTop;
+    });
+    expect(scrolledTo).toBeGreaterThan(0);
+
+    await navButton(page, FORGE_TAB_INDEX).click();
+    await page.waitForSelector('[data-testid="forge-view"]', { timeout: 20_000 });
+    await expect(page.getByTestId('optimizer-view')).toHaveCount(0);
+
+    await openOptimizer(page);
+    await expect(heroRows().first()).toHaveAttribute('aria-expanded', 'false');
+    await expect(heroRows().nth(1)).toHaveAttribute('aria-expanded', 'true');
+    expect(await page.evaluate(() => document.querySelector('main').scrollTop)).toBe(scrolledTo);
+
+    // Back to the default before the tests below read the first row.
+    await heroRows().nth(1).click();
+    await heroRows().first().click();
+    await page.evaluate(() => {
+      document.querySelector('main').scrollTop = 0;
+    });
+  });
+
   test('a live tick changes nothing; Refresh labels the plan stale', async () => {
     // The package's own stale-plan sentence — inlined the same way the main-thread-fallback
     // sentence above is, since the package's copy module lives outside what a `.mjs` spec reads.
@@ -249,6 +289,14 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
 
     await expect(page.getByRole('heading', { name: /^Resultados do plano$/i, level: 2 })).toHaveCount(0);
     await expect(page.locator('[data-scope-column="donate"] article')).toHaveCount(1);
+
+    // The runner still holds the plan the scope change cleared; a trip to another tab and back
+    // must not hand it to the screen again.
+    await navButton(page, FORGE_TAB_INDEX).click();
+    await page.waitForSelector('[data-testid="forge-view"]', { timeout: 20_000 });
+    await openOptimizer(page);
+    await expect(page.getByRole('heading', { name: /^Escopo por herói$/i, level: 2 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /^Resultados do plano$/i, level: 2 })).toHaveCount(0);
 
     await resize(app, page, 1280, 800);
     await app.close();

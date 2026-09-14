@@ -11,18 +11,28 @@ import { buildGearFlowRows, groupGearFlowRows, removedRowsByOriginHero } from '.
 import { HeroDeltaRow, type HeroDeltaRoster } from './hero-delta-row';
 import type { HeroGearFlow } from './hero-proposed-gear';
 
+/**
+ * Which rows are open is the host's state, not this table's: the desktop unmounts the screen on
+ * every tab change and the web on every route change, and a row the player opened to read must
+ * still be open when they come back. `null` is the default set — the first hero — which both
+ * hosts restore whenever a new plan lands.
+ */
 export function HeroDeltaTable({
   t,
   lang,
   plan,
   heroes,
   inventoryItems,
+  openHeroIds,
+  onOpenHeroIdsChange,
 }: {
   t: TeamPlanScreenCopy;
   lang: Lang;
   plan: TeamPlan;
   heroes: readonly HeroRecord[];
   inventoryItems: readonly InventoryItem[];
+  openHeroIds: readonly string[] | null;
+  onOpenHeroIdsChange: (heroIds: readonly string[]) => void;
 }) {
   const roster: HeroDeltaRoster = useMemo(() => {
     const heroByScopeKey = new Map(heroes.map((hero) => [hero.sourceId ?? hero.id, hero]));
@@ -55,15 +65,10 @@ export function HeroDeltaTable({
   }, [plan, inventoryItems]);
 
   const firstHeroId = plan.perHero[0]?.heroId;
-  // Remount when a new plan lands so the first row opens again after Optimize.
-  const accordionKey = [
-    plan.planDps,
-    plan.currentDps,
-    plan.run.rounds,
-    plan.run.evaluations,
-    plan.run.elapsedMs,
-    plan.perHero.map((row) => row.heroId).join(','),
-  ].join(':');
+  const openValue = useMemo(
+    () => (openHeroIds === null ? (firstHeroId === undefined ? [] : [firstHeroId]) : [...openHeroIds]),
+    [openHeroIds, firstHeroId],
+  );
 
   return (
     <Panel>
@@ -71,12 +76,7 @@ export function HeroDeltaTable({
         <h2 className={panelTitleClass}>{t.teamPlanHeroDeltaTitle}</h2>
       </div>
       <Tooltip.Provider delay={200} closeDelay={80}>
-        <Accordion.Root
-          key={accordionKey}
-          multiple
-          defaultValue={firstHeroId ? [firstHeroId] : []}
-          className={accordionStackClass}
-        >
+        <Accordion.Root multiple value={openValue} onValueChange={onOpenHeroIdsChange} className={accordionStackClass}>
           {plan.perHero.map((row) => (
             <HeroDeltaRow
               key={row.heroId}

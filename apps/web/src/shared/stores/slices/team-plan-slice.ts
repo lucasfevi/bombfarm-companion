@@ -2,6 +2,7 @@ import type { StateCreator } from 'zustand';
 import type { InventoryItem } from '@bombfarm/domain/inventory';
 import { normalizeInventorySnapshot } from '@bombfarm/domain/inventory';
 import { applyTeamPlanControlChange, type TeamPlanControlChange } from '@bombfarm/team-plan/core';
+import type { HeroRecord } from '@/shared/lib/storage';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 import type {
   TeamPlan,
@@ -53,6 +54,12 @@ export type TeamPlanSlice = {
   runId: string | null;
   plan: TeamPlan;
   planInputSignature: string | null;
+  /** The roster the run was solved from, frozen at startRun: the result rows name these heroes,
+   *  not whatever the roster holds by the time they are read. */
+  planHeroes: readonly HeroRecord[] | null;
+  /** The result rows the player has opened; `null` is the default (the first hero), which every
+   *  new plan starts from. Lives here so a route change does not close them. */
+  openHeroIds: readonly string[] | null;
 
   hydrateInventory: (snapshot: InventorySnapshot, forgeFloor: number) => void;
   hydrateScope: (persisted: Record<string, ScopeState>) => void;
@@ -67,6 +74,7 @@ export type TeamPlanSlice = {
   resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
   applyPlan: (runId: string, plan: DomainTeamPlan) => void;
   clearPlan: () => void;
+  setOpenHeroIds: (heroIds: readonly string[]) => void;
   syncScopeForRoster: () => void;
 };
 
@@ -85,6 +93,8 @@ const CLEARED_PLAN = {
   planInputSignature: null,
   runStatus: 'idle',
   runId: null,
+  planHeroes: null,
+  openHeroIds: null,
 } as const;
 
 export const createTeamPlanSlice: StateCreator<
@@ -121,6 +131,8 @@ export const createTeamPlanSlice: StateCreator<
     runId: null,
     plan: null,
     planInputSignature: null,
+    planHeroes: null,
+    openHeroIds: null,
 
     hydrateInventory: (snapshot, forgeFloor) => {
       const normalized = normalizeInventorySnapshot(snapshot);
@@ -159,7 +171,7 @@ export const createTeamPlanSlice: StateCreator<
 
     startRun: (runId) => {
       if (get().runId === runId && get().runStatus === 'running') return;
-      set({ runId, runStatus: 'running' });
+      set({ runId, runStatus: 'running', planHeroes: selectTeamPlanInputs(get()).heroes });
     },
 
     resolveRun: (runId, status) => {
@@ -174,6 +186,7 @@ export const createTeamPlanSlice: StateCreator<
         planInputSignature: selectLiveTeamPlanInputSignature(get()),
         runStatus: 'done',
         runId,
+        openHeroIds: null,
       });
     },
 
@@ -182,11 +195,17 @@ export const createTeamPlanSlice: StateCreator<
         get().plan === null &&
         get().planInputSignature === null &&
         get().runStatus === 'idle' &&
-        get().runId === null
+        get().runId === null &&
+        get().planHeroes === null &&
+        get().openHeroIds === null
       ) {
         return;
       }
-      set({ plan: null, planInputSignature: null, runStatus: 'idle', runId: null });
+      set(CLEARED_PLAN);
+    },
+
+    setOpenHeroIds: (heroIds) => {
+      set({ openHeroIds: [...heroIds] });
     },
 
     // Keep prior per-hero choices; seed defaults only for heroes missing from the map (import /

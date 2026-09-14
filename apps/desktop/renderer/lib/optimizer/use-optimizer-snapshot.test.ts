@@ -135,7 +135,7 @@ describe('the snapshot store computes once and does not follow the live account'
     const later = viewAtLevel(80);
 
     open(first.view, first.key, null);
-    startRun('r1', 'sig-1');
+    startRun('r1', 'sig-1', []);
     applyPlan('r1', { gain: 1 } as never);
     const planBeforeRefresh = planStore.getState();
 
@@ -149,12 +149,12 @@ describe('the snapshot store computes once and does not follow the live account'
   });
 });
 
-describe('the four lifecycle actions reach the plan store', () => {
-  it('startRun, resolveRun, applyPlan and clearPlan each dispatch into it', () => {
-    const { planStore, startRun, resolveRun, applyPlan, clearPlan } = createOptimizerStore();
+describe('the lifecycle actions reach the plan store', () => {
+  it('startRun, resolveRun, applyPlan, openHeroes and clearPlan each dispatch into it', () => {
+    const { planStore, startRun, resolveRun, applyPlan, openHeroes, clearPlan } = createOptimizerStore();
 
-    startRun('r1', 'sig-1');
-    expect(planStore.getState()).toMatchObject({ runStatus: 'running', runId: 'r1', signature: 'sig-1' });
+    startRun('r1', 'sig-1', []);
+    expect(planStore.getState()).toMatchObject({ runStatus: 'running', runId: 'r1', signature: 'sig-1', heroes: [] });
 
     resolveRun('r1', 'blocked');
     expect(planStore.getState().runStatus).toBe('blocked');
@@ -162,8 +162,18 @@ describe('the four lifecycle actions reach the plan store', () => {
     applyPlan('r1', { gain: 2 } as never);
     expect(planStore.getState().plan).toEqual({ gain: 2 });
 
+    openHeroes(['h2']);
+    expect(planStore.getState().openHeroIds).toEqual(['h2']);
+
     clearPlan();
-    expect(planStore.getState()).toEqual({ runStatus: 'idle', runId: null, plan: null, signature: null });
+    expect(planStore.getState()).toEqual({
+      runStatus: 'idle',
+      runId: null,
+      plan: null,
+      signature: null,
+      heroes: null,
+      openHeroIds: null,
+    });
   });
 });
 

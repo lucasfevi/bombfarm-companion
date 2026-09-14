@@ -29,3 +29,5 @@ export {
 } from './run-summary-copy';
 export { optimizeAriaFor, allowedChangesHint, ignoreCrowdingHint } from './setup-copy';
 export { formatElapsed } from './optimizing-elapsed';
+export { runnerMarksAtMount, runnerMarksBeforeRun, runnerReports } from './runner-reports';
+export type { RunnerMarks, RunnerReport, RunnerReportSource } from './runner-reports';

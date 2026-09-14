@@ -5,6 +5,7 @@ import { Button, workspaceClass } from '@bombfarm/ui';
 import { sub, type Lang } from '@bombfarm/hero/copy';
 import type { TeamPlanAllowedChanges, TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { TeamPlanInputs, TeamPlanControls, ScopeState, TeamPlanRunStatus } from '../core';
 import type { TeamPlanScreenCopy } from '../copy';
 import { teamPlanObjectiveCopy } from '../model/objective-copy';
@@ -26,9 +27,16 @@ export type TeamPlanScreenData = {
   controls: TeamPlanControls;
   /** The host's settled plan — `null` until applyPlan, and again after any clear. */
   plan: TeamPlan | null;
+  /** The roster the run was solved from, frozen by the host at startRun — `null` while there is
+   *  no run. The result rows are drawn against this and not `inputs.heroes`: a hero the live
+   *  roster has since dropped or re-keyed is still the hero the plan is about. */
+  planHeroes: readonly HeroRecord[] | null;
   runStatus: TeamPlanRunStatus;
   runId: string | null;
   isStale: boolean;
+  /** The result rows the player has opened, or `null` for the default — the first hero. Held by
+   *  the host so it outlives the screen; reset to `null` by the host when a new plan lands. */
+  openHeroIds: readonly string[] | null;
 };
 
 export type TeamPlanScreenActions = {
@@ -42,6 +50,7 @@ export type TeamPlanScreenActions = {
   resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
   applyPlan: (runId: string, plan: TeamPlan) => void;
   clearPlan: () => void;
+  setOpenHeroIds: (heroIds: readonly string[]) => void;
 };
 
 export type TeamPlanScreenSlots = {
@@ -192,8 +201,10 @@ export function TeamPlanScreenView({
                     t={t}
                     lang={lang}
                     plan={displayPlan}
-                    heroes={heroes}
+                    heroes={data.planHeroes ?? heroes}
                     inventoryItems={inventoryItems}
+                    openHeroIds={data.openHeroIds}
+                    onOpenHeroIdsChange={actions.setOpenHeroIds}
                   />
                 </div>
               </section>
