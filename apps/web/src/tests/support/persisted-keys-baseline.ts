@@ -21,6 +21,10 @@
  * `bf-hp-inventory-view-v1` is the inventory surface's own list — every row a save carries, not
  * just the gear the optimizer pools. A NEW key rather than a widened `bf-hp-inventory-v1`, so no
  * migration runs and the solver's snapshot type is untouched; an absent key simply reads empty.
+ *
+ * `bf-hp-team-plan-v1` is the Optimizer's last plan — a derived, replaceable artifact keyed to
+ * the input signature it was solved under. Written whole on every solve and removed on clear,
+ * never merged; a stored plan that fails to read whole is dropped rather than repaired.
  */
 export const PERSISTED_KEY_BASELINE = [
   'bf-hp-inventory-v1',
@@ -30,6 +34,7 @@ export const PERSISTED_KEY_BASELINE = [
   'bf-hp-account-v1',
   'bf-hp-active-hero-v1',
   'bf-hp-gear-scope-v1',
+  'bf-hp-team-plan-v1',
   'bf-hp-critdmg-flat-migrated-v1',
   'bf-hp-critchance-flat-migrated-v1',
   'bf-hp-critcdr-repool-migrated-v1',
