@@ -44,12 +44,11 @@ export function PlannerCard() {
       context={sub(t.homeCardPlannerContext, { count: HOME_RANKING_LIMIT })}
       footer={
         hasRoster ? (
-          <>
-            <p className="m-0">{firstLine}</p>
-            {moreCount > 0 ? (
-              <p className="m-0">{sub(t.homeCardPlannerMore, { count: moreCount })}</p>
-            ) : null}
-          </>
+          <p className="m-0 truncate">
+            {moreCount > 0
+              ? `${firstLine} · ${sub(t.homeCardPlannerMore, { count: moreCount })}`
+              : firstLine}
+          </p>
         ) : (
           t.homeCardPlannerNeedsHeroes
         )
@@ -60,9 +59,7 @@ export function PlannerCard() {
           <DataTable.Table>
             <DataTable.Head>
               <DataTable.Row>
-                <DataTable.Header>
-                  <span className="sr-only">{t.homeCardPlannerColHero}</span>
-                </DataTable.Header>
+                <DataTable.Header>{t.homeCardPlannerColHero}</DataTable.Header>
                 <DataTable.Header align="right">{t.homeCardPlannerColPower}</DataTable.Header>
                 <DataTable.Header align="right">{t.homeCardPlannerColDps}</DataTable.Header>
                 <DataTable.Header>{t.rosterColAbilities}</DataTable.Header>

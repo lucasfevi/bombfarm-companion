@@ -112,15 +112,15 @@ describe('the front page planner card', () => {
       rows.forEach((row, index) => {
         expect(row).toContain(`>${formatCompactNumber(ranking[index].dps, lang)}<`);
       });
-      expect(body(html)).toContain(`<span class="sr-only">${strings.homeCardPlannerColHero}</span>`);
+      expect(body(html)).toContain(`>${strings.homeCardPlannerColHero}<`);
+      expect(body(html)).not.toContain('sr-only');
       expect(body(html)).toContain(`>${strings.homeCardPlannerColPower}<`);
       expect(body(html)).toContain(`>${strings.homeCardPlannerColDps}<`);
       expect(body(html)).toContain(`>${strings.rosterColAbilities}<`);
       expect(footerLines(html)).toEqual([
-        sub(strings.homeCardPlannerFooterAccount, {
+        `${sub(strings.homeCardPlannerFooterAccount, {
           phase: formatPhaseLabel(ACCOUNT_FARM_PHASE, lang),
-        }),
-        sub(strings.homeCardPlannerMore, { count: 3 }),
+        })} · ${sub(strings.homeCardPlannerMore, { count: 3 })}`,
       ]);
     }
   });
@@ -155,12 +155,14 @@ describe('the front page planner card', () => {
     usePlannerStore.setState({ lang: 'en' });
     const ten = render();
     expect(rowsOf(ten)).toHaveLength(9);
-    expect(footerLines(ten)[1]).toBe(sub(STRINGS.en.homeCardPlannerMore, { count: 1 }));
+    expect(footerLines(ten)).toHaveLength(1);
+    expect(footerLines(ten)[0]).toContain(` · ${sub(STRINGS.en.homeCardPlannerMore, { count: 1 })}`);
 
     hydrate(TWELVE.slice(0, 9));
     const nine = render();
     expect(rowsOf(nine)).toHaveLength(9);
     expect(footerLines(nine)).toHaveLength(1);
+    expect(footerLines(nine)[0]).not.toContain(' · ');
   });
 
   it('a hero with no power prints a dash and still prints its DPS', () => {
@@ -194,13 +196,13 @@ describe('the front page planner card', () => {
       ].join(', ');
 
       expect(rowsOf(html)).toHaveLength(9);
-      expect(footerLines(html)[0]).toBe(sub(strings.homeCardPlannerMissingFields, { fields }));
+      expect(footerLines(html)[0]).toBe(`${sub(strings.homeCardPlannerMissingFields, { fields })} · ${sub(strings.homeCardPlannerMore, { count: 3 })}`);
       expect(footer(html)).not.toContain(strings.homeCardPlannerFooterAccount.split('{')[0]);
     }
 
     usePlannerStore.setState({ missingRequiredFields: [], phase: null, lang: 'en' });
     expect(footerLines(render())[0]).toBe(
-      sub(STRINGS.en.homeCardPlannerMissingFields, { fields: STRINGS.en[FIELD_LABEL_KEY.phase] }),
+      `${sub(STRINGS.en.homeCardPlannerMissingFields, { fields: STRINGS.en[FIELD_LABEL_KEY.phase] })} · ${sub(STRINGS.en.homeCardPlannerMore, { count: 3 })}`,
     );
   });
 
@@ -208,7 +210,7 @@ describe('the front page planner card', () => {
     hydrate(TWELVE);
     usePlannerStore.setState({ lang: 'en' });
     expect(footerLines(render())[0]).toBe(
-      sub(STRINGS.en.homeCardPlannerFooterAccount, { phase: formatPhaseLabel(ACCOUNT_FARM_PHASE, 'en') }),
+      `${sub(STRINGS.en.homeCardPlannerFooterAccount, { phase: formatPhaseLabel(ACCOUNT_FARM_PHASE, 'en') })} · ${sub(STRINGS.en.homeCardPlannerMore, { count: 3 })}`,
     );
 
     state().setPhasesViewPhase(137);
@@ -217,7 +219,7 @@ describe('the front page planner card', () => {
     for (const lang of LANGS) {
       usePlannerStore.setState({ lang });
       expect(footerLines(render())[0]).toBe(
-        sub(STRINGS[lang].homeCardPlannerFooterChosen, { phase: formatPhaseLabel(137, lang) }),
+        `${sub(STRINGS[lang].homeCardPlannerFooterChosen, { phase: formatPhaseLabel(137, lang) })} · ${sub(STRINGS[lang].homeCardPlannerMore, { count: 3 })}`,
       );
     }
   });
