@@ -26,7 +26,7 @@ export function PlannerCardRow({ hero, dps, lang }: { hero: HeroRecord; dps: num
         {formatCompactNumber(dps, lang)}
       </DataTable.Cell>
       <DataTable.Cell>
-        <HeroAbilityIcons abilities={hero.abilities} lang={lang} />
+        <HeroAbilityIcons abilities={hero.abilities} lang={lang} size="md" />
       </DataTable.Cell>
     </DataTable.Row>
   );
