@@ -210,31 +210,34 @@ export function CombatBreakdownCard({ card, label, value, text, lit, onLit, card
   const face = (
     <div
       tabIndex={0}
-      className="flex min-w-0 flex-1 flex-col gap-0.5 px-2 pt-1.5 pb-1 outline-none focus-visible:ring-1 focus-visible:ring-accent"
+      className="flex min-w-0 flex-1 flex-col px-2 pt-1.5 pb-1 outline-none focus-visible:ring-1 focus-visible:ring-accent"
     >
       <div className="flex min-w-0 items-baseline justify-between gap-2 @min-[820px]:flex-col @min-[820px]:items-stretch @min-[820px]:gap-0">
-        <span className="min-w-0 text-[11px] leading-tight font-medium text-ink">{label}</span>
+        <span className="min-w-0 text-[10px] leading-tight font-medium text-muted">{label}</span>
         <span
-          className="shrink-0 font-mono text-[13px] font-semibold tabular-nums text-ink @min-[820px]:text-right"
+          className={cn(
+            'shrink-0 font-mono leading-tight font-semibold tabular-nums text-ink @min-[820px]:mt-0.5',
+            isDps ? 'text-[18px]' : 'text-[16px]',
+          )}
           data-testid="breakdown-value"
         >
           {value}
         </span>
       </div>
-      {formula ? (
-        <span className="font-mono text-[9.5px] leading-tight break-words text-muted" data-testid="breakdown-symbolic">
-          {formula}
-        </span>
-      ) : null}
       {penetration ? (
         <span
           className={cn(
-            'text-[10px] leading-tight',
+            'mt-0.5 text-[10px] leading-tight',
             note?.kind === 'penetration' && note.reading.kind === 'covers' ? 'text-up' : 'text-down',
           )}
           data-testid="breakdown-penetration"
         >
           {penetration}
+        </span>
+      ) : null}
+      {formula ? (
+        <span className="mt-1 line-clamp-2 font-mono text-[9.5px] leading-tight break-words text-muted opacity-80" data-testid="breakdown-symbolic">
+          {formula}
         </span>
       ) : null}
     </div>
