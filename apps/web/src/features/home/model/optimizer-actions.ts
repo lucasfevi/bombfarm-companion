@@ -71,7 +71,7 @@ export function planActions(
     ),
   ];
 
-  const moves = new Set([...equips, ...plan.forgeList].map((action) => action.itemId)).size;
+  const moves = new Set([...plan.moveList, ...plan.forgeList].map((action) => action.itemId)).size;
   return { rows, moves, resets: plan.pointResets.length };
 }
 

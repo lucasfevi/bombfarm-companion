@@ -255,6 +255,29 @@ describe('the front page optimizer card', () => {
     }
   });
 
+  it('a stale plan under the floor stays the not-worth sentence while it recalculates', () => {
+    arrangeUsable();
+    usePlannerStore.setState({
+      plan: plan({ currentDps: 100, planDps: 104, moveList: [equip('1', null)] }),
+      planInputSignature: 'old',
+      runStatus: 'running',
+      runId: '2',
+    });
+
+    for (const lang of LANGS) {
+      usePlannerStore.setState({ lang });
+      const html = render();
+
+      expect(html).toContain('data-home-card-state="recalculating"');
+      expect(textOf(body(html))).toBe(escaped(STRINGS[lang].farmRespecNotWorthTitle));
+      expect(html).not.toContain('home-optimizer-headline');
+      expect(html).not.toContain('home-optimizer-action');
+      expect(bodyClass(html).split(' ')).toContain('opacity-50');
+      expect(footer(html)).toBe(STRINGS[lang].homeCardOptimizerSeeFullPlan);
+      expect(contextText(html)).toBe(STRINGS[lang].homeCardOptimizerRecalculating);
+    }
+  });
+
   it("a plan under the worth-making floor prints the advisor's sentence and no action", () => {
     arrangeUsable();
     applyMatchingPlan(plan({ currentDps: 100, planDps: 104, moveList: [equip('1', null)] }));

@@ -55,13 +55,8 @@ export function OptimizerCard() {
           : null;
 
   const actions = plan ? planActions(plan, inventory, heroes, t, lang) : null;
-  const state = optimizerCardState({
-    inputsUsable,
-    runStatus,
-    plan,
-    stale,
-    belowFloor: plan ? belowFloor(plan) : false,
-  });
+  const underFloor = plan ? belowFloor(plan) : false;
+  const state = optimizerCardState({ inputsUsable, runStatus, plan, stale, belowFloor: underFloor });
 
   let body: ReactNode = null;
   let footer: ReactNode = null;
@@ -72,10 +67,6 @@ export function OptimizerCard() {
     case 'skeleton':
       body = <OptimizerCardSkeleton />;
       footer = sub(t.homeCardOptimizerSearching, { elapsed });
-      break;
-    case 'belowFloor':
-      body = <p className="m-0 text-sm">{t.farmRespecNotWorthTitle}</p>;
-      footer = <OptimizerPlanFooter moves={0} resets={0} t={t} />;
       break;
     case 'blocked':
       body = (
@@ -96,7 +87,10 @@ export function OptimizerCard() {
       );
       break;
     default:
-      if (plan && actions) {
+      if (underFloor) {
+        body = <p className="m-0 text-sm">{t.farmRespecNotWorthTitle}</p>;
+        footer = <OptimizerPlanFooter moves={0} resets={0} t={t} />;
+      } else if (plan && actions) {
         body = <OptimizerPlanBody plan={plan} actions={actions} objective={objective} t={t} lang={lang} />;
         footer = <OptimizerPlanFooter moves={actions.moves} resets={actions.resets} t={t} />;
       }

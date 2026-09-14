@@ -179,6 +179,26 @@ describe("the optimizer card's first actions", () => {
     expect(planActions(plan({}), [], HEROES, STRINGS.en, 'en')).toEqual({ rows: [], moves: 0, resets: 0 });
   });
 
+  it('a strip-only unequip counts as a move though it lists no row', () => {
+    const stripOnly = plan({
+      moveList: [
+        { phase: 'unequip', itemId: 'x', defId: 'ember_calca', slot: 'calca', fromHeroId: 'src-a', toHeroId: null },
+      ],
+    });
+    expect(planActions(stripOnly, [EMBER], HEROES, STRINGS.en, 'en')).toEqual({ rows: [], moves: 1, resets: 0 });
+
+    const movedAcross = plan({
+      moveList: [
+        { phase: 'unequip', itemId: 'x', defId: 'ember_calca', slot: 'calca', fromHeroId: 'src-a', toHeroId: null },
+        { phase: 'equip', itemId: 'x', defId: 'ember_calca', slot: 'calca', fromHeroId: 'src-a', toHeroId: 'src-b' },
+      ],
+    });
+    const counted = planActions(movedAcross, [EMBER], HEROES, STRINGS.en, 'en');
+    expect(counted.moves).toBe(1);
+    expect(counted.rows).toHaveLength(1);
+    expect(counted.rows[0]?.kind).toBe('move');
+  });
+
   it("gain is the waterfall's percent and zero when the current DPS is zero", () => {
     expect(gainPct(plan({ currentDps: 100, planDps: 112 }))).toBe(12);
     expect(gainPct(plan({ currentDps: 200, planDps: 190 }))).toBe(-5);

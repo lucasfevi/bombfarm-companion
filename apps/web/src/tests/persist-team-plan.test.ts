@@ -175,6 +175,20 @@ describe('team plan persistence subscription', () => {
     expect(localStorage.getItem(TEAM_PLAN_KEY)).toBeNull();
   });
 
+  it('the envelope carries the phase the plan was scored at', () => {
+    bootUsableStore(true);
+    usePlannerStore.setState({ phase: 40, maxPhase: 137 });
+    usePlannerStore.getState().setTargetPhase(51);
+    solve(samplePlan());
+
+    vi.advanceTimersByTime(AUTOSAVE_MS);
+    const state = usePlannerStore.getState();
+    expect(state.plan).not.toBeNull();
+    expect(selectTeamPlanTargetPhase(state)).toBe(51);
+    expect(storedEnvelope()?.targetPhase).toBe(51);
+    expect(storedEnvelope()?.targetPhase).not.toBe(state.phase);
+  });
+
   it('writes nothing before the store is booted', () => {
     bootUsableStore(false);
     solve(samplePlan());

@@ -53,6 +53,12 @@ describe('the optimizer card state', () => {
     }
   });
 
+  it('a stale plan recalculates whether or not it is under the floor', () => {
+    const staleUnderFloor = { inputsUsable: true, plan: PLAN, stale: true, belowFloor: true } as const;
+    expect(optimizerCardState({ ...staleUnderFloor, runStatus: 'running' })).toBe('recalculating');
+    expect(optimizerCardState({ ...staleUnderFloor, runStatus: 'done' })).toBe('recalculating');
+  });
+
   it('blocked and error win over an older plan', () => {
     expect(optimizerCardState(usable({ runStatus: 'blocked' }))).toBe('blocked');
     expect(optimizerCardState(usable({ runStatus: 'error' }))).toBe('error');
