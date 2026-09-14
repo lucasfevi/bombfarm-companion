@@ -95,6 +95,12 @@ export function formatItemDisplay(
   return `${set} ${slot} · ${rar} nv${item.level}${plus}`;
 }
 
+/** The set a piece of gear belongs to, by name; the raw id for a definition the catalog lacks. */
+export function itemSetName(item: { defId: string }, lang: Lang): string {
+  const definition = catalog.defs.find((entry) => entry.id === item.defId);
+  return definition ? setName(definition.set, lang) : item.defId;
+}
+
 /** A piece of gear's name — its set and slot; the raw id for a definition the catalog lacks. */
 export function itemName(item: { defId: string }, lang: Lang): string {
   const definition = catalog.defs.find((entry) => entry.id === item.defId);

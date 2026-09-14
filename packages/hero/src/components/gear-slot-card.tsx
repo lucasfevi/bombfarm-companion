@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { SLOTS, itemValores, type EquippedItem, type Loadout, type Slot } from '@bombfarm/domain/gear';
-import { itemName, itemRarityLabel, slotLabel } from '@bombfarm/domain/game-labels';
+import { itemName, itemRarityLabel, itemSetName, slotLabel } from '@bombfarm/domain/game-labels';
 import {
   ItemIcon,
   rarityTextClass,
@@ -75,17 +75,20 @@ export function GearSlotCard({ slot, equipped, lang, t, formatNumber, changed, c
       <div className="flex justify-center">
         <ItemIcon item={equipped} size="xl" className="shrink-0" />
       </div>
-      <div className="flex min-w-0 flex-col gap-0.5 text-center">
-        <span className="min-w-0 text-balance text-sm font-semibold text-ink">
-          {itemName(equipped, lang)}
-          {equipped.upgrade > 0 ? <span className="text-accent"> +{equipped.upgrade}</span> : null}
+      <div className="flex min-w-0 flex-col gap-0.5 whitespace-nowrap text-center">
+        <span
+          className="flex min-w-0 items-baseline justify-center gap-1 text-sm font-semibold text-ink"
+          aria-label={itemName(equipped, lang)}
+        >
+          <span className="min-w-0 truncate">{itemSetName(equipped, lang)}</span>
+          {equipped.upgrade > 0 ? <span className="shrink-0 text-accent">+{equipped.upgrade}</span> : null}
         </span>
         <span className="flex min-w-0 items-baseline justify-center gap-1 text-xs leading-none">
           <span className={cn('shrink-0 font-medium', tier)}>{itemRarityLabel(equipped.rarityIdx, lang)}</span>
           <span className="shrink-0 text-muted" aria-hidden="true">
             &middot;
           </span>
-          <span className="truncate text-muted">
+          <span className="shrink-0 text-muted">
             {t.rankLv} {equipped.level}
           </span>
         </span>
