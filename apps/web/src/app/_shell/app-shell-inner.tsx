@@ -96,7 +96,7 @@ export function AppShellInner({
   }
 
   return (
-    <div className="flex min-h-screen flex-col pb-10">
+    <div className="flex min-h-screen flex-col">
       <SiteHeader t={t} lang={lang} onImport={openImportDialog} onLangChange={setLang} />
 
       {showReferralNotice ? <ReferralNotice t={t} onDismiss={dismissReferralNotice} /> : null}

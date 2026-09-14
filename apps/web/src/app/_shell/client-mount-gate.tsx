@@ -10,7 +10,6 @@ import {
 /** Inline dark shell so a CSS/HMR glitch never flashes a white loading page. */
 const loadingShellStyle = {
   minHeight: '100vh',
-  paddingBottom: 40,
   background: 'oklch(18% 0.015 48)',
 } as const;
 
