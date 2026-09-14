@@ -108,6 +108,7 @@ export function ForgeQueuePanel({
         labels={labels}
         forgeWritesEnabled={forgeWritesEnabled}
         accountSource={accountSource}
+        layout="stacked"
       />
     </Panel>
   );

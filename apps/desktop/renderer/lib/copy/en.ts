@@ -526,6 +526,7 @@ export const en = {
   forgeQueueAddAria: 'Add {item} to the forge queue, to {target}',
   forgeQueueAddedAria: '{item} is in the forge queue, to {target}',
   forgeQueueTitle: 'Forge queue',
+  forgeQueueOpenForge: 'Forge queue — open the Forge tab',
   forgeQueueForged: '{done}/{total} forged',
   forgeQueueRolling: 'rolling',
   forgeQueueProgress: '{rolls} rolls · {spent} gold',

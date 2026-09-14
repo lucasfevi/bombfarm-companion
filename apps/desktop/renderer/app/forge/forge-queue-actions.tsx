@@ -10,7 +10,7 @@
  */
 import { useCallback, useState } from 'react';
 import type { AccountSource } from '@bombfarm/contracts';
-import { Button, ConfirmDialog } from '@bombfarm/ui';
+import { Button, ConfirmDialog, cn } from '@bombfarm/ui';
 import { sub, subNodes, useCopy } from '../../lib/copy';
 import type { ForgeQueueState } from '../../lib/forge/forge-queue-reducer';
 import { cancelForgeQueue, startForgeQueue } from '../../lib/forge/forge-queue-store';
@@ -32,12 +32,16 @@ export function ForgeQueueActions({
   labels,
   forgeWritesEnabled,
   accountSource,
+  layout = 'inline',
 }: {
   queue: ForgeQueueState;
   rows: readonly ForgeQueueRow[];
   labels: ForgeLabels;
   forgeWritesEnabled: boolean;
   accountSource: AccountSource | null;
+  /** `inline` is the band's row; `stacked` is the panel's column, its button as wide as the
+   *  Forge button above it. */
+  layout?: 'inline' | 'stacked';
 }) {
   const t = useCopy();
   const run = useForgeRun();
@@ -83,8 +87,14 @@ export function ForgeQueueActions({
           })
         : subNodes(t.forgeQueueConfirmMany, { count: rows.length, gold });
 
+  const stacked = layout === 'stacked';
+  const buttonClass = cn(stacked && 'w-full');
+
   return (
-    <div data-testid="forge-queue-actions" className="flex min-w-0 flex-wrap items-center gap-2">
+    <div
+      data-testid="forge-queue-actions"
+      className={cn('flex', 'min-w-0', 'gap-2', stacked ? 'flex-col' : 'flex-wrap', stacked ? 'items-stretch' : 'items-center')}
+    >
       {haltText !== null ? (
         <span data-testid="forge-queue-halt" className="text-[11px] text-warn">
           {sub(t.forgeQueueStopped, { reason: haltText })}
@@ -96,11 +106,11 @@ export function ForgeQueueActions({
         </span>
       ) : null}
       {running ? (
-        <Button type="button" variant="default" data-testid="forge-queue-cancel" onClick={onCancel}>
+        <Button type="button" variant="default" className={buttonClass} data-testid="forge-queue-cancel" onClick={onCancel}>
           {t.forgeQueueCancel}
         </Button>
       ) : (
-        <Button type="button" variant="primary" data-testid="forge-queue-start" disabled={!canStart} onClick={openConfirm}>
+        <Button type="button" variant="primary" className={buttonClass} data-testid="forge-queue-start" disabled={!canStart} onClick={openConfirm}>
           {queue.status === 'halted' ? t.forgeQueueResume : t.forgeQueueStart}
         </Button>
       )}

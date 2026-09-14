@@ -154,6 +154,11 @@ test.describe('the forge queue, fed from the Optimizer', () => {
     await expect(rows).toHaveCount(2);
     await expect(rows.first().getByTestId('forge-queue-remove')).toBeVisible();
 
+    // The band's name is the way here from any tab: back to the Optimizer, then through it.
+    await openOptimizer(page);
+    await page.getByTestId('forge-queue-open-forge').click();
+    await page.waitForSelector('[data-testid="forge-view"]', { timeout: 20_000 });
+
     // The panel carries the queue's own Start, gated the same way as the band's.
     const panelStart = page.getByTestId('forge-queue-panel').getByTestId('forge-queue-start');
     await expect(panelStart).toBeDisabled();

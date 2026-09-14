@@ -374,7 +374,13 @@ function HomePageContent({
         }
         banner={
           granted && forgeQueueShown ? (
-            <ForgeQueueBar forgeWritesEnabled={forgeWritesEnabled} accountSource={environment?.accountSource ?? null} />
+            <ForgeQueueBar
+              forgeWritesEnabled={forgeWritesEnabled}
+              accountSource={environment?.accountSource ?? null}
+              onOpenForge={() => {
+                setActiveNavId('forge');
+              }}
+            />
           ) : null
         }
         version={

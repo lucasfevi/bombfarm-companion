@@ -13,6 +13,7 @@
 import { useEffect, useMemo } from 'react';
 import type { AccountSource } from '@bombfarm/contracts';
 import { buildInventoryView } from '@bombfarm/domain/inventory-view';
+import { cn } from '@bombfarm/ui';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
 import type { ForgeQueueState } from '../../lib/forge/forge-queue-reducer';
@@ -32,9 +33,12 @@ export function isForgeQueueShown(queue: ForgeQueueState): boolean {
 export function ForgeQueueBar({
   forgeWritesEnabled,
   accountSource,
+  onOpenForge,
 }: {
   forgeWritesEnabled: boolean;
   accountSource: AccountSource | null;
+  /** The band's name is the way to the Forge tab, where the queue is listed in full. */
+  onOpenForge: () => void;
 }) {
   const t = useCopy();
   const { lang, locale } = useLocale();
@@ -63,7 +67,30 @@ export function ForgeQueueBar({
 
   return (
     <div data-testid="forge-queue-bar" data-status={queue.status} className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
-      <span className="font-semibold text-ink">{t.forgeQueueTitle}</span>
+      <button
+        type="button"
+        aria-label={t.forgeQueueOpenForge}
+        data-testid="forge-queue-open-forge"
+        className={cn(
+          'cursor-pointer',
+          'border-0',
+          'bg-transparent',
+          'p-0',
+          'font-semibold',
+          'text-ink',
+          'underline-offset-2',
+          'hover:text-accent',
+          'hover:underline',
+          'focus-visible:rounded-sm',
+          'focus-visible:[outline-style:solid]',
+          'focus-visible:outline-2',
+          'focus-visible:outline-offset-2',
+          'focus-visible:outline-accent',
+        )}
+        onClick={onOpenForge}
+      >
+        {t.forgeQueueTitle}
+      </button>
       <span data-testid="forge-queue-count" className="font-mono text-[12px] tabular-nums text-muted">
         {sub(t.forgeQueueForged, { done: queue.forged, total: queue.forged + queue.pieces.length })}
       </span>
