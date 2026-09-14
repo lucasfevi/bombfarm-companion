@@ -1,7 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { createTabScrollMemory } from './tab-scroll-memory';
 
-/** Longer than any open animation a tab plays on mount (the accordion panels take 0.4s). */
+/** How long the restore keeps chasing content that lands after the first commit. */
 const RESTORE_WINDOW_MS = 1000;
 
 /**
@@ -9,9 +9,8 @@ const RESTORE_WINDOW_MS = 1000;
  * tab's offset is read in the setter, before React commits — by the time an effect could look,
  * the old content is gone and the scroller has already been clamped. The incoming tab's offset
  * is put back in a layout effect, on the first commit that draws it, and then again as the
- * content grows: panels that animate open start at no height, so the first commit is shorter
- * than the page settles to and a single set would be clamped. The player scrolling themselves
- * ends the restore at once.
+ * content grows: a tab whose first commit is shorter than the page it settles to would clamp a
+ * single set. The player scrolling themselves ends the restore at once.
  */
 export function useTabScrollMemory(
   initialTabId: string,

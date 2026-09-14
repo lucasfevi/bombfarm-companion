@@ -90,6 +90,35 @@ describe('the snapshot store computes once and does not follow the live account'
     expect(store.getState()).toBe(afterOpen);
   });
 
+  it('opening again after a gold-only tick keeps the snapshot in hand, even though the account key moved', () => {
+    const { store, open } = createOptimizerStore();
+    const first = viewAtLevel(10);
+    open(first.view, first.key, null);
+    const afterOpen = store.getState();
+
+    const ticked = viewOf(payloadWithGold(10, '999'));
+    expect(ticked.key).not.toBe(first.key);
+    open(ticked.view, ticked.key, null);
+
+    expect(store.getState()).toBe(afterOpen);
+  });
+
+  it('opening again after a hero levelled up re-takes the snapshot', () => {
+    const { store, open } = createOptimizerStore();
+    const first = viewAtLevel(10);
+    open(first.view, first.key, null);
+    const afterOpen = store.getState();
+
+    const levelled = viewAtLevel(11);
+    open(levelled.view, levelled.key, null);
+    const afterReopen = store.getState();
+
+    expect(afterReopen).not.toBe(afterOpen);
+    if (afterReopen.status !== 'ready') throw new Error('expected ready');
+    expect(afterReopen.sourceKey).toBe(levelled.key);
+    expect(afterReopen.inputs.heroes[0]?.level).toBe(11);
+  });
+
   it('opening with the same account but a different Farm phase recomputes', () => {
     const { store, open } = createOptimizerStore();
     const first = viewAtLevel(10);
