@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { cn } from '@bombfarm/ui';
+import { buttonRecipe, cn } from '@bombfarm/ui';
 import {
   mutedClass,
   panelHClass,
@@ -48,13 +48,21 @@ export function HomeSectionCard({
       data-home-card-state={state}
       className={cn(panelRecipe(), 'flex h-full min-w-0 flex-col')}
     >
-      <div className={panelHClass}>
-        <h2 className={cn(panelTitleClass, 'shrink-0')}>{heading}</h2>
-        {context === undefined ? null : (
-          <span className={cn(mutedClass, 'min-w-0 truncate')}>{context}</span>
-        )}
+      <div className={cn(panelHClass, 'items-center')}>
+        <div className="flex min-w-0 items-baseline gap-2.5">
+          <h2 className={cn(panelTitleClass, 'shrink-0')}>{heading}</h2>
+          {context === undefined ? null : (
+            <span className={cn(mutedClass, 'min-w-0 truncate')}>{context}</span>
+          )}
+        </div>
         {needs || !link ? null : (
-          <Link className="shrink-0 whitespace-nowrap" href={SITE_SECTION_HREF[section]}>
+          <Link
+            className={cn(
+              buttonRecipe({ variant: 'ghost' }),
+              'ml-auto shrink-0 px-2 py-1 font-mono text-[11px] tracking-[0.07em] whitespace-nowrap uppercase no-underline',
+            )}
+            href={SITE_SECTION_HREF[section]}
+          >
             {t.homeOpenLink}
           </Link>
         )}

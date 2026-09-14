@@ -81,6 +81,7 @@ describe('the front page card shell', () => {
     expect(source).not.toContain('onClick');
     expect(source.match(/href=/g)).toHaveLength(1);
     expect(source).toContain('href={SITE_SECTION_HREF[section]}');
+    expect(source).toContain("buttonRecipe({ variant: 'ghost' })");
   });
 
   it('a card that still needs a save carries no link to its section', () => {

@@ -1,7 +1,7 @@
 export const en = {
   homeTitle: "Your account, at a glance",
   homeSubtitle: "Every section in one screen, from your last import. Open a card for the full page.",
-  homeOpenLink: "Open →",
+  homeOpenLink: "Open",
   homeStripPlayerUnknown: "Unknown player",
   homeStripAccountIdUnknown: "no account id",
   homeStripHeroes: "{count} heroes",
@@ -51,7 +51,7 @@ export const en = {
 export const pt: typeof en = {
   homeTitle: "Sua conta, num relance",
   homeSubtitle: "Cada seção em uma tela, a partir da sua última importação. Abra um card para ver a página completa.",
-  homeOpenLink: "Abrir →",
+  homeOpenLink: "Abrir",
   homeStripPlayerUnknown: "Jogador desconhecido",
   homeStripAccountIdUnknown: "sem ID da conta",
   homeStripHeroes: "{count} heróis",
