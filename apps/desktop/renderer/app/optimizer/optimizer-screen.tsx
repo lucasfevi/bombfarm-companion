@@ -34,7 +34,7 @@ import type { OptimizerPlanState } from '../../lib/optimizer/optimizer-plan-stor
 import type { OptimizerView } from '../../lib/optimizer/optimizer-view-storage';
 import { optimizerScreenCopy, useTeamPlanCopy } from '../screen-copy';
 import { AccountRefreshControl } from '../account-refresh-control';
-import { ForgeQueueAdd } from './forge-queue-add';
+import { ForgeQueueAdd } from '../forge/forge-queue-add';
 
 type OptimizerScreenRefresh = {
   stale: boolean;

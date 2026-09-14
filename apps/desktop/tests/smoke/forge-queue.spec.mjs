@@ -155,6 +155,39 @@ test.describe('the forge queue, fed from the Optimizer', () => {
     await shoot(page, testInfo, 'forge-tab-queue.png');
   });
 
+  test('the plan panel queues the piece in hand at the target it shows', async ({}, testInfo) => {
+    await openForge(page);
+    await page.waitForSelector('[data-testid="inventory-table-row"]', { timeout: 20_000 });
+    const rows = page.getByTestId('forge-queue-row');
+    const before = await rows.count();
+
+    // The fixture's first unforged piece: narrow the bag to +0, then the top row is one with a
+    // climb ahead of it.
+    await page.getByRole('combobox', { name: 'Filter by forge level' }).click();
+    await page.getByRole('option', { name: '+0 only', exact: true }).click();
+    await page.getByTestId('inventory-table-row').first().click();
+    const itemPanel = page.getByTestId('forge-item-panel');
+    await expect(itemPanel).toHaveAttribute('data-state', 'item');
+    const itemId = await itemPanel.getAttribute('data-item-id');
+
+    const add = page.getByTestId('forge-plan-panel').getByTestId('forge-queue-add');
+    await expect(add).toHaveText(readCopyValue('forgeQueueAdd'));
+    await add.click();
+    await expect(add).toHaveAttribute('data-queued', 'true');
+    await expect(rows).toHaveCount(before + 1);
+    await expect(rows.last()).toHaveAttribute('data-item-id', itemId);
+    await expect(page.getByTestId('forge-queue-waiting')).toHaveText(`${String(before + 1)} waiting`);
+
+    // Stepping the target un-queues the button (the queue holds the old target) and pressing
+    // it again moves the target rather than adding a second row.
+    await page.getByRole('button', { name: 'Raise the target' }).click();
+    await expect(add).not.toHaveAttribute('data-queued', 'true');
+    await add.click();
+    await expect(add).toHaveAttribute('data-queued', 'true');
+    await expect(rows).toHaveCount(before + 1);
+    await shoot(page, testInfo, 'forge-plan-queued.png');
+  });
+
   test('removing a piece on the Forge tab takes it off the footer, and the panel goes with the last one', async () => {
     await openForge(page);
     const rows = page.getByTestId('forge-queue-row');

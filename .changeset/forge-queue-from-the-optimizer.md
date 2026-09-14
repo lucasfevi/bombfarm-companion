@@ -20,8 +20,9 @@ rolls. The queue stops on any piece that stops short of its target — out of go
 cooldown, a refused item — and names the reason in the footer; Resume picks up from that piece.
 A piece the bag no longer holds, or one already at its target, leaves the queue on its own.
 
-**The Forge tab lists it.** A Forge queue panel beside the bag lists every queued piece with its
-climb and lets you take one off. The waiting pieces survive a restart — restored paused, never
+**The Forge tab lists it, and feeds it.** A Forge queue panel beside the bag lists every queued
+piece with its climb and lets you take one off, and the plan panel carries the same *Add to
+queue* under its Forge button — the piece in hand, at the target the panel shows. The waiting pieces survive a restart — restored paused, never
 started on their own.
 
 `@bombfarm/team-plan`: `TeamPlanScreenSlots.forgeQueueAction` — a host-supplied control drawn at
