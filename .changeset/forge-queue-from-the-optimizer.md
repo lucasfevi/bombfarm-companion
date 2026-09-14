@@ -22,8 +22,8 @@ A piece the bag no longer holds, or one already at its target, leaves the queue 
 
 **The Forge tab lists it, and feeds it.** A Forge queue panel beside the bag lists every queued
 piece with its climb and lets you take one off, and the plan panel carries the same *Add to
-queue* under its Forge button — the piece in hand, at the target the panel shows. The waiting pieces survive a restart — restored paused, never
-started on their own.
+queue* under its Forge button — the piece in hand, at the target the panel shows. The waiting
+pieces survive a restart — restored paused, never started on their own.
 
 `@bombfarm/team-plan`: `TeamPlanScreenSlots.forgeQueueAction` — a host-supplied control drawn at
 the end of each forge-queue entry. The web supplies none and renders exactly as before.
