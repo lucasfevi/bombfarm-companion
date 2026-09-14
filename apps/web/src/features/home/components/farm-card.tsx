@@ -1,16 +1,14 @@
 'use client';
 
-import { gameDifficultyLabel } from '@bombfarm/domain/phase-wiki';
-import { Tooltip, cn, formatNumber } from '@bombfarm/ui';
-import { mutedClass } from '@bombfarm/ui/panel-field.recipe';
+import { formatPhaseCoord } from '@bombfarm/domain/phase-wiki';
+import { Tooltip, formatNumber } from '@bombfarm/ui';
 import { useAppLang } from '@/shared/context/app-lang';
 import { sub, type Strings } from '@/shared/i18n';
 import { selectFarmReturnBonus, usePlannerStore, type PlannerStore } from '@/shared/stores';
-import { selectFarmCardRows } from '../model/farm-card-view';
-import { buildFarmSentence, formatSignedPct } from '../model/farm-sentence';
+import { selectFarmCardRows, type FarmOutlookTile } from '../model/farm-card-view';
+import { buildFarmSentence } from '../model/farm-sentence';
 import { selectAccountUsable, selectHasRoster } from '../model/home-selectors';
-import { FarmOutlookTile } from './farm-outlook-tile';
-import { FarmPhaseTile } from './farm-phase-tile';
+import { FarmComparisonTable, type FarmComparisonColumn } from './farm-comparison-table';
 import { HomeSectionCard } from './home-section-card';
 
 const RETURN_BONUS_KEY = {
@@ -19,11 +17,12 @@ const RETURN_BONUS_KEY = {
   vip: 'farmRankingReturnBonusVip',
 } as const satisfies Record<PlannerStore['farmReturnBonus'], keyof Strings>;
 
-const PILL_TONE_CLASS = {
-  up: 'text-up',
-  down: 'text-warn',
-  neutral: 'text-muted',
-} as const;
+function lockLine(tile: FarmOutlookTile, strings: Strings, phase: string): string | null {
+  if (!tile.row.locked) return null;
+  if (tile.block === null) return sub(strings.homeCardFarmLockedReach, { phase });
+  const key = tile.block.gateInfeasible ? strings.homeCardFarmLockedGateCannot : strings.homeCardFarmLockedGate;
+  return sub(key, { phase, gate: tile.block.gate });
+}
 
 export function FarmCard() {
   const { t, lang } = useAppLang();
@@ -31,21 +30,47 @@ export function FarmCard() {
   const hasRoster = usePlannerStore(selectHasRoster);
   const accountUsable = usePlannerStore(selectAccountUsable);
   const returnBonus = usePlannerStore(selectFarmReturnBonus);
-  const { currentRow, bestRow, pushTargetRow } = view;
+  const { currentRow, bestRow, pushTargetRow, nextItemLevel, nextDifficulty } = view;
   const ready = hasRoster && accountUsable && currentRow != null && bestRow != null;
 
-  const sentence = buildFarmSentence(view.sentence, t, lang);
   const pushLine =
     pushTargetRow && bestRow
       ? sub(t.homeCardFarmFooterPush, {
           phase: pushTargetRow.phase,
-          pct: formatNumber(
-            ((pushTargetRow.goldPerHour - bestRow.goldPerHour) / bestRow.goldPerHour) * 100,
-            lang,
-            1,
-          ),
+          pct: formatNumber(((pushTargetRow.goldPerHour - bestRow.goldPerHour) / bestRow.goldPerHour) * 100, lang, 1),
         })
       : null;
+
+  let columns: FarmComparisonColumn[] = [];
+  const notes: string[] = [];
+  if (currentRow && bestRow) {
+    const sentence = buildFarmSentence(view.sentence, t);
+    if (sentence) notes.push(sub(t.homeCardFarmSentenceLead, { phase: t.homeCardFarmBest, rest: sentence.slice(0, -1) }) + '.');
+    columns = [
+      { id: 'current', title: t.homeCardFarmCurrent, row: currentRow, vs: 'here' },
+      {
+        id: 'best',
+        title: t.homeCardFarmBest,
+        row: bestRow,
+        vs: view.pill.pct == null ? 'same' : { pct: view.pill.pct, tone: view.pill.tone, against: t.homeCardFarmVsCurrent },
+      },
+    ];
+    for (const [columnId, next, against] of [
+      ['nextItemLevel', nextItemLevel, t.homeCardFarmVsBest],
+      ['nextDifficulty', nextDifficulty, t.homeCardFarmVsCurrent],
+    ] as const) {
+      if (next?.kind !== 'tile') continue;
+      columns.push({
+        id: columnId,
+        title: columnId === 'nextItemLevel' ? t.homeCardFarmNextItemLevel : t.homeCardFarmNextDifficulty,
+        row: next.tile.row,
+        vs: { pct: next.tile.pct, tone: next.tile.tone, against },
+      });
+      const line = lockLine(next.tile, t, formatPhaseCoord(next.tile.row.phase, lang));
+      if (line) notes.push(line);
+    }
+  }
+  const peak = Math.max(0, ...columns.map((column) => column.row.goldPerHour));
 
   return (
     <HomeSectionCard
@@ -66,66 +91,18 @@ export function FarmCard() {
         )
       }
     >
-      {currentRow && bestRow ? (
+      {columns.length > 0 ? (
         <Tooltip.Provider delay={200} closeDelay={80}>
-          <div className="grid grid-cols-1 items-center gap-3 min-[720px]:grid-cols-[1fr_auto_1fr]">
-            <FarmPhaseTile
-              row={currentRow}
-              title={t.homeCardFarmCurrent}
-              barPercent={view.barPercent.current}
-              variant="fill"
-              testId="home-farm-current"
-            />
-            <p
-              className={cn('m-0 text-center font-mono text-sm font-bold tabular-nums', PILL_TONE_CLASS[view.pill.tone])}
-              data-testid="home-farm-pill"
-              data-tone={view.pill.tone}
-            >
-              {view.pill.pct == null ? t.homeCardFarmSame : formatSignedPct(view.pill.pct, lang)}
-            </p>
-            <FarmPhaseTile
-              row={bestRow}
-              title={t.homeCardFarmBest}
-              barPercent={view.barPercent.best}
-              variant="best"
-              testId="home-farm-best"
-            />
-          </div>
-          {sentence ? (
-            <p className="m-0 mt-3 text-sm" data-testid="home-farm-sentence">
-              {sentence}
-            </p>
-          ) : null}
-          <div className="mt-4 grid grid-cols-1 gap-3 border-t border-line pt-4 min-[720px]:grid-cols-2">
-            {view.nextItemLevel?.kind === 'tile' ? (
-              <FarmOutlookTile
-                title={t.homeCardFarmNextItemLevel}
-                tile={view.nextItemLevel.tile}
-                testId="home-farm-next-item-level"
-              />
-            ) : (
-              <div className="flex min-w-0 flex-col gap-1" data-testid="home-farm-next-item-level">
-                <p className={cn('m-0 text-xs', mutedClass)}>{t.homeCardFarmNextItemLevel}</p>
-                <p className="m-0 text-sm">{t.homeCardFarmNextItemLevelNone}</p>
-              </div>
-            )}
-            {view.nextDifficulty?.kind === 'tile' ? (
-              <FarmOutlookTile
-                title={t.homeCardFarmNextDifficulty}
-                tile={view.nextDifficulty.tile}
-                testId="home-farm-next-difficulty"
-              />
-            ) : (
-              <div className="flex min-w-0 flex-col gap-1" data-testid="home-farm-next-difficulty">
-                <p className={cn('m-0 text-xs', mutedClass)}>{t.homeCardFarmNextDifficulty}</p>
-                <p className="m-0 text-sm">
-                  {sub(t.homeCardFarmNextDifficultyTop, {
-                    difficulty: gameDifficultyLabel(view.nextDifficulty?.ato ?? currentRow.ato, lang),
-                  })}
+          <FarmComparisonTable columns={columns} peakGoldPerHour={peak} sameLabel={t.homeCardFarmSame} />
+          {notes.length > 0 ? (
+            <div className="mt-3 mb-3 grid gap-1 border-t border-[color-mix(in_oklch,var(--line)_60%,transparent)] pt-2.5 text-xs leading-normal text-muted">
+              {notes.map((note) => (
+                <p key={note} className="m-0" data-testid="home-farm-note">
+                  {note}
                 </p>
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
+          ) : null}
         </Tooltip.Provider>
       ) : null}
     </HomeSectionCard>

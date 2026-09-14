@@ -5,13 +5,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FarmRateRow } from '@bombfarm/domain/farm-rate';
 import { emptyLoadout } from '@bombfarm/domain/gear';
-import { gameDifficultyLabel, phaseMapDisplayName } from '@bombfarm/domain/phase-wiki';
+import { formatPhaseCoord, gameDifficultyLabel, phaseMapDisplayName } from '@bombfarm/domain/phase-wiki';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
-import {
-  formatBand,
-  formatPhaseLabel,
-  formatRatePerHour,
-} from '@bombfarm/farm/model/farm-ranking-format';
+import { formatBand, formatRatePerHour } from '@bombfarm/farm/model/farm-ranking-format';
 import { formatClearTime } from '@bombfarm/hero/model';
 import { FarmCard } from '@/features/home/components/farm-card';
 import { farmCardViewFrom, type FarmCardView } from '@/features/home/model/farm-card-view';
@@ -136,6 +132,10 @@ const slot = (html: string, testId: string) =>
   new RegExp(`data-testid="${testId}"[^>]*>([^<]*)<`).exec(html)?.[1] ?? null;
 const tag = (html: string, testId: string) =>
   html.slice(html.lastIndexOf('<', html.indexOf(`data-testid="${testId}"`)), html.indexOf('>', html.indexOf(`data-testid="${testId}"`)) + 1);
+const cellText = (html: string, testId: string, tagName: 'td' | 'th') => {
+  const at = html.indexOf(`data-testid="${testId}"`);
+  return textOf(html.slice(html.indexOf('>', at) + 1, html.indexOf(`</${tagName}>`, at)));
+};
 const barWidths = (html: string) => [...html.matchAll(/style="width:([^"]+)"/g)].map((match) => match[1]);
 
 describe('the front page farm card', () => {
@@ -149,9 +149,9 @@ describe('the front page farm card', () => {
     viewOverride = null;
   });
 
-  it("two tiles print the board's own figures for the current and the best phase", () => {
+  it("four aligned columns print the board's own figures, labelled, with the best column tinted and the locked one dimmed", () => {
     usableAccount();
-    viewOverride = farmCardViewFrom([CURRENT, BEST], 10);
+    viewOverride = farmCardViewFrom([CURRENT, BEST, NEXT_LEVEL, GATE, NEXT_ATO], 10);
 
     for (const lang of LANGS) {
       usePlannerStore.setState({ lang });
@@ -160,36 +160,40 @@ describe('the front page farm card', () => {
 
       expect(html).toContain('data-home-card-state="ready"');
       expect(html).toContain(`>${strings.homeCardFarmContext}<`);
-      expect(html.indexOf(`>${strings.homeCardFarmCurrent}<`)).toBeLessThan(html.indexOf(`>${strings.homeCardFarmBest}<`));
-
-      for (const [testId, tile] of [
-        ['home-farm-current', CURRENT],
-        ['home-farm-best', BEST],
-      ] as const) {
-        const tileHtml = html.slice(html.indexOf(`data-testid="${testId}"`), html.indexOf(`data-testid="${testId}-detail"`));
-        expect(slot(html, `${testId}-phase`)).toBe(formatPhaseLabel(tile.phase, lang));
-        expect(tileHtml).toContain(`>${gameDifficultyLabel(tile.ato, lang)}<`);
-        expect(tileHtml).toContain(`>${phaseMapDisplayName(tile.phase, lang)}<`);
-        expect(slot(html, `${testId}-gold`)).toBe(formatRatePerHour(tile.goldPerHour, lang));
-        expect(slot(html, `${testId}-detail`)).toBe(
-          [
-            formatRatePerHour(tile.xpPerHour, lang),
-            formatBand(tile.itemLevelLabel),
-            formatClearTime(tile.clearSecs),
-          ].join(' · '),
-        );
+      for (const key of ['homeCardFarmRowGold', 'homeCardFarmRowXp', 'homeCardFarmRowItemLevels', 'homeCardFarmRowClearTime', 'homeCardFarmRowVs'] as const) {
+        expect(textOf(html)).toContain(strings[key]);
       }
+      const titles = ['current', 'best', 'nextItemLevel', 'nextDifficulty'].map((id) => cellText(html, `home-farm-${id}-title`, 'th'));
+      expect(titles).toEqual([
+        strings.homeCardFarmCurrent,
+        strings.homeCardFarmBest,
+        strings.homeCardFarmNextItemLevel,
+        strings.homeCardFarmNextDifficulty,
+      ]);
 
-      expect(tag(html, 'home-farm-current-gate')).not.toContain('invisible');
-      expect(tag(html, 'home-farm-current-gate')).not.toContain('aria-hidden="true"');
-      expect(tag(html, 'home-farm-best-gate')).toContain('invisible');
-      expect(tag(html, 'home-farm-best-gate')).toContain('aria-hidden="true"');
-      expect(html).toContain(`<span class="sr-only">${strings.farmRankingGateBadge}</span>`);
-      expect(barWidths(html)).toEqual(['40%', '100%']);
+      for (const [id, tile] of [
+        ['current', CURRENT],
+        ['best', BEST],
+        ['nextItemLevel', NEXT_LEVEL],
+        ['nextDifficulty', NEXT_ATO],
+      ] as const) {
+        expect(slot(html, `home-farm-${id}-phase`)).toBe(formatPhaseCoord(tile.phase, lang));
+        expect(html).toContain(`>${phaseMapDisplayName(tile.phase, lang)}<`);
+        expect(slot(html, `home-farm-${id}-gold`)).toBe(formatRatePerHour(tile.goldPerHour, lang));
+        expect(slot(html, `home-farm-${id}-xp`)).toBe(formatRatePerHour(tile.xpPerHour, lang));
+        expect(slot(html, `home-farm-${id}-items`)).toBe(formatBand(tile.itemLevelLabel));
+        expect(slot(html, `home-farm-${id}-clear`)).toBe(formatClearTime(tile.clearSecs));
+      }
+      expect(html).not.toContain(`>${gameDifficultyLabel(CURRENT.ato, lang)}<`);
+      expect(barWidths(html)).toEqual(['40%', '100%', '90%', '20%']);
+      expect(tag(html, 'home-farm-best-title')).toContain('text-accent');
+      expect(tag(html, 'home-farm-nextDifficulty-phase')).toContain('text-muted');
+      expect(tag(html, 'home-farm-current-phase')).toContain('text-ink');
+      expect((html.match(new RegExp(`>${strings.homeCardFarmLocked}<`, 'g')) ?? []).length).toBe(2);
     }
   });
 
-  it('the two outlook tiles price the next item level against best and the next difficulty against current, with their lock lines', () => {
+  it('the vs row states each comparison against its own basis, and the notes carry the drop change and the gate', () => {
     usableAccount();
     viewOverride = farmCardViewFrom([CURRENT, BEST, NEXT_LEVEL, GATE, NEXT_ATO], 10);
 
@@ -197,63 +201,47 @@ describe('the front page farm card', () => {
       usePlannerStore.setState({ lang });
       const strings = STRINGS[lang];
       const html = render();
-      const level = html.slice(openingOf(html, 'home-farm-next-item-level'), openingOf(html, 'home-farm-next-difficulty'));
-      const ato = html.slice(openingOf(html, 'home-farm-next-difficulty'), openingOf(html, 'home-card-footer'));
+      const vs = (id: string) => cellText(html, `home-farm-${id}-vs`, 'td');
 
-      expect(textOf(level)).toContain(strings.homeCardFarmNextItemLevel);
-      expect(level).toContain(`>${formatPhaseLabel(101, lang)}<`);
-      expect(level).toContain(`>${formatRatePerHour(2700, lang)}<`);
-      expect(level).toContain(`>${formatSignedPct(-10, lang)}<`);
-      expect(textOf(level)).toContain(strings.homeCardFarmVsBest);
-      expect(textOf(level)).toContain(strings.homeCardFarmLocked);
-      expect(textOf(level)).toContain(sub(strings.homeCardFarmReachFirst, { phase: 101 }));
+      expect(vs('current')).toBe(strings.homeCardFarmHere);
+      expect(vs('best')).toBe(`${formatSignedPct(150, lang)}${strings.homeCardFarmVsCurrent}`);
+      expect(vs('nextItemLevel')).toBe(`${formatSignedPct(-10, lang)}${strings.homeCardFarmVsBest}`);
+      expect(vs('nextDifficulty')).toBe(`${formatSignedPct(-50, lang)}${strings.homeCardFarmVsCurrent}`);
+      expect(tag(html, 'home-farm-best-vs').length).toBeGreaterThan(0);
+      expect(html.slice(html.indexOf('home-farm-best-vs'))).toContain('data-tone="up"');
 
-      expect(textOf(ato)).toContain(strings.homeCardFarmNextDifficulty);
-      expect(ato).toContain(`>${formatPhaseLabel(151, lang)}<`);
-      expect(ato).toContain(`>${formatRatePerHour(600, lang)}<`);
-      expect(ato).toContain(`>${formatSignedPct(-50, lang)}<`);
-      expect(textOf(ato)).toContain(strings.homeCardFarmVsCurrent);
-      expect(textOf(ato)).toContain(escaped(sub(strings.homeCardFarmClearGateCannot, { gate: 150 })));
+      const notes = [...html.matchAll(/data-testid="home-farm-note"[^>]*>([^<]*)</g)].map((match) => match[1]);
+      expect(notes).toEqual([
+        `${sub(strings.homeCardFarmSentenceLead, { phase: strings.homeCardFarmBest, rest: (buildFarmSentence(viewOverride.sentence, strings) ?? '').slice(0, -1) })}.`,
+        escaped(sub(strings.homeCardFarmLockedReach, { phase: formatPhaseCoord(101, lang) })),
+        escaped(sub(strings.homeCardFarmLockedGateCannot, { phase: formatPhaseCoord(151, lang), gate: 150 })),
+      ]);
+      expect(viewOverride.sentence.map((fragment) => fragment.kind)).toEqual(['ahead', 'clearFaster', 'dropsSwap']);
     }
   });
 
-  it('the outlook slots say so when no higher item level or no next difficulty exists', () => {
+  it('with no next item level and no next difficulty the table has two columns and the notes say nothing about them', () => {
     usableAccount();
     const top = row({ phase: 451, ato: 5, goldPerHour: 1000, itemLevels: [99], itemLevelLabel: '99' });
     viewOverride = farmCardViewFrom([top], 451);
     usePlannerStore.setState({ lang: 'en' });
     const html = render();
 
-    expect(textOf(html)).toContain(STRINGS.en.homeCardFarmNextItemLevelNone);
-    expect(textOf(html)).toContain(
-      sub(STRINGS.en.homeCardFarmNextDifficultyTop, { difficulty: gameDifficultyLabel(5, 'en') }),
-    );
+    expect(html).toContain('data-testid="home-farm-best-title"');
+    expect(html).not.toContain('home-farm-nextItemLevel');
+    expect(html).not.toContain('home-farm-nextDifficulty');
+    expect(html).not.toContain('home-farm-note');
   });
 
-  it('the pill and the sentence appear only when the phases differ', () => {
+  it('the best column says you are on it when the phases match, and the pill turns down when current pays more', () => {
     usableAccount();
-    viewOverride = farmCardViewFrom([CURRENT, BEST], 10);
-
-    for (const lang of LANGS) {
-      usePlannerStore.setState({ lang });
-      const html = render();
-
-      expect(tag(html, 'home-farm-pill')).toContain('data-tone="up"');
-      expect(slot(html, 'home-farm-pill')).toBe(formatSignedPct(150, lang));
-      expect(slot(html, 'home-farm-sentence')).toBe(
-        buildFarmSentence(viewOverride.sentence, STRINGS[lang], lang),
-      );
-      expect(viewOverride.sentence.map((fragment) => fragment.kind)).toEqual(['ahead', 'clearFaster', 'itemLevelUp']);
-    }
-
     viewOverride = farmCardViewFrom([CURRENT, BEST], 30);
     for (const lang of LANGS) {
       usePlannerStore.setState({ lang });
       const html = render();
-
-      expect(tag(html, 'home-farm-pill')).toContain('data-tone="neutral"');
-      expect(slot(html, 'home-farm-pill')).toBe(escaped(STRINGS[lang].homeCardFarmSame));
-      expect(html).not.toContain('home-farm-sentence');
+      const bestVs = cellText(html, 'home-farm-best-vs', 'td');
+      expect(bestVs).toBe(escaped(STRINGS[lang].homeCardFarmSame));
+      expect(html).not.toContain('home-farm-note');
       expect(slot(html, 'home-farm-current-gold')).toBe(slot(html, 'home-farm-best-gold'));
     }
 
@@ -262,8 +250,9 @@ describe('the front page farm card', () => {
       10,
     );
     usePlannerStore.setState({ lang: 'en' });
-    expect(tag(render(), 'home-farm-pill')).toContain('data-tone="down"');
-    expect(slot(render(), 'home-farm-pill')).toBe('−50.0%');
+    const html = render();
+    expect(html.slice(html.indexOf('home-farm-best-vs'))).toContain('data-tone="down"');
+    expect(html.slice(html.indexOf('home-farm-best-vs'))).toContain('>−50.0%<');
   });
 
   it('the footer names a push target only when a locked phase would pay more', () => {
@@ -345,7 +334,7 @@ describe('the front page farm card', () => {
   });
 
   it('reads every figure off the board rows and imports no farm-rate module', () => {
-    for (const file of ['farm-card.tsx', 'farm-phase-tile.tsx']) {
+    for (const file of ['farm-card.tsx', 'farm-comparison-table.tsx']) {
       const source = readFileSync(join(WEB_PACKAGE_ROOT, 'src/features/home/components', file), 'utf8');
       const specifiers = Array.from(source.matchAll(/from '([^']+)'/g), (match) => match[1]);
 

@@ -160,7 +160,7 @@ test.describe('Home', () => {
     await expect(page.getByTestId('home-account-total')).toHaveText(total);
   });
 
-  test('the grid folds from two rows to one column without a page-level scrollbar', async ({
+  test('the grid folds from two rows to one column, the farm table scrolls inside its card, and the page never scrolls sideways', async ({
     page,
   }) => {
     await openEmptyHome(page);
@@ -192,9 +192,14 @@ test.describe('Home', () => {
     await expect
       .poll(async () => {
         const [current, best] = await tiles();
-        return current != null && best != null && best.y > current.y;
+        return current != null && best != null && best.y === current.y && best.x > current.x;
       })
       .toBe(true);
+    const tableScrollsInsideItsCard = await page.evaluate(() => {
+      const scroller = document.querySelector('[data-testid="home-farm-best"]')?.closest('.overflow-x-auto');
+      return scroller != null && scroller.scrollWidth > scroller.clientWidth;
+    });
+    expect(tableScrollsInsideItsCard).toBe(true);
     const overflow = await page.evaluate(() => ({
       scrollWidth: document.documentElement.scrollWidth,
       clientWidth: document.documentElement.clientWidth,

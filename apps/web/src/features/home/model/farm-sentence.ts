@@ -3,7 +3,9 @@ import { sub, type Lang, type Strings } from '@/shared/i18n';
 import { formatNumber } from '@/shared/lib/format-number';
 import type { FarmSentenceFragment } from './farm-card-view';
 
-function fragmentText(fragment: FarmSentenceFragment, strings: Strings, lang: Lang): string {
+const levels = (values: readonly number[]) => values.join('/');
+
+function fragmentText(fragment: FarmSentenceFragment, strings: Strings): string {
   switch (fragment.kind) {
     case 'ahead':
       return sub(strings.homeCardFarmSentenceAhead, { count: fragment.count });
@@ -13,10 +15,16 @@ function fragmentText(fragment: FarmSentenceFragment, strings: Strings, lang: La
       return sub(strings.homeCardFarmSentenceClearFaster, { delta: formatClearTime(fragment.deltaSecs) });
     case 'clearSlower':
       return sub(strings.homeCardFarmSentenceClearSlower, { delta: formatClearTime(fragment.deltaSecs) });
-    case 'itemLevelUp':
-      return sub(strings.homeCardFarmSentenceItemLevelUp, { delta: formatNumber(fragment.delta, lang, 0) });
-    case 'itemLevelDown':
-      return sub(strings.homeCardFarmSentenceItemLevelDown, { delta: formatNumber(fragment.delta, lang, 0) });
+    case 'dropsKeepAdd':
+      return sub(strings.homeCardFarmSentenceDropsKeepAdd, { keep: levels(fragment.keep), add: levels(fragment.add) });
+    case 'dropsAdd':
+      return sub(strings.homeCardFarmSentenceDropsAdd, { add: levels(fragment.add) });
+    case 'dropsKeepLose':
+      return sub(strings.homeCardFarmSentenceDropsKeepLose, { keep: levels(fragment.keep), lose: levels(fragment.lose) });
+    case 'dropsLose':
+      return sub(strings.homeCardFarmSentenceDropsLose, { lose: levels(fragment.lose) });
+    case 'dropsSwap':
+      return sub(strings.homeCardFarmSentenceDropsSwap, { lose: levels(fragment.lose), add: levels(fragment.add) });
     case 'oneShotGained':
       return strings.homeCardFarmSentenceOneShotGained;
     case 'oneShotLost':
@@ -24,13 +32,12 @@ function fragmentText(fragment: FarmSentenceFragment, strings: Strings, lang: La
   }
 }
 
-export function buildFarmSentence(
-  fragments: readonly FarmSentenceFragment[],
-  strings: Strings,
-  lang: Lang,
-): string | null {
+export function buildFarmSentence(fragments: readonly FarmSentenceFragment[], strings: Strings): string | null {
   if (fragments.length === 0) return null;
-  return `${fragments.map((fragment) => fragmentText(fragment, strings, lang)).join(', ')}.`;
+  const parts = fragments.map((fragment) => fragmentText(fragment, strings));
+  const last = parts.pop() as string;
+  const joined = parts.length === 0 ? last : `${parts.join(', ')}${strings.homeCardFarmSentenceAnd}${last}`;
+  return `${joined}.`;
 }
 
 export function formatSignedPct(pct: number, lang: Lang): string {

@@ -6,7 +6,11 @@ type FarmRateRow = FarmRankingResult['rows'][number];
 export type FarmSentenceFragment =
   | { kind: 'ahead' | 'behind'; count: number }
   | { kind: 'clearFaster' | 'clearSlower'; deltaSecs: number }
-  | { kind: 'itemLevelUp' | 'itemLevelDown'; delta: number }
+  | { kind: 'dropsKeepAdd'; keep: number[]; add: number[] }
+  | { kind: 'dropsAdd'; add: number[] }
+  | { kind: 'dropsKeepLose'; keep: number[]; lose: number[] }
+  | { kind: 'dropsLose'; lose: number[] }
+  | { kind: 'dropsSwap'; lose: number[]; add: number[] }
   | { kind: 'oneShotGained' | 'oneShotLost' };
 
 export type FarmCardPillTone = 'up' | 'down' | 'neutral';
@@ -85,8 +89,16 @@ export function nextDifficultyFrom(rows: readonly FarmRateRow[], current: FarmRa
     : { kind: 'top', ato: current.ato };
 }
 
-function lowestBand(row: FarmRateRow): number {
-  return row.itemLevels.length > 0 ? Math.min(...row.itemLevels) : 0;
+function dropChange(current: FarmRateRow, best: FarmRateRow): FarmSentenceFragment | null {
+  const before = new Set(current.itemLevels);
+  const after = new Set(best.itemLevels);
+  const keep = current.itemLevels.filter((level) => after.has(level));
+  const add = best.itemLevels.filter((level) => !before.has(level));
+  const lose = current.itemLevels.filter((level) => !after.has(level));
+  if (add.length === 0 && lose.length === 0) return null;
+  if (add.length > 0 && lose.length > 0) return { kind: 'dropsSwap', lose, add };
+  if (add.length > 0) return keep.length > 0 ? { kind: 'dropsKeepAdd', keep, add } : { kind: 'dropsAdd', add };
+  return keep.length > 0 ? { kind: 'dropsKeepLose', keep, lose } : { kind: 'dropsLose', lose };
 }
 
 function sentenceFragments(current: FarmRateRow, best: FarmRateRow): FarmSentenceFragment[] {
@@ -100,10 +112,8 @@ function sentenceFragments(current: FarmRateRow, best: FarmRateRow): FarmSentenc
     fragments.push({ kind: best.clearSecs < current.clearSecs ? 'clearFaster' : 'clearSlower', deltaSecs });
   }
 
-  const bandDelta = lowestBand(best) - lowestBand(current);
-  if (bandDelta !== 0) {
-    fragments.push({ kind: bandDelta > 0 ? 'itemLevelUp' : 'itemLevelDown', delta: Math.abs(bandDelta) });
-  }
+  const drops = dropChange(current, best);
+  if (drops) fragments.push(drops);
 
   if (best.oneShot && !current.oneShot) fragments.push({ kind: 'oneShotGained' });
   if (!best.oneShot && current.oneShot) fragments.push({ kind: 'oneShotLost' });

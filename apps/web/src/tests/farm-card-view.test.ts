@@ -181,16 +181,40 @@ describe('the front page’s current-versus-best phase view', () => {
         fragments: [{ kind: 'ahead', count: 1 }],
       },
       {
-        name: 'item level up, from the lowest band',
-        current: { phase: 10, itemLevels: [10, 12] },
-        best: { phase: 11, itemLevels: [14, 11] },
-        fragments: [{ kind: 'ahead', count: 1 }, { kind: 'itemLevelUp', delta: 1 }],
+        name: 'drops: keeps one level and adds one',
+        current: { phase: 10, itemLevels: [50] },
+        best: { phase: 11, itemLevels: [40, 50] },
+        fragments: [{ kind: 'ahead', count: 1 }, { kind: 'dropsKeepAdd', keep: [50], add: [40] }],
       },
       {
-        name: 'item level down, from the lowest band',
-        current: { phase: 10, itemLevels: [14, 11] },
-        best: { phase: 11, itemLevels: [10, 12] },
-        fragments: [{ kind: 'ahead', count: 1 }, { kind: 'itemLevelDown', delta: 1 }],
+        name: 'drops: adds levels with nothing in common',
+        current: { phase: 10, itemLevels: [] },
+        best: { phase: 11, itemLevels: [50, 60] },
+        fragments: [{ kind: 'ahead', count: 1 }, { kind: 'dropsAdd', add: [50, 60] }],
+      },
+      {
+        name: 'drops: keeps one level and loses one',
+        current: { phase: 10, itemLevels: [40, 50] },
+        best: { phase: 11, itemLevels: [50] },
+        fragments: [{ kind: 'ahead', count: 1 }, { kind: 'dropsKeepLose', keep: [50], lose: [40] }],
+      },
+      {
+        name: 'drops: loses every level',
+        current: { phase: 10, itemLevels: [40] },
+        best: { phase: 11, itemLevels: [] },
+        fragments: [{ kind: 'ahead', count: 1 }, { kind: 'dropsLose', lose: [40] }],
+      },
+      {
+        name: 'drops: swaps one level for another',
+        current: { phase: 10, itemLevels: [40, 50] },
+        best: { phase: 11, itemLevels: [50, 60] },
+        fragments: [{ kind: 'ahead', count: 1 }, { kind: 'dropsSwap', lose: [40], add: [60] }],
+      },
+      {
+        name: 'the same drops say nothing',
+        current: { phase: 10, itemLevels: [40, 50] },
+        best: { phase: 11, itemLevels: [50, 40] },
+        fragments: [{ kind: 'ahead', count: 1 }],
       },
       {
         name: 'one-shot gained',
@@ -212,12 +236,12 @@ describe('the front page’s current-versus-best phase view', () => {
       },
       {
         name: 'all four, in the fixed order',
-        current: { phase: 10, clearSecs: 90, itemLevels: [10], oneShot: false },
-        best: { phase: 13, clearSecs: 60, itemLevels: [11], oneShot: true },
+        current: { phase: 10, clearSecs: 90, itemLevels: [50], oneShot: false },
+        best: { phase: 13, clearSecs: 60, itemLevels: [40, 50], oneShot: true },
         fragments: [
           { kind: 'ahead', count: 3 },
           { kind: 'clearFaster', deltaSecs: 30 },
-          { kind: 'itemLevelUp', delta: 1 },
+          { kind: 'dropsKeepAdd', keep: [50], add: [40] },
           { kind: 'oneShotGained' },
         ],
       },
@@ -229,16 +253,17 @@ describe('the front page’s current-versus-best phase view', () => {
     }
 
     const all = cases[cases.length - 1].fragments;
-    expect(buildFarmSentence(all, STRINGS.en, 'en')).toBe(
-      '3 phases ahead, 30s faster to clear, +1 item level, you one-shot every prop there.',
+    expect(buildFarmSentence(all, STRINGS.en)).toBe(
+      '3 phases ahead, 30s faster to clear, keeps level-50 drops while adding level 40, and you one-shot every prop there.',
     );
-    expect(buildFarmSentence(all, STRINGS.pt, 'pt')).toBe(
-      '3 fases à frente, 30s mais rápida de limpar, +1 de nível de item, você mata todo obstáculo de um golpe lá.',
+    expect(buildFarmSentence(all, STRINGS.pt)).toBe(
+      '3 fases à frente, 30s mais rápida de limpar, mantém os drops de nível 50 e adiciona nível 40 e você mata todo obstáculo de um golpe lá.',
     );
-    expect(buildFarmSentence([{ kind: 'behind', count: 2 }, { kind: 'oneShotLost' }], STRINGS.en, 'en')).toBe(
-      '2 phases behind, you stop one-shotting props.',
+    expect(buildFarmSentence([{ kind: 'behind', count: 2 }, { kind: 'oneShotLost' }], STRINGS.en)).toBe(
+      '2 phases behind, and you stop one-shotting props.',
     );
-    expect(buildFarmSentence([], STRINGS.en, 'en')).toBeNull();
+    expect(buildFarmSentence([{ kind: 'behind', count: 2 }], STRINGS.en)).toBe('2 phases behind.');
+    expect(buildFarmSentence([], STRINGS.en)).toBeNull();
   });
 
   it('the view takes no sort or filter argument', () => {
