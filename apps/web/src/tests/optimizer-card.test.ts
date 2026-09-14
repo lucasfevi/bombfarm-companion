@@ -71,8 +71,8 @@ const escaped = (text: string) => text.replace(/'/g, '&#x27;');
 const bodyClass = (html: string) => /class="([^"]*)"/.exec(body(html))?.[1] ?? '';
 const contextText = (html: string) =>
   /<span[^>]*>([^<]*)<\/span>/.exec(html.slice(0, openingOf(html, 'home-card-body')))?.[1] ?? null;
-const actionKinds = (html: string) =>
-  [...body(html).matchAll(/data-testid="home-optimizer-action" data-kind="([a-z]+)"/g)].map((m) => m[1]);
+const seePlanLink = (html: string) =>
+  /<a [^>]*data-testid="home-optimizer-see-plan" href="\/optimizer">([^<]*)<\/a>/.exec(body(html))?.[1] ?? null;
 const lineText = (html: string, testId: string) =>
   textOf(new RegExp(`<p[^>]*data-testid="${testId}"[^>]*>(.*?)</p>`).exec(html)?.[1] ?? '');
 
@@ -220,23 +220,26 @@ describe('the front page optimizer card', () => {
     }
   });
 
-  it('renders the skeleton only while the first solve runs and never over an existing plan', () => {
+  it('says it is building the plan while the first solve runs, and never over an existing plan', () => {
     arrangeUsable();
     usePlannerStore.setState({ plan: null, planInputSignature: null, runStatus: 'running', runId: '1' });
 
     for (const lang of LANGS) {
       usePlannerStore.setState({ lang });
+      const t = STRINGS[lang];
       const html = render();
 
-      expect(html).toContain('data-home-card-state="skeleton"');
-      expect(body(html)).toContain('data-testid="home-optimizer-skeleton"');
-      expect(footer(html)).toBe(sub(STRINGS[lang].homeCardOptimizerSearching, { elapsed: 0 }));
+      expect(html).toContain('data-home-card-state="optimizing"');
+      expect(lineText(html, 'home-optimizer-optimizing')).toBe(escaped(t.teamPlanOptimizingTitle));
+      expect(textOf(body(html))).toBe(escaped(t.teamPlanOptimizingTitle + t.teamPlanOptimizingBody));
+      expect(footer(html)).toBe(sub(t.homeCardOptimizerSearching, { elapsed: 0 }));
+      expect(seePlanLink(html)).toBeNull();
     }
 
     usePlannerStore.setState({ plan: plan({}), planInputSignature: 'old', runStatus: 'running', runId: '2' });
     const overPlan = render();
-    expect(overPlan).not.toContain('data-home-card-state="skeleton"');
-    expect(overPlan).not.toContain('home-optimizer-skeleton');
+    expect(overPlan).not.toContain('data-home-card-state="optimizing"');
+    expect(overPlan).not.toContain('home-optimizer-optimizing');
   });
 
   it('keeps a stale plan dimmed under Recalculating while the new solve runs', () => {
@@ -269,16 +272,18 @@ describe('the front page optimizer card', () => {
       const html = render();
 
       expect(html).toContain('data-home-card-state="recalculating"');
-      expect(textOf(body(html))).toBe(escaped(STRINGS[lang].farmRespecNotWorthTitle));
+      expect(textOf(body(html))).toBe(
+        escaped(STRINGS[lang].farmRespecNotWorthTitle + STRINGS[lang].homeCardOptimizerSeeFullPlan),
+      );
       expect(html).not.toContain('home-optimizer-headline');
-      expect(html).not.toContain('home-optimizer-action');
       expect(bodyClass(html).split(' ')).toContain('opacity-50');
-      expect(footer(html)).toBe(STRINGS[lang].homeCardOptimizerSeeFullPlan);
+      expect(seePlanLink(html)).toBe(STRINGS[lang].homeCardOptimizerSeeFullPlan);
+      expect(footer(html)).toBe('');
       expect(contextText(html)).toBe(STRINGS[lang].homeCardOptimizerRecalculating);
     }
   });
 
-  it("a plan under the worth-making floor prints the advisor's sentence and no action", () => {
+  it("a plan under the worth-making floor prints the advisor's sentence and the way to the full plan", () => {
     arrangeUsable();
     applyMatchingPlan(plan({ currentDps: 100, planDps: 104, moveList: [equip('1', null)] }));
 
@@ -287,11 +292,12 @@ describe('the front page optimizer card', () => {
       const html = render();
 
       expect(html).toContain('data-home-card-state="belowFloor"');
-      expect(textOf(body(html))).toBe(escaped(STRINGS[lang].farmRespecNotWorthTitle));
-      expect(html).not.toContain('home-optimizer-action');
+      expect(textOf(body(html))).toBe(
+        escaped(STRINGS[lang].farmRespecNotWorthTitle + STRINGS[lang].homeCardOptimizerSeeFullPlan),
+      );
       expect(html).not.toContain('home-optimizer-headline');
-      expect(footer(html)).toBe(STRINGS[lang].homeCardOptimizerSeeFullPlan);
-      expect(html.slice(openingOf(html, 'home-card-footer'))).toMatch(/<a [^>]*href="\/optimizer"/);
+      expect(seePlanLink(html)).toBe(STRINGS[lang].homeCardOptimizerSeeFullPlan);
+      expect(footer(html)).toBe('');
     }
   });
 
@@ -327,18 +333,14 @@ describe('the front page optimizer card', () => {
     }
   });
 
-  it('the action list is equips in list order, then forges, then resets, three at most, with a contribution only on a reset', () => {
+  it('a plan is its gain, the phase it was scored at, and one button to the full plan', () => {
     arrangeUsable();
     const solved = plan({
       currentDps: 100,
       planDps: 120,
       scoredPhase: 60,
       scoredPhaseSource: 'searched',
-      moveList: [
-        equip('1', null),
-        { phase: 'unequip', itemId: '2', defId: 'ember_calca', slot: 'calca', fromHeroId: 'src-b', toHeroId: null },
-        equip('2', 'src-b'),
-      ],
+      moveList: [equip('1', null), equip('2', 'src-b')],
       forgeList: [{ itemId: '3', defId: 'ember_calca', from: 8, to: 10 }],
       pointResets: [reset(1234), reset(50)],
     });
@@ -356,24 +358,18 @@ describe('the front page optimizer card', () => {
       expect(lineText(html, 'home-optimizer-scored-at')).toBe(
         `${sub(t.homeCardOptimizerScoredAt, { phase: scoredPhaseValue(lang, solved) })} · ${scoredPhaseHint(t, solved)}`,
       );
-      expect(actionKinds(html)).toEqual(['equip', 'move', 'forge']);
-      expect(html.match(/home-optimizer-contribution/g) ?? []).toHaveLength(0);
-      expect(footer(html)).toBe(
-        [
-          sub(t.homeCardOptimizerCountMoves, { count: 3 }),
-          sub(t.homeCardOptimizerCountResets, { count: 2 }),
-          t.homeCardOptimizerSeeFullPlan,
-        ].join(' · '),
+      expect(textOf(body(html))).toBe(
+        lineText(html, 'home-optimizer-headline') +
+          lineText(html, 'home-optimizer-scored-at') +
+          escaped(t.homeCardOptimizerSeeFullPlan),
       );
+      expect(seePlanLink(html)).toBe(t.homeCardOptimizerSeeFullPlan);
+      expect(html.match(/<a /g)).toHaveLength(2);
+      expect(footer(html)).toBe('');
     }
-
-    applyMatchingPlan(plan({ ...solved, moveList: [], forgeList: [] }));
-    const resetsOnly = render();
-    expect(actionKinds(resetsOnly)).toEqual(['reset', 'reset']);
-    expect(resetsOnly.match(/home-optimizer-contribution/g)).toHaveLength(2);
   });
 
-  it('a plan with one move and no resets prints one row and a footer with the moves count only', () => {
+  it('a damage plan names DPS in its headline', () => {
     arrangeUsable();
     usePlannerStore.setState({ objective: 'dps' });
     applyMatchingPlan(plan({ currentDps: 100, planDps: 120, moveList: [equip('1', null)] }));
@@ -388,9 +384,6 @@ describe('the front page optimizer card', () => {
         sub(t.homeCardOptimizerHeadlineDps, { pct: lang === 'en' ? '+20.0' : '+20,0' }),
       );
       expect(html).not.toContain(t.homeCardOptimizerHeadlineFarm.replace('{pct}', ''));
-      expect(actionKinds(html)).toEqual(['equip']);
-      expect(footer(html)).toBe(`${sub(t.homeCardOptimizerCountMoves, { count: 1 })} · ${t.homeCardOptimizerSeeFullPlan}`);
-      expect(footer(html)).not.toContain(t.homeCardOptimizerCountResets.replace('{count} ', ''));
     }
   });
 });

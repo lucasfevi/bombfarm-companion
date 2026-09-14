@@ -30,8 +30,8 @@ describe('the optimizer card state', () => {
       [usable({ runStatus: 'blocked', plan: PLAN }), 'blocked'],
       [usable({ runStatus: 'error', plan: null }), 'error'],
       [usable({ runStatus: 'error', plan: PLAN }), 'error'],
-      [usable({ runStatus: 'idle', plan: null }), 'skeleton'],
-      [usable({ runStatus: 'running', plan: null }), 'skeleton'],
+      [usable({ runStatus: 'idle', plan: null }), 'optimizing'],
+      [usable({ runStatus: 'running', plan: null }), 'optimizing'],
       [usable({ runStatus: 'running', plan: PLAN, stale: true }), 'recalculating'],
       [usable({ runStatus: 'done', plan: PLAN, stale: true }), 'recalculating'],
       [usable({ runStatus: 'done', plan: PLAN, stale: false, belowFloor: true }), 'belowFloor'],
@@ -42,12 +42,12 @@ describe('the optimizer card state', () => {
     }
   });
 
-  it('never renders the skeleton over an existing plan', () => {
+  it('never says it is optimizing over an existing plan', () => {
     for (const runStatus of RUN_STATUSES) {
       for (const stale of [false, true]) {
         for (const belowFloor of [false, true]) {
           const input = usable({ runStatus, stale, belowFloor, plan: PLAN });
-          expect(optimizerCardState(input), JSON.stringify(input)).not.toBe('skeleton');
+          expect(optimizerCardState(input), JSON.stringify(input)).not.toBe('optimizing');
         }
       }
     }

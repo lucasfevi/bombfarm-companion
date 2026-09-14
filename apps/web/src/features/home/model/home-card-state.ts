@@ -3,7 +3,7 @@ import type { SiteSection } from '@/shared/lib/site-sections';
 export type HomeCardState =
   | 'needs'
   | 'ready'
-  | 'skeleton'
+  | 'optimizing'
   | 'recalculating'
   | 'plan'
   | 'belowFloor'

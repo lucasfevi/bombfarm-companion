@@ -7,11 +7,11 @@ const PLAN_KEY = 'bf-hp-team-plan-v1';
 const HEROES_KEY = 'bf-hp-heroes-v1';
 const HEADLINE = /^[+-]\d+([.,]\d)?% (gold \/ hour|DPS), whole roster$/;
 const STALE_NOTICE = /Inputs changed since this plan was computed/i;
-const FIRST_ACTIONS = 3;
 
 const card = (page: Page) => page.getByRole('article', { name: 'Optimizer', exact: true });
 const headline = (page: Page) => page.getByTestId('home-optimizer-headline');
-const skeleton = (page: Page) => page.getByTestId('home-optimizer-skeleton');
+const optimizing = (page: Page) => page.getByTestId('home-optimizer-optimizing');
+const seePlan = (page: Page) => page.getByTestId('home-optimizer-see-plan');
 const results = (page: Page) => page.getByRole('region', { name: /^Team plan results$/i });
 const staleNotice = (page: Page) => page.getByRole('status').filter({ hasText: STALE_NOTICE });
 const optimizeButton = (page: Page) => page.getByRole('button', { name: /^Build a team plan of /i });
@@ -36,24 +36,10 @@ function workerChunkLoads(page: Page): Promise<number> {
   );
 }
 
-type PersistedPlan = {
-  plan: {
-    moveList: { phase: string }[];
-    forgeList: unknown[];
-    pointResets: unknown[];
-  };
-};
-
-async function waitForPersistedPlan(page: Page): Promise<PersistedPlan> {
+async function waitForPersistedPlan(page: Page): Promise<void> {
   await expect
     .poll(() => page.evaluate((key) => localStorage.getItem(key), PLAN_KEY), { timeout: 5_000 })
     .not.toBeNull();
-  return page.evaluate((key) => JSON.parse(localStorage.getItem(key)!) as PersistedPlan, PLAN_KEY);
-}
-
-function actionRowsOf({ plan }: PersistedPlan): number {
-  const equips = plan.moveList.filter((action) => action.phase === 'equip').length;
-  return equips + plan.forgeList.length + plan.pointResets.length;
 }
 
 async function pickObjective(page: Page, optionName: RegExp) {
@@ -99,17 +85,19 @@ test.describe('Home optimizer card', () => {
     await page.goto('/');
   });
 
-  test('a first visit solves once and shows the headline and three actions', async ({ page }) => {
-    await cardState(page, 'skeleton');
+  test('a first visit says it is building the plan, solves once, then shows the gain and the way to the full plan', async ({
+    page,
+  }) => {
+    await cardState(page, 'optimizing');
+    await expect(optimizing(page)).toHaveText('Building plan…');
     await cardState(page, 'plan');
 
     await expect(headline(page)).toBeVisible();
     await expect(headline(page)).toHaveText(HEADLINE);
-    const persisted = await waitForPersistedPlan(page);
-    expect(actionRowsOf(persisted)).toBeGreaterThanOrEqual(1);
-    await expect(page.getByTestId('home-optimizer-action')).toHaveCount(
-      Math.min(FIRST_ACTIONS, actionRowsOf(persisted)),
-    );
+    await expect(page.getByTestId('home-optimizer-scored-at')).toContainText(/^scored at /);
+    await expect(seePlan(page)).toHaveText('See the full plan →');
+    await expect(seePlan(page)).toHaveAttribute('href', '/optimizer');
+    await waitForPersistedPlan(page);
     await page.waitForLoadState('networkidle');
     expect(await workerChunkLoads(page)).toBe(1);
   });
@@ -127,7 +115,7 @@ test.describe('Home optimizer card', () => {
     await expect(staleNotice(page)).toHaveCount(0);
   });
 
-  test('a reload shows the plan with no skeleton and starts no worker', async ({ page }) => {
+  test('a reload shows the plan at once and starts no worker', async ({ page }) => {
     await cardState(page, 'plan');
     const before = await textOf(headline(page));
     await waitForPersistedPlan(page);
@@ -135,7 +123,7 @@ test.describe('Home optimizer card', () => {
     await page.reload();
 
     await cardState(page, 'plan');
-    await expect(skeleton(page)).toHaveCount(0);
+    await expect(optimizing(page)).toHaveCount(0);
     await expect(headline(page)).toHaveText(before);
     await page.waitForLoadState('networkidle');
     expect(await workerChunkLoads(page)).toBe(0);
@@ -167,7 +155,7 @@ test.describe('Home optimizer card', () => {
     await pickObjective(page, /^DPS$/i);
     await openSection(page, 'Home');
 
-    await cardState(page, 'skeleton');
+    await cardState(page, 'optimizing');
     await cardState(page, 'plan');
     await expect(headline(page)).toHaveText(/^[+-]\d+([.,]\d)?% DPS, whole roster$/);
     await page.waitForLoadState('networkidle');
