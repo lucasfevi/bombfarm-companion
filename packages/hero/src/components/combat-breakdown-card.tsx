@@ -51,7 +51,8 @@ const TERM_KEY: Record<FormulaTermKey, HeroCopyKey> = {
   field: 'heroDetailBreakdownTermField',
   avgHit: 'heroDetailBreakdownTermAvgHit',
   bombs: 'heroDetailBreakdownTermBombs',
-  range: 'heroDetailBreakdownTermRange',
+  rangeMult: 'heroDetailBreakdownTermRangeMult',
+  aiEfficiency: 'heroDetailBreakdownTermAiEfficiency',
   activeDps: 'heroDetailBreakdownTermActiveDps',
 };
 
@@ -87,6 +88,8 @@ function noteText(copy: HeroCopy, note: CardNote, lang: Lang, formatNumber: (n: 
       return copy.heroDetailBreakdownNoteAvgHitEqualsHit;
     case 'batonHeld':
       return sub(copy.heroDetailBreakdownNoteBatonHeld, { pct: formatNumber(note.pct, 0) });
+    case 'activeDpsConstants':
+      return sub(copy.heroDetailBreakdownNoteActiveConstants, { cells: formatNumber(note.rangeCells, 1) });
     case 'fieldWithoutTeamDrain':
       return sub(copy.heroDetailBreakdownNoteFieldWithoutTeamDrain, { name: abilityName(note.auraId, lang), secs: formatNumber(note.seconds, 0) });
     case 'penetration':

@@ -110,7 +110,8 @@ export type FormulaTermKey =
   | 'field'
   | 'avgHit'
   | 'bombs'
-  | 'range'
+  | 'rangeMult'
+  | 'aiEfficiency'
   | 'activeDps';
 
 export interface FormulaTerm {

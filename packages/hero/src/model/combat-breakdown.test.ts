@@ -226,8 +226,8 @@ describe('the notes a card carries', () => {
     expect(note.seconds).toBeLessThan(withFolego.effective.energy / withFolego.context.drainMult);
   });
 
-  it('a sheet card and the DPS cards carry no note', () => {
-    for (const id of ['attack', 'energy', 'activeDps', 'sustainedDps'] as const) {
+  it('a sheet card and the Sustained DPS card carry no note', () => {
+    for (const id of ['attack', 'energy', 'sustainedDps'] as const) {
       expect(cardNoteFor(id, facts, minato, switchesOff), id).toBeNull();
     }
   });
@@ -259,5 +259,21 @@ describe('the Damage multiplier card says how Baton Pass is counted', () => {
     const on = { ...switchesOff, passagem_bastao: true };
     const note = cardNoteFor('dmg', factsForHero(fixture, minato, on), minato, on);
     expect(note).toEqual({ kind: 'batonHeld', pct: expect.closeTo(80, 6) as number });
+  });
+});
+
+describe('the Active DPS card names its two constants', () => {
+  it('carries the blast-spread and AI-efficiency note at the phase’s range', () => {
+    const facts = factsForHero(fixture, minato);
+    expect(cardNoteFor('activeDps', facts, minato, switchesOff)).toEqual({
+      kind: 'activeDpsConstants',
+      rangeCells: facts.context.blastRange,
+    });
+    const active = buildStatBreakdown('activeDps', facts);
+    if (active.kind !== 'formula') throw new Error('expected formula');
+    const terms = active.parts.filter((part) => typeof part !== 'string');
+    expect(terms.map((term) => term.key)).toEqual(['avgHit', 'bombs', 'rangeMult', 'aiEfficiency']);
+    expect(terms[2]?.value).toBeCloseTo(1 + 0.5 * facts.context.blastRange, 9);
+    expect(terms[3]?.value).toBe(0.9);
   });
 });

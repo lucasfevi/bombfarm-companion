@@ -148,7 +148,7 @@ export const heroEn = {
   heroDetailBreakdownFormulaAvgHit: "hit × crit factor",
   heroDetailBreakdownFormulaBombs: "1 ÷ E[max(fuse, hop ÷ speed)]",
   heroDetailBreakdownFormulaUptime: "field ÷ (field + rest)",
-  heroDetailBreakdownFormulaActive: "avg × bombs/s × range × 0.9",
+  heroDetailBreakdownFormulaActive: "avg × bombs/s × spread × 0.9",
   heroDetailBreakdownFormulaSustained: "active × uptime",
   heroDetailBreakdownTermPhaseMit: "phase mitigation",
   heroDetailBreakdownTermPenetration: "penetration",
@@ -175,7 +175,8 @@ export const heroEn = {
   heroDetailBreakdownTermField: "field time",
   heroDetailBreakdownTermAvgHit: "average hit",
   heroDetailBreakdownTermBombs: "bombs/s",
-  heroDetailBreakdownTermRange: "blast range",
+  heroDetailBreakdownTermRangeMult: "blast spread",
+  heroDetailBreakdownTermAiEfficiency: "AI efficiency",
   heroDetailBreakdownTermActiveDps: "active DPS",
   heroDetailBreakdownReads: "Reads",
   heroDetailBreakdownNoteFuseAtCeiling:
@@ -184,6 +185,8 @@ export const heroEn = {
     "The fuse cannot go below {floor}s; cooldown reduction stops paying at {cap}%.",
   heroDetailBreakdownNoteAvgHitEqualsHit: "Equal to Hit: crit chance is zero, so no hit crits.",
   heroDetailBreakdownNoteFieldWithoutTeamDrain: "Without the team's {name} this would be {secs}s.",
+  heroDetailBreakdownNoteActiveConstants:
+    "Blast spread is 1 + 0.5 per cell of range ({cells} cells here): each cell past the epicentre reaches half a hit's worth of props on average. AI efficiency is the game's flat ×0.9 for a fielded hero's re-targeting and misplaced bombs; every Active DPS in this app carries it.",
   heroDetailBreakdownNoteBatonHeld:
     "Baton Pass is counted as if its pulse never lapsed: the whole stint at +{pct}%. The Farm page and the Optimizer count only the 120 s each entry lights.",
   heroDetailBreakdownPenCovers: "nothing lost to mitigation",

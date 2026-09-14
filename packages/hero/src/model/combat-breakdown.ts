@@ -240,6 +240,7 @@ export type CardNote =
   | { readonly kind: 'avgHitEqualsHit' }
   | { readonly kind: 'fieldWithoutTeamDrain'; readonly auraId: string; readonly seconds: number }
   | { readonly kind: 'batonHeld'; readonly pct: number }
+  | { readonly kind: 'activeDpsConstants'; readonly rangeCells: number }
   | { readonly kind: 'penetration'; readonly reading: PenetrationCardReading };
 
 /** What the model has to say about a card beyond its formula, when it has something. */
@@ -268,6 +269,8 @@ export function cardNoteFor(
       const pulse = facts.entryPulseMult ?? 1;
       return pulse > 1 ? { kind: 'batonHeld', pct: (pulse - 1) * 100 } : null;
     }
+    case 'activeDps':
+      return { kind: 'activeDpsConstants', rangeCells: facts.context.blastRange };
     case 'mitF':
       return { kind: 'penetration', reading: penetrationCardReading(facts) };
     default:

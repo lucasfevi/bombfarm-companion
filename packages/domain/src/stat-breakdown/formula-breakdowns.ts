@@ -2,6 +2,7 @@ import {
   bombsPerSecond,
   critFactor,
   cycleSecondsForHero,
+  EFF_IA,
   fieldSeconds,
   FUSE_FLOOR,
   fuseSeconds,
@@ -131,9 +132,9 @@ export function formulaActive(facts: PipelineFacts): FormulaBreakdown {
   const effective = facts.effective;
   const average = hitDamage(facts) * critFactor(effective.critChance, effective.critDmg);
   const bombs = bombsPerSecond(effective, facts.context);
-  const range = facts.context.blastRange;
+  const rangeMult = 1 + 0.5 * facts.context.blastRange;
   const value = facts.active;
-  return formula('bdFormulaActive', value)`${term('avgHit', average, 0)} × ${term('bombs', bombs, 2)} × (1 + 0.5 × ${term('range', range, 1)}) × 0.9 = ${formatBreakdownNumber(value, 0)}`;
+  return formula('bdFormulaActive', value)`${term('avgHit', average, 0)} × ${term('bombs', bombs, 2)} × ${term('rangeMult', rangeMult, 2)} × ${term('aiEfficiency', EFF_IA, 1)} = ${formatBreakdownNumber(value, 0)}`;
 }
 
 export function formulaSustained(facts: PipelineFacts): FormulaBreakdown {

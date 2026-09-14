@@ -652,7 +652,7 @@ describe('formula parts', () => {
     expect(facts.dmgMult).toBeGreaterThan(1);
     expect(avg.value).toBeCloseTo(hit.value * factor.value, 6);
     const activeTerms = active.parts.filter((part) => typeof part !== 'string');
-    expect(activeTerms.map((term) => term.key)).toEqual(['avgHit', 'bombs', 'range']);
+    expect(activeTerms.map((term) => term.key)).toEqual(['avgHit', 'bombs', 'rangeMult', 'aiEfficiency']);
     expect(activeTerms[0]?.value).toBeCloseTo(avg.value, 6);
   });
 });
