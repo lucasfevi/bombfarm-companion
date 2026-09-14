@@ -39,8 +39,8 @@ import { acceptPlan, initialOptimizerPlanState, type OptimizerPlanArrival, type 
 export type { OptimizerSnapshotState, OptimizerPlanState };
 
 export interface OptimizerSnapshotActions {
-  /** The tab opened. A no-op when the snapshot in hand is already this account's, at this Farm
-   *  phase. */
+  /** The tab opened. A no-op when the snapshot in hand would be rebuilt unchanged — see
+   *  {@link openOwesSnapshot}. */
   readonly open: (view: AccountView, sourceKey: string, farmChosenPhase: number | null) => void;
   /** The player asked for the live account. Adopts it. */
   readonly refresh: (view: AccountView, sourceKey: string, farmChosenPhase: number | null) => void;
@@ -126,6 +126,7 @@ export function createOptimizerStore(): {
     planStore,
     runner,
     open: (view, sourceKey, farmChosenPhase) => {
+      if (!openOwesSnapshot(store.getState(), view, farmChosenPhase)) return;
       adopt('begin', view, sourceKey, farmChosenPhase);
     },
     refresh: (view, sourceKey, farmChosenPhase) => {
@@ -172,6 +173,23 @@ export function optimizerSnapshotStale(state: OptimizerSnapshotState, liveView: 
   const live = buildOptimizerInputs(liveView, settled.inputs.farmChosenPhase);
   const liveDepKey = live === null ? LIVE_ACCOUNT_INCOMPLETE : optimizerDepKey(live.inputs);
   return optimizerDepKey(settled.inputs) !== liveDepKey;
+}
+
+/**
+ * Whether opening the tab should re-take the snapshot. The account key behind `begin` moves with
+ * every wallet tick, so keyed on it alone a re-open almost always recomputed — and repainted every
+ * row with the same numbers. A settled snapshot at the wanted Farm phase is re-taken only when
+ * the live account would actually give different inputs ({@link optimizerSnapshotStale}); any
+ * other state is left to the reducer's own rule.
+ */
+export function openOwesSnapshot(
+  state: OptimizerSnapshotState,
+  liveView: AccountView,
+  farmChosenPhase: number | null,
+): boolean {
+  if (state.status !== 'ready') return true;
+  if (state.farmChosenPhase !== farmChosenPhase) return true;
+  return optimizerSnapshotStale(state, liveView);
 }
 
 export interface OptimizerSnapshotHook {

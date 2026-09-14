@@ -7,7 +7,8 @@
  *
  * Nothing here recomputes on a live tick. The inputs are built from the account as it stood when
  * the tab opened, and the only things that move it are an explicit Refresh or the tab re-opening
- * against a changed account or Farm phase — see `lib/optimizer/optimizer-snapshot-store.ts`. A
+ * against an account that would give different inputs, or a different Farm phase — see
+ * `lib/optimizer/use-optimizer-snapshot.ts` and `lib/optimizer/optimizer-snapshot-store.ts`. A
  * snapshot the live account has moved past is LABELLED and left alone; an unlabelled stale number
  * is the failure this screen exists to avoid.
  *

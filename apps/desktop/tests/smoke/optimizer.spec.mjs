@@ -211,12 +211,12 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
 
   // The shell unmounts a tab the player leaves. The rows they had open and how far down they
   // were are both state of the visit, and a Forge round trip is the visit's normal shape.
-  test('the open rows and the scroll offset survive a trip to the Forge tab and back', async () => {
-    // With the OS animations on: the panels animate open on mount, which is the case the offset
-    // restore has to hold through, and a machine that reduces motion would pass this vacuously.
-    // Motion reads the preference once, as the renderer loads, so the page is reloaded under the
-    // emulation and the plan solved again. A hidden window (`BFC_HIDE_WINDOWS=1`) still passes
-    // vacuously: no animation frame runs there, so the panel is at its full height at once.
+  test('the open rows and the scroll offset survive a trip to the Forge tab and back, drawn open at once', async () => {
+    // With the OS animations on: a row open at mount must be drawn open rather than replaying its
+    // reveal, and a machine that reduces motion would pass that vacuously. Motion reads the
+    // preference once, as the renderer loads, so the page is reloaded under the emulation and the
+    // plan solved again. A hidden window (`BFC_HIDE_WINDOWS=1`) still passes vacuously: no
+    // animation frame runs there, so nothing could animate.
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.reload();
     await page.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
@@ -249,13 +249,28 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
     await expect(page.getByTestId('optimizer-view')).toHaveCount(0);
 
     await openOptimizer(page);
+    // The open row is at its full height from the first commit, so the page does not grow after
+    // the return and the offset is back at once. Before the panels stopped animating on mount the
+    // page grew for ~0.5s here, over some forty frames. Sampled on a timer rather than animation
+    // frames so a hidden window, which runs none, still finishes.
+    const afterReturn = await page.evaluate(
+      () =>
+        new Promise((resolve) => {
+          const main = document.querySelector('main');
+          const heights = new Set();
+          const firstScrollTop = main.scrollTop;
+          const intervalId = setInterval(() => {
+            heights.add(main.scrollHeight);
+          }, 16);
+          setTimeout(() => {
+            clearInterval(intervalId);
+            resolve({ distinctHeights: heights.size, firstScrollTop });
+          }, 600);
+        }),
+    );
+    expect(afterReturn).toEqual({ distinctHeights: 1, firstScrollTop: scrolledTo });
     await expect(heroRows().first()).toHaveAttribute('aria-expanded', 'false');
     await expect(heroRows().nth(1)).toHaveAttribute('aria-expanded', 'true');
-    // The open panel animates in again on mount, so the offset is put back as the page grows and
-    // is only expected once it has settled — a single set on the first frame would be clamped.
-    await expect.poll(() => page.evaluate(() => document.querySelector('main').scrollTop), { timeout: 5_000 }).toBe(
-      scrolledTo,
-    );
 
     // Back to the default before the tests below read the first row.
     await heroRows().nth(1).click();
