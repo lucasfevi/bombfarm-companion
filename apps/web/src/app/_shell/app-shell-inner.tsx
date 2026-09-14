@@ -16,8 +16,9 @@ import type { AccountImportData } from '@bombfarm/domain/import-save';
 import type { RequiredAccountField } from '@bombfarm/domain/account-required-fields';
 import { AccountMissingFieldsBanner } from '@/features/account';
 import { sub } from '@/shared/i18n';
+import { Toast } from '@bombfarm/ui';
 import { workspaceShellClass } from '@bombfarm/ui/panel-field.recipe';
-import { usePlannerStore, selectStrings, commitActiveHero } from '@/shared/stores';
+import { usePlannerStore, selectStrings, commitActiveHero, selectToast } from '@/shared/stores';
 
 /**
  * Who the editor should be pointed at after an import, never `null` for a non-empty roster.
@@ -58,6 +59,7 @@ export function AppShellInner({
   const setHeroes = usePlannerStore((state) => state.setHeroes);
   const applyAccountImport = usePlannerStore((state) => state.applyAccountImport);
   const flashToast = usePlannerStore((state) => state.flashToast);
+  const toast = usePlannerStore(selectToast);
 
   /** Snapshot taken when the dialog opens — avoids reading a mutating roster mid-dialog. */
   const [importExisting, setImportExisting] = useState<HeroRecord[]>([]);
@@ -144,6 +146,13 @@ export function AppShellInner({
       </div>
 
       <Footer t={t} />
+
+      {/*
+       * Hosted here and not in the planner slot: that slot is `hidden` + `inert` on every section
+       * page, and a toast flashed from the header chip or the import dialog rendered into it
+       * unseen — the copy succeeded, and the player was told nothing.
+       */}
+      <Toast message={toast} />
     </div>
   );
 }

@@ -1,23 +1,23 @@
 {
   "captureMode": "prod-profile",
   "fixture": "importedRoster",
-  "_note": "REFRESHED (11) for the planner's Combat tab (2026-09-11), per docs/react-performance.md rule 10's deliberate-change path - never by widening the guard, which compares exactly on purpose. All four scenarios moved DOWN: P-02 8962->7942 (-1020), P-03 15736->14002 (-1734), P-04 7650->7335 (-315), P-05 2542->2408 (-134). Measured against a CONTROL: develop's tip (843027d9) was captured on the same host with the same method and reproduced the outgoing baseline exactly on all four scenarios (8962/15736/7650/2542), so the deltas are this change's own. Two causes, both structural. The Effective stats panel left the Points tab for the new Combat tab, so the Points-tab scenarios no longer redraw its accordion rows on every commit. And the Combat tab's content - the phase picker over every phase, the hero panel and the breakdown - is mounted only while Combat is the active tab; the tab primitive keeps inactive panels mounted, and the first CI run of this change measured the cost of leaving it mounted: every scenario moved UP instead (P-02 +832, P-03 +1429, P-04 +560, P-05 +241), because the picker and the breakdown re-rendered on every edit made on the other tabs. Mounting on demand removed that and the panel's own former cost with it. Captured on the host with PERF_FORCE=1 after perf:build:profile, deterministic across 7 repetitions.",
+  "_note": "REFRESHED (12) for hosting the shell toast in the app shell instead of the planner slot (2026-09-14), per docs/react-performance.md rule 10's deliberate-change path - never by widening the guard, which compares exactly on purpose. All four scenarios moved DOWN: P-02 7942->7912 (-30), P-03 14002->13939 (-63), P-04 7335->7307 (-28), P-05 2408->2396 (-12). Measured against a CONTROL: develop's tip (80890ea2), the branch's base, reproduced the outgoing baseline exactly on the CI runner (7942/14002/7335/2408), and the local capture of this change reproduced the CI capture of it exactly, so the deltas are this change's own. One cause: HeroPlanner used to subscribe to the store's toast and render it, so every autosave flash during a scenario re-rendered the planner composer and its children; the shell now subscribes instead, and the toast's two state changes per flash reach only the shell. Captured on the host with PERF_FORCE=1 after perf:build:profile, deterministic across 7 repetitions.",
   "scenarios": [
     {
       "id": "P-02",
-      "medianComponentRenders": 7942
+      "medianComponentRenders": 7912
     },
     {
       "id": "P-03",
-      "medianComponentRenders": 14002
+      "medianComponentRenders": 13939
     },
     {
       "id": "P-04",
-      "medianComponentRenders": 7335
+      "medianComponentRenders": 7307
     },
     {
       "id": "P-05",
-      "medianComponentRenders": 2408
+      "medianComponentRenders": 2396
     }
   ]
 }
