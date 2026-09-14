@@ -3,10 +3,14 @@ import { emptyLoadout } from '@bombfarm/domain/gear';
 import type { InventoryItem } from '@bombfarm/domain/inventory';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
-import type { TeamPlanWorkerLike, TeamPlanWorkerResponse } from '@bombfarm/team-plan/runner';
+import type {
+  TeamPlanRunnerHandle,
+  TeamPlanWorkerLike,
+  TeamPlanWorkerResponse,
+} from '@bombfarm/team-plan/runner';
 import { createShellTeamPlanSolver } from '@/app/_shell/create-shell-team-plan-solver';
 import { normalizeHero } from '@/shared/lib/storage';
-import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
+import { resetPlannerStoreForTests, selectTeamPlanIsStale, usePlannerStore } from '@/shared/stores';
 import { attachTeamPlanRunnerSync } from '@/shared/stores/team-plan-runner-sync';
 
 function samplePlan(planDps: number): TeamPlan {
@@ -39,7 +43,12 @@ function asWorkerMessage(data: TeamPlanWorkerResponse): MessageEvent<TeamPlanWor
   return { data } as unknown as MessageEvent<TeamPlanWorkerResponse>;
 }
 
-type PendingReply = { runId: string; answer: (plan: TeamPlan) => void };
+type PendingReply = {
+  runId: string;
+  answer: (plan: TeamPlan) => void;
+  answerBlocked: (heroNames: string[]) => void;
+  answerError: (message: string) => void;
+};
 
 function heldWorkerFactory(pending: PendingReply[]) {
   return (): TeamPlanWorkerLike => {
@@ -48,17 +57,13 @@ function heldWorkerFactory(pending: PendingReply[]) {
       onerror: null,
       terminate() {},
       postMessage(message) {
+        const reply = (data: TeamPlanWorkerResponse) => worker.onmessage?.(asWorkerMessage(data));
+        const runId = message.runId;
         pending.push({
-          runId: message.runId,
-          answer: (plan) => {
-            worker.onmessage?.(
-              asWorkerMessage({
-                kind: 'done',
-                runId: message.runId,
-                result: { blocked: false, plan },
-              }),
-            );
-          },
+          runId,
+          answer: (plan) => reply({ kind: 'done', runId, result: { blocked: false, plan } }),
+          answerBlocked: (heroNames) => reply({ kind: 'blocked', runId, heroNames }),
+          answerError: (message) => reply({ kind: 'error', runId, message }),
         });
       },
     };
@@ -199,5 +204,102 @@ describe('the shell-level runner-to-store sync', () => {
     expect(state().plan).toBe(landedPlan);
     expect(state().runId).toBe(runId);
     expect(state().runStatus).toBe('done');
+  });
+});
+
+function dispatchAsTheToolbarWould(runner: TeamPlanRunnerHandle) {
+  const id = runner.runId;
+  if (!id) return;
+  state().startRun(id);
+  if (runner.status === 'running') return;
+  if (runner.status === 'done' && runner.plan) {
+    state().applyPlan(id, runner.plan);
+    return;
+  }
+  if (runner.status === 'blocked' || runner.status === 'error') {
+    state().resolveRun(id, runner.status);
+  }
+}
+
+describe("the optimizer page's view of the shared runner", () => {
+  let pending: PendingReply[];
+  let detach: () => void;
+  let solver: ReturnType<typeof createShellTeamPlanSolver>;
+
+  beforeEach(() => {
+    resetPlannerStoreForTests();
+    bootUsableStore();
+    pending = [];
+    solver = createShellTeamPlanSolver({ createWorker: heldWorkerFactory(pending) });
+    detach = attachTeamPlanRunnerSync(usePlannerStore, solver);
+  });
+
+  afterEach(() => {
+    detach();
+    resetPlannerStoreForTests();
+  });
+
+  it("the page's runner reports a run's id only while it is running", () => {
+    solver.solve();
+    const doneId = solver.getSnapshot().runId;
+    expect(solver.runner.status).toBe('running');
+    expect(solver.runner.runId).toBe(doneId);
+    pending[0].answer(samplePlan(120));
+    expect(solver.runner.status).toBe('done');
+    expect(solver.runner.plan?.planDps).toBe(120);
+    expect(solver.runner.runId).toBeNull();
+    expect(solver.getSnapshot().runId).toBe(doneId);
+
+    solver.solve();
+    const blockedId = solver.getSnapshot().runId;
+    expect(solver.runner.runId).toBe(blockedId);
+    pending[1].answerBlocked(['Hero a']);
+    expect(solver.runner.status).toBe('blocked');
+    expect(solver.runner.blockedHeroNames).toEqual(['Hero a']);
+    expect(solver.runner.runId).toBeNull();
+    expect(solver.getSnapshot().runId).toBe(blockedId);
+
+    solver.solve();
+    const errorId = solver.getSnapshot().runId;
+    expect(solver.runner.runId).toBe(errorId);
+    pending[2].answerError('worker fell over');
+    expect(solver.runner.status).toBe('error');
+    expect(solver.runner.errorMessage).toBe('worker fell over');
+    expect(solver.runner.runId).toBeNull();
+    expect(solver.getSnapshot().runId).toBe(errorId);
+
+    solver.runner.cancel();
+    expect(solver.runner.status).toBe('idle');
+    expect(solver.runner.runId).toBeNull();
+  });
+
+  it('a plan made stale after the shell solved it stays stale when the optimizer page dispatches for that run', () => {
+    solver.solve();
+    pending[0].answer(samplePlan(120));
+    const solvedSignature = state().planInputSignature;
+    expect(solvedSignature).not.toBeNull();
+    expect(selectTeamPlanIsStale(state())).toBe(false);
+
+    state().setForgeFloor(state().forgeFloor + 1);
+    expect(state().plan).not.toBeNull();
+    expect(selectTeamPlanIsStale(state())).toBe(true);
+
+    dispatchAsTheToolbarWould(solver.runner);
+
+    expect(selectTeamPlanIsStale(state())).toBe(true);
+    expect(state().planInputSignature).toBe(solvedSignature);
+  });
+
+  it('a plan cleared on the optimizer page does not come back when the page mounts again', () => {
+    solver.solve();
+    pending[0].answer(samplePlan(120));
+    expect(state().plan).not.toBeNull();
+
+    state().clearPlan();
+    dispatchAsTheToolbarWould(solver.runner);
+
+    expect(state().plan).toBeNull();
+    expect(state().runStatus).toBe('idle');
+    expect(state().runId).toBeNull();
   });
 });
