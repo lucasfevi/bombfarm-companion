@@ -1,23 +1,23 @@
 {
   "captureMode": "prod-profile",
   "fixture": "importedRoster",
-  "_note": "REFRESHED (12) for hosting the shell toast in the app shell instead of the planner slot (2026-09-14), per docs/react-performance.md rule 10's deliberate-change path - never by widening the guard, which compares exactly on purpose. All four scenarios moved DOWN: P-02 7942->7912 (-30), P-03 14002->13939 (-63), P-04 7335->7307 (-28), P-05 2408->2396 (-12). Measured against a CONTROL: develop's tip (80890ea2), the branch's base, reproduced the outgoing baseline exactly on the CI runner (7942/14002/7335/2408), and the local capture of this change reproduced the CI capture of it exactly, so the deltas are this change's own. One cause: HeroPlanner used to subscribe to the store's toast and render it, so every autosave flash during a scenario re-rendered the planner composer and its children; the shell now subscribes instead, and the toast's two state changes per flash reach only the shell. Captured on the host with PERF_FORCE=1 after perf:build:profile, deterministic across 7 repetitions.",
+  "_note": "REFRESHED (13) for the front page (2026-09-14), per docs/react-performance.md rule 10's deliberate-change path - never by widening the guard. All four scenarios moved UP by a few renders over the toast-hosting baseline: P-02 7912->7934 (+22), P-03 13939->13986 (+47), P-04 7307->7328 (+21), P-05 2396->2405 (+9). One structural cause: the site header carries a sixth nav tab (Home), one more link drawn on every header commit; the quick guide the planner used to mount above itself is gone, which is why the increase is smaller than one tab's worth. Measured on the same host with the same method, on the branch rebased onto the baseline's own develop commit. Previous note: REFRESHED (12) for hosting the shell toast in the app shell instead of the planner slot (2026-09-14), per docs/react-performance.md rule 10's deliberate-change path - never by widening the guard, which compares exactly on purpose. All four scenarios moved DOWN: P-02 7942->7912 (-30), P-03 14002->13939 (-63), P-04 7335->7307 (-28), P-05 2408->2396 (-12). Measured against a CONTROL: develop's tip (80890ea2), the branch's base, reproduced the outgoing baseline exactly on the CI runner (7942/14002/7335/2408), and the local capture of this change reproduced the CI capture of it exactly, so the deltas are this change's own. One cause: HeroPlanner used to subscribe to the store's toast and render it, so every autosave flash during a scenario re-rendered the planner composer and its children; the shell now subscribes instead, and the toast's two state changes per flash reach only the shell. Captured on the host with PERF_FORCE=1 after perf:build:profile, deterministic across 7 repetitions.",
   "scenarios": [
     {
       "id": "P-02",
-      "medianComponentRenders": 7912
+      "medianComponentRenders": 7934
     },
     {
       "id": "P-03",
-      "medianComponentRenders": 13939
+      "medianComponentRenders": 13986
     },
     {
       "id": "P-04",
-      "medianComponentRenders": 7307
+      "medianComponentRenders": 7328
     },
     {
       "id": "P-05",
-      "medianComponentRenders": 2396
+      "medianComponentRenders": 2405
     }
   ]
 }
