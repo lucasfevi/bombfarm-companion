@@ -68,6 +68,29 @@ test.describe('Team plan results panels', () => {
     await expect(panel.getByText(/^Proposed items$/i)).toBeVisible();
   });
 
+  test('the rows left open survive leaving the page and coming back', async ({ page }) => {
+    const panel = page
+      .getByRole('heading', { name: /Per-hero changes/i, level: 2 })
+      .locator('xpath=ancestor::section[1]');
+    const rows = panel.getByRole('button', { name: /^Detailed breakdown for/i });
+    await rows.first().click();
+    await rows.nth(1).click();
+    await expect(rows.first()).toHaveAttribute('aria-expanded', 'false');
+    await expect(rows.nth(1)).toHaveAttribute('aria-expanded', 'true');
+
+    await page.getByRole('link', { name: /^Farm$/i }).click();
+    await expect(page.getByRole('region', { name: /Optimizer/i })).toHaveCount(0);
+    await page.getByRole('link', { name: /^Optimizer$/i }).click();
+    await expect(page.getByRole('region', { name: /Optimizer/i })).toBeVisible();
+
+    const rowsAgain = page
+      .getByRole('heading', { name: /Per-hero changes/i, level: 2 })
+      .locator('xpath=ancestor::section[1]')
+      .getByRole('button', { name: /^Detailed breakdown for/i });
+    await expect(rowsAgain.first()).toHaveAttribute('aria-expanded', 'false');
+    await expect(rowsAgain.nth(1)).toHaveAttribute('aria-expanded', 'true');
+  });
+
   test('collapsing then expanding a hero row still reveals the breakdown', async ({ page }) => {
     const panel = page
       .getByRole('heading', { name: /Per-hero changes/i, level: 2 })

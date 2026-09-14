@@ -8,6 +8,7 @@ import { resolveTeamPlanTargetPhase } from '../core/plan-lifecycle';
 import type { TeamPlanScreenCopy } from '../copy';
 import { teamPlanObjectiveCopy } from '../model/objective-copy';
 import { optimizeAriaFor } from '../model/setup-copy';
+import { runnerMarksAtMount, runnerMarksBeforeRun, runnerReports } from '../model/runner-reports';
 import type { TeamPlanRunner } from '../runner';
 import type { TeamPlanScreenActions, TeamPlanScreenData } from './team-plan-screen';
 import { AllowedChangesField } from './allowed-changes-field';
@@ -35,43 +36,25 @@ export function TeamPlanToolbar({
   const farmUnavailable = isFarmObjectiveUnavailable(data.inputs.maxPhase, resolvedTargetPhase);
   const farmBlocked = data.controls.objective === 'farm' && farmUnavailable;
   const scopeEmpty = countOptimizeScopeHeroes(data.inputs.heroes, data.controls.scopeByHeroId) === 0;
-  const handledRunId = useRef<string | null>(null);
-  // A run that falls back to the main thread computes synchronously inside the same click that
-  // started it, so React's automatic batching can coalesce the 'running' and the terminal state
-  // into the ONE render this effect sees — this ref makes `startRun` fire for a runId exactly
-  // once regardless of whether an intermediate 'running' render happened to exist to observe.
-  // Without it, a host whose `applyPlan`/`resolveRun` key off the runId `startRun` recorded (so a
-  // later Refresh mid-run cannot silently re-key an in-flight plan) never sees that runId at all,
-  // and silently drops the finished plan.
-  const startedRunId = useRef<string | null>(null);
+  // Seeded from the runner as it stands at mount, never from nothing: a host-owned runner
+  // outlives this screen, and a run it already finished was handed over on the mount that
+  // started it — see `runnerMarksAtMount`.
+  const marksRef = useRef(runnerMarksAtMount(runner));
 
   const handleOptimize = useCallback(() => {
     if (countOptimizeScopeHeroes(data.inputs.heroes, data.controls.scopeByHeroId) === 0) return;
     if (data.controls.objective === 'farm' && farmUnavailable) return;
-    handledRunId.current = null;
+    marksRef.current = runnerMarksBeforeRun(marksRef.current);
     runner.run(buildTeamPlanInput(data.inputs, data.controls));
   }, [runner, data.inputs, data.controls, farmUnavailable]);
 
   useEffect(() => {
-    const runId = runner.runId;
-    if (!runId) return;
-    if (startedRunId.current !== runId) {
-      startedRunId.current = runId;
-      actions.startRun(runId);
-    }
-    if (runner.status === 'running') return;
-    if (handledRunId.current === runId) return;
-    handledRunId.current = runId;
-    if (runner.status === 'done' && runner.plan) {
-      actions.applyPlan(runId, runner.plan);
-      return;
-    }
-    if (runner.status === 'blocked') {
-      actions.resolveRun(runId, 'blocked');
-      return;
-    }
-    if (runner.status === 'error') {
-      actions.resolveRun(runId, 'error');
+    const { reports, marks } = runnerReports(runner, marksRef.current);
+    marksRef.current = marks;
+    for (const report of reports) {
+      if (report.kind === 'startRun') actions.startRun(report.runId);
+      else if (report.kind === 'applyPlan') actions.applyPlan(report.runId, report.plan);
+      else actions.resolveRun(report.runId, report.status);
     }
   }, [runner, actions]);
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type {
   AppEnvironmentInfo,
   AppLocale,
@@ -25,6 +25,7 @@ import { rarityLabel } from '@bombfarm/domain/game-labels';
 import type { ConsentRecord } from '@bombfarm/game-api';
 import { CopyProvider, useCopy, useLocale, type Copy } from '../lib/copy';
 import { formatAge } from '../lib/format';
+import { useTabScrollMemory } from '../lib/use-tab-scroll-memory';
 import { navItemsFor } from './nav-items';
 import { ShellActions } from './shell-actions';
 import { ShellWindowControls } from './shell-window-controls';
@@ -221,7 +222,8 @@ function HomePageContent({
   // row and never shrinks, so the room the tabs and actions are competing for is what is left
   // after it.
   const density = useShellDensity(WINDOW_CONTROLS_WIDTH);
-  const [activeNavId, setActiveNavId] = useState(DEFAULT_NAV_ID);
+  const mainRef = useRef<HTMLElement | null>(null);
+  const [activeNavId, setActiveNavId] = useTabScrollMemory(DEFAULT_NAV_ID, mainRef);
   const [environment, setEnvironment] = useState<AppEnvironmentInfo | null>(null);
   const [status, setStatus] = useState<GameStatusInfo | null>(null);
   const [consent, setConsent] = useState<ConsentRecord | null>(null);
@@ -343,6 +345,7 @@ function HomePageContent({
         brand={<BrandMark />}
         draggable
         windowControls={<ShellWindowControls />}
+        mainRef={mainRef}
         actions={
           <ShellActions
             density={density}

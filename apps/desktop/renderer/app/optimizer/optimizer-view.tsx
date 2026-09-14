@@ -44,6 +44,7 @@ export function OptimizerView() {
     resolveRun,
     applyPlan,
     clearPlan,
+    openHeroes,
   } = useOptimizerSnapshot();
 
   const [controls, setControls] = useState<OptimizerView>(DEFAULT_OPTIMIZER_VIEW);
@@ -150,7 +151,7 @@ export function OptimizerView() {
         planState={planState}
         runner={runner}
         refresh={{ stale, busy, readState, onRefresh }}
-        actions={{ startRun, resolveRun, applyPlan, clearPlan }}
+        actions={{ startRun, resolveRun, applyPlan, clearPlan, openHeroes }}
       />
     </div>
   );

@@ -30,9 +30,11 @@ export function TeamPlanPage({
   const inputs = usePlannerStore(useShallow(selectTeamPlanInputs));
   const controls = usePlannerStore(useShallow(selectTeamPlanControls));
   const plan = usePlannerStore((state) => state.plan);
+  const planHeroes = usePlannerStore((state) => state.planHeroes);
   const runStatus = usePlannerStore((state) => state.runStatus);
   const runId = usePlannerStore((state) => state.runId);
   const isStale = usePlannerStore(selectTeamPlanIsStale);
+  const openHeroIds = usePlannerStore((state) => state.openHeroIds);
 
   const setScope = usePlannerStore((state) => state.setScope);
   const setForgeFloor = usePlannerStore((state) => state.setForgeFloor);
@@ -44,12 +46,13 @@ export function TeamPlanPage({
   const resolveRun = usePlannerStore((state) => state.resolveRun);
   const applyPlan = usePlannerStore((state) => state.applyPlan);
   const clearPlan = usePlannerStore((state) => state.clearPlan);
+  const setOpenHeroIds = usePlannerStore((state) => state.setOpenHeroIds);
 
   return (
     <TeamPlanScreenView
       t={t}
       lang={lang}
-      data={{ inputs, controls, plan, runStatus, runId, isStale }}
+      data={{ inputs, controls, plan, planHeroes, runStatus, runId, isStale, openHeroIds }}
       actions={{
         setScope,
         setForgeFloor,
@@ -61,6 +64,7 @@ export function TeamPlanPage({
         resolveRun,
         applyPlan,
         clearPlan,
+        setOpenHeroIds,
       }}
       slots={{ emptyState: (kind) => webTeamPlanEmptyState(kind, t, onImport) }}
     />

@@ -1,4 +1,4 @@
-import type { CSSProperties, PropsWithChildren, ReactNode } from 'react';
+import type { CSSProperties, PropsWithChildren, ReactNode, Ref } from 'react';
 import { AppNav } from './app-nav';
 import type { IconName } from './icon';
 import type { ShellDensity } from './shell-density';
@@ -66,6 +66,9 @@ export interface AppShellProps extends PropsWithChildren {
    * belong to the OS wants.
    */
   windowControls?: ReactNode;
+  /** The one scrolling `<main>`, for a host that wants to read or set its offset — the desktop
+   *  puts each tab's offset back when the player returns to it. */
+  mainRef?: Ref<HTMLElement> | undefined;
 }
 
 /** `-webkit-app-region` has no Tailwind utility and isn't a standard CSS property TypeScript knows. */
@@ -123,6 +126,7 @@ export function AppShell({
   version,
   draggable = false,
   windowControls,
+  mainRef,
   children,
 }: AppShellProps) {
   const navItems = items.map((item) => ({
@@ -179,7 +183,7 @@ export function AppShell({
         ) : null}
       </header>
 
-      <main className={appShellMainClass}>
+      <main ref={mainRef} className={appShellMainClass}>
         <div className={appShellMainInnerClass}>{children}</div>
       </main>
 
