@@ -7,7 +7,7 @@ import { formatItemRosterTooltip, slotLabel } from '@bombfarm/domain/game-labels
 
 import { cn, Tooltip } from '@bombfarm/ui';
 import { ItemIcon } from './item-icon';
-import { artFrameRadiusClass, rosterIconTooltipTriggerClass } from './game-art.recipe';
+import { emptyGearSlotClass, rosterIconTooltipTriggerClass } from './game-art.recipe';
 
 type Props = {
   loadout: Loadout;
@@ -20,11 +20,6 @@ type Props = {
   /** Rank/level prefix for the equipped-item tooltip subtitle (e.g. "Lv"). */
   lvLabel?: string;
 };
-
-const emptyGearClass = cn(
-  'inline-grid w-12 aspect-[18/19] shrink-0 border border-dashed border-line bg-[color-mix(in_oklch,var(--bg)_55%,var(--surface))]',
-  artFrameRadiusClass,
-);
 
 function stopRowActivation(event: SyntheticEvent) {
   event.stopPropagation();
@@ -58,7 +53,7 @@ export function HeroGearIcons({
                 onClick={stopRowActivation}
                 onKeyDown={stopRowActivation}
               >
-                <span className={emptyGearClass} aria-hidden="true" />
+                <span className={emptyGearSlotClass} aria-hidden="true" />
               </Tooltip.Trigger>
               <Tooltip.Portal>
                 <Tooltip.Positioner sideOffset={6}>

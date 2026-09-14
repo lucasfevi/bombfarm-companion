@@ -162,8 +162,9 @@ describe('hero gear icons', () => {
     expect(src).toContain('size="lg"');
     expect(src).not.toContain('showUpgrade={false}');
     expect(src).not.toContain('showLevel={false}');
-    expect(src).toContain('w-12');
-    expect(src).toContain('aspect-[18/19]');
+    expect(src).toContain('emptyGearSlotClass');
+    const recipe = readGameArt('game-art.recipe.ts');
+    expect(recipe).toMatch(/emptyGearSlotClass = cn\(\s*'inline-grid w-12 aspect-\[18\/19\]/);
   });
 
   it('uses roster tooltip formatter with a caller-supplied rank/level label', () => {

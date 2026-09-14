@@ -11,4 +11,5 @@ export const teamPlanGearFlowPtBR: TeamPlanGearFlowCopy = {
   teamPlanFlowRemovedWhyOther:
     'Nenhum outro herói no escopo consegue usá-lo, então ele fica no inventário.',
   teamPlanFlowRowForge: 'Forjar de +{from} para +{to}',
+  teamPlanFlowSlotEmpty: 'Nenhum item proposto',
 };
