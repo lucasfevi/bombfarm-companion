@@ -90,8 +90,7 @@ const EN_CARD_LABELS: Record<(typeof CARD_IDS)[number], string> = {
 
 /**
  * Cora with an own drain reduction, so the Field time card is reached by an own ability as well
- * as by the team's Fôlego. The seed roster carries crit in save units, so no crit magnitude is
- * asserted on it anywhere below.
+ * as by the team's Fôlego.
  */
 function withExtraBattery(base: typeof importedRoster) {
   return {
@@ -253,7 +252,7 @@ test.describe('combat breakdown panel', () => {
 
   test('a sheet card\'s popover is its ledger grouped by game line (EN + PT)', async ({ page }) => {
     // Crit Chance exercises all four lines at once: a sheet ability (Olho Clínico), gear, a tree
-    // bonus, and the hero line. Its magnitude is not asserted — the seed's crit is in save units.
+    // bonus, and the hero line.
     const naked = { attack: 200, energy: 300, speed: 50, critChance: 10, critDmg: 70, penetration: 5, cdr: 5, luck: 0 };
     const zero = { attack: 0, energy: 0, speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0, luck: 0 };
     function seeded(lang: 'en' | 'pt') {
@@ -310,6 +309,23 @@ test.describe('combat breakdown panel', () => {
     await expect(matrix.locator('[data-matrix-row="attack"] [data-cell="off"]')).toHaveCount(1);
     await expect(matrix.locator('[data-matrix-row="energy"] [data-cell="off"]')).toHaveCount(0);
     await expect(matrix.getByRole('columnheader', { name: /Rune/ })).toHaveCount(0);
+  });
+
+  test('the seeded hero crits: the matrix prints her crit chance and crit damage in sheet units, and the Critical factor card is their product', async ({
+    page,
+  }) => {
+    await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+    await page.goto('/planner');
+    await selectSavedHero(page, 'Cora');
+    await openCombatTab(page, 'en');
+
+    const matrix = effectivePanel(page).getByTestId('breakdown-matrix');
+    await expect(matrix.locator('[data-matrix-row="critChance"] [data-testid="breakdown-effective"]')).toHaveText('12.70%');
+    await expect(matrix.locator('[data-matrix-row="critDmg"] [data-testid="breakdown-effective"]')).toHaveText('62.36%');
+    await expect(matrix.locator('[data-matrix-row="cdr"] [data-testid="breakdown-effective"]')).toHaveText('3.14%');
+    // 1 + 0.127 × 0.6236 = 1.0792
+    await expect(cardValue(page, 'critFactor')).toHaveText('×1.079');
+    await expect(cardValue(page, 'criticalHit')).not.toHaveText(await cardValue(page, 'hit').innerText());
   });
 
   test('a team aura reaches the panel only through its Combat tab switch: the Attack card lights the icon and the matrix prices it', async ({

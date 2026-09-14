@@ -5,9 +5,6 @@ import { importedRoster, seedLocalStorage, selectSavedHero } from './fixtures/se
  * The Abilities & auras section on the Combat tab: every team aura the game has, each behind a
  * switch unless it is the hero's own; a switch prices the aura at its cap and reaches every
  * planner figure that reads the pipeline, and nothing on the Farm page.
- *
- * War Cry and Miner's Breath are the auras asserted on. The seed roster stores crit in save
- * units, so Deadly Omen's delta is not a figure to pin here.
  */
 const TEAM_AURA_IDS = ['grito_guerra', 'pressagio_mortal', 'marcha_acelerada', 'folego_mineiro', 'brecha', 'passagem_bastao'] as const;
 
@@ -174,6 +171,30 @@ test.describe('abilities & auras section', () => {
     await mainNav.getByRole('link', { name: /^Farm$/i }).click();
     await expect(page.getByRole('heading', { name: /^Your hero$/i, level: 2 })).toBeVisible();
     await expect(farmPanel).toHaveText(farmBefore);
+  });
+
+  test('Deadly Omen promises a double-digit gain on a hero who crits, and its switch moves the Combat figure by that promise', async ({
+    page,
+  }) => {
+    await seedLocalStorage(page, roster);
+    await page.goto('/planner');
+    await selectSavedHero(page, 'Cora');
+    await openCombatTab(page);
+
+    // +20 crit points at the cap on a 12.7% / +62.36% hero lifts the critical factor from ×1.079
+    // to ×1.204 — a near-zero promise here means the seed is back in save units.
+    const row = auraSection(page).getByTestId('team-aura-pressagio_mortal');
+    const promised = await promisedDeltaPct(row);
+    expect(promised).toBeGreaterThan(10);
+    expect(promised).toBeLessThan(13);
+
+    const before = await combatSustainedDps(page);
+    await row.getByRole('switch').click();
+    await expect(row.getByRole('switch')).toBeChecked();
+    await expect(row.getByTestId('team-aura-priced-at')).toHaveText(/\+20/);
+    await expect.poll(() => combatSustainedDps(page)).toBeGreaterThan(before);
+    const after = await combatSustainedDps(page);
+    expect(Math.abs((after / before - 1) * 100 - promised)).toBeLessThanOrEqual(moveTolerancePct(before, after));
   });
 
   test('Miner’s Breath reaches the Points ranking, which reads the same pipeline', async ({ page }) => {
