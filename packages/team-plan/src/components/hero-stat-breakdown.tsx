@@ -9,20 +9,9 @@ import type { TeamPlanScreenCopy } from '../copy';
 
 type Copy = TeamPlanScreenCopy;
 
-/** `HeroSheet` fields shown in the Combat grid, in display order (no Luck — see below). */
-const BREAKDOWN_STAT_KEYS = SHEET_PANEL_KEYS.filter(
-  (key) => key !== 'luck',
-) as readonly (keyof TeamPlanHeroStats)[];
-
-/**
- * Sheet grid only: Luck never reaches `HeroSheet`/combat — excluded from DPS scoring,
- * `REOPT_KEYS`, and this display never feeds back into either — so
- * there is no meaningful Combat-stats row for it — a combat row would either duplicate the
- * sheet value or invent a combat transformation that doesn't exist. Display-only, ordered by
- * `SHEET_PANEL_KEYS` so it lands right after Speed, matching the Planner sheet table's own
- * Luck row placement.
- */
-const SHEET_ONLY_STAT_KEYS = SHEET_PANEL_KEYS as readonly (keyof TeamPlanHeroStats)[];
+/** Ordered as the Planner's own sheet table, Luck right after Speed. Luck is display-only here —
+ *  it never reaches DPS scoring. */
+const SHEET_STAT_KEYS = SHEET_PANEL_KEYS as readonly (keyof TeamPlanHeroStats)[];
 
 const subheadingClass = 'm-0 mb-1 text-[9px] font-bold leading-none tracking-[0.06em] text-muted uppercase';
 
@@ -43,12 +32,9 @@ function statRows(
 }
 
 /**
- * Sheet stats pass through `gameSheetView` (`sheet-view.ts`) so they match what the game's own
- * hero panel shows (100% crit chance / 80% CDR clamp) — the combat view stays uncapped
- * (combat crit chance legitimately exceeds the sheet cap via Presságio Mortal and similar).
- * `TeamPlanHeroStats` now carries a real `luck` (structurally identical to `SheetStats`), so it
- * passes through `gameSheetView` directly — `gameSheetView` never lowers `luck` (no display cap
- * for it, `sheet-view.ts`), it only rides along unchanged.
+ * Sheet stats pass through `gameSheetView` so they match what the game's own hero panel shows
+ * (100% crit chance / 80% CDR clamp). The hit rows below stay on the uncapped combat figures —
+ * combat crit chance legitimately exceeds the sheet cap via Presságio Mortal and similar.
  */
 function capSheetStats(stats: TeamPlanHeroStats): TeamPlanHeroStats {
   const viewed = gameSheetView(stats);
@@ -110,8 +96,7 @@ export function HeroStatBreakdown({
   hitBefore: number;
   hitAfter: number;
 }) {
-  const sheetRows = statRows(t, capSheetStats(sheetBefore), capSheetStats(sheetAfter), SHEET_ONLY_STAT_KEYS);
-  const combatRows = statRows(t, combatBefore, combatAfter, BREAKDOWN_STAT_KEYS);
+  const sheetRows = statRows(t, capSheetStats(sheetBefore), capSheetStats(sheetAfter), SHEET_STAT_KEYS);
   const hitDamageRows = hitRows(t, hitBefore, hitAfter, combatBefore, combatAfter);
   const columnLabels = {
     label: t.colStat,
@@ -128,15 +113,7 @@ export function HeroStatBreakdown({
           columnLabels={columnLabels}
           rows={sheetRows}
           decimals={2}
-        />
-      </section>
-      <section className="min-w-0">
-        <h4 className={subheadingClass}>{t.teamPlanHeroBreakdownStatsCombatTitle}</h4>
-        <DeltaTable
-          caption={t.teamPlanHeroBreakdownStatsCombatTitle}
-          columnLabels={columnLabels}
-          rows={combatRows}
-          decimals={2}
+          striped
         />
       </section>
       <section className="min-w-0">
@@ -146,6 +123,7 @@ export function HeroStatBreakdown({
           columnLabels={columnLabels}
           rows={hitDamageRows}
           decimals={0}
+          striped
         />
       </section>
     </div>

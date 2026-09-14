@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef } from 'react';
-import { Button, Panel, panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui';
+import { Button, Panel, Tooltip, panelHClass, panelTitleClass } from '@bombfarm/ui';
 import type { Lang } from '@bombfarm/hero/copy';
 import { buildTeamPlanInput, countOptimizeScopeHeroes, isFarmObjectiveUnavailable } from '../core';
 import { resolveTeamPlanTargetPhase } from '../core/plan-lifecycle';
@@ -15,6 +15,7 @@ import { ForgeFloorField } from './forge-floor-field';
 import { IgnoreCrowdingField } from './ignore-crowding-field';
 import { ObjectiveField } from './objective-field';
 import { PhaseField } from './phase-field';
+import { InfoTip } from './setup-field';
 
 export function TeamPlanToolbar({
   t,
@@ -78,62 +79,65 @@ export function TeamPlanToolbar({
 
   return (
     <Panel focus>
-      <div className={panelHClass}>
-        <h2 className={panelTitleClass}>{t.teamPlanSetupSectionTitle}</h2>
-      </div>
-      <p className={tipClass}>{copy.setupSectionBody}</p>
-      {farmBlocked ? (
-        <p className="m-0 mt-2 text-[13px] text-warn" role="status">
-          {t.teamPlanObjectiveFarmNeedsMaxPhase}
-        </p>
-      ) : null}
-      {/* The button centres against the field block rather than sitting on its bottom edge — the
-          fields' hints are of different lengths, so the row's bottom is wherever the longest hint
-          ends and has nothing to do with where the button belongs. */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-6">
-        {/* The fields align on their TOPS, not the row's centre or bottom: each carries a hint of
-            its own length below the control, so aligning them any other way steps the controls
-            down like a staircase. Their labels are one line and share a class, so a shared top
-            edge puts every control on the same line. */}
-        <div className="flex min-w-0 flex-1 flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:gap-6">
-          <ObjectiveField
-            t={t}
-            copy={copy}
-            value={data.controls.objective}
-            onChange={actions.setObjective}
-          />
-          <PhaseField
-            t={t}
-            lang={lang}
-            copy={copy}
-            value={resolvedTargetPhase}
-            maxPhase={data.inputs.maxPhase}
-            onChange={actions.setTargetPhase}
-          />
-          <AllowedChangesField t={t} value={data.controls.allowedChanges} onChange={actions.setAllowedChanges} />
-          {/* A points-only plan is scored at the items' real forge levels and orders no forge
-              work, so a floor the player can still set would be a control that does nothing. */}
-          {data.controls.allowedChanges === 'points' ? null : (
-            <ForgeFloorField t={t} value={data.controls.forgeFloor} onChange={actions.setForgeFloor} />
-          )}
-          <IgnoreCrowdingField
-            t={t}
-            value={data.controls.ignoreFieldCrowding}
-            onChange={actions.setIgnoreFieldCrowding}
-          />
+      <Tooltip.Provider delay={180} closeDelay={80}>
+        {/* The button centres against the whole panel — title, notice and fields — not the field
+            row alone, so it sits at the panel's middle rather than a title's height below it. */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <div className="min-w-0 flex-1">
+            <div className={panelHClass}>
+              <h2 className={`${panelTitleClass} flex items-center gap-1.5`}>
+                {t.teamPlanSetupSectionTitle}
+                <InfoTip label={t.teamPlanSetupSectionTitle} tip={copy.setupSectionBody} />
+              </h2>
+            </div>
+            {farmBlocked ? (
+              <p className="m-0 mb-2 text-[13px] text-warn" role="status">
+                {t.teamPlanObjectiveFarmNeedsMaxPhase}
+              </p>
+            ) : null}
+            {/* Tops, not centres: a field may carry a one-line warning under its control (a phase
+                past the account's furthest), and centring would step the others down against it. */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:gap-5">
+              <ObjectiveField
+                t={t}
+                copy={copy}
+                value={data.controls.objective}
+                onChange={actions.setObjective}
+              />
+              <PhaseField
+                t={t}
+                lang={lang}
+                copy={copy}
+                value={resolvedTargetPhase}
+                maxPhase={data.inputs.maxPhase}
+                onChange={actions.setTargetPhase}
+              />
+              <AllowedChangesField t={t} value={data.controls.allowedChanges} onChange={actions.setAllowedChanges} />
+              {/* A points-only plan is scored at the items' real forge levels and orders no forge
+                  work, so a floor the player can still set would be a control that does nothing. */}
+              {data.controls.allowedChanges === 'points' ? null : (
+                <ForgeFloorField t={t} value={data.controls.forgeFloor} onChange={actions.setForgeFloor} />
+              )}
+              <IgnoreCrowdingField
+                t={t}
+                value={data.controls.ignoreFieldCrowding}
+                onChange={actions.setIgnoreFieldCrowding}
+              />
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="primary"
+            disabled={busy || scopeEmpty || farmBlocked}
+            aria-busy={busy}
+            aria-label={optimizeAriaFor(t, data.controls.allowedChanges)}
+            className="min-h-12 w-full shrink-0 px-8 text-sm sm:w-auto sm:min-w-52"
+            onClick={handleOptimize}
+          >
+            {busy ? t.teamPlanOptimizing : t.teamPlanOptimize}
+          </Button>
         </div>
-        <Button
-          type="button"
-          variant="primary"
-          disabled={busy || scopeEmpty || farmBlocked}
-          aria-busy={busy}
-          aria-label={optimizeAriaFor(t, data.controls.allowedChanges)}
-          className="min-h-12 w-full shrink-0 px-8 text-sm sm:w-auto sm:min-w-52"
-          onClick={handleOptimize}
-        >
-          {busy ? t.teamPlanOptimizing : t.teamPlanOptimize}
-        </Button>
-      </div>
+      </Tooltip.Provider>
     </Panel>
   );
 }

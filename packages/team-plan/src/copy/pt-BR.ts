@@ -28,15 +28,14 @@ export const teamPlanPagePtBR: TeamPlanPageCopy = {
   teamPlanPhaseBeyondMax:
     'Além da fase mais distante que sua conta alcançou (#{max}) — isto responde quanto o esquadrão renderia se conseguisse sustentá-la.',
   teamPlanRunSummaryTitle: 'Resumo da busca',
-  teamPlanRunSummaryScoredPhase: 'Calculado na fase',
-  teamPlanScoredPhaseChosen: '{phase} — a fase que você escolheu.',
-  teamPlanScoredPhaseAccount: '{phase} — onde sua conta está agora.',
-  teamPlanScoredPhaseSearched:
-    '{phase} — escolhida automaticamente, a melhor que este esquadrão sustenta.',
+  teamPlanWaterfallPhaseLabel: 'Fase',
+  teamPlanWaterfallPhaseFrom: 'era {phase}',
+  teamPlanScoredPhaseChosen: 'A fase que você escolheu.',
+  teamPlanScoredPhaseAccount: 'Onde sua conta está agora.',
+  teamPlanScoredPhaseSearched: 'Escolhida automaticamente — a melhor que este esquadrão sustenta.',
   teamPlanScoredPhaseUnreachable:
-    '{phase} — este esquadrão não consegue limpá-la, então não há nada a render nela.',
+    'Este esquadrão não consegue limpá-la, então não há nada a render nela.',
   teamPlanScoredPhaseNoneFeasible: 'Nenhuma fase que este esquadrão consiga limpar foi encontrada.',
-  teamPlanRunSummaryFieldStatus: 'Situação do campo',
   teamPlanRunSummaryDuty: 'Carga de batalha',
   teamPlanRunSummaryDutyValue: '{duty} de {slots} slots',
   teamPlanRunSummaryDutyHint:
@@ -110,7 +109,6 @@ export const teamPlanPagePtBR: TeamPlanPageCopy = {
   teamPlanHeroDeltaExpandAria: 'Detalhamento de {name}',
   teamPlanHeroBreakdownStatsTitle: 'Mudança de status',
   teamPlanHeroBreakdownStatsSheetTitle: 'Ficha do herói',
-  teamPlanHeroBreakdownStatsCombatTitle: 'Stats de combate',
   teamPlanHeroBreakdownHitTitle: 'Dano do hit',
   teamPlanHeroHitNormal: 'Hit normal',
   teamPlanHeroHitCritical: 'Hit crítico',

@@ -348,7 +348,7 @@ export type TeamPlanPerHeroRow = {
   before: number;
   after: number;
   delta: number;
-  /** Combat-effective stats (`HeroScore.effective`) — team auras applied, uncapped (matches `teamPlanHeroDeltaNote`). */
+  /** Combat-effective stats (`HeroScore.effective`) — team auras applied, uncapped — the view the search scores. */
   combatStatsBefore: TeamPlanHeroStats;
   combatStatsAfter: TeamPlanHeroStats;
   /** Sheet stats (`HeroScore.adjusted`) — no combat multipliers/auras, uncapped here; the UI applies `gameSheetView` (`sheet-view.ts`) before display. */

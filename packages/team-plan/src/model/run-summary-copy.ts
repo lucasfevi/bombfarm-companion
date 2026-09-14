@@ -24,21 +24,35 @@ export function seedStartLabel(t: TeamPlanCopy, seedUsed: string): string {
 }
 
 /**
- * What the plan was scored against, in one sentence: the phase, and where that phase came from.
- * The automatic case has to say so — a figure the player did not ask for at a phase they did not
- * pick reads as a claim about their own account otherwise.
+ * Where the plan's phase came from, as the note under the phase card. The automatic case has to
+ * say so — a figure the player did not ask for at a phase they did not pick reads as a claim
+ * about their own account otherwise.
  */
-export function scoredPhaseHint(t: TeamPlanCopy, lang: Lang, plan: TeamPlan): string | null {
+export function scoredPhaseHint(t: TeamPlanCopy, plan: TeamPlan): string | null {
   if (plan.scoredPhase == null) {
     return plan.scoredPhaseSource === 'searched' ? t.teamPlanScoredPhaseNoneFeasible : null;
   }
-  const phase = formatPhaseLabel(plan.scoredPhase, lang);
-  if (plan.scoredPhaseInfeasible) return sub(t.teamPlanScoredPhaseUnreachable, { phase });
-  if (plan.scoredPhaseSource === 'searched') {
-    return sub(t.teamPlanScoredPhaseSearched, { phase });
-  }
-  if (plan.scoredPhaseSource === 'account') {
-    return sub(t.teamPlanScoredPhaseAccount, { phase });
-  }
-  return sub(t.teamPlanScoredPhaseChosen, { phase });
+  if (plan.scoredPhaseInfeasible) return t.teamPlanScoredPhaseUnreachable;
+  if (plan.scoredPhaseSource === 'searched') return t.teamPlanScoredPhaseSearched;
+  if (plan.scoredPhaseSource === 'account') return t.teamPlanScoredPhaseAccount;
+  return t.teamPlanScoredPhaseChosen;
+}
+
+export function scoredPhaseValue(lang: Lang, plan: TeamPlan): string {
+  return plan.scoredPhase == null ? '—' : formatPhaseLabel(plan.scoredPhase, lang);
+}
+
+/**
+ * The phase the account is on when the plan's figures are about a different one — the sweep moved
+ * the squad, or the player pinned a phase away from home. Null when they agree or either is
+ * unknown, so the card says nothing rather than "was —".
+ */
+export function scoredPhaseMovedFrom(
+  t: TeamPlanCopy,
+  lang: Lang,
+  plan: TeamPlan,
+  accountPhase: number | null,
+): string | null {
+  if (plan.scoredPhase == null || accountPhase == null || plan.scoredPhase === accountPhase) return null;
+  return sub(t.teamPlanWaterfallPhaseFrom, { phase: formatPhaseLabel(accountPhase, lang) });
 }

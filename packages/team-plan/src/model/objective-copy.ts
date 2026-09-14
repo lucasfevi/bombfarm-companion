@@ -19,7 +19,6 @@ export type TeamPlanObjectiveCopy = {
   resultsHeader: string;
   gearDipNote: string;
   phaseHintNone: string;
-  heroDeltaNote: string;
 };
 
 export function teamPlanObjectiveCopy(
@@ -35,7 +34,6 @@ export function teamPlanObjectiveCopy(
         resultsHeader: strings.teamPlanResultsHeaderFarm,
         gearDipNote: strings.teamPlanGearDipNoteFarm,
         phaseHintNone: strings.teamPlanPhaseHintNoneFarm,
-        heroDeltaNote: strings.teamPlanHeroDeltaNoteFarm,
       }
     : {
         setupSectionBody: strings.teamPlanSetupSectionBodyDps,
@@ -45,6 +43,5 @@ export function teamPlanObjectiveCopy(
         resultsHeader: strings.teamPlanResultsHeaderDps,
         gearDipNote: strings.teamPlanGearDipNoteDps,
         phaseHintNone: strings.teamPlanPhaseHintNoneDps,
-        heroDeltaNote: strings.teamPlanHeroDeltaNoteDps,
       };
 }

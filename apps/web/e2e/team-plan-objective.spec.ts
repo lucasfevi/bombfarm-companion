@@ -1,7 +1,15 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { teamPlanFixtureSeed } from './fixtures/team-plan-seed';
 import { seedLocalStorage } from './fixtures/seed';
-import { clickOptimize, gotoTeamPlan, waitForOptimizeDone } from './fixtures/team-plan-e2e';
+import {
+  clickOptimize,
+  gotoTeamPlan,
+  openFieldHelp,
+  waitForOptimizeDone,
+} from './fixtures/team-plan-e2e';
+
+/** The setup panel's intro is a tooltip on its title. */
+const SETUP_HELP = /^Search setup: /i;
 
 /** DS Select is a Base UI combobox — not a native `<select>`. */
 function objectiveCombobox(page: Page): Locator {
@@ -25,13 +33,13 @@ test.describe('Team plan objective', () => {
   test('the control is on the setup panel and starts on gold per hour', async ({ page }) => {
     await expect(objectiveCombobox(page)).toBeVisible();
     await expect(objectiveCombobox(page)).toHaveText(/^Gold \/ hr$/i);
-    await expect(page.getByText(/scored for the gold per hour/i)).toBeVisible();
+    await expect(await openFieldHelp(page, SETUP_HELP)).toContainText(/scored for the gold per hour/i);
   });
 
   test('switching to DPS restates what the search will score', async ({ page }) => {
     await pickObjective(page, /^DPS$/i);
     await expect(objectiveCombobox(page)).toHaveText(/^DPS$/i);
-    await expect(page.getByText(/scored for combined roster DPS/i)).toBeVisible();
+    await expect(await openFieldHelp(page, SETUP_HELP)).toContainText(/scored for combined roster DPS/i);
   });
 
   test('a Gold plan reports gold per hour and never roster DPS', async ({ page }) => {
