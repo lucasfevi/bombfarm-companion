@@ -56,9 +56,12 @@ const numericClass = 'font-mono text-xs tabular-nums';
 const tagClass = 'text-[10px] font-bold tracking-[0.06em] uppercase text-muted';
 const columnHeadClass = 'text-[9px] font-bold tracking-[0.08em] uppercase text-muted';
 const groupHeadClass = 'mt-3 mb-1.5 text-[10px] font-bold tracking-[0.08em] uppercase text-accent';
-const rowClass =
-  'grid grid-cols-[2.75rem_auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1 border-t border-line py-1.5 sm:grid-cols-[2.75rem_auto_minmax(0,1fr)_7rem_7rem_8rem]';
-const figuresClass = 'col-start-3 flex flex-wrap gap-x-3 sm:contents';
+const auraRowClass =
+  'grid grid-cols-[2.75rem_auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1 border-t border-line py-1.5 sm:grid-cols-[2.75rem_auto_minmax(0,1fr)_13rem_13rem_9rem]';
+const ownRowClass =
+  'grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1 border-t border-line py-1.5 sm:grid-cols-[auto_minmax(0,1fr)_13rem_9rem]';
+const auraFiguresClass = 'col-start-3 flex flex-wrap gap-x-3 sm:contents';
+const ownFiguresClass = 'col-start-2 flex flex-wrap gap-x-3 sm:contents';
 
 function readoutText(readout: AbilityEffectReadout, t: HeroCopy, lang: Lang): string {
   if (readout.kind === 'none') return '—';
@@ -112,7 +115,7 @@ export function AbilitiesAurasPanel({
       </Tooltip.Provider>
 
       <h3 className={groupHeadClass}>{t.heroDetailAurasTeamGroup}</h3>
-      <div className={cn(rowClass, 'hidden border-t-0 py-0 sm:grid')} aria-hidden>
+      <div className={cn(auraRowClass, 'hidden border-t-0 py-0 sm:grid')} aria-hidden>
         <span />
         <span />
         <span className={columnHeadClass}>{t.heroDetailAurasColumnAura}</span>
@@ -127,7 +130,7 @@ export function AbilitiesAurasPanel({
             value: formatNumber(Math.abs(row.deltaPct), lang, 1),
           });
           return (
-            <li key={row.buffId} data-testid={`team-aura-${row.buffId}`} className={rowClass}>
+            <li key={row.buffId} data-testid={`team-aura-${row.buffId}`} className={auraRowClass}>
               {row.carried ? (
                 <span className={tagClass} data-testid="team-aura-own">
                   {t.heroDetailAuraOwnTag}
@@ -146,7 +149,7 @@ export function AbilitiesAurasPanel({
                   {abilityEffectText(row.buffId, lang)}
                 </span>
               </div>
-              <div className={figuresClass}>
+              <div className={auraFiguresClass}>
                 <span className={cn(numericClass, !row.on && 'text-muted')} data-testid="team-aura-priced-at">
                   {row.pricedAt ? readoutText(row.pricedAt, t, lang) : '—'}
                 </span>
@@ -164,10 +167,16 @@ export function AbilitiesAurasPanel({
       {ownRows.length === 0 ? (
         <p className={cn(tipClass, 'm-0')}>{t.heroDetailAurasNoOwnAbilities}</p>
       ) : (
-        <ul className="m-0 list-none p-0">
+        <>
+          <div className={cn(ownRowClass, 'hidden border-t-0 py-0 sm:grid')} aria-hidden>
+            <span />
+            <span className={columnHeadClass}>{t.heroDetailAurasColumnAbility}</span>
+            <span className={columnHeadClass}>{t.heroDetailAurasColumnEffect}</span>
+            <span className={columnHeadClass}>{t.heroDetailAurasColumnStatus}</span>
+          </div>
+          <ul className="m-0 list-none p-0">
           {ownRows.map((row) => (
-            <li key={row.abilityId} data-testid={`own-ability-${row.abilityId}`} className={rowClass}>
-              <span />
+            <li key={row.abilityId} data-testid={`own-ability-${row.abilityId}`} className={ownRowClass}>
               <AbilityIcon
                 code={row.abilityId}
                 size="sm"
@@ -180,18 +189,18 @@ export function AbilitiesAurasPanel({
                   {abilityEffectText(row.abilityId, lang)}
                 </span>
               </div>
-              <div className={figuresClass}>
+              <div className={ownFiguresClass}>
                 <span className={cn(numericClass, row.status !== 'own' && 'text-muted')}>
                   {readoutText(row.effect, t, lang)}
                 </span>
-                <span className="hidden sm:block" />
                 <span className={tagClass} data-testid="own-ability-status">
                   {t[STATUS_KEY[row.status]]}
                 </span>
               </div>
             </li>
           ))}
-        </ul>
+          </ul>
+        </>
       )}
     </Panel>
   );

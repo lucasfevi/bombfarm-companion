@@ -109,6 +109,9 @@ export const heroEn = {
   heroDetailAurasColumnPricedAt: "Priced at",
   heroDetailAurasColumnCap: "Cap",
   heroDetailAurasColumnDelta: "Sustained DPS",
+  heroDetailAurasColumnAbility: "Ability",
+  heroDetailAurasColumnEffect: "Effect",
+  heroDetailAurasColumnStatus: "Status",
   heroDetailAuraOwnTag: "own",
   heroDetailAuraNotHereTag: "not here",
   heroDetailAuraNotModelledTag: "not modelled",
@@ -126,7 +129,7 @@ export const heroEn = {
   heroDetailAuraUnitDmgMult: "×{value} dmg",
   heroDetailAuraUnitGateAttack: "+{value}% on gates",
   heroDetailAuraUnitPackPerAlly: "+{value}% dmg per ally",
-  heroDetailAuraUnitPulse: "+{value}% team dmg, pulse held up",
+  heroDetailAuraUnitPulse: "+{value}% dmg, pulse held up",
   heroDetailAurasNoOwnAbilities: "This hero has no ability of its own in force.",
 
   heroDetailBreakdownHint: "Hover or focus a card's figure for the formula behind it and what it reads.",

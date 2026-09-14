@@ -110,6 +110,9 @@ export const heroPtBR: HeroCopy = {
   heroDetailAurasColumnPricedAt: "Precificada em",
   heroDetailAurasColumnCap: "Teto",
   heroDetailAurasColumnDelta: "DPS efetivo",
+  heroDetailAurasColumnAbility: "Habilidade",
+  heroDetailAurasColumnEffect: "Efeito",
+  heroDetailAurasColumnStatus: "Situação",
   heroDetailAuraOwnTag: "própria",
   heroDetailAuraNotHereTag: "não nesta fase",
   heroDetailAuraNotModelledTag: "não modelada",
@@ -127,7 +130,7 @@ export const heroPtBR: HeroCopy = {
   heroDetailAuraUnitDmgMult: "×{value} de dano",
   heroDetailAuraUnitGateAttack: "+{value}% em portões",
   heroDetailAuraUnitPackPerAlly: "+{value}% de dano por aliado",
-  heroDetailAuraUnitPulse: "+{value}% de dano do time, pulso mantido",
+  heroDetailAuraUnitPulse: "+{value}% de dano, pulso mantido",
   heroDetailAurasNoOwnAbilities: "Este herói não tem nenhuma habilidade própria em vigor.",
 
   heroDetailBreakdownHint: "Passe o mouse ou foque o valor de um quadro para ver a fórmula por trás dele e o que ele lê.",
