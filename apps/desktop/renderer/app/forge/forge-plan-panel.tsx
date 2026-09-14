@@ -258,16 +258,10 @@ export function ForgePlanPanel({
         >
           {buttonLabel}
         </Button>
+        <ForgeQueueAdd itemId={item.id} target={target} itemName={labels.itemName(item)} disabled={maxed} className="w-full" />
         <span data-testid="forge-button-reason" className={cn('text-[11px]', startRefusal === null || armed ? 'text-muted' : 'text-warn')}>
           {reasonLine}
         </span>
-        <ForgeQueueAdd
-          itemId={item.id}
-          target={target}
-          itemName={labels.itemName(item)}
-          disabled={maxed}
-          className="mt-1 w-full"
-        />
       </div>
     </Panel>
   );
