@@ -39,6 +39,31 @@ describe('home copy', () => {
     }
   });
 
+  it("the optimizer card's keys carry a signed percent, an elapsed count and the action placeholders in both locales", () => {
+    const expected: Record<string, string[]> = {
+      homeCardOptimizerRecalculating: [],
+      homeCardOptimizerSearching: ['elapsed'],
+      homeCardOptimizerHeadlineFarm: ['pct'],
+      homeCardOptimizerHeadlineDps: ['pct'],
+      homeCardOptimizerScoredAt: ['phase'],
+      homeCardOptimizerActionMove: ['hero', 'item'],
+      homeCardOptimizerActionEquip: ['hero', 'item'],
+      homeCardOptimizerActionForge: ['from', 'item', 'to'],
+      homeCardOptimizerActionReset: ['hero'],
+      homeCardOptimizerCountMoves: ['count'],
+      homeCardOptimizerCountResets: ['count'],
+      homeCardOptimizerSeeFullPlan: [],
+    };
+    expect(Object.keys(expected)).toHaveLength(12);
+    for (const locale of [home.en, home.pt]) {
+      for (const [key, names] of Object.entries(expected)) {
+        const value = locale[key as keyof typeof home.en];
+        expect(typeof value, key).toBe('string');
+        expect(placeholders(value), key).toEqual(names);
+      }
+    }
+  });
+
   it("the nav label for the front page exists in both locales beside the planner's", () => {
     expect(chrome.en.navHome).toBe('Home');
     expect(chrome.pt.navHome).toBe('Início');
