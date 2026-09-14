@@ -173,6 +173,8 @@ export const createTeamPlanSlice: StateCreator<
         planInputSignature: envelope.signature,
         runStatus: 'done',
         runId: null,
+        planHeroes: selectTeamPlanInputs(state).heroes,
+        openHeroIds: null,
       });
     },
 

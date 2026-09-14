@@ -314,4 +314,16 @@ describe('hydratePlannerStore', () => {
     expect(state.plan).toEqual(envelope.plan);
     expect(state.runStatus).toBe('done');
   });
+
+  it('a restored plan names the roster it booted with', () => {
+    seedRosterAndAccount();
+    localStorage.setItem(TEAM_PLAN_KEY, JSON.stringify(envelopeFor(liveSignatureAfterBoot())));
+
+    hydratePlannerStore();
+    const state = usePlannerStore.getState();
+    expect(state.plan).not.toBeNull();
+    expect(state.heroes).toHaveLength(1);
+    expect(state.planHeroes).toEqual(state.heroes);
+    expect(state.openHeroIds).toBeNull();
+  });
 });
