@@ -327,6 +327,9 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'abilityIconRecipe',
   'artFrameRadiusClass',
   'artFrameRecipe',
+  // emptyGearSlotClass (2026-09-14): the dashed empty-slot tile was private to HeroGearIcons until
+  // the Optimizer's proposed-items grid started drawing the slots the plan leaves bare. One look.
+  'emptyGearSlotClass',
   'heroRankBandClass',
   'heroRankTextClass',
   'heroRankToneClass',

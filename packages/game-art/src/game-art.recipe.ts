@@ -122,6 +122,12 @@ export const abilityIconRecipe = cva(
 export type AbilityIconRecipeSize = keyof typeof abilityIconSize;
 export type ArtFrameRecipeSize = keyof typeof artFrameSize;
 
+/** A gear slot with nothing in it, drawn at the `lg` item-icon footprint. */
+export const emptyGearSlotClass = cn(
+  'inline-grid w-12 aspect-[18/19] shrink-0 border border-dashed border-line bg-[color-mix(in_oklch,var(--bg)_55%,var(--surface))]',
+  artFrameRadiusClass,
+);
+
 export const slotsGridClass = 'grid grid-cols-8 gap-1.5 max-[720px]:min-w-[720px]';
 export const slotStatsGridClass = `${slotsGridClass} mt-1.5`;
 export const slotStatRowClass =

@@ -66,6 +66,7 @@ export {
   artFrameRecipe,
   artFrameRadiusClass,
   abilityIconRecipe,
+  emptyGearSlotClass,
   iconMetaGlyphRecipe,
   rosterInactiveChromeClass,
   rosterIconTooltipTriggerClass,

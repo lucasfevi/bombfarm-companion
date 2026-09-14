@@ -113,7 +113,6 @@ export const teamPlanPagePtBR: TeamPlanPageCopy = {
   teamPlanHeroHitNormal: 'Hit normal',
   teamPlanHeroHitCritical: 'Hit crítico',
   teamPlanHeroBreakdownGearTitle: 'Itens propostos',
-  teamPlanHeroBreakdownGearEmpty: 'Nenhum item proposto para este herói.',
   teamPlanHeroBreakdownPointsTitle: 'Reset de pontos',
   teamPlanHeroBreakdownPointsEmpty: 'Nenhum reset de pontos é recomendado para este herói.',
   teamPlanRunedHeroes:

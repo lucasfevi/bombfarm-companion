@@ -17,6 +17,7 @@ export const teamPlanGearFlowEn = {
   teamPlanFlowRemovedWhyOther:
     'No other hero in scope can use it, so it waits in your inventory.',
   teamPlanFlowRowForge: 'Forge from +{from} to +{to}',
+  teamPlanFlowSlotEmpty: 'No item proposed',
   teamPlanForgeQueueHeading: 'Forge queue',
   teamPlanForgeQueueLadderAria: 'Forge ladder for {item}: +{from} to +{to}',
   teamPlanForgeQueueRolls: '≈ {rolls} rolls',

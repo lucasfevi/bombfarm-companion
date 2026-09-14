@@ -113,7 +113,6 @@ export const teamPlanPageEn = {
   teamPlanHeroHitNormal: 'Normal hit',
   teamPlanHeroHitCritical: 'Critical hit',
   teamPlanHeroBreakdownGearTitle: 'Proposed items',
-  teamPlanHeroBreakdownGearEmpty: 'No proposed items for this hero.',
   teamPlanHeroBreakdownPointsTitle: 'Point reset',
   teamPlanHeroBreakdownPointsEmpty: 'No point reset is recommended for this hero.',
   teamPlanRunedHeroes:

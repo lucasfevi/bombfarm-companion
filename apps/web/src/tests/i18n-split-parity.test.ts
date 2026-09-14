@@ -187,6 +187,10 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as { en: Strings; 
  */
 const KEYS_REMOVED: readonly string[] = [
   'navTeamPlan',
+  // The Optimizer's proposed-items grid draws every gear slot now (2026-09-14), so a hero the
+  // plan gives nothing shows eight named empty cards and the sentence that stood in for them has
+  // no reader left; its per-slot replacement is `teamPlanFlowSlotEmpty` (in `KEYS_ADDED`).
+  'teamPlanHeroBreakdownGearEmpty',
   // Split into `…Both`/`…Points`/`…Gear` (in `KEYS_ADDED`): the one string named gear moves and
   // point resets whatever Allowed changes was set to.
   'teamPlanOptimizeAria',
@@ -507,6 +511,9 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanFlowRowRemovedToInventory',
   'teamPlanFlowRemovedWhyCrowded',
   'teamPlanFlowRemovedWhyOther',
+  // Every slot drawn (2026-09-14): the line an empty card carries under the slot's name, so a
+  // grid one card short stops reading as an item the page lost.
+  'teamPlanFlowSlotEmpty',
   'navOptimizer',
   'teamPlanOptimizeAriaBoth',
   'teamPlanOptimizeAriaPoints',
