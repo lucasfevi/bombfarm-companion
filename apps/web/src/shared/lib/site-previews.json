@@ -6,9 +6,9 @@
     "cardHeadline": ["Your whole account,", "on one screen."],
     "cardChips": ["Top heroes", "Best phase", "Optimizer plan", "Market value"]
   },
-  "planner": {
-    "eyebrow": "Planner",
-    "title": "Planner — Bomb Farm Companion",
+  "heroes": {
+    "eyebrow": "Heroes",
+    "title": "Heroes — Bomb Farm Companion",
     "description": "Import your Bomb Farm save and see what your next skill point is worth — every hero's geared stats, gear sets, points and DPS. Free, and the save never leaves your browser.",
     "cardHeadline": ["Know what your next point", "is worth before you spend it."],
     "cardChips": ["Next-point DPS", "Gear & sets", "Skill points", "Respec payback"]

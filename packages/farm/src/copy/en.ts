@@ -66,7 +66,7 @@ export const farmEn = {
   phasesColNormalHit: "Normal",
   phasesColCritHit: "Crit",
   phasesColFieldTime: "Field",
-  phasesNoHeroes: "Import heroes in the Planner to see penetration and hits-to-kill here.",
+  phasesNoHeroes: "Import heroes to see penetration and hits-to-kill here.",
   phasesNoHeroesLink: "import a save to unlock hero rows.",
   phasesSquadSection: "Top {slots} by solo DPS",
   phasesSquadTip: "Sum of the highest solo sustained-DPS builds in your roster (same Account), up to your casa slot count.",

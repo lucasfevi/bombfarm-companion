@@ -689,7 +689,7 @@ describe('site navigation', () => {
 
   it('treats only the front page as an exact-path section', () => {
     expect(isSiteSectionActive('home', '/')).toBe(true);
-    expect(isSiteSectionActive('planner', '/')).toBe(false);
+    expect(isSiteSectionActive('heroes', '/')).toBe(false);
     expect(isSiteSectionActive('download', '/download')).toBe(true);
     expect(isSiteSectionActive('download', '/')).toBe(false);
   });

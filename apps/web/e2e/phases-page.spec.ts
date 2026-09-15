@@ -13,11 +13,11 @@ test.describe('Phases page', () => {
     await page.goto('/farm');
 
     await expect(page.getByRole('link', { name: /^Farm$/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /^Planner$/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /^Heroes$/i })).toBeVisible();
 
     const navLinks = page.getByRole('navigation', { name: 'Main sections' }).getByRole('link');
     await expect(navLinks.first()).toHaveText(/^Home$/i);
-    await expect(navLinks.nth(1)).toHaveText(/^Planner$/i);
+    await expect(navLinks.nth(1)).toHaveText(/^Heroes$/i);
     await expect(navLinks.nth(2)).toHaveText(/^Farm$/i);
     await expect(page.getByRole('heading', { name: /^Map$/i, level: 2 })).toBeVisible();
     await expect(page.getByRole('heading', { name: /^Economy$/i, level: 2 })).toBeVisible();
@@ -52,7 +52,7 @@ test.describe('Phases page', () => {
     await seedLocalStorage(page, { heroes: [], lang: 'en' });
     await page.goto('/farm');
 
-    await expect(page.getByText(/Import heroes in the Planner/i)).toBeVisible();
+    await expect(page.getByText(/Import heroes to see penetration/i)).toBeVisible();
 
     await page.getByRole('button', { name: /^Import/i }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
@@ -62,7 +62,7 @@ test.describe('Phases page', () => {
     await expect(page.getByRole('dialog')).toBeHidden();
 
     await expect(page.getByText(/Combined sustained DPS/i)).toBeVisible();
-    await expect(page.getByText(/Import heroes in the Planner to see/i)).toBeHidden();
+    await expect(page.getByText(/Import heroes to see penetration/i)).toBeHidden();
   });
 
   test('your hero uses the planner switcher and squad table reflects casa slots', async ({ page }) => {

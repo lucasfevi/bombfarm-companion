@@ -73,7 +73,7 @@ export const farmPtBR: FarmCopy = {
   phasesColNormalHit: "Normal",
   phasesColCritHit: "Crít.",
   phasesColFieldTime: "Campo",
-  phasesNoHeroes: "Importe heróis no Planner para ver penetração e hits-to-kill aqui.",
+  phasesNoHeroes: "Importe heróis para ver penetração e hits-to-kill aqui.",
   phasesNoHeroesLink: "importe um save para liberar linhas por herói.",
   phasesSquadSection: "Top {slots} por DPS solo",
   phasesSquadTip: "Soma dos maiores DPS solo sustentados do roster (mesma Conta), até o limite de slots da casa.",

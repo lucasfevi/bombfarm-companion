@@ -8,7 +8,7 @@ function activePanel(page: import('@playwright/test').Page) {
 test.describe('planner tabs IA (PTI)', () => {
   test('tab list exposes Hero / Combat / Gear / Points (no Check, no Account)', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
 
     const tabs = page.getByRole('tab');
@@ -23,7 +23,7 @@ test.describe('planner tabs IA (PTI)', () => {
 
   test('Points tab stacks Points / Next point then Stats; Effective moved to Combat', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
 
     await page.getByRole('tab', { name: /^Points$/i }).click();
@@ -37,7 +37,7 @@ test.describe('planner tabs IA (PTI)', () => {
 
   test('Combat tab stacks the phase control, Effective, then the abilities and auras — no hero panel of its own', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
 
     await page.getByRole('tab', { name: /^Combat$/i }).click();
@@ -54,7 +54,7 @@ test.describe('planner tabs IA (PTI)', () => {
 
   test('picking a phase on Combat moves the strip, and Back returns it', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     const hit = page.getByRole('region', { name: /current hero/i }).getByText(/^Hit$/i).locator('..');
     const hitBefore = await hit.textContent();
@@ -81,7 +81,7 @@ test.describe('planner tabs IA (PTI)', () => {
 
   test('Gear tab includes Items subsection (Stats lives on Points)', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await page.getByRole('tab', { name: /^Gear$/i }).click();
 
@@ -94,7 +94,7 @@ test.describe('planner tabs IA (PTI)', () => {
   test('Points / Next point facts pair side-by-side above 720px', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.setViewportSize({ width: 1100, height: 900 });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
 
     await page.getByRole('tab', { name: /^Points$/i }).click();
@@ -124,7 +124,7 @@ test.describe('planner tabs IA (PTI)', () => {
       lang: 'en',
       heroes: importedRoster.heroes,
     });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
 
     const pointsTab = page.getByRole('tab', { name: /^Points$/i });
@@ -165,7 +165,7 @@ test.describe('planner tabs IA (PTI)', () => {
 
   test('no Context panel heading anywhere', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
 
     await expect(page.getByRole('heading', { name: /^Context$/i, level: 2 })).toHaveCount(0);
@@ -213,14 +213,14 @@ test.describe('HeroStrip reset-advice warn chrome', () => {
 
   test('warn border shows when the gate fires; not when it does not', async ({ page }) => {
     await seedLocalStorage(page, heroStripHero(firingPts));
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     const firing = heroStripSection(page);
     await expect(firing).toHaveClass(/border-\[color-mix/);
     await expect(firing).not.toHaveClass(/\bborder-line\b/);
 
     await seedLocalStorage(page, heroStripHero(quietPts));
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     const quiet = heroStripSection(page);
     await expect(quiet).toHaveClass(/\bborder-line\b/);
@@ -229,7 +229,7 @@ test.describe('HeroStrip reset-advice warn chrome', () => {
 
   test('no roster-wide banner is drawn above the strip when the gate fires', async ({ page }) => {
     await seedLocalStorage(page, heroStripHero(firingPts));
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
 
     await expect(heroStripSection(page)).toHaveClass(/border-\[color-mix/);
@@ -238,7 +238,7 @@ test.describe('HeroStrip reset-advice warn chrome', () => {
 
   test('delete is the only icon control in the strip action column', async ({ page }) => {
     await seedLocalStorage(page, heroStripHero(firingPts));
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
 
     const strip = heroStripSection(page);
@@ -248,7 +248,7 @@ test.describe('HeroStrip reset-advice warn chrome', () => {
 
   test('Points tab warn-dots when the reset gate fires', async ({ page }) => {
     await seedLocalStorage(page, heroStripHero(firingPts));
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
 
     await expect(page.getByRole('tab', { name: /^Points$/i }).locator('[data-tab-badge="warn"]')).toBeVisible();
@@ -256,7 +256,7 @@ test.describe('HeroStrip reset-advice warn chrome', () => {
 
   test('a disabled hero is left out of the strip warn and the Points tab warn', async ({ page }) => {
     await seedLocalStorage(page, heroStripHero(firingPts, false));
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
 
     await expect(heroStripSection(page)).toHaveClass(/\bborder-line\b/);
@@ -266,7 +266,7 @@ test.describe('HeroStrip reset-advice warn chrome', () => {
 
   test('enabling a disabled hero restores automatic respec chrome', async ({ page }) => {
     await seedLocalStorage(page, heroStripHero(firingPts, false));
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
 
     await page.getByRole('switch', { name: /enable or disable this hero/i }).click();
@@ -279,12 +279,12 @@ test.describe('HeroStrip reset-advice warn chrome', () => {
     page,
   }) => {
     await seedLocalStorage(page, heroStripHero(firingPts));
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     const firingBox = await heroStripSection(page).boundingBox();
 
     await seedLocalStorage(page, heroStripHero(quietPts));
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     const quietBox = await heroStripSection(page).boundingBox();
 
@@ -298,7 +298,7 @@ test.describe('HeroStrip reset-advice warn chrome', () => {
     page,
   }) => {
     await seedLocalStorage(page, heroStripHero(firingPts));
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
 
     const strip = heroStripSection(page);
@@ -311,7 +311,7 @@ test.describe('HeroStrip reset-advice warn chrome', () => {
     // Moved here from the account specs when the Account panel became its own page: this has
     // always been about the planner's Points tab, not about the Account panel.
     await seedLocalStorage(page, importedRoster);
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await page.getByRole('tab', { name: /^pontos$/i }).click();
     const advice = activePanel(page);

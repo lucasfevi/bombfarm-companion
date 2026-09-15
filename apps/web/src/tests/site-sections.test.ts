@@ -9,28 +9,31 @@ import {
 } from '@/shared/lib/site-sections';
 
 describe('site sections', () => {
-  it('home is first and planner is second, in the order the nav draws them', () => {
+  it('home is first and heroes is second, in the order the nav draws them', () => {
     expect(SITE_SECTIONS).toEqual([
       'home',
-      'planner',
+      'heroes',
       'farm',
       'optimizer',
       'inventory',
       'account',
       'download',
     ]);
-    expect(NAV_SECTIONS).toEqual(['home', 'planner', 'farm', 'optimizer', 'inventory', 'account']);
+    expect(NAV_SECTIONS).toEqual(['home', 'heroes', 'farm', 'optimizer', 'inventory', 'account']);
     expect(SITE_SECTION_HREF.home).toBe('/');
-    expect(SITE_SECTION_HREF.planner).toBe('/planner');
+    expect(SITE_SECTION_HREF.heroes).toBe('/heroes');
+    expect(SITE_SECTION_LABEL_KEY.heroes).toBe('navHeroes');
+    expect(STRINGS.en[SITE_SECTION_LABEL_KEY.heroes]).toBe('Heroes');
+    expect(STRINGS.pt[SITE_SECTION_LABEL_KEY.heroes]).toBe('Heróis');
     expect(SITE_SECTION_LABEL_KEY.home).toBe('navHome');
     expect(STRINGS.en[SITE_SECTION_LABEL_KEY.home]).toBe('Home');
   });
 
-  it('home matches only the root and planner matches its own prefix', () => {
+  it('home matches only the root and heroes matches its own prefix', () => {
     expect(isSiteSectionActive('home', '/')).toBe(true);
-    expect(isSiteSectionActive('home', '/planner')).toBe(false);
-    expect(isSiteSectionActive('planner', '/planner/anything')).toBe(true);
-    expect(isSiteSectionActive('planner', '/')).toBe(false);
+    expect(isSiteSectionActive('home', '/heroes')).toBe(false);
+    expect(isSiteSectionActive('heroes', '/heroes/anything')).toBe(true);
+    expect(isSiteSectionActive('heroes', '/')).toBe(false);
   });
 
   it('download is a section but not a tab', () => {

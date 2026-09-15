@@ -113,7 +113,7 @@ test.describe('combat breakdown panel', () => {
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page, 'en');
 
@@ -148,7 +148,7 @@ test.describe('combat breakdown panel', () => {
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
 
@@ -168,7 +168,7 @@ test.describe('combat breakdown panel', () => {
   test('narrow (380px): the same twenty figures stack one per row, still without a click', async ({ page }) => {
     await page.setViewportSize({ width: 380, height: 900 });
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
 
@@ -187,7 +187,7 @@ test.describe('combat breakdown panel', () => {
 
   test('hovering Hit lights the wires from Attack, Mitigation factor and Damage multiplier', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
 
@@ -213,7 +213,7 @@ test.describe('combat breakdown panel', () => {
     page,
   }) => {
     await seedLocalStorage(page, { ...withExtraBattery(importedRoster), lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
 
@@ -238,7 +238,7 @@ test.describe('combat breakdown panel', () => {
   test('narrow: the same Field time popover opens from the stacked card', async ({ page }) => {
     await page.setViewportSize({ width: 380, height: 900 });
     await seedLocalStorage(page, { ...withExtraBattery(importedRoster), lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
 
@@ -269,7 +269,7 @@ test.describe('combat breakdown panel', () => {
     }
 
     await seedLocalStorage(page, seeded('en'));
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
     await cardFace(page, 'critChance').hover();
@@ -280,7 +280,7 @@ test.describe('combat breakdown panel', () => {
     await expect(ledger.locator('[data-ledger-group="skillTree"]')).toContainText(/^Skill tree/);
 
     await seedLocalStorage(page, seeded('pt'));
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'pt');
     await cardFace(page, 'critChance').hover();
@@ -295,7 +295,7 @@ test.describe('combat breakdown panel', () => {
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
 
@@ -315,7 +315,7 @@ test.describe('combat breakdown panel', () => {
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
 
@@ -332,7 +332,7 @@ test.describe('combat breakdown panel', () => {
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
 
@@ -353,7 +353,7 @@ test.describe('combat breakdown panel', () => {
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
 
@@ -365,7 +365,7 @@ test.describe('combat breakdown panel', () => {
 
   test('Hit updates when points change', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
     const hitBefore = await cardValue(page, 'hit').innerText();
@@ -381,7 +381,7 @@ test.describe('combat breakdown panel', () => {
 
   test('Points tab soft-badges when setup incomplete; Effective stays neutral', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
 
     const pointsTab = page.getByRole('tab', { name: /^points$/i });

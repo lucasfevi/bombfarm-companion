@@ -58,7 +58,7 @@ function storedLevelOf(page: Page, name: string): Promise<number | null> {
 }
 
 async function levelUpAHero(page: Page, name: string) {
-  await openSection(page, 'Planner');
+  await openSection(page, 'Heroes');
   await selectSavedHero(page, name);
   const before = await storedLevelOf(page, name);
   expect(before).not.toBeNull();
@@ -185,7 +185,7 @@ test.describe('Home optimizer card', () => {
     await pickObjective(page, /^DPS$/i);
     await expect(results(page)).toHaveCount(0);
 
-    await openSection(page, 'Planner');
+    await openSection(page, 'Heroes');
     await expect(page.getByRole('region', { name: /current hero/i })).toBeVisible();
     await openSection(page, 'Optimizer');
 

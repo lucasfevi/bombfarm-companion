@@ -58,12 +58,12 @@ describe('home copy', () => {
     }
   });
 
-  it("the nav label for the front page exists in both locales beside the planner's", () => {
+  it("the nav label for the front page exists in both locales beside the heroes page's", () => {
     expect(chrome.en.navHome).toBe('Home');
     expect(chrome.pt.navHome).toBe('Início');
-    expect(chrome.en.navPlanner).toBe('Planner');
-    expect(chrome.pt.navPlanner).toBe('Planner');
+    expect(chrome.en.navHeroes).toBe('Heroes');
+    expect(chrome.pt.navHeroes).toBe('Heróis');
     const keys = Object.keys(chrome.en);
-    expect(keys.indexOf('navPlanner')).toBe(keys.indexOf('navHome') + 1);
+    expect(keys.indexOf('navHeroes')).toBe(keys.indexOf('navHome') + 1);
   });
 });
