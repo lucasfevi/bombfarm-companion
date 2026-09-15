@@ -10,8 +10,7 @@ point search price team auras per candidate.
 **Two game values moved** since the 2026-09-02 bundle, and both reach a screen:
 
 - **Return Bonus** is now +50% (was +40%) and +100% for VIP (was +80%). The Farm board's
-  Return Bonus estimate on both hosts scales gold, XP and every drop rate by ×1.5 / ×2 instead of
-  ×1.4 / ×1.8.
+  Return Bonus estimate on both hosts scales gold and XP by ×1.5 / ×2 instead of ×1.4 / ×1.8.
 - **Misericórdia** executes rock below 0.75% of its HP per level (was 1.25%), so 15% at rank 20
   instead of 25%. Every DPS figure for a hero carrying it — the Heroes seat, the Farm board, the
   Optimizer — prices the smaller threshold, and the ability's effect text on both hosts says 0.75%.

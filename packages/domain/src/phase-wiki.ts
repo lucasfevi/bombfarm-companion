@@ -119,9 +119,9 @@ export function dropAppliesOnPhase(id: DropRateId, gate: boolean): boolean {
 
 /** Keys spent to enter one gate. Live 1. ← `drops.keyGateCost` */
 export const KEY_GATE_COST: number = wiki.drops.keyGateCost;
-/** Return Bonus, non-VIP. Live 0.5. ← `drops.bonusAdd` */
+/** Return Bonus on gold and XP (not drops), non-VIP. Live 0.5. ← `drops.bonusAdd` */
 export const RETURN_BONUS_ADD: number = wiki.drops.bonusAdd;
-/** Return Bonus, VIP. Live 1. ← `drops.bonusAddVip` */
+/** Return Bonus on gold and XP (not drops), VIP. Live 1. ← `drops.bonusAddVip` */
 export const RETURN_BONUS_ADD_VIP: number = wiki.drops.bonusAddVip;
 /** Banked offline seconds cap. Live 28800. ← `drops.bonusCapSecs` */
 export const RETURN_BONUS_CAP_SECS: number = wiki.drops.bonusCapSecs;
