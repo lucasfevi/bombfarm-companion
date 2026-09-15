@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
-  MARKET_QUOTE_CURRENCY,
+  DEFAULT_MARKET_QUOTE_CURRENCY,
+  MARKET_QUOTE_CURRENCIES,
   emptyMarketSnapshotView,
+  isMarketQuoteCurrency,
   isMarketQuoteTarget,
   type MarketQuoteResult,
 } from './market.js';
@@ -59,7 +61,23 @@ describe('market quote result', () => {
     expect(failure.keptAmount).toBe(25);
   });
 
-  it('quotes in one currency', () => {
-    expect(MARKET_QUOTE_CURRENCY).toBe('BRL');
+  it('defaults to BRL, the one currency every install quoted in before the setting existed', () => {
+    expect(DEFAULT_MARKET_QUOTE_CURRENCY).toBe('BRL');
+    expect(isMarketQuoteCurrency(DEFAULT_MARKET_QUOTE_CURRENCY)).toBe(true);
+  });
+});
+
+describe('isMarketQuoteCurrency', () => {
+  it('accepts every offered code and nothing else', () => {
+    for (const code of MARKET_QUOTE_CURRENCIES) expect(isMarketQuoteCurrency(code)).toBe(true);
+    expect(isMarketQuoteCurrency('brl')).toBe(false);
+    expect(isMarketQuoteCurrency('SEK')).toBe(false);
+    expect(isMarketQuoteCurrency(7)).toBe(false);
+    expect(isMarketQuoteCurrency(null)).toBe(false);
+  });
+
+  it('offers each ISO-4217 code once, as three capital letters', () => {
+    expect(new Set(MARKET_QUOTE_CURRENCIES).size).toBe(MARKET_QUOTE_CURRENCIES.length);
+    for (const code of MARKET_QUOTE_CURRENCIES) expect(code).toMatch(/^[A-Z]{3}$/);
   });
 });

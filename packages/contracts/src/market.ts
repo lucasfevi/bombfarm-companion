@@ -7,9 +7,62 @@
  * is what makes narrowing the type parameter on the far side sound.
  */
 
-export const MARKET_QUOTE_CURRENCY = 'BRL';
+/**
+ * The ISO-4217 codes the desktop may fetch its own per-item quotes in. The Steam id each one is
+ * sent as lives in the pricing package, beside the endpoint that consumes it; a test there holds
+ * the two lists to the same set, so a code offered here is never one the fetch would silently
+ * downgrade to USD.
+ */
+export const MARKET_QUOTE_CURRENCIES = [
+  'USD',
+  'GBP',
+  'EUR',
+  'CHF',
+  'RUB',
+  'PLN',
+  'BRL',
+  'JPY',
+  'NOK',
+  'IDR',
+  'MYR',
+  'PHP',
+  'SGD',
+  'THB',
+  'VND',
+  'KRW',
+  'TRY',
+  'UAH',
+  'MXN',
+  'CAD',
+  'AUD',
+  'NZD',
+  'CNY',
+  'INR',
+  'CLP',
+  'PEN',
+  'COP',
+  'ZAR',
+  'HKD',
+  'TWD',
+  'SAR',
+  'AED',
+  'ARS',
+  'ILS',
+  'KZT',
+  'KWD',
+  'QAR',
+  'CRC',
+  'UYU',
+] as const;
 
-export type MarketQuoteCurrency = typeof MARKET_QUOTE_CURRENCY;
+export type MarketQuoteCurrency = (typeof MARKET_QUOTE_CURRENCIES)[number];
+
+/** What every install quoted in before the setting existed, so an upgrade changes nothing. */
+export const DEFAULT_MARKET_QUOTE_CURRENCY: MarketQuoteCurrency = 'BRL';
+
+export function isMarketQuoteCurrency(value: unknown): value is MarketQuoteCurrency {
+  return typeof value === 'string' && (MARKET_QUOTE_CURRENCIES as readonly string[]).includes(value);
+}
 
 export type MarketSnapshotSource = 'none' | 'cache' | 'network';
 
