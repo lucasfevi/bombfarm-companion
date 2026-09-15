@@ -1,5 +1,108 @@
 # @bombfarm/game-art
 
+## 0.5.0
+
+### Minor Changes
+
+- 33ff64b: Draw the equipped items on the desktop's Gear stage — art in its rarity frame, name, tier, level,
+  forge and the slot it sits in — instead of eight bare stat cards.
+
+  The Heroes screen's Gear stage used to print only each slot's stat contributions ("Damage
+  +6,733.7 / Crit Chance +15.0%") with nothing saying which item they came from. It now draws the
+  same slot card the web planner draws: the slot's name on top, the item's art centred in its rarity
+  frame, the item's set with its forge `+N`, its tier in the tier's colour beside its level, and
+  the stats it contributes beneath under their short labels ("Dmg", "Crit", "CDR" / "Dano", "Crít",
+  "Recarga"). An empty slot shows a dashed tile and "Empty". The stage stays read-only — no control
+  on it changes the loadout.
+
+  One card for both hosts. `GearSlotCard` lives in `@bombfarm/hero`; the shared Items panel draws it
+  whenever a host supplies no slot editor, and the web planner's editor now wraps the same card,
+  handing its level, rarity and forge selects in as the card's children, pinned to the foot of the
+  card so they line up across a row — so the per-slot stats that used to sit in a second row under
+  the editors now sit inside each card, under the item they belong to. The eight slots lay out four
+  across in two rows, centred, and go to one row of eight once the panel is 64rem wide — the widest
+  the desktop shell lets it get — where every card's header, art, name and tier line still sit on
+  the same rows as its neighbours'.
+
+  The totals table under the cards loses its "Damage (% of Attack)" column: no item in the current
+  catalog carries a percent damage bonus, so it read +0.0% on every account.
+
+- 306d2d0: Paint each band of the grade scale in the colour the game prints that grade in, so the six read
+  left to right as the ladder they are, with the hero's own grade lifted out of them.
+
+  The abilities panel keeps one figure — how much of the point budget is spent — in place of the
+  slot count, the granted-against-spendable split and the dead-point total. Points a hero can never
+  spend are a consequence of its level and rarity, not something it can act on, so the panel no
+  longer spends four rows saying so.
+
+- 306d2d0: Name the planner's first tab for the hero rather than for one of the panels inside it, now that
+  it carries identity and the birth roll as well as abilities.
+
+  The birth-roll readout drops the distance-to-next-grade line, spaces the band's ends so a range
+  reads as one span, and explains the roll-quality figure on hover — it is the average of the eight
+  percentiles, which nothing on screen said. The grade rail carries a wash of the colour the game
+  prints that grade in. The market tile answers with a price or with not-marketable: "sellable,
+  amount unknown" told a player nothing they could act on.
+
+### Patch Changes
+
+- 5ad5aa2: `HeroAbilityIcons` takes a `size`, defaulting to the large frame it always drew, so a dense table can ask for a smaller one.
+- b0f4431: Read a hero's market value on Steam, and say what unit each figure is in.
+
+  **The market value is a link to the listing it was read off.** The tile carries the Steam mark and
+  opens the Community Market page for that rarity — in the browser on both apps. A price this app
+  quotes from a market it does not own is worth more when you can go and check it.
+
+  **Each figure carries its own unit, and each name stops carrying one.** The Points table prints
+  `45,45%` where it printed `45,45`, so the four rate stats are named `Crit` rather than `Crit %`.
+  The stat sheet and the team-plan breakdown, whose rows show many figures at once, keep the unit on
+  the name instead — one mark per row rather than nine. In pt-BR the column is `Atributo`, and the
+  Effective stats panel is `Atributos efetivos`, matching the labels beneath them; English still
+  calls a stat a stat.
+
+  **The Preview column only appears where something can fill it.** It shows what the Optimize build
+  search proposes, so on a screen with no search to run it was a permanently empty column taking
+  width from the figures beside it.
+
+  **Two things the sheet no longer says.** The desktop's sheet note said the breakdown came from
+  your save; it reads the running game, and now says so. And a birth roll that lands near a grade
+  boundary no longer prints a caveat about it — it is still a placement, and the sentence changed
+  nothing a player would do.
+
+  Descenders are no longer clipped off the identity panel's values: a truncated line at a line
+  height of 1 cuts the tail off a `g`.
+
+- Updated dependencies [a112580]
+- Updated dependencies [0d241f6]
+- Updated dependencies [306d2d0]
+- Updated dependencies [9df458b]
+- Updated dependencies [579684a]
+- Updated dependencies [33ff64b]
+- Updated dependencies [374c22d]
+- Updated dependencies [16c218d]
+- Updated dependencies [5ad5aa2]
+- Updated dependencies [c3019aa]
+- Updated dependencies [dae7398]
+- Updated dependencies [b0f4431]
+- Updated dependencies [c336926]
+- Updated dependencies [306d2d0]
+- Updated dependencies [306d2d0]
+- Updated dependencies [8afbad5]
+- Updated dependencies [047ce89]
+- Updated dependencies [30428ba]
+- Updated dependencies [13c01e7]
+- Updated dependencies [aa63003]
+- Updated dependencies [fcc507e]
+- Updated dependencies [306d2d0]
+- Updated dependencies [374c22d]
+- Updated dependencies [8ca17f2]
+- Updated dependencies [c4573ed]
+- Updated dependencies [6fe7247]
+- Updated dependencies [5dffa73]
+- Updated dependencies [4329c1a]
+  - @bombfarm/domain@1.1.0
+  - @bombfarm/ui@0.13.0
+
 ## 0.4.2
 
 ### Patch Changes

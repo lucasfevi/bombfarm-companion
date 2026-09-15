@@ -1,5 +1,220 @@
 # @bombfarm/ui
 
+## 0.13.0
+
+### Minor Changes
+
+- 9df458b: The Effective stats panel on the Combat tab (web planner) and the Combat stage (desktop Heroes
+  screen) no longer folds each figure behind an accordion row. Both apps now draw one shared panel
+  from the hero package: the combat figures as a pipeline of cards — Sheet (the seven combat sheet
+  stats), Factors (Damage multiplier, Mitigation factor, Critical factor, Fuse, Field time, Rest),
+  Per hit · cadence (Hit, Critical hit, Average hit, Bombs/s, Uptime) and DPS (Active, Sustained)
+  — with curved wires between the cards that feed each other, so every figure is visible without a
+  click and Speed's card is seen feeding Bombs/s. Each card carries a short symbolic formula, and at
+  its bottom edge the icon of every ability or aura that reaches it — Grito on Attack, Marcha on
+  Speed, Presságio on Crit Chance, Brecha on Penetration, Detonação Dupla, Misericórdia, Matilha and
+  Passagem de Bastão on Damage multiplier, Fôlego and Bateria Extra on Field time, Explosão Ampla on
+  Active DPS, Contra o Relógio on Attack on a gate phase — dimmed while the aura's switch is off;
+  hovering an icon names the ability. Hovering or focusing a card opens one popover on both layouts:
+  a derived figure shows its substituted formula with every term named, the inputs it reads as
+  chips, and a note where the model has one (the fuse at its ceiling, an average hit equal to the
+  hit because crit chance is zero, what Field time would read without the team's Fôlego); a sheet
+  stat shows its ledger grouped by game line. Hovering a card also lights the wires that feed it.
+  The Mitigation factor card carries the penetration reading ("covers the phase" / "12.2% short of
+  this phase") that the hero panel used to print; that panel leaves the Combat stage altogether —
+  the hero is the one the strip or the roster holds, and the prop table goes with it (the Farm
+  page's hero panel keeps both). Under the pipeline, the seven combat sheet stats as a matrix — Hero
+  (base, level, stars and points folded to one figure; hover for the four), Gear, Ability, Skill
+  tree, Sheet total, Aura ×, Effective — always all seven rows, with "—" for an empty cell and "off"
+  where an aura exists but its switch is off; a Rune × column appears only while a rune is on the
+  sheet. The panel's own width picks the layout: the pipeline at 820px and up, the same cards
+  stacked one per row under the same four labels below that. Average hit joins the derived
+  breakdown as its own figure (hit × critical factor), and the Active DPS formula reads it rather
+  than a second damage multiplier — no value moves.
+
+  Baton Pass is now the sixth team aura behind a switch in the Abilities & auras section, beside
+  the five standing ones: the hero's own rank counts on its own entry pulse and cannot be switched
+  off; for a hero without it the switch prices that pulse at the field-wide cap (+80% for the
+  window), whoever would carry it, and the row says what flipping it does to sustained DPS like the
+  others. It leaves the own-abilities list. The drain-reductions note under the section is gone.
+
+  Both panels on the Combat tab and stage now carry their explanation behind an info glyph beside
+  the title, the way the Optimizer's setup bar does, instead of an intro paragraph; the Effective
+  stats explanation no longer describes how Baton Pass is counted. The info glyph is a design-system
+  primitive now, `InfoTip`, and the Optimizer draws it from there.
+
+  A hero's own Baton Pass pulse now reaches every figure a per-hero screen prints, not only the
+  DPS pair: Hit, Critical hit and Average hit carry the pulse's expectation over wall clock, and the
+  Damage multiplier card names the pulse as its own factor — so switching Baton Pass on moves Hit
+  the way it moves Sustained DPS. Hits-to-kill still reads the unpulsed hit (a threshold is crossed
+  at a level the field sits at, never at the average of two), and the Farm board's pricing is
+  untouched.
+
+  On a hero's own screen Baton Pass is counted as if its pulse never lapsed — the whole stint at
+  its level, +80% at the cap — because the screen answers what the hero is worth with the pulse on;
+  the Farm page and the Optimizer keep counting only the 120 s each entry lights. The Damage
+  multiplier card's popover says so, the aura row's figure reads "pulse held up", and the section's
+  info glyph explains the difference. A line under the Effective stats title says a card's figure
+  opens its formula on hover or focus; inside a popover the main figure stays white while every
+  term, step and running total is accent or muted, and the popover grows to keep a formula on one
+  line. The sheet-stat matrix is striped.
+
+  The penetration reading told the wrong story. Penetration pierces a share of the phase's
+  mitigation (`dano = ataque × (1 − mitig × (1 − pen/100))`), not points off it, so 42.6%
+  penetration against an 8.36% phase still loses 4.8% of every hit — yet the hero panel called that
+  "covering the phase" / "Fully piercing" because 42.6 ≥ 8.36, and the Phases page's mitigation tip
+  said "8.4% pen ignores all mitigation". Both now say what the phase still takes off each hit
+  ("4.8% of each hit lost — 42.6% of the phase's 8.36% pierced"), "nothing lost" only at 100%, and
+  the Mitigation factor card's popover spells the rule out.
+
+### Patch Changes
+
+- 579684a: A Combat tab on the planner, and one phase picker for it on both apps.
+
+  **The planner has the desktop app's fourth stage now.** Hero, Combat, Gear, Points — the same
+  four the desktop Heroes screen draws, from the same implementations. Combat holds the phase the
+  figures are for, one hero against that phase (whether it pierces the mitigation, the average hit,
+  the fuse floor, the cooldown-reduction ceiling, the prop table), and the per-statistic breakdown,
+  which moves here from the bottom of Points. Picking a phase on it moves every figure the planner
+  prints — the hero strip, Gear and Points read the same numbers — and leaves the Farm page's own
+  selection alone.
+
+  **The phase picker is the optimizer's.** Type `Hard 1-1`, `Normal 2-1` or `151` and pick the
+  phase, on the desktop as on the planner, instead of stepping a number box. The button beside it
+  reads **Back to your current phase** and stands as tall as the picker.
+
+- 374c22d: Optimizer tab: the roster gear and points planner, from the live account.
+
+  **A new tab, between Forge and Account.** The nav now reads Live · Farm · Heroes · Inventory ·
+  Forge · Optimizer · Account · Settings. It proposes the same forge list, move list and point
+  resets the website's optimizer does — from the account the app already holds, with no export and
+  no import. Like the Farm board it works from a snapshot taken when the tab opens: nothing on it
+  moves on a live tick, the Refresh control dates the numbers by the account read behind them, and
+  a plan the account has moved past is labelled rather than silently recomputed. The search runs in
+  a background worker; if that worker cannot start, the same search runs on the main page and the
+  summary says so.
+
+  **Your controls are remembered.** Objective, allowed changes, forge floor, crowding, target phase
+  and every hero's Optimize / Donate / Leave alone choice survive a relaunch. A plan never does.
+
+  **The Farm respec panel now points here** for item moves and forges.
+
+  **The top bar gives up its words a little sooner.** An eighth tab makes the worded strip about
+  105px wider and the glyph strip 36px wider, so all three widths the bar degrades at moved with it.
+  At the smallest window a player can drag to, the secondary actions now sit behind the overflow
+  button; the tabs and the brand mark still fit.
+
+- c3019aa: Forge queue: forge the Optimizer's chores in turn, without leaving the tab.
+
+  **Add to queue on every forge chore.** Each entry of an Optimizer hero row's forge queue carries
+  an _Add to queue_ button; one press puts the piece and its target on the app's forge queue and the
+  button reads _Queued_. One entry per piece — a re-run plan that moves a piece's target moves the
+  queued target rather than adding a second entry.
+
+  **A band under the top bar runs it.** While the queue holds anything, a band between the nav and
+  the screen shows the queue: `0/3 forged`, the piece rolling and its climb so far
+  (`+9 → +12 · 4 rolls · 12.3k gold`), and Start or Cancel. Start asks first — the dialog prints the
+  expected gold for everything queued, coin and all — and is
+  held back for the same reasons the Forge button is: an account with no server behind it, or the
+  forge writes switch off. Pieces are forged in order with no per-piece limits, one run at a time
+  through the same path the Forge tab uses, so the Forge tab's rail draws each queued run as it
+  rolls. The queue stops on any piece that stops short of its target — out of gold, a server
+  cooldown, a refused item — and names the reason in the band; Resume picks up from that piece.
+  A piece the bag no longer holds, or one already at its target, leaves the queue on its own.
+
+  **The Forge tab lists it, feeds it and runs it.** A Forge queue panel beside the bag lists every
+  queued piece with its climb, lets you take one off, and carries the same Start, Cancel and Clear
+  as the band; the plan panel carries _Add to queue_ under its Forge button — the piece in hand, at the
+  target the panel shows. The waiting pieces survive a restart — restored paused, never started on
+  their own.
+
+  `@bombfarm/team-plan`: `TeamPlanScreenSlots.forgeQueueAction` — a host-supplied control drawn at
+  the end of each forge-queue entry. The web supplies none and renders exactly as before.
+
+  `@bombfarm/ui`: `AppShell` gains a `banner` slot between the top bar and `<main>` (absent renders
+  nothing), and `ConfirmDialog`'s close sits in the popup's own corner rather than inside the
+  padding.
+
+- b0f4431: Show a hero's abilities beside its identity, and give the desktop hero screen the planner's stages.
+
+  **The ability pool now sits under the portrait.** The identity panel's left column holds the
+  portrait, name and stars with the pool below them — each ability's icon and its level out of 20,
+  nothing else. Which abilities a hero owns and how far each is levelled is the first thing you check
+  about a hero, and until now it meant scrolling past the birth roll to reach the abilities panel.
+  That panel is unchanged and still the place that says what each ability does, what its next level
+  is worth, and — in the planner — spends the point. A hero with no pool draws no strip.
+
+  **The desktop hero screen is four stages instead of one long column.** Hero, Combat, Gear and
+  Points, where the column used to run identity → phase → combat → abilities → next point → points →
+  sheet → items → effective stats without a break. Hero, Gear and Points hold what the planner's tabs
+  of those names hold, panel for panel, so the two apps read the same way; Combat is the fourth
+  because this screen computes the phase-scoped figures the planner folds into its hero strip, and
+  it carries the phase control beside them. Points also picks up the planner's own arrangement: the
+  points table and the next-point ranking side by side, then the stat sheet, then the breakdown.
+
+- c336926: The Heroes screen no longer shows a horizontal scrollbar under the roster and the hero's stages.
+
+  The four stages sit side by side in one strip with the inactive ones held off screen, and an
+  `sr-only` caption on the Gear stage's totals table — being absolutely positioned, with nothing in
+  the strip positioned above it — was measured against the scrolling region rather than the strip,
+  so the region grew a scrollbar for content nobody could see. Every hero with equipment showed it.
+  The strip's stage boxes are now positioned, so the clip reaches everything inside them.
+
+- 306d2d0: Show a hero's stat sheet, its items and its best next stat point on the Heroes screen.
+
+  **The whole reference half of a hero's detail is on the desktop now.** Under the combat and
+  abilities panels the screen already drew, it adds what to spend your next stat point on, the points
+  this hero has placed, the stat sheet peeled apart from the birth roll through level, stars,
+  abilities, gear, points and skill tree, everything the hero is wearing with each slot's
+  contribution and the totals, and finally where each combat figure came from — an expandable row per
+  number, showing either the running ledger that builds it or the formula it is substituted into.
+
+  **It reads your account and changes nothing.** Every one of those panels can be edited elsewhere;
+  here none of them is. No stat steppers, no Reset, no Optimize build, no item editor, and the gear
+  comparison shows the figures with nothing that could rewrite either loadout. The one control on the
+  whole half is the target the next-point ranking is read against.
+
+  **Ranking for farming says why it cannot answer, instead of going blank.** That ranking is scored
+  against a farming rotation, which this screen does not compose — so asking for it keeps the damage
+  ranking on screen and says plainly that there is no rotation to rank against, rather than showing
+  an empty list that reads as "nothing is worth a point".
+
+  **Both languages, from one place.** All 125 of these labels, headings and notes now ship with the
+  panels themselves in English and Brazilian Portuguese, so the desktop and the web planner cannot
+  drift into saying different things about the same number.
+
+- 306d2d0: Add the Heroes tab.
+
+  **A new tab, between Farm and Inventory.** The nav now reads Live · Farm · Heroes · Inventory ·
+  Forge · Account · Settings. It sits beside the farm board because that is where per-hero numbers
+  are read today. The screen itself arrives in the next change; for now the tab shows the honest
+  "nothing read from your account yet" empty state, in both languages.
+
+  **The top bar gives up its words a little sooner.** A seventh tab makes the worded strip about
+  77px wider, so the two widths the bar degrades at moved with it — the actions collapse behind one
+  button below 1147px of bar, and the tabs fall back to their glyphs below 847px. The smallest
+  window a player can drag to now lands in the glyph stage rather than just above it: the tabs show
+  their icons, and the tab you are on still shows its name.
+
+- 13c01e7: The Optimizer keeps its place while you look at another screen.
+
+  Leaving the Optimizer for the Forge tab and coming back used to reopen the first hero's row and
+  put the page back at the top, on every trip. Now the rows you had open stay open and the page
+  returns to where you left it, on every desktop tab; on the web planner, the open rows survive a
+  move to another page as well. A new plan still opens its first hero by default.
+
+  The per-hero result rows now also keep naming the heroes the plan was solved from, so a hero
+  that a later account read could not model no longer loses its avatar and details in the list.
+
+- aa63003: Coming back to the desktop Optimizer tab no longer replays the reveal on every row you had open, and no longer rebuilds its snapshot for a wallet tick: the rows are drawn open at once, the scroll offset is back on the first frame, and the account is re-read only when it would change the inputs (a level, a gear change, a different Farm phase). Across the app, a panel that is already open when its screen appears — an accordion row, a collapsed-by-default card you had expanded — is now drawn open; only pressing it animates.
+- 306d2d0: Wake one planner panel at a time again, and commit once per edit instead of twice.
+
+  Moving the panels into a shared package left their hosts holding the subscriptions on their behalf, so a store change re-rendered the hero strip and every sibling tab alongside the panel that actually read it. Each panel now has its own connector, which subscribes to exactly what that panel needs.
+
+  The same move also cost the design system's Select its stable option list: it handed Base UI a fresh `items` array on every render, and Base UI republished it from a layout effect, re-rendering the trigger's value in a second commit. Any interaction on a panel holding a Select therefore committed twice — spending a stat point cost roughly twice the component renders it should. The option list now keeps its identity while the options are unchanged.
+
+- 6fe7247: A screen taller than the window now ends as far above the status strip as it starts below the header. Scrolled to the bottom, the last panel on Farm, Heroes, Account, Forge and Settings sat on the strip's border; the shell's content measure was pinned to the window's height, and a taller screen overflowed it past the padding that draws the gap.
+
 ## 0.12.1
 
 ### Patch Changes

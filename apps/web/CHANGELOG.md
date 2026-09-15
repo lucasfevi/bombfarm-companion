@@ -1,5 +1,705 @@
 # @bombfarm/web
 
+## 0.19.0
+
+### Minor Changes
+
+- a112580: An Abilities & auras section closes the Combat tab on the web planner and the Combat stage on the desktop Heroes screen, replacing the team-aura switches beside the phase picker. Every team aura the game has is listed, whoever carries it: the hero's own aura counts at its rank and cannot be switched off; any other aura is off until switched on, and then is priced at its field-wide cap — the roster is no longer an input to a hero's own figures. Each row says what flipping it would do to sustained DPS ("+12.7 % if on", "−11.3 % if off"). Below it, every ability of the hero's own reads as priced — "−12 % drain", "+1.0 range", "×1.09 dmg" — with Contra o Relógio marked "not here" off a gate phase, and a note spells out that the two drain reductions add. "Back to your current phase" now clears the switches too; they still never persist.
+- 0d241f6: Model three more combat abilities — Breach, Pack and Baton Pass — and price every team aura
+  one way on every screen.
+
+  **Breach is the fifth standing team aura.** It reads as flat penetration points on every hero on
+  the field, +1 per level, capped at 20 across every carrier — the same shape as Deadly Omen's crit
+  points. It sits beside the other four everywhere they are enumerated: the Combat tab's and the
+  Heroes screen's aura switches gain a fifth row, the Farm board and the Optimizer weight each
+  carrier by its predicted uptime, and a hero's own screen always counts its own rank. The
+  penetration breakdown shows it as its own team line.
+
+  **Pack is an own ability priced at the field size.** Each level adds +0.5% damage per ally
+  standing beside the carrier, capped at +90% (live wiki, 2026-09-13 — the catalog's old
+  "+2% / +40%" text matched neither). A hero's own screen counts the heroes the game has deployed
+  beside it; the Farm board and both Optimizer objectives count each other hero for its own share
+  of the rotation, never more than the field has room for. The damage formula prints the pack
+  factor as its own term with a glossary tip.
+
+  **Baton Pass is the sixth team aura, and comes in pulses.** When a carrier enters the rotation the
+  whole field — heroes without the ability included — deals +4% damage per rank for 120 seconds.
+  The Farm board, the Farm respec advisor and both Optimizer objectives price it as the other
+  auras are priced: each carrier's pulse lights the field for its own share of wall clock,
+  overlapping pulses sum their ranks and clamp at +80% inside the expectation, and the Farm board
+  prices every hero's hit through its own hits-to-kill step at each pulse level, so the credit
+  lands only where a pulse crosses a threshold. A hero's own screen now prices its OWN pulse from
+  the same rule, at its own stint length, so the ability's next level reads as a real gain there
+  too; the other carriers' pulses are counted only on the rotating surfaces, and the Effective
+  stats tip says so. On the calibration anchor, one rank-20 carrier moved gold per hour by about
+  +1%, re-pinned and not refitted.
+
+  **The abilities panel prices the three.** Breach reports a gain below its ceiling and names the
+  ceiling at it, Pack reports a gain beside allies, Baton Pass reports a gain — and Ghost, Hero
+  Hunter, Gold Vein, Fortune and Lapidary Eye still read "not modelled".
+
+  **The wiki-drift capture was a month stale.** The committed capture the drift tooling's tests
+  read still carried Mercy at 1.25% per level and Keen Eye at 0.75% from 2026-08-14; it is
+  re-taken from the live endpoint and pinned to the committed fingerprint baseline, so it cannot
+  silently lag the catalog again.
+
+- 9df458b: The Effective stats panel on the Combat tab (web planner) and the Combat stage (desktop Heroes
+  screen) no longer folds each figure behind an accordion row. Both apps now draw one shared panel
+  from the hero package: the combat figures as a pipeline of cards — Sheet (the seven combat sheet
+  stats), Factors (Damage multiplier, Mitigation factor, Critical factor, Fuse, Field time, Rest),
+  Per hit · cadence (Hit, Critical hit, Average hit, Bombs/s, Uptime) and DPS (Active, Sustained)
+  — with curved wires between the cards that feed each other, so every figure is visible without a
+  click and Speed's card is seen feeding Bombs/s. Each card carries a short symbolic formula, and at
+  its bottom edge the icon of every ability or aura that reaches it — Grito on Attack, Marcha on
+  Speed, Presságio on Crit Chance, Brecha on Penetration, Detonação Dupla, Misericórdia, Matilha and
+  Passagem de Bastão on Damage multiplier, Fôlego and Bateria Extra on Field time, Explosão Ampla on
+  Active DPS, Contra o Relógio on Attack on a gate phase — dimmed while the aura's switch is off;
+  hovering an icon names the ability. Hovering or focusing a card opens one popover on both layouts:
+  a derived figure shows its substituted formula with every term named, the inputs it reads as
+  chips, and a note where the model has one (the fuse at its ceiling, an average hit equal to the
+  hit because crit chance is zero, what Field time would read without the team's Fôlego); a sheet
+  stat shows its ledger grouped by game line. Hovering a card also lights the wires that feed it.
+  The Mitigation factor card carries the penetration reading ("covers the phase" / "12.2% short of
+  this phase") that the hero panel used to print; that panel leaves the Combat stage altogether —
+  the hero is the one the strip or the roster holds, and the prop table goes with it (the Farm
+  page's hero panel keeps both). Under the pipeline, the seven combat sheet stats as a matrix — Hero
+  (base, level, stars and points folded to one figure; hover for the four), Gear, Ability, Skill
+  tree, Sheet total, Aura ×, Effective — always all seven rows, with "—" for an empty cell and "off"
+  where an aura exists but its switch is off; a Rune × column appears only while a rune is on the
+  sheet. The panel's own width picks the layout: the pipeline at 820px and up, the same cards
+  stacked one per row under the same four labels below that. Average hit joins the derived
+  breakdown as its own figure (hit × critical factor), and the Active DPS formula reads it rather
+  than a second damage multiplier — no value moves.
+
+  Baton Pass is now the sixth team aura behind a switch in the Abilities & auras section, beside
+  the five standing ones: the hero's own rank counts on its own entry pulse and cannot be switched
+  off; for a hero without it the switch prices that pulse at the field-wide cap (+80% for the
+  window), whoever would carry it, and the row says what flipping it does to sustained DPS like the
+  others. It leaves the own-abilities list. The drain-reductions note under the section is gone.
+
+  Both panels on the Combat tab and stage now carry their explanation behind an info glyph beside
+  the title, the way the Optimizer's setup bar does, instead of an intro paragraph; the Effective
+  stats explanation no longer describes how Baton Pass is counted. The info glyph is a design-system
+  primitive now, `InfoTip`, and the Optimizer draws it from there.
+
+  A hero's own Baton Pass pulse now reaches every figure a per-hero screen prints, not only the
+  DPS pair: Hit, Critical hit and Average hit carry the pulse's expectation over wall clock, and the
+  Damage multiplier card names the pulse as its own factor — so switching Baton Pass on moves Hit
+  the way it moves Sustained DPS. Hits-to-kill still reads the unpulsed hit (a threshold is crossed
+  at a level the field sits at, never at the average of two), and the Farm board's pricing is
+  untouched.
+
+  On a hero's own screen Baton Pass is counted as if its pulse never lapsed — the whole stint at
+  its level, +80% at the cap — because the screen answers what the hero is worth with the pulse on;
+  the Farm page and the Optimizer keep counting only the 120 s each entry lights. The Damage
+  multiplier card's popover says so, the aura row's figure reads "pulse held up", and the section's
+  info glyph explains the difference. A line under the Effective stats title says a card's figure
+  opens its formula on hover or focus; inside a popover the main figure stays white while every
+  term, step and running total is accent or muted, and the popover grows to keep a formula on one
+  line. The sheet-stat matrix is striped.
+
+  The penetration reading told the wrong story. Penetration pierces a share of the phase's
+  mitigation (`dano = ataque × (1 − mitig × (1 − pen/100))`), not points off it, so 42.6%
+  penetration against an 8.36% phase still loses 4.8% of every hit — yet the hero panel called that
+  "covering the phase" / "Fully piercing" because 42.6 ≥ 8.36, and the Phases page's mitigation tip
+  said "8.4% pen ignores all mitigation". Both now say what the phase still takes off each hit
+  ("4.8% of each hit lost — 42.6% of the phase's 8.36% pierced"), "nothing lost" only at 100%, and
+  the Mitigation factor card's popover spells the rule out.
+
+- 579684a: A Combat tab on the planner, and one phase picker for it on both apps.
+
+  **The planner has the desktop app's fourth stage now.** Hero, Combat, Gear, Points — the same
+  four the desktop Heroes screen draws, from the same implementations. Combat holds the phase the
+  figures are for, one hero against that phase (whether it pierces the mitigation, the average hit,
+  the fuse floor, the cooldown-reduction ceiling, the prop table), and the per-statistic breakdown,
+  which moves here from the bottom of Points. Picking a phase on it moves every figure the planner
+  prints — the hero strip, Gear and Points read the same numbers — and leaves the Farm page's own
+  selection alone.
+
+  **The phase picker is the optimizer's.** Type `Hard 1-1`, `Normal 2-1` or `151` and pick the
+  phase, on the desktop as on the planner, instead of stepping a number box. The button beside it
+  reads **Back to your current phase** and stands as tall as the picker.
+
+- 2b8bc83: The Farm page's Optimize button opens the Optimizer — the Optimizer page on the web planner, the Optimizer tab on the desktop app — instead of expanding a points-only respec panel in place. That panel, its per-hero split, its cheaper-respec frontier and the "show ranking under this build" switch are gone with it: the Optimizer already recommends points, gear moves and forges together for the same roster, and two surfaces answering "what should I change" with different scopes read as two different answers. The Home page's optimizer card keeps its "already close to the best found" verdict for a plan under the worth-making floor.
+- 306d2d0: Paint each band of the grade scale in the colour the game prints that grade in, so the six read
+  left to right as the ladder they are, with the hero's own grade lifted out of them.
+
+  The abilities panel keeps one figure — how much of the point budget is spent — in place of the
+  slot count, the granted-against-spendable split and the dead-point total. Points a hero can never
+  spend are a consequence of its level and rarity, not something it can act on, so the panel no
+  longer spends four rows saying so.
+
+- dae7398: Model the timed rune buffs a hero can carry. A rune's bonus is read off the account and taken
+  back off the sheet before spent points are recovered, so a runed hero now inverts exactly to its
+  level instead of overshooting its budget and being blocked — on the account this was fitted on,
+  every one of the six runed heroes had been blocked and none is now. The rune then goes back on
+  every figure that describes the hero today: the stat sheet gains a rune column and the
+  per-statistic breakdown a rune step naming the play time left; combat, ranking, farm and plan
+  figures include it. A plan is never justified by one: the optimizer names the runed heroes in its
+  disclosures, since a rune expires and cannot be bought back. The xp and gold axes are carried but
+  not priced.
+
+  On the desktop, a hero whose spent points still cannot be read is left off the Farm board and
+  named above it, and the Heroes screen withholds that hero's points, gear and combat figures with a
+  notice instead of drawing them from a zeroed allocation. On the web planner, an account read with
+  runed heroes now imports whole.
+
+- b0f4431: Read a hero's market value on Steam, and say what unit each figure is in.
+
+  **The market value is a link to the listing it was read off.** The tile carries the Steam mark and
+  opens the Community Market page for that rarity — in the browser on both apps. A price this app
+  quotes from a market it does not own is worth more when you can go and check it.
+
+  **Each figure carries its own unit, and each name stops carrying one.** The Points table prints
+  `45,45%` where it printed `45,45`, so the four rate stats are named `Crit` rather than `Crit %`.
+  The stat sheet and the team-plan breakdown, whose rows show many figures at once, keep the unit on
+  the name instead — one mark per row rather than nine. In pt-BR the column is `Atributo`, and the
+  Effective stats panel is `Atributos efetivos`, matching the labels beneath them; English still
+  calls a stat a stat.
+
+  **The Preview column only appears where something can fill it.** It shows what the Optimize build
+  search proposes, so on a screen with no search to run it was a permanently empty column taking
+  width from the figures beside it.
+
+  **Two things the sheet no longer says.** The desktop's sheet note said the breakdown came from
+  your save; it reads the running game, and now says so. And a birth roll that lands near a grade
+  boundary no longer prints a caveat about it — it is still a placement, and the sentence changed
+  nothing a player would do.
+
+  Descenders are no longer clipped off the identity panel's values: a truncated line at a line
+  height of 1 cuts the tail off a `g`.
+
+- 306d2d0: Name the planner's first tab for the hero rather than for one of the panels inside it, now that
+  it carries identity and the birth roll as well as abilities.
+
+  The birth-roll readout drops the distance-to-next-grade line, spaces the band's ends so a range
+  reads as one span, and explains the roll-quality figure on hover — it is the average of the eight
+  percentiles, which nothing on screen said. The grade rail carries a wash of the colour the game
+  prints that grade in. The market tile answers with a price or with not-marketable: "sellable,
+  amount unknown" told a player nothing they could act on.
+
+- 306d2d0: Show the birth roll and the ability readout in the planner's Hero tab.
+
+  The tab already let you move ability ranks; it never said how lucky the hero's permanent birth roll was, or what one more level of each ability is actually worth. Both panels are the ones the desktop Heroes screen draws, so the two apps say the same thing about the same hero.
+
+  Nothing about saving changed. Pricing every ability costs a combat-model pass each, so the result is memoised in the store's selector layer alongside the advisor pipeline.
+
+- 882da7f: Rename the Planner page to **Heroes**, and its URL from `/planner` to `/heroes`.
+
+  "Planner" was the name of the whole site before it grew a Farm board, an Optimizer, an Inventory and an Account page; as one tab among six it named nothing in particular. The page is the per-hero workspace — the roster rail, and the Hero, Gear, Points and Combat tabs for the hero you pick — and "Heroes" is what the desktop app has always called the same screen. In Portuguese it is **Heróis**.
+
+  `/planner` keeps working. It is a redirect stub that replaces itself with `/heroes` — the same shape `/phases` and `/team-plan` have used since their renames — so a link shared before today still lands, is not indexed, and does not trap the Back button. The page's share card is re-rendered under its new name.
+
+  The Farm board's empty-roster note no longer sends you "to the Planner": it says to import heroes, and the link beside it names the page — so the shared copy stays true on the desktop app, which reads the account from the game and has nothing to import.
+
+- 8afbad5: Every printed hit — Hit, Critical Hit and Average hit on the Combat tab, the hero strip, the Phases panel, the roster rows, gear compare and the Team Plan — is now what one blast shows in the game: sheet attack through mitigation times the pack, extra and Baton Pass factors. Double Detonation's second blast and Misericórdia's execute are expectations no single blast carries, so they leave the Damage multiplier card and land on Active DPS as their own `abilities` term, badged there; the Hit card says what it leaves out and where it went. DPS, gate damage and hits-to-kill are unchanged. A Double Detonation carrier's Hit no longer prints 15% above the game's popup.
+- 0a9018d: Home: the Optimizer card shows your plan, and the Optimizer page opens on it
+- 5ad5aa2: Home: the site opens on an overview of your account; the planner is at /planner; the quick guide
+  is gone. The front page shows whose save it is and how old it is, then six cards — the roster
+  ranked by DPS, the phase that pays most beside the one you are on, the optimizer, the inventory,
+  the account and the desktop app — each opening its full page. Before a first import it says
+  exactly how to fill it.
+- 047ce89: Show the gear an Optimizer plan takes OFF a hero, say why, and let you plan without the reason.
+
+  The plan could always unequip a piece and hand it back with nobody taking it, and the page rendered
+  no row for it: the item vanished off the hero's card and was mentioned nowhere, because the
+  "returns to inventory" group the model already built was filtered out before it reached the screen.
+  Those removals now appear on the hero they came off, and carry their reason.
+
+  The reason is field crowding. Where the field cannot seat the whole roster at once, a hero taking
+  more field time crowds the others out, so gear that raises its uptime lowers the roster's own
+  score — faithfully modelled, and the honest answer to "what does my roster earn as it stands". It
+  is the wrong answer for a player who rotates heroes in buckets, and it reads as the optimizer
+  ignoring an item. **Keep every hero geared** drops that term from both objectives, so more gear can
+  never score worse, and fills every empty slot the plan has an item for. The totals it produces
+  describe a field that never makes heroes queue, so they read higher than the roster really earns —
+  the control says so, and the reported field status stays the true one either way.
+
+  On a 13-hero roster the honest plan left eleven slots empty that it owned gear for, three of them
+  helmets; with the toggle on it leaves none, and every remaining gap is a piece the hero is too
+  low-level to equip.
+
+- 306d2d0: One Abilities panel in the planner's Hero tab, not two.
+
+  The tab carried an editor — rank steppers and Reset — and, below it, a second panel under the same heading reporting the same hero's slots, points, dead points and what one more level of each ability is worth. Two panels, one subject, and a reader had to notice they were not the same thing.
+
+  They are now one. The panel is the one the desktop already draws, and it takes the editing callbacks as an option: given them it carries the steppers and the Reset button the tab always had, and without them — which is what the desktop passes — the same figures render with nothing to click. Stepping, clamping and the disabled states are unchanged.
+
+  Two figures now read in the desktop's wording rather than the planner's: slots as "2 of 3 for this rarity" and points as "14 of 40 spent". Points granted against points spendable stays, and the dead-point line is now always a stated sentence — a hero wasting nothing says so, instead of hiding a warning that does not apply to it.
+
+- 30428ba: Price every DPS figure on one bombing-cadence model — the Farm page's measured one — and retire
+  the advisor's serial model.
+
+  **Two models printed DPS.** The hero strip, the Points ranking, the reset-advice gate, the Combat
+  stage on both apps and the Optimizer's damage objective read a serial cycle, `1 / (fuse + 0.15 s)`,
+  in which Speed did not appear: a Speed point ranked at 0% forever and Marcha Acelerada was worth
+  nothing. The Farm page read a measured cycle — the longer of the fuse and the walk to the next
+  plant, averaged over hop lengths measured in real clears and packed closer on denser difficulties
+  — so a hero's bombs per second on the Combat stage and its plants per second on the Farm page, at
+  the same phase, were two different numbers.
+
+  **Now there is one.** The advisor's bombs per second is the inverse of the Farm page's cycle at
+  the farm phase's own difficulty band. Speed shortens every hop the fuse does not already cover,
+  and is a real next-point candidate (about 1.1% a point on a typical hero). Cooldown reduction pays
+  only on the hops where the fuse is the longer leg — observed directly: a hero that reaches its
+  next target before its previous bomb has gone off waits on the cell and plants a fifth of a
+  second after the fuse ends, and when one hero was respecced from 12% to 28% cooldown reduction
+  that waiting time moved with her fuse, one for one, while a second hero's did not. Where the
+  crossover falls depends on walk speed and on the field; the model puts it near 53% for a hero
+  walking two cells a second, and past it the point scores zero, where the serial model had it
+  paying through to the 80% cap. Nothing is measured past 28%, and the same capture found the model
+  overstating how much of a fast hero's field is fuse-bound, so a fast hero's cooldown figure reads
+  high rather than low. A build with every point in cooldown still trips the reset gate — harder
+  than before.
+
+  **Every DPS figure moves, on both apps**, typically down by about a third at mid cooldown
+  reduction; the Bombs/s breakdown prints the one formula with the fuse, walk speed, band and
+  resulting cycle substituted, and the "How the math works" text describes the measured cycle.
+
+  **The accepted cost:** the measured cycle's approximations — a hop histogram fitted at one
+  difficulty band and scaled to the others, a density term that runs optimistic at the easiest band,
+  latency constants calibrated on squad clears — now reach per-hero figures. Those are errors of
+  degree; Speed doing nothing was an error of kind. A hero priced alone is priced at squad density,
+  as the Farm page already priced it.
+
+- 374c22d: The Optimizer no longer shows an "Assumptions & limits" panel under its results, on the web
+  planner or the desktop app. What it said was technical — unmodelled abilities, loadout drift
+  against the inventory snapshot, excluded-item counts, aura and Planner-divergence notes, forge
+  and Luck caveats, restricted-plan notes — and did not change what a player should do with the
+  plan above it. The run summary, gain breakdown and per-hero table are unchanged.
+
+  Everything that existed only to feed that panel goes with it: the `disclosures` field on a
+  computed team plan, the package component and its copy, and the four host-supplied strings each
+  app provided for it.
+
+- 2c32cba: The roster board now has a card-detail control, each card carries the hero's sheet, and each
+  card leads with the hero's power.
+
+  **The sheet, on the card.** Under the birth-roll bars — now headed "Birth stats" — a card prints
+  the hero's own eight stats as the game does: attack, energy, speed, luck, crit chance, crit
+  damage, penetration and cooldown, each with its exact figure on a tooltip. The bars say where
+  each stat landed inside its band; the figures say what it is. Bars and figures are labelled with
+  the same three-letter codes, the same in either language — `ATK`, `ENE`, `SPD`, `LCK`, `CrC`,
+  `CrD`, `PEN`, `CDR` — so crit chance, crit damage and cooldown no longer share a label, and
+  hovering any of them still shows the full name in your language.
+
+  **Three presets, on the board's own header.** Full is what the board opens on: identity, birth
+  stats, sheet stats, ability pool and gear. Combat is the same card with the gear left off — the
+  pool and the sheet are what a fighter is; the gear it happens to be wearing is not. Compact cuts
+  a card to its identity, its power, its roll bars in a single line and its ability pool as a row of
+  small icons without their level badges, with no headings at all — which is what puts a whole
+  roster of twenty on one screen. Nothing is lost to a screen reader in any of them: every bar,
+  figure and icon keeps its full name and its exact reading on its tooltip.
+
+  The control sits on the board rather than in the toolbar above it, because the toolbar governs
+  the list as well and the list has no detail to set. It is a way of looking at the board you are
+  in front of, not a setting about your account, and it opens on Full every time.
+
+  **Power is the figure.** A card used to print the birth roll's mean as its headline number, with
+  power in small type beneath it. The mean of eight percentiles said less than the eight bars right
+  under it already did, so it is gone — the bars are the roll — and power, the figure the game
+  itself sums a hero up with, takes the headline in the card's corner, labelled as such. Still
+  compact, the way gold is: `617.210` reads `617.2k`.
+
+- 61ee478: Put the whole roster on the planner, as a rail beside the hero you are editing or a board of cards
+  over it. The planner could only ever show one hero, and the only way to reach another was a dialog
+  that showed a table of names — so "which of my heroes rolled best", "which of them own this
+  ability", and "which are still wearing nothing" were questions you answered by opening and closing
+  that dialog once per hero.
+
+  The rail lists every hero best birth roll first; the board draws each one's roll as eight tinted
+  bars beside its ability pool and its gear, so a roster compares against itself in one look. One
+  toolbar governs both — sort by roll, power, level, rarity, grade or stars in either direction,
+  narrow to the heroes owning a given ability, or hide the ones you have taken out of the rotation —
+  and switching between the two shapes never changes which heroes are on screen, only how they are
+  drawn. Narrowing the roster is a question about the roster and never a hero switch, so the build
+  you are editing stays put even when the filter leaves it off the rail.
+
+  Both presentations, and the toolbar, are the ones the desktop app's Heroes screen draws, from one
+  implementation rather than a second copy: a change to either arrives in both, and a player who has
+  learned one has learned the other. The rail needs a 19rem column beside the planner, so below
+  1100px it is not drawn and the hero strip's own Switch hero dialog remains the way to choose.
+
+  Also fixes an ability tile nobody owns being pressable. Those tiles are shown, dimmed, because
+  "which of these do I have none of" is a real question about a roster — but pressing one selected a
+  filter no hero could match, emptying the roster with no way back but the same dimmed tile.
+
+- c05617f: The roster list beside a hero's detail now prints each hero's power, not the birth-roll mean.
+
+  The column a player reads down the "Your roster" rail is the figure the game itself sums a hero
+  up with — the same power, compact (`617.210` → `617.2k`), that the board's cards lead with since
+  the cards took it as their headline. The birth roll is still where it was: the bars on every card
+  and the Birth roll panel on the hero itself. The rail's header reads "Power" on both hosts; a
+  hero whose save carried no power prints a dash, never a zero.
+
+- 5dffa73: Price team auras one way on every screen, and give a hero's own screen its switches.
+
+  **The same hero printed a different DPS on every screen, and a different one on every account
+  read.** The Heroes screen and the planner's Combat tab priced team auras off a snapshot of
+  whoever happened to be standing on the field when the account was read, so the number moved as
+  the rotation turned — on one real roster it read 22–33% low for every hero, on another 4.7% high.
+  The Optimizer's damage objective summed each carrier's rank by its duty and clamped afterwards,
+  which held two part-time carriers of one capped aura at the cap the whole time; the gold
+  objective and the Farm board took the expected value of the capped sum instead.
+
+  **Every screen that rotates a roster now prices auras the Farm board's way**: each carrier the
+  game will field, weighted by the uptime the model predicts for it, the cap taken inside the
+  expectation. The Optimizer's damage objective moves onto it — on a roster with one carrier per
+  aura nothing changes; three Fôlego carriers that summed to 60 against a cap of 20 move a plan's
+  DPS by −3.7% — and, like the gold objective, it now counts a hero you leave alone: that hero
+  still fields, so its aura reaches the rest of the roster at the duty its untouched build sustains.
+  Only a donated hero is out, on both. The phase explorer beside the Farm board prices the same
+  way, on both apps, so it and the board agree.
+
+  **A hero's own screen asks a narrower question, and gets a control.** The Heroes screen and the
+  Combat tab price one hero on the field: its own aura always counts, and every other carrier is a
+  what-if behind a switch — off, the hero is priced alone; on, that aura counts every other hero in
+  rotation that carries it, as if they stood on the field the whole time. The four switches sit
+  beside the phase picker, say what they assume, and say where the uptime-weighted figures live
+  instead. They reset on every visit, like the phase pick.
+
+  **The stored aura total is gone.** The planner used to keep a hand-typed override that no screen
+  has offered a field for since August, and a snapshot that went stale on the next read; a saved
+  account still carrying either loads with both discarded. A Farm board that was still being priced
+  against such an override — a number no control could show or clear — now prices the roster like
+  every other.
+
+### Patch Changes
+
+- 0ba2534: Hovering or focusing a card of the Effective stats pipeline now mutes every card not wired to it,
+  lights the wires on both sides of it, and opens its popover from anywhere on the card.
+
+  - **The cards it is wired to stay lit; the rest fade.** Lit means one wire away in either
+    direction — what the card reads and what reads it — so hovering a sheet stat such as Attack
+    shows the figure it feeds, and hovering Hit shows the three cards it reads and the two it feeds.
+    The wires lit follow the same rule; before, only the wires into the hovered card lit, and no
+    card was dimmed.
+  - **The whole card is the popover's trigger.** It used to be the card's upper face only, and the
+    ability and aura icons along the bottom edge each carried a popover of their own — so a pointer
+    resting on the icon row or landing on an icon opened the icon's name instead of the card's
+    formula, which read as the popover not opening. The icons keep their names for screen readers
+    and are no longer tab stops; the card's popover already lists them under what it reads.
+  - **A help cursor over every card**, matching the info tips and glossary terms, in place of the
+    text cursor the labels showed and the arrow the padding showed.
+
+- b0f4431: Say each combat figure once, and stop drawing three sections that could never fill.
+
+  **A hero's field time was reported as 4.495,4%.** `uptime` is already a percentage — field seconds
+  over field plus rest, times 100 — and the combat panel multiplied it by 100 again. A hero on field
+  45% of the time read `4.495,4`. It reads `45,0` now, and this was wrong on the phase explorer too.
+
+  **The Combat stage stated eight figures twice.** Damage through, normal hit, critical hit, field
+  time, fuse, uptime and both DPS figures appeared bare in the hero panel and again, each with the
+  ledger that produced it, in the breakdown below. The bare copy is gone: it was the same number
+  with less behind it. What the hero panel still says is what only it says — whether the hero
+  pierces the phase, the average hit its build lands, the floor its fuse cannot go under, the
+  ceiling its cooldown reduction stops paying at, and the prop table.
+
+  **Three empty sections, on any screen that cannot fill them.** A gear comparison needs a second
+  loadout, which only a Copy gear button can create, so a read-only screen drew a heading over
+  nothing. The Points panel held a blank line open for reset advice that names a button that screen
+  does not have. Both now appear only where something can fill them — as the Preview column already
+  does. The advice line still holds its space on the planner, where it comes and goes.
+
+  **The stat sheet puts its units on the figures**, like the Points table beside it: `1.680,00%`
+  under a row named `Crít`, not `1.680,00` under `Crít %`. The team-plan breakdown keeps the unit on
+  the label, because its table formats its own numbers and has nowhere to put one.
+
+- 33ff64b: Draw the equipped items on the desktop's Gear stage — art in its rarity frame, name, tier, level,
+  forge and the slot it sits in — instead of eight bare stat cards.
+
+  The Heroes screen's Gear stage used to print only each slot's stat contributions ("Damage
+  +6,733.7 / Crit Chance +15.0%") with nothing saying which item they came from. It now draws the
+  same slot card the web planner draws: the slot's name on top, the item's art centred in its rarity
+  frame, the item's set with its forge `+N`, its tier in the tier's colour beside its level, and
+  the stats it contributes beneath under their short labels ("Dmg", "Crit", "CDR" / "Dano", "Crít",
+  "Recarga"). An empty slot shows a dashed tile and "Empty". The stage stays read-only — no control
+  on it changes the loadout.
+
+  One card for both hosts. `GearSlotCard` lives in `@bombfarm/hero`; the shared Items panel draws it
+  whenever a host supplies no slot editor, and the web planner's editor now wraps the same card,
+  handing its level, rarity and forge selects in as the card's children, pinned to the foot of the
+  card so they line up across a row — so the per-slot stats that used to sit in a second row under
+  the editors now sit inside each card, under the item they belong to. The eight slots lay out four
+  across in two rows, centred, and go to one row of eight once the panel is 64rem wide — the widest
+  the desktop shell lets it get — where every card's header, art, name and tier line still sit on
+  the same rows as its neighbours'.
+
+  The totals table under the cards loses its "Damage (% of Attack)" column: no item in the current
+  catalog carries a percent damage bonus, so it read +0.0% on every account.
+
+- 306d2d0: Describe all seven desktop screens on the download page, not four.
+
+  The "What you get" section advertised Live, Inventory, Forge and Settings. Farm and Account were added to the desktop app without being added here, and Heroes is new — so a visitor deciding whether to install was reading a description of an app three screens smaller than the one they would get.
+
+  The three new cards sit in the app's own tab order (Live, Farm, Heroes, Inventory, Forge, Account, Settings) and describe what each screen actually does: the Farm board and its phase explorer and respec proposal, one hero's grade, roll luck, abilities, combat numbers, stat sheet and gear on the Heroes screen, and the House, skill tree and sellable-holdings figures on Account.
+
+- 374c22d: The download page lists the Optimizer screen.
+
+  The "What you get" section gains an eighth card, in the app's own tab order: the forge list, the
+  move list, the point resets and the gain each step buys. Eight cards fill the grid at every width,
+  so the spacer cell that squared a seven-card grid is gone.
+
+- 6114120: The download page resolves the stable build from GitHub's latest-release endpoint and walks every page of the release list for the install and update counts. It used to read only the first page of thirty: once a week of betas filled that page the button fell back to the releases page and the counts vanished, and even before that the counts were an undercount of whatever fit on page one.
+- ee92e13: Optimizer results: the gain breakdown comes first, with the phase and the battle load as cards;
+  the search summary is folded away.
+
+  **Two new cards on the gain breakdown.** _Phase_ names the phase every figure is scored at, the
+  way the game writes it, with a note on where that phase came from — the one you picked, where
+  your account is now, or the best the squad can hold when the search chose for itself. When the
+  plan is about a phase other than the account's own, the card also says which one it was on.
+  _Battle load_ carries the roster's pull on the field against the slots it can fight in, tagged
+  with whether the roster fits the field or fills it.
+
+  **The search summary is a single folded line under the breakdown.** How long the search took, how
+  many builds it checked, the sentences behind the two cards and the timed-rune caveat are still
+  there, one click away. A search cut short by its budget, or one that had to run on the main page,
+  still says so in plain sight.
+
+  **The paragraph above the per-hero changes is gone.** It explained that the rows are DPS and
+  why they do not add up to a gold total; the row headers already say DPS, and the paragraph led the
+  panel.
+
+  **Each hero row gains a forge queue.** Under the proposed items, every piece the plan forges is
+  drawn as its ladder — the rungs it already holds, the safe jump to +8, and each roll past it faded
+  by its own chance — with the expected rolls, safe jumps and gold to climb it, summed at the bottom.
+
+  **The points reset table lists every stat**, not only the ones the plan moves, and the stat
+  ledgers on a hero row are striped so a figure can be followed across its columns. The _Combat
+  stats_ table is gone — it repeated the hero sheet on most rows; the hit damage rows still read
+  the combat-effective figures.
+
+  **The search setup bar is one control tall.** Each field's explanation — and the panel's own
+  intro — sits behind a small info glyph beside the label, shown on hover; the labels are bold. A phase past the account's furthest still warns in place.
+
+- 78554b8: Header links prefetch a route's payload when you hover, touch, or focus them instead of on every page load, so a visit no longer downloads every section's payload up front.
+- 374c22d: The note over the Optimizer's per-hero table no longer says the figures ignore the game's crit and cooldown caps. They never did — every DPS the search scores runs through those caps; only the Stats panel's raw sheet totals can read past them, and that panel marks a capped line itself.
+- 306d2d0: Lay the hero identity panel out as a band of facts over full-width detail.
+
+  Rarity, grade, level, power, roll quality, market value and marketability were a narrow column of label/value rows sitting beside a much taller birth-roll section, and the birth roll then split again — a rail on one side, the eight-row table on the other. Two short things beside two tall ones left most of the panel empty at any width that had room to show more.
+
+  They are now small tiles across the top, beside the hero's portrait and name, wrapping to fewer per row as the panel narrows. The grade rail and the roll table each take the full width beneath. The rail is the reason: each grade boundary is a band, not a line, because the measurement locates it inside an interval and no closer — and at half width those bands were too narrow to read as intervals at all.
+
+- 306d2d0: Show the power the save recorded for a hero on its identity panel, grouped the same way the roster picker's power column groups it.
+
+  The figure was already imported and already stored; the one screen dedicated to who a hero is was the only place that never printed it, so comparing two heroes meant leaving the panel for the picker.
+
+  A hero nobody has imported a power for reads as an em dash, not as zero. Absence means the figure was never read, which is a different fact from a hero of no power — and a zero would sort and read as the worst hero on the roster.
+
+- 306d2d0: Compute the hero workspace's combat numbers at the phase you picked, so the planner and the phases explorer stop disagreeing about the same hero.
+
+  The workspace read the farm phase the imported save reported — a value nothing in the app ever moved — while the phases explorer computed at whatever phase you had selected there. Picking any phase made the two screens print different hits, uptime and DPS for one hero, with nothing on either screen to say why.
+
+  Both now read the same phase: your pick when you have made one, and the account's own farm phase until then, so a freshly imported account keeps answering for the phase it actually farms.
+
+- 306d2d0: Price heroes with the same team auras on both per-hero surfaces. The phases explorer read the
+  stored aura override alone, so an account whose carriers are deployed but whose override was
+  never set saw no team auras there and different combat figures than the hero workspace showed
+  for the same hero. Computation now reads a derived roster total; what is written to storage is
+  unchanged.
+- 374c22d: The Optimizer's per-hero rows label their three figures "DPS before", "DPS after" and "Δ DPS", so the number is named where it is read rather than two paragraphs above.
+- b0f4431: Show a hero's abilities beside its identity, and give the desktop hero screen the planner's stages.
+
+  **The ability pool now sits under the portrait.** The identity panel's left column holds the
+  portrait, name and stars with the pool below them — each ability's icon and its level out of 20,
+  nothing else. Which abilities a hero owns and how far each is levelled is the first thing you check
+  about a hero, and until now it meant scrolling past the birth roll to reach the abilities panel.
+  That panel is unchanged and still the place that says what each ability does, what its next level
+  is worth, and — in the planner — spends the point. A hero with no pool draws no strip.
+
+  **The desktop hero screen is four stages instead of one long column.** Hero, Combat, Gear and
+  Points, where the column used to run identity → phase → combat → abilities → next point → points →
+  sheet → items → effective stats without a break. Hero, Gear and Points hold what the planner's tabs
+  of those names hold, panel for panel, so the two apps read the same way; Combat is the fourth
+  because this screen computes the phase-scoped figures the planner folds into its hero strip, and
+  it carries the phase control beside them. Points also picks up the planner's own arrangement: the
+  points table and the next-point ranking side by side, then the stat sheet, then the breakdown.
+
+- c336926: The Heroes screen no longer shows a horizontal scrollbar under the roster and the hero's stages.
+
+  The four stages sit side by side in one strip with the inactive ones held off screen, and an
+  `sr-only` caption on the Gear stage's totals table — being absolutely positioned, with nothing in
+  the strip positioned above it — was measured against the scrolling region rather than the strip,
+  so the region grew a scrollbar for content nobody could see. Every hero with equipment showed it.
+  The strip's stage boxes are now positioned, so the clip reaches everything inside them.
+
+- ace21e3: Draw every gear slot in the Optimizer's proposed items, empty ones included.
+
+  The per-hero "Proposed items" grid only drew a card for an item that ended on the hero, so a slot
+  the plan had nothing for — no piece owned that fits, or one the field-crowding term leaves bare —
+  simply went missing: seven cards where the game has eight slots, with nothing to say the eighth
+  was considered. The grid now lays out all eight in catalog order, and a slot with no item shows
+  the slot's name over "No item proposed", so a short grid stops reading as an item the page lost.
+  The sentence that used to stand in for a hero with no proposed items goes with it: eight named
+  empty cards say the same thing in the same place as everyone else's.
+
+- 13c01e7: The Optimizer keeps its place while you look at another screen.
+
+  Leaving the Optimizer for the Forge tab and coming back used to reopen the first hero's row and
+  put the page back at the top, on every trip. Now the rows you had open stay open and the page
+  returns to where you left it, on every desktop tab; on the web planner, the open rows survive a
+  move to another page as well. A new plan still opens its first hero by default.
+
+  The per-hero result rows now also keep naming the heroes the plan was solved from, so a hero
+  that a later account read could not model no longer loses its avatar and details in the list.
+
+- aa63003: Coming back to the desktop Optimizer tab no longer replays the reveal on every row you had open, and no longer rebuilds its snapshot for a wallet tick: the rows are drawn open at once, the scroll offset is back on the first frame, and the account is re-read only when it would change the inputs (a level, a gear change, a different Farm phase). Across the app, a panel that is already open when its screen appears — an accordion row, a collapsed-by-default card you had expanded — is now drawn open; only pressing it animates.
+- 306d2d0: Wake one planner panel at a time again, and commit once per edit instead of twice.
+
+  Moving the panels into a shared package left their hosts holding the subscriptions on their behalf, so a store change re-rendered the hero strip and every sibling tab alongside the panel that actually read it. Each panel now has its own connector, which subscribes to exactly what that panel needs.
+
+  The same move also cost the design system's Select its stable option list: it handed Base UI a fresh `items` array on every render, and Base UI republished it from a layout effect, re-rendering the trigger's value in a second commit. Any interaction on a panel holding a Select therefore committed twice — spending a stat point cost roughly twice the component renders it should. The option list now keeps its identity while the options are unchanged.
+
+- f672642: Show the "Referral code copied" confirmation on every page, not only the planner. The toast was
+  mounted inside the planner's keep-alive slot, which the Farm, Inventory, Optimizer, Account and
+  Download pages hide — the click copied the code but gave no visible sign it had. The import
+  result toast on those pages is fixed the same way.
+- 8ca17f2: Remove the last traces of the skill-tree keystones the 2026-08-13 game patch deleted.
+
+  **The mechanics went a month ago; their vocabulary stayed.** The crit-damage multiplier the Glass
+  Cannon keystone used to feed survived as a hard-coded `1` threaded through `CombatMults`,
+  `DeriveInput`, the advisor pipeline, team-plan scoring and the stat-breakdown types — every
+  caller multiplied by one. That field is gone from every signature; no figure moves.
+
+  **The web planner no longer wipes a stored account for carrying the retired tree fields.** The
+  boot-time drop that cleared every `bf-hp-*` key on sight of `glassCannon` / `tempoDobrado` /
+  `abisso` / `abissoBase` / `critDmgMult` is removed; those fields are still discarded on load by
+  the fixed-field tree rebuild, as they have been since the patch, so a record that carries them
+  loads with them ignored rather than being thrown away. Nothing is migrated.
+
+  **The desktop's stored-section drop keeps the same verdicts without naming the tokens.** A
+  `skills` row carrying a retired `totals` key was already an added key under the schema
+  fingerprint; the separate retired-key list that re-found the same evidence is deleted.
+
+  The two guards that existed only to assert the keystones were absent — and the pinned per-file,
+  per-line maps every neighbouring edit had to re-pin — are deleted with them, along with two
+  orphaned fixture copies nothing read.
+
+- c4573ed: The Return Bonus multiplies gold and XP only, as the game now applies it.
+
+  The wiki's Economy page stopped listing drop chances under the bonus: while the banked time runs,
+  gold and XP are worth +50% (+100% with the 30-day pass) and nothing else moves. The Farm board on
+  both hosts, the Home card's best phase and every farm-objective search (next point, respec, per-hero
+  optimize) used to scale chests, keys, gem chests, time pieces and stone chests by the same ×1.5 / ×2,
+  so with the switch on they overstated every drop column by up to 2× and the chests objective's
+  figures with it. Those columns now hold still across Off / On / VIP; gold/hr and XP/hr still scale.
+
+- a67d9b9: The roster rail and board now open sorted by power, strongest first, on the planner and on the
+  desktop app's Heroes screen alike. They opened best birth roll first, so the hero at the top was
+  the one whose stats had rolled luckiest rather than the one who hits hardest — and power is the
+  figure the game itself sums a hero up with. Roll quality is still one press away in the sort
+  menu, where Power now heads the list.
+- 80890ea: Say where the save file comes from. The import dialog and the quick guide's Export step both
+  asked for a save-file export without saying where the game keeps that control; both now point
+  at Settings → Privacy, "Download a copy of my data".
+- 843027d: Stop sending the reader to an Account "Team buffs" control that no screen draws.
+
+  Four planner strings — the abilities tip, two paragraphs of How the math works and the Optimizer's aura disclosure — still said to set another hero's War Cry under "Team buffs" on the Account page. No page has had that control for a while, so a player checking why in-game damage diverged from the model was told to open a panel that does not exist. The same paragraph also described a "Use as farm phase" button that is gone: the phase every combat figure is computed at is the one the Farm page is set to, unless the Combat tab is looking at another.
+
+  Those strings now point at the Combat tab, where each team aura has its own switch, and they say "team aura" — the term the app uses everywhere else — instead of "team buff", which the rest of the explain text, the Effective-stats tip and the breakdown's source label now also use, on the planner and on the desktop Heroes screen alike.
+
+- 374c22d: A new package holds the optimizer: its screen, the runner and its worker, the input model and
+  the rules that decide when a plan is stale and which control changes clear it. The web planner now
+  draws `/optimizer` from that package through a connector that maps its own store onto the
+  package's flat inputs record, and nothing on the page changes for a player — same layout, same
+  strings, same behaviour, proven by the optimizer's browser suite passing without an edit.
+
+  Strings that name a screen only one host has — the empty states and their call to action, the
+  remedy shown when gold scoring has no furthest phase, the two disclosures that name the Planner
+  and the Account tab, the farm advisor's pointer, and the blocked notice's re-export sentence — are
+  a contract type each host satisfies from its own dictionary. A host-neutral test forbids those
+  words in the shared dictionary and demonstrates its own red state.
+
+  The scope hero card, the per-hero delta row and the waterfall step cell carry an explicit
+  `memo()`: the React Compiler does not run over a package a host transpiles, so a component that
+  reaches a host that way keeps only the memoisation its own source spells.
+
+- 4329c1a: Follow the wiki as published on 2026-09-13, restate Diamond Tip as flat points, and let the farm
+  point search price team auras per candidate.
+
+  **Two game values moved** since the 2026-09-02 bundle, and both reach a screen:
+
+  - **Return Bonus** is now +50% (was +40%) and +100% for VIP (was +80%). The Farm board's
+    Return Bonus estimate on both hosts scales gold and XP by ×1.5 / ×2 instead of ×1.4 / ×1.8.
+  - **Misericórdia** executes rock below 0.75% of its HP per level (was 1.25%), so 15% at rank 20
+    instead of 25%. Every DPS figure for a hero carrying it — the Heroes seat, the Farm board, the
+    Optimizer — prices the smaller threshold, and the ability's effect text on both hosts says 0.75%.
+
+  The other moved sections (achievements list, market access, the stash cap's field names, a new
+  600 s swap timeout on phases, and the new Boost, daily-reward, ranking-prize, PvP and rune
+  sections) back nothing the app models; the bundle's 600 phase rows and every other constant are
+  unchanged.
+
+  **Ponta de Diamante (Diamond Tip) adds flat penetration points**, held outside the pool that gear
+  and spent points scale — the shape the 2026-09-02 patch gave it. It was modelled as multiplying
+  the hero's natural penetration (×21 at rank 20), which is what the game did before the patch. A
+  2026-09-13 live read settles it: a ★2 rank-20 carrier exports 64.1 penetration against 44.1
+  composed without the ability — a residual of exactly 20. Every carrier's penetration column, the
+  stat breakdown's Diamond Tip line, point inference on imported saves (which no longer reports
+  hundreds of negative penetration points for a carrier) and every DPS figure downstream move with
+  it. Captures taken before the patch keep the old reading and are marked as such.
+
+  **The Farm respec search now prices the team auras for each candidate it tries.** It used to hold
+  them at the starting build's totals, so a carrier of Fôlego de Mineiro that bought energy was
+  scored as if its aura reached the field no more than before — and solving a roster, applying the
+  proposal, and solving again could find a further gain. Each candidate now carries its own aura
+  totals, so a search and a re-search score the same squad, and the pipeline runs once per hero
+  instead of twice.
+
+- Updated dependencies [a112580]
+- Updated dependencies [0d241f6]
+- Updated dependencies [5ad5aa2]
+- Updated dependencies [306d2d0]
+- Updated dependencies [0ba2534]
+- Updated dependencies [9df458b]
+- Updated dependencies [b0f4431]
+- Updated dependencies [579684a]
+- Updated dependencies [33ff64b]
+- Updated dependencies [374c22d]
+- Updated dependencies [16c218d]
+- Updated dependencies [5ad5aa2]
+- Updated dependencies [2b8bc83]
+- Updated dependencies [c3019aa]
+- Updated dependencies [306d2d0]
+- Updated dependencies [374c22d]
+- Updated dependencies [306d2d0]
+- Updated dependencies [306d2d0]
+- Updated dependencies [374c22d]
+- Updated dependencies [dae7398]
+- Updated dependencies [b0f4431]
+- Updated dependencies [b0f4431]
+- Updated dependencies [c336926]
+- Updated dependencies [306d2d0]
+- Updated dependencies [882da7f]
+- Updated dependencies [306d2d0]
+- Updated dependencies [306d2d0]
+- Updated dependencies [8afbad5]
+- Updated dependencies [047ce89]
+- Updated dependencies [306d2d0]
+- Updated dependencies [30428ba]
+- Updated dependencies [13c01e7]
+- Updated dependencies [aa63003]
+- Updated dependencies [fcc507e]
+- Updated dependencies [306d2d0]
+- Updated dependencies [374c22d]
+- Updated dependencies [8ca17f2]
+- Updated dependencies [c4573ed]
+- Updated dependencies [61ee478]
+- Updated dependencies [6fe7247]
+- Updated dependencies [843027d]
+- Updated dependencies [5dffa73]
+- Updated dependencies [374c22d]
+- Updated dependencies [374c22d]
+- Updated dependencies [374c22d]
+- Updated dependencies [4329c1a]
+  - @bombfarm/hero@0.2.0
+  - @bombfarm/domain@1.1.0
+  - @bombfarm/game-art@0.5.0
+  - @bombfarm/ui@0.13.0
+  - @bombfarm/team-plan@0.1.0
+  - @bombfarm/farm@1.1.0
+  - @bombfarm/account@0.2.4
+
 ## 0.18.1
 
 ### Patch Changes
