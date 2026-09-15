@@ -121,7 +121,7 @@ export function factsForHero(
     treeEnergy: fixture.account.tree.energy,
     treeLuckFlatPct: combat.treeSheet.luckFlatPct,
     context: combat.context,
-    dmgMult: combat.dmgMult * combat.entryPulse.expectedMult,
+    dmgMult: combat.hitMult * combat.entryPulse.expectedMult,
     treeDanoTotal: fixture.account.tree.danoTotal,
     extraDmgPct: 0,
     active: combat.active,

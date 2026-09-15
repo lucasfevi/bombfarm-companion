@@ -173,6 +173,7 @@ describe('derive', () => {
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: mults.hitMult,
       dmgMult: mults.dmgMult,
       mitigationPct: 6.7,
     });
@@ -210,6 +211,7 @@ describe('derive', () => {
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: mults.hitMult,
       dmgMult: mults.dmgMult,
       mitigationPct: 6.7,
     });
@@ -239,6 +241,7 @@ describe('derive', () => {
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: 1,
       dmgMult: 1,
       mitigationPct: 0,
     });
@@ -262,6 +265,7 @@ describe('derive', () => {
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: 1,
       dmgMult: 1,
       mitigationPct: 0,
     });
@@ -313,6 +317,7 @@ describe('derive', () => {
       treeSheet,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: mults.hitMult,
       dmgMult: mults.dmgMult,
       mitigationPct: 6.7,
     });
@@ -324,12 +329,12 @@ describe('derive', () => {
     expect(result.effective.attack).toBeCloseTo(bellatrix.sheet.attack, 6);
 
     // hit reproduces predictHitDamage from `effective` alone — no dmg_static anywhere
-    // in the expression (dmgMult is 1 here, so a correct hit is the raw predicted hit).
+    // in the expression (hitMult is 1 here, so a correct hit is the raw predicted hit).
     const expectedHit = predictHitDamage(
       result.effective.attack,
       6.7 / 100,
       result.effective.penetration,
-      mults.dmgMult,
+      mults.hitMult,
     );
     expect(result.hit).toBeCloseTo(expectedHit, 6);
   });
@@ -367,7 +372,7 @@ describe('derive', () => {
       mitigationPct: 6.7,
     } as const;
 
-    const fixed = derive({ ...deriveArgs, dmgMult: mults.dmgMult });
+    const fixed = derive({ ...deriveArgs, hitMult: mults.hitMult, dmgMult: mults.dmgMult });
 
     // Pin `fixed.dps` directly to an INDEPENDENT computation (`sustainedDps` called directly,
     // not through a second `derive()`), so a uniform internal double-count inside `derive`
@@ -402,6 +407,7 @@ describe('derive', () => {
       treeSheet: tree,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: 1,
       dmgMult: 1,
       mitigationPct: 0,
     });
@@ -439,6 +445,7 @@ describe('derive', () => {
       treeSheet: tree,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: 1,
       dmgMult: 1,
       mitigationPct: 0,
     });
@@ -484,6 +491,7 @@ describe('derive', () => {
       treeSheet: tree,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: 1,
       dmgMult: 1,
       mitigationPct: 0,
     });
@@ -515,6 +523,7 @@ describe('derive', () => {
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: 1,
       dmgMult: 1,
       mitigationPct: 0,
     };

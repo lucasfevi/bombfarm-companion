@@ -99,7 +99,7 @@ export type HeroScore = {
   adjusted: SheetStats;
   /**
    * `derive()`'s single-target normal (non-crit) hit — `predictHitDamage(effective.attack,
-   * mitigationPct/100, effective.penetration, dmgMult)`. Carried alongside `adjusted` above at
+   * mitigationPct/100, effective.penetration, hitMult)`. Carried alongside `adjusted` above at
    * no extra evaluation cost (`derive()` already returns it). The Team Plan hero panel's Hit
    * damage grid (`hero-stat-breakdown.tsx`) derives Critical from this at display time —
    * `hit × (1 + effective.critDmg / 100)`, same formula as `advisor-pipeline.ts`'s `predCrit`

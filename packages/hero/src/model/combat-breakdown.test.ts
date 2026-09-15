@@ -12,6 +12,7 @@ import {
   cardInputChips,
   cardInputs,
   cardNoteFor,
+  expectedBlastAbilityIds,
   ledgerLines,
   matrixRowsFor,
   matrixShowsRunes,
@@ -77,8 +78,8 @@ describe('which card an ability lands on', () => {
     expect(cardForAbility('marcha_acelerada')).toBe('speed');
     expect(cardForAbility('pressagio_mortal')).toBe('critChance');
     expect(cardForAbility('brecha')).toBe('penetration');
-    expect(cardForAbility('detonacao_dupla')).toBe('dmg');
-    expect(cardForAbility('misericordia')).toBe('dmg');
+    expect(cardForAbility('detonacao_dupla')).toBe('activeDps');
+    expect(cardForAbility('misericordia')).toBe('activeDps');
     expect(cardForAbility('matilha')).toBe('dmg');
     expect(cardForAbility('passagem_bastao')).toBe('dmg');
     expect(cardForAbility('folego_mineiro')).toBe('fieldSeconds');
@@ -209,6 +210,33 @@ describe('the notes a card carries', () => {
     expect(cardNoteFor('fuse', capped, minato, switchesOff)?.kind).toBe('fuseAtCeiling');
   });
 
+  it('the Hit card says which of the hero’s abilities it leaves out and where they land, only while one is in force', () => {
+    const note = cardNoteFor('hit', facts, minato, switchesOff);
+    expect(note).toEqual({ kind: 'hitWithoutExpectedBlasts', abilityIds: ['misericordia'], mult: facts.mods.dmgMult });
+    expect(facts.mods.dmgMult).toBeCloseTo(1 / (1 - 0.15), 9);
+    const plainHero = { ...minato, abilities: { ...minato.abilities, misericordia: 0 } };
+    const plainFacts = factsForHero(fixture, plainHero);
+    expect(expectedBlastAbilityIds(plainHero)).toEqual([]);
+    expect(cardNoteFor('hit', plainFacts, plainHero, switchesOff)).toBeNull();
+    expect(expectedBlastAbilityIds({ abilities: { detonacao_dupla: 3, misericordia: 1, explosao_ampla: 20 } })).toEqual(['detonacao_dupla', 'misericordia']);
+  });
+
+  it('the Hit card prints what one blast shows: the second blast and the execute are Active DPS’s term, not the hit’s', () => {
+    const dmg = buildStatBreakdown('dmg', facts);
+    const hit = buildStatBreakdown('hit', facts);
+    const active = buildStatBreakdown('activeDps', facts);
+    if (dmg.kind !== 'formula' || hit.kind !== 'formula' || active.kind !== 'formula') throw new Error('expected formulas');
+    expect(dmg.parts.filter((part) => typeof part !== 'string').map((part) => part.key)).not.toContain('abilities');
+    expect(hit.value).toBeCloseTo(
+      facts.effective.attack * mitigationFactor(facts.context.mitigation, facts.effective.penetration) * facts.dmgMult,
+      6,
+    );
+    expect(hit.value * facts.mods.dmgMult).not.toBeCloseTo(hit.value, 3);
+    const abilities = active.parts.find((part) => typeof part !== 'string' && part.key === 'abilities');
+    expect(abilities && typeof abilities !== 'string' ? abilities.value : NaN).toBeCloseTo(facts.mods.dmgMult, 9);
+    expect(active.value).toBeCloseTo(facts.active, 6);
+  });
+
   it('the Average hit card explains itself only when no hit can crit', () => {
     expect(cardNoteFor('avgHit', facts, minato, switchesOff)).toBeNull();
     const noCrit = { ...facts, effective: { ...facts.effective, critChance: 0 } };
@@ -272,8 +300,8 @@ describe('the Active DPS card names its two constants', () => {
     const active = buildStatBreakdown('activeDps', facts);
     if (active.kind !== 'formula') throw new Error('expected formula');
     const terms = active.parts.filter((part) => typeof part !== 'string');
-    expect(terms.map((term) => term.key)).toEqual(['avgHit', 'bombs', 'rangeMult', 'aiEfficiency']);
-    expect(terms[2]?.value).toBeCloseTo(1 + 0.5 * facts.context.blastRange, 9);
-    expect(terms[3]?.value).toBe(0.9);
+    expect(terms.map((term) => term.key)).toEqual(['avgHit', 'abilities', 'bombs', 'rangeMult', 'aiEfficiency']);
+    expect(terms[3]?.value).toBeCloseTo(1 + 0.5 * facts.context.blastRange, 9);
+    expect(terms[4]?.value).toBe(0.9);
   });
 });

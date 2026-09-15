@@ -349,6 +349,7 @@ function recordHero(
     treeSheet: tree,
     penetrationPp: mults.teamPenFlat,
     context,
+    hitMult: mults.hitMult,
     dmgMult: mults.dmgMult,
     mitigationPct,
   });
@@ -418,7 +419,7 @@ function recordHero(
     treeEnergy: pipelineResult.treeSheet.energyPct,
     treeLuckFlatPct: pipelineResult.treeSheet.luckFlatPct,
     context: pipelineResult.context,
-    dmgMult: pipelineResult.dmgMult,
+    dmgMult: pipelineResult.hitMult,
     treeDanoTotal: pipelineResult.treeSheet.danoStatic,
     extraDmgPct: 0,
     active: pipelineResult.active,

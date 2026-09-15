@@ -166,8 +166,13 @@ export interface PipelineFacts {
   /** `skills.totals.luck_add × 100` — flat Luck percentage points (see `ledgerLuck`). */
   treeLuckFlatPct: number;
   context: Context;
+  /**
+   * What one blast carries — `packMult × (1 + extraDmgPct/100) × entryPulseMult`, the
+   * pipeline's `hitMult` with the pulse folded in. Never the second-blast / execute expectation:
+   * that is `mods.dmgMult`, a factor of `active` and `dps` and of no printed hit.
+   */
   dmgMult: number;
-  /** Tree damage mult (Dano Total) — factor in `dmgMult`. */
+  /** Tree damage mult (Dano Total) — on the sheet, never a factor here. */
   treeDanoTotal: number;
   /** Extra damage % from Math check — factor in `dmgMult`. */
   extraDmgPct: number;

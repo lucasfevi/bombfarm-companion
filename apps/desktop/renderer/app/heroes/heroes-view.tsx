@@ -665,7 +665,7 @@ function effectiveFacts(
     treeEnergy: account.tree.energy,
     treeLuckFlatPct: combat.treeSheet.luckFlatPct,
     context: combat.context,
-    dmgMult: combat.dmgMult * combat.entryPulse.expectedMult,
+    dmgMult: combat.hitMult * combat.entryPulse.expectedMult,
     treeDanoTotal: account.tree.danoTotal,
     // The planner's Math-check override, which this app has no surface for.
     extraDmgPct: 0,

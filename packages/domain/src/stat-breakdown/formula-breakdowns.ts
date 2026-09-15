@@ -43,20 +43,19 @@ export function formulaMitF(facts: PipelineFacts): FormulaBreakdown {
 }
 
 /**
- * `dmgMult` no longer carries `treeDanoTotal` — the tree's `dmg_static` factor
- * now lives on the sheet (`ledgerAttack`'s 'tree' step), applied exactly once. This formula's
- * substituted string must not imply a second application.
+ * The multiplier one blast carries. The tree's `dmg_static` lives on the sheet (`ledgerAttack`'s
+ * 'tree' step), and the second-blast / execute expectation is Active DPS's own term
+ * (`formulaActive`) — neither may appear here, or a hit would print more than the game shows.
  */
 export function formulaDmg(facts: PipelineFacts): FormulaBreakdown {
-  const abl = facts.mods.dmgMult;
   const pack = facts.packMult;
   const extra = 1 + facts.extraDmgPct / 100;
   const pulse = facts.entryPulseMult ?? 1;
   const value = facts.dmgMult;
   if (pulse === 1) {
-    return formula('bdFormulaDmg', value)`${term('abilities', abl, 3)} × ${term('pack', pack, 3)} × ${term('extra', extra, 3)} = ${formatBreakdownNumber(value, 3)}`;
+    return formula('bdFormulaDmg', value)`${term('pack', pack, 3)} × ${term('extra', extra, 3)} = ${formatBreakdownNumber(value, 3)}`;
   }
-  return formula('bdFormulaDmg', value)`${term('abilities', abl, 3)} × ${term('pack', pack, 3)} × ${term('extra', extra, 3)} × ${term('pulse', pulse, 3)} = ${formatBreakdownNumber(value, 3)}`;
+  return formula('bdFormulaDmg', value)`${term('pack', pack, 3)} × ${term('extra', extra, 3)} × ${term('pulse', pulse, 3)} = ${formatBreakdownNumber(value, 3)}`;
 }
 
 function hitDamage(facts: PipelineFacts): number {
@@ -126,15 +125,25 @@ export function formulaUptime(facts: PipelineFacts): FormulaBreakdown {
   return formula('bdFormulaUptime', value)`100 × ${term('field', field, 0)} / (${term('field', field, 0)} + ${term('restSeconds', facts.rest, 0)}) = ${formatBreakdownNumber(value, 1)}%`;
 }
 
-/** The average hit already carries the damage multiplier (it is `hit × critFactor`), so the
- *  multiplier is not a second factor here — `derive()` applies it once, to the same product. */
+/** What no single blast shows and DPS still earns: Detonação Dupla's second blast and
+ *  Misericórdia's execute, as expectations (`AbilityMods.dmgMult`). Omitted at exactly 1. */
+export function expectedBlastsMult(facts: PipelineFacts): number {
+  return facts.mods.dmgMult;
+}
+
+/** The average hit already carries the blast's own multiplier (it is `hit × critFactor`); the
+ *  abilities term is the one factor a hit leaves out — `derive()` applies it once, here. */
 export function formulaActive(facts: PipelineFacts): FormulaBreakdown {
   const effective = facts.effective;
   const average = hitDamage(facts) * critFactor(effective.critChance, effective.critDmg);
+  const abilities = expectedBlastsMult(facts);
   const bombs = bombsPerSecond(effective, facts.context);
   const rangeMult = 1 + 0.5 * facts.context.blastRange;
   const value = facts.active;
-  return formula('bdFormulaActive', value)`${term('avgHit', average, 0)} × ${term('bombs', bombs, 2)} × ${term('rangeMult', rangeMult, 2)} × ${term('aiEfficiency', EFF_IA, 1)} = ${formatBreakdownNumber(value, 0)}`;
+  if (abilities === 1) {
+    return formula('bdFormulaActive', value)`${term('avgHit', average, 0)} × ${term('bombs', bombs, 2)} × ${term('rangeMult', rangeMult, 2)} × ${term('aiEfficiency', EFF_IA, 1)} = ${formatBreakdownNumber(value, 0)}`;
+  }
+  return formula('bdFormulaActive', value)`${term('avgHit', average, 0)} × ${term('abilities', abilities, 3)} × ${term('bombs', bombs, 2)} × ${term('rangeMult', rangeMult, 2)} × ${term('aiEfficiency', EFF_IA, 1)} = ${formatBreakdownNumber(value, 0)}`;
 }
 
 export function formulaSustained(facts: PipelineFacts): FormulaBreakdown {

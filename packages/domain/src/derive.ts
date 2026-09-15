@@ -32,6 +32,17 @@ export type CombatMults = {
   /** Matilha's capped pack factor at this field size (`matilhaMult`) — a factor of `dmgMult`,
    *  surfaced so a breakdown can print it as its own term. */
   packMult: number;
+  /**
+   * What every single blast carries: `packMult × (1 + extra)`. The number a damage popup shows
+   * is the sheet attack through mitigation times this — Detonação Dupla's second blast is a
+   * separate popup, and Misericórdia's execute is a rock destroyed, not a larger hit.
+   */
+  hitMult: number;
+  /**
+   * Expected damage per bomb, relative to the sheet attack: `hitMult × abilities`, where
+   * `abilities` is `AbilityMods.dmgMult` — the second-blast chance and the execute threshold as
+   * expectations. DPS, gate damage and hits-to-kill read this; a printed hit never does.
+   */
   dmgMult: number;
 };
 
@@ -64,6 +75,7 @@ export function computeCombatMults(input: ComputeCombatMultsInput): CombatMults 
   const { mods, teamBuffs, extraDmgPct } = input;
   const auras = teamAuraLayer(teamBuffs);
   const packMult = matilhaMult(mods.packDmgPctPerAlly / 100, input.fieldAllies ?? 0);
+  const hitMult = packMult * (1 + extraDmgPct / 100);
   return {
     teamDrainMult: auras.teamDrainMult,
     teamCritFlat: auras.teamCritFlat,
@@ -73,7 +85,8 @@ export function computeCombatMults(input: ComputeCombatMultsInput): CombatMults 
     gateAttackMult: mods.gateAttackMult,
     energyMult: 1,
     packMult,
-    dmgMult: mods.dmgMult * packMult * (1 + extraDmgPct / 100),
+    hitMult,
+    dmgMult: mods.dmgMult * hitMult,
   };
 }
 
@@ -100,6 +113,9 @@ export type DeriveInput = {
    *  (`CombatMults.teamPenFlat`), the same shape as `teamCritFlat`. */
   penetrationPp: number;
   context: Context;
+  /** `CombatMults.hitMult` — what `hit` carries. */
+  hitMult: number;
+  /** `CombatMults.dmgMult` — what `dps` and `active` carry. */
   dmgMult: number;
   mitigationPct: number;
   /**
@@ -118,6 +134,7 @@ export type DeriveResult = {
   effective: HeroSheet;
   dps: number;
   active: number;
+  /** One non-crit blast: sheet attack through mitigation × `hitMult`. */
   hit: number;
 };
 
@@ -149,6 +166,7 @@ export function derive(input: DeriveInput): DeriveResult {
     treeSheet,
     penetrationPp,
     context,
+    hitMult,
     dmgMult,
     mitigationPct,
   } = input;
@@ -226,6 +244,6 @@ export function derive(input: DeriveInput): DeriveResult {
     dps: sustainedDps(effective, context) * dmgMult,
     active: activeDps(effective, context) * dmgMult,
     // No dmg_static anywhere here — effective.attack already carries it once, at the sheet.
-    hit: predictHitDamage(effective.attack, mitigationPct / 100, effective.penetration, dmgMult),
+    hit: predictHitDamage(effective.attack, mitigationPct / 100, effective.penetration, hitMult),
   };
 }

@@ -179,6 +179,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     treeSheet,
     penetrationPp: mults.teamPenFlat,
     context,
+    hitMult: mults.hitMult,
     dmgMult: mults.dmgMult,
     mitigationPct: 6.7,
   });
@@ -209,7 +210,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     treeEnergy,
     treeLuckFlatPct,
     context,
-    dmgMult: mults.dmgMult,
+    dmgMult: mults.hitMult,
     treeDanoTotal,
     extraDmgPct,
     active: deriveResult.active,
@@ -637,22 +638,36 @@ describe('formula parts', () => {
     }
   });
 
-  it('the average hit is the hit times the critical factor, and Active DPS reads it rather than a second damage multiplier', () => {
+  it('the average hit is the hit times the critical factor, and Active DPS reads it plus the abilities term a hit leaves out', () => {
     const { facts } = buildFixture({
       pts: { ...ZERO_PTS(), critChance: 5, critDmg: 5 },
       abilities: { detonacao_dupla: 10 },
     });
+    const dmg = buildStatBreakdown('dmg', facts);
     const hit = buildStatBreakdown('hit', facts);
     const avg = buildStatBreakdown('avgHit', facts);
     const factor = buildStatBreakdown('critFactor', facts);
     const active = buildStatBreakdown('activeDps', facts);
-    if (hit.kind !== 'formula' || avg.kind !== 'formula' || factor.kind !== 'formula' || active.kind !== 'formula') {
+    if (dmg.kind !== 'formula' || hit.kind !== 'formula' || avg.kind !== 'formula' || factor.kind !== 'formula' || active.kind !== 'formula') {
       throw new Error('expected formulas');
     }
-    expect(facts.dmgMult).toBeGreaterThan(1);
+    expect(facts.mods.dmgMult).toBeCloseTo(1 + 0.15 * 0.5, 9);
+    expect(dmg.value).toBe(1);
+    expect(dmg.parts.filter((part) => typeof part !== 'string').map((part) => part.key)).toEqual(['pack', 'extra']);
+    expect(hit.value).toBeCloseTo(facts.effective.attack * mitigationFactor(facts.context.mitigation, facts.effective.penetration), 6);
     expect(avg.value).toBeCloseTo(hit.value * factor.value, 6);
     const activeTerms = active.parts.filter((part) => typeof part !== 'string');
-    expect(activeTerms.map((term) => term.key)).toEqual(['avgHit', 'bombs', 'rangeMult', 'aiEfficiency']);
+    expect(activeTerms.map((term) => term.key)).toEqual(['avgHit', 'abilities', 'bombs', 'rangeMult', 'aiEfficiency']);
     expect(activeTerms[0]?.value).toBeCloseTo(avg.value, 6);
+    expect(activeTerms[1]?.value).toBeCloseTo(facts.mods.dmgMult, 9);
+    expect(active.value).toBeCloseTo(facts.active, 6);
+  });
+
+  it('a hero without a second blast or an execute prints no abilities term on Active DPS', () => {
+    const { facts } = buildFixture({ abilities: { explosao_ampla: 10 } });
+    expect(facts.mods.dmgMult).toBe(1);
+    const active = buildStatBreakdown('activeDps', facts);
+    if (active.kind !== 'formula') throw new Error('expected formula');
+    expect(active.parts.filter((part) => typeof part !== 'string').map((term) => term.key)).toEqual(['avgHit', 'bombs', 'rangeMult', 'aiEfficiency']);
   });
 });
