@@ -139,7 +139,7 @@ export const heroPtBR: HeroCopy = {
   heroDetailBreakdownRowPerHit: "Por hit · cadência",
   heroDetailBreakdownRowDps: "DPS",
   heroDetailBreakdownFormulaMitF: "1 − mitigação × (1 − pen)",
-  heroDetailBreakdownFormulaDmg: "habilidades × matilha × extra × pulso",
+  heroDetailBreakdownFormulaDmg: "matilha × extra × pulso",
   heroDetailBreakdownFormulaCritFactor: "1 + cc × dc",
   heroDetailBreakdownFormulaFuse: "max(2 × (1 − recarga), piso)",
   heroDetailBreakdownFormulaField: "energia ÷ dreno",
@@ -149,7 +149,7 @@ export const heroPtBR: HeroCopy = {
   heroDetailBreakdownFormulaAvgHit: "hit × fator de crítico",
   heroDetailBreakdownFormulaBombs: "1 ÷ E[max(pavio, salto ÷ velocidade)]",
   heroDetailBreakdownFormulaUptime: "campo ÷ (campo + descanso)",
-  heroDetailBreakdownFormulaActive: "médio × bombas/s × espalhamento × 0.9",
+  heroDetailBreakdownFormulaActive: "médio × habilidades × bombas/s × espalhamento × 0.9",
   heroDetailBreakdownFormulaSustained: "ativo × aproveitamento",
   heroDetailBreakdownTermPhaseMit: "mitigação da fase",
   heroDetailBreakdownTermPenetration: "penetração",
@@ -185,6 +185,8 @@ export const heroPtBR: HeroCopy = {
   heroDetailBreakdownNoteFuseFloor:
     "O pavio não desce de {floor}s; a redução de recarga para de pagar em {cap}%.",
   heroDetailBreakdownNoteAvgHitEqualsHit: "Igual ao Hit: a chance de crítico é zero, então nenhum hit é crítico.",
+  heroDetailBreakdownNoteHitWithoutExpectedBlasts:
+    "O que uma explosão mostra no jogo. {names} soma dano que nenhuma explosão isolada mostra, então fica de fora aqui; o DPS ativo carrega isso como ×{mult}.",
   heroDetailBreakdownNoteFieldWithoutTeamDrain: "Sem o {name} do time isto seria {secs}s.",
   heroDetailBreakdownNoteActiveConstants:
     "O espalhamento da explosão é 1 + 0,5 por célula de alcance ({cells} células aqui): cada célula além do epicentro alcança em média meio hit de props. A eficiência da IA é o ×0,9 fixo do jogo para o remirar e as bombas mal colocadas de um herói em campo; todo DPS ativo deste app carrega isso.",

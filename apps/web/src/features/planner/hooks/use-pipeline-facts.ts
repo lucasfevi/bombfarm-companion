@@ -37,7 +37,7 @@ export function usePipelineFacts(): PipelineFacts {
     packMult,
     entryPulse,
     rest,
-    dmgMult,
+    hitMult,
     treeSheet,
   } = pipeline;
 
@@ -65,7 +65,7 @@ export function usePipelineFacts(): PipelineFacts {
     treeEnergy,
     treeLuckFlatPct: treeSheet.luckFlatPct,
     context,
-    dmgMult: dmgMult * entryPulse.expectedMult,
+    dmgMult: hitMult * entryPulse.expectedMult,
     treeDanoTotal,
     extraDmgPct: 0,
     active,

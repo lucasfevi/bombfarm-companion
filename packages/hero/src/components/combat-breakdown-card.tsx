@@ -86,6 +86,11 @@ function noteText(copy: HeroCopy, note: CardNote, lang: Lang, formatNumber: (n: 
       return sub(copy.heroDetailBreakdownNoteFuseFloor, { floor: formatNumber(note.floorSecs, 1), cap: formatNumber(note.capPct, 0) });
     case 'avgHitEqualsHit':
       return copy.heroDetailBreakdownNoteAvgHitEqualsHit;
+    case 'hitWithoutExpectedBlasts':
+      return sub(copy.heroDetailBreakdownNoteHitWithoutExpectedBlasts, {
+        names: note.abilityIds.map((abilityId) => abilityName(abilityId, lang)).join(' + '),
+        mult: formatNumber(note.mult, 3),
+      });
     case 'batonHeld':
       return sub(copy.heroDetailBreakdownNoteBatonHeld, { pct: formatNumber(note.pct, 0) });
     case 'activeDpsConstants':

@@ -13,6 +13,7 @@ import { SHEET_DISPLAY_KEYS, type SheetDisplayKey } from '@bombfarm/domain/plann
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import {
   buildStatBreakdown,
+  expectedBlastsMult,
   LEDGER_SOURCE_GROUP,
   type BreakdownStatId,
   type LedgerGroup,
@@ -83,8 +84,10 @@ const CARD_FOR_EFFECT: Record<AbilityEffect['kind'], BreakdownStatId | null> = {
   penetrationPp: 'penetration',
   drainPct: 'fieldSeconds',
   rangeCells: 'activeDps',
-  secondBlastPct: 'dmg',
-  executePct: 'dmg',
+  // Expectations, not blasts: the second blast is its own popup and the execute destroys the
+  // rock, so neither reaches a printed hit — they land where DPS earns them.
+  secondBlastPct: 'activeDps',
+  executePct: 'activeDps',
   packDmgPct: 'dmg',
   teamPulseDmgPct: 'dmg',
   none: null,
@@ -95,6 +98,16 @@ const ABILITY_BY_ID = new Map(ABILITIES.map((ability) => [ability.id, ability]))
 export function cardForAbility(abilityId: string): BreakdownStatId | null {
   const definition = ABILITY_BY_ID.get(abilityId);
   return definition ? CARD_FOR_EFFECT[definition.effect.kind] : null;
+}
+
+/** The hero's own abilities whose damage no single blast shows, in force at any rank. */
+export function expectedBlastAbilityIds(hero: Pick<HeroRecord, 'abilities'>): string[] {
+  return Object.entries(hero.abilities)
+    .filter(([abilityId, rank]) => {
+      const kind = ABILITY_BY_ID.get(abilityId)?.effect.kind;
+      return rank > 0 && (kind === 'secondBlastPct' || kind === 'executePct');
+    })
+    .map(([abilityId]) => abilityId);
 }
 
 export type CardBadge = {
@@ -238,6 +251,8 @@ export type CardNote =
   | { readonly kind: 'fuseAtCeiling'; readonly floorSecs: number; readonly capPct: number }
   | { readonly kind: 'fuseFloor'; readonly floorSecs: number; readonly capPct: number }
   | { readonly kind: 'avgHitEqualsHit' }
+  /** The hit leaves out what these abilities add; Active DPS carries it as `mult`. */
+  | { readonly kind: 'hitWithoutExpectedBlasts'; readonly abilityIds: readonly string[]; readonly mult: number }
   | { readonly kind: 'fieldWithoutTeamDrain'; readonly auraId: string; readonly seconds: number }
   | { readonly kind: 'batonHeld'; readonly pct: number }
   | { readonly kind: 'activeDpsConstants'; readonly rangeCells: number }
@@ -259,6 +274,11 @@ export function cardNoteFor(
       return critFactor(facts.effective.critChance, facts.effective.critDmg) === 1
         ? { kind: 'avgHitEqualsHit' }
         : null;
+    case 'hit': {
+      const mult = expectedBlastsMult(facts);
+      const abilityIds = expectedBlastAbilityIds(hero);
+      return mult !== 1 && abilityIds.length > 0 ? { kind: 'hitWithoutExpectedBlasts', abilityIds, mult } : null;
+    }
     case 'fieldSeconds': {
       const folego = teamAurasAroundHero(hero, switches).folego_mineiro;
       if (!folego.on) return null;

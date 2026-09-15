@@ -124,10 +124,12 @@ export type AdvisorPipelineResult = {
   rest: number;
   context: Context;
   gateAttackMult: number;
-  /** Abilities × pack × extra — the standing multiplier, the pulse NOT folded in: the Farm board
-   *  prices the pulse per level through hits-to-kill and reads this as its base. A per-hero
-   *  screen multiplies it by `entryPulse.expectedMult`, which is what `predHit` carries. */
+  /** Abilities × pack × extra — expected damage per bomb, the pulse NOT folded in: the Farm board
+   *  prices the pulse per level through hits-to-kill and reads this as its base. */
   dmgMult: number;
+  /** Pack × extra — what one blast carries (`CombatMults.hitMult`). A per-hero screen multiplies
+   *  it by `entryPulse.expectedMult`, which is what `predHit` carries. */
+  hitMult: number;
   /** Combat mults already computed by `computeCombatMults` — surfaced for breakdown (additive). */
   attackMult: number;
   energyMult: number;
@@ -287,6 +289,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     teamPenFlat,
     teamDrainMult,
     packMult,
+    hitMult,
     dmgMult,
   } = mults;
 
@@ -317,6 +320,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     treeSheet,
     penetrationPp: teamPenFlat,
     context,
+    hitMult,
     dmgMult,
     mitigationPct: mitPct,
     runes,
@@ -394,7 +398,9 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     runeSheetMultipliers(runes),
   );
 
-  const htkHit = equippedResult.hit * critFactor(effective.critChance, effective.critDmg);
+  // Hits-to-kill runs on expected damage per bomb — the second blast and the execute as
+  // expectations, the Farm board's convention — which is more than any one blast shows.
+  const htkHit = equippedResult.hit * mods.dmgMult * critFactor(effective.critChance, effective.critDmg);
   const propRows: PropHtkRow[] = propHtkRows(stoneHp, htkHit, targetProp);
   const bossHp = propHp(stoneHp, BOSS_HP_MULT);
   const bossHits = hitsToKill(htkHit, bossHp);
@@ -423,6 +429,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     context,
     gateAttackMult,
     dmgMult,
+    hitMult,
     attackMult,
     energyMult,
     speedMult,

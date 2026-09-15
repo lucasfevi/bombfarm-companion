@@ -90,6 +90,7 @@ describe('CombatBreakdownPanel', () => {
     const html = render('en');
     expect(cardMarkup(html, 'fieldSeconds')).toMatch(/data-badge="folego_mineiro" data-on="false"/);
     expect(cardMarkup(html, 'attack')).toMatch(/data-badge="grito_guerra" data-on="false"/);
-    expect(cardMarkup(html, 'dmg')).toMatch(/data-badge="misericordia" data-on="true"/);
+    expect(cardMarkup(html, 'activeDps')).toMatch(/data-badge="misericordia" data-on="true"/);
+    expect(cardMarkup(html, 'dmg')).not.toMatch(/data-badge="misericordia"/);
   });
 });

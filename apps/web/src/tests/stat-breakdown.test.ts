@@ -179,6 +179,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     treeSheet,
     penetrationPp: mults.teamPenFlat,
     context,
+    hitMult: mults.hitMult,
     dmgMult: mults.dmgMult,
     mitigationPct: 6.7,
   });
@@ -209,7 +210,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     treeEnergy,
     treeLuckFlatPct,
     context,
-    dmgMult: mults.dmgMult,
+    dmgMult: mults.hitMult,
     treeDanoTotal,
     extraDmgPct,
     active: deriveResult.active,

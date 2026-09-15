@@ -204,9 +204,7 @@ const KEYS_REMOVED: readonly string[] = [
   // Was split into a Dps/Farm pair (2026-09-06) because the per-hero rows are DPS whatever the
   // roster was scored on; the pair was deleted outright (2026-09-13) — the paragraph explained a
   // table whose column headers already name DPS, and it led the panel.
-  'teamPlanHeroDeltaNote',
-  'teamPlanSetupSectionBody',
-  'teamPlanRunSummaryRegimeHintSaturated',
+  'teamPlanHeroDeltaNote', 'teamPlanSetupSectionBody', 'teamPlanRunSummaryRegimeHintSaturated',
   'teamPlanRunSummaryFieldStatus',
   // The hero row's Combat stats table (2026-09-14): with the sheet table capped only at the
   // game's own display caps, the two tables agreed on most rows and the second one went; the hit

@@ -106,6 +106,7 @@ function realHeroDerive(file: string, name: string, level: number) {
     treeSheet: tree,
     penetrationPp: mults.teamPenFlat,
     context,
+    hitMult: mults.hitMult,
     dmgMult: mults.dmgMult,
     mitigationPct: 6.7,
   });
@@ -488,7 +489,8 @@ describe('optimizeBuild — Tier 2', () => {
       treeSheet: { danoStatic: 1, energyPct: 0, speedPct: 0, critChancePct: 0, critDmgPct: 0, luckFlatPct: 0 },
       penetrationPp: 0,
       context,
-      dmgMult: mults.dmgMult,
+      hitMult: mults.hitMult,
+    dmgMult: mults.dmgMult,
       mitigationPct: 6.7,
     };
     const atZero = derive({ ...args, pts: ZERO_PTS() });
