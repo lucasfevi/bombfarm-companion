@@ -1,5 +1,368 @@
 # @bombfarm/domain
 
+## 1.1.0
+
+### Minor Changes
+
+- a112580: An Abilities & auras section closes the Combat tab on the web planner and the Combat stage on the desktop Heroes screen, replacing the team-aura switches beside the phase picker. Every team aura the game has is listed, whoever carries it: the hero's own aura counts at its rank and cannot be switched off; any other aura is off until switched on, and then is priced at its field-wide cap — the roster is no longer an input to a hero's own figures. Each row says what flipping it would do to sustained DPS ("+12.7 % if on", "−11.3 % if off"). Below it, every ability of the hero's own reads as priced — "−12 % drain", "+1.0 range", "×1.09 dmg" — with Contra o Relógio marked "not here" off a gate phase, and a note spells out that the two drain reductions add. "Back to your current phase" now clears the switches too; they still never persist.
+- 0d241f6: Model three more combat abilities — Breach, Pack and Baton Pass — and price every team aura
+  one way on every screen.
+
+  **Breach is the fifth standing team aura.** It reads as flat penetration points on every hero on
+  the field, +1 per level, capped at 20 across every carrier — the same shape as Deadly Omen's crit
+  points. It sits beside the other four everywhere they are enumerated: the Combat tab's and the
+  Heroes screen's aura switches gain a fifth row, the Farm board and the Optimizer weight each
+  carrier by its predicted uptime, and a hero's own screen always counts its own rank. The
+  penetration breakdown shows it as its own team line.
+
+  **Pack is an own ability priced at the field size.** Each level adds +0.5% damage per ally
+  standing beside the carrier, capped at +90% (live wiki, 2026-09-13 — the catalog's old
+  "+2% / +40%" text matched neither). A hero's own screen counts the heroes the game has deployed
+  beside it; the Farm board and both Optimizer objectives count each other hero for its own share
+  of the rotation, never more than the field has room for. The damage formula prints the pack
+  factor as its own term with a glossary tip.
+
+  **Baton Pass is the sixth team aura, and comes in pulses.** When a carrier enters the rotation the
+  whole field — heroes without the ability included — deals +4% damage per rank for 120 seconds.
+  The Farm board, the Farm respec advisor and both Optimizer objectives price it as the other
+  auras are priced: each carrier's pulse lights the field for its own share of wall clock,
+  overlapping pulses sum their ranks and clamp at +80% inside the expectation, and the Farm board
+  prices every hero's hit through its own hits-to-kill step at each pulse level, so the credit
+  lands only where a pulse crosses a threshold. A hero's own screen now prices its OWN pulse from
+  the same rule, at its own stint length, so the ability's next level reads as a real gain there
+  too; the other carriers' pulses are counted only on the rotating surfaces, and the Effective
+  stats tip says so. On the calibration anchor, one rank-20 carrier moved gold per hour by about
+  +1%, re-pinned and not refitted.
+
+  **The abilities panel prices the three.** Breach reports a gain below its ceiling and names the
+  ceiling at it, Pack reports a gain beside allies, Baton Pass reports a gain — and Ghost, Hero
+  Hunter, Gold Vein, Fortune and Lapidary Eye still read "not modelled".
+
+  **The wiki-drift capture was a month stale.** The committed capture the drift tooling's tests
+  read still carried Mercy at 1.25% per level and Keen Eye at 0.75% from 2026-08-14; it is
+  re-taken from the live endpoint and pinned to the committed fingerprint baseline, so it cannot
+  silently lag the catalog again.
+
+- 306d2d0: Value what one more level of each of a hero's abilities is worth to that hero, at a given phase,
+  by re-running the same combat model rather than adding a second formula for the same quantity.
+  Team-wide auras are priced through the roster total they actually act on, so levelling one is not
+  reported as worth nothing. Four outcomes stay distinct in the data — a gain, already at maximum,
+  the field already at that aura's ceiling, and an effect the damage-per-second measure does not
+  reach — so no ability that does something can render as a plain zero.
+- 9df458b: The Effective stats panel on the Combat tab (web planner) and the Combat stage (desktop Heroes
+  screen) no longer folds each figure behind an accordion row. Both apps now draw one shared panel
+  from the hero package: the combat figures as a pipeline of cards — Sheet (the seven combat sheet
+  stats), Factors (Damage multiplier, Mitigation factor, Critical factor, Fuse, Field time, Rest),
+  Per hit · cadence (Hit, Critical hit, Average hit, Bombs/s, Uptime) and DPS (Active, Sustained)
+  — with curved wires between the cards that feed each other, so every figure is visible without a
+  click and Speed's card is seen feeding Bombs/s. Each card carries a short symbolic formula, and at
+  its bottom edge the icon of every ability or aura that reaches it — Grito on Attack, Marcha on
+  Speed, Presságio on Crit Chance, Brecha on Penetration, Detonação Dupla, Misericórdia, Matilha and
+  Passagem de Bastão on Damage multiplier, Fôlego and Bateria Extra on Field time, Explosão Ampla on
+  Active DPS, Contra o Relógio on Attack on a gate phase — dimmed while the aura's switch is off;
+  hovering an icon names the ability. Hovering or focusing a card opens one popover on both layouts:
+  a derived figure shows its substituted formula with every term named, the inputs it reads as
+  chips, and a note where the model has one (the fuse at its ceiling, an average hit equal to the
+  hit because crit chance is zero, what Field time would read without the team's Fôlego); a sheet
+  stat shows its ledger grouped by game line. Hovering a card also lights the wires that feed it.
+  The Mitigation factor card carries the penetration reading ("covers the phase" / "12.2% short of
+  this phase") that the hero panel used to print; that panel leaves the Combat stage altogether —
+  the hero is the one the strip or the roster holds, and the prop table goes with it (the Farm
+  page's hero panel keeps both). Under the pipeline, the seven combat sheet stats as a matrix — Hero
+  (base, level, stars and points folded to one figure; hover for the four), Gear, Ability, Skill
+  tree, Sheet total, Aura ×, Effective — always all seven rows, with "—" for an empty cell and "off"
+  where an aura exists but its switch is off; a Rune × column appears only while a rune is on the
+  sheet. The panel's own width picks the layout: the pipeline at 820px and up, the same cards
+  stacked one per row under the same four labels below that. Average hit joins the derived
+  breakdown as its own figure (hit × critical factor), and the Active DPS formula reads it rather
+  than a second damage multiplier — no value moves.
+
+  Baton Pass is now the sixth team aura behind a switch in the Abilities & auras section, beside
+  the five standing ones: the hero's own rank counts on its own entry pulse and cannot be switched
+  off; for a hero without it the switch prices that pulse at the field-wide cap (+80% for the
+  window), whoever would carry it, and the row says what flipping it does to sustained DPS like the
+  others. It leaves the own-abilities list. The drain-reductions note under the section is gone.
+
+  Both panels on the Combat tab and stage now carry their explanation behind an info glyph beside
+  the title, the way the Optimizer's setup bar does, instead of an intro paragraph; the Effective
+  stats explanation no longer describes how Baton Pass is counted. The info glyph is a design-system
+  primitive now, `InfoTip`, and the Optimizer draws it from there.
+
+  A hero's own Baton Pass pulse now reaches every figure a per-hero screen prints, not only the
+  DPS pair: Hit, Critical hit and Average hit carry the pulse's expectation over wall clock, and the
+  Damage multiplier card names the pulse as its own factor — so switching Baton Pass on moves Hit
+  the way it moves Sustained DPS. Hits-to-kill still reads the unpulsed hit (a threshold is crossed
+  at a level the field sits at, never at the average of two), and the Farm board's pricing is
+  untouched.
+
+  On a hero's own screen Baton Pass is counted as if its pulse never lapsed — the whole stint at
+  its level, +80% at the cap — because the screen answers what the hero is worth with the pulse on;
+  the Farm page and the Optimizer keep counting only the 120 s each entry lights. The Damage
+  multiplier card's popover says so, the aura row's figure reads "pulse held up", and the section's
+  info glyph explains the difference. A line under the Effective stats title says a card's figure
+  opens its formula on hover or focus; inside a popover the main figure stays white while every
+  term, step and running total is accent or muted, and the popover grows to keep a formula on one
+  line. The sheet-stat matrix is striped.
+
+  The penetration reading told the wrong story. Penetration pierces a share of the phase's
+  mitigation (`dano = ataque × (1 − mitig × (1 − pen/100))`), not points off it, so 42.6%
+  penetration against an 8.36% phase still loses 4.8% of every hit — yet the hero panel called that
+  "covering the phase" / "Fully piercing" because 42.6 ≥ 8.36, and the Phases page's mitigation tip
+  said "8.4% pen ignores all mitigation". Both now say what the phase still takes off each hit
+  ("4.8% of each hit lost — 42.6% of the phase's 8.36% pierced"), "nothing lost" only at 100%, and
+  the Mitigation factor card's popover spells the rule out.
+
+- 16c218d: Stop the Optimizer handing a hero worse gear than it is holding. Its dominance rule compared two
+  pieces only within one item definition, on the premise that sets differ in which stats they roll
+  and so are incomparable. That premise no longer holds: every slot's thirty sets roll the same
+  stats in the same order, and a roll is `statBase × nivelMult[level] × forja`, so within a slot an
+  item is fully described by (level, rarity, forge) and the set name is cosmetic. A clay amulet beats
+  a coal one of equal rarity and forge outright — and the search was still offering the coal.
+
+  Dominance is now read off the catalog's own scaled rolls instead of asserted, so it degrades to
+  "incomparable" by itself if a set ever does roll differently again. It is applied per hero level,
+  because a dominated piece may be the only one an under-levelled hero can equip.
+
+  Comparing across sets also fixes a second, quieter symptom. The gold objective is flat over wide
+  plateaus — hero damage reaches it through an integer hits-to-kill, and Luck does not reach it at
+  all — so a swap chain that pays for itself elsewhere could leave a hero holding gear a free piece
+  beats outright, with no gain available to make the search correct it. Where the plan is already
+  changing a slot, it now hands over the best piece it could; slots the plan leaves alone stay
+  alone, so no chore is invented, and each substitution is still scored, because more Energia raises
+  uptime and on a saturated field that can cost more than the piece gains.
+
+- dae7398: Model the timed rune buffs a hero can carry. A rune's bonus is read off the account and taken
+  back off the sheet before spent points are recovered, so a runed hero now inverts exactly to its
+  level instead of overshooting its budget and being blocked — on the account this was fitted on,
+  every one of the six runed heroes had been blocked and none is now. The rune then goes back on
+  every figure that describes the hero today: the stat sheet gains a rune column and the
+  per-statistic breakdown a rune step naming the play time left; combat, ranking, farm and plan
+  figures include it. A plan is never justified by one: the optimizer names the runed heroes in its
+  disclosures, since a rune expires and cannot be bought back. The xp and gold axes are carried but
+  not priced.
+
+  On the desktop, a hero whose spent points still cannot be read is left off the Farm board and
+  named above it, and the Heroes screen withholds that hero's points, gear and combat figures with a
+  notice instead of drawing them from a zeroed allocation. On the web planner, an account read with
+  runed heroes now imports whole.
+
+- 8afbad5: Every printed hit — Hit, Critical Hit and Average hit on the Combat tab, the hero strip, the Phases panel, the roster rows, gear compare and the Team Plan — is now what one blast shows in the game: sheet attack through mitigation times the pack, extra and Baton Pass factors. Double Detonation's second blast and Misericórdia's execute are expectations no single blast carries, so they leave the Damage multiplier card and land on Active DPS as their own `abilities` term, badged there; the Hit card says what it leaves out and where it went. DPS, gate damage and hits-to-kill are unchanged. A Double Detonation carrier's Hit no longer prints 15% above the game's popup.
+- 047ce89: Show the gear an Optimizer plan takes OFF a hero, say why, and let you plan without the reason.
+
+  The plan could always unequip a piece and hand it back with nobody taking it, and the page rendered
+  no row for it: the item vanished off the hero's card and was mentioned nowhere, because the
+  "returns to inventory" group the model already built was filtered out before it reached the screen.
+  Those removals now appear on the hero they came off, and carry their reason.
+
+  The reason is field crowding. Where the field cannot seat the whole roster at once, a hero taking
+  more field time crowds the others out, so gear that raises its uptime lowers the roster's own
+  score — faithfully modelled, and the honest answer to "what does my roster earn as it stands". It
+  is the wrong answer for a player who rotates heroes in buckets, and it reads as the optimizer
+  ignoring an item. **Keep every hero geared** drops that term from both objectives, so more gear can
+  never score worse, and fills every empty slot the plan has an item for. The totals it produces
+  describe a field that never makes heroes queue, so they read higher than the roster really earns —
+  the control says so, and the reported field status stays the true one either way.
+
+  On a 13-hero roster the honest plan left eleven slots empty that it owned gear for, three of them
+  helmets; with the toggle on it leaves none, and every remaining gap is a piece the hero is too
+  low-level to equip.
+
+- 30428ba: Price every DPS figure on one bombing-cadence model — the Farm page's measured one — and retire
+  the advisor's serial model.
+
+  **Two models printed DPS.** The hero strip, the Points ranking, the reset-advice gate, the Combat
+  stage on both apps and the Optimizer's damage objective read a serial cycle, `1 / (fuse + 0.15 s)`,
+  in which Speed did not appear: a Speed point ranked at 0% forever and Marcha Acelerada was worth
+  nothing. The Farm page read a measured cycle — the longer of the fuse and the walk to the next
+  plant, averaged over hop lengths measured in real clears and packed closer on denser difficulties
+  — so a hero's bombs per second on the Combat stage and its plants per second on the Farm page, at
+  the same phase, were two different numbers.
+
+  **Now there is one.** The advisor's bombs per second is the inverse of the Farm page's cycle at
+  the farm phase's own difficulty band. Speed shortens every hop the fuse does not already cover,
+  and is a real next-point candidate (about 1.1% a point on a typical hero). Cooldown reduction pays
+  only on the hops where the fuse is the longer leg — observed directly: a hero that reaches its
+  next target before its previous bomb has gone off waits on the cell and plants a fifth of a
+  second after the fuse ends, and when one hero was respecced from 12% to 28% cooldown reduction
+  that waiting time moved with her fuse, one for one, while a second hero's did not. Where the
+  crossover falls depends on walk speed and on the field; the model puts it near 53% for a hero
+  walking two cells a second, and past it the point scores zero, where the serial model had it
+  paying through to the 80% cap. Nothing is measured past 28%, and the same capture found the model
+  overstating how much of a fast hero's field is fuse-bound, so a fast hero's cooldown figure reads
+  high rather than low. A build with every point in cooldown still trips the reset gate — harder
+  than before.
+
+  **Every DPS figure moves, on both apps**, typically down by about a third at mid cooldown
+  reduction; the Bombs/s breakdown prints the one formula with the fuse, walk speed, band and
+  resulting cycle substituted, and the "How the math works" text describes the measured cycle.
+
+  **The accepted cost:** the measured cycle's approximations — a hop histogram fitted at one
+  difficulty band and scaled to the others, a density term that runs optimistic at the easiest band,
+  latency constants calibrated on squad clears — now reach per-hero figures. Those are errors of
+  degree; Speed doing nothing was an error of kind. A hero priced alone is priced at squad density,
+  as the Farm page already priced it.
+
+- fcc507e: Make the Optimizer spend the stat points a hero has not placed yet, instead of only reshuffling
+  the ones it already spent. A level-102 hero holding 52 unspent points was offered a rearrangement
+  of the other 50 and nothing else — the points it had banked were never mentioned, never priced,
+  and never appeared in the plan at all.
+
+  The gold search had no move that could place them. Every move in its per-hero neighbourhood is a
+  transfer, so a vector's total never changes; five of its six seeds ARE built from the hero's whole
+  level pool, but each is a squad-wide assignment at one shared energy share, so it wins or loses
+  for every hero at once. The sixth carries each hero's current total. That left one route to a
+  banked point — a squad-wide re-split good enough to beat the incumbent on every other hero's
+  account too — which a large pool sometimes tipped and a small one never did. On a roster already
+  settled at the optimizer's own advice, banks of 1 to 12 points were dropped in full; on the
+  account that surfaced this, a bank of 52 was dropped as well. The damage objective was unaffected:
+  its seeds are built per hero, so a full-pool seed can win on its own merit.
+
+  The per-hero neighbourhood now carries a family that places unplaced points, whole pool first so
+  one accepted move settles it and the transfer family spreads it from there. Placement still has to
+  earn its keep against the objective — more damage can clear a phase faster than the field refills
+  and cost gold — so a point that buys nothing stays where it is rather than being spent for the
+  sake of it. The level ceiling is untouched: no proposal has ever been allowed to exceed it, and
+  none does now.
+
+  Placing those points is also free, and the advisor now says so. A respec buys back points already
+  committed, so a proposal that only ADDS commits none and owes nothing — but the Farm page charged
+  a flat 1000 gold per hero level on every hero whose build changed at all. That was correct while
+  every move was a transfer, because anything that changed also took a point off something; it stops
+  being correct the moment a proposal can be pure addition. On a settled roster, a hero banking eight
+  points was quoted 44,000 gold for a plan that takes nothing away from it. The headline respec cost
+  and the payback it feeds now count only the heroes that actually have to buy one, and the Team
+  Plan's per-hero reset cost is 0 for the same case.
+
+- 374c22d: The Optimizer no longer shows an "Assumptions & limits" panel under its results, on the web
+  planner or the desktop app. What it said was technical — unmodelled abilities, loadout drift
+  against the inventory snapshot, excluded-item counts, aura and Planner-divergence notes, forge
+  and Luck caveats, restricted-plan notes — and did not change what a player should do with the
+  plan above it. The run summary, gain breakdown and per-hero table are unchanged.
+
+  Everything that existed only to feed that panel goes with it: the `disclosures` field on a
+  computed team plan, the package component and its copy, and the four host-supplied strings each
+  app provided for it.
+
+- 8ca17f2: Remove the last traces of the skill-tree keystones the 2026-08-13 game patch deleted.
+
+  **The mechanics went a month ago; their vocabulary stayed.** The crit-damage multiplier the Glass
+  Cannon keystone used to feed survived as a hard-coded `1` threaded through `CombatMults`,
+  `DeriveInput`, the advisor pipeline, team-plan scoring and the stat-breakdown types — every
+  caller multiplied by one. That field is gone from every signature; no figure moves.
+
+  **The web planner no longer wipes a stored account for carrying the retired tree fields.** The
+  boot-time drop that cleared every `bf-hp-*` key on sight of `glassCannon` / `tempoDobrado` /
+  `abisso` / `abissoBase` / `critDmgMult` is removed; those fields are still discarded on load by
+  the fixed-field tree rebuild, as they have been since the patch, so a record that carries them
+  loads with them ignored rather than being thrown away. Nothing is migrated.
+
+  **The desktop's stored-section drop keeps the same verdicts without naming the tokens.** A
+  `skills` row carrying a retired `totals` key was already an added key under the schema
+  fingerprint; the separate retired-key list that re-found the same evidence is deleted.
+
+  The two guards that existed only to assert the keystones were absent — and the pinned per-file,
+  per-line maps every neighbouring edit had to re-pin — are deleted with them, along with two
+  orphaned fixture copies nothing read.
+
+- 5dffa73: Price team auras one way on every screen, and give a hero's own screen its switches.
+
+  **The same hero printed a different DPS on every screen, and a different one on every account
+  read.** The Heroes screen and the planner's Combat tab priced team auras off a snapshot of
+  whoever happened to be standing on the field when the account was read, so the number moved as
+  the rotation turned — on one real roster it read 22–33% low for every hero, on another 4.7% high.
+  The Optimizer's damage objective summed each carrier's rank by its duty and clamped afterwards,
+  which held two part-time carriers of one capped aura at the cap the whole time; the gold
+  objective and the Farm board took the expected value of the capped sum instead.
+
+  **Every screen that rotates a roster now prices auras the Farm board's way**: each carrier the
+  game will field, weighted by the uptime the model predicts for it, the cap taken inside the
+  expectation. The Optimizer's damage objective moves onto it — on a roster with one carrier per
+  aura nothing changes; three Fôlego carriers that summed to 60 against a cap of 20 move a plan's
+  DPS by −3.7% — and, like the gold objective, it now counts a hero you leave alone: that hero
+  still fields, so its aura reaches the rest of the roster at the duty its untouched build sustains.
+  Only a donated hero is out, on both. The phase explorer beside the Farm board prices the same
+  way, on both apps, so it and the board agree.
+
+  **A hero's own screen asks a narrower question, and gets a control.** The Heroes screen and the
+  Combat tab price one hero on the field: its own aura always counts, and every other carrier is a
+  what-if behind a switch — off, the hero is priced alone; on, that aura counts every other hero in
+  rotation that carries it, as if they stood on the field the whole time. The four switches sit
+  beside the phase picker, say what they assume, and say where the uptime-weighted figures live
+  instead. They reset on every visit, like the phase pick.
+
+  **The stored aura total is gone.** The planner used to keep a hand-typed override that no screen
+  has offered a field for since August, and a snapshot that went stale on the next read; a saved
+  account still carrying either loads with both discarded. A Farm board that was still being priced
+  against such an override — a number no control could show or clear — now prices the roster like
+  every other.
+
+### Patch Changes
+
+- 33ff64b: Draw the equipped items on the desktop's Gear stage — art in its rarity frame, name, tier, level,
+  forge and the slot it sits in — instead of eight bare stat cards.
+
+  The Heroes screen's Gear stage used to print only each slot's stat contributions ("Damage
+  +6,733.7 / Crit Chance +15.0%") with nothing saying which item they came from. It now draws the
+  same slot card the web planner draws: the slot's name on top, the item's art centred in its rarity
+  frame, the item's set with its forge `+N`, its tier in the tier's colour beside its level, and
+  the stats it contributes beneath under their short labels ("Dmg", "Crit", "CDR" / "Dano", "Crít",
+  "Recarga"). An empty slot shows a dashed tile and "Empty". The stage stays read-only — no control
+  on it changes the loadout.
+
+  One card for both hosts. `GearSlotCard` lives in `@bombfarm/hero`; the shared Items panel draws it
+  whenever a host supplies no slot editor, and the web planner's editor now wraps the same card,
+  handing its level, rarity and forge selects in as the card's children, pinned to the foot of the
+  card so they line up across a row — so the per-slot stats that used to sit in a second row under
+  the editors now sit inside each card, under the item they belong to. The eight slots lay out four
+  across in two rows, centred, and go to one row of eight once the panel is 64rem wide — the widest
+  the desktop shell lets it get — where every card's header, art, name and tier line still sit on
+  the same rows as its neighbours'.
+
+  The totals table under the cards loses its "Damage (% of Attack)" column: no item in the current
+  catalog carries a percent damage bonus, so it read +0.0% on every account.
+
+- 5ad5aa2: The one-shot identifier guard's allowlist names the web front page's farm comparison, which reads the ranking board's one-shot column to say whether a phase is one-shot. Test-only; nothing the package ships changes.
+- c4573ed: The Return Bonus multiplies gold and XP only, as the game now applies it.
+
+  The wiki's Economy page stopped listing drop chances under the bonus: while the banked time runs,
+  gold and XP are worth +50% (+100% with the 30-day pass) and nothing else moves. The Farm board on
+  both hosts, the Home card's best phase and every farm-objective search (next point, respec, per-hero
+  optimize) used to scale chests, keys, gem chests, time pieces and stone chests by the same ×1.5 / ×2,
+  so with the switch on they overstated every drop column by up to 2× and the chests objective's
+  figures with it. Those columns now hold still across Off / On / VIP; gold/hr and XP/hr still scale.
+
+- 4329c1a: Follow the wiki as published on 2026-09-13, restate Diamond Tip as flat points, and let the farm
+  point search price team auras per candidate.
+
+  **Two game values moved** since the 2026-09-02 bundle, and both reach a screen:
+
+  - **Return Bonus** is now +50% (was +40%) and +100% for VIP (was +80%). The Farm board's
+    Return Bonus estimate on both hosts scales gold and XP by ×1.5 / ×2 instead of ×1.4 / ×1.8.
+  - **Misericórdia** executes rock below 0.75% of its HP per level (was 1.25%), so 15% at rank 20
+    instead of 25%. Every DPS figure for a hero carrying it — the Heroes seat, the Farm board, the
+    Optimizer — prices the smaller threshold, and the ability's effect text on both hosts says 0.75%.
+
+  The other moved sections (achievements list, market access, the stash cap's field names, a new
+  600 s swap timeout on phases, and the new Boost, daily-reward, ranking-prize, PvP and rune
+  sections) back nothing the app models; the bundle's 600 phase rows and every other constant are
+  unchanged.
+
+  **Ponta de Diamante (Diamond Tip) adds flat penetration points**, held outside the pool that gear
+  and spent points scale — the shape the 2026-09-02 patch gave it. It was modelled as multiplying
+  the hero's natural penetration (×21 at rank 20), which is what the game did before the patch. A
+  2026-09-13 live read settles it: a ★2 rank-20 carrier exports 64.1 penetration against 44.1
+  composed without the ability — a residual of exactly 20. Every carrier's penetration column, the
+  stat breakdown's Diamond Tip line, point inference on imported saves (which no longer reports
+  hundreds of negative penetration points for a carrier) and every DPS figure downstream move with
+  it. Captures taken before the patch keep the old reading and are marked as such.
+
+  **The Farm respec search now prices the team auras for each candidate it tries.** It used to hold
+  them at the starting build's totals, so a carrier of Fôlego de Mineiro that bought energy was
+  scored as if its aura reached the field no more than before — and solving a roster, applying the
+  proposal, and solving again could find a further gain. Each candidate now carries its own aura
+  totals, so a search and a re-search score the same squad, and the pipeline runs once per hero
+  instead of twice.
+
 ## 1.0.1
 
 ### Patch Changes

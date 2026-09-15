@@ -1,5 +1,40 @@
 # @bombfarm/account
 
+## 0.2.4
+
+### Patch Changes
+
+- Updated dependencies [a112580]
+- Updated dependencies [0d241f6]
+- Updated dependencies [306d2d0]
+- Updated dependencies [9df458b]
+- Updated dependencies [579684a]
+- Updated dependencies [33ff64b]
+- Updated dependencies [374c22d]
+- Updated dependencies [16c218d]
+- Updated dependencies [5ad5aa2]
+- Updated dependencies [c3019aa]
+- Updated dependencies [dae7398]
+- Updated dependencies [b0f4431]
+- Updated dependencies [c336926]
+- Updated dependencies [306d2d0]
+- Updated dependencies [306d2d0]
+- Updated dependencies [8afbad5]
+- Updated dependencies [047ce89]
+- Updated dependencies [30428ba]
+- Updated dependencies [13c01e7]
+- Updated dependencies [aa63003]
+- Updated dependencies [fcc507e]
+- Updated dependencies [306d2d0]
+- Updated dependencies [374c22d]
+- Updated dependencies [8ca17f2]
+- Updated dependencies [c4573ed]
+- Updated dependencies [6fe7247]
+- Updated dependencies [5dffa73]
+- Updated dependencies [4329c1a]
+  - @bombfarm/domain@1.1.0
+  - @bombfarm/ui@0.13.0
+
 ## 0.2.3
 
 ### Patch Changes
