@@ -174,8 +174,9 @@ export const FORTUNA_AURA_CAP: number =
 export type ReturnBonusMode = 'off' | 'on' | 'vip';
 
 /**
- * `1 | 1 + RETURN_BONUS_ADD | 1 + RETURN_BONUS_ADD_VIP`. Total function — an unrecognized mode
- * (should TypeScript be bypassed at a call site) falls back to `1` rather than throwing.
+ * `1 | 1 + RETURN_BONUS_ADD | 1 + RETURN_BONUS_ADD_VIP`, applied to gold and XP only — the wiki
+ * stopped listing drop chances under the bonus on 2026-09-15. Total function — an unrecognized
+ * mode (should TypeScript be bypassed at a call site) falls back to `1` rather than throwing.
  */
 export function returnBonusMultiplier(mode: ReturnBonusMode): number {
   if (mode === 'on') return 1 + RETURN_BONUS_ADD;
@@ -1332,13 +1333,12 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   const goldMult = squad.teamCoinMult * (1 + fortunaAura) * bonus;
   const goldPerHour = propsPerHour * eGold * goldMult * goldSelfMix;
 
-  const chestsPerHour = propsPerHour * DROP_RATES.chest * sorteMult * bonus;
-  const keysPerHour = line.gate
-    ? -(cyclesPerHour * KEY_GATE_COST)
-    : propsPerHour * DROP_RATES.key * sorteMult * bonus;
-  const gemsPerHour = line.gate ? propsPerHour * DROP_RATES.gem * sorteMult * bonus : 0;
-  const timePiecesPerHour = line.gate ? propsPerHour * DROP_RATES.time * sorteMult * bonus : 0;
-  const stoneChestsPerHour = line.gate ? propsPerHour * DROP_RATES.stone * sorteMult * bonus : 0;
+  // The Return Bonus reaches gold and XP only; every drop chance answers to Sorte alone.
+  const chestsPerHour = propsPerHour * DROP_RATES.chest * sorteMult;
+  const keysPerHour = line.gate ? -(cyclesPerHour * KEY_GATE_COST) : propsPerHour * DROP_RATES.key * sorteMult;
+  const gemsPerHour = line.gate ? propsPerHour * DROP_RATES.gem * sorteMult : 0;
+  const timePiecesPerHour = line.gate ? propsPerHour * DROP_RATES.time * sorteMult : 0;
+  const stoneChestsPerHour = line.gate ? propsPerHour * DROP_RATES.stone * sorteMult : 0;
   const xpPerHour = propsPerHour * xpPerProp(line.phase) * squad.xpMult * bonus;
 
   const maxPropHp = line.hp * MAX_PROP_HP_MULT;

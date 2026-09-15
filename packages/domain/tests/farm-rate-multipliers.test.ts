@@ -4,7 +4,8 @@
  * Seven cases, each a single-variable delta against a shared baseline, each asserting both the
  * column that must move AND `toBe`-level equality on the columns that must not. Proves the two
  * do-not-"fix" asymmetries: Sorte moves chest/key/gem/time and never
- * gold/xp; the gold chain (team_coin/fortuna/veia_ouro) moves gold and never chest/key/gem/xp.
+ * gold/xp; the gold chain (team_coin/fortuna/veia_ouro) moves gold and never chest/key/gem/xp;
+ * the Return Bonus moves gold and xp and never a drop.
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -268,8 +269,8 @@ describe('Gold tracks team_coin / fortuna / veia_ouro, never Sorte', () => {
   });
 });
 
-describe('Return bonus multiplies gold/XP/drops only — structure is untouched', () => {
-  it("'off' → 'on' → 'vip' scales gold, xp and the four drop rates by exactly 1 / 1.5 / 2; structural fields are byte-identical", () => {
+describe('Return bonus multiplies gold and XP only — drops and structure are untouched', () => {
+  it("'off' → 'on' → 'vip' scales gold and xp by exactly 1 / 1.5 / 2; every drop column and structural field is byte-identical", () => {
     const heroFacts = computeHeroFarmFacts({ heroes, account });
     const squad = computeSquadFarmFacts(heroFacts, account);
 
@@ -277,16 +278,15 @@ describe('Return bonus multiplies gold/XP/drops only — structure is untouched'
     const on = computeFarmRateRow(10, squad, { returnBonus: 'on' })!;
     const vip = computeFarmRateRow(10, squad, { returnBonus: 'vip' })!;
 
-    for (const field of [
-      'goldPerHour',
-      'chestsPerHour',
-      'gemsPerHour',
-      'timePiecesPerHour',
-      'stoneChestsPerHour',
-      'xpPerHour',
-    ] as const) {
+    for (const field of ['goldPerHour', 'xpPerHour'] as const) {
       expect(on[field] / off[field]).toBeCloseTo(1.5, 9);
       expect(vip[field] / off[field]).toBeCloseTo(2, 9);
+    }
+
+    for (const field of ['chestsPerHour', 'gemsPerHour', 'timePiecesPerHour', 'stoneChestsPerHour'] as const) {
+      expect(off[field]).toBeGreaterThan(0);
+      expect(on[field]).toBe(off[field]);
+      expect(vip[field]).toBe(off[field]);
     }
 
     for (const field of ['propsPerHour', 'clearSecs', 'cyclesPerHour', 'expectedHtk', 'oneShot', 'infeasible'] as const) {
@@ -294,19 +294,22 @@ describe('Return bonus multiplies gold/XP/drops only — structure is untouched'
       expect(vip[field]).toBe(off[field]);
     }
 
-    // The bonus multiplies gains, not entry costs — a gate row's negative keysPerHour is
-    // unchanged across all three modes.
+    // A gate row's negative keysPerHour is an entry cost, and it stays put like every other
+    // non-gold, non-XP column.
     expect(off.keysPerHour).toBeLessThan(0);
     expect(on.keysPerHour).toBe(off.keysPerHour);
     expect(vip.keysPerHour).toBe(off.keysPerHour);
   });
 
-  it("non-gate keysPerHour (a gain) DOES scale with the bonus, unlike the gate's cost", () => {
+  it('non-gate keysPerHour is a drop chance, so it does not move with the bonus either', () => {
     const heroFacts = computeHeroFarmFacts({ heroes, account });
     const squad = computeSquadFarmFacts(heroFacts, account);
     const off = computeFarmRateRow(42, squad, { returnBonus: 'off' })!;
     const on = computeFarmRateRow(42, squad, { returnBonus: 'on' })!;
-    expect(on.keysPerHour / off.keysPerHour).toBeCloseTo(1.5, 9);
+    const vip = computeFarmRateRow(42, squad, { returnBonus: 'vip' })!;
+    expect(off.keysPerHour).toBeGreaterThan(0);
+    expect(on.keysPerHour).toBe(off.keysPerHour);
+    expect(vip.keysPerHour).toBe(off.keysPerHour);
   });
 });
 
