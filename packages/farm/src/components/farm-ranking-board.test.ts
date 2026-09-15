@@ -36,8 +36,7 @@ describe('Farm Ranking board — testids present', () => {
     ['farm-return-bonus.tsx', 'farm-return-bonus'],
     ['farm-ranking-table.tsx', 'farm-ranking-table'],
     ['farm-ranking-table.tsx', 'farm-sort-live'],
-    ['farm-optimize-toolbar.tsx', 'farm-optimize-toolbar'],
-    ['farm-optimize-toolbar.tsx', 'farm-optimize'],
+    ['farm-optimize-button.tsx', 'farm-optimize'],
   ];
 
   for (const [file, testid] of expectations) {
@@ -103,42 +102,44 @@ describe('Farm Ranking board — the four empty states render no numeric cell', 
   });
 });
 
-describe('Optimize toolbar — always available, and nothing but a way to the Optimizer', () => {
+describe('Optimize button — always available, and nothing but a way to the Optimizer', () => {
   // The inverse of the check this replaced. Optimize used to be hidden until a background
   // estimate vouched for it, which meant an under-reporting estimate could leave a player with
   // a worthwhile plan and no way to ask for it. There is no early return left to reinstate.
   it('renders unconditionally — no early return, and nothing that could gate the control', () => {
-    const source = read('farm-optimize-toolbar.tsx');
+    const source = read('farm-optimize-button.tsx');
     expect(source).not.toMatch(/return null/);
     expect(source).not.toMatch(/shouldSurface|gate\./);
   });
 
-  it('Optimize is the only control in the toolbar — no objective picker, no switch', () => {
-    const source = read('farm-optimize-toolbar.tsx');
+  it('Optimize is the only control in its file — no objective picker, no switch', () => {
+    const source = read('farm-optimize-button.tsx');
     expect(source).not.toContain('Select');
     expect(source).not.toContain('Switch');
   });
 
   it('the button hands the press to the host — the package owns no route and no solve', () => {
-    const source = read('farm-optimize-toolbar.tsx');
+    const source = read('farm-optimize-button.tsx');
     expect(source).toMatch(/onClick=\{onOpenOptimizer\}/);
     expect(source).not.toMatch(/href|router|solve|Respec/);
   });
 
-  it('the Optimize button reserves a min-width so the row never reflows around it', () => {
-    const source = read('farm-optimize-toolbar.tsx');
-    expect(source).toMatch(/className="min-w-\d+"/);
+  it("the button reserves a min-width and takes the filter row's control-band height, bottom-aligned to it", () => {
+    const source = read('farm-optimize-button.tsx');
+    expect(source).toMatch(/min-w-\d+/);
+    expect(source).toContain('farmFieldControlClass');
+    expect(source).toContain('self-end');
   });
 
   it('reads no figure at all — the Optimizer screen is where the numbers are', () => {
-    const source = read('farm-optimize-toolbar.tsx');
+    const source = read('farm-optimize-button.tsx');
     expect(source).not.toMatch(/paybackHours|gainPct|formatGainPct|aria-busy/);
   });
 
-  it('the board threads the host\'s openOptimizer action straight to the toolbar', () => {
+  it('the board threads the host\'s openOptimizer action straight to the button', () => {
     const source = read('farm-ranking-board.tsx');
     expect(source).toContain('openOptimizer: () => void');
-    expect(source).toContain('<FarmOptimizeToolbar t={t} onOpenOptimizer={openOptimizer} />');
+    expect(source).toContain('<FarmOptimizeButton t={t} onOpenOptimizer={openOptimizer} />');
   });
 
   it('the board takes its rows as a prop — the host owns the subscription', () => {
@@ -153,26 +154,19 @@ describe('Optimize toolbar — always available, and nothing but a way to the Op
   });
 });
 
-describe('Optimize toolbar wiring', () => {
-  it('the board renders the toolbar between the pool and the table', () => {
+describe('Farm Ranking filter row placement', () => {
+  it('the filters, the return bonus and the Optimize button share one row, in that order, above the table', () => {
     const source = read('farm-ranking-board.tsx');
     const poolIndex = source.indexOf('<FarmRotationPool');
-    const toolbarIndex = source.indexOf('<FarmOptimizeToolbar');
+    const filtersIndex = source.indexOf('<FarmRankingFilters');
+    const bonusIndex = source.indexOf('<FarmReturnBonus');
+    const buttonIndex = source.indexOf('<FarmOptimizeButton');
     const tableIndex = source.indexOf('<FarmRankingTable');
     expect(poolIndex).toBeGreaterThan(-1);
-    expect(toolbarIndex).toBeGreaterThan(poolIndex);
-    expect(tableIndex).toBeGreaterThan(toolbarIndex);
-  });
-});
-
-describe('Farm Ranking filter row placement', () => {
-  it('the filters sit below the Optimize toolbar and above the table', () => {
-    const source = read('farm-ranking-board.tsx');
-    const toolbarIndex = source.indexOf('<FarmOptimizeToolbar');
-    const filtersIndex = source.indexOf('<FarmRankingFilters');
-    const tableIndex = source.indexOf('<FarmRankingTable');
-    expect(filtersIndex).toBeGreaterThan(toolbarIndex);
-    expect(tableIndex).toBeGreaterThan(filtersIndex);
+    expect(filtersIndex).toBeGreaterThan(poolIndex);
+    expect(bonusIndex).toBeGreaterThan(filtersIndex);
+    expect(buttonIndex).toBeGreaterThan(bonusIndex);
+    expect(tableIndex).toBeGreaterThan(buttonIndex);
   });
 
   it('the filters render above the empty states, so a fully-filtered board can be un-filtered', () => {
@@ -278,7 +272,7 @@ describe('the components are prop-driven — no store, no host module', () => {
     expect(componentFiles.length).toBe(21);
     expect(componentFiles).toContain('farm-ranking-board.tsx');
     expect(componentFiles).toContain('combat-phase-panel.tsx');
-    expect(componentFiles).toContain('farm-optimize-toolbar.tsx');
+    expect(componentFiles).toContain('farm-optimize-button.tsx');
     expect(componentFiles).toContain('phases-explorer.tsx');
   });
 

@@ -162,7 +162,7 @@ describe('max props (error, non-DOM props only, no allowlist)', () => {
   it('the scan reaches this package\'s components — it is not passing over an empty set', () => {
     const names = files.map((abs) => path.basename(abs));
     expect(names).toContain('farm-ranking-board.tsx');
-    expect(names).toContain('farm-optimize-toolbar.tsx');
+    expect(names).toContain('farm-optimize-button.tsx');
     expect(names.filter((name) => name.startsWith('farm-')).length).toBeGreaterThanOrEqual(10);
   });
 

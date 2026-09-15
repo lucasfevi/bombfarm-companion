@@ -5,8 +5,8 @@ import { importedRoster, seedLocalStorage } from './fixtures/seed';
  *  above it — the same seed `farm-ranking.spec.ts` drives. */
 const accountWithMaxPhase = { ...importedRoster.account!, maxPhase: 42 };
 
-const toolbar = (page: Page) => page.getByTestId('farm-optimize-toolbar');
 const optimizeButton = (page: Page) => page.getByTestId('farm-optimize');
+const returnBonus = (page: Page) => page.getByTestId('farm-return-bonus');
 const optimizerRegion = (page: Page) => page.getByRole('region', { name: /^(Optimizer|Otimizador)$/ });
 
 test.describe('the Farm page’s Optimize button', () => {
@@ -16,13 +16,19 @@ test.describe('the Farm page’s Optimize button', () => {
     await expect(page.getByTestId('farm-ranking-table')).toBeVisible();
   });
 
-  test('the toolbar is the button and nothing else — no figure, no panel, no switch', async ({ page }) => {
-    await expect(toolbar(page)).toBeVisible();
+  test("the button reads Optimize and sits on the filter row, on the return bonus's line and to its right", async ({ page }) => {
     await expect(optimizeButton(page)).toBeEnabled();
-    expect(((await toolbar(page).textContent()) ?? '').trim()).toBe('Optimize');
-    await expect(toolbar(page).getByRole('button')).toHaveCount(1);
-    await expect(toolbar(page).getByRole('switch')).toHaveCount(0);
+    await expect(optimizeButton(page)).toHaveText('Optimize');
     await expect(page.getByTestId('farm-respec-panel')).toHaveCount(0);
+
+    const bonusSelect = returnBonus(page).getByRole('combobox');
+    const [button, select] = await Promise.all([
+      optimizeButton(page).boundingBox(),
+      bonusSelect.boundingBox(),
+    ]);
+    if (!button || !select) throw new Error('button or return-bonus select not laid out');
+    expect(button.x).toBeGreaterThan(select.x + select.width);
+    expect(Math.abs(button.y + button.height - (select.y + select.height))).toBeLessThanOrEqual(1);
   });
 
   test('a click opens the Optimizer page, and Back returns to the Farm page', async ({ page }) => {
@@ -46,7 +52,7 @@ test.describe('the Farm page’s Optimize button', () => {
   test('renders in Portuguese with no EN leakage', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'pt' });
     await page.goto('/farm');
-    await expect(toolbar(page)).toHaveText(/^\s*Otimizar\s*$/);
+    await expect(optimizeButton(page)).toHaveText('Otimizar');
 
     await optimizeButton(page).click();
     await expect(page).toHaveURL(/\/optimizer\/?$/);

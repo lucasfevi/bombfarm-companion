@@ -24,7 +24,7 @@ import { FarmRankingFilters } from './farm-ranking-filters';
 import { FarmRotationPool } from './farm-rotation-pool';
 import { FarmReturnBonus } from './farm-return-bonus';
 import { FarmRankingTable } from './farm-ranking-table';
-import { FarmOptimizeToolbar } from './farm-optimize-toolbar';
+import { FarmOptimizeButton } from './farm-optimize-button';
 
 /**
  * Everything the board reads, and everything it writes, in two bags.
@@ -205,7 +205,6 @@ export function FarmRankingBoardView({
           </Banner>
         </div>
       ) : null}
-      <FarmOptimizeToolbar t={t} onOpenOptimizer={openOptimizer} />
       {result.reason !== 'no-roster' ? (
         <div className="mb-2 flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
           <FarmRankingFilters
@@ -215,7 +214,10 @@ export function FarmRankingBoardView({
             lang={lang}
             t={t}
           />
-          <FarmReturnBonus value={returnBonus} onChange={setFarmReturnBonus} t={t} />
+          <div className="flex flex-wrap items-start gap-3">
+            <FarmReturnBonus value={returnBonus} onChange={setFarmReturnBonus} t={t} />
+            <FarmOptimizeButton t={t} onOpenOptimizer={openOptimizer} />
+          </div>
         </div>
       ) : null}
       {result.reason === 'compute-failed' ? (

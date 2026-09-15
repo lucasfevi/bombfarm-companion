@@ -52,9 +52,9 @@ Browser-level smoke and visual baselines for the static export. Unit math stays 
 > scenarios plus a keyboard-operability pass) and the two edited pre-existing specs
 > (`e2e/phases-page.spec.ts`, `e2e/app-shell-nav.spec.ts`).
 >
-> **`/farm` (Optimize button):** the toolbar between the rotation pool and the filters is one
-> primary button that opens `/optimizer`; nothing expands in place. Smoke coverage lives in
-> `e2e/farm-optimize-button.spec.ts` (four scenarios).
+> **`/farm` (Optimize button):** the filter row ends in one primary button, to the right of the
+> return-bonus `Select` and on its line, that opens `/optimizer`; nothing expands in place. Smoke
+> coverage lives in `e2e/farm-optimize-button.spec.ts` (four scenarios).
 >
 > **Promote-to-600 evidence:** a lightweight same-session
 > Playwright timing (not the formal profiler-re-run `e2e/perf/` commit-instrumentation harness — recorded
