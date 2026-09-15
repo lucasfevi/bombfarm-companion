@@ -613,8 +613,7 @@ export const en = {
   accountHoldingsSkinsWorn: 'A bought skin counts once however many heroes wear it, and only while one of them still does — dress every hero back to a birth skin and this figure falls with nothing sold.',
 
   // farm* — the Farm screen's own chrome. The board and the phase panels print their own
-  // dictionary, which the farm package ships; these are the strings only this app owns — and the
-  // sentence the respec panel uses to point at the Optimizer tab.
+  // dictionary, which the farm package ships; these are the strings only this app owns.
   farmNavLabel: 'Farm',
   farmRefresh: 'Refresh',
   farmRefreshBusy: 'Working…',
@@ -622,10 +621,9 @@ export const en = {
   farmRefreshStale: 'out of date',
   farmUnavailableTitle: 'Not enough of your account has been read',
   farmUnavailableDescription: 'The board needs every part of your account. Open the game with the companion running and leave it open for a moment.',
-  farmRespecOptimizerPointer: 'For item moves and forges too, open the Optimizer tab.',
   farmLeftOutTitle: 'Some heroes are left off the board',
   farmLeftOutBody: 'The app could not read the spent stat points of {heroes} from the account, so their rates cannot be priced and they are left off this board.',
-  // The stat vocabulary the farm screen borrows from this app. Every other stat name comes from
+  // The stat vocabulary the Heroes and Forge screens borrow. Every other stat name comes from
   // the game data itself; loot-facing Luck is the one the shared map does not carry.
   farmStatColumn: 'Stat',
   farmStatLuck: 'Luck',

@@ -15,7 +15,6 @@ const TEST_HOST_COPY_EN: TeamPlanHostCopy = {
   teamPlanEmptyAllLeaveAloneBody: 'Set at least one hero to Optimize.',
   teamPlanBlockedBody: 'Re-export your save for: {heroes}.',
   teamPlanObjectiveFarmNeedsMaxPhase: 'Pick a phase, re-import the save, or score for damage.',
-  teamPlanFarmAdvisorPointer: 'For gear moves and forge work as well, use the Optimizer page.',
 };
 
 const TEST_HOST_COPY_PT: TeamPlanHostCopy = {
@@ -27,7 +26,6 @@ const TEST_HOST_COPY_PT: TeamPlanHostCopy = {
   teamPlanEmptyAllLeaveAloneBody: 'Marque pelo menos um herói como Otimizar.',
   teamPlanBlockedBody: 'Reexporte o save para: {heroes}.',
   teamPlanObjectiveFarmNeedsMaxPhase: 'Escolha uma fase, reimporte o save, ou pontue por dano.',
-  teamPlanFarmAdvisorPointer: 'Para movimentações de itens e forjas também, use a página Otimizador.',
 };
 
 const SCREEN_COPY = {

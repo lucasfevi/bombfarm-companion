@@ -14,7 +14,7 @@ import {
   selectHeroes,
   selectActiveHeroId,
   selectRosterAccount,
-  selectFarmBoardRows,
+  selectFarmRankingRows,
   selectPhasesViewPhase,
   commitActiveHero,
 } from '@/shared/stores';
@@ -24,7 +24,7 @@ import {
  * and nowhere below: `@bombfarm/farm/components` is prop-driven so the desktop app can render the
  * identical screen from its own state.
  *
- * `selectFarmBoardRows` is read WITHOUT `useShallow` — the same carve-out the board itself relies
+ * `selectFarmRankingRows` is read WITHOUT `useShallow` — the same carve-out the board itself relies
  * on, since it returns a stable identity on a cache hit.
  */
 export function PhasesExplorer({ t, lang }: { t: Strings; lang: Lang }) {
@@ -33,7 +33,7 @@ export function PhasesExplorer({ t, lang }: { t: Strings; lang: Lang }) {
   const heroes = usePlannerStore(selectHeroes);
   const activeHeroId = usePlannerStore(selectActiveHeroId);
   const account = usePlannerStore(useShallow(selectRosterAccount));
-  const farmRows = usePlannerStore(selectFarmBoardRows);
+  const farmRows = usePlannerStore(selectFarmRankingRows);
 
   const selectHero = useCallback((hero: HeroRecord) => {
     commitActiveHero(hero);

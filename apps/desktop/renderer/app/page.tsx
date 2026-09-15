@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   AppEnvironmentInfo,
   AppLocale,
@@ -226,6 +226,11 @@ function HomePageContent({
   const density = useShellDensity(WINDOW_CONTROLS_WIDTH);
   const mainRef = useRef<HTMLElement | null>(null);
   const [activeNavId, setActiveNavId] = useTabScrollMemory(DEFAULT_NAV_ID, mainRef);
+  // Stable on purpose: the Farm screen folds it into the hand-memoised action bag that reaches
+  // its 600-row table, and a fresh lambda per shell render would invalidate that bag every tick.
+  const openOptimizerTab = useCallback(() => {
+    setActiveNavId('optimizer');
+  }, [setActiveNavId]);
   const [environment, setEnvironment] = useState<AppEnvironmentInfo | null>(null);
   const [status, setStatus] = useState<GameStatusInfo | null>(null);
   const [consent, setConsent] = useState<ConsentRecord | null>(null);
@@ -452,7 +457,7 @@ function HomePageContent({
               <SupportSection />
             </div>
           ) : activeNavId === 'farm' ? (
-            <FarmView />
+            <FarmView onOpenOptimizer={openOptimizerTab} />
           ) : activeNavId === 'heroes' ? (
             <HeroesView />
           ) : activeNavId === 'inventory' ? (

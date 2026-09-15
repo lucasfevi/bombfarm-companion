@@ -127,7 +127,7 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as { en: Strings; 
  *
  * The unchanged-hero group (2026-08-20): every hero needing no respec repeated the same two
  * lines on its own card. They are now stated once above the group, over the summed gold those
- * builds save (`farmRespecUnchangedGroupNote`, in `KEYS_ADDED`), so the per-card
+ * builds save (`farmRespecUnchangedGroupNote`, since retired with the panel), so the per-card
  * `farmRespecUnchangedNote` and `farmRespecUnchangedGoldSaved` have no reader left.
  *
  * The Respec Advisor's energy-allocation section (2026-08-20) is gone in two steps: its bar first,
@@ -188,6 +188,40 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as { en: Strings; 
  */
 const KEYS_REMOVED: readonly string[] = [
   'navTeamPlan',
+  // The Farm page's Optimize button opens the Optimizer (2026-09-14): the points-only respec
+  // panel it used to expand in place — its busy label, metric tiles, per-hero split, cheaper-
+  // respec frontier, re-rank switch and every banner — is gone, so each of its strings has no
+  // reader left. The Optimizer page recommends points, gear moves and forges together.
+  'farmRespecBudgetExhausted',
+  'farmRespecClose',
+  'farmRespecDiagnostics',
+  'farmRespecFailed',
+  'farmRespecFrontierGainCost',
+  'farmRespecFrontierHeading',
+  'farmRespecFrontierHeroCountOne',
+  'farmRespecFrontierHeroCountTwo',
+  'farmRespecFrontierPaybackNone',
+  'farmRespecHeroesHeading',
+  'farmRespecKeyCurrent',
+  'farmRespecKeyDelta',
+  'farmRespecKeyTarget',
+  'farmRespecLuckHint',
+  'farmRespecLuckKeep',
+  'farmRespecMetricChests',
+  'farmRespecMetricCost',
+  'farmRespecMetricGold',
+  'farmRespecMetricPayback',
+  'farmRespecOptimize',
+  'farmRespecOptimizeBusy',
+  'farmRespecPanelGain',
+  'farmRespecPanelHeading',
+  'farmRespecPaybackHours',
+  'farmRespecPaybackNoChange',
+  'farmRespecRerankBanner',
+  'farmRespecRerankCaption',
+  'farmRespecRerankToggle',
+  'farmRespecTerminalDesc',
+  'farmRespecTerminalTitle',
   // The gear totals table's "Damage (% of Attack)" column (2026-09-14): no item in the current
   // catalog carries a percent damage bonus, so the column read +0.0% on every account.
   'dmgPctLabel',
@@ -337,15 +371,6 @@ const KEYS_REMOVED: readonly string[] = [
  * guarantee window now shown as subtext under the normal window, once the committed wiki bundle's
  * stale VIP figure was corrected to match the live wiki.
  *
- * The metric tile row rework (2026-08-19) added a fifth Farm Respec Advisor tile —
- * `farmRespecMetricPhase` labels the recommended-phase before/after tile, and
- * `farmRespecMetricPhaseSame` is the muted note it shows in place of a repeated label when the
- * proposal does not move the phase. The tile also carries a tooltip explaining what the Payback
- * figure divides, since players were reading "pays for itself in N h" as computed against the NEW
- * gold/hr rather than the increase over the current one: `farmRespecPaybackTip` is the tooltip
- * body, triggered by the Payback label itself (`TipLabel`) rather than a separate `?` control, so
- * no separate trigger-label key exists.
- *
  * The Account page (2026-08-22): `navAccount` is the new nav label (replacing the retired
  * `tabAccount`), and the ten `accountSave*`/`accountMaxPhase`/`accountLuckFlat`/
  * `accountFieldSlots`/`accountCasaSlots` keys are the new "From your save" panel — account-wide
@@ -439,12 +464,7 @@ const KEYS_REMOVED: readonly string[] = [
  * `teamPlanObjectiveAria`, `teamPlanObjectiveOptionDamage`, `teamPlanObjectiveOptionGold`, the hint
  * under it (`teamPlanObjectiveHintDps`/`Farm`) and the warning shown when a record carries no
  * furthest-phase for gold to be priced against (`teamPlanObjectiveFarmNeedsMaxPhase`) — plus the
- * `…Dps`/`…Farm` half of each string listed in `KEYS_REMOVED`. `teamPlanFarmAdvisorPointer` is the
- * one that renders elsewhere: the Farm page's respec advisor now states that it moves stat points
- * only, and the web planner appends this pointer to the Team plan page. The desktop app has no
- * such page and passes nothing, so the shared panel names no destination there.
- * `farmRespecPointsOnly` is that advisor's own scope sentence, and lives in the shared farm copy
- * because it is true on both apps.
+ * `…Dps`/`…Farm` half of each string listed in `KEYS_REMOVED`.
  *
  * The Team plan phase picker (2026-09-07) adds the control (`teamPlanPhaseLabel`,
  * `teamPlanPhaseAria`, `teamPlanPhaseNone`, `teamPlanPhaseSearchPlaceholder`,
@@ -477,6 +497,13 @@ const KEYS_REMOVED: readonly string[] = [
  * not: the restriction is on what the plan may propose, not on how it scores.
  */
 const KEYS_ADDED: readonly string[] = [
+  // The Farm page's Optimize button opens the Optimizer (2026-09-14) instead of solving a
+  // points-only respec in place: `farmOptimize` is the button's label, its one string. The
+  // Home page's optimizer card kept the in-place panel's "already close to the best found"
+  // verdict for a plan under the worth-making floor, so that sentence moves to the card's own
+  // namespace as `homeCardOptimizerBelowFloor`; the panel's other strings are in `KEYS_REMOVED`.
+  'farmOptimize',
+  'homeCardOptimizerBelowFloor',
   // The planner's Combat tab (2026-09-11): the one string this app adds for the desktop's fourth
   // stage; the phase control's own words ship with the panel, in the package that draws it.
   'tabCombat',
@@ -539,7 +566,6 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanColDpsBefore',
   'teamPlanColDpsAfter',
   'teamPlanColDpsDelta',
-  'farmRespecPointsOnly',
   'teamPlanPhaseLabel',
   'teamPlanPhaseAria',
   'teamPlanPhaseNone',
@@ -570,7 +596,6 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanObjectiveHintDps',
   'teamPlanObjectiveHintFarm',
   'teamPlanObjectiveFarmNeedsMaxPhase',
-  'teamPlanFarmAdvisorPointer',
   'teamPlanSetupSectionBodyDps',
   'teamPlanSetupSectionBodyFarm',
   'teamPlanRunSummaryRegimeHintSaturatedDps',
@@ -616,8 +641,6 @@ const KEYS_ADDED: readonly string[] = [
   'marketAgeUnknown',
   'accountMissingFieldsTitle',
   'accountMissingFieldsBody',
-  'farmRespecNotWorthTitle',
-  'farmRespecNotWorthDesc',
   'referralNoticeTitle',
   'referralNoticeBody',
   'referralNoticeReward',
@@ -723,7 +746,6 @@ const KEYS_ADDED: readonly string[] = [
   'accountBonusOfTotal',
   'accountBagTabs',
   'navAccount',
-  'farmRespecUnchangedGroupNote',
   'phasesXpActualHint',
   'phasesDropsSection',
   'phasesDropChest',
@@ -740,9 +762,6 @@ const KEYS_ADDED: readonly string[] = [
   'phasesDropNonGateOnly',
   'phasesJaulaSectionDesc',
   'phasesJaulaWindowVip',
-  'farmRespecMetricPhase',
-  'farmRespecMetricPhaseSame',
-  'farmRespecPaybackTip',
   // The Phases hero/squad panel rework (2026-08-20): the hero panel breaks its single
   // crit-weighted "avg hit" into normal/crit/average plus field time, and the Top-N table trades
   // gear, abilities and power — roster facts that say nothing about this phase — for the same
@@ -838,11 +857,6 @@ const KEYS_ADDED: readonly string[] = [
   'optimizeBuildFarmKeptCurrent',
   'optimizeBuildFarmNoPool',
   'optimizeBuildFarmNoRate',
-  // The respec advisor's honest framing (2026-08-31): `farmRespecBestFound` says the proposal is
-  // the best build the search found and not proof that no better one exists, and it renders on
-  // every result. That claim used to appear only inside `farmRespecBudgetExhausted`, whose
-  // absence then read as a guarantee of optimality the search cannot make at any budget.
-  'farmRespecBestFound',
   /**
    * The account-holdings section (2026-09-02) — the Account page's new headline figure for what
    * the whole account could sell, over three components: the inventory, the sellable heroes and
@@ -1038,16 +1052,10 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   // the thing it measured, and points at the DPS setting of the button rather than the button.
   // With a farm target on the same control, an unqualified "possible gain" no longer says which.
   'resetAdviceGainLine',
-  // The respec advisor's honest framing (2026-08-31): this line no longer carries the
-  // "not guaranteed to be the best that exists" clause — `farmRespecBestFound` says that on every
-  // result now — and no longer calls the bound a time budget, which it never was.
-  'farmRespecBudgetExhausted',
   // The page is renamed Team plan -> Optimizer (2026-09-07), URL `/team-plan` -> `/optimizer`.
   // The nav label changes key as well and is declared above; these carry the page's own name in
   // their text. The explain section is retitled to match and its opening sentence no longer says
-  // the search scores for DPS, which stopped being the only objective. `teamPlanFarmAdvisorPointer`
-  // also names the page and is NOT listed here: it is already declared added above, and an added
-  // key's value is unconstrained by the comparison.
+  // the search scores for DPS, which stopped being the only objective.
   'teamPlanPageLandmark',
   'teamPlanPageTitle',
   'explainSections.8.h',
@@ -1275,23 +1283,6 @@ describe('Farm Ranking i18n parity', () => {
     for (const key of Object.keys(STRINGS.en)) {
       if (!key.startsWith('farmRanking') && key !== 'navPhases') continue;
       if (EN_PT_COLLISION_ALLOWLIST.has(key)) continue;
-      const enValue = STRINGS.en[key as keyof Strings];
-      const ptValue = STRINGS.pt[key as keyof Strings];
-      if (typeof enValue === 'string' && enValue === ptValue) leaks.push(key);
-    }
-    expect(leaks, `EN string left untranslated in PT: ${leaks.join(', ')}`).toEqual([]);
-  });
-});
-
-/**
- * Farm Respec Advisor T7 — same shape as `Farm Ranking i18n parity` above. None of these
- * strings legitimately collides between EN and PT, so no allowlist entry is needed.
- */
-describe('Farm Respec Advisor i18n parity', () => {
-  it('no farmRespec* PT value is byte-identical to its EN counterpart', () => {
-    const leaks: string[] = [];
-    for (const key of Object.keys(STRINGS.en)) {
-      if (!key.startsWith('farmRespec')) continue;
       const enValue = STRINGS.en[key as keyof Strings];
       const ptValue = STRINGS.pt[key as keyof Strings];
       if (typeof enValue === 'string' && enValue === ptValue) leaks.push(key);

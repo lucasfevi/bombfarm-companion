@@ -166,12 +166,11 @@ export function optimizerHostCopyFrom(t: Copy): TeamPlanHostCopy {
     teamPlanEmptyAllLeaveAloneBody: t.optimizerEmptyAllLeaveAloneBody,
     teamPlanBlockedBody: t.optimizerBlockedBody,
     teamPlanObjectiveFarmNeedsMaxPhase: t.optimizerFarmNeedsMaxPhase,
-    teamPlanFarmAdvisorPointer: t.farmRespecOptimizerPointer,
   };
 }
 
 /**
- * The package's dictionary plus this app's nine host strings, plus the hero-identity and
+ * The package's dictionary plus this app's eight host strings, plus the hero-identity and
  * stat-panel vocabulary the per-hero breakdown panels deep in the screen read
  * (`TeamPlanScreenCopy` is `TeamPlanCopy & TeamPlanHostCopy & RosterCopy & StatPanelCopy` — the
  * same two contracts `@bombfarm/hero`'s own panels take). Memoised by the caller; allocates on

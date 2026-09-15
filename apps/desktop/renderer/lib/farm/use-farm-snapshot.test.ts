@@ -9,7 +9,6 @@ import { describe, expect, it } from 'vitest';
 import type { AccountFidelity, AccountPayload, AccountView } from '@bombfarm/contracts';
 import { accountChangeKey } from '@bombfarm/contracts';
 import type { FarmControls } from './farm-inputs';
-import { freshProposal } from './farm-respec-store';
 import { settledBoard } from './farm-snapshot-store';
 import { createFarmSnapshotStore, farmBoardStale } from './use-farm-snapshot';
 
@@ -179,98 +178,6 @@ describe('the snapshot store computes once and does not follow the live account'
     const stateB = b.store.getState();
     if (stateA.status !== 'ready' || stateB.status !== 'ready') throw new Error('expected ready');
     expect(stateA.board).not.toBe(stateB.board);
-  });
-});
-
-/** One turn of the macrotask queue — what `scheduleAfterPaint` falls back to off a browser. */
-function afterPaint(): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, 0);
-  });
-}
-
-describe('the respec advisor — nothing on the paint path, an expensive solve on demand', () => {
-  it('a settled board carries no advisor product at all — the screen paints without one', () => {
-    const { store, open } = createFarmSnapshotStore();
-    const opened = viewAtLevel(10);
-    open(opened.view, opened.key, CONTROLS);
-
-    const state = store.getState();
-    if (state.status !== 'ready') throw new Error('expected ready');
-    expect(Object.keys(state).sort()).toEqual(
-      ['board', 'capturedAt', 'controls', 'inputs', 'sourceKey', 'status'].sort(),
-    );
-  });
-
-  it('opening the screen never solves — the advisor is idle until it is asked', () => {
-    const { respecStore, open, setControls } = createFarmSnapshotStore();
-    const opened = viewAtLevel(10);
-    open(opened.view, opened.key, CONTROLS);
-    setControls({ farmPoolOverrides: {}, farmReturnBonus: 'vip' });
-
-    expect(respecStore.getState()).toEqual({
-      proposal: null,
-      status: 'idle',
-      panelOpen: false,
-      reRank: false,
-    });
-  });
-
-  it('Optimize commits a busy frame first and only then solves', async () => {
-    const { respecStore, open, runRespec } = createFarmSnapshotStore();
-    const opened = viewAtLevel(10);
-    open(opened.view, opened.key, CONTROLS);
-
-    runRespec();
-    // Synchronously after the press: busy, panel open, and NO result — the solve has not run.
-    expect(respecStore.getState().status).toBe('solving');
-    expect(respecStore.getState().panelOpen).toBe(true);
-    expect(respecStore.getState().proposal).toBeNull();
-
-    await afterPaint();
-    expect(respecStore.getState().status).toBe('done');
-    expect(respecStore.getState().proposal).not.toBeNull();
-  });
-
-  it('the proposal is keyed to the board it solved against, so a recompute makes it unrenderable', async () => {
-    const { store, respecStore, open, runRespec, setControls } = createFarmSnapshotStore();
-    const opened = viewAtLevel(10);
-    open(opened.view, opened.key, CONTROLS);
-    runRespec();
-    await afterPaint();
-
-    const solvedAgainst = store.getState();
-    if (solvedAgainst.status !== 'ready') throw new Error('expected ready');
-    expect(freshProposal(respecStore.getState(), solvedAgainst.inputs)).not.toBeNull();
-
-    setControls({ farmPoolOverrides: {}, farmReturnBonus: 'vip' });
-    const recomputed = store.getState();
-    if (recomputed.status !== 'ready') throw new Error('expected ready');
-    expect(freshProposal(respecStore.getState(), recomputed.inputs)).toBeNull();
-    // Nothing cleared it: the state still says done, the derivation simply stops handing it out.
-    expect(respecStore.getState().status).toBe('done');
-  });
-
-  it('a second press while a solve is in flight does not start another', async () => {
-    const { respecStore, open, runRespec } = createFarmSnapshotStore();
-    const opened = viewAtLevel(10);
-    open(opened.view, opened.key, CONTROLS);
-
-    runRespec();
-    const busy = respecStore.getState();
-    runRespec();
-    expect(respecStore.getState()).toBe(busy);
-
-    await afterPaint();
-    expect(respecStore.getState().status).toBe('done');
-  });
-
-  it('pressing Optimize with no board at all fails by name rather than solving against nothing', async () => {
-    const { respecStore, runRespec } = createFarmSnapshotStore();
-    runRespec();
-    await afterPaint();
-    expect(respecStore.getState().status).toBe('failed');
-    expect(respecStore.getState().proposal).toBeNull();
   });
 });
 

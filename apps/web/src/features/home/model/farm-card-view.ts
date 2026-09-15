@@ -1,5 +1,5 @@
 import { pickBestFarmRow } from '@bombfarm/farm/model/farm-ranking-view';
-import { selectFarmBoardRows, type FarmRankingResult, type PlannerStore } from '@/shared/stores';
+import { selectFarmRankingRows, type FarmRankingResult, type PlannerStore } from '@/shared/stores';
 
 type FarmRateRow = FarmRankingResult['rows'][number];
 
@@ -163,7 +163,7 @@ export function farmCardViewFrom(rows: readonly FarmRateRow[], phase: number | n
 let cache: { rows: readonly FarmRateRow[]; phase: number | null; view: FarmCardView } | null = null;
 
 export function selectFarmCardRows(state: PlannerStore): FarmCardView {
-  const { rows } = selectFarmBoardRows(state);
+  const { rows } = selectFarmRankingRows(state);
   if (cache && Object.is(cache.rows, rows) && Object.is(cache.phase, state.phase)) {
     return cache.view;
   }

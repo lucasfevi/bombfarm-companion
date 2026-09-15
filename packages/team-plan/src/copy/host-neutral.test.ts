@@ -47,7 +47,7 @@ describe('the package dictionary names no host word, in either language', () => 
 });
 
 /**
- * Red-state demonstration: the nine web host values, verbatim, as they read today — proves
+ * Red-state demonstration: the eight web host values, verbatim, as they read today — proves
  * the scan actually catches real host copy rather than passing vacuously. `teamPlanBlockedBody`
  * is named explicitly because it is the one the orchestrator decided belongs in the contract;
  * `teamPlanBudgetExhausted` (a genuine package key, "stopped early **to save** time") is asserted
@@ -66,17 +66,16 @@ const WEB_HOST_VALUES_EN = {
   teamPlanBlockedBody: 'Re-export your save so these heroes include a birth roll: {heroes}.',
   teamPlanObjectiveFarmNeedsMaxPhase:
     'Letting the search pick its own phase needs the furthest phase your account has reached, which this save did not carry. Pick a phase above, re-import the save, or score for damage.',
-  teamPlanFarmAdvisorPointer: 'For gear moves and forge work as well, use the Optimizer page.',
 };
 
-describe('red state: the nine web host values are caught', () => {
+describe('red state: the eight web host values are caught', () => {
   const fixture = { ...teamPlanEn, ...WEB_HOST_VALUES_EN };
 
-  it('reports at least six of the nine host keys as hits, including teamPlanBlockedBody', () => {
+  it('reports at least five of the eight host keys as hits, including teamPlanBlockedBody', () => {
     const hitKeys = Object.keys(WEB_HOST_VALUES_EN).filter(
       (key) => offendingPatterns(fixture[key as keyof typeof fixture]).length > 0,
     );
-    expect(hitKeys.length).toBeGreaterThanOrEqual(6);
+    expect(hitKeys.length).toBeGreaterThanOrEqual(5);
     expect(hitKeys).toContain('teamPlanBlockedBody');
   });
 

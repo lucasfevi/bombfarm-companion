@@ -90,6 +90,7 @@ function navButton(page, index) {
   return page.locator('nav[aria-label="Main"] button').nth(index);
 }
 
+const FARM_TAB_INDEX = 1;
 const FORGE_TAB_INDEX = 4;
 const OPTIMIZER_TAB_INDEX = 5;
 const SETTINGS_TAB_INDEX = 7;
@@ -172,6 +173,19 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
   test.afterAll(async () => {
     await app?.close().catch(() => undefined);
     fs.rmSync(runDir, { recursive: true, force: true });
+  });
+
+  // The Farm board's Optimize button is this tab's other entrance: the board itself runs no
+  // solve and expands nothing, it hands the player over to the shell's tab switch.
+  test("the Farm board's Optimize button lands on this tab", async () => {
+    await navButton(page, FARM_TAB_INDEX).click();
+    await page.waitForSelector('[data-testid="farm-view"]', { timeout: 20_000 });
+    await expect(page.getByTestId('farm-optimize')).toHaveText('Optimize');
+
+    await page.getByTestId('farm-optimize').click();
+    await page.waitForSelector('[data-testid="optimizer-view"]', { timeout: 20_000 });
+    await expect(page.getByRole('region', { name: /Optimizer/i })).toBeVisible();
+    await expect(navButton(page, OPTIMIZER_TAB_INDEX)).toHaveAttribute('aria-current', 'page');
   });
 
   // The checked-in fixture already carries eight heroes a sheet-inversion mismatch blocks (see

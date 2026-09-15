@@ -20,7 +20,7 @@ type Props = {
  * is bound to `battleAllowed` semantics and a cross-feature reach for it would need a new lint
  * allowlist entry for a control whose meaning here is different (estimation-local, never a save
  * write). `heroes` is a separate prop because `deriveFarmPoolEntries` stays a pure id/name/enabled
- * derivation — the full record is resolved here, as `FarmRespecHeroGrid` does.
+ * derivation — the full record is resolved here.
  *
  * The cards tighten below a 64rem pool because at the desktop shell's 960px minimum the wide card
  * fits only three per row, and the fifth row of it pushes the whole ranking table below the fold.

@@ -15,7 +15,7 @@ import { STRINGS } from '@/shared/i18n';
 import { normalizeHero } from '@/shared/lib/storage';
 import {
   resetPlannerStoreForTests,
-  selectFarmBoardRows,
+  selectFarmRankingRows,
   usePlannerStore,
   type PlannerStore,
 } from '@/shared/stores';
@@ -271,7 +271,7 @@ describe('the front page’s current-versus-best phase view', () => {
     expect(selectFarmCardRows.length).toBe(1);
 
     hydrateBoard();
-    const { rows } = selectFarmBoardRows(state());
+    const { rows } = selectFarmRankingRows(state());
     expect(rows.length).toBe(600);
     expect(selectFarmCardRows(state())).toEqual(farmCardViewFrom(rows, 51));
   });
@@ -372,7 +372,7 @@ describe('the front page’s current-versus-best phase view', () => {
     ).toMatchObject(nothing);
     expect(farmCardViewFrom([], 10)).toMatchObject(nothing);
 
-    expect(selectFarmBoardRows(state()).rows).toEqual([]);
+    expect(selectFarmRankingRows(state()).rows).toEqual([]);
     expect(selectFarmCardRows(state())).toMatchObject(nothing);
   });
 

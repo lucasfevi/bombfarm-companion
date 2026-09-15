@@ -8,7 +8,6 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { sub, type Lang } from '@bombfarm/hero/copy';
 import type { FarmCopy } from '../copy';
 import type { FarmPoolEntry, FarmRankingResult } from '../core';
-import type { FarmRespecProposal, FarmRespecStatus } from '../model/farm-respec-view';
 import {
   applyFarmFilters,
   DEFAULT_SORT,
@@ -25,18 +24,7 @@ import { FarmRankingFilters } from './farm-ranking-filters';
 import { FarmRotationPool } from './farm-rotation-pool';
 import { FarmReturnBonus } from './farm-return-bonus';
 import { FarmRankingTable } from './farm-ranking-table';
-import { FarmRespecToolbar } from './farm-respec-toolbar';
-import { FarmRespecPanel } from './farm-respec-panel';
-import { FarmRespecRerankToggle } from './farm-respec-rerank-toggle';
-import type { FarmStatLabels } from './stat-labels';
-
-/** The advisor's three values, grouped so the board's own bag stays about the ranking. */
-export type FarmRespecBoardData = {
-  /** Already narrowed to a FRESH proposal by the host — a stale one arrives as `null`. */
-  view: FarmRespecProposal | null;
-  status: FarmRespecStatus;
-  panelOpen: boolean;
-};
+import { FarmOptimizeButton } from './farm-optimize-button';
 
 /**
  * Everything the board reads, and everything it writes, in two bags.
@@ -50,7 +38,6 @@ export type FarmRespecBoardData = {
  */
 export type FarmRankingBoardData = {
   result: FarmRankingResult;
-  reRankActive: boolean;
   heroes: readonly HeroRecord[];
   poolEntries: FarmPoolEntry[];
   returnBonus: ReturnBonusMode;
@@ -58,8 +45,6 @@ export type FarmRankingBoardData = {
   fieldSlots: number | null;
   currentPhase: number;
   phasesViewPhaseChosen: boolean;
-  statLabels: FarmStatLabels;
-  respec: FarmRespecBoardData;
   /** The table scrollport's height. Omitted, the table keeps the fixed height it has always
    *  had — a host that draws the board inside a window it does not control passes its own. */
   tableScrollportHeightPx?: number;
@@ -74,9 +59,6 @@ export type FarmRankingBoardData = {
  */
 export type FarmRankingBoardSlots = {
   headerOverlay?: ReactNode;
-  /** Passed straight to the respec panel's `scopeNote` — see that component for why it is the
-   *  host's to write. */
-  respecScopeNote?: ReactNode;
 };
 
 export type FarmRankingBoardActions = {
@@ -84,9 +66,8 @@ export type FarmRankingBoardActions = {
   syncDefaultPhaseSelection: (phase: number) => void;
   setFarmHeroEnabled: (heroId: string, enabled: boolean) => void;
   setFarmReturnBonus: (mode: ReturnBonusMode) => void;
-  setFarmRespecPanelOpen: (open: boolean) => void;
-  setFarmRespecReRank: (next: boolean) => void;
-  runFarmRespec: () => void;
+  /** The Optimize button — routing to the host's Optimizer screen is the host's. */
+  openOptimizer: () => void;
 };
 
 /**
@@ -110,7 +91,6 @@ export function FarmRankingBoardView({
 }) {
   const {
     result,
-    reRankActive,
     heroes,
     poolEntries,
     returnBonus,
@@ -118,8 +98,6 @@ export function FarmRankingBoardView({
     fieldSlots,
     currentPhase,
     phasesViewPhaseChosen,
-    statLabels,
-    respec,
     tableScrollportHeightPx,
   } = data;
   const {
@@ -127,9 +105,7 @@ export function FarmRankingBoardView({
     syncDefaultPhaseSelection,
     setFarmHeroEnabled,
     setFarmReturnBonus,
-    setFarmRespecPanelOpen,
-    setFarmRespecReRank,
-    runFarmRespec,
+    openOptimizer,
   } = actions;
 
   const [filters, setFilters] = useState<FarmFilters>(defaultFarmFilters);
@@ -229,24 +205,6 @@ export function FarmRankingBoardView({
           </Banner>
         </div>
       ) : null}
-      <FarmRespecToolbar
-        t={t}
-        data={{ status: respec.status, panelOpen: respec.panelOpen }}
-        onOptimize={runFarmRespec}
-      />
-      <FarmRespecPanel
-        t={t}
-        lang={lang}
-        data={{
-          view: respec.view,
-          status: respec.status,
-          panelOpen: respec.panelOpen,
-          heroes,
-          statLabels,
-        }}
-        onClose={() => setFarmRespecPanelOpen(false)}
-        scopeNote={slots?.respecScopeNote}
-      />
       {result.reason !== 'no-roster' ? (
         <div className="mb-2 flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
           <FarmRankingFilters
@@ -256,7 +214,10 @@ export function FarmRankingBoardView({
             lang={lang}
             t={t}
           />
-          <FarmReturnBonus value={returnBonus} onChange={setFarmReturnBonus} t={t} />
+          <div className="flex flex-wrap items-start gap-3">
+            <FarmReturnBonus value={returnBonus} onChange={setFarmReturnBonus} t={t} />
+            <FarmOptimizeButton t={t} onOpenOptimizer={openOptimizer} />
+          </div>
         </div>
       ) : null}
       {result.reason === 'compute-failed' ? (
@@ -270,24 +231,16 @@ export function FarmRankingBoardView({
           <EmptyState title={empty.title} description={empty.description} />
         </div>
       ) : (
-        <>
-          <FarmRespecRerankToggle
-            t={t}
-            hasProposal={respec.view != null}
-            active={reRankActive}
-            onToggle={setFarmRespecReRank}
-          />
-          <FarmRankingTable
-            rows={visibleRows}
-            sort={sort}
-            onSort={onSort}
-            currentPhase={currentPhase}
-            onActivate={setPhasesViewPhase}
-            lang={lang}
-            t={t}
-            display={{ reRankActive, scrollportHeightPx: tableScrollportHeightPx }}
-          />
-        </>
+        <FarmRankingTable
+          rows={visibleRows}
+          sort={sort}
+          onSort={onSort}
+          currentPhase={currentPhase}
+          onActivate={setPhasesViewPhase}
+          lang={lang}
+          t={t}
+          scrollportHeightPx={tableScrollportHeightPx}
+        />
       )}
     </Panel>
   );

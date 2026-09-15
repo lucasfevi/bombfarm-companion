@@ -1,32 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { emptyLoadout } from '@bombfarm/domain/gear';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
-import {
-  solveFarmRespec,
-  FARM_RESPEC_MIN_GAIN_PCT,
-  type FarmRespecResult,
-} from '@bombfarm/domain/farm-optimize';
 import { normalizeHero } from '@/shared/lib/storage';
-import type { FarmAccount } from '@bombfarm/domain/farm-rate';
 import {
-  isFarmRespecWorthMaking,
   getFarmRankingComputeCount,
-  getFarmRespecRowsComputeCount,
-  getFarmRespecSolveCount,
-  readFarmDepTuple,
-  readFarmRespecDepTuple,
   resetFarmRankingCache,
   resetFarmRankingComputeCount,
-  resetFarmRespecRowsComputeCount,
-  resetFarmRespecSolveCount,
-  runFarmRespecSolve,
-  selectFarmBoardRows,
   selectFarmPoolEntries,
   selectFarmRankingRows,
-  selectFarmRespecIsStale,
-  selectFarmRespecStatus,
-  selectFarmRespecView,
-  selectFarmReRankActive,
   selectFarmReturnBonus,
 } from '@/shared/stores/selectors/farm-ranking-selectors';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
@@ -57,28 +38,15 @@ function farmHero(id: string, overrides: Partial<{ battleAllowed: boolean }> = {
   });
 }
 
-/** Used only by the new Farm Respec Advisor describe blocks below — the shipped
- *  `selectFarmRankingRows` describe block above keeps its own original two reset calls
- *  untouched. */
-function resetAllFarmCaches() {
-  resetFarmRankingComputeCount();
-  resetFarmRespecSolveCount();
-  resetFarmRespecRowsComputeCount();
-}
-
 describe('selectFarmRankingRows', () => {
   beforeEach(() => {
     resetPlannerStoreForTests();
     resetFarmRankingComputeCount();
-      resetFarmRespecSolveCount();
-    resetFarmRespecRowsComputeCount();
   });
 
   afterEach(() => {
     resetPlannerStoreForTests();
     resetFarmRankingComputeCount();
-      resetFarmRespecSolveCount();
-    resetFarmRespecRowsComputeCount();
   });
 
   it('empty roster short-circuits to no-roster, without a full compute', () => {
@@ -307,404 +275,45 @@ describe('selectFarmPoolEntries / selectFarmReturnBonus', () => {
   });
 });
 
-const MINIMAL_ACCOUNT: FarmAccount = {
-  tree: { danoTotal: 1, critChance: 0, critDmg: 0, speed: 0, energy: 0, teamCoinPct: 0, luckFlatPct: 0 },
-  context: { houseIdx: 0, houseLevel: 0, phase: null, mitigationPct: 1, rankMode: 'dps', targetProp: 'stone' },
-  slots: 9,
-  maxPhase: null,
-};
-
-/**
- * The 15 mutators readFarmRespecDepTuple must react to (mirrors the "every dep-tuple member
- * drives a recompute" list above — readFarmRespecDepTuple is currently identical to
- * readFarmDepTuple, now that the objective picker is gone). Reused by the Tier 1 recompute
- * test, the staleness test and the proposed-rows compute-count test so all three drive the
- * exact same 15 members.
- */
-function respecTupleMutators(): { name: string; mutate: () => void }[] {
-  return [
-    {
-      name: 'heroes',
-      mutate: () => usePlannerStore.getState().hydrateRoster([farmHero('a'), farmHero('b')], null),
-    },
-    {
-      name: 'treeDanoTotal',
-      mutate: () =>
-        usePlannerStore.getState().applyAccountImport({
-          tree: { danoTotal: 2, critChance: 0, critDmg: 0, speed: 0, energy: 0, teamCoinPct: 0, luckFlatPct: 0 },
-          houseIdx: null,
-          houseLevel: null,
-          phase: null,
-        }),
-    },
-    {
-      name: 'treeCritChance',
-      mutate: () =>
-        usePlannerStore.getState().applyAccountImport({
-          tree: { danoTotal: 1, critChance: 5, critDmg: 0, speed: 0, energy: 0, teamCoinPct: 0, luckFlatPct: 0 },
-          houseIdx: null,
-          houseLevel: null,
-          phase: null,
-        }),
-    },
-    {
-      name: 'treeCritDmg',
-      mutate: () =>
-        usePlannerStore.getState().applyAccountImport({
-          tree: { danoTotal: 1, critChance: 0, critDmg: 5, speed: 0, energy: 0, teamCoinPct: 0, luckFlatPct: 0 },
-          houseIdx: null,
-          houseLevel: null,
-          phase: null,
-        }),
-    },
-    {
-      name: 'treeSpeed',
-      mutate: () =>
-        usePlannerStore.getState().applyAccountImport({
-          tree: { danoTotal: 1, critChance: 0, critDmg: 0, speed: 5, energy: 0, teamCoinPct: 0, luckFlatPct: 0 },
-          houseIdx: null,
-          houseLevel: null,
-          phase: null,
-        }),
-    },
-    {
-      name: 'treeEnergy',
-      mutate: () =>
-        usePlannerStore.getState().applyAccountImport({
-          tree: { danoTotal: 1, critChance: 0, critDmg: 0, speed: 0, energy: 5, teamCoinPct: 0, luckFlatPct: 0 },
-          houseIdx: null,
-          houseLevel: null,
-          phase: null,
-        }),
-    },
-    {
-      name: 'treeTeamCoinPct',
-      mutate: () =>
-        usePlannerStore.getState().applyAccountImport({
-          tree: { danoTotal: 1, critChance: 0, critDmg: 0, speed: 0, energy: 0, teamCoinPct: 5, luckFlatPct: 0 },
-          houseIdx: null,
-          houseLevel: null,
-          phase: null,
-        }),
-    },
-    {
-      name: 'treeLuckFlatPct',
-      mutate: () =>
-        usePlannerStore.getState().applyAccountImport({
-          tree: { danoTotal: 1, critChance: 0, critDmg: 0, speed: 0, energy: 0, teamCoinPct: 0, luckFlatPct: 5 },
-          houseIdx: null,
-          houseLevel: null,
-          phase: null,
-        }),
-    },
-    { name: 'houseIdx', mutate: () => usePlannerStore.getState().setHouseIdx(2) },
-    { name: 'houseLevel', mutate: () => usePlannerStore.getState().setHouseLevel(4) },
-    {
-      name: 'slots',
-      mutate: () =>
-        usePlannerStore
-          .getState()
-          .applyAccountImport({ tree: null, houseIdx: null, houseLevel: null, phase: null, slots: 5 }),
-    },
-    {
-      name: 'maxPhase',
-      mutate: () =>
-        usePlannerStore
-          .getState()
-          .applyAccountImport({ tree: null, houseIdx: null, houseLevel: null, phase: null, maxPhase: 42 }),
-    },
-    { name: 'farmPoolOverrides', mutate: () => usePlannerStore.getState().setFarmHeroEnabled('a', false) },
-    { name: 'farmReturnBonus', mutate: () => usePlannerStore.getState().setFarmReturnBonus('vip') },
-  ];
-}
-
-/** Sets a FRESH proposal directly (bypassing the T5 solve action, which does not exist in this
- *  file's scope) so the staleness/rows tests can start from a known-fresh state. */
-function primeFreshProposal() {
-  const state = usePlannerStore.getState();
-  const result = runFarmRespecSolve(state);
-  usePlannerStore.setState({
-    farmRespecProposal: { deps: readFarmRespecDepTuple(usePlannerStore.getState()), result },
-    farmRespecStatus: 'done',
-  });
-}
-
-describe('readFarmRespecDepTuple', () => {
+describe('the roster identity invariant, observed through the board', () => {
   beforeEach(() => {
     resetPlannerStoreForTests();
-    resetAllFarmCaches();
+    resetFarmRankingComputeCount();
+    usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
+    selectFarmRankingRows(usePlannerStore.getState());
+    expect(getFarmRankingComputeCount()).toBe(1);
   });
 
   afterEach(() => {
     resetPlannerStoreForTests();
-    resetAllFarmCaches();
+    resetFarmRankingComputeCount();
   });
 
-  // 18 ranking members since the House-ceiling fix added `fieldSlots` and `houseCycleSecs` to
-  // `readFarmDepTuple`, its regression repair added `houseCycleSecsHouseIdx`/
-  // `houseCycleSecsLevel`, and the team-aura total left (the board derives it from `heroes`).
-  // With the objective picker gone, readFarmRespecDepTuple no longer appends anything of its
-  // own — it is currently identical to readFarmDepTuple.
-  it('has 18 members, identical to readFarmDepTuple', () => {
-    usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
-    const tuple = readFarmRespecDepTuple(usePlannerStore.getState());
-    expect(tuple).toHaveLength(18);
-    expect(tuple).toEqual(readFarmDepTuple(usePlannerStore.getState()));
-  });
-});
-
-describe('the solve is reachable from any roster state — there is no gate in front of it', () => {
-  beforeEach(() => {
-    resetPlannerStoreForTests();
-    resetAllFarmCaches();
-  });
-
-  afterEach(() => {
-    resetPlannerStoreForTests();
-  });
-
-  // These three used to assert that a cheap pre-check REFUSED to run on a degenerate roster.
-  // There is no pre-check any more, so what is asserted instead is that the solve itself answers
-  // for each of those rosters with a named outcome rather than throwing or inventing a
-  // recommendation. Optimize is always pressable, so every one of these is reachable.
-  it('an empty roster solves to the emptyPool outcome', () => {
-    const result = runFarmRespecSolve(usePlannerStore.getState());
-    expect(result.outcome).toBe('emptyPool');
-    expect(result.gainPct).toBe(0);
-  });
-
-  it('every hero disabled solves to the emptyPool outcome', () => {
-    usePlannerStore.getState().hydrateRoster([farmHero('a', { battleAllowed: false })], null);
-    const result = runFarmRespecSolve(usePlannerStore.getState());
-    expect(result.outcome).toBe('emptyPool');
-  });
-
-  it('a farmPoolOverrides override of false on an otherwise-allowed hero also solves to emptyPool', () => {
-    usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
-    usePlannerStore.getState().setFarmHeroEnabled('a', false);
-    const result = runFarmRespecSolve(usePlannerStore.getState());
-    expect(result.outcome).toBe('emptyPool');
-  });
-
-  it('(structural) worth-making is gainPct alone — paybackHours never withholds, at any value including null', () => {
-    expect(
-      isFarmRespecWorthMaking({ gainPct: FARM_RESPEC_MIN_GAIN_PCT, paybackHours: null } as FarmRespecResult),
-    ).toBe(true);
-    expect(
-      isFarmRespecWorthMaking({
-        gainPct: FARM_RESPEC_MIN_GAIN_PCT - 0.1,
-        paybackHours: 0.1,
-      } as FarmRespecResult),
-    ).toBe(false);
-  });
-
-  it('(structural) a hand-forced out-of-range blend weight clamps to 1 without throwing', () => {
-    let result: FarmRespecResult | undefined;
-    expect(() => {
-      result = solveFarmRespec({
-        heroes: [farmHero('a')],
-        account: MINIMAL_ACCOUNT,
-        enabledHeroIds: ['a'],
-        objective: { kind: 'blend', weight: 7 },
-        maxPhase: null,
-        returnBonus: 'off',
-      });
-    }).not.toThrow();
-    expect(result?.objective.weight).toBe(1);
-    expect(result?.objective.kind).toBe('gold');
-  });
-
-  // The load-bearing half of the check this replaced. Every dependency change must be free of
-  // advisor work: the board re-ranks, and NOTHING solves until the button is pressed.
-  describe('every one of the 14 tuple members re-ranks the board, and NEVER solves', () => {
-    beforeEach(() => {
-      usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
-      selectFarmRankingRows(usePlannerStore.getState());
-    });
-
-    for (const { name, mutate } of respecTupleMutators()) {
-      it(name, () => {
-        const rowsBefore = getFarmRankingComputeCount();
-        mutate();
-        selectFarmRankingRows(usePlannerStore.getState());
-        expect(getFarmRankingComputeCount()).toBe(rowsBefore + 1);
-        expect(getFarmRespecSolveCount()).toBe(0);
-      });
-    }
-  });
-});
-
-describe('runFarmRespecSolve (Tier 2 — a plain function, not a selector)', () => {
-  beforeEach(() => {
-    resetPlannerStoreForTests();
-    resetAllFarmCaches();
-  });
-
-  afterEach(() => {
-    resetPlannerStoreForTests();
-    resetAllFarmCaches();
-  });
-
-  it('increments the solve counter and returns a searched result', () => {
-    usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
-    const result = runFarmRespecSolve(usePlannerStore.getState());
-    expect(getFarmRespecSolveCount()).toBe(1);
-    // Non-vacuity: the search RAN. A short-circuited terminal result spends no evaluations.
-    expect(result.evaluations).toBeGreaterThan(0);
-    expect(result.outcome).toBe('improved');
-  });
-
-  it('has no memo of its own — every call solves again; idempotency is the slice action\'s job', () => {
-    usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
-    runFarmRespecSolve(usePlannerStore.getState());
-    runFarmRespecSolve(usePlannerStore.getState());
-    expect(getFarmRespecSolveCount()).toBe(2);
-  });
-
-  it('resetFarmRespecSolveCount resets the counter to 0', () => {
-    usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
-    runFarmRespecSolve(usePlannerStore.getState());
-    resetFarmRespecSolveCount();
-    expect(getFarmRespecSolveCount()).toBe(0);
-  });
-});
-
-describe('staleness derivations (an input change invalidates the proposal and reverts re-rank)', () => {
-  beforeEach(() => {
-    resetPlannerStoreForTests();
-    resetAllFarmCaches();
-    usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
-    primeFreshProposal();
-  });
-
-  afterEach(() => {
-    resetPlannerStoreForTests();
-    resetAllFarmCaches();
-  });
-
-  it('a fresh proposal is not stale, and view/status/reRank read through it', () => {
-    usePlannerStore.getState().setFarmRespecReRank(true);
-    const state = usePlannerStore.getState();
-    expect(selectFarmRespecIsStale(state)).toBe(false);
-    expect(selectFarmRespecView(state)).toBe(state.farmRespecProposal);
-    expect(selectFarmRespecStatus(state)).toBe('done');
-    expect(selectFarmReRankActive(state)).toBe(true);
-  });
-
-  for (const { name, mutate } of respecTupleMutators()) {
-    it(`${name} change invalidates the proposal: view -> null, status -> idle, reRank -> false`, () => {
-      usePlannerStore.getState().setFarmRespecReRank(true);
-      mutate();
-      const state = usePlannerStore.getState();
-      expect(selectFarmRespecIsStale(state)).toBe(true);
-      expect(selectFarmRespecView(state)).toBeNull();
-      expect(selectFarmRespecStatus(state)).toBe('idle');
-      expect(selectFarmReRankActive(state)).toBe(false);
-    });
-  }
-
-  // The NON-mutation counterpart to the loop above: a no-op autosave patch must leave
+  // The NON-mutation counterpart to the per-member loop above: a no-op autosave patch must leave
   // `state.heroes` alone. See `patchHeroInList` in `@/shared/lib/storage` for what a fresh
   // roster array does to this tuple and why it failed silently.
   // The IMPORT path holds the same contract via `importHeroes`; its cases live in
-  // `farm-respec-import-identity.test.ts` (this suite sits at its own max-lines cap).
-  it('a NO-OP autosave patch does not invalidate the proposal: the roster array keeps its identity', () => {
-    usePlannerStore.getState().setFarmRespecReRank(true);
+  // `farm-board-import-identity.test.ts` (this suite sits at its own max-lines cap).
+  it('a NO-OP autosave patch does not recompute the board: the roster array keeps its identity', () => {
     const before = usePlannerStore.getState().heroes;
+    const rows = selectFarmRankingRows(usePlannerStore.getState());
     const rebuilt = normalizeHero({ ...structuredClone(before[0]), updatedAt: before[0].updatedAt + 700 });
     usePlannerStore.getState().patchHero(rebuilt);
 
     const state = usePlannerStore.getState();
     expect(state.heroes).toBe(before);
-    expect(selectFarmRespecIsStale(state)).toBe(false);
-    expect(selectFarmRespecView(state)).toBe(state.farmRespecProposal);
-    expect(selectFarmRespecStatus(state)).toBe('done');
-    expect(selectFarmReRankActive(state)).toBe(true);
+    expect(selectFarmRankingRows(state)).toBe(rows);
+    expect(getFarmRankingComputeCount()).toBe(1);
   });
 
-  it('an autosave patch that DID change the hero still invalidates the proposal', () => {
-    usePlannerStore.getState().setFarmRespecReRank(true);
+  it('an autosave patch that DID change the hero still recomputes the board', () => {
     const before = usePlannerStore.getState().heroes;
+    const rows = selectFarmRankingRows(usePlannerStore.getState());
     usePlannerStore.getState().patchHero({ ...before[0], level: before[0].level + 1 });
 
     const state = usePlannerStore.getState();
     expect(state.heroes).not.toBe(before);
-    expect(selectFarmRespecIsStale(state)).toBe(true);
-    expect(selectFarmRespecView(state)).toBeNull();
-    expect(selectFarmRespecStatus(state)).toBe('idle');
-    expect(selectFarmReRankActive(state)).toBe(false);
-  });
-});
-
-describe('selectFarmBoardRows (proposed rows compute ONLY in re-rank mode)', () => {
-  beforeEach(() => {
-    resetPlannerStoreForTests();
-    resetAllFarmCaches();
-    usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
-    primeFreshProposal();
-  });
-
-  afterEach(() => {
-    resetPlannerStoreForTests();
-    resetAllFarmCaches();
-  });
-
-  it('returns selectFarmRankingRows\' own object identity when re-rank is off', () => {
-    const state = usePlannerStore.getState();
-    expect(Object.is(selectFarmBoardRows(state), selectFarmRankingRows(state))).toBe(true);
-  });
-
-  it('the proposed-row compute count stays 0 across every tuple member change while re-rank is off', () => {
-    for (const { mutate } of respecTupleMutators()) {
-      mutate();
-      selectFarmBoardRows(usePlannerStore.getState());
-    }
-    expect(getFarmRespecRowsComputeCount()).toBe(0);
-  });
-
-  it('flipping re-rank on computes once; flipping off then on again with unchanged inputs reuses the memo', () => {
-    usePlannerStore.getState().setFarmRespecReRank(true);
-    selectFarmBoardRows(usePlannerStore.getState());
-    expect(getFarmRespecRowsComputeCount()).toBe(1);
-
-    usePlannerStore.getState().setFarmRespecReRank(false);
-    usePlannerStore.getState().setFarmRespecReRank(true);
-    selectFarmBoardRows(usePlannerStore.getState());
-    expect(getFarmRespecRowsComputeCount()).toBe(1);
-  });
-});
-
-describe('resetFarmRankingCache clears all three caches', () => {
-  beforeEach(() => {
-    resetPlannerStoreForTests();
-    resetAllFarmCaches();
-  });
-
-  afterEach(() => {
-    resetPlannerStoreForTests();
-    resetAllFarmCaches();
-  });
-
-  it('forces a recompute of the ranking rows', () => {
-    usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
-    selectFarmRankingRows(usePlannerStore.getState());
-
-    resetFarmRankingCache();
-
-    selectFarmRankingRows(usePlannerStore.getState());
+    expect(selectFarmRankingRows(state)).not.toBe(rows);
     expect(getFarmRankingComputeCount()).toBe(2);
-  });
-
-  it('also forces a recompute of the board-rows (re-rank) cache', () => {
-    usePlannerStore.getState().hydrateRoster([farmHero('a')], null);
-    primeFreshProposal();
-    usePlannerStore.getState().setFarmRespecReRank(true);
-    selectFarmBoardRows(usePlannerStore.getState());
-    expect(getFarmRespecRowsComputeCount()).toBe(1);
-
-    resetFarmRankingCache();
-
-    selectFarmBoardRows(usePlannerStore.getState());
-    expect(getFarmRespecRowsComputeCount()).toBe(2);
   });
 });

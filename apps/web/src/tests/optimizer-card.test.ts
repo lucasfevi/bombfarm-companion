@@ -277,7 +277,7 @@ describe('the front page optimizer card', () => {
 
       expect(html).toContain('data-home-card-state="recalculating"');
       expect(textOf(body(html))).toBe(
-        escaped(STRINGS[lang].farmRespecNotWorthTitle + STRINGS[lang].homeCardOptimizerSeeFullPlan),
+        escaped(STRINGS[lang].homeCardOptimizerBelowFloor + STRINGS[lang].homeCardOptimizerSeeFullPlan),
       );
       expect(html).not.toContain('home-optimizer-headline');
       expect(bodyClass(html).split(' ')).toContain('opacity-50');
@@ -287,7 +287,7 @@ describe('the front page optimizer card', () => {
     }
   });
 
-  it("a plan under the worth-making floor prints the advisor's sentence and the way to the full plan", () => {
+  it("a plan under the worth-making floor says so and shows the way to the full plan", () => {
     arrangeUsable();
     applyMatchingPlan(plan({ currentDps: 100, planDps: 104, moveList: [equip('1', null)] }));
 
@@ -297,7 +297,7 @@ describe('the front page optimizer card', () => {
 
       expect(html).toContain('data-home-card-state="belowFloor"');
       expect(textOf(body(html))).toBe(
-        escaped(STRINGS[lang].farmRespecNotWorthTitle + STRINGS[lang].homeCardOptimizerSeeFullPlan),
+        escaped(STRINGS[lang].homeCardOptimizerBelowFloor + STRINGS[lang].homeCardOptimizerSeeFullPlan),
       );
       expect(html).not.toContain('home-optimizer-headline');
       expect(seePlanLink(html)).toBe(STRINGS[lang].homeCardOptimizerSeeFullPlan);

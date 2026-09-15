@@ -13,7 +13,7 @@ import { FARM_COLUMNS } from '../model/farm-ranking-view';
  * established genre for this kind of assertion — source-scanning — and the genuine DOM-rendered
  * proof (testids resolve, empty states render no numeric text, badges carry words,
  * `<colgroup>`/header count match) is covered by the real browser in the web app's farm-ranking
- * and farm-respec end-to-end specs.
+ * and farm-optimize-button end-to-end specs.
  *
  * `readFileSync` on a bare file name is deliberate: a renamed or moved subject throws here rather
  * than leaving a guard that passes while scanning nothing.
@@ -36,27 +36,8 @@ describe('Farm Ranking board — testids present', () => {
     ['farm-return-bonus.tsx', 'farm-return-bonus'],
     ['farm-ranking-table.tsx', 'farm-ranking-table'],
     ['farm-ranking-table.tsx', 'farm-sort-live'],
-    ['farm-respec-toolbar.tsx', 'farm-respec-toolbar'],
-    ['farm-respec-toolbar.tsx', 'farm-respec-optimize'],
-    ['farm-respec-panel.tsx', 'farm-respec-panel'],
-    ['farm-respec-panel.tsx', 'farm-respec-below-threshold-banner'],
-    ['farm-respec-panel.tsx', 'farm-respec-close'],
-    ['farm-respec-metrics.tsx', 'farm-respec-metrics'],
-    ['farm-respec-metrics.tsx', 'farm-respec-metric-gold'],
-    ['farm-respec-metrics.tsx', 'farm-respec-metric-chests'],
-    ['farm-respec-metrics.tsx', 'farm-respec-metric-phase'],
-    ['farm-respec-metrics.tsx', 'farm-respec-metric-cost'],
-    ['farm-respec-metrics.tsx', 'farm-respec-metric-payback'],
-    ['farm-respec-hero-grid.tsx', 'farm-respec-heroes'],
-    ['farm-respec-frontier.tsx', 'farm-respec-frontier'],
-    ['farm-respec-rerank-toggle.tsx', 'farm-respec-rerank'],
+    ['farm-optimize-button.tsx', 'farm-optimize'],
   ];
-
-  it('farm-respec-frontier.tsx declares a per-hero-count testid template', () => {
-    expect(read('farm-respec-frontier.tsx')).toContain(
-      'farm-respec-frontier-${entry.heroCount}',
-    );
-  });
 
   for (const [file, testid] of expectations) {
     it(`${file} declares data-testid="${testid}"`, () => {
@@ -121,241 +102,44 @@ describe('Farm Ranking board — the four empty states render no numeric cell', 
   });
 });
 
-describe('Farm Respec Advisor toolbar — always available, controls and layout stability', () => {
+describe('Optimize button — always available, and nothing but a way to the Optimizer', () => {
   // The inverse of the check this replaced. Optimize used to be hidden until a background
   // estimate vouched for it, which meant an under-reporting estimate could leave a player with
-  // a worthwhile respec and no way to ask for it. There is no early return left to reinstate.
+  // a worthwhile plan and no way to ask for it. There is no early return left to reinstate.
   it('renders unconditionally — no early return, and nothing that could gate the control', () => {
-    const source = read('farm-respec-toolbar.tsx');
+    const source = read('farm-optimize-button.tsx');
     expect(source).not.toMatch(/return null/);
     expect(source).not.toMatch(/shouldSurface|gate\./);
   });
 
-  it('no objective picker remains — Optimize is the only control in the toolbar', () => {
-    const source = read('farm-respec-toolbar.tsx');
+  it('Optimize is the only control in its file — no objective picker, no switch', () => {
+    const source = read('farm-optimize-button.tsx');
     expect(source).not.toContain('Select');
-    expect(source).not.toContain('setFarmObjective');
-  });
-
-  it('Optimize is a real button with aria-busy, aria-expanded and aria-controls pointing at the panel', () => {
-    const source = read('farm-respec-toolbar.tsx');
-    expect(source).toMatch(/aria-busy=\{busy\}/);
-    expect(source).toMatch(/aria-expanded=\{panelOpen\}/);
-    expect(source).toContain('aria-controls="farm-respec-panel"');
-  });
-
-  it('the Optimize button reserves a min-width so the busy transition does not reflow the toolbar', () => {
-    const source = read('farm-respec-toolbar.tsx');
-    expect(source).toMatch(/className="min-w-\d+"/);
-  });
-
-  it('reads no result figure at all — every number the advisor has belongs to the panel', () => {
-    const source = read('farm-respec-toolbar.tsx');
-    expect(source).not.toMatch(/paybackHours|gainPct|formatGainPct/);
-  });
-
-  it('takes only status and panelOpen — the host subscribes to nothing else for it', () => {
-    const source = read('farm-respec-toolbar.tsx');
-    expect(source).toContain('const { status, panelOpen } = data;');
-  });
-});
-
-describe('Farm Respec Advisor panel — in-place expansion and banners', () => {
-  it('is a plain <section> in normal flow — no role="dialog", no portal', () => {
-    const source = read('farm-respec-panel.tsx');
-    expect(source).toMatch(/<section[\s\S]*?id="farm-respec-panel"/);
-    expect(source).not.toMatch(/role=["']dialog["']/);
-    expect(source).not.toContain('Portal');
-  });
-
-  it('mounts only when a fresh view exists or status is solving/failed, AND the panel is open', () => {
-    const source = read('farm-respec-panel.tsx');
-    expect(source).toMatch(
-      /const mountable = panelOpen && \(view != null \|\| status === 'solving' \|\| status === 'failed'\);/,
-    );
-  });
-
-  it('the failed state renders a named banner with zero numeric cells and no re-rank toggle', () => {
-    const source = read('farm-respec-panel.tsx');
-    expect(source).toContain("panelState.kind === 'failed'");
-    expect(source).toContain('farm-respec-failed-banner');
     expect(source).not.toContain('Switch');
   });
 
-  it('"the best found, not provably best" is rendered unconditionally, not only when the budget ran out', () => {
-    const source = read('farm-respec-panel.tsx');
-    const noteIndex = source.indexOf('farmRespecBestFound');
-    const branchIndex = source.indexOf('panelState.budgetExhausted');
-    expect(noteIndex).toBeGreaterThan(-1);
-    // Ahead of the only conditional in this branch, so no state of the panel can drop it — the
-    // search settles on a local best at every budget, and a caveat that appears only sometimes
-    // reads as a guarantee the rest of the time.
-    expect(branchIndex).toBeGreaterThan(noteIndex);
+  it('the button hands the press to the host — the package owns no route and no solve', () => {
+    const source = read('farm-optimize-button.tsx');
+    expect(source).toMatch(/onClick=\{onOpenOptimizer\}/);
+    expect(source).not.toMatch(/href|router|solve|Respec/);
   });
 
-  it('the budget-exhausted banner renders ABOVE the metric tiles', () => {
-    const source = read('farm-respec-panel.tsx');
-    const bannerIndex = source.indexOf('farm-respec-budget-exhausted');
-    const tilesIndex = source.indexOf('<FarmRespecMetrics');
-    expect(bannerIndex).toBeGreaterThan(-1);
-    expect(tilesIndex).toBeGreaterThan(bannerIndex);
+  it("the button reserves a min-width and takes the filter row's control-band height, bottom-aligned to it", () => {
+    const source = read('farm-optimize-button.tsx');
+    expect(source).toMatch(/min-w-\d+/);
+    expect(source).toContain('farmFieldControlClass');
+    expect(source).toContain('self-end');
   });
 
-  it('winningSeed is never rendered anywhere in the panel or its children', () => {
-    for (const file of [
-      'farm-respec-panel.tsx',
-      'farm-respec-metrics.tsx',
-    ]) {
-      expect(read(file)).not.toMatch(/winningSeed/);
-    }
+  it('reads no figure at all — the Optimizer screen is where the numbers are', () => {
+    const source = read('farm-optimize-button.tsx');
+    expect(source).not.toMatch(/paybackHours|gainPct|formatGainPct|aria-busy/);
   });
 
-  it('no component under this task has a try/catch of its own', () => {
-    for (const file of [
-      'farm-respec-panel.tsx',
-      'farm-respec-metrics.tsx',
-    ]) {
-      expect(read(file)).not.toMatch(/\btry\s*\{/);
-    }
-  });
-
-  // The energy-allocation section is gone entirely — bar first, then the sentence. Nothing in
-  // the panel reads `result.plateau` any more; this pins that so it cannot creep back untested.
-  it('the panel renders no energy-allocation section', () => {
-    const source = read('farm-respec-panel.tsx');
-    expect(source).not.toMatch(/[Pp]lateau/);
-  });
-
-  it('the panel has a real heading wired via aria-labelledby, and a close button that closes it', () => {
-    const source = read('farm-respec-panel.tsx');
-    expect(source).toMatch(/aria-labelledby=\{PANEL_HEADING_ID\}/);
-    expect(source).toMatch(/data-testid="farm-respec-close"\s*\n\s*onClick=\{onClose\}/);
-  });
-});
-
-describe('Farm Respec Advisor hero cards — full target allocations, luck kept, unchanged still shown', () => {
-  it('the card testid and per-key testid templates are declared', () => {
-    const source = read('farm-respec-hero-card.tsx');
-    expect(source).toContain('farm-respec-hero-${entry.heroId}');
-    expect(source).toContain('farm-respec-key-${entry.heroId}-${row.key}');
-  });
-
-  // The grid renders two groups now (changed heroes, then unchanged), so it no longer maps
-  // `result.heroes` directly. The invariant this guarded — no hero is dropped — is proved
-  // against `partitionHeroEntries` itself in farm-respec-view.test.ts, which is stronger than
-  // scanning for an absent `.filter(`; what is left to assert here is that BOTH groups render.
-  it('the grid renders both hero groups — never only the changed ones', () => {
-    const source = read('farm-respec-hero-grid.tsx');
-    expect(source).toContain('partitionHeroEntries(result)');
-    expect(source).toMatch(/groups\.changed\.map\(/);
-    expect(source).toMatch(/groups\.unchanged\.map\(/);
-    expect(source).not.toMatch(/result\.heroes\.filter\(/);
-  });
-
-  it('the grid uses an auto-fit/minmax responsive layout — never an accordion, tab list or horizontal scroller', () => {
-    const source = read('farm-respec-hero-grid.tsx');
-    expect(source).toContain('auto-fit');
-    expect(source).toContain('minmax');
-    expect(source).not.toMatch(/Accordion|role="tablist"|overflow-x/);
-  });
-
-  it('identity is rendered by HeroIdentityChip from the shared art package — no second identity component here', () => {
-    const cardSource = read('farm-respec-hero-card.tsx');
-    expect(cardSource).toMatch(
-      /import\s*\{[^}]*HeroIdentityChip[^}]*\}\s*from\s*'@bombfarm\/game-art'/,
-    );
-  });
-
-  it('the changed-hero table passes current, target and change to the shared DeltaTable ledger, chronological order (current before target)', () => {
-    const source = read('farm-respec-hero-card.tsx');
-    expect(source).toContain('t.farmRespecKeyCurrent');
-    expect(source).toContain('t.farmRespecKeyTarget');
-    expect(source).toContain('t.farmRespecKeyDelta');
-    expect(source).toContain('row.target');
-    expect(source).toContain('row.current');
-    expect(source.indexOf('t.farmRespecKeyCurrent')).toBeLessThan(source.indexOf('t.farmRespecKeyTarget'));
-  });
-
-  it('the luck row is locked, carrying the same hint text through DeltaTable\'s lock glyph', () => {
-    const source = read('farm-respec-hero-card.tsx');
-    expect(source).toContain('locked: row.keep');
-    expect(source).toContain('t.farmRespecLuckKeep');
-    expect(source).toContain('t.farmRespecLuckHint');
-  });
-
-  it('an unchanged hero renders de-emphasized, never hidden outright', () => {
-    const source = read('farm-respec-hero-card.tsx');
-    expect(source).toContain('!entry.changed');
-    expect(source).not.toMatch(/display:\s*none/);
-  });
-
-  // The note and the gold saved are stated once for the whole group, not per card — repeated on
-  // every card they were the same sentence several times over, and the amounts were a total the
-  // player had to sum themselves.
-  it('the unchanged group states its note once, over the summed gold from the domain', () => {
-    const grid = read('farm-respec-hero-grid.tsx');
-    expect(grid).toContain('t.farmRespecUnchangedGroupNote');
-    expect(grid).toContain('result.unchangedRespecCostGold');
-    const card = read('farm-respec-hero-card.tsx');
-    expect(card).not.toMatch(/farmRespecUnchanged/);
-  });
-
-  it('no move is annotated as optional/negligible/minor/skippable at any magnitude — no conditional class keyed on delta size', () => {
-    const source = read('farm-respec-hero-card.tsx');
-    expect(source).not.toMatch(/negligible|\boptional\b|\bskip(pable)?\b/i);
-    expect(source).not.toMatch(/row\.delta\s*[<>=]/);
-  });
-});
-
-describe('Farm Respec Advisor frontier — cost-ascending, never re-sorted locally', () => {
-  it('renders one row per result.frontier entry, in the array\'s own order — no local sort/filter/reverse', () => {
-    const source = read('farm-respec-frontier.tsx');
-    expect(source).toContain('resolveFrontierEntries(result)');
-    expect(source).toMatch(/entries\.map\(/);
-    expect(source).not.toMatch(/entries\.(sort|filter|reverse)\(/);
-  });
-
-  it('an empty frontier is omitted — the model\'s null signal is respected, not mapped over as an empty list', () => {
-    const source = read('farm-respec-frontier.tsx');
-    expect(source).toMatch(/if \(entries == null\) return null;/);
-  });
-});
-
-describe('Farm Respec Advisor re-rank toggle and mode marking', () => {
-  it('the toggle is always mounted above the table, not gated inside the collapsible panel', () => {
-    const boardSource = read('farm-ranking-board.tsx');
-    const panelSource = read('farm-respec-panel.tsx');
-    expect(boardSource).toContain('<FarmRespecRerankToggle');
-    expect(panelSource).not.toContain('FarmRespecRerankToggle');
-  });
-
-  it('taking the active flag as a prop means the toggle has no staleness logic of its own', () => {
-    const source = read('farm-respec-rerank-toggle.tsx');
-    expect(source).toContain('active: boolean');
-    expect(source).not.toMatch(/\bdeps\b|\bstale\b/);
-  });
-
-  it('the toggle renders nothing until a fresh proposal exists, and never reads the panel state', () => {
-    const source = read('farm-respec-rerank-toggle.tsx');
-    expect(source).toContain('hasProposal: boolean');
-    expect(source).toMatch(/if \(!hasProposal\) return null;/);
-    expect(source).not.toMatch(/panelOpen/);
-    // The board mounts it on the proposal alone — collapsing the panel must not hide it.
-    expect(read('farm-ranking-board.tsx')).toContain('hasProposal={respec.view != null}');
-  });
-
-  it('re-rank mode is marked three independent, non-colour ways: an always-mounted Banner, the sr-only caption, and a data-farm-mode attribute', () => {
-    const toggleSource = read('farm-respec-rerank-toggle.tsx');
-    const tableSource = read('farm-ranking-table.tsx');
-    expect(toggleSource).toContain('<Banner');
-    expect(tableSource).toContain('reRankActive ? t.farmRespecRerankCaption : t.farmRankingCaption');
-    expect(tableSource).toMatch(/data-farm-mode=\{reRankActive \? 'proposed' : 'current'\}/);
-  });
-
-  it('farm-ranking-table.tsx gains reRankActive with no column, sort or filter semantic change (sortKey/sortDir are regrouped into one sort prop only to stay under the 8-prop cap)', () => {
-    const source = read('farm-ranking-table.tsx');
-    expect(source).toContain('reRankActive: boolean');
-    expect(source).not.toMatch(/FARM_COLUMNS\s*=/); // the shipped column list itself is not reassigned/edited
+  it('the board threads the host\'s openOptimizer action straight to the button', () => {
+    const source = read('farm-ranking-board.tsx');
+    expect(source).toContain('openOptimizer: () => void');
+    expect(source).toContain('<FarmOptimizeButton t={t} onOpenOptimizer={openOptimizer} />');
   });
 
   it('the board takes its rows as a prop — the host owns the subscription', () => {
@@ -363,33 +147,26 @@ describe('Farm Respec Advisor re-rank toggle and mode marking', () => {
     expect(source).toContain('result: FarmRankingResult');
   });
 
-  it('the board\'s visibleRows pipeline (applyFarmFilters -> sortFarmRows) is untouched — only the row source changed', () => {
+  it('the board\'s visibleRows pipeline (applyFarmFilters -> sortFarmRows) is untouched', () => {
     const source = read('farm-ranking-board.tsx');
     expect(source).toContain('applyFarmFilters(result.rows, effectiveFilters)');
     expect(source).toContain('sortFarmRows(filtered, sort.key, sort.direction)');
   });
 });
 
-describe('Farm Respec Advisor toolbar/panel wiring', () => {
-  it('the board renders the toolbar between the pool and the table', () => {
+describe('Farm Ranking filter row placement', () => {
+  it('the filters, the return bonus and the Optimize button share one row, in that order, above the table', () => {
     const source = read('farm-ranking-board.tsx');
     const poolIndex = source.indexOf('<FarmRotationPool');
-    const toolbarIndex = source.indexOf('<FarmRespecToolbar');
+    const filtersIndex = source.indexOf('<FarmRankingFilters');
+    const bonusIndex = source.indexOf('<FarmReturnBonus');
+    const buttonIndex = source.indexOf('<FarmOptimizeButton');
     const tableIndex = source.indexOf('<FarmRankingTable');
     expect(poolIndex).toBeGreaterThan(-1);
-    expect(toolbarIndex).toBeGreaterThan(poolIndex);
-    expect(tableIndex).toBeGreaterThan(toolbarIndex);
-  });
-});
-
-describe('Farm Ranking filter row placement', () => {
-  it('the filters sit below the respec toolbar and above the table', () => {
-    const source = read('farm-ranking-board.tsx');
-    const toolbarIndex = source.indexOf('<FarmRespecToolbar');
-    const filtersIndex = source.indexOf('<FarmRankingFilters');
-    const tableIndex = source.indexOf('<FarmRankingTable');
-    expect(filtersIndex).toBeGreaterThan(toolbarIndex);
-    expect(tableIndex).toBeGreaterThan(filtersIndex);
+    expect(filtersIndex).toBeGreaterThan(poolIndex);
+    expect(bonusIndex).toBeGreaterThan(filtersIndex);
+    expect(buttonIndex).toBeGreaterThan(bonusIndex);
+    expect(tableIndex).toBeGreaterThan(buttonIndex);
   });
 
   it('the filters render above the empty states, so a fully-filtered board can be un-filtered', () => {
@@ -439,7 +216,7 @@ describe('Farm Ranking table — the scrollport height is the host\'s to set', (
   it('the board threads its own optional height straight through', () => {
     const source = read('farm-ranking-board.tsx');
     expect(source).toContain('tableScrollportHeightPx?: number');
-    expect(source).toContain('scrollportHeightPx: tableScrollportHeightPx');
+    expect(source).toContain('scrollportHeightPx={tableScrollportHeightPx}');
   });
 });
 
@@ -482,7 +259,7 @@ describe('the components are prop-driven — no store, no host module', () => {
   const componentFiles = componentFilesUnder(COMPONENTS_DIR);
 
   it('red state: a fabricated usePlannerStore subscription is caught', () => {
-    expect(findHostReach('const rows = usePlannerStore(selectFarmBoardRows);')).toBe(
+    expect(findHostReach('const rows = usePlannerStore(selectFarmRankingRows);')).toBe(
       'usePlannerStore',
     );
   });
@@ -492,10 +269,10 @@ describe('the components are prop-driven — no store, no host module', () => {
   });
 
   it('the scan reaches every component in this tree, subdirectories included', () => {
-    expect(componentFiles.length).toBe(27);
+    expect(componentFiles.length).toBe(21);
     expect(componentFiles).toContain('farm-ranking-board.tsx');
     expect(componentFiles).toContain('combat-phase-panel.tsx');
-    expect(componentFiles).toContain('farm-respec-panel.tsx');
+    expect(componentFiles).toContain('farm-optimize-button.tsx');
     expect(componentFiles).toContain('phases-explorer.tsx');
   });
 

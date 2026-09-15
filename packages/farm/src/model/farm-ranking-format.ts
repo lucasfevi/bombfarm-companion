@@ -27,9 +27,8 @@ export function formatSignedRate(value: number, lang: Lang): string {
 /**
  * The Farm Ranking table's own cell variant: {@link formatRate} with a trailing `/h` — the
  * column headers no longer carry "/ hr" themselves, so each rate cell states its own unit. Not a
- * change to `formatRate` itself: `farm-respec-metrics.tsx` prints the same values as a
- * current-to-proposed delta ("X → Y"), a context where restating "/h" on every number reads as
- * noise rather than a unit. A non-finite value stays the bare em dash — no unit on "no data".
+ * change to `formatRate` itself, which other surfaces print without a unit. A non-finite value
+ * stays the bare em dash — no unit on "no data".
  */
 export function formatRatePerHour(value: number, lang: Lang): string {
   const formatted = formatRate(value, lang);

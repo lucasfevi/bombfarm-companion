@@ -1,8 +1,7 @@
 // The ONLY file in @bombfarm/farm that imports a runtime binding from @bombfarm/domain/farm-rate
 // or @bombfarm/domain/farm-optimize, and apps/web and apps/desktop must import neither (enforced
 // by a structural guard — see farm-ranking-guards.test.ts, guards (f) and (g); a type-only
-// `ReturnBonusMode`/`FarmRateRow`/`FarmRespecResult` import erases at compile time and is
-// allowed anywhere).
+// `ReturnBonusMode`/`FarmRateRow` import erases at compile time and is allowed anywhere).
 //
 // computeFarmRates is @bombfarm/domain's own stated convenience entry point — it fixes the
 // facts -> squad -> rows ordering in one place. Do NOT hand-compose computeHeroFarmFacts +
@@ -12,21 +11,13 @@
 // itself.
 import {
   computeFarmRates,
-  computeFarmRateTable,
   farmTeamBuffs,
   type FarmAccount,
   type FarmRateRow,
-  type SquadFarmFacts,
 } from '@bombfarm/domain/farm-rate';
 // resolveFarmObjective, farmObjectiveValue and bestFarmPhase are deliberately NOT imported —
-// that surface belongs to the next-point ranking mode, not to this recommendation seam.
-// respecCostGold is not imported either: every cost this surface renders is already a field on a
-// FarmRespecResult/FarmRespecHeroEntry.
-import {
-  solveFarmRespec,
-  FARM_RESPEC_MIN_GAIN_PCT,
-  type FarmRespecResult,
-} from '@bombfarm/domain/farm-optimize';
+// that surface belongs to the next-point ranking mode, not to this board.
+import { FARM_RESPEC_MIN_GAIN_PCT } from '@bombfarm/domain/farm-optimize';
 import type { AccountShared } from '@bombfarm/domain/shims/storage';
 import type { FarmInputs } from './farm-inputs';
 
@@ -59,10 +50,10 @@ const EMPTY_ROWS: readonly FarmRateRow[] = [];
  * The converse obligation falls on PRODUCERS in the HOST APP: the members compared by reference
  * here (`heroes`, `farmPoolOverrides`) must be identity-stable across a
  * write that changed nothing. {@link farmDepsEqual} compares with `Object.is`, so a
- * fresh-but-equal array or object reads exactly like a real edit — it drops a live respec
- * proposal with no error surfaced. Every roster producer must return the SAME array when nothing
- * changed, and the single writer of the roster must decline to write an unchanged reference; a
- * new roster producer owes both halves.
+ * fresh-but-equal array or object reads exactly like a real edit — it recomputes the whole
+ * 600-row board with no error surfaced. Every roster producer must return the SAME array when
+ * nothing changed, and the single writer of the roster must decline to write an unchanged
+ * reference; a new roster producer owes both halves.
  */
 export function readFarmDepTuple(inputs: FarmInputs) {
   return [
@@ -190,66 +181,11 @@ export function computeFarmRanking(inputs: FarmInputs): FarmRankingResult {
 }
 
 /**
- * The rows for an ALREADY-SOLVED proposed squad — the board's re-rank source. The only call
- * that skips the facts/squad stages, because the solver has already produced the squad.
+ * The gain a plan must clear before a surface calls it worth making — the floor the domain's
+ * points solver applies, re-exported so a host names it without a second runtime import of that
+ * solver (guard (g)).
  */
-export function computeFarmProposedRows(
-  squad: SquadFarmFacts,
-  inputs: FarmInputs,
-): FarmRankingResult {
-  const rows = computeFarmRateTable(squad, {
-    maxPhase: inputs.maxPhase,
-    returnBonus: inputs.farmReturnBonus,
-  });
-  return { rows, reason: null };
-}
-
-// -------------------------------------------------------------------------------------------
-// Farm Respec Advisor — the on-demand solve.
-// -------------------------------------------------------------------------------------------
-
-/**
- * The solve's dependency tuple. The recommendation depends on nothing the ranking board doesn't
- * already — this is currently identical to {@link readFarmDepTuple}, kept as its own named entry
- * point so the call sites read "the respec deps", not a re-derivation of the ranking ones.
- */
-export function readFarmRespecDepTuple(inputs: FarmInputs) {
-  return readFarmDepTuple(inputs);
-}
-
-function buildFarmRespecInput(inputs: FarmInputs, enabledHeroIds: readonly string[]) {
-  return {
-    heroes: inputs.heroes,
-    account: buildAccount(inputs),
-    enabledHeroIds,
-    maxPhase: inputs.maxPhase,
-    returnBonus: inputs.farmReturnBonus,
-  };
-}
-
-/**
- * The one expression the "is this respec worth making" decision is built from. `paybackHours` is
- * deliberately never read here, at any value including `null` — gain alone decides, and payback
- * is reported beside the recommendation, never used to withhold it. Exported so this exact
- * formula, not a re-derivation of it, is what the panel and its tests both drive.
- */
-export function isFarmRespecWorthMaking(result: FarmRespecResult): boolean {
-  return result.gainPct >= FARM_RESPEC_MIN_GAIN_PCT;
-}
-
-/** The floor {@link isFarmRespecWorthMaking} applies, re-exported so the rest of the package can
- *  name it in copy without a second runtime import of the domain solver (guard (g)). */
 export const FARM_RESPEC_WORTH_MAKING_PCT = FARM_RESPEC_MIN_GAIN_PCT;
-
-/**
- * The full solve. A PLAIN FUNCTION: not a selector, not memoized, and never called during
- * render. Its one caller must be an explicit user event (the Optimize button) — it costs
- * seconds on a large roster, and nothing on the dependency-driven render path may reach it.
- */
-export function runFarmRespecSolve(inputs: FarmInputs): FarmRespecResult {
-  const enabledHeroIds = resolveEnabledHeroIds(inputs);
-  return solveFarmRespec(buildFarmRespecInput(inputs, enabledHeroIds));
-}
 
 export type FarmPoolEntry = {
   heroId: string;

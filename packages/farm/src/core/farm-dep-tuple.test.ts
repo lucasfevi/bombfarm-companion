@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createFarmRankingMemo } from './farm-memo';
-import { readFarmDepTuple, readFarmRespecDepTuple } from './farm-compute';
+import { readFarmDepTuple } from './farm-compute';
 import type { FarmInputs } from './farm-inputs';
 
 /**
@@ -91,11 +91,6 @@ describe('readFarmDepTuple', () => {
     );
   });
 
-  it('the respec tuple is the ranking tuple, member for member', () => {
-    const inputs = baseInputs();
-    expect(readFarmRespecDepTuple(inputs)).toEqual(readFarmDepTuple(inputs));
-  });
-
   describe('each member occupies its own position and no other', () => {
     for (const member of TUPLE_MEMBERS) {
       it(`${member.name} moves only position ${member.index}`, () => {
@@ -136,14 +131,4 @@ describe('each dep-tuple member invalidates the memo, and nothing else does', ()
       expect(memo.rowsComputeCount()).toBe(2);
     });
   }
-
-  // The solve is deliberately NOT memoized — every press re-solves. This asserts the counter
-  // moves on each call, so a memo quietly added to the on-demand path fails here rather than
-  // silently serving a stale proposal after the roster changed.
-  it('the on-demand solve is never memoized — every call counts', () => {
-    const memo = createFarmRankingMemo();
-    memo.solve(baseInputs());
-    memo.solve(baseInputs());
-    expect(memo.solveCount()).toBe(2);
-  });
 });
