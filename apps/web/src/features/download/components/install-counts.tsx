@@ -1,18 +1,18 @@
 import { type Lang, type Strings } from '@/shared/i18n';
-import type { LatestRelease } from '../model/latest-release';
+import type { DownloadCounts } from '../model/latest-release';
 import { CountFigure } from './count-figure';
 
 export function InstallCounts({
   t,
   lang,
-  release,
+  counts,
 }: {
   t: Strings;
   lang: Lang;
-  /** `null` while unknown, and stays null if GitHub could not be reached. */
-  release: LatestRelease | null;
+  /** `null` while unknown, and stays null if any page of the release list could not be read. */
+  counts: DownloadCounts | null;
 }) {
-  if (release === null) return null;
+  if (counts === null) return null;
 
   return (
     <section className="flex flex-wrap items-center justify-between gap-8 rounded-xl border border-line bg-bg-2 px-6 py-5">
@@ -21,15 +21,15 @@ export function InstallCounts({
           lang={lang}
           tone="gold"
           testId="download-install-count"
-          value={release.installs}
+          value={counts.installs}
           label={t.downloadInstallsSuffix}
         />
-        {release.updates > 0 ? (
+        {counts.updates > 0 ? (
           <CountFigure
             lang={lang}
             tone="ink"
             testId="download-update-count"
-            value={release.updates}
+            value={counts.updates}
             label={t.downloadUpdatesSuffix}
           />
         ) : null}
