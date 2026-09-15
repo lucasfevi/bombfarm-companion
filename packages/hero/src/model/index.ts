@@ -22,6 +22,19 @@ export type {
 } from './roster-board-order';
 export { heroPickOutcome } from './roster-view-mode';
 export type { HeroPickOutcome, RosterViewMode } from './roster-view-mode';
+export {
+  DEFAULT_ROSTER_CARD_DENSITY,
+  ROSTER_CARD_DENSITIES,
+  cardSectionsFor,
+  isRosterCardDensity,
+} from './roster-card-density';
+export type {
+  RosterCardAbilities,
+  RosterCardDensity,
+  RosterCardRoll,
+  RosterCardSections,
+} from './roster-card-density';
+export { SHEET_STAT_CODES } from './sheet-stat-codes';
 export { formatClearTime } from './format-clear-time';
 export {
   birthRollAvailability,

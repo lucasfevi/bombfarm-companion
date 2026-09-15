@@ -37,4 +37,13 @@ export type RosterBoardCopy = RosterCopy & {
   heroesAbilityFilterOption: string;
   /** `{ability}` — the reading a tile no hero on this roster owns carries instead. */
   heroesAbilityFilterAbsent: string;
+  /** The board's card-detail control and its three presets, least to most of a hero per card. */
+  heroesDensityLabel: string;
+  heroesDensityCompact: string;
+  heroesDensityCombat: string;
+  heroesDensityFull: string;
+  /** The heading over a card's sheet stats — the host's word for the stat sheet. */
+  heroesCardSheetStatsLabel: string;
+  /** The heading over a card's roll bars — the host's word for the birth roll. */
+  heroesCardBirthStatsLabel: string;
 };

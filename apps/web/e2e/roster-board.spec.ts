@@ -172,6 +172,45 @@ test.describe('roster rail and board', () => {
     await expect(strip.getByText('Nessa')).toBeVisible();
   });
 
+  test('the card-detail presets change how much of a hero each card draws, never how many cards', async ({
+    page,
+  }) => {
+    await openPlanner(page);
+    await showBoard(page);
+    const cards = page.locator('[data-testid^="heroes-roster-card-"]');
+    const gear = page.getByTestId('heroes-card-gear');
+    const abilities = page.getByTestId('heroes-card-abilities');
+    const sheet = page.getByTestId('heroes-card-sheet');
+    const density = page.getByTestId('heroes-card-density');
+    const cardCount = await cards.count();
+    expect(cardCount).toBeGreaterThan(0);
+
+    await expect(gear).toHaveCount(cardCount);
+    await expect(abilities).toHaveCount(cardCount);
+    await expect(sheet).toHaveCount(cardCount);
+    const fullHeight = await page
+      .getByTestId('heroes-roster-card-board-ayla')
+      .evaluate((node) => node.getBoundingClientRect().height);
+
+    // The count is the property that matters: a preset changes how much of a hero a card draws,
+    // never which heroes are on the board.
+    await density.getByRole('button', { name: /^Compact$/ }).click();
+    await expect(cards).toHaveCount(cardCount);
+    await expect(abilities).toHaveCount(cardCount);
+    await expect(gear).toHaveCount(0);
+    await expect(sheet).toHaveCount(0);
+    const compactHeight = await page
+      .getByTestId('heroes-roster-card-board-ayla')
+      .evaluate((node) => node.getBoundingClientRect().height);
+    expect(compactHeight).toBeLessThan(fullHeight);
+
+    await density.getByRole('button', { name: /^Combat$/ }).click();
+    await expect(cards).toHaveCount(cardCount);
+    await expect(abilities).toHaveCount(cardCount);
+    await expect(sheet).toHaveCount(cardCount);
+    await expect(gear).toHaveCount(0);
+  });
+
   test('below the rail threshold the picker dialog is still the way to choose a hero', async ({
     page,
   }) => {
