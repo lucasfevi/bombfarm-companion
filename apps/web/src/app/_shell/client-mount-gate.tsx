@@ -3,9 +3,12 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   attachPlannerPersistence,
+  attachTeamPlanRunnerSync,
+  ensureTeamPlanSolver,
   hydratePlannerStore,
   usePlannerStore,
 } from '@/shared/stores';
+import { createShellTeamPlanSolver } from './create-shell-team-plan-solver';
 
 /** Inline dark shell so a CSS/HMR glitch never flashes a white loading page. */
 const loadingShellStyle = {
@@ -24,8 +27,13 @@ export function ClientMountGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     hydratePlannerStore();
     const detach = attachPlannerPersistence(usePlannerStore);
+    const solver = ensureTeamPlanSolver(createShellTeamPlanSolver);
+    const detachSync = attachTeamPlanRunnerSync(usePlannerStore, solver);
     setReady(true);
-    return detach;
+    return () => {
+      detachSync();
+      detach();
+    };
   }, []);
 
   if (!ready) {

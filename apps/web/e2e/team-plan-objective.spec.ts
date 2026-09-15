@@ -113,6 +113,7 @@ test.describe('Team plan objective — a record with no furthest phase', () => {
     await expect(page.getByText(NEEDS_PHASE)).toBeVisible();
 
     await page.getByRole('combobox', { name: /^Which phase this search plans for$/i }).click();
+    await expect(page.getByPlaceholder('Hard, Normal 2-1, or 151')).toBeFocused();
     await page.keyboard.type('Normal 1-1');
     await page.getByRole('option', { name: 'Normal 1-1 (#51)' }).click();
 

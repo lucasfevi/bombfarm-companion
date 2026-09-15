@@ -17,6 +17,7 @@ async function openPhasePicker(page: Page) {
 
 async function search(page: Page, query: string) {
   await openPhasePicker(page);
+  await expect(page.getByPlaceholder('Hard, Normal 2-1, or 151')).toBeFocused();
   await page.keyboard.type(query);
 }
 

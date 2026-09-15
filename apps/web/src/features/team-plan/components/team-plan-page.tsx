@@ -2,6 +2,7 @@
 
 import { useShallow } from 'zustand/react/shallow';
 import { TeamPlanScreenView } from '@bombfarm/team-plan/components';
+import { useTeamPlanSolver } from '@/shared/hooks/use-team-plan-solver';
 import type { Lang, Strings } from '@/shared/i18n';
 import {
   usePlannerStore,
@@ -47,11 +48,13 @@ export function TeamPlanPage({
   const applyPlan = usePlannerStore((state) => state.applyPlan);
   const clearPlan = usePlannerStore((state) => state.clearPlan);
   const setOpenHeroIds = usePlannerStore((state) => state.setOpenHeroIds);
+  const { runner } = useTeamPlanSolver();
 
   return (
     <TeamPlanScreenView
       t={t}
       lang={lang}
+      runner={runner}
       data={{ inputs, controls, plan, planHeroes, runStatus, runId, isStale, openHeroIds }}
       actions={{
         setScope,

@@ -1,9 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
 import { hydratePlannerStore } from '@/shared/stores/hydrate-planner-store';
 import { resetPlannerStoreForTests, usePlannerStore } from '@/shared/stores';
+import { selectTeamPlanIsStale } from '@/shared/stores/selectors/team-plan-selectors';
+import { selectLiveTeamPlanInputSignature } from '@/shared/stores/slices/team-plan-slice';
+import { DEFAULT_TEAM_PLAN_OBJECTIVE } from '@/shared/stores/team-plan/types';
 import * as storage from '@/shared/lib/storage';
 import * as i18n from '@/shared/i18n';
 import * as phasesView from '@/shared/lib/phases-view-storage';
+import { TEAM_PLAN_KEY, type TeamPlanEnvelope } from '@/shared/lib/team-plan-storage';
 
 function memoryLocalStorage() {
   const store = new Map<string, string>();
@@ -71,6 +76,65 @@ function heroJson(id: string, sourceId: string) {
       luck: 0,
     },
   };
+}
+
+function samplePlan(): TeamPlan {
+  return {
+    steps: [],
+    forgeList: [],
+    moveList: [],
+    pointResets: [],
+    perHero: [],
+    proposedLoadouts: {},
+    regime: 'underSaturated',
+    sumDuty: 1,
+    slots: 3,
+    currentDps: 100,
+    planDps: 120,
+    forgeFloorApplied: 10,
+    allowedChanges: 'both',
+    scoredPhase: null,
+    scoredPhaseSource: 'account',
+    scoredPhaseInfeasible: false,
+    gearBreakdown: { forgeDelta: 0, moveDelta: 0 },
+    requiresFullPlan: false,
+    gearDipDps: 0,
+    runedHeroNames: [],
+    run: { rounds: 1, evaluations: 1, budgetExhausted: false, elapsedMs: 1, seedUsed: 'seed' },
+  };
+}
+
+function envelopeFor(signature: string, overrides: Partial<TeamPlanEnvelope> = {}): TeamPlanEnvelope {
+  return {
+    version: 1,
+    signature,
+    objective: DEFAULT_TEAM_PLAN_OBJECTIVE,
+    allowedChanges: 'both',
+    ignoreFieldCrowding: false,
+    targetPhase: null,
+    plan: samplePlan(),
+    ...overrides,
+  };
+}
+
+function seedRosterAndAccount() {
+  localStorage.setItem('bf-hp-heroes-v1', JSON.stringify([heroJson('a', 's-a')]));
+  localStorage.setItem('bf-hp-active-hero-v1', JSON.stringify('a'));
+  localStorage.setItem(
+    'bf-hp-account-v1',
+    JSON.stringify({
+      tree: storage.DEFAULT_TREE(),
+      teamBuffs: {},
+      context: storage.DEFAULT_CONTEXT(),
+    }),
+  );
+}
+
+function liveSignatureAfterBoot(): string {
+  hydratePlannerStore();
+  const signature = selectLiveTeamPlanInputSignature(usePlannerStore.getState());
+  resetPlannerStoreForTests();
+  return signature;
 }
 
 describe('hydratePlannerStore', () => {
@@ -176,5 +240,90 @@ describe('hydratePlannerStore', () => {
     expect(setItem).toHaveBeenCalledWith('bf-hp-critdmg-flat-migrated-v1', 'true');
     expect(setItem).toHaveBeenCalledWith('bf-hp-critchance-flat-migrated-v1', 'true');
     expect(setItem).toHaveBeenCalledWith('bf-hp-critcdr-repool-migrated-v1', 'true');
+  });
+
+  it('restores a plan whose controls match, as current when its signature matches the live one and as stale when it does not', () => {
+    seedRosterAndAccount();
+    const liveSignature = liveSignatureAfterBoot();
+
+    const current = envelopeFor(liveSignature);
+    localStorage.setItem(TEAM_PLAN_KEY, JSON.stringify(current));
+    hydratePlannerStore();
+    let state = usePlannerStore.getState();
+    expect(state.plan).toEqual(current.plan);
+    expect(state.runStatus).toBe('done');
+    expect(state.runId).toBeNull();
+    expect(state.planInputSignature).toBe(liveSignature);
+    expect(selectTeamPlanIsStale(state)).toBe(false);
+
+    resetPlannerStoreForTests();
+    const stale = envelopeFor(`${liveSignature}-but-older`);
+    localStorage.setItem(TEAM_PLAN_KEY, JSON.stringify(stale));
+    hydratePlannerStore();
+    state = usePlannerStore.getState();
+    expect(state.plan).toEqual(stale.plan);
+    expect(state.runStatus).toBe('done');
+    expect(selectTeamPlanIsStale(state)).toBe(true);
+  });
+
+  it('drops a plan solved under different controls and removes its key', () => {
+    seedRosterAndAccount();
+    const liveSignature = liveSignatureAfterBoot();
+    const otherObjective = DEFAULT_TEAM_PLAN_OBJECTIVE === 'dps' ? 'farm' : 'dps';
+    localStorage.setItem(
+      TEAM_PLAN_KEY,
+      JSON.stringify(envelopeFor(liveSignature, { objective: otherObjective })),
+    );
+
+    hydratePlannerStore();
+    const state = usePlannerStore.getState();
+    expect(state.plan).toBeNull();
+    expect(state.runStatus).toBe('idle');
+    expect(localStorage.getItem('bf-hp-team-plan-v1')).toBeNull();
+  });
+
+  it('restores after the scope map, so the inventory hydration cannot clear it', () => {
+    seedRosterAndAccount();
+    localStorage.setItem(
+      'bf-hp-inventory-v1',
+      JSON.stringify({
+        version: 1,
+        importedAt: 5,
+        items: [
+          {
+            id: '1',
+            defId: 'ember_calca',
+            rarityIdx: 2,
+            level: 10,
+            upgrade: 8,
+            slot: 'calca',
+            equipped: false,
+            equippedBy: null,
+            defResolved: true,
+            marketBlocked: false,
+          },
+        ],
+      }),
+    );
+    const envelope = envelopeFor(liveSignatureAfterBoot());
+    localStorage.setItem(TEAM_PLAN_KEY, JSON.stringify(envelope));
+
+    hydratePlannerStore();
+    const state = usePlannerStore.getState();
+    expect(state.inventory.items).toHaveLength(1);
+    expect(state.plan).toEqual(envelope.plan);
+    expect(state.runStatus).toBe('done');
+  });
+
+  it('a restored plan names the roster it booted with', () => {
+    seedRosterAndAccount();
+    localStorage.setItem(TEAM_PLAN_KEY, JSON.stringify(envelopeFor(liveSignatureAfterBoot())));
+
+    hydratePlannerStore();
+    const state = usePlannerStore.getState();
+    expect(state.plan).not.toBeNull();
+    expect(state.heroes).toHaveLength(1);
+    expect(state.planHeroes).toEqual(state.heroes);
+    expect(state.openHeroIds).toBeNull();
   });
 });
