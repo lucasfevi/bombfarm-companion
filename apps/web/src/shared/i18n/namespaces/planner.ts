@@ -34,7 +34,6 @@ export const en = {
   // so the filter that keeps only those heroes says Enabled here and Active there.
   heroesRosterTitle: "Your roster",
   heroesRosterListLabel: "Your heroes",
-  heroesRollQualityLabel: "Roll",
   heroesViewLabel: "Layout",
   heroesViewCards: "Cards",
   heroesViewList: "List",
@@ -92,7 +91,6 @@ export const pt: typeof en = {
   rosterColStatus: "Status",
   heroesRosterTitle: "Seu elenco",
   heroesRosterListLabel: "Seus heróis",
-  heroesRollQualityLabel: "Sorteio",
   heroesViewLabel: "Layout",
   heroesViewCards: "Cartões",
   heroesViewList: "Lista",

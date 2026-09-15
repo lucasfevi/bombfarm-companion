@@ -11,7 +11,7 @@
 import { HeroIdentityChip, rosterInactiveChromeClass } from '@bombfarm/game-art';
 import { Panel, cn, panelHClass, panelTitleClass } from '@bombfarm/ui';
 import type { Lang, RosterBoardCopy } from '../../copy';
-import { rollQualityText, type RosterHeroRow } from '../../model';
+import { heroPowerText, type RosterHeroRow } from '../../model';
 
 export function RosterRail({
   rows,
@@ -32,7 +32,7 @@ export function RosterRail({
       <div className={panelHClass}>
         <h2 className={panelTitleClass}>{t.heroesRosterTitle}</h2>
         <span className="text-[10px] font-bold tracking-[0.08em] text-muted uppercase">
-          {t.heroesRollQualityLabel}
+          {t.heroesSortPower}
         </span>
       </div>
       <ul className="m-0 flex list-none flex-col gap-0.5 p-0" aria-label={t.heroesRosterListLabel}>
@@ -94,10 +94,10 @@ function RosterRailRow({
         <span className={cn('flex', 'min-w-0', 'flex-1', 'items-center', 'gap-2', inactiveChrome)}>
           <HeroIdentityChip hero={row.hero} fallbackName={row.hero.name} lang={lang} />
         </span>
-        {/* Roll quality is a column players read down, and the sans face this app ships has no
-            tabular figures — so the mono face is what actually keeps the digits in line. */}
+        {/* Power is a column players read down, and the sans face this app ships has no tabular
+            figures — so the mono face is what actually keeps the digits in line. */}
         <span className={cn('shrink-0', 'font-mono', 'text-xs', 'tabular-nums', 'text-muted', inactiveChrome)}>
-          {rollQualityText(row, lang)}
+          {heroPowerText(row, lang)}
         </span>
       </button>
     </li>

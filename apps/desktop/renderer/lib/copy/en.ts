@@ -665,7 +665,6 @@ export const en = {
   heroesTabPoints: 'Points',
   heroesRosterTitle: 'Your roster',
   heroesRosterListLabel: 'Your heroes',
-  heroesRollQualityLabel: 'Roll',
   heroesFiguresWithheldTitle: 'Not enough of your account has been read',
   heroesFiguresWithheldDescription: 'The per-hero numbers need your skill tree and your House. Leave the game open for a moment and they will fill in.',
   heroesPointsUnreadTitle: "This hero's spent stat points could not be read",

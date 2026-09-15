@@ -1,15 +1,15 @@
 /**
- * The order a roster surface lists heroes in, and the roll-quality reading each row prints.
+ * The order a roster surface lists heroes in, and the power figure each row prints.
  *
- * `rollQualityFor` is run ONCE per hero here and the report is carried on the row, so the list and
- * the detail panel beside it read the same number rather than each deriving its own.
+ * `rollQualityFor` is run ONCE per hero here and the report is carried on the row, so the list's
+ * order and the detail panel beside it read the same number rather than each deriving its own.
  */
 import { compareRollQuality, rollQualityFor, type RollQualityReport } from '@bombfarm/domain/roll-quality';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import { formatNumber, type Lang } from '@bombfarm/ui';
+import { formatCompactNumber, type Lang } from '@bombfarm/ui';
 
-/** What a row prints when the domain could place nothing. Never a zero, which would read as the
- *  worst possible roll rather than as an absence of evidence. */
+/** What a row prints when the save carried no figure. Never a zero, which would read as the
+ *  weakest hero on the roster rather than as an absence of evidence. */
 const NOT_PLACED = '—';
 
 export type RosterHeroRow = {
@@ -44,8 +44,8 @@ export function orderByRollQuality(heroes: readonly HeroRecord[]): readonly Rost
     );
 }
 
-/** The roll-quality reading a list row prints — the same mean the detail panel places on its rail,
- *  to one decimal, and the not-placed dash where the domain reported nothing. */
-export function rollQualityText(row: RosterHeroRow, lang: Lang): string {
-  return row.report === undefined ? NOT_PLACED : formatNumber(row.report.mean, lang, 1);
+/** The power a list row prints — the figure the game sums a hero up with, compact as the board's
+ *  cards print it, and the dash where the save carried none. */
+export function heroPowerText(row: RosterHeroRow, lang: Lang): string {
+  return row.hero.power == null ? NOT_PLACED : formatCompactNumber(row.hero.power, lang);
 }
