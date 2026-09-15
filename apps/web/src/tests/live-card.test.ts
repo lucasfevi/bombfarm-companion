@@ -37,8 +37,6 @@ const RELEASE: LatestRelease = {
   downloadUrl:
     'https://github.com/lucasfevi/bombfarm-companion/releases/download/v0.7.0/bombfarm-companion-0.7.0-setup.exe',
   sizeLabel: '212 MB',
-  installs: 6,
-  updates: 3,
 };
 
 const HOME_COMPONENTS = join(WEB_PACKAGE_ROOT, 'src/features/home/components');
