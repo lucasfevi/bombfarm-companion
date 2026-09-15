@@ -20,12 +20,14 @@ import * as advice from '@/shared/i18n/namespaces/advice';
 import * as breakdown from '@/shared/i18n/namespaces/breakdown';
 import * as phases from '@/shared/i18n/namespaces/phases';
 import * as teamPlan from '@/shared/i18n/namespaces/team-plan';
+import * as teamPlanGearFlow from '@/shared/i18n/namespaces/team-plan-gear-flow';
 import * as teamPlanObjective from '@/shared/i18n/namespaces/team-plan-objective';
 import * as importNs from '@/shared/i18n/namespaces/import';
 import * as stats from '@/shared/i18n/namespaces/stats';
 import * as market from '@/shared/i18n/namespaces/market';
 import * as inventory from '@/shared/i18n/namespaces/inventory';
 import * as download from '@/shared/i18n/namespaces/download';
+import * as home from '@/shared/i18n/namespaces/home';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
 /**
@@ -54,10 +56,7 @@ import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
  * entries and gives the mechanism a fresh floor to accumulate from.
  */
 const fixturePath = join(WEB_PACKAGE_ROOT, 'src/tests/fixtures/i18n-strings-main.json');
-const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
-  en: Strings;
-  pt: Strings;
-};
+const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as { en: Strings; pt: Strings };
 
 /**
  * Declare deltas here. A feature that changes `STRINGS` in a way that would otherwise fail one
@@ -128,7 +127,7 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  *
  * The unchanged-hero group (2026-08-20): every hero needing no respec repeated the same two
  * lines on its own card. They are now stated once above the group, over the summed gold those
- * builds save (`farmRespecUnchangedGroupNote`, in `KEYS_ADDED`), so the per-card
+ * builds save (`farmRespecUnchangedGroupNote`, since retired with the panel), so the per-card
  * `farmRespecUnchangedNote` and `farmRespecUnchangedGoldSaved` have no reader left.
  *
  * The Respec Advisor's energy-allocation section (2026-08-20) is gone in two steps: its bar first,
@@ -189,15 +188,65 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
  */
 const KEYS_REMOVED: readonly string[] = [
   'navTeamPlan',
+  // The Planner page is the Heroes page (2026-09-15), the name the desktop app gives the same
+  // screen; `navHeroes` (in `KEYS_ADDED`) carries the label in both languages.
+  'navPlanner',
+  // The Farm page's Optimize button opens the Optimizer (2026-09-14): the points-only respec
+  // panel it used to expand in place — its busy label, metric tiles, per-hero split, cheaper-
+  // respec frontier, re-rank switch and every banner — is gone, so each of its strings has no
+  // reader left. The Optimizer page recommends points, gear moves and forges together.
+  'farmRespecBudgetExhausted',
+  'farmRespecClose',
+  'farmRespecDiagnostics',
+  'farmRespecFailed',
+  'farmRespecFrontierGainCost',
+  'farmRespecFrontierHeading',
+  'farmRespecFrontierHeroCountOne',
+  'farmRespecFrontierHeroCountTwo',
+  'farmRespecFrontierPaybackNone',
+  'farmRespecHeroesHeading',
+  'farmRespecKeyCurrent',
+  'farmRespecKeyDelta',
+  'farmRespecKeyTarget',
+  'farmRespecLuckHint',
+  'farmRespecLuckKeep',
+  'farmRespecMetricChests',
+  'farmRespecMetricCost',
+  'farmRespecMetricGold',
+  'farmRespecMetricPayback',
+  'farmRespecOptimize',
+  'farmRespecOptimizeBusy',
+  'farmRespecPanelGain',
+  'farmRespecPanelHeading',
+  'farmRespecPaybackHours',
+  'farmRespecPaybackNoChange',
+  'farmRespecRerankBanner',
+  'farmRespecRerankCaption',
+  'farmRespecRerankToggle',
+  'farmRespecTerminalDesc',
+  'farmRespecTerminalTitle',
+  // The gear totals table's "Damage (% of Attack)" column (2026-09-14): no item in the current
+  // catalog carries a percent damage bonus, so the column read +0.0% on every account.
+  'dmgPctLabel',
+  // The Optimizer's proposed-items grid draws every gear slot now (2026-09-14), so a hero the
+  // plan gives nothing shows eight named empty cards and the sentence that stood in for them has
+  // no reader left; its per-slot replacement is `teamPlanFlowSlotEmpty` (in `KEYS_ADDED`).
+  'teamPlanHeroBreakdownGearEmpty',
+  // The quick guide leaves with the front page (2026-09-13): its section, its header toggle and
+  // its four strings had no reader left.
+  'guideToggleTitle', 'guideTitle', 'guideSteps', 'hide',
   // Split into `…Both`/`…Points`/`…Gear` (in `KEYS_ADDED`): the one string named gear moves and
   // point resets whatever Allowed changes was set to.
   'teamPlanOptimizeAria',
-  // Split into a Dps/Farm pair (in `KEYS_ADDED`): the per-hero rows are DPS whatever the roster
-  // was scored on, so under gold this note claimed figures were "what the search actually
-  // optimizes against" when they are a different quantity from the total above them.
-  'teamPlanHeroDeltaNote',
-  'teamPlanSetupSectionBody',
-  'teamPlanRunSummaryRegimeHintSaturated',
+  // Was split into a Dps/Farm pair (2026-09-06) because the per-hero rows are DPS whatever the
+  // roster was scored on; the pair was deleted outright (2026-09-13) — the paragraph explained a
+  // table whose column headers already name DPS, and it led the panel.
+  'teamPlanHeroDeltaNote', 'teamPlanSetupSectionBody', 'teamPlanRunSummaryRegimeHintSaturated',
+  'teamPlanRunSummaryFieldStatus',
+  // The hero row's Combat stats table (2026-09-14): with the sheet table capped only at the
+  // game's own display caps, the two tables agreed on most rows and the second one went; the hit
+  // damage rows below it still read the combat-effective figures.
+  'teamPlanHeroBreakdownStatsCombatTitle',
   'teamPlanTotalGainValue',
   'teamPlanResultsHeader',
   'teamPlanGearDipNote',
@@ -257,7 +306,29 @@ const KEYS_REMOVED: readonly string[] = [
   // planner, advice the hero strip's warn border and the Points panel's own gain line already
   // carry for the hero being looked at. Its two strings have no reader left.
   'resetAdviceRosterBanner',
-  'resetAdviceRosterHero',
+  // One bombing-cadence model (2026-09-11): the Bombs/s breakdown stops switching between a
+  // serial and a wiki formula and prints the one measured cycle (`bdFormulaBombs`, in
+  // `KEYS_ADDED`), so the two per-model expressions and the wiki formula's stamina-factor term
+  // have no reader left. The retired Context panel's cycle-model control — `cycle`,
+  // `cycleSerial`, `cycleWiki`, `walkS` — had already lost its screen and now loses the model it
+  // named. One line: this file sits at the `src/tests/**` max-lines cap.
+  'resetAdviceRosterHero', 'bdFormulaBombsSerial', 'bdFormulaBombsWiki', 'bdTermSf', 'cycle', 'cycleSerial', 'cycleWiki', 'walkS',
+  // The Optimizer's assumptions-and-limits panel is withdrawn (2026-09-12): its content was
+  // judged technical and useless to a player, and the rest of the results section is unchanged.
+  // The Dps/Farm-suffixed saturation/aura/divergence/forge-skipped/luck-frozen/allowed-changes
+  // strings that also fed only that panel never reached a fixture re-baseline, so they simply
+  // leave `KEYS_ADDED` below rather than joining this list.
+  'teamPlanDisclosuresTitle',
+  'teamPlanUnmodelledAbilities',
+  'teamPlanLoadoutDrift',
+  'teamPlanExcludedItems',
+  // Combat breakdown (2026-09-13): the Effective stats accordions are replaced by a pipeline of
+  // cards over a sheet-stat matrix, drawn by the shared hero package from its own copy. The
+  // accordion's two group headings and its trigger aria, the ledger's total row, and the
+  // symbolic formula templates with the glossary tips their tokens opened — every figure now
+  // prints its substituted formula with each term named instead — all lose their reader.
+  // One line: this file sits at the max-lines cap.
+  'bdGroupSheet', 'bdGroupDerived', 'bdTriggerAria', 'bdLedgerTotal', 'bdFormulaMitF', 'bdFormulaDmg', 'bdFormulaHit', 'bdFormulaCriticalHit', 'bdFormulaCritFactor', 'bdFormulaFuse', 'bdFormulaField', 'bdFormulaRest', 'bdFormulaUptime', 'bdFormulaActive', 'bdFormulaSustained', 'bdTermMit', 'bdTermPen', 'bdTermTree', 'bdTermAbl', 'bdTermExtra', 'bdTermAtk', 'bdTermMitigation', 'bdTermDamage', 'bdTermCc', 'bdTermCd', 'bdTermCdr', 'bdTermWalk', 'bdTermDrain', 'bdTermRestSeconds', 'bdTermField', 'bdTermRestSecs', 'bdTermAvg', 'bdTermRange', 'bdTermActiveDps',
 ];
 
 /**
@@ -302,15 +373,6 @@ const KEYS_REMOVED: readonly string[] = [
  * panel-level description under the new cage art. `phasesJaulaWindowVip` labels the VIP
  * guarantee window now shown as subtext under the normal window, once the committed wiki bundle's
  * stale VIP figure was corrected to match the live wiki.
- *
- * The metric tile row rework (2026-08-19) added a fifth Farm Respec Advisor tile —
- * `farmRespecMetricPhase` labels the recommended-phase before/after tile, and
- * `farmRespecMetricPhaseSame` is the muted note it shows in place of a repeated label when the
- * proposal does not move the phase. The tile also carries a tooltip explaining what the Payback
- * figure divides, since players were reading "pays for itself in N h" as computed against the NEW
- * gold/hr rather than the increase over the current one: `farmRespecPaybackTip` is the tooltip
- * body, triggered by the Payback label itself (`TipLabel`) rather than a separate `?` control, so
- * no separate trigger-label key exists.
  *
  * The Account page (2026-08-22): `navAccount` is the new nav label (replacing the retired
  * `tabAccount`), and the ten `accountSave*`/`accountMaxPhase`/`accountLuckFlat`/
@@ -405,22 +467,21 @@ const KEYS_REMOVED: readonly string[] = [
  * `teamPlanObjectiveAria`, `teamPlanObjectiveOptionDamage`, `teamPlanObjectiveOptionGold`, the hint
  * under it (`teamPlanObjectiveHintDps`/`Farm`) and the warning shown when a record carries no
  * furthest-phase for gold to be priced against (`teamPlanObjectiveFarmNeedsMaxPhase`) — plus the
- * `…Dps`/`…Farm` half of each string listed in `KEYS_REMOVED`. `teamPlanFarmAdvisorPointer` is the
- * one that renders elsewhere: the Farm page's respec advisor now states that it moves stat points
- * only, and the web planner appends this pointer to the Team plan page. The desktop app has no
- * such page and passes nothing, so the shared panel names no destination there.
- * `farmRespecPointsOnly` is that advisor's own scope sentence, and lives in the shared farm copy
- * because it is true on both apps.
+ * `…Dps`/`…Farm` half of each string listed in `KEYS_REMOVED`.
  *
  * The Team plan phase picker (2026-09-07) adds the control (`teamPlanPhaseLabel`,
  * `teamPlanPhaseAria`, `teamPlanPhaseNone`, `teamPlanPhaseSearchPlaceholder`,
  * `teamPlanPhaseNoMatch`, `teamPlanPhaseMoreMatches`), the two hints under it
  * (`teamPlanPhaseHintNone`/`Chosen`), the note for a phase past the account's furthest
- * (`teamPlanPhaseBeyondMax`), and the run summary's read-back of which phase the plan was scored
- * at, one string per way the phase was arrived at (`teamPlanRunSummaryScoredPhase`,
- * `teamPlanScoredPhaseChosen`, `teamPlanScoredPhaseAccount`, `teamPlanScoredPhaseSearched`,
- * `teamPlanScoredPhaseUnreachable`, `teamPlanScoredPhaseNoneFeasible`). None of these are
- * objective-suffixed: a phase is a phase under either objective, and the read-back reports one.
+ * (`teamPlanPhaseBeyondMax`), and the read-back of which phase the plan was scored at, one string
+ * per way the phase was arrived at (`teamPlanScoredPhaseChosen`, `teamPlanScoredPhaseAccount`,
+ * `teamPlanScoredPhaseSearched`, `teamPlanScoredPhaseUnreachable`,
+ * `teamPlanScoredPhaseNoneFeasible`). None of these are objective-suffixed: a phase is a phase
+ * under either objective, and the read-back reports one. The read-back moved (2026-09-13) from a
+ * sentence at the top of the run summary to a card on the gain breakdown — `teamPlanWaterfallPhaseLabel`
+ * heads it and `teamPlanWaterfallPhaseFrom` names the account's own phase when the plan is about
+ * another — and its neighbour, the field-status line, became the battle-load card's tag, so
+ * `teamPlanRunSummaryFieldStatus` has no reader left (in `KEYS_REMOVED`).
  *
  * The honest price-freshness fix (2026-09-08) replaces `marketPricesUpdated` with
  * `marketPricesOldest`, reworded from "Prices updated {age}" to "Oldest price read {age}". The old
@@ -439,20 +500,76 @@ const KEYS_REMOVED: readonly string[] = [
  * not: the restriction is on what the plan may propose, not on how it scores.
  */
 const KEYS_ADDED: readonly string[] = [
+  'navHeroes',
+  // The Farm page's Optimize button opens the Optimizer (2026-09-14) instead of solving a
+  // points-only respec in place: `farmOptimize` is the button's label, its one string. The
+  // Home page's optimizer card kept the in-place panel's "already close to the best found"
+  // verdict for a plan under the worth-making floor, so that sentence moves to the card's own
+  // namespace as `homeCardOptimizerBelowFloor`; the panel's other strings are in `KEYS_REMOVED`.
+  'farmOptimize',
+  'homeCardOptimizerBelowFloor',
+  // The planner's Combat tab (2026-09-11): the one string this app adds for the desktop's fourth
+  // stage; the phase control's own words ship with the panel, in the package that draws it.
+  'tabCombat',
+  // The roster rail and board (2026-09-10). The planner had no roster surface of its own — the
+  // hero strip's picker dialog was the only way to see the account at once — so it now draws the
+  // same rail, board and toolbar the desktop app's Heroes screen does, from one implementation.
+  // Nineteen strings, and every one of them is this app's own word rather than a copy of the
+  // desktop's: the filter that keeps only the heroes in rotation says "Enabled heroes" here,
+  // because "Enabled"/"Disabled" is what this planner has always called that flag.
+  'heroesRosterTitle',
+  'heroesRosterListLabel',
+  'heroesViewLabel',
+  'heroesViewCards',
+  'heroesViewList',
+  // The board's card-detail presets (2026-09-14): the control's name, its three options and the
+  // headings over a card's sheet stats and roll bars. Six strings, on one line because this file
+  // sits at its line cap.
+  'heroesDensityLabel', 'heroesDensityCompact', 'heroesDensityCombat', 'heroesDensityFull', 'heroesCardSheetStatsLabel', 'heroesCardBirthStatsLabel',
+  'heroesSortLabel',
+  'heroesSortRoll',
+  'heroesSortPower',
+  'heroesSortLevel',
+  'heroesSortRarity',
+  'heroesSortRank',
+  'heroesSortStars',
+  'heroesSortAscending',
+  'heroesSortDescending',
+  'heroesFilterActiveHeroes',
+  'heroesAbilityFilterLabel',
+  'heroesAbilityFilterOption',
+  // Hero runes (2026-09-13): the sheet's rune Δ column and the breakdown's rune step. One line.
+  // Combat breakdown (2026-09-13): the derived figures gain an Average hit card, so the host
+  // dictionary gains its label; the cadence model's and abilities pass's formula and glossary
+  // strings that were declared here left with the accordion (see `KEYS_REMOVED`). One line.
+  'heroesAbilityFilterAbsent', 'colSheetDeltaRune', 'bdSrcRune', 'bdNoteRune', 'teamPlanRunedHeroes', 'effectiveAvgHit',
+  // The Optimizer's field-crowding opt-out (2026-09-09) and the removals section that made it
+  // necessary. The plan could always take gear off a hero and hand it back — on a field that
+  // cannot seat everyone, a weak hero wearing less crowds the others out less — but the page
+  // rendered no row for it, so the piece simply vanished off the hero's card. The removals now
+  // show on the hero they came off, with the reason, and the toggle plans without that term.
+  'teamPlanIgnoreCrowdingLabel',
+  'teamPlanIgnoreCrowdingAria',
+  'teamPlanIgnoreCrowdingHintOff',
+  'teamPlanIgnoreCrowdingHintOn',
+  'teamPlanFlowRemovedHeading',
+  'teamPlanFlowRowRemovedToInventory',
+  'teamPlanFlowRemovedWhyCrowded',
+  'teamPlanFlowRemovedWhyOther',
+  // Every slot drawn (2026-09-14): the line an empty card carries under the slot's name, so a
+  // grid one card short stops reading as an item the page lost.
+  'teamPlanFlowSlotEmpty',
   'navOptimizer',
   'teamPlanOptimizeAriaBoth',
   'teamPlanOptimizeAriaPoints',
   'teamPlanOptimizeAriaGear',
   'teamPlanPhaseHintNoneDps',
   'teamPlanPhaseHintNoneFarm',
-  // Luck is not part of `HeroSheet`, so no points search can reach it in either direction. The
-  // page had never said so, which matters most under the gold objective: a stat that raises drop
-  // rates, and so gold per hour, is being held still while gold per hour is optimized.
-  'teamPlanLuckFrozenDps',
-  'teamPlanLuckFrozenFarm',
-  'teamPlanHeroDeltaNoteDps',
-  'teamPlanHeroDeltaNoteFarm',
-  'farmRespecPointsOnly',
+  // The per-hero row names its figures as DPS, so the three headers stop reading as a bare
+  // before/after of something unnamed; the breakdown tables keep the short labels.
+  'teamPlanColDpsBefore',
+  'teamPlanColDpsAfter',
+  'teamPlanColDpsDelta',
   'teamPlanPhaseLabel',
   'teamPlanPhaseAria',
   'teamPlanPhaseNone',
@@ -461,7 +578,8 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanPhaseMoreMatches',
   'teamPlanPhaseHintChosen',
   'teamPlanPhaseBeyondMax',
-  'teamPlanRunSummaryScoredPhase',
+  'teamPlanWaterfallPhaseLabel',
+  'teamPlanWaterfallPhaseFrom',
   'teamPlanScoredPhaseChosen',
   'teamPlanScoredPhaseAccount',
   'teamPlanScoredPhaseSearched',
@@ -475,8 +593,6 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanAllowedChangesHintBoth',
   'teamPlanAllowedChangesHintPoints',
   'teamPlanAllowedChangesHintGear',
-  'teamPlanAllowedChangesNotePoints',
-  'teamPlanAllowedChangesNoteGear',
   'teamPlanObjectiveLabel',
   'teamPlanObjectiveAria',
   'teamPlanObjectiveOptionDamage',
@@ -484,7 +600,6 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanObjectiveHintDps',
   'teamPlanObjectiveHintFarm',
   'teamPlanObjectiveFarmNeedsMaxPhase',
-  'teamPlanFarmAdvisorPointer',
   'teamPlanSetupSectionBodyDps',
   'teamPlanSetupSectionBodyFarm',
   'teamPlanRunSummaryRegimeHintSaturatedDps',
@@ -495,14 +610,6 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanResultsHeaderFarm',
   'teamPlanGearDipNoteDps',
   'teamPlanGearDipNoteFarm',
-  'teamPlanSaturationCalloutDps',
-  'teamPlanSaturationCalloutFarm',
-  'teamPlanAuraDisclosureDps',
-  'teamPlanAuraDisclosureFarm',
-  'teamPlanPlannerDivergenceDps',
-  'teamPlanPlannerDivergenceFarm',
-  'teamPlanForgeSkippedNoteDps',
-  'teamPlanForgeSkippedNoteFarm',
   'downloadScreenForgeTitle',
   'downloadScreenForgeItem1',
   'downloadScreenForgeItem2',
@@ -538,8 +645,6 @@ const KEYS_ADDED: readonly string[] = [
   'marketAgeUnknown',
   'accountMissingFieldsTitle',
   'accountMissingFieldsBody',
-  'farmRespecNotWorthTitle',
-  'farmRespecNotWorthDesc',
   'referralNoticeTitle',
   'referralNoticeBody',
   'referralNoticeReward',
@@ -645,7 +750,6 @@ const KEYS_ADDED: readonly string[] = [
   'accountBonusOfTotal',
   'accountBagTabs',
   'navAccount',
-  'farmRespecUnchangedGroupNote',
   'phasesXpActualHint',
   'phasesDropsSection',
   'phasesDropChest',
@@ -662,9 +766,6 @@ const KEYS_ADDED: readonly string[] = [
   'phasesDropNonGateOnly',
   'phasesJaulaSectionDesc',
   'phasesJaulaWindowVip',
-  'farmRespecMetricPhase',
-  'farmRespecMetricPhaseSame',
-  'farmRespecPaybackTip',
   // The Phases hero/squad panel rework (2026-08-20): the hero panel breaks its single
   // crit-weighted "avg hit" into normal/crit/average plus field time, and the Top-N table trades
   // gear, abilities and power — roster facts that say nothing about this phase — for the same
@@ -760,11 +861,6 @@ const KEYS_ADDED: readonly string[] = [
   'optimizeBuildFarmKeptCurrent',
   'optimizeBuildFarmNoPool',
   'optimizeBuildFarmNoRate',
-  // The respec advisor's honest framing (2026-08-31): `farmRespecBestFound` says the proposal is
-  // the best build the search found and not proof that no better one exists, and it renders on
-  // every result. That claim used to appear only inside `farmRespecBudgetExhausted`, whose
-  // absence then read as a guarantee of optimality the search cannot make at any budget.
-  'farmRespecBestFound',
   /**
    * The account-holdings section (2026-09-02) — the Account page's new headline figure for what
    * the whole account could sell, over three components: the inventory, the sellable heroes and
@@ -804,6 +900,58 @@ const KEYS_ADDED: readonly string[] = [
   'accountHoldingsSkinsCoverage',
   'accountHoldingsSkinsWithheld',
   'accountHoldingsSkinsWorn',
+  /**
+   * The download page's screen list catches up with the app (2026-09-07). It advertised four
+   * screens while the desktop app shipped seven: Farm and Account were added to the app and never
+   * added here, and Heroes is new. The three new cards are numbered keys for the same reason the
+   * original four are — an array diffs as one leaf path per element in the value comparisons but
+   * as the bare key name in the key-name comparison, so one entry could not satisfy both.
+   *
+   * Heroes carries six items rather than the four or five its neighbours do because the screen
+   * genuinely holds six separable readings of one hero, and folding two together would have
+   * described a screen that does less than it does.
+   *
+   * The cards are ordered as the app's own tab strip orders them, so a reader who installs it
+   * meets the screens in the sequence this page introduced them. Nothing ties the two together,
+   * so that ordering is a fact about this file only.
+   */
+  'downloadScreenFarmTitle',
+  'downloadScreenFarmItem1',
+  'downloadScreenFarmItem2',
+  'downloadScreenFarmItem3',
+  'downloadScreenFarmItem4',
+  'downloadScreenFarmItem5',
+  'downloadScreenHeroesTitle',
+  'downloadScreenHeroesItem1',
+  'downloadScreenHeroesItem2',
+  'downloadScreenHeroesItem3',
+  'downloadScreenHeroesItem4',
+  'downloadScreenHeroesItem5',
+  'downloadScreenHeroesItem6',
+  'downloadScreenAccountTitle',
+  'downloadScreenAccountItem1',
+  'downloadScreenAccountItem2',
+  'downloadScreenAccountItem3',
+  'downloadScreenAccountItem4',
+  'downloadScreenAccountItem5',
+
+  // The download page's eighth screen card (2026-09-11). The desktop app gained an Optimizer
+  // tab — the roster gear and points planner, run from the live account — and the page that
+  // describes the app's screens describes that one too, in the app's own tab order. The spacer
+  // cell that squared a seven-card grid goes with it: eight cards fill two and four columns.
+  'downloadScreenOptimizerTitle',
+  'downloadScreenOptimizerItem1',
+  'downloadScreenOptimizerItem2',
+  'downloadScreenOptimizerItem3',
+  'downloadScreenOptimizerItem4',
+  // The Optimizer's forge queue (2026-09-13): every forge chore among a hero's proposed items,
+  // drawn as its ladder and priced from the forge table. One line: this file sits at its cap.
+  'teamPlanForgeQueueHeading', 'teamPlanForgeQueueLadderAria', 'teamPlanForgeQueueRolls', 'teamPlanForgeQueueSafeJumpOne', 'teamPlanForgeQueueSafeJumpMany', 'teamPlanForgeQueueGold', 'teamPlanForgeQueueTotal', 'teamPlanForgeQueueNoForecast', 'teamPlanForgeQueueLegend',
+  /**
+   * The front page (2026-09-13): the `home` namespace and its nav label. Every key on one line
+   * because this file sits at the `src/tests/**` max-lines cap (see the line above `resetAdviceRosterHero`).
+   */
+  'navHome', 'homeTitle', 'homeSubtitle', 'homeOpenLink', 'homeStripPlayerUnknown', 'homeStripAccountIdUnknown', 'homeStripHeroes', 'homeStripItems', 'homeStripImported', 'homeStripImportedUnknown', 'homeStripImport', 'homeFirstVisitEyebrow', 'homeFirstVisitTitle', 'homeFirstVisitTitleAccent', 'homeFirstVisitBody', 'homeFirstVisitButton', 'homeFirstVisitHint', 'homeCardPlannerContext', 'homeCardPlannerColHero', 'homeCardPlannerColPower', 'homeCardPlannerColDps', 'homeCardPlannerFooterAccount', 'homeCardPlannerFooterChosen', 'homeCardPlannerMore', 'homeCardPlannerNeedsHeroes', 'homeCardPlannerMissingFields', 'homeCardFarmContext', 'homeCardFarmCurrent', 'homeCardFarmBest', 'homeCardFarmSame', 'homeCardFarmSentenceAhead', 'homeCardFarmSentenceBehind', 'homeCardFarmSentenceClearFaster', 'homeCardFarmSentenceClearSlower', 'homeCardFarmSentenceDropsKeepAdd', 'homeCardFarmSentenceDropsAdd', 'homeCardFarmSentenceDropsKeepLose', 'homeCardFarmSentenceDropsLose', 'homeCardFarmSentenceDropsSwap', 'homeCardFarmSentenceAnd', 'homeCardFarmSentenceLead', 'homeCardFarmRowGold', 'homeCardFarmRowXp', 'homeCardFarmRowItemLevels', 'homeCardFarmRowClearTime', 'homeCardFarmRowVs', 'homeCardFarmHere', 'homeCardFarmLockedGate', 'homeCardFarmLockedGateCannot', 'homeCardFarmLockedReach', 'homeCardFarmSentenceOneShotGained', 'homeCardFarmSentenceOneShotLost', 'homeCardFarmNextItemLevel', 'homeCardFarmNextItemLevelNone', 'homeCardFarmNextDifficulty', 'homeCardFarmNextDifficultyTop', 'homeCardFarmVsBest', 'homeCardFarmVsCurrent', 'homeCardFarmLocked', 'homeCardFarmFooterRanked', 'homeCardFarmFooterPush', 'homeCardFarmNeeds', 'homeCardOptimizerContext', 'homeCardOptimizerRecalculating', 'homeCardOptimizerSearching', 'homeCardOptimizerHeadlineFarm', 'homeCardOptimizerHeadlineDps', 'homeCardOptimizerScoredAt', 'homeCardOptimizerSeeFullPlan', 'homeCardAccountValue', 'homeCardAccountHouseSlots', 'homeCardAccountMore', 'homeCardAccountHouse', 'homeCardInventoryContext', 'homeCardInventoryNeeds', 'homeCardInventoryCoverage', 'homeCardAccountContext', 'homeCardAccountNeeds', 'homeCardLiveBody',
 ];
 
 /**
@@ -839,7 +987,52 @@ const KEYS_ADDED: readonly string[] = [
  * time (e.g. "Chests / hr" -> "Item chest"); that wording now survives as the tooltip and
  * screen-reader text behind each header's icon.
  */
+/**
+ * Paths reworded in pt-BR ONLY, declared separately because `PROSE_EDITED_PATHS` above is
+ * checked against BOTH languages: a path listed there must differ from the fixture in `en` and
+ * in `pt`, so a fix that is genuinely one language's own could not be declared at all without
+ * inventing an English edit to match it.
+ *
+ * This does not loosen the comparison. `en` is still measured against `PROSE_EDITED_PATHS` alone
+ * and `pt` against both lists, so an undeclared drift in either language still fails, and a path
+ * put here rather than above is a claim — checked by the two assertions — that English did not
+ * change.
+ */
+const PROSE_EDITED_PATHS_PT_ONLY: readonly string[] = [
+  // The planner's pt-BR called a stat a "Stat" in the two places it names one as a heading —
+  // the sheet/points column and the Effective panel's title — while every label under them was
+  // translated. Both now say Atributo(s), matching the desktop's Heroes screen, and the pt
+  // walkthrough paragraph that names the panel follows it. English calls a stat a stat.
+  'colStat', 'panelEffective',
+  // The level prefix (2026-09-14): pt-BR said "Lv" wherever the planner abbreviates a hero's or
+  // an item's level — the roster rail, the import preview, the gear slot cards — while the
+  // desktop said "Nv". Both say Nv now; English keeps Lv.
+  'rankLv',
+];
+
 const PROSE_EDITED_PATHS: readonly string[] = [
+  // The Planner page is the Heroes page (2026-09-15): the Farm board's empty-roster note stops
+  // naming a page — the web link beside it does that — so the shared copy stays true on both hosts.
+  'phasesNoHeroes',
+  // The Points table prints each figure in its own unit now (2026-09-10), so the four rate stats
+  // no longer carry a `%` in their NAME: `Crit %` -> `Crit`, `Crit dmg +%` -> `Crit dmg`,
+  // `Pen %` -> `Pen`, `CDR %` -> `CDR`, and their pt-BR counterparts. The sheet table and the
+  // team-plan stat breakdown, whose rows show many unitless figures at once, append the unit to
+  // the label themselves rather than to nine cells apiece.
+  'statShort.critChance',
+  'statShort.critDmg',
+  'statShort.penetration',
+  'statShort.cdr',
+  // The planner's first tab (2026-09-09) was named for the only panel it held. It now carries the
+  // hero's identity and birth roll as well, so it is named for the hero: `tabHero` Abilities ->
+  // Hero. Its warning title moves with it — the badge reports a default sheet as well as unspent
+  // ability points, so "Abilities need attention" under-reported it even before the rename.
+  'tabHero',
+  'tabHeroWarnTitle',
+  // The abilities panel stopped printing a slot count, a granted/spendable split and a dead-point
+  // total, so the tip's opening sentence — which explained the budget behind them — went with
+  // them. What it still names is which abilities reach the hero's in-game stats.
+  'abilitiesTip',
   'treeDano',
   'treeCrit',
   'treeCritDmg',
@@ -866,20 +1059,59 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   // the thing it measured, and points at the DPS setting of the button rather than the button.
   // With a farm target on the same control, an unqualified "possible gain" no longer says which.
   'resetAdviceGainLine',
-  // The respec advisor's honest framing (2026-08-31): this line no longer carries the
-  // "not guaranteed to be the best that exists" clause — `farmRespecBestFound` says that on every
-  // result now — and no longer calls the bound a time budget, which it never was.
-  'farmRespecBudgetExhausted',
   // The page is renamed Team plan -> Optimizer (2026-09-07), URL `/team-plan` -> `/optimizer`.
   // The nav label changes key as well and is declared above; these carry the page's own name in
   // their text. The explain section is retitled to match and its opening sentence no longer says
-  // the search scores for DPS, which stopped being the only objective. `teamPlanFarmAdvisorPointer`
-  // also names the page and is NOT listed here: it is already declared added above, and an added
-  // key's value is unconstrained by the comparison.
+  // the search scores for DPS, which stopped being the only objective.
   'teamPlanPageLandmark',
   'teamPlanPageTitle',
   'explainSections.8.h',
   'explainSections.8.p.0',
+  // Team auras get their own switches on the Combat tab (2026-09-11), and the Account page
+  // stopped drawing a "Team buffs" control before that. Four strings still sent the reader to
+  // that control — `abilitiesTip` and `explainSections.0.p.1` (both already declared above), the
+  // "what the app does not model" paragraph and the Optimizer paragraph — and now point at the
+  // Combat tab instead; `explainSections.0.p.1` also stops describing a "Use as farm phase"
+  // control that no longer exists. The rest are the term itself: every player-facing "team buff"
+  // / "buffs de time" now says "team aura" / "auras de time", so the explain block does not
+  // switch vocabulary between one paragraph and the next.
+  // One line: the blanket `src/tests/**` max-lines cap (650) sits one line above this file.
+  // Team auras priced one way (2026-09-12): the Optimizer paragraph (`explainSections.8.p.1`,
+  // declared above) stops saying its totals "exclude the scored hero" — false since every
+  // carrier's own rank started counting — and says they are weighted by predicted uptime, the
+  // Farm board's own form; `effectiveTip` (declared above) now names the aura switches that sit
+  // above the panel it captions. The two Optimizer disclosures that said the same were in
+  // `KEYS_ADDED` and are now withdrawn along with the panel that rendered them (2026-09-12) — see
+  // the panel-removal note in `KEYS_REMOVED` above. No new entry for either.
+  // One bombing-cadence model (2026-09-11): the "Bombs per second" explain section stops
+  // describing a serial fuse-plus-0.15 s cycle with a wiki toggle beside it and describes the
+  // measured cycle — max(fuse, hop / walk speed) over measured hop lengths — whose code block
+  // follows; its third paragraph now says the same cycle prices every figure the planner
+  // prints. `bdTermWalk` stops naming a walk DELAY and names the walk SPEED the cycle divides by.
+  // One line: this file sits at the max-lines cap.
+  'bdSrcTeam', 'effectiveTip', 'missingHint', 'explainSections.0.code', 'explainSections.1.p.0', 'explainSections.5.p.0', 'explainSections.7.p.1', 'explainSections.8.p.1', 'explainSections.2.p.0', 'explainSections.2.p.2', 'explainSections.2.code',
+  // Abilities pass (2026-09-13): the "what the app does not model" paragraph stops listing
+  // Baton Pass — a team aura in pulses, counted for the hero's own pulse here and for every
+  // carrier on the Farm page and the Optimizer — and describes Pack (Matilha, per deployed ally)
+  // and Breach (Brecha, flat team penetration points); `effectiveTip` (declared above) says the
+  // same in one line, and `bdFormulaDmg` gains its `pack` factor. Optimizer disclosures are in
+  // `KEYS_ADDED`.
+  // Where the save file comes from (2026-09-13): the import dialog's description told the reader
+  // to "export your save file" without saying where the game keeps that control. It now names
+  // it — Settings → Privacy, "Download a copy of my data". (The quick guide's step said the same
+  // and left with the guide; it is in `KEYS_REMOVED`.)
+  'importDialogDesc',
+  // Penetration reading (2026-09-14): the three strings that said penetration "covers" a phase once
+  // it matched the mitigation percentage, or that N% pen "ignores all mitigation". The game
+  // pierces a SHARE of the mitigation (`dano = ataque × (1 − mitig × (1 − pen/100))`), so only
+  // 100% penetration loses nothing; the hero panel now prints what each hit still loses and the
+  // phase fact's tip states the rule.
+  'phasesPenOk', 'phasesPenShort', 'phasesPenNeedHint',
+  // Combat breakdown (2026-09-13): `bdTermWalk` and `bdFormulaDmg`, declared reworded by the two
+  // passes above, leave with the accordion (`KEYS_REMOVED`); the walkthrough paragraph that named
+  // the Effective stats panel (`explainSections.0.p.0`, declared above) now describes the
+  // pipeline and the matrix, and the same panel's tip (`effectiveTip`, declared above) is unchanged.
+  'explainSections.7.p.0',
 ];
 
 function omitKeys<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {
@@ -924,12 +1156,13 @@ const namespaces = [
   ['breakdown', breakdown],
   ['phases', phases],
   ['teamPlan', teamPlan],
+  ['teamPlanGearFlow', teamPlanGearFlow],
   ['teamPlanObjective', teamPlanObjective],
   ['import', importNs],
   ['stats', stats],
   ['market', market],
   ['inventory', inventory],
-  ['download', download],
+  ['download', download], ['home', home],
 ] as const;
 
 describe('i18n split parity', () => {
@@ -944,7 +1177,16 @@ describe('i18n split parity', () => {
 
   it('STRINGS.pt differs from the frozen fixture (minus declared-removed keys) at exactly the declared deltas', () => {
     const diffs = diffLeafPaths(STRINGS.pt, omitKeys(fixture.pt, KEYS_REMOVED)).sort();
-    expect(diffs).toEqual([...PROSE_EDITED_PATHS, ...KEYS_ADDED].sort());
+    expect(diffs).toEqual(
+      [...PROSE_EDITED_PATHS, ...PROSE_EDITED_PATHS_PT_ONLY, ...KEYS_ADDED].sort(),
+    );
+  });
+
+  it('a pt-only declaration really is pt-only — English matches the fixture at every one', () => {
+    const enDiffs = new Set(diffLeafPaths(STRINGS.en, omitKeys(fixture.en, KEYS_REMOVED)));
+    for (const path of PROSE_EDITED_PATHS_PT_ONLY) {
+      expect(enDiffs.has(path), `${path} is declared pt-only but English changed too`).toBe(false);
+    }
   });
 
   it('namespace key sets are pairwise disjoint', () => {
@@ -1048,23 +1290,6 @@ describe('Farm Ranking i18n parity', () => {
     for (const key of Object.keys(STRINGS.en)) {
       if (!key.startsWith('farmRanking') && key !== 'navPhases') continue;
       if (EN_PT_COLLISION_ALLOWLIST.has(key)) continue;
-      const enValue = STRINGS.en[key as keyof Strings];
-      const ptValue = STRINGS.pt[key as keyof Strings];
-      if (typeof enValue === 'string' && enValue === ptValue) leaks.push(key);
-    }
-    expect(leaks, `EN string left untranslated in PT: ${leaks.join(', ')}`).toEqual([]);
-  });
-});
-
-/**
- * Farm Respec Advisor T7 — same shape as `Farm Ranking i18n parity` above. None of these
- * strings legitimately collides between EN and PT, so no allowlist entry is needed.
- */
-describe('Farm Respec Advisor i18n parity', () => {
-  it('no farmRespec* PT value is byte-identical to its EN counterpart', () => {
-    const leaks: string[] = [];
-    for (const key of Object.keys(STRINGS.en)) {
-      if (!key.startsWith('farmRespec')) continue;
       const enValue = STRINGS.en[key as keyof Strings];
       const ptValue = STRINGS.pt[key as keyof Strings];
       if (typeof enValue === 'string' && enValue === ptValue) leaks.push(key);

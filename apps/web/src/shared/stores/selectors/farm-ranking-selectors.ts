@@ -6,43 +6,40 @@
  * No file in apps/web imports a runtime binding from `@bombfarm/domain/farm-rate` or
  * `@bombfarm/domain/farm-optimize` any more — the package owns both, and a structural guard
  * enforces it (farm-ranking-guards.test.ts, guards (f) and (g)). Type-only imports of
- * `FarmRateRow`/`ReturnBonusMode`/`FarmRespecResult` erase at compile time and stay allowed.
+ * `FarmRateRow`/`ReturnBonusMode` erase at compile time and stay allowed.
  *
- * PRODUCER OBLIGATION, unchanged by the move and still owed by this app. Three tuple members are
- * compared by REFERENCE (`Object.is`) inside the package: `state.heroes`, the effective team
- * buffs, and `state.farmPoolOverrides`. A fresh-but-equal array or object reads exactly like a
- * real edit — it drops a live respec proposal with no error surfaced. For `heroes` that
+ * PRODUCER OBLIGATION, unchanged by the move and still owed by this app. Two tuple members are
+ * compared by REFERENCE (`Object.is`) inside the package: `state.heroes` and
+ * `state.farmPoolOverrides`. A fresh-but-equal array or object reads exactly like a
+ * real edit — it recomputes the whole 600-row board with no error surfaced. For `heroes` that
  * obligation is met by every roster producer in `shared/lib/storage.ts` — `patchHeroInList` (the
  * 700ms autosave path, the guard that cost the most to find), `importHeroes` (the save-import
  * path), and `writeHeroBattleAllowed` (`stores/persistence/persist-roster.ts`) — each returning
  * the SAME array when nothing changed. The matching consumer half is `commitRoster` in
  * `stores/slices/roster-slice.ts`, the single writer of `state.heroes`, which declines to `set`
- * on an unchanged reference. A new roster producer owes both halves. `selectEffectiveTeamBuffs`
- * holds the same contract through its own single-entry cache.
+ * on an unchanged reference. A new roster producer owes both halves.
  *
  * `toFarmInputs` allocating a fresh object per call does NOT threaten any of that: the memo
- * never keys on that object, it keys on the 19 fields read out of it.
+ * never keys on that object, it keys on the 18 fields read out of it.
  */
 import {
   buildAccount as buildFarmAccount,
+  computeFarmTeamBuffs,
   createFarmRankingMemo,
   deriveFarmPoolEntries,
   farmDepsEqual,
-  isFarmRespecWorthMaking,
   readFarmDepTuple as readFarmInputsDepTuple,
-  readFarmRespecDepTuple as readFarmInputsRespecDepTuple,
   resolveEnabledHeroIds as resolveEnabledHeroIdsFor,
   type FarmInputs,
   type FarmPoolEntry,
   type FarmRankingResult,
 } from '@bombfarm/farm/core';
-import type { FarmRespecResult } from '@bombfarm/domain/farm-optimize';
-import type { AccountShared } from '@/shared/lib/storage';
+import type { FarmAccount } from '@bombfarm/domain/farm-rate';
+import type { AccountShared as CombatAccount } from '@bombfarm/domain/shims/storage';
 import type { PlannerStore } from '@/shared/stores/planner-store';
-import type { FarmRespecProposal, FarmRespecStatus } from '@/shared/stores/slices/phases-slice';
-import { selectEffectiveTeamBuffs } from '@/shared/stores/selectors/account-selectors';
+import { selectAccountShared } from '@/shared/stores/selectors/account-selectors';
 
-export { deriveFarmPoolEntries, isFarmRespecWorthMaking };
+export { deriveFarmPoolEntries };
 export type {
   FarmPoolEntry,
   FarmRankingReason,
@@ -67,8 +64,6 @@ function toFarmInputs(state: PlannerStore): FarmInputs {
     treeEnergy: state.treeEnergy,
     treeTeamCoinPct: state.treeTeamCoinPct,
     treeLuckFlatPct: state.treeLuckFlatPct,
-    effectiveTeamBuffs: selectEffectiveTeamBuffs(state),
-    teamBuffsOverride: state.teamBuffsOverride,
     houseIdx: state.houseIdx,
     houseLevel: state.houseLevel,
     slots: state.slots,
@@ -82,7 +77,7 @@ function toFarmInputs(state: PlannerStore): FarmInputs {
   };
 }
 
-/** The 19 planner edits the board must react to. See the package's own header for what each
+/** The 18 planner edits the board must react to. See the package's own header for what each
  *  member is there to catch and why a missing one fails silently. */
 export function readFarmDepTuple(state: PlannerStore) {
   return readFarmInputsDepTuple(toFarmInputs(state));
@@ -104,8 +99,48 @@ export function resolveEnabledHeroIds(state: PlannerStore): string[] {
   return resolveEnabledHeroIdsFor(toFarmInputs(state));
 }
 
-export function buildAccount(state: PlannerStore): AccountShared {
+export function buildAccount(state: PlannerStore): FarmAccount {
   return buildFarmAccount(toFarmInputs(state));
+}
+
+let rosterTeamBuffsCache: { deps: readonly unknown[]; result: Record<string, number> } | null = null;
+let rosterAccountCache: CombatAccount | null = null;
+
+export function resetRosterAccountCache(): void {
+  rosterTeamBuffsCache = null;
+  rosterAccountCache = null;
+}
+
+/**
+ * The team-aura totals the Farm board prices against, for the roster-wide readers that sit beside
+ * it (the phases explorer's squad ranking) — every pooled carrier weighted by its own predicted
+ * uptime, so the explorer and the board agree on the same roster. Memoized on the board's own
+ * dep tuple: it costs a pipeline pass per pooled hero.
+ */
+export function selectRosterTeamBuffs(state: PlannerStore): Record<string, number> {
+  const deps = readFarmDepTuple(state);
+  if (rosterTeamBuffsCache && farmDepsEqual(rosterTeamBuffsCache.deps, deps)) {
+    return rosterTeamBuffsCache.result;
+  }
+  const result = computeFarmTeamBuffs(toFarmInputs(state));
+  rosterTeamBuffsCache = { deps, result };
+  return result;
+}
+
+/** {@link selectAccountShared} with {@link selectRosterTeamBuffs} overlaid — the account a
+ *  ROSTER-WIDE figure computes against. A per-hero figure reads `selectActiveHeroAccount`. */
+export function selectRosterAccount(state: PlannerStore): CombatAccount {
+  const shared = selectAccountShared(state);
+  const teamBuffs = selectRosterTeamBuffs(state);
+  if (
+    rosterAccountCache &&
+    rosterAccountCache.teamBuffs === teamBuffs &&
+    Object.is(rosterAccountCache.context, shared.context)
+  ) {
+    return rosterAccountCache;
+  }
+  rosterAccountCache = { ...shared, teamBuffs };
+  return rosterAccountCache;
 }
 
 /**
@@ -116,107 +151,6 @@ export function buildAccount(state: PlannerStore): AccountShared {
  */
 export function selectFarmRankingRows(state: PlannerStore): FarmRankingResult {
   return memo.rows(toFarmInputs(state));
-}
-
-// -------------------------------------------------------------------------------------------
-// Farm Respec Advisor — the on-demand solve, staleness, and the board's
-// re-rank row source.
-// -------------------------------------------------------------------------------------------
-
-/** Currently identical to {@link readFarmDepTuple}, kept as its own named entry point so the
- *  Tier 1/Tier 2 call sites read "the respec deps", not a re-derivation of the ranking ones. */
-export function readFarmRespecDepTuple(state: PlannerStore) {
-  return readFarmInputsRespecDepTuple(toFarmInputs(state));
-}
-
-/**
- * Tier 1. Same shape as {@link selectFarmRankingRows}, over the same
- * {@link readFarmDepTuple}-derived tuple. Returns the SAME object identity on a cache hit and
- * must be subscribed to WITHOUT `useShallow`, for the identical reason.
- */
-export function getFarmRespecSolveCount(): number {
-  return memo.solveCount();
-}
-
-export function resetFarmRespecSolveCount(): void {
-  memo.resetSolveCount();
-}
-
-/**
- * Tier 2 — the on-demand full solve. A PLAIN FUNCTION: not a selector, not memoized, and never
- * called during render. The ONLY caller is phases-slice.ts's `runFarmRespec` action, on an
- * explicit user event (the Optimize button). Calling this anywhere on the dependency-driven
- * render path is the exact hazard the split between the two tiers exists to prevent.
- */
-export function runFarmRespecSolve(state: PlannerStore): FarmRespecResult {
-  return memo.solve(toFarmInputs(state));
-}
-
-/** true iff a proposal exists AND its deps differ from the live tuple. */
-export function selectFarmRespecIsStale(state: PlannerStore): boolean {
-  const proposal = state.farmRespecProposal;
-  if (!proposal) return false;
-  return !farmDepsEqual(proposal.deps, readFarmRespecDepTuple(state));
-}
-
-/**
- * The proposal ONLY when it is fresh. A stale proposal is unrenderable BY CONSTRUCTION — no
- * effect, no subscription, no write-on-render clears it; this pure derivation simply never
- * hands it to a caller. Stable identity: returns the stored FarmRespecProposal object or null,
- * never a fresh wrapper.
- */
-export function selectFarmRespecView(state: PlannerStore): FarmRespecProposal | null {
-  const proposal = state.farmRespecProposal;
-  if (!proposal) return null;
-  return farmDepsEqual(proposal.deps, readFarmRespecDepTuple(state)) ? proposal : null;
-}
-
-/**
- * `'idle'` whenever the view is null (no fresh proposal to show — including a proposal made
- * stale by a later input change), whatever `state.farmRespecStatus` holds. This is how the
- * Optimize control re-arms after an input change without a second write path clearing
- * `farmRespecStatus` itself. Components that need the LIVE in-flight/failed state (busy
- * spinner, failure banner) read `state.farmRespecStatus` directly — this derivation answers a
- * different question ("is there a fresh result to show"), not "is a solve currently running".
- */
-export function selectFarmRespecStatus(state: PlannerStore): FarmRespecStatus {
-  return selectFarmRespecView(state) == null ? 'idle' : state.farmRespecStatus;
-}
-
-/** `state.farmRespecReRank && selectFarmRespecView(state) != null`. A boolean — safe to
- *  subscribe directly. Already `false` whenever no fresh proposal exists, so the re-rank toggle
- *  component needs no staleness logic of its own. */
-export function selectFarmReRankActive(state: PlannerStore): boolean {
-  return state.farmRespecReRank && selectFarmRespecView(state) != null;
-}
-
-export function getFarmRespecRowsComputeCount(): number {
-  return memo.boardRowsComputeCount();
-}
-
-export function resetFarmRespecRowsComputeCount(): void {
-  memo.resetBoardRowsComputeCount();
-}
-
-/**
- * The board's row source. Returns {@link selectFarmRankingRows}' OWN cached object identity
- * when re-rank is off — not a copy, not a wrapper — so the no-`useShallow` contract holds
- * unchanged. The proposed squad's table is computed ONLY on the proposed branch, memoized on
- * `[proposedSquad, state.maxPhase, state.farmReturnBonus]`.
- *
- * The MODE is deliberately NOT carried on this return value. Spreading the ranking result into
- * `{ ...result, mode }` allocates a fresh object on every call, which turns
- * `useSyncExternalStore` into an infinite render loop — the exact hazard
- * `deriveFarmPoolEntries`' own header warns about for a different selector. Read the mode
- * separately via {@link selectFarmReRankActive}.
- */
-export function selectFarmBoardRows(state: PlannerStore): FarmRankingResult {
-  if (!selectFarmReRankActive(state)) {
-    return selectFarmRankingRows(state);
-  }
-  // Non-null: selectFarmReRankActive already proved selectFarmRespecView(state) != null.
-  const proposal = selectFarmRespecView(state)!;
-  return memo.boardRows(toFarmInputs(state), proposal.result.proposedSquad);
 }
 
 /** Convenience wrapper over `deriveFarmPoolEntries` for direct-state callers (tests). */

@@ -43,8 +43,10 @@ import {
   type ResolvedFarmObjective,
 } from '../farm-optimize-objective';
 import { computeCombatMults } from '../derive';
-import { fieldSeconds } from '../model';
+import { DEFAULT_CASA_SLOTS } from '../casa-slots';
+import { alliesOverRotation, fieldSeconds } from '../model';
 import { computeTeamBuffsOverRotation, type TeamBuffId } from '../team-buffs';
+import { isSquadScope } from './auras';
 import { scoreHeroLoadout } from './score';
 import type { Loadout, PointAlloc } from '../gear/types';
 import type {
@@ -102,10 +104,11 @@ function farmContextFor(account: TeamPlanAccountInput): FarmContext {
 function phaseOptionsFor(
   account: TeamPlanAccountInput,
   targetPhase: number | null | undefined,
+  ignoreFieldCrowding: boolean,
 ): BestFarmPhaseOptions {
   const maxPhase = account.maxPhase;
   if (targetPhase != null && Number.isFinite(targetPhase)) {
-    return { maxPhase: maxPhase ?? null, pinnedPhase: targetPhase };
+    return { maxPhase: maxPhase ?? null, pinnedPhase: targetPhase, ignoreFieldCrowding };
   }
   if (typeof maxPhase !== 'number' || !Number.isFinite(maxPhase) || maxPhase < 1) {
     throw new Error(
@@ -114,7 +117,7 @@ function phaseOptionsFor(
         'plan would optimise the squad across the whole 600-phase table.',
     );
   }
-  return { maxPhase };
+  return { maxPhase, ignoreFieldCrowding };
 }
 
 function squadAccountFor(account: TeamPlanAccountInput): SquadFarmAccount {
@@ -144,33 +147,30 @@ function presenceOf(score: HeroScore): number {
 /**
  * Team auras over the rotation, priced in the estimator's two passes: full presence first, then
  * weighted by the uptimes that seeding produced. Fixed at two passes, not iterated — only Fôlego
- * closes the loop back into uptime at all.
+ * closes the loop back into uptime at all. The same presences give each carrier its Matilha
+ * allies, frozen with the auras for the run for the same reason.
  */
-function priceAuras(
+function priceField(
   squadContexts: readonly HeroPlanContext[],
   loadoutByHeroId: Readonly<Record<string, Loadout>>,
   farm: FarmContext,
-): Record<TeamBuffId, number> {
+  fieldSlots: number,
+): { auras: Record<TeamBuffId, number>; alliesByHeroId: Record<string, number> } {
   const atFullPresence = computeTeamBuffsOverRotation(squadContexts, null);
   const presence = squadContexts.map((ctx) =>
     presenceOf(
       scoreHeroLoadout(ctx, loadoutByHeroId[ctx.heroId] ?? {}, ctx.pts, atFullPresence, farm),
     ),
   );
-  return computeTeamBuffsOverRotation(squadContexts, presence);
+  const alliesByHeroId: Record<string, number> = {};
+  squadContexts.forEach((ctx, index) => {
+    alliesByHeroId[ctx.heroId] = alliesOverRotation(presence, index, fieldSlots);
+  });
+  return { auras: computeTeamBuffsOverRotation(squadContexts, presence), alliesByHeroId };
 }
 
-/**
- * Which of the plan's heroes are on the rotation the objective prices.
- *
- * Optimize and leave-alone both farm; only donate does not. That matches the estimator's own
- * rule, which drops a hero the game will not field (`battleAllowed === false`) — the very
- * condition the plan turns into a default donate scope. An explicit Donate says the player is
- * stripping the hero for parts, so it leaves the rotation too.
- */
-export function isSquadScope(scope: HeroPlanContext['scope']): boolean {
-  return scope === 'optimize' || scope === 'leaveAlone';
-}
+/** The rule both objectives share now lives beside the aura total that applies it. */
+export { isSquadScope };
 
 /**
  * The once-per-run setup, over the SQUAD in roster order (see {@link TeamPlanFarmObjective}).
@@ -183,13 +183,24 @@ export function buildFarmObjective(
   account: TeamPlanAccountInput,
   loadoutByHeroId: Readonly<Record<string, Loadout>>,
   targetPhase?: number | null,
+  ignoreFieldCrowding = false,
 ): TeamPlanFarmObjective {
-  const phaseOptions = phaseOptionsFor(account, targetPhase);
+  const phaseOptions = phaseOptionsFor(account, targetPhase, ignoreFieldCrowding);
   const farm = farmContextFor(account);
-  const auras = priceAuras(squadContexts, loadoutByHeroId, farm);
+  const { auras, alliesByHeroId } = priceField(
+    squadContexts,
+    loadoutByHeroId,
+    farm,
+    account.fieldSlots ?? account.slots ?? DEFAULT_CASA_SLOTS,
+  );
   const heroes: FrozenHeroFarmTerms[] = squadContexts.map((ctx) => ({
     ctx,
-    dmgMult: computeCombatMults({ mods: ctx.mods, teamBuffs: auras, extraDmgPct: 0 }).dmgMult,
+    dmgMult: computeCombatMults({
+      mods: ctx.mods,
+      teamBuffs: auras,
+      extraDmgPct: 0,
+      fieldAllies: alliesByHeroId[ctx.heroId],
+    }).dmgMult,
     ...(ctx.scope === 'optimize' ? {} : { fixedLoadout: loadoutByHeroId[ctx.heroId] ?? {} }),
   }));
 

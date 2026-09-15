@@ -54,6 +54,7 @@ export { HeroGearIcons } from './hero-gear-icons';
 export { GoldValue } from './gold-value';
 export {
   MarketPrice,
+  SteamGlyph,
   type MarketPriceLabels,
   type MarketPriceView,
 } from './market-price';
@@ -65,11 +66,18 @@ export {
   artFrameRecipe,
   artFrameRadiusClass,
   abilityIconRecipe,
+  emptyGearSlotClass,
   iconMetaGlyphRecipe,
   rosterInactiveChromeClass,
   rosterIconTooltipTriggerClass,
+  heroRankTextClass,
+  heroRankBandClass,
+  heroRankToneClass,
   rarityTextClass,
   rarityDotClass,
+  slotChromeClassName,
+  slotStatRowClass,
+  slotsGridClass,
   type ArtFrameRecipeSize,
   type AbilityIconRecipeSize,
 } from './game-art.recipe';

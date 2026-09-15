@@ -61,7 +61,7 @@ describe('team-plan i18n namespace', () => {
       'teamPlanPageTitle',
       'teamPlanOptimize',
       'teamPlanScopeDonate',
-      'teamPlanSaturationCalloutDps',
+      'teamPlanResultsHeaderDps',
     ] as const;
     for (const key of keys) {
       expect(STRINGS.pt[key]).not.toBe(STRINGS.en[key]);

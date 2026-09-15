@@ -72,14 +72,14 @@ describe('account form UX chrome', () => {
 
 describe('planner tabs IA (PTI-*)', () => {
   const tabLabels = {
-    tabHero: { en: 'Abilities', pt: 'Habilidades' },
+    tabHero: { en: 'Hero', pt: 'Herói' },
     tabGear: { en: 'Gear', pt: 'Equipamento' },
     tabPoints: { en: 'Points', pt: 'Pontos' },
     // Farm Ranking (T1): renamed Phases -> Farm, identical in both languages.
     navPhases: { en: 'Farm', pt: 'Farm' },
-    navPlanner: { en: 'Planner', pt: 'Planner' },
+    navHeroes: { en: 'Heroes', pt: 'Heróis' },
     navAccount: { en: 'Account', pt: 'Conta' },
-    tabHeroWarnTitle: { en: 'Abilities need attention', pt: 'Habilidades precisam de atenção' },
+    tabHeroWarnTitle: { en: 'This hero needs attention', pt: 'Este herói precisa de atenção' },
     tabGearWarnTitle: { en: 'Gear needs attention', pt: 'Equipamento precisa de atenção' },
   } as const;
 
@@ -90,7 +90,7 @@ describe('planner tabs IA (PTI-*)', () => {
     panelSheet: { en: 'Stats', pt: 'Atributos' },
     panelAccount: { en: 'Account', pt: 'Conta' },
     panelPoints: { en: 'Points', pt: 'Pontos' },
-    panelEffective: { en: 'Effective stats', pt: 'Stats efetivos' },
+    panelEffective: { en: 'Effective stats', pt: 'Atributos efetivos' },
   } as const;
 
   it('tab labels have no numeric prefixes', () => {
@@ -118,13 +118,16 @@ describe('planner tabs IA (PTI-*)', () => {
     expect('expandAll' in STRINGS.pt).toBe(false);
   });
 
-  it('first tab label matches Abilities panel title (hero strip owns identity)', () => {
-    expect(STRINGS.en.tabHero).toBe(STRINGS.en.panelAbilities);
-    expect(STRINGS.pt.tabHero).toBe(STRINGS.pt.panelAbilities);
-    expect(STRINGS.en.panelAbilities).toBe('Abilities');
-    expect(STRINGS.pt.panelAbilities).toBe('Habilidades');
-    expect(STRINGS.en.panelAbilities).not.toMatch(/^\d+ ·/);
-    expect(STRINGS.pt.panelAbilities).not.toMatch(/^\d+ ·/);
+  it('first tab is named for the hero, not for one of the panels inside it', () => {
+    // It used to equal the Abilities panel title, because abilities were the only thing the tab
+    // held and identity lived in the strip above. The tab now carries identity and the birth roll
+    // too, so naming it after one panel would under-report the other two.
+    expect(STRINGS.en.tabHero).toBe('Hero');
+    expect(STRINGS.pt.tabHero).toBe('Herói');
+    expect(STRINGS.en.tabHero).not.toBe(STRINGS.en.panelAbilities);
+    expect(STRINGS.pt.tabHero).not.toBe(STRINGS.pt.panelAbilities);
+    expect(STRINGS.en.tabHero).not.toMatch(/^\d+ ·/);
+    expect(STRINGS.pt.tabHero).not.toMatch(/^\d+ ·/);
   });
 
   it('hero identity chrome labels (name + rank)', () => {
@@ -138,10 +141,10 @@ describe('planner tabs IA (PTI-*)', () => {
 describe('effective stats panel chrome (EST-*)', () => {
   it('effectiveTip clarifies post-pipeline sources in EN and PT', () => {
     expect(STRINGS.en.effectiveTip).toBe(
-      'Includes gear, points, skill tree, abilities, and team buffs.',
+      'Includes gear, points, skill tree, abilities, and the team auras switched on below. Pack counts the heroes deployed beside this one.',
     );
     expect(STRINGS.pt.effectiveTip).toBe(
-      'Inclui equipamento, pontos, árvore, habilidades e buffs de time.',
+      'Inclui equipamento, pontos, árvore, habilidades e as auras de time ligadas abaixo. Matilha conta os heróis em campo ao lado deste.',
     );
   });
 
@@ -154,12 +157,13 @@ describe('effective stats panel chrome (EST-*)', () => {
     expect(STRINGS.pt.effectiveTargetHp).toBe('HP do alvo');
   });
 
-  it('defines breakdown derived labels, sources, notes, and formula keys', () => {
+  it('defines breakdown derived labels, sources and notes', () => {
     const keys = [
       'effectiveMitF',
       'effectiveDmg',
       'effectiveHit',
       'effectiveCriticalHit',
+      'effectiveAvgHit',
       'effectiveCritFactor',
       'effectiveBombsPerSec',
       'effectiveField',
@@ -176,48 +180,11 @@ describe('effective stats panel chrome (EST-*)', () => {
       'bdSrcAbilities',
       'bdSrcTeam',
       'bdSrcAbilitiesTeam',
-      'bdLedgerTotal',
       'bdNoteCapped',
       'bdNoteSplit',
       'bdNoteKeenEye',
       'bdNoteDiamondTip',
       'bdNoteBrutalStrike',
-      'bdGroupSheet',
-      'bdGroupDerived',
-      'bdTriggerAria',
-      'bdFormulaMitF',
-      'bdFormulaDmg',
-      'bdFormulaHit',
-      'bdFormulaCriticalHit',
-      'bdFormulaCritFactor',
-      'bdFormulaFuse',
-      'bdFormulaBombsSerial',
-      'bdFormulaBombsWiki',
-      'bdFormulaField',
-      'bdFormulaRest',
-      'bdFormulaUptime',
-      'bdFormulaActive',
-      'bdFormulaSustained',
-      'bdTermMit',
-      'bdTermPen',
-      'bdTermTree',
-      'bdTermAbl',
-      'bdTermExtra',
-      'bdTermAtk',
-      'bdTermMitigation',
-      'bdTermDamage',
-      'bdTermCc',
-      'bdTermCd',
-      'bdTermCdr',
-      'bdTermWalk',
-      'bdTermSf',
-      'bdTermDrain',
-      'bdTermRestSeconds',
-      'bdTermField',
-      'bdTermRestSecs',
-      'bdTermAvg',
-      'bdTermRange',
-      'bdTermActiveDps',
     ] as const;
     for (const lang of ['en', 'pt'] as const) {
       for (const k of keys) {
@@ -226,8 +193,6 @@ describe('effective stats panel chrome (EST-*)', () => {
         expect(String(v).length).toBeGreaterThan(0);
       }
     }
-    expect(STRINGS.en.bdTriggerAria).toContain('{stat}');
-    expect(STRINGS.pt.bdTriggerAria).toContain('{stat}');
     expect(STRINGS.en.bdNoteSplit).toContain('{own}');
     expect(STRINGS.pt.bdNoteSplit).toContain('{team}');
   });
@@ -237,65 +202,7 @@ describe('effective stats panel chrome (EST-*)', () => {
     const ptCodes = STRINGS.pt.explainSections.map((s) => s.code).join('\n');
     expect(enCodes).toMatch(/critChance|critDmg|cdr|bombs\/s|walk/i);
     expect(ptCodes).toMatch(/cdr|bombs|walk|pavio|fuse|crit/i);
-    expect(STRINGS.en.bdFormulaFuse).toContain('0.4');
     expect(STRINGS.en.explainSections.some((s) => s.code?.includes('0.4'))).toBe(true);
-  });
-});
-
-describe('quick guide (import-only workflow)', () => {
-  const guideBodies = (lang: 'en' | 'pt') => STRINGS[lang].guideSteps.map((s) => s.d);
-
-  it('has four sequentially numbered steps in EN and PT', () => {
-    expect(STRINGS.en.guideSteps).toHaveLength(4);
-    expect(STRINGS.pt.guideSteps).toHaveLength(4);
-    expect(STRINGS.en.guideSteps.map((s) => s.t)).toEqual([
-      '1 · Export',
-      '2 · Import',
-      '3 · Points',
-      '4 · Compare & save',
-    ]);
-    expect(STRINGS.pt.guideSteps.map((s) => s.t)).toEqual([
-      '1 · Exportar',
-      '2 · Importar',
-      '3 · Pontos',
-      '4 · Comparar & salvar',
-    ]);
-  });
-
-  it('omits manual-setup chrome and Infer naked references', () => {
-    for (const lang of ['en', 'pt'] as const) {
-      const joined = guideBodies(lang).join('\n');
-      expect(joined).not.toMatch(/manual|Manual|manualmente|Configuração manual/i);
-      expect(joined).not.toMatch(/Infer naked|Inferir base/i);
-    }
-    expect(STRINGS.en).not.toHaveProperty('guideTabManual');
-    expect(STRINGS.en).not.toHaveProperty('guideImportSteps');
-    expect(STRINGS.en).not.toHaveProperty('emptyManualCta');
-  });
-
-  it('guide bodies omit Context setup instructions', () => {
-    for (const lang of ['en', 'pt'] as const) {
-      for (const body of guideBodies(lang)) {
-        expect(body).not.toMatch(/set <em>Context<\/em>|ajuste o <em>Contexto<\/em>/i);
-        expect(body).not.toMatch(/\bContext panel\b|\bpainel Contexto\b/i);
-      }
-    }
-  });
-
-  it('points step references hero strip next point, not the top bar', () => {
-    expect(STRINGS.en.guideSteps[2].d).toMatch(/<em>Next point<\/em>/);
-    expect(STRINGS.en.guideSteps[2].d).toMatch(/hero strip/i);
-    expect(STRINGS.en.guideSteps[2].d).not.toMatch(/top bar/i);
-    expect(STRINGS.pt.guideSteps[2].d).toMatch(/<em>Próximo ponto<\/em>/);
-    expect(STRINGS.pt.guideSteps[2].d).toMatch(/faixa do herói/i);
-    expect(STRINGS.pt.guideSteps[2].d).not.toMatch(/barra superior/i);
-  });
-
-  it('compare step mentions Phases in the top bar', () => {
-    expect(STRINGS.en.guideSteps[3].d).toMatch(/<em>Phases<\/em>/);
-    expect(STRINGS.en.guideSteps[3].d).toMatch(/top bar/i);
-    expect(STRINGS.pt.guideSteps[3].d).toMatch(/<em>Fases<\/em>/);
-    expect(STRINGS.pt.guideSteps[3].d).toMatch(/barra superior/i);
   });
 });
 
@@ -308,25 +215,42 @@ describe('explain-tab copy (advice-column IA alignment)', () => {
     expect(explainJoined('pt')).not.toMatch(/\bContexto\b/);
   });
 
-  it('points farm phase at Phases page and Account for House', () => {
+  it('points farm phase at the Farm page, team auras at the Combat tab, and Account for House', () => {
     expect(STRINGS.en.explainSections[0].p[1]).toMatch(/Account shares House/);
-    expect(STRINGS.en.explainSections[0].p[1]).toMatch(/Phases page/);
+    expect(STRINGS.en.explainSections[0].p[1]).toMatch(/Farm page/);
+    expect(STRINGS.en.explainSections[0].p[1]).toMatch(/Combat tab/);
     expect(STRINGS.en.explainSections[0].p[1]).toMatch(/Effective stats/);
     expect(STRINGS.en.explainSections[0].p[1]).toMatch(/level power/);
     expect(STRINGS.pt.explainSections[0].p[1]).toMatch(/A Conta compartilha Casa/);
-    expect(STRINGS.pt.explainSections[0].p[1]).toMatch(/Fases/);
-    expect(STRINGS.pt.explainSections[0].p[1]).toMatch(/Stats efetivos/);
+    expect(STRINGS.pt.explainSections[0].p[1]).toMatch(/página Farm/);
+    expect(STRINGS.pt.explainSections[0].p[1]).toMatch(/aba Combate/);
+    expect(STRINGS.pt.explainSections[0].p[1]).toMatch(/Atributos efetivos/);
     expect(STRINGS.pt.explainSections[0].p[1]).toMatch(/poder de nível/);
   });
 
-  it('explains synced farm phase and serial cycle knobs', () => {
+  it('never sends the reader to the retired Account "Team buffs" control or "Use as farm phase" button', () => {
+    for (const lang of ['en', 'pt'] as const) {
+      const everyString = JSON.stringify(STRINGS[lang]);
+      expect(everyString).not.toMatch(/team buff|buffs? de time/i);
+      expect(everyString).not.toMatch(/use as farm phase|usar como fase de farm/i);
+    }
+  });
+
+  it('explains synced farm phase and the measured bomb cycle — no serial or wiki model left', () => {
     expect(STRINGS.en.explainSections[1].p[0]).toMatch(/synced farm phase/);
-    expect(STRINGS.en.explainSections[2].p[0]).toMatch(/Walk delay/);
+    expect(STRINGS.en.explainSections[2].p[0]).toMatch(/walk speed/i);
+    expect(STRINGS.en.explainSections[2].p[0]).toMatch(/Speed shortens every hop/);
     expect(STRINGS.en.explainSections[2].p[1]).toMatch(/Blocks per bomb/);
-    expect(STRINGS.en.explainSections[2].p[2]).toMatch(/Wiki bombs/);
+    expect(STRINGS.en.explainSections[2].p[2]).toMatch(/One cycle model/);
+    expect(STRINGS.en.explainSections[2].code).toMatch(/max\(fuse, hop \/ walk\)/);
     expect(STRINGS.pt.explainSections[1].p[0]).toMatch(/fase de farm sincronizada/);
-    expect(STRINGS.pt.explainSections[2].p[0]).toMatch(/caminhada/i);
-    expect(STRINGS.pt.explainSections[2].p[2]).toMatch(/Wiki/);
+    expect(STRINGS.pt.explainSections[2].p[0]).toMatch(/velocidade de caminhada/i);
+    expect(STRINGS.pt.explainSections[2].p[2]).toMatch(/Um único modelo de ciclo/);
+    for (const lang of ['en', 'pt'] as const) {
+      const section = STRINGS[lang].explainSections[2];
+      const cadenceText = [section.p[0], section.p[2], section.code ?? ''].join(' ');
+      expect(cadenceText).not.toMatch(/serial|em série|wiki|walk delay|atraso de caminhada|0\.15/i);
+    }
   });
 
   it('section 1 describes the read-only Stats table on Points using its actual column names (explain-math.md rule 2)', () => {
@@ -357,16 +281,10 @@ describe('explain-tab copy (advice-column IA alignment)', () => {
     expect(STRINGS.pt.explainSections[0].p[2]).toMatch(/Total/);
     expect(STRINGS.pt.explainSections[0].p[2]).toMatch(/aba Equipamento/);
 
-    // No explain/guide prose anywhere should still tell the player to type the geared sheet
+    // No explain prose anywhere should still tell the player to type the geared sheet
     // or claim Stats lives on Gear.
     expect(explainJoined('en')).not.toMatch(/type (in|the) geared sheet/i);
     expect(explainJoined('pt')).not.toMatch(/digite a ficha equipada/i);
-    for (const step of STRINGS.en.guideSteps) {
-      expect(step.d).not.toMatch(/type (in|the) geared sheet/i);
-    }
-    for (const step of STRINGS.pt.guideSteps) {
-      expect(step.d).not.toMatch(/digite a ficha equipada/i);
-    }
   });
 
   it('drops Gates / Need% from props-and-phases section', () => {
@@ -396,9 +314,9 @@ describe('sheet ability copy (on-sheet names follow Lang)', () => {
     expect(t.abilitiesTip).toMatch(/Ponta de Diamante/);
     expect(t.abilitiesTip).toMatch(/Golpe Brutal/);
     expect(t.abilitiesTip).toMatch(/stats do herói no jogo/);
-    // the budget rule is min(level, slots x 20) — "slots x 10" is falsified.
-    expect(t.abilitiesTip).toMatch(/slots da raridade × 20/);
-    expect(t.abilitiesTip).not.toMatch(/× 10/);
+    // The tip used to state the budget rule and this pinned its arithmetic. The panel no longer
+    // prints a budget explanation, so there is no prose left to pin — the rule itself is guarded
+    // where it is computed, against worked heroes, in the domain's own point-budget suite.
     expect(t.sheetAbilityTag).toBe('Altera atributos');
     expect(t.sheetTip).toMatch(/Ponta de Diamante/);
     expect(t.sheetTip).toMatch(/save/i);
@@ -411,9 +329,7 @@ describe('sheet ability copy (on-sheet names follow Lang)', () => {
     expect(t.abilitiesTip).toMatch(/Keen Eye/);
     expect(t.abilitiesTip).toMatch(/Brutal Strike/);
     expect(t.abilitiesTip).toMatch(/in-game stats/);
-    // the budget rule is min(level, slots x 20) — "slots x 10" is falsified.
-    expect(t.abilitiesTip).toMatch(/rarity slots × 20/);
-    expect(t.abilitiesTip).not.toMatch(/× 10/);
+    // See the PT case above for why the budget rule is no longer pinned in this prose.
     expect(t.sheetAbilityTag).toBe('Affects stats');
     expect(t.sheetTip).toMatch(/Diamond Tip/);
     expect(t.abilitiesTip).not.toMatch(/Ponta de Diamante|Olho Clínico/);
@@ -470,42 +386,6 @@ describe('PT template contracts after copy polish', () => {
     );
   });
 
-  it('parseEmphasis keeps balanced <em> on the PT guide Points step', () => {
-    const step = STRINGS.pt.guideSteps[2].d;
-    expect(step).toContain('<em>Próximo ponto</em>');
-    expect(step).toContain('<em>Pontos</em>');
-    expect(parseEmphasis(step)).toEqual([
-      {
-        kind: 'text',
-        value:
-          'O app já calcula sozinho o seu próximo melhor ponto — veja ',
-      },
-      { kind: 'em', value: 'Próximo ponto' },
-      {
-        kind: 'text',
-        value: ' na faixa do herói acima das abas. Aumente esse mesmo atributo no painel ',
-      },
-      { kind: 'em', value: 'Pontos' },
-      {
-        kind: 'text',
-        value: ' para ver o DPS subir e, no jogo, gaste o ponto de verdade para acompanhar.',
-      },
-    ]);
-  });
-
-  it('balances every <em> pair across PT guide copy', () => {
-    const guideCopy = STRINGS.pt.guideSteps.map((s) => s.d);
-    for (const text of guideCopy) {
-      const opens = (text.match(/<em>/g) ?? []).length;
-      const closes = (text.match(/<\/em>/g) ?? []).length;
-      expect(opens).toBe(closes);
-      // No leftover raw tags after parse
-      const rebuilt = parseEmphasis(text)
-        .map((p) => (p.kind === 'em' ? `<em>${p.value}</em>` : p.value))
-        .join('');
-      expect(rebuilt).toBe(text);
-    }
-  });
 });
 
 /** Flatten all string values under STRINGS.pt (nested objects + guide/explain arrays). */
@@ -544,11 +424,9 @@ describe('portuguese UX glossary (PTUX)', () => {
     expect(STRINGS.pt.colHits).toBe('Hits');
     expect(STRINGS.pt.compareHit).toBe('Hit');
     expect(STRINGS.pt.metricUptime).toBe('Tempo ativo');
-    expect(STRINGS.pt.walkS).toBe('Caminhada (s)');
     expect(STRINGS.pt.reCopy).toBe('Copiar novamente');
     expect(STRINGS.pt.factMissing).toBe('Multiplicador que falta');
-    expect(STRINGS.pt.cycleSerial).toBe('Em série');
-    expect(STRINGS.pt.statShort.cdr).toBe('Redução de recarga (%)');
+    expect(STRINGS.pt.statShort.cdr).toBe('Redução de recarga');
     expect(STRINGS.pt.statFull.cdr).toBe('Redução de recarga');
     expect(STRINGS.pt.slotStatFullLabels.cooldown).toBe('Redução de recarga');
     // No bare CDR / Cooldown leftovers in PT chrome labels.
@@ -572,12 +450,10 @@ describe('portuguese UX glossary (PTUX)', () => {
     expect(STRINGS.en.metricHit).toBe('Hit');
     expect(STRINGS.en.metricSustained).toBe('Sustained DPS');
     expect(STRINGS.en.metricActive).toBe('Active DPS');
-    expect(STRINGS.en.cycleSerial).toBe('Serial');
-    expect(STRINGS.en.walkS).toBe('Walk s');
     expect(STRINGS.en.reCopy).toBe('Re-copy');
     expect(STRINGS.en.factMissing).toBe('Missing multiplier');
     expect(STRINGS.en.colHits).toBe('Hits');
-    expect(STRINGS.en.statShort.cdr).toBe('CDR %');
+    expect(STRINGS.en.statShort.cdr).toBe('CDR');
     expect(STRINGS.en.off).toBe('off');
     expect(STRINGS.en.gateTimer).toBe('Timer');
     expect(STRINGS.en.compareHit).toBe('Hit');
@@ -602,13 +478,11 @@ describe('portuguese UX glossary (PTUX)', () => {
     expect(STRINGS.pt.colHits).toBe('Hits');
     expect(STRINGS.pt.compareHit).toBe('Hit');
     expect(STRINGS.pt.factPred).toBe('Previsto / critical hit');
-    // Walk / copy / missing mult / serial / CDR family
-    expect(STRINGS.pt.walkS).toBe('Caminhada (s)');
+    // Copy / missing mult / cycle / CDR family
     expect(STRINGS.pt.reCopy).toBe('Copiar novamente');
     expect(STRINGS.pt.factMissing).toBe('Multiplicador que falta');
-    expect(STRINGS.pt.cycleSerial).toBe('Em série');
-    expect(STRINGS.pt.explainSections[2].p[0]).toMatch(/Modelo em série/);
-    expect(STRINGS.pt.statShort.cdr).toBe('Redução de recarga (%)');
+    expect(STRINGS.pt.explainSections[2].p[0]).toMatch(/Ciclo de bomba medido/);
+    expect(STRINGS.pt.statShort.cdr).toBe('Redução de recarga');
     expect(STRINGS.pt.statFull.cdr).toBe('Redução de recarga');
     expect(STRINGS.pt.slotStatFullLabels.cooldown).toBe('Redução de recarga');
     expect(STRINGS.pt.slotStatLabels.cooldown).toBe('Recarga');
@@ -651,10 +525,8 @@ describe('normalizeAccount', () => {
   it('merges tree / context defaults', () => {
     const a = normalizeAccount({
       tree: { ...DEFAULT_TREE(), danoTotal: 1.25 },
-      teamBuffs: { grito_guerra: 20 },
     });
     expect(a.tree.danoTotal).toBe(1.25);
-    expect(a.teamBuffs.grito_guerra).toBe(20);
     expect(a.context.phase).toBe(DEFAULT_CONTEXT().phase);
   });
 });

@@ -12,7 +12,7 @@ import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import type { AccountSection } from '@bombfarm/contracts';
 import { checkSchema, SCHEMA_LEVELS, type SchemaLevel } from '@bombfarm/domain/save-schema';
-import { checkSectionShape, ROUTE_FINGERPRINTS, SECTION_FINGERPRINTS } from './fingerprints.js';
+import { checkSectionShape, ROUTE_FINGERPRINTS, SECTION_FINGERPRINTS, STATE_SELL_GATE_KEYS } from './fingerprints.js';
 import { ROUTES } from './routes.js';
 import { fixturePath, loadFixtureJson, required, requireFixture } from './test-fixtures.js';
 
@@ -62,6 +62,43 @@ describe('ROUTE_FINGERPRINTS', () => {
     expect(stateFingerprint.level.keys).not.toContain('account_id');
     expect(stateFingerprint.level.keys).not.toContain('player_name');
     expect(stateFingerprint.level.allowance).toEqual(['account_id', 'player_name']);
+  });
+
+  describe('the sell-gate keys on /state — required, because the game emits them on every body', () => {
+    it('client_can_sell, sell_phase and sell_mode are declared keys, and /state declares no optional escape', () => {
+      const stateLevel = ROUTE_FINGERPRINTS.account.level;
+      expect([...STATE_SELL_GATE_KEYS]).toEqual(['client_can_sell', 'sell_phase', 'sell_mode']);
+      for (const key of STATE_SELL_GATE_KEYS) expect(stateLevel.keys).toContain(key);
+      expect(stateLevel.optional).toBeUndefined();
+    });
+
+    it('the /state fixture carries all three, with the observed value kinds: boolean, number, string', () => {
+      if (!bodies) return;
+      const stateBody = required(bodies['/state'], 'missing /state body');
+      expect(typeof stateBody.client_can_sell).toBe('boolean');
+      expect(typeof stateBody.sell_phase).toBe('number');
+      expect(typeof stateBody.sell_mode).toBe('string');
+    });
+
+    it('RED: a /state body from before the sell gate reports exactly the three keys missing, path-qualified', () => {
+      if (!bodies) return;
+      const { client_can_sell, sell_phase, sell_mode, ...preSellGate } = required(bodies['/state'], 'missing /state body');
+      expect([client_can_sell, sell_phase, sell_mode].every((value) => value !== undefined)).toBe(true);
+      expect(checkSchema(preSellGate, ROUTE_FINGERPRINTS.account)).toEqual({
+        ok: false,
+        missingKeys: ['account.client_can_sell', 'account.sell_phase', 'account.sell_mode'],
+        addedKeys: [],
+      });
+    });
+
+    it('the account fingerprint alone is anchored on the later observation; the other four keep the 2026-08-12 anchor', () => {
+      expect(ROUTE_FINGERPRINTS.account.capturedAt).toBe('2026-09-10T00:00:00.000Z');
+      expect(ROUTE_FINGERPRINTS.account.sourceArtifact).toContain('2026-09-10');
+      for (const section of ['heroes', 'skills', 'casa', 'items'] as const) {
+        expect(ROUTE_FINGERPRINTS[section].capturedAt).toBe('2026-08-12T13:15:38.000Z');
+        expect(ROUTE_FINGERPRINTS[section].sourceArtifact).not.toContain('2026-09-10');
+      }
+    });
   });
 
   it('the scrubbed /state fixture itself carries neither account_id nor player_name', () => {

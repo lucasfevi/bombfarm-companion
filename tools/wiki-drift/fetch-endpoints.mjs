@@ -6,10 +6,21 @@
 // timeout, or a 200 carrying anything other than a JSON object all resolve here, before any
 // comparison against a baseline is even attempted.
 
+import { readFileSync } from 'node:fs';
+
 export const DATA_URL = 'https://wiki.bombfarm.net/wiki/api/data';
 export const FASES_NOMES_URL = 'https://wiki.bombfarm.net/wiki/api/fases-nomes';
 
 const BACKOFF_MS = [1000, 4000];
+
+// Identifies this scheduled job to the wiki's operators — product, version, contact. Without it
+// `fetch` sends the bare string `node`, which gives them no way to tell a recurring automated
+// reader from anything else, or to reach whoever runs it. Same shape the market snapshot sends.
+const APP_VERSION = JSON.parse(
+  readFileSync(new URL('../../apps/desktop/package.json', import.meta.url), 'utf-8'),
+).version;
+
+export const USER_AGENT = `Bomb Farm Companion wiki-check/${APP_VERSION} (+https://github.com/lucasfevi/bombfarm-companion)`;
 
 function isPlainObject(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -18,7 +29,11 @@ function isPlainObject(value) {
 async function fetchOnce(url, fetchImpl, timeoutMs) {
   let response;
   try {
-    response = await fetchImpl(url, { redirect: 'follow', signal: AbortSignal.timeout(timeoutMs) });
+    response = await fetchImpl(url, {
+      redirect: 'follow',
+      headers: { 'User-Agent': USER_AGENT },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
   } catch (err) {
     const isTimeout = err != null && (err.name === 'TimeoutError' || err.name === 'AbortError');
     return { ok: false, reason: isTimeout ? 'timeout' : 'network-error' };

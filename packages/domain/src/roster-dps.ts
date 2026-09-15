@@ -1,4 +1,4 @@
-import { computeAdvisorPipeline } from './advisor-pipeline';
+import { computeAdvisorPipeline, type AdvisorPipelineInput } from './advisor-pipeline';
 import { DEFAULT_CASA_SLOTS } from './casa-slots';
 import { computeHeroPhaseFit } from './phase-intel';
 import type { HeroRecord, AccountShared } from './shims/storage';
@@ -31,18 +31,19 @@ export type RosterDpsInput = {
 };
 
 /**
- * The only `HeroRecord`-shaped entry to `computeAdvisorPipeline`. Exported so a
- * second surface (the desktop renderer) maps a `HeroRecord` to advice through this one
- * function instead of assembling its own `AdvisorPipelineInput` — one mapping, not two.
+ * The only `HeroRecord`-shaped mapping onto `AdvisorPipelineInput`. Exported so a second surface
+ * (the desktop renderer) maps a `HeroRecord` to advice through this one function instead of
+ * assembling its own input — one mapping, not two — and so a what-if that re-runs the pipeline
+ * with one field changed starts from the same input the figures did.
  */
-export function pipelineForHero(
+export function advisorInputForHero(
   hero: HeroRecord,
   account: AccountShared,
   phase: number,
   mitigationPct: number,
-) {
+): AdvisorPipelineInput {
   const context = account.context;
-  return computeAdvisorPipeline({
+  return {
     naked: hero.naked,
     geared: hero.gearedOverride,
     loadout: hero.loadout,
@@ -59,6 +60,8 @@ export function pipelineForHero(
     treeEnergy: account.tree.energy,
     treeLuckFlatPct: account.tree.luckFlatPct ?? 0,
     teamBuffs: account.teamBuffs,
+    fieldAllies: account.fieldAllies ?? 0,
+    entryPulseRankFloor: account.entryPulseRankFloor ?? 0,
     houseIdx: context.houseIdx,
     houseLevel: context.houseLevel,
     houseCycleSecs: account.houseCycleSecs ?? null,
@@ -73,7 +76,17 @@ export function pipelineForHero(
     rankMode: context.rankMode,
     targetProp: context.targetProp,
     birth: hero.birth,
-  });
+    runes: hero.runes,
+  };
+}
+
+export function pipelineForHero(
+  hero: HeroRecord,
+  account: AccountShared,
+  phase: number,
+  mitigationPct: number,
+) {
+  return computeAdvisorPipeline(advisorInputForHero(hero, account, phase, mitigationPct));
 }
 
 /** Solo sustained DPS for one hero using shared account context. */

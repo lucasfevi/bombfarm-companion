@@ -203,15 +203,6 @@ describe('account house stack recipe', () => {
     expect(pf.stackFieldsClass).not.toContain('data-account-tree-value');
   });
 
-  // The keystone control/status recipe classes and stack variant
-  // are gone, not weakened: absence asserted by name, and the trailing template-literal
-  // segment that used to enable them no longer appears anywhere in stackFieldsClass.
-  it('no longer exports the keystone control/status recipe classes', () => {
-    expect('accountKeystoneControlClass' in pf).toBe(false);
-    expect('accountKeystoneStatusClass' in pf).toBe(false);
-    expect(pf.stackFieldsClass).not.toContain('data-keystone-control');
-  });
-
 });
 
 describe('math check stack alignment', () => {

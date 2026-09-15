@@ -20,12 +20,6 @@ export function scopePanel(page: Page) {
     .locator('xpath=ancestor::section[1]');
 }
 
-export function disclosuresPanel(page: Page) {
-  return page
-    .getByRole('heading', { name: /^Assumptions & limits$/i, level: 2 })
-    .locator('xpath=ancestor::section[1]');
-}
-
 /**
  * The button's accessible name follows Allowed changes, so these helpers match only its stable
  * prefix — driving the page must not depend on which kinds of work the current mode permits.
@@ -46,7 +40,24 @@ export async function waitForOptimizeDone(page: Page, timeout = 120_000) {
   ).toBeEnabled({
     timeout,
   });
-  await expect(page.getByText(/^Field status:/i)).toBeVisible({ timeout });
+  await expect(page.getByTestId('team-plan-battle-load-card')).toBeVisible({ timeout });
+}
+
+/** A setup field's explanation is a hover tooltip on its label; this hovers and returns it. */
+export async function openFieldHelp(page: Page, field: RegExp) {
+  await page.mouse.move(0, 0);
+  await page.getByRole('button', { name: field }).hover();
+  const help = page.locator('[data-slot="tooltip-popup"][data-open]');
+  await expect(help).toBeVisible();
+  return help;
+}
+
+/** The search summary is folded by default; its sentences are only visible once opened. */
+export async function openSearchSummary(page: Page) {
+  const summary = page.getByTestId('team-plan-run-summary');
+  await summary.getByRole('button', { name: /^Search summary$/i }).click();
+  await expect(summary.getByTestId('team-plan-run-summary-body')).toBeVisible();
+  return summary;
 }
 
 export async function setE2eMaxEvaluations(page: Page, maxEvaluations: number | null) {
@@ -83,9 +94,7 @@ export async function setAccountForgeFloor(page: Page, forgeFloor: number) {
 }
 
 export async function readForgeFloorValue(page: Page): Promise<string> {
-  // The label wraps the whole Stepper (−/value/+), so its full text content is more than
-  // just the field name — match on containment, not full equality.
-  const value = page.locator('label').filter({ hasText: /Min forge \(\+\)/i }).locator('b').first();
+  const value = page.getByTestId('team-plan-forge-floor-field').locator('b').first();
   await expect(value).toBeVisible();
   return (await value.textContent()) ?? '';
 }

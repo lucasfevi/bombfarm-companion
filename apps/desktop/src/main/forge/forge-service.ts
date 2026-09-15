@@ -15,6 +15,7 @@ import {
   grantSession,
   grantWriteSession,
   isGranted,
+  createRequestIdSource,
   requestPost,
   type GrantedConsent,
   type HttpTransport,
@@ -140,6 +141,11 @@ function stopFor(outcome: RequestOutcome): ForgeStopReason {
       return 'cooldown';
     case 'http_error':
       return 'missing';
+    case 'api_error':
+      // A named refusal on a 4xx/5xx carries the same signal `http_error` did — the server
+      // rejected this item. A refusal on an otherwise-OK response (maintenance, a dead session)
+      // says nothing about the item, so it stays a plain error.
+      return outcome.status >= 400 ? 'missing' : 'error';
     default:
       return 'error';
   }
@@ -151,6 +157,10 @@ function limitOrNull(value: number | null): number | null {
 
 export function createForgeService(deps: ForgeServiceDeps): ForgeService {
   const random = deps.random ?? Math.random;
+  // The game's key counts from its own start, not the epoch; `now()` at construction is this
+  // process's equivalent zero. One source per service, so the sequence is monotonic across runs.
+  const startedAtMs = deps.now();
+  const requestIds = createRequestIdSource({ uptimeMs: () => deps.now() - startedAtMs, random });
   let activeRunId: string | null = null;
   let cancelled = false;
   let sequence = 0;
@@ -194,7 +204,7 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
         const route = step.kind === 'safe' ? FORGE_ROUTES.forgeToSafe : FORGE_ROUTES.forge;
         let outcome: RequestOutcome;
         try {
-          outcome = await deps.gate.runWrite(`forge:${item.id}`, () => requestPost(session, deps.transport, route, item.id));
+          outcome = await deps.gate.runWrite(`forge:${item.id}`, () => requestPost(session, deps.transport, route, item.id, requestIds.next()));
         } catch (err) {
           stop = err instanceof PacingRefusedError && err.gateState !== 'halted' ? 'cooldown' : 'error';
           deps.log.warn({ scope: 'forge', event: 'run.refused_by_gate', runId, error: String(err) });

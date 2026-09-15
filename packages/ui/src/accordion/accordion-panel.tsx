@@ -10,13 +10,17 @@ import type { AccordionPanelProps } from './types';
  * Height + opacity + mask-reveal animation via Motion — see `Collapsible.Panel` for the full
  * rationale (adapted from animate-ui.com/docs/primitives/base/accordion). Slightly faster than
  * `Collapsible.Panel` since this is a smaller nested ledger row, not the main card reveal.
+ *
+ * `initial={false}`: an item open when the accordion mounts is drawn open, and only a toggle
+ * animates — the reveal is feedback for a press, not an entrance. A screen remounted with rows
+ * the player had already opened would otherwise replay every reveal on each visit.
  */
 export function AccordionPanel({ className, children }: AccordionPanelProps) {
   const openValues = useContext(AccordionOpenContext);
   const itemValue = useContext(AccordionItemValueContext);
   const open = itemValue !== undefined && openValues.includes(itemValue);
   return (
-    <AnimatePresence>
+    <AnimatePresence initial={false}>
       {open && (
         <BaseAccordion.Panel
           hidden={false}

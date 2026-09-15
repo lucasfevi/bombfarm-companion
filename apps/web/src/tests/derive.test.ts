@@ -11,8 +11,7 @@ const baseCtx = (): Context => ({
   restSeconds: 12 * 60,
   mitigation: 0.067,
   blastRange: 1,
-  cycleModel: 'serial',
-  walkDelay: 0.15,
+  ato: 1,
   drainMult: 1,
 });
 
@@ -38,7 +37,7 @@ const ZERO_TREE: TreeSheetTotals = {
 };
 
 describe('computeCombatMults', () => {
-  it('applies the roster-wide team-buffs total and the hero’s own SELF ability mods (issue #132)', () => {
+  it('applies the roster-wide team-buffs total and the hero’s own SELF ability mods (PR #139)', () => {
     // Team auras (Grito/Marcha/Fôlego/Presságio) never reach a hero's own AbilityMods any more
     // — `teamBuffs` is the roster-wide total (already including this hero, if it carries any of
     // them) and is the SOLE source for all four. `mods.gateAttackMult`/`dmgMult` stay own-only
@@ -67,17 +66,13 @@ describe('computeCombatMults', () => {
     // Contra o Relógio is a self ability, not a team aura (Fault 1) — gateAttackMult reads
     // `mods` alone, unaffected by teamBuffs.
     expect(m.gateAttackMult).toBeCloseTo(1.2, 6);
-    // Glass Cannon no longer exists (MP5 removed all five keystones; TreeSheetTotals.glassCannon
-    // was deleted with it) — energyMult/critDmgMult are permanent identity here now.
     expect(m.energyMult).toBe(1);
-    expect(m.critDmgMult).toBe(1);
     // `dmgMult` is exactly `mods.dmgMult × (1 + extraDmgPct/100)`.
     expect(m.dmgMult).toBeCloseTo(1.15 * 1.1, 6);
   });
 
-  it('the ComputeCombatMultsInput type no longer accepts a tree damage/energy/keystone term', () => {
-    // Compile-time guard: `treeDanoTotal` / `treeEnergy` / `treeGlassCannon` / `treeTempoDobrado`
-    // must be gone from the type, not merely unused. This assigns a value of the exact input
+  it('the ComputeCombatMultsInput type no longer accepts a tree damage/energy term', () => {
+    // Compile-time guard: `treeDanoTotal` / `treeEnergy` must be gone from the type, not merely unused. This assigns a value of the exact input
     // shape `computeCombatMults` accepts; adding any of them back would fail `pnpm typecheck`,
     // not this assertion.
     const mods = abilityMods({});
@@ -88,11 +83,9 @@ describe('computeCombatMults', () => {
     };
     expect('treeDanoTotal' in input).toBe(false);
     expect('treeEnergy' in input).toBe(false);
-    expect('treeGlassCannon' in input).toBe(false);
-    expect('treeTempoDobrado' in input).toBe(false);
   });
 
-  it('the field is a property of the roster, not the hero: carrier and non-carrier read the same total (issue #132)', () => {
+  it('the field is a property of the roster, not the hero: carrier and non-carrier read the same total (PR #139)', () => {
     // A rank-20 carrier and a non-carrier standing in the SAME field both read the SAME
     // teamBuffs — computeCombatMults never adds anything extra for the carrier, because
     // abilityMods never gave it anything to add. This is the shape fix itself: no own-vs-
@@ -131,7 +124,6 @@ describe('computeCombatMults', () => {
     expect(m.attackMult).toBe(1);
     expect(m.speedMult).toBe(1);
     expect(m.energyMult).toBe(1);
-    expect(m.critDmgMult).toBe(1);
     expect(m.dmgMult).toBe(1);
     expect(m.teamDrainMult).toBe(1);
   });
@@ -159,11 +151,11 @@ describe('derive', () => {
       attackMult: mults.attackMult,
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
-      critDmgMult: mults.critDmgMult,
       teamCritFlat: mults.teamCritFlat,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: mults.hitMult,
       dmgMult: mults.dmgMult,
       mitigationPct: 6.7,
     });
@@ -197,11 +189,11 @@ describe('derive', () => {
       attackMult: mults.attackMult,
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
-      critDmgMult: mults.critDmgMult,
       teamCritFlat: mults.teamCritFlat,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: mults.hitMult,
       dmgMult: mults.dmgMult,
       mitigationPct: 6.7,
     });
@@ -227,11 +219,11 @@ describe('derive', () => {
       attackMult: 1,
       energyMult: 1,
       speedMult: 1,
-      critDmgMult: 1,
       teamCritFlat: 0,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: 1,
       dmgMult: 1,
       mitigationPct: 0,
     });
@@ -251,11 +243,11 @@ describe('derive', () => {
       attackMult: 1,
       energyMult: 1,
       speedMult: 1,
-      critDmgMult: 1,
       teamCritFlat: 0,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: 1,
       dmgMult: 1,
       mitigationPct: 0,
     });
@@ -290,7 +282,6 @@ describe('derive', () => {
     expect(mults.attackMult).toBe(1);
     expect(mults.speedMult).toBe(1);
     expect(mults.energyMult).toBe(1);
-    expect(mults.critDmgMult).toBe(1);
     expect(mults.dmgMult).toBe(1);
 
     const result = derive({
@@ -304,11 +295,11 @@ describe('derive', () => {
       attackMult: mults.attackMult,
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
-      critDmgMult: mults.critDmgMult,
       teamCritFlat: 0,
       treeSheet,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: mults.hitMult,
       dmgMult: mults.dmgMult,
       mitigationPct: 6.7,
     });
@@ -320,12 +311,12 @@ describe('derive', () => {
     expect(result.effective.attack).toBeCloseTo(bellatrix.sheet.attack, 6);
 
     // hit reproduces predictHitDamage from `effective` alone — no dmg_static anywhere
-    // in the expression (dmgMult is 1 here, so a correct hit is the raw predicted hit).
+    // in the expression (hitMult is 1 here, so a correct hit is the raw predicted hit).
     const expectedHit = predictHitDamage(
       result.effective.attack,
       6.7 / 100,
       result.effective.penetration,
-      mults.dmgMult,
+      mults.hitMult,
     );
     expect(result.hit).toBeCloseTo(expectedHit, 6);
   });
@@ -356,7 +347,6 @@ describe('derive', () => {
       attackMult: mults.attackMult,
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
-      critDmgMult: mults.critDmgMult,
       teamCritFlat: 0,
       treeSheet,
       penetrationPp: 0,
@@ -364,7 +354,7 @@ describe('derive', () => {
       mitigationPct: 6.7,
     } as const;
 
-    const fixed = derive({ ...deriveArgs, dmgMult: mults.dmgMult });
+    const fixed = derive({ ...deriveArgs, hitMult: mults.hitMult, dmgMult: mults.dmgMult });
 
     // Pin `fixed.dps` directly to an INDEPENDENT computation (`sustainedDps` called directly,
     // not through a second `derive()`), so a uniform internal double-count inside `derive`
@@ -395,11 +385,11 @@ describe('derive', () => {
       attackMult: 1,
       energyMult: 1,
       speedMult: 1,
-      critDmgMult: 1,
       teamCritFlat: 0,
       treeSheet: tree,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: 1,
       dmgMult: 1,
       mitigationPct: 0,
     });
@@ -433,11 +423,11 @@ describe('derive', () => {
       attackMult: 1,
       energyMult: 1,
       speedMult: 1,
-      critDmgMult: 1,
       teamCritFlat: 0,
       treeSheet: tree,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: 1,
       dmgMult: 1,
       mitigationPct: 0,
     });
@@ -479,11 +469,11 @@ describe('derive', () => {
       attackMult: 1,
       energyMult: 1,
       speedMult: 1,
-      critDmgMult: 1,
       teamCritFlat: 0,
       treeSheet: tree,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: 1,
       dmgMult: 1,
       mitigationPct: 0,
     });
@@ -511,11 +501,11 @@ describe('derive', () => {
       attackMult: 1,
       energyMult: 1,
       speedMult: 1,
-      critDmgMult: 1,
       teamCritFlat: 0,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: 1,
       dmgMult: 1,
       mitigationPct: 0,
     };

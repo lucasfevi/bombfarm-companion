@@ -226,6 +226,9 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
             event: 'section.failed',
             section: route.section,
             reason: outcome.reason,
+            // The server's own error code when it named one (SERVER_LOCKED, ACCOUNT_BANNED, …).
+            // A closed vocabulary of server states, never a response value — nothing player-identifying.
+            ...(outcome.code === undefined ? {} : { code: outcome.code }),
           });
         }
         outcomes[route.section] = outcome;

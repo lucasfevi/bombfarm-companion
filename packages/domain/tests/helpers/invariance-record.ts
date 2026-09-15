@@ -126,14 +126,13 @@ type HeroRecordEntry = {
     speedMult: string;
     gateAttackMult: string;
     energyMult: string;
-    critDmgMult: string;
     dmgMult: string;
   };
   farmContextForHero: {
     restSeconds: string;
     mitigation: string;
     blastRange: string;
-    walkDelay: string;
+    ato: string;
     drainMult: string;
   };
   derive: {
@@ -346,11 +345,11 @@ function recordHero(
     attackMult: mults.attackMult,
     energyMult: mults.energyMult,
     speedMult: mults.speedMult,
-    critDmgMult: mults.critDmgMult,
     teamCritFlat: mults.teamCritFlat,
     treeSheet: tree,
-    penetrationPp: mods.penetrationPp,
+    penetrationPp: mults.teamPenFlat,
     context,
+    hitMult: mults.hitMult,
     dmgMult: mults.dmgMult,
     mitigationPct,
   });
@@ -411,15 +410,16 @@ function recordHero(
     attackMult: pipelineResult.attackMult,
     energyMult: pipelineResult.energyMult,
     speedMult: pipelineResult.speedMult,
-    critDmgMult: pipelineResult.critDmgMult,
     teamCritFlat: pipelineResult.teamCritFlat,
+    teamPenFlat: pipelineResult.teamPenFlat,
+    packMult: pipelineResult.packMult,
     treeSpeed: pipelineResult.treeSheet.speedPct,
     treeCritChance: pipelineResult.treeSheet.critChancePct,
     treeCritDmg: pipelineResult.treeSheet.critDmgPct,
     treeEnergy: pipelineResult.treeSheet.energyPct,
     treeLuckFlatPct: pipelineResult.treeSheet.luckFlatPct,
     context: pipelineResult.context,
-    dmgMult: pipelineResult.dmgMult,
+    dmgMult: pipelineResult.hitMult,
     treeDanoTotal: pipelineResult.treeSheet.danoStatic,
     extraDmgPct: 0,
     active: pipelineResult.active,
@@ -482,14 +482,13 @@ function recordHero(
       speedMult: num(mults.speedMult),
       gateAttackMult: num(mults.gateAttackMult),
       energyMult: num(mults.energyMult),
-      critDmgMult: num(mults.critDmgMult),
       dmgMult: num(mults.dmgMult),
     },
     farmContextForHero: {
       restSeconds: num(context.restSeconds),
       mitigation: num(context.mitigation),
       blastRange: num(context.blastRange),
-      walkDelay: num(context.walkDelay),
+      ato: num(context.ato),
       drainMult: num(context.drainMult),
     },
     derive: {

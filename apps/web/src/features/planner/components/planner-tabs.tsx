@@ -1,9 +1,11 @@
 'use client';
 
-import { HeroAbilitiesTab } from './hero-abilities-tab';
-import { GearTab } from './gear-tab';
+import { HeroTab } from './hero-tab';
+import { CombatTab } from './combat-tab';
 import { AdviceColumn } from './advice-column';
 import { HeroStrip } from './hero-strip';
+import { RosterWorkspace } from './roster-workspace';
+import { GearTab } from './gear-tab';
 import { Tabs, Tooltip } from '@bombfarm/ui';
 import type { TabStatus } from '@bombfarm/domain/planner-tab-status';
 import { usePlannerTab } from '../hooks/use-planner-tab';
@@ -35,37 +37,45 @@ export function PlannerTabs() {
 
   return (
     <div className={plannerStageClass}>
-      {!noHeroYet ? <HeroStrip /> : null}
-      <Tooltip.Provider delay={0} closeDelay={0}>
-        <Tabs.Root value={tab} onValueChange={setTab}>
-          <Tabs.List>
-            <Tabs.Tab value="hero" badge={heroTabStatus.badge} status={statusProp(heroTabStatus)}>
-              {t.tabHero}
-            </Tabs.Tab>
-            <Tabs.Tab value="gear" badge={gearTabStatus.badge} status={statusProp(gearTabStatus)}>
-              {t.tabGear}
-            </Tabs.Tab>
-            <Tabs.Tab
-              value="points"
-              badge={pointsTabStatus.badge}
-              status={statusProp(pointsTabStatus)}
-            >
-              {t.tabPoints}
-            </Tabs.Tab>
-          </Tabs.List>
-          <Tabs.Panels>
-            <Tabs.Panel value="hero">
-              <HeroAbilitiesTab />
-            </Tabs.Panel>
-            <Tabs.Panel value="gear">
-              <GearTab />
-            </Tabs.Panel>
-            <Tabs.Panel value="points">
-              <AdviceColumn />
-            </Tabs.Panel>
-          </Tabs.Panels>
-        </Tabs.Root>
-      </Tooltip.Provider>
+      <RosterWorkspace strip={!noHeroYet ? <HeroStrip /> : null}>
+        <Tooltip.Provider delay={0} closeDelay={0}>
+          <Tabs.Root value={tab} onValueChange={setTab}>
+            <Tabs.List>
+              <Tabs.Tab value="hero" badge={heroTabStatus.badge} status={statusProp(heroTabStatus)}>
+                {t.tabHero}
+              </Tabs.Tab>
+              <Tabs.Tab value="combat">{t.tabCombat}</Tabs.Tab>
+              <Tabs.Tab value="gear" badge={gearTabStatus.badge} status={statusProp(gearTabStatus)}>
+                {t.tabGear}
+              </Tabs.Tab>
+              <Tabs.Tab
+                value="points"
+                badge={pointsTabStatus.badge}
+                status={statusProp(pointsTabStatus)}
+              >
+                {t.tabPoints}
+              </Tabs.Tab>
+            </Tabs.List>
+            <Tabs.Panels>
+              <Tabs.Panel value="hero">
+                <HeroTab />
+              </Tabs.Panel>
+              <Tabs.Panel value="combat">
+                {/* Mounted only while shown: the tab holds no state of its own (the phase pick
+                    lives in the store), and its picker and breakdown would otherwise re-render
+                    on every edit made on the other three tabs. */}
+                {tab === 'combat' ? <CombatTab /> : null}
+              </Tabs.Panel>
+              <Tabs.Panel value="gear">
+                <GearTab />
+              </Tabs.Panel>
+              <Tabs.Panel value="points">
+                <AdviceColumn />
+              </Tabs.Panel>
+            </Tabs.Panels>
+          </Tabs.Root>
+        </Tooltip.Provider>
+      </RosterWorkspace>
     </div>
   );
 }

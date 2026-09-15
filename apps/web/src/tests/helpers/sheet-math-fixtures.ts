@@ -21,6 +21,7 @@ import {
   treeTotalsFromSave as treeTotalsFromSaveUnits,
 } from '@bombfarm/domain/save-units';
 import { expect } from 'vitest';
+import { readHeroRunes, type HeroRune } from '@bombfarm/domain/runes';
 
 // Reads the domain package's own committed captures across the package boundary by relative
 // path, rather than keeping a second copy here that could drift from it.
@@ -43,6 +44,8 @@ export type SaveHeroSheet = {
   sheet: SheetStats;
   /** lv1 ★0 rolls in planner units — undefined on pre-`birth_stats` fixtures. */
   birth: BirthStats | undefined;
+  /** The hero's timed rune buffs (`runas`), already inside `sheet` — empty on every pre-rune capture. */
+  runes: HeroRune[];
 };
 
 function isObject(v: unknown): v is Record<string, unknown> {
@@ -139,7 +142,7 @@ export function extractHero(
   const sheetOther: SheetOtherPct = {
     ...emptySheetOther(),
     critChanceFlat: mods.sheetCritChanceFlat,
-    penetration: mods.sheetPenetrationRaw,
+    penetration: mods.sheetPenetrationFlat,
     critDmgFlat: mods.sheetCritDmgFlat,
   };
 
@@ -157,6 +160,7 @@ export function extractHero(
     sheetOther,
     sheet: mapSaveStats(statsRaw),
     birth: birthRaw ? birthFromSaveUnits(birthRaw) : undefined,
+    runes: readHeroRunes(rawHero.runas),
   };
 }
 

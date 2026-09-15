@@ -8,11 +8,14 @@
  *
  * Split out of `waterfall.ts` to keep files small and the decision logic independently testable.
  */
+import { SLOTS } from '../gear/catalog';
 import type { PointAlloc } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import { wikiPhaseLine } from '../phase-wiki';
+import { dominates, statsForEntry } from './dominance';
 import { evaluateRoster } from './evaluate';
-import { loadoutsFromAssignment, type AssignmentState } from './solver-assignment';
+import { eligibleForHero, poolEntryForItem } from './pool';
+import { applyMove, squadLoadouts, type AssignmentState } from './solver-assignment';
 import type {
   EvaluateRosterInput,
   FarmContext,
@@ -58,14 +61,93 @@ export function evaluateAt(
 ): RosterEvaluation {
   const evalInput: EvaluateRosterInput = {
     contexts,
-    loadoutsByHeroId: loadoutsFromAssignment(assignment, itemById),
+    loadoutsByHeroId: squadLoadouts(assignment, itemById, contexts, gearInput.heroes),
     ptsByHeroId,
     slots: gearInput.account.fieldSlots,
     farm: farmFromAccount(gearInput),
     forgeFloor,
     farmObjective,
+    ignoreFieldCrowding: gearInput.ignoreFieldCrowding,
   };
   return evaluateRoster(evalInput);
+}
+
+export type PolishDominatedInput = {
+  contexts: HeroPlanContext[];
+  gearInput: TeamPlanInput;
+  itemById: ReadonlyMap<string, InventoryItem>;
+  baselineAssignment: AssignmentState;
+  planAssignment: AssignmentState;
+  currentPts: Record<string, PointAlloc>;
+  floor: number;
+  farmObjective?: TeamPlanFarmObjective;
+};
+
+/**
+ * Where the plan is already re-gearing a slot, make it hand over the best piece it could.
+ *
+ * The search accepts a move only on a strict objective gain, and the gold objective is flat over
+ * wide plateaus — hero damage reaches it through an integer hits-to-kill, and Sorte does not reach
+ * it at all. So a swap chain that pays for itself elsewhere can leave a hero holding gear another
+ * FREE piece beats outright, and the search has no reason to correct it. That is what a player
+ * sees as "the optimizer ignored my epic amulet".
+ *
+ * SUBSTITUTIONS ONLY, NEVER NEW CHORES — unless the run asked for the opposite. Normally only
+ * slots the plan is already changing are considered, so this swaps what a chore hands over and
+ * never adds one, and a plan that touches no gear stays a plan that touches no gear. Under
+ * `ignoreFieldCrowding` the player has asked for every hero to end up geared, so an empty slot
+ * becomes fair game too and the new chore is the point rather than a side effect.
+ *
+ * STILL EVALUATED, because dominance is not monotone in the objective. More energy raises a
+ * hero's uptime, and on a field already saturated more uptime raises queue contention and can
+ * lower the served fraction. A strictly better piece can therefore score slightly worse, so each
+ * substitution is scored and kept only when the objective holds. (Under `ignoreFieldCrowding` that
+ * term is gone and the check passes by construction — it is kept because the guard, not the
+ * caller's flag, is what makes this pass safe.)
+ */
+export function polishDominatedPlacements(input: PolishDominatedInput): AssignmentState {
+  const { contexts, gearInput, itemById, baselineAssignment, planAssignment, currentPts, floor, farmObjective } = input;
+  const optimize = contexts.filter((ctx) => ctx.scope === 'optimize');
+  const heroOrder = [...optimize].sort((a, b) => a.heroId.localeCompare(b.heroId));
+  const fillEmptySlots = gearInput.ignoreFieldCrowding === true;
+
+  let assignment = planAssignment;
+  let best = evaluateAt(contexts, assignment, currentPts, gearInput, itemById, floor, farmObjective).objective;
+
+  for (const ctx of heroOrder) {
+    for (const slot of SLOTS) {
+      const placedId = assignment.slots[ctx.heroId]?.[slot];
+      if (!placedId && !fillEmptySlots) continue;
+      // A slot the plan leaves exactly as the player has it today is not this pass's business:
+      // improving it would invent a chore the search did not ask for.
+      if (placedId && baselineAssignment.slots[ctx.heroId]?.[slot] === placedId) continue;
+      const placed = placedId ? itemById.get(placedId) : null;
+      if (placedId && !placed?.slot) continue;
+      // An empty slot compares as an item that rolls nothing, so every eligible piece beats it.
+      const placedStats = placed ? statsForEntry(poolEntryForItem(placed, floor)) : new Map<string, number>();
+
+      let winner: { itemId: string; stats: ReadonlyMap<string, number> } | null = null;
+      for (const freeId of [...assignment.pool].sort()) {
+        const free = itemById.get(freeId);
+        if (!free?.slot) continue;
+        const entry = poolEntryForItem(free, floor);
+        if (!eligibleForHero(entry, ctx, slot)) continue;
+        const stats = statsForEntry(entry);
+        if (!dominates(stats, placedStats)) continue;
+        if (winner && !dominates(stats, winner.stats)) continue;
+        winner = { itemId: freeId, stats };
+      }
+      if (!winner) continue;
+
+      const swapped = applyMove(assignment, { kind: 'assign', itemId: winner.itemId, heroId: ctx.heroId, slot });
+      const objective = evaluateAt(contexts, swapped, currentPts, gearInput, itemById, floor, farmObjective).objective;
+      if (objective < best - EPS) continue;
+      assignment = swapped;
+      best = objective;
+    }
+  }
+
+  return assignment;
 }
 
 export type AcceptedRespec = {
@@ -255,10 +337,25 @@ export function chooseGearCandidate(input: ChooseGearCandidateInput): ChosenGear
   const todayEvaluation = evaluateAt(contexts, baselineAssignment, currentPts, gearInput, itemById, 0, farmObjective);
   const sameAssignment = assignmentsMatch(baselineAssignment, planAssignment);
 
+  // Polished per candidate, not once: dominance is compared at `effectiveUpgrade`, which the two
+  // move-bearing candidates read at different floors. The two baseline candidates are deliberately
+  // left alone — they are the "change no gear" arms, and polishing one would give it chores.
+  const polishedFor = (candidateFloor: number): AssignmentState =>
+    polishDominatedPlacements({
+      contexts,
+      gearInput,
+      itemById,
+      baselineAssignment,
+      planAssignment,
+      currentPts,
+      floor: candidateFloor,
+      farmObjective,
+    });
+
   const declared: GearCandidate[] = [{ key: 'none', assignment: baselineAssignment, floor: 0 }];
   if (floor > 0) declared.push({ key: 'forgeOnly', assignment: baselineAssignment, floor });
-  if (!sameAssignment) declared.push({ key: 'movesOnly', assignment: planAssignment, floor: 0 });
-  if (floor > 0 && !sameAssignment) declared.push({ key: 'forgeMoves', assignment: planAssignment, floor });
+  if (!sameAssignment) declared.push({ key: 'movesOnly', assignment: polishedFor(0), floor: 0 });
+  if (floor > 0 && !sameAssignment) declared.push({ key: 'forgeMoves', assignment: polishedFor(floor), floor });
 
   type Evaluated = { candidate: GearCandidate; gearEvaluation: RosterEvaluation; respec: AcceptedRespec };
   // Every declared candidate is scored — none is discarded on its own `gearEvaluation` (option B:

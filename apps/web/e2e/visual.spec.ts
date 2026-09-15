@@ -12,8 +12,8 @@ import { importedRoster, seedLocalStorage, selectSavedHero } from './fixtures/se
  */
 test.describe.skip('visual baselines', () => {
   test('empty workspace', async ({ page }) => {
-    await seedLocalStorage(page, { heroes: [], lang: 'pt', guideHidden: true });
-    await page.goto('/');
+    await seedLocalStorage(page, { heroes: [], lang: 'pt' });
+    await page.goto('/heroes');
     await expect(page.getByRole('region', { name: /nenhum herói adicionado/i })).toBeVisible();
     await expect(page).toHaveScreenshot('empty-workspace.png', {
       mask: [page.getByTestId('app-version')],
@@ -22,7 +22,7 @@ test.describe.skip('visual baselines', () => {
 
   test('hero strip with imported roster', async ({ page }) => {
     await seedLocalStorage(page, importedRoster);
-    await page.goto('/');
+    await page.goto('/heroes');
     const heroStrip = page.getByRole('region', { name: /herói atual/i });
     await expect(heroStrip).toBeVisible();
     await expect(heroStrip).toHaveScreenshot('hero-strip.png');
@@ -30,7 +30,7 @@ test.describe.skip('visual baselines', () => {
 
   test('planner tabs — points stage', async ({ page }) => {
     await seedLocalStorage(page, importedRoster);
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await page.getByRole('tab', { name: /^pontos$/i }).click();
     const stage = page.locator('[data-slot="tabs-panel"][data-state="active"]');
@@ -40,7 +40,7 @@ test.describe.skip('visual baselines', () => {
 
   test('planner tabs — gear stage', async ({ page }) => {
     await seedLocalStorage(page, importedRoster);
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await page.getByRole('tab', { name: /^equipamento$/i }).click();
     const stage = page.locator('[data-slot="tabs-panel"][data-state="active"]');
@@ -50,7 +50,7 @@ test.describe.skip('visual baselines', () => {
 
   test('open import dialog', async ({ page }) => {
     await seedLocalStorage(page, importedRoster);
-    await page.goto('/');
+    await page.goto('/heroes');
     await page.getByRole('button', { name: /^importar$/i }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();

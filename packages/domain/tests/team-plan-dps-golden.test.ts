@@ -11,6 +11,40 @@
  * A failure here is a change in what damage mode recommends. That may be intended — but it is
  * never a side effect, and re-recording these is a deliberate act with its own reasoning.
  *
+ * RE-RECORDED ONCE, when the damage objective moved onto the same aura form as the gold objective
+ * and the Farm board (the expected value of the CAPPED sum over independently present carriers,
+ * `computeTeamBuffsOverRotation`, in place of clamping the duty-weighted sum). The 7-hero
+ * capture carries one carrier per aura and did not move. The two 13-hero captures each field several
+ * part-time carriers of one capped aura, which the old form held at the cap the whole time:
+ * crit-points moved −0.15% on both DPS figures with the plan itself byte-identical; soulbound,
+ * whose three Fôlego carriers had summed to 60 against a cap of 20, moved −3.7% and dropped two
+ * point resets while keeping every gear move. Nothing else was touched.
+ *
+ * RE-RECORDED AGAIN 2026-09-12, on top of the aura-form re-record above, when the advisor
+ * adopted the farm board's measured bomb cycle (apps/web/docs/adr/016). Every DPS the scorer reads moved — the serial fuse-plus-0.15 s cycle
+ * ran ~1.4x faster than the measured one at these rosters' CDR — and with Speed now a real
+ * throughput stat and CDR no longer paying past the walk, the plans themselves changed shape
+ * (move counts, digests). Same method as the original recording: `runTeamPlan` at its default
+ * budget on the same three captures, forge floor 10.
+ *
+ * RE-RECORDED A THIRD TIME 2026-09-12, for a game-data change rather than a code one: the wiki
+ * published Misericórdia at 0.75% of HP per level (was 1.25%), and the `executePct` kind prices
+ * that threshold into every carrier's DPS. currentDps moved −4.2% (7 heroes), −5.9% (crit-points)
+ * and −1.0% (soulbound); the 7-hero plan is byte-identical, the two 13-hero plans each dropped a
+ * few moves (122 → 118, 56 → 54) and soulbound gained one point reset. Same method again.
+ *
+ * RE-RECORDED A FOURTH TIME 2026-09-13, for the abilities pass — three abilities the objective
+ * had never priced. Passagem de Bastão became the field-wide pulse the wiki's scope column says
+ * it is (every hero on the field lit for 120 s of each carrier's rotation cycle, priced like the
+ * auras) in place of a multiplier on the carrier's own hits; the 7-hero capture's one rank-6
+ * carrier lifts both DPS figures +2.2% with the plan byte-identical, and crit-points' rank-20
+ * carrier lifts today's DPS +5.2% and the plan's +4.4%, with six fewer moves and a new loadout
+ * digest — the carrier's stint now moves every hero's score, not just its own. Soulbound carries
+ * no Baton Pass and no Brecha; what moved it +5.5% / +5.2% is Matilha — Jon's rank 20 and Nyx's
+ * rank 8, each priced at the allies its rotation keeps beside it — and the plan changed shape
+ * with it: 37 moves for 54, one fewer forge, two fewer point resets, and the seed that won went
+ * from the greedy per-hero seed back to the roster as it stands. Same method again.
+ *
  * NOT regime-bound: the claim is "this code still plans what it planned", an identity between two
  * revisions of the same arithmetic, not a statement about what the game rewards.
  */
@@ -46,35 +80,35 @@ const GOLDENS = [
   {
     file: 'save-20260819-11882-7heroes.json',
     forgeFloor: 10,
-    currentDps: 4159.354708300664,
-    planDps: 4935.861831079204,
-    moves: 18,
+    currentDps: 2790.210159891838,
+    planDps: 3316.9354467552575,
+    moves: 20,
     forges: 40,
     pointResets: 5,
     seedUsed: 'current',
-    loadoutDigest: 'e53242ce5e9871bf',
+    loadoutDigest: 'afd4e3c50dcfaab9',
   },
   {
     file: 'save-20260823-13heroes-crit-points.json',
     forgeFloor: 10,
-    currentDps: 64670.63470873365,
-    planDps: 100591.78827844442,
-    moves: 110,
-    forges: 17,
+    currentDps: 45459.16519724657,
+    planDps: 70558.72634133865,
+    moves: 112,
+    forges: 18,
     pointResets: 11,
     seedUsed: 'current',
-    loadoutDigest: '91b17ab317a62b28',
+    loadoutDigest: 'df9ebf69f5367bc8',
   },
   {
     file: 'save-20260831-13heroes-soulbound.json',
     forgeFloor: 10,
-    currentDps: 8266.568367302578,
-    planDps: 9035.626885788633,
-    moves: 64,
-    forges: 69,
-    pointResets: 10,
-    seedUsed: 'greedyHeroDps',
-    loadoutDigest: '86db9ea653aa59e3',
+    currentDps: 5798.730447486583,
+    planDps: 6312.744998349591,
+    moves: 37,
+    forges: 68,
+    pointResets: 8,
+    seedUsed: 'current',
+    loadoutDigest: '8b0a3d02618aedb7',
   },
 ];
 

@@ -319,12 +319,31 @@ describe('team-plan slice', () => {
     expect(usePlannerStore.getState().runStatus).toBe('done');
   });
 
+  it('startRun freezes the roster the run is solved from, so a later roster change does not re-label the rows', () => {
+    usePlannerStore.getState().hydrateRoster([hero('a'), hero('b')], 'a');
+    usePlannerStore.getState().startRun('run-1');
+    const frozen = usePlannerStore.getState().planHeroes;
+    expect(frozen?.map((h) => h.id)).toEqual(['a', 'b']);
+    usePlannerStore.getState().hydrateRoster([hero('a')], 'a');
+    expect(usePlannerStore.getState().planHeroes).toBe(frozen);
+  });
+
+  it('the rows the player opens survive until a new plan lands, which opens the default again', () => {
+    usePlannerStore.getState().startRun('run-1');
+    usePlannerStore.getState().setOpenHeroIds(['b', 'c']);
+    expect(usePlannerStore.getState().openHeroIds).toEqual(['b', 'c']);
+    usePlannerStore.getState().applyPlan('run-1', { perHero: [] } as never);
+    expect(usePlannerStore.getState().openHeroIds).toBeNull();
+  });
+
   it('clearPlan resets plan markers', () => {
-    usePlannerStore.setState({ planInputSignature: 'sig', runId: '1', runStatus: 'done' });
+    usePlannerStore.setState({ planInputSignature: 'sig', runId: '1', runStatus: 'done', planHeroes: [], openHeroIds: ['a'] });
     usePlannerStore.getState().clearPlan();
     expect(usePlannerStore.getState().planInputSignature).toBeNull();
     expect(usePlannerStore.getState().runId).toBeNull();
     expect(usePlannerStore.getState().runStatus).toBe('idle');
+    expect(usePlannerStore.getState().planHeroes).toBeNull();
+    expect(usePlannerStore.getState().openHeroIds).toBeNull();
   });
 
   it('clearPlan resets a running search with no plan yet', () => {

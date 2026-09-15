@@ -43,6 +43,30 @@ describe('patchAccountAfterForge', () => {
     });
   });
 
+  it('keeps the piece on its hero when the reply comes back without a wearer', () => {
+    const worn: AccountPayload = {
+      ...PAYLOAD,
+      items: [{ id: 'g1', def_id: 'steel_luva', upgrade: 12, equipped_on: 'h1', equip_slot: 5, in_stash: false }],
+    };
+    const patched = patchAccountAfterForge(
+      worn,
+      {
+        itemId: 'g1',
+        item: { id: 'g1', def_id: 'steel_luva', upgrade: 13, equipped_on: null, equip_slot: null, in_stash: false },
+        gold: null,
+      },
+      NOW,
+    );
+    expect(patched.items).toEqual([
+      { id: 'g1', def_id: 'steel_luva', upgrade: 13, equipped_on: 'h1', equip_slot: 5, in_stash: false },
+    ]);
+  });
+
+  it('keeps the row id it matched on when the reply spells the id another way', () => {
+    const patched = patchAccountAfterForge(PAYLOAD, { itemId: 'g1', item: { id: 1, upgrade: 9 }, gold: null }, NOW);
+    expect(patched.items?.[0]).toMatchObject({ id: 'g1', upgrade: 9 });
+  });
+
   it('leaves the account section and its stamp alone when the server reported no wallet', () => {
     const patched = patchAccountAfterForge(PAYLOAD, { itemId: 'g1', item: { upgrade: 9 }, gold: null }, NOW);
     expect(patched.account).toBe(PAYLOAD.account);

@@ -1,5 +1,5 @@
 /**
- * Roster-level team-aura acceptance tests (issue #132, judgement call #3). The old
+ * Roster-level team-aura acceptance tests (PR #139, judgement call #3). The old
  * `computeTeamBuffsFromDeployed(heroes, excludeHeroId)` excluded one hero from the stored
  * total, so which hero happened to be "active" when the total was computed changed the answer
  * every OTHER hero read. The fixed shape: the stored total excludes nobody, and a live editor
@@ -14,9 +14,16 @@ import {
 } from '@bombfarm/domain/derive';
 import { abilityMods } from '@bombfarm/domain/model';
 import {
+  PASSAGEM_BASTAO_RANK_CAP,
+  TEAM_AURA_SWITCH_IDS,
+  TEAM_BUFF_ABILITY_IDS,
   TEAM_BUFF_CAP,
+  computeTeamBuffsAroundHero,
+  entryPulseRankFloor,
   computeTeamBuffsFromDeployed,
+  noTeamAuraSwitches,
   substituteHeroAbilities,
+  teamAurasAroundHero,
   zeroTeamBuffs,
   type TeamBuffId,
 } from '@bombfarm/domain/team-buffs';
@@ -46,7 +53,7 @@ function experiencedPct(total: Record<TeamBuffId, number>, buffId: 'folego_minei
   return buffId === 'folego_mineiro' ? (1 - mults.teamDrainMult) * 100 : (mults.attackMult - 1) * 100;
 }
 
-describe('computeTeamBuffsFromDeployed — the roster-wide total (issue #132)', () => {
+describe('computeTeamBuffsFromDeployed — the roster-wide total (PR #139)', () => {
   it('excludes nobody: sums every deployed hero, including whichever one a caller might otherwise call "active"', () => {
     const a = hero('a', { grito_guerra: 10 });
     const b = hero('b', { grito_guerra: 5, marcha_acelerada: 10 });
@@ -83,7 +90,7 @@ describe('computeTeamBuffsFromDeployed — the roster-wide total (issue #132)', 
   });
 });
 
-describe('acceptance: the field is a property of the roster, not of whichever hero is asking (issue #132)', () => {
+describe('acceptance: the field is a property of the roster, not of whichever hero is asking (PR #139)', () => {
   it('one carrier at rank 20 deployed alone receives 20', () => {
     const total = computeTeamBuffsFromDeployed([hero('a', { folego_mineiro: 20 })]);
     expect(experiencedPct(total, 'folego_mineiro')).toBeCloseTo(20, 6);
@@ -184,5 +191,85 @@ describe('substituteHeroAbilities', () => {
     const total = { ...zeroTeamBuffs(), grito_guerra: 33, pressagio_mortal: 12 };
     const abilities = { grito_guerra: 7, pressagio_mortal: 3 };
     expect(substituteHeroAbilities(total, abilities, abilities)).toEqual(total);
+  });
+});
+
+describe('teamAurasAroundHero — every team aura from one hero’s seat', () => {
+  it('lists every aura the game has, carried or not, so a missing aura still shows what it would be worth', () => {
+    const around = teamAurasAroundHero(hero('me', { grito_guerra: 5 }), noTeamAuraSwitches());
+    expect(Object.keys(around).sort()).toEqual([...TEAM_AURA_SWITCH_IDS].sort());
+    expect(around.grito_guerra).toEqual({ own: 5, cap: 20, carried: true, on: true, pricedAt: 5 });
+    expect(around.folego_mineiro).toEqual({ own: 0, cap: 20, carried: false, on: false, pricedAt: 0 });
+    expect(around.passagem_bastao).toEqual({ own: 0, cap: 80, carried: false, on: false, pricedAt: 0 });
+  });
+
+  it('the roster is not an input: two seats with the same abilities read the same, whoever else exists', () => {
+    const me = hero('me', { grito_guerra: 5 });
+    expect(teamAurasAroundHero(me, noTeamAuraSwitches())).toEqual(
+      teamAurasAroundHero({ abilities: { grito_guerra: 5 } }, noTeamAuraSwitches()),
+    );
+  });
+
+  it('a switched-on aura the hero does not carry is priced at its cap', () => {
+    const switches = { ...noTeamAuraSwitches(), folego_mineiro: true };
+    const seat = teamAurasAroundHero(hero('me', {}), switches).folego_mineiro;
+    expect(seat).toEqual({ own: 0, cap: TEAM_BUFF_CAP.folego_mineiro, carried: false, on: true, pricedAt: 20 });
+  });
+
+  it('a carried rank-12 Fôlego plus its switch reads the cap, not 12 + something', () => {
+    const switches = { ...noTeamAuraSwitches(), folego_mineiro: true };
+    const seat = teamAurasAroundHero(hero('me', { folego_mineiro: 12 }), switches).folego_mineiro;
+    expect(seat.own).toBe(12);
+    expect(seat.pricedAt).toBe(TEAM_BUFF_CAP.folego_mineiro);
+  });
+
+  it('counts the hero’s own rank whatever its own battleAllowed or deployed flag says', () => {
+    const me = { ...hero('me', { folego_mineiro: 12 }, false), battleAllowed: false };
+    expect(teamAurasAroundHero(me, noTeamAuraSwitches()).folego_mineiro.own).toBe(12);
+  });
+
+  it('noTeamAuraSwitches is one entry per modelled aura, all off', () => {
+    expect(Object.keys(noTeamAuraSwitches()).sort()).toEqual([...TEAM_AURA_SWITCH_IDS].sort());
+    expect(Object.values(noTeamAuraSwitches()).every((on) => on === false)).toBe(true);
+  });
+
+  it('Baton Pass sits behind a switch too: 4% per rank on the seat, the cap rank floor on the pulse while it is on', () => {
+    const off = teamAurasAroundHero(hero('me', { passagem_bastao: 10 }), noTeamAuraSwitches());
+    expect(off.passagem_bastao).toEqual({ own: 40, cap: 80, carried: true, on: true, pricedAt: 40 });
+    const switches = { ...noTeamAuraSwitches(), passagem_bastao: true };
+    expect(teamAurasAroundHero(hero('me', {}), switches).passagem_bastao).toEqual({ own: 0, cap: 80, carried: false, on: true, pricedAt: 80 });
+    expect(entryPulseRankFloor(noTeamAuraSwitches())).toBe(0);
+    expect(entryPulseRankFloor(switches)).toBe(PASSAGEM_BASTAO_RANK_CAP);
+    expect(PASSAGEM_BASTAO_RANK_CAP).toBe(20);
+    expect(computeTeamBuffsAroundHero(hero('me', {}), switches)).toEqual(zeroTeamBuffs());
+  });
+});
+
+describe('computeTeamBuffsAroundHero — the per-hero screen’s total', () => {
+  const me = hero('me', { grito_guerra: 5 });
+
+  it('with every switch off, only the hero’s own aura counts, at its rank', () => {
+    expect(computeTeamBuffsAroundHero(me, noTeamAuraSwitches())).toEqual({ ...zeroTeamBuffs(), grito_guerra: 5 });
+  });
+
+  it('a switched-on aura is priced at its cap and the field experiences exactly that', () => {
+    const switches = { ...noTeamAuraSwitches(), grito_guerra: true };
+    const total = computeTeamBuffsAroundHero(me, switches);
+    expect(total.grito_guerra).toBe(TEAM_BUFF_CAP.grito_guerra);
+    expect(experiencedPct(total, 'grito_guerra')).toBeCloseTo(TEAM_BUFF_CAP.grito_guerra, 12);
+  });
+
+  it('switches are independent per aura', () => {
+    const switches = { ...noTeamAuraSwitches(), folego_mineiro: true };
+    expect(computeTeamBuffsAroundHero(me, switches)).toEqual({
+      ...zeroTeamBuffs(),
+      grito_guerra: 5,
+      folego_mineiro: TEAM_BUFF_CAP.folego_mineiro,
+    });
+  });
+
+  it('substituteHeroAbilities still moves the hero’s own contribution inside this total', () => {
+    const total = computeTeamBuffsAroundHero(me, noTeamAuraSwitches());
+    expect(substituteHeroAbilities(total, me.abilities, { grito_guerra: 9 }).grito_guerra).toBe(9);
   });
 });

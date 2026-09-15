@@ -1,6 +1,6 @@
 # Content-fit UI
 
-**Status:** reference (durable) · **Source:** `account-house-keystones` polish (2026-07-22)
+**Status:** reference (durable) · **Source:** the Account panel's polish (2026-07-22)
 
 Controls and labels must be sized and laid out from **real content**, not from a default slot that happens to look fine for short English placeholders.
 

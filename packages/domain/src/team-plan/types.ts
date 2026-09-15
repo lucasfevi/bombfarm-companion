@@ -1,4 +1,5 @@
 import type { BirthStats, TreeSheetTotals } from '../birth-sheet';
+import type { HeroRune } from '../runes';
 import type { BestFarmPhaseOptions } from '../farm-optimize-objective';
 import type { HeroFarmFacts, SquadFarmAccount } from '../farm-rate';
 import type { Loadout, PointAlloc, SheetStats } from '../gear/types';
@@ -74,6 +75,8 @@ export type HeroPlanContext = {
   scope: ScopeState;
   abilities: Record<string, number>;
   pts: PointAlloc;
+  /** The hero's timed rune buffs, folded into every sheet the scorer composes for it. */
+  runes: readonly HeroRune[];
 };
 
 export type HeroScore = {
@@ -96,7 +99,7 @@ export type HeroScore = {
   adjusted: SheetStats;
   /**
    * `derive()`'s single-target normal (non-crit) hit — `predictHitDamage(effective.attack,
-   * mitigationPct/100, effective.penetration, dmgMult)`. Carried alongside `adjusted` above at
+   * mitigationPct/100, effective.penetration, hitMult)`. Carried alongside `adjusted` above at
    * no extra evaluation cost (`derive()` already returns it). The Team Plan hero panel's Hit
    * damage grid (`hero-stat-breakdown.tsx`) derives Critical from this at display time —
    * `hit × (1 + effective.critDmg / 100)`, same formula as `advisor-pipeline.ts`'s `predCrit`
@@ -155,6 +158,18 @@ export type RosterEvaluation = {
   perHero: Record<string, HeroScore>;
   auras: Record<TeamBuffId, number>;
   /**
+   * Passagem de Bastão over the rotation in the last round, as the expected field-wide damage
+   * multiplier every `perHero` DPS figure was scaled by — `1` without a fielded carrier.
+   * `screenRosterObjective` prices its candidates against this incumbent figure.
+   */
+  entryPulseMult: number;
+  /**
+   * The duty every fielded hero's aura was weighted by in the last round — the optimize heroes'
+   * from `perHero`, plus the leave-alone heroes', which `perHero` does not carry because nothing
+   * they score reaches the objective. `screenRosterObjective` prices its candidates off this map.
+   */
+  dutyByHeroId: Record<string, number>;
+  /**
    * Farm mode only: the phase `objective` was measured at, and the per-hero farm facts it was
    * measured from. Absent in DPS mode, and `farmPhase` is `null` when no phase is feasible.
    * `screenRosterObjective` reads both — it rescores only the heroes a move touches and prices
@@ -175,6 +190,8 @@ export type TeamPlanHeroInput = {
   pts: PointAlloc;
   loadout: Loadout;
   battleAllowed?: boolean;
+  /** Absent reads as none. */
+  runes?: readonly HeroRune[] | undefined;
 };
 
 export type TeamPlanAccountInput = {
@@ -217,10 +234,10 @@ export type TeamPlanAccountInput = {
 /**
  * The build-independent half of one hero's farm basis, extracted once per run.
  *
- * `dmgMult` and the two loot ability levels are functions of the hero's abilities and the frozen
- * team auras alone — no gear, no points — so they survive every candidate the search tries. The
- * build-DEPENDENT half (the effective sheet, its per-point deltas, and the farm `Context`) comes
- * from the scorer per evaluation and is combined with this.
+ * `dmgMult` and the two loot ability levels are functions of the hero's abilities, the frozen
+ * team auras and the frozen field size alone — no gear, no points — so they survive every
+ * candidate the search tries. The build-DEPENDENT half (the effective sheet, its per-point
+ * deltas, and the farm `Context`) comes from the scorer per evaluation and is combined with this.
  */
 export type FrozenHeroFarmTerms = {
   /** The very `HeroPlanContext` the run was built from — fixed for a whole `runTeamPlan`, which
@@ -289,6 +306,21 @@ export type TeamPlanInput = {
    * back which phase the answer is about.
    */
   targetPhase?: number | null;
+  /**
+   * Score as if the field always had room, and keep every hero geared.
+   *
+   * Omitted ⇒ `false`, the honest model. On a field that cannot seat the whole roster at once,
+   * a hero taking more field time crowds the others out, so gear that raises its uptime can lower
+   * the roster objective — and a plan reading that faithfully proposes stripping gear off a weak
+   * hero and leaving the slot empty. Set here, both objectives drop that term, so more gear can
+   * never score worse, and the plan fills every empty slot it has an item for.
+   *
+   * The answer is deliberately not the roster's true throughput: it is what the squad would earn
+   * if the field never made heroes queue. That is the right question for a player who rotates
+   * heroes in buckets rather than fielding one fixed line-up, and the wrong one for a player
+   * asking what their whole roster earns as it stands.
+   */
+  ignoreFieldCrowding?: boolean;
 };
 
 /**
@@ -316,7 +348,7 @@ export type TeamPlanPerHeroRow = {
   before: number;
   after: number;
   delta: number;
-  /** Combat-effective stats (`HeroScore.effective`) — team auras applied, uncapped (matches `teamPlanHeroDeltaNote`). */
+  /** Combat-effective stats (`HeroScore.effective`) — team auras applied, uncapped — the view the search scores. */
   combatStatsBefore: TeamPlanHeroStats;
   combatStatsAfter: TeamPlanHeroStats;
   /** Sheet stats (`HeroScore.adjusted`) — no combat multipliers/auras, uncapped here; the UI applies `gameSheetView` (`sheet-view.ts`) before display. */
@@ -364,7 +396,9 @@ export type TeamPlan = {
     /** Marginal ROSTER objective gain at the moment this reset was accepted — sustained damage
      *  under the DPS objective, gold per hour under the farm one. Display-only. */
     rosterGainObjective: number;
-    /** `heroLevel * 1000` gold. Display-only — never in the objective, never a filter or gate. */
+    /** `heroLevel * 1000` gold, or 0 when {@link pts} only ADDS to {@link ptsBefore} — placing
+     *  points the game already granted costs nothing, since the gold buys back what is already
+     *  committed. Display-only — never in the objective, never a filter or gate. */
     resetCostGold: number;
   }[];
   perHero: TeamPlanPerHeroRow[];
@@ -407,13 +441,12 @@ export type TeamPlan = {
   requiresFullPlan: boolean;
   /** How far below today the gear step sits, as a POSITIVE number. 0 when requiresFullPlan is false. */
   gearDipDps: number;
-  disclosures: {
-    unmodelledAbilities: { abilityId: string; heroNames: string[] }[];
-    loadoutDriftHeroNames: string[];
-    foreignOwnedItemCount: number;
-    marketBlockedItemCount: number;
-    unresolvedDefItemCount: number;
-  };
+  /**
+   * Heroes in scope carrying a timed rune on a sheet statistic. The plan prices today's
+   * sheet, rune included, but a rune is not something the plan can buy — so wherever the plan
+   * explains a gain, these are the heroes whose gain is partly the rune's and expires with it.
+   */
+  runedHeroNames: string[];
   run: {
     rounds: number;
     evaluations: number;
@@ -465,4 +498,6 @@ export type EvaluateRosterInput = {
    * mode below that point.
    */
   farmObjective?: TeamPlanFarmObjective;
+  /** See {@link TeamPlanInput.ignoreFieldCrowding}. */
+  ignoreFieldCrowding?: boolean;
 };

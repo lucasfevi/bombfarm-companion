@@ -3,14 +3,13 @@ import type { AccountShared, HeroRecord } from '../../src/shared/lib/storage';
 import type { PhasesViewState } from '../../src/shared/lib/phases-view-storage';
 import type { InventorySnapshot } from '@bombfarm/domain/inventory';
 
-/** Keys mirror `src/shared/lib/storage.ts` + i18n/guide chrome — keep in sync. */
+/** Keys mirror `src/shared/lib/storage.ts` + i18n chrome — keep in sync. */
 const HEROES_KEY = 'bf-hp-heroes-v1';
 const ACTIVE_KEY = 'bf-hp-active-hero-v1';
 const ACCOUNT_KEY = 'bf-hp-account-v1';
 const INVENTORY_KEY = 'bf-hp-inventory-v1';
 const PHASES_VIEW_KEY = 'bf-hp-phases-view-v1';
 const LANG_KEY = 'bf_lang';
-const GUIDE_HIDDEN_KEY = 'bf_guide_hidden';
 const REFERRAL_NOTICE_HIDDEN_KEY = 'bf_referral_notice_hidden';
 
 /**
@@ -39,8 +38,6 @@ export type SeededState = {
   account?: AccountShared;
   inventory?: InventorySnapshot;
   lang?: 'pt' | 'en';
-  /** When true (default), suppress the first-run guide overlay. */
-  guideHidden?: boolean;
   /** When true (default), suppress the first-run referral notice below the topbar. */
   referralNoticeHidden?: boolean;
   /** Seeds bf-hp-phases-view-v1 — phase, farmPool and farmReturnBonus. */
@@ -80,15 +77,20 @@ const zeroPts = () => ({
   luck: 0,
 });
 
+/**
+ * Every sheet below is in the planner's own units, not the save export's: crit chance, cooldown
+ * reduction and luck are percent, crit damage is percent OVER a normal hit (a ×1.62 hit is 62).
+ * Save fractions here read as a hero who never crits, and did for months.
+ */
 function hero( partial: Partial<HeroRecord> & Pick<HeroRecord, 'id' | 'name'>): HeroRecord {
   const geared = partial.gearedOverride ?? {
     attack: 500,
     energy: 300,
     speed: 50,
-    critChance: 0.1,
-    critDmg: 1.5,
+    critChance: 10,
+    critDmg: 50,
     penetration: 1,
-    cdr: 0.02,
+    cdr: 2,
     luck: 0,
   };
   return {
@@ -109,6 +111,12 @@ function hero( partial: Partial<HeroRecord> & Pick<HeroRecord, 'id' | 'name'>): 
     power: partial.power,
     deployed: partial.deployed ?? false,
     battleAllowed: partial.battleAllowed,
+    // Both stay ABSENT unless a caller supplies them, which is a valid record and the one every
+    // seed written before the roster board used. Spelled `?? undefined` rather than omitted: a
+    // hero the helper silently dropped these from reports no birth roll at all, and a roster of
+    // those is a board of dashes that looks like a broken screen rather than an empty one.
+    birth: partial.birth ?? undefined,
+    statRanges: partial.statRanges ?? undefined,
   };
 }
 
@@ -129,10 +137,10 @@ export const importedRoster: SeededState = {
         attack: 1470.4,
         energy: 836.4,
         speed: 50.3,
-        critChance: 0.127,
-        critDmg: 1.6236,
+        critChance: 12.7,
+        critDmg: 62.36,
         penetration: 1.1,
-        cdr: 0.0314,
+        cdr: 3.14,
         luck: 0,
       },
       abilities: { detonacao_dupla: 10, passagem_bastao: 10 },
@@ -150,10 +158,10 @@ export const importedRoster: SeededState = {
         attack: 150.5,
         energy: 202.3,
         speed: 49.7,
-        critChance: 0.1005,
-        critDmg: 1.547,
+        critChance: 10.05,
+        critDmg: 54.7,
         penetration: 1.53,
-        cdr: 0.0068,
+        cdr: 0.68,
         luck: 0,
       },
       abilities: { marcha_acelerada: 0, olho_clinico: 10 },
@@ -171,10 +179,10 @@ export const importedRoster: SeededState = {
         attack: 420,
         energy: 310,
         speed: 48.5,
-        critChance: 0.06,
-        critDmg: 1.5,
+        critChance: 6,
+        critDmg: 50,
         penetration: 65,
-        cdr: 0.02,
+        cdr: 2,
         luck: 0,
       },
       abilities: { ponta_diamante: 10 },
@@ -182,7 +190,6 @@ export const importedRoster: SeededState = {
   ],
   activeHeroId: 'seed-cora',
   lang: 'pt',
-  guideHidden: true,
   account: {
     tree: {
       danoTotal: 1.96,
@@ -192,7 +199,6 @@ export const importedRoster: SeededState = {
       energy: 0.52,
       teamCoinPct: 0,
     },
-    teamBuffs: {},
     context: {
       houseIdx: 2,
       houseLevel: 6,
@@ -207,10 +213,7 @@ export const importedRoster: SeededState = {
   },
 };
 
-/**
- * Writes planner storage keys before app JS runs.
- * App truth: `bf_guide_hidden === '1'` hides the guide overlay (see client-app-shell.tsx).
- */
+/** Writes planner storage keys before app JS runs. */
 export async function seedLocalStorage(page: Page, state: SeededState): Promise<void> {
   const payload = {
     heroes: state.heroes,
@@ -218,10 +221,8 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
     account: state.account ?? null,
     inventory: state.inventory ?? null,
     lang: state.lang ?? 'pt',
-    // Default hide guide; only show when guideHidden is explicitly false.
-    guideHidden: state.guideHidden !== false,
-    // Same default as the guide: a first-run notice on top of every seeded page would
-    // shift the layout every other spec measures.
+    // Hidden by default: a first-run notice on top of every seeded page would shift the
+    // layout every other spec measures.
     referralNoticeHidden: state.referralNoticeHidden !== false,
     phasesView: state.phasesView ?? null,
   };
@@ -233,7 +234,6 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
       account,
       inventory,
       lang,
-      guideHidden,
       referralNoticeHidden,
       phasesView,
       keys,
@@ -246,7 +246,6 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
       if (inventory) localStorage.setItem(keys.inventory, JSON.stringify(inventory));
       else localStorage.removeItem(keys.inventory);
       localStorage.setItem(keys.lang, lang);
-      localStorage.setItem(keys.guideHidden, guideHidden ? '1' : '0');
       localStorage.setItem(keys.referralNoticeHidden, referralNoticeHidden ? '1' : '0');
       if (phasesView) localStorage.setItem(keys.phasesView, JSON.stringify(phasesView));
       else localStorage.removeItem(keys.phasesView);
@@ -262,7 +261,6 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
         account: ACCOUNT_KEY,
         inventory: INVENTORY_KEY,
         lang: LANG_KEY,
-        guideHidden: GUIDE_HIDDEN_KEY,
         referralNoticeHidden: REFERRAL_NOTICE_HIDDEN_KEY,
         phasesView: PHASES_VIEW_KEY,
         migrationMarkers: [...MIGRATION_MARKER_KEYS],
@@ -270,6 +268,132 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
     },
   );
 }
+
+/**
+ * The roster the board is for: birth rolls, ability pools and gear that actually differ.
+ *
+ * `importedRoster` cannot serve here and is deliberately left alone. Its heroes carry no `birth`
+ * and no `statRanges`, so `rollQualityFor` places nothing on any of them — every roll bar is empty
+ * and the roll sort has nothing to order by, which would make a green spec about a board that is
+ * showing dashes. Every perf and visual baseline is expressed against that roster too.
+ *
+ * The eight windows are the game's own published ranks for a common hero, in planner units
+ * (`saveSheetUnits`: crit chance, CDR and luck are percent, crit damage is percent ABOVE ×1).
+ * The three heroes are placed high, middle and low inside them on purpose, so "best roll first"
+ * has a visible answer and reversing the direction visibly reverses it.
+ */
+const COMMON_BIRTH_WINDOWS: NonNullable<HeroRecord['statRanges']> = {
+  attack: { min: 150, max: 200 },
+  energy: { min: 140, max: 240 },
+  speed: { min: 48.5, max: 53.5 },
+  penetration: { min: 1, max: 4 },
+  critChance: { min: 4, max: 10 },
+  critDmg: { min: 50, max: 80 },
+  cdr: { min: 1, max: 4 },
+  luck: { min: 2, max: 10 },
+};
+
+/** A birth roll placed at one fraction of every window — 1 is the top of each, 0 the floor. */
+function birthAt(fraction: number): NonNullable<HeroRecord['birth']> {
+  const at = (key: keyof typeof COMMON_BIRTH_WINDOWS) => {
+    const band = COMMON_BIRTH_WINDOWS[key];
+    if (band === undefined) throw new Error(`no window for ${key}`);
+    return band.min + (band.max - band.min) * fraction;
+  };
+  return {
+    attack: at('attack'),
+    energy: at('energy'),
+    speed: at('speed'),
+    penetration: at('penetration'),
+    critChance: at('critChance'),
+    critDmg: at('critDmg'),
+    cdr: at('cdr'),
+    luck: at('luck'),
+  };
+}
+
+function gear(defPrefix: string, level: number, upgrade: number) {
+  const piece = (slot: string) => ({ defId: `${defPrefix}_${slot}`, rarityIdx: 3, level, upgrade });
+  return {
+    arma: piece('arma'),
+    elmo: piece('elmo'),
+    anel: piece('anel'),
+    amuleto: null,
+    peito: piece('peito'),
+    calca: piece('calca'),
+    luva: null,
+    bota: piece('bota'),
+  };
+}
+
+/**
+ * Four heroes whose roll, power, level, rarity, grade and ability pool all order differently, one
+ * of them out of the rotation — so a spec can tell each sort key apart from the others, and can
+ * see that a shelved hero is drawn muted rather than dropped.
+ */
+export const rosterBoard: SeededState = {
+  ...importedRoster,
+  heroes: [
+    hero({
+      id: 'board-ayla',
+      name: 'Ayla',
+      level: 80,
+      stars: 3,
+      rank: 'S',
+      rarity: 'Épico',
+      sourceId: '3001',
+      power: 91250,
+      birth: birthAt(0.9),
+      statRanges: COMMON_BIRTH_WINDOWS,
+      loadout: gear('ember', 220, 8),
+      abilities: { olho_clinico: 20, ponta_diamante: 12, misericordia: 6 },
+    }),
+    hero({
+      id: 'board-doran',
+      name: 'Doran',
+      level: 62,
+      stars: 1,
+      rank: 'B',
+      rarity: 'Raro',
+      sourceId: '3002',
+      power: 41800,
+      birth: birthAt(0.5),
+      statRanges: COMMON_BIRTH_WINDOWS,
+      loadout: gear('gold', 150, 3),
+      abilities: { detonacao_dupla: 15, marcha_acelerada: 4 },
+    }),
+    hero({
+      id: 'board-nessa',
+      name: 'Nessa',
+      level: 95,
+      stars: 0,
+      rank: 'D',
+      rarity: 'Comum',
+      sourceId: '3003',
+      power: 12400,
+      birth: birthAt(0.15),
+      statRanges: COMMON_BIRTH_WINDOWS,
+      loadout: gear('coal', 90, 0),
+      abilities: { contra_relogio: 8 },
+    }),
+    hero({
+      id: 'board-shelved',
+      name: 'Torvin',
+      level: 40,
+      stars: 2,
+      rank: 'A',
+      rarity: 'Raro',
+      sourceId: '3004',
+      power: 25600,
+      battleAllowed: false,
+      birth: birthAt(0.7),
+      statRanges: COMMON_BIRTH_WINDOWS,
+      loadout: gear('gold', 120, 5),
+      abilities: { explosao_ampla: 10 },
+    }),
+  ],
+  activeHeroId: 'board-doran',
+};
 
 /** Pick a seeded hero via the hero strip picker dialog. */
 export async function selectSavedHero(page: Page, name: string) {

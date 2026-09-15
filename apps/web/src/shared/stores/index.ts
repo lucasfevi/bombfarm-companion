@@ -7,6 +7,13 @@ export type { PlannerStore } from '@/shared/stores/planner-store';
 export { hydratePlannerStore } from '@/shared/stores/hydrate-planner-store';
 export { attachPlannerPersistence } from '@/shared/stores/persistence/attach-persistence';
 export { commitActiveHero } from '@/shared/stores/commit-active-hero';
+export {
+  ensureTeamPlanSolver,
+  getTeamPlanSolver,
+  resetTeamPlanSolverForTests,
+} from '@/shared/stores/team-plan-solver';
+export type { TeamPlanSolver, TeamPlanSolverSnapshot } from '@/shared/stores/team-plan-solver';
+export { attachTeamPlanRunnerSync } from '@/shared/stores/team-plan-runner-sync';
 export type { SessionSlice } from '@/shared/stores/slices/session-slice';
 export type { AccountSlice } from '@/shared/stores/slices/account-slice';
 export type { RosterSlice } from '@/shared/stores/slices/roster-slice';
@@ -20,6 +27,8 @@ export {
 } from '@/shared/stores/selectors/session-selectors';
 export {
   selectAccountShared,
+  selectActiveHeroAccount,
+  selectActiveHeroFieldAllies,
   selectAccountTuple,
   selectTreeDanoTotal,
   selectTreeCritChance,
@@ -29,9 +38,8 @@ export {
   selectTreeTeamCoinPct,
   selectTreeLuckFlatPct,
   selectTreeXpMult,
-  selectTeamBuffsOverride,
-  selectEffectiveTeamBuffs,
-  resetEffectiveTeamBuffsCache,
+  selectActiveHeroTeamBuffs,
+  resetActiveHeroTeamBuffsCache,
   selectHouseIdx,
   selectHouseLevel,
   selectHouseCycleSecs,
@@ -46,6 +54,7 @@ export {
   selectMaxPhase,
   selectPlayerName,
   selectAccountId,
+  selectAccountImportedAt,
   selectMissingRequiredFields,
   selectTreeSquadDmgPct,
   selectTreeGeoMult,
@@ -58,9 +67,12 @@ export {
   selectScopeByHeroId,
   selectForgeFloor,
   selectTeamPlanAllowedChanges,
+  selectTeamPlanIgnoreFieldCrowding,
   selectTeamPlanObjective,
   selectTeamPlanFarmUnavailable,
   selectTeamPlanTargetPhase,
+  selectOptimizeScopeHeroCount,
+  selectTeamPlanInputsUsable,
 } from '@/shared/stores/selectors/team-plan-selectors';
 export type { TeamPlanSlice } from '@/shared/stores/slices/team-plan-slice';
 export {
@@ -71,6 +83,7 @@ export {
 export {
   selectDps,
   selectAdvisorPipeline,
+  selectTeamAuraDpsDeltas,
   getAdvisorPipelineComputeCount,
   resetAdvisorPipelineCache,
   resetAdvisorPipelineComputeCount,
@@ -90,6 +103,14 @@ export {
   selectFormatNumber,
 } from '@/shared/stores/selectors/hero-selectors';
 export {
+  selectDraftHeroRecord,
+  selectHeroRollQuality,
+  selectHeroAbilityGains,
+  resetHeroPanelCaches,
+  getHeroAbilityGainsComputeCount,
+  resetHeroAbilityGainsComputeCount,
+} from '@/shared/stores/selectors/hero-panel-selectors';
+export {
   selectPlannerTabStatuses,
   selectSetupReady,
   selectHeroTabStatus,
@@ -100,28 +121,25 @@ export {
 export {
   selectPhasesViewPhase,
   selectPhasesViewPhaseChosen,
+  selectCurrentPhase,
+  selectCurrentPhaseMitigationPct,
+  selectCombatPhase,
+  selectCombatPhaseSelection,
+  selectCombatMitigationPct,
+  selectTeamAuraSwitches,
 } from '@/shared/stores/selectors/phases-selectors';
 export { selectTreeSheetTotals } from '@/shared/stores/selectors/tree-sheet-selectors';
 export {
   selectFarmRankingRows,
   selectFarmPoolEntries,
   deriveFarmPoolEntries,
-  isFarmRespecWorthMaking,
   selectFarmReturnBonus,
   resetFarmRankingCache,
   getFarmRankingComputeCount,
   resetFarmRankingComputeCount,
-  readFarmRespecDepTuple,
-  runFarmRespecSolve,
-  getFarmRespecSolveCount,
-  resetFarmRespecSolveCount,
-  selectFarmRespecIsStale,
-  selectFarmRespecView,
-  selectFarmRespecStatus,
-  selectFarmReRankActive,
-  selectFarmBoardRows,
-  getFarmRespecRowsComputeCount,
-  resetFarmRespecRowsComputeCount,
+  selectRosterTeamBuffs,
+  selectRosterAccount,
+  resetRosterAccountCache,
 } from '@/shared/stores/selectors/farm-ranking-selectors';
 export type {
   FarmRankingResult,

@@ -1,8 +1,7 @@
 // The ONLY file in @bombfarm/farm that imports a runtime binding from @bombfarm/domain/farm-rate
 // or @bombfarm/domain/farm-optimize, and apps/web and apps/desktop must import neither (enforced
 // by a structural guard — see farm-ranking-guards.test.ts, guards (f) and (g); a type-only
-// `ReturnBonusMode`/`FarmRateRow`/`FarmRespecResult` import erases at compile time and is
-// allowed anywhere).
+// `ReturnBonusMode`/`FarmRateRow` import erases at compile time and is allowed anywhere).
 //
 // computeFarmRates is @bombfarm/domain's own stated convenience entry point — it fixes the
 // facts -> squad -> rows ordering in one place. Do NOT hand-compose computeHeroFarmFacts +
@@ -12,19 +11,13 @@
 // itself.
 import {
   computeFarmRates,
-  computeFarmRateTable,
+  farmTeamBuffs,
+  type FarmAccount,
   type FarmRateRow,
-  type SquadFarmFacts,
 } from '@bombfarm/domain/farm-rate';
 // resolveFarmObjective, farmObjectiveValue and bestFarmPhase are deliberately NOT imported —
-// that surface belongs to the next-point ranking mode, not to this recommendation seam.
-// respecCostGold is not imported either: every cost this surface renders is already a field on a
-// FarmRespecResult/FarmRespecHeroEntry.
-import {
-  solveFarmRespec,
-  FARM_RESPEC_MIN_GAIN_PCT,
-  type FarmRespecResult,
-} from '@bombfarm/domain/farm-optimize';
+// that surface belongs to the next-point ranking mode, not to this board.
+import { FARM_RESPEC_MIN_GAIN_PCT } from '@bombfarm/domain/farm-optimize';
 import type { AccountShared } from '@bombfarm/domain/shims/storage';
 import type { FarmInputs } from './farm-inputs';
 
@@ -40,7 +33,7 @@ const EMPTY_ROWS: readonly FarmRateRow[] = [];
 
 /**
  * The dependency-tuple traceability artifact: every planner edit the board must react to.
- * 19 members — `fieldSlots` and `houseCycleSecs` joined at the House-ceiling fix: the first is
+ * 18 members — `fieldSlots` and `houseCycleSecs` joined at the House-ceiling fix: the first is
  * the FIELD concurrency cap (`skills.field_slots`, a different quantity from `slots`, which is
  * the House's RECOVERY cap), the second is the House cycle that every hero's uptime divides by.
  * `houseCycleSecsHouseIdx`/`houseCycleSecsLevel` joined at the same fix's regression repair: the
@@ -51,19 +44,16 @@ const EMPTY_ROWS: readonly FarmRateRow[] = [];
  * `FarmRateOptions.maxPhase` is what sets `FarmRateRow.locked` (a COMPUTE INPUT, not a
  * post-compute filter; an earlier design draft treating it as a filter would have made
  * `row.locked` permanently `false`). A field missing from this tuple is a planner edit that
- * silently does not recompute the board.
- *
- * `teamBuffsOverride` is a named field on {@link FarmInputs} but is deliberately NOT a member:
- * `effectiveTeamBuffs` below already moves whenever the override does, and adding it would
- * change a tuple whose exact 19-member shape and order existing tests assert.
+ * silently does not recompute the board. Team auras are not a member and need none: the board
+ * derives them from `heroes` itself, over the rotation.
  *
  * The converse obligation falls on PRODUCERS in the HOST APP: the members compared by reference
- * here (`heroes`, `effectiveTeamBuffs`, `farmPoolOverrides`) must be identity-stable across a
+ * here (`heroes`, `farmPoolOverrides`) must be identity-stable across a
  * write that changed nothing. {@link farmDepsEqual} compares with `Object.is`, so a
- * fresh-but-equal array or object reads exactly like a real edit — it drops a live respec
- * proposal with no error surfaced. Every roster producer must return the SAME array when nothing
- * changed, and the single writer of the roster must decline to write an unchanged reference; a
- * new roster producer owes both halves.
+ * fresh-but-equal array or object reads exactly like a real edit — it recomputes the whole
+ * 600-row board with no error surfaced. Every roster producer must return the SAME array when
+ * nothing changed, and the single writer of the roster must decline to write an unchanged
+ * reference; a new roster producer owes both halves.
  */
 export function readFarmDepTuple(inputs: FarmInputs) {
   return [
@@ -75,9 +65,6 @@ export function readFarmDepTuple(inputs: FarmInputs) {
     inputs.treeEnergy,
     inputs.treeTeamCoinPct,
     inputs.treeLuckFlatPct,
-    // The effective (override-or-derived) roster total, issue #132 — `heroes` above already
-    // covers the "derive" half; this also invalidates on an override edit.
-    inputs.effectiveTeamBuffs,
     inputs.houseIdx,
     inputs.houseLevel,
     inputs.slots,
@@ -108,14 +95,14 @@ export function resolveEnabledHeroIds(inputs: FarmInputs): string[] {
 }
 
 /**
- * Minimal `AccountShared` built directly from the tuple's own primitive fields — not a host's
+ * Minimal `FarmAccount` built directly from the tuple's own primitive fields — not a host's
  * full account snapshot (whose own tuple carries fields, e.g. `mitigationPct`/`phase`/
  * `rankMode`/`targetProp`, that `pipelineForHero(hero, account, 1, 0)` never reads because the
  * farm-rate module calls it with an explicit phase/mitigation of its own). Keeping this seam's
  * own tuple as the single source of "what triggers a recompute" avoids a second referential-
  * stability mechanism.
  */
-export function buildAccount(inputs: FarmInputs): AccountShared {
+export function buildAccount(inputs: FarmInputs): FarmAccount {
   return {
     tree: {
       danoTotal: inputs.treeDanoTotal,
@@ -126,15 +113,6 @@ export function buildAccount(inputs: FarmInputs): AccountShared {
       teamCoinPct: inputs.treeTeamCoinPct,
       luckFlatPct: inputs.treeLuckFlatPct,
     },
-    // Issue #132: the roster-wide total is DERIVED from the roster by default (an override,
-    // when set, wins) — never the stale, silently-zero stored field a fresh import used to
-    // leave every carrier's own aura at 0% until someone found the auto-fill button.
-    teamBuffs: inputs.effectiveTeamBuffs,
-    // Which of the two `teamBuffs` came back. @bombfarm/domain re-derives the auras over the
-    // rotation pool when the total is DERIVED (a deployed-line-up snapshot is the wrong quantity
-    // for a board that cycles a whole pool through the House), and passes it through verbatim when
-    // it is an override — a hand-typed "assume this much aura" has no carriers behind it to weight.
-    teamBuffsOverride: inputs.teamBuffsOverride,
     context: {
       houseIdx: inputs.houseIdx,
       houseLevel: inputs.houseLevel,
@@ -143,7 +121,7 @@ export function buildAccount(inputs: FarmInputs): AccountShared {
       rankMode: 'dps',
       targetProp: 'stone',
     },
-    // Spread rather than assigned: `AccountShared.slots` is optional-and-absent, never explicitly
+    // Spread rather than assigned: `FarmAccount.slots` is optional-and-absent, never explicitly
     // undefined, so a host with no House slots figure must omit the key rather than set it.
     ...(inputs.slots === undefined ? {} : { slots: inputs.slots }),
     fieldSlots: inputs.fieldSlots,
@@ -152,6 +130,26 @@ export function buildAccount(inputs: FarmInputs): AccountShared {
     houseCycleSecsLevel: inputs.houseCycleSecsLevel,
     maxPhase: inputs.maxPhase,
   };
+}
+
+/**
+ * The team-aura totals the board prices its rows against — each carrier weighted by its own
+ * uptime, over the same pool {@link computeFarmRanking} resolves. The figure a roster-wide
+ * surface beside the board (the phases explorer's squad ranking) prices against, so it and the
+ * board agree. Costs one pipeline pass per pooled hero; a host memoizes it on the dep tuple.
+ */
+export function computeFarmTeamBuffs(inputs: FarmInputs): Record<string, number> {
+  return farmTeamBuffs({
+    heroes: inputs.heroes,
+    account: buildAccount(inputs),
+    enabledHeroIds: resolveEnabledHeroIds(inputs),
+  });
+}
+
+/** {@link buildAccount} with {@link computeFarmTeamBuffs} overlaid — the account a ROSTER-WIDE
+ *  figure beside the board computes against. */
+export function buildRosterAccount(inputs: FarmInputs): AccountShared {
+  return { ...buildAccount(inputs), teamBuffs: computeFarmTeamBuffs(inputs) };
 }
 
 export function computeFarmRanking(inputs: FarmInputs): FarmRankingResult {
@@ -183,66 +181,11 @@ export function computeFarmRanking(inputs: FarmInputs): FarmRankingResult {
 }
 
 /**
- * The rows for an ALREADY-SOLVED proposed squad — the board's re-rank source. The only call
- * that skips the facts/squad stages, because the solver has already produced the squad.
+ * The gain a plan must clear before a surface calls it worth making — the floor the domain's
+ * points solver applies, re-exported so a host names it without a second runtime import of that
+ * solver (guard (g)).
  */
-export function computeFarmProposedRows(
-  squad: SquadFarmFacts,
-  inputs: FarmInputs,
-): FarmRankingResult {
-  const rows = computeFarmRateTable(squad, {
-    maxPhase: inputs.maxPhase,
-    returnBonus: inputs.farmReturnBonus,
-  });
-  return { rows, reason: null };
-}
-
-// -------------------------------------------------------------------------------------------
-// Farm Respec Advisor — the on-demand solve.
-// -------------------------------------------------------------------------------------------
-
-/**
- * The solve's dependency tuple. The recommendation depends on nothing the ranking board doesn't
- * already — this is currently identical to {@link readFarmDepTuple}, kept as its own named entry
- * point so the call sites read "the respec deps", not a re-derivation of the ranking ones.
- */
-export function readFarmRespecDepTuple(inputs: FarmInputs) {
-  return readFarmDepTuple(inputs);
-}
-
-function buildFarmRespecInput(inputs: FarmInputs, enabledHeroIds: readonly string[]) {
-  return {
-    heroes: inputs.heroes,
-    account: buildAccount(inputs),
-    enabledHeroIds,
-    maxPhase: inputs.maxPhase,
-    returnBonus: inputs.farmReturnBonus,
-  };
-}
-
-/**
- * The one expression the "is this respec worth making" decision is built from. `paybackHours` is
- * deliberately never read here, at any value including `null` — gain alone decides, and payback
- * is reported beside the recommendation, never used to withhold it. Exported so this exact
- * formula, not a re-derivation of it, is what the panel and its tests both drive.
- */
-export function isFarmRespecWorthMaking(result: FarmRespecResult): boolean {
-  return result.gainPct >= FARM_RESPEC_MIN_GAIN_PCT;
-}
-
-/** The floor {@link isFarmRespecWorthMaking} applies, re-exported so the rest of the package can
- *  name it in copy without a second runtime import of the domain solver (guard (g)). */
 export const FARM_RESPEC_WORTH_MAKING_PCT = FARM_RESPEC_MIN_GAIN_PCT;
-
-/**
- * The full solve. A PLAIN FUNCTION: not a selector, not memoized, and never called during
- * render. Its one caller must be an explicit user event (the Optimize button) — it costs
- * seconds on a large roster, and nothing on the dependency-driven render path may reach it.
- */
-export function runFarmRespecSolve(inputs: FarmInputs): FarmRespecResult {
-  const enabledHeroIds = resolveEnabledHeroIds(inputs);
-  return solveFarmRespec(buildFarmRespecInput(inputs, enabledHeroIds));
-}
 
 export type FarmPoolEntry = {
   heroId: string;

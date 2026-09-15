@@ -17,8 +17,7 @@ const baseCtx = (): Context => ({
   restSeconds: 12 * 60,
   mitigation: 0.067,
   blastRange: 1,
-  cycleModel: 'serial',
-  walkDelay: 0.15,
+  ato: 1,
   drainMult: 1,
 });
 
@@ -58,7 +57,7 @@ describe('computeCombatMults', () => {
     expect('treeEnergy' in input).toBe(false);
   });
 
-  it('the field is a property of the roster, not the hero: a rank-20 carrier and a non-carrier read the SAME total (issue #132)', () => {
+  it('the field is a property of the roster, not the hero: a rank-20 carrier and a non-carrier read the SAME total (PR #139)', () => {
     // RETIRED the old "stacks own Grito + other heroes' Grito additively" pin (a real
     // math-check screenshot at +20% own / +20% team → ×1.4): that screenshot's 40% total
     // exceeds Grito's confirmed cap (20%) and predates abilityMods folding a team aura into a
@@ -98,13 +97,12 @@ describe('computeCombatMults', () => {
     expect(m.attackMult).toBe(1);
     expect(m.speedMult).toBe(1);
     expect(m.energyMult).toBe(1);
-    expect(m.critDmgMult).toBe(1);
     expect(m.dmgMult).toBe(1);
     expect(m.teamDrainMult).toBe(1);
   });
 });
 
-describe('team aura faults (issue #132)', () => {
+describe('team aura faults (PR #139)', () => {
   it('Fault 2/4: two rank-20 Fôlego carriers cap the drain total at ONE carrier’s worth', () => {
     // Jon and Doran both carry folego_mineiro 20. Under the confirmed rule the field total is
     // min(cap, 20+20) = 20 (the cap), not 40 and not the old double-counted 0.64 drain
@@ -171,11 +169,11 @@ describe('derive', () => {
       attackMult: mults.attackMult,
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
-      critDmgMult: mults.critDmgMult,
       teamCritFlat: mults.teamCritFlat,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: mults.hitMult,
       dmgMult: mults.dmgMult,
       mitigationPct: 6.7,
     });
@@ -209,11 +207,11 @@ describe('derive', () => {
       attackMult: mults.attackMult,
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
-      critDmgMult: mults.critDmgMult,
       teamCritFlat: mults.teamCritFlat,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: mults.hitMult,
       dmgMult: mults.dmgMult,
       mitigationPct: 6.7,
     });
@@ -239,11 +237,11 @@ describe('derive', () => {
       attackMult: 1,
       energyMult: 1,
       speedMult: 1,
-      critDmgMult: 1,
       teamCritFlat: 0,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: 1,
       dmgMult: 1,
       mitigationPct: 0,
     });
@@ -263,11 +261,11 @@ describe('derive', () => {
       attackMult: 1,
       energyMult: 1,
       speedMult: 1,
-      critDmgMult: 1,
       teamCritFlat: 0,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: 1,
       dmgMult: 1,
       mitigationPct: 0,
     });
@@ -302,7 +300,6 @@ describe('derive', () => {
     expect(mults.attackMult).toBe(1);
     expect(mults.speedMult).toBe(1);
     expect(mults.energyMult).toBe(1);
-    expect(mults.critDmgMult).toBe(1);
     expect(mults.dmgMult).toBe(1);
 
     const result = derive({
@@ -316,11 +313,11 @@ describe('derive', () => {
       attackMult: mults.attackMult,
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
-      critDmgMult: mults.critDmgMult,
       teamCritFlat: 0,
       treeSheet,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: mults.hitMult,
       dmgMult: mults.dmgMult,
       mitigationPct: 6.7,
     });
@@ -332,12 +329,12 @@ describe('derive', () => {
     expect(result.effective.attack).toBeCloseTo(bellatrix.sheet.attack, 6);
 
     // hit reproduces predictHitDamage from `effective` alone — no dmg_static anywhere
-    // in the expression (dmgMult is 1 here, so a correct hit is the raw predicted hit).
+    // in the expression (hitMult is 1 here, so a correct hit is the raw predicted hit).
     const expectedHit = predictHitDamage(
       result.effective.attack,
       6.7 / 100,
       result.effective.penetration,
-      mults.dmgMult,
+      mults.hitMult,
     );
     expect(result.hit).toBeCloseTo(expectedHit, 6);
   });
@@ -368,7 +365,6 @@ describe('derive', () => {
       attackMult: mults.attackMult,
       energyMult: mults.energyMult,
       speedMult: mults.speedMult,
-      critDmgMult: mults.critDmgMult,
       teamCritFlat: 0,
       treeSheet,
       penetrationPp: 0,
@@ -376,7 +372,7 @@ describe('derive', () => {
       mitigationPct: 6.7,
     } as const;
 
-    const fixed = derive({ ...deriveArgs, dmgMult: mults.dmgMult });
+    const fixed = derive({ ...deriveArgs, hitMult: mults.hitMult, dmgMult: mults.dmgMult });
 
     // Pin `fixed.dps` directly to an INDEPENDENT computation (`sustainedDps` called directly,
     // not through a second `derive()`), so a uniform internal double-count inside `derive`
@@ -407,11 +403,11 @@ describe('derive', () => {
       attackMult: 1,
       energyMult: 1,
       speedMult: 1,
-      critDmgMult: 1,
       teamCritFlat: 0,
       treeSheet: tree,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: 1,
       dmgMult: 1,
       mitigationPct: 0,
     });
@@ -445,11 +441,11 @@ describe('derive', () => {
       attackMult: 1,
       energyMult: 1,
       speedMult: 1,
-      critDmgMult: 1,
       teamCritFlat: 0,
       treeSheet: tree,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: 1,
       dmgMult: 1,
       mitigationPct: 0,
     });
@@ -491,11 +487,11 @@ describe('derive', () => {
       attackMult: 1,
       energyMult: 1,
       speedMult: 1,
-      critDmgMult: 1,
       teamCritFlat: 0,
       treeSheet: tree,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: 1,
       dmgMult: 1,
       mitigationPct: 0,
     });
@@ -523,11 +519,11 @@ describe('derive', () => {
       attackMult: 1,
       energyMult: 1,
       speedMult: 1,
-      critDmgMult: 1,
       teamCritFlat: 0,
       treeSheet: ZERO_TREE,
       penetrationPp: 0,
       context: baseCtx(),
+      hitMult: 1,
       dmgMult: 1,
       mitigationPct: 0,
     };

@@ -201,8 +201,8 @@ describe('phase-wiki-bundle', () => {
 
     it('KEY_GATE_COST / RETURN_BONUS_ADD / RETURN_BONUS_ADD_VIP / RETURN_BONUS_CAP_SECS', () => {
       expect(KEY_GATE_COST).toBe(1);
-      expect(RETURN_BONUS_ADD).toBe(0.4);
-      expect(RETURN_BONUS_ADD_VIP).toBe(0.8);
+      expect(RETURN_BONUS_ADD).toBe(0.5);
+      expect(RETURN_BONUS_ADD_VIP).toBe(1);
       expect(RETURN_BONUS_CAP_SECS).toBe(28800);
     });
 

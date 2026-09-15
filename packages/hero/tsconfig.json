@@ -4,14 +4,14 @@
     "jsx": "react-jsx",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "outDir": "dist",
-    "rootDir": "src",
-    "noUncheckedIndexedAccess": false
+    "rootDir": "src"
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": [
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
     "src/**/*.stories.ts",
-    "src/**/*.stories.tsx"
+    "src/**/*.stories.tsx",
+    "src/**/*.test-fixture.ts"
   ]
 }

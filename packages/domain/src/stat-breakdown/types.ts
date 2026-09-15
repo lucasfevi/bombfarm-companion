@@ -1,6 +1,7 @@
 import type { AbilityMods, Context, HeroSheet } from '../model';
 import type { SheetOtherPct, SheetStats } from '../gear';
 import type { SheetKey, SheetPanelKey } from '../planner-constants';
+import type { HeroRune } from '../runes';
 
 export type BreakdownStatId =
   | SheetPanelKey
@@ -8,6 +9,7 @@ export type BreakdownStatId =
   | 'dmg'
   | 'hit'
   | 'criticalHit'
+  | 'avgHit'
   | 'critFactor'
   | 'fuse'
   | 'bombsPerSecond'
@@ -28,7 +30,8 @@ export type LedgerSource =
   | 'tree'
   | 'abilities'
   | 'team'
-  | 'abilitiesTeam';
+  | 'abilitiesTeam'
+  | 'rune';
 export type LedgerNote =
   | 'capped'
   | 'ownTeamSplit'
@@ -39,9 +42,10 @@ export type LedgerNote =
 /**
  * The four in-game lines, plus a `combat` bucket for the multiplicative sources that
  * sit below the sheet (`abilities` / `team` / `abilitiesTeam`) — real combat bonuses, not one
- * of the four sheet-building lines.
+ * of the four sheet-building lines — and `rune`, the timed buff the game applies on top of the
+ * sheet it built from those four (`runes.ts`).
  */
-export type LedgerGroup = 'hero' | 'gear' | 'ability' | 'skillTree' | 'combat';
+export type LedgerGroup = 'hero' | 'gear' | 'ability' | 'skillTree' | 'combat' | 'rune';
 
 /**
  * Exhaustive map from every `LedgerSource` to the game line it belongs to.
@@ -61,6 +65,7 @@ export const LEDGER_SOURCE_GROUP: Record<LedgerSource, LedgerGroup> = {
   abilities: 'combat',
   team: 'combat',
   abilitiesTeam: 'combat',
+  rune: 'rune',
 };
 
 export interface LedgerStep {
@@ -74,12 +79,56 @@ export interface LedgerStep {
   splitTeam?: number;
   /** When set, UI shows `percent% × base` instead of a bare additive amount. */
   pctOfBase?: { percent: number; base: number };
+  /** `rune` steps only: play-seconds until the rune expires — the buff is transient. */
+  runePlaySecondsLeft?: number;
 }
+
+/** Every input a derived figure's substituted formula names — a host labels each one. */
+export type FormulaTermKey =
+  | 'phaseMit'
+  | 'penetration'
+  | 'abilities'
+  | 'pack'
+  | 'extra'
+  | 'pulse'
+  | 'attack'
+  | 'mitF'
+  | 'dmg'
+  | 'hit'
+  | 'critChance'
+  | 'critDmg'
+  | 'critFactor'
+  | 'cdr'
+  | 'fuseFloor'
+  | 'fuse'
+  | 'walk'
+  | 'band'
+  | 'cycle'
+  | 'energy'
+  | 'drain'
+  | 'restSeconds'
+  | 'field'
+  | 'avgHit'
+  | 'bombs'
+  | 'rangeMult'
+  | 'aiEfficiency'
+  | 'activeDps';
+
+export interface FormulaTerm {
+  key: FormulaTermKey;
+  value: number;
+  /** `value` as `substituted` prints it. */
+  text: string;
+}
+
+/** `substituted`, cut into its literal operators and the terms between them, in order. */
+export type FormulaPart = string | FormulaTerm;
 
 export interface FormulaBreakdown {
   kind: 'formula';
   expressionKey: string;
   substituted: string;
+  parts: readonly FormulaPart[];
   value: number;
 }
 
@@ -103,8 +152,13 @@ export interface PipelineFacts {
   attackMult: number;
   energyMult: number;
   speedMult: number;
-  critDmgMult: number;
   teamCritFlat: number;
+  /** The roster's capped Brecha total in flat penetration points (`CombatMults.teamPenFlat`). */
+  teamPenFlat: number;
+  /** Matilha's pack factor inside `dmgMult` (`CombatMults.packMult`). */
+  packMult: number;
+  /** The hero's own Baton Pass pulse averaged over wall clock, inside `dmgMult`; absent reads as 1. */
+  entryPulseMult?: number;
   treeSpeed: number;
   treeCritChance: number;
   treeCritDmg: number;
@@ -112,8 +166,13 @@ export interface PipelineFacts {
   /** `skills.totals.luck_add × 100` — flat Luck percentage points (see `ledgerLuck`). */
   treeLuckFlatPct: number;
   context: Context;
+  /**
+   * What one blast carries — `packMult × (1 + extraDmgPct/100) × entryPulseMult`, the
+   * pipeline's `hitMult` with the pulse folded in. Never the second-blast / execute expectation:
+   * that is `mods.dmgMult`, a factor of `active` and `dps` and of no printed hit.
+   */
   dmgMult: number;
-  /** Tree damage mult (Dano Total) — factor in `dmgMult`. */
+  /** Tree damage mult (Dano Total) — on the sheet, never a factor here. */
   treeDanoTotal: number;
   /** Extra damage % from Math check — factor in `dmgMult`. */
   extraDmgPct: number;
@@ -121,4 +180,6 @@ export interface PipelineFacts {
   dps: number;
   uptime: number;
   rest: number;
+  /** The hero's timed runes, already inside `geared`/`adjusted`/`effective`; absent reads as none. */
+  runes?: readonly HeroRune[] | undefined;
 }

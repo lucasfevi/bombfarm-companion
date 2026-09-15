@@ -5,8 +5,8 @@ directly by relative path rather than holding a copy of its own, and
 `tools/fixture-corpus-parity.test.mjs` fails if one is ever committed there again.
 
 Every fixture here satisfies the positive discriminator: it carries at least one of
-`skills.refunds`, `skills.totals.vagas_campo`, `skills.totals.bag_tabs_bonus`, and none of
-`keystones`, `abisso_base`, `crit_dmg_mult` — enforced by `fixture-corpus.test.ts`.
+`skills.refunds`, `skills.totals.vagas_campo`, `skills.totals.bag_tabs_bonus` — enforced by
+`fixture-corpus.test.ts`.
 
 For what this deletion cost, the unreproducible fixture families it replaced, and the round-trip
 invariant's one accepted residual gap, see
@@ -20,7 +20,7 @@ that file lands later in this feature — expected, not a defect of this manifes
 | Source capture | live save export, captured externally from the game client |
 | Capture date | 2026-08-13 |
 | Account | 486 (post-wipe), `phase: 24`, `max_phase: 42` — 5 heroes: Jon L38 (4/8 geared), Bellatrix L42 (8/8 geared), Perrin L4 (naked), Perrin L3 (naked), Lyra L2 (naked) |
-| Capture log entry | *Keystone removal + account wipe*, 2026-08-13 row (tracked externally to this repo) |
+| Capture log entry | *Game patch + account wipe*, 2026-08-13 row (tracked externally to this repo) |
 | Scrub | `account.account_id`, `account.player_name` removed via `scrubPersonalFields` (`packages/domain/tests/helpers/fidelity-pair.ts`) — nothing else changed |
 | SHA-256 (unscrubbed source) | `fb87b0051bf6842af1a691493d9a52e7baa6ca6f582d1916778c147b4b017b04` |
 | SHA-256 (committed file) | `f6fe17e5d246f9b873b95fc0a51ead10a596cf061272b3b53ab5c3f344393694` |
@@ -32,12 +32,12 @@ that file lands later in this feature — expected, not a defect of this manifes
 | Field | Value |
 | --- | --- |
 | Source capture | `packages/domain/tests/fixtures/api/assembled-payload-before.json` (already committed to this repo; byte copy, unmodified) |
-| Capture date | 2026-08-12 |
+| Capture date | 2026-08-12 — the `account` block additionally carries the three sell-gate keys (`client_can_sell`, `sell_phase`, `sell_mode`) the game added later, transcribed into the source `/state` fixture from a 2026-09-10 observation so the fingerprint corpus stays exact |
 | Account | API-assembled `AccountPayload`, `phase: 21`, `max_phase: 33` — 8 heroes (5 battle-allowed: Nyx L25 8/8, Bellatrix L27 8/8, Cora L22 4/8, Wren L24 3/8, Devin L5 naked; 3 not battle-allowed: Lyra L3, Mira L3, Bryn L3, all naked) |
 | Capture log entry | none — this fixture predates MP5 and has no dedicated capture-log entry; it was already committed and already scrubbed of `account_id`/`player_name` (`D19`) before this feature. Recorded as a limitation, not papered over |
 | Scrub | none applied by this feature — the source file was already scrubbed when it was committed |
 | SHA-256 (unscrubbed source) | not applicable — no unscrubbed predecessor exists in either repo; the earliest committed form is already scrubbed |
-| SHA-256 (committed file) | `d9bfac297f188a10ff6885d00844a9f99c21e2a1171f667ea9d8ee4783003435` (identical to `packages/domain/tests/fixtures/api/assembled-payload-before.json`, checked by `tools/fixture-corpus-parity.test.mjs`) |
+| SHA-256 (committed file) | `e45f9bc57af515752ec68c15e6f3966b15a34eaae56a5d890143b11512450697` (identical to `packages/domain/tests/fixtures/api/assembled-payload-before.json`, checked by `tools/fixture-corpus-parity.test.mjs`) |
 | May prove | whole-roster round trip with **zero** inference issues on all 8 heroes; battle-allowed vs. not-battle-allowed hero handling; the larger inventory (27 catalogued items) for team-plan search and import-sync assertions |
 | May **not** prove | save-file shape (no `export_version`/`generated_at`); the duplicate-hero-name a11y case (all 8 names are distinct); item-upgrade variety for forge assertions (every upgrade is `0`); high-phase mitigation; before/after point deltas, ability-toggle or gear-swap pairs (same single-snapshot limits as the export) |
 
@@ -213,3 +213,17 @@ no exclusion list, that any inversion reporting no issue stays inside the ceilin
 | SHA-256 (committed file) | `d6c90193b9603b9ea5011e4f92a61c63b5b6cc97526e097865d6aa055dca6494` |
 | May prove | the `soulbound` flag the game began emitting on 2026-08-29 — the only committed capture that carries it, and it witnesses the key **both ways on both sections** (19 of 112 items, 3 of 13 heroes), which is what lets it be a reviewable `optional` escape rather than a dead one. It also witnesses the flag's relationship to sale: all 19 soulbound items are `tradable: false` and all 3 soulbound heroes are `marketable: false`, while 41 items are tradable without being soulbound — so the subset is strict in the direction that matters and is not an artifact of everything being untradable. Beyond the flag it is the **second capture past the 2026-08-28 damage boundary and much the thicker of the two** (13 heroes / 112 items against save-20260828's 4 / 15), with forge variety (`upgrade` in `{0, 8}`, where save-20260828 is all `0`), item levels `{0, 10, 20, 30}`, rarities Comum through Épico, and the `item.slot` escape witnessed both ways (77 with, 35 without). The only capture in the corpus where any hero carries an **unspent stat point** (Orin and Devin, 1 each) |
 | May **not** prove | the 50-level Dano step (`itens.dmg_step_niveis`) — items top out at level 30, so this capture leaves that gap exactly where `save-20260828-4heroes-postpatch.json` left it; a before/after point delta (it holds unspent points but is a single snapshot, so there is no second half to diff against); stars (every hero is ★0); Presságio Mortal (no hero owns it); a `soulbound: false` value (the game omits the key rather than emitting it false, so this capture — and the wire — witness only presence-or-absence) |
+
+## `payload-20260913-20heroes-runes.json`
+
+| Field | Value |
+| --- | --- |
+| Source capture | the desktop app's own live account read (an assembled `AccountPayload`, not a save export), taken off the installed app's stored sections |
+| Capture date | 2026-09-13 |
+| Account | 486, `phase: 91`, `max_phase: 230` — 20 heroes, levels 1 to 142, Comum through Lendária, **seven of them starred** (Jon ★2, WB;KE ★1, WB;PA ★1, Bellatrix ★2, Minato ★2, Edda ★2, Korin ★2): eleven geared 8/8, one 6/8 (Torin L30), eight naked. 285 items. Casa IV at level 18 — `casa.slots: 9`, `skills.field_slots: 9`, `skills.totals.vagas_campo: 8`. The heaviest skill tree in the corpus: `dmg_static 3.88`, `energia_add 2.06`, `crit_dmg_add 0.68`, `speed_add 0.205`, `crit_chance_add 0.249` |
+| Capture log entry | *Runes appear on heroes*, 2026-09-13 row (tracked externally to this repo) |
+| Scrub | `account.account_id`, `account.player_name` removed; re-serialized as 2-space JSON to match this directory; a `fidelity` block added naming every section `resolved` at the read's own capture time — nothing else changed |
+| SHA-256 (unscrubbed source) | `778e62a2220e383d9dd836b693b1a610304afc306055c16acea2d0dc99f451e0` |
+| SHA-256 (committed file) | `840242d77b32b35bb20b0ab1517a2ffb2ce5f1535025942081ee2c742b933f65` |
+| May prove | **the rune mechanic** — the only committed capture carrying `heroes[].runas`: six of twenty heroes hold timed rune buffs (Jon, WB;KE, Bellatrix, Minato, Edda, Korin), every one at rarity 0 (`p = 0.05`), and Bellatrix holds one on all eight axes at once. It witnesses the field **both ways** (6 with, 14 without), which is what lets `runas` be a reviewable `optional` escape in `save-schema.ts`. With the runes modelled (`runes.ts`) all 20 heroes solve to a whole-number point vector landing exactly on `level`; with the field ignored the same six over-recover and are blocked — so the capture proves the mechanic rather than merely tolerating it. The per-axis FORM is fitted here: attack / energy / speed / crit chance / cooldown multiply the final sheet (speed discriminates post-tree from pre-tree on three heroes), crit damage multiplies the pre-tree excess with the tree's flat add on top (four heroes; the alternative placements miss by ~3 points each). Also the second key the same read introduced, `export_lock_secs` (2 of 20 heroes), likewise witnessed both ways. Beyond runes it is the **first in-regime capture with ★ > 0 heroes**, so star scaling of every percent-of-base and flat term is finally observed on real sheets — every one of the seven starred heroes reproduces to float precision; the **furthest phase** in the corpus (`max_phase 230`); and the only capture where a hero (Minato) carries an exported penetration the model does not reproduce (`64.1` against a composed ~19), a pre-existing gap the rune work did not touch and this file makes visible |
+| May **not** prove | a rune stronger than rarity 0 (every `p` here is `0.05` — higher rarities are assumed to keep the same shape, per `WIKI_RUNES.strengthByRarity`); two runes on one axis at once (never observed — re-applying an axis extends `s`, up to `cap_play_secs`); how a rune interacts with the crit-chance / cooldown display caps (no runed hero is near either); the xp and gold axes' effect on anything (Bellatrix carries both, but a read is a snapshot and neither is a sheet statistic); before/after point deltas (`stat_points_available` is `0` on every hero); a second account (this is 486 — the cross-account check for runes has no witness yet) |

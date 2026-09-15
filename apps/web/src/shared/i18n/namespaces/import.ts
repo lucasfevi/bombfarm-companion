@@ -1,7 +1,7 @@
 export const en = {
   importHeroesBtn: "Import",
   importDialogTitle: "Import heroes from save file",
-  importDialogDesc: "Upload a BombFarm save-file export (.json) to pick heroes to bring into the planner.",
+  importDialogDesc: "Upload a BombFarm save-file export (.json) to pick heroes to bring into the planner. To get one, open the game's Settings → Privacy and click Download next to \"Download a copy of my data\".",
   importPreviewTitle: "Review import",
   importPreviewDesc: "Check skill tree, house, and hero roster from this save, then import.",
   importDropHint: "Drag your save file here, or click to browse",
@@ -41,7 +41,7 @@ export const en = {
   importRejectedNotASaveFile: "This file doesn't look like a BombFarm save-file export.",
   importRejectedMissingBirthStats: "This save is missing birth stats needed for accurate points for: {names}. Re-export from an updated game version.",
   // The positive-discriminator rejection — deliberately generic. Names no
-  // keystone, node id, version, date or field path, so it stays accurate after the next patch.
+  // retired mechanic, node id, version, date or field path, so it stays accurate after the next patch.
   importRejectedUnsupportedShape: "The planner can't use this save file. Export a fresh save from the game and import that one.",
   // A blocked candidate used to be dimmed and nothing else, which reads as a rendering glitch
   // rather than an explanation. Every way a hero can block — gear the catalog does not know, a
@@ -59,7 +59,7 @@ export const en = {
 export const pt: typeof en = {
   importHeroesBtn: "Importar",
   importDialogTitle: "Importar heróis do save",
-  importDialogDesc: "Envie um arquivo de save do BombFarm (.json) para escolher quais heróis trazer para o planner.",
+  importDialogDesc: "Envie um arquivo de save do BombFarm (.json) para escolher quais heróis trazer para o planner. Para gerar um, abra Configurações → Privacidade no jogo e clique em Baixar ao lado de \"Baixar uma cópia dos meus dados\".",
   importPreviewTitle: "Revisar importação",
   importPreviewDesc: "Confira a árvore de habilidades, a casa e o elenco deste save e importe.",
   importDropHint: "Arraste seu arquivo de save aqui, ou clique para escolher",

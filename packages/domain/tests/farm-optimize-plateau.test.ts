@@ -136,13 +136,13 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
     //           so both stats compete for the pool again and pull the split away from the
     //           attack/energy pair once more — the mirror image of the 0.5402 → 0.5000 move
     //           above, three days later.
-    //   0.5618  issue #132's team-aura roster shape: this fixture's account.teamBuffs is
+    //   0.5618  PR #139's team-aura roster shape: this fixture's account.teamBuffs is
     //           zeroTeamBuffs(), so Jon (folego_mineiro 18, elsewhere in this 5-hero roster)
     //           loses the own-rank drain leak the old model let through. His lower uptime shifts
     //           the squad-level House allocation this solve reads, moving the winning build's
     //           own energy/attack split even though nothing about ITS abilities changed.
     //   0.5568  2026-08-20 rotation-priced team auras + the HOP_DENSITY_EXPONENT refit. Jon's
-    //           folego_mineiro is credited again — not at its full rank as before issue #132, but
+    //           folego_mineiro is credited again — not at its full rank as before PR #139, but
     //           at the share of the rotation he is actually on the field for — which lifts every
     //           hero's field seconds and shifts the same allocation back part of the way.
     //   0.6279  2026-08-23 crit-chance ability shape: Olho Clínico's contribution stops scaling

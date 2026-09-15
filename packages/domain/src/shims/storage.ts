@@ -1,5 +1,6 @@
 /** Domain-facing storage shapes (formerly `@/shared/lib/storage` types). */
 import type { StatRanges } from '../birth-sheet.js';
+import type { HeroRune } from '../runes.js';
 import type { Loadout, SheetStats } from '../gear/types.js';
 import type { RankMode, RarityKey } from '../model/index.js';
 
@@ -36,15 +37,23 @@ export type HeroContext = {
 
 export type AccountShared = {
   tree: TreeState;
+  /**
+   * The team-aura totals THIS pipeline call prices against — never a stored account fact. The
+   * caller computes them for the screen at hand (`team-buffs.ts`): a rotating board prices the
+   * pool over its uptimes, a per-hero screen prices one hero's seat, and the farm-rate module
+   * ignores whatever it is handed and derives its own.
+   */
   teamBuffs: Record<string, number>;
   /**
-   * Set when {@link teamBuffs} is a hand-typed total rather than one derived from the roster.
-   * Only `farm-rate.ts` reads it, and only to decide whether it may re-derive the auras over the
-   * rotation: a typed number is a deliberate "assume this much aura" what-if and must reach the
-   * board verbatim, where a derived one is a snapshot of whoever happens to be deployed and is
-   * the wrong quantity for a board that rotates a whole pool through the field.
+   * Other heroes on the field beside the one THIS pipeline call prices — Matilha's allies. Per
+   * call like `teamBuffs`, never a stored account fact: a per-hero screen counts the deployed
+   * heroes other than the hero, and the farm-rate module derives its own from the pool's
+   * uptimes. Absent reads as none.
    */
-  teamBuffsOverride?: Record<string, number> | null;
+  fieldAllies?: number;
+  /** The rank the hero's own Passagem de Bastão pulse is priced at, at least — per call like
+   *  `fieldAllies`: the cap rank while a per-hero screen's switch is on, else absent. */
+  entryPulseRankFloor?: number;
   context: HeroContext;
   /**
    * HOUSE RECOVERY slots (`casa.slots`) — how many heroes the House refills at a time. NOT the
@@ -129,6 +138,13 @@ export type HeroRecord = {
    * read, which has no file to re-export and would be left with nothing at all.
    */
   statRanges?: StatRanges;
+  /**
+   * The timed rune buffs the hero carried when it was read (`heroes[].runas`), already folded
+   * into {@link gearedOverride}. Absent on a record written before the importer read them, and
+   * every reader treats absence as an empty list (`runesOf`, `runes.ts`); the importer writes the
+   * list on every candidate, empty or not.
+   */
+  runes?: readonly HeroRune[] | undefined;
   tree?: TreeState;
   teamBuffs?: Record<string, number>;
   context?: HeroContext;

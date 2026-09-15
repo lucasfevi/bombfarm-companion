@@ -25,6 +25,12 @@ describe('SegmentedToggle', () => {
     expect(out).toMatch(/class="[^"]*\bbg-accent\b[^"]*text-accent-ink[^"]*">EN</);
   });
 
+  it('tells assistive technology which option is pressed, not just the eye', () => {
+    const out = html({ options: OPTIONS, value: 'en', onChange: () => {}, ariaLabel: 'Language' });
+    expect(out).toMatch(/<button[^>]*aria-pressed="false"[^>]*>PT</);
+    expect(out).toMatch(/<button[^>]*aria-pressed="true"[^>]*>EN</);
+  });
+
   it('fires onChange with the clicked option id', () => {
     let lastId: string | undefined;
     const tree = SegmentedToggle({

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { abilityMods, levelPowerMult, mitigationFactor, type Context } from '@bombfarm/domain/model';
+import {
+  abilityMods,
+  cycleSecondsForHero,
+  GRID_SPEED_COEF,
+  levelPowerMult,
+  mitigationFactor,
+  type Context,
+} from '@bombfarm/domain/model';
 import { combineDrainRate } from '@bombfarm/domain/drain';
 import { emptySheetOther, starsMult, type SheetOtherPct, type SheetStats } from '@bombfarm/domain/gear';
 import { computeCombatMults, derive } from '@bombfarm/domain/derive';
@@ -22,8 +29,7 @@ const baseCtx = (): Context => ({
   restSeconds: 12 * 60,
   mitigation: 0.067,
   blastRange: 1,
-  cycleModel: 'serial',
-  walkDelay: 0.15,
+  ato: 1,
   drainMult: 1,
 });
 
@@ -98,7 +104,7 @@ function buildFixture(opts: FixtureOpts = {}) {
     ({
       ...emptySheetOther(),
       critChanceFlat: mods.sheetCritChanceFlat,
-      penetration: mods.sheetPenetrationRaw,
+      penetration: mods.sheetPenetrationFlat,
       critDmgFlat: mods.sheetCritDmgFlat,
     } satisfies SheetOtherPct);
 
@@ -169,11 +175,11 @@ function buildFixture(opts: FixtureOpts = {}) {
     attackMult: mults.attackMult,
     energyMult: mults.energyMult,
     speedMult: mults.speedMult,
-    critDmgMult: mults.critDmgMult,
     teamCritFlat: mults.teamCritFlat,
     treeSheet,
-    penetrationPp: mods.penetrationPp,
+    penetrationPp: mults.teamPenFlat,
     context,
+    hitMult: mults.hitMult,
     dmgMult: mults.dmgMult,
     mitigationPct: 6.7,
   });
@@ -195,15 +201,16 @@ function buildFixture(opts: FixtureOpts = {}) {
     attackMult: mults.attackMult,
     energyMult: mults.energyMult,
     speedMult: mults.speedMult,
-    critDmgMult: mults.critDmgMult,
     teamCritFlat: mults.teamCritFlat,
+    teamPenFlat: mults.teamPenFlat,
+    packMult: mults.packMult,
     treeSpeed,
     treeCritChance,
     treeCritDmg,
     treeEnergy,
     treeLuckFlatPct,
     context,
-    dmgMult: mults.dmgMult,
+    dmgMult: mults.hitMult,
     treeDanoTotal,
     extraDmgPct,
     active: deriveResult.active,
@@ -246,12 +253,19 @@ function assertFormulasMatch(facts: PipelineFacts): void {
             ? hit
             : id === 'criticalHit'
               ? hit * (1 + facts.effective.critDmg / 100)
+              : id === 'avgHit'
+                ? hit * (1 + (facts.effective.critChance / 100) * (facts.effective.critDmg / 100))
               : id === 'critFactor'
                 ? 1 + (facts.effective.critChance / 100) * (facts.effective.critDmg / 100)
                 : id === 'fuse'
                   ? Math.max(2 * (1 - facts.effective.cdr / 100), 0.4)
                   : id === 'bombsPerSecond'
-                    ? 1 / (Math.max(2 * (1 - facts.effective.cdr / 100), 0.4) + facts.context.walkDelay)
+                    ? 1 /
+                      cycleSecondsForHero(
+                        Math.max(2 * (1 - facts.effective.cdr / 100), 0.4),
+                        facts.effective.speed * GRID_SPEED_COEF,
+                        facts.context.ato,
+                      )
                     : id === 'fieldSeconds'
                       ? facts.effective.energy / facts.context.drainMult
                       : id === 'rest'
@@ -315,7 +329,7 @@ describe('stat-breakdown builder', () => {
     }
   });
 
-  it('F5 — uncapped team: ownTeamSplit note (issue #132: own is always 0, the hero’s own rank never reaches abilityMods)', () => {
+  it('F5 — uncapped team: ownTeamSplit note (PR #139: own is always 0, the hero’s own rank never reaches abilityMods)', () => {
     // Grito de Guerra is a team aura — a hero's own rank (5, here, to prove it is harmlessly
     // ignored) never reaches abilityMods, so the roster-wide team total (10) alone drives
     // attackMult 1.10, under Grito's 20 cap.
@@ -407,10 +421,13 @@ describe('stat-breakdown builder', () => {
     const pen = buildStatBreakdown('penetration', facts);
     expect(pen.kind).toBe('ledger');
     if (pen.kind === 'ledger') {
+      expect(pen.steps.map((s) => s.source)).toEqual(['base', 'stars', 'sheetAbilities']);
       const sheet = pen.steps.find((s) => s.source === 'sheetAbilities');
       expect(sheet?.note).toBe('diamondTip');
-      // ponta_diamante @10, W3 perLevel 1.0 -> raw Σ 10 (was 20 pre-W3).
-      expect(sheet?.amount).toBeCloseTo(11, 6);
+      // ponta_diamante @10, perLevel 1.0 -> a FLAT +10 penetration points since the 2026-09-02
+      // patch, so this step is an ADD like Keen Eye's above, not the ×11 pool multiply it was.
+      expect(sheet?.op).toBe('+');
+      expect(sheet?.amount).toBeCloseTo(10, 6);
     }
   });
 
@@ -521,6 +538,7 @@ describe('LEDGER_SOURCE_GROUP is exhaustive over LedgerSource', () => {
     'abilities',
     'team',
     'abilitiesTeam',
+    'rune',
   ];
 
   it('every LedgerSource union member has a mapped LedgerGroup', () => {
@@ -596,5 +614,60 @@ describe('ledgerLuck', () => {
     const abilityStep = bd.steps.find((s) => s.source === 'sheetAbilities');
     expect(abilityStep).toBeDefined();
     expect(abilityStep?.amount).toBe(0);
+  });
+});
+
+describe('formula parts', () => {
+  it('every derived formula is its parts joined, and every term carries a key and the text it prints as', () => {
+    const { facts } = buildFixture({
+      abilities: { detonacao_dupla: 5, bateria_extra: 5, explosao_ampla: 3 },
+      teamBuffs: { ...zeroTeamBuffs(), folego_mineiro: 10 },
+    });
+    for (const id of BREAKDOWN_DERIVED_IDS) {
+      const bd = buildStatBreakdown(id, facts);
+      expect(bd.kind).toBe('formula');
+      if (bd.kind !== 'formula') return;
+      const joined = bd.parts.map((part) => (typeof part === 'string' ? part : part.text)).join('');
+      expect(joined, id).toBe(bd.substituted);
+      const terms = bd.parts.filter((part) => typeof part !== 'string');
+      expect(terms.length, `${id} names no term`).toBeGreaterThan(0);
+      for (const term of terms) {
+        expect(term.key, id).toBeTruthy();
+        expect(Number.isFinite(term.value), `${id}.${term.key}`).toBe(true);
+      }
+    }
+  });
+
+  it('the average hit is the hit times the critical factor, and Active DPS reads it plus the abilities term a hit leaves out', () => {
+    const { facts } = buildFixture({
+      pts: { ...ZERO_PTS(), critChance: 5, critDmg: 5 },
+      abilities: { detonacao_dupla: 10 },
+    });
+    const dmg = buildStatBreakdown('dmg', facts);
+    const hit = buildStatBreakdown('hit', facts);
+    const avg = buildStatBreakdown('avgHit', facts);
+    const factor = buildStatBreakdown('critFactor', facts);
+    const active = buildStatBreakdown('activeDps', facts);
+    if (dmg.kind !== 'formula' || hit.kind !== 'formula' || avg.kind !== 'formula' || factor.kind !== 'formula' || active.kind !== 'formula') {
+      throw new Error('expected formulas');
+    }
+    expect(facts.mods.dmgMult).toBeCloseTo(1 + 0.15 * 0.5, 9);
+    expect(dmg.value).toBe(1);
+    expect(dmg.parts.filter((part) => typeof part !== 'string').map((part) => part.key)).toEqual(['pack', 'extra']);
+    expect(hit.value).toBeCloseTo(facts.effective.attack * mitigationFactor(facts.context.mitigation, facts.effective.penetration), 6);
+    expect(avg.value).toBeCloseTo(hit.value * factor.value, 6);
+    const activeTerms = active.parts.filter((part) => typeof part !== 'string');
+    expect(activeTerms.map((term) => term.key)).toEqual(['avgHit', 'abilities', 'bombs', 'rangeMult', 'aiEfficiency']);
+    expect(activeTerms[0]?.value).toBeCloseTo(avg.value, 6);
+    expect(activeTerms[1]?.value).toBeCloseTo(facts.mods.dmgMult, 9);
+    expect(active.value).toBeCloseTo(facts.active, 6);
+  });
+
+  it('a hero without a second blast or an execute prints no abilities term on Active DPS', () => {
+    const { facts } = buildFixture({ abilities: { explosao_ampla: 10 } });
+    expect(facts.mods.dmgMult).toBe(1);
+    const active = buildStatBreakdown('activeDps', facts);
+    if (active.kind !== 'formula') throw new Error('expected formula');
+    expect(active.parts.filter((part) => typeof part !== 'string').map((term) => term.key)).toEqual(['avgHit', 'bombs', 'rangeMult', 'aiEfficiency']);
   });
 });

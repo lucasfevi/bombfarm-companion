@@ -17,7 +17,12 @@ import { describe, expect, it } from 'vitest';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 
-const SCANNED_ROOTS = ['apps', 'packages', 'tools', 'docs', '.changeset'];
+// Every tracked, public directory tree an agent authors prose into. `.github` (workflow YAML)
+// and `.cursor` (editor rule files that mirror `docs/`) were absent for years, so no CI workflow
+// or Cursor rule was ever scanned — a citation could sit in one indefinitely and this guard would
+// still report green. The per-root assertion below fails if any root here scans zero files, so a
+// root added without a matching extension cannot silently do nothing.
+const SCANNED_ROOTS = ['apps', 'packages', 'tools', 'docs', '.changeset', '.github', '.cursor'];
 
 /**
  * `CHANGELOG.md` is out of scope, and `.changeset/**` is in scope for exactly that reason:
@@ -38,6 +43,7 @@ const SCANNED_EXTENSIONS = [
   '.jsx',
   '.css',
   '.md',
+  '.mdc',
   '.json',
   '.yml',
   '.yaml',

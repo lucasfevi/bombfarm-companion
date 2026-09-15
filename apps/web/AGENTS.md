@@ -90,7 +90,8 @@ the *visual* project, whose screenshot baselines are only stable inside one imag
 behavioural smoke specs compare no pixels and need none of it. Every note in the root
 [`AGENTS.md`](../../AGENTS.md) check list applies: it is the check that catches breaks no Vitest
 run can see, `E2E_PREBUILT=1` skips the build when `out/` is current, and a stale listener on port
-4321 makes the whole run describe an old export.
+4321 makes the whole run describe an old export — `E2E_PORT` moves a run off a port another
+session holds.
 
 ```bash
 npx vitest run --project tools download-page-drift

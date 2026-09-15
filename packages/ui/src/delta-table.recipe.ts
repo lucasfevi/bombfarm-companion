@@ -11,8 +11,8 @@ export const deltaTableLabelColClass = 'w-[48%]';
 export const deltaTableNumericColClass = 'w-[17.34%]';
 
 export const deltaTableHeadRowClass = 'text-[10px] tracking-[0.03em] text-muted uppercase';
-export const deltaTableHeadCellClass = 'py-1 pr-1 text-left font-normal';
-export const deltaTableHeadNumericCellClass = 'py-1 pl-2 text-right font-normal';
+export const deltaTableHeadCellClass = 'py-1 pr-1 text-left font-bold';
+export const deltaTableHeadNumericCellClass = 'py-1 pl-2 text-right font-bold';
 
 export const deltaTableRowRecipe = cva('border-t border-line/50', {
   variants: {
@@ -26,8 +26,12 @@ export const deltaTableRowRecipe = cva('border-t border-line/50', {
      * table's header row.
      */
     unaffected: { true: 'text-muted', false: '' },
+    /** Every other row tinted a few percent of ink — reads on either theme's ground — so a long
+     *  ledger can be followed across four columns without losing the row. The first body row is
+     *  the tinted one, so the stripe starts right under the header. */
+    striped: { true: 'odd:bg-[color-mix(in_oklch,var(--ink)_5%,transparent)]', false: '' },
   },
-  defaultVariants: { unaffected: false },
+  defaultVariants: { unaffected: false, striped: false },
 });
 export const deltaTableLabelCellClass = 'py-1 pr-1 text-left align-middle font-normal';
 export const deltaTableLabelInnerClass =

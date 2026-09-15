@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   AppEnvironmentInfo,
   AppLocale,
@@ -10,7 +10,13 @@ import type {
   UpdateStatus,
 } from '@bombfarm/contracts';
 import { DEFAULT_SETTINGS, idleUpdateStatus } from '@bombfarm/contracts';
-import { AppShell, BrandMark, StatusChip, useShellDensity, WINDOW_CONTROLS_WIDTH } from '@bombfarm/ui';
+import {
+  AppShell,
+  BrandMark,
+  StatusChip,
+  useShellDensity,
+  WINDOW_CONTROLS_WIDTH,
+} from '@bombfarm/ui';
 // Proves the renderer can import @bombfarm/domain: a value import from a
 // FILE subpath that itself value-imports ./data/catalog.json, so a dist missing the JSON data
 // fails the static export build rather than surfacing later at runtime. It also carries a
@@ -19,6 +25,7 @@ import { rarityLabel } from '@bombfarm/domain/game-labels';
 import type { ConsentRecord } from '@bombfarm/game-api';
 import { CopyProvider, useCopy, useLocale, type Copy } from '../lib/copy';
 import { formatAge } from '../lib/format';
+import { useTabScrollMemory } from '../lib/use-tab-scroll-memory';
 import { navItemsFor } from './nav-items';
 import { ShellActions } from './shell-actions';
 import { ShellWindowControls } from './shell-window-controls';
@@ -27,8 +34,12 @@ import { ConsentModal } from './consent-modal';
 import { UpdateChip } from './update-chip';
 import { LiveView } from './live/live-view';
 import { FarmView } from './farm/farm-view';
+import { HeroesView } from './heroes/heroes-view';
 import { InventoryView } from './inventory/inventory-view';
+import { ForgeQueueBar, isForgeQueueShown } from './forge/forge-queue-bar';
+import { useForgeQueue } from '../lib/forge/forge-queue-store';
 import { ForgeView } from './forge/forge-view';
+import { OptimizerView } from './optimizer/optimizer-view';
 import { AccountView } from './account/account-view';
 import { ConsentSection } from './settings/consent-section';
 import { ForgeSection } from './settings/forge-section';
@@ -213,7 +224,13 @@ function HomePageContent({
   // row and never shrinks, so the room the tabs and actions are competing for is what is left
   // after it.
   const density = useShellDensity(WINDOW_CONTROLS_WIDTH);
-  const [activeNavId, setActiveNavId] = useState(DEFAULT_NAV_ID);
+  const mainRef = useRef<HTMLElement | null>(null);
+  const [activeNavId, setActiveNavId] = useTabScrollMemory(DEFAULT_NAV_ID, mainRef);
+  // Stable on purpose: the Farm screen folds it into the hand-memoised action bag that reaches
+  // its 600-row table, and a fresh lambda per shell render would invalidate that bag every tick.
+  const openOptimizerTab = useCallback(() => {
+    setActiveNavId('optimizer');
+  }, [setActiveNavId]);
   const [environment, setEnvironment] = useState<AppEnvironmentInfo | null>(null);
   const [status, setStatus] = useState<GameStatusInfo | null>(null);
   const [consent, setConsent] = useState<ConsentRecord | null>(null);
@@ -322,6 +339,9 @@ function HomePageContent({
   const consentLoaded = consent !== null;
   const gated = isConsentGateVisible(consent);
   const granted = consentLoaded && !gated;
+  // The shell draws the band only while there is a queue to show: an element that renders null
+  // would still claim the strip's height on every screen.
+  const forgeQueueShown = isForgeQueueShown(useForgeQueue());
 
   return (
     <>
@@ -335,6 +355,7 @@ function HomePageContent({
         brand={<BrandMark />}
         draggable
         windowControls={<ShellWindowControls />}
+        mainRef={mainRef}
         actions={
           <ShellActions
             density={density}
@@ -355,6 +376,17 @@ function HomePageContent({
               t.shellLoadingLabel
             )}
           </span>
+        }
+        banner={
+          granted && forgeQueueShown ? (
+            <ForgeQueueBar
+              forgeWritesEnabled={forgeWritesEnabled}
+              accountSource={environment?.accountSource ?? null}
+              onOpenForge={() => {
+                setActiveNavId('forge');
+              }}
+            />
+          ) : null
         }
         version={
           environment ? (
@@ -383,13 +415,11 @@ function HomePageContent({
             whichever tab happens to be showing — six smoke specs wait on it purely as a boot
             signal. The probe beside it proves a @bombfarm/domain value and the active language
             reached the DOM; it renders nothing a player sees. */}
-        {/* `min-h-0` is what lets a screen fill the scroll region instead of growing past it. A
-            flex item's automatic minimum size is its content, so without this every tab was as
-            tall as its contents and `<main>` scrolled whatever the tab did with `min-h-0` and
-            `flex-1` inside — the bag table's own scroller had nothing to be a scroller inside of.
-            A tab that is genuinely taller than the region still overflows this box and still
-            scrolls `<main>`, because nothing here clips. */}
-        <div data-testid="app-ready" className="flex min-h-0 flex-1 flex-col gap-4">
+        {/* Fills the shell's measure, which is at least the region and as tall as the tab beyond
+            that — never pinned to the region, or a taller tab overflows it past `<main>`'s end
+            padding. `relative` is what a screen that fills the region positions itself against
+            (`absolute inset-0`) so its own scrollers, not `<main>`, take its height. */}
+        <div data-testid="app-ready" className="relative flex flex-1 flex-col gap-4">
           <span data-testid="domain-label-probe" className="sr-only">
             {rarityLabel('Comum', lang)}
           </span>
@@ -427,11 +457,15 @@ function HomePageContent({
               <SupportSection />
             </div>
           ) : activeNavId === 'farm' ? (
-            <FarmView />
+            <FarmView onOpenOptimizer={openOptimizerTab} />
+          ) : activeNavId === 'heroes' ? (
+            <HeroesView />
           ) : activeNavId === 'inventory' ? (
             <InventoryView />
           ) : activeNavId === 'forge' ? (
             <ForgeView forgeWritesEnabled={forgeWritesEnabled} accountSource={environment?.accountSource ?? null} />
+          ) : activeNavId === 'optimizer' ? (
+            <OptimizerView />
           ) : activeNavId === 'account' ? (
             <AccountView
               onOpenInventory={() => {

@@ -56,7 +56,10 @@ export function TabsPanels({ className, children, transition = contentsTransitio
               // callback-ref population pattern is standard and was unflagged before the split.
               itemRefs.current[index] = element;
             }}
-            className="w-full shrink-0 overflow-clip"
+            // `relative` makes this box the containing block of every absolutely positioned
+            // descendant — an `sr-only` caption, say — so the clip reaches them. Without it they
+            // resolve to the scrolling <main> and the off-screen stages widen its scroll range.
+            className="relative w-full shrink-0 overflow-clip"
           >
             {child}
           </div>

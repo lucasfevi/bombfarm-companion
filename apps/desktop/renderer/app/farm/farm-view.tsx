@@ -29,21 +29,14 @@ import {
   type FarmRankingBoardActions,
   type FarmRankingBoardData,
   type FarmRankingBoardSlots,
-  type FarmStatLabels,
 } from '@bombfarm/farm/components';
 import { HeroPickerDialogView, type HeroPickerSlotProps } from '@bombfarm/hero/components';
-import {
-  buildAccount,
-  deriveFarmPoolEntries,
-  type FarmInputs,
-  type FarmRankingResult,
-} from '@bombfarm/farm/core';
-import { statLabel } from '@bombfarm/domain/game-labels';
-import { SHEET_KEYS, type SheetKey } from '@bombfarm/domain/planner-constants';
-import type { ReturnBonusMode, SquadFarmFacts } from '@bombfarm/domain/farm-rate';
+import { buildRosterAccount, deriveFarmPoolEntries } from '@bombfarm/farm/core';
+import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import { useCopy, useLocale } from '../../lib/copy';
+import { sub, useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
+import { buildAccountRoster } from '../../lib/account/account-roster';
 import {
   useAccountReadRequest,
   type AccountReadRequestState,
@@ -51,30 +44,19 @@ import {
 import { DEFAULT_FARM_CONTROLS, type FarmControls } from '../../lib/farm/farm-inputs';
 import { loadFarmView, saveFarmView } from '../../lib/farm/farm-view-storage';
 import { settledBoard, type FarmSettledBoard } from '../../lib/farm/farm-snapshot-store';
-import { freshProposal, reRankActive, type FarmRespecState } from '../../lib/farm/farm-respec-store';
 import { useFarmSnapshot } from '../../lib/farm/use-farm-snapshot';
 import { useFarmTableHeight } from '../../lib/farm/use-farm-table-height';
-import { farmScreenCopy, useFarmCopy } from './farm-copy';
-import { FarmRefreshControl } from './farm-refresh-control';
+import { farmScreenCopy, useFarmCopy } from '../screen-copy';
+import { AccountRefreshControl } from '../account-refresh-control';
 
 const DEFAULT_PHASE = 1;
 
-export function FarmView() {
+/** `onOpenOptimizer` is the shell's tab switch: the board's Optimize button is a way to the
+ *  Optimizer tab, and which tab is showing is the shell's state, not this screen's. */
+export function FarmView({ onOpenOptimizer }: { onOpenOptimizer: () => void }) {
   const t = useCopy();
   const account = useAccountView();
-  const {
-    state,
-    respec,
-    stale,
-    hasAccount,
-    open,
-    refresh,
-    setControls,
-    setRespecPanelOpen,
-    setRespecReRank,
-    runRespec,
-    proposedRows,
-  } = useFarmSnapshot();
+  const { state, stale, hasAccount, open, refresh, setControls } = useFarmSnapshot();
 
   const [controls, setLocalControls] = useState<FarmControls>(DEFAULT_FARM_CONTROLS);
   const [phase, setPhase] = useState(DEFAULT_PHASE);
@@ -173,10 +155,7 @@ export function FarmView() {
       setFarmHeroEnabled,
       setFarmReturnBonus,
       onSelectHero,
-      setRespecPanelOpen,
-      setRespecReRank,
-      runRespec,
-      proposedRows,
+      onOpenOptimizer,
     }),
     [
       setPhasesViewPhase,
@@ -184,11 +163,16 @@ export function FarmView() {
       setFarmHeroEnabled,
       setFarmReturnBonus,
       onSelectHero,
-      setRespecPanelOpen,
-      setRespecReRank,
-      runRespec,
-      proposedRows,
+      onOpenOptimizer,
     ],
+  );
+
+  // Named above the board rather than priced on it: a hero whose spent points could not be read
+  // is left out by `buildFarmInputs`, and a row that silently vanished would read as an account
+  // that lost a hero. Read off the live account, not the snapshot — the roster is what says so.
+  const leftOut = useMemo(
+    () => (account.status === 'loaded' ? (buildAccountRoster(account.view)?.pointsUnrecovered ?? []) : []),
+    [account],
   );
 
   const tableScrollportHeightPx = useFarmTableHeight();
@@ -253,10 +237,14 @@ export function FarmView() {
       className={colClass}
       aria-busy={busy}
     >
+      {leftOut.length > 0 ? (
+        <Banner tone="warn" title={t.farmLeftOutTitle} data-testid="farm-left-out">
+          {sub(t.farmLeftOutBody, { heroes: leftOut.map((hero) => hero.name).join(', ') })}
+        </Banner>
+      ) : null}
       <FarmScreen
         snapshot={settled}
         view={{ phase, phaseChosen, activeHeroId, tableScrollportHeightPx }}
-        respec={respec}
         refresh={refreshBag}
         actions={screenActions}
       />
@@ -278,10 +266,7 @@ type FarmScreenActions = {
   setFarmHeroEnabled: (heroId: string, enabled: boolean) => void;
   setFarmReturnBonus: (mode: ReturnBonusMode) => void;
   onSelectHero: (hero: HeroRecord) => void;
-  setRespecPanelOpen: (open: boolean) => void;
-  setRespecReRank: (active: boolean) => void;
-  runRespec: () => void;
-  proposedRows: (inputs: FarmInputs, proposedSquad: SquadFarmFacts) => FarmRankingResult;
+  onOpenOptimizer: () => void;
 };
 
 /**
@@ -292,7 +277,6 @@ type FarmScreenActions = {
 function FarmScreen({
   snapshot,
   view,
-  respec,
   refresh,
   actions,
 }: {
@@ -303,7 +287,6 @@ function FarmScreen({
     activeHeroId: string | null;
     tableScrollportHeightPx: number;
   };
-  respec: FarmRespecState;
   refresh: FarmScreenRefresh;
   actions: FarmScreenActions;
 }) {
@@ -313,14 +296,6 @@ function FarmScreen({
   const { board, inputs, capturedAt } = snapshot;
 
   const screenCopy = useMemo(() => farmScreenCopy(farmCopy, t), [farmCopy, t]);
-
-  const statLabels = useMemo<FarmStatLabels>(() => {
-    const full = {} as Record<SheetKey, string>;
-    for (const key of SHEET_KEYS) {
-      full[key] = key === 'luck' ? t.farmStatLuck : statLabel(key, lang);
-    }
-    return { column: t.farmStatColumn, full };
-  }, [t, lang]);
 
   // One array per snapshot, shared by both views: the explorer's own contract asks for a mutable
   // one, and two copies would be two identities for the same roster on a screen whose memos are
@@ -332,25 +307,13 @@ function FarmScreen({
     [heroes, inputs],
   );
 
-  const account = useMemo(() => buildAccount(inputs), [inputs]);
-
-  // Both read the proposal through the same freshness derivation, so the table can never be
-  // captioned as showing a build the panel is no longer allowed to describe.
-  const proposal = useMemo(() => freshProposal(respec, inputs), [respec, inputs]);
-  const reRanking = reRankActive(respec, inputs);
-
-  // Only computed on the re-ranked branch, and memoized inside the store, so leaving the toggle
-  // on costs one table rather than one per render.
-  const rows = useMemo(
-    () =>
-      proposal && reRanking ? actions.proposedRows(inputs, proposal.result.proposedSquad) : board,
-    [proposal, reRanking, actions, inputs, board],
-  );
+  // The explorer's squad ranking prices team auras the way the board beside it does: every pooled
+  // carrier weighted by its predicted uptime.
+  const account = useMemo(() => buildRosterAccount(inputs), [inputs]);
 
   const boardData = useMemo<FarmRankingBoardData>(
     () => ({
-      result: rows,
-      reRankActive: reRanking,
+      result: board,
       heroes,
       poolEntries,
       returnBonus: inputs.farmReturnBonus,
@@ -358,24 +321,9 @@ function FarmScreen({
       fieldSlots: inputs.fieldSlots,
       currentPhase: view.phase,
       phasesViewPhaseChosen: view.phaseChosen,
-      statLabels,
-      respec: { view: proposal, status: respec.status, panelOpen: respec.panelOpen },
       tableScrollportHeightPx: view.tableScrollportHeightPx,
     }),
-    [
-      rows,
-      reRanking,
-      heroes,
-      inputs,
-      poolEntries,
-      view.phase,
-      view.phaseChosen,
-      view.tableScrollportHeightPx,
-      statLabels,
-      proposal,
-      respec.status,
-      respec.panelOpen,
-    ],
+    [board, heroes, inputs, poolEntries, view.phase, view.phaseChosen, view.tableScrollportHeightPx],
   );
 
   const boardActions = useMemo<FarmRankingBoardActions>(
@@ -384,9 +332,7 @@ function FarmScreen({
       syncDefaultPhaseSelection: actions.syncDefaultPhaseSelection,
       setFarmHeroEnabled: actions.setFarmHeroEnabled,
       setFarmReturnBonus: actions.setFarmReturnBonus,
-      setFarmRespecPanelOpen: actions.setRespecPanelOpen,
-      setFarmRespecReRank: actions.setRespecReRank,
-      runFarmRespec: actions.runRespec,
+      openOptimizer: actions.onOpenOptimizer,
     }),
     [actions],
   );
@@ -394,7 +340,7 @@ function FarmScreen({
   const boardSlots = useMemo<FarmRankingBoardSlots>(
     () => ({
       headerOverlay: (
-        <FarmRefreshControl
+        <AccountRefreshControl
           capturedAt={capturedAt}
           stale={refresh.stale}
           busy={refresh.busy}

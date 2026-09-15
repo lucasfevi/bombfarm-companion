@@ -1,7 +1,9 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { teamPlanFixtureSeed } from './fixtures/team-plan-seed';
 import { seedLocalStorage } from './fixtures/seed';
-import { clickOptimize, gotoTeamPlan, waitForOptimizeDone } from './fixtures/team-plan-e2e';
+import { clickOptimize, gotoTeamPlan, openFieldHelp, waitForOptimizeDone } from './fixtures/team-plan-e2e';
+
+const PHASE_HELP = /^Plan for phase: /i;
 
 /** The DS `SearchSelect` trigger — a Base UI combobox, like `Select`'s. */
 function phaseCombobox(page: Page): Locator {
@@ -15,6 +17,7 @@ async function openPhasePicker(page: Page) {
 
 async function search(page: Page, query: string) {
   await openPhasePicker(page);
+  await expect(page.getByPlaceholder('Hard, Normal 2-1, or 151')).toBeFocused();
   await page.keyboard.type(query);
 }
 
@@ -71,7 +74,7 @@ test.describe('Team plan phase picker', () => {
   test('None is a real option, not the absence of one', async ({ page }) => {
     await pickPhase(page, 'None', /^None$/);
     await expect(phaseCombobox(page)).toHaveText(/^None$/);
-    await expect(page.getByText(/No phase pinned\./)).toBeVisible();
+    await expect(await openFieldHelp(page, PHASE_HELP)).toContainText(/No phase pinned\./);
   });
 
   /**
@@ -81,13 +84,14 @@ test.describe('Team plan phase picker', () => {
    */
   test('unpinned says what each objective actually does with it', async ({ page }) => {
     await pickPhase(page, 'None', /^None$/);
-    await expect(page.getByText(/No phase pinned\. The search picks the best phase/)).toBeVisible();
+    await expect(await openFieldHelp(page, PHASE_HELP)).toContainText(
+      /No phase pinned\. The search picks the best phase/,
+    );
 
     await pickObjective(page, /^DPS$/i);
-    await expect(
-      page.getByText(/No phase pinned\. Damage is scored at the phase your account is on now\./),
-    ).toBeVisible();
-    await expect(page.getByText(/The search picks the best phase/)).toHaveCount(0);
+    const help = await openFieldHelp(page, PHASE_HELP);
+    await expect(help).toContainText(/No phase pinned\. Damage is scored at the phase your account is on now\./);
+    await expect(help).not.toContainText(/The search picks the best phase/);
   });
 
   test('a chosen phase past the account’s furthest says so', async ({ page }) => {
@@ -101,14 +105,18 @@ test.describe('Team plan phase picker', () => {
     await pickPhase(page, 'Normal 1-1', /^Normal 1-1 \(#51\)$/);
     await clickOptimize(page);
     await waitForOptimizeDone(page);
-    await expect(page.getByText(/Normal 1-1 \(#51\) — the phase you picked\./)).toBeVisible();
+    const phaseCard = page.getByTestId('team-plan-phase-card');
+    await expect(phaseCard).toContainText('Normal 1-1 (#51)');
+    await expect(phaseCard).toContainText('The phase you picked.');
   });
 
   test('with None, a gold plan reports the phase it settled on as automatic', async ({ page }) => {
     await pickPhase(page, 'None', /^None$/);
     await clickOptimize(page);
     await waitForOptimizeDone(page);
-    await expect(page.getByText(/picked automatically, the best this squad can hold\./)).toBeVisible();
+    await expect(page.getByTestId('team-plan-phase-card')).toContainText(
+      'Picked automatically — the best this squad can hold.',
+    );
   });
 
   test('a damage plan on None stays on the account’s own phase and says nothing automatic', async ({
@@ -119,28 +127,33 @@ test.describe('Team plan phase picker', () => {
     await pickPhase(page, 'None', /^None$/);
     await clickOptimize(page);
     await waitForOptimizeDone(page);
-    await expect(page.getByText(/Easy 1-1 \(#1\) — the phase you picked\./)).toHaveCount(0);
-    await expect(page.getByText(/picked automatically/)).toHaveCount(0);
+    const phaseCard = page.getByTestId('team-plan-phase-card');
+    await expect(phaseCard).toContainText('Where your account is now.');
+    await expect(phaseCard).not.toContainText('The phase you picked.');
+    await expect(phaseCard).not.toContainText('Picked automatically');
   });
 });
 
 /**
- * The setup fields carry hints of different lengths under their controls, and the row they sit in
- * used to bottom-align its children. Left alone that stepped the controls down a staircase —
- * measured 202 / 220 / 230 px before the fields were grouped to share a top edge.
+ * The setup fields used to carry hints of different lengths under their controls, and the row they
+ * sat in bottom-aligned its children — which stepped the controls down a staircase, measured
+ * 202 / 220 / 230 px. The hints are behind a `?` now, but the row still top-aligns (a phase past
+ * the account's furthest adds a warning line under one field), so the controls are still measured.
  */
 const SETUP_FIELDS = /Score for|Plan for phase|Allowed changes|Min forge/i;
 
 function setupFieldBoxes(page: Page) {
   return page.evaluate(
     (pattern) =>
-      [...document.querySelectorAll('label')]
-        .filter((label) => new RegExp(pattern, 'i').test(label.textContent ?? ''))
-        .map((label) => {
-          const control = label.querySelector('select, input, [role="combobox"], button');
+      [...document.querySelectorAll('[data-setup-field]')]
+        .filter((field) => new RegExp(pattern, 'i').test(field.textContent ?? ''))
+        .map((field) => {
+          const control = field
+            .querySelector('[data-setup-control]')
+            ?.querySelector('select, input, [role="combobox"], button');
           const rect = control?.getBoundingClientRect();
           return {
-            label: (label.querySelector('span')?.textContent ?? '').trim(),
+            label: (field.querySelector('span')?.textContent ?? '').trim(),
             top: Math.round(rect?.top ?? -1),
             height: Math.round(rect?.height ?? -1),
           };
@@ -176,9 +189,10 @@ test.describe('the setup fields sit on one line', () => {
 
   /**
    * The button used to sit on the row's bottom edge, which is wherever the LONGEST hint happens to
-   * end — 33.75px below the row's centre, and moving with the copy.
+   * end — 33.75px below the row's centre, and moving with the copy. It now centres against the
+   * whole panel (title and fields), which its parent row spans.
    */
-  test('Build team plan is centred against the fields, not stuck to the row’s bottom edge', async ({
+  test('Build team plan is centred against the panel, not stuck to the row’s bottom edge', async ({
     page,
   }) => {
     const offset = await page.evaluate(() => {
@@ -186,7 +200,8 @@ test.describe('the setup fields sit on one line', () => {
         /Build team plan/i.test(candidate.textContent ?? ''),
       );
       const row = button?.parentElement;
-      if (!button || !row) return null;
+      const title = [...document.querySelectorAll('h2')].find((h) => /Search setup/i.test(h.textContent ?? ''));
+      if (!button || !row || !title || !row.contains(title)) return null;
       const buttonRect = button.getBoundingClientRect();
       const rowRect = row.getBoundingClientRect();
       return (

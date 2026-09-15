@@ -34,7 +34,8 @@ function stopRowActivation(event: SyntheticEvent) {
   event.stopPropagation();
 }
 
-function SteamGlyph({ className }: { className?: string }) {
+/** The Steam mark, for a control that leads to a Steam Community Market page and nothing else. */
+export function SteamGlyph({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden focusable="false" className={cn('size-3.5 shrink-0', className)}>
       <path d={STEAM_PATH} fill="currentColor" />

@@ -1,11 +1,15 @@
 import { POINT_GAIN } from '../model';
 import { TEAM_BUFF_CAP } from '../team-buffs';
 import {
+  gearedBeforeRunesFor,
   pushAdd,
   pushAddPctOfBase,
   pushBase,
   pushBirthThenGear,
+  pushBirthThroughAbilities,
   pushMul,
+  pushRune,
+  runeFactorFor,
   teamAddNote,
   teamMultNote,
 } from './ledger-kit';
@@ -20,8 +24,10 @@ export function ledgerAttack(facts: PipelineFacts): StatBreakdown {
   // dmg_static (a raw multiplier) → percent form for pushBirthThenGear's uniform
   // contract, so the 'tree' step is sourced from the sheet, not added on top of it.
   pushBirthThenGear(steps, 'attack', facts, (facts.treeDanoTotal - 1) * 100);
-  pushAdd(steps, 'points', facts.pts.attack * facts.delta.attack);
-  // Grito de Guerra is a team aura (issue #132) — `facts.attackMult` is already the full roster
+  // `delta.attack` already carries the rune (derive.ts); the rune step below multiplies once.
+  pushAdd(steps, 'points', (facts.pts.attack * facts.delta.attack) / runeFactorFor('attack', facts));
+  pushRune(steps, 'attack', facts);
+  // Grito de Guerra is a team aura (PR #139) — `facts.attackMult` is already the full roster
   // total, capped; there is no "own" share for a hero's own mods to contribute, so the note's
   // own/team split degenerates to own=0 (ownMult=1, identity) by construction.
   const { note, split } = teamMultNote(facts.attackMult, 1, TEAM_BUFF_CAP.grito_guerra);
@@ -33,7 +39,9 @@ export function ledgerEnergy(facts: PipelineFacts): StatBreakdown {
   const steps: LedgerStep[] = [];
   // energia_add multiplies the Hero+Gear subtotal.
   pushBirthThenGear(steps, 'energy', facts, facts.treeEnergy);
-  pushAdd(steps, 'points', facts.pts.energy * facts.delta.energy);
+  // `delta.energy` carries the rune through `gem` (derive.ts); the rune step below multiplies once.
+  pushAdd(steps, 'points', (facts.pts.energy * facts.delta.energy) / runeFactorFor('energy', facts));
+  pushRune(steps, 'energy', facts);
   return { kind: 'ledger', total: facts.effective.energy, steps };
 }
 
@@ -49,8 +57,9 @@ export function ledgerSpeed(facts: PipelineFacts): StatBreakdown {
     facts.pts.speed * POINT_GAIN.speedPctOfBase * 100,
     baseSpeed,
   );
+  pushRune(steps, 'speed', facts);
 
-  // Marcha Acelerada is a team aura (issue #132) — same reasoning as ledgerAttack above.
+  // Marcha Acelerada is a team aura (PR #139) — same reasoning as ledgerAttack above.
   const { note, split } = teamMultNote(facts.speedMult, 1, TEAM_BUFF_CAP.marcha_acelerada);
   pushMul(steps, 'abilitiesTeam', facts.speedMult, note, split);
   return { kind: 'ledger', total: facts.effective.speed, steps };
@@ -70,7 +79,8 @@ export function ledgerCritChance(facts: PipelineFacts): StatBreakdown {
     facts.pts.critChance * POINT_GAIN.critChancePctOfBase * 100,
     baseCrit,
   );
-  // Presságio Mortal is a team aura (issue #132) — `facts.teamCritFlat` is already the full
+  pushRune(steps, 'critChance', facts);
+  // Presságio Mortal is a team aura (PR #139) — `facts.teamCritFlat` is already the full
   // roster total, capped; there is no separate "own" line to add alongside it. Flat crit points
   // since the 2026-08-23 patch, so it is a plain addend rather than a share of the roll.
   pushAdd(steps, 'team', facts.teamCritFlat, teamAddNote(facts.teamCritFlat, TEAM_BUFF_CAP.pressagio_mortal));
@@ -82,14 +92,27 @@ export function ledgerCritDmg(facts: PipelineFacts): StatBreakdown {
   // Every crit-damage term is a flat percentage-point addend — the tree node (inside
   // pushBirthThenGear) as much as the point (POINT_GAIN.critDmgFlat) — so neither
   // line carries `pctOfBase` provenance.
-  pushBirthThenGear(steps, 'critDmg', facts, facts.treeCritDmg);
+  if (runeFactorFor('critDmg', facts) === 1) {
+    pushBirthThenGear(steps, 'critDmg', facts, facts.treeCritDmg);
+    pushAdd(steps, 'points', facts.pts.critDmg * POINT_GAIN.critDmgFlat);
+    return { kind: 'ledger', total: facts.effective.critDmg, steps };
+  }
+  // A crit-damage rune multiplies everything BEFORE the tree's flat add (`applyRuneMultipliers`),
+  // so on a runed hero the tree line moves after the rune step — the same lines, in the game's
+  // own order.
+  pushBirthThroughAbilities(steps, 'critDmg', facts);
+  const gearAmount = gearedBeforeRunesFor('critDmg', facts, facts.treeCritDmg) - facts.treeCritDmg - facts.naked.critDmg;
+  pushAdd(steps, 'gear', gearAmount);
   pushAdd(steps, 'points', facts.pts.critDmg * POINT_GAIN.critDmgFlat);
+  pushRune(steps, 'critDmg', facts);
+  pushAdd(steps, 'tree', facts.treeCritDmg);
   return { kind: 'ledger', total: facts.effective.critDmg, steps };
 }
 
 export function ledgerPenetration(facts: PipelineFacts): StatBreakdown {
   const steps: LedgerStep[] = [];
-  const basePen = facts.naked.penetration / (1 + facts.sheetOther.penetration);
+  // Ponta de Diamante's points are flat and outside the pool, like Olho Clínico's above.
+  const basePen = facts.naked.penetration - Math.max(0, facts.sheetOther.penetration);
   pushBirthThenGear(steps, 'penetration', facts);
   pushAddPctOfBase(
     steps,
@@ -97,7 +120,8 @@ export function ledgerPenetration(facts: PipelineFacts): StatBreakdown {
     facts.pts.penetration * POINT_GAIN.penetrationPctOfBase * 100,
     basePen,
   );
-  pushAdd(steps, 'abilities', facts.mods.penetrationPp);
+  // Brecha is a team aura, flat points like Presságio Mortal's — the full roster total, capped.
+  pushAdd(steps, 'team', facts.teamPenFlat, teamAddNote(facts.teamPenFlat, TEAM_BUFF_CAP.brecha));
   return { kind: 'ledger', total: facts.effective.penetration, steps };
 }
 
@@ -147,5 +171,6 @@ export function ledgerCdr(facts: PipelineFacts): StatBreakdown {
     facts.pts.cdr * POINT_GAIN.cdrPctOfBase * 100,
     baseCdr,
   );
+  pushRune(steps, 'cdr', facts);
   return { kind: 'ledger', total: facts.effective.cdr, steps };
 }

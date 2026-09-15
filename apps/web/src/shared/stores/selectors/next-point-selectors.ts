@@ -14,7 +14,6 @@ import type { PointValue, RankMode } from '@bombfarm/domain/model';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 import type { HeroRecord } from '@/shared/lib/storage';
 import { selectAdvisorPipeline } from '@/shared/stores/selectors/advisor-selectors';
-import { selectEffectiveTeamBuffs } from '@/shared/stores/selectors/account-selectors';
 import { selectHeroDraftTuple } from '@/shared/stores/persistence/persist-hero-draft';
 import {
   readFarmDepTuple,
@@ -94,11 +93,9 @@ export function resetDraftFarmBasisComputeCount(): void {
 }
 
 /** The account-shaped members of readFarmDepTuple only — NOT farmPoolOverrides/farmReturnBonus,
- *  neither of which affects a single hero's own extracted basis. `heroes` itself is NOT listed
- *  directly (unlike `readFarmDepTuple`): `selectEffectiveTeamBuffs` below is the one way the
- *  full roster can affect this single hero's basis (issue #132 — the derived team-buffs total),
- *  and it already returns a stable reference keyed on `heroes`, so depending on ITS result
- *  covers that without a second, bulkier `state.heroes` entry here. */
+ *  neither of which affects a single hero's own extracted basis, and NOT `heroes`: the basis is
+ *  extracted from a one-hero pool, whose team auras farm-rate derives from that hero alone, so
+ *  the rest of the roster cannot reach it. */
 function readDraftBasisDepTuple(state: PlannerStore) {
   return [
     ...selectHeroDraftTuple(state),
@@ -109,7 +106,6 @@ function readDraftBasisDepTuple(state: PlannerStore) {
     state.treeEnergy,
     state.treeTeamCoinPct,
     state.treeLuckFlatPct,
-    selectEffectiveTeamBuffs(state),
     state.houseIdx,
     state.houseLevel,
     state.slots,

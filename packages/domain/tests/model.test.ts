@@ -15,6 +15,7 @@ import {
   critFactor,
   predictHitDamage,
   bombsPerSecond,
+  cycleSecondsForHero,
   activeDps,
   sustainedDps,
   energySwitchPoint,
@@ -36,8 +37,7 @@ const baseCtx = (): Context => ({
   restSeconds: 12 * 60,
   mitigation: 0.067,
   blastRange: 1,
-  cycleModel: 'serial',
-  walkDelay: 0.15,
+  ato: 1,
   drainMult: 1,
 });
 
@@ -112,11 +112,28 @@ describe('hit math', () => {
 });
 
 describe('bombs / DPS', () => {
-  it('serial cycle uses fuse + walk delay', () => {
+  it('bombs/s is the inverse of the measured cycle at the context band — the farm board’s own cycle', () => {
+    const h = sampleHero();
+    for (const ato of [1, 3, 5]) {
+      const ctx = { ...baseCtx(), ato };
+      const cycle = cycleSecondsForHero(fuseSeconds(h.cdr), h.speed * GRID_SPEED_COEF, ato);
+      expect(bombsPerSecond(h, ctx)).toBe(1 / cycle);
+    }
+  });
+
+  it('a denser band shortens the walk and raises bombs/s', () => {
+    const h = sampleHero();
+    expect(bombsPerSecond(h, { ...baseCtx(), ato: 5 })).toBeGreaterThan(bombsPerSecond(h, { ...baseCtx(), ato: 1 }));
+  });
+
+  it('+10 Speed raises sustained DPS — Speed shortens every hop the fuse does not cover', () => {
     const h = sampleHero();
     const ctx = baseCtx();
-    const rate = bombsPerSecond(h, ctx);
-    expect(rate).toBeCloseTo(1 / (fuseSeconds(h.cdr) + ctx.walkDelay), 8);
+    expect(sustainedDps({ ...h, speed: h.speed + 10 }, ctx)).toBeGreaterThan(sustainedDps(h, ctx));
+  });
+
+  it('a hero that cannot move bombs at 0/s rather than dividing by zero', () => {
+    expect(bombsPerSecond({ ...sampleHero(), speed: 0 }, baseCtx())).toBe(0);
   });
 
   it('sustained DPS is active × duty cycle', () => {
@@ -141,7 +158,7 @@ describe('bombs / DPS', () => {
 
 describe('abilityMods', () => {
   it('stacks modeled combat effects (W3 rank-20 perLevel values)', () => {
-    // grito_guerra and pressagio_mortal are team auras (issue #132) — abilityMods never folds
+    // grito_guerra and pressagio_mortal are team auras (PR #139) — abilityMods never folds
     // them into a hero's own mods, so they are included here only to prove they are harmlessly
     // ignored (no field they used to populate moves).
     const m = abilityMods({
@@ -152,18 +169,16 @@ describe('abilityMods', () => {
       pressagio_mortal: 4,
     });
     expect(m.drainMult).toBeCloseTo(0.95, 6);
-    expect(m.penetrationPp).toBe(0);
-    expect(m.sheetPenetrationRaw).toBe(3);
+    expect(m.sheetPenetrationFlat).toBe(3);
     // FLAT crit points since the 2026-08-23 patch: 10 x 2.
     expect(m.sheetCritChanceFlat).toBeCloseTo(20, 6);
   });
 
   it('treats Ponta de Diamante as on-sheet raw Σ (not combat penetrationPp)', () => {
     expect(isSheetAbility(ABILITIES.find((a) => a.id === 'ponta_diamante')!)).toBe(true);
-    expect(abilityMods({ ponta_diamante: 0 }).sheetPenetrationRaw).toBe(0);
-    expect(abilityMods({ ponta_diamante: 1 }).sheetPenetrationRaw).toBe(1);
-    expect(abilityMods({ ponta_diamante: 20 }).sheetPenetrationRaw).toBe(20);
-    expect(abilityMods({ ponta_diamante: 10 }).penetrationPp).toBe(0);
+    expect(abilityMods({ ponta_diamante: 0 }).sheetPenetrationFlat).toBe(0);
+    expect(abilityMods({ ponta_diamante: 1 }).sheetPenetrationFlat).toBe(1);
+    expect(abilityMods({ ponta_diamante: 20 }).sheetPenetrationFlat).toBe(20);
   });
 
   it('models Explosão Ampla as +0.1 rangeCells per level, +2 at rank 20 (W3: 0.2 → 0.1)', () => {
@@ -231,28 +246,11 @@ describe('rankNextPoint', () => {
     expect(cdr?.gainPct).toBe(0);
   });
 
-  it('still ranks CDR above zero at 70% and real DPS still improves toward the 80% cap', () => {
-    const h: HeroSheet = { ...sampleHero(), cdr: 70 };
-    const deltas: EffectiveDeltas = {
-      attack: 10,
-      energy: 8,
-      speed: 1,
-      critChance: 2,
-      critDmg: 8,
-      penetration: 0.5,
-      cdr: 0.5,
-    };
-    const ctx = baseCtx();
-    const ranking = rankNextPoint(h, ctx, { effectiveDeltas: deltas });
-    const cdr = ranking.find((r) => r.stat === 'cdr')!;
-    expect(cdr.gainPct).toBeGreaterThan(0);
-    // Floor is 0.4s at 80% CDR — 70→75 still shortens real fuse.
-    const cur = sustainedDps(h, ctx);
-    const next = sustainedDps({ ...h, cdr: 75 }, ctx);
-    expect(next).toBeGreaterThan(cur);
-  });
-
-  it('CDR gain stays positive from 70% up to 79% (zero only at 80% cap)', () => {
+  // Under the measured cycle a shorter fuse only pays while it is the longer leg of
+  // max(fuse, hop / walk). For this hero (w = 2.12 cells/s) the shortest walked hop takes 0.94 s,
+  // which a fuse under ~53% CDR still exceeds; past that the walk covers every hop and CDR buys
+  // nothing. The serial model this replaced had CDR paying through to the 80% cap.
+  it('ranks CDR above zero while the fuse still exceeds the shortest walked hop', () => {
     const deltas: EffectiveDeltas = {
       attack: 10,
       energy: 8,
@@ -263,12 +261,50 @@ describe('rankNextPoint', () => {
       cdr: 1,
     };
     const ctx = baseCtx();
-    for (const cdr of [70, 75, 79]) {
+    for (const cdr of [10, 30, 50]) {
       const gain = rankNextPoint({ ...sampleHero(), cdr }, ctx, { effectiveDeltas: deltas }).find(
         (r) => r.stat === 'cdr',
       )!.gainPct;
       expect(gain).toBeGreaterThan(0);
     }
+  });
+
+  it('scores CDR at zero once the walk covers every hop, well before the 80% cap', () => {
+    const deltas: EffectiveDeltas = {
+      attack: 10,
+      energy: 8,
+      speed: 1,
+      critChance: 2,
+      critDmg: 8,
+      penetration: 0.5,
+      cdr: 1,
+    };
+    const ctx = baseCtx();
+    for (const cdr of [55, 70, 79]) {
+      const gain = rankNextPoint({ ...sampleHero(), cdr }, ctx, { effectiveDeltas: deltas }).find(
+        (r) => r.stat === 'cdr',
+      )!.gainPct;
+      expect(gain).toBe(0);
+    }
+    expect(sustainedDps({ ...sampleHero(), cdr: 75 }, ctx)).toBe(sustainedDps({ ...sampleHero(), cdr: 70 }, ctx));
+  });
+
+  it('a faster hero keeps paying for CDR longer than a slower one — its walks are the shorter leg more often', () => {
+    const deltas: EffectiveDeltas = {
+      attack: 10,
+      energy: 8,
+      speed: 1,
+      critChance: 2,
+      critDmg: 8,
+      penetration: 0.5,
+      cdr: 1,
+    };
+    const cdrGain = (speed: number) =>
+      rankNextPoint({ ...sampleHero(), speed, cdr: 40 }, baseCtx(), { effectiveDeltas: deltas }).find(
+        (r) => r.stat === 'cdr',
+      )!.gainPct;
+    expect(cdrGain(55)).toBeGreaterThan(0);
+    expect(cdrGain(30)).toBe(0);
   });
 
   it('still ranks penetration above zero at 70% (below 100% combat bypass)', () => {

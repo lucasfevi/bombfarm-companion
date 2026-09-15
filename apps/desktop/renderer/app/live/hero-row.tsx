@@ -1,5 +1,6 @@
 import { memo, type ReactNode } from 'react';
-import { HeroAvatar, rarityTextClass } from '@bombfarm/game-art';
+import { HeroAvatar, heroRankToneClass, rarityTextClass } from '@bombfarm/game-art';
+import { cn } from '@bombfarm/ui';
 import { sub, useCopy, useLocale, type Copy } from '../../lib/copy';
 import { formatEnergyPercent } from '../../lib/format';
 import type { LiveHeroFact } from '../../lib/live/live-model';
@@ -176,7 +177,7 @@ const HeroRowBody = memo(function HeroRowBody({
         <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
           <span className="flex min-w-0 items-baseline gap-1">
             {rank ? (
-              <span className="shrink-0 text-[11px] leading-none font-black tracking-tight text-accent">{rank}</span>
+              <span className={cn('shrink-0', 'text-[11px]', 'leading-none', 'font-black', 'tracking-tight', heroRankToneClass(rank))}>{rank}</span>
             ) : (
               <span className="shrink-0 text-[11px] leading-none font-black tracking-tight text-muted">—</span>
             )}

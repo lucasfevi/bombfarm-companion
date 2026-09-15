@@ -22,7 +22,7 @@ Each slice exports its state type, initial state, and actions. Actions are **ver
 | Slice | Owner wave | Notes |
 | --- | --- | --- |
 | session | W4 | lang, toast, persist gate / skip-toast one-shots |
-| account | W4 | tree, team buffs, farm context |
+| account | W4 | tree, farm context |
 | roster | W4 | heroes + activeHeroId — sole in-memory roster |
 | phases | W4 | explorer view phase (`bf-hp-phases-view-v1`) |
 | hero-draft | **W5** | active hero edit fields — not in W4 |
@@ -68,27 +68,9 @@ Failed `localStorage` writes return `false`, notify `onStorageWriteError`, and s
 
 ## The ≤8 props rule (strict since W7)
 
-W5-migrated planner components (`PlannerTabs`, `HeroAbilitiesTab`, `GearTab` — W6 split of the former `BuildColumn` — `AccountColumn`, `AdviceColumn`, `HeroStrip`, composer) must declare **≤ 8 props**. Repo-wide enforcement is a Vitest inventory (`src/tests/mod-17-max-props.test.ts`).
+W5-migrated planner components (`PlannerTabs`, `GearTab` — W6 split of the former `BuildColumn` — `AccountColumn`, `AdviceColumn`, `HeroStrip`, composer) must declare **≤ 8 props**. Repo-wide enforcement is a Vitest inventory (`src/tests/mod-17-max-props.test.ts`).
 
 **W7 closed this**: `ALLOWLIST_FILES` is **empty** and the rule is strict. The `Switch` / `Select` entries were removed not by changing those components but by fixing the counter — the rule counts only a component's **own non-DOM props**, excluding native HTML/ARIA attributes and surfaces inherited via `ComponentPropsWithoutRef`. The rule targets prop-drilled god-components, not DOM pass-through primitives. The migrated six must never join an allowlist.
-
-## The farm respec on-demand solve is a slice action, not a selector
-
-The Farm page's respec advisor runs a cheap, dependency-driven check on every relevant store
-change (a memoized selector, the same shape as every other board selector) but its full solve
-only runs when the player clicks Optimize — an explicit event, not a store write. That solve is a
-plain `runFarmRespec()` action on `phases-slice.ts`, not a selector, because a selector's contract
-is to answer the SAME question every time its inputs are read — it cannot decide "only compute
-this on a click," and a selector that quietly skipped its own recompute on some renders but not
-others would violate the one invariant every other memoized selector in this store relies on. The
-result is stored in the slice, keyed on the exact dependency tuple that produced it (element-wise
-identity comparison, the same comparison the read-side memo already uses) — not a separate
-timestamp or version counter, because the question "is this proposal still valid" and the question
-"would a fresh compute produce a different memo key" are the same question, and answering it twice
-in two different ways is exactly the kind of drift this store's memoization discipline exists to
-prevent. When the store changes under a fresh proposal, the stored result simply stops matching
-the live tuple — the derivation that reads it treats a mismatched key as "nothing to show" without
-an effect, a subscription, or a write-on-render ever running.
 
 ## What the store claims (post-W8)
 

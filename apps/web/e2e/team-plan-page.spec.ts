@@ -11,7 +11,7 @@ test.describe('Optimizer page', () => {
       'aria-current',
       'page',
     );
-    await expect(page.getByRole('link', { name: /^Planner$/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /^Heroes$/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /^Farm$/i })).toBeVisible();
   });
 

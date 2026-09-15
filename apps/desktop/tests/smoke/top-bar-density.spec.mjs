@@ -15,23 +15,32 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..', '..');
 const ACCOUNT_FULL_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-full.json');
 
-/** Wide enough to spell every word in the bar. */
-const FULL_WINDOW = 1280;
-/** Inside the band where the tabs are glyphs and everything else is untouched. */
-const ICON_TABS_WINDOW = 1120;
-/** `createMainWindow`'s own `minWidth` — the narrowest window a player can drag to. */
+/** Wide enough to spell every word in the bar. 1440, not the 1320 seven tabs were happy at: the
+ *  eighth took the whole-bar sum to 1262, and 1320 leaves only 58px over it — inside the range a
+ *  font-rendering pass moves. */
+const FULL_WINDOW = 1440;
+/** Inside the band where the tabs are glyphs and everything else is untouched. 1060 would sit
+ *  68px above `SHELL_BRAND_MARK_WIDTH` (992) and only 202px below `SHELL_ICON_TABS_WIDTH`
+ *  (1262), so 1160 is used instead — comfortably inside the icon-tabs band on both sides. */
+const ICON_TABS_WINDOW = 1160;
+/** Inside the band where the brand has shrunk to its mark but the actions are still spelled out.
+ *  940 sits 68px above `SHELL_ACTIONS_COLLAPSE_WIDTH` (872) and 52px below `SHELL_BRAND_MARK_WIDTH`
+ *  (992) — the band the eighth tab brought within reach of "keeps every action its own control",
+ *  which used to probe the minimum window itself. */
+const BRAND_MARK_WINDOW = 1040;
+/** `createMainWindow`'s own `minWidth` — the narrowest window a player can drag to. The eighth tab
+ *  moved this stage from "brand mark, actions spelled out" to "actions collapsed behind the
+ *  overflow": 860px of bar (960 minus the caption strip) now sits under
+ *  `SHELL_ACTIONS_COLLAPSE_WIDTH` (872), where it used to sit above it. */
 const MIN_WINDOW = 960;
-/** Below the minimum, reachable only by lifting it as `resize` does. The overflow stage lives
- *  here: glyph tabs, a brand mark and all five actions still fit at the real minimum, so the stage
- *  is a floor under a future smaller window rather than one a player meets today.
- *
- *  A probe, not a boundary: the stage starts where the window minus the caption cluster falls
- *  under `SHELL_ACTIONS_COLLAPSE_WIDTH`, so this has to stay under that sum plus the cluster's
- *  own width and moves whenever either does. */
+/** At the real minimum itself now (see `MIN_WINDOW`'s comment) — kept as its own named constant
+ *  because the two assertions that use it probe a stage description, not a coincidence of value. */
 const ACTIONS_COLLAPSED_WINDOW = 860;
-/** Narrower still. Six glyph tabs, a mark and a menu stop fitting below ~610px, which is 350px
- *  past the smallest window that exists. */
-const NARROWEST_MEASURED = 640;
+/** Narrower still, reachable only by lifting the minimum as `resize` does. The eighth glyph
+ *  widened the tab strip further, taking the width at which the tabs and the overflow menu stop
+ *  fitting from ~576px to ~612px — so this probe keeps the seven-tab clearance of 64px: 612 + 64
+ *  = 676, rounded onto the 20px grid the loop below steps on. */
+const NARROWEST_MEASURED = 680;
 
 async function launchApp() {
   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-top-bar-'));
@@ -64,7 +73,7 @@ async function launchApp() {
   await expect(consentModal).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('consent-accept').click();
   await expect(consentModal).toBeHidden({ timeout: 15_000 });
-  await expect(page.locator('nav[aria-label="Main"] button')).toHaveCount(6, { timeout: 30_000 });
+  await expect(page.locator('nav[aria-label="Main"] button')).toHaveCount(8, { timeout: 30_000 });
 
   // Portuguese, because it is the binding language: its tab words and its action labels are the
   // longest either language puts in the bar, so a width that fits here fits in English too. The
@@ -234,8 +243,8 @@ test.describe('top bar — degrades as the window narrows, and never overlaps it
     }
   });
 
-  test('keeps every action its own control at the smallest real window', async () => {
-    await resize(app, page, MIN_WINDOW);
+  test('keeps every action its own control just above the smallest real window', async () => {
+    await resize(app, page, BRAND_MARK_WINDOW);
 
     await expect(page.getByTestId('shell-overflow')).toHaveCount(0);
     for (const id of ['shell-referral', 'shell-coffee', 'open-mini']) {
@@ -245,6 +254,15 @@ test.describe('top bar — degrades as the window narrows, and never overlaps it
     const bar = await topBar(page);
     expect(bar.brand.width).toBeLessThan(60);
     await expect(page.getByTestId('flavor-badge')).toHaveCount(0);
+  });
+
+  test('collapses the actions behind one button at the smallest real window itself', async () => {
+    await resize(app, page, MIN_WINDOW);
+
+    await expect(page.getByTestId('shell-overflow')).toBeVisible();
+    for (const id of ['shell-referral', 'shell-coffee', 'open-mini']) {
+      await expect(page.getByTestId(id), `${id} stayed in the bar past its width`).toHaveCount(0);
+    }
   });
 
   test('collapses the actions behind one button only below the smallest real window', async () => {
@@ -279,7 +297,7 @@ test.describe('top bar — degrades as the window narrows, and never overlaps it
     await resize(app, page, NARROWEST_MEASURED);
     const rendered = await tabs(page);
 
-    expect(rendered).toHaveLength(6);
+    expect(rendered).toHaveLength(8);
     const active = rendered.filter((tab) => tab.active);
     expect(active).toHaveLength(1);
     expect(active[0].text, 'the current screen lost its name').not.toBe('');
@@ -303,7 +321,16 @@ test.describe('top bar — degrades as the window narrows, and never overlaps it
 
   test('every tab still reaches its screen at the narrowest width the bar is drawn at', async () => {
     await resize(app, page, NARROWEST_MEASURED);
-    const screens = ['live-view', 'farm-view', 'inventory-view', 'forge-view', 'account-view', 'settings-view'];
+    const screens = [
+      'live-view',
+      'farm-view',
+      'heroes-view',
+      'inventory-view',
+      'forge-view',
+      'optimizer-view',
+      'account-view',
+      'settings-view',
+    ];
 
     for (const [index, testId] of screens.entries()) {
       await page.locator('nav[aria-label="Main"] button').nth(index).click();

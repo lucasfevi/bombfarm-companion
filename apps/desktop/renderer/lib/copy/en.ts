@@ -518,6 +518,33 @@ export const en = {
   forgeAgainstExact: 'exactly what the plan expected',
   forgeAgainstNoPlan: 'No plan to compare against — this run was not started from the panel',
   forgeDone: 'Done',
+  // forgeQueue* — the forge queue: pieces added from the Optimizer's hero rows or the Forge plan
+  // panel, forged in turn by Start. The band under the top bar names the queue, the piece rolling
+  // and what stopped it; the Forge tab lists the pieces waiting and carries the same controls.
+  forgeQueueAdd: 'Add to queue',
+  forgeQueueAdded: 'Queued',
+  forgeQueueAddAria: 'Add {item} to the forge queue, to {target}',
+  forgeQueueAddedAria: '{item} is in the forge queue, to {target}',
+  forgeQueueTitle: 'Forge queue',
+  forgeQueueOpenForge: 'Forge queue — open the Forge tab',
+  forgeQueueForged: '{done}/{total} forged',
+  forgeQueueRolling: 'rolling',
+  forgeQueueProgress: '{rolls} rolls · {spent} gold',
+  forgeQueueStopped: 'Stopped — {reason}',
+  forgeQueueStart: 'Start',
+  forgeQueueResume: 'Resume',
+  forgeQueueCancel: 'Cancel',
+  forgeQueueRemove: 'Remove {item} from the queue',
+  forgeQueueClear: 'Clear',
+  forgeQueueClearAria: 'Clear the forge queue',
+  forgeQueueConfirmTitle: 'Start the forge queue?',
+  forgeQueueConfirmOne: 'Forges {item} to {target} and spends gold on your account — about {gold} expected.',
+  forgeQueueConfirmMany:
+    'Forges {count} pieces in turn and spends gold on your account — about {gold} expected. The queue stops if a piece stops short of its target.',
+  forgeQueueConfirmNoEstimate: 'Spends gold on your account; no estimate for these pieces. The queue stops if a piece stops short of its target.',
+  forgeQueueConfirm: 'Start — spends gold',
+  forgeQueueConfirmCancel: 'Not now',
+  forgeQueuePanelCaption: 'Forged in turn from the top; a piece already at its target leaves on its own.',
 
   // account* — the Account screen: what the account could sell, who it belongs to, and what its
   // House and skill tree grant. The panels are shared drawings that take a label for every string
@@ -594,10 +621,71 @@ export const en = {
   farmRefreshStale: 'out of date',
   farmUnavailableTitle: 'Not enough of your account has been read',
   farmUnavailableDescription: 'The board needs every part of your account. Open the game with the companion running and leave it open for a moment.',
-  // The stat vocabulary the farm screen borrows from this app. Every other stat name comes from
+  farmLeftOutTitle: 'Some heroes are left off the board',
+  farmLeftOutBody: 'The app could not read the spent stat points of {heroes} from the account, so their rates cannot be priced and they are left off this board.',
+  // The stat vocabulary the Heroes and Forge screens borrow. Every other stat name comes from
   // the game data itself; loot-facing Luck is the one the shared map does not carry.
   farmStatColumn: 'Stat',
   farmStatLuck: 'Luck',
+
+  // heroes* — the Heroes screen's own chrome, distinct from the hero* vocabulary below, which is
+  // the shared per-hero field names the farm surfaces also read.
+  heroesNavLabel: 'Heroes',
+  heroesNeverReadTitle: 'Nothing read from your account yet',
+  heroesNeverReadDescription: 'Open the game with the companion running, and your heroes will appear here.',
+  heroesNoneTitle: 'This account has no heroes',
+  heroesNoneDescription: 'Your account was read, and it holds nobody to show here yet.',
+  heroesViewLabel: 'Layout',
+  heroesSortLabel: 'Sort by',
+  heroesSortRoll: 'Roll',
+  heroesSortPower: 'Power',
+  heroesSortLevel: 'Level',
+  heroesSortRarity: 'Rarity',
+  heroesSortRank: 'Grade',
+  heroesSortStars: 'Stars',
+  heroesSortAscending: 'Worst first',
+  heroesSortDescending: 'Best first',
+  heroesFilterActiveHeroes: 'Active heroes',
+  heroesAbilityFilterLabel: 'Filter by ability',
+  heroesAbilityFilterOption: 'Only heroes with {ability}',
+  heroesAbilityFilterAbsent: 'No hero here has {ability}',
+  heroesViewCards: 'Cards',
+  heroesViewList: 'List',
+  heroesDensityLabel: 'Card detail',
+  heroesDensityCompact: 'Compact',
+  heroesDensityCombat: 'Combat',
+  heroesDensityFull: 'Full',
+  heroesCardSheetStatsLabel: 'Stats',
+  heroesCardBirthStatsLabel: 'Birth stats',
+  heroesTabHero: 'Hero',
+  heroesTabCombat: 'Combat',
+  heroesTabGear: 'Gear',
+  heroesTabPoints: 'Points',
+  heroesRosterTitle: 'Your roster',
+  heroesRosterListLabel: 'Your heroes',
+  heroesFiguresWithheldTitle: 'Not enough of your account has been read',
+  heroesFiguresWithheldDescription: 'The per-hero numbers need your skill tree and your House. Leave the game open for a moment and they will fill in.',
+  heroesPointsUnreadTitle: "This hero's spent stat points could not be read",
+  heroesPointsUnreadDescription: 'The sheet the game reported for this hero does not add up under the current model, so its points, gear figures and combat numbers are withheld rather than drawn as if it had spent none.',
+  heroesPhaseUnknownTitle: 'That is not a phase this app knows',
+  heroesPhaseUnknownDescription: 'Pick a phase the game actually has, and the numbers come back.',
+
+  // optimizer* — the Optimizer screen's own chrome. The setup panel, scope board and results
+  // print the dictionary the team-plan package ships; these are the strings whose truth depends
+  // on this host: the tab's name, the reasons a screen is empty, the sentences that name the
+  // desktop's other screens.
+  optimizerNavLabel: 'Optimizer',
+  optimizerUnavailableDescription: 'The optimizer needs every part of your account. Open the game with the companion running and leave it open for a moment.',
+  optimizerEmptyNoRosterTitle: 'No heroes on this account',
+  optimizerEmptyNoRosterBody: 'Your account was read and holds no heroes, so there is nothing to plan for yet.',
+  optimizerEmptyNoInventoryTitle: 'No gear items on this account',
+  optimizerEmptyNoInventoryBody: 'Your account was read and holds no gear, so there is nothing to move or forge yet.',
+  optimizerEmptyAllLeaveAloneTitle: 'Nothing in scope',
+  optimizerEmptyAllLeaveAloneBody: 'Set at least one hero to Optimize before running a plan.',
+  optimizerBlockedBody: 'The account read is missing what the search needs for {heroes}, so it cannot score them.',
+  optimizerFarmNeedsMaxPhase: 'Letting the search pick its own phase needs the furthest phase your account has reached, which this read did not carry. Pick a phase above, or score for damage.',
+  optimizerLeftOutTitle: 'Some heroes were left out of the search',
+  optimizerLeftOutBody: 'The app could not read the spent stat points of {heroes} from the account, so they are left out of this search: not on the scope board, not in the plan.',
 
   // hero*/gear*/import*/roster*/switch*/mode*/rank* — hero-identity vocabulary the farm screen's
   // roster surfaces read as one structural contract. Named exactly as that contract names them.

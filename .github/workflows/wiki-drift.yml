@@ -33,7 +33,7 @@ jobs:
         with:
           node-version: 22
 
-      # No dependency install by design (MWD-02): tools/wiki-drift/check.mjs imports only Node
+      # No dependency install by design: tools/wiki-drift/check.mjs imports only Node
       # built-ins. Adding an install step here would multiply this job's one billed minute.
       # No `if:`, no `continue-on-error`, no `|| true`, no `--write`.
       - name: Compare the published wiki against the committed fingerprint

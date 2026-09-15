@@ -34,28 +34,22 @@ beforeEach(() => {
 });
 
 /**
- * TWO passes per hero, not one — `computeHeroFarmBases` prices the team auras over the rotation,
- * which needs every hero's uptime, which only the pipeline produces (see that function's own
- * note). The invariant this file guards is unchanged and is the one in its title: the count is a
- * fixed multiple of ROSTER SIZE and never a function of the 600 rows. `N` when
- * `account.teamBuffsOverride` is set — a hand-typed total needs no second pass to weight.
+ * ONE pass per hero, with the auras off — `computeHeroFarmBases` prices the team auras over the
+ * rotation as a closed-form layer on that pass (see that function's own note), where it used to
+ * spend a second pipeline pass on the seeding. The invariant this file guards is unchanged and is
+ * the one in its title: the count is a fixed multiple of ROSTER SIZE and never a function of the
+ * 600 rows.
  */
-const PASSES_PER_HERO = 2;
+const PASSES_PER_HERO = 1;
 
 describe('energySwitchPointCallCount — a function of roster size, not row count', () => {
-  it('computeFarmRates over all 600 phases with the 5-hero fixture bumps the counter exactly 2x5 times', () => {
+  it('computeFarmRates over all 600 phases with the 5-hero fixture bumps the counter exactly 1x5 times', () => {
     const { heroes, account } = loadFarmRateFixture();
     computeFarmRates({ heroes, account });
     expect(energySwitchPointCallCount).toBe(PASSES_PER_HERO * 5);
   });
 
-  it('an explicit teamBuffs override collapses to ONE pass per hero', () => {
-    const { heroes, account } = loadFarmRateFixture();
-    computeFarmRates({ heroes, account: { ...account, teamBuffsOverride: { grito_guerra: 20 } } });
-    expect(energySwitchPointCallCount).toBe(5);
-  });
-
-  it('the same 5-hero roster over a SINGLE phase still bumps the counter exactly 2x5 times — the count is a function of roster size alone', () => {
+  it('the same 5-hero roster over a SINGLE phase still bumps the counter exactly 1x5 times — the count is a function of roster size alone', () => {
     const { heroes, account } = loadFarmRateFixture();
 
     resetEnergySwitchPointCallCount();
@@ -82,7 +76,7 @@ describe('energySwitchPointCallCount — a function of roster size, not row coun
     expect(energySwitchPointCallCount).toBe(0);
   });
 
-  it('a 2-hero pool bumps the counter exactly 2x2 times (rules out a hardcoded constant)', () => {
+  it('a 2-hero pool bumps the counter exactly 1x2 times (rules out a hardcoded constant)', () => {
     const { heroes, account } = loadFarmRateFixture();
     const twoIds = heroes.slice(0, 2).map((h) => h.id);
     computeFarmRates({ heroes, account, enabledHeroIds: twoIds });

@@ -95,20 +95,28 @@ export function formatItemDisplay(
   return `${set} ${slot} · ${rar} nv${item.level}${plus}`;
 }
 
+/** The set a piece of gear belongs to, by name; the raw id for a definition the catalog lacks. */
+export function itemSetName(item: { defId: string }, lang: Lang): string {
+  const definition = catalog.defs.find((entry) => entry.id === item.defId);
+  return definition ? setName(definition.set, lang) : item.defId;
+}
+
+/** A piece of gear's name — its set and slot; the raw id for a definition the catalog lacks. */
+export function itemName(item: { defId: string }, lang: Lang): string {
+  const definition = catalog.defs.find((entry) => entry.id === item.defId);
+  if (!definition) return item.defId;
+  return `${setName(definition.set, lang)} ${slotLabel(definition.slot, lang)}`;
+}
+
 /** Roster gear tooltip — title: item + forge; subtitle: level + rarity (no slot header). */
 export function formatItemRosterTooltip(
   item: { defId: string; rarityIdx: number; level: number; upgrade: number },
   lang: Lang,
   lvLabel: string,
 ): { title: string; subtitle: string } {
-  const definition = catalog.defs.find((entry) => entry.id === item.defId);
   const rar = itemRarityLabel(item.rarityIdx, lang);
   const plus = item.upgrade > 0 ? ` +${item.upgrade}` : '';
-  if (!definition) {
-    return { title: `${item.defId}${plus}`, subtitle: `${lvLabel} ${item.level} ${rar}` };
-  }
-  const name = `${setName(definition.set, lang)} ${slotLabel(definition.slot, lang)}`;
-  return { title: `${name}${plus}`, subtitle: `${lvLabel} ${item.level} ${rar}` };
+  return { title: `${itemName(item, lang)}${plus}`, subtitle: `${lvLabel} ${item.level} ${rar}` };
 }
 
 // --- Maps ---
@@ -162,8 +170,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '+1 Penetration (points)/level',
   },
   misericordia: {
-    pt: 'executa rocha < 1.25%/nível',
-    en: 'executes rock < 1.25%/level',
+    pt: 'executa rocha < 0.75%/nível',
+    en: 'executes rock < 0.75%/level',
   },
   explosao_ampla: {
     pt: '+0.1 raio da explosão/nível',
@@ -186,8 +194,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '−1% TEAM energy spent/level',
   },
   passagem_bastao: {
-    pt: '+4% de Dano ao ENTRAR no rodízio (dura 120s)/nível (não modelado)',
-    en: '+4% Damage on ENTERING rotation (lasts 120s)/level (not modeled)',
+    pt: '+4% de Dano do TIME ao ENTRAR no rodízio (dura 120s)/nível',
+    en: '+4% TEAM Damage on ENTERING rotation (lasts 120s)/level',
   },
   olho_lapidador: {
     pt: '+2.5% chance de subir a raridade do drop do herói que destruiu o objeto/nível (loot, não vale para Jaulas)',
@@ -206,16 +214,16 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '+4% crit damage/level (flat, affects stats)',
   },
   matilha: {
-    pt: '+2% dano por aliado na rotação/nível, +40% no teto (não modelado)',
-    en: '+2% dmg per ally in rotation/level, +40% at cap (not modeled)',
+    pt: '+0.5% dano por aliado em campo/nível, +90% no teto',
+    en: '+0.5% damage per ally on the field/level, +90% at cap',
   },
   fortuna: {
     pt: '+0.5% ouro do TIME/nível, +10% no teto (loot, aura capada)',
     en: '+0.5% TEAM gold/level, +10% at cap (loot, capped aura)',
   },
   brecha: {
-    pt: '+1 Penetração/nível, +20 no teto (herói na ficha: não comprovado)',
-    en: '+1 Penetration/level, +20 at cap (on-sheet status not proven)',
+    pt: '+1 ponto de Penetração do TIME/nível, +20 no teto',
+    en: '+1 TEAM Penetration point/level, +20 at cap',
   },
 };
 

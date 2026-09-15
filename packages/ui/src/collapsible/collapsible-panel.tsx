@@ -17,11 +17,14 @@ import type { CollapsiblePanelProps } from './types';
  * which is normally driven by detecting a real CSS transition on the element — Motion animates
  * via the Web Animations API instead, so Base UI would otherwise apply `hidden` (`display:
  * none`) the instant `open` flips, before Motion's exit animation gets a chance to play.
+ *
+ * `initial={false}`: a panel open at mount is drawn open, and only a toggle animates — see
+ * `Accordion.Panel`.
  */
 export function CollapsiblePanel({ className, children }: CollapsiblePanelProps) {
   const open = useCollapsibleOpen();
   return (
-    <AnimatePresence>
+    <AnimatePresence initial={false}>
       {open && (
         <BaseCollapsible.Panel
           hidden={false}

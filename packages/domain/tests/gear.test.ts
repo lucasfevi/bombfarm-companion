@@ -272,27 +272,24 @@ describe('defaultNaked (static naked sheet)', () => {
     expect(withOlho0.critChance).toBe(BASE_ROLLS.Incomum.critChance);
   });
 
-  it('bakes Ponta via abilityMods sheetPenetrationRaw (base ≈ 3% → 3 / 6 / 33, W3 perLevel 1.0)', () => {
+  it('bakes Ponta via abilityMods sheetPenetrationFlat as a FLAT addend (base 3 → 3 / 4 / 13, perLevel 1.0)', () => {
     const basePen = 3;
     const nakedBase = { ...naked(), penetration: basePen };
     for (const [rank, expected] of [
       [0, 3],
-      [1, 6],
-      [10, 33],
+      [1, 4],
+      [10, 13],
     ] as const) {
       const mods = abilityMods(rank > 0 ? { ponta_diamante: rank } : {});
-      expect(mods.penetrationPp).toBe(0);
-      expect(mods.sheetPenetrationRaw).toBe(1 * rank);
-      const rescaled = rescaleNakedPen(nakedBase, 0, mods.sheetPenetrationRaw);
+      expect(mods.sheetPenetrationFlat).toBe(1 * rank);
+      const rescaled = rescaleNakedPen(nakedBase, 0, mods.sheetPenetrationFlat);
       expect(rescaled.penetration).toBeCloseTo(expected, 6);
       const fromDefault = defaultNaked('Raro', 1, {
         ...emptySheetOther(),
-        penetration: mods.sheetPenetrationRaw,
+        penetration: mods.sheetPenetrationFlat,
       });
-      expect(fromDefault.penetration).toBeCloseTo(
-        BASE_ROLLS.Raro.penetration * (1 + mods.sheetPenetrationRaw),
-        6,
-      );
+      // Flat and outside the pool, so the roll never multiplies it — +rank, not ×(1 + rank).
+      expect(fromDefault.penetration).toBeCloseTo(BASE_ROLLS.Raro.penetration + mods.sheetPenetrationFlat, 6);
     }
   });
 
@@ -407,15 +404,16 @@ describe('rescaleNakedForLevel', () => {
 });
 
 describe('rescaleNakedPen', () => {
-  it('rescales only penetration by (1+newOther)/(1+oldOther)', () => {
+  it('shifts only penetration by the flat ability difference, preserving the roll', () => {
     const custom: SheetStats = { ...naked(), attack: 999, penetration: 9 };
     const next = rescaleNakedPen(custom, 2, 20);
-    expect(next.penetration).toBeCloseTo(9 * (21 / 3), 6);
+    // Flat, so the hero's own roll never enters: +18, not ×7.
+    expect(next.penetration).toBeCloseTo(9 - 2 + 20, 6);
     expect(next.attack).toBe(custom.attack);
     expect(next.critChance).toBe(custom.critChance);
   });
 
-  it('is a no-op when other raw Σ does not change', () => {
+  it('is a no-op when the flat addend does not change', () => {
     const n = naked();
     expect(rescaleNakedPen(n, 10, 10)).toBe(n);
   });

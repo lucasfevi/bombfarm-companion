@@ -1,38 +1,47 @@
 'use client';
 
-import { useMemo } from 'react';
-
-import { SLOTS } from '@bombfarm/domain/gear';
+import { GearTab as GearTabView } from '@bombfarm/hero/components';
+import { SlotEditor } from '@/features/gear';
 import { useAppLang } from '@/shared/context/app-lang';
-import { numberFormatterFor } from '@/shared/lib/format-number';
-import { usePlannerStore } from '@/shared/stores';
+import { usePlannerStore, selectAdvisorPipeline } from '@/shared/stores';
 import { useHeroBuildActions } from '../hooks/use-hero-build-actions';
-import { FieldRequired, Panel } from '@bombfarm/ui';
-import { colClass, panelHClass, panelTitleClass } from '@bombfarm/ui/panel-field.recipe';
-import { GearSlotsGrid } from './gear-slots-grid';
-import { GearSlotStatsGrid } from './gear-slot-stats-grid';
-import { GearCompareSection } from './gear-compare-section';
 
+/**
+ * Store wiring for the shared Items panel. It lives here, one level below `PlannerTabs`, so a
+ * loadout or pipeline change wakes this panel alone — subscribing on the panel's behalf from the
+ * tab shell would re-render the hero strip and every sibling tab with it.
+ */
 export function GearTab() {
   const { t, lang } = useAppLang();
-  const boundFormatNumber = useMemo(() => numberFormatterFor(lang), [lang]);
-  const { setSlot } = useHeroBuildActions();
+  const pipeline = usePlannerStore(selectAdvisorPipeline);
   const loadout = usePlannerStore((state) => state.loadout);
-
-  const onPatchSlot = setSlot;
-  const hasGear = SLOTS.some((slot) => loadout[slot] != null);
+  const altLoadout = usePlannerStore((state) => state.altLoadout);
+  const { setSlot, setAltSlot, clearCompare, copyGear, applyAltGear } = useHeroBuildActions();
 
   return (
-    <main className={colClass}>
-      <Panel>
-        <div className={panelHClass}>
-          <h2 className={panelTitleClass}>{t.panelItems}</h2>
-          <FieldRequired show={!hasGear}>{t.fieldRequired}</FieldRequired>
-        </div>
-        <GearSlotsGrid loadout={loadout} t={t} lang={lang} onPatchSlot={onPatchSlot} />
-        {hasGear && <GearSlotStatsGrid loadout={loadout} t={t} formatNumber={boundFormatNumber} />}
-        <GearCompareSection />
-      </Panel>
-    </main>
+    <GearTabView
+      t={t}
+      lang={lang}
+      loadout={loadout}
+      altLoadout={altLoadout}
+      pipeline={pipeline}
+      editing={{
+        onPatchSlot: setSlot,
+        onPatchAltSlot: setAltSlot,
+        onApplyAltGear: applyAltGear,
+        onCopyGear: copyGear,
+        onClearCompare: clearCompare,
+      }}
+      renderSlot={({ slot, equipped, changed, onPatch }) => (
+        <SlotEditor
+          slot={slot}
+          equipped={equipped}
+          changed={changed}
+          t={t}
+          lang={lang}
+          onPatch={onPatch}
+        />
+      )}
+    />
   );
 }

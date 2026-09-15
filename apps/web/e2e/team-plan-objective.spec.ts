@@ -3,10 +3,13 @@ import { teamPlanFixtureSeed } from './fixtures/team-plan-seed';
 import { seedLocalStorage } from './fixtures/seed';
 import {
   clickOptimize,
-  disclosuresPanel,
   gotoTeamPlan,
+  openFieldHelp,
   waitForOptimizeDone,
 } from './fixtures/team-plan-e2e';
+
+/** The setup panel's intro is a tooltip on its title. */
+const SETUP_HELP = /^Search setup: /i;
 
 /** DS Select is a Base UI combobox — not a native `<select>`. */
 function objectiveCombobox(page: Page): Locator {
@@ -30,24 +33,13 @@ test.describe('Team plan objective', () => {
   test('the control is on the setup panel and starts on gold per hour', async ({ page }) => {
     await expect(objectiveCombobox(page)).toBeVisible();
     await expect(objectiveCombobox(page)).toHaveText(/^Gold \/ hr$/i);
-    await expect(page.getByText(/scored for the gold per hour/i)).toBeVisible();
+    await expect(await openFieldHelp(page, SETUP_HELP)).toContainText(/scored for the gold per hour/i);
   });
 
   test('switching to DPS restates what the search will score', async ({ page }) => {
     await pickObjective(page, /^DPS$/i);
     await expect(objectiveCombobox(page)).toHaveText(/^DPS$/i);
-    await expect(page.getByText(/scored for combined roster DPS/i)).toBeVisible();
-  });
-
-  /**
-   * Luck raises drop rates and so gold per hour, and no points search can move it — the page owes
-   * a gold-scored reader that, and owes a damage-scored reader the reassurance it is not taken.
-   */
-  test('both objectives disclose that Luck is never moved', async ({ page }) => {
-    await clickOptimize(page);
-    await waitForOptimizeDone(page);
-    await expect(disclosuresPanel(page).getByText(/never moves Luck, in either direction/i)).toBeVisible();
-    await expect(disclosuresPanel(page).getByText(/Luck raises drop rates/i)).toBeVisible();
+    await expect(await openFieldHelp(page, SETUP_HELP)).toContainText(/scored for combined roster DPS/i);
   });
 
   test('a Gold plan reports gold per hour and never roster DPS', async ({ page }) => {
@@ -121,6 +113,7 @@ test.describe('Team plan objective — a record with no furthest phase', () => {
     await expect(page.getByText(NEEDS_PHASE)).toBeVisible();
 
     await page.getByRole('combobox', { name: /^Which phase this search plans for$/i }).click();
+    await expect(page.getByPlaceholder('Hard, Normal 2-1, or 151')).toBeFocused();
     await page.keyboard.type('Normal 1-1');
     await page.getByRole('option', { name: 'Normal 1-1 (#51)' }).click();
 

@@ -12,6 +12,7 @@ import { applyPoints } from './gear/apply';
 import { starsMult } from './gear/catalog';
 import type { Loadout, PointAlloc, SheetOtherPct, SheetStats } from './gear/types';
 import { ZERO_PTS, type SheetKey } from './planner-constants';
+import { applyRuneMultipliers, runeSheetMultipliers, type HeroRune } from './runes';
 
 /**
  * lv1 ★0 rolls in PLANNER units (already unit-converted — crit chance/luck/CDR are
@@ -65,9 +66,10 @@ function poolFactor(percent: number): number {
  * {@link SheetOtherPct}) fold in the on-sheet ability contribution multiplicatively;
  * luck takes no `sheetOther` term.
  *
- * Crit damage and crit chance are the exceptions: their on-sheet ability contributions
- * (`sheetOther.critDmgFlat` / `sheetOther.critChanceFlat` — Golpe Brutal and Olho Clínico) are
- * FLAT addends in planner percentage points, added AFTER the star factor. See
+ * Crit damage, crit chance and penetration are the exceptions: their on-sheet ability
+ * contributions (`sheetOther.critDmgFlat` / `critChanceFlat` / `penetration` — Golpe Brutal,
+ * Olho Clínico and Ponta de Diamante) are FLAT addends in the sheet's units, added AFTER the star
+ * factor. See
  * `POINT_GAIN.critDmgFlat` and the `critDmgFlat` / `critChanceFlat` ability kinds for the two
  * measurements. No capture carries a ★>0 hero with either contribution, so whether the flat
  * terms would themselves star-scale is unobserved; not star-scaling them is the conservative
@@ -90,7 +92,7 @@ export function nakedFromBirth(
     speed: birth.speed * poolFactor(sheetOther.speed),
     critChance: birth.critChance * star + Math.max(0, sheetOther.critChanceFlat),
     critDmg: birth.critDmg * star + Math.max(0, sheetOther.critDmgFlat),
-    penetration: birth.penetration * poolFactor(sheetOther.penetration) * star,
+    penetration: birth.penetration * star + Math.max(0, sheetOther.penetration),
     cdr: birth.cdr * poolFactor(sheetOther.cdr) * star,
     luck: birth.luck * star,
   };
@@ -143,11 +145,14 @@ export type ComposeSheetFromBirthInput = {
   loadout: Loadout;
   pts: PointAlloc;
   tree: TreeSheetTotals;
+  /** The hero's timed rune buffs — absent or empty composes the sheet exactly as before. */
+  runes?: readonly HeroRune[] | undefined;
 };
 
 /**
  * The full birth → displayed-sheet chain: `nakedFromBirth` → `applyPoints` (existing
- * shared pool) → `applySkillTree`. Reuses `applyPoints` rather than reimplementing the
+ * shared pool) → `applySkillTree` → the runes (`runes.ts`, last: they multiply what the
+ * game has already built). Reuses `applyPoints` rather than reimplementing the
  * pool — the tree `_add` keys are algebraically additive pool members, so this
  * composition is exact through the existing gear/points machinery.
  *
@@ -172,7 +177,9 @@ export function composeSheetFromBirth(input: ComposeSheetFromBirthInput): SheetS
     input.level,
     input.stars,
   );
-  return applySkillTree(pooled, naked, input.sheetOther, input.tree);
+  const withTree = applySkillTree(pooled, naked, input.sheetOther, input.tree);
+  if (!input.runes || input.runes.length === 0) return withTree;
+  return applyRuneMultipliers(withTree, input.tree, runeSheetMultipliers(input.runes));
 }
 
 /**

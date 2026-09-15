@@ -1,4 +1,7 @@
 import { cva } from 'class-variance-authority';
+import type { EquippedItem } from '@bombfarm/domain/gear';
+import { LETTER_BANDS } from '@bombfarm/domain/roll-quality';
+import { cn } from '@bombfarm/ui';
 
 /** Shared corner radius for wiki-sourced hero/item inventory frames. */
 export const artFrameRadiusClass = 'rounded-sm';
@@ -119,6 +122,40 @@ export const abilityIconRecipe = cva(
 export type AbilityIconRecipeSize = keyof typeof abilityIconSize;
 export type ArtFrameRecipeSize = keyof typeof artFrameSize;
 
+/** A gear slot with nothing in it, drawn at the `lg` item-icon footprint. */
+export const emptyGearSlotClass = cn(
+  'inline-grid w-12 aspect-[18/19] shrink-0 border border-dashed border-line bg-[color-mix(in_oklch,var(--bg)_55%,var(--surface))]',
+  artFrameRadiusClass,
+);
+
+/** The eight slot cards: four across, or eight across once the panel is 64rem wide — the desktop
+ *  shell caps this panel at 1096px of content (measured at a 1920px window), which is 131px a card
+ *  with the gaps, enough for the art, a name wrapped over two lines and every stat row unbroken.
+ *  Between those two shapes nothing else reads: a 5+3 or 6+2 fold leaves a slot under one it has
+ *  nothing to do with. Each column stops at 13rem, the measure the card is drawn for, and the grid
+ *  centres in a wider panel rather than stretching the cards or hugging one edge. Under 720px the
+ *  row keeps its width and scrolls sideways. The container is the panel the grid sits in. */
+export const slotsGridClass =
+  'grid grid-cols-[repeat(4,minmax(0,13rem))] justify-center gap-1.5 max-[720px]:min-w-[36rem] @min-[64rem]:grid-cols-[repeat(8,minmax(0,13rem))]';
+export const slotStatRowClass =
+  'flex items-baseline justify-between gap-1.5 text-muted leading-snug [&_b]:shrink-0 [&_b]:font-semibold [&_b]:text-ink';
+
+const slotChromeBase = cn(
+  'relative flex flex-col gap-1 border border-dashed border-line bg-bg p-1.5 [&_[data-select]]:w-full',
+  artFrameRadiusClass,
+);
+const slotChromeChanged =
+  'shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--accent)_40%,transparent)]';
+
+/** One gear slot's card: neutral chrome, solid once filled — the rarity reads from the item frame
+ *  inside it. `changed` marks a clone slot that differs from the current gear. */
+export function slotChromeClassName(
+  equipped: EquippedItem | null | undefined,
+  changed = false,
+): string {
+  return cn(slotChromeBase, equipped && 'border-solid', changed && slotChromeChanged);
+}
+
 /** Literal rarity text colours so Tailwind's JIT scanner sees every class. */
 const rarityTextClasses = [
   'text-rar-0',
@@ -150,6 +187,26 @@ export function rarityDotClass(index: number): string | undefined {
 }
 
 /**
+ * Hero grade letter → the colour the game itself prints that grade in.
+ *
+ * The game paints grades on the SAME six-step ladder it paints rarities on, one step per letter
+ * from the bottom: E reads grey like Comum, D green like Incomum, C blue like Raro, B purple like
+ * Épico, A gold like Lendária, S red like Mítico. Read off the game's own hero cards, where a
+ * green "Rank D" sits beside a blue "Rare" and a purple "Rank B" beside a green "Uncommon" — the
+ * two ladders are the same colours indexed independently, which is why this reuses
+ * `rarityTextClass` rather than declaring a second palette that could drift from it.
+ *
+ * The letters come from the domain's own grade table, so a grade added or renamed there moves this
+ * with it instead of leaving a letter uncoloured. `undefined` for a letter that table does not
+ * know, which reads as no colour rather than as the bottom grade's.
+ */
+export function heroRankTextClass(rank: string | undefined): string | undefined {
+  if (rank === undefined) return undefined;
+  const index = LETTER_BANDS.letters.indexOf(rank.trim());
+  return index === -1 ? undefined : rarityTextClass(index);
+}
+
+/**
  * Roster icon tooltip trigger — real button semantics, hover/pointer only.
  * `tabIndex={-1}` on the trigger keeps one tab stop per picker row (the `<tr>`).
  */
@@ -158,3 +215,53 @@ export const rosterIconTooltipTriggerClass =
 
 /** Shelved-hero mute — apply to scan chrome, not the status toggle. */
 export const rosterInactiveChromeClass = 'opacity-55 grayscale';
+
+/**
+ * The colour to paint a hero's grade in, absent and unrecognised cases included.
+ *
+ * Every surface that shows a grade needs the same three answers — the game's colour for a grade
+ * the table knows, the accent for one it does not, and the muted tone for a hero with no grade at
+ * all — so they read it here instead of each repeating the ternary. They did repeat it, in ten
+ * places, which is how nine of them kept one flat accent after the ladder arrived.
+ */
+export function heroRankToneClass(rank: string | undefined): string {
+  if (!rank?.trim()) return 'text-muted';
+  return heroRankTextClass(rank) ?? 'text-accent';
+}
+
+/** Literal rarity washes so Tailwind's JIT scanner sees every class. Two strengths: the quiet one
+ *  a band uses to say which grade it is, and the one the hero's own grade uses to say so louder. */
+const rarityBandClasses = [
+  'bg-rar-0/12',
+  'bg-rar-1/12',
+  'bg-rar-2/12',
+  'bg-rar-3/12',
+  'bg-rar-4/12',
+  'bg-rar-5/12',
+] as const;
+
+const rarityBandActiveClasses = [
+  'bg-rar-0/30',
+  'bg-rar-1/30',
+  'bg-rar-2/30',
+  'bg-rar-3/30',
+  'bg-rar-4/30',
+  'bg-rar-5/30',
+] as const;
+
+/**
+ * The fill for one grade's band on a grade scale — the colour the game prints that grade in, at a
+ * strength that leaves whatever is drawn over it readable.
+ *
+ * Six bands side by side ARE the ladder, so each carries its own colour rather than the scale
+ * carrying one: a player reading left to right sees grey climb to red, which is the same order the
+ * game shows them. `active` is the grade the hero actually holds, lifted enough to find at a
+ * glance without turning the other five into noise. `undefined` for a grade the table does not
+ * know, which leaves the band its own background rather than inventing one.
+ */
+export function heroRankBandClass(rank: string | undefined, active = false): string | undefined {
+  if (!rank?.trim()) return undefined;
+  const index = LETTER_BANDS.letters.indexOf(rank.trim());
+  if (index === -1) return undefined;
+  return active ? rarityBandActiveClasses[index] : rarityBandClasses[index];
+}

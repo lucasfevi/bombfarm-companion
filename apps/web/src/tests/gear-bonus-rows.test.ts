@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gearBonusRows, formatBonus } from '@/features/planner/model/gear-bonus-rows';
+import { gearBonusRows, formatBonus } from '@bombfarm/hero/model';
 import { STRINGS } from '@/shared/i18n';
 import type { GearBonuses } from '@bombfarm/domain/gear';
 
@@ -30,11 +30,11 @@ const clone: GearBonuses = {
 };
 
 describe('gearBonusRows', () => {
-  it('returns one row per GearBonuses key, in the fixed column order, without a clone', () => {
+  it('returns one row per drawn GearBonuses key, in the fixed column order, without a clone', () => {
     const rows = gearBonusRows(current, t);
+    // `dmgPct` is structurally 0 with the current catalog, so the totals draw no column for it.
     expect(rows.map((r) => r.key)).toEqual([
       'dmgFlat',
-      'dmgPct',
       'energyPct',
       'speedPct',
       'luckPct',

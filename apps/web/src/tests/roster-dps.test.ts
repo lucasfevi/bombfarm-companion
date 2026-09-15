@@ -19,9 +19,9 @@ import { zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import {
   DEFAULT_CONTEXT,
   DEFAULT_TREE,
-  type AccountShared,
   type HeroRecord,
 } from '@/shared/lib/storage';
+import type { AccountShared } from '@bombfarm/domain/shims/storage';
 
 const sampleBirth = (): SheetStats => ({
   attack: 200,

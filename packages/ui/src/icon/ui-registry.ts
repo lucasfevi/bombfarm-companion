@@ -8,6 +8,7 @@ import {
   HiMiniMap,
   HiMiniSignal,
   HiMiniUser,
+  HiMiniUserGroup,
   HiMiniXMark,
   HiMiniCheck,
   HiMiniCheckCircle,
@@ -19,6 +20,7 @@ import {
   HiMiniSquares2X2,
   HiMiniBars3,
   HiMiniWindow,
+  HiMiniSparkles,
 } from 'react-icons/hi2';
 import { BiCoffee, BiCopy } from 'react-icons/bi';
 import {
@@ -43,6 +45,17 @@ export const uiIconRegistry = {
   cog: HiMiniCog6Tooth,
   // The sixth desktop tab, the Forge — drawn as its glyph at the same widths as the five above.
   hammer: PiHammer,
+  // The seventh desktop tab, the Heroes screen. `HiMiniUserGroup` over `HiMiniUsers` by geometry,
+  // not by name: `user` above is one centred bust, and `HiMiniUsers` is one large figure with a
+  // small companion whose mass merges into that bust's shoulder at 16px, where these tabs are
+  // drawn without their words. `HiMiniUserGroup` puts three separate heads across the full width,
+  // so the silhouette stays plural at that size and no player takes it for the Account tab.
+  'user-group': HiMiniUserGroup,
+  // The eighth desktop tab, the Optimizer. Sparkles over a sliders glyph (which reads as Settings
+  // beside `cog`), a trending arrow (earnings, beside `signal`) and a wrench (Forge, beside
+  // `hammer`): at 16px it is the one mark that means "improve this" and shares no mass with a
+  // tool or a figure.
+  sparkles: HiMiniSparkles,
   // The top bar's overflow trigger — the secondary actions, once they no longer fit beside the tabs
   'ellipsis-horizontal': HiMiniEllipsisHorizontal,
   // Inventory layout toggle — cards

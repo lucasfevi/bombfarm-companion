@@ -97,12 +97,6 @@ describe('import inventory sync', () => {
   // (the ground-truth rule's class (a) — read from the capture): re-pointed onto the post-patch export's
   // real phase (24) — `phase-151.json` is deleted with the rest of the pre-wipe corpus
   // (the blanket corpus deletion, not triaged; `max_phase 42` post-wipe cannot reproduce a phase-151 subject at all).
-  // RECORDED LOSS: the Abisso half of the deleted assertion (`treeAbisso`/`treeAbissoBase`
-  // flowing from a real save's `abisso_base`) is unreproducible — no post-patch capture
-  // carries `abisso_base` at all (the 2026-08-13 patch removed the keystone). This feature later
-  // removed Abisso detection itself (it had been covered by `abisso-glass-cannon.test.ts`,
-  // deleted at F3's T2) — the mechanic no longer exists anywhere in the pipeline. See
-  // docs/fixture-corpus.md.
   it('applyAccountImport carries a real save\'s account.phase into store phase', () => {
     const raw = loadFixtureJsonForExport();
     const { account } = parseSaveFile(raw, []);

@@ -5,7 +5,7 @@ import type { HeroSheet } from '../model';
 import { canonicalizeAssignment } from './canonicalize-assignment';
 import { evaluateRoster } from './evaluate';
 import { optimizeBuild } from '../points-reopt';
-import { respecCostGold } from '../respec-cost';
+import { requiresPointReset, respecCostGold } from '../respec-cost';
 import { mayRespendPoints } from './allowed-changes';
 import {
   buildInitialAssignment,
@@ -192,15 +192,18 @@ function buildPointResets(
     const after = respecStateEval.perHero[heroId]?.sustained ?? 0;
     const heroGainDpsPct = before > 0 ? (after / before - 1) * 100 : 0;
     const level = heroLevelById.get(heroId) ?? 0;
+    const ptsBefore = currentPtsByHeroId[heroId] ?? {};
+    const pts = finalPtsByHeroId[heroId] ?? {};
     return {
       heroId,
-      ptsBefore: currentPtsByHeroId[heroId] ?? {},
-      pts: finalPtsByHeroId[heroId] ?? {},
+      ptsBefore,
+      pts,
       heroGainDpsPct,
       rosterGainObjective: gainByHeroId[heroId] ?? 0,
       // Confirmed real in-game cost. Ability resets cost the same again, separately, but we never
       // recommend ability resets here. Display-only — never enters the objective or any filter.
-      resetCostGold: respecCostGold(level),
+      // 0 when the proposal only ADDS: placing points the game already granted needs no reset.
+      resetCostGold: requiresPointReset(ptsBefore, pts) ? respecCostGold(level) : 0,
     };
   });
 }

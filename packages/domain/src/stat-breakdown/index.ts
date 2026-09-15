@@ -17,6 +17,9 @@ export type {
   LedgerStep,
   LedgerGroup,
   FormulaBreakdown,
+  FormulaPart,
+  FormulaTerm,
+  FormulaTermKey,
   StatBreakdown,
   PipelineFacts,
 } from './types';
@@ -24,6 +27,8 @@ export type {
 export { LEDGER_SOURCE_GROUP } from './types';
 
 export { foldLedger } from './ledger-kit';
+
+export { expectedBlastsMult } from './formula-breakdowns';
 
 export {
   BREAKDOWN_SHEET_IDS,

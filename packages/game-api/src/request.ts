@@ -4,7 +4,7 @@ import { ConsentedSessionRequiredError, RAW, isConsentedSession, type ConsentedS
 /**
  * The one read request function (one host, HTTPS, GET; every pacing failure gets a distinct
  * named status). Adapted from the internal automation prototype's
- * API client — the header set and the 15 s timeout are reused; `FALLBACK_IPS` and the IP-retry
+ * API client — the 15 s timeout is reused; `FALLBACK_IPS` and the IP-retry
  * loop are deliberately not ported (transport failure gets a named status, not an IP fallback).
  * The write twin, `forge-request.ts`, is the only module that may build a POST, and it reuses
  * this module's headers, classifier and timeout rather than carrying a second copy.
@@ -27,6 +27,14 @@ import { ConsentedSessionRequiredError, RAW, isConsentedSession, type ConsentedS
 
 const HOST = 'app.bombfarm.net';
 const METHOD = 'GET';
+
+/** Protocol constant, beside the other request-shaping ones. The product half lives here; the
+ *  version is the running app's and is injected by whoever builds the transport, since this
+ *  package cannot know it. Carries no contact URL — `apps/desktop`'s boundary guard forbids that
+ *  process naming any host but the API. */
+export function companionUserAgent(appVersion: string): string {
+  return `Bomb Farm Companion/${appVersion}`;
+}
 
 /** Conservative, unmeasured — rejecting a response this large is safer than buffering it whole. */
 const MAX_RESPONSE_BYTES = 2_000_000;
@@ -58,7 +66,12 @@ export type HttpTransport = (req: HttpRequest | HttpWriteRequest) => Promise<Htt
 
 export type RequestOutcome =
   | { readonly kind: 'ok'; readonly status: 200; readonly json: unknown }
-  | { readonly kind: 'unauthorized'; readonly status: 401 | 403 }
+  /** `status` is not narrowed to 401/403: the server also names a dead session in the body of an
+   *  otherwise-successful response, and that has to be representable. */
+  | { readonly kind: 'unauthorized'; readonly status: number; readonly code: string | null }
+  /** The server named a refusal in the body (`{"error":"SERVER_LOCKED"}`) — at any status,
+   *  including 200. Distinct from `http_error`, which is a status with nothing named. */
+  | { readonly kind: 'api_error'; readonly status: number; readonly code: string }
   | { readonly kind: 'cooldown'; readonly status: number; readonly retryHint: string | null }
   | { readonly kind: 'http_error'; readonly status: number; readonly preview: string }
   | { readonly kind: 'malformed_json'; readonly preview: string }
@@ -85,11 +98,19 @@ export function authorizedHeaders(session: ConsentedSession): Readonly<Record<st
   }
   return {
     Authorization: `Bearer ${session.token[RAW]()}`,
-    'X-Account-Id': session.accountId,
     Accept: 'application/json',
     Host: HOST,
     Connection: 'close',
   };
+}
+
+/** The game sends `account_id` as the first query parameter on every account-scoped route, and the
+ *  server cross-checks it against the account the bearer token resolves to — a mismatch comes back
+ *  as `WRONG_ACCOUNT`. It is the account identifier the server actually expects to see; the token
+ *  alone is never how the client asks. Both builders below go through here so the read and write
+ *  paths cannot drift apart. */
+export function withAccountId(path: string, accountId: string): string {
+  return `${path}?account_id=${encodeURIComponent(accountId)}`;
 }
 
 export function buildHttpRequest(
@@ -100,7 +121,7 @@ export function buildHttpRequest(
   return {
     host: HOST,
     method: METHOD,
-    path,
+    path: withAccountId(path, session.accountId),
     headers: authorizedHeaders(session),
     timeoutMs: opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     ...(opts?.signal ? { signal: opts.signal } : {}),
@@ -134,22 +155,59 @@ function extractRetryHint(body: string): string | null {
   }
 }
 
+/** The codes that mean this session is over. The game clears its stored token and re-authenticates
+ *  on exactly these; treating them as anything softer leaves us retrying with a dead token. */
+const SESSION_DEAD_CODES: ReadonlySet<string> = new Set([
+  'NO_TOKEN',
+  'BAD_TOKEN',
+  'WRONG_ACCOUNT',
+  'SESSION_EXPIRED',
+]);
+
+/** The server names a refusal as `{"error": "CODE"}`, and the game screens for it on EVERY
+ *  response before the per-route handler runs — at any status, 200 included. Without this, a
+ *  refusal body on a 200 parses as a perfectly good JSON object and is committed as account
+ *  state. */
+function apiErrorCode(body: string): string | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    return null;
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+  const code = (parsed as Record<string, unknown>).error;
+  return typeof code === 'string' && code.length > 0 ? code : null;
+}
+
 /** Maps a raw response into a `RequestOutcome` — every branch names a distinct, closed reason.
- *  Order matters: size, then auth, then cooldown (status OR shape), then generic error,
- *  then success. Shared with `forge-request.ts`: a forge roll's cooldown reads the same way. */
+ *  Order matters: size, then auth (status OR named code), then cooldown (status OR shape), then a
+ *  named refusal at any status, then generic error, then success. Shared with
+ *  `forge-request.ts`: a forge roll's cooldown reads the same way. */
 export function classifyResponse(status: number, body: string): RequestOutcome {
   const bytes = Buffer.byteLength(body, 'utf8');
   if (bytes > MAX_RESPONSE_BYTES) {
     return { kind: 'too_large', bytes };
   }
 
+  const code = apiErrorCode(body);
+
+  if (code !== null && SESSION_DEAD_CODES.has(code)) {
+    return { kind: 'unauthorized', status, code };
+  }
+
   if (status === 401 || status === 403) {
-    return { kind: 'unauthorized', status };
+    return { kind: 'unauthorized', status, code };
   }
 
   const cooldownShaped = COOLDOWN_BODY_PATTERN.test(body);
   if (status === 429 || status === 503 || cooldownShaped) {
     return { kind: 'cooldown', status, retryHint: extractRetryHint(body) };
+  }
+
+  // Before the status branches below, so a named refusal on a 200 can never read as `ok`.
+  if (code !== null) {
+    return { kind: 'api_error', status, code };
   }
 
   if (status >= 400) {

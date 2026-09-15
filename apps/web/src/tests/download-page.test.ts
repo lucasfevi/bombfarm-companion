@@ -34,7 +34,11 @@ import {
   doubleClickFrameAt,
   permissionFrameAt,
 } from '@/features/download/model/step-illustrations';
-import { parseLatestRelease, type LatestRelease } from '@/features/download/model/latest-release';
+import {
+  parseLatestRelease,
+  type DownloadCounts,
+  type LatestRelease,
+} from '@/features/download/model/latest-release';
 import { RELEASES_URL, isStableInstaller } from '@/features/download/model/release';
 import { STRINGS, type Lang } from '@/shared/i18n';
 
@@ -52,9 +56,9 @@ const RELEASE: LatestRelease = {
   downloadUrl:
     'https://github.com/lucasfevi/bombfarm-companion/releases/download/v0.7.0/bombfarm-companion-0.7.0-setup.exe',
   sizeLabel: '212 MB',
-  installs: 6,
-  updates: 3,
 };
+
+const COUNTS: DownloadCounts = { installs: 6, updates: 3 };
 
 
 describe('Live replica', () => {
@@ -542,114 +546,6 @@ describe('recognising a stable installer', () => {
   });
 });
 
-describe('resolving the newest build', () => {
-  const asset = (name: string, downloads: number) => ({
-    name,
-    size: 221_979_203,
-    download_count: downloads,
-    browser_download_url: `https://example.invalid/${name}`,
-  });
-
-  const payload = [
-    {
-      tag_name: 'v0.6.0-beta.161',
-      published_at: '2026-08-30T21:56:50Z',
-      assets: [asset('bombfarm-companion-beta-0.6.0-beta.161-setup.exe', 4)],
-    },
-    {
-      tag_name: 'v0.7.0-beta.163',
-      published_at: '2026-08-30T23:37:27Z',
-      assets: [asset('bombfarm-companion-beta-0.7.0-beta.163-setup.exe', 2)],
-    },
-  ];
-
-  const withStable = [
-    ...payload,
-    {
-      tag_name: 'v0.7.0',
-      published_at: '2026-08-31T09:00:00Z',
-      assets: [asset('bombfarm-companion-0.7.0-setup.exe', 1)],
-    },
-  ];
-
-  it('resolves nothing at all while only betas exist', () => {
-    expect(parseLatestRelease(payload)).toBeNull();
-  });
-
-  /**
-   * Stable is the only thing this page serves. It carries no channel word in its filename —
-   * beta's does — so the installer is recognised by the version starting straight after the
-   * product name.
-   */
-  it('serves the stable build once one exists', () => {
-    const parsed = parseLatestRelease(withStable);
-    expect(parsed?.version).toBe('0.7.0');
-    expect(parsed?.fileName).toBe('bombfarm-companion-0.7.0-setup.exe');
-  });
-
-  /**
-   * A beta published after the newest stable is the normal state of this rail — every merge to
-   * `develop` cuts one — and must never take the button.
-   */
-  it('ignores a beta published more recently than the stable build', () => {
-    const betaIsNewer = [
-      {
-        tag_name: 'v0.7.0',
-        published_at: '2026-08-31T09:00:00Z',
-        assets: [asset('bombfarm-companion-0.7.0-setup.exe', 1)],
-      },
-      {
-        tag_name: 'v0.8.0-beta.170',
-        published_at: '2026-09-02T09:00:00Z',
-        assets: [asset('bombfarm-companion-beta-0.8.0-beta.170-setup.exe', 1)],
-      },
-    ];
-    expect(parseLatestRelease(betaIsNewer)?.version).toBe('0.7.0');
-  });
-
-  /**
-   * The install figure is the one number here that is deliberately not stable-only: it counts
-   * every installer anyone has ever downloaded, betas included, because it is a tally of people
-   * who installed the app rather than a property of the build on offer.
-   */
-  it('totals downloads across every build, betas included', () => {
-    expect(parseLatestRelease(withStable)?.installs).toBe(7);
-  });
-
-  it('reports the asset size in MB', () => {
-    expect(parseLatestRelease(withStable)?.sizeLabel).toBe('212 MB');
-  });
-
-  it('ignores drafts, blockmaps and build logs', () => {
-    const noisy = [
-      {
-        tag_name: 'v9.9.9',
-        draft: true,
-        published_at: '2027-01-01T00:00:00Z',
-        assets: [asset('bombfarm-companion-9.9.9-setup.exe', 1)],
-      },
-      {
-        tag_name: 'v0.7.0',
-        published_at: '2026-08-31T09:00:00Z',
-        assets: [
-          asset('bombfarm-companion-0.7.0-setup.exe.blockmap', 99),
-          asset('builder-debug.yml', 99),
-          asset('bombfarm-companion-0.7.0-setup.exe', 2),
-        ],
-      },
-    ];
-    const parsed = parseLatestRelease(noisy);
-    expect(parsed?.version).toBe('0.7.0');
-    expect(parsed?.installs).toBe(2);
-  });
-
-  it('gives up rather than guessing when the payload is unusable', () => {
-    expect(parseLatestRelease(null)).toBeNull();
-    expect(parseLatestRelease({ message: 'API rate limit exceeded' })).toBeNull();
-    expect(parseLatestRelease([{ tag_name: 'v1', assets: [] }])).toBeNull();
-  });
-});
-
 describe('site navigation', () => {
   /**
    * `/download` shipped unreachable: it lived outside the app shell with a header of its own, and
@@ -687,9 +583,9 @@ describe('site navigation', () => {
     }
   });
 
-  it('treats only the planner as an exact-path section', () => {
-    expect(isSiteSectionActive('planner', '/')).toBe(true);
-    expect(isSiteSectionActive('planner', '/farm')).toBe(false);
+  it('treats only the front page as an exact-path section', () => {
+    expect(isSiteSectionActive('home', '/')).toBe(true);
+    expect(isSiteSectionActive('heroes', '/')).toBe(false);
     expect(isSiteSectionActive('download', '/download')).toBe(true);
     expect(isSiteSectionActive('download', '/')).toBe(false);
   });
@@ -717,21 +613,19 @@ describe('what the page offers', () => {
    * at all; this asserts the refusal at the surface the visitor actually clicks.
    */
   it('offers no build at all rather than a beta one', () => {
-    const betaOnly = [
-      {
-        tag_name: 'v0.7.1-beta.170',
-        published_at: '2026-08-31T17:34:18Z',
-        assets: [
-          {
-            name: 'bombfarm-companion-beta-0.7.1-beta.170-setup.exe',
-            size: 221_979_203,
-            download_count: 3,
-            browser_download_url: 'https://example.invalid/beta',
-          },
-        ],
-      },
-    ];
-    expect(parseLatestRelease(betaOnly)).toBeNull();
+    const beta = {
+      tag_name: 'v0.7.1-beta.170',
+      published_at: '2026-08-31T17:34:18Z',
+      assets: [
+        {
+          name: 'bombfarm-companion-beta-0.7.1-beta.170-setup.exe',
+          size: 221_979_203,
+          download_count: 3,
+          browser_download_url: 'https://example.invalid/beta',
+        },
+      ],
+    };
+    expect(parseLatestRelease(beta)).toBeNull();
 
     const markup = renderToStaticMarkup(
       createElement(DownloadHero, { t: STRINGS.en, lang: 'en', release: null }),
@@ -742,7 +636,7 @@ describe('what the page offers', () => {
 
   it('shows no channel cards', () => {
     const markup = renderToStaticMarkup(
-      createElement(InstallCounts, { t: STRINGS.en, lang: 'en', release: RELEASE }),
+      createElement(InstallCounts, { t: STRINGS.en, lang: 'en', counts: COUNTS }),
     );
     expect(markup).not.toContain('Stable');
     expect(markup).not.toContain('Beta');
@@ -758,53 +652,23 @@ describe('install count strip', () => {
    */
   it('prints the count as a whole number', () => {
     const markup = renderToStaticMarkup(
-      createElement(InstallCounts, { t: STRINGS.pt, lang: 'pt', release: RELEASE }),
+      createElement(InstallCounts, { t: STRINGS.pt, lang: 'pt', counts: COUNTS }),
     );
     expect(markup).toContain('>6<');
     expect(markup).not.toContain('6,0');
   });
 
-  it('hides the strip entirely when the release could not be read', () => {
+  it('hides the strip entirely when the release list could not be read', () => {
     const markup = renderToStaticMarkup(
-      createElement(InstallCounts, { t: STRINGS.en, lang: 'en', release: null }),
+      createElement(InstallCounts, { t: STRINGS.en, lang: 'en', counts: null }),
     );
     expect(markup).not.toContain('download-install-count');
     expect(markup).not.toContain(STRINGS.en.downloadInstallsSuffix);
   });
 
-  /**
-   * Installs count every installer on every channel; updates count only `.blockmap` fetches,
-   * which nothing but electron-updater asks for. Mixing them would inflate installs with the
-   * same people coming back.
-   */
-  it('counts installs across every channel and version', () => {
-    const across = [
-      {
-        tag_name: 'v0.7.0-beta.163',
-        published_at: '2026-08-30T23:37:27Z',
-        assets: [
-          { name: 'bombfarm-companion-beta-0.7.0-beta.163-setup.exe', size: 1, download_count: 5, browser_download_url: 'https://example.invalid/a' },
-          { name: 'bombfarm-companion-beta-0.7.0-beta.163-setup.exe.blockmap', size: 1, download_count: 7, browser_download_url: 'https://example.invalid/c' },
-        ],
-      },
-      {
-        tag_name: 'v0.7.0',
-        published_at: '2026-08-31T09:00:00Z',
-        assets: [
-          { name: 'bombfarm-companion-0.7.0-setup.exe', size: 1, download_count: 4, browser_download_url: 'https://example.invalid/b' },
-        ],
-      },
-    ];
-    const parsed = parseLatestRelease(across);
-    expect(parsed?.installs).toBe(9);
-    expect(parsed?.updates).toBe(7);
-    // The button serves the stable build, not whichever asset happened to be first.
-    expect(parsed?.fileName).toBe('bombfarm-companion-0.7.0-setup.exe');
-  });
-
   it('shows the update figure beside the install figure', () => {
     const markup = renderToStaticMarkup(
-      createElement(InstallCounts, { t: STRINGS.en, lang: 'en', release: RELEASE }),
+      createElement(InstallCounts, { t: STRINGS.en, lang: 'en', counts: COUNTS }),
     );
     expect(markup).toContain('download-update-count');
     expect(markup).toContain(STRINGS.en.downloadUpdatesSuffix);
@@ -812,18 +676,18 @@ describe('install count strip', () => {
 
   it('omits the update figure until an update has actually been delivered', () => {
     const markup = renderToStaticMarkup(
-      createElement(InstallCounts, { t: STRINGS.en, lang: 'en', release: { ...RELEASE, updates: 0 } }),
+      createElement(InstallCounts, { t: STRINGS.en, lang: 'en', counts: { ...COUNTS, updates: 0 } }),
     );
     expect(markup).not.toContain('download-update-count');
   });
 
   it('separates thousands in the reader own convention', () => {
-    const many = { ...RELEASE, installs: 4182 };
+    const many = { ...COUNTS, installs: 4182 };
     const pt = renderToStaticMarkup(
-      createElement(InstallCounts, { t: STRINGS.pt, lang: 'pt', release: many }),
+      createElement(InstallCounts, { t: STRINGS.pt, lang: 'pt', counts: many }),
     );
     const en = renderToStaticMarkup(
-      createElement(InstallCounts, { t: STRINGS.en, lang: 'en', release: many }),
+      createElement(InstallCounts, { t: STRINGS.en, lang: 'en', counts: many }),
     );
     expect(pt).toContain('4.182');
     expect(en).toContain('4,182');

@@ -6,7 +6,7 @@
  * constants below, never the search machinery itself).
  */
 import { generateMoves, REOPT_FULL_MAX_SWEEPS } from './points-reopt-search';
-import { clampPtsToBudget, REOPT_KEYS } from './points-reopt-core';
+import { budgetOf, clampPtsToBudget, REOPT_KEYS } from './points-reopt-core';
 import {
   squadFactsFromBases,
   type HeroFarmBasis,
@@ -42,6 +42,13 @@ export const FARM_OPT_FULL_MAX_EVALUATIONS = 8_000;
 export const FARM_OPT_JOINT_BUDGET_SHARE = 0.5;
 
 export type PtsAssignment = ReadonlyMap<string, Record<SheetKey, number>>;
+
+/** A move in the per-hero neighbourhood. `unplaced` is the hero's budget minus what its vector
+ *  currently holds; the transfer families from `generateMoves()` ignore it. */
+type SpendMoveFn = (
+  pts: Record<SheetKey, number>,
+  unplaced: number,
+) => Record<SheetKey, number> | null;
 
 export type FarmCandidate = {
   name: string;
@@ -200,6 +207,38 @@ function shareBuild(
   return next;
 }
 
+/** Whole pool first: `Infinity` is clamped by `unplaced` like every other size, so it places
+ *  everything the hero is holding in one move. */
+const SPEND_BLOCKS: readonly number[] = [Infinity, 10, 5, 3, 2, 1];
+
+/**
+ * PLACE points the hero has not spent yet — the one thing the transfer neighbourhood cannot do.
+ *
+ * `generateMoves()` is transfers only, so every vector it reaches carries the total it started
+ * from, and `current` is the one seed not built from the budget. Between them, a hero holding
+ * banked points had a single route to spending them: a squad-level {@link shareBuild} re-split
+ * that must beat the incumbent for the WHOLE searchable set at one energy share. On a roster
+ * whose other heroes are already well split that candidate loses, and the banked points go down
+ * with it — a level-102 hero holding 52 unplaced points was offered a reshuffle of the 50 it had
+ * already spent, sweep after sweep, with nothing anywhere saying the other 52 existed.
+ *
+ * Ordered whole-pool-first because a farm probe is a phase sweep and the loop takes the FIRST
+ * improvement: trying `key += everything` ahead of the block sizes settles the pool in one
+ * accepted move and leaves the transfer family to spread it from there.
+ */
+function generateSpendMoves(): SpendMoveFn[] {
+  const moves: SpendMoveFn[] = [];
+  for (const blockSize of SPEND_BLOCKS) {
+    for (const key of REOPT_KEYS) {
+      moves.push((pts, unplaced) => {
+        const amount = Math.min(blockSize, unplaced);
+        return amount <= 0 ? null : { ...pts, [key]: pts[key] + amount };
+      });
+    }
+  }
+  return moves;
+}
+
 /** `budget` desc, then `heroId` asc (plain `<`) — the fixed per-hero local-search order. */
 function orderSearchableHeroes(searchableIds: readonly string[], budgetById: ReadonlyMap<string, number>): string[] {
   return [...searchableIds].sort((a, b) => {
@@ -308,7 +347,7 @@ export function runFarmSearch(
 ): FarmSearchOutcome {
   const basesById = new Map(bases.map((b) => [b.heroId, b] as const));
   const searchableSet = new Set(searchableIds);
-  const moves = generateMoves();
+  const moves: SpendMoveFn[] = [...generateSpendMoves(), ...generateMoves()];
 
   let evaluations = 0;
   let budgetExhausted = false;
@@ -364,7 +403,8 @@ export function runFarmSearch(
             }
             const basis = basesById.get(heroId)!;
             const currentHeroPts = winner.assignment.get(heroId) ?? basis.pts;
-            const nextPts = move(currentHeroPts);
+            const unplaced = Math.max(0, (budgetById.get(heroId) ?? 0) - budgetOf(currentHeroPts));
+            const nextPts = move(currentHeroPts, unplaced);
             if (!nextPts) continue;
             const candAssignment = new Map(winner.assignment);
             candAssignment.set(heroId, nextPts);

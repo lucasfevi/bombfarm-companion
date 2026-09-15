@@ -5,6 +5,8 @@
 // Ability effects are FLAT game units applied outside the sheet (confirmed by
 // Ponta de Diamante "+1 de Penetração (pontos)" matching observed sheets).
 import { critFactor } from './combat';
+import { MATILHA_PER_RANK_PER_ALLY } from './matilha';
+import { PASSAGEM_BASTAO_PER_RANK } from './passagem-bastao';
 import { BASE_ROLLS, POINT_GAIN, type RarityKey } from './rarity-constants';
 
 export type AbilityEffect =
@@ -34,7 +36,12 @@ export type AbilityEffect =
    * two abilities, not the point.
    */
   | { kind: 'critChanceFlat'; perLevel: number; onSheet?: boolean }
-  | { kind: 'penetrationPp'; perLevel: number; onSheet?: boolean } // onSheet = raw Σ on hero sheet
+  /**
+   * FLAT penetration points per ability level. `onSheet` = the hero's own sheet Σ carries it
+   * (Ponta de Diamante, held outside the gear/points pool); without it the points are a TEAM
+   * aura's (Brecha), summed over the field and capped like Presságio Mortal's crit points.
+   */
+  | { kind: 'penetrationPp'; perLevel: number; onSheet?: boolean }
   | { kind: 'rangeCells'; perLevel: number }
   | { kind: 'secondBlastPct'; perLevel: number } // chance of 2nd blast at 50% dmg
   | { kind: 'executePct'; perLevel: number } // executes rock below threshold
@@ -56,6 +63,14 @@ export type AbilityEffect =
    * hero. Same flat shape as the crit-damage stat point (`POINT_GAIN.critDmgFlat`).
    */
   | { kind: 'critDmgFlat'; perLevel: number; onSheet?: boolean }
+  /** Matilha — damage % per level PER ALLY on the field, capped (`model/matilha.ts`). */
+  | { kind: 'packDmgPct'; perLevel: number }
+  /**
+   * Passagem de Bastão — TEAM damage % per level, up in pulses rather than standing
+   * (`model/passagem-bastao.ts`). Never on a hero's own mods: the pulse is priced over the
+   * rotation, or over the hero's own stint on its own screen.
+   */
+  | { kind: 'teamPulseDmgPct'; perLevel: number }
   | { kind: 'none' };
 
 export interface AbilityDef {
@@ -80,8 +95,17 @@ export const ABILITIES: AbilityDef[] = [
   // applied to the same field of the same table.
   { id: 'pressagio_mortal', name: 'Presságio Mortal', max: 20, effectText: '+1 ponto de chance de crítico do TIME/nível (valor fixo)', effect: { kind: 'critChanceFlat', perLevel: 1 } },
   { id: 'fantasma', name: 'Fantasma', max: 20, effectText: 'atravessa rocha; +0.05% Ataque de passagem/nível (não modelado)', effect: { kind: 'none' } },
+  // FLAT points, held outside the gear/points pool — the shape the 2026-09-02 patch gave it
+  // ("os pontos de Penetração agora são adicionados diretamente"). MEASURED on the 2026-09-13
+  // live read: Minato (★2, rank 20) exports 64.118 penetration against 44.118 composed without
+  // the ability — a residual of exactly 20, so the addend is neither star-scaled nor inside a
+  // pool his gear multiplies ~5×. Before the patch it multiplied the roll (×21 at rank 20), and
+  // that pre-patch capture is registered as such.
   { id: 'ponta_diamante', name: 'Ponta de Diamante', max: 20, effectText: '+1 Penetração (pontos)/nível', effect: { kind: 'penetrationPp', perLevel: 1, onSheet: true } },
-  { id: 'misericordia', name: 'Misericórdia', max: 20, effectText: 'executa rocha < 1.25%/nível', effect: { kind: 'executePct', perLevel: 1.25 } },
+  // Live wiki `per_level` 0.0125 → 0.0075 between the 2026-09-02 and 2026-09-12 pulls (15% of
+  // HP at cap, was 25%). The same wiki edit records the 2026-09-01 semantics: below the threshold
+  // the rock is destroyed — which is what `executePct` always priced.
+  { id: 'misericordia', name: 'Misericórdia', max: 20, effectText: 'executa rocha < 0.75%/nível', effect: { kind: 'executePct', perLevel: 0.75 } },
   { id: 'explosao_ampla', name: 'Explosão Ampla', max: 20, effectText: '+0.1 raio da explosão/nível', effect: { kind: 'rangeCells', perLevel: 0.1 } },
   { id: 'contra_relogio', name: 'Contra o Relógio', max: 20, effectText: '+2% Ataque em fase de tempo/nível', effect: { kind: 'gateAttackPct', perLevel: 2 } },
   // 2026-08-23 patch: +40 crit POINTS at max rank, i.e. +2 per level flat (live wiki
@@ -91,16 +115,23 @@ export const ABILITIES: AbilityDef[] = [
   { id: 'olho_clinico', name: 'Olho Clínico', max: 20, effectText: '+2 pontos de chance de crítico/nível (valor fixo, altera atributos)', effect: { kind: 'critChanceFlat', perLevel: 2, onSheet: true } },
   { id: 'detonacao_dupla', name: 'Detonação Dupla', max: 20, effectText: '+1.5% chance de 2ª explosão (50% dano)/nível', effect: { kind: 'secondBlastPct', perLevel: 1.5 } },
   { id: 'folego_mineiro', name: 'Fôlego de Mineiro', max: 20, effectText: '−1% energia gasta do TIME/nível', effect: { kind: 'drainPct', perLevel: 1 } },
-  { id: 'passagem_bastao', name: 'Passagem de Bastão', max: 20, effectText: '+4% de Dano ao ENTRAR no rodízio (dura 120s)/nível (não modelado)', effect: { kind: 'none' } },
+  // A team aura that is up in pulses, not a standing multiplier: the Farm board and the Optimizer
+  // price it over the rotation, a hero's own screen over its own stint (`model/passagem-bastao.ts`).
+  // Not in `TEAM_BUFF_ABILITY_IDS`: those are the standing auras the sheet carries.
+  { id: 'passagem_bastao', name: 'Passagem de Bastão', max: 20, effectText: '+4% de Dano do TIME ao ENTRAR no rodízio (dura 120s)/nível', effect: { kind: 'teamPulseDmgPct', perLevel: PASSAGEM_BASTAO_PER_RANK * 100 } },
   // 2026-08-23 patch restated the scope: it upgrades the drop of the hero that destroyed the
   // object, and does not apply to Jaulas. The per-level rate is unchanged (wiki 0.025).
   { id: 'olho_lapidador', name: 'Olho de Lapidador', max: 20, effectText: '+2.5% chance de subir a raridade do drop do herói que destruiu o objeto/nível (loot, não vale para Jaulas)', effect: { kind: 'none' } },
   { id: 'veia_ouro', name: 'Veia de Ouro', max: 20, effectText: '+2% ouro (próprio)/nível, +40% no teto (loot)', effect: { kind: 'none' } },
   { id: 'grito_guerra', name: 'Grito de Guerra', max: 20, effectText: '+1% Ataque do TIME/nível', effect: { kind: 'attackPct', perLevel: 1 } },
   { id: 'golpe_brutal', name: 'Golpe Brutal', max: 20, effectText: '+4% dano crítico/nível (valor fixo, altera atributos)', effect: { kind: 'critDmgFlat', perLevel: 4, onSheet: true } },
-  { id: 'matilha', name: 'Matilha', max: 20, effectText: '+2% dano por aliado na rotação/nível, +40% no teto (não modelado)', effect: { kind: 'none' } },
+  // Live wiki 2026-09-13: `per_level` 0.005 and `combate.pack_dmg_cap` 0.9 — the older text's
+  // 2%/40% matched neither. Allies are the OTHER heroes on the field beside the carrier.
+  { id: 'matilha', name: 'Matilha', max: 20, effectText: '+0.5% dano por aliado em campo/nível, +90% no teto', effect: { kind: 'packDmgPct', perLevel: MATILHA_PER_RANK_PER_ALLY * 100 } },
   { id: 'fortuna', name: 'Fortuna', max: 20, effectText: '+0.5% ouro do TIME/nível, +10% no teto (loot, aura capada)', effect: { kind: 'none' } },
-  { id: 'brecha', name: 'Brecha', max: 20, effectText: '+1 Penetração/nível, +20 no teto (herói na ficha: não comprovado)', effect: { kind: 'none' } },
+  // Live wiki 2026-09-13: `kind: team_pen`, `per_level` 1 — flat points on every hero on the
+  // field, capped at 20, the same shape as Presságio Mortal. Never on the carrier's own sheet.
+  { id: 'brecha', name: 'Brecha', max: 20, effectText: '+1 ponto de Penetração do TIME/nível, +20 no teto', effect: { kind: 'penetrationPp', perLevel: 1 } },
 ];
 
 /** Inventory-sheet abilities (shared Σ with gear) — kept out of the combat ability grid. */
@@ -145,9 +176,13 @@ export interface AbilityMods {
   /** Olho Clínico — FLAT crit-chance percentage points (planner units), already on the hero
    *  sheet. Feeds `SheetOtherPct.critChanceFlat` as an addend held OUTSIDE the shared pool. */
   sheetCritChanceFlat: number;
-  /** Ponta de Diamante etc. — raw Σ units on the unequipped sheet (+1 per level). */
-  sheetPenetrationRaw: number;
-  penetrationPp: number;
+  /** Ponta de Diamante — FLAT penetration points (+1 per level), already on the hero sheet.
+   *  Feeds `SheetOtherPct.penetration` as an addend held OUTSIDE the shared pool. Brecha's
+   *  points are a team aura's and never land here — see the module doc below. */
+  sheetPenetrationFlat: number;
+  /** Matilha — damage % PER ALLY on the field (rank × per-level), before the field size is
+   *  known. `computeCombatMults` turns it into the capped multiplier once it is. */
+  packDmgPctPerAlly: number;
   /** Golpe Brutal — FLAT crit-damage percentage points (planner units), already on the hero
    *  sheet. Feeds `SheetOtherPct.critDmgFlat` as an addend, NOT a pool fraction. */
   sheetCritDmgFlat: number;
@@ -158,20 +193,21 @@ export interface AbilityMods {
 
 /**
  * Team auras — Grito de Guerra (`attackPct`), Marcha Acelerada (`speedPct`), Fôlego de Mineiro
- * (`drainPct`) and Presságio Mortal (`critChanceFlat`, not `onSheet`) — never reach a
- * hero's own `AbilityMods` (issue #132). Under the confirmed rule a team aura is a property of
- * the FIELD: every deployed hero experiences the SAME capped roster total (`team-buffs.ts`,
- * `computeCombatMults`), carrier or not, so there is no "this hero's own share" for `abilityMods`
- * to fold in — doing so was exactly the double-count this rewrite removed. Their four
- * `AbilityEffect` cases below are explicit no-ops rather than omitted, so a future kind added to
- * the union still forces every switch in this file to handle it.
+ * (`drainPct`), Presságio Mortal (`critChanceFlat`, not `onSheet`), Brecha (`penetrationPp`, not
+ * `onSheet`) and Passagem de Bastão (`teamPulseDmgPct`) — never reach a hero's own `AbilityMods`
+ * (PR #139). Under the confirmed rule a team aura is a property of the FIELD: every deployed hero
+ * experiences the SAME capped roster total (`team-buffs.ts`, `computeCombatMults`), carrier or
+ * not, so there is no "this hero's own share" for `abilityMods` to fold in — doing so was exactly
+ * the double-count this rewrite removed. Their `AbilityEffect` cases below are explicit no-ops
+ * rather than omitted, so a future kind added to the union still forces every switch in this
+ * file to handle it.
  */
 export function abilityMods(levels: Record<string, number>): AbilityMods {
   const mods: AbilityMods = {
     drainMult: 1,
     sheetCritChanceFlat: 0,
-    sheetPenetrationRaw: 0,
-    penetrationPp: 0,
+    sheetPenetrationFlat: 0,
+    packDmgPctPerAlly: 0,
     sheetCritDmgFlat: 0,
     rangeCells: 0,
     dmgMult: 1,
@@ -191,8 +227,8 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
         // else: Presságio Mortal (team) — see the module doc above.
         break;
       case 'penetrationPp':
-        if (effect.onSheet) mods.sheetPenetrationRaw += effect.perLevel * count;
-        else mods.penetrationPp += effect.perLevel * count;
+        if (effect.onSheet) mods.sheetPenetrationFlat += effect.perLevel * count;
+        // else: Brecha (team) — see the module doc above.
         break;
       case 'critDmgFlat':
         mods.sheetCritDmgFlat += effect.perLevel * count;
@@ -214,6 +250,12 @@ export function abilityMods(levels: Record<string, number>): AbilityMods {
         break;
       case 'gateAttackPct':
         mods.gateAttackMult *= 1 + (effect.perLevel * count) / 100;
+        break;
+      case 'packDmgPct':
+        mods.packDmgPctPerAlly += effect.perLevel * count;
+        break;
+      case 'teamPulseDmgPct':
+        // Passagem de Bastão (team, pulsed) — see the module doc above.
         break;
       case 'none':
         break;

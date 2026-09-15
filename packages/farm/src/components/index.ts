@@ -12,11 +12,10 @@ export type {
   FarmRankingBoardActions,
   FarmRankingBoardData,
   FarmRankingBoardSlots,
-  FarmRespecBoardData,
 } from './farm-ranking-board';
-export type { FarmStatLabels } from './stat-labels';
 export { FarmCopyProvider, useFarmCopy } from './farm-copy-context';
 export type { FarmCopyValue } from './farm-copy-context';
+export { CombatPhasePanel } from './combat-phase-panel';
 export { PhasesExplorerView } from './phases-explorer';
 export type {
   PhasesExplorerActions,

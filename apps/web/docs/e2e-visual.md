@@ -36,9 +36,8 @@ Browser-level smoke and visual baselines for the static export. Unit math stays 
 > optimizing modal (hero6 bomb-activation loop, Cancel), post-run Run summary (plain-language
 > seed + elapsed seconds) + gain scoreboard / waterfall (no Today `+0`; no negative respec
 > recommendation) + expandable per-hero rows with proposed gear (including kept existing
-> items labeled as no-change) and point-reset details, and
-> disclosures callouts. The Optimizer page does not write heroes (no alt-loadout push). Smoke
-> coverage lives under `e2e/team-plan-*.spec.ts`.
+> items labeled as no-change) and point-reset details. The Optimizer page does not write
+> heroes (no alt-loadout push). Smoke coverage lives under `e2e/team-plan-*.spec.ts`.
 >
 > **`/farm` (Farm Ranking board):** no committed visual baseline, same `/optimizer`
 > precedent — the visual project stays globally `describe.skip` and agents may not run
@@ -53,15 +52,9 @@ Browser-level smoke and visual baselines for the static export. Unit math stays 
 > scenarios plus a keyboard-operability pass) and the two edited pre-existing specs
 > (`e2e/phases-page.spec.ts`, `e2e/app-shell-nav.spec.ts`).
 >
-> **`/farm` (Farm Respec Advisor):** no committed visual baseline, same `/optimizer` and `/farm`
-> Ranking board precedent above — the visual project stays globally `describe.skip` and agents may
-> not run `test:e2e:update` or accept baselines. Before enabling `e2e/visual.spec.ts` for this
-> surface, a human should review: the toolbar (objective `Select`, Optimize button idle/busy
-> states, the lower-bound headline), the panel expanding in place above the table (metric tiles,
-> the plateau band with its markers and range sentence, the chest-objective explainer), the
-> hero-card grid (a changed hero's eight-key table, the Luck "keep" chip, an unchanged hero's
-> de-emphasized two-line card), the cost frontier list, and the re-rank banner + `Switch` sitting
-> above the table. Smoke coverage lives in `e2e/farm-respec.spec.ts` (nine scenarios).
+> **`/farm` (Optimize button):** the filter row ends in one primary button, to the right of the
+> return-bonus `Select` and on its line, that opens `/optimizer`; nothing expands in place. Smoke
+> coverage lives in `e2e/farm-optimize-button.spec.ts` (four scenarios).
 >
 > **Promote-to-600 evidence:** a lightweight same-session
 > Playwright timing (not the formal profiler-re-run `e2e/perf/` commit-instrumentation harness — recorded

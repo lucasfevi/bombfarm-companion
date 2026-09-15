@@ -1,45 +1,53 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { BiCoffee, BiCopy } from 'react-icons/bi';
-import type { Strings, Lang } from '@/shared/i18n';
-import { AppNav, Button, SegmentedToggle, Tooltip, buttonRecipe } from '@bombfarm/ui';
-import { REFERRAL_CODE } from '@/shared/referral';
-import { useReferralCopy } from './use-referral-copy';
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { BiCoffee, BiCopy } from "react-icons/bi";
+import type { Strings, Lang } from "@/shared/i18n";
+import {
+  AppNav,
+  Button,
+  SegmentedToggle,
+  Tooltip,
+  buttonRecipe,
+} from "@bombfarm/ui";
+import { REFERRAL_CODE } from "@/shared/referral";
+import { prefetchOnIntent } from "./prefetch-on-intent";
+import { useReferralCopy } from "./use-referral-copy";
 import {
   NAV_SECTIONS,
   SITE_SECTION_HREF,
   SITE_SECTION_LABEL_KEY,
   isSiteSectionActive,
   type SiteSection,
-} from '@/shared/lib/site-sections';
-
+} from "@/shared/lib/site-sections";
 
 export function SiteHeader({
   t,
   lang,
-  showGuide,
   onImport,
-  onToggleGuide,
   onLangChange,
 }: {
   t: Strings;
   lang: Lang;
-  showGuide?: boolean;
   onImport?: () => void;
-  onToggleGuide?: (next: boolean) => void;
   onLangChange: (lang: Lang) => void;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { codeRef, copy: copyReferral } = useReferralCopy(t);
 
   return (
     <header className="sticky top-0 z-30 min-h-top border-b border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-4 py-2.5 backdrop-blur-[14px]">
       <div className="mx-auto flex max-w-app flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
-          <Link href="/" className="flex items-center gap-2.5 no-underline">
+          <Link
+            href="/"
+            prefetch={false}
+            {...prefetchOnIntent(router, "/")}
+            className="flex items-center gap-2.5 no-underline"
+          >
             <Image
               src="/favicon.svg"
               alt=""
@@ -49,8 +57,12 @@ export function SiteHeader({
               priority
             />
             <div>
-              <div className="text-sm leading-1.1 font-bold text-ink">Bomb Farm</div>
-              <div className="text-[11px] tracking-[0.04em] text-muted uppercase">{t.appSuiteTag}</div>
+              <div className="text-sm leading-1.1 font-bold text-ink">
+                Bomb Farm
+              </div>
+              <div className="text-[11px] tracking-[0.04em] text-muted uppercase">
+                {t.appSuiteTag}
+              </div>
             </div>
           </Link>
           <AppNav
@@ -64,7 +76,12 @@ export function SiteHeader({
               <Link
                 key={item.id}
                 href={SITE_SECTION_HREF[item.id as SiteSection]}
-                aria-current={item.active ? 'page' : undefined}
+                prefetch={false}
+                {...prefetchOnIntent(
+                  router,
+                  SITE_SECTION_HREF[item.id as SiteSection]
+                )}
+                aria-current={item.active ? "page" : undefined}
                 className={className}
               >
                 {item.label}
@@ -75,8 +92,12 @@ export function SiteHeader({
         <div className="flex flex-nowrap items-center justify-end gap-1.5 max-[720px]:flex-wrap max-[720px]:justify-start">
           <Link
             href={SITE_SECTION_HREF.download}
-            aria-current={isSiteSectionActive('download', pathname) ? 'page' : undefined}
-            className={buttonRecipe({ variant: 'primary' })}
+            prefetch={false}
+            {...prefetchOnIntent(router, SITE_SECTION_HREF.download)}
+            aria-current={
+              isSiteSectionActive("download", pathname) ? "page" : undefined
+            }
+            className={buttonRecipe({ variant: "primary" })}
             data-testid="header-download-cta"
           >
             {t.downloadHeaderCta}
@@ -84,17 +105,6 @@ export function SiteHeader({
           {onImport ? (
             <Button type="button" onClick={onImport}>
               {t.importHeroesBtn}
-            </Button>
-          ) : null}
-          {onToggleGuide != null && showGuide != null ? (
-            <Button
-              type="button"
-              variant={showGuide ? 'help-on' : 'help'}
-              onClick={() => onToggleGuide(!showGuide)}
-              title={t.guideToggleTitle}
-              aria-label={t.guideToggleTitle}
-            >
-              ?
             </Button>
           ) : null}
           {/* Code only — the tooltip carries the why, the footer the full copy. */}
@@ -120,7 +130,7 @@ export function SiteHeader({
             </Tooltip.Root>
           </Tooltip.Provider>
           <a
-            className={buttonRecipe({ variant: 'coffee' })}
+            className={buttonRecipe({ variant: "coffee" })}
             href="https://buymeacoffee.com/lucasfevi"
             target="_blank"
             rel="noreferrer"
@@ -131,12 +141,13 @@ export function SiteHeader({
           </a>
           <SegmentedToggle
             options={[
-              { id: 'pt', label: 'PT' },
-              { id: 'en', label: 'EN' },
+              { id: "pt", label: "PT" },
+              { id: "en", label: "EN" },
             ]}
             value={lang}
             onChange={(nextLang) => {
-              if (nextLang === 'pt' || nextLang === 'en') onLangChange(nextLang);
+              if (nextLang === "pt" || nextLang === "en")
+                onLangChange(nextLang);
             }}
             ariaLabel="Language"
           />

@@ -2,11 +2,12 @@ import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
-import { DATA_URL, FASES_NOMES_URL, fetchEndpoints } from './wiki-drift/fetch-endpoints.mjs';
+import { DATA_URL, FASES_NOMES_URL, USER_AGENT, fetchEndpoints } from './wiki-drift/fetch-endpoints.mjs';
 
 const root = resolve(fileURLToPath(new URL('.', import.meta.url)));
 const MODULE_PATH = join(root, 'wiki-drift/fetch-endpoints.mjs');
 const FIXTURES = join(root, 'wiki-drift/__fixtures__');
+const CONTACT_URL = 'https://github.com/lucasfevi/bombfarm-companion';
 
 const apiDataCapture = JSON.parse(readFileSync(join(FIXTURES, 'api-data.captured.json'), 'utf8'));
 const fasesNomesCapture = JSON.parse(
@@ -37,9 +38,9 @@ function noopSleep() {
 describe('fetch-endpoints.mjs — module shape', () => {
   const source = readFileSync(MODULE_PATH, 'utf8');
 
-  it('declares exactly the two wiki endpoint URLs as module constants, no other absolute URL', () => {
-    const urls = source.match(/https?:\/\/[^'"`\s]+/g) ?? [];
-    expect(urls).toEqual([DATA_URL, FASES_NOMES_URL]);
+  it('declares exactly the two wiki endpoint URLs as module constants, plus the contact URL the User-Agent carries', () => {
+    const urls = source.match(/https?:\/\/[^'"`\s)]+/g) ?? [];
+    expect(urls).toEqual([DATA_URL, FASES_NOMES_URL, CONTACT_URL]);
   });
 
   it('the two constants are exactly /wiki/api/data and /wiki/api/fases-nomes', () => {
@@ -66,13 +67,21 @@ describe('fetchEndpoints — the green direction', () => {
     });
   });
 
-  it('requests carry redirect: follow, an AbortSignal, and no other options (no headers, no credentials)', async () => {
+  it('requests carry redirect: follow, an AbortSignal, and an identifying User-Agent — and no credentials', async () => {
     const fetchImpl = vi.fn(async () => jsonResponse(apiDataCapture));
     await fetchEndpoints({ fetchImpl, sleep: noopSleep() });
     const [, options] = fetchImpl.mock.calls[0];
-    expect(Object.keys(options).sort()).toEqual(['redirect', 'signal']);
+    expect(Object.keys(options).sort()).toEqual(['headers', 'redirect', 'signal']);
     expect(options.redirect).toBe('follow');
     expect(options.signal).toBeInstanceOf(AbortSignal);
+    // The one header, and nothing that could authenticate this job to the wiki.
+    expect(options.headers).toEqual({ 'User-Agent': USER_AGENT });
+  });
+
+  it('the User-Agent names the product, a real version, and a contact URL', () => {
+    expect(USER_AGENT).toMatch(
+      /^Bomb Farm Companion wiki-check\/\d+\.\d+\.\d+ \(\+https:\/\/github\.com\/lucasfevi\/bombfarm-companion\)$/,
+    );
   });
 });
 

@@ -31,7 +31,7 @@ function payloadWithHeroLevel(level: number): AccountPayload {
         stat_points_available: 0,
       },
     ],
-    skills: { totals: { dmg_static: 2.1, crit_dmg_mult: 1 } },
+    skills: { totals: { dmg_static: 2.1 } },
     casa: { active_casa: 1, levels: [10] },
     items: [],
     fidelity: resolvedFidelity(),

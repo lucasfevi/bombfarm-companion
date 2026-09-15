@@ -35,7 +35,8 @@ function createTestClock(): PacingClock {
 
 function fixtureTransport(): HttpTransport {
   return (req) => {
-    const body = bodies[req.path];
+    // Fixture bodies are keyed by route; a built request's path also carries `account_id`.
+    const body = bodies[req.path.split('?')[0] ?? ''];
     return Promise.resolve({ status: 200, body: JSON.stringify(body ?? {}) });
   };
 }
@@ -205,6 +206,24 @@ describe('readSection — every SectionFailureReason producible from routes.ts i
     },
     { label: 'a throwing transport', transport: throwingTransport('ECONNREFUSED'), expectedReason: 'transport_error' },
   ];
+
+  it('a refusal named on a 200 -> failed/api_error carrying the code, never ok and never drift', async () => {
+    const gate = createPacingGate(createTestClock());
+    const transport = fixedResponseTransport({ status: 200, body: '{"error":"SERVER_LOCKED"}' });
+
+    const outcome = await readSection(session, transport, gate, stateRoute);
+
+    expect(outcome).toEqual({ kind: 'failed', reason: 'api_error', code: 'SERVER_LOCKED' });
+  });
+
+  it('every route refuses a named error body — none of the five commits it as a section', async () => {
+    const transport = fixedResponseTransport({ status: 200, body: '{"error":"SERVER_LOCKED"}' });
+    for (const route of ROUTES) {
+      const gate = createPacingGate(createTestClock());
+      const outcome = await readSection(session, transport, gate, route);
+      expect(outcome.kind, `${route.path} must not resolve a refusal body`).toBe('failed');
+    }
+  });
 
   for (const { label, transport, expectedReason } of cases) {
     it(`${label} -> failed/${expectedReason}`, async () => {

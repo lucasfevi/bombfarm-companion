@@ -8,12 +8,14 @@ import * as advice from './namespaces/advice';
 import * as breakdown from './namespaces/breakdown';
 import * as phases from './namespaces/phases';
 import * as teamPlan from './namespaces/team-plan';
+import * as teamPlanGearFlow from './namespaces/team-plan-gear-flow';
 import * as teamPlanObjective from './namespaces/team-plan-objective';
 import * as importNs from './namespaces/import';
 import * as stats from './namespaces/stats';
 import * as inventory from './namespaces/inventory';
 import * as market from './namespaces/market';
 import * as download from './namespaces/download';
+import * as home from './namespaces/home';
 
 const en = {
   ...chrome.en,
@@ -25,12 +27,14 @@ const en = {
   ...breakdown.en,
   ...phases.en,
   ...teamPlan.en,
+  ...teamPlanGearFlow.en,
   ...teamPlanObjective.en,
   ...importNs.en,
   ...stats.en,
   ...inventory.en,
   ...market.en,
   ...download.en,
+  ...home.en,
 };
 const pt = {
   ...chrome.pt,
@@ -42,12 +46,14 @@ const pt = {
   ...breakdown.pt,
   ...phases.pt,
   ...teamPlan.pt,
+  ...teamPlanGearFlow.pt,
   ...teamPlanObjective.pt,
   ...importNs.pt,
   ...stats.pt,
   ...inventory.pt,
   ...market.pt,
   ...download.pt,
+  ...home.pt,
 };
 
 export type Strings = typeof en;

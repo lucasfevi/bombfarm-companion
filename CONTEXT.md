@@ -20,9 +20,10 @@ Ubiquitous language for the companion's game model. Terms only — no implementa
 - **One-shot** — a hero's average hit destroys a prop in a single blast. When the whole
   rotation pool one-shots every prop type on a phase, throughput is plant-rate-bound, not
   damage-bound.
-- **Cadence model** — the measured bomb-cycle model: cycle time ≈ max(fuse time, walk
-  time between plants). Supersedes the serial fuse+constant model for farm-rate estimation
-  only; the advisor keeps the serial model.
+- **Cadence model** — the measured bomb-cycle model: cycle time ≈ max(fuse time, walk time
+  between plants), so Speed shortens every hop the fuse does not already cover. The one bombing
+  model behind every DPS figure the companion prints; the earlier serial fuse-plus-constant
+  model is retired.
 - **Return Bonus (Bônus de Retorno)** — banked offline time (cap 8h) during which gold, XP,
   and every drop chance are boosted (+40%, +80% VIP). Only multiplies what the player
   destroys while it runs.
@@ -88,6 +89,15 @@ Ubiquitous language for the companion's game model. Terms only — no implementa
   Several heroes may hold drafts at once, and each is flagged.
 - **Out of date (draft)** — a draft whose Live values have since moved in a field that draft
   touches. Judged per hero: another hero changing must never flag this one.
+- **Team aura** — an ability whose effect is a property of the **field**: every hero standing in
+  it receives the same total, summed over the carriers present and capped per aura. The one
+  player-facing word for Grito de Guerra, Fôlego de Mineiro, Marcha Acelerada, Presságio Mortal
+  and any aura added later; never *team buff*.
+- **Own ability** — an ability whose effect reaches only the hero that has it, and is always in
+  force for that hero. Not a team aura even when it touches the same figure one does: Bateria
+  Extra and Fôlego de Mineiro both cut energy spent, and only the second is an aura.
+- **Field** — the heroes standing in a phase at once: the deployed heroes plus the hero whose
+  figures are being read, who is on it by definition. Team auras are summed over the field.
 
 ## Market value
 
@@ -111,3 +121,21 @@ Ubiquitous language for the companion's game model. Terms only — no implementa
   has left the account, so holdings count what is on someone's back and nothing else. A skin
   gone from the roster is gone from the value, and the screen says so rather than leaving the
   reader to notice a figure that dropped.
+
+## Home
+
+- **Home** — the web planner's front page, at `/`: one section card per section, filled from
+  the last import. Named *Home* in EN and *Início* in PT.
+- **Section card** — a card on Home that shows a compressed version of one section's page and
+  links to it. A card that lacks an input names the input; it never fills the gap with a
+  default or a wiki figure.
+- **Best phase** — the phase with the highest estimated gold/hr among those the account can
+  enter, under the current rotation pool and Return Bonus setting. What the Farm card compares
+  the current phase against. A locked phase that would beat it is a *push target*.
+- **Roster DPS ranking** — the roster sorted by each hero's solo DPS at the resolved phase.
+  The Farm page's top-9 table and the Planner card draw the same ranking.
+- **Next item level** — the first phase that drops one item level above the best phase's
+  highest, priced in gold/hr against the best phase. It may be locked; the Farm card shows it
+  anyway, with what stands in the way.
+- **Next difficulty** — the first phase of the difficulty after the current phase's, priced in
+  gold/hr against the current phase. Absent at the last difficulty.

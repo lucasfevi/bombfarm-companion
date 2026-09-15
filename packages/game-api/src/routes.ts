@@ -68,6 +68,8 @@ export const ROUTES: readonly RouteDescriptor[] = [
 export type SectionFailureReason =
   | 'unauthorized'
   | 'cooldown'
+  /** The server named a refusal in the body — `code` carries which one. */
+  | 'api_error'
   | 'http_error'
   | 'malformed_json'
   | 'too_large'
@@ -86,7 +88,12 @@ export type SectionOutcome =
       readonly missingKeys: readonly string[];
       readonly addedKeys: readonly string[];
     }
-  | { readonly kind: 'failed'; readonly reason: SectionFailureReason };
+  | {
+      readonly kind: 'failed';
+      readonly reason: SectionFailureReason;
+      /** The server's own error code, when it named one (`SERVER_LOCKED`, `ACCOUNT_BANNED`, …). */
+      readonly code?: string;
+    };
 
 /** Reads one route through the pacing gate, checks its shape, and projects it. Never throws for
  *  an ordinary failure — every branch resolves to a named `SectionOutcome`. */
@@ -131,7 +138,11 @@ export async function readSection(
       return { kind: 'ok', body: projected };
     }
     case 'unauthorized':
-      return { kind: 'failed', reason: 'unauthorized' };
+      return outcome.code === null
+        ? { kind: 'failed', reason: 'unauthorized' }
+        : { kind: 'failed', reason: 'unauthorized', code: outcome.code };
+    case 'api_error':
+      return { kind: 'failed', reason: 'api_error', code: outcome.code };
     case 'cooldown':
       return { kind: 'failed', reason: 'cooldown' };
     case 'http_error':

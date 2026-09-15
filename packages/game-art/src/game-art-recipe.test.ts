@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { LETTER_BANDS } from '@bombfarm/domain/roll-quality';
 import {
   artFrameRecipe,
+  heroRankBandClass,
+  heroRankTextClass,
+  rarityTextClass,
   abilityIconRecipe,
   iconMetaGlyphRecipe,
   rosterIconTooltipTriggerClass,
@@ -54,5 +58,64 @@ describe('game-art.recipe', () => {
   it('rosterInactiveChromeClass desaturates shelved heroes', () => {
     expect(rosterInactiveChromeClass).toContain('grayscale');
     expect(rosterInactiveChromeClass).toContain('opacity-55');
+  });
+});
+
+describe('heroRankTextClass', () => {
+  it('walks the same six-step colour ladder the rarities use, one step per grade', () => {
+    const classes = LETTER_BANDS.letters.map((letter) => heroRankTextClass(letter));
+
+    // The claim is the pairing, not the palette: grade i is painted in rarity i's colour.
+    expect(classes).toEqual(LETTER_BANDS.letters.map((_, index) => rarityTextClass(index)));
+    // And the ladder really is six distinct colours, so the assertion above is not six nulls.
+    expect(new Set(classes).size).toBe(LETTER_BANDS.letters.length);
+    expect(classes.every((value) => typeof value === 'string')).toBe(true);
+  });
+
+  it('paints the lowest and the highest grade differently, in the ladder direction', () => {
+    const lowest = LETTER_BANDS.letters[0];
+    const highest = LETTER_BANDS.letters[LETTER_BANDS.letters.length - 1];
+
+    expect(heroRankTextClass(lowest)).toBe(rarityTextClass(0));
+    expect(heroRankTextClass(highest)).toBe(rarityTextClass(LETTER_BANDS.letters.length - 1));
+    expect(heroRankTextClass(lowest)).not.toBe(heroRankTextClass(highest));
+  });
+
+  it('leaves a grade the table does not know uncoloured rather than painting it the bottom one', () => {
+    expect(heroRankTextClass('Z')).toBeUndefined();
+    expect(heroRankTextClass(undefined)).toBeUndefined();
+    expect(heroRankTextClass('')).toBeUndefined();
+  });
+
+  it('reads a grade the game padded with spaces', () => {
+    expect(heroRankTextClass(' S ')).toBe(heroRankTextClass('S'));
+  });
+});
+
+describe('heroRankBandClass', () => {
+  it('gives each grade its own band colour, so six bands read as the ladder', () => {
+    const bands = LETTER_BANDS.letters.map((letter) => heroRankBandClass(letter));
+
+    expect(new Set(bands).size).toBe(LETTER_BANDS.letters.length);
+    expect(bands.every((band) => typeof band === 'string')).toBe(true);
+  });
+
+  it('lifts the grade the hero holds above the five beside it', () => {
+    for (const letter of LETTER_BANDS.letters) {
+      expect(heroRankBandClass(letter, true)).not.toBe(heroRankBandClass(letter, false));
+    }
+  });
+
+  it('keeps the active strengths distinct too, so the lift never collapses two grades together', () => {
+    const active = LETTER_BANDS.letters.map((letter) => heroRankBandClass(letter, true));
+
+    expect(new Set(active).size).toBe(LETTER_BANDS.letters.length);
+  });
+
+  it('leaves a grade the table does not know unpainted rather than guessing one', () => {
+    expect(heroRankBandClass('Z')).toBeUndefined();
+    expect(heroRankBandClass(undefined)).toBeUndefined();
+    expect(heroRankBandClass('')).toBeUndefined();
+    expect(heroRankBandClass('Z', true)).toBeUndefined();
   });
 });

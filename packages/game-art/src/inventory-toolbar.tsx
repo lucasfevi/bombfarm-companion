@@ -18,7 +18,7 @@ import {
   type ItemKind,
 } from "@bombfarm/domain/inventory-view";
 import { cn, Icon, Select, SelectMultiple, Tooltip } from "@bombfarm/ui";
-import { rarityTextClass } from "./game-art.recipe";
+import { heroRankToneClass, rarityTextClass } from "./game-art.recipe";
 import {
   inventoryChipRecipe,
   inventoryFieldClass,
@@ -97,7 +97,7 @@ function HeroOptionLabel({ hero }: { hero: InventoryHeroOption }) {
   return (
     <span className="flex min-w-0 items-baseline gap-1">
       {hero.rank ? (
-        <span className="shrink-0 text-[11px] font-black tracking-tight text-accent">{hero.rank}</span>
+        <span className={cn('shrink-0 text-[11px] font-black tracking-tight', heroRankToneClass(hero.rank))}>{hero.rank}</span>
       ) : null}
       <span className={cn('truncate font-semibold', rarityTextClass(hero.rarityIdx) ?? 'text-ink')}>
         {hero.name}

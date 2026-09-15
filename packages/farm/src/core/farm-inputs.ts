@@ -21,15 +21,6 @@ export type FarmInputs = {
   treeEnergy: number;
   treeTeamCoinPct: number;
   treeLuckFlatPct: number;
-  /**
-   * Already resolved: the override when one is set, the roster-derived total otherwise. Resolved
-   * by the host because the derivation is memoized there — a host that recomputed it per call
-   * would hand this seam a fresh object every time and defeat the dependency tuple's reference
-   * compare (see `readFarmDepTuple`).
-   */
-  effectiveTeamBuffs: Record<string, number>;
-  /** Which of the two the field above is — `buildAccount` passes it through verbatim. */
-  teamBuffsOverride: Record<string, number> | null;
   houseIdx: number;
   houseLevel: number;
   /**

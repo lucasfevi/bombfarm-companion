@@ -1,7 +1,7 @@
 {
-  "syncedAt": "2026-09-02",
-  "sourcePulledAt": "2026-09-02T21:48:46.860Z",
-  "emittedAt": "2026-09-02",
+  "syncedAt": "2026-09-13",
+  "sourcePulledAt": "2026-09-13T17:30:01.768Z",
+  "emittedAt": "2026-09-13",
   "source": "official-wiki-export",
   "props": [
     {
@@ -143,8 +143,8 @@
     "timechestDropRate": 0.001,
     "stoneChestDropRate": 0.0005,
     "keyGateCost": 1,
-    "bonusAdd": 0.4,
-    "bonusAddVip": 0.8,
+    "bonusAdd": 0.5,
+    "bonusAddVip": 1,
     "bonusCapSecs": 28800
   },
   "timechestRarityByAto": [
@@ -295,6 +295,22 @@
       "perLevel": 0.025,
       "maxLevel": 20
     }
+  },
+  "runes": {
+    "axes": ["attack", "energy", "speed", "crit", "critdmg", "cdr", "xp", "gold"],
+    "statIndexByAxis": {
+      "attack": 0,
+      "energy": 1,
+      "speed": 2,
+      "crit": 4,
+      "critdmg": 5,
+      "cdr": 7
+    },
+    "strengthByRarity": [0.05, 0.09, 0.13, 0.17, 0.21, 0.25],
+    "durationPlaySecs": 86400,
+    "capPlaySecs": 259200,
+    "capRunes": 3,
+    "marketMinRarity": 2
   },
   "itemPorFase": [
     {

@@ -26,6 +26,7 @@ export function SegmentedToggle({ options, value, onChange, ariaLabel, className
         <button
           key={option.id}
           type="button"
+          aria-pressed={option.id === value}
           className={segmentedToggleItemRecipe({ active: option.id === value })}
           onClick={() => onChange(option.id)}
         >

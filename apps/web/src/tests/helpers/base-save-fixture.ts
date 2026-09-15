@@ -168,6 +168,9 @@ export function baseSave() {
         // same half-`crit_dmg_add` error as Lorne. The inversion recovered 23 points against a
         // budget of 0, so the importer BLOCKED her, which is why the check below had been
         // skipped: it asserts Brenna is not blocked.
+        //
+        // `penetration` recomputed again 2026-09-13, when Ponta de Diamante became a flat +10
+        // outside the pool: 0.6 × (1 + 0.392 gear) + 10, where it had been 0.6 × (1 + 10 + 0.392).
         stat_points_available: 30,
         birth_stats: {
           dmg: 70,
@@ -185,7 +188,7 @@ export function baseSave() {
           speed: 45.196223468,
           crit_chance: 0.0689782120875,
           crit_dmg: 1.696153846,
-          penetration: 6.8351999999999995,
+          penetration: 10.8352,
           cooldown_reduction: 0.015393443820000002,
           power: 2500,
           luck: 0.0594647275,
@@ -229,8 +232,7 @@ export function baseSave() {
     },
     // MP5 F4: post-patch skills shape — parseSaveFile's positive discriminator on the new keys
     // requires skills.refunds / skills.totals.vagas_campo / skills.totals.bag_tabs_bonus to be
-    // present, or the whole file is rejected. No retired keystone field survives here (F2/F3's
-    // own removal).
+    // present, or the whole file is rejected.
     skills: {
       refunds: {},
       totals: {

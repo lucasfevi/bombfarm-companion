@@ -2,6 +2,7 @@ import {
   Children,
   isValidElement,
   useMemo,
+  useRef,
   type ChangeEvent,
   type ComponentPropsWithoutRef,
   type ReactNode,
@@ -48,6 +49,34 @@ function optionsFromChildren(children: ReactNode): OptionItem[] {
       },
     ];
   });
+}
+
+function optionEquals(left: OptionItem, right: OptionItem | undefined): boolean {
+  return (
+    right !== undefined &&
+    left.value === right.value &&
+    left.disabled === right.disabled &&
+    Object.is(left.label, right.label)
+  );
+}
+
+function sameOptions(left: OptionItem[], right: OptionItem[]): boolean {
+  return left.length === right.length && left.every((item, index) => optionEquals(item, right[index]));
+}
+
+/**
+ * The option list, re-derived every render but handed back under the SAME identity while the
+ * options themselves are unchanged. Base UI republishes `items` into its own store from a layout
+ * effect keyed on that identity, and a fresh array each render makes it do so on every render —
+ * which re-renders the trigger's value in a second commit, doubling the commit count of any
+ * interaction that touches a panel holding a Select. `useMemo` on `children` cannot prevent it:
+ * JSX children are a new array each render unless the caller is memoized.
+ */
+function useStableOptions(children: ReactNode): OptionItem[] {
+  const next = optionsFromChildren(children);
+  const cache = useRef(next);
+  if (!sameOptions(cache.current, next)) cache.current = next;
+  return cache.current;
 }
 
 export type SelectProps = Omit<ComponentPropsWithoutRef<'select'>, 'size' | 'onChange' | 'multiple'> & {
@@ -114,7 +143,7 @@ export function SelectMultiple({
   'aria-label': ariaLabel,
   title,
 }: SelectMultipleProps) {
-  const items = useMemo(() => optionsFromChildren(children), [children]);
+  const items = useStableOptions(children);
   const itemClass = size === 'compact' ? selectItemCompactClass : selectItemClass;
   const selected = useMemo(() => [...(value ?? [])], [value]);
 
@@ -222,7 +251,7 @@ export function Select({
   'aria-label': ariaLabel,
   title,
 }: SelectProps) {
-  const items = useMemo(() => optionsFromChildren(children), [children]);
+  const items = useStableOptions(children);
   const itemClass = size === 'compact' ? selectItemCompactClass : selectItemClass;
 
   const controlled = value !== undefined;

@@ -19,6 +19,27 @@ export function IncludedScreens({ t }: { t: Strings }) {
           ]}
         />
         <ScreenCard
+          title={t.downloadScreenFarmTitle}
+          items={[
+            t.downloadScreenFarmItem1,
+            t.downloadScreenFarmItem2,
+            t.downloadScreenFarmItem3,
+            t.downloadScreenFarmItem4,
+            t.downloadScreenFarmItem5,
+          ]}
+        />
+        <ScreenCard
+          title={t.downloadScreenHeroesTitle}
+          items={[
+            t.downloadScreenHeroesItem1,
+            t.downloadScreenHeroesItem2,
+            t.downloadScreenHeroesItem3,
+            t.downloadScreenHeroesItem4,
+            t.downloadScreenHeroesItem5,
+            t.downloadScreenHeroesItem6,
+          ]}
+        />
+        <ScreenCard
           title={t.downloadScreenInventoryTitle}
           items={[
             t.downloadScreenInventoryItem1,
@@ -34,6 +55,25 @@ export function IncludedScreens({ t }: { t: Strings }) {
             t.downloadScreenForgeItem2,
             t.downloadScreenForgeItem3,
             t.downloadScreenForgeItem4,
+          ]}
+        />
+        <ScreenCard
+          title={t.downloadScreenOptimizerTitle}
+          items={[
+            t.downloadScreenOptimizerItem1,
+            t.downloadScreenOptimizerItem2,
+            t.downloadScreenOptimizerItem3,
+            t.downloadScreenOptimizerItem4,
+          ]}
+        />
+        <ScreenCard
+          title={t.downloadScreenAccountTitle}
+          items={[
+            t.downloadScreenAccountItem1,
+            t.downloadScreenAccountItem2,
+            t.downloadScreenAccountItem3,
+            t.downloadScreenAccountItem4,
+            t.downloadScreenAccountItem5,
           ]}
         />
         <ScreenCard

@@ -7,7 +7,7 @@ import {
   optimizeResultDisplay,
   previewResultDisplay,
   type PointsPreview,
-} from '@/features/planner/model/points-preview-copy';
+} from '@bombfarm/hero/model';
 import type { HeroFarmOptimizeOutcome, HeroFarmOptimizeResult } from '@bombfarm/domain/farm-hero-optimize';
 import type { ReoptResult } from '@bombfarm/domain/points-reopt';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';

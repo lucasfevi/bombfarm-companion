@@ -17,7 +17,7 @@ function sheetOtherFromAbilities(abilities: Record<string, number>) {
   return {
     ...emptySheetOther(),
     critChanceFlat: mods.sheetCritChanceFlat,
-    penetration: mods.sheetPenetrationRaw,
+    penetration: mods.sheetPenetrationFlat,
     critDmgFlat: mods.sheetCritDmgFlat,
   };
 }
@@ -42,6 +42,7 @@ export function buildHeroPlanContext(
     scope,
     abilities: hero.abilities,
     pts: hero.pts,
+    runes: hero.runes ?? [],
   };
 }
 
@@ -97,6 +98,7 @@ export function gearedSheetFromContext(
     loadout,
     pts,
     tree: ctx.treeSheet,
+    runes: ctx.runes,
   });
 }
 

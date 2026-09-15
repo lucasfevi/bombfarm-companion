@@ -91,6 +91,7 @@ describe('scoreHeroLoadout', () => {
       heroId: 'z',
       name: 'Zero',
       level: 10,
+      runes: [],
       stars: 0,
       rarity: 'Comum',
       birth: {
@@ -106,12 +107,12 @@ describe('scoreHeroLoadout', () => {
       sheetOther: { speed: 0, critChanceFlat: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       mods: {
         drainMult: 1,
-        penetrationPp: 0,
+        packDmgPctPerAlly: 0,
         rangeCells: 0,
         dmgMult: 1,
         gateAttackMult: 1,
         sheetCritChanceFlat: 0,
-        sheetPenetrationRaw: 0,
+        sheetPenetrationFlat: 0,
         sheetCritDmgFlat: 0,
       },
       treeSheet: {
@@ -216,6 +217,7 @@ describe('scoreHeroLoadout', () => {
       heroId: 'pt-dbl-count',
       name: 'PointDoubleCount',
       level: 40,
+      runes: [],
       stars: 3,
       rarity: 'Épico',
       birth: {
@@ -231,12 +233,12 @@ describe('scoreHeroLoadout', () => {
       sheetOther: { speed: 0, critChanceFlat: 0, critDmgFlat: 0, penetration: 0, cdr: 0 },
       mods: {
         drainMult: 1,
-        penetrationPp: 0,
+        packDmgPctPerAlly: 0,
         rangeCells: 0,
         dmgMult: 1,
         gateAttackMult: 1,
         sheetCritChanceFlat: 0,
-        sheetPenetrationRaw: 0,
+        sheetPenetrationFlat: 0,
         sheetCritDmgFlat: 0,
       },
       treeSheet: {

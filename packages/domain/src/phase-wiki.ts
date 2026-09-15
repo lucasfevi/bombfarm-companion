@@ -119,9 +119,9 @@ export function dropAppliesOnPhase(id: DropRateId, gate: boolean): boolean {
 
 /** Keys spent to enter one gate. Live 1. ← `drops.keyGateCost` */
 export const KEY_GATE_COST: number = wiki.drops.keyGateCost;
-/** Return Bonus, non-VIP. Live 0.4. ← `drops.bonusAdd` */
+/** Return Bonus on gold and XP (not drops), non-VIP. Live 0.5. ← `drops.bonusAdd` */
 export const RETURN_BONUS_ADD: number = wiki.drops.bonusAdd;
-/** Return Bonus, VIP. Live 0.8. ← `drops.bonusAddVip` */
+/** Return Bonus on gold and XP (not drops), VIP. Live 1. ← `drops.bonusAddVip` */
 export const RETURN_BONUS_ADD_VIP: number = wiki.drops.bonusAddVip;
 /** Banked offline seconds cap. Live 28800. ← `drops.bonusCapSecs` */
 export const RETURN_BONUS_CAP_SECS: number = wiki.drops.bonusCapSecs;
@@ -149,6 +149,25 @@ export type WikiGems = {
   list: readonly WikiGem[];
 };
 export const WIKI_GEMS: WikiGems = wiki.gems;
+
+/**
+ * ← `runas`. `strengthByRarity` is `forca` (a fraction per rarity index 0–5), the two spans are
+ * `duracao_play_secs` / `cap_play_secs` (play time, not wall time), `capRunes` is `cap_runas` and
+ * `marketMinRarity` is `market_min_rarity`. `axes` is `eixos` in `idx` order, and
+ * `statIndexByAxis` its `stat` field — the game's own stat index, absent for xp and gold, which
+ * are not sheet statistics. The bundle does not carry `dist_por_faixa` (the drop distribution by
+ * band) or `total`: nothing in the app prices a rune drop.
+ */
+export type WikiRunes = {
+  axes: readonly string[];
+  statIndexByAxis: Readonly<Record<string, number>>;
+  strengthByRarity: readonly number[];
+  durationPlaySecs: number;
+  capPlaySecs: number;
+  capRunes: number;
+  marketMinRarity: number;
+};
+export const WIKI_RUNES: WikiRunes = wiki.runes;
 
 /** [ato-1][rank-1] — P(rank | gem chest), per difficulty. 5 rows × 3 columns, each row sums to 1.
  *  Alias of `WIKI_GEMS.rankDistByAto`, exported flat because it is the term farm-rate reads. */

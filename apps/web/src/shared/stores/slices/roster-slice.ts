@@ -40,11 +40,10 @@ export const createRosterSlice: StateCreator<
    *
    * Why it is load-bearing: `state.heroes` is member 0 of `readFarmDepTuple`
    * (`stores/selectors/farm-ranking-selectors.ts`), whose members are compared with `Object.is`.
-   * A fresh-but-equal roster array therefore reads exactly like a real planner edit —
-   * `selectFarmRespecView` judges a still-valid farm-respec proposal stale, the board silently
-   * falls back to the current build, and `selectFarmRespecStatus` collapses to `'idle'` with no
-   * error surfaced. Both halves are needed: a producer that reallocates defeats this check, and a
-   * writer that bypasses this helper defeats a well-behaved producer.
+   * A fresh-but-equal roster array therefore reads exactly like a real planner edit — the
+   * 600-row farm board recomputes, silently, with no error surfaced. Both halves are needed: a
+   * producer that reallocates defeats this check, and a writer that bypasses this helper defeats
+   * a well-behaved producer.
    *
    * The check is a REFERENCE compare, never a deep one — value equality is the producer's job,
    * where the shape of a `HeroRecord` is known and the comparison runs once per write.

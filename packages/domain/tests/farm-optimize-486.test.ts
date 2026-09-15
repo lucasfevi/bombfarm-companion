@@ -123,7 +123,7 @@ describe('the recommended phase reproduces the measured band', () => {
     expect(solved.gainPct).toBeLessThanOrEqual(9);
   });
 
-  // Was 'the winning vector holds at least one Speed point'. On this roster (issue #132's
+  // Was 'the winning vector holds at least one Speed point'. On this roster (PR #139's
   // corrected model) the winner now allocates zero Speed — a legitimate result of two other
   // round-3 changes (crit chance/CDR moving back to percent-of-base, and `reoptBudget` clamping
   // to `level`), not a search defect: re-deriving this fixture's team-buffs total (round 4) made

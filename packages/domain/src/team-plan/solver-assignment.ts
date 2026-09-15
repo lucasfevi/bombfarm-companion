@@ -2,7 +2,7 @@ import { SLOTS } from '../gear/catalog';
 import type { EquippedItem, Loadout } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import { eligibleForHero, poolEntryForItem } from './pool';
-import type { GearPool, HeroPlanContext } from './types';
+import type { GearPool, HeroPlanContext, TeamPlanHeroInput } from './types';
 
 export type AssignmentState = {
   /** optimize-hero slot → equipped item id (or empty). */
@@ -52,6 +52,27 @@ export function loadoutsFromAssignment(
   const out: Record<string, Loadout> = {};
   for (const heroId of Object.keys(state.slots)) {
     out[heroId] = heroLoadoutFromAssignment(state, heroId, itemById);
+  }
+  return out;
+}
+
+/**
+ * Every fielded hero's loadout for one evaluation: the assignment's for the heroes the search
+ * gears, the roster's own for the heroes it leaves alone. The second half is what lets a
+ * leave-alone hero's aura weigh in at the duty its real build sustains rather than a naked one —
+ * the same seeding the gold objective's bridge takes from the roster as it stands.
+ */
+export function squadLoadouts(
+  state: AssignmentState,
+  itemById: ReadonlyMap<string, InventoryItem>,
+  contexts: readonly HeroPlanContext[],
+  heroes: readonly TeamPlanHeroInput[],
+): Record<string, Loadout> {
+  const out = loadoutsFromAssignment(state, itemById);
+  for (const ctx of contexts) {
+    if (ctx.scope !== 'leaveAlone') continue;
+    const hero = heroes.find((candidate) => candidate.heroId === ctx.heroId);
+    if (hero) out[ctx.heroId] = hero.loadout;
   }
   return out;
 }

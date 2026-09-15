@@ -21,6 +21,7 @@ import {
 } from './save-units';
 import { composeSheetFromBirth, nakedFromBirth, type BirthStats, type TreeSheetTotals } from './birth-sheet';
 import { inferSpentPoints, spentPointsOf, type PointInferenceIssue } from './point-inference';
+import { readHeroRunes } from './runes';
 import { ACCOUNT_SECTIONS, sectionHasData } from './account-fidelity';
 import { missingRequiredAccountFields, type RequiredAccountField } from './account-required-fields';
 import { missingPostUpdateKeys } from './save-schema';
@@ -655,7 +656,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
     const sheetOther = {
       ...emptySheetOther(),
       critChanceFlat: mods.sheetCritChanceFlat,
-      penetration: mods.sheetPenetrationRaw,
+      penetration: mods.sheetPenetrationFlat,
       critDmgFlat: mods.sheetCritDmgFlat,
     };
 
@@ -669,6 +670,9 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
     // own. They enrich a sheet that is already correct without them, so a hero, a save, or a
     // live account read carrying no `stat_ranges` imports exactly as it did before.
     const statRanges = readStatRanges(rawHero.stat_ranges);
+    // Same posture as the roll bounds: a rune the payload spells wrongly is dropped alone, and a
+    // hero with none composes exactly as it did before the field existed.
+    const runes = readHeroRunes(rawHero.runas);
     const naked = nakedFromBirth(birth, level, stars, sheetOther);
     const gearedOverride = composeSheetFromBirth({
       birth,
@@ -678,6 +682,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
       loadout,
       pts: ZERO_PTS(),
       tree,
+      runes,
     });
 
     // Stats: the save's `stats` block is the hero's final (geared + spent-points, tree-
@@ -694,7 +699,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
     let power = 0;
     if (statsRaw) {
       const sheet = saveSheetUnits(statsRaw);
-      const inferred = inferSpentPoints({ birth, level, stars, sheetOther, loadout, tree, sheet, statPointsAvailable });
+      const inferred = inferSpentPoints({ birth, level, stars, sheetOther, loadout, tree, sheet, statPointsAvailable, runes });
       pts = inferred.pts;
       pointIssues = inferred.issues;
       if (inferred.issues.length > 0) {
@@ -755,6 +760,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
       skin,
       birth,
       statRanges,
+      runes,
     };
 
     candidates.push({

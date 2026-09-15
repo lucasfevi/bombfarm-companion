@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { APP_LOCALES } from '@bombfarm/contracts';
-import { CopyProvider, STRINGS, useCopy, useLocale } from './index';
+import { CopyProvider, STRINGS, subNodes, useCopy, useLocale } from './index';
 import { en } from './en';
 import { ptBR } from './pt-BR';
 
@@ -70,5 +70,26 @@ describe('useLocale', () => {
       createElement(CopyProvider, { locale, children: createElement(LocaleProbe) }),
     );
     expect(html).toContain(`${locale}|${lang}|${bcp47}`);
+  });
+});
+
+describe('subNodes', () => {
+  it('keeps the words as text and puts the given node where the placeholder was', () => {
+    const html = renderToStaticMarkup(
+      createElement(
+        'p',
+        null,
+        ...subNodes('About {gold} expected for {count} pieces.', {
+          gold: createElement('strong', null, '212,869'),
+          count: 2,
+        }),
+      ),
+    );
+    expect(html).toBe('<p>About <strong>212,869</strong> expected for 2 pieces.</p>');
+  });
+
+  it('leaves a placeholder it was given no value for as written', () => {
+    const html = renderToStaticMarkup(createElement('p', null, ...subNodes('{a} and {b}', { a: 'x' })));
+    expect(html).toBe('<p>x and {b}</p>');
   });
 });

@@ -2,19 +2,9 @@
 
 import { Banner } from '@bombfarm/ui';
 import { setupBannerListClass, setupBannerPClass } from '@bombfarm/ui/panel-field.recipe';
-import type { RequiredAccountField } from '@bombfarm/domain/account-required-fields';
 import { useAppLang } from '@/shared/context/app-lang';
-import type { Strings } from '@/shared/i18n';
 import { usePlannerStore, selectMissingRequiredFields } from '@/shared/stores';
-
-/** The Account page's own labels, so the banner does not invent a second vocabulary. */
-const FIELD_LABEL_KEY = {
-  tree: 'panelTree',
-  houseIdx: 'house',
-  houseLevel: 'houseLevelLabel',
-  phase: 'accountCurrentPhase',
-  maxPhase: 'accountMaxPhase',
-} as const satisfies Record<RequiredAccountField, keyof Strings>;
+import { FIELD_LABEL_KEY } from '../model/required-field-labels';
 
 /**
  * Mounted in the app shell, so it shows on every page rather than only on Account: the harm

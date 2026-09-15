@@ -6,6 +6,7 @@ import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { formatNumber } from '@/shared/lib/format-number';
 import type { Lang, Strings } from '@/shared/i18n';
 import { sub } from '@/shared/i18n';
+import { heroRankToneClass } from '@/shared/game-art';
 import { cn, DataTable, Switch, Tooltip } from '@bombfarm/ui';
 import { MAX_STARS } from '@bombfarm/domain/gear';
 import {
@@ -55,7 +56,7 @@ export function ImportCandidateRow({
       <DataTable.Cell
         className={cn(
           'max-[560px]:hidden text-xl leading-none font-black tracking-tight',
-          candidate.rank?.trim() ? 'text-accent' : 'text-muted',
+          heroRankToneClass(candidate.rank ?? undefined),
           inactiveChrome,
         )}
       >

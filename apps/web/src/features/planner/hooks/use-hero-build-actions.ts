@@ -128,8 +128,8 @@ export function useHeroBuildActions() {
     if (prevMods.sheetCritChanceFlat !== nextMods.sheetCritChanceFlat) {
       setNaked(nakedAfterSheetAbilityChange(nakedRef.current, 'critChanceFlat', prevMods, nextMods));
     }
-    if (prevMods.sheetPenetrationRaw !== nextMods.sheetPenetrationRaw) {
-      setNaked(rescaleNakedPen(nakedRef.current, prevMods.sheetPenetrationRaw, nextMods.sheetPenetrationRaw));
+    if (prevMods.sheetPenetrationFlat !== nextMods.sheetPenetrationFlat) {
+      setNaked(rescaleNakedPen(nakedRef.current, prevMods.sheetPenetrationFlat, nextMods.sheetPenetrationFlat));
     }
     if (prevMods.sheetCritDmgFlat !== nextMods.sheetCritDmgFlat) {
       setNaked(rescaleNakedCritDmg(nakedRef.current, prevMods.sheetCritDmgFlat, nextMods.sheetCritDmgFlat));

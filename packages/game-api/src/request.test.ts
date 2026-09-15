@@ -56,11 +56,13 @@ describe('buildHttpRequest — the token is read through RAW exactly once, nowhe
     const req = buildHttpRequest(session, '/state');
     const rawToken = session.token[RAW]();
 
-    expect(req.headers.Authorization).toBe(`Bearer ${rawToken}`);
-    expect(req.headers['X-Account-Id']).toBe('486');
-    expect(req.headers.Accept).toBe('application/json');
-    expect(req.headers.Host).toBe('app.bombfarm.net');
-    expect(req.headers.Connection).toBe('close');
+    expect(req.path).toBe('/state?account_id=486');
+    expect(req.headers).toEqual({
+      Authorization: `Bearer ${rawToken}`,
+      Accept: 'application/json',
+      Host: 'app.bombfarm.net',
+      Connection: 'close',
+    });
     expect(req.path).not.toContain(rawToken);
 
     const headerValues = Object.entries(req.headers).filter(([key]) => key !== 'Authorization');
@@ -136,8 +138,32 @@ describe('RequestOutcome classification — every response class maps to its own
       response: { status: 200, body: '{"code":"COOLDOWN_ACTIVE"}' },
       expectKind: 'cooldown',
     },
-    { label: 'another 4xx (404)', response: { status: 404, body: '{"error":"not_found"}' }, expectKind: 'http_error' },
+    {
+      label: 'a 4xx naming a code (404)',
+      response: { status: 404, body: '{"error":"NO_SUCH_ITEM"}' },
+      expectKind: 'api_error',
+    },
+    {
+      label: 'a 4xx naming nothing (404)',
+      response: { status: 404, body: 'not found' },
+      expectKind: 'http_error',
+    },
     { label: 'a 5xx (500)', response: { status: 500, body: 'internal error' }, expectKind: 'http_error' },
+    {
+      label: 'a refusal named on an otherwise-successful 200',
+      response: { status: 200, body: '{"error":"SERVER_LOCKED"}' },
+      expectKind: 'api_error',
+    },
+    {
+      label: 'a dead session named on a 200',
+      response: { status: 200, body: '{"error":"BAD_TOKEN"}' },
+      expectKind: 'unauthorized',
+    },
+    {
+      label: 'a wrong-account refusal on a 200 (reachable only since we send account_id)',
+      response: { status: 200, body: '{"error":"WRONG_ACCOUNT"}' },
+      expectKind: 'unauthorized',
+    },
   ];
 
   for (const { label, response, expectKind } of cases) {

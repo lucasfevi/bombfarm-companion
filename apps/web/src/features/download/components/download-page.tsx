@@ -2,7 +2,7 @@
 
 import { workspaceClass } from '@bombfarm/ui/panel-field.recipe';
 import type { Lang, Strings } from '@/shared/i18n';
-import { useLatestRelease } from '../model/use-latest-release';
+import { useDownloadCounts, useLatestRelease } from '../model/use-latest-release';
 import { DownloadHero } from './download-hero';
 import { InstallCounts } from './install-counts';
 import { InstallSteps } from './install-steps';
@@ -15,11 +15,12 @@ import { IncludedScreens } from './included-screens';
  */
 export function DownloadPage({ t, lang }: { t: Strings; lang: Lang }) {
   const release = useLatestRelease();
+  const counts = useDownloadCounts();
 
   return (
     <div className={workspaceClass}>
       <DownloadHero t={t} lang={lang} release={release} />
-      <InstallCounts t={t} lang={lang} release={release} />
+      <InstallCounts t={t} lang={lang} counts={counts} />
       <InstallSteps t={t} fileName={release?.fileName ?? null} />
       <MiniWindowSection t={t} lang={lang} />
       <IncludedScreens t={t} />

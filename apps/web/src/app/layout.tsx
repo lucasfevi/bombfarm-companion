@@ -36,13 +36,13 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 /**
- * Site-wide chrome plus the planner's own preview: `/` has no layout of its own, so this is
- * where the planner's title, description and share card come from. Every other section overrides
- * all three from its own layout.
+ * Site-wide chrome plus the front page's own preview: `/` has no layout of its own, so this is
+ * where the front page's title, description and share card come from. Every other section
+ * overrides all three from its own layout.
  */
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  ...sectionMetadata('planner'),
+  ...sectionMetadata('home'),
   applicationName: SITE_NAME,
   keywords: [
     'Bomb Farm',

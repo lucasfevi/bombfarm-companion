@@ -448,22 +448,22 @@ describe('guard (h) — no research-private identifier or path in apps/web, @bom
 });
 
 // ---------------------------------------------------------------------------------------------
-// (i) No useShallow wrapping the farm respec selectors.
+// (i) No useShallow wrapping the board's memoized row selector.
 // ---------------------------------------------------------------------------------------------
-describe('guard (i) — no useShallow on the farm respec selectors', () => {
-  const GUARDED_SELECTORS = ['selectFarmBoardRows', 'selectFarmRespecView'];
+describe('guard (i) — no useShallow on the farm ranking row selector', () => {
+  const GUARDED_SELECTORS = ['selectFarmRankingRows'];
 
   function findUseShallowWrap(text: string, selectorName: string): boolean {
     return new RegExp(`useShallow\\([^)]*${selectorName}`).test(text);
   }
 
-  it('red state: a fabricated useShallow(selectFarmBoardRows) wrap is caught', () => {
+  it('red state: a fabricated useShallow(selectFarmRankingRows) wrap is caught', () => {
     expect(
-      findUseShallowWrap('usePlannerStore(useShallow(selectFarmBoardRows))', 'selectFarmBoardRows'),
+      findUseShallowWrap('usePlannerStore(useShallow(selectFarmRankingRows))', 'selectFarmRankingRows'),
     ).toBe(true);
   });
 
-  it('green state: no source file wraps selectFarmBoardRows or selectFarmRespecView in useShallow', () => {
+  it('green state: no source file wraps selectFarmRankingRows in useShallow', () => {
     const files = walkFiles(
       path.join(WEB_PACKAGE_ROOT, 'src'),
       (name) => name.endsWith('.ts') || name.endsWith('.tsx'),
@@ -494,11 +494,7 @@ describe('guard (j) — the farm screen’s store reads happen in its two connec
   const BOARD_CONNECTOR = 'src/features/phases/components/farm-ranking-board.tsx';
   const EXPLORER_CONNECTOR = 'src/features/phases/components/phases-explorer.tsx';
   const CONNECTORS = [BOARD_CONNECTOR, EXPLORER_CONNECTOR];
-  const BOARD_SELECTORS = [
-    'selectFarmBoardRows',
-    'selectFarmReRankActive',
-    'selectFarmRespecView',
-  ];
+  const BOARD_SELECTORS = ['selectFarmRankingRows', 'selectHeroes', 'selectFarmReturnBonus'];
 
   /** Every source file under `features/phases`, and whether it subscribes. Returns the files too,
    *  so the assertions below can prove the walk reached something before reading the answer. */
@@ -525,7 +521,7 @@ describe('guard (j) — the farm screen’s store reads happen in its two connec
   it('the explorer connector renders the package view and holds the explorer’s own store reads', () => {
     const source = fs.readFileSync(path.join(WEB_PACKAGE_ROOT, EXPLORER_CONNECTOR), 'utf8');
     expect(source).toContain('PhasesExplorerView');
-    for (const selector of ['selectPhasesViewPhase', 'selectAccountShared', 'selectHeroes']) {
+    for (const selector of ['selectPhasesViewPhase', 'selectRosterAccount', 'selectHeroes']) {
       expect(source, `${EXPLORER_CONNECTOR} must subscribe to ${selector}`).toContain(selector);
     }
   });

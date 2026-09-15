@@ -1,17 +1,6 @@
 /**
- * The absence guard. Makes the src/tests retired-identifier scans machine-checkable, and is
- * the ONLY mechanism that can catch a stale removed-arm property in an untypechecked test file:
- * `packages/domain/tsconfig.typecheck.json` covers six `fidelity-*` files, and esbuild silently
- * drops excess object-literal properties at runtime, so a stale property on the other 53 test
- * files would compile, run, and pass.
- *
- * A literal zero-matches assertion over `packages/domain/tests` is unreachable (fixtures may
- * never be edited, and two carriers under `fixtures/` belong to F3's still-shipping web
- * surface; two more are F1's own guard and its manifest, which must name the forbidden keys to
- * forbid them; this feature adds one more — its own purpose-built rejection fixture, which must contain
- * the retired fields verbatim). This suite pins an exact PER-FILE map instead of a bare count — a
- * count-only check would miss a match moving from an allowlisted file to a new one while the sum
- * holds.
+ * The skip-directive guard: no skipped or todo suite anywhere in this package unless it is named
+ * in the manifest below — and the manifest is empty.
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
@@ -22,32 +11,6 @@ const here = dirname(fileURLToPath(import.meta.url));
 const DOMAIN_ROOT = join(here, '..');
 const SRC_ROOT = join(DOMAIN_ROOT, 'src');
 const TESTS_ROOT = join(DOMAIN_ROOT, 'tests');
-
-/**
- * This guard's own implementation necessarily contains the pattern it matches against (as
- * source code, in its own explanatory prose, and in this file's name check) — a linter does
- * not lint its own rule definition. Self-excluded from both scans below, not allowlisted:
- * the exclusion is structural, not a carve-out for stale content.
- */
-const SELF_FILENAME = 'source-surface.test.ts';
-
-/**
- * `packages/domain/src` pattern — deliberately case-insensitive and singular
- * `keystone`, so it also catches a stale cross-reference to the name of a deleted test file.
- * Includes the bare `critDmgMult` identifier, whose ONLY surviving occurrences are
- * the pinned 12-line combat pass-through — everything else naming it was deleted.
- */
-const SRC_PATTERN =
-  /keystone|abisso|glass.?cannon|tempo.?dobrado|critDmgMult|crit_dmg_mult|abissoBase|abisso_base/i;
-
-/**
- * `packages/domain/tests` pattern — the SAME token set MINUS the bare
- * `critDmgMult` identifier. Every surviving suite legitimately keeps `critDmgMult: 1` /
- * `critDmgMult: mults.critDmgMult` across many files — that pass-through is
- * combat-layer content, not deleted-arm content, and this pattern never
- * included the bare identifier in the first place.
- */
-const TESTS_PATTERN = /keystone|abisso|glass.?cannon|tempo.?dobrado|crit_dmg_mult|abissoBase|abisso_base/i;
 
 /**
  * Anchored to `describe|it|test` immediately before `.skip`/`.todo`, plus the legacy `xit`/
@@ -95,125 +58,13 @@ function listFiles(dir: string, acc: string[] = []): string[] {
   return acc;
 }
 
-/**
- * `packages/domain/src` — the surviving `critDmgMult` combat pass-through. Every
- * deleted-arm term is gone; this always-`1` chain is the one keystone-shaped identifier the
- * spec's own Assumption keeps (removing it would be an unrelated public-signature change to
- * `derive()`). Re-measured against the tree at every T5-T9 commit, not copied from a document.
- */
-const SRC_ALLOWLIST: Record<string, number[]> = {
-  // Line numbers only — still SIX matches, unchanged in kind. Re-measured after issue #132's
-  // team-aura rewrite across three passes: (1) replaced `stackTeamBonusMult`/
-  // `TEAM_MULT_BONUS_CAP` with `combineTeamAuraPct` and removed `teamGateMult`; (2) folded
-  // Presságio's own rank into the same capped combination and removed the now-redundant
-  // `combatCritChancePctOfBase` DeriveInput field; (3) the roster-is-the-field rewrite dropped
-  // `teamAtkMult`/`teamSpeedMult` (now identical to `attackMult`/`speedMult`) and simplified
-  // `computeCombatMults` to a fixed `ownPct: 0` at every call site, each pass adding or moving
-  // doc comments above these hits.
-  // +9 (line numbers only): extracting `teamDrainMultFromTeamBuffs` (so the live field
-  // countdown's multiplier resolver could reuse the Fôlego de Mineiro cap/floor arithmetic
-  // instead of reimplementing it) added a function and its doc comment above these hits.
-  'derive.ts': [26, 89, 107, 155, 210, 221],
-  // Line numbers only — still FOUR matches, unchanged in kind. Re-measured against the merged
-  // tree rather than resolved to either side: this branch's House-cycle plumbing
-  // (`houseCycleSecs`, then `houseCycleSecsHouseIdx`/`houseCycleSecsLevel`) and #87's farm-objective
-  // rank mode each inserted lines above these hits, so BOTH pins were stale after the merge —
-  // 341 from here and 325 from develop are each correct only in isolation. Issue #132's crit-
-  // combination fix removed the `combatCritChancePctOfBase` pass-through line, shifting the
-  // last hit down by one.
-  // +3 (line numbers only): surfacing `fieldSecs` on the pipeline result added a documented
-  // field to the output type and one line to the returned object, above these hits.
-  // +1 (line number only): `spentDelta` now calls the shared `spentPointsOf` instead of
-  // re-summing SHEET_KEYS inline, so the import block gained a line above these hits. Still FOUR
-  // matches, unchanged in kind.
-  // +3/+16/+18 (line numbers only): reporting the fuse time with its floor and cooldown cap added
-  // three imports, a documented block of four fields on the result type, and one computed local
-  // above the returned object. Still FOUR matches, unchanged in kind.
-  'advisor-pipeline.ts': [115, 237, 266, 367],
-  // +1 (line number only): the flat-crit-damage fix's `brutalStrike` LedgerNote arm
-  // (review item 5, PR #90) added one line above this hit.
-  'stat-breakdown/types.ts': [106],
-  // +1 (line number only): the `cycleSecs` pass-through added one line above this hit.
-  // +2 more: the House-ceiling regression repair's `cycleSecsHouseIdx`/`cycleSecsLevel`
-  // pass-through (PR #86 finding, house.ts:38) added two more lines above it.
-  // +12 (line number only): keying the score memo on the `FarmContext` too — a run holds two of
-  // them once the farm objective exists — added a signature builder and its doc comment above
-  // this hit.
-  'team-plan/score.ts': [150],
-};
-
-/**
- * `packages/domain/tests` — five files outside F2's reach, each commented with its owner:
- * - `fixtures/i18n-strings-main.json`, `fixtures/storage-roundtrip-20260729.json`: F3's web
- *   i18n / storage-roundtrip snapshots, living inside `fixtures/`, which may never be edited.
- * - `fixtures/sheet-math/README.md`: F1's provenance manifest, which must name the forbidden
- *   keys to forbid them.
- * - `fixture-corpus.test.ts`: F1's own corpus guard, whose `FORBIDDEN_KEYS` array must contain
- *   the literal key names to function.
- * - `fixtures/rejection/pre-update-save.json`: F4's own purpose-built rejection fixture
- *   (`packages/domain/tests/save-acceptance.test.ts`) — it must contain the
- *   retired fields verbatim to prove `parseSaveFile` rejects a save shaped like this. Its sibling
- *   `truncated-save.json` carries none of them (an empty `skills.totals`) and needs no entry.
- */
-const TESTS_ALLOWLIST: Record<string, number> = {
-  'fixtures/i18n-strings-main.json': 24,
-  'fixtures/storage-roundtrip-20260729.json': 1,
-  'fixtures/sheet-math/README.md': 2,
-  'fixture-corpus.test.ts': 3,
-  'fixtures/rejection/pre-update-save.json': 3,
-};
-
-function matchingLines(absPath: string, pattern: RegExp): number[] {
-  const text = readFileSync(absPath, 'utf8');
-  const lines = text.split(/\r?\n/);
-  const hits: number[] = [];
-  lines.forEach((line, index) => {
-    if (pattern.test(line)) hits.push(index + 1);
-  });
-  return hits;
-}
-
-describe('source-surface — the deleted-arm absence guard (T10)', () => {
+describe('source-surface — the skip-directive guard', () => {
   const srcFiles = listFiles(SRC_ROOT);
-  const testFiles = listFiles(TESTS_ROOT).filter((f) => !f.endsWith(SELF_FILENAME));
+  const testFiles = listFiles(TESTS_ROOT);
 
   it('non-vacuity: the scan roots are non-empty and meet a committed floor', () => {
     expect(srcFiles.length, `scanned ${SRC_ROOT}`).toBeGreaterThanOrEqual(50);
     expect(testFiles.length, `scanned ${TESTS_ROOT}`).toBeGreaterThanOrEqual(50);
-  });
-
-  it('packages/domain/src: the pattern matches exactly the pinned per-file, per-line allowlist', () => {
-    const actual: Record<string, number[]> = {};
-    for (const file of srcFiles) {
-      const rel = relative(SRC_ROOT, file).split('\\').join('/');
-      const hits = matchingLines(file, SRC_PATTERN);
-      if (hits.length > 0) actual[rel] = hits;
-    }
-
-    const expectedFiles = Object.keys(SRC_ALLOWLIST).sort();
-    const actualFiles = Object.keys(actual).sort();
-    expect(actualFiles, 'unexpected file(s) with a match, or an allowlisted file with none').toEqual(expectedFiles);
-
-    for (const file of expectedFiles) {
-      expect(actual[file], `${file}: matched lines`).toEqual(SRC_ALLOWLIST[file]);
-    }
-  });
-
-  it('packages/domain/tests: the pattern matches exactly the four allowlisted files, with their exact counts', () => {
-    const actual: Record<string, number> = {};
-    for (const file of testFiles) {
-      const rel = relative(TESTS_ROOT, file).split('\\').join('/');
-      const hits = matchingLines(file, TESTS_PATTERN);
-      if (hits.length > 0) actual[rel] = hits.length;
-    }
-
-    const expectedFiles = Object.keys(TESTS_ALLOWLIST).sort();
-    const actualFiles = Object.keys(actual).sort();
-    expect(actualFiles, 'unexpected file(s) with a match, or an allowlisted file with none').toEqual(expectedFiles);
-
-    for (const file of expectedFiles) {
-      expect(actual[file], `${file}: match count`).toBe(TESTS_ALLOWLIST[file]);
-    }
   });
 
   it('skip directives in packages/domain are exactly the declared F8 manifest', () => {

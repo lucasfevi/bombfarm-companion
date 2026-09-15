@@ -28,6 +28,7 @@ import {
   type FarmRateRow,
 } from '@bombfarm/domain/farm-rate';
 import { pipelineForHero } from '@bombfarm/domain/roster-dps';
+import { GRID_SPEED_COEF, critFactor, fuseSeconds, predictHitDamage } from '@bombfarm/domain/model';
 import {
   energySwitchPointCallCount,
   resetEnergySwitchPointCallCount,
@@ -60,8 +61,11 @@ describe('heroFactsFromBasis(b, b.pts) — identity with computeHeroFarmFacts, e
   });
 
   it('does NOT short-circuit on pts === basis.pts (same object identity still goes through the full reconstruction)', () => {
+    // The same pool on both sides: a basis carries the field its pool priced it in (the auras and
+    // the allies beside it), so a one-hero pool would reconstruct a different field, not a
+    // different code path.
     const [basis] = computeHeroFarmBases({ heroes, account });
-    const [fact] = computeHeroFarmFacts({ heroes: [heroes[0]], account });
+    const [fact] = computeHeroFarmFacts({ heroes, account });
     // Passing the exact same object reference as `basis.pts` — a short-circuit implementation
     // would still need to produce the identical result, so this alone does not distinguish the
     // two; it is asserted together with the capture-then-compare suite above, which would catch
@@ -92,28 +96,29 @@ describe('the moved-vector case — the affine claim itself', () => {
 
     const reconstructed = heroFactsFromBasis(jonBasis, movedPts);
 
-    // The re-run must price the SAME team auras the basis was built with, pinned via the override
-    // path. Left to re-derive them it would not: rotation-weighted auras are a function of every
-    // hero's uptime, moving 5 points from attack into energy moves this hero's uptime, and the
-    // affine claim under test is about the point vector alone — it holds the whole pipeline-
-    // derived context fixed, auras included (see `heroFactsFromBasis`'s own note). Comparing
-    // against a re-priced run would test the aura feedback loop, not the reconstruction.
-    const pinned = { ...account, teamBuffs: farmTeamBuffs({ heroes: [jon], account }), teamBuffsOverride: {} };
+    // The re-run is a direct pipeline call handed the SAME team auras the basis was built with.
+    // Run through `computeHeroFarmFacts` it would re-derive them: rotation-weighted auras are a
+    // function of every hero's uptime, moving 5 points from attack into energy moves this hero's
+    // uptime, and the affine claim under test is about the point vector alone — it holds the
+    // whole pipeline-derived context fixed, auras included (see `heroFactsFromBasis`'s own note).
+    // Comparing against a re-priced run would test the aura feedback loop, not the reconstruction.
+    const pinned = { ...account, teamBuffs: farmTeamBuffs({ heroes: [jon], account }) };
     const movedHero: HeroRecord = { ...jon, pts: movedPts };
-    const [realRun] = computeHeroFarmFacts({ heroes: [movedHero], account: pinned });
+    const realRun = pipelineForHero(movedHero, pinned, 1, 0);
+    const realAvgHitBase =
+      predictHitDamage(realRun.effective.attack, 0, realRun.effective.penetration, realRun.dmgMult) *
+      critFactor(realRun.effective.critChance, realRun.effective.critDmg);
 
-    expectCloseRel(reconstructed.avgHitBase, realRun.avgHitBase, 1e-9);
-    expectCloseRel(reconstructed.penetrationPct, realRun.penetrationPct, 1e-9);
-    expectCloseRel(reconstructed.fuseSecs, realRun.fuseSecs, 1e-9);
-    expectCloseRel(reconstructed.walkSpeedCells, realRun.walkSpeedCells, 1e-9);
-    expectCloseRel(reconstructed.cycleSecs, realRun.cycleSecs, 1e-9);
-    expectCloseRel(reconstructed.plantsPerSec, realRun.plantsPerSec, 1e-9);
-    expectCloseRel(reconstructed.blocksPerBomb, realRun.blocksPerBomb, 1e-9);
-    expectCloseRel(reconstructed.uptime, realRun.uptime, 1e-9);
-    expectCloseRel(reconstructed.heroLuckPct, realRun.heroLuckPct, 1e-9);
-    expect(reconstructed.veiaOuroLevel).toBe(realRun.veiaOuroLevel);
-    expect(reconstructed.fortunaLevel).toBe(realRun.fortunaLevel);
-    expect(reconstructed.degenerate).toBe(realRun.degenerate);
+    expectCloseRel(reconstructed.avgHitBase, realAvgHitBase, 1e-9);
+    expectCloseRel(reconstructed.penetrationPct, realRun.effective.penetration, 1e-9);
+    expectCloseRel(reconstructed.fuseSecs, fuseSeconds(realRun.effective.cdr), 1e-9);
+    expectCloseRel(reconstructed.walkSpeedCells, realRun.effective.speed * GRID_SPEED_COEF, 1e-9);
+    expectCloseRel(reconstructed.blocksPerBomb, 1 + 0.5 * realRun.context.blastRange, 1e-9);
+    expectCloseRel(reconstructed.uptime, realRun.uptime / 100, 1e-9);
+    expectCloseRel(reconstructed.heroLuckPct, realRun.adjusted.luck - (account.tree.luckFlatPct ?? 0), 1e-9);
+    expect(reconstructed.veiaOuroLevel).toBe(jonBasis.veiaOuroLevel);
+    expect(reconstructed.fortunaLevel).toBe(jonBasis.fortunaLevel);
+    expect(reconstructed.degenerate).toBe(false);
   });
 });
 
@@ -131,9 +136,9 @@ describe('pipeline-call count — the basis is extracted once and never re-deriv
     resetEnergySwitchPointCallCount();
   });
 
-  it('computeHeroFarmBases costs 2x|enabled| (rotation-priced auras); 200 subsequent heroFactsFromBasis calls cost 0', () => {
+  it('computeHeroFarmBases costs |enabled| (the auras are a closed-form layer on the one pass); 200 subsequent heroFactsFromBasis calls cost 0', () => {
     const bases = computeHeroFarmBases({ heroes, account });
-    expect(energySwitchPointCallCount).toBe(2 * heroes.length);
+    expect(energySwitchPointCallCount).toBe(heroes.length);
 
     resetEnergySwitchPointCallCount();
     for (let i = 0; i < 200; i++) {

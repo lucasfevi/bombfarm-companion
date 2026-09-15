@@ -8,10 +8,12 @@ import {
   fuseSeconds,
   FUSE_FLOOR,
   STAT_CAPS,
+  passagemBastaoFieldPulse,
   type AbilityMods,
   type Context,
   type HeroSheet,
   type PointValue,
+  type PassagemBastaoFieldPulse,
   type RankMode,
   type RarityKey,
 } from './model';
@@ -20,6 +22,7 @@ import { spentPointsOf } from './point-inference';
 import type { SheetKey } from './planner-constants';
 import { computeCombatMults, derive, type DeriveResult } from './derive';
 import { applySkillTree, type BirthStats, type TreeSheetTotals } from './birth-sheet';
+import { applyRuneMultipliers, runeSheetMultipliers, type HeroRune } from './runes';
 import { resolveCloneGeared, resolveDeriveSheets } from './advisor-pipeline-sheets';
 import {
   effectiveFarmPhase,
@@ -66,6 +69,18 @@ export type AdvisorPipelineInput = {
   /** `skills.totals.luck_add × 100` — flat Luck percentage points. */
   treeLuckFlatPct: number;
   teamBuffs: Record<TeamBuffId, number>;
+  /**
+   * Other heroes on the field beside this one — Matilha's allies. Per-call like `teamBuffs`: a
+   * per-hero screen counts the deployed heroes other than the hero (the hero is on the field by
+   * definition), a rotating board derives its own from the pool's uptimes. Absent reads as none.
+   */
+  fieldAllies?: number;
+  /**
+   * The rank the hero's own Passagem de Bastão pulse is priced at, at least — the cap rank while
+   * a per-hero screen's switch for it is on (`entryPulseRankFloor`). Absent reads as the hero's
+   * own rank alone.
+   */
+  entryPulseRankFloor?: number;
   houseIdx: number;
   houseLevel: number;
   /**
@@ -99,6 +114,8 @@ export type AdvisorPipelineInput = {
    * geared) so Points After / DPS stay aligned with Stats Total after level/stars/tree edits.
    */
   birth?: BirthStats | null;
+  /** The hero's timed rune buffs (`runes.ts`); absent reads as none. */
+  runes?: readonly HeroRune[] | undefined;
 };
 
 export type AdvisorPipelineResult = {
@@ -107,13 +124,31 @@ export type AdvisorPipelineResult = {
   rest: number;
   context: Context;
   gateAttackMult: number;
+  /** Abilities × pack × extra — expected damage per bomb, the pulse NOT folded in: the Farm board
+   *  prices the pulse per level through hits-to-kill and reads this as its base. */
   dmgMult: number;
+  /** Pack × extra — what one blast carries (`CombatMults.hitMult`). A per-hero screen multiplies
+   *  it by `entryPulse.expectedMult`, which is what `predHit` carries. */
+  hitMult: number;
   /** Combat mults already computed by `computeCombatMults` — surfaced for breakdown (additive). */
   attackMult: number;
   energyMult: number;
   speedMult: number;
-  critDmgMult: number;
   teamCritFlat: number;
+  teamPenFlat: number;
+  /** Matilha's pack factor inside `dmgMult`, at `fieldAllies`. */
+  packMult: number;
+  /** The allies `packMult` was priced at — echoed so a breakdown can name the field size. */
+  fieldAllies: number;
+  /**
+   * The hero's OWN Passagem de Bastão, HELD UP for the whole stint: `1 + 0.04 × rank` (capped at
+   * ×1.8) with probability 1, `[{ mult: 1, probability: 1 }]` for a hero without the ability. A
+   * per-hero screen answers "what is this hero worth with its pulse on", so the pulse is not
+   * discounted to the 120 s it lasts on each entry — that discount is the Farm board's and the
+   * Optimizer's, which price a rotation over wall clock. `dps`, `active` and the printed hits
+   * below carry it; hits-to-kill does not — a hit is a step the Farm board prices per level.
+   */
+  entryPulse: PassagemBastaoFieldPulse;
   /** The whole skill tree, once — surfaced for Wave 6's breakdown. */
   treeSheet: TreeSheetTotals;
   A: DeriveResult;
@@ -163,6 +198,18 @@ export type AdvisorPipelineResult = {
 };
 
 /**
+ * The hero's own Passagem de Bastão on its own screen, held up for the whole stint — the same
+ * level rule the Farm board and the Optimizer price every carrier with
+ * (`passagemBastaoFieldPulse`) at presence 1, at the hero's own rank or the cap rank a switch
+ * asks for. The other carriers' pulses are not counted here — a per-hero screen has no stint
+ * for them, the rotating surfaces do.
+ */
+function ownEntryPulse(rank: number): PassagemBastaoFieldPulse {
+  if (!(rank > 0)) return passagemBastaoFieldPulse([]);
+  return passagemBastaoFieldPulse([{ rank, presence: 1 }]);
+}
+
+/**
  * Pure advisor math: derive A/B, expected sheet, point ranking, energy switch,
  * prop HTK table, and gate rows. Call from `useMemo` with primitive/stable deps only.
  */
@@ -195,6 +242,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     targetProp,
     birth,
   } = input;
+  const runes = input.runes ?? [];
 
   const farmPhase = effectiveFarmPhase(phase);
   const mitPct = effectiveMitigationPct({ phase, mitigationPct });
@@ -204,7 +252,7 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   const sheetOther: SheetOtherPct = {
     ...emptySheetOther(),
     critChanceFlat: mods.sheetCritChanceFlat,
-    penetration: mods.sheetPenetrationRaw,
+    penetration: mods.sheetPenetrationFlat,
     critDmgFlat: mods.sheetCritDmgFlat,
   };
 
@@ -222,21 +270,26 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     treeEnergy,
     treeLuckFlatPct,
     birth,
+    runes,
   });
 
+  const fieldAllies = input.fieldAllies ?? 0;
   const mults = computeCombatMults({
     mods,
     teamBuffs,
     extraDmgPct: 0,
+    fieldAllies,
   });
   const {
     attackMult,
     speedMult,
     gateAttackMult,
     energyMult,
-    critDmgMult,
     teamCritFlat,
+    teamPenFlat,
     teamDrainMult,
+    packMult,
+    hitMult,
     dmgMult,
   } = mults;
 
@@ -263,20 +316,29 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     attackMult,
     energyMult,
     speedMult,
-    critDmgMult,
     teamCritFlat,
     treeSheet,
-    penetrationPp: mods.penetrationPp,
+    penetrationPp: teamPenFlat,
     context,
+    hitMult,
     dmgMult,
     mitigationPct: mitPct,
+    runes,
   } as const;
 
   const equippedResult = derive({ ...deriveArgs, geared: gearedForDerive });
   const { delta: pointDelta, adjusted, effective } = equippedResult;
-  const dps = equippedResult.dps;
-  const active = equippedResult.active;
-  const predHit = equippedResult.hit;
+  const field = fieldSeconds(effective, context);
+  const uptime = (100 * field) / (field + rest);
+  const entryPulseRank = Math.max(abilities.passagem_bastao ?? 0, input.entryPulseRankFloor ?? 0);
+  const entryPulse = ownEntryPulse(entryPulseRank);
+  const dps = equippedResult.dps * entryPulse.expectedMult;
+  const active = equippedResult.active * entryPulse.expectedMult;
+  // The pulse is up for a share of wall clock, so the figures a hero's screen prints — the hit,
+  // its crit and average, the multiplier they carry — are the expectation over that clock. The
+  // hits-to-kill rows below deliberately are not: a threshold is crossed at a level the field
+  // sits at, never at the average of two (the Farm board's rule), so they read the unpulsed hit.
+  const predHit = equippedResult.hit * entryPulse.expectedMult;
   // Birth-backed: recompose clone from birth (same path as Apply to current).
   // Without birth: project the observed sheet so typed drift stays a 0% delta
   // when clone === current.
@@ -292,11 +354,12 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
           level,
           stars,
           treeSheet,
+          runes,
         }),
       })
     : null;
-  const bDiff = cloneResult ? (cloneResult.dps / dps - 1) * 100 || 0 : 0;
-  const bHitDiff = cloneResult ? (cloneResult.hit / predHit - 1) * 100 || 0 : 0;
+  const bDiff = cloneResult ? ((cloneResult.dps * entryPulse.expectedMult) / dps - 1) * 100 || 0 : 0;
+  const bHitDiff = cloneResult ? (cloneResult.hit / equippedResult.hit - 1) * 100 || 0 : 0;
 
   const line = phaseLine(farmPhase);
   const stoneHp = line?.hp ?? 0;
@@ -314,8 +377,6 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   const eSwitch = energySwitchPoint(effective, context);
   const best = ranking[0];
   const spentDelta = spentPointsOf(pts);
-  const field = fieldSeconds(effective, context);
-  const uptime = (100 * field) / (field + rest);
 
   const mitF = mitigationFactor(mitPct / 100, effective.penetration);
   const predCrit = predHit * (1 + effective.critDmg / 100);
@@ -326,16 +387,23 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
   // projection used by the Gear tab's sheet-mismatch check) would silently diverge from
   // `adjusted` by exactly the tree's factor for every hero with any spent attack/energy
   // point, false-triggering a "sheet mismatch" warning that has nothing to do with gear.
-  const expectedSheet = applySkillTree(
-    applyPoints(nakedForDerive, loadout, pts, sheetOther, level, stars),
-    nakedForDerive,
-    sheetOther,
+  const expectedSheet = applyRuneMultipliers(
+    applySkillTree(
+      applyPoints(nakedForDerive, loadout, pts, sheetOther, level, stars),
+      nakedForDerive,
+      sheetOther,
+      treeSheet,
+    ),
     treeSheet,
+    runeSheetMultipliers(runes),
   );
 
-  const propRows: PropHtkRow[] = propHtkRows(stoneHp, avgHit, targetProp);
+  // Hits-to-kill runs on expected damage per bomb — the second blast and the execute as
+  // expectations, the Farm board's convention — which is more than any one blast shows.
+  const htkHit = equippedResult.hit * mods.dmgMult * critFactor(effective.critChance, effective.critDmg);
+  const propRows: PropHtkRow[] = propHtkRows(stoneHp, htkHit, targetProp);
   const bossHp = propHp(stoneHp, BOSS_HP_MULT);
-  const bossHits = hitsToKill(avgHit, bossHp);
+  const bossHits = hitsToKill(htkHit, bossHp);
   const avgPropHp = weightedAvgPropHp(stoneHp);
 
   const gateRows: GateRow[] = buildGateRows(effective, context, field, dmgMult, gateAttackMult);
@@ -361,11 +429,15 @@ export function computeAdvisorPipeline(input: AdvisorPipelineInput): AdvisorPipe
     context,
     gateAttackMult,
     dmgMult,
+    hitMult,
     attackMult,
     energyMult,
     speedMult,
-    critDmgMult,
     teamCritFlat,
+    teamPenFlat,
+    packMult,
+    fieldAllies,
+    entryPulse,
     treeSheet,
     A: equippedResult,
     B: cloneResult,

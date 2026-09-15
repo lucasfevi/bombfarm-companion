@@ -1,3 +1,4 @@
+import { cycleSecondsForHero } from './cadence';
 import { POINT_GAIN, STAT_CAPS } from './rarity-constants';
 import type { Context, HeroSheet } from './types';
 
@@ -5,10 +6,6 @@ import type { Context, HeroSheet } from './types';
 export const GRID_SPEED_COEF = 0.0386;
 /** `eficiência_IA = 0.9` — wiki Combate AI-efficiency factor. */
 export const EFF_IA = 0.9;
-
-export function staminaFactor(energy: number): number {
-  return 1 - 0.5 / (1.3 + 0.003 * energy);
-}
 
 export const FUSE_FLOOR = 0.4; // "piso de 20% do ciclo" — 20% of the 2s base (CDR teto 80%)
 
@@ -23,15 +20,10 @@ export function marginalFuseSeconds(cdrPct: number): number {
   return 2 * (1 - cdr / 100);
 }
 
-function bombsPerSecondWithFuse(
-  hero: Pick<HeroSheet, 'speed' | 'energy' | 'cdr'>,
-  context: Context,
-  fuseSec: number,
-): number {
-  if (context.cycleModel === 'serial') {
-    return 1 / (fuseSec + context.walkDelay);
-  }
-  return (0.3 + 0.12 * hero.speed * GRID_SPEED_COEF) * staminaFactor(hero.energy);
+/** Bombs per second at `fuseSec`: the inverse of the measured cycle, 0 for a hero that cannot move. */
+function bombsPerSecondWithFuse(hero: Pick<HeroSheet, 'speed'>, context: Context, fuseSec: number): number {
+  const cycle = cycleSecondsForHero(fuseSec, hero.speed * GRID_SPEED_COEF, context.ato);
+  return Number.isFinite(cycle) && cycle > 0 ? 1 / cycle : 0;
 }
 
 function activeDpsWithFuse(hero: HeroSheet, context: Context, fuseSec: number): number {
@@ -46,11 +38,8 @@ export function sustainedDpsWithFuse(hero: HeroSheet, context: Context, fuseSec:
   return activeDpsWithFuse(hero, context, fuseSec) * duty;
 }
 
-export function bombsPerSecond(hero: Pick<HeroSheet, 'speed' | 'energy' | 'cdr'>, context: Context): number {
-  if (context.cycleModel === 'serial') {
-    return 1 / (fuseSeconds(hero.cdr) + context.walkDelay);
-  }
-  return (0.3 + 0.12 * hero.speed * GRID_SPEED_COEF) * staminaFactor(hero.energy);
+export function bombsPerSecond(hero: Pick<HeroSheet, 'speed' | 'cdr'>, context: Context): number {
+  return bombsPerSecondWithFuse(hero, context, fuseSeconds(hero.cdr));
 }
 
 export function critFactor(critChancePct: number, critDmgPct: number): number {

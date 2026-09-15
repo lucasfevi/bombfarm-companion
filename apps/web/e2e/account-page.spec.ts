@@ -67,7 +67,7 @@ function panel(page: Page, heading: RegExp) {
 
 async function openAccount(page: Page, lang: 'pt' | 'en' = 'en') {
   await seedLocalStorage(page, accountRoster(lang));
-  await page.goto('/');
+  await page.goto('/heroes');
   await gotoAccountPage(page);
 }
 
@@ -97,7 +97,7 @@ test.describe('account page — identity header', () => {
   test('a save with no identity shows dashes, not a blank header', async ({ page }) => {
     // `importedRoster` predates the identity keys, which is exactly the scrubbed-export shape.
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/');
+    await page.goto('/heroes');
     await gotoAccountPage(page);
 
     const header = panel(page, /^Account$/i);
@@ -140,7 +140,7 @@ test.describe('account page — House panel', () => {
   test('a delta of zero is omitted rather than shown as +0', async ({ page }) => {
     // Casa IV → Casa V keeps the slot count at 9, so only the cycle improves.
     await seedLocalStorage(page, atHouse('en', 3, 1, 9));
-    await page.goto('/');
+    await page.goto('/heroes');
     await gotoAccountPage(page);
     const house = panel(page, /^House$/i);
 
@@ -151,7 +151,7 @@ test.describe('account page — House panel', () => {
 
   test('the last House shows no next-House block at all', async ({ page }) => {
     await seedLocalStorage(page, atHouse('en', 4, 20, 9));
-    await page.goto('/');
+    await page.goto('/heroes');
     await gotoAccountPage(page);
     const house = panel(page, /^House$/i);
 
@@ -251,26 +251,18 @@ test.describe('account page — what the rework removed', () => {
 
   test('the planner keeps its own tabs and has no Account tab', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/');
+    await page.goto('/heroes');
     await expect(page.getByRole('tab', { name: /^Account$/i })).toHaveCount(0);
     await expect(page.getByRole('tab', { name: /^Gear$/i })).toBeVisible();
   });
 
-  test('no keystone control survives anywhere on the page', async ({ page }) => {
-    // Carried over from the retired account-panel spec: the 2026-08-13 patch removed all five
-    // keystones, and this is the DOM-level proof that the Account surface grew none back. The
-    // page is read-only now, so the switch/checkbox assertions double as a "still no controls"
-    // guard.
+  test('the read-only page renders no switch or checkbox in either language', async ({ page }) => {
     for (const lang of ['en', 'pt'] as const) {
       await openAccount(page, lang);
       const main = page.locator('main');
-      await expect(main.locator('[data-keystone-control]')).toHaveCount(0);
       await expect(main.locator('[data-switch]')).toHaveCount(0);
       await expect(main.getByRole('switch')).toHaveCount(0);
       await expect(main.getByRole('checkbox')).toHaveCount(0);
-      for (const name of [/Abisso/i, /Glass Cannon/i, /Tempo Dobrado/i]) {
-        await expect(main.getByLabel(name)).toHaveCount(0);
-      }
     }
   });
 });

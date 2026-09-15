@@ -1,6 +1,7 @@
 import { levelPowerMult } from '../model';
 import { starsMult, type SheetOtherPct } from '../gear';
 import type { SheetDisplayKey } from '../planner-constants';
+import { RUNE_AXIS_SHEET_KEY, runeSheetMultipliers, type HeroRune } from '../runes';
 import type {
   LedgerNote,
   LedgerSource,
@@ -14,9 +15,52 @@ export function formatBreakdownNumber(value: number, digits: number): string {
   return value.toFixed(digits);
 }
 
+/** The zero-points sheet value, runes included — what `derive()` was handed as `geared`. */
 export function gearedFor(statKey: SheetDisplayKey, facts: PipelineFacts): number {
   if (facts.geared) return facts.geared[statKey];
   return facts.adjusted[statKey] - facts.pts[statKey] * facts.delta[statKey];
+}
+
+/**
+ * {@link gearedFor} with the hero's runes taken back off, so the birth → gear → tree lines
+ * are built from what the game built before the rune multiplied it. Crit damage's rune sits
+ * inside the tree's flat add (`applyRuneMultipliers`), so that add is peeled first and put back.
+ */
+export function gearedBeforeRunesFor(statKey: SheetDisplayKey, facts: PipelineFacts, treePct: number): number {
+  const geared = gearedFor(statKey, facts);
+  const factor = runeFactorFor(statKey, facts);
+  if (factor === 1) return geared;
+  if (statKey === 'critDmg') return (geared - treePct) / factor + treePct;
+  return geared / factor;
+}
+
+export function runeFactorFor(statKey: SheetDisplayKey, facts: PipelineFacts): number {
+  return runeSheetMultipliers(facts.runes ?? [])[statKey];
+}
+
+/** The rune on this key with the least play time left — the one whose expiry ends the buff first. */
+export function runeExpiringFirst(statKey: SheetDisplayKey, facts: PipelineFacts): HeroRune | undefined {
+  let soonest: HeroRune | undefined;
+  for (const rune of facts.runes ?? []) {
+    if (RUNE_AXIS_SHEET_KEY[rune.axis] !== statKey) continue;
+    if (!soonest || rune.playSecondsLeft < soonest.playSecondsLeft) soonest = rune;
+  }
+  return soonest;
+}
+
+/** The `× (1 + p)` step for this key's runes; nothing is pushed on a hero carrying none. */
+export function pushRune(steps: LedgerStep[], statKey: SheetDisplayKey, facts: PipelineFacts): void {
+  const factor = runeFactorFor(statKey, facts);
+  if (Math.abs(factor - 1) < EPS) return;
+  const previous = steps.at(-1);
+  if (!previous) return;
+  steps.push({
+    source: 'rune',
+    op: '×',
+    amount: factor,
+    running: previous.running * factor,
+    runePlaySecondsLeft: runeExpiringFirst(statKey, facts)?.playSecondsLeft,
+  });
 }
 
 function otherFactor(percent: number): number {
@@ -33,10 +77,9 @@ function sheetOtherFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct): numbe
   switch (statKey) {
     case 'speed':
       return otherPct.speed;
-    case 'penetration':
-      return otherPct.penetration;
     case 'cdr':
       return otherPct.cdr;
+    case 'penetration':
     case 'critChance':
     case 'critDmg':
     case 'attack':
@@ -49,6 +92,7 @@ function sheetOtherFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct): numbe
 function sheetAbilityFlatFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct): number {
   if (statKey === 'critDmg') return Math.max(0, otherPct.critDmgFlat);
   if (statKey === 'critChance') return Math.max(0, otherPct.critChanceFlat);
+  if (statKey === 'penetration') return Math.max(0, otherPct.penetration);
   return 0;
 }
 
@@ -63,7 +107,8 @@ function sheetAbilityFlatFor(statKey: SheetDisplayKey, otherPct: SheetOtherPct):
  * values rather than to this peeled figure.
  */
 export function birthFromNaked(statKey: SheetDisplayKey, facts: PipelineFacts): number {
-  // Peel the flat sheet-ability addend (crit damage only) before the multiplicative peels.
+  // Peel the flat sheet-ability addend (crit damage, crit chance, penetration) before the
+  // multiplicative peels.
   const naked = facts.naked[statKey] - sheetAbilityFlatFor(statKey, facts.sheetOther);
   const levelMult = levelPowerMult(facts.level);
   const starMult = starsMult(facts.stars);
@@ -120,24 +165,9 @@ export function pushBirthThenGear(
   treePct = 0,
 ): void {
   const naked = facts.naked[statKey];
-  pushBase(steps, birthFromNaked(statKey, facts));
-  if (statKey === 'attack') {
-    pushMul(steps, 'level', levelPowerMult(facts.level));
-  }
-  if (statKey !== 'speed') {
-    pushMul(steps, 'stars', starsMult(facts.stars));
-  }
-  const other = sheetOtherFor(statKey, facts.sheetOther);
-  if (other > EPS) {
-    pushMul(steps, 'sheetAbilities', otherFactor(other), sheetAbilityNote(statKey));
-  }
-  // Crit damage's and crit chance's sheet abilities are flat addends, not pool factors.
-  const abilityFlat = sheetAbilityFlatFor(statKey, facts.sheetOther);
-  if (abilityFlat > EPS) {
-    pushAdd(steps, 'sheetAbilities', abilityFlat, sheetAbilityNote(statKey));
-  }
+  const { other, abilityFlat } = pushBirthThroughAbilities(steps, statKey, facts);
 
-  const gearedValue = gearedFor(statKey, facts);
+  const gearedValue = gearedBeforeRunesFor(statKey, facts, treePct);
   // Energy: geared = naked × (1 + energyPct) → delta = energyPct × naked.
   // Shared pool: geared − naked = gearPct × (naked / (1+other)).
   const base = statKey === 'energy' ? naked : (naked - abilityFlat) / otherFactor(other);
@@ -172,6 +202,35 @@ export function pushBirthThenGear(
   } else {
     pushAddPctOfBase(steps, 'tree', treePct, base);
   }
+}
+
+/**
+ * The first half of {@link pushBirthThenGear}: birth roll → level → stars → sheet abilities.
+ * Running total afterwards equals `naked[statKey]`. Returns the two ability terms the gear
+ * split below needs, so a caller placing the gear and tree lines itself reads them once.
+ */
+export function pushBirthThroughAbilities(
+  steps: LedgerStep[],
+  statKey: SheetDisplayKey,
+  facts: PipelineFacts,
+): { other: number; abilityFlat: number } {
+  pushBase(steps, birthFromNaked(statKey, facts));
+  if (statKey === 'attack') {
+    pushMul(steps, 'level', levelPowerMult(facts.level));
+  }
+  if (statKey !== 'speed') {
+    pushMul(steps, 'stars', starsMult(facts.stars));
+  }
+  const other = sheetOtherFor(statKey, facts.sheetOther);
+  if (other > EPS) {
+    pushMul(steps, 'sheetAbilities', otherFactor(other), sheetAbilityNote(statKey));
+  }
+  // Crit damage's, crit chance's and penetration's sheet abilities are flat addends, not pool factors.
+  const abilityFlat = sheetAbilityFlatFor(statKey, facts.sheetOther);
+  if (abilityFlat > EPS) {
+    pushAdd(steps, 'sheetAbilities', abilityFlat, sheetAbilityNote(statKey));
+  }
+  return { other, abilityFlat };
 }
 
 export function pushBase(steps: LedgerStep[], base: number): void {
@@ -255,7 +314,7 @@ export function teamMultNote(
  * multiplying — Presságio Mortal's crit points since the 2026-08-23 patch. `amount` and `cap`
  * are in the same flat units. There is no own/team split to report: a team aura is a property
  * of the field, so every deployed hero reads the same roster total and the "own" share is 0 by
- * construction (issue #132), which is exactly what {@link teamMultNote} degenerates to too.
+ * construction (PR #139), which is exactly what {@link teamMultNote} degenerates to too.
  */
 export function teamAddNote(amount: number, cap: number): LedgerNote | undefined {
   return amount >= cap - EPS ? 'capped' : undefined;

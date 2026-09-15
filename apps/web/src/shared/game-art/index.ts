@@ -2,6 +2,7 @@ export {
   ArtFrame,
   type ArtFrameSize,
   HeroAvatar,
+  heroRankToneClass,
   HeroIdentity,
   type HeroIdentityVariant,
   HeroIdentityChip,
@@ -24,6 +25,9 @@ export {
   rosterIconTooltipTriggerClass,
   rarityTextClass,
   rarityDotClass,
+  slotChromeClassName,
+  slotStatRowClass,
+  slotsGridClass,
   type ArtFrameRecipeSize,
   type AbilityIconRecipeSize,
 } from '@bombfarm/game-art';

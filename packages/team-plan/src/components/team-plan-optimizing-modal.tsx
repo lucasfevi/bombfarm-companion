@@ -1,0 +1,71 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { Button, Dialog, dialogDescClass } from '@bombfarm/ui';
+import { sub } from '@bombfarm/hero/copy';
+import type { TeamPlanCopy } from '../copy';
+import { formatElapsed } from '../model/optimizing-elapsed';
+import { Hero6BombActivationSprite } from './hero6-bomb-activation-sprite';
+
+export function TeamPlanOptimizingModal({
+  open,
+  t,
+  onCancel,
+}: {
+  open: boolean;
+  t: TeamPlanCopy;
+  onCancel: () => void;
+}) {
+  const [elapsedMs, setElapsedMs] = useState(0);
+
+  useEffect(() => {
+    if (!open) {
+      setElapsedMs(0);
+      return;
+    }
+    const started = Date.now();
+    setElapsedMs(0);
+    const intervalId = window.setInterval(() => setElapsedMs(Date.now() - started), 250);
+    return () => window.clearInterval(intervalId);
+  }, [open]);
+
+  if (!open) return null;
+
+  return (
+    <Dialog.Root
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onCancel();
+      }}
+    >
+      <Dialog.Portal>
+        <Dialog.Backdrop />
+        <Dialog.Popup className="max-h-none! w-[min(92vw,380px)]! p-4!">
+          <Dialog.Head>
+            <Dialog.Title>{t.teamPlanOptimizingTitle}</Dialog.Title>
+          </Dialog.Head>
+          <p className={dialogDescClass}>{t.teamPlanOptimizingBody}</p>
+          <div className="flex flex-col items-center gap-3 py-2">
+            <Hero6BombActivationSprite className="size-40 select-none" />
+            <div
+              className="h-1.5 w-full overflow-hidden rounded-sm border border-line bg-bg"
+              role="progressbar"
+              aria-valuetext={t.teamPlanOptimizingProgressAria}
+              aria-label={t.teamPlanOptimizingProgressAria}
+            >
+              <div className="h-full w-full animate-pulse rounded-sm bg-accent/70" />
+            </div>
+            <p className="m-0 text-[13px] tabular-nums text-muted" role="status" aria-live="polite">
+              {sub(t.teamPlanOptimizingElapsed, { time: formatElapsed(elapsedMs) })}
+            </p>
+          </div>
+          <div className="mt-2 flex justify-end border-t border-line py-3">
+            <Button type="button" variant="ghost" onClick={onCancel}>
+              {t.teamPlanOptimizingCancel}
+            </Button>
+          </div>
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}

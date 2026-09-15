@@ -9,6 +9,7 @@ import { Bar, Button, cn, Panel, PanelHeader, StatList, Stepper, type StatListIt
 import { sub, useCopy } from '../../lib/copy';
 import type { ForgePlan, ForgePlanForecast } from '../../lib/forge/use-forge-plan';
 import { ForgeGold } from './forge-gold';
+import { ForgeQueueAdd } from './forge-queue-add';
 import {
   BLANK,
   forgeLevel,
@@ -257,6 +258,7 @@ export function ForgePlanPanel({
         >
           {buttonLabel}
         </Button>
+        <ForgeQueueAdd itemId={item.id} target={target} itemName={labels.itemName(item)} disabled={maxed} className="w-full" />
         <span data-testid="forge-button-reason" className={cn('text-[11px]', startRefusal === null || armed ? 'text-muted' : 'text-warn')}>
           {reasonLine}
         </span>

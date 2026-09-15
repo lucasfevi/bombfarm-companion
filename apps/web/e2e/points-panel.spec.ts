@@ -64,7 +64,7 @@ function pointsPanel(page: import('@playwright/test').Page, lang: 'pt' | 'en' = 
 
 /**
  * Rows of the **Points** table only. The read-only Stats table shares this tab and repeats
- * every stat label (`statShort.cdr` is "Redução de recarga (%)", `luck` is "Sorte"), so a
+ * every stat label (`statShort.cdr` is "Redução de recarga", `luck` is "Sorte"), so a
  * panel-wide `locator('tr')` matches both tables — and positional `td` access then silently
  * reads a Stats cell. Scope to the Points section before indexing columns.
  */
@@ -85,7 +85,7 @@ test.describe('points panel UX', () => {
   test('shows spent / level points; Reset uses default button and clears spend', async ({ page }) => {
     const pts = { ...zeroPts(), energy: 10, critDmg: 5 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -116,7 +116,7 @@ test.describe('points panel UX', () => {
   test('+1 at the budget ceiling is refused — a no-op, not an overspend', async ({ page }) => {
     const pts = { ...zeroPts(), energy: 38 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -136,7 +136,7 @@ test.describe('points panel UX', () => {
   test('+1 with exactly one point of headroom still applies in full', async ({ page }) => {
     const pts = { ...zeroPts(), energy: 37 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -153,7 +153,7 @@ test.describe('points panel UX', () => {
   }) => {
     const pts = { ...zeroPts(), energy: 39 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -174,7 +174,7 @@ test.describe('points panel UX', () => {
   }) => {
     const pts = { ...zeroPts(), energy: 35, critChance: 3 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -187,15 +187,15 @@ test.describe('points panel UX', () => {
     await expect(panel.getByText(/41 \/ 38 pontos/i)).toHaveCount(0);
     await expect(panel.getByText(/38 \/ 38 pontos/i)).toBeVisible();
 
-    // −5 on Crit % (3 spent) floors at 0, not −2.
-    const critRow = panel.locator('tr').filter({ hasText: /^Crít %/ });
+    // −5 on crit chance (3 spent) floors at 0, not −2.
+    const critRow = panel.locator('tr').filter({ hasText: /^Crít/ });
     await critRow.getByRole('button', { name: /remover 5 pontos de chance de crítico/i }).click();
     await expect(panel.getByText(/35 \/ 38 pontos/i)).toBeVisible();
   });
 
   test('Luck row is present on the Points table', async ({ page }) => {
     await seedLocalStorage(page, pointsHero({ level: 38, pts: zeroPts() }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -211,7 +211,7 @@ test.describe('points panel UX', () => {
 
   test('EN chrome: ±5 aria-labels name the stat', async ({ page }) => {
     await seedLocalStorage(page, pointsHero({ lang: 'en', level: 38, pts: zeroPts() }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page, 'en');
 
@@ -225,7 +225,7 @@ test.describe('points panel UX', () => {
     page,
   }) => {
     await seedLocalStorage(page, pointsHero({ level: 38, pts: zeroPts() }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -249,7 +249,7 @@ test.describe('points panel UX', () => {
   test('EN chrome: spent / level points + Reset', async ({ page }) => {
     const pts = { ...zeroPts(), attack: 2 };
     await seedLocalStorage(page, pointsHero({ lang: 'en', level: 38, pts }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page, 'en');
 
@@ -273,7 +273,7 @@ test.describe('points panel preview / apply', () => {
   }) => {
     const pts = { ...zeroPts(), cdr: 38 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -308,7 +308,7 @@ test.describe('points panel preview / apply', () => {
   test('Next point ranking stays keyed off the stored pts, not the preview', async ({ page }) => {
     const pts = { ...zeroPts(), cdr: 38 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -328,7 +328,7 @@ test.describe('points panel preview / apply', () => {
   }) => {
     const pts = { ...zeroPts(), cdr: 38 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -358,7 +358,7 @@ test.describe('points panel preview / apply', () => {
   test('a new Optimize run hides the applied-respec note', async ({ page }) => {
     const pts = { ...zeroPts(), cdr: 38 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -377,7 +377,7 @@ test.describe('points panel preview / apply', () => {
   test('Clear preview discards the candidate without touching pts', async ({ page }) => {
     const pts = { ...zeroPts(), cdr: 38 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -397,13 +397,14 @@ test.describe('points panel preview / apply', () => {
 
 test.describe('points panel reset advice gain line + Optimize build result', () => {
   // pts.cdr = level is a deliberately bad single-stat dump — confirmed directly against
-  // computeAdvisorPipeline (not guessed): resetAdvice.recommend is true with a ~251% gate
-  // gainPct for this seeded hero. pts.attack = level is confirmed the opposite: recommend is
-  // false, gainPct ~0.
+  // computeAdvisorPipeline (not guessed): resetAdvice.recommend is true with a ~188% gate
+  // gainPct for this seeded hero (~251% before the measured bomb cycle replaced the serial
+  // one, under which CDR past the walk buys nothing). pts.attack = level is confirmed the
+  // opposite: recommend is false, gainPct ~0.
   test('gain line shows when a reset is worth it, naming Optimize build', async ({ page }) => {
     const pts = { ...zeroPts(), cdr: 38 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -418,7 +419,7 @@ test.describe('points panel reset advice gain line + Optimize build result', () 
   }) => {
     const pts = { ...zeroPts(), attack: 38 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -433,7 +434,7 @@ test.describe('points panel reset advice gain line + Optimize build result', () 
   }) => {
     const pts = { ...zeroPts(), attack: 38 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -446,7 +447,7 @@ test.describe('points panel reset advice gain line + Optimize build result', () 
   test('disabled hero shows a muted exclusion note under Optimize build', async ({ page }) => {
     const pts = { ...zeroPts(), cdr: 38 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts, battleAllowed: false }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -460,7 +461,7 @@ test.describe('points panel reset advice gain line + Optimize build result', () 
   test('enabling a disabled hero hides the exclusion note and shows the gain line', async ({ page }) => {
     const pts = { ...zeroPts(), cdr: 38 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts, battleAllowed: false }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -479,7 +480,7 @@ test.describe('points panel reset advice gain line + Optimize build result', () 
     // `reoptBudget` is 0 only when the level pool AND the placed points are both 0. A level-0
     // hero is the reachable shape: nothing to place, nothing placed.
     await seedLocalStorage(page, pointsHero({ level: 0, pts: zeroPts() }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -496,7 +497,7 @@ test.describe('points panel reset advice gain line + Optimize build result', () 
     // "nothing spent to move" and disable the button, stranding the hero's whole level — the
     // budget is the level pool now, not the sum of what is already placed.
     await seedLocalStorage(page, pointsHero({ level: 38, pts: zeroPts() }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -515,7 +516,7 @@ test.describe('points panel reset advice gain line + Optimize build result', () 
   test('result line reads "best allocation found" with a percentage for a real gain', async ({ page }) => {
     const pts = { ...zeroPts(), cdr: 38 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -529,7 +530,7 @@ test.describe('points panel reset advice gain line + Optimize build result', () 
   }) => {
     const pts = { ...zeroPts(), cdr: 38 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -548,7 +549,7 @@ test.describe('points panel reset advice gain line + Optimize build result', () 
   }) => {
     const pts = { ...zeroPts(), cdr: 38 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -563,7 +564,7 @@ test.describe('points panel reset advice gain line + Optimize build result', () 
   test('under the Farm target the result names gold per hour, never sustained DPS', async ({ page }) => {
     const pts = { ...zeroPts(), cdr: 38 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 
@@ -584,7 +585,7 @@ test.describe('points panel reset advice gain line + Optimize build result', () 
   }) => {
     const pts = { ...zeroPts(), attack: 38 };
     await seedLocalStorage(page, pointsHero({ level: 38, pts }));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openPointsTab(page);
 

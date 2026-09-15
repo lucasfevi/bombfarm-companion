@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import type { TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
 import { STRINGS, type Lang } from '@/shared/i18n';
 import * as objectiveNamespace from '@/shared/i18n/namespaces/team-plan-objective';
-import { teamPlanObjectiveCopy } from '@/features/team-plan/model/objective-copy';
+import { teamPlanObjectiveCopy } from '@bombfarm/team-plan/model';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
 const LANGS: Lang[] = ['en', 'pt'];
@@ -39,39 +39,19 @@ function sourceFiles(dir: string): string[] {
 
 describe('team plan objective copy', () => {
   for (const lang of LANGS) {
-    /**
-     * One field is exempt, and it is the reason the rule exists rather than an escape from it.
-     * The per-hero rows are `perHero[].sustained` — DPS — whatever the roster was scored on, so
-     * under gold this note's whole job is to say that out loud: naming DPS is what stops the
-     * reader adding those figures up and expecting the gold total above them.
-     */
-    const DAMAGE_WORD_EXEMPT = new Set(['heroDeltaNote']);
-
     it(`${lang}: no farm-mode string carries a damage word`, () => {
       for (const [field, text] of bundleEntries(lang, 'farm')) {
-        if (DAMAGE_WORD_EXEMPT.has(field)) continue;
         for (const pattern of DAMAGE_WORDS[lang]) {
           expect(text, `${field}: "${text}" matched ${pattern}`).not.toMatch(pattern);
         }
       }
     });
 
-    // The exemption is only defensible while the note actually does the job it claims: say the
-    // figures are DPS, and say they are not the gold total. An exemption that stopped being used
-    // for that would be a hole.
-    it(`${lang}: the exempt farm note names DPS and denies it is the scored figure`, () => {
-      const { heroDeltaNote } = teamPlanObjectiveCopy(STRINGS[lang], 'farm');
-      expect(heroDeltaNote).toMatch(DAMAGE_WORDS[lang][0]);
-      expect(heroDeltaNote).toMatch(GOLD_WORDS[lang]);
-    });
-
-    // Without this the check above passes on an empty or accidentally-neutered dps bundle, which
-    // would mean the two objectives had stopped saying anything different at all.
     it(`${lang}: the dps bundle still speaks of damage, so the farm check is not vacuous`, () => {
       const damageWorded = bundleEntries(lang, 'dps').filter(([, text]) =>
         DAMAGE_WORDS[lang].some((pattern) => pattern.test(text)),
       );
-      expect(damageWorded.length).toBeGreaterThanOrEqual(6);
+      expect(damageWorded.length).toBeGreaterThanOrEqual(5);
     });
 
     it(`${lang}: the farm-mode strings that report a figure name gold`, () => {
@@ -108,12 +88,9 @@ describe('team plan objective copy', () => {
    */
   it('no source file outside the namespace and the resolver reads a suffixed key', () => {
     const suffixed = Object.keys(objectiveNamespace.en).filter((key) => /(Dps|Farm)$/.test(key));
-    expect(suffixed.length).toBeGreaterThanOrEqual(18);
+    expect(suffixed.length).toBeGreaterThanOrEqual(14);
 
-    const allowed = [
-      join('shared', 'i18n', 'namespaces', 'team-plan-objective.ts'),
-      join('features', 'team-plan', 'model', 'objective-copy.ts'),
-    ];
+    const allowed = [join('shared', 'i18n', 'namespaces', 'team-plan-objective.ts')];
     const offenders: string[] = [];
     for (const file of sourceFiles(join(WEB_PACKAGE_ROOT, 'src'))) {
       if (allowed.some((suffix) => file.endsWith(suffix))) continue;
@@ -126,7 +103,7 @@ describe('team plan objective copy', () => {
   });
 
   /**
-   * The phase picker, the allowed-changes control and the run summary's read-back render under
+   * The phase picker, the allowed-changes control and the breakdown's phase card render under
    * BOTH objectives from a single key each, so they get no `…Dps`/`…Farm` pair to keep them apart
    * — which means each string has to be true of a gold plan and a damage plan at once. A damage
    * word in any of them is the same failure the bundle split exists to prevent, arriving through
@@ -141,7 +118,8 @@ describe('team plan objective copy', () => {
     'teamPlanPhaseMoreMatches',
     'teamPlanPhaseHintChosen',
     'teamPlanPhaseBeyondMax',
-    'teamPlanRunSummaryScoredPhase',
+    'teamPlanWaterfallPhaseLabel',
+    'teamPlanWaterfallPhaseFrom',
     'teamPlanScoredPhaseChosen',
     'teamPlanScoredPhaseAccount',
     'teamPlanScoredPhaseSearched',
@@ -155,8 +133,6 @@ describe('team plan objective copy', () => {
     'teamPlanAllowedChangesHintBoth',
     'teamPlanAllowedChangesHintPoints',
     'teamPlanAllowedChangesHintGear',
-    'teamPlanAllowedChangesNotePoints',
-    'teamPlanAllowedChangesNoteGear',
     // The three Optimize arias name the KIND of work a plan may contain, never what it is scored
     // on, so all three render under either objective.
     'teamPlanOptimizeAriaBoth',

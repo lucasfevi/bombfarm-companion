@@ -16,7 +16,7 @@ function stubMatchMedia(matches: boolean) {
     matches,
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
-  }) as unknown as typeof window.matchMedia;
+  });
 }
 
 function currentSrc(container: HTMLDivElement): string | null {
@@ -117,7 +117,7 @@ describe('SpriteLoop', () => {
       matches: false,
       addEventListener: vi.fn(),
       removeEventListener,
-    }) as unknown as typeof window.matchMedia;
+    });
     const clearIntervalSpy = vi.spyOn(window, 'clearInterval');
 
     act(() => {

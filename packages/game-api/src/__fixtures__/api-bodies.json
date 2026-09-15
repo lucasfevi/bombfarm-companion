@@ -18,7 +18,10 @@
     "vip_until": 1789163117,
     "bag_tabs": 2,
     "bag_capacity": 50,
-    "items_count": 4
+    "items_count": 4,
+    "client_can_sell": true,
+    "sell_phase": 120,
+    "sell_mode": "todos"
   },
   "/roster": {
     "heroes": [

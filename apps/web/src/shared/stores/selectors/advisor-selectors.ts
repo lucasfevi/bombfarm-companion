@@ -1,9 +1,18 @@
 import {
   computeAdvisorPipeline,
+  type AdvisorPipelineInput,
   type AdvisorPipelineResult,
 } from '@bombfarm/domain/advisor-pipeline';
-import { substituteHeroAbilities } from '@bombfarm/domain/team-buffs';
-import { selectEffectiveTeamBuffs } from '@/shared/stores/selectors/account-selectors';
+import { teamAuraDpsDeltas } from '@bombfarm/domain/team-aura-deltas';
+import { entryPulseRankFloor, substituteHeroAbilities, type TeamAuraId } from '@bombfarm/domain/team-buffs';
+import {
+  selectActiveHeroFieldAllies,
+  selectActiveHeroTeamBuffs,
+} from '@/shared/stores/selectors/account-selectors';
+import {
+  selectCombatMitigationPct,
+  selectCombatPhase,
+} from '@/shared/stores/selectors/phases-selectors';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 
 /**
@@ -12,9 +21,11 @@ import type { PlannerStore } from '@/shared/stores/planner-store';
  */
 let advisorPipelineComputeCount = 0;
 let cache: { deps: readonly unknown[]; result: AdvisorPipelineResult } | null = null;
+let auraDeltasCache: { deps: readonly unknown[]; result: Record<TeamAuraId, number> } | null = null;
 
 export function resetAdvisorPipelineCache(): void {
   cache = null;
+  auraDeltasCache = null;
 }
 
 export function getAdvisorPipelineComputeCount(): number {
@@ -44,15 +55,18 @@ export function readAdvisorDepTuple(state: PlannerStore): readonly unknown[] {
     state.treeSpeed,
     state.treeEnergy,
     state.treeLuckFlatPct,
-    // The effective (override-or-derived) roster total, issue #132 — a stable reference that
-    // only changes when the override or the roster actually does (`selectEffectiveTeamBuffs`).
-    selectEffectiveTeamBuffs(state),
+    // The active hero's own aura plus whatever the Combat tab's switches let in — a stable
+    // reference that only changes when the roster, the active hero or a switch actually does
+    // (`selectActiveHeroTeamBuffs`).
+    selectActiveHeroTeamBuffs(state),
+    // The deployed heroes beside the active one — Matilha's allies (`fieldAlliesAroundHero`).
+    selectActiveHeroFieldAllies(state),
+    // Passagem de Bastão's switch reaches the pipeline as the rank floor of the hero's own pulse.
+    state.teamAuraSwitches.passagem_bastao,
     // The active hero's own team-aura ranks are folded into that total at combine time
-    // (issue #132's substitution, `substituteHeroAbilities`), not by `abilityMods` any more — so
+    // (PR #139's substitution, `substituteHeroAbilities`), not by `abilityMods` any more — so
     // a change to EITHER the roster (the active hero's last-persisted ranks) or `activeHeroId`
-    // itself (switching heroes) must invalidate this cache exactly like `state.abilities` above,
-    // REGARDLESS of whether an override is active (the substitution still applies on top of an
-    // override — only the base being substituted into differs).
+    // itself (switching heroes) must invalidate this cache exactly like `state.abilities` above.
     state.heroes,
     state.activeHeroId,
     state.houseIdx,
@@ -60,28 +74,30 @@ export function readAdvisorDepTuple(state: PlannerStore): readonly unknown[] {
     state.houseCycleSecs,
     state.houseCycleSecsHouseIdx,
     state.houseCycleSecsLevel,
-    state.phase,
-    state.mitigationPct,
+    // The phase the player picked in the phases explorer, or the account's own farm phase while
+    // there is no pick. Reading the import-time field directly left this pipeline answering for a
+    // different stage than the explorer's own per-hero panel.
+    selectCombatPhase(state),
+    selectCombatMitigationPct(state),
     // state.rankMode is deliberately NOT a dep here: computeAdvisorPipeline no longer reads
     // rankMode for anything, so including it would invalidate this cache on every dps/farm
     // toggle for no reason — the pipeline's ranking output cannot change from it.
     state.targetProp,
     state.birth,
+    state.runes,
   ] as const;
 }
 
 /**
- * The active hero's own team-aura ranks substituted into the effective roster total (issue
- * #132): `abilityMods` no longer folds a team aura into a hero's own mods at all, so the ONLY
- * way an edit to the active hero's own Grito/Marcha/Fôlego/Presságio rank reaches the live
- * preview is through this substitution. `selectEffectiveTeamBuffs` is either an explicit
- * override or DERIVED from the roster's PERSISTED ranks either way — `state.heroes` still holds
- * the active hero's persisted rank until the autosave debounce catches up with the live
- * `state.abilities` draft, so the substitution is exactly as correct against an override as it
- * is against the derived default.
+ * The active hero's own team-aura ranks substituted into its per-hero total (PR #139):
+ * `abilityMods` no longer folds a team aura into a hero's own mods at all, so the ONLY way an
+ * edit to the active hero's own Grito/Marcha/Fôlego/Presságio rank reaches the live preview is
+ * through this substitution. `selectActiveHeroTeamBuffs` reads the roster's PERSISTED ranks —
+ * `state.heroes` still holds the active hero's persisted rank until the autosave debounce
+ * catches up with the live `state.abilities` draft — so the draft's rank is swapped in here.
  */
 function previewTeamBuffs(state: PlannerStore) {
-  const effective = selectEffectiveTeamBuffs(state);
+  const effective = selectActiveHeroTeamBuffs(state);
   const savedActiveHero = state.heroes.find((hero) => hero.id === state.activeHeroId);
   if (!savedActiveHero) return effective;
   return substituteHeroAbilities(effective, savedActiveHero.abilities, state.abilities);
@@ -95,13 +111,8 @@ function depsEqual(left: readonly unknown[], right: readonly unknown[]): boolean
   return true;
 }
 
-export function selectAdvisorPipeline(state: PlannerStore): AdvisorPipelineResult {
-  const deps = readAdvisorDepTuple(state);
-  if (cache && depsEqual(cache.deps, deps)) {
-    return cache.result;
-  }
-  advisorPipelineComputeCount += 1;
-  const result = computeAdvisorPipeline({
+function advisorInput(state: PlannerStore): AdvisorPipelineInput {
+  return {
     naked: state.naked,
     geared: state.gearedOverride,
     loadout: state.loadout,
@@ -118,18 +129,45 @@ export function selectAdvisorPipeline(state: PlannerStore): AdvisorPipelineResul
     treeEnergy: state.treeEnergy,
     treeLuckFlatPct: state.treeLuckFlatPct,
     teamBuffs: previewTeamBuffs(state),
+    fieldAllies: selectActiveHeroFieldAllies(state),
+    entryPulseRankFloor: entryPulseRankFloor(state.teamAuraSwitches),
     houseIdx: state.houseIdx,
     houseLevel: state.houseLevel,
     houseCycleSecs: state.houseCycleSecs,
     houseCycleSecsHouseIdx: state.houseCycleSecsHouseIdx,
     houseCycleSecsLevel: state.houseCycleSecsLevel,
-    phase: state.phase,
-    mitigationPct: state.mitigationPct,
+    phase: selectCombatPhase(state),
+    mitigationPct: selectCombatMitigationPct(state),
     rankMode: state.rankMode,
     targetProp: state.targetProp,
     birth: state.birth,
-  });
+    runes: state.runes,
+  };
+}
+
+export function selectAdvisorPipeline(state: PlannerStore): AdvisorPipelineResult {
+  const deps = readAdvisorDepTuple(state);
+  if (cache && depsEqual(cache.deps, deps)) {
+    return cache.result;
+  }
+  advisorPipelineComputeCount += 1;
+  const result = computeAdvisorPipeline(advisorInput(state));
   cache = { deps, result };
+  return result;
+}
+
+/**
+ * What each aura switch on the Combat tab would do to sustained DPS — one extra pipeline run per
+ * aura, cached on the same dependency tuple as the pipeline itself, and only computed while
+ * something (the Combat tab's aura section) actually reads it.
+ */
+export function selectTeamAuraDpsDeltas(state: PlannerStore): Record<TeamAuraId, number> {
+  const deps = readAdvisorDepTuple(state);
+  if (auraDeltasCache && depsEqual(auraDeltasCache.deps, deps)) {
+    return auraDeltasCache.result;
+  }
+  const result = teamAuraDpsDeltas(advisorInput(state), selectAdvisorPipeline(state).dps);
+  auraDeltasCache = { deps, result };
   return result;
 }
 

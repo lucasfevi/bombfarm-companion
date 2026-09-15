@@ -20,7 +20,7 @@ const readSrc = (rel: string) => readFileSync(resolve(root, rel), 'utf8');
 
 const IDENTITY_MODS = {
   drainMult: 1,
-  penetrationPp: 0,
+  packDmgPctPerAlly: 0,
   rangeCells: 0,
   dmgMult: 1,
   gateAttackMult: 1,
@@ -78,12 +78,13 @@ describe('catalog completeness (T2)', () => {
     }
   });
 
-  it('brecha is { kind: none }, not penetrationPp — on-sheet status not proven', () => {
+  it("brecha is team penetration points — penetrationPp without onSheet, never the carrier's own sheet", () => {
     const brecha = ABILITIES.find((a) => a.id === 'brecha');
-    expect(brecha?.effect).toEqual({ kind: 'none' });
+    expect(brecha?.effect).toEqual({ kind: 'penetrationPp', perLevel: 1 });
+    expect(abilityMods({ brecha: 20 }).sheetPenetrationFlat).toBe(0);
   });
 
-  it("SHEET_ABILITIES is unchanged by the three new kind:'none' entries (re-asserted)", () => {
+  it("SHEET_ABILITIES is unchanged — a team aura's points are not a sheet ability's (re-asserted)", () => {
     expect(SHEET_ABILITIES.map((a) => a.id)).toEqual(['ponta_diamante', 'olho_clinico', 'golpe_brutal']);
   });
 });
@@ -114,7 +115,7 @@ describe('rank-20 migration', () => {
       citation: 'wiki habilidades 2026-08-23 (published; no capture owns this ability)',
     },
     { id: 'ponta_diamante', perLevel: 1, wikiTotalAtCap: 20, citation: 'wiki Grimório ability table' },
-    { id: 'misericordia', perLevel: 1.25, wikiTotalAtCap: 25, citation: 'wiki Grimório ability table' },
+    { id: 'misericordia', perLevel: 0.75, wikiTotalAtCap: 15, citation: 'wiki Grimório ability table, 2026-09-12 pull' },
     { id: 'explosao_ampla', perLevel: 0.1, wikiTotalAtCap: 2, citation: 'wiki Grimório ability table' },
     { id: 'contra_relogio', perLevel: 2, wikiTotalAtCap: 40, citation: 'wiki Grimório ability table' },
     {
@@ -138,7 +139,7 @@ describe('rank-20 migration', () => {
   );
 
   it('marcha_acelerada at rank 13 is 2.405, not the naive-halved 2.6', () => {
-    // Marcha Acelerada is a team aura (issue #132) — abilityMods no longer folds it into a
+    // Marcha Acelerada is a team aura (PR #139) — abilityMods no longer folds it into a
     // hero's own mods at all; TEAM_BUFF_PER_LEVEL is the live rate the roster-wide total uses.
     expect(TEAM_BUFF_PER_LEVEL.marcha_acelerada * 13).toBeCloseTo(2.405, 10);
     // Naive halving (0.2 x 13 = 2.6) is outside tolerance of the correct 0.185 x 13 = 2.405.
@@ -147,19 +148,19 @@ describe('rank-20 migration', () => {
 
   it('every changed SELF ability at rank 13 matches perLevel x 13, not old-value x 13', () => {
     // Grito de Guerra, Marcha Acelerada, Fôlego de Mineiro and Presságio Mortal are team auras
-    // (issue #132) — abilityMods no longer folds any of them into a hero's own mods, so they
+    // (PR #139) — abilityMods no longer folds any of them into a hero's own mods, so they
     // are covered by TEAM_BUFF_PER_LEVEL (above) and the MID_CURVE_ABILITIES catalog check
     // instead of here. This test is now SELF abilities only.
     expect(abilityMods({ bateria_extra: 13 }).drainMult).toBeCloseTo(1 - 13 / 100, 10);
-    expect(abilityMods({ ponta_diamante: 13 }).sheetPenetrationRaw).toBeCloseTo(13, 10);
-    expect(abilityMods({ misericordia: 13 }).dmgMult).toBeCloseTo(1 / (1 - 16.25 / 100), 10);
+    expect(abilityMods({ ponta_diamante: 13 }).sheetPenetrationFlat).toBeCloseTo(13, 10);
+    expect(abilityMods({ misericordia: 13 }).dmgMult).toBeCloseTo(1 / (1 - 9.75 / 100), 10);
     expect(abilityMods({ explosao_ampla: 13 }).rangeCells).toBeCloseTo(1.3, 10);
     expect(abilityMods({ contra_relogio: 13 }).gateAttackMult).toBeCloseTo(1.26, 10);
     expect(abilityMods({ olho_clinico: 13 }).sheetCritChanceFlat).toBeCloseTo(2 * 13, 10);
     expect(abilityMods({ detonacao_dupla: 13 }).dmgMult).toBeCloseTo(1 + (19.5 / 100) * 0.5, 10);
   });
 
-  it('a hero\'s own rank in a team aura never touches that hero\'s own AbilityMods (issue #132)', () => {
+  it('a hero\'s own rank in a team aura never touches that hero\'s own AbilityMods (PR #139)', () => {
     const mods = abilityMods({
       grito_guerra: 20,
       marcha_acelerada: 20,
@@ -175,10 +176,11 @@ describe('rank-20 migration', () => {
     expect(abilityMods({ explosao_ampla: 20 }).rangeCells).toBeCloseTo(2, 10);
   });
 
-  it('passagem_bastao is rank-20 damage-on-enter copy and stays unmodeled', () => {
+  it('passagem_bastao is rank-20 damage-on-enter copy — a team pulse the sheet never carries', () => {
     const def = ABILITIES.find((a) => a.id === 'passagem_bastao')!;
     expect(def.max).toBe(20);
-    expect(def.effect).toEqual({ kind: 'none' });
+    expect(def.effect).toEqual({ kind: 'teamPulseDmgPct', perLevel: 4 });
+    expect(def.effectText).not.toMatch(/não modelado/);
     expect(def.effectText).toMatch(/4%/);
     expect(def.effectText).toMatch(/120/);
     expect(def.effectText).not.toMatch(/velocidade/i);
@@ -257,7 +259,7 @@ describe('golpe_brutal — critDmgFlat (flat crit damage, POINT_GAIN.critDmgFlat
     expect(mods.sheetCritDmgFlat).toBe(52);
     expect(mods.drainMult).toBe(IDENTITY_MODS.drainMult);
     expect(mods.gateAttackMult).toBe(IDENTITY_MODS.gateAttackMult);
-    expect(mods.penetrationPp).toBe(IDENTITY_MODS.penetrationPp);
+    expect(mods.packDmgPctPerAlly).toBe(IDENTITY_MODS.packDmgPctPerAlly);
     expect(mods.rangeCells).toBe(IDENTITY_MODS.rangeCells);
     expect(mods.dmgMult).toBe(IDENTITY_MODS.dmgMult);
   });

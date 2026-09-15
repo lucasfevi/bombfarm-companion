@@ -8,9 +8,11 @@
  * below zero and the excess is discarded. `farm-rate.ts` charges for that with
  * `eHtk = Σ share × ceil(propHp / avgHit)`.
  *
- * The gap is ENTIRELY that quantization, not the House/field ceilings — on this fixture at phase
- * 51 the House throttle is a factor of 0.990, while the top hero needs 0.89 fractional hits for
- * the average prop against an `eHtk` of 1.40, and `1.40 / 0.89` is the whole discrepancy.
+ * The gap is that quantization, not the House/field ceilings — on this fixture at phase 51 the
+ * House throttle is a factor of 0.990, while the top hero needs 0.89 fractional hits for the
+ * average prop against an `eHtk` of 1.40. Until the advisor adopted the board's measured bomb
+ * cycle the fluid-HP figure also read a faster serial cadence, which widened the ratio past 1.4;
+ * on one shared cadence it is ~1.18, and that residual is the quantization alone.
  *
  * `farm-rate-phase51-ato2-anchor.test.ts` pins `clearSecs` on this same fixture and phase against
  * a real measurement; it is the reason the direction below is an assertion about which model is
@@ -47,11 +49,11 @@ describe('clear time — one model, and the retired one it replaced', () => {
   it('the fluid-HP model reads far fast against the quantized one', () => {
     const { shipped, fluidHp } = models();
     expect(fluidHp).toBeLessThan(shipped);
-    expect(shipped / fluidHp).toBeGreaterThan(1.4);
+    expect(shipped / fluidHp).toBeGreaterThan(1.15);
   });
 
   it('the gap is large enough that no rounding or formatting could hide it', () => {
     const { shipped, fluidHp } = models();
-    expect(shipped - fluidHp).toBeGreaterThan(20);
+    expect(shipped - fluidHp).toBeGreaterThan(10);
   });
 });

@@ -162,8 +162,9 @@ describe('hero gear icons', () => {
     expect(src).toContain('size="lg"');
     expect(src).not.toContain('showUpgrade={false}');
     expect(src).not.toContain('showLevel={false}');
-    expect(src).toContain('w-12');
-    expect(src).toContain('aspect-[18/19]');
+    expect(src).toContain('emptyGearSlotClass');
+    const recipe = readGameArt('game-art.recipe.ts');
+    expect(recipe).toMatch(/emptyGearSlotClass = cn\(\s*'inline-grid w-12 aspect-\[18\/19\]/);
   });
 
   it('uses roster tooltip formatter with a caller-supplied rank/level label', () => {
@@ -198,8 +199,9 @@ describe('hero ability icons', () => {
     expect(src).not.toContain('role="img"');
   });
 
-  it('shows n/max progress at lg size matching gear', () => {
-    expect(src).toContain('size="lg"');
+  it('shows n/max progress at lg size matching gear unless a caller asks for another', () => {
+    expect(src).toContain("size = 'lg'");
+    expect(src).toContain('size={size}');
     expect(src).toContain('level={level}');
     expect(src).toContain('max={max}');
     expect(src).toContain('${level}/${max}');
@@ -250,15 +252,16 @@ describe('item icon meta glyphs', () => {
   });
 });
 
-describe('abilities tab chrome', () => {
-  const buildCol = read('features/planner/components/hero-abilities-tab.tsx');
+describe('abilities panel chrome', () => {
+  // One panel draws the ability cards for both apps now, so its chrome is read where it lives.
+  const abilities = readHero('components/hero-abilities-panel.tsx');
   const itemIcon = readGameArt('item-icon.tsx');
 
   it('shows ability icons at xl size with n/20 progress', () => {
-    expect(buildCol).toContain('AbilityIcon');
-    expect(buildCol).toMatch(/AbilityIcon[\s\S]*size="xl"/);
-    expect(buildCol).toMatch(/level=\{level\}/);
-    expect(buildCol).toMatch(/max=\{ability\.max\}/);
+    expect(abilities).toContain('AbilityIcon');
+    expect(abilities).toMatch(/AbilityIcon[\s\S]*size="xl"/);
+    expect(abilities).toMatch(/level=\{row\.level\}/);
+    expect(abilities).toMatch(/max=\{row\.max\}/);
   });
 
   it('does not overlay rarity crystals on item art', () => {
@@ -268,7 +271,8 @@ describe('abilities tab chrome', () => {
 });
 
 describe('gear tab slot chrome', () => {
-  const src = read('features/gear/components/slot-editor.tsx');
+  const src = readHero('components/gear-slot-card.tsx');
+  const editor = read('features/gear/components/slot-editor.tsx');
 
   it('uses ItemIcon at xl with default level and upgrade glyphs', () => {
     expect(src).toMatch(/<ItemIcon item=\{equipped\} size="xl"/);
@@ -278,13 +282,12 @@ describe('gear tab slot chrome', () => {
     expect(src).toContain('aspect-[18/19]');
   });
 
-  it('centers filled art and keeps the slot name only on empty placeholders', () => {
+  it('centers the art, names the slot on every card, and the planner pins clear at the corner', () => {
     expect(src).toContain('justify-center');
-    expect(src).toContain('absolute -top-1 -right-1');
-    const emptyBranch = src.slice(src.indexOf(': ('), src.indexOf('<Select'));
-    expect(emptyBranch).toContain('slotLabel(slot, lang)');
-    const filledBranch = src.slice(src.indexOf('{equipped ? ('), src.indexOf(': ('));
-    expect(filledBranch).not.toContain('slotLabel');
+    expect(src).toContain('slotLabel(slot, lang)');
+    expect(src).toContain('itemName(equipped, lang)');
+    expect(src).toContain('itemRarityLabel(equipped.rarityIdx, lang)');
+    expect(editor).toContain('absolute -top-1 -right-1');
   });
 });
 
@@ -364,17 +367,32 @@ describe('import preview table chrome', () => {
   });
 });
 
-describe('gear slot stats', () => {
-  const buildCol = read('features/planner/components/gear-slot-stats-grid.tsx');
-  const compareSrc = read('features/planner/components/gear-compare-section.tsx');
+describe('gear slot card', () => {
+  const card = readHero('components/gear-slot-card.tsx');
+  const compareSrc = readHero('components/gear-compare-section.tsx');
+  const editor = read('features/gear/components/slot-editor.tsx');
 
-  it('uses full stat labels in per-slot breakdown', () => {
-    expect(buildCol).toContain('slotStatFullLabels');
-    expect(buildCol).not.toMatch(/slotStatLabels\[/);
+  it('uses the short stat labels beside the slot values — the full ones head the totals table', () => {
+    expect(card).toContain('slotStatLabels[');
+    expect(card).not.toContain('slotStatFullLabels');
+    expect(readHero('components/gear-totals-table.tsx') + readHero('model/gear-bonus-rows.ts')).toContain(
+      'slotStatFullLabels',
+    );
   });
 
-  it('shows the same per-slot stats under clone gear', () => {
-    expect(compareSrc).toContain('<GearSlotStatsGrid loadout={altLoadout}');
+  it('pins the host controls to the foot of the card so they line up across a row', () => {
+    expect(card).toContain('mt-auto');
+  });
+
+  it('draws the clone gear as the same cards when no editor is supplied', () => {
+    expect(compareSrc).toContain('<GearSlotCardsGrid');
+    expect(compareSrc).toContain('loadout={altLoadout}');
+  });
+
+  it('the planner editor is the shared card with its controls as children — not a second drawing', () => {
+    expect(editor).toContain('<GearSlotCard');
+    expect(editor).not.toContain('<ItemIcon');
+    expect(editor).not.toContain('slotChromeClassName');
   });
 });
 

@@ -49,6 +49,8 @@ export type DeltaTableProps = {
   decimals?: number;
   /** Drops a row whose `now` and `target` are both 0. Callers decide — the two real surfaces disagree on purpose. */
   hideZeroRows?: boolean;
+  /** Tints every other body row so a long ledger stays readable across its four columns. */
+  striped?: boolean;
   className?: string;
 };
 
@@ -85,6 +87,7 @@ export function DeltaTable({
   caption,
   decimals = 0,
   hideZeroRows = false,
+  striped = false,
   className,
 }: DeltaTableProps) {
   const visibleRows = hideZeroRows ? rows.filter((row) => row.now !== 0 || row.target !== 0) : rows;
@@ -121,7 +124,7 @@ export function DeltaTable({
             <tr
               key={row.id}
               data-testid={row.testId}
-              className={deltaTableRowRecipe({ unaffected: delta === 0 })}
+              className={deltaTableRowRecipe({ unaffected: delta === 0, striped })}
             >
               <th scope="row" className={deltaTableLabelCellClass}>
                 <span className={deltaTableLabelInnerClass}>

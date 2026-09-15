@@ -4,6 +4,7 @@ import { abilityMods } from '@bombfarm/domain/model';
 import type { Loadout, SheetStats } from '@bombfarm/domain/gear';
 import { applyGear, emptyLoadout, emptySheet, emptySheetOther } from '@bombfarm/domain/gear';
 import { mergeImportedHero } from '@bombfarm/domain/import-merge';
+import { normalizeHeroRunes, type HeroRune } from '@bombfarm/domain/runes';
 import { normalizePointAlloc, normalizeSheetStats } from '@bombfarm/domain/sheet-normalize';
 import { normalizeSkin } from '@bombfarm/domain/wiki-assets';
 import {
@@ -115,6 +116,13 @@ export type HeroRecord = {
    * read, which has no file to re-export and would be left with nothing at all.
    */
   statRanges?: StatRanges;
+  /**
+   * The timed rune buffs the hero carried when it was read, already folded into
+   * {@link gearedOverride}. Additive, and absence stays absence on load — same posture as
+   * {@link statRanges}, for the same reason: a record loads and re-serializes byte-identically,
+   * and the importer is the only writer. Readers take absence as none (`runesOf`, `runes.ts`).
+   */
+  runes?: readonly HeroRune[];
   /** @deprecated migrated into AccountShared — kept only for old saves. */
   tree?: TreeState;
   /** @deprecated migrated into AccountShared — kept only for old saves. */
@@ -141,7 +149,7 @@ function migrateGearedOverride(raw: Partial<HeroRecord>): SheetStats {
   const sheetOther = {
     ...emptySheetOther(),
     critChanceFlat: mods.sheetCritChanceFlat,
-    penetration: mods.sheetPenetrationRaw,
+    penetration: mods.sheetPenetrationFlat,
     critDmgFlat: mods.sheetCritDmgFlat,
   };
   return applyGear(naked, loadout, sheetOther);
@@ -172,6 +180,7 @@ export function normalizeHero(raw: Partial<HeroRecord> & Pick<HeroRecord, 'id' |
     skin: normalizeSkin(raw.skin),
     birth: raw.birth ? normalizeSheetStats(raw.birth) : undefined,
     statRanges: raw.statRanges,
+    runes: raw.runes === undefined ? undefined : normalizeHeroRunes(raw.runes),
   };
 }
 
@@ -258,7 +267,6 @@ export function loadAccountShared(): AccountShared {
     (activeId ? heroes.find((hero) => hero.id === activeId) : undefined) ?? heroes[0] ?? null;
   const seeded = normalizeAccount({
     tree: donor?.tree,
-    teamBuffs: donor?.teamBuffs,
     context: donor?.context,
   });
   saveAccountShared(seeded);
@@ -351,11 +359,11 @@ function heroRecordsValueEqual(left: HeroRecord, right: HeroRecord): boolean {
  * Returns the SAME array reference when `saved` is value-equal to the record already at that
  * index. This is load-bearing, not a micro-optimisation: `state.heroes` is member 0 of
  * `readFarmDepTuple` (`stores/selectors/farm-ranking-selectors.ts`), whose members are compared
- * with `Object.is`. A fresh array identity therefore invalidates every memo keyed on that tuple
- * AND makes `selectFarmRespecView` judge a still-valid respec proposal stale — silently, since
- * `selectFarmRespecStatus` then collapses to `'idle'` and no error surfaces. The 700ms debounced
- * hero autosave (`persistence/persist-hero-draft.ts`) round-trips the roster and calls this after
- * any interaction, so `.map()`'s unconditional new array dropped live proposals on a timer.
+ * with `Object.is`. A fresh array identity therefore invalidates every memo keyed on that tuple —
+ * silently, since the 600-row farm board simply recomputes and no error surfaces. The 700ms
+ * debounced hero autosave (`persistence/persist-hero-draft.ts`) round-trips the roster and calls
+ * this after any interaction, so `.map()`'s unconditional new array recomputed the board on a
+ * timer.
  * Reference equality cannot serve here: `saved` is rebuilt by `normalizeHero`, so `===` never
  * hits — see {@link heroRecordsValueEqual} for the comparison and why `updatedAt` is excluded.
  *
@@ -402,8 +410,8 @@ export function patchHeroInList(heroes: HeroRecord[], saved: HeroRecord): HeroRe
  * ignores the `updatedAt` stamp `mergeImportedHero` refreshes) to the one it replaced. Same
  * contract, same reason as {@link patchHeroInList}: `state.heroes` is member 0 of
  * `readFarmDepTuple` (`stores/selectors/farm-ranking-selectors.ts`), compared with `Object.is`,
- * so a fresh-but-equal array reads as a real planner edit and silently drops a live farm-respec
- * proposal. Re-importing an unchanged save file used to do exactly that.
+ * so a fresh-but-equal array reads as a real planner edit and silently recomputes the 600-row
+ * farm board. Re-importing an unchanged save file used to do exactly that.
  *
  * Two things this deliberately does NOT change:
  * - `created`/`updated`/`removed` keep their meaning. `updated` still counts every record

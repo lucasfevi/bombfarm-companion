@@ -21,8 +21,13 @@ function createTestClock(): PacingClock {
   };
 }
 
+/** Fixture bodies are keyed by route, while a built request's path also carries `account_id`. */
+function routeOf(path: string): string {
+  return path.split('?')[0] ?? '';
+}
+
 function transportFor(bodies: Record<string, Record<string, unknown>>): HttpTransport {
-  return (req) => Promise.resolve({ status: 200, body: JSON.stringify(bodies[req.path] ?? {}) });
+  return (req) => Promise.resolve({ status: 200, body: JSON.stringify(bodies[routeOf(req.path)] ?? {}) });
 }
 
 describe('the committed fixtures are scrubbed (D19 — the repo is public)', () => {

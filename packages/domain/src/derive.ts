@@ -12,18 +12,37 @@ import {
 import type { TreeSheetTotals } from './birth-sheet';
 import { starsMult, type SheetOtherPct, type SheetStats } from './gear';
 import { SHEET_KEYS, type SheetKey } from './planner-constants';
-import { TEAM_BUFF_CAP, type TeamBuffId } from './team-buffs';
+import { runeSheetMultipliers, type HeroRune } from './runes';
+import { matilhaMult } from './model/matilha';
+import type { TeamBuffId } from './team-buffs';
+import { teamAuraLayer } from './team-aura-layer';
 
 export type CombatMults = {
   teamDrainMult: number;
   /** The roster-wide Presságio total in FLAT crit points, already clamped at
    *  `TEAM_BUFF_CAP.pressagio_mortal` — the single value `derive()` adds to the sheet. */
   teamCritFlat: number;
+  /** The roster-wide Brecha total in FLAT penetration points, already clamped at
+   *  `TEAM_BUFF_CAP.brecha` — `derive()`'s `penetrationPp`. */
+  teamPenFlat: number;
   attackMult: number;
   speedMult: number;
   gateAttackMult: number;
   energyMult: number;
-  critDmgMult: number;
+  /** Matilha's capped pack factor at this field size (`matilhaMult`) — a factor of `dmgMult`,
+   *  surfaced so a breakdown can print it as its own term. */
+  packMult: number;
+  /**
+   * What every single blast carries: `packMult × (1 + extra)`. The number a damage popup shows
+   * is the sheet attack through mitigation times this — Detonação Dupla's second blast is a
+   * separate popup, and Misericórdia's execute is a rock destroyed, not a larger hit.
+   */
+  hitMult: number;
+  /**
+   * Expected damage per bomb, relative to the sheet attack: `hitMult × abilities`, where
+   * `abilities` is `AbilityMods.dmgMult` — the second-blast chance and the execute threshold as
+   * expectations. DPS, gate damage and hits-to-kill read this; a printed hit never does.
+   */
   dmgMult: number;
 };
 
@@ -35,33 +54,11 @@ export type ComputeCombatMultsInput = {
   mods: AbilityMods;
   teamBuffs: Record<TeamBuffId, number>;
   extraDmgPct: number;
+  /** Other heroes on the field beside this one — Matilha's allies. Absent reads as none. */
+  fieldAllies?: number;
 };
 
-/**
- * Team auras are a property of the FIELD (confirmed 2026-08-19): every deployed hero — carrier
- * or not — experiences the SAME `min(cap, roster total)`, never an "own share" added on top of
- * an others-only figure. `ownPct` stays as a parameter (rather than deleting it and inlining
- * `Math.min`) so every call site names what it is doing: `computeCombatMults` below always
- * passes `0`, because `teamBuffs` already carries every carrier including this hero (see
- * `computeTeamBuffsFromDeployed` / `substituteHeroAbilities`, `team-buffs.ts`) — there is no
- * separate "own" term left to add. The cap is per ability ({@link TEAM_BUFF_CAP}), not a single
- * global figure — an earlier version of this comment cited `combate.team_mult_bonus_cap` as the
- * source of a single +100% cap, but that key does not exist in the live wiki payload or in this
- * repo's own drift capture; it was never a published constant.
- */
-export function combineTeamAuraPct(ownPct: number, othersPct: number, cap: number): number {
-  return Math.min(cap, Math.max(0, ownPct) + Math.max(0, othersPct));
-}
-
-/**
- * The Fôlego de Mineiro half of {@link computeCombatMults}, factored out so the live field
- * countdown (`resolveFieldDrainMultipliers`) can derive the same capped team drain multiplier
- * from a live on-field set without reimplementing the cap/floor arithmetic.
- */
-export function teamDrainMultFromTeamBuffs(teamBuffs: Record<TeamBuffId, number>): number {
-  const folegoPct = combineTeamAuraPct(0, teamBuffs.folego_mineiro || 0, TEAM_BUFF_CAP.folego_mineiro);
-  return Math.max(0.01, 1 - folegoPct / 100);
-}
+export { combineTeamAuraPct, teamDrainMultFromTeamBuffs } from './team-aura-layer';
 
 /**
  * Team / combat multipliers used by the advisor pipeline. The skill tree no longer
@@ -69,25 +66,27 @@ export function teamDrainMultFromTeamBuffs(teamBuffs: Record<TeamBuffId, number>
  * factors applied once by `applySkillTree`, not a second time on top of the combat sheet.
  *
  * `teamBuffs` must be the FULL roster total for every aura, including whichever hero `mods`
- * belongs to — `abilityMods` never folds a team aura into a hero's own mods (issue #132), so
+ * belongs to — `abilityMods` never folds a team aura into a hero's own mods (PR #139), so
  * there is nothing left for this function to add back on top. Contra o Relógio ("gate power")
  * is a self ability, not a team aura (its wiki `kind` is `gate_power`, not `team_*`) —
  * `gateAttackMult` reads `mods` alone, same as before.
  */
 export function computeCombatMults(input: ComputeCombatMultsInput): CombatMults {
   const { mods, teamBuffs, extraDmgPct } = input;
-  const gritoPct = combineTeamAuraPct(0, teamBuffs.grito_guerra || 0, TEAM_BUFF_CAP.grito_guerra);
-  const marchaPct = combineTeamAuraPct(0, teamBuffs.marcha_acelerada || 0, TEAM_BUFF_CAP.marcha_acelerada);
-  const teamCritFlat = combineTeamAuraPct(0, teamBuffs.pressagio_mortal || 0, TEAM_BUFF_CAP.pressagio_mortal);
+  const auras = teamAuraLayer(teamBuffs);
+  const packMult = matilhaMult(mods.packDmgPctPerAlly / 100, input.fieldAllies ?? 0);
+  const hitMult = packMult * (1 + extraDmgPct / 100);
   return {
-    teamDrainMult: teamDrainMultFromTeamBuffs(teamBuffs),
-    teamCritFlat,
-    attackMult: 1 + gritoPct / 100,
-    speedMult: 1 + marchaPct / 100,
+    teamDrainMult: auras.teamDrainMult,
+    teamCritFlat: auras.teamCritFlat,
+    teamPenFlat: auras.teamPenFlat,
+    attackMult: auras.attackMult,
+    speedMult: auras.speedMult,
     gateAttackMult: mods.gateAttackMult,
     energyMult: 1,
-    critDmgMult: 1,
-    dmgMult: mods.dmgMult * (1 + extraDmgPct / 100),
+    packMult,
+    hitMult,
+    dmgMult: mods.dmgMult * hitMult,
   };
 }
 
@@ -104,17 +103,27 @@ export type DeriveInput = {
   attackMult: number;
   energyMult: number;
   speedMult: number;
-  critDmgMult: number;
   /** The hero's own Presságio rank already folded in and capped, one resolved value in FLAT
    *  crit points — see `CombatMults.teamCritFlat`. There is no separate "own" input here,
    *  matching `attackMult`/`speedMult`: the combination happens once, in `computeCombatMults`. */
   teamCritFlat: number;
   /** The whole skill tree, once — replaces the four scattered tree inputs. */
   treeSheet: TreeSheetTotals;
+  /** FLAT penetration points added after the sheet — the roster's capped Brecha total
+   *  (`CombatMults.teamPenFlat`), the same shape as `teamCritFlat`. */
   penetrationPp: number;
   context: Context;
+  /** `CombatMults.hitMult` — what `hit` carries. */
+  hitMult: number;
+  /** `CombatMults.dmgMult` — what `dps` and `active` carry. */
   dmgMult: number;
   mitigationPct: number;
+  /**
+   * The runes already folded into `geared`. A rune multiplies the point too (`runes.ts`), so
+   * every per-point delta below carries its axis's factor — except energy, whose factor rides
+   * in `gem` the same way `energia_add` does.
+   */
+  runes?: readonly HeroRune[] | undefined;
 };
 
 export type DeriveResult = {
@@ -125,6 +134,7 @@ export type DeriveResult = {
   effective: HeroSheet;
   dps: number;
   active: number;
+  /** One non-crit blast: sheet attack through mitigation × `hitMult`. */
   hit: number;
 };
 
@@ -152,25 +162,27 @@ export function derive(input: DeriveInput): DeriveResult {
     attackMult,
     energyMult,
     speedMult,
-    critDmgMult,
     teamCritFlat,
     treeSheet,
     penetrationPp,
     context,
+    hitMult,
     dmgMult,
     mitigationPct,
   } = input;
+  const rune = runeSheetMultipliers(input.runes ?? []);
 
   const gem = naked.energy > 0 ? gearedX.energy / naked.energy : 1;
   // Shared pool: +1 pt adds naked×perPt/(1+O), not naked×perPt.
   const oSpeed = 1 + sheetOther.speed;
-  const oPen = 1 + sheetOther.penetration;
   const oCdr = 1 + sheetOther.cdr;
   // The birth roll everything crit-chance scales off: gear, the stat point and the skill tree
   // all read it, and Olho Clínico's flat points — which none of them multiply — come back off.
   // Presságio Mortal no longer reads it at all: it is flat points now, added straight to the
   // sheet below (already capped at TEAM_BUFF_CAP.pressagio_mortal by computeCombatMults).
   const baseCrit = naked.critChance - Math.max(0, sheetOther.critChanceFlat);
+  // Same placement for penetration: Ponta de Diamante's points are flat and outside the pool.
+  const basePen = naked.penetration - Math.max(0, sheetOther.penetration);
   const star = starsMult(stars);
   const atkPt = attackPointGain(level) * star;
   // Resolved: the six pooled shared-divisor deltas below
@@ -188,14 +200,14 @@ export function derive(input: DeriveInput): DeriveResult {
     // the per-point gain by it too, or attack points would under-count against the sheet.
     // `delta.attack` has no `gem` analogue (energy's own ratio-based factor), so this
     // explicit `danoStatic` factor is NOT redundant and stays exactly as-is.
-    attack: atkPt * treeSheet.danoStatic,
+    attack: atkPt * treeSheet.danoStatic * rune.attack,
     energy: POINT_GAIN.energyNative * gem * star,
-    speed: (POINT_GAIN.speedPctOfBase * naked.speed) / oSpeed,
-    critChance: POINT_GAIN.critChancePctOfBase * baseCrit,
+    speed: ((POINT_GAIN.speedPctOfBase * naked.speed) / oSpeed) * rune.speed,
+    critChance: POINT_GAIN.critChancePctOfBase * baseCrit * rune.critChance,
     // Flat — no `naked.critDmg` factor and no shared-pool divisor (POINT_GAIN.critDmgFlat).
-    critDmg: POINT_GAIN.critDmgFlat,
-    penetration: (POINT_GAIN.penetrationPctOfBase * naked.penetration) / oPen,
-    cdr: (POINT_GAIN.cdrPctOfBase * naked.cdr) / oCdr,
+    critDmg: POINT_GAIN.critDmgFlat * rune.critDmg,
+    penetration: POINT_GAIN.penetrationPctOfBase * basePen,
+    cdr: ((POINT_GAIN.cdrPctOfBase * naked.cdr) / oCdr) * rune.cdr,
     // Luck has no `other` term — no divisor, unlike the shared-pool stats above.
     luck: POINT_GAIN.luckPctOfBase * naked.luck,
   };
@@ -207,18 +219,18 @@ export function derive(input: DeriveInput): DeriveResult {
     energy: adjusted.energy * energyMult,
     speed: adjusted.speed * speedMult,
     critChance: adjusted.critChance + teamCritFlat,
-    critDmg: adjusted.critDmg * critDmgMult,
+    critDmg: adjusted.critDmg,
     penetration: adjusted.penetration + penetrationPp,
     cdr: adjusted.cdr,
-    attackPerPoint: atkPt * treeSheet.danoStatic * attackMult,
-    energyPerPoint: POINT_GAIN.energyNative * gem * star * energyMult,
+    attackPerPoint: delta.attack * attackMult,
+    energyPerPoint: delta.energy * energyMult,
   };
   const effectiveDelta: Record<SheetKey, number> = {
     attack: effective.attackPerPoint,
     energy: effective.energyPerPoint,
     speed: delta.speed * speedMult,
     critChance: delta.critChance,
-    critDmg: delta.critDmg * critDmgMult,
+    critDmg: delta.critDmg,
     penetration: delta.penetration,
     cdr: delta.cdr,
     // No combat multiplier — Luck never reaches DPS scoring.
@@ -232,6 +244,6 @@ export function derive(input: DeriveInput): DeriveResult {
     dps: sustainedDps(effective, context) * dmgMult,
     active: activeDps(effective, context) * dmgMult,
     // No dmg_static anywhere here — effective.attack already carries it once, at the sheet.
-    hit: predictHitDamage(effective.attack, mitigationPct / 100, effective.penetration, dmgMult),
+    hit: predictHitDamage(effective.attack, mitigationPct / 100, effective.penetration, hitMult),
   };
 }

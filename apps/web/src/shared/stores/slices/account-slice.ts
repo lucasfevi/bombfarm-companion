@@ -5,25 +5,12 @@ import { effectiveFarmPhase } from '@bombfarm/domain/farm-context';
 import type { AccountImportData } from '@bombfarm/domain/import-save';
 import type { RequiredAccountField } from '@bombfarm/domain/account-required-fields';
 import { phaseLine } from '@bombfarm/domain/phases';
-import type { TeamBuffId } from '@bombfarm/domain/team-buffs';
 import {
   DEFAULT_CONTEXT,
   DEFAULT_TREE,
   type AccountShared,
 } from '@/shared/lib/storage';
 import type { PlannerStore } from '@/shared/stores/planner-store';
-
-function teamBuffsOverrideEqual(
-  left: Record<TeamBuffId, number> | null,
-  right: Record<TeamBuffId, number> | null,
-): boolean {
-  if (left === right) return true;
-  if (!left || !right) return false;
-  for (const buffId of Object.keys(left) as TeamBuffId[]) {
-    if (left[buffId] !== right[buffId]) return false;
-  }
-  return true;
-}
 
 export type AccountSlice = {
   treeDanoTotal: number;
@@ -43,13 +30,6 @@ export type AccountSlice = {
   /** `vagas_campo` / `bag_tabs_bonus` — counts the tree grants, shown on the Account page. */
   treeFieldSlotsBonus: number;
   treeBagTabsBonus: number;
-  /**
-   * The user's explicit team-buffs OVERRIDE — `null` means "derive from the deployed roster"
-   * (issue #132; see `selectEffectiveTeamBuffs`, `account-selectors.ts`). This is the ONLY
-   * field the store itself tracks; the effective (override-or-derived) value is always computed,
-   * never stored, so it can never go stale against the roster.
-   */
-  teamBuffsOverride: Record<TeamBuffId, number> | null;
   houseIdx: number;
   houseLevel: number;
   phase: number | null;
@@ -95,8 +75,9 @@ export type AccountSlice = {
   accountId: string | null;
   /** See {@link AccountShared.missingRequiredFields} for what `null` vs `[]` mean. */
   missingRequiredFields: readonly RequiredAccountField[] | null;
+  /** Epoch ms of the last import; `null` until one happens in this browser. */
+  importedAt: number | null;
 
-  setTeamBuffsOverride: (value: Record<TeamBuffId, number> | null) => void;
   setHouseIdx: (value: number) => void;
   setHouseLevel: (value: number) => void;
   setFarmPhase: (value: number | null) => void;
@@ -129,7 +110,6 @@ export const createAccountSlice: StateCreator<
   treeGeoMult: defaultTree.geoMult ?? 1,
   treeFieldSlotsBonus: defaultTree.fieldSlotsBonus ?? 0,
   treeBagTabsBonus: defaultTree.bagTabsBonus ?? 0,
-  teamBuffsOverride: null,
   houseIdx: defaultCtx.houseIdx,
   houseLevel: defaultCtx.houseLevel,
   phase: defaultCtx.phase,
@@ -145,11 +125,8 @@ export const createAccountSlice: StateCreator<
   playerName: null,
   accountId: null,
   missingRequiredFields: null,
+  importedAt: null,
 
-  setTeamBuffsOverride: (value) => {
-    if (teamBuffsOverrideEqual(get().teamBuffsOverride, value)) return;
-    set({ teamBuffsOverride: value });
-  },
   setHouseIdx: (value) => {
     if (get().houseIdx === value) return;
     set({ houseIdx: value });
@@ -195,9 +172,6 @@ export const createAccountSlice: StateCreator<
       treeGeoMult: shared.tree.geoMult ?? 1,
       treeFieldSlotsBonus: shared.tree.fieldSlotsBonus ?? 0,
       treeBagTabsBonus: shared.tree.bagTabsBonus ?? 0,
-      // `shared` already went through `normalizeAccount` (issue #132) — `teamBuffsOverride` is
-      // `null` (derive from the roster) or an already-clean `Record<TeamBuffId, number>`.
-      teamBuffsOverride: shared.teamBuffsOverride ?? null,
       houseIdx: shared.context.houseIdx,
       houseLevel: shared.context.houseLevel,
       phase: shared.context.phase,
@@ -213,6 +187,7 @@ export const createAccountSlice: StateCreator<
       playerName: shared.playerName ?? null,
       accountId: shared.accountId ?? null,
       missingRequiredFields: shared.missingRequiredFields ?? null,
+      importedAt: shared.importedAt ?? null,
     });
   },
 
@@ -283,6 +258,7 @@ export const createAccountSlice: StateCreator<
     // `[]`, never `null`: reaching this function means an import happened, so "never checked"
     // is over even when the caller supplies no verdict.
     patch.missingRequiredFields = missingRequired ?? [];
+    patch.importedAt = Date.now();
     if (Object.keys(patch).length > 0) set(patch);
   },
 });

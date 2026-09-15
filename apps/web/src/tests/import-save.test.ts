@@ -34,7 +34,7 @@ function rawSheetOther(abilities: Record<string, number>): SheetOtherPct {
   return {
     ...emptySheetOther(),
     critChanceFlat: mods.sheetCritChanceFlat,
-    penetration: mods.sheetPenetrationRaw,
+    penetration: mods.sheetPenetrationFlat,
     critDmgFlat: mods.sheetCritDmgFlat,
   };
 }
@@ -117,7 +117,7 @@ describe('parseSaveFile — birth_stats reject gate', () => {
   // MP5 F1 — RECORDED LOSS ("deleted, not weakened"): `gale-01-points-reset.json`
   // (16 heroes, 0 with birth_stats) is the only fixture that could demonstrate the whole-file
   // reject gate against a REAL pre-birth_stats export. Every post-patch capture carries
-  // `birth_stats` on every hero by construction (the field predates the keystone patch), so
+  // `birth_stats` on every hero by construction (the field predates the 2026-08-13 patch), so
   // no committed post-patch fixture can reproduce this shape. The reject-gate LOGIC itself
   // stays covered by `account-source-parity.test.ts`'s synthetic multi-hero missing-birth_stats
   // cases (`missingBirthStats naming that hero`, `mixed save … rejects with every missing name`)

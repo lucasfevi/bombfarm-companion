@@ -7,19 +7,28 @@ import type { Lang } from '@bombfarm/domain/shims/i18n';
 
 import { cn, Tooltip } from '@bombfarm/ui';
 import { AbilityIcon } from './ability-icon';
-import { rosterIconTooltipTriggerClass } from './game-art.recipe';
+import { rosterIconTooltipTriggerClass, type AbilityIconRecipeSize } from './game-art.recipe';
 
 type Props = {
   abilities: Record<string, number>;
   lang: Lang;
   className?: string;
+  size?: AbilityIconRecipeSize;
+  /** Off, the icon carries no level badge; the tooltip and accessible name still read it. */
+  showLevel?: boolean;
 };
 
 function stopRowActivation(event: SyntheticEvent) {
   event.stopPropagation();
 }
 
-export function HeroAbilityIcons({ abilities, lang, className }: Props) {
+export function HeroAbilityIcons({
+  abilities,
+  lang,
+  className,
+  size = 'lg',
+  showLevel = true,
+}: Props) {
   const entries = heroAbilityIconEntries(abilities);
 
   if (entries.length === 0) {
@@ -45,7 +54,11 @@ export function HeroAbilityIcons({ abilities, lang, className }: Props) {
               onClick={stopRowActivation}
               onKeyDown={stopRowActivation}
             >
-              <AbilityIcon code={id} size="lg" level={level} max={max} />
+              {showLevel ? (
+                <AbilityIcon code={id} size={size} level={level} max={max} />
+              ) : (
+                <AbilityIcon code={id} size={size} />
+              )}
             </Tooltip.Trigger>
             <Tooltip.Portal>
               <Tooltip.Positioner sideOffset={6}>

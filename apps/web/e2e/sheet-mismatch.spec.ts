@@ -45,7 +45,7 @@ function birthStatsState(lang: 'pt' | 'en'): SeededState {
 test.describe('sheet birth breakdown (Points Stats)', () => {
   test('Stats table is read-only and shows Birth / Total headers (EN)', async ({ page }) => {
     await seedLocalStorage(page, birthStatsState('en'));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await page.getByRole('tab', { name: /^points$/i }).click();
 
@@ -67,7 +67,7 @@ test.describe('sheet birth breakdown (Points Stats)', () => {
 
   test('Stats table shows Ao nascer / Total headers (PT)', async ({ page }) => {
     await seedLocalStorage(page, birthStatsState('pt'));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await page.getByRole('tab', { name: /^pontos$/i }).click();
 
@@ -81,7 +81,7 @@ test.describe('sheet birth breakdown (Points Stats)', () => {
 
   test('EN Gear tab does not warn for gearedOverride ≠ expected sheet', async ({ page }) => {
     await seedLocalStorage(page, birthStatsState('en'));
-    await page.goto('/');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
 
     const gearTab = page.getByRole('tab', { name: /^Gear$/i });

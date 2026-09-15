@@ -7,6 +7,7 @@ import {
   inventoryFieldHeightClass,
   rarityTextClass,
 } from '@bombfarm/game-art';
+import { heroRankToneClass } from '@bombfarm/game-art';
 import { Button, cn, Select } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
 import { EMPTY_FORGE_FILTER, FORGE_BANDS, isEmptyForgeFilter, type ForgeBand, type ForgeFilter } from '../../lib/forge/forge-rows';
@@ -40,7 +41,7 @@ function HeroOptionLabel({ hero }: { hero: ForgeHeroOption }) {
   return (
     <span className="flex min-w-0 items-center gap-1.5">
       <HeroAvatar skin={hero.skin} rarityIdx={hero.rarityIdx} size="xs" name={hero.name} className="size-5 shrink-0" />
-      {hero.rank ? <span className="shrink-0 text-[11px] font-black tracking-tight text-accent">{hero.rank}</span> : null}
+      {hero.rank ? <span className={cn('shrink-0', 'text-[11px]', 'font-black', 'tracking-tight', heroRankToneClass(hero.rank))}>{hero.rank}</span> : null}
       <span className={cn('truncate', 'font-semibold', rarityTextClass(hero.rarityIdx) ?? 'text-ink')}>{hero.name}</span>
       <span className="shrink-0 text-[10px] tabular-nums text-muted">{hero.level}</span>
     </span>

@@ -175,7 +175,7 @@ try {
     await page.screenshot({ path: file });
     console.log(`og: ${path.relative(projectRoot, file)}`);
 
-    if (section === 'planner') {
+    if (section === 'home') {
       const fallback = path.join(projectRoot, 'public', 'og.png');
       await page.screenshot({ path: fallback });
       console.log(`og: ${path.relative(projectRoot, fallback)} (fallback for older shared links)`);

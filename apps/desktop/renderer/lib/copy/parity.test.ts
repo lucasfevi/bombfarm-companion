@@ -23,8 +23,9 @@ import { ptBR } from './pt-BR';
 // both of the values it joins are themselves already localised before they reach it.
 // liveEarningsXpHeadlineUnit: "xp / h" — "xp" is the same abbreviation in both languages, and the
 // "/ h" unit marker is not a word either, so the two languages land on the identical string.
-// inventoryViewLabel: "Layout" is a loanword carrying the same spelling in pt-BR, and it names
-// the cards/list switch rather than either option — both of which ARE translated.
+// inventoryViewLabel / heroesViewLabel: "Layout" is a loanword carrying the same spelling in
+// pt-BR, and it names the cards/list switch rather than either option — both of which ARE
+// translated. The Heroes screen switches its roster with the same control and the same word.
 // liveMapXpPerPropLabel: "XP / prop" — "XP" is the same abbreviation in both languages, and
 // "prop" is the loanword the game itself uses in Portuguese (the pt-BR copy already spells it
 // "props" elsewhere in this table), so the two languages land on the identical string.
@@ -45,6 +46,7 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'inventoryDetailSetSlot',
   'liveEarningsXpHeadlineUnit',
   'inventoryViewLabel',
+  'heroesViewLabel',
   'liveEarningsPropsPerMinuteLabel',
   'liveEarningsPropsTotalLabel',
   'farmNavLabel',

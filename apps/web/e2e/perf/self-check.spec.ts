@@ -42,7 +42,7 @@ test.describe('perf harness self-check', () => {
     await installCollector(page)
     await seedLocalStorage(page, importedRoster)
 
-    await page.goto('/')
+    await page.goto('/heroes')
 
     // Settle: planner region visible.
     const heroStrip = page.getByRole('region', { name: /herói atual|current hero/i })

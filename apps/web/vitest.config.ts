@@ -28,6 +28,7 @@ export default defineConfig({
       '@bombfarm/ui': path.resolve(root, '../../packages/ui/src'),
       '@bombfarm/farm': path.resolve(root, '../../packages/farm/src'),
       '@bombfarm/hero': path.resolve(root, '../../packages/hero/src'),
+      '@bombfarm/team-plan': path.resolve(root, '../../packages/team-plan/src'),
       '@bombfarm/contracts': path.resolve(root, '../../packages/contracts/src'),
     },
   },

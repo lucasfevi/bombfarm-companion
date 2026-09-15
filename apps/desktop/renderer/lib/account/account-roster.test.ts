@@ -1,0 +1,234 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { parseAccountPayload } from '@bombfarm/domain/import-save';
+import type { AccountFidelity, AccountPayload, AccountView } from '@bombfarm/contracts';
+import { buildAccountRoster } from './account-roster';
+
+const NOW = '2026-08-12T00:00:00.000Z';
+
+function resolvedFidelity(overrides: Partial<AccountFidelity> = {}): AccountFidelity {
+  return {
+    account: { status: 'resolved', capturedAt: NOW },
+    heroes: { status: 'resolved', capturedAt: NOW },
+    skills: { status: 'resolved', capturedAt: NOW },
+    casa: { status: 'resolved', capturedAt: NOW },
+    items: { status: 'resolved', capturedAt: NOW },
+    ...overrides,
+  };
+}
+
+function rawHero(id: string, name = 'Hero') {
+  const birth = {
+    dmg: 100,
+    energia: 100,
+    speed: 50,
+    crit_chance: 5,
+    crit_dmg: 50,
+    penetration: 0,
+    cooldown_reduction: 0,
+    luck: 0,
+  };
+  return { id, name, level: 10, rarity: 2, stars: 1, birth_stats: birth, stats: birth, stat_points_available: 0 };
+}
+
+function basePayload(heroes: unknown[] = [rawHero('h1', 'Alpha')]): AccountPayload {
+  return {
+    account: { phase: 60, max_phase: 88 },
+    heroes,
+    skills: { totals: { dmg_static: 1.5 } },
+    casa: { active_casa: 1, levels: [10] },
+    items: [],
+    fidelity: resolvedFidelity(),
+  };
+}
+
+function viewOf(payload: AccountPayload): AccountView {
+  return { payload, gameRunning: false, store: { status: 'ok', reason: null, binding: 'better-sqlite3' } };
+}
+
+const OFFLINE_FIXTURE = path.join(__dirname, '..', '..', '..', 'tests', 'fixtures', 'account-offline.json');
+
+function offlinePayload(): AccountPayload {
+  return JSON.parse(readFileSync(OFFLINE_FIXTURE, 'utf8')) as AccountPayload;
+}
+
+function required<T>(value: T | null | undefined, message: string): T {
+  if (value === null || value === undefined) throw new Error(message);
+  return value;
+}
+
+describe('one record per hero the account view carries', () => {
+  it('the committed offline account yields its thirteen heroes, keyed by the game ids it carries', () => {
+    const roster = required(buildAccountRoster(viewOf(offlinePayload())), 'expected a roster');
+    expect(roster.heroes).toHaveLength(13);
+    expect(roster.heroes.map((hero) => hero.id)).toEqual([
+      '26863',
+      '41990',
+      '52562',
+      '45497',
+      '59925',
+      '72601',
+      '73099',
+      '74555',
+      '76184',
+      '59925-roster',
+      '71038',
+      '71128',
+      '71129',
+    ]);
+  });
+
+  it('an account with no heroes yields an empty roster rather than throwing', () => {
+    const roster = required(buildAccountRoster(viewOf(basePayload([]))), 'expected a roster');
+    expect(roster.heroes).toEqual([]);
+  });
+
+  it('a payload that does not parse withholds the whole roster, rather than the heroes that did parse', () => {
+    const payload = basePayload([rawHero('h1', 'Alpha'), { id: 'h2', name: 'NoBirth' }]);
+    expect(buildAccountRoster(viewOf(payload))).toBeNull();
+  });
+});
+
+describe('no farm control is needed to read the roster', () => {
+  it('the builder takes the account view alone', () => {
+    expect(buildAccountRoster).toHaveLength(1);
+    expect(buildAccountRoster(viewOf(basePayload()))).not.toBeNull();
+  });
+
+  it('the source imports nothing farm-shaped, and no React', () => {
+    const source = readFileSync(path.join(__dirname, 'account-roster.ts'), 'utf8');
+    expect(source).not.toMatch(/from ['"][^'"]*\bfarm\b[^'"]*['"]/);
+    expect(source).not.toMatch(/from ['"]react['"]/);
+    expect(source).not.toMatch(/FarmControls|farmPoolOverrides|farmReturnBonus/);
+  });
+});
+
+describe('the id and the capture time are the only synthesised fields', () => {
+  const cases: [string, () => AccountPayload, string][] = [
+    ['the offline fixture', offlinePayload, '2026-08-23T00:00:00.000Z'],
+    ['a minimal account', () => basePayload(), NOW],
+  ];
+  it.each(cases)(
+    '%s: every other field on every record is the parsed candidate record, key for key',
+    (_label, payloadOf, capturedAt) => {
+      const payload = payloadOf();
+      const parsed = parseAccountPayload(payload, []);
+      const roster = required(buildAccountRoster(viewOf(payload)), 'expected a roster');
+      expect(roster.heroes.length).toBe(parsed.candidates.length);
+
+      roster.heroes.forEach((hero, index) => {
+        const candidate = required(parsed.candidates[index], `expected a candidate at ${String(index)}`);
+        const { id, updatedAt, ...stats } = hero;
+        expect(id).toBe(candidate.sourceId);
+        expect(updatedAt).toBe(Date.parse(capturedAt));
+        expect(stats).toEqual(candidate.record);
+        expect(Object.keys(hero).sort()).toEqual([...Object.keys(candidate.record), 'id', 'updatedAt'].sort());
+      });
+    },
+  );
+
+  it('the capture time is the heroes section own, not the account section or any other', () => {
+    const heroesCapturedAt = '2026-08-10T06:30:00.000Z';
+    const payload: AccountPayload = {
+      ...basePayload(),
+      fidelity: resolvedFidelity({ heroes: { status: 'resolved', capturedAt: heroesCapturedAt } }),
+    };
+    const roster = required(buildAccountRoster(viewOf(payload)), 'expected a roster');
+    expect(required(roster.heroes[0], 'expected a hero').updatedAt).toBe(Date.parse(heroesCapturedAt));
+  });
+
+  it('falls back to the read clock when the heroes section carries no capture time', () => {
+    const before = Date.now();
+    const payload: AccountPayload = { ...basePayload(), fidelity: resolvedFidelity({ heroes: { status: 'missing' } }) };
+    const roster = required(buildAccountRoster(viewOf(payload)), 'expected a roster');
+    const updatedAt = required(roster.heroes[0], 'expected a hero').updatedAt;
+    expect(updatedAt).toBeGreaterThanOrEqual(before);
+    expect(updatedAt).toBeLessThanOrEqual(Date.now());
+  });
+});
+
+describe('the account-wide block comes from the same parse as the roster', () => {
+  it('one parse answers both, so the two can never describe different reads', () => {
+    const payload = offlinePayload();
+    const roster = required(buildAccountRoster(viewOf(payload)), 'expected a roster');
+    expect(roster.account).toEqual(parseAccountPayload(payload, []).account);
+  });
+});
+
+function rawHeroMissingStats(id: string, name: string): Record<string, unknown> {
+  const hero: Record<string, unknown> = { ...rawHero(id, name) };
+  delete hero.stats;
+  return hero;
+}
+
+describe('pointsUnrecovered — candidates the parser blocked', () => {
+  it('is empty when every candidate parses cleanly', () => {
+    const payload = basePayload([rawHero('h1', 'Alpha'), rawHero('h2', 'Beta')]);
+    const roster = required(buildAccountRoster(viewOf(payload)), 'expected a roster');
+    expect(roster.pointsUnrecovered).toEqual([]);
+  });
+
+  it('names a hero missing its stats block, and still carries it in heroes with zeroed points', () => {
+    const payload = basePayload([rawHero('h1', 'Alpha'), rawHeroMissingStats('h2', 'Beta')]);
+    const roster = required(buildAccountRoster(viewOf(payload)), 'expected a roster');
+    expect(roster.pointsUnrecovered).toEqual([{ id: 'h2', name: 'Beta' }]);
+
+    const hero = roster.heroes.find((candidate) => candidate.id === 'h2');
+    expect(hero).toBeDefined();
+    expect(Object.values(hero?.pts ?? {}).every((value) => value === 0)).toBe(true);
+  });
+
+  it('lists more than one blocked hero, in roster order', () => {
+    const payload = basePayload([
+      rawHero('h1', 'Alpha'),
+      rawHeroMissingStats('h2', 'Beta'),
+      rawHeroMissingStats('h3', 'Gamma'),
+    ]);
+    const roster = required(buildAccountRoster(viewOf(payload)), 'expected a roster');
+    expect(roster.pointsUnrecovered).toEqual([
+      { id: 'h2', name: 'Beta' },
+      { id: 'h3', name: 'Gamma' },
+    ]);
+  });
+
+  // Not a fixture staleness bug: this is the SAME defect the guard above proves against a
+  // synthetic hero, already present in the checked-in capture — a sheet-inversion mismatch a
+  // later game update introduced, over-spending the budget rather than leaving `stats` absent.
+  // Pinned here so a fixture refresh that quietly fixes it is a visible test change, not a silent
+  // loss of coverage.
+  it('the checked-in offline fixture already carries eight, from a sheet-inversion mismatch', () => {
+    const roster = required(buildAccountRoster(viewOf(offlinePayload())), 'expected a roster');
+    expect(roster.pointsUnrecovered).toEqual([
+      { id: '41990', name: 'Jon' },
+      { id: '52562', name: 'Bellatrix' },
+      { id: '45497', name: 'Buff S #1' },
+      { id: '72601', name: 'WB #1' },
+      { id: '73099', name: 'Buff L #1' },
+      { id: '74555', name: 'WB #3' },
+      { id: '76184', name: 'Buff FL #1' },
+      { id: '59925-roster', name: 'Manco #2' },
+    ]);
+  });
+});
+
+describe('the gear-only pool of the same parse, surfaced beside the roster', () => {
+  it('the committed offline account yields its 137 gear items, each with a string id and defId', () => {
+    const roster = required(buildAccountRoster(viewOf(offlinePayload())), 'expected a roster');
+    expect(roster.inventory).toHaveLength(137);
+    for (const item of roster.inventory) {
+      expect(typeof item.id).toBe('string');
+      expect(typeof item.defId).toBe('string');
+    }
+  });
+
+  it('an account with no items yields an empty pool rather than throwing', () => {
+    const roster = required(buildAccountRoster(viewOf(basePayload())), 'expected a roster');
+    expect(roster.inventory).toEqual([]);
+  });
+
+  it('calls parseAccountPayload exactly once', () => {
+    const source = readFileSync(path.join(__dirname, 'account-roster.ts'), 'utf8');
+    expect(source.match(/parseAccountPayload\(/g)).toHaveLength(1);
+  });
+});

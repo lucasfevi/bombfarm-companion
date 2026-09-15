@@ -2,6 +2,7 @@ export type { Lang } from './lang';
 export { loadLang, saveLang } from './lang';
 export { sub, parseEmphasis } from './format';
 export {
+  MARKET_CURRENCY,
   formatMoney,
   formatPriceFreshness,
   formatQuoteAge,
