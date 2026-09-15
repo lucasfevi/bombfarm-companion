@@ -1,12 +1,12 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BiCoffee, BiCopy } from 'react-icons/bi';
 import type { Strings, Lang } from '@/shared/i18n';
 import { AppNav, Button, SegmentedToggle, Tooltip, buttonRecipe } from '@bombfarm/ui';
 import { REFERRAL_CODE } from '@/shared/referral';
+import { HoverPrefetchLink } from './hover-prefetch-link';
 import { useReferralCopy } from './use-referral-copy';
 import {
   NAV_SECTIONS,
@@ -35,7 +35,7 @@ export function SiteHeader({
     <header className="sticky top-0 z-30 min-h-top border-b border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-4 py-2.5 backdrop-blur-[14px]">
       <div className="mx-auto flex max-w-app flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
-          <Link href="/" className="flex items-center gap-2.5 no-underline">
+          <HoverPrefetchLink href="/" className="flex items-center gap-2.5 no-underline">
             <Image
               src="/favicon.svg"
               alt=""
@@ -48,7 +48,7 @@ export function SiteHeader({
               <div className="text-sm leading-1.1 font-bold text-ink">Bomb Farm</div>
               <div className="text-[11px] tracking-[0.04em] text-muted uppercase">{t.appSuiteTag}</div>
             </div>
-          </Link>
+          </HoverPrefetchLink>
           <AppNav
             ariaLabel={t.siteNavAria}
             items={NAV_SECTIONS.map((section) => ({
@@ -57,26 +57,26 @@ export function SiteHeader({
               active: isSiteSectionActive(section, pathname),
             }))}
             renderItem={(item, className) => (
-              <Link
+              <HoverPrefetchLink
                 key={item.id}
                 href={SITE_SECTION_HREF[item.id as SiteSection]}
                 aria-current={item.active ? 'page' : undefined}
                 className={className}
               >
                 {item.label}
-              </Link>
+              </HoverPrefetchLink>
             )}
           />
         </div>
         <div className="flex flex-nowrap items-center justify-end gap-1.5 max-[720px]:flex-wrap max-[720px]:justify-start">
-          <Link
+          <HoverPrefetchLink
             href={SITE_SECTION_HREF.download}
             aria-current={isSiteSectionActive('download', pathname) ? 'page' : undefined}
             className={buttonRecipe({ variant: 'primary' })}
             data-testid="header-download-cta"
           >
             {t.downloadHeaderCta}
-          </Link>
+          </HoverPrefetchLink>
           {onImport ? (
             <Button type="button" onClick={onImport}>
               {t.importHeroesBtn}

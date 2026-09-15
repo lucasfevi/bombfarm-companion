@@ -49,6 +49,24 @@ test.describe('App shell navigation', () => {
     await expect(links.nth(1)).not.toHaveAttribute('aria-current', 'page');
   });
 
+  test('header links fetch a route payload on hover, not on page load', async ({ page }) => {
+    await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+
+    const payloadRequests: string[] = [];
+    page.on('request', (req) => {
+      if (/\.txt(\?|$)/.test(req.url())) payloadRequests.push(new URL(req.url()).pathname);
+    });
+
+    await page.goto('/planner');
+    await expect(page.getByRole('region', { name: /current hero/i })).toBeVisible();
+    await page.waitForTimeout(1000);
+    expect(payloadRequests).toEqual([]);
+
+    await page.getByRole('link', { name: /^Farm$/i }).hover();
+    await expect.poll(() => payloadRequests).toContain('/farm.txt');
+    expect(payloadRequests).not.toContain('/optimizer.txt');
+  });
+
   test('import dialog opens from the shell on both routes', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/farm');
