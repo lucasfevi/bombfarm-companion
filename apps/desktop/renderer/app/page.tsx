@@ -6,6 +6,7 @@ import type {
   AppLocale,
   GameStatusInfo,
   LiveDiagnosticsDumpOutcome,
+  MarketQuoteCurrency,
   SettingsWriteReason,
   UpdateStatus,
 } from '@bombfarm/contracts';
@@ -46,6 +47,7 @@ import { ForgeSection } from './settings/forge-section';
 import { GameSection } from './settings/game-section';
 import { DiagnosticsSection } from './settings/diagnostics-section';
 import { LanguageSection } from './settings/language-section';
+import { MarketSection } from './settings/market-section';
 import { SupportSection } from './settings/support-section';
 import { UpdatesSection } from './settings/updates-section';
 import { WindowSection } from './settings/window-section';
@@ -83,6 +85,8 @@ export default function HomePage() {
   const [forgeWritesWarning, setForgeWritesWarning] = useState<SettingsWriteReason | null>(null);
   const [restartGameOnExit, setRestartGameOnExit] = useState(DEFAULT_SETTINGS.restartGameOnExit);
   const [restartGameOnExitWarning, setRestartGameOnExitWarning] = useState<SettingsWriteReason | null>(null);
+  const [marketQuoteCurrency, setMarketQuoteCurrency] = useState<MarketQuoteCurrency>(DEFAULT_SETTINGS.marketQuoteCurrency);
+  const [marketQuoteCurrencyWarning, setMarketQuoteCurrencyWarning] = useState<SettingsWriteReason | null>(null);
 
   useEffect(() => {
     const bridge = getBridge();
@@ -100,6 +104,7 @@ export default function HomePage() {
         setAlwaysOnTopMini(settings.alwaysOnTopMini);
         setForgeWritesEnabled(settings.forgeWritesEnabled);
         setRestartGameOnExit(settings.restartGameOnExit);
+        setMarketQuoteCurrency(settings.marketQuoteCurrency);
       })
       .catch(() => {
         setLocale(DEFAULT_SETTINGS.locale);
@@ -162,6 +167,15 @@ export default function HomePage() {
     });
   };
 
+  const onMarketQuoteCurrencyChange = (next: MarketQuoteCurrency) => {
+    const bridge = getBridge();
+    if (!bridge) return;
+    void bridge.invoke('settings:setMarketQuoteCurrency', next).then((result) => {
+      setMarketQuoteCurrency(result.settings.marketQuoteCurrency);
+      setMarketQuoteCurrencyWarning(result.persisted ? null : result.reason);
+    });
+  };
+
   return (
     <CopyProvider locale={locale ?? DEFAULT_SETTINGS.locale}>
       <HomePageContent
@@ -180,6 +194,9 @@ export default function HomePage() {
         restartGameOnExit={restartGameOnExit}
         onRestartGameOnExitChange={onRestartGameOnExitChange}
         restartGameOnExitWarning={restartGameOnExitWarning}
+        marketQuoteCurrency={marketQuoteCurrency}
+        onMarketQuoteCurrencyChange={onMarketQuoteCurrencyChange}
+        marketQuoteCurrencyWarning={marketQuoteCurrencyWarning}
       />
     </CopyProvider>
   );
@@ -201,6 +218,9 @@ function HomePageContent({
   restartGameOnExit,
   onRestartGameOnExitChange,
   restartGameOnExitWarning,
+  marketQuoteCurrency,
+  onMarketQuoteCurrencyChange,
+  marketQuoteCurrencyWarning,
 }: {
   locale: AppLocale;
   onLocaleChange: (next: AppLocale) => void;
@@ -217,6 +237,9 @@ function HomePageContent({
   restartGameOnExit: boolean;
   onRestartGameOnExitChange: (next: boolean) => void;
   restartGameOnExitWarning: SettingsWriteReason | null;
+  marketQuoteCurrency: MarketQuoteCurrency;
+  onMarketQuoteCurrencyChange: (next: MarketQuoteCurrency) => void;
+  marketQuoteCurrencyWarning: SettingsWriteReason | null;
 }) {
   const t = useCopy();
   const { lang } = useLocale();
@@ -445,6 +468,11 @@ function HomePageContent({
                 forgeWritesEnabled={forgeWritesEnabled}
                 onForgeWritesEnabledChange={onForgeWritesEnabledChange}
                 persistWarning={forgeWritesWarning}
+              />
+              <MarketSection
+                marketQuoteCurrency={marketQuoteCurrency}
+                onMarketQuoteCurrencyChange={onMarketQuoteCurrencyChange}
+                persistWarning={marketQuoteCurrencyWarning}
               />
               <ConsentSection onRevoke={onConsentRevoke} />
               <DiagnosticsSection onSave={onSaveDiagnostics} result={diagnosticsDumpResult} />
