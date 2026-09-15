@@ -47,7 +47,7 @@ export const SlotEditor = memo(function SlotEditor({
         <Button
           type="button"
           variant="icon"
-          className="absolute -top-1 -right-1 z-10"
+          className="absolute -top-1 -right-1 z-10 hover:bg-transparent"
           aria-label={t.clear}
           title={t.clear}
           onClick={() => onPatch(slot, null)}

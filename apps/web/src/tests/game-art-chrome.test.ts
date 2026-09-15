@@ -372,9 +372,16 @@ describe('gear slot card', () => {
   const compareSrc = readHero('components/gear-compare-section.tsx');
   const editor = read('features/gear/components/slot-editor.tsx');
 
-  it('uses full stat labels in the per-slot breakdown', () => {
-    expect(card).toContain('slotStatFullLabels');
-    expect(card).not.toMatch(/slotStatLabels\[/);
+  it('uses the short stat labels beside the slot values — the full ones head the totals table', () => {
+    expect(card).toContain('slotStatLabels[');
+    expect(card).not.toContain('slotStatFullLabels');
+    expect(readHero('components/gear-totals-table.tsx') + readHero('model/gear-bonus-rows.ts')).toContain(
+      'slotStatFullLabels',
+    );
+  });
+
+  it('pins the host controls to the foot of the card so they line up across a row', () => {
+    expect(card).toContain('mt-auto');
   });
 
   it('draws the clone gear as the same cards when no editor is supplied', () => {

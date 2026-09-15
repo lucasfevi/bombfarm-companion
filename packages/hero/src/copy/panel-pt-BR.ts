@@ -122,6 +122,15 @@ export const gearPanelPtBR: GearPanelCopy = {
   gearSlotEmptyAria: '{slot} — vazio',
   gearSlotEmptyTip: 'Vazio',
   rankLv: 'Nv',
+  slotStatLabels: {
+    dmg: 'Dano',
+    energia: 'Ene',
+    velocidade: 'Vel',
+    sorte: 'Sorte',
+    crit: 'Crít',
+    penetracao: 'Pen',
+    cooldown: 'Recarga',
+  },
   slotStatFullLabels: {
     dmg: 'Dano',
     energia: 'Energia',

@@ -123,6 +123,15 @@ export const gearPanelEn = {
   gearSlotEmptyAria: '{slot} — empty',
   gearSlotEmptyTip: 'Empty',
   rankLv: 'Lv',
+  slotStatLabels: {
+    dmg: 'Dmg',
+    energia: 'Ene',
+    velocidade: 'Spd',
+    sorte: 'Luck',
+    crit: 'Crit',
+    penetracao: 'Pen',
+    cooldown: 'CDR',
+  },
   slotStatFullLabels: {
     dmg: 'Damage',
     energia: 'Energy',

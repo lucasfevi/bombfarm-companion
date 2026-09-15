@@ -16,7 +16,7 @@ import { sub, type GearPanelCopy, type Lang } from '../copy';
 /** The four members of `GearPanelCopy` one slot card prints. */
 export type GearSlotCardCopy = Pick<
   GearPanelCopy,
-  'gearSlotEmptyAria' | 'gearSlotEmptyTip' | 'rankLv' | 'slotStatFullLabels'
+  'gearSlotEmptyAria' | 'gearSlotEmptyTip' | 'rankLv' | 'slotStatLabels'
 >;
 
 export type GearSlotCardProps = {
@@ -27,7 +27,7 @@ export type GearSlotCardProps = {
   formatNumber: (n: number, d?: number) => string;
   /** A clone slot that differs from the current gear. */
   changed?: boolean | undefined;
-  /** A host's controls for the slot, drawn under the item. */
+  /** A host's controls for the slot, drawn at the foot of the card so they line up across a row. */
   children?: ReactNode;
 };
 
@@ -42,6 +42,7 @@ const emptyTileClass =
  */
 export function GearSlotCard({ slot, equipped, lang, t, formatNumber, changed, children }: GearSlotCardProps) {
   const slotName = slotLabel(slot, lang);
+  const controls = children ? <div className="mt-auto flex flex-col gap-1">{children}</div> : null;
 
   if (!equipped) {
     return (
@@ -56,7 +57,7 @@ export function GearSlotCard({ slot, equipped, lang, t, formatNumber, changed, c
           <span className={emptyTileClass} aria-hidden="true" />
         </div>
         <p className="m-0 text-center text-xs text-muted">{t.gearSlotEmptyTip}</p>
-        {children}
+        {controls}
       </div>
     );
   }
@@ -97,13 +98,13 @@ export function GearSlotCard({ slot, equipped, lang, t, formatNumber, changed, c
         <div className="flex flex-col gap-0.5 text-[11px] leading-snug tabular-nums">
           {stats.map(({ stat, valor, unit }) => (
             <div key={stat} className={slotStatRowClass}>
-              <span>{t.slotStatFullLabels[stat as keyof typeof t.slotStatFullLabels]}</span>
+              <span>{t.slotStatLabels[stat as keyof typeof t.slotStatLabels]}</span>
               <b>{unit === 'flat' ? `+${formatNumber(valor, 1)}` : `+${formatNumber(valor * 100, 1)}%`}</b>
             </div>
           ))}
         </div>
       ) : null}
-      {children}
+      {controls}
     </div>
   );
 }

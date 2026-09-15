@@ -16,9 +16,11 @@
  * `gearSlotEmptyAria`, `gearSlotEmptyTip` and `rankLv` are the three the slot card shares with
  * `RosterCopy`; a host that satisfies both from one dictionary supplies each once.
  *
- * `slotStatFullLabels` names its seven item stats individually rather than as a record over the
- * catalog's `ItemStat`, which widens to `string` — under that key type every lookup would come back
- * possibly-undefined and a missing stat would print nothing instead of failing to compile.
+ * `slotStatLabels` and `slotStatFullLabels` name their seven item stats individually rather than
+ * as a record over the catalog's `ItemStat`, which widens to `string` — under that key type every
+ * lookup would come back possibly-undefined and a missing stat would print nothing instead of
+ * failing to compile. The short set is what a slot card prints beside its values; the full set
+ * heads the totals table, which has the width.
  */
 export type GearPanelCopy = {
   fieldRequired: string;
@@ -28,6 +30,15 @@ export type GearPanelCopy = {
   gearSlotEmptyAria: string;
   gearSlotEmptyTip: string;
   rankLv: string;
+  slotStatLabels: {
+    dmg: string;
+    energia: string;
+    velocidade: string;
+    sorte: string;
+    crit: string;
+    penetracao: string;
+    cooldown: string;
+  };
   slotStatFullLabels: {
     dmg: string;
     energia: string;
