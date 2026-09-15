@@ -77,6 +77,8 @@ export function RosterWorkspace({ strip, children }: { strip: ReactNode; childre
                 selectedId={view.selectedId}
                 onSelectHeroId={view.onSelectHeroId}
                 statLabel={statLabel}
+                density={view.density}
+                onDensity={view.onDensity}
                 t={t}
                 lang={lang}
               />

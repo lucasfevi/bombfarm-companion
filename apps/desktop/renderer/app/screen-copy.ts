@@ -102,6 +102,12 @@ export function rosterBoardCopyFrom(t: Copy): RosterBoardCopy {
     heroesAbilityFilterLabel: t.heroesAbilityFilterLabel,
     heroesAbilityFilterOption: t.heroesAbilityFilterOption,
     heroesAbilityFilterAbsent: t.heroesAbilityFilterAbsent,
+    heroesDensityLabel: t.heroesDensityLabel,
+    heroesDensityCompact: t.heroesDensityCompact,
+    heroesDensityCombat: t.heroesDensityCombat,
+    heroesDensityFull: t.heroesDensityFull,
+    heroesCardSheetStatsLabel: t.heroesCardSheetStatsLabel,
+    heroesCardBirthStatsLabel: t.heroesCardBirthStatsLabel,
   };
 }
 
