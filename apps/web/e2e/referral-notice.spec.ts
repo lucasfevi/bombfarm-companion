@@ -8,7 +8,7 @@ import { REFERRAL_CODE } from '../src/shared/referral';
  */
 async function openFirstRun(page: Page) {
   await page.addInitScript(() => localStorage.setItem('bf_lang', 'en'));
-  await page.goto('/planner');
+  await page.goto('/heroes');
 }
 
 test.describe('first-run referral notice', () => {

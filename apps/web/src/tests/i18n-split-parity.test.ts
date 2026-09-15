@@ -188,6 +188,9 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as { en: Strings; 
  */
 const KEYS_REMOVED: readonly string[] = [
   'navTeamPlan',
+  // The Planner page is the Heroes page (2026-09-15), the name the desktop app gives the same
+  // screen; `navHeroes` (in `KEYS_ADDED`) carries the label in both languages.
+  'navPlanner',
   // The Farm page's Optimize button opens the Optimizer (2026-09-14): the points-only respec
   // panel it used to expand in place — its busy label, metric tiles, per-hero split, cheaper-
   // respec frontier, re-rank switch and every banner — is gone, so each of its strings has no
@@ -497,6 +500,7 @@ const KEYS_REMOVED: readonly string[] = [
  * not: the restriction is on what the plan may propose, not on how it scores.
  */
 const KEYS_ADDED: readonly string[] = [
+  'navHeroes',
   // The Farm page's Optimize button opens the Optimizer (2026-09-14) instead of solving a
   // points-only respec in place: `farmOptimize` is the button's label, its one string. The
   // Home page's optimizer card kept the in-place panel's "already close to the best found"
@@ -1007,6 +1011,9 @@ const PROSE_EDITED_PATHS_PT_ONLY: readonly string[] = [
 ];
 
 const PROSE_EDITED_PATHS: readonly string[] = [
+  // The Planner page is the Heroes page (2026-09-15): the Farm board's empty-roster note stops
+  // naming a page — the web link beside it does that — so the shared copy stays true on both hosts.
+  'phasesNoHeroes',
   // The Points table prints each figure in its own unit now (2026-09-10), so the four rate stats
   // no longer carry a `%` in their NAME: `Crit %` -> `Crit`, `Crit dmg +%` -> `Crit dmg`,
   // `Pen %` -> `Pen`, `CDR %` -> `CDR`, and their pt-BR counterparts. The sheet table and the

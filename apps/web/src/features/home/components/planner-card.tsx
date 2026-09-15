@@ -39,7 +39,7 @@ export function PlannerCard() {
 
   return (
     <HomeSectionCard
-      section="planner"
+      section="heroes"
       state={hasRoster ? 'ready' : 'needs'}
       context={sub(t.homeCardPlannerContext, { count: HOME_RANKING_LIMIT })}
       footer={

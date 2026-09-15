@@ -67,7 +67,7 @@ function panel(page: Page, heading: RegExp) {
 
 async function openAccount(page: Page, lang: 'pt' | 'en' = 'en') {
   await seedLocalStorage(page, accountRoster(lang));
-  await page.goto('/planner');
+  await page.goto('/heroes');
   await gotoAccountPage(page);
 }
 
@@ -97,7 +97,7 @@ test.describe('account page — identity header', () => {
   test('a save with no identity shows dashes, not a blank header', async ({ page }) => {
     // `importedRoster` predates the identity keys, which is exactly the scrubbed-export shape.
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await gotoAccountPage(page);
 
     const header = panel(page, /^Account$/i);
@@ -140,7 +140,7 @@ test.describe('account page — House panel', () => {
   test('a delta of zero is omitted rather than shown as +0', async ({ page }) => {
     // Casa IV → Casa V keeps the slot count at 9, so only the cycle improves.
     await seedLocalStorage(page, atHouse('en', 3, 1, 9));
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await gotoAccountPage(page);
     const house = panel(page, /^House$/i);
 
@@ -151,7 +151,7 @@ test.describe('account page — House panel', () => {
 
   test('the last House shows no next-House block at all', async ({ page }) => {
     await seedLocalStorage(page, atHouse('en', 4, 20, 9));
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await gotoAccountPage(page);
     const house = panel(page, /^House$/i);
 
@@ -251,7 +251,7 @@ test.describe('account page — what the rework removed', () => {
 
   test('the planner keeps its own tabs and has no Account tab', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await expect(page.getByRole('tab', { name: /^Account$/i })).toHaveCount(0);
     await expect(page.getByRole('tab', { name: /^Gear$/i })).toBeVisible();
   });

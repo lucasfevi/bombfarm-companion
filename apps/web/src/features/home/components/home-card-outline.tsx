@@ -6,7 +6,7 @@ const LABEL_VALUE = ['h-3 w-2/5', 'h-3 w-1/5'];
 const FIGURE = 'h-7 w-1/2';
 
 const OUTLINE_ROWS: Record<HomeCardSection, readonly (readonly string[])[]> = {
-  planner: [[ROW], [ROW], [ROW], [ROW], [ROW], [ROW]],
+  heroes: [[ROW], [ROW], [ROW], [ROW], [ROW], [ROW]],
   farm: [['h-16 flex-1', 'h-5 w-12', 'h-16 flex-1']],
   optimizer: [['h-7 w-3/4'], [ROW], [ROW], [ROW]],
   inventory: [[FIGURE], LABEL_VALUE, LABEL_VALUE, LABEL_VALUE, LABEL_VALUE, LABEL_VALUE, LABEL_VALUE],

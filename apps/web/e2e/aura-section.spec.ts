@@ -81,7 +81,7 @@ test.describe('abilities & auras section', () => {
     page,
   }) => {
     await seedLocalStorage(page, roster);
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page);
 
@@ -132,7 +132,7 @@ test.describe('abilities & auras section', () => {
     page,
   }) => {
     await seedLocalStorage(page, roster);
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
 
     // The Farm page's own hero panel, for the same hero, in the same session — read before and
@@ -142,7 +142,7 @@ test.describe('abilities & auras section', () => {
     await mainNav.getByRole('link', { name: /^Farm$/i }).click();
     await expect(page.getByRole('heading', { name: /^Your hero$/i, level: 2 })).toBeVisible();
     const farmBefore = await farmPanel.innerText();
-    await mainNav.getByRole('link', { name: /^Planner$/i }).click();
+    await mainNav.getByRole('link', { name: /^Heroes$/i }).click();
     await openCombatTab(page);
 
     const stripBefore = await stripSustainedDps(page);
@@ -177,7 +177,7 @@ test.describe('abilities & auras section', () => {
     page,
   }) => {
     await seedLocalStorage(page, roster);
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page);
 
@@ -199,7 +199,7 @@ test.describe('abilities & auras section', () => {
 
   test('Miner’s Breath reaches the Points ranking, which reads the same pipeline', async ({ page }) => {
     await seedLocalStorage(page, roster);
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
 
     const before = await energyRankingText(page);
@@ -213,7 +213,7 @@ test.describe('abilities & auras section', () => {
 
   test('"Back to your current phase" clears the switches, and so does a reload', async ({ page }) => {
     await seedLocalStorage(page, roster);
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page);
 

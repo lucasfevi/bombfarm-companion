@@ -10,7 +10,7 @@ test.describe('App shell navigation', () => {
       if (req.url().includes('_avatar.png')) avatarRequests.push(req.url());
     });
 
-    await page.goto('/planner');
+    await page.goto('/heroes');
     const heroStrip = page.getByRole('region', { name: /current hero/i });
     await expect(heroStrip).toBeVisible();
 
@@ -20,22 +20,22 @@ test.describe('App shell navigation', () => {
     await expect(page).toHaveURL(/\/farm$/);
     await expect(heroStrip).toBeHidden();
 
-    await page.getByRole('link', { name: /^Planner$/i }).click();
-    await expect(page).toHaveURL(/\/planner$/);
+    await page.getByRole('link', { name: /^Heroes$/i }).click();
+    await expect(page).toHaveURL(/\/heroes$/);
     await expect(heroStrip).toBeVisible();
 
     // Keep-alive: the planner tree is never unmounted, so no avatar refetch.
     expect(avatarRequests.length).toBe(avatarsAfterFirstLoad);
   });
 
-  test('nav order is Home then Planner then Farm and marks the active route', async ({ page }) => {
+  test('nav order is Home then Heroes then Farm and marks the active route', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
 
     const links = page.getByRole('navigation', { name: 'Main sections' }).getByRole('link');
     await expect(links).toHaveText([
       /^Home$/i,
-      /^Planner$/i,
+      /^Heroes$/i,
       /^Farm$/i,
       /^Optimizer$/i,
       /^Inventory$/i,
@@ -79,5 +79,25 @@ test.describe('App shell navigation', () => {
     await expect(page.getByRole('heading', { name: /^Map$/i, level: 2 })).toBeVisible();
     await expect(page.getByLabel(/^Difficulty$/i)).toBeVisible();
     await expect(page.getByRole('region', { name: /current hero/i })).toBeHidden();
+  });
+});
+
+test.describe('/planner redirect stub', () => {
+  test('sends a link shared before the rename to /heroes, without a Back trap', async ({ page }) => {
+    await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
+    await page.goto('/farm');
+    await page.goto('/planner');
+
+    await expect(page).toHaveURL(/\/heroes$/);
+    await expect(page.getByRole('region', { name: /current hero/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /^Heroes$/i })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+
+    // `router.replace`, not `push`: Back must reach whatever came before the old URL, or the
+    // stub redirects again and the visitor cannot leave.
+    await page.goBack();
+    await expect(page).toHaveURL(/\/farm$/);
   });
 });

@@ -1,4 +1,4 @@
-export type SiteSection = 'home' | 'planner' | 'farm' | 'optimizer' | 'inventory' | 'account' | 'download';
+export type SiteSection = 'home' | 'heroes' | 'farm' | 'optimizer' | 'inventory' | 'account' | 'download';
 
 /**
  * Every top-level route, in order.
@@ -9,7 +9,7 @@ export type SiteSection = 'home' | 'planner' | 'farm' | 'optimizer' | 'inventory
  */
 export const SITE_SECTIONS: readonly SiteSection[] = [
   'home',
-  'planner',
+  'heroes',
   'farm',
   'optimizer',
   'inventory',
@@ -27,7 +27,7 @@ export const NAV_SECTIONS: readonly SiteSection[] = SITE_SECTIONS.filter(
 
 export const SITE_SECTION_HREF: Record<SiteSection, string> = {
   home: '/',
-  planner: '/planner',
+  heroes: '/heroes',
   farm: '/farm',
   optimizer: '/optimizer',
   inventory: '/inventory',
@@ -41,7 +41,7 @@ export const SITE_SECTION_HREF: Record<SiteSection, string> = {
  */
 export const SITE_SECTION_LABEL_KEY = {
   home: 'navHome',
-  planner: 'navPlanner',
+  heroes: 'navHeroes',
   farm: 'navPhases',
   optimizer: 'navOptimizer',
   inventory: 'navInventory',

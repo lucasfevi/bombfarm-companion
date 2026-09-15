@@ -42,8 +42,8 @@ export function PhasesExplorer({ t, lang }: { t: Strings; lang: Lang }) {
   const slots = useMemo(
     () => ({
       emptyRosterAction: (
-        <Link href={SITE_SECTION_HREF.planner} className="text-accent underline-offset-2 hover:underline">
-          {t.navPlanner}
+        <Link href={SITE_SECTION_HREF.heroes} className="text-accent underline-offset-2 hover:underline">
+          {t.navHeroes}
         </Link>
       ),
       renderPicker: (picker: HeroPickerSlotProps) => (

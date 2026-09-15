@@ -49,7 +49,7 @@ export function AppShellInner({
   const pathname = usePathname();
   /** Every section but the planner renders `children`; the planner is the kept-alive slot. */
   const onSectionPage = SITE_SECTIONS.some(
-    (section) => section !== 'planner' && isSiteSectionActive(section, pathname),
+    (section) => section !== 'heroes' && isSiteSectionActive(section, pathname),
   );
   const { lang, setLang, t } = useAppLang();
   const importDialogOpen = usePlannerStore((state) => state.importDialogOpen);

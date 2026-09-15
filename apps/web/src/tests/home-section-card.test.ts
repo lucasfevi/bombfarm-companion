@@ -22,7 +22,7 @@ vi.mock('@/shared/stores/planner-store', async (importOriginal) => {
 
 const LANGS: readonly Lang[] = ['en', 'pt'];
 const KINDS: readonly HomeCardSection[] = [
-  'planner',
+  'heroes',
   'farm',
   'optimizer',
   'inventory',

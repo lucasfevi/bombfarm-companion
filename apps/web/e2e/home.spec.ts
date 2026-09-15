@@ -127,7 +127,7 @@ test.describe('Home', () => {
     expect(farmDps).toBeGreaterThan(0);
 
     await openSection(page, 'Home');
-    const cardRow = card(page, 'Planner').locator('tbody tr').first();
+    const cardRow = card(page, 'Heroes').locator('tbody tr').first();
     await expect(cardRow.locator('td').first()).toContainText(heroName!);
     await expect(cardRow.locator('td').nth(2)).toHaveText(formatCompactNumber(farmDps, 'en'));
   });
@@ -165,7 +165,7 @@ test.describe('Home', () => {
   }) => {
     await openEmptyHome(page);
     await importThirteenHeroes(page);
-    const planner = card(page, 'Planner');
+    const planner = card(page, 'Heroes');
     const farm = card(page, 'Farm');
     const tiles = () =>
       Promise.all([

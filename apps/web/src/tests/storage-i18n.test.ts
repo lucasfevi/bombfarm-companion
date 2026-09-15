@@ -77,7 +77,7 @@ describe('planner tabs IA (PTI-*)', () => {
     tabPoints: { en: 'Points', pt: 'Pontos' },
     // Farm Ranking (T1): renamed Phases -> Farm, identical in both languages.
     navPhases: { en: 'Farm', pt: 'Farm' },
-    navPlanner: { en: 'Planner', pt: 'Planner' },
+    navHeroes: { en: 'Heroes', pt: 'Heróis' },
     navAccount: { en: 'Account', pt: 'Conta' },
     tabHeroWarnTitle: { en: 'This hero needs attention', pt: 'Este herói precisa de atenção' },
     tabGearWarnTitle: { en: 'Gear needs attention', pt: 'Equipamento precisa de atenção' },

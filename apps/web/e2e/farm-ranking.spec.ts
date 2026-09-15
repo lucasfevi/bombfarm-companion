@@ -92,7 +92,7 @@ test.describe('Farm Ranking board', () => {
     page,
   }) => {
     await seedLocalStorage(page, { ...importedRoster, account: accountWithMaxPhase, lang: 'en' });
-    await page.goto('/planner');
+    await page.goto('/heroes');
     await page.goto('/phases');
     await expect(page).toHaveURL(/\/farm$/);
     await expect(page.getByTestId('farm-ranking')).toBeVisible();
