@@ -30,11 +30,11 @@ const clone: GearBonuses = {
 };
 
 describe('gearBonusRows', () => {
-  it('returns one row per GearBonuses key, in the fixed column order, without a clone', () => {
+  it('returns one row per drawn GearBonuses key, in the fixed column order, without a clone', () => {
     const rows = gearBonusRows(current, t);
+    // `dmgPct` is structurally 0 with the current catalog, so the totals draw no column for it.
     expect(rows.map((r) => r.key)).toEqual([
       'dmgFlat',
-      'dmgPct',
       'energyPct',
       'speedPct',
       'luckPct',

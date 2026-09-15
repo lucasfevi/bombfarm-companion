@@ -128,17 +128,32 @@ export const emptyGearSlotClass = cn(
   artFrameRadiusClass,
 );
 
-export const slotsGridClass = 'grid grid-cols-8 gap-1.5 max-[720px]:min-w-[720px]';
-export const slotStatsGridClass = `${slotsGridClass} mt-1.5`;
+/** The eight slot cards: four across, or eight across once the panel is 64rem wide — the desktop
+ *  shell caps this panel at 1096px of content (measured at a 1920px window), which is 131px a card
+ *  with the gaps, enough for the art, a name wrapped over two lines and every stat row unbroken.
+ *  Between those two shapes nothing else reads: a 5+3 or 6+2 fold leaves a slot under one it has
+ *  nothing to do with. Each column stops at 13rem, the measure the card is drawn for, and the grid
+ *  centres in a wider panel rather than stretching the cards or hugging one edge. Under 720px the
+ *  row keeps its width and scrolls sideways. The container is the panel the grid sits in. */
+export const slotsGridClass =
+  'grid grid-cols-[repeat(4,minmax(0,13rem))] justify-center gap-1.5 max-[720px]:min-w-[36rem] @min-[64rem]:grid-cols-[repeat(8,minmax(0,13rem))]';
 export const slotStatRowClass =
   'flex items-baseline justify-between gap-1.5 text-muted leading-snug [&_b]:shrink-0 [&_b]:font-semibold [&_b]:text-ink';
 
-export function slotStatClassName(equipped: EquippedItem | null | undefined): string {
-  return cn(
-    'flex min-h-[2.5em] flex-col gap-0.5 border border-dashed border-transparent bg-bg p-1.5 text-[11px] leading-snug tabular-nums',
-    artFrameRadiusClass,
-    equipped && 'border-solid border-line',
-  );
+const slotChromeBase = cn(
+  'relative flex flex-col gap-1 border border-dashed border-line bg-bg p-1.5 [&_[data-select]]:w-full',
+  artFrameRadiusClass,
+);
+const slotChromeChanged =
+  'shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--accent)_40%,transparent)]';
+
+/** One gear slot's card: neutral chrome, solid once filled — the rarity reads from the item frame
+ *  inside it. `changed` marks a clone slot that differs from the current gear. */
+export function slotChromeClassName(
+  equipped: EquippedItem | null | undefined,
+  changed = false,
+): string {
+  return cn(slotChromeBase, equipped && 'border-solid', changed && slotChromeChanged);
 }
 
 /** Literal rarity text colours so Tailwind's JIT scanner sees every class. */

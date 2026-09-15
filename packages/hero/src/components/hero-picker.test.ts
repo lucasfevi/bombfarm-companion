@@ -108,7 +108,7 @@ describe('the components are prop-driven — no store, no host module', () => {
     expect(componentFiles).toContain('combat-breakdown-matrix.tsx');
     expect(componentFiles).toContain('gear-tab.tsx');
     expect(componentFiles).toContain('gear-slots-grid.tsx');
-    expect(componentFiles).toContain('gear-slot-stats-grid.tsx');
+    expect(componentFiles).toContain('gear-slot-card.tsx');
     expect(componentFiles).toContain('gear-totals-table.tsx');
     expect(componentFiles).toContain('gear-compare-section.tsx');
     expect(componentFiles).toContain('next-point-ranking.tsx');

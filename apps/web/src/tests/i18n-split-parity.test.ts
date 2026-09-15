@@ -222,6 +222,9 @@ const KEYS_REMOVED: readonly string[] = [
   'farmRespecRerankToggle',
   'farmRespecTerminalDesc',
   'farmRespecTerminalTitle',
+  // The gear totals table's "Damage (% of Attack)" column (2026-09-14): no item in the current
+  // catalog carries a percent damage bonus, so the column read +0.0% on every account.
+  'dmgPctLabel',
   // The Optimizer's proposed-items grid draws every gear slot now (2026-09-14), so a hero the
   // plan gives nothing shows eight named empty cards and the sentence that stood in for them has
   // no reader left; its per-slot replacement is `teamPlanFlowSlotEmpty` (in `KEYS_ADDED`).
@@ -999,8 +1002,11 @@ const PROSE_EDITED_PATHS_PT_ONLY: readonly string[] = [
   // the sheet/points column and the Effective panel's title — while every label under them was
   // translated. Both now say Atributo(s), matching the desktop's Heroes screen, and the pt
   // walkthrough paragraph that names the panel follows it. English calls a stat a stat.
-  'colStat',
-  'panelEffective',
+  'colStat', 'panelEffective',
+  // The level prefix (2026-09-14): pt-BR said "Lv" wherever the planner abbreviates a hero's or
+  // an item's level — the roster rail, the import preview, the gear slot cards — while the
+  // desktop said "Nv". Both say Nv now; English keeps Lv.
+  'rankLv',
 ];
 
 const PROSE_EDITED_PATHS: readonly string[] = [

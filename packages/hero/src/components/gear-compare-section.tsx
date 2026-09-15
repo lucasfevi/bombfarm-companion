@@ -20,7 +20,7 @@ import {
 import { AnimatePresence, motion, MotionConfig } from 'motion/react';
 import type { GearPanelCopy, Lang } from '../copy';
 import { gearPanelReading } from '../model/gear-panel';
-import { GearSlotStatsGrid } from './gear-slot-stats-grid';
+import { GearSlotCardsGrid } from './gear-slot-card';
 import { GearTotalsTable } from './gear-totals-table';
 import type { GearSlotEditorSlot, SlotPatchHandler } from './gear-slots-grid';
 
@@ -196,7 +196,7 @@ export function GearCompareSection({
               {!hasGear && (
                 <MetricScoreboard cells={metricCells!} aria-label={metricsAriaLabel} />
               )}
-              {reading.showSlotEditors && editing && renderSlot && (
+              {reading.showSlotEditors && editing && renderSlot ? (
                 <div className={slotsGridClass}>
                   {SLOTS.map((slot) => {
                     const current = loadout[slot];
@@ -214,8 +214,15 @@ export function GearCompareSection({
                     );
                   })}
                 </div>
+              ) : (
+                <GearSlotCardsGrid
+                  loadout={altLoadout}
+                  lang={lang}
+                  t={t}
+                  formatNumber={boundFormatNumber}
+                  aria-label={t.slotStats}
+                />
               )}
-              <GearSlotStatsGrid loadout={altLoadout} t={t} formatNumber={boundFormatNumber} />
             </motion.div>
           )}
         </AnimatePresence>

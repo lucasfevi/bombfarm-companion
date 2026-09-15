@@ -26,7 +26,7 @@ import type { TeamPlanEmptyStateKind } from '@bombfarm/team-plan/model';
 import type { TeamPlanRunnerHandle, TeamPlanRunStatus } from '@bombfarm/team-plan/runner';
 import type { TeamPlan, TeamPlanAllowedChanges, TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import { formatItemRosterTooltip } from '@bombfarm/domain/game-labels';
+import { itemName } from '@bombfarm/domain/game-labels';
 import { useCopy, useLocale } from '../../lib/copy';
 import type { AccountReadRequestState } from '../../lib/account/use-account-read-request';
 import type { OptimizerSettledSnapshot } from '../../lib/optimizer/optimizer-snapshot-store';
@@ -175,10 +175,10 @@ export function OptimizerScreen({
   const forgeQueueAction = useCallback(
     (entry: ForgeQueueEntryRef) => {
       const item = inventoryItems.find((candidate) => candidate.id === entry.itemId);
-      const itemName = item === undefined ? entry.itemId : formatItemRosterTooltip({ ...item, upgrade: 0 }, lang, t.rankLv).title;
-      return <ForgeQueueAdd itemId={entry.itemId} target={entry.to} itemName={itemName} />;
+      const name = item === undefined ? entry.itemId : itemName(item, lang);
+      return <ForgeQueueAdd itemId={entry.itemId} target={entry.to} itemName={name} />;
     },
-    [inventoryItems, lang, t.rankLv],
+    [inventoryItems, lang],
   );
 
   const slots = useMemo<TeamPlanScreenSlots>(

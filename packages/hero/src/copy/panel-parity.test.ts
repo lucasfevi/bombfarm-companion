@@ -43,12 +43,14 @@ const GEAR_PT = flatten(gearPanelPtBR);
  *
  * 'Stat', 'Clone', 'Total' and 'Farm' are loanwords carrying the same spelling in pt-BR, and
  * 'gear' is the one the Portuguese sheet tip beside them already uses. 'DPS' is an initialism.
- * 'Hit' and 'Critical Hit' are the game's own untranslated combat terms. 'Pen' and '/pt'
+ * 'Hit' and 'Critical Hit' are the game's own untranslated combat terms. 'Pen', 'Ene' and '/pt'
  * abbreviate words that abbreviate identically in both languages — the unabbreviated
- * `statFull.penetration` beside the first one IS translated.
+ * `statFull.penetration` and `slotStatFullLabels.*` beside them ARE translated.
  */
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly string[] = [
   'statShort.penetration',
+  'slotStatLabels.penetracao',
+  'slotStatLabels.energia',
   'colSheetDeltaGear',
   'colSheetTotal',
   'colPerPt',

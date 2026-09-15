@@ -15,7 +15,7 @@ import {
 import type { GearPanelCopy, Lang } from '../copy';
 import { gearPanelReading } from '../model/gear-panel';
 import { GearSlotsGrid, type GearSlotEditorSlot, type SlotPatchHandler } from './gear-slots-grid';
-import { GearSlotStatsGrid } from './gear-slot-stats-grid';
+import { GearSlotCardsGrid } from './gear-slot-card';
 import { GearCompareSection, type GearCompareEditing } from './gear-compare-section';
 
 /**
@@ -54,15 +54,22 @@ export function GearTab({
 
   return (
     <main className={colClass}>
-      <Panel>
+      <Panel className="@container min-w-0">
         <div className={panelHClass}>
           <h2 className={panelTitleClass}>{t.panelItems}</h2>
           <FieldRequired show={!hasGear}>{t.fieldRequired}</FieldRequired>
         </div>
-        {reading.showSlotEditors && editing && renderSlot && (
+        {reading.showSlotEditors && editing && renderSlot ? (
           <GearSlotsGrid loadout={loadout} onPatchSlot={editing.onPatchSlot} renderSlot={renderSlot} />
+        ) : (
+          <GearSlotCardsGrid
+            loadout={loadout}
+            lang={lang}
+            t={t}
+            formatNumber={boundFormatNumber}
+            aria-label={t.slotStats}
+          />
         )}
-        {hasGear && <GearSlotStatsGrid loadout={loadout} t={t} formatNumber={boundFormatNumber} />}
         <GearCompareSection
           t={t}
           lang={lang}

@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { slotChromeClassName } from '@/features/gear/components/slot-editor';
-import { slotStatClassName } from '@/shared/game-art';
+import { slotChromeClassName } from '@/shared/game-art';
 import { STRINGS, sub } from '@/shared/i18n';
 import { setsForLevel, type EquippedItem } from '@bombfarm/domain/gear';
 import { setName } from '@bombfarm/domain/game-labels';
@@ -37,25 +36,6 @@ describe('slotChromeClassName', () => {
     expect(empty).not.toMatch(/border-rar-/);
     expect(empty).not.toContain('shadow-[inset');
     expect(empty).toContain('border-dashed');
-  });
-});
-
-describe('slotStatClassName', () => {
-  it('uses neutral solid border when equipped', () => {
-    const rare = slotStatClassName(eq(2));
-    expect(rare).not.toMatch(/border-rar-/);
-    expect(rare).toContain('border-line');
-    expect(rare).toContain('border-solid');
-    expect(rare).not.toContain('border-transparent');
-  });
-
-  it('keeps transparent dashed border when empty', () => {
-    for (const empty of [slotStatClassName(null), slotStatClassName(undefined)]) {
-      expect(empty).toContain('border-transparent');
-      expect(empty).toContain('border-dashed');
-      expect(empty).not.toMatch(/border-rar-/);
-      expect(empty).not.toContain('border-solid');
-    }
   });
 });
 

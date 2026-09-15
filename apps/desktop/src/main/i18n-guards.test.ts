@@ -392,6 +392,8 @@ const GAME_LABELS_HELPERS = [
   'itemStatLabel',
   'propLabel',
   'setName',
+  'itemSetName',
+  'itemName',
   'formatItemDisplay',
   'formatItemRosterTooltip',
 ] as const;
