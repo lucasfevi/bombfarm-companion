@@ -132,7 +132,7 @@ export const heroEn = {
   heroDetailAuraUnitPulse: "+{value}% dmg, pulse held up",
   heroDetailAurasNoOwnAbilities: "This hero has no ability of its own in force.",
 
-  heroDetailBreakdownHint: "Hover or focus a card's figure for the formula behind it and what it reads.",
+  heroDetailBreakdownHint: 'Hover or focus a card for the formula behind it and what it reads; the cards it is wired to stay lit.',
   heroDetailBreakdownRowSheet: "Sheet",
   heroDetailBreakdownRowFactors: "Factors",
   heroDetailBreakdownRowPerHit: "Per hit · cadence",

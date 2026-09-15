@@ -137,6 +137,8 @@ export {
   cardInputChips,
   cardInputs,
   cardNoteFor,
+  cardOutputs,
+  connectedCards,
   ledgerLines,
   matrixRowsFor,
   matrixShowsRunes,

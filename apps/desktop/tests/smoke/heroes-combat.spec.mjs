@@ -137,11 +137,14 @@ test.describe('the Heroes screen\'s Combat stage', () => {
     await expect(wires.locator('[data-edge-from="speed"][data-edge-to="bombsPerSecond"]')).toHaveCount(1);
   });
 
-  test('hovering a card opens its popover and lights the wires that feed it', async () => {
+  test('hovering a card opens its popover, lights the wires on both sides of it and mutes the cards on neither', async () => {
     const panel = page.getByTestId('combat-breakdown');
-    await panel.locator('[data-breakdown-card="hit"] [data-slot="tooltip-trigger"]').first().hover();
+    await panel.locator('[data-breakdown-card="hit"]').hover();
     await expect(page.getByTestId('breakdown-popover-hit')).toBeVisible();
-    await expect(panel.locator('[data-testid="breakdown-wires"] [data-lit="true"]')).toHaveCount(3);
+    await expect(panel.locator('[data-testid="breakdown-wires"] [data-lit="true"]')).toHaveCount(5);
+    await expect(panel.locator('[data-breakdown-card][data-muted="true"]')).toHaveCount(CARD_IDS.length - 6);
+    await page.mouse.move(0, 0);
+    await expect(panel.locator('[data-breakdown-card][data-muted="true"]')).toHaveCount(0);
   });
 
   test('pulled narrow, the same cards stack one per row and the wires are gone', async () => {

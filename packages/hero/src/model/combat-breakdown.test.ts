@@ -12,6 +12,8 @@ import {
   cardInputChips,
   cardInputs,
   cardNoteFor,
+  cardOutputs,
+  connectedCards,
   expectedBlastAbilityIds,
   ledgerLines,
   matrixRowsFor,
@@ -64,6 +66,14 @@ describe('the pipeline\'s rows and wires', () => {
     expect(cardInputs('hit')).toEqual(['attack', 'mitF', 'dmg']);
     expect(cardInputs('activeDps')).toEqual(['avgHit', 'bombsPerSecond']);
     expect(cardInputs('attack')).toEqual([]);
+  });
+
+  it('a card is connected to what it reads and to what reads it, so a sheet stat lights the figure it feeds', () => {
+    expect(cardOutputs('attack')).toEqual(['hit']);
+    expect(cardOutputs('critDmg')).toEqual(['critFactor', 'criticalHit']);
+    expect(cardOutputs('sustainedDps')).toEqual([]);
+    expect([...connectedCards('hit')]).toEqual(['hit', 'attack', 'mitF', 'dmg', 'criticalHit', 'avgHit']);
+    expect([...connectedCards('attack')]).toEqual(['attack', 'hit']);
   });
 });
 

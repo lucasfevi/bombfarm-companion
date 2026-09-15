@@ -70,6 +70,15 @@ export function cardInputs(card: BreakdownStatId): readonly BreakdownStatId[] {
   return COMBAT_BREAKDOWN_EDGES.filter((edge) => edge.to === card).map((edge) => edge.from);
 }
 
+export function cardOutputs(card: BreakdownStatId): readonly BreakdownStatId[] {
+  return COMBAT_BREAKDOWN_EDGES.filter((edge) => edge.from === card).map((edge) => edge.to);
+}
+
+/** The card itself and every card one wire away from it, in either direction. */
+export function connectedCards(card: BreakdownStatId): ReadonlySet<BreakdownStatId> {
+  return new Set([card, ...cardInputs(card), ...cardOutputs(card)]);
+}
+
 /**
  * Where each effect kind lands. Exhaustive over the catalog's kinds, so an ability added under a
  * new kind has to be placed here before it compiles — and one added under an existing kind lands

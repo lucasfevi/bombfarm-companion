@@ -36,8 +36,9 @@ function cardValue(page: Page, id: string): Locator {
 }
 
 /** The face of a card — the hover and focus target that opens its popover. */
+/** The whole card is the popover's trigger. */
 function cardFace(page: Page, id: string): Locator {
-  return card(page, id).locator('[data-slot="tooltip-trigger"]').first();
+  return card(page, id);
 }
 
 /** Every figure the pipeline draws: the seven sheet stats, six factors, five per-hit and cadence
@@ -185,7 +186,7 @@ test.describe('combat breakdown panel', () => {
     expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(clientWidth);
   });
 
-  test('hovering Hit lights the wires from Attack, Mitigation factor and Damage multiplier', async ({ page }) => {
+  test('hovering Hit lights its wires both ways, keeps the cards on them lit and mutes the rest', async ({ page }) => {
     await seedLocalStorage(page, { ...importedRoster, lang: 'en' });
     await page.goto('/heroes');
     await selectSavedHero(page, 'Cora');
@@ -194,13 +195,23 @@ test.describe('combat breakdown panel', () => {
     const wires = effectivePanel(page).getByTestId('breakdown-wires');
     await expect(wires.locator('[data-lit="true"]')).toHaveCount(0);
     await cardFace(page, 'hit').hover();
+    // Three wires in, two out: Hit reads Attack, the mitigation factor and the damage multiplier,
+    // and feeds Critical hit and Average hit.
     const lit = wires.locator('[data-lit="true"]');
-    await expect(lit).toHaveCount(3);
+    await expect(lit).toHaveCount(5);
     for (const from of ['attack', 'mitF', 'dmg']) {
       await expect(wires.locator(`[data-edge-from="${from}"][data-edge-to="hit"][data-lit="true"]`)).toHaveCount(1);
     }
+    for (const to of ['criticalHit', 'avgHit']) {
+      await expect(wires.locator(`[data-edge-from="hit"][data-edge-to="${to}"][data-lit="true"]`)).toHaveCount(1);
+    }
     await expect(card(page, 'attack')).toHaveAttribute('data-lit', 'true');
+    await expect(card(page, 'criticalHit')).toHaveAttribute('data-lit', 'true');
+    // Every card not one wire from Hit is muted while the hover lasts.
     await expect(card(page, 'speed')).not.toHaveAttribute('data-lit', 'true');
+    await expect(card(page, 'speed')).toHaveAttribute('data-muted', 'true');
+    await expect(card(page, 'sustainedDps')).toHaveAttribute('data-muted', 'true');
+    await expect(effectivePanel(page).locator('[data-breakdown-card][data-muted="true"]')).toHaveCount(14);
     // The popover opens on the same hover, with every term of the substituted formula named.
     const popover = page.getByTestId('breakdown-popover-hit');
     await expect(popover).toBeVisible();
@@ -229,7 +240,8 @@ test.describe('combat breakdown panel', () => {
 
     await page.mouse.move(0, 0);
     await expect(popover).toBeHidden();
-    // Keyboard focus: Fuse's card has no badge icons, so Tab from its face lands on Field time's.
+    await expect(effectivePanel(page).locator('[data-breakdown-card][data-muted="true"]')).toHaveCount(0);
+    // Keyboard focus: the badge icons are not tab stops, so Tab from Fuse's card lands on Field time's.
     await cardFace(page, 'fuse').focus();
     await page.keyboard.press('Tab');
     await expect(page.getByTestId('breakdown-popover-fieldSeconds')).toBeVisible();
@@ -242,7 +254,7 @@ test.describe('combat breakdown panel', () => {
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
 
-    // Keyboard focus: Fuse's card has no badge icons, so Tab from its face lands on Field time's.
+    // Keyboard focus: the badge icons are not tab stops, so Tab from Fuse's card lands on Field time's.
     await cardFace(page, 'fuse').focus();
     await page.keyboard.press('Tab');
     const popover = page.getByTestId('breakdown-popover-fieldSeconds');
