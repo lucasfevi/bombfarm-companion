@@ -27,6 +27,7 @@ export default defineConfig({
         'optimizer.spec.mjs',
         'heroes-combat.spec.mjs',
         'heroes-roster-board.spec.mjs',
+        'heroes-stages-and-scrollbars.spec.mjs',
         'live-earnings-no-layout-shift.spec.mjs',
         'live-hero-row-no-layout-shift.spec.mjs',
         'live-state-summary-no-layout-shift.spec.mjs',
