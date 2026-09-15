@@ -592,7 +592,6 @@ export const ptBR: Copy = {
   farmRefreshStale: 'desatualizado',
   farmUnavailableTitle: 'Ainda falta ler parte da sua conta',
   farmUnavailableDescription: 'O quadro precisa de todas as partes da sua conta. Abra o jogo com o companion em execução e deixe aberto por um instante.',
-  farmRespecOptimizerPointer: 'Para movimentações de itens e forjas também, abra a aba Otimizador.',
   farmLeftOutTitle: 'Alguns heróis ficaram fora do quadro',
   farmLeftOutBody: 'O app não conseguiu ler os pontos de atributo gastos de {heroes} na conta, então as taxas deles não podem ser calculadas e eles ficam fora deste quadro.',
   farmStatColumn: 'Atributo',

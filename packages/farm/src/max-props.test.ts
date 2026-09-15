@@ -162,8 +162,8 @@ describe('max props (error, non-DOM props only, no allowlist)', () => {
   it('the scan reaches this package\'s components — it is not passing over an empty set', () => {
     const names = files.map((abs) => path.basename(abs));
     expect(names).toContain('farm-ranking-board.tsx');
-    expect(names).toContain('farm-respec-panel.tsx');
-    expect(names.filter((name) => name.startsWith('farm-')).length).toBeGreaterThanOrEqual(16);
+    expect(names).toContain('farm-optimize-toolbar.tsx');
+    expect(names.filter((name) => name.startsWith('farm-')).length).toBeGreaterThanOrEqual(10);
   });
 
   it('red state: a fabricated nine-prop component is counted over the budget', () => {
@@ -185,7 +185,7 @@ describe('max props (error, non-DOM props only, no allowlist)', () => {
   onActivate: (phase: number) => void;
   lang: Lang;
   t: FarmCopy;
-  reRankActive: boolean;
+  scrollportHeightPx?: number;
   ninth: boolean;
 `;
     // Eight of the nine, if the scan stopped at the bag's first closing brace.

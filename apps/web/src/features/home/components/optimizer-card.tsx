@@ -92,7 +92,7 @@ export function OptimizerCard() {
         body = (
           <>
             {underFloor ? (
-              <p className="m-0 text-sm">{t.farmRespecNotWorthTitle}</p>
+              <p className="m-0 text-sm">{t.homeCardOptimizerBelowFloor}</p>
             ) : (
               <OptimizerPlanBody plan={plan} objective={objective} t={t} lang={lang} />
             )}

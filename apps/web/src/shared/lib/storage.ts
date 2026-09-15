@@ -359,11 +359,11 @@ function heroRecordsValueEqual(left: HeroRecord, right: HeroRecord): boolean {
  * Returns the SAME array reference when `saved` is value-equal to the record already at that
  * index. This is load-bearing, not a micro-optimisation: `state.heroes` is member 0 of
  * `readFarmDepTuple` (`stores/selectors/farm-ranking-selectors.ts`), whose members are compared
- * with `Object.is`. A fresh array identity therefore invalidates every memo keyed on that tuple
- * AND makes `selectFarmRespecView` judge a still-valid respec proposal stale — silently, since
- * `selectFarmRespecStatus` then collapses to `'idle'` and no error surfaces. The 700ms debounced
- * hero autosave (`persistence/persist-hero-draft.ts`) round-trips the roster and calls this after
- * any interaction, so `.map()`'s unconditional new array dropped live proposals on a timer.
+ * with `Object.is`. A fresh array identity therefore invalidates every memo keyed on that tuple —
+ * silently, since the 600-row farm board simply recomputes and no error surfaces. The 700ms
+ * debounced hero autosave (`persistence/persist-hero-draft.ts`) round-trips the roster and calls
+ * this after any interaction, so `.map()`'s unconditional new array recomputed the board on a
+ * timer.
  * Reference equality cannot serve here: `saved` is rebuilt by `normalizeHero`, so `===` never
  * hits — see {@link heroRecordsValueEqual} for the comparison and why `updatedAt` is excluded.
  *
@@ -410,8 +410,8 @@ export function patchHeroInList(heroes: HeroRecord[], saved: HeroRecord): HeroRe
  * ignores the `updatedAt` stamp `mergeImportedHero` refreshes) to the one it replaced. Same
  * contract, same reason as {@link patchHeroInList}: `state.heroes` is member 0 of
  * `readFarmDepTuple` (`stores/selectors/farm-ranking-selectors.ts`), compared with `Object.is`,
- * so a fresh-but-equal array reads as a real planner edit and silently drops a live farm-respec
- * proposal. Re-importing an unchanged save file used to do exactly that.
+ * so a fresh-but-equal array reads as a real planner edit and silently recomputes the 600-row
+ * farm board. Re-importing an unchanged save file used to do exactly that.
  *
  * Two things this deliberately does NOT change:
  * - `created`/`updated`/`removed` keep their meaning. `updated` still counts every record

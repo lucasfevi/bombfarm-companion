@@ -43,25 +43,17 @@ const COLUMN_WIDTH_REM: Record<string, number> = {
 
 type Props = {
   rows: readonly FarmRateRow[];
-  /** Grouped rather than two flat props (the 8-prop cap left no room once reRankActive
-   *  joined) — the board's own sort state is already this exact shape. */
+  /** Grouped rather than two flat props — the board's own sort state is already this exact
+   *  shape. */
   sort: { key: FarmSortKey; direction: FarmSortDir };
   onSort: (key: FarmSortKey) => void;
   currentPhase: number;
   onActivate: (phase: number) => void;
   lang: Lang;
   t: FarmCopy;
-  /** How the table is shown rather than what it lists, grouped to stay inside the 8-prop cap —
-   *  the same regrouping `sort` above already carries. */
-  display: {
-    /** True when the rows above come from the proposed respec build, not the player's current
-     *  one. Drives the caption text and a data-farm-mode attribute — no column, sort or filter
-     *  change; the table itself is byte-identical either way. */
-    reRankActive: boolean;
-    /** The scrollport's height, which is what the virtualization window is sized from. Omitted,
-     *  the table renders at the height it always had. */
-    scrollportHeightPx?: number | undefined;
-  };
+  /** The scrollport's height, which is what the virtualization window is sized from. Omitted,
+   *  the table renders at the height it always had. */
+  scrollportHeightPx?: number | undefined;
 };
 
 /**
@@ -81,9 +73,8 @@ export function FarmRankingTable({
   onActivate,
   lang,
   t,
-  display,
+  scrollportHeightPx = DEFAULT_SCROLLPORT_HEIGHT_PX,
 }: Props) {
-  const { reRankActive, scrollportHeightPx = DEFAULT_SCROLLPORT_HEIGHT_PX } = display;
   const [scrollTop, setScrollTop] = useState(0);
   const total = rows.length;
   const visibleRows = useMemo(() => visibleRowsFor(scrollportHeightPx), [scrollportHeightPx]);
@@ -120,7 +111,6 @@ export function FarmRankingTable({
       >
         <DataTable.Table
           className="min-w-266 table-fixed"
-          data-farm-mode={reRankActive ? 'proposed' : 'current'}
           aria-rowcount={total}
         >
           <colgroup>
@@ -128,9 +118,7 @@ export function FarmRankingTable({
               <col key={column.id} style={{ width: `${COLUMN_WIDTH_REM[column.id]}rem` }} />
             ))}
           </colgroup>
-          <DataTable.Caption>
-            {reRankActive ? t.farmRespecRerankCaption : t.farmRankingCaption}
-          </DataTable.Caption>
+          <DataTable.Caption>{t.farmRankingCaption}</DataTable.Caption>
           <DataTable.Head>
             <DataTable.Row>
               {FARM_COLUMNS.map((column) => {

@@ -16,7 +16,7 @@ import { STRINGS, sub, type Lang } from '@/shared/i18n';
 import { normalizeHero } from '@/shared/lib/storage';
 import {
   resetPlannerStoreForTests,
-  selectFarmBoardRows,
+  selectFarmRankingRows,
   usePlannerStore,
   type PlannerStore,
 } from '@/shared/stores';
@@ -51,7 +51,7 @@ const LANGS: readonly Lang[] = ['en', 'pt'];
 function boardRow(): FarmRateRow {
   usePlannerStore.getState().hydrateRoster([hero('a'), hero('b')], 'a');
   usePlannerStore.getState().applyAccountImport({ tree: null, houseIdx: 0, houseLevel: 5, phase: 51, maxPhase: 137 });
-  const base = selectFarmBoardRows(usePlannerStore.getState()).rows.find(
+  const base = selectFarmRankingRows(usePlannerStore.getState()).rows.find(
     (candidate) => !candidate.locked && !candidate.infeasible && !candidate.gate,
   );
   resetPlannerStoreForTests();

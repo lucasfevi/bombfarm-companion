@@ -1020,7 +1020,7 @@ none, so throwing would be a standing red nobody could clear.
 | `point-roundtrip` (domain + web) | a whole-roster geared capture; its live stand-in for the current regime is `postpatch-damage-model.test.ts`, on four heroes |
 | `tree-crit-dmg-flat` (domain + web) | a capture with a nonzero `skills.totals.crit_dmg_add` |
 | `points-rank-golden` (domain + web) | a geared hero to re-record the golden against |
-| `farm-point-rank`, `farm-rate-gate-throughput`, `invariance-baseline`, `farm-respec-fixture` | the same geared roster |
+| `farm-point-rank`, `farm-rate-gate-throughput`, `invariance-baseline` | the same geared roster |
 | `import-merge`, one assertion | an 8/8-geared hero to reconstruct |
 
 **What the corpus sweep lost, concretely.** `points-within-level-budget.test.ts` swept three

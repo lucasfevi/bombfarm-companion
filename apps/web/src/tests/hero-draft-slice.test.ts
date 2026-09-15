@@ -150,7 +150,7 @@ describe('hero-draft slice', () => {
    * The 700ms draft autosave stages `buildHeroRecord(activeHeroId)` and feeds it to
    * `patchHeroInList`, so a stored field the draft does not mirror comes back missing: the value
    * is stripped from localStorage AND the fresh array reference invalidates every memo keyed on
-   * `state.heroes`, dropping a farm-respec proposal the player is looking at. Field-agnostic on
+   * `state.heroes`, recomputing the farm board the player is looking at. Field-agnostic on
    * purpose — it fails for whichever field is dropped next, not only for `marketable`.
    */
   it('applyHero then buildHeroRecord round-trips every stored field, so a no-op autosave is a no-op', () => {

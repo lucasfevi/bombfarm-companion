@@ -21,7 +21,7 @@ import type { FarmControls } from './farm-inputs';
 
 /**
  * One compute's settled products: the board, the inputs it was computed from, and the age of the
- * account they all came from. The respec solve is a button press and lives nowhere near here.
+ * account they all came from.
  */
 export type FarmSettledBoard = {
   readonly board: FarmRankingResult;

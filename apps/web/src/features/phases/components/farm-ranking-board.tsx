@@ -1,13 +1,13 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { FarmRankingBoardView } from '@bombfarm/farm/components';
 import type { Lang, Strings } from '@/shared/i18n';
+import { SITE_SECTION_HREF } from '@/shared/lib/site-sections';
 import {
   deriveFarmPoolEntries,
-  selectFarmBoardRows,
-  selectFarmReRankActive,
-  selectFarmRespecView,
+  selectFarmRankingRows,
   selectFarmReturnBonus,
   selectFieldSlots,
   selectHeroes,
@@ -23,13 +23,15 @@ import {
  * identical screen from its own state, and a second connector per component would put four
  * subscriptions where this one already carries them.
  *
- * `selectFarmBoardRows` and `selectFarmRespecView` are read WITHOUT
- * `useShallow` — each returns a stable identity on a cache hit, and shallow-comparing 600 rows on
- * every write would defeat the memo they exist to protect.
+ * `selectFarmRankingRows` is read WITHOUT `useShallow` — it returns a stable identity on a cache
+ * hit, and shallow-comparing 600 rows on every write would defeat the memo it exists to protect.
+ *
+ * The Optimize button is this app's route to the Optimizer page; the desktop app switches a tab
+ * instead, which is why the board takes a callback rather than an href.
  */
 export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
-  const result = usePlannerStore(selectFarmBoardRows);
-  const reRankActive = usePlannerStore(selectFarmReRankActive);
+  const router = useRouter();
+  const result = usePlannerStore(selectFarmRankingRows);
   const heroes = usePlannerStore(selectHeroes);
   const farmPoolOverrides = usePlannerStore((state) => state.farmPoolOverrides);
   const poolEntries = useMemo(
@@ -41,16 +43,13 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
   const fieldSlots = usePlannerStore(selectFieldSlots);
   const currentPhase = usePlannerStore(selectPhasesViewPhase);
   const phasesViewPhaseChosen = usePlannerStore(selectPhasesViewPhaseChosen);
-  const respecView = usePlannerStore(selectFarmRespecView);
-  const respecStatus = usePlannerStore((state) => state.farmRespecStatus);
-  const respecPanelOpen = usePlannerStore((state) => state.farmRespecPanelOpen);
   const setPhasesViewPhase = usePlannerStore((state) => state.setPhasesViewPhase);
   const syncDefaultPhaseSelection = usePlannerStore((state) => state.syncDefaultPhaseSelection);
   const setFarmHeroEnabled = usePlannerStore((state) => state.setFarmHeroEnabled);
   const setFarmReturnBonus = usePlannerStore((state) => state.setFarmReturnBonus);
-  const setFarmRespecPanelOpen = usePlannerStore((state) => state.setFarmRespecPanelOpen);
-  const setFarmRespecReRank = usePlannerStore((state) => state.setFarmRespecReRank);
-  const runFarmRespec = usePlannerStore((state) => state.runFarmRespec);
+  const openOptimizer = useCallback(() => {
+    router.push(SITE_SECTION_HREF.optimizer);
+  }, [router]);
 
   return (
     <FarmRankingBoardView
@@ -58,7 +57,6 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
       lang={lang}
       data={{
         result,
-        reRankActive,
         heroes,
         poolEntries,
         returnBonus,
@@ -66,23 +64,14 @@ export function FarmRankingBoard({ t, lang }: { t: Strings; lang: Lang }) {
         fieldSlots,
         currentPhase,
         phasesViewPhaseChosen,
-        statLabels: { column: t.colStat, full: t.statFull },
-        respec: {
-          view: respecView,
-          status: respecStatus,
-          panelOpen: respecPanelOpen,
-        },
       }}
       actions={{
         setPhasesViewPhase,
         syncDefaultPhaseSelection,
         setFarmHeroEnabled,
         setFarmReturnBonus,
-        setFarmRespecPanelOpen,
-        setFarmRespecReRank,
-        runFarmRespec,
+        openOptimizer,
       }}
-      slots={{ respecScopeNote: t.teamPlanFarmAdvisorPointer }}
     />
   );
 }

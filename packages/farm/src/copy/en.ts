@@ -90,7 +90,7 @@ export const farmEn = {
   bossRow: "boss/cage",
   avgRow: "avg",
 
-  // Farm Ranking board. The `phases*` keys above and the `farmRanking*`/`farmRespec*` keys below
+  // Farm Ranking board. The `phases*` keys above and the `farmRanking*` keys below
   // share one file deliberately — they are one screen — and the prefixes keep each block greppable.
   farmRankingColPhase: "Phase",
   farmRankingColMitigation: "Mitigation",
@@ -147,43 +147,7 @@ export const farmEn = {
   farmRankingSortDesc: "descending",
   farmRankingCurrentPhase: "Current phase",
 
-  // Farm Respec Advisor.
-  farmRespecOptimize: "Optimize",
-  farmRespecOptimizeBusy: "Calculating…",
-  farmRespecPaybackHours: "Pays for itself in {hours} h",
-  farmRespecPaybackNoChange: "Gold per hour does not change, so there is no gold payback to report.",
-  farmRespecNotWorthTitle: "Your build is already close to the best found",
-  farmRespecNotWorthDesc: "The best build this search reached is worth {gain}% more gold per hour, under the {floor}% it takes to be worth a respec. Keep your points where they are and spend the gold elsewhere.",
-  farmRespecPanelHeading: "Respec advisor",
-  farmRespecPointsOnly: "This advisor only moves stat points. It never moves gear between heroes and never forges anything.",
-  farmRespecClose: "Close",
-  farmRespecPanelGain: "{pct}% more per hour",
-  farmRespecMetricGold: "Gold / hr",
-  farmRespecMetricChests: "Chests / hr",
-  farmRespecMetricPhase: "Phase",
-  farmRespecMetricPhaseSame: "(same phase)",
-  farmRespecMetricCost: "Respec cost",
-  farmRespecMetricPayback: "Payback",
-  farmRespecPaybackTip: "Payback divides the respec cost by the extra gold per hour the new build earns — the difference between the two Gold/hr numbers above, not the new rate on its own. If the proposed build earns less gold than today, or the same amount, there is no gold payback to report.",
-  farmRespecBestFound: "This is the best build the search found — not proof that no better one exists.",
-  farmRespecBudgetExhausted: "This search stopped at its limit on how many builds it may check, rather than because it had run out of improvements to make.",
-  farmRespecDiagnostics: "{evaluations} builds checked across {sweeps} passes",
-  farmRespecFailed: "The full search couldn't complete this time. Try Optimize again.",
-  farmRespecTerminalTitle: "No respec recommendation right now",
-  farmRespecTerminalDesc: "There isn't a build to recommend for this roster and pool.",
-  farmRespecHeroesHeading: "Per-hero split",
-  farmRespecLuckKeep: "Keep",
-  farmRespecLuckHint: "Luck is left alone on purpose — the game doesn't refund it the same way every other stat is, and this planner never moves it.",
-  farmRespecUnchangedGroupNote: "No respec needed for these — saves {gold} gold you don't have to spend.",
-  farmRespecKeyCurrent: "Current",
-  farmRespecKeyTarget: "Target",
-  farmRespecKeyDelta: "Change",
-  farmRespecFrontierHeading: "Cheaper respecs",
-  farmRespecFrontierHeroCountOne: "1 hero",
-  farmRespecFrontierHeroCountTwo: "2 heroes",
-  farmRespecFrontierGainCost: "{gain}% gain for {cost} gold",
-  farmRespecFrontierPaybackNone: "no gold payback",
-  farmRespecRerankToggle: "Show ranking under this build",
-  farmRespecRerankBanner: "Showing the table under the proposed respec build, not your current one.",
-  farmRespecRerankCaption: "Farm Ranking table, showing phases under the proposed respec build, not the current one.",
+  // The Optimize button: it opens the host's Optimizer screen, where every recommendation
+  // (points, gear moves, forges) is made.
+  farmOptimize: "Optimize",
 } as const;

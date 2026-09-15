@@ -4,7 +4,7 @@ import type { FarmInputs } from './farm-inputs';
 
 /**
  * Two host apps now run this compute, and a memo they shared would let one app's warm cache
- * answer the other's call — and one app's test reset silently clear the other's counters. Every
+ * answer the other's call — and one app's test reset silently clear the other's counter. Every
  * assertion here is about that separation, so it is written as "computing on A leaves B cold",
  * never as "A and B report different numbers", which a single shared instance could also satisfy.
  */
@@ -49,16 +49,6 @@ describe('createFarmRankingMemo instances are isolated', () => {
     const fromSecond = second.rows(inputs());
     expect(second.rowsComputeCount()).toBe(1);
     expect(fromSecond).not.toBe(fromFirst);
-  });
-
-  it('the solve counter is per instance', () => {
-    const first = createFarmRankingMemo();
-    const second = createFarmRankingMemo();
-
-    first.solve(inputs());
-    first.solve(inputs());
-    expect(first.solveCount()).toBe(2);
-    expect(second.solveCount()).toBe(0);
   });
 
   it('resetting one instance leaves the other warm and its counters intact', () => {

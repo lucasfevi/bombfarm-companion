@@ -4,24 +4,8 @@ import {
   type PhasesViewState,
   type ReturnBonusMode,
 } from '@/shared/lib/phases-view-storage';
-import type { FarmRespecProposal, FarmRespecStatus } from '@bombfarm/farm';
 import { noTeamAuraSwitches, type TeamAuraId, type TeamAuraSwitches } from '@bombfarm/domain/team-buffs';
-import { scheduleAfterPaint } from '@/shared/lib/schedule-after-paint';
-// Legal intra-element import (boundaries/elements declares one `shared-stores` element covering
-// both slices/ and selectors/) — the reverse edge of the same shape already ships in
-// team-plan-slice.ts, which imports from team-plan-selectors.ts.
-import {
-  readFarmRespecDepTuple,
-  runFarmRespecSolve,
-  selectFarmRespecIsStale,
-} from '@/shared/stores/selectors/farm-ranking-selectors';
 import type { PlannerStore } from '@/shared/stores/planner-store';
-
-/** Declared in `@bombfarm/farm` beside the view model that reads them, and re-exported here so
- *  this slice stays the import surface its existing consumers already use. The dependency tuple
- *  a `FarmRespecProposal` is keyed by is `readFarmRespecDepTuple`'s return value, compared
- *  element-wise via the selectors module's own `depsEqual`. */
-export type { FarmRespecProposal, FarmRespecStatus };
 
 export type PhasesSlice = {
   phasesViewPhase: number;
@@ -32,14 +16,6 @@ export type PhasesSlice = {
   farmPoolOverrides: Record<string, boolean>;
   /** Farm Ranking return-bonus estimate — `@bombfarm/domain`'s `ReturnBonusMode` verbatim. */
   farmReturnBonus: ReturnBonusMode;
-  /** The on-demand Tier 2 result. EPHEMERAL — never persisted (spec Out of scope). */
-  farmRespecProposal: FarmRespecProposal | null;
-  /** EPHEMERAL. */
-  farmRespecStatus: FarmRespecStatus;
-  /** EPHEMERAL — the re-rank toggle (the sort/filter precedent). */
-  farmRespecReRank: boolean;
-  /** EPHEMERAL — lets the player close the panel without turning re-rank on. */
-  farmRespecPanelOpen: boolean;
   /**
    * EPHEMERAL — the planner's Combat tab asking about a phase other than the one the app would
    * choose on its own (`selectCombatPhase`). `null` while no such pick is in force. Never
@@ -62,15 +38,11 @@ export type PhasesSlice = {
   syncDefaultPhaseSelection: (phase: number) => void;
   setFarmHeroEnabled: (heroId: string, enabled: boolean) => void;
   setFarmReturnBonus: (mode: ReturnBonusMode) => void;
-  setFarmRespecReRank: (active: boolean) => void;
-  setFarmRespecPanelOpen: (open: boolean) => void;
   /** `null` clears the pick and hands the planner back to `selectCombatPhase`'s own answer. */
   setPlannerPhaseOverride: (phase: number | null) => void;
   setTeamAuraSwitch: (buffId: TeamAuraId, enabled: boolean) => void;
   /** "Back to your current phase": drops the phase pick AND every aura switch in one write. */
   clearPlannerWhatIfs: () => void;
-  /** Runs Tier 2 on demand, off the render path — see the action body for the full contract. */
-  runFarmRespec: () => void;
 };
 
 export const createPhasesSlice: StateCreator<
@@ -103,10 +75,6 @@ export const createPhasesSlice: StateCreator<
     phasesViewPhaseChosen: false,
     farmPoolOverrides: {},
     farmReturnBonus: 'off',
-    farmRespecProposal: null,
-    farmRespecStatus: 'idle',
-    farmRespecReRank: false,
-    farmRespecPanelOpen: false,
     plannerPhaseOverride: null,
     teamAuraSwitches: noTeamAuraSwitches(),
 
@@ -158,19 +126,6 @@ export const createPhasesSlice: StateCreator<
       persistPhasesView(get());
     },
 
-    // Closes the panel when turning on (the settled layout: re-rank mode is for looking at the
-    // table); re-opens it when turning back off. Never re-solves either way — an unchanged
-    // proposal is simply reused.
-    setFarmRespecReRank: (active) => {
-      if (get().farmRespecReRank === active) return;
-      set({ farmRespecReRank: active, farmRespecPanelOpen: !active });
-    },
-
-    setFarmRespecPanelOpen: (open) => {
-      if (get().farmRespecPanelOpen === open) return;
-      set({ farmRespecPanelOpen: open });
-    },
-
     setPlannerPhaseOverride: (phase) => {
       if (get().plannerPhaseOverride === phase) return;
       set({ plannerPhaseOverride: phase });
@@ -187,39 +142,6 @@ export const createPhasesSlice: StateCreator<
       const switched = Object.values(current.teamAuraSwitches).some(Boolean);
       if (current.plannerPhaseOverride === null && !switched) return;
       set({ plannerPhaseOverride: null, teamAuraSwitches: noTeamAuraSwitches() });
-    },
-
-    /**
-     * The ONLY caller of `runFarmRespecSolve` — an explicit user event (the Optimize button),
-     * never the render path. Synchronous and returns `void`, not `async`: nothing here is I/O,
-     * and an `async` handler would return a floating promise into an `onClick`.
-     */
-    runFarmRespec: () => {
-      const state = get();
-      // An unchanged, still-fresh proposal is reused: no second solve, just re-open the panel.
-      if (state.farmRespecProposal && !selectFarmRespecIsStale(state) && state.farmRespecStatus === 'done') {
-        set({ farmRespecPanelOpen: true });
-        return;
-      }
-      if (state.farmRespecStatus === 'solving') return; // no concurrent second run
-      set({ farmRespecStatus: 'solving', farmRespecPanelOpen: true });
-      scheduleAfterPaint(() => {
-        // Read LIVE state inside the scheduled callback, not the `state` captured above — a
-        // change during the two-frame yield must key the result to the tuple it actually
-        // solved against, never to a tuple read before the yield.
-        const live = get();
-        try {
-          const result = runFarmRespecSolve(live);
-          set({
-            farmRespecProposal: { deps: readFarmRespecDepTuple(live), result },
-            farmRespecStatus: 'done',
-          });
-        } catch {
-          // Caught at THIS boundary only. Item A never throws by contract; this is
-          // belt-and-braces, and it renders a NAMED failure state, never an empty panel.
-          set({ farmRespecProposal: null, farmRespecStatus: 'failed' });
-        }
-      });
     },
   };
 };

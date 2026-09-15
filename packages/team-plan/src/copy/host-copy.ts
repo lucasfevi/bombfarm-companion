@@ -22,10 +22,6 @@ export type TeamPlanHostCopy = {
   /** The remedy shown when gold scoring has no furthest phase to sweep to — points at whichever
    *  screen each host uses to import or re-read the account's `max_phase`. */
   teamPlanObjectiveFarmNeedsMaxPhase: string;
-  /** Points a reader at "the Optimizer page" from the farm advisor — a cross-screen pointer whose
-   *  wording depends on what the host calls that screen and whether it draws this sentence at
-   *  all. */
-  teamPlanFarmAdvisorPointer: string;
 };
 
 /** A key present in both the package dictionary and the host contract would let a host silently
