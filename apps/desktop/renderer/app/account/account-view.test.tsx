@@ -154,7 +154,7 @@ function loaded(payload: AccountPayload): AccountViewState {
 }
 
 function html(): string {
-  return renderToStaticMarkup(createElement(AccountView, { onOpenInventory: () => {} }));
+  return renderToStaticMarkup(createElement(AccountView, { onOpenInventory: () => {}, marketQuoteCurrency: 'BRL' }));
 }
 
 /**
@@ -168,7 +168,7 @@ function openRow(id: HoldingsComponentId): string {
   const facts = accountFactsFrom(state.view);
   const snapshotNow = marketState.current.status === 'ready' ? marketState.current.view.snapshot : null;
   const components = holdingsComponents(
-    accountHoldingsFrom(facts.holdings, snapshotNow),
+    accountHoldingsFrom(facts.holdings, snapshotNow, 'BRL'),
     facts.holdings.heroes,
     'en',
   );
@@ -530,6 +530,7 @@ describe('how old the holdings footnote says the prices under it are', () => {
     const holdings = accountHoldingsFrom(
       accountFactsFrom(account.view).holdings,
       market.view.snapshot,
+      'BRL',
     );
     const priced = holdingsPrices(holdings).filter((price) => price.state === 'priced');
 

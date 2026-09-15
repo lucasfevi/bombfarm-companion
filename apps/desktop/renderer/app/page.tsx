@@ -487,15 +487,16 @@ function HomePageContent({
           ) : activeNavId === 'farm' ? (
             <FarmView onOpenOptimizer={openOptimizerTab} />
           ) : activeNavId === 'heroes' ? (
-            <HeroesView />
+            <HeroesView marketQuoteCurrency={marketQuoteCurrency} />
           ) : activeNavId === 'inventory' ? (
-            <InventoryView />
+            <InventoryView marketQuoteCurrency={marketQuoteCurrency} />
           ) : activeNavId === 'forge' ? (
             <ForgeView forgeWritesEnabled={forgeWritesEnabled} accountSource={environment?.accountSource ?? null} />
           ) : activeNavId === 'optimizer' ? (
             <OptimizerView />
           ) : activeNavId === 'account' ? (
             <AccountView
+              marketQuoteCurrency={marketQuoteCurrency}
               onOpenInventory={() => {
                 setActiveNavId('inventory');
               }}
