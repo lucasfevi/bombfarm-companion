@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   output: 'export',
   trailingSlash: true,
   images: { unoptimized: true },
+  // `scripts/dev.mjs` points Electron at `http://127.0.0.1:<port>` while `next dev` identifies
+  // itself as `localhost`, so without this every `/_next/*` request is flagged cross-origin.
+  allowedDevOrigins: ['127.0.0.1'],
   transpilePackages: [
     '@bombfarm/account',
     '@bombfarm/ui',
