@@ -57,7 +57,9 @@ test.describe('App shell navigation', () => {
       if (/\.txt(\?|$)/.test(req.url())) payloadRequests.push(new URL(req.url()).pathname);
     });
 
-    await page.goto('/planner');
+    // A direct load: `/planner` is a client-side redirect to `/heroes` now, and that navigation
+    // fetches `/heroes.txt` — which this guard would then mistake for a prefetch.
+    await page.goto('/heroes');
     await expect(page.getByRole('region', { name: /current hero/i })).toBeVisible();
     await page.waitForTimeout(1000);
     expect(payloadRequests).toEqual([]);
