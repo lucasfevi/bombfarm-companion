@@ -1,3 +1,4 @@
+import { STEAM_CURRENCY_IDS } from './currencies.js';
 import type { AppFilters, SearchFilters, SearchPage, SearchRow } from './types.js';
 
 const COMMUNITY = 'https://steamcommunity.com/market';
@@ -18,12 +19,10 @@ export function listingUrl(appId: number, hashName: string): string {
 }
 
 /**
- * Steam's numeric currency ids. `search/render` ignores this parameter — measured 2026-08-29,
- * `currency=7` came back `$3.65 USD` — but `priceoverview` honours it, which is the whole reason
- * a second endpoint is worth the per-item call.
+ * `search/render` ignores the currency parameter — measured 2026-08-29, `currency=7` came back
+ * `$3.65 USD` — but `priceoverview` honours it, which is the whole reason a second endpoint is
+ * worth the per-item call. The id table lives in `currencies.ts`.
  */
-export const STEAM_CURRENCY_IDS: Record<string, number> = { USD: 1, BRL: 7 };
-
 export function priceOverviewUrl(appId: number, hashName: string, currency: string): string {
   const params = new URLSearchParams({
     appid: String(appId),
