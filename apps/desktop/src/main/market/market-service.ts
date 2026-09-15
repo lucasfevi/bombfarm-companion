@@ -1,6 +1,6 @@
 import {
-  MARKET_QUOTE_CURRENCY,
   emptyMarketSnapshotView,
+  type MarketQuoteCurrency,
   type MarketQuoteFailureReason,
   type MarketQuoteResult,
   type MarketQuoteTarget,
@@ -32,6 +32,10 @@ export interface MarketServiceDeps {
   log: LogPort;
   now(): number;
   sleep(ms: number): Promise<void>;
+  /** The currency the player asked for, read afresh for every quote so a change in Settings
+   *  reaches the next fetch without a restart. It picks the `lowestNative` key a quote is read
+   *  from and written to; quotes already held in another currency stay where they are. */
+  quoteCurrency(): MarketQuoteCurrency;
   io?: MarketCacheIo;
   scheduler?: { readonly setTimeout: typeof setTimeout; readonly clearTimeout: typeof clearTimeout };
   snapshotRefreshMs?: number;
@@ -67,8 +71,8 @@ interface QuoteSubject {
   readonly keptAmount: number | null;
 }
 
-function nativeAmount(entry: MarketEntry | undefined): number | null {
-  return entry?.lowestNative[MARKET_QUOTE_CURRENCY] ?? null;
+function nativeAmount(entry: MarketEntry | undefined, currency: MarketQuoteCurrency): number | null {
+  return entry?.lowestNative[currency] ?? null;
 }
 
 export function createMarketService(deps: MarketServiceDeps): MarketService {
@@ -198,13 +202,13 @@ export function createMarketService(deps: MarketServiceDeps): MarketService {
     }, snapshotRefreshMs);
   }
 
-  function subjectFor(target: MarketQuoteTarget): QuoteSubject | null {
+  function subjectFor(target: MarketQuoteTarget, currency: MarketQuoteCurrency): QuoteSubject | null {
     const snapshot = view.snapshot;
     if (target.kind === 'key') {
       const position = snapshot?.index[target.key];
       const entry = position === undefined ? undefined : snapshot?.entries[position];
       if (entry === undefined || position === undefined) return null;
-      return { key: target.key, hashName: entry.hashName, position, keptAmount: nativeAmount(entry) };
+      return { key: target.key, hashName: entry.hashName, position, keptAmount: nativeAmount(entry, currency) };
     }
 
     const position = snapshot?.entries.findIndex((entry) => entry.hashName === target.hashName) ?? -1;
@@ -213,11 +217,11 @@ export function createMarketService(deps: MarketServiceDeps): MarketService {
       key: entry?.key ?? null,
       hashName: target.hashName,
       position: position < 0 ? null : position,
-      keptAmount: nativeAmount(entry),
+      keptAmount: nativeAmount(entry, currency),
     };
   }
 
-  function mergeQuote(position: number, amount: number, quotedUtc: string): void {
+  function mergeQuote(position: number, currency: MarketQuoteCurrency, amount: number, quotedUtc: string): void {
     const snapshot = view.snapshot;
     if (snapshot === null) return;
     const entry = snapshot.entries[position];
@@ -226,7 +230,7 @@ export function createMarketService(deps: MarketServiceDeps): MarketService {
     const entries = snapshot.entries.slice();
     entries[position] = {
       ...entry,
-      lowestNative: { ...entry.lowestNative, [MARKET_QUOTE_CURRENCY]: amount },
+      lowestNative: { ...entry.lowestNative, [currency]: amount },
       nativeQuotedUtc: quotedUtc,
     };
     view = { ...view, snapshot: { ...snapshot, entries } };
@@ -268,7 +272,8 @@ export function createMarketService(deps: MarketServiceDeps): MarketService {
    *  snapshot or move a price while this one waits, and `keptAmount` has to be what the snapshot
    *  actually carries at the moment the refresh runs. */
   async function quote(target: MarketQuoteTarget): Promise<MarketQuoteResult> {
-    const subject = subjectFor(target);
+    const currency = deps.quoteCurrency();
+    const subject = subjectFor(target, currency);
     if (subject === null) {
       return failure({ key: target.kind === 'key' ? target.key : null, hashName: null, keptAmount: null }, 'unknown-item');
     }
@@ -280,7 +285,7 @@ export function createMarketService(deps: MarketServiceDeps): MarketService {
     let response;
     try {
       response = await deps.httpGet({
-        url: priceOverviewUrl(MARKET_APP_ID, subject.hashName, MARKET_QUOTE_CURRENCY),
+        url: priceOverviewUrl(MARKET_APP_ID, subject.hashName, currency),
         etag: null,
       });
     } catch (error: unknown) {
@@ -318,7 +323,7 @@ export function createMarketService(deps: MarketServiceDeps): MarketService {
 
     const quotedUtc = iso();
     if (subject.position !== null) {
-      mergeQuote(subject.position, amount, quotedUtc);
+      mergeQuote(subject.position, currency, amount, quotedUtc);
       publish();
     }
 
@@ -326,7 +331,7 @@ export function createMarketService(deps: MarketServiceDeps): MarketService {
       ok: true,
       key: subject.key,
       hashName: subject.hashName,
-      currency: MARKET_QUOTE_CURRENCY,
+      currency,
       amount,
       quotedUtc,
     };

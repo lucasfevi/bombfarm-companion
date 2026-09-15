@@ -17,9 +17,9 @@ export {
   type SearchPage,
   type SearchRow,
 } from './types.js';
+export { STEAM_CURRENCIES, STEAM_CURRENCY_IDS, steamCurrencyFor, type SteamCurrency } from './currencies.js';
 export {
   SEARCH_PAGE_SIZE,
-  STEAM_CURRENCY_IDS,
   appFiltersUrl,
   listingUrl,
   parseAppFilters,

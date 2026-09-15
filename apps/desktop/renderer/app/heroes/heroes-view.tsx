@@ -28,6 +28,7 @@ import {
   type Lang,
 } from '@bombfarm/ui';
 import { HeroIdentityChip } from '@bombfarm/game-art';
+import type { MarketQuoteCurrency } from '@bombfarm/contracts';
 import { CombatPhasePanel } from '@bombfarm/farm/components';
 import {
   AbilitiesAurasPanel,
@@ -63,7 +64,6 @@ import type {
 import { resolveHeroPrice } from '@bombfarm/pricing';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { formatMoney } from '../../lib/format';
-import { HOLDINGS_CURRENCY } from '../../lib/account/account-holdings';
 import { useMarketSnapshot } from '../../lib/market/use-market-snapshot';
 import { abilityGainFor, type AbilityGain } from '@bombfarm/domain/ability-gain';
 import type { AdvisorPipelineResult } from '@bombfarm/domain/advisor-pipeline';
@@ -108,7 +108,7 @@ function sheetKeyLabel(key: SheetKey, lang: Lang, luckLabel: string): string {
   return key === 'luck' ? luckLabel : statLabel(key, lang);
 }
 
-export function HeroesView() {
+export function HeroesView({ marketQuoteCurrency }: { marketQuoteCurrency: MarketQuoteCurrency }) {
   const t = useCopy();
   const account = useAccountView();
   const model = useMemo(() => heroesScreenModel(account), [account]);
@@ -151,7 +151,7 @@ export function HeroesView() {
     default:
       return (
         <HeroesScreenFrame>
-          <HeroesRoster model={model} />
+          <HeroesRoster model={model} marketQuoteCurrency={marketQuoteCurrency} />
         </HeroesScreenFrame>
       );
   }
@@ -167,7 +167,13 @@ function HeroesScreenFrame({ children }: { children: ReactNode }) {
   );
 }
 
-function HeroesRoster({ model }: { model: RosterModel }) {
+function HeroesRoster({
+  model,
+  marketQuoteCurrency,
+}: {
+  model: RosterModel;
+  marketQuoteCurrency: MarketQuoteCurrency;
+}) {
   const { lang, locale } = useLocale();
   const t = useCopy();
   const heroCopy = useHeroDetailCopy();
@@ -282,9 +288,9 @@ function HeroesRoster({ model }: { model: RosterModel }) {
       resolveHeroPrice(
         { rarity: RARITIES.indexOf(active.hero.rarity), marketable: active.hero.marketable ?? false },
         snapshot,
-        HOLDINGS_CURRENCY,
+        marketQuoteCurrency,
       ),
-    [active.hero, snapshot],
+    [active.hero, snapshot, marketQuoteCurrency],
   );
   const formatAmount = useCallback(
     (value: number, currency: string) => formatMoney(value, locale, currency),

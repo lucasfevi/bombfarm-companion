@@ -59,12 +59,13 @@ describe('broadcastEventToWindows', () => {
     const first = fakeWindow(false);
     const second = fakeWindow(false);
     const payload: AppSettings = {
-      schemaVersion: 3,
+      schemaVersion: 4,
       locale: 'pt-BR',
       alwaysOnTopMain: false,
       alwaysOnTopMini: true,
       forgeWritesEnabled: false,
       restartGameOnExit: false,
+      marketQuoteCurrency: 'BRL',
     };
 
     broadcastEventToWindows([first, second], 'bfc:event:settings:changed', payload);

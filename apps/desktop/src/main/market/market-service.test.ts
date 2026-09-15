@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { MarketQuoteCurrency } from '@bombfarm/contracts';
 import { resolveKey } from '@bombfarm/pricing';
 import type { MarketEntry, MarketSnapshot } from '@bombfarm/pricing';
 import type { LogPort } from '../storage/index.js';
@@ -69,6 +70,8 @@ interface Harness {
   pushes: MarketView[];
   files: Map<string, string>;
   advance(ms: number): void;
+  /** Stands in for the Settings write: the next quote reads it, as the real service reads main's. */
+  chooseCurrency(currency: MarketQuoteCurrency): void;
 }
 
 interface HarnessOptions {
@@ -87,6 +90,7 @@ function harness({ respond, files = {}, overrides = {} }: HarnessOptions): Harne
   const pushes: MarketView[] = [];
   const disk = new Map(Object.entries(files));
   let clock = Date.parse('2026-08-29T12:00:00.000Z');
+  let currency: MarketQuoteCurrency = 'BRL';
 
   const io: MarketCacheIo = {
     read: (path) => disk.get(path) ?? null,
@@ -110,6 +114,7 @@ function harness({ respond, files = {}, overrides = {} }: HarnessOptions): Harne
       clock += ms;
       return Promise.resolve();
     },
+    quoteCurrency: () => currency,
     onChanged: (view) => pushes.push(view),
     ...overrides,
   });
@@ -123,8 +128,14 @@ function harness({ respond, files = {}, overrides = {} }: HarnessOptions): Harne
     advance: (ms) => {
       clock += ms;
     },
+    chooseCurrency: (next) => {
+      currency = next;
+    },
   };
 }
+
+const currencyIdOf = (request: MarketHttpRequest | undefined): string | null =>
+  request === undefined ? null : new URL(request.url).searchParams.get('currency');
 
 const ok = (body: unknown, etag: string | null = null): MarketHttpResponse => ({
   status: 200,
@@ -363,6 +374,45 @@ describe('per-item refresh', () => {
 
     expect(result).toMatchObject({ ok: false, reason: 'unknown-item', keptAmount: null });
     expect(h.requests).toHaveLength(1);
+  });
+
+  it('a quote after the currency changes asks Steam for the new id and lands under the new key, the old key intact', async () => {
+    const h = harness({
+      respond: (_request, callIndex) => {
+        if (callIndex === 0) return ok(seeded(), 'v1');
+        return callIndex === 1 ? ok({ success: true, lowest_price: 'R$ 31,50' }) : ok({ success: true, lowest_price: '$5.90' });
+      },
+    });
+
+    await h.service.refreshSnapshot();
+    const inBrl = await h.service.refreshItem({ kind: 'key', key: 'k1' });
+    expect(currencyIdOf(h.requests[1])).toBe('7');
+    expect(inBrl).toMatchObject({ ok: true, currency: 'BRL', amount: 31.5 });
+
+    h.chooseCurrency('USD');
+    const inUsd = await h.service.refreshItem({ kind: 'key', key: 'k1' });
+
+    expect(currencyIdOf(h.requests[2])).toBe('1');
+    expect(inUsd).toMatchObject({ ok: true, currency: 'USD', amount: 5.9 });
+    expect(h.service.getView().snapshot?.entries[0]?.lowestNative).toEqual({ BRL: 31.5, USD: 5.9 });
+    const cached = JSON.parse(h.files.get(CACHE_PATH) ?? '{}') as { snapshot: MarketSnapshot };
+    expect(cached.snapshot.entries[0]?.lowestNative).toEqual({ BRL: 31.5, USD: 5.9 });
+  });
+
+  it('keptAmount on a failed quote is the standing price in the currency asked for, not another', async () => {
+    const h = harness({
+      respond: (_request, callIndex) => {
+        if (callIndex === 0) return ok(seeded(), 'v1');
+        return ok({ success: true });
+      },
+    });
+
+    await h.service.refreshSnapshot();
+    h.chooseCurrency('USD');
+    const declined = await h.service.refreshItem({ kind: 'key', key: 'k1' });
+
+    expect(declined).toMatchObject({ ok: false, reason: 'not-quoted', keptAmount: null });
+    expect(priceOf(h.service.getView())).toBe(25);
   });
 
   it('quotes by hash name when the caller has no key', async () => {

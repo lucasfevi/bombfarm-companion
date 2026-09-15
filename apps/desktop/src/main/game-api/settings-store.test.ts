@@ -8,20 +8,22 @@ const availableBindings = detectAvailableBindings();
 warnForUnavailableBindings(availableBindings);
 
 const EN: AppSettings = {
-  schemaVersion: 3,
+  schemaVersion: 4,
   locale: 'en',
   alwaysOnTopMain: false,
   alwaysOnTopMini: false,
   forgeWritesEnabled: false,
   restartGameOnExit: false,
+  marketQuoteCurrency: 'BRL',
 };
 const PT_BR: AppSettings = {
-  schemaVersion: 3,
+  schemaVersion: 4,
   locale: 'pt-BR',
   alwaysOnTopMain: false,
   alwaysOnTopMini: false,
   forgeWritesEnabled: false,
   restartGameOnExit: false,
+  marketQuoteCurrency: 'BRL',
 };
 
 describe.each(availableBindings)('createSettingsStore over the real account_meta table (%s)', (binding) => {
@@ -72,7 +74,36 @@ describe.each(availableBindings)('createSettingsStore over the real account_meta
     expect(store.read()).toBeNull();
   });
 
-  it('a v1 row migrates to v2 on read and persists v2 on the next write', () => {
+  it('a v3 row stored before the market currency existed reads back quoting in BRL, and the next write persists v4', () => {
+    const open = openTestAccountDb(binding);
+    if (!open.db) throw new Error('expected an open db for this binding');
+    const storedV3 = {
+      schemaVersion: 3,
+      locale: 'pt-BR',
+      alwaysOnTopMain: true,
+      alwaysOnTopMini: false,
+      forgeWritesEnabled: true,
+      restartGameOnExit: false,
+    };
+    open.db
+      .prepare('INSERT INTO account_meta (key, value) VALUES (?, ?)')
+      .run('settings_v1', JSON.stringify(storedV3));
+
+    const store = createSettingsStore(open.db);
+    const migrated = store.read();
+
+    expect(migrated).toEqual({ ...storedV3, schemaVersion: 4, marketQuoteCurrency: 'BRL' });
+    if (!migrated) throw new Error('expected the v3 row to migrate');
+
+    store.write({ ...migrated, marketQuoteCurrency: 'USD' });
+    const row = open.db.prepare('SELECT value FROM account_meta WHERE key = ?').get('settings_v1') as
+      | { value: string }
+      | undefined;
+    expect(JSON.parse(row?.value ?? '')).toEqual({ ...storedV3, schemaVersion: 4, marketQuoteCurrency: 'USD' });
+    expect(store.read()?.marketQuoteCurrency).toBe('USD');
+  });
+
+  it('a v1 row migrates to the current schema on read and persists it on the next write', () => {
     const open = openTestAccountDb(binding);
     if (!open.db) throw new Error('expected an open db for this binding');
     open.db

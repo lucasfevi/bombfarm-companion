@@ -6,7 +6,6 @@ import { SKIN_CATEGORY, categoryKey, heroPriceKey, priceKey } from '@bombfarm/pr
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import type { AccountHoldingsFacts } from './account-facts';
 import {
-  HOLDINGS_CURRENCY,
   accountHoldingsFrom,
   holdingsComponents,
   inventoryTotals,
@@ -121,13 +120,17 @@ function inventoryItem(overrides: Partial<InventoryViewItem> = {}): InventoryVie
 
 describe('what the account could sell', () => {
   it('quotes the inventory, the sellable heroes and the worn bought skins in one figure', () => {
-    const holdings = accountHoldingsFrom(facts(), SNAPSHOT);
-    expect(holdings.currency).toBe(HOLDINGS_CURRENCY);
+    const holdings = accountHoldingsFrom(facts(), SNAPSHOT, 'BRL');
+    expect(holdings.currency).toBe('BRL');
     expect(holdings.inventory.amount).toBe(3);
     expect(holdings.heroes.amount).toBe(20);
     expect(holdings.skins.amount).toBe(7);
     expect(holdings.total).toBe(30);
     expect(holdings.complete).toBe(true);
+  });
+
+  it('prices in whichever currency is asked for, so the setting reaches the figure', () => {
+    expect(accountHoldingsFrom(facts(), SNAPSHOT, 'USD').currency).toBe('USD');
   });
 
   it('prices the heroes the game marks sellable, and counts the others in neither figure', () => {
@@ -140,6 +143,7 @@ describe('what the account could sell', () => {
         ],
       }),
       SNAPSHOT,
+      'BRL',
     );
     expect(holdings.heroes.amount).toBe(40);
     expect(holdings.heroes.priced).toBe(2);
@@ -148,7 +152,7 @@ describe('what the account could sell', () => {
 
   it('reports a sellable hero the market is not quoting as eligible but unpriced', () => {
     const noListings = snapshotOf([entry(heroPriceKey(HERO_RARITY), 'Hero (Legendary)', null)]);
-    const holdings = accountHoldingsFrom(facts({ inventory: [], skinsWorn: [] }), noListings);
+    const holdings = accountHoldingsFrom(facts({ inventory: [], skinsWorn: [] }), noListings, 'BRL');
     expect(holdings.heroes.amount).toBe(0);
     expect(holdings.heroes.priced).toBe(0);
     expect(holdings.heroes.eligible).toBe(1);
@@ -158,19 +162,20 @@ describe('what the account could sell', () => {
     const holdings = accountHoldingsFrom(
       facts({ skinsWorn: [BOUGHT_SKIN, BOUGHT_SKIN, BOUGHT_SKIN] }),
       SNAPSHOT,
+      'BRL',
     );
     expect(holdings.skins.amount).toBe(7);
     expect(holdings.skins.eligible).toBe(1);
   });
 
   it('drops birth skins, which cost nothing and are not holdings at all', () => {
-    const holdings = accountHoldingsFrom(facts({ skinsWorn: [0, 1, 2, 3] }), SNAPSHOT);
+    const holdings = accountHoldingsFrom(facts({ skinsWorn: [0, 1, 2, 3] }), SNAPSHOT, 'BRL');
     expect(holdings.skins.amount).toBe(0);
     expect(holdings.skins.eligible).toBe(0);
   });
 
   it('withholds a component whose account data could not be read, rather than calling it zero', () => {
-    const holdings = accountHoldingsFrom(facts({ inventory: null }), SNAPSHOT);
+    const holdings = accountHoldingsFrom(facts({ inventory: null }), SNAPSHOT, 'BRL');
     expect(holdings.inventory.withheld).toBe(true);
     expect(holdings.withheld).toEqual(['inventory']);
     expect(holdings.complete).toBe(false);
@@ -186,7 +191,7 @@ describe('the things each column lists under its figure', () => {
   ];
   const columnsOf = (overrides: Partial<AccountHoldingsFacts> = {}) => {
     const built = facts({ heroes: roster, ...overrides });
-    return holdingsComponents(accountHoldingsFrom(built, SNAPSHOT), built.heroes, 'en');
+    return holdingsComponents(accountHoldingsFrom(built, SNAPSHOT, 'BRL'), built.heroes, 'en');
   };
 
   /** What the entry's leading cell was built from, so its depiction can be read as data. */
@@ -227,7 +232,7 @@ describe('the things each column lists under its figure', () => {
 
   it('follows the language the rest of the screen speaks', () => {
     const built = facts({ heroes: roster });
-    const columns = holdingsComponents(accountHoldingsFrom(built, SNAPSHOT), built.heroes, 'pt');
+    const columns = holdingsComponents(accountHoldingsFrom(built, SNAPSHOT, 'BRL'), built.heroes, 'pt');
 
     expect(columns.heroes.entries.map((entry) => identityOf(entry).lang)).toEqual(['pt', 'pt']);
     expect(columnsOf().heroes.entries.map((entry) => identityOf(entry).lang)).toEqual(['en', 'en']);
@@ -299,8 +304,8 @@ describe('the things each column lists under its figure', () => {
 describe('the inventory figure the Inventory header prints', () => {
   it('is the inventory component of the account-wide computation, over everything it holds', () => {
     const items = [inventoryItem(), inventoryItem({ id: 'i2' })];
-    expect(inventoryTotals(items, SNAPSHOT)).toEqual({ total: 6, priced: 2, tradable: 2 });
-    expect(inventoryTotals(items, SNAPSHOT)?.total).toBe(
+    expect(inventoryTotals(items, SNAPSHOT, 'BRL')).toEqual({ total: 6, priced: 2, tradable: 2 });
+    expect(inventoryTotals(items, SNAPSHOT, 'BRL')?.total).toBe(
       accountHoldingsFrom(
         facts({
           inventory: items.map((item) => ({
@@ -310,21 +315,22 @@ describe('the inventory figure the Inventory header prints', () => {
           })),
         }),
         SNAPSHOT,
+        'BRL',
       ).inventory.amount,
     );
   });
 
   it('counts an item the game forbids selling in neither the figure nor the coverage', () => {
     const items = [inventoryItem(), inventoryItem({ id: 'i2', tradable: false })];
-    expect(inventoryTotals(items, SNAPSHOT)).toEqual({ total: 3, priced: 1, tradable: 1 });
+    expect(inventoryTotals(items, SNAPSHOT, 'BRL')).toEqual({ total: 3, priced: 1, tradable: 1 });
   });
 
   it('counts a tradable item the market is not quoting against the coverage but not the figure', () => {
     const items = [inventoryItem(), inventoryItem({ id: 'i2', defId: 'nao_listado' })];
-    expect(inventoryTotals(items, SNAPSHOT)).toEqual({ total: 3, priced: 1, tradable: 2 });
+    expect(inventoryTotals(items, SNAPSHOT, 'BRL')).toEqual({ total: 3, priced: 1, tradable: 2 });
   });
 
   it('has nothing to say with no snapshot in hand', () => {
-    expect(inventoryTotals([inventoryItem()], null)).toBeNull();
+    expect(inventoryTotals([inventoryItem()], null, 'BRL')).toBeNull();
   });
 });

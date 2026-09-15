@@ -21,6 +21,7 @@ export default defineConfig({
         'auto-recompute.spec.mjs',
         'i18n.spec.mjs',
         'inventory.spec.mjs',
+        'market-currency.spec.mjs',
         'forge-plan.spec.mjs',
         'forge-run.spec.mjs',
         'forge-queue.spec.mjs',

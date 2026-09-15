@@ -6,7 +6,7 @@
  */
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { HeroIdentity } from '@bombfarm/game-art';
-import type { DomainLang } from '@bombfarm/contracts';
+import type { DomainLang, MarketQuoteCurrency } from '@bombfarm/contracts';
 import type {
   HoldingsComponentView,
   HoldingsEntry,
@@ -16,14 +16,12 @@ import type { AccountHoldings, HoldingsTally, MarketSnapshot, SkinsTally } from 
 import { accountHoldings, boughtSkinHashFor } from '@bombfarm/pricing';
 import type { AccountHoldingsFacts, HoldingsHero } from './account-facts';
 
-/** The currency the published market snapshot is quoted in — the one the Inventory screen states. */
-export const HOLDINGS_CURRENCY = 'BRL';
-
 export function accountHoldingsFrom(
   facts: AccountHoldingsFacts,
   snapshot: MarketSnapshot | null,
+  currency: MarketQuoteCurrency,
 ): AccountHoldings {
-  return accountHoldings({ ...facts, snapshot, currency: HOLDINGS_CURRENCY });
+  return accountHoldings({ ...facts, snapshot, currency });
 }
 
 const componentView = (
@@ -130,6 +128,7 @@ export interface InventoryTotals {
 export function inventoryTotals(
   items: readonly InventoryViewItem[],
   snapshot: MarketSnapshot | null,
+  currency: MarketQuoteCurrency,
 ): InventoryTotals | null {
   if (snapshot == null) return null;
   const { inventory } = accountHoldings({
@@ -141,7 +140,7 @@ export function inventoryTotals(
     heroes: null,
     skinsWorn: null,
     snapshot,
-    currency: HOLDINGS_CURRENCY,
+    currency,
   });
   return { total: inventory.amount, priced: inventory.priced, tradable: inventory.eligible };
 }
