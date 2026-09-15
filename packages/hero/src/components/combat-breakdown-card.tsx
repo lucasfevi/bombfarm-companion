@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { abilityName } from '@bombfarm/domain/game-labels';
 import type { BreakdownStatId, FormulaPart, FormulaTermKey, StatBreakdown } from '@bombfarm/domain/stat-breakdown';
 import { AbilityIcon } from '@bombfarm/game-art';
@@ -192,27 +192,22 @@ export type CombatBreakdownCardProps = {
   value: string;
   text: BreakdownText;
   lit: boolean;
+  muted: boolean;
   onLit: (id: BreakdownStatId | null) => void;
   cardRef: (element: HTMLElement | null) => void;
 };
 
 /**
  * One figure of the pipeline: its label, its value, the short form of what it is computed from,
- * and at its bottom edge the abilities and auras that reach it. Hovering or focusing it opens the
- * same popover on either layout — the ledger for a sheet stat, the substituted formula with every
- * term named for a derived one — and tells the panel to light the wires that feed it.
+ * and at its bottom edge the abilities and auras that reach it. The whole card is the trigger:
+ * hovering or focusing it anywhere opens the same popover on either layout — the ledger for a
+ * sheet stat, the substituted formula with every term named for a derived one — and tells the
+ * panel which card to light. The badge icons carry no popover of their own; the popover's
+ * "reads" chips name them.
  */
-export function CombatBreakdownCard({ card, label, value, text, lit, onLit, cardRef }: CombatBreakdownCardProps) {
+export function CombatBreakdownCard({ card, label, value, text, lit, muted, onLit, cardRef }: CombatBreakdownCardProps) {
   const { id, breakdown, badges, chips, note } = card;
   const { t, copy, lang, formatNumber } = text;
-  const rootRef = useRef<HTMLDivElement | null>(null);
-  const setRoot = useCallback(
-    (element: HTMLDivElement | null) => {
-      rootRef.current = element;
-      cardRef(element);
-    },
-    [cardRef],
-  );
   const formula = cardFormulaText(copy, id);
   const isDps = id === 'activeDps' || id === 'sustainedDps';
   const penetration = note?.kind === 'penetration' ? penetrationText(copy, note, formatNumber) : null;
@@ -226,104 +221,93 @@ export function CombatBreakdownCard({ card, label, value, text, lit, onLit, card
 
   const face = (
     <div
+      ref={cardRef}
       tabIndex={0}
-      className="flex min-w-0 flex-1 flex-col px-2 pt-1.5 pb-1 outline-none focus-visible:ring-1 focus-visible:ring-accent"
-    >
-      <div className="flex min-w-0 items-baseline justify-between gap-2 @min-[820px]:flex-col @min-[820px]:items-stretch @min-[820px]:gap-0">
-        <span className="min-w-0 text-[10px] leading-tight font-medium text-muted">{label}</span>
-        <span
-          className={cn(
-            'shrink-0 font-mono leading-tight font-semibold tabular-nums text-ink @min-[820px]:mt-0.5',
-            isDps ? 'text-[18px]' : 'text-[16px]',
-          )}
-          data-testid="breakdown-value"
-        >
-          {value}
-        </span>
-      </div>
-      {penetration ? (
-        <span
-          className={cn(
-            'mt-0.5 text-[10px] leading-tight',
-            note?.kind === 'penetration' && note.reading.kind === 'pierced' ? 'text-up' : 'text-down',
-          )}
-          data-testid="breakdown-penetration"
-        >
-          {penetration}
-        </span>
-      ) : null}
-      {formula ? (
-        <span className="mt-1 line-clamp-2 font-mono text-[9.5px] leading-tight break-words text-muted opacity-80" data-testid="breakdown-symbolic">
-          {formula}
-        </span>
-      ) : null}
-    </div>
-  );
-
-  return (
-    <div
-      ref={setRoot}
       data-breakdown-card={id}
       data-lit={lit ? 'true' : undefined}
+      data-muted={muted ? 'true' : undefined}
       onPointerEnter={() => onLit(id)}
       onPointerLeave={() => onLit(null)}
       onFocus={() => onLit(id)}
       onBlur={() => onLit(null)}
       className={cn(
-        'relative flex min-w-0 flex-col rounded-sm border bg-bg',
+        'relative flex min-w-0 cursor-help flex-col rounded-sm border bg-bg outline-none focus-visible:ring-1 focus-visible:ring-accent',
+        'motion-safe:transition-opacity motion-safe:duration-[120ms]',
         isDps ? 'border-[color-mix(in_oklch,var(--accent)_55%,var(--line))] bg-[color-mix(in_oklch,var(--accent)_10%,var(--bg))]' : 'border-line',
         lit && 'border-accent',
+        muted && 'opacity-35',
         '@min-[820px]:h-full',
       )}
     >
-      <Tooltip.Root>
-        <Tooltip.Trigger render={face} />
-        <Tooltip.Portal>
-          <Tooltip.Positioner side="bottom" sideOffset={6} anchor={rootRef}>
-            <Tooltip.Popup className="w-max max-w-[min(92vw,40rem)]" data-testid={`breakdown-popover-${id}`}>
-              <p className="m-0 mb-1 flex items-baseline justify-between gap-3 text-[12px] font-semibold text-ink">
-                <span>{label}</span>
-                <span className="font-mono tabular-nums">{value}</span>
-              </p>
-              {body}
-              <InputChips chips={chips} heading={copy.heroDetailBreakdownReads} />
-              {note ? (
-                <p className={cn('m-0 mt-2 text-[11px] leading-snug', mutedClass)}>{noteText(copy, note, lang, formatNumber)}</p>
-              ) : null}
-            </Tooltip.Popup>
-          </Tooltip.Positioner>
-        </Tooltip.Portal>
-      </Tooltip.Root>
+      <div className="flex min-w-0 flex-1 flex-col px-2 pt-1.5 pb-1">
+        <div className="flex min-w-0 items-baseline justify-between gap-2 @min-[820px]:flex-col @min-[820px]:items-stretch @min-[820px]:gap-0">
+          <span className="min-w-0 text-[10px] leading-tight font-medium text-muted">{label}</span>
+          <span
+            className={cn(
+              'shrink-0 font-mono leading-tight font-semibold tabular-nums text-ink @min-[820px]:mt-0.5',
+              isDps ? 'text-[18px]' : 'text-[16px]',
+            )}
+            data-testid="breakdown-value"
+          >
+            {value}
+          </span>
+        </div>
+        {penetration ? (
+          <span
+            className={cn(
+              'mt-0.5 text-[10px] leading-tight',
+              note?.kind === 'penetration' && note.reading.kind === 'pierced' ? 'text-up' : 'text-down',
+            )}
+            data-testid="breakdown-penetration"
+          >
+            {penetration}
+          </span>
+        ) : null}
+        {formula ? (
+          <span className="mt-1 line-clamp-2 font-mono text-[9.5px] leading-tight break-words text-muted opacity-80" data-testid="breakdown-symbolic">
+            {formula}
+          </span>
+        ) : null}
+      </div>
       {badges.length > 0 ? (
         <ul className="m-0 flex list-none flex-wrap gap-1 px-2 pb-1.5 @min-[820px]:mt-auto" data-testid="breakdown-badges">
           {badges.map((badge) => {
             const name = abilityName(badge.abilityId, lang);
-            const text = badge.on ? name : sub(copy.heroDetailBreakdownIconOff, { name });
             return (
-              <li key={badge.abilityId} data-badge={badge.abilityId} data-on={badge.on ? 'true' : 'false'}>
-                <Tooltip.Root>
-                  <Tooltip.Trigger
-                    render={
-                      <span
-                        tabIndex={0}
-                        aria-label={text}
-                        className="inline-flex rounded-sm outline-none focus-visible:ring-1 focus-visible:ring-accent"
-                      >
-                        <AbilityIcon code={badge.abilityId} size="xs" className={cn(!badge.on && 'opacity-35')} />
-                      </span>
-                    }
-                  />
-                  <Tooltip.Portal>
-                    <Tooltip.Positioner side="top" sideOffset={4}>
-                      <Tooltip.Popup>{text}</Tooltip.Popup>
-                    </Tooltip.Positioner>
-                  </Tooltip.Portal>
-                </Tooltip.Root>
+              <li
+                key={badge.abilityId}
+                role="img"
+                aria-label={badge.on ? name : sub(copy.heroDetailBreakdownIconOff, { name })}
+                data-badge={badge.abilityId}
+                data-on={badge.on ? 'true' : 'false'}
+              >
+                <AbilityIcon code={badge.abilityId} size="xs" className={cn(!badge.on && 'opacity-35')} />
               </li>
             );
           })}
         </ul>
       ) : null}
     </div>
+  );
+
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger render={face} />
+      <Tooltip.Portal>
+        <Tooltip.Positioner side="bottom" sideOffset={6}>
+          <Tooltip.Popup className="w-max max-w-[min(92vw,40rem)]" data-testid={`breakdown-popover-${id}`}>
+            <p className="m-0 mb-1 flex items-baseline justify-between gap-3 text-[12px] font-semibold text-ink">
+              <span>{label}</span>
+              <span className="font-mono tabular-nums">{value}</span>
+            </p>
+            {body}
+            <InputChips chips={chips} heading={copy.heroDetailBreakdownReads} />
+            {note ? (
+              <p className={cn('m-0 mt-2 text-[11px] leading-snug', mutedClass)}>{noteText(copy, note, lang, formatNumber)}</p>
+            ) : null}
+          </Tooltip.Popup>
+        </Tooltip.Positioner>
+      </Tooltip.Portal>
+    </Tooltip.Root>
   );
 }

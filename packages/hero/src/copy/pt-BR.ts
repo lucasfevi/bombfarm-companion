@@ -133,7 +133,7 @@ export const heroPtBR: HeroCopy = {
   heroDetailAuraUnitPulse: "+{value}% de dano, pulso mantido",
   heroDetailAurasNoOwnAbilities: "Este herói não tem nenhuma habilidade própria em vigor.",
 
-  heroDetailBreakdownHint: "Passe o mouse ou foque o valor de um quadro para ver a fórmula por trás dele e o que ele lê.",
+  heroDetailBreakdownHint: 'Passe o mouse ou foque um quadro para ver a fórmula por trás dele e o que ele lê; os quadros ligados a ele ficam acesos.',
   heroDetailBreakdownRowSheet: "Ficha",
   heroDetailBreakdownRowFactors: "Fatores",
   heroDetailBreakdownRowPerHit: "Por hit · cadência",

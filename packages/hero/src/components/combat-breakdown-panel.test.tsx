@@ -27,11 +27,16 @@ function render(lang: Lang): string {
   );
 }
 
+/** One card's markup, from its own opening tag up to the next card's. */
 function cardMarkup(html: string, id: string): string {
-  const start = html.indexOf(`data-breakdown-card="${id}"`);
-  if (start < 0) throw new Error(`no card for ${id}`);
-  const next = html.indexOf('data-breakdown-card="', start + 1);
-  return html.slice(start, next < 0 ? undefined : next);
+  const marker = html.indexOf(`data-breakdown-card="${id}"`);
+  if (marker < 0) throw new Error(`no card for ${id}`);
+  const next = html.indexOf('data-breakdown-card="', marker + 1);
+  return html.slice(html.lastIndexOf('<', marker), next < 0 ? undefined : html.lastIndexOf('<', next));
+}
+
+function openingTag(fragment: string): string {
+  return fragment.slice(0, fragment.indexOf('>') + 1);
 }
 
 function textOf(fragment: string, testId: string): string {
@@ -92,5 +97,18 @@ describe('CombatBreakdownPanel', () => {
     expect(cardMarkup(html, 'attack')).toMatch(/data-badge="grito_guerra" data-on="false"/);
     expect(cardMarkup(html, 'activeDps')).toMatch(/data-badge="misericordia" data-on="true"/);
     expect(cardMarkup(html, 'dmg')).not.toMatch(/data-badge="misericordia"/);
+  });
+
+  it('the whole card is the one popover trigger, under a help cursor; its badges are labelled icons with no popover and no tab stop', () => {
+    const html = render('en');
+    const fieldTime = cardMarkup(html, 'fieldSeconds');
+    const root = openingTag(fieldTime);
+    expect(root).toContain('data-slot="tooltip-trigger"');
+    expect(root).toContain('tabindex="0"');
+    expect(root).toContain('cursor-help');
+    expect(fieldTime.match(/data-slot="tooltip-trigger"/g)).toHaveLength(1);
+    expect(fieldTime.match(/tabindex="0"/g)).toHaveLength(1);
+    expect(fieldTime).toMatch(/<li role="img" aria-label="Miner(?:'|&#x27;)s Breath — switched off"/);
+    expect(html).not.toContain('data-muted');
   });
 });

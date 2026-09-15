@@ -200,7 +200,7 @@ test.describe('display precision sweep', () => {
     const effective = activePanel(page).locator('section').filter({
       has: page.getByRole('heading', { name: /^Effective stats$/i, level: 2 }),
     });
-    await effective.locator('[data-breakdown-card="speed"] [data-slot="tooltip-trigger"]').first().hover();
+    await effective.locator('[data-breakdown-card="speed"]').hover();
     const popover = page.getByTestId('breakdown-popover-speed');
 
     // The "points" step: 25 pts x 2%/pt of a 50.00 base -> "+ 50.00% × 50.00" (2 dp).

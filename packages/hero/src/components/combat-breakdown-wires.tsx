@@ -76,7 +76,7 @@ export function CombatBreakdownWires({
         const from = geometry.boxes[edge.from];
         const to = geometry.boxes[edge.to];
         if (!from || !to) return null;
-        const isLit = lit === edge.to;
+        const isLit = lit === edge.to || lit === edge.from;
         return (
           <path
             key={`${edge.from}-${edge.to}`}

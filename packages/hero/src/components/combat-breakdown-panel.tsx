@@ -12,7 +12,7 @@ import {
   COMBAT_BREAKDOWN_ROWS,
   breakdownCardData,
   cardBadgesFor,
-  cardInputs,
+  connectedCards,
   matrixRowsFor,
   type BreakdownRowId,
 } from '../model/combat-breakdown';
@@ -40,7 +40,8 @@ const groupHeadClass = 'm-0 text-[10px] font-bold tracking-[0.08em] text-accent 
 /**
  * Where one hero's combat figures come from, drawn as a pipeline: the seven sheet stats feed the
  * factors, the factors feed the per-hit and cadence figures, and those feed the two DPS figures.
- * Every figure is visible without a click; the wires say which card reads which.
+ * Every figure is visible without a click; the wires say which card reads which. Hovering or
+ * focusing a card lights it with every card one wire away and mutes the rest.
  *
  * The panel's own width picks the layout. At 820px and up the cards sit in four centred rows
  * with the wires drawn between them; below that the same cards stack one per row under the same
@@ -90,7 +91,7 @@ export function CombatBreakdownPanel({
     [t],
   );
   const text = useMemo<BreakdownText>(() => ({ t, copy, lang, formatNumber }), [t, copy, lang, formatNumber]);
-  const litCards = useMemo(() => (lit ? new Set<BreakdownStatId>([lit, ...cardInputs(lit)]) : null), [lit]);
+  const litCards = useMemo(() => (lit ? connectedCards(lit) : null), [lit]);
 
   return (
     <Panel className="@container min-w-0" data-testid="combat-breakdown">
@@ -116,6 +117,7 @@ export function CombatBreakdownPanel({
                       value={formatBreakdownValue(id, rowValue(id, facts), formatNumber)}
                       text={text}
                       lit={litCards?.has(id) ?? false}
+                      muted={litCards !== null && !litCards.has(id)}
                       onLit={setLit}
                       cardRef={cardRefFor.get(id)!}
                     />
