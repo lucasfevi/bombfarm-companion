@@ -1,20 +1,20 @@
 'use client';
 
 import type { SyntheticEvent } from 'react';
-import { abilityName } from '@bombfarm/domain/game-labels';
 import { heroAbilityIconEntries } from '@bombfarm/domain/hero-abilities';
 import type { Lang } from '@bombfarm/domain/shims/i18n';
 
-import { cn, Tooltip } from '@bombfarm/ui';
+import { cn } from '@bombfarm/ui';
 import { AbilityIcon } from './ability-icon';
-import { rosterIconTooltipTriggerClass, type AbilityIconRecipeSize } from './game-art.recipe';
+import { type AbilityIconRecipeSize } from './game-art.recipe';
+import { AbilityPeek } from './peek';
 
 type Props = {
   abilities: Record<string, number>;
   lang: Lang;
   className?: string;
   size?: AbilityIconRecipeSize;
-  /** Off, the icon carries no level badge; the tooltip and accessible name still read it. */
+  /** Off, the icon carries no level badge; the card and the accessible name still read it. */
   showLevel?: boolean;
 };
 
@@ -22,6 +22,7 @@ function stopRowActivation(event: SyntheticEvent) {
   event.stopPropagation();
 }
 
+/** A hero's abilities as tiles — each opens the ability's card on hover. */
 export function HeroAbilityIcons({
   abilities,
   lang,
@@ -41,38 +42,15 @@ export function HeroAbilityIcons({
       onClick={stopRowActivation}
       onKeyDown={stopRowActivation}
     >
-      {entries.map(({ id, level, max }) => {
-        const name = abilityName(id, lang);
-        const label = `${name}, ${level}/${max}`;
-        return (
-          <Tooltip.Root key={id}>
-            <Tooltip.Trigger
-              type="button"
-              tabIndex={-1}
-              aria-label={label}
-              className={rosterIconTooltipTriggerClass}
-              onClick={stopRowActivation}
-              onKeyDown={stopRowActivation}
-            >
-              {showLevel ? (
-                <AbilityIcon code={id} size={size} level={level} max={max} />
-              ) : (
-                <AbilityIcon code={id} size={size} />
-              )}
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Positioner sideOffset={6}>
-                <Tooltip.Popup>
-                  <p className="m-0 font-semibold text-ink">{name}</p>
-                  <p className="m-0 text-xs text-muted">
-                    {level}/{max}
-                  </p>
-                </Tooltip.Popup>
-              </Tooltip.Positioner>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-        );
-      })}
+      {entries.map(({ id, level, max }) => (
+        <AbilityPeek key={id} id={id} level={level} max={max} lang={lang} stopRowActivation>
+          {showLevel ? (
+            <AbilityIcon code={id} size={size} level={level} max={max} />
+          ) : (
+            <AbilityIcon code={id} size={size} />
+          )}
+        </AbilityPeek>
+      ))}
     </span>
   );
 }

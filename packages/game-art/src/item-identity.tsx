@@ -1,6 +1,8 @@
+import type { Lang } from '@bombfarm/domain/shims/i18n';
 import { cn } from '@bombfarm/ui';
 import { rarityTextClass } from './game-art.recipe';
 import { ItemIcon, type ItemIconItem } from './item-icon';
+import { ItemPeek, itemPeekFromInventory, type WireItemStat } from './peek';
 
 /**
  * The four strings an item is identified by. Functions rather than values because every caller
@@ -12,6 +14,8 @@ import { ItemIcon, type ItemIconItem } from './item-icon';
  * skill stone) — that absence is also what moves the tier colour up onto the name.
  */
 export interface ItemIdentityLabels<TItem extends ItemIconItem> {
+  /** The language the item's hover card is written in. */
+  lang: Lang;
   itemName: (item: TItem) => string;
   itemRarity: (item: TItem) => string;
   /** Already localized and prefixed, e.g. "Lv 60". Empty for a kind that has no level. */
@@ -35,7 +39,7 @@ const DETAIL_TEXT = { sm: 'text-[10px]', xl: 'text-xs' } as const;
  * The tier colour rides on whichever element carries the tier: the rarity word when there is one,
  * and the name itself for the kinds whose name IS their tier.
  */
-export function ItemIdentity<TItem extends ItemIconItem>({
+export function ItemIdentity<TItem extends ItemIconItem & { stats?: readonly WireItemStat[] | undefined }>({
   item,
   labels,
   size = 'sm',
@@ -57,7 +61,9 @@ export function ItemIdentity<TItem extends ItemIconItem>({
 
   return (
     <span className={cn('flex min-w-0 items-center gap-2', className)}>
-      <ItemIcon item={item} size={size} showLevel={false} showUpgrade={false} className="shrink-0" />
+      <ItemPeek item={itemPeekFromInventory(item)} lang={labels.lang} name={name} className="shrink-0">
+        <ItemIcon item={item} size={size} showLevel={false} showUpgrade={false} />
+      </ItemPeek>
       <span className="flex min-w-0 flex-col gap-0.5">
         <span className="flex min-w-0 items-baseline gap-1">
           <span

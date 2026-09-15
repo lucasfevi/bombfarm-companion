@@ -2,18 +2,26 @@ import { describe, expect, it } from 'vitest';
 import {
   abilityEffectText,
   abilityName,
+  abilityReadoutText,
   formatItemDisplay,
   formatItemRosterTooltip,
   houseLabel,
   itemRarityLabel,
+  itemSlot,
   itemStatLabel,
+  levelLabel,
+  peekLabel,
   propLabel,
   rarityLabel,
   setName,
+  sheetStatLabel,
+  sheetStatShortLabel,
   slotLabel,
   statLabel,
   teamBuffLabel,
 } from '@bombfarm/domain/game-labels';
+import { ownAbilityReadout } from '@bombfarm/domain/ability-effect-readout';
+import { SHEET_PANEL_KEYS } from '@bombfarm/domain/planner-constants';
 import { ABILITIES, HOUSES, STAT_LABELS, type RarityKey, type StatKey } from '@bombfarm/domain/model';
 import { ITEM_RARITIES, SLOTS, type Slot } from '@bombfarm/domain/gear';
 import { TEAM_BUFF_ABILITY_IDS, TEAM_BUFF_FIELDS } from '@bombfarm/domain/team-buffs';
@@ -304,5 +312,57 @@ describe('setName', () => {
     expect(setName('clay', 'en')).toBe('Clay');
     expect(setName('sandstorm', 'pt')).toBe('Tempestade de Areia');
     expect(setName('wooden', 'pt')).toBe('Madeira');
+  });
+});
+
+describe('levelLabel', () => {
+  it('abbreviates a level the way the game does, in either language', () => {
+    expect(levelLabel(64, 'en')).toBe('Lv 64');
+    expect(levelLabel(64, 'pt')).toBe('Nv 64');
+  });
+});
+
+describe('sheetStatLabel / sheetStatShortLabel', () => {
+  it('names all eight sheet rows in both languages, luck included, long and short', () => {
+    for (const key of SHEET_PANEL_KEYS) {
+      for (const lang of ['pt', 'en'] as const) {
+        expect(sheetStatLabel(key, lang), `${key} ${lang}`).not.toBe(key);
+        expect(sheetStatShortLabel(key, lang), `${key} ${lang}`).not.toBe(key);
+      }
+    }
+    expect(sheetStatLabel('luck', 'pt')).toBe('Sorte');
+    expect(sheetStatShortLabel('critChance', 'pt')).toBe('Crít.');
+  });
+});
+
+describe('itemSlot', () => {
+  it('reads the slot off the catalog, and null for a definition it lacks', () => {
+    expect(itemSlot({ defId: 'forest_elmo' })).toBe('elmo');
+    expect(itemSlot({ defId: 'nope' })).toBeNull();
+  });
+});
+
+describe('abilityReadoutText', () => {
+  const format = (value: number, decimals: number) => value.toFixed(decimals);
+
+  it('says a readout in the unit its kind names, with the caller’s number formatting', () => {
+    expect(abilityReadoutText(ownAbilityReadout('golpe_brutal', 13), 'en', format)).toBe('+52% crit damage');
+    expect(abilityReadoutText(ownAbilityReadout('golpe_brutal', 13), 'pt', format)).toBe('+52% de dano crítico');
+    expect(abilityReadoutText(ownAbilityReadout('bateria_extra', 12), 'en', format)).toBe('−12% drain');
+    expect(abilityReadoutText(ownAbilityReadout('explosao_ampla', 10), 'en', format)).toBe('+1.0 range');
+    expect(abilityReadoutText(ownAbilityReadout('marcha_acelerada', 20), 'en', format)).toBe('+3.70% speed');
+    expect(abilityReadoutText({ kind: 'dmgMult', value: 1.09 }, 'pt', format)).toBe('×1.09 de dano');
+  });
+
+  it('an unmodelled readout is a dash', () => {
+    expect(abilityReadoutText({ kind: 'none' }, 'en', format)).toBe('—');
+  });
+});
+
+describe('peekLabel', () => {
+  it('carries the hover cards’ few words in both languages', () => {
+    expect(peekLabel('atCap', 'en')).toBe('At cap');
+    expect(peekLabel('atCap', 'pt')).toBe('No teto');
+    expect(peekLabel('rankOf', 'en')).toContain('{rank}');
   });
 });

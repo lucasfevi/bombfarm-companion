@@ -300,6 +300,19 @@ describe('design-system barrel surface (frozen)', () => {
 // the item they belong to, inside the one card both hosts draw.
 const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'AbilityIcon',
+  // The peek family (2026-09-15): the hover card every item, hero and ability icon opens, and the
+  // frame it hangs from — one skeleton, three cards, one trigger contract.
+  'AbilityPeek',
+  'AbilityPeekCard',
+  'HeroPeek',
+  'HeroPeekCard',
+  'ItemPeek',
+  'ItemPeekCard',
+  'PeekFrame',
+  'heroPeekData',
+  'itemPeekFromInventory',
+  'peekPopupClass',
+  'peekTriggerClass',
   'ArtFrame',
   'DEFAULT_INVENTORY_TABLE_COLUMNS',
   'InventoryGrid',

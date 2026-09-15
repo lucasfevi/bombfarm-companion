@@ -95,7 +95,7 @@ describe('desktop inventory labels', () => {
     ]);
   });
 
-  it('hands the card the hero identity in pieces — rank, name, rarity, level, avatar skin', () => {
+  it('hands the card the hero identity in pieces — rank, name, rarity, level, avatar skin — and the same identity for the avatar to open', () => {
     expect(equippedByOf(inventoryLabels(en, 'en', HEROES), 'g1')).toEqual({
       name: 'Kendo',
       rank: 'S',
@@ -104,6 +104,7 @@ describe('desktop inventory labels', () => {
       stars: 2,
       skin: 3,
       unknown: false,
+      peek: { name: 'Kendo', rank: 'S', rarityIdx: 5, level: 157, stars: 2, skin: 3 },
     });
   });
 

@@ -14,10 +14,12 @@ import {
   type InventoryViewStat,
   type ItemKind,
 } from "@bombfarm/domain/inventory-view";
+import type { Lang } from "@bombfarm/domain/shims/i18n";
 import { cn } from "@bombfarm/ui";
 import { GoldIcon } from "./gold-icon";
 import { MarketPrice, type MarketPriceLabels, type MarketPriceView } from "./market-price";
 import { HeroAvatar } from "./hero-avatar";
+import { HeroPeek, type HeroPeekData } from "./peek";
 import { ItemIdentity, type ItemIdentityLabels } from "./item-identity";
 import { rarityTextClass } from "./game-art.recipe";
 import {
@@ -66,6 +68,8 @@ export interface InventoryEquippedBy {
   skin: number;
   /** The caller has no record of this hero — draw the name as a note, with no avatar. */
   unknown: boolean;
+  /** What the avatar's hover card says; absent, the avatar is bare art. */
+  peek?: HeroPeekData | undefined;
 }
 
 /** One stat, split so the card can put the label and the number at opposite edges. */
@@ -165,7 +169,7 @@ const MAX_STAT_LINES = 4;
  * borrow is the alignment rule — rank and name share a baseline, so a bold `S` does not ride
  * above the name next to it.
  */
-function EquippedByRow({ hero }: { hero: InventoryEquippedBy }) {
+function EquippedByRow({ hero, lang }: { hero: InventoryEquippedBy; lang: Lang }) {
   if (hero.unknown) {
     return (
       <span data-testid="inventory-card-hero" className="min-w-0 truncate text-xs text-muted">
@@ -178,13 +182,9 @@ function EquippedByRow({ hero }: { hero: InventoryEquippedBy }) {
 
   return (
     <span className="flex min-w-0 items-center gap-1.5">
-      <HeroAvatar
-        skin={hero.skin}
-        rarityIdx={hero.rarityIdx}
-        size="xs"
-        name={hero.name}
-        className="shrink-0"
-      />
+      <HeroPeek hero={hero.peek ?? { name: hero.name }} lang={lang} disabled={!hero.peek} className="shrink-0">
+        <HeroAvatar skin={hero.skin} rarityIdx={hero.rarityIdx} size="xs" name={hero.name} />
+      </HeroPeek>
       <span className="flex min-w-0 flex-col gap-0.5">
         <span className="flex min-w-0 items-baseline gap-1">
           {hero.rank ? (
@@ -319,7 +319,7 @@ const InventoryCard = memo(function InventoryCard({
         {/* One slot, two tenants that never coincide: only gear is worn, and only the fungible
             kinds stack. */}
         {equippedBy ? (
-          <EquippedByRow hero={equippedBy} />
+          <EquippedByRow hero={equippedBy} lang={labels.lang} />
         ) : count > 1 ? (
           <span data-testid="inventory-card-count" className={inventoryCountClass}>
             <StackGlyph />

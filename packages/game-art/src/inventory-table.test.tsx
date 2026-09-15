@@ -28,6 +28,7 @@ const RARITIES = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary', 'Mythic'];
 const view = buildInventoryView(RAW_ITEMS);
 
 const labels: InventoryTableLabels = {
+  lang: 'en',
   caption: 'Inventory',
   groupTitle: (kind) => kind,
   itemName: (item) => NAMES[item.defId] ?? item.defId,

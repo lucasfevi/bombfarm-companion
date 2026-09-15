@@ -16,9 +16,11 @@ import {
   type InventoryViewItem,
   type ItemKind,
 } from '@bombfarm/domain/inventory-view';
+import type { Lang } from '@bombfarm/domain/shims/i18n';
 import { cn, DataTable, EmptyState, Icon } from '@bombfarm/ui';
 import { GoldIcon } from './gold-icon';
 import { HeroAvatar } from './hero-avatar';
+import { HeroPeek } from './peek';
 import { ItemIdentity, type ItemIdentityLabels } from './item-identity';
 import { MarketPrice, type MarketPriceLabels, type MarketPriceView } from './market-price';
 import { rarityTextClass } from './game-art.recipe';
@@ -204,7 +206,7 @@ function columnsFor(
 
 const MAX_HERO_STARS = 3;
 
-function EquippedByCell({ hero }: { hero: InventoryEquippedBy }) {
+function EquippedByCell({ hero, lang }: { hero: InventoryEquippedBy; lang: Lang }) {
   if (hero.unknown) {
     return <span className={cn('truncate', inventoryTableBlankClass)}>{hero.name}</span>;
   }
@@ -213,7 +215,9 @@ function EquippedByCell({ hero }: { hero: InventoryEquippedBy }) {
 
   return (
     <span className={inventoryTableHeroClass}>
-      <HeroAvatar skin={hero.skin} rarityIdx={hero.rarityIdx} size="xs" name={hero.name} className="shrink-0" />
+      <HeroPeek hero={hero.peek ?? { name: hero.name }} lang={lang} disabled={!hero.peek} className="shrink-0">
+        <HeroAvatar skin={hero.skin} rarityIdx={hero.rarityIdx} size="xs" name={hero.name} />
+      </HeroPeek>
       <span className={cn(inventoryTableHeroNameClass, rarityTextClass(hero.rarityIdx) ?? 'text-ink')}>
         {hero.name}
       </span>
@@ -352,7 +356,7 @@ const InventoryTableRow = memo(function InventoryTableRow({
           </DataTable.Cell>
         );
       case 'hero':
-        return <DataTable.Cell key={column.id}>{hero ? <EquippedByCell hero={hero} /> : <Blank />}</DataTable.Cell>;
+        return <DataTable.Cell key={column.id}>{hero ? <EquippedByCell hero={hero} lang={labels.lang} /> : <Blank />}</DataTable.Cell>;
       case 'actions':
         return (
           <DataTable.Cell key={column.id} align="right">

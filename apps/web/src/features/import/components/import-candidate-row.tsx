@@ -13,6 +13,8 @@ import {
   HeroAbilityIcons,
   HeroAvatar,
   HeroGearIcons,
+  HeroPeek,
+  heroPeekData,
   rarityDotClass,
   rarityTextClass,
   rosterInactiveChromeClass,
@@ -45,12 +47,9 @@ export function ImportCandidateRow({
     >
       <DataTable.Cell className="w-14 px-1" nowrap={false}>
         <span className={inactiveChrome}>
-          <HeroAvatar
-            skin={candidate.record.skin ?? 0}
-            rarityIdx={rarIdx}
-            size="lg"
-            name={candidate.name}
-          />
+          <HeroPeek hero={heroPeekData(candidate.record)} lang={lang}>
+            <HeroAvatar skin={candidate.record.skin ?? 0} rarityIdx={rarIdx} size="lg" name={candidate.name} />
+          </HeroPeek>
         </span>
       </DataTable.Cell>
       <DataTable.Cell
@@ -95,7 +94,6 @@ export function ImportCandidateRow({
           lang={lang}
           emptySlotAriaLabel={(slotName) => sub(t.gearSlotEmptyAria, { slot: slotName })}
           emptySlotTip={t.gearSlotEmptyTip}
-          lvLabel={t.rankLv}
         />
       </DataTable.Cell>
       <DataTable.Cell className={cn('max-[960px]:hidden py-2', inactiveChrome)} nowrap={false} data-roster-wrap>

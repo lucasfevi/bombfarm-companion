@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { InfoTip, Panel, Switch, Tooltip, cn, formatNumber, panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui';
 import type { AbilityEffectReadout } from '@bombfarm/domain/ability-effect-readout';
-import { abilityEffectText, abilityName } from '@bombfarm/domain/game-labels';
+import { abilityEffectText, abilityName, abilityReadoutText } from '@bombfarm/domain/game-labels';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { TeamAuraId, TeamAuraSwitches } from '@bombfarm/domain/team-buffs';
 import { AbilityIcon } from '@bombfarm/game-art';
@@ -13,38 +13,6 @@ import {
   teamAuraRowsFor,
   type OwnAbilityStatus,
 } from '../model/abilities-auras-panel';
-
-type ReadoutKind = Exclude<AbilityEffectReadout, { kind: 'none' }>['kind'];
-
-const UNIT_KEY: Record<ReadoutKind, keyof HeroCopy> = {
-  attackPct: 'heroDetailAuraUnitAttack',
-  speedPct: 'heroDetailAuraUnitSpeed',
-  critPoints: 'heroDetailAuraUnitCrit',
-  drainPct: 'heroDetailAuraUnitDrain',
-  penetrationPoints: 'heroDetailAuraUnitPenetration',
-  critDmgPct: 'heroDetailAuraUnitCritDmg',
-  rangeCells: 'heroDetailAuraUnitRange',
-  dmgMult: 'heroDetailAuraUnitDmgMult',
-  gateAttackPct: 'heroDetailAuraUnitGateAttack',
-  packDmgPctPerAlly: 'heroDetailAuraUnitPackPerAlly',
-  teamPulseDmgPct: 'heroDetailAuraUnitPulse',
-};
-
-/** Marcha's per-level step is 0.185%, a multiplier lands on 1.09, a radius on 1.0; the rest move
- *  in whole units. */
-const UNIT_DECIMALS: Record<ReadoutKind, number> = {
-  attackPct: 0,
-  speedPct: 2,
-  critPoints: 0,
-  drainPct: 0,
-  penetrationPoints: 0,
-  critDmgPct: 0,
-  rangeCells: 1,
-  dmgMult: 2,
-  gateAttackPct: 0,
-  packDmgPctPerAlly: 1,
-  teamPulseDmgPct: 0,
-};
 
 const STATUS_KEY: Record<OwnAbilityStatus, keyof HeroCopy> = {
   own: 'heroDetailAuraOwnTag',
@@ -63,11 +31,8 @@ const ownRowClass =
 const auraFiguresClass = 'col-start-3 flex flex-wrap gap-x-3 sm:contents';
 const ownFiguresClass = 'col-start-2 flex flex-wrap gap-x-3 sm:contents';
 
-function readoutText(readout: AbilityEffectReadout, t: HeroCopy, lang: Lang): string {
-  if (readout.kind === 'none') return '—';
-  return sub(t[UNIT_KEY[readout.kind]], {
-    value: formatNumber(readout.value, lang, UNIT_DECIMALS[readout.kind]),
-  });
+function readoutText(readout: AbilityEffectReadout, lang: Lang): string {
+  return abilityReadoutText(readout, lang, (value, decimals) => formatNumber(value, lang, decimals));
 }
 
 function deltaClass(deltaPct: number): string {
@@ -151,9 +116,9 @@ export function AbilitiesAurasPanel({
               </div>
               <div className={auraFiguresClass}>
                 <span className={cn(numericClass, !row.on && 'text-muted')} data-testid="team-aura-priced-at">
-                  {row.pricedAt ? readoutText(row.pricedAt, t, lang) : '—'}
+                  {row.pricedAt ? readoutText(row.pricedAt, lang) : '—'}
                 </span>
-                <span className={cn(numericClass, 'text-muted')}>{readoutText(row.cap, t, lang)}</span>
+                <span className={cn(numericClass, 'text-muted')}>{readoutText(row.cap, lang)}</span>
                 <span className={cn(numericClass, deltaClass(row.deltaPct))} data-testid="team-aura-delta">
                   {deltaText}
                 </span>
@@ -191,7 +156,7 @@ export function AbilitiesAurasPanel({
               </div>
               <div className={ownFiguresClass}>
                 <span className={cn(numericClass, row.status !== 'own' && 'text-muted')}>
-                  {readoutText(row.effect, t, lang)}
+                  {readoutText(row.effect, lang)}
                 </span>
                 <span className={tagClass} data-testid="own-ability-status">
                   {t[STATUS_KEY[row.status]]}

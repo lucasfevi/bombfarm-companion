@@ -127,7 +127,6 @@ describe('hero picker roster chrome', () => {
   it('passes localized empty-slot copy into HeroGearIcons', () => {
     expect(rowSrc).toContain('t.gearSlotEmptyAria');
     expect(rowSrc).toContain('t.gearSlotEmptyTip');
-    expect(rowSrc).toContain('lvLabel={t.rankLv}');
   });
 
   it('uses a wider popup for icon columns', () => {
@@ -167,9 +166,9 @@ describe('hero gear icons', () => {
     expect(recipe).toMatch(/emptyGearSlotClass = cn\(\s*'inline-grid w-12 aspect-\[18\/19\]/);
   });
 
-  it('uses roster tooltip formatter with a caller-supplied rank/level label', () => {
-    expect(src).toContain('formatItemRosterTooltip');
-    expect(src).toContain('lvLabel');
+  it('each equipped tile opens the item card, and names the item nowhere else', () => {
+    expect(src).toContain('<ItemPeek');
+    expect(src).not.toContain('formatItemRosterTooltip');
     expect(src).not.toContain('formatItemDisplay');
   });
 
@@ -179,24 +178,26 @@ describe('hero gear icons', () => {
     expect(src).not.toMatch(/return <span className="text-muted">—<\/span>/);
   });
 
-  it('takes empty-slot copy as caller-supplied labels, and uses hover-only tooltip triggers', () => {
+  it('takes empty-slot copy as caller-supplied labels, and keeps the empty tile out of the tab order as a span, like the peeks beside it', () => {
     // Localisation itself is the caller's job — this package cannot import `@/shared/i18n`; the
     // roster row call sites pin the localized text, see below.
     expect(src).toContain('emptySlotAriaLabel');
     expect(src).toContain('emptySlotTip');
-    expect(src).toContain('type="button"');
+    expect(src).toContain('render={<span role="img" />}');
     expect(src).toContain('tabIndex={-1}');
-    expect(src).not.toContain('role="img"');
+    expect(src).not.toContain('type="button"');
   });
 });
 
 describe('hero ability icons', () => {
   const src = readGameArt('hero-ability-icons.tsx');
 
-  it('uses hover-only tooltip triggers', () => {
-    expect(src).toContain('type="button"');
-    expect(src).toContain('tabIndex={-1}');
-    expect(src).not.toContain('role="img"');
+  it('each icon opens the ability card; the frame keeps the trigger out of the tab order', () => {
+    expect(src).toContain('<AbilityPeek');
+    expect(src).toContain('stopRowActivation');
+    const frame = readGameArt('peek/peek-frame.tsx');
+    expect(frame).toContain('tabIndex={-1}');
+    expect(frame).toContain("render={<span role={label === undefined ? undefined : 'img'} />}");
   });
 
   it('shows n/max progress at lg size matching gear unless a caller asks for another', () => {
@@ -204,7 +205,7 @@ describe('hero ability icons', () => {
     expect(src).toContain('size={size}');
     expect(src).toContain('level={level}');
     expect(src).toContain('max={max}');
-    expect(src).toContain('${level}/${max}');
+    expect(readGameArt('peek/ability-peek.tsx')).toContain('${level}/${cap}');
   });
 });
 

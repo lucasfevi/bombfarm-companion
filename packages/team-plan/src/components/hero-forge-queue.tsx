@@ -5,7 +5,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { formatItemRosterTooltip } from '@bombfarm/domain/game-labels';
 import type { ForgeForecast } from '@bombfarm/domain/forge';
 import { cn, formatCompactNumber, formatNumber, mutedClass } from '@bombfarm/ui';
-import { ItemIcon } from '@bombfarm/game-art';
+import { ItemIcon, ItemPeek } from '@bombfarm/game-art';
 import { sub, type Lang } from '@bombfarm/hero/copy';
 import type { TeamPlanScreenCopy } from '../copy';
 import { buildForgeQueue, type ForgeLadderRung } from '../model/forge-queue';
@@ -84,7 +84,9 @@ export function HeroForgeQueue({
           const tip = formatItemRosterTooltip(item, lang, t.rankLv);
           return (
             <li key={row.itemId} className="flex items-start gap-2.5" data-testid="team-plan-forge-queue-item">
-              <ItemIcon item={item} size="sm" />
+              <ItemPeek item={item} lang={lang}>
+                <ItemIcon item={item} size="sm" />
+              </ItemPeek>
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="min-w-0 truncate text-[12px] leading-tight font-bold text-ink">{tip.title}</span>

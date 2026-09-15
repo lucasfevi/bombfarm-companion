@@ -5,6 +5,7 @@ import { heroLevelLabel, rarityLabel } from '@bombfarm/domain/game-labels';
 import type { Lang } from '@bombfarm/domain/shims/i18n';
 import { cn } from '@bombfarm/ui';
 import { HeroAvatar } from './hero-avatar';
+import { HeroPeek, type HeroPeekData } from './peek';
 import { heroRankToneClass, rarityTextClass } from './game-art.recipe';
 import type { ArtFrameSize } from './art-frame';
 
@@ -28,6 +29,7 @@ export function HeroIdentity({
   size = 'sm',
   variant = 'inline',
   nameTestId,
+  peek,
 }: {
   name: string;
   rank?: string | undefined;
@@ -46,6 +48,11 @@ export function HeroIdentity({
   variant?: HeroIdentityVariant;
   /** `data-testid` on the element carrying the hero's own name, for a caller that needs one. */
   nameTestId?: string | undefined;
+  /**
+   * What hovering the avatar opens. Absent, the avatar is bare art — the block already says who
+   * this is, so the card is worth drawing only when it can say more: the sheet, the gear.
+   */
+  peek?: HeroPeekData | undefined;
 }) {
   // An index off the end reads as unknown, not as a rarity with no name: the roster join accepts
   // any non-negative number so a new tier lands here before this list knows it, and
@@ -70,7 +77,9 @@ export function HeroIdentity({
   return (
     <div className="flex min-w-0 items-center gap-2">
       <div className="shrink-0">
-        <HeroAvatar skin={skin} rarityIdx={rarityIdx ?? NEUTRAL_RARITY_IDX} size={size} name={name} />
+        <HeroPeek hero={peek ?? { name }} lang={lang} disabled={!peek}>
+          <HeroAvatar skin={skin} rarityIdx={rarityIdx ?? NEUTRAL_RARITY_IDX} size={size} name={name} />
+        </HeroPeek>
       </div>
       <div className="min-w-0 text-left">
         <div

@@ -4,7 +4,11 @@
  */
 import type { Lang } from './shims/i18n';
 import type { RarityKey, StatKey } from './model';
+// Type-only on purpose: the readout module reaches `model`, which reaches the gear catalog, which
+// reaches back here — a value import would evaluate this file's neighbours in a circle.
+import type { AbilityEffectReadout } from './ability-effect-readout';
 import { type Slot } from './gear';
+import type { SheetKey } from './planner-constants';
 import type { TeamBuffId } from './team-buffs';
 import catalog from './data/catalog.json' with { type: 'json' };
 
@@ -30,9 +34,14 @@ export function rarityLabel(key: RarityKey, lang: Lang): string {
   return pick(RARITY_LABELS[key], lang, key);
 }
 
+/** A level with its prefix — the game abbreviates a hero's and an item's the same way. */
+export function levelLabel(level: number, lang: Lang): string {
+  return `${pick(LEVEL_PREFIX, lang, 'Lv')} ${String(level)}`;
+}
+
 /** Hero level with its prefix. The abbreviation is a game term, so it follows `Lang`. */
 export function heroLevelLabel(level: number, lang: Lang): string {
-  return `${pick(HERO_LEVEL_PREFIX, lang, 'Lv')} ${String(level)}`;
+  return levelLabel(level, lang);
 }
 
 /** Item rarity label by catalog rarity index 0..5. */
@@ -54,6 +63,37 @@ export function slotLabel(slot: Slot, lang: Lang): string {
 export function statLabel(stat: StatKey, lang: Lang): string {
   return pick(STAT_LABEL_MAP[stat], lang, stat);
 }
+
+/** Every sheet row's label, luck included — the eight the sheet panel prints. */
+export function sheetStatLabel(stat: SheetKey, lang: Lang): string {
+  return stat === 'luck' ? pick(LUCK_LABEL, lang, stat) : statLabel(stat, lang);
+}
+
+/** The same eight, abbreviated for a column too narrow to spell "Chance de Crítico". */
+export function sheetStatShortLabel(stat: SheetKey, lang: Lang): string {
+  return pick(SHEET_STAT_SHORT_LABELS[stat], lang, stat);
+}
+
+/**
+ * An ability readout as the game would say it — "+20 crit points", "×1,09 de dano". The number
+ * is formatted by the caller so it keeps the reader's own separator convention.
+ */
+export function abilityReadoutText(
+  readout: AbilityEffectReadout,
+  lang: Lang,
+  formatNumber: (value: number, decimals: number) => string,
+): string {
+  if (readout.kind === 'none') return '—';
+  const value = formatNumber(readout.value, ABILITY_READOUT_DECIMALS[readout.kind]);
+  return pick(ABILITY_READOUT_UNITS[readout.kind], lang, '{value}').replace('{value}', value);
+}
+
+/** The few words the hover cards say that no other surface does. */
+export function peekLabel(key: PeekLabelKey, lang: Lang): string {
+  return pick(PEEK_LABELS[key], lang, key);
+}
+
+export type PeekLabelKey = keyof typeof PEEK_LABELS;
 
 /** Team-buff field label (ability id). */
 export function teamBuffLabel(buffId: TeamBuffId, lang: Lang): string {
@@ -99,6 +139,12 @@ export function formatItemDisplay(
 export function itemSetName(item: { defId: string }, lang: Lang): string {
   const definition = catalog.defs.find((entry) => entry.id === item.defId);
   return definition ? setName(definition.set, lang) : item.defId;
+}
+
+/** The slot a piece of gear goes in; `null` for a definition the catalog lacks. */
+export function itemSlot(item: { defId: string }): Slot | null {
+  const definition = catalog.defs.find((entry) => entry.id === item.defId);
+  return definition ? definition.slot : null;
 }
 
 /** A piece of gear's name — its set and slot; the raw id for a definition the catalog lacks. */
@@ -227,7 +273,65 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
   },
 };
 
-const HERO_LEVEL_PREFIX: Bilingual = { pt: 'Nv', en: 'Lv' };
+const LEVEL_PREFIX: Bilingual = { pt: 'Nv', en: 'Lv' };
+
+const LUCK_LABEL: Bilingual = { pt: 'Sorte', en: 'Luck' };
+
+const SHEET_STAT_SHORT_LABELS: Record<SheetKey, Bilingual> = {
+  attack: { pt: 'Ataque', en: 'Attack' },
+  energy: { pt: 'Energia', en: 'Energy' },
+  speed: { pt: 'Veloc.', en: 'Speed' },
+  luck: LUCK_LABEL,
+  critChance: { pt: 'Crít.', en: 'Crit' },
+  critDmg: { pt: 'Dano crít.', en: 'Crit dmg' },
+  penetration: { pt: 'Penetr.', en: 'Pen' },
+  cdr: { pt: 'CDR', en: 'CDR' },
+};
+
+type AbilityReadoutKind = Exclude<AbilityEffectReadout['kind'], 'none'>;
+
+/** How many decimals each readout prints with: Marcha's per-level step is 0.185%, a multiplier
+ *  lands on 1.09, a radius on 1.0; the rest move in whole units. */
+const ABILITY_READOUT_DECIMALS: Record<AbilityReadoutKind, number> = {
+  attackPct: 0,
+  speedPct: 2,
+  critPoints: 0,
+  drainPct: 0,
+  penetrationPoints: 0,
+  critDmgPct: 0,
+  rangeCells: 1,
+  dmgMult: 2,
+  gateAttackPct: 0,
+  packDmgPctPerAlly: 1,
+  teamPulseDmgPct: 0,
+};
+
+const ABILITY_READOUT_UNITS: Record<AbilityReadoutKind, Bilingual> = {
+  attackPct: { pt: '+{value}% de ataque', en: '+{value}% attack' },
+  speedPct: { pt: '+{value}% de velocidade', en: '+{value}% speed' },
+  critPoints: { pt: '+{value} pontos de crítico', en: '+{value} crit points' },
+  drainPct: { pt: '−{value}% de gasto', en: '−{value}% drain' },
+  penetrationPoints: { pt: '+{value} de penetração', en: '+{value} penetration' },
+  critDmgPct: { pt: '+{value}% de dano crítico', en: '+{value}% crit damage' },
+  rangeCells: { pt: '+{value} de alcance', en: '+{value} range' },
+  dmgMult: { pt: '×{value} de dano', en: '×{value} dmg' },
+  gateAttackPct: { pt: '+{value}% em portões', en: '+{value}% on gates' },
+  packDmgPctPerAlly: { pt: '+{value}% de dano por aliado', en: '+{value}% dmg per ally' },
+  teamPulseDmgPct: { pt: '+{value}% de dano, pulso mantido', en: '+{value}% dmg, pulse held up' },
+};
+
+const PEEK_LABELS = {
+  /** "Rank {rank} of {max}" — the ability's level line. */
+  rankOf: { pt: 'Rank {rank} de {max}', en: 'Rank {rank} of {max}' },
+  atRank: { pt: 'No rank {rank}', en: 'At rank {rank}' },
+  atCap: { pt: 'No teto', en: 'At cap' },
+  teamAura: { pt: 'aura do time', en: 'team aura' },
+  ownSheet: { pt: 'ficha própria', en: 'own sheet' },
+  forge: { pt: 'Forja', en: 'Forge' },
+  power: { pt: 'Poder', en: 'Power' },
+  deployed: { pt: 'Em campo', en: 'Deployed' },
+  emptySlot: { pt: 'Vazio', en: 'Empty' },
+} satisfies Record<string, Bilingual>;
 
 const RARITY_LABELS: Record<RarityKey, Bilingual> = {
   Comum: { pt: 'Comum', en: 'Common' },
