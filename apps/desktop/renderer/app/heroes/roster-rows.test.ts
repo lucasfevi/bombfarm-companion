@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import type { AccountPayload, AccountView } from '@bombfarm/contracts';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { rollQualityFor } from '@bombfarm/domain/roll-quality';
-import { orderByRollQuality, rollQualityText, type RosterHeroRow } from '@bombfarm/hero/model';
+import { heroPowerText, orderByRollQuality, type RosterHeroRow } from '@bombfarm/hero/model';
 import { buildAccountRoster } from '../../lib/account/account-roster';
 
 /**
@@ -88,19 +88,19 @@ describe('orderByRollQuality', () => {
   });
 });
 
-describe('rollQualityText', () => {
+describe('heroPowerText', () => {
   function onlyRow(hero: HeroRecord): RosterHeroRow {
     const row = orderByRollQuality([hero])[0];
     if (row === undefined) throw new Error('expected one row');
     return row;
   }
 
-  it('prints the same mean the detail panel places, to one decimal', () => {
-    const row = onlyRow(placeable());
-    expect(rollQualityText(row, 'en')).toBe((row.report?.mean ?? 0).toFixed(1));
+  it('prints the power the save recorded, compact as the board card prints it', () => {
+    expect(heroPowerText(onlyRow({ ...placeable(), power: 617_210 }), 'en')).toBe('617.2k');
   });
 
-  it('prints a dash, never a zero, for a hero the domain could place nothing for', () => {
-    expect(rollQualityText(onlyRow(withoutRollBounds(placeable())), 'en')).toBe('—');
+  it('prints a dash, never a zero, for a hero whose save carried no power', () => {
+    const { power: _power, ...unread } = placeable();
+    expect(heroPowerText(onlyRow(unread), 'en')).toBe('—');
   });
 });

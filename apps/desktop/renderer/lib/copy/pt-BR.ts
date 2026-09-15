@@ -631,7 +631,6 @@ export const ptBR: Copy = {
   heroesTabPoints: 'Pontos',
   heroesRosterTitle: 'Seu elenco',
   heroesRosterListLabel: 'Seus heróis',
-  heroesRollQualityLabel: 'Sorteio',
   heroesFiguresWithheldTitle: 'Ainda não foi lido o bastante da sua conta',
   heroesFiguresWithheldDescription: 'Os números de cada herói precisam da sua árvore de habilidades e da sua Casa. Deixe o jogo aberto por um instante e eles vão aparecer.',
   heroesPointsUnreadTitle: 'Os pontos de atributo gastos deste herói não puderam ser lidos',

@@ -18,7 +18,6 @@ import type { RosterCopy } from './roster-copy';
 export type RosterBoardCopy = RosterCopy & {
   heroesRosterTitle: string;
   heroesRosterListLabel: string;
-  heroesRollQualityLabel: string;
   heroesViewLabel: string;
   heroesViewCards: string;
   heroesViewList: string;

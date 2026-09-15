@@ -1,6 +1,6 @@
 /** `@bombfarm/hero/model` — the view models and formatting the hero components render from. */
 export { compareRosterHeroes, gearCountOf } from './roster-compare';
-export { orderByRollQuality, rollQualityText } from './roster-rows';
+export { heroPowerText, orderByRollQuality } from './roster-rows';
 export type { RosterHeroRow } from './roster-rows';
 export {
   ROSTER_BOARD_SORT_KEYS,

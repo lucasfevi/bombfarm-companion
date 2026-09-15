@@ -490,7 +490,6 @@ const KEYS_ADDED: readonly string[] = [
   // because "Enabled"/"Disabled" is what this planner has always called that flag.
   'heroesRosterTitle',
   'heroesRosterListLabel',
-  'heroesRollQualityLabel',
   'heroesViewLabel',
   'heroesViewCards',
   'heroesViewList',
