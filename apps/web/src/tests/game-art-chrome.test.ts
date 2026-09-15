@@ -271,7 +271,8 @@ describe('abilities panel chrome', () => {
 });
 
 describe('gear tab slot chrome', () => {
-  const src = read('features/gear/components/slot-editor.tsx');
+  const src = readHero('components/gear-slot-card.tsx');
+  const editor = read('features/gear/components/slot-editor.tsx');
 
   it('uses ItemIcon at xl with default level and upgrade glyphs', () => {
     expect(src).toMatch(/<ItemIcon item=\{equipped\} size="xl"/);
@@ -281,13 +282,12 @@ describe('gear tab slot chrome', () => {
     expect(src).toContain('aspect-[18/19]');
   });
 
-  it('centers filled art and keeps the slot name only on empty placeholders', () => {
+  it('centers the art, names the slot on every card, and the planner pins clear at the corner', () => {
     expect(src).toContain('justify-center');
-    expect(src).toContain('absolute -top-1 -right-1');
-    const emptyBranch = src.slice(src.indexOf(': ('), src.indexOf('<Select'));
-    expect(emptyBranch).toContain('slotLabel(slot, lang)');
-    const filledBranch = src.slice(src.indexOf('{equipped ? ('), src.indexOf(': ('));
-    expect(filledBranch).not.toContain('slotLabel');
+    expect(src).toContain('slotLabel(slot, lang)');
+    expect(src).toContain('itemName(equipped, lang)');
+    expect(src).toContain('itemRarityLabel(equipped.rarityIdx, lang)');
+    expect(editor).toContain('absolute -top-1 -right-1');
   });
 });
 
@@ -367,17 +367,32 @@ describe('import preview table chrome', () => {
   });
 });
 
-describe('gear slot stats', () => {
-  const buildCol = readHero('components/gear-slot-stats-grid.tsx');
+describe('gear slot card', () => {
+  const card = readHero('components/gear-slot-card.tsx');
   const compareSrc = readHero('components/gear-compare-section.tsx');
+  const editor = read('features/gear/components/slot-editor.tsx');
 
-  it('uses full stat labels in per-slot breakdown', () => {
-    expect(buildCol).toContain('slotStatFullLabels');
-    expect(buildCol).not.toMatch(/slotStatLabels\[/);
+  it('uses the short stat labels beside the slot values — the full ones head the totals table', () => {
+    expect(card).toContain('slotStatLabels[');
+    expect(card).not.toContain('slotStatFullLabels');
+    expect(readHero('components/gear-totals-table.tsx') + readHero('model/gear-bonus-rows.ts')).toContain(
+      'slotStatFullLabels',
+    );
   });
 
-  it('shows the same per-slot stats under clone gear', () => {
-    expect(compareSrc).toContain('<GearSlotStatsGrid loadout={altLoadout}');
+  it('pins the host controls to the foot of the card so they line up across a row', () => {
+    expect(card).toContain('mt-auto');
+  });
+
+  it('draws the clone gear as the same cards when no editor is supplied', () => {
+    expect(compareSrc).toContain('<GearSlotCardsGrid');
+    expect(compareSrc).toContain('loadout={altLoadout}');
+  });
+
+  it('the planner editor is the shared card with its controls as children — not a second drawing', () => {
+    expect(editor).toContain('<GearSlotCard');
+    expect(editor).not.toContain('<ItemIcon');
+    expect(editor).not.toContain('slotChromeClassName');
   });
 });
 

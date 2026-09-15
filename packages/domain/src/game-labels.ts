@@ -95,20 +95,28 @@ export function formatItemDisplay(
   return `${set} ${slot} · ${rar} nv${item.level}${plus}`;
 }
 
+/** The set a piece of gear belongs to, by name; the raw id for a definition the catalog lacks. */
+export function itemSetName(item: { defId: string }, lang: Lang): string {
+  const definition = catalog.defs.find((entry) => entry.id === item.defId);
+  return definition ? setName(definition.set, lang) : item.defId;
+}
+
+/** A piece of gear's name — its set and slot; the raw id for a definition the catalog lacks. */
+export function itemName(item: { defId: string }, lang: Lang): string {
+  const definition = catalog.defs.find((entry) => entry.id === item.defId);
+  if (!definition) return item.defId;
+  return `${setName(definition.set, lang)} ${slotLabel(definition.slot, lang)}`;
+}
+
 /** Roster gear tooltip — title: item + forge; subtitle: level + rarity (no slot header). */
 export function formatItemRosterTooltip(
   item: { defId: string; rarityIdx: number; level: number; upgrade: number },
   lang: Lang,
   lvLabel: string,
 ): { title: string; subtitle: string } {
-  const definition = catalog.defs.find((entry) => entry.id === item.defId);
   const rar = itemRarityLabel(item.rarityIdx, lang);
   const plus = item.upgrade > 0 ? ` +${item.upgrade}` : '';
-  if (!definition) {
-    return { title: `${item.defId}${plus}`, subtitle: `${lvLabel} ${item.level} ${rar}` };
-  }
-  const name = `${setName(definition.set, lang)} ${slotLabel(definition.slot, lang)}`;
-  return { title: `${name}${plus}`, subtitle: `${lvLabel} ${item.level} ${rar}` };
+  return { title: `${itemName(item, lang)}${plus}`, subtitle: `${lvLabel} ${item.level} ${rar}` };
 }
 
 // --- Maps ---

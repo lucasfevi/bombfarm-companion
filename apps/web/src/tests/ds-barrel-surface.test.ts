@@ -290,11 +290,13 @@ describe('design-system barrel surface (frozen)', () => {
 // `inventoryTableSelectedRowClass` arrives in their place, for the row a picker screen is
 // currently planning against.
 //
-// The four gear-slot classes (2026-09-07): the eight-across slot grid, the stats grid under it, one
-// stat row, and the chrome of one stat box. They live here rather than in `@bombfarm/ui` because
-// `slotStatClassName` composes `artFrameRadiusClass`, which is this package's and which the design
-// system cannot import — the dependency runs this way — and because the `inventory*` family beside
-// them is the same item-tile vocabulary. The Items panel that draws them is `@bombfarm/hero`'s now.
+// The three gear-slot classes (2026-09-07, reshaped 2026-09-14): the eight-across slot grid, one
+// stat row, and the chrome of one slot card. They live here rather than in `@bombfarm/ui` because
+// `slotChromeClassName` composes `artFrameRadiusClass`, which is this package's and which the
+// design system cannot import — the dependency runs this way — and because the `inventory*` family
+// beside them is the same item-tile vocabulary. The Items panel that draws them is
+// `@bombfarm/hero`'s. The stats grid and its box chrome left when the per-slot stats moved under
+// the item they belong to, inside the one card both hosts draw.
 const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'AbilityIcon',
   'ArtFrame',
@@ -368,9 +370,8 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'rarityTextClass',
   'rosterIconTooltipTriggerClass',
   'rosterInactiveChromeClass',
-  'slotStatClassName',
+  'slotChromeClassName',
   'slotStatRowClass',
-  'slotStatsGridClass',
   'slotsGridClass',
 ].sort();
 

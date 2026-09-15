@@ -13,15 +13,32 @@
  * otherwise owe the other's whole vocabulary. `fieldRequired` is the single member both name, and
  * it still has one owner — the host's own dictionary.
  *
- * `slotStatFullLabels` names its seven item stats individually rather than as a record over the
- * catalog's `ItemStat`, which widens to `string` — under that key type every lookup would come back
- * possibly-undefined and a missing stat would print nothing instead of failing to compile.
+ * `gearSlotEmptyAria`, `gearSlotEmptyTip` and `rankLv` are the three the slot card shares with
+ * `RosterCopy`; a host that satisfies both from one dictionary supplies each once.
+ *
+ * `slotStatLabels` and `slotStatFullLabels` name their seven item stats individually rather than
+ * as a record over the catalog's `ItemStat`, which widens to `string` — under that key type every
+ * lookup would come back possibly-undefined and a missing stat would print nothing instead of
+ * failing to compile. The short set is what a slot card prints beside its values; the full set
+ * heads the totals table, which has the width.
  */
 export type GearPanelCopy = {
   fieldRequired: string;
 
   panelItems: string;
   slotStats: string;
+  gearSlotEmptyAria: string;
+  gearSlotEmptyTip: string;
+  rankLv: string;
+  slotStatLabels: {
+    dmg: string;
+    energia: string;
+    velocidade: string;
+    sorte: string;
+    crit: string;
+    penetracao: string;
+    cooldown: string;
+  };
   slotStatFullLabels: {
     dmg: string;
     energia: string;
@@ -33,7 +50,6 @@ export type GearPanelCopy = {
   };
 
   gearTotals: string;
-  dmgPctLabel: string;
 
   panelCompare: string;
   compareTip: string;
