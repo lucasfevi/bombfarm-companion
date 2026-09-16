@@ -82,6 +82,7 @@ export function ReplicaHeroRow({
       name={hero.name}
       rank={hero.grade}
       rarityIdx={hero.rarity}
+      stars={hero.stars}
       level={hero.level}
       skin={hero.skin}
       lang={lang}

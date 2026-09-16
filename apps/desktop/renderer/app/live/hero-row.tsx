@@ -172,6 +172,7 @@ const HeroRowBody = memo(function HeroRowBody({
         name={hero.name ?? hero.id}
         rank={rank}
         rarityIdx={hero.rarity}
+        stars={hero.stars}
         level={hero.level}
         skin={hero.skin}
         lang={lang}

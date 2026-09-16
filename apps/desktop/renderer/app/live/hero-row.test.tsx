@@ -87,9 +87,9 @@ describe('HeroRow', () => {
     expect(html).not.toContain('uppercase');
   });
 
-  it('carries no rarity word and no stars — the avatar frame is the only rarity on the row', () => {
+  it('carries the stars beside the name but no rarity word — the avatar frame is the only rarity on the row', () => {
     const html = renderToStaticMarkup(createElement(HeroRow, { state: 'queued', hero: { id: 'hero-7', rarity: 3, stars: 2 } }));
-    expect(html).not.toContain('★');
+    expect(html).toContain('★★');
     expect(html).not.toContain('Epic');
   });
 
