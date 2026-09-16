@@ -144,6 +144,18 @@ describe('parsePvpDuelResult', () => {
     expect(parsePvpDuelResult('nope')).toBeNull();
   });
 
+  it('reads a squad whose hero ids are numbers — the wire form — as the roster spells them', () => {
+    const state = {
+      [wireKey('stateTier')]: 'r2',
+      [wireKey('phase')]: 50,
+      [wireKey('stateSquad')]: [
+        { [wireKey('squadSlot')]: 1, [wireKey('squadHeroId')]: 591239 },
+        { [wireKey('squadSlot')]: 0, [wireKey('squadHeroId')]: 862212 },
+      ],
+    };
+    expect(parsePvpDuelResult(duelResult({ [wireKey('state')]: state }))?.squadHeroIds).toEqual(['862212', '591239']);
+  });
+
   it('tolerates a squad the state does not carry', () => {
     const state = { [wireKey('stateTier')]: 'r1', [wireKey('phase')]: 1 };
     expect(parsePvpDuelResult(duelResult({ [wireKey('state')]: state }))?.squadHeroIds).toEqual([]);

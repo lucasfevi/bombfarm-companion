@@ -26,12 +26,20 @@ function parsePrize(value: unknown): PvpDuelPrize | null {
   return value === 'won' || value === 'lost' ? value : null;
 }
 
+/** The wire carries the id as a number (`862212`, observed 2026-09-16); the roster keys heroes by
+ *  the same id as a string, so it is read as one here. */
+function heroIdOf(value: unknown): string | null {
+  if (typeof value === 'string' && value !== '') return value;
+  const asNumber = finiteNumber(value);
+  return asNumber === null ? null : String(asNumber);
+}
+
 function parseSquadHeroIds(value: unknown): readonly string[] {
   if (!Array.isArray(value)) return [];
   return value
     .filter(isPlainObject)
-    .map((entry) => ({ slot: finiteNumber(entry[wireKey('squadSlot')]), heroId: entry[wireKey('squadHeroId')] }))
-    .filter((entry): entry is { slot: number | null; heroId: string } => typeof entry.heroId === 'string')
+    .map((entry) => ({ slot: finiteNumber(entry[wireKey('squadSlot')]), heroId: heroIdOf(entry[wireKey('squadHeroId')]) }))
+    .filter((entry): entry is { slot: number | null; heroId: string } => entry.heroId !== null)
     .sort((left, right) => (left.slot ?? Number.MAX_SAFE_INTEGER) - (right.slot ?? Number.MAX_SAFE_INTEGER))
     .map((entry) => entry.heroId);
 }
