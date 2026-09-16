@@ -27,8 +27,9 @@ items and forge queue, the inventory grid and table (the item, and the hero wear
 desktop Forge queue. An icon that is the subject of its own screen — the selected hero's strip,
 its Gear tab cards, the ability editor — stays bare: the card would only repeat the screen.
 
-The hovered icon rings in the accent so a peekable icon looks like one; the trigger stays out of
-the tab order so a row of ten icons keeps its one stop. Icons drawn inside a card open nothing —
-a card is one level deep.
+The hovered icon brightens and lifts so a peekable icon looks like one; the trigger stays out of
+the tab order so a row of ten icons keeps its one stop. On the 28px tiles the forge level shrinks
+to an 8px mono glyph in the corner, so it no longer covers a third of the art. Icons drawn inside
+a card open nothing — a card is one level deep.
 
 The gear and ability strips' older two-line tooltips are gone, replaced by the cards.

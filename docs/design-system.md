@@ -115,7 +115,9 @@ and its two strips. The contract every call site keeps:
 - **The trigger lays out exactly as the bare icon did.** `PeekFrame` renders `Tooltip.Trigger` as
   a `<span role="img">` (an avatar sits inside clickable rows and switcher buttons — a button in a
   button is not HTML) with `tabIndex={-1}`, so a row of ten icons keeps its one tab stop; the
-  accessible name rides on it. It rings in the accent on hover, the same ring focus draws.
+  accessible name rides on it. On hover the art itself answers — the tile brightens and lifts
+  two pixels onto a soft shadow; nothing is drawn around it, since an accent ring read as a
+  selection on a strip of eight.
 - **One level deep, always.** Icons drawn inside a card are bare art; pass `disabled` to a peek
   drawn where a card must not open (a drag overlay, a nested trigger).
 - **A card says what it was handed.** `HeroPeekData` is all-optional past the name;

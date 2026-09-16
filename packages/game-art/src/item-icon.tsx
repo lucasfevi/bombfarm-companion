@@ -46,7 +46,7 @@ export function ItemIcon({ item, size = 'md', className, showUpgrade, showLevel 
   const plate = raritySlotPlateSrc(item.rarityIdx);
   const iconUrl = isGear ? itemIconSrc(item.defId) : itemKindIconSrc(item.defId, item.rarityIdx);
 
-  const glyphSize = size === 'xs' || size === 'sm' ? 'compact' : 'roomy';
+  const glyphSize = size === 'xs' ? 'tiny' : size === 'sm' ? 'compact' : 'roomy';
   const imgPad = size === 'xs' || size === 'sm' ? 'p-px' : 'p-0.5';
   const upgrade = Math.max(0, Math.round(item.upgrade));
   const withLevel = (showLevel ?? true) && isGear;

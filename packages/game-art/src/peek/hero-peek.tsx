@@ -5,7 +5,6 @@ import { SLOTS, type Loadout, type SheetStats } from '@bombfarm/domain/gear';
 import { heroLevelLabel, peekLabel, rarityLabel, sheetStatShortLabel } from '@bombfarm/domain/game-labels';
 import { heroAbilityIconEntries } from '@bombfarm/domain/hero-abilities';
 import { RARITIES, SHEET_PANEL_KEYS, SHEET_PCT_KEYS } from '@bombfarm/domain/planner-constants';
-import { shortHeroRecordId } from '@bombfarm/domain/shims/hero-identity';
 import type { Lang } from '@bombfarm/domain/shims/i18n';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { cn, formatCompactNumber, formatNumber } from '@bombfarm/ui';
@@ -19,6 +18,9 @@ import {
   peekHeadClass,
   peekNameClass,
   peekNameTextClass,
+  peekPowerClass,
+  peekPowerLabelClass,
+  peekPowerValueClass,
   peekRowClass,
   peekRowsGridClass,
   peekRuleClass,
@@ -42,7 +44,6 @@ export type HeroPeekData = {
   stars?: number | undefined;
   level?: number | undefined;
   skin?: number | undefined;
-  shortId?: string | undefined;
   /** The geared sheet — the eight figures the sheet panel prints. */
   stats?: SheetStats | undefined;
   abilities?: Record<string, number> | undefined;
@@ -53,10 +54,9 @@ export type HeroPeekData = {
 
 /**
  * The whole record, as the card reads it. An import candidate is a record without an id yet,
- * so the id is the one field allowed to be missing — the card then prints no `#id`.
+ * and the card never prints one — a reader tells two Perrins apart by the sheet, not the id.
  */
-export function heroPeekData(hero: Omit<HeroRecord, 'id' | 'updatedAt'> & { id?: string }): HeroPeekData {
-  const recordId = hero.sourceId ?? hero.id;
+export function heroPeekData(hero: Omit<HeroRecord, 'id' | 'updatedAt'>): HeroPeekData {
   return {
     name: hero.name,
     rank: hero.rank,
@@ -64,7 +64,6 @@ export function heroPeekData(hero: Omit<HeroRecord, 'id' | 'updatedAt'> & { id?:
     stars: hero.stars,
     level: hero.level,
     skin: hero.skin,
-    shortId: recordId === undefined ? undefined : shortHeroRecordId({ id: recordId }),
     stats: hero.gearedOverride,
     abilities: hero.abilities,
     loadout: hero.loadout,
@@ -93,14 +92,11 @@ export function HeroPeekCard({ hero, lang }: Pick<HeroPeekProps, 'hero' | 'lang'
   const abilities = hero.abilities ? heroAbilityIconEntries(hero.abilities) : [];
   const loadout = hero.loadout;
   const gear = loadout ? SLOTS.flatMap((slot) => (loadout[slot] ? [loadout[slot]] : [])) : [];
-  const subtitle = [
-    hero.level === undefined ? null : heroLevelLabel(hero.level, lang),
-    hero.shortId === undefined ? null : `#${hero.shortId}`,
-  ].filter((part) => part !== null);
+  const level = hero.level === undefined ? null : heroLevelLabel(hero.level, lang);
 
   return (
     <div data-slot="hero-peek">
-      <div className={peekHeadClass}>
+      <div className={cn(peekHeadClass, hero.power !== undefined && 'grid-cols-[auto_minmax(0,1fr)_auto]')}>
         <HeroAvatar skin={hero.skin ?? 0} rarityIdx={rarityIdx ?? NEUTRAL_RARITY_IDX} size="lg" name="" />
         <div className="min-w-0">
           <div className={peekNameClass}>
@@ -122,14 +118,20 @@ export function HeroPeekCard({ hero, lang }: Pick<HeroPeekProps, 'hero' | 'lang'
                 {rarityLabel(rarityKey, lang)}
               </span>
             ) : null}
-            {rarityKey !== undefined && subtitle.length > 0 ? (
+            {rarityKey !== undefined && level !== null ? (
               <span className="text-muted" aria-hidden="true">
                 ·
               </span>
             ) : null}
-            {subtitle.length > 0 ? <span className="text-muted">{subtitle.join(' · ')}</span> : null}
+            {level !== null ? <span className="text-muted">{level}</span> : null}
           </div>
         </div>
+        {hero.power !== undefined ? (
+          <div className={peekPowerClass}>
+            <span className={peekPowerLabelClass}>{peekLabel('power', lang)}</span>
+            <span className={peekPowerValueClass}>{formatCompactNumber(hero.power, lang)}</span>
+          </div>
+        ) : null}
       </div>
       {hero.stats ? (
         <>
@@ -153,8 +155,8 @@ export function HeroPeekCard({ hero, lang }: Pick<HeroPeekProps, 'hero' | 'lang'
           <div className="flex flex-col gap-1.5">
             {abilities.length > 0 ? (
               <div className={peekStripClass}>
-                {abilities.map(({ id, level, max }) => (
-                  <AbilityIcon key={id} code={id} size="sm" level={level} max={max} />
+                {abilities.map(({ id }) => (
+                  <AbilityIcon key={id} code={id} size="xs" />
                 ))}
               </div>
             ) : null}
@@ -168,14 +170,9 @@ export function HeroPeekCard({ hero, lang }: Pick<HeroPeekProps, 'hero' | 'lang'
           </div>
         </>
       ) : null}
-      {hero.deployed || hero.power !== undefined ? (
+      {hero.deployed ? (
         <div className={peekFootClass}>
-          <span>{hero.deployed ? peekLabel('deployed', lang) : ''}</span>
-          {hero.power !== undefined ? (
-            <span className="shrink-0">
-              {peekLabel('power', lang)} {formatCompactNumber(hero.power, lang)}
-            </span>
-          ) : null}
+          <span>{peekLabel('deployed', lang)}</span>
         </div>
       ) : null}
     </div>

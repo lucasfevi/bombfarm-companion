@@ -7,18 +7,24 @@
 export const peekPopupClass = 'w-[17rem]';
 
 /**
- * The trigger wraps the art in place — it lays out exactly as the bare icon did — and rings it in
- * the accent on hover, the same ring keyboard focus draws, so an icon that opens a card looks
- * like one. `tabIndex={-1}` on it keeps one tab stop per row, as the roster icons always had.
+ * The trigger wraps the art in place — it lays out exactly as the bare icon did — and on hover
+ * the art itself answers: the tile brightens and lifts two pixels onto a soft shadow. Nothing is
+ * drawn around it; an accent ring read as a selection on a strip of eight, which it is not.
+ * `tabIndex={-1}` on it keeps one tab stop per row, as the roster icons always had.
  */
 export const peekTriggerClass =
-  'inline-flex cursor-default rounded-sm border-0 bg-transparent p-0 align-top hover:[outline:2px_solid_var(--accent)] hover:[outline-offset:1px] focus-visible:[outline:2px_solid_var(--accent)] focus-visible:[outline-offset:1px]';
+  'inline-flex cursor-default rounded-sm border-0 bg-transparent p-0 align-top [&>*]:transition-[filter,transform,box-shadow] [&>*]:duration-100 hover:[&>*]:-translate-y-0.5 hover:[&>*]:brightness-[1.18] hover:[&>*]:saturate-[1.1] hover:[&>*]:shadow-[0_4px_10px_rgb(0_0_0/0.45)] motion-reduce:[&>*]:transition-none motion-reduce:hover:[&>*]:translate-y-0';
 
 /** Art, then name and subtitle stacked beside it. */
 export const peekHeadClass = 'grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2.5';
 export const peekNameClass = 'flex min-w-0 items-baseline gap-1.5 text-[13px] leading-tight font-bold text-ink';
 export const peekNameTextClass = 'min-w-0 truncate';
 export const peekSubClass = 'mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-1 text-[11px] leading-snug';
+/** The one figure a player ranks a roster by, at the head's right edge: the label small above
+ *  the number, the number as loud as the name. */
+export const peekPowerClass = 'flex shrink-0 flex-col items-end gap-0.5 self-start pl-1';
+export const peekPowerLabelClass = 'font-mono text-[9.5px] uppercase leading-none tracking-[0.06em] text-muted';
+export const peekPowerValueClass = 'font-mono text-[13px] leading-none font-bold tabular-nums text-accent';
 export const peekRuleClass = 'my-2 h-px bg-line';
 export const peekRowsClass = 'flex flex-col gap-[3px] text-[11px] leading-snug tabular-nums';
 export const peekRowsGridClass = 'grid grid-cols-2 gap-x-3.5 gap-y-[3px] text-[11px] leading-snug tabular-nums';

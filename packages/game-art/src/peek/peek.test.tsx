@@ -118,13 +118,17 @@ describe('HeroPeekCard', () => {
     expect(html).toContain('Perrin');
     expect(html).toContain('★★');
     expect(html).toContain('Epic');
-    expect(html).toContain('Lv 127 · #01a2f');
+    expect(html).toContain('Lv 127');
+    expect(html).not.toContain('#01a2f');
     expect(html).toContain('12.5k');
     expect(html).toContain('32.5%');
     expect(html).toContain('/abilities/golpe_brutal.png');
     expect(html).toContain('/items/lvl100_helmet_forest.png');
     expect(html).toContain('Deployed');
-    expect(html).toContain('Power 48.2k');
+    expect(html).toContain('>Power<');
+    expect(html).toContain('>48.2k<');
+    // The strips are bare art — no rank badge on an ability tile.
+    expect(html).not.toContain('13/20');
   });
 
   it('says only what it was handed — a live row’s identity draws no sheet and no strips', () => {
@@ -136,9 +140,9 @@ describe('HeroPeekCard', () => {
     expect(html).not.toContain('Power');
   });
 
-  it('an import candidate has no id yet and gets no #id', () => {
-    const { id: _id, sourceId: _sourceId, ...candidate } = perrin;
-    expect(heroPeekData(candidate).shortId).toBeUndefined();
+  it('reads an import candidate, which has no id yet', () => {
+    const { id: _id, sourceId: _sourceId, updatedAt: _at, ...candidate } = perrin;
+    expect(heroPeekData(candidate).name).toBe('Perrin');
   });
 });
 
