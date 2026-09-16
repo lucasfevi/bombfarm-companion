@@ -33,7 +33,7 @@ const EMPTY_ROWS: readonly FarmRateRow[] = [];
 
 /**
  * The dependency-tuple traceability artifact: every planner edit the board must react to.
- * 18 members — `fieldSlots` and `houseCycleSecs` joined at the House-ceiling fix: the first is
+ * 19 members — `fieldSlots` and `houseCycleSecs` joined at the House-ceiling fix: the first is
  * the FIELD concurrency cap (`skills.field_slots`, a different quantity from `slots`, which is
  * the House's RECOVERY cap), the second is the House cycle that every hero's uptime divides by.
  * `houseCycleSecsHouseIdx`/`houseCycleSecsLevel` joined at the same fix's regression repair: the
@@ -43,12 +43,13 @@ const EMPTY_ROWS: readonly FarmRateRow[] = [];
  * board computing against a stale anchor after a re-import. `maxPhase` is here because
  * `FarmRateOptions.maxPhase` is what sets `FarmRateRow.locked` (a COMPUTE INPUT, not a
  * post-compute filter; an earlier design draft treating it as a filter would have made
- * `row.locked` permanently `false`). A field missing from this tuple is a planner edit that
- * silently does not recompute the board. Team auras are not a member and need none: the board
- * derives them from `heroes` itself, over the rotation.
+ * `row.locked` permanently `false`). `aurasAtCap` is the player's assumption about the auras and
+ * a member for the same reason `farmReturnBonus` is. A field missing from this tuple is a
+ * planner edit that silently does not recompute the board. The auras' rotation-weighted totals
+ * are not a member and need none: the board derives them from `heroes` itself.
  *
  * The converse obligation falls on PRODUCERS in the HOST APP: the members compared by reference
- * here (`heroes`, `farmPoolOverrides`) must be identity-stable across a
+ * here (`heroes`, `farmPoolOverrides`, `aurasAtCap`) must be identity-stable across a
  * write that changed nothing. {@link farmDepsEqual} compares with `Object.is`, so a
  * fresh-but-equal array or object reads exactly like a real edit — it recomputes the whole
  * 600-row board with no error surfaced. Every roster producer must return the SAME array when
@@ -75,6 +76,7 @@ export function readFarmDepTuple(inputs: FarmInputs) {
     inputs.maxPhase,
     inputs.farmPoolOverrides,
     inputs.farmReturnBonus,
+    inputs.aurasAtCap,
   ] as const;
 }
 
@@ -129,6 +131,7 @@ export function buildAccount(inputs: FarmInputs): FarmAccount {
     houseCycleSecsHouseIdx: inputs.houseCycleSecsHouseIdx,
     houseCycleSecsLevel: inputs.houseCycleSecsLevel,
     maxPhase: inputs.maxPhase,
+    aurasAtCap: inputs.aurasAtCap,
   };
 }
 

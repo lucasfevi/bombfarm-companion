@@ -83,6 +83,7 @@ import {
   cycleSecondsForHero,
   alliesOverRotation,
   matilhaMult,
+  PASSAGEM_BASTAO_CAPPED_PULSE,
   passagemBastaoFieldPulse,
   passagemBastaoPresence,
   type Context,
@@ -104,7 +105,14 @@ export {
 import { buildCandidateSheet } from './points-reopt-core';
 import { pipelineForHero } from './roster-dps';
 import { DEFAULT_CASA_SLOTS } from './casa-slots';
-import { computeTeamBuffsOverRotation, zeroTeamBuffs, type TeamBuffId } from './team-buffs';
+import {
+  computeTeamBuffsOverRotation,
+  holdAurasAtCap,
+  pulseHeldAtCap,
+  zeroTeamBuffs,
+  type AurasAtCap,
+  type TeamBuffId,
+} from './team-buffs';
 import { teamAuraLayer, teamDrainMultFromTeamBuffs } from './team-aura-layer';
 import { combineDrainRate } from './drain';
 import { abilityMods } from './model/abilities';
@@ -253,7 +261,14 @@ export type HeroFarmFacts = {
  * The account a farm board is priced against: every `AccountShared` field but `teamBuffs`, which
  * this module derives itself over the rotation ({@link farmTeamBuffs}) and so does not take.
  */
-export type FarmAccount = Omit<AccountShared, 'teamBuffs'>;
+/**
+ * Everything about the account a farm evaluation reads, minus the aura totals it prices itself,
+ * plus one thing that is NOT a fact off the save: `aurasAtCap`, the caller's assumption that
+ * the named team auras hold the field at their cap the whole time (`holdAurasAtCap`). It rides
+ * on the account bag because it reaches both places the auras are priced — the layer every basis
+ * is built at and the squad's entry pulse — through the one object both already receive.
+ */
+export type FarmAccount = Omit<AccountShared, 'teamBuffs'> & { aurasAtCap?: AurasAtCap };
 
 export type FarmFactsInput = {
   heroes: readonly HeroRecord[];
@@ -513,10 +528,13 @@ function resolveFieldSlots(account: Pick<AccountShared, 'slots' | 'fieldSlots'>)
 function priceFieldForAssignment(
   bases: readonly (HeroFarmBasis & { auraFree: AuraFreeFarmTerms })[],
   ptsByHeroId: ReadonlyMap<string, Record<SheetKey, number>> | null,
-  fieldSlots: number,
+  account: SquadFarmAccount,
 ): FieldLayer {
+  const fieldSlots = resolveFieldSlots(account);
   const carriers = bases.map((basis) => ({ abilities: basis.auraFree.abilities }));
-  const atFullPresence = computeTeamBuffsOverRotation(carriers, null);
+  // Held at both steps: a held Fôlego reaches every carrier's field seconds, so the presences
+  // the second step weights by must already see it.
+  const atFullPresence = holdAurasAtCap(computeTeamBuffsOverRotation(carriers, null), account.aurasAtCap);
   const atFullPresenceDrainMult = teamDrainMultFromTeamBuffs(atFullPresence);
   const presence = bases.map((basis) =>
     presenceAt(basis, basis.auraFree, ptsByHeroId?.get(basis.heroId) ?? basis.pts, atFullPresenceDrainMult),
@@ -525,7 +543,10 @@ function priceFieldForAssignment(
   bases.forEach((basis, index) => {
     alliesByHeroId.set(basis.heroId, alliesOverRotation(presence, index, fieldSlots));
   });
-  return { teamBuffs: computeTeamBuffsOverRotation(carriers, presence), alliesByHeroId };
+  return {
+    teamBuffs: holdAurasAtCap(computeTeamBuffsOverRotation(carriers, presence), account.aurasAtCap),
+    alliesByHeroId,
+  };
 }
 
 /**
@@ -578,7 +599,7 @@ function priceTeamBuffs(
   account: FarmAccount,
 ): Record<TeamBuffId, number> {
   const bases = auraFreeBasesForAccount(enabledHeroes, account).filter(hasAuraFreeTerms);
-  return priceFieldForAssignment(bases, null, resolveFieldSlots(account)).teamBuffs;
+  return priceFieldForAssignment(bases, null, account).teamBuffs;
 }
 
 /**
@@ -611,7 +632,7 @@ export function computeHeroFarmBases(input: FarmFactsInput): HeroFarmBasis[] {
   const { heroes, account, enabledHeroIds } = input;
   const enabledHeroes = resolveEnabledHeroes(heroes, enabledHeroIds);
   const auraFreeBases = auraFreeBasesForAccount(enabledHeroes, account).filter(hasAuraFreeTerms);
-  const field = priceFieldForAssignment(auraFreeBases, null, resolveFieldSlots(account));
+  const field = priceFieldForAssignment(auraFreeBases, null, account);
   return auraFreeBases.map((basis) => priceAuraLayer(basis, field));
 }
 
@@ -694,7 +715,7 @@ export function squadFactsFromBases(
 ): SquadFarmFacts {
   const priced = bases.every(hasAuraFreeTerms)
     ? (() => {
-        const field = priceFieldForAssignment(bases, ptsByHeroId, resolveFieldSlots(account));
+        const field = priceFieldForAssignment(bases, ptsByHeroId, account);
         return bases.map((basis) => priceAuraLayer(basis, field));
       })()
     : bases;
@@ -764,7 +785,8 @@ export type SquadFarmFacts = {
    * of wall clock it holds each ({@link passagemBastaoFieldPulse}). A team aura that is up in
    * pulses, so it is priced as the auras are: each carrier's pulse present for its own share of
    * wall clock, overlaps summed and capped inside the expectation. Phase-independent, hence on
-   * the squad; the row layer prices every hero's hit through every level.
+   * the squad; the row layer prices every hero's hit through every level. The field held at its
+   * cap instead when the account's `aurasAtCap` names the ability.
    */
   entryPulse: PassagemBastaoFieldPulse;
   /** `1 + max(0, tree.teamCoinPct) / 100`. */
@@ -795,10 +817,11 @@ function houseSlotDemand(hero: HeroFarmFacts): number {
   return Math.min(1, Math.max(0, demand));
 }
 
-/** Exactly the `AccountShared` fields {@link computeSquadFarmFacts} reads. Narrower than the whole
- *  record so a caller holding only account-level farm terms (the Team Plan) can supply them
- *  without fabricating a `context` and a `teamBuffs` snapshot that nothing here would look at. */
-export type SquadFarmAccount = Pick<AccountShared, 'slots' | 'fieldSlots' | 'tree'>;
+/** Exactly the `AccountShared` fields {@link computeSquadFarmFacts} reads, and the caller's
+ *  {@link FarmAccount.aurasAtCap}. Narrower than the whole record so a caller holding only
+ *  account-level farm terms (the Team Plan) can supply them without fabricating a `context` and a
+ *  `teamBuffs` snapshot that nothing here would look at. */
+export type SquadFarmAccount = Pick<AccountShared, 'slots' | 'fieldSlots' | 'tree'> & { aurasAtCap?: AurasAtCap };
 
 export function computeSquadFarmFacts(
   heroFacts: readonly HeroFarmFacts[],
@@ -816,9 +839,9 @@ export function computeSquadFarmFacts(
   const fuseWeightedSum = heroFacts.reduce((sum, hero) => sum + hero.uptime * hero.fuseSecs, 0);
   const meanFuseSecs = uptimeSum > 0 ? fuseWeightedSum / uptimeSum : 0;
 
-  const entryPulse = passagemBastaoFieldPulse(
-    heroFacts.flatMap((hero) => (hero.passagemBastao ? [hero.passagemBastao] : [])),
-  );
+  const entryPulse = pulseHeldAtCap(account.aurasAtCap)
+    ? PASSAGEM_BASTAO_CAPPED_PULSE
+    : passagemBastaoFieldPulse(heroFacts.flatMap((hero) => (hero.passagemBastao ? [hero.passagemBastao] : [])));
 
   const teamCoinMult = 1 + Math.max(0, account.tree.teamCoinPct ?? 0) / 100;
 
@@ -1229,6 +1252,7 @@ function normalizeZero(value: number): number {
 function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateOptions): FarmRateRow {
   const bonus = returnBonusMultiplier(options.returnBonus ?? 'off');
   const sorteMult = 1 + squad.sorteFraction;
+  const pulse = squad.entryPulse;
 
   // Per-hero, per-phase: mitigation is the ONLY phase-dependent damage term.
   // `fullTerm` / `fullBossTerm` are UNCONSTRAINED rates — each hero at its own duty cycle, as if
@@ -1236,7 +1260,6 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   const perHero = squad.heroes.map((hero) => {
     const mitF = mitigationFactor(line.mitig, hero.penetrationPct);
     const avgHit = hero.avgHitBase * mitF;
-    const pulse = squad.entryPulse;
     const eHtk = pulseBlendedHtk(pulse, avgHit, (hit) =>
       PROP_SHARES.reduce(
         (sum, prop) => sum + prop.share * hitsToKill(hit, propHp(line.hp, prop.hpMult)),

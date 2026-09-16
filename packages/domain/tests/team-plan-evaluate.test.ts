@@ -566,4 +566,36 @@ describe('Passagem de Bastão is a field-wide pulse, priced like the auras', () 
     expect(leftAlone.entryPulseMult).toBeGreaterThan(1);
     expect(leftAlone.objective).toBeGreaterThan(donated.objective);
   });
+
+  it('aurasAtCap naming Baton Pass holds the field at ×1.8 with no carrier at all, and lifts every score by it', () => {
+    const without = evaluateRoster(withCarrier('optimize', 0));
+    const capped = evaluateRoster({ ...withCarrier('optimize', 0), aurasAtCap: ['passagem_bastao'] });
+    expect(capped.entryPulseMult).toBe(1.8);
+    for (const [heroId, score] of Object.entries(capped.perHero)) {
+      const before = without.perHero[heroId]!;
+      expect(score.sustained / before.sustained).toBeCloseTo(1.8, 9);
+      expect(score.active / before.active).toBeCloseTo(1.8, 9);
+      expect(score.duty).toBe(before.duty);
+    }
+    expect(capped.objective / without.objective).toBeCloseTo(1.8, 9);
+  });
+
+  it('the held pulse ignores what a carrier would sustain — the pool’s own pulse is not added on top', () => {
+    const sustained = evaluateRoster(withCarrier('optimize', 20));
+    const capped = evaluateRoster({ ...withCarrier('optimize', 20), aurasAtCap: ['passagem_bastao'] });
+    expect(sustained.entryPulseMult).toBeLessThan(1.8);
+    expect(capped.entryPulseMult).toBe(1.8);
+    expect(capped.dutyByHeroId).toEqual(sustained.dutyByHeroId);
+  });
+
+  it('naming a standing aura holds its total at the cap in the reported auras, and only that one', () => {
+    const plain = evaluateRoster(withCarrier('optimize', 0));
+    const held = evaluateRoster({ ...withCarrier('optimize', 0), aurasAtCap: ['grito_guerra'] });
+    expect(held.auras.grito_guerra).toBe(20);
+    expect(held.entryPulseMult).toBe(1);
+    for (const id of ['pressagio_mortal', 'marcha_acelerada', 'folego_mineiro', 'brecha'] as const) {
+      expect(held.auras[id]).toBe(plain.auras[id]);
+    }
+    expect(held.objective).toBeGreaterThan(plain.objective);
+  });
 });

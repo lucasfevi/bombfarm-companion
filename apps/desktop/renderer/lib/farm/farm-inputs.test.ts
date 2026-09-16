@@ -149,10 +149,12 @@ describe('maxPhase reaches the compute', () => {
 describe('the controls are passed through verbatim, by reference', () => {
   it('farmPoolOverrides keeps its identity — the package compares that member with Object.is', () => {
     const overrides = { h1: false };
-    const controls = { farmPoolOverrides: overrides, farmReturnBonus: 'vip' as const };
+    const aurasAtCap = ['brecha'] as const;
+    const controls = { farmPoolOverrides: overrides, farmReturnBonus: 'vip' as const, aurasAtCap };
     const inputs = required(buildFarmInputs(viewOf(basePayload()), controls), 'expected inputs');
     expect(inputs.farmPoolOverrides).toBe(overrides);
     expect(inputs.farmReturnBonus).toBe('vip');
+    expect(inputs.aurasAtCap).toBe(aurasAtCap);
   });
 });
 

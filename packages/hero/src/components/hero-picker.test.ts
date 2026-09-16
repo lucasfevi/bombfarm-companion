@@ -86,8 +86,9 @@ describe('the components are prop-driven — no store, no host module', () => {
   });
 
   it('the scan reaches every component in this tree, subdirectories included', () => {
-    expect(componentFiles.length).toBe(31);
+    expect(componentFiles.length).toBe(32);
     expect(componentFiles).toContain('hero-identity-roll-panel.tsx');
+    expect(componentFiles).toContain('aura-cap-chips.tsx');
     expect(componentFiles).toContain('abilities-auras-panel.tsx');
     expect(componentFiles).toContain('roster-board/roster-rail.tsx');
     expect(componentFiles).toContain('roster-board/roster-cards.tsx');

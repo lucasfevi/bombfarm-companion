@@ -7,6 +7,7 @@
  */
 import { useCallback, useMemo, useRef } from 'react';
 import {
+  SetupAuraCapField,
   TeamPlanScreenView,
   TeamPlanEmptyPanel,
   type ForgeQueueEntryRef,
@@ -26,6 +27,7 @@ import type { TeamPlanEmptyStateKind } from '@bombfarm/team-plan/model';
 import type { TeamPlanRunnerHandle, TeamPlanRunStatus } from '@bombfarm/team-plan/runner';
 import type { TeamPlan, TeamPlanAllowedChanges, TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import type { TeamAuraId } from '@bombfarm/domain/team-buffs';
 import { itemName } from '@bombfarm/domain/game-labels';
 import { useCopy, useLocale } from '../../lib/copy';
 import type { AccountReadRequestState } from '../../lib/account/use-account-read-request';
@@ -181,9 +183,27 @@ export function OptimizerScreen({
     [inventoryItems, lang],
   );
 
+  const aurasAtCap = controls.aurasAtCap;
+  const setAuraAtCap = useCallback(
+    (auraId: TeamAuraId, value: boolean) => {
+      onControlChange({ kind: 'auraAtCap', auraId, value });
+    },
+    [onControlChange],
+  );
+
   const slots = useMemo<TeamPlanScreenSlots>(
     () => ({
       forgeQueueAction,
+      setupFields: (
+        <SetupAuraCapField
+          label={t.optimizerAurasAtCapLabel}
+          hint={t.optimizerAurasAtCapHint}
+          value={aurasAtCap}
+          onToggle={setAuraAtCap}
+          lang={lang}
+          testId="optimizer-auras-at-cap"
+        />
+      ),
       headerOverlay: (
         <AccountRefreshControl
           capturedAt={snapshot.capturedAt}
@@ -199,7 +219,7 @@ export function OptimizerScreen({
       },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- emptyTitleBody is derived from t each render
-    [snapshot.capturedAt, refresh, t, forgeQueueAction],
+    [snapshot.capturedAt, refresh, t, lang, forgeQueueAction, aurasAtCap, setAuraAtCap],
   );
 
   return <TeamPlanScreenView t={screenCopy} lang={lang} data={data} actions={screenActions} slots={slots} runner={runner} />;

@@ -124,10 +124,14 @@ export function createFarmSnapshotStore(): {
 
 const sharedFarmSnapshotStore = createLazySingleton(createFarmSnapshotStore);
 
-/** The snapshot's own two compute inputs, so the live account is measured under the controls the
+/** The snapshot's own compute inputs, so the live account is measured under the controls the
  *  board on screen was computed with — a control change already recomputes the board itself. */
 function snapshotControls(inputs: FarmInputs): FarmControls {
-  return { farmPoolOverrides: inputs.farmPoolOverrides, farmReturnBonus: inputs.farmReturnBonus };
+  return {
+    farmPoolOverrides: inputs.farmPoolOverrides,
+    farmReturnBonus: inputs.farmReturnBonus,
+    aurasAtCap: inputs.aurasAtCap,
+  };
 }
 
 /**

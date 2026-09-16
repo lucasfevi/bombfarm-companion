@@ -155,18 +155,38 @@ describe('Optimize button — always available, and nothing but a way to the Opt
 });
 
 describe('Farm Ranking filter row placement', () => {
-  it('the filters, the return bonus and the Optimize button share one row, in that order, above the table', () => {
+  it('the filters, the return bonus, the host controls slot and the Optimize button share one row, in that order, above the table', () => {
     const source = read('farm-ranking-board.tsx');
     const poolIndex = source.indexOf('<FarmRotationPool');
     const filtersIndex = source.indexOf('<FarmRankingFilters');
     const bonusIndex = source.indexOf('<FarmReturnBonus');
+    const controlsIndex = source.indexOf('{slots?.controls}');
     const buttonIndex = source.indexOf('<FarmOptimizeButton');
     const tableIndex = source.indexOf('<FarmRankingTable');
     expect(poolIndex).toBeGreaterThan(-1);
     expect(filtersIndex).toBeGreaterThan(poolIndex);
     expect(bonusIndex).toBeGreaterThan(filtersIndex);
-    expect(buttonIndex).toBeGreaterThan(bonusIndex);
+    expect(controlsIndex).toBeGreaterThan(bonusIndex);
+    expect(buttonIndex).toBeGreaterThan(controlsIndex);
     expect(tableIndex).toBeGreaterThan(buttonIndex);
+  });
+
+  it('the host controls slot is drawn bare — no wrapper for a host that passes nothing', () => {
+    const source = read('farm-ranking-board.tsx');
+    expect(source).toContain('{slots?.controls}');
+    expect(source).not.toMatch(/<div[^>]*>\s*\{slots\?\.controls\}/);
+  });
+
+  it('FarmAuraCapField takes its label strings from the host and draws the shared chips to the filter field grid', () => {
+    const source = read('farm-aura-cap-field.tsx');
+    expect(source).toContain('farmFieldClass');
+    expect(source).toContain('farmFieldLabelClass');
+    expect(source).toContain('farmFieldControlClass');
+    expect(source).not.toContain('FarmCopy');
+    expect(source).not.toMatch(/\bt\.[a-z]/);
+    expect(source).toContain('<InfoTip label={label} tip={hint} />');
+    expect(source).toContain('<AuraCapChips');
+    expect(source).not.toContain('HelpTip');
   });
 
   it('the filters render above the empty states, so a fully-filtered board can be un-filtered', () => {
@@ -269,8 +289,9 @@ describe('the components are prop-driven — no store, no host module', () => {
   });
 
   it('the scan reaches every component in this tree, subdirectories included', () => {
-    expect(componentFiles.length).toBe(21);
+    expect(componentFiles.length).toBe(22);
     expect(componentFiles).toContain('farm-ranking-board.tsx');
+    expect(componentFiles).toContain('farm-aura-cap-field.tsx');
     expect(componentFiles).toContain('combat-phase-panel.tsx');
     expect(componentFiles).toContain('farm-optimize-button.tsx');
     expect(componentFiles).toContain('phases-explorer.tsx');

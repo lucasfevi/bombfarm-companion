@@ -11,3 +11,4 @@ export {
 } from './team-plan-screen';
 export { type ForgeQueueAction, type ForgeQueueEntryRef } from './hero-forge-queue';
 export { TeamPlanEmptyPanel } from './team-plan-empty-panel';
+export { SetupAuraCapField } from './setup-aura-cap-field';

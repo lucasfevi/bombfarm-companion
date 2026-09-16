@@ -63,6 +63,9 @@ export type TeamPlanScreenSlots = {
   /** Drawn at the end of each entry of a hero's forge queue — the desktop puts its add-to-queue
    *  control there. Undefined renders nothing at all, so the web's DOM is unchanged. */
   forgeQueueAction?: ForgeQueueAction;
+  /** Drawn after the setup bar's own fields — a host's own search controls, on the same grid
+   *  (`SetupAuraCapField`). Undefined renders nothing at all, so the web's DOM is unchanged. */
+  setupFields?: ReactNode;
 };
 
 export function TeamPlanScreenView({
@@ -120,7 +123,14 @@ export function TeamPlanScreenView({
 
   const setupAndScope = (
     <>
-      <TeamPlanToolbar t={t} lang={lang} data={data} actions={actions} runner={runnerState} />
+      <TeamPlanToolbar
+        t={t}
+        lang={lang}
+        data={data}
+        actions={actions}
+        runner={runnerState}
+        setupFields={slots.setupFields}
+      />
       <ScopeList t={t} lang={lang} heroes={heroes} scopeByHeroId={controls.scopeByHeroId} onScope={actions.setScope} />
     </>
   );

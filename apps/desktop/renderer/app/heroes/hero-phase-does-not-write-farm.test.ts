@@ -39,7 +39,7 @@ describe('an override on the Heroes screen leaves the Farm screen stored phase a
   });
 
   it('the stored view is byte-for-byte what it was, after the screen has recomputed at another phase', () => {
-    saveFarmView({ farmPoolOverrides: { h1: false }, farmReturnBonus: 'vip', selectedPhase: 51 });
+    saveFarmView({ farmPoolOverrides: { h1: false }, farmReturnBonus: 'vip', aurasAtCap: [], selectedPhase: 51 });
     const storedBefore = entries.get(FARM_VIEW_KEY);
 
     const farm: FarmPhaseSelection = { ready: true, phase: loadFarmView().selectedPhase };
@@ -53,7 +53,7 @@ describe('an override on the Heroes screen leaves the Farm screen stored phase a
   });
 
   it('the Farm selection still governs the screen once the override is cleared', () => {
-    saveFarmView({ farmPoolOverrides: {}, farmReturnBonus: 'off', selectedPhase: 51 });
+    saveFarmView({ farmPoolOverrides: {}, farmReturnBonus: 'off', aurasAtCap: [], selectedPhase: 51 });
 
     const farm: FarmPhaseSelection = { ready: true, phase: loadFarmView().selectedPhase };
     readHeroPhase(farm, 120);

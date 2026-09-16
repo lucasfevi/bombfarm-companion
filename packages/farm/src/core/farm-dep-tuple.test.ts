@@ -7,19 +7,20 @@ import type { FarmInputs } from './farm-inputs';
  * The dependency tuple is the whole recompute contract, and its failure mode is silent: a field
  * left out of it is a planner edit that does not recompute the board, with no error anywhere and
  * a stale table that still looks like a real answer. Nothing else in this package catches that,
- * so the table below names all 18 members by the POSITION they occupy and proves, per member,
+ * so the table below names all 19 members by the POSITION they occupy and proves, per member,
  * that it is the only position a change to it moves — and that a change to it forces a fresh
  * compute while an equal-valued input object does not.
  */
 
 /**
- * The two members the tuple compares by REFERENCE. Hoisted so `baseInputs()` hands back the
+ * The three members the tuple compares by REFERENCE. Hoisted so `baseInputs()` hands back the
  * same two objects every call — which is exactly the contract a host's producers owe, and
  * without which the "an equal-valued fresh input record does not recompute" control below would
  * be impossible to state.
  */
 const HEROES: FarmInputs['heroes'] = [];
 const POOL_OVERRIDES: FarmInputs['farmPoolOverrides'] = {};
+const AURAS_AT_CAP: FarmInputs['aurasAtCap'] = [];
 
 function baseInputs(): FarmInputs {
   return {
@@ -41,6 +42,7 @@ function baseInputs(): FarmInputs {
     maxPhase: null,
     farmPoolOverrides: POOL_OVERRIDES,
     farmReturnBonus: 'off',
+    aurasAtCap: AURAS_AT_CAP,
   };
 }
 
@@ -80,12 +82,15 @@ const TUPLE_MEMBERS: readonly TupleMember[] = [
     change: (i) => ({ ...i, farmPoolOverrides: { a: false } }),
   },
   { index: 17, name: 'farmReturnBonus', change: (i) => ({ ...i, farmReturnBonus: 'vip' }) },
+  // A reference compare, like the two above: a host must hand the same list back when nothing
+  // changed, and the domain's frozen empty list when it offers no control at all.
+  { index: 18, name: 'aurasAtCap', change: (i) => ({ ...i, aurasAtCap: ['grito_guerra'] }) },
 ];
 
 describe('readFarmDepTuple', () => {
-  it('has exactly 18 members, one per named member of the table below', () => {
-    expect(readFarmDepTuple(baseInputs())).toHaveLength(18);
-    expect(TUPLE_MEMBERS).toHaveLength(18);
+  it('has exactly 19 members, one per named member of the table below', () => {
+    expect(readFarmDepTuple(baseInputs())).toHaveLength(19);
+    expect(TUPLE_MEMBERS).toHaveLength(19);
     expect(TUPLE_MEMBERS.map((member) => member.index)).toEqual(
       TUPLE_MEMBERS.map((_, position) => position),
     );

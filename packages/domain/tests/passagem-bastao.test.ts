@@ -4,6 +4,7 @@ import {
   HOUSE_MAX_LEVEL,
   houseRestSeconds,
   PASSAGEM_BASTAO_CAP,
+  PASSAGEM_BASTAO_CAPPED_PULSE,
   PASSAGEM_BASTAO_COOLDOWN_SEC,
   PASSAGEM_BASTAO_PER_RANK,
   PASSAGEM_BASTAO_WINDOW_SEC,
@@ -137,5 +138,18 @@ describe('passagemBastaoFieldPulse — priced like the other team auras', () => 
       { rank: 20, presence: 0.1 },
     ]);
     expect(pulse.levels[0]).toEqual({ mult: 1.12, probability: 0.9 });
+  });
+});
+
+describe('PASSAGEM_BASTAO_CAPPED_PULSE — the field held at the cap the whole time', () => {
+  it('is the one level a permanently-lit cap-rank carrier would produce', () => {
+    expect(PASSAGEM_BASTAO_CAPPED_PULSE).toEqual(passagemBastaoFieldPulse([{ rank: 20, presence: 1 }]));
+    expect(PASSAGEM_BASTAO_CAPPED_PULSE.levels).toEqual([{ mult: 1 + PASSAGEM_BASTAO_CAP, probability: 1 }]);
+    expect(PASSAGEM_BASTAO_CAPPED_PULSE.expectedMult).toBe(1 + PASSAGEM_BASTAO_CAP);
+  });
+
+  it('is frozen, so no consumer can bend the cap it prices', () => {
+    expect(Object.isFrozen(PASSAGEM_BASTAO_CAPPED_PULSE)).toBe(true);
+    expect(Object.isFrozen(PASSAGEM_BASTAO_CAPPED_PULSE.levels)).toBe(true);
   });
 });
