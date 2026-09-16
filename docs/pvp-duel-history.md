@@ -25,6 +25,19 @@ Every key is declared in `packages/game-api/src/pvp/lexicon.ts` and rendered int
 [`wire-vocabulary.md`](wire-vocabulary.md); the identifier and parser reference a token only through
 that lexicon, and the vocabulary guard scans `packages/game-api/src/pvp/` for a spelled-out one.
 
+## What the tap has to read to see them at all
+
+The game's server sends responses `Transfer-Encoding: chunked` and `Content-Encoding: gzip`
+routinely, and the first duel fought against this tab (2026-09-16) left nothing in the log but
+`live-source.http_body_skipped` lines under both reasons and no PVP verdict at all. Until then the
+TLS-side decoder (`apps/desktop/src/main/live-source/tls-stream.ts`) skipped both shapes on
+purpose — every body it had needed came plain, with a `Content-Length`, under 85 KB — and capped a
+single body at 256 KiB, which a ~2 MB film could never have fit under anyway. The decoder now reassembles chunked framing,
+inflates gzip/deflate/br, and holds up to 8 MiB of wire bytes per body; while a response's body is
+still arriving it buffers rather than scanning the half-body for a frame start, since a compressed
+body is arbitrary bytes. What it still skips, and says so: a body with neither a length nor
+chunked framing, and an encoding it cannot inflate.
+
 ## How the two bodies are told apart
 
 The tap hooks the client's TLS read side, so an observed body carries no URL. The account sections

@@ -24,3 +24,7 @@ smallest window a player can drag to still draws every tab and the brand mark.
 
 Offline mode (`pnpm dev:offline`) serves two fixture duels, one with its film and one without, so
 the tab can be looked at without a game.
+
+**The live tap now reads chunked and compressed responses.** Until now it skipped both shapes,
+and the first duel fought against this tab left only skipped bodies in the log; anything the game
+sends chunked or gzipped is read from here on, up to 8 MiB a body.
