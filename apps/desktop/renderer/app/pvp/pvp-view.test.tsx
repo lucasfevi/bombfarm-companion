@@ -34,6 +34,7 @@ vi.mock('../../lib/account/account-roster', () => ({
 }));
 
 const { PvpView } = await import('./pvp-view');
+const { DuelHistoryPanel } = await import('./duel-history-panel');
 
 function render(state: PvpHistoryState): string {
   historyState.current = state;
@@ -111,10 +112,22 @@ describe('PvpView', () => {
     expect(html).toContain('118 → 123');
     expect(html).toContain('>+5<');
     expect(html).not.toContain('data-testid="pvp-prize"');
-    expect(html).toContain('data-testid="pvp-open-replay"');
+    expect(html).toMatch(/<button [^>]*data-testid="pvp-open-replay" aria-pressed="false" class="[^"]*border-line bg-bg-2[^"]*"/);
     expect(html).toContain(en.pvpFilmReplay);
     expect(html).not.toContain('data-testid="pvp-replay"');
     expect(html).toContain('1 duels · 1 won · 1 films kept');
+  });
+
+  it('draws the open duel Replay as the pressed primary button, and the others as plain ones', () => {
+    const history = ready([row()]);
+    const html = renderToStaticMarkup(
+      createElement(DuelHistoryPanel, {
+        history: history.status === 'ready' ? history.history : null,
+        openFilmId: 48117,
+        onOpenReplay: () => undefined,
+      }),
+    );
+    expect(html).toMatch(/<button [^>]*data-testid="pvp-open-replay" aria-pressed="true" class="[^"]*border-accent bg-accent[^"]*"/);
   });
 
   it('draws the standing as fact tiles: the tier as a number, points over the next threshold, duels left, squad slots and the rank', () => {

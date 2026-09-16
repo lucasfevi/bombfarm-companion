@@ -268,7 +268,8 @@ function DuelRow({
         {row.filmStored && onOpenReplay !== undefined ? (
           <Button
             type="button"
-            variant="text"
+            variant={open ? 'primary' : 'default'}
+            className={cn('whitespace-nowrap', 'px-2', 'py-1')}
             data-testid="pvp-open-replay"
             aria-pressed={open}
             onClick={() => {
