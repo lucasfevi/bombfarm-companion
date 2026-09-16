@@ -105,8 +105,8 @@ function DuelRow({ row }: { row: PvpDuelRow }) {
   return (
     <DataTable.Row data-testid="pvp-duel-row" data-duel-id={row.id} data-film-stored={row.filmStored ? 'true' : 'false'}>
       <DataTable.RowHeader>{formatCapturedAt(row.recordedAt, t)}</DataTable.RowHeader>
-      <DataTable.Cell>
-        <span className="flex min-w-0 items-baseline gap-2">
+      <DataTable.Cell nowrap={false}>
+        <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
           <span className="truncate" data-testid="pvp-opponent">
             {row.defender.name}
           </span>
@@ -148,7 +148,7 @@ function DuelRow({ row }: { row: PvpDuelRow }) {
           </span>
         </span>
       </DataTable.Cell>
-      <DataTable.Cell data-testid="pvp-prize" className={row.prize === 'lost' ? 'text-warn' : undefined}>
+      <DataTable.Cell nowrap={false} data-testid="pvp-prize" className={row.prize === 'lost' ? 'text-warn' : undefined}>
         {row.prize === 'won' ? t.pvpPrizeWon : t.pvpPrizeLost}
       </DataTable.Cell>
       <DataTable.Cell data-testid="pvp-film" className={row.filmStored ? undefined : 'text-muted'}>
