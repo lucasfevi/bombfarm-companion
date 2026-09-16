@@ -1,4 +1,4 @@
-import { computeTeamBuffsOverRotation, type TeamBuffId } from '../team-buffs';
+import { computeTeamBuffsOverRotation, holdAurasAtCap, type AurasAtCap, type TeamBuffId } from '../team-buffs';
 import type { HeroPlanContext } from './types';
 
 /**
@@ -25,14 +25,16 @@ export function isSquadScope(scope: HeroPlanContext['scope']): boolean {
  * in the same form as the gold objective and the Farm board: the expected value of the CAPPED
  * sum over independently present carriers. Summing rank × duty and clamping afterwards, which
  * this did before, asserted that two part-time carriers of one capped aura keep it at the cap
- * the whole time — true of a staggered rotation, not of a hand-played one.
+ * the whole time — true of a staggered rotation, not of a hand-played one. `aurasAtCap` asserts
+ * exactly that for the auras it names, on purpose (`TeamPlanInput.aurasAtCap`).
  */
 export function computeRosterAuras(
   contexts: HeroPlanContext[],
   dutyByHeroId: Record<string, number>,
+  aurasAtCap?: AurasAtCap,
 ): Record<TeamBuffId, number> {
   const presence = contexts.map((ctx) =>
     isSquadScope(ctx.scope) ? (dutyByHeroId[ctx.heroId] ?? 0) : 0,
   );
-  return computeTeamBuffsOverRotation(contexts, presence);
+  return holdAurasAtCap(computeTeamBuffsOverRotation(contexts, presence), aurasAtCap);
 }

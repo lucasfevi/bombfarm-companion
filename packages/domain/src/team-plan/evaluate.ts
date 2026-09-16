@@ -1,11 +1,13 @@
 import type { Loadout } from '../gear/types';
 import {
   alliesOverRotation,
+  PASSAGEM_BASTAO_CAPPED_PULSE,
   passagemBastaoFieldPulse,
   passagemBastaoPresence,
   type PassagemBastaoCarrier,
   type PassagemBastaoFieldPulse,
 } from '../model';
+import { pulseHeldAtCap, type AurasAtCap } from '../team-buffs';
 import { computeRosterAuras, isSquadScope } from './auras';
 import { evaluateFarmObjective, screenFarmObjective } from './farm-objective';
 import { effectiveUpgrade } from './pool';
@@ -84,12 +86,15 @@ function alliesByHeroId(
  * fielded carrier's pulse lights the whole field for its own share of wall clock, at the stint
  * length and duty its build sustains this round. A hero the player leaves alone still fields, so
  * its pulse counts; a donated one is out. Like the aura total it does not depend on which hero
- * is asking, so callers compute it once per round.
+ * is asking, so callers compute it once per round. Held at the cap instead, whatever the carriers
+ * sustain, when `aurasAtCap` names the ability (`TeamPlanInput.aurasAtCap`).
  */
 function computeFieldPulse(
   contexts: readonly HeroPlanContext[],
   stints: Readonly<Record<string, Stint>>,
+  aurasAtCap: AurasAtCap | undefined,
 ): PassagemBastaoFieldPulse {
+  if (pulseHeldAtCap(aurasAtCap)) return PASSAGEM_BASTAO_CAPPED_PULSE;
   const carriers: PassagemBastaoCarrier[] = [];
   for (const ctx of contexts) {
     const rank = ctx.abilities.passagem_bastao ?? 0;
@@ -200,7 +205,7 @@ export function screenRosterObjective(
   // as `changedHeroIds` is walked) — every hero reads the SAME roster total (PR #139), so this
   // is computed once, not once per changed hero. The incumbent's field pulse is reused the same
   // way: a move changes a carrier's stint by a few percent, and the pulse it lights by less.
-  const auras = computeRosterAuras(input.contexts, base.dutyByHeroId);
+  const auras = computeRosterAuras(input.contexts, base.dutyByHeroId, input.aurasAtCap);
   const allies = alliesByHeroId(input.contexts, base.dutyByHeroId, slots);
 
   for (const heroId of changedHeroIds) {
@@ -262,7 +267,7 @@ export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
     // Every hero reads the SAME roster total this round (PR #139) — `duties` is fixed for
     // the whole round (only `nextDuties` accumulates as heroes are scored), so this is hoisted
     // out of the per-hero loop below rather than recomputed once per hero.
-    const roundAuras = computeRosterAuras(input.contexts, duties);
+    const roundAuras = computeRosterAuras(input.contexts, duties, input.aurasAtCap);
     const roundAllies = alliesByHeroId(input.contexts, duties, slots);
     const stints: Record<string, Stint> = {};
     for (const ctx of optimizeContexts) {
@@ -285,7 +290,7 @@ export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
 
     // Unlike the auras, which each hero's sheet needs BEFORE it is scored and so read the previous
     // round's duties, the pulse scales a finished score, so it reads this round's stints.
-    entryPulseMult = computeFieldPulse(input.contexts, stints).expectedMult;
+    entryPulseMult = computeFieldPulse(input.contexts, stints, input.aurasAtCap).expectedMult;
     for (const heroId of Object.keys(roundScores)) {
       roundScores[heroId] = applyFieldPulse(roundScores[heroId], entryPulseMult);
     }
@@ -305,7 +310,7 @@ export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
     slots,
     input.ignoreFieldCrowding,
   );
-  const auras = computeRosterAuras(input.contexts, duties);
+  const auras = computeRosterAuras(input.contexts, duties, input.aurasAtCap);
   const evaluation: RosterEvaluation = {
     objective,
     regime,

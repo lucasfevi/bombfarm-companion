@@ -650,6 +650,12 @@ export const ptBR: Copy = {
   optimizerLeftOutTitle: 'Alguns heróis ficaram fora da busca',
   optimizerLeftOutBody: 'O app não conseguiu ler os pontos de atributo gastos de {heroes} na leitura da conta, então eles ficaram fora desta busca: não estão no quadro de escopo nem no plano.',
 
+  // *AurasAtCap* — as fichas de aura no Farm e no Otimizador; ver o comentário em `en.ts`.
+  farmAurasAtCapLabel: 'Auras com 100% de uptime',
+  farmAurasAtCapHint: 'Cada aura acesa é calculada como se mantivesse o campo inteiro no teto 100% do tempo, seja o que for que o seu rodízio sustentaria sozinho. Apagada, a aura conta pela fração do tempo em que seus portadores estão em campo.',
+  optimizerAurasAtCapLabel: 'Auras com 100% de uptime',
+  optimizerAurasAtCapHint: 'Cada aura acesa é pontuada como se mantivesse o campo inteiro no teto 100% do tempo, seja o que for que o elenco sustentaria sozinho. Apagada, a aura conta pela fração do tempo em que seus portadores estão em campo.',
+
   heroAvatarCol: 'Avatar',
   heroBattleActive: 'Ativado',
   heroBattleActiveTitle: 'Ativado no rodízio',

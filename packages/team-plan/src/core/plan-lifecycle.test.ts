@@ -188,6 +188,12 @@ describe('computeTeamPlanInputSignature', () => {
       computeTeamPlanInputSignature(base, controls({ ...baseControls, ignoreFieldCrowding: true })),
     );
   });
+
+  it('differs when aurasAtCap changes', () => {
+    expect(computeTeamPlanInputSignature(base, baseControls)).not.toBe(
+      computeTeamPlanInputSignature(base, controls({ ...baseControls, aurasAtCap: ['grito_guerra'] })),
+    );
+  });
 });
 
 describe('isTeamPlanStale', () => {
@@ -312,6 +318,19 @@ describe('applyTeamPlanControlChange', () => {
       controls: { ...control, ignoreFieldCrowding: true },
       clearsPlan: true,
     });
+  });
+
+  it('auraAtCap: an unchanged aura returns null, a flipped one clears, and the list keeps the domain order', () => {
+    const control = controls({ aurasAtCap: ['passagem_bastao'] });
+    expect(
+      applyTeamPlanControlChange(control, { kind: 'auraAtCap', auraId: 'passagem_bastao', value: true }, context),
+    ).toBeNull();
+    expect(applyTeamPlanControlChange(control, { kind: 'auraAtCap', auraId: 'brecha', value: false }, context)).toBeNull();
+    const lit = applyTeamPlanControlChange(control, { kind: 'auraAtCap', auraId: 'grito_guerra', value: true }, context);
+    expect(lit).toEqual({ controls: { ...control, aurasAtCap: ['grito_guerra', 'passagem_bastao'] }, clearsPlan: true });
+    const cleared = applyTeamPlanControlChange(control, { kind: 'auraAtCap', auraId: 'passagem_bastao', value: false }, context);
+    expect(cleared?.controls.aurasAtCap).toBe(DEFAULT_TEAM_PLAN_CONTROLS.aurasAtCap);
+    expect(cleared?.clearsPlan).toBe(true);
   });
 
   it('targetPhase: the first pick of the phase the derived default already sits on flips targetPhaseChosen without clearing', () => {

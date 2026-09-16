@@ -13,6 +13,7 @@ import type { FarmInputs } from './farm-inputs';
  *  every `inputs()` call hands back the same two objects. */
 const HEROES: FarmInputs['heroes'] = [];
 const POOL_OVERRIDES: FarmInputs['farmPoolOverrides'] = {};
+const AURAS_AT_CAP: FarmInputs['aurasAtCap'] = [];
 
 function inputs(): FarmInputs {
   return {
@@ -34,6 +35,7 @@ function inputs(): FarmInputs {
     maxPhase: null,
     farmPoolOverrides: POOL_OVERRIDES,
     farmReturnBonus: 'off',
+    aurasAtCap: AURAS_AT_CAP,
   };
 }
 

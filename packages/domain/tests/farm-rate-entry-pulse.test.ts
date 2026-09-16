@@ -12,16 +12,20 @@
 import { describe, expect, it } from 'vitest';
 import {
   computeFarmRateRow,
+  computeFarmRates,
   computeHeroFarmBases,
   computeHeroFarmFacts,
   computeSquadFarmFacts,
+  farmTeamBuffs,
   heroFactsFromBasis,
   heroFarmBasisFromParts,
+  squadFactsFromBases,
   type HeroFarmFacts,
 } from '@bombfarm/domain/farm-rate';
 import {
   ABILITY_LEVEL_MAX,
   FUSE_FLOOR,
+  PASSAGEM_BASTAO_CAPPED_PULSE,
   STAT_CAPS,
   fieldSeconds,
   mitigationFactor,
@@ -228,6 +232,82 @@ describe('every level goes through its own hits-to-kill step', () => {
     // left to move.
     expect(rowFor([pulsed], phase).propsPerHour).toBe(rowFor([standing], phase).propsPerHour);
     expect(rowFor([pulsed], phase).propsPerHour).toBeGreaterThan(0);
+  });
+});
+
+describe('aurasAtCap naming the ability holds the field at the cap whatever the pool lights', () => {
+  const phase = 42;
+  const HELD: AccountShared = { ...UNCONSTRAINED, aurasAtCap: ['passagem_bastao'] };
+  const atCap = (squadHeroes: readonly HeroFarmFacts[]) =>
+    computeFarmRateRow(phase, computeSquadFarmFacts(squadHeroes, HELD))!;
+
+  it('a pool with no carrier prices as one whose rank-20 pulse never drops', () => {
+    const bystander = syntheticHero({ heroId: 'bystander', avgHitBase: 60 });
+    const lit = syntheticHero({ heroId: 'lit', avgHitBase: 60, passagemBastao: { rank: 20, presence: 1 } });
+    expect(atCap([bystander])).toEqual(rowFor([lit], phase));
+  });
+
+  it('a part-time low-rank carrier is lifted to the cap, never left at what it sustains', () => {
+    const carrier = syntheticHero({ heroId: 'carrier', avgHitBase: 60, passagemBastao: { rank: 5, presence: 0.3 } });
+    const lit = { ...carrier, passagemBastao: { rank: 20, presence: 1 } };
+    expect(atCap([carrier])).toEqual(rowFor([lit], phase));
+    expect(atCap([carrier]).goldPerHour).toBeGreaterThan(rowFor([carrier], phase).goldPerHour);
+  });
+
+  it('a pool already at the cap the whole time is unchanged by the option', () => {
+    const lit = syntheticHero({ heroId: 'lit', avgHitBase: 60, passagemBastao: { rank: 20, presence: 1 } });
+    expect(atCap([lit])).toEqual(rowFor([lit], phase));
+  });
+
+  it('the squad carries the held pulse; an empty list or another aura leaves the pool’s own', () => {
+    const carrier = syntheticHero({ heroId: 'carrier', avgHitBase: 60, passagemBastao: { rank: 5, presence: 0.3 } });
+    const own = computeSquadFarmFacts([carrier], UNCONSTRAINED).entryPulse;
+    expect(own.levels.map((level) => level.mult)).toEqual([1, 1.2]);
+    expect(computeSquadFarmFacts([carrier], { ...UNCONSTRAINED, aurasAtCap: [] }).entryPulse).toEqual(own);
+    expect(computeSquadFarmFacts([carrier], { ...UNCONSTRAINED, aurasAtCap: ['grito_guerra'] }).entryPulse).toEqual(own);
+    expect(computeSquadFarmFacts([carrier], HELD).entryPulse).toBe(PASSAGEM_BASTAO_CAPPED_PULSE);
+  });
+
+  it('computeFarmRates reads it off the account, so every row is priced at the cap', () => {
+    const roster = [withAbilityLevels(heroes[0], { passagem_bastao: 3 }), heroes[1]];
+    const capped = computeFarmRates({ heroes: roster, account: { ...account, aurasAtCap: ['passagem_bastao'] } });
+    const plain = computeFarmRates({ heroes: roster, account });
+    expect(capped.squad.entryPulse).toBe(PASSAGEM_BASTAO_CAPPED_PULSE);
+    expect(capped.heroFacts).toEqual(plain.heroFacts);
+    for (const [index, row] of capped.rows.entries()) {
+      expect(row.goldPerHour).toBeGreaterThanOrEqual(plain.rows[index]!.goldPerHour);
+    }
+  });
+});
+
+describe('aurasAtCap naming a standing aura holds it in the layer every basis is priced at', () => {
+  it('War Cry at cap lifts every enabled hero’s hit, reports 20 from farmTeamBuffs, and moves nothing else', () => {
+    const plain = { heroes, account };
+    const held = { heroes, account: { ...account, aurasAtCap: ['grito_guerra'] as const } };
+    expect(farmTeamBuffs(held).grito_guerra).toBe(20);
+    expect(farmTeamBuffs(held).brecha).toBe(farmTeamBuffs(plain).brecha);
+    const before = computeHeroFarmFacts(plain);
+    const after = computeHeroFarmFacts(held);
+    expect(after).toHaveLength(before.length);
+    for (const [index, facts] of after.entries()) {
+      expect(facts.avgHitBase).toBeGreaterThan(before[index]!.avgHitBase);
+      expect(facts.uptime).toBe(before[index]!.uptime);
+      expect(facts.plantsPerSec).toBe(before[index]!.plantsPerSec);
+    }
+  });
+
+  it('Fôlego at cap reaches field seconds, so uptime moves — the hold is applied before presences are weighed', () => {
+    const before = computeHeroFarmFacts({ heroes, account });
+    const after = computeHeroFarmFacts({ heroes, account: { ...account, aurasAtCap: ['folego_mineiro'] } });
+    expect(after.some((facts, index) => facts.uptime > before[index]!.uptime)).toBe(true);
+  });
+
+  it('a candidate assignment priced through squadFactsFromBases holds the same auras', () => {
+    const heldAccount = { ...account, aurasAtCap: ['grito_guerra'] as const };
+    const bases = computeHeroFarmBases({ heroes, account: heldAccount });
+    const viaBases = squadFactsFromBases(bases, null, heldAccount);
+    const direct = computeSquadFarmFacts(computeHeroFarmFacts({ heroes, account: heldAccount }), heldAccount);
+    expect(viaBases.heroes.map((hero) => hero.avgHitBase)).toEqual(direct.heroes.map((hero) => hero.avgHitBase));
   });
 });
 

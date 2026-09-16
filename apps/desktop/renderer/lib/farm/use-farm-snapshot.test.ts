@@ -12,7 +12,7 @@ import type { FarmControls } from './farm-inputs';
 import { settledBoard } from './farm-snapshot-store';
 import { createFarmSnapshotStore, farmBoardStale } from './use-farm-snapshot';
 
-const CONTROLS: FarmControls = { farmPoolOverrides: {}, farmReturnBonus: 'off' };
+const CONTROLS: FarmControls = { farmPoolOverrides: {}, farmReturnBonus: 'off', aurasAtCap: [] };
 
 function fidelityAt(capturedAt: string): AccountFidelity {
   return {
@@ -132,7 +132,7 @@ describe('the snapshot store computes once and does not follow the live account'
     const opened = viewAtLevel(10);
     open(opened.view, opened.key, CONTROLS);
 
-    setControls({ farmPoolOverrides: {}, farmReturnBonus: 'vip' });
+    setControls({ farmPoolOverrides: {}, farmReturnBonus: 'vip', aurasAtCap: [] });
     const state = store.getState();
     expect(state.status).toBe('ready');
     if (state.status !== 'ready') throw new Error('expected ready');
@@ -143,7 +143,7 @@ describe('the snapshot store computes once and does not follow the live account'
 
   it('setControls before the screen ever opened does nothing — there is no frozen account yet', () => {
     const { store, setControls } = createFarmSnapshotStore();
-    setControls({ farmPoolOverrides: {}, farmReturnBonus: 'vip' });
+    setControls({ farmPoolOverrides: {}, farmReturnBonus: 'vip', aurasAtCap: [] });
     expect(store.getState()).toEqual({ status: 'idle' });
   });
 
@@ -215,7 +215,7 @@ describe('a snapshot is stale when the BOARD would compute differently, not when
 
   it('changing a compute input does not make the live account look stale', () => {
     const { store, setControls } = opened();
-    setControls({ farmPoolOverrides: { h1: false }, farmReturnBonus: 'vip' });
+    setControls({ farmPoolOverrides: { h1: false }, farmReturnBonus: 'vip', aurasAtCap: [] });
     const live = viewOf(payloadWithGold(10, '5000'));
     expect(farmBoardStale(store.getState(), live.view)).toBe(false);
   });
@@ -280,7 +280,7 @@ describe('a settled board is dated by the account read behind it, never by the c
 
     // The player toggles a hero out of the rotation pool. The board is computed again against the
     // frozen account — a genuinely new compute, over data nobody re-read.
-    setControls({ farmPoolOverrides: { h1: false }, farmReturnBonus: 'off' });
+    setControls({ farmPoolOverrides: { h1: false }, farmReturnBonus: 'off', aurasAtCap: [] });
 
     const after = settledBoard(store.getState());
     expect(after?.board).not.toBe(boardBefore);
