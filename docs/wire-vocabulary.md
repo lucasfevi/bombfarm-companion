@@ -114,3 +114,63 @@ The combat websocket packs its payload into single-letter and abbreviated keys b
 | Wire token | Domain field | Description | Origin |
 | --- | --- | --- | --- |
 | `snap` | `snapMessageType` | The only observed value of `t`: a live combat-frame snapshot tick. | English |
+
+
+## PVP duel result and film
+
+The duel result the client receives on Challenge and the film it fetches right after mix Portuguese keys (`venceu`, `fase`, `filme`) with English ones (`slots`, `squad`, `hz`) — see `packages/game-api/src/pvp/lexicon.ts`. The film’s per-frame keys are declared for documentation only; the desktop keeps a film whole and reads its header.
+
+### Keys
+
+| Wire token | Domain field | Description | Origin |
+| --- | --- | --- | --- |
+| `venceu` | `won` | Whether the attacker won the duel. | Portuguese |
+| `fase` | `phase` | On a result: the combat phase the duel was fought in, not the tier floor. On the state and the film: see the row. | Portuguese |
+| `filme` | `filmId` | The film id the server issued for the duel; 0 when none was. | Portuguese |
+| `salas` | `rooms` | Room clears over the duel. | Portuguese |
+| `segundos` | `seconds` | Duel length in seconds (60 observed). | Portuguese |
+| `atacante` | `attacker` | The side that pressed Challenge — the player. | Portuguese |
+| `defensor` | `defender` | The side that was challenged — the opponent. | Portuguese |
+| `nome` | `name` | A side's display name. | Portuguese |
+| `herois` | `heroes` | How many heroes a side fielded. | Portuguese |
+| `dano` | `score` | A side's score: the HP it tore off the other side. | Portuguese |
+| `pontos_antes` | `pointsBefore` | PVP points before the duel settled. | Portuguese |
+| `pontos_depois` | `pointsAfter` | PVP points after the duel settled. | Portuguese |
+| `duelos_restantes` | `duelsLeft` | Duels left in the quota. | Portuguese |
+| `duelos_max` | `duelsMax` | The duel quota. | Portuguese |
+| `premio` | `prize` | Whether the rune chest landed (`won`) or was lost to a full bag (`lost`). | Portuguese |
+| `estado` | `state` | The full PVP state after the duel. | Portuguese |
+| `pontos` | `points` | Current PVP points. | Portuguese |
+| `faixa` | `tier` | The tier token (`r1`…`r6`). | Portuguese |
+| `faixa_num` | `tierNumber` | The tier as a number. | Portuguese |
+| `faixa_prox` | `tierNext` | Points to the next tier. | Portuguese |
+| `slots` | `slots` | Squad slots available. | English |
+| `squad` | `squad` | The squad, one entry per filled slot. | English |
+| `slot` | `slot` | A squad entry’s slot index. | English |
+| `hero_id` | `heroId` | A squad entry’s hero id. | English |
+| `duelos_usados` | `duelsUsed` | Duels spent from the quota. | Portuguese |
+| `enabled` | `enabled` | Whether PVP is open to the account. | English |
+| `id` | `filmId` | The film’s own id — the value the result named in `filme`. | English |
+| `fase_visual` | `visualPhase` | The phase the film draws its room as. | Portuguese |
+| `hz` | `hz` | Frames per second the film was sampled at (12 observed). | English |
+| `a` | `attackerHeroes` | Per-hero attacker entries, index = squad slot. | English |
+| `d` | `defenderHeroes` | Per-hero defender entries, index = squad slot. | English |
+| `sk` | `skill` | A film hero entry’s skill field. Meaning not established. | English |
+| `t` | `t` | A film hero entry’s `t` field. Meaning not established. | English |
+| `q` | `frames` | The film’s frames (721 observed for a 60 s duel at 12 Hz). | English |
+| `t` | `time` | Frame time. | English |
+| `hp` | `hp` | Room HP at the frame. | English |
+| `da` | `attackerDamage` | Attacker damage so far. | English |
+| `dd` | `defenderDamage` | Defender damage so far. | English |
+| `k` | `k` | Optional per-frame field. Meaning not established. | English |
+| `c` | `c` | Per-frame field. Meaning not established. | English |
+| `h` | `heroes` | Per-frame hero entries. | English |
+| `b` | `bombs` | Per-frame bomb entries. | English |
+| `x` | `x` | Per-frame field. Meaning not established. | English |
+
+### `premio` values
+
+| Wire token | Domain field | Description | Origin |
+| --- | --- | --- | --- |
+| `won` | `prize` | The rune chest landed in the bag. | English |
+| `lost` | `prize` | The rune chest was lost to a full bag. | English |
