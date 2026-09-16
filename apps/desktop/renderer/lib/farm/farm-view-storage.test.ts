@@ -34,7 +34,12 @@ describe('farm view preferences', () => {
   });
 
   it('round-trips what was written', () => {
-    const view = { farmPoolOverrides: { h1: false }, farmReturnBonus: 'vip' as const, selectedPhase: 7 };
+    const view = {
+      farmPoolOverrides: { h1: false },
+      farmReturnBonus: 'vip' as const,
+      aurasAtCap: ['grito_guerra', 'passagem_bastao'] as const,
+      selectedPhase: 7,
+    };
     saveFarmView(view);
     expect(loadFarmView()).toEqual(view);
   });
@@ -56,6 +61,15 @@ describe('farm view preferences', () => {
   it('drops a return-bonus mode that is not one of the three', () => {
     entries.set(KEY, JSON.stringify({ farmReturnBonus: 'quadruple' }));
     expect(loadFarmView().farmReturnBonus).toBe(DEFAULT_FARM_VIEW.farmReturnBonus);
+  });
+
+  it('keeps only real aura ids out of the stored list, in the domain’s order, and the frozen empty list otherwise', () => {
+    entries.set(KEY, JSON.stringify({ aurasAtCap: ['passagem_bastao', 'nope', 7, 'grito_guerra'] }));
+    expect(loadFarmView().aurasAtCap).toEqual(['grito_guerra', 'passagem_bastao']);
+    entries.set(KEY, JSON.stringify({ aurasAtCap: 'grito_guerra' }));
+    expect(loadFarmView().aurasAtCap).toBe(DEFAULT_FARM_VIEW.aurasAtCap);
+    entries.set(KEY, JSON.stringify({}));
+    expect(loadFarmView().aurasAtCap).toBe(DEFAULT_FARM_VIEW.aurasAtCap);
   });
 
   it('keeps only the boolean pool overrides out of a half-written record', () => {

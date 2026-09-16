@@ -16,17 +16,15 @@ holdTeamPlanSuiteUntilInRegime();
  *
  * The bug only reproduces in the `saturated` regime (Σ duty >= slots), which is why the grid
  * sweeps small slot counts across two fixtures and several forge floors, plus donate-scope
- * mixes. `save-20260819-11882-7heroes.json` at floor 10 / slots 3, floor 10 / slots 5, and
- * floor 20 / slots 3 are the cases measured to reproduce the bug on unpatched code (respec step
- * as low as -726 on floor 10 / slots 3 alone).
+ * mixes.
  *
  * Budget: the guards in `waterfall-guards.ts` are a post-processing step over whatever
  * assignment/points the search happened to find — they hold at ANY evaluation budget, not only
  * a fully-converged one (a truncated search is if anything a *better* adversarial input, since
  * it is more likely to hand the waterfall a candidate that would have dipped without the guard).
- * So most of the grid runs at a small `maxEvaluations` to keep this file fast; only the three
- * cases the plan measured as reproducing the bug (see above) run at the real production budget,
- * to also cover the fully-converged search path end to end.
+ * So most of the grid runs at a small `maxEvaluations` to keep this file fast; three saturated
+ * cells on the smaller roster run at the real production budget, to also cover the
+ * fully-converged search path end to end.
  *
  * Note on coverage: across this entire grid (both fixtures × every forge floor × every slot
  * count, plus the donate-scope mixes below), the fully-converged, guarded search never actually
@@ -37,11 +35,6 @@ holdTeamPlanSuiteUntilInRegime();
  * any committed save happens to trigger it.
  */
 
-// F1 (ground-truth-rule class (b) — structural): re-pointed onto the post-patch corpus. This grid's
-// invariant (assertStepInvariants) is checked at every cell regardless of which file backs it,
-// so the re-point itself carries no loss; only the three named FULL_BUDGET_CASES keys (specific
-// configs the plan's authors measured as reproducing the option-B bug on the OLD fixture) are
-// renamed onto the new corpus as a coverage-completeness choice, not a correctness requirement.
 const FILES = [TEAM_PLAN_FIXTURE, TEAM_PLAN_LARGE_FIXTURE] as const;
 const FORGE_FLOORS = [0, 10, 15, 20];
 const SLOT_COUNTS = [1, 2, 3, 5, 9];
@@ -52,11 +45,18 @@ const FULL_BUDGET_TIMEOUT_MS = 90_000;
 /** Small enough to run in well under a second per config; large enough to still search. */
 const REDUCED_MAX_EVALUATIONS = 3_000;
 
-/** The plan's own measured reproduction cases — run these at the real production budget. */
+/**
+ * The cells that run at the real production budget. These were the three configs on which the
+ * bug was first measured on unpatched code (respec step as low as -726), on a capture of the
+ * same account that has since left the regime. Re-chosen as the same three configs on its
+ * successor because all three still land in the saturated regime there (measured), which is the
+ * only regime the bug lives in — the unpatched code is gone, so the reproduction itself cannot
+ * be re-measured.
+ */
 const FULL_BUDGET_CASES = new Set([
-  'save-20260819-11882-7heroes.json|10|3',
-  'save-20260819-11882-7heroes.json|10|5',
-  'save-20260819-11882-7heroes.json|20|3',
+  `${TEAM_PLAN_FIXTURE}|10|3`,
+  `${TEAM_PLAN_FIXTURE}|10|5`,
+  `${TEAM_PLAN_FIXTURE}|20|3`,
 ]);
 
 function donateMix(heroIds: string[]): Record<string, ScopeState> {
@@ -161,10 +161,9 @@ describe('team plan step monotonicity (roster level)', () => {
   it(
     'export floor 10 slots 9: pointResets is in acceptance order, not heroId order',
     () => {
-      // The LARGE in-regime fixture, deliberately, and it is the only test in this file that
-      // needs it: an ordering claim needs at least two things to order, and the 7-hero roster
-      // produces exactly ONE point reset at this config (measured). The 11-hero roster produces
-      // five, in an order that is not alphabetical by heroId — which is the discrimination.
+      // An ordering claim needs at least two things to order and an order that is not already
+      // alphabetical: the 20-hero roster yields six resets here (measured), accepted best
+      // marginal gain first, which is not heroId order.
       const input = teamPlanInputFromFixture(TEAM_PLAN_LARGE_FIXTURE, 10);
       input.account.fieldSlots = 9;
       const result = runTeamPlan(input, { maxEvaluations: REDUCED_MAX_EVALUATIONS });

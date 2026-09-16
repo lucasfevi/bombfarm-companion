@@ -796,6 +796,13 @@ export const en = {
   pvpFilmMissing: 'Not kept',
   pvpFilmReplay: 'Replay',
   pvpFilmNote: 'A film is kept the moment the game fetches it. The server drops a film seconds later, so one that was skipped or missed cannot be fetched now.',
+  // *AurasAtCap* — the team-aura chips on the Farm board's control row and the Optimizer's setup
+  // bar. Their field strings live here rather than in the packages' own dictionaries because no
+  // other host draws the field; each chip names its own aura and cap from the shared dictionary.
+  farmAurasAtCapLabel: 'Auras 100% uptime',
+  farmAurasAtCapHint: 'Each lit aura is priced as if it held the whole field at its cap 100% of the time, whatever your rotation would sustain on its own. Unlit, an aura counts for the share of the time its carriers are on the field.',
+  optimizerAurasAtCapLabel: 'Auras 100% uptime',
+  optimizerAurasAtCapHint: 'Each lit aura is scored as if it held the whole field at its cap 100% of the time, whatever the roster would sustain on its own. Unlit, an aura counts for the share of the time its carriers are on the field.',
 
   // hero*/gear*/import*/roster*/switch*/mode*/rank* — hero-identity vocabulary the farm screen's
   // roster surfaces read as one structural contract. Named exactly as that contract names them.

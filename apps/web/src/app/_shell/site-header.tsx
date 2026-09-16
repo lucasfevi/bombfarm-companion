@@ -129,16 +129,28 @@ export function SiteHeader({
               </Tooltip.Portal>
             </Tooltip.Root>
           </Tooltip.Provider>
-          <a
-            className={buttonRecipe({ variant: "coffee" })}
-            href="https://buymeacoffee.com/lucasfevi"
-            target="_blank"
-            rel="noreferrer"
-            title={t.coffee}
-            aria-label={t.coffee}
-          >
-            <BiCoffee size={16} aria-hidden="true" />
-          </a>
+          <Tooltip.Provider delay={200} closeDelay={80}>
+            <Tooltip.Root>
+              <Tooltip.Trigger
+                render={
+                  <a
+                    className={buttonRecipe({ variant: "coffee" })}
+                    href="https://buymeacoffee.com/lucasfevi"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={t.coffee}
+                  />
+                }
+              >
+                <BiCoffee size={16} aria-hidden="true" />
+              </Tooltip.Trigger>
+              <Tooltip.Portal>
+                <Tooltip.Positioner sideOffset={6}>
+                  <Tooltip.Popup>{t.coffee}</Tooltip.Popup>
+                </Tooltip.Positioner>
+              </Tooltip.Portal>
+            </Tooltip.Root>
+          </Tooltip.Provider>
           <SegmentedToggle
             options={[
               { id: "pt", label: "PT" },

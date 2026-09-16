@@ -24,7 +24,8 @@ export const heroEn = {
   heroDetailRunesTitle: "Runes",
   heroDetailRunesTip:
     "Timed buffs the game is applying to this hero right now. Every figure on this screen counts them, and each one goes when its play time runs out.",
-  heroDetailRuneValue: "+{pct}% · {hours} h of play left",
+  heroDetailRuneStrength: "+{pct}%",
+  heroDetailRunePlayLeft: "{hours}h of buff left",
   heroDetailRuneAxisXp: "XP",
   heroDetailRuneAxisGold: "Gold",
 

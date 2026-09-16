@@ -13,6 +13,7 @@ export type {
   FarmRankingBoardData,
   FarmRankingBoardSlots,
 } from './farm-ranking-board';
+export { FarmAuraCapField } from './farm-aura-cap-field';
 export { FarmCopyProvider, useFarmCopy } from './farm-copy-context';
 export type { FarmCopyValue } from './farm-copy-context';
 export { CombatPhasePanel } from './combat-phase-panel';

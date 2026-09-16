@@ -21,6 +21,29 @@ const FIXTURES_DIR = join(here, 'fixtures');
 // mention in the tree, and the second test below pins it so this exemption stays honest.
 const MANIFEST_FILES = new Set(['pair.json']);
 
+// The 2026-09-14 exports REPLACE the two fields with placeholders instead of removing them, so
+// the export fingerprint's `allowance` escape is witnessed present and not just absent. A
+// placeholder carries no identity, but only these exact values pass: the check below runs on
+// the parsed `account` object, so a real id, a blank string, or a placeholder anywhere else in
+// the file is still an offender. Adding a capture with a new placeholder means registering it
+// here, in the open.
+const REGISTERED_PLACEHOLDERS: Readonly<Record<(typeof PERSONAL_FIELDS)[number], ReadonlySet<unknown>>> = {
+  account_id: new Set([900001, 900002]),
+  player_name: new Set(['Fixture Alpha', 'Fixture Beta']),
+};
+
+function carriesOnlyRegisteredPlaceholder(content: string, field: (typeof PERSONAL_FIELDS)[number]): boolean {
+  const parsed: unknown = JSON.parse(content);
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return false;
+  const account = (parsed as Record<string, unknown>).account;
+  if (typeof account !== 'object' || account === null) return false;
+  const value = (account as Record<string, unknown>)[field];
+  if (!REGISTERED_PLACEHOLDERS[field].has(value)) return false;
+  const withoutAccountField = structuredClone(parsed) as Record<string, Record<string, unknown>>;
+  delete withoutAccountField.account[field];
+  return !JSON.stringify(withoutAccountField).includes(field);
+}
+
 function listCaptureFiles(dir: string): string[] {
   const files: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -45,10 +68,10 @@ describe('committed fixtures carry no player identity', () => {
     for (const file of files) {
       const content = readFileSync(file, 'utf8');
       for (const field of PERSONAL_FIELDS) {
-        // F4's `assertScrubbed` semantics: the field *name* must not appear at all. The
-        // scrub deletes the key rather than blanking the value, so a placeholder such as
-        // `"player_name": ""` is a failure here too, by design.
-        if (content.includes(field)) {
+        // The fidelity pair's `assertScrubbed` semantics: the field *name* must not appear at
+        // all. The one exception is a registered placeholder on `account` itself; a blank
+        // string or an unregistered value is a failure here, by design.
+        if (content.includes(field) && !carriesOnlyRegisteredPlaceholder(content, field)) {
           offenders.push(`${relative(FIXTURES_DIR, file)} (${field})`);
         }
       }
@@ -57,10 +80,22 @@ describe('committed fixtures carry no player identity', () => {
     const message =
       offenders.length > 0
         ? `Committed fixtures still carry personal fields: ${offenders.join(', ')}. Remove the ` +
-          `account.${PERSONAL_FIELDS.join(' / account.')} keys entirely before committing a capture ` +
-          `— see docs/fidelity-gate.md.`
+          `account.${PERSONAL_FIELDS.join(' / account.')} keys entirely, or replace them with a ` +
+          `placeholder registered in this file, before committing a capture — see docs/fidelity-gate.md.`
         : 'no offenders';
     expect(offenders, message).toEqual([]);
+  });
+
+  it('a registered placeholder passes only on account itself, and nothing else does', () => {
+    const scrubbed = (account: Record<string, unknown>, rest: Record<string, unknown> = {}) =>
+      JSON.stringify({ account, heroes: [], ...rest });
+    expect(carriesOnlyRegisteredPlaceholder(scrubbed({ account_id: 900002, phase: 1 }), 'account_id')).toBe(true);
+    expect(carriesOnlyRegisteredPlaceholder(scrubbed({ player_name: 'Fixture Alpha' }), 'player_name')).toBe(true);
+    expect(carriesOnlyRegisteredPlaceholder(scrubbed({ account_id: 12345 }), 'account_id')).toBe(false);
+    expect(carriesOnlyRegisteredPlaceholder(scrubbed({ account_id: '900002' }), 'account_id')).toBe(false);
+    expect(carriesOnlyRegisteredPlaceholder(scrubbed({ player_name: '' }), 'player_name')).toBe(false);
+    expect(carriesOnlyRegisteredPlaceholder(scrubbed({ player_name: 'Fixture Alpha' }, { note: 'player_name' }), 'player_name')).toBe(false);
+    expect(carriesOnlyRegisteredPlaceholder(JSON.stringify({ player_name: 'Fixture Alpha' }), 'player_name')).toBe(false);
   });
 
   it('the exempted pair manifest mentions the fields only as a scrub attestation', () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { Button, InfoTip, Panel, Tooltip, panelHClass, panelTitleClass } from '@bombfarm/ui';
 import type { Lang } from '@bombfarm/hero/copy';
 import { buildTeamPlanInput, countOptimizeScopeHeroes, isFarmObjectiveUnavailable } from '../core';
@@ -23,12 +23,14 @@ export function TeamPlanToolbar({
   data,
   actions,
   runner,
+  setupFields,
 }: {
   t: TeamPlanScreenCopy;
   lang: Lang;
   data: TeamPlanScreenData;
   actions: TeamPlanScreenActions;
   runner: TeamPlanRunner;
+  setupFields?: ReactNode;
 }) {
   const copy = teamPlanObjectiveCopy(t, data.controls.objective);
   const resolvedTargetPhase = resolveTeamPlanTargetPhase(data.inputs, data.controls);
@@ -107,6 +109,7 @@ export function TeamPlanToolbar({
                 value={data.controls.ignoreFieldCrowding}
                 onChange={actions.setIgnoreFieldCrowding}
               />
+              {setupFields}
             </div>
           </div>
           <Button

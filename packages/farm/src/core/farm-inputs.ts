@@ -11,6 +11,7 @@
  */
 import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import type { AurasAtCap } from '@bombfarm/domain/team-buffs';
 
 export type FarmInputs = {
   heroes: readonly HeroRecord[];
@@ -42,4 +43,10 @@ export type FarmInputs = {
   maxPhase: number | null;
   farmPoolOverrides: Record<string, boolean>;
   farmReturnBonus: ReturnBonusMode;
+  /**
+   * The team auras to price at their cap the whole time (`FarmAccount.aurasAtCap`). Compared by
+   * REFERENCE in the dep tuple like `farmPoolOverrides`, so a host that offers no control passes
+   * the domain's frozen `NO_AURAS_AT_CAP` and never a fresh `[]`.
+   */
+  aurasAtCap: AurasAtCap;
 };

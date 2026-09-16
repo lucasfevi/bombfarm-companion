@@ -144,7 +144,8 @@ describe('spent stat points never exceed the hero level (corpus sweep)', () => {
    * 5x reaches all of them, so none could back a `sheet` number any more. The prediction recorded
    * here was that the sweep would recover on the first post-boundary capture with a geared roster.
    * It has: the 2026-08-31 capture adds 13 heroes, eleven of them geared, and all 13 satisfy the
-   * budget on the current damage model.
+   * budget on the current damage model. The two 2026-09-14 exports then add 29 more past every
+   * boundary, one of them from the second account.
    *
    * The per-file breakdown is asserted, not just the total: a total alone would stay green if one
    * capture stopped being swept while another grew, which is the failure this guard exists for.
@@ -156,8 +157,10 @@ describe('spent stat points never exceed the hero level (corpus sweep)', () => {
       'sheet-math/payload-20260913-20heroes-runes.json': 20,
       'sheet-math/save-20260828-4heroes-postpatch.json': 4,
       'sheet-math/save-20260831-13heroes-soulbound.json': 13,
+      'sheet-math/save-20260914-20heroes-phase101.json': 20,
+      'sheet-math/save-20260914-9heroes-second-account.json': 9,
     });
-    expect(SUBJECTS.length).toBe(37);
+    expect(SUBJECTS.length).toBe(66);
     const dirs = new Set(SUBJECTS.map((s) => s.file.split('/')[0]));
     expect(dirs, `capture directories reached: ${[...dirs].join(', ')}`).toEqual(new Set(['sheet-math']));
   });

@@ -73,6 +73,8 @@ export function buildTeamPlanInput(
     // Both objectives drop their field-crowding term under this, and the plan fills every empty
     // slot it has an item for — see the domain field for why that is an opt-in mis-pricing.
     ignoreFieldCrowding: controls.ignoreFieldCrowding,
+    // Both objectives hold these auras at their cap under this — the same opt-in shape.
+    aurasAtCap: controls.aurasAtCap,
     // Both objectives score here. Null is the objective's own default: gold sweeps for its best
     // phase, damage stays on the account's own.
     targetPhase: resolveTeamPlanTargetPhase(inputs, controls),

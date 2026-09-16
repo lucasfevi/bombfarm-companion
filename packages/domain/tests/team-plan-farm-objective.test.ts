@@ -299,6 +299,58 @@ describe('the priced squad is who the player fields, not what the search may mov
   });
 });
 
+describe('aurasAtCap reaches the farm objective through the squad account and the frozen auras', () => {
+  const file = 'save-20260828-4heroes-postpatch.json';
+  const AT_CAP = ['passagem_bastao', 'grito_guerra'] as const;
+
+  it('is carried on the squad account, and the frozen standing auras are held', () => {
+    const fixture = loadTeamPlanFarmFixture(file);
+    const { account } = fixture.teamPlanInput;
+    const built = buildHeroPlanContexts(fixture.teamPlanInput.heroes, account, fixture.teamPlanInput.scopeByHeroId);
+    if (built.blocked) throw new Error('blocked');
+    const squad = built.contexts.filter((ctx) => isSquadScope(ctx.scope));
+    const plain = buildFarmObjective(squad, account, {});
+    expect(plain.account.aurasAtCap).toBeUndefined();
+    const held = buildFarmObjective(squad, account, {}, null, false, AT_CAP);
+    expect(held.account.aurasAtCap).toBe(AT_CAP);
+    expect(held.auras.grito_guerra).toBe(20);
+    expect(held.auras.brecha).toBe(plain.auras.brecha);
+    expect(held.phaseOptions).toEqual(plain.phaseOptions);
+  });
+
+  it('the bridged objective at the cap equals the estimator run on an account holding the same auras', () => {
+    const fixture = loadTeamPlanFarmFixture(file);
+    const input = fixture.teamPlanInput;
+    const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
+    if (built.blocked) throw new Error('blocked');
+    const squad = built.contexts.filter((ctx) => isSquadScope(ctx.scope));
+    const { loadouts, pts } = bridgeFor(input);
+    const objective = buildFarmObjective(squad, input.account, loadouts, null, false, AT_CAP);
+    const bridged = evaluateFarmObjective(objective, loadouts, pts, undefined);
+
+    const heldAccount = { ...fixture.account, aurasAtCap: AT_CAP };
+    const bases = computeHeroFarmBases({
+      heroes: fixture.heroes,
+      account: heldAccount,
+      enabledHeroIds: fixture.enabledHeroIds,
+    });
+    const pick = bestFarmPhase(squadFactsFromBases(bases, null, heldAccount), GOLD, UNUSED_SCALES, {
+      maxPhase: fixture.account.maxPhase,
+    });
+    expect(bridged.objective).toBe(pick ? pick.value : 0);
+    expect(bridged.objective).toBeGreaterThan(ordinaryFarmPath(fixture).goldPerHour);
+  });
+
+  it('runTeamPlan under farm hands it to the objective, and the reported gold/hr is priced at the cap', () => {
+    const fixture = loadTeamPlanFarmFixture(file);
+    const base: TeamPlanInput = { ...fixture.teamPlanInput, objective: 'farm', allowedChanges: 'points' };
+    const plain = runTeamPlan(base, { maxEvaluations: 200 });
+    const capped = runTeamPlan({ ...base, aurasAtCap: AT_CAP }, { maxEvaluations: 200 });
+    if (plain.blocked || capped.blocked) throw new Error('blocked');
+    expect(capped.plan.currentDps).toBeGreaterThan(plain.plan.currentDps);
+  });
+});
+
 describe('farm mode refuses an unbounded phase ceiling', () => {
   it.each([null, undefined, 0, Number.NaN])('maxPhase %s is rejected', (maxPhase) => {
     const fixture = loadTeamPlanFarmFixture('save-20260828-4heroes-postpatch.json');

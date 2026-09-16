@@ -757,6 +757,11 @@ export const ptBR: Copy = {
   pvpFilmMissing: 'Não guardado',
   pvpFilmReplay: 'Ver replay',
   pvpFilmNote: 'Um filme é guardado no momento em que o jogo o busca. O servidor descarta o filme segundos depois, então um que foi pulado ou perdido não pode ser buscado agora.',
+  // *AurasAtCap* — as fichas de aura no Farm e no Otimizador; ver o comentário em `en.ts`.
+  farmAurasAtCapLabel: 'Auras com 100% de uptime',
+  farmAurasAtCapHint: 'Cada aura acesa é calculada como se mantivesse o campo inteiro no teto 100% do tempo, seja o que for que o seu rodízio sustentaria sozinho. Apagada, a aura conta pela fração do tempo em que seus portadores estão em campo.',
+  optimizerAurasAtCapLabel: 'Auras com 100% de uptime',
+  optimizerAurasAtCapHint: 'Cada aura acesa é pontuada como se mantivesse o campo inteiro no teto 100% do tempo, seja o que for que o elenco sustentaria sozinho. Apagada, a aura conta pela fração do tempo em que seus portadores estão em campo.',
 
   heroAvatarCol: 'Avatar',
   heroBattleActive: 'Ativado',

@@ -97,6 +97,20 @@ const EXPECTED_CORPUS_FILES = [
   'save-20260822-15heroes-tree-crit-dmg.json',
   'save-20260823-13heroes-crit-points.json',
   'save-20260831-13heroes-soulbound.json',
+  'save-20260914-9heroes-second-account.json',
+  'save-20260914-20heroes-phase101.json',
+] as const;
+
+/**
+ * The two captures whose scrub REPLACED `account_id` / `player_name` with placeholders instead of
+ * removing them. Every older export dropped both keys, so until these landed the account level's
+ * `allowance` escape had never been seen present and could not be told from a dead one. Named for
+ * the same reason as the soulbound witness below: the assertion is about both sides, and a
+ * rename must fail it rather than let it go vacuous.
+ */
+const ACCOUNT_ALLOWANCE_WITNESS_FILES = [
+  'save-20260914-9heroes-second-account.json',
+  'save-20260914-20heroes-phase101.json',
 ] as const;
 
 /**
@@ -204,6 +218,25 @@ describe('EXPORT_FINGERPRINT — corpus check', () => {
       'soulbound',
       'save.heroes[].soulbound',
     );
+  });
+
+  it('non-vacuity: the account-level allowance keys are witnessed both ways — present on the placeholder-scrubbed captures, absent on the older ones', () => {
+    if (!corpus) return;
+    const accountLevel = EXPORT_FINGERPRINT.level.children?.account;
+    expect(accountLevel?.kind).toBe('object');
+    if (accountLevel?.kind !== 'object') return;
+    const allowance = accountLevel.level.allowance ?? [];
+    expect(allowance).toEqual(['account_id', 'player_name']);
+
+    const accounts = corpus.map(({ body }) => body.account as Record<string, unknown>);
+    for (const key of allowance) {
+      assertOptionalKeyWitnessedBothWays(accounts, key, `save.account.${key}`);
+      for (const file of ACCOUNT_ALLOWANCE_WITNESS_FILES) {
+        const witness = corpus.find((member) => member.file === file);
+        expect(witness, `the allowance witness capture ${file} is no longer discovered`).toBeDefined();
+        expect(witness && key in (witness.body.account as Record<string, unknown>), `${file}: ${key} present`).toBe(true);
+      }
+    }
   });
 
   it('soulbound never appears without the untradable flag that actually withholds a market price', () => {

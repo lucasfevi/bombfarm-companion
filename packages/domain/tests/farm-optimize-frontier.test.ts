@@ -2,6 +2,9 @@
  * The cost frontier — best 1-hero and best 2-hero respec, each re-solved (never truncated),
  * ordered ascending by cost, sized to the searchable set, and never advising a spend under a
  * gold-lowering objective without an honest null payback.
+ *
+ * Measured on `save-20260914-9heroes-second-account.json`: Nolan wins the 1-hero tier and
+ * Sora + Nolan the 2-hero tier.
  */
 import { describe, expect, it } from 'vitest';
 import { solveFarmRespec, FARM_OPT_FULL_MAX_EVALUATIONS } from '@bombfarm/domain/farm-optimize';
@@ -15,23 +18,24 @@ import { holdSuiteUntilInRegime } from './helpers/capture-regime';
 
 holdSuiteUntilInRegime(`sheet-math/${FARM_OPTIMIZE_FIXTURE}`, 'sheet');
 
-const { heroes, account, maxPhase } = loadFarmRateFixture();
+const { heroes, account, maxPhase } = loadFarmRateFixture(FARM_OPTIMIZE_FIXTURE);
 
 describe('the fixture reproduces the measured frontier ordering', () => {
   const result = solveFarmRespec({ heroes, account, maxPhase });
   const [oneHero, twoHero] = result.frontier;
 
-  it('the 1-hero entry has strictly lower cost, gain and payback than the joint optimum', () => {
+  it('the 1-hero entry has strictly lower cost and gain than the joint optimum; payback is NOT ordered by the contract', () => {
     expect(result.frontier).toHaveLength(2);
     expect(oneHero.heroCount).toBe(1);
     expect(oneHero.respecCostGold).toBeLessThan(result.respecCostGold);
     expect(oneHero.gainPct).toBeLessThan(result.gainPct);
+    // Nolan, +0.54%, 127,000 gold against the joint +5.96% for 660,000 — recorded, not hardcoded
+    // as the pass/fail bar; the strict inequalities above are the actual assertions. Payback is
+    // cost ÷ Δgold/h and can go either way (0.78h here against the joint 0.36h), so nothing pins
+    // it beyond being present and finite.
+    expect(oneHero.heroIds).toEqual(['720809']); // Nolan
     expect(oneHero.paybackHours).not.toBeNull();
     expect(result.paybackHours).not.toBeNull();
-    expect(oneHero.paybackHours!).toBeLessThan(result.paybackHours!);
-    // Bellatrix, +9.87%, 42,000 gold, 1.61h — recorded, not hardcoded as the
-    // pass/fail bar; the strict inequalities above are the actual assertions.
-    expect(oneHero.heroIds).toEqual(['20402']); // Bellatrix
   });
 
   it('the array is cost-ascending, and the joint total is >= the last tier when it changes more heroes', () => {
@@ -112,7 +116,7 @@ describe('re-solved, not truncated', () => {
 
 describe('frontier size tracks |S|, never duplicated, never padded', () => {
   it('|S| = 1 ⇒ frontier: []', () => {
-    const oneId = [heroes.find((h) => h.name === 'Jon')!.id];
+    const oneId = [heroes.find((h) => h.name === 'Nolan')!.id];
     const result = solveFarmRespec({ heroes, account, maxPhase, enabledHeroIds: oneId });
     expect(result.frontier).toHaveLength(0);
   });
@@ -135,7 +139,7 @@ describe('frontier size tracks |S|, never duplicated, never padded', () => {
 
 describe('exactly one searchable hero ⇒ empty frontier (re-asserted from T7)', () => {
   it('a single-hero pool never produces a frontier entry', () => {
-    const oneId = [heroes.find((h) => h.name === 'Jon')!.id];
+    const oneId = [heroes.find((h) => h.name === 'Nolan')!.id];
     const result = solveFarmRespec({ heroes, account, maxPhase, enabledHeroIds: oneId });
     expect(result.frontier).toHaveLength(0);
   });
@@ -184,11 +188,11 @@ describe('each frontier entry is a complete result on its own', () => {
 });
 
 describe('the frontier candidate ranking reproduces the exhaustive answer on the fixture', () => {
-  it("Bellatrix wins the 1-hero tier and Jon+Bellatrix wins the 2-hero tier — the frontier's own verification", () => {
+  it("Nolan wins the 1-hero tier and Sora+Nolan wins the 2-hero tier — the frontier's own verification", () => {
     const result = solveFarmRespec({ heroes, account, maxPhase });
     const [oneHero, twoHero] = result.frontier;
-    expect(oneHero.heroIds).toEqual(['20402']); // Bellatrix
-    expect([...twoHero.heroIds].sort()).toEqual(['20402', '584'].sort()); // Bellatrix + Jon
+    expect(oneHero.heroIds).toEqual(['720809']); // Nolan
+    expect([...twoHero.heroIds].sort()).toEqual(['268800', '720809'].sort()); // Sora + Nolan
   });
 });
 

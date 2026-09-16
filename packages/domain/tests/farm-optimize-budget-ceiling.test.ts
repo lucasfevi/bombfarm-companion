@@ -29,8 +29,9 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 import { holdSuiteUntilInRegime } from './helpers/capture-regime';
 
-/** A capture with no over-spent hero, so the anomaly below is the one this file introduces. */
-const CLEAN_FIXTURE = 'save-20260823-13heroes-crit-points.json';
+/** A capture with no over-spent hero, so the anomaly below is the one this file introduces.
+ *  Isolde's 67 unspent points are under-spend, the opposite of what this file constructs. */
+const CLEAN_FIXTURE = 'save-20260914-9heroes-second-account.json';
 
 holdSuiteUntilInRegime(`sheet-math/${CLEAN_FIXTURE}`, 'sheet');
 
@@ -61,8 +62,8 @@ describe('no proposal exceeds the hero own reoptBudget, even from an over-spent 
     }
   }
 
-  // ONE full solve — 8,000 evaluations, ~5s. The gate cases below are 64 each and carry the
-  // parameter sweep, so the file stays under a second beyond this.
+  // ONE full solve — 8,000 evaluations, ~2s on nine heroes. The gate cases below are 64 each
+  // and carry the parameter sweep, so the file stays under a second beyond this.
   it('the full solve, with every hero over-spent at once', () => {
     const roster = heroes.map((hero) => overSpend(hero, 5));
     expect(budgetOf(roster[0].pts)).toBeGreaterThan(reoptBudget(roster[0].pts, roster[0].level));

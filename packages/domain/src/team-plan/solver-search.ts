@@ -190,6 +190,7 @@ export function evaluateAssignment(
     scoreMemo: budget.scoreMemo,
     farmObjective,
     ignoreFieldCrowding: input.ignoreFieldCrowding,
+    aurasAtCap: input.aurasAtCap,
   };
   const result = evaluateRoster(evalInput);
   // Stop memoising once the cap is reached rather than evicting: the search keeps running and

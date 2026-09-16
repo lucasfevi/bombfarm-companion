@@ -4,8 +4,9 @@ import type { Lang } from '@/shared/i18n';
 
 import { formatCompactNumber, formatNumber } from '@/shared/lib/format-number';
 import { useAppLang } from '@/shared/context/app-lang';
-import { cn } from '@bombfarm/ui';
+import { Tooltip, cn } from '@bombfarm/ui';
 import { usePlannerStore, selectAdvisorPipeline, selectBestStat, selectBestGainPct } from '@/shared/stores';
+import { MetricValue } from './hero-strip-metric-value';
 
 const metricLabelClass = 'text-[9px] font-bold leading-none tracking-[0.08em] text-muted uppercase';
 const metricValueClass = 'font-mono text-sm font-semibold leading-none tabular-nums';
@@ -28,39 +29,35 @@ export function HeroStripMetrics() {
   const fmtCompact = (value: number) => formatCompactNumber(value, lang, 1);
 
   return (
-    <div
-      className={cn(
-        'flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-2.5 py-1.5 xl:border-r xl:border-b-0',
-        railDividerClass,
-      )}
-    >
-      <div className="flex min-w-13 flex-col gap-0.5">
-        <span className={metricLabelClass}>{t.metricSustained}</span>
-        <strong className={metricValueClass} title={formatNumber(dps, lang, 0)}>
-          {fmtCompact(dps)}
-        </strong>
+    <Tooltip.Provider delay={200} closeDelay={80}>
+      <div
+        className={cn(
+          'flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-2.5 py-1.5 xl:border-r xl:border-b-0',
+          railDividerClass,
+        )}
+      >
+        <div className="flex min-w-13 flex-col gap-0.5">
+          <span className={metricLabelClass}>{t.metricSustained}</span>
+          <MetricValue compact={fmtCompact(dps)} full={formatNumber(dps, lang, 0)} className={metricValueClass} />
+        </div>
+        <div className="flex min-w-13 flex-col gap-0.5">
+          <span className={metricLabelClass}>{t.metricActive}</span>
+          <MetricValue compact={fmtCompact(active)} full={formatNumber(active, lang, 0)} className={metricValueClass} />
+        </div>
+        <div className="flex min-w-13 flex-col gap-0.5">
+          <span className={metricLabelClass}>{t.metricUptime}</span>
+          <strong className={metricValueClass}>{formatNumber(uptime, lang, 1)}%</strong>
+        </div>
+        <div className="flex min-w-14 flex-col gap-0.5">
+          <span className={metricLabelClass}>{t.metricNextPoint}</span>
+          <strong className={cn(metricValueClass, 'text-accent')}>{t.statFull[bestStat]}</strong>
+          <em className={metricEmClass}>{formatSignedGainPct(bestGainPct, lang)}</em>
+        </div>
+        <div className="flex min-w-13 flex-col gap-0.5">
+          <span className={metricLabelClass}>{t.metricHit}</span>
+          <MetricValue compact={fmtCompact(predHit)} full={formatNumber(predHit, lang, 0)} className={metricValueClass} />
+        </div>
       </div>
-      <div className="flex min-w-13 flex-col gap-0.5">
-        <span className={metricLabelClass}>{t.metricActive}</span>
-        <strong className={metricValueClass} title={formatNumber(active, lang, 0)}>
-          {fmtCompact(active)}
-        </strong>
-      </div>
-      <div className="flex min-w-13 flex-col gap-0.5">
-        <span className={metricLabelClass}>{t.metricUptime}</span>
-        <strong className={metricValueClass}>{formatNumber(uptime, lang, 1)}%</strong>
-      </div>
-      <div className="flex min-w-14 flex-col gap-0.5">
-        <span className={metricLabelClass}>{t.metricNextPoint}</span>
-        <strong className={cn(metricValueClass, 'text-accent')}>{t.statFull[bestStat]}</strong>
-        <em className={metricEmClass}>{formatSignedGainPct(bestGainPct, lang)}</em>
-      </div>
-      <div className="flex min-w-13 flex-col gap-0.5">
-        <span className={metricLabelClass}>{t.metricHit}</span>
-        <strong className={metricValueClass} title={formatNumber(predHit, lang, 0)}>
-          {fmtCompact(predHit)}
-        </strong>
-      </div>
-    </div>
+    </Tooltip.Provider>
   );
 }

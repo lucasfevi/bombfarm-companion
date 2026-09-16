@@ -56,6 +56,8 @@ export const en = {
   heroesAbilityFilterLabel: "Filter by ability",
   heroesAbilityFilterOption: "Only heroes with {ability}",
   heroesAbilityFilterAbsent: "No hero here has {ability}",
+  levelStepUp: "Increase level",
+  levelStepDown: "Decrease level",
 };
 
 export const pt: typeof en = {
@@ -113,4 +115,6 @@ export const pt: typeof en = {
   heroesAbilityFilterLabel: "Filtrar por habilidade",
   heroesAbilityFilterOption: "Só heróis com {ability}",
   heroesAbilityFilterAbsent: "Nenhum herói aqui tem {ability}",
+  levelStepUp: "Aumentar nível",
+  levelStepDown: "Diminuir nível",
 };

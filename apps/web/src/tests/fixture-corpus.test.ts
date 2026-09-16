@@ -47,15 +47,15 @@ function sha256(path: string): string {
  * that stops being true).
  */
 const COMPUTED_PATH_ALLOWLIST: Record<string, string> = {
-  // Domain-only by design. Its reason for existing is the farm RANKING discrimination — a roster
-  // holding both one-shotting and non-one-shotting heroes at the same phase (issue #171) — and
-  // that scorer has no web-side suite of its own. Naming it in a web test purely to satisfy this
-  // sweep would be the contrived cross-tree copy the corpus guards exist to prevent. Its live
-  // readers are `packages/domain/tests/farm-point-rank.test.ts` (via `FARM_RANK_FIXTURE`),
-  // `team-plan-step-monotonicity.test.ts` (via `TEAM_PLAN_LARGE_FIXTURE`) and the corpus sweep in
+  // Domain-only by design. Out of regime for `sheet` since 2026-09-02, it is read for its SHAPE
+  // — a rank-20 ponta_diamante carrier beside naked young heroes — by the ability suites, which
+  // have no web-side twin. Naming it in a web test purely to satisfy this sweep would be the
+  // contrived cross-tree copy the corpus guards exist to prevent. Its live readers are
+  // `packages/domain/tests/abilities-pass.test.ts`, `ability-gain.test.ts` and
+  // `team-aura-deltas.test.ts` (via `FARM_RANK_FIXTURE`) and the corpus sweep in
   // `points-within-level-budget.test.ts`, and the domain-side orphan sweep holds it to that.
   'save-20260825-11heroes-one-shot-spread.json':
-    'read only by packages/domain tests (farm-point-rank, team-plan-step-monotonicity, points-within-level-budget); no web-side scorer suite exists to name it',
+    'read only by packages/domain tests (abilities-pass, ability-gain, team-aura-deltas, points-within-level-budget); no web-side ability suite exists to name it',
   // Domain-only for the same reason. It was captured for the account-fidelity schema — it is the
   // only committed capture carrying the game's `soulbound` flag, and it witnesses that optional
   // escape both ways so it cannot go dead. Schema fingerprinting has no web-side surface at all,

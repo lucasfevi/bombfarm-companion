@@ -32,8 +32,9 @@ describe('goldGainPct / chestsGainPct — signed, never clamped', () => {
     expect(result.chestsGainPct).toBeGreaterThan(0);
   });
 
-  // RE-ASKED on the 2026-08-19 roster (issue #206): goldGainPct -14.59%, chestsGainPct +42.64%.
-  // The finding is the SIGN, not the magnitude, and the sign survived the change of account.
+  // goldGainPct -1.75%, chestsGainPct +9.54% on this roster; -14.59% and +42.64% on the same
+  // account's 2026-08-19 capture. The finding is the SIGN, not the magnitude, and the sign
+  // survives the change of capture.
   it('a LOSS: the chests objective trades gold away — goldGainPct is NEGATIVE, not clamped to 0', () => {
     const result = solveFarmRespec({ heroes, account, objective: { kind: 'chests' }, maxPhase });
     expect(result.proposedGoldPerHour).toBeLessThan(result.currentGoldPerHour);

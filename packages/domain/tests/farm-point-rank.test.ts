@@ -1,19 +1,22 @@
 /**
  * The farm-mode next-point scorer. Every case here is measured on
- * `save-20260825-11heroes-one-shot-spread.json` (pool = all 11 heroes, gold objective, return bonus
- * off, `maxPhase 42` unless stated) — figures are recorded from a real run, not hand-derived.
+ * `save-20260914-20heroes-phase101.json` (pool = all 20 heroes, gold objective, return bonus off,
+ * `maxPhase 42` unless stated) — figures are recorded from a real run, not hand-derived.
  *
- * RE-POINTED off `save-20260813-5heroes.json` (issues #171, #206). Two things forced it, and they
- * are the same thing seen from either end. That capture is out of regime for `sheet` math
- * (`helpers/capture-regime.ts`), so under the corpus's admissibility rule no assertion in this
- * file could legitimately read a number off it. And independently, its roster had stopped being
- * able to state this file's central claim: the 2026-08-23 patch moved Bellatrix into the one-shot
- * regime and Perrin across the attack/energy boundary, leaving no hero on the far side of either
- * contrast, and seven tests disabled recording that.
+ * The roster holds both sides of the one-shot contrast at once: thirteen geared heroes at
+ * L40–L151 that one-shot a phase-42 prop and seven naked ones at L1–L24 that do not. Two things
+ * about the set-up are deliberate. The seven are `battle_allowed: false` on the capture, so the
+ * pool is passed explicitly as every id rather than taken from the default (which would drop
+ * them and leave nothing on the far side of the contrast). And the phase is 42 rather than the
+ * account's own 101: at 101 none of the thirteen one-shots any more (hits-to-kill 1.03–6.6), so
+ * the contrast the file is named for exists only below the account's frontier.
  *
- * The 11-hero capture holds both sides of both contrasts on one roster — nine geared heroes that
- * one-shot a phase-42 prop, and two naked young ones (Hale L2, Joric L5) that do not — so the
- * discrimination is restored with real subjects rather than pinned flips.
+ * A pool of 20 over 9 field slots is also a saturated field, which shows in the numbers: the
+ * uptime an energy point buys is rationed by the FIFO queue, so energy ranks low on most geared
+ * heroes and goes negative on the weak ones. The 11-hero 2026-08-25 roster this file was
+ * measured on before ranked energy first on eight of nine one-shotters; that claim is a property
+ * of a pool the field can seat, not of the scorer, and it is recorded here as what this roster
+ * measures instead.
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -22,20 +25,22 @@ import {
   FARM_RANK_MAX_EVALUATIONS,
   type FarmPointRankResult,
 } from '@bombfarm/domain/farm-point-rank';
+import { computeHeroFarmFacts, computeSquadFarmFacts, computeFarmRateRow } from '@bombfarm/domain/farm-rate';
 import { pipelineForHero } from '@bombfarm/domain/roster-dps';
 import { RANK_STATS } from '@bombfarm/domain/model';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { holdSuiteUntilInRegime } from './helpers/capture-regime';
-import { FARM_RANK_FIXTURE, loadFarmRateFixture } from './helpers/farm-rate-fixtures';
+import { FARM_POINT_RANK_FIXTURE, loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
 // Module scope, and throwing rather than skipping: every test below reads a number off this one
 // capture, so there is no per-test judgement to make and nothing to skip into. If the fixture is
 // ever swapped for one behind a boundary, this file fails loudly instead of asserting a stale
 // number — which is the failure mode `helpers/capture-regime.ts` exists to close.
-holdSuiteUntilInRegime(`sheet-math/${FARM_RANK_FIXTURE}`, 'sheet');
+holdSuiteUntilInRegime(`sheet-math/${FARM_POINT_RANK_FIXTURE}`, 'sheet');
 
-const { heroes, account, maxPhase } = loadFarmRateFixture(FARM_RANK_FIXTURE);
-const bases = computeHeroFarmBases({ heroes, account });
+const { heroes, account, maxPhase } = loadFarmRateFixture(FARM_POINT_RANK_FIXTURE);
+const POOL_IDS = heroes.map((hero) => hero.id);
+const bases = computeHeroFarmBases({ heroes, account, enabledHeroIds: POOL_IDS });
 
 function heroByName(name: string): HeroRecord {
   const hero = heroes.find((h) => h.name === name);
@@ -64,10 +69,32 @@ function gainOf(result: FarmPointRankResult, stat: string): number {
   return result.rows!.find((row) => row.stat === stat)!.gainPct;
 }
 
-/** The nine geared heroes that clear a phase-42 prop in one hit on this roster. */
-const ONE_SHOTTERS = ['Minato', 'Jon', 'Bellatrix2', 'IDK', 'WB #1', 'WB #2', 'WB #3', 'LE + FO', 'Bellatrix'];
-/** The two naked young heroes that do not. */
-const NON_ONE_SHOTTERS = ['Hale', 'Joric'];
+/** Whether `hero`, farming alone, clears every phase-42 prop in one hit. */
+function oneShotsPhase42(hero: HeroRecord): boolean {
+  const facts = computeHeroFarmFacts({ heroes, account, enabledHeroIds: [hero.id] });
+  return computeFarmRateRow(42, computeSquadFarmFacts(facts, account))!.oneShot;
+}
+
+/** The thirteen geared heroes — exactly the capture's `battle_allowed` half. Two are named Torin. */
+const ONE_SHOTTERS = heroes.filter((hero) => hero.battleAllowed !== false);
+/** The seven naked ones, L1–L24, all benched on the capture. */
+const NON_ONE_SHOTTERS = heroes.filter((hero) => hero.battleAllowed === false);
+/**
+ * Naked and NOT one-shotting (hits-to-kill 1.77–11.2 at phase 42), yet the next attack point
+ * scores exactly 0 on two of them: the gold objective is a step function in damage, and a single
+ * point does not carry BP 03 or BP 05 across a hits-to-kill step. The other five do cross one.
+ */
+const NAKED_ATTACK_POSITIVE = ['BP 01', 'BP 02', 'BP 04', 'Bram', 'Gale'];
+const NAKED_ATTACK_ON_A_STEP = ['BP 03', 'BP 05'];
+
+describe('the roster holds both sides of the one-shot contrast at phase 42', () => {
+  it('thirteen geared heroes one-shot a phase-42 prop on their own; the seven naked ones do not', () => {
+    expect(ONE_SHOTTERS).toHaveLength(13);
+    expect(NON_ONE_SHOTTERS).toHaveLength(7);
+    for (const hero of ONE_SHOTTERS) expect(oneShotsPhase42(hero), `${hero.name} L${hero.level}`).toBe(true);
+    for (const hero of NON_ONE_SHOTTERS) expect(oneShotsPhase42(hero), `${hero.name} L${hero.level}`).toBe(false);
+  });
+});
 
 describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts the two ranking modes', () => {
   const bellatrix = heroByName('Bellatrix');
@@ -91,49 +118,48 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
   });
 
   /**
-   * THE OTHER HALF OF THE CONTRAST, restored (issue #171). An attack point scoring 0 only means
-   * "this hero already one-shots" if some hero on the same roster, at the same phase, scores it
-   * above 0 — otherwise a regression that zeroed attack unconditionally would read as a squad of
-   * one-shotters and pass. These two are that control.
+   * THE OTHER HALF OF THE CONTRAST. An attack point scoring 0 only means "this hero already
+   * one-shots" if some hero on the same roster, at the same phase, scores it above 0 — otherwise
+   * a regression that zeroed attack unconditionally would read as a squad of one-shotters and
+   * pass. These five are that control.
    */
-  it.each(NON_ONE_SHOTTERS)('%s does NOT one-shot at maxPhase 42 — an attack point scores strictly above 0', (name) => {
+  it.each(NAKED_ATTACK_POSITIVE)('%s does NOT one-shot at maxPhase 42 — an attack point scores strictly above 0', (name) => {
     const result = rankNextPointForFarm({ bases, account, heroId: heroByName(name).id, maxPhase: 42 });
     expect(result.outcome).toBe('ranked');
     expect(gainOf(result, 'attack')).toBeGreaterThan(0);
     assertResultIsFinite(result);
   });
 
-  it('both sides are populated at maxPhase 42 — nine heroes at exactly 0, two strictly above it', () => {
+  it('both sides are populated at maxPhase 42 — the thirteen one-shotters plus the two naked heroes sitting on a hits-to-kill step score exactly 0, five naked heroes strictly above it', () => {
     const gains = new Map(
-      heroes.map((hero) => [
-        hero.name,
-        gainOf(rankNextPointForFarm({ bases, account, heroId: hero.id, maxPhase: 42 }), 'attack'),
-      ]),
+      heroes.map((hero) => [hero.id, gainOf(rankNextPointForFarm({ bases, account, heroId: hero.id, maxPhase: 42 }), 'attack')]),
     );
-    expect([...gains].filter(([, gain]) => gain === 0).map(([name]) => name).sort()).toEqual([...ONE_SHOTTERS].sort());
-    expect([...gains].filter(([, gain]) => gain > 0).map(([name]) => name).sort()).toEqual([...NON_ONE_SHOTTERS].sort());
+    const nameOf = (id: string) => heroes.find((hero) => hero.id === id)!.name;
+    const zero = [...gains].filter(([, gain]) => gain === 0).map(([id]) => nameOf(id)).sort();
+    const positive = [...gains].filter(([, gain]) => gain > 0).map(([id]) => nameOf(id)).sort();
+    expect(zero).toEqual([...ONE_SHOTTERS.map((hero) => hero.name), ...NAKED_ATTACK_ON_A_STEP].sort());
+    expect(positive).toEqual([...NAKED_ATTACK_POSITIVE].sort());
+    for (const name of NAKED_ATTACK_ON_A_STEP) expect(oneShotsPhase42(heroByName(name))).toBe(false);
   });
 
-  it('farm ranks ENERGY first for Bellatrix at maxPhase 42 — the order INVERTED when cadence stopped assuming every plant is walk-bound', () => {
+  it('farm ranks SPEED first for every one-shotter at maxPhase 42, energy for none — the field is saturated, so cadence beats uptime', () => {
+    // Speed shortens every walk-bound plant a hero makes while she holds a field slot; energy
+    // buys more field seconds, but with twenty heroes queued for nine slots those seconds are
+    // rationed by the queue rather than added to the squad. Bellatrix's full order is pinned as
+    // the recorded shape: cdr a close second (the fuse-bound plants speed cannot help are the
+    // ones CDR can), energy a distant third, and the four damage-side keys tied at 0.
     const rows = rankNextPointForFarm({ bases, account, heroId: bellatrix.id, maxPhase: 42 }).rows!;
-    // This claim used to be "speed first, energy second". The inversion is the point, and it is a
-    // consequence of fixing the cadence model rather than of tuning anything: the retired
-    // `cycle = max(fuse, E_D_CELLS / walkSpeed)` put EVERY plant on the walk branch, so a speed
-    // point shortened every cycle. Averaging over the measured hop distribution, roughly 45% of
-    // plants are fuse-bound, where speed buys nothing — which is also why `cdr` stopped scoring
-    // exactly 0: the fuse-bound mass speed cannot help is precisely the mass CDR can.
-    //
-    // On THIS roster speed edges energy for Bellatrix specifically (she is the fastest clearer of
-    // the nine), so the energy-first claim is asserted where it holds — over the eight other
-    // one-shotters — and her own order is pinned as the exception rather than smoothed over.
-    expect(rows.map((r) => r.stat)).toEqual(['speed', 'energy', 'cdr', 'attack', 'critDmg', 'critChance', 'penetration']);
-    const energyFirst = ONE_SHOTTERS.filter(
-      (name) => rankNextPointForFarm({ bases, account, heroId: heroByName(name).id, maxPhase: 42 }).rows![0].stat === 'energy',
+    expect(rows.map((r) => r.stat)).toEqual(['speed', 'cdr', 'energy', 'attack', 'critDmg', 'critChance', 'penetration']);
+    const firstStatById = new Map(
+      ONE_SHOTTERS.map((hero) => [hero.id, rankNextPointForFarm({ bases, account, heroId: hero.id, maxPhase: 42 }).rows![0].stat] as const),
     );
-    expect(energyFirst.sort()).toEqual(ONE_SHOTTERS.filter((name) => name !== 'Bellatrix').sort());
+    expect([...firstStatById.values()].every((stat) => stat === 'speed')).toBe(true);
   });
 
-  it('DPS mode scores attack first and speed exactly 0 on a hero farm scores attack at 0 (the inversion)', () => {
+  it('DPS mode scores attack first on a hero farm scores attack at 0 (the inversion)', () => {
+    // The speed half of this inversion is gone: DPS mode prices speed on every hero of every
+    // roster now (0.145% on Jon here), so "speed exactly 0 under DPS" is not a claim any capture
+    // can make. What survives is the attack half, which is the one that discriminates the modes.
     const jon = heroByName('Jon');
     expect(gainOf(rankNextPointForFarm({ bases, account, heroId: jon.id, maxPhase: 42 }), 'attack')).toBe(0);
 
@@ -142,20 +168,17 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
     const dps = pipelineForHero(jon, account, line.phase, line.mitigationPct);
     expect(dps.ranking[0].stat).toBe('attack');
     expect(dps.ranking[0].gainPct).toBeGreaterThan(0);
-    expect(dps.ranking.find((r) => r.stat === 'speed')!.gainPct).toBe(0);
   });
 });
 
 describe('rankNextPointForFarm — anti-"energy always wins" sensor', () => {
   /**
-   * The sensor exists to prove "energy always wins" is false, and it had lost its last subject
-   * (issue #171): the 2026-08-23 patch flipped Perrin L4, the only hero on the old fixture that
-   * ranked attack over energy, onto the energy side. Hale L2 restores it on three phases — a
-   * naked level-2 hero far enough from one-shotting that another point of damage is still the
-   * best thing she can be given.
+   * The sensor exists to prove "energy always wins" is false. Bram L1 — naked, one level, far
+   * enough from one-shotting that another point of damage is still the best thing he can be
+   * given — holds it on three phases, as Hale L2 did on the 2026-08-25 roster.
    */
-  it.each([42, 20, 10])('Hale (not one-shotting): farm ranks attack strictly above energy at maxPhase %i', (mp) => {
-    const result = rankNextPointForFarm({ bases, account, heroId: heroByName('Hale').id, maxPhase: mp });
+  it.each([42, 20, 10])('Bram (not one-shotting): farm ranks attack strictly above energy at maxPhase %i', (mp) => {
+    const result = rankNextPointForFarm({ bases, account, heroId: heroByName('Bram').id, maxPhase: mp });
     expect(result.outcome).toBe('ranked');
     expect(gainOf(result, 'attack')).toBeGreaterThan(gainOf(result, 'energy'));
     expect(result.rows![0].stat).toBe('attack');
@@ -163,24 +186,23 @@ describe('rankNextPointForFarm — anti-"energy always wins" sensor', () => {
 
   /**
    * An energy point on the weakest hero in a queued field is worth LESS THAN NOTHING, and that is
-   * a claim about the FIFO field queue rather than about Hale. Energy buys field uptime; the
-   * queue rations uptime; so stacking it on the hero who clears slowest keeps her holding a slot
+   * a claim about the FIFO field queue rather than about Bram. Energy buys field uptime; the
+   * queue rations uptime; so stacking it on the hero who clears slowest keeps him holding a slot
    * that a faster hero would have converted into more gold. Nothing else in the suite pins a
    * negative marginal value, and it is the one direction a naive "more stat is more output"
    * model can never produce — so it is asserted here rather than left as an observation.
    */
-  it('Hale at maxPhase 42: an energy point is NEGATIVE — the field queue can make uptime cost the squad', () => {
-    const result = rankNextPointForFarm({ bases, account, heroId: heroByName('Hale').id, maxPhase: 42 });
+  it('Bram at maxPhase 42: an energy point is NEGATIVE — the field queue can make uptime cost the squad', () => {
+    const result = rankNextPointForFarm({ bases, account, heroId: heroByName('Bram').id, maxPhase: 42 });
     expect(gainOf(result, 'energy')).toBeLessThan(0);
-    expect(gainOf(result, 'energy')).toBeCloseTo(-0.002392859991595664, 9);
-    // Not a collapse: the same point on every other hero is worth something positive.
-    const others = heroes.filter((h) => h.name !== 'Hale');
-    for (const hero of others) {
-      expect(
-        gainOf(rankNextPointForFarm({ bases, account, heroId: hero.id, maxPhase: 42 }), 'energy'),
-        `${hero.name} energy gain`,
-      ).toBeGreaterThan(0);
-    }
+    expect(gainOf(result, 'energy')).toBeCloseTo(-0.12713347066902747, 9);
+    // Not a collapse: the sign is decided hero by hero. On this saturated field it is negative
+    // on most of the roster, and positive on exactly the four fastest clearers.
+    const positiveEnergy = heroes
+      .filter((hero) => gainOf(rankNextPointForFarm({ bases, account, heroId: hero.id, maxPhase: 42 }), 'energy') > 0)
+      .map((hero) => hero.name)
+      .sort();
+    expect(positiveEnergy).toEqual(['Bellatrix', 'Jon', 'Minato', 'NotJ']);
   });
 });
 
@@ -197,7 +219,7 @@ describe('rankNextPointForFarm — cdr scores SMALL BUT POSITIVE under farm (it 
   // So CDR is no longer free to ignore, but it stays far below speed and energy because it only
   // pays on the short-hop mass. Asserted as a shape (positive, small, never top) rather than
   // per-hero constants: the exact values move with any re-fit of the distribution.
-  it.each(['Bellatrix', 'Jon', 'Hale', 'Joric'])('%s: cdr gainPct >= 0 and never ranks first', (name) => {
+  it.each(['Bellatrix', 'Jon', 'Bram', 'Gale'])('%s: cdr gainPct >= 0 and never ranks first', (name) => {
     const result = rankNextPointForFarm({ bases, account, heroId: heroByName(name).id, maxPhase: 42 });
     const cdr = gainOf(result, 'cdr');
     expect(cdr).toBeGreaterThanOrEqual(0);
@@ -206,7 +228,7 @@ describe('rankNextPointForFarm — cdr scores SMALL BUT POSITIVE under farm (it 
   });
 
   it('at least one fixture hero now scores cdr strictly above 0 — the fuse-bound branch is reachable', () => {
-    const anyPositive = ['Bellatrix', 'Jon', 'Hale', 'Joric'].some(
+    const anyPositive = ['Bellatrix', 'Jon', 'Bram', 'Gale'].some(
       (name) => gainOf(rankNextPointForFarm({ bases, account, heroId: heroByName(name).id, maxPhase: 42 }), 'cdr') > 0,
     );
     expect(anyPositive).toBe(true);
@@ -257,7 +279,7 @@ describe('rankNextPointForFarm — edge/degenerate cases, full tuple', () => {
 
   it('a squad with zero field slots ⇒ noBaseline (no phase is feasible), evaluations 1 under gold', () => {
     const zeroSlots = { ...account, slots: 0 };
-    const zeroSlotBases = computeHeroFarmBases({ heroes, account: zeroSlots });
+    const zeroSlotBases = computeHeroFarmBases({ heroes, account: zeroSlots, enabledHeroIds: POOL_IDS });
     const result = rankNextPointForFarm({
       bases: zeroSlotBases,
       account: zeroSlots,
@@ -277,7 +299,7 @@ describe('rankNextPointForFarm — edge/degenerate cases, full tuple', () => {
 
   it('the same noBaseline squad under a blend objective spends 2 extra evaluations on the frozen scales (3 total)', () => {
     const zeroSlots = { ...account, slots: 0 };
-    const zeroSlotBases = computeHeroFarmBases({ heroes, account: zeroSlots });
+    const zeroSlotBases = computeHeroFarmBases({ heroes, account: zeroSlots, enabledHeroIds: POOL_IDS });
     const result = rankNextPointForFarm({
       bases: zeroSlotBases,
       account: zeroSlots,
@@ -294,7 +316,7 @@ describe('rankNextPointForFarm — edge/degenerate cases, full tuple', () => {
     const jon = heroByName('Jon');
     const degenJon: HeroRecord = { ...jon, birth: jon.birth ? { ...jon.birth, speed: 0, attack: 0 } : jon.birth };
     const mixedHeroes = heroes.map((h) => (h.id === jon.id ? degenJon : h));
-    const mixedBases = computeHeroFarmBases({ heroes: mixedHeroes, account });
+    const mixedBases = computeHeroFarmBases({ heroes: mixedHeroes, account, enabledHeroIds: POOL_IDS });
     const result = rankNextPointForFarm({ bases: mixedBases, account, heroId: bellatrix.id, maxPhase: 42 });
     expect(result.outcome).toBe('ranked');
     expect(result.rows).toHaveLength(RANK_STATS.length);
@@ -411,11 +433,10 @@ describe('rankNextPointForFarm — evaluation budget', () => {
   });
 });
 
-describe('rankNextPointForFarm — finite sweep over every fixture hero and every objective kind', () => {
-  it.each([...ONE_SHOTTERS, ...NON_ONE_SHOTTERS])('%s: never NaN, never Infinity, for gold/chests/blend', (name) => {
-    const hero = heroByName(name);
+describe('rankNextPointForFarm — finite sweep over every fixture hero and every objective kind, up to the account cap', () => {
+  it.each(heroes.map((hero) => [`${hero.name} L${hero.level}`, hero.id]))('%s: never NaN, never Infinity, for gold/chests/blend', (_label, heroId) => {
     for (const objective of [{ kind: 'gold' as const }, { kind: 'chests' as const }, { kind: 'blend' as const, weight: 0.5 }]) {
-      assertResultIsFinite(rankNextPointForFarm({ bases, account, heroId: hero.id, objective, maxPhase }));
+      assertResultIsFinite(rankNextPointForFarm({ bases, account, heroId, objective, maxPhase }));
     }
   });
 });
