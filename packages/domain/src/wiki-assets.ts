@@ -1,6 +1,7 @@
 import catalog from './data/catalog.json' with { type: 'json' };
 import type { Slot } from './gear';
 import type { DropRateId } from './phase-wiki';
+import type { RuneAxis } from './runes';
 
 /**
  * Bundled game art under `public/wiki-assets/`, sourced from the Grimório's static assets.
@@ -156,6 +157,13 @@ export function rarityCrystalSrc(rarityIdx: number): string | null {
   const slug = CRYSTAL_SLUG[Math.round(rarityIdx)];
   if (!slug) return null;
   return `${WIKI_ASSETS_BASE}/icons/crystal_${slug}.png`;
+}
+
+/** Wiki rune icon — one sprite per axis and rarity, filed under the axis code the account read
+ *  uses and the same six rarity words as the keys and the crystals. */
+export function runeIconSrc(axis: RuneAxis, rarityIdx: number): string | null {
+  const slug = RARITY_SLUG[Math.round(rarityIdx)];
+  return slug ? `${WIKI_ASSETS_BASE}/icons/rune_${axis}_${slug}.png` : null;
 }
 
 /** Wiki ability icon — filename matches ability id (e.g. `ponta_diamante`). */

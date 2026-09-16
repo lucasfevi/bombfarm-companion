@@ -23,7 +23,8 @@ export const heroPtBR: HeroCopy = {
   heroDetailRunesTitle: "Runas",
   heroDetailRunesTip:
     "Bônus temporários que o jogo está aplicando a este herói agora. Todos os números desta tela contam com eles, e cada um some quando o tempo de jogo acaba.",
-  heroDetailRuneValue: "+{pct}% · {hours} h de jogo restantes",
+  heroDetailRuneStrength: "+{pct}%",
+  heroDetailRunePlayLeft: "{hours}h de bônus restantes",
   heroDetailRuneAxisXp: "XP",
   heroDetailRuneAxisGold: "Ouro",
 

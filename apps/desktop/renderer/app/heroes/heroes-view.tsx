@@ -37,6 +37,7 @@ import {
   HeroAbilitiesPanel,
   HeroCopyProvider,
   HeroIdentityRollPanel,
+  HeroRunesPanel,
   HeroPickerDialogView,
   NextPointRanking,
   PointsTable,
@@ -541,6 +542,8 @@ function HeroDetailTabs({
                 onClearOverride={onClearOverride}
                 lang={lang}
               />
+              {/* On the record, not a figure: a still-blocked hero shows its runes all the same. */}
+              <HeroRunesPanel hero={active.hero} lang={lang} statLabel={boundStatLabel} />
               {figures.kind !== 'at' ? <FiguresNotice figures={figures} /> : null}
               {/* The combat sheet those figures were computed from — beside them rather than at the
                   bottom of Points, where it was the one phase-scoped panel in a stage of sheet

@@ -5,7 +5,6 @@ import { MAX_STARS } from '@bombfarm/domain/gear';
 import { heroAbilitySlotsUsed } from '@bombfarm/domain/hero-abilities';
 import { RARITIES, type SheetKey } from '@bombfarm/domain/planner-constants';
 import type { RollQualityReport } from '@bombfarm/domain/roll-quality';
-import { RUNE_AXIS_SHEET_KEY, runesOf, type HeroRune } from '@bombfarm/domain/runes';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import {
   HeroAbilityIcons,
@@ -200,13 +199,6 @@ function GradeRailView({ mean, railLetter }: { mean: number; railLetter: string 
  * `useHeroCopy()`: that context carries the host-supplied `HeroPanelCopy`, and none of the roll
  * vocabulary below is a string a host already owns.
  */
-/** The statistic a rune multiplies, in the host's own stat vocabulary; xp and gold are not statistics. */
-function runeAxisLabel(rune: HeroRune, t: HeroCopy, statLabel: (key: SheetKey) => string): string {
-  const key = RUNE_AXIS_SHEET_KEY[rune.axis];
-  if (key !== null) return statLabel(key);
-  return rune.axis === 'xp' ? t.heroDetailRuneAxisXp : t.heroDetailRuneAxisGold;
-}
-
 export function HeroIdentityRollPanel({
   hero,
   rollQuality,
@@ -237,7 +229,6 @@ export function HeroIdentityRollPanel({
     (value) => `${formatNumber(value, lang, 1)}%`,
   );
 
-  const runes = runesOf(hero);
   const rarityIndex = RARITIES.indexOf(hero.rarity);
   const starCount = Math.max(0, Math.min(MAX_STARS, Math.round(hero.stars)));
   const abilitySlots = heroAbilitySlotsUsed(hero.abilities);
@@ -343,28 +334,6 @@ export function HeroIdentityRollPanel({
             ))}
           </div>
         </div>
-
-        {runes.length > 0 ? (
-          <>
-            <h3 className={cn(sectionTitleClass, 'mt-5')}>{t.heroDetailRunesTitle}</h3>
-            <p className={cn(tipClass, 'mt-1.5')}>{t.heroDetailRunesTip}</p>
-            <StatList
-              className="mt-1"
-              items={runes.map((rune, index) => ({
-                id: `${rune.axis}-${String(index)}`,
-                label: runeAxisLabel(rune, t, statLabel),
-                value: (
-                  <span className={numericClass}>
-                    {sub(t.heroDetailRuneValue, {
-                      pct: formatNumber(rune.strengthPct, lang, 0),
-                      hours: formatNumber(rune.playSecondsLeft / 3600, lang, 0),
-                    })}
-                  </span>
-                ),
-              }))}
-            />
-          </>
-        ) : null}
 
         <h3 className={cn(sectionTitleClass, 'mt-5')}>{t.heroDetailRollTitle}</h3>
         <p className={cn(tipClass, 'mt-1.5')}>{t.heroDetailRollPermanent}</p>

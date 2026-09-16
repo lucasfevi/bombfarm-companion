@@ -98,6 +98,7 @@ under an app's own public root.
 | `HeroAvatar` | Save `skin` portrait inside square `ArtFrame` (display map swaps wiki `hero2`/`hero3` vs save skins 1/2) | composes `ArtFrame` |
 | `ItemIcon` | Catalog item PNG in portrait frame + halo level / `+N` | composes `ArtFrame` + `iconMetaGlyphRecipe` |
 | `AbilityIcon` | Wiki ability PNG in neutral square frame + halo `n/20` | `game-art.recipe.ts` → `abilityIconRecipe` + `iconMetaGlyphRecipe` |
+| `RuneIcon` | Wiki rune PNG (one per axis × rarity) on the game's rarity plate, square | composes `ArtFrame` |
 | `HeroAbilityIcons` | Roster row of pool abilities + name/`n/20` tooltip | composes `AbilityIcon` + DS `Tooltip` |
 | `HeroGearIcons` | Roster row of all 8 slots (item or empty) + slot/item tooltip | composes `ItemIcon` + DS `Tooltip` |
 

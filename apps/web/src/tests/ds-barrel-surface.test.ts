@@ -323,6 +323,9 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'ItemIcon',
   'ItemIdentity',
   'PropIcon',
+  // RuneIcon (2026-09-16): a rune's sprite on its rarity plate, for the Combat tab's runes panel
+  // and the strip its folded header keeps. Same tile vocabulary as ItemIcon; one look.
+  'RuneIcon',
   'SpriteLoop',
   // SteamGlyph (2026-09-10): the Steam mark was private to MarketPrice until the hero identity
   // panel's market tile became a link to the same place. One destination, one mark.
