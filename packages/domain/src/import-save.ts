@@ -458,7 +458,7 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
     ...result,
     warnings: [
       ...result.warnings,
-      `This save is missing account field(s) the planner needs (${accountMissingRequired.join(', ')}) ` +
+      'This save is missing account field(s) the planner needs ' +
         '— export a fresh save from the game and import it again.',
     ],
     accountMissingRequired,
