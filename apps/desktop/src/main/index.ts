@@ -30,6 +30,7 @@ import {
   type MarketQuoteCurrency,
   type MarketQuoteResult,
   type MarketQuoteTarget,
+  type PvpFilmView,
   type PvpHistoryResult,
   type SettingsWriteResult,
   type UpdateStatus,
@@ -450,6 +451,7 @@ function registerIpcHandlers(): void {
     'forge:inject': (events: unknown) => forgeInjector?.inject(events) ?? { ok: false },
     'pvp:history': listPvpHistory,
     'pvp:refresh': (): AccountReadResult => pvpReader?.refresh() ?? { ok: false, reason: 'unavailable' },
+    'pvp:film': (): PvpFilmView | null => null,
     'window:minimize': () => {
       mainWindow?.minimize();
       return null;

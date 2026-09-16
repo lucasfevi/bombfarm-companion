@@ -176,7 +176,7 @@ export function DuelHistoryPanel({
   );
 }
 
-function DuelRow({ row, onOpenReplay, open }: { row: PvpDuelRow; onOpenReplay?: (row: PvpDuelRow) => void; open: boolean }) {
+function DuelRow({ row, onOpenReplay, open }: { row: PvpDuelRow; onOpenReplay: ((row: PvpDuelRow) => void) | undefined; open: boolean }) {
   const t = useCopy();
   const { locale } = useLocale();
 
