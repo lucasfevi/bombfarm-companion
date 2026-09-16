@@ -279,7 +279,9 @@ describe('the trigger', () => {
     expect(html).toContain('aria-label="Forest Helm +8. Lv 100 Legendary"');
     expect(html).toContain('<i>icon</i>');
     expect(html).not.toContain('<button');
-    // The card mounts on hover, not at rest.
+    // At rest the trigger is a bare span — no tooltip tree, no card — until a pointer arrives.
+    expect(html).toContain('data-slot="peek-trigger"');
+    expect(html).not.toContain('data-slot="tooltip-trigger"');
     expect(html).not.toContain('data-peek-card');
   });
 

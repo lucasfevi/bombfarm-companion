@@ -161,7 +161,7 @@ test.describe('core client flow', () => {
     await expect(picker.getByRole('columnheader', { name: /^Equip\./i })).toBeVisible();
 
     const gearCell = picker.locator('tbody tr').first().locator('td[data-roster-wrap]').first();
-    await expect(gearCell.locator('[data-slot="tooltip-trigger"]')).toHaveCount(8);
+    await expect(gearCell.locator('[data-slot="tooltip-trigger"], [data-slot="peek-trigger"]')).toHaveCount(8);
   });
 
   /**

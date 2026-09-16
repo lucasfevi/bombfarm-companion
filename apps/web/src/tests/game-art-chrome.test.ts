@@ -197,7 +197,10 @@ describe('hero ability icons', () => {
     expect(src).toContain('stopRowActivation');
     const frame = readGameArt('peek/peek-frame.tsx');
     expect(frame).toContain('tabIndex={-1}');
-    expect(frame).toContain("render={<span role={label === undefined ? undefined : 'img'} />}");
+    expect(frame).toContain('render={<span role={role} />}');
+    // A bare span until a pointer arrives: the tooltip tree is not paid for by icons nobody hovers.
+    expect(frame).toContain('data-slot="peek-trigger"');
+    expect(frame).toContain('onPointerEnter');
   });
 
   it('shows n/max progress at lg size matching gear unless a caller asks for another', () => {
