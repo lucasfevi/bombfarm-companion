@@ -23,8 +23,9 @@ name: Line endings
 # apps/web/out and apps/desktop/dist removed). Do not add one.
 #
 # tools/line-endings.test.mjs also runs under local `pnpm test` (root vitest, tools
-# project) and incidentally under ci-desktop.yml/ci-fidelity.yml when their filters
-# match. This workflow is the unconditional surface, not the only one.
+# project), incidentally under ci-desktop.yml/ci-fidelity.yml when their filters match,
+# and under repo-guards.yml, which runs the whole tools project unfiltered but needs a
+# build first. This workflow is the cheap unconditional surface, not the only one.
 
 on:
   workflow_dispatch:
