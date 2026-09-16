@@ -12,7 +12,11 @@ price everything from it.
 price now, rather than the snapshot's, gets one `priceoverview` call from the Electron main
 process — which is Node, so the browser's same-origin rule does not apply to it. It is one call
 for one item, it carries nothing about the account, and it never widens: everything else on both
-apps still comes from the published file.
+apps still comes from the published file. The currency that call asks for is the Settings
+page's **Market → Currency for refreshed prices** (BRL unless changed); the ids Steam takes for
+each are the `STEAM_CURRENCIES` table in `@bombfarm/pricing`, and a test holds that table and the
+selector's option list to the same set, because an id Steam does not know is not refused — it
+answers in USD.
 
 The web planner has no such affordance and cannot have one. Steam sends no
 `Access-Control-Allow-Origin`, so a browser cannot call it at all, and the planner is a static

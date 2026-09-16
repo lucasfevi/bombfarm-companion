@@ -1,6 +1,7 @@
 import type { AppSettings } from './index.js';
 import { DEFAULT_SETTINGS } from './index.js';
 import { isAppLocale } from './locale.js';
+import { isMarketQuoteCurrency, type MarketQuoteCurrency } from './market.js';
 
 type BooleanFlag = 'alwaysOnTopMain' | 'alwaysOnTopMini' | 'forgeWritesEnabled' | 'restartGameOnExit';
 
@@ -19,13 +20,26 @@ function readBooleanFlag(record: Record<string, unknown>, key: BooleanFlag): boo
   return 'invalid';
 }
 
+/** A code this build no longer offers is not malformed storage: the rest of the row still holds,
+ *  and only the currency falls back. Anything that is not a string at all is. */
+function readMarketQuoteCurrency(record: Record<string, unknown>): MarketQuoteCurrency | 'invalid' {
+  const value = record.marketQuoteCurrency;
+  if (value === undefined) {
+    return DEFAULT_SETTINGS.marketQuoteCurrency;
+  }
+  if (typeof value !== 'string') {
+    return 'invalid';
+  }
+  return isMarketQuoteCurrency(value) ? value : DEFAULT_SETTINGS.marketQuoteCurrency;
+}
+
 export function migrateStoredSettings(parsed: unknown): AppSettings | null {
   if (!isPlainObject(parsed)) {
     return null;
   }
 
   const schemaVersion = parsed.schemaVersion;
-  if (schemaVersion !== 1 && schemaVersion !== 2 && schemaVersion !== 3) {
+  if (schemaVersion !== 1 && schemaVersion !== 2 && schemaVersion !== 3 && schemaVersion !== 4) {
     return null;
   }
 
@@ -35,12 +49,8 @@ export function migrateStoredSettings(parsed: unknown): AppSettings | null {
 
   if (schemaVersion === 1) {
     return {
-      schemaVersion: 3,
+      ...DEFAULT_SETTINGS,
       locale: parsed.locale,
-      alwaysOnTopMain: false,
-      alwaysOnTopMini: false,
-      forgeWritesEnabled: false,
-      restartGameOnExit: false,
     };
   }
 
@@ -48,22 +58,25 @@ export function migrateStoredSettings(parsed: unknown): AppSettings | null {
   const miniFlag = readBooleanFlag(parsed, 'alwaysOnTopMini');
   const forgeWritesFlag = readBooleanFlag(parsed, 'forgeWritesEnabled');
   const restartGameFlag = readBooleanFlag(parsed, 'restartGameOnExit');
+  const marketQuoteCurrency = readMarketQuoteCurrency(parsed);
 
   if (
     mainFlag === 'invalid' ||
     miniFlag === 'invalid' ||
     forgeWritesFlag === 'invalid' ||
-    restartGameFlag === 'invalid'
+    restartGameFlag === 'invalid' ||
+    marketQuoteCurrency === 'invalid'
   ) {
     return null;
   }
 
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     locale: parsed.locale,
     alwaysOnTopMain: mainFlag === 'missing' ? DEFAULT_SETTINGS.alwaysOnTopMain : mainFlag,
     alwaysOnTopMini: miniFlag === 'missing' ? DEFAULT_SETTINGS.alwaysOnTopMini : miniFlag,
     forgeWritesEnabled: forgeWritesFlag === 'missing' ? DEFAULT_SETTINGS.forgeWritesEnabled : forgeWritesFlag,
     restartGameOnExit: restartGameFlag === 'missing' ? DEFAULT_SETTINGS.restartGameOnExit : restartGameFlag,
+    marketQuoteCurrency,
   };
 }

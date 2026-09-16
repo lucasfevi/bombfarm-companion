@@ -14,5 +14,11 @@ export const searchSelectInputClass =
 /** Both the empty state and the "more matches than fit" note. */
 export const searchSelectNoteClass = 'shrink-0 px-2.5 py-2 text-[12px] text-muted';
 
+/**
+ * Base UI keeps `Combobox.Empty` mounted while rows match — it is the live region that announces
+ * the count — so the note's padding would otherwise draw as a blank row above the list.
+ */
+export const searchSelectEmptyClass = `${searchSelectNoteClass} empty:py-0`;
+
 /** A wide list of coordinates reads badly at the trigger's own width. */
 export const searchSelectPopupClass = 'min-w-[max(var(--anchor-width),15rem)]';

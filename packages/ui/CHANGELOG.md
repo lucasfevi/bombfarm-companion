@@ -1,5 +1,11 @@
 # @bombfarm/ui
 
+## 0.13.1
+
+### Patch Changes
+
+- 1ef139c: The searchable select no longer draws a blank row between its search field and the list while rows match.
+
 ## 0.13.0
 
 ### Minor Changes

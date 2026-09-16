@@ -24,6 +24,7 @@ import {
   type InventoryViewItem,
 } from '@bombfarm/domain/inventory-view';
 import { resolveItemPrice } from '@bombfarm/pricing';
+import type { MarketQuoteCurrency } from '@bombfarm/contracts';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
 import { inventoryTotals } from '../../lib/account/account-holdings';
@@ -43,7 +44,7 @@ function loadLayout(): InventoryLayout {
   }
 }
 
-export function InventoryView() {
+export function InventoryView({ marketQuoteCurrency }: { marketQuoteCurrency: MarketQuoteCurrency }) {
   const t = useCopy();
   const { lang, locale } = useLocale();
   const accountViewState = useAccountView();
@@ -89,9 +90,9 @@ export function InventoryView() {
                 tradable: entry.item.tradable,
               },
               snapshot,
-              'BRL',
+              marketQuoteCurrency,
             ),
-    [snapshot],
+    [snapshot, marketQuoteCurrency],
   );
 
   const priceOfItem = useMemo(
@@ -102,9 +103,9 @@ export function InventoryView() {
             resolveItemPrice(
               { defId: item.defId, rarity: item.rarityIdx, tradable: item.tradable },
               snapshot,
-              'BRL',
+              marketQuoteCurrency,
             ),
-    [snapshot],
+    [snapshot, marketQuoteCurrency],
   );
 
   const isPricedItem = useMemo(
@@ -116,7 +117,10 @@ export function InventoryView() {
   // Over the whole inventory, not the filtered view — this is what it holds, not what is on
   // screen. Summed by the shared account-wide computation with the other components withheld, so
   // this header and the Account screen's inventory column cannot disagree about the same items.
-  const totals = useMemo(() => inventoryTotals(inventory.items, snapshot), [inventory, snapshot]);
+  const totals = useMemo(
+    () => inventoryTotals(inventory.items, snapshot, marketQuoteCurrency),
+    [inventory, snapshot, marketQuoteCurrency],
+  );
 
   const totalsLabels = useMemo(
     () => ({
@@ -196,7 +200,7 @@ export function InventoryView() {
         {totals ? (
           <InventoryTotals
             total={totals.total}
-            currency="BRL"
+            currency={marketQuoteCurrency}
             priced={totals.priced}
             tradable={totals.tradable}
             labels={totalsLabels}

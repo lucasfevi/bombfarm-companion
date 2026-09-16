@@ -1,5 +1,27 @@
 # @bombfarm/desktop
 
+## 0.16.0
+
+### Minor Changes
+
+- 1ef139c: Add a Market section to the desktop Settings page with a selector for the currency the app asks Steam for when you refresh one item's price. Every currency Steam still quotes natively is offered; BRL stays the default, so an existing install sees no change. The Inventory, Heroes and Account screens price in the chosen currency too, converted from the shared list until an item is refreshed. A quote in a newly chosen currency lands beside the ones already held rather than replacing them. The shared price list stays converted from USD, as before.
+
+### Patch Changes
+
+- Updated dependencies [1ef139c]
+- Updated dependencies [1ef139c]
+  - @bombfarm/contracts@0.8.0
+  - @bombfarm/pricing@0.3.0
+  - @bombfarm/ui@0.13.1
+  - @bombfarm/domain@1.1.1
+  - @bombfarm/game-api@0.4.4
+  - @bombfarm/game-data@0.0.15
+  - @bombfarm/account@0.2.5
+  - @bombfarm/farm@1.1.1
+  - @bombfarm/game-art@0.5.1
+  - @bombfarm/hero@0.2.1
+  - @bombfarm/team-plan@0.1.1
+
 ## 0.15.0
 
 ### Minor Changes

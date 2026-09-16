@@ -14,6 +14,7 @@ import {
   type SelectSize,
 } from './select.recipe';
 import {
+  searchSelectEmptyClass,
   searchSelectInputClass,
   searchSelectNoteClass,
   searchSelectPopupClass,
@@ -162,7 +163,7 @@ export function SearchSelect({
                   same-named comboboxes on the page whenever the popup is open. */}
               <Combobox.Input placeholder={searchPlaceholder} className={searchSelectInputClass} />
             </div>
-            <Combobox.Empty className={searchSelectNoteClass}>{emptyLabel}</Combobox.Empty>
+            <Combobox.Empty className={searchSelectEmptyClass}>{emptyLabel}</Combobox.Empty>
             <Combobox.List className={selectListClass}>
               {visible.map((option) => (
                 <Combobox.Item key={option.value} value={option} className={itemClass}>
