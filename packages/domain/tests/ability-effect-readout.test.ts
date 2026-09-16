@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  TEAM_ABILITY_IDS,
+  isTeamAbilityId,
+  isTeamAuraId,
   isTeamBuffId,
   ownAbilityReadout,
   teamAuraReadout,
 } from '@bombfarm/domain/ability-effect-readout';
 import { ABILITIES, abilityMods } from '@bombfarm/domain/model';
-import { TEAM_BUFF_ABILITY_IDS } from '@bombfarm/domain/team-buffs';
+import { TEAM_AURA_SWITCH_IDS, TEAM_BUFF_ABILITY_IDS } from '@bombfarm/domain/team-buffs';
 
 describe('teamAuraReadout — an aura at an amount, in the unit its effect kind names', () => {
   it('maps each modelled aura to its unit', () => {
@@ -86,5 +89,32 @@ describe('isTeamBuffId', () => {
   it('narrows exactly the modelled aura ids', () => {
     for (const buffId of TEAM_BUFF_ABILITY_IDS) expect(isTeamBuffId(buffId)).toBe(true);
     expect(isTeamBuffId('bateria_extra')).toBe(false);
+  });
+});
+
+describe('isTeamAbilityId — every ability the catalog scopes to the TEAM, switched or not', () => {
+  const catalogTeamIds = ABILITIES.filter((ability) => /\bTIME\b/.test(ability.effectText)).map(
+    (ability) => ability.id,
+  );
+
+  it('agrees with the effect texts, so a team ability added to the catalog cannot go untagged', () => {
+    expect([...TEAM_ABILITY_IDS].sort()).toEqual([...catalogTeamIds].sort());
+    for (const ability of ABILITIES) {
+      expect(isTeamAbilityId(ability.id), ability.id).toBe(catalogTeamIds.includes(ability.id));
+    }
+  });
+
+  it('is the switched auras plus Fortuna, which the combat model leaves to the loot layer', () => {
+    for (const auraId of TEAM_AURA_SWITCH_IDS) expect(isTeamAbilityId(auraId), auraId).toBe(true);
+    expect(isTeamAbilityId('fortuna')).toBe(true);
+    expect(isTeamAuraId('fortuna')).toBe(false);
+    expect(isTeamBuffId('fortuna')).toBe(false);
+  });
+
+  it('a self-scoped ability is not one, even when its effect mentions allies', () => {
+    expect(isTeamAbilityId('matilha')).toBe(false);
+    expect(isTeamAbilityId('contra_relogio')).toBe(false);
+    expect(isTeamAbilityId('veia_ouro')).toBe(false);
+    expect(isTeamAbilityId('not_an_ability')).toBe(false);
   });
 });

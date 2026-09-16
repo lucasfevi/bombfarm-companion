@@ -66,6 +66,7 @@ function heroEntries(
           stars={hero.stars}
           level={hero.level}
           skin={hero.skin}
+          peek={hero.peek}
           lang={lang}
           size="xs"
           variant="stacked"

@@ -3,8 +3,11 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { HoldingsRow, HoldingsView, type HoldingsComponentId } from '@bombfarm/account/holdings';
 import { Accordion } from '@bombfarm/ui';
+import { emptyLoadout } from '@bombfarm/domain/gear';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import type { RarityKey } from '@bombfarm/domain/model';
+import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { CatalogView, HoldingsTally, MarketEntry, MarketSnapshot } from '@bombfarm/pricing';
 import {
   buildSnapshot,
@@ -385,6 +388,40 @@ describe('account holdings — what each component is made of', () => {
     expect(aria).toContain('Lv 42');
     expect(cyra).toContain('alt="Cyra"');
     expect(cyra).toContain('Uncommon');
+  });
+
+  it('lets the avatar of a hero the store holds whole open its card, and leaves a partial one bare', () => {
+    const sheet = { attack: 10, energy: 10, speed: 10, critChance: 0, critDmg: 10, penetration: 0, cdr: 0, luck: 0 };
+    const stored: HeroRecord = {
+      id: 'aria',
+      name: 'Aria',
+      updatedAt: 1,
+      rarity: 'Raro',
+      level: 42,
+      stars: 1,
+      naked: sheet,
+      loadout: emptyLoadout(),
+      altLoadout: null,
+      gearedOverride: sheet,
+      abilities: {},
+      pts: ZERO_PTS(),
+      rank: 'S',
+      power: 1234,
+      marketable: true,
+      skin: ROYAL_SENTINEL,
+    };
+    const mixed = priceableHeroes([stored, ...ROSTER.slice(1)]);
+    const open = openRow('heroes', INVENTORY, worn, mixed);
+    const [aria, cyra] = entryChunks(open, 'heroes');
+
+    expect(aria).toContain('data-peek="hero"');
+    expect(aria).toContain('alt="Aria"');
+    expect(cyra).toContain('alt="Cyra"');
+    expect(cyra).not.toContain('data-peek=');
+    expect(slots(open, 'account-holdings-heroes-entry-amount')).toEqual(['R$50.00']);
+    expect(slot(renderSection(INVENTORY, worn, mixed), 'account-holdings-heroes-coverage')).toBe(
+      '1 of 2 sellable heroes priced',
+    );
   });
 
   it('shows what it knows about a hero the roster told it less about, and crashes on none of it', () => {

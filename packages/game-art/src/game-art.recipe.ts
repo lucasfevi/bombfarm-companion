@@ -135,6 +135,15 @@ export const abilityIconRecipe = cva(
 export type AbilityIconRecipeSize = keyof typeof abilityIconSize;
 export type ArtFrameRecipeSize = keyof typeof artFrameSize;
 
+const emptyGearSlotChrome =
+  'inline-grid aspect-[18/19] shrink-0 border border-dashed border-line bg-[color-mix(in_oklch,var(--bg)_55%,var(--surface))]';
+
+/** A gear slot with nothing in it, at any item-icon footprint. */
+export const emptyGearSlotRecipe = cva(`${emptyGearSlotChrome} ${artFrameRadiusClass}`, {
+  variants: { size: artFrameSize },
+  defaultVariants: { size: 'lg' },
+});
+
 /** A gear slot with nothing in it, drawn at the `lg` item-icon footprint. */
 export const emptyGearSlotClass = cn(
   'inline-grid w-12 aspect-[18/19] shrink-0 border border-dashed border-line bg-[color-mix(in_oklch,var(--bg)_55%,var(--surface))]',

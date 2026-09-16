@@ -35,6 +35,16 @@ const ABILITY_BY_ID = new Map(ABILITIES.map((ability) => [ability.id, ability]))
 const TEAM_BUFF_IDS = new Set<string>(TEAM_BUFF_ABILITY_IDS);
 const TEAM_AURA_IDS = new Set<string>(TEAM_AURA_SWITCH_IDS);
 
+/**
+ * Every ability the game scopes to the TEAM: the switched auras plus Fortuna, a team gold aura the
+ * combat model never prices (loot is the farm board's layer), so it belongs to no switch list.
+ */
+export const TEAM_ABILITY_IDS = [...TEAM_AURA_SWITCH_IDS, 'fortuna'] as const;
+
+export type TeamAbilityId = (typeof TEAM_ABILITY_IDS)[number];
+
+const TEAM_ABILITY_ID_SET = new Set<string>(TEAM_ABILITY_IDS);
+
 export function isTeamBuffId(abilityId: string): abilityId is TeamBuffId {
   return TEAM_BUFF_IDS.has(abilityId);
 }
@@ -42,6 +52,11 @@ export function isTeamBuffId(abilityId: string): abilityId is TeamBuffId {
 /** The standing five plus Passagem de Bastão — every aura a per-hero screen keeps behind a switch. */
 export function isTeamAuraId(abilityId: string): abilityId is TeamAuraId {
   return TEAM_AURA_IDS.has(abilityId);
+}
+
+/** Whether the ability acts on the whole team rather than its carrier — the tag a card shows. */
+export function isTeamAbilityId(abilityId: string): abilityId is TeamAbilityId {
+  return TEAM_ABILITY_ID_SET.has(abilityId);
 }
 
 function readoutKind(effect: AbilityEffect): AbilityEffectReadout['kind'] {

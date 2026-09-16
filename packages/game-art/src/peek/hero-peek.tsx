@@ -9,12 +9,11 @@ import type { Lang } from '@bombfarm/domain/shims/i18n';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { cn, formatCompactNumber, formatNumber } from '@bombfarm/ui';
 import { AbilityIcon } from '../ability-icon';
-import { heroRankToneClass, rarityTextClass } from '../game-art.recipe';
+import { emptyGearSlotRecipe, heroRankToneClass, rarityTextClass } from '../game-art.recipe';
 import { HeroAvatar } from '../hero-avatar';
 import { ItemIcon } from '../item-icon';
 import { PeekFrame } from './peek-frame';
 import {
-  peekFootClass,
   peekHeadClass,
   peekNameClass,
   peekNameTextClass,
@@ -49,7 +48,6 @@ export type HeroPeekData = {
   abilities?: Record<string, number> | undefined;
   loadout?: Loadout | undefined;
   power?: number | undefined;
-  deployed?: boolean | undefined;
 };
 
 /**
@@ -68,7 +66,6 @@ export function heroPeekData(hero: Omit<HeroRecord, 'id' | 'updatedAt'>): HeroPe
     abilities: hero.abilities,
     loadout: hero.loadout,
     power: hero.power,
-    deployed: hero.deployed,
   };
 }
 
@@ -81,9 +78,13 @@ export type HeroPeekProps = {
   stopRowActivation?: boolean | undefined;
 };
 
+const emptyGearSlotTileClass = emptyGearSlotRecipe({ size: 'xs' });
+
 /**
  * The card a hero opens: rank, name and stars, tier and level, the geared sheet in two columns,
  * then the abilities and the gear as bare art — bare because a card is one level deep, always.
+ * The gear strip is always the eight slots in order, an empty tile standing in for each one
+ * with nothing in it, so a reader sees which slots are empty.
  */
 export function HeroPeekCard({ hero, lang }: Pick<HeroPeekProps, 'hero' | 'lang'>) {
   const rarityIdx = hero.rarityIdx !== undefined && hero.rarityIdx >= 0 ? hero.rarityIdx : undefined;
@@ -91,7 +92,6 @@ export function HeroPeekCard({ hero, lang }: Pick<HeroPeekProps, 'hero' | 'lang'
   const stars = Math.max(0, Math.min(MAX_STARS, Math.round(hero.stars ?? 0)));
   const abilities = hero.abilities ? heroAbilityIconEntries(hero.abilities) : [];
   const loadout = hero.loadout;
-  const gear = loadout ? SLOTS.flatMap((slot) => (loadout[slot] ? [loadout[slot]] : [])) : [];
   const level = hero.level === undefined ? null : heroLevelLabel(hero.level, lang);
 
   return (
@@ -149,7 +149,7 @@ export function HeroPeekCard({ hero, lang }: Pick<HeroPeekProps, 'hero' | 'lang'
           </div>
         </>
       ) : null}
-      {abilities.length > 0 || gear.length > 0 ? (
+      {abilities.length > 0 || loadout ? (
         <>
           <div className={peekRuleClass} />
           <div className="flex flex-col gap-1.5">
@@ -160,20 +160,20 @@ export function HeroPeekCard({ hero, lang }: Pick<HeroPeekProps, 'hero' | 'lang'
                 ))}
               </div>
             ) : null}
-            {gear.length > 0 ? (
+            {loadout ? (
               <div className={peekStripClass}>
-                {gear.map((item) => (
-                  <ItemIcon key={item.defId} item={item} size="xs" showLevel={false} />
-                ))}
+                {SLOTS.map((slot) => {
+                  const item = loadout[slot];
+                  return item ? (
+                    <ItemIcon key={slot} item={item} size="xs" showLevel={false} />
+                  ) : (
+                    <span key={slot} data-slot="empty-gear-slot" className={emptyGearSlotTileClass} aria-hidden="true" />
+                  );
+                })}
               </div>
             ) : null}
           </div>
         </>
-      ) : null}
-      {hero.deployed ? (
-        <div className={peekFootClass}>
-          <span>{peekLabel('deployed', lang)}</span>
-        </div>
       ) : null}
     </div>
   );

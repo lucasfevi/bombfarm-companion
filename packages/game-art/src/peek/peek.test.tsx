@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createElement, type ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { ABILITIES } from '@bombfarm/domain/model';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { AbilityPeek, AbilityPeekCard } from './ability-peek';
 import { HeroPeek, HeroPeekCard, heroPeekData } from './hero-peek';
@@ -34,20 +35,72 @@ const perrin: HeroRecord = {
   pts: { attack: 0, energy: 0, speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0, luck: 0 },
 };
 
+/** The card's stat rows, label by label, in the order they are drawn. */
+const statLabels = (html: string) =>
+  [...html.matchAll(/class="shrink-0 truncate font-semibold text-ink">([^<]+)</g)].map((match) => match[1]);
+
+const dollars = {
+  view: { state: 'priced', amount: 12.5, currency: 'USD', basis: 'native', listingUrl: null, quotedUtc: null, listings: 4 },
+  labels: {
+    amount: (amount: number, currency: string) => `${currency} ${amount.toFixed(2)}`,
+    title: () => 'native, 1 h ago',
+    unpriced: () => 'No listing',
+  },
+} as const;
+
 describe('ItemPeekCard', () => {
-  it('names the piece in its tier colour, with its forge, tier and level, then every roll it makes', () => {
+  it('names the piece in ink with its forge, then tier, level and the forge multiplier on one line, then every roll it makes', () => {
     const html = render(createElement(ItemPeekCard, { item: helmet, lang: 'en' }));
-    expect(html).toContain('text-rar-4">Forest Helm<');
+    expect(html).toContain('class="min-w-0 truncate text-ink">Forest Helm<');
+    expect(html).not.toContain('text-rar-4">Forest Helm<');
     expect(html).toContain('+8');
-    expect(html).toContain('Legendary');
+    expect(html).toContain('text-rar-4">Legendary<');
     expect(html).toContain('Lv 100');
     // Five rolls for a Legendary, each scaled to level 100 and forged ×1.64.
+    expect(statLabels(html)).toHaveLength(5);
     expect(html).toContain('Energy');
     expect(html).toContain('+57.40%');
     expect(html).toContain('Damage');
     expect(html).toContain('+947.1');
-    expect(html).toContain('Helm · Forest');
     expect(html).toContain('Forge ×1.64');
+  });
+
+  it('prints every one of a Mythic’s six rolls', () => {
+    const html = render(createElement(ItemPeekCard, { item: { ...helmet, rarityIdx: 5 }, lang: 'en' }));
+    expect(statLabels(html)).toEqual(['Energy', 'Luck', 'Damage', 'Crit', 'Penetration', 'Cooldown']);
+  });
+
+  it('draws each roll as the inventory card does: label, dotted leader, then the figure in the accent', () => {
+    const html = render(createElement(ItemPeekCard, { item: helmet, lang: 'en' }));
+    const row = /class="flex items-baseline gap-1.5 text-\[11px\]">(.*?)<\/span><\/span>/.exec(html);
+    expect(row).not.toBeNull();
+    expect(row?.[1]).toContain('bg-repeat-x" aria-hidden="true"></span>');
+    expect(row?.[1]).toContain('class="shrink-0 font-mono text-[11px] font-medium tabular-nums text-accent">+');
+  });
+
+  it('the forge multiplier rides the tier line, in place of the slot and set the name already says', () => {
+    const html = visible(render(createElement(ItemPeekCard, { item: helmet, lang: 'en' })));
+    const sub = /leading-snug">(.*?)<\/div><\/div><\/div>/.exec(html)?.[1] ?? '';
+    expect(sub.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()).toBe('Legendary · Lv 100 · Forge ×1.64');
+    expect(html).not.toContain('Helm · Forest');
+
+    const unforged = visible(render(createElement(ItemPeekCard, { item: { ...helmet, upgrade: 0 }, lang: 'en' })));
+    expect(unforged).not.toContain('Forge');
+  });
+
+  it('says what the item is worth — gold, and the market’s quote when the host has one', () => {
+    const priced = render(createElement(ItemPeekCard, { item: { ...helmet, sellValueGold: 1234 }, lang: 'en', price: dollars }));
+    expect(priced).toContain('data-slot="item-peek-gold"');
+    expect(priced).toContain('1,234');
+    expect(priced).toContain('USD 12.50');
+
+    const goldOnly = render(createElement(ItemPeekCard, { item: { ...helmet, sellValueGold: 1234 }, lang: 'en' }));
+    expect(goldOnly).toContain('1,234');
+    expect(goldOnly).not.toContain('USD');
+
+    const catalogBuilt = render(createElement(ItemPeekCard, { item: helmet, lang: 'en' }));
+    expect(catalogBuilt).not.toContain('data-slot="item-peek-gold"');
+    expect(catalogBuilt).not.toContain('USD');
   });
 
   it('prints the rolls it is handed over the catalog’s, so an inventory row and its card agree', () => {
@@ -97,22 +150,56 @@ describe('AbilityPeekCard', () => {
     expect(html).toContain('own sheet');
   });
 
-  it('a team aura is tagged as one, and a capped ability drops the cap line', () => {
-    const html = render(createElement(AbilityPeekCard, { id: 'grito_guerra', level: 20, lang: 'en' }));
-    expect(html).toContain('team aura');
-    expect(html).toContain('At rank 20');
-    expect(html).not.toContain('At cap');
+  it('the scope tag sits on the rank line in the head, and nothing follows the figure rows', () => {
+    const html = render(createElement(AbilityPeekCard, { id: 'grito_guerra', level: 12, lang: 'en' }));
+    const head = html.slice(0, html.indexOf('At rank'));
+    expect(head).toMatch(/Rank 12 of 20<\/span><span[^>]*>·<\/span><span[^>]*>team aura<\/span>/);
+    expect(html.slice(html.indexOf('At cap'))).not.toContain('team aura');
+    expect(html.slice(html.indexOf('At cap'))).not.toContain('own sheet');
   });
 
-  it('an unmodelled ability keeps its effect text and prints no figure', () => {
-    const html = render(createElement(AbilityPeekCard, { id: 'caca_hero', level: 5, lang: 'en' }));
-    expect(html).toContain('not modeled');
+  it('every ability the game scopes to the team is tagged as one — Fortuna included, with no switch behind it', () => {
+    const teamIds = ABILITIES.filter((ability) => /\bTIME\b/.test(ability.effectText)).map((ability) => ability.id);
+    expect(teamIds).toContain('fortuna');
+    for (const id of teamIds) {
+      expect(render(createElement(AbilityPeekCard, { id, level: 5, lang: 'en' })), id).toContain('team aura');
+    }
+    expect(render(createElement(AbilityPeekCard, { id: 'matilha', level: 5, lang: 'en' }))).not.toContain('team aura');
+  });
+
+  it('a capped ability still shows both rows, so every card has the same figures', () => {
+    const html = render(createElement(AbilityPeekCard, { id: 'grito_guerra', level: 20, lang: 'en' }));
+    expect(html).toContain('Rank 20 of 20');
+    expect(html).toContain('At rank 20');
+    expect(html).toContain('At cap');
+    expect(html.match(/\+20% attack/g)).toHaveLength(2);
+  });
+
+  it('an unmodelled ability keeps its effect text and prints no figure row, capped or not', () => {
+    expect(render(createElement(AbilityPeekCard, { id: 'caca_hero', level: 5, lang: 'en' }))).toContain('not modeled');
+    for (const id of ['caca_hero', 'veia_ouro', 'fortuna']) {
+      for (const level of [5, 20, undefined]) {
+        const html = render(createElement(AbilityPeekCard, { id, level, lang: 'en' }));
+        expect(html, `${id} at ${String(level)}`).not.toContain('At rank');
+        expect(html, `${id} at ${String(level)}`).not.toContain('At cap');
+      }
+    }
+  });
+
+  it('without a rank it reads the ability alone: the name, the tag, the effect and one cap row', () => {
+    const html = render(createElement(AbilityPeekCard, { id: 'grito_guerra', lang: 'en' }));
+    expect(html).toContain('War Cry');
+    expect(html).toContain('team aura');
+    expect(html).not.toContain('Rank ');
+    expect(html).not.toContain('/20');
     expect(html).not.toContain('At rank');
+    expect(html).toContain('At cap');
+    expect(html.match(/\+20% attack/g)).toHaveLength(1);
   });
 });
 
 describe('HeroPeekCard', () => {
-  it('reads the record: rank, name, stars, tier, level, id, the sheet, both strips and the footer', () => {
+  it('reads the record: rank, name, stars, tier, level, the sheet and both strips — never the id', () => {
     const html = render(createElement(HeroPeekCard, { hero: heroPeekData(perrin), lang: 'en' }));
     expect(html).toContain('>A<');
     expect(html).toContain('Perrin');
@@ -124,11 +211,32 @@ describe('HeroPeekCard', () => {
     expect(html).toContain('32.5%');
     expect(html).toContain('/abilities/golpe_brutal.png');
     expect(html).toContain('/items/lvl100_helmet_forest.png');
-    expect(html).toContain('Deployed');
     expect(html).toContain('>Power<');
     expect(html).toContain('>48.2k<');
     // The strips are bare art — no rank badge on an ability tile.
     expect(html).not.toContain('13/20');
+  });
+
+  it('the gear strip is always eight tiles in slot order, an empty tile standing in for each bare slot', () => {
+    const html = render(createElement(HeroPeekCard, { hero: heroPeekData(perrin), lang: 'en' }));
+    expect(html.match(/data-slot="empty-gear-slot"/g)).toHaveLength(7);
+    expect(html.match(/<img src="\/wiki-assets\/items\/lvl100_helmet_forest\.png"/g)).toHaveLength(1);
+    // The one equipped piece is a weapon, the first slot: it leads the strip and the empties follow.
+    expect(html.indexOf('<img src="/wiki-assets/items/lvl100_helmet_forest.png"')).toBeLessThan(
+      html.indexOf('data-slot="empty-gear-slot"'),
+    );
+    expect(html).toMatch(/data-slot="empty-gear-slot" class="[^"]*\baspect-\[18\/19\][^"]*\bw-7\b[^"]*" aria-hidden="true"/);
+  });
+
+  it('a deployed hero reads no differently — the card says nothing about deployment', () => {
+    const html = render(createElement(HeroPeekCard, { hero: heroPeekData({ ...perrin, deployed: true }), lang: 'en' }));
+    expect(html).not.toContain('Deployed');
+    expect(heroPeekData(perrin)).not.toHaveProperty('deployed');
+  });
+
+  it('prints the power figure larger than the name, in the accent, mono and tabular', () => {
+    const html = render(createElement(HeroPeekCard, { hero: heroPeekData(perrin), lang: 'en' }));
+    expect(html).toMatch(/class="font-mono text-base leading-none font-bold tabular-nums text-accent">48\.2k</);
   });
 
   it('says only what it was handed — a live row’s identity draws no sheet and no strips', () => {
@@ -182,5 +290,11 @@ describe('the trigger', () => {
     );
     expect(visible(html)).not.toContain('12/20');
     expect(html).toMatch(/aria-label="Keen Eye, 12\/20"/);
+  });
+
+  it('names an ability with no carrier by its name alone', () => {
+    const html = render(createElement(AbilityPeek, { id: 'olho_clinico', lang: 'en', children: createElement('i') }));
+    expect(html).toMatch(/aria-label="Keen Eye"/);
+    expect(html).not.toContain('/20');
   });
 });

@@ -133,6 +133,7 @@ export {
   type HeroPeekData,
   type HeroPeekProps,
   type ItemPeekItem,
+  type ItemPeekPrice,
   type ItemPeekProps,
   type ItemPeekStat,
   type WireItemStat,

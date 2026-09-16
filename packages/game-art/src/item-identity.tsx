@@ -2,7 +2,7 @@ import type { Lang } from '@bombfarm/domain/shims/i18n';
 import { cn } from '@bombfarm/ui';
 import { rarityTextClass } from './game-art.recipe';
 import { ItemIcon, type ItemIconItem } from './item-icon';
-import { ItemPeek, itemPeekFromInventory, type WireItemStat } from './peek';
+import { ItemPeek, itemPeekFromInventory, type ItemPeekPrice, type WireItemStat } from './peek';
 
 /**
  * The four strings an item is identified by. Functions rather than values because every caller
@@ -39,12 +39,15 @@ const DETAIL_TEXT = { sm: 'text-[10px]', xl: 'text-xs' } as const;
  * The tier colour rides on whichever element carries the tier: the rarity word when there is one,
  * and the name itself for the kinds whose name IS their tier.
  */
-export function ItemIdentity<TItem extends ItemIconItem & { stats?: readonly WireItemStat[] | undefined }>({
+export function ItemIdentity<
+  TItem extends ItemIconItem & { sellValueGold?: number | undefined; stats?: readonly WireItemStat[] | undefined },
+>({
   item,
   labels,
   size = 'sm',
   nameTestId,
   className,
+  price,
 }: {
   item: TItem;
   labels: ItemIdentityLabels<TItem>;
@@ -52,6 +55,8 @@ export function ItemIdentity<TItem extends ItemIconItem & { stats?: readonly Wir
   /** `data-testid` on the element carrying the item's own name, for a caller that needs one. */
   nameTestId?: string | undefined;
   className?: string | undefined;
+  /** The market quote the hover card prints beside the sell value; absent, the card shows gold alone. */
+  price?: ItemPeekPrice | undefined;
 }) {
   const name = labels.itemName(item);
   const rarity = labels.itemRarity(item);
@@ -61,7 +66,7 @@ export function ItemIdentity<TItem extends ItemIconItem & { stats?: readonly Wir
 
   return (
     <span className={cn('flex min-w-0 items-center gap-2', className)}>
-      <ItemPeek item={itemPeekFromInventory(item)} lang={labels.lang} name={name} className="shrink-0">
+      <ItemPeek item={itemPeekFromInventory(item)} lang={labels.lang} name={name} price={price} className="shrink-0">
         <ItemIcon item={item} size={size} showLevel={false} showUpgrade={false} />
       </ItemPeek>
       <span className="flex min-w-0 flex-col gap-0.5">

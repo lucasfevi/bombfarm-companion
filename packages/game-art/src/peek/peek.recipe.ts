@@ -21,16 +21,21 @@ export const peekNameClass = 'flex min-w-0 items-baseline gap-1.5 text-[13px] le
 export const peekNameTextClass = 'min-w-0 truncate';
 export const peekSubClass = 'mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-1 text-[11px] leading-snug';
 /** The one figure a player ranks a roster by, at the head's right edge: the label small above
- *  the number, the number as loud as the name. */
-export const peekPowerClass = 'flex shrink-0 flex-col items-end gap-0.5 self-start pl-1';
+ *  the number, the number louder than the name. Centred on the row like the name block, so the
+ *  label sits beside the name line and the figure beside the tier line. */
+export const peekPowerClass = 'flex shrink-0 flex-col items-end gap-0.5 pl-1';
 export const peekPowerLabelClass = 'font-mono text-[9.5px] uppercase leading-none tracking-[0.06em] text-muted';
-export const peekPowerValueClass = 'font-mono text-[13px] leading-none font-bold tabular-nums text-accent';
+export const peekPowerValueClass = 'font-mono text-base leading-none font-bold tabular-nums text-accent';
 export const peekRuleClass = 'my-2 h-px bg-line';
 export const peekRowsClass = 'flex flex-col gap-[3px] text-[11px] leading-snug tabular-nums';
 export const peekRowsGridClass = 'grid grid-cols-2 gap-x-3.5 gap-y-[3px] text-[11px] leading-snug tabular-nums';
 export const peekRowClass = 'flex items-baseline justify-between gap-2 text-muted [&_b]:shrink-0 [&_b]:font-semibold [&_b]:text-ink';
 export const peekEffectClass = 'text-[11.5px] leading-[1.4] text-ink';
 export const peekFootClass = 'mt-2 flex items-baseline justify-between gap-2 text-[10.5px] leading-snug text-muted';
+/** What an item is worth, the way the inventory card's footer says it: coin and gold at the left
+ *  edge, the market quote at the right. */
+export const peekValueRowClass = 'flex items-center justify-between gap-2 text-[11px] leading-snug tabular-nums text-muted';
+export const peekGoldClass = 'flex items-center gap-1';
 export const peekStripClass = 'flex flex-wrap gap-0.5';
 export const peekTagClass =
   'inline-block rounded-[3px] border border-line px-[5px] py-px font-mono text-[9.5px] uppercase tracking-[0.06em] text-muted';

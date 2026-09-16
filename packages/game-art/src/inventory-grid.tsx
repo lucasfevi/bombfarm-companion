@@ -155,11 +155,6 @@ function StackGlyph() {
   );
 }
 
-/** Four is what a Mítico rolls; showing all six of a future tier would push the footer around. */
-const MAX_STAT_LINES = 4;
-
-/** The ritual caps at three; anything past that is a bad read, not a taller row of stars. */
-
 /**
  * The equipping hero, as the roster's own identity block at card scale: avatar beside two lines —
  * rank, name and stars on the first, level on the second.
@@ -256,12 +251,13 @@ const InventoryCard = memo(function InventoryCard({
   const { item, count } = entry;
   const badges = labels.badges(item);
   const equippedBy = labels.equippedBy?.(item) ?? null;
-  const stats = item.stats.slice(0, MAX_STAT_LINES);
+  const { stats } = item;
   const tone = inventoryCardTone(item.rarityIdx, item.kind !== 'other');
   const interactive = Boolean(onSelect);
   // Reserved for every card once the shell prices at all, so a listed item does not make its row
   // taller than the one beside it.
   const pricedColumn = priceLabels != null;
+  const peekPrice = price != null && priceLabels != null ? { view: price, labels: priceLabels } : undefined;
 
   const body = (
     <>
@@ -271,6 +267,7 @@ const InventoryCard = memo(function InventoryCard({
           labels={labels}
           size="xl"
           nameTestId="inventory-card-name"
+          price={peekPrice}
         />
         {badges.length > 0 ? (
           <span className="flex flex-wrap gap-1">
@@ -310,7 +307,7 @@ const InventoryCard = memo(function InventoryCard({
   );
 
   // `mt-auto` is what pins this row to the bottom edge whatever sits above it, so a Comum
-  // carrying one stat and a Mítico carrying four still line their footers up across a row.
+  // carrying one stat and a Mítico carrying six still line their footers up across a row.
   const footer = (
       <span
         data-testid="inventory-card-footer"

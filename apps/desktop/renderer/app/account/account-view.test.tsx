@@ -10,6 +10,7 @@ import { en } from '../../lib/copy/en';
 import type { AccountViewState } from '../../lib/account/use-account-view';
 import type { MarketState } from '../../lib/market/market-store';
 import { accountFactsFrom } from '../../lib/account/account-facts';
+import { buildAccountRoster } from '../../lib/account/account-roster';
 import { accountHoldingsFrom, holdingsComponents } from '../../lib/account/account-holdings';
 import { accountHoldingsLabels } from './account-labels';
 import { AccountView } from './account-view';
@@ -165,7 +166,7 @@ function html(): string {
 function openRow(id: HoldingsComponentId): string {
   const state = accountState.current;
   if (state.status !== 'loaded') throw new Error('no account to draw a row from');
-  const facts = accountFactsFrom(state.view);
+  const facts = accountFactsFrom(state.view, buildAccountRoster(state.view));
   const snapshotNow = marketState.current.status === 'ready' ? marketState.current.view.snapshot : null;
   const components = holdingsComponents(
     accountHoldingsFrom(facts.holdings, snapshotNow, 'BRL'),
@@ -528,7 +529,7 @@ describe('how old the holdings footnote says the prices under it are', () => {
     }
 
     const holdings = accountHoldingsFrom(
-      accountFactsFrom(account.view).holdings,
+      accountFactsFrom(account.view, buildAccountRoster(account.view)).holdings,
       market.view.snapshot,
       'BRL',
     );
