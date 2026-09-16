@@ -1,15 +1,17 @@
 'use client';
 
 /**
- * The PVP screen: every duel the app saw settle while it was open, newest first, and whether each
- * one's film is held. The list is what the game reported — nothing on it is predicted, and a duel
- * the app was closed for is not on it, because the tap was not there to see it.
+ * The PVP screen: the account's standing as the game last reported it, then every duel the app
+ * saw settle while it was open, newest first, and whether each one's film is held. The list is
+ * what the game reported — nothing on it is predicted, and a duel the app was closed for is not on
+ * it, because the tap was not there to see it.
  */
+import type { ReactNode } from 'react';
 import type { PvpDuelRow, PvpHistoryResult } from '@bombfarm/contracts';
-import { cn, colClass, DataTable, EmptyState, HelpTip, Panel, PanelHeader } from '@bombfarm/ui';
+import { cn, colClass, DataTable, EmptyState, InfoTip, Panel, PanelHeader, Tooltip } from '@bombfarm/ui';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { formatCapturedAt, formatCount } from '../../lib/format';
-import { formatPointsDelta, latestQuota } from '../../lib/pvp/pvp-rows';
+import { duelsLeft, formatPointsDelta } from '../../lib/pvp/pvp-rows';
 import { usePvpHistory } from '../../lib/pvp/use-pvp-history';
 
 /** Twelve rows under the sticky header before the table scrolls: a session's quota several
@@ -21,33 +23,104 @@ export function PvpView() {
   const history = state.status === 'ready' ? state.history : null;
 
   return (
-    <div data-testid="pvp-view" data-state={state.status} className={colClass}>
-      <DuelHistoryPanel history={history} />
+    <Tooltip.Provider>
+      <div data-testid="pvp-view" data-state={state.status} className={colClass}>
+        <StandingPanel history={history} />
+        <DuelHistoryPanel history={history} />
+      </div>
+    </Tooltip.Provider>
+  );
+}
+
+function Figure({ label, value, note, testId }: { label: string; value: ReactNode; note: ReactNode; testId: string }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-1" data-testid={testId}>
+      <span className="text-[10.5px] uppercase tracking-[0.06em] text-muted whitespace-nowrap">{label}</span>
+      <span className="text-[15px] font-bold tabular-nums text-ink">{value}</span>
+      <span className="min-h-[11px] text-[11px] leading-none text-muted">{note}</span>
     </div>
+  );
+}
+
+function StandingPanel({ history }: { history: PvpHistoryResult | null }) {
+  const t = useCopy();
+  const { locale } = useLocale();
+  const standing = history?.standing ?? null;
+  const rank = history?.rank ?? null;
+  const quota = history === null ? null : duelsLeft(history);
+
+  return (
+    <Panel data-testid="pvp-standing" data-state={standing === null ? 'empty' : 'read'}>
+      <PanelHeader title={t.pvpStandingTitle}>
+        {standing !== null ? (
+          <span className="text-xs text-muted" data-testid="pvp-standing-age">
+            {sub(t.pvpStandingAge, { age: formatCapturedAt(standing.capturedAt, t) })}
+          </span>
+        ) : null}
+      </PanelHeader>
+      {standing === null && quota === null && rank === null ? (
+        <p className="m-0 text-xs text-muted">{t.pvpStandingEmpty}</p>
+      ) : (
+        <div className="grid grid-cols-2 gap-x-6 gap-y-3 lg:grid-cols-4">
+          <Figure
+            label={t.pvpStandingPoints}
+            testId="pvp-standing-points"
+            value={standing === null ? t.pvpStandingUnknown : formatCount(standing.points, locale)}
+            note={
+              standing === null
+                ? null
+                : standing.nextTierAt === null
+                  ? sub(t.pvpStandingTierNoNext, { tier: standing.tier })
+                  : sub(t.pvpStandingTier, { tier: standing.tier, next: formatCount(standing.nextTierAt, locale) })
+            }
+          />
+          <Figure
+            label={t.pvpStandingDuels}
+            testId="pvp-standing-duels"
+            value={quota === null ? t.pvpStandingUnknown : sub(t.pvpStandingDuelsValue, { left: quota.left, max: quota.max })}
+            note={null}
+          />
+          <Figure
+            label={t.pvpStandingSlots}
+            testId="pvp-standing-slots"
+            value={
+              standing === null || standing.slots === null
+                ? t.pvpStandingUnknown
+                : sub(t.pvpStandingSlotsValue, { slots: standing.slots, max: standing.slotsMax ?? standing.slots })
+            }
+            note={null}
+          />
+          <Figure
+            label={t.pvpStandingRank}
+            testId="pvp-standing-rank"
+            value={rank === null ? t.pvpStandingUnknown : sub(t.pvpStandingRankValue, { position: formatCount(rank.position, locale) })}
+            note={
+              rank === null
+                ? t.pvpStandingRankUnknown
+                : sub(t.pvpStandingRankAge, { age: formatCapturedAt(rank.capturedAt, t), points: formatCount(rank.points, locale) })
+            }
+          />
+        </div>
+      )}
+    </Panel>
   );
 }
 
 function DuelHistoryPanel({ history }: { history: PvpHistoryResult | null }) {
   const t = useCopy();
   const { locale } = useLocale();
-  const quota = history === null ? null : latestQuota(history);
   const empty = history === null || history.rows.length === 0;
 
   return (
     <Panel data-testid="pvp-history" data-state={empty ? 'empty' : 'duels'}>
       <PanelHeader title={t.pvpTitle}>
         {history !== null && !empty ? (
-          <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 text-xs tabular-nums text-muted">
-            <span data-testid="pvp-summary">
-              {sub(t.pvpSummary, {
-                duels: formatCount(history.totals.duels, locale),
-                won: formatCount(history.totals.won, locale),
-                films: formatCount(history.totals.films, locale),
-              })}
-            </span>
-            {quota !== null ? (
-              <span data-testid="pvp-quota">{sub(t.pvpQuota, { left: quota.left, max: quota.max })}</span>
-            ) : null}
+          <span className="text-xs tabular-nums text-muted" data-testid="pvp-summary">
+            {sub(t.pvpSummary, {
+              duels: formatCount(history.totals.duels, locale),
+              won: formatCount(history.totals.won, locale),
+              films: formatCount(history.totals.films, locale),
+            })}
           </span>
         ) : null}
       </PanelHeader>
@@ -66,19 +139,18 @@ function DuelHistoryPanel({ history }: { history: PvpHistoryResult | null }) {
                   <DataTable.Header scope="col" align="right">
                     <span className="inline-flex items-center gap-1">
                       {t.pvpColumnScore}
-                      <HelpTip label={t.pvpColumnScore}>{t.pvpScoreHint}</HelpTip>
+                      <InfoTip label={t.pvpColumnScore} tip={t.pvpScoreHint} />
                     </span>
                   </DataTable.Header>
                   <DataTable.Header scope="col" align="right">
                     <span className="inline-flex items-center gap-1">
                       {t.pvpColumnPhase}
-                      <HelpTip label={t.pvpColumnPhase}>{t.pvpPhaseHint}</HelpTip>
+                      <InfoTip label={t.pvpColumnPhase} tip={t.pvpPhaseHint} />
                     </span>
                   </DataTable.Header>
                   <DataTable.Header scope="col" align="right">
                     {t.pvpColumnPoints}
                   </DataTable.Header>
-                  <DataTable.Header scope="col">{t.pvpColumnPrize}</DataTable.Header>
                   <DataTable.Header scope="col">{t.pvpColumnFilm}</DataTable.Header>
                 </DataTable.Row>
               </DataTable.Head>
@@ -147,9 +219,6 @@ function DuelRow({ row }: { row: PvpDuelRow }) {
             {formatPointsDelta(row, locale)}
           </span>
         </span>
-      </DataTable.Cell>
-      <DataTable.Cell nowrap={false} data-testid="pvp-prize" className={row.prize === 'lost' ? 'text-warn' : undefined}>
-        {row.prize === 'won' ? t.pvpPrizeWon : t.pvpPrizeLost}
       </DataTable.Cell>
       <DataTable.Cell data-testid="pvp-film" className={row.filmStored ? undefined : 'text-muted'}>
         {row.filmStored ? t.pvpFilmStored : t.pvpFilmMissing}

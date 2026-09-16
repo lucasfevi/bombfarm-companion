@@ -50,13 +50,30 @@ function row(overrides: Partial<PvpDuelRow> = {}): PvpDuelRow {
   };
 }
 
-function ready(rows: PvpDuelRow[]): PvpHistoryState {
+function ready(rows: PvpDuelRow[], extra: Partial<Pick<PvpHistoryResult, 'standing' | 'rank'>> = {}): PvpHistoryState {
   const history: PvpHistoryResult = {
     rows,
     totals: { duels: rows.length, won: rows.filter((r) => r.won).length, films: rows.filter((r) => r.filmStored).length },
+    standing: null,
+    rank: null,
+    ...extra,
   };
   return { status: 'ready', applied: 1, history };
 }
+
+const STANDING = {
+  points: 205,
+  tier: 'r2',
+  tierNumber: 2,
+  nextTierAt: 375,
+  tierFloor: 50,
+  duelsUsed: 8,
+  duelsMax: 10,
+  slots: 9,
+  slotsMax: 9,
+  squadHeroIds: ['862212'],
+  capturedAt: new Date(Date.now() - 60_000).toISOString(),
+};
 
 describe('PvpView', () => {
   it('shows the empty state before any duel, and while the list is still loading', () => {
@@ -68,7 +85,7 @@ describe('PvpView', () => {
     }
   });
 
-  it('prints one row per duel with the opponent, both scores, the room phase against the tier floor, the points move and the prize', () => {
+  it('prints one row per duel with the opponent, both scores, the room phase against the tier floor and the points move, and no prize column', () => {
     const html = render(ready([row()]));
     expect(html).toContain('data-testid="pvp-duel-row"');
     expect(html).toContain('Corvo Negro');
@@ -79,10 +96,32 @@ describe('PvpView', () => {
     expect(html).toContain('tier r3, floor 100');
     expect(html).toContain('118 → 123');
     expect(html).toContain('>+5<');
-    expect(html).toContain(en.pvpPrizeWon);
+    expect(html).not.toContain('data-testid="pvp-prize"');
     expect(html).toContain(en.pvpFilmStored);
     expect(html).toContain('1 duels · 1 won · 1 films kept');
-    expect(html).toContain('3 of 5 duels left');
+  });
+
+  it('draws the standing from the last state report: points and tier, duels left, squad slots, and the rank with its own date', () => {
+    const html = render(ready([row()], { standing: STANDING, rank: { position: 2, points: 200, capturedAt: STANDING.capturedAt } }));
+    expect(html).toContain('data-testid="pvp-standing" data-state="read"');
+    expect(html).toContain('>205<');
+    expect(html).toContain('tier r2 · next tier at 375');
+    expect(html).toContain('2 of 10');
+    expect(html).toContain('9 of 9');
+    expect(html).toContain('>#2<');
+    expect(html).toContain('as of 1m ago, at 200 points');
+  });
+
+  it('falls back to the latest duel for the quota, and says the rank wants the ranking opened, before any state report', () => {
+    const html = render(ready([row()]));
+    expect(html).toContain('data-testid="pvp-standing" data-state="empty"');
+    expect(html).toContain('3 of 5');
+    expect(html).toContain(en.pvpStandingRankUnknown);
+    expect(html).toContain(en.pvpStandingUnknown);
+  });
+
+  it('says nothing has been read with no state, no rank and no duel', () => {
+    expect(render(ready([]))).toContain(en.pvpStandingEmpty);
   });
 
   it('keeps a duel whose film never arrived as a row, and says the film is not kept', () => {
@@ -90,7 +129,6 @@ describe('PvpView', () => {
     expect(html).toContain('data-film-stored="false"');
     expect(html).toContain(en.pvpFilmMissing);
     expect(html).toContain(en.pvpResultLost);
-    expect(html).toContain(en.pvpPrizeLost);
     expect(html).toContain('>-10<');
     expect(html).toContain(en.pvpFilmNote);
   });

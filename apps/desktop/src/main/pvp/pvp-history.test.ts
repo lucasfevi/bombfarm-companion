@@ -54,6 +54,7 @@ describe('pvp history', () => {
       ?.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('pvp_duels', 'pvp_films') ORDER BY name")
       .all();
     expect(tables).toEqual([{ name: 'pvp_duels' }, { name: 'pvp_films' }]);
+    expect(open.db?.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'pvp_standing'").get()).toEqual({ name: 'pvp_standing' });
   });
 
   it('lists newest first, round-trips every column, and says whether each film is held', () => {
@@ -73,8 +74,28 @@ describe('pvp history', () => {
     expect(listed.rows[1]).toEqual({ id: 1, ...AT, filmStored: true, ...duel() });
     expect(listed.rows[0]).toMatchObject({ id: 2, accountId: null, filmStored: false, won: false, prize: 'lost' });
     expect(listed.totals).toEqual({ duels: 2, won: 1, films: 1 });
+    expect(listed.standing).toBeNull();
+    expect(listed.rank).toBeNull();
 
     expect(history.list({ limit: 1 }).rows).toHaveLength(1);
+  });
+
+  it('keeps one standing and one rank, each replaced by a newer report', () => {
+    const open = openTestAccountDb(firstBinding());
+    const history = createPvpHistory(open.db);
+    const snapshot = {
+      points: 200, tier: 'r2', tierNumber: 2, nextTierAt: 375, tierFloor: 50,
+      duelsUsed: 7, duelsMax: 10, slots: 9, slotsMax: 9, squadHeroIds: ['1'],
+    };
+    expect(history.recordStanding(snapshot, { capturedAt: '2026-09-16T10:00:00.000Z' })).toBe(true);
+    expect(history.recordStanding({ ...snapshot, points: 205, duelsUsed: 8 }, { capturedAt: '2026-09-16T10:05:00.000Z' })).toBe(true);
+    expect(history.recordRank({ position: 2, points: 200 }, { capturedAt: '2026-09-16T09:00:00.000Z' })).toBe(true);
+    expect(history.recordRank({ position: 2, points: 200 }, { capturedAt: '2026-09-16T09:30:00.000Z' })).toBe(false);
+
+    const listed = history.list({ limit: 10 });
+    expect(listed.standing).toEqual({ ...snapshot, points: 205, duelsUsed: 8, capturedAt: '2026-09-16T10:05:00.000Z' });
+    expect(listed.rank).toEqual({ position: 2, points: 200, capturedAt: '2026-09-16T09:00:00.000Z' });
+    expect(open.db?.prepare('SELECT COUNT(*) AS n FROM pvp_standing').get()).toEqual({ n: 2 });
   });
 
   it('keeps one row per issued film id, however many times the result body passes', () => {
@@ -118,6 +139,8 @@ describe('pvp history', () => {
     const history = createPvpHistory(null);
     expect(history.recordDuel(duel(), AT)).toBe(false);
     expect(history.storeFilm(film(), '{}', { storedAt: AT.recordedAt })).toBe(false);
+    expect(history.recordStanding({ points: 1, tier: 'r1', tierNumber: null, nextTierAt: null, tierFloor: 1, duelsUsed: null, duelsMax: null, slots: null, slotsMax: null, squadHeroIds: [] }, { capturedAt: AT.recordedAt })).toBe(false);
+    expect(history.recordRank({ position: 1, points: 1 }, { capturedAt: AT.recordedAt })).toBe(false);
     expect(history.list({ limit: 10 })).toEqual(EMPTY_PVP_HISTORY);
   });
 });

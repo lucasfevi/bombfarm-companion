@@ -35,20 +35,25 @@ function openHistory() {
 }
 
 describe('pvp recorder', () => {
-  it('records the committed offline fixture: two duels, one with its film and one without', () => {
+  it('records the committed offline fixture: two duels (one with its film), the standing and the rank', () => {
     const history = openHistory();
     const emitted: PvpHistoryResult[] = [];
     const recorder = createPvpRecorder({ history, accountId: () => '486', emit: (view) => emitted.push(view) });
 
-    const [result, film, filmless] = fixtureBodies();
-    if (!result || !film || !filmless) throw new Error('fixture holds fewer than three bodies');
+    const [result, film, filmless, state, ranking] = fixtureBodies();
+    if (!result || !film || !filmless || !state || !ranking) throw new Error('fixture holds fewer than five bodies');
     recorder.observe(observationOf(result, 1_000));
     recorder.observe(observationOf(film, 2_000));
     recorder.observe(observationOf(filmless, 3_000));
+    recorder.observe(observationOf(state, 4_000));
+    recorder.observe(observationOf(ranking, 5_000));
 
-    expect(emitted).toHaveLength(3);
+    expect(emitted).toHaveLength(5);
     const view = history.list({ limit: 10 });
     expect(view.totals).toEqual({ duels: 2, won: 1, films: 1 });
+    expect(view.standing).toMatchObject({ points: 113, tier: 'r3', tierFloor: 100, duelsUsed: 3, duelsMax: 5, slots: 5, slotsMax: 9, capturedAt: new Date(4_000).toISOString() });
+    expect(view.standing?.squadHeroIds).toHaveLength(5);
+    expect(view.rank).toEqual({ position: 12, points: 113, capturedAt: new Date(5_000).toISOString() });
     expect(view.rows.map((row) => [row.filmId, row.filmStored, row.won, row.accountId])).toEqual([
       [0, false, false, '486'],
       [48117, true, true, '486'],
@@ -75,6 +80,28 @@ describe('pvp recorder', () => {
     recorder.observe(observationOf(Buffer.from(raw, 'utf8'), 1_000));
     const stored = db.prepare('SELECT body, frames FROM pvp_films WHERE film_id = ?').get(7) as { body: string; frames: number };
     expect(stored).toEqual({ body: raw, frames: 1 });
+  });
+
+  it('takes the standing a duel result carries, so the section is current before any poll', () => {
+    const history = openHistory();
+    const recorder = createPvpRecorder({ history, accountId: () => null, emit: () => undefined });
+    const [result] = fixtureBodies();
+    if (!result) throw new Error('fixture is empty');
+    recorder.observe(observationOf(result, 1_000));
+    expect(history.list({ limit: 10 }).standing).toMatchObject({ points: 123, tier: 'r3', capturedAt: new Date(1_000).toISOString() });
+  });
+
+  it('keeps a rank from the PVP points board only, never from the hero or power boards', () => {
+    const history = openHistory();
+    const emit = vi.fn();
+    const recorder = createPvpRecorder({ history, accountId: () => null, emit });
+    const [, , , , ranking] = fixtureBodies();
+    if (!ranking) throw new Error('fixture holds no ranking');
+    const other = JSON.parse(ranking.toString('utf8')) as Record<string, unknown>;
+    other.by = 'hero';
+    recorder.observe(observationOf(Buffer.from(JSON.stringify(other), 'utf8'), 1_000));
+    expect(emit).not.toHaveBeenCalled();
+    expect(history.list({ limit: 10 }).rank).toBeNull();
   });
 
   it('announces once per body kept, never for one already held', () => {

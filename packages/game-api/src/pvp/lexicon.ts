@@ -1,10 +1,11 @@
 /**
- * The PVP wire lexicon: the duel result the client receives when it presses Challenge, and the
- * film it fetches right after. Both bodies mix Portuguese keys (`venceu`, `fase`, `filme`) with
- * English ones (`slots`, `squad`, `hz`), and this table is the one place that vocabulary is
- * translated into this codebase's own English domain field names — the same job
- * `../rotation/lexicon.ts` does for `/rotation`. `identify.ts` and `parse.ts` reference a wire
- * token only through {@link wireKey}, never as an inline literal.
+ * The PVP wire lexicon: the duel result the client receives when it presses Challenge, the film it
+ * fetches right after, the PVP state the client polls (the same object the result carries as
+ * `estado`), and the ranking it fetches when the player opens the leaderboard. The bodies mix
+ * Portuguese keys (`venceu`, `fase`, `filme`) with English ones (`slots`, `squad`, `hz`), and this
+ * table is the one place that vocabulary is translated into this codebase's own English domain
+ * field names — the same job `../rotation/lexicon.ts` does for `/rotation`. `identify.ts` and
+ * `parse.ts` reference a wire token only through {@link wireKey}, never as an inline literal.
  *
  * The film's per-frame keys (`t`, `hp`, `da`, `dd`, `k`, `c`, `h`, `b`, `x`) are declared for
  * documentation: the desktop keeps the film whole and reads only its header, so nothing here
@@ -40,6 +41,23 @@ export type PvpWireSymbol =
   | 'squadHeroId'
   | 'stateDuelsUsed'
   | 'stateEnabled'
+  | 'stateSlotsMax'
+  | 'stateSlotsAll'
+  | 'stateActiveTier'
+  | 'stateLevel'
+  | 'stateLevels'
+  | 'stateMaxLevel'
+  | 'stateUpgradeCost'
+  | 'upgradeCostQuantity'
+  | 'upgradeCostRarity'
+  | 'rankingBy'
+  | 'rankingTop'
+  | 'rankingMe'
+  | 'rankingRank'
+  | 'rankingName'
+  | 'rankingValue'
+  | 'rankingHeroSkin'
+  | 'rankingBadges'
   | 'filmIdField'
   | 'filmVisualPhase'
   | 'filmHz'
@@ -85,6 +103,23 @@ const KEY_ENTRIES: ReadonlyArray<WireLexiconEntry & { readonly symbol: PvpWireSy
   { symbol: 'squadHeroId', wireToken: 'hero_id', kind: 'key', domainField: 'heroId', description: 'A squad entry’s hero id.', origin: 'english' },
   { symbol: 'stateDuelsUsed', wireToken: 'duelos_usados', kind: 'key', domainField: 'duelsUsed', description: 'Duels spent from the quota.', origin: 'portuguese' },
   { symbol: 'stateEnabled', wireToken: 'enabled', kind: 'key', domainField: 'enabled', description: 'Whether PVP is open to the account.', origin: 'english' },
+  { symbol: 'stateSlotsMax', wireToken: 'slots_max', kind: 'key', domainField: 'slotsMax', description: 'Squad slots at the top of the ladder.', origin: 'english' },
+  { symbol: 'stateSlotsAll', wireToken: 'slots_all', kind: 'key', domainField: 'slotsAll', description: 'Squad slots granted at each squad level.', origin: 'english' },
+  { symbol: 'stateActiveTier', wireToken: 'active_tier', kind: 'key', domainField: 'activeTier', description: 'Meaning not established.', origin: 'english' },
+  { symbol: 'stateLevel', wireToken: 'level', kind: 'key', domainField: 'level', description: 'Squad level of the highest rarity house. Meaning not fully established.', origin: 'english' },
+  { symbol: 'stateLevels', wireToken: 'levels', kind: 'key', domainField: 'levels', description: 'Per-rarity squad house levels.', origin: 'english' },
+  { symbol: 'stateMaxLevel', wireToken: 'max_level', kind: 'key', domainField: 'maxLevel', description: 'The squad house level cap (20 observed).', origin: 'english' },
+  { symbol: 'stateUpgradeCost', wireToken: 'upgrade_cost', kind: 'key', domainField: 'upgradeCost', description: 'The time items the next squad upgrade costs, per rarity.', origin: 'english' },
+  { symbol: 'upgradeCostQuantity', wireToken: 'qtd', kind: 'key', domainField: 'quantity', description: 'How many of a rarity the upgrade costs.', origin: 'portuguese' },
+  { symbol: 'upgradeCostRarity', wireToken: 'rarity', kind: 'key', domainField: 'rarity', description: 'The rarity an upgrade cost entry is priced in.', origin: 'english' },
+  { symbol: 'rankingBy', wireToken: 'by', kind: 'key', domainField: 'by', description: 'Which leaderboard the body is: `pvp`, `hero` or `power`.', origin: 'english' },
+  { symbol: 'rankingTop', wireToken: 'top', kind: 'key', domainField: 'top', description: 'The top hundred, one entry per rank.', origin: 'english' },
+  { symbol: 'rankingMe', wireToken: 'me', kind: 'key', domainField: 'me', description: "The player's own entry, whatever their rank.", origin: 'english' },
+  { symbol: 'rankingRank', wireToken: 'rank', kind: 'key', domainField: 'rank', description: 'A leaderboard position, 1 at the top.', origin: 'english' },
+  { symbol: 'rankingName', wireToken: 'name', kind: 'key', domainField: 'name', description: "An entry's display name.", origin: 'english' },
+  { symbol: 'rankingValue', wireToken: 'value', kind: 'key', domainField: 'value', description: 'The figure the board ranks by, as a string of digits (PVP points on the `pvp` board).', origin: 'english' },
+  { symbol: 'rankingHeroSkin', wireToken: 'hero_skin', kind: 'key', domainField: 'heroSkin', description: "An entry's shown skin index.", origin: 'english' },
+  { symbol: 'rankingBadges', wireToken: 'badges', kind: 'key', domainField: 'badges', description: "An entry's badge tokens.", origin: 'english' },
   { symbol: 'filmIdField', wireToken: 'id', kind: 'key', domainField: 'filmId', description: 'The film’s own id — the value the result named in `filme`.', origin: 'english' },
   { symbol: 'filmVisualPhase', wireToken: 'fase_visual', kind: 'key', domainField: 'visualPhase', description: 'The phase the film draws its room as.', origin: 'portuguese' },
   { symbol: 'filmHz', wireToken: 'hz', kind: 'key', domainField: 'hz', description: 'Frames per second the film was sampled at (12 observed).', origin: 'english' },
@@ -107,7 +142,13 @@ const KEY_ENTRIES: ReadonlyArray<WireLexiconEntry & { readonly symbol: PvpWireSy
 const ENUM_ENTRIES: readonly WireLexiconEntry[] = [
   { symbol: 'prizeWon', wireToken: 'won', kind: 'enum_value', domainField: 'prize', description: 'The rune chest landed in the bag.', origin: 'english' },
   { symbol: 'prizeLost', wireToken: 'lost', kind: 'enum_value', domainField: 'prize', description: 'The rune chest was lost to a full bag.', origin: 'english' },
+  { symbol: 'rankingByPvp', wireToken: 'pvp', kind: 'enum_value', domainField: 'by', description: 'The PVP points leaderboard.', origin: 'english' },
+  { symbol: 'rankingByHero', wireToken: 'hero', kind: 'enum_value', domainField: 'by', description: 'The strongest-hero leaderboard.', origin: 'english' },
+  { symbol: 'rankingByPower', wireToken: 'power', kind: 'enum_value', domainField: 'by', description: 'The total-power leaderboard.', origin: 'english' },
 ];
+
+/** The one board this app reads a position from. */
+export const PVP_RANKING_BOARD = 'pvp';
 
 export const PVP_WIRE_LEXICON: readonly WireLexiconEntry[] = [...KEY_ENTRIES, ...ENUM_ENTRIES];
 

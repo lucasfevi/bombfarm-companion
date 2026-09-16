@@ -5,9 +5,13 @@ export function formatPointsDelta(row: Pick<PvpDuelRow, 'pointsBefore' | 'points
   return new Intl.NumberFormat(BCP47_BY_LOCALE[locale], { signDisplay: 'exceptZero' }).format(row.pointsAfter - row.pointsBefore);
 }
 
-/** The quota as the most recent duel reported it — the one row that knows, since the tap sees
- *  no state read of its own. `null` before any duel. */
-export function latestQuota(history: PvpHistoryResult): { readonly left: number; readonly max: number } | null {
+/** Duels left today, from the standing when it carries the quota and otherwise from the latest
+ *  duel's own report — a result always says what was left after it. `null` before either. */
+export function duelsLeft(history: PvpHistoryResult): { readonly left: number; readonly max: number } | null {
+  const standing = history.standing;
+  if (standing !== null && standing.duelsUsed !== null && standing.duelsMax !== null) {
+    return { left: Math.max(0, standing.duelsMax - standing.duelsUsed), max: standing.duelsMax };
+  }
   const latest = history.rows[0];
   return latest === undefined ? null : { left: latest.duelsLeft, max: latest.duelsMax };
 }

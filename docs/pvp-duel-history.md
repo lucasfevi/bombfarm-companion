@@ -1,7 +1,8 @@
 # PVP duel history
 
 **Status (2026-09-16):** the desktop keeps every duel it sees settle while it is open, and the PVP
-tab lists them. Nothing is predicted and no squad is picked; this is a record.
+tab lists them under the account's standing as the game last reported it. Nothing is predicted and
+no squad is picked; this is a record.
 
 ## What a duel looks like on the wire
 
@@ -17,6 +18,12 @@ live tap already sees in plaintext:
    `squad`, …);
 2. the **film** — ~2 MB: `id`, `fase`, `fase_visual`, `hz`, `segundos`, `salas`, per-hero `a[]` /
    `d[]`, and `q[]`, 721 frames for a 60 s duel at 12 Hz.
+
+Two more bodies pass without a duel: the **state** the client polls (the same object a result
+carries as `estado` — points, tier, the next tier's threshold, quota, squad slots and the squad),
+and the **ranking** the client fetches when the player opens the leaderboard (`by` names the
+board — `pvp`, `hero` or `power` — with the top hundred and the player's own `me` entry). The tab's
+standing section is drawn from the latest of each; only the `pvp` board's position is kept.
 
 The client fetches the film immediately after the result, and **the server answers 404 for it
 seconds later**. The only way to ever have a film is to keep the body the moment it passes.
@@ -38,7 +45,23 @@ still arriving it buffers rather than scanning the half-body for a frame start, 
 body is arbitrary bytes. What it still skips, and says so: a body with neither a length nor
 chunked framing, and an encoding it cannot inflate.
 
-## How the two bodies are told apart
+## What the film says about the opponent, and what it cannot
+
+A result names the opponent, their hero count and their score, and nothing else; `estado` is the
+player's own state. The film is anonymous by construction: `d[]` is one `{sk, t}` per defender
+slot, and every frame's `h[]` carries side, slot, cell, position, a state and a walk speed — where
+each hero went and what it was doing, never who it was. No hero id, name, level, rarity, gear or
+ability crosses the wire for either side.
+
+Per-hero damage is not in the film either. A bomb carries its cell, side, radius and fuse but no
+placer, and damage exists only as the two per-side running totals. Measured on the first real film:
+the placer is inferable from which of the side's heroes stands on the bomb's cell when it appears
+(205 of 207 bombs unambiguous), but of the 193 frames where the player's total moved, 17 had
+several of their bombs ending in the same tick and 19 had none — about a fifth of the damage would
+be a guess, and two heroes hitting one prop cannot be split at all. A per-hero score is therefore
+not shown: a figure that is right four times in five reads as data and is not.
+
+## How the bodies are told apart
 
 The tap hooks the client's TLS read side, so an observed body carries no URL. The account sections
 are identified by complete-key-set fingerprints; the PVP bodies are not, because a result's state
@@ -55,7 +78,10 @@ complete key set contains either pair, and a test pins that against every finger
 handle the forge ledger borrows (`CREATE TABLE IF NOT EXISTS`, so `SCHEMA_VERSION` does not move):
 
 - `pvp_duels` — one row per result, the fields as columns, keyed by `duel_key`;
-- `pvp_films` — one row per film, keyed by film id, the body kept as the bytes that passed.
+- `pvp_films` — one row per film, keyed by film id, the body kept as the bytes that passed;
+- `pvp_standing` — two rows, the latest state report and the latest points-board position, each
+  with the time it was captured; a report identical to the one held is not rewritten, so nothing
+  downstream is woken for a poll that repeats.
 
 Two tables because the bodies arrive separately and in no guaranteed order. **A player who skips
 the battle animation may never pull the film at all**; the server may issue none (`filme: 0`); the
@@ -82,7 +108,8 @@ list when they come back.
 ## Offline mode
 
 The committed byte capture predates duels, so `pnpm dev:offline` serves the bodies in
-`src/main/live-source/fixtures/pvp-duels-offline.json` — two results and one film — once per tap,
+`src/main/live-source/fixtures/pvp-duels-offline.json` — two results, one film, a state poll and a
+ranking — once per tap,
 ahead of the first frame, through the same HTTP decoder the capture's own REST bytes go through.
 The two results are deliberately one filmed duel and one filmless, so the tab shows both states.
 `BFC_REPLAY_PVP_FIXTURE` points the replay at another file; an empty string opts out.

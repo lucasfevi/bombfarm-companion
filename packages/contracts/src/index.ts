@@ -34,6 +34,10 @@ export type {
   PvpFilmSummary,
   PvpHistoryResult,
   PvpHistoryTotals,
+  PvpRank,
+  PvpRankEntry,
+  PvpStanding,
+  PvpStateSnapshot,
 } from './pvp.js';
 export { migrateStoredSettings } from './settings-migration.js';
 /** The desktop locale token, its one domain/BCP-47 mapping, and the pure

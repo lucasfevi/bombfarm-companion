@@ -1,5 +1,5 @@
 import type { PvpHistoryResult } from '@bombfarm/contracts';
-import { parsePvpDuelResult, parsePvpFilm } from '@bombfarm/game-api';
+import { isPvpPointsBoard, parsePvpDuelResult, parsePvpDuelState, parsePvpFilm, parsePvpRanking, parsePvpState } from '@bombfarm/game-api';
 import type { ObservedPvpBody } from '../live-source/live-source.js';
 import type { LogPort } from '../storage/index.js';
 import type { PvpHistory } from './pvp-history.js';
@@ -45,8 +45,32 @@ export function createPvpRecorder(deps: PvpRecorderDeps): PvpRecorder {
           return;
         }
         const written = deps.history.recordDuel(record, { recordedAt: at, accountId: deps.accountId() });
+        // The result carries the standing after the duel — fresher than any poll, so it replaces it.
+        const state = parsePvpDuelState(body);
+        const standingWritten = state !== null && deps.history.recordStanding(state, { capturedAt: at });
         log.info({ scope: 'pvp', event: written ? 'duel.recorded' : 'duel.already_held', filmId: record.filmId, won: record.won });
-        if (written) announce();
+        if (written || standingWritten) announce();
+        return;
+      }
+
+      if (route === 'state') {
+        const state = parsePvpState(body);
+        if (state === null) {
+          log.warn({ scope: 'pvp', event: 'state.unreadable', byteLength: raw.length });
+          return;
+        }
+        if (deps.history.recordStanding(state, { capturedAt: at })) announce();
+        return;
+      }
+
+      if (route === 'ranking') {
+        const entry = parsePvpRanking(body);
+        if (entry === null) {
+          log.warn({ scope: 'pvp', event: 'ranking.unreadable', byteLength: raw.length });
+          return;
+        }
+        if (!isPvpPointsBoard(entry)) return;
+        if (deps.history.recordRank({ position: entry.position, points: entry.value }, { capturedAt: at })) announce();
         return;
       }
 

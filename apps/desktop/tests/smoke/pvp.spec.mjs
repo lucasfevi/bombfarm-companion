@@ -49,9 +49,13 @@ const en = (key) => readCopyValue(EN_COPY_PATH, key);
 
 /** The bodies the replay serves, read from the same file main reads — so the assertions below
  *  follow the fixture rather than restating it. */
-function fixtureDuels() {
+function fixtureBodies() {
   const { bodies } = JSON.parse(fs.readFileSync(PVP_FIXTURE, 'utf8'));
-  return bodies.filter((body) => typeof body.venceu === 'boolean');
+  return {
+    duels: bodies.filter((body) => typeof body.venceu === 'boolean'),
+    state: bodies.find((body) => typeof body.pontos === 'number' && Array.isArray(body.squad)),
+    ranking: bodies.find((body) => body.by === 'pvp'),
+  };
 }
 
 async function launchApp(env) {
@@ -119,7 +123,7 @@ test.describe('PVP tab — every duel the replayed tap saw settle, kept and list
     await expect(navButton(page, PVP_TAB_INDEX)).toHaveAccessibleName(en('pvpNavLabel'));
     await openPvp(page);
 
-    const duels = fixtureDuels();
+    const { duels } = fixtureBodies();
     expect(duels).toHaveLength(2);
     const [filmed, filmless] = duels;
 
@@ -132,7 +136,7 @@ test.describe('PVP tab — every duel the replayed tap saw settle, kept and list
     await expect(rows.nth(0).getByTestId('pvp-opponent')).toHaveText(filmless.defensor.nome);
     await expect(rows.nth(0).getByTestId('pvp-result')).toHaveText(en('pvpResultLost'));
     await expect(rows.nth(0).getByTestId('pvp-film')).toHaveText(en('pvpFilmMissing'));
-    await expect(rows.nth(0).getByTestId('pvp-prize')).toHaveText(en('pvpPrizeLost'));
+    await expect(page.getByTestId('pvp-prize')).toHaveCount(0);
 
     await expect(rows.nth(1)).toHaveAttribute('data-film-stored', 'true');
     await expect(rows.nth(1).getByTestId('pvp-opponent')).toHaveText(filmed.defensor.nome);
@@ -143,9 +147,20 @@ test.describe('PVP tab — every duel the replayed tap saw settle, kept and list
     await expect(rows.nth(1).getByTestId('pvp-points')).toHaveText(`${filmed.pontos_antes} → ${filmed.pontos_depois}`);
 
     await expect(page.getByTestId('pvp-summary')).toHaveText('2 duels · 1 won · 1 films kept');
-    await expect(page.getByTestId('pvp-quota')).toHaveText(
-      `${filmless.duelos_restantes} of ${filmless.duelos_max} duels left`,
-    );
+  });
+
+  test('the standing section shows the last state poll and the ranking the replay served', async () => {
+    const { state, ranking } = fixtureBodies();
+    expect(state).toBeDefined();
+    expect(ranking).toBeDefined();
+
+    await expect(page.getByTestId('pvp-standing')).toHaveAttribute('data-state', 'read');
+    await expect(page.getByTestId('pvp-standing-points')).toContainText(String(state.pontos));
+    await expect(page.getByTestId('pvp-standing-points')).toContainText(`tier ${state.faixa} · next tier at ${state.faixa_prox}`);
+    await expect(page.getByTestId('pvp-standing-duels')).toContainText(`${state.duelos_max - state.duelos_usados} of ${state.duelos_max}`);
+    await expect(page.getByTestId('pvp-standing-slots')).toContainText(`${state.slots} of ${state.slots_max}`);
+    await expect(page.getByTestId('pvp-standing-rank')).toContainText(`#${ranking.me.rank}`);
+    await expect(page.getByTestId('pvp-standing-rank')).toContainText(`at ${ranking.me.value} points`);
   });
 
   test('the duels survive a relaunch on the same user data, and the replay serving them again adds nothing', async () => {

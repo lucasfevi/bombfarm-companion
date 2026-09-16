@@ -938,6 +938,73 @@
     "duelos_max": 5,
     "enabled": true
    }
+  },
+  {
+   "pontos": 113,
+   "faixa": "r3",
+   "faixa_num": 3,
+   "faixa_prox": 150,
+   "fase": 100,
+   "slots": 5,
+   "squad": [
+    {
+     "slot": 0,
+     "hero_id": "26863"
+    },
+    {
+     "slot": 1,
+     "hero_id": "41990"
+    },
+    {
+     "slot": 2,
+     "hero_id": "52562"
+    },
+    {
+     "slot": 3,
+     "hero_id": "45497"
+    },
+    {
+     "slot": 4,
+     "hero_id": "59925"
+    }
+   ],
+   "duelos_usados": 3,
+   "duelos_max": 5,
+   "enabled": true,
+   "slots_max": 9,
+   "slots_all": [
+    2,
+    4,
+    6,
+    8,
+    9
+   ]
+  },
+  {
+   "by": "pvp",
+   "top": [
+    {
+     "rank": 1,
+     "name": "Corvo Negro",
+     "value": "240",
+     "hero_skin": 0,
+     "badges": []
+    },
+    {
+     "rank": 2,
+     "name": "Tempestade",
+     "value": "221",
+     "hero_skin": 0,
+     "badges": []
+    }
+   ],
+   "me": {
+    "rank": 12,
+    "name": "Bellatrix Squad",
+    "value": "113",
+    "hero_skin": 0,
+    "badges": []
+   }
   }
  ]
 }

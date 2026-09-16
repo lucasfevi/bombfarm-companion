@@ -4,7 +4,7 @@ import { identifyObservedBody } from '../identify-observed-body.js';
 import { checkShape } from '../shape.js';
 import { identifyPvpBody } from './identify.js';
 import { wireKey } from './lexicon.js';
-import { parsePvpDuelResult, parsePvpFilm } from './parse.js';
+import { isPvpPointsBoard, parsePvpDuelResult, parsePvpDuelState, parsePvpFilm, parsePvpRanking, parsePvpState } from './parse.js';
 
 function side(name: string, heroes: unknown, score: number): Record<string, unknown> {
   return { [wireKey('sideName')]: name, [wireKey('sideHeroes')]: heroes, [wireKey('sideScore')]: score };
@@ -58,7 +58,43 @@ function film(overrides: Record<string, unknown> = {}): Record<string, unknown> 
   };
 }
 
+function stateBody(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    [wireKey('statePoints')]: 205,
+    [wireKey('stateTier')]: 'r2',
+    [wireKey('phase')]: 50,
+    [wireKey('stateTierNumber')]: 2,
+    [wireKey('stateTierNext')]: 375,
+    [wireKey('stateSlots')]: 9,
+    [wireKey('stateSlotsMax')]: 9,
+    [wireKey('stateSquad')]: [{ [wireKey('squadSlot')]: 0, [wireKey('squadHeroId')]: 862212 }],
+    [wireKey('stateDuelsUsed')]: 8,
+    [wireKey('duelsMax')]: 10,
+    [wireKey('stateEnabled')]: true,
+    ...overrides,
+  };
+}
+
+function rankingBody(board: string, overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    [wireKey('rankingBy')]: board,
+    [wireKey('rankingTop')]: [{ [wireKey('rankingRank')]: 1, [wireKey('rankingName')]: 'Top', [wireKey('rankingValue')]: '240' }],
+    [wireKey('rankingMe')]: { [wireKey('rankingRank')]: 2, [wireKey('rankingName')]: 'Me', [wireKey('rankingValue')]: '200' },
+    ...overrides,
+  };
+}
+
 describe('identifyPvpBody', () => {
+  it('names the polled state by its points, tier and squad at the top level, and a ranking by its board, top and own entry', () => {
+    expect(identifyPvpBody(stateBody())).toBe('state');
+    expect(identifyPvpBody(rankingBody('pvp'))).toBe('ranking');
+    expect(identifyPvpBody(rankingBody('hero'))).toBe('ranking');
+  });
+
+  it('does not take a duel result for a state, though it carries the same object nested', () => {
+    expect(identifyPvpBody(duelResult())).toBe('duel');
+  });
+
   it('names a duel result by the won flag and the film id together', () => {
     expect(identifyPvpBody(duelResult())).toBe('duel');
   });
@@ -159,6 +195,64 @@ describe('parsePvpDuelResult', () => {
   it('tolerates a squad the state does not carry', () => {
     const state = { [wireKey('stateTier')]: 'r1', [wireKey('phase')]: 1 };
     expect(parsePvpDuelResult(duelResult({ [wireKey('state')]: state }))?.squadHeroIds).toEqual([]);
+  });
+});
+
+describe('parsePvpState', () => {
+  it('reads the standing from the polled body, and the same from a duel result', () => {
+    const expected = {
+      points: 205,
+      tier: 'r2',
+      tierNumber: 2,
+      nextTierAt: 375,
+      tierFloor: 50,
+      duelsUsed: 8,
+      duelsMax: 10,
+      slots: 9,
+      slotsMax: 9,
+      squadHeroIds: ['862212'],
+    };
+    expect(parsePvpState(stateBody())).toEqual(expected);
+    expect(parsePvpDuelState(duelResult({ [wireKey('state')]: stateBody() }))).toEqual(expected);
+  });
+
+  it('leaves out figures the wire does not carry rather than inventing them', () => {
+    const sparse = { [wireKey('statePoints')]: 1, [wireKey('stateTier')]: 'r1', [wireKey('phase')]: 1 };
+    expect(parsePvpState(sparse)).toEqual({
+      points: 1,
+      tier: 'r1',
+      tierNumber: null,
+      nextTierAt: null,
+      tierFloor: 1,
+      duelsUsed: null,
+      duelsMax: null,
+      slots: null,
+      slotsMax: null,
+      squadHeroIds: [],
+    });
+  });
+
+  it('refuses a state without points, tier or floor', () => {
+    expect(parsePvpState(stateBody({ [wireKey('statePoints')]: '205' }))).toBeNull();
+    expect(parsePvpState(stateBody({ [wireKey('stateTier')]: 2 }))).toBeNull();
+    expect(parsePvpState('x')).toBeNull();
+  });
+});
+
+describe('parsePvpRanking', () => {
+  it("reads the player's own entry and names the board, with the digit-string value as a number", () => {
+    expect(parsePvpRanking(rankingBody('pvp'))).toEqual({ board: 'pvp', position: 2, value: 200 });
+    expect(parsePvpRanking(rankingBody('power'))).toEqual({ board: 'power', position: 2, value: 200 });
+  });
+
+  it('tells the PVP points board from the others', () => {
+    expect(isPvpPointsBoard({ board: 'pvp', position: 1, value: 1 })).toBe(true);
+    expect(isPvpPointsBoard({ board: 'hero', position: 1, value: 1 })).toBe(false);
+  });
+
+  it('refuses a ranking without a usable own entry', () => {
+    expect(parsePvpRanking(rankingBody('pvp', { [wireKey('rankingMe')]: {} }))).toBeNull();
+    expect(parsePvpRanking(rankingBody('pvp', { [wireKey('rankingMe')]: { [wireKey('rankingRank')]: 2, [wireKey('rankingValue')]: 'n/a' } }))).toBeNull();
   });
 });
 

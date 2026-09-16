@@ -5,6 +5,9 @@ import {
   type PvpDuelRow,
   type PvpFilmSummary,
   type PvpHistoryResult,
+  type PvpRank,
+  type PvpStanding,
+  type PvpStateSnapshot,
 } from '@bombfarm/contracts';
 import type { LogPort, SqliteDb } from '../storage/index.js';
 
@@ -61,7 +64,18 @@ CREATE TABLE IF NOT EXISTS pvp_films (
   frames       INTEGER NOT NULL,
   body         TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS pvp_standing (
+  key         TEXT PRIMARY KEY,
+  captured_at TEXT NOT NULL,
+  body        TEXT NOT NULL
+);
 `;
+
+/** The two rows `pvp_standing` holds: the account's PVP state as last reported, and its position
+ *  on the points board as last fetched. Newest wins; there is no history of either. */
+const STANDING_KEY = 'state';
+const RANK_KEY = 'rank';
 
 const LIST_SQL = `
 SELECT d.*, (f.film_id IS NOT NULL) AS film_stored
@@ -81,7 +95,16 @@ export interface PvpHistory {
   recordDuel(record: PvpDuelRecord, opts: { readonly recordedAt: string; readonly accountId: string | null }): boolean;
   /** `true` when the film was written; a film already held is left as first stored. */
   storeFilm(summary: PvpFilmSummary, body: string, opts: { readonly storedAt: string }): boolean;
+  /** Replaces the standing with a newer report; `false` when it repeats the one held, or with no
+   *  store behind it. */
+  recordStanding(snapshot: PvpStateSnapshot, opts: { readonly capturedAt: string }): boolean;
+  recordRank(rank: Omit<PvpRank, 'capturedAt'>, opts: { readonly capturedAt: string }): boolean;
   list(opts: { readonly limit: number }): PvpHistoryResult;
+}
+
+interface StandingRow {
+  captured_at: string;
+  body: string;
 }
 
 interface StoredRow {
@@ -169,6 +192,42 @@ export function duelKeyOf(record: PvpDuelRecord): string {
   ].join(':');
 }
 
+function readStanding(db: SqliteDb, key: string): StandingRow | undefined {
+  return db.prepare('SELECT captured_at, body FROM pvp_standing WHERE key = ?').get(key) as StandingRow | undefined;
+}
+
+/** `false` when the report says nothing new — a poll repeating the last one, or a result body
+ *  seen twice — so nothing downstream is woken for it. */
+function writeStanding(db: SqliteDb, key: string, capturedAt: string, body: unknown): boolean {
+  const encoded = JSON.stringify(body);
+  if (readStanding(db, key)?.body === encoded) return false;
+  db.prepare(
+    'INSERT INTO pvp_standing (key, captured_at, body) VALUES (?, ?, ?) ' +
+      'ON CONFLICT(key) DO UPDATE SET captured_at = excluded.captured_at, body = excluded.body',
+  ).run(key, capturedAt, encoded);
+  return true;
+}
+
+function standingOf(row: StandingRow | undefined): PvpStanding | null {
+  if (!row) return null;
+  try {
+    const parsed = JSON.parse(row.body) as PvpStateSnapshot;
+    return { ...parsed, capturedAt: row.captured_at };
+  } catch {
+    return null;
+  }
+}
+
+function rankOf(row: StandingRow | undefined): PvpRank | null {
+  if (!row) return null;
+  try {
+    const parsed = JSON.parse(row.body) as Omit<PvpRank, 'capturedAt'>;
+    return { ...parsed, capturedAt: row.captured_at };
+  } catch {
+    return null;
+  }
+}
+
 /** Both bindings answer `run()` with the statement's change count under the same key. */
 function wrote(runResult: unknown): boolean {
   const changes = (runResult as { changes?: unknown } | null)?.changes;
@@ -249,6 +308,26 @@ export function createPvpHistory(db: SqliteDb | null, log: LogPort = NOOP_LOG): 
       }
     },
 
+    recordStanding(snapshot, { capturedAt }) {
+      if (!db) return false;
+      try {
+        return writeStanding(db, STANDING_KEY, capturedAt, snapshot);
+      } catch (err) {
+        log.error({ scope: 'pvp', event: 'history.record_standing_failed', error: String(err) });
+        return false;
+      }
+    },
+
+    recordRank(rank, { capturedAt }) {
+      if (!db) return false;
+      try {
+        return writeStanding(db, RANK_KEY, capturedAt, rank);
+      } catch (err) {
+        log.error({ scope: 'pvp', event: 'history.record_rank_failed', error: String(err) });
+        return false;
+      }
+    },
+
     list({ limit }) {
       if (!db) return EMPTY_PVP_HISTORY;
       try {
@@ -261,6 +340,8 @@ export function createPvpHistory(db: SqliteDb | null, log: LogPort = NOOP_LOG): 
         return {
           rows: rows.map(toRow),
           totals: { duels: totals?.duels ?? 0, won: totals?.won ?? 0, films: totals?.films ?? 0 },
+          standing: standingOf(readStanding(db, STANDING_KEY)),
+          rank: rankOf(readStanding(db, RANK_KEY)),
         };
       } catch (err) {
         log.error({ scope: 'pvp', event: 'history.list_failed', error: String(err) });

@@ -150,6 +150,23 @@ The duel result the client receives on Challenge and the film it fetches right a
 | `hero_id` | `heroId` | A squad entry’s hero id. | English |
 | `duelos_usados` | `duelsUsed` | Duels spent from the quota. | Portuguese |
 | `enabled` | `enabled` | Whether PVP is open to the account. | English |
+| `slots_max` | `slotsMax` | Squad slots at the top of the ladder. | English |
+| `slots_all` | `slotsAll` | Squad slots granted at each squad level. | English |
+| `active_tier` | `activeTier` | Meaning not established. | English |
+| `level` | `level` | Squad level of the highest rarity house. Meaning not fully established. | English |
+| `levels` | `levels` | Per-rarity squad house levels. | English |
+| `max_level` | `maxLevel` | The squad house level cap (20 observed). | English |
+| `upgrade_cost` | `upgradeCost` | The time items the next squad upgrade costs, per rarity. | English |
+| `qtd` | `quantity` | How many of a rarity the upgrade costs. | Portuguese |
+| `rarity` | `rarity` | The rarity an upgrade cost entry is priced in. | English |
+| `by` | `by` | Which leaderboard the body is: `pvp`, `hero` or `power`. | English |
+| `top` | `top` | The top hundred, one entry per rank. | English |
+| `me` | `me` | The player's own entry, whatever their rank. | English |
+| `rank` | `rank` | A leaderboard position, 1 at the top. | English |
+| `name` | `name` | An entry's display name. | English |
+| `value` | `value` | The figure the board ranks by, as a string of digits (PVP points on the `pvp` board). | English |
+| `hero_skin` | `heroSkin` | An entry's shown skin index. | English |
+| `badges` | `badges` | An entry's badge tokens. | English |
 | `id` | `filmId` | The film’s own id — the value the result named in `filme`. | English |
 | `fase_visual` | `visualPhase` | The phase the film draws its room as. | Portuguese |
 | `hz` | `hz` | Frames per second the film was sampled at (12 observed). | English |
@@ -174,3 +191,6 @@ The duel result the client receives on Challenge and the film it fetches right a
 | --- | --- | --- | --- |
 | `won` | `prize` | The rune chest landed in the bag. | English |
 | `lost` | `prize` | The rune chest was lost to a full bag. | English |
+| `pvp` | `by` | The PVP points leaderboard. | English |
+| `hero` | `by` | The strongest-hero leaderboard. | English |
+| `power` | `by` | The total-power leaderboard. | English |

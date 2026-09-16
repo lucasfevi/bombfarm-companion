@@ -6,7 +6,7 @@ import { createPvpHistoryStore } from './use-pvp-history';
 type Bridge = NonNullable<Window['bfc']>;
 
 function history(duels: number): PvpHistoryResult {
-  return { rows: [], totals: { duels, won: 0, films: 0 } };
+  return { rows: [], totals: { duels, won: 0, films: 0 }, standing: null, rank: null };
 }
 
 describe('pvp history store', () => {

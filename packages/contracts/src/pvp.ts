@@ -51,6 +51,42 @@ export interface PvpFilmSummary {
   readonly frames: number;
 }
 
+/** The account's PVP standing as the game last reported it — on a poll of its state, or inside a
+ *  duel result. Figures the wire may leave out are `null`, never invented. */
+export interface PvpStateSnapshot {
+  readonly points: number;
+  /** The tier token as the server names it (`r1`…`r6`). */
+  readonly tier: string;
+  readonly tierNumber: number | null;
+  /** The points the next tier starts at. */
+  readonly nextTierAt: number | null;
+  readonly tierFloor: number;
+  readonly duelsUsed: number | null;
+  readonly duelsMax: number | null;
+  readonly slots: number | null;
+  readonly slotsMax: number | null;
+  readonly squadHeroIds: readonly string[];
+}
+
+export interface PvpStanding extends PvpStateSnapshot {
+  readonly capturedAt: string;
+}
+
+/** The player's own entry on one leaderboard body, whichever board it is. */
+export interface PvpRankEntry {
+  readonly board: string;
+  readonly position: number;
+  readonly value: number;
+}
+
+/** The player's position on the PVP points board, as of the last time the client fetched it —
+ *  the game only fetches it when the player opens the ranking, so it carries its own date. */
+export interface PvpRank {
+  readonly position: number;
+  readonly points: number;
+  readonly capturedAt: string;
+}
+
 export interface PvpDuelRow extends PvpDuelRecord {
   readonly id: number;
   readonly recordedAt: string;
@@ -69,6 +105,13 @@ export interface PvpHistoryTotals {
 export interface PvpHistoryResult {
   readonly rows: readonly PvpDuelRow[];
   readonly totals: PvpHistoryTotals;
+  readonly standing: PvpStanding | null;
+  readonly rank: PvpRank | null;
 }
 
-export const EMPTY_PVP_HISTORY: PvpHistoryResult = { rows: [], totals: { duels: 0, won: 0, films: 0 } };
+export const EMPTY_PVP_HISTORY: PvpHistoryResult = {
+  rows: [],
+  totals: { duels: 0, won: 0, films: 0 },
+  standing: null,
+  rank: null,
+};

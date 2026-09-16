@@ -1,6 +1,13 @@
-import type { PvpDuelPrize, PvpDuelRecord, PvpDuelSide, PvpFilmSummary } from '@bombfarm/contracts';
+import type {
+  PvpDuelPrize,
+  PvpDuelRecord,
+  PvpDuelSide,
+  PvpFilmSummary,
+  PvpRankEntry,
+  PvpStateSnapshot,
+} from '@bombfarm/contracts';
 import { isPlainObject } from '../type-guards.js';
-import { wireKey } from './lexicon.js';
+import { PVP_RANKING_BOARD, wireKey } from './lexicon.js';
 
 function finiteNumber(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
@@ -45,9 +52,62 @@ function parseSquadHeroIds(value: unknown): readonly string[] {
 }
 
 /**
+ * Reads the standing: the polled state body, or the same object a duel result carries nested
+ * under its state key. `null` when the points, the tier or its floor are missing — the three
+ * figures the screen leads with.
+ */
+export function parsePvpState(value: unknown): PvpStateSnapshot | null {
+  if (!isPlainObject(value)) return null;
+  const points = finiteNumber(value[wireKey('statePoints')]);
+  const tier = value[wireKey('stateTier')];
+  const tierFloor = finiteNumber(value[wireKey('phase')]);
+  if (points === null || typeof tier !== 'string' || tierFloor === null) return null;
+  const slots = finiteNumber(value[wireKey('stateSlots')]);
+  return {
+    points,
+    tier,
+    tierNumber: finiteNumber(value[wireKey('stateTierNumber')]),
+    nextTierAt: finiteNumber(value[wireKey('stateTierNext')]),
+    tierFloor,
+    duelsUsed: finiteNumber(value[wireKey('stateDuelsUsed')]),
+    duelsMax: finiteNumber(value[wireKey('duelsMax')]),
+    slots,
+    slotsMax: finiteNumber(value[wireKey('stateSlotsMax')]) ?? slots,
+    squadHeroIds: parseSquadHeroIds(value[wireKey('stateSquad')]),
+  };
+}
+
+/** The standing a duel result carries with it, read the same way the polled body is. */
+export function parsePvpDuelState(body: unknown): PvpStateSnapshot | null {
+  return isPlainObject(body) ? parsePvpState(body[wireKey('state')]) : null;
+}
+
+/**
+ * The player's own entry on a ranking body, and which board it is. The value is a string of
+ * digits on the wire; a board this app does not know still parses, so the caller decides what to
+ * keep by `board` rather than this refusing it.
+ */
+export function parsePvpRanking(body: unknown): PvpRankEntry | null {
+  if (!isPlainObject(body)) return null;
+  const board = body[wireKey('rankingBy')];
+  const me = body[wireKey('rankingMe')];
+  if (typeof board !== 'string' || !isPlainObject(me)) return null;
+  const position = finiteNumber(me[wireKey('rankingRank')]);
+  const rawValue = me[wireKey('rankingValue')];
+  const value = typeof rawValue === 'string' && rawValue.trim() !== '' ? Number(rawValue) : finiteNumber(rawValue);
+  if (position === null || value === null || !Number.isFinite(value)) return null;
+  return { board, position, value };
+}
+
+export function isPvpPointsBoard(entry: PvpRankEntry): boolean {
+  return entry.board === PVP_RANKING_BOARD;
+}
+
+/**
  * Reads a duel result body into its record, or `null` when a field the row cannot do without is
  * missing or mistyped. The state object is read for the tier, its floor and the squad only —
- * everything else it carries is the account's standing PVP state, not this duel's.
+ * everything else it carries is the account's standing PVP state, not this duel's, and
+ * {@link parsePvpDuelState} reads that separately.
  */
 export function parsePvpDuelResult(body: unknown): PvpDuelRecord | null {
   if (!isPlainObject(body)) return null;

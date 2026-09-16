@@ -100,17 +100,19 @@ describe('the replay tap serves the committed PVP bodies once, ahead of the firs
     vi.useRealTimers();
   });
 
-  it('hands the two duel results and the film to onHttpBody through the HTTP decoder, before any frame', async () => {
+  it('hands the two duel results, the film, the state and the ranking to onHttpBody through the HTTP decoder, before any frame', async () => {
     const { handle, httpBodies, order } = drive({ pvpFixturePath: COMMITTED_PVP_FIXTURE });
     handle.start();
     advanceRecords(1);
-    expect(order.slice(0, 4)).toEqual(['http', 'http', 'http', 'frame']);
+    expect(order.slice(0, 6)).toEqual(['http', 'http', 'http', 'http', 'http', 'frame']);
 
     const verdicts = httpBodies.map((body) => identifyObservedBody(JSON.parse(body.toString('utf8'))));
     expect(verdicts).toEqual([
       { kind: 'pvp', route: 'duel' },
       { kind: 'pvp', route: 'film' },
       { kind: 'pvp', route: 'duel' },
+      { kind: 'pvp', route: 'state' },
+      { kind: 'pvp', route: 'ranking' },
     ]);
     await handle.teardown();
   });
@@ -119,7 +121,7 @@ describe('the replay tap serves the committed PVP bodies once, ahead of the firs
     const { handle, httpBodies } = drive({ pvpFixturePath: COMMITTED_PVP_FIXTURE });
     handle.start();
     advanceRecords(CAPTURE_RECORDS * 2);
-    expect(httpBodies).toHaveLength(3);
+    expect(httpBodies).toHaveLength(5);
     await handle.teardown();
   });
 
