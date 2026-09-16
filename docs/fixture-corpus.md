@@ -1057,10 +1057,14 @@ set with issues is exactly empty, by name") and the `import-merge` reconstructio
 captures to witness the export fingerprint's two `allowance` keys present.
 
 Every claim was re-asked, not re-recorded: bands and inequalities that reproduced were kept
-unchanged; pinned literals were re-measured with a footprint; two claims did not survive and are
+unchanged; pinned literals were re-measured with a footprint; three claims did not survive and are
 recorded where they stood — `farm-optimize-486`'s chest ratio (1.426 on 2026-08-19, 1.095 on the
-same account on 2026-09-14) is now a drift canary behind the invariant it argued for, and
-`farm-optimize-frontier`'s payback ordering was retired because the contract never ordered it. Two
+same account on 2026-09-14) is now a drift canary behind the invariant it argued for,
+`farm-optimize-frontier`'s payback ordering was retired because the contract never ordered it, and
+`farm-point-rank`'s "speed scores exactly 0 under the DPS objective" was retired because the
+cadence model has priced Speed on every hero since the measured bomb cycle landed (0.145 on Jon
+here; it was already 0.665 on the 2026-08-25 roster under today's model, so it was stale before the
+re-point). Two
 suites (`farm-optimize-frontier`, `farm-optimize-plateau`) turned out to have been reading the
 5-hero 2026-08-13 capture through a defaulted argument while held on a different one; both now
 name their capture. The corpus growing by 29 heroes also moved two letter-grade cut points in

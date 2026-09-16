@@ -78,6 +78,10 @@ function expandTeamPlanWrapper() {
  * One record per capture a call site holds on: `{ suite, helper, capture, mechanic }`. The
  * team-plan wrapper yields two. Throws, naming the call site, on anything it cannot resolve.
  */
+function blankComments(source) {
+  return source.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, (comment) => comment.replace(/[^\n]/g, ' '));
+}
+
 function scanHoldCallSites() {
   const holds = [];
   const throwingCallSites = [];
@@ -87,7 +91,7 @@ function scanHoldCallSites() {
     for (const absolute of listTestSources(join(root, scanRoot))) {
       const suite = toRepoPath(absolute);
       if (NOT_CONSUMERS.includes(suite)) continue;
-      const source = readFileSync(absolute, 'utf8');
+      const source = blankComments(readFileSync(absolute, 'utf8'));
       for (const match of source.matchAll(CALL_PATTERN)) {
         const helper = match[1];
         const line = source.slice(0, match.index).split('\n').length;
