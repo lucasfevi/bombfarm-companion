@@ -80,7 +80,7 @@ describe('pvp history', () => {
     expect(history.list({ limit: 1 }).rows).toHaveLength(1);
   });
 
-  it('keeps one standing and one rank, each replaced by a newer report', () => {
+  it('keeps one standing and one rank, each replaced and re-dated by a newer report even when its figures repeat', () => {
     const open = openTestAccountDb(firstBinding());
     const history = createPvpHistory(open.db);
     const snapshot = {
@@ -90,11 +90,11 @@ describe('pvp history', () => {
     expect(history.recordStanding(snapshot, { capturedAt: '2026-09-16T10:00:00.000Z' })).toBe(true);
     expect(history.recordStanding({ ...snapshot, points: 205, duelsUsed: 8 }, { capturedAt: '2026-09-16T10:05:00.000Z' })).toBe(true);
     expect(history.recordRank({ position: 2, points: 200 }, { capturedAt: '2026-09-16T09:00:00.000Z' })).toBe(true);
-    expect(history.recordRank({ position: 2, points: 200 }, { capturedAt: '2026-09-16T09:30:00.000Z' })).toBe(false);
+    expect(history.recordRank({ position: 2, points: 200 }, { capturedAt: '2026-09-16T09:30:00.000Z' })).toBe(true);
 
     const listed = history.list({ limit: 10 });
     expect(listed.standing).toEqual({ ...snapshot, points: 205, duelsUsed: 8, capturedAt: '2026-09-16T10:05:00.000Z' });
-    expect(listed.rank).toEqual({ position: 2, points: 200, capturedAt: '2026-09-16T09:00:00.000Z' });
+    expect(listed.rank).toEqual({ position: 2, points: 200, capturedAt: '2026-09-16T09:30:00.000Z' });
     expect(open.db?.prepare('SELECT COUNT(*) AS n FROM pvp_standing').get()).toEqual({ n: 2 });
   });
 

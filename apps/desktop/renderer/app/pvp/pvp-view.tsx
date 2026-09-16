@@ -36,6 +36,8 @@ import {
   type PvpResultFilter,
 } from '../../lib/pvp/pvp-rows';
 import { refreshPvpStanding, usePvpHistory } from '../../lib/pvp/use-pvp-history';
+import { usePvpRefresh } from '../../lib/pvp/use-pvp-refresh';
+import { AccountRefreshControl } from '../account-refresh-control';
 
 /** Twelve rows under the sticky header before the table scrolls: a session's quota several
  *  times over, and the screen still keeps its footnote in view. */
@@ -66,15 +68,21 @@ function StandingPanel({ history }: { history: PvpHistoryResult | null }) {
   const rank = history?.rank ?? null;
   const quota = history === null ? null : duelsLeft(history);
   const unread = t.pvpStandingUnknown;
+  const refresh = usePvpRefresh();
 
   return (
     <Panel data-testid="pvp-standing" data-state={standing === null ? 'empty' : 'read'}>
       <PanelHeader title={t.pvpStandingTitle}>
-        {standing !== null ? (
-          <span className="text-xs text-muted" data-testid="pvp-standing-age">
-            {sub(t.pvpStandingAge, { age: formatCapturedAt(standing.capturedAt, t) })}
-          </span>
-        ) : null}
+        <span data-testid="pvp-standing-age">
+          <AccountRefreshControl
+            capturedAt={standing?.capturedAt ?? null}
+            stale={false}
+            busy={false}
+            readState={refresh.state}
+            onRefresh={refresh.request}
+            ageLine={(age) => sub(t.pvpStandingAge, { age })}
+          />
+        </span>
       </PanelHeader>
       {standing === null && quota === null && rank === null ? (
         <p className="m-0 text-xs text-muted">{t.pvpStandingEmpty}</p>

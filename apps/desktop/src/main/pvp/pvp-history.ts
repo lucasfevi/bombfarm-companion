@@ -95,8 +95,7 @@ export interface PvpHistory {
   recordDuel(record: PvpDuelRecord, opts: { readonly recordedAt: string; readonly accountId: string | null }): boolean;
   /** `true` when the film was written; a film already held is left as first stored. */
   storeFilm(summary: PvpFilmSummary, body: string, opts: { readonly storedAt: string }): boolean;
-  /** Replaces the standing with a newer report; `false` when it repeats the one held, or with no
-   *  store behind it. */
+  /** Replaces the standing with a newer report, dating it; `false` only with no store behind it. */
   recordStanding(snapshot: PvpStateSnapshot, opts: { readonly capturedAt: string }): boolean;
   recordRank(rank: Omit<PvpRank, 'capturedAt'>, opts: { readonly capturedAt: string }): boolean;
   list(opts: { readonly limit: number }): PvpHistoryResult;
@@ -196,16 +195,14 @@ function readStanding(db: SqliteDb, key: string): StandingRow | undefined {
   return db.prepare('SELECT captured_at, body FROM pvp_standing WHERE key = ?').get(key) as StandingRow | undefined;
 }
 
-/** `false` when the report says nothing new — a poll repeating the last one, or a result body
- *  seen twice — so nothing downstream is woken for it. */
-function writeStanding(db: SqliteDb, key: string, capturedAt: string, body: unknown): boolean {
-  const encoded = JSON.stringify(body);
-  if (readStanding(db, key)?.body === encoded) return false;
+/** Always rewritten, figures unchanged or not: the date beside the standing means "last read",
+ *  and a report that repeats the last one is still a read — a player who sees "as of 8h ago" on
+ *  a figure the app confirmed a minute ago reads it as stale. */
+function writeStanding(db: SqliteDb, key: string, capturedAt: string, body: unknown): void {
   db.prepare(
     'INSERT INTO pvp_standing (key, captured_at, body) VALUES (?, ?, ?) ' +
       'ON CONFLICT(key) DO UPDATE SET captured_at = excluded.captured_at, body = excluded.body',
-  ).run(key, capturedAt, encoded);
-  return true;
+  ).run(key, capturedAt, JSON.stringify(body));
 }
 
 function standingOf(row: StandingRow | undefined): PvpStanding | null {
@@ -311,7 +308,8 @@ export function createPvpHistory(db: SqliteDb | null, log: LogPort = NOOP_LOG): 
     recordStanding(snapshot, { capturedAt }) {
       if (!db) return false;
       try {
-        return writeStanding(db, STANDING_KEY, capturedAt, snapshot);
+        writeStanding(db, STANDING_KEY, capturedAt, snapshot);
+        return true;
       } catch (err) {
         log.error({ scope: 'pvp', event: 'history.record_standing_failed', error: String(err) });
         return false;
@@ -321,7 +319,8 @@ export function createPvpHistory(db: SqliteDb | null, log: LogPort = NOOP_LOG): 
     recordRank(rank, { capturedAt }) {
       if (!db) return false;
       try {
-        return writeStanding(db, RANK_KEY, capturedAt, rank);
+        writeStanding(db, RANK_KEY, capturedAt, rank);
+        return true;
       } catch (err) {
         log.error({ scope: 'pvp', event: 'history.record_rank_failed', error: String(err) });
         return false;

@@ -89,8 +89,8 @@ handle the forge ledger borrows (`CREATE TABLE IF NOT EXISTS`, so `SCHEMA_VERSIO
 - `pvp_duels` — one row per result, the fields as columns, keyed by `duel_key`;
 - `pvp_films` — one row per film, keyed by film id, the body kept as the bytes that passed;
 - `pvp_standing` — two rows, the latest state report and the latest points-board position, each
-  with the time it was captured; a report identical to the one held is not rewritten, so nothing
-  downstream is woken for a poll that repeats.
+  dated by its last read — a report that repeats the last one is still a read, and the date beside
+  the standing means "last confirmed", never "last changed".
 
 Two tables because the bodies arrive separately and in no guaranteed order. **A player who skips
 the battle animation may never pull the film at all**; the server may issue none (`filme: 0`); the

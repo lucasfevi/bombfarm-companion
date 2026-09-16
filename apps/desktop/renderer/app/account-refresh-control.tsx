@@ -59,12 +59,16 @@ export function AccountRefreshControl({
   busy,
   readState,
   onRefresh,
+  ageLine,
 }: {
   capturedAt: string | null;
   stale: boolean;
   busy: boolean;
   readState: AccountReadRequestState;
   onRefresh: () => void;
+  /** The line under the button, when the thing refreshed is not the account read: given the
+   *  same relative age the default line prints. */
+  ageLine?: (age: string) => string;
 }) {
   const t = useCopy();
   const [now, setNow] = useState(() => Date.now());
@@ -106,7 +110,9 @@ export function AccountRefreshControl({
           data-testid="account-refresh-age"
           className={cn('text-[11px] leading-none', stale ? 'text-warn' : 'text-muted')}
         >
-          {accountRefreshAgeLine(capturedAt, stale, t, now)}
+          {ageLine !== undefined && capturedAt !== null && !stale
+            ? ageLine(formatCapturedAt(capturedAt, t, now))
+            : accountRefreshAgeLine(capturedAt, stale, t, now)}
         </span>
       </span>
     </span>

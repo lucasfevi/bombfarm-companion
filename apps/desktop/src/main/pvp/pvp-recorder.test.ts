@@ -104,7 +104,7 @@ describe('pvp recorder', () => {
     expect(history.list({ limit: 10 }).rank).toBeNull();
   });
 
-  it('announces once per body kept, never for one already held', () => {
+  it('keeps one row for a result seen twice, though each sighting re-dates the standing it carries', () => {
     const history = openHistory();
     const emit = vi.fn();
     const recorder = createPvpRecorder({ history, accountId: () => null, emit });
@@ -112,6 +112,20 @@ describe('pvp recorder', () => {
     if (!result) throw new Error('fixture is empty');
     recorder.observe(observationOf(result, 1_000));
     recorder.observe(observationOf(result, 2_000));
+    const view = history.list({ limit: 10 });
+    expect(view.totals.duels).toBe(1);
+    expect(view.standing?.capturedAt).toBe(new Date(2_000).toISOString());
+    expect(emit).toHaveBeenCalledTimes(2);
+  });
+
+  it('announces nothing for a film already held', () => {
+    const history = openHistory();
+    const emit = vi.fn();
+    const recorder = createPvpRecorder({ history, accountId: () => null, emit });
+    const [, film] = fixtureBodies();
+    if (!film) throw new Error('fixture holds no film');
+    recorder.observe(observationOf(film, 1_000));
+    recorder.observe(observationOf(film, 2_000));
     expect(emit).toHaveBeenCalledTimes(1);
   });
 
