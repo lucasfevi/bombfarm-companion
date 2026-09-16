@@ -21,6 +21,18 @@ vi.mock('../../lib/pvp/use-pvp-history', () => ({
   refreshPvpStanding: () => undefined,
 }));
 
+// The squad column reads the roster through the account seam; a static render never starts that
+// store, so the roster is handed in here as the loaded answer.
+const roster = vi.hoisted(() => ({ heroes: [] as { id: string; name: string; rarity: string; skin?: number }[] }));
+
+vi.mock('../../lib/account/use-account-view', () => ({
+  useAccountView: () => ({ status: 'loaded', view: {}, applied: 1, key: 'account' }),
+}));
+
+vi.mock('../../lib/account/account-roster', () => ({
+  buildAccountRoster: () => ({ heroes: roster.heroes }),
+}));
+
 const { PvpView } = await import('./pvp-view');
 
 function render(state: PvpHistoryState): string {
@@ -99,7 +111,9 @@ describe('PvpView', () => {
     expect(html).toContain('118 → 123');
     expect(html).toContain('>+5<');
     expect(html).not.toContain('data-testid="pvp-prize"');
-    expect(html).toContain(en.pvpFilmStored);
+    expect(html).toContain('data-testid="pvp-open-replay"');
+    expect(html).toContain(en.pvpFilmReplay);
+    expect(html).not.toContain('data-testid="pvp-replay"');
     expect(html).toContain('1 duels · 1 won · 1 films kept');
   });
 
@@ -113,6 +127,66 @@ describe('PvpView', () => {
     expect(html).toContain('9 of 9');
     expect(html).toContain('>#2</p>');
     expect(html).not.toContain('r2');
+  });
+
+  it('draws the tier meter under the figures: the tier pair, the fill over the next threshold, the ticks, and the wins and days still to go', () => {
+    const html = render(ready([row()], { standing: STANDING }));
+    expect(html).toContain('data-testid="pvp-tier-meter"');
+    expect(html).toContain('Tier 2 to Tier 3');
+    expect(html).toMatch(/style="width:\s*54\.6\d+%"/);
+    expect(html).toMatch(/data-testid="pvp-tier-eta"[^>]*>.*34 wins.*to go at .*5.* a win, about .*4 days.* at today’s quota/);
+    expect(html).toMatch(/>0<\/span><span[^>]*>205<\/span><span>375<\/span>/);
+  });
+
+  it('reads the per-win step off the latest won duel, and drops the days clause when the quota is not known', () => {
+    const html = render(ready([row({ pointsBefore: 100, pointsAfter: 106 })], { standing: { ...STANDING, duelsMax: null } }));
+    expect(html).toMatch(/data-testid="pvp-tier-eta"[^>]*>.*29 wins.*to go at .*6.* a win</);
+    expect(html).not.toContain('at today’s quota');
+  });
+
+  it('omits the tier meter at the top tier, which has no threshold ahead of it', () => {
+    const html = render(ready([row()], { standing: { ...STANDING, nextTierAt: null } }));
+    expect(html).toContain('data-testid="pvp-standing" data-state="read"');
+    expect(html).not.toContain('data-testid="pvp-tier-meter"');
+    expect(html).not.toContain('data-testid="pvp-tier-eta"');
+  });
+
+  it('draws the points trend beside the figures over the newest twelve duels, oldest first, with the window, win rate and streak above it', () => {
+    const rows = Array.from({ length: 14 }, (_, index) =>
+      row({ id: 20 - index, won: index < 2, pointsBefore: 150 - index * 5, pointsAfter: 155 - index * 5 }),
+    );
+    const html = render(ready(rows, { standing: STANDING }));
+    expect(html).toContain('data-testid="pvp-points-trend" data-state="drawn"');
+    expect(html).toContain(en.pvpStandingTrendLabel);
+    expect(html).toContain('last 12, win rate 17%, streak W2');
+    expect(html).toContain('data-sparkline');
+    expect(html).toContain('aria-label="Points after each of the last 12 duels"');
+    expect(html).toContain('class="block text-accent"');
+  });
+
+  it('dots each duel on the trend by its result, newest last, over an axis spanning the readings, with a won/lost legend', () => {
+    const html = render(ready([row({ id: 3, won: false, pointsBefore: 120, pointsAfter: 110 }), row({ id: 2 }), row({ id: 1 })]));
+    const tones = [...html.matchAll(/data-sparkline-mark="(\w+)"/g)].map((match) => match[1]);
+    expect(tones).toEqual(['up', 'up', 'down']);
+    expect(html).toContain('class="stroke-down"');
+    expect(html).toMatch(/<path d="M0 [\d.]+ L50 [\d.]+ L100 63"[^>]*stroke="currentColor"/);
+    expect(html).toContain('data-testid="pvp-points-trend-legend"');
+    expect(html).toContain('bg-up');
+    expect(html).toContain('bg-down');
+    expect(html).toContain(en.pvpStandingLegendWon);
+    expect(html).toContain(en.pvpStandingLegendLost);
+  });
+
+  it('says a losing streak as one, over the rows it has when fewer than twelve', () => {
+    const html = render(ready([row({ id: 3, won: false, pointsBefore: 120, pointsAfter: 110 }), row({ id: 2 }), row({ id: 1 })]));
+    expect(html).toContain('last 3, win rate 67%, streak L1');
+  });
+
+  it('asks for more duels in place of the trend under two rows', () => {
+    const html = render(ready([row()], { standing: STANDING }));
+    expect(html).toContain('data-testid="pvp-points-trend" data-state="empty"');
+    expect(html).toContain(en.pvpStandingTrendEmpty);
+    expect(html).not.toContain('data-sparkline');
   });
 
   it('falls back to the latest duel for the quota before any state report, and says the rest is not read yet', () => {
@@ -143,6 +217,33 @@ describe('PvpView', () => {
     expect(html).toContain(en.pvpResultLost);
     expect(html).toContain('>-10<');
     expect(html).toContain(en.pvpFilmNote);
+  });
+
+  it('draws the squad as one avatar per fielded hero in slot order, keeps a slot for a hero the roster no longer carries, and prints a dash for a row with no squad', () => {
+    roster.heroes = [
+      { id: '862212', name: 'Nim', rarity: 'Raro', skin: 3 },
+      { id: '900001', name: 'Pip', rarity: 'Comum' },
+    ];
+    try {
+      const html = render(ready([row({ squadHeroIds: ['900001', '777', '862212'] }), row({ id: 2, squadHeroIds: [] })]));
+      expect(html).toContain(en.pvpSquadColumn);
+      expect(html).toContain('data-testid="pvp-squad" data-count="3"');
+      expect(html).toContain('data-testid="pvp-squad" data-count="0"');
+      expect(html.match(/data-testid="pvp-squad-unknown"/g)).toHaveLength(1);
+      expect(html).toContain(`aria-label="${en.pvpSquadUnknownHero}"`);
+      expect(html.indexOf('alt="Pip"')).toBeLessThan(html.indexOf('data-testid="pvp-squad-unknown"'));
+      expect(html.indexOf('data-testid="pvp-squad-unknown"')).toBeLessThan(html.indexOf('alt="Nim"'));
+      expect(html).toMatch(/data-testid="pvp-squad" data-count="0"[^>]*><span aria-hidden="true">—<\/span>/);
+    } finally {
+      roster.heroes = [];
+    }
+  });
+
+  it('keeps every slot as an unknown hero while the roster is not read', () => {
+    const html = render(ready([row({ squadHeroIds: ['1', '2'] })]));
+    expect(html).toContain('data-testid="pvp-squad" data-count="2"');
+    expect(html.match(/data-testid="pvp-squad-unknown"/g)).toHaveLength(2);
+    expect(html).not.toContain('<img');
   });
 
   it('lists the rows in the order the history serves them — newest first', () => {

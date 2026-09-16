@@ -135,6 +135,15 @@ describe('pvp history', () => {
     expect(stored?.body).toBe('{"first":true}');
   });
 
+  it('hands back the exact bytes of a held film, and null for one it never caught', () => {
+    const open = openTestAccountDb(firstBinding());
+    const history = createPvpHistory(open.db);
+    const body = '{"id":48117,"q":[{"t":0,"hp":1}]}';
+    history.storeFilm(film(), body, { storedAt: '2026-09-16T10:00:01.000Z' });
+    expect(history.readFilm(48117)).toBe(body);
+    expect(history.readFilm(48118)).toBeNull();
+  });
+
   it('is inert without a database', () => {
     const history = createPvpHistory(null);
     expect(history.recordDuel(duel(), AT)).toBe(false);
@@ -142,5 +151,6 @@ describe('pvp history', () => {
     expect(history.recordStanding({ points: 1, tier: 'r1', tierNumber: null, nextTierAt: null, tierFloor: 1, duelsUsed: null, duelsMax: null, slots: null, slotsMax: null, squadHeroIds: [] }, { capturedAt: AT.recordedAt })).toBe(false);
     expect(history.recordRank({ position: 1, points: 1 }, { capturedAt: AT.recordedAt })).toBe(false);
     expect(history.list({ limit: 10 })).toEqual(EMPTY_PVP_HISTORY);
+    expect(history.readFilm(48117)).toBeNull();
   });
 });

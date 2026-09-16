@@ -1,9 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { PvpDuelRow, PvpHistoryResult } from '@bombfarm/contracts';
-import { inventoryFieldHeightClass } from '@bombfarm/game-art';
+import { RARITIES } from '@bombfarm/domain/planner-constants';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import { HeroAvatar, inventoryFieldHeightClass } from '@bombfarm/game-art';
 import { Button, cn, DataTable, EmptyState, FactTile, InfoTip, Panel, PanelHeader, SearchSelect, SegmentedToggle } from '@bombfarm/ui';
+import { buildAccountRoster } from '../../lib/account/account-roster';
+import { useAccountView } from '../../lib/account/use-account-view';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { formatCapturedAt, formatCount } from '../../lib/format';
 import {
@@ -15,10 +19,15 @@ import {
   tierNumberOf,
   type PvpResultFilter,
 } from '../../lib/pvp/pvp-rows';
+import { usePvpFilters } from '../../lib/pvp/use-pvp-filters';
 
 /** Twelve rows under the sticky header before the table scrolls: a session's quota several
  *  times over, and the screen still keeps its footnote in view. */
 const TABLE_MAX_ROWS = 12;
+
+type HeroById = ReadonlyMap<string, HeroRecord>;
+
+const NO_HEROES: HeroById = new Map();
 
 export function DuelHistoryPanel({
   history,
@@ -35,8 +44,13 @@ export function DuelHistoryPanel({
   const rows = useMemo(() => history?.rows ?? [], [history]);
   const empty = rows.length === 0;
 
-  const [opponent, setOpponent] = useState<string>(ALL_OPPONENTS);
-  const [result, setResult] = useState<PvpResultFilter>('all');
+  const { opponent, result, setOpponent, setResult } = usePvpFilters();
+  const account = useAccountView();
+  const heroById = useMemo<HeroById>(() => {
+    if (account.status !== 'loaded') return NO_HEROES;
+    const roster = buildAccountRoster(account.view);
+    return roster === null ? NO_HEROES : new Map(roster.heroes.map((hero) => [hero.id, hero]));
+  }, [account]);
 
   const opponents = useMemo(() => opponentNames(rows), [rows]);
   const opponentOptions = useMemo(
@@ -139,6 +153,12 @@ export function DuelHistoryPanel({
                 <DataTable.Head>
                   <DataTable.Row>
                     <DataTable.Header scope="col">{t.pvpColumnWhen}</DataTable.Header>
+                    <DataTable.Header scope="col">
+                      <span className="inline-flex items-center gap-1">
+                        {t.pvpSquadColumn}
+                        <InfoTip label={t.pvpSquadColumn} tip={t.pvpSquadHint} />
+                      </span>
+                    </DataTable.Header>
                     <DataTable.Header scope="col">{t.pvpColumnOpponent}</DataTable.Header>
                     <DataTable.Header scope="col">{t.pvpColumnResult}</DataTable.Header>
                     <DataTable.Header scope="col" align="right">
@@ -161,7 +181,13 @@ export function DuelHistoryPanel({
                 </DataTable.Head>
                 <DataTable.Body data-testid="pvp-history-body">
                   {shown.map((row) => (
-                    <DuelRow key={row.id} row={row} onOpenReplay={onOpenReplay} open={openFilmId !== null && row.filmId === openFilmId} />
+                    <DuelRow
+                      key={row.id}
+                      row={row}
+                      heroById={heroById}
+                      onOpenReplay={onOpenReplay}
+                      open={openFilmId !== null && row.filmId === openFilmId}
+                    />
                   ))}
                 </DataTable.Body>
               </DataTable.Table>
@@ -176,13 +202,26 @@ export function DuelHistoryPanel({
   );
 }
 
-function DuelRow({ row, onOpenReplay, open }: { row: PvpDuelRow; onOpenReplay: ((row: PvpDuelRow) => void) | undefined; open: boolean }) {
+function DuelRow({
+  row,
+  heroById,
+  onOpenReplay,
+  open,
+}: {
+  row: PvpDuelRow;
+  heroById: HeroById;
+  onOpenReplay: ((row: PvpDuelRow) => void) | undefined;
+  open: boolean;
+}) {
   const t = useCopy();
   const { locale } = useLocale();
 
   return (
     <DataTable.Row data-testid="pvp-duel-row" data-duel-id={row.id} data-film-stored={row.filmStored ? 'true' : 'false'}>
       <DataTable.RowHeader>{formatCapturedAt(row.recordedAt, t)}</DataTable.RowHeader>
+      <DataTable.Cell data-testid="pvp-squad" data-count={row.squadHeroIds.length}>
+        <SquadStack heroIds={row.squadHeroIds} heroById={heroById} />
+      </DataTable.Cell>
       <DataTable.Cell nowrap={false}>
         <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
           <span className="truncate" data-testid="pvp-opponent">
@@ -245,5 +284,54 @@ function DuelRow({ row, onOpenReplay, open }: { row: PvpDuelRow; onOpenReplay: (
         )}
       </DataTable.Cell>
     </DataTable.Row>
+  );
+}
+
+/** The heroes fielded, in slot order, overlapping like a hand of cards. A hero the roster no
+ *  longer carries keeps its slot as a framed question mark, so the stack is as long as the squad
+ *  was. */
+function SquadStack({ heroIds, heroById }: { heroIds: readonly string[]; heroById: HeroById }) {
+  const t = useCopy();
+  if (heroIds.length === 0) return <span aria-hidden>—</span>;
+  return (
+    <span className="flex items-center">
+      {heroIds.map((heroId, index) => {
+        const hero = heroById.get(heroId);
+        const overlap = index === 0 ? undefined : '-ml-1.5';
+        return hero === undefined ? (
+          <span
+            key={`${heroId}-${String(index)}`}
+            role="img"
+            aria-label={t.pvpSquadUnknownHero}
+            data-testid="pvp-squad-unknown"
+            className={cn(
+              'inline-grid',
+              'size-6',
+              'shrink-0',
+              'place-items-center',
+              'rounded-sm',
+              'border',
+              'border-dashed',
+              'border-line',
+              'bg-bg-2',
+              'text-[10px]',
+              'text-muted',
+              overlap,
+            )}
+          >
+            {t.pvpSquadUnknownMark}
+          </span>
+        ) : (
+          <HeroAvatar
+            key={`${heroId}-${String(index)}`}
+            skin={hero.skin ?? 0}
+            rarityIdx={RARITIES.indexOf(hero.rarity)}
+            size="xs"
+            name={hero.name}
+            className={cn('size-6', 'shrink-0', overlap)}
+          />
+        );
+      })}
+    </span>
   );
 }

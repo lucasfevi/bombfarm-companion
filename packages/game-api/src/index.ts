@@ -53,6 +53,7 @@ export { identifyPvpBody } from './pvp/identify.js';
 export type { PvpRoute } from './pvp/identify.js';
 export { isPvpPointsBoard, parsePvpDuelResult, parsePvpDuelState, parsePvpFilm, parsePvpRanking, parsePvpState } from './pvp/parse.js';
 export { PVP_RANKING_LIMIT, PVP_STATE_PATH, pvpRankingPath } from './pvp/routes.js';
+export { summarizePvpFilm } from './pvp/film.js';
 export { PORTUGUESE_WIRE_TOKENS, renderWireGlossary } from './wire-glossary.js';
 export type { WireLexiconEntry, WireVocabularyKind, WireVocabularyOrigin } from './wire-lexicon.js';
 export { isPlainObject } from './type-guards.js';

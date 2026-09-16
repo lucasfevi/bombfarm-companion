@@ -36,7 +36,7 @@ import {
   type UpdateStatus,
   type WindowStateView,
 } from '@bombfarm/contracts';
-import { createPacingGate, initialConsent, isGranted, trayTextFor } from '@bombfarm/game-api';
+import { createPacingGate, initialConsent, isGranted, summarizePvpFilm, trayTextFor } from '@bombfarm/game-api';
 import { createAccountNotifier, resolveAccountView, resolveCachedAccountView } from './account-view.js';
 import { patchAccountAfterForge } from './forge/forge-account-patch.js';
 import { createForgeHistory, type ForgeHistory } from './forge/forge-history.js';
@@ -352,6 +352,19 @@ function listPvpHistory(): PvpHistoryResult {
   return pvpHistory?.list({ limit: PVP_HISTORY_LIST_LIMIT }) ?? EMPTY_PVP_HISTORY;
 }
 
+function readPvpFilm(filmId: number): PvpFilmView | null {
+  const body = pvpHistory?.readFilm(filmId) ?? null;
+  if (body === null) return null;
+  try {
+    const view = summarizePvpFilm(JSON.parse(body));
+    if (view === null) log.warn({ scope: 'pvp', event: 'film.unreadable', filmId });
+    return view;
+  } catch (err) {
+    log.warn({ scope: 'pvp', event: 'film.unreadable', filmId, error: String(err) });
+    return null;
+  }
+}
+
 function refreshMarketItem(target: MarketQuoteTarget): Promise<MarketQuoteResult> {
   if (!isMarketQuoteTarget(target) || marketService === null) {
     return Promise.resolve({
@@ -451,7 +464,7 @@ function registerIpcHandlers(): void {
     'forge:inject': (events: unknown) => forgeInjector?.inject(events) ?? { ok: false },
     'pvp:history': listPvpHistory,
     'pvp:refresh': (): AccountReadResult => pvpReader?.refresh() ?? { ok: false, reason: 'unavailable' },
-    'pvp:film': (): PvpFilmView | null => null,
+    'pvp:film': readPvpFilm,
     'window:minimize': () => {
       mainWindow?.minimize();
       return null;

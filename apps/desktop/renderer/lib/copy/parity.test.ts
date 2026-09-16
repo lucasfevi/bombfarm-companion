@@ -44,6 +44,10 @@ import { ptBR } from './pt-BR';
 // untranslated name for the mode, printed as-is in its Portuguese interface; the points cell is two
 // placeholders around an arrow, the rank a hash before one, the standing's points a slash between
 // two — no words in any of them.
+// pvpRivalsRecord / pvpSquadUnknownMark: a won–lost record is two placeholders around an en dash,
+// and the empty squad slot's mark is a lone question mark — no words in either.
+// pvpReplayAxisSeconds / pvpReplayLegendOpponent: a seconds axis label is a placeholder before the
+// unit letter, and the opponent's legend entry is their name before their total — no words in either.
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'ageShortSeconds',
   'liveMapXpPerPropLabel',
@@ -64,6 +68,10 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'pvpPoints',
   'pvpStandingRankValue',
   'pvpStandingPointsValue',
+  'pvpReplayAxisSeconds',
+  'pvpReplayLegendOpponent',
+  'pvpRivalsRecord',
+  'pvpSquadUnknownMark',
 ];
 
 function placeholderSet(value: string): Set<string> {

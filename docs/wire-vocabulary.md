@@ -183,7 +183,16 @@ The duel result the client receives on Challenge and the film it fetches right a
 | `c` | `c` | Per-frame field. Meaning not established. | English |
 | `h` | `heroes` | Per-frame hero entries. | English |
 | `b` | `bombs` | Per-frame bomb entries. | English |
-| `x` | `x` | Per-frame field. Meaning not established. | English |
+| `x` | `x` | Per-frame entities (one observed, with `a`, `k` and an `hp` on a 0–255 scale). Meaning not established. | English |
+| `l` | `side` | A bomb’s or hero’s side: 0 attacker, 1 defender. | English |
+| `ce` | `cell` | The cell a bomb sits in, or a hero stands on. | English |
+| `r` | `radius` | A bomb’s blast radius in cells. | English |
+| `f` | `fuseLeft` | Seconds of fuse a bomb has left at the frame. | English |
+| `ft` | `fuseTotal` | A bomb’s whole fuse; with the side and cell it identifies one bomb across frames. | English |
+| `l` | `side` | A frame hero’s side: 0 attacker, 1 defender. | English |
+| `i` | `slot` | A frame hero’s squad slot. | English |
+| `ce` | `cell` | The cell a frame hero stands on. | English |
+| `st` | `state` | A frame hero’s state, 0–5 observed. Meaning not established. | English |
 
 ### `premio` values
 

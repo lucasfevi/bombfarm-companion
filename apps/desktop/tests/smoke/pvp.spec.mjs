@@ -143,7 +143,7 @@ test.describe('PVP tab — every duel the replayed tap saw settle, kept and list
     await expect(rows.nth(1)).toHaveAttribute('data-film-stored', 'true');
     await expect(rows.nth(1).getByTestId('pvp-opponent')).toHaveText(filmed.defensor.nome);
     await expect(rows.nth(1).getByTestId('pvp-result')).toHaveText(en('pvpResultWon'));
-    await expect(rows.nth(1).getByTestId('pvp-film')).toHaveText(en('pvpFilmStored'));
+    await expect(rows.nth(1).getByTestId('pvp-open-replay')).toHaveText(en('pvpFilmReplay'));
     await expect(rows.nth(1).getByTestId('pvp-phase')).toHaveText(
       `${filmed.fase} (T${filmed.estado.faixa_num}, floor ${filmed.estado.fase})`,
     );
@@ -200,6 +200,46 @@ test.describe('PVP tab — every duel the replayed tap saw settle, kept and list
 
     await page.getByRole('group', { name: en('pvpFilterResultLabel') }).getByRole('button', { name: en('pvpFilterResultAll') }).click();
     await expect(page.getByTestId('pvp-duel-row')).toHaveCount(2);
+  });
+
+  test('the standing draws the tier meter and the points trend; the rivals panel, the squad column and the replay follow the fixture', async () => {
+    const { duels, state } = fixtureBodies();
+    const [filmed] = duels;
+    await openPvp(page);
+    await expect(page.getByTestId('pvp-duel-row')).toHaveCount(2, { timeout: 20_000 });
+
+    // A: the meter and its sentence, from the standing the replay served.
+    await expect(page.getByTestId('pvp-tier-meter')).toBeVisible();
+    const winsToGo = Math.ceil((state.faixa_prox - state.pontos) / 5);
+    await expect(page.getByTestId('pvp-tier-eta')).toContainText(`${winsToGo} wins`);
+    // B: two duels are enough for the trend to draw, with one mark per result.
+    await expect(page.getByTestId('pvp-points-trend')).toHaveAttribute('data-state', 'drawn');
+    await expect(page.locator('[data-sparkline-mark]')).toHaveCount(2);
+    // C: two opponents, so the rivals table draws both, worst record first.
+    await expect(page.getByTestId('pvp-rivals')).toHaveAttribute('data-state', 'rivals');
+    const rivalRows = page.getByTestId('pvp-rival-row');
+    await expect(rivalRows).toHaveCount(2);
+    await expect(rivalRows.nth(0)).toHaveAttribute('data-opponent', duels[1].defensor.nome);
+    // E: the fixture squads are five heroes of the offline roster, drawn as avatars.
+    await expect(page.getByTestId('pvp-squad').first()).toHaveAttribute('data-count', String(filmed.estado.squad.length));
+    await expect(page.getByTestId('pvp-squad').first().locator('img')).toHaveCount(filmed.estado.squad.length);
+
+    // A rivals row click narrows the list to that opponent.
+    await rivalRows.nth(1).click();
+    await expect(page.getByTestId('pvp-duel-row')).toHaveCount(1);
+    await expect(page.getByTestId('pvp-head-to-head')).toBeVisible();
+    await page.getByRole('combobox', { name: en('pvpFilterOpponentLabel') }).click();
+    await page.getByRole('option', { name: en('pvpFilterOpponentAll') }).click();
+    await expect(page.getByTestId('pvp-duel-row')).toHaveCount(2);
+
+    // D: the kept film opens as the replay, with the facts the fixture film settles.
+    await page.getByTestId('pvp-open-replay').click();
+    await expect(page.getByTestId('pvp-replay')).toBeVisible();
+    await expect(page.getByTestId('pvp-replay-chart')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('pvp-replay-facts')).toContainText('30 s');
+    await expect(page.getByTestId('pvp-replay-facts')).toContainText('4%');
+    await page.getByTestId('pvp-replay-close').click();
+    await expect(page.getByTestId('pvp-replay')).toHaveCount(0);
   });
 
   test('the duels survive a relaunch on the same user data, and the replay serving them again adds nothing', async () => {

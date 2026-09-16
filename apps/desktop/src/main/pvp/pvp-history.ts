@@ -99,6 +99,8 @@ export interface PvpHistory {
   recordStanding(snapshot: PvpStateSnapshot, opts: { readonly capturedAt: string }): boolean;
   recordRank(rank: Omit<PvpRank, 'capturedAt'>, opts: { readonly capturedAt: string }): boolean;
   list(opts: { readonly limit: number }): PvpHistoryResult;
+  /** The film's body as the tap caught it — the ~2 MB stays in main. `null` when not held. */
+  readFilm(filmId: number): string | null;
 }
 
 interface StandingRow {
@@ -345,6 +347,17 @@ export function createPvpHistory(db: SqliteDb | null, log: LogPort = NOOP_LOG): 
       } catch (err) {
         log.error({ scope: 'pvp', event: 'history.list_failed', error: String(err) });
         return EMPTY_PVP_HISTORY;
+      }
+    },
+
+    readFilm(filmId) {
+      if (!db) return null;
+      try {
+        const stored = db.prepare('SELECT body FROM pvp_films WHERE film_id = ?').get(filmId) as { body: string } | undefined;
+        return stored?.body ?? null;
+      } catch (err) {
+        log.error({ scope: 'pvp', event: 'history.read_film_failed', error: String(err) });
+        return null;
       }
     },
   };

@@ -16,7 +16,15 @@ or was lost to a full bag — and lists it newest first. Nothing is predicted an
 **Your standing sits above the list**, asked for the moment the tab opens: tier, points over the
 next tier's threshold, duels left today, squad slots, and your position on the points
 leaderboard. **The list filters by opponent and by result**, and with an opponent chosen prints
-your record against them.
+your record against them. **The standing prices the next tier** — wins to go and the days that
+takes at today's quota — and draws the last twelve duels' points with a won/lost mark on each.
+**A rivals panel** lists your record against every opponent, worst first; a click filters the
+list. **Each row shows your squad** as hero portraits. **A kept film opens as a replay**: both
+sides' damage over the sixty seconds with the room's HP, when the lead was taken, the widest lead,
+and bombs per side.
+
+**`Sparkline` can run its axis over the readings alone** (`domain="data"`) and carry a mark per
+point; every existing sparkline is unchanged.
 
 **The film is kept the moment the game fetches it.** The server drops a duel's film seconds after
 the client pulls it, so the app keeps the body as it passes; the list says which duels have theirs.

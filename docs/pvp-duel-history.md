@@ -123,6 +123,25 @@ ahead of the first frame, through the same HTTP decoder the capture's own REST b
 The two results are deliberately one filmed duel and one filmless, so the tab shows both states.
 `BFC_REPLAY_PVP_FIXTURE` points the replay at another file; an empty string opts out.
 
+## What the tab draws from the record
+
+Above the list, the standing panel prices the next tier from the rows themselves — the points a
+win moves (read off the latest won row, 5 observed) against the next tier's threshold, and the
+days that takes at today's quota — and draws the last twelve duels' points as a sparkline with a
+won/lost mark per duel. The `Sparkline` primitive gained a `domain="data"` axis for it: ±5 moves on
+~200 points are invisible on a zero-floored axis, and the level is not the message there.
+
+A rivals panel lists every opponent fought with the record, the summed score margin and the last
+result, worst record first; a row click sets the opponent filter through a window-lifetime filter
+store both panels share. Each duel row draws the player's squad as the app's hero avatars, joined
+to the roster by hero id; a hero no longer on the roster is an empty framed slot, never dropped.
+
+A kept film opens as a replay panel beside the rivals: `pvp:film` reads the body in main and
+returns one point per second (both totals and the room's HP) with the facts the frames settle —
+when the winner took a lead they kept, the widest lead, room HP left, and bombs per side
+(`summarizePvpFilm` in `packages/game-api/src/pvp/film.ts`). The 2 MB body never crosses the
+bridge. Nothing per hero: see the section above on why.
+
 ## The list's filters
 
 The duel list filters by opponent (every opponent fought, most fought first) and by result, on

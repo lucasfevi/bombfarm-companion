@@ -74,7 +74,16 @@ export type PvpWireSymbol =
   | 'frameC'
   | 'frameHeroes'
   | 'frameBombs'
-  | 'frameX';
+  | 'frameX'
+  | 'bombSide'
+  | 'bombCell'
+  | 'bombRadius'
+  | 'bombFuseLeft'
+  | 'bombFuseTotal'
+  | 'heroSide'
+  | 'heroSlot'
+  | 'heroCell'
+  | 'heroState';
 
 const KEY_ENTRIES: ReadonlyArray<WireLexiconEntry & { readonly symbol: PvpWireSymbol }> = [
   { symbol: 'won', wireToken: 'venceu', kind: 'key', domainField: 'won', description: 'Whether the attacker won the duel.', origin: 'portuguese' },
@@ -136,7 +145,16 @@ const KEY_ENTRIES: ReadonlyArray<WireLexiconEntry & { readonly symbol: PvpWireSy
   { symbol: 'frameC', wireToken: 'c', kind: 'key', domainField: 'c', description: 'Per-frame field. Meaning not established.', origin: 'english' },
   { symbol: 'frameHeroes', wireToken: 'h', kind: 'key', domainField: 'heroes', description: 'Per-frame hero entries.', origin: 'english' },
   { symbol: 'frameBombs', wireToken: 'b', kind: 'key', domainField: 'bombs', description: 'Per-frame bomb entries.', origin: 'english' },
-  { symbol: 'frameX', wireToken: 'x', kind: 'key', domainField: 'x', description: 'Per-frame field. Meaning not established.', origin: 'english' },
+  { symbol: 'frameX', wireToken: 'x', kind: 'key', domainField: 'x', description: 'Per-frame entities (one observed, with `a`, `k` and an `hp` on a 0–255 scale). Meaning not established.', origin: 'english' },
+  { symbol: 'bombSide', wireToken: 'l', kind: 'key', domainField: 'side', description: 'A bomb’s or hero’s side: 0 attacker, 1 defender.', origin: 'english' },
+  { symbol: 'bombCell', wireToken: 'ce', kind: 'key', domainField: 'cell', description: 'The cell a bomb sits in, or a hero stands on.', origin: 'english' },
+  { symbol: 'bombRadius', wireToken: 'r', kind: 'key', domainField: 'radius', description: 'A bomb’s blast radius in cells.', origin: 'english' },
+  { symbol: 'bombFuseLeft', wireToken: 'f', kind: 'key', domainField: 'fuseLeft', description: 'Seconds of fuse a bomb has left at the frame.', origin: 'english' },
+  { symbol: 'bombFuseTotal', wireToken: 'ft', kind: 'key', domainField: 'fuseTotal', description: 'A bomb’s whole fuse; with the side and cell it identifies one bomb across frames.', origin: 'english' },
+  { symbol: 'heroSide', wireToken: 'l', kind: 'key', domainField: 'side', description: 'A frame hero’s side: 0 attacker, 1 defender.', origin: 'english' },
+  { symbol: 'heroSlot', wireToken: 'i', kind: 'key', domainField: 'slot', description: 'A frame hero’s squad slot.', origin: 'english' },
+  { symbol: 'heroCell', wireToken: 'ce', kind: 'key', domainField: 'cell', description: 'The cell a frame hero stands on.', origin: 'english' },
+  { symbol: 'heroState', wireToken: 'st', kind: 'key', domainField: 'state', description: 'A frame hero’s state, 0–5 observed. Meaning not established.', origin: 'english' },
 ];
 
 const ENUM_ENTRIES: readonly WireLexiconEntry[] = [
