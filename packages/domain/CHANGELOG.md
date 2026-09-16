@@ -1,5 +1,12 @@
 # @bombfarm/domain
 
+## 1.1.1
+
+### Patch Changes
+
+- Updated dependencies [1ef139c]
+  - @bombfarm/contracts@0.8.0
+
 ## 1.1.0
 
 ### Minor Changes
