@@ -126,8 +126,8 @@ export type LetterBandTable = {
  * a boundary between letters. Everything below is read back off the committed captures.
  *
  * DERIVATION. Score every hero by {@link rollQualityFor} — the unweighted mean of its eight roll
- * percentiles — then group by the letter the game stored. Across the 20 committed captures in
- * this repository (195 hero entries, 85 distinct heroes after de-duplicating on the birth-roll
+ * percentiles — then group by the letter the game stored. Across the 22 committed captures in
+ * this repository (224 hero entries, 113 distinct heroes after de-duplicating on the birth-roll
  * signature) the letters order by that mean with ZERO inversions: every hero of a letter scores
  * above every hero of the letter below. De-duplication is on the roll and not on the hero,
  * because the eight-float roll is unique within every capture and never contradicts a stored
@@ -137,12 +137,12 @@ export type LetterBandTable = {
  *
  * | letter | heroes | min     | max     |
  * | ------ | ------ | ------- | ------- |
- * | E      | 10     | 24.3417 | 41.1645 |
- * | D      | 24     | 41.4892 | 47.3178 |
- * | C      | 9      | 47.5431 | 51.7274 |
- * | B      | 18     | 53.3387 | 57.8162 |
- * | A      | 13     | 58.9236 | 62.9655 |
- * | S      | 11     | 63.7207 | 72.6844 |
+ * | E      | 15     | 24.3417 | 41.1645 |
+ * | D      | 28     | 41.4892 | 47.3178 |
+ * | C      | 13     | 47.5431 | 51.8244 |
+ * | B      | 27     | 53.3387 | 57.8162 |
+ * | A      | 15     | 58.9236 | 62.9655 |
+ * | S      | 15     | 63.6019 | 72.6844 |
  *
  * Each boundary therefore carries the EMPTY INTERVAL between two adjacent letters rather than a
  * cut point: the evidence locates it somewhere in that gap and no closer. Interval endpoints are
@@ -150,29 +150,30 @@ export type LetterBandTable = {
  * outside every interval. A runtime cut point is derived from the interval (its midpoint); the
  * interval is what is actually known.
  *
- * THE HONEST LIMIT. C/B is the least-located boundary: its gap is 1.61 points wide — the widest
- * of the five, against 0.23 for D/C (narrowed from 0.68 by the 2026-09-13 capture, whose two
- * Torins sit 0.23 apart on either side of it) — and rests on just 9 C-graded heroes on its lower
- * side. One C hero rolling near 52 would move it. The outermost bands are open-ended at runtime: 24.3417
+ * THE HONEST LIMIT. C/B is the least-located boundary: its gap is 1.51 points wide (narrowed
+ * from 1.61 by the 2026-09-14 captures, whose best C hero scores 51.82) — the widest of the five,
+ * against 0.23 for D/C (narrowed from 0.68 by the 2026-09-13 capture, whose two Torins sit 0.23
+ * apart on either side of it) — and rests on just 13 C-graded heroes on its lower side. One C
+ * hero rolling near 52 would move it. The outermost bands are open-ended at runtime: 24.3417
  * and 72.6844 are the worst and best rolls yet seen, not limits, and a hero rolling better than
  * any hero so far is still S.
  */
 export const LETTER_BANDS: LetterBandTable = {
   letters: ['E', 'D', 'C', 'B', 'A', 'S'],
   evidence: [
-    { letter: 'E', heroes: 10, observedMin: 24.3417, observedMax: 41.1645 },
-    { letter: 'D', heroes: 24, observedMin: 41.4892, observedMax: 47.3178 },
-    { letter: 'C', heroes: 9, observedMin: 47.5431, observedMax: 51.7274 },
-    { letter: 'B', heroes: 18, observedMin: 53.3387, observedMax: 57.8162 },
-    { letter: 'A', heroes: 13, observedMin: 58.9236, observedMax: 62.9655 },
-    { letter: 'S', heroes: 11, observedMin: 63.7207, observedMax: 72.6844 },
+    { letter: 'E', heroes: 15, observedMin: 24.3417, observedMax: 41.1645 },
+    { letter: 'D', heroes: 28, observedMin: 41.4892, observedMax: 47.3178 },
+    { letter: 'C', heroes: 13, observedMin: 47.5431, observedMax: 51.8244 },
+    { letter: 'B', heroes: 27, observedMin: 53.3387, observedMax: 57.8162 },
+    { letter: 'A', heroes: 15, observedMin: 58.9236, observedMax: 62.9655 },
+    { letter: 'S', heroes: 15, observedMin: 63.6019, observedMax: 72.6844 },
   ],
   boundaries: [
     { below: 'E', above: 'D', min: 41.1645, max: 41.4891 },
     { below: 'D', above: 'C', min: 47.3178, max: 47.5431 },
-    { below: 'C', above: 'B', min: 51.7275, max: 53.3387 },
+    { below: 'C', above: 'B', min: 51.8244, max: 53.3387 },
     { below: 'B', above: 'A', min: 57.8162, max: 58.9235 },
-    { below: 'A', above: 'S', min: 62.9655, max: 63.7206 },
+    { below: 'A', above: 'S', min: 62.9655, max: 63.6019 },
   ],
 };
 

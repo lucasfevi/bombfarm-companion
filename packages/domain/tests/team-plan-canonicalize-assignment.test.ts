@@ -102,10 +102,7 @@ describe('canonicalizeAssignment', () => {
     // The two group members are stored at +0 and +12 with a forge floor of 12, so canonicalizing
     // genuinely rewrites which physical item each hero wears (their `upgrade` fields differ) —
     // yet both clamp to the same effective upgrade, so the objective must be bit-identical.
-    // (the ground-truth rule, class (b) — structural): re-pointed onto save-20260819-11882-7heroes.json.
-    // The fixture only supplies two real hero contexts here; both inventory items (upgrade 0
-    // and 12) are hand-constructed, not read from the corpus, so which file backs the heroes
-    // does not change what this test discriminates.
+    // The fixture supplies two real hero contexts; both items are hand-built, not read from it.
     const input = teamPlanInputFromFixture(TEAM_PLAN_FIXTURE, 12);
     const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
     if (built.blocked) throw new Error('fixture blocked');
@@ -358,10 +355,9 @@ describe('buildWaterfall canonicalizes at the applied floor', () => {
    * silently reverts while still reporting the improved objective.
    */
   function forgeFloorMismatchInput() {
-    // (the ground-truth rule, class (b) — structural): re-pointed onto save-20260819-11882-7heroes.json.
-    // Every item's upgrade is overwritten below (forged to +12, then worn/spare/ballast are
-    // hand-constructed at +0/+10/+0) — the fixture supplies only real heroes and one real
-    // equipped item identity to build from, not any of the asserted upgrade values.
+    // Every upgrade is overwritten below (forged to +12, then worn/spare/ballast hand-built at
+    // +0/+10/+0): the fixture supplies real heroes and one real equipped item identity, not any
+    // of the asserted upgrade values.
     const base = teamPlanInputFromFixture(TEAM_PLAN_FIXTURE, 10);
     const rosterHeroIds = new Set(base.heroes.map((hero) => hero.heroId));
     // Forge everything to +12 so the ONLY sub-floor items in play are the ones added below.
@@ -373,6 +369,9 @@ describe('buildWaterfall canonicalizes at the applied floor', () => {
       .filter((entry) => entry.equippedBy && rosterHeroIds.has(entry.equippedBy))
       .filter((entry) => entry.slot && entry.defResolved && !entry.marketBlocked)
       .sort((left, right) => left.id.localeCompare(right.id))[0];
+    // A spare in the bag that dominates the target would be polished onto the hero in place of
+    // the +10 copy, and the floor question would never be asked — the bag holds one on this roster.
+    const withoutRivalSpares = forged.filter((entry) => entry.equippedBy || entry.slot !== target.slot);
     const worn = { ...target, upgrade: 0 };
     // `+10` sits exactly ON the floor: same pool key as `worn` at floor 10, a different one at
     // floor 0, and never itself a forge chore.
@@ -391,7 +390,7 @@ describe('buildWaterfall canonicalizes at the applied floor', () => {
 
     const input = {
       ...base,
-      inventory: [...forged.map((entry) => (entry.id === target.id ? worn : entry)), spare, ...ballast],
+      inventory: [...withoutRivalSpares.map((entry) => (entry.id === target.id ? worn : entry)), spare, ...ballast],
       // More slots than heroes keeps the roster under-saturated, where the objective is a plain sum
       // of sustained DPS and therefore monotone in upgrade — that is what makes the tie exact.
       // `fieldSlots`, not `slots` (House recovery), is what the saturation math reads.

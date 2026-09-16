@@ -17,33 +17,42 @@ import { loadFixtureJson } from './sheet-math-fixtures';
 export const FARM_RATE_FIXTURE = 'save-20260813-5heroes.json';
 
 /**
- * The in-regime roster for suites that assert RANKING outcomes rather than shapes. Eleven heroes
- * captured 2026-08-25, holding both sides of the one-shot contrast at once — nine geared heroes
- * that one-shot a phase-42 prop and two naked young ones that do not (issue #171). Split from
- * {@link FARM_RATE_FIXTURE} rather than replacing it: the 2026-08-13 capture is out of regime for
- * `sheet` (see `helpers/capture-regime.ts`), so a value assertion may not read it, but the ~40
- * structural suites that read it for roster shape are unaffected and stay where they are.
+ * The 11-hero roster of 2026-08-25, read for its SHAPE by the ability suites (`abilities-pass`,
+ * `ability-gain`, `team-aura-deltas`): a rank-20 ponta_diamante carrier (IDK) beside naked young
+ * heroes (Hale L2, Joric L5). It is out of regime for `sheet` (see `helpers/capture-regime.ts`),
+ * so no value assertion may read it — the scorer suite that used to moved to
+ * {@link FARM_POINT_RANK_FIXTURE}.
  */
 export const FARM_RANK_FIXTURE = 'save-20260825-11heroes-one-shot-spread.json';
 
 /**
- * The in-regime roster for the RESPEC OPTIMIZER suites. A second, disjoint account captured
- * 2026-08-19, in regime for `sheet` on a waiver its registry row states and
- * `capture-regime-registry.test.ts` verifies (no hero owns either ability the 2026-08-23 patch
- * restated).
- *
- * Chosen over {@link FARM_RANK_FIXTURE} for two reasons that both matter here. It is a DIFFERENT
- * ACCOUNT from every other in-regime capture, so a band that holds on both is evidence about the
- * optimizer rather than about one player's build — which is exactly the check the re-enabled
- * findings in `farm-optimize-486.test.ts` rest on. And it is SMALL: `solveFarmRespec` over its 7
- * heroes runs in ~1s against ~12s for the 11-hero roster, across roughly a dozen call sites.
+ * The in-regime roster for the next-point SCORER suite (`farm-point-rank.test.ts`): the main
+ * account captured 2026-09-14 at phase 101 / max_phase 230, 20 heroes. Thirteen geared heroes at
+ * L40-L151 one-shot a phase-42 prop and the seven naked ones at L1-L24 do not, so both sides of
+ * the one-shot contrast sit on one roster. The seven are `battle_allowed: false` on the capture,
+ * so a suite that wants them in the pool passes every id as `enabledHeroIds` rather than taking
+ * the default pool.
  */
-export const FARM_OPTIMIZE_FIXTURE = 'save-20260819-11882-7heroes.json';
+export const FARM_POINT_RANK_FIXTURE = 'save-20260914-20heroes-phase101.json';
+
+/**
+ * The in-regime roster for the RESPEC OPTIMIZER suites: the second account captured 2026-09-14
+ * at phase 61 / max_phase 155 — 9 heroes, eight geared 8/8 (Nolan L127 down to Nyx L41) and one
+ * naked with her whole budget unspent (Isolde L67, 67 points). Past every regime boundary with
+ * no waiver needed.
+ *
+ * Chosen over {@link FARM_POINT_RANK_FIXTURE} for two reasons that both matter here. It is a
+ * DIFFERENT ACCOUNT from every other post-boundary capture, so a band that holds on both is
+ * evidence about the optimizer rather than about one player's build — which is exactly the
+ * check the findings in `farm-optimize-486.test.ts` rest on. And it is SMALL: `solveFarmRespec`
+ * over its 9 heroes runs in ~1.5s, across roughly a dozen call sites.
+ */
+export const FARM_OPTIMIZE_FIXTURE = 'save-20260914-9heroes-second-account.json';
 
 export type FarmRateFixture = {
   heroes: HeroRecord[];
   account: AccountShared;
-  /** `account.maxPhase` straight off the parsed fixture (42 on the committed corpus). */
+  /** `account.maxPhase` straight off the parsed fixture (42 on the default 5-hero capture). */
   maxPhase: number | null;
 };
 

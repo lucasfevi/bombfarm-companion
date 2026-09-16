@@ -1,6 +1,11 @@
 /**
- * The skip-directive guard: no skipped or todo suite anywhere in this package unless it is named
- * in the manifest below — and the manifest is empty.
+ * The skip-directive guard: no static `.skip` / `.todo` DIRECTIVE anywhere in this package unless
+ * it is named in the manifest below — and the manifest is empty.
+ *
+ * It governs directives only. A suite held at run time through `helpers/capture-regime.ts`
+ * (`holdSuiteUntilInRegime`, `skipUnlessInRegime`) is invisible to this pattern by design and is
+ * governed by `tools/held-suite-manifest.test.mjs` instead; the last test here pins that guard's
+ * existence so the two cannot drift apart silently.
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
@@ -26,9 +31,11 @@ const SKIP_PATTERN = /\b(describe|it|test)\.(skip|todo)\b|\bxit[(]|\bxdescribe[(
 const SKIP_PATTERN_GLOBAL = new RegExp(SKIP_PATTERN.source, 'g');
 
 /**
- * This guard was a HARD ZERO: no skipped test anywhere in this package, ever. It became an exact
+ * This guard was a HARD ZERO: no skip directive anywhere in this package, ever. It became an exact
  * per-file manifest for one bounded reason — the stale-capture debt — and that debt is now PAID.
- * This package has no skipped test again.
+ * This package carries no static skip directive again. Suites held at run time by
+ * `helpers/capture-regime.ts` still exist; each one is recorded in
+ * `tools/held-suites.manifest.mjs`, not here.
  *
  * Committed fixtures captured before the 2026-08-18 patch lost 40-100% of their rosters to the
  * importer's stat-point budget refusal, so 38 assertions here described rosters that no longer
@@ -84,6 +91,19 @@ describe('source-surface — the skip-directive guard', () => {
 
     for (const file of expectedFiles) {
       expect(actual[file], `${file}: skip count`).toBe(F8_SKIP_MANIFEST[file]);
+    }
+  });
+
+  it('the runtime-hold guard this file defers to exists and names every hold helper', () => {
+    const guardPath = join(DOMAIN_ROOT, '..', '..', 'tools', 'held-suite-manifest.test.mjs');
+    let guardSource: string;
+    try {
+      guardSource = readFileSync(guardPath, 'utf8');
+    } catch {
+      throw new Error(`${guardPath} is missing: runtime holds through capture-regime.ts are unguarded`);
+    }
+    for (const helper of ['holdSuiteUntilInRegime', 'holdTeamPlanSuiteUntilInRegime', 'skipUnlessInRegime']) {
+      expect(guardSource, `tools/held-suite-manifest.test.mjs no longer names ${helper}`).toContain(`'${helper}'`);
     }
   });
 });

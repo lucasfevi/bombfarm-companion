@@ -1011,7 +1011,8 @@ capture lands. This is the one departure from §11's "throws rather than skips" 
 narrow: that rule is right whenever the corpus holds a capture to re-point AT, and here it holds
 none, so throwing would be a standing red nobody could clear.
 
-**826 domain tests and 29 web tests are held.** What they cover, and what each needs to come back:
+**826 domain tests and 29 web tests were held** (by 2026-09-16, 845 across both hosts). What they
+covered, and what each needed to come back — every row below was re-armed on 2026-09-16, see §14:
 
 | Held | Needs |
 | --- | --- |
@@ -1032,3 +1033,49 @@ now says so mechanically rather than leaving it to be noticed.
 10, where the Dano step is 1. The weapon ×5 is game-confirmed; the 50-level step rests on the wiki
 alone, and `postpatch-damage-model.test.ts` says so in the name of the assertion that reads it. A
 capture holding one item at level 50 or past settles it.
+
+## 14. 2026-09-16: the hold came off, and a hold is now a recorded decision
+
+**What the hold had cost.** Between 2026-08-28 and 2026-09-16 the twenty-four suites of §13 plus one
+`import-merge` assertion — 845 tests — reported green while running nothing, and nothing said so:
+`source-surface.test.ts` and the parity manifest see only static `describe.skip` / `it.skip`
+directives, and a counted runtime skip inside a green run reads as green. Meanwhile three captures
+admissible for `sheet` sat in the registry unread — the two waived saves of 2026-08-28 and
+2026-08-31, and the 2026-09-13 live read — and no suite asked whether it could move onto one.
+
+**Two captures landed, and everything re-armed.** `save-20260914-9heroes-second-account.json`
+(the second account 25 days after its 2026-08-19 capture: 9 heroes, 8 geared 8/8, one with all 67
+points unspent) took over every constant the 2026-08-19 file had carried — `TEAM_PLAN_FIXTURE`,
+`FARM_OPTIMIZE_FIXTURE`, `points-rank-golden`'s subjects, `tree-crit-dmg-flat` (the only
+post-boundary roster on which no hero holds a crit-damage point) — so every band recorded as
+cross-account evidence stays cross-account. `save-20260914-20heroes-phase101.json` (the main
+account at phase 101: 13 geared heroes beside 7 naked ones at L1–L24) took over the one-shot
+contrast (`FARM_POINT_RANK_FIXTURE`, new), `TEAM_PLAN_LARGE_FIXTURE` (6 point resets to order),
+`point-roundtrip` (20/20 heroes issue-free, so the "exactly one pinned exception" claim became "the
+set with issues is exactly empty, by name") and the `import-merge` reconstruction. Both files keep
+`account_id` / `player_name` as registered placeholders rather than deleting them — the first
+captures to witness the export fingerprint's two `allowance` keys present.
+
+Every claim was re-asked, not re-recorded: bands and inequalities that reproduced were kept
+unchanged; pinned literals were re-measured with a footprint; three claims did not survive and are
+recorded where they stood — `farm-optimize-486`'s chest ratio (1.426 on 2026-08-19, 1.095 on the
+same account on 2026-09-14) is now a drift canary behind the invariant it argued for,
+`farm-optimize-frontier`'s payback ordering was retired because the contract never ordered it, and
+`farm-point-rank`'s "speed scores exactly 0 under the DPS objective" was retired because the
+cadence model has priced Speed on every hero since the measured bomb cycle landed (0.145 on Jon
+here; it was already 0.665 on the 2026-08-25 roster under today's model, so it was stale before the
+re-point). Two
+suites (`farm-optimize-frontier`, `farm-optimize-plateau`) turned out to have been reading the
+5-hero 2026-08-13 capture through a defaulted argument while held on a different one; both now
+name their capture. The corpus growing by 29 heroes also moved two letter-grade cut points in
+`roll-quality.ts` (C/B +0.05, A/S −0.06), carried by a changeset.
+
+**A hold is now a manifested decision.** `tools/held-suite-manifest.test.mjs` resolves every
+`holdSuiteUntilInRegime` / `holdTeamPlanSuiteUntilInRegime` / `skipUnlessInRegime` call site to
+the capture and mechanic it reads, asks the registry whether that capture is admissible, and
+requires every hold to have an entry in `tools/held-suites.manifest.mjs` naming, for each capture
+the registry DOES admit for that mechanic, why the suite is not reading it. It fails in both
+directions (a hold with no entry; an entry whose suite runs again), fails when an admissible capture
+lands that no entry has decided against, and prints `N suites held out of regime: …` on every
+`pnpm test`. The manifest is empty today. §13's rule — hold rather than throw when the corpus has
+nothing to re-point at — stands; what changed is that the hold has to be written down.

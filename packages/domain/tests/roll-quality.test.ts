@@ -327,8 +327,8 @@ function distinctCorpusHeroes(): { readonly hero: SaveHero; readonly mean: numbe
 const DISTINCT = distinctCorpusHeroes();
 
 describe('LETTER_BANDS still describes the corpus it was derived from', () => {
-  it('the corpus still holds the 85 distinct heroes the table was read off', () => {
-    expect(DISTINCT.length).toBe(85);
+  it('the corpus still holds the 113 distinct heroes the table was read off', () => {
+    expect(DISTINCT.length).toBe(113);
   });
 
   for (const evidence of LETTER_BANDS.evidence) {

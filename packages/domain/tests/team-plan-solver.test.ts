@@ -29,7 +29,7 @@ describe('runTeamPlan', () => {
     spy.mockRestore();
   });
 
-  it('is deterministic on save-20260819-11882-7heroes.json', () => {
+  it('is deterministic on the fixture', () => {
     const input = teamPlanInputFromFixture(TEAM_PLAN_FIXTURE);
     const first = runTeamPlan(input);
     const second = runTeamPlan(input);
@@ -43,18 +43,13 @@ describe('runTeamPlan', () => {
     expect(JSON.stringify(stripElapsed(first.plan))).toBe(JSON.stringify(stripElapsed(second.plan)));
   });
 
-  // (the ground-truth rule, class (b) — structural): re-pointed onto save-20260819-11882-7heroes.json.
-  // This was originally two tests — one per deleted fixture (`save-20260731-11heroes.json`,
-  // `save-20260801-crit-dmg-tree.json`). Both now name the same post-patch subject and would
-  // be an exact duplicate (same input, same assertion) if both were kept; the second is
-  // deleted rather than left as dead-weight repetition. Recorded for T10.
-  it('satisfies planDps >= currentDps on save-20260819-11882-7heroes.json', () => {
+  it('satisfies planDps >= currentDps on the fixture', () => {
     const result = runTeamPlan(teamPlanInputFromFixture(TEAM_PLAN_FIXTURE));
     assertOk(result);
     expect(result.plan.planDps).toBeGreaterThanOrEqual(result.plan.currentDps);
   });
 
-  it('finds strictly positive gain on save-20260819-11882-7heroes.json', () => {
+  it('finds strictly positive gain on the fixture', () => {
     const result = runTeamPlan(teamPlanInputFromFixture(TEAM_PLAN_FIXTURE));
     assertOk(result);
     expect(result.plan.planDps).toBeGreaterThan(result.plan.currentDps);
@@ -123,10 +118,8 @@ describe('runTeamPlan', () => {
     expect(result.plan.run.elapsedMs).toBeGreaterThanOrEqual(0);
   });
 
-  // The solver's 45-second bound is a ceiling, not a target — re-pointing this fixture does not loosen it even though the
-  // smaller post-patch roster (8 heroes vs the deleted fixture's 11) makes this measurably
-  // faster (~69ms observed locally, vs the ~13-15s the old 11-hero fixture used to take).
-  it('completes save-20260819-11882-7heroes.json under 45 seconds', () => {
+  // The 45-second bound is a ceiling, not a target: the 9-hero roster converges in ~3s locally.
+  it('completes the fixture under 45 seconds', () => {
     const input = teamPlanInputFromFixture(TEAM_PLAN_FIXTURE);
     const started = performance.now();
     const result = runTeamPlan(input);
