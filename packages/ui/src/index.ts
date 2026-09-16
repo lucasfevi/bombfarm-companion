@@ -177,6 +177,7 @@ export {
   type ToastContextValue,
   type ToastProviderProps,
   type ToastItemProps,
+  type ToastLabels,
 } from './toast-system';
 export {
   NotificationCenter,

@@ -30,7 +30,14 @@ export function HeroStripUpgrades() {
       )}
     >
       <UpgradeField label={t.level}>
-        <Num className="w-full" value={level} onChange={onLevelChange} step={1} />
+        <Num
+          className="w-full"
+          value={level}
+          onChange={onLevelChange}
+          step={1}
+          incrementLabel={t.levelStepUp}
+          decrementLabel={t.levelStepDown}
+        />
         <Button
           type="button"
           className="h-full whitespace-nowrap px-2 text-xs"

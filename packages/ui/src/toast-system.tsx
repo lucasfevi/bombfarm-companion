@@ -86,6 +86,22 @@ const TOAST_VARIANT_ICON = {
   progress: 'arrow-path',
 } as const satisfies Record<ToastVariant, string>;
 
+/**
+ * The copy this system bakes into the viewport and each toast. Supplied by the host from its own
+ * dictionary — the design system carries no English of its own, so a localised host stays localised
+ * down to the dismiss button and the overflow affordance.
+ */
+export type ToastLabels = {
+  /** Accessible name for each toast's dismiss button. */
+  dismiss: string;
+  /** Collapses the expanded overflow list back to the visible stack. */
+  showLess: string;
+  /** Expands the overflow list; receives the hidden toast count. */
+  showMore: (count: number) => string;
+  /** Screen-reader progress readout on a progress toast; receives the whole-number percent. */
+  progressComplete: (percent: number) => string;
+};
+
 export type ToastContextValue = {
   push: (toast: ToastInput) => string;
   dismiss: (id: string) => void;
@@ -94,6 +110,7 @@ export type ToastContextValue = {
   overflow: ToastEntry[];
   overflowCount: number;
   buffer: ToastQueueState['buffer'];
+  labels: ToastLabels;
 };
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -107,6 +124,8 @@ export function useToast(): ToastContextValue {
 
 export type ToastProviderProps = {
   children?: ReactNode;
+  /** Host-supplied copy for the dismiss button, overflow toggle and progress readout. */
+  labels: ToastLabels;
 };
 
 /**
@@ -114,7 +133,7 @@ export type ToastProviderProps = {
  * Render `<ToastViewport />` once anywhere inside the provider tree
  * to actually display toasts — the provider itself renders only `children`.
  */
-export function ToastProvider({ children }: ToastProviderProps) {
+export function ToastProvider({ children, labels }: ToastProviderProps) {
   const [state, setState] = useState<ToastQueueState>(initialToastQueueState);
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -158,8 +177,9 @@ export function ToastProvider({ children }: ToastProviderProps) {
       overflow: state.overflow,
       overflowCount: state.overflowCount,
       buffer: state.buffer,
+      labels,
     }),
-    [push, dismiss, clear, state],
+    [push, dismiss, clear, state, labels],
   );
 
   return <ToastContext.Provider value={value}>{children}</ToastContext.Provider>;
@@ -168,6 +188,8 @@ export function ToastProvider({ children }: ToastProviderProps) {
 export type ToastItemProps = {
   toast: ToastEntry;
   onDismiss: (id: string) => void;
+  /** Dismiss-button name and progress readout — the two strings a single toast renders. */
+  labels: Pick<ToastLabels, 'dismiss' | 'progressComplete'>;
   className?: string;
 };
 
@@ -178,7 +200,7 @@ export type ToastItemProps = {
  * `ToastInput`'s type, not an array — passing more than one action is a
  * compile-time type error, not a runtime truncation.
  */
-export function ToastItem({ toast, onDismiss, className }: ToastItemProps) {
+export function ToastItem({ toast, onDismiss, labels, className }: ToastItemProps) {
   const isError = toast.variant === 'error';
   const isProgress = toast.variant === 'progress';
   const progress = isProgress ? Math.max(0, Math.min(100, toast.progress ?? 0)) : undefined;
@@ -217,7 +239,7 @@ export function ToastItem({ toast, onDismiss, className }: ToastItemProps) {
               <div className={toastProgressFillClass} style={{ width: `${progress}%` }} />
             </div>
             <span key={announceBucket} className={toastSrOnlyClass}>
-              {progress}% complete
+              {labels.progressComplete(progress ?? 0)}
             </span>
           </>
         ) : null}
@@ -234,7 +256,7 @@ export function ToastItem({ toast, onDismiss, className }: ToastItemProps) {
       <button
         type="button"
         className={toastCloseButtonClass}
-        aria-label="Dismiss"
+        aria-label={labels.dismiss}
         onClick={() => onDismiss(toast.id)}
       >
         <Icon name="x-mark" size="sm" />
@@ -253,7 +275,7 @@ export function ToastItem({ toast, onDismiss, className }: ToastItemProps) {
  * rather than the node-only Vitest suite, which cannot exercise a portal.
  */
 export function ToastViewport({ className }: { className?: string }) {
-  const { visible, overflow, overflowCount, dismiss } = useToast();
+  const { visible, overflow, overflowCount, dismiss, labels } = useToast();
   const [mounted, setMounted] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
@@ -268,7 +290,7 @@ export function ToastViewport({ className }: { className?: string }) {
   return createPortal(
     <div className={cn(toastViewportClass, className)}>
       {visible.map((toast) => (
-        <ToastItem key={toast.id} toast={toast} onDismiss={dismiss} />
+        <ToastItem key={toast.id} toast={toast} onDismiss={dismiss} labels={labels} />
       ))}
       {overflowCount > 0 ? (
         <button
@@ -277,11 +299,11 @@ export function ToastViewport({ className }: { className?: string }) {
           aria-expanded={expanded}
           onClick={() => setExpanded((prev) => !prev)}
         >
-          {expanded ? 'Show less' : `+${overflowCount} more`}
+          {expanded ? labels.showLess : labels.showMore(overflowCount)}
         </button>
       ) : null}
       {extra.map((toast) => (
-        <ToastItem key={toast.id} toast={toast} onDismiss={dismiss} />
+        <ToastItem key={toast.id} toast={toast} onDismiss={dismiss} labels={labels} />
       ))}
     </div>,
     document.body,

@@ -11,6 +11,8 @@ const meta = {
     onChange: () => undefined,
     step: 0.05,
     decimals: 2,
+    incrementLabel: 'Increment',
+    decrementLabel: 'Decrement',
   },
 } satisfies Meta<typeof Num>;
 
@@ -54,11 +56,11 @@ export const InFieldStack: Story = {
       <Fields layout="stack" className="max-w-sm">
         <label>
           <span>Total damage ×</span>
-          <Num value={dmg} onChange={setDmg} step={0.001} decimals={3} />
+          <Num value={dmg} onChange={setDmg} step={0.001} decimals={3} incrementLabel="Increment" decrementLabel="Decrement" />
         </label>
         <label>
           <span>Crit chance +% base</span>
-          <Num value={crit} onChange={setCrit} decimals={2} />
+          <Num value={crit} onChange={setCrit} decimals={2} incrementLabel="Increment" decrementLabel="Decrement" />
         </label>
       </Fields>
     );
@@ -72,7 +74,7 @@ export const InFieldInline: Story = {
       <Fields layout="inline">
         <label>
           Multiplier
-          <Num value={value} onChange={setValue} step={0.05} decimals={2} />
+          <Num value={value} onChange={setValue} step={0.05} decimals={2} incrementLabel="Increment" decrementLabel="Decrement" />
         </label>
       </Fields>
     );

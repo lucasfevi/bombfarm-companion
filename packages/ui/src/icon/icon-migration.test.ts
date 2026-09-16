@@ -39,8 +39,9 @@ describe('icon migration parity — num spinner chevrons (rows 2–3)', () => {
   });
 
   it('keeps parent button labels and drops vendor icon imports', () => {
-    expect(src).toContain('aria-label="Increment"');
-    expect(src).toContain('aria-label="Decrement"');
+    // The labels are host-supplied now (localized), so the buttons carry them by prop, not literal.
+    expect(src).toContain('aria-label={incrementLabel}');
+    expect(src).toContain('aria-label={decrementLabel}');
     expectNoVendorIconImports(src);
   });
 });

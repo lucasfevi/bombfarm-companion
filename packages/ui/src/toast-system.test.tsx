@@ -2,8 +2,15 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { ToastItem, ToastProvider, useToast } from './toast-system';
+import { ToastItem, ToastProvider, useToast, type ToastLabels } from './toast-system';
 import type { ToastEntry, ToastVariant } from './toast-queue';
+
+const TEST_LABELS: ToastLabels = {
+  dismiss: 'Dismiss',
+  showLess: 'Show less',
+  showMore: (count) => `+${count} more`,
+  progressComplete: (percent) => `${percent}% complete`,
+};
 
 function makeEntry(overrides: Partial<ToastEntry> & Pick<ToastEntry, 'variant'>): ToastEntry {
   return {
@@ -18,13 +25,15 @@ function makeEntry(overrides: Partial<ToastEntry> & Pick<ToastEntry, 'variant'>)
 }
 
 function renderItem(entry: ToastEntry) {
-  return renderToStaticMarkup(createElement(ToastItem, { toast: entry, onDismiss: () => {} }));
+  return renderToStaticMarkup(
+    createElement(ToastItem, { toast: entry, onDismiss: () => {}, labels: TEST_LABELS }),
+  );
 }
 
 describe('ToastProvider — owns reducer state and the single setTimeout', () => {
   it('renders its children', () => {
     const html = renderToStaticMarkup(
-      createElement(ToastProvider, { children: createElement('p', null, 'hello') }),
+      createElement(ToastProvider, { labels: TEST_LABELS, children: createElement('p', null, 'hello') }),
     );
     expect(html).toContain('hello');
   });
