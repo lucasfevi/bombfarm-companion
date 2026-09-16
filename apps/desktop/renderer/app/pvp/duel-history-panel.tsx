@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import type { PvpDuelRow, PvpHistoryResult } from '@bombfarm/contracts';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import { HeroAvatar, inventoryFieldHeightClass } from '@bombfarm/game-art';
+import { HeroAvatar, HeroPeek, heroPeekData, inventoryFieldHeightClass } from '@bombfarm/game-art';
 import { Button, cn, DataTable, EmptyState, FactTile, InfoTip, Panel, PanelHeader, SearchSelect, SegmentedToggle } from '@bombfarm/ui';
 import { buildAccountRoster } from '../../lib/account/account-roster';
 import { useAccountView } from '../../lib/account/use-account-view';
@@ -288,11 +288,13 @@ function DuelRow({
   );
 }
 
-/** The heroes fielded, in slot order, overlapping like a hand of cards. A hero the roster no
- *  longer carries keeps its slot as a framed question mark, so the stack is as long as the squad
- *  was. */
+/** The heroes fielded, in slot order, overlapping like a hand of cards, each opening its own
+ *  card on hover — lifted above its neighbours while it does, since the next card in the hand
+ *  covers its edge. A hero the roster no longer carries keeps its slot as a framed question mark,
+ *  so the stack is as long as the squad was. */
 function SquadStack({ heroIds, heroById }: { heroIds: readonly string[]; heroById: HeroById }) {
   const t = useCopy();
+  const { lang } = useLocale();
   if (heroIds.length === 0) return <span aria-hidden>—</span>;
   return (
     <span className="flex items-center">
@@ -323,14 +325,14 @@ function SquadStack({ heroIds, heroById }: { heroIds: readonly string[]; heroByI
             {t.pvpSquadUnknownMark}
           </span>
         ) : (
-          <HeroAvatar
+          <HeroPeek
             key={`${heroId}-${String(index)}`}
-            skin={hero.skin ?? 0}
-            rarityIdx={RARITIES.indexOf(hero.rarity)}
-            size="xs"
-            name={hero.name}
-            className={cn('size-6', 'shrink-0', overlap)}
-          />
+            hero={heroPeekData(hero)}
+            lang={lang}
+            className={cn('relative', 'hover:z-[1]', overlap)}
+          >
+            <HeroAvatar skin={hero.skin ?? 0} rarityIdx={RARITIES.indexOf(hero.rarity)} size="xs" name={hero.name} className="size-6" />
+          </HeroPeek>
         );
       })}
     </span>

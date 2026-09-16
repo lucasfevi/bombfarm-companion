@@ -1,8 +1,8 @@
 'use client';
 
 import { Tooltip, cn, formatNumber } from '@bombfarm/ui';
-import { teamAuraReadout, type AbilityEffectReadout } from '@bombfarm/domain/ability-effect-readout';
-import { abilityEffectText, abilityName } from '@bombfarm/domain/game-labels';
+import { teamAuraReadout } from '@bombfarm/domain/ability-effect-readout';
+import { abilityEffectText, abilityName, abilityReadoutText } from '@bombfarm/domain/game-labels';
 import { PASSAGEM_BASTAO_CAP } from '@bombfarm/domain/model';
 import {
   TEAM_AURA_SWITCH_IDS,
@@ -11,31 +11,17 @@ import {
   type TeamAuraId,
 } from '@bombfarm/domain/team-buffs';
 import { AbilityIcon } from '@bombfarm/game-art';
-import { heroCopyFor, sub, type HeroCopy, type Lang } from '../copy';
-
-type ReadoutKind = Exclude<AbilityEffectReadout, { kind: 'none' }>['kind'];
-
-const CAP_UNIT_KEY: Partial<Record<ReadoutKind, keyof HeroCopy>> = {
-  attackPct: 'heroDetailAuraUnitAttack',
-  speedPct: 'heroDetailAuraUnitSpeed',
-  critPoints: 'heroDetailAuraUnitCrit',
-  drainPct: 'heroDetailAuraUnitDrain',
-  penetrationPoints: 'heroDetailAuraUnitPenetration',
-  teamPulseDmgPct: 'heroDetailAuraUnitPulse',
-};
+import { heroCopyFor, sub, type Lang } from '../copy';
 
 function capAmount(auraId: TeamAuraId): number {
   return auraId === 'passagem_bastao' ? PASSAGEM_BASTAO_CAP * 100 : TEAM_BUFF_CAP[auraId];
 }
 
-/** "+20% attack" — each aura's cap in the unit the Heroes screen's aura rows print it in. */
+/** "+20% attack" — each aura's cap in the unit the Heroes screen's aura cards print it in. */
 export function auraCapText(auraId: TeamAuraId, lang: Lang): string {
-  const readout = teamAuraReadout(auraId, capAmount(auraId));
-  if (readout.kind === 'none') return '—';
-  const key = CAP_UNIT_KEY[readout.kind];
-  if (key === undefined) return '—';
-  const decimals = readout.kind === 'speedPct' ? 2 : 0;
-  return sub(heroCopyFor(lang)[key], { value: formatNumber(readout.value, lang, decimals) });
+  return abilityReadoutText(teamAuraReadout(auraId, capAmount(auraId)), lang, (value, decimals) =>
+    formatNumber(value, lang, decimals),
+  );
 }
 
 const chipClass =
