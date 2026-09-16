@@ -4,29 +4,19 @@
  * number that moved rather than as nothing at all. Values are read off a real run, never
  * hand-derived.
  *
- * RE-POINTED onto `save-20260819-11882-7heroes.json` (issue #206). The retired
- * `save-20260813-5heroes.json` had left its regime, and the two subjects pinned on it were
- * disabled rather than re-recorded — a golden pinned to a capture the model can no longer solve
- * is not a canary, it is a number nobody can act on. Its re-recording history (the House cycle
- * correction, the 2026-08-18 crit/CDR revert, the 2026-08-23 ability shape) described that
- * roster and is kept in `docs/fixture-corpus.md` rather than carried onto this one.
- *
  * WHAT A GOLDEN CAN AND CANNOT SAY, restated because it is easy to lose: these figures are this
  * model's own output, so they are not evidence about the game and re-recording them proves
  * nothing on its own. What they buy is a diff. When one of them moves, the change was reached by
- * something, and the useful work is naming what — which is why every past re-record here is
+ * something, and the useful work is naming what — which is why every re-record here is
  * accompanied by a footprint (which stats moved, on which subjects, and by how much) rather than
- * just a new number.
+ * just a new number. A golden pinned to a capture the model can no longer solve is not a canary,
+ * it is a number nobody can act on, so an expired capture is re-pointed rather than re-recorded
+ * in place; the earlier rosters' re-recording history is kept in `docs/fixture-corpus.md`.
  *
- * RE-RECORDED 2026-09-11 — the advisor adopted the farm board's measured bomb cycle
- * (apps/web/docs/adr/016), so bombs/s now reads Speed and the difficulty band instead of a
- * constant 0.15 s walk. Footprint, both subjects and the synthetic hero: Speed enters the ranking
- * (0 -> 1.07-1.12%, third place on every subject) and CDR falls to a quarter of its old rate
- * (Gale 0.0460 -> 0.0135, Kael 0.0307 -> 0.0087, synthetic 0.0513 -> 0.0136) because a shorter
- * fuse pays only on the hops the walk does not already cover; attack, energy, crit and
- * penetration are cadence-independent ratios and did not move. Gale's attack figure did move
- * (1.7126 -> 1.7194): this suite was already held out of regime when the 2026-08-28 weapon Dano
- * ladder landed, and that change reached his geared sheet while nothing was comparing.
+ * Re-pointed onto `save-20260914-9heroes-second-account.json` — the same account as the retired
+ * 2026-08-19 capture, 26 days on — with new subjects, so the two roster figures are not
+ * comparable to the old ones. The roster-independent synthetic-hero figures below reproduced
+ * exactly across the re-point, which is the one comparison the swap allows.
  */
 import { describe, expect, it } from 'vitest';
 import { parseAccountPayload } from '@bombfarm/domain/import-save';
@@ -39,17 +29,13 @@ import type { HeroRecord, AccountShared } from '@bombfarm/domain/shims/storage';
 import { holdSuiteUntilInRegime } from './helpers/capture-regime';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 
-const FIXTURE = 'save-20260819-11882-7heroes.json';
+const FIXTURE = 'save-20260914-9heroes-second-account.json';
 
-// A golden is our own output by construction, so it can never be a claim about the game —
-// its whole value is catching an unintended model change as a number that moved. That value
-// is real only while the capture underneath it is one the model can still solve, which is why
-// this is re-pointed rather than re-recorded in place (issue #206).
 holdSuiteUntilInRegime(`sheet-math/${FIXTURE}`, 'sheet');
 
 const pick = (rows: readonly PointValue[]) => rows.map((r) => ({ stat: r.stat, gainPct: r.gainPct }));
 
-describe('DPS next-point ranking — golden fixture (pre-deletion, pinned byte-for-byte)', () => {
+describe('DPS next-point ranking — golden fixture (pinned byte-for-byte)', () => {
   const raw = loadFixtureJson(FIXTURE);
   const parsed = parseAccountPayload(raw, []);
   if (parsed.rejected) throw new Error(`fixture rejected: ${parsed.rejected.reason}`);
@@ -92,44 +78,47 @@ describe('DPS next-point ranking — golden fixture (pre-deletion, pinned byte-f
   }
 
   /**
-   * Gale L48, geared, is the discriminating subject: he is the ONLY hero on this roster whose
-   * energy point outranks his attack point, and the margin is thin (1.7311 vs 1.7126, ~1.1%).
-   * A change that shifted either rate even slightly would reorder him while leaving the other six
-   * heroes' orders intact — which is exactly what a golden is for.
+   * Devin L87, geared 8/8 with Olho Clínico 20/20, is the discriminating subject: he is the ONLY
+   * hero on this roster whose top point is not attack — his crit-damage point outranks it
+   * (1.6258 vs 1.0901), because the ability's flat +40 crit chance makes every crit-damage point
+   * pay on nearly half his bombs. A change that shifted either rate would reorder him while
+   * leaving the other eight heroes' attack-first orders intact — which is exactly what a golden
+   * is for.
    */
-  it('Gale L48 (geared) — full ranking pinned to full precision, energy first', () => {
-    const result = pipelineForHero(heroByName('Gale'), account, phase, mitigationPct);
+  it('Devin L87 (geared, Olho Clínico) — full ranking pinned to full precision, crit damage first', () => {
+    const result = pipelineForHero(heroByName('Devin'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
-      { stat: 'energy', gainPct: 1.731149679444255 },
-      { stat: 'attack', gainPct: 1.7193730221849446 },
-      { stat: 'speed', gainPct: 1.073190750541042 },
-      { stat: 'critDmg', gainPct: 0.4459730294051445 },
-      { stat: 'critChance', gainPct: 0.09916082858880682 },
-      { stat: 'cdr', gainPct: 0.01350607505610224 },
-      { stat: 'penetration', gainPct: 0.001994465912513732 },
+      { stat: 'critDmg', gainPct: 1.6258384769856304 },
+      { stat: 'attack', gainPct: 1.0900754392397571 },
+      { stat: 'speed', gainPct: 0.4586162938889915 },
+      { stat: 'energy', gainPct: 0.3079450009872753 },
+      { stat: 'critChance', gainPct: 0.08676728467884587 },
+      { stat: 'cdr', gainPct: 0.01750429994018532 },
+      { stat: 'penetration', gainPct: 0.00244876856141385 },
     ]);
   });
 
   /**
-   * Kael L2, naked, is the opposite end: nothing equipped, two points spent, and attack ahead of
-   * energy by more than 2x. Pinning both ends means a change that only reaches geared heroes, or
+   * Isolde L67, naked with all 67 points unspent, is the opposite end: nothing equipped, nothing
+   * spent, and attack ahead of energy by more than 2x on a sheet that is birth roll, tree and
+   * ability terms alone. Pinning both ends means a change that only reaches geared heroes, or
    * only reaches the level term, shows up on exactly one of the two.
    */
-  it('Kael L2 (naked) — full ranking pinned to full precision, attack dominant', () => {
-    const result = pipelineForHero(heroByName('Kael'), account, phase, mitigationPct);
+  it('Isolde L67 (naked, no points spent) — full ranking pinned to full precision, attack dominant', () => {
+    const result = pipelineForHero(heroByName('Isolde'), account, phase, mitigationPct);
     expect(pick(result.ranking)).toEqual([
-      { stat: 'attack', gainPct: 15.948186475064375 },
-      { stat: 'energy', gainPct: 7.106169237061066 },
-      { stat: 'speed', gainPct: 1.1173450961979858 },
-      { stat: 'critDmg', gainPct: 0.21177885060466028 },
-      { stat: 'critChance', gainPct: 0.03841758456635258 },
-      { stat: 'cdr', gainPct: 0.008736710587298191 },
-      { stat: 'penetration', gainPct: 0.0004083070894500551 },
+      { stat: 'attack', gainPct: 5.04711144179415 },
+      { stat: 'energy', gainPct: 2.305569985939271 },
+      { stat: 'speed', gainPct: 0.7083292471643077 },
+      { stat: 'critDmg', gainPct: 0.23330731000408278 },
+      { stat: 'critChance', gainPct: 0.08375991220037626 },
+      { stat: 'cdr', gainPct: 0.01524226244737914 },
+      { stat: 'penetration', gainPct: 0.0012742229402507022 },
     ]);
   });
 });
 
-describe('DPS next-point ranking — CDR marginal-fuse special case (golden, pre-deletion)', () => {
+describe('DPS next-point ranking — CDR marginal-fuse special case (golden, roster-independent)', () => {
   const baseCtx = (): Context => ({
     restSeconds: 12 * 60,
     mitigation: 0.067,

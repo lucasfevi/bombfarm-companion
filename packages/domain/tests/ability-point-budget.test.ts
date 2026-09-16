@@ -47,8 +47,7 @@ describe('abilityPointBudget', () => {
   it('spent === min(level, quota x 20) holds 13/13 across both post-patch corpus files (equality, not <=)', () => {
     // (the ground-truth rule class (a) — read from the capture): re-pointed onto both corpus files
     // combined (5 export heroes + 8 payload heroes). The hero count is read from the two
-    // fixtures, not hand-copied — 13, verified against packages/domain/tests/point-roundtrip.test.ts's
-    // own independently-measured 13-hero floor.
+    // fixtures, not hand-copied.
     const exportRaw = loadFixtureJson('save-20260813-5heroes.json');
     const payloadRaw = loadFixtureJson('payload-20260812-8heroes.json');
     const heroes = [

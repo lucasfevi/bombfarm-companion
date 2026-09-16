@@ -20,7 +20,7 @@ import { holdSuiteUntilInRegime } from './helpers/capture-regime';
 
 holdSuiteUntilInRegime(`sheet-math/${FARM_OPTIMIZE_FIXTURE}`, 'sheet');
 
-const { heroes, account, maxPhase } = loadFarmRateFixture();
+const { heroes, account, maxPhase } = loadFarmRateFixture(FARM_OPTIMIZE_FIXTURE);
 
 describe('derivePlateauBounds — the contiguity and single-point rules, on synthetic ladders', () => {
   it('a width of several grid steps when every neighbour in the run qualifies', () => {
@@ -114,44 +114,10 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
     // collapses to a single point. That is spec-sanctioned behaviour, not an accident: min and
     // max both equal the winner's own share, never null, never an invented width.
     //
-    // RE-MEASURED FIVE TIMES, every time because the winning BUILD moved — never the plateau
-    // logic. The single-point collapse is unchanged throughout. Chronological; the LAST entry is
-    // always the value asserted below.
-    //   0.4744  original
-    //   0.4937  House-ceiling fix: rest seconds now come from the fixture's own
-    //           `casa.cycle_secs` (1181.05s) rather than the `HOUSES` table (1102s), and a longer
-    //           House cycle makes each Energy point (which buys field seconds) worth more.
-    //   0.5402  cadence fix: averaging the cycle over the measured hop distribution puts ~45% of
-    //           plants on the fuse-bound branch, where a Speed point buys nothing. Speed's
-    //           marginal value drops sharply, the winning build stops spending on it, and the
-    //           freed pool goes to Energy. Same direction as the rank inversion pinned in
-    //           `farm-point-rank.test.ts`, where energy overtakes speed outright.
-    //   0.5000  2026-08-15 patch: crit chance and CDR became flat addends
-    //           (`POINT_GAIN.critChanceFlat` / `.cdrFlat`). Both per-point gains collapsed by
-    //           more than an order of magnitude, so neither stat competes for the pool any more
-    //           and the split reverts toward the attack/energy pair.
-    //   0.5217  2026-08-16 item redistribution: chest/pants now lead Penetração/Recarga, so the
-    //           winning build's gear mix shifts and the split moves once more.
-    //   0.6395  2026-08-18 patch (issue #132): crit chance and CDR moved back to percent-of-base,
-    //           so both stats compete for the pool again and pull the split away from the
-    //           attack/energy pair once more — the mirror image of the 0.5402 → 0.5000 move
-    //           above, three days later.
-    //   0.5618  PR #139's team-aura roster shape: this fixture's account.teamBuffs is
-    //           zeroTeamBuffs(), so Jon (folego_mineiro 18, elsewhere in this 5-hero roster)
-    //           loses the own-rank drain leak the old model let through. His lower uptime shifts
-    //           the squad-level House allocation this solve reads, moving the winning build's
-    //           own energy/attack split even though nothing about ITS abilities changed.
-    //   0.5568  2026-08-20 rotation-priced team auras + the HOP_DENSITY_EXPONENT refit. Jon's
-    //           folego_mineiro is credited again — not at its full rank as before PR #139, but
-    //           at the share of the rotation he is actually on the field for — which lifts every
-    //           hero's field seconds and shifts the same allocation back part of the way.
-    //   0.6279  2026-08-23 crit-chance ability shape: Olho Clínico's contribution stops scaling
-    //           with the hero's crit roll and becomes a flat +40 points at rank 20, so a
-    //           crit-chance POINT is worth far less at the margin on an Olho hero than it was.
-    //           The pool's winning build spends elsewhere and the split moves back toward
-    //           energy. ← asserted below
-    expect(plateau.minEnergyShare).toBeCloseTo(0.627906976744186, 4);
-    expect(plateau.maxEnergyShare).toBeCloseTo(0.627906976744186, 4);
+    // 0.4548 on `save-20260914-9heroes-second-account.json`. The single-point collapse has held
+    // through every re-measurement on every roster; only the winning BUILD ever moved it.
+    expect(plateau.minEnergyShare).toBeCloseTo(0.45481927710843373, 4);
+    expect(plateau.maxEnergyShare).toBeCloseTo(0.45481927710843373, 4);
     expect(plateau.minEnergyShare).toBe(plateau.maxEnergyShare);
   });
 
@@ -174,22 +140,28 @@ describe('a squad whose small point budget produces a genuinely wide plateau, th
     // forces a genuinely wide plateau through the SAME live `solveFarmRespec` pipeline, not a
     // hand-built ladder: a hero with a tiny reallocatable point budget (4, from level 4 with
     // every stat and luck at 0) means the ladder's 0.05-wide grid steps are finer than the
-    // budget can resolve. `Math.round(pool * share)` maps five consecutive shares — 0.40, 0.45,
-    // 0.50, 0.55, 0.60 — to the exact same 2-energy/2-attack integer split, so those five squads
+    // budget can resolve. `Math.round(pool * share)` maps five consecutive shares — 0.15, 0.20,
+    // 0.25, 0.30, 0.35 — to the exact same 1-energy/3-attack integer split, so those five squads
     // are bit-identical and score exactly the same, not merely within tolerance. That produces a
     // measured, deterministic band, not a single point.
-    const jon = heroes.find((h) => h.name === 'Jon')!;
-    const tinyBudgetJon: HeroRecord = {
-      ...jon,
+    //
+    // Isolde is the subject because she is the one hero on this roster whose 4-point winner
+    // sits inside a run the neighbouring splits fall out of: the 0-energy split at 0.10 and the
+    // 2-energy split at 0.40 both score more than 1% below it, so the reported band is exactly
+    // the identical-split run and nothing wider. Every other hero's winner rounds to the
+    // all-energy or 2/2 split and the band takes in a neighbouring split as well.
+    const isolde = heroes.find((h) => h.name === 'Isolde')!;
+    const tinyBudgetIsolde: HeroRecord = {
+      ...isolde,
       level: 4,
       pts: { attack: 0, energy: 0, speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0, luck: 0 },
     };
-    const result = solveFarmRespec({ heroes: [tinyBudgetJon], account, maxPhase });
+    const result = solveFarmRespec({ heroes: [tinyBudgetIsolde], account, maxPhase });
     expect(result.plateau).not.toBeNull();
     const plateau = result.plateau!;
-    expect(plateau.minEnergyShare).toBe(0.4);
-    expect(plateau.maxEnergyShare).toBe(0.6);
-    expect(plateau.proposedEnergyShare).toBe(0.5);
+    expect(plateau.minEnergyShare).toBe(0.15);
+    expect(plateau.maxEnergyShare).toBe(0.35);
+    expect(plateau.proposedEnergyShare).toBe(0.25);
     expect(plateau.maxEnergyShare - plateau.minEnergyShare).toBeCloseTo(0.2, 9);
   });
 });
@@ -220,13 +192,13 @@ describe('a keptCurrent solve still reports a plateau', () => {
 
 describe('a zero-searchable-pool squad', () => {
   it('currentEnergyShare === 0 and no NaN, on the noBudget fast path', () => {
-    const jon = heroes.find((h) => h.name === 'Jon')!;
-    const zeroBudgetJon: HeroRecord = {
-      ...jon,
+    const sora = heroes.find((h) => h.name === 'Sora')!;
+    const zeroBudgetSora: HeroRecord = {
+      ...sora,
       level: 5,
       pts: { attack: 0, energy: 0, speed: 0, critChance: 0, critDmg: 0, penetration: 0, cdr: 0, luck: 5 },
     };
-    const result = solveFarmRespec({ heroes: [zeroBudgetJon], account, maxPhase });
+    const result = solveFarmRespec({ heroes: [zeroBudgetSora], account, maxPhase });
     expect(result.outcome).toBe('noBudget');
     expect(result.plateau).not.toBeNull();
     expect(result.plateau!.currentEnergyShare).toBe(0);
@@ -239,7 +211,7 @@ describe('the plateau adds ZERO evaluations', () => {
     // A 1-hero pool forces frontier: [] unconditionally (heroCount can never be < |S|=1), so
     // this isolates the plateau's own cost from the frontier's, which otherwise also adds
     // evaluations to the same total.
-    const oneId = [heroes.find((h) => h.name === 'Jon')!.id];
+    const oneId = [heroes.find((h) => h.name === 'Nolan')!.id];
     const bases = computeHeroFarmBases({ heroes, account, enabledHeroIds: oneId });
     const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.pts, b.level)] as const));
     const searchableIds = bases.map((b) => b.heroId);

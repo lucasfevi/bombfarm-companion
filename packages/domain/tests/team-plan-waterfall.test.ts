@@ -42,9 +42,6 @@ function ptsWithResets(
   return pts;
 }
 
-// (the ground-truth rule, class (b) — structural): re-pointed onto save-20260819-11882-7heroes.json
-// (default subject) and save-20260819-11882-7heroes.json (forge-specific assertions, per
-// the payload's uniform-0 upgrades cannot exercise a forge/no-forge choice).
 describe('buildWaterfall', () => {
   // Finding 4: the roster objective's saturation cap must read `account.fieldSlots` (FIELD
   // concurrency), never `account.slots` (HOUSE recovery) — a real save can carry both, disagreeing
@@ -89,9 +86,7 @@ describe('buildWaterfall', () => {
   });
 
   it('includes forge entries for items below forgeFloor on the fixture', () => {
-    // (the ground-truth rule, class (a)): forge-specific — takes save-20260819-11882-7heroes.json (item
-    // upgrades {0, 8}), not the default payload subject, whose upgrades are uniformly 0 and
-    // so cannot exercise a genuine forge/no-forge choice.
+    // Needs a roster whose upgrades straddle the floor: the fixture's sit at 0, 8 and 10.
     const { plan } = waterfallFromFixture(TEAM_PLAN_FIXTURE);
     expect(plan.forgeList.length).toBeGreaterThan(0);
     expect(plan.forgeFloorApplied).toBeGreaterThan(0);
@@ -168,16 +163,10 @@ describe('buildWaterfall', () => {
   });
 
   it('every listed point reset is roster-justified: removing any single one does not raise the objective', () => {
-    // NOTE: floor 10 / slots 3 was this fixture's original motivating example (measured +923
-    // with 3 resets) when this test was first written. With the search fully converged to local
-    // optimality (solver-search.ts Change 2), the move-only gear step at that exact config now
-    // already captures the whole gain on its own (see team-plan-step-monotonicity.test.ts), so
-    // `acceptPointResets` finds nothing left to add there and `pointResets` is empty — that is
-    // a better plan, not a regression, and this test would pass vacuously against it. floor 10 /
-    // slots 9 (used by the sibling "negative gainPct" test below) reliably still exercises
-    // resets under the current converged search, so this test uses that config instead.
+    // A converged search can capture a config's whole gain in the gear step and leave no reset
+    // to justify, which would pass this vacuously — hence the guard on the count. Floor 10 /
+    // slots 9 yields eight resets on this roster.
     const { input, plan } = waterfallFromFixture(TEAM_PLAN_FIXTURE, 10, 9);
-    // Assert it actually exercises resets so this test cannot pass vacuously.
     expect(plan.pointResets.length).toBeGreaterThan(0);
     const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
     if (built.blocked) throw new Error('blocked');
@@ -199,15 +188,6 @@ describe('buildWaterfall', () => {
       expect(evaluation.objective).toBeLessThanOrEqual(plan.planDps + 1e-6);
     }
   });
-
-  // DELETED, not re-pointed (the ground-truth rule; T5's explicit instruction). This was the one
-  // non-quarantined skip directive in the two test trees. Its subject (save-20260801-crit-dmg-
-  // tree.json, hero 37446) dies with the rest of the pre-wipe corpus, and nobody has looked for
-  // a fresh empirical example on the new substrate — re-pointing it onto a substrate nobody has
-  // verified reproduces the scenario would be exactly the "green without executing" failure
-  // mode this repo tracks. The underlying invariant it wanted is unchanged in the code and
-  // stays covered by 'every listed point reset is roster-justified' above. Recorded in
-  // docs/fixture-corpus.md.
 
   it('carries the allocation each reset was scored against, matching that hero sheetStatsBefore', () => {
     const { input, plan } = waterfallFromFixture(TEAM_PLAN_FIXTURE, 10, 9);
@@ -342,9 +322,7 @@ describe('buildWaterfall', () => {
     expect(Math.abs(deltaSum - (wf.steps[2]!.objective - wf.steps[0]!.objective))).toBeLessThan(1e-9);
   });
 
-  // The old "never attributes a negative roster delta to the respec step" test here only
-  // exercised save-20260819-11882-7heroes.json, which never reaches the saturated regime at that
-  // fixture's default slot count — that blind spot is why the original bug shipped. The full
-  // roster-level step-monotonicity regression (all steps, both fixtures, the forge floor / slot
-  // grid, and donate-scope mixes) now lives in team-plan-step-monotonicity.test.ts.
+  // Roster-level step monotonicity (the respec step never negative, across the forge floor /
+  // slot grid on both fixtures) lives in team-plan-step-monotonicity.test.ts: a single roster
+  // at its default slot count never reaches the saturated regime where that bug lives.
 });

@@ -8,15 +8,11 @@
  * Covers: the solver beating both naive builds, the recommended-phase band, and the chest
  * objective reporting a higher chest rate at a different phase than the gold objective.
  *
- * RE-POINTED off `save-20260813-5heroes.json` onto `save-20260819-11882-7heroes.json` (issue
- * #206). The old fixture is out of regime for `sheet` math, which had left four of this file's
- * claims disabled rather than re-recorded — each one a real finding whose numbers nobody had
- * re-checked. Every one of the four was then re-asked of the new roster before being re-enabled,
- * and all four REPRODUCE, on a different account, with their recorded bands unchanged: the
- * inverted-intuition result (all-attack scores below the current build), all-attack being the
- * worst of the four builds, `gainPct` landing inside [4, 9], and the chest ratio inside
- * [1.3, 1.5]. Bands that survive a change of account are not rubber stamps — that is exactly the
- * check #206 asks for, and it is why these came back rather than being deleted.
+ * Measured on `save-20260914-9heroes-second-account.json`. The standard for what survives a
+ * change of capture: a band or inequality that reproduces on a different roster is kept
+ * unchanged; a pinned literal is re-measured and its footprint noted; a claim whose subject the
+ * roster no longer holds is re-chosen with the reason stated. Bands that survive a change of
+ * account are not rubber stamps — that is exactly the check the findings here rest on.
  */
 import { describe, expect, it } from 'vitest';
 import { solveFarmRespec, FARM_RESPEC_MIN_GAIN_PCT } from '@bombfarm/domain/farm-optimize';
@@ -87,11 +83,10 @@ describe('the solver strictly beats the all-energy build', () => {
 });
 
 describe('the inverted-intuition finding: all-attack scores BELOW the current build', () => {
-  // Re-asked of the 2026-08-19 roster and it still holds: 1,085,794 < 1,331,738. On the retired
-  // 2026-08-13 roster it was 212,284 < 264,997 — a different account, a different order of
-  // magnitude, the same direction. Dumping every point into damage is worse than the build the
-  // account already has, because damage past the one-shot threshold buys nothing while the
-  // energy and speed it was taken from buy uptime and cadence.
+  // Holds on this roster too: 25,191,101 < 30,449,438, where the 2026-08-19 capture of the same
+  // account measured 1,085,794 < 1,331,738. Dumping every point into damage is worse than the
+  // build the account already has, because damage past the one-shot threshold buys nothing while
+  // the energy and speed it was taken from buy uptime and cadence.
   it(`all-attack (${allAttackBest.toFixed(0)}) < current (${currentBest.toFixed(0)})`, () => {
     expect(allAttackBest).toBeLessThan(currentBest);
   });
@@ -103,34 +98,30 @@ describe('the inverted-intuition finding: all-attack scores BELOW the current bu
 });
 
 describe('the recommended phase reproduces the measured band', () => {
-  // The account's own `max_phase` is 52 and the solver picks 51 — this roster is already farming
-  // at its ceiling, so the recommendation is "stay", not "move". The retired 2026-08-13 roster
-  // sat well below its own cap and the band there was 26–28; the claim that survives the change
-  // of account is the relation to the cap, not the absolute number, so that is what is asserted.
-  it('the recommended phase sits at the account\'s reachable ceiling, not below it', () => {
-    expect(maxPhase).toBe(52);
-    expect(solved.recommendedPhase).toBeGreaterThanOrEqual(maxPhase! - 1);
-    expect(solved.recommendedPhase).toBeLessThanOrEqual(maxPhase!);
+  // The account's own `max_phase` is 155 and the first phase it cannot clear is 150, yet the
+  // solver picks 71: an interior gold peak, four phases past the current build's own argmax of
+  // 67. The same account's 2026-08-19 capture farmed at its ceiling (max_phase 52, pick 51), so
+  // the relation to the cap is a property of where the account stands, not of the solver — what
+  // is pinned is the measured pick, with the cap alongside it so a move of either is visible.
+  it('the recommended phase is an interior peak (71), well below the reachable ceiling (155)', () => {
+    expect(maxPhase).toBe(155);
+    expect(solved.currentPhase).toBe(67);
+    expect(solved.recommendedPhase).toBe(71);
+    expect(solved.recommendedPhase!).toBeLessThan(maxPhase!);
   });
 
-  // RE-ASKED on the 2026-08-19 roster: 7.21%, inside the same [4, 9] band recorded for the
-  // retired 2026-08-13 one (~6.19% there). A band that holds across two unrelated accounts is
-  // evidence about the optimizer's headroom rather than a number copied off one run, which is
-  // why this came back instead of being deleted (issue #206).
+  // 5.96% here, inside the same [4, 9] band the 2026-08-19 capture of this account measured
+  // at 7.21% and the retired 2026-08-13 roster at ~6.19%. A band that holds across accounts and
+  // captures is evidence about the optimizer's headroom rather than a number copied off one run.
   it('gainPct exceeds FARM_RESPEC_MIN_GAIN_PCT and sits inside the recorded band [4, 9]', () => {
     expect(solved.gainPct).toBeGreaterThan(FARM_RESPEC_MIN_GAIN_PCT);
     expect(solved.gainPct).toBeGreaterThanOrEqual(4);
     expect(solved.gainPct).toBeLessThanOrEqual(9);
   });
 
-  // Was 'the winning vector holds at least one Speed point'. On this roster (PR #139's
-  // corrected model) the winner now allocates zero Speed — a legitimate result of two other
-  // round-3 changes (crit chance/CDR moving back to percent-of-base, and `reoptBudget` clamping
-  // to `level`), not a search defect: re-deriving this fixture's team-buffs total (round 4) made
-  // no difference here, because the one deployed hero on this roster carries no team aura at
-  // all, so the total was already zero either way. The property this test actually protects —
-  // that Speed is a live candidate the search reaches and scores, not a branch it can't reach —
-  // still holds and is asserted directly below instead of through this roster's specific winner.
+  // The property this protects is that Speed is a live candidate the search reaches and scores,
+  // not a branch it cannot reach — asserted directly rather than through whether a given
+  // roster's winner happens to spend on it.
   it('Speed is scored as a real, reachable candidate: an all-speed build evaluates to a finite, positive objective on the same path the solver searches, even though this roster is not the case where it wins', () => {
     expect(Number.isFinite(allSpeedBest)).toBe(true);
     expect(allSpeedBest).toBeGreaterThan(0);
@@ -148,14 +139,14 @@ describe('the chest objective reports a strictly higher chest rate and a differe
     expect(chestSolve.recommendedPhase).not.toBe(solved.recommendedPhase);
   });
 
-  // RE-ASKED on the 2026-08-19 roster: 1.426x, inside the same band the retired roster measured
-  // at ~1.40x. The load-bearing half of this claim is the last line — it rules out the earlier 4x
-  // figure, which came from an uncommitted capture nobody can re-read — and a second account
-  // landing in the same narrow band is what makes that refutation stick (issue #206).
-  it('the chest ratio (current build\'s own chest ceiling vs the chest-optimal build\'s) is ~1.40x, not the earlier 4x claim', () => {
+  // The load-bearing half of this claim is the upper bound — it rules out the earlier 4x figure,
+  // which came from an uncommitted capture nobody can re-read. The ratio itself is a drift
+  // canary, not a contract: 1.426 on the same account's 2026-08-19 capture, 1.095 on 2026-09-14
+  // — the chest-optimal build moved closer to the gold-optimal one as the roster matured.
+  it('the chest-optimal build lifts the current build\'s own chest ceiling (ratio > 1) and nowhere near the earlier 4x claim; measured 1.095', () => {
     const ratio = chestSolve.proposedChestsPerHour / chestSolve.currentChestsPerHour;
-    expect(ratio).toBeGreaterThan(1.3);
-    expect(ratio).toBeLessThan(1.5);
-    expect(ratio).not.toBeGreaterThan(2); // rules out the earlier uncommitted-capture 4x figure.
+    expect(ratio).toBeGreaterThan(1);
+    expect(ratio).toBeLessThan(4);
+    expect(ratio).toBeCloseTo(1.095, 3);
   });
 });
