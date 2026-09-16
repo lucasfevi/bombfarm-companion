@@ -241,7 +241,14 @@ describe('buildTeamPlanInput scope defaults', () => {
       objective: 'farm',
       allowedChanges: 'both',
       ignoreFieldCrowding: false,
+      aurasAtCap: [],
       targetPhase: 100,
     });
+  });
+
+  it('hands aurasAtCap to the domain by reference, as it stands on the controls', () => {
+    const atCap = ['grito_guerra', 'passagem_bastao'] as const;
+    expect(buildTeamPlanInput(inputs(), controls({ aurasAtCap: atCap })).aurasAtCap).toBe(atCap);
+    expect(buildTeamPlanInput(inputs(), controls()).aurasAtCap).toEqual([]);
   });
 });

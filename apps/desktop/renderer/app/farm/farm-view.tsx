@@ -24,6 +24,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Banner, EmptyState, colClass } from '@bombfarm/ui';
 import { scheduleAfterPaint } from '@bombfarm/farm';
 import {
+  FarmAuraCapField,
   FarmRankingBoardView,
   PhasesExplorerView,
   type FarmRankingBoardActions,
@@ -34,6 +35,8 @@ import { HeroPickerDialogView, type HeroPickerSlotProps } from '@bombfarm/hero/c
 import { buildRosterAccount, deriveFarmPoolEntries } from '@bombfarm/farm/core';
 import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import type { TeamAuraId } from '@bombfarm/domain/team-buffs';
+import { withAuraAtCap } from '@bombfarm/team-plan/core';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
 import { buildAccountRoster } from '../../lib/account/account-roster';
@@ -69,6 +72,7 @@ export function FarmView({ onOpenOptimizer }: { onOpenOptimizer: () => void }) {
     setLocalControls({
       farmPoolOverrides: stored.farmPoolOverrides,
       farmReturnBonus: stored.farmReturnBonus,
+      aurasAtCap: stored.aurasAtCap,
     });
     if (stored.selectedPhase !== null) {
       setPhase(stored.selectedPhase);
@@ -134,6 +138,13 @@ export function FarmView({ onOpenOptimizer }: { onOpenOptimizer: () => void }) {
     );
   }, []);
 
+  const setAuraAtCap = useCallback((auraId: TeamAuraId, atCap: boolean) => {
+    setLocalControls((previous) => {
+      const aurasAtCap = withAuraAtCap(previous.aurasAtCap, auraId, atCap);
+      return aurasAtCap === previous.aurasAtCap ? previous : { ...previous, aurasAtCap };
+    });
+  }, []);
+
   const setPhasesViewPhase = useCallback((next: number) => {
     setPhase(next);
     setPhaseChosen(true);
@@ -154,6 +165,7 @@ export function FarmView({ onOpenOptimizer }: { onOpenOptimizer: () => void }) {
       syncDefaultPhaseSelection,
       setFarmHeroEnabled,
       setFarmReturnBonus,
+      setAuraAtCap,
       onSelectHero,
       onOpenOptimizer,
     }),
@@ -162,6 +174,7 @@ export function FarmView({ onOpenOptimizer }: { onOpenOptimizer: () => void }) {
       syncDefaultPhaseSelection,
       setFarmHeroEnabled,
       setFarmReturnBonus,
+      setAuraAtCap,
       onSelectHero,
       onOpenOptimizer,
     ],
@@ -265,6 +278,7 @@ type FarmScreenActions = {
   syncDefaultPhaseSelection: (phase: number) => void;
   setFarmHeroEnabled: (heroId: string, enabled: boolean) => void;
   setFarmReturnBonus: (mode: ReturnBonusMode) => void;
+  setAuraAtCap: (auraId: TeamAuraId, atCap: boolean) => void;
   onSelectHero: (hero: HeroRecord) => void;
   onOpenOptimizer: () => void;
 };
@@ -348,8 +362,20 @@ function FarmScreen({
           onRefresh={refresh.onRefresh}
         />
       ),
+      // The board's own assumption about the auras, beside the Return Bonus it already owns.
+      // Reads the settled snapshot's list, as the Return Bonus select reads its mode.
+      controls: (
+        <FarmAuraCapField
+          label={t.farmAurasAtCapLabel}
+          hint={t.farmAurasAtCapHint}
+          value={inputs.aurasAtCap}
+          onToggle={actions.setAuraAtCap}
+          lang={lang}
+          testId="farm-auras-at-cap"
+        />
+      ),
     }),
-    [capturedAt, refresh],
+    [capturedAt, refresh, t, lang, inputs.aurasAtCap, actions.setAuraAtCap],
   );
 
   const explorerData = useMemo(

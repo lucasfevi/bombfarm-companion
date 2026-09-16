@@ -1,11 +1,12 @@
 /**
  * What the farm screen remembers between visits: the rotation-pool overrides, the return-bonus
- * mode and the phase the player had selected.
+ * mode, the auras held at their cap and the phase the player had selected.
  *
  * Its own key, deliberately not the web planner's. The two apps read different accounts out of
  * different stores, and sharing a key would be a claim that one screen's state is the other's.
  */
 import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
+import { normalizeAurasAtCap } from '@bombfarm/team-plan/core';
 import { DEFAULT_FARM_CONTROLS, type FarmControls } from './farm-inputs';
 
 const FARM_VIEW_STORAGE_KEY = 'bfc-farm-view';
@@ -44,6 +45,7 @@ function normalizeFarmView(value: unknown): FarmView {
   return {
     farmPoolOverrides: normalizePoolOverrides(raw.farmPoolOverrides),
     farmReturnBonus: normalizeReturnBonus(raw.farmReturnBonus),
+    aurasAtCap: normalizeAurasAtCap(raw.aurasAtCap),
     selectedPhase: normalizeSelectedPhase(raw.selectedPhase),
   };
 }

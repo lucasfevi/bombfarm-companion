@@ -41,11 +41,19 @@ describe('optimizer view preferences', () => {
       allowedChanges: 'gear',
       forgeFloor: 7,
       ignoreFieldCrowding: true,
+      aurasAtCap: ['marcha_acelerada'],
       targetPhase: 40,
       targetPhaseChosen: true,
     };
     saveOptimizerView(view);
     expect(loadOptimizerView()).toEqual(view);
+  });
+
+  it('keeps only real aura ids out of the stored list, and the frozen empty list otherwise', () => {
+    entries.set(KEY, JSON.stringify({ aurasAtCap: ['brecha', 'nope'] }));
+    expect(loadOptimizerView().aurasAtCap).toEqual(['brecha']);
+    entries.set(KEY, JSON.stringify({ aurasAtCap: true }));
+    expect(loadOptimizerView().aurasAtCap).toBe(DEFAULT_OPTIMIZER_VIEW.aurasAtCap);
   });
 
   it('reads as the defaults when nothing is stored', () => {

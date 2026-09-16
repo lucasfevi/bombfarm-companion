@@ -11,7 +11,7 @@ import type {
   HeroSheet,
   RarityKey,
 } from '../model';
-import type { TeamBuffId } from '../team-buffs';
+import type { AurasAtCap, TeamBuffId } from '../team-buffs';
 
 export type ScopeState = 'optimize' | 'donate' | 'leaveAlone';
 
@@ -321,6 +321,16 @@ export type TeamPlanInput = {
    * asking what their whole roster earns as it stands.
    */
   ignoreFieldCrowding?: boolean;
+  /**
+   * Team auras to score as if they held the field at their cap the whole of wall clock.
+   *
+   * Omitted or empty, every aura is priced as the rotation sustains it: each carrier present for
+   * its own share of wall clock, summed and capped inside the expectation. Named here, a standing
+   * aura's total is held at its cap in every round of both objectives, and Passagem de Bastão's
+   * pulse at its capped level on every score. Like `ignoreFieldCrowding`, an answer to a
+   * question about a field the roster does not light on its own, never a correction to the model.
+   */
+  aurasAtCap?: AurasAtCap;
 };
 
 /**
@@ -500,4 +510,6 @@ export type EvaluateRosterInput = {
   farmObjective?: TeamPlanFarmObjective;
   /** See {@link TeamPlanInput.ignoreFieldCrowding}. */
   ignoreFieldCrowding?: boolean;
+  /** See {@link TeamPlanInput.aurasAtCap}. */
+  aurasAtCap?: AurasAtCap;
 };

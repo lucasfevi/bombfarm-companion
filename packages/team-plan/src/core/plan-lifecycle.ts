@@ -1,7 +1,8 @@
 import type { TeamPlanInputs } from './team-plan-inputs';
 import type { TeamPlanControls } from './team-plan-controls';
 import type { ScopeState } from './hero-scope';
-import { clampForgeFloor, clampTargetPhase } from './team-plan-controls';
+import { clampForgeFloor, clampTargetPhase, withAuraAtCap } from './team-plan-controls';
+import type { TeamAuraId } from '@bombfarm/domain/team-buffs';
 import { mergeScopeForRoster } from './hero-scope';
 
 /**
@@ -55,6 +56,7 @@ export function computeTeamPlanInputSignature(
     targetPhase: resolveTeamPlanTargetPhase(inputs, controls),
     allowedChanges: controls.allowedChanges,
     ignoreFieldCrowding: controls.ignoreFieldCrowding,
+    aurasAtCap: controls.aurasAtCap,
   });
 }
 
@@ -68,6 +70,7 @@ export type TeamPlanControlChange =
   | { kind: 'objective'; value: TeamPlanControls['objective'] }
   | { kind: 'allowedChanges'; value: TeamPlanControls['allowedChanges'] }
   | { kind: 'ignoreFieldCrowding'; value: boolean }
+  | { kind: 'auraAtCap'; auraId: TeamAuraId; value: boolean }
   | { kind: 'targetPhase'; value: number | null };
 
 function scopeMapsEqual(left: Record<string, ScopeState>, right: Record<string, ScopeState>): boolean {
@@ -129,6 +132,14 @@ export function applyTeamPlanControlChange(
     case 'ignoreFieldCrowding': {
       if (controls.ignoreFieldCrowding === change.value) return null;
       return { controls: { ...controls, ignoreFieldCrowding: change.value }, clearsPlan: true };
+    }
+
+    // Clears for the same reason `ignoreFieldCrowding` does: every hit in the previous run was
+    // priced against a field lit some other share of the time.
+    case 'auraAtCap': {
+      const next = withAuraAtCap(controls.aurasAtCap, change.auraId, change.value);
+      if (next === controls.aurasAtCap) return null;
+      return { controls: { ...controls, aurasAtCap: next }, clearsPlan: true };
     }
 
     // Clears the plan for the same reason `objective` does: the figures on screen are about one

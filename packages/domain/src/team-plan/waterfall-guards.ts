@@ -68,6 +68,7 @@ export function evaluateAt(
     forgeFloor,
     farmObjective,
     ignoreFieldCrowding: gearInput.ignoreFieldCrowding,
+    aurasAtCap: gearInput.aurasAtCap,
   };
   return evaluateRoster(evalInput);
 }
