@@ -67,6 +67,8 @@ export { AbilityCard, type AbilityCardProps } from './ability-card';
 export { Panel, type PanelProps } from './panel';
 export { PanelHeader, type PanelHeaderProps } from './panel-header';
 export { Fields, type FieldsProps, type FieldsLayout } from './fields';
+export { FactTile, type FactTileProps } from './fact-tile';
+export { type FactTileSize } from './fact-tile.recipe';
 export { Bar, type BarProps } from './bar';
 export { Sparkline, type SparklineProps } from './sparkline';
 export { Num } from './num';

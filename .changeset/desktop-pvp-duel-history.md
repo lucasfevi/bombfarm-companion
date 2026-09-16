@@ -13,9 +13,10 @@ reported — when, the opponent and how many heroes they fielded, won or lost, b
 phase against your tier's floor, the points before and after, and whether the rune chest landed
 or was lost to a full bag — and lists it newest first. Nothing is predicted and no squad is picked.
 
-**Your standing sits above the list**: points and tier with the next tier's threshold, duels left
-today, squad slots, and your position on the points leaderboard as of the last time you opened
-the ranking in the game.
+**Your standing sits above the list**, asked for the moment the tab opens: tier, points over the
+next tier's threshold, duels left today, squad slots, and your position on the points
+leaderboard. **The list filters by opponent and by result**, and with an opponent chosen prints
+your record against them.
 
 **The film is kept the moment the game fetches it.** The server drops a duel's film seconds after
 the client pulls it, so the app keeps the body as it passes; the list says which duels have theirs.

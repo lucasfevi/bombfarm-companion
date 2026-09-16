@@ -40,9 +40,10 @@ import { ptBR } from './pt-BR';
 // modeDps: "DPS" — an acronym, identical in both languages.
 // forgeItemTitle: "Item" is an ordinary Portuguese noun spelled the same way, and it is the word
 // the game's own Portuguese interface uses for a piece of gear.
-// pvpNavLabel / pvpPoints / pvpStandingRankValue: "PVP" is the game's own untranslated name for
-// the mode, printed as-is in its Portuguese interface; the points cell is two placeholders around
-// an arrow and the rank a hash before one, no words in either.
+// pvpNavLabel / pvpPoints / pvpStandingRankValue / pvpStandingPointsValue: "PVP" is the game's own
+// untranslated name for the mode, printed as-is in its Portuguese interface; the points cell is two
+// placeholders around an arrow, the rank a hash before one, the standing's points a slash between
+// two — no words in any of them.
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'ageShortSeconds',
   'liveMapXpPerPropLabel',
@@ -62,6 +63,7 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'pvpNavLabel',
   'pvpPoints',
   'pvpStandingRankValue',
+  'pvpStandingPointsValue',
 ];
 
 function placeholderSet(value: string): Set<string> {

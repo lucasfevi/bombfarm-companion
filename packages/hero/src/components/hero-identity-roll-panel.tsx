@@ -17,8 +17,8 @@ import {
 } from '@bombfarm/game-art';
 import {
   DataTable,
+  FactTile,
   Panel,
-  Tooltip,
   StatList,
   cn,
   formatNumber,
@@ -86,50 +86,28 @@ type IdentityFact = {
 
 /** `leading-none` shaves the descenders off a truncated line — `truncate` clips to the line box,
  *  and at a line height of 1 the box is shorter than the face. */
-const factValueClass = 'mt-1 truncate text-sm leading-tight font-bold';
-
-function FactTile({ fact }: { fact: IdentityFact }) {
+function IdentityFactTile({ fact }: { fact: IdentityFact }) {
   const value =
     fact.href === undefined ? (
-      <p className={cn(numericClass, factValueClass, fact.valueClass ?? 'text-ink')}>
-        {fact.value}
-      </p>
+      fact.value
     ) : (
       <a
         href={fact.href}
         target="_blank"
         rel="noopener noreferrer"
-        className={cn(
-          numericClass,
-          factValueClass,
-          'flex items-center gap-1.5 underline-offset-2 hover:underline focus-visible:underline',
-          fact.valueClass ?? 'text-ink',
-        )}
+        className="flex items-center gap-1.5 text-inherit underline-offset-2 hover:underline focus-visible:underline"
       >
         <SteamGlyph className="shrink-0" />
         <span className="truncate">{fact.value}</span>
       </a>
     );
-
-  const tile = (
-    <div className="min-w-0 border border-line px-2.5 py-1.5">
-      <p className={sectionTitleClass}>{fact.label}</p>
-      {value}
-    </div>
-  );
-
-  if (fact.note === undefined) return tile;
   return (
-    <Tooltip.Root>
-      <Tooltip.Trigger render={tile} />
-      <Tooltip.Portal>
-        <Tooltip.Positioner sideOffset={6}>
-          <Tooltip.Popup>
-            <p className="m-0 max-w-[36ch]">{fact.note}</p>
-          </Tooltip.Popup>
-        </Tooltip.Positioner>
-      </Tooltip.Portal>
-    </Tooltip.Root>
+    <FactTile
+      label={fact.label}
+      value={value}
+      {...(fact.note === undefined ? {} : { note: fact.note })}
+      {...(fact.valueClass === undefined ? {} : { valueClassName: fact.valueClass })}
+    />
   );
 }
 
@@ -339,7 +317,7 @@ export function HeroIdentityRollPanel({
 
           <div className="grid min-w-0 flex-1 grid-cols-2 gap-2 @min-[30rem]:grid-cols-3 @min-[52rem]:grid-cols-4 @min-[72rem]:grid-cols-6">
             {facts.map((fact) => (
-              <FactTile key={fact.id} fact={fact} />
+              <IdentityFactTile key={fact.id} fact={fact} />
             ))}
           </div>
         </div>

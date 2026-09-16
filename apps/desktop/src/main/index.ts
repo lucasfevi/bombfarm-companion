@@ -42,6 +42,7 @@ import { createForgeHistory, type ForgeHistory } from './forge/forge-history.js'
 import { createForgeInjector, shouldHonourForgeInject, type ForgeInjector } from './forge/forge-inject.js';
 import { createForgeService, type ForgeService } from './forge/forge-service.js';
 import { createPvpHistory, type PvpHistory } from './pvp/pvp-history.js';
+import { createPvpReader, type PvpReader } from './pvp/pvp-reader.js';
 import { createPvpRecorder, type PvpRecorder } from './pvp/pvp-recorder.js';
 import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
@@ -156,6 +157,7 @@ let forgeService: ForgeService | null = null;
 let forgeHistory: ForgeHistory | null = null;
 let pvpHistory: PvpHistory | null = null;
 let pvpRecorder: PvpRecorder | null = null;
+let pvpReader: PvpReader | null = null;
 /** Enough for a session's duels several times over at the quota the state reports (`duelos_max`
  *  of 5 observed), and the same page the forge ledger serves. */
 const PVP_HISTORY_LIST_LIMIT = 50;
@@ -447,6 +449,7 @@ function registerIpcHandlers(): void {
     },
     'forge:inject': (events: unknown) => forgeInjector?.inject(events) ?? { ok: false },
     'pvp:history': listPvpHistory,
+    'pvp:refresh': (): AccountReadResult => pvpReader?.refresh() ?? { ok: false, reason: 'unavailable' },
     'window:minimize': () => {
       mainWindow?.minimize();
       return null;
@@ -1061,6 +1064,17 @@ async function bootstrap(): Promise<void> {
   // and transport as the cycle above, and lands its result through the cycle's own commit seam
   // so the notifier is what announces the patched bag and wallet.
   const cachedAccount = (): AccountView | null => resolveCachedAccountView({ gameReader, consentStore, accountRefresh });
+  pvpReader = createPvpReader({
+    consentStore: { read: () => consentStore?.read() ?? initialConsent() },
+    accountSource: currentAccountSource,
+    isGameRunning: () => gameReader?.isGameProcessRunning() ?? false,
+    readToken,
+    transport: gameApiTransport,
+    gate,
+    recorder: pvpRecorder,
+    log,
+  });
+
   forgeHistory = createForgeHistory(accountOpen.db, log);
   forgeService = createForgeService({
     consentStore,
@@ -1270,6 +1284,7 @@ if (!gotLock) {
     // forgeHistory borrows accountOpen.db the way settingsStore does; accountStore.close()
     // below owns the handle, so it gains no close() of its own.
     forgeHistory = null;
+    pvpReader = null;
     pvpRecorder = null;
     pvpHistory = null;
     triggeredRefresh = null;

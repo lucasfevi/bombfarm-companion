@@ -14,8 +14,11 @@ vi.mock('../../lib/copy', async (importOriginal) => {
 
 const historyState = vi.hoisted(() => ({ current: null as unknown as PvpHistoryState }));
 
+// A static render runs no effects, so the refresh the screen asks for on open is a no-op here;
+// the reader's own tests prove what the call does.
 vi.mock('../../lib/pvp/use-pvp-history', () => ({
   usePvpHistory: () => historyState.current,
+  refreshPvpStanding: () => undefined,
 }));
 
 const { PvpView } = await import('./pvp-view');
@@ -92,8 +95,7 @@ describe('PvpView', () => {
     expect(html).toContain('4 heroes');
     expect(html).toContain(en.pvpResultWon);
     expect(html).toContain('184,320 vs 151,960');
-    expect(html).toContain('data-testid="pvp-phase">120<');
-    expect(html).toContain('tier r3, floor 100');
+    expect(html).toContain('120 (T3, floor 100)');
     expect(html).toContain('118 → 123');
     expect(html).toContain('>+5<');
     expect(html).not.toContain('data-testid="pvp-prize"');
@@ -101,23 +103,33 @@ describe('PvpView', () => {
     expect(html).toContain('1 duels · 1 won · 1 films kept');
   });
 
-  it('draws the standing from the last state report: points and tier, duels left, squad slots, and the rank with its own date', () => {
+  it('draws the standing as fact tiles: the tier as a number, points over the next threshold, duels left, squad slots and the rank', () => {
     const html = render(ready([row()], { standing: STANDING, rank: { position: 2, points: 200, capturedAt: STANDING.capturedAt } }));
     expect(html).toContain('data-testid="pvp-standing" data-state="read"');
-    expect(html).toContain('>205<');
-    expect(html).toContain('tier r2 · next tier at 375');
+    expect(html).toContain('data-testid="pvp-standing-tier"');
+    expect(html).toContain('>2</p>');
+    expect(html).toContain('205 / 375');
     expect(html).toContain('2 of 10');
     expect(html).toContain('9 of 9');
-    expect(html).toContain('>#2<');
-    expect(html).toContain('as of 1m ago, at 200 points');
+    expect(html).toContain('>#2</p>');
+    expect(html).not.toContain('r2');
   });
 
-  it('falls back to the latest duel for the quota, and says the rank wants the ranking opened, before any state report', () => {
+  it('falls back to the latest duel for the quota before any state report, and says the rest is not read yet', () => {
     const html = render(ready([row()]));
     expect(html).toContain('data-testid="pvp-standing" data-state="empty"');
     expect(html).toContain('3 of 5');
-    expect(html).toContain(en.pvpStandingRankUnknown);
     expect(html).toContain(en.pvpStandingUnknown);
+  });
+
+  it('offers an opponent filter listing every opponent fought, a result filter and the shown-of-total count, with no rivalry until an opponent is chosen', () => {
+    const html = render(ready([row(), row({ id: 2, defender: { name: 'Silent', heroes: 8, score: 1 } })]));
+    expect(html).toContain('data-testid="pvp-filters"');
+    expect(html).toContain(en.pvpFilterOpponentAll);
+    expect(html).toContain(en.pvpFilterResultAll);
+    expect(html).toContain('aria-pressed="true"');
+    expect(html).toMatch(/data-testid="pvp-filter-count"[^>]*>2 of 2</);
+    expect(html).not.toContain('data-testid="pvp-head-to-head"');
   });
 
   it('says nothing has been read with no state, no rank and no duel', () => {

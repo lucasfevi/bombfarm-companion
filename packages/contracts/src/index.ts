@@ -474,6 +474,10 @@ export interface IpcChannels {
   'forge:inject': { args: [unknown]; result: { ok: boolean } };
   /** Every duel the tap has seen settle, newest first, with whether each one's film is held. */
   'pvp:history': { args: []; result: PvpHistoryResult };
+  /** Asks main to read the PVP state and the points ranking now, the way `account:readNow` asks
+   *  for the account. `ok` means the reads were started; what they find arrives on `pvp:changed`,
+   *  and only if it changed something. */
+  'pvp:refresh': { args: []; result: AccountReadResult };
 }
 
 export type IpcInvokeChannel = keyof IpcChannels;
@@ -525,6 +529,7 @@ export const IPC_CHANNELS = [
   'forge:clearHistory',
   'forge:inject',
   'pvp:history',
+  'pvp:refresh',
 ] as const satisfies readonly IpcInvokeChannel[];
 
 export type IpcEventChannel =

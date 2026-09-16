@@ -25,6 +25,15 @@ and the **ranking** the client fetches when the player opens the leaderboard (`b
 board — `pvp`, `hero` or `power` — with the top hundred and the player's own `me` entry). The tab's
 standing section is drawn from the latest of each; only the `pvp` board's position is kept.
 
+The app does not wait for the client to fetch either. When the PVP tab opens it asks for both
+itself — `GET /pvp/state` and `GET /ranking?by=pvp&limit=100`, the routes and the limit the client
+requests with — through the same consent gate, session token, transport and pacing as the account
+cycle (`apps/desktop/src/main/pvp/pvp-reader.ts`, behind `pvp:refresh`). What a read finds goes
+through the same recorder the tap feeds, so a body the app asked for and one the client fetched are
+one path. A refresh within ten seconds of the last is refused as `rate_limited`, and a refusal
+never blanks the screen: it keeps what it last held. In offline mode the reader answers `offline`
+and the replayed bodies stand in.
+
 The client fetches the film immediately after the result, and **the server answers 404 for it
 seconds later**. The only way to ever have a film is to keep the body the moment it passes.
 
@@ -113,6 +122,16 @@ ranking — once per tap,
 ahead of the first frame, through the same HTTP decoder the capture's own REST bytes go through.
 The two results are deliberately one filmed duel and one filmless, so the tab shows both states.
 `BFC_REPLAY_PVP_FIXTURE` points the replay at another file; an empty string opts out.
+
+## The list's filters
+
+The duel list filters by opponent (every opponent fought, most fought first) and by result, on
+the same toolbar row the Inventory and Forge screens use — compact controls at one height, no
+labels over them, the shown-of-total count at the row's end. With an opponent chosen, a strip of
+fact tiles under the toolbar prints the record against them — duels, won, lost, and both sides'
+summed scores — over every duel held against that name whatever the result filter shows, so the
+strip reads as the rivalry rather than as the rows under it. An opponent is a display name: the
+result body carries no id for the other side.
 
 ## What it does not do yet
 

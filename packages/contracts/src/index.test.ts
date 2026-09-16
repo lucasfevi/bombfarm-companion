@@ -66,6 +66,7 @@ describe('contracts IPC surface', () => {
       'forge:clearHistory',
       'forge:inject',
       'pvp:history',
+      'pvp:refresh',
     ]);
   });
 

@@ -87,6 +87,8 @@ function navButton(page, index) {
   return page.locator('nav[aria-label="Main"] button').nth(index);
 }
 
+/** Every test opens the tab itself: a retried test runs in a fresh worker whose `beforeAll`
+ *  relaunched the app on the Live tab, so nothing may lean on the previous test's navigation. */
 async function openPvp(page) {
   await navButton(page, PVP_TAB_INDEX).click();
   await page.waitForSelector('[data-testid="pvp-view"]', { timeout: 20_000 });
@@ -142,8 +144,9 @@ test.describe('PVP tab — every duel the replayed tap saw settle, kept and list
     await expect(rows.nth(1).getByTestId('pvp-opponent')).toHaveText(filmed.defensor.nome);
     await expect(rows.nth(1).getByTestId('pvp-result')).toHaveText(en('pvpResultWon'));
     await expect(rows.nth(1).getByTestId('pvp-film')).toHaveText(en('pvpFilmStored'));
-    await expect(rows.nth(1).getByTestId('pvp-phase')).toHaveText(String(filmed.fase));
-    await expect(rows.nth(1).getByTestId('pvp-tier-floor')).toContainText(String(filmed.estado.fase));
+    await expect(rows.nth(1).getByTestId('pvp-phase')).toHaveText(
+      `${filmed.fase} (T${filmed.estado.faixa_num}, floor ${filmed.estado.fase})`,
+    );
     await expect(rows.nth(1).getByTestId('pvp-points')).toHaveText(`${filmed.pontos_antes} → ${filmed.pontos_depois}`);
 
     await expect(page.getByTestId('pvp-summary')).toHaveText('2 duels · 1 won · 1 films kept');
@@ -153,14 +156,50 @@ test.describe('PVP tab — every duel the replayed tap saw settle, kept and list
     const { state, ranking } = fixtureBodies();
     expect(state).toBeDefined();
     expect(ranking).toBeDefined();
+    await openPvp(page);
 
     await expect(page.getByTestId('pvp-standing')).toHaveAttribute('data-state', 'read');
-    await expect(page.getByTestId('pvp-standing-points')).toContainText(String(state.pontos));
-    await expect(page.getByTestId('pvp-standing-points')).toContainText(`tier ${state.faixa} · next tier at ${state.faixa_prox}`);
+    // The tile is its label and its figure; the figure is the number alone, never the wire's `r3`.
+    await expect(page.getByTestId('pvp-standing-tier')).toHaveText(`${en('pvpStandingTier')}${state.faixa_num}`);
+    await expect(page.getByTestId('pvp-standing-points')).toContainText(`${state.pontos} / ${state.faixa_prox}`);
     await expect(page.getByTestId('pvp-standing-duels')).toContainText(`${state.duelos_max - state.duelos_usados} of ${state.duelos_max}`);
     await expect(page.getByTestId('pvp-standing-slots')).toContainText(`${state.slots} of ${state.slots_max}`);
     await expect(page.getByTestId('pvp-standing-rank')).toContainText(`#${ranking.me.rank}`);
-    await expect(page.getByTestId('pvp-standing-rank')).toContainText(`at ${ranking.me.value} points`);
+  });
+
+  test('the opponent filter narrows the list to one rival and prints the record against them; the result filter narrows by outcome', async () => {
+    const { duels } = fixtureBodies();
+    const [filmed, filmless] = duels;
+    await openPvp(page);
+    await expect(page.getByTestId('pvp-duel-row')).toHaveCount(2, { timeout: 20_000 });
+
+    await page.getByRole('combobox', { name: en('pvpFilterOpponentLabel') }).click();
+    await page.getByRole('option', { name: filmed.defensor.nome }).click();
+    await expect(page.getByTestId('pvp-duel-row')).toHaveCount(1);
+    await expect(page.getByTestId('pvp-opponent')).toHaveText(filmed.defensor.nome);
+    const rivalry = page.getByTestId('pvp-head-to-head');
+    await expect(rivalry).toContainText(`Against ${filmed.defensor.nome}`);
+    await expect(rivalry.getByTestId('pvp-head-to-head-duels')).toHaveText(`${en('pvpHeadToHeadDuels')}1`);
+    await expect(rivalry.getByTestId('pvp-head-to-head-won')).toHaveText(`${en('pvpHeadToHeadWon')}1`);
+    await expect(rivalry.getByTestId('pvp-head-to-head-lost')).toHaveText(`${en('pvpHeadToHeadLost')}0`);
+    await expect(page.getByTestId('pvp-filter-count')).toHaveText('1 of 2');
+
+    await page.getByRole('group', { name: en('pvpFilterResultLabel') }).getByRole('button', { name: en('pvpResultLost') }).click();
+    await expect(page.getByTestId('pvp-duel-row')).toHaveCount(0);
+    await expect(page.getByTestId('pvp-filter-empty')).toBeVisible();
+    await expect(page.getByTestId('pvp-filter-count')).toHaveText('0 of 2');
+    // The record strip is the rivalry, not the rows under it: it does not change with the outcome filter.
+    await expect(rivalry.getByTestId('pvp-head-to-head-won')).toHaveText(`${en('pvpHeadToHeadWon')}1`);
+    await expect(rivalry.getByTestId('pvp-head-to-head-lost')).toHaveText(`${en('pvpHeadToHeadLost')}0`);
+
+    await page.getByRole('combobox', { name: en('pvpFilterOpponentLabel') }).click();
+    await page.getByRole('option', { name: en('pvpFilterOpponentAll') }).click();
+    await expect(page.getByTestId('pvp-duel-row')).toHaveCount(1);
+    await expect(page.getByTestId('pvp-opponent')).toHaveText(filmless.defensor.nome);
+    await expect(page.getByTestId('pvp-head-to-head')).toHaveCount(0);
+
+    await page.getByRole('group', { name: en('pvpFilterResultLabel') }).getByRole('button', { name: en('pvpFilterResultAll') }).click();
+    await expect(page.getByTestId('pvp-duel-row')).toHaveCount(2);
   });
 
   test('the duels survive a relaunch on the same user data, and the replay serving them again adds nothing', async () => {

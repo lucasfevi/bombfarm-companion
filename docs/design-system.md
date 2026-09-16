@@ -55,6 +55,7 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 | `Panel` | `<section>` | `focus` / `aligned` / `unverified` booleans (`need` is a no-op — required uses `FieldRequired`) | `panel-field.recipe.ts` |
 | `PanelHeader` | `<div>` + `<h2>` | `title` (required); optional `children` for the row's right-hand side (counters, actions). Section titles only — a hero name keeps bold sentence case | `panel-field.recipe.ts` (`panelHClass`/`panelTitleClass`) |
 | `Fields` | `<div>` | `layout`: `inline` \| `inline-dense` \| `stack` | `panel-field.recipe.ts` |
+| `FactTile` | `<div>` | one labelled figure of a facts cluster; `size`: `default` (bordered cell, as the hero identity panel's grid) \| `headline` (unboxed, the Live earnings panel's figure); `note` as a tooltip over the tile — promoted from the hero identity panel for the PVP standing (2026-09-16) | `fact-tile.recipe.ts` |
 | `Bar` | `<div>` | `pct` + `variant`: `fill` \| `best` | `bar.recipe.ts` |
 | `Num` | `@base-ui/react/button` spin + `<input type="number">` | composite numeric field — left chevron steppers, right-aligned value; hide native spinners | `stepper.recipe.ts` (`num*`) |
 | `Select` | `@base-ui/react/select` | `size`: `default` \| `compact`; left chevron trigger; **ported popup** (themed options) | `select.recipe.ts` |

@@ -42,6 +42,15 @@ function windowBridge(): Bridge | null {
   return (window as unknown as { bfc?: Bridge }).bfc ?? null;
 }
 
+/** Asks main to read the standing now — the tab calls it on open. What the read finds arrives on
+ *  `pvp:changed` like everything else; a refusal (no game, no consent, too soon) is main's to
+ *  log, and the screen keeps showing what it last held. */
+export function refreshPvpStanding(): void {
+  const bridge = windowBridge();
+  if (!bridge) return;
+  void bridge.invoke('pvp:refresh').catch(() => undefined);
+}
+
 const sharedPvpHistoryStore = createLazySingleton(() => createPvpHistoryStore(windowBridge));
 
 export function usePvpHistory(): PvpHistoryState {

@@ -5,6 +5,8 @@ import { checkShape } from '../shape.js';
 import { identifyPvpBody } from './identify.js';
 import { wireKey } from './lexicon.js';
 import { isPvpPointsBoard, parsePvpDuelResult, parsePvpDuelState, parsePvpFilm, parsePvpRanking, parsePvpState } from './parse.js';
+import { withAccountId } from '../request.js';
+import { PVP_STATE_PATH, pvpRankingPath } from './routes.js';
 
 function side(name: string, heroes: unknown, score: number): Record<string, unknown> {
   return { [wireKey('sideName')]: name, [wireKey('sideHeroes')]: heroes, [wireKey('sideScore')]: score };
@@ -253,6 +255,14 @@ describe('parsePvpRanking', () => {
   it('refuses a ranking without a usable own entry', () => {
     expect(parsePvpRanking(rankingBody('pvp', { [wireKey('rankingMe')]: {} }))).toBeNull();
     expect(parsePvpRanking(rankingBody('pvp', { [wireKey('rankingMe')]: { [wireKey('rankingRank')]: 2, [wireKey('rankingValue')]: 'n/a' } }))).toBeNull();
+  });
+});
+
+describe('the PVP read routes', () => {
+  it('build the paths the client itself requests, with the account id joined onto a query the ranking already carries', () => {
+    expect(withAccountId(PVP_STATE_PATH, '486')).toBe('/pvp/state?account_id=486');
+    expect(withAccountId(pvpRankingPath(), '486')).toBe('/ranking?by=pvp&limit=100&account_id=486');
+    expect(pvpRankingPath(5)).toBe('/ranking?by=pvp&limit=5');
   });
 });
 
