@@ -33,12 +33,14 @@ function auraSection(page: Page) {
   return activePanel(page).getByTestId('abilities-auras');
 }
 
-/** The strip's Sustained DPS, at full precision from the figure's own tooltip. */
+/** The strip's Sustained DPS, at full precision from the figure's own tooltip (hover to reveal). */
 async function stripSustainedDps(page: Page): Promise<number> {
   const strip = page.getByRole('region', { name: /current hero/i });
   const value = strip.getByText(/^Sustained DPS$/i).locator('xpath=../strong');
-  const title = await value.getAttribute('title');
-  return Number((title ?? '').replace(/,/g, ''));
+  await value.hover();
+  const popup = page.locator('[data-slot="tooltip-popup"][data-open]');
+  await expect(popup).toBeVisible();
+  return Number((await popup.innerText()).replace(/,/g, ''));
 }
 
 /** The Combat tab's Sustained DPS figure — the Effective panel's card, which the tab states once. */
