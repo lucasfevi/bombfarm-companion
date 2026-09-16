@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { heroLevelLabel } from '@bombfarm/domain/game-labels';
 import { heroAvatarSrc } from '@bombfarm/domain/wiki-assets';
-import { STRINGS, sub } from '../../lib/copy';
+import { STRINGS } from '../../lib/copy';
 import { heroRankToneClass } from '@bombfarm/game-art';
 import { HeroRow } from './hero-row';
 
@@ -86,20 +87,34 @@ describe('HeroRow', () => {
     expect(html).not.toContain('uppercase');
   });
 
-  it('carries no rarity chip and no stars — rarity is colour-only now', () => {
+  it('carries no rarity word and no stars — the avatar frame is the only rarity on the row', () => {
     const html = renderToStaticMarkup(createElement(HeroRow, { state: 'queued', hero: { id: 'hero-7', rarity: 3, stars: 2 } }));
     expect(html).not.toContain('★');
     expect(html).not.toContain('Epic');
   });
 
-  it('colours the hero name by rarity when rarity is known', () => {
-    const html = renderToStaticMarkup(createElement(HeroRow, { state: 'queued', hero: { id: 'hero-7', name: 'Astra', rarity: 3 } }));
-    expect(html).toMatch(/data-testid="live-hero-row-hero-7-name" class="text-rar-3"/);
+  it('prints the name in ink whatever the rarity — the avatar frame carries the rarity, the text does not', () => {
+    const known = renderToStaticMarkup(createElement(HeroRow, { state: 'queued', hero: { id: 'hero-7', name: 'Astra', rarity: 3 } }));
+    const unknown = renderToStaticMarkup(createElement(HeroRow, { state: 'queued', hero: { id: 'hero-7', name: 'Astra' } }));
+    const nameClassOf = (html: string) => /data-testid="live-hero-row-hero-7-name" class="([^"]*)"/.exec(html)?.[1];
+
+    expect(nameClassOf(known)).toContain('text-ink');
+    expect(known).not.toContain('text-rar-');
+    expect(known).toContain('border-rar-3');
+    expect(nameClassOf(unknown)).toContain('text-ink');
+    expect(unknown).not.toContain('text-rar-');
   });
 
-  it('falls back to a neutral name colour when rarity is unknown', () => {
-    const html = renderToStaticMarkup(createElement(HeroRow, { state: 'queued', hero: { id: 'hero-7', name: 'Astra' } }));
-    expect(html).not.toContain('text-rar-');
+  it('opens the hero card from the avatar when handed one, and leaves the avatar bare otherwise', () => {
+    const peek = { name: 'Astra', rank: 'S', level: 61, power: 1234 };
+    const withCard = renderToStaticMarkup(
+      createElement(HeroRow, { state: 'queued', hero: { id: 'hero-7', name: 'Astra', rarity: 3 }, peek }),
+    );
+    const bare = renderToStaticMarkup(createElement(HeroRow, { state: 'queued', hero: { id: 'hero-7', name: 'Astra', rarity: 3 } }));
+
+    expect(withCard).toContain('data-peek="hero"');
+    expect(bare).not.toContain('data-peek=');
+    expect(bare).toContain('<img');
   });
 
   it('renders a HeroAvatar image for every hero, including an id-only one', () => {
@@ -274,8 +289,8 @@ describe('HeroRow — every row shares one fixed column grid', () => {
         hero: { id: 'hero-7', name: 'A Genuinely Very Long Hero Name That Keeps Going' },
       }),
     );
-    const nameWrapper = /<span class="([^"]*)"><span[^>]*data-testid="live-hero-row-hero-7-name"/.exec(html)?.[1];
-    expect(nameWrapper).toMatch(/\btruncate\b/);
+    const nameClass = /data-testid="live-hero-row-hero-7-name" class="([^"]*)"/.exec(html)?.[1];
+    expect(nameClass).toMatch(/\btruncate\b/);
     expect(html).toContain('A Genuinely Very Long Hero Name That Keeps Going');
   });
 
@@ -290,19 +305,19 @@ describe('HeroRow — every row shares one fixed column grid', () => {
     expect(tokens).toContain('bg-[color-mix(in_oklch,var(--surface)_92%,transparent)]');
   });
 
-  it('prints a dash for a level the roster join has not delivered, rather than claiming level 0', () => {
+  it('prints no level for one the roster join has not delivered, rather than claiming level 0', () => {
     const html = renderToStaticMarkup(
       createElement(HeroRow, { state: 'on-field', hero: { id: 'hero-7', name: 'Astra', grade: 'A' } }),
     );
-    expect(html).not.toContain(sub(en.liveHeroLevelValue, { level: 0 }));
-    expect(html).toContain('—');
+    expect(html).not.toContain(heroLevelLabel(0, 'en'));
+    expect(html).not.toContain('Lv ');
   });
 
-  it('prints the level it was given', () => {
+  it('prints the level it was given, in the reader’s language', () => {
     const html = renderToStaticMarkup(
       createElement(HeroRow, { state: 'on-field', hero: { id: 'hero-7', name: 'Astra', grade: 'A', level: 61 } }),
     );
-    expect(html).toContain(sub(en.liveHeroLevelValue, { level: 61 }));
+    expect(html).toContain(heroLevelLabel(61, 'en'));
   });
 
   it('stacks the rank and name on one line, with the level on a second line, both beside the avatar', () => {
@@ -314,21 +329,18 @@ describe('HeroRow — every row shares one fixed column grid', () => {
     expect(avatarIndex).toBeGreaterThan(-1);
 
     const afterAvatar = html.slice(avatarIndex);
-    const columnMatch = /<span class="([^"]*\bflex-col\b[^"]*)">/.exec(afterAvatar);
-    expect(columnMatch).toBeTruthy();
-    const columnIndex = avatarIndex + (columnMatch?.index ?? 0);
-
-    const afterColumn = html.slice(columnIndex);
-    const lineMatch = /<span class="([^"]*\bitems-baseline\b[^"]*)">/.exec(afterColumn);
+    const lineMatch = /<div class="([^"]*\bitems-baseline\b[^"]*)">/.exec(afterAvatar);
     expect(lineMatch).toBeTruthy();
-    const lineIndex = columnIndex + (lineMatch?.index ?? 0);
+    const lineIndex = avatarIndex + (lineMatch?.index ?? 0);
 
     const rankIndex = html.indexOf('>A<', lineIndex);
     const nameIndex = html.indexOf('data-testid="live-hero-row-hero-7-name"', lineIndex);
-    const levelIndex = html.indexOf(sub(STRINGS.en.liveHeroLevelValue, { level: 42 }), nameIndex);
+    const levelIndex = html.indexOf(heroLevelLabel(42, 'en'), nameIndex);
 
     expect(rankIndex).toBeGreaterThan(lineIndex);
     expect(nameIndex).toBeGreaterThan(rankIndex);
     expect(levelIndex).toBeGreaterThan(nameIndex);
+    // The level is its own line under the name, not a third item on the name's line.
+    expect(html.slice(nameIndex, levelIndex)).toContain('</div><div');
   });
 });

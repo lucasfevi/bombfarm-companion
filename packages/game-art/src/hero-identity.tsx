@@ -28,6 +28,7 @@ export function HeroIdentity({
   lang,
   size = 'sm',
   variant = 'inline',
+  showRarity = true,
   nameTestId,
   peek,
 }: {
@@ -46,6 +47,11 @@ export function HeroIdentity({
    * id, so a grid of chips keeps one uniform height regardless of name or rarity length.
    */
   variant?: HeroIdentityVariant;
+  /**
+   * `false` leaves the rarity word out — the avatar's frame still carries the rarity as art. For
+   * a row where the rarity is not the reading: the Live list, which reads state and energy.
+   */
+  showRarity?: boolean | undefined;
   /** `data-testid` on the element carrying the hero's own name, for a caller that needs one. */
   nameTestId?: string | undefined;
   /**
@@ -62,7 +68,7 @@ export function HeroIdentity({
   const clampedStars = Math.max(0, Math.min(3, Math.round(stars)));
   const stacked = variant === 'stacked';
 
-  const rarity = (
+  const rarity = showRarity ? (
     <span
       className={cn(
         'truncate font-bold',
@@ -72,7 +78,7 @@ export function HeroIdentity({
     >
       {rarityKey !== undefined ? rarityLabel(rarityKey, lang) : '—'}
     </span>
-  );
+  ) : null;
 
   return (
     <div className="flex min-w-0 items-center gap-2">
@@ -110,7 +116,7 @@ export function HeroIdentity({
         </div>
         {stacked ? (
           <>
-            <div className="mt-1 flex min-w-0 text-[10px] leading-none">{rarity}</div>
+            {rarity === null ? null : <div className="mt-1 flex min-w-0 text-[10px] leading-none">{rarity}</div>}
             <div
               className={cn('mt-1 text-[10px] leading-none text-muted', level === undefined && 'invisible')}
               aria-hidden={level === undefined ? true : undefined}

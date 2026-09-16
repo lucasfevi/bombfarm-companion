@@ -5,6 +5,7 @@ import type { LiveEarnings, LiveMap } from '@bombfarm/contracts';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
 import type { LiveFastModel, LiveHeroFact, LiveSlowModel } from '../../lib/live/live-model';
+import { useLiveHeroPeeks } from '../../lib/live/use-live-hero-peeks';
 import { EarningsPanel } from './earnings-panel';
 import { FieldCountdown } from './field-countdown';
 import { FreshnessLine, type ReachedLiveFreshness } from './freshness-line';
@@ -86,6 +87,7 @@ export function LivePanel({
   const fieldSlotsHint = fieldSize !== undefined && fieldSize < FIELD_SLOTS_MAX ? t.liveFieldSlotsHint : undefined;
 
   const rows = useMemo(() => buildRows(slow, fast), [slow, fast]);
+  const peekFor = useLiveHeroPeeks();
 
   return (
     <div data-testid="live-panel" className="flex flex-col gap-4">
@@ -131,6 +133,7 @@ export function LivePanel({
                   state={row.state}
                   hero={row.hero}
                   energyFraction={row.energyFraction}
+                  peek={peekFor(row.hero.id)}
                   muted={row.state === 'benched'}
                   trailing={
                     row.state === 'on-field' ? (

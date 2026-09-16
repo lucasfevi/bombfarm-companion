@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import type { HeroPeekData } from '@bombfarm/game-art';
 import type { Copy } from '../../lib/copy';
 import { en } from '../../lib/copy/en';
 import { ptBR } from '../../lib/copy/pt-BR';
@@ -21,6 +22,12 @@ vi.mock('../../lib/copy', async (importOriginal) => {
     useLocale: () => locale.value,
   };
 });
+
+const peeks: { value: ReadonlyMap<string, HeroPeekData> } = { value: new Map() };
+
+vi.mock('../../lib/live/use-live-hero-peeks', () => ({
+  useLiveHeroPeeks: () => (heroId: string) => peeks.value.get(heroId),
+}));
 
 const SLOW: LiveSlowModel = {
   onField: [{ id: 'hero-a', name: 'Astra', grade: 'S', level: 61, rarity: 4, energyFraction: 0.42 }],
@@ -121,13 +128,30 @@ describe('MiniHeroes', () => {
     expect(out).toMatch(/data-testid="live-hero-row-hero-a-energy" class="[^"]*\bw-8\b[^"]*text-right/);
   });
 
-  it('gives the level its own fixed slot, so a three-digit level cannot shift the reading beside it', () => {
-    const wide = html({
-      ...SLOW,
-      onField: [{ id: 'hero-a', name: 'Astra', grade: 'S', level: 106, rarity: 4, energyFraction: 0.42 }],
-    });
-    expect(wide).toContain('Lv 106');
-    expect(wide).toMatch(/class="[^"]*\bw-10\b[^"]*"[^>]*>Lv 106</);
+  it('prints the level under the name inside the identity block, not on the energy line', () => {
+    const out = html(SLOW, FAST);
+    const name = out.indexOf('live-hero-row-hero-a-name');
+    const level = out.indexOf('Lv 61', name);
+    const mark = out.indexOf(`class="sr-only">${en.liveListOnFieldTitle}<`, name);
+    expect(level).toBeGreaterThan(name);
+    expect(mark).toBeGreaterThan(level);
+    expect(out).not.toMatch(/\bw-10\b/);
+  });
+
+  it('prints the name in ink and keeps the rarity to the avatar frame', () => {
+    const out = html(SLOW, FAST);
+    const nameClass = /data-testid="live-hero-row-hero-a-name" class="([^"]*)"/.exec(out)?.[1];
+    expect(nameClass).toContain('text-ink');
+    expect(nameClass).not.toContain('text-rar-');
+    expect(out).not.toContain('Legendary');
+    expect(out).toContain('border-rar-4');
+  });
+
+  it('holds the bar to a fixed width so the reading sits the same distance from the edge on every row', () => {
+    const out = html(SLOW, FAST);
+    const bars = out.match(/<span class="([^"]*)"><div data-testid="live-hero-row-[^"]*-energy-bar"/g) ?? [];
+    expect(bars).toHaveLength(4);
+    for (const bar of bars) expect(bar).toMatch(/\bw-14\b/);
   });
 
   it('separates neighbouring rows with an alternating tint rather than running them together', () => {
@@ -152,6 +176,22 @@ describe('MiniHeroes', () => {
     const out = html(SLOW, FAST);
     expect(out).toMatch(/data-testid="live-hero-row-hero-c-energy"[^>]*><span aria-hidden="true">—/);
     expect(out).toContain(`class="sr-only">${en.valueNotAvailable}<`);
+  });
+
+  it('opens the card from the avatar of a hero the account view holds, and leaves the others bare', () => {
+    peeks.value = new Map([['hero-a', { name: 'Astra', rank: 'S', level: 61, power: 1234 }]]);
+    try {
+      const out = html(SLOW, FAST);
+      const triggers = out.match(/data-peek="hero"/g) ?? [];
+      expect(triggers).toHaveLength(1);
+      expect(out.indexOf('data-peek="hero"')).toBeLessThan(out.indexOf('live-hero-row-hero-b"'));
+    } finally {
+      peeks.value = new Map();
+    }
+  });
+
+  it('draws every avatar bare while the account view holds no roster', () => {
+    expect(html(SLOW, FAST)).not.toContain('data-peek=');
   });
 
   it('shows the empty-list copy when there are no rows', () => {

@@ -1,11 +1,10 @@
 import { useMemo, type ReactNode } from 'react';
-import { HeroAvatar, heroRankToneClass, rarityTextClass } from '@bombfarm/game-art';
-import { cn } from '@bombfarm/ui';
+import { HeroIdentity, type HeroPeekData } from '@bombfarm/game-art';
 import { FIELD_SLOTS_MAX } from '@bombfarm/domain/casa-slots';
-import { heroLevelLabel } from '@bombfarm/domain/game-labels';
 import { useCopy, useLocale } from '../../lib/copy';
 import { formatCount, formatEnergyPercent } from '../../lib/format';
 import type { LiveFastModel, LiveHeroFact, LiveSlowModel } from '../../lib/live/live-model';
+import { useLiveHeroPeeks } from '../../lib/live/use-live-hero-peeks';
 import { EnergyBar } from '../live/energy-bar';
 import { FieldCountdown } from '../live/field-countdown';
 import type { LiveRotationRowState } from '../live/hero-row';
@@ -13,7 +12,6 @@ import { RecoveryCountdown } from '../live/recovery-countdown';
 import { restingFacts, restingSlotsCount, restingSlotsHint } from '../live/resting-facts';
 import { StateSummaryBar } from '../live/state-summary-bar';
 
-const NEUTRAL_RARITY_IDX = 2;
 const EM_DASH = '—';
 
 /**
@@ -60,61 +58,61 @@ function MiniStateMark({ state }: { state: LiveRotationRowState }) {
 }
 
 /**
- * Two lines at a fixed height, so a row whose energy or countdown has not arrived is exactly as
- * tall as one whose has. Every absent reading prints a dash and hands the words to a screen
- * reader: this window gives each of those columns about four characters, and the absent-value
- * sentence wraps them onto a second line, which is the one thing a fixed height cannot absorb.
+ * The identity block every roster surface draws, spanning two lines at a fixed height, with the
+ * countdown above the state mark, the energy figure and its bar. Fixed, so a row whose energy or
+ * countdown has not arrived is exactly as tall as one whose has: every absent reading prints a
+ * dash and hands the words to a screen reader, because the absent-value sentence wraps a
+ * four-character slot onto a second line, which is the one thing a fixed height cannot absorb.
  *
  * The energy figure sits at the head of the bar it describes, in a slot wide enough for `100%`,
- * rather than at the row's right edge. Pinned to the edge it drifted away from its own hero as the
- * window widened — measured at 409px of empty space on a 557px window — and no two readings shared
- * a column to be compared down. Here it is a fixed distance from the meter it labels at every
- * width, and every row puts it in the same place.
+ * and the bar is a fixed width so the pair sits at the same distance from the row's edge however
+ * wide the window is dragged. Pinned to the edge on its own the reading drifted away from its own
+ * hero as the window widened — measured at 409px of empty space on a 557px window — and no two
+ * readings shared a column to be compared down.
  */
 function MiniHeroRow({
   state,
   hero,
   energyFraction,
+  peek,
   trailing,
 }: {
   state: LiveRotationRowState;
   hero: LiveHeroFact;
   energyFraction: number | undefined;
+  peek: HeroPeekData | undefined;
   trailing?: ReactNode;
 }) {
   const t = useCopy();
   const { locale, lang } = useLocale();
-  const name = hero.name ?? hero.id;
   // Rank, name and rarity arrive on one roster join, so a rank printed beside a bare hero id
   // would be half a join rendered as though it were whole.
   const rank = hero.name === undefined ? undefined : hero.grade?.trim();
-  const rarityClass = hero.rarity !== undefined ? (rarityTextClass(hero.rarity) ?? 'text-ink') : 'text-ink';
 
   return (
     <li
       data-testid={`live-hero-row-${hero.id}`}
-      className="grid h-9 grid-cols-[1.75rem_minmax(0,1fr)] grid-rows-2 items-center gap-x-1.5 rounded-sm px-1 odd:bg-[color-mix(in_oklch,var(--ink)_5%,transparent)]"
+      className="grid h-9 grid-cols-[minmax(0,1fr)_auto] grid-rows-2 items-center gap-x-1.5 rounded-sm px-1 odd:bg-[color-mix(in_oklch,var(--ink)_5%,transparent)]"
     >
-      <span className="row-span-2">
-        <HeroAvatar skin={hero.skin ?? 0} rarityIdx={hero.rarity ?? NEUTRAL_RARITY_IDX} size="xs" name={name} />
+      <span className="row-span-2 min-w-0">
+        <HeroIdentity
+          name={hero.name ?? hero.id}
+          rank={rank}
+          rarityIdx={hero.rarity}
+          level={hero.level}
+          skin={hero.skin}
+          lang={lang}
+          size="xs"
+          showRarity={false}
+          nameTestId={`live-hero-row-${hero.id}-name`}
+          peek={peek}
+        />
       </span>
 
-      <span className="flex min-w-0 items-baseline gap-1.5">
-        <span className={cn('min-w-3', 'shrink-0', 'text-[10px]', 'leading-none', 'font-bold', heroRankToneClass(rank ?? undefined))}>{rank ?? ''}</span>
-        <span
-          data-testid={`live-hero-row-${hero.id}-name`}
-          className="min-w-0 flex-1 truncate text-[11px] leading-none"
-        >
-          <span className={rarityClass}>{name}</span>
-        </span>
-        <span className="shrink-0">{trailing}</span>
-      </span>
+      <span className="flex justify-end">{trailing}</span>
 
-      <span className="flex min-w-0 items-center gap-1.5">
+      <span className="flex items-center justify-end gap-1.5">
         <MiniStateMark state={state} />
-        <span className="w-10 shrink-0 font-mono text-[10px] leading-none tabular-nums text-muted">
-          {hero.level === undefined ? EM_DASH : heroLevelLabel(hero.level, lang)}
-        </span>
         <span
           data-testid={`live-hero-row-${hero.id}-energy`}
           className="w-8 shrink-0 text-right font-mono text-[10px] leading-none tabular-nums text-ink"
@@ -128,7 +126,7 @@ function MiniHeroRow({
             formatEnergyPercent(energyFraction, locale)
           )}
         </span>
-        <span className="min-w-8 flex-1">
+        <span className="w-14 shrink-0">
           <EnergyBar testId={`live-hero-row-${hero.id}-energy-bar`} fraction={energyFraction} />
         </span>
       </span>
@@ -163,6 +161,7 @@ export function MiniHeroes({ slow, fast }: { slow: LiveSlowModel | null; fast: L
   const fieldSlotsHint =
     slow && fieldSize !== undefined && fieldSize < FIELD_SLOTS_MAX ? t.liveFieldSlotsHint : undefined;
   const rows = useMemo(() => (slow ? buildRows(slow, fast) : []), [slow, fast]);
+  const peekFor = useLiveHeroPeeks();
 
   if (slow === null) {
     return (
@@ -202,6 +201,7 @@ export function MiniHeroes({ slow, fast }: { slow: LiveSlowModel | null; fast: L
                 state={row.state}
                 hero={row.hero}
                 energyFraction={row.energyFraction}
+                peek={peekFor(row.hero.id)}
                 trailing={
                   row.state === 'on-field' ? (
                     <FieldCountdown

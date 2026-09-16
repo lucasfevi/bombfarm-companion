@@ -216,7 +216,6 @@ export const ptBR: Copy = {
   liveListQueuedTitle: 'Ociosos',
   liveListBenchedTitle: 'No banco',
   liveListEmptyLine: 'Nenhum herói aqui no momento.',
-  liveHeroLevelValue: 'Nv {level}',
   liveEnergyLabel: 'Energia',
   liveEnergyRisingLabel: 'Subindo',
   liveEnergyFallingLabel: 'Caindo',

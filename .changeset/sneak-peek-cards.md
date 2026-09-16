@@ -25,6 +25,14 @@ a game database site — everywhere the app draws one as an icon.
   eight gear slots as art, an empty tile standing in for a bare slot. A row that only knows a
   name and a rank gets a card that says that much and no more.
 
+Two surfaces reshape around the cards. The Combat tab's Abilities & Auras panel stops
+repeating each ability's effect sentence — the card says it — and draws its two groups side by
+side as columns of small cards, each icon opening its card and an own ability's icon carrying
+its rank badge. The desktop Live tab's rows (the mini window's too, and the web download page's
+replica of them) draw the same identity block every roster surface uses, without the rarity
+word, and the avatar opens the hero's card from the account's own record. The forge queue's band
+shows the piece at its head as art that opens the item's card.
+
 Also fixed on the way: the inventory card capped an item at four stat lines, so a Legendary or
 Mythic piece hid its fifth and sixth rolls — every roll shows now.
 
