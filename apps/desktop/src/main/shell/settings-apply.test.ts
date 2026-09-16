@@ -5,16 +5,18 @@ import {
   applyAlwaysOnTopMini,
   applyForgeWritesEnabled,
   applyLocale,
+  applyMarketQuoteCurrency,
   applyRestartGameOnExit,
 } from './settings-apply.js';
 
 const BASE: AppSettings = {
-  schemaVersion: 3,
+  schemaVersion: 4,
   locale: 'en',
   alwaysOnTopMain: true,
   alwaysOnTopMini: true,
   forgeWritesEnabled: true,
   restartGameOnExit: true,
+  marketQuoteCurrency: 'BRL',
 };
 
 describe('applyLocale', () => {
@@ -28,12 +30,13 @@ describe('applyLocale', () => {
     const result = applyLocale({ current: BASE, next: 'pt-BR', persist });
 
     expect(result.settings).toEqual({
-      schemaVersion: 3,
+      schemaVersion: 4,
       locale: 'pt-BR',
       alwaysOnTopMain: true,
       alwaysOnTopMini: true,
       forgeWritesEnabled: true,
       restartGameOnExit: true,
+      marketQuoteCurrency: 'BRL',
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -73,12 +76,13 @@ describe('applyAlwaysOnTopMain', () => {
 
     expect(setAlwaysOnTop).toHaveBeenCalledWith(true, 'normal');
     expect(result.settings).toEqual({
-      schemaVersion: 3,
+      schemaVersion: 4,
       locale: 'pt-BR',
       alwaysOnTopMain: true,
       alwaysOnTopMini: false,
       forgeWritesEnabled: false,
       restartGameOnExit: false,
+      marketQuoteCurrency: 'BRL',
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -158,12 +162,13 @@ describe('applyAlwaysOnTopMini', () => {
 
     expect(setAlwaysOnTop).toHaveBeenCalledWith(true, 'screen-saver');
     expect(result.settings).toEqual({
-      schemaVersion: 3,
+      schemaVersion: 4,
       locale: 'pt-BR',
       alwaysOnTopMain: false,
       alwaysOnTopMini: true,
       forgeWritesEnabled: false,
       restartGameOnExit: false,
+      marketQuoteCurrency: 'BRL',
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -199,12 +204,13 @@ describe('applyForgeWritesEnabled', () => {
     const result = applyForgeWritesEnabled({ current: { ...DEFAULT_SETTINGS, locale: 'pt-BR' }, enabled: true, persist });
 
     expect(result.settings).toEqual({
-      schemaVersion: 3,
+      schemaVersion: 4,
       locale: 'pt-BR',
       alwaysOnTopMain: false,
       alwaysOnTopMini: false,
       forgeWritesEnabled: true,
       restartGameOnExit: false,
+      marketQuoteCurrency: 'BRL',
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -263,12 +269,13 @@ describe('applyRestartGameOnExit', () => {
 
     expect(setEnabled).toHaveBeenCalledWith(true);
     expect(result.settings).toEqual({
-      schemaVersion: 3,
+      schemaVersion: 4,
       locale: 'pt-BR',
       alwaysOnTopMain: false,
       alwaysOnTopMini: false,
       forgeWritesEnabled: false,
       restartGameOnExit: true,
+      marketQuoteCurrency: 'BRL',
     });
     expect(persist).toHaveBeenCalledWith(result.settings);
   });
@@ -295,6 +302,45 @@ describe('applyRestartGameOnExit', () => {
 
     expect(result).toEqual({ settings: DEFAULT_SETTINGS, persisted: true, reason: null });
     expect(setEnabled).not.toHaveBeenCalled();
+    expect(persist).not.toHaveBeenCalled();
+  });
+});
+
+describe('applyMarketQuoteCurrency', () => {
+  it('persists the spread object with the currency applied and every other setting alone', () => {
+    const persist = vi.fn((settings: AppSettings) => ({
+      settings,
+      persisted: true,
+      reason: null,
+    }));
+
+    const result = applyMarketQuoteCurrency({ current: BASE, next: 'USD', persist });
+
+    expect(result.settings).toEqual({ ...BASE, marketQuoteCurrency: 'USD' });
+    expect(persist).toHaveBeenCalledWith(result.settings);
+  });
+
+  it('returns applied settings with persisted false when the write fails', () => {
+    const persist = vi.fn(() => ({
+      settings: { ...DEFAULT_SETTINGS, marketQuoteCurrency: 'EUR' as const },
+      persisted: false,
+      reason: 'not_writable' as const,
+    }));
+
+    const result = applyMarketQuoteCurrency({ current: DEFAULT_SETTINGS, next: 'EUR', persist });
+
+    expect(result.settings.marketQuoteCurrency).toBe('EUR');
+    expect(result.persisted).toBe(false);
+    expect(result.reason).toBe('not_writable');
+  });
+
+  it('is a no-op for a code the desktop cannot fetch in — nothing is persisted, the current setting stands', () => {
+    const persist = vi.fn();
+
+    for (const next of ['SEK', 'brl', 7, null, undefined]) {
+      const result = applyMarketQuoteCurrency({ current: DEFAULT_SETTINGS, next, persist });
+      expect(result).toEqual({ settings: DEFAULT_SETTINGS, persisted: true, reason: null });
+    }
     expect(persist).not.toHaveBeenCalled();
   });
 });

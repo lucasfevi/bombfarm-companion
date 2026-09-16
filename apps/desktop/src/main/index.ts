@@ -26,6 +26,7 @@ import {
   type IpcInvokeResult,
   type LiveDiagnosticsDumpOutcome,
   type LiveView,
+  type MarketQuoteCurrency,
   type MarketQuoteResult,
   type MarketQuoteTarget,
   type SettingsWriteResult,
@@ -97,6 +98,7 @@ import {
   applyAlwaysOnTopMini as applyAlwaysOnTopMiniSettings,
   applyForgeWritesEnabled as applyForgeWritesEnabledSettings,
   applyLocale as applyLocaleSettings,
+  applyMarketQuoteCurrency as applyMarketQuoteCurrencySettings,
   applyRestartGameOnExit as applyRestartGameOnExitSettings,
 } from './shell/settings-apply.js';
 import { createElectronTray } from './shell/electron-tray.js';
@@ -264,6 +266,10 @@ function applyRestartGameOnExit(enabled: unknown): SettingsWriteResult {
   });
 }
 
+function applyMarketQuoteCurrency(next: unknown): SettingsWriteResult {
+  return applyMarketQuoteCurrencySettings({ current: currentSettings, next, persist: persistSettings });
+}
+
 function defaultLiveView(): LiveView {
   const now = new Date().toISOString();
   return {
@@ -375,6 +381,8 @@ function registerIpcHandlers(): void {
     'settings:setAlwaysOnTopMini': (enabled: boolean): SettingsWriteResult => applyAlwaysOnTopMini(enabled),
     'settings:setForgeWritesEnabled': (enabled: boolean): SettingsWriteResult => applyForgeWritesEnabled(enabled),
     'settings:setRestartGameOnExit': (enabled: boolean): SettingsWriteResult => applyRestartGameOnExit(enabled),
+    'settings:setMarketQuoteCurrency': (currency: MarketQuoteCurrency): SettingsWriteResult =>
+      applyMarketQuoteCurrency(currency),
     'storage:health': () => storage?.healthCheck() ?? { binding: 'unknown', ok: false },
     'game:getStatus': () => gameReader?.getStatus() ?? {
       status: 'not_running' as const,
@@ -1077,6 +1085,7 @@ async function bootstrap(): Promise<void> {
     log,
     now: () => Date.now(),
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    quoteCurrency: () => currentSettings.marketQuoteCurrency,
     onChanged: (view) => {
       emitEvent('market:changed', view);
     },

@@ -2,7 +2,8 @@ import type { AppFlavor, UpdateChannel } from './flavors.js';
 import type { SettingsWriteResult } from './locale.js';
 import type { LiveDiagnosticsDumpOutcome, LiveEvent, LiveView } from './live-source.js';
 import type { UpdateStatus } from './update.js';
-import type { MarketQuoteResult, MarketQuoteTarget, MarketSnapshotView } from './market.js';
+import type { MarketQuoteCurrency, MarketQuoteResult, MarketQuoteTarget, MarketSnapshotView } from './market.js';
+import { DEFAULT_MARKET_QUOTE_CURRENCY } from './market.js';
 import type { ForgeEvent, ForgeHistoryResult, ForgeStartRequest, ForgeStartResult } from './forge.js';
 
 export { accountChangeKey, canonicalStringify } from './account-change-key.js';
@@ -80,7 +81,13 @@ export type {
   MarketSnapshotSource,
   MarketSnapshotView,
 } from './market.js';
-export { MARKET_QUOTE_CURRENCY, emptyMarketSnapshotView, isMarketQuoteTarget } from './market.js';
+export {
+  DEFAULT_MARKET_QUOTE_CURRENCY,
+  MARKET_QUOTE_CURRENCIES,
+  emptyMarketSnapshotView,
+  isMarketQuoteCurrency,
+  isMarketQuoteTarget,
+} from './market.js';
 export type {
   AccountStoreReason,
   AccountStoreStatus,
@@ -298,7 +305,7 @@ export interface DamageAttributionResult {
 }
 
 export interface AppSettings {
-  schemaVersion: 3;
+  schemaVersion: 4;
   locale: 'en' | 'pt-BR';
   alwaysOnTopMain: boolean;
   alwaysOnTopMini: boolean;
@@ -308,15 +315,19 @@ export interface AppSettings {
   /** Off until the player turns it on. While on, a game process this app already saw running and
    *  which then disappears is asked back through Steam. Nothing here ever stops a living game. */
   restartGameOnExit: boolean;
+  /** The currency the desktop's own per-item market quotes are fetched in. The shared published
+   *  snapshot stays converted from USD whatever this says. */
+  marketQuoteCurrency: MarketQuoteCurrency;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  schemaVersion: 3,
+  schemaVersion: 4,
   locale: 'en',
   alwaysOnTopMain: false,
   alwaysOnTopMini: false,
   forgeWritesEnabled: false,
   restartGameOnExit: false,
+  marketQuoteCurrency: DEFAULT_MARKET_QUOTE_CURRENCY,
 };
 
 export type MiniLiveGrowthAxis = 'vertical' | 'horizontal';
@@ -383,6 +394,7 @@ export interface IpcChannels {
   'settings:setAlwaysOnTopMini': { args: [boolean]; result: SettingsWriteResult };
   'settings:setForgeWritesEnabled': { args: [boolean]; result: SettingsWriteResult };
   'settings:setRestartGameOnExit': { args: [boolean]; result: SettingsWriteResult };
+  'settings:setMarketQuoteCurrency': { args: [MarketQuoteCurrency]; result: SettingsWriteResult };
   /** The main window's caption buttons, drawn in the header rather than by the OS. Zero-arg like
    *  the consent quartet — the channel name is the verb. `window:close` asks the window to close
    *  and does not decide what that means: the shell's own close handler still answers it, so on
@@ -463,6 +475,7 @@ export const IPC_CHANNELS = [
   'settings:setAlwaysOnTopMini',
   'settings:setForgeWritesEnabled',
   'settings:setRestartGameOnExit',
+  'settings:setMarketQuoteCurrency',
   'window:minimize',
   'window:toggleMaximize',
   'window:close',

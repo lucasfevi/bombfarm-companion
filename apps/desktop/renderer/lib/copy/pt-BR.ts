@@ -93,6 +93,15 @@ export const ptBR: Copy = {
     'Com isto ligado, se o jogo fechar enquanto o companion já está aberto, a Steam inicia-o de novo. O companion não inicia o jogo ao abrir. Desligado por padrão.',
   settingsRestartGameOnExitNotSavedTitle: 'Configuração do jogo alterada, mas não salva',
 
+  // settingsMarket* — a moeda que este app pede à Steam ao atualizar o preço de um item
+  settingsMarketSectionTitle: 'Mercado',
+  settingsMarketQuoteCurrencyLabel: 'Moeda dos preços atualizados',
+  settingsMarketQuoteCurrencyHelp:
+    'Ao atualizar um item, a Steam é consultada nesta moeda. A lista de preços compartilhada continua convertida do dólar.',
+  settingsMarketQuoteCurrencySearchPlaceholder: 'USD, Euro ou Real',
+  settingsMarketQuoteCurrencyNoMatch: 'Nenhuma moeda corresponde.',
+  settingsMarketQuoteCurrencyNotSavedTitle: 'Moeda alterada, mas não salva',
+
   // settingsConsent* — o controle de revogar o acesso à conta (Configurações só é alcançável já permitido)
   settingsConsentSectionTitle: 'Acesso à conta',
   settingsConsentStatusGranted: 'Acesso: permitido',

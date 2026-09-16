@@ -115,7 +115,7 @@ function loaded(payload: AccountPayload): AccountViewState {
 }
 
 function html(): string {
-  return renderToStaticMarkup(createElement(InventoryView));
+  return renderToStaticMarkup(createElement(InventoryView, { marketQuoteCurrency: 'BRL' }));
 }
 
 beforeEach(() => {
@@ -136,7 +136,7 @@ beforeEach(() => {
 
 describe('the Inventory header', () => {
   it('prints exactly what the shared inventory computation returns, and the coverage with it', () => {
-    const totals = inventoryTotals(buildInventoryView(RAW_ITEMS).items, snapshot());
+    const totals = inventoryTotals(buildInventoryView(RAW_ITEMS).items, snapshot(), 'BRL');
     if (totals === null) throw new Error('the snapshot is in hand, so the inventory has a figure');
     expect(totals).toEqual({ total: 6, priced: 2, tradable: 3 });
 

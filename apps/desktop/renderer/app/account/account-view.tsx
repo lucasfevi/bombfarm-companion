@@ -18,6 +18,7 @@ import { AccountHouseView, AccountIdentityView, AccountTreeView } from '@bombfar
 import { HoldingsView } from '@bombfarm/account/holdings';
 import { Banner, Button, EmptyState, colClass } from '@bombfarm/ui';
 import { holdingsPrices } from '@bombfarm/pricing';
+import type { MarketQuoteCurrency } from '@bombfarm/contracts';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { formatCapturedAt } from '../../lib/format';
 import { useAccountView } from '../../lib/account/use-account-view';
@@ -32,7 +33,13 @@ import {
   accountTreeLabels,
 } from './account-labels';
 
-export function AccountView({ onOpenInventory }: { onOpenInventory: () => void }) {
+export function AccountView({
+  onOpenInventory,
+  marketQuoteCurrency,
+}: {
+  onOpenInventory: () => void;
+  marketQuoteCurrency: MarketQuoteCurrency;
+}) {
   const t = useCopy();
   const { lang, locale } = useLocale();
   const accountViewState = useAccountView();
@@ -41,8 +48,8 @@ export function AccountView({ onOpenInventory }: { onOpenInventory: () => void }
   const view = accountViewState.status === 'loaded' ? accountViewState.view : null;
   const facts = useMemo(() => (view === null ? null : accountFactsFrom(view)), [view]);
   const holdings = useMemo(
-    () => (facts === null ? null : accountHoldingsFrom(facts.holdings, snapshot)),
-    [facts, snapshot],
+    () => (facts === null ? null : accountHoldingsFrom(facts.holdings, snapshot, marketQuoteCurrency)),
+    [facts, snapshot, marketQuoteCurrency],
   );
 
   const holdingsLabels = useMemo(() => accountHoldingsLabels(t, locale), [t, locale]);
