@@ -15,11 +15,11 @@ function FieldDemo({ layout }: { layout: 'inline' | 'inline-dense' | 'stack' }) 
     <Fields layout={layout}>
       <label className="text-xs text-muted">
         Attack speed
-        <Num value={1.2} onChange={() => undefined} decimals={2} />
+        <Num value={1.2} onChange={() => undefined} decimals={2} incrementLabel="Increment" decrementLabel="Decrement" />
       </label>
       <label className="text-xs text-muted">
         Crit rate
-        <Num value={0.15} onChange={() => undefined} decimals={2} />
+        <Num value={0.15} onChange={() => undefined} decimals={2} incrementLabel="Increment" decrementLabel="Decrement" />
       </label>
       <label className="text-xs text-muted">
         Rarity

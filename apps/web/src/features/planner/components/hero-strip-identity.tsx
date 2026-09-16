@@ -4,7 +4,7 @@ import { HiMiniArrowsRightLeft } from 'react-icons/hi2';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { useAppLang } from '@/shared/context/app-lang';
-import { cn } from '@bombfarm/ui';
+import { Tooltip, cn } from '@bombfarm/ui';
 import {
   usePlannerStore,
   selectHeroName,
@@ -59,14 +59,25 @@ export function HeroStripIdentity({ onOpenPicker }: { onOpenPicker: () => void }
             >
               {rankMark}
             </span>
-            <p className="min-w-0 truncate text-base leading-none font-bold text-ink" title={heroName}>
-              {heroName}
-              {starCount > 0 ? (
-                <span className="ml-1 text-[0.92em] tracking-tight text-rar-4" aria-hidden="true">
-                  {'★'.repeat(starCount)}
-                </span>
-              ) : null}
-            </p>
+            <Tooltip.Provider delay={200} closeDelay={80}>
+              <Tooltip.Root>
+                <Tooltip.Trigger
+                  render={<p className="min-w-0 truncate text-base leading-none font-bold text-ink" />}
+                >
+                  {heroName}
+                  {starCount > 0 ? (
+                    <span className="ml-1 text-[0.92em] tracking-tight text-rar-4" aria-hidden="true">
+                      {'★'.repeat(starCount)}
+                    </span>
+                  ) : null}
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Positioner sideOffset={6}>
+                    <Tooltip.Popup>{heroName}</Tooltip.Popup>
+                  </Tooltip.Positioner>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
           </div>
           <div className="mt-1 flex min-w-0 items-center gap-1.5">
             <span className={`shrink-0 text-[11px] leading-none font-bold ${rarTextClass}`}>

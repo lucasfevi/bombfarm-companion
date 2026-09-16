@@ -231,24 +231,11 @@ const PINNED_EXCEPTIONS: readonly PinnedException[] = [
     permittedBy: 'the pinned literal-exception list — packages/ui may not change (reuse boundary)',
     reachable: true,
   },
-  {
-    text: 'aria-label="Increment"',
-    owner: join(REPO_ROOT, 'packages', 'ui', 'src', 'num.tsx'),
-    permittedBy: 'the pinned literal-exception list',
-    reachable: true,
-  },
-  {
-    text: 'aria-label="Decrement"',
-    owner: join(REPO_ROOT, 'packages', 'ui', 'src', 'num.tsx'),
-    permittedBy: 'the pinned literal-exception list',
-    reachable: true,
-  },
-  {
-    text: 'aria-label="Dismiss"',
-    owner: join(REPO_ROOT, 'packages', 'ui', 'src', 'toast-system.tsx'),
-    permittedBy: 'the pinned literal-exception list — the desktop renders no toast today; reachable: false so mounting one later is a test failure, not a silent regression',
-    reachable: false,
-  },
+  // Num's spinner labels and the toast dismiss/overflow/progress copy used to sit here as
+  // hardcoded English. They now take host-supplied labels (Num's incrementLabel/decrementLabel,
+  // ToastProvider's labels), so packages/ui bakes in none of them and the entries are gone.
+  // packages/ui's own baked-in-copy guard (packages/ui/src/baked-in-copy.test.ts) catches any
+  // new one at the source.
 ];
 
 describe('Guard 2 — the pinned packages/ui exception table', () => {
@@ -260,7 +247,7 @@ describe('Guard 2 — the pinned packages/ui exception table', () => {
     // Guard 1 ever having flagged it, which cannot happen: Guard 1 does not scan packages/ui at
     // all, by design (the reuse boundary) — the width of this specific table is instead bounded by
     // hand, reviewed at PR time.
-    expect(PINNED_EXCEPTIONS.length).toBe(4);
+    expect(PINNED_EXCEPTIONS.length).toBe(1);
   });
 
   it('each pinned entry is verbatim in its owning file, or is correctly marked as no longer reachable', () => {

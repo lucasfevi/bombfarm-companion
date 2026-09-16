@@ -1,12 +1,20 @@
 import { useEffect, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import { Button, ToastItem, ToastProvider, ToastViewport, useToast } from './index';
+import { Button, ToastItem, ToastProvider, ToastViewport, useToast, type ToastLabels } from './index';
 import type { ToastEntry } from './toast-queue';
+
+const DEMO_LABELS: ToastLabels = {
+  dismiss: 'Dismiss',
+  showLess: 'Show less',
+  showMore: (count) => `+${count} more`,
+  progressComplete: (percent) => `${percent}% complete`,
+};
 
 const meta = {
   title: 'UI/Toast System',
   component: ToastItem,
   tags: ['autodocs'],
+  args: { labels: DEMO_LABELS },
 } satisfies Meta<typeof ToastItem>;
 
 export default meta;
@@ -101,7 +109,7 @@ function CoalescingProgressDemo() {
 
 export const CoalescingProgress: Story = {
   render: () => (
-    <ToastProvider>
+    <ToastProvider labels={DEMO_LABELS}>
       <CoalescingProgressDemo />
       <ToastViewport />
     </ToastProvider>
@@ -128,7 +136,7 @@ function OverflowDemo() {
 
 export const OverflowAffordance: Story = {
   render: () => (
-    <ToastProvider>
+    <ToastProvider labels={DEMO_LABELS}>
       <OverflowDemo />
       <ToastViewport />
     </ToastProvider>
