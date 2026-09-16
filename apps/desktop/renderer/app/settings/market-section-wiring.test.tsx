@@ -1,58 +1,70 @@
 import { describe, expect, it, vi } from 'vitest';
-import { en } from '../../lib/copy/en';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import type { SearchSelectProps } from '@bombfarm/ui';
+import { MARKET_QUOTE_CURRENCIES } from '@bombfarm/contracts';
+import { CopyProvider } from '../../lib/copy';
 import { MarketSection } from './market-section';
 
-vi.mock('../../lib/copy', () => ({
-  useCopy: () => en,
-  useLocale: () => ({ locale: 'en', lang: 'en', bcp47: 'en-US' }),
-  SETTINGS_WRITE_REASON_COPY_KEY: {
-    no_store: 'settingsLanguageReasonNoStore',
-    not_writable: 'settingsLanguageReasonNotWritable',
-    unknown: 'settingsLanguageReasonUnknown',
+// The control is stubbed so its props are observable; the section itself renders for real, hooks
+// included, which a direct call of the component function would not allow.
+const captured: SearchSelectProps[] = [];
+vi.mock('@bombfarm/ui', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@bombfarm/ui')>()),
+  SearchSelect: (props: SearchSelectProps) => {
+    captured.push(props);
+    return null;
   },
 }));
 
-function selectElement(props: {
-  marketQuoteCurrency: 'BRL';
-  onMarketQuoteCurrencyChange: (next: string) => void;
-  persistWarning: null;
-}) {
-  const section = MarketSection(props) as unknown as {
-    props: { children: [{ props: { children: unknown } }, unknown] };
-  };
-  const settingsRow = section.props.children[0];
-  return settingsRow.props.children as {
-    props: { value: string; onChange: (event: { target: { value: string } }) => void; children: { props: { value: string } }[] };
-  };
+function renderSection(onMarketQuoteCurrencyChange: (next: string) => void): SearchSelectProps {
+  captured.length = 0;
+  renderToStaticMarkup(
+    createElement(CopyProvider, {
+      locale: 'en',
+      children: createElement(MarketSection, {
+        marketQuoteCurrency: 'BRL',
+        onMarketQuoteCurrencyChange,
+        persistWarning: null,
+      }),
+    }),
+  );
+  const props = captured[0];
+  if (!props) throw new Error('MarketSection rendered no SearchSelect');
+  return props;
 }
 
 describe('MarketSection — the rendered control is wired to onMarketQuoteCurrencyChange', () => {
   it('a pick of an offered code reaches the callback with that code', () => {
     const onMarketQuoteCurrencyChange = vi.fn();
-    const select = selectElement({ marketQuoteCurrency: 'BRL', onMarketQuoteCurrencyChange, persistWarning: null });
+    const select = renderSection(onMarketQuoteCurrencyChange);
 
-    expect(select.props.value).toBe('BRL');
+    expect(select.value).toBe('BRL');
 
-    select.props.onChange({ target: { value: 'USD' } });
+    select.onValueChange('USD');
     expect(onMarketQuoteCurrencyChange).toHaveBeenCalledTimes(1);
     expect(onMarketQuoteCurrencyChange).toHaveBeenCalledWith('USD');
   });
 
-  it('a value that is not an offered code never reaches the callback', () => {
+  it('a value that is not an offered code never reaches the callback — clearing the search included', () => {
     const onMarketQuoteCurrencyChange = vi.fn();
-    const select = selectElement({ marketQuoteCurrency: 'BRL', onMarketQuoteCurrencyChange, persistWarning: null });
+    const select = renderSection(onMarketQuoteCurrencyChange);
 
-    select.props.onChange({ target: { value: 'SEK' } });
-    select.props.onChange({ target: { value: '' } });
+    select.onValueChange('SEK');
+    select.onValueChange('');
     expect(onMarketQuoteCurrencyChange).not.toHaveBeenCalled();
   });
 
-  it('every option carries a code the callback accepts', () => {
-    const select = selectElement({ marketQuoteCurrency: 'BRL', onMarketQuoteCurrencyChange: () => {}, persistWarning: null });
+  it('every option carries a code the callback accepts, and the search matches on code and name', () => {
     const onMarketQuoteCurrencyChange = vi.fn();
-    const again = selectElement({ marketQuoteCurrency: 'BRL', onMarketQuoteCurrencyChange, persistWarning: null });
+    const select = renderSection(onMarketQuoteCurrencyChange);
 
-    for (const option of select.props.children) again.props.onChange({ target: { value: option.props.value } });
-    expect(onMarketQuoteCurrencyChange).toHaveBeenCalledTimes(select.props.children.length);
+    for (const option of select.options) select.onValueChange(option.value);
+    expect(onMarketQuoteCurrencyChange).toHaveBeenCalledTimes(MARKET_QUOTE_CURRENCIES.length);
+
+    const brl = select.options.find((option) => option.value === 'BRL');
+    expect(brl?.label).toBe('BRL · Brazilian Real');
+    expect(select.searchPlaceholder).toBe('USD, Euro, or Real');
+    expect(select.emptyLabel).toBe('No currency matches that.');
   });
 });

@@ -96,6 +96,8 @@ export const en = {
   settingsMarketQuoteCurrencyLabel: 'Currency for refreshed prices',
   settingsMarketQuoteCurrencyHelp:
     'When you refresh an item, Steam is asked for its price in this currency. The shared price list stays converted from USD.',
+  settingsMarketQuoteCurrencySearchPlaceholder: 'USD, Euro, or Real',
+  settingsMarketQuoteCurrencyNoMatch: 'No currency matches that.',
   settingsMarketQuoteCurrencyNotSavedTitle: 'Currency changed, but not saved',
 
   // settingsConsent* — the account access revoke control (Settings is reachable only once granted)

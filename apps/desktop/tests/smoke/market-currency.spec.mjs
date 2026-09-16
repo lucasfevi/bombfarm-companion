@@ -75,7 +75,7 @@ function currencySelect(page) {
 }
 
 test.describe('market currency smoke — drawn on the default, picked in place, and remembered', () => {
-  test('BRL by default, a pick of USD lands without a reload, and USD is what a restart reads back', async () => {
+  test('BRL by default, a search for "dollar" narrows the list, the USD pick lands without a reload, and USD is what a restart reads back', async () => {
     const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-market-currency-'));
     try {
       const { app: app1, page: page1 } = await launchApp({ BFC_USER_DATA_DIR: userDataDir });
@@ -93,7 +93,13 @@ test.describe('market currency smoke — drawn on the default, picked in place, 
         });
 
         await select.click();
+        await expect(page1.getByPlaceholder(en('settingsMarketQuoteCurrencySearchPlaceholder'))).toBeFocused();
+        await page1.keyboard.type('dollar');
+        // Code and name both match, so "dollar" keeps every dollar and drops the real.
+        await expect(page1.getByRole('option', { name: /^BRL · / })).toHaveCount(0);
+        await expect(page1.getByRole('option', { name: /^AUD · / })).toBeVisible();
         await page1.getByRole('option', { name: /^USD · / }).click();
+        await expect(page1.getByRole('listbox')).toHaveCount(0);
 
         await expect(select).toContainText('USD', { timeout: 10_000 });
         await expect(select).not.toContainText('BRL');

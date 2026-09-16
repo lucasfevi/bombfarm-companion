@@ -40,8 +40,8 @@ describe('MarketSection source — no controls of its own and no account access 
   });
 });
 
-describe('MarketSection renders SettingsSection -> SettingsRow -> Select, both locales', () => {
-  // Base UI's Select only puts the CURRENTLY SELECTED option's label into static markup — the
+describe('MarketSection renders SettingsSection -> SettingsRow -> SearchSelect, both locales', () => {
+  // Base UI's Combobox only puts the CURRENTLY SELECTED option's label into static markup — the
   // list is portal-rendered — so the option copy is proven the observable way: the same selected
   // value under each UI language renders a different name.
   it('the selected option is named in the app language, the code in front of it', () => {

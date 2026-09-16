@@ -98,6 +98,8 @@ export const ptBR: Copy = {
   settingsMarketQuoteCurrencyLabel: 'Moeda dos preços atualizados',
   settingsMarketQuoteCurrencyHelp:
     'Ao atualizar um item, a Steam é consultada nesta moeda. A lista de preços compartilhada continua convertida do dólar.',
+  settingsMarketQuoteCurrencySearchPlaceholder: 'USD, Euro ou Real',
+  settingsMarketQuoteCurrencyNoMatch: 'Nenhuma moeda corresponde.',
   settingsMarketQuoteCurrencyNotSavedTitle: 'Moeda alterada, mas não salva',
 
   // settingsConsent* — o controle de revogar o acesso à conta (Configurações só é alcançável já permitido)

@@ -1,12 +1,14 @@
 /**
- * The market currency control, the same three shipped `@bombfarm/ui` primitives as
- * `language-section.tsx` (`SettingsSection` → `SettingsRow` → `Select`) with the not-persisted
- * warning in an always-mounted `Banner` (`docs/no-layout-shift.md` rule 1).
+ * The market currency control, `language-section.tsx`'s shape (`SettingsSection` → `SettingsRow`)
+ * over the searchable `SearchSelect` the Optimizer's phase picker uses — thirty-nine rows is a
+ * list to type into, not to scroll — with the not-persisted warning in an always-mounted `Banner`
+ * (`docs/no-layout-shift.md` rule 1).
  *
  * Presentational only — `page.tsx` owns the stored currency, the persist warning, and the write;
  * this component reaches for no bridge of its own.
  */
-import { Banner, SettingsRow, SettingsSection, Select, cn } from '@bombfarm/ui';
+import { useMemo } from 'react';
+import { Banner, SearchSelect, SettingsRow, SettingsSection, cn } from '@bombfarm/ui';
 import { isMarketQuoteCurrency, type MarketQuoteCurrency, type SettingsWriteReason } from '@bombfarm/contracts';
 import { STEAM_CURRENCIES } from '@bombfarm/pricing';
 import { SETTINGS_WRITE_REASON_COPY_KEY, useCopy, useLocale } from '../../lib/copy';
@@ -31,6 +33,14 @@ export function MarketSection({
 }) {
   const t = useCopy();
   const { bcp47 } = useLocale();
+  const options = useMemo(
+    () =>
+      STEAM_CURRENCIES.map((currency) => ({
+        value: currency.code,
+        label: `${currency.code} · ${currencyLabel(currency.code, currency.label, bcp47)}`,
+      })),
+    [bcp47],
+  );
 
   return (
     <SettingsSection title={t.settingsMarketSectionTitle}>
@@ -39,22 +49,18 @@ export function MarketSection({
         help={t.settingsMarketQuoteCurrencyHelp}
         className="[&_label_[data-select]]:w-56"
       >
-        <Select
+        <SearchSelect
+          options={options}
           value={marketQuoteCurrency}
-          onChange={(event) => {
-            const next = event.target.value;
+          onValueChange={(next) => {
             if (isMarketQuoteCurrency(next)) {
               onMarketQuoteCurrencyChange(next);
             }
           }}
           aria-label={t.settingsMarketQuoteCurrencyLabel}
-        >
-          {STEAM_CURRENCIES.map((currency) => (
-            <option key={currency.code} value={currency.code}>
-              {`${currency.code} · ${currencyLabel(currency.code, currency.label, bcp47)}`}
-            </option>
-          ))}
-        </Select>
+          searchPlaceholder={t.settingsMarketQuoteCurrencySearchPlaceholder}
+          emptyLabel={t.settingsMarketQuoteCurrencyNoMatch}
+        />
       </SettingsRow>
       <Banner
         tone="warn"
