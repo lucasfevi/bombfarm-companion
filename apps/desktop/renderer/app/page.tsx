@@ -41,6 +41,7 @@ import { ForgeQueueBar, isForgeQueueShown } from './forge/forge-queue-bar';
 import { useForgeQueue } from '../lib/forge/forge-queue-store';
 import { ForgeView } from './forge/forge-view';
 import { OptimizerView } from './optimizer/optimizer-view';
+import { PvpView } from './pvp/pvp-view';
 import { AccountView } from './account/account-view';
 import { ConsentSection } from './settings/consent-section';
 import { ForgeSection } from './settings/forge-section';
@@ -494,6 +495,8 @@ function HomePageContent({
             <ForgeView forgeWritesEnabled={forgeWritesEnabled} accountSource={environment?.accountSource ?? null} />
           ) : activeNavId === 'optimizer' ? (
             <OptimizerView />
+          ) : activeNavId === 'pvp' ? (
+            <PvpView />
           ) : activeNavId === 'account' ? (
             <AccountView
               marketQuoteCurrency={marketQuoteCurrency}

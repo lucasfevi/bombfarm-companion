@@ -696,6 +696,37 @@ export const en = {
   optimizerLeftOutTitle: 'Some heroes were left out of the search',
   optimizerLeftOutBody: 'The app could not read the spent stat points of {heroes} from the account, so they are left out of this search: not on the scope board, not in the plan.',
 
+  // pvp* — the PVP screen: every duel the app saw settle while it was open, and whether each
+  // one's film is held. Nothing here is predicted; the rows are what the game reported.
+  pvpNavLabel: 'PVP',
+  pvpTitle: 'Duel history',
+  pvpSummary: '{duels} duels · {won} won · {films} films kept',
+  pvpQuota: '{left} of {max} duels left',
+  pvpCaption: 'Every duel this app saw settle, newest first',
+  pvpEmptyTitle: 'No duels yet',
+  pvpEmptyDescription: 'Fight a duel while this app is open and it is kept here, with its film.',
+  pvpColumnWhen: 'When',
+  pvpColumnOpponent: 'Opponent',
+  pvpColumnResult: 'Result',
+  pvpColumnScore: 'Score',
+  pvpColumnPhase: 'Room phase',
+  pvpColumnPoints: 'Points',
+  pvpColumnPrize: 'Prize',
+  pvpColumnFilm: 'Film',
+  pvpOpponentHeroes: '{n} heroes',
+  pvpResultWon: 'Won',
+  pvpResultLost: 'Lost',
+  pvpScore: '{yours} vs {theirs}',
+  pvpScoreHint: 'Your score first, then theirs: the HP each side tore off the other over the duel.',
+  pvpTierFloor: 'tier {tier}, floor {floor}',
+  pvpPhaseHint: 'The phase the duel was fought in. The tier floor is the lowest phase your tier fights at.',
+  pvpPoints: '{before} → {after}',
+  pvpPrizeWon: 'Rune chest',
+  pvpPrizeLost: 'Chest lost, bag full',
+  pvpFilmStored: 'Kept',
+  pvpFilmMissing: 'Not kept',
+  pvpFilmNote: 'A film is kept the moment the game fetches it. The server drops a film seconds later, so one that was skipped or missed cannot be fetched now.',
+
   // hero*/gear*/import*/roster*/switch*/mode*/rank* — hero-identity vocabulary the farm screen's
   // roster surfaces read as one structural contract. Named exactly as that contract names them.
   heroAvatarCol: 'Avatar',

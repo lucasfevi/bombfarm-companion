@@ -28,6 +28,9 @@ import { uiIconRegistry } from './ui-registry';
 // Desktop Optimizer tab (2026-09-11): sparkles — the eighth nav tab's glyph, chosen over sliders,
 // a trending arrow and a wrench so it is read as neither Settings, earnings nor Forge at the
 // glyph-only widths; the budget moved to 31 with it.
+// Desktop PVP tab (2026-09-16): sword — the ninth nav tab's glyph, chosen over crossed swords
+// (an X at 16px) and a trophy (achievements) so it reads as a fight beside the Forge hammer; the
+// budget moved to 32 with it.
 const MIGRATED_UI_NAMES = [
   'window',
   'signal',
@@ -38,6 +41,7 @@ const MIGRATED_UI_NAMES = [
   'hammer',
   'user-group',
   'sparkles',
+  'sword',
   'ellipsis-horizontal',
   'layout-grid',
   'layout-list',
@@ -63,8 +67,8 @@ const MIGRATED_UI_NAMES = [
 ] as const;
 
 describe('icon registries — budget and membership', () => {
-  it('keeps uiIconRegistry within the 31-entry budget', () => {
-    expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(31);
+  it('keeps uiIconRegistry within the 32-entry budget', () => {
+    expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(32);
   });
 
   it('maps exactly the declared ui-chrome glyphs', () => {
