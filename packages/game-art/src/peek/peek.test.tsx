@@ -186,9 +186,16 @@ describe('AbilityPeekCard', () => {
     }
   });
 
+  it('the rank line never wraps, and a long figure wraps under itself instead of running out of the card', () => {
+    const html = render(createElement(AbilityPeekCard, { id: 'misericordia', level: 13, lang: 'pt' }));
+    expect(html).toMatch(/class="[^"]*whitespace-nowrap[^"]*"[^>]*>(?:(?!<\/div>).)*Rank 13 de 20/);
+    expect(html).toContain('executa &lt; 9,8% HP (×1,11 dano)');
+    expect(html).toContain('[&amp;_b]:min-w-0 [&amp;_b]:text-right');
+  });
+
   it('a second blast reads as a chance and the multiplier it works out to; crit and penetration read in %', () => {
     expect(render(createElement(AbilityPeekCard, { id: 'detonacao_dupla', level: 20, lang: 'en' }))).toContain(
-      '30.0% chance (×1.15 damage)',
+      '30.0% chance (×1.15 dmg)',
     );
     expect(render(createElement(AbilityPeekCard, { id: 'olho_clinico', level: 20, lang: 'en' }))).toContain('+40% crit');
     expect(render(createElement(AbilityPeekCard, { id: 'brecha', level: 20, lang: 'en' }))).toContain('+20% penetration');

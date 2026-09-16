@@ -19,7 +19,9 @@ export const peekTriggerClass =
 export const peekHeadClass = 'grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2.5';
 export const peekNameClass = 'flex min-w-0 items-baseline gap-1.5 text-[13px] leading-tight font-bold text-ink';
 export const peekNameTextClass = 'min-w-0 truncate';
-export const peekSubClass = 'mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-1 text-[11px] leading-snug';
+/** One line, always: a rank line that folds under its tag reads as two facts. The name above it
+ *  truncates instead. */
+export const peekSubClass = 'mt-0.5 flex min-w-0 flex-nowrap items-baseline gap-x-1 whitespace-nowrap text-[11px] leading-snug';
 /** The one figure a player ranks a roster by, at the head's right edge: the label small above
  *  the number, the number louder than the name. Centred on the row like the name block, so the
  *  label sits beside the name line and the figure beside the tier line. */
@@ -29,7 +31,9 @@ export const peekPowerValueClass = 'font-mono text-base leading-none font-bold t
 export const peekRuleClass = 'my-2 h-px bg-line';
 export const peekRowsClass = 'flex flex-col gap-[3px] text-[11px] leading-snug tabular-nums';
 export const peekRowsGridClass = 'grid grid-cols-2 gap-x-3.5 gap-y-[3px] text-[11px] leading-snug tabular-nums';
-export const peekRowClass = 'flex items-baseline justify-between gap-2 text-muted [&_b]:shrink-0 [&_b]:font-semibold [&_b]:text-ink';
+/** The label keeps its width; a long figure wraps under itself, right-aligned, rather than
+ *  running out of the card. */
+export const peekRowClass = 'flex items-baseline justify-between gap-2 text-muted [&>span]:shrink-0 [&_b]:min-w-0 [&_b]:text-right [&_b]:font-semibold [&_b]:text-ink';
 export const peekEffectClass = 'text-[11.5px] leading-[1.4] text-ink';
 export const peekFootClass = 'mt-2 flex items-baseline justify-between gap-2 text-[10.5px] leading-snug text-muted';
 /** What an item is worth, the way the inventory card's footer says it: coin and gold at the left

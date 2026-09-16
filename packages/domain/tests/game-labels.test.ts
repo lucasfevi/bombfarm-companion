@@ -357,10 +357,8 @@ describe('abilityReadoutText', () => {
   });
 
   it('a second blast reads as its chance and the multiplier; an execute as its threshold and the multiplier', () => {
-    expect(abilityReadoutText(ownAbilityReadout('detonacao_dupla', 20), 'en', format)).toBe('30.0% chance (×1.15 damage)');
-    expect(abilityReadoutText(ownAbilityReadout('misericordia', 20), 'pt', format)).toBe(
-      'executa abaixo de 15.00% de HP (×1.18 de dano)',
-    );
+    expect(abilityReadoutText(ownAbilityReadout('detonacao_dupla', 20), 'en', format)).toBe('30.0% chance (×1.15 dmg)');
+    expect(abilityReadoutText(ownAbilityReadout('misericordia', 20), 'pt', format)).toBe('executa < 15.0% HP (×1.18 dano)');
   });
 
   it('an unmodelled readout is a dash', () => {
