@@ -167,23 +167,31 @@ describe('AbilityPeekCard', () => {
     expect(render(createElement(AbilityPeekCard, { id: 'matilha', level: 5, lang: 'en' }))).not.toContain('team aura');
   });
 
-  it('a capped ability still shows both rows, so every card has the same figures', () => {
+  it('a capped ability shows one row — the cap is the rank, so saying it twice says nothing', () => {
     const html = render(createElement(AbilityPeekCard, { id: 'grito_guerra', level: 20, lang: 'en' }));
     expect(html).toContain('Rank 20 of 20');
-    expect(html).toContain('At rank 20');
+    expect(html).not.toContain('At rank 20');
     expect(html).toContain('At cap');
-    expect(html.match(/\+20% attack/g)).toHaveLength(2);
+    expect(html.match(/\+20% attack/g)).toHaveLength(1);
   });
 
-  it('an unmodelled ability keeps its effect text and prints no figure row, capped or not', () => {
-    expect(render(createElement(AbilityPeekCard, { id: 'caca_hero', level: 5, lang: 'en' }))).toContain('not modeled');
-    for (const id of ['caca_hero', 'veia_ouro', 'fortuna']) {
-      for (const level of [5, 20, undefined]) {
-        const html = render(createElement(AbilityPeekCard, { id, level, lang: 'en' }));
-        expect(html, `${id} at ${String(level)}`).not.toContain('At rank');
-        expect(html, `${id} at ${String(level)}`).not.toContain('At cap');
-      }
+  it('the abilities the model never prices still read their published figure at the rank and at the cap', () => {
+    const cage = render(createElement(AbilityPeekCard, { id: 'caca_hero', level: 5, lang: 'en' }));
+    expect(cage).toContain('not modeled');
+    expect(cage).toContain('At rank 5');
+    expect(cage).toContain('+25% Cage damage');
+    expect(cage).toContain('+100% Cage damage');
+    for (const id of ['fantasma', 'olho_lapidador', 'veia_ouro', 'fortuna']) {
+      expect(render(createElement(AbilityPeekCard, { id, level: 20, lang: 'en' })), id).toContain('At cap');
     }
+  });
+
+  it('a second blast reads as a chance and the multiplier it works out to; crit and penetration read in %', () => {
+    expect(render(createElement(AbilityPeekCard, { id: 'detonacao_dupla', level: 20, lang: 'en' }))).toContain(
+      '30.0% chance (×1.15 damage)',
+    );
+    expect(render(createElement(AbilityPeekCard, { id: 'olho_clinico', level: 20, lang: 'en' }))).toContain('+40% crit');
+    expect(render(createElement(AbilityPeekCard, { id: 'brecha', level: 20, lang: 'en' }))).toContain('+20% penetration');
   });
 
   it('without a rank it reads the ability alone: the name, the tag, the effect and one cap row', () => {

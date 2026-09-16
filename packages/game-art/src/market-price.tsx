@@ -106,7 +106,7 @@ export function MarketPrice({
             )}
           >
             <SteamGlyph />
-            <span>{body}</span>
+            <span className={priced ? 'text-up' : undefined}>{body}</span>
           </Tooltip.Trigger>
           {tip == null ? null : (
             <Tooltip.Portal>

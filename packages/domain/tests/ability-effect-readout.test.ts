@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   TEAM_ABILITY_IDS,
+  UNMODELLED_READOUT_PER_LEVEL,
+  isPricedReadout,
   isTeamAbilityId,
   isTeamAuraId,
   isTeamBuffId,
@@ -36,12 +38,19 @@ describe('ownAbilityReadout — the model’s own arithmetic read back', () => {
     expect(readout.kind === 'rangeCells' && readout.value).toBeCloseTo(1, 12);
   });
 
-  it('Detonação Dupla and Misericórdia read as the damage multiplier abilityMods applies', () => {
-    for (const abilityId of ['detonacao_dupla', 'misericordia']) {
-      const readout = ownAbilityReadout(abilityId, 12);
-      expect(readout).toEqual({ kind: 'dmgMult', value: abilityMods({ [abilityId]: 12 }).dmgMult });
-      expect(readout.kind === 'dmgMult' && readout.value).toBeGreaterThan(1);
-    }
+  it('Detonação Dupla reads as its chance and the multiplier abilityMods applies', () => {
+    expect(ownAbilityReadout('detonacao_dupla', 20)).toEqual({
+      kind: 'secondBlast',
+      chancePct: 30,
+      dmgMult: abilityMods({ detonacao_dupla: 20 }).dmgMult,
+    });
+  });
+
+  it('Misericórdia reads as its execute threshold and the multiplier abilityMods applies', () => {
+    const readout = ownAbilityReadout('misericordia', 20);
+    expect(readout.kind).toBe('execute');
+    expect(readout.kind === 'execute' && readout.thresholdPct).toBeCloseTo(15, 9);
+    expect(readout.kind === 'execute' && readout.dmgMult).toBe(abilityMods({ misericordia: 20 }).dmgMult);
   });
 
   it('Contra o Relógio reads as gate attack, never as attack', () => {
@@ -56,9 +65,24 @@ describe('ownAbilityReadout — the model’s own arithmetic read back', () => {
     expect(ownAbilityReadout('golpe_brutal', 5)).toEqual({ kind: 'critDmgPct', value: 20 });
   });
 
-  it('an unmodelled ability, or an unknown id, reads as none', () => {
-    expect(ownAbilityReadout('caca_hero', 10)).toEqual({ kind: 'none' });
+  it('an unknown id reads as none', () => {
     expect(ownAbilityReadout('not_an_ability', 10)).toEqual({ kind: 'none' });
+  });
+
+  it('the abilities the combat model never prices still read their published per-level figure', () => {
+    expect(ownAbilityReadout('caca_hero', 10)).toEqual({ kind: 'cageDmgPct', value: 50 });
+    expect(ownAbilityReadout('fantasma', 20)).toEqual({ kind: 'passageAttackPct', value: 1 });
+    expect(ownAbilityReadout('olho_lapidador', 20)).toEqual({ kind: 'dropTierPct', value: 50 });
+    expect(ownAbilityReadout('veia_ouro', 20)).toEqual({ kind: 'goldPct', value: 40 });
+    expect(ownAbilityReadout('fortuna', 20)).toEqual({ kind: 'goldPct', value: 10 });
+  });
+
+  it('every ability whose effect the model skips has a published figure, and it matches its effect text', () => {
+    for (const ability of ABILITIES.filter((entry) => entry.effect.kind === 'none')) {
+      const published = UNMODELLED_READOUT_PER_LEVEL[ability.id];
+      expect(published, ability.id).toBeDefined();
+      expect(ability.effectText, ability.id).toContain(`${published?.perLevel}%`);
+    }
   });
 
   it("Matilha reads as damage per ally, Passagem de Bastão as team damage on entering — neither off abilityMods' dmgMult", () => {
@@ -76,11 +100,11 @@ describe('ownAbilityReadout — the model’s own arithmetic read back', () => {
     expect(ownAbilityReadout('folego_mineiro', 12)).toEqual({ kind: 'drainPct', value: 12 });
   });
 
-  it('every catalog ability with a modelled effect has a readout', () => {
+  it('every catalog ability has a readout — priced by the model, or published and marked as such', () => {
     for (const ability of ABILITIES) {
       const readout = ownAbilityReadout(ability.id, 1);
-      if (ability.effect.kind === 'none') expect(readout.kind, ability.id).toBe('none');
-      else expect(readout.kind, ability.id).not.toBe('none');
+      expect(readout.kind, ability.id).not.toBe('none');
+      expect(isPricedReadout(readout), ability.id).toBe(ability.effect.kind !== 'none');
     }
   });
 });

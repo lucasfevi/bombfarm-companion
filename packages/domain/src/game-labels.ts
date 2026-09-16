@@ -84,8 +84,20 @@ export function abilityReadoutText(
   formatNumber: (value: number, decimals: number) => string,
 ): string {
   if (readout.kind === 'none') return '—';
-  const value = formatNumber(readout.value, ABILITY_READOUT_DECIMALS[readout.kind]);
-  return pick(ABILITY_READOUT_UNITS[readout.kind], lang, '{value}').replace('{value}', value);
+  const decimals = ABILITY_READOUT_DECIMALS[readout.kind];
+  const template = pick(ABILITY_READOUT_UNITS[readout.kind], lang, '{value}');
+  switch (readout.kind) {
+    case 'secondBlast':
+      return template
+        .replace('{value}', formatNumber(readout.chancePct, decimals))
+        .replace('{mult}', formatNumber(readout.dmgMult, 2));
+    case 'execute':
+      return template
+        .replace('{value}', formatNumber(readout.thresholdPct, decimals))
+        .replace('{mult}', formatNumber(readout.dmgMult, 2));
+    default:
+      return template.replace('{value}', formatNumber(readout.value, decimals));
+  }
 }
 
 /** The few words the hover cards say that no other surface does. */
@@ -260,8 +272,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '+4% crit damage/level (flat, affects stats)',
   },
   matilha: {
-    pt: '+0.5% dano por aliado em campo/nível, +90% no teto',
-    en: '+0.5% damage per ally on the field/level, +90% at cap',
+    pt: '+0.5% dano por aliado em campo/nível',
+    en: '+0.5% damage per ally on the field/level',
   },
   fortuna: {
     pt: '+0.5% ouro do TIME/nível, +10% no teto (loot, aura capada)',
@@ -290,8 +302,9 @@ const SHEET_STAT_SHORT_LABELS: Record<SheetKey, Bilingual> = {
 
 type AbilityReadoutKind = Exclude<AbilityEffectReadout['kind'], 'none'>;
 
-/** How many decimals each readout prints with: Marcha's per-level step is 0.185%, a multiplier
- *  lands on 1.09, a radius on 1.0; the rest move in whole units. */
+/** How many decimals each readout's leading figure prints with: Marcha's per-level step is
+ *  0.185%, Fantasma's 0.05%, a radius lands on 1.0; the rest move in whole or half units. A
+ *  multiplier always prints with two. */
 const ABILITY_READOUT_DECIMALS: Record<AbilityReadoutKind, number> = {
   attackPct: 0,
   speedPct: 2,
@@ -300,24 +313,36 @@ const ABILITY_READOUT_DECIMALS: Record<AbilityReadoutKind, number> = {
   penetrationPoints: 0,
   critDmgPct: 0,
   rangeCells: 1,
-  dmgMult: 2,
+  secondBlast: 1,
+  execute: 2,
   gateAttackPct: 0,
   packDmgPctPerAlly: 1,
   teamPulseDmgPct: 0,
+  cageDmgPct: 0,
+  passageAttackPct: 2,
+  dropTierPct: 1,
+  goldPct: 1,
 };
 
+/** Crit and penetration points print as `%`: that is the unit the game's own sheet shows them
+ *  in, and a reader checks the card against the sheet. */
 const ABILITY_READOUT_UNITS: Record<AbilityReadoutKind, Bilingual> = {
   attackPct: { pt: '+{value}% de ataque', en: '+{value}% attack' },
   speedPct: { pt: '+{value}% de velocidade', en: '+{value}% speed' },
-  critPoints: { pt: '+{value} pontos de crítico', en: '+{value} crit points' },
+  critPoints: { pt: '+{value}% de crítico', en: '+{value}% crit' },
   drainPct: { pt: '−{value}% de gasto', en: '−{value}% drain' },
-  penetrationPoints: { pt: '+{value} de penetração', en: '+{value} penetration' },
+  penetrationPoints: { pt: '+{value}% de penetração', en: '+{value}% penetration' },
   critDmgPct: { pt: '+{value}% de dano crítico', en: '+{value}% crit damage' },
   rangeCells: { pt: '+{value} de alcance', en: '+{value} range' },
-  dmgMult: { pt: '×{value} de dano', en: '×{value} dmg' },
+  secondBlast: { pt: '{value}% de chance (×{mult} de dano)', en: '{value}% chance (×{mult} damage)' },
+  execute: { pt: 'executa abaixo de {value}% de HP (×{mult} de dano)', en: 'executes below {value}% HP (×{mult} damage)' },
   gateAttackPct: { pt: '+{value}% em portões', en: '+{value}% on gates' },
   packDmgPctPerAlly: { pt: '+{value}% de dano por aliado', en: '+{value}% dmg per ally' },
   teamPulseDmgPct: { pt: '+{value}% de dano, pulso mantido', en: '+{value}% dmg, pulse held up' },
+  cageDmgPct: { pt: '+{value}% de dano na Jaula', en: '+{value}% Cage damage' },
+  passageAttackPct: { pt: '+{value}% de Ataque de passagem', en: '+{value}% attack from passage' },
+  dropTierPct: { pt: '+{value}% de chance de subir raridade', en: '+{value}% chance of a rarer drop' },
+  goldPct: { pt: '+{value}% de ouro', en: '+{value}% gold' },
 };
 
 const PEEK_LABELS = {

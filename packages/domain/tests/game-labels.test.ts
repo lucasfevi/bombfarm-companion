@@ -351,7 +351,16 @@ describe('abilityReadoutText', () => {
     expect(abilityReadoutText(ownAbilityReadout('bateria_extra', 12), 'en', format)).toBe('−12% drain');
     expect(abilityReadoutText(ownAbilityReadout('explosao_ampla', 10), 'en', format)).toBe('+1.0 range');
     expect(abilityReadoutText(ownAbilityReadout('marcha_acelerada', 20), 'en', format)).toBe('+3.70% speed');
-    expect(abilityReadoutText({ kind: 'dmgMult', value: 1.09 }, 'pt', format)).toBe('×1.09 de dano');
+    expect(abilityReadoutText(ownAbilityReadout('olho_clinico', 20), 'en', format)).toBe('+40% crit');
+    expect(abilityReadoutText(ownAbilityReadout('ponta_diamante', 20), 'pt', format)).toBe('+20% de penetração');
+    expect(abilityReadoutText(ownAbilityReadout('veia_ouro', 20), 'en', format)).toBe('+40.0% gold');
+  });
+
+  it('a second blast reads as its chance and the multiplier; an execute as its threshold and the multiplier', () => {
+    expect(abilityReadoutText(ownAbilityReadout('detonacao_dupla', 20), 'en', format)).toBe('30.0% chance (×1.15 damage)');
+    expect(abilityReadoutText(ownAbilityReadout('misericordia', 20), 'pt', format)).toBe(
+      'executa abaixo de 15.00% de HP (×1.18 de dano)',
+    );
   });
 
   it('an unmodelled readout is a dash', () => {

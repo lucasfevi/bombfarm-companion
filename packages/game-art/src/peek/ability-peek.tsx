@@ -79,7 +79,7 @@ export function AbilityPeekCard({ id, level, max = ABILITY_LEVEL_MAX, lang }: Pi
       <p className={peekEffectClass}>{abilityEffectText(id, lang)}</p>
       {cap.kind !== 'none' ? (
         <div className={`${peekRowsClass} mt-1.5`}>
-          {level !== undefined ? (
+          {level !== undefined && level < max ? (
             <div className={peekRowClass}>
               <span>{peekLabel('atRank', lang).replace('{rank}', formatNumber(level, lang, 0))}</span>
               <b className="text-up!">{abilityReadoutText(ownAbilityReadout(id, level), lang, format)}</b>
