@@ -944,6 +944,10 @@ const KEYS_ADDED: readonly string[] = [
   'downloadScreenOptimizerItem2',
   'downloadScreenOptimizerItem3',
   'downloadScreenOptimizerItem4',
+  // The download page's ninth screen card (2026-09-16): the desktop's PVP tab, the duel history.
+  // Nine cards fill three columns exactly; a spacer squares the two-column grid. One line: this
+  // file sits at its cap.
+  'downloadScreenPvpTitle', 'downloadScreenPvpItem1', 'downloadScreenPvpItem2', 'downloadScreenPvpItem3', 'downloadScreenPvpItem4',
   // The Optimizer's forge queue (2026-09-13): every forge chore among a hero's proposed items,
   // drawn as its ladder and priced from the forge table. One line: this file sits at its cap.
   'teamPlanForgeQueueHeading', 'teamPlanForgeQueueLadderAria', 'teamPlanForgeQueueRolls', 'teamPlanForgeQueueSafeJumpOne', 'teamPlanForgeQueueSafeJumpMany', 'teamPlanForgeQueueGold', 'teamPlanForgeQueueTotal', 'teamPlanForgeQueueNoForecast', 'teamPlanForgeQueueLegend',

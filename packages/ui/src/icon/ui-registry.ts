@@ -29,7 +29,7 @@ import {
   VscChromeMinimize,
   VscChromeRestore,
 } from 'react-icons/vsc';
-import { PiHammer, PiSortAscending, PiSortDescending } from 'react-icons/pi';
+import { PiHammer, PiSortAscending, PiSortDescending, PiSword } from 'react-icons/pi';
 import type { IconGlyph } from './types';
 
 export const uiIconRegistry = {
@@ -56,6 +56,10 @@ export const uiIconRegistry = {
   // `hammer`): at 16px it is the one mark that means "improve this" and shares no mass with a
   // tool or a figure.
   sparkles: HiMiniSparkles,
+  // The ninth desktop tab, PVP. A sword over crossed swords (two blades at 16px read as an X, the
+  // close mark) and a trophy (reads as achievements): one blade is the one mark that means "a
+  // fight" and shares no mass with the Forge hammer beside it.
+  sword: PiSword,
   // The top bar's overflow trigger — the secondary actions, once they no longer fit beside the tabs
   'ellipsis-horizontal': HiMiniEllipsisHorizontal,
   // Inventory layout toggle — cards

@@ -1,29 +1,22 @@
 'use client';
 
 /**
- * A screen's one refresh affordance, always mounted over the screen's heading line — never a
- * banner that appears once the numbers have already gone out of date. Two states, one control:
- * the age of the ACCOUNT the screen was computed from, or the fact that the live account has moved
- * past it. Two screens mount it — the Farm board over its heading, the Optimizer over its page
- * title — and both date the line by the account read.
- *
- * The press both re-solves the screen and asks the app to go and read the account, so the button
- * is working while EITHER is in flight, and a read that never started says so beside the button —
- * to its left, where a line of any length leaves the button where the reader last saw it.
+ * A screen's one refresh affordance, mounted over its heading line whether or not the numbers
+ * have gone out of date. One icon button, and one line to its left that says the age of the
+ * ACCOUNT the screen was computed from, that the live account has moved past it, or — for as long
+ * as it stands — why a press started no read. Only that line's words change between states; the
+ * control keeps one height, and the button keeps its place at the right edge.
  *
  * The age is the account read's, never the calculation's. Those coincide while the app is reading
  * the game normally and diverge without limit when it is not, and dating the line by the
  * calculation meant every press of this button reset it to "just now" over numbers that had not
  * moved for hours. A button that certifies freshness it did not obtain is worse than no button.
  *
- * The age sits under the button rather than beside it so the button keeps one fixed position
- * while the line beneath it changes wording, width and tone.
- *
  * The age keeps itself current on its own interval. Nothing here recomputes anything: the screen
  * only ever moves on `onRefresh`, which is the screen's own single recompute path.
  */
 import { useEffect, useState } from 'react';
-import { Button, cn } from '@bombfarm/ui';
+import { Button, cn, Icon, Tooltip } from '@bombfarm/ui';
 import { sub, useCopy, type Copy } from '../lib/copy';
 import { accountReadRefusalText } from '../lib/account-read-labels';
 import type { AccountReadRequestState } from '../lib/account/use-account-read-request';
@@ -59,12 +52,16 @@ export function AccountRefreshControl({
   busy,
   readState,
   onRefresh,
+  ageLine,
 }: {
   capturedAt: string | null;
   stale: boolean;
   busy: boolean;
   readState: AccountReadRequestState;
   onRefresh: () => void;
+  /** The line beside the button, when the thing refreshed is not the account read: given the
+   *  same relative age the default line prints. */
+  ageLine?: (age: string) => string;
 }) {
   const t = useCopy();
   const [now, setNow] = useState(() => Date.now());
@@ -79,36 +76,51 @@ export function AccountRefreshControl({
   }, []);
 
   const working = busy || readState.kind === 'working';
+  const age =
+    ageLine !== undefined && capturedAt !== null && !stale
+      ? ageLine(formatCapturedAt(capturedAt, t, now))
+      : accountRefreshAgeLine(capturedAt, stale, t, now);
+  const refused = readState.kind === 'refused';
+  const lineClass = cn('text-[11px]', 'leading-none', 'tabular-nums', 'whitespace-nowrap', stale || refused ? 'text-warn' : 'text-muted');
 
   return (
-    <span data-testid="account-refresh-control" className="flex items-start justify-end gap-2">
-      {readState.kind === 'refused' ? (
-        <span
-          data-testid="account-refresh-refusal"
-          className="text-warn max-w-52 pt-1.5 text-right text-[11px] leading-snug"
-        >
+    <span data-testid="account-refresh-control" className="inline-flex items-center justify-end gap-1.5">
+      {refused ? (
+        <span data-testid="account-refresh-refusal" className={lineClass}>
           {accountReadRefusalText(readState.reason, t)}
         </span>
-      ) : null}
-      <span className="flex flex-col items-end gap-0.5">
-        <Button
-          type="button"
-          variant="primary"
-          className="min-w-20"
-          data-testid="account-refresh"
-          disabled={working}
-          aria-busy={working}
-          onClick={onRefresh}
-        >
-          {working ? t.farmRefreshBusy : t.farmRefresh}
-        </Button>
-        <span
-          data-testid="account-refresh-age"
-          className={cn('text-[11px] leading-none', stale ? 'text-warn' : 'text-muted')}
-        >
-          {accountRefreshAgeLine(capturedAt, stale, t, now)}
+      ) : (
+        <span data-testid="account-refresh-age" className={lineClass}>
+          {age}
         </span>
-      </span>
+      )}
+      <Tooltip.Provider delay={200} closeDelay={80}>
+        <Tooltip.Root>
+          <Tooltip.Trigger
+            render={
+              <Button
+                type="button"
+                variant="icon-action"
+                aria-label={t.farmRefresh}
+                data-testid="account-refresh"
+                disabled={working}
+                aria-busy={working}
+                onClick={onRefresh}
+              >
+                <Icon name="arrow-path" size="sm" data-icon="arrow-path" className={cn(working && 'motion-safe:animate-spin')} />
+              </Button>
+            }
+          />
+          <Tooltip.Portal>
+            <Tooltip.Positioner sideOffset={6}>
+              <Tooltip.Popup data-testid="account-refresh-tip">
+                <p className="m-0">{t.farmRefresh}</p>
+                {age === '' ? null : <p className="m-0">{age}</p>}
+              </Tooltip.Popup>
+            </Tooltip.Positioner>
+          </Tooltip.Portal>
+        </Tooltip.Root>
+      </Tooltip.Provider>
     </span>
   );
 }

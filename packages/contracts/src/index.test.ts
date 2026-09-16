@@ -65,6 +65,9 @@ describe('contracts IPC surface', () => {
       'forge:history',
       'forge:clearHistory',
       'forge:inject',
+      'pvp:history',
+      'pvp:refresh',
+      'pvp:film',
     ]);
   });
 
@@ -78,6 +81,7 @@ describe('contracts IPC surface', () => {
       'market:changed',
       'settings:changed',
       'forge:event',
+      'pvp:changed',
       'window:changed',
     ]);
   });

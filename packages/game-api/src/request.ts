@@ -110,7 +110,8 @@ export function authorizedHeaders(session: ConsentedSession): Readonly<Record<st
  *  alone is never how the client asks. Both builders below go through here so the read and write
  *  paths cannot drift apart. */
 export function withAccountId(path: string, accountId: string): string {
-  return `${path}?account_id=${encodeURIComponent(accountId)}`;
+  const separator = path.includes('?') ? '&' : '?';
+  return `${path}${separator}account_id=${encodeURIComponent(accountId)}`;
 }
 
 export function buildHttpRequest(

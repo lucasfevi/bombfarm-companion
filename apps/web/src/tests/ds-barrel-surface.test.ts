@@ -100,6 +100,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'DeltaTable',
   'Dialog',
   'EmptyState',
+  'FactTile',
   'FieldRequired',
   'Fields',
   'FileDropZone',

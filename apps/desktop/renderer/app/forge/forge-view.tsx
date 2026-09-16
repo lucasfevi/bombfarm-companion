@@ -59,12 +59,12 @@ import {
 } from '../../lib/forge/forge-store';
 import { useContentHeight } from '../../lib/forge/use-content-height';
 import { useForgePlan } from '../../lib/forge/use-forge-plan';
+import { AccountRefreshControl } from '../account-refresh-control';
 import { ForgeItemPanel } from './forge-item-panel';
 import { forgeButtonReason, forgeLabels } from './forge-labels';
 import { ForgeLedger } from './forge-ledger';
 import { ForgePlanPanel } from './forge-plan-panel';
 import { ForgeQueuePanel } from './forge-queue-panel';
-import { ForgeRefresh } from './forge-refresh';
 import { ForgeRail } from './forge-rail';
 import { FORGE_TABLE_COLUMNS, forgeTableLabels } from './forge-table-labels';
 import { ForgeToolbar, type ForgeHeroOption } from './forge-toolbar';
@@ -387,7 +387,7 @@ export function ForgeView({
             {/* Refresh acts on the read behind the bag, not on what is filtered out of it, so it
                 stands over the bag rather than among the filters. */}
             <div data-testid="forge-bag-header" className="mb-2 flex shrink-0 justify-end">
-              <ForgeRefresh capturedAt={capturedAt} stale={stale} state={refreshState} onRefresh={refresh} />
+              <AccountRefreshControl capturedAt={capturedAt} stale={stale} busy={false} readState={refreshState} onRefresh={refresh} />
             </div>
             <InventoryTable
               view={tableView}

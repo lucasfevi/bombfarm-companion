@@ -1,6 +1,6 @@
 import type { LiveHit, LiveLootPop, LiveTick, LiveTickHero } from '@bombfarm/contracts';
 import { isPlainObject, liveFrameWireKey as wireKey } from '@bombfarm/game-api';
-import { inflateSync } from 'node:zlib';
+import { brotliDecompressSync, gunzipSync, inflateRawSync, inflateSync } from 'node:zlib';
 import type { FrameDumpReason } from './frame-ring.js';
 import { DecodedFrame, FrameDecodeError, FrameDecoder, OPCODE } from './ws-frame.js';
 
@@ -27,12 +27,14 @@ export type TapEvent =
   | { readonly kind: 'tick'; readonly tick: LiveTick; readonly raw: Record<string, unknown> };
 
 const HEAD_CAP_BYTES = 16 * 1024;
-/** Also the cap on a single HTTP response body's reassembly: 256 KiB gives roughly 3x headroom
- *  over the ~85 KB largest body observed in a live capture (2026-08-25), so a legitimate response
- *  completes well inside it while a declared length that never finishes arriving still gets
- *  bounded — the same connection just gives up here, same as it already does for any other
- *  unrecognisable byte run. */
-const GIVEUP_BYTES = 256 * 1024;
+/** Also the cap on a single HTTP response body's reassembly. 8 MiB: the largest body the app has
+ *  to finish is a PVP film — ~2 MB of frames as JSON (2026-09-16), which arrives chunked and
+ *  compressed, so the wire form is smaller and the cap has to hold the wire form, not the
+ *  inflated one. It used to be 256 KiB against an ~85 KB largest body (2026-08-25), and a film
+ *  hit it silently. A declared length that never finishes arriving is still bounded — the same
+ *  connection just gives up here, same as it already does for any other unrecognisable byte run,
+ *  and the idle sweep releases what it buffered. */
+const GIVEUP_BYTES = 8 * 1024 * 1024;
 /** Rewalked on every call so a header split across a chunk boundary — the only way an offset
  *  already ruled out can start matching later — is still found, without resyncing from 0. */
 const RESYNC_OVERLAP_BYTES = 8;
@@ -264,24 +266,76 @@ export function findWsFrameStart(buf: Buffer, fromOffset = 0): number | undefine
 }
 
 /** Why a response body, though fully buffered, was left unread rather than guessed at — the
- *  three shapes {@link matchHttpResponse} cannot safely turn into a `Buffer` at all: chunked
- *  framing (no declared length to reassemble by), no usable `Content-Length` (the same problem
- *  under a different cause), and a declared `Content-Encoding` this app never decompresses. */
-export type HttpBodySkipReason = 'chunked' | 'compressed' | 'no_length';
-
-function bodySkipReason(headerText: string, hasContentLength: boolean): HttpBodySkipReason | undefined {
-  if (/\r\ntransfer-encoding:\s*chunked/i.test(headerText)) return 'chunked';
-  if (!hasContentLength) return 'no_length';
-  const encodingMatch = /\r\ncontent-encoding:\s*([\w-]+)/i.exec(headerText);
-  const encoding = (encodingMatch?.[1] ?? 'identity').toLowerCase();
-  return encoding === 'identity' ? undefined : 'compressed';
-}
+ *  two shapes {@link matchHttpResponse} cannot safely turn into a `Buffer`: no usable
+ *  `Content-Length` and no chunked framing (nothing says where the body ends), and a declared
+ *  `Content-Encoding` this app cannot inflate — an encoding it does not know, or bytes the
+ *  declared one refuses. Chunked framing and gzip/deflate/br are read, not skipped: the PVP duel
+ *  result and film both arrive that way (2026-09-16), and skipping them was an empty PVP tab. */
+export type HttpBodySkipReason = 'compressed' | 'no_length';
 
 interface HttpMatch {
   readonly status: number;
   readonly totalLength: number;
   readonly body?: Buffer;
   readonly bodySkipReason?: HttpBodySkipReason;
+}
+
+/** `undefined` when the response is not complete yet; `null` when the framing is broken. */
+type ChunkedBody = { readonly body: Buffer; readonly totalLength: number } | null | undefined;
+
+/**
+ * Reassembles `Transfer-Encoding: chunked`: `<hex size>[;ext]\r\n<data>\r\n` repeated, then a
+ * zero-size chunk, then optional trailers, then a blank line. Returns `undefined` while any chunk
+ * is still arriving so the caller keeps buffering rather than scanning the half-body for frames.
+ */
+function readChunkedBody(buf: Buffer, from: number): ChunkedBody {
+  const parts: Buffer[] = [];
+  let offset = from;
+  for (;;) {
+    const lineEnd = buf.indexOf('\r\n', offset);
+    if (lineEnd === -1) return undefined;
+    const sizeText = buf.subarray(offset, lineEnd).toString('latin1').split(';')[0]?.trim() ?? '';
+    if (!/^[0-9a-f]+$/i.test(sizeText)) return null;
+    const size = Number.parseInt(sizeText, 16);
+    if (size === 0) {
+      const trailersEnd = buf.indexOf('\r\n\r\n', lineEnd);
+      if (trailersEnd === -1) return undefined;
+      return { body: Buffer.concat(parts), totalLength: trailersEnd + 4 };
+    }
+    const dataStart = lineEnd + 2;
+    const dataEnd = dataStart + size;
+    if (buf.length < dataEnd + 2) return undefined;
+    if (buf[dataEnd] !== 0x0d || buf[dataEnd + 1] !== 0x0a) return null;
+    parts.push(buf.subarray(dataStart, dataEnd));
+    offset = dataEnd + 2;
+  }
+}
+
+/** `undefined` for an encoding this app does not know, or a body the declared one refuses. */
+function decodeBody(body: Buffer, encoding: string): Buffer | undefined {
+  try {
+    switch (encoding) {
+      case 'identity':
+        return body;
+      case 'gzip':
+      case 'x-gzip':
+        return gunzipSync(body);
+      case 'deflate':
+        // The zlib-wrapped form is the standard one; a raw deflate stream is what some servers
+        // actually send under the same name, and it fails the first attempt with a header error.
+        try {
+          return inflateSync(body);
+        } catch {
+          return inflateRawSync(body);
+        }
+      case 'br':
+        return brotliDecompressSync(body);
+      default:
+        return undefined;
+    }
+  } catch {
+    return undefined;
+  }
 }
 
 function matchHttpResponse(buf: Buffer): HttpMatch | undefined {
@@ -293,21 +347,45 @@ function matchHttpResponse(buf: Buffer): HttpMatch | undefined {
   const statusMatch = /^HTTP\/1\.[01] (\d{3})/.exec(headerText);
   const statusText = statusMatch?.[1];
   if (statusText === undefined) return undefined;
-
-  const lengthMatch = /\r\ncontent-length:\s*(\d+)/i.exec(headerText);
-  const bodyLength = lengthMatch?.[1] !== undefined ? Number(lengthMatch[1]) : 0;
-  const totalLength = headerEnd + 4 + bodyLength;
-  if (buf.length < totalLength) return undefined;
-
   const status = Number(statusText);
+  const bodyStart = headerEnd + 4;
+
   // A protocol upgrade handshake carries no body to identify — #advanceHead branches on this
   // status before ever looking at `body`/`bodySkipReason`, so nothing downstream needs either.
-  if (status === 101) return { status, totalLength };
+  if (status === 101) return { status, totalLength: bodyStart };
 
-  const skipReason = bodySkipReason(headerText, lengthMatch !== null);
-  if (skipReason) return { status, totalLength, bodySkipReason: skipReason };
-  if (bodyLength === 0) return { status, totalLength };
-  return { status, totalLength, body: buf.subarray(headerEnd + 4, totalLength) };
+  const chunked = /\r\ntransfer-encoding:\s*chunked/i.test(headerText);
+  const lengthMatch = /\r\ncontent-length:\s*(\d+)/i.exec(headerText);
+  let wireBody: Buffer;
+  let totalLength: number;
+  if (chunked) {
+    const reassembled = readChunkedBody(buf, bodyStart);
+    if (reassembled === undefined) return undefined;
+    // Broken framing: hand the head back as a bodiless response so the connection moves on,
+    // the way an undeclared length already does, rather than buffering until the cap.
+    if (reassembled === null) return { status, totalLength: bodyStart, bodySkipReason: 'no_length' };
+    ({ body: wireBody, totalLength } = reassembled);
+  } else if (lengthMatch?.[1] !== undefined) {
+    totalLength = bodyStart + Number(lengthMatch[1]);
+    if (buf.length < totalLength) return undefined;
+    wireBody = buf.subarray(bodyStart, totalLength);
+  } else {
+    return { status, totalLength: bodyStart, bodySkipReason: 'no_length' };
+  }
+
+  if (wireBody.length === 0) return { status, totalLength };
+  const encodingMatch = /\r\ncontent-encoding:\s*([\w-]+)/i.exec(headerText);
+  const body = decodeBody(wireBody, (encodingMatch?.[1] ?? 'identity').toLowerCase());
+  if (body === undefined) return { status, totalLength, bodySkipReason: 'compressed' };
+  return { status, totalLength, body };
+}
+
+/** Whether `buf` opens with a complete HTTP response header — the case where a still-incomplete
+ *  body must be waited for rather than scanned for a frame start: a compressed body is arbitrary
+ *  bytes, and a scan across half of one can find a length-shaped false positive. */
+function startsWithHttpHead(buf: Buffer): boolean {
+  if (!buf.subarray(0, 5).equals(Buffer.from('HTTP/', 'latin1'))) return false;
+  return buf.subarray(0, Math.min(buf.length, HEAD_CAP_BYTES)).indexOf('\r\n\r\n') !== -1;
 }
 
 interface HeadState {
@@ -457,6 +535,11 @@ export class TlsConnections {
         events.push({ kind: 'http', status: httpMatch.status });
       }
       return { state: INITIAL_HEAD_STATE, rest };
+    }
+
+    if (startsWithHttpHead(buf)) {
+      if (buf.length >= GIVEUP_BYTES) return { state: { kind: 'ignore' } };
+      return { state: { kind: 'head', buf, scannedUpTo: state.scannedUpTo } };
     }
 
     const scanFrom = Math.max(0, state.scannedUpTo - RESYNC_OVERLAP_BYTES);

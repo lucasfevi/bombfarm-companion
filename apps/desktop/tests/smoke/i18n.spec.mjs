@@ -102,7 +102,7 @@ async function acceptConsent(page) {
   await expect(modal).toBeHidden({ timeout: 15_000 });
 }
 
-/** The Live/Farm/Heroes/Inventory/Forge/Optimizer/Account/Settings nav buttons live in AppShell's persistent sidebar
+/** The Live/Farm/Heroes/Inventory/Forge/Optimizer/PVP/Account/Settings nav buttons live in AppShell's persistent sidebar
  *  (`packages/ui/src/AppShell.tsx`), which stays mounted across every `activeNavId` — unlike the
  *  content area, which conditionally mounts/unmounts per tab (`page.tsx`). `packages/ui` ships no
  *  `data-testid` on these buttons (a design-system reuse-boundary rule — it must not change), so they are located by role +
@@ -147,8 +147,9 @@ test.describe('language smoke — detected, switched in place, and remembered', 
         await expectNavWord(page1, 3, pt('inventoryNavLabel'));
         await expectNavWord(page1, 4, pt('forgeNavLabel'));
         await expectNavWord(page1, 5, pt('optimizerNavLabel'));
-        await expectNavWord(page1, 6, pt('accountNavLabel'));
-        await expectNavWord(page1, 7, pt('settingsNavLabel'));
+        await expectNavWord(page1, 6, pt('pvpNavLabel'));
+        await expectNavWord(page1, 7, pt('accountNavLabel'));
+        await expectNavWord(page1, 8, pt('settingsNavLabel'));
 
         // --- Navigate to Inventory; the no-layout-shift "before" measurement + the no-recompute sentinel ------
         await navButton(page1, 3).click();
@@ -170,7 +171,7 @@ test.describe('language smoke — detected, switched in place, and remembered', 
         expect(cardBoxBefore).not.toBeNull();
 
         // --- Navigate to Settings, drive the shipped Select to English (live switch, no restart) -----
-        await navButton(page1, 7).click();
+        await navButton(page1, 8).click();
         const select = page1.getByRole('combobox', { name: pt('settingsLanguageLabel') });
         await expect(select).toBeVisible({ timeout: 10_000 });
         await select.click();
@@ -183,8 +184,9 @@ test.describe('language smoke — detected, switched in place, and remembered', 
         await expectNavWord(page1, 3, en('inventoryNavLabel'));
         await expectNavWord(page1, 4, en('forgeNavLabel'));
         await expectNavWord(page1, 5, en('optimizerNavLabel'));
-        await expectNavWord(page1, 6, en('accountNavLabel'));
-        await expectNavWord(page1, 7, en('settingsNavLabel'));
+        await expectNavWord(page1, 6, en('pvpNavLabel'));
+        await expectNavWord(page1, 7, en('accountNavLabel'));
+        await expectNavWord(page1, 8, en('settingsNavLabel'));
 
         // No reload occurred — the sentinel stamped before the switch survived it.
         const sentinelAfter = await page1.evaluate(() => window.__bfcI18nSentinel);
@@ -234,8 +236,10 @@ test.describe('language smoke — detected, switched in place, and remembered', 
         await expectNavWord(page2, 1, en('farmNavLabel'));
         await expectNavWord(page2, 2, en('heroesNavLabel'));
         await expectNavWord(page2, 3, en('inventoryNavLabel'));
-        // The new tab's word must survive a relaunch too, not just the live switch above.
+        // The newer tabs' words must survive a relaunch too, not just the live switch above.
         await expectNavWord(page2, 5, en('optimizerNavLabel'));
+        await expectNavWord(page2, 6, en('pvpNavLabel'));
+        await expectNavWord(page2, 7, en('accountNavLabel'));
       } finally {
         await app2.close().catch(() => undefined);
       }

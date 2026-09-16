@@ -1,11 +1,12 @@
 /**
- * Combines every declared wire lexicon — `/rotation` and the live combat websocket, so far — into
- * one `PORTUGUESE_WIRE_TOKENS` list and one `docs/wire-vocabulary.md` document. Adding a third wire
- * boundary later means declaring its own lexicon on `./wire-lexicon.js`'s machinery and adding one
- * line in each list below; nothing else here changes.
+ * Combines every declared wire lexicon — `/rotation`, the live combat websocket and the PVP duel
+ * bodies — into one `PORTUGUESE_WIRE_TOKENS` list and one `docs/wire-vocabulary.md` document.
+ * Adding another wire boundary means declaring its own lexicon on `./wire-lexicon.js`'s machinery
+ * and adding one line in each list below; nothing else here changes.
  */
 
 import { LIVE_FRAME_WIRE_LEXICON } from './live-frame/lexicon.js';
+import { PVP_WIRE_LEXICON } from './pvp/lexicon.js';
 import { ROTATION_WIRE_LEXICON } from './rotation/lexicon.js';
 import { glossaryTable, portugueseWireTokens, type WireLexiconEntry } from './wire-lexicon.js';
 
@@ -16,6 +17,7 @@ import { glossaryTable, portugueseWireTokens, type WireLexiconEntry } from './wi
 export const PORTUGUESE_WIRE_TOKENS: readonly string[] = [
   ...portugueseWireTokens(ROTATION_WIRE_LEXICON),
   ...portugueseWireTokens(LIVE_FRAME_WIRE_LEXICON),
+  ...portugueseWireTokens(PVP_WIRE_LEXICON),
 ];
 
 function boundarySection(
@@ -73,5 +75,15 @@ export function renderWireGlossary(): string {
     '`t` values',
   );
 
-  return [...header, ...rotation, '', ...liveFrame].join('\n').trimEnd() + '\n';
+  const pvp = boundarySection(
+    'PVP duel result and film',
+    'The duel result the client receives on Challenge and the film it fetches right after mix ' +
+      'Portuguese keys (`venceu`, `fase`, `filme`) with English ones (`slots`, `squad`, `hz`) — ' +
+      'see `packages/game-api/src/pvp/lexicon.ts`. The film’s per-frame keys are declared for ' +
+      'documentation only; the desktop keeps a film whole and reads its header.',
+    PVP_WIRE_LEXICON,
+    '`premio` values',
+  );
+
+  return [...header, ...rotation, '', ...liveFrame, '', ...pvp].join('\n').trimEnd() + '\n';
 }

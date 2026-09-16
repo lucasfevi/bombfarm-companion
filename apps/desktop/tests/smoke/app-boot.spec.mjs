@@ -100,11 +100,11 @@ test.describe('app boot smoke', () => {
         timeout: 30_000,
       });
 
-      // Eight tabs: Live, Farm, Heroes, Inventory, Forge, Optimizer, Account, Settings
+      // Nine tabs: Live, Farm, Heroes, Inventory, Forge, Optimizer, PVP, Account, Settings
       // (`navItemsFor`). This asserts the shell rendered its nav at all, not which tabs it holds —
       // `i18n.spec.mjs` names each one.
       const navButtons = page.locator('nav[aria-label="Main"] button');
-      await expect(navButtons).toHaveCount(8, { timeout: 30_000 });
+      await expect(navButtons).toHaveCount(9, { timeout: 30_000 });
 
       // the renderer's @bombfarm/domain value import reached the DOM.
       await expect(page.getByTestId('domain-label-probe')).toHaveText('Common');

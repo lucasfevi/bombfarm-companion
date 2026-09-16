@@ -108,4 +108,69 @@ describe('Sparkline', () => {
     expect(html).toContain('preserveAspectRatio="none"');
     expect(html).toContain('vector-effect="non-scaling-stroke"');
   });
+
+  describe('domain', () => {
+    const SERIES = [200, 205, 195, 200, 190] as const;
+
+    it('is the zero floor by default: the markup is byte-identical with the prop omitted and with `zero` given', () => {
+      const omitted = render({ values: SERIES, ariaLabel: ARIA, height: 42 });
+      expect(omitted).toBe(render({ values: SERIES, ariaLabel: ARIA, height: 42, domain: 'zero' }));
+      const ys = vertices(linePaths(omitted)[0] ?? '').map(([, y]) => y);
+      expect(ys[1]).toBe(1);
+      expect(ys[4]).toBeCloseTo(3.93, 2);
+    });
+
+    it('`data` runs the axis from the smallest reading at the baseline to the largest at the top', () => {
+      const html = render({ values: SERIES, ariaLabel: ARIA, height: 42, domain: 'data' });
+      const ys = vertices(linePaths(html)[0] ?? '').map(([, y]) => y);
+      expect(ys[1]).toBe(1);
+      expect(ys[4]).toBe(41);
+      expect(ys[0]).toBeCloseTo(41 - (10 / 15) * 40, 2);
+    });
+
+    it('`data` lays a series with no spread on the baseline, having no scale to draw it at', () => {
+      const html = render({ values: [500, 500, 500], ariaLabel: ARIA, height: 42, domain: 'data' });
+      const ys = vertices(linePaths(html)[0] ?? '').map(([, y]) => y);
+      expect(ys).toEqual([41, 41, 41]);
+    });
+  });
+
+  describe('marks', () => {
+    function markPaths(html: string): readonly { tone: string; d: string; width: number }[] {
+      return [...html.matchAll(/<path data-sparkline-mark="(\w+)" d="([^"]+)"[^>]*stroke-width="(\d+)"/g)].map((match) => ({
+        tone: match[1] ?? '',
+        d: match[2] ?? '',
+        width: Number(match[3]),
+      }));
+    }
+
+    it('draws one round dot per toned entry, on the reading it marks, in the tone\'s stroke class', () => {
+      const html = render({ values: [1, 2, 3], ariaLabel: ARIA, height: 42, marks: ['up', null, 'down'] });
+      const marks = markPaths(html);
+      expect(marks.map((mark) => mark.tone)).toEqual(['up', 'down']);
+      expect(html).toContain('class="stroke-up"');
+      expect(html).toContain('class="stroke-down"');
+      const line = vertices(linePaths(html)[0] ?? '');
+      expect(vertices(marks[0]?.d ?? '')).toEqual([line[0], line[0]]);
+      expect(vertices(marks[1]?.d ?? '')).toEqual([line[2], line[2]]);
+      expect(html.match(/stroke-linecap="round"/g)?.length).toBe(3);
+    });
+
+    it('draws the newest reading\'s dot larger than the rest', () => {
+      const html = render({ values: [1, 2, 3], ariaLabel: ARIA, marks: ['up', 'up', 'down'] });
+      expect(markPaths(html).map((mark) => mark.width)).toEqual([6, 6, 8]);
+    });
+
+    it('marks nothing at a gap, and nothing at all when no entry carries a tone', () => {
+      expect(markPaths(render({ values: [1, null, 3], ariaLabel: ARIA, marks: ['up', 'down', null] }))).toHaveLength(1);
+      expect(markPaths(render({ values: [1, 2, 3], ariaLabel: ARIA, marks: [null, null, null] }))).toHaveLength(0);
+      expect(render({ values: [1, 2, 3], ariaLabel: ARIA, marks: [] })).toBe(render({ values: [1, 2, 3], ariaLabel: ARIA }));
+    });
+
+    it('keeps a dot round under the box\'s own stretch: a non-scaling stroke, not a circle', () => {
+      const html = render({ values: [1, 2], ariaLabel: ARIA, marks: ['up', 'up'] });
+      expect(html).not.toContain('<circle');
+      expect(html.match(/vector-effect="non-scaling-stroke"/g)?.length).toBe(4);
+    });
+  });
 });

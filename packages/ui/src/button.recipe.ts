@@ -21,6 +21,9 @@ export const buttonRecipe = cva('', {
       'help-on': `${btnBase} min-w-[30px] rounded-full border-accent bg-bg-2 px-0 py-1.5 text-center font-bold text-accent hover:border-accent`,
       text: 'cursor-pointer border-0 bg-transparent p-0 text-[11px] tracking-[0.04em] text-muted uppercase hover:text-accent',
       icon: 'inline-grid size-5 shrink-0 cursor-pointer place-items-center rounded-sm border-0 bg-transparent p-0 text-muted hover:bg-[color-mix(in_oklch,var(--down)_12%,transparent)] hover:text-down',
+      // The same square as `icon` for an action that keeps things (refresh, retry) rather than
+      // removes them: accent on hover where `icon` warns in the down tone.
+      'icon-action': `inline-grid size-5 shrink-0 cursor-pointer place-items-center rounded-sm border-0 bg-transparent p-0 text-muted hover:bg-[color-mix(in_oklch,var(--accent)_12%,transparent)] hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 ${transition}`,
       // Carries a code the player copies, so the label is monospaced and letter-spaced to be read
       // character by character — the rest is the default chrome.
       referral: `${btnBase} inline-flex items-center gap-1.5 border-line bg-bg-2 font-mono tracking-[0.06em] text-muted hover:border-accent hover:text-accent`,

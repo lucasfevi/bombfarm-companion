@@ -1,6 +1,6 @@
 import type { LiveTick } from '@bombfarm/contracts';
 import { liveFrameWireKey as wireKey } from '@bombfarm/game-api';
-import { deflateSync } from 'node:zlib';
+import { deflateSync, gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import {
   buildHttpResponse,
@@ -328,10 +328,10 @@ describe('TlsConnections: HTTP recognition', () => {
     expect(events).toEqual([{ kind: 'http', status: 204 }]);
   });
 
-  it('gives up classifying a connection after 256 KiB of unrecognisable bytes', () => {
+  it('gives up classifying a connection after 8 MiB of unrecognisable bytes', () => {
     const conn = new TlsConnections();
-    const noise = Buffer.alloc(1024, 0x00);
-    for (let i = 0; i < 256; i += 1) {
+    const noise = Buffer.alloc(256 * 1024, 0x00);
+    for (let i = 0; i < 32; i += 1) {
       expect(conn.push('noise', noise)).toEqual([]);
     }
 
@@ -368,27 +368,117 @@ describe('TlsConnections: HTTP body reassembly', () => {
     expect(warnings).toEqual([]);
   });
 
-  it('skips a chunked body and reports the skip once via the injected log, rather than guessing at its framing', () => {
+  it('reassembles a chunked body — chunk extensions and trailers included — and delivers it whole', () => {
     const warnings: Record<string, unknown>[] = [];
     const conn = new TlsConnections({ log: { warn: (record) => warnings.push(record) } });
 
     const events = conn.push(
       'chunked',
-      buildRawHttpResponse(200, ['Transfer-Encoding: chunked'], '5\r\nhello\r\n0\r\n\r\n'),
+      buildRawHttpResponse(
+        200,
+        ['Transfer-Encoding: chunked'],
+        '5;ext=1\r\nhello\r\n7\r\n, world\r\n0\r\nX-Trailer: yes\r\n\r\n',
+      ),
     );
 
-    expect(events).toEqual([{ kind: 'http', status: 200 }]);
-    expect(warnings).toEqual([
-      { scope: 'live-source', event: 'live-source.http_body_skipped', reason: 'chunked', status: 200 },
+    expect(events).toEqual([{ kind: 'http', status: 200, body: Buffer.from('hello, world', 'utf8') }]);
+    expect(warnings).toEqual([]);
+  });
+
+  it('keeps buffering a chunked body split across reads mid-chunk, scanning none of it for a frame start', () => {
+    const json = JSON.stringify({ venceu: true, filme: 7, padding: 'x'.repeat(3000) });
+    const chunks = [json.slice(0, 1000), json.slice(1000, 2500), json.slice(2500)];
+    const wire = chunks.map((chunk) => `${chunk.length.toString(16)}\r\n${chunk}\r\n`).join('') + '0\r\n\r\n';
+    const response = buildRawHttpResponse(200, ['Transfer-Encoding: chunked'], wire);
+    const next = buildHttpResponse(200, 'OK', '{"after":true}');
+
+    const conn = new TlsConnections();
+    const events: unknown[] = [];
+    for (let offset = 0; offset < response.length; offset += 700) {
+      events.push(...conn.push('split-chunked', response.subarray(offset, offset + 700)));
+    }
+    expect(events).toEqual([{ kind: 'http', status: 200, body: Buffer.from(json, 'utf8') }]);
+    expect(conn.push('split-chunked', next)).toEqual([{ kind: 'http', status: 200, body: Buffer.from('{"after":true}', 'utf8') }]);
+  });
+
+  it('inflates a gzip body declared by content-length', () => {
+    const json = JSON.stringify({ venceu: true, filme: 48117 });
+    const gz = gzipSync(Buffer.from(json, 'utf8'));
+    const head = ['HTTP/1.1 200 OK', 'Content-Type: application/json', 'Content-Encoding: gzip', `Content-Length: ${String(gz.length)}`].join('\r\n') + '\r\n\r\n';
+
+    const conn = new TlsConnections();
+    expect(conn.push('gzip', Buffer.concat([Buffer.from(head, 'latin1'), gz]))).toEqual([
+      { kind: 'http', status: 200, body: Buffer.from(json, 'utf8') },
     ]);
   });
 
-  it('skips a compressed body and reports the skip once via the injected log, rather than guessing at its content', () => {
+  it('reads a film-sized body — hundreds of KB of frames, chunked and gzipped, in 16 KiB reads — as the JSON it was', () => {
+    // Pseudo-random figures, so the frames compress the way real ones do rather than collapsing
+    // to a few kilobytes — the wire form has to be what beat the old 256 KiB cap.
+    let seed = 20260916;
+    const rand = () => {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 4294967296;
+    };
+    const film = JSON.stringify({
+      id: 48117,
+      fase: 120,
+      q: Array.from({ length: 721 }, (_, index) => ({
+        t: index / 12,
+        hp: Math.round(rand() * 100000),
+        da: Math.round(rand() * 200000),
+        dd: Math.round(rand() * 200000),
+        h: Array.from({ length: 10 }, (__, slot) => ({ i: slot, e: rand(), x: rand() * 19, y: rand() * 15, s: rand() })),
+        b: Array.from({ length: 6 }, () => ({ c: Math.round(rand() * 300), r: Math.round(rand() * 3), f: rand() })),
+      })),
+    });
+    expect(film.length).toBeGreaterThan(800_000);
+    const gz = gzipSync(Buffer.from(film, 'utf8'));
+    const chunkSize = 8192;
+    const wireParts: Buffer[] = [];
+    for (let offset = 0; offset < gz.length; offset += chunkSize) {
+      const chunk = gz.subarray(offset, offset + chunkSize);
+      wireParts.push(Buffer.from(`${chunk.length.toString(16)}\r\n`, 'latin1'), chunk, Buffer.from('\r\n', 'latin1'));
+    }
+    wireParts.push(Buffer.from('0\r\n\r\n', 'latin1'));
+    const head = ['HTTP/1.1 200 OK', 'Content-Type: application/json', 'Content-Encoding: gzip', 'Transfer-Encoding: chunked'].join('\r\n') + '\r\n\r\n';
+    const response = Buffer.concat([Buffer.from(head, 'latin1'), ...wireParts]);
+    expect(response.length).toBeGreaterThan(256 * 1024);
+
+    const warnings: Record<string, unknown>[] = [];
+    const conn = new TlsConnections({ log: { warn: (record) => warnings.push(record) } });
+    const events: unknown[] = [];
+    for (let offset = 0; offset < response.length; offset += 16 * 1024) {
+      events.push(...conn.push('film', response.subarray(offset, offset + 16 * 1024)));
+    }
+    expect(warnings).toEqual([]);
+    expect(events).toHaveLength(1);
+    const [event] = events as [{ kind: string; body?: Buffer }];
+    expect(event.kind).toBe('http');
+    expect(event.body?.toString('utf8')).toBe(film);
+  });
+
+  it('skips a body under an encoding it cannot inflate and reports the skip once via the injected log', () => {
     const warnings: Record<string, unknown>[] = [];
     const conn = new TlsConnections({ log: { warn: (record) => warnings.push(record) } });
 
     const events = conn.push(
       'compressed',
+      buildRawHttpResponse(200, ['Content-Length: 5', 'Content-Encoding: zstd'], 'xxxxx'),
+    );
+
+    expect(events).toEqual([{ kind: 'http', status: 200 }]);
+    expect(warnings).toEqual([
+      { scope: 'live-source', event: 'live-source.http_body_skipped', reason: 'compressed', status: 200 },
+    ]);
+  });
+
+  it('skips a body whose declared gzip encoding refuses the bytes, rather than delivering garbage', () => {
+    const warnings: Record<string, unknown>[] = [];
+    const conn = new TlsConnections({ log: { warn: (record) => warnings.push(record) } });
+
+    const events = conn.push(
+      'bad-gzip',
       buildRawHttpResponse(200, ['Content-Length: 5', 'Content-Encoding: gzip'], 'xxxxx'),
     );
 
