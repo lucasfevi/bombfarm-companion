@@ -21,6 +21,7 @@ import {
   heroFarmBasisFromParts,
   squadFactsFromBases,
   type HeroFarmFacts,
+  type SquadFarmAccount,
 } from '@bombfarm/domain/farm-rate';
 import {
   ABILITY_LEVEL_MAX,
@@ -237,7 +238,7 @@ describe('every level goes through its own hits-to-kill step', () => {
 
 describe('aurasAtCap naming the ability holds the field at the cap whatever the pool lights', () => {
   const phase = 42;
-  const HELD: AccountShared = { ...UNCONSTRAINED, aurasAtCap: ['passagem_bastao'] };
+  const HELD: SquadFarmAccount = { ...UNCONSTRAINED, aurasAtCap: ['passagem_bastao'] };
   const atCap = (squadHeroes: readonly HeroFarmFacts[]) =>
     computeFarmRateRow(phase, computeSquadFarmFacts(squadHeroes, HELD))!;
 
