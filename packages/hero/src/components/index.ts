@@ -17,6 +17,7 @@ export { AbilitiesAurasPanel } from './abilities-auras-panel';
 export { AuraCapChips, auraCapText } from './aura-cap-chips';
 export { CombatBreakdownPanel } from './combat-breakdown-panel';
 export { HeroIdentityRollPanel } from './hero-identity-roll-panel';
+export { HeroRunesPanel } from './hero-runes-panel';
 export { HeroAbilitiesPanel } from './hero-abilities-panel';
 export type { AbilityPanelEditing } from './hero-abilities-panel';
 export { PhasesHeroFitTable } from './phases-hero-fit-table';

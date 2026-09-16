@@ -47,6 +47,7 @@ export type {
   InventoryTableProps,
 } from './inventory-table';
 export { AbilityIcon } from './ability-icon';
+export { RuneIcon } from './rune-icon';
 export { PropIcon } from './prop-icon';
 export { DropIcon } from './drop-icon';
 export { HeroAbilityIcons } from './hero-ability-icons';
