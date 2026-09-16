@@ -21,7 +21,14 @@ takes at today's quota — and draws the last twelve duels' points with a won/lo
 **A rivals panel** lists your record against every opponent, worst first; a click filters the
 list. **Each row shows your squad** as hero portraits. **A kept film opens as a replay**: both
 sides' damage over the sixty seconds with the room's HP, when the lead was taken, the widest lead,
-and bombs per side.
+and bombs per side. Moving the pointer over the chart reads both totals and the room's HP at the
+second under it. The rivals panel takes the replay's height beside it and scrolls; alone, it and
+the duel list cap themselves at eight and twelve rows.
+
+**Every screen's refresh is now one icon.** Farm, Optimizer, Forge and PVP shared a labelled
+button with the account's age printed beside it; each now draws the same quiet refresh glyph with
+the age line, and says why a press started no read in that line's place. The Forge's own uppercase
+"out of date" label is gone with it. `Button` gained an `icon-action` variant for it.
 
 **`Sparkline` can run its axis over the readings alone** (`domain="data"`) and carry a mark per
 point; every existing sparkline is unchanged.

@@ -238,8 +238,26 @@ test.describe('PVP tab — every duel the replayed tap saw settle, kept and list
     await expect(page.getByTestId('pvp-replay-chart')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByTestId('pvp-replay-facts')).toContainText('30 s');
     await expect(page.getByTestId('pvp-replay-facts')).toContainText('4%');
-    await page.getByTestId('pvp-replay-close').click();
+    // The axis reads compact figures, and the rivals panel beside the replay takes its height.
+    await expect(page.getByTestId('pvp-replay-chart')).toContainText('100k');
+    await expect(page.getByTestId('pvp-rivals')).toHaveAttribute('data-fill', 'replay');
+    // Moving the pointer over the plot names the second under it, in the chart and in the legend.
+    const chart = page.getByTestId('pvp-replay-chart');
+    const box = await chart.boundingBox();
+    if (box === null) throw new Error('replay chart has no box');
+    await chart.hover({ position: { x: box.width * (40 + 508 / 2) / 560, y: box.height / 2 } });
+    await expect(chart).toHaveAttribute('data-hovered-second', '30');
+    await expect(page.getByTestId('pvp-replay-cursor')).toBeVisible();
+    await expect(page.getByTestId('pvp-replay-legend-at')).toHaveText('at 30 s');
+    await page.mouse.move(0, 0);
+    await expect(page.getByTestId('pvp-replay-cursor')).toHaveCount(0);
+    // The close is the panel's corner icon, labelled, not a word.
+    const close = page.getByTestId('pvp-replay-close');
+    await expect(close).toHaveAttribute('aria-label', en('pvpReplayClose'));
+    await expect(close).toHaveText('');
+    await close.click();
     await expect(page.getByTestId('pvp-replay')).toHaveCount(0);
+    await expect(page.getByTestId('pvp-rivals')).not.toHaveAttribute('data-fill', 'replay');
   });
 
   test('the duels survive a relaunch on the same user data, and the replay serving them again adds nothing', async () => {

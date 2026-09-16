@@ -443,7 +443,6 @@ export const en = {
   // one screen's subject. They cover the reasons a read can fail, plus the floor that stops two
   // presses becoming two reads. Two more reuse the forgeStart* lines above, which already say the
   // same thing in the same words.
-  forgeRefreshWorking: 'Reading…',
   accountReadRecent: 'Just read a moment ago — the account is as fresh as it gets',
   accountReadFixture: 'No server to read from',
   accountReadNotConsented: 'Accept the account read in Settings to refresh',
@@ -625,7 +624,6 @@ export const en = {
   // dictionary, which the farm package ships; these are the strings only this app owns.
   farmNavLabel: 'Farm',
   farmRefresh: 'Refresh',
-  farmRefreshBusy: 'Working…',
   farmRefreshedAge: 'account read {age}',
   farmRefreshStale: 'out of date',
   farmUnavailableTitle: 'Not enough of your account has been read',
@@ -771,7 +769,8 @@ export const en = {
   pvpReplayAxisSeconds: '{s} s',
   pvpReplayLegendYou: 'you {total}',
   pvpReplayLegendOpponent: '{opponent} {total}',
-  pvpReplayLegendRoomHp: 'room HP',
+  pvpReplayLegendRoomHp: 'room HP {pct}',
+  pvpReplayLegendAt: 'at {s} s',
   pvpHeadToHeadScore: 'Score',
   pvpTitle: 'Duel history',
   pvpSummary: '{duels} duels · {won} won · {films} films kept',

@@ -140,7 +140,13 @@ A kept film opens as a replay panel beside the rivals: `pvp:film` reads the body
 returns one point per second (both totals and the room's HP) with the facts the frames settle —
 when the winner took a lead they kept, the widest lead, room HP left, and bombs per side
 (`summarizePvpFilm` in `packages/game-api/src/pvp/film.ts`). The 2 MB body never crosses the
-bridge. Nothing per hero: see the section above on why.
+bridge. Nothing per hero: see the section above on why. The chart's axis prints compact figures
+(`100k`), and the pointer over the plot names the second under it — a hairline, a dot on each
+series, and the legend swapping its final totals for that second's. The SVG keeps its aspect
+ratio, so the pointer maps back through one scale (`secondAtPointer`, pure and tested). The
+panel's close is the corner icon, not a word. Beside the open replay the rivals panel takes its
+height and scrolls inside it (`fill`); alone, the rivals table caps at eight rows and the duel
+list at twelve.
 
 ## The list's filters
 

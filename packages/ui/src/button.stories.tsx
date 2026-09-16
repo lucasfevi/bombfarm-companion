@@ -38,6 +38,10 @@ export const Icon: Story = {
   args: { children: '×', variant: 'icon', 'aria-label': 'Close' },
 };
 
+export const IconAction: Story = {
+  args: { children: <UiIcon name="arrow-path" />, variant: 'icon-action', 'aria-label': 'Refresh' },
+};
+
 export const Coffee: Story = {
   args: {
     variant: 'coffee',

@@ -50,8 +50,8 @@ function history(rows: PvpDuelRow[]): PvpHistoryResult {
   };
 }
 
-function render(rows: PvpDuelRow[] | null): string {
-  return renderToStaticMarkup(createElement(RivalsPanel, { history: rows === null ? null : history(rows) }));
+function render(rows: PvpDuelRow[] | null, fill = false): string {
+  return renderToStaticMarkup(createElement(RivalsPanel, { history: rows === null ? null : history(rows), fill }));
 }
 
 describe('RivalsPanel', () => {
@@ -97,6 +97,18 @@ describe('RivalsPanel', () => {
   it('prints a dash for the margin while the opponent has scored nothing', () => {
     const html = render([row(1, 'Ana', true, 100, 0), row(2, 'Bruno', true)]);
     expect(html).toMatch(/data-testid="pvp-rival-margin" class=""><span aria-hidden="true">—<\/span>/);
+  });
+
+  it('caps the table at eight scrolling rows alone, and lets it fill the replay beside it on a wide window', () => {
+    const rows = [row(1, 'Ana', true), row(2, 'Bruno', false)];
+    const alone = render(rows);
+    expect(alone).toMatch(/class="isolate min-h-0 overflow-auto" style="max-height:calc\(2rem \* 8\)"/);
+    expect(alone).not.toContain('data-fill=');
+    const beside = render(rows, true);
+    expect(beside).toContain('data-testid="pvp-rivals" data-state="rivals" data-fill="replay"');
+    expect(beside).toMatch(/<section class="[^"]*xl:flex xl:h-full xl:min-h-0 xl:flex-col"[^>]*data-fill="replay"/);
+    expect(beside).toContain('class="isolate min-h-0 overflow-auto max-h-[calc(2rem*8)] xl:max-h-none xl:flex-1"');
+    expect(beside).not.toContain('style="max-height');
   });
 
   it('says rivals need two opponents instead of drawing a one-row table, and the same with no history at all', () => {

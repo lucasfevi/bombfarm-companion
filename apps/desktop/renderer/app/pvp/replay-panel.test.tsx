@@ -16,7 +16,7 @@ vi.mock('../../lib/pvp/use-pvp-film', () => ({
   usePvpFilm: () => filmState.current,
 }));
 
-const { ReplayPanel, roundAxisMax } = await import('./replay-panel');
+const { ReplayPanel, roundAxisMax, secondAtPointer } = await import('./replay-panel');
 
 const ROW: PvpDuelRow = {
   id: 1,
@@ -79,8 +79,8 @@ describe('ReplayPanel', () => {
     expect(html).toContain('data-testid="pvp-replay" data-state="loading" data-film-id="48117"');
     expect(html).toContain(en.pvpReplayTitle);
     expect(html).toContain(en.pvpReplayLoading);
-    expect(html).toContain('data-testid="pvp-replay-close"');
-    expect(html).toContain(en.pvpReplayClose);
+    expect(html).toMatch(/<button [^>]*aria-label="Close"[^>]*data-testid="pvp-replay-close"[^>]*class="[^"]*absolute[^"]*"/);
+    expect(html).not.toContain('>Close<');
     expect(html).not.toContain('data-testid="pvp-replay-chart"');
   });
 
@@ -115,8 +115,8 @@ describe('ReplayPanel', () => {
     const html = render({ status: 'ready', view: view() });
     expect(html).toContain('data-testid="pvp-replay-chart" viewBox="0 0 560 150" width="100%"');
     expect(html).toContain('>0</text>');
-    expect(html).toContain('>100,000</text>');
-    expect(html).toContain('>200,000</text>');
+    expect(html).toContain('>100k</text>');
+    expect(html).toContain('>200k</text>');
     expect(html).toContain('>0 s</text>');
     expect(html).toContain('>30 s</text>');
     expect(html).toContain('>60 s</text>');
@@ -124,14 +124,34 @@ describe('ReplayPanel', () => {
     expect(html).toMatch(/<polyline class="text-down" stroke="currentColor" points="[^"]+" data-series="defender">/);
     expect(html).toMatch(/<polyline class="text-muted" stroke="currentColor" stroke-dasharray="4 3" points="[^"]+" data-series="room-hp">/);
     expect(html.match(/<circle /g)).toHaveLength(3);
+    expect(html).not.toContain('data-testid="pvp-replay-cursor"');
     expect(html).not.toMatch(/#[0-9a-f]{3,6}\b/i);
   });
 
-  it('closes the legend with both totals and the room HP entry', () => {
+  it('closes the legend with the final totals and the room HP left, and no hovered second', () => {
     const html = render({ status: 'ready', view: view() });
     expect(html).toMatch(/data-testid="pvp-replay-legend-you".*?you 184,320</);
     expect(html).toMatch(/data-testid="pvp-replay-legend-opponent".*?Corvo Negro 151,960</);
-    expect(html).toContain(en.pvpReplayLegendRoomHp);
+    expect(html).toMatch(/data-testid="pvp-replay-legend-room-hp".*?room HP 4%</);
+    expect(html).not.toContain('data-testid="pvp-replay-legend-at"');
+    expect(html).not.toContain('data-at-second=');
+  });
+});
+
+describe('secondAtPointer', () => {
+  const rect = { left: 100, width: 1120 };
+
+  it('maps the pointer through the rendered scale onto the plot, second by second', () => {
+    expect(secondAtPointer(100 + 40 * 2, rect, 60)).toBe(0);
+    expect(secondAtPointer(100 + (40 + 508 / 2) * 2, rect, 60)).toBe(30);
+    expect(secondAtPointer(100 + (40 + 508) * 2, rect, 60)).toBe(60);
+    expect(secondAtPointer(100 + (40 + 508 * 0.5083) * 2, rect, 60)).toBe(30);
+  });
+
+  it('is null off the plot, past the margins, or before the chart has a width', () => {
+    expect(secondAtPointer(100, rect, 60)).toBeNull();
+    expect(secondAtPointer(100 + 560 * 2, rect, 60)).toBeNull();
+    expect(secondAtPointer(150, { left: 100, width: 0 }, 60)).toBeNull();
   });
 });
 

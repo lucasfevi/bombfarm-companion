@@ -1,19 +1,21 @@
 'use client';
 
-import type { AppLocale, PvpDuelRow, PvpFilmSecond, PvpFilmView } from '@bombfarm/contracts';
+import { useCallback, useRef, useState, type MouseEvent } from 'react';
+import type { AppLocale, DomainLang, PvpDuelRow, PvpFilmSecond, PvpFilmView } from '@bombfarm/contracts';
 import { BCP47_BY_LOCALE } from '@bombfarm/contracts';
-import { Button, cn, FactTile, Panel, PanelHeader } from '@bombfarm/ui';
+import { Button, cn, FactTile, formatCompactNumber, Icon, Panel, PanelHeader, Tooltip } from '@bombfarm/ui';
 import { sub, useCopy, useLocale, type Copy } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
 import { usePvpFilm } from '../../lib/pvp/use-pvp-film';
 
 const EM_DASH = '—';
 
-const CHART = { width: 560, height: 150, left: 46, right: 12, top: 8, bottom: 20 } as const;
+const CHART = { width: 560, height: 150, left: 40, right: 12, top: 14, bottom: 20 } as const;
 const PLOT_WIDTH = CHART.width - CHART.left - CHART.right;
 const PLOT_HEIGHT = CHART.height - CHART.top - CHART.bottom;
 const DASH = '4 3';
 const END_DOT_RADIUS = 2.5;
+const CURSOR_DOT_RADIUS = 3.5;
 
 /** The y axis tops out at the larger final total rounded up to its leading digit — a round
  *  figure the labels can print, never a number the line happens to end on. */
@@ -43,7 +45,31 @@ function pointsOf(series: readonly PvpFilmSecond[], seconds: number, read: (seco
   return series.map((second) => `${xOf(second.second, seconds).toFixed(1)},${yOf(read(second)).toFixed(1)}`).join(' ');
 }
 
-function ReplayChart({ view, t, locale }: { view: PvpFilmView; t: Copy; locale: AppLocale }) {
+/** The second under the pointer, in the SVG's own frame: the drawing keeps its aspect ratio, so
+ *  one scale maps the rendered width back onto the viewBox. Null a little outside the plot. */
+export function secondAtPointer(clientX: number, rect: { left: number; width: number }, seconds: number): number | null {
+  if (rect.width <= 0) return null;
+  const x = ((clientX - rect.left) / rect.width) * CHART.width;
+  const fraction = (x - CHART.left) / PLOT_WIDTH;
+  if (fraction < -0.02 || fraction > 1.02) return null;
+  return Math.round(Math.min(1, Math.max(0, fraction)) * seconds);
+}
+
+function ReplayChart({
+  view,
+  t,
+  locale,
+  lang,
+  hovered,
+  onHover,
+}: {
+  view: PvpFilmView;
+  t: Copy;
+  locale: AppLocale;
+  lang: DomainLang;
+  hovered: PvpFilmSecond | null;
+  onHover: (second: number | null) => void;
+}) {
   const { series, facts } = view;
   const last = series[series.length - 1];
   const seconds = Math.max(1, facts.seconds);
@@ -53,15 +79,31 @@ function ReplayChart({ view, t, locale }: { view: PvpFilmView; t: Copy; locale: 
   const roomHp = pointsOf(series, seconds, (second) => second.roomHp);
   const hairlines = [0, 0.5, 1];
   const ticks = [0, seconds / 2, seconds];
+  const svgRef = useRef<SVGSVGElement | null>(null);
+
+  const onMouseMove = useCallback(
+    (event: MouseEvent<SVGSVGElement>) => {
+      const rect = svgRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      onHover(secondAtPointer(event.clientX, rect, seconds));
+    },
+    [onHover, seconds],
+  );
 
   return (
     <svg
+      ref={svgRef}
       data-testid="pvp-replay-chart"
+      data-hovered-second={hovered === null ? undefined : hovered.second}
       viewBox={`0 0 ${String(CHART.width)} ${String(CHART.height)}`}
       width="100%"
-      className="block"
+      className="block cursor-crosshair"
       role="img"
       aria-label={t.pvpReplayChartLabel}
+      onMouseMove={onMouseMove}
+      onMouseLeave={() => {
+        onHover(null);
+      }}
     >
       <g className="text-line" stroke="currentColor" strokeWidth={1} strokeDasharray={DASH}>
         {hairlines.map((fraction) => (
@@ -71,7 +113,7 @@ function ReplayChart({ view, t, locale }: { view: PvpFilmView; t: Copy; locale: 
       <g className="fill-current font-mono text-[10px] text-muted">
         {hairlines.map((fraction) => (
           <text key={fraction} x={CHART.left - 4} y={yOf(fraction) + 3} textAnchor="end">
-            {formatCount(axisMax * fraction, locale)}
+            {formatCompactNumber(axisMax * fraction, lang, 0)}
           </text>
         ))}
         {ticks.map((second, index) => (
@@ -97,7 +139,66 @@ function ReplayChart({ view, t, locale }: { view: PvpFilmView; t: Copy; locale: 
           <circle className="text-up" cx={xOf(last.second, seconds)} cy={yOf(last.attackerDamage / axisMax)} r={END_DOT_RADIUS} />
         </g>
       )}
+      {hovered === null ? null : (
+        <g data-testid="pvp-replay-cursor" pointerEvents="none">
+          <line
+            className="text-ink"
+            stroke="currentColor"
+            strokeWidth={1}
+            x1={xOf(hovered.second, seconds)}
+            x2={xOf(hovered.second, seconds)}
+            y1={CHART.top - 2}
+            y2={CHART.top + PLOT_HEIGHT}
+          />
+          <text
+            className="fill-current font-mono text-[10px] text-ink"
+            x={xOf(hovered.second, seconds)}
+            y={CHART.top - 4}
+            textAnchor={cursorLabelAnchor(hovered.second, seconds)}
+          >
+            {sub(t.pvpReplayAxisSeconds, { s: formatCount(hovered.second, locale) })}
+          </text>
+          <g fill="currentColor" stroke="var(--surface)" strokeWidth={1.5}>
+            <circle className="text-muted" cx={xOf(hovered.second, seconds)} cy={yOf(hovered.roomHp)} r={CURSOR_DOT_RADIUS} />
+            <circle className="text-down" cx={xOf(hovered.second, seconds)} cy={yOf(hovered.defenderDamage / axisMax)} r={CURSOR_DOT_RADIUS} />
+            <circle className="text-up" cx={xOf(hovered.second, seconds)} cy={yOf(hovered.attackerDamage / axisMax)} r={CURSOR_DOT_RADIUS} />
+          </g>
+        </g>
+      )}
     </svg>
+  );
+}
+
+function cursorLabelAnchor(second: number, seconds: number): 'start' | 'middle' | 'end' {
+  if (second < seconds * 0.1) return 'start';
+  if (second > seconds * 0.9) return 'end';
+  return 'middle';
+}
+
+/** The close sits in the panel's own corner, over its padding, the way a dialog's does. */
+function CloseCorner({ label, onClose }: { label: string; onClose: () => void }) {
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger
+        render={
+          <Button
+            type="button"
+            variant="icon"
+            aria-label={label}
+            data-testid="pvp-replay-close"
+            onClick={onClose}
+            className={cn('absolute', 'top-1.5', 'right-1.5', 'z-10')}
+          >
+            <Icon name="x-mark" size="sm" />
+          </Button>
+        }
+      />
+      <Tooltip.Portal>
+        <Tooltip.Positioner sideOffset={6}>
+          <Tooltip.Popup>{label}</Tooltip.Popup>
+        </Tooltip.Positioner>
+      </Tooltip.Portal>
+    </Tooltip.Root>
   );
 }
 
@@ -170,32 +271,31 @@ export function ReplayPanel({
   className?: string;
 }) {
   const t = useCopy();
-  const { locale } = useLocale();
+  const { locale, lang } = useLocale();
   const film = usePvpFilm(filmId);
+  const [hoveredSecond, setHoveredSecond] = useState<number | null>(null);
   if (filmId === null) return null;
 
   const view = film.status === 'ready' ? film.view : null;
   const opponent = row?.defender.name ?? EM_DASH;
   const last = view?.series[view.series.length - 1];
+  const hovered = view === null || hoveredSecond === null ? null : (view.series[hoveredSecond] ?? null);
+  const shown = hovered ?? last;
 
   return (
-    <Panel data-testid="pvp-replay" data-state={film.status} data-film-id={filmId} className={className}>
-      <PanelHeader title={t.pvpReplayTitle}>
-        <span className="ml-auto flex items-center gap-3">
-          {view === null ? null : (
-            <span className="text-xs text-muted" data-testid="pvp-replay-note">
-              {sub(t.pvpReplayNote, {
-                opponent,
-                id: String(view.filmId),
-                frames: formatCount(view.facts.frames, locale),
-                hz: formatCount(view.facts.hz, locale),
-              })}
-            </span>
-          )}
-          <Button type="button" variant="text" data-testid="pvp-replay-close" onClick={onClose}>
-            {t.pvpReplayClose}
-          </Button>
-        </span>
+    <Panel data-testid="pvp-replay" data-state={film.status} data-film-id={filmId} className={cn('relative', className)}>
+      <CloseCorner label={t.pvpReplayClose} onClose={onClose} />
+      <PanelHeader title={t.pvpReplayTitle} className="pr-8">
+        {view === null ? null : (
+          <span className="text-xs text-muted" data-testid="pvp-replay-note">
+            {sub(t.pvpReplayNote, {
+              opponent,
+              id: String(view.filmId),
+              frames: formatCount(view.facts.frames, locale),
+              hz: formatCount(view.facts.hz, locale),
+            })}
+          </span>
+        )}
       </PanelHeader>
       {film.status === 'missing' ? (
         <p className="m-0 text-xs text-muted">{t.pvpReplayMissing}</p>
@@ -204,16 +304,25 @@ export function ReplayPanel({
       ) : (
         <div className="flex flex-col gap-3">
           <ReplayFacts view={view} t={t} locale={locale} />
-          <ReplayChart view={view} t={t} locale={locale} />
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs tabular-nums" data-testid="pvp-replay-legend">
+          <ReplayChart view={view} t={t} locale={locale} lang={lang} hovered={hovered} onHover={setHoveredSecond} />
+          <div
+            className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs tabular-nums"
+            data-testid="pvp-replay-legend"
+            data-at-second={hovered === null ? undefined : hovered.second}
+          >
+            {hovered === null ? null : (
+              <span className="font-mono text-ink" data-testid="pvp-replay-legend-at">
+                {sub(t.pvpReplayLegendAt, { s: formatCount(hovered.second, locale) })}
+              </span>
+            )}
             <LegendEntry tone="text-up" testId="pvp-replay-legend-you">
-              {sub(t.pvpReplayLegendYou, { total: formatCount(last?.attackerDamage ?? 0, locale) })}
+              {sub(t.pvpReplayLegendYou, { total: formatCount(shown?.attackerDamage ?? 0, locale) })}
             </LegendEntry>
             <LegendEntry tone="text-down" testId="pvp-replay-legend-opponent">
-              {sub(t.pvpReplayLegendOpponent, { opponent, total: formatCount(last?.defenderDamage ?? 0, locale) })}
+              {sub(t.pvpReplayLegendOpponent, { opponent, total: formatCount(shown?.defenderDamage ?? 0, locale) })}
             </LegendEntry>
             <LegendEntry tone="text-muted" dashed testId="pvp-replay-legend-room-hp">
-              {t.pvpReplayLegendRoomHp}
+              {sub(t.pvpReplayLegendRoomHp, { pct: formatPercent(shown?.roomHp ?? 0, locale) })}
             </LegendEntry>
           </div>
         </div>

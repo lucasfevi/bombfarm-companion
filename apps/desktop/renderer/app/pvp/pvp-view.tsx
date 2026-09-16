@@ -29,8 +29,8 @@ export function PvpView() {
     <Tooltip.Provider>
       <div data-testid="pvp-view" data-state={state.status} className={colClass}>
         <StandingPanel history={history} />
-        <div className={cn('grid', 'items-start', 'gap-2.5', 'min-w-0', openFilmId === null ? 'grid-cols-1' : 'xl:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]')}>
-          <RivalsPanel history={history} />
+        <div className={cn('grid', 'gap-2.5', 'min-w-0', openFilmId === null ? 'grid-cols-1' : 'xl:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]')}>
+          <RivalsPanel history={history} fill={openFilmId !== null} />
           <ReplayPanel
             filmId={openFilmId}
             row={openRow}

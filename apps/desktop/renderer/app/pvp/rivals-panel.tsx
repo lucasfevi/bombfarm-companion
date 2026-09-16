@@ -9,6 +9,8 @@ import { rivalRecords, type RivalRecord } from '../../lib/pvp/pvp-rivals';
 import { usePvpFilters } from '../../lib/pvp/use-pvp-filters';
 
 const TABLE_MAX_ROWS = 8;
+/** The same cap as `maxRows`, as a class the xl breakpoint can lift; the row height is DataTable's default. */
+const FILL_CAP_BELOW_XL = 'max-h-[calc(2rem*8)]';
 const FEWEST_RIVALS = 2;
 
 function toneOf(sign: number): string | undefined {
@@ -17,13 +19,29 @@ function toneOf(sign: number): string | undefined {
   return undefined;
 }
 
-export function RivalsPanel({ history, className }: { history: PvpHistoryResult | null; className?: string }) {
+export function RivalsPanel({
+  history,
+  className,
+  fill = false,
+}: {
+  history: PvpHistoryResult | null;
+  className?: string;
+  /** Beside an open replay the panel takes the replay's height and its table scrolls inside it;
+   *  alone, or stacked over the replay on a narrow window, the table caps itself at
+   *  {@link TABLE_MAX_ROWS} rows. */
+  fill?: boolean;
+}) {
   const t = useCopy();
   const rivals = useMemo(() => rivalRecords(history?.rows ?? []), [history]);
   const few = rivals.length < FEWEST_RIVALS;
 
   return (
-    <Panel data-testid="pvp-rivals" data-state={few ? 'few' : 'rivals'} className={className}>
+    <Panel
+      data-testid="pvp-rivals"
+      data-state={few ? 'few' : 'rivals'}
+      data-fill={fill ? 'replay' : undefined}
+      className={cn(fill && 'xl:flex', fill && 'xl:h-full', fill && 'xl:min-h-0', fill && 'xl:flex-col', className)}
+    >
       <PanelHeader title={t.pvpRivalsTitle}>
         {few ? null : <span className="text-xs text-muted">{t.pvpRivalsNote}</span>}
       </PanelHeader>
@@ -32,7 +50,10 @@ export function RivalsPanel({ history, className }: { history: PvpHistoryResult 
           {t.pvpRivalsFew}
         </p>
       ) : (
-        <DataTable.Root scrollable maxRows={TABLE_MAX_ROWS}>
+        <DataTable.Root
+          scrollable
+          {...(fill ? { className: cn(FILL_CAP_BELOW_XL, 'xl:max-h-none', 'xl:flex-1') } : { maxRows: TABLE_MAX_ROWS })}
+        >
           <DataTable.Table>
             <DataTable.Head>
               <DataTable.Row>

@@ -46,7 +46,7 @@ All exported from the barrel [`packages/ui/src/index.ts`](../packages/ui/src/ind
 
 | Primitive | Base UI wrap | Variants / props | Recipe |
 | --- | --- | --- | --- |
-| `Button` | `@base-ui/react/button` | `variant`: `default` \| `primary` \| `ghost` \| `help` \| `help-on` \| `text` \| `icon` \| `coffee` \| `coffee-full` | `button.recipe.ts` |
+| `Button` | `@base-ui/react/button` | `variant`: `default` \| `primary` \| `ghost` \| `help` \| `help-on` \| `text` \| `icon` \| `icon-action` \| `coffee` \| `coffee-full` | `button.recipe.ts` |
 | `Chip` | `<span>` | `variant`: `default` \| `on` \| `small` \| `small-active` \| `small-warn` | `chip.recipe.ts` |
 | `Stepper` | `@base-ui/react/button` (×2) | `−`/value/`+` trio | `stepper.recipe.ts` |
 | `RankControl` | `@base-ui/react/button` | level readout + inc/dec (public props unchanged) | `stepper.recipe.ts` |
