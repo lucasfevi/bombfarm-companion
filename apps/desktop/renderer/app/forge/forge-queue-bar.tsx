@@ -2,7 +2,8 @@
 
 /**
  * The forge queue in the band under the top bar: how many pieces it has forged of how many, the
- * one rolling and how far it has come, and the queue's controls. Drawn by the shell rather than by
+ * piece at its head — its icon opening the item's card — with how far it has come while it rolls,
+ * and the queue's controls. Drawn by the shell rather than by
  * a tab so the queue is in sight and in reach on every screen — the piece rolling is main's, and
  * only the Forge tab draws its rail. The shell mounts it only while the queue holds anything.
  *
@@ -13,6 +14,7 @@
 import { useEffect, useMemo } from 'react';
 import type { AccountSource } from '@bombfarm/contracts';
 import { buildInventoryView } from '@bombfarm/domain/inventory-view';
+import { ItemIcon, ItemPeek, itemPeekFromInventory } from '@bombfarm/game-art';
 import { cn } from '@bombfarm/ui';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
@@ -94,17 +96,24 @@ export function ForgeQueueBar({
       <span data-testid="forge-queue-count" className="font-mono text-[12px] tabular-nums text-muted">
         {sub(t.forgeQueueForged, { done: queue.forged, total: queue.forged + queue.pieces.length })}
       </span>
-      {queue.active !== null && head !== null ? (
-        <span data-testid="forge-queue-in-flight" className="flex min-w-0 items-baseline gap-1.5 text-[12px]">
+      {head !== null ? (
+        <span data-testid="forge-queue-in-flight" className="flex min-w-0 items-center gap-1.5 text-[12px]">
+          {head.item !== null ? (
+            <ItemPeek item={itemPeekFromInventory(head.item)} lang={lang} name={headName}>
+              <ItemIcon item={head.item} size="xs" showLevel={false} showUpgrade={false} />
+            </ItemPeek>
+          ) : null}
           <span className="truncate text-ink">{headName}</span>
           <span className="font-mono tabular-nums text-ink">
             {forgeLevel(inFlight?.upgrade ?? head.item?.upgrade ?? 0)} → {forgeLevel(head.piece.target)}
           </span>
-          <span className="text-muted">
-            {inFlight === null
-              ? t.forgeQueueRolling
-              : sub(t.forgeQueueProgress, { rolls: labels.count(inFlight.tally.rolls), spent: labels.gold(inFlight.tally.spent) })}
-          </span>
+          {queue.active !== null ? (
+            <span className="text-muted">
+              {inFlight === null
+                ? t.forgeQueueRolling
+                : sub(t.forgeQueueProgress, { rolls: labels.count(inFlight.tally.rolls), spent: labels.gold(inFlight.tally.spent) })}
+            </span>
+          ) : null}
         </span>
       ) : null}
       <div className="ml-auto">

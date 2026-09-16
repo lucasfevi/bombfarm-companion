@@ -133,6 +133,9 @@ test.describe('the forge queue, fed from the Optimizer', () => {
     const bar = page.getByTestId('forge-queue-bar');
     await expect(bar).toBeVisible();
     await expect(bar.getByTestId('forge-queue-count')).toHaveText('0/1 forged');
+    // The piece at the head of the queue is in the band as its own art, and that art opens the
+    // item's card — a reader can check the piece without leaving the tab they are on.
+    await expect(bar.getByTestId('forge-queue-in-flight').locator('[data-peek="item"]')).toHaveCount(1);
     await expect(bar.getByTestId('forge-queue-start')).toBeDisabled();
     await expect(bar.getByTestId('forge-queue-reason')).toHaveText(readCopyValue('forgeReasonFixture'));
 
