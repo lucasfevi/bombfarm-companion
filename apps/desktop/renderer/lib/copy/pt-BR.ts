@@ -687,6 +687,10 @@ export const ptBR: Copy = {
   pvpHeadToHeadDuels: 'Duelos',
   pvpHeadToHeadWon: 'Vitórias',
   pvpHeadToHeadLost: 'Derrotas',
+  // pvpStanding* additions (standing panel).
+  // pvpRivals* keys (rivals panel).
+  // pvpSquad* keys (squad column).
+  // pvpReplay* keys (replay panel).
   pvpHeadToHeadScore: 'Placar',
   pvpTitle: 'Histórico de duelos',
   pvpSummary: '{duels} duelos · {won} vitórias · {films} filmes guardados',
@@ -710,6 +714,7 @@ export const ptBR: Copy = {
   pvpPoints: '{before} → {after}',
   pvpFilmStored: 'Guardado',
   pvpFilmMissing: 'Não guardado',
+  pvpFilmReplay: 'Ver replay',
   pvpFilmNote: 'Um filme é guardado no momento em que o jogo o busca. O servidor descarta o filme segundos depois, então um que foi pulado ou perdido não pode ser buscado agora.',
 
   heroAvatarCol: 'Avatar',

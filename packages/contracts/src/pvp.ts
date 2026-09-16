@@ -87,6 +87,38 @@ export interface PvpRank {
   readonly capturedAt: string;
 }
 
+/** One second of a kept film: both sides' damage so far and the room's HP as a fraction. */
+export interface PvpFilmSecond {
+  readonly second: number;
+  readonly attackerDamage: number;
+  readonly defenderDamage: number;
+  /** 0–1 of the room's starting HP. */
+  readonly roomHp: number;
+}
+
+/** What a kept film settles about its duel, read from the frames — never from the result. */
+export interface PvpFilmFacts {
+  /** The second from which the side that finished ahead stayed ahead; `null` when the lead never
+   *  changed hands after the first damage, or the film holds no damage at all. */
+  readonly leadTakenAtSecond: number | null;
+  /** The largest gap between the two totals, signed for the attacker, and when it stood. */
+  readonly widestLead: { readonly amount: number; readonly atSecond: number } | null;
+  /** Room HP at the last frame, 0–1. */
+  readonly roomHpLeft: number;
+  /** Distinct bombs each side placed over the film. */
+  readonly bombs: { readonly attacker: number; readonly defender: number };
+  readonly heroes: { readonly attacker: number; readonly defender: number };
+  readonly frames: number;
+  readonly hz: number;
+  readonly seconds: number;
+}
+
+export interface PvpFilmView {
+  readonly filmId: number;
+  readonly series: readonly PvpFilmSecond[];
+  readonly facts: PvpFilmFacts;
+}
+
 export interface PvpDuelRow extends PvpDuelRecord {
   readonly id: number;
   readonly recordedAt: string;

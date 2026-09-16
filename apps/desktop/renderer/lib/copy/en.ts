@@ -726,6 +726,10 @@ export const en = {
   pvpHeadToHeadDuels: 'Duels',
   pvpHeadToHeadWon: 'Won',
   pvpHeadToHeadLost: 'Lost',
+  // pvpStanding* additions for the tier meter and the points trend go here (standing panel).
+  // pvpRivals* keys go here (rivals panel).
+  // pvpSquad* keys go here (squad column).
+  // pvpReplay* keys go here (replay panel).
   pvpHeadToHeadScore: 'Score',
   pvpTitle: 'Duel history',
   pvpSummary: '{duels} duels · {won} won · {films} films kept',
@@ -749,6 +753,7 @@ export const en = {
   pvpPoints: '{before} → {after}',
   pvpFilmStored: 'Kept',
   pvpFilmMissing: 'Not kept',
+  pvpFilmReplay: 'Replay',
   pvpFilmNote: 'A film is kept the moment the game fetches it. The server drops a film seconds later, so one that was skipped or missed cannot be fetched now.',
 
   // hero*/gear*/import*/roster*/switch*/mode*/rank* — hero-identity vocabulary the farm screen's

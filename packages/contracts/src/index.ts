@@ -5,7 +5,7 @@ import type { UpdateStatus } from './update.js';
 import type { MarketQuoteCurrency, MarketQuoteResult, MarketQuoteTarget, MarketSnapshotView } from './market.js';
 import { DEFAULT_MARKET_QUOTE_CURRENCY } from './market.js';
 import type { ForgeEvent, ForgeHistoryResult, ForgeStartRequest, ForgeStartResult } from './forge.js';
-import type { PvpHistoryResult } from './pvp.js';
+import type { PvpFilmView, PvpHistoryResult } from './pvp.js';
 
 export { accountChangeKey, canonicalStringify } from './account-change-key.js';
 export { EMPTY_FORGE_HISTORY } from './forge.js';
@@ -31,7 +31,10 @@ export type {
   PvpDuelRecord,
   PvpDuelRow,
   PvpDuelSide,
+  PvpFilmFacts,
+  PvpFilmSecond,
   PvpFilmSummary,
+  PvpFilmView,
   PvpHistoryResult,
   PvpHistoryTotals,
   PvpRank,
@@ -478,6 +481,9 @@ export interface IpcChannels {
    *  for the account. `ok` means the reads were started; what they find arrives on `pvp:changed`,
    *  and only if it changed something. */
   'pvp:refresh': { args: []; result: AccountReadResult };
+  /** A kept film, read down to one point per second and the facts the frames settle. `null` when
+   *  no film with that id is held. The 2 MB body never crosses the bridge. */
+  'pvp:film': { args: [number]; result: PvpFilmView | null };
 }
 
 export type IpcInvokeChannel = keyof IpcChannels;
@@ -530,6 +536,7 @@ export const IPC_CHANNELS = [
   'forge:inject',
   'pvp:history',
   'pvp:refresh',
+  'pvp:film',
 ] as const satisfies readonly IpcInvokeChannel[];
 
 export type IpcEventChannel =
