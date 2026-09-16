@@ -7,30 +7,44 @@ import {
   isReplayLiveSourceEnabled,
   REPLAY_FRAME_INTERVAL_MS,
   resolveReplayCapturePath,
+  resolveReplayPvpFixturePath,
 } from './replay-tap.js';
+import { identifyObservedBody } from '@bombfarm/game-api';
 
 /** `__dirname`, not `import.meta.url`: `tsconfig.main.json` builds this tree to CommonJS. */
 const HERE = __dirname;
 const COMMITTED_CAPTURE = resolve(HERE, 'fixtures', 'live-capture.bfcc');
+const COMMITTED_PVP_FIXTURE = resolve(HERE, 'fixtures', 'pvp-duels-offline.json');
 
 /** The committed capture holds 60 records that decode to 58 ticks — see `live-capture.test.ts`. */
 const CAPTURE_RECORDS = 60;
 const CAPTURE_TICKS = 58;
 
-function drive(overrides: { readonly consent?: () => boolean; readonly capturePath?: string } = {}) {
+function drive(
+  overrides: { readonly consent?: () => boolean; readonly capturePath?: string; readonly pvpFixturePath?: string } = {},
+) {
   const events: LiveEvent[] = [];
   const observedFrames: Record<string, unknown>[] = [];
+  const httpBodies: Buffer[] = [];
+  const order: ('frame' | 'http')[] = [];
   const handle = createReplayTapFactory({
     capturePath: overrides.capturePath ?? COMMITTED_CAPTURE,
+    ...(overrides.pvpFixturePath !== undefined ? { pvpFixturePath: overrides.pvpFixturePath } : {}),
     consent: overrides.consent ?? (() => true),
     onObservedFrame: (wire) => observedFrames.push(wire),
   })(
-    (event) => events.push(event),
-    () => undefined,
+    (event) => {
+      events.push(event);
+      if (event.type === 'frame') order.push('frame');
+    },
+    (body) => {
+      httpBodies.push(body);
+      order.push('http');
+    },
   );
   const frames = () => events.filter((event) => event.type === 'frame');
   const currencies = () => events.filter((event) => event.type === 'currency');
-  return { events, handle, frames, currencies, observedFrames };
+  return { events, handle, frames, currencies, observedFrames, httpBodies, order };
 }
 
 function advanceRecords(count: number): void {
@@ -63,6 +77,66 @@ describe('resolveReplayCapturePath', () => {
   it('names a path even when no candidate exists, so a missing capture is reportable', () => {
     const resolved = resolveReplayCapturePath({}, resolve(HERE, 'nowhere', 'at', 'all'));
     expect(resolved.endsWith('live-capture.bfcc')).toBe(true);
+  });
+});
+
+describe('resolveReplayPvpFixturePath', () => {
+  it('honours the override, including an empty string as opting out', () => {
+    expect(resolveReplayPvpFixturePath({ BFC_REPLAY_PVP_FIXTURE: 'C:\\tmp\\duels.json' }, HERE)).toBe('C:\\tmp\\duels.json');
+    expect(resolveReplayPvpFixturePath({ BFC_REPLAY_PVP_FIXTURE: '' }, HERE)).toBe('');
+  });
+
+  it('falls back to the committed fixture beside the capture', () => {
+    expect(resolveReplayPvpFixturePath({}, HERE)).toBe(COMMITTED_PVP_FIXTURE);
+  });
+});
+
+describe('the replay tap serves the committed PVP bodies once, ahead of the first frame', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('hands the two duel results and the film to onHttpBody through the HTTP decoder, before any frame', async () => {
+    const { handle, httpBodies, order } = drive({ pvpFixturePath: COMMITTED_PVP_FIXTURE });
+    handle.start();
+    advanceRecords(1);
+    expect(order.slice(0, 4)).toEqual(['http', 'http', 'http', 'frame']);
+
+    const verdicts = httpBodies.map((body) => identifyObservedBody(JSON.parse(body.toString('utf8'))));
+    expect(verdicts).toEqual([
+      { kind: 'pvp', route: 'duel' },
+      { kind: 'pvp', route: 'film' },
+      { kind: 'pvp', route: 'duel' },
+    ]);
+    await handle.teardown();
+  });
+
+  it('serves them once per tap, however many passes the capture loops through', async () => {
+    const { handle, httpBodies } = drive({ pvpFixturePath: COMMITTED_PVP_FIXTURE });
+    handle.start();
+    advanceRecords(CAPTURE_RECORDS * 2);
+    expect(httpBodies).toHaveLength(3);
+    await handle.teardown();
+  });
+
+  it('serves nothing without a fixture path, or with one that does not exist, and still replays', async () => {
+    const withoutPath = drive();
+    withoutPath.handle.start();
+    advanceRecords(CAPTURE_RECORDS);
+    expect(withoutPath.httpBodies).toHaveLength(0);
+    expect(withoutPath.frames().length).toBe(CAPTURE_TICKS);
+    await withoutPath.handle.teardown();
+
+    const missing = drive({ pvpFixturePath: resolve(HERE, 'fixtures', 'no-such-duels.json') });
+    missing.handle.start();
+    advanceRecords(CAPTURE_RECORDS);
+    expect(missing.httpBodies).toHaveLength(0);
+    expect(missing.frames().length).toBe(CAPTURE_TICKS);
+    await missing.handle.teardown();
   });
 });
 

@@ -124,8 +124,9 @@ a verdict, a sequence number, a timestamp, and the body itself.
 
 **Its reason to exist is the traffic the app throws away.** The hook is on the TLS read side, so an
 observed body carries no URL and no method; `identifyObservedBody` matches it against five route
-fingerprints and returns `unidentified` for everything else, and `LiveSource` drops those after one
-log line naming a byte length. Anything the game sends that the app does not model — what a cage
+fingerprints and the two PVP body shapes (see [pvp-duel-history.md](pvp-duel-history.md)) and
+returns `unidentified` for everything else, and `LiveSource` drops those after one log line naming
+a byte length. Anything the game sends that the app does not model — what a cage
 open actually returns, what a chest open actually contains — is in that discarded set. The recorder
 is therefore wired **above** those early returns, on the raw bytes.
 
@@ -151,7 +152,7 @@ ordering — two observations can share a millisecond), `at`, the most recent fr
 
 | `kind` | Carries |
 | --- | --- |
-| `body` | `byteLength`, the `verdict` (`identified` with its section, `unidentified`, `ambiguous` with its sections, or `parse_failed`), and the parsed body — **including** when the verdict is `unidentified` |
+| `body` | `byteLength`, the `verdict` (`identified` with its section, `pvp` with its route, `unidentified`, `ambiguous` with its sections, or `parse_failed`), and the parsed body — **including** when the verdict is `unidentified` |
 | `frame` | `wire`: the frame object verbatim, decoded keys and the keys `toLiveTick` never reads alike |
 | `mark` | `label` — an annotation you typed while playing |
 | `session` | `started` (naming the destination), each currency transition, `redactor_armed`, `stopped`, `append_failed` |
