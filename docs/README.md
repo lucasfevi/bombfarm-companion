@@ -21,7 +21,7 @@ These are **current truth**. Do not invent planning/spec paths in this repo.
 | [validation.md](validation.md) | Author ≠ validator |
 | [git-commits.md](git-commits.md) | Atomic commits by default; commitlint |
 | [line-endings.md](line-endings.md) | LF everywhere; no in-place stream edits |
-| [machine-load.md](machine-load.md) | One CPU budget divided among concurrent runs; the per-tool ceilings and the `BFC_CPU_BUDGET` knob |
+| [machine-load.md](machine-load.md) | One CPU budget divided among concurrent runs; the per-tool ceilings, the `BFC_CPU_BUDGET` knob, and why `pnpm check:changed` scopes the work the budget divides |
 | [branching.md](branching.md) | `develop` integration, `main` release-only |
 | [releases.md](releases.md) | Changesets release rail, artifacts, recovery |
 | [hard-truths.md](hard-truths.md) | How to propose / accept new hard truths |
