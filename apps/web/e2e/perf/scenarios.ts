@@ -129,7 +129,13 @@ export const scenarios: Scenario[] = [
     precondition: async (page) => {
       await ensurePlannerTab(page, 'hero')
       const strip = page.getByRole('region', { name: /herói atual|current hero/i })
-      await strip.getByRole('button', { name: /trocar herói|switch hero/i }).click()
+      // On the avatar, not the button's centre: the hero's name sits in the middle of this button
+      // and is a tooltip trigger, and how far it reaches depends on the font the runner has —
+      // with the fallback font the centre lands on it, and a tooltip a pointer has once crossed
+      // re-renders its root on every commit that follows until the strip remounts.
+      await strip
+        .getByRole('button', { name: /trocar herói|switch hero/i })
+        .click({ position: { x: 30, y: 30 } })
       const dialog = page.getByRole('dialog', { name: /trocar herói|switch hero/i })
       await dialog.waitFor({ state: 'visible' })
       return dialog.getByRole('columnheader', { name: /nome|name/i })

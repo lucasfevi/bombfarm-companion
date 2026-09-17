@@ -25,6 +25,8 @@ import { scenarios, ensurePlannerTab, type Scenario } from './scenarios'
 
 const REPETITIONS = 7
 const WINDOW_TAIL_MS = 1500
+/** Longer than a tooltip's open delay plus its enter animation. */
+const POINTER_SETTLE_MS = 800
 /**
  * Discard first N measured loops per scenario before the 7 counted reps.
  * Host `dev-strict` spreads showed first-rep (and sometimes second) warm-up
@@ -142,11 +144,13 @@ async function runScenarioReps(
     const target = await scenario.precondition(page)
     await expect(target, `${scenario.id} precondition failed`).toBeVisible()
     await expect(target).toBeEnabled()
-    // Park the pointer in the corner: a peek trigger mounts its tooltip tree on the first pointer
-    // it sees, and a dialog the precondition opened under a resting pointer arms whichever icon
-    // lands there — seven more components on every commit of the window, on the runner whose
-    // viewport puts an icon under the pointer and not on the one whose viewport does not.
-    await page.mouse.move(0, 0)
+    // The pointer reaches the target before the window opens, and whatever its arrival starts
+    // (a tooltip's open delay, a hover style) has settled. Otherwise the first input's own pointer
+    // move is measured too, and it is not the same move everywhere: it leaves whatever the
+    // previous step left the pointer on, and a tooltip's 200ms open timer then races the inputs
+    // that follow, so the same scenario reads ±1 from repetition to repetition.
+    await target.hover()
+    await page.waitForTimeout(POINTER_SETTLE_MS)
 
     const startMs = await mark(page, `${scenario.id}-start-${i}`)
     await scenario.run(page, target)
