@@ -7,6 +7,7 @@ import type { ItemIconItem } from './item-icon';
 const gear: ItemIconItem = { defId: 'iron_anel', rarityIdx: 2, level: 60, upgrade: 12 };
 
 const labels: ItemIdentityLabels<ItemIconItem> = {
+  lang: 'en',
   itemName: () => 'Iron · Ring',
   itemRarity: () => 'Rare',
   itemLevel: (item) => `Lv ${item.level}`,
@@ -38,7 +39,7 @@ describe('ItemIdentity', () => {
   it('moves the tier colour onto the name when there is no tier word under it', () => {
     const named = render({ item: gear, labels: { ...labels, itemRarity: () => '' } });
     expect(named).toContain('text-rar-2');
-    expect(named).not.toContain('Rare');
+    expect(named.replace(/aria-label="[^"]*"/g, '')).not.toContain('Rare');
 
     const worded = render({ item: gear, labels });
     expect(worded.slice(0, worded.indexOf('Iron'))).not.toContain('text-rar-2');

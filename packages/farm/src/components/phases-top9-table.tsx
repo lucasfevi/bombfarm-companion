@@ -1,6 +1,6 @@
 'use client';
 
-import { HeroAvatar, rarityTextClass, rosterInactiveChromeClass } from '@bombfarm/game-art';
+import { HeroAvatar, heroPeekData, rarityTextClass, rosterInactiveChromeClass } from '@bombfarm/game-art';
 import { cn, DataTable } from '@bombfarm/ui';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import type { RosterDpsRow } from '@bombfarm/domain/roster-dps';
@@ -8,6 +8,7 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { FarmScreenCopy } from '../copy';
 import { formatClearTime } from '@bombfarm/hero/model';
 import { MAX_STARS } from '@bombfarm/domain/gear';
+import { useFarmCopy } from './farm-copy-context';
 
 type Props = {
   rows: RosterDpsRow[];
@@ -33,6 +34,7 @@ export function PhasesTop9Table({
   formatNumber,
   onSelectHero,
 }: Props) {
+  const { lang } = useFarmCopy();
   return (
     <DataTable.Root
       scrollable
@@ -91,7 +93,7 @@ export function PhasesTop9Table({
                 </DataTable.Cell>
                 <DataTable.Cell className="w-12 px-1" nowrap={false}>
                   <span className={inactiveChrome}>
-                    <HeroAvatar skin={hero.skin ?? 0} rarityIdx={rarIdx} size="md" name={hero.name} />
+                    <HeroAvatar skin={hero.skin ?? 0} rarityIdx={rarIdx} size="md" name={hero.name} peek={{ hero: heroPeekData(hero), lang }} />
                   </span>
                 </DataTable.Cell>
                 <DataTable.Cell className={inactiveChrome}>

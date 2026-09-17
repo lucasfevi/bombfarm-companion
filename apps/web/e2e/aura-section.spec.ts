@@ -96,7 +96,7 @@ test.describe('abilities & auras section', () => {
       await expect(row.getByTestId('team-aura-priced-at')).toHaveText('—');
     }
     await expect(section.getByTestId('team-aura-grito_guerra').getByTestId('team-aura-delta')).toHaveText(/\+\d+\.\d% if on/);
-    await expect(section.getByTestId('own-ability-detonacao_dupla')).toContainText(/×1\.\d\d dmg/);
+    await expect(section.getByTestId('own-ability-detonacao_dupla')).toContainText(/15\.0% chance \(×1\.\d\d dmg\)/);
     // Baton Pass is the sixth aura row. Cora carries it at rank 10, so it is her own — no switch —
     // priced at the team damage her own entry pulse carries, rank 10 × 4%.
     const batonPass = section.getByTestId('team-aura-passagem_bastao');

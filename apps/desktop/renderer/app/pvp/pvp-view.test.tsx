@@ -246,6 +246,8 @@ describe('PvpView', () => {
       expect(html).toContain(`aria-label="${en.pvpSquadUnknownHero}"`);
       expect(html.indexOf('alt="Pip"')).toBeLessThan(html.indexOf('data-testid="pvp-squad-unknown"'));
       expect(html.indexOf('data-testid="pvp-squad-unknown"')).toBeLessThan(html.indexOf('alt="Nim"'));
+      // Each hero the roster still carries opens its card; the unknown slot has nothing to open.
+      expect(html.match(/data-peek="hero"/g)).toHaveLength(2);
       expect(html).toMatch(/data-testid="pvp-squad" data-count="0"[^>]*><span aria-hidden="true">—<\/span>/);
     } finally {
       roster.heroes = [];

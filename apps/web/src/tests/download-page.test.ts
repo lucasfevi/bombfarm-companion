@@ -150,6 +150,18 @@ describe('Live replica', () => {
     for (const name of ['Bellatrix', 'Jon', 'Minato']) expect(markup).toContain(name);
     expect(markup.match(/<img/g) ?? []).toHaveLength(replicaFrameAt(0).heroes.length);
   });
+
+  it('draws each identity the way the desktop Live row does: name in ink, level under it, no rarity word', () => {
+    const markup = renderToStaticMarkup(createElement(LiveReplica, { lang: 'en' }));
+    const names = [...markup.matchAll(/<span class="([^"]*)">(Bellatrix|Jon|Minato)<\/span>/g)];
+    expect(names).toHaveLength(3);
+    for (const [, className] of names) {
+      expect(className).toContain('text-ink');
+      expect(className).not.toContain('text-rar-');
+    }
+    for (const word of ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary']) expect(markup).not.toContain(word);
+    expect(markup.match(/Lv \d+/g) ?? []).toHaveLength(replicaFrameAt(0).heroes.length);
+  });
 });
 
 describe('the mini window section', () => {
@@ -279,6 +291,21 @@ describe('the mini window section', () => {
       'liveListBenchedTitle',
     ] as const) {
       expect(markup).toContain(liveLabel(key, 'en'));
+    }
+  });
+
+  it('keeps the level inside the identity block, off the energy line, the way the desktop compact row does', () => {
+    const markup = render({ ...DEFAULT_MINI_LAYOUT, showEarnings: false, showMap: false, showHeroes: true });
+    const rows = markup.split('<li class=').slice(1);
+    expect(rows).toHaveLength(replicaFrameAt(0).heroes.length);
+    for (const row of rows) {
+      const name = row.indexOf('text-ink">');
+      const level = row.search(/Lv \d+/);
+      const mark = row.indexOf('class="sr-only">');
+      expect(level).toBeGreaterThan(name);
+      expect(mark).toBeGreaterThan(level);
+      expect(row).not.toMatch(/\bw-10\b/);
+      expect(row).toMatch(/\bw-14\b/);
     }
   });
 

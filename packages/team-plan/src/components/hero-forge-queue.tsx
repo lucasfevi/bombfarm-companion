@@ -84,7 +84,7 @@ export function HeroForgeQueue({
           const tip = formatItemRosterTooltip(item, lang, t.rankLv);
           return (
             <li key={row.itemId} className="flex items-start gap-2.5" data-testid="team-plan-forge-queue-item">
-              <ItemIcon item={item} size="sm" />
+              <ItemIcon item={item} size="sm" peek={{ lang }} />
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="min-w-0 truncate text-[12px] leading-tight font-bold text-ink">{tip.title}</span>

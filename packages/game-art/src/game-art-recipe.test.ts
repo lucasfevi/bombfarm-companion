@@ -40,6 +40,12 @@ describe('game-art.recipe', () => {
     expect(iconMetaGlyphRecipe({ size: 'roomy', place: 'bottom-end' })).toContain('var(--rar-4)');
     expect(iconMetaGlyphRecipe({ size: 'roomy', place: 'bottom-center' })).toContain('text-center');
     expect(iconMetaGlyphRecipe({ size: 'roomy', place: 'bottom-center' })).toContain('text-[11px]');
+    // The 28px tile's glyph: a quarter of the pixels, hugging the corner.
+    const tiny = iconMetaGlyphRecipe({ size: 'tiny', place: 'bottom-end' });
+    expect(tiny).toContain('text-[8px]');
+    expect(tiny).toContain('font-mono');
+    expect(tiny).toContain('bottom-px');
+    expect(tiny).not.toContain('bottom-0.5');
   });
 
   it('abilityIconRecipe uses neutral border and shared radius aligned to art frames', () => {

@@ -1,6 +1,8 @@
+import type { Lang } from '@bombfarm/domain/shims/i18n';
 import { cn } from '@bombfarm/ui';
 import { rarityTextClass } from './game-art.recipe';
 import { ItemIcon, type ItemIconItem } from './item-icon';
+import { itemPeekFromInventory, type ItemPeekPrice, type WireItemStat } from './peek';
 
 /**
  * The four strings an item is identified by. Functions rather than values because every caller
@@ -12,6 +14,8 @@ import { ItemIcon, type ItemIconItem } from './item-icon';
  * skill stone) — that absence is also what moves the tier colour up onto the name.
  */
 export interface ItemIdentityLabels<TItem extends ItemIconItem> {
+  /** The language the item's hover card is written in. */
+  lang: Lang;
   itemName: (item: TItem) => string;
   itemRarity: (item: TItem) => string;
   /** Already localized and prefixed, e.g. "Lv 60". Empty for a kind that has no level. */
@@ -35,12 +39,15 @@ const DETAIL_TEXT = { sm: 'text-[10px]', xl: 'text-xs' } as const;
  * The tier colour rides on whichever element carries the tier: the rarity word when there is one,
  * and the name itself for the kinds whose name IS their tier.
  */
-export function ItemIdentity<TItem extends ItemIconItem>({
+export function ItemIdentity<
+  TItem extends ItemIconItem & { sellValueGold?: number | undefined; stats?: readonly WireItemStat[] | undefined },
+>({
   item,
   labels,
   size = 'sm',
   nameTestId,
   className,
+  price,
 }: {
   item: TItem;
   labels: ItemIdentityLabels<TItem>;
@@ -48,6 +55,8 @@ export function ItemIdentity<TItem extends ItemIconItem>({
   /** `data-testid` on the element carrying the item's own name, for a caller that needs one. */
   nameTestId?: string | undefined;
   className?: string | undefined;
+  /** The market quote the hover card prints beside the sell value; absent, the card shows gold alone. */
+  price?: ItemPeekPrice | undefined;
 }) {
   const name = labels.itemName(item);
   const rarity = labels.itemRarity(item);
@@ -57,7 +66,13 @@ export function ItemIdentity<TItem extends ItemIconItem>({
 
   return (
     <span className={cn('flex min-w-0 items-center gap-2', className)}>
-      <ItemIcon item={item} size={size} showLevel={false} showUpgrade={false} className="shrink-0" />
+      <ItemIcon
+        item={itemPeekFromInventory(item)}
+        size={size}
+        showLevel={false}
+        showUpgrade={false}
+        peek={{ lang: labels.lang, name, price, className: 'shrink-0' }}
+      />
       <span className="flex min-w-0 flex-col gap-0.5">
         <span className="flex min-w-0 items-baseline gap-1">
           <span

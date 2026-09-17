@@ -16,9 +16,11 @@ import {
   type InventoryViewItem,
   type ItemKind,
 } from '@bombfarm/domain/inventory-view';
+import type { Lang } from '@bombfarm/domain/shims/i18n';
 import { cn, DataTable, EmptyState, Icon } from '@bombfarm/ui';
 import { GoldIcon } from './gold-icon';
 import { HeroAvatar } from './hero-avatar';
+import type { ItemPeekPrice } from './peek';
 import { ItemIdentity, type ItemIdentityLabels } from './item-identity';
 import { MarketPrice, type MarketPriceLabels, type MarketPriceView } from './market-price';
 import { rarityTextClass } from './game-art.recipe';
@@ -204,7 +206,7 @@ function columnsFor(
 
 const MAX_HERO_STARS = 3;
 
-function EquippedByCell({ hero }: { hero: InventoryEquippedBy }) {
+function EquippedByCell({ hero, lang }: { hero: InventoryEquippedBy; lang: Lang }) {
   if (hero.unknown) {
     return <span className={cn('truncate', inventoryTableBlankClass)}>{hero.name}</span>;
   }
@@ -213,7 +215,14 @@ function EquippedByCell({ hero }: { hero: InventoryEquippedBy }) {
 
   return (
     <span className={inventoryTableHeroClass}>
-      <HeroAvatar skin={hero.skin} rarityIdx={hero.rarityIdx} size="xs" name={hero.name} className="shrink-0" />
+      <HeroAvatar
+        skin={hero.skin}
+        rarityIdx={hero.rarityIdx}
+        size="xs"
+        name={hero.name}
+        className="shrink-0"
+        peek={hero.peek === undefined ? undefined : { hero: hero.peek, lang }}
+      />
       <span className={cn(inventoryTableHeroNameClass, rarityTextClass(hero.rarityIdx) ?? 'text-ink')}>
         {hero.name}
       </span>
@@ -245,15 +254,17 @@ function SpacerRow({ testId, height, colSpan }: { testId: string; height: number
 function NameCell({
   item,
   labels,
+  price,
   onSelect,
 }: {
   item: InventoryViewItem;
   labels: InventoryTableLabels;
+  price: ItemPeekPrice | undefined;
   onSelect: ((item: InventoryViewItem) => void) | undefined;
 }) {
   const identity = (
     <span className="flex min-w-0 items-center gap-1">
-      <ItemIdentity item={item} labels={labels} nameTestId="inventory-row-name" className="flex-1" />
+      <ItemIdentity item={item} labels={labels} nameTestId="inventory-row-name" className="flex-1" price={price} />
       {item.locked ? <Icon name="lock-closed" size="xs" className="shrink-0 text-muted" /> : null}
     </span>
   );
@@ -307,13 +318,14 @@ const InventoryTableRow = memo(function InventoryTableRow({
   const { item, count } = entry;
   const hero = labels.equippedBy?.(item) ?? null;
   const price = priceOf?.(entry) ?? null;
+  const peekPrice = price != null && priceLabels != null ? { view: price, labels: priceLabels } : undefined;
 
   function cell(column: Column): ReactNode {
     switch (column.id) {
       case 'name':
         return (
           <DataTable.RowHeader key={column.id}>
-            <NameCell item={item} labels={labels} onSelect={onSelectRow} />
+            <NameCell item={item} labels={labels} price={peekPrice} onSelect={onSelectRow} />
           </DataTable.RowHeader>
         );
       case 'forge':
@@ -352,7 +364,7 @@ const InventoryTableRow = memo(function InventoryTableRow({
           </DataTable.Cell>
         );
       case 'hero':
-        return <DataTable.Cell key={column.id}>{hero ? <EquippedByCell hero={hero} /> : <Blank />}</DataTable.Cell>;
+        return <DataTable.Cell key={column.id}>{hero ? <EquippedByCell hero={hero} lang={labels.lang} /> : <Blank />}</DataTable.Cell>;
       case 'actions':
         return (
           <DataTable.Cell key={column.id} align="right">

@@ -21,8 +21,8 @@ import { cva, type VariantProps } from 'class-variance-authority';
  *
  * `contain-intrinsic-size: auto 190px` is the placeholder height for a card nobody has scrolled to
  * yet. `auto` makes the browser remember each card's real height once it has rendered once, which
- * matters because cards are not one height — a Comum with one stat is 140px and a Mítico with four
- * and an equipped hero is 228px. The residual error is a slightly wrong scrollbar length on first
+ * matters because cards are not one height — a Comum with one stat is 140px and a Mítico with six
+ * and an equipped hero is taller still. The residual error is a slightly wrong scrollbar length on first
  * scroll, nothing that moves content.
  */
 export const inventoryCardRecipe = cva(
@@ -100,7 +100,7 @@ export type InventoryBadgeTone = NonNullable<VariantProps<typeof inventoryBadgeR
 export const inventoryFooterClass =
   'mt-auto flex min-h-[38px] items-end justify-between gap-2 border-t border-line/60 pt-2';
 
-/** Wide enough for a 64px icon beside four stat lines without the text wrapping to two columns. */
+/** Wide enough for a 64px icon beside a stat line without the text wrapping to two columns. */
 export const inventoryGridClass = 'grid grid-cols-[repeat(auto-fill,minmax(17rem,1fr))] gap-2.5';
 
 /**

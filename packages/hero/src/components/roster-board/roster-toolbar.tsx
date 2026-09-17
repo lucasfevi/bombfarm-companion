@@ -197,47 +197,37 @@ function AbilityFilterStrip({
           ? cn('border-accent', 'bg-[color-mix(in_oklch,var(--accent)_28%,transparent)]')
           : '';
         return (
-          <Tooltip.Root key={option.id}>
-            <Tooltip.Trigger
-              type="button"
-              aria-pressed={option.selected}
-              aria-label={label}
-              // `aria-disabled`, not `disabled`. The tooltip primitive drops a `disabled`
-              // attribute on its trigger — a disabled element receives no hover, and this tile's
-              // tooltip is the whole reason an ability nobody owns is drawn at all — so the DOM
-              // cannot refuse the press and `pressAbilityFilter` refuses it instead.
-              aria-disabled={option.owned ? undefined : true}
-              data-testid={`heroes-ability-filter-${option.id}`}
-              onClick={() => {
-                onFilter({
-                  ...filter,
-                  abilityIds: pressAbilityFilter(filter.abilityIds, option),
-                });
-              }}
-              // Pressed is marked by recolouring the icon's own frame, never by a frame on the
-              // button: the icon already draws one, so a second would read as two concentric
-              // frames and make the pressed icon wider than its neighbours. An `outline` grows
-              // it the same way, and would fight the focus ring for the same property.
-              className={cn(
-                'rounded-sm',
-                'border-0',
-                'bg-transparent',
-                'p-0',
-                'focus-visible:[outline:2px_solid_var(--accent)]',
-                option.owned ? 'cursor-pointer' : cn('cursor-default', 'opacity-30', 'grayscale'),
-              )}
-            >
-              <AbilityIcon code={option.id} size="xs" className={selectedFrameClass} />
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Positioner sideOffset={6}>
-                <Tooltip.Popup>
-                  <p className="m-0 font-semibold text-ink">{name}</p>
-                  <p className="m-0 text-xs text-muted">{label}</p>
-                </Tooltip.Popup>
-              </Tooltip.Positioner>
-            </Tooltip.Portal>
-          </Tooltip.Root>
+          <button
+            key={option.id}
+            type="button"
+            aria-pressed={option.selected}
+            aria-label={label}
+            // `aria-disabled`, not `disabled`: a disabled element receives no hover, and the
+            // card an ability nobody owns opens is the whole reason it is drawn at all — so the
+            // DOM cannot refuse the press and `pressAbilityFilter` refuses it instead.
+            aria-disabled={option.owned ? undefined : true}
+            data-testid={`heroes-ability-filter-${option.id}`}
+            onClick={() => {
+              onFilter({
+                ...filter,
+                abilityIds: pressAbilityFilter(filter.abilityIds, option),
+              });
+            }}
+            // Pressed is marked by recolouring the icon's own frame, never by a frame on the
+            // button: the icon already draws one, so a second would read as two concentric
+            // frames and make the pressed icon wider than its neighbours. An `outline` grows
+            // it the same way, and would fight the focus ring for the same property.
+            className={cn(
+              'rounded-sm',
+              'border-0',
+              'bg-transparent',
+              'p-0',
+              'focus-visible:[outline:2px_solid_var(--accent)]',
+              option.owned ? 'cursor-pointer' : cn('cursor-default', 'opacity-30', 'grayscale'),
+            )}
+          >
+            <AbilityIcon code={option.id} size="xs" className={selectedFrameClass} peek={{ lang }} />
+          </button>
         );
       })}
     </span>

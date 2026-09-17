@@ -5,6 +5,7 @@ import { heroLevelLabel, rarityLabel } from '@bombfarm/domain/game-labels';
 import type { Lang } from '@bombfarm/domain/shims/i18n';
 import { cn } from '@bombfarm/ui';
 import { HeroAvatar } from './hero-avatar';
+import type { HeroPeekData } from './peek';
 import { heroRankToneClass, rarityTextClass } from './game-art.recipe';
 import type { ArtFrameSize } from './art-frame';
 
@@ -27,7 +28,9 @@ export function HeroIdentity({
   lang,
   size = 'sm',
   variant = 'inline',
+  showRarity = true,
   nameTestId,
+  peek,
 }: {
   name: string;
   rank?: string | undefined;
@@ -44,8 +47,18 @@ export function HeroIdentity({
    * id, so a grid of chips keeps one uniform height regardless of name or rarity length.
    */
   variant?: HeroIdentityVariant;
+  /**
+   * `false` leaves the rarity word out — the avatar's frame still carries the rarity as art. For
+   * a row where the rarity is not the reading: the Live list, which reads state and energy.
+   */
+  showRarity?: boolean | undefined;
   /** `data-testid` on the element carrying the hero's own name, for a caller that needs one. */
   nameTestId?: string | undefined;
+  /**
+   * What hovering the avatar opens. Absent, the avatar is bare art — the block already says who
+   * this is, so the card is worth drawing only when it can say more: the sheet, the gear.
+   */
+  peek?: HeroPeekData | undefined;
 }) {
   // An index off the end reads as unknown, not as a rarity with no name: the roster join accepts
   // any non-negative number so a new tier lands here before this list knows it, and
@@ -55,7 +68,7 @@ export function HeroIdentity({
   const clampedStars = Math.max(0, Math.min(3, Math.round(stars)));
   const stacked = variant === 'stacked';
 
-  const rarity = (
+  const rarity = showRarity ? (
     <span
       className={cn(
         'truncate font-bold',
@@ -65,12 +78,18 @@ export function HeroIdentity({
     >
       {rarityKey !== undefined ? rarityLabel(rarityKey, lang) : '—'}
     </span>
-  );
+  ) : null;
 
   return (
     <div className="flex min-w-0 items-center gap-2">
       <div className="shrink-0">
-        <HeroAvatar skin={skin} rarityIdx={rarityIdx ?? NEUTRAL_RARITY_IDX} size={size} name={name} />
+        <HeroAvatar
+          skin={skin}
+          rarityIdx={rarityIdx ?? NEUTRAL_RARITY_IDX}
+          size={size}
+          name={name}
+          peek={peek === undefined ? undefined : { hero: peek, lang }}
+        />
       </div>
       <div className="min-w-0 text-left">
         <div
@@ -101,7 +120,7 @@ export function HeroIdentity({
         </div>
         {stacked ? (
           <>
-            <div className="mt-1 flex min-w-0 text-[10px] leading-none">{rarity}</div>
+            {rarity === null ? null : <div className="mt-1 flex min-w-0 text-[10px] leading-none">{rarity}</div>}
             <div
               className={cn('mt-1 text-[10px] leading-none text-muted', level === undefined && 'invisible')}
               aria-hidden={level === undefined ? true : undefined}

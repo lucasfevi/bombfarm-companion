@@ -336,7 +336,6 @@ const HeroCard = memo(function HeroCard({
               className={GEAR_PER_ROW}
               emptySlotAriaLabel={(slotName) => sub(t.gearSlotEmptyAria, { slot: slotName })}
               emptySlotTip={t.gearSlotEmptyTip}
-              lvLabel={t.importColLevel}
             />
           </CardSection>
         ) : null}

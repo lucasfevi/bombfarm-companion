@@ -1,5 +1,6 @@
 import {
   SHEET_PANEL_KEYS,
+  SHEET_PCT_KEYS,
   type SheetKey,
   type SheetPanelKey,
 } from '@bombfarm/domain/planner-constants';
@@ -13,15 +14,7 @@ import {
 } from '@bombfarm/domain/stat-breakdown';
 import { sub, type StatPanelCopy } from '../copy';
 
-// Luck joins the pct set now that `statFull.luck` / `statShort.luck` exist and `isSheetKey`
-// below is widened to cover it — renders at 2 dp with `%` on every SHEET_PANEL_KEYS surface.
-export const SHEET_PCT_KEYS: ReadonlySet<SheetPanelKey> = new Set([
-  'critChance',
-  'critDmg',
-  'penetration',
-  'cdr',
-  'luck',
-]);
+export { SHEET_PCT_KEYS };
 
 /**
  * The unit a sheet statistic prints in: `%` for the rate stats, nothing for the counts.

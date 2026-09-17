@@ -165,6 +165,14 @@ function equippedBy(
     stars: hero.stars,
     skin: hero.skin,
     unknown: false,
+    peek: {
+      name: hero.name,
+      rank: hero.rank,
+      rarityIdx: hero.rarityIdx,
+      stars: hero.stars,
+      level: hero.level,
+      skin: hero.skin,
+    },
   };
 }
 
@@ -205,6 +213,7 @@ export function inventoryLabels(
 ): InventoryGridLabels {
   return {
     groupTitle: (kind) => t[GROUP_KEY[kind]],
+    lang,
     itemName: (item) => itemName(item, t, lang),
     itemRarity: (item) => itemRarity(item, lang),
     itemLevel: (item) => itemLevel(item, t),
@@ -260,6 +269,7 @@ export function inventoryTableLabels(
   return {
     caption: t.inventoryTableCaption,
     groupTitle: grid.groupTitle,
+    lang,
     itemName: grid.itemName,
     itemRarity: grid.itemRarity,
     itemLevel: grid.itemLevel,

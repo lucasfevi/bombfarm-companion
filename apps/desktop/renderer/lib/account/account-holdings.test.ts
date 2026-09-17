@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { isValidElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import type { HoldingsEntry } from '@bombfarm/account/holdings';
+import { heroPeekData } from '@bombfarm/game-art';
+import { emptyLoadout } from '@bombfarm/domain/gear';
+import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { MarketEntry, MarketSnapshot } from '@bombfarm/pricing';
 import { SKIN_CATEGORY, categoryKey, heroPriceKey, priceKey } from '@bombfarm/pricing';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
@@ -214,6 +219,38 @@ describe('the things each column lists under its figure', () => {
       level: 42,
       skin: BOUGHT_SKIN,
     });
+  });
+
+  it('lets the avatar of a hero with a whole record open its card, and leaves the rest bare', () => {
+    const sheet = { attack: 10, energy: 10, speed: 10, critChance: 0, critDmg: 10, penetration: 0, cdr: 0, luck: 0 };
+    const record: HeroRecord = {
+      id: 'h1',
+      name: 'Vex',
+      updatedAt: 1,
+      rarity: 'Lendária',
+      level: 42,
+      stars: 1,
+      naked: sheet,
+      loadout: emptyLoadout(),
+      altLoadout: null,
+      gearedOverride: sheet,
+      abilities: {},
+      pts: ZERO_PTS(),
+      rank: 'S',
+      power: 1234,
+    };
+    const columns = columnsOf({
+      heroes: roster.map((hero) => (hero.name === 'Vex' ? { ...hero, peek: heroPeekData(record) } : hero)),
+    });
+    const [vex, nim] = columns.heroes.entries.map((entry) => renderToStaticMarkup(entry.leading));
+
+    expect(vex).toContain('data-peek="hero"');
+    expect(vex).toContain('alt="Vex"');
+    expect(nim).toContain('alt="Nim"');
+    expect(nim).not.toContain('data-peek=');
+    expect(columns.heroes.amount).toBe(20);
+    expect(columns.heroes.priced).toBe(1);
+    expect(columns.heroes.eligible).toBe(2);
   });
 
   it('lets a hero the roster told it less about show what it does know', () => {

@@ -14,10 +14,12 @@ import {
   type InventoryViewStat,
   type ItemKind,
 } from "@bombfarm/domain/inventory-view";
+import type { Lang } from "@bombfarm/domain/shims/i18n";
 import { cn } from "@bombfarm/ui";
 import { GoldIcon } from "./gold-icon";
 import { MarketPrice, type MarketPriceLabels, type MarketPriceView } from "./market-price";
 import { HeroAvatar } from "./hero-avatar";
+import type { HeroPeekData } from "./peek";
 import { ItemIdentity, type ItemIdentityLabels } from "./item-identity";
 import { rarityTextClass } from "./game-art.recipe";
 import {
@@ -66,6 +68,8 @@ export interface InventoryEquippedBy {
   skin: number;
   /** The caller has no record of this hero — draw the name as a note, with no avatar. */
   unknown: boolean;
+  /** What the avatar's hover card says; absent, the avatar is bare art. */
+  peek?: HeroPeekData | undefined;
 }
 
 /** One stat, split so the card can put the label and the number at opposite edges. */
@@ -151,11 +155,6 @@ function StackGlyph() {
   );
 }
 
-/** Four is what a Mítico rolls; showing all six of a future tier would push the footer around. */
-const MAX_STAT_LINES = 4;
-
-/** The ritual caps at three; anything past that is a bad read, not a taller row of stars. */
-
 /**
  * The equipping hero, as the roster's own identity block at card scale: avatar beside two lines —
  * rank, name and stars on the first, level on the second.
@@ -165,7 +164,7 @@ const MAX_STAT_LINES = 4;
  * borrow is the alignment rule — rank and name share a baseline, so a bold `S` does not ride
  * above the name next to it.
  */
-function EquippedByRow({ hero }: { hero: InventoryEquippedBy }) {
+function EquippedByRow({ hero, lang }: { hero: InventoryEquippedBy; lang: Lang }) {
   if (hero.unknown) {
     return (
       <span data-testid="inventory-card-hero" className="min-w-0 truncate text-xs text-muted">
@@ -184,6 +183,7 @@ function EquippedByRow({ hero }: { hero: InventoryEquippedBy }) {
         size="xs"
         name={hero.name}
         className="shrink-0"
+        peek={hero.peek === undefined ? undefined : { hero: hero.peek, lang }}
       />
       <span className="flex min-w-0 flex-col gap-0.5">
         <span className="flex min-w-0 items-baseline gap-1">
@@ -256,12 +256,13 @@ const InventoryCard = memo(function InventoryCard({
   const { item, count } = entry;
   const badges = labels.badges(item);
   const equippedBy = labels.equippedBy?.(item) ?? null;
-  const stats = item.stats.slice(0, MAX_STAT_LINES);
+  const { stats } = item;
   const tone = inventoryCardTone(item.rarityIdx, item.kind !== 'other');
   const interactive = Boolean(onSelect);
   // Reserved for every card once the shell prices at all, so a listed item does not make its row
   // taller than the one beside it.
   const pricedColumn = priceLabels != null;
+  const peekPrice = price != null && priceLabels != null ? { view: price, labels: priceLabels } : undefined;
 
   const body = (
     <>
@@ -271,6 +272,7 @@ const InventoryCard = memo(function InventoryCard({
           labels={labels}
           size="xl"
           nameTestId="inventory-card-name"
+          price={peekPrice}
         />
         {badges.length > 0 ? (
           <span className="flex flex-wrap gap-1">
@@ -310,7 +312,7 @@ const InventoryCard = memo(function InventoryCard({
   );
 
   // `mt-auto` is what pins this row to the bottom edge whatever sits above it, so a Comum
-  // carrying one stat and a Mítico carrying four still line their footers up across a row.
+  // carrying one stat and a Mítico carrying six still line their footers up across a row.
   const footer = (
       <span
         data-testid="inventory-card-footer"
@@ -319,7 +321,7 @@ const InventoryCard = memo(function InventoryCard({
         {/* One slot, two tenants that never coincide: only gear is worn, and only the fungible
             kinds stack. */}
         {equippedBy ? (
-          <EquippedByRow hero={equippedBy} />
+          <EquippedByRow hero={equippedBy} lang={labels.lang} />
         ) : count > 1 ? (
           <span data-testid="inventory-card-count" className={inventoryCountClass}>
             <StackGlyph />

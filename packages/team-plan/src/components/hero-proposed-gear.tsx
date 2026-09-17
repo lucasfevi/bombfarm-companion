@@ -2,8 +2,8 @@
 
 import { SLOTS, type Slot } from '@bombfarm/domain/gear';
 import { formatItemRosterTooltip, slotLabel } from '@bombfarm/domain/game-labels';
-import { cn, Tooltip, mutedClass } from '@bombfarm/ui';
-import { ItemIcon, emptyGearSlotClass, rosterIconTooltipTriggerClass } from '@bombfarm/game-art';
+import { cn, mutedClass } from '@bombfarm/ui';
+import { ItemIcon, emptyGearSlotClass } from '@bombfarm/game-art';
 import { sub, type Lang } from '@bombfarm/hero/copy';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { isKeptExistingGearFlowRow, type GearFlowRow } from '../model/gear-flow-rows';
@@ -107,27 +107,7 @@ export function HeroProposedGear({
                   : 'border-solid border-line bg-bg',
               )}
             >
-              <Tooltip.Root>
-                <Tooltip.Trigger
-                  type="button"
-                  tabIndex={-1}
-                  aria-label={`${tip.title}. ${tip.subtitle}${keptExisting ? `. ${t.teamPlanFlowRowExisting}` : ''}`}
-                  className={cn(rosterIconTooltipTriggerClass, keptExisting && 'opacity-80')}
-                >
-                  <ItemIcon item={equipped} size="lg" />
-                </Tooltip.Trigger>
-                <Tooltip.Portal>
-                  <Tooltip.Positioner sideOffset={6}>
-                    <Tooltip.Popup>
-                      <p className="m-0 font-semibold text-ink">{tip.title}</p>
-                      <p className="m-0 text-xs text-muted">{tip.subtitle}</p>
-                      {keptExisting ? (
-                        <p className="m-0 mt-1 text-xs text-muted">{t.teamPlanFlowRowExisting}</p>
-                      ) : null}
-                    </Tooltip.Popup>
-                  </Tooltip.Positioner>
-                </Tooltip.Portal>
-              </Tooltip.Root>
+              <ItemIcon item={equipped} size="lg" peek={{ lang, className: cn(keptExisting && 'opacity-80') }} />
               <div
                 className={cn(
                   'text-[12px] leading-tight font-bold',
@@ -173,7 +153,7 @@ export function HeroProposedGear({
               const tip = formatItemRosterTooltip(equipped, lang, t.rankLv);
               return (
                 <li key={row.itemId} className="flex items-center gap-2">
-                  <ItemIcon item={equipped} size="sm" />
+                  <ItemIcon item={equipped} size="sm" peek={{ lang }} />
                   <span className="min-w-0 text-[12px] leading-tight text-ink">{tip.title}</span>
                   <span className={cn(mutedClass, 'ml-auto text-right')}>
                     {t.teamPlanFlowRowRemovedToInventory}

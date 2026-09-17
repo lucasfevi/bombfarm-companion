@@ -17,10 +17,10 @@ describe('auraCapText — each aura’s cap in the unit the Heroes screen prints
 
   it('pins the four shapes: a percent, flat points, a drain cut, and the pulse', () => {
     expect(auraCapText('grito_guerra', 'en')).toBe('+20% attack');
-    expect(auraCapText('pressagio_mortal', 'en')).toBe('+20 crit points');
+    expect(auraCapText('pressagio_mortal', 'en')).toBe('+20% crit');
     expect(auraCapText('marcha_acelerada', 'en')).toBe('+3.70% speed');
     expect(auraCapText('folego_mineiro', 'en')).toBe('−20% drain');
-    expect(auraCapText('brecha', 'en')).toBe('+20 penetration');
+    expect(auraCapText('brecha', 'en')).toBe('+20% penetration');
     expect(auraCapText('passagem_bastao', 'en')).toBe('+80% dmg, pulse held up');
   });
 });

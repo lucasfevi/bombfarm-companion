@@ -25,8 +25,6 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof heroEn)[] = [
   // "XP" is the game's own token in both languages; a rune's strength is a bare signed percent.
   'heroDetailRuneAxisXp',
   'heroDetailRuneStrength',
-  // "Aura" is spelled the same in both languages.
-  'heroDetailAurasColumnAura',
   'heroDetailBreakdownColAura',
   // The breakdown's DPS row is the same initialism as `heroDetailCombatDps`; "hit" is the loanword
   // the pt-BR copy already uses for the figure (`heroDetailBreakdownFormulaCriticalHit` reads

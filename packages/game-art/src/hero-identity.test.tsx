@@ -38,6 +38,50 @@ describe('HeroIdentity', () => {
   });
 });
 
+describe('HeroIdentity — leaving the rarity word out', () => {
+  /** The avatar's frame carries the rarity as art; everything after it is the text block. */
+  const afterAvatar = (html: string) => html.slice(html.indexOf('<img'));
+
+  it.each(['inline', 'stacked'] as const)(
+    'prints the rarity word in its colour by default, in the %s variant',
+    (variant) => {
+      const html = render({ name: 'Aurora', rarityIdx: 3, level: 42, lang: 'en', variant });
+      expect(afterAvatar(html)).toContain('Epic');
+      expect(afterAvatar(html)).toContain('text-rar-3');
+    },
+  );
+
+  it.each(['inline', 'stacked'] as const)(
+    'with showRarity off prints neither the word nor a rarity colour past the avatar frame, in the %s variant',
+    (variant) => {
+      const html = render({ name: 'Aurora', rarityIdx: 3, level: 42, lang: 'en', variant, showRarity: false });
+      expect(afterAvatar(html)).not.toContain('Epic');
+      expect(afterAvatar(html)).not.toMatch(/text-rar-\d/);
+      expect(html).toContain('Aurora');
+      expect(html).toContain('Lv 42');
+    },
+  );
+
+  it('with showRarity off the stacked block is two lines, not three with a blank in the middle', () => {
+    const shown = render({ name: 'Aurora', rarityIdx: 3, level: 42, lang: 'en', variant: 'stacked' });
+    const hidden = render({ name: 'Aurora', rarityIdx: 3, level: 42, lang: 'en', variant: 'stacked', showRarity: false });
+    const lines = (html: string) => (afterAvatar(html).match(/<div class="mt-1/g) ?? []).length;
+    expect(lines(shown)).toBe(2);
+    expect(lines(hidden)).toBe(1);
+    expect(hidden).not.toContain('invisible');
+  });
+
+  it('with showRarity off the inline second line is the level and the id alone', () => {
+    const html = render({ name: 'Aurora', rarityIdx: 3, level: 42, shortId: '9f', lang: 'en', showRarity: false });
+    expect(html).toMatch(/<div class="mt-1[^"]*"><span class="shrink-0 text-muted">Lv 42<span aria-hidden="true"> · <\/span>#9f<\/span><\/div>/);
+  });
+
+  it('with showRarity off the avatar frame still carries the rarity', () => {
+    const html = render({ name: 'Aurora', rarityIdx: 3, lang: 'en', showRarity: false });
+    expect(html.slice(0, html.indexOf('<img'))).toMatch(/rar-3|rarity/);
+  });
+});
+
 describe('HeroIdentity — the grade colour', () => {
   it('paints each grade in the colour the game prints it, not one accent for all of them', () => {
     const classes = LETTER_BANDS.letters.map((letter) => {

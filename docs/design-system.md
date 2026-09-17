@@ -100,10 +100,44 @@ under an app's own public root.
 | `ItemIcon` | Catalog item PNG in portrait frame + halo level / `+N` | composes `ArtFrame` + `iconMetaGlyphRecipe` |
 | `AbilityIcon` | Wiki ability PNG in neutral square frame + halo `n/20` | `game-art.recipe.ts` → `abilityIconRecipe` + `iconMetaGlyphRecipe` |
 | `RuneIcon` | Wiki rune PNG (one per axis × rarity) on the game's rarity plate, square | composes `ArtFrame` |
-| `HeroAbilityIcons` | Roster row of pool abilities + name/`n/20` tooltip | composes `AbilityIcon` + DS `Tooltip` |
-| `HeroGearIcons` | Roster row of all 8 slots (item or empty) + slot/item tooltip | composes `ItemIcon` + DS `Tooltip` |
+| `HeroAbilityIcons` | Roster row of pool abilities, each opening its `AbilityPeek` card | composes `AbilityIcon` + `AbilityPeek` |
+| `HeroGearIcons` | Roster row of all 8 slots (item or empty); a filled slot opens its `ItemPeek` card | composes `ItemIcon` + `ItemPeek` |
+| `ItemPeek` / `HeroPeek` / `AbilityPeek` | The hover card an icon opens — see **Peek cards** below | `peek/peek.recipe.ts`, on `Tooltip.Popup`'s recipe |
 
-**Roster picker interaction:** each hero row is **one keyboard tab stop** (`<tr tabIndex={0}>` + `aria-label`, no `role="button"`). Gear/ability icon tooltips use DS `Tooltip.Trigger` as `type="button"` with `tabIndex={-1}` — hover/pointer supplementary detail without nested tab traps. Row `Enter`/`Space` still selects the hero; icon clicks `stopPropagation` so tooltips never fire row pick.
+**Peek cards** ([`packages/game-art/src/peek/`](../packages/game-art/src/peek)): one skeleton, three
+subjects. The art small at the head with the name in its rarity colour beside it, a hairline, then
+the lines — an item's rolls, an ability's effect at this rank and at the cap, a hero's geared sheet
+and its two strips. The contract every call site keeps:
+
+- **A reference to a thing opens its card; the subject of a screen does not.** A hero in a rail,
+  a picker row, a scope card or an inventory footer peeks; the selected hero's strip, its Gear tab
+  cards and the ability editor stay bare, because the card would only repeat the screen.
+- **The art primitive is the trigger.** `ItemIcon`, `HeroAvatar` and `AbilityIcon` take a `peek`
+  prop and wrap themselves through `usePeek` (`peek/use-peek.tsx`); `ItemPeek` / `HeroPeek` /
+  `AbilityPeek` exist for wrapping something else, a name say. At rest the trigger is a bare
+  `<span>` — a tooltip tree per icon re-rendered five hundred times per commit on the inventory,
+  and the render-count instruments on both hosts gate that — and the first pointer *move* over it
+  (a move, not an enter: the browser raises an enter alone for an icon a re-laid-out table slides
+  under a resting pointer, and a card that pops open unasked is worse than none) mounts the
+  tooltip already open. The hook owns the open state and closes from a document-level pointer
+  watch, since a tooltip opened by anything but its own hover never learns the pointer has gone.
+  The span (an avatar sits inside clickable rows and switcher buttons — a button in a button is
+  not HTML) is `tabIndex={-1}`, so a row of ten icons keeps its one tab stop; the accessible name
+  rides on it only for art that has none of its own. On hover the art itself answers — the tile
+  brightens and lifts two pixels onto a soft shadow; nothing is drawn around it, since an accent
+  ring read as a selection on a strip of eight.
+- **One level deep, always.** Icons drawn inside a card are bare art; leave `peek` off (or pass
+  `disabled` to a wrapper) where a card must not open — a drag overlay, a nested trigger.
+- **A card says what it was handed.** `HeroPeekData` is all-optional past the name;
+  `heroPeekData(record)` fills it from a `HeroRecord`. An inventory row hands `ItemPeek` the rolls
+  the game reported (`stats`) so the row and its card print the same figures; a piece the planner
+  built lets the card derive them from the catalog.
+- **The words are the domain's.** `peekLabel`, `sheetStatShortLabel`, `levelLabel` and
+  `abilityReadoutText` in `@bombfarm/domain/game-labels` — game vocabulary, bilingual, so the
+  package stays free of any host's dictionary; a stackable item's name is the one thing the host
+  passes in (`name`), since only its dictionary knows it.
+
+**Roster picker interaction:** each hero row is **one keyboard tab stop** (`<tr tabIndex={0}>` + `aria-label`, no `role="button"`). Icon peeks and the empty-slot tooltip sit outside the tab order (`tabIndex={-1}`) — hover/pointer supplementary detail without nested tab traps. Row `Enter`/`Space` still selects the hero; icon clicks `stopPropagation` so a peek never fires row pick.
 
 **Tooltip trigger nested inside another interactive control:** `Tooltip.Trigger` renders a `<button>` by default, which is invalid HTML nested inside another `<button>` (e.g. an `Accordion.Trigger` row). Swap the rendered tag via `render={<span />}` instead of `type="button"` — see `AbbreviatedNumber` (`packages/team-plan/src/components/abbreviated-number.tsx`), which shows a `formatCompactNumber` value's exact figure on hover/focus from inside an Optimizer Accordion row. Pair with `tabIndex={-1}` (via a `disableFocus` prop) when the trigger sits inside an already-focusable ancestor, matching the icon-tooltip convention above.
 

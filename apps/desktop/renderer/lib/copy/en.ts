@@ -219,7 +219,6 @@ export const en = {
   liveListQueuedTitle: 'Idle',
   liveListBenchedTitle: 'Benched',
   liveListEmptyLine: 'No heroes here right now.',
-  liveHeroLevelValue: 'Lv {level}',
   liveEnergyLabel: 'Energy',
   liveEnergyRisingLabel: 'Rising',
   liveEnergyFallingLabel: 'Falling',

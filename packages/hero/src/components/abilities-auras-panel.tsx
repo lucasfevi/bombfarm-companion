@@ -3,7 +3,8 @@
 import { useMemo } from 'react';
 import { InfoTip, Panel, Switch, Tooltip, cn, formatNumber, panelHClass, panelTitleClass, tipClass } from '@bombfarm/ui';
 import type { AbilityEffectReadout } from '@bombfarm/domain/ability-effect-readout';
-import { abilityEffectText, abilityName } from '@bombfarm/domain/game-labels';
+import { abilityName, abilityReadoutText } from '@bombfarm/domain/game-labels';
+import { ABILITY_LEVEL_MAX } from '@bombfarm/domain/model';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { TeamAuraId, TeamAuraSwitches } from '@bombfarm/domain/team-buffs';
 import { AbilityIcon } from '@bombfarm/game-art';
@@ -14,60 +15,24 @@ import {
   type OwnAbilityStatus,
 } from '../model/abilities-auras-panel';
 
-type ReadoutKind = Exclude<AbilityEffectReadout, { kind: 'none' }>['kind'];
-
-const UNIT_KEY: Record<ReadoutKind, keyof HeroCopy> = {
-  attackPct: 'heroDetailAuraUnitAttack',
-  speedPct: 'heroDetailAuraUnitSpeed',
-  critPoints: 'heroDetailAuraUnitCrit',
-  drainPct: 'heroDetailAuraUnitDrain',
-  penetrationPoints: 'heroDetailAuraUnitPenetration',
-  critDmgPct: 'heroDetailAuraUnitCritDmg',
-  rangeCells: 'heroDetailAuraUnitRange',
-  dmgMult: 'heroDetailAuraUnitDmgMult',
-  gateAttackPct: 'heroDetailAuraUnitGateAttack',
-  packDmgPctPerAlly: 'heroDetailAuraUnitPackPerAlly',
-  teamPulseDmgPct: 'heroDetailAuraUnitPulse',
-};
-
-/** Marcha's per-level step is 0.185%, a multiplier lands on 1.09, a radius on 1.0; the rest move
- *  in whole units. */
-const UNIT_DECIMALS: Record<ReadoutKind, number> = {
-  attackPct: 0,
-  speedPct: 2,
-  critPoints: 0,
-  drainPct: 0,
-  penetrationPoints: 0,
-  critDmgPct: 0,
-  rangeCells: 1,
-  dmgMult: 2,
-  gateAttackPct: 0,
-  packDmgPctPerAlly: 1,
-  teamPulseDmgPct: 0,
-};
-
 const STATUS_KEY: Record<OwnAbilityStatus, keyof HeroCopy> = {
   own: 'heroDetailAuraOwnTag',
   notHere: 'heroDetailAuraNotHereTag',
   notModelled: 'heroDetailAuraNotModelledTag',
 };
 
-const numericClass = 'font-mono text-xs tabular-nums';
+const numericClass = 'font-mono text-[11px] leading-snug tabular-nums';
 const tagClass = 'text-[10px] font-bold tracking-[0.06em] uppercase text-muted';
-const columnHeadClass = 'text-[9px] font-bold tracking-[0.08em] uppercase text-muted';
-const groupHeadClass = 'mt-3 mb-1.5 text-[10px] font-bold tracking-[0.08em] uppercase text-accent';
-const auraRowClass =
-  'grid grid-cols-[2.75rem_auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1 border-t border-line py-1.5 sm:grid-cols-[2.75rem_auto_minmax(0,1fr)_13rem_13rem_9rem]';
-const ownRowClass =
-  'grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1 border-t border-line py-1.5 sm:grid-cols-[auto_minmax(0,1fr)_13rem_9rem]';
-const auraFiguresClass = 'col-start-3 flex flex-wrap gap-x-3 sm:contents';
-const ownFiguresClass = 'col-start-2 flex flex-wrap gap-x-3 sm:contents';
+const groupHeadClass = 'mb-1.5 text-[10px] font-bold tracking-[0.08em] uppercase text-accent';
+/** The two groups side by side once the panel is wide enough for two columns of cards, each
+ *  group two cards across; under that they stack, and under a phone's width the cards do too. */
+const groupsClass = 'mt-3 grid grid-cols-1 gap-x-5 gap-y-3 @min-[52rem]:grid-cols-2';
+const cardsClass = 'm-0 grid list-none grid-cols-1 gap-1.5 p-0 @min-[26rem]:grid-cols-2';
+const cardClass =
+  'grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 rounded-sm border border-line bg-bg px-2 py-1.5';
 
-function readoutText(readout: AbilityEffectReadout, t: HeroCopy, lang: Lang): string {
-  if (readout.kind === 'none') return '—';
-  return sub(t[UNIT_KEY[readout.kind]], {
-    value: formatNumber(readout.value, lang, UNIT_DECIMALS[readout.kind]),
-  });
+function readoutText(readout: AbilityEffectReadout, lang: Lang): string {
+  return abilityReadoutText(readout, lang, (value, decimals) => formatNumber(value, lang, decimals));
 }
 
 function deltaClass(deltaPct: number): string {
@@ -104,7 +69,7 @@ export function AbilitiesAurasPanel({
   const ownRows = useMemo(() => ownAbilityRowsFor(hero, phase), [hero, phase]);
 
   return (
-    <Panel data-testid="abilities-auras">
+    <Panel data-testid="abilities-auras" className="@container min-w-0">
       <Tooltip.Provider delay={200} closeDelay={100}>
         <div className={panelHClass}>
           <span className="flex items-center gap-1.5">
@@ -114,94 +79,91 @@ export function AbilitiesAurasPanel({
         </div>
       </Tooltip.Provider>
 
-      <h3 className={groupHeadClass}>{t.heroDetailAurasTeamGroup}</h3>
-      <div className={cn(auraRowClass, 'hidden border-t-0 py-0 sm:grid')} aria-hidden>
-        <span />
-        <span />
-        <span className={columnHeadClass}>{t.heroDetailAurasColumnAura}</span>
-        <span className={columnHeadClass}>{t.heroDetailAurasColumnPricedAt}</span>
-        <span className={columnHeadClass}>{t.heroDetailAurasColumnCap}</span>
-        <span className={columnHeadClass}>{t.heroDetailAurasColumnDelta}</span>
-      </div>
-      <ul className="m-0 list-none p-0">
-        {auraRows.map((row) => {
-          const name = abilityName(row.buffId, lang);
-          const deltaText = sub(row.on ? t.heroDetailAuraDeltaIfOff : t.heroDetailAuraDeltaIfOn, {
-            value: formatNumber(Math.abs(row.deltaPct), lang, 1),
-          });
-          return (
-            <li key={row.buffId} data-testid={`team-aura-${row.buffId}`} className={auraRowClass}>
-              {row.carried ? (
-                <span className={tagClass} data-testid="team-aura-own">
-                  {t.heroDetailAuraOwnTag}
-                </span>
-              ) : (
-                <Switch
-                  checked={row.on}
-                  onCheckedChange={(enabled) => onSwitch(row.buffId, enabled)}
-                  aria-label={sub(t.heroDetailAuraSwitchAria, { name })}
-                />
-              )}
-              <AbilityIcon code={row.buffId} size="sm" className={cn('shrink-0', !row.on && 'opacity-40')} />
-              <div className={cn('flex min-w-0 flex-col', !row.on && 'text-muted')}>
-                <span className="text-[12px] font-semibold">{name}</span>
-                <span className="text-[11px] leading-1.3 text-muted">
-                  {abilityEffectText(row.buffId, lang)}
-                </span>
-              </div>
-              <div className={auraFiguresClass}>
-                <span className={cn(numericClass, !row.on && 'text-muted')} data-testid="team-aura-priced-at">
-                  {row.pricedAt ? readoutText(row.pricedAt, t, lang) : '—'}
-                </span>
-                <span className={cn(numericClass, 'text-muted')}>{readoutText(row.cap, t, lang)}</span>
-                <span className={cn(numericClass, deltaClass(row.deltaPct))} data-testid="team-aura-delta">
-                  {deltaText}
-                </span>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-
-      <h3 className={groupHeadClass}>{t.heroDetailAurasOwnGroup}</h3>
-      {ownRows.length === 0 ? (
-        <p className={cn(tipClass, 'm-0')}>{t.heroDetailAurasNoOwnAbilities}</p>
-      ) : (
-        <>
-          <div className={cn(ownRowClass, 'hidden border-t-0 py-0 sm:grid')} aria-hidden>
-            <span />
-            <span className={columnHeadClass}>{t.heroDetailAurasColumnAbility}</span>
-            <span className={columnHeadClass}>{t.heroDetailAurasColumnEffect}</span>
-            <span className={columnHeadClass}>{t.heroDetailAurasColumnStatus}</span>
-          </div>
-          <ul className="m-0 list-none p-0">
-          {ownRows.map((row) => (
-            <li key={row.abilityId} data-testid={`own-ability-${row.abilityId}`} className={ownRowClass}>
-              <AbilityIcon
-                code={row.abilityId}
-                size="sm"
-                className={cn('shrink-0', row.status !== 'own' && 'opacity-40')}
-              />
-              <div className={cn('flex min-w-0 flex-col', row.status !== 'own' && 'text-muted')}>
-                <span className="text-[12px] font-semibold">{abilityName(row.abilityId, lang)}</span>
-                <span className="text-[11px] leading-1.3 text-muted">
-                  {sub(t.heroDetailAuraRank, { rank: formatNumber(row.rank, lang, 0) })} ·{' '}
-                  {abilityEffectText(row.abilityId, lang)}
-                </span>
-              </div>
-              <div className={ownFiguresClass}>
-                <span className={cn(numericClass, row.status !== 'own' && 'text-muted')}>
-                  {readoutText(row.effect, t, lang)}
-                </span>
-                <span className={tagClass} data-testid="own-ability-status">
-                  {t[STATUS_KEY[row.status]]}
-                </span>
-              </div>
-            </li>
-          ))}
+      <div className={groupsClass}>
+        <section>
+          <h3 className={groupHeadClass}>{t.heroDetailAurasTeamGroup}</h3>
+          <ul className={cardsClass}>
+            {auraRows.map((row) => {
+              const name = abilityName(row.buffId, lang);
+              const rank = row.carried ? hero.abilities[row.buffId] : undefined;
+              const deltaText = sub(row.on ? t.heroDetailAuraDeltaIfOff : t.heroDetailAuraDeltaIfOn, {
+                value: formatNumber(Math.abs(row.deltaPct), lang, 1),
+              });
+              return (
+                <li key={row.buffId} data-testid={`team-aura-${row.buffId}`} className={cn(cardClass, !row.on && 'text-muted')}>
+                  <AbilityIcon
+                    code={row.buffId}
+                    size="md"
+                    {...(rank === undefined ? {} : { level: rank, max: ABILITY_LEVEL_MAX })}
+                    className={cn(!row.on && 'opacity-40')}
+                    peek={{ lang, level: rank }}
+                  />
+                  <div className="flex min-w-0 flex-col gap-0.5">
+                    <span className="truncate text-[12px] leading-tight font-semibold">{name}</span>
+                    <span className={cn(numericClass, 'flex min-w-0 flex-wrap items-baseline gap-x-2')}>
+                      <span className={cn(!row.on && 'text-muted')} data-testid="team-aura-priced-at">
+                        {row.pricedAt ? readoutText(row.pricedAt, lang) : '—'}
+                      </span>
+                      <span className={deltaClass(row.deltaPct)} data-testid="team-aura-delta">
+                        {deltaText}
+                      </span>
+                    </span>
+                    <span className={cn(numericClass, 'truncate text-muted')}>
+                      {t.heroDetailAurasColumnCap} {readoutText(row.cap, lang)}
+                    </span>
+                  </div>
+                  {row.carried ? (
+                    <span className={tagClass} data-testid="team-aura-own">
+                      {t.heroDetailAuraOwnTag}
+                    </span>
+                  ) : (
+                    <Switch
+                      checked={row.on}
+                      onCheckedChange={(enabled) => onSwitch(row.buffId, enabled)}
+                      aria-label={sub(t.heroDetailAuraSwitchAria, { name })}
+                    />
+                  )}
+                </li>
+              );
+            })}
           </ul>
-        </>
-      )}
+        </section>
+
+        <section>
+          <h3 className={groupHeadClass}>{t.heroDetailAurasOwnGroup}</h3>
+          {ownRows.length === 0 ? (
+            <p className={cn(tipClass, 'm-0')}>{t.heroDetailAurasNoOwnAbilities}</p>
+          ) : (
+            <ul className={cardsClass}>
+              {ownRows.map((row) => (
+                <li
+                  key={row.abilityId}
+                  data-testid={`own-ability-${row.abilityId}`}
+                  className={cn(cardClass, row.status !== 'own' && 'text-muted')}
+                >
+                  <AbilityIcon
+                    code={row.abilityId}
+                    size="md"
+                    level={row.rank}
+                    max={ABILITY_LEVEL_MAX}
+                    className={cn(row.status !== 'own' && 'opacity-40')}
+                    peek={{ lang, level: row.rank }}
+                  />
+                  <div className="flex min-w-0 flex-col gap-0.5">
+                    <span className="truncate text-[12px] leading-tight font-semibold">{abilityName(row.abilityId, lang)}</span>
+                    <span className={cn(numericClass, row.status === 'own' ? 'text-ink' : 'text-muted')}>
+                      {readoutText(row.effect, lang)}
+                    </span>
+                  </div>
+                  <span className={tagClass} data-testid="own-ability-status">
+                    {t[STATUS_KEY[row.status]]}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
     </Panel>
   );
 }

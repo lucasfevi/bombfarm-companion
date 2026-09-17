@@ -24,6 +24,7 @@ import { formatCapturedAt } from '../../lib/format';
 import { useAccountView } from '../../lib/account/use-account-view';
 import { accountFactsFrom } from '../../lib/account/account-facts';
 import { accountHoldingsFrom, holdingsComponents } from '../../lib/account/account-holdings';
+import { buildAccountRoster } from '../../lib/account/account-roster';
 import { useMarketSnapshot } from '../../lib/market/use-market-snapshot';
 import { priceFreshness } from '../inventory/market-labels';
 import {
@@ -46,7 +47,8 @@ export function AccountView({
   const { snapshot } = useMarketSnapshot();
 
   const view = accountViewState.status === 'loaded' ? accountViewState.view : null;
-  const facts = useMemo(() => (view === null ? null : accountFactsFrom(view)), [view]);
+  const roster = useMemo(() => (view === null ? null : buildAccountRoster(view)), [view]);
+  const facts = useMemo(() => (view === null ? null : accountFactsFrom(view, roster)), [view, roster]);
   const holdings = useMemo(
     () => (facts === null ? null : accountHoldingsFrom(facts.holdings, snapshot, marketQuoteCurrency)),
     [facts, snapshot, marketQuoteCurrency],

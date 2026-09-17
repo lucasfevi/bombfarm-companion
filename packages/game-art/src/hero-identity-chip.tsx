@@ -5,6 +5,7 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { Lang } from '@bombfarm/domain/shims/i18n';
 import { shortHeroRecordId } from '@bombfarm/domain/shims/hero-identity';
 import { HeroIdentity, type HeroIdentityVariant } from './hero-identity';
+import { heroPeekData } from './peek';
 
 /** Compact avatar + rank/name/rarity/level·id block — the `ScopeHeroCard` identity, sized down for a row. */
 export function HeroIdentityChip({
@@ -41,6 +42,7 @@ export function HeroIdentityChip({
       lang={lang}
       variant={variant}
       nameTestId={nameTestId}
+      peek={heroPeekData(hero)}
     />
   );
 }

@@ -127,7 +127,7 @@ export const ABILITIES: AbilityDef[] = [
   { id: 'golpe_brutal', name: 'Golpe Brutal', max: 20, effectText: '+4% dano crítico/nível (valor fixo, altera atributos)', effect: { kind: 'critDmgFlat', perLevel: 4, onSheet: true } },
   // Live wiki 2026-09-13: `per_level` 0.005 and `combate.pack_dmg_cap` 0.9 — the older text's
   // 2%/40% matched neither. Allies are the OTHER heroes on the field beside the carrier.
-  { id: 'matilha', name: 'Matilha', max: 20, effectText: '+0.5% dano por aliado em campo/nível, +90% no teto', effect: { kind: 'packDmgPct', perLevel: MATILHA_PER_RANK_PER_ALLY * 100 } },
+  { id: 'matilha', name: 'Matilha', max: 20, effectText: '+0.5% dano por aliado em campo/nível', effect: { kind: 'packDmgPct', perLevel: MATILHA_PER_RANK_PER_ALLY * 100 } },
   { id: 'fortuna', name: 'Fortuna', max: 20, effectText: '+0.5% ouro do TIME/nível, +10% no teto (loot, aura capada)', effect: { kind: 'none' } },
   // Live wiki 2026-09-13: `kind: team_pen`, `per_level` 1 — flat points on every hero on the
   // field, capped at 20, the same shape as Presságio Mortal. Never on the carrier's own sheet.

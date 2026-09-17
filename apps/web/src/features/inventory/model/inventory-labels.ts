@@ -1,6 +1,7 @@
-import type {
-  InventoryBadge,
-  InventoryEquippedBy,
+import {
+  heroPeekData,
+  type InventoryBadge,
+  type InventoryEquippedBy,
   InventoryGridLabels,
   InventoryHeroOption,
   InventoryStatText,
@@ -172,6 +173,7 @@ function equippedBy(
     stars: hero.stars,
     skin: hero.skin ?? 0,
     unknown: false,
+    peek: heroPeekData(hero),
   };
 }
 
@@ -217,6 +219,7 @@ export function inventoryLabels(
 
   return {
     groupTitle: (kind) => strings[GROUP_KEY[kind]] as string,
+    lang,
     itemName: (item) => itemName(item, strings, lang),
     itemRarity: (item) => itemRarity(item, lang),
     itemLevel: (item) => itemLevel(item, strings),
@@ -273,6 +276,7 @@ export function inventoryTableLabels(
   return {
     caption: strings.inventoryTableCaption,
     groupTitle: grid.groupTitle,
+    lang,
     itemName: grid.itemName,
     itemRarity: grid.itemRarity,
     itemLevel: grid.itemLevel,

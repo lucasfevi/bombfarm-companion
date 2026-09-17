@@ -97,7 +97,7 @@ describe('ownAbilityRowsFor', () => {
       effect: { kind: 'drainPct', value: 12 },
       status: 'own',
     });
-    expect(rows.find((row) => row.abilityId === 'detonacao_dupla')?.effect.kind).toBe('dmgMult');
+    expect(rows.find((row) => row.abilityId === 'detonacao_dupla')?.effect.kind).toBe('secondBlast');
   });
 
   it('Contra o Relógio is "not here" off a gate phase and the hero’s own on one', () => {
@@ -110,7 +110,7 @@ describe('ownAbilityRowsFor', () => {
   it('an ability the model carries no effect for is "not modelled"', () => {
     const rows = ownAbilityRowsFor({ abilities }, phaseWhere(false));
     expect(rows.find((row) => row.abilityId === 'caca_hero')).toMatchObject({
-      effect: { kind: 'none' },
+      effect: { kind: 'cageDmgPct' },
       status: 'notModelled',
     });
   });

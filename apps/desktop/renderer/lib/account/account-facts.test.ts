@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AccountFidelity, AccountPayload, AccountSection, AccountView } from '@bombfarm/contracts';
 import { accountFactsFrom, capturedAtOf, isSectionUsable } from './account-facts';
+import { buildAccountRoster } from './account-roster';
 
 const NOW = '2026-08-12T00:00:00.000Z';
 const EARLIER = '2026-08-11T00:00:00.000Z';
@@ -56,7 +57,25 @@ function viewOf(payload: AccountPayload): AccountView {
   return { payload, gameRunning: false, store: { status: 'ok', reason: null, binding: 'better-sqlite3' } };
 }
 
-const factsOf = (payload: AccountPayload) => accountFactsFrom(viewOf(payload));
+/** The screen's own pairing: the facts over the roster the same read parsed. */
+const factsOf = (payload: AccountPayload) =>
+  accountFactsFrom(viewOf(payload), buildAccountRoster(viewOf(payload)));
+
+const BIRTH = {
+  dmg: 100,
+  energia: 100,
+  speed: 50,
+  crit_chance: 5,
+  crit_dmg: 50,
+  penetration: 0,
+  cooldown_reduction: 0,
+  luck: 0,
+};
+
+/** A row the parser turns into a whole record, not just a depiction. */
+function wholeRawHero(id: string, overrides: Record<string, unknown> = {}) {
+  return rawHero(id, { birth_stats: BIRTH, stats: BIRTH, stat_points_available: 0, ...overrides });
+}
 
 /** What each part of the screen looks like once a section is taken away. */
 function drawnParts(payload: AccountPayload) {
@@ -259,6 +278,34 @@ describe('the sellable flag the game itself sends', () => {
     expect(hero?.rank).toBeUndefined();
     expect(hero?.level).toBeUndefined();
     expect(hero?.skin).toBeUndefined();
+  });
+
+  it('gives a hero the parsed roster holds the card its record opens, joined on the game id', () => {
+    const payload: AccountPayload = {
+      ...basePayload(),
+      heroes: [
+        wholeRawHero('h1', { name: 'Vex', rarity: 4, level: 42, stats: { ...BIRTH, power: 1234 } }),
+        wholeRawHero('h2', { name: 'Nim', rarity: 2 }),
+      ],
+    };
+    const [vex, nim] = factsOf(payload).holdings.heroes ?? [];
+
+    expect(vex?.peek).toMatchObject({ name: 'Vex', rarityIdx: 4, level: 42, power: 1234 });
+    expect(vex?.peek?.stats).toBeDefined();
+    expect(vex?.peek?.loadout).toBeDefined();
+    expect(nim?.peek).toMatchObject({ name: 'Nim', rarityIdx: 2 });
+  });
+
+  it('leaves the card out when the parser rejected the roster, and still prices every row', () => {
+    const payload: AccountPayload = {
+      ...basePayload(),
+      heroes: [wholeRawHero('h1', { marketable: true }), rawHero('h2', { marketable: true })],
+    };
+    expect(buildAccountRoster(viewOf(payload))).toBeNull();
+
+    const heroes = factsOf(payload).holdings.heroes ?? [];
+    expect(heroes.map((hero) => hero.marketable)).toEqual([true, true]);
+    for (const hero of heroes) expect(hero).not.toHaveProperty('peek');
   });
 
   it('reads every worn skin, leaving the collapsing to the shared computation', () => {
