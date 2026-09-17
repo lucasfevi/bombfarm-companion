@@ -131,7 +131,7 @@ const NodeMedallion = memo(function NodeMedallion({
       {owned || maxed ? (
         <circle r={r * 1.3} fill="var(--gold)" opacity={maxed ? 0.3 : 0.22} filter={`url(#${glowId})`} />
       ) : null}
-      {selected ? <circle r={r + 9} fill="none" stroke="var(--accent)" strokeWidth={2.5} /> : null}
+      {selected ? <circle r={r + 9} fill="none" stroke="var(--ink)" strokeWidth={2} opacity={0.9} /> : null}
       <circle
         r={r + 9}
         fill="none"

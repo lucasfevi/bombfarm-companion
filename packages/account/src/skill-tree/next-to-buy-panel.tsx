@@ -20,7 +20,8 @@ export type NextToBuyPanelProps = {
   labels: SkillTreeLabels;
 };
 
-const rowGridClass = 'grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-x-2.5';
+// Fixed figure columns, shared by the head and every row, so the figures line up down the panel.
+const rowGridClass = 'grid grid-cols-[minmax(0,1fr)_3.5rem_4.5rem_3.75rem] items-center gap-x-1.5';
 const numericClass = 'text-right font-mono text-[11px] tabular-nums';
 
 function Medallion({ node, src, className }: { node: SkillNode; src: string | null; className?: string }) {
@@ -45,7 +46,7 @@ export function NextToBuyPanel({ pricing, rows, objective, selectedId, onSelect,
         </p>
       ) : (
         <>
-          <div className={cn(rowGridClass, 'mb-1 text-[10px] font-bold tracking-[0.08em] text-muted uppercase')} aria-hidden>
+          <div className={cn(rowGridClass, 'mb-1 text-[10px] font-bold tracking-[0.08em] whitespace-nowrap text-muted uppercase')} aria-hidden>
             <span>{labels.colNode}</span>
             <span className="text-right">{labels.colCost}</span>
             <span className="text-right">{labels.colGain}</span>

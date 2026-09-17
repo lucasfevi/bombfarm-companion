@@ -820,7 +820,7 @@ export const ptBR: Copy = {
   skillsColNode: 'Nó',
   skillsColCost: 'Custo',
   skillsColGain: 'Ganho',
-  skillsColPerMillion: 'Por 1M de ouro',
+  skillsColPerMillion: 'Por 1M',
   skillsGainDps: '{v} DPS',
   skillsPerMillionGold: '{v}',
   skillsPerMillionDps: '{v} DPS',

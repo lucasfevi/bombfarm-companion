@@ -862,7 +862,7 @@ export const en = {
   skillsColNode: 'Node',
   skillsColCost: 'Cost',
   skillsColGain: 'Gain',
-  skillsColPerMillion: 'Per 1M gold',
+  skillsColPerMillion: 'Per 1M',
   skillsGainDps: '{v} DPS',
   skillsPerMillionGold: '{v}',
   skillsPerMillionDps: '{v} DPS',
