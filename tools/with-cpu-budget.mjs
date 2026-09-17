@@ -1,6 +1,6 @@
-import { spawn } from 'node:child_process';
 import process from 'node:process';
 import { cappedWorkers } from './cpu-budget.mjs';
+import { bareTokensOrExit, runBareTokens } from './shell-command.mjs';
 import { npmrcWorkspaceConcurrency } from './workspace-concurrency.mjs';
 
 /**
@@ -18,51 +18,10 @@ import { npmrcWorkspaceConcurrency } from './workspace-concurrency.mjs';
  * — and it is memory, not CPU, that makes several of those at once hurt.
  */
 
-/**
- * The child has to go through a shell, because on Windows `pnpm` is a `.cmd` shim that
- * `CreateProcess` cannot exec directly. Passing an args array alongside `shell` concatenates it
- * unescaped — that is Node's DEP0190 warning, and it really does mangle arguments (`node -e
- * "a b"` arrived as `bad option: -,`). So the command line is built here instead, and anything
- * that would need quoting to survive the trip is refused rather than silently corrupted.
- *
- * Every call site passes bare tokens (`pnpm -r build`), so this rejects nothing in practice —
- * it is here so that a later call site with a quoted argument fails loudly at the first run
- * instead of running something subtly different from what it reads like.
- */
-const SHELL_SAFE_TOKEN = /^[A-Za-z0-9._@:=/\\-]+$/;
-
-const argv = process.argv.slice(2);
-
-if (argv.length === 0) {
-  process.stderr.write('usage: node tools/with-cpu-budget.mjs <command> [args...]\n');
-  process.exit(2);
-}
-
-const unsafe = argv.filter((token) => !SHELL_SAFE_TOKEN.test(token));
-if (unsafe.length > 0) {
-  process.stderr.write(
-    `with-cpu-budget: refusing to shell-quote ${JSON.stringify(unsafe)}. ` +
-      'Pass bare tokens, or run the command directly and set npm_config_workspace_concurrency yourself.\n',
-  );
-  process.exit(2);
-}
+const argv = bareTokensOrExit(process.argv.slice(2), 'with-cpu-budget');
 
 process.env.npm_config_workspace_concurrency = String(
   cappedWorkers(npmrcWorkspaceConcurrency(), `workspace:${argv.join(' ')}`),
 );
 
-const child = spawn(argv.join(' '), { stdio: 'inherit', shell: true });
-
-child.on('error', (error) => {
-  process.stderr.write(`${error.message}\n`);
-  process.exit(1);
-});
-
-child.on('exit', (code, signal) => {
-  // Signal deaths must stay signal deaths, or Ctrl-C reads to the caller as a plain failure.
-  if (signal) {
-    process.kill(process.pid, signal);
-    return;
-  }
-  process.exit(code ?? 1);
-});
+runBareTokens(argv);

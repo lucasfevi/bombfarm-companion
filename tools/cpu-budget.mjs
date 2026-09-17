@@ -15,9 +15,17 @@ import process from 'node:process';
  * The fix is a shared denominator rather than a smaller numerator. A run about to fan out
  * writes a lease into a machine-wide directory, counts the live leases, and takes
  * `budget / liveLeases` — so one run alone behaves exactly as it does today, and N runs split
- * the same budget N ways instead of each claiming it whole. Nothing ever waits: a run that
- * arrives late gets a smaller share, never a queue position, so there is no lock to strand and
- * no deadlock to hit.
+ * the same budget N ways instead of each claiming it whole. A run that arrives late gets a
+ * smaller share, never a queue position, so there is no lock to strand and no deadlock to hit.
+ *
+ * The one exception is the heavy-run slot below, and it exists because sharing is the wrong
+ * shape for a full run. Four sessions each running the whole Vitest suite at once take a
+ * quarter share each, finish together four times later, and hold four sets of TypeScript
+ * programs and worker pools the entire time — the budget divides cores, not memory. Queuing
+ * them has the same throughput, hands the first its result four times sooner, and keeps peak
+ * memory at one run. So the full runs (an unscoped `vitest run`, the web e2e suite, the
+ * Electron smoke suite) take one machine-wide slot before they fan out, and the scoped
+ * everyday run never does — it stays on the share model and never waits on anything.
  *
  * Leases are reaped by liveness, not by discipline: a run killed with Ctrl-C leaves its file
  * behind, and the next reader drops it because the pid is gone. STALE_AFTER_MS is the backstop
@@ -38,6 +46,8 @@ import process from 'node:process';
 const LEASE_DIR_ENV = 'BFC_CPU_LEASE_DIR';
 const LEASE_ENV = 'BFC_CPU_LEASE';
 const BUDGET_ENV = 'BFC_CPU_BUDGET';
+const HEAVY_SLOT_ENV = 'BFC_HEAVY_SLOT';
+const HEAVY_SLOT_FILE = 'heavy-run.lock';
 
 /**
  * A lease older than this is dropped even if its pid still answers. Long enough that no real
@@ -182,6 +192,112 @@ export function cappedWorkers(cap, kind) {
   return Math.max(1, Math.min(ceiling, Math.floor(machineCpuBudget() / runs)));
 }
 
+function heavySlotFile() {
+  return path.join(leaseDir(), HEAVY_SLOT_FILE);
+}
+
+/**
+ * Whoever holds the heavy-run slot right now, or null. A holder whose pid is gone, or whose
+ * file is older than the staleness backstop, is reaped here — the same liveness rule as the
+ * leases, so a run killed with Ctrl-C cannot strand the next one.
+ */
+export function heavySlotHolder() {
+  const file = heavySlotFile();
+  let holder;
+  try {
+    holder = JSON.parse(readFileSync(file, 'utf8'));
+  } catch (error) {
+    if (error?.code === 'ENOENT') return null;
+    holder = undefined;
+  }
+  const pid = Number(holder?.pid);
+  const startedAt = Number(holder?.startedAt);
+  const fresh = Number.isFinite(startedAt) && Date.now() - startedAt < STALE_AFTER_MS;
+  if (Number.isFinite(pid) && fresh && processIsAlive(pid)) return holder;
+  try {
+    rmSync(file, { force: true });
+  } catch {
+    // Another waiter reaped it first.
+  }
+  return null;
+}
+
+function sleepSync(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/**
+ * Take the machine-wide heavy-run slot, waiting for the current holder to finish if there is
+ * one. Synchronous on purpose: the callers are build and test configs, which are loaded before
+ * any event loop the tool would let us yield to.
+ *
+ * Inherited like the lease: the slot id travels in the environment so a Vitest worker or a
+ * Playwright worker re-loading the config inside the run does not queue behind its own parent.
+ * Creation is `wx` (exclusive), so two waiters that both see the holder die race on the
+ * filesystem and exactly one wins. Every failure fails open — an unwritable directory or a torn
+ * file means the run goes ahead unqueued, which is slower, not broken.
+ *
+ * @param {string} kind Recorded in the slot file, so a waiter can say what it is waiting for.
+ * @param {{ onWait?: (holder: object, waitedMs: number) => void, pollMs?: number }} [options]
+ * @returns {{ waitedMs: number }}
+ */
+export function waitForHeavySlot(kind, { onWait = reportWaiting, pollMs = 1000 } = {}) {
+  if (!sharingApplies() || process.env[HEAVY_SLOT_ENV]) return { waitedMs: 0 };
+  const file = heavySlotFile();
+  const startedWaitingAt = Date.now();
+  try {
+    mkdirSync(leaseDir(), { recursive: true });
+  } catch {
+    return { waitedMs: 0 };
+  }
+  let lastReportedAt = 0;
+  let racesLost = 0;
+  for (;;) {
+    try {
+      writeFileSync(file, JSON.stringify({ pid: process.pid, kind, startedAt: Date.now() }), { flag: 'wx' });
+      break;
+    } catch (error) {
+      if (error?.code !== 'EEXIST') return { waitedMs: Date.now() - startedWaitingAt };
+    }
+    const holder = heavySlotHolder();
+    if (!holder) {
+      // The file existed a moment ago and is unreadable or reaped now: someone else is
+      // mid-write, or we lost the reap race. A few retries settle it; beyond that the
+      // directory is misbehaving, and a queue that cannot be trusted is not worth waiting on.
+      racesLost += 1;
+      if (racesLost > 5) return { waitedMs: Date.now() - startedWaitingAt };
+      sleepSync(Math.min(pollMs, 50));
+      continue;
+    }
+    const waitedMs = Date.now() - startedWaitingAt;
+    if (waitedMs - lastReportedAt >= 30_000 || lastReportedAt === 0) {
+      lastReportedAt = Math.max(1, waitedMs);
+      onWait(holder, waitedMs);
+    }
+    sleepSync(pollMs);
+  }
+  process.env[HEAVY_SLOT_ENV] = String(process.pid);
+  process.on('exit', () => releaseHeavySlot(file));
+  return { waitedMs: Date.now() - startedWaitingAt };
+}
+
+function releaseHeavySlot(file) {
+  try {
+    if (Number(JSON.parse(readFileSync(file, 'utf8'))?.pid) === process.pid) rmSync(file, { force: true });
+  } catch {
+    // Already gone, or reaped as stale and taken by a successor — either way not ours to delete.
+  }
+}
+
+function reportWaiting(holder, waitedMs) {
+  const holderAgeSeconds = Math.round((Date.now() - Number(holder.startedAt)) / 1000);
+  const waited = waitedMs >= 1000 ? `, waited ${Math.round(waitedMs / 1000)}s` : '';
+  process.stderr.write(
+    `waiting for the heavy-run slot: pid ${holder.pid} is running ${holder.kind} (${holderAgeSeconds}s)${waited}
+`,
+  );
+}
+
 /**
  * Read-only view of the machine's current state — claims nothing, so asking what is running
  * never changes what is running.
@@ -195,6 +311,7 @@ export function cpuLeaseReport() {
     sharingApplies: sharingApplies(),
     leases,
     sharePerRun: Math.max(1, Math.floor(budget / Math.max(1, leases.length))),
+    heavySlot: heavySlotHolder(),
   };
 }
 

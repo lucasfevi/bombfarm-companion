@@ -1,9 +1,14 @@
 import { availableParallelism } from 'node:os';
 import { defineConfig, devices } from '@playwright/test';
-import { cappedWorkers } from '../../tools/cpu-budget.mjs';
+import { cappedWorkers, waitForHeavySlot } from '../../tools/cpu-budget.mjs';
 
 // Another Bomb Farm session on the same machine may hold 4321 with a different export;
 // `E2E_PORT` lets a run serve its own build somewhere else instead of testing that one.
+// A full browser suite queues behind any other full run on the machine rather than
+// sharing with it — see `waitForHeavySlot` in `tools/cpu-budget.mjs`. Inherited by the
+// workers that re-load this config, and a no-op on CI.
+waitForHeavySlot('playwright:web');
+
 const PORT = Number(process.env.E2E_PORT ?? 4321);
 const BASE_URL = `http://localhost:${PORT}`;
 const prebuilt = process.env.E2E_PREBUILT === '1';

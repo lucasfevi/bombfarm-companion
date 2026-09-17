@@ -1,4 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
+import { waitForHeavySlot } from '../../tools/cpu-budget.mjs';
+
+// Forty-odd Electron launches queue behind any other full run on the machine rather than
+// sharing with it — see `waitForHeavySlot` in `tools/cpu-budget.mjs`. A no-op on CI.
+waitForHeavySlot('playwright:desktop');
 
 export default defineConfig({
   testDir: './tests/smoke',
