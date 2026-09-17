@@ -49,7 +49,8 @@ effect kind for the small nodes and unlocks.
 A node is worth the difference it makes to the farm, and only that difference: the same roster on
 the same phase, once under the tree as it stands and once under the tree with the node one level
 higher. The roster, pool overrides, return bonus and auras-at-cap setting are the Farm tab's own
-inputs, and the phase is the one the Farm tab is set to, so the figures here agree with the board.
+inputs, and the phase is the one the Farm tab is set to — or, with none picked there, the phase the
+account is farming now; the header says which — so the figures here agree with the board.
 
 - **Gold per hour** runs through hits-to-kill, which is a ceiling, so a small damage node at the
   roster exactly as read is a coin toss: a whole hit per prop when it crosses a breakpoint and
