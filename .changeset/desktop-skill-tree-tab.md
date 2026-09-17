@@ -16,8 +16,9 @@ sit beside it, as the game's own summary prints them.
 
 **Next to buy.** Every node you could buy now is ranked by what one more level adds per million
 gold, either to gold per hour or to team DPS — your choice, remembered between visits. Both are
-priced against the Farm tab's own roster, pool and settings, on the phase the Farm tab is set to,
-so the figures agree with the board. A node that pays in drops, XP or bag space is listed with its
+priced against the Farm tab's own roster, pool and settings, on the phase the Farm tab is set to —
+or, with none picked there, the phase the account is farming now — so the figures agree with the
+board. A node that pays in drops, XP or bag space is listed with its
 cost and says so; the app does not invent a gold value for it. When the roster cannot be priced
 the tree still draws, without figures.
 
