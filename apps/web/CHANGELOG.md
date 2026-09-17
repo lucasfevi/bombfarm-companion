@@ -1,5 +1,26 @@
 # @bombfarm/web
 
+## 0.20.1
+
+### Patch Changes
+
+- cb9b319: The Combat tab's aura cards hold still when a switch flips. A card is three lines whatever its
+  state — the aura's name, the figure it is priced at, and what flipping it does to sustained DPS —
+  and none of them wraps, so switching an aura on recolours its card and moves nothing around it.
+  The cap line is gone: it repeated the figure above it on every card but a carried aura below its
+  cap, whose rank the icon's badge already shows; an aura that is off now reads the cap its switch
+  would price the hero with, dimmed, instead of a dash. Cards go two or three across only while
+  each can print its longest Portuguese line whole, and Baton Pass's figure reads "+80% dmg (pulse)"
+  so that it does.
+- Updated dependencies [cb9b319]
+  - @bombfarm/hero@0.3.1
+  - @bombfarm/domain@1.2.1
+  - @bombfarm/farm@1.2.1
+  - @bombfarm/team-plan@0.2.1
+  - @bombfarm/account@0.2.7
+  - @bombfarm/game-art@0.6.1
+  - @bombfarm/pricing@0.3.2
+
 ## 0.20.0
 
 ### Minor Changes
