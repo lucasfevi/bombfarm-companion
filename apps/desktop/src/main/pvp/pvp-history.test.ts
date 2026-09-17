@@ -64,7 +64,7 @@ describe('pvp history', () => {
     expect(history.storeFilm(film(), '{"q":[]}', { storedAt: '2026-09-16T10:00:01.000Z' })).toBe(true);
     expect(
       history.recordDuel(
-        duel({ filmId: 0, won: false, prize: 'lost', defender: { name: 'Other', heroes: 5, score: 90 } }),
+        duel({ filmId: 0, won: false, prize: null, defender: { name: 'Other', heroes: 5, score: 90 } }),
         { recordedAt: '2026-09-16T10:05:00.000Z', accountId: null },
       ),
     ).toBe(true);
@@ -72,7 +72,7 @@ describe('pvp history', () => {
     const listed = history.list({ limit: 10 });
     expect(listed.rows.map((row) => row.filmId)).toEqual([0, 48117]);
     expect(listed.rows[1]).toEqual({ id: 1, ...AT, filmStored: true, ...duel() });
-    expect(listed.rows[0]).toMatchObject({ id: 2, accountId: null, filmStored: false, won: false, prize: 'lost' });
+    expect(listed.rows[0]).toMatchObject({ id: 2, accountId: null, filmStored: false, won: false, prize: null });
     expect(listed.totals).toEqual({ duels: 2, won: 1, films: 1 });
     expect(listed.standing).toBeNull();
     expect(listed.rank).toBeNull();
