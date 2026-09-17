@@ -1,5 +1,39 @@
 # @bombfarm/desktop
 
+## 0.17.1
+
+### Patch Changes
+
+- cb9b319: The Combat tab's aura cards hold still when a switch flips. A card is three lines whatever its
+  state — the aura's name, the figure it is priced at, and what flipping it does to sustained DPS —
+  and none of them wraps, so switching an aura on recolours its card and moves nothing around it.
+  The cap line is gone: it repeated the figure above it on every card but a carried aura below its
+  cap, whose rank the icon's badge already shows; an aura that is off now reads the cap its switch
+  would price the hero with, dimmed, instead of a dash. Cards go two or three across only while
+  each can print its longest Portuguese line whole, and Baton Pass's figure reads "+80% dmg (pulse)"
+  so that it does.
+- 910f39b: PVP tab: lost duels are recorded.
+
+  A duel the player lost was refused by the result reader and never reached the history — the
+  tab listed wins only, while the loss's film was kept with no row to attach to. The reader
+  required the rune-chest outcome (`won` / `lost`) on every result, and a lost duel issues no chest,
+  so its result names neither. The chest outcome is now optional on a record (`null` when the
+  result carries none), and a refused result is logged with the record fields it lacked so the next
+  one is diagnosable from the log.
+
+- Updated dependencies [cb9b319]
+- Updated dependencies [910f39b]
+  - @bombfarm/hero@0.3.1
+  - @bombfarm/domain@1.2.1
+  - @bombfarm/contracts@0.9.1
+  - @bombfarm/game-api@0.5.1
+  - @bombfarm/farm@1.2.1
+  - @bombfarm/team-plan@0.2.1
+  - @bombfarm/account@0.2.7
+  - @bombfarm/game-art@0.6.1
+  - @bombfarm/game-data@0.0.17
+  - @bombfarm/pricing@0.3.2
+
 ## 0.17.0
 
 ### Minor Changes

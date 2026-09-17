@@ -224,7 +224,7 @@ describe('PvpView', () => {
   });
 
   it('keeps a duel whose film never arrived as a row, and says the film is not kept', () => {
-    const html = render(ready([row({ id: 2, filmId: 0, filmStored: false, won: false, prize: 'lost', pointsAfter: 108 })]));
+    const html = render(ready([row({ id: 2, filmId: 0, filmStored: false, won: false, prize: null, pointsAfter: 108 })]));
     expect(html).toContain('data-film-stored="false"');
     expect(html).toContain(en.pvpFilmMissing);
     expect(html).toContain(en.pvpResultLost);

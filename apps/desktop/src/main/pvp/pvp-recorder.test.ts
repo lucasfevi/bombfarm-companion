@@ -129,14 +129,33 @@ describe('pvp recorder', () => {
     expect(emit).toHaveBeenCalledTimes(1);
   });
 
-  it('names an unreadable body in the log and keeps nothing', () => {
+  it('records a lost duel — a result that names no chest outcome, since none was issued', () => {
+    const history = openHistory();
+    const { log, records } = createLogSpy();
+    const recorder = createPvpRecorder({ history, accountId: () => '486', emit: () => undefined, log });
+    const [, , filmless] = fixtureBodies();
+    if (!filmless) throw new Error('fixture holds no filmless duel');
+    const lost = JSON.parse(filmless.toString('utf8')) as Record<string, unknown>;
+    expect(lost).toMatchObject({ venceu: false });
+    expect(lost).not.toHaveProperty('premio');
+
+    recorder.observe(observationOf(filmless, 1_000));
+    expect(records.map((entry) => entry.record.event)).toEqual(['duel.recorded']);
+    expect(history.list({ limit: 10 }).rows[0]).toMatchObject({ won: false, prize: null, pointsBefore: 123, pointsAfter: 113 });
+  });
+
+  it('names an unreadable body in the log, with the record fields it lacked, and keeps nothing', () => {
     const history = openHistory();
     const { log, records } = createLogSpy();
     const emit = vi.fn();
     const recorder = createPvpRecorder({ history, accountId: () => null, emit, log });
     const raw = Buffer.from('{"venceu": true, "filme": 1}', 'utf8');
     recorder.observe({ route: 'duel', body: JSON.parse(raw.toString('utf8')), raw, atMs: 1_000 });
-    expect(records.map((entry) => entry.record.event)).toContain('duel.unreadable');
+    const warned = records.find((entry) => entry.record.event === 'duel.unreadable');
+    expect(warned?.record).toMatchObject({
+      byteLength: raw.length,
+      missing: ['phase', 'rooms', 'seconds', 'attacker', 'defender', 'pointsBefore', 'pointsAfter', 'duelsLeft', 'duelsMax', 'tier', 'tierFloor'],
+    });
     expect(emit).not.toHaveBeenCalled();
     expect(history.list({ limit: 10 }).totals.duels).toBe(0);
   });

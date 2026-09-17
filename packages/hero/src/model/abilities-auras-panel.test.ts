@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { wikiPhaseLine } from '@bombfarm/domain/phase-wiki';
+import { teamAuraReadout } from '@bombfarm/domain/ability-effect-readout';
 import { TEAM_AURA_SWITCH_IDS, TEAM_BUFF_CAP, noTeamAuraSwitches, zeroTeamBuffs } from '@bombfarm/domain/team-buffs';
 import { ownAbilityRowsFor, teamAuraRowsFor } from './abilities-auras-panel';
 
@@ -14,13 +15,24 @@ function phaseWhere(gate: boolean): number {
 }
 
 describe('teamAuraRowsFor', () => {
-  it('lists every team aura the game has, for a hero carrying none', () => {
+  it('lists every team aura the game has, for a hero carrying none, each off and reading its cap', () => {
     const rows = teamAuraRowsFor({ abilities: {} }, noTeamAuraSwitches(), NO_DELTAS);
     expect(rows.map((row) => row.buffId)).toEqual([...TEAM_AURA_SWITCH_IDS]);
     for (const row of rows) {
       expect(row.carried).toBe(false);
       expect(row.on).toBe(false);
-      expect(row.pricedAt).toBeNull();
+      expect(row.readout).toEqual(teamAuraReadout(row.buffId, row.buffId === 'passagem_bastao' ? 80 : TEAM_BUFF_CAP[row.buffId]));
+    }
+  });
+
+  it('an off aura reads the same figure its switch would price the hero with, so flipping it moves no text but the delta', () => {
+    const allOn = { ...noTeamAuraSwitches() };
+    for (const id of TEAM_AURA_SWITCH_IDS) allOn[id] = true;
+    const off = teamAuraRowsFor({ abilities: {} }, noTeamAuraSwitches(), NO_DELTAS);
+    const on = teamAuraRowsFor({ abilities: {} }, allOn, NO_DELTAS);
+    for (const [i, row] of off.entries()) {
+      expect(on[i]?.on).toBe(true);
+      expect(on[i]?.readout).toEqual(row.readout);
     }
   });
 
@@ -29,21 +41,20 @@ describe('teamAuraRowsFor', () => {
     expect(own.find((row) => row.buffId === 'passagem_bastao')).toMatchObject({
       carried: true,
       on: true,
-      pricedAt: { kind: 'teamPulseDmgPct', value: 40 },
-      cap: { kind: 'teamPulseDmgPct', value: 80 },
+      readout: { kind: 'teamPulseDmgPct', value: 40 },
     });
     const switched = teamAuraRowsFor({ abilities: {} }, { ...noTeamAuraSwitches(), passagem_bastao: true }, NO_DELTAS);
     expect(switched.find((row) => row.buffId === 'passagem_bastao')).toMatchObject({
       carried: false,
       on: true,
-      pricedAt: { kind: 'teamPulseDmgPct', value: 80 },
+      readout: { kind: 'teamPulseDmgPct', value: 80 },
     });
   });
 
   it('a carried aura is on at the hero’s rank and marked as the hero’s own', () => {
     const rows = teamAuraRowsFor({ abilities: { grito_guerra: 12 } }, noTeamAuraSwitches(), NO_DELTAS);
     const grito = rows.find((row) => row.buffId === 'grito_guerra');
-    expect(grito).toMatchObject({ carried: true, on: true, pricedAt: { kind: 'attackPct', value: 12 } });
+    expect(grito).toMatchObject({ carried: true, on: true, readout: { kind: 'attackPct', value: 12 } });
   });
 
   it('a switched-on aura the hero does not carry is priced at its cap', () => {
@@ -53,8 +64,7 @@ describe('teamAuraRowsFor', () => {
     expect(folego).toMatchObject({
       carried: false,
       on: true,
-      pricedAt: { kind: 'drainPct', value: TEAM_BUFF_CAP.folego_mineiro },
-      cap: { kind: 'drainPct', value: TEAM_BUFF_CAP.folego_mineiro },
+      readout: { kind: 'drainPct', value: TEAM_BUFF_CAP.folego_mineiro },
     });
   });
 

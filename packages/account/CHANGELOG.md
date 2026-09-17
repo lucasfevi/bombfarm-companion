@@ -1,5 +1,12 @@
 # @bombfarm/account
 
+## 0.2.7
+
+### Patch Changes
+
+- Updated dependencies [cb9b319]
+  - @bombfarm/domain@1.2.1
+
 ## 0.2.6
 
 ### Patch Changes

@@ -8,6 +8,16 @@ import { importedRoster, seedLocalStorage, selectSavedHero } from './fixtures/se
  */
 const TEAM_AURA_IDS = ['grito_guerra', 'pressagio_mortal', 'marcha_acelerada', 'folego_mineiro', 'brecha', 'passagem_bastao'] as const;
 
+/** An off aura's card reads what its switch would price the hero with — the cap — dimmed. */
+const AURA_CAP_TEXT: Record<(typeof TEAM_AURA_IDS)[number], string> = {
+  grito_guerra: '+20% attack',
+  pressagio_mortal: '+20% crit',
+  marcha_acelerada: '+3.70% speed',
+  folego_mineiro: '−20% drain',
+  brecha: '+20% penetration',
+  passagem_bastao: '+80% dmg (pulse)',
+};
+
 /** Lorne carries War Cry at rank 12; Cora carries no team aura at all. */
 const roster = {
   ...importedRoster,
@@ -93,7 +103,7 @@ test.describe('abilities & auras section', () => {
       const row = section.getByTestId(`team-aura-${id}`);
       await expect(row).toBeVisible();
       await expect(row.getByRole('switch')).not.toBeChecked();
-      await expect(row.getByTestId('team-aura-priced-at')).toHaveText('—');
+      await expect(row.getByTestId('team-aura-readout')).toHaveText(AURA_CAP_TEXT[id]);
     }
     await expect(section.getByTestId('team-aura-grito_guerra').getByTestId('team-aura-delta')).toHaveText(/\+\d+\.\d% if on/);
     await expect(section.getByTestId('own-ability-detonacao_dupla')).toContainText(/15\.0% chance \(×1\.\d\d dmg\)/);
@@ -102,7 +112,7 @@ test.describe('abilities & auras section', () => {
     const batonPass = section.getByTestId('team-aura-passagem_bastao');
     await expect(batonPass.getByRole('switch')).toHaveCount(0);
     await expect(batonPass.getByTestId('team-aura-own')).toHaveText(/^own$/i);
-    await expect(batonPass.getByTestId('team-aura-priced-at')).toHaveText(/\+40% dmg, pulse held up/);
+    await expect(batonPass.getByTestId('team-aura-readout')).toHaveText(/\+40% dmg \(pulse\)/);
     await expect(section.getByTestId('own-ability-passagem_bastao')).toHaveCount(0);
 
     await selectSavedHero(page, 'Lorne');
@@ -110,7 +120,7 @@ test.describe('abilities & auras section', () => {
     const warCry = lorneSection.getByTestId('team-aura-grito_guerra');
     await expect(warCry.getByRole('switch')).toHaveCount(0);
     await expect(warCry.getByTestId('team-aura-own')).toHaveText(/^own$/i);
-    await expect(warCry.getByTestId('team-aura-priced-at')).toHaveText(/\+12% attack/);
+    await expect(warCry.getByTestId('team-aura-readout')).toHaveText(/\+12% attack/);
     await expect(warCry.getByTestId('team-aura-delta')).toHaveText(/−\d+\.\d% if off/);
     for (const id of TEAM_AURA_IDS.filter((aura) => aura !== 'grito_guerra')) {
       await expect(lorneSection.getByTestId(`team-aura-${id}`).getByRole('switch')).toHaveCount(1);
@@ -118,13 +128,14 @@ test.describe('abilities & auras section', () => {
     // Lorne carries no Baton Pass: its switch prices her own entry pulse at the cap, and the
     // Combat figure moves by what the row promised.
     const lorneBaton = lorneSection.getByTestId('team-aura-passagem_bastao');
-    await expect(lorneBaton.getByTestId('team-aura-priced-at')).toHaveText('—');
+    await expect(lorneBaton.getByTestId('team-aura-readout')).toHaveText(AURA_CAP_TEXT.passagem_bastao);
+    await expect(lorneBaton.getByTestId('team-aura-delta')).toHaveText(/\+\d+\.\d% if on/);
     const promised = await promisedDeltaPct(lorneBaton);
     expect(promised).toBeGreaterThan(0);
     const before = await combatSustainedDps(page);
     await lorneBaton.getByRole('switch').click();
     await expect(lorneBaton.getByRole('switch')).toBeChecked();
-    await expect(lorneBaton.getByTestId('team-aura-priced-at')).toHaveText(/\+80% dmg, pulse held up/);
+    await expect(lorneBaton.getByTestId('team-aura-readout')).toHaveText(/\+80% dmg \(pulse\)/);
     await expect.poll(() => combatSustainedDps(page)).toBeGreaterThan(before);
     const after = await combatSustainedDps(page);
     expect(Math.abs((after / before - 1) * 100 - promised)).toBeLessThanOrEqual(moveTolerancePct(before, after));
@@ -157,7 +168,7 @@ test.describe('abilities & auras section', () => {
 
     await row.getByRole('switch').click();
     await expect(row.getByRole('switch')).toBeChecked();
-    await expect(row.getByTestId('team-aura-priced-at')).toHaveText(/\+20% attack/);
+    await expect(row.getByTestId('team-aura-readout')).toHaveText(/\+20% attack/);
     await expect(row.getByTestId('team-aura-delta')).toHaveText(/−\d+\.\d% if off/);
 
     await expect
@@ -193,7 +204,7 @@ test.describe('abilities & auras section', () => {
     const before = await combatSustainedDps(page);
     await row.getByRole('switch').click();
     await expect(row.getByRole('switch')).toBeChecked();
-    await expect(row.getByTestId('team-aura-priced-at')).toHaveText(/\+20/);
+    await expect(row.getByTestId('team-aura-readout')).toHaveText(/\+20/);
     await expect.poll(() => combatSustainedDps(page)).toBeGreaterThan(before);
     const after = await combatSustainedDps(page);
     expect(Math.abs((after / before - 1) * 100 - promised)).toBeLessThanOrEqual(moveTolerancePct(before, after));

@@ -14,8 +14,9 @@ live tap already sees in plaintext:
    floor), `filme` (a film id, `0` for none), `salas`, `segundos`, `atacante` and `defensor`
    (`{nome, herois, dano}` — `dano` is each side's score), `pontos_antes` / `pontos_depois`,
    `duelos_restantes` / `duelos_max`, `premio` (`won` when the rune chest landed, `lost` when a full
-   bag lost it) and `estado`, the account's full PVP state (`faixa`, `fase` as the tier floor,
-   `squad`, …);
+   bag lost it; a lost duel issues no chest and names neither — the record's `prize` is then
+   `null`, and the row is kept all the same) and `estado`, the account's full PVP state (`faixa`,
+   `fase` as the tier floor, `squad`, …);
 2. the **film** — ~2 MB: `id`, `fase`, `fase_visual`, `hz`, `segundos`, `salas`, per-hero `a[]` /
    `d[]`, and `q[]`, 721 frames for a 60 s duel at 12 Hz.
 

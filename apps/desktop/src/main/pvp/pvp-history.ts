@@ -99,7 +99,7 @@ export interface PvpHistory {
   recordStanding(snapshot: PvpStateSnapshot, opts: { readonly capturedAt: string }): boolean;
   recordRank(rank: Omit<PvpRank, 'capturedAt'>, opts: { readonly capturedAt: string }): boolean;
   list(opts: { readonly limit: number }): PvpHistoryResult;
-  /** The film's body as the tap caught it — the ~2 MB stays in main. `null` when not held. */
+  /** The film's body as the tap caught it ï¿½ the ~2 MB stays in main. `null` when not held. */
   readFilm(filmId: number): string | null;
 }
 
@@ -142,6 +142,14 @@ interface TotalsRow {
 
 const NOOP_LOG: LogPort = { info: () => undefined, warn: () => undefined, error: () => undefined };
 
+/** The `prize` column is `NOT NULL` in every database already written, and the additive schema
+ *  has no path to relax it, so a duel that issued no chest is stored as the empty string. */
+const NO_PRIZE_STORED = '';
+
+function prizeFrom(stored: string): PvpDuelPrize | null {
+  return stored === NO_PRIZE_STORED ? null : (stored as PvpDuelPrize);
+}
+
 function squadHeroIdsFrom(stored: string): readonly string[] {
   try {
     const parsed: unknown = JSON.parse(stored);
@@ -168,7 +176,7 @@ function toRow(stored: StoredRow): PvpDuelRow {
     pointsAfter: stored.points_after,
     duelsLeft: stored.duels_left,
     duelsMax: stored.duels_max,
-    prize: stored.prize as PvpDuelPrize,
+    prize: prizeFrom(stored.prize),
     tier: stored.tier,
     tierFloor: stored.tier_floor,
     squadHeroIds: squadHeroIdsFrom(stored.squad_hero_ids),
@@ -271,7 +279,7 @@ export function createPvpHistory(db: SqliteDb | null, log: LogPort = NOOP_LOG): 
           record.pointsAfter,
           record.duelsLeft,
           record.duelsMax,
-          record.prize,
+          record.prize ?? NO_PRIZE_STORED,
           record.tier,
           record.tierFloor,
           JSON.stringify(record.squadHeroIds),
