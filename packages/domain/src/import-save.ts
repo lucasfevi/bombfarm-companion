@@ -27,6 +27,7 @@ import { missingRequiredAccountFields, type RequiredAccountField } from './accou
 import { missingPostUpdateKeys } from './save-schema';
 import { WIKI_PHASE_LINES } from './phase-wiki';
 import type { AccountPayload } from '@bombfarm/contracts';
+import { parseSkillTreeState } from './skill-tree';
 
 const RARITY_BY_IDX: RarityKey[] = ['Comum', 'Incomum', 'Raro', 'Épico', 'Lendária', 'Mítico'];
 
@@ -135,6 +136,16 @@ export type AccountImportData = {
    */
   playerName?: string | null;
   accountId?: string | null;
+  /**
+   * Owned skill-tree levels (and the wallet / refunds that travel with them). `null` when the
+   * save carries no `skills.levels` — totals can exist without the per-node map, and an older
+   * stored account has the same gap until the next import.
+   */
+  skillTree?: {
+    levels: Readonly<Record<string, number>>;
+    refunds: Readonly<Record<string, number>>;
+    gold: number | null;
+  } | null;
 };
 
 /**
@@ -306,6 +317,15 @@ function mapAccountIdentity(raw: Record<string, unknown>): {
   return { playerName, accountId };
 }
 
+function mapImportedSkillTree(
+  skills: Record<string, unknown> | null,
+): NonNullable<AccountImportData['skillTree']> | null {
+  if (!skills) return null;
+  const parsed = parseSkillTreeState(skills);
+  if (parsed === null) return null;
+  return { levels: parsed.levels, refunds: parsed.refunds, gold: parsed.gold };
+}
+
 function mapAccountData(raw: Record<string, unknown>): AccountImportData {
   const skills = isObject(raw.skills) ? raw.skills : null;
   const totals = skills && isObject(skills.totals) ? skills.totals : null;
@@ -358,6 +378,7 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
       maxPhase,
       playerName,
       accountId,
+      skillTree: mapImportedSkillTree(skills),
     };
   }
 
@@ -373,6 +394,7 @@ function mapAccountData(raw: Record<string, unknown>): AccountImportData {
     maxPhase,
     playerName,
     accountId,
+    skillTree: mapImportedSkillTree(skills),
   };
 }
 
@@ -386,6 +408,7 @@ const EMPTY_ACCOUNT_DATA: AccountImportData = {
   maxPhase: null,
   playerName: null,
   accountId: null,
+  skillTree: null,
 };
 
 /**

@@ -28,8 +28,10 @@ export type RequiredAccountField = (typeof REQUIRED_ACCOUNT_FIELDS)[number];
  *   `slots` to `DEFAULT_CASA_SLOTS`. Each fallback is correct on its own terms.
  * - `playerName` / `accountId` are optional export keys, scrubbed from every committed fixture,
  *   and nothing computes with them.
+ * - `skillTree` is the per-node map (`skills.levels`). Totals still live on required `tree`; a
+ *   save can carry totals without levels, and an older stored account has the same gap.
  */
-export const OPTIONAL_ACCOUNT_FIELDS = ['slots', 'fieldSlots', 'houseCycleSecs', 'playerName', 'accountId'] as const;
+export const OPTIONAL_ACCOUNT_FIELDS = ['slots', 'fieldSlots', 'houseCycleSecs', 'playerName', 'accountId', 'skillTree'] as const;
 
 /** Structural rather than `AccountImportData`, so `import-save.ts` imports this without a cycle. */
 export type RequiredAccountFieldSource = {

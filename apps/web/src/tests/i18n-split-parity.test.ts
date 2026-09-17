@@ -28,6 +28,7 @@ import * as market from '@/shared/i18n/namespaces/market';
 import * as inventory from '@/shared/i18n/namespaces/inventory';
 import * as download from '@/shared/i18n/namespaces/download';
 import * as home from '@/shared/i18n/namespaces/home';
+import * as skills from '@/shared/i18n/namespaces/skills';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
 /**
@@ -964,6 +965,10 @@ const KEYS_ADDED: readonly string[] = [
   // The number spinner's step-up/step-down accessible names (the level control on the hero strip):
   // the design-system Num now takes them as props instead of baking in English. One line for the cap.
   'levelStepUp', 'levelStepDown',
+  // Skill Tree page (2026-09-17): the imported save's tree, as the game draws it, with what each
+  // next level is worth. One compact block — this file sits at its line cap.
+  'navSkills', 'skillsTitle', 'skillsTip', 'skillsUnreadableTitle', 'skillsUnreadableDescription', 'skillsArmHub', 'skillsArmDano', 'skillsArmCrit', 'skillsArmVelocidade', 'skillsArmOuro', 'skillsArmDrop', 'skillsArmEnergia', 'skillsArmGeo', 'skillsArmNeutro', 'skillsTierStart', 'skillsTierSmall', 'skillsTierNotavel', 'skillsTierUnlock', 'skillsKindTeamDmg', 'skillsKindCritChance', 'skillsKindCritDmg', 'skillsKindSpeed', 'skillsKindCoin', 'skillsKindLuck', 'skillsKindEnergia', 'skillsKindXp', 'skillsKindGeo', 'skillsKindFieldSlot', 'skillsKindBagTab', 'skillsEffectTeamDmg', 'skillsEffectCritChance', 'skillsEffectCritDmg', 'skillsEffectSpeed', 'skillsEffectCoin', 'skillsEffectLuck', 'skillsEffectEnergia', 'skillsEffectXp', 'skillsEffectGeo', 'skillsEffectFieldSlot', 'skillsEffectBagTab', 'skillsLevel', 'skillsHubName', 'skillsHubNote', 'skillsStateOwned', 'skillsStateMaxed', 'skillsStateBuyable', 'skillsStateUnaffordable', 'skillsStateLockedPrerequisite', 'skillsStateLockedPhase', 'skillsAlwaysLit', 'skillsNextLevelCost', 'skillsCostToMax', 'skillsRefund', 'skillsRefundBlocked', 'skillsWallet', 'skillsGoldAmount', 'skillsNextToBuy', 'skillsNextToBuyTip', 'skillsObjectiveGold', 'skillsObjectiveDps', 'skillsColNode', 'skillsColCost', 'skillsColGain', 'skillsColPerMillion', 'skillsGainDps', 'skillsPerMillionGold', 'skillsPerMillionDps', 'skillsGainOutsideObjectives', 'skillsNothingToRecommend', 'skillsPricingUnavailable', 'skillsPricedAtPhase', 'skillsPricedAtAccountPhase',
+  'skillsNodeTitleC07', 'skillsNodeTitleC12', 'skillsNodeTitleD07', 'skillsNodeTitleD12', 'skillsNodeTitleE07', 'skillsNodeTitleE11', 'skillsNodeTitleN01', 'skillsNodeTitleN03', 'skillsNodeTitleN05', 'skillsNodeTitleN07', 'skillsNodeTitleN09', 'skillsNodeTitleN11', 'skillsNodeTitleN13', 'skillsNodeTitleN15', 'skillsNodeTitleO08', 'skillsNodeTitleO12', 'skillsNodeTitleP01', 'skillsNodeTitleP02', 'skillsNodeTitleP03', 'skillsNodeTitleP04', 'skillsNodeTitleP05', 'skillsNodeTitleP06', 'skillsNodeTitleP07', 'skillsNodeTitleS02', 'skillsNodeTitleS05', 'skillsNodeTitleS07', 'skillsNodeTitleS11', 'skillsNodeTitleT01', 'skillsNodeTitleT02', 'skillsNodeTitleT03', 'skillsNodeTitleT04', 'skillsNodeTitleT05', 'skillsNodeTitleT06', 'skillsNodeTitleV08', 'skillsNodeTitleV13', 'skillsDpsLeftOut', 'skillsAffordableNow', 'skillsSelectNodeHint', 'skillsPreview', 'skillsPreviewTip', 'skillsPreviewGold', 'skillsPreviewGoldAtRoster', 'skillsPreviewDps', 'skillsTotalNowNext', 'skillsRequires', 'skillsGate', 'skillsArm', 'skillsTier', 'skillsEffects', 'skillsTotals', 'skillsTotalsTip', 'skillsTotalTeamDmg', 'skillsTotalCritChance', 'skillsTotalCritDmg', 'skillsTotalSpeed', 'skillsTotalCoin', 'skillsTotalLuck', 'skillsTotalEnergia', 'skillsTotalDmgStatic', 'skillsTotalGeo', 'skillsTotalXp', 'skillsTotalFieldSlots', 'skillsTotalBagTabs', 'skillsTreeProgress', 'skillsGoldSpent', 'skillsGoldToMax', 'skillsFitToView', 'skillsZoomIn', 'skillsZoomOut', 'skillsLegend', 'skillsLegendOwned', 'skillsLegendBuyable', 'skillsLegendLocked', 'skillsLegendRecommended', 'skillsCanvasAria', 'skillsNodeAria',
 ];
 
 /**
@@ -1174,7 +1179,7 @@ const namespaces = [
   ['stats', stats],
   ['market', market],
   ['inventory', inventory],
-  ['download', download], ['home', home],
+  ['download', download], ['home', home], ['skills', skills],
 ] as const;
 
 describe('i18n split parity', () => {

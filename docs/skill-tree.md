@@ -19,6 +19,15 @@ gold per hour, or team DPS. The objective toggle is remembered between visits.
 The tab is drawn from the account read the other data screens share. When the skills section of
 that read is not usable, the tab says the tree could not be read and draws nothing else.
 
+## Web planner
+
+The same screen ships on the web planner as a tab between Inventory and Account. Owned levels
+arrive on the imported save (`skills.levels`) and persist on the account record; a browser
+account written before that field existed still has the tree's totals on the Account page, but
+the Skill Tree tab asks for a fresh import rather than inventing nodes. Gold per hour prints two
+figures: the mean over nearby roster strengths, and the value at this roster beside it. Rates
+keep three significant digits so a now→next pair does not collapse to the same compact number.
+
 ## Where the catalog and the layout come from
 
 Two committed bundles in `@bombfarm/domain`, refreshed out of band by maintainers, the way the
@@ -57,7 +66,8 @@ account is farming now; the header says which — so the figures here agree with
   nothing when it does not. The gain is therefore taken as the mean over nearby roster strengths —
   every hero's attack scaled across ±5% in half-percent steps, both sides of the comparison scaled
   alike. Damage nodes come out stable from ±2% to ±8%; every other axis is smooth and unchanged by
-  the mean.
+  the mean. The ranking and the selected-node preview also print the figure at this roster, so the
+  mean and the exact read sit side by side.
 - **Team DPS** is the roster objective the Optimizer scores, evaluated with the tree's sheet totals
   and field slots moved by the node. Heroes without birth stats are left out of this figure and
   named.

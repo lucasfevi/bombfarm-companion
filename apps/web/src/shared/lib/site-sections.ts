@@ -1,4 +1,12 @@
-export type SiteSection = 'home' | 'heroes' | 'farm' | 'optimizer' | 'inventory' | 'account' | 'download';
+export type SiteSection =
+  | 'home'
+  | 'heroes'
+  | 'farm'
+  | 'optimizer'
+  | 'inventory'
+  | 'skills'
+  | 'account'
+  | 'download';
 
 /**
  * Every top-level route, in order.
@@ -13,6 +21,7 @@ export const SITE_SECTIONS: readonly SiteSection[] = [
   'farm',
   'optimizer',
   'inventory',
+  'skills',
   'account',
   'download',
 ];
@@ -31,6 +40,7 @@ export const SITE_SECTION_HREF: Record<SiteSection, string> = {
   farm: '/farm',
   optimizer: '/optimizer',
   inventory: '/inventory',
+  skills: '/skills',
   account: '/account',
   download: '/download',
 };
@@ -45,6 +55,7 @@ export const SITE_SECTION_LABEL_KEY = {
   farm: 'navPhases',
   optimizer: 'navOptimizer',
   inventory: 'navInventory',
+  skills: 'navSkills',
   account: 'navAccount',
   download: 'downloadNavLabel',
 } as const satisfies Record<SiteSection, string>;

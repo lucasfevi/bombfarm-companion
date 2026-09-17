@@ -11,12 +11,12 @@ Canonical keys (current):
 | --- | --- |
 | `bf-hp-heroes-v1` | `HeroRecord[]` |
 | `bf-hp-active-hero-v1` | active hero id |
-| `bf-hp-account-v1` | `AccountShared` (tree, context, slots, fieldSlots, houseCycleSecs, forgeFloor); a record's `teamBuffs` / `teamBuffsOverride` are discarded on load |
+| `bf-hp-account-v1` | `AccountShared` (tree, context, slots, fieldSlots, houseCycleSecs, forgeFloor, optional `skillTree` levels); a record's `teamBuffs` / `teamBuffsOverride` are discarded on load |
 | `bf-hp-inventory-v1` | `InventorySnapshot` (`version`, `importedAt`, `items[]`) |
 | `bf-hp-gear-scope-v1` | Optimizer per-hero scope map (`Record<heroId, ScopeState>`) — see below |
 | `bf-hp-team-plan-v1` | Optimizer plan envelope (`{ version, signature, objective, allowedChanges, ignoreFieldCrowding, targetPhase, plan }`) — see below |
 
-UI chrome prefs (`bf_lang`, guide/roster open state, etc.) are separate and must tolerate absence.
+UI chrome prefs (`bf_lang`, `bf-hp-skills-view-v1`, guide/roster open state, etc.) are separate and must tolerate absence.
 
 **Out of scope for this hard truth:** pre-public / private-only shapes (e.g. old point-advisor `bf-pa-*` keys). The product guarantee starts at the public `bf-hp-*-v1` schema. Leftover readers in code are optional cleanup, not a requirement to preserve forever.
 
@@ -87,6 +87,7 @@ Both fields stay **absent** on `defaultPhasesView()` and on every payload the pl
 | Field | Default | Notes |
 | --- | --- | --- |
 | `importedAt` | absent (`null` at the store) | Epoch ms of the last `applyAccountImport`, written **unconditionally** on every import whatever the payload carries — the Home status strip's "save imported N ago". A record written before the field existed has no stamp and is **not backfilled** (no migrator, no migration marker — rule 6); the next import writes it. `normalizeAccount` keeps only a positive finite number and **omits the key** otherwise (absent, `null`, `NaN`, `±Infinity`, a string, `0`), so a stampless record re-serialises byte-identically (the round-trip tripwire). |
+| `skillTree` | omitted (`null` at the store) | Owned skill-tree levels (and the wallet / refunds that travel with them) from the last import. Absent on a record written before this field existed — **no migrator backfills it**; the next import writes it. The Skill Tree page treats absence as "re-import to see the tree". `normalizeAccount` parses through the same reader the save uses and **omits the key** when there is no `levels` map, so a pre-field record re-serialises byte-identically. **Written unconditionally by `applyAccountImport`** from `AccountImportData.skillTree` — a later import whose save carries totals but no per-node map must **clear** a stale tree, not preserve it. |
 | `maxPhase` | `null` | `account.max_phase` — the furthest phase this account has reached. Mirrors the optional field `@bombfarm/domain` added to its own storage shim. `null`/absent means no lock badges anywhere on the Farm Ranking board, and its unlocked-only filter renders disabled with a one-line reason rather than silently filtering to nothing. Clamped/rounded to an integer in `1..600` on load, the same way `context.phase` already is. **Written unconditionally by `applyAccountImport`** from `AccountImportData.maxPhase` — unlike every sibling field on this record, which is written only `if (data.field != null)`. This field is required-and-total, so a payload carrying no `max_phase` source is an assertion that this account has no known max phase: a re-import must **clear** a stale value, not preserve it, or a lock badge would keep asserting progress the payload just contradicted. Both the file-import and API-refresh paths reach this (both funnel through `parseAccountPayload` → `mapAccountData`). |
 
 ### `bf-hp-inventory-v1` (account-scoped collection)
