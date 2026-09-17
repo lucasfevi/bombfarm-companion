@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { switchLanguage } from './shell-control.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..', '..');
@@ -125,12 +126,12 @@ test.describe('Skill Tree tab — the fixture account\'s tree, drawn and priced'
   });
 
   test('the same screen in Portuguese, through the top bar\'s language switch', async () => {
-    await page.locator('[role="group"] button', { hasText: 'PT' }).click();
+    await switchLanguage(page, 'pt');
     await expect(navButton(page, SKILLS_TAB_INDEX)).toHaveAccessibleName(pt('skillsNavLabel'), { timeout: 10_000 });
     await openSkills(page);
     await expectScreenDrawn(page, pt);
 
-    await page.locator('[role="group"] button', { hasText: 'EN' }).click();
+    await switchLanguage(page, 'en');
     await expect(navButton(page, SKILLS_TAB_INDEX)).toHaveAccessibleName(en('skillsNavLabel'), { timeout: 10_000 });
   });
 });

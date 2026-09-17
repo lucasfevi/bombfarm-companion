@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { switchLanguage } from './shell-control.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..', '..');
@@ -78,7 +79,7 @@ async function launchApp() {
   // Portuguese, because it is the binding language: its tab words and its action labels are the
   // longest either language puts in the bar, so a width that fits here fits in English too. The
   // widths this file asserts against were measured in it.
-  await page.locator('[role="group"] button', { hasText: 'PT' }).click();
+  await switchLanguage(page, 'pt');
   await expect(page.locator('nav[aria-label="Main"] button').first()).toHaveText('Ao vivo');
 
   return { app, page };
