@@ -24,10 +24,15 @@ const STATUS_KEY: Record<OwnAbilityStatus, keyof HeroCopy> = {
 const numericClass = 'font-mono text-[11px] leading-snug tabular-nums';
 const tagClass = 'text-[10px] font-bold tracking-[0.06em] uppercase text-muted';
 const groupHeadClass = 'mb-1.5 text-[10px] font-bold tracking-[0.08em] uppercase text-accent';
-/** The two groups side by side once the panel is wide enough for two columns of cards, each
- *  group two cards across; under that they stack, and under a phone's width the cards do too. */
-const groupsClass = 'mt-3 grid grid-cols-1 gap-x-5 gap-y-3 @min-[52rem]:grid-cols-2';
-const cardsClass = 'm-0 grid list-none grid-cols-1 gap-1.5 p-0 @min-[26rem]:grid-cols-2';
+/** A card takes more columns only while each can still print its longest line whole, in
+ *  Portuguese, beside the widest thing its right column holds — an aura card's "+3,70% de
+ *  velocidade" beside "própria", an own ability's "+50% de chance de subir raridade" beside "não
+ *  nesta fase" — so the groups sit side by side only once each half holds two aura cards, and
+ *  each group measures its own width for how many cards go across. */
+const groupsClass = 'mt-3 grid grid-cols-1 gap-x-5 gap-y-3 @min-[67.5rem]:grid-cols-2';
+const groupClass = '@container min-w-0';
+const auraCardsClass = 'm-0 grid list-none grid-cols-1 gap-1.5 p-0 @min-[33rem]:grid-cols-2 @min-[50rem]:grid-cols-3';
+const ownCardsClass = 'm-0 grid list-none grid-cols-1 gap-1.5 p-0 @min-[48rem]:grid-cols-2';
 const cardClass =
   'grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 rounded-sm border border-line bg-bg px-2 py-1.5';
 
@@ -48,6 +53,9 @@ function deltaClass(deltaPct: number): string {
  * Gear and Points all read the same pipeline — so each row says what flipping it would do to
  * sustained DPS before the reader does. The tip says where the uptime-weighted figures live
  * instead, because the same hero prints a different DPS there.
+ *
+ * A card is three lines whatever its switch says — name, the figure, the delta — and none of
+ * them wraps, so flipping a switch recolours the card and moves nothing around it.
  */
 export function AbilitiesAurasPanel({
   hero,
@@ -80,9 +88,9 @@ export function AbilitiesAurasPanel({
       </Tooltip.Provider>
 
       <div className={groupsClass}>
-        <section>
+        <section className={groupClass}>
           <h3 className={groupHeadClass}>{t.heroDetailAurasTeamGroup}</h3>
-          <ul className={cardsClass}>
+          <ul className={auraCardsClass}>
             {auraRows.map((row) => {
               const name = abilityName(row.buffId, lang);
               const rank = row.carried ? hero.abilities[row.buffId] : undefined;
@@ -100,16 +108,11 @@ export function AbilitiesAurasPanel({
                   />
                   <div className="flex min-w-0 flex-col gap-0.5">
                     <span className="truncate text-[12px] leading-tight font-semibold">{name}</span>
-                    <span className={cn(numericClass, 'flex min-w-0 flex-wrap items-baseline gap-x-2')}>
-                      <span className={cn(!row.on && 'text-muted')} data-testid="team-aura-priced-at">
-                        {row.pricedAt ? readoutText(row.pricedAt, lang) : '—'}
-                      </span>
-                      <span className={deltaClass(row.deltaPct)} data-testid="team-aura-delta">
-                        {deltaText}
-                      </span>
+                    <span className={cn(numericClass, 'truncate', !row.on && 'text-muted')} data-testid="team-aura-readout">
+                      {readoutText(row.readout, lang)}
                     </span>
-                    <span className={cn(numericClass, 'truncate text-muted')}>
-                      {t.heroDetailAurasColumnCap} {readoutText(row.cap, lang)}
+                    <span className={cn(numericClass, 'truncate', deltaClass(row.deltaPct))} data-testid="team-aura-delta">
+                      {deltaText}
                     </span>
                   </div>
                   {row.carried ? (
@@ -129,12 +132,12 @@ export function AbilitiesAurasPanel({
           </ul>
         </section>
 
-        <section>
+        <section className={groupClass}>
           <h3 className={groupHeadClass}>{t.heroDetailAurasOwnGroup}</h3>
           {ownRows.length === 0 ? (
             <p className={cn(tipClass, 'm-0')}>{t.heroDetailAurasNoOwnAbilities}</p>
           ) : (
-            <ul className={cardsClass}>
+            <ul className={ownCardsClass}>
               {ownRows.map((row) => (
                 <li
                   key={row.abilityId}
@@ -151,7 +154,7 @@ export function AbilitiesAurasPanel({
                   />
                   <div className="flex min-w-0 flex-col gap-0.5">
                     <span className="truncate text-[12px] leading-tight font-semibold">{abilityName(row.abilityId, lang)}</span>
-                    <span className={cn(numericClass, row.status === 'own' ? 'text-ink' : 'text-muted')}>
+                    <span className={cn(numericClass, 'truncate', row.status === 'own' ? 'text-ink' : 'text-muted')}>
                       {readoutText(row.effect, lang)}
                     </span>
                   </div>
