@@ -13,7 +13,6 @@ import {
   HeroAbilityIcons,
   HeroAvatar,
   HeroGearIcons,
-  HeroPeek,
   heroPeekData,
   rarityDotClass,
   rarityTextClass,
@@ -47,9 +46,13 @@ export function ImportCandidateRow({
     >
       <DataTable.Cell className="w-14 px-1" nowrap={false}>
         <span className={inactiveChrome}>
-          <HeroPeek hero={heroPeekData(candidate.record)} lang={lang}>
-            <HeroAvatar skin={candidate.record.skin ?? 0} rarityIdx={rarIdx} size="lg" name={candidate.name} />
-          </HeroPeek>
+          <HeroAvatar
+            skin={candidate.record.skin ?? 0}
+            rarityIdx={rarIdx}
+            size="lg"
+            name={candidate.name}
+            peek={{ hero: heroPeekData(candidate.record), lang }}
+          />
         </span>
       </DataTable.Cell>
       <DataTable.Cell

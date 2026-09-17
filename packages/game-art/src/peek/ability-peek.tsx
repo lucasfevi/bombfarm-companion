@@ -7,7 +7,7 @@ import { abilityEffectText, abilityName, abilityReadoutText, peekLabel } from '@
 import type { Lang } from '@bombfarm/domain/shims/i18n';
 import { formatNumber } from '@bombfarm/ui';
 import { AbilityIcon } from '../ability-icon';
-import { PeekFrame } from './peek-frame';
+import { usePeek, type PeekSpec } from './use-peek';
 import {
   peekEffectClass,
   peekHeadClass,
@@ -95,20 +95,22 @@ export function AbilityPeekCard({ id, level, max = ABILITY_LEVEL_MAX, lang }: Pi
   );
 }
 
-/** Wraps an ability's icon (or name) so hovering it opens {@link AbilityPeekCard}. */
-export function AbilityPeek({ id, level, max, lang, children, className, disabled, stopRowActivation }: AbilityPeekProps) {
+/** What `AbilityIcon` needs to open the card itself, beside the ability it already draws. */
+export type AbilityIconPeek = Pick<AbilityPeekProps, 'lang' | 'level' | 'max' | 'className' | 'stopRowActivation'>;
+
+export function abilityPeekSpec(id: string, { lang, level, max, className, stopRowActivation }: AbilityIconPeek): PeekSpec {
   const cap = max ?? ABILITY_LEVEL_MAX;
   const name = abilityName(id, lang);
-  return (
-    <PeekFrame
-      kind="ability"
-      label={level === undefined ? name : `${name}, ${level}/${cap}`}
-      className={className}
-      disabled={disabled}
-      stopRowActivation={stopRowActivation}
-      card={<AbilityPeekCard id={id} level={level} max={cap} lang={lang} />}
-    >
-      {children}
-    </PeekFrame>
-  );
+  return {
+    kind: 'ability',
+    label: level === undefined ? name : `${name}, ${level}/${cap}`,
+    className,
+    stopRowActivation,
+    card: <AbilityPeekCard id={id} level={level} max={cap} lang={lang} />,
+  };
+}
+
+/** Wraps something other than an `AbilityIcon` — a name, say — so hovering it opens {@link AbilityPeekCard}. */
+export function AbilityPeek({ id, children, disabled, ...peek }: AbilityPeekProps) {
+  return usePeek(disabled ? undefined : abilityPeekSpec(id, peek), children);
 }

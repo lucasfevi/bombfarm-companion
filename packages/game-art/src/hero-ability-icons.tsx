@@ -7,7 +7,6 @@ import type { Lang } from '@bombfarm/domain/shims/i18n';
 import { cn } from '@bombfarm/ui';
 import { AbilityIcon } from './ability-icon';
 import { type AbilityIconRecipeSize } from './game-art.recipe';
-import { AbilityPeek } from './peek';
 
 type Props = {
   abilities: Record<string, number>;
@@ -42,15 +41,13 @@ export function HeroAbilityIcons({
       onClick={stopRowActivation}
       onKeyDown={stopRowActivation}
     >
-      {entries.map(({ id, level, max }) => (
-        <AbilityPeek key={id} id={id} level={level} max={max} lang={lang} stopRowActivation>
-          {showLevel ? (
-            <AbilityIcon code={id} size={size} level={level} max={max} />
-          ) : (
-            <AbilityIcon code={id} size={size} />
-          )}
-        </AbilityPeek>
-      ))}
+      {entries.map(({ id, level, max }) =>
+        showLevel ? (
+          <AbilityIcon key={id} code={id} size={size} level={level} max={max} peek={{ lang, level, max, stopRowActivation: true }} />
+        ) : (
+          <AbilityIcon key={id} code={id} size={size} peek={{ lang, level, max, stopRowActivation: true }} />
+        ),
+      )}
     </span>
   );
 }

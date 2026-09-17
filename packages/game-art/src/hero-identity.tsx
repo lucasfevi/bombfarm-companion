@@ -5,7 +5,7 @@ import { heroLevelLabel, rarityLabel } from '@bombfarm/domain/game-labels';
 import type { Lang } from '@bombfarm/domain/shims/i18n';
 import { cn } from '@bombfarm/ui';
 import { HeroAvatar } from './hero-avatar';
-import { HeroPeek, type HeroPeekData } from './peek';
+import type { HeroPeekData } from './peek';
 import { heroRankToneClass, rarityTextClass } from './game-art.recipe';
 import type { ArtFrameSize } from './art-frame';
 
@@ -83,9 +83,13 @@ export function HeroIdentity({
   return (
     <div className="flex min-w-0 items-center gap-2">
       <div className="shrink-0">
-        <HeroPeek hero={peek ?? { name }} lang={lang} disabled={!peek}>
-          <HeroAvatar skin={skin} rarityIdx={rarityIdx ?? NEUTRAL_RARITY_IDX} size={size} name={name} />
-        </HeroPeek>
+        <HeroAvatar
+          skin={skin}
+          rarityIdx={rarityIdx ?? NEUTRAL_RARITY_IDX}
+          size={size}
+          name={name}
+          peek={peek === undefined ? undefined : { hero: peek, lang }}
+        />
       </div>
       <div className="min-w-0 text-left">
         <div

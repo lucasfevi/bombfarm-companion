@@ -7,7 +7,7 @@ import { abilityName, abilityReadoutText } from '@bombfarm/domain/game-labels';
 import { ABILITY_LEVEL_MAX } from '@bombfarm/domain/model';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { TeamAuraId, TeamAuraSwitches } from '@bombfarm/domain/team-buffs';
-import { AbilityIcon, AbilityPeek } from '@bombfarm/game-art';
+import { AbilityIcon } from '@bombfarm/game-art';
 import { heroCopyFor, sub, type HeroCopy, type Lang } from '../copy';
 import {
   ownAbilityRowsFor,
@@ -91,14 +91,13 @@ export function AbilitiesAurasPanel({
               });
               return (
                 <li key={row.buffId} data-testid={`team-aura-${row.buffId}`} className={cn(cardClass, !row.on && 'text-muted')}>
-                  <AbilityPeek id={row.buffId} level={rank} lang={lang}>
-                    <AbilityIcon
-                      code={row.buffId}
-                      size="md"
-                      {...(rank === undefined ? {} : { level: rank, max: ABILITY_LEVEL_MAX })}
-                      className={cn(!row.on && 'opacity-40')}
-                    />
-                  </AbilityPeek>
+                  <AbilityIcon
+                    code={row.buffId}
+                    size="md"
+                    {...(rank === undefined ? {} : { level: rank, max: ABILITY_LEVEL_MAX })}
+                    className={cn(!row.on && 'opacity-40')}
+                    peek={{ lang, level: rank }}
+                  />
                   <div className="flex min-w-0 flex-col gap-0.5">
                     <span className="truncate text-[12px] leading-tight font-semibold">{name}</span>
                     <span className={cn(numericClass, 'flex min-w-0 flex-wrap items-baseline gap-x-2')}>
@@ -142,15 +141,14 @@ export function AbilitiesAurasPanel({
                   data-testid={`own-ability-${row.abilityId}`}
                   className={cn(cardClass, row.status !== 'own' && 'text-muted')}
                 >
-                  <AbilityPeek id={row.abilityId} level={row.rank} lang={lang}>
-                    <AbilityIcon
-                      code={row.abilityId}
-                      size="md"
-                      level={row.rank}
-                      max={ABILITY_LEVEL_MAX}
-                      className={cn(row.status !== 'own' && 'opacity-40')}
-                    />
-                  </AbilityPeek>
+                  <AbilityIcon
+                    code={row.abilityId}
+                    size="md"
+                    level={row.rank}
+                    max={ABILITY_LEVEL_MAX}
+                    className={cn(row.status !== 'own' && 'opacity-40')}
+                    peek={{ lang, level: row.rank }}
+                  />
                   <div className="flex min-w-0 flex-col gap-0.5">
                     <span className="truncate text-[12px] leading-tight font-semibold">{abilityName(row.abilityId, lang)}</span>
                     <span className={cn(numericClass, row.status === 'own' ? 'text-ink' : 'text-muted')}>

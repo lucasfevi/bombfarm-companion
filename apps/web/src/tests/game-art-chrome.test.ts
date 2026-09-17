@@ -167,7 +167,7 @@ describe('hero gear icons', () => {
   });
 
   it('each equipped tile opens the item card, and names the item nowhere else', () => {
-    expect(src).toContain('<ItemPeek');
+    expect(src).toContain('peek={{ lang, stopRowActivation: true }}');
     expect(src).not.toContain('formatItemRosterTooltip');
     expect(src).not.toContain('formatItemDisplay');
   });
@@ -192,15 +192,14 @@ describe('hero gear icons', () => {
 describe('hero ability icons', () => {
   const src = readGameArt('hero-ability-icons.tsx');
 
-  it('each icon opens the ability card; the frame keeps the trigger out of the tab order', () => {
-    expect(src).toContain('<AbilityPeek');
-    expect(src).toContain('stopRowActivation');
-    const frame = readGameArt('peek/peek-frame.tsx');
+  it('each icon opens the ability card; the trigger stays out of the tab order and is a bare span at rest', () => {
+    expect(src).toContain('peek={{ lang, level, max, stopRowActivation: true }}');
+    const frame = readGameArt('peek/use-peek.tsx');
     expect(frame).toContain('tabIndex={-1}');
     expect(frame).toContain('render={<span role={role} />}');
     // A bare span until a pointer arrives: the tooltip tree is not paid for by icons nobody hovers.
     expect(frame).toContain('data-slot="peek-trigger"');
-    expect(frame).toContain('onPointerEnter');
+    expect(frame).toContain('onPointerMove');
   });
 
   it('shows n/max progress at lg size matching gear unless a caller asks for another', () => {

@@ -14,7 +14,7 @@
 import { useEffect, useMemo } from 'react';
 import type { AccountSource } from '@bombfarm/contracts';
 import { buildInventoryView } from '@bombfarm/domain/inventory-view';
-import { ItemIcon, ItemPeek, itemPeekFromInventory } from '@bombfarm/game-art';
+import { ItemIcon, itemPeekFromInventory } from '@bombfarm/game-art';
 import { cn } from '@bombfarm/ui';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
@@ -99,9 +99,13 @@ export function ForgeQueueBar({
       {head !== null ? (
         <span data-testid="forge-queue-in-flight" className="flex min-w-0 items-center gap-1.5 text-[12px]">
           {head.item !== null ? (
-            <ItemPeek item={itemPeekFromInventory(head.item)} lang={lang} name={headName}>
-              <ItemIcon item={head.item} size="xs" showLevel={false} showUpgrade={false} />
-            </ItemPeek>
+            <ItemIcon
+              item={itemPeekFromInventory(head.item)}
+              size="xs"
+              showLevel={false}
+              showUpgrade={false}
+              peek={{ lang, name: headName }}
+            />
           ) : null}
           <span className="truncate text-ink">{headName}</span>
           <span className="font-mono tabular-nums text-ink">

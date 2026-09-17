@@ -1,6 +1,6 @@
 'use client';
 
-import { HeroAvatar, HeroPeek, heroPeekData, rarityTextClass, rosterInactiveChromeClass } from '@bombfarm/game-art';
+import { HeroAvatar, heroPeekData, rarityTextClass, rosterInactiveChromeClass } from '@bombfarm/game-art';
 import { cn, DataTable } from '@bombfarm/ui';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import type { RosterDpsRow } from '@bombfarm/domain/roster-dps';
@@ -93,9 +93,7 @@ export function PhasesTop9Table({
                 </DataTable.Cell>
                 <DataTable.Cell className="w-12 px-1" nowrap={false}>
                   <span className={inactiveChrome}>
-                    <HeroPeek hero={heroPeekData(hero)} lang={lang}>
-                      <HeroAvatar skin={hero.skin ?? 0} rarityIdx={rarIdx} size="md" name={hero.name} />
-                    </HeroPeek>
+                    <HeroAvatar skin={hero.skin ?? 0} rarityIdx={rarIdx} size="md" name={hero.name} peek={{ hero: heroPeekData(hero), lang }} />
                   </span>
                 </DataTable.Cell>
                 <DataTable.Cell className={inactiveChrome}>

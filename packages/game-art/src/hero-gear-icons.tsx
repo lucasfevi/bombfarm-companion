@@ -8,7 +8,6 @@ import { slotLabel } from '@bombfarm/domain/game-labels';
 import { cn, Tooltip } from '@bombfarm/ui';
 import { ItemIcon } from './item-icon';
 import { emptyGearSlotClass, rosterIconTooltipTriggerClass } from './game-art.recipe';
-import { ItemPeek } from './peek';
 
 type Props = {
   loadout: Loadout;
@@ -68,11 +67,7 @@ export function HeroGearIcons({
           );
         }
 
-        return (
-          <ItemPeek key={slot} item={equipped} lang={lang} stopRowActivation>
-            <ItemIcon item={equipped} size="lg" />
-          </ItemPeek>
-        );
+        return <ItemIcon key={slot} item={equipped} size="lg" peek={{ lang, stopRowActivation: true }} />;
       })}
     </span>
   );

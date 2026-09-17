@@ -112,14 +112,22 @@ and its two strips. The contract every call site keeps:
 - **A reference to a thing opens its card; the subject of a screen does not.** A hero in a rail,
   a picker row, a scope card or an inventory footer peeks; the selected hero's strip, its Gear tab
   cards and the ability editor stay bare, because the card would only repeat the screen.
-- **The trigger lays out exactly as the bare icon did.** `PeekFrame` renders `Tooltip.Trigger` as
-  a `<span role="img">` (an avatar sits inside clickable rows and switcher buttons — a button in a
-  button is not HTML) with `tabIndex={-1}`, so a row of ten icons keeps its one tab stop; the
-  accessible name rides on it. On hover the art itself answers — the tile brightens and lifts
-  two pixels onto a soft shadow; nothing is drawn around it, since an accent ring read as a
-  selection on a strip of eight.
-- **One level deep, always.** Icons drawn inside a card are bare art; pass `disabled` to a peek
-  drawn where a card must not open (a drag overlay, a nested trigger).
+- **The art primitive is the trigger.** `ItemIcon`, `HeroAvatar` and `AbilityIcon` take a `peek`
+  prop and wrap themselves through `usePeek` (`peek/use-peek.tsx`); `ItemPeek` / `HeroPeek` /
+  `AbilityPeek` exist for wrapping something else, a name say. At rest the trigger is a bare
+  `<span>` — a tooltip tree per icon re-rendered five hundred times per commit on the inventory,
+  and the render-count instruments on both hosts gate that — and the first pointer *move* over it
+  (a move, not an enter: the browser raises an enter alone for an icon a re-laid-out table slides
+  under a resting pointer, and a card that pops open unasked is worse than none) mounts the
+  tooltip already open. The hook owns the open state and closes from a document-level pointer
+  watch, since a tooltip opened by anything but its own hover never learns the pointer has gone.
+  The span (an avatar sits inside clickable rows and switcher buttons — a button in a button is
+  not HTML) is `tabIndex={-1}`, so a row of ten icons keeps its one tab stop; the accessible name
+  rides on it only for art that has none of its own. On hover the art itself answers — the tile
+  brightens and lifts two pixels onto a soft shadow; nothing is drawn around it, since an accent
+  ring read as a selection on a strip of eight.
+- **One level deep, always.** Icons drawn inside a card are bare art; leave `peek` off (or pass
+  `disabled` to a wrapper) where a card must not open — a drag overlay, a nested trigger.
 - **A card says what it was handed.** `HeroPeekData` is all-optional past the name;
   `heroPeekData(record)` fills it from a `HeroRecord`. An inventory row hands `ItemPeek` the rolls
   the game reported (`stats`) so the row and its card print the same figures; a piece the planner

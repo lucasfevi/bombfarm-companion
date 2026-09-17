@@ -5,7 +5,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { Select, cn } from '@bombfarm/ui';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
-import { HeroAvatar, HeroPeek, heroPeekData, heroRankToneClass, rarityTextClass } from '@bombfarm/game-art';
+import { HeroAvatar, heroPeekData, heroRankToneClass, rarityTextClass } from '@bombfarm/game-art';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { sub, type Lang } from '@bombfarm/hero/copy';
 import { shortHeroRecordId } from '@bombfarm/domain/shims/hero-identity';
@@ -73,9 +73,13 @@ export const ScopeHeroCard = memo(function ScopeHeroCard({
     >
       <div className="flex items-start gap-2">
         <div className="mt-0.5 shrink-0" aria-hidden={overlay || undefined}>
-          <HeroPeek hero={heroPeekData(hero)} lang={lang} disabled={overlay}>
-            <HeroAvatar skin={hero.skin ?? 0} rarityIdx={rarIdx} size="md" name={hero.name} />
-          </HeroPeek>
+          <HeroAvatar
+            skin={hero.skin ?? 0}
+            rarityIdx={rarIdx}
+            size="md"
+            name={hero.name}
+            peek={overlay ? undefined : { hero: heroPeekData(hero), lang }}
+          />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">

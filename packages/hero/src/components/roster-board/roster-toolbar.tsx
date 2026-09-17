@@ -19,7 +19,6 @@ import { useMemo } from 'react';
 import { abilityName } from '@bombfarm/domain/game-labels';
 import {
   AbilityIcon,
-  AbilityPeek,
   InventoryLayoutToggle,
   inventorySortDirectionClass,
   inventorySortGroupClass,
@@ -227,9 +226,7 @@ function AbilityFilterStrip({
               option.owned ? 'cursor-pointer' : cn('cursor-default', 'opacity-30', 'grayscale'),
             )}
           >
-            <AbilityPeek id={option.id} lang={lang}>
-              <AbilityIcon code={option.id} size="xs" className={selectedFrameClass} />
-            </AbilityPeek>
+            <AbilityIcon code={option.id} size="xs" className={selectedFrameClass} peek={{ lang }} />
           </button>
         );
       })}

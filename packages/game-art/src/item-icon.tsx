@@ -3,6 +3,8 @@ import { itemIconSrc, itemKindIconSrc, raritySlotPlateSrc } from '@bombfarm/doma
 import { cn } from '@bombfarm/ui';
 import { ArtFrame, type ArtFrameSize } from './art-frame';
 import { iconMetaGlyphRecipe } from './game-art.recipe';
+import { itemPeekSpec, type ItemIconPeek, type ItemPeekItem } from './peek/item-peek';
+import { usePeek } from './peek/use-peek';
 
 /**
  * The fields an item tile draws. Deliberately structural rather than one of the domain's named
@@ -19,13 +21,15 @@ export type ItemIconItem = {
 };
 
 type Props = {
-  item: ItemIconItem;
+  item: ItemPeekItem;
   size?: ArtFrameSize;
   className?: string;
-  /** Hide the forge `+N` (it stays in the tooltip). Default: shown, on gear. */
+  /** Hide the forge `+N` (it stays in the card). Default: shown, on gear. */
   showUpgrade?: boolean;
   /** Hide the item-level glyph. Default: shown, on gear. */
   showLevel?: boolean;
+  /** Open the item's card on hover. Absent, the tile is bare art — one drawn inside a card, say. */
+  peek?: ItemIconPeek | undefined;
 };
 
 /**
@@ -41,7 +45,7 @@ type Props = {
  * Level and forge are gear's glyphs alone: a gem or a key arrives with both at 0 on the wire, so
  * drawing them would print a "0" on every stack.
  */
-export function ItemIcon({ item, size = 'md', className, showUpgrade, showLevel }: Props) {
+export function ItemIcon({ item, size = 'md', className, showUpgrade, showLevel, peek }: Props) {
   const isGear = item.kind === undefined || item.kind === 'equipment';
   const plate = raritySlotPlateSrc(item.rarityIdx);
   const iconUrl = isGear ? itemIconSrc(item.defId) : itemKindIconSrc(item.defId, item.rarityIdx);
@@ -52,7 +56,7 @@ export function ItemIcon({ item, size = 'md', className, showUpgrade, showLevel 
   const withLevel = (showLevel ?? true) && isGear;
   const withUpgrade = (showUpgrade ?? true) && isGear && upgrade > 0;
 
-  return (
+  const art = (
     <ArtFrame
       rarityIdx={item.rarityIdx}
       size={size}
@@ -95,4 +99,5 @@ export function ItemIcon({ item, size = 'md', className, showUpgrade, showLevel 
       ) : null}
     </ArtFrame>
   );
+  return usePeek(peek === undefined ? undefined : itemPeekSpec(item, peek), art);
 }

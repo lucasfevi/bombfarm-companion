@@ -15,7 +15,7 @@ import {
 } from '../inventory-grid.recipe';
 import { ItemIcon, type ItemIconItem } from '../item-icon';
 import { MarketPrice, type MarketPriceLabels, type MarketPriceView } from '../market-price';
-import { PeekFrame } from './peek-frame';
+import { usePeek, type PeekSpec } from './use-peek';
 import {
   peekGoldClass,
   peekHeadClass,
@@ -176,24 +176,28 @@ export function ItemPeekCard({ item, lang, name, price }: Pick<ItemPeekProps, 'i
   );
 }
 
-/** Wraps an item's icon (or name) so hovering it opens {@link ItemPeekCard}. */
-export function ItemPeek({ item, lang, name, price, children, className, disabled, stopRowActivation }: ItemPeekProps) {
+/** What `ItemIcon` needs to open the card itself, beside the item it already draws. */
+export type ItemIconPeek = Pick<ItemPeekProps, 'lang' | 'name' | 'price' | 'className' | 'stopRowActivation'>;
+
+/** The trigger's accessible name: the item, its forge, its level and tier. */
+export function itemPeekLabel(item: ItemPeekItem, lang: Lang, name?: string): string {
   const gear = isGear(item);
   const title = name ?? (gear ? itemName(item, lang) : itemRarityLabel(item.rarityIdx, lang));
   const upgrade = gear && item.upgrade > 0 ? ` +${Math.round(item.upgrade)}` : '';
-  const label = gear
-    ? `${title}${upgrade}. ${levelLabel(item.level, lang)} ${itemRarityLabel(item.rarityIdx, lang)}`
-    : title;
-  return (
-    <PeekFrame
-      kind="item"
-      label={label}
-      className={className}
-      disabled={disabled}
-      stopRowActivation={stopRowActivation}
-      card={<ItemPeekCard item={item} lang={lang} name={name} price={price} />}
-    >
-      {children}
-    </PeekFrame>
-  );
+  return gear ? `${title}${upgrade}. ${levelLabel(item.level, lang)} ${itemRarityLabel(item.rarityIdx, lang)}` : title;
+}
+
+export function itemPeekSpec(item: ItemPeekItem, { lang, name, price, className, stopRowActivation }: ItemIconPeek): PeekSpec {
+  return {
+    kind: 'item',
+    label: itemPeekLabel(item, lang, name),
+    className,
+    stopRowActivation,
+    card: <ItemPeekCard item={item} lang={lang} name={name} price={price} />,
+  };
+}
+
+/** Wraps something other than an `ItemIcon` — a name, say — so hovering it opens {@link ItemPeekCard}. */
+export function ItemPeek({ item, children, disabled, ...peek }: ItemPeekProps) {
+  return usePeek(disabled ? undefined : itemPeekSpec(item, peek), children);
 }

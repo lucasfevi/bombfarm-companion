@@ -20,7 +20,7 @@ import type { Lang } from '@bombfarm/domain/shims/i18n';
 import { cn, DataTable, EmptyState, Icon } from '@bombfarm/ui';
 import { GoldIcon } from './gold-icon';
 import { HeroAvatar } from './hero-avatar';
-import { HeroPeek, type ItemPeekPrice } from './peek';
+import type { ItemPeekPrice } from './peek';
 import { ItemIdentity, type ItemIdentityLabels } from './item-identity';
 import { MarketPrice, type MarketPriceLabels, type MarketPriceView } from './market-price';
 import { rarityTextClass } from './game-art.recipe';
@@ -215,9 +215,14 @@ function EquippedByCell({ hero, lang }: { hero: InventoryEquippedBy; lang: Lang 
 
   return (
     <span className={inventoryTableHeroClass}>
-      <HeroPeek hero={hero.peek ?? { name: hero.name }} lang={lang} disabled={!hero.peek} className="shrink-0">
-        <HeroAvatar skin={hero.skin} rarityIdx={hero.rarityIdx} size="xs" name={hero.name} />
-      </HeroPeek>
+      <HeroAvatar
+        skin={hero.skin}
+        rarityIdx={hero.rarityIdx}
+        size="xs"
+        name={hero.name}
+        className="shrink-0"
+        peek={hero.peek === undefined ? undefined : { hero: hero.peek, lang }}
+      />
       <span className={cn(inventoryTableHeroNameClass, rarityTextClass(hero.rarityIdx) ?? 'text-ink')}>
         {hero.name}
       </span>

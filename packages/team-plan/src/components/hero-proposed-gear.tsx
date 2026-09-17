@@ -3,7 +3,7 @@
 import { SLOTS, type Slot } from '@bombfarm/domain/gear';
 import { formatItemRosterTooltip, slotLabel } from '@bombfarm/domain/game-labels';
 import { cn, mutedClass } from '@bombfarm/ui';
-import { ItemIcon, ItemPeek, emptyGearSlotClass } from '@bombfarm/game-art';
+import { ItemIcon, emptyGearSlotClass } from '@bombfarm/game-art';
 import { sub, type Lang } from '@bombfarm/hero/copy';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { isKeptExistingGearFlowRow, type GearFlowRow } from '../model/gear-flow-rows';
@@ -107,9 +107,7 @@ export function HeroProposedGear({
                   : 'border-solid border-line bg-bg',
               )}
             >
-              <ItemPeek item={equipped} lang={lang} className={cn(keptExisting && 'opacity-80')}>
-                <ItemIcon item={equipped} size="lg" />
-              </ItemPeek>
+              <ItemIcon item={equipped} size="lg" peek={{ lang, className: cn(keptExisting && 'opacity-80') }} />
               <div
                 className={cn(
                   'text-[12px] leading-tight font-bold',
@@ -155,9 +153,7 @@ export function HeroProposedGear({
               const tip = formatItemRosterTooltip(equipped, lang, t.rankLv);
               return (
                 <li key={row.itemId} className="flex items-center gap-2">
-                  <ItemPeek item={equipped} lang={lang}>
-                    <ItemIcon item={equipped} size="sm" />
-                  </ItemPeek>
+                  <ItemIcon item={equipped} size="sm" peek={{ lang }} />
                   <span className="min-w-0 text-[12px] leading-tight text-ink">{tip.title}</span>
                   <span className={cn(mutedClass, 'ml-auto text-right')}>
                     {t.teamPlanFlowRowRemovedToInventory}

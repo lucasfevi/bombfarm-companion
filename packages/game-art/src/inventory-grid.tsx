@@ -19,7 +19,7 @@ import { cn } from "@bombfarm/ui";
 import { GoldIcon } from "./gold-icon";
 import { MarketPrice, type MarketPriceLabels, type MarketPriceView } from "./market-price";
 import { HeroAvatar } from "./hero-avatar";
-import { HeroPeek, type HeroPeekData } from "./peek";
+import type { HeroPeekData } from "./peek";
 import { ItemIdentity, type ItemIdentityLabels } from "./item-identity";
 import { rarityTextClass } from "./game-art.recipe";
 import {
@@ -177,9 +177,14 @@ function EquippedByRow({ hero, lang }: { hero: InventoryEquippedBy; lang: Lang }
 
   return (
     <span className="flex min-w-0 items-center gap-1.5">
-      <HeroPeek hero={hero.peek ?? { name: hero.name }} lang={lang} disabled={!hero.peek} className="shrink-0">
-        <HeroAvatar skin={hero.skin} rarityIdx={hero.rarityIdx} size="xs" name={hero.name} />
-      </HeroPeek>
+      <HeroAvatar
+        skin={hero.skin}
+        rarityIdx={hero.rarityIdx}
+        size="xs"
+        name={hero.name}
+        className="shrink-0"
+        peek={hero.peek === undefined ? undefined : { hero: hero.peek, lang }}
+      />
       <span className="flex min-w-0 flex-col gap-0.5">
         <span className="flex min-w-0 items-baseline gap-1">
           {hero.rank ? (

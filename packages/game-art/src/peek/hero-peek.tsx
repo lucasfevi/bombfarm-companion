@@ -12,7 +12,7 @@ import { AbilityIcon } from '../ability-icon';
 import { emptyGearSlotRecipe, heroRankToneClass, rarityTextClass } from '../game-art.recipe';
 import { HeroAvatar } from '../hero-avatar';
 import { ItemIcon } from '../item-icon';
-import { PeekFrame } from './peek-frame';
+import { usePeek, type PeekSpec } from './use-peek';
 import {
   peekHeadClass,
   peekNameClass,
@@ -179,17 +179,14 @@ export function HeroPeekCard({ hero, lang }: Pick<HeroPeekProps, 'hero' | 'lang'
   );
 }
 
-/** Wraps a hero's avatar (or name) so hovering it opens {@link HeroPeekCard}. */
-export function HeroPeek({ hero, lang, children, className, disabled, stopRowActivation }: HeroPeekProps) {
-  return (
-    <PeekFrame
-      kind="hero"
-      className={className}
-      disabled={disabled}
-      stopRowActivation={stopRowActivation}
-      card={<HeroPeekCard hero={hero} lang={lang} />}
-    >
-      {children}
-    </PeekFrame>
-  );
+/** What `HeroAvatar` needs to open the card itself. */
+export type HeroAvatarPeek = Pick<HeroPeekProps, 'hero' | 'lang' | 'className' | 'stopRowActivation'>;
+
+export function heroPeekSpec({ hero, lang, className, stopRowActivation }: HeroAvatarPeek): PeekSpec {
+  return { kind: 'hero', className, stopRowActivation, card: <HeroPeekCard hero={hero} lang={lang} /> };
+}
+
+/** Wraps something other than a `HeroAvatar` — a name, say — so hovering it opens {@link HeroPeekCard}. */
+export function HeroPeek({ children, disabled, ...peek }: HeroPeekProps) {
+  return usePeek(disabled ? undefined : heroPeekSpec(peek), children);
 }

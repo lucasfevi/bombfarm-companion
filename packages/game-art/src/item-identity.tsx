@@ -2,7 +2,7 @@ import type { Lang } from '@bombfarm/domain/shims/i18n';
 import { cn } from '@bombfarm/ui';
 import { rarityTextClass } from './game-art.recipe';
 import { ItemIcon, type ItemIconItem } from './item-icon';
-import { ItemPeek, itemPeekFromInventory, type ItemPeekPrice, type WireItemStat } from './peek';
+import { itemPeekFromInventory, type ItemPeekPrice, type WireItemStat } from './peek';
 
 /**
  * The four strings an item is identified by. Functions rather than values because every caller
@@ -66,9 +66,13 @@ export function ItemIdentity<
 
   return (
     <span className={cn('flex min-w-0 items-center gap-2', className)}>
-      <ItemPeek item={itemPeekFromInventory(item)} lang={labels.lang} name={name} price={price} className="shrink-0">
-        <ItemIcon item={item} size={size} showLevel={false} showUpgrade={false} />
-      </ItemPeek>
+      <ItemIcon
+        item={itemPeekFromInventory(item)}
+        size={size}
+        showLevel={false}
+        showUpgrade={false}
+        peek={{ lang: labels.lang, name, price, className: 'shrink-0' }}
+      />
       <span className="flex min-w-0 flex-col gap-0.5">
         <span className="flex min-w-0 items-baseline gap-1">
           <span

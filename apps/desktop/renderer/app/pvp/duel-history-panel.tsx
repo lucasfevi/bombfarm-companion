@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import type { PvpDuelRow, PvpHistoryResult } from '@bombfarm/contracts';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import { HeroAvatar, HeroPeek, heroPeekData, inventoryFieldHeightClass } from '@bombfarm/game-art';
+import { HeroAvatar, heroPeekData, inventoryFieldHeightClass } from '@bombfarm/game-art';
 import { Button, cn, DataTable, EmptyState, FactTile, InfoTip, Panel, PanelHeader, SearchSelect, SegmentedToggle } from '@bombfarm/ui';
 import { buildAccountRoster } from '../../lib/account/account-roster';
 import { useAccountView } from '../../lib/account/use-account-view';
@@ -325,14 +325,15 @@ function SquadStack({ heroIds, heroById }: { heroIds: readonly string[]; heroByI
             {t.pvpSquadUnknownMark}
           </span>
         ) : (
-          <HeroPeek
+          <HeroAvatar
             key={`${heroId}-${String(index)}`}
-            hero={heroPeekData(hero)}
-            lang={lang}
-            className={cn('relative', 'hover:z-[1]', overlap)}
-          >
-            <HeroAvatar skin={hero.skin ?? 0} rarityIdx={RARITIES.indexOf(hero.rarity)} size="xs" name={hero.name} className="size-6" />
-          </HeroPeek>
+            skin={hero.skin ?? 0}
+            rarityIdx={RARITIES.indexOf(hero.rarity)}
+            size="xs"
+            name={hero.name}
+            className="size-6"
+            peek={{ hero: heroPeekData(hero), lang, className: cn('relative', 'hover:z-[1]', overlap) }}
+          />
         );
       })}
     </span>
