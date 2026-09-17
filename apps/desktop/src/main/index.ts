@@ -4,6 +4,7 @@ import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, shell, type Web
 import {
   DEFAULT_SETTINGS,
   EMPTY_FORGE_HISTORY,
+  EMPTY_PVP_HISTORY,
   emptyMarketSnapshotView,
   initialUpdateStatus,
   isIpcChannel,
@@ -29,16 +30,21 @@ import {
   type MarketQuoteCurrency,
   type MarketQuoteResult,
   type MarketQuoteTarget,
+  type PvpFilmView,
+  type PvpHistoryResult,
   type SettingsWriteResult,
   type UpdateStatus,
   type WindowStateView,
 } from '@bombfarm/contracts';
-import { createPacingGate, initialConsent, isGranted, trayTextFor } from '@bombfarm/game-api';
+import { createPacingGate, initialConsent, isGranted, summarizePvpFilm, trayTextFor } from '@bombfarm/game-api';
 import { createAccountNotifier, resolveAccountView, resolveCachedAccountView } from './account-view.js';
 import { patchAccountAfterForge } from './forge/forge-account-patch.js';
 import { createForgeHistory, type ForgeHistory } from './forge/forge-history.js';
 import { createForgeInjector, shouldHonourForgeInject, type ForgeInjector } from './forge/forge-inject.js';
 import { createForgeService, type ForgeService } from './forge/forge-service.js';
+import { createPvpHistory, type PvpHistory } from './pvp/pvp-history.js';
+import { createPvpReader, type PvpReader } from './pvp/pvp-reader.js';
+import { createPvpRecorder, type PvpRecorder } from './pvp/pvp-recorder.js';
 import { applyAppIdentity } from './app-identity.js';
 import { createBootRecord } from './boot-record.js';
 import { fuseSecondsForCdr } from './domain-edge.js';
@@ -81,6 +87,7 @@ import {
   createReplayTapFactory,
   isReplayLiveSourceEnabled,
   resolveReplayCapturePath,
+  resolveReplayPvpFixturePath,
 } from './live-source/replay-tap.js';
 import { configureLogging, log } from './logging.js';
 import {
@@ -149,6 +156,12 @@ let triggeredRefresh: TriggeredRefresh | null = null;
 let marketService: MarketService | null = null;
 let forgeService: ForgeService | null = null;
 let forgeHistory: ForgeHistory | null = null;
+let pvpHistory: PvpHistory | null = null;
+let pvpRecorder: PvpRecorder | null = null;
+let pvpReader: PvpReader | null = null;
+/** Enough for a session's duels several times over at the quota the state reports (`duelos_max`
+ *  of 5 observed), and the same page the forge ledger serves. */
+const PVP_HISTORY_LIST_LIMIT = 50;
 let forgeInjector: ForgeInjector | null = null;
 /** Fixture mode only — see `gameReader.onAccountCommitted` for why a re-ingest of an unchanged
  *  rotation is not free. */
@@ -312,6 +325,15 @@ function currentAccountSource(): AccountSource {
   return gameReader?.getMode() === 'fixture' ? 'fixture' : 'server';
 }
 
+/** The account the session token names, when consent lets it be read — the tap sees only
+ *  response bodies, so an observed duel is stamped with the account the app is bound to. */
+function boundAccountId(): string | null {
+  const consent = consentStore?.read() ?? initialConsent();
+  if (!isGranted(consent)) return null;
+  const result = readToken(consent);
+  return result.ok ? result.accountId : null;
+}
+
 function requestAccountReadNow(): AccountReadResult {
   return requestAccountRead({
     consentStore: { read: () => consentStore?.read() ?? initialConsent() },
@@ -324,6 +346,23 @@ function requestAccountReadNow(): AccountReadResult {
 
 function listForgeHistory(): ForgeHistoryResult {
   return forgeHistory?.list({ limit: 50 }) ?? EMPTY_FORGE_HISTORY;
+}
+
+function listPvpHistory(): PvpHistoryResult {
+  return pvpHistory?.list({ limit: PVP_HISTORY_LIST_LIMIT }) ?? EMPTY_PVP_HISTORY;
+}
+
+function readPvpFilm(filmId: number): PvpFilmView | null {
+  const body = pvpHistory?.readFilm(filmId) ?? null;
+  if (body === null) return null;
+  try {
+    const view = summarizePvpFilm(JSON.parse(body));
+    if (view === null) log.warn({ scope: 'pvp', event: 'film.unreadable', filmId });
+    return view;
+  } catch (err) {
+    log.warn({ scope: 'pvp', event: 'film.unreadable', filmId, error: String(err) });
+    return null;
+  }
 }
 
 function refreshMarketItem(target: MarketQuoteTarget): Promise<MarketQuoteResult> {
@@ -423,6 +462,9 @@ function registerIpcHandlers(): void {
       return listForgeHistory();
     },
     'forge:inject': (events: unknown) => forgeInjector?.inject(events) ?? { ok: false },
+    'pvp:history': listPvpHistory,
+    'pvp:refresh': (): AccountReadResult => pvpReader?.refresh() ?? { ok: false, reason: 'unavailable' },
+    'pvp:film': readPvpFilm,
     'window:minimize': () => {
       mainWindow?.minimize();
       return null;
@@ -890,17 +932,35 @@ async function bootstrap(): Promise<void> {
     });
   }
 
+  // The duel history borrows accountOpen.db the way the forge ledger does. Built before the live
+  // source so the seam it feeds exists from the first observed body: a duel that settles while
+  // the app is open must never be dropped for having arrived early.
+  pvpHistory = createPvpHistory(accountOpen.db, log);
+  pvpRecorder = createPvpRecorder({
+    history: pvpHistory,
+    accountId: boundAccountId,
+    emit: (history) => {
+      emitEvent('pvp:changed', history);
+    },
+    log,
+    listLimit: PVP_HISTORY_LIST_LIMIT,
+  });
+
   liveSource = new LiveSource({
     consent: liveConsent,
     userDataDir,
     flavor: resolveAppEnv().flavor,
     isPackaged: resolveAppEnv().isPackaged,
     observer: observationCapture,
+    onObservedPvpBody: (observation) => {
+      pvpRecorder?.observe(observation);
+    },
     log,
     ...(replayLive
       ? {
           createTap: createReplayTapFactory({
             capturePath: resolveReplayCapturePath(process.env, __dirname),
+            pvpFixturePath: resolveReplayPvpFixturePath(process.env, __dirname),
             consent: liveConsent,
             log,
             onObservedFrame: (wire, atMs) => {
@@ -1019,6 +1079,17 @@ async function bootstrap(): Promise<void> {
   // and transport as the cycle above, and lands its result through the cycle's own commit seam
   // so the notifier is what announces the patched bag and wallet.
   const cachedAccount = (): AccountView | null => resolveCachedAccountView({ gameReader, consentStore, accountRefresh });
+  pvpReader = createPvpReader({
+    consentStore: { read: () => consentStore?.read() ?? initialConsent() },
+    accountSource: currentAccountSource,
+    isGameRunning: () => gameReader?.isGameProcessRunning() ?? false,
+    readToken,
+    transport: gameApiTransport,
+    gate,
+    recorder: pvpRecorder,
+    log,
+  });
+
   forgeHistory = createForgeHistory(accountOpen.db, log);
   forgeService = createForgeService({
     consentStore,
@@ -1228,6 +1299,9 @@ if (!gotLock) {
     // forgeHistory borrows accountOpen.db the way settingsStore does; accountStore.close()
     // below owns the handle, so it gains no close() of its own.
     forgeHistory = null;
+    pvpReader = null;
+    pvpRecorder = null;
+    pvpHistory = null;
     triggeredRefresh = null;
     void liveSource?.teardown();
     liveSource = null;

@@ -80,7 +80,7 @@ Shared by both branches:
 
 - Pull requests required before merging (0 approving reviews — solo maintainer can merge)
 - Stale review dismissals enabled
-- Required status checks: `ci-web-required`, `ci-desktop-required`, `e2e-smoke`, `e2e-visual`
+- Required status checks: `ci-web-required`, `ci-desktop-required`, `repo-guards-required`, `e2e-smoke`, `e2e-visual`
 - Branches do **not** need to be up to date before merge (`strict: false`)
 - Direct pushes blocked; force pushes and branch deletion blocked
 - `enforce_admins: true` — no owner bypass

@@ -97,6 +97,16 @@ const NO_FIELD_PULSE: PassagemBastaoFieldPulse = Object.freeze({
 });
 
 /**
+ * The field held at the cap for the whole of wall clock — what a surface that assumes the ability
+ * is always up prices, whatever the pool's carriers would sustain on their own. One level, so the
+ * Farm board's per-level hits-to-kill step reduces to the capped hit.
+ */
+export const PASSAGEM_BASTAO_CAPPED_PULSE: PassagemBastaoFieldPulse = Object.freeze({
+  levels: Object.freeze([Object.freeze({ mult: 1 + PASSAGEM_BASTAO_CAP, probability: 1 })]),
+  expectedMult: 1 + PASSAGEM_BASTAO_CAP,
+});
+
+/**
  * Priced like the other team auras (`computeTeamBuffsOverRotation`): each carrier's pulse is up
  * independently for its own share of wall clock, the pulses that overlap sum their ranks, and
  * the sum is clamped at the cap INSIDE the expectation — `E[min(cap, Σ)]`, never

@@ -3,7 +3,7 @@
 import type { SyntheticEvent } from 'react';
 import { SLOTS, type Loadout } from '@bombfarm/domain/gear';
 import type { Lang } from '@bombfarm/domain/shims/i18n';
-import { formatItemRosterTooltip, slotLabel } from '@bombfarm/domain/game-labels';
+import { slotLabel } from '@bombfarm/domain/game-labels';
 
 import { cn, Tooltip } from '@bombfarm/ui';
 import { ItemIcon } from './item-icon';
@@ -17,21 +17,19 @@ type Props = {
   emptySlotAriaLabel?: (slotName: string) => string;
   /** Tooltip body for an empty gear slot. */
   emptySlotTip?: string;
-  /** Rank/level prefix for the equipped-item tooltip subtitle (e.g. "Lv"). */
-  lvLabel?: string;
 };
 
 function stopRowActivation(event: SyntheticEvent) {
   event.stopPropagation();
 }
 
+/** A hero's eight gear slots as tiles — each filled one opens the item's card on hover. */
 export function HeroGearIcons({
   loadout,
   lang,
   className,
   emptySlotAriaLabel = (slotName) => `${slotName} — empty`,
   emptySlotTip = 'Empty',
-  lvLabel = 'Lv',
 }: Props) {
   return (
     <span
@@ -46,9 +44,11 @@ export function HeroGearIcons({
           return (
             <Tooltip.Root key={slot}>
               <Tooltip.Trigger
-                type="button"
+                render={<span role="img" />}
                 tabIndex={-1}
                 aria-label={emptySlotAriaLabel(slotName)}
+                delay={200}
+                closeDelay={80}
                 className={rosterIconTooltipTriggerClass}
                 onClick={stopRowActivation}
                 onKeyDown={stopRowActivation}
@@ -67,30 +67,7 @@ export function HeroGearIcons({
           );
         }
 
-        const tip = formatItemRosterTooltip(equipped, lang, lvLabel);
-        const aria = `${tip.title}. ${tip.subtitle}`;
-        return (
-          <Tooltip.Root key={slot}>
-            <Tooltip.Trigger
-              type="button"
-              tabIndex={-1}
-              aria-label={aria}
-              className={rosterIconTooltipTriggerClass}
-              onClick={stopRowActivation}
-              onKeyDown={stopRowActivation}
-            >
-              <ItemIcon item={equipped} size="lg" />
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Positioner sideOffset={6}>
-                <Tooltip.Popup>
-                  <p className="m-0 font-semibold text-ink">{tip.title}</p>
-                  <p className="m-0 text-xs text-muted">{tip.subtitle}</p>
-                </Tooltip.Popup>
-              </Tooltip.Positioner>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-        );
+        return <ItemIcon key={slot} item={equipped} size="lg" peek={{ lang, stopRowActivation: true }} />;
       })}
     </span>
   );

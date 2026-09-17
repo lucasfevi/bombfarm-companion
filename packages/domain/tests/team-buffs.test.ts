@@ -6,6 +6,38 @@
  * substitutes ONE hero's own contribution instead of excluding it.
  */
 import { describe, expect, it } from 'vitest';
+import { NO_AURAS_AT_CAP, holdAurasAtCap, pulseHeldAtCap } from '@bombfarm/domain/team-buffs';
+
+describe('holdAurasAtCap — the named standing auras at their cap, the rest as priced', () => {
+  const totals = { grito_guerra: 11.57, pressagio_mortal: 4, marcha_acelerada: 1.2, folego_mineiro: 0, brecha: 20 };
+
+  it('holds each named standing aura at TEAM_BUFF_CAP and leaves the others alone', () => {
+    expect(holdAurasAtCap(totals, ['grito_guerra', 'folego_mineiro'])).toEqual({
+      ...totals,
+      grito_guerra: 20,
+      folego_mineiro: 20,
+    });
+  });
+
+  it('returns the same object when nothing is held — absent, empty, only the pulse, or already at cap', () => {
+    expect(holdAurasAtCap(totals, undefined)).toBe(totals);
+    expect(holdAurasAtCap(totals, NO_AURAS_AT_CAP)).toBe(totals);
+    expect(holdAurasAtCap(totals, ['passagem_bastao'])).toBe(totals);
+    expect(holdAurasAtCap(totals, ['brecha'])).toBe(totals);
+  });
+
+  it('never mutates the totals it is handed', () => {
+    const before = { ...totals };
+    holdAurasAtCap(totals, ['marcha_acelerada']);
+    expect(totals).toEqual(before);
+  });
+
+  it('pulseHeldAtCap reads only the pulse entry', () => {
+    expect(pulseHeldAtCap(undefined)).toBe(false);
+    expect(pulseHeldAtCap(['grito_guerra'])).toBe(false);
+    expect(pulseHeldAtCap(['grito_guerra', 'passagem_bastao'])).toBe(true);
+  });
+});
 import { emptyLoadout, emptySheet } from '@bombfarm/domain/gear';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
 import {

@@ -28,7 +28,6 @@ import { TEAM_PLAN_FIXTURE, holdTeamPlanSuiteUntilInRegime, teamPlanInputFromFix
 
 holdTeamPlanSuiteUntilInRegime();
 
-// (the ground-truth rule, class (b) — structural): re-pointed onto save-20260819-11882-7heroes.json.
 const FIXTURE = TEAM_PLAN_FIXTURE;
 
 function setup(fixture: string = FIXTURE) {
@@ -165,10 +164,7 @@ describe('solver cache memory', () => {
  */
 describe('interchangeable items: one candidate at a time, multiplicity preserved', () => {
   it('offers exactly one representative per group but still equips every copy', () => {
-    // (the ground-truth rule, class (a) — read from the capture): re-pointed onto
-    // save-20260819-11882-7heroes.json, which carries real duplicate spares (measured: 6
-    // pool-key groups with 2-3 copies each) — richer duplicate coverage than the deleted
-    // `SaveFile_BombFarm.json` this test used to read.
+    // The fixture's bag carries real duplicate spares: five pool-key groups of two copies each.
     const ctx = setup(TEAM_PLAN_FIXTURE);
     const poolKey = (id: string) => {
       const item = ctx.itemById.get(id);
@@ -207,18 +203,29 @@ describe('interchangeable items: one candidate at a time, multiplicity preserved
     }
 
     // Multiplicity: equipping one copy must promote the next, so N copies can reach N heroes.
-    const [dupKey, dupCount] = duplicated[0];
+    // Only a group the generator offers can show it — a group dominated by another spare for
+    // every hero is pruned before representatives are picked, and four of the five here are.
+    const offeredKeys = new Set(
+      moves.flatMap((m) => (m.kind === 'assign' ? [poolKey(m.itemId)] : [])),
+    );
+    const offeredDuplicate = duplicated.find(([key]) => offeredKeys.has(key));
+    expect(offeredDuplicate, 'fixture must offer at least one duplicated group').toBeDefined();
+    const [dupKey, dupCount] = offeredDuplicate!;
     let assignment = ctx.baseline;
     const equipped: string[] = [];
     for (let i = 0; i < dupCount; i++) {
-      const next = generateMoves({
+      const candidates = generateMoves({
         contexts: ctx.contexts,
         slots: assignment.slots,
         pool: assignment.pool,
         itemById: ctx.itemById,
         heroDpsById: {},
         forgeFloor: ctx.input.forgeFloor,
-      }).find((m) => m.kind === 'assign' && poolKey(m.itemId) === dupKey && !equipped.includes(m.itemId));
+      }).filter((m) => m.kind === 'assign' && poolKey(m.itemId) === dupKey && !equipped.includes(m.itemId));
+      // An empty destination first: displacing an incumbent that dominates the group would hide
+      // the next copy behind the dominance prune, which is that filter's job, not multiplicity.
+      const next =
+        candidates.find((m) => m.kind === 'assign' && !assignment.slots[m.heroId]?.[m.slot]) ?? candidates[0];
       if (!next || next.kind !== 'assign') break;
       equipped.push(next.itemId);
       assignment = applyMove(assignment, next);

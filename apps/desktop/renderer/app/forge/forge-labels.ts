@@ -273,6 +273,7 @@ export function forgeLabels(t: Copy, lang: DomainLang, locale: AppLocale): Forge
   const multiplier = (upgrade: number) => decimals(upgradeMult(upgrade), 2, locale);
 
   return {
+    lang,
     itemName: inventory.itemName,
     itemRarity: inventory.itemRarity,
     itemLevel: inventory.itemLevel,

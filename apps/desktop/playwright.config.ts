@@ -26,6 +26,7 @@ export default defineConfig({
         'forge-run.spec.mjs',
         'forge-queue.spec.mjs',
         'optimizer.spec.mjs',
+        'pvp.spec.mjs',
         'heroes-combat.spec.mjs',
         'heroes-roster-board.spec.mjs',
         'heroes-stages-and-scrollbars.spec.mjs',

@@ -1,5 +1,92 @@
 # @bombfarm/web
 
+## 0.20.0
+
+### Minor Changes
+
+- de6ad93: A hero's runes now sit on the Combat tab, in their own panel under the phase pick, instead of
+  inside the Identity panel on the Hero tab. Each rune is drawn with the game's own sprite for its
+  axis and rarity, beside its strength and the play time it has left. The panel starts folded,
+  with a strip of the sprites in its header, so a glance still says which buffs the figures below
+  are counting; open it for the figures. A hero without runes shows no panel, as before.
+- dde8fe4: Hovering an item, a hero or an ability opens a card that reads it — the way a gear link does on
+  a game database site — everywhere the app draws one as an icon.
+
+  - **An item's card** names the piece with its forge level, says its tier, level and forge
+    multiplier, lists every stat it rolls at that level and forge with the inventory card's dotted
+    leaders, and ends with what it is worth — the gold the game pays and the Steam market quote
+    where the host has one. An inventory row's card prints the rolls the game reported for that
+    exact item, the same figures the row itself shows, so the two never disagree after a patch
+    moves the catalog.
+  - **An ability's card** says the rank and scope (a TEAM aura, or a bonus on the hero's own
+    sheet), what one rank does, and what this rank and the cap add up to — "+52% crit damage" at
+    rank 13, "+80%" at 20. The roster's ability filters open the same card without a rank.
+  - **A hero's card** reads the whole record where one is at hand: rank, name and stars, tier
+    and level, power at the head, the geared sheet in two columns, then the abilities and all
+    eight gear slots as art, an empty tile standing in for a bare slot. A row that only knows a
+    name and a rank gets a card that says that much and no more.
+
+  Two surfaces reshape around the cards. The Combat tab's Abilities & Auras panel stops
+  repeating each ability's effect sentence — the card says it — and draws its two groups side by
+  side as columns of small cards, each icon opening its card and an own ability's icon carrying
+  its rank badge. The desktop Live tab's rows (the mini window's too, and the web download page's
+  replica of them) draw the same identity block every roster surface uses, without the rarity
+  word, and the avatar opens the hero's card from the account's own record. The forge queue's band
+  shows the piece at its head as art that opens the item's card.
+
+  Also fixed on the way: the inventory card capped an item at four stat lines, so a Legendary or
+  Mythic piece hid its fifth and sixth rolls — every roll shows now.
+
+  Where it opens: the roster rows and cards, the hero picker, the import dialog, the Home
+  overview, the Farm rotation pool and top-9 table, the Optimizer's scope cards, proposed
+  items and forge queue, the inventory grid and table (the item, and the hero wearing it), the
+  Account tab's hero list, and the desktop Forge queue. An icon that is the subject of its own screen — the selected hero's strip,
+  its Gear tab cards, the ability editor — stays bare: the card would only repeat the screen.
+
+  The hovered icon brightens and lifts so a peekable icon looks like one; the trigger stays out of
+  the tab order so a row of ten icons keeps its one stop. On the 28px tiles the forge level shrinks
+  to an 8px mono glyph in the corner, so it no longer covers a third of the art. Icons drawn inside
+  a card open nothing — a card is one level deep.
+
+  The gear and ability strips' older two-line tooltips are gone, replaced by the cards.
+
+### Patch Changes
+
+- 8a77e75: The download page lists the PVP screen.
+
+  The "What you get" section gains a ninth card, in the app's own tab order: every duel fought while
+  the app is open, its result and scores, the prize, and the film kept the moment the game fetches
+  it. Nine cards fill three columns exactly at the widest layout; a spacer squares the two-column one.
+
+- fe508c2: The number spinner and the toast system no longer bake in English. `Num` takes
+  `incrementLabel`/`decrementLabel`, and `ToastProvider` takes a `labels` set (the dismiss button,
+  the overflow toggle and the progress readout), each passed by the host from its own dictionary — so
+  a screen reader on a localised screen no longer hears "Increment", "Decrement" or "Dismiss" in the
+  middle of an otherwise translated interface. The web planner's level stepper now passes its own
+  localised labels. A new guard in `@bombfarm/ui` fails on the next user-facing string baked into a
+  design-system component, and the desktop's pinned-exception list for design-system strings is
+  updated to match.
+- fe508c2: The last native `title` tooltips on the web planner — the Buy-me-a-coffee link in the header, the
+  truncated hero name, and the abbreviated hero-strip metrics — now use the design-system Tooltip.
+  They are themed, honour the app's own delay, appear on touch and keyboard focus, and reveal the
+  full figure where the text is clipped, instead of the browser's unstyled native tip that never
+  showed on a phone.
+- Updated dependencies [9af518a]
+- Updated dependencies [8a77e75]
+- Updated dependencies [fe508c2]
+- Updated dependencies [6e82439]
+- Updated dependencies [fe508c2]
+- Updated dependencies [de6ad93]
+- Updated dependencies [dde8fe4]
+  - @bombfarm/domain@1.2.0
+  - @bombfarm/hero@0.3.0
+  - @bombfarm/farm@1.2.0
+  - @bombfarm/team-plan@0.2.0
+  - @bombfarm/ui@0.14.0
+  - @bombfarm/game-art@0.6.0
+  - @bombfarm/account@0.2.6
+  - @bombfarm/pricing@0.3.1
+
 ## 0.19.1
 
 ### Patch Changes

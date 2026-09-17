@@ -8,6 +8,7 @@
  * own abilities are in force on this phase.
  */
 import {
+  isPricedReadout,
   ownAbilityReadout,
   teamAuraReadout,
   isTeamAuraId,
@@ -69,7 +70,7 @@ export type OwnAbilityRow = {
 };
 
 function ownAbilityStatus(effect: AbilityEffectReadout, gatePhase: boolean): OwnAbilityStatus {
-  if (effect.kind === 'none') return 'notModelled';
+  if (!isPricedReadout(effect)) return 'notModelled';
   if (effect.kind === 'gateAttackPct') return gatePhase ? 'own' : 'notHere';
   return 'own';
 }

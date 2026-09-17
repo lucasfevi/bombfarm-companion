@@ -77,10 +77,9 @@ describe('ForgeToolbar', () => {
 
   it('is filters only — Refresh acts on the read behind the bag and stands over the bag instead', () => {
     const html = renderToolbar({ filter: { ...EMPTY_FORGE_FILTER, forge: 'at8' } });
-    expect(html).not.toContain('data-testid="forge-refresh"');
-    expect(html).not.toContain('data-testid="forge-stale-label"');
-    expect(html).not.toContain('data-testid="forge-read-age"');
-    expect(html).not.toContain('Account read');
+    expect(html).not.toContain('data-testid="account-refresh"');
+    expect(html).not.toContain('data-testid="account-refresh-age"');
+    expect(html).not.toContain(en.farmRefreshedAge.replace('{age}', ''));
     expect(html).not.toContain(en.farmRefresh);
   });
 

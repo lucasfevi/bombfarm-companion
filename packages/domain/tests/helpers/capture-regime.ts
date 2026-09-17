@@ -289,6 +289,29 @@ export const CAPTURE_REGISTRY: Record<string, CaptureRow> = {
       'both ways. Also the first in-regime capture with starred heroes (★1 and ★2), the latest ' +
       'phase (91, max_phase 230) and the largest tree (crit_dmg_add 0.68, dmg_static 3.88).',
   },
+  'sheet-math/save-20260914-9heroes-second-account.json': {
+    capturedOn: '2026-09-14',
+    retention: 'value',
+    note:
+      'The second account (the one behind save-20260819-11882-7heroes) past every boundary ' +
+      'above, and the only post-2026-09-02 capture that is not the main account — so it is what ' +
+      'keeps a cross-account claim cross-account now that the 2026-08-19 capture has expired for ' +
+      'itemDamage, penetration and sheet. 9 heroes (8 geared 8/8, one naked with all 67 of her ' +
+      'points unspent), all importing with no issue and inverting exactly to their budget. The ' +
+      'only in-regime capture holding ponta_diamante below rank 20 (Nyx 5/20), with four owners ' +
+      'on one roster.',
+  },
+  'sheet-math/save-20260914-20heroes-phase101.json': {
+    capturedOn: '2026-09-14',
+    retention: 'value',
+    note:
+      'The thickest post-boundary export: the main account at phase 101 / max_phase 230 with 20 ' +
+      'heroes (nine starred, ★1 and ★2) and 317 items, all 20 importing with no issue and ' +
+      'inverting exactly to their budget. Thirteen geared heroes at L40-L151 beside seven naked ' +
+      'ones at L1-L24 — both sides of the one-shot contrast on one roster, which ' +
+      'save-20260825 held only in the pre-2026-09-02 regime. A save export, not a payload: the ' +
+      'runes payload taken the day before is the same account but a different root shape.',
+  },
   'farm-rate/save-20260815-486-7heroes.json': {
     capturedOn: '2026-08-15',
     retention: 'structural',
@@ -375,9 +398,11 @@ function expiryMessage(capturePath: string, mechanic: Mechanic): string {
 }
 
 /**
- * A runtime `context.skip()`, not a `.skip(...)` literal — needs no entry in the static skip
- * manifests (`tools/fixture-corpus-parity.test.mjs`, `source-surface.test.ts`), which police
- * skips nobody explained; the explanation here is generated from the registry instead.
+ * A runtime `context.skip()`, not a `.skip(...)` literal, so the static skip guards
+ * (`tools/fixture-corpus-parity.test.mjs`, `source-surface.test.ts`) do not see it. What sees it
+ * is `tools/held-suite-manifest.test.mjs`: every call site whose capture is out of regime must
+ * have an entry in `tools/held-suites.manifest.mjs` saying, for each capture the registry DOES
+ * admit, why the suite is not reading that one instead. A hold is a decision, not a default.
  *
  * Use this inside a test body. For a module-scope loader, where there is no `TestContext` to skip
  * and a wrong fixture would silently feed every test in the file, use {@link assertInRegime}.
@@ -396,15 +421,11 @@ export function skipUnlessInRegime(ctx: TestContext, capturePath: string, mechan
  * the corpus holds nothing the suite could be re-pointed AT, because then "fail loudly" is a
  * standing red that no one can clear, and a standing red is how a suite stops being read.
  *
- * The 2026-08-28 damage boundary put the corpus in exactly that state: every committed capture
- * but one has an equipped weapon, and the one that does not is a fresh account too thin to carry
- * a gear planner or a phase-52 band. So these suites are held, not deleted, and they come back on
- * their own the moment a capture past the boundary lands with the roster they need.
- *
- * It is a runtime `ctx.skip()` for the same reason {@link skipUnlessInRegime} is: a `.skip(...)`
- * literal would need an entry in the static skip manifests, and the reason here is generated from
- * the registry rather than restated by hand. The skip is COUNTED and its message names the
- * capture and the boundary, so a held suite is visible in every run.
+ * A held suite is NOT visible on its own: a skip is counted, but a counted skip in a green run
+ * reads as green. Between 2026-08-28 and 2026-09-16 twenty-four suites and 845 tests were held
+ * this way while three admissible captures sat in the registry unread. The manifest guard named
+ * above is what makes the hold cost something — the entry must be written when the hold starts
+ * and deleted when the suite is re-pointed.
  */
 export function holdSuiteUntilInRegime(capturePath: string, mechanic: Mechanic): void {
   beforeEach((ctx: TestContext) => {

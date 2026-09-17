@@ -1,0 +1,71 @@
+name: Repo guards
+
+# The whole `tools` vitest project, unconditionally.
+#
+# DELIBERATELY NOT PATH-FILTERED. The tools project is where the repo-wide guards live —
+# planning-reference hygiene, the web-to-domain source-resolution check, download-page
+# drift, the held-suite manifest, the design-system gate, fixture-corpus parity, and the
+# shape guards over the workflows themselves. Every one of them can be broken from a path
+# outside the filtered workflows' unions: a planning identifier in a docs-only change, a
+# source-resolution regression from an apps/web-only change, a workflow edit under
+# .github/. Before this file the project reached CI only through ci-desktop.yml's
+# `quality` job and ci-fidelity.yml's `fidelity-gate` job, both behind path filters, and
+# ci-web.yml never ran it at all — so a PR that stayed inside apps/web/, docs/,
+# .changeset/, .husky/ or .github/ ran none of these guards.
+#
+# line-endings.yml stays a separate, cheaper surface on purpose: it needs no build, so it
+# reports in a fraction of the time. This job builds the packages the tools project's
+# build-dependent files resolve through dist (tools/require-workspace-dist.test.mjs
+# asserts the set) and then runs every file, which re-runs the LF census incidentally.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, develop]
+    # No `paths:` — see the header. This gate is unconditional by design.
+  pull_request:
+
+concurrency:
+  group: repo-guards-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  repo-guards:
+    name: Repo-wide guards (tools project, unfiltered)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build the packages the tools project resolves through dist
+        run: pnpm --filter @bombfarm/contracts --filter @bombfarm/domain --filter @bombfarm/game-api --filter @bombfarm/pricing build
+
+      - name: Repo guards (tools project, every file)
+        run: pnpm vitest run --project tools
+
+  repo-guards-required:
+    name: repo-guards-required
+    needs: [repo-guards]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      # The line-endings-required idiom: `!=` also catches skipped and cancelled, so a job
+      # that never ran fails this gate instead of reporting green.
+      - name: Require the repo guards to have actually run and passed
+        if: needs.repo-guards.result != 'success'
+        run: |
+          echo "repo-guards: ${{ needs.repo-guards.result }}"
+          exit 1

@@ -12,6 +12,7 @@ import { canonicalStringify } from '@bombfarm/contracts';
 import type { AccountView } from '@bombfarm/contracts';
 import type { ReturnBonusMode } from '@bombfarm/domain/farm-rate';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import { NO_AURAS_AT_CAP, type AurasAtCap } from '@bombfarm/domain/team-buffs';
 import { readFarmDepTuple, type FarmInputs } from '@bombfarm/farm/core';
 import { isSectionUsable, sectionFidelityOf } from '../account/account-facts';
 import { buildAccountRoster } from '../account/account-roster';
@@ -21,21 +22,24 @@ import { buildAccountRoster } from '../account/account-roster';
 export { isSectionUsable };
 
 /**
- * The two compute inputs the player owns. Everything else on {@link FarmInputs} is read out of
- * the account; these two are chosen on the screen, and changing either is one of the three
- * events allowed to recompute the board. Filters, sorting and phase selection are not here
- * because they are post-compute and must never invalidate a snapshot.
+ * The compute inputs the player owns. Everything else on {@link FarmInputs} is read out of the
+ * account; these are chosen on the screen, and changing any is one of the three events allowed
+ * to recompute the board. Filters, sorting and phase selection are not here because they are
+ * post-compute and must never invalidate a snapshot.
  */
 export type FarmControls = {
   readonly farmPoolOverrides: Record<string, boolean>;
   readonly farmReturnBonus: ReturnBonusMode;
+  readonly aurasAtCap: AurasAtCap;
 };
 
 /** One shared reference, so a screen that never touched the controls hands the compute the same
- *  object every time — `farmPoolOverrides` is compared by identity inside the package. */
+ *  object every time — `farmPoolOverrides` and `aurasAtCap` are compared by identity inside the
+ *  package. */
 export const DEFAULT_FARM_CONTROLS: FarmControls = Object.freeze({
   farmPoolOverrides: Object.freeze({}) as Record<string, boolean>,
   farmReturnBonus: 'off' as const,
+  aurasAtCap: NO_AURAS_AT_CAP,
 });
 
 /**
@@ -99,6 +103,7 @@ export function buildFarmInputs(view: AccountView, controls: FarmControls): Farm
     maxPhase: account.maxPhase ?? null,
     farmPoolOverrides: controls.farmPoolOverrides,
     farmReturnBonus: controls.farmReturnBonus,
+    aurasAtCap: controls.aurasAtCap,
   };
 }
 
@@ -116,7 +121,7 @@ function withoutCaptureTime(hero: HeroRecord): Record<string, unknown> {
 
 /**
  * A value identity for everything the farm board recomputes from — `readFarmDepTuple`'s
- * eighteen members, compared as values rather than as references.
+ * nineteen members, compared as values rather than as references.
  *
  * `@bombfarm/farm/core` compares that tuple with `Object.is` and places the matching obligation
  * on the host app: the two object members (`heroes`, `farmPoolOverrides`) must keep their

@@ -93,14 +93,17 @@ describe('parseSaveFile reports required fields the save did not carry', () => {
     expect(missingRequiredAccountFields({ ...result.account })).toContain('tree');
   });
 
-  it('names the missing fields in a warning, not only in the typed result', () => {
+  it('flags missing account fields in a warning; the typed result carries which ones', () => {
     const save = completeSave();
     delete (save.account as Record<string, unknown>).phase;
 
     const result = parseSaveFile(save, []);
 
     expect(result.accountMissingRequired).toEqual(['phase']);
-    expect(result.warnings.join(' ')).toContain('phase');
+    // The warning flags the gap but no longer prints the raw field key: the app names the missing
+    // fields in the player's own language from the typed result, so the warning stays language-neutral.
+    expect(result.warnings.some((warning) => /missing account field/i.test(warning))).toBe(true);
+    expect(result.warnings.join(' ')).not.toContain('phase');
   });
 
   it('a rejected file reports nothing missing — it produced no account to judge', () => {

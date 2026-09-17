@@ -114,3 +114,92 @@ The combat websocket packs its payload into single-letter and abbreviated keys b
 | Wire token | Domain field | Description | Origin |
 | --- | --- | --- | --- |
 | `snap` | `snapMessageType` | The only observed value of `t`: a live combat-frame snapshot tick. | English |
+
+
+## PVP duel result and film
+
+The duel result the client receives on Challenge and the film it fetches right after mix Portuguese keys (`venceu`, `fase`, `filme`) with English ones (`slots`, `squad`, `hz`) — see `packages/game-api/src/pvp/lexicon.ts`. The film’s per-frame keys are declared for documentation only; the desktop keeps a film whole and reads its header.
+
+### Keys
+
+| Wire token | Domain field | Description | Origin |
+| --- | --- | --- | --- |
+| `venceu` | `won` | Whether the attacker won the duel. | Portuguese |
+| `fase` | `phase` | On a result: the combat phase the duel was fought in, not the tier floor. On the state and the film: see the row. | Portuguese |
+| `filme` | `filmId` | The film id the server issued for the duel; 0 when none was. | Portuguese |
+| `salas` | `rooms` | Room clears over the duel. | Portuguese |
+| `segundos` | `seconds` | Duel length in seconds (60 observed). | Portuguese |
+| `atacante` | `attacker` | The side that pressed Challenge — the player. | Portuguese |
+| `defensor` | `defender` | The side that was challenged — the opponent. | Portuguese |
+| `nome` | `name` | A side's display name. | Portuguese |
+| `herois` | `heroes` | How many heroes a side fielded. | Portuguese |
+| `dano` | `score` | A side's score: the HP it tore off the other side. | Portuguese |
+| `pontos_antes` | `pointsBefore` | PVP points before the duel settled. | Portuguese |
+| `pontos_depois` | `pointsAfter` | PVP points after the duel settled. | Portuguese |
+| `duelos_restantes` | `duelsLeft` | Duels left in the quota. | Portuguese |
+| `duelos_max` | `duelsMax` | The duel quota. | Portuguese |
+| `premio` | `prize` | Whether the rune chest landed (`won`) or was lost to a full bag (`lost`). | Portuguese |
+| `estado` | `state` | The full PVP state after the duel. | Portuguese |
+| `pontos` | `points` | Current PVP points. | Portuguese |
+| `faixa` | `tier` | The tier token (`r1`…`r6`). | Portuguese |
+| `faixa_num` | `tierNumber` | The tier as a number. | Portuguese |
+| `faixa_prox` | `tierNext` | Points to the next tier. | Portuguese |
+| `slots` | `slots` | Squad slots available. | English |
+| `squad` | `squad` | The squad, one entry per filled slot. | English |
+| `slot` | `slot` | A squad entry’s slot index. | English |
+| `hero_id` | `heroId` | A squad entry’s hero id. | English |
+| `duelos_usados` | `duelsUsed` | Duels spent from the quota. | Portuguese |
+| `enabled` | `enabled` | Whether PVP is open to the account. | English |
+| `slots_max` | `slotsMax` | Squad slots at the top of the ladder. | English |
+| `slots_all` | `slotsAll` | Squad slots granted at each squad level. | English |
+| `active_tier` | `activeTier` | Meaning not established. | English |
+| `level` | `level` | Squad level of the highest rarity house. Meaning not fully established. | English |
+| `levels` | `levels` | Per-rarity squad house levels. | English |
+| `max_level` | `maxLevel` | The squad house level cap (20 observed). | English |
+| `upgrade_cost` | `upgradeCost` | The time items the next squad upgrade costs, per rarity. | English |
+| `qtd` | `quantity` | How many of a rarity the upgrade costs. | Portuguese |
+| `rarity` | `rarity` | The rarity an upgrade cost entry is priced in. | English |
+| `by` | `by` | Which leaderboard the body is: `pvp`, `hero` or `power`. | English |
+| `top` | `top` | The top hundred, one entry per rank. | English |
+| `me` | `me` | The player's own entry, whatever their rank. | English |
+| `rank` | `rank` | A leaderboard position, 1 at the top. | English |
+| `name` | `name` | An entry's display name. | English |
+| `value` | `value` | The figure the board ranks by, as a string of digits (PVP points on the `pvp` board). | English |
+| `hero_skin` | `heroSkin` | An entry's shown skin index. | English |
+| `badges` | `badges` | An entry's badge tokens. | English |
+| `id` | `filmId` | The film’s own id — the value the result named in `filme`. | English |
+| `fase_visual` | `visualPhase` | The phase the film draws its room as. | Portuguese |
+| `hz` | `hz` | Frames per second the film was sampled at (12 observed). | English |
+| `a` | `attackerHeroes` | Per-hero attacker entries, index = squad slot. | English |
+| `d` | `defenderHeroes` | Per-hero defender entries, index = squad slot. | English |
+| `sk` | `skill` | A film hero entry’s skill field. Meaning not established. | English |
+| `t` | `t` | A film hero entry’s `t` field. Meaning not established. | English |
+| `q` | `frames` | The film’s frames (721 observed for a 60 s duel at 12 Hz). | English |
+| `t` | `time` | Frame time. | English |
+| `hp` | `hp` | Room HP at the frame. | English |
+| `da` | `attackerDamage` | Attacker damage so far. | English |
+| `dd` | `defenderDamage` | Defender damage so far. | English |
+| `k` | `k` | Optional per-frame field. Meaning not established. | English |
+| `c` | `c` | Per-frame field. Meaning not established. | English |
+| `h` | `heroes` | Per-frame hero entries. | English |
+| `b` | `bombs` | Per-frame bomb entries. | English |
+| `x` | `x` | Per-frame entities (one observed, with `a`, `k` and an `hp` on a 0–255 scale). Meaning not established. | English |
+| `l` | `side` | A bomb’s or hero’s side: 0 attacker, 1 defender. | English |
+| `ce` | `cell` | The cell a bomb sits in, or a hero stands on. | English |
+| `r` | `radius` | A bomb’s blast radius in cells. | English |
+| `f` | `fuseLeft` | Seconds of fuse a bomb has left at the frame. | English |
+| `ft` | `fuseTotal` | A bomb’s whole fuse; with the side and cell it identifies one bomb across frames. | English |
+| `l` | `side` | A frame hero’s side: 0 attacker, 1 defender. | English |
+| `i` | `slot` | A frame hero’s squad slot. | English |
+| `ce` | `cell` | The cell a frame hero stands on. | English |
+| `st` | `state` | A frame hero’s state, 0–5 observed. Meaning not established. | English |
+
+### `premio` values
+
+| Wire token | Domain field | Description | Origin |
+| --- | --- | --- | --- |
+| `won` | `prize` | The rune chest landed in the bag. | English |
+| `lost` | `prize` | The rune chest was lost to a full bag. | English |
+| `pvp` | `by` | The PVP points leaderboard. | English |
+| `hero` | `by` | The strongest-hero leaderboard. | English |
+| `power` | `by` | The total-power leaderboard. | English |

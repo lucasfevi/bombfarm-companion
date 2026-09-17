@@ -45,7 +45,7 @@ import {
 import { computeCombatMults } from '../derive';
 import { DEFAULT_CASA_SLOTS } from '../casa-slots';
 import { alliesOverRotation, fieldSeconds } from '../model';
-import { computeTeamBuffsOverRotation, type TeamBuffId } from '../team-buffs';
+import { computeTeamBuffsOverRotation, holdAurasAtCap, type AurasAtCap, type TeamBuffId } from '../team-buffs';
 import { isSquadScope } from './auras';
 import { scoreHeroLoadout } from './score';
 import type { Loadout, PointAlloc } from '../gear/types';
@@ -120,10 +120,11 @@ function phaseOptionsFor(
   return { maxPhase, ignoreFieldCrowding };
 }
 
-function squadAccountFor(account: TeamPlanAccountInput): SquadFarmAccount {
+function squadAccountFor(account: TeamPlanAccountInput, aurasAtCap: AurasAtCap | undefined): SquadFarmAccount {
   return {
     slots: account.slots,
     fieldSlots: account.fieldSlots,
+    ...(aurasAtCap === undefined ? {} : { aurasAtCap }),
     tree: {
       danoTotal: account.treeSheet.danoStatic,
       critChance: account.treeSheet.critChancePct,
@@ -155,8 +156,10 @@ function priceField(
   loadoutByHeroId: Readonly<Record<string, Loadout>>,
   farm: FarmContext,
   fieldSlots: number,
+  aurasAtCap: AurasAtCap | undefined,
 ): { auras: Record<TeamBuffId, number>; alliesByHeroId: Record<string, number> } {
-  const atFullPresence = computeTeamBuffsOverRotation(squadContexts, null);
+  // Held at both steps, as the estimator holds them (`priceFieldForAssignment`).
+  const atFullPresence = holdAurasAtCap(computeTeamBuffsOverRotation(squadContexts, null), aurasAtCap);
   const presence = squadContexts.map((ctx) =>
     presenceOf(
       scoreHeroLoadout(ctx, loadoutByHeroId[ctx.heroId] ?? {}, ctx.pts, atFullPresence, farm),
@@ -166,7 +169,7 @@ function priceField(
   squadContexts.forEach((ctx, index) => {
     alliesByHeroId[ctx.heroId] = alliesOverRotation(presence, index, fieldSlots);
   });
-  return { auras: computeTeamBuffsOverRotation(squadContexts, presence), alliesByHeroId };
+  return { auras: holdAurasAtCap(computeTeamBuffsOverRotation(squadContexts, presence), aurasAtCap), alliesByHeroId };
 }
 
 /** The rule both objectives share now lives beside the aura total that applies it. */
@@ -184,6 +187,7 @@ export function buildFarmObjective(
   loadoutByHeroId: Readonly<Record<string, Loadout>>,
   targetPhase?: number | null,
   ignoreFieldCrowding = false,
+  aurasAtCap?: AurasAtCap,
 ): TeamPlanFarmObjective {
   const phaseOptions = phaseOptionsFor(account, targetPhase, ignoreFieldCrowding);
   const farm = farmContextFor(account);
@@ -192,6 +196,7 @@ export function buildFarmObjective(
     loadoutByHeroId,
     farm,
     account.fieldSlots ?? account.slots ?? DEFAULT_CASA_SLOTS,
+    aurasAtCap,
   );
   const heroes: FrozenHeroFarmTerms[] = squadContexts.map((ctx) => ({
     ctx,
@@ -207,7 +212,7 @@ export function buildFarmObjective(
   return {
     auras,
     farm,
-    account: squadAccountFor(account),
+    account: squadAccountFor(account, aurasAtCap),
     phaseOptions,
     treeLuckFlatPct: account.treeSheet.luckFlatPct,
     heroes,

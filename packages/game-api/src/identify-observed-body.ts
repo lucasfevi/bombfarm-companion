@@ -1,5 +1,6 @@
 import type { AccountSection } from '@bombfarm/contracts';
 import { ROUTE_FINGERPRINTS, type RouteFingerprint } from './fingerprints.js';
+import { identifyPvpBody, type PvpRoute } from './pvp/identify.js';
 import { checkShape } from './shape.js';
 import { isPlainObject } from './type-guards.js';
 
@@ -9,9 +10,14 @@ import { isPlainObject } from './type-guards.js';
  * identify it by. A body is `identified` only when it matches exactly one route; `unidentified`
  * (no match, the expected outcome after a game patch reshapes a body) and `ambiguous` (more than
  * one match) are both refusals to guess, never resolved by preferring one route over another.
+ *
+ * `pvp` is the one non-section verdict: a duel result or a film, told apart by the key pair only
+ * each carries (see {@link identifyPvpBody}). A section fingerprint names a complete key set that
+ * contains neither pair, so a body can never be both a section and a PVP body.
  */
 export type ObservedBodyIdentification =
   | { readonly kind: 'identified'; readonly section: AccountSection }
+  | { readonly kind: 'pvp'; readonly route: PvpRoute }
   | { readonly kind: 'unidentified' }
   | { readonly kind: 'ambiguous'; readonly sections: readonly AccountSection[] };
 
@@ -20,6 +26,9 @@ export function identifyObservedBody(
   fingerprints: Readonly<Record<AccountSection, RouteFingerprint>> = ROUTE_FINGERPRINTS,
 ): ObservedBodyIdentification {
   if (!isPlainObject(body)) return { kind: 'unidentified' };
+
+  const pvpRoute = identifyPvpBody(body);
+  if (pvpRoute !== null) return { kind: 'pvp', route: pvpRoute };
 
   const sections = Object.keys(fingerprints) as readonly AccountSection[];
   const matches = sections.filter((section) => checkShape(body, fingerprints[section]).ok);

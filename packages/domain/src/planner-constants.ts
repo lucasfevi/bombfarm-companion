@@ -43,6 +43,15 @@ export const SHEET_PANEL_KEYS: readonly SheetKey[] = [
 
 export type SheetPanelKey = SheetKey;
 
+/** The sheet rows that are rates and print with a `%`; the other three are counts. */
+export const SHEET_PCT_KEYS: ReadonlySet<SheetPanelKey> = new Set<SheetPanelKey>([
+  'critChance',
+  'critDmg',
+  'penetration',
+  'cdr',
+  'luck',
+]);
+
 /**
  * The seven sheet stats scored for DPS and consumed by `sheetsClose` and the
  * mismatch tab-status predicate. Equals `SHEET_KEYS` minus `luck`, which is modelled

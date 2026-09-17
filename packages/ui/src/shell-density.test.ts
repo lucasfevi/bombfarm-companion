@@ -31,7 +31,8 @@ describe('shellDensityFor', () => {
     // Read from the cluster's own constant rather than written out: the OS drew those buttons at
     // 136px until the header took the job over at 100, and a number copied here would still say
     // 136 — landing this assertion in a band the running app never reaches. The eighth tab moved
-    // this stage inside the range a window can be dragged to, where it used to sit above it.
+    // this stage inside the range a window can be dragged to, where it used to sit above it, and
+    // the ninth kept it there.
     expect(shellDensityFor(960 - WINDOW_CONTROLS_WIDTH)).toBe('actions-collapsed');
   });
 

@@ -7,7 +7,7 @@
  * next account read drops it.
  */
 import type { AccountSource } from '@bombfarm/contracts';
-import { ItemIcon } from '@bombfarm/game-art';
+import { ItemIcon, itemPeekFromInventory } from '@bombfarm/game-art';
 import { Button, Icon, Panel, PanelHeader, Tooltip, cn, mutedClass } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
 import type { ForgeQueueState } from '../../lib/forge/forge-queue-reducer';
@@ -62,7 +62,7 @@ export function ForgeQueuePanel({
                 {item === null ? (
                   <span aria-hidden className="size-8 shrink-0 rounded-sm border border-dashed border-line" />
                 ) : (
-                  <ItemIcon item={item} size="sm" />
+                  <ItemIcon item={itemPeekFromInventory(item)} size="sm" peek={{ lang: labels.lang, name }} />
                 )}
                 <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-ink">{name}</span>
                 <span className="shrink-0 font-mono text-[11px] tabular-nums text-ink">

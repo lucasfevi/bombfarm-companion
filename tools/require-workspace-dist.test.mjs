@@ -459,6 +459,7 @@ describe('CI jobs that run the tools project build what its guarded files need',
     expect(runs.map(({ workflow, job }) => `${workflow}:${job}`)).toEqual([
       'ci-desktop.yml:quality',
       'ci-fidelity.yml:fidelity-gate',
+      'repo-guards.yml:repo-guards',
     ]);
   });
 

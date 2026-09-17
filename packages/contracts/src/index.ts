@@ -5,6 +5,7 @@ import type { UpdateStatus } from './update.js';
 import type { MarketQuoteCurrency, MarketQuoteResult, MarketQuoteTarget, MarketSnapshotView } from './market.js';
 import { DEFAULT_MARKET_QUOTE_CURRENCY } from './market.js';
 import type { ForgeEvent, ForgeHistoryResult, ForgeStartRequest, ForgeStartResult } from './forge.js';
+import type { PvpFilmView, PvpHistoryResult } from './pvp.js';
 
 export { accountChangeKey, canonicalStringify } from './account-change-key.js';
 export { EMPTY_FORGE_HISTORY } from './forge.js';
@@ -24,6 +25,23 @@ export type {
   ForgeStepEvent,
   ForgeStopReason,
 } from './forge.js';
+export { EMPTY_PVP_HISTORY } from './pvp.js';
+export type {
+  PvpDuelPrize,
+  PvpDuelRecord,
+  PvpDuelRow,
+  PvpDuelSide,
+  PvpFilmFacts,
+  PvpFilmSecond,
+  PvpFilmSummary,
+  PvpFilmView,
+  PvpHistoryResult,
+  PvpHistoryTotals,
+  PvpRank,
+  PvpRankEntry,
+  PvpStanding,
+  PvpStateSnapshot,
+} from './pvp.js';
 export { migrateStoredSettings } from './settings-migration.js';
 /** The desktop locale token, its one domain/BCP-47 mapping, and the pure
  *  startup resolution. `locale.ts` itself imports `AppSettings`/`DEFAULT_SETTINGS` back from this
@@ -457,6 +475,15 @@ export interface IpcChannels {
   /** Test-only: replays a scripted event sequence through the real `forge:event` seam. Main
    *  honours it only unpackaged on the fixture reader; anywhere else it answers `{ ok: false }`. */
   'forge:inject': { args: [unknown]; result: { ok: boolean } };
+  /** Every duel the tap has seen settle, newest first, with whether each one's film is held. */
+  'pvp:history': { args: []; result: PvpHistoryResult };
+  /** Asks main to read the PVP state and the points ranking now, the way `account:readNow` asks
+   *  for the account. `ok` means the reads were started; what they find arrives on `pvp:changed`,
+   *  and only if it changed something. */
+  'pvp:refresh': { args: []; result: AccountReadResult };
+  /** A kept film, read down to one point per second and the facts the frames settle. `null` when
+   *  no film with that id is held. The 2 MB body never crosses the bridge. */
+  'pvp:film': { args: [number]; result: PvpFilmView | null };
 }
 
 export type IpcInvokeChannel = keyof IpcChannels;
@@ -507,6 +534,9 @@ export const IPC_CHANNELS = [
   'forge:history',
   'forge:clearHistory',
   'forge:inject',
+  'pvp:history',
+  'pvp:refresh',
+  'pvp:film',
 ] as const satisfies readonly IpcInvokeChannel[];
 
 export type IpcEventChannel =
@@ -518,6 +548,7 @@ export type IpcEventChannel =
   | 'market:changed'
   | 'settings:changed'
   | 'forge:event'
+  | 'pvp:changed'
   | 'window:changed';
 
 export interface IpcEvents {
@@ -546,6 +577,9 @@ export interface IpcEvents {
   /** Every call a forge run makes, as it settles, then one `done`. The step's `to` is the
    *  server's answer, never an inference from the odds. */
   'forge:event': ForgeEvent;
+  /** Fired when a duel result or a film has just been kept — the same list `pvp:history` serves,
+   *  so a screen already open sees the duel without polling. */
+  'pvp:changed': PvpHistoryResult;
   /** Fired on every maximize and unmaximize of the main window, so the header's own caption
    *  buttons follow a state change the OS made (a double-clicked title bar, a snap, Win+Up)
    *  and not only the ones they asked for. */
@@ -561,6 +595,7 @@ export const IPC_EVENT_CHANNELS = [
   'market:changed',
   'settings:changed',
   'forge:event',
+  'pvp:changed',
   'window:changed',
 ] as const satisfies readonly IpcEventChannel[];
 

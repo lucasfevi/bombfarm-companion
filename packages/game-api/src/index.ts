@@ -47,6 +47,13 @@ export { normalizeRotation } from './rotation/normalize.js';
 // used to live here now lives in that test file instead.
 export { LIVE_FRAME_WIRE_LEXICON, wireKey as liveFrameWireKey } from './live-frame/lexicon.js';
 export type { LiveFrameWireSymbol } from './live-frame/lexicon.js';
+export { PVP_RANKING_BOARD, PVP_WIRE_LEXICON, wireKey as pvpWireKey } from './pvp/lexicon.js';
+export type { PvpWireSymbol } from './pvp/lexicon.js';
+export { identifyPvpBody } from './pvp/identify.js';
+export type { PvpRoute } from './pvp/identify.js';
+export { isPvpPointsBoard, parsePvpDuelResult, parsePvpDuelState, parsePvpFilm, parsePvpRanking, parsePvpState } from './pvp/parse.js';
+export { PVP_RANKING_LIMIT, PVP_STATE_PATH, pvpRankingPath } from './pvp/routes.js';
+export { summarizePvpFilm } from './pvp/film.js';
 export { PORTUGUESE_WIRE_TOKENS, renderWireGlossary } from './wire-glossary.js';
 export type { WireLexiconEntry, WireVocabularyKind, WireVocabularyOrigin } from './wire-lexicon.js';
 export { isPlainObject } from './type-guards.js';

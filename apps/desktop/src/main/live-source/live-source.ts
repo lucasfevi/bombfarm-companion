@@ -27,7 +27,7 @@ import type {
   SectionFidelity,
 } from '@bombfarm/contracts';
 import { isConnectedCurrency, isLiveCurrency, liveGap } from '@bombfarm/contracts';
-import { identifyObservedBody, isPlainObject, normalizeRotation } from '@bombfarm/game-api';
+import { identifyObservedBody, isPlainObject, normalizeRotation, type PvpRoute } from '@bombfarm/game-api';
 import {
   advanceRecoveryClock,
   createInitialFieldCountdownState,
@@ -265,9 +265,21 @@ export interface TapHandle {
   pollNow(): void;
 }
 
+/** One PVP body as the tap saw it: which of the two it is, the parsed object, and the bytes
+ *  themselves — a film is handed on as it came, never re-serialised. */
+export interface ObservedPvpBody {
+  readonly route: PvpRoute;
+  readonly body: unknown;
+  readonly raw: Buffer;
+  readonly atMs: number;
+}
+
 export interface LiveSourceDeps {
   /** Checked at the attach site by the underlying tap, never inferred from construction order. */
   readonly consent: () => boolean;
+  /** Where a duel result or a film goes the moment it is identified. Omitted, both are named in
+   *  the log and dropped, the way every non-rotation section still is. */
+  readonly onObservedPvpBody?: (observation: ObservedPvpBody) => void;
   readonly userDataDir: string;
   /** Gates the frame capture inside the default tap factory — irrelevant, and safe to omit, when
    *  `createTap` overrides that factory entirely. Defaults to `'prod'`, the flavor capture never
@@ -555,6 +567,7 @@ export class LiveSource {
    *  whenever no live tick has ever set {@link #goldBalance} this session, so a game-closed read
    *  shows a real (if aging) balance instead of an em dash. */
   readonly #observer: ObservationCapture | null;
+  readonly #onObservedPvpBody: ((observation: ObservedPvpBody) => void) | null;
   #accountGoldBalance: number | null = null;
   /** When {@link #accountGoldBalance} was captured. `null` only alongside a `null` balance. */
   #accountGoldCapturedAt: string | null = null;
@@ -572,6 +585,7 @@ export class LiveSource {
   constructor(deps: LiveSourceDeps) {
     this.#log = deps.log ?? NOOP_LOG_PORT;
     this.#observer = deps.observer ?? null;
+    this.#onObservedPvpBody = deps.onObservedPvpBody ?? null;
     this.#now = deps.now ?? Date.now;
     this.#earningsFold = new EarningsFold({ now: this.#now, xpPerProp, log: this.#log });
     this.#mapFold = new MapFold({ wikiFactsFor });
@@ -766,8 +780,9 @@ export class LiveSource {
   /** Reads the client's own traffic before this app's own requests: {@link identifyObservedBody}
    *  is the strict, shape-only discriminator (the tap sees responses with no URL, so a path is
    *  never available to identify by) — a match resolves to exactly one route or not at all, never
-   *  a guess. Only the rotation route is wired downstream this slice; every other identified
-   *  section is named in the log and otherwise left alone, the seam the next one plugs into. */
+   *  a guess. The rotation route and the two PVP bodies are wired downstream; every other
+   *  identified section is named in the log and otherwise left alone, the seam the next one plugs
+   *  into. */
   #handleObservedHttpBody(bodyBuf: Buffer, atMs: number): void {
     // Above every early return below, and on the raw bytes: the bodies the developer capture
     // exists to record are exactly the ones the unidentified and ambiguous branches discard.
@@ -793,6 +808,11 @@ export class LiveSource {
         sections: identification.sections,
         byteLength: bodyBuf.length,
       });
+      return;
+    }
+    if (identification.kind === 'pvp') {
+      this.#log.info({ scope: 'live-source', event: 'observed_body.pvp', route: identification.route, byteLength: bodyBuf.length });
+      this.#onObservedPvpBody?.({ route: identification.route, body: parsed, raw: bodyBuf, atMs });
       return;
     }
 

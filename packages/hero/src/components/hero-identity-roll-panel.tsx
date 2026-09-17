@@ -5,7 +5,6 @@ import { MAX_STARS } from '@bombfarm/domain/gear';
 import { heroAbilitySlotsUsed } from '@bombfarm/domain/hero-abilities';
 import { RARITIES, type SheetKey } from '@bombfarm/domain/planner-constants';
 import type { RollQualityReport } from '@bombfarm/domain/roll-quality';
-import { RUNE_AXIS_SHEET_KEY, runesOf, type HeroRune } from '@bombfarm/domain/runes';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import {
   HeroAbilityIcons,
@@ -17,8 +16,8 @@ import {
 } from '@bombfarm/game-art';
 import {
   DataTable,
+  FactTile,
   Panel,
-  Tooltip,
   StatList,
   cn,
   formatNumber,
@@ -86,50 +85,28 @@ type IdentityFact = {
 
 /** `leading-none` shaves the descenders off a truncated line — `truncate` clips to the line box,
  *  and at a line height of 1 the box is shorter than the face. */
-const factValueClass = 'mt-1 truncate text-sm leading-tight font-bold';
-
-function FactTile({ fact }: { fact: IdentityFact }) {
+function IdentityFactTile({ fact }: { fact: IdentityFact }) {
   const value =
     fact.href === undefined ? (
-      <p className={cn(numericClass, factValueClass, fact.valueClass ?? 'text-ink')}>
-        {fact.value}
-      </p>
+      fact.value
     ) : (
       <a
         href={fact.href}
         target="_blank"
         rel="noopener noreferrer"
-        className={cn(
-          numericClass,
-          factValueClass,
-          'flex items-center gap-1.5 underline-offset-2 hover:underline focus-visible:underline',
-          fact.valueClass ?? 'text-ink',
-        )}
+        className="flex items-center gap-1.5 text-inherit underline-offset-2 hover:underline focus-visible:underline"
       >
         <SteamGlyph className="shrink-0" />
         <span className="truncate">{fact.value}</span>
       </a>
     );
-
-  const tile = (
-    <div className="min-w-0 border border-line px-2.5 py-1.5">
-      <p className={sectionTitleClass}>{fact.label}</p>
-      {value}
-    </div>
-  );
-
-  if (fact.note === undefined) return tile;
   return (
-    <Tooltip.Root>
-      <Tooltip.Trigger render={tile} />
-      <Tooltip.Portal>
-        <Tooltip.Positioner sideOffset={6}>
-          <Tooltip.Popup>
-            <p className="m-0 max-w-[36ch]">{fact.note}</p>
-          </Tooltip.Popup>
-        </Tooltip.Positioner>
-      </Tooltip.Portal>
-    </Tooltip.Root>
+    <FactTile
+      label={fact.label}
+      value={value}
+      {...(fact.note === undefined ? {} : { note: fact.note })}
+      {...(fact.valueClass === undefined ? {} : { valueClassName: fact.valueClass })}
+    />
   );
 }
 
@@ -200,13 +177,6 @@ function GradeRailView({ mean, railLetter }: { mean: number; railLetter: string 
  * `useHeroCopy()`: that context carries the host-supplied `HeroPanelCopy`, and none of the roll
  * vocabulary below is a string a host already owns.
  */
-/** The statistic a rune multiplies, in the host's own stat vocabulary; xp and gold are not statistics. */
-function runeAxisLabel(rune: HeroRune, t: HeroCopy, statLabel: (key: SheetKey) => string): string {
-  const key = RUNE_AXIS_SHEET_KEY[rune.axis];
-  if (key !== null) return statLabel(key);
-  return rune.axis === 'xp' ? t.heroDetailRuneAxisXp : t.heroDetailRuneAxisGold;
-}
-
 export function HeroIdentityRollPanel({
   hero,
   rollQuality,
@@ -237,7 +207,6 @@ export function HeroIdentityRollPanel({
     (value) => `${formatNumber(value, lang, 1)}%`,
   );
 
-  const runes = runesOf(hero);
   const rarityIndex = RARITIES.indexOf(hero.rarity);
   const starCount = Math.max(0, Math.min(MAX_STARS, Math.round(hero.stars)));
   const abilitySlots = heroAbilitySlotsUsed(hero.abilities);
@@ -339,32 +308,10 @@ export function HeroIdentityRollPanel({
 
           <div className="grid min-w-0 flex-1 grid-cols-2 gap-2 @min-[30rem]:grid-cols-3 @min-[52rem]:grid-cols-4 @min-[72rem]:grid-cols-6">
             {facts.map((fact) => (
-              <FactTile key={fact.id} fact={fact} />
+              <IdentityFactTile key={fact.id} fact={fact} />
             ))}
           </div>
         </div>
-
-        {runes.length > 0 ? (
-          <>
-            <h3 className={cn(sectionTitleClass, 'mt-5')}>{t.heroDetailRunesTitle}</h3>
-            <p className={cn(tipClass, 'mt-1.5')}>{t.heroDetailRunesTip}</p>
-            <StatList
-              className="mt-1"
-              items={runes.map((rune, index) => ({
-                id: `${rune.axis}-${String(index)}`,
-                label: runeAxisLabel(rune, t, statLabel),
-                value: (
-                  <span className={numericClass}>
-                    {sub(t.heroDetailRuneValue, {
-                      pct: formatNumber(rune.strengthPct, lang, 0),
-                      hours: formatNumber(rune.playSecondsLeft / 3600, lang, 0),
-                    })}
-                  </span>
-                ),
-              }))}
-            />
-          </>
-        ) : null}
 
         <h3 className={cn(sectionTitleClass, 'mt-5')}>{t.heroDetailRollTitle}</h3>
         <p className={cn(tipClass, 'mt-1.5')}>{t.heroDetailRollPermanent}</p>

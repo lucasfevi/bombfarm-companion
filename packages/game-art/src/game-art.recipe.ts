@@ -82,25 +82,38 @@ export const artFrameRecipe = cva(`${artFrameBase} ${artFrameRadiusClass}`, {
 });
 
 const iconMetaGlyphBase =
-  'pointer-events-none absolute z-[1] font-bold leading-none tabular-nums tracking-tight [text-shadow:0_1px_1px_color-mix(in_oklch,var(--bg)_90%,transparent),0_0_4px_color-mix(in_oklch,var(--bg)_72%,transparent)]';
+  'pointer-events-none absolute z-[1] leading-none tabular-nums [text-shadow:0_1px_1px_color-mix(in_oklch,var(--bg)_90%,transparent),0_0_4px_color-mix(in_oklch,var(--bg)_72%,transparent)]';
 
-/** Halo glyphs on inventory art — no plaque fill. */
+/** Halo glyphs on inventory art — no plaque fill. `tiny` is the 28px tile's: 8px mono hugging
+ *  the corner, a quarter of the pixels the 10px glyph took, so a forge level no longer covers a
+ *  third of the art it sits on. The offsets are compound because each size hugs its corner at
+ *  its own distance, and cva concatenates rather than merges — two `bottom-*` utilities in one
+ *  class string would leave the stylesheet's order to decide. */
 export const iconMetaGlyphRecipe = cva(iconMetaGlyphBase, {
   variants: {
     size: {
-      compact: 'text-[10px]',
-      roomy: 'text-[11px]',
+      tiny: 'font-mono text-[8px] font-semibold',
+      compact: 'text-[10px] font-bold tracking-tight',
+      roomy: 'text-[11px] font-bold tracking-tight',
     },
     place: {
-      'top-end': 'top-0.5 right-0.5 text-ink',
-      'bottom-end': 'bottom-0.5 right-0.5 text-[color-mix(in_oklch,var(--ink)_72%,var(--rar-4))]',
-      'bottom-center': 'inset-x-0 bottom-0.5 text-center text-ink',
+      'top-end': 'text-ink',
+      'bottom-end': 'text-[color-mix(in_oklch,var(--ink)_72%,var(--rar-4))]',
+      'bottom-center': 'inset-x-0 text-center text-ink',
     },
   },
+  compoundVariants: [
+    { size: ['compact', 'roomy'], place: 'top-end', class: 'top-0.5 right-0.5' },
+    { size: ['compact', 'roomy'], place: 'bottom-end', class: 'bottom-0.5 right-0.5' },
+    { size: ['compact', 'roomy'], place: 'bottom-center', class: 'bottom-0.5' },
+    { size: 'tiny', place: 'top-end', class: 'top-px right-px' },
+    { size: 'tiny', place: 'bottom-end', class: 'bottom-px right-px' },
+    { size: 'tiny', place: 'bottom-center', class: 'bottom-px' },
+  ],
   defaultVariants: { size: 'compact', place: 'top-end' },
 });
 
-export type IconMetaGlyphSize = 'compact' | 'roomy';
+export type IconMetaGlyphSize = 'tiny' | 'compact' | 'roomy';
 
 const abilityIconSize = {
   xs: 'size-7',
@@ -121,6 +134,15 @@ export const abilityIconRecipe = cva(
 
 export type AbilityIconRecipeSize = keyof typeof abilityIconSize;
 export type ArtFrameRecipeSize = keyof typeof artFrameSize;
+
+const emptyGearSlotChrome =
+  'inline-grid aspect-[18/19] shrink-0 border border-dashed border-line bg-[color-mix(in_oklch,var(--bg)_55%,var(--surface))]';
+
+/** A gear slot with nothing in it, at any item-icon footprint. */
+export const emptyGearSlotRecipe = cva(`${emptyGearSlotChrome} ${artFrameRadiusClass}`, {
+  variants: { size: artFrameSize },
+  defaultVariants: { size: 'lg' },
+});
 
 /** A gear slot with nothing in it, drawn at the `lg` item-icon footprint. */
 export const emptyGearSlotClass = cn(

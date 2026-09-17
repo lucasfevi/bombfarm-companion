@@ -92,11 +92,12 @@ describe('farmObjectiveValue — each kind selects the right column', () => {
   });
 
   it('blend at w=0.5 sits strictly between the two normalized endpoints', () => {
-    // Phase 29 (the current build's gold-optimal phase) is neither currency's own best, so both
-    // normalized terms are < 1 and unequal — the row used to derive `scales` (phase 1) would make
-    // the blend collapse onto a single point, which is why the scales are the full-sweep maxima.
+    // Phase 61 (the account's own phase) is neither currency's own best — gold peaks at 67 and
+    // chests at 1 — so both normalized terms are < 1 (0.969 and 0.905) and unequal. The row used
+    // to derive `scales` (phase 1) would make the blend collapse onto a single point, which is
+    // why the scales are the full-sweep maxima.
     const buildScales = currentBuildScales();
-    const midRow = computeFarmRateRow(29, squad, { maxPhase })!;
+    const midRow = computeFarmRateRow(61, squad, { maxPhase })!;
 
     const goldValue = farmObjectiveValue(midRow, resolveFarmObjective({ kind: 'gold' }), buildScales);
     const chestValue = farmObjectiveValue(midRow, resolveFarmObjective({ kind: 'chests' }), buildScales);
@@ -147,11 +148,9 @@ describe('farmObjectiveScales — the frozen blend normalizers, exported (lifted
    * The drift canary: two constants nothing else in the suite pins, so any change to the
    * throughput model that nobody meant to make shows up here as a number moving.
    *
-   * RE-BASED onto `save-20260819-11882-7heroes.json` (issue #206) — the retired 2026-08-13
-   * capture had left its regime, and the pinned figures had been re-recorded six times as the
-   * model moved beneath them. That whole history described the OLD roster and is preserved in
-   * `docs/fixture-corpus.md` rather than carried forward here, where it would describe a fixture
-   * this test no longer reads.
+   * Measured on `save-20260914-9heroes-second-account.json` (max_phase 155). The same account's
+   * 2026-08-19 capture read 1,331,737.54 and 4.185706 at max_phase 52; the roster is 25 days
+   * older and two heroes larger, so the figures are not comparable, only the route to them is.
    *
    * BOTH scales are `…PerHour` maxima over the sweep — `goldPick.row.goldPerHour` and
    * `chestPick.row.chestsPerHour` — so anything that scales squad throughput moves both, and the
@@ -163,9 +162,9 @@ describe('farmObjectiveScales — the frozen blend normalizers, exported (lifted
    * re-record can only ever restate the model, never paper over a disagreement between the two
    * routes to it.
    */
-  it('on the committed fixture (maxPhase 52): goldScale ≈ 1 331 737.54, chestScale ≈ 4.185706', () => {
+  it('on the committed fixture (maxPhase 155): goldScale ≈ 30 449 437.88, chestScale ≈ 16.679921', () => {
     const scales = farmObjectiveScales(squad, { maxPhase });
-    expect(scales.goldScale).toBeCloseTo(1331737.54, 1);
-    expect(scales.chestScale).toBeCloseTo(4.185706, 5);
+    expect(scales.goldScale).toBeCloseTo(30449437.88, 1);
+    expect(scales.chestScale).toBeCloseTo(16.679921, 5);
   });
 });

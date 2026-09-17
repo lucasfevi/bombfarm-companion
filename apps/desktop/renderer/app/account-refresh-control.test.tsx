@@ -27,6 +27,16 @@ function render(props: Partial<Parameters<typeof AccountRefreshControl>[0]> = {}
   );
 }
 
+function tagOf(html: string, testid: string): string {
+  return new RegExp(`<[a-z]+[^>]*data-testid="${testid}"[^>]*>`).exec(html)?.[0] ?? '';
+}
+
+function textOf(html: string, testid: string): string {
+  return new RegExp(`<[a-z]+[^>]*data-testid="${testid}"[^>]*>([^<]*)<`).exec(html)?.[1] ?? '';
+}
+
+const BUTTON_STATE_ATTRIBUTES = / (disabled=""|data-disabled=""|aria-busy="[a-z]+")/g;
+
 describe('AccountRefreshControl — one control, always present, two states', () => {
   it('offers the refresh whether or not the snapshot has gone out of date', () => {
     expect(render({ stale: false })).toContain('data-testid="account-refresh"');
@@ -54,24 +64,78 @@ describe('AccountRefreshControl — one control, always present, two states', ()
     expect(html).not.toContain(en.ageJustNow);
   });
 
-  it('says it is working and refuses a second press while a recompute is in flight', () => {
+  it('spins its icon and refuses a second press while a recompute is in flight', () => {
     const html = render({ busy: true });
-    expect(html).toContain(en.farmRefreshBusy);
-    expect(html).toContain('disabled=""');
-    expect(html).toContain('aria-busy="true"');
+    const button = tagOf(html, 'account-refresh');
+    expect(button).toContain('disabled=""');
+    expect(button).toContain('aria-busy="true"');
+    expect(html).toContain('motion-safe:animate-spin');
   });
 
   it('is equally working while the account read is in flight, with the screen already re-solved', () => {
     const html = render({ busy: false, readState: { kind: 'working' } });
-    expect(html).toContain(en.farmRefreshBusy);
-    expect(html).toContain('disabled=""');
-    expect(html).toContain('aria-busy="true"');
+    const button = tagOf(html, 'account-refresh');
+    expect(button).toContain('disabled=""');
+    expect(button).toContain('aria-busy="true"');
+    expect(html).toContain('motion-safe:animate-spin');
   });
 
-  it('is pressable again once the recompute has settled', () => {
+  it('is pressable again, and still, once the recompute has settled', () => {
     const html = render({ busy: false });
-    expect(html).toContain(en.farmRefresh);
-    expect(html).not.toContain('disabled=""');
+    const button = tagOf(html, 'account-refresh');
+    expect(button).not.toContain('disabled=""');
+    expect(button).toContain('aria-busy="false"');
+    expect(html).not.toContain('animate-spin');
+  });
+});
+
+describe('the control is an icon with its line beside it, not a labelled button with a line beneath', () => {
+  it('is named by copy and carries the refresh glyph, never a text label', () => {
+    const html = render();
+    expect(tagOf(html, 'account-refresh')).toContain(`aria-label="${en.farmRefresh}"`);
+    expect(html).toContain('data-icon="arrow-path"');
+    expect(textOf(html, 'account-refresh')).toBe('');
+  });
+
+  it('is the quiet square icon button, not the primary fill', () => {
+    const button = tagOf(render(), 'account-refresh');
+    expect(button).toContain('size-5');
+    expect(button).not.toContain('bg-accent');
+  });
+
+  it('answers a hover or a focus with the design-system tooltip, never the native attribute', () => {
+    const button = tagOf(render(), 'account-refresh');
+    expect(button).toContain('data-slot="tooltip-trigger"');
+    expect(button).not.toContain('title=');
+  });
+
+  it('sets the line to the left of the button, on one row, in the small tabular muted face', () => {
+    const html = render({ capturedAt: minutesAgo(5) });
+    expect(html.indexOf('data-testid="account-refresh-age"')).toBeLessThan(html.indexOf('data-testid="account-refresh"'));
+    expect(tagOf(html, 'account-refresh-control')).toContain('items-center');
+    expect(tagOf(html, 'account-refresh-control')).not.toContain('flex-col');
+    const line = tagOf(html, 'account-refresh-age');
+    expect(line).toContain('text-[11px]');
+    expect(line).toContain('tabular-nums');
+    expect(line).toContain('text-muted');
+    expect(line).toContain('whitespace-nowrap');
+  });
+
+  it('turns the line to the warn tone once the numbers are out of date', () => {
+    const line = tagOf(render({ stale: true }), 'account-refresh-age');
+    expect(line).toContain('text-warn');
+    expect(line).not.toContain('text-muted');
+  });
+
+  it('keeps the button the same element in every state, so nothing about it moves', () => {
+    const idle = tagOf(render(), 'account-refresh').replace(BUTTON_STATE_ATTRIBUTES, '');
+    const working = tagOf(render({ busy: true }), 'account-refresh').replace(BUTTON_STATE_ATTRIBUTES, '');
+    const refused = tagOf(render({ readState: { kind: 'refused', reason: 'offline' } }), 'account-refresh').replace(
+      BUTTON_STATE_ATTRIBUTES,
+      '',
+    );
+    expect(working).toBe(idle);
+    expect(refused).toBe(idle);
   });
 });
 
@@ -80,7 +144,7 @@ describe('AccountRefreshControl — one control, always present, two states', ()
  * started — and a screen that re-solved over the same account it already had, with nothing said,
  * is the stale answer this control exists to make impossible to misread.
  */
-describe('a press that started no read says why, beside the button', () => {
+describe('a press that started no read says why, in the place of the age line', () => {
   it('says nothing about a read that is not being refused', () => {
     expect(render()).not.toContain('data-testid="account-refresh-refusal"');
     expect(render({ readState: { kind: 'working' } })).not.toContain('data-testid="account-refresh-refusal"');
@@ -101,13 +165,29 @@ describe('a press that started no read says why, beside the button', () => {
 
   it('leaves the button pressable — a refusal is not a read in flight', () => {
     const html = render({ readState: { kind: 'refused', reason: 'rate_limited' } });
-    expect(html).toContain(en.farmRefresh);
-    expect(html).not.toContain('disabled=""');
+    expect(tagOf(html, 'account-refresh')).not.toContain('disabled=""');
   });
 
-  it('still states the age of the account the screen was computed from', () => {
+  it('stands where the age line stood, in the warn tone, rather than as a second sentence', () => {
     const html = render({ capturedAt: minutesAgo(5), readState: { kind: 'refused', reason: 'offline' } });
-    expect(html).toContain(sub(en.farmRefreshedAge, { age: en.ageMinutes.replace('{n}', '5') }));
+    expect(html).not.toContain('data-testid="account-refresh-age"');
+    expect(textOf(html, 'account-refresh-refusal')).toBe(en.accountReadFixture);
+    expect(tagOf(html, 'account-refresh-refusal')).toContain('text-warn');
+    expect(html.indexOf('data-testid="account-refresh-refusal"')).toBeLessThan(html.indexOf('data-testid="account-refresh"'));
+  });
+
+  it("shares the age line's face, so the swap changes the words and nothing else", () => {
+    const age = tagOf(render({ capturedAt: minutesAgo(5) }), 'account-refresh-age');
+    const refusal = tagOf(render({ capturedAt: minutesAgo(5), readState: { kind: 'refused', reason: 'offline' } }), 'account-refresh-refusal');
+    expect(refusal.replace('account-refresh-refusal', 'account-refresh-age').replace('text-warn', 'text-muted')).toBe(age);
+  });
+});
+
+describe("the line beside the button can be the caller's own", () => {
+  it("prints the caller's own line where the thing refreshed is not the account read", () => {
+    const html = render({ capturedAt: minutesAgo(5), ageLine: (age) => sub(en.pvpStandingAge, { age }) });
+    expect(textOf(html, 'account-refresh-age')).toBe(sub(en.pvpStandingAge, { age: en.ageMinutes.replace('{n}', '5') }));
+    expect(html).not.toContain(en.farmRefreshedAge.replace('{age}', ''));
   });
 });
 
@@ -169,8 +249,25 @@ describe('the Farm screen mounts the control unconditionally, over the board hea
   });
 });
 
+describe('the Forge screen mounts the same control over its bag, not a refresh of its own', () => {
+  const source = readFileSync(path.join(__dirname, 'forge', 'forge-view.tsx'), 'utf8');
+
+  it('the scan reads a real file', () => {
+    expect(source).toMatch(/export function ForgeView/);
+  });
+
+  it('draws the shared control inside the bag header', () => {
+    expect(source).toContain('<AccountRefreshControl');
+    expect(source).not.toContain('ForgeRefresh');
+  });
+
+  it('asks the app to go and read the account, not only to re-pin the one in hand', () => {
+    expect(source).toContain('useAccountReadRequest(adoptLive)');
+  });
+});
+
 /**
- * The Optimizer screen's own twin of the block above. Its connector is two files — the early
+ * The Optimizer screen's own twin of the Farm block above. Its connector is two files — the early
  * states and the storage/open wiring in `optimizer-view.tsx`, the memo bags and the control in
  * `optimizer-screen.tsx` — so the source scan reads both concatenated: the invariants are about
  * the connector as a whole, not about which of the two files a given line happens to sit in.

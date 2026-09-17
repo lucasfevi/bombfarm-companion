@@ -7,6 +7,7 @@ import {
   type TeamPlanControls,
   type TeamPlanInputs,
 } from '@bombfarm/team-plan/core';
+import { NO_AURAS_AT_CAP } from '@bombfarm/domain/team-buffs';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 
 export function selectTeamPlanInputs(state: PlannerStore): TeamPlanInputs {
@@ -42,6 +43,8 @@ export function selectTeamPlanControls(state: PlannerStore): TeamPlanControls {
     objective: state.objective,
     allowedChanges: state.allowedChanges,
     ignoreFieldCrowding: state.ignoreFieldCrowding,
+    // This app offers no control for it: the search prices every aura as the roster sustains it.
+    aurasAtCap: NO_AURAS_AT_CAP,
     targetPhase: state.targetPhase,
     targetPhaseChosen: state.targetPhaseChosen,
   };

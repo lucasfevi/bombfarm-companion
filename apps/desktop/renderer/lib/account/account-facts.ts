@@ -13,6 +13,8 @@ import { parseAccountPayload } from '@bombfarm/domain/import-save';
 import { buildInventoryView } from '@bombfarm/domain/inventory-view';
 import { resolveHouseRestSeconds } from '@bombfarm/domain/model';
 import { ACCOUNT_SECTIONS } from '@bombfarm/domain/account-fidelity';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import { heroPeekData, type HeroPeekData } from '@bombfarm/game-art';
 import { isTrustworthySection } from '@bombfarm/contracts';
 import type {
   AccountPayload,
@@ -21,6 +23,7 @@ import type {
   SectionFidelity,
 } from '@bombfarm/contracts';
 import type { PriceableHero, PriceableItem } from '@bombfarm/pricing';
+import type { AccountRoster } from './account-roster';
 
 /**
  * The withhold gate is per-section usability, never the account-wide fidelity grade. A
@@ -84,6 +87,8 @@ export interface HoldingsHero extends PriceableHero {
   stars?: number | undefined;
   level?: number | undefined;
   skin?: number | undefined;
+  /** The card the avatar opens, present only when the parsed roster holds this hero's record. */
+  peek?: HeroPeekData | undefined;
 }
 
 /** The three priceable readings behind the holdings section. `null` is "not read", never "none". */
@@ -222,13 +227,20 @@ function roundedNumberOf(value: unknown): number | undefined {
  * game's own answer to whether a hero may be listed at all. A row that does not carry the flag is
  * treated as unsellable, which keeps it out of the total AND out of the count the coverage is
  * over, rather than inventing a price for it.
+ *
+ * The rows are read raw so that a roster the parser rejects still prices; the parsed roster,
+ * where there is one, is joined back on the game's own hero id to give each avatar its card.
  */
-function priceableHeroesOf(rawHeroes: readonly unknown[]): HoldingsHero[] {
+function priceableHeroesOf(
+  rawHeroes: readonly unknown[],
+  recordsById: ReadonlyMap<string, HeroRecord>,
+): HoldingsHero[] {
   const heroes: HoldingsHero[] = [];
   for (const raw of rawHeroes) {
     if (!isObject(raw)) continue;
     const rarity = raw.rarity;
     if (typeof rarity !== 'number' || !Number.isFinite(rarity)) continue;
+    const record = typeof raw.id === 'string' ? recordsById.get(raw.id) : undefined;
     heroes.push({
       name: heroNameOf(raw),
       rarity: Math.round(rarity),
@@ -237,9 +249,14 @@ function priceableHeroesOf(rawHeroes: readonly unknown[]): HoldingsHero[] {
       stars: roundedNumberOf(raw.stars),
       level: roundedNumberOf(raw.level),
       skin: roundedNumberOf(raw.skin),
+      ...(record === undefined ? {} : { peek: heroPeekData(record) }),
     });
   }
   return heroes;
+}
+
+function recordsByIdOf(roster: AccountRoster | null): ReadonlyMap<string, HeroRecord> {
+  return new Map((roster?.heroes ?? []).map((hero) => [hero.id, hero]));
 }
 
 function skinsWornOf(rawHeroes: readonly unknown[]): number[] {
@@ -253,7 +270,7 @@ function skinsWornOf(rawHeroes: readonly unknown[]): number[] {
   return skins;
 }
 
-function holdingsFactsOf(payload: AccountPayload): AccountHoldingsFacts {
+function holdingsFactsOf(payload: AccountPayload, roster: AccountRoster | null): AccountHoldingsFacts {
   const rawItems = payload.items;
   const rawHeroes = payload.heroes;
   const inventoryRead = readable(payload, 'items') && Array.isArray(rawItems);
@@ -263,7 +280,7 @@ function holdingsFactsOf(payload: AccountPayload): AccountHoldingsFacts {
     // The same derivation the Inventory screen draws from, so the two cannot disagree about what
     // the inventory holds.
     inventory: inventoryRead ? buildInventoryView(rawItems).items.map(priceableItem) : null,
-    heroes: rosterRead ? priceableHeroesOf(rawHeroes) : null,
+    heroes: rosterRead ? priceableHeroesOf(rawHeroes, recordsByIdOf(roster)) : null,
     skinsWorn: rosterRead ? skinsWornOf(rawHeroes) : null,
   };
 }
@@ -288,14 +305,19 @@ export function oldestCaptureOf(payload: AccountPayload): string | null {
   return oldest;
 }
 
-export function accountFactsFrom(view: AccountView): AccountFacts {
+/**
+ * `roster` is the same read's parse from `account-roster.ts`, handed in rather than taken here so
+ * the screen still keeps to one parse per read; `null` when that parse rejected the payload, which
+ * costs the holdings list its cards and nothing else.
+ */
+export function accountFactsFrom(view: AccountView, roster: AccountRoster | null): AccountFacts {
   const payload = view.payload;
   const account = accountBlockOf(payload);
   return {
     identity: identityFactsOf(payload, account),
     house: houseFactsOf(account),
     tree: treeFactsOf(account),
-    holdings: holdingsFactsOf(payload),
+    holdings: holdingsFactsOf(payload, roster),
     readCapturedAt: oldestCaptureOf(payload),
   };
 }

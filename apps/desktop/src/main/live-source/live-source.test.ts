@@ -10,7 +10,13 @@ import { generateReplayStream } from './fixtures/generate-replay-stream.js';
 import type { LogPort } from './log-port.js';
 import type { ObservationCapture } from './observation-capture.js';
 import { createReplayTapFactory } from './replay-tap.js';
-import { LiveSource, nodeObservationAppendPort, observationCaptureFilePath, type TapHandle } from './live-source.js';
+import {
+  LiveSource,
+  nodeObservationAppendPort,
+  observationCaptureFilePath,
+  type ObservedPvpBody,
+  type TapHandle,
+} from './live-source.js';
 
 class FakeTap implements TapHandle {
   startCount = 0;
@@ -54,7 +60,7 @@ function requireNumber(value: number | null): number {
   return value;
 }
 
-function createHarness(opts: { readonly log?: LogPort } = {}) {
+function createHarness(opts: { readonly log?: LogPort; readonly onObservedPvpBody?: (observation: ObservedPvpBody) => void } = {}) {
   const taps: FakeTap[] = [];
   let sequence = 0;
   const clock = { ms: 1_700_000_000_000 };
@@ -64,6 +70,7 @@ function createHarness(opts: { readonly log?: LogPort } = {}) {
     userDataDir: 'unused-in-tests',
     now: () => clock.ms,
     ...(opts.log ? { log: opts.log } : {}),
+    ...(opts.onObservedPvpBody ? { onObservedPvpBody: opts.onObservedPvpBody } : {}),
     createTap: (onEvent, onHttpBody) => {
       const tap = new FakeTap(onEvent, onHttpBody);
       taps.push(tap);
@@ -763,6 +770,60 @@ describe('LiveSource: an observed body identification failure falls back to the 
     }).not.toThrow();
     expect(warnRecords).toHaveLength(1);
     expect(warnRecords[0]).toMatchObject({ event: 'observed_body.malformed_json' });
+  });
+});
+
+describe('LiveSource: an observed PVP body is handed on whole, with its bytes', () => {
+  const duelResult = {
+    venceu: true,
+    fase: 120,
+    filme: 48117,
+    salas: 3,
+    segundos: 60,
+    atacante: { nome: 'Player', herois: 5, dano: 10 },
+    defensor: { nome: 'Opponent', herois: 5, dano: 9 },
+    pontos_antes: 1,
+    pontos_depois: 6,
+    duelos_restantes: 4,
+    duelos_max: 5,
+    premio: 'won',
+    estado: { faixa: 'r1', fase: 1 },
+  };
+
+  it('a duel result reaches the PVP seam as its route, the parsed body and the raw bytes, and is not a warning', () => {
+    const { log, warnRecords } = createSpyLog();
+    const seen: ObservedPvpBody[] = [];
+    const { source, currentTap } = createHarness({ log, onObservedPvpBody: (observation) => seen.push(observation) });
+    source.start();
+
+    const raw = Buffer.from(JSON.stringify(duelResult), 'utf8');
+    currentTap().emitRawHttpBody(raw, 4_321);
+
+    expect(warnRecords).toEqual([]);
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toMatchObject({ route: 'duel', body: duelResult, atMs: 4_321 });
+    expect(seen[0]?.raw).toBe(raw);
+  });
+
+  it('a film reaches the seam as the film route', () => {
+    const seen: ObservedPvpBody[] = [];
+    const { source, currentTap } = createHarness({ onObservedPvpBody: (observation) => seen.push(observation) });
+    source.start();
+
+    currentTap().emitHttpBody({ id: 48117, fase: 120, q: [{ t: 0 }] }, 1);
+
+    expect(seen.map((observation) => observation.route)).toEqual(['film']);
+  });
+
+  it('with no seam wired, a PVP body is named in the log and dropped rather than reported as unidentified', () => {
+    const { log, warnRecords, infoRecords } = createSpyLog();
+    const { source, currentTap } = createHarness({ log });
+    source.start();
+
+    currentTap().emitHttpBody(duelResult, 1);
+
+    expect(warnRecords).toEqual([]);
+    expect(infoRecords.some((record) => record.event === 'observed_body.pvp' && record.route === 'duel')).toBe(true);
   });
 });
 

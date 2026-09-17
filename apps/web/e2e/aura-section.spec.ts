@@ -33,12 +33,14 @@ function auraSection(page: Page) {
   return activePanel(page).getByTestId('abilities-auras');
 }
 
-/** The strip's Sustained DPS, at full precision from the figure's own tooltip. */
+/** The strip's Sustained DPS, at full precision from the figure's own tooltip (hover to reveal). */
 async function stripSustainedDps(page: Page): Promise<number> {
   const strip = page.getByRole('region', { name: /current hero/i });
   const value = strip.getByText(/^Sustained DPS$/i).locator('xpath=../strong');
-  const title = await value.getAttribute('title');
-  return Number((title ?? '').replace(/,/g, ''));
+  await value.hover();
+  const popup = page.locator('[data-slot="tooltip-popup"][data-open]');
+  await expect(popup).toBeVisible();
+  return Number((await popup.innerText()).replace(/,/g, ''));
 }
 
 /** The Combat tab's Sustained DPS figure — the Effective panel's card, which the tab states once. */
@@ -94,7 +96,7 @@ test.describe('abilities & auras section', () => {
       await expect(row.getByTestId('team-aura-priced-at')).toHaveText('—');
     }
     await expect(section.getByTestId('team-aura-grito_guerra').getByTestId('team-aura-delta')).toHaveText(/\+\d+\.\d% if on/);
-    await expect(section.getByTestId('own-ability-detonacao_dupla')).toContainText(/×1\.\d\d dmg/);
+    await expect(section.getByTestId('own-ability-detonacao_dupla')).toContainText(/15\.0% chance \(×1\.\d\d dmg\)/);
     // Baton Pass is the sixth aura row. Cora carries it at rank 10, so it is her own — no switch —
     // priced at the team damage her own entry pulse carries, rank 10 × 4%.
     const batonPass = section.getByTestId('team-aura-passagem_bastao');

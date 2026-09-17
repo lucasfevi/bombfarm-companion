@@ -17,7 +17,7 @@ import { importHeroes, loadHeroes, normalizeHero, type HeroRecord } from '@/shar
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 import { skipUnlessInRegime } from '../../../../packages/domain/tests/helpers/capture-regime';
 
-const MERGE_CAPTURE = 'save-20260818-12heroes.json';
+const MERGE_CAPTURE = 'save-20260914-20heroes-phase101.json';
 
 const sheet = (patch: Partial<SheetStats> = {}): SheetStats => ({
   attack: 100,
@@ -266,47 +266,30 @@ describe('mergeImportedHero', () => {
     expect(merged).not.toHaveProperty('obsCrit');
   });
 
-  // RE-POINTED AGAIN 2026-08-16 onto the post-redistribution capture, both sides. The previous
-  // subjects (export-Perrin, payload-Wren) come from captures taken before the same-day item
-  // redistribution, so their committed gear no longer matches the shipped catalog and NO integer
-  // point vector reconstructs their sheets — the reconstruction half of this test could only be
-  // made green by loosening its tolerance, which is the opposite of its purpose. Two heroes from
-  // the current capture keep the claim intact: different accounts is not the property being
-  // tested, different pts vectors is.
-  //
-  // (the ground-truth rule, class (a) + (b)): re-pointed onto the two post-patch corpus files. The
-  // deleted vera-01 -> vera-03 pair was a before/after snapshot of the SAME hero — that family
-  // is unreproducible post-wipe (`stat_points_available` is 0 on every corpus hero, so no
-  // point-delta pair exists). Design (the ground-truth rule, §6.1): two real heroes from two genuinely
-  // different accounts is a STRONGER merge subject than two snapshots of one — it still proves
-  // the overwrite is not stale (different pts vectors) and still proves the merged
-  // naked/pts/loadout faithfully reconstruct a real save's `stats`, without needing the same
-  // hero twice.
-  it('re-import Sora -> Doran — merged naked+pts reconstruct the new save (no stale decimals)', (ctx) => {
-    // Re-pointed onto the post-2026-08-18-revert capture (issue #132); the 2026-08-16
-    // redistribution export this used to read is now flat-regime and no longer a subject —
-    // see `docs/fixture-corpus.md` §9.
-    //
-    // HELD at the 2026-08-28 damage boundary: Doran is 8/8 geared, so reconstructing his sheet
-    // is a `sheet` claim, and this capture can no longer back one. Every other assertion in this
-    // file is structural and still runs. Returns on the first geared post-2026-08-28 capture.
+  // The deleted before/after pair was two snapshots of the SAME hero, which no single export can
+  // reproduce. Two real heroes from one capture keep the claim intact: different accounts is not
+  // the property being tested, different pts vectors is — the overwrite is proven not stale, and
+  // the merged naked/pts/loadout are proven to reconstruct a real save's `stats`.
+  it('re-import Gale -> Doran — merged naked+pts reconstruct the new save (no stale decimals)', (ctx) => {
+    // Reconstructing an 8/8-geared sheet is a `sheet` claim, so this one test holds when the
+    // capture leaves its regime while every structural assertion in the file keeps running.
     skipUnlessInRegime(ctx, `sheet-math/${MERGE_CAPTURE}`, 'sheet');
     const raw = loadFixtureJson(MERGE_CAPTURE);
     const { candidates } = parseSaveFile(raw, []);
-    const sora = candidates.find((c) => c.record.name === 'Sora')!; // L10, a small pts vector
-    const existing = normalizeHero({ ...sora.record, id: 'local-sora', updatedAt: 1 });
+    const gale = candidates.find((c) => c.record.name === 'Gale')!; // L8, naked, a small pts vector
+    const existing = normalizeHero({ ...gale.record, id: 'local-gale', updatedAt: 1 });
 
-    const doran = candidates.find((c) => c.record.name === 'Doran')!; // L55, 8/8 geared
+    const doran = candidates.find((c) => c.record.name === 'Doran')!; // L113, 8/8 geared
     const merged = mergeImportedHero(existing, doran.record);
 
-    // Proves the merge is not stale from Zane's pts — Doran's differ.
+    // Proves the merge is not stale from Gale's pts — Doran's differ.
     expect(merged.pts).not.toEqual(existing.pts);
 
     // gearedOverride is deliberately the ZERO-points sheet, so comparing it
     // directly to the save's own points-inclusive `stats` would be wrong by construction.
     // Reconstruct the full sheet the same way computeAdvisorPipeline's expectedSheet does
     // (naked -> applyPoints -> applySkillTree) to prove merge's stored naked/pts/loadout
-    // faithfully reproduce Wren's save, not a stale Perrin residue.
+    // faithfully reproduce Doran's save, not a stale Gale residue.
     const mods = abilityMods(merged.abilities);
     const sheetOther = {
       ...emptySheetOther(),
@@ -323,8 +306,8 @@ describe('mergeImportedHero', () => {
       tree,
     );
     const rawHeroes = (raw as { heroes: Record<string, unknown>[] }).heroes;
-    const rawWren = rawHeroes.find((h) => h.id === doran.sourceId)!;
-    const expected = saveSheetUnits(rawWren.stats as Record<string, unknown>);
+    const rawDoran = rawHeroes.find((h) => h.id === doran.sourceId)!;
+    const expected = saveSheetUnits(rawDoran.stats as Record<string, unknown>);
     for (const key of SHEET_KEYS) {
       expect(Math.abs(reconstructed[key] - expected[key]), key).toBeLessThanOrEqual(0.01);
     }

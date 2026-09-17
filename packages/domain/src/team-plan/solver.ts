@@ -78,6 +78,7 @@ function farmObjectiveFor(
     loadoutByHeroId,
     input.targetPhase,
     input.ignoreFieldCrowding,
+    input.aurasAtCap,
   );
 }
 

@@ -308,6 +308,37 @@ export function entryPulseRankFloor(switches: TeamAuraSwitches): number {
   return switches.passagem_bastao === true ? PASSAGEM_BASTAO_RANK_CAP : 0;
 }
 
+/**
+ * Which team auras a rotating surface — the Farm board, the Optimizer — prices at their cap the
+ * whole of wall clock, whatever its carriers would sustain: the standing five are held at
+ * `TEAM_BUFF_CAP` in the rotation-weighted total ({@link holdAurasAtCap}), Passagem de Bastão as
+ * the field held at its capped pulse ({@link pulseHeldAtCap}). An answer to a question about a
+ * field the roster does not light on its own — never a correction to the rotation model — so an
+ * empty list is the model as it stands, and the default everywhere.
+ */
+export type AurasAtCap = readonly TeamAuraId[];
+
+export const NO_AURAS_AT_CAP: AurasAtCap = Object.freeze([]);
+
+/** The same object back when nothing is held, so a caller keyed on identity is not woken. */
+export function holdAurasAtCap(
+  totals: Record<TeamBuffId, number>,
+  aurasAtCap: AurasAtCap | undefined,
+): Record<TeamBuffId, number> {
+  if (aurasAtCap === undefined || aurasAtCap.length === 0) return totals;
+  let held: Record<TeamBuffId, number> | null = null;
+  for (const buffId of TEAM_BUFF_ABILITY_IDS) {
+    if (!aurasAtCap.includes(buffId) || totals[buffId] === TEAM_BUFF_CAP[buffId]) continue;
+    held ??= { ...totals };
+    held[buffId] = TEAM_BUFF_CAP[buffId];
+  }
+  return held ?? totals;
+}
+
+export function pulseHeldAtCap(aurasAtCap: AurasAtCap | undefined): boolean {
+  return aurasAtCap !== undefined && aurasAtCap.includes('passagem_bastao');
+}
+
 /** The aura total a per-hero screen prices one hero against — `pricedAt` per aura. */
 export function computeTeamBuffsAroundHero(
   hero: Pick<HeroRecord, 'abilities'>,

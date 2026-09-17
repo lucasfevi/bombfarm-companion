@@ -1,6 +1,6 @@
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import { DataTable, formatCompactNumber } from '@bombfarm/ui';
-import { HeroAbilityIcons, HeroIdentity } from '@/shared/game-art';
+import { HeroAbilityIcons, HeroIdentity, heroPeekData } from '@/shared/game-art';
 import type { Lang } from '@/shared/i18n';
 import type { HeroRecord } from '@/shared/lib/storage';
 
@@ -17,6 +17,7 @@ export function PlannerCardRow({ hero, dps, lang }: { hero: HeroRecord; dps: num
           level={hero.level}
           skin={hero.skin}
           lang={lang}
+          peek={heroPeekData(hero)}
         />
       </DataTable.Cell>
       <DataTable.Cell align="right" numeric>

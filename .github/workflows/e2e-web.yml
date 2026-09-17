@@ -8,7 +8,14 @@ on:
     branches: [main, develop]
     paths:
       - 'apps/web/**'
+      - 'packages/account/**'
+      - 'packages/contracts/**'
       - 'packages/domain/**'
+      - 'packages/farm/**'
+      - 'packages/game-art/**'
+      - 'packages/hero/**'
+      - 'packages/pricing/**'
+      - 'packages/team-plan/**'
       - 'packages/ui/**'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -49,7 +56,14 @@ jobs:
               - 'apps/web/playwright.config.ts'
               - 'apps/web/next.config.ts'
               - 'apps/web/package.json'
+              - 'packages/account/**'
+              - 'packages/contracts/**'
               - 'packages/domain/**'
+              - 'packages/farm/**'
+              - 'packages/game-art/**'
+              - 'packages/hero/**'
+              - 'packages/pricing/**'
+              - 'packages/team-plan/**'
               - 'packages/ui/**'
               - 'pnpm-lock.yaml'
               - '.github/workflows/e2e-web.yml'
@@ -278,6 +292,17 @@ jobs:
 
       - name: Compare against committed baseline
         run: pnpm perf:compare
+
+      # The per-component tally is the only thing that says WHICH renders a mismatch is made
+      # of; without it a runner-only delta can only be guessed at from the host.
+      - name: Upload the raw capture
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-render-counts-raw
+          path: apps/web/e2e/perf/out/perf-baseline.raw.json
+          if-no-files-found: ignore
+          retention-days: 7
 
   report:
     needs: [changes, build-e2e, smoke-shard, visual-e2e]

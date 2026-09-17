@@ -28,6 +28,7 @@ export interface ReplicaHeroSeed {
   readonly skin: number;
   readonly rarity: number;
   readonly grade: string;
+  readonly stars: number;
   readonly level: number;
   readonly state: ReplicaRowState;
   readonly energyPercent: number;
@@ -38,12 +39,12 @@ export interface ReplicaHeroSeed {
 
 /** Names, skins, rarities and levels from a real account, so the drawing shows a real roster. */
 const HERO_SEEDS: readonly ReplicaHeroSeed[] = [
-  { id: 'bellatrix', name: 'Bellatrix', skin: 5, rarity: 1, grade: 'S', level: 106, state: 'on-field', energyPercent: 71, energyRate: -0.35, countdownSeconds: 252 },
-  { id: 'jon', name: 'Jon', skin: 5, rarity: 2, grade: 'A', level: 96, state: 'on-field', energyPercent: 54, energyRate: -0.3, countdownSeconds: 108 },
-  { id: 'minato', name: 'Minato', skin: 5, rarity: 2, grade: 'A', level: 95, state: 'recovering', energyPercent: 24, energyRate: 0.5, countdownSeconds: 161 },
-  { id: 'buff-s-1', name: 'Buff S #1', skin: 6, rarity: 2, grade: 'B', level: 85, state: 'queued', energyPercent: 100, energyRate: 0 },
-  { id: 'wb-1', name: 'WB #1', skin: 3, rarity: 0, grade: 'B', level: 84, state: 'queued', energyPercent: 100, energyRate: 0 },
-  { id: 'wb-2', name: 'WB #2', skin: 3, rarity: 0, grade: 'C', level: 77, state: 'benched', energyPercent: 88, energyRate: 0 },
+  { id: 'bellatrix', name: 'Bellatrix', skin: 5, rarity: 1, grade: 'S', stars: 2, level: 106, state: 'on-field', energyPercent: 71, energyRate: -0.35, countdownSeconds: 252 },
+  { id: 'jon', name: 'Jon', skin: 5, rarity: 2, grade: 'A', stars: 2, level: 96, state: 'on-field', energyPercent: 54, energyRate: -0.3, countdownSeconds: 108 },
+  { id: 'minato', name: 'Minato', skin: 5, rarity: 2, grade: 'A', stars: 2, level: 95, state: 'recovering', energyPercent: 24, energyRate: 0.5, countdownSeconds: 161 },
+  { id: 'buff-s-1', name: 'Buff S #1', skin: 6, rarity: 2, grade: 'B', stars: 1, level: 85, state: 'queued', energyPercent: 100, energyRate: 0 },
+  { id: 'wb-1', name: 'WB #1', skin: 3, rarity: 0, grade: 'B', stars: 1, level: 84, state: 'queued', energyPercent: 100, energyRate: 0 },
+  { id: 'wb-2', name: 'WB #2', skin: 3, rarity: 0, grade: 'C', stars: 1, level: 77, state: 'benched', energyPercent: 88, energyRate: 0 },
 ];
 
 export interface ReplicaHero extends Omit<ReplicaHeroSeed, 'energyRate'> {
@@ -162,6 +163,7 @@ export function replicaFrameAt(elapsedSeconds: number): ReplicaFrame {
     skin: seed.skin,
     rarity: seed.rarity,
     grade: seed.grade,
+    stars: seed.stars,
     level: seed.level,
     state: seed.state,
     energyPercent: Math.round(clampPercent(seed.energyPercent + seed.energyRate * seconds)),

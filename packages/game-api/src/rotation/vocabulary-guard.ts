@@ -11,6 +11,7 @@ import { PORTUGUESE_WIRE_TOKENS } from '../wire-glossary.js';
 export const VOCABULARY_GUARD_SCOPE_DIRS: readonly string[] = [
   'packages/game-api/src/rotation',
   'packages/game-api/src/live-frame',
+  'packages/game-api/src/pvp',
 ];
 export const VOCABULARY_GUARD_SCOPE_EXTRA_FILES: readonly string[] = [
   'packages/contracts/src/rotation-snapshot.ts',
@@ -19,13 +20,14 @@ export const VOCABULARY_GUARD_SCOPE_EXTRA_FILES: readonly string[] = [
   'apps/desktop/src/main/live-source/fixtures/generate-replay-stream.ts',
 ];
 
-/** The real count is 6 (`normalize.ts`, `vocabulary-guard.ts`, `rotation-snapshot.ts`,
- *  `live-source.ts`, `tls-stream.ts`, `generate-replay-stream.ts`) as of this writing —
- *  `packages/game-api/src/live-frame/` contributes nothing from its own directory walk today,
- *  since it holds only the excluded `lexicon.ts`. A resolved count below this is treated as a
- *  guard failure — scanning too little — never as a pass; deliberately widen this alongside any
- *  edit that legitimately grows the scope. */
-export const VOCABULARY_GUARD_MIN_SCOPE_FILES = 6;
+/** The real count is 8 (`normalize.ts`, `vocabulary-guard.ts`, `pvp/identify.ts`,
+ *  `pvp/parse.ts`, `rotation-snapshot.ts`, `live-source.ts`, `tls-stream.ts`,
+ *  `generate-replay-stream.ts`) as of this writing — `packages/game-api/src/live-frame/`
+ *  contributes nothing from its own directory walk today, since it holds only the excluded
+ *  `lexicon.ts`. A resolved count below this is treated as a guard failure — scanning too little
+ *  — never as a pass; deliberately widen this alongside any edit that legitimately grows the
+ *  scope. */
+export const VOCABULARY_GUARD_MIN_SCOPE_FILES = 8;
 
 /** Whether `repoRelativePath` is out of the guard's scope even though it lives under one of
  *  {@link VOCABULARY_GUARD_SCOPE_DIRS} — exported so `resolveScopeFiles()` (a filesystem walk that

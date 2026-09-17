@@ -7,7 +7,7 @@ export function IncludedScreens({ t }: { t: Strings }) {
       <p className="m-0 mb-4 flex items-center gap-3 font-mono text-[10.5px] tracking-[0.17em] text-muted uppercase after:h-px after:flex-1 after:bg-line/60 after:content-['']">
         {t.downloadIncludedHeading}
       </p>
-      <div className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-line bg-line md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-line bg-line md:grid-cols-2 xl:grid-cols-3">
         <ScreenCard
           title={t.downloadScreenLiveTitle}
           items={[
@@ -67,6 +67,15 @@ export function IncludedScreens({ t }: { t: Strings }) {
           ]}
         />
         <ScreenCard
+          title={t.downloadScreenPvpTitle}
+          items={[
+            t.downloadScreenPvpItem1,
+            t.downloadScreenPvpItem2,
+            t.downloadScreenPvpItem3,
+            t.downloadScreenPvpItem4,
+          ]}
+        />
+        <ScreenCard
           title={t.downloadScreenAccountTitle}
           items={[
             t.downloadScreenAccountItem1,
@@ -85,6 +94,10 @@ export function IncludedScreens({ t }: { t: Strings }) {
             t.downloadScreenSettingsItem4,
           ]}
         />
+        {/* The grid draws its dividers as a line-coloured backdrop showing through 1px gaps, so a
+            trailing empty cell reads as a solid block of that colour. Nine cards fill three columns
+            exactly and leave one cell at two, and none at one. */}
+        <div aria-hidden className="hidden bg-bg md:block xl:hidden" />
       </div>
     </section>
   );

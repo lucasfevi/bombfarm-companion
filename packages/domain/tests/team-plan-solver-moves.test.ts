@@ -108,13 +108,9 @@ describe('generateMoves', () => {
   });
 
   it('orders moves by heroDps desc then heroId asc then slot then itemId', () => {
-    // (the ground-truth rule, class (b) — structural, RECORDED FIX): the deleted fixture's hero name
-    // 'Torin' was hardcoded to receive the elevated heroDps that makes this ordering
-    // discriminate. No corpus hero is named Torin, and the original `if (torinFirst >= 0 &&
-    // otherFirst >= 0)` guard would have silently made the inner assertion never run against
-    // the new corpus (findIndex returns -1 for both sides) — a genuine vacuous-assertion risk
-    // caught by T5's inversion check, not a pre-existing bug shipped as-is. Fixed by picking a
-    // real, always-present hero (the first built context) instead of a name.
+    // The elevated heroDps goes to the first built context rather than a hero named in the
+    // fixture: a name that leaves the roster would make both findIndex calls -1 and the ordering
+    // assertion vacuous.
     const input = teamPlanInputFromFixture(TEAM_PLAN_FIXTURE);
     const built = buildHeroPlanContexts(input.heroes, input.account, input.scopeByHeroId);
     if (built.blocked) throw new Error('blocked');

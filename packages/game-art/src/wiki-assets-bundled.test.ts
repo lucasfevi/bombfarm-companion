@@ -4,7 +4,8 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ABILITIES } from '@bombfarm/domain/model';
 import { PROPS } from '@bombfarm/domain/phases';
-import { HERO_SKIN_COUNT, heroAvatarSrc, itemIconSrc, propIconSrc, dropIconSrc } from '@bombfarm/domain/wiki-assets';
+import { RUNE_AXES } from '@bombfarm/domain/runes';
+import { HERO_SKIN_COUNT, heroAvatarSrc, itemIconSrc, propIconSrc, dropIconSrc, runeIconSrc } from '@bombfarm/domain/wiki-assets';
 import { DROP_RATES, type DropRateId } from '@bombfarm/domain/phase-wiki';
 import catalog from '@bombfarm/domain/data/catalog.json';
 
@@ -156,5 +157,33 @@ describe('bundled wiki assets', () => {
     // Four per-band families of 5, plus the one fixed item chest. Pins the count so a family
     // silently collapsing to a single sprite fails here rather than looking fine.
     expect(seen.size, 'distinct sprites the panel can reach').toBe(21);
+  });
+
+  /**
+   * `runeIconSrc` interpolates the axis code and the rarity slug, so every one of the 48 pairs
+   * is a path nothing else reads. A runed hero draws a blank plate for a missing one and no
+   * check notices; the two directions together also catch a bundled sprite the helper cannot
+   * name, which is how a renamed axis would first show.
+   */
+  it('ships rune art for every axis at every rarity, and bundles no orphaned rune art', () => {
+    expect(RUNE_AXES.length, 'rune axes').toBe(8);
+
+    const wanted = new Set<string>();
+    const missing: string[] = [];
+    for (const axis of RUNE_AXES) {
+      for (let rarity = 0; rarity < 6; rarity += 1) {
+        const src = runeIconSrc(axis, rarity);
+        expect(src, `runeIconSrc returned null for ${axis} at rarity ${rarity}`).not.toBeNull();
+        wanted.add(src!.slice(src!.lastIndexOf('/') + 1));
+        if (!existsSync(assetPath(src!))) missing.push(`${axis}@${rarity} -> ${src}`);
+      }
+    }
+
+    expect(missing, 'rune pairs whose art is not bundled').toEqual([]);
+    expect(wanted.size, 'distinct rune sprites').toBe(48);
+
+    const dir = resolve(assetsRoot, 'icons');
+    const orphaned = readdirSync(dir).filter((f) => f.startsWith('rune_') && !wanted.has(f));
+    expect(orphaned, 'bundled rune art no axis/rarity pair points at').toEqual([]);
   });
 });

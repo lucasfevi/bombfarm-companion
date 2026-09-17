@@ -944,6 +944,10 @@ const KEYS_ADDED: readonly string[] = [
   'downloadScreenOptimizerItem2',
   'downloadScreenOptimizerItem3',
   'downloadScreenOptimizerItem4',
+  // The download page's ninth screen card (2026-09-16): the desktop's PVP tab, the duel history.
+  // Nine cards fill three columns exactly; a spacer squares the two-column grid. One line: this
+  // file sits at its cap.
+  'downloadScreenPvpTitle', 'downloadScreenPvpItem1', 'downloadScreenPvpItem2', 'downloadScreenPvpItem3', 'downloadScreenPvpItem4',
   // The Optimizer's forge queue (2026-09-13): every forge chore among a hero's proposed items,
   // drawn as its ladder and priced from the forge table. One line: this file sits at its cap.
   'teamPlanForgeQueueHeading', 'teamPlanForgeQueueLadderAria', 'teamPlanForgeQueueRolls', 'teamPlanForgeQueueSafeJumpOne', 'teamPlanForgeQueueSafeJumpMany', 'teamPlanForgeQueueGold', 'teamPlanForgeQueueTotal', 'teamPlanForgeQueueNoForecast', 'teamPlanForgeQueueLegend',
@@ -952,6 +956,9 @@ const KEYS_ADDED: readonly string[] = [
    * because this file sits at the `src/tests/**` max-lines cap (see the line above `resetAdviceRosterHero`).
    */
   'navHome', 'homeTitle', 'homeSubtitle', 'homeOpenLink', 'homeStripPlayerUnknown', 'homeStripAccountIdUnknown', 'homeStripHeroes', 'homeStripItems', 'homeStripImported', 'homeStripImportedUnknown', 'homeStripImport', 'homeFirstVisitEyebrow', 'homeFirstVisitTitle', 'homeFirstVisitTitleAccent', 'homeFirstVisitBody', 'homeFirstVisitButton', 'homeFirstVisitHint', 'homeCardPlannerContext', 'homeCardPlannerColHero', 'homeCardPlannerColPower', 'homeCardPlannerColDps', 'homeCardPlannerFooterAccount', 'homeCardPlannerFooterChosen', 'homeCardPlannerMore', 'homeCardPlannerNeedsHeroes', 'homeCardPlannerMissingFields', 'homeCardFarmContext', 'homeCardFarmCurrent', 'homeCardFarmBest', 'homeCardFarmSame', 'homeCardFarmSentenceAhead', 'homeCardFarmSentenceBehind', 'homeCardFarmSentenceClearFaster', 'homeCardFarmSentenceClearSlower', 'homeCardFarmSentenceDropsKeepAdd', 'homeCardFarmSentenceDropsAdd', 'homeCardFarmSentenceDropsKeepLose', 'homeCardFarmSentenceDropsLose', 'homeCardFarmSentenceDropsSwap', 'homeCardFarmSentenceAnd', 'homeCardFarmSentenceLead', 'homeCardFarmRowGold', 'homeCardFarmRowXp', 'homeCardFarmRowItemLevels', 'homeCardFarmRowClearTime', 'homeCardFarmRowVs', 'homeCardFarmHere', 'homeCardFarmLockedGate', 'homeCardFarmLockedGateCannot', 'homeCardFarmLockedReach', 'homeCardFarmSentenceOneShotGained', 'homeCardFarmSentenceOneShotLost', 'homeCardFarmNextItemLevel', 'homeCardFarmNextItemLevelNone', 'homeCardFarmNextDifficulty', 'homeCardFarmNextDifficultyTop', 'homeCardFarmVsBest', 'homeCardFarmVsCurrent', 'homeCardFarmLocked', 'homeCardFarmFooterRanked', 'homeCardFarmFooterPush', 'homeCardFarmNeeds', 'homeCardOptimizerContext', 'homeCardOptimizerRecalculating', 'homeCardOptimizerSearching', 'homeCardOptimizerHeadlineFarm', 'homeCardOptimizerHeadlineDps', 'homeCardOptimizerScoredAt', 'homeCardOptimizerSeeFullPlan', 'homeCardAccountValue', 'homeCardAccountHouseSlots', 'homeCardAccountMore', 'homeCardAccountHouse', 'homeCardInventoryContext', 'homeCardInventoryNeeds', 'homeCardInventoryCoverage', 'homeCardAccountContext', 'homeCardAccountNeeds', 'homeCardLiveBody',
+  // The number spinner's step-up/step-down accessible names (the level control on the hero strip):
+  // the design-system Num now takes them as props instead of baking in English. One line for the cap.
+  'levelStepUp', 'levelStepDown',
 ];
 
 /**

@@ -5,42 +5,36 @@ import { holdSuiteUntilInRegime } from './capture-regime';
 import { loadFixtureJson } from './sheet-math-fixtures';
 
 /**
- * The in-regime roster for the team-plan suites (issue #206).
+ * The in-regime roster for the team-plan suites: the second account, past every boundary.
  *
- * The two captures these suites used to read are behind the importer's stat-point budget refusal,
- * and the damage is not subtle: `payload-20260812-8heroes.json` loses half its roster (8 heroes
- * in, 4 unblocked out) and every one of the survivors comes through with an EMPTY loadout, so a
- * gear planner was being exercised on a roster wearing nothing. `save-20260813-5heroes.json` is
- * the same story at 5 -> 3. That is what the disabled tests in this group were recording: no
- * donor to take an item from, no forge candidate, no pair of point resets to order.
- *
- * This capture comes through 7 of 7 unblocked with 40 items worn across 5 heroes and 54 in the
- * bag — a plan needs items to keep, move and forge, and it has them. Picked over the two larger
- * in-regime captures, which are equally well geared, because it is a different ACCOUNT from the
- * rest of the corpus and because the solver runs an order of magnitude faster on 7 heroes than on
- * 11 or 13, across a group of suites that call it dozens of times.
+ * A gear planner needs items to keep, move and forge, and this capture has them — 9 heroes, all
+ * importing unblocked, eight of them geared 8/8 with 64 items worn and 37 spares in the bag (with
+ * duplicate copies among them), upgrades at 0, 8 and 10 so a floor of 10 leaves real forge
+ * chores. The ninth hero is naked with her whole 67-point budget unspent. Chosen over the larger
+ * capture below because it is a different ACCOUNT from the rest of the corpus, and because the
+ * solver converges in ~3s here against ~8-10s on 20 heroes, across a group of suites that call
+ * it dozens of times.
  */
-export const TEAM_PLAN_FIXTURE = 'save-20260819-11882-7heroes.json';
+export const TEAM_PLAN_FIXTURE = 'save-20260914-9heroes-second-account.json';
 
 /**
- * The larger in-regime roster, for the two claims the 7-hero one cannot carry: it produces five
- * point resets where the smaller produces one, so anything asserting an ORDER over resets needs
- * this one.
+ * The larger in-regime roster: the main account at phase 101, 20 heroes — thirteen geared at
+ * L40-L151 beside seven naked ones at L1-L24. The step-monotonicity grid sweeps both files so the
+ * invariant is checked on two accounts, and this one is saturated at every slot count the grid
+ * visits. It yields six point resets at floor 10 / slots 9, in an acceptance order that is not
+ * alphabetical by hero id, which is what an ordering claim needs.
  */
-export const TEAM_PLAN_LARGE_FIXTURE = 'save-20260825-11heroes-one-shot-spread.json';
+export const TEAM_PLAN_LARGE_FIXTURE = 'save-20260914-20heroes-phase101.json';
 
 /**
  * Held once here rather than repeated in each suite that reads these two: the constants are the
  * single point where the choice of capture is made, so this is the single point where it can be
  * wrong.
  *
- * This used to `assertInRegime` and throw, on the reasoning that a value suite pointed at an
- * expired capture should fail loudly rather than report a green run with a quiet skip in it. That
- * still holds whenever the corpus has a capture to re-point AT. The 2026-08-28 damage boundary
- * left it with none that can carry a gear planner — the one admissible capture is a fresh account
- * with two geared heroes and fifteen items, where this group needs the forty-items-worn roster the
- * constants above were chosen for — so throwing here would be a standing red no one can clear.
- * The suites are held instead, and return by themselves when such a capture lands.
+ * A hold rather than `assertInRegime`: when the next boundary lands, the corpus may again have
+ * nothing a gear planner can be re-pointed at, and a throw here would be a standing red no one
+ * can clear. The skip is counted, names the capture and the boundary, and
+ * `tools/held-suites.manifest.mjs` must then record the group as held.
  */
 export function holdTeamPlanSuiteUntilInRegime(): void {
   for (const fixture of [TEAM_PLAN_FIXTURE, TEAM_PLAN_LARGE_FIXTURE]) {

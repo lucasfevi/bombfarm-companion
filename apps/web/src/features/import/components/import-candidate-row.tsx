@@ -13,6 +13,7 @@ import {
   HeroAbilityIcons,
   HeroAvatar,
   HeroGearIcons,
+  heroPeekData,
   rarityDotClass,
   rarityTextClass,
   rosterInactiveChromeClass,
@@ -50,6 +51,7 @@ export function ImportCandidateRow({
             rarityIdx={rarIdx}
             size="lg"
             name={candidate.name}
+            peek={{ hero: heroPeekData(candidate.record), lang }}
           />
         </span>
       </DataTable.Cell>
@@ -95,7 +97,6 @@ export function ImportCandidateRow({
           lang={lang}
           emptySlotAriaLabel={(slotName) => sub(t.gearSlotEmptyAria, { slot: slotName })}
           emptySlotTip={t.gearSlotEmptyTip}
-          lvLabel={t.rankLv}
         />
       </DataTable.Cell>
       <DataTable.Cell className={cn('max-[960px]:hidden py-2', inactiveChrome)} nowrap={false} data-roster-wrap>

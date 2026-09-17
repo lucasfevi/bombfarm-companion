@@ -18,6 +18,9 @@ export {
   isScopeState,
   clampForgeFloor,
   clampTargetPhase,
+  isTeamAuraId,
+  normalizeAurasAtCap,
+  withAuraAtCap,
 } from './team-plan-controls';
 export type { ScopeState } from './hero-scope';
 export {

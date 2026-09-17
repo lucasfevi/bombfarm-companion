@@ -100,6 +100,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'DeltaTable',
   'Dialog',
   'EmptyState',
+  'FactTile',
   'FieldRequired',
   'Fields',
   'FileDropZone',
@@ -299,6 +300,19 @@ describe('design-system barrel surface (frozen)', () => {
 // the item they belong to, inside the one card both hosts draw.
 const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'AbilityIcon',
+  // The peek family (2026-09-15): the hover card every item, hero and ability icon opens, and the
+  // frame it hangs from — one skeleton, three cards, one trigger contract.
+  'AbilityPeek',
+  'AbilityPeekCard',
+  'HeroPeek',
+  'HeroPeekCard',
+  'ItemPeek',
+  'ItemPeekCard',
+  'PeekFrame',
+  'heroPeekData',
+  'itemPeekFromInventory',
+  'peekPopupClass',
+  'peekTriggerClass',
   'ArtFrame',
   'DEFAULT_INVENTORY_TABLE_COLUMNS',
   'InventoryGrid',
@@ -323,6 +337,9 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   'ItemIcon',
   'ItemIdentity',
   'PropIcon',
+  // RuneIcon (2026-09-16): a rune's sprite on its rarity plate, for the Combat tab's runes panel
+  // and the strip its folded header keeps. Same tile vocabulary as ItemIcon; one look.
+  'RuneIcon',
   'SpriteLoop',
   // SteamGlyph (2026-09-10): the Steam mark was private to MarketPrice until the hero identity
   // panel's market tile became a link to the same place. One destination, one mark.

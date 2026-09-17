@@ -8,6 +8,7 @@ import type {
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import type { RarityKey } from '@bombfarm/domain/model';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
+import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type {
   AccountHoldings,
   HoldingsTally,
@@ -17,7 +18,7 @@ import type {
   SkinsTally,
 } from '@bombfarm/pricing';
 import { accountHoldings, boughtSkinHashFor } from '@bombfarm/pricing';
-import { HeroIdentity } from '@/shared/game-art';
+import { HeroIdentity, heroPeekData, type HeroPeekData } from '@/shared/game-art';
 import { formatMoney, sub, type Lang, type Strings } from '@/shared/i18n';
 import type { StoredInventoryView } from '@/shared/lib/inventory-view-storage';
 
@@ -31,7 +32,25 @@ export interface HoldingsHero extends PriceableHero {
   stars?: number;
   level?: number;
   skin?: number;
+  /** The card the avatar opens, present only when the roster held the whole record. */
+  peek?: HeroPeekData | undefined;
 }
+
+/** What the list needs to depict a hero — a partial roster view can supply this much. */
+interface HeroDepiction {
+  name: string;
+  rarity: RarityKey;
+  marketable?: boolean;
+  rank?: string;
+  stars?: number;
+  level?: number;
+  skin?: number;
+}
+
+type HoldingsHeroSource = HeroDepiction | Omit<HeroRecord, 'id' | 'updatedAt'>;
+
+const peekOf = (hero: HoldingsHeroSource): HeroPeekData | undefined =>
+  'gearedOverride' in hero ? heroPeekData(hero) : undefined;
 
 export interface AccountHoldingsSource {
   /** Every row of the stored inventory, or null when this browser has imported no save. */
@@ -57,18 +76,11 @@ const priceable = (item: InventoryViewItem): PriceableItem => ({
  * where no hero carries the flag at all is the other thing — heroes stored before the planner read
  * the flag, which nobody has asked yet — and only that withholds the whole component. Same shape
  * for a hero the planner built by hand, which the game has never seen and cannot sell.
+ *
+ * A whole record also carries the card its avatar opens; a partial view carries no card, and its
+ * avatar stays bare art.
  */
-export function priceableHeroes(
-  heroes: readonly {
-    name: string;
-    rarity: RarityKey;
-    marketable?: boolean;
-    rank?: string;
-    stars?: number;
-    level?: number;
-    skin?: number;
-  }[],
-): HoldingsHero[] | null {
+export function priceableHeroes(heroes: readonly HoldingsHeroSource[]): HoldingsHero[] | null {
   if (!heroes.some((hero) => hero.marketable != null)) return null;
   return heroes.map((hero) => ({
     name: hero.name,
@@ -78,6 +90,7 @@ export function priceableHeroes(
     stars: hero.stars,
     level: hero.level,
     skin: hero.skin,
+    peek: peekOf(hero),
   }));
 }
 
@@ -152,6 +165,7 @@ function heroEntries(
           stars={hero.stars}
           level={hero.level}
           skin={hero.skin}
+          peek={hero.peek}
           lang={lang}
           size="xs"
           variant="stacked"

@@ -10,6 +10,7 @@ import {
   HeroAvatar,
   HeroAbilityIcons,
   HeroGearIcons,
+  heroPeekData,
   rarityDotClass,
   rarityTextClass,
   rosterInactiveChromeClass,
@@ -81,7 +82,7 @@ export const HeroPickerRow = memo(function HeroPickerRow({
     >
       <DataTable.Cell className="w-14 px-1" nowrap={false}>
         <span className={inactiveChrome}>
-          <HeroAvatar skin={hero.skin ?? 0} rarityIdx={rarIdx} size="lg" name={hero.name} />
+          <HeroAvatar skin={hero.skin ?? 0} rarityIdx={rarIdx} size="lg" name={hero.name} peek={{ hero: heroPeekData(hero), lang }} />
         </span>
       </DataTable.Cell>
       <DataTable.Cell
@@ -126,7 +127,6 @@ export const HeroPickerRow = memo(function HeroPickerRow({
           lang={lang}
           emptySlotAriaLabel={(slotName) => sub(t.gearSlotEmptyAria, { slot: slotName })}
           emptySlotTip={t.gearSlotEmptyTip}
-          lvLabel={t.rankLv}
         />
       </DataTable.Cell>
       <DataTable.Cell className={cn('max-[960px]:hidden py-2', inactiveChrome)} nowrap={false} data-roster-wrap>

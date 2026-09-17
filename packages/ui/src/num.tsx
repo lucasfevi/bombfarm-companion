@@ -8,6 +8,8 @@ export function Num({
   onChange,
   step = 0.1,
   decimals,
+  incrementLabel,
+  decrementLabel,
   className,
 }: {
   value: number;
@@ -15,6 +17,10 @@ export function Num({
   step?: number;
   /** When set, display and round the value to this many fraction digits. */
   decimals?: number;
+  /** Accessible name for the step-up button — the host passes it from its own dictionary. */
+  incrementLabel: string;
+  /** Accessible name for the step-down button — the host passes it from its own dictionary. */
+  decrementLabel: string;
   className?: string;
 }) {
   const shown =
@@ -31,7 +37,7 @@ export function Num({
           type="button"
           tabIndex={-1}
           className={numSpinBtnClass}
-          aria-label="Increment"
+          aria-label={incrementLabel}
           onClick={() => commit(value + step)}
         >
           <Icon name="chevron-up" className="size-3.5" />
@@ -40,7 +46,7 @@ export function Num({
           type="button"
           tabIndex={-1}
           className={cn(numSpinBtnClass, 'border-t border-line')}
-          aria-label="Decrement"
+          aria-label={decrementLabel}
           onClick={() => commit(value - step)}
         >
           <Icon name="chevron-down" className="size-3.5" />

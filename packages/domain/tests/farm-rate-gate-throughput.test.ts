@@ -34,7 +34,8 @@ describe('every row propsPerHour agrees with that row own clearSecs', () => {
 
   // Non-vacuity for the per-row loop below: with no gate row in the sweep, every case under it
   // would be a non-gate row and the boss-seconds claim this file is named for would be asserted
-  // nowhere. Measured 7 gates (phases 10..70) on the 2026-08-19 roster (issue #206).
+  // nowhere. Measured 14 gates (phases 10..140) on `save-20260914-9heroes-second-account.json`,
+  // where the same account's 2026-08-19 capture reached 7 (phases 10..70).
   it('the fixture reaches gate rows at all', () => {
     expect(rows.filter((row) => row.gate).length).toBeGreaterThanOrEqual(4);
   });

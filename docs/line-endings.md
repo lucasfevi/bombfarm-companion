@@ -37,7 +37,9 @@ Before this was pinned, endings drifted per file: 532 tracked files were stored 
   if it failed.
 
 `ci-desktop.yml` and `ci-fidelity.yml` also run the `tools` project incidentally when their
-own path filters match — defence in depth, not the gate.
+own path filters match, and [`repo-guards.yml`](../.github/workflows/repo-guards.yml) now
+runs the whole project unconditionally too — defence in depth, not the gate.
+`line-endings.yml` stays the cheap, build-free surface for this one guard.
 
 That "not path-filtered" property is itself pinned, by
 [`tools/line-endings-workflow.test.mjs`](../tools/line-endings-workflow.test.mjs): it fails

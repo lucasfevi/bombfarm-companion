@@ -1,16 +1,11 @@
 import { memo, type ReactNode } from 'react';
-import { HeroAvatar, heroRankToneClass, rarityTextClass } from '@bombfarm/game-art';
-import { cn } from '@bombfarm/ui';
-import { sub, useCopy, useLocale, type Copy } from '../../lib/copy';
+import { HeroIdentity, type HeroPeekData } from '@bombfarm/game-art';
+import { useCopy, useLocale, type Copy } from '../../lib/copy';
 import { formatEnergyPercent } from '../../lib/format';
 import type { LiveHeroFact } from '../../lib/live/live-model';
 import { EnergyBar } from './energy-bar';
 
 export type LiveRotationRowState = 'on-field' | 'recovering' | 'queued' | 'benched';
-
-/** `ArtFrame`'s own middle-of-the-road default — tints the avatar frame when the roster join has
- *  not caught up to this hero's rarity yet. */
-const NEUTRAL_RARITY_IDX = 2;
 
 /**
  * One literal per state rather than a computed class name: the shell's untranslated-prose guard
@@ -146,24 +141,25 @@ function EnergyReading({
  *
  * Memoising is only half of it, and was the half that bought nothing on its own: the props have to
  * be stable for it to bite. `energyFraction` arriving as a number rather than merged into the hero
- * is what makes that true here, and the store's per-slice identity rule is what makes the hero
- * itself survive a tick unchanged.
+ * is what makes that true here, the store's per-slice identity rule is what makes the hero itself
+ * survive a tick unchanged, and `peek` is built once per roster upstream for the same reason.
  */
 const HeroRowBody = memo(function HeroRowBody({
   state,
   hero,
   energyFraction,
+  peek,
 }: {
   state: LiveRotationRowState;
   hero: LiveHeroFact;
   energyFraction: number | undefined;
+  peek: HeroPeekData | undefined;
 }) {
   const t = useCopy();
+  const { lang } = useLocale();
   // Name and grade arrive from the same roster join, so a grade without a name is half a join —
   // rendering it would put a rank letter beside a bare id as though both were known.
   const rank = hero.name !== undefined ? hero.grade?.trim() : undefined;
-  const name = hero.name ?? hero.id;
-  const nameColorClass = hero.rarity !== undefined ? (rarityTextClass(hero.rarity) ?? 'text-ink') : 'text-ink';
   const energyTestId = `live-energy-${hero.id}`;
 
   return (
@@ -172,26 +168,19 @@ const HeroRowBody = memo(function HeroRowBody({
         <RowStateDot state={state} />
         <span className="sr-only">{rowStateLabel(state, t)}</span>
       </span>
-      <span className="flex min-w-0 items-center gap-2">
-        <HeroAvatar skin={hero.skin ?? 0} rarityIdx={hero.rarity ?? NEUTRAL_RARITY_IDX} size="xs" name={name} />
-        <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
-          <span className="flex min-w-0 items-baseline gap-1">
-            {rank ? (
-              <span className={cn('shrink-0', 'text-[11px]', 'leading-none', 'font-black', 'tracking-tight', heroRankToneClass(rank))}>{rank}</span>
-            ) : (
-              <span className="shrink-0 text-[11px] leading-none font-black tracking-tight text-muted">—</span>
-            )}
-            <span className="min-w-0 flex-1 truncate text-[12px] leading-none font-bold">
-              <span data-testid={`live-hero-row-${hero.id}-name`} className={nameColorClass}>
-                {name}
-              </span>
-            </span>
-          </span>
-          <span className="text-[10px] leading-none text-muted tabular-nums">
-            {hero.level === undefined ? '—' : sub(t.liveHeroLevelValue, { level: hero.level })}
-          </span>
-        </span>
-      </span>
+      <HeroIdentity
+        name={hero.name ?? hero.id}
+        rank={rank}
+        rarityIdx={hero.rarity}
+        stars={hero.stars}
+        level={hero.level}
+        skin={hero.skin}
+        lang={lang}
+        size="xs"
+        showRarity={false}
+        nameTestId={`live-hero-row-${hero.id}-name`}
+        peek={peek}
+      />
       <EnergyBar testId={energyTestId} fraction={energyFraction} />
       <EnergyReading
         testId={`${energyTestId}-value`}
@@ -206,6 +195,7 @@ export function HeroRow({
   state,
   hero,
   energyFraction,
+  peek,
   muted = false,
   trailing,
 }: {
@@ -225,6 +215,12 @@ export function HeroRow({
    * snapshot's own figure.
    */
   energyFraction?: number | undefined;
+  /**
+   * The card hovering the avatar opens — the roster record this live hero is, when the account
+   * view holds one. Absent, the avatar is bare art. Built once per roster upstream, never per
+   * render: the body below is memoised, and a fresh object per tick would defeat that.
+   */
+  peek?: HeroPeekData | undefined;
   /** Drains the row's colour — a hero who is out of the rotation entirely, not resting inside it. */
   muted?: boolean | undefined;
   trailing?: ReactNode;
@@ -235,7 +231,7 @@ export function HeroRow({
       data-muted={muted ? '' : undefined}
       className="grid grid-cols-[0.5rem_8rem_minmax(0,1fr)_3rem_4rem] items-center gap-2 rounded-sm border border-line bg-[color-mix(in_oklch,var(--surface)_92%,transparent)] px-2 py-1 odd:bg-[color-mix(in_oklch,var(--ink)_5%,var(--surface))] data-[muted]:opacity-60 data-[muted]:grayscale"
     >
-      <HeroRowBody state={state} hero={hero} energyFraction={energyFraction ?? hero.energyFraction} />
+      <HeroRowBody state={state} hero={hero} energyFraction={energyFraction ?? hero.energyFraction} peek={peek} />
       {trailing !== undefined ? <span className="flex items-center gap-1">{trailing}</span> : null}
     </li>
   );

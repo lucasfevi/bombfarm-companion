@@ -6,6 +6,8 @@ import {
   iconMetaGlyphRecipe,
   type AbilityIconRecipeSize,
 } from './game-art.recipe';
+import { abilityPeekSpec, type AbilityIconPeek } from './peek/ability-peek';
+import { usePeek } from './peek/use-peek';
 
 type Props = {
   code: string;
@@ -13,12 +15,18 @@ type Props = {
   className?: string;
   level?: number;
   max?: number;
+  /** Open the ability's card on hover. Absent, the tile is bare art. */
+  peek?: AbilityIconPeek | undefined;
 };
 
-export function AbilityIcon({ code, size = 'md', className, level, max }: Props) {
+export function AbilityIcon({ code, size = 'md', className, level, max, peek }: Props) {
   const iconUrl = abilityIconSrc(code);
-  if (!iconUrl) return null;
+  const spec = peek === undefined || !iconUrl ? undefined : abilityPeekSpec(code, peek);
+  const art = iconUrl ? renderTile(iconUrl, size, className, level, max) : null;
+  return usePeek(spec, art);
+}
 
+function renderTile(iconUrl: string, size: AbilityIconRecipeSize, className: string | undefined, level?: number, max?: number) {
   const showProgress = level != null && max != null && max > 0;
   const compact = size === 'xs' || size === 'sm';
   // The extra bottom padding is the badge's seat, so it is only taken when a badge sits in it —

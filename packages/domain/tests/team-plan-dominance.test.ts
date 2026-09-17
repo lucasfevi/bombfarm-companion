@@ -8,9 +8,8 @@ import type { InventoryItem } from '@bombfarm/domain/inventory';
 import type { HeroPlanContext, PoolEntry, TeamPlanInput } from '@bombfarm/domain/team-plan/types';
 
 /**
- * Deliberately fixture-free. The whole team-plan group is held out of the capture regime today, so
- * a test written against `TEAM_PLAN_FIXTURE` would report green having executed nothing. Every
- * claim below is about the catalog and the rule, both of which are always available.
+ * Deliberately fixture-free: every claim below is about the catalog and the rule, both always
+ * available, so no regime boundary can ever hold this file.
  */
 
 function entryFor(defId: string, rarityIdx: number, level: number, upgrade: number, slot: string): PoolEntry {

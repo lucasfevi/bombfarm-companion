@@ -47,11 +47,12 @@ export interface ObservationEnvelope {
   readonly redaction: RedactionLevel;
 }
 
-/** The first three mirror `identifyObservedBody`'s verdicts one for one. `parse_failed` is this
- *  module's own fourth case: a body that is not JSON never reaches the identifier at all, and
+/** The first four mirror `identifyObservedBody`'s verdicts one for one. `parse_failed` is this
+ *  module's own fifth case: a body that is not JSON never reaches the identifier at all, and
  *  "we saw something we could not read" is itself a finding rather than a reason to drop it. */
 export type ObservationBodyVerdict =
   | { readonly kind: 'identified'; readonly section: string }
+  | { readonly kind: 'pvp'; readonly route: string }
   | { readonly kind: 'unidentified' }
   | { readonly kind: 'ambiguous'; readonly sections: readonly string[] }
   | { readonly kind: 'parse_failed' };

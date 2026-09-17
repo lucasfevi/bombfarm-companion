@@ -59,6 +59,10 @@ export type FarmRankingBoardData = {
  */
 export type FarmRankingBoardSlots = {
   headerOverlay?: ReactNode;
+  /** Drawn in the control row between the Return Bonus and the Optimize button — a host's own
+   *  compute controls, on the same field grid (`FarmAuraCapField`). Undefined renders nothing
+   *  at all, so a host without any keeps the row it always had. */
+  controls?: ReactNode;
 };
 
 export type FarmRankingBoardActions = {
@@ -216,6 +220,7 @@ export function FarmRankingBoardView({
           />
           <div className="flex flex-wrap items-start gap-3">
             <FarmReturnBonus value={returnBonus} onChange={setFarmReturnBonus} t={t} />
+            {slots?.controls}
             <FarmOptimizeButton t={t} onOpenOptimizer={openOptimizer} />
           </div>
         </div>
