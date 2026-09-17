@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { HERO_SKIN_COUNT, heroAvatarSrc, isKnownSkin, normalizeSkin, propIconSrc, goldIconSrc, clockIconSrc } from '../src/wiki-assets';
+import {
+  HERO_SKIN_COUNT,
+  chestIconSrc,
+  clockIconSrc,
+  goldIconSrc,
+  heroAvatarSrc,
+  heroCageIconSrc,
+  isKnownSkin,
+  itemKindIconSrc,
+  normalizeSkin,
+  propIconSrc,
+} from '../src/wiki-assets';
 import { PROPS } from '../src/phases';
 
 describe('heroAvatarSrc display map', () => {
@@ -80,5 +91,23 @@ describe('propIconSrc', () => {
       expect(seen.has(src!), `${prop.name} reuses ${src}`).toBe(false);
       seen.add(src!);
     }
+  });
+});
+
+/**
+ * A `chest_hero_{act}` row used to fall through to the item chest's wooden box, which is the
+ * art for a different item. The tail is the act the cage was caught in, and the wiki draws that
+ * cage per act, so the row shows the cage itself.
+ */
+describe('itemKindIconSrc for a hero cage', () => {
+  it.each([1, 2, 3, 4, 5])('draws the act-%i cage, never the item chest', (act) => {
+    const src = itemKindIconSrc(`chest_hero_${act}`, act);
+    expect(src).toBe(`/wiki-assets/env/cage_ato${act}.png`);
+    expect(src).not.toBe(chestIconSrc());
+  });
+
+  it('falls back to the generic cage for an act outside the five bands', () => {
+    expect(itemKindIconSrc('chest_hero_0', 0)).toBe('/wiki-assets/env/jaula.png');
+    expect(heroCageIconSrc(6)).toBe('/wiki-assets/env/jaula.png');
   });
 });

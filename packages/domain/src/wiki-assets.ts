@@ -108,6 +108,8 @@ export function raritySlotPlateSrc(rarityIdx: number): string | null {
  *    same way the per-difficulty drop sprites are.
  *  - **chests** fall back to the neutral item chest, then to the family the id names — a gem
  *    chest and a key chest have their own art, a levelled item chest does not.
+ *  - **hero cages** (`chest_hero_*`) are the field cage itself, drawn per act, since the id's
+ *    tail is the act the cage was caught in and not a chest tier.
  */
 export function itemKindIconSrc(defId: string, rarityIdx: number): string | null {
   if (defId.startsWith('gem_')) return `${WIKI_ASSETS_BASE}/gems/${defId}.png`;
@@ -147,6 +149,7 @@ export function itemKindIconSrc(defId: string, rarityIdx: number): string | null
     // branch a `chest_time_*` row fell through to the neutral wooden chest, which is the art for
     // an ITEM chest and says nothing about what is inside.
     if (defId.startsWith('chest_time')) return band ? `${WIKI_ASSETS_BASE}/houses/house_${band}.png` : chestIconSrc();
+    if (defId.startsWith('chest_hero')) return heroCageIconSrc(Math.round(rarityIdx));
     return chestIconSrc();
   }
 
@@ -268,6 +271,15 @@ export function goldIconSrc(): string {
 /** The neutral item-chest sprite — same fixed art `dropIconSrc('chest', ato)` returns. */
 export function chestIconSrc(): string {
   return `${WIKI_ASSETS_BASE}/chests/item_chest.png`;
+}
+
+/**
+ * The field cage of an act, 1..5 — the sprite the wiki draws for the cage a `chest_hero_{act}`
+ * came out of. The generic cage stands in for an act outside that range, so a cage row never
+ * falls through to the item chest's wooden box.
+ */
+export function heroCageIconSrc(ato: number): string {
+  return ato >= 1 && ato <= DROP_ART_BANDS ? `${WIKI_ASSETS_BASE}/env/cage_ato${ato}.png` : `${WIKI_ASSETS_BASE}/env/jaula.png`;
 }
 
 /** The game's own gate-timer clock — used to mark a gate phase instead of a generic chip. */
