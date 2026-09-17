@@ -1,5 +1,5 @@
 import type { PvpHistoryResult } from '@bombfarm/contracts';
-import { isPvpPointsBoard, parsePvpDuelResult, parsePvpDuelState, parsePvpFilm, parsePvpRanking, parsePvpState } from '@bombfarm/game-api';
+import { isPvpPointsBoard, parsePvpDuelState, parsePvpFilm, parsePvpRanking, parsePvpState, readPvpDuelResult } from '@bombfarm/game-api';
 import type { ObservedPvpBody } from '../live-source/live-source.js';
 import type { LogPort } from '../storage/index.js';
 import type { PvpHistory } from './pvp-history.js';
@@ -39,9 +39,9 @@ export function createPvpRecorder(deps: PvpRecorderDeps): PvpRecorder {
     observe({ route, body, raw, atMs }) {
       const at = new Date(atMs).toISOString();
       if (route === 'duel') {
-        const record = parsePvpDuelResult(body);
+        const { record, missing } = readPvpDuelResult(body);
         if (record === null) {
-          log.warn({ scope: 'pvp', event: 'duel.unreadable', byteLength: raw.length });
+          log.warn({ scope: 'pvp', event: 'duel.unreadable', byteLength: raw.length, missing });
           return;
         }
         const written = deps.history.recordDuel(record, { recordedAt: at, accountId: deps.accountId() });

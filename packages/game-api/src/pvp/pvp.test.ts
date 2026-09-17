@@ -4,7 +4,7 @@ import { identifyObservedBody } from '../identify-observed-body.js';
 import { checkShape } from '../shape.js';
 import { identifyPvpBody } from './identify.js';
 import { wireKey } from './lexicon.js';
-import { isPvpPointsBoard, parsePvpDuelResult, parsePvpDuelState, parsePvpFilm, parsePvpRanking, parsePvpState } from './parse.js';
+import { isPvpPointsBoard, parsePvpDuelResult, parsePvpDuelState, parsePvpFilm, parsePvpRanking, parsePvpState, readPvpDuelResult } from './parse.js';
 import { withAccountId } from '../request.js';
 import { PVP_STATE_PATH, pvpRankingPath } from './routes.js';
 
@@ -174,12 +174,33 @@ describe('parsePvpDuelResult', () => {
     expect(parsePvpDuelResult(duelResult({ [wireKey('filmId')]: 0 }))?.filmId).toBe(0);
   });
 
+  it('reads a lost duel, whose result names no chest outcome, as a record with no prize', () => {
+    const { [wireKey('prize')]: _chest, ...lost } = duelResult({ [wireKey('won')]: false, [wireKey('pointsAfter')]: 108 });
+    expect(lost).not.toHaveProperty(wireKey('prize'));
+    expect(parsePvpDuelResult(lost)).toMatchObject({ won: false, pointsAfter: 108, prize: null });
+  });
+
+  it('reads a chest outcome it does not know as no prize rather than refusing the duel', () => {
+    expect(parsePvpDuelResult(duelResult({ [wireKey('prize')]: 'maybe' }))?.prize).toBeNull();
+    expect(parsePvpDuelResult(duelResult({ [wireKey('prize')]: null }))?.prize).toBeNull();
+  });
+
   it('refuses a result missing a field the row cannot do without', () => {
-    expect(parsePvpDuelResult(duelResult({ [wireKey('prize')]: 'maybe' }))).toBeNull();
     expect(parsePvpDuelResult(duelResult({ [wireKey('attacker')]: null }))).toBeNull();
     expect(parsePvpDuelResult(duelResult({ [wireKey('state')]: {} }))).toBeNull();
     expect(parsePvpDuelResult(duelResult({ [wireKey('pointsAfter')]: '123' }))).toBeNull();
     expect(parsePvpDuelResult('nope')).toBeNull();
+  });
+
+  it('names the record fields a refused body lacks, and none on a body it reads', () => {
+    expect(readPvpDuelResult(duelResult()).missing).toEqual([]);
+    expect(readPvpDuelResult(duelResult({ [wireKey('attacker')]: null, [wireKey('pointsAfter')]: '123' })).missing).toEqual([
+      'attacker',
+      'pointsAfter',
+    ]);
+    expect(readPvpDuelResult(duelResult({ [wireKey('state')]: {} })).missing).toEqual(['tier', 'tierFloor']);
+    expect(readPvpDuelResult(duelResult({ [wireKey('state')]: 'r3' })).missing).toEqual(['tier', 'tierFloor']);
+    expect(readPvpDuelResult('nope')).toEqual({ record: null, missing: ['body'] });
   });
 
   it('reads a squad whose hero ids are numbers — the wire form — as the roster spells them', () => {
