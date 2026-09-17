@@ -29,6 +29,7 @@ export { cn } from './cn';
 export {
   formatNumber,
   formatCompactNumber,
+  formatSignificantCompact,
   numberFormatterFor,
   compactNumberFormatterFor,
   type BoundNumberFormat,

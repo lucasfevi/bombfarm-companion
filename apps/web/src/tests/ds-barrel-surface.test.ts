@@ -188,6 +188,7 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'fileDropZoneRecipe',
   'formatCompactNumber',
   'formatNumber',
+  'formatSignificantCompact',
   // The number formatters take the reader's language now, so the pair that binds one for the
   // components which receive an injected formatter ships beside them.
   'numberFormatterFor',
