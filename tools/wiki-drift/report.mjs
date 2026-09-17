@@ -15,10 +15,9 @@ export const TRACKER_MARKER = '<!-- bfc-wiki-drift-tracker -->';
  * source belongs here too — `data.rotacao`'s field and House ceilings are exactly that, and
  * listing only `phase-wiki.json` for it sent a reader to a file that does not hold them.
  *
- * `data.bolsa`/`ritual`/`skill_tree`/`stat_kinds` and `fasesNomes.disponivel`/`mundos`/
- * `sufixos`/`zonas` back nothing today and are deliberately absent — `skill_tree` in particular
- * backs no committed file but is the section the wiki drift check reasoned from, so it still sits
- * inside the baseline; its absence here only affects how the "backs nothing" note reads.
+ * `data.bolsa`/`ritual`/`stat_kinds` and `fasesNomes.disponivel`/`mundos`/`sufixos`/`zonas` back
+ * nothing today and are deliberately absent; their absence here only affects how the "backs
+ * nothing" note reads.
  */
 export const ARTIFACT_BACKED_SECTIONS = {
   // GRID_SPEED_COEF from `grid_speed_coef`, EFF_IA from `eff_ia`, the level-power step from
@@ -63,6 +62,8 @@ export const ARTIFACT_BACKED_SECTIONS = {
   ],
   // defs, sets, levels, version — version === itens.versao_catalogo
   'data.itens': ['packages/domain/src/data/catalog.json'],
+  // version, total, fieldBaseSlots, fieldSize, every node's effects/costs/refunds/gate/requires
+  'data.skill_tree': ['packages/domain/src/data/skill-tree.json'],
   // slots
   'data.slots': ['packages/domain/src/data/catalog.json'],
   // itemStats

@@ -14,7 +14,10 @@ import {
   propIconSrc,
   dropIconSrc,
   runeIconSrc,
+  skillKindArtSrc,
+  skillNodeArtSrc,
 } from '@bombfarm/domain/wiki-assets';
+import { SKILL_EFFECT_KINDS, SKILL_TREE } from '@bombfarm/domain/skill-tree';
 import { DROP_RATES, type DropRateId } from '@bombfarm/domain/phase-wiki';
 import catalog from '@bombfarm/domain/data/catalog.json';
 
@@ -212,5 +215,24 @@ describe('bundled wiki assets', () => {
     const dir = resolve(assetsRoot, 'icons');
     const orphaned = readdirSync(dir).filter((f) => f.startsWith('rune_') && !wanted.has(f));
     expect(orphaned, 'bundled rune art no axis/rarity pair points at').toEqual([]);
+  });
+
+  it('ships the skill-tree medallions: one per node of the catalog and per effect kind, and bundles no other', () => {
+    const wanted = new Set<string>();
+    for (const node of SKILL_TREE.nodes) {
+      const src = skillNodeArtSrc(node);
+      expect(src, `no art for ${node.id}`).not.toBeNull();
+      expect(existsSync(assetPath(src!)), `missing ${src}`).toBe(true);
+      wanted.add(assetPath(src!));
+    }
+    for (const kind of SKILL_EFFECT_KINDS) {
+      const src = skillKindArtSrc(kind);
+      expect(existsSync(assetPath(src)), `missing ${src}`).toBe(true);
+      wanted.add(assetPath(src));
+    }
+    const dir = resolve(assetsRoot, 'skills');
+    const bundled = readdirSync(dir).map((f) => resolve(dir, f));
+    expect(bundled.filter((f) => !wanted.has(f)), 'bundled skill art nothing points at').toEqual([]);
+    expect(wanted.size).toBe(29);
   });
 });

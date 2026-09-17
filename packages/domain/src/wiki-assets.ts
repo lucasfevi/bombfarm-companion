@@ -2,6 +2,7 @@ import catalog from './data/catalog.json' with { type: 'json' };
 import type { Slot } from './gear';
 import type { DropRateId } from './phase-wiki';
 import type { RuneAxis } from './runes';
+import type { SkillEffectKind } from './skill-tree/catalog';
 
 /**
  * Bundled game art under `public/wiki-assets/`, sourced from the Grimório's static assets.
@@ -167,6 +168,59 @@ export function rarityCrystalSrc(rarityIdx: number): string | null {
 export function runeIconSrc(axis: RuneAxis, rarityIdx: number): string | null {
   const slug = RARITY_SLUG[Math.round(rarityIdx)];
   return slug ? `${WIKI_ASSETS_BASE}/icons/rune_${axis}_${slug}.png` : null;
+}
+
+const SKILL_KIND_ART: Readonly<Record<SkillEffectKind, string>> = {
+  team_dmg: 'skill_attack_slot',
+  g_crit_chance: 'skill_critical_chance_slot',
+  g_crit_dmg: 'skill_critical_chance_slot',
+  g_speed: 'skill_speed_slot',
+  team_coin: 'skill_coin_slot',
+  g_luck: 'skill_chest_slot',
+  team_energia: 'skill_energy_slot',
+  team_geo: 'skill_gem_slot',
+  team_xp: 'skill_experience_slot',
+  vagas_campo: 'membro',
+  bag_tab: 'aba_de_bolsa',
+};
+
+/** The notables carry their own art, filed by title rather than by id. */
+const SKILL_NOTABLE_ART: Readonly<Record<string, string>> = {
+  D07: 'furia_explosiva',
+  D12: 'devastacao',
+  C07: 'golpe_preciso',
+  C12: 'olho_mortal',
+  V08: 'impeto',
+  V13: 'vendaval',
+  O08: 'veio_de_ouro',
+  O12: 'febre_do_ouro',
+  S07: 'achado_raro',
+  S11: 'terouso_oculto',
+  E07: 'folego_profundo',
+  E11: 'coracao_de_mina',
+  T01: 'sangue_ouro',
+  T02: 'tempestade_precisa',
+  T03: 'fortuna_dobrada',
+  T04: 'pulso_da_terra',
+  T05: 'cacador_de_reliquias',
+  T06: 'geometria_dourada',
+};
+
+export const SKILL_HUB_ART = 'skill_map_center2';
+
+/**
+ * Wiki skill-tree art — the same medallions the game draws on its skill screen: the hub's own,
+ * one per notable, and one per effect kind for the small nodes and unlocks (the first effect
+ * names it).
+ */
+export function skillNodeArtSrc(node: { id: string; tier: string; effects: readonly { kind: SkillEffectKind }[] }): string | null {
+  const file =
+    node.tier === 'start' ? SKILL_HUB_ART : (SKILL_NOTABLE_ART[node.id] ?? (node.effects[0] ? SKILL_KIND_ART[node.effects[0].kind] : undefined));
+  return file ? `${WIKI_ASSETS_BASE}/skills/${file}.png` : null;
+}
+
+export function skillKindArtSrc(kind: SkillEffectKind): string {
+  return `${WIKI_ASSETS_BASE}/skills/${SKILL_KIND_ART[kind]}.png`;
 }
 
 /** Wiki ability icon — filename matches ability id (e.g. `ponta_diamante`). */
