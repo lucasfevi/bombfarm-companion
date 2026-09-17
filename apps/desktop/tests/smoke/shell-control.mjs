@@ -54,7 +54,9 @@ export async function switchLanguage(page, language) {
     await menu.waitFor({ state: 'visible', timeout: 10_000 });
   }
   await page.getByTestId(LANGUAGE_IN_OVERFLOW[language]).click();
-  await menu.waitFor({ state: 'detached', timeout: 10_000 }).catch(() => undefined);
+  // A radio item does not close the menu it sits in, and an open menu makes the page beneath
+  // inert — the next tab click would wait on it forever.
+  await closeShellOverflow(page);
 }
 
 /**
