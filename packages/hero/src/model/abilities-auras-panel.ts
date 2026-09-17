@@ -30,9 +30,11 @@ export type TeamAuraRow = {
   /** The hero's own ability: on at the hero's rank, and no switch to turn it off. */
   readonly carried: boolean;
   readonly on: boolean;
-  /** What the figures are priced with, capped — `null` while the aura is off. */
-  readonly pricedAt: AbilityEffectReadout | null;
-  readonly cap: AbilityEffectReadout;
+  /**
+   * What the figures are priced with while the aura is on — the hero's own rank, or the cap once
+   * switched on — and what its switch would price them with while it is off: the cap.
+   */
+  readonly readout: AbilityEffectReadout;
   /** Signed percent of sustained DPS: "+x% if on" for an off aura, "−x% if off" for an on one. */
   readonly deltaPct: number;
 };
@@ -49,8 +51,7 @@ export function teamAuraRowsFor(
       buffId,
       carried: seat.carried,
       on: seat.on,
-      pricedAt: seat.on ? teamAuraReadout(buffId, combineTeamAuraPct(0, seat.pricedAt, seat.cap)) : null,
-      cap: teamAuraReadout(buffId, seat.cap),
+      readout: teamAuraReadout(buffId, seat.on ? combineTeamAuraPct(0, seat.pricedAt, seat.cap) : seat.cap),
       deltaPct: deltas[buffId] ?? 0,
     };
   });

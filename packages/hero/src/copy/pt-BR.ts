@@ -107,7 +107,6 @@ export const heroPtBR: HeroCopy = {
     "Com o que os números desta etapa são precificados. Uma aura de time é uma propriedade do campo: todo mundo que está nele recebe o mesmo total, com teto por aura. A aura do próprio herói conta no rank dele e não pode ser desligada; qualquer outra aura fica desligada até você ligar, e então conta no teto, seja quem for o portador. A tela Farm e o Otimizador precificam as mesmas auras pelo tempo ativo previsto de cada portador, então os números deles podem diferir destes. A Passagem de Bastão conta aqui como se o pulso nunca acabasse — o tempo em campo inteiro no nível dela, +80% no teto — enquanto a tela Farm e o Otimizador contam só os 120 s que cada entrada acende.",
   heroDetailAurasTeamGroup: "Auras de time",
   heroDetailAurasOwnGroup: "Habilidades próprias",
-  heroDetailAurasColumnCap: "Teto",
   heroDetailAuraOwnTag: "própria",
   heroDetailAuraNotHereTag: "não nesta fase",
   heroDetailAuraNotModelledTag: "não modelada",

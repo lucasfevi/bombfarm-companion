@@ -338,7 +338,7 @@ const ABILITY_READOUT_UNITS: Record<AbilityReadoutKind, Bilingual> = {
   execute: { pt: 'executa < {value}% HP (×{mult} dano)', en: 'executes < {value}% HP (×{mult} dmg)' },
   gateAttackPct: { pt: '+{value}% em portões', en: '+{value}% on gates' },
   packDmgPctPerAlly: { pt: '+{value}% de dano por aliado', en: '+{value}% dmg per ally' },
-  teamPulseDmgPct: { pt: '+{value}% de dano, pulso mantido', en: '+{value}% dmg, pulse held up' },
+  teamPulseDmgPct: { pt: '+{value}% de dano (pulso)', en: '+{value}% dmg (pulse)' },
   cageDmgPct: { pt: '+{value}% de dano na Jaula', en: '+{value}% Cage damage' },
   passageAttackPct: { pt: '+{value}% de Ataque de passagem', en: '+{value}% attack from passage' },
   dropTierPct: { pt: '+{value}% de chance de subir raridade', en: '+{value}% chance of a rarer drop' },

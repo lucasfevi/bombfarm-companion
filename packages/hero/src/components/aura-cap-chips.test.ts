@@ -21,7 +21,7 @@ describe('auraCapText — each aura’s cap in the unit the Heroes screen prints
     expect(auraCapText('marcha_acelerada', 'en')).toBe('+3.70% speed');
     expect(auraCapText('folego_mineiro', 'en')).toBe('−20% drain');
     expect(auraCapText('brecha', 'en')).toBe('+20% penetration');
-    expect(auraCapText('passagem_bastao', 'en')).toBe('+80% dmg, pulse held up');
+    expect(auraCapText('passagem_bastao', 'en')).toBe('+80% dmg (pulse)');
   });
 });
 
