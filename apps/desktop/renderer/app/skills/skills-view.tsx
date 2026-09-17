@@ -139,7 +139,7 @@ export function SkillsView() {
     <div
       data-testid="skills-view"
       data-pricing={pricing === null ? 'none' : 'priced'}
-      className={cn(colClass, 'relative min-h-0 flex-1')}
+      className={cn(colClass, 'relative', 'min-h-0', 'flex-1')}
     >
       <SkillTreeScreen
         catalog={SKILL_TREE}
