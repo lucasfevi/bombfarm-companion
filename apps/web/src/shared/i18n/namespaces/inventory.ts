@@ -37,6 +37,7 @@ export const en = {
   inventoryChestKey: "Key chest",
   inventoryChestSkill: "Skill stone chest",
   inventoryChestTime: "House part chest",
+  inventoryChestHero: "Hero cage · Act {act}",
 
   inventorySearchPlaceholder: "Search items…",
   inventorySearchLabel: "Search your inventory",
@@ -124,6 +125,7 @@ export const pt: typeof en = {
   inventoryChestKey: "Baú de chaves",
   inventoryChestSkill: "Baú de pedras",
   inventoryChestTime: "Baú de peças de Casa",
+  inventoryChestHero: "Jaula de herói · Ato {act}",
 
   inventorySearchPlaceholder: "Buscar itens…",
   inventorySearchLabel: "Buscar no inventário",

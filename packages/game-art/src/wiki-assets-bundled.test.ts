@@ -5,7 +5,16 @@ import { fileURLToPath } from 'node:url';
 import { ABILITIES } from '@bombfarm/domain/model';
 import { PROPS } from '@bombfarm/domain/phases';
 import { RUNE_AXES } from '@bombfarm/domain/runes';
-import { HERO_SKIN_COUNT, heroAvatarSrc, itemIconSrc, propIconSrc, dropIconSrc, runeIconSrc } from '@bombfarm/domain/wiki-assets';
+import {
+  HERO_SKIN_COUNT,
+  heroAvatarSrc,
+  heroCageIconSrc,
+  itemIconSrc,
+  itemKindIconSrc,
+  propIconSrc,
+  dropIconSrc,
+  runeIconSrc,
+} from '@bombfarm/domain/wiki-assets';
 import { DROP_RATES, type DropRateId } from '@bombfarm/domain/phase-wiki';
 import catalog from '@bombfarm/domain/data/catalog.json';
 
@@ -101,8 +110,8 @@ describe('bundled wiki assets', () => {
    * image and neither the type checker nor any math test notices.
    *
    * Forward direction ONLY, unlike the item and hero guards above. `env/` is a mixed
-   * directory — it also holds `bomb`, `boss`, `jaula` and the five `cage_ato*` sprites,
-   * which no prop points at — so a reverse "no orphaned art" sweep would fail on assets
+   * directory — it also holds `bomb`, `boss`, `jaula` and the five `cage_ato*` sprites the
+   * hero-cage sweep below reaches — so a reverse "no orphaned art" sweep would fail on assets
    * that are legitimately reachable from elsewhere.
    */
   it('ships env art for every modeled prop', () => {
@@ -157,6 +166,24 @@ describe('bundled wiki assets', () => {
     // Four per-band families of 5, plus the one fixed item chest. Pins the count so a family
     // silently collapsing to a single sprite fails here rather than looking fine.
     expect(seen.size, 'distinct sprites the panel can reach').toBe(21);
+  });
+
+  /**
+   * `heroCageIconSrc` interpolates the act into a filename the same way the drop art does, and
+   * the inventory reaches it through `itemKindIconSrc` for every `chest_hero_*` row — one path
+   * per act that nothing else reads, plus the generic cage the out-of-range fallback names.
+   */
+  it('ships cage art for every act a hero cage can come from, and the generic cage', () => {
+    const missing: string[] = [];
+    for (const act of [1, 2, 3, 4, 5]) {
+      const src = itemKindIconSrc(`chest_hero_${act}`, act);
+      expect(src, `itemKindIconSrc returned null for chest_hero_${act}`).not.toBeNull();
+      if (!existsSync(assetPath(src!))) missing.push(`chest_hero_${act} -> ${src}`);
+    }
+    const fallback = heroCageIconSrc(0);
+    if (!existsSync(assetPath(fallback))) missing.push(`fallback -> ${fallback}`);
+
+    expect(missing, 'hero cages whose art is not bundled').toEqual([]);
   });
 
   /**

@@ -43,10 +43,15 @@ function fill(template: string, vars: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (_match, key: string) => String(vars[key] ?? ''));
 }
 
-/** `chest_item_90` is the level-90 item chest; `chest_key_3`/`chest_gem_2` name their contents. */
+/**
+ * `chest_item_90` is the level-90 item chest; `chest_key_3`/`chest_gem_2` name their contents;
+ * `chest_hero_3` is the cage caught in act 3, which is the act the market sells it under.
+ */
 function chestName(defId: string, t: Copy): string {
   const itemChest = /^chest_item_(\d+)$/.exec(defId);
   if (itemChest?.[1] !== undefined) return fill(t.inventoryChestItem, { level: itemChest[1] });
+  const heroCage = /^chest_hero_(\d+)$/.exec(defId);
+  if (heroCage?.[1] !== undefined) return fill(t.inventoryChestHero, { act: heroCage[1] });
   if (defId.startsWith('chest_gem')) return t.inventoryChestGem;
   if (defId.startsWith('chest_key')) return t.inventoryChestKey;
   if (defId.startsWith('chest_skill')) return t.inventoryChestSkill;

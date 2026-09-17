@@ -321,6 +321,7 @@ export const ptBR: Copy = {
   inventoryChestKey: 'Baú de chaves',
   inventoryChestSkill: 'Baú de pedras',
   inventoryChestTime: 'Baú de peças de Casa',
+  inventoryChestHero: 'Jaula de herói · Ato {act}',
   inventorySearchPlaceholder: 'Buscar itens…',
   inventorySearchLabel: 'Buscar no inventário',
   inventoryFilterAll: 'Todos',

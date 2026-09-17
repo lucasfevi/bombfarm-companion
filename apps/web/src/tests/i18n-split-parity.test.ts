@@ -501,6 +501,8 @@ const KEYS_REMOVED: readonly string[] = [
  */
 const KEYS_ADDED: readonly string[] = [
   'navHeroes',
+  // The inventory names a hero cage by its act (2026-09-17) instead of printing `chest_hero_3`.
+  'inventoryChestHero',
   // The Farm page's Optimize button opens the Optimizer (2026-09-14) instead of solving a
   // points-only respec in place: `farmOptimize` is the button's label, its one string. The
   // Home page's optimizer card kept the in-place panel's "already close to the best found"

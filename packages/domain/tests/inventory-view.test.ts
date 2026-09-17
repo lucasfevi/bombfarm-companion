@@ -717,6 +717,7 @@ describe('chest tiers from the def_id tail', () => {
     ['chest_skill_2', 2],
     ['chest_key_3', 3],
     ['chest_key_5', 5],
+    ['chest_hero_3', 3],
   ])('reads %s as rarity %i, not the 0 the wire sends', (defId, expected) => {
     expect(rarityOf(defId)).toBe(expected);
   });

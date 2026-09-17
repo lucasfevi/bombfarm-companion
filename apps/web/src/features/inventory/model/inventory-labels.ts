@@ -70,10 +70,15 @@ const GEM_KEY: Record<string, keyof Strings> = {
   gem_topaz: 'inventoryGemTopaz',
 };
 
-/** `chest_item_90` is the level-90 item chest; `chest_key_3`/`chest_gem_2` name their contents. */
+/**
+ * `chest_item_90` is the level-90 item chest; `chest_key_3`/`chest_gem_2` name their contents;
+ * `chest_hero_3` is the cage caught in act 3, which is the act the market sells it under.
+ */
 function chestName(defId: string, strings: Strings): string {
   const itemChest = /^chest_item_(\d+)$/.exec(defId);
   if (itemChest) return sub(strings.inventoryChestItem, { level: itemChest[1] });
+  const heroCage = /^chest_hero_(\d+)$/.exec(defId);
+  if (heroCage) return sub(strings.inventoryChestHero, { act: heroCage[1] });
   if (defId.startsWith('chest_gem')) return strings.inventoryChestGem;
   if (defId.startsWith('chest_key')) return strings.inventoryChestKey;
   if (defId.startsWith('chest_skill')) return strings.inventoryChestSkill;
