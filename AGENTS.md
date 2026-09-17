@@ -47,9 +47,10 @@ Builds the workspace packages (`tsc` only — ~20 s; the Next export and the Ele
 needed to typecheck or test), then typechecks and lints the packages the diff touches **plus
 everything that depends on them**, runs `eslint tools/`, runs the Vitest files that import from the
 changed modules (`vitest --changed`), and runs the whole `tools` guard project. Measured
-2026-09-17: a one-file change in `packages/farm` ran 16 test files in ~25 s where the full suite
-is ~7,000 tests; the whole tier is about a minute. Diff base is `origin/develop` (merge-base);
-pass `--since <ref>` to compare against something else.
+2026-09-17, machine to itself: a one-file change in `packages/farm` — whose dependents include
+both apps — took 1 min 38 s end to end, 16 Vitest files where the full suite is ~7,000 tests; the
+floor with nothing changed (build + `tools` guards) is ~30 s. Diff base is `origin/develop`
+(merge-base); pass `--since <ref>` to compare against something else.
 
 It widens itself to the full typecheck/lint/test when the diff touches a file that reaches every
 package (root `package.json`, the lockfile, `tsconfig.base.json`, `eslint.config.mjs`, the root
