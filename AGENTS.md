@@ -29,7 +29,40 @@ change the other, in the same PR — see [`apps/desktop/AGENTS.md`](apps/desktop
 - **electron-log** (main/preload/renderer)
 - **SQLite** via `Storage` wrapper (`node:sqlite` when Electron's Node supports it, else `better-sqlite3`)
 
-## Local checks (run before PR)
+## Local checks
+
+**Two tiers. Local runs are scoped to the diff; CI owns the full matrix.** Every agent session
+used to run the whole sequence below before a PR, and CI then ran the same thing again — N
+sessions on one machine made N full suites, and the wait was the sum. The machine-wide CPU budget
+([`docs/machine-load.md`](docs/machine-load.md)) makes those runs share cores; it cannot make them
+smaller. Scoping does.
+
+### Tier 1 — while working, after every change
+
+```bash
+pnpm check:changed
+```
+
+Builds the workspace packages (`tsc` only — ~20 s; the Next export and the Electron bundle are not
+needed to typecheck or test), then typechecks and lints the packages the diff touches **plus
+everything that depends on them**, runs `eslint tools/`, runs the Vitest files that import from the
+changed modules (`vitest --changed`), and runs the whole `tools` guard project. Measured
+2026-09-17: a one-file change in `packages/farm` ran 16 test files in ~25 s where the full suite
+is ~7,000 tests; the whole tier is about a minute. Diff base is `origin/develop` (merge-base);
+pass `--since <ref>` to compare against something else.
+
+It widens itself to the full typecheck/lint/test when the diff touches a file that reaches every
+package (root `package.json`, the lockfile, `tsconfig.base.json`, `eslint.config.mjs`, the root
+Vitest config — the list is in `tools/check-changed-scope.mjs`). It does **not** widen for the
+~45 specs under `apps/web/src/tests` that read files instead of importing them; those are CI's to
+catch, which is the point of tier 2.
+
+### Tier 2 — before the PR: push, and let CI run the full matrix
+
+CI is already path-filtered per host (`ci-web`, `ci-desktop`, `ci-fidelity`, `e2e-web`) with the
+`tools` guards unconditional (`repo-guards`), on a single-tenant runner. Push, read the result, fix
+from it. Run the full local sequence only when the change touches a fan-out package (`domain`,
+`ui`, `contracts`), or when CI came back red and you need to iterate locally:
 
 ```bash
 pnpm install
@@ -37,18 +70,23 @@ pnpm build
 pnpm typecheck
 pnpm lint
 pnpm test
-pnpm --filter @bombfarm/domain test
-pnpm --filter @bombfarm/web test
 pnpm --filter @bombfarm/web exec playwright test --project=smoke
 pnpm test:smoke   # Windows — builds static renderer + launches Electron
 ```
 
-**The Playwright line is not optional, and `pnpm test` does not cover it.** `pnpm test` is Vitest
-only; the `apps/web` e2e specs are the only check that exercises the planner as a running browser
-app over time, and a whole class of break is invisible without them. One landed on 2026-09-02:
-a stored hero field the draft did not mirror made the 700ms autosave churn the roster array, so
-the Farm Respec panel closed itself ~700ms after opening — five e2e tests red while `build`,
-`typecheck`, `lint`, 7,002 Vitest tests and the Electron smoke suite were all green.
+The full sequence is ~7 minutes through the Vitest line alone (measured 2026-09-17, machine to
+itself); several sessions running it at once are what makes the machine unusable.
+
+### The two suites neither tier includes
+
+**The Playwright line is owed whenever the change reaches the web planner — and `pnpm test` does
+not cover it.** `pnpm test` is Vitest only; the `apps/web` e2e specs are the only check that
+exercises the planner as a running browser app over time, and a whole class of break is invisible
+without them. One landed on 2026-09-02: a stored hero field the draft did not mirror made the
+700ms autosave churn the roster array, so the Farm Respec panel closed itself ~700ms after opening
+— five e2e tests red while `build`, `typecheck`, `lint`, 7,002 Vitest tests and the Electron smoke
+suite were all green. "Reaches the web planner" means the paths `e2e-web.yml` filters on: `apps/web`
+and the packages it imports — store slices and record shapes count, not just styling.
 
 It builds the static export itself and takes ~2.5 minutes cold. Two things to know before reading
 its result: pass `E2E_PREBUILT=1` to skip the build when `apps/web/out` is genuinely current, and
@@ -56,6 +94,10 @@ kill anything already listening on port 4321 first — `reuseExistingServer` is 
 stale server silently serves an old export and the run describes code you are not testing. If
 that listener belongs to another session on the machine, do not kill it: set `E2E_PORT` (say
 `4322`) and the run serves and tests its own export there instead.
+
+The Electron smoke suite (`pnpm test:smoke`) is owed on the same terms for `apps/desktop` — see
+[`apps/desktop/AGENTS.md`](apps/desktop/AGENTS.md) for the hidden variant that gives you the
+screen back.
 
 ## Running the desktop app without the game
 
@@ -73,11 +115,11 @@ letting them multiply. `node tools/cpu-budget-report.mjs` says what is running a
 getting; `BFC_CPU_BUDGET` raises or lowers the total. See
 [`docs/machine-load.md`](docs/machine-load.md).
 
-`pnpm build` is not optional and has to come first: the workspace packages publish their types
-and entry points from `dist/` (`packages/domain`'s `exports` map, for one, points every subpath
-at `./dist/**`), so on a freshly cloned tree `pnpm typecheck`, `pnpm lint` and three of the vitest
-projects — `@bombfarm/desktop`, `@bombfarm/game-api` and `tools` — all fail to resolve them until
-the packages are built. All three run `tools/require-workspace-dist.mjs`, which throws and names
+A package build has to come first, and `pnpm check:changed` does it for you: the workspace
+packages publish their types and entry points from `dist/` (`packages/domain`'s `exports` map,
+for one, points every subpath at `./dist/**`), so on a freshly cloned tree `pnpm typecheck`,
+`pnpm lint` and three of the vitest projects — `@bombfarm/desktop`, `@bombfarm/game-api` and
+`tools` — all fail to resolve them until the packages are built. All three run `tools/require-workspace-dist.mjs`, which throws and names
 the unbuilt packages instead of letting the affected files die at collection: the first two as a
 project-wide `globalSetup`, and `tools` as a per-file call from the single file that needs a build
 (`globalSetup` would also fire in the deliberately build-free `line-endings` CI job, which runs

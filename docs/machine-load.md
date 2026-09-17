@@ -98,6 +98,28 @@ Neither is a matter of discipline. `tools/vitest-worker-cap.test.mjs` derives th
 from the directory listing and fails, naming the file and the fix, when either is missing — the
 rule had previously lived as a comment in two project configs while ten siblings went without it.
 
+## The budget divides work; `pnpm check:changed` shrinks it
+
+Sharing cores bounds how hard the machine works, not how much work it is asked to do. Several
+sessions each running the full local sequence still make several full suites; each is slower and
+the wait is the sum. The other half of the fix is [`tools/check-changed.mjs`](../tools/check-changed.mjs)
+— the tier-1 check in the root [`AGENTS.md`](../AGENTS.md) — which runs only what the branch's
+diff reaches and leaves the full matrix to CI, where the runner is single-tenant anyway.
+
+Two facts it is built around, both measured 2026-09-17:
+
+- **pnpm's `--filter "...[ref]"` selects nothing from a worktree.** It finds the repo root by
+  walking up to a `.git` *directory*; a worktree's `.git` is a file, so from a worktree nested
+  under the primary checkout it resolves to the primary and matches no package. The script
+  computes the changed packages from `git diff` itself and hands pnpm `--filter "...{<dir>}"`
+  per package, which takes the directory as given.
+- **`vitest --changed` walks the module graph**, so a test that reads a file instead of importing
+  it is invisible to it. The `tools` project is entirely such guards and runs whole every time; the
+  filesystem-reading specs under `apps/web/src/tests` are left to CI.
+
+The script takes one lease for the whole sequence, so a session running it counts once against
+the budget, not once per step.
+
 ## What this does not cover
 
 - **The share is chosen once, at startup.** Vitest, Playwright and Next all fix their pool before
