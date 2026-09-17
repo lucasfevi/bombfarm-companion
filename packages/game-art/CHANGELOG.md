@@ -1,5 +1,12 @@
 # @bombfarm/game-art
 
+## 0.6.1
+
+### Patch Changes
+
+- Updated dependencies [cb9b319]
+  - @bombfarm/domain@1.2.1
+
 ## 0.6.0
 
 ### Minor Changes
