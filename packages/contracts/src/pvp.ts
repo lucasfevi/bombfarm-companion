@@ -5,7 +5,8 @@
  * fetches it, the film. Nothing here is predicted.
  */
 
-/** `won` is the rune chest landing in the bag; `lost` is the same chest lost to a full bag. */
+/** `won` is the rune chest landing in the bag; `lost` is the same chest lost to a full bag. A
+ *  duel that issued no chest — a lost duel — names neither, and the record carries `null`. */
 export type PvpDuelPrize = 'won' | 'lost';
 
 /** One side of a duel: its display name, how many heroes it fielded, and its score — the HP it
@@ -32,7 +33,8 @@ export interface PvpDuelRecord {
   readonly pointsAfter: number;
   readonly duelsLeft: number;
   readonly duelsMax: number;
-  readonly prize: PvpDuelPrize;
+  /** `null` when the result named no chest outcome — the wire's shape for a duel that issued none. */
+  readonly prize: PvpDuelPrize | null;
   /** The tier token as the server names it (`r1`…`r6`). */
   readonly tier: string;
   readonly tierFloor: number;

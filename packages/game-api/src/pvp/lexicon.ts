@@ -100,7 +100,7 @@ const KEY_ENTRIES: ReadonlyArray<WireLexiconEntry & { readonly symbol: PvpWireSy
   { symbol: 'pointsAfter', wireToken: 'pontos_depois', kind: 'key', domainField: 'pointsAfter', description: 'PVP points after the duel settled.', origin: 'portuguese' },
   { symbol: 'duelsLeft', wireToken: 'duelos_restantes', kind: 'key', domainField: 'duelsLeft', description: 'Duels left in the quota.', origin: 'portuguese' },
   { symbol: 'duelsMax', wireToken: 'duelos_max', kind: 'key', domainField: 'duelsMax', description: 'The duel quota.', origin: 'portuguese' },
-  { symbol: 'prize', wireToken: 'premio', kind: 'key', domainField: 'prize', description: 'Whether the rune chest landed (`won`) or was lost to a full bag (`lost`).', origin: 'portuguese' },
+  { symbol: 'prize', wireToken: 'premio', kind: 'key', domainField: 'prize', description: 'Whether the rune chest landed (`won`) or was lost to a full bag (`lost`); names neither on a duel that issued no chest — a lost one.', origin: 'portuguese' },
   { symbol: 'state', wireToken: 'estado', kind: 'key', domainField: 'state', description: 'The full PVP state after the duel.', origin: 'portuguese' },
   { symbol: 'statePoints', wireToken: 'pontos', kind: 'key', domainField: 'points', description: 'Current PVP points.', origin: 'portuguese' },
   { symbol: 'stateTier', wireToken: 'faixa', kind: 'key', domainField: 'tier', description: 'The tier token (`r1`…`r6`).', origin: 'portuguese' },

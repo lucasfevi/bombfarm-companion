@@ -138,7 +138,7 @@ The duel result the client receives on Challenge and the film it fetches right a
 | `pontos_depois` | `pointsAfter` | PVP points after the duel settled. | Portuguese |
 | `duelos_restantes` | `duelsLeft` | Duels left in the quota. | Portuguese |
 | `duelos_max` | `duelsMax` | The duel quota. | Portuguese |
-| `premio` | `prize` | Whether the rune chest landed (`won`) or was lost to a full bag (`lost`). | Portuguese |
+| `premio` | `prize` | Whether the rune chest landed (`won`) or was lost to a full bag (`lost`); names neither on a duel that issued no chest — a lost one. | Portuguese |
 | `estado` | `state` | The full PVP state after the duel. | Portuguese |
 | `pontos` | `points` | Current PVP points. | Portuguese |
 | `faixa` | `tier` | The tier token (`r1`…`r6`). | Portuguese |

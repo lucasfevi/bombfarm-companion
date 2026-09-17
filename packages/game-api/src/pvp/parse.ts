@@ -29,8 +29,29 @@ function parseSide(value: unknown): PvpDuelSide | null {
   return { name, heroes, score };
 }
 
+/** The chest outcome is only ever `won` or `lost`; a body naming neither issued no chest. */
 function parsePrize(value: unknown): PvpDuelPrize | null {
   return value === 'won' || value === 'lost' ? value : null;
+}
+
+function parseBoolean(value: unknown): boolean | null {
+  return typeof value === 'boolean' ? value : null;
+}
+
+function parseString(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
+}
+
+type Complete<T> = { readonly [K in keyof T]: NonNullable<T[K]> };
+
+function isComplete<T extends Record<string, unknown>>(fields: T): fields is T & Complete<T> {
+  return Object.values(fields).every((value) => value !== null);
+}
+
+function missingNames(fields: Record<string, unknown>): readonly string[] {
+  return Object.entries(fields)
+    .filter(([, value]) => value === null)
+    .map(([name]) => name);
 }
 
 /** The wire carries the id as a number (`862212`, observed 2026-09-16); the roster keys heroes by
@@ -103,65 +124,51 @@ export function isPvpPointsBoard(entry: PvpRankEntry): boolean {
   return entry.board === PVP_RANKING_BOARD;
 }
 
+export type PvpDuelResultReading =
+  | { readonly record: PvpDuelRecord; readonly missing: readonly [] }
+  | { readonly record: null; readonly missing: readonly string[] };
+
 /**
- * Reads a duel result body into its record, or `null` when a field the row cannot do without is
- * missing or mistyped. The state object is read for the tier, its floor and the squad only —
- * everything else it carries is the account's standing PVP state, not this duel's, and
+ * Reads a duel result body into its record. `record` is `null` when a field the row cannot do
+ * without is missing or mistyped, and `missing` then names those fields by their record name so
+ * a refusal can be logged without the body. The chest outcome is not one of them: a duel that
+ * issued no chest names none. The state object is read for the tier, its floor and the squad
+ * only — everything else it carries is the account's standing PVP state, not this duel's, and
  * {@link parsePvpDuelState} reads that separately.
  */
-export function parsePvpDuelResult(body: unknown): PvpDuelRecord | null {
-  if (!isPlainObject(body)) return null;
-  const won = body[wireKey('won')];
-  const phase = finiteNumber(body[wireKey('phase')]);
-  const filmId = finiteNumber(body[wireKey('filmId')]);
-  const rooms = finiteNumber(body[wireKey('rooms')]);
-  const seconds = finiteNumber(body[wireKey('seconds')]);
-  const attacker = parseSide(body[wireKey('attacker')]);
-  const defender = parseSide(body[wireKey('defender')]);
-  const pointsBefore = finiteNumber(body[wireKey('pointsBefore')]);
-  const pointsAfter = finiteNumber(body[wireKey('pointsAfter')]);
-  const duelsLeft = finiteNumber(body[wireKey('duelsLeft')]);
-  const duelsMax = finiteNumber(body[wireKey('duelsMax')]);
-  const prize = parsePrize(body[wireKey('prize')]);
+export function readPvpDuelResult(body: unknown): PvpDuelResultReading {
+  if (!isPlainObject(body)) return { record: null, missing: ['body'] };
   const state = body[wireKey('state')];
-  if (
-    typeof won !== 'boolean' ||
-    phase === null ||
-    filmId === null ||
-    rooms === null ||
-    seconds === null ||
-    attacker === null ||
-    defender === null ||
-    pointsBefore === null ||
-    pointsAfter === null ||
-    duelsLeft === null ||
-    duelsMax === null ||
-    prize === null ||
-    !isPlainObject(state)
-  ) {
-    return null;
-  }
-  const tier = state[wireKey('stateTier')];
-  const tierFloor = finiteNumber(state[wireKey('phase')]);
-  if (typeof tier !== 'string' || tierFloor === null) return null;
+  const stateObject = isPlainObject(state) ? state : null;
+  const fields = {
+    won: parseBoolean(body[wireKey('won')]),
+    phase: finiteNumber(body[wireKey('phase')]),
+    filmId: finiteNumber(body[wireKey('filmId')]),
+    rooms: finiteNumber(body[wireKey('rooms')]),
+    seconds: finiteNumber(body[wireKey('seconds')]),
+    attacker: parseSide(body[wireKey('attacker')]),
+    defender: parseSide(body[wireKey('defender')]),
+    pointsBefore: finiteNumber(body[wireKey('pointsBefore')]),
+    pointsAfter: finiteNumber(body[wireKey('pointsAfter')]),
+    duelsLeft: finiteNumber(body[wireKey('duelsLeft')]),
+    duelsMax: finiteNumber(body[wireKey('duelsMax')]),
+    tier: stateObject === null ? null : parseString(stateObject[wireKey('stateTier')]),
+    tierFloor: stateObject === null ? null : finiteNumber(stateObject[wireKey('phase')]),
+  };
+  if (!isComplete(fields)) return { record: null, missing: missingNames(fields) };
 
   return {
-    won,
-    phase,
-    filmId,
-    rooms,
-    seconds,
-    attacker,
-    defender,
-    pointsBefore,
-    pointsAfter,
-    duelsLeft,
-    duelsMax,
-    prize,
-    tier,
-    tierFloor,
-    squadHeroIds: parseSquadHeroIds(state[wireKey('stateSquad')]),
+    record: {
+      ...fields,
+      prize: parsePrize(body[wireKey('prize')]),
+      squadHeroIds: parseSquadHeroIds(stateObject?.[wireKey('stateSquad')]),
+    },
+    missing: [],
   };
+}
+
+export function parsePvpDuelResult(body: unknown): PvpDuelRecord | null {
+  return readPvpDuelResult(body).record;
 }
 
 /** Reads a film's header. The frames are counted, never decoded — the body is kept whole. */
