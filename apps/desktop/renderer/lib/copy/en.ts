@@ -913,8 +913,6 @@ export const en = {
   skillsPreviewTip: 'Your farm rebuilt with this node one level higher, against the tree as it stands.',
   skillsPreviewGold: 'Gold per hour',
   skillsPreviewDps: 'Team DPS',
-  skillsBaselineGold: 'Now',
-  skillsBaselineDps: 'Now',
   skillsTotalNowNext: '{now} → {next}',
   skillsRequires: 'Requires',
   skillsGate: 'Phase gate',

@@ -95,8 +95,6 @@ export interface SkillTreeLabels {
   previewTip: string;
   previewGold: string;
   previewDps: string;
-  baselineGold: string;
-  baselineDps: string;
   /** `now → next`, for a stat total moving one level. */
   totalNowNext: (now: string, next: string) => string;
   requires: string;

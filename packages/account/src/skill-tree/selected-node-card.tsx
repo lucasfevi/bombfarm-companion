@@ -133,13 +133,15 @@ export function SelectedNodeCard({ node, status, gain, pricing, nodeArtSrc, node
             variant="phases"
             aria-label={labels.preview}
             items={[
-              { id: 'baseline-gold', label: labels.baselineGold, value: rateGold(labels, pricing.baseline.goldPerHour) },
               {
                 id: 'preview-gold',
                 label: labels.previewGold,
                 value: (
                   <>
-                    {rateGold(labels, pricing.baseline.goldPerHour + gain.goldPerHourDelta)}
+                    {labels.totalNowNext(
+                      rateGold(labels, pricing.baseline.goldPerHour),
+                      rateGold(labels, pricing.baseline.goldPerHour + gain.goldPerHourDelta),
+                    )}
                     <Delta value={gain.goldPerHourDelta} text={labels.gainGold(gain.goldPerHourDelta)} />
                   </>
                 ),
@@ -147,13 +149,15 @@ export function SelectedNodeCard({ node, status, gain, pricing, nodeArtSrc, node
               { id: 'per-million-gold', label: labels.colPerMillion, value: labels.perMillionGold(gain.goldPerMillion) },
               ...(pricing.baseline.teamDps !== null && gain.teamDpsDelta !== null && gain.dpsPerMillion !== null
                 ? [
-                    { id: 'baseline-dps', label: labels.baselineDps, value: rateDps(labels, pricing.baseline.teamDps) },
                     {
                       id: 'preview-dps',
                       label: labels.previewDps,
                       value: (
                         <>
-                          {rateDps(labels, pricing.baseline.teamDps + gain.teamDpsDelta)}
+                          {labels.totalNowNext(
+                            rateDps(labels, pricing.baseline.teamDps),
+                            rateDps(labels, pricing.baseline.teamDps + gain.teamDpsDelta),
+                          )}
                           <Delta value={gain.teamDpsDelta} text={labels.gainDps(gain.teamDpsDelta)} />
                         </>
                       ),

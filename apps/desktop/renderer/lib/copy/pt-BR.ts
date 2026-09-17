@@ -871,8 +871,6 @@ export const ptBR: Copy = {
   skillsPreviewTip: 'Seu farm recalculado com este nó um nível acima, contra a árvore como está.',
   skillsPreviewGold: 'Ouro por hora',
   skillsPreviewDps: 'DPS do time',
-  skillsBaselineGold: 'Agora',
-  skillsBaselineDps: 'Agora',
   skillsTotalNowNext: '{now} → {next}',
   skillsRequires: 'Requer',
   skillsGate: 'Portão de fase',

@@ -69,8 +69,6 @@ function labelsTagged(tag: string): SkillTreeLabels {
     previewTip: `${tag}-previewTip`,
     previewGold: `${tag}-previewGold`,
     previewDps: `${tag}-previewDps`,
-    baselineGold: `${tag}-baselineGold`,
-    baselineDps: `${tag}-baselineDps`,
     totalNowNext: (now, next) => `${tag}-nowNext-${now}~${next}`,
     requires: `${tag}-requires`,
     gate: `${tag}-gate`,
@@ -380,23 +378,24 @@ describe('SkillTreeScreen — the selected node', () => {
     expect(facts).toContainEqual({ label: labels.requires, value: labels.kindName('team_dmg') });
   });
 
-  it('previews the objectives with the node bought: baseline, with-node, signed delta, per million', () => {
+  it('previews the objectives with the node bought: now → with node, signed delta, per million', () => {
     const labels = labelsTagged('aa');
     const html = section(render({ selectedId: 'D01' }), 'skill-tree-preview');
     const facts = rows(html);
-    expect(facts).toContainEqual({ label: labels.baselineGold, value: labels.goldCompact(10_000) });
-    expect(facts).toContainEqual({ label: labels.previewGold, value: `${labels.goldCompact(10_015)} ${labels.gainGold(15)}` });
+    expect(facts).toContainEqual({
+      label: labels.previewGold,
+      value: `${labels.totalNowNext(labels.goldCompact(10_000), labels.goldCompact(10_015))} ${labels.gainGold(15)}`,
+    });
     expect(facts).toContainEqual({ label: labels.colPerMillion, value: labels.perMillionGold(510.4) });
-    expect(facts).toContainEqual({ label: labels.baselineDps, value: '2000' });
-    expect(facts).toContainEqual({ label: labels.previewDps, value: `2007 ${labels.gainDps(7)}` });
+    expect(facts).toContainEqual({ label: labels.previewDps, value: `${labels.totalNowNext('2000', '2007')} ${labels.gainDps(7)}` });
     expect(html).toContain(labels.gainOutsideObjectives);
   });
 
   it('uses the host rate formatters when the bag carries them', () => {
     const labels: SkillTreeLabels = { ...labelsTagged('aa'), goldPerHour: (value) => `rate-${value}`, teamDps: (value) => `dps-${value}` };
     const facts = rows(section(render({ selectedId: 'D01', labels }), 'skill-tree-preview'));
-    expect(facts).toContainEqual({ label: labels.baselineGold, value: 'rate-10000' });
-    expect(facts).toContainEqual({ label: labels.baselineDps, value: 'dps-2000' });
+    expect(facts).toContainEqual({ label: labels.previewGold, value: `${labels.totalNowNext('rate-10000', 'rate-10015')} ${labels.gainGold(15)}` });
+    expect(facts).toContainEqual({ label: labels.previewDps, value: `${labels.totalNowNext('dps-2000', 'dps-2007')} ${labels.gainDps(7)}` });
   });
 
   it('skips the DPS rows when the roster has no DPS figure', () => {
