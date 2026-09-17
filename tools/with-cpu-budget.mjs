@@ -1,9 +1,7 @@
 import { spawn } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 import process from 'node:process';
-import { fileURLToPath } from 'node:url';
 import { cappedWorkers } from './cpu-budget.mjs';
+import { npmrcWorkspaceConcurrency } from './workspace-concurrency.mjs';
 
 /**
  * Run a `pnpm -r` command with its workspace concurrency taken from the machine-wide budget
@@ -19,22 +17,6 @@ import { cappedWorkers } from './cpu-budget.mjs';
  * so every parallel `eslint` holds its own type information beside every parallel `tsc --noEmit`
  * — and it is memory, not CPU, that makes several of those at once hurt.
  */
-
-const NPMRC = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.npmrc');
-
-/**
- * The static ceiling stays in `.npmrc` and is read back here, so a bare `pnpm -r` typed by hand
- * is bounded by the same number this wrapper starts from. Two copies of it would drift.
- */
-function npmrcWorkspaceConcurrency() {
-  try {
-    const match = /^workspace-concurrency\s*=\s*(\d+)\s*$/m.exec(readFileSync(NPMRC, 'utf8'));
-    const value = Number(match?.[1]);
-    return Number.isFinite(value) && value >= 1 ? value : 1;
-  } catch {
-    return 1;
-  }
-}
 
 /**
  * The child has to go through a shell, because on Windows `pnpm` is a `.cmd` shim that
