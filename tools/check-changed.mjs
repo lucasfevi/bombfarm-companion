@@ -101,7 +101,7 @@ function main() {
     run(`pnpm ${dependentsFilters(changedPackageDirs)} lint`);
   }
   run('pnpm lint:tools');
-  run(everything ? 'pnpm exec vitest run' : `pnpm exec vitest run --changed ${sha}`);
+  run(everything ? 'node tools/with-heavy-slot.mjs pnpm exec vitest run' : `pnpm exec vitest run --changed ${sha}`);
   if (!everything) {
     run('pnpm exec vitest run --project tools');
   }

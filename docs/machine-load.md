@@ -40,8 +40,9 @@ budget 8, 8 runs -> vitest 1, next 1, workspaces 1
 The budget defaults to **a third of the machine's cores** (minimum 2) — 8 of 24 — so two thirds
 stay free for the browser, the editor, and the game.
 
-**No run ever waits.** A run arriving late gets a smaller share, not a queue position. There is no
-lock to strand, so a killed run cannot block the next one.
+**A scoped run never waits.** A run arriving late gets a smaller share, not a queue position.
+There is no lock to strand, so a killed run cannot block the next one. The full runs are the one
+exception — see the heavy-run slot below.
 
 **Leases are reaped by liveness.** Ctrl-C leaves a lease behind; the next reader drops it because
 the pid is gone. A six-hour staleness backstop covers the one case liveness cannot see, the OS
@@ -66,6 +67,7 @@ share per run 2
   pid 11636 — vitest (41s)
   pid 25556 — next:build (12s)
   pid 31656 — workspace:-r lint (3s)
+heavy slot    pid 11636 — vitest run (41s); full runs queue behind it
 ```
 
 Reading the state claims nothing, so asking what is running never changes what is running.
@@ -77,6 +79,7 @@ Reading the state claims nothing, so asking what is running never changes what i
 | `BFC_CPU_BUDGET` | Total cores all Bomb Farm work may hold. Raise it on a machine dedicated to this work, lower it while doing something else that matters more. |
 | `BFC_CPU_LEASE_DIR` | Where leases live. Tests point this at a temp directory; there is no reason to set it by hand. |
 | `BFC_CPU_LEASE` | Set automatically for child processes. Its presence means "this process is part of a run that already has a share" — which is how a build nested inside a build, and Playwright and Vitest re-loading their config inside every worker, avoid counting one run several times. |
+| `BFC_HEAVY_SLOT` | Set automatically once a full run holds the heavy-run slot, for the same reason: a worker re-loading the config must not queue behind its own parent. |
 
 ```bash
 BFC_CPU_BUDGET=16 pnpm test
@@ -98,6 +101,40 @@ Neither is a matter of discipline. `tools/vitest-worker-cap.test.mjs` derives th
 from the directory listing and fails, naming the file and the fix, when either is missing — the
 rule had previously lived as a comment in two project configs while ten siblings went without it.
 
+## The heavy-run slot: full runs queue, everything else shares
+
+Sharing is the wrong shape for a full run. Four sessions each running the whole Vitest suite at
+once take a quarter share each, finish together four times later, and hold four sets of
+TypeScript programs and worker pools the entire time — the budget divides cores, not memory, and
+on a 32 GB machine it is memory that runs out first. Queuing them has the same total throughput,
+hands the first its result four times sooner, and keeps peak memory at one run.
+
+So the full runs take one machine-wide slot before they fan out, and wait for the current holder
+if there is one. `waitForHeavySlot(kind)` in `cpu-budget.mjs` is the primitive: an exclusive
+create of `heavy-run.lock` in the lease directory, polled once a second, with a line on stderr
+naming who holds it and for how long. Reaped by liveness and the same six-hour backstop as the
+leases; inherited through `BFC_HEAVY_SLOT` so workers re-loading a config do not queue behind
+their own parent; every failure fails open to an unqueued run.
+
+| Takes the slot | Where |
+| --- | --- |
+| `pnpm test` (the unscoped Vitest suite) | root `package.json`, through [`tools/with-heavy-slot.mjs`](../tools/with-heavy-slot.mjs) |
+| `pnpm check:changed` when it widens to the full suite | the same wrapper, from `check-changed.mjs` |
+| The web Playwright suite | [`apps/web/playwright.config.ts`](../apps/web/playwright.config.ts) — from inside the config, because the documented `pnpm --filter @bombfarm/web exec playwright test …` never passes through a root script |
+| The Electron smoke suite | [`apps/desktop/playwright.config.ts`](../apps/desktop/playwright.config.ts), likewise |
+
+What deliberately does **not** take it: `pnpm check:changed`'s scoped Vitest runs, a direct
+`npx vitest run --project <name> …`, `pnpm build` / `typecheck` / `lint`. Those are minutes at
+most, already bounded by the share model, and are the runs a session makes many times an hour —
+they must never wait on a stranger's full suite. So the split is by command, not by content: a
+bare `pnpm test` queues even with a filter after it; a scoped run goes straight to `vitest`.
+
+Measured 2026-09-17: a `playwright test --list` started while another process held the slot
+printed `waiting for the heavy-run slot: pid 70208 is running vitest run (3s)`, proceeded the
+moment the holder exited, and the report showed the slot free afterwards. The holder still takes
+a lease, so scoped runs beside it keep dividing the budget correctly; the slot only serialises
+heavy against heavy.
+
 ## The budget divides work; `pnpm check:changed` shrinks it
 
 Sharing cores bounds how hard the machine works, not how much work it is asked to do. Several
@@ -118,7 +155,7 @@ Two facts it is built around, both measured 2026-09-17:
   filesystem-reading specs under `apps/web/src/tests` are left to CI.
 
 The script takes one lease for the whole sequence, so a session running it counts once against
-the budget, not once per step.
+the budget, not once per step — and takes the heavy-run slot only on the widened path.
 
 ## What this does not cover
 

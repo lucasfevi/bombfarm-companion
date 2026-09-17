@@ -76,7 +76,10 @@ pnpm test:smoke   # Windows — builds static renderer + launches Electron
 ```
 
 The full sequence is ~7 minutes through the Vitest line alone (measured 2026-09-17, machine to
-itself); several sessions running it at once are what makes the machine unusable.
+itself). `pnpm test`, the web e2e suite and the Electron smoke suite each take the machine-wide
+heavy-run slot and **queue** behind any other full run — a line on stderr says whose — so several
+sessions running them at once finish one after another instead of all at once, four times later,
+with four times the memory. Tier 1 never queues. See [`docs/machine-load.md`](docs/machine-load.md).
 
 ### The two suites neither tier includes
 

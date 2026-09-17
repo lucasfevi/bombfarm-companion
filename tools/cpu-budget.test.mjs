@@ -1,11 +1,11 @@
 import { spawnSync } from 'node:child_process';
 import esbuild from 'esbuild';
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { availableParallelism, tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { cappedWorkers, cpuLeaseReport, machineCpuBudget } from './cpu-budget.mjs';
+import { cappedWorkers, cpuLeaseReport, heavySlotHolder, machineCpuBudget, waitForHeavySlot } from './cpu-budget.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
@@ -30,6 +30,14 @@ function deadPid() {
   return pid;
 }
 
+function slotFile() {
+  return path.join(leaseDir, 'heavy-run.lock');
+}
+
+function writeSlot(holder) {
+  writeFileSync(slotFile(), JSON.stringify(holder), 'utf8');
+}
+
 function leaseFiles() {
   try {
     return readdirSync(leaseDir).filter((entry) => entry.endsWith('.json'));
@@ -39,12 +47,13 @@ function leaseFiles() {
 }
 
 beforeEach(() => {
-  saveEnv('BFC_CPU_LEASE_DIR', 'BFC_CPU_LEASE', 'BFC_CPU_BUDGET', 'CI');
+  saveEnv('BFC_CPU_LEASE_DIR', 'BFC_CPU_LEASE', 'BFC_CPU_BUDGET', 'BFC_HEAVY_SLOT', 'CI');
   leaseDir = mkdtempSync(path.join(tmpdir(), 'bfc-cpu-budget-test-'));
   process.env.BFC_CPU_LEASE_DIR = leaseDir;
   // Vitest itself claimed a lease when it loaded `vitest.workers.ts`; this process must look
   // unclaimed so the tests below exercise claiming rather than inheritance.
   delete process.env.BFC_CPU_LEASE;
+  delete process.env.BFC_HEAVY_SLOT;
   delete process.env.CI;
 });
 
@@ -245,6 +254,94 @@ describe('importability from a Playwright config', () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toBe('none');
     expect(leaseFiles()).toEqual([]);
+    expect(existsSync(slotFile())).toBe(false);
+  });
+});
+
+describe('waitForHeavySlot', () => {
+  it('takes a free slot at once and records who holds it', () => {
+    const { waitedMs } = waitForHeavySlot('vitest run');
+    expect(waitedMs).toBeLessThan(500);
+    expect(heavySlotHolder()).toMatchObject({ pid: process.pid, kind: 'vitest run' });
+    expect(process.env.BFC_HEAVY_SLOT).toBe(String(process.pid));
+  });
+
+  it('waits while a live holder has it, and reports whom it is waiting for', () => {
+    writeSlot({ pid: process.pid, kind: 'playwright:web', startedAt: Date.now() });
+    const seen = [];
+    const { waitedMs } = waitForHeavySlot('vitest run', {
+      pollMs: 20,
+      onWait: (holder) => {
+        seen.push(holder.kind);
+        rmSync(slotFile(), { force: true });
+      },
+    });
+    expect(seen).toEqual(['playwright:web']);
+    expect(waitedMs).toBeGreaterThanOrEqual(20);
+    expect(heavySlotHolder()).toMatchObject({ pid: process.pid, kind: 'vitest run' });
+  });
+
+  it('reaps a holder whose process is gone instead of waiting for it', () => {
+    writeSlot({ pid: deadPid(), kind: 'vitest run', startedAt: Date.now() });
+    const { waitedMs } = waitForHeavySlot('playwright:desktop', { pollMs: 20 });
+    expect(waitedMs).toBeLessThan(500);
+    expect(heavySlotHolder()).toMatchObject({ pid: process.pid });
+  });
+
+  it('reaps a holder older than the staleness backstop, in case its pid was recycled', () => {
+    writeSlot({ pid: process.pid, kind: 'vitest run', startedAt: Date.now() - 7 * 60 * 60 * 1000 });
+    expect(waitForHeavySlot('vitest run', { pollMs: 20 }).waitedMs).toBeLessThan(500);
+  });
+
+  it('reaps a slot file it cannot parse rather than waiting on it forever', () => {
+    writeFileSync(slotFile(), '{not json', 'utf8');
+    expect(waitForHeavySlot('vitest run', { pollMs: 20 }).waitedMs).toBeLessThan(500);
+    expect(heavySlotHolder()).toMatchObject({ pid: process.pid });
+  });
+
+  it('is inherited, so a worker re-loading the config does not queue behind its own parent', () => {
+    writeSlot({ pid: process.pid, kind: 'vitest run', startedAt: Date.now() });
+    process.env.BFC_HEAVY_SLOT = '12345';
+    expect(waitForHeavySlot('vitest run').waitedMs).toBe(0);
+    expect(heavySlotHolder()).toMatchObject({ kind: 'vitest run' });
+  });
+
+  it('is bypassed under CI, where a runner has nobody to queue behind', () => {
+    writeSlot({ pid: process.pid, kind: 'vitest run', startedAt: Date.now() });
+    process.env.CI = '1';
+    expect(waitForHeavySlot('vitest run').waitedMs).toBe(0);
+  });
+
+  it('fails open when the lease directory cannot be used', () => {
+    process.env.BFC_CPU_LEASE_DIR = path.join(leaseDir, 'not-a-dir.txt');
+    writeFileSync(process.env.BFC_CPU_LEASE_DIR, '', 'utf8');
+    expect(waitForHeavySlot('vitest run').waitedMs).toBeLessThan(500);
+  });
+
+  it('releases the slot when the holder exits, so the next full run does not wait on a ghost', () => {
+    const moduleUrl = pathToFileURL(path.join(HERE, 'cpu-budget.mjs')).href;
+    const childEnv = { ...process.env, BFC_CPU_LEASE_DIR: leaseDir };
+    delete childEnv.BFC_HEAVY_SLOT;
+    delete childEnv.CI;
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '-e',
+        `import { waitForHeavySlot, heavySlotHolder } from ${JSON.stringify(moduleUrl)};\n` +
+          `waitForHeavySlot('vitest run');\nprocess.stdout.write(String(heavySlotHolder()?.pid === process.pid));`,
+      ],
+      { encoding: 'utf8', env: childEnv },
+    );
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe('true');
+    expect(existsSync(slotFile())).toBe(false);
+  });
+
+  it('shows up in the report, so the diagnostic can say what full runs are queued behind', () => {
+    expect(cpuLeaseReport().heavySlot).toBeNull();
+    waitForHeavySlot('vitest run');
+    expect(cpuLeaseReport().heavySlot).toMatchObject({ pid: process.pid, kind: 'vitest run' });
   });
 });
 
