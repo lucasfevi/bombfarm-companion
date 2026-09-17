@@ -146,6 +146,22 @@ export function SelectedNodeCard({ node, status, gain, pricing, nodeArtSrc, node
                   </>
                 ),
               },
+              {
+                id: 'preview-gold-at-roster',
+                label: labels.previewGoldAtRoster,
+                value: (
+                  <>
+                    {labels.totalNowNext(
+                      rateGold(labels, pricing.baseline.goldPerHour),
+                      rateGold(labels, pricing.baseline.goldPerHour + gain.goldPerHourDeltaAtRoster),
+                    )}
+                    <Delta
+                      value={gain.goldPerHourDeltaAtRoster}
+                      text={labels.gainGold(gain.goldPerHourDeltaAtRoster)}
+                    />
+                  </>
+                ),
+              },
               { id: 'per-million-gold', label: labels.colPerMillion, value: labels.perMillionGold(gain.goldPerMillion) },
               ...(pricing.baseline.teamDps !== null && gain.teamDpsDelta !== null && gain.dpsPerMillion !== null
                 ? [

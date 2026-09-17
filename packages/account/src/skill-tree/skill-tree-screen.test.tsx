@@ -68,6 +68,7 @@ function labelsTagged(tag: string): SkillTreeLabels {
     preview: `${tag}-preview`,
     previewTip: `${tag}-previewTip`,
     previewGold: `${tag}-previewGold`,
+    previewGoldAtRoster: `${tag}-previewGoldAtRoster`,
     previewDps: `${tag}-previewDps`,
     totalNowNext: (now, next) => `${tag}-nowNext-${now}~${next}`,
     requires: `${tag}-requires`,
@@ -132,6 +133,7 @@ const PRICING: SkillTreePricing = {
       level: 2,
       cost: 29_387,
       goldPerHourDelta: 15,
+      goldPerHourDeltaAtRoster: 40,
       goldPerMillion: 510.4,
       teamDpsDelta: 7,
       dpsPerMillion: 238.2,
@@ -162,7 +164,7 @@ function section(html: string, testId: string): string {
   const start = html.indexOf(`data-testid="${testId}"`);
   if (start < 0) throw new Error(`no ${testId}`);
   const rest = html.slice(start + 1);
-  const end = rest.search(/data-testid="skill-tree-(?!hover-card|recommendation-|preview|selected-|dps-left-out|progress|wallet|priced-at)/);
+  const end = rest.search(/data-testid="skill-tree-(?!hover-card|recommendation-|preview|selected-|dps-left-out|progress|wallet|priced-at|at-roster-|affordable-)/);
   return end < 0 ? rest : rest.slice(0, end);
 }
 
@@ -306,6 +308,8 @@ describe('SkillTreeScreen — next to buy', () => {
     expect(html).toContain(labels.totalNowNext('2', '3'));
     expect(html).toContain(labels.goldCompact(29_387));
     expect(html).toContain(labels.gainGold(15));
+    expect(html).toContain(labels.gainGold(40));
+    expect(html).toContain('data-testid="skill-tree-at-roster-D01"');
     expect(html).toContain(labels.perMillionGold(510.4));
     expect(html).toContain(labels.affordableNow);
     expect(html).toContain('<img alt="" src="art/D01.png"');
@@ -386,6 +390,10 @@ describe('SkillTreeScreen — the selected node', () => {
       label: labels.previewGold,
       value: `${labels.totalNowNext(labels.goldCompact(10_000), labels.goldCompact(10_015))} ${labels.gainGold(15)}`,
     });
+    expect(facts).toContainEqual({
+      label: labels.previewGoldAtRoster,
+      value: `${labels.totalNowNext(labels.goldCompact(10_000), labels.goldCompact(10_040))} ${labels.gainGold(40)}`,
+    });
     expect(facts).toContainEqual({ label: labels.colPerMillion, value: labels.perMillionGold(510.4) });
     expect(facts).toContainEqual({ label: labels.previewDps, value: `${labels.totalNowNext('2000', '2007')} ${labels.gainDps(7)}` });
     expect(html).toContain(labels.gainOutsideObjectives);
@@ -395,6 +403,10 @@ describe('SkillTreeScreen — the selected node', () => {
     const labels: SkillTreeLabels = { ...labelsTagged('aa'), goldPerHour: (value) => `rate-${value}`, teamDps: (value) => `dps-${value}` };
     const facts = rows(section(render({ selectedId: 'D01', labels }), 'skill-tree-preview'));
     expect(facts).toContainEqual({ label: labels.previewGold, value: `${labels.totalNowNext('rate-10000', 'rate-10015')} ${labels.gainGold(15)}` });
+    expect(facts).toContainEqual({
+      label: labels.previewGoldAtRoster,
+      value: `${labels.totalNowNext('rate-10000', 'rate-10040')} ${labels.gainGold(40)}`,
+    });
     expect(facts).toContainEqual({ label: labels.previewDps, value: `${labels.totalNowNext('dps-2000', 'dps-2007')} ${labels.gainDps(7)}` });
   });
 

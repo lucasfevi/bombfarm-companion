@@ -94,6 +94,8 @@ export interface SkillTreeLabels {
   preview: string;
   previewTip: string;
   previewGold: string;
+  /** Gold/hr at the roster exactly as read — beside {@link previewGold}, the spread mean. */
+  previewGoldAtRoster: string;
   previewDps: string;
   /** `now → next`, for a stat total moving one level. */
   totalNowNext: (now: string, next: string) => string;

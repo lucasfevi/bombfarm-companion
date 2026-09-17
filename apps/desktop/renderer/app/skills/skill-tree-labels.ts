@@ -5,7 +5,7 @@
  */
 import type { SkillTreeLabels } from '@bombfarm/account/skill-tree';
 import type { SkillArm, SkillEffectKind, SkillTier, SkillTotals } from '@bombfarm/domain/skill-tree';
-import { formatCompactNumber, formatNumber } from '@bombfarm/ui';
+import { formatCompactNumber, formatNumber, formatSignificantCompact } from '@bombfarm/ui';
 import type { DomainLang } from '@bombfarm/contracts';
 import { sub, type Copy, type CopyKey } from '../../lib/copy';
 
@@ -193,8 +193,9 @@ export function skillTreeLabels(t: Copy, lang: DomainLang, phaseSource: SkillsPh
     preview: t.skillsPreview,
     previewTip: t.skillsPreviewTip,
     previewGold: t.skillsPreviewGold,
+    previewGoldAtRoster: t.skillsPreviewGoldAtRoster,
     previewDps: t.skillsPreviewDps,
-    goldPerHour: (value) => `${formatCompactNumber(value, lang, 1)}/h`,
+    goldPerHour: (value) => `${formatSignificantCompact(value, lang, 3)}/h`,
     teamDps: (value) => formatNumber(Math.round(value), lang, 0),
     totalNowNext: (now, next) => sub(t.skillsTotalNowNext, { now, next }),
     requires: t.skillsRequires,

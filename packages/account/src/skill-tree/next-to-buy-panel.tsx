@@ -88,7 +88,20 @@ export function NextToBuyPanel({ pricing, rows, objective, selectedId, onSelect,
                       </span>
                     </span>
                     <span className={cn(numericClass, 'text-gold')}>{labels.goldCompact(gain.cost)}</span>
-                    <span className={cn(numericClass, delta < 0 ? 'text-down' : 'text-up')}>{gainLabel(delta)}</span>
+                    <span className={cn(numericClass, 'flex', 'flex-col', 'items-end', 'gap-0.5')}>
+                      <span className={delta < 0 ? 'text-down' : 'text-up'}>{gainLabel(delta)}</span>
+                      {objective === 'goldPerHour' ? (
+                        <span
+                          className={cn(
+                            'text-[10px]',
+                            gain.goldPerHourDeltaAtRoster < 0 ? 'text-down' : 'text-muted',
+                          )}
+                          data-testid={`skill-tree-at-roster-${node.id}`}
+                        >
+                          {labels.gainGold(gain.goldPerHourDeltaAtRoster)}
+                        </span>
+                      ) : null}
+                    </span>
                     <span className={cn(numericClass, 'text-muted')}>{perMillionLabel(perMillion)}</span>
                   </button>
                 </li>
