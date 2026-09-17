@@ -36,7 +36,7 @@ effect kind for the small nodes and unlocks.
 
 - **The hub is lit from the start.** It never appears in the owned levels and always counts at its
   full level (+5% squad damage).
-- **A neighbour opens at five levels.** Every node but the hub requires one or more parents, and a
+- **A neighbour opens at five levels.** Every node but the hub requires exactly one parent, and the
   parent counts as held once it reaches five levels, or its own maximum when that is lower — a
   one-level unlock opens the next node at one.
 - **Phase gates.** A gated node cannot be bought until the account's furthest phase reaches the
