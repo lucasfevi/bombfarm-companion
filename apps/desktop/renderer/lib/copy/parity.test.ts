@@ -48,6 +48,11 @@ import { ptBR } from './pt-BR';
 // and the empty squad slot's mark is a lone question mark — no words in either.
 // pvpReplayAxisSeconds / pvpReplayLegendOpponent: a seconds axis label is a placeholder before the
 // unit letter, and the opponent's legend entry is their name before their total — no words in either.
+// skillsArmHub: "Hub" is the game's own untranslated name for the tree's centre arm, printed as-is
+// in its Portuguese interface. skillsTotalNowNext / skillsGainDps: two placeholders around an
+// arrow, and a placeholder before the DPS acronym — no words in either. skillsPerMillionGold /
+// skillsPerMillionDps: a bare placeholder, and one before the DPS acronym, under a column head
+// that carries the unit — no words in either.
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'ageShortSeconds',
   'liveMapXpPerPropLabel',
@@ -72,6 +77,11 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'pvpReplayLegendOpponent',
   'pvpRivalsRecord',
   'pvpSquadUnknownMark',
+  'skillsArmHub',
+  'skillsTotalNowNext',
+  'skillsGainDps',
+  'skillsPerMillionGold',
+  'skillsPerMillionDps',
 ];
 
 function placeholderSet(value: string): Set<string> {

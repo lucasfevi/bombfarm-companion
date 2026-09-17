@@ -29,7 +29,7 @@ import {
   VscChromeMinimize,
   VscChromeRestore,
 } from 'react-icons/vsc';
-import { PiHammer, PiSortAscending, PiSortDescending, PiSword } from 'react-icons/pi';
+import { PiGraph, PiHammer, PiSortAscending, PiSortDescending, PiSword } from 'react-icons/pi';
 import type { IconGlyph } from './types';
 
 export const uiIconRegistry = {
@@ -60,6 +60,11 @@ export const uiIconRegistry = {
   // close mark) and a trophy (reads as achievements): one blade is the one mark that means "a
   // fight" and shares no mass with the Forge hammer beside it.
   sword: PiSword,
+  // The tenth desktop tab, the Skill Tree. A hub with spokes to outlying nodes — the shape of the
+  // game's own tree — over a branching hierarchy (an org chart, reads as structure rather than
+  // growth) and a leafed tree (reads as nature). At 16px the joined dots are the one mark that
+  // means "connected nodes" and share no mass with the sparkles beside them.
+  graph: PiGraph,
   // The top bar's overflow trigger — the secondary actions, once they no longer fit beside the tabs
   'ellipsis-horizontal': HiMiniEllipsisHorizontal,
   // Inventory layout toggle — cards

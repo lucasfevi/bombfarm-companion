@@ -15,32 +15,32 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(__dirname, '..', '..');
 const ACCOUNT_FULL_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-full.json');
 
-/** Wide enough to spell every word in the bar. 1500, not the 1440 eight tabs were happy at: the
- *  ninth took the whole-bar sum to 1314, and 1440 leaves only 26px over it — inside the range a
+/** Wide enough to spell every word in the bar. 1600, not the 1500 nine tabs were happy at: the
+ *  tenth took the whole-bar sum to 1390, and 1500 leaves only 10px over it — inside the range a
  *  font-rendering pass moves. */
-const FULL_WINDOW = 1500;
-/** Inside the band where the tabs are glyphs and everything else is untouched. 1100px of bar sits
- *  72px above `SHELL_BRAND_MARK_WIDTH` (1028) and 214px below `SHELL_ICON_TABS_WIDTH` (1314) —
+const FULL_WINDOW = 1600;
+/** Inside the band where the tabs are glyphs and everything else is untouched. 1140px of bar sits
+ *  76px above `SHELL_BRAND_MARK_WIDTH` (1064) and 250px below `SHELL_ICON_TABS_WIDTH` (1390) —
  *  comfortably inside the icon-tabs band on both sides. */
-const ICON_TABS_WINDOW = 1200;
+const ICON_TABS_WINDOW = 1240;
 /** Inside the band where the brand has shrunk to its mark but the actions are still spelled out.
- *  970px of bar sits 62px above `SHELL_ACTIONS_COLLAPSE_WIDTH` (908) and 58px below
- *  `SHELL_BRAND_MARK_WIDTH` (1028) — the band the eighth tab brought within reach of "keeps every
+ *  1000px of bar sits 56px above `SHELL_ACTIONS_COLLAPSE_WIDTH` (944) and 64px below
+ *  `SHELL_BRAND_MARK_WIDTH` (1064) — the band the eighth tab brought within reach of "keeps every
  *  action its own control", which used to probe the minimum window itself. */
-const BRAND_MARK_WINDOW = 1070;
+const BRAND_MARK_WINDOW = 1100;
 /** `createMainWindow`'s own `minWidth` — the narrowest window a player can drag to. The eighth tab
  *  moved this stage from "brand mark, actions spelled out" to "actions collapsed behind the
  *  overflow": 860px of bar (960 minus the caption strip) sits under
- *  `SHELL_ACTIONS_COLLAPSE_WIDTH` (908), where it used to sit above it. */
+ *  `SHELL_ACTIONS_COLLAPSE_WIDTH` (944), where it used to sit above it. */
 const MIN_WINDOW = 960;
 /** At the real minimum itself now (see `MIN_WINDOW`'s comment) — kept as its own named constant
  *  because the two assertions that use it probe a stage description, not a coincidence of value. */
 const ACTIONS_COLLAPSED_WINDOW = 860;
-/** Narrower still, reachable only by lifting the minimum as `resize` does. The ninth glyph
+/** Narrower still, reachable only by lifting the minimum as `resize` does. The tenth glyph
  *  widened the tab strip by another 36px, taking the width at which the tabs and the overflow
- *  menu stop fitting from ~612px to ~648px — so this probe keeps the seven-tab clearance of 64px:
- *  648 + 64 = 712, rounded onto the 20px grid the loop below steps on. */
-const NARROWEST_MEASURED = 720;
+ *  menu stop fitting from ~648px to ~684px — so this probe keeps the seven-tab clearance of 64px:
+ *  684 + 64 = 748, rounded onto the 20px grid the loop below steps on. */
+const NARROWEST_MEASURED = 760;
 
 async function launchApp() {
   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-top-bar-'));
@@ -73,7 +73,7 @@ async function launchApp() {
   await expect(consentModal).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('consent-accept').click();
   await expect(consentModal).toBeHidden({ timeout: 15_000 });
-  await expect(page.locator('nav[aria-label="Main"] button')).toHaveCount(9, { timeout: 30_000 });
+  await expect(page.locator('nav[aria-label="Main"] button')).toHaveCount(10, { timeout: 30_000 });
 
   // Portuguese, because it is the binding language: its tab words and its action labels are the
   // longest either language puts in the bar, so a width that fits here fits in English too. The
@@ -297,7 +297,7 @@ test.describe('top bar — degrades as the window narrows, and never overlaps it
     await resize(app, page, NARROWEST_MEASURED);
     const rendered = await tabs(page);
 
-    expect(rendered).toHaveLength(9);
+    expect(rendered).toHaveLength(10);
     const active = rendered.filter((tab) => tab.active);
     expect(active).toHaveLength(1);
     expect(active[0].text, 'the current screen lost its name').not.toBe('');
@@ -329,6 +329,7 @@ test.describe('top bar — degrades as the window narrows, and never overlaps it
       'forge-view',
       'optimizer-view',
       'pvp-view',
+      'skills-view',
       'account-view',
       'settings-view',
     ];

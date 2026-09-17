@@ -93,7 +93,7 @@ function navButton(page, index) {
 const FARM_TAB_INDEX = 1;
 const FORGE_TAB_INDEX = 4;
 const OPTIMIZER_TAB_INDEX = 5;
-const SETTINGS_TAB_INDEX = 8;
+const SETTINGS_TAB_INDEX = 9;
 
 async function openOptimizer(page) {
   await navButton(page, OPTIMIZER_TAB_INDEX).click();

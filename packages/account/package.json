@@ -20,6 +20,10 @@
       "types": "./src/holdings/index.ts",
       "default": "./src/holdings/index.ts"
     },
+    "./skill-tree": {
+      "types": "./src/skill-tree/index.ts",
+      "default": "./src/skill-tree/index.ts"
+    },
     "./*": {
       "types": "./src/*",
       "default": "./src/*"
