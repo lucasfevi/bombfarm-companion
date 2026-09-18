@@ -27,6 +27,8 @@ export interface SkillTreeLabels {
   effectPerLevel: (kind: SkillEffectKind, perLevel: number) => string;
   /** The same effect summed at a level, e.g. `+5% squad damage at level 10`. */
   effectAtLevel: (kind: SkillEffectKind, total: number) => string;
+  /** The bare figure of an effect total — signed percent, or a signed count for the unlock kinds. */
+  effectValue: (kind: SkillEffectKind, total: number) => string;
   armName: (arm: SkillArm) => string;
   tierName: (tier: SkillTier) => string;
   /** `Level 3/10`. */
@@ -109,7 +111,15 @@ export interface SkillTreeLabels {
   previewGold: string;
   /** Gold/hr at the roster exactly as read — beside {@link previewGold}, the spread mean. */
   previewGoldAtRoster: string;
-  previewDps: string;
+  /** The combat figure's name under each objective: damage per second at the gate, or in the duel. */
+  previewGate: string;
+  previewPvp: string;
+  /** The three rows a figure is shown in: as it stands, with the node, and the change. */
+  before: string;
+  after: string;
+  change: string;
+  /** A change as a signed percentage of the before figure, `+0.5%`. */
+  percentChange: (fraction: number) => string;
   /** `now → next`, for a stat total moving one level. */
   totalNowNext: (now: string, next: string) => string;
   requires: string;

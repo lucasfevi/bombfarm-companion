@@ -4,7 +4,6 @@ import {
   EMPTY_SKILL_TOTALS,
   nodeStatus,
   type SkillEffect,
-  type SkillEffectKind,
   type SkillNodeGain,
   type SkillNodeStatus,
   type SkillPricingObjective,
@@ -48,14 +47,7 @@ export function effectTotalAt(effect: SkillEffect, level: number): number {
   return effect.perLevel * level;
 }
 
-const COUNT_KINDS: readonly SkillEffectKind[] = ['vagas_campo', 'bag_tab'];
 
-/** Signed percent to two places, or a signed count for the slot and bag-tab kinds. */
-export function formatEffectTotal(kind: SkillEffectKind, value: number): string {
-  const sign = value < 0 ? '-' : '+';
-  if (COUNT_KINDS.includes(kind)) return `${sign}${Math.abs(Math.round(value))}`;
-  return `${sign}${(Math.abs(value) * 100).toFixed(2)}%`;
-}
 
 /** The value a totals row reads with nothing bought — the game leaves such rows out. */
 export function isIdentityTotal(key: keyof SkillTotals, value: number): boolean {

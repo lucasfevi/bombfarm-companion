@@ -13,7 +13,7 @@ import {
   type SkillTreePricing,
   type SkillTreeState,
 } from '@bombfarm/domain/skill-tree';
-import { effectTotalAt, formatEffectTotal } from './node-facts';
+import { effectTotalAt } from './node-facts';
 import { SkillTreeScreen } from './skill-tree-screen';
 import type { SkillTreeLabels, SkillTreeScreenProps } from './types';
 
@@ -28,6 +28,7 @@ function labelsTagged(tag: string): SkillTreeLabels {
     kindName: (kind) => `${tag}-kind-${kind}`,
     effectPerLevel: (kind, perLevel) => `${tag}-perLevel-${kind}-${perLevel}`,
     effectAtLevel: (kind, total) => `${tag}-atLevel-${kind}-${total}`,
+    effectValue: (kind, total) => `${tag}-fx-${kind}-${total.toFixed(4)}`,
     armName: (arm) => `${tag}-arm-${arm}`,
     tierName: (tier) => `${tag}-tier-${tier}`,
     level: (level, max) => `${tag}-level-${level}/${max}`,
@@ -80,7 +81,12 @@ function labelsTagged(tag: string): SkillTreeLabels {
     previewTip: `${tag}-previewTip`,
     previewGold: `${tag}-previewGold`,
     previewGoldAtRoster: `${tag}-previewGoldAtRoster`,
-    previewDps: `${tag}-previewDps`,
+    previewGate: `${tag}-previewGate`,
+    previewPvp: `${tag}-previewPvp`,
+    before: `${tag}-before`,
+    after: `${tag}-after`,
+    change: `${tag}-change`,
+    percentChange: (fraction) => `${tag}-pct-${(fraction * 100).toFixed(1)}`,
     totalNowNext: (now, next) => `${tag}-nowNext-${now}~${next}`,
     requires: `${tag}-requires`,
     gate: `${tag}-gate`,
@@ -349,16 +355,19 @@ describe('SkillTreeScreen — next to buy', () => {
     if (node === undefined || effect === undefined) throw new Error('D01 must have an effect');
     const html = recommendationRow(render({ selectedId: 'D01' }), 'D01');
     expect(html).toContain(`data-testid="skill-tree-recommendation-detail-D01"`);
-    expect(html).toContain(
-      labels.totalNowNext(
-        formatEffectTotal(effect.kind, effectTotalAt(effect, 2)),
-        formatEffectTotal(effect.kind, effectTotalAt(effect, 3)),
-      ),
-    );
+    const before = effectTotalAt(effect, 2);
+    const after = effectTotalAt(effect, 3);
+    expect(html).toContain(labels.effectValue(effect.kind, before));
+    expect(html).toContain(labels.effectValue(effect.kind, after));
+    expect(html).toContain(labels.effectValue(effect.kind, after - before));
     expect(html).toContain(labels.kindName(effect.kind));
     expect(html).not.toContain(labels.effectPerLevel(effect.kind, effect.perLevel));
-    expect(html).toContain(labels.totalNowNext(labels.goldCompact(10_000), labels.goldCompact(10_015)));
-    expect(html).not.toContain(labels.totalNowNext(labels.goldCompact(10_000), labels.goldCompact(10_040)));
+    expect(html).toContain(labels.previewGold);
+    expect(html).toContain(labels.goldCompact(10_000));
+    expect(html).toContain(labels.goldCompact(10_015));
+    expect(html).toContain(labels.percentChange(10_015 / 10_000 - 1));
+    expect(html).not.toContain(labels.goldCompact(10_040));
+    for (const word of [labels.before, labels.after, labels.change]) expect(html).toContain(word);
   });
 
   it('keeps the expand off a row that is not selected', () => {
@@ -374,11 +383,15 @@ describe('SkillTreeScreen — next to buy', () => {
     expect(html).not.toContain(labels.gainGold(3));
   });
 
-  it('expands combat now→next from the windowed rate', () => {
+  it('expands the combat figure before / after / change, named for the objective', () => {
     const labels = labelsTagged('aa');
-    const html = recommendationRow(render({ objective: 'gateClear', selectedId: 'H03' }), 'H03');
-    expect(html).toContain('data-testid="skill-tree-recommendation-detail-H03"');
-    expect(html).toContain(labels.totalNowNext('2000', '2030'));
+    const gate = recommendationRow(render({ objective: 'gateClear', selectedId: 'H03' }), 'H03');
+    expect(gate).toContain('data-testid="skill-tree-recommendation-detail-H03"');
+    expect(gate).toContain(labels.previewGate);
+    expect(gate).toContain('>2000<');
+    expect(gate).toContain('>2030<');
+    expect(gate).toContain(labels.percentChange(2030 / 2000 - 1));
+    expect(recommendationRow(render({ objective: 'pvp', selectedId: 'H03' }), 'H03')).toContain(labels.previewPvp);
   });
 
   it('says so when there is no pricing, and when nothing gains', () => {
@@ -442,7 +455,7 @@ describe('SkillTreeScreen — the selected node', () => {
     const perLevel = node.effects[0]?.perLevel ?? 0;
     expect(facts).toContainEqual({
       label: labels.effectPerLevel('team_dmg', perLevel),
-      value: labels.totalNowNext(`+${(perLevel * 200).toFixed(2)}%`, `+${(perLevel * 300).toFixed(2)}%`),
+      value: labels.totalNowNext(labels.effectValue('team_dmg', perLevel * 2), labels.effectValue('team_dmg', perLevel * 3)),
     });
     expect(facts).toContainEqual({ label: labels.nextLevelCost, value: labels.gold(node.costs[2] ?? 0) });
     expect(facts).toContainEqual({
@@ -478,8 +491,9 @@ describe('SkillTreeScreen — the selected node', () => {
       value: `${labels.totalNowNext(labels.goldCompact(10_000), labels.goldCompact(10_040))} ${labels.gainGold(40)}`,
     });
     expect(facts).toContainEqual({ label: labels.colPerMillion, value: labels.perMillionGold(510.4) });
-    expect(facts).toContainEqual({ label: labels.previewDps, value: `${labels.totalNowNext('2000', '2007')} ${labels.gainDps(7)}` });
+    expect(facts).toContainEqual({ label: labels.previewGate, value: `${labels.totalNowNext('2000', '2007')} ${labels.gainDps(7)}` });
     expect(html).toContain(labels.gainOutsideObjectives);
+    expect(section(render({ selectedId: 'D01', objective: 'pvp' }), 'skill-tree-preview')).toContain(labels.previewPvp);
   });
 
   it('uses the host rate formatters when the bag carries them', () => {
@@ -490,7 +504,7 @@ describe('SkillTreeScreen — the selected node', () => {
       label: labels.previewGoldAtRoster,
       value: `${labels.totalNowNext('rate-10000', 'rate-10040')} ${labels.gainGold(40)}`,
     });
-    expect(facts).toContainEqual({ label: labels.previewDps, value: `${labels.totalNowNext('dps-2000', 'dps-2007')} ${labels.gainDps(7)}` });
+    expect(facts).toContainEqual({ label: labels.previewGate, value: `${labels.totalNowNext('dps-2000', 'dps-2007')} ${labels.gainDps(7)}` });
   });
 
   it('skips the DPS rows when the roster has no DPS figure', () => {
@@ -502,7 +516,7 @@ describe('SkillTreeScreen — the selected node', () => {
     };
     const html = section(render({ selectedId: 'D01', pricing }), 'skill-tree-preview');
     expect(html).toContain(labels.previewGold);
-    expect(html).not.toContain(labels.previewDps);
+    expect(html).not.toContain(labels.previewGate);
   });
 
   it('keeps the facts but drops the preview for a locked node, and says what locks it', () => {

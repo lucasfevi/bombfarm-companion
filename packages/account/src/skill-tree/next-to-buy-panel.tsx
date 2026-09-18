@@ -1,7 +1,7 @@
 import type { SkillNode, SkillNodeGain, SkillNodeStatus, SkillPricingObjective, SkillTreePricing } from '@bombfarm/domain/skill-tree';
 import { Panel, PanelHeader, cn, tipClass } from '@bombfarm/ui';
 import { AffordableCheck } from './affordable-check';
-import { effectTotalAt, formatEffectTotal, objectiveDelta, objectivePerMillion } from './node-facts';
+import { effectTotalAt, objectiveDelta, objectivePerMillion } from './node-facts';
 import type { SkillTreeLabels } from './types';
 
 export type RecommendationRow = {
@@ -38,6 +38,74 @@ function rateDps(labels: SkillTreeLabels, value: number): string {
   return labels.teamDps ? labels.teamDps(value) : String(Math.round(value));
 }
 
+type ObjectiveFigure = { title: string; before: string; after: string; change: string; tone: 'up' | 'down' };
+
+/** The objective's figure as it stands and with the node — gold/hr, or the window's damage per second. */
+function objectiveFigure(
+  pricing: SkillTreePricing,
+  gain: SkillNodeGain,
+  objective: SkillPricingObjective,
+  labels: SkillTreeLabels,
+): ObjectiveFigure | null {
+  if (objective === 'goldPerHour') {
+    const before = pricing.baseline.goldPerHour;
+    const after = before + gain.goldPerHourDelta;
+    return {
+      title: labels.previewGold,
+      before: rateGold(labels, before),
+      after: rateGold(labels, after),
+      change: labels.percentChange(before > 0 ? after / before - 1 : 0),
+      tone: gain.goldPerHourDelta < 0 ? 'down' : 'up',
+    };
+  }
+  if (pricing.baseline.teamDps === null || gain.teamDpsDelta === null) return null;
+  const before = pricing.baseline.teamDps;
+  const after = before + gain.teamDpsDelta;
+  return {
+    title: objective === 'pvp' ? labels.previewPvp : labels.previewGate,
+    before: rateDps(labels, before),
+    after: rateDps(labels, after),
+    change: labels.percentChange(before > 0 ? after / before - 1 : 0),
+    tone: gain.teamDpsDelta < 0 ? 'down' : 'up',
+  };
+}
+
+const beforeAfterRowClass = 'flex items-baseline justify-between gap-2 text-[11px]';
+
+function BeforeAfter({
+  title,
+  before,
+  after,
+  change,
+  changeTone = 'up',
+  labels,
+}: {
+  title: string;
+  before: string;
+  after: string;
+  change: string;
+  changeTone?: 'up' | 'down';
+  labels: SkillTreeLabels;
+}) {
+  return (
+    <span className={cn('flex', 'flex-col', 'gap-0.5', 'not-first:mt-2')}>
+      <span className={factLabelClass}>{title}</span>
+      <span className={beforeAfterRowClass}>
+        <span className="text-muted">{labels.before}</span>
+        <span className={cn('font-mono', 'tabular-nums')}>{before}</span>
+      </span>
+      <span className={beforeAfterRowClass}>
+        <span className="text-muted">{labels.after}</span>
+        <span className={cn('font-mono', 'font-bold', 'tabular-nums')}>{after}</span>
+      </span>
+      <span className={beforeAfterRowClass}>
+        <span className="text-muted">{labels.change}</span>
+        <span className={cn('font-mono', 'font-bold', 'tabular-nums', changeTone === 'down' ? 'text-down' : 'text-up')}>{change}</span>
+      </span>
+    </span>
+  );
+}
+
 function NextToBuyRow({
   node,
   gain,
@@ -65,13 +133,7 @@ function NextToBuyRow({
   const perMillion = objectivePerMillion(gain, objective) ?? 0;
   const gainLabel = objective === 'goldPerHour' ? labels.gainGold : labels.gainDps;
   const perMillionLabel = objective === 'goldPerHour' ? labels.perMillionGold : labels.perMillionDps;
-  const rateNow = objective === 'goldPerHour' ? rateGold(labels, pricing.baseline.goldPerHour) : pricing.baseline.teamDps === null ? null : rateDps(labels, pricing.baseline.teamDps);
-  const rateNext =
-    objective === 'goldPerHour'
-      ? rateGold(labels, pricing.baseline.goldPerHour + gain.goldPerHourDelta)
-      : pricing.baseline.teamDps === null || gain.teamDpsDelta === null
-        ? null
-        : rateDps(labels, pricing.baseline.teamDps + gain.teamDpsDelta);
+  const figure = objectiveFigure(pricing, gain, objective, labels);
   const nextLevel = Math.min(node.maxLevel, gain.level + 1);
   const buyable = status.affordable === true;
 
@@ -150,25 +212,31 @@ function NextToBuyRow({
             data-testid={`skill-tree-recommendation-detail-${node.id}`}
           >
             <span>
-              <span className={factLabelClass}>{labels.effects}</span>
-              {node.effects.map((effect) => (
-                <span key={effect.kind} className={cn('mt-1', 'block')}>
-                  <span className={cn('block', 'font-mono', 'text-xs', 'font-bold', 'tabular-nums')}>
-                    {labels.totalNowNext(
-                      formatEffectTotal(effect.kind, effectTotalAt(effect, gain.level)),
-                      formatEffectTotal(effect.kind, effectTotalAt(effect, nextLevel)),
-                    )}
-                  </span>
-                  <span className={cn('mt-0.5', 'block', 'text-[10px]', 'leading-snug', 'text-muted')}>{labels.kindName(effect.kind)}</span>
-                </span>
-              ))}
+              {node.effects.map((effect) => {
+                const before = effectTotalAt(effect, gain.level);
+                const after = effectTotalAt(effect, nextLevel);
+                return (
+                  <BeforeAfter
+                    key={effect.kind}
+                    title={labels.kindName(effect.kind)}
+                    before={labels.effectValue(effect.kind, before)}
+                    after={labels.effectValue(effect.kind, after)}
+                    change={labels.effectValue(effect.kind, after - before)}
+                    labels={labels}
+                  />
+                );
+              })}
             </span>
             <span className={cn('border-l', 'border-line', 'pl-3')}>
-              <span className={factLabelClass}>{objective === 'goldPerHour' ? labels.previewGold : labels.previewDps}</span>
-              {rateNow !== null && rateNext !== null ? (
-                <span className={cn('mt-1', 'block', 'font-mono', 'text-xs', 'font-bold', 'tabular-nums')}>
-                  {labels.totalNowNext(rateNow, rateNext)}
-                </span>
+              {figure ? (
+                <BeforeAfter
+                  title={figure.title}
+                  before={figure.before}
+                  after={figure.after}
+                  change={figure.change}
+                  changeTone={figure.tone}
+                  labels={labels}
+                />
               ) : null}
             </span>
           </span>

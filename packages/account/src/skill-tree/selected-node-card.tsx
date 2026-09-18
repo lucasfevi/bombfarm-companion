@@ -3,6 +3,7 @@ import {
   type SkillNode,
   type SkillNodeGain,
   type SkillNodeStatus,
+  type SkillPricingObjective,
   type SkillTreePricing,
 } from '@bombfarm/domain/skill-tree';
 import { GoldValue } from '@bombfarm/game-art';
@@ -19,7 +20,7 @@ import {
   type StatListItem,
 } from '@bombfarm/ui';
 import { AffordableCheck } from './affordable-check';
-import { effectTotalAt, formatEffectTotal } from './node-facts';
+import { effectTotalAt } from './node-facts';
 import type { SkillTreeLabels } from './types';
 
 export type SelectedNodeCardProps = {
@@ -27,6 +28,7 @@ export type SelectedNodeCardProps = {
   status: SkillNodeStatus;
   gain: SkillNodeGain | null;
   pricing: SkillTreePricing | null;
+  objective: SkillPricingObjective;
   nodeById: ReadonlyMap<string, SkillNode>;
   statuses: ReadonlyMap<string, SkillNodeStatus>;
   nodeArtSrc: (node: SkillNode) => string | null;
@@ -130,6 +132,7 @@ export function SelectedNodeCard({
   status,
   gain,
   pricing,
+  objective,
   nodeById,
   statuses,
   nodeArtSrc,
@@ -149,8 +152,8 @@ export function SelectedNodeCard({
     id: effect.kind,
     label: labels.effectPerLevel(effect.kind, effect.perLevel),
     value: labels.totalNowNext(
-      formatEffectTotal(effect.kind, effectTotalAt(effect, status.level)),
-      formatEffectTotal(effect.kind, effectTotalAt(effect, nextLevel)),
+      labels.effectValue(effect.kind, effectTotalAt(effect, status.level)),
+      labels.effectValue(effect.kind, effectTotalAt(effect, nextLevel)),
     ),
   }));
 
@@ -276,7 +279,7 @@ export function SelectedNodeCard({
                 ? [
                     {
                       id: 'preview-dps',
-                      label: labels.previewDps,
+                      label: objective === 'pvp' ? labels.previewPvp : labels.previewGate,
                       value: (
                         <>
                           {labels.totalNowNext(

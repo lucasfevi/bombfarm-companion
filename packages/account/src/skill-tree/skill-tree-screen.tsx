@@ -139,6 +139,7 @@ export function SkillTreeScreen({
                 status={selectedStatus}
                 gain={selectedGain}
                 pricing={pricing}
+                objective={objective}
                 nodeById={nodeById}
                 statuses={statuses}
                 nodeArtSrc={nodeArtSrc}
@@ -156,14 +157,14 @@ export function SkillTreeScreen({
 
         <div className="flex min-h-0 min-w-0 flex-col gap-2.5 min-[960px]:overflow-y-auto min-[960px]:pr-0.5">
           <Panel data-testid="skill-tree-header">
-            <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+            <div className="flex flex-col gap-2">
               <FactTile size="headline" label={labels.wallet} value={state.gold === null ? '—' : labels.gold(state.gold)} valueClassName="text-gold" data-testid="skill-tree-wallet" />
               {pricedAt ? (
                 <p className={cn('m-0', 'text-[11px]', 'text-muted')} data-testid="skill-tree-priced-at">
                   {pricedAt}
                 </p>
               ) : null}
-              <div className={cn('flex', 'flex-wrap', 'items-end', 'gap-2')}>
+              <div className={cn('flex', 'flex-wrap', 'items-center', 'gap-2')}>
                 <SegmentedToggle
                   ariaLabel={labels.nextToBuy}
                   value={objective}
@@ -173,7 +174,7 @@ export function SkillTreeScreen({
                   options={objectives.map((id) => ({ id, label: objectiveLabel(id, labels) }))}
                 />
                 {objective === 'gateClear' ? (
-                  <div data-testid="skill-tree-gate-phase" className="w-52">
+                  <div data-testid="skill-tree-gate-phase" className="min-w-44 flex-1">
                     <SearchSelect
                       aria-label={labels.gatePhaseSelect}
                       options={gateOptions}
