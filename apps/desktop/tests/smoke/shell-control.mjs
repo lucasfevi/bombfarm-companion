@@ -33,6 +33,32 @@ export async function shellControl(page, testId) {
   return page.getByTestId(folded);
 }
 
+const LANGUAGE_TOGGLE_WORD = { pt: 'PT', en: 'EN' };
+const LANGUAGE_IN_OVERFLOW = { pt: 'shell-overflow-language-pt', en: 'shell-overflow-language-en' };
+
+/**
+ * Switches the interface language through the bar, wherever the bar has put the switch: the
+ * inline PT / EN toggle on a wide window, the radio items inside the overflow menu on a narrow
+ * one. The tenth tab put the CI runner's default window under the width the actions fold at, so
+ * a spec that clicked the inline toggle passed on a wide desk and timed out on the runner.
+ */
+export async function switchLanguage(page, language) {
+  const inline = page.locator('[role="group"] button', { hasText: LANGUAGE_TOGGLE_WORD[language] });
+  if ((await inline.count()) > 0) {
+    await inline.click();
+    return;
+  }
+  const menu = page.getByTestId('shell-overflow-menu');
+  if ((await menu.count()) === 0) {
+    await page.getByTestId('shell-overflow').click();
+    await menu.waitFor({ state: 'visible', timeout: 10_000 });
+  }
+  await page.getByTestId(LANGUAGE_IN_OVERFLOW[language]).click();
+  // A radio item does not close the menu it sits in, and an open menu makes the page beneath
+  // inert — the next tab click would wait on it forever.
+  await closeShellOverflow(page);
+}
+
 /**
  * Shuts the overflow menu if a lookup opened one, and does nothing on the flat bar.
  *

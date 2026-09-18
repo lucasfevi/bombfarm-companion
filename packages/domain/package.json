@@ -32,6 +32,10 @@
       "types": "./dist/team-plan/index.d.ts",
       "import": "./dist/team-plan/index.js"
     },
+    "./skill-tree": {
+      "types": "./dist/skill-tree/index.d.ts",
+      "import": "./dist/skill-tree/index.js"
+    },
     "./data/*": "./dist/data/*",
     "./*": {
       "types": "./dist/*.d.ts",

@@ -51,6 +51,24 @@ export function formatCompactNumber(value: number, lang: Lang, decimals = 1): st
   return formatNumber(value, lang, decimals);
 }
 
+/**
+ * Compact form that keeps `digits` significant figures, including trailing zeros that still
+ * count: `4_300_000` → `4.30m`, `3900` → `3.90k`. Rates that print `4.3m/h → 4.3m/h` at one
+ * decimal become readable as `4.30m/h`. A non-finite value is an em dash.
+ */
+export function formatSignificantCompact(value: number, lang: Lang, digits = 3): string {
+  if (!Number.isFinite(value)) return '—';
+  const sign = value < 0 ? '-' : '';
+  const abs = Math.abs(value);
+  const unit = abs >= 1_000_000_000 ? 1_000_000_000 : abs >= 1_000_000 ? 1_000_000 : abs >= 1_000 ? 1_000 : 1;
+  const suffix = unit === 1_000_000_000 ? 'bi' : unit === 1_000_000 ? 'm' : unit === 1_000 ? 'k' : '';
+  const scaled = unit === 1 ? abs : abs / unit;
+  if (scaled === 0) return `0${suffix}`;
+  const decimals = Math.max(0, digits - Math.floor(Math.log10(scaled)) - 1);
+  if (unit === 1 && Number.isInteger(value) && decimals === 0) return String(value);
+  return `${sign}${formatNumber(scaled, lang, decimals)}${suffix}`;
+}
+
 /** A number formatter with one signature: `(n, decimals?)`. */
 export type BoundNumberFormat = (value: number, decimals?: number) => string;
 

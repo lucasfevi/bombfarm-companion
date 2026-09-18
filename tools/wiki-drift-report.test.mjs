@@ -195,8 +195,12 @@ describe('ARTIFACT_BACKED_SECTIONS — the itens mapping is measured, not assume
     expect(ARTIFACT_BACKED_SECTIONS['data.itens']).toContain('packages/domain/src/data/catalog.json');
   });
 
-  it('data.skill_tree backs no committed artifact today — absent from the map', () => {
-    expect(ARTIFACT_BACKED_SECTIONS['data.skill_tree']).toBeUndefined();
+  it('data.skill_tree is a backed section pointing at skill-tree.json', () => {
+    expect(ARTIFACT_BACKED_SECTIONS['data.skill_tree']).toContain('packages/domain/src/data/skill-tree.json');
+  });
+
+  it('data.bolsa backs no committed artifact today — absent from the map', () => {
+    expect(ARTIFACT_BACKED_SECTIONS['data.bolsa']).toBeUndefined();
   });
 });
 
@@ -293,7 +297,7 @@ describe('renderIssueBody — the issue names where the differing values are com
 
   it('omits the block entirely when nothing that differs backs a committed file', () => {
     const body = renderIssueBody({
-      diffs: [sectionChangedDiff('data', 'skill_tree')],
+      diffs: [sectionChangedDiff('data', 'bolsa')],
       observedAt: '2026-08-14T05:17:00.000Z',
       runUrl: 'https://example.invalid/run',
     });
@@ -313,16 +317,16 @@ describe('renderIssueBody — the issue names where the differing values are com
 
 describe('drift confined to a section that backs no committed artifact is still reported', () => {
   it('names a section that backs no committed artifact in the body, and does not suppress the alert', () => {
-    const diffs = [sectionChangedDiff('data', 'skill_tree')];
+    const diffs = [sectionChangedDiff('data', 'bolsa')];
     const body = renderIssueBody({ diffs, observedAt: '2026-08-14T05:17:00.000Z', runUrl: 'https://example.invalid/run' });
     expect(body).toMatch(/no.*differing sections back a committed companion artifact/i);
     // Not suppressed: the table and the title still carry the diff.
-    expect(body).toContain('data.skill_tree');
+    expect(body).toContain('data.bolsa');
     expect(renderIssueTitle(diffs)).toBe('Wiki data drift — 1 section(s) differ');
   });
 
   it('a drift confined to unbacked sections still summarises as outcome: drift', () => {
-    const diffs = [sectionChangedDiff('data', 'skill_tree')];
+    const diffs = [sectionChangedDiff('data', 'bolsa')];
     const text = renderSummary({ outcome: 'drift', diffs });
     expect(text).toMatch(/^outcome: drift$/m);
   });

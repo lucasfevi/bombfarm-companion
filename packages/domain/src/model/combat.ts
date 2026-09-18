@@ -111,3 +111,20 @@ export function activeDps(hero: HeroSheet, context: Context): number {
 export function gateDamage(hero: HeroSheet, context: Context, gateSeconds: number): number {
   return activeDps(hero, context) * Math.min(fieldSeconds(hero, context), gateSeconds);
 }
+
+/**
+ * On-field seconds over a repeating deploy/rest cycle that starts at full energy.
+ * Rest of 0 is one stint — the same cap `gateDamage` uses — not an infinite duty cycle.
+ */
+export function fieldTimeInWindow(fieldSecondsValue: number, restSeconds: number, windowSeconds: number): number {
+  if (!(windowSeconds > 0) || !(fieldSecondsValue > 0)) return 0;
+  if (!(restSeconds > 0)) return Math.min(fieldSecondsValue, windowSeconds);
+  const cycle = fieldSecondsValue + restSeconds;
+  const fullCycles = Math.floor(windowSeconds / cycle);
+  const remainder = windowSeconds - fullCycles * cycle;
+  return fullCycles * fieldSecondsValue + Math.min(fieldSecondsValue, remainder);
+}
+
+export function windowedDamage(active: number, fieldSecondsValue: number, restSeconds: number, windowSeconds: number): number {
+  return active * fieldTimeInWindow(fieldSecondsValue, restSeconds, windowSeconds);
+}

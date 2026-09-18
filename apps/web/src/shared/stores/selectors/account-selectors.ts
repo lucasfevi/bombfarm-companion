@@ -152,6 +152,7 @@ export function selectAccountShared(state: PlannerStore): AccountShared {
       ? { missingRequiredFields: state.missingRequiredFields }
       : {}),
     ...(state.importedAt != null ? { importedAt: state.importedAt } : {}),
+    ...(state.skillTree != null ? { skillTree: state.skillTree } : {}),
   };
   return accountSharedCache;
 }
@@ -188,6 +189,7 @@ export function selectAccountTuple(state: PlannerStore) {
     state.accountId,
     state.missingRequiredFields,
     state.importedAt,
+    state.skillTree,
   ] as const;
 }
 

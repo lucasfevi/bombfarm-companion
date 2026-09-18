@@ -28,6 +28,7 @@ import * as market from '@/shared/i18n/namespaces/market';
 import * as inventory from '@/shared/i18n/namespaces/inventory';
 import * as download from '@/shared/i18n/namespaces/download';
 import * as home from '@/shared/i18n/namespaces/home';
+import * as skills from '@/shared/i18n/namespaces/skills';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
 /**
@@ -950,6 +951,9 @@ const KEYS_ADDED: readonly string[] = [
   // Nine cards fill three columns exactly; a spacer squares the two-column grid. One line: this
   // file sits at its cap.
   'downloadScreenPvpTitle', 'downloadScreenPvpItem1', 'downloadScreenPvpItem2', 'downloadScreenPvpItem3', 'downloadScreenPvpItem4',
+  // The download page's tenth screen card (2026-09-17): the desktop's Skill Tree tab. Ten cards
+  // fill two columns exactly; two spacers square the three-column grid. One line: at the cap.
+  'downloadScreenSkillsTitle', 'downloadScreenSkillsItem1', 'downloadScreenSkillsItem2', 'downloadScreenSkillsItem3', 'downloadScreenSkillsItem4',
   // The Optimizer's forge queue (2026-09-13): every forge chore among a hero's proposed items,
   // drawn as its ladder and priced from the forge table. One line: this file sits at its cap.
   'teamPlanForgeQueueHeading', 'teamPlanForgeQueueLadderAria', 'teamPlanForgeQueueRolls', 'teamPlanForgeQueueSafeJumpOne', 'teamPlanForgeQueueSafeJumpMany', 'teamPlanForgeQueueGold', 'teamPlanForgeQueueTotal', 'teamPlanForgeQueueNoForecast', 'teamPlanForgeQueueLegend',
@@ -961,6 +965,10 @@ const KEYS_ADDED: readonly string[] = [
   // The number spinner's step-up/step-down accessible names (the level control on the hero strip):
   // the design-system Num now takes them as props instead of baking in English. One line for the cap.
   'levelStepUp', 'levelStepDown',
+  // Skill Tree page (2026-09-17): the imported save's tree, as the game draws it, with what each
+  // next level is worth. One compact block — this file sits at its line cap.
+  'navSkills', 'skillsTitle', 'skillsTip', 'skillsUnreadableTitle', 'skillsUnreadableDescription', 'skillsArmHub', 'skillsArmDano', 'skillsArmCrit', 'skillsArmVelocidade', 'skillsArmOuro', 'skillsArmDrop', 'skillsArmEnergia', 'skillsArmGeo', 'skillsArmNeutro', 'skillsTierStart', 'skillsTierSmall', 'skillsTierNotavel', 'skillsTierUnlock', 'skillsKindTeamDmg', 'skillsKindCritChance', 'skillsKindCritDmg', 'skillsKindSpeed', 'skillsKindCoin', 'skillsKindLuck', 'skillsKindEnergia', 'skillsKindXp', 'skillsKindGeo', 'skillsKindFieldSlot', 'skillsKindBagTab', 'skillsEffectTeamDmg', 'skillsEffectCritChance', 'skillsEffectCritDmg', 'skillsEffectSpeed', 'skillsEffectCoin', 'skillsEffectLuck', 'skillsEffectEnergia', 'skillsEffectXp', 'skillsEffectGeo', 'skillsEffectFieldSlot', 'skillsEffectBagTab', 'skillsLevel', 'skillsHubName', 'skillsHubNote', 'skillsStateOwned', 'skillsStateMaxed', 'skillsStateBuyable', 'skillsStateUnaffordable', 'skillsStateLockedPrerequisite', 'skillsStateLockedPhase', 'skillsAlwaysLit', 'skillsNextLevelCost', 'skillsCostToMax', 'skillsRefund', 'skillsRefundTip', 'skillsRefundBlocked', 'skillsWallet', 'skillsGoldAmount', 'skillsNextToBuy', 'skillsNextToBuyTip', 'skillsObjectiveGold', 'skillsObjectiveGate', 'skillsObjectivePvp', 'skillsColNode', 'skillsColCost', 'skillsColGain', 'skillsColPerMillion', 'skillsGainDps', 'skillsPerMillionGold', 'skillsPerMillionDps', 'skillsGainOutsideObjectives', 'skillsNothingToRecommend', 'skillsPvpEmpty', 'skillsPricingUnavailable', 'skillsPricedAtPhase', 'skillsPricedAtAccountPhase', 'skillsPricedAtGate', 'skillsPricedAtPvp', 'skillsGatePhaseSelect', 'skillsGatePhaseSearchPlaceholder', 'skillsGatePhaseNoMatch', 'skillsGatePhaseMoreMatches',
+  'skillsNodeTitleC07', 'skillsNodeTitleC12', 'skillsNodeTitleD07', 'skillsNodeTitleD12', 'skillsNodeTitleE07', 'skillsNodeTitleE11', 'skillsNodeTitleN01', 'skillsNodeTitleN03', 'skillsNodeTitleN05', 'skillsNodeTitleN07', 'skillsNodeTitleN09', 'skillsNodeTitleN11', 'skillsNodeTitleN13', 'skillsNodeTitleN15', 'skillsNodeTitleO08', 'skillsNodeTitleO12', 'skillsNodeTitleP01', 'skillsNodeTitleP02', 'skillsNodeTitleP03', 'skillsNodeTitleP04', 'skillsNodeTitleP05', 'skillsNodeTitleP06', 'skillsNodeTitleP07', 'skillsNodeTitleS02', 'skillsNodeTitleS05', 'skillsNodeTitleS07', 'skillsNodeTitleS11', 'skillsNodeTitleT01', 'skillsNodeTitleT02', 'skillsNodeTitleT03', 'skillsNodeTitleT04', 'skillsNodeTitleT05', 'skillsNodeTitleT06', 'skillsNodeTitleV08', 'skillsNodeTitleV13', 'skillsDpsLeftOut', 'skillsAffordableNow', 'skillsCloseNode', 'skillsPreview', 'skillsPreviewTip', 'skillsPreviewGold', 'skillsPreviewGate', 'skillsPreviewPvp', 'skillsTotalNowNext', 'skillsRequires', 'skillsGate', 'skillsArm', 'skillsTier', 'skillsEffects', 'skillsTotals', 'skillsTotalsTip', 'skillsTotalTeamDmg', 'skillsTotalCritChance', 'skillsTotalCritDmg', 'skillsTotalSpeed', 'skillsTotalCoin', 'skillsTotalLuck', 'skillsTotalEnergia', 'skillsTotalDmgStatic', 'skillsTotalGeo', 'skillsTotalXp', 'skillsTotalFieldSlots', 'skillsTotalBagTabs', 'skillsLevelsBought', 'skillsCountOf', 'skillsGoldSpent', 'skillsGoldToMax', 'skillsFitToView', 'skillsZoomIn', 'skillsZoomOut', 'skillsLegend', 'skillsLegendOwned', 'skillsLegendBuyable', 'skillsLegendUnaffordable', 'skillsLegendLocked', 'skillsLegendRecommended', 'skillsCanvasAria', 'skillsNodeAria',
 ];
 
 /**
@@ -1171,7 +1179,7 @@ const namespaces = [
   ['stats', stats],
   ['market', market],
   ['inventory', inventory],
-  ['download', download], ['home', home],
+  ['download', download], ['home', home], ['skills', skills],
 ] as const;
 
 describe('i18n split parity', () => {

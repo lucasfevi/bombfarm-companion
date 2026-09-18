@@ -34,6 +34,13 @@
     "cardHeadline": ["Everything your save carries,", "not just what is equipped."],
     "cardChips": ["Gear & sets", "Gems & keys", "Skill stones", "House parts"]
   },
+  "skills": {
+    "eyebrow": "Skill Tree",
+    "title": "Skill Tree — Bomb Farm Companion",
+    "description": "Your Bomb Farm skill tree as the game draws it — every node you own, what the next level costs, and what it is worth to gold per hour or team DPS. Free, and the save never leaves your browser.",
+    "cardHeadline": ["Your tree, as the game", "draws it."],
+    "cardChips": ["Owned levels", "Next to buy", "Gold/hr or DPS", "Tree totals"]
+  },
   "account": {
     "eyebrow": "Account",
     "title": "Account — Bomb Farm Companion",

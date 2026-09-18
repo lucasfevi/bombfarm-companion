@@ -60,6 +60,8 @@ export {
   clampPenPct,
   predictHitDamage,
   fieldSeconds,
+  fieldTimeInWindow,
+  windowedDamage,
   sustainedDps,
   activeDps,
   gateDamage,

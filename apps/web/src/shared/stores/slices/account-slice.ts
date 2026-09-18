@@ -77,6 +77,7 @@ export type AccountSlice = {
   missingRequiredFields: readonly RequiredAccountField[] | null;
   /** Epoch ms of the last import; `null` until one happens in this browser. */
   importedAt: number | null;
+  skillTree: AccountShared['skillTree'] | null;
 
   setHouseIdx: (value: number) => void;
   setHouseLevel: (value: number) => void;
@@ -126,6 +127,7 @@ export const createAccountSlice: StateCreator<
   accountId: null,
   missingRequiredFields: null,
   importedAt: null,
+  skillTree: null,
 
   setHouseIdx: (value) => {
     if (get().houseIdx === value) return;
@@ -188,6 +190,7 @@ export const createAccountSlice: StateCreator<
       accountId: shared.accountId ?? null,
       missingRequiredFields: shared.missingRequiredFields ?? null,
       importedAt: shared.importedAt ?? null,
+      skillTree: shared.skillTree ?? null,
     });
   },
 
@@ -259,6 +262,13 @@ export const createAccountSlice: StateCreator<
     // is over even when the caller supplies no verdict.
     patch.missingRequiredFields = missingRequired ?? [];
     patch.importedAt = Date.now();
+    patch.skillTree = data.skillTree
+      ? {
+          levels: { ...data.skillTree.levels },
+          refunds: { ...data.skillTree.refunds },
+          gold: data.skillTree.gold,
+        }
+      : null;
     if (Object.keys(patch).length > 0) set(patch);
   },
 });

@@ -1,0 +1,5253 @@
+{
+  "version": 8,
+  "total": 132,
+  "fieldBaseSlots": 1,
+  "fieldSize": 9,
+  "nodes": [
+    {
+      "id": "H00",
+      "name": "Reator de Detonação",
+      "arm": "hub",
+      "tier": "start",
+      "ring": 0,
+      "maxLevel": 1,
+      "effects": [
+        {
+          "kind": "team_dmg",
+          "perLevel": 0.05
+        }
+      ],
+      "costs": [
+        0
+      ],
+      "refunds": [
+        0
+      ],
+      "gatePhase": 0,
+      "requires": [],
+      "note": "O coração da árvore — aceso desde o início (+5% de dano do esquadrão)."
+    },
+    {
+      "id": "H01",
+      "name": "Dano do Esquadrão",
+      "arm": "dano",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_dmg",
+          "perLevel": 0.005
+        }
+      ],
+      "costs": [
+        3000,
+        3628,
+        4388,
+        5307,
+        6419,
+        7763,
+        9389,
+        11356,
+        13734,
+        16611
+      ],
+      "refunds": [
+        1500,
+        1814,
+        2194,
+        2653,
+        3209,
+        3881,
+        4694,
+        5678,
+        6867,
+        8305
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "H00"
+      ]
+    },
+    {
+      "id": "H02",
+      "name": "Chance Crítica",
+      "arm": "crit",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_crit_chance",
+          "perLevel": 0.001237320657
+        }
+      ],
+      "costs": [
+        3000,
+        3628,
+        4388,
+        5307,
+        6419,
+        7763,
+        9389,
+        11356,
+        13734,
+        16611
+      ],
+      "refunds": [
+        1500,
+        1814,
+        2194,
+        2653,
+        3209,
+        3881,
+        4694,
+        5678,
+        6867,
+        8305
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "H00"
+      ]
+    },
+    {
+      "id": "H03",
+      "name": "Velocidade",
+      "arm": "velocidade",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_speed",
+          "perLevel": 0.0004728156
+        }
+      ],
+      "costs": [
+        3000,
+        3591,
+        4297,
+        5143,
+        6156,
+        7367,
+        8817,
+        10553,
+        12630,
+        15116
+      ],
+      "refunds": [
+        1500,
+        1795,
+        2148,
+        2571,
+        3078,
+        3683,
+        4408,
+        5276,
+        6315,
+        7558
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "H00"
+      ]
+    },
+    {
+      "id": "H04",
+      "name": "Ouro por Alvo",
+      "arm": "ouro",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_coin",
+          "perLevel": 0.00625
+        }
+      ],
+      "costs": [
+        3000,
+        3587,
+        4289,
+        5129,
+        6133,
+        7334,
+        8769,
+        10485,
+        12538,
+        14992
+      ],
+      "refunds": [
+        1500,
+        1793,
+        2144,
+        2564,
+        3066,
+        3667,
+        4384,
+        5242,
+        6269,
+        7496
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "H00"
+      ]
+    },
+    {
+      "id": "H05",
+      "name": "Sorte",
+      "arm": "drop",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_luck",
+          "perLevel": 0.0011275636
+        }
+      ],
+      "costs": [
+        3000,
+        3629,
+        4389,
+        5308,
+        6420,
+        7765,
+        9392,
+        11360,
+        13740,
+        16618
+      ],
+      "refunds": [
+        1500,
+        1814,
+        2194,
+        2654,
+        3210,
+        3882,
+        4696,
+        5680,
+        6870,
+        8309
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "H00"
+      ]
+    },
+    {
+      "id": "H06",
+      "name": "Energia do Herói",
+      "arm": "energia",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_energia",
+          "perLevel": 0.0058050847
+        }
+      ],
+      "costs": [
+        3000,
+        3628,
+        4388,
+        5307,
+        6419,
+        7763,
+        9389,
+        11356,
+        13734,
+        16611
+      ],
+      "refunds": [
+        1500,
+        1814,
+        2194,
+        2653,
+        3209,
+        3881,
+        4694,
+        5678,
+        6867,
+        8305
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "H00"
+      ]
+    },
+    {
+      "id": "H08",
+      "name": "Dano Composto",
+      "arm": "geo",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_geo",
+          "perLevel": 0.001459356
+        }
+      ],
+      "costs": [
+        3000,
+        3759,
+        4711,
+        5903,
+        7397,
+        9270,
+        11616,
+        14556,
+        18240,
+        22857
+      ],
+      "refunds": [
+        1500,
+        1879,
+        2355,
+        2951,
+        3698,
+        4635,
+        5808,
+        7278,
+        9120,
+        11428
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "H00"
+      ]
+    },
+    {
+      "id": "N01",
+      "name": "Vaga de Campo I",
+      "arm": "neutro",
+      "tier": "unlock",
+      "ring": 1,
+      "maxLevel": 1,
+      "effects": [
+        {
+          "kind": "vagas_campo",
+          "perLevel": 1.0
+        }
+      ],
+      "costs": [
+        3000
+      ],
+      "refunds": [
+        1500
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "H00"
+      ],
+      "note": "+1 herói em campo (→2)."
+    },
+    {
+      "id": "N02",
+      "name": "XP do Esquadrão",
+      "arm": "neutro",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "team_xp",
+          "perLevel": 0.01
+        }
+      ],
+      "costs": [
+        13971,
+        19930,
+        28431,
+        40557,
+        57856
+      ],
+      "refunds": [
+        6985,
+        9965,
+        14215,
+        20278,
+        28928
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "N01"
+      ]
+    },
+    {
+      "id": "N03",
+      "name": "Vaga de Campo II",
+      "arm": "neutro",
+      "tier": "unlock",
+      "ring": 1,
+      "maxLevel": 1,
+      "effects": [
+        {
+          "kind": "vagas_campo",
+          "perLevel": 1.0
+        }
+      ],
+      "costs": [
+        68828
+      ],
+      "refunds": [
+        34414
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "N02"
+      ],
+      "note": "+1 herói em campo (→3)."
+    },
+    {
+      "id": "N04",
+      "name": "XP do Esquadrão",
+      "arm": "neutro",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "team_xp",
+          "perLevel": 0.012
+        }
+      ],
+      "costs": [
+        79799,
+        89038,
+        99347,
+        110850,
+        123684
+      ],
+      "refunds": [
+        39899,
+        44519,
+        49673,
+        55425,
+        61842
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "N03"
+      ]
+    },
+    {
+      "id": "N05",
+      "name": "Vaga de Campo III",
+      "arm": "neutro",
+      "tier": "unlock",
+      "ring": 2,
+      "maxLevel": 1,
+      "effects": [
+        {
+          "kind": "vagas_campo",
+          "perLevel": 1.0
+        }
+      ],
+      "costs": [
+        134655
+      ],
+      "refunds": [
+        67327
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "N04"
+      ],
+      "note": "(→4)."
+    },
+    {
+      "id": "N06",
+      "name": "XP do Esquadrão",
+      "arm": "neutro",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "team_xp",
+          "perLevel": 0.014
+        }
+      ],
+      "costs": [
+        145627,
+        155539,
+        166127,
+        177434,
+        189512
+      ],
+      "refunds": [
+        72813,
+        77769,
+        83063,
+        88717,
+        94756
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "N05"
+      ]
+    },
+    {
+      "id": "N07",
+      "name": "Vaga de Campo IV",
+      "arm": "neutro",
+      "tier": "unlock",
+      "ring": 2,
+      "maxLevel": 1,
+      "effects": [
+        {
+          "kind": "vagas_campo",
+          "perLevel": 1.0
+        }
+      ],
+      "costs": [
+        200483
+      ],
+      "refunds": [
+        100241
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "N06"
+      ],
+      "note": "(→5)."
+    },
+    {
+      "id": "N08",
+      "name": "XP do Esquadrão",
+      "arm": "neutro",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "team_xp",
+          "perLevel": 0.016
+        }
+      ],
+      "costs": [
+        211454,
+        221662,
+        232363,
+        243580,
+        255340
+      ],
+      "refunds": [
+        105727,
+        110831,
+        116181,
+        121790,
+        127670
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "N07"
+      ]
+    },
+    {
+      "id": "N09",
+      "name": "Vaga de Campo V",
+      "arm": "neutro",
+      "tier": "unlock",
+      "ring": 3,
+      "maxLevel": 1,
+      "effects": [
+        {
+          "kind": "vagas_campo",
+          "perLevel": 1.0
+        }
+      ],
+      "costs": [
+        266311
+      ],
+      "refunds": [
+        133155
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "N08"
+      ],
+      "note": "(→6)."
+    },
+    {
+      "id": "N10",
+      "name": "XP do Esquadrão",
+      "arm": "neutro",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "team_xp",
+          "perLevel": 0.018
+        }
+      ],
+      "costs": [
+        277282,
+        287656,
+        298419,
+        309584,
+        321167
+      ],
+      "refunds": [
+        138641,
+        143828,
+        149209,
+        154792,
+        160583
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "N09"
+      ]
+    },
+    {
+      "id": "N11",
+      "name": "Vaga de Campo VI",
+      "arm": "neutro",
+      "tier": "unlock",
+      "ring": 3,
+      "maxLevel": 1,
+      "effects": [
+        {
+          "kind": "vagas_campo",
+          "perLevel": 1.0
+        }
+      ],
+      "costs": [
+        332139
+      ],
+      "refunds": [
+        166069
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "N10"
+      ],
+      "note": "(→7)."
+    },
+    {
+      "id": "N12",
+      "name": "XP do Esquadrão",
+      "arm": "neutro",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "team_xp",
+          "perLevel": 0.02
+        }
+      ],
+      "costs": [
+        343110,
+        353591,
+        364392,
+        375524,
+        386995
+      ],
+      "refunds": [
+        171555,
+        176795,
+        182196,
+        187762,
+        193497
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "N11"
+      ]
+    },
+    {
+      "id": "N13",
+      "name": "Vaga de Campo VII",
+      "arm": "neutro",
+      "tier": "unlock",
+      "ring": 3,
+      "maxLevel": 1,
+      "effects": [
+        {
+          "kind": "vagas_campo",
+          "perLevel": 1.0
+        }
+      ],
+      "costs": [
+        397966
+      ],
+      "refunds": [
+        198983
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "N12"
+      ],
+      "note": "(→8)."
+    },
+    {
+      "id": "N14",
+      "name": "XP do Esquadrão",
+      "arm": "neutro",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "team_xp",
+          "perLevel": 0.022
+        }
+      ],
+      "costs": [
+        408937,
+        419493,
+        430321,
+        441428,
+        452823
+      ],
+      "refunds": [
+        204468,
+        209746,
+        215160,
+        220714,
+        226411
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "N13"
+      ]
+    },
+    {
+      "id": "N15",
+      "name": "Vaga de Campo VIII",
+      "arm": "neutro",
+      "tier": "unlock",
+      "ring": 3,
+      "maxLevel": 1,
+      "effects": [
+        {
+          "kind": "vagas_campo",
+          "perLevel": 1.0
+        }
+      ],
+      "costs": [
+        463794
+      ],
+      "refunds": [
+        231897
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "N14"
+      ],
+      "note": "+1 herói em campo (→9, campo cheio)."
+    },
+    {
+      "id": "D01",
+      "name": "Dano do Esquadrão",
+      "arm": "dano",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_dmg",
+          "perLevel": 0.007
+        }
+      ],
+      "costs": [
+        20090,
+        24298,
+        29387,
+        35542,
+        42986,
+        51989,
+        62877,
+        76047,
+        91974,
+        111238
+      ],
+      "refunds": [
+        10045,
+        12149,
+        14693,
+        17771,
+        21493,
+        25994,
+        31438,
+        38023,
+        45987,
+        55619
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "H01"
+      ]
+    },
+    {
+      "id": "D02",
+      "name": "Dano do Esquadrão",
+      "arm": "dano",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_dmg",
+          "perLevel": 0.009
+        }
+      ],
+      "costs": [
+        134535,
+        162713,
+        196792,
+        238009,
+        287858,
+        348148,
+        421066,
+        509255,
+        615916,
+        744916
+      ],
+      "refunds": [
+        67267,
+        81356,
+        98396,
+        119004,
+        143929,
+        174074,
+        210533,
+        254627,
+        307958,
+        372458
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "D01"
+      ]
+    },
+    {
+      "id": "D03",
+      "name": "Dano do Esquadrão",
+      "arm": "dano",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_dmg",
+          "perLevel": 0.011
+        }
+      ],
+      "costs": [
+        900936,
+        1089632,
+        1317848,
+        1593864,
+        1927689,
+        2331432,
+        2819736,
+        3410313,
+        4124582,
+        4988451
+      ],
+      "refunds": [
+        450468,
+        544816,
+        658924,
+        796932,
+        963844,
+        1165716,
+        1409868,
+        1705156,
+        2062291,
+        2494225
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "D02"
+      ]
+    },
+    {
+      "id": "D04",
+      "name": "Dano do Esquadrão",
+      "arm": "dano",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_dmg",
+          "perLevel": 0.013
+        }
+      ],
+      "costs": [
+        6033249,
+        7296877,
+        8825163,
+        10673540,
+        12909049,
+        15612771,
+        18882772,
+        22837654,
+        27620863,
+        33405886
+      ],
+      "refunds": [
+        3016624,
+        3648438,
+        4412581,
+        5336770,
+        6454524,
+        7806385,
+        9441386,
+        11418827,
+        13810431,
+        16702943
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "D03"
+      ]
+    },
+    {
+      "id": "D05",
+      "name": "Dano do Esquadrão",
+      "arm": "dano",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_dmg",
+          "perLevel": 0.009
+        }
+      ],
+      "costs": [
+        134535,
+        162713,
+        196792,
+        238009,
+        287858,
+        348148,
+        421066,
+        509255,
+        615916,
+        744916
+      ],
+      "refunds": [
+        67267,
+        81356,
+        98396,
+        119004,
+        143929,
+        174074,
+        210533,
+        254627,
+        307958,
+        372458
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "D01"
+      ]
+    },
+    {
+      "id": "D06",
+      "name": "Dano do Esquadrão",
+      "arm": "dano",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_dmg",
+          "perLevel": 0.011
+        }
+      ],
+      "costs": [
+        900936,
+        1089632,
+        1317848,
+        1593864,
+        1927689,
+        2331432,
+        2819736,
+        3410313,
+        4124582,
+        4988451
+      ],
+      "refunds": [
+        450468,
+        544816,
+        658924,
+        796932,
+        963844,
+        1165716,
+        1409868,
+        1705156,
+        2062291,
+        2494225
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "D05"
+      ]
+    },
+    {
+      "id": "D07",
+      "name": "Fúria Explosiva",
+      "arm": "dano",
+      "tier": "notavel",
+      "ring": 2,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "team_dmg",
+          "perLevel": 0.026
+        }
+      ],
+      "costs": [
+        6033249,
+        7296877,
+        8825163,
+        10673540,
+        12909049
+      ],
+      "refunds": [
+        3016624,
+        3648438,
+        4412581,
+        5336770,
+        6454524
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "D06"
+      ]
+    },
+    {
+      "id": "D08",
+      "name": "Dano do Esquadrão",
+      "arm": "dano",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_dmg",
+          "perLevel": 0.015
+        }
+      ],
+      "costs": [
+        15612771,
+        18882772,
+        22837654,
+        27620863,
+        33405886,
+        40402546,
+        48864616,
+        59099014,
+        71476946,
+        86447360
+      ],
+      "refunds": [
+        7806385,
+        9441386,
+        11418827,
+        13810431,
+        16702943,
+        20201273,
+        24432308,
+        29549507,
+        35738473,
+        43223680
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "D07"
+      ]
+    },
+    {
+      "id": "D09",
+      "name": "Dano do Esquadrão",
+      "arm": "dano",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_dmg",
+          "perLevel": 0.011
+        }
+      ],
+      "costs": [
+        900936,
+        1089632,
+        1317848,
+        1593864,
+        1927689,
+        2331432,
+        2819736,
+        3410313,
+        4124582,
+        4988451
+      ],
+      "refunds": [
+        450468,
+        544816,
+        658924,
+        796932,
+        963844,
+        1165716,
+        1409868,
+        1705156,
+        2062291,
+        2494225
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "D05"
+      ]
+    },
+    {
+      "id": "D10",
+      "name": "Dano do Esquadrão",
+      "arm": "dano",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_dmg",
+          "perLevel": 0.015
+        }
+      ],
+      "costs": [
+        15612771,
+        18882772,
+        22837654,
+        27620863,
+        33405886,
+        40402546,
+        48864616,
+        59099014,
+        71476946,
+        86447360
+      ],
+      "refunds": [
+        7806385,
+        9441386,
+        11418827,
+        13810431,
+        16702943,
+        20201273,
+        24432308,
+        29549507,
+        35738473,
+        43223680
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "D07"
+      ]
+    },
+    {
+      "id": "D11",
+      "name": "Dano do Esquadrão",
+      "arm": "dano",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_dmg",
+          "perLevel": 0.017
+        }
+      ],
+      "costs": [
+        104553237,
+        126451281,
+        152935738,
+        184967204,
+        223707468,
+        270561645,
+        327229148,
+        395765316,
+        478655970,
+        578907572
+      ],
+      "refunds": [
+        52276618,
+        63225640,
+        76467869,
+        92483602,
+        111853734,
+        135280822,
+        163614574,
+        197882658,
+        239327985,
+        289453786
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "D10"
+      ]
+    },
+    {
+      "id": "D12",
+      "name": "Devastação",
+      "arm": "dano",
+      "tier": "notavel",
+      "ring": 3,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "team_dmg",
+          "perLevel": 0.038
+        }
+      ],
+      "costs": [
+        700156266,
+        846799766,
+        1024156862,
+        1238660330,
+        1498090253
+      ],
+      "refunds": [
+        350078133,
+        423399883,
+        512078431,
+        619330165,
+        749045126
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "D11"
+      ]
+    },
+    {
+      "id": "D13",
+      "name": "Dano do Esquadrão",
+      "arm": "dano",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_dmg",
+          "perLevel": 0.021
+        }
+      ],
+      "costs": [
+        1811856207,
+        2191338544,
+        2650301164,
+        3205390733,
+        3876740458,
+        4688700327,
+        5670720287,
+        6858418394,
+        8294872695,
+        10032183671
+      ],
+      "refunds": [
+        905928103,
+        1095669272,
+        1325150582,
+        1602695366,
+        1938370229,
+        2344350163,
+        2835360143,
+        3429209197,
+        4147436347,
+        5016091835
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "D12"
+      ]
+    },
+    {
+      "id": "D14",
+      "name": "Dano do Esquadrão",
+      "arm": "dano",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_dmg",
+          "perLevel": 0.021
+        }
+      ],
+      "costs": [
+        1811856207,
+        2191338544,
+        2650301164,
+        3205390733,
+        3876740458,
+        4688700327,
+        5670720287,
+        6858418394,
+        8294872695,
+        10032183671
+      ],
+      "refunds": [
+        905928103,
+        1095669272,
+        1325150582,
+        1602695366,
+        1938370229,
+        2344350163,
+        2835360143,
+        3429209197,
+        4147436347,
+        5016091835
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "D12"
+      ]
+    },
+    {
+      "id": "C01",
+      "name": "Chance Crítica",
+      "arm": "crit",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_crit_chance",
+          "perLevel": 0.001855981
+        }
+      ],
+      "costs": [
+        20090,
+        24298,
+        29387,
+        35542,
+        42986,
+        51989,
+        62877,
+        76047,
+        91974,
+        111238
+      ],
+      "refunds": [
+        10045,
+        12149,
+        14693,
+        17771,
+        21493,
+        25994,
+        31438,
+        38023,
+        45987,
+        55619
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "H02"
+      ]
+    },
+    {
+      "id": "C02",
+      "name": "Chance Crítica",
+      "arm": "crit",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_crit_chance",
+          "perLevel": 0.002474641309
+        }
+      ],
+      "costs": [
+        134535,
+        162713,
+        196792,
+        238009,
+        287858,
+        348148,
+        421066,
+        509255,
+        615916,
+        744916
+      ],
+      "refunds": [
+        67267,
+        81356,
+        98396,
+        119004,
+        143929,
+        174074,
+        210533,
+        254627,
+        307958,
+        372458
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "C01"
+      ]
+    },
+    {
+      "id": "C03",
+      "name": "Dano crítico",
+      "arm": "crit",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_crit_dmg",
+          "perLevel": 0.0163461538
+        },
+        {
+          "kind": "g_speed",
+          "perLevel": 0.001182039
+        }
+      ],
+      "costs": [
+        900936,
+        1089632,
+        1317848,
+        1593864,
+        1927689,
+        2331432,
+        2819736,
+        3410313,
+        4124582,
+        4988451
+      ],
+      "refunds": [
+        450468,
+        544816,
+        658924,
+        796932,
+        963844,
+        1165716,
+        1409868,
+        1705156,
+        2062291,
+        2494225
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "C02"
+      ]
+    },
+    {
+      "id": "C04",
+      "name": "Chance Crítica",
+      "arm": "crit",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_crit_chance",
+          "perLevel": 0.003711961966
+        }
+      ],
+      "costs": [
+        6033249,
+        7296877,
+        8825163,
+        10673540,
+        12909049,
+        15612771,
+        18882772,
+        22837654,
+        27620863,
+        33405886
+      ],
+      "refunds": [
+        3016624,
+        3648438,
+        4412581,
+        5336770,
+        6454524,
+        7806385,
+        9441386,
+        11418827,
+        13810431,
+        16702943
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "C03"
+      ]
+    },
+    {
+      "id": "C05",
+      "name": "Chance Crítica",
+      "arm": "crit",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_crit_chance",
+          "perLevel": 0.002474641309
+        }
+      ],
+      "costs": [
+        134535,
+        162713,
+        196792,
+        238009,
+        287858,
+        348148,
+        421066,
+        509255,
+        615916,
+        744916
+      ],
+      "refunds": [
+        67267,
+        81356,
+        98396,
+        119004,
+        143929,
+        174074,
+        210533,
+        254627,
+        307958,
+        372458
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "C01"
+      ]
+    },
+    {
+      "id": "C06",
+      "name": "Dano crítico",
+      "arm": "crit",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_crit_dmg",
+          "perLevel": 0.0163461538
+        },
+        {
+          "kind": "g_speed",
+          "perLevel": 0.001182039
+        }
+      ],
+      "costs": [
+        900936,
+        1089632,
+        1317848,
+        1593864,
+        1927689,
+        2331432,
+        2819736,
+        3410313,
+        4124582,
+        4988451
+      ],
+      "refunds": [
+        450468,
+        544816,
+        658924,
+        796932,
+        963844,
+        1165716,
+        1409868,
+        1705156,
+        2062291,
+        2494225
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "C05"
+      ]
+    },
+    {
+      "id": "C07",
+      "name": "Golpe Preciso",
+      "arm": "crit",
+      "tier": "notavel",
+      "ring": 2,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "g_crit_chance",
+          "perLevel": 0.007423923966
+        },
+        {
+          "kind": "g_crit_dmg",
+          "perLevel": 0.0392307692
+        }
+      ],
+      "costs": [
+        6033249,
+        7296877,
+        8825163,
+        10673540,
+        12909049
+      ],
+      "refunds": [
+        3016624,
+        3648438,
+        4412581,
+        5336770,
+        6454524
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "C06"
+      ]
+    },
+    {
+      "id": "C08",
+      "name": "Chance Crítica",
+      "arm": "crit",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_crit_chance",
+          "perLevel": 0.004330622309
+        }
+      ],
+      "costs": [
+        15612771,
+        18882772,
+        22837654,
+        27620863,
+        33405886,
+        40402546,
+        48864616,
+        59099014,
+        71476946,
+        86447360
+      ],
+      "refunds": [
+        7806385,
+        9441386,
+        11418827,
+        13810431,
+        16702943,
+        20201273,
+        24432308,
+        29549507,
+        35738473,
+        43223680
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "C07"
+      ]
+    },
+    {
+      "id": "C09",
+      "name": "Chance Crítica",
+      "arm": "crit",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_crit_chance",
+          "perLevel": 0.003093301657
+        }
+      ],
+      "costs": [
+        900936,
+        1089632,
+        1317848,
+        1593864,
+        1927689,
+        2331432,
+        2819736,
+        3410313,
+        4124582,
+        4988451
+      ],
+      "refunds": [
+        450468,
+        544816,
+        658924,
+        796932,
+        963844,
+        1165716,
+        1409868,
+        1705156,
+        2062291,
+        2494225
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "C05"
+      ]
+    },
+    {
+      "id": "C10",
+      "name": "Chance Crítica",
+      "arm": "crit",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_crit_chance",
+          "perLevel": 0.004330622309
+        }
+      ],
+      "costs": [
+        15612771,
+        18882772,
+        22837654,
+        27620863,
+        33405886,
+        40402546,
+        48864616,
+        59099014,
+        71476946,
+        86447360
+      ],
+      "refunds": [
+        7806385,
+        9441386,
+        11418827,
+        13810431,
+        16702943,
+        20201273,
+        24432308,
+        29549507,
+        35738473,
+        43223680
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "C07"
+      ]
+    },
+    {
+      "id": "C11",
+      "name": "Dano crítico",
+      "arm": "crit",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_crit_dmg",
+          "perLevel": 0.0261538461
+        },
+        {
+          "kind": "g_speed",
+          "perLevel": 0.0018912624
+        }
+      ],
+      "costs": [
+        104553237,
+        126451281,
+        152935738,
+        184967204,
+        223707468,
+        270561645,
+        327229148,
+        395765316,
+        478655970,
+        578907572
+      ],
+      "refunds": [
+        52276618,
+        63225640,
+        76467869,
+        92483602,
+        111853734,
+        135280822,
+        163614574,
+        197882658,
+        239327985,
+        289453786
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "C10"
+      ]
+    },
+    {
+      "id": "C12",
+      "name": "Olho Mortal",
+      "arm": "crit",
+      "tier": "notavel",
+      "ring": 3,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "g_crit_chance",
+          "perLevel": 0.011135885931
+        },
+        {
+          "kind": "g_crit_dmg",
+          "perLevel": 0.0588461538
+        }
+      ],
+      "costs": [
+        700156266,
+        846799766,
+        1024156862,
+        1238660330,
+        1498090253
+      ],
+      "refunds": [
+        350078133,
+        423399883,
+        512078431,
+        619330165,
+        749045126
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "C11"
+      ]
+    },
+    {
+      "id": "C13",
+      "name": "Dano crítico",
+      "arm": "crit",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_crit_dmg",
+          "perLevel": 0.0326923077
+        },
+        {
+          "kind": "g_speed",
+          "perLevel": 0.002364078
+        }
+      ],
+      "costs": [
+        1811856207,
+        2191338544,
+        2650301164,
+        3205390733,
+        3876740458,
+        4688700327,
+        5670720287,
+        6858418394,
+        8294872695,
+        10032183671
+      ],
+      "refunds": [
+        905928103,
+        1095669272,
+        1325150582,
+        1602695366,
+        1938370229,
+        2344350163,
+        2835360143,
+        3429209197,
+        4147436347,
+        5016091835
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "C12"
+      ]
+    },
+    {
+      "id": "C14",
+      "name": "Chance Crítica",
+      "arm": "crit",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_crit_chance",
+          "perLevel": 0.006186603309
+        }
+      ],
+      "costs": [
+        1811856207,
+        2191338544,
+        2650301164,
+        3205390733,
+        3876740458,
+        4688700327,
+        5670720287,
+        6858418394,
+        8294872695,
+        10032183671
+      ],
+      "refunds": [
+        905928103,
+        1095669272,
+        1325150582,
+        1602695366,
+        1938370229,
+        2344350163,
+        2835360143,
+        3429209197,
+        4147436347,
+        5016091835
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "C12"
+      ]
+    },
+    {
+      "id": "V01",
+      "name": "Velocidade",
+      "arm": "velocidade",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_speed",
+          "perLevel": 0.0007092234
+        }
+      ],
+      "costs": [
+        18092,
+        21653,
+        25915,
+        31017,
+        37122,
+        44429,
+        53174,
+        63641,
+        76168,
+        91161
+      ],
+      "refunds": [
+        9046,
+        10826,
+        12957,
+        15508,
+        18561,
+        22214,
+        26587,
+        31820,
+        38084,
+        45580
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "H03"
+      ]
+    },
+    {
+      "id": "V02",
+      "name": "Velocidade",
+      "arm": "velocidade",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_speed",
+          "perLevel": 0.0009456312
+        }
+      ],
+      "costs": [
+        109102,
+        130577,
+        156280,
+        187042,
+        223859,
+        267924,
+        320661,
+        383780,
+        459322,
+        549735
+      ],
+      "refunds": [
+        54551,
+        65288,
+        78140,
+        93521,
+        111929,
+        133962,
+        160330,
+        191890,
+        229661,
+        274867
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "V01"
+      ]
+    },
+    {
+      "id": "V03",
+      "name": "Velocidade",
+      "arm": "velocidade",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_speed",
+          "perLevel": 0.001182039
+        },
+        {
+          "kind": "team_energia",
+          "perLevel": 0.0145127119
+        }
+      ],
+      "costs": [
+        657946,
+        787455,
+        942457,
+        1127969,
+        1349997,
+        1615728,
+        1933766,
+        2314406,
+        2769971,
+        3315209
+      ],
+      "refunds": [
+        328973,
+        393727,
+        471228,
+        563984,
+        674998,
+        807864,
+        966883,
+        1157203,
+        1384985,
+        1657604
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "V02"
+      ]
+    },
+    {
+      "id": "V04",
+      "name": "Velocidade",
+      "arm": "velocidade",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_speed",
+          "perLevel": 0.0014184468
+        }
+      ],
+      "costs": [
+        3967767,
+        4748777,
+        5683520,
+        6802257,
+        8141204,
+        9743708,
+        11661647,
+        13957111,
+        16704410,
+        19992485
+      ],
+      "refunds": [
+        1983883,
+        2374388,
+        2841760,
+        3401128,
+        4070602,
+        4871854,
+        5830823,
+        6978555,
+        8352205,
+        9996242
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "V03"
+      ]
+    },
+    {
+      "id": "V05",
+      "name": "Velocidade",
+      "arm": "velocidade",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_speed",
+          "perLevel": 0.0009456312
+        }
+      ],
+      "costs": [
+        109102,
+        130577,
+        156280,
+        187042,
+        223859,
+        267924,
+        320661,
+        383780,
+        459322,
+        549735
+      ],
+      "refunds": [
+        54551,
+        65288,
+        78140,
+        93521,
+        111929,
+        133962,
+        160330,
+        191890,
+        229661,
+        274867
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "V01"
+      ]
+    },
+    {
+      "id": "V06",
+      "name": "Velocidade",
+      "arm": "velocidade",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_speed",
+          "perLevel": 0.001182039
+        }
+      ],
+      "costs": [
+        657946,
+        787455,
+        942457,
+        1127969,
+        1349997,
+        1615728,
+        1933766,
+        2314406,
+        2769971,
+        3315209
+      ],
+      "refunds": [
+        328973,
+        393727,
+        471228,
+        563984,
+        674998,
+        807864,
+        966883,
+        1157203,
+        1384985,
+        1657604
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "V05"
+      ]
+    },
+    {
+      "id": "V07",
+      "name": "Velocidade",
+      "arm": "velocidade",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_speed",
+          "perLevel": 0.0014184468
+        },
+        {
+          "kind": "team_energia",
+          "perLevel": 0.0174152542
+        }
+      ],
+      "costs": [
+        3967767,
+        4748777,
+        5683520,
+        6802257,
+        8141204,
+        9743708,
+        11661647,
+        13957111,
+        16704410,
+        19992485
+      ],
+      "refunds": [
+        1983883,
+        2374388,
+        2841760,
+        3401128,
+        4070602,
+        4871854,
+        5830823,
+        6978555,
+        8352205,
+        9996242
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "V06"
+      ]
+    },
+    {
+      "id": "V08",
+      "name": "Ímpeto",
+      "arm": "velocidade",
+      "tier": "notavel",
+      "ring": 2,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "g_speed",
+          "perLevel": 0.0033097092
+        }
+      ],
+      "costs": [
+        23927782,
+        28637696,
+        34274702,
+        41021290,
+        49095868
+      ],
+      "refunds": [
+        11963891,
+        14318848,
+        17137351,
+        20510645,
+        24547934
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "V07"
+      ]
+    },
+    {
+      "id": "V09",
+      "name": "Velocidade",
+      "arm": "velocidade",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_speed",
+          "perLevel": 0.001182039
+        }
+      ],
+      "costs": [
+        657946,
+        787455,
+        942457,
+        1127969,
+        1349997,
+        1615728,
+        1933766,
+        2314406,
+        2769971,
+        3315209
+      ],
+      "refunds": [
+        328973,
+        393727,
+        471228,
+        563984,
+        674998,
+        807864,
+        966883,
+        1157203,
+        1384985,
+        1657604
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "V05"
+      ]
+    },
+    {
+      "id": "V10",
+      "name": "Velocidade",
+      "arm": "velocidade",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_speed",
+          "perLevel": 0.0016548546
+        }
+      ],
+      "costs": [
+        23927782,
+        28637696,
+        34274702,
+        41021290,
+        49095868,
+        58759834,
+        70326044,
+        84168931,
+        100736634,
+        120565501
+      ],
+      "refunds": [
+        11963891,
+        14318848,
+        17137351,
+        20510645,
+        24547934,
+        29379917,
+        35163022,
+        42084465,
+        50368317,
+        60282750
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "V07"
+      ]
+    },
+    {
+      "id": "V11",
+      "name": "Velocidade",
+      "arm": "velocidade",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_speed",
+          "perLevel": 0.0018912624
+        },
+        {
+          "kind": "team_energia",
+          "perLevel": 0.023220339
+        }
+      ],
+      "costs": [
+        144297458,
+        172700782,
+        206694979,
+        247380551,
+        296074617,
+        354353559,
+        424104053,
+        507584143,
+        607496346,
+        727075138
+      ],
+      "refunds": [
+        72148729,
+        86350391,
+        103347489,
+        123690275,
+        148037308,
+        177176779,
+        212052026,
+        253792071,
+        303748173,
+        363537569
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "V10"
+      ]
+    },
+    {
+      "id": "V12",
+      "name": "Velocidade",
+      "arm": "velocidade",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_speed",
+          "perLevel": 0.0021276702
+        },
+        {
+          "kind": "team_energia",
+          "perLevel": 0.0261228814
+        }
+      ],
+      "costs": [
+        870191660,
+        1041479055,
+        1246482438,
+        1491838421,
+        1785489957,
+        2136943478,
+        2557576655,
+        3061006719,
+        3663531302,
+        4384656041
+      ],
+      "refunds": [
+        435095830,
+        520739527,
+        623241219,
+        745919210,
+        892744978,
+        1068471739,
+        1278788327,
+        1530503359,
+        1831765651,
+        2192328020
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "V11"
+      ]
+    },
+    {
+      "id": "V13",
+      "name": "Vendaval",
+      "arm": "velocidade",
+      "tier": "notavel",
+      "ring": 3,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "g_speed",
+          "perLevel": 0.004728156
+        }
+      ],
+      "costs": [
+        5247726034,
+        6280681604,
+        7516962807,
+        8996591993,
+        10767469466
+      ],
+      "refunds": [
+        2623863017,
+        3140340802,
+        3758481403,
+        4498295996,
+        5383734733
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "V12"
+      ]
+    },
+    {
+      "id": "V14",
+      "name": "Velocidade",
+      "arm": "velocidade",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_speed",
+          "perLevel": 0.002364078
+        }
+      ],
+      "costs": [
+        5247726034,
+        6280681604,
+        7516962807,
+        8996591993,
+        10767469466,
+        12886924158,
+        15423569556,
+        18459524937,
+        22093073828,
+        26441845759
+      ],
+      "refunds": [
+        2623863017,
+        3140340802,
+        3758481403,
+        4498295996,
+        5383734733,
+        6443462079,
+        7711784778,
+        9229762468,
+        11046536914,
+        13220922879
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "V12"
+      ]
+    },
+    {
+      "id": "O01",
+      "name": "Ouro por Alvo",
+      "arm": "ouro",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_coin",
+          "perLevel": 0.009375
+        }
+      ],
+      "costs": [
+        17927,
+        21436,
+        25632,
+        30649,
+        36649,
+        43823,
+        52401,
+        62658,
+        74922,
+        89588
+      ],
+      "refunds": [
+        8963,
+        10718,
+        12816,
+        15324,
+        18324,
+        21911,
+        26200,
+        31329,
+        37461,
+        44794
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "H04"
+      ]
+    },
+    {
+      "id": "O02",
+      "name": "Ouro por Alvo",
+      "arm": "ouro",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_coin",
+          "perLevel": 0.0125
+        }
+      ],
+      "costs": [
+        107123,
+        128092,
+        153165,
+        183146,
+        218995,
+        261862,
+        313120,
+        374411,
+        447700,
+        535334
+      ],
+      "refunds": [
+        53561,
+        64046,
+        76582,
+        91573,
+        109497,
+        130931,
+        156560,
+        187205,
+        223850,
+        267667
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "O01"
+      ]
+    },
+    {
+      "id": "O03",
+      "name": "Ouro por Alvo",
+      "arm": "ouro",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_coin",
+          "perLevel": 0.015625
+        },
+        {
+          "kind": "g_luck",
+          "perLevel": 0.00272
+        }
+      ],
+      "costs": [
+        640122,
+        765422,
+        915248,
+        1094402,
+        1308624,
+        1564779,
+        1871074,
+        2237325,
+        2675267,
+        3198933
+      ],
+      "refunds": [
+        320061,
+        382711,
+        457624,
+        547201,
+        654312,
+        782389,
+        935537,
+        1118662,
+        1337633,
+        1599466
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "O02"
+      ]
+    },
+    {
+      "id": "O04",
+      "name": "Ouro por Alvo",
+      "arm": "ouro",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_coin",
+          "perLevel": 0.01875
+        }
+      ],
+      "costs": [
+        3825101,
+        4573840,
+        5469139,
+        6539688,
+        7819790,
+        9350463,
+        11180756,
+        13369316,
+        15986273,
+        19115483
+      ],
+      "refunds": [
+        1912550,
+        2286920,
+        2734569,
+        3269844,
+        3909895,
+        4675231,
+        5590378,
+        6684658,
+        7993136,
+        9557741
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "O03"
+      ]
+    },
+    {
+      "id": "O05",
+      "name": "Ouro por Alvo",
+      "arm": "ouro",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_coin",
+          "perLevel": 0.0125
+        }
+      ],
+      "costs": [
+        107123,
+        128092,
+        153165,
+        183146,
+        218995,
+        261862,
+        313120,
+        374411,
+        447700,
+        535334
+      ],
+      "refunds": [
+        53561,
+        64046,
+        76582,
+        91573,
+        109497,
+        130931,
+        156560,
+        187205,
+        223850,
+        267667
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "O01"
+      ]
+    },
+    {
+      "id": "O06",
+      "name": "Ouro por Alvo",
+      "arm": "ouro",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_coin",
+          "perLevel": 0.015625
+        },
+        {
+          "kind": "g_luck",
+          "perLevel": 0.00272
+        }
+      ],
+      "costs": [
+        640122,
+        765422,
+        915248,
+        1094402,
+        1308624,
+        1564779,
+        1871074,
+        2237325,
+        2675267,
+        3198933
+      ],
+      "refunds": [
+        320061,
+        382711,
+        457624,
+        547201,
+        654312,
+        782389,
+        935537,
+        1118662,
+        1337633,
+        1599466
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "O05"
+      ]
+    },
+    {
+      "id": "O07",
+      "name": "Ouro por Alvo",
+      "arm": "ouro",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_coin",
+          "perLevel": 0.01875
+        }
+      ],
+      "costs": [
+        3825101,
+        4573840,
+        5469139,
+        6539688,
+        7819790,
+        9350463,
+        11180756,
+        13369316,
+        15986273,
+        19115483
+      ],
+      "refunds": [
+        1912550,
+        2286920,
+        2734569,
+        3269844,
+        3909895,
+        4675231,
+        5590378,
+        6684658,
+        7993136,
+        9557741
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "O06"
+      ]
+    },
+    {
+      "id": "O08",
+      "name": "Veio de Ouro",
+      "arm": "ouro",
+      "tier": "notavel",
+      "ring": 2,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "team_coin",
+          "perLevel": 0.04375
+        }
+      ],
+      "costs": [
+        22857214,
+        27331366,
+        32681304,
+        39078458,
+        46727813
+      ],
+      "refunds": [
+        11428607,
+        13665683,
+        16340652,
+        19539229,
+        23363906
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "O07"
+      ]
+    },
+    {
+      "id": "O09",
+      "name": "Ouro por Alvo",
+      "arm": "ouro",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_coin",
+          "perLevel": 0.015625
+        },
+        {
+          "kind": "g_luck",
+          "perLevel": 0.00272
+        }
+      ],
+      "costs": [
+        640122,
+        765422,
+        915248,
+        1094402,
+        1308624,
+        1564779,
+        1871074,
+        2237325,
+        2675267,
+        3198933
+      ],
+      "refunds": [
+        320061,
+        382711,
+        457624,
+        547201,
+        654312,
+        782389,
+        935537,
+        1118662,
+        1337633,
+        1599466
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "O05"
+      ]
+    },
+    {
+      "id": "O10",
+      "name": "Ouro por Alvo",
+      "arm": "ouro",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_coin",
+          "perLevel": 0.021875
+        }
+      ],
+      "costs": [
+        22857214,
+        27331366,
+        32681304,
+        39078458,
+        46727813,
+        55874480,
+        66811549,
+        79889477,
+        95527326,
+        114226182
+      ],
+      "refunds": [
+        11428607,
+        13665683,
+        16340652,
+        19539229,
+        23363906,
+        27937240,
+        33405774,
+        39944738,
+        47763663,
+        57113091
+      ],
+      "gatePhase": 80,
+      "requires": [
+        "O07"
+      ]
+    },
+    {
+      "id": "O11",
+      "name": "Ouro por Alvo",
+      "arm": "ouro",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_coin",
+          "perLevel": 0.021875
+        },
+        {
+          "kind": "g_luck",
+          "perLevel": 0.003808
+        }
+      ],
+      "costs": [
+        136585218,
+        163320891,
+        195289899,
+        233516634,
+        279226005,
+        333882690,
+        399238067,
+        477386337,
+        570831625,
+        682568225
+      ],
+      "refunds": [
+        68292609,
+        81660445,
+        97644949,
+        116758317,
+        139613002,
+        166941345,
+        199619033,
+        238693168,
+        285415812,
+        341284112
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "O10"
+      ]
+    },
+    {
+      "id": "O12",
+      "name": "Febre do Ouro",
+      "arm": "ouro",
+      "tier": "notavel",
+      "ring": 3,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "team_coin",
+          "perLevel": 0.05
+        }
+      ],
+      "costs": [
+        816176538,
+        975937817,
+        1166971333,
+        1395398425,
+        1668538643
+      ],
+      "refunds": [
+        408088269,
+        487968908,
+        583485666,
+        697699212,
+        834269321
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "O11"
+      ]
+    },
+    {
+      "id": "O13",
+      "name": "Ouro por Alvo",
+      "arm": "ouro",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_coin",
+          "perLevel": 0.028125
+        }
+      ],
+      "costs": [
+        1995144291,
+        2385680883,
+        2852662488,
+        3411052722,
+        4078744233,
+        4877132039,
+        5831799096,
+        6973336054,
+        8338321490,
+        9970493998
+      ],
+      "refunds": [
+        997572145,
+        1192840441,
+        1426331244,
+        1705526361,
+        2039372116,
+        2438566019,
+        2915899548,
+        3486668027,
+        4169160745,
+        4985246999
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "O12"
+      ]
+    },
+    {
+      "id": "O14",
+      "name": "Ouro por Alvo",
+      "arm": "ouro",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_coin",
+          "perLevel": 0.028125
+        }
+      ],
+      "costs": [
+        1995144291,
+        2385680883,
+        2852662488,
+        3411052722,
+        4078744233,
+        4877132039,
+        5831799096,
+        6973336054,
+        8338321490,
+        9970493998
+      ],
+      "refunds": [
+        997572145,
+        1192840441,
+        1426331244,
+        1705526361,
+        2039372116,
+        2438566019,
+        2915899548,
+        3486668027,
+        4169160745,
+        4985246999
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "O12"
+      ]
+    },
+    {
+      "id": "S01",
+      "name": "Sorte",
+      "arm": "drop",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_luck",
+          "perLevel": 0.0011275636
+        }
+      ],
+      "costs": [
+        20100,
+        24311,
+        29404,
+        35565,
+        43016,
+        52027,
+        62927,
+        76111,
+        92057,
+        111343
+      ],
+      "refunds": [
+        10050,
+        12155,
+        14702,
+        17782,
+        21508,
+        26013,
+        31463,
+        38055,
+        46028,
+        55671
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "H05"
+      ]
+    },
+    {
+      "id": "S03",
+      "name": "Sorte",
+      "arm": "drop",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_luck",
+          "perLevel": 0.0016913455
+        },
+        {
+          "kind": "team_coin",
+          "perLevel": 0.01
+        }
+      ],
+      "costs": [
+        134669,
+        162883,
+        197007,
+        238281,
+        288202,
+        348581,
+        421611,
+        509940,
+        616774,
+        745991
+      ],
+      "refunds": [
+        67334,
+        81441,
+        98503,
+        119140,
+        144101,
+        174290,
+        210805,
+        254970,
+        308387,
+        372995
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "S01"
+      ]
+    },
+    {
+      "id": "S02",
+      "name": "Aba de Inventário",
+      "arm": "drop",
+      "tier": "unlock",
+      "ring": 1,
+      "maxLevel": 1,
+      "effects": [
+        {
+          "kind": "bag_tab",
+          "perLevel": 1.0
+        }
+      ],
+      "costs": [
+        50000
+      ],
+      "refunds": [
+        25000
+      ],
+      "gatePhase": 50,
+      "requires": [
+        "S03"
+      ],
+      "note": "+1 aba de inventário (mais 25 espaços de item)."
+    },
+    {
+      "id": "S06",
+      "name": "Sorte",
+      "arm": "drop",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_luck",
+          "perLevel": 0.0022551273
+        },
+        {
+          "kind": "team_coin",
+          "perLevel": 0.0133333333
+        }
+      ],
+      "costs": [
+        902279,
+        1091310,
+        1319944,
+        1596477,
+        1930946,
+        2335487,
+        2824781,
+        3416584,
+        4132372,
+        4998120
+      ],
+      "refunds": [
+        451139,
+        545655,
+        659972,
+        798238,
+        965473,
+        1167743,
+        1412390,
+        1708292,
+        2066186,
+        2499060
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "P05"
+      ]
+    },
+    {
+      "id": "S07",
+      "name": "Achado Raro",
+      "arm": "drop",
+      "tier": "notavel",
+      "ring": 2,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "g_luck",
+          "perLevel": 0.0056378182
+        }
+      ],
+      "costs": [
+        6045246,
+        7311749,
+        8843590,
+        10696358,
+        12937288
+      ],
+      "refunds": [
+        3022623,
+        3655874,
+        4421795,
+        5348179,
+        6468644
+      ],
+      "gatePhase": 51,
+      "requires": [
+        "S06"
+      ]
+    },
+    {
+      "id": "S05",
+      "name": "Aba de Inventário",
+      "arm": "drop",
+      "tier": "unlock",
+      "ring": 2,
+      "maxLevel": 1,
+      "effects": [
+        {
+          "kind": "bag_tab",
+          "perLevel": 1.0
+        }
+      ],
+      "costs": [
+        200000
+      ],
+      "refunds": [
+        100000
+      ],
+      "gatePhase": 150,
+      "requires": [
+        "S09"
+      ],
+      "note": "+1 aba de inventário (mais 25 espaços de item)."
+    },
+    {
+      "id": "S09",
+      "name": "Sorte",
+      "arm": "drop",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_luck",
+          "perLevel": 0.0022551273
+        }
+      ],
+      "costs": [
+        902279,
+        1091310,
+        1319944,
+        1596477,
+        1930946,
+        2335487,
+        2824781,
+        3416584,
+        4132372,
+        4998120
+      ],
+      "refunds": [
+        451139,
+        545655,
+        659972,
+        798238,
+        965473,
+        1167743,
+        1412390,
+        1708292,
+        2066186,
+        2499060
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "P05"
+      ]
+    },
+    {
+      "id": "S10",
+      "name": "Sorte",
+      "arm": "drop",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_luck",
+          "perLevel": 0.0033826909
+        }
+      ],
+      "costs": [
+        15647701,
+        18925957,
+        22891022,
+        27686783,
+        33487275,
+        40502994,
+        48988534,
+        59251829,
+        71665325,
+        86679499
+      ],
+      "refunds": [
+        7823850,
+        9462978,
+        11445511,
+        13843391,
+        16743637,
+        20251497,
+        24494267,
+        29625914,
+        35832662,
+        43339749
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "S07"
+      ]
+    },
+    {
+      "id": "S11",
+      "name": "Tesouro Oculto",
+      "arm": "drop",
+      "tier": "notavel",
+      "ring": 3,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "g_luck",
+          "perLevel": 0.0078929455
+        }
+      ],
+      "costs": [
+        104839201,
+        126803435,
+        153369265,
+        185500743,
+        224363895
+      ],
+      "refunds": [
+        52419600,
+        63401717,
+        76684632,
+        92750371,
+        112181947
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "S10"
+      ]
+    },
+    {
+      "id": "S12",
+      "name": "Sorte",
+      "arm": "drop",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_luck",
+          "perLevel": 0.0045102546
+        },
+        {
+          "kind": "team_coin",
+          "perLevel": 0.0266666667
+        }
+      ],
+      "costs": [
+        271369034,
+        328221938,
+        396985755,
+        480155868,
+        580750454,
+        702420010,
+        849579828,
+        1027570220,
+        1242850314,
+        1503232455
+      ],
+      "refunds": [
+        135684517,
+        164110969,
+        198492877,
+        240077934,
+        290375227,
+        351210005,
+        424789914,
+        513785110,
+        621425157,
+        751616227
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "S11"
+      ]
+    },
+    {
+      "id": "S13",
+      "name": "Sorte",
+      "arm": "drop",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_luck",
+          "perLevel": 0.0050740364
+        }
+      ],
+      "costs": [
+        1818165702,
+        2199078731,
+        2659794572,
+        3217032235,
+        3891013431,
+        4706196398,
+        5692163476,
+        6884694624,
+        8327065845,
+        10071619640
+      ],
+      "refunds": [
+        909082851,
+        1099539365,
+        1329897286,
+        1608516117,
+        1945506715,
+        2353098199,
+        2846081738,
+        3442347312,
+        4163532922,
+        5035809820
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "S12"
+      ]
+    },
+    {
+      "id": "S14",
+      "name": "Sorte",
+      "arm": "drop",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_luck",
+          "perLevel": 0.0050740364
+        }
+      ],
+      "costs": [
+        1818165702,
+        2199078731,
+        2659794572,
+        3217032235,
+        3891013431,
+        4706196398,
+        5692163476,
+        6884694624,
+        8327065845,
+        10071619640
+      ],
+      "refunds": [
+        909082851,
+        1099539365,
+        1329897286,
+        1608516117,
+        1945506715,
+        2353098199,
+        2846081738,
+        3442347312,
+        4163532922,
+        5035809820
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "S12"
+      ]
+    },
+    {
+      "id": "E01",
+      "name": "Energia do Herói",
+      "arm": "energia",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_energia",
+          "perLevel": 0.0087076271
+        }
+      ],
+      "costs": [
+        20090,
+        24298,
+        29387,
+        35542,
+        42986,
+        51989,
+        62877,
+        76047,
+        91974,
+        111238
+      ],
+      "refunds": [
+        10045,
+        12149,
+        14693,
+        17771,
+        21493,
+        25994,
+        31438,
+        38023,
+        45987,
+        55619
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "H06"
+      ]
+    },
+    {
+      "id": "E02",
+      "name": "Energia do Herói",
+      "arm": "energia",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_energia",
+          "perLevel": 0.0116101695
+        }
+      ],
+      "costs": [
+        134535,
+        162713,
+        196792,
+        238009,
+        287858,
+        348148,
+        421066,
+        509255,
+        615916,
+        744916
+      ],
+      "refunds": [
+        67267,
+        81356,
+        98396,
+        119004,
+        143929,
+        174074,
+        210533,
+        254627,
+        307958,
+        372458
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "E01"
+      ]
+    },
+    {
+      "id": "E03",
+      "name": "Energia do Herói",
+      "arm": "energia",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_energia",
+          "perLevel": 0.0145127119
+        },
+        {
+          "kind": "g_speed",
+          "perLevel": 0.001182039
+        }
+      ],
+      "costs": [
+        900936,
+        1089632,
+        1317848,
+        1593864,
+        1927689,
+        2331432,
+        2819736,
+        3410313,
+        4124582,
+        4988451
+      ],
+      "refunds": [
+        450468,
+        544816,
+        658924,
+        796932,
+        963844,
+        1165716,
+        1409868,
+        1705156,
+        2062291,
+        2494225
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "E02"
+      ]
+    },
+    {
+      "id": "E04",
+      "name": "Energia do Herói",
+      "arm": "energia",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_energia",
+          "perLevel": 0.0174152542
+        }
+      ],
+      "costs": [
+        6033249,
+        7296877,
+        8825163,
+        10673540,
+        12909049,
+        15612771,
+        18882772,
+        22837654,
+        27620863,
+        33405886
+      ],
+      "refunds": [
+        3016624,
+        3648438,
+        4412581,
+        5336770,
+        6454524,
+        7806385,
+        9441386,
+        11418827,
+        13810431,
+        16702943
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "E03"
+      ]
+    },
+    {
+      "id": "E05",
+      "name": "Energia do Herói",
+      "arm": "energia",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_energia",
+          "perLevel": 0.0116101695
+        }
+      ],
+      "costs": [
+        134535,
+        162713,
+        196792,
+        238009,
+        287858,
+        348148,
+        421066,
+        509255,
+        615916,
+        744916
+      ],
+      "refunds": [
+        67267,
+        81356,
+        98396,
+        119004,
+        143929,
+        174074,
+        210533,
+        254627,
+        307958,
+        372458
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "E01"
+      ]
+    },
+    {
+      "id": "E06",
+      "name": "Energia do Herói",
+      "arm": "energia",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_energia",
+          "perLevel": 0.0145127119
+        },
+        {
+          "kind": "g_speed",
+          "perLevel": 0.001182039
+        }
+      ],
+      "costs": [
+        900936,
+        1089632,
+        1317848,
+        1593864,
+        1927689,
+        2331432,
+        2819736,
+        3410313,
+        4124582,
+        4988451
+      ],
+      "refunds": [
+        450468,
+        544816,
+        658924,
+        796932,
+        963844,
+        1165716,
+        1409868,
+        1705156,
+        2062291,
+        2494225
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "E05"
+      ]
+    },
+    {
+      "id": "E07",
+      "name": "Fôlego Profundo",
+      "arm": "energia",
+      "tier": "notavel",
+      "ring": 2,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "team_energia",
+          "perLevel": 0.0348305085
+        }
+      ],
+      "costs": [
+        6033249,
+        7296877,
+        8825163,
+        10673540,
+        12909049
+      ],
+      "refunds": [
+        3016624,
+        3648438,
+        4412581,
+        5336770,
+        6454524
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "E06"
+      ]
+    },
+    {
+      "id": "E08",
+      "name": "Energia do Herói",
+      "arm": "energia",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_energia",
+          "perLevel": 0.0203177966
+        }
+      ],
+      "costs": [
+        15612771,
+        18882772,
+        22837654,
+        27620863,
+        33405886,
+        40402546,
+        48864616,
+        59099014,
+        71476946,
+        86447360
+      ],
+      "refunds": [
+        7806385,
+        9441386,
+        11418827,
+        13810431,
+        16702943,
+        20201273,
+        24432308,
+        29549507,
+        35738473,
+        43223680
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "E07"
+      ]
+    },
+    {
+      "id": "E09",
+      "name": "Energia do Herói",
+      "arm": "energia",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_energia",
+          "perLevel": 0.0145127119
+        }
+      ],
+      "costs": [
+        900936,
+        1089632,
+        1317848,
+        1593864,
+        1927689,
+        2331432,
+        2819736,
+        3410313,
+        4124582,
+        4988451
+      ],
+      "refunds": [
+        450468,
+        544816,
+        658924,
+        796932,
+        963844,
+        1165716,
+        1409868,
+        1705156,
+        2062291,
+        2494225
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "E05"
+      ]
+    },
+    {
+      "id": "E10",
+      "name": "Energia do Herói",
+      "arm": "energia",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_energia",
+          "perLevel": 0.0203177966
+        },
+        {
+          "kind": "g_speed",
+          "perLevel": 0.0016548546
+        }
+      ],
+      "costs": [
+        15612771,
+        18882772,
+        22837654,
+        27620863,
+        33405886,
+        40402546,
+        48864616,
+        59099014,
+        71476946,
+        86447360
+      ],
+      "refunds": [
+        7806385,
+        9441386,
+        11418827,
+        13810431,
+        16702943,
+        20201273,
+        24432308,
+        29549507,
+        35738473,
+        43223680
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "E07"
+      ]
+    },
+    {
+      "id": "E11",
+      "name": "Coração da Mina",
+      "arm": "energia",
+      "tier": "notavel",
+      "ring": 3,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "team_energia",
+          "perLevel": 0.046440678
+        }
+      ],
+      "costs": [
+        104553237,
+        126451281,
+        152935738,
+        184967204,
+        223707468
+      ],
+      "refunds": [
+        52276618,
+        63225640,
+        76467869,
+        92483602,
+        111853734
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "E10"
+      ]
+    },
+    {
+      "id": "E12",
+      "name": "Energia do Herói",
+      "arm": "energia",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_energia",
+          "perLevel": 0.0261228814
+        }
+      ],
+      "costs": [
+        270561646,
+        327229148,
+        395765317,
+        478655971,
+        578907573,
+        700156267,
+        846799767,
+        1024156863,
+        1238660331,
+        1498090255
+      ],
+      "refunds": [
+        135280823,
+        163614574,
+        197882658,
+        239327985,
+        289453786,
+        350078133,
+        423399883,
+        512078431,
+        619330165,
+        749045127
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "E11"
+      ]
+    },
+    {
+      "id": "E13",
+      "name": "Energia do Herói",
+      "arm": "energia",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_energia",
+          "perLevel": 0.0290254237
+        },
+        {
+          "kind": "g_speed",
+          "perLevel": 0.002364078
+        }
+      ],
+      "costs": [
+        1811856207,
+        2191338544,
+        2650301164,
+        3205390733,
+        3876740458,
+        4688700327,
+        5670720287,
+        6858418394,
+        8294872695,
+        10032183671
+      ],
+      "refunds": [
+        905928103,
+        1095669272,
+        1325150582,
+        1602695366,
+        1938370229,
+        2344350163,
+        2835360143,
+        3429209197,
+        4147436347,
+        5016091835
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "E12"
+      ]
+    },
+    {
+      "id": "E14",
+      "name": "Energia do Herói",
+      "arm": "energia",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_energia",
+          "perLevel": 0.0290254237
+        }
+      ],
+      "costs": [
+        1811856207,
+        2191338544,
+        2650301164,
+        3205390733,
+        3876740458,
+        4688700327,
+        5670720287,
+        6858418394,
+        8294872695,
+        10032183671
+      ],
+      "refunds": [
+        905928103,
+        1095669272,
+        1325150582,
+        1602695366,
+        1938370229,
+        2344350163,
+        2835360143,
+        3429209197,
+        4147436347,
+        5016091835
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "E12"
+      ]
+    },
+    {
+      "id": "G01",
+      "name": "Dano Composto",
+      "arm": "geo",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_geo",
+          "perLevel": 0.0021898325
+        }
+      ],
+      "costs": [
+        28643,
+        35893,
+        44978,
+        56362,
+        70628,
+        88504,
+        110906,
+        138977,
+        174153,
+        218233
+      ],
+      "refunds": [
+        14321,
+        17946,
+        22489,
+        28181,
+        35314,
+        44252,
+        55453,
+        69488,
+        87076,
+        109116
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "H08"
+      ]
+    },
+    {
+      "id": "G02",
+      "name": "Dano Composto",
+      "arm": "geo",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_geo",
+          "perLevel": 0.0028964662
+        },
+        {
+          "kind": "team_dmg",
+          "perLevel": 0.0104814815
+        }
+      ],
+      "costs": [
+        273467,
+        342684,
+        429421,
+        538112,
+        674313,
+        844989,
+        1058864,
+        1326873,
+        1662717,
+        2083568
+      ],
+      "refunds": [
+        136733,
+        171342,
+        214710,
+        269056,
+        337156,
+        422494,
+        529432,
+        663436,
+        831358,
+        1041784
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "G01"
+      ]
+    },
+    {
+      "id": "G03",
+      "name": "Dano Composto",
+      "arm": "geo",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_geo",
+          "perLevel": 0.0036523842
+        }
+      ],
+      "costs": [
+        2610940,
+        3271795,
+        4099919,
+        5137649,
+        6438040,
+        8067572,
+        10109555,
+        12668384,
+        15874879,
+        19892969
+      ],
+      "refunds": [
+        1305470,
+        1635897,
+        2049959,
+        2568824,
+        3219020,
+        4033786,
+        5054777,
+        6334192,
+        7937439,
+        9946484
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "G02"
+      ]
+    },
+    {
+      "id": "G04",
+      "name": "Dano Composto",
+      "arm": "geo",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_geo",
+          "perLevel": 0.0043478438
+        },
+        {
+          "kind": "team_xp",
+          "perLevel": 0.0221538462
+        }
+      ],
+      "costs": [
+        24928083,
+        31237630,
+        39144186,
+        49051970,
+        61467513,
+        77025555,
+        96521492,
+        120952045,
+        151566215,
+        189929138
+      ],
+      "refunds": [
+        12464041,
+        15618815,
+        19572093,
+        24525985,
+        30733756,
+        38512777,
+        48260746,
+        60476022,
+        75783107,
+        94964569
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "G03"
+      ]
+    },
+    {
+      "id": "G05",
+      "name": "Dano Composto",
+      "arm": "geo",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_geo",
+          "perLevel": 0.0051170704
+        }
+      ],
+      "costs": [
+        238002096,
+        298242803,
+        373731034,
+        468326091,
+        586864101,
+        735405264,
+        921543680,
+        1154795587,
+        1447085880,
+        1813357766
+      ],
+      "refunds": [
+        119001048,
+        149121401,
+        186865517,
+        234163045,
+        293432050,
+        367702632,
+        460771840,
+        577397793,
+        723542940,
+        906678883
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "G04"
+      ]
+    },
+    {
+      "id": "G06",
+      "name": "Dano Composto",
+      "arm": "geo",
+      "tier": "small",
+      "ring": 3,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_geo",
+          "perLevel": 0.0058502148
+        }
+      ],
+      "costs": [
+        2272336721,
+        2847487834,
+        3568215437,
+        4471366393,
+        5603113874,
+        7021317943,
+        8798483622,
+        11025467679,
+        13816123638,
+        17313122485
+      ],
+      "refunds": [
+        1136168360,
+        1423743917,
+        1784107718,
+        2235683196,
+        2801556937,
+        3510658971,
+        4399241811,
+        5512733839,
+        6908061819,
+        8656561242
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "G05"
+      ]
+    },
+    {
+      "id": "G08",
+      "name": "Dano Composto",
+      "arm": "geo",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_geo",
+          "perLevel": 0.0029208417
+        }
+      ],
+      "costs": [
+        273467,
+        342684,
+        429421,
+        538112,
+        674313,
+        844989,
+        1058864,
+        1326873,
+        1662717,
+        2083568
+      ],
+      "refunds": [
+        136733,
+        171342,
+        214710,
+        269056,
+        337156,
+        422494,
+        529432,
+        663436,
+        831358,
+        1041784
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "G01"
+      ]
+    },
+    {
+      "id": "G09",
+      "name": "Dano Composto",
+      "arm": "geo",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_geo",
+          "perLevel": 0.0043844603
+        }
+      ],
+      "costs": [
+        24928083,
+        31237630,
+        39144186,
+        49051970,
+        61467513,
+        77025555,
+        96521492,
+        120952045,
+        151566215,
+        189929138
+      ],
+      "refunds": [
+        12464041,
+        15618815,
+        19572093,
+        24525985,
+        30733756,
+        38512777,
+        48260746,
+        60476022,
+        75783107,
+        94964569
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "G03"
+      ]
+    },
+    {
+      "id": "G10",
+      "name": "Dano Composto",
+      "arm": "geo",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_geo",
+          "perLevel": 0.0036523842
+        }
+      ],
+      "costs": [
+        2610940,
+        3271795,
+        4099919,
+        5137649,
+        6438040,
+        8067572,
+        10109555,
+        12668384,
+        15874879,
+        19892969
+      ],
+      "refunds": [
+        1305470,
+        1635897,
+        2049959,
+        2568824,
+        3219020,
+        4033786,
+        5054777,
+        6334192,
+        7937439,
+        9946484
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "G08"
+      ]
+    },
+    {
+      "id": "G11",
+      "name": "Dano Composto",
+      "arm": "geo",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_geo",
+          "perLevel": 0.0043844603
+        }
+      ],
+      "costs": [
+        24928083,
+        31237630,
+        39144186,
+        49051970,
+        61467513,
+        77025555,
+        96521492,
+        120952045,
+        151566215,
+        189929138
+      ],
+      "refunds": [
+        12464041,
+        15618815,
+        19572093,
+        24525985,
+        30733756,
+        38512777,
+        48260746,
+        60476022,
+        75783107,
+        94964569
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "G10"
+      ]
+    },
+    {
+      "id": "G12",
+      "name": "Dano Composto",
+      "arm": "geo",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_geo",
+          "perLevel": 0.0036523842
+        }
+      ],
+      "costs": [
+        2610940,
+        3271795,
+        4099919,
+        5137649,
+        6438040,
+        8067572,
+        10109555,
+        12668384,
+        15874879,
+        19892969
+      ],
+      "refunds": [
+        1305470,
+        1635897,
+        2049959,
+        2568824,
+        3219020,
+        4033786,
+        5054777,
+        6334192,
+        7937439,
+        9946484
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "G02"
+      ]
+    },
+    {
+      "id": "G13",
+      "name": "Dano Composto",
+      "arm": "geo",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_geo",
+          "perLevel": 0.0043844603
+        }
+      ],
+      "costs": [
+        24928083,
+        31237630,
+        39144186,
+        49051970,
+        61467513,
+        77025555,
+        96521492,
+        120952045,
+        151566215,
+        189929138
+      ],
+      "refunds": [
+        12464041,
+        15618815,
+        19572093,
+        24525985,
+        30733756,
+        38512777,
+        48260746,
+        60476022,
+        75783107,
+        94964569
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "G12"
+      ]
+    },
+    {
+      "id": "G14",
+      "name": "Dano Composto",
+      "arm": "geo",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_geo",
+          "perLevel": 0.0051170704
+        }
+      ],
+      "costs": [
+        238002096,
+        298242803,
+        373731034,
+        468326091,
+        586864101,
+        735405264,
+        921543680,
+        1154795587,
+        1447085880,
+        1813357766
+      ],
+      "refunds": [
+        119001048,
+        149121401,
+        186865517,
+        234163045,
+        293432050,
+        367702632,
+        460771840,
+        577397793,
+        723542940,
+        906678883
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "G13"
+      ]
+    },
+    {
+      "id": "G15",
+      "name": "Dano Composto",
+      "arm": "geo",
+      "tier": "small",
+      "ring": 1,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_geo",
+          "perLevel": 0.0058502148
+        }
+      ],
+      "costs": [
+        2272336721,
+        2847487834,
+        3568215437,
+        4471366393,
+        5603113874,
+        7021317943,
+        8798483622,
+        11025467679,
+        13816123638,
+        17313122485
+      ],
+      "refunds": [
+        1136168360,
+        1423743917,
+        1784107718,
+        2235683196,
+        2801556937,
+        3510658971,
+        4399241811,
+        5512733839,
+        6908061819,
+        8656561242
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "G14"
+      ]
+    },
+    {
+      "id": "P01",
+      "name": "Gume Cruel",
+      "arm": "dano",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_dmg",
+          "perLevel": 0.013
+        }
+      ],
+      "costs": [
+        6033249,
+        7296877,
+        8825163,
+        10673540,
+        12909049,
+        15612771,
+        18882772,
+        22837654,
+        27620863,
+        33405886
+      ],
+      "refunds": [
+        3016624,
+        3648438,
+        4412581,
+        5336770,
+        6454524,
+        7806385,
+        9441386,
+        11418827,
+        13810431,
+        16702943
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "D09"
+      ]
+    },
+    {
+      "id": "P02",
+      "name": "Reflexo Afiado",
+      "arm": "crit",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_crit_chance",
+          "perLevel": 0.003711961966
+        },
+        {
+          "kind": "g_speed",
+          "perLevel": 0.0014184468
+        }
+      ],
+      "costs": [
+        6033249,
+        7296877,
+        8825163,
+        10673540,
+        12909049,
+        15612771,
+        18882772,
+        22837654,
+        27620863,
+        33405886
+      ],
+      "refunds": [
+        3016624,
+        3648438,
+        4412581,
+        5336770,
+        6454524,
+        7806385,
+        9441386,
+        11418827,
+        13810431,
+        16702943
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "C09"
+      ]
+    },
+    {
+      "id": "P03",
+      "name": "Passo Lucrativo",
+      "arm": "velocidade",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_speed",
+          "perLevel": 0.0014184468
+        },
+        {
+          "kind": "team_coin",
+          "perLevel": 0.01875
+        }
+      ],
+      "costs": [
+        3967767,
+        4748777,
+        5683520,
+        6802257,
+        8141204,
+        9743708,
+        11661647,
+        13957111,
+        16704410,
+        19992485
+      ],
+      "refunds": [
+        1983883,
+        2374388,
+        2841760,
+        3401128,
+        4070602,
+        4871854,
+        5830823,
+        6978555,
+        8352205,
+        9996242
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "V09"
+      ]
+    },
+    {
+      "id": "P04",
+      "name": "Mão Cheia",
+      "arm": "ouro",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_coin",
+          "perLevel": 0.01875
+        },
+        {
+          "kind": "g_luck",
+          "perLevel": 0.003264
+        }
+      ],
+      "costs": [
+        3825101,
+        4573840,
+        5469139,
+        6539688,
+        7819790,
+        9350463,
+        11180756,
+        13369316,
+        15986273,
+        19115483
+      ],
+      "refunds": [
+        1912550,
+        2286920,
+        2734569,
+        3269844,
+        3909895,
+        4675231,
+        5590378,
+        6684658,
+        7993136,
+        9557741
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "O09"
+      ]
+    },
+    {
+      "id": "P05",
+      "name": "Brisa da Fortuna",
+      "arm": "drop",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "g_luck",
+          "perLevel": 0.0016913455
+        },
+        {
+          "kind": "team_energia",
+          "perLevel": 0.0145127119
+        }
+      ],
+      "costs": [
+        134669,
+        162883,
+        197007,
+        238281,
+        288202,
+        348581,
+        421611,
+        509940,
+        616774,
+        745991
+      ],
+      "refunds": [
+        67334,
+        81441,
+        98503,
+        119140,
+        144101,
+        174290,
+        210805,
+        254970,
+        308387,
+        372995
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "S01"
+      ]
+    },
+    {
+      "id": "P06",
+      "name": "Pulso Constante",
+      "arm": "energia",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_energia",
+          "perLevel": 0.0174152542
+        },
+        {
+          "kind": "team_geo",
+          "perLevel": 0.0043844603
+        }
+      ],
+      "costs": [
+        6033249,
+        7296877,
+        8825163,
+        10673540,
+        12909049,
+        15612771,
+        18882772,
+        22837654,
+        27620863,
+        33405886
+      ],
+      "refunds": [
+        3016624,
+        3648438,
+        4412581,
+        5336770,
+        6454524,
+        7806385,
+        9441386,
+        11418827,
+        13810431,
+        16702943
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "E09"
+      ]
+    },
+    {
+      "id": "P07",
+      "name": "Pressão Tectônica",
+      "arm": "geo",
+      "tier": "small",
+      "ring": 2,
+      "maxLevel": 10,
+      "effects": [
+        {
+          "kind": "team_geo",
+          "perLevel": 0.0051170704
+        },
+        {
+          "kind": "team_dmg",
+          "perLevel": 0.0183425926
+        }
+      ],
+      "costs": [
+        238002096,
+        298242803,
+        373731034,
+        468326091,
+        586864101,
+        735405264,
+        921543680,
+        1154795587,
+        1447085880,
+        1813357766
+      ],
+      "refunds": [
+        119001048,
+        149121401,
+        186865517,
+        234163045,
+        293432050,
+        367702632,
+        460771840,
+        577397793,
+        723542940,
+        906678883
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "G09"
+      ]
+    },
+    {
+      "id": "T01",
+      "name": "Sangue & Ouro",
+      "arm": "dano",
+      "tier": "notavel",
+      "ring": 3,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "team_dmg",
+          "perLevel": 0.046
+        }
+      ],
+      "costs": [
+        12133363940,
+        14674623720,
+        17748135008,
+        21465374669,
+        25961167721
+      ],
+      "refunds": [
+        6066681970,
+        7337311860,
+        8874067504,
+        10732687334,
+        12980583860
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "D13"
+      ]
+    },
+    {
+      "id": "T02",
+      "name": "Tempestade Precisa",
+      "arm": "crit",
+      "tier": "notavel",
+      "ring": 3,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "g_crit_chance",
+          "perLevel": 0.013610527274
+        },
+        {
+          "kind": "g_crit_dmg",
+          "perLevel": 0.0719230769
+        },
+        {
+          "kind": "g_speed",
+          "perLevel": 0.0052009716
+        }
+      ],
+      "costs": [
+        12133363940,
+        14674623720,
+        17748135008,
+        21465374669,
+        25961167721
+      ],
+      "refunds": [
+        6066681970,
+        7337311860,
+        8874067504,
+        10732687334,
+        12980583860
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "C13"
+      ]
+    },
+    {
+      "id": "T03",
+      "name": "Fortuna Dobrada",
+      "arm": "ouro",
+      "tier": "notavel",
+      "ring": 3,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "team_coin",
+          "perLevel": 0.0625
+        },
+        {
+          "kind": "g_luck",
+          "perLevel": 0.01088
+        }
+      ],
+      "costs": [
+        11922153718,
+        14255838208,
+        17046326344,
+        20383034488,
+        24372881672
+      ],
+      "refunds": [
+        5961076859,
+        7127919104,
+        8523163172,
+        10191517244,
+        12186440836
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "O13"
+      ]
+    },
+    {
+      "id": "T04",
+      "name": "Pulso da Terra",
+      "arm": "energia",
+      "tier": "notavel",
+      "ring": 3,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "team_energia",
+          "perLevel": 0.0638559322
+        },
+        {
+          "kind": "team_geo",
+          "perLevel": 0.0161705651
+        }
+      ],
+      "costs": [
+        12133363940,
+        14674623720,
+        17748135008,
+        21465374669,
+        25961167721
+      ],
+      "refunds": [
+        6066681970,
+        7337311860,
+        8874067504,
+        10732687334,
+        12980583860
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "E13"
+      ]
+    },
+    {
+      "id": "T05",
+      "name": "Caçador de Relíquias",
+      "arm": "drop",
+      "tier": "notavel",
+      "ring": 3,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "g_luck",
+          "perLevel": 0.0112756364
+        },
+        {
+          "kind": "team_dmg",
+          "perLevel": 0.0524074074
+        }
+      ],
+      "costs": [
+        12181664472,
+        14733772186,
+        17820556733,
+        21554035060,
+        26069692117
+      ],
+      "refunds": [
+        6090832236,
+        7366886093,
+        8910278366,
+        10777017530,
+        13034846058
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "S13"
+      ]
+    },
+    {
+      "id": "T06",
+      "name": "Geometria Dourada",
+      "arm": "geo",
+      "tier": "notavel",
+      "ring": 2,
+      "maxLevel": 5,
+      "effects": [
+        {
+          "kind": "team_geo",
+          "perLevel": 0.0116362991
+        },
+        {
+          "kind": "team_coin",
+          "perLevel": 0.04375
+        }
+      ],
+      "costs": [
+        2272336721,
+        2847487834,
+        3568215437,
+        4471366393,
+        5603113874
+      ],
+      "refunds": [
+        1136168360,
+        1423743917,
+        1784107718,
+        2235683196,
+        2801556937
+      ],
+      "gatePhase": 0,
+      "requires": [
+        "P07"
+      ]
+    }
+  ]
+}

@@ -39,6 +39,7 @@ test.describe('App shell navigation', () => {
       /^Farm$/i,
       /^Optimizer$/i,
       /^Inventory$/i,
+      /^Skill Tree$/i,
       /^Account$/i,
     ]);
     await expect(links.nth(1)).toHaveAttribute('aria-current', 'page');

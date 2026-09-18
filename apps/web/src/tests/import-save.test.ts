@@ -364,6 +364,7 @@ describe('parseSaveFile', () => {
       // family — a payload with no `account` section asserts "no identity", never a placeholder.
       playerName: null,
       accountId: null,
+      skillTree: null,
     });
   });
 

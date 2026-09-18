@@ -140,7 +140,7 @@ function assertBlocksHoldTheirShape(blocks) {
   }
 }
 
-/** The Live/Farm/Heroes/Inventory/Forge/Optimizer/PVP/Account/Settings nav buttons, by position —
+/** The Live/Farm/Heroes/Inventory/Forge/Optimizer/PVP/Skill Tree/Account/Settings nav buttons, by position —
  *  same technique as `i18n.spec.mjs`'s own `navButton` (`packages/ui` ships no `data-testid` on
  *  these, by design). */
 function navButton(page, index) {
@@ -148,7 +148,7 @@ function navButton(page, index) {
 }
 
 async function switchToPortuguese(page) {
-  await navButton(page, 8).click();
+  await navButton(page, 9).click();
   const select = page.getByRole('combobox', { name: en('settingsLanguageLabel') });
   await select.waitFor({ state: 'visible', timeout: 10_000 });
   await select.click();

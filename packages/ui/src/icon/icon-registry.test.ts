@@ -31,6 +31,9 @@ import { uiIconRegistry } from './ui-registry';
 // Desktop PVP tab (2026-09-16): sword — the ninth nav tab's glyph, chosen over crossed swords
 // (an X at 16px) and a trophy (achievements) so it reads as a fight beside the Forge hammer; the
 // budget moved to 32 with it.
+// Desktop Skill Tree tab (2026-09-17): graph — the tenth nav tab's glyph, a hub joined to outlying
+// nodes like the game's own tree, chosen over a branching hierarchy (an org chart) and a leafed
+// tree (nature) so it reads as connected nodes beside the sparkles; the budget moved to 33 with it.
 const MIGRATED_UI_NAMES = [
   'window',
   'signal',
@@ -42,6 +45,7 @@ const MIGRATED_UI_NAMES = [
   'user-group',
   'sparkles',
   'sword',
+  'graph',
   'ellipsis-horizontal',
   'layout-grid',
   'layout-list',
@@ -67,8 +71,8 @@ const MIGRATED_UI_NAMES = [
 ] as const;
 
 describe('icon registries — budget and membership', () => {
-  it('keeps uiIconRegistry within the 32-entry budget', () => {
-    expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(32);
+  it('keeps uiIconRegistry within the 33-entry budget', () => {
+    expect(Object.keys(uiIconRegistry).length).toBeLessThanOrEqual(33);
   });
 
   it('maps exactly the declared ui-chrome glyphs', () => {

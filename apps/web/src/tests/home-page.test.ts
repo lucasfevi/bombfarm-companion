@@ -5,7 +5,6 @@ import { emptyLoadout } from '@bombfarm/domain/gear';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
 import { HomePage } from '@/features/home';
 import { STRINGS, type Lang } from '@/shared/i18n';
-import { NAV_SECTIONS, SITE_SECTION_LABEL_KEY } from '@/shared/lib/site-sections';
 import { normalizeHero } from '@/shared/lib/storage';
 import {
   ensureTeamPlanSolver,
@@ -102,9 +101,11 @@ describe('the front page', () => {
 
       expect(html.match(/<article/g)).toHaveLength(6);
       expect(articleLabels(html)).toEqual([
-        ...NAV_SECTIONS.filter((section) => section !== 'home').map(
-          (section) => strings[SITE_SECTION_LABEL_KEY[section]],
-        ),
+        strings.navHeroes,
+        strings.navPhases,
+        strings.navOptimizer,
+        strings.navInventory,
+        strings.navAccount,
         strings.downloadHeaderCta,
       ]);
       expect(html).toContain(`>${strings.homeTitle}</h1>`);
