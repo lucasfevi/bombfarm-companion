@@ -13,7 +13,6 @@ import {
   type SkillTreePricing,
   type SkillTreeState,
 } from '@bombfarm/domain/skill-tree';
-import { effectTotalAt } from './node-facts';
 import { SkillTreeScreen } from './skill-tree-screen';
 import type { SkillTreeLabels, SkillTreeScreenProps } from './types';
 
@@ -84,10 +83,6 @@ function labelsTagged(tag: string): SkillTreeLabels {
     previewGoldAtRoster: `${tag}-previewGoldAtRoster`,
     previewGate: `${tag}-previewGate`,
     previewPvp: `${tag}-previewPvp`,
-    before: `${tag}-before`,
-    after: `${tag}-after`,
-    change: `${tag}-change`,
-    percentChange: (fraction) => `${tag}-pct-${(fraction * 100).toFixed(1)}`,
     totalNowNext: (now, next) => `${tag}-nowNext-${now}~${next}`,
     requires: `${tag}-requires`,
     gate: `${tag}-gate`,
@@ -188,7 +183,7 @@ function section(html: string, testId: string): string {
   const start = html.indexOf(`data-testid="${testId}"`);
   if (start < 0) throw new Error(`no ${testId}`);
   const rest = html.slice(start + 1);
-  const end = rest.search(/data-testid="skill-tree-(?!hover-card|recommendation-|preview|selected-|dps-left-out|progress|wallet|priced-at|at-roster-|affordable-|requires-|selected-short-)/);
+  const end = rest.search(/data-testid="skill-tree-(?!hover-card|recommendation-|preview|selected-|dps-left-out|progress|wallet|priced-at|at-roster-|affordable-|requires-|selected-short-|short-)/);
   return end < 0 ? rest : rest.slice(0, end);
 }
 
@@ -344,33 +339,24 @@ describe('SkillTreeScreen — next to buy', () => {
     expect(html).toContain('<img alt="" src="art/D01.png"');
   });
 
-  it('leaves the affordable check off a row the wallet cannot cover', () => {
+  it('marks a row the wallet cannot cover with the crossed coin instead of the check', () => {
     const labels = labelsTagged('aa');
-    expect(recommendationRow(render({ state: { ...STATE, gold: 10 } }), 'H02')).not.toContain(labels.affordableNow);
+    const row = recommendationRow(render({ state: { ...STATE, gold: 10 } }), 'H02');
+    expect(row).not.toContain(labels.affordableNow);
+    expect(row).toContain('data-testid="skill-tree-short-H02"');
+    expect(row).toContain(labels.stateUnaffordable);
   });
 
-  it('expands the selected row with effect now→next, the kind name, and the objective rate — not the per-level value', () => {
+  it('carries the ranking description in an info tip beside its title', () => {
     const labels = labelsTagged('aa');
-    const node = skillNode('D01');
-    const effect = node?.effects[0];
-    expect(node).toBeDefined();
-    expect(effect).toBeDefined();
-    if (node === undefined || effect === undefined) throw new Error('D01 must have an effect');
+    const html = section(render(), 'skill-tree-next-to-buy');
+    expect(html).toContain(labels.nextToBuyTip);
+  });
+
+  it('never grows a row on select — the node card carries the detail, so nothing below shifts', () => {
     const html = recommendationRow(render({ selectedId: 'D01' }), 'D01');
-    expect(html).toContain(`data-testid="skill-tree-recommendation-detail-D01"`);
-    const before = effectTotalAt(effect, 2);
-    const after = effectTotalAt(effect, 3);
-    expect(html).toContain(labels.effectValue(effect.kind, before));
-    expect(html).toContain(labels.effectValue(effect.kind, after));
-    expect(html).toContain(labels.effectValue(effect.kind, after - before));
-    expect(html).toContain(labels.kindName(effect.kind));
-    expect(html).not.toContain(labels.effectPerLevel(effect.kind, effect.perLevel));
-    expect(html).toContain(labels.previewGold);
-    expect(html).toContain(labels.goldCompact(10_000));
-    expect(html).toContain(labels.goldCompact(10_015));
-    expect(html).toContain(labels.percentChange(10_015 / 10_000 - 1));
-    expect(html).not.toContain(labels.goldCompact(10_040));
-    for (const word of [labels.before, labels.after, labels.change]) expect(html).toContain(word);
+    expect(html).toContain('aria-pressed="true"');
+    expect(html).not.toContain('skill-tree-recommendation-detail-D01');
   });
 
   it('keeps the expand off a row that is not selected', () => {
@@ -384,17 +370,6 @@ describe('SkillTreeScreen — next to buy', () => {
     expect(html).toContain(labels.gainDps(30));
     expect(html).toContain(labels.perMillionDps(10_000));
     expect(html).not.toContain(labels.gainGold(3));
-  });
-
-  it('expands the combat figure before / after / change, named for the objective', () => {
-    const labels = labelsTagged('aa');
-    const gate = recommendationRow(render({ objective: 'gateClear', selectedId: 'H03' }), 'H03');
-    expect(gate).toContain('data-testid="skill-tree-recommendation-detail-H03"');
-    expect(gate).toContain(labels.previewGate);
-    expect(gate).toContain('>2000<');
-    expect(gate).toContain('>2030<');
-    expect(gate).toContain(labels.percentChange(2030 / 2000 - 1));
-    expect(recommendationRow(render({ objective: 'pvp', selectedId: 'H03' }), 'H03')).toContain(labels.previewPvp);
   });
 
   it('says so when there is no pricing, and when nothing gains', () => {

@@ -116,12 +116,6 @@ export interface SkillTreeLabels {
   /** The combat figure's name under each objective: damage per second at the gate, or in the duel. */
   previewGate: string;
   previewPvp: string;
-  /** The three rows a figure is shown in: as it stands, with the node, and the change. */
-  before: string;
-  after: string;
-  change: string;
-  /** A change as a signed percentage of the before figure, `+0.5%`. */
-  percentChange: (fraction: number) => string;
   /** `now → next`, for a stat total moving one level. */
   totalNowNext: (now: string, next: string) => string;
   requires: string;

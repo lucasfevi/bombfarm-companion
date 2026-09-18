@@ -46,7 +46,9 @@ test.describe('Skill Tree page', () => {
     await expect(row).toBeVisible();
     await row.click();
     await expect(row).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('[data-testid^="skill-tree-recommendation-detail-"]')).toBeVisible();
+    await expect(page.getByTestId('skill-tree-selected')).toBeVisible();
+    await page.getByTestId('skill-tree-selected-close').click();
+    await expect(page.getByTestId('skill-tree-selected')).toHaveCount(0);
   });
 
   test('the gate objective prices on a gate picked from the gate-only phase list', async ({ page }) => {
