@@ -1,6 +1,6 @@
 # Skill Tree tab
 
-**Status (2026-09-17):** the desktop draws the account's skill tree as the game lays it out and
+**Status (2026-09-18):** the desktop draws the account's skill tree as the game lays it out and
 prices every node the player could buy next. It is read-only: buying stays in the game, and the
 app calls no endpoint that would spend gold.
 
@@ -17,6 +17,14 @@ speed, gold per target, luck, energy, the compound (GEO) multiplier, hero XP, fi
 tabs — and a **Next to buy** panel that ranks every buyable node by what one more level adds per
 million gold, under one of three objectives: gold per hour, a timed gate clear, or a PVP duel. The
 objective and the chosen gate are remembered between visits.
+
+Each of the eight paths is drawn in its own colour — rings, edges, glow and progress arcs — and
+Gold keeps the wallet's gold, as does the hub. Colour says which path a node is on; ring weight
+and glow say its state, and a node the wallet cannot cover is red on every path. The medallion
+art is bronze on every arm, so the ring is the only place a path's colour can live. Above the
+tree, one card per path prints the levels bought over the path's total, the nodes maxed and the
+gold sunk into it over what the whole path costs, each with its share; pressing a card lights that
+path alone on the tree until it is pressed again.
 
 The tab is drawn from the account read the other data screens share. When the skills section of
 that read is not usable, the tab says the tree could not be read and draws nothing else.

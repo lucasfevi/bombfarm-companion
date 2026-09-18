@@ -947,6 +947,8 @@ export const en = {
   skillsCountOf: '{part} / {whole}',
   skillsGoldSpent: 'Gold spent',
   skillsGoldToMax: 'Gold to max the tree',
+  skillsPaths: 'Progress by path',
+  skillsNodesMaxed: '{maxed} of {nodes} nodes maxed',
   skillsFitToView: 'Fit to view',
   skillsZoomIn: 'Zoom in',
   skillsZoomOut: 'Zoom out',
@@ -956,6 +958,7 @@ export const en = {
   skillsLegendUnaffordable: 'Not enough gold',
   skillsLegendLocked: 'Locked',
   skillsLegendRecommended: 'Best value',
+  skillsLegendPathNote: 'Ring colour is the path; ring weight and glow are the state. Not enough gold stays red on every path.',
   skillsCanvasAria: 'Skill tree map',
   skillsNodeAria: '{name}, level {level} of {max}',
   // *AurasAtCap* — the team-aura chips on the Farm board's control row and the Optimizer's setup

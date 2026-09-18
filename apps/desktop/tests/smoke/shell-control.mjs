@@ -33,7 +33,9 @@ export async function shellControl(page, testId) {
   return page.getByTestId(folded);
 }
 
-const LANGUAGE_TOGGLE_WORD = { pt: 'PT', en: 'EN' };
+// Whole-word: `hasText` with a string is a case-blind substring match, and the Skill Tree tab's
+// path cards are buttons in a group too — "Energy" answered to 'EN'.
+const LANGUAGE_TOGGLE_WORD = { pt: /^PT$/, en: /^EN$/ };
 const LANGUAGE_IN_OVERFLOW = { pt: 'shell-overflow-language-pt', en: 'shell-overflow-language-en' };
 
 /**

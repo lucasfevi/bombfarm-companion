@@ -1,13 +1,14 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { rankSkillGains, wikiGateLines, gateWindowSecs, type SkillNode, type SkillNodeGain, type SkillPricingObjective } from '@bombfarm/domain/skill-tree';
+import { rankSkillGains, wikiGateLines, gateWindowSecs, type SkillArm, type SkillNode, type SkillNodeGain, type SkillPricingObjective } from '@bombfarm/domain/skill-tree';
 import { FactTile, Panel, PanelHeader, SearchSelect, SegmentedToggle, Tooltip, cn, tipClass, type SearchSelectOption } from '@bombfarm/ui';
 import { GoldValue } from '@bombfarm/game-art';
 import { CompactFigure } from './compact-figure';
 import { NextToBuyPanel, type RecommendationRow } from './next-to-buy-panel';
-import { objectiveDelta, statusMap, treeSummary } from './node-facts';
+import { armSummaries, objectiveDelta, statusMap, treeSummary } from './node-facts';
 import { skillNodeDisplayName } from './node-name';
+import { PathProgressCards } from './path-progress-cards';
 import { SelectedNodeCard } from './selected-node-card';
 import { SkillTreeCanvas, SkillTreeLegend } from './skill-tree-canvas';
 import { TotalsPanel } from './totals-panel';
@@ -48,6 +49,8 @@ export function SkillTreeScreen({
   labels,
   selectedId: controlledSelectedId,
   onSelect,
+  focusArm: controlledFocusArm,
+  onFocusArm,
   recommendationCount = DEFAULT_RECOMMENDATION_COUNT,
   className,
 }: SkillTreeScreenProps) {
@@ -60,10 +63,20 @@ export function SkillTreeScreen({
     },
     [onSelect, controlledSelectedId],
   );
+  const [ownFocusArm, setOwnFocusArm] = useState<SkillArm | null>(null);
+  const focusArm = controlledFocusArm === undefined ? ownFocusArm : controlledFocusArm;
+  const focusPath = useCallback(
+    (arm: SkillArm | null) => {
+      onFocusArm?.(arm);
+      if (controlledFocusArm === undefined) setOwnFocusArm(arm);
+    },
+    [onFocusArm, controlledFocusArm],
+  );
 
   const nodeById = useMemo(() => new Map(catalog.nodes.map((node) => [node.id, node])), [catalog]);
   const statuses = useMemo(() => statusMap(catalog, state), [catalog, state]);
   const summary = useMemo(() => treeSummary(catalog, statuses), [catalog, statuses]);
+  const paths = useMemo(() => armSummaries(catalog, statuses), [catalog, statuses]);
   const gains = useMemo<ReadonlyMap<string, SkillNodeGain>>(
     () => new Map((pricing?.gains ?? []).map((gain) => [gain.id, gain])),
     [pricing],
@@ -121,6 +134,7 @@ export function SkillTreeScreen({
         <Panel className="flex min-h-0 min-w-0 flex-col" data-testid="skill-tree-canvas-panel">
           <PanelHeader title={labels.title} />
           <p className={tipClass}>{labels.tip}</p>
+          <PathProgressCards summaries={paths} focusArm={focusArm} onFocusArm={focusPath} labels={labels} />
           <div className="relative flex min-h-0 flex-1 flex-col">
             <SkillTreeCanvas
               catalog={catalog}
@@ -130,6 +144,7 @@ export function SkillTreeScreen({
               objective={objective}
               selectedId={selectedId}
               recommendedId={recommendedId}
+              focusArm={focusArm}
               onSelect={select}
               nodeArtSrc={nodeArtSrc}
               nodeName={nodeName}

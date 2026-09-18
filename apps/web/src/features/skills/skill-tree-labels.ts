@@ -223,6 +223,8 @@ export function skillTreeLabels(copy: Strings, lang: Lang, phaseSource: SkillsPh
     share: (fraction) => `${formatNumber(fraction * 100, lang, 1)}%`,
     goldSpent: copy.skillsGoldSpent,
     goldToMax: copy.skillsGoldToMax,
+    paths: copy.skillsPaths,
+    nodesMaxed: (maxed, nodes) => sub(copy.skillsNodesMaxed, { maxed: formatNumber(maxed, lang, 0), nodes: formatNumber(nodes, lang, 0) }),
 
     fitToView: copy.skillsFitToView,
     zoomIn: copy.skillsZoomIn,
@@ -233,6 +235,7 @@ export function skillTreeLabels(copy: Strings, lang: Lang, phaseSource: SkillsPh
     legendUnaffordable: copy.skillsLegendUnaffordable,
     legendLocked: copy.skillsLegendLocked,
     legendRecommended: copy.skillsLegendRecommended,
+    legendPathNote: copy.skillsLegendPathNote,
     canvasAria: copy.skillsCanvasAria,
     nodeAria: (name, level, max) => sub(copy.skillsNodeAria, { name, level, max }),
   };
