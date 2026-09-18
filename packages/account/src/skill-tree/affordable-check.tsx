@@ -23,13 +23,22 @@ function Mark({ label, testId, children }: { label: string; testId: string; chil
   );
 }
 
-/** The green check beside a node the wallet covers right now. */
+function CoinMark({ icon, tone }: { icon: 'check' | 'x-mark'; tone: 'up' | 'down' }) {
+  return (
+    <span className="relative inline-flex size-3.5">
+      <img src={goldIconSrc()} alt="" aria-hidden className="size-3.5 object-contain" draggable={false} />
+      <span className={cn('absolute', '-right-1', '-bottom-1', tone === 'up' ? 'text-up' : 'text-down')}>
+        <Icon name={icon} size="xs" />
+      </span>
+    </span>
+  );
+}
+
+/** The coin with a green check beside a node the wallet covers right now. */
 export function AffordableCheck({ label, testId }: { label: string; testId: string }) {
   return (
     <Mark label={label} testId={testId}>
-      <span className="text-up">
-        <Icon name="check" size="xs" />
-      </span>
+      <CoinMark icon="check" tone="up" />
     </Mark>
   );
 }
@@ -38,12 +47,7 @@ export function AffordableCheck({ label, testId }: { label: string; testId: stri
 export function ShortOfGoldMark({ label, testId }: { label: string; testId: string }) {
   return (
     <Mark label={label} testId={testId}>
-      <span className="relative inline-flex size-3.5">
-        <img src={goldIconSrc()} alt="" aria-hidden className="size-3.5 object-contain opacity-70" draggable={false} />
-        <span className="absolute -right-1 -bottom-1 rounded-full bg-surface text-down">
-          <Icon name="x-mark" size="xs" />
-        </span>
-      </span>
+      <CoinMark icon="x-mark" tone="down" />
     </Mark>
   );
 }
