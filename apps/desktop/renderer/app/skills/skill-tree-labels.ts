@@ -171,6 +171,7 @@ export function skillTreeLabels(t: Copy, lang: DomainLang, phaseSource: SkillsPh
     wallet: t.skillsWallet,
     gold: (gold) => sub(t.skillsGoldAmount, { gold: formatNumber(gold, lang, 0) }),
     goldCompact: (gold) => formatCompactNumber(gold, lang, 1),
+    compactNumber: (value) => formatSignificantCompact(value, lang),
 
     nextToBuy: t.skillsNextToBuy,
     nextToBuyTip: t.skillsNextToBuyTip,

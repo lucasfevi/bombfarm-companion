@@ -62,6 +62,8 @@ export interface SkillTreeLabels {
   gold: (gold: number) => string;
   /** Compact gold for the canvas and the ranking rows, `1.2M`. */
   goldCompact: (gold: number) => string;
+  /** Any figure printed short, `2.57M`, the exact one a hover away. */
+  compactNumber: (value: number) => string;
   /** An unsigned gold/hr rate — the preview's baseline and with-node figures. `goldCompact` when absent. */
   goldPerHour?: (value: number) => string;
   /** An unsigned team-DPS figure, for the same two preview rows. A rounded integer when absent. */

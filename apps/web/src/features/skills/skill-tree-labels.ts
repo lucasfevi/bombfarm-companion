@@ -167,6 +167,7 @@ export function skillTreeLabels(copy: Strings, lang: Lang, phaseSource: SkillsPh
     wallet: copy.skillsWallet,
     gold: (gold) => sub(copy.skillsGoldAmount, { gold: formatNumber(gold, lang, 0) }),
     goldCompact: (gold) => formatCompactNumber(gold, lang, 1),
+    compactNumber: (value) => formatSignificantCompact(value, lang),
 
     nextToBuy: copy.skillsNextToBuy,
     nextToBuyTip: copy.skillsNextToBuyTip,

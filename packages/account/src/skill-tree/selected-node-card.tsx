@@ -11,7 +11,6 @@ import {
   Button,
   Icon,
   InfoTip,
-  PanelHeader,
   StatList,
   Tooltip,
   cn,
@@ -19,7 +18,8 @@ import {
   tipClass,
   type StatListItem,
 } from '@bombfarm/ui';
-import { AffordableCheck } from './affordable-check';
+import { AffordableCheck, ShortOfGoldMark } from './affordable-check';
+import { CompactFigure } from './compact-figure';
 import { effectTotalAt } from './node-facts';
 import type { SkillTreeLabels } from './types';
 
@@ -51,7 +51,6 @@ function stateLine(node: SkillNode, status: SkillNodeStatus, parentName: (id: st
       return missing ? labels.stateLockedPrerequisite(parentName(missing.id), missing.need, missing.have) : labels.stateBuyable;
     }
     default:
-      if (status.affordable === false) return labels.stateUnaffordable;
       return status.owned ? labels.stateOwned : labels.stateBuyable;
   }
 }
@@ -145,7 +144,12 @@ export function SelectedNodeCard({
     const parent = nodeById.get(id);
     return parent ? nodeName(parent) : id;
   };
-  const gold = (amount: number) => <GoldValue baseline>{labels.gold(amount)}</GoldValue>;
+  const gold = (amount: number) => (
+    <GoldValue baseline>
+      <CompactFigure compact={labels.goldCompact(amount)} exact={labels.gold(amount)} />
+    </GoldValue>
+  );
+  const dps = (value: number) => <CompactFigure compact={labels.compactNumber(value)} exact={rateDps(labels, value)} />;
 
   const nextLevel = Math.min(node.maxLevel, status.level + 1);
   const effectItems: StatListItem[] = node.effects.map((effect) => ({
@@ -203,14 +207,23 @@ export function SelectedNodeCard({
       data-testid="skill-tree-selected"
       data-node-id={node.id}
       aria-label={nodeName(node)}
-      className={cn('flex flex-col rounded-sm border border-line bg-surface p-3 shadow-lg', className)}
+      className={cn('relative flex flex-col rounded-sm border border-line bg-surface p-3 shadow-lg', className)}
     >
-      <div className="flex items-start gap-3">
+      <span className="absolute top-1.5 right-1.5">
+        <Button variant="icon" aria-label={labels.closeNode} data-testid="skill-tree-selected-close" onClick={() => onSelect(null)}>
+          <Icon name="x-mark" size="sm" />
+        </Button>
+      </span>
+      <div className="flex items-start gap-3 pr-5">
         <Medallion src={nodeArtSrc(node)} className="size-12" />
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <h2 className="m-0 flex items-center gap-1.5 truncate text-sm font-bold text-ink">
             <span className="truncate">{nodeName(node)}</span>
-            {status.affordable === true ? <AffordableCheck label={labels.affordableNow} testId={`skill-tree-selected-affordable-${node.id}`} /> : null}
+            {status.affordable === true ? (
+              <AffordableCheck label={labels.affordableNow} testId={`skill-tree-selected-affordable-${node.id}`} />
+            ) : status.affordable === false ? (
+              <ShortOfGoldMark label={labels.stateUnaffordable} testId={`skill-tree-selected-short-${node.id}`} />
+            ) : null}
           </h2>
           <p className="m-0 text-[11px] text-muted">
             {labels.armName(node.arm)} · {labels.tierName(node.tier)}
@@ -219,20 +232,13 @@ export function SelectedNodeCard({
             {labels.level(status.level, status.maxLevel)}
           </p>
         </div>
-        <Button
-          variant="ghost"
-          className="-mt-1 -mr-1 px-1.5 py-1"
-          aria-label={labels.closeNode}
-          data-testid="skill-tree-selected-close"
-          onClick={() => onSelect(null)}
-        >
-          <Icon name="x-mark" size="sm" />
-        </Button>
       </div>
       {node.tier === 'start' ? <p className={cn(tipClass, 'mt-2')}>{labels.hubNote}</p> : null}
-      <p className="m-0 mt-2 text-xs text-ink" data-testid="skill-tree-selected-state">
-        {stateLine(node, status, parentName, labels)}
-      </p>
+      {status.availability === 'buyable' ? null : (
+        <p className="m-0 mt-2 text-xs text-ink" data-testid="skill-tree-selected-state">
+          {stateLine(node, status, parentName, labels)}
+        </p>
+      )}
 
       <h3 className={heroAbilTitleClass}>{labels.effects}</h3>
       <StatList variant="phases" items={effectItems} aria-label={labels.effects} />
@@ -241,9 +247,10 @@ export function SelectedNodeCard({
 
       {showPreview ? (
         <div className="mt-3 border-t border-line pt-3" data-testid="skill-tree-preview">
-          <PanelHeader title={labels.preview} className="mb-1">
+          <h3 className={cn(heroAbilTitleClass, 'flex items-center gap-1.5')}>
+            {labels.preview}
             <InfoTip label={labels.preview} tip={labels.previewTip} />
-          </PanelHeader>
+          </h3>
           <StatList
             variant="phases"
             aria-label={labels.preview}
@@ -282,10 +289,9 @@ export function SelectedNodeCard({
                       label: objective === 'pvp' ? labels.previewPvp : labels.previewGate,
                       value: (
                         <>
-                          {labels.totalNowNext(
-                            rateDps(labels, pricing.baseline.teamDps),
-                            rateDps(labels, pricing.baseline.teamDps + gain.teamDpsDelta),
-                          )}
+                          {dps(pricing.baseline.teamDps)}
+                          <span className="mx-1">→</span>
+                          {dps(pricing.baseline.teamDps + gain.teamDpsDelta)}
                           <Delta value={gain.teamDpsDelta} text={labels.gainDps(gain.teamDpsDelta)} />
                         </>
                       ),

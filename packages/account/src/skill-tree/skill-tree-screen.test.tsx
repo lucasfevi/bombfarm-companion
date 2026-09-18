@@ -49,6 +49,7 @@ function labelsTagged(tag: string): SkillTreeLabels {
     wallet: `${tag}-wallet`,
     gold: (gold) => `${tag}-gold-${gold}`,
     goldCompact: (gold) => `${tag}-goldCompact-${gold}`,
+    compactNumber: (value) => `${tag}-cn-${Math.round(value)}`,
     nextToBuy: `${tag}-nextToBuy`,
     nextToBuyTip: `${tag}-nextToBuyTip`,
     objectiveGold: `${tag}-objectiveGold`,
@@ -185,7 +186,7 @@ function section(html: string, testId: string): string {
   const start = html.indexOf(`data-testid="${testId}"`);
   if (start < 0) throw new Error(`no ${testId}`);
   const rest = html.slice(start + 1);
-  const end = rest.search(/data-testid="skill-tree-(?!hover-card|recommendation-|preview|selected-|dps-left-out|progress|wallet|priced-at|at-roster-|affordable-|requires-)/);
+  const end = rest.search(/data-testid="skill-tree-(?!hover-card|recommendation-|preview|selected-|dps-left-out|progress|wallet|priced-at|at-roster-|affordable-|requires-|selected-short-)/);
   return end < 0 ? rest : rest.slice(0, end);
 }
 
@@ -449,7 +450,8 @@ describe('SkillTreeScreen — the selected node', () => {
     const node = skillNode('D01');
     if (!node) throw new Error('no D01');
     expect(html).toContain(labels.level(2, 10));
-    expect(html).toContain(labels.stateOwned);
+    expect(html).not.toContain('data-testid="skill-tree-selected-state"');
+    expect(section(render({ selectedId: 'D02' }), 'skill-tree-selected')).toContain('data-testid="skill-tree-selected-state"');
     expect(html).toContain(`${labels.armName('dano')} · ${labels.tierName('small')}`);
     const facts = rows(html);
     const perLevel = node.effects[0]?.perLevel ?? 0;
@@ -457,12 +459,12 @@ describe('SkillTreeScreen — the selected node', () => {
       label: labels.effectPerLevel('team_dmg', perLevel),
       value: labels.totalNowNext(labels.effectValue('team_dmg', perLevel * 2), labels.effectValue('team_dmg', perLevel * 3)),
     });
-    expect(facts).toContainEqual({ label: labels.nextLevelCost, value: labels.gold(node.costs[2] ?? 0) });
+    expect(facts).toContainEqual({ label: labels.nextLevelCost, value: labels.goldCompact(node.costs[2] ?? 0) });
     expect(facts).toContainEqual({
       label: labels.costToMax,
-      value: labels.gold(node.costs.slice(2).reduce((sum, cost) => sum + cost, 0)),
+      value: labels.goldCompact(node.costs.slice(2).reduce((sum, cost) => sum + cost, 0)),
     });
-    expect(facts).toContainEqual({ label: labels.refund, value: labels.gold(node.refunds[1] ?? 0) });
+    expect(facts).toContainEqual({ label: labels.refund, value: labels.goldCompact(node.refunds[1] ?? 0) });
     expect(html).toContain(labels.refundTip);
     expect(facts.find((fact) => fact.label === labels.requires)?.value).toContain(labels.kindName('team_dmg'));
     expect(html).toContain('data-testid="skill-tree-requires-H01"');
@@ -473,9 +475,10 @@ describe('SkillTreeScreen — the selected node', () => {
     const html = section(render({ selectedId: 'H02', state: { ...STATE, gold: 1e12 } }), 'skill-tree-selected');
     expect(html).toContain('data-testid="skill-tree-selected-affordable-H02"');
     expect(html).toContain(labels.affordableNow);
-    expect(section(render({ selectedId: 'H02', state: { ...STATE, gold: 0 } }), 'skill-tree-selected')).not.toContain(
-      'skill-tree-selected-affordable-H02',
-    );
+    const short = section(render({ selectedId: 'H02', state: { ...STATE, gold: 0 } }), 'skill-tree-selected');
+    expect(short).not.toContain('skill-tree-selected-affordable-H02');
+    expect(short).toContain('data-testid="skill-tree-selected-short-H02"');
+    expect(short).toContain(labels.stateUnaffordable);
   });
 
   it('previews the objectives with the node bought: now → with node, signed delta, per million', () => {
@@ -491,7 +494,7 @@ describe('SkillTreeScreen — the selected node', () => {
       value: `${labels.totalNowNext(labels.goldCompact(10_000), labels.goldCompact(10_040))} ${labels.gainGold(40)}`,
     });
     expect(facts).toContainEqual({ label: labels.colPerMillion, value: labels.perMillionGold(510.4) });
-    expect(facts).toContainEqual({ label: labels.previewGate, value: `${labels.totalNowNext('2000', '2007')} ${labels.gainDps(7)}` });
+    expect(facts).toContainEqual({ label: labels.previewGate, value: `${labels.compactNumber(2000)} → ${labels.compactNumber(2007)} ${labels.gainDps(7)}` });
     expect(html).toContain(labels.gainOutsideObjectives);
     expect(section(render({ selectedId: 'D01', objective: 'pvp' }), 'skill-tree-preview')).toContain(labels.previewPvp);
   });
@@ -504,7 +507,7 @@ describe('SkillTreeScreen — the selected node', () => {
       label: labels.previewGoldAtRoster,
       value: `${labels.totalNowNext('rate-10000', 'rate-10040')} ${labels.gainGold(40)}`,
     });
-    expect(facts).toContainEqual({ label: labels.previewGate, value: `${labels.totalNowNext('dps-2000', 'dps-2007')} ${labels.gainDps(7)}` });
+    expect(facts).toContainEqual({ label: labels.previewGate, value: `${labels.compactNumber(2000)} → ${labels.compactNumber(2007)} ${labels.gainDps(7)}` });
   });
 
   it('skips the DPS rows when the roster has no DPS figure', () => {
