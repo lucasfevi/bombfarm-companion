@@ -142,6 +142,7 @@ export interface SkillTreeLabels {
   legend: string;
   legendOwned: string;
   legendBuyable: string;
+  legendUnaffordable: string;
   legendLocked: string;
   legendRecommended: string;
   canvasAria: string;

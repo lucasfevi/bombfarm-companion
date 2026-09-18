@@ -234,6 +234,7 @@ export function skillTreeLabels(t: Copy, lang: DomainLang, phaseSource: SkillsPh
     legend: t.skillsLegend,
     legendOwned: t.skillsLegendOwned,
     legendBuyable: t.skillsLegendBuyable,
+    legendUnaffordable: t.skillsLegendUnaffordable,
     legendLocked: t.skillsLegendLocked,
     legendRecommended: t.skillsLegendRecommended,
     canvasAria: t.skillsCanvasAria,

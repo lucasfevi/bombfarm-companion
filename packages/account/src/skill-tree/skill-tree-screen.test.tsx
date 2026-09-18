@@ -103,6 +103,7 @@ function labelsTagged(tag: string): SkillTreeLabels {
     legend: `${tag}-legend`,
     legendOwned: `${tag}-legendOwned`,
     legendBuyable: `${tag}-legendBuyable`,
+    legendUnaffordable: `${tag}-legendUnaffordable`,
     legendLocked: `${tag}-legendLocked`,
     legendRecommended: `${tag}-legendRecommended`,
     canvasAria: `${tag}-canvasAria`,
@@ -300,7 +301,7 @@ describe('SkillTreeScreen — the canvas', () => {
     const labels = labelsTagged('aa');
     const html = render();
     expect(html).toMatch(/viewBox="-\d+(\.\d+)? -\d+(\.\d+)? \d+(\.\d+)? \d+(\.\d+)?"/);
-    for (const text of [labels.fitToView, labels.zoomIn, labels.zoomOut, labels.legendOwned, labels.legendBuyable, labels.legendLocked, labels.legendRecommended]) {
+    for (const text of [labels.fitToView, labels.zoomIn, labels.zoomOut, labels.legendOwned, labels.legendBuyable, labels.legendUnaffordable, labels.legendLocked, labels.legendRecommended]) {
       expect(html).toContain(`>${text}<`);
     }
     expect(html).toContain(`aria-label="${labels.legend}"`);

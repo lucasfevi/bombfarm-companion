@@ -953,6 +953,7 @@ export const en = {
   skillsLegend: 'Legend',
   skillsLegendOwned: 'Owned',
   skillsLegendBuyable: 'Can buy',
+  skillsLegendUnaffordable: 'Not enough gold',
   skillsLegendLocked: 'Locked',
   skillsLegendRecommended: 'Best value',
   skillsCanvasAria: 'Skill tree map',

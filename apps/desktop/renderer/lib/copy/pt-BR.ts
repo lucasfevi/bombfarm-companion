@@ -911,6 +911,7 @@ export const ptBR: Copy = {
   skillsLegend: 'Legenda',
   skillsLegendOwned: 'Comprado',
   skillsLegendBuyable: 'Pode comprar',
+  skillsLegendUnaffordable: 'Falta ouro',
   skillsLegendLocked: 'Bloqueado',
   skillsLegendRecommended: 'Melhor valor',
   skillsCanvasAria: 'Mapa da árvore de habilidades',

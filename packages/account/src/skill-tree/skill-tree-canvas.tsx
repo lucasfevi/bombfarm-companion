@@ -501,9 +501,10 @@ export function SkillTreeCanvas({
   );
 }
 
-const LEGEND_SWATCH: Record<'owned' | 'buyable' | 'locked' | 'recommended', string> = {
+const LEGEND_SWATCH: Record<'owned' | 'buyable' | 'unaffordable' | 'locked' | 'recommended', string> = {
   owned: 'border-gold bg-[color-mix(in_oklch,var(--gold)_35%,var(--bg))]',
   buyable: 'border-gold bg-bg',
+  unaffordable: 'border-[color-mix(in_oklch,var(--down)_65%,var(--gold))] bg-bg',
   locked: 'border-line bg-bg-2 opacity-50',
   recommended: 'border-up border-dashed bg-bg',
 };
@@ -512,6 +513,7 @@ export function SkillTreeLegend({ labels }: { labels: SkillTreeLabels }) {
   const items = [
     { id: 'owned', text: labels.legendOwned },
     { id: 'buyable', text: labels.legendBuyable },
+    { id: 'unaffordable', text: labels.legendUnaffordable },
     { id: 'locked', text: labels.legendLocked },
     { id: 'recommended', text: labels.legendRecommended },
   ] as const;
