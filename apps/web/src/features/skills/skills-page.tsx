@@ -16,9 +16,7 @@ import { EmptyState, cn } from '@bombfarm/ui';
 import { useAppLang } from '@/shared/context/app-lang';
 import type { AccountShared } from '@/shared/lib/storage';
 import { usePlannerStore } from '@/shared/stores';
-import { farmInputsOf } from '@/shared/stores/selectors/farm-ranking-selectors';
 import { skillTreeLabels } from './skill-tree-labels';
-import { gateCombatInput } from '@bombfarm/farm/core';
 import {
   priceSkillsView,
   skillsPricingKey,
@@ -115,8 +113,7 @@ export function SkillsPage() {
   const pricing = useKeyedMemo<SkillTreePricing | null>(pricingKey, () => {
     const store = usePlannerStore.getState();
     if (state === null || totals === null || store.phase === null) return null;
-    const combat = gateCombatInput(farmInputsOf(store), gatePhase);
-    return priceSkillsView(store, state, totals, store.phase, combat);
+    return priceSkillsView(store, state, totals, store.phase, gatePhase);
   });
 
   if (state === null || totals === null) {

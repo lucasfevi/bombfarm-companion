@@ -58,18 +58,32 @@ export type SkillTreePricingInput = {
   /** Node ids to price; every buyable node when absent. */
   readonly candidates?: readonly string[];
   readonly spread?: BreakpointSpread;
-  /** Combat window T in seconds. Absent or not positive: no combat figures. */
-  readonly combatWindowSecs?: number | null;
-  /** Combat roster. Omitted → `enabledHeroIds`. An explicit empty list is empty. */
-  readonly combatHeroIds?: readonly string[] | null;
-  /** Phase combat is priced at. Omitted → `phase`. */
-  readonly combatPhase?: number;
+  /** A timed clear of a gate by a chosen squad; absent, no gate figures. */
+  readonly gate?: SkillCombatWindow | null;
+  /** The duel window with the standing PVP squad; absent, no duel figures. */
+  readonly pvp?: SkillCombatWindow | null;
+};
+
+/** A combat window to price: how long, who, and the phase it is fought at. */
+export type SkillCombatWindow = {
+  readonly windowSecs: number;
+  readonly heroIds: readonly string[];
+  readonly phase: number;
+};
+
+/** The window's damage per second as the roster stands; `null` when no hero on it carries birth stats. */
+export type SkillCombatFigure = {
+  readonly phase: number;
+  readonly windowSecs: number;
+  readonly dps: number | null;
+  /** Heroes left out — no birth stats on record. */
+  readonly leftOut: readonly string[];
 };
 
 export type SkillObjectiveFigures = {
   readonly goldPerHour: number;
-  /** `null` when no enabled hero carries birth stats. */
-  readonly teamDps: number | null;
+  readonly gate: SkillCombatFigure | null;
+  readonly pvp: SkillCombatFigure | null;
 };
 
 export type SkillNodeGain = {
@@ -81,21 +95,21 @@ export type SkillNodeGain = {
   readonly goldPerHourDelta: number;
   /** At the roster exactly as read. */
   readonly goldPerHourDeltaAtRoster: number;
-  readonly teamDpsDelta: number | null;
+  readonly gateDpsDelta: number | null;
+  readonly pvpDpsDelta: number | null;
   /** Δ gold/hr per million gold spent — `Infinity` for a free level. */
   readonly goldPerMillion: number;
-  readonly dpsPerMillion: number | null;
+  readonly gatePerMillion: number | null;
+  readonly pvpPerMillion: number | null;
   /** Effect kinds on the node that neither objective can see. */
   readonly unpriced: readonly SkillEffectKind[];
 };
 
 export type SkillTreePricing = {
   readonly phase: number;
-  readonly combatPhase: number | null;
-  readonly combatWindowSecs: number | null;
   readonly baseline: SkillObjectiveFigures;
   readonly gains: readonly SkillNodeGain[];
-  /** Heroes the combat figure had to leave out — no birth stats on record. */
+  /** Heroes either combat figure had to leave out — no birth stats on record. */
   readonly dpsLeftOut: readonly string[];
 };
 
@@ -150,16 +164,7 @@ function teamPlanHero(hero: HeroRecord): TeamPlanHeroInput {
   };
 }
 
-function farmHeroes(input: SkillTreePricingInput): readonly HeroRecord[] {
-  const ids = input.enabledHeroIds;
-  if (ids == null) return input.heroes.filter((hero) => hero.battleAllowed !== false);
-  const idSet = new Set(ids);
-  return input.heroes.filter((hero) => idSet.has(hero.id));
-}
-
-function combatHeroes(input: SkillTreePricingInput): readonly HeroRecord[] {
-  if (input.combatHeroIds === undefined) return farmHeroes(input);
-  const ids = input.combatHeroIds ?? [];
+function combatHeroes(input: SkillTreePricingInput, ids: readonly string[]): readonly HeroRecord[] {
   const byId = new Map(input.heroes.map((hero) => [hero.id, hero]));
   const selected: HeroRecord[] = [];
   for (const id of ids) {
@@ -179,18 +184,12 @@ type DpsModel = {
   readonly windowSecs: number;
 };
 
-function combatWindowSecsOf(input: SkillTreePricingInput): number | null {
-  const secs = input.combatWindowSecs;
-  return secs != null && secs > 0 ? secs : null;
-}
-
-function dpsModelFor(input: SkillTreePricingInput): DpsModel | null {
-  const windowSecs = combatWindowSecsOf(input);
-  if (windowSecs === null) return null;
-  const selected = combatHeroes(input);
+function dpsModelFor(input: SkillTreePricingInput, window: SkillCombatWindow | null | undefined): DpsModel | null {
+  if (!window || !(window.windowSecs > 0)) return null;
+  const selected = combatHeroes(input, window.heroIds);
   const withBirth = selected.filter((hero) => hero.birth !== undefined);
   const leftOut = selected.filter((hero) => hero.birth === undefined).map((hero) => hero.name);
-  const phase = input.combatPhase ?? input.phase;
+  const phase = window.phase;
   const line = wikiPhaseLine(phase) ?? phaseLine(phase);
   return {
     heroes: withBirth.map(teamPlanHero),
@@ -199,8 +198,13 @@ function dpsModelFor(input: SkillTreePricingInput): DpsModel | null {
     leftOut,
     mitigationPct: +((line?.mitig ?? 0.01) * 100).toFixed(2),
     phase,
-    windowSecs,
+    windowSecs: window.windowSecs,
   };
+}
+
+function figureOf(model: DpsModel | null, dps: number | null): SkillCombatFigure | null {
+  if (model === null) return null;
+  return { phase: model.phase, windowSecs: model.windowSecs, dps, leftOut: model.leftOut };
 }
 
 function windowedTeamDpsOf(model: DpsModel, input: SkillTreePricingInput, totals: SkillTotals, fieldSlots: number): number | null {
@@ -285,8 +289,15 @@ export function priceSkillTree(input: SkillTreePricingInput): SkillTreePricing {
   const baseGoldByFactor = new Map(factors.map((factor) => [factor, goldAt(baseGold, factor)]));
   const baselineGold = goldAt(baseGold, 1);
 
-  const dpsModel = dpsModelFor(input);
-  const baselineDps = dpsModel === null ? null : windowedTeamDpsOf(dpsModel, input, input.totals, baseFieldSlots);
+  const gateModel = dpsModelFor(input, input.gate);
+  const pvpModel = dpsModelFor(input, input.pvp);
+  const baselineGate = gateModel === null ? null : windowedTeamDpsOf(gateModel, input, input.totals, baseFieldSlots);
+  const baselinePvp = pvpModel === null ? null : windowedTeamDpsOf(pvpModel, input, input.totals, baseFieldSlots);
+  const combatDelta = (model: DpsModel | null, baseline: number | null, moves: boolean, totals: SkillTotals, fieldSlots: number) => {
+    if (model === null || baseline === null) return null;
+    const dps = moves ? windowedTeamDpsOf(model, input, totals, fieldSlots) : baseline;
+    return dps === null ? null : dps - baseline;
+  };
 
   const candidateIds =
     input.candidates ??
@@ -310,13 +321,8 @@ export function priceSkillTree(input: SkillTreePricingInput): SkillTreePricing {
     const atRoster = goldAt(gold, 1) - baselineGold;
 
     const dpsMoves = touchesSheet(node) || slotDelta !== 0;
-    const dps =
-      baselineDps === null || dpsModel === null
-        ? null
-        : dpsMoves
-          ? windowedTeamDpsOf(dpsModel, input, totals, baseFieldSlots + slotDelta)
-          : baselineDps;
-    const dpsDelta = dps === null || baselineDps === null ? null : dps - baselineDps;
+    const gateDelta = combatDelta(gateModel, baselineGate, dpsMoves, totals, baseFieldSlots + slotDelta);
+    const pvpDelta = combatDelta(pvpModel, baselinePvp, dpsMoves, totals, baseFieldSlots + slotDelta);
 
     gains.push({
       id: node.id,
@@ -324,20 +330,20 @@ export function priceSkillTree(input: SkillTreePricingInput): SkillTreePricing {
       cost: status.nextCost,
       goldPerHourDelta: expected,
       goldPerHourDeltaAtRoster: atRoster,
-      teamDpsDelta: dpsDelta,
+      gateDpsDelta: gateDelta,
+      pvpDpsDelta: pvpDelta,
       goldPerMillion: perMillion(expected, status.nextCost),
-      dpsPerMillion: dpsDelta === null ? null : perMillion(dpsDelta, status.nextCost),
+      gatePerMillion: gateDelta === null ? null : perMillion(gateDelta, status.nextCost),
+      pvpPerMillion: pvpDelta === null ? null : perMillion(pvpDelta, status.nextCost),
       unpriced: unpricedKinds(node),
     });
   }
 
   return {
     phase: input.phase,
-    combatPhase: dpsModel === null ? null : dpsModel.heroes.length === 0 ? (input.combatPhase ?? null) : dpsModel.phase,
-    combatWindowSecs: dpsModel?.windowSecs ?? null,
-    baseline: { goldPerHour: baselineGold, teamDps: baselineDps },
+    baseline: { goldPerHour: baselineGold, gate: figureOf(gateModel, baselineGate), pvp: figureOf(pvpModel, baselinePvp) },
     gains,
-    dpsLeftOut: dpsModel?.leftOut ?? [],
+    dpsLeftOut: [...new Set([...(gateModel?.leftOut ?? []), ...(pvpModel?.leftOut ?? [])])],
   };
 }
 
@@ -347,10 +353,32 @@ export function isCombatSkillObjective(objective: SkillPricingObjective): boolea
   return objective === 'gateClear' || objective === 'pvp';
 }
 
+/** The gain a node makes to one objective — `null` when that objective was not priced. */
+export function objectiveDelta(gain: SkillNodeGain, objective: SkillPricingObjective): number | null {
+  switch (objective) {
+    case 'goldPerHour':
+      return gain.goldPerHourDelta;
+    case 'gateClear':
+      return gain.gateDpsDelta;
+    default:
+      return gain.pvpDpsDelta;
+  }
+}
+
+export function objectivePerMillion(gain: SkillNodeGain, objective: SkillPricingObjective): number | null {
+  switch (objective) {
+    case 'goldPerHour':
+      return gain.goldPerMillion;
+    case 'gateClear':
+      return gain.gatePerMillion;
+    default:
+      return gain.pvpPerMillion;
+  }
+}
+
 /** Best value first — the gain per million gold, ties to the cheaper node; zero-gain nodes last. */
 export function rankSkillGains(gains: readonly SkillNodeGain[], objective: SkillPricingObjective): SkillNodeGain[] {
-  const score = (gain: SkillNodeGain) =>
-    objective === 'goldPerHour' ? gain.goldPerMillion : (gain.dpsPerMillion ?? Number.NEGATIVE_INFINITY);
+  const score = (gain: SkillNodeGain) => objectivePerMillion(gain, objective) ?? Number.NEGATIVE_INFINITY;
   return [...gains].sort((a, b) => {
     const diff = score(b) - score(a);
     if (Number.isNaN(diff) || diff === 0) return a.cost - b.cost;

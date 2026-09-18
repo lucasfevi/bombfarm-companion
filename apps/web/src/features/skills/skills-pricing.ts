@@ -6,7 +6,7 @@ import {
   type SkillTreePricing,
   type SkillTreeState,
 } from '@bombfarm/domain/skill-tree';
-import { buildAccount, farmDepsEqual, resolveEnabledHeroIds, type SkillsCombatInput } from '@bombfarm/farm/core';
+import { buildAccount, farmDepsEqual, gateCombatWindow, resolveEnabledHeroIds } from '@bombfarm/farm/core';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 import { farmInputsOf, readFarmDepTuple } from '@/shared/stores/selectors/farm-ranking-selectors';
 
@@ -58,7 +58,7 @@ export function priceSkillsView(
   state: SkillTreeState,
   totals: SkillTotals,
   phase: number,
-  combat: SkillsCombatInput,
+  gatePhase: number,
 ): SkillTreePricing {
   const inputs = farmInputsOf(store);
   return priceSkillTree({
@@ -69,8 +69,6 @@ export function priceSkillsView(
     phase,
     totals,
     state,
-    combatWindowSecs: combat.windowSecs,
-    combatHeroIds: combat.heroIds,
-    ...(combat.phase === null ? {} : { combatPhase: combat.phase }),
+    gate: gateCombatWindow(inputs, gatePhase),
   });
 }

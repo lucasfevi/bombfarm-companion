@@ -31,14 +31,15 @@ describe('priceSkillTree', () => {
   const totals = totalsFromLevels(state);
   const enabledHeroIds = heroes.map((hero) => hero.id);
   const gatePhase = defaultGatePhase(phase);
-  const combatWindowSecs = gateWindowSecs(gatePhase);
-  const combatHeroIds = skillTreeGateRosterIds({
+  const gateHeroIds = skillTreeGateRosterIds({
     heroes,
     account,
     enabledHeroIds,
     phase: gatePhase,
     fieldSlots: fieldSlotsForSkillTree(account),
   });
+  const gate = { windowSecs: gateWindowSecs(gatePhase), heroIds: gateHeroIds, phase: gatePhase };
+  const pvp = { windowSecs: PVP_WINDOW_SECS, heroIds: gateHeroIds.slice(0, 5), phase: 220 };
 
   function price(overrides: Partial<Parameters<typeof priceSkillTree>[0]> = {}) {
     return priceSkillTree({
@@ -49,9 +50,8 @@ describe('priceSkillTree', () => {
       phase,
       totals,
       state,
-      combatWindowSecs,
-      combatHeroIds,
-      combatPhase: gatePhase,
+      gate,
+      pvp,
       ...overrides,
     });
   }
@@ -64,9 +64,10 @@ describe('priceSkillTree', () => {
     const board = computeFarmRates({ heroes, account, enabledHeroIds, returnBonus: 'off', maxPhase: account.maxPhase ?? null });
     const row = computeFarmRateRow(phase, board.squad, { returnBonus: 'off', maxPhase: account.maxPhase ?? null });
     expect(pricing.baseline.goldPerHour).toBeCloseTo(row!.goldPerHour, 6);
-    expect(pricing.baseline.teamDps).toBeGreaterThan(0);
-    expect(pricing.combatPhase).toBe(gatePhase);
-    expect(pricing.combatWindowSecs).toBe(combatWindowSecs);
+    expect(pricing.baseline.gate?.dps).toBeGreaterThan(0);
+    expect(pricing.baseline.gate).toMatchObject({ phase: gatePhase, windowSecs: gate.windowSecs, leftOut: [] });
+    expect(pricing.baseline.pvp?.dps).toBeGreaterThan(0);
+    expect(pricing.baseline.pvp).toMatchObject({ phase: 220, windowSecs: PVP_WINDOW_SECS });
     expect(pricing.dpsLeftOut).toEqual([]);
 
     expect(pricing.gains.length).toBeGreaterThan(5);
@@ -85,16 +86,18 @@ describe('priceSkillTree', () => {
     const coin = pricing.gains.find((gain) => skillNode(gain.id)!.effects.some((effect) => effect.kind === 'team_coin'));
     expect(coin, 'a buyable coin node').toBeDefined();
     expect(coin!.goldPerHourDelta).toBeGreaterThan(0);
-    expect(coin!.teamDpsDelta).toBe(0);
+    expect(coin!.gateDpsDelta).toBe(0);
+    expect(coin!.pvpDpsDelta).toBe(0);
     const luck = pricing.gains.find((gain) => skillNode(gain.id)!.effects.every((effect) => effect.kind === 'g_luck'));
     if (luck) {
       expect(luck.goldPerHourDelta).toBe(0);
-      expect(luck.teamDpsDelta).toBe(0);
+      expect(luck.gateDpsDelta).toBe(0);
       expect(luck.unpriced).toEqual(['g_luck']);
     }
     const damage = pricing.gains.find((gain) => skillNode(gain.id)!.effects.some((effect) => effect.kind === 'team_dmg' || effect.kind === 'team_geo'));
     expect(damage, 'a buyable damage node').toBeDefined();
-    expect(damage!.teamDpsDelta).toBeGreaterThan(0);
+    expect(damage!.gateDpsDelta).toBeGreaterThan(0);
+    expect(damage!.pvpDpsDelta).toBeGreaterThan(0);
     expect(byId.size).toBe(pricing.gains.length);
   });
 
@@ -106,9 +109,12 @@ describe('priceSkillTree', () => {
     }
     const gate = rankSkillGains(pricing.gains, 'gateClear');
     for (let i = 1; i < gate.length; i++) {
-      expect(gate[i - 1]!.dpsPerMillion ?? -Infinity).toBeGreaterThanOrEqual(gate[i]!.dpsPerMillion ?? -Infinity);
+      expect(gate[i - 1]!.gatePerMillion ?? -Infinity).toBeGreaterThanOrEqual(gate[i]!.gatePerMillion ?? -Infinity);
     }
-    expect(rankSkillGains(pricing.gains, 'pvp').map((gain) => gain.id)).toEqual(gate.map((gain) => gain.id));
+    const duel = rankSkillGains(pricing.gains, 'pvp');
+    for (let i = 1; i < duel.length; i++) {
+      expect(duel[i - 1]!.pvpPerMillion ?? -Infinity).toBeGreaterThanOrEqual(duel[i]!.pvpPerMillion ?? -Infinity);
+    }
   });
 
   it('prices only the candidates it is handed', () => {
@@ -118,9 +124,8 @@ describe('priceSkillTree', () => {
 
   it('leaves energy near zero on a window the roster already covers, while a damage node still moves', () => {
     const pricing = price({
-      combatHeroIds: combatHeroIds.slice(0, 1),
-      combatWindowSecs: 1,
-      combatPhase: gatePhase,
+      gate: { windowSecs: 1, heroIds: gateHeroIds.slice(0, 1), phase: gatePhase },
+      pvp: null,
       account: { ...account, aurasAtCap: TEAM_AURA_SWITCH_IDS },
     });
     const energy = pricing.gains.find((gain) => {
@@ -130,8 +135,8 @@ describe('priceSkillTree', () => {
     const damage = pricing.gains.find((gain) => skillNode(gain.id)!.effects.some((effect) => effect.kind === 'team_dmg' || effect.kind === 'team_geo'));
     expect(energy, 'a buyable energy-only node').toBeDefined();
     expect(damage, 'a buyable damage node').toBeDefined();
-    expect(Math.abs(energy!.teamDpsDelta ?? 0)).toBeLessThan(1e-6);
-    expect(damage!.teamDpsDelta).toBeGreaterThan(0);
+    expect(Math.abs(energy!.gateDpsDelta ?? 0)).toBeLessThan(1e-6);
+    expect(damage!.gateDpsDelta).toBeGreaterThan(0);
   });
 
   it('uses the ranked gate roster, not the full farm pool, for the combat figure', () => {
@@ -142,23 +147,26 @@ describe('priceSkillTree', () => {
       phase: gatePhase,
       fieldSlots: 6,
     });
-    const full = price({ combatHeroIds: enabledHeroIds });
-    const ranked = price({ combatHeroIds: rankedIds });
+    const full = price({ gate: { ...gate, heroIds: enabledHeroIds } });
+    const ranked = price({ gate: { ...gate, heroIds: rankedIds } });
     expect(rankedIds).toHaveLength(6);
     expect(rankedIds.length).toBeLessThan(enabledHeroIds.length);
-    expect(ranked.baseline.teamDps).not.toBe(full.baseline.teamDps);
+    expect(ranked.baseline.gate?.dps).not.toBe(full.baseline.gate?.dps);
   });
 
   it('does not invent a combat team when the PVP squad is empty', () => {
-    const pricing = price({ combatHeroIds: [], combatWindowSecs: PVP_WINDOW_SECS, combatPhase: 50 });
-    expect(pricing.baseline.teamDps).toBeNull();
-    expect(pricing.gains.every((gain) => gain.teamDpsDelta === null)).toBe(true);
+    const pricing = price({ pvp: null });
+    expect(pricing.baseline.pvp).toBeNull();
+    expect(pricing.gains.every((gain) => gain.pvpDpsDelta === null && gain.pvpPerMillion === null)).toBe(true);
+    expect(pricing.baseline.gate?.dps).toBeGreaterThan(0);
     expect(pricing.baseline.goldPerHour).toBeGreaterThan(0);
+    const emptySquad = price({ pvp: { ...pvp, heroIds: [] } });
+    expect(emptySquad.baseline.pvp?.dps).toBeNull();
   });
 
   it('keeps gold ranking the same when the combat roster is empty', () => {
     const gold = rankSkillGains(price().gains, 'goldPerHour').map((gain) => [gain.id, gain.goldPerHourDelta]);
-    const emptyCombat = rankSkillGains(price({ combatHeroIds: [] }).gains, 'goldPerHour').map((gain) => [
+    const emptyCombat = rankSkillGains(price({ gate: null, pvp: null }).gains, 'goldPerHour').map((gain) => [
       gain.id,
       gain.goldPerHourDelta,
     ]);

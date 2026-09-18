@@ -29,8 +29,7 @@ import { isSectionUsable, sectionFidelityOf } from '../../lib/account/account-fa
 import type { AccountView } from '@bombfarm/contracts';
 import { buildAccountRoster } from '../../lib/account/account-roster';
 import { buildFarmInputs } from '../../lib/farm/farm-inputs';
-import { pvpCombatInput } from '../../lib/skills/pvp-combat-input';
-import { gateCombatInput } from '@bombfarm/farm/core';
+import { pvpCombatWindow } from '../../lib/skills/pvp-combat-input';
 import { priceSkillsView, skillsPricingKey, skillsTotalsOf } from '../../lib/skills/skills-pricing';
 import { DEFAULT_SKILLS_VIEW, loadSkillsView, saveSkillsView, type SkillsView } from '../../lib/skills/skills-view-storage';
 import { refreshPvpStanding, usePvpHistory } from '../../lib/pvp/use-pvp-history';
@@ -115,25 +114,18 @@ export function SkillsView() {
   const labels = useMemo(() => skillTreeLabels(t, lang, phaseSource), [t, lang, phaseSource]);
   const inputs = view === null || controls === null ? null : buildFarmInputs(view, controls);
 
+  // The duel figure sits on every node card, whichever objective ranks the list.
   useEffect(() => {
-    if (objective === 'pvp') refreshPvpStanding();
-  }, [objective]);
+    refreshPvpStanding();
+  }, []);
 
   const rosterIds = useMemo(() => new Set(inputs?.heroes.map((hero) => hero.id) ?? []), [inputs]);
-  const pvp = pvpCombatInput(pvpHistory.status === 'ready' ? pvpHistory.history : null, rosterIds);
+  const pvp = pvpCombatWindow(pvpHistory.status === 'ready' ? pvpHistory.history : null, rosterIds);
   const pricingKey =
-    inputs === null || state === null || phase === null
-      ? null
-      : skillsPricingKey(inputs, state, phase, {
-          objective,
-          gatePhase,
-          pvpHeroIds: pvp.heroIds,
-          pvpPhase: pvp.phase,
-        });
+    inputs === null || state === null || phase === null ? null : skillsPricingKey(inputs, state, phase, { gatePhase, pvp });
   const pricing = useKeyedMemo<SkillTreePricing | null>(pricingKey, () => {
     if (inputs === null || state === null || totals === null || phase === null) return null;
-    const combat = objective === 'pvp' ? pvp : gateCombatInput(inputs, gatePhase);
-    return priceSkillsView(inputs, state, totals, phase, combat);
+    return priceSkillsView(inputs, state, totals, phase, gatePhase, pvp);
   });
 
   if (accountViewState.status === 'loading') {
@@ -190,7 +182,7 @@ export function SkillsView() {
         onObjectiveChange={setObjective}
         gatePhase={gatePhase}
         onGatePhaseChange={setGatePhase}
-        pvpEmpty={objective === 'pvp' && pvp.empty}
+        pvpEmpty={pvp === null}
         nodeArtSrc={skillNodeArtSrc}
         labels={labels}
       />

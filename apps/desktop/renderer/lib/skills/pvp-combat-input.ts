@@ -1,20 +1,15 @@
 import type { PvpHistoryResult } from '@bombfarm/contracts';
-import { PVP_WINDOW_SECS } from '@bombfarm/domain/skill-tree';
-import type { SkillsCombatInput } from '@bombfarm/farm/core';
+import { PVP_WINDOW_SECS, type SkillCombatWindow } from '@bombfarm/domain/skill-tree';
 
-export function pvpCombatInput(
-  history: PvpHistoryResult | null,
-  rosterIds: ReadonlySet<string>,
-): SkillsCombatInput & { readonly empty: boolean } {
+/**
+ * The duel window with the standing PVP squad, or `null` while no squad is on record — the
+ * ranking waits rather than inventing a team. Squad members the roster does not carry are dropped.
+ */
+export function pvpCombatWindow(history: PvpHistoryResult | null, rosterIds: ReadonlySet<string>): SkillCombatWindow | null {
   const standing = history?.standing ?? null;
-  if (standing === null) {
-    return { windowSecs: PVP_WINDOW_SECS, heroIds: [], phase: null, empty: true };
-  }
+  if (standing === null) return null;
   const heroIds = standing.squadHeroIds.filter((id) => rosterIds.has(id));
-  if (heroIds.length === 0) {
-    return { windowSecs: PVP_WINDOW_SECS, heroIds: [], phase: null, empty: true };
-  }
-  const latestPhase = history?.rows[0]?.phase;
-  const phase = latestPhase ?? standing.tierFloor;
-  return { windowSecs: PVP_WINDOW_SECS, heroIds, phase, empty: false };
+  if (heroIds.length === 0) return null;
+  const phase = history?.rows[0]?.phase ?? standing.tierFloor;
+  return { windowSecs: PVP_WINDOW_SECS, heroIds, phase };
 }

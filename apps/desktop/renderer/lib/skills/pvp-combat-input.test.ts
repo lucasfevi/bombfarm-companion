@@ -1,15 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { PVP_WINDOW_SECS } from '@bombfarm/domain/skill-tree';
-import { pvpCombatInput } from './pvp-combat-input';
+import { pvpCombatWindow } from './pvp-combat-input';
 
-describe('pvpCombatInput', () => {
+describe('pvpCombatWindow', () => {
   it('stays empty without a standing or when no squad hero is still on the roster', () => {
-    expect(pvpCombatInput(null, new Set(['a']))).toEqual({
-      windowSecs: PVP_WINDOW_SECS,
-      heroIds: [],
-      phase: null,
-      empty: true,
-    });
+    expect(pvpCombatWindow(null, new Set(['a']))).toBeNull();
     const history = {
       rows: [],
       totals: { duels: 0, won: 0, films: 0 },
@@ -28,7 +23,7 @@ describe('pvpCombatInput', () => {
       },
       rank: null,
     };
-    expect(pvpCombatInput(history, new Set(['still-here']))).toMatchObject({ empty: true, heroIds: [] });
+    expect(pvpCombatWindow(history, new Set(['still-here']))).toBeNull();
   });
 
   it('keeps standing slot order and uses the latest duel phase when history has one', () => {
@@ -72,11 +67,10 @@ describe('pvpCombatInput', () => {
       },
       rank: null,
     };
-    expect(pvpCombatInput(history, new Set(['a', 'b']))).toEqual({
+    expect(pvpCombatWindow(history, new Set(['a', 'b']))).toEqual({
       windowSecs: PVP_WINDOW_SECS,
       heroIds: ['b', 'a'],
       phase: 120,
-      empty: false,
     });
   });
 
@@ -99,6 +93,6 @@ describe('pvpCombatInput', () => {
       },
       rank: null,
     };
-    expect(pvpCombatInput(history, new Set(['a'])).phase).toBe(80);
+    expect(pvpCombatWindow(history, new Set(['a']))?.phase).toBe(80);
   });
 });

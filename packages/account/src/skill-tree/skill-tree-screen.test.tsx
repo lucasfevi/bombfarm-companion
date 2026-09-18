@@ -81,8 +81,8 @@ function labelsTagged(tag: string): SkillTreeLabels {
     previewTip: `${tag}-previewTip`,
     previewGold: `${tag}-previewGold`,
     previewGoldAtRoster: `${tag}-previewGoldAtRoster`,
-    previewGate: `${tag}-previewGate`,
-    previewPvp: `${tag}-previewPvp`,
+    previewGate: (phase) => `${tag}-previewGate-${phase}`,
+    previewPvp: (phase) => `${tag}-previewPvp-${phase}`,
     totalNowNext: (now, next) => `${tag}-nowNext-${now}~${next}`,
     requires: `${tag}-requires`,
     gate: `${tag}-gate`,
@@ -128,9 +128,11 @@ function gain(id: string, overrides: Partial<SkillNodeGain> = {}): SkillNodeGain
     cost: 1_000_000,
     goldPerHourDelta: 100,
     goldPerHourDeltaAtRoster: 100,
-    teamDpsDelta: 10,
+    gateDpsDelta: 10,
+    pvpDpsDelta: 10,
     goldPerMillion: 100,
-    dpsPerMillion: 10,
+    gatePerMillion: 10,
+    pvpPerMillion: 10,
     unpriced: [],
     ...overrides,
   };
@@ -139,21 +141,25 @@ function gain(id: string, overrides: Partial<SkillNodeGain> = {}): SkillNodeGain
 /** H02 is the best gold buy, H03 the best DPS buy, H04 prices neither objective above zero. */
 const PRICING: SkillTreePricing = {
   phase: 60,
-  combatPhase: 60,
-  combatWindowSecs: 600,
-  baseline: { goldPerHour: 10_000, teamDps: 2_000 },
+  baseline: {
+    goldPerHour: 10_000,
+    gate: { phase: 60, windowSecs: 600, dps: 2_000, leftOut: [] },
+    pvp: { phase: 220, windowSecs: 60, dps: 4_000, leftOut: [] },
+  },
   gains: [
-    gain('H04', { cost: 3000, goldPerHourDelta: 0, goldPerMillion: 0, teamDpsDelta: 0, dpsPerMillion: 0 }),
-    gain('H03', { cost: 3000, goldPerHourDelta: 3, goldPerMillion: 1000, teamDpsDelta: 30, dpsPerMillion: 10_000 }),
-    gain('H02', { cost: 3000, goldPerHourDelta: 30, goldPerMillion: 10_000, teamDpsDelta: 3, dpsPerMillion: 1000 }),
+    gain('H04', { cost: 3000, goldPerHourDelta: 0, goldPerMillion: 0, gateDpsDelta: 0, gatePerMillion: 0, pvpDpsDelta: 0, pvpPerMillion: 0 }),
+    gain('H03', { cost: 3000, goldPerHourDelta: 3, goldPerMillion: 1000, gateDpsDelta: 30, gatePerMillion: 10_000, pvpDpsDelta: 3, pvpPerMillion: 1000 }),
+    gain('H02', { cost: 3000, goldPerHourDelta: 30, goldPerMillion: 10_000, gateDpsDelta: 3, gatePerMillion: 1000, pvpDpsDelta: 30, pvpPerMillion: 10_000 }),
     gain('D01', {
       level: 2,
       cost: 29_387,
       goldPerHourDelta: 15,
       goldPerHourDeltaAtRoster: 40,
       goldPerMillion: 510.4,
-      teamDpsDelta: 7,
-      dpsPerMillion: 238.2,
+      gateDpsDelta: 7,
+      gatePerMillion: 238.2,
+      pvpDpsDelta: 9,
+      pvpPerMillion: 306.3,
       unpriced: ['g_luck'],
     }),
   ],
@@ -313,9 +319,9 @@ describe('SkillTreeScreen — next to buy', () => {
     expect(recommendationOrder(render())).toEqual(['H02', 'H03', 'D01']);
   });
 
-  it('ranks by combat per million under a combat objective', () => {
+  it('ranks by the gate figure or the duel figure per million, each its own order', () => {
     expect(recommendationOrder(render({ objective: 'gateClear' }))).toEqual(['H03', 'H02', 'D01']);
-    expect(recommendationOrder(render({ objective: 'pvp' }))).toEqual(['H03', 'H02', 'D01']);
+    expect(recommendationOrder(render({ objective: 'pvp' }))).toEqual(['H02', 'H03', 'D01']);
   });
 
   it('caps the list at recommendationCount', () => {
@@ -390,7 +396,8 @@ describe('SkillTreeScreen — next to buy', () => {
   it('prints the wallet, the priced phase and the three objective options in the header', () => {
     const labels = labelsTagged('aa');
     const html = section(render(), 'skill-tree-header');
-    expect(html).toContain(labels.gold(1e7));
+    expect(html).toContain(labels.goldCompact(1e7));
+    expect(html).toContain('/wiki-assets/');
     expect(html).toContain(labels.pricedAtPhase(60));
     expect(html).toContain(`aria-pressed="true"`);
     expect(html).toContain(labels.objectiveGold);
@@ -471,9 +478,24 @@ describe('SkillTreeScreen — the selected node', () => {
       value: `${labels.totalNowNext(labels.goldCompact(10_000), labels.goldCompact(10_040))} ${labels.gainGold(40)}`,
     });
     expect(facts).toContainEqual({ label: labels.colPerMillion, value: labels.perMillionGold(510.4) });
-    expect(facts).toContainEqual({ label: labels.previewGate, value: `${labels.compactNumber(2000)} → ${labels.compactNumber(2007)} ${labels.gainDps(7)}` });
+    expect(facts).toContainEqual({ label: labels.previewGate(60), value: `${labels.compactNumber(2000)} → ${labels.compactNumber(2007)} ${labels.gainDps(7)}` });
+    expect(facts).toContainEqual({ label: labels.previewPvp(220), value: `${labels.compactNumber(4000)} → ${labels.compactNumber(4009)} ${labels.gainDps(9)}` });
+    expect(facts.filter((fact) => fact.label === labels.colPerMillion).map((fact) => fact.value)).toEqual([
+      labels.perMillionGold(510.4),
+      labels.perMillionDps(238.2),
+      labels.perMillionDps(306.3),
+    ]);
     expect(html).toContain(labels.gainOutsideObjectives);
-    expect(section(render({ selectedId: 'D01', objective: 'pvp' }), 'skill-tree-preview')).toContain(labels.previewPvp);
+  });
+
+  it('shows all three figures whichever objective ranks the list', () => {
+    const labels = labelsTagged('aa');
+    for (const objective of ['goldPerHour', 'gateClear', 'pvp'] as const) {
+      const html = section(render({ selectedId: 'D01', objective }), 'skill-tree-preview');
+      expect(html).toContain(labels.previewGold);
+      expect(html).toContain(labels.previewGate(60));
+      expect(html).toContain(labels.previewPvp(220));
+    }
   });
 
   it('uses the host rate formatters when the bag carries them', () => {
@@ -484,19 +506,20 @@ describe('SkillTreeScreen — the selected node', () => {
       label: labels.previewGoldAtRoster,
       value: `${labels.totalNowNext('rate-10000', 'rate-10040')} ${labels.gainGold(40)}`,
     });
-    expect(facts).toContainEqual({ label: labels.previewGate, value: `${labels.compactNumber(2000)} → ${labels.compactNumber(2007)} ${labels.gainDps(7)}` });
+    expect(facts).toContainEqual({ label: labels.previewGate(60), value: `${labels.compactNumber(2000)} → ${labels.compactNumber(2007)} ${labels.gainDps(7)}` });
   });
 
-  it('skips the DPS rows when the roster has no DPS figure', () => {
+  it('skips a combat row whose window was not priced, keeping the other', () => {
     const labels = labelsTagged('aa');
     const pricing: SkillTreePricing = {
       ...PRICING,
-      baseline: { goldPerHour: 10_000, teamDps: null },
-      gains: PRICING.gains.map((entry) => ({ ...entry, teamDpsDelta: null, dpsPerMillion: null })),
+      baseline: { ...PRICING.baseline, gate: null },
+      gains: PRICING.gains.map((entry) => ({ ...entry, gateDpsDelta: null, gatePerMillion: null })),
     };
     const html = section(render({ selectedId: 'D01', pricing }), 'skill-tree-preview');
     expect(html).toContain(labels.previewGold);
-    expect(html).not.toContain(labels.previewGate);
+    expect(html).toContain(labels.previewPvp(220));
+    expect(html).not.toContain(labels.previewGate(60));
   });
 
   it('keeps the facts but drops the preview for a locked node, and says what locks it', () => {

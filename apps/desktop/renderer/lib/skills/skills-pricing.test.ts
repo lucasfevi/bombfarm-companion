@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { AccountPayload, AccountView } from '@bombfarm/contracts';
-import { parseSkillTreeState, type SkillTreeState } from '@bombfarm/domain/skill-tree';
-import { gateCombatInput, type FarmInputs } from '@bombfarm/farm/core';
+import { parseSkillTreeState, PVP_WINDOW_SECS, type SkillTreeState } from '@bombfarm/domain/skill-tree';
+import type { FarmInputs } from '@bombfarm/farm/core';
 import { buildFarmInputs, DEFAULT_FARM_CONTROLS } from '../farm/farm-inputs';
 import { priceSkillsView, skillsPricingKey, skillsTotalsOf } from './skills-pricing';
 
@@ -24,10 +24,16 @@ function offlineInputs(view = offlineView()): { inputs: FarmInputs; state: Skill
 describe('priceSkillsView', () => {
   it('prices the committed offline account: a baseline, a gain per buyable node, and the phase it was asked for', () => {
     const { inputs, state } = offlineInputs();
-    const pricing = priceSkillsView(inputs, state, skillsTotalsOf(state), 51, gateCombatInput(inputs, 50));
+    const squad = inputs.heroes.slice(0, 3).map((hero) => hero.id);
+    const pricing = priceSkillsView(inputs, state, skillsTotalsOf(state), 51, 50, { windowSecs: PVP_WINDOW_SECS, heroIds: squad, phase: 120 });
 
     expect(pricing.phase).toBe(51);
     expect(pricing.baseline.goldPerHour).toBeGreaterThan(0);
+    expect(pricing.baseline.gate?.phase).toBe(50);
+    expect(pricing.baseline.gate?.dps).toBeGreaterThan(0);
+    expect(pricing.baseline.pvp).toMatchObject({ phase: 120, windowSecs: PVP_WINDOW_SECS });
+    expect(pricing.baseline.pvp?.dps).toBeGreaterThan(0);
+    expect(priceSkillsView(inputs, state, skillsTotalsOf(state), 51, 50, null).baseline.pvp).toBeNull();
     expect(pricing.gains.length).toBeGreaterThan(0);
     for (const gain of pricing.gains) {
       expect(gain.cost).toBeGreaterThan(0);
@@ -57,18 +63,18 @@ describe('skillsPricingKey', () => {
     const first = offlineInputs(view);
     const second = offlineInputs(later);
     expect(first.inputs.heroes[0]?.updatedAt).not.toBe(second.inputs.heroes[0]?.updatedAt);
-    const viewKey = { objective: 'goldPerHour' as const, gatePhase: 50, pvpHeroIds: [], pvpPhase: null };
-    expect(skillsPricingKey(first.inputs, first.state, 51, viewKey)).toBe(skillsPricingKey(second.inputs, second.state, 51, viewKey));
+    const windows = { gatePhase: 50, pvp: null };
+    expect(skillsPricingKey(first.inputs, first.state, 51, windows)).toBe(skillsPricingKey(second.inputs, second.state, 51, windows));
   });
 
   it('moves with the phase, the tree levels and the farm controls', () => {
     const { inputs, state } = offlineInputs();
-    const viewKey = { objective: 'goldPerHour' as const, gatePhase: 50, pvpHeroIds: [] as string[], pvpPhase: null };
-    const base = skillsPricingKey(inputs, state, 51, viewKey);
-    expect(skillsPricingKey(inputs, state, 52, viewKey)).not.toBe(base);
-    expect(skillsPricingKey(inputs, { ...state, levels: { ...state.levels, X99: 1 } }, 51, viewKey)).not.toBe(base);
-    expect(skillsPricingKey({ ...inputs, farmReturnBonus: 'vip' }, state, 51, viewKey)).not.toBe(base);
-    expect(skillsPricingKey(inputs, state, 51, { ...viewKey, objective: 'gateClear' })).not.toBe(base);
-    expect(skillsPricingKey(inputs, state, 51, { ...viewKey, gatePhase: 60 })).not.toBe(base);
+    const windows = { gatePhase: 50, pvp: null };
+    const base = skillsPricingKey(inputs, state, 51, windows);
+    expect(skillsPricingKey(inputs, state, 52, windows)).not.toBe(base);
+    expect(skillsPricingKey(inputs, { ...state, levels: { ...state.levels, X99: 1 } }, 51, windows)).not.toBe(base);
+    expect(skillsPricingKey({ ...inputs, farmReturnBonus: 'vip' }, state, 51, windows)).not.toBe(base);
+    expect(skillsPricingKey(inputs, state, 51, { ...windows, gatePhase: 60 })).not.toBe(base);
+    expect(skillsPricingKey(inputs, state, 51, { ...windows, pvp: { windowSecs: PVP_WINDOW_SECS, heroIds: ['a'], phase: 120 } })).not.toBe(base);
   });
 });

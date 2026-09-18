@@ -4,9 +4,7 @@ import {
   EMPTY_SKILL_TOTALS,
   nodeStatus,
   type SkillEffect,
-  type SkillNodeGain,
   type SkillNodeStatus,
-  type SkillPricingObjective,
   type SkillTotals,
   type SkillTreeCatalog,
   type SkillTreeState,
@@ -77,10 +75,4 @@ export function treeSummary(catalog: SkillTreeCatalog, statuses: ReadonlyMap<str
   return { ownedLevels, totalLevels, goldSpent, goldToMax };
 }
 
-export function objectiveDelta(gain: SkillNodeGain, objective: SkillPricingObjective): number | null {
-  return objective === 'goldPerHour' ? gain.goldPerHourDelta : gain.teamDpsDelta;
-}
-
-export function objectivePerMillion(gain: SkillNodeGain, objective: SkillPricingObjective): number | null {
-  return objective === 'goldPerHour' ? gain.goldPerMillion : gain.dpsPerMillion;
-}
+export { objectiveDelta, objectivePerMillion } from '@bombfarm/domain/skill-tree';

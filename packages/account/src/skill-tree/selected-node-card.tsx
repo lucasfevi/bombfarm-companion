@@ -3,7 +3,7 @@ import {
   type SkillNode,
   type SkillNodeGain,
   type SkillNodeStatus,
-  type SkillPricingObjective,
+  type SkillCombatFigure,
   type SkillTreePricing,
 } from '@bombfarm/domain/skill-tree';
 import { GoldValue } from '@bombfarm/game-art';
@@ -28,7 +28,6 @@ export type SelectedNodeCardProps = {
   status: SkillNodeStatus;
   gain: SkillNodeGain | null;
   pricing: SkillTreePricing | null;
-  objective: SkillPricingObjective;
   nodeById: ReadonlyMap<string, SkillNode>;
   statuses: ReadonlyMap<string, SkillNodeStatus>;
   nodeArtSrc: (node: SkillNode) => string | null;
@@ -131,7 +130,6 @@ export function SelectedNodeCard({
   status,
   gain,
   pricing,
-  objective,
   nodeById,
   statuses,
   nodeArtSrc,
@@ -150,6 +148,31 @@ export function SelectedNodeCard({
     </GoldValue>
   );
   const dps = (value: number) => <CompactFigure compact={labels.compactNumber(value)} exact={rateDps(labels, value)} />;
+  const combatRows = (
+    id: string,
+    figure: SkillCombatFigure | null,
+    delta: number | null,
+    perMillion: number | null,
+    title: (phase: number) => string,
+  ): StatListItem[] => {
+    if (figure === null || figure.dps === null || delta === null || perMillion === null) return [];
+    const before = figure.dps;
+    return [
+      {
+        id: `preview-${id}`,
+        label: title(figure.phase),
+        value: (
+          <>
+            {dps(before)}
+            <span className="mx-1">→</span>
+            {dps(before + delta)}
+            <Delta value={delta} text={labels.gainDps(delta)} />
+          </>
+        ),
+      },
+      { id: `per-million-${id}`, label: labels.colPerMillion, value: labels.perMillionDps(perMillion) },
+    ];
+  };
 
   const nextLevel = Math.min(node.maxLevel, status.level + 1);
   const effectItems: StatListItem[] = node.effects.map((effect) => ({
@@ -282,23 +305,8 @@ export function SelectedNodeCard({
                 ),
               },
               { id: 'per-million-gold', label: labels.colPerMillion, value: labels.perMillionGold(gain.goldPerMillion) },
-              ...(pricing.baseline.teamDps !== null && gain.teamDpsDelta !== null && gain.dpsPerMillion !== null
-                ? [
-                    {
-                      id: 'preview-dps',
-                      label: objective === 'pvp' ? labels.previewPvp : labels.previewGate,
-                      value: (
-                        <>
-                          {dps(pricing.baseline.teamDps)}
-                          <span className="mx-1">→</span>
-                          {dps(pricing.baseline.teamDps + gain.teamDpsDelta)}
-                          <Delta value={gain.teamDpsDelta} text={labels.gainDps(gain.teamDpsDelta)} />
-                        </>
-                      ),
-                    },
-                    { id: 'per-million-dps', label: labels.colPerMillion, value: labels.perMillionDps(gain.dpsPerMillion) },
-                  ]
-                : []),
+              ...combatRows('gate', pricing.baseline.gate, gain.gateDpsDelta, gain.gatePerMillion, labels.previewGate),
+              ...combatRows('pvp', pricing.baseline.pvp, gain.pvpDpsDelta, gain.pvpPerMillion, labels.previewPvp),
             ]}
           />
           {gain.unpriced.length > 0 ? (

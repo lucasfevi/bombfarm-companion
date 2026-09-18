@@ -1,8 +1,10 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { rankSkillGains, wikiGateLines, gateWindowSecs, PVP_WINDOW_SECS, type SkillNode, type SkillNodeGain, type SkillPricingObjective } from '@bombfarm/domain/skill-tree';
+import { rankSkillGains, wikiGateLines, gateWindowSecs, type SkillNode, type SkillNodeGain, type SkillPricingObjective } from '@bombfarm/domain/skill-tree';
 import { FactTile, Panel, PanelHeader, SearchSelect, SegmentedToggle, Tooltip, cn, tipClass, type SearchSelectOption } from '@bombfarm/ui';
+import { GoldValue } from '@bombfarm/game-art';
+import { CompactFigure } from './compact-figure';
 import { NextToBuyPanel, type RecommendationRow } from './next-to-buy-panel';
 import { objectiveDelta, statusMap, treeSummary } from './node-facts';
 import { skillNodeDisplayName } from './node-name';
@@ -95,8 +97,8 @@ export function SkillTreeScreen({
     if (!pricing) return null;
     if (objective === 'goldPerHour') return labels.pricedAtPhase(pricing.phase);
     if (objective === 'gateClear') return labels.pricedAtGate(gatePhase, gateWindowSecs(gatePhase));
-    if (pricing.combatPhase == null) return null;
-    return labels.pricedAtPvp(pricing.combatPhase, PVP_WINDOW_SECS);
+    if (pricing.baseline.pvp === null) return null;
+    return labels.pricedAtPvp(pricing.baseline.pvp.phase, pricing.baseline.pvp.windowSecs);
   })();
 
   return (
@@ -139,7 +141,6 @@ export function SkillTreeScreen({
                 status={selectedStatus}
                 gain={selectedGain}
                 pricing={pricing}
-                objective={objective}
                 nodeById={nodeById}
                 statuses={statuses}
                 nodeArtSrc={nodeArtSrc}
@@ -158,7 +159,21 @@ export function SkillTreeScreen({
         <div className="flex min-h-0 min-w-0 flex-col gap-2.5 min-[960px]:overflow-y-auto min-[960px]:pr-0.5">
           <Panel data-testid="skill-tree-header">
             <div className="flex flex-col gap-2">
-              <FactTile size="headline" label={labels.wallet} value={state.gold === null ? '—' : labels.gold(state.gold)} valueClassName="text-gold" data-testid="skill-tree-wallet" />
+              <FactTile
+                size="headline"
+                label={labels.wallet}
+                value={
+                  state.gold === null ? (
+                    '—'
+                  ) : (
+                    <GoldValue iconClassName="size-5">
+                      <CompactFigure compact={labels.goldCompact(state.gold)} exact={labels.gold(state.gold)} />
+                    </GoldValue>
+                  )
+                }
+                valueClassName="text-gold"
+                data-testid="skill-tree-wallet"
+              />
               {pricedAt ? (
                 <p className={cn('m-0', 'text-[11px]', 'text-muted')} data-testid="skill-tree-priced-at">
                   {pricedAt}
