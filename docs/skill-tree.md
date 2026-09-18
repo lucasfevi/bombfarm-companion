@@ -26,9 +26,9 @@ that read is not usable, the tab says the tree could not be read and draws nothi
 The same screen ships on the web planner as a tab between Inventory and Account. Owned levels
 arrive on the imported save (`skills.levels`) and persist on the account record; a browser
 account written before that field existed still has the tree's totals on the Account page, but
-the Skill Tree tab asks for a fresh import rather than inventing nodes. Gold per hour prints two
-figures: the mean over nearby roster strengths, and the value at this roster beside it. Rates
-keep three significant digits so a now→next pair does not collapse to the same compact number.
+the Skill Tree tab asks for a fresh import rather than inventing nodes. Gold per hour prints the
+mean over nearby roster strengths. Rates keep three significant digits so a now→next pair does
+not collapse to the same compact number.
 
 ## Where the catalog and the layout come from
 
@@ -68,8 +68,8 @@ account is farming now; the header says which — so the figures here agree with
   nothing when it does not. The gain is therefore taken as the mean over nearby roster strengths —
   every hero's attack scaled across ±5% in half-percent steps, both sides of the comparison scaled
   alike. Damage nodes come out stable from ±2% to ±8%; every other axis is smooth and unchanged by
-  the mean. The ranking and the selected-node preview also print the figure at this roster, so the
-  mean and the exact read sit side by side.
+  the mean. The figure at the roster exactly as read is still computed (`goldPerHourDeltaAtRoster`)
+  but not shown; only the mean is printed.
 - **Gate clear** prices damage over the gate's own timer at a gate the player picks — the same phase
   control the Optimizer uses, listing gate phases only — by the strongest squad the field can seat
   from the Farm board's pool, each hero deploying and resting on its own cycle inside that window.

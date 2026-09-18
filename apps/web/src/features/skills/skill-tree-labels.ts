@@ -203,7 +203,6 @@ export function skillTreeLabels(copy: Strings, lang: Lang, phaseSource: SkillsPh
     preview: copy.skillsPreview,
     previewTip: copy.skillsPreviewTip,
     previewGold: copy.skillsPreviewGold,
-    previewGoldAtRoster: copy.skillsPreviewGoldAtRoster,
     previewGate: (phase) => sub(copy.skillsPreviewGate, { phase }),
     previewPvp: (phase) => sub(copy.skillsPreviewPvp, { phase }),
     goldPerHour: (value) => `${formatSignificantCompact(value, lang, 3)}/h`,

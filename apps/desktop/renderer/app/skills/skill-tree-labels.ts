@@ -207,7 +207,6 @@ export function skillTreeLabels(t: Copy, lang: DomainLang, phaseSource: SkillsPh
     preview: t.skillsPreview,
     previewTip: t.skillsPreviewTip,
     previewGold: t.skillsPreviewGold,
-    previewGoldAtRoster: t.skillsPreviewGoldAtRoster,
     previewGate: (phase) => sub(t.skillsPreviewGate, { phase }),
     previewPvp: (phase) => sub(t.skillsPreviewPvp, { phase }),
     goldPerHour: (value) => `${formatSignificantCompact(value, lang, 3)}/h`,

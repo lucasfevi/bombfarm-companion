@@ -80,7 +80,6 @@ function labelsTagged(tag: string): SkillTreeLabels {
     preview: `${tag}-preview`,
     previewTip: `${tag}-previewTip`,
     previewGold: `${tag}-previewGold`,
-    previewGoldAtRoster: `${tag}-previewGoldAtRoster`,
     previewGate: (phase) => `${tag}-previewGate-${phase}`,
     previewPvp: (phase) => `${tag}-previewPvp-${phase}`,
     totalNowNext: (now, next) => `${tag}-nowNext-${now}~${next}`,
@@ -473,10 +472,7 @@ describe('SkillTreeScreen — the selected node', () => {
       label: labels.previewGold,
       value: `${labels.totalNowNext(labels.goldCompact(10_000), labels.goldCompact(10_015))} ${labels.gainGold(15)}`,
     });
-    expect(facts).toContainEqual({
-      label: labels.previewGoldAtRoster,
-      value: `${labels.totalNowNext(labels.goldCompact(10_000), labels.goldCompact(10_040))} ${labels.gainGold(40)}`,
-    });
+    expect(html).not.toContain(labels.goldCompact(10_040));
     expect(facts).toContainEqual({ label: labels.colPerMillion, value: labels.perMillionGold(510.4) });
     expect(facts).toContainEqual({ label: labels.previewGate(60), value: `${labels.compactNumber(2000)} → ${labels.compactNumber(2007)} ${labels.gainDps(7)}` });
     expect(facts).toContainEqual({ label: labels.previewPvp(220), value: `${labels.compactNumber(4000)} → ${labels.compactNumber(4009)} ${labels.gainDps(9)}` });
@@ -502,10 +498,6 @@ describe('SkillTreeScreen — the selected node', () => {
     const labels: SkillTreeLabels = { ...labelsTagged('aa'), goldPerHour: (value) => `rate-${value}`, teamDps: (value) => `dps-${value}` };
     const facts = rows(section(render({ selectedId: 'D01', labels }), 'skill-tree-preview'));
     expect(facts).toContainEqual({ label: labels.previewGold, value: `${labels.totalNowNext('rate-10000', 'rate-10015')} ${labels.gainGold(15)}` });
-    expect(facts).toContainEqual({
-      label: labels.previewGoldAtRoster,
-      value: `${labels.totalNowNext('rate-10000', 'rate-10040')} ${labels.gainGold(40)}`,
-    });
     expect(facts).toContainEqual({ label: labels.previewGate(60), value: `${labels.compactNumber(2000)} → ${labels.compactNumber(2007)} ${labels.gainDps(7)}` });
   });
 

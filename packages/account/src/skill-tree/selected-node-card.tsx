@@ -291,19 +291,6 @@ export function SelectedNodeCard({
                   </>
                 ),
               },
-              {
-                id: 'preview-gold-at-roster',
-                label: labels.previewGoldAtRoster,
-                value: (
-                  <>
-                    {labels.totalNowNext(
-                      rateGold(labels, pricing.baseline.goldPerHour),
-                      rateGold(labels, pricing.baseline.goldPerHour + gain.goldPerHourDeltaAtRoster),
-                    )}
-                    <Delta value={gain.goldPerHourDeltaAtRoster} text={labels.gainGold(gain.goldPerHourDeltaAtRoster)} />
-                  </>
-                ),
-              },
               { id: 'per-million-gold', label: labels.colPerMillion, value: labels.perMillionGold(gain.goldPerMillion) },
               ...combatRows('gate', pricing.baseline.gate, gain.gateDpsDelta, gain.gatePerMillion, labels.previewGate),
               ...combatRows('pvp', pricing.baseline.pvp, gain.pvpDpsDelta, gain.pvpPerMillion, labels.previewPvp),

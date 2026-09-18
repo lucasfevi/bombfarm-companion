@@ -111,8 +111,6 @@ export interface SkillTreeLabels {
   preview: string;
   previewTip: string;
   previewGold: string;
-  /** Gold/hr at the roster exactly as read — beside {@link previewGold}, the spread mean. */
-  previewGoldAtRoster: string;
   /** The combat figures' names: damage per second at that gate, and in the duel at that phase. */
   previewGate: (phase: number) => string;
   previewPvp: (phase: number) => string;
