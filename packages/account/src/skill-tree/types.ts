@@ -135,8 +135,11 @@ export interface SkillTreeLabels {
   totalsTip: string;
   totalRows: Record<keyof SkillTotals, string>;
   formatTotal: (key: keyof SkillTotals, value: number) => string;
-  /** `spent / total` gold over the whole tree. */
-  treeProgress: (ownedLevels: number, totalLevels: number) => string;
+  levelsBought: string;
+  /** `825 / 1,095`. */
+  countOf: (part: number, whole: number) => string;
+  /** An unsigned share, `75.3%`. */
+  share: (fraction: number) => string;
   goldSpent: string;
   goldToMax: string;
 

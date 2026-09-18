@@ -227,8 +227,9 @@ export function skillTreeLabels(t: Copy, lang: DomainLang, phaseSource: SkillsPh
     totalsTip: t.skillsTotalsTip,
     totalRows: totalRowNames(t),
     formatTotal: (key, value) => formatSkillTotal(key, value, lang),
-    treeProgress: (ownedLevels, totalLevels) =>
-      sub(t.skillsTreeProgress, { owned: ownedLevels, total: totalLevels }),
+    levelsBought: t.skillsLevelsBought,
+    countOf: (part, whole) => sub(t.skillsCountOf, { part: formatNumber(part, lang, 0), whole: formatNumber(whole, lang, 0) }),
+    share: (fraction) => `${formatNumber(fraction * 100, lang, 1)}%`,
     goldSpent: t.skillsGoldSpent,
     goldToMax: t.skillsGoldToMax,
 

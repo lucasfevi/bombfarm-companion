@@ -98,7 +98,9 @@ function labelsTagged(tag: string): SkillTreeLabels {
     totalsTip: `${tag}-totalsTip`,
     totalRows,
     formatTotal: (key, value) => `${tag}-total-${key}-${value}`,
-    treeProgress: (owned, total) => `${tag}-progress-${owned}/${total}`,
+    levelsBought: `${tag}-levelsBought`,
+    countOf: (part, whole) => `${tag}-count-${part}/${whole}`,
+    share: (fraction) => `${tag}-share-${(fraction * 100).toFixed(1)}`,
     goldSpent: `${tag}-goldSpent`,
     goldToMax: `${tag}-goldToMax`,
     fitToView: `${tag}-fitToView`,
@@ -559,9 +561,11 @@ describe('SkillTreeScreen — the totals', () => {
     expect(rows(html).map((row) => row.label)).toEqual([
       labels.totalRows.team_dmg_add,
       labels.totalRows.dmg_static,
+      labels.levelsBought,
       labels.goldSpent,
       labels.goldToMax,
     ]);
+    expect(html).toContain(labels.totalsTip);
     expect(html).toContain(labels.formatTotal('team_dmg_add', totals.team_dmg_add));
     expect(html).not.toContain(labels.totalRows.xp_mult);
     expect(html).not.toContain(labels.totalRows.vagas_campo);
@@ -571,9 +575,10 @@ describe('SkillTreeScreen — the totals', () => {
     const labels = labelsTagged('aa');
     const empty: SkillTreeState = { ...STATE, levels: {} };
     const html = section(render({ state: empty, totals: EMPTY_SKILL_TOTALS, pricing: null }), 'skill-tree-totals');
-    expect(rows(html).map((row) => row.label)).toEqual([labels.goldSpent, labels.goldToMax]);
-    expect(html).toContain(labels.treeProgress(0, 1095));
-    expect(html).toContain(labels.gold(0));
+    expect(rows(html).map((row) => row.label)).toEqual([labels.levelsBought, labels.goldSpent, labels.goldToMax]);
+    expect(html).toContain(labels.countOf(0, 1095));
+    expect(html).toContain(labels.share(0));
+    expect(html).toContain(labels.goldCompact(0));
   });
 
   it('sums the owned levels, the gold they cost and the gold the rest would', () => {
@@ -586,9 +591,11 @@ describe('SkillTreeScreen — the totals', () => {
       .filter((node) => node.tier !== 'start')
       .reduce((sum, node) => sum + node.costs.reduce((inner, cost) => inner + cost, 0), 0);
     const html = section(render(), 'skill-tree-totals');
-    expect(html).toContain(labels.treeProgress(7, 1095));
-    expect(html).toContain(labels.gold(spent));
-    expect(html).toContain(labels.gold(everything - spent));
+    expect(html).toContain(labels.countOf(7, 1095));
+    expect(html).toContain(labels.share(7 / 1095));
+    expect(html).toContain(labels.goldCompact(spent));
+    expect(html).toContain(labels.share(spent / everything));
+    expect(html).toContain(labels.goldCompact(everything - spent));
   });
 });
 

@@ -55,7 +55,8 @@ describe('skillTreeLabels', () => {
     expect(pt.stateLockedPhase(80)).toBe('Desbloqueia após a fase 80');
     expect(en.gold(1_234_567)).toBe('1,234,567 gold');
     expect(pt.goldCompact(1_234_567)).toBe('1,2m');
-    expect(en.treeProgress(120, 400)).toBe('120 of 400 levels bought');
+    expect(en.countOf(120, 1095)).toBe('120 / 1,095');
+    expect(en.share(0.753)).toBe('75.3%');
     expect(en.nodeAria('Devastation', 2, 5)).toBe('Devastation, level 2 of 5');
     expect(en.totalNowNext('+5%', '+6%')).toBe('+5% → +6%');
     expect(en.goldPerHour?.(4_300_000)).toBe('4.30m/h');
