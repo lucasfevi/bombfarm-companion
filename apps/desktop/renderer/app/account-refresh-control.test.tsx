@@ -221,43 +221,78 @@ describe('the age line dates the account read, never the calculation', () => {
   });
 });
 
-describe('the Farm screen mounts the control unconditionally, over the board heading line', () => {
-  const source = readFileSync(path.join(__dirname, 'farm', 'farm-view.tsx'), 'utf8')
+/**
+ * The control is drawn ONCE, by the shell's refresh bar, and never by a screen. A screen whose
+ * numbers come from a copy of its own — the board, the bag, the snapshot, the standing — hands the
+ * bar its refresh through the registry instead, so the button is in one place on every tab and
+ * still does what that screen needs.
+ */
+function stripped(...segments: string[]): string {
+  return segments
+    .map((segment) => readFileSync(path.join(__dirname, segment), 'utf8'))
+    .join('\n')
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/\/\/.*$/gm, '');
+}
+
+describe('the shell draws the control once, in its band under the top bar', () => {
+  const page = stripped('page.tsx');
+  const bar = stripped('refresh-state-bar.tsx');
+
+  it('the scan reads real files', () => {
+    expect(page).toMatch(/export default function HomePage/);
+    expect(bar).toMatch(/export function RefreshStateBar/);
+  });
+
+  it('the bar is the one place the control is mounted', () => {
+    expect(bar).toContain('<AccountRefreshControl');
+    for (const screen of ['farm/farm-view.tsx', 'forge/forge-view.tsx', 'optimizer/optimizer-view.tsx', 'optimizer/optimizer-screen.tsx', 'pvp/pvp-view.tsx', 'pvp/standing-panel.tsx']) {
+      expect(stripped(screen), screen).not.toContain('AccountRefreshControl');
+    }
+  });
+
+  it('the shell mounts the bar in its banner slot, on every tab but Settings', () => {
+    expect(page).toContain('<RefreshStateBar tabId={activeNavId}');
+    expect(page).toContain("activeNavId !== 'settings'");
+  });
+
+  it("a screen that registers nothing gets the live account read's age and a read of it", () => {
+    expect(bar).toContain('useAccountReadRequest(');
+    expect(bar).toContain('oldestCaptureOf(live.payload)');
+  });
+});
+
+describe('the Farm screen hands the bar its refresh, with no staleness gate around it', () => {
+  const source = stripped('farm/farm-view.tsx');
 
   it('the scan reads a real file', () => {
     expect(source).toMatch(/export function FarmView/);
   });
 
-  it('hands the control to the board as its header slot, with no staleness gate around it', () => {
-    expect(source).toContain('headerOverlay: (');
-    expect(source).toContain('<AccountRefreshControl');
+  it("registers under its own tab id, dating the line by the settled board's account read", () => {
+    expect(source).toContain("useScreenRefreshRegistration('farm', { capturedAt: settled?.capturedAt ?? null, stale, busy, readState, onRefresh })");
     expect(source).not.toMatch(/\{stale \?/);
   });
 
-  it('refreshes through the screen\'s one recompute path, never a second call into the store', () => {
+  it("refreshes through the screen's one recompute path, never a second call into the store", () => {
     const refreshCalls = source.match(/\brefresh\(/g) ?? [];
     expect(refreshCalls).toHaveLength(1);
   });
 
-  // The defect this was rewritten for: the press re-solved the board from whatever account the
-  // renderer already held, so a gear change made seconds earlier could not reach it however many
-  // times it was pressed.
   it('asks the app to go and read the account, not only to re-solve from the one in hand', () => {
     expect(source).toContain('useAccountReadRequest(adoptLive)');
   });
 });
 
-describe('the Forge screen mounts the same control over its bag, not a refresh of its own', () => {
-  const source = readFileSync(path.join(__dirname, 'forge', 'forge-view.tsx'), 'utf8');
+describe('the Forge screen hands the bar its refresh, not a refresh of its own', () => {
+  const source = stripped('forge/forge-view.tsx');
 
   it('the scan reads a real file', () => {
     expect(source).toMatch(/export function ForgeView/);
   });
 
-  it('draws the shared control inside the bag header', () => {
-    expect(source).toContain('<AccountRefreshControl');
+  it("registers under its own tab id, dating the line by the pinned bag's account read", () => {
+    expect(source).toContain("useScreenRefreshRegistration('forge', { capturedAt, stale, busy: false, readState: refreshState, onRefresh: refresh })");
     expect(source).not.toContain('ForgeRefresh');
   });
 
@@ -266,34 +301,46 @@ describe('the Forge screen mounts the same control over its bag, not a refresh o
   });
 });
 
-/**
- * The Optimizer screen's own twin of the Farm block above. Its connector is two files — the early
- * states and the storage/open wiring in `optimizer-view.tsx`, the memo bags and the control in
- * `optimizer-screen.tsx` — so the source scan reads both concatenated: the invariants are about
- * the connector as a whole, not about which of the two files a given line happens to sit in.
- */
-describe('the Optimizer screen mounts the control unconditionally, over the page title', () => {
-  const source =
-    readFileSync(path.join(__dirname, 'optimizer', 'optimizer-view.tsx'), 'utf8') +
-    readFileSync(path.join(__dirname, 'optimizer', 'optimizer-screen.tsx'), 'utf8');
+describe('the Optimizer screen hands the bar its refresh, with no staleness gate around it', () => {
+  const source = stripped('optimizer/optimizer-view.tsx', 'optimizer/optimizer-screen.tsx');
 
   it('the scan reads real files', () => {
     expect(source).toMatch(/export function OptimizerView/);
     expect(source).toMatch(/export function OptimizerScreen/);
   });
 
-  it('hands the control to the package screen as its header slot, with no staleness gate around it', () => {
-    expect(source).toContain('headerOverlay: (');
-    expect(source).toContain('<AccountRefreshControl');
+  it("registers under its own tab id, dating the line by the settled snapshot's account read", () => {
+    expect(source).toContain("useScreenRefreshRegistration('optimizer', { capturedAt: settled?.capturedAt ?? null, stale, busy, readState, onRefresh })");
     expect(source).not.toMatch(/\{stale \?/);
   });
 
-  it('refreshes through the screen\'s one recompute path, never a second call into the store', () => {
+  it("refreshes through the screen's one recompute path, never a second call into the store", () => {
     const refreshCalls = source.match(/\brefresh\(\)/g) ?? [];
     expect(refreshCalls).toHaveLength(1);
   });
 
   it('asks the app to go and read the account, not only to re-solve from the one in hand', () => {
     expect(source).toContain('useAccountReadRequest(adoptLive)');
+  });
+});
+
+describe("the PVP screen hands the bar the standing's own read, dated by the standing", () => {
+  const source = stripped('pvp/pvp-view.tsx');
+
+  it('the scan reads a real file', () => {
+    expect(source).toMatch(/export function PvpView/);
+  });
+
+  it("registers the standing read under its own tab id, with the standing's line", () => {
+    expect(source).toContain("useScreenRefreshRegistration('pvp', {");
+    expect(source).toContain('capturedAt: history?.standing?.capturedAt ?? null');
+    expect(source).toContain('onRefresh: refresh.request');
+    expect(source).toContain('ageLine: standingAge');
+    expect(source).toContain('sub(t.pvpStandingAge, { age })');
+  });
+
+  it('asks main for the standing, never the account', () => {
+    expect(source).toContain('usePvpRefresh()');
+    expect(source).not.toContain('useAccountReadRequest');
   });
 });

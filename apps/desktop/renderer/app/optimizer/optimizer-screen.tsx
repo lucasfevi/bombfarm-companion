@@ -30,20 +30,11 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { TeamAuraId } from '@bombfarm/domain/team-buffs';
 import { itemName } from '@bombfarm/domain/game-labels';
 import { useCopy, useLocale } from '../../lib/copy';
-import type { AccountReadRequestState } from '../../lib/account/use-account-read-request';
 import type { OptimizerSettledSnapshot } from '../../lib/optimizer/optimizer-snapshot-store';
 import type { OptimizerPlanState } from '../../lib/optimizer/optimizer-plan-store';
 import type { OptimizerView } from '../../lib/optimizer/optimizer-view-storage';
 import { optimizerScreenCopy, useTeamPlanCopy } from '../screen-copy';
-import { AccountRefreshControl } from '../account-refresh-control';
 import { ForgeQueueAdd } from '../forge/forge-queue-add';
-
-type OptimizerScreenRefresh = {
-  stale: boolean;
-  busy: boolean;
-  readState: AccountReadRequestState;
-  onRefresh: () => void;
-};
 
 type OptimizerScreenActionsIn = {
   startRun: (runId: string, signature: string, heroes: readonly HeroRecord[]) => void;
@@ -59,7 +50,6 @@ export function OptimizerScreen({
   setControls,
   planState,
   runner,
-  refresh,
   actions,
 }: {
   snapshot: OptimizerSettledSnapshot;
@@ -67,7 +57,6 @@ export function OptimizerScreen({
   setControls: (next: OptimizerView) => void;
   planState: OptimizerPlanState;
   runner: TeamPlanRunnerHandle;
-  refresh: OptimizerScreenRefresh;
   actions: OptimizerScreenActionsIn;
 }) {
   const t = useCopy();
@@ -204,22 +193,13 @@ export function OptimizerScreen({
           testId="optimizer-auras-at-cap"
         />
       ),
-      headerOverlay: (
-        <AccountRefreshControl
-          capturedAt={snapshot.capturedAt}
-          stale={refresh.stale}
-          busy={refresh.busy}
-          readState={refresh.readState}
-          onRefresh={refresh.onRefresh}
-        />
-      ),
       emptyState: (kind: TeamPlanEmptyStateKind) => {
         const [title, body] = emptyTitleBody[kind];
         return <TeamPlanEmptyPanel title={title} body={body} />;
       },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- emptyTitleBody is derived from t each render
-    [snapshot.capturedAt, refresh, t, lang, forgeQueueAction, aurasAtCap, setAuraAtCap],
+    [t, lang, forgeQueueAction, aurasAtCap, setAuraAtCap],
   );
 
   return <TeamPlanScreenView t={screenCopy} lang={lang} data={data} actions={screenActions} slots={slots} runner={runner} />;
