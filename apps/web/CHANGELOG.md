@@ -1,5 +1,66 @@
 # @bombfarm/web
 
+## 0.21.0
+
+### Minor Changes
+
+- c5d3c51: Skill Tree ranking can target a timed gate clear or a 60s PVP window instead of infinite-horizon team DPS.
+- c5d3c51: Skill Tree next-to-buy ranking: cost and mean gain under the name, per-million as the large figure.
+
+  The ranking no longer shows the at-roster gold figure or an "affordable now" sentence. A node you can buy gets a green edge and the coin with a check beside its name, one the wallet cannot cover the coin with a cross; selecting a row opens the node's card over the tree, so the list itself never grows or shifts.
+
+- 34f3afd: Skill Tree: a colour per path, and a progress card for each above the tree.
+
+  Every arm of the tree now draws its rings, edges, glow and progress arcs in its own colour —
+  red for Damage, pink for Crit, cyan for Speed, green for Drop/Luck, blue for Energy, violet for
+  Geometric, silver for Neutral Axis — and Gold keeps the wallet's gold, as does the hub. Ring
+  colour is the path; ring weight and glow are the state, as before; a node the wallet cannot cover
+  stays red on every path. The legend says so under its swatches.
+
+  Above the tree, one card per path prints its levels bought over the path's total with a bar, its
+  nodes maxed, and the gold sunk into it over what the whole path costs, each with its share. Press
+  a card to light that path alone — the rest of the tree fades back — and press it again to release.
+
+- c5d3c51: Skill Tree on the web planner, both gold-per-hour figures, and rates to three significant digits.
+
+  The imported save's owned nodes now persist with the account, so the planner grows a Skill Tree
+  tab between Inventory and Account — the same drawing and ranking the desktop tab already shows.
+  Gold per hour prints the spread mean and the figure at this roster, side by side, and rates keep
+  three significant digits so `4.30m/h → 4.34m/h` stays readable.
+
+### Patch Changes
+
+- c5d3c51: The download page lists the Skill Tree screen.
+
+  The "What you get" section gains a tenth card, in the app's own tab order: the whole tree as the
+  game draws it, what every buyable node adds to gold per hour or team DPS, the best value per
+  million gold on the phase you farm, and a preview of your farm with any node one level higher. Ten
+  cards fill two columns exactly; two spacers square the three-column grid.
+
+- c88f96b: The inventory shows a hero cage as a cage. A `chest_hero_3` row printed its wire id as its name
+  under the wooden item-chest icon; it now reads "Hero cage · Act 3" ("Jaula de herói · Ato 3") and
+  draws the cage of that act, the same art the wiki uses, on both the web planner and the desktop.
+- c5d3c51: Skill Tree: the selected node opens as a card over the tree, and the gate picker is the Optimizer's phase control.
+
+  Selecting a node — on the tree or in the ranking — opens a closable card over the tree instead of a panel in the side column. The card marks a node the wallet covers with the same green check the ranking uses, prints gold with the coin, keeps every row to one line, explains refunds and the one-level-up figures behind info tips, and shows the node it hangs off as a link: hover for that node's facts, click to jump to it.
+
+  The gate objective's phase picker is the same searchable phase control the Optimizer uses, listing gate phases only, at the height of the objective buttons. The web planner, which has no PVP squad source, offers gold and gate only.
+
+- Updated dependencies [c5d3c51]
+- Updated dependencies [c88f96b]
+- Updated dependencies [c5d3c51]
+- Updated dependencies [c5d3c51]
+- Updated dependencies [c5d3c51]
+- Updated dependencies [34f3afd]
+- Updated dependencies [c5d3c51]
+  - @bombfarm/account@0.3.0
+  - @bombfarm/domain@1.3.0
+  - @bombfarm/ui@0.14.1
+  - @bombfarm/farm@1.2.2
+  - @bombfarm/game-art@0.6.2
+  - @bombfarm/hero@0.3.2
+  - @bombfarm/team-plan@0.2.2
+
 ## 0.20.1
 
 ### Patch Changes
