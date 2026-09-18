@@ -28,7 +28,8 @@ function CoinMark({ icon, tone }: { icon: 'check' | 'x-mark'; tone: 'up' | 'down
     <span className="relative inline-flex size-3.5">
       <img src={goldIconSrc()} alt="" aria-hidden className="size-3.5 object-contain" draggable={false} />
       <span className={cn('absolute', '-right-1', '-bottom-1', tone === 'up' ? 'text-up' : 'text-down')}>
-        <Icon name={icon} size="xs" />
+        {/* The glyph is a filled path; outlining it in its own colour is what thickens the trace. */}
+        <Icon name={icon} size="xs" className="[&_svg]:stroke-current [&_svg]:[stroke-width:1.75]" />
       </span>
     </span>
   );
