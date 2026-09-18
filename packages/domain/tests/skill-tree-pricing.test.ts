@@ -130,7 +130,7 @@ describe('priceSkillTree', () => {
     });
     const energy = pricing.gains.find((gain) => {
       const node = skillNode(gain.id);
-      return node !== null && node.effects.length > 0 && node.effects.every((effect) => effect.kind === 'team_energia');
+      return node !== undefined && node.effects.length > 0 && node.effects.every((effect) => effect.kind === 'team_energia');
     });
     const damage = pricing.gains.find((gain) => skillNode(gain.id)!.effects.some((effect) => effect.kind === 'team_dmg' || effect.kind === 'team_geo'));
     expect(energy, 'a buyable energy-only node').toBeDefined();

@@ -1,12 +1,13 @@
 import { test, expect } from '@playwright/test';
-import { gotoSkillsPage, importedRoster, seedLocalStorage } from './fixtures/seed';
+import { gotoSkillsPage, importedRoster, rosterBoard, seedLocalStorage } from './fixtures/seed';
 
 function skillsRoster() {
+  // The board roster: its heroes carry birth rolls, which the gate figure needs.
   return {
-    ...importedRoster,
+    ...rosterBoard,
     lang: 'en' as const,
     account: {
-      ...importedRoster.account!,
+      ...rosterBoard.account!,
       skillTree: {
         levels: { D01: 5, H01: 5 },
         refunds: {},
@@ -36,7 +37,7 @@ test.describe('Skill Tree page', () => {
     await expect(screen).toBeVisible();
     await expect(page.getByTestId('skill-tree-canvas')).toBeVisible();
     await expect(page.getByTestId('skill-tree-next-to-buy')).toBeVisible();
-    await expect(page.getByTestId('skill-tree-wallet')).toContainText('50,000,000');
+    await expect(page.getByTestId('skill-tree-wallet')).toContainText('50m');
     await expect(page.getByRole('link', { name: /^Skill Tree$/i })).toHaveAttribute('aria-current', 'page');
     await expect(page.getByRole('button', { name: 'Gold/h' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Gate' })).toBeVisible();
