@@ -1,20 +1,30 @@
-import type { SkillPricingObjective } from '@bombfarm/domain/skill-tree';
+import { type SkillPricingObjective } from '@bombfarm/domain/skill-tree';
 
 const SKILLS_VIEW_STORAGE_KEY = 'bf-hp-skills-view-v1';
 
-const OBJECTIVES: readonly SkillPricingObjective[] = ['goldPerHour', 'teamDps'];
+/** The planner has no PVP squad source, so `pvp` is not an objective it offers. */
+export const WEB_SKILLS_OBJECTIVES: readonly SkillPricingObjective[] = ['goldPerHour', 'gateClear'];
 
 export type SkillsView = {
   readonly objective: SkillPricingObjective;
+  readonly gatePhase: number | null;
 };
 
-export const DEFAULT_SKILLS_VIEW: SkillsView = { objective: 'goldPerHour' };
+export const DEFAULT_SKILLS_VIEW: SkillsView = { objective: 'goldPerHour', gatePhase: null };
+
+function readObjective(raw: unknown): SkillPricingObjective {
+  if (raw === 'teamDps') return 'gateClear';
+  return WEB_SKILLS_OBJECTIVES.find((candidate) => candidate === raw) ?? DEFAULT_SKILLS_VIEW.objective;
+}
+
+function readGatePhase(raw: unknown): number | null {
+  return typeof raw === 'number' && Number.isInteger(raw) && raw > 0 ? raw : null;
+}
 
 function normalizeSkillsView(value: unknown): SkillsView {
   if (typeof value !== 'object' || value === null) return DEFAULT_SKILLS_VIEW;
   const raw = value as Record<string, unknown>;
-  const objective = OBJECTIVES.find((candidate) => candidate === raw.objective);
-  return objective === undefined ? DEFAULT_SKILLS_VIEW : { objective };
+  return { objective: readObjective(raw.objective), gatePhase: readGatePhase(raw.gatePhase) };
 }
 
 export function loadSkillsView(): SkillsView {

@@ -52,7 +52,9 @@ export interface SkillTreeLabels {
   /** Costs. */
   nextLevelCost: string;
   costToMax: string;
+  /** The refund row's short label; {@link refundTip} carries the rule. */
   refund: string;
+  refundTip: string;
   refundBlocked: (childNames: string) => string;
   wallet: string;
   gold: (gold: number) => string;
@@ -67,8 +69,9 @@ export interface SkillTreeLabels {
   nextToBuy: string;
   nextToBuyTip: string;
   objectiveGold: string;
-  objectiveDps: string;
-  /** Column heads. */
+  objectiveGate: string;
+  objectivePvp: string;
+  /** Ranking figure labels. */
   colNode: string;
   colCost: string;
   colGain: string;
@@ -82,15 +85,25 @@ export interface SkillTreeLabels {
   gainOutsideObjectives: string;
   /** The ranking has nothing to price: no buyable node, or the roster could not be read. */
   nothingToRecommend: string;
+  pvpEmpty: string;
   pricingUnavailable: string;
-  /** Names the phase the figures are for. */
+  /** Names the phase the gold figures are for. */
   pricedAtPhase: (phase: number) => string;
+  pricedAtGate: (phase: number, windowSecs: number) => string;
+  pricedAtPvp: (phase: number, windowSecs: number) => string;
+  /** The gate picker — the Optimizer's phase control, gate phases only. */
+  gatePhaseSelect: string;
+  /** A gate phase as the app spells phases everywhere else. */
+  gatePhaseOption: (phase: number) => string;
+  gatePhaseSearchPlaceholder: string;
+  gatePhaseNoMatch: string;
+  gatePhaseMoreMatches: (shown: number, matched: number) => string;
   /** Heroes left out of the DPS figure — no birth stats. */
   dpsLeftOut: (names: string) => string;
   affordableNow: string;
 
-  /** The selected-node card. */
-  selectNodeHint: string;
+  /** The selected-node card — an overlay on the tree that opens on select. */
+  closeNode: string;
   preview: string;
   previewTip: string;
   previewGold: string;
@@ -138,6 +151,12 @@ export interface SkillTreeScreenProps {
   pricing: SkillTreePricing | null;
   objective: SkillPricingObjective;
   onObjectiveChange: (objective: SkillPricingObjective) => void;
+  /** The objectives this host can price — a planner with no PVP squad source leaves `pvp` out. */
+  objectives?: readonly SkillPricingObjective[];
+  gatePhase: number;
+  onGatePhaseChange: (phase: number) => void;
+  /** PVP standing squad is empty — ranking stays hidden. */
+  pvpEmpty?: boolean;
   /** The medallion for a node — the host resolves art. */
   nodeArtSrc: (node: SkillNode) => string | null;
   labels: SkillTreeLabels;

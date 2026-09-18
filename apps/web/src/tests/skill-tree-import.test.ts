@@ -92,8 +92,8 @@ describe('skillsPricingKey', () => {
       ...importData({ levels: { D01: 5 }, refunds: {}, gold: 1 }),
       phase: 1,
     });
-    const first = skillsPricingKey(usePlannerStore.getState());
-    const second = skillsPricingKey(usePlannerStore.getState());
+    const first = skillsPricingKey(usePlannerStore.getState(), 'goldPerHour', 10);
+    const second = skillsPricingKey(usePlannerStore.getState(), 'goldPerHour', 10);
     expect(first).not.toBeNull();
     expect(second).toBe(first);
   });

@@ -6,11 +6,12 @@ import { canonicalStringify } from '@bombfarm/contracts';
 import {
   priceSkillTree,
   totalsFromLevels,
+  type SkillPricingObjective,
   type SkillTotals,
   type SkillTreePricing,
   type SkillTreeState,
 } from '@bombfarm/domain/skill-tree';
-import { buildAccount, resolveEnabledHeroIds, type FarmInputs } from '@bombfarm/farm/core';
+import { buildAccount, resolveEnabledHeroIds, type FarmInputs, type SkillsCombatInput } from '@bombfarm/farm/core';
 import { farmBoardDepKey } from '../farm/farm-inputs';
 
 /** The tree's totals as the server reports them, or rebuilt from the levels when it sent none. */
@@ -23,8 +24,18 @@ export function skillsTotalsOf(state: SkillTreeState): SkillTotals {
  * few seconds and re-allocated on every read, so the identity is by value — and, like the farm
  * board's own key, blind to the capture time each read stamps on every hero.
  */
-export function skillsPricingKey(inputs: FarmInputs, state: SkillTreeState, phase: number): string {
-  return canonicalStringify([farmBoardDepKey(inputs), state.levels, phase]);
+export function skillsPricingKey(
+  inputs: FarmInputs,
+  state: SkillTreeState,
+  phase: number,
+  view: {
+    readonly objective: SkillPricingObjective;
+    readonly gatePhase: number;
+    readonly pvpHeroIds: readonly string[];
+    readonly pvpPhase: number | null;
+  },
+): string {
+  return canonicalStringify([farmBoardDepKey(inputs), state.levels, phase, view]);
 }
 
 export function priceSkillsView(
@@ -32,6 +43,7 @@ export function priceSkillsView(
   state: SkillTreeState,
   totals: SkillTotals,
   phase: number,
+  combat: SkillsCombatInput,
 ): SkillTreePricing {
   return priceSkillTree({
     heroes: inputs.heroes,
@@ -41,5 +53,8 @@ export function priceSkillsView(
     phase,
     totals,
     state,
+    combatWindowSecs: combat.windowSecs,
+    combatHeroIds: combat.heroIds,
+    ...(combat.phase === null ? {} : { combatPhase: combat.phase }),
   });
 }

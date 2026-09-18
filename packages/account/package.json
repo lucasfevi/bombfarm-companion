@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@bombfarm/domain": "workspace:*",
+    "@bombfarm/game-art": "workspace:*",
     "@bombfarm/ui": "workspace:*"
   },
   "peerDependencies": {

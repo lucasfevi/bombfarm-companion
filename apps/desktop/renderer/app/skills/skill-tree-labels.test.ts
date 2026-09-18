@@ -60,7 +60,7 @@ describe('skillTreeLabels', () => {
     expect(en.totalNowNext('+5%', '+6%')).toBe('+5% → +6%');
     expect(en.goldPerHour?.(4_300_000)).toBe('4.30m/h');
     expect(en.goldPerHour?.(3_900)).toBe('3.90k/h');
-    expect(en.previewGoldAtRoster).toBe('Gold per hour at this roster');
-    expect(pt.previewGoldAtRoster).toBe('Ouro por hora neste elenco');
+    expect(en.previewGoldAtRoster).toBe('At this roster');
+    expect(pt.previewGoldAtRoster).toBe('Neste elenco');
   });
 });

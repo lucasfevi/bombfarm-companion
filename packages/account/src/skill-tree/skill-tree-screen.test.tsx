@@ -13,6 +13,7 @@ import {
   type SkillTreePricing,
   type SkillTreeState,
 } from '@bombfarm/domain/skill-tree';
+import { effectTotalAt, formatEffectTotal } from './node-facts';
 import { SkillTreeScreen } from './skill-tree-screen';
 import type { SkillTreeLabels, SkillTreeScreenProps } from './types';
 
@@ -42,6 +43,7 @@ function labelsTagged(tag: string): SkillTreeLabels {
     nextLevelCost: `${tag}-nextLevelCost`,
     costToMax: `${tag}-costToMax`,
     refund: `${tag}-refund`,
+    refundTip: `${tag}-refundTip`,
     refundBlocked: (children) => `${tag}-refundBlocked-${children}`,
     wallet: `${tag}-wallet`,
     gold: (gold) => `${tag}-gold-${gold}`,
@@ -49,7 +51,8 @@ function labelsTagged(tag: string): SkillTreeLabels {
     nextToBuy: `${tag}-nextToBuy`,
     nextToBuyTip: `${tag}-nextToBuyTip`,
     objectiveGold: `${tag}-objectiveGold`,
-    objectiveDps: `${tag}-objectiveDps`,
+    objectiveGate: `${tag}-objectiveGate`,
+    objectivePvp: `${tag}-objectivePvp`,
     colNode: `${tag}-colNode`,
     colCost: `${tag}-colCost`,
     colGain: `${tag}-colGain`,
@@ -60,11 +63,19 @@ function labelsTagged(tag: string): SkillTreeLabels {
     perMillionDps: (value) => `${tag}-perMillionDps-${value}`,
     gainOutsideObjectives: `${tag}-gainOutsideObjectives`,
     nothingToRecommend: `${tag}-nothingToRecommend`,
+    pvpEmpty: `${tag}-pvpEmpty`,
     pricingUnavailable: `${tag}-pricingUnavailable`,
     pricedAtPhase: (phase) => `${tag}-pricedAt-${phase}`,
+    pricedAtGate: (phase, secs) => `${tag}-pricedAtGate-${phase}-${secs}`,
+    pricedAtPvp: (phase, secs) => `${tag}-pricedAtPvp-${phase}-${secs}`,
+    gatePhaseSelect: `${tag}-gatePhaseSelect`,
+    gatePhaseOption: (phase) => `${tag}-gatePhase-${phase}`,
+    gatePhaseSearchPlaceholder: `${tag}-gatePhaseSearch`,
+    gatePhaseNoMatch: `${tag}-gatePhaseNoMatch`,
+    gatePhaseMoreMatches: (shown, matched) => `${tag}-gatePhaseMore-${shown}-${matched}`,
     dpsLeftOut: (names) => `${tag}-dpsLeftOut-${names}`,
     affordableNow: `${tag}-affordableNow`,
-    selectNodeHint: `${tag}-selectNodeHint`,
+    closeNode: `${tag}-closeNode`,
     preview: `${tag}-preview`,
     previewTip: `${tag}-previewTip`,
     previewGold: `${tag}-previewGold`,
@@ -124,6 +135,8 @@ function gain(id: string, overrides: Partial<SkillNodeGain> = {}): SkillNodeGain
 /** H02 is the best gold buy, H03 the best DPS buy, H04 prices neither objective above zero. */
 const PRICING: SkillTreePricing = {
   phase: 60,
+  combatPhase: 60,
+  combatWindowSecs: 600,
   baseline: { goldPerHour: 10_000, teamDps: 2_000 },
   gains: [
     gain('H04', { cost: 3000, goldPerHourDelta: 0, goldPerMillion: 0, teamDpsDelta: 0, dpsPerMillion: 0 }),
@@ -153,6 +166,8 @@ function render(props: Partial<SkillTreeScreenProps> = {}) {
       pricing={PRICING}
       objective="goldPerHour"
       onObjectiveChange={() => {}}
+      gatePhase={10}
+      onGatePhaseChange={() => {}}
       nodeArtSrc={(node) => `art/${node.id}.png`}
       labels={labelsTagged('aa')}
       {...props}
@@ -164,7 +179,7 @@ function section(html: string, testId: string): string {
   const start = html.indexOf(`data-testid="${testId}"`);
   if (start < 0) throw new Error(`no ${testId}`);
   const rest = html.slice(start + 1);
-  const end = rest.search(/data-testid="skill-tree-(?!hover-card|recommendation-|preview|selected-|dps-left-out|progress|wallet|priced-at|at-roster-|affordable-)/);
+  const end = rest.search(/data-testid="skill-tree-(?!hover-card|recommendation-|preview|selected-|dps-left-out|progress|wallet|priced-at|at-roster-|affordable-|requires-)/);
   return end < 0 ? rest : rest.slice(0, end);
 }
 
@@ -255,7 +270,7 @@ describe('SkillTreeScreen — the canvas', () => {
   it('marks the recommended node for the objective in force, and the selected one', () => {
     expect(nodeAttrs(render(), 'H02')['data-recommended']).toBe('true');
     expect(nodeAttrs(render(), 'H03')['data-recommended']).toBeUndefined();
-    expect(nodeAttrs(render({ objective: 'teamDps' }), 'H03')['data-recommended']).toBe('true');
+    expect(nodeAttrs(render({ objective: 'gateClear' }), 'H03')['data-recommended']).toBe('true');
     expect(nodeAttrs(render({ selectedId: 'D01' }), 'D01')['aria-pressed']).toBe('true');
     expect(nodeAttrs(render({ selectedId: 'D01' }), 'H01')['aria-pressed']).toBe('false');
   });
@@ -294,38 +309,76 @@ describe('SkillTreeScreen — next to buy', () => {
     expect(recommendationOrder(render())).toEqual(['H02', 'H03', 'D01']);
   });
 
-  it('ranks by DPS per million under the DPS objective', () => {
-    expect(recommendationOrder(render({ objective: 'teamDps' }))).toEqual(['H03', 'H02', 'D01']);
+  it('ranks by combat per million under a combat objective', () => {
+    expect(recommendationOrder(render({ objective: 'gateClear' }))).toEqual(['H03', 'H02', 'D01']);
+    expect(recommendationOrder(render({ objective: 'pvp' }))).toEqual(['H03', 'H02', 'D01']);
   });
 
   it('caps the list at recommendationCount', () => {
     expect(recommendationOrder(render({ recommendationCount: 2 }))).toEqual(['H02', 'H03']);
   });
 
-  it('prints each row from the bag: level step, compact cost, signed gain, per million, and the affordable chip', () => {
+  it('prints each row from the bag: level step, compact cost, mean gain, per million, and the affordable check', () => {
     const labels = labelsTagged('aa');
     const html = recommendationRow(render(), 'D01');
     expect(html).toContain(labels.totalNowNext('2', '3'));
+    expect(html).toContain(`>${labels.colCost}<`);
+    expect(html).toContain(`>${labels.colGain}<`);
+    expect(html).toContain(`>${labels.colPerMillion}<`);
     expect(html).toContain(labels.goldCompact(29_387));
     expect(html).toContain(labels.gainGold(15));
-    expect(html).toContain(labels.gainGold(40));
-    expect(html).toContain('data-testid="skill-tree-at-roster-D01"');
+    expect(html).not.toContain(labels.gainGold(40));
+    expect(html).not.toContain('data-testid="skill-tree-at-roster-D01"');
     expect(html).toContain(labels.perMillionGold(510.4));
+    expect(html).toContain('data-testid="skill-tree-affordable-D01"');
     expect(html).toContain(labels.affordableNow);
     expect(html).toContain('<img alt="" src="art/D01.png"');
   });
 
-  it('leaves the chip off a row the wallet cannot cover', () => {
+  it('leaves the affordable check off a row the wallet cannot cover', () => {
     const labels = labelsTagged('aa');
     expect(recommendationRow(render({ state: { ...STATE, gold: 10 } }), 'H02')).not.toContain(labels.affordableNow);
   });
 
+  it('expands the selected row with effect now→next, the kind name, and the objective rate — not the per-level value', () => {
+    const labels = labelsTagged('aa');
+    const node = skillNode('D01');
+    const effect = node?.effects[0];
+    expect(node).toBeDefined();
+    expect(effect).toBeDefined();
+    if (node === undefined || effect === undefined) throw new Error('D01 must have an effect');
+    const html = recommendationRow(render({ selectedId: 'D01' }), 'D01');
+    expect(html).toContain(`data-testid="skill-tree-recommendation-detail-D01"`);
+    expect(html).toContain(
+      labels.totalNowNext(
+        formatEffectTotal(effect.kind, effectTotalAt(effect, 2)),
+        formatEffectTotal(effect.kind, effectTotalAt(effect, 3)),
+      ),
+    );
+    expect(html).toContain(labels.kindName(effect.kind));
+    expect(html).not.toContain(labels.effectPerLevel(effect.kind, effect.perLevel));
+    expect(html).toContain(labels.totalNowNext(labels.goldCompact(10_000), labels.goldCompact(10_015)));
+    expect(html).not.toContain(labels.totalNowNext(labels.goldCompact(10_000), labels.goldCompact(10_040)));
+  });
+
+  it('keeps the expand off a row that is not selected', () => {
+    expect(recommendationRow(render(), 'D01')).not.toContain('data-testid="skill-tree-recommendation-detail-D01"');
+  });
+
   it('switches the gain unit with the objective', () => {
     const labels = labelsTagged('aa');
-    const html = recommendationRow(render({ objective: 'teamDps' }), 'H03');
+    const html = recommendationRow(render({ objective: 'gateClear' }), 'H03');
+    expect(html).toContain(`>${labels.colGain}<`);
     expect(html).toContain(labels.gainDps(30));
     expect(html).toContain(labels.perMillionDps(10_000));
     expect(html).not.toContain(labels.gainGold(3));
+  });
+
+  it('expands combat now→next from the windowed rate', () => {
+    const labels = labelsTagged('aa');
+    const html = recommendationRow(render({ objective: 'gateClear', selectedId: 'H03' }), 'H03');
+    expect(html).toContain('data-testid="skill-tree-recommendation-detail-H03"');
+    expect(html).toContain(labels.totalNowNext('2000', '2030'));
   });
 
   it('says so when there is no pricing, and when nothing gains', () => {
@@ -343,20 +396,38 @@ describe('SkillTreeScreen — next to buy', () => {
     expect(render()).not.toContain('aa-dpsLeftOut');
   });
 
-  it('prints the wallet, the priced phase and both objective options in the header', () => {
+  it('prints the wallet, the priced phase and the three objective options in the header', () => {
     const labels = labelsTagged('aa');
     const html = section(render(), 'skill-tree-header');
     expect(html).toContain(labels.gold(1e7));
     expect(html).toContain(labels.pricedAtPhase(60));
     expect(html).toContain(`aria-pressed="true"`);
     expect(html).toContain(labels.objectiveGold);
-    expect(html).toContain(labels.objectiveDps);
+    expect(html).toContain(labels.objectiveGate);
+    expect(html).toContain(labels.objectivePvp);
+  });
+
+  it('shows a gate phase select only under Gate, and PVP empty copy instead of the ranking', () => {
+    const labels = labelsTagged('aa');
+    const gate = render({ objective: 'gateClear', gatePhase: 10 });
+    expect(gate).toContain('data-testid="skill-tree-gate-phase"');
+    expect(gate).toContain(labels.gatePhaseSelect);
+    expect(gate).toContain(labels.pricedAtGate(10, 600));
+    expect(render()).not.toContain('data-testid="skill-tree-gate-phase"');
+    const pvp = render({ objective: 'pvp', pvpEmpty: true });
+    expect(pvp).toContain(labels.pvpEmpty);
+    expect(pvp).toContain('data-testid="skill-tree-pvp-empty"');
+    expect(pvp).not.toContain(labels.nothingToRecommend);
+    expect(recommendationOrder(pvp)).toEqual([]);
   });
 });
 
 describe('SkillTreeScreen — the selected node', () => {
-  it('asks for a selection when there is none', () => {
-    expect(render()).toContain(labelsTagged('aa').selectNodeHint);
+  it('draws no card until a node is selected, and the card carries a close control', () => {
+    expect(render()).not.toContain('data-testid="skill-tree-selected"');
+    const html = render({ selectedId: 'D01' });
+    expect(html).toContain('data-testid="skill-tree-selected-close"');
+    expect(html).toContain(labelsTagged('aa').closeNode);
   });
 
   it('prints the facts of an owned node: level, state, effects now → next, next cost, cost to max, refund', () => {
@@ -379,7 +450,19 @@ describe('SkillTreeScreen — the selected node', () => {
       value: labels.gold(node.costs.slice(2).reduce((sum, cost) => sum + cost, 0)),
     });
     expect(facts).toContainEqual({ label: labels.refund, value: labels.gold(node.refunds[1] ?? 0) });
-    expect(facts).toContainEqual({ label: labels.requires, value: labels.kindName('team_dmg') });
+    expect(html).toContain(labels.refundTip);
+    expect(facts.find((fact) => fact.label === labels.requires)?.value).toContain(labels.kindName('team_dmg'));
+    expect(html).toContain('data-testid="skill-tree-requires-H01"');
+  });
+
+  it('marks a node the wallet covers with the check, in the card as in the ranking', () => {
+    const labels = labelsTagged('aa');
+    const html = section(render({ selectedId: 'H02', state: { ...STATE, gold: 1e12 } }), 'skill-tree-selected');
+    expect(html).toContain('data-testid="skill-tree-selected-affordable-H02"');
+    expect(html).toContain(labels.affordableNow);
+    expect(section(render({ selectedId: 'H02', state: { ...STATE, gold: 0 } }), 'skill-tree-selected')).not.toContain(
+      'skill-tree-selected-affordable-H02',
+    );
   });
 
   it('previews the objectives with the node bought: now → with node, signed delta, per million', () => {

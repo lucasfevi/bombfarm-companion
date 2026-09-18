@@ -1,25 +1,33 @@
 /**
  * What the Skill Tree screen remembers between visits: which objective the recommendation panel
- * ranks by. Its own key, beside the Farm screen's — the two remember different choices about the
- * same account, and neither reads the other's.
+ * ranks by, and which gate phase Gate clear is priced at. Its own key, beside the Farm screen's.
  */
-import type { SkillPricingObjective } from '@bombfarm/domain/skill-tree';
+import { type SkillPricingObjective } from '@bombfarm/domain/skill-tree';
 
 const SKILLS_VIEW_STORAGE_KEY = 'bfc-skills-view';
 
-const OBJECTIVES: readonly SkillPricingObjective[] = ['goldPerHour', 'teamDps'];
+const OBJECTIVES: readonly SkillPricingObjective[] = ['goldPerHour', 'gateClear', 'pvp'];
 
 export type SkillsView = {
   readonly objective: SkillPricingObjective;
+  readonly gatePhase: number | null;
 };
 
-export const DEFAULT_SKILLS_VIEW: SkillsView = { objective: 'goldPerHour' };
+export const DEFAULT_SKILLS_VIEW: SkillsView = { objective: 'goldPerHour', gatePhase: null };
+
+function readObjective(raw: unknown): SkillPricingObjective {
+  if (raw === 'teamDps') return 'gateClear';
+  return OBJECTIVES.find((candidate) => candidate === raw) ?? DEFAULT_SKILLS_VIEW.objective;
+}
+
+function readGatePhase(raw: unknown): number | null {
+  return typeof raw === 'number' && Number.isInteger(raw) && raw > 0 ? raw : null;
+}
 
 function normalizeSkillsView(value: unknown): SkillsView {
   if (typeof value !== 'object' || value === null) return DEFAULT_SKILLS_VIEW;
   const raw = value as Record<string, unknown>;
-  const objective = OBJECTIVES.find((candidate) => candidate === raw.objective);
-  return objective === undefined ? DEFAULT_SKILLS_VIEW : { objective };
+  return { objective: readObjective(raw.objective), gatePhase: readGatePhase(raw.gatePhase) };
 }
 
 /** Never throws and never returns a partial record: an absent, unparseable or half-written value

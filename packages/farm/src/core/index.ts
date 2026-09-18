@@ -22,5 +22,7 @@ export type {
   FarmRankingReason,
   FarmRankingResult,
 } from './farm-compute';
+export { emptyPvpCombatInput, gateCombatInput } from './skill-tree-combat';
+export type { SkillsCombatInput } from './skill-tree-combat';
 export { createFarmRankingMemo } from './farm-memo';
 export type { FarmRankingMemo } from './farm-memo';

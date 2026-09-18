@@ -52,7 +52,8 @@ import { ptBR } from './pt-BR';
 // in its Portuguese interface. skillsTotalNowNext / skillsGainDps: two placeholders around an
 // arrow, and a placeholder before the DPS acronym — no words in either. skillsPerMillionGold /
 // skillsPerMillionDps: a bare placeholder, and one before the DPS acronym, under a column head
-// that carries the unit — no words in either.
+// that carries the unit — no words in either. skillsObjectivePvp: the game's own PVP acronym,
+// printed as-is in both languages, same as pvpNavLabel.
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'ageShortSeconds',
   'liveMapXpPerPropLabel',
@@ -82,6 +83,7 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'skillsGainDps',
   'skillsPerMillionGold',
   'skillsPerMillionDps',
+  'skillsObjectivePvp',
 ];
 
 function placeholderSet(value: string): Set<string> {

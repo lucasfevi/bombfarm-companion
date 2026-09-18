@@ -7,6 +7,7 @@ import type { SkillTreeLabels } from '@bombfarm/account/skill-tree';
 import type { SkillArm, SkillEffectKind, SkillTier, SkillTotals } from '@bombfarm/domain/skill-tree';
 import { formatCompactNumber, formatNumber, formatSignificantCompact } from '@bombfarm/ui';
 import { sub, type Lang, type Strings } from '@/shared/i18n';
+import { formatPhaseLabel } from '@/shared/lib/phase-label';
 
 const MINUS_SIGN = '−';
 
@@ -160,6 +161,7 @@ export function skillTreeLabels(copy: Strings, lang: Lang, phaseSource: SkillsPh
     nextLevelCost: copy.skillsNextLevelCost,
     costToMax: copy.skillsCostToMax,
     refund: copy.skillsRefund,
+    refundTip: copy.skillsRefundTip,
     refundBlocked: (childNames) => sub(copy.skillsRefundBlocked, { children: childNames }),
     wallet: copy.skillsWallet,
     gold: (gold) => sub(copy.skillsGoldAmount, { gold: formatNumber(gold, lang, 0) }),
@@ -168,7 +170,8 @@ export function skillTreeLabels(copy: Strings, lang: Lang, phaseSource: SkillsPh
     nextToBuy: copy.skillsNextToBuy,
     nextToBuyTip: copy.skillsNextToBuyTip,
     objectiveGold: copy.skillsObjectiveGold,
-    objectiveDps: copy.skillsObjectiveDps,
+    objectiveGate: copy.skillsObjectiveGate,
+    objectivePvp: copy.skillsObjectivePvp,
     colNode: copy.skillsColNode,
     colCost: copy.skillsColCost,
     colGain: copy.skillsColGain,
@@ -179,13 +182,22 @@ export function skillTreeLabels(copy: Strings, lang: Lang, phaseSource: SkillsPh
     perMillionDps: (value) => sub(copy.skillsPerMillionDps, { v: signedCompact(value, lang) }),
     gainOutsideObjectives: copy.skillsGainOutsideObjectives,
     nothingToRecommend: copy.skillsNothingToRecommend,
+    pvpEmpty: copy.skillsPvpEmpty,
     pricingUnavailable: copy.skillsPricingUnavailable,
     pricedAtPhase: (phase) =>
       sub(phaseSource === 'farm' ? copy.skillsPricedAtPhase : copy.skillsPricedAtAccountPhase, { phase }),
+    pricedAtGate: (phase, windowSecs) => sub(copy.skillsPricedAtGate, { phase, secs: windowSecs }),
+    pricedAtPvp: (phase, windowSecs) => sub(copy.skillsPricedAtPvp, { phase, secs: windowSecs }),
+    gatePhaseSelect: copy.skillsGatePhaseSelect,
+    gatePhaseOption: (phase) => formatPhaseLabel(phase, lang),
+    gatePhaseSearchPlaceholder: copy.skillsGatePhaseSearchPlaceholder,
+    gatePhaseNoMatch: copy.skillsGatePhaseNoMatch,
+    gatePhaseMoreMatches: (shown, matched) =>
+      sub(copy.skillsGatePhaseMoreMatches, { shown: formatNumber(shown, lang, 0), matched: formatNumber(matched, lang, 0) }),
     dpsLeftOut: (names) => sub(copy.skillsDpsLeftOut, { names }),
     affordableNow: copy.skillsAffordableNow,
 
-    selectNodeHint: copy.skillsSelectNodeHint,
+    closeNode: copy.skillsCloseNode,
     preview: copy.skillsPreview,
     previewTip: copy.skillsPreviewTip,
     previewGold: copy.skillsPreviewGold,

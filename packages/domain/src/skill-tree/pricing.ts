@@ -8,6 +8,8 @@ import {
   type HeroFarmBasis,
   type ReturnBonusMode,
 } from '../farm-rate';
+import { windowedDamage } from '../model/combat';
+import { wikiPhaseLine } from '../phase-wiki';
 import { phaseLine } from '../phases';
 import type { HeroRecord } from '../shims/storage';
 import { buildHeroPlanContexts, evaluateRoster, type TeamPlanAccountInput, type TeamPlanHeroInput } from '../team-plan';
@@ -29,7 +31,7 @@ export type BreakpointSpread = { readonly halfWidth: number; readonly step: numb
 
 export const BREAKPOINT_SPREAD: BreakpointSpread = { halfWidth: 0.05, step: 0.005 };
 
-/** Kinds that move neither gold/hr nor team DPS: they pay in drops, XP or bag space. */
+/** Kinds that move neither gold/hr nor the combat window: they pay in drops, XP or bag space. */
 export const SKILL_KINDS_OUTSIDE_OBJECTIVES: readonly SkillEffectKind[] = ['g_luck', 'team_xp', 'bag_tab'];
 
 const SHEET_LEVEL_KEYS = new Set<keyof SkillTotals>([
@@ -56,6 +58,12 @@ export type SkillTreePricingInput = {
   /** Node ids to price; every buyable node when absent. */
   readonly candidates?: readonly string[];
   readonly spread?: BreakpointSpread;
+  /** Combat window T in seconds. Absent or not positive: no combat figures. */
+  readonly combatWindowSecs?: number | null;
+  /** Combat roster. Omitted → `enabledHeroIds`. An explicit empty list is empty. */
+  readonly combatHeroIds?: readonly string[] | null;
+  /** Phase combat is priced at. Omitted → `phase`. */
+  readonly combatPhase?: number;
 };
 
 export type SkillObjectiveFigures = {
@@ -83,9 +91,11 @@ export type SkillNodeGain = {
 
 export type SkillTreePricing = {
   readonly phase: number;
+  readonly combatPhase: number | null;
+  readonly combatWindowSecs: number | null;
   readonly baseline: SkillObjectiveFigures;
   readonly gains: readonly SkillNodeGain[];
-  /** Heroes the DPS figure had to leave out — no birth stats on record. */
+  /** Heroes the combat figure had to leave out — no birth stats on record. */
   readonly dpsLeftOut: readonly string[];
 };
 
@@ -140,11 +150,23 @@ function teamPlanHero(hero: HeroRecord): TeamPlanHeroInput {
   };
 }
 
-function enabledHeroes(input: SkillTreePricingInput): readonly HeroRecord[] {
+function farmHeroes(input: SkillTreePricingInput): readonly HeroRecord[] {
   const ids = input.enabledHeroIds;
   if (ids == null) return input.heroes.filter((hero) => hero.battleAllowed !== false);
   const idSet = new Set(ids);
   return input.heroes.filter((hero) => idSet.has(hero.id));
+}
+
+function combatHeroes(input: SkillTreePricingInput): readonly HeroRecord[] {
+  if (input.combatHeroIds === undefined) return farmHeroes(input);
+  const ids = input.combatHeroIds ?? [];
+  const byId = new Map(input.heroes.map((hero) => [hero.id, hero]));
+  const selected: HeroRecord[] = [];
+  for (const id of ids) {
+    const hero = byId.get(id);
+    if (hero) selected.push(hero);
+  }
+  return selected;
 }
 
 type DpsModel = {
@@ -153,31 +175,42 @@ type DpsModel = {
   readonly ptsByHeroId: Record<string, HeroRecord['pts']>;
   readonly leftOut: readonly string[];
   readonly mitigationPct: number;
+  readonly phase: number;
+  readonly windowSecs: number;
 };
 
-function dpsModelFor(input: SkillTreePricingInput): DpsModel {
-  const withBirth = enabledHeroes(input).filter((hero) => hero.birth !== undefined);
-  const leftOut = enabledHeroes(input)
-    .filter((hero) => hero.birth === undefined)
-    .map((hero) => hero.name);
-  const line = phaseLine(input.phase);
+function combatWindowSecsOf(input: SkillTreePricingInput): number | null {
+  const secs = input.combatWindowSecs;
+  return secs != null && secs > 0 ? secs : null;
+}
+
+function dpsModelFor(input: SkillTreePricingInput): DpsModel | null {
+  const windowSecs = combatWindowSecsOf(input);
+  if (windowSecs === null) return null;
+  const selected = combatHeroes(input);
+  const withBirth = selected.filter((hero) => hero.birth !== undefined);
+  const leftOut = selected.filter((hero) => hero.birth === undefined).map((hero) => hero.name);
+  const phase = input.combatPhase ?? input.phase;
+  const line = wikiPhaseLine(phase) ?? phaseLine(phase);
   return {
     heroes: withBirth.map(teamPlanHero),
     loadoutsByHeroId: Object.fromEntries(withBirth.map((hero) => [hero.id, hero.loadout])),
     ptsByHeroId: Object.fromEntries(withBirth.map((hero) => [hero.id, hero.pts])),
     leftOut,
     mitigationPct: +((line?.mitig ?? 0.01) * 100).toFixed(2),
+    phase,
+    windowSecs,
   };
 }
 
-function teamDpsOf(model: DpsModel, input: SkillTreePricingInput, totals: SkillTotals, fieldSlots: number): number | null {
+function windowedTeamDpsOf(model: DpsModel, input: SkillTreePricingInput, totals: SkillTotals, fieldSlots: number): number | null {
   if (model.heroes.length === 0) return null;
   const base = input.account;
   const account: TeamPlanAccountInput = {
     treeSheet: treeSheetFromTotals(totals),
     houseIdx: base.context.houseIdx,
     houseLevel: base.context.houseLevel,
-    phase: input.phase,
+    phase: model.phase,
     mitigationPct: model.mitigationPct,
     slots: base.slots ?? DEFAULT_CASA_SLOTS,
     fieldSlots,
@@ -196,7 +229,7 @@ function teamDpsOf(model: DpsModel, input: SkillTreePricingInput, totals: SkillT
     farm: {
       houseIdx: account.houseIdx,
       houseLevel: account.houseLevel,
-      phase: input.phase,
+      phase: model.phase,
       mitigationPct: model.mitigationPct,
       cycleSecs: account.cycleSecs,
       cycleSecsHouseIdx: account.cycleSecsHouseIdx,
@@ -205,7 +238,12 @@ function teamDpsOf(model: DpsModel, input: SkillTreePricingInput, totals: SkillT
     forgeFloor: 0,
     aurasAtCap: base.aurasAtCap,
   });
-  return Number.isFinite(evaluation.objective) ? evaluation.objective : 0;
+  let damage = 0;
+  for (const score of Object.values(evaluation.perHero)) {
+    damage += windowedDamage(score.active, score.fieldSeconds, score.context.restSeconds, model.windowSecs);
+  }
+  const rate = damage / model.windowSecs;
+  return Number.isFinite(rate) ? rate : 0;
 }
 
 function touchesSheet(node: SkillNode): boolean {
@@ -248,7 +286,7 @@ export function priceSkillTree(input: SkillTreePricingInput): SkillTreePricing {
   const baselineGold = goldAt(baseGold, 1);
 
   const dpsModel = dpsModelFor(input);
-  const baselineDps = teamDpsOf(dpsModel, input, input.totals, baseFieldSlots);
+  const baselineDps = dpsModel === null ? null : windowedTeamDpsOf(dpsModel, input, input.totals, baseFieldSlots);
 
   const candidateIds =
     input.candidates ??
@@ -272,7 +310,12 @@ export function priceSkillTree(input: SkillTreePricingInput): SkillTreePricing {
     const atRoster = goldAt(gold, 1) - baselineGold;
 
     const dpsMoves = touchesSheet(node) || slotDelta !== 0;
-    const dps = baselineDps === null ? null : dpsMoves ? teamDpsOf(dpsModel, input, totals, baseFieldSlots + slotDelta) : baselineDps;
+    const dps =
+      baselineDps === null || dpsModel === null
+        ? null
+        : dpsMoves
+          ? windowedTeamDpsOf(dpsModel, input, totals, baseFieldSlots + slotDelta)
+          : baselineDps;
     const dpsDelta = dps === null || baselineDps === null ? null : dps - baselineDps;
 
     gains.push({
@@ -290,13 +333,19 @@ export function priceSkillTree(input: SkillTreePricingInput): SkillTreePricing {
 
   return {
     phase: input.phase,
+    combatPhase: dpsModel === null ? null : dpsModel.heroes.length === 0 ? (input.combatPhase ?? null) : dpsModel.phase,
+    combatWindowSecs: dpsModel?.windowSecs ?? null,
     baseline: { goldPerHour: baselineGold, teamDps: baselineDps },
     gains,
-    dpsLeftOut: dpsModel.leftOut,
+    dpsLeftOut: dpsModel?.leftOut ?? [],
   };
 }
 
-export type SkillPricingObjective = 'goldPerHour' | 'teamDps';
+export type SkillPricingObjective = 'goldPerHour' | 'gateClear' | 'pvp';
+
+export function isCombatSkillObjective(objective: SkillPricingObjective): boolean {
+  return objective === 'gateClear' || objective === 'pvp';
+}
 
 /** Best value first — the gain per million gold, ties to the cheaper node; zero-gain nodes last. */
 export function rankSkillGains(gains: readonly SkillNodeGain[], objective: SkillPricingObjective): SkillNodeGain[] {

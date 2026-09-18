@@ -5,6 +5,7 @@
  */
 import type { SkillTreeLabels } from '@bombfarm/account/skill-tree';
 import type { SkillArm, SkillEffectKind, SkillTier, SkillTotals } from '@bombfarm/domain/skill-tree';
+import { formatPhaseLabel } from '@bombfarm/farm';
 import { formatCompactNumber, formatNumber, formatSignificantCompact } from '@bombfarm/ui';
 import type { DomainLang } from '@bombfarm/contracts';
 import { sub, type Copy, type CopyKey } from '../../lib/copy';
@@ -164,6 +165,7 @@ export function skillTreeLabels(t: Copy, lang: DomainLang, phaseSource: SkillsPh
     nextLevelCost: t.skillsNextLevelCost,
     costToMax: t.skillsCostToMax,
     refund: t.skillsRefund,
+    refundTip: t.skillsRefundTip,
     refundBlocked: (childNames) => sub(t.skillsRefundBlocked, { children: childNames }),
     wallet: t.skillsWallet,
     gold: (gold) => sub(t.skillsGoldAmount, { gold: formatNumber(gold, lang, 0) }),
@@ -172,7 +174,8 @@ export function skillTreeLabels(t: Copy, lang: DomainLang, phaseSource: SkillsPh
     nextToBuy: t.skillsNextToBuy,
     nextToBuyTip: t.skillsNextToBuyTip,
     objectiveGold: t.skillsObjectiveGold,
-    objectiveDps: t.skillsObjectiveDps,
+    objectiveGate: t.skillsObjectiveGate,
+    objectivePvp: t.skillsObjectivePvp,
     colNode: t.skillsColNode,
     colCost: t.skillsColCost,
     colGain: t.skillsColGain,
@@ -183,13 +186,22 @@ export function skillTreeLabels(t: Copy, lang: DomainLang, phaseSource: SkillsPh
     perMillionDps: (value) => sub(t.skillsPerMillionDps, { v: signedCompact(value, lang) }),
     gainOutsideObjectives: t.skillsGainOutsideObjectives,
     nothingToRecommend: t.skillsNothingToRecommend,
+    pvpEmpty: t.skillsPvpEmpty,
     pricingUnavailable: t.skillsPricingUnavailable,
     pricedAtPhase: (phase) =>
       sub(phaseSource === 'farm' ? t.skillsPricedAtPhase : t.skillsPricedAtAccountPhase, { phase }),
+    pricedAtGate: (phase, windowSecs) => sub(t.skillsPricedAtGate, { phase, secs: windowSecs }),
+    pricedAtPvp: (phase, windowSecs) => sub(t.skillsPricedAtPvp, { phase, secs: windowSecs }),
+    gatePhaseSelect: t.skillsGatePhaseSelect,
+    gatePhaseOption: (phase) => formatPhaseLabel(phase, lang),
+    gatePhaseSearchPlaceholder: t.skillsGatePhaseSearchPlaceholder,
+    gatePhaseNoMatch: t.skillsGatePhaseNoMatch,
+    gatePhaseMoreMatches: (shown, matched) =>
+      sub(t.skillsGatePhaseMoreMatches, { shown: formatNumber(shown, lang, 0), matched: formatNumber(matched, lang, 0) }),
     dpsLeftOut: (names) => sub(t.skillsDpsLeftOut, { names }),
     affordableNow: t.skillsAffordableNow,
 
-    selectNodeHint: t.skillsSelectNodeHint,
+    closeNode: t.skillsCloseNode,
     preview: t.skillsPreview,
     previewTip: t.skillsPreviewTip,
     previewGold: t.skillsPreviewGold,

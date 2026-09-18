@@ -1,17 +1,19 @@
 import {
   priceSkillTree,
   totalsFromLevels,
+  type SkillPricingObjective,
   type SkillTotals,
   type SkillTreePricing,
   type SkillTreeState,
 } from '@bombfarm/domain/skill-tree';
-import { buildAccount, farmDepsEqual, resolveEnabledHeroIds } from '@bombfarm/farm/core';
+import { buildAccount, farmDepsEqual, resolveEnabledHeroIds, type SkillsCombatInput } from '@bombfarm/farm/core';
 import type { PlannerStore } from '@/shared/stores/planner-store';
 import { farmInputsOf, readFarmDepTuple } from '@/shared/stores/selectors/farm-ranking-selectors';
 
 export function skillsTotalsOf(state: SkillTreeState): SkillTotals {
   return state.totals ?? totalsFromLevels(state);
 }
+
 
 let pricingStamp = 0;
 let lastPricingIdentity: {
@@ -20,9 +22,15 @@ let lastPricingIdentity: {
   phase: number;
   maxPhase: number | null;
   fieldSlots: number | null;
+  objective: SkillPricingObjective;
+  gatePhase: number;
 } | null = null;
 
-export function skillsPricingKey(store: PlannerStore): string | null {
+export function skillsPricingKey(
+  store: PlannerStore,
+  objective: SkillPricingObjective,
+  gatePhase: number,
+): string | null {
   const stored = store.skillTree;
   if (stored == null || store.phase === null) return null;
   const deps = readFarmDepTuple(store);
@@ -34,11 +42,13 @@ export function skillsPricingKey(store: PlannerStore): string | null {
     lastPricingIdentity.maxPhase === maxPhase &&
     lastPricingIdentity.fieldSlots === fieldSlots &&
     lastPricingIdentity.levels === levels &&
+    lastPricingIdentity.objective === objective &&
+    lastPricingIdentity.gatePhase === gatePhase &&
     farmDepsEqual(lastPricingIdentity.deps, deps)
   ) {
     return String(pricingStamp);
   }
-  lastPricingIdentity = { deps, levels, phase, maxPhase, fieldSlots };
+  lastPricingIdentity = { deps, levels, phase, maxPhase, fieldSlots, objective, gatePhase };
   pricingStamp += 1;
   return String(pricingStamp);
 }
@@ -48,6 +58,7 @@ export function priceSkillsView(
   state: SkillTreeState,
   totals: SkillTotals,
   phase: number,
+  combat: SkillsCombatInput,
 ): SkillTreePricing {
   const inputs = farmInputsOf(store);
   return priceSkillTree({
@@ -58,5 +69,8 @@ export function priceSkillsView(
     phase,
     totals,
     state,
+    combatWindowSecs: combat.windowSecs,
+    combatHeroIds: combat.heroIds,
+    ...(combat.phase === null ? {} : { combatPhase: combat.phase }),
   });
 }

@@ -9,12 +9,14 @@ app calls no endpoint that would spend gold.
 The tree the game draws — the hub in the middle, eight arms of small nodes and notables radiating
 from it, and the unlocks (field slots and bag tabs) on the rim — with each node's owned level, the
 level it can be bought to, and whether it is lit, buyable, out of gold, waiting on a prerequisite
-or behind a phase gate. Selecting a node shows its effects per level, its next level's cost, the
-cost to max it, and the refund undoing its top level would return. Beside the tree sit the totals
-the game's own summary prints — squad damage, crit, speed, gold per target, luck, energy, the
-compound (GEO) multiplier, hero XP, field slots, bag tabs — and a **Next to buy** panel that ranks
-every buyable node by what one more level adds per million gold, under one of two objectives:
-gold per hour, or team DPS. The objective toggle is remembered between visits.
+or behind a phase gate. Selecting a node opens a card over the tree — closable, and reached from the
+ranking too — with its effects per level, its next level's cost, the cost to max it, the refund
+undoing its top level would return, and the node it hangs off (hover for that node's facts, click
+to jump to it). Beside the tree sit the totals the game's own summary prints — squad damage, crit,
+speed, gold per target, luck, energy, the compound (GEO) multiplier, hero XP, field slots, bag
+tabs — and a **Next to buy** panel that ranks every buyable node by what one more level adds per
+million gold, under one of three objectives: gold per hour, a timed gate clear, or a PVP duel. The
+objective and the chosen gate are remembered between visits.
 
 The tab is drawn from the account read the other data screens share. When the skills section of
 that read is not usable, the tab says the tree could not be read and draws nothing else.
@@ -68,19 +70,25 @@ account is farming now; the header says which — so the figures here agree with
   alike. Damage nodes come out stable from ±2% to ±8%; every other axis is smooth and unchanged by
   the mean. The ranking and the selected-node preview also print the figure at this roster, so the
   mean and the exact read sit side by side.
-- **Team DPS** is the roster objective the Optimizer scores, evaluated with the tree's sheet totals
-  and field slots moved by the node. Heroes without birth stats are left out of this figure and
-  named.
+- **Gate clear** prices damage over the gate's own timer at a gate the player picks — the same phase
+  control the Optimizer uses, listing gate phases only — by the strongest squad the field can seat
+  from the Farm board's pool, each hero deploying and resting on its own cycle inside that window.
+  The figure is that window's damage per second; a node's gain is the difference one level makes.
+- **PVP** prices the same window shape over the duel's 60 seconds, with the standing squad the PVP
+  tab last read and the phase of the latest duel. With no squad on record the ranking waits rather
+  than inventing a team. The web planner has no squad source, so it offers gold and gate only.
 
-Both are rankings, not predictions of the absolute rate: the terms the model holds fixed cancel
+Heroes without birth stats are left out of the combat figures and named.
+
+All three are rankings, not predictions of the absolute rate: the terms the model holds fixed cancel
 between the two sides. Pricing a full roster costs about a tenth of a second, so it is keyed by
 value and recomputed only when the roster, the tree levels, the controls or the phase change — not
 on every account poll.
 
 ## What is not priced
 
-Luck, hero XP and bag tabs move neither objective. A node whose only effect is one of these is
-listed with its cost and marked as paying outside both objectives; the tab does not invent a gold
+Luck, hero XP and bag tabs move none of the objectives. A node whose only effect is one of these is
+listed with its cost and marked as paying outside them; the tab does not invent a gold
 value for a chest drop or a level.
 
 ## What the tab never does

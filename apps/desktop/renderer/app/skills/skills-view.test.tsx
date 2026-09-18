@@ -37,6 +37,11 @@ vi.mock('./use-stored-farm-controls', async () => {
   return { useStoredFarmControls: () => DEFAULT_FARM_CONTROLS };
 });
 
+vi.mock('../../lib/pvp/use-pvp-history', () => ({
+  usePvpHistory: () => ({ status: 'unavailable', applied: 0, history: null }),
+  refreshPvpStanding: () => undefined,
+}));
+
 // The drawing is the shared package's and has its own tests; what this file proves is what the
 // connector hands it.
 vi.mock('@bombfarm/account/skill-tree', () => ({

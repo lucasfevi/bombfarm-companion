@@ -29,13 +29,18 @@ describe('skill tree view preferences', () => {
   });
 
   it('is stored under its own key, never the farm screen key', () => {
-    saveSkillsView({ objective: 'teamDps' });
+    saveSkillsView({ objective: 'gateClear', gatePhase: 10 });
     expect([...entries.keys()]).toEqual([KEY]);
   });
 
-  it('round-trips the objective', () => {
-    saveSkillsView({ objective: 'teamDps' });
-    expect(loadSkillsView()).toEqual({ objective: 'teamDps' });
+  it('round-trips the objective and gate phase', () => {
+    saveSkillsView({ objective: 'pvp', gatePhase: 40 });
+    expect(loadSkillsView()).toEqual({ objective: 'pvp', gatePhase: 40 });
+  });
+
+  it('loads a stored teamDps objective as gateClear', () => {
+    entries.set(KEY, JSON.stringify({ objective: 'teamDps' }));
+    expect(loadSkillsView()).toEqual({ objective: 'gateClear', gatePhase: null });
   });
 
   it('reads the defaults when nothing was ever stored', () => {

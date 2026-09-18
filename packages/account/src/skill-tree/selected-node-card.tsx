@@ -5,19 +5,35 @@ import {
   type SkillNodeStatus,
   type SkillTreePricing,
 } from '@bombfarm/domain/skill-tree';
-import { Panel, PanelHeader, StatList, cn, heroAbilTitleClass, tipClass, type StatListItem } from '@bombfarm/ui';
+import { GoldValue } from '@bombfarm/game-art';
+import {
+  Button,
+  Icon,
+  InfoTip,
+  PanelHeader,
+  StatList,
+  Tooltip,
+  cn,
+  heroAbilTitleClass,
+  tipClass,
+  type StatListItem,
+} from '@bombfarm/ui';
+import { AffordableCheck } from './affordable-check';
 import { effectTotalAt, formatEffectTotal } from './node-facts';
 import type { SkillTreeLabels } from './types';
 
 export type SelectedNodeCardProps = {
-  node: SkillNode | null;
-  status: SkillNodeStatus | null;
+  node: SkillNode;
+  status: SkillNodeStatus;
   gain: SkillNodeGain | null;
   pricing: SkillTreePricing | null;
+  nodeById: ReadonlyMap<string, SkillNode>;
+  statuses: ReadonlyMap<string, SkillNodeStatus>;
   nodeArtSrc: (node: SkillNode) => string | null;
   nodeName: (node: SkillNode) => string;
-  parentName: (id: string) => string;
+  onSelect: (id: string | null) => void;
   labels: SkillTreeLabels;
+  className?: string;
 };
 
 function stateLine(node: SkillNode, status: SkillNodeStatus, parentName: (id: string) => string, labels: SkillTreeLabels): string {
@@ -50,16 +66,84 @@ function Delta({ value, text }: { value: number; text: string }) {
   return <span className={cn('ml-1.5 font-mono text-[11px]', value < 0 ? 'text-down' : 'text-up')}>{text}</span>;
 }
 
-export function SelectedNodeCard({ node, status, gain, pricing, nodeArtSrc, nodeName, parentName, labels }: SelectedNodeCardProps) {
-  if (node === null || status === null) {
-    return (
-      <Panel data-testid="skill-tree-selected">
-        <p className="m-0 text-xs text-muted">{labels.selectNodeHint}</p>
-      </Panel>
-    );
-  }
+function Medallion({ src, className }: { src: string | null; className: string }) {
+  if (src === null) return <span aria-hidden className={cn('shrink-0 rounded-full border border-line bg-bg-2', className)} />;
+  return <img alt="" src={src} className={cn('shrink-0 rounded-full object-cover', className)} />;
+}
 
-  const art = nodeArtSrc(node);
+/** The prerequisite as a node to reach: its medallion and name, a hover card, a click that selects it. */
+function RequiredNode({
+  node,
+  status,
+  art,
+  name,
+  onSelect,
+  labels,
+}: {
+  node: SkillNode;
+  status: SkillNodeStatus | undefined;
+  art: string | null;
+  name: string;
+  onSelect: (id: string) => void;
+  labels: SkillTreeLabels;
+}) {
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger
+        delay={180}
+        closeDelay={80}
+        render={
+          <button
+            type="button"
+            data-testid={`skill-tree-requires-${node.id}`}
+            onClick={() => onSelect(node.id)}
+            className="inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-sm border border-transparent px-1 py-0.5 font-mono text-[11px] text-ink hover:border-line hover:bg-bg-2"
+          />
+        }
+      >
+        <Medallion src={art} className="size-4" />
+        <span className="truncate">{name}</span>
+      </Tooltip.Trigger>
+      <Tooltip.Portal>
+        <Tooltip.Positioner sideOffset={6}>
+          <Tooltip.Popup>
+            <p className="m-0 text-xs font-semibold text-ink">{name}</p>
+            {status ? (
+              <p className="m-0 text-[11px] text-muted">
+                {labels.armName(node.arm)} · {labels.level(status.level, status.maxLevel)}
+              </p>
+            ) : null}
+            {node.effects.map((effect) => (
+              <p key={effect.kind} className="m-0 text-[11px]">
+                {labels.effectPerLevel(effect.kind, effect.perLevel)}
+              </p>
+            ))}
+          </Tooltip.Popup>
+        </Tooltip.Positioner>
+      </Tooltip.Portal>
+    </Tooltip.Root>
+  );
+}
+
+export function SelectedNodeCard({
+  node,
+  status,
+  gain,
+  pricing,
+  nodeById,
+  statuses,
+  nodeArtSrc,
+  nodeName,
+  onSelect,
+  labels,
+  className,
+}: SelectedNodeCardProps) {
+  const parentName = (id: string) => {
+    const parent = nodeById.get(id);
+    return parent ? nodeName(parent) : id;
+  };
+  const gold = (amount: number) => <GoldValue baseline>{labels.gold(amount)}</GoldValue>;
+
   const nextLevel = Math.min(node.maxLevel, status.level + 1);
   const effectItems: StatListItem[] = node.effects.map((effect) => ({
     id: effect.kind,
@@ -72,24 +156,38 @@ export function SelectedNodeCard({ node, status, gain, pricing, nodeArtSrc, node
 
   const costItems: StatListItem[] = [];
   if (status.nextCost !== null) {
-    costItems.push({ id: 'next-cost', label: labels.nextLevelCost, value: labels.gold(status.nextCost) });
+    costItems.push({ id: 'next-cost', label: labels.nextLevelCost, value: gold(status.nextCost) });
   }
   if (status.level < node.maxLevel && node.tier !== 'start') {
-    costItems.push({ id: 'cost-to-max', label: labels.costToMax, value: labels.gold(costForLevels(node, status.level, node.maxLevel)) });
+    costItems.push({ id: 'cost-to-max', label: labels.costToMax, value: gold(costForLevels(node, status.level, node.maxLevel)) });
   }
   if (status.refund !== null) {
     const blocked = status.refundBlockedBy.length > 0;
     costItems.push({
       id: 'refund',
       label: labels.refund,
-      value: labels.gold(status.refund),
+      value: gold(status.refund),
       muted: blocked,
-      ...(blocked ? { tip: labels.refundBlocked(status.refundBlockedBy.map(parentName).join(', ')) } : {}),
+      tip: blocked ? labels.refundBlocked(status.refundBlockedBy.map(parentName).join(', ')) : labels.refundTip,
     });
   }
   const [parentId] = node.requires;
-  if (parentId !== undefined) {
-    costItems.push({ id: 'requires', label: labels.requires, value: parentName(parentId) });
+  const parent = parentId === undefined ? undefined : nodeById.get(parentId);
+  if (parent) {
+    costItems.push({
+      id: 'requires',
+      label: labels.requires,
+      value: (
+        <RequiredNode
+          node={parent}
+          status={statuses.get(parent.id)}
+          art={nodeArtSrc(parent)}
+          name={nodeName(parent)}
+          onSelect={onSelect}
+          labels={labels}
+        />
+      ),
+    });
   }
   if (node.gatePhase > 0) {
     costItems.push({ id: 'gate', label: labels.gate, value: String(node.gatePhase) });
@@ -98,15 +196,19 @@ export function SelectedNodeCard({ node, status, gain, pricing, nodeArtSrc, node
   const showPreview = status.availability === 'buyable' && gain !== null && pricing !== null;
 
   return (
-    <Panel data-testid="skill-tree-selected" data-node-id={node.id}>
-      <div className="flex items-center gap-3">
-        {art === null ? (
-          <span aria-hidden className="size-12 shrink-0 rounded-full border border-line bg-bg-2" />
-        ) : (
-          <img alt="" src={art} className="size-12 shrink-0 rounded-full object-cover" />
-        )}
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <h2 className="m-0 truncate text-sm font-bold text-ink">{nodeName(node)}</h2>
+    <section
+      data-testid="skill-tree-selected"
+      data-node-id={node.id}
+      aria-label={nodeName(node)}
+      className={cn('flex flex-col rounded-sm border border-line bg-surface p-3 shadow-lg', className)}
+    >
+      <div className="flex items-start gap-3">
+        <Medallion src={nodeArtSrc(node)} className="size-12" />
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <h2 className="m-0 flex items-center gap-1.5 truncate text-sm font-bold text-ink">
+            <span className="truncate">{nodeName(node)}</span>
+            {status.affordable === true ? <AffordableCheck label={labels.affordableNow} testId={`skill-tree-selected-affordable-${node.id}`} /> : null}
+          </h2>
           <p className="m-0 text-[11px] text-muted">
             {labels.armName(node.arm)} · {labels.tierName(node.tier)}
           </p>
@@ -114,6 +216,15 @@ export function SelectedNodeCard({ node, status, gain, pricing, nodeArtSrc, node
             {labels.level(status.level, status.maxLevel)}
           </p>
         </div>
+        <Button
+          variant="ghost"
+          className="-mt-1 -mr-1 px-1.5 py-1"
+          aria-label={labels.closeNode}
+          data-testid="skill-tree-selected-close"
+          onClick={() => onSelect(null)}
+        >
+          <Icon name="x-mark" size="sm" />
+        </Button>
       </div>
       {node.tier === 'start' ? <p className={cn(tipClass, 'mt-2')}>{labels.hubNote}</p> : null}
       <p className="m-0 mt-2 text-xs text-ink" data-testid="skill-tree-selected-state">
@@ -127,8 +238,9 @@ export function SelectedNodeCard({ node, status, gain, pricing, nodeArtSrc, node
 
       {showPreview ? (
         <div className="mt-3 border-t border-line pt-3" data-testid="skill-tree-preview">
-          <PanelHeader title={labels.preview} className="mb-1" />
-          <p className={tipClass}>{labels.previewTip}</p>
+          <PanelHeader title={labels.preview} className="mb-1">
+            <InfoTip label={labels.preview} tip={labels.previewTip} />
+          </PanelHeader>
           <StatList
             variant="phases"
             aria-label={labels.preview}
@@ -155,10 +267,7 @@ export function SelectedNodeCard({ node, status, gain, pricing, nodeArtSrc, node
                       rateGold(labels, pricing.baseline.goldPerHour),
                       rateGold(labels, pricing.baseline.goldPerHour + gain.goldPerHourDeltaAtRoster),
                     )}
-                    <Delta
-                      value={gain.goldPerHourDeltaAtRoster}
-                      text={labels.gainGold(gain.goldPerHourDeltaAtRoster)}
-                    />
+                    <Delta value={gain.goldPerHourDeltaAtRoster} text={labels.gainGold(gain.goldPerHourDeltaAtRoster)} />
                   </>
                 ),
               },
@@ -190,6 +299,6 @@ export function SelectedNodeCard({ node, status, gain, pricing, nodeArtSrc, node
           ) : null}
         </div>
       ) : null}
-    </Panel>
+    </section>
   );
 }

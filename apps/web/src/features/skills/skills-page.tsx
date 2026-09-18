@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { SkillTreeScreen } from '@bombfarm/account/skill-tree';
 import {
   parseSkillTreeState,
+  resolveGatePhase,
   SKILL_TREE,
   SKILL_TREE_LAYOUT,
   type SkillPricingObjective,
@@ -15,9 +16,15 @@ import { EmptyState, cn } from '@bombfarm/ui';
 import { useAppLang } from '@/shared/context/app-lang';
 import type { AccountShared } from '@/shared/lib/storage';
 import { usePlannerStore } from '@/shared/stores';
+import { farmInputsOf } from '@/shared/stores/selectors/farm-ranking-selectors';
 import { skillTreeLabels } from './skill-tree-labels';
-import { priceSkillsView, skillsPricingKey, skillsTotalsOf } from './skills-pricing';
-import { loadSkillsView, saveSkillsView } from './skills-view-storage';
+import { gateCombatInput } from '@bombfarm/farm/core';
+import {
+  priceSkillsView,
+  skillsPricingKey,
+  skillsTotalsOf,
+} from './skills-pricing';
+import { DEFAULT_SKILLS_VIEW, WEB_SKILLS_OBJECTIVES, loadSkillsView, saveSkillsView, type SkillsView } from './skills-view-storage';
 
 function useKeyedMemo<T>(key: string | null, compute: () => T): T {
   const cache = useRef<{ key: string | null; value: T } | null>(null);
@@ -27,21 +34,41 @@ function useKeyedMemo<T>(key: string | null, compute: () => T): T {
   return cache.current.value;
 }
 
-function useStoredObjective(): [SkillPricingObjective, (next: SkillPricingObjective) => void] {
-  const [objective, setObjective] = useState<SkillPricingObjective>('goldPerHour');
+function useStoredSkillsView(fromPhase: number | null): {
+  objective: SkillPricingObjective;
+  setObjective: (next: SkillPricingObjective) => void;
+  gatePhase: number;
+  setGatePhase: (next: number) => void;
+} {
+  const [view, setView] = useState<SkillsView>(DEFAULT_SKILLS_VIEW);
   const [storageReady, setStorageReady] = useState(false);
 
   useEffect(() => {
-    setObjective(loadSkillsView().objective);
+    setView(loadSkillsView());
     setStorageReady(true);
   }, []);
 
   useEffect(() => {
-    if (!storageReady) return;
-    saveSkillsView({ objective });
-  }, [storageReady, objective]);
+    if (!storageReady || view.gatePhase !== null || fromPhase === null) return;
+    setView((current) => ({ ...current, gatePhase: resolveGatePhase(null, fromPhase) }));
+  }, [storageReady, view.gatePhase, fromPhase]);
 
-  return [objective, setObjective];
+  useEffect(() => {
+    if (!storageReady) return;
+    saveSkillsView(view);
+  }, [storageReady, view]);
+
+  const gatePhase = resolveGatePhase(view.gatePhase, fromPhase ?? 1);
+  return {
+    objective: view.objective,
+    setObjective: (objective) => {
+      setView((current) => ({ ...current, objective }));
+    },
+    gatePhase,
+    setGatePhase: (next) => {
+      setView((current) => ({ ...current, gatePhase: next }));
+    },
+  };
 }
 
 function treeStateFromStore(
@@ -54,14 +81,29 @@ function treeStateFromStore(
   return { ...parsed, maxPhase, fieldSlots };
 }
 
-const pageShellClass = cn('absolute', 'inset-0', 'flex', 'min-h-0', 'flex-1', 'flex-col');
+const pageShellClass = cn(
+  'absolute',
+  'inset-0',
+  'mx-auto',
+  'flex',
+  'min-h-0',
+  'w-full',
+  'max-w-app',
+  'flex-1',
+  'flex-col',
+  'gap-3',
+  'px-4',
+  'pt-3',
+  'pb-3',
+);
 
 export function SkillsPage() {
   const { t, lang } = useAppLang();
   const skillTree = usePlannerStore((state) => state.skillTree ?? null);
   const maxPhase = usePlannerStore((state) => state.maxPhase);
   const fieldSlots = usePlannerStore((state) => state.fieldSlots);
-  const [objective, setObjective] = useStoredObjective();
+  const farmPhase = usePlannerStore((state) => state.phase);
+  const { objective, setObjective, gatePhase, setGatePhase } = useStoredSkillsView(farmPhase);
 
   const state = useMemo(
     () => (skillTree === null ? null : treeStateFromStore(skillTree, maxPhase, fieldSlots)),
@@ -69,11 +111,12 @@ export function SkillsPage() {
   );
   const totals = useMemo(() => (state === null ? null : skillsTotalsOf(state)), [state]);
   const labels = useMemo(() => skillTreeLabels(t, lang, 'farm'), [t, lang]);
-  const pricingKey = usePlannerStore(skillsPricingKey);
+  const pricingKey = usePlannerStore((store) => skillsPricingKey(store, objective, gatePhase));
   const pricing = useKeyedMemo<SkillTreePricing | null>(pricingKey, () => {
     const store = usePlannerStore.getState();
     if (state === null || totals === null || store.phase === null) return null;
-    return priceSkillsView(store, state, totals, store.phase);
+    const combat = gateCombatInput(farmInputsOf(store), gatePhase);
+    return priceSkillsView(store, state, totals, store.phase, combat);
   });
 
   if (state === null || totals === null) {
@@ -98,6 +141,9 @@ export function SkillsPage() {
         pricing={pricing}
         objective={objective}
         onObjectiveChange={setObjective}
+        objectives={WEB_SKILLS_OBJECTIVES}
+        gatePhase={gatePhase}
+        onGatePhaseChange={setGatePhase}
         nodeArtSrc={skillNodeArtSrc}
         labels={labels}
       />

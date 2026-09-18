@@ -25,10 +25,17 @@ describe('skills view storage', () => {
     expect(loadSkillsView()).toEqual(DEFAULT_SKILLS_VIEW);
   });
 
-  it('round-trips the objective the reader last picked', () => {
+  it('round-trips the objective and gate phase the reader last picked', () => {
     vi.stubGlobal('localStorage', memoryLocalStorage());
-    saveSkillsView({ objective: 'teamDps' });
-    expect(loadSkillsView()).toEqual({ objective: 'teamDps' });
+    saveSkillsView({ objective: 'gateClear', gatePhase: 20 });
+    expect(loadSkillsView()).toEqual({ objective: 'gateClear', gatePhase: 20 });
+  });
+
+  it('loads a stored teamDps objective as gateClear', () => {
+    const storage = memoryLocalStorage();
+    vi.stubGlobal('localStorage', storage);
+    storage.setItem('bf-hp-skills-view-v1', '{"objective":"teamDps"}');
+    expect(loadSkillsView()).toEqual({ objective: 'gateClear', gatePhase: null });
   });
 
   it('falls back when the stored value is not an objective', () => {

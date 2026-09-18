@@ -3,7 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { AccountPayload, AccountView } from '@bombfarm/contracts';
 import { parseSkillTreeState, type SkillTreeState } from '@bombfarm/domain/skill-tree';
-import type { FarmInputs } from '@bombfarm/farm/core';
+import { gateCombatInput, type FarmInputs } from '@bombfarm/farm/core';
 import { buildFarmInputs, DEFAULT_FARM_CONTROLS } from '../farm/farm-inputs';
 import { priceSkillsView, skillsPricingKey, skillsTotalsOf } from './skills-pricing';
 
@@ -24,7 +24,7 @@ function offlineInputs(view = offlineView()): { inputs: FarmInputs; state: Skill
 describe('priceSkillsView', () => {
   it('prices the committed offline account: a baseline, a gain per buyable node, and the phase it was asked for', () => {
     const { inputs, state } = offlineInputs();
-    const pricing = priceSkillsView(inputs, state, skillsTotalsOf(state), 51);
+    const pricing = priceSkillsView(inputs, state, skillsTotalsOf(state), 51, gateCombatInput(inputs, 50));
 
     expect(pricing.phase).toBe(51);
     expect(pricing.baseline.goldPerHour).toBeGreaterThan(0);
@@ -57,14 +57,18 @@ describe('skillsPricingKey', () => {
     const first = offlineInputs(view);
     const second = offlineInputs(later);
     expect(first.inputs.heroes[0]?.updatedAt).not.toBe(second.inputs.heroes[0]?.updatedAt);
-    expect(skillsPricingKey(first.inputs, first.state, 51)).toBe(skillsPricingKey(second.inputs, second.state, 51));
+    const viewKey = { objective: 'goldPerHour' as const, gatePhase: 50, pvpHeroIds: [], pvpPhase: null };
+    expect(skillsPricingKey(first.inputs, first.state, 51, viewKey)).toBe(skillsPricingKey(second.inputs, second.state, 51, viewKey));
   });
 
   it('moves with the phase, the tree levels and the farm controls', () => {
     const { inputs, state } = offlineInputs();
-    const base = skillsPricingKey(inputs, state, 51);
-    expect(skillsPricingKey(inputs, state, 52)).not.toBe(base);
-    expect(skillsPricingKey(inputs, { ...state, levels: { ...state.levels, X99: 1 } }, 51)).not.toBe(base);
-    expect(skillsPricingKey({ ...inputs, farmReturnBonus: 'vip' }, state, 51)).not.toBe(base);
+    const viewKey = { objective: 'goldPerHour' as const, gatePhase: 50, pvpHeroIds: [] as string[], pvpPhase: null };
+    const base = skillsPricingKey(inputs, state, 51, viewKey);
+    expect(skillsPricingKey(inputs, state, 52, viewKey)).not.toBe(base);
+    expect(skillsPricingKey(inputs, { ...state, levels: { ...state.levels, X99: 1 } }, 51, viewKey)).not.toBe(base);
+    expect(skillsPricingKey({ ...inputs, farmReturnBonus: 'vip' }, state, 51, viewKey)).not.toBe(base);
+    expect(skillsPricingKey(inputs, state, 51, { ...viewKey, objective: 'gateClear' })).not.toBe(base);
+    expect(skillsPricingKey(inputs, state, 51, { ...viewKey, gatePhase: 60 })).not.toBe(base);
   });
 });
