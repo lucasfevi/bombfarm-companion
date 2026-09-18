@@ -77,8 +77,11 @@ and neither is published by the wiki.
 
 ## Everything else
 
-`abilities/`, `env/`, `items/`, `icons/`, `key/` and `nav/`, and every `hero/` file outside the two
-sequence subdirectories above, mirror upstream at the same subpath under their own upstream names.
+`abilities/`, `env/`, `items/`, `icons/`, `key/`, `nav/` and `skills/`, and every `hero/` file outside
+the two sequence subdirectories above, mirror upstream at the same subpath under their own upstream
+names. `skills/` is the skill screen's medallion set — one per effect kind, one per notable
+(filed by title, `terouso_oculto` misspelling included), and the hub's `skill_map_center2` —
+resolved by `skillNodeArtSrc` / `skillKindArtSrc`.
 Two of those names are Portuguese (`env/minerio_mithril.png`, `env/crystal_rubi.png`) and all
 twenty ability sprites are, but those filenames are **not free to change**: `propIconSrc` and
 `abilityIconSrc` build a path by joining a prop name or ability id straight onto the directory, and

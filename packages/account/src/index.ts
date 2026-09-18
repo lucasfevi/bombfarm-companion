@@ -1,7 +1,7 @@
 /**
  * @bombfarm/account public root.
  * Prefer the named subpaths: `@bombfarm/account/layout`, `@bombfarm/account/panels`,
- * `@bombfarm/account/holdings`.
+ * `@bombfarm/account/holdings`, `@bombfarm/account/skill-tree`.
  *
  * Every view here is presentational and prop-driven. Nothing in this package reads a store, a
  * locale context or an IPC bridge — the desktop shell and the web planner each own a connector
@@ -10,3 +10,4 @@
 export * from './layout/index';
 export * from './panels/index';
 export * from './holdings/index';
+export * from './skill-tree/index';

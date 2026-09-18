@@ -22,5 +22,6 @@ export type {
   FarmRankingReason,
   FarmRankingResult,
 } from './farm-compute';
+export { gateCombatWindow } from './skill-tree-combat';
 export { createFarmRankingMemo } from './farm-memo';
 export type { FarmRankingMemo } from './farm-memo';

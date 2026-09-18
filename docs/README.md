@@ -21,7 +21,7 @@ These are **current truth**. Do not invent planning/spec paths in this repo.
 | [validation.md](validation.md) | Author ≠ validator |
 | [git-commits.md](git-commits.md) | Atomic commits by default; commitlint |
 | [line-endings.md](line-endings.md) | LF everywhere; no in-place stream edits |
-| [machine-load.md](machine-load.md) | One CPU budget divided among concurrent runs; the per-tool ceilings and the `BFC_CPU_BUDGET` knob |
+| [machine-load.md](machine-load.md) | One CPU budget divided among concurrent runs; the per-tool ceilings, the `BFC_CPU_BUDGET` knob, and why `pnpm check:changed` scopes the work the budget divides |
 | [branching.md](branching.md) | `develop` integration, `main` release-only |
 | [releases.md](releases.md) | Changesets release rail, artifacts, recovery |
 | [hard-truths.md](hard-truths.md) | How to propose / accept new hard truths |
@@ -34,6 +34,7 @@ These are **current truth**. Do not invent planning/spec paths in this repo.
 | [live-logging.md](live-logging.md) | The shared log's dedup/redaction guarantees, the frame ring, and the two dev-gated captures — raw bytes for replay fixtures, and observed bodies and frames for finding out what the game actually sends |
 | [offline-dev-mode.md](offline-dev-mode.md) | `pnpm dev:offline` — the desktop app with no game and no server: fixture account, replayed live capture, and why it is not a mock server |
 | [pvp-duel-history.md](pvp-duel-history.md) | The PVP tab: how a duel result and its film are told apart on the tap, why the film has to be kept the moment it passes, the two-table store and what a skipped battle leaves behind |
+| [skill-tree.md](skill-tree.md) | The Skill Tree tab: what it draws, where the catalog and layout bundles come from, the rules it applies, how a node is priced against the Farm board's inputs, what is not priced, and why it never buys |
 | [hero-runes.md](hero-runes.md) | Hero runes: the timed stat buff on the account read — where it enters the sheet arithmetic (fitted, per axis), how every figure treats a buff that expires, and the two axes nothing prices yet |
 
 ## Web-only

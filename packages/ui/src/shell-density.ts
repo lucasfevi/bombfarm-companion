@@ -24,34 +24,34 @@ export type ShellDensity = 'full' | 'icon-tabs' | 'brand-mark' | 'actions-collap
  * they start overlapping on. Portuguese is the binding language; its tab words and its action
  * labels are the longest either language puts in the bar.
  *
- * Brand 159 + worded tabs 746 + actions 340 + the two gaps = 1274px of content, and the bar's
+ * Brand 159 + worded tabs 822 + actions 340 + the two gaps = 1350px of content, and the bar's
  * content is 24px narrower than the room measured here (the shell gutter, less the caption strip
- * the bar already holds clear) — so 1298px, with nine tabs. The ninth added 52px to the eight
- * measured at 694: the strip was re-rendered at its real geometry in the binding language and came
- * back 691.9px worded and 743.7px with the tab in, rather than being estimated from a word length
- * — "PVP" is the shortest word in the bar, so this tab costs half what the eighth did. The margin
- * above that absorbs a font-rendering pass that measures a few pixels wider.
+ * the bar already holds clear) — so 1374px, with ten tabs. The tenth added 76px to the nine
+ * measured at 746: the strip was re-rendered at its real geometry in the binding language and came
+ * back 741.7px worded and 817.7px with the tab in, rather than being estimated from a word length
+ * — "Árvore" is a middling word, so this tab costs more than "PVP" did and less than "Otimizador".
+ * The margin above that absorbs a font-rendering pass that measures a few pixels wider.
  */
-export const SHELL_ICON_TABS_WIDTH = 1314;
+export const SHELL_ICON_TABS_WIDTH = 1390;
 
 /**
- * The same sum with the tabs already down to glyphs: 159 + 459 + 340 + gaps = 986, so 1010px.
+ * The same sum with the tabs already down to glyphs: 159 + 495 + 340 + gaps = 1022, so 1046px.
  *
- * A glyph tab costs the same whatever its word, so the ninth adds 36px here against 52px above —
+ * A glyph tab costs the same whatever its word, so the tenth adds 36px here against 76px above —
  * measured the same way, at the compact geometry where the active tab keeps its word.
  */
-export const SHELL_BRAND_MARK_WIDTH = 1028;
+export const SHELL_BRAND_MARK_WIDTH = 1064;
 
 /**
- * And with the brand down to its mark as well: 34 + 459 + 340 + gaps = 861, so 885px.
+ * And with the brand down to its mark as well: 34 + 495 + 340 + gaps = 897, so 921px.
  *
  * The smallest window a player can drag to reaches this stage: the desktop's minimum is 960px,
- * which leaves 860px of bar after the caption inset, and that is 48px inside this one — the
- * eighth tab brought it inside the range a window can be dragged to, and the ninth moved it
- * further in. At the minimum window every secondary action sits behind the overflow button; the
- * tabs and the brand mark still fit.
+ * which leaves 860px of bar after the caption inset, and that is 84px inside this one — the
+ * eighth tab brought it inside the range a window can be dragged to, and the ninth and tenth
+ * moved it further in. At the minimum window every secondary action sits behind the overflow
+ * button; the tabs and the brand mark still fit.
  */
-export const SHELL_ACTIONS_COLLAPSE_WIDTH = 908;
+export const SHELL_ACTIONS_COLLAPSE_WIDTH = 944;
 
 export function shellDensityFor(availableWidth: number): ShellDensity {
   if (availableWidth < SHELL_ACTIONS_COLLAPSE_WIDTH) return 'actions-collapsed';

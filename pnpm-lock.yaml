@@ -311,6 +311,9 @@ importers:
       '@bombfarm/domain':
         specifier: workspace:*
         version: link:../domain
+      '@bombfarm/game-art':
+        specifier: workspace:*
+        version: link:../game-art
       '@bombfarm/ui':
         specifier: workspace:*
         version: link:../ui

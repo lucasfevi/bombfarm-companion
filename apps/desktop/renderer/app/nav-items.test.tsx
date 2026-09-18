@@ -5,7 +5,7 @@ import { navItemsFor } from './nav-items';
 const t = STRINGS.en;
 
 describe('navItemsFor', () => {
-  it('offers exactly Live, Farm, Heroes, Inventory, Forge, Optimizer, PVP, Account, Settings, in that order, in every flavor', () => {
+  it('offers exactly Live, Farm, Heroes, Inventory, Forge, Optimizer, PVP, Skill Tree, Account, Settings, in that order, in every flavor', () => {
     expect(navItemsFor(t).map((item) => item.id)).toEqual([
       'live',
       'farm',
@@ -14,6 +14,7 @@ describe('navItemsFor', () => {
       'forge',
       'optimizer',
       'pvp',
+      'skills',
       'account',
       'settings',
     ]);
@@ -23,13 +24,14 @@ describe('navItemsFor', () => {
     expect(navItemsFor(t)[0]?.id).toBe('live');
   });
 
-  it('puts Heroes after Farm, Forge after Inventory, Optimizer after Forge, PVP after Optimizer and Account after PVP, and leaves Settings last', () => {
+  it('puts Heroes after Farm, Forge after Inventory, Optimizer after Forge, PVP after Optimizer, Skill Tree after PVP and Account after Skill Tree, and leaves Settings last', () => {
     const ids = navItemsFor(t).map((item) => item.id);
     expect(ids.indexOf('heroes')).toBe(ids.indexOf('farm') + 1);
     expect(ids.indexOf('forge')).toBe(ids.indexOf('inventory') + 1);
     expect(ids.indexOf('optimizer')).toBe(ids.indexOf('forge') + 1);
     expect(ids.indexOf('pvp')).toBe(ids.indexOf('optimizer') + 1);
-    expect(ids.indexOf('account')).toBe(ids.indexOf('pvp') + 1);
+    expect(ids.indexOf('skills')).toBe(ids.indexOf('pvp') + 1);
+    expect(ids.indexOf('account')).toBe(ids.indexOf('skills') + 1);
     expect(ids.at(-1)).toBe('settings');
   });
 

@@ -5,7 +5,19 @@ import { fileURLToPath } from 'node:url';
 import { ABILITIES } from '@bombfarm/domain/model';
 import { PROPS } from '@bombfarm/domain/phases';
 import { RUNE_AXES } from '@bombfarm/domain/runes';
-import { HERO_SKIN_COUNT, heroAvatarSrc, itemIconSrc, propIconSrc, dropIconSrc, runeIconSrc } from '@bombfarm/domain/wiki-assets';
+import {
+  HERO_SKIN_COUNT,
+  heroAvatarSrc,
+  heroCageIconSrc,
+  itemIconSrc,
+  itemKindIconSrc,
+  propIconSrc,
+  dropIconSrc,
+  runeIconSrc,
+  skillKindArtSrc,
+  skillNodeArtSrc,
+} from '@bombfarm/domain/wiki-assets';
+import { SKILL_EFFECT_KINDS, SKILL_TREE } from '@bombfarm/domain/skill-tree';
 import { DROP_RATES, type DropRateId } from '@bombfarm/domain/phase-wiki';
 import catalog from '@bombfarm/domain/data/catalog.json';
 
@@ -101,8 +113,8 @@ describe('bundled wiki assets', () => {
    * image and neither the type checker nor any math test notices.
    *
    * Forward direction ONLY, unlike the item and hero guards above. `env/` is a mixed
-   * directory — it also holds `bomb`, `boss`, `jaula` and the five `cage_ato*` sprites,
-   * which no prop points at — so a reverse "no orphaned art" sweep would fail on assets
+   * directory — it also holds `bomb`, `boss`, `jaula` and the five `cage_ato*` sprites the
+   * hero-cage sweep below reaches — so a reverse "no orphaned art" sweep would fail on assets
    * that are legitimately reachable from elsewhere.
    */
   it('ships env art for every modeled prop', () => {
@@ -160,6 +172,24 @@ describe('bundled wiki assets', () => {
   });
 
   /**
+   * `heroCageIconSrc` interpolates the act into a filename the same way the drop art does, and
+   * the inventory reaches it through `itemKindIconSrc` for every `chest_hero_*` row — one path
+   * per act that nothing else reads, plus the generic cage the out-of-range fallback names.
+   */
+  it('ships cage art for every act a hero cage can come from, and the generic cage', () => {
+    const missing: string[] = [];
+    for (const act of [1, 2, 3, 4, 5]) {
+      const src = itemKindIconSrc(`chest_hero_${act}`, act);
+      expect(src, `itemKindIconSrc returned null for chest_hero_${act}`).not.toBeNull();
+      if (!existsSync(assetPath(src!))) missing.push(`chest_hero_${act} -> ${src}`);
+    }
+    const fallback = heroCageIconSrc(0);
+    if (!existsSync(assetPath(fallback))) missing.push(`fallback -> ${fallback}`);
+
+    expect(missing, 'hero cages whose art is not bundled').toEqual([]);
+  });
+
+  /**
    * `runeIconSrc` interpolates the axis code and the rarity slug, so every one of the 48 pairs
    * is a path nothing else reads. A runed hero draws a blank plate for a missing one and no
    * check notices; the two directions together also catch a bundled sprite the helper cannot
@@ -185,5 +215,24 @@ describe('bundled wiki assets', () => {
     const dir = resolve(assetsRoot, 'icons');
     const orphaned = readdirSync(dir).filter((f) => f.startsWith('rune_') && !wanted.has(f));
     expect(orphaned, 'bundled rune art no axis/rarity pair points at').toEqual([]);
+  });
+
+  it('ships the skill-tree medallions: one per node of the catalog and per effect kind, and bundles no other', () => {
+    const wanted = new Set<string>();
+    for (const node of SKILL_TREE.nodes) {
+      const src = skillNodeArtSrc(node);
+      expect(src, `no art for ${node.id}`).not.toBeNull();
+      expect(existsSync(assetPath(src!)), `missing ${src}`).toBe(true);
+      wanted.add(assetPath(src!));
+    }
+    for (const kind of SKILL_EFFECT_KINDS) {
+      const src = skillKindArtSrc(kind);
+      expect(existsSync(assetPath(src)), `missing ${src}`).toBe(true);
+      wanted.add(assetPath(src));
+    }
+    const dir = resolve(assetsRoot, 'skills');
+    const bundled = readdirSync(dir).map((f) => resolve(dir, f));
+    expect(bundled.filter((f) => !wanted.has(f)), 'bundled skill art nothing points at').toEqual([]);
+    expect(wanted.size).toBe(29);
   });
 });

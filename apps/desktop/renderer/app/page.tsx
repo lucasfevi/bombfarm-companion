@@ -42,6 +42,7 @@ import { useForgeQueue } from '../lib/forge/forge-queue-store';
 import { ForgeView } from './forge/forge-view';
 import { OptimizerView } from './optimizer/optimizer-view';
 import { PvpView } from './pvp/pvp-view';
+import { SkillsView } from './skills/skills-view';
 import { AccountView } from './account/account-view';
 import { ConsentSection } from './settings/consent-section';
 import { ForgeSection } from './settings/forge-section';
@@ -497,6 +498,8 @@ function HomePageContent({
             <OptimizerView />
           ) : activeNavId === 'pvp' ? (
             <PvpView />
+          ) : activeNavId === 'skills' ? (
+            <SkillsView />
           ) : activeNavId === 'account' ? (
             <AccountView
               marketQuoteCurrency={marketQuoteCurrency}

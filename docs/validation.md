@@ -15,11 +15,14 @@ The agent that **implements** (or fixes) a change must not be the one that **val
 ## Local checks (before calling PASS)
 
 ```bash
-pnpm typecheck
-pnpm lint
-pnpm test
-pnpm build
+pnpm check:changed
 ```
+
+Scoped to the diff — packages the change touches plus their dependents, the Vitest files that
+import from the changed modules, and the whole `tools` guard project. The full
+`typecheck` / `lint` / `test` / `build` sequence is CI's job on push; run it locally only for a
+change to a fan-out package (`domain`, `ui`, `contracts`) or when CI came back red — see the root
+[`AGENTS.md`](../AGENTS.md) "Local checks" for the two tiers and the numbers behind them.
 
 For any change the web planner can observe — styling and layout, but equally store slices,
 selectors, persistence and stored record shapes — also run:

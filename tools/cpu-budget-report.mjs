@@ -33,4 +33,11 @@ for (const lease of report.leases) {
   lines.push(`  pid ${lease.pid} — ${lease.kind} (${ageSeconds}s)`);
 }
 
+if (report.heavySlot) {
+  const ageSeconds = Math.round((Date.now() - Number(report.heavySlot.startedAt)) / 1000);
+  lines.push(`heavy slot    pid ${report.heavySlot.pid} — ${report.heavySlot.kind} (${ageSeconds}s); full runs queue behind it`);
+} else {
+  lines.push('heavy slot    free');
+}
+
 process.stdout.write(`${lines.join('\n')}\n`);

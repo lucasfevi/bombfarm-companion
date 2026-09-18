@@ -74,6 +74,7 @@ describe('parseSaveFile — the positive acceptance gate', () => {
       maxPhase: null,
       playerName: null,
       accountId: null,
+      skillTree: null,
     });
   });
 

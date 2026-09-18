@@ -16,10 +16,19 @@ describe('site sections', () => {
       'farm',
       'optimizer',
       'inventory',
+      'skills',
       'account',
       'download',
     ]);
-    expect(NAV_SECTIONS).toEqual(['home', 'heroes', 'farm', 'optimizer', 'inventory', 'account']);
+    expect(NAV_SECTIONS).toEqual([
+      'home',
+      'heroes',
+      'farm',
+      'optimizer',
+      'inventory',
+      'skills',
+      'account',
+    ]);
     expect(SITE_SECTION_HREF.home).toBe('/');
     expect(SITE_SECTION_HREF.heroes).toBe('/heroes');
     expect(SITE_SECTION_LABEL_KEY.heroes).toBe('navHeroes');
@@ -27,6 +36,10 @@ describe('site sections', () => {
     expect(STRINGS.pt[SITE_SECTION_LABEL_KEY.heroes]).toBe('Heróis');
     expect(SITE_SECTION_LABEL_KEY.home).toBe('navHome');
     expect(STRINGS.en[SITE_SECTION_LABEL_KEY.home]).toBe('Home');
+    expect(SITE_SECTION_LABEL_KEY.skills).toBe('navSkills');
+    expect(SITE_SECTION_HREF.skills).toBe('/skills');
+    expect(STRINGS.en[SITE_SECTION_LABEL_KEY.skills]).toBe('Skill Tree');
+    expect(STRINGS.pt[SITE_SECTION_LABEL_KEY.skills]).toBe('Árvore');
   });
 
   it('home matches only the root and heroes matches its own prefix', () => {

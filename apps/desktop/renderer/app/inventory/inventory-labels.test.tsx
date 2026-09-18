@@ -24,6 +24,7 @@ const ROWS = [
     ],
   },
   { id: 'c1', def_id: 'chest_item_90', category: 1, rarity: 0, level: 0, sell_value: '100' },
+  { id: 'c2', def_id: 'chest_hero_3', category: 1, rarity: 0, level: 0, sell_value: '0' },
   { id: 'm1', def_id: 'gem_amethyst', category: 2, rarity: 4, level: 0, sell_value: '260' },
   { id: 't1', def_id: 'time_part_raro', category: 3, rarity: 2, level: 0, sell_value: '180' },
   { id: 'k1', def_id: 'map_key_epico', category: 4, rarity: 3, level: 0, sell_value: '220' },
@@ -81,6 +82,13 @@ describe('desktop inventory labels', () => {
       expect(labels.itemRarity(item(id))).toBe('');
       expect(labels.itemLevel(item(id))).toBe('');
     }
+  });
+
+  /** The cage used to print its wire id, `chest_hero_3`, under the wooden item-chest icon. */
+  it('names a hero cage by the act it was caught in, with the act as its tier', () => {
+    expect(inventoryLabels(en, 'en').itemName(item('c2'))).toBe('Hero cage · Act 3');
+    expect(inventoryLabels(ptBR, 'pt').itemName(item('c2'))).toBe('Jaula de herói · Ato 3');
+    expect(inventoryLabels(en, 'en').itemRarity(item('c2'))).toBe('Epic');
   });
 
   it('leaves the forge empty on an unforged item, so the card draws no separator for it', () => {

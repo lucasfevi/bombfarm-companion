@@ -80,6 +80,10 @@ function toFarmInputs(state: PlannerStore): FarmInputs {
   };
 }
 
+export function farmInputsOf(state: PlannerStore): FarmInputs {
+  return toFarmInputs(state);
+}
+
 /** The 19 planner edits the board must react to. See the package's own header for what each
  *  member is there to catch and why a missing one fails silently. */
 export function readFarmDepTuple(state: PlannerStore) {

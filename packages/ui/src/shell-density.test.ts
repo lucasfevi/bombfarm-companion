@@ -32,14 +32,14 @@ describe('shellDensityFor', () => {
     // 136px until the header took the job over at 100, and a number copied here would still say
     // 136 — landing this assertion in a band the running app never reaches. The eighth tab moved
     // this stage inside the range a window can be dragged to, where it used to sit above it, and
-    // the ninth kept it there.
+    // the ninth and tenth kept it there.
     expect(shellDensityFor(960 - WINDOW_CONTROLS_WIDTH)).toBe('actions-collapsed');
   });
 
   it('still shrinks the brand to its mark just above the smallest window a player can drag to', () => {
-    // The band this used to be the only reachable stage at now sits one window-width step above
+    // The band this used to be the only reachable stage at now sits a few window-width steps above
     // the minimum — this pins that the band still exists rather than having collapsed away.
-    expect(shellDensityFor(1040 - WINDOW_CONTROLS_WIDTH)).toBe('brand-mark');
+    expect(shellDensityFor(1080 - WINDOW_CONTROLS_WIDTH)).toBe('brand-mark');
   });
 
   it('never runs out of answers, however small the window gets', () => {

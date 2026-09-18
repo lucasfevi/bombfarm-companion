@@ -1,6 +1,6 @@
 {
   "name": "@bombfarm/account",
-  "version": "0.2.7",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "exports": {
@@ -20,6 +20,10 @@
       "types": "./src/holdings/index.ts",
       "default": "./src/holdings/index.ts"
     },
+    "./skill-tree": {
+      "types": "./src/skill-tree/index.ts",
+      "default": "./src/skill-tree/index.ts"
+    },
     "./*": {
       "types": "./src/*",
       "default": "./src/*"
@@ -33,6 +37,7 @@
   },
   "dependencies": {
     "@bombfarm/domain": "workspace:*",
+    "@bombfarm/game-art": "workspace:*",
     "@bombfarm/ui": "workspace:*"
   },
   "peerDependencies": {

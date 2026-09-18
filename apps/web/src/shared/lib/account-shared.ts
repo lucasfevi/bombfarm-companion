@@ -23,6 +23,7 @@ import {
   type RequiredAccountField,
 } from '@bombfarm/domain/account-required-fields';
 import { DEFAULT_TARGET_PROP } from '@bombfarm/domain/farm-context';
+import { parseSkillTreeState } from '@bombfarm/domain/skill-tree';
 
 export type TreeState = {
   /** Squad damage × from the tree UI — already includes GEO / compound damage mults. */
@@ -152,6 +153,16 @@ export type AccountShared = {
    * written before the stamp existed — no migration backfills it, the next import writes it.
    */
   importedAt?: number;
+  /**
+   * Owned skill-tree levels from the last import. Absent on a record written before this field
+   * existed — no migrator backfills it; the next import writes it. The Skill Tree page treats
+   * absence as "re-import to see the tree".
+   */
+  skillTree?: {
+    levels: Record<string, number>;
+    refunds: Record<string, number>;
+    gold: number | null;
+  };
 };
 
 export const DEFAULT_TREE = (): TreeState => ({
@@ -297,6 +308,12 @@ function normalizeImportedAt(raw: unknown): number | null {
   return typeof raw === 'number' && Number.isFinite(raw) && raw > 0 ? raw : null;
 }
 
+function normalizeSkillTree(raw: unknown): AccountShared['skillTree'] | null {
+  const parsed = parseSkillTreeState(raw);
+  if (parsed === null) return null;
+  return { levels: { ...parsed.levels }, refunds: { ...parsed.refunds }, gold: parsed.gold };
+}
+
 /**
  * A fixed-field rebuild, so a record's stale keys are discarded rather than spread through. The
  * two team-aura fields older records carry (`teamBuffs`, a snapshot of whoever was deployed at
@@ -307,6 +324,7 @@ function normalizeImportedAt(raw: unknown): number | null {
 export function normalizeAccount(raw?: Partial<AccountShared> | null): AccountShared {
   const missing = toRequiredAccountFields(raw?.missingRequiredFields);
   const importedAt = normalizeImportedAt(raw?.importedAt);
+  const skillTree = normalizeSkillTree(raw?.skillTree);
   return {
     tree: normalizeTree(raw?.tree),
     context: normalizeContext(raw?.context),
@@ -322,5 +340,6 @@ export function normalizeAccount(raw?: Partial<AccountShared> | null): AccountSh
     // Omitted rather than `null` when absent on `raw` — see `selectAccountShared`.
     ...(missing != null ? { missingRequiredFields: missing } : {}),
     ...(importedAt != null ? { importedAt } : {}),
+    ...(skillTree != null ? { skillTree } : {}),
   };
 }

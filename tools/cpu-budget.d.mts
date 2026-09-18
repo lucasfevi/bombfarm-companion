@@ -20,6 +20,12 @@ export interface CpuLeaseReport {
   sharingApplies: boolean;
   leases: CpuLease[];
   sharePerRun: number;
+  heavySlot: CpuLease | null;
+}
+
+export interface HeavySlotOptions {
+  onWait?: (holder: CpuLease, waitedMs: number) => void;
+  pollMs?: number;
 }
 
 export declare function machineCpuBudget(): number;
@@ -27,3 +33,7 @@ export declare function machineCpuBudget(): number;
 export declare function cappedWorkers(cap: number, kind: string): number;
 
 export declare function cpuLeaseReport(): CpuLeaseReport;
+
+export declare function heavySlotHolder(): CpuLease | null;
+
+export declare function waitForHeavySlot(kind: string, options?: HeavySlotOptions): { waitedMs: number };

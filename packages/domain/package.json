@@ -1,6 +1,6 @@
 {
   "name": "@bombfarm/domain",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "private": true,
   "type": "module",
   "exports": {
@@ -31,6 +31,10 @@
     "./team-plan": {
       "types": "./dist/team-plan/index.d.ts",
       "import": "./dist/team-plan/index.js"
+    },
+    "./skill-tree": {
+      "types": "./dist/skill-tree/index.d.ts",
+      "import": "./dist/skill-tree/index.js"
     },
     "./data/*": "./dist/data/*",
     "./*": {
