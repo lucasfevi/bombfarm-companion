@@ -1,11 +1,12 @@
 'use client';
 
 /**
- * A screen's one refresh affordance, mounted over its heading line whether or not the numbers
- * have gone out of date. One icon button, and one line to its left that says the age of the
- * ACCOUNT the screen was computed from, that the live account has moved past it, or — for as long
- * as it stands — why a press started no read. Only that line's words change between states; the
- * control keeps one height, and the button keeps its place at the right edge.
+ * The app's one refresh affordance, drawn by the shell's refresh bar under the top bar for the
+ * tab on screen, whether or not its numbers have gone out of date. One icon button, and one line
+ * to its left that says the age of the ACCOUNT the screen was computed from, that the live
+ * account has moved past it, or — for as long as it stands — why a press started no read. Only
+ * that line's words change between states; the control keeps one height, and the button keeps
+ * its place at the right edge.
  *
  * The age is the account read's, never the calculation's. Those coincide while the app is reading
  * the game normally and diverge without limit when it is not, and dating the line by the

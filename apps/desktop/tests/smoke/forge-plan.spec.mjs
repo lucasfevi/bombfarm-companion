@@ -183,15 +183,20 @@ test.describe('forge plan smoke', () => {
       await page.getByRole('option', { name: 'Any forge' }).click();
       await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBe(before);
 
-      // Refresh acts on the read behind the bag, so it stands over the bag rather than among the
-      // filters. It is the app's one refresh control — an icon with the read age to its left — and
-      // a live read on this fixture never moves, so it is only ever in its current-read state here.
-      await expect(view.getByTestId('forge-toolbar').getByTestId('account-refresh')).toHaveCount(0);
-      const refreshButton = view.getByTestId('forge-bag-panel').getByRole('button', { name: 'Refresh', exact: true });
+      // Refresh acts on the read behind the bag, and it is the shell's one refresh control — in
+      // the bar under the top bar, named for this tab, an icon with the read age to its left —
+      // never a control of the screen's own. A live read on this fixture never moves, so it is
+      // only ever in its current-read state here.
+      await expect(view.getByTestId('account-refresh')).toHaveCount(0);
+      const bar = page.getByTestId('refresh-state-bar');
+      await expect(bar).toHaveAttribute('data-tab', 'forge');
+      await expect(bar).toHaveAttribute('data-source', 'screen');
+      await expect(bar.getByTestId('refresh-state-subject')).toHaveText('Forge');
+      const refreshButton = bar.getByRole('button', { name: 'Refresh', exact: true });
       await expect(refreshButton).toBeVisible();
       await expect(refreshButton).toHaveAttribute('data-testid', 'account-refresh');
-      await expect(view.getByTestId('account-refresh-age')).toContainText('account read');
-      await expect(view.getByTestId('account-refresh-age')).not.toContainText('out of date');
+      await expect(bar.getByTestId('account-refresh-age')).toContainText('account read');
+      await expect(bar.getByTestId('account-refresh-age')).not.toContainText('out of date');
       await expect(page.getByTestId('account-refresh-tip')).toHaveCount(0);
       await refreshButton.hover();
       await expect(page.getByTestId('account-refresh-tip')).toContainText('account read');
@@ -200,10 +205,10 @@ test.describe('forge plan smoke', () => {
       // and a fixture has no server behind it, so the one thing the press must not do is look
       // like it worked. This is also the state a real player reaches with the game closed. The
       // refusal takes the age line's place for as long as it stands.
-      await expect(view.getByTestId('account-refresh-refusal')).toHaveCount(0);
+      await expect(bar.getByTestId('account-refresh-refusal')).toHaveCount(0);
       await refreshButton.click();
-      await expect(view.getByTestId('account-refresh-refusal')).toHaveText('No server to read from');
-      await expect(view.getByTestId('account-refresh-age')).toHaveCount(0);
+      await expect(bar.getByTestId('account-refresh-refusal')).toHaveText('No server to read from');
+      await expect(bar.getByTestId('account-refresh-age')).toHaveCount(0);
       // Refused is not working: nothing is in flight, so the button is pressable again.
       await expect(refreshButton).toBeEnabled();
 

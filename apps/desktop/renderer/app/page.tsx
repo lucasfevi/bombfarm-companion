@@ -38,6 +38,7 @@ import { FarmView } from './farm/farm-view';
 import { HeroesView } from './heroes/heroes-view';
 import { InventoryView } from './inventory/inventory-view';
 import { ForgeQueueBar, isForgeQueueShown } from './forge/forge-queue-bar';
+import { RefreshStateBar } from './refresh-state-bar';
 import { useForgeQueue } from '../lib/forge/forge-queue-store';
 import { ForgeView } from './forge/forge-view';
 import { OptimizerView } from './optimizer/optimizer-view';
@@ -364,9 +365,13 @@ function HomePageContent({
   const consentLoaded = consent !== null;
   const gated = isConsentGateVisible(consent);
   const granted = consentLoaded && !gated;
-  // The shell draws the band only while there is a queue to show: an element that renders null
-  // would still claim the strip's height on every screen.
-  const forgeQueueShown = isForgeQueueShown(useForgeQueue());
+  // Settings reads nothing from the game, so it is the one tab with no refresh bar; the forge
+  // queue joins the band only while there is a queue to show. The band itself is drawn only when
+  // one of the two is: an element that renders null would still claim the strip's height.
+  const forgeQueue = useForgeQueue();
+  const forgeQueueShown = granted && isForgeQueueShown(forgeQueue);
+  const refreshBarShown = granted && activeNavId !== 'settings';
+  const activeNavLabel = navItemsFor(t).find((item) => item.id === activeNavId)?.label ?? '';
 
   return (
     <>
@@ -403,14 +408,19 @@ function HomePageContent({
           </span>
         }
         banner={
-          granted && forgeQueueShown ? (
-            <ForgeQueueBar
-              forgeWritesEnabled={forgeWritesEnabled}
-              accountSource={environment?.accountSource ?? null}
-              onOpenForge={() => {
-                setActiveNavId('forge');
-              }}
-            />
+          refreshBarShown || forgeQueueShown ? (
+            <>
+              {refreshBarShown ? <RefreshStateBar tabId={activeNavId} label={activeNavLabel} /> : null}
+              {forgeQueueShown ? (
+                <ForgeQueueBar
+                  forgeWritesEnabled={forgeWritesEnabled}
+                  accountSource={environment?.accountSource ?? null}
+                  onOpenForge={() => {
+                    setActiveNavId('forge');
+                  }}
+                />
+              ) : null}
+            </>
           ) : null
         }
         version={

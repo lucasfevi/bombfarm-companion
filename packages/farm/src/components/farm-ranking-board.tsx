@@ -50,15 +50,8 @@ export type FarmRankingBoardData = {
   tableScrollportHeightPx?: number;
 };
 
-/**
- * Host-supplied chrome the board draws but knows nothing about. `headerOverlay` is painted over
- * the empty space to the right of the heading instead of sharing its line, so it costs the board
- * no height at all whatever its own is — the desktop shell puts its refresh control there, and a
- * window 640px tall has no row to spare above the table. A host that passes something taller than
- * the heading's own line owes the check that it clears the rotation pool beneath it.
- */
+/** Host-supplied chrome the board draws but knows nothing about. */
 export type FarmRankingBoardSlots = {
-  headerOverlay?: ReactNode;
   /** Drawn in the control row between the Return Bonus and the Optimize button — a host's own
    *  compute controls, on the same field grid (`FarmAuraCapField`). Undefined renders nothing
    *  at all, so a host without any keeps the row it always had. */
@@ -166,13 +159,10 @@ export function FarmRankingBoardView({
 
   return (
     <Panel data-testid="farm-ranking">
-      <div className="relative mb-2.5 flex items-baseline">
+      <div className="mb-2.5 flex items-baseline">
         <h2 className="m-0 text-[13px] font-bold tracking-[0.04em] uppercase">
           {t.farmRankingTitle}
         </h2>
-        {slots?.headerOverlay ? (
-          <div className="absolute top-0 right-0">{slots.headerOverlay}</div>
-        ) : null}
       </div>
       {result.reason !== 'no-roster' ? (
         <div className="mb-3">
