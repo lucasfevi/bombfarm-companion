@@ -135,6 +135,11 @@ export interface SkillTreeLabels {
   goldSpent: string;
   goldToMax: string;
 
+  /** The per-path progress cards above the tree. */
+  paths: string;
+  /** `3 of 17 nodes maxed`. */
+  nodesMaxed: (maxed: number, nodes: number) => string;
+
   /** Canvas controls. */
   fitToView: string;
   zoomIn: string;
@@ -145,6 +150,8 @@ export interface SkillTreeLabels {
   legendUnaffordable: string;
   legendLocked: string;
   legendRecommended: string;
+  /** One line under the legend: the ring's colour is the path, its weight is the state. */
+  legendPathNote: string;
   canvasAria: string;
   nodeAria: (name: string, level: number, max: number) => string;
 }
@@ -171,6 +178,9 @@ export interface SkillTreeScreenProps {
   /** Controlled selection, so a host can deep-link or remember it. */
   selectedId?: string | null;
   onSelect?: (id: string | null) => void;
+  /** Controlled path focus — the one path lit while the rest fade; uncontrolled when absent. */
+  focusArm?: SkillArm | null;
+  onFocusArm?: (arm: SkillArm | null) => void;
   /** Rows the recommendation panel shows. */
   recommendationCount?: number;
   className?: string;

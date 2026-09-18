@@ -2,9 +2,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
   EMPTY_SKILL_TOTALS,
+  SKILL_ARMS,
   SKILL_TOTALS_KEYS,
   SKILL_TREE,
   SKILL_TREE_LAYOUT,
+  costForLevels,
   nodeStatus,
   skillNode,
   totalsFromLevels,
@@ -13,6 +15,7 @@ import {
   type SkillTreePricing,
   type SkillTreeState,
 } from '@bombfarm/domain/skill-tree';
+import { SKILL_ARM_COLOUR } from './arm-colour';
 import { SkillTreeScreen } from './skill-tree-screen';
 import type { SkillTreeLabels, SkillTreeScreenProps } from './types';
 
@@ -97,6 +100,8 @@ function labelsTagged(tag: string): SkillTreeLabels {
     share: (fraction) => `${tag}-share-${(fraction * 100).toFixed(1)}`,
     goldSpent: `${tag}-goldSpent`,
     goldToMax: `${tag}-goldToMax`,
+    paths: `${tag}-paths`,
+    nodesMaxed: (maxed, nodes) => `${tag}-maxed-${maxed}/${nodes}`,
     fitToView: `${tag}-fitToView`,
     zoomIn: `${tag}-zoomIn`,
     zoomOut: `${tag}-zoomOut`,
@@ -106,6 +111,7 @@ function labelsTagged(tag: string): SkillTreeLabels {
     legendUnaffordable: `${tag}-legendUnaffordable`,
     legendLocked: `${tag}-legendLocked`,
     legendRecommended: `${tag}-legendRecommended`,
+    legendPathNote: `${tag}-legendPathNote`,
     canvasAria: `${tag}-canvasAria`,
     nodeAria: (name, level, max) => `${tag}-nodeAria-${name}-${level}/${max}`,
   };
@@ -189,7 +195,7 @@ function section(html: string, testId: string): string {
   const start = html.indexOf(`data-testid="${testId}"`);
   if (start < 0) throw new Error(`no ${testId}`);
   const rest = html.slice(start + 1);
-  const end = rest.search(/data-testid="skill-tree-(?!hover-card|recommendation-|preview|selected-|dps-left-out|progress|wallet|priced-at|at-roster-|affordable-|requires-|selected-short-|short-)/);
+  const end = rest.search(/data-testid="skill-tree-(?!hover-card|recommendation-|preview|selected-|dps-left-out|progress|wallet|priced-at|at-roster-|affordable-|requires-|selected-short-|short-|path-|legend-)/);
   return end < 0 ? rest : rest.slice(0, end);
 }
 
@@ -311,6 +317,123 @@ describe('SkillTreeScreen — the canvas', () => {
     const html = render({ selectedId: 'H01' });
     expect(html).not.toMatch(/ title="/);
     expect(html).not.toContain('<title');
+  });
+});
+
+function edgeAttrs(html: string, id: string): Record<string, string> {
+  const match = html.match(new RegExp(`<line ([^>]*data-edge="${id}"[^>]*)>`));
+  if (!match?.[1]) throw new Error(`no edge ${id}`);
+  const attrs: Record<string, string> = {};
+  for (const [, key, value] of match[1].matchAll(/([\w-]+)="([^"]*)"/g)) {
+    if (key && value !== undefined) attrs[key] = value;
+  }
+  return attrs;
+}
+
+function cardAttrs(html: string, arm: string): Record<string, string> {
+  const match = html.match(new RegExp(`<button ([^>]*data-testid="skill-tree-path-${arm}"[^>]*)>`));
+  if (!match?.[1]) throw new Error(`no card ${arm}`);
+  const attrs: Record<string, string> = {};
+  for (const [, key, value] of match[1].matchAll(/([\w-]+)="([^"]*)"/g)) {
+    if (key && value !== undefined) attrs[key] = value;
+  }
+  return attrs;
+}
+
+function nodeMarkup(html: string, id: string): string {
+  const start = html.indexOf(`data-node-id="${id}"`);
+  if (start < 0) throw new Error(`no node ${id}`);
+  return html.slice(start, html.indexOf('</g>', start));
+}
+
+describe('SkillTreeScreen — the paths', () => {
+  it('gives every path its own colour, and the hub the gold of the wallet', () => {
+    const colours = SKILL_ARMS.filter((arm) => arm !== 'hub' && arm !== 'ouro').map((arm) => SKILL_ARM_COLOUR[arm]);
+    expect(new Set(colours).size).toBe(colours.length);
+    expect(SKILL_ARM_COLOUR.hub).toBe('var(--gold)');
+    expect(SKILL_ARM_COLOUR.ouro).toBe('var(--gold)');
+    expect(colours).not.toContain('var(--gold)');
+  });
+
+  it('draws the ring, the glow, the arc and the edge of a node in the colour of its path', () => {
+    const html = render();
+    expect(nodeAttrs(html, 'D01')['data-arm']).toBe('dano');
+    expect(nodeMarkup(html, 'D01')).toContain(`stroke="${SKILL_ARM_COLOUR.dano}"`);
+    expect(nodeMarkup(html, 'D01')).toContain(`fill="${SKILL_ARM_COLOUR.dano}"`);
+    expect(nodeMarkup(html, 'D01')).not.toContain('var(--gold)');
+    expect(edgeAttrs(html, 'D01').stroke).toBe(SKILL_ARM_COLOUR.dano);
+    expect(nodeMarkup(html, 'H02')).toContain(`stroke="${SKILL_ARM_COLOUR.crit}"`);
+    expect(edgeAttrs(html, 'H02').stroke).toBe(SKILL_ARM_COLOUR.crit);
+    expect(nodeMarkup(html, 'H00')).toContain('stroke="var(--gold)"');
+  });
+
+  it('keeps a locked edge in the line colour and a short wallet red, whatever the path', () => {
+    const html = render({ state: { ...STATE, gold: 10 } });
+    expect(edgeAttrs(html, 'D02').stroke).toBe('var(--line)');
+    expect(nodeMarkup(html, 'H02')).toContain('stroke="var(--down)"');
+    expect(nodeMarkup(html, 'H02')).not.toContain(`stroke="${SKILL_ARM_COLOUR.crit}"`);
+  });
+
+  it('prints one card per path with its levels, its share, its maxed nodes and the gold sunk into it', () => {
+    const labels = labelsTagged('aa');
+    const html = render();
+    const cards = section(html, 'skill-tree-paths');
+    expect(html).toContain(`aria-label="${labels.paths}" data-testid="skill-tree-paths"`);
+    const arms = SKILL_ARMS.filter((arm) => arm !== 'hub');
+    expect([...cards.matchAll(/data-testid="skill-tree-path-([a-z]+)"/g)].map((match) => match[1])).toEqual(arms);
+    const dano = SKILL_TREE.nodes.filter((node) => node.arm === 'dano');
+    expect(dano.map((node) => node.id)).toContain('H01');
+    const totalLevels = dano.reduce((sum, node) => sum + node.maxLevel, 0);
+    const spent = costForLevels(skillNode('H01')!, 0, 5) + costForLevels(skillNode('D01')!, 0, 2);
+    const pathGold = dano.reduce((sum, node) => sum + costForLevels(node, 0, node.maxLevel), 0);
+    expect(cards).toContain(labels.countOf(7, totalLevels));
+    expect(cards).toContain(labels.share(7 / totalLevels));
+    expect(cards).toContain(labels.nodesMaxed(0, dano.length));
+    expect(cards).toContain(`>${labels.goldCompact(spent)}<`);
+    expect(cards).toContain(`> / ${labels.goldCompact(pathGold)}<`);
+    expect(cards).toContain(labels.share(spent / pathGold));
+    expect(cards).toContain(`aria-label="${labels.goldSpent}: ${labels.gold(spent)} / ${labels.gold(pathGold)}"`);
+    expect(cards).toContain('aria-valuenow="7"');
+    expect(cards).toContain(`aria-valuemax="${totalLevels}"`);
+    expect(cards).toContain(`>${labels.armName('dano')}<`);
+  });
+
+  it('drops the shares from a path that is finished', () => {
+    const neutro = SKILL_TREE.nodes.filter((node) => node.arm === 'neutro');
+    const levels = Object.fromEntries(neutro.map((node) => [node.id, node.maxLevel]));
+    const labels = labelsTagged('aa');
+    const html = render({ state: { ...STATE, levels: { ...STATE.levels, ...levels } } });
+    const total = neutro.reduce((sum, node) => sum + node.maxLevel, 0);
+    const gold = neutro.reduce((sum, node) => sum + costForLevels(node, 0, node.maxLevel), 0);
+    expect(html).toContain(labels.countOf(total, total));
+    expect(html).not.toContain(labels.share(1));
+    expect(html).toContain(labels.nodesMaxed(neutro.length, neutro.length));
+    expect(section(html, 'skill-tree-path-spent-neutro')).toContain(`>${labels.goldCompact(gold)}<`);
+  });
+
+  it('lights the focused path alone: every other node and edge fades, the hub never does', () => {
+    const html = render({ focusArm: 'dano' });
+    expect(cardAttrs(html, 'dano')['aria-pressed']).toBe('true');
+    expect(cardAttrs(html, 'crit')['aria-pressed']).toBe('false');
+    expect(nodeAttrs(html, 'D01')['data-dimmed']).toBeUndefined();
+    expect(nodeAttrs(html, 'H01')['data-dimmed']).toBeUndefined();
+    expect(nodeAttrs(html, 'H00')['data-dimmed']).toBeUndefined();
+    expect(nodeAttrs(html, 'H02')['data-dimmed']).toBe('true');
+    expect(nodeAttrs(html, 'H02').class).toContain('opacity-15');
+    expect(edgeAttrs(html, 'H02')['data-dimmed']).toBe('true');
+    expect(edgeAttrs(html, 'D01')['data-dimmed']).toBeUndefined();
+    expect(Number(edgeAttrs(html, 'H02').opacity)).toBeLessThan(Number(edgeAttrs(html, 'D01').opacity));
+  });
+
+  it('fades nothing until a path is pressed', () => {
+    const html = render();
+    expect(html).not.toContain('data-dimmed=');
+    expect(section(html, 'skill-tree-paths')).not.toContain('aria-pressed="true"');
+  });
+
+  it('explains the ring under the legend', () => {
+    const labels = labelsTagged('aa');
+    expect(section(render(), 'skill-tree-legend-paths')).toContain(labels.legendPathNote);
   });
 });
 

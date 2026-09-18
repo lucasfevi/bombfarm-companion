@@ -13,6 +13,7 @@ import {
   type PointerEvent,
 } from 'react';
 import type {
+  SkillArm,
   SkillNode,
   SkillNodeGain,
   SkillNodeLayout,
@@ -22,6 +23,7 @@ import type {
   SkillTreeLayout,
 } from '@bombfarm/domain/skill-tree';
 import { Button, cn, tooltipPopupRecipe } from '@bombfarm/ui';
+import { skillArmColour } from './arm-colour';
 import { edgeToneOf, effectTotalAt, objectiveDelta, visualStateOf, type EdgeTone, type NodeVisualState } from './node-facts';
 import {
   DRAG_DEAD_ZONE_PX,
@@ -54,6 +56,8 @@ export type SkillTreeCanvasProps = {
   objective: SkillPricingObjective;
   selectedId: string | null;
   recommendedId: string | null;
+  /** The one path drawn at full strength while every other node and edge fades back. */
+  focusArm: SkillArm | null;
   onSelect: (id: string | null) => void;
   nodeArtSrc: (node: SkillNode) => string | null;
   nodeName: (node: SkillNode) => string;
@@ -62,20 +66,33 @@ export type SkillTreeCanvasProps = {
 
 const NODE_ID_ATTR = 'data-node-id';
 
-const EDGE_STYLE: Record<EdgeTone, { stroke: string; width: number; opacity: number }> = {
-  owned: { stroke: 'var(--gold)', width: 3, opacity: 0.9 },
-  buyable: { stroke: 'var(--gold)', width: 2, opacity: 0.4 },
-  locked: { stroke: 'var(--line)', width: 1.5, opacity: 0.6 },
+const EDGE_STYLE: Record<EdgeTone, { width: number; opacity: number }> = {
+  owned: { width: 3, opacity: 0.9 },
+  buyable: { width: 2, opacity: 0.4 },
+  locked: { width: 1.5, opacity: 0.6 },
 };
 
-const RING_STROKE: Record<NodeVisualState, string | null> = {
-  lit: 'var(--gold)',
-  owned: null,
-  maxed: 'var(--gold)',
-  buyable: 'var(--gold)',
-  unaffordable: 'color-mix(in oklch, var(--down) 65%, var(--gold))',
-  locked: 'var(--line)',
-};
+function edgeStroke(tone: EdgeTone, armColour: string): string {
+  return tone === 'locked' ? 'var(--line)' : armColour;
+}
+
+/**
+ * The ring says two things at once: its colour is the path, its weight and glow are the state.
+ * An owned node draws its progress arc instead of a closed ring, and a node the wallet cannot
+ * cover is red on every path — the one state that must never be mistaken for a path.
+ */
+function ringStroke(state: NodeVisualState, armColour: string): string | null {
+  switch (state) {
+    case 'owned':
+      return null;
+    case 'unaffordable':
+      return 'var(--down)';
+    case 'locked':
+      return 'var(--line)';
+    default:
+      return armColour;
+  }
+}
 
 function nodeIdOf(target: EventTarget | null): string | null {
   if (!(target instanceof Element)) return null;
@@ -89,6 +106,7 @@ type NodeMedallionProps = {
   level: number;
   selected: boolean;
   recommended: boolean;
+  dimmed: boolean;
   artSrc: string | null;
   clipId: string;
   glowId: string;
@@ -103,13 +121,15 @@ const NodeMedallion = memo(function NodeMedallion({
   level,
   selected,
   recommended,
+  dimmed,
   artSrc,
   clipId,
   glowId,
   ariaLabel,
 }: NodeMedallionProps) {
   const r = place.diameter / 2;
-  const ring = RING_STROKE[state];
+  const colour = skillArmColour(node.arm);
+  const ring = ringStroke(state, colour);
   const owned = state === 'owned';
   const maxed = state === 'maxed';
   const badgeFont = Math.max(7, r * 0.42);
@@ -120,16 +140,19 @@ const NodeMedallion = memo(function NodeMedallion({
       aria-label={ariaLabel}
       aria-pressed={selected}
       data-node-id={node.id}
+      data-arm={node.arm}
       data-state={state}
       data-recommended={recommended || undefined}
+      data-dimmed={dimmed || undefined}
       transform={`translate(${place.x} ${place.y})`}
       className={cn(
         'group cursor-pointer outline-none',
         state === 'locked' && 'opacity-35 grayscale',
+        dimmed && 'opacity-15',
       )}
     >
       {owned || maxed ? (
-        <circle r={r * 1.3} fill="var(--gold)" opacity={maxed ? 0.3 : 0.22} filter={`url(#${glowId})`} />
+        <circle r={r * 1.3} fill={colour} opacity={maxed ? 0.3 : 0.22} filter={`url(#${glowId})`} />
       ) : null}
       {selected ? <circle r={r + 10} fill="none" stroke="var(--ink)" strokeWidth={4} opacity={0.95} /> : null}
       <circle
@@ -156,12 +179,12 @@ const NodeMedallion = memo(function NodeMedallion({
         <image href={artSrc} x={-r} y={-r} width={place.diameter} height={place.diameter} clipPath={`url(#${clipId})`} />
       )}
       {ring !== null ? <circle r={r + 1.3} fill="none" stroke={ring} strokeWidth={maxed ? 3.2 : 2} /> : null}
-      {maxed ? <circle r={r + 5} fill="none" stroke="var(--gold)" strokeWidth={3} opacity={0.25} /> : null}
+      {maxed ? <circle r={r + 5} fill="none" stroke={colour} strokeWidth={3} opacity={0.25} /> : null}
       {owned ? (
         <path
           d={arcPath(r + 1.3, progressFraction(level, node.maxLevel))}
           fill="none"
-          stroke="var(--gold)"
+          stroke={colour}
           strokeWidth={2.6}
           strokeLinecap="round"
         />
@@ -175,7 +198,7 @@ const NodeMedallion = memo(function NodeMedallion({
             height={badgeFont * 1.5}
             rx={badgeFont * 0.75}
             fill="var(--bg)"
-            stroke="var(--gold)"
+            stroke={colour}
             strokeWidth={0.8}
           />
           <text
@@ -257,11 +280,13 @@ export function SkillTreeCanvas({
   objective,
   selectedId,
   recommendedId,
+  focusArm,
   onSelect,
   nodeArtSrc,
   nodeName,
   labels,
 }: SkillTreeCanvasProps) {
+  const isDimmed = (node: SkillNode) => focusArm !== null && node.tier !== 'start' && node.arm !== focusArm;
   const extent = useMemo(() => layoutExtent(layout), [layout]);
   const [viewBox, setViewBox] = useState<ViewBox>(extent);
   const [size, setSize] = useState<Size | null>(null);
@@ -432,19 +457,22 @@ export function SkillTreeCanvas({
             const parent = parentId === undefined ? undefined : layout.nodes[parentId];
             const status = statuses.get(node.id);
             if (!place || !parent || !status) return null;
-            const style = EDGE_STYLE[edgeToneOf(visualStateOf(status))];
+            const tone = edgeToneOf(visualStateOf(status));
+            const style = EDGE_STYLE[tone];
+            const dimmed = isDimmed(node);
             return (
               <line
                 key={node.id}
                 data-edge={node.id}
-                data-tone={edgeToneOf(visualStateOf(status))}
+                data-tone={tone}
+                data-dimmed={dimmed || undefined}
                 x1={parent.x}
                 y1={parent.y}
                 x2={place.x}
                 y2={place.y}
-                stroke={style.stroke}
+                stroke={edgeStroke(tone, skillArmColour(node.arm))}
                 strokeWidth={style.width}
-                opacity={style.opacity}
+                opacity={dimmed ? style.opacity * 0.12 : style.opacity}
                 strokeLinecap="round"
               />
             );
@@ -465,6 +493,7 @@ export function SkillTreeCanvas({
                 level={status.level}
                 selected={selectedId === node.id}
                 recommended={recommendedId === node.id}
+                dimmed={isDimmed(node)}
                 artSrc={nodeArtSrc(node)}
                 clipId={clipIdFor(place.diameter)}
                 glowId={glowId}
@@ -501,10 +530,11 @@ export function SkillTreeCanvas({
   );
 }
 
+/** The legend is about state, so its swatches are drawn in ink: the path colours are the tree's. */
 const LEGEND_SWATCH: Record<'owned' | 'buyable' | 'unaffordable' | 'locked' | 'recommended', string> = {
-  owned: 'border-gold bg-[color-mix(in_oklch,var(--gold)_35%,var(--bg))]',
-  buyable: 'border-gold bg-bg',
-  unaffordable: 'border-[color-mix(in_oklch,var(--down)_65%,var(--gold))] bg-bg',
+  owned: 'border-ink bg-[color-mix(in_oklch,var(--ink)_30%,var(--bg))]',
+  buyable: 'border-ink bg-bg',
+  unaffordable: 'border-down bg-bg',
   locked: 'border-line bg-bg-2 opacity-50',
   recommended: 'border-up border-dashed bg-bg',
 };
@@ -525,6 +555,9 @@ export function SkillTreeLegend({ labels }: { labels: SkillTreeLabels }) {
           {item.text}
         </li>
       ))}
+      <li className="basis-full" data-testid="skill-tree-legend-paths">
+        {labels.legendPathNote}
+      </li>
     </ul>
   );
 }

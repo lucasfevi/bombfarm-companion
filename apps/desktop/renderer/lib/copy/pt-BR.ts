@@ -905,6 +905,8 @@ export const ptBR: Copy = {
   skillsCountOf: '{part} / {whole}',
   skillsGoldSpent: 'Ouro gasto',
   skillsGoldToMax: 'Ouro para completar a árvore',
+  skillsPaths: 'Progresso por caminho',
+  skillsNodesMaxed: '{maxed} de {nodes} nós no máximo',
   skillsFitToView: 'Ajustar à tela',
   skillsZoomIn: 'Aproximar',
   skillsZoomOut: 'Afastar',
@@ -914,6 +916,7 @@ export const ptBR: Copy = {
   skillsLegendUnaffordable: 'Falta ouro',
   skillsLegendLocked: 'Bloqueado',
   skillsLegendRecommended: 'Melhor valor',
+  skillsLegendPathNote: 'A cor do anel é o caminho; a espessura e o brilho são o estado. Falta ouro fica vermelho em todo caminho.',
   skillsCanvasAria: 'Mapa da árvore de habilidades',
   skillsNodeAria: '{name}, nível {level} de {max}',
   // *AurasAtCap* — as fichas de aura no Farm e no Otimizador; ver o comentário em `en.ts`.

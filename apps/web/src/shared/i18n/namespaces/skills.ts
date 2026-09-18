@@ -116,6 +116,8 @@ export const en = {
   skillsCountOf: '{part} / {whole}',
   skillsGoldSpent: 'Gold spent',
   skillsGoldToMax: 'Gold to max the tree',
+  skillsPaths: 'Progress by path',
+  skillsNodesMaxed: '{maxed} of {nodes} nodes maxed',
   skillsFitToView: 'Fit to view',
   skillsZoomIn: 'Zoom in',
   skillsZoomOut: 'Zoom out',
@@ -125,6 +127,7 @@ export const en = {
   skillsLegendUnaffordable: 'Not enough gold',
   skillsLegendLocked: 'Locked',
   skillsLegendRecommended: 'Best value',
+  skillsLegendPathNote: 'Ring colour is the path; ring weight and glow are the state. Not enough gold stays red on every path.',
   skillsCanvasAria: 'Skill tree map',
   skillsNodeAria: '{name}, level {level} of {max}',
 };
@@ -247,6 +250,8 @@ export const pt: typeof en = {
   skillsCountOf: '{part} / {whole}',
   skillsGoldSpent: 'Ouro gasto',
   skillsGoldToMax: 'Ouro para completar a árvore',
+  skillsPaths: 'Progresso por caminho',
+  skillsNodesMaxed: '{maxed} de {nodes} nós no máximo',
   skillsFitToView: 'Ajustar à tela',
   skillsZoomIn: 'Aproximar',
   skillsZoomOut: 'Afastar',
@@ -256,6 +261,7 @@ export const pt: typeof en = {
   skillsLegendUnaffordable: 'Falta ouro',
   skillsLegendLocked: 'Bloqueado',
   skillsLegendRecommended: 'Melhor valor',
+  skillsLegendPathNote: 'A cor do anel é o caminho; a espessura e o brilho são o estado. Falta ouro fica vermelho em todo caminho.',
   skillsCanvasAria: 'Mapa da árvore de habilidades',
   skillsNodeAria: '{name}, nível {level} de {max}',
 };

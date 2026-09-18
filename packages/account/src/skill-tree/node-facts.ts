@@ -3,6 +3,8 @@ import {
   EFFECT_TOTAL_BINDINGS,
   EMPTY_SKILL_TOTALS,
   nodeStatus,
+  SKILL_ARMS,
+  type SkillArm,
   type SkillEffect,
   type SkillNodeStatus,
   type SkillTotals,
@@ -73,6 +75,36 @@ export function treeSummary(catalog: SkillTreeCatalog, statuses: ReadonlyMap<str
     goldToMax += costForLevels(node, level, node.maxLevel);
   }
   return { ownedLevels, totalLevels, goldSpent, goldToMax };
+}
+
+export type ArmSummary = {
+  readonly arm: SkillArm;
+  readonly nodes: number;
+  readonly maxedNodes: number;
+  readonly ownedLevels: number;
+  readonly totalLevels: number;
+  readonly goldSpent: number;
+  readonly goldToMax: number;
+};
+
+/** One summary per path, in the catalog's arm order; the hub belongs to no path and is left out. */
+export function armSummaries(catalog: SkillTreeCatalog, statuses: ReadonlyMap<string, SkillNodeStatus>): readonly ArmSummary[] {
+  const byArm = new Map<SkillArm, ArmSummary>();
+  for (const node of catalog.nodes) {
+    if (node.tier === 'start') continue;
+    const level = statuses.get(node.id)?.level ?? 0;
+    const current = byArm.get(node.arm) ?? { arm: node.arm, nodes: 0, maxedNodes: 0, ownedLevels: 0, totalLevels: 0, goldSpent: 0, goldToMax: 0 };
+    byArm.set(node.arm, {
+      arm: node.arm,
+      nodes: current.nodes + 1,
+      maxedNodes: current.maxedNodes + (level >= node.maxLevel ? 1 : 0),
+      ownedLevels: current.ownedLevels + level,
+      totalLevels: current.totalLevels + node.maxLevel,
+      goldSpent: current.goldSpent + costForLevels(node, 0, level),
+      goldToMax: current.goldToMax + costForLevels(node, level, node.maxLevel),
+    });
+  }
+  return SKILL_ARMS.flatMap((arm) => byArm.get(arm) ?? []);
 }
 
 export { objectiveDelta, objectivePerMillion } from '@bombfarm/domain/skill-tree';
