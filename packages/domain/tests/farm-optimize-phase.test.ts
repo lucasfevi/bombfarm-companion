@@ -97,7 +97,7 @@ describe('bestFarmPhase — the non-unimodality pin', () => {
   // (30,449,438/h), four rows to its left. Both neighbours are FEASIBLE, where on the retired
   // roster the left neighbour was infeasible: the trough is what makes the curve non-unimodal,
   // and it does not need to be an unclearable phase to do it.
-  it('phase 71 is a strict local maximum under the current build (> phases 70 and 72) that is not the global peak (67)', () => {
+  it('phase 71 is a strict local maximum under the current build (> phases 70 and 72) that is not the global peak (65)', () => {
     const row70 = computeFarmRateRow(70, squad)!;
     const row71 = computeFarmRateRow(71, squad)!;
     const row72 = computeFarmRateRow(72, squad)!;
@@ -106,16 +106,17 @@ describe('bestFarmPhase — the non-unimodality pin', () => {
     expect(row71.goldPerHour).toBeGreaterThan(row70.goldPerHour);
     expect(row71.goldPerHour).toBeGreaterThan(row72.goldPerHour);
     const fullSweep = bestFarmPhase(squad, goldObjective, scales, { maxPhase: null });
-    expect(fullSweep!.phase).toBe(67);
+    // RE-PINNED 2026-09-19 for the standing-props clear (ADR-017); the previous figure is in the git history.
+    expect(fullSweep!.phase).toBe(65);
     expect(fullSweep!.value).toBeGreaterThan(row71.goldPerHour);
   });
 
   // Stride 4, not 3 or 10: this roster's argmax is phase 67 = 1 + 3 × 22, so a stride-3 sweep
   // starting at phase 1 lands on it exactly and would have found the peak by luck; stride 4's
   // grid (…, 65, 69, …) straddles it instead.
-  it('a stride-4 subsampled sweep returns a different, lower-valued phase than the full sweep', () => {
+  it('a stride-3 subsampled sweep returns a different, lower-valued phase than the full sweep', () => {
     const fullSweep = bestFarmPhase(squad, goldObjective, scales, { maxPhase: null });
-    const strided = bestFarmPhase(squad, goldObjective, scales, { maxPhase: null, phaseStride: 4 });
+    const strided = bestFarmPhase(squad, goldObjective, scales, { maxPhase: null, phaseStride: 3 });
     expect(fullSweep).not.toBeNull();
     expect(strided).not.toBeNull();
     expect(strided!.phase).not.toBe(fullSweep!.phase);
@@ -132,12 +133,15 @@ describe('bestFarmPhase — changing the objective changes the pick', () => {
   // per hour, while gold wants the deepest phase the squad can still clear quickly, because gold
   // per prop rises with phase. So the chest pick is phase 1, the gold pick is strictly deeper,
   // and the two never coincide.
-  it('the objectives pull opposite ways: chests pick phase 1, gold picks strictly deeper', () => {
+  it('the objectives pull opposite ways: chests pick the first 75-prop map (51), gold picks strictly deeper', () => {
     const goldPick = bestFarmPhase(squad, goldObjective, scales, { maxPhase });
     const chestPick = bestFarmPhase(squad, chestObjective, scales, { maxPhase });
     expect(goldPick).not.toBeNull();
     expect(chestPick).not.toBeNull();
-    expect(chestPick!.phase).toBe(1);
+    // Chests follow props per hour alone, and under the standing-props clear a 75-prop map a
+    // roster one-shots yields more props per hour than a 50-prop one: the head and the starved
+    // tail are paid once per wave whatever the map holds.
+    expect(chestPick!.phase).toBe(51);
     expect(goldPick!.phase).toBeGreaterThan(chestPick!.phase);
   });
 });

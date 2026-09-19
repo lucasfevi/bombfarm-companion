@@ -1,24 +1,11 @@
 /**
- * Why the app has ONE clear-time model, and why the obvious second one is wrong.
+ * One clear-time model, and the retired one it must never quietly become.
  *
- * The Phases explorer's squad panel used to print its own estimate — total map HP divided by the
- * squad's summed sustained DPS — beside the ranking board's `FarmRateRow.clearSecs` for the same
- * phase, on the same page. The two never agreed, because dividing a fluid HP pool by DPS credits
- * every point of damage to prop HP, and the game does not: a prop dies on the hit that takes it
- * below zero and the excess is discarded. `farm-rate.ts` charges for that with
- * `eHtk = Σ share × ceil(propHp / avgHit)`.
- *
- * The gap is that quantization, not the House/field ceilings — on this fixture at phase 51 the
- * House throttle is a factor of 0.990, while the top hero needs 0.89 fractional hits for the
- * average prop against an `eHtk` of 1.40. Until the advisor adopted the board's measured bomb
- * cycle the fluid-HP figure also read a faster serial cadence, which widened the ratio past 1.4;
- * on one shared cadence it is ~1.18, and that residual is the quantization alone.
- *
- * `farm-rate-phase51-ato2-anchor.test.ts` pins `clearSecs` on this same fixture and phase against
- * a real measurement; it is the reason the direction below is an assertion about which model is
- * right rather than a note about two models differing. That constant is deliberately NOT repeated
- * here — this file asserts the RATIO and the SIGN, so the two files cannot drift into disagreeing
- * about the measurement itself.
+ * The retired estimator divided the map's total HP by the roster's summed DPS — a fluid that
+ * ignores that props die one at a time, that a hit's overshoot is wasted, that the crit is rolled
+ * per hit and that the field starves under ten props. The shipped row prices all of that
+ * (`model/clear-time.ts`, ADR-017). The two must not agree: on a map a squad clears in tens of
+ * seconds they sit a clear margin apart, in whichever direction the roster's hit size puts them.
  */
 import { describe, expect, it } from 'vitest';
 import { computeFarmRates } from '@bombfarm/domain/farm-rate';
@@ -30,30 +17,27 @@ import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 const FIXTURE = 'save-20260818-12heroes.json';
 const PHASE = 51;
 
-function models() {
+function ratioAt(phase: number): number {
   const { heroes, account } = loadFarmRateFixture(FIXTURE, 'sheet-math');
   const { rows } = computeFarmRates({ heroes, account });
-  const row = rows.find((entry) => entry.phase === PHASE);
-  const intel = computePhaseIntelGlobal(PHASE, {});
-  if (!row || !intel) throw new Error(`no row/intel for phase ${PHASE}`);
-
+  const row = rows.find((entry) => entry.phase === phase);
+  const intel = computePhaseIntelGlobal(phase, {});
+  if (!row || !intel) throw new Error(`no row/intel for phase ${phase}`);
   const squadSlots = account.fieldSlots ?? account.slots ?? DEFAULT_CASA_SLOTS;
-  const top = rankRosterByDps(
-    { heroes, account, phase: PHASE, mitigationPct: intel.mitigationPct },
-    squadSlots,
-  );
-  return { shipped: row.clearSecs, fluidHp: intel.totalMapHp / sumTopDps(top) };
+  const top = rankRosterByDps({ heroes, account, phase, mitigationPct: intel.mitigationPct }, squadSlots);
+  return row.clearSecs / (intel.totalMapHp / sumTopDps(top));
 }
 
 describe('clear time — one model, and the retired one it replaced', () => {
-  it('the fluid-HP model reads far fast against the quantized one', () => {
-    const { shipped, fluidHp } = models();
-    expect(fluidHp).toBeLessThan(shipped);
-    expect(shipped / fluidHp).toBeGreaterThan(1.15);
-  });
-
-  it('the gap is large enough that no rounding or formatting could hide it', () => {
-    const { shipped, fluidHp } = models();
-    expect(shipped - fluidHp).toBeGreaterThan(10);
+  it('the shipped clear is not a multiple of the fluid-HP figure: the two diverge across phases', () => {
+    // A fluid clear shrinks to nothing as the props' HP does; the shipped one is bounded below by
+    // the cadence of reaching and bombing them, so the ratio between the two is large on a map
+    // the roster one-shots and falls toward one where every hit is needed.
+    const trivial = ratioAt(5);
+    const deep = ratioAt(151);
+    expect(Number.isFinite(trivial)).toBe(true);
+    expect(Number.isFinite(deep)).toBe(true);
+    expect(trivial).toBeGreaterThan(deep * 1.5);
+    expect(ratioAt(PHASE)).toBeGreaterThan(deep);
   });
 });

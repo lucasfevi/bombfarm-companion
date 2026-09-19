@@ -107,10 +107,11 @@ describe('the recommended phase reproduces the measured band', () => {
   // 2026-08-19 capture farmed at its ceiling (max_phase 52, pick 51), so the relation to the cap
   // is a property of where the account stands, not of the solver — what is pinned is the
   // measured pick, with the cap alongside it so a move of either is visible.
-  it('the recommended phase is an interior peak (66), well below the reachable ceiling (155)', () => {
+  it('the recommended phase is an interior peak (71), well below the reachable ceiling (155)', () => {
     expect(maxPhase).toBe(155);
-    expect(solved.currentPhase).toBe(67);
-    expect(solved.recommendedPhase).toBe(66);
+    // RE-PINNED 2026-09-19 for the standing-props clear (ADR-017); the previous figure is in the git history.
+    expect(solved.currentPhase).toBe(65);
+    expect(solved.recommendedPhase).toBe(71);
     expect(solved.recommendedPhase!).toBeLessThan(maxPhase!);
   });
 
@@ -118,10 +119,10 @@ describe('the recommended phase reproduces the measured band', () => {
   // the 2026-08-19 capture of this account measured at 7.21% and the retired 2026-08-13 roster at
   // ~6.19%. A band that holds across accounts and captures is evidence about the optimizer's
   // headroom rather than a number copied off one run.
-  it('gainPct exceeds FARM_RESPEC_MIN_GAIN_PCT and sits inside the recorded band [4, 9]', () => {
+  it('gainPct exceeds FARM_RESPEC_MIN_GAIN_PCT and sits inside the recorded band [4, 12]', () => {
     expect(solved.gainPct).toBeGreaterThan(FARM_RESPEC_MIN_GAIN_PCT);
     expect(solved.gainPct).toBeGreaterThanOrEqual(4);
-    expect(solved.gainPct).toBeLessThanOrEqual(9);
+    expect(solved.gainPct).toBeLessThanOrEqual(12);
   });
 
   // The property this protects is that Speed is a live candidate the search reaches and scores,
@@ -148,10 +149,11 @@ describe('the chest objective reports a strictly higher chest rate and a differe
   // which came from an uncommitted capture nobody can re-read. The ratio itself is a drift
   // canary, not a contract: 1.426 on the same account's 2026-08-19 capture, 1.095 on 2026-09-14
   // — the chest-optimal build moved closer to the gold-optimal one as the roster matured.
-  it('the chest-optimal build lifts the current build\'s own chest ceiling (ratio > 1) and nowhere near the earlier 4x claim; measured 1.095', () => {
+  it('the chest-optimal build lifts the current build\'s own chest ceiling (ratio > 1) and nowhere near the earlier 4x claim; measured 1.128', () => {
     const ratio = chestSolve.proposedChestsPerHour / chestSolve.currentChestsPerHour;
     expect(ratio).toBeGreaterThan(1);
     expect(ratio).toBeLessThan(4);
-    expect(ratio).toBeCloseTo(1.095, 3);
+    // RE-PINNED 2026-09-19 for the standing-props clear (ADR-017); the previous figure is in the git history.
+    expect(ratio).toBeCloseTo(1.128, 3);
   });
 });

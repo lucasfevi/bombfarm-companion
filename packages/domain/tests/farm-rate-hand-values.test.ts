@@ -40,7 +40,8 @@ import {
   LOOT_ABILITY_VALUES,
 } from '@bombfarm/domain/phase-wiki';
 import { hitsToKill, propHp } from '@bombfarm/domain/phases';
-import { mitigationFactor, EFF_IA } from '@bombfarm/domain/model';
+import { mitigationFactor, EFF_IA, STAT_CAPS } from '@bombfarm/domain/model';
+import { simulateClear } from '@bombfarm/domain/model/clear-time';
 import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
 const TOL = 1e-9; // relative tolerance — every input is an exact double (stated once, per T7).
@@ -191,13 +192,7 @@ function handComputeRow(stoneHp: number, mitig: number, goldComum: number, phase
     perHero.map((x) => x.onField),
     squad.fieldSlots,
   );
-  const propsPerSec = concurrencyScale * shareDenom;
   const bossPerSec = concurrencyScale * bossRateSum;
-
-  const expectedHtk = perHero.reduce((sum, x) => {
-    const share = shareDenom > 0 ? x.term / shareDenom : 0;
-    return sum + share * x.eHtk;
-  }, 0);
 
   const veiaOuroPerLevel = LOOT_ABILITY_VALUES.veia_ouro.perLevel;
   const goldSelfMix = perHero.reduce((sum, x) => {
@@ -206,23 +201,27 @@ function handComputeRow(stoneHp: number, mitig: number, goldComum: number, phase
     return sum + share * goldSelf;
   }, 0);
 
-  // The head of the clear, re-derived from the stagger constant rather than by calling
-  // `clearHeadSeconds`: half the stagger per hero past the first, plus the one bomb fuse that
-  // burns before anything can explode.
-  const meanFuseSecs =
-    heroFacts.reduce((sum: number, hero: HeroFarmFacts) => sum + hero.uptime * hero.fuseSecs, 0) /
-    squad.uptimeSum;
-  // `max(0, …)` because a mean occupancy under one hero has no second hero to queue behind, and
-  // the fixture's House ceiling puts it there (0.66 on field): an unclamped term would hand the
-  // clear NEGATIVE startup seconds.
-  const headSecs =
-    (HERO_ACTIVATION_STAGGER_SEC * Math.max(0, heroesOnField - 1)) / 2 + meanFuseSecs;
-
+  // The clear itself is the standing-props integral, fed exactly what the row feeds it: each
+  // hero's House-allocated, queue-scaled presence and its non-crit hit at this mitigation. The
+  // fixture carries no Baton Pass carrier, so there is one level and no blend.
   const propCount = propCountForAto(ato);
-  const clearSecs = headSecs + propCount / propsPerSec + (gate ? 1 / bossPerSec : 0);
+  const clear = simulateClear(
+    perHero.map((x) => ({
+      presence: x.onField * concurrencyScale,
+      fuseSecs: x.hero.fuseSecs,
+      walkSpeedCells: x.hero.walkSpeedCells,
+      blastCells: x.hero.blastCells!,
+      hitNoCrit: x.hero.hitNoCritBase! * mitigationFactor(mitig, x.hero.penetrationPct),
+      critChance: Math.min(x.hero.critChancePct!, STAT_CAPS.critChance) / 100,
+      critMult: 1 + x.hero.critDmgPct! / 100,
+    })),
+    WIKI_PROPS.map((prop) => ({ hp: propHp(stoneHp, prop.hpMult), weight: prop.weight })),
+    propCount,
+  );
+  const propsPerSec = propCount / clear.clearSecs;
+  const expectedHtk = clear.expectedHtk;
+  const clearSecs = clear.clearSecs + (gate ? 1 / bossPerSec : 0);
   const cyclesPerHour = Number.isFinite(clearSecs) && clearSecs > 0 ? 3600 / clearSecs : 0;
-  // The head, and on a gate the boss, are seconds of the cycle that drop nothing, so every
-  // hourly rate follows the cycle rather than the steady-state prop rate.
   const propsPerHour = cyclesPerHour * propCount;
 
   const eGold = goldComum * goldShareFactor;
@@ -305,7 +304,7 @@ describe('phase 42 — non-gate hand-computed values', () => {
     expect(squad.xpMult).not.toBe(1);
   });
 
-  it('clearSecs and cyclesPerHour match the head + propCount / propsPerSec (no gate boss term)', () => {
+  it('clearSecs and cyclesPerHour match the standing-props integral (no gate boss term)', () => {
     expect(Math.abs(row.clearSecs - hand.clearSecs) / hand.clearSecs).toBeLessThan(TOL);
     expect(Math.abs(row.cyclesPerHour - hand.cyclesPerHour) / hand.cyclesPerHour).toBeLessThan(TOL);
   });
@@ -333,7 +332,7 @@ describe('phase 10 — gate hand-computed values', () => {
     expect(Math.abs(row.xpPerHour - hand.xpPerHour) / hand.xpPerHour).toBeLessThan(TOL);
   });
 
-  it('cyclesPerHour includes the boss term (head + propCount/propsPerSec + 1/bossPerSec)', () => {
+  it('cyclesPerHour includes the boss term (the integral + 1/bossPerSec)', () => {
     expect(Math.abs(row.clearSecs - hand.clearSecs) / hand.clearSecs).toBeLessThan(TOL);
     expect(Math.abs(row.cyclesPerHour - hand.cyclesPerHour) / hand.cyclesPerHour).toBeLessThan(TOL);
   });
