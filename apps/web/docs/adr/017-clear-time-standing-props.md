@@ -50,9 +50,9 @@ Optimizer's farm objective, the phase pin — reads the new figure through the s
   the next thing to measure: a pulse-off run on the saturated account would pin it.
 - The phase-51 anchor test is re-pinned to the new arithmetic and its residual restated; it is
   not refitted.
-- A row costs ~30 µs against ~4 µs before (the integral steps `n / 20` props at a time above
-  twenty standing and one at a time below, with one exponential per pass), so a 600-row board is
-  ~20 ms and a Team Plan farm solve ~1.5× its former time.
+- A row costs ~25 µs against ~4 µs before (the integral steps `n / 10` props at a time above ten
+  standing and one at a time below, with one exponential per pass), so a 600-row board is ~15 ms.
+  The domain test suite, which the optimizer tests dominate, takes about twice as long.
 - Each hero's share of the gold is its share of the clear's kills, which the integral now
   reports (`killShareByHero`); the Veia de Ouro mix follows it rather than the old per-hero rate
   terms.

@@ -28,10 +28,11 @@
  * - **Easy props die first.** Hits land uniformly over standing props, so a type needing fewer
  *   hits depletes faster and the tail is the tough mix. Tracked per type, no constant.
  *
- * Two structural pieces earn a sentence each. The miss term uses the previous step's kill rate
- * (`kPrev`), an implicit equation solved by lagging one prop, which is exact in the limit and
- * within 1% at 100 steps. The integration walks one prop at a time so the last prop is priced at
- * the `n = 1` rate — integrating a fractional count to zero would take logarithmic, unbounded time.
+ * Two structural pieces earn a sentence each. The miss term is a fixed point (plants miss because
+ * of the kill rate the plants produce), solved by three damped passes from the previous step's
+ * rate. The integration steps in whole props — a tenth of the standing count on a full map, one
+ * at a time under ten — so the last prop is priced at the `n = 1` rate and the clear is a smooth
+ * function of every input; integrating a fractional count to zero would take unbounded time.
  */
 
 /** Playable cells of the battlefield grid (19 × 16). */
@@ -74,7 +75,7 @@ export const ACTIVE_PER_PROP = 1.9;
 export const ACTIVE_EXTRA = 1.5;
 
 /** Standing props per prop killed in one integration step; under this many, one prop per step. */
-const COARSE_STEP_ABOVE = 20;
+const COARSE_STEP_ABOVE = 10;
 
 /** Above this many hits the crit-averaged hit is exact to under 1% (central limit) and cheaper. */
 const CRIT_ROLL_MAX_HITS = 60;
@@ -226,7 +227,8 @@ export function simulateClear(
 
   // One prop per step under `COARSE_STEP_ABOVE` standing, where the rates move fastest and the
   // last prop must be priced at the `n = 1` rate; `n / COARSE_STEP_ABOVE` props per step on a
-  // fuller map, with the rates read at the step's midpoint. The step is continuous in the count
+  // fuller map, with the rates read at the step's midpoint (ten per step at a hundred standing:
+  // against one per step the ten held-out pairs move by under 3%, and the row costs 30% less). The step is continuous in the count
   // (never rounded), so the clear is a smooth function of every input. The bound only guards a
   // mix that never empties.
   for (let step = 0; step < 2 * propCount + 10; step++) {

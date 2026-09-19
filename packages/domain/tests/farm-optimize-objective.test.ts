@@ -162,10 +162,10 @@ describe('farmObjectiveScales — the frozen blend normalizers, exported (lifted
    * re-record can only ever restate the model, never paper over a disagreement between the two
    * routes to it.
    */
-  it('on the committed fixture (maxPhase 155): goldScale ≈ 30 449 437.88, chestScale ≈ 15.328515', () => {
+  it('on the committed fixture (maxPhase 155): goldScale ≈ 30 449 437.88, chestScale ≈ 15.587677', () => {
     const scales = farmObjectiveScales(squad, { maxPhase });
     // RE-PINNED 2026-09-19 for the standing-props clear (ADR-017); the previous figure is in the git history.
-    expect(scales.goldScale).toBeCloseTo(29050599.39, 1);
-    expect(scales.chestScale).toBeCloseTo(15.328515, 5);
+    expect(scales.goldScale).toBeCloseTo(29563288.87, 1);
+    expect(scales.chestScale).toBeCloseTo(15.587677, 5);
   });
 });

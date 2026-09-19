@@ -219,7 +219,7 @@ describe('rankNextPointForFarm — anti-"energy always wins" sensor', () => {
     const result = rankNextPointForFarm({ bases, account, heroId: heroByName('Bram').id, maxPhase: 42 });
     expect(gainOf(result, 'energy')).toBeLessThan(0);
     // RE-PINNED 2026-09-19 for the standing-props clear (ADR-017); -0.12713347066902747 before.
-    expect(gainOf(result, 'energy')).toBeCloseTo(-0.07830153487318192, 9);
+    expect(gainOf(result, 'energy')).toBeCloseTo(-0.07899834560854968, 9);
     // Not a collapse: the sign is decided hero by hero. On this queued field it is positive on
     // every geared hero — more of a one-shotter's field time is more kills — and negative on
     // every naked one, whose extra field seconds displace a faster clearer's.
