@@ -32,8 +32,9 @@ const HEAD_CAP_BYTES = 16 * 1024;
  *  compressed, so the wire form is smaller and the cap has to hold the wire form, not the
  *  inflated one. It used to be 256 KiB against an ~85 KB largest body (2026-08-25), and a film
  *  hit it silently. A declared length that never finishes arriving is still bounded — the same
- *  connection just gives up here, same as it already does for any other unrecognisable byte run,
- *  and the idle sweep releases what it buffered. */
+ *  connection gives up here, same as it does for any other unrecognisable byte run, and the idle
+ *  sweep releases what it buffered. Both are logged; neither is reached while a later response
+ *  can be resynced to (see `scanForHttpHead`). */
 const GIVEUP_BYTES = 8 * 1024 * 1024;
 /** Rewalked on every call so a header split across a chunk boundary — the only way an offset
  *  already ruled out can start matching later — is still found, without resyncing from 0. */
@@ -273,6 +274,14 @@ export function findWsFrameStart(buf: Buffer, fromOffset = 0): number | undefine
  *  result and film both arrive that way (2026-09-16), and skipping them was an empty PVP tab. */
 export type HttpBodySkipReason = 'compressed' | 'no_length';
 
+/** Why bytes at the front of a connection were discarded to reach the next response: an attach
+ *  mid-body or a body's leftover tail (`unrecognised_prefix`), or a declared body the client
+ *  abandoned before it finished arriving (`body_cut_short`). */
+export type HttpResyncReason = 'unrecognised_prefix' | 'body_cut_short';
+
+/** Why a connection was given up on for good at {@link GIVEUP_BYTES}. */
+export type ConnectionIgnoredReason = 'unrecognised_bytes' | 'body_never_completed';
+
 interface HttpMatch {
   readonly status: number;
   readonly totalLength: number;
@@ -386,6 +395,43 @@ function matchHttpResponse(buf: Buffer): HttpMatch | undefined {
 function startsWithHttpHead(buf: Buffer): boolean {
   if (!buf.subarray(0, 5).equals(Buffer.from('HTTP/', 'latin1'))) return false;
   return buf.subarray(0, Math.min(buf.length, HEAD_CAP_BYTES)).indexOf('\r\n\r\n') !== -1;
+}
+
+const HTTP_HEAD_MARKER = Buffer.from('HTTP/1.', 'latin1');
+const HTTP_STATUS_LINE_PREFIX_BYTES = 'HTTP/1.1 200 '.length;
+const HTTP_STATUS_LINE_PREFIX = /^HTTP\/1\.[01] \d{3}[ \r]/;
+
+interface HttpHeadScanResult {
+  /** The offset of a proven response header: a status line, and the blank line that ends the
+   *  header block within {@link HEAD_CAP_BYTES} of it. */
+  readonly offset?: number;
+  /** The earliest status line whose header block has not fully arrived yet — provisional, like
+   *  {@link WsFrameScanResult.incompleteAt}, so the next push rescans from there. */
+  readonly incompleteAt?: number;
+}
+
+/**
+ * The HTTP half of the mid-stream resync {@link scanForWsFrameStart} does for frames. The bytes
+ * at the front of a `head` buffer are not always a response: the hook can attach while a body is
+ * streaming, and a body the client abandoned by closing the connection leaves its tail behind for
+ * whichever connection the TLS context's address is reused by next. Neither ever matched at
+ * offset 0 before, so the connection buffered every later response behind the junk until the cap
+ * and then ignored it — silently, which is how a duel result and its film went missing while the
+ * tap was hooked (2026-09-18). A status line alone is not accepted, because a body is arbitrary
+ * bytes; the header block has to close as well.
+ */
+function scanForHttpHead(buf: Buffer, fromOffset: number): HttpHeadScanResult {
+  let offset = buf.indexOf(HTTP_HEAD_MARKER, fromOffset);
+  while (offset !== -1) {
+    const head = buf.subarray(offset, Math.min(buf.length, offset + HEAD_CAP_BYTES));
+    if (head.length < HTTP_STATUS_LINE_PREFIX_BYTES) return { incompleteAt: offset };
+    if (HTTP_STATUS_LINE_PREFIX.test(head.toString('latin1', 0, HTTP_STATUS_LINE_PREFIX_BYTES))) {
+      if (head.indexOf('\r\n\r\n') !== -1) return { offset };
+      if (head.length < HEAD_CAP_BYTES) return { incompleteAt: offset };
+    }
+    offset = buf.indexOf(HTTP_HEAD_MARKER, offset + 1);
+  }
+  return {};
 }
 
 interface HeadState {
@@ -537,19 +583,44 @@ export class TlsConnections {
       return { state: INITIAL_HEAD_STATE, rest };
     }
 
-    if (startsWithHttpHead(buf)) {
-      if (buf.length >= GIVEUP_BYTES) return { state: { kind: 'ignore' } };
-      return { state: { kind: 'head', buf, scannedUpTo: state.scannedUpTo } };
-    }
-
     const scanFrom = Math.max(0, state.scannedUpTo - RESYNC_OVERLAP_BYTES);
-    const scanResult = scanForWsFrameStart(buf, scanFrom);
-    if (scanResult.offset !== undefined) {
-      return { state: { kind: 'ws', decoder: new FrameDecoder() }, rest: buf.subarray(scanResult.offset) };
+    // Offset 0 is the response `matchHttpResponse` is already waiting on, or ruled out above.
+    const headScanFrom = Math.max(1, scanFrom);
+
+    if (startsWithHttpHead(buf)) {
+      // A whole response header inside a body still arriving means the client gave up on that
+      // body and the connection (or its reused address) has moved on to the next response.
+      const nextHead = scanForHttpHead(buf, headScanFrom);
+      if (nextHead.offset !== undefined) {
+        return this.#resyncToHttpHead(buf, nextHead.offset, 'body_cut_short');
+      }
+      if (buf.length >= GIVEUP_BYTES) return this.#ignoreConnection(buf, 'body_never_completed');
+      return { state: { kind: 'head', buf, scannedUpTo: nextHead.incompleteAt ?? buf.length } };
     }
 
-    if (buf.length >= GIVEUP_BYTES) return { state: { kind: 'ignore' } };
-    return { state: { kind: 'head', buf, scannedUpTo: scanResult.incompleteAt ?? buf.length } };
+    const frameScan = scanForWsFrameStart(buf, scanFrom);
+    if (frameScan.offset !== undefined) {
+      return { state: { kind: 'ws', decoder: new FrameDecoder() }, rest: buf.subarray(frameScan.offset) };
+    }
+
+    const headScan = scanForHttpHead(buf, headScanFrom);
+    if (headScan.offset !== undefined) {
+      return this.#resyncToHttpHead(buf, headScan.offset, 'unrecognised_prefix');
+    }
+
+    if (buf.length >= GIVEUP_BYTES) return this.#ignoreConnection(buf, 'unrecognised_bytes');
+    const incompleteAt = Math.min(frameScan.incompleteAt ?? buf.length, headScan.incompleteAt ?? buf.length);
+    return { state: { kind: 'head', buf, scannedUpTo: incompleteAt } };
+  }
+
+  #resyncToHttpHead(buf: Buffer, offset: number, reason: HttpResyncReason): AdvanceStep {
+    this.#log?.warn({ scope: 'live-source', event: 'live-source.http_resynced', reason, discardedBytes: offset });
+    return { state: INITIAL_HEAD_STATE, rest: buf.subarray(offset) };
+  }
+
+  #ignoreConnection(buf: Buffer, reason: ConnectionIgnoredReason): AdvanceStep {
+    this.#log?.warn({ scope: 'live-source', event: 'live-source.connection_ignored', reason, bytes: buf.length });
+    return { state: { kind: 'ignore' } };
   }
 
   #advanceWs(state: WsState, bytes: Buffer, events: TapEvent[]): AdvanceStep {
