@@ -1,6 +1,6 @@
 ---
-'@bombfarm/domain': minor
-'@bombfarm/web': patch
+"@bombfarm/domain": minor
+"@bombfarm/web": patch
 ---
 
 Farm board and Optimizer clear time is now an integral over the props still standing, with crits
