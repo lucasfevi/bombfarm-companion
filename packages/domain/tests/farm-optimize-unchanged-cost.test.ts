@@ -38,8 +38,16 @@ describe('unchangedRespecCostGold', () => {
     expect(result.respecCostGold + result.unchangedRespecCostGold + addsOnlyCost).toBe(everyHero);
   });
 
-  it('is a real figure on this fixture, not a vacuous zero', () => {
-    const result = solveFarmRespec({ heroes, account, maxPhase });
+  it('is a real figure, not a vacuous zero: re-solved from its own answer, every hero is unchanged and still priced', () => {
+    // The first solve of this fixture now changes every hero (the standing-props clear moved its
+    // optimum), so the unchanged sum is taken on the re-solve from the proposed build, where
+    // nothing moves and every hero's would-be reset cost lands in this field.
+    const first = solveFarmRespec({ heroes, account, maxPhase });
+    const proposed = heroes.map((hero) => {
+      const entry = first.heroes.find((h) => h.heroId === hero.id);
+      return entry ? { ...hero, pts: entry.proposedPts } : hero;
+    });
+    const result = solveFarmRespec({ heroes: proposed, account, maxPhase });
 
     expect(result.heroes.some((hero) => !hero.changed)).toBe(true);
     expect(result.unchangedRespecCostGold).toBeGreaterThan(0);

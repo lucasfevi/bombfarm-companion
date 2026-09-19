@@ -198,20 +198,24 @@ describe('gate over timer, and the strict > boundary (edge cases)', () => {
     expect(eHtk).toBe(1);
     expect(bossHtk).toBe(1);
 
-    // One hero at uptime 1 puts exactly 1 on the field, so the head is the opening fuse alone —
-    // no activation stagger with nobody to stagger behind.
-    const fuseSecs = syntheticHero({ heroId: 'probe' }).fuseSecs;
-    const headSecs = clearHeadSeconds(1, fuseSecs);
-
-    function buildSquad(targetClearSecs: number) {
-      const requiredRate = (propCount * eHtk + bossHtk) / (targetClearSecs - headSecs);
-      const plantsPerSec = requiredRate / EFF_IA;
-      const hero: HeroFarmFacts = syntheticHero({ heroId: 'boundary', avgHitBase, plantsPerSec, blocksPerBomb: 1, uptime: 1 });
-      return computeSquadFarmFacts([hero], { ...account, slots: 1000 });
+    // The clear is a continuous, increasing function of the hero's fuse (the standing-props
+    // integral has no closed form to invert), so the fuse that lands exactly on the timer is
+    // found by bisection and the two rows sit a hair either side of it.
+    function rowAtFuse(fuseSecs: number) {
+      const hero: HeroFarmFacts = syntheticHero({ heroId: 'boundary', avgHitBase, fuseSecs, blocksPerBomb: 1, uptime: 1 });
+      return computeFarmRateRow(10, computeSquadFarmFacts([hero], { ...account, slots: 1000 }))!;
     }
-
-    const belowRow = computeFarmRateRow(10, buildSquad(gateTimerSecs - 1e-6))!;
-    const aboveRow = computeFarmRateRow(10, buildSquad(gateTimerSecs + 1e-6))!;
+    let low = 0.4;
+    let high = 400;
+    expect(rowAtFuse(low).clearSecs).toBeLessThan(gateTimerSecs);
+    expect(rowAtFuse(high).clearSecs).toBeGreaterThan(gateTimerSecs);
+    for (let step = 0; step < 80; step++) {
+      const mid = (low + high) / 2;
+      if (rowAtFuse(mid).clearSecs > gateTimerSecs) high = mid;
+      else low = mid;
+    }
+    const belowRow = rowAtFuse(low);
+    const aboveRow = rowAtFuse(high);
     expectNoNaN(belowRow);
     expectNoNaN(aboveRow);
 

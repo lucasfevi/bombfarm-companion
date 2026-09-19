@@ -117,8 +117,9 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
     // 0.6415 on `save-20260914-9heroes-second-account.json` (0.4548 before the from-zero search
     // of 2026-09-18 moved the winning build). The single-point collapse has held through every
     // re-measurement on every roster; only the winning BUILD ever moved it.
-    expect(plateau.minEnergyShare).toBeCloseTo(0.6414762741652021, 4);
-    expect(plateau.maxEnergyShare).toBeCloseTo(0.6414762741652021, 4);
+    // RE-PINNED 2026-09-19 for the standing-props clear (ADR-017); the previous figure is in the git history.
+    expect(plateau.minEnergyShare).toBeCloseTo(0.5262172284644194, 4);
+    expect(plateau.maxEnergyShare).toBeCloseTo(0.5262172284644194, 4);
     expect(plateau.minEnergyShare).toBe(plateau.maxEnergyShare);
   });
 
@@ -160,10 +161,15 @@ describe('a squad whose small point budget produces a genuinely wide plateau, th
     const result = solveFarmRespec({ heroes: [tinyBudgetIsolde], account, maxPhase });
     expect(result.plateau).not.toBeNull();
     const plateau = result.plateau!;
-    expect(plateau.minEnergyShare).toBe(0.15);
-    expect(plateau.maxEnergyShare).toBe(0.35);
-    expect(plateau.proposedEnergyShare).toBe(0.25);
-    expect(plateau.maxEnergyShare - plateau.minEnergyShare).toBeCloseTo(0.2, 9);
+    // RE-PINNED 2026-09-19 for the standing-props clear (ADR-017). With the clear paying for a
+    // starved tail and a walk-in head, four points buy this hero more as energy (field time) than
+    // as attack, so the winner is the all-energy split and the band runs from the 2-energy split
+    // up: shares 0.40–0.60 all round to 2 energy and score bit-identically, 0.70–0.80 to 3, and
+    // 0.90–1.00 to 4, every one within tolerance of the peak. Still a measured band, not a point.
+    expect(plateau.minEnergyShare).toBe(0.4);
+    expect(plateau.maxEnergyShare).toBe(1);
+    expect(plateau.proposedEnergyShare).toBe(1);
+    expect(plateau.maxEnergyShare - plateau.minEnergyShare).toBeCloseTo(0.6, 9);
   });
 });
 

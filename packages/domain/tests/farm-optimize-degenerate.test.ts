@@ -175,7 +175,15 @@ describe('the objective rises but goldPerHour falls ⇒ paybackHours null, never
   // same crossover — optimising for chests really does cost gold, and `paybackHours` really does
   // go null rather than negative when it does.
   it('the chest-optimal build trades gold away — proposedGoldPerHour falls and paybackHours is null', () => {
-    const result = solveFarmRespec({ heroes, account, objective: { kind: 'chests' }, maxPhase });
+    // From the GOLD-optimal build, so the trade is the objectives' and not the current build's:
+    // a roster far from its gold optimum can gain gold on the way to more chests, and did on
+    // this fixture once the standing-props clear (ADR-017) moved its optimum.
+    const goldSolve = solveFarmRespec({ heroes, account, maxPhase });
+    const goldBuilt: HeroRecord[] = heroes.map((hero) => {
+      const entry = goldSolve.heroes.find((h) => h.heroId === hero.id);
+      return entry ? { ...hero, pts: entry.proposedPts } : hero;
+    });
+    const result = solveFarmRespec({ heroes: goldBuilt, account, objective: { kind: 'chests' }, maxPhase });
     expect(result.outcome).toBe('improved');
     expect(result.proposedGoldPerHour).toBeLessThan(result.currentGoldPerHour);
     expect(result.paybackHours).toBeNull();

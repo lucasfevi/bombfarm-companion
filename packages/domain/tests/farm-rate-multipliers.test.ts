@@ -186,7 +186,7 @@ describe('Gold tracks team_coin / fortuna / veia_ouro, never Sorte', () => {
     expect(boostedRow.xpPerHour).toBe(baseRow.xpPerHour);
   });
 
-  it('five heroes maxed on fortuna (full uptime) hit FORTUNA_AURA_CAP exactly (0.10); a sixth maxed hero adds no aura and no props, and costs only the head of the clear', () => {
+  it('five heroes maxed on fortuna (full uptime) hit FORTUNA_AURA_CAP exactly (0.10); a sixth maxed hero adds no aura and no props, and costs nothing', () => {
     // Both ceilings lifted, for the same reason: with the fixture's own 3 field slots, ADDING a
     // 6th hero's uptime would also move `row.concurrencyScale` (a real, separate effect — more
     // bodies competing for the same field slots), which would confound the "cap binds" claim
@@ -218,13 +218,12 @@ describe('Gold tracks team_coin / fortuna / veia_ouro, never Sorte', () => {
     expect(perClear(rowSix, rowSix.goldPerHour) / perClear(rowFive, rowFive.goldPerHour)).toBeCloseTo(1, 12);
     expect(perClear(rowSix, rowSix.propsPerHour) / perClear(rowFive, rowFive.propsPerHour)).toBeCloseTo(1, 12);
 
-    // PER HOUR it is not free, and that is the one thing a sixth body always costs: it takes a
-    // slot in the field roster, so the wave needs another half-stagger to come up and every clear
-    // is that much longer.
+    // PER HOUR it is free as well: a body that lands no hit neither kills a prop nor slows the
+    // heroes that do, so the clear is the same length. It still stands on the field.
     expect(rowSix.heroesOnField).toBe(rowFive.heroesOnField + 1);
-    expect(rowSix.clearSecs - rowFive.clearSecs).toBeCloseTo(HERO_ACTIVATION_STAGGER_SEC / 2, 12);
-    expect(rowSix.goldPerHour).toBeLessThan(rowFive.goldPerHour);
-    expect(rowSix.propsPerHour).toBeLessThan(rowFive.propsPerHour);
+    expect(rowSix.clearSecs).toBeCloseTo(rowFive.clearSecs, 12);
+    expect(rowSix.goldPerHour).toBeCloseTo(rowFive.goldPerHour, 6);
+    expect(rowSix.propsPerHour).toBeCloseTo(rowFive.propsPerHour, 6);
   });
 
   it('fortuna below the cap: fortunaAura === Σ uptime_h × 0.005 × level_h exactly (unnormalized sum) when the House does not throttle', () => {
