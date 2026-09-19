@@ -150,8 +150,8 @@ describe('the fixed point: re-solving on the solver\'s own proposal changes noth
   });
 
   it('the winning seed on a kept-current re-solve is \'current\' — the mechanism the fixed point rests on', () => {
-    // On a re-run the previous winner IS the 'current' seed, out-scores every
-    // canonical seed, and is already a local optimum, so the descent starts and ends there.
+    // The descent never sees the current build, so on a re-run it lands on the same vector it
+    // proposed the first time; that ties the incumbent, and a tie is the incumbent's by rule.
     const first = solveFarmRespec({ heroes, account, maxPhase });
     const respecced: HeroRecord[] = heroes.map((hero) => {
       const entry = first.heroes.find((h) => h.heroId === hero.id);

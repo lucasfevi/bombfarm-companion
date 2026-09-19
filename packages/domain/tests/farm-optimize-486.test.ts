@@ -99,20 +99,25 @@ describe('the inverted-intuition finding: all-attack scores BELOW the current bu
 
 describe('the recommended phase reproduces the measured band', () => {
   // The account's own `max_phase` is 155 and the first phase it cannot clear is 150, yet the
-  // solver picks 71: an interior gold peak, four phases past the current build's own argmax of
-  // 67. The same account's 2026-08-19 capture farmed at its ceiling (max_phase 52, pick 51), so
-  // the relation to the cap is a property of where the account stands, not of the solver — what
-  // is pinned is the measured pick, with the cap alongside it so a move of either is visible.
-  it('the recommended phase is an interior peak (71), well below the reachable ceiling (155)', () => {
+  // solver picks 66: an interior gold peak, one phase below the current build's own argmax of
+  // 67 — the proposal is the more energy-heavy build (share 0.64 against the current 0.57) that
+  // farms a phase lower, faster. Re-measured 2026-09-18 when the search stopped seeding from the
+  // player's build and gained the step-crossing moves: the pick moved from 71 (four phases past
+  // the current argmax) to 66, and the proposal from 32.26m to 32.73m gold/h. The same account's
+  // 2026-08-19 capture farmed at its ceiling (max_phase 52, pick 51), so the relation to the cap
+  // is a property of where the account stands, not of the solver — what is pinned is the
+  // measured pick, with the cap alongside it so a move of either is visible.
+  it('the recommended phase is an interior peak (66), well below the reachable ceiling (155)', () => {
     expect(maxPhase).toBe(155);
     expect(solved.currentPhase).toBe(67);
-    expect(solved.recommendedPhase).toBe(71);
+    expect(solved.recommendedPhase).toBe(66);
     expect(solved.recommendedPhase!).toBeLessThan(maxPhase!);
   });
 
-  // 5.96% here, inside the same [4, 9] band the 2026-08-19 capture of this account measured
-  // at 7.21% and the retired 2026-08-13 roster at ~6.19%. A band that holds across accounts and
-  // captures is evidence about the optimizer's headroom rather than a number copied off one run.
+  // 7.49% here (5.96% before the from-zero search of 2026-09-18), inside the same [4, 9] band
+  // the 2026-08-19 capture of this account measured at 7.21% and the retired 2026-08-13 roster at
+  // ~6.19%. A band that holds across accounts and captures is evidence about the optimizer's
+  // headroom rather than a number copied off one run.
   it('gainPct exceeds FARM_RESPEC_MIN_GAIN_PCT and sits inside the recorded band [4, 9]', () => {
     expect(solved.gainPct).toBeGreaterThan(FARM_RESPEC_MIN_GAIN_PCT);
     expect(solved.gainPct).toBeGreaterThanOrEqual(4);

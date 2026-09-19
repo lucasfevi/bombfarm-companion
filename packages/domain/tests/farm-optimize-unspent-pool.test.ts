@@ -6,9 +6,9 @@
  * at all — and it did not:
  *
  * - every move in `generateMoves()` is a transfer, so a vector's total never changes;
- * - five of the six seeds ARE built from the budget, but each is a squad-wide assignment at one
+ * - the split seeds ARE built from the budget, but each is a squad-wide assignment at one
  *   energy share, so it wins or loses for the whole searchable set at once;
- * - the sixth, `'current'`, carries each hero's own total.
+ * - the `'current'` seed of the time carried each hero's own total.
  *
  * So the only thing that could ever place a banked point was a squad-wide re-split good enough
  * to beat the incumbent on every OTHER hero's account too. A big enough pool tips that vote and
