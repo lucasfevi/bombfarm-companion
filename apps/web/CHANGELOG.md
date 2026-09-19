@@ -1,5 +1,17 @@
 # @bombfarm/web
 
+## 0.21.1
+
+### Patch Changes
+
+- Updated dependencies [fdc8b8e]
+  - @bombfarm/domain@1.3.1
+  - @bombfarm/account@0.3.1
+  - @bombfarm/farm@1.2.3
+  - @bombfarm/game-art@0.6.3
+  - @bombfarm/hero@0.3.3
+  - @bombfarm/team-plan@0.2.3
+
 ## 0.21.0
 
 ### Minor Changes
