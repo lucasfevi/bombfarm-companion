@@ -20,7 +20,15 @@ const HERO = {
   inField: true,
 };
 
-function renderToolbar(overrides: { filter?: ForgeFilter; anyEquipped?: boolean } = {}): string {
+const SETS = [
+  { set: 'ember', level: 10, count: 2 },
+  { set: 'glacier', level: 60, count: 5 },
+  { set: 'steel', level: 120, count: 1 },
+];
+
+function renderToolbar(
+  overrides: { filter?: ForgeFilter; anyEquipped?: boolean; sets?: typeof SETS } = {},
+): string {
   return renderToStaticMarkup(
     createElement(CopyProvider, {
       locale: 'en',
@@ -28,6 +36,7 @@ function renderToolbar(overrides: { filter?: ForgeFilter; anyEquipped?: boolean 
         heroes: [HERO],
         filter: overrides.filter ?? EMPTY_FORGE_FILTER,
         onFilterChange: () => {},
+        sets: overrides.sets ?? SETS,
         slots: ['arma'],
         rarities: [2],
         anyEquipped: overrides.anyEquipped ?? true,
@@ -68,6 +77,27 @@ describe('ForgeToolbar', () => {
     expect(renderToolbar({ filter: { ...EMPTY_FORGE_FILTER, forge: '12to14' } })).toContain('+12 to +14');
   });
 
+  // The picker's boxes live in a portal that only exists once it is open, so what a rendered
+  // toolbar can be asked is what its trigger says: every set, or how many of them are left.
+  it("offers the inventory's set picker, reading as every set until the list is narrowed", () => {
+    const every = renderToolbar();
+    expect(every).toContain(`aria-label="${en.inventoryFilterSetsLabel}"`);
+    expect(every).toContain(en.inventoryFilterAllSets);
+    expect(renderToolbar({ filter: { ...EMPTY_FORGE_FILTER, sets: ['ember', 'steel'] } })).toContain('2 of 3 sets');
+    expect(renderToolbar({ filter: { ...EMPTY_FORGE_FILTER, sets: [] } })).toContain('0 of 3 sets');
+  });
+
+  it('has no set picker for a bag of one set — there is nothing it could narrow', () => {
+    for (const sets of [[], SETS.slice(0, 1)]) {
+      expect(renderToolbar({ sets })).not.toContain(`aria-label="${en.inventoryFilterSetsLabel}"`);
+    }
+  });
+
+  it('counts a narrowed set list as a filter the clear control undoes', () => {
+    const html = renderToolbar({ filter: { ...EMPTY_FORGE_FILTER, sets: ['ember'] } });
+    expect(html).toContain('data-testid="forge-clear-filter"');
+  });
+
   it('shows the clear control only once a filter is on, and gives it the accent fill and the field height', () => {
     expect(renderToolbar()).not.toContain('data-testid="forge-clear-filter"');
     const clear = tagOf(renderToolbar({ filter: { ...EMPTY_FORGE_FILTER, forge: 'at8' } }), 'forge-clear-filter');
@@ -88,6 +118,7 @@ describe('ForgeToolbar', () => {
     const order = [
       en.forgeSearchLabel,
       en.inventoryFilterHeroLabel,
+      en.inventoryFilterSetsLabel,
       en.forgeSlotLabel,
       en.forgeBandLabel,
     ].map((label) => positionOf(html, `aria-label="${label}"`));
@@ -103,7 +134,7 @@ describe('ForgeToolbar', () => {
     const search = new RegExp(`<input[^>]*aria-label="${en.forgeSearchLabel}"[^>]*>`).exec(html)?.[0] ?? '';
     expect(search).toContain('w-full');
     expect(search).toContain('h-[30px]');
-    for (const label of [en.inventoryFilterHeroLabel, en.forgeSlotLabel, en.forgeBandLabel]) {
+    for (const label of [en.inventoryFilterHeroLabel, en.inventoryFilterSetsLabel, en.forgeSlotLabel, en.forgeBandLabel]) {
       expect(new RegExp(`<[a-z]+[^>]*aria-label="${label}"[^>]*>`).exec(html)?.[0] ?? '').toContain('h-[30px]');
     }
   });
