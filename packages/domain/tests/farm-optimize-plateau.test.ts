@@ -114,10 +114,11 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
     // collapses to a single point. That is spec-sanctioned behaviour, not an accident: min and
     // max both equal the winner's own share, never null, never an invented width.
     //
-    // 0.4548 on `save-20260914-9heroes-second-account.json`. The single-point collapse has held
-    // through every re-measurement on every roster; only the winning BUILD ever moved it.
-    expect(plateau.minEnergyShare).toBeCloseTo(0.45481927710843373, 4);
-    expect(plateau.maxEnergyShare).toBeCloseTo(0.45481927710843373, 4);
+    // 0.6415 on `save-20260914-9heroes-second-account.json` (0.4548 before the from-zero search
+    // of 2026-09-18 moved the winning build). The single-point collapse has held through every
+    // re-measurement on every roster; only the winning BUILD ever moved it.
+    expect(plateau.minEnergyShare).toBeCloseTo(0.6414762741652021, 4);
+    expect(plateau.maxEnergyShare).toBeCloseTo(0.6414762741652021, 4);
     expect(plateau.minEnergyShare).toBe(plateau.maxEnergyShare);
   });
 

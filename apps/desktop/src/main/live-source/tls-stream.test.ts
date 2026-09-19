@@ -328,8 +328,9 @@ describe('TlsConnections: HTTP recognition', () => {
     expect(events).toEqual([{ kind: 'http', status: 204 }]);
   });
 
-  it('gives up classifying a connection after 8 MiB of unrecognisable bytes', () => {
-    const conn = new TlsConnections();
+  it('gives up classifying a connection after 8 MiB of unrecognisable bytes, and says so once', () => {
+    const warnings: Record<string, unknown>[] = [];
+    const conn = new TlsConnections({ log: { warn: (record) => warnings.push(record) } });
     const noise = Buffer.alloc(256 * 1024, 0x00);
     for (let i = 0; i < 32; i += 1) {
       expect(conn.push('noise', noise)).toEqual([]);
@@ -337,6 +338,68 @@ describe('TlsConnections: HTTP recognition', () => {
 
     const valid = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [] })));
     expect(conn.push('noise', valid)).toEqual([]);
+    expect(warnings).toEqual([
+      { scope: 'live-source', event: 'live-source.connection_ignored', reason: 'unrecognised_bytes', bytes: 8 * 1024 * 1024 },
+    ]);
+  });
+});
+
+describe('TlsConnections: resyncing to the next response behind bytes that are not one', () => {
+  const duelResult = buildRawHttpResponse(200, ['Content-Length: 25'], '{"venceu":true,"filme":6}');
+
+  it('attached in the middle of a body, delivers the next response on that connection instead of burying it', () => {
+    const warnings: Record<string, unknown>[] = [];
+    const conn = new TlsConnections({ log: { warn: (record) => warnings.push(record) } });
+    const tailOfSomeBody = Buffer.from('"export_lock_secs":0}]}', 'utf8');
+
+    expect(conn.push('mid-body', tailOfSomeBody)).toEqual([]);
+    expect(conn.push('mid-body', duelResult)).toEqual([{ kind: 'http', status: 200, body: Buffer.from('{"venceu":true,"filme":6}') }]);
+    expect(warnings).toEqual([
+      { scope: 'live-source', event: 'live-source.http_resynced', reason: 'unrecognised_prefix', discardedBytes: tailOfSomeBody.length },
+    ]);
+    expect(conn.push('mid-body', duelResult)).toHaveLength(1);
+  });
+
+  it('delivers a response the client sent on a reused connection whose previous body it abandoned mid-way', () => {
+    const warnings: Record<string, unknown>[] = [];
+    const conn = new TlsConnections({ log: { warn: (record) => warnings.push(record) } });
+    const abandoned = Buffer.concat([
+      Buffer.from('HTTP/1.1 200 OK\r\nContent-Length: 128000\r\n\r\n', 'latin1'),
+      Buffer.from('{"items":[{"id":1', 'utf8'),
+    ]);
+
+    expect(conn.push('0x1f3a', abandoned)).toEqual([]);
+    expect(conn.push('0x1f3a', duelResult)).toEqual([{ kind: 'http', status: 200, body: Buffer.from('{"venceu":true,"filme":6}') }]);
+    expect(warnings).toEqual([
+      { scope: 'live-source', event: 'live-source.http_resynced', reason: 'body_cut_short', discardedBytes: abandoned.length },
+    ]);
+  });
+
+  it('keeps waiting for a declared body that is still arriving — the resync needs a whole header, not a status line', () => {
+    const conn = new TlsConnections();
+    const head = Buffer.from('HTTP/1.1 200 OK\r\nContent-Length: 40\r\n\r\n', 'latin1');
+    const bodyMentioningHttp = Buffer.from('{"note":"HTTP/1.1 200 OK is not a resync","z":0}', 'utf8').subarray(0, 40);
+
+    expect(conn.push('honest', head)).toEqual([]);
+    expect(conn.push('honest', bodyMentioningHttp.subarray(0, 30))).toEqual([]);
+    expect(conn.push('honest', bodyMentioningHttp.subarray(30))).toEqual([{ kind: 'http', status: 200, body: bodyMentioningHttp }]);
+  });
+
+  it('finds a response whose header straddles two reads behind the junk', () => {
+    const conn = new TlsConnections();
+    const junk = Buffer.alloc(3000, 0x2a);
+    const split = 20;
+
+    expect(conn.push('straddle', Buffer.concat([junk, duelResult.subarray(0, split)]))).toEqual([]);
+    expect(conn.push('straddle', duelResult.subarray(split))).toEqual([{ kind: 'http', status: 200, body: Buffer.from('{"venceu":true,"filme":6}') }]);
+  });
+
+  it('still recovers a combat frame behind junk, the resync the websocket side already had', () => {
+    const conn = new TlsConnections();
+    const frame = buildServerTextFrame(Buffer.from(JSON.stringify({ t: 'snap', heroes: [] })));
+
+    const events = conn.push('ws-after-junk', Buffer.concat([Buffer.from('garbage', 'latin1'), frame]));
+    expect(events.map((event) => event.kind)).toEqual(['tick']);
   });
 });
 
@@ -510,20 +573,27 @@ describe('TlsConnections: HTTP body reassembly', () => {
   });
 
   it('gives up on a declared body that never fully arrives, rather than buffering it without limit', () => {
-    const conn = new TlsConnections();
-    const headers = 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 999999\r\n\r\n';
+    const warnings: Record<string, unknown>[] = [];
+    const conn = new TlsConnections({ log: { warn: (record) => warnings.push(record) } });
+    const headers = 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 99999999\r\n\r\n';
     expect(conn.push('runaway-body', Buffer.from(headers, 'latin1'))).toEqual([]);
 
-    const chunk = Buffer.alloc(4096, 0x61);
-    let lastEvents: TapEvent[] = [];
-    for (let i = 0; i < 80; i += 1) {
-      lastEvents = conn.push('runaway-body', chunk);
+    const chunk = Buffer.alloc(256 * 1024, 0x61);
+    for (let i = 0; i < 32; i += 1) {
+      expect(conn.push('runaway-body', chunk)).toEqual([]);
     }
 
-    expect(lastEvents).toEqual([]);
-    // Once the connection has given up (256 KiB — see GIVEUP_BYTES's own justification), further
+    // Once the connection has given up (8 MiB — see GIVEUP_BYTES's own justification), further
     // bytes are discarded outright rather than kept in an ever-growing buffer.
     expect(conn.push('runaway-body', chunk)).toEqual([]);
+    expect(warnings).toEqual([
+      {
+        scope: 'live-source',
+        event: 'live-source.connection_ignored',
+        reason: 'body_never_completed',
+        bytes: headers.length + 32 * 256 * 1024,
+      },
+    ]);
   });
 });
 

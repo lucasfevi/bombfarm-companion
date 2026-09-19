@@ -55,6 +55,21 @@ still arriving it buffers rather than scanning the half-body for a frame start, 
 body is arbitrary bytes. What it still skips, and says so: a body with neither a length nor
 chunked framing, and an encoding it cannot inflate.
 
+The second duel it lost (2026-09-18) was lost while the tap was hooked and healthy, with nothing in
+the log at all. The decoder keys its per-connection state on the TLS context's address, which the
+client frees on close and reuses for the next connection; and until then it only recognised a
+response at the *front* of a connection's buffer. So a connection the hook attached to mid-body,
+or one whose declared body the client abandoned by closing — leaving its tail for whichever
+connection got the address next — buried every later response behind the junk until the 8 MiB
+cap, then dropped the connection to `ignore`, silently. The `/pvp/state` poll came through a clean
+connection; the result 1.5 s later and the film did not. The decoder now scans forward for the
+next complete response header — a status line *and* the blank line that closes the header block,
+never a status line alone, since a body is arbitrary bytes — the same prove-it-first resync the
+websocket side already had for frames, and logs `live-source.http_resynced` with the discarded
+byte count (`unrecognised_prefix` or `body_cut_short`). Reaching the cap is logged too, as
+`live-source.connection_ignored`; it is no longer reachable while a later response exists to
+resync to.
+
 ## What the film says about the opponent, and what it cannot
 
 A result names the opponent, their hero count and their score, and nothing else; `estado` is the
@@ -145,9 +160,12 @@ bridge. Nothing per hero: see the section above on why. The chart's axis prints 
 (`100k`), and the pointer over the plot names the second under it — a hairline, a dot on each
 series, and the legend swapping its final totals for that second's. The SVG keeps its aspect
 ratio, so the pointer maps back through one scale (`secondAtPointer`, pure and tested). The
-panel's close is the corner icon, not a word. Beside the open replay the rivals panel takes its
-height and scrolls inside it (`fill`); alone, the rivals table caps at eight rows and the duel
-list at twelve.
+panel's close is the corner icon, not a word. The rivals table and the duel list each show ten
+rows under a sticky header and scroll the rest, at the same height alone or beside the replay,
+and each mounts only a window of rows around the visible band over spacer rows that hold the
+scroll height (`renderer/lib/row-window.ts`; the pinned row heights are in
+`renderer/lib/pvp/pvp-table-rows.ts`, measured in the running app). `aria-rowcount` on the table
+and `aria-rowindex` on each mounted row carry the count a DOM row count no longer can.
 
 ## The list's filters
 

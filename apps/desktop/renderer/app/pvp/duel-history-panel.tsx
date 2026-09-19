@@ -19,11 +19,13 @@ import {
   tierNumberOf,
   type PvpResultFilter,
 } from '../../lib/pvp/pvp-rows';
+import { DUEL_ROW_HEIGHT_PX, HEADER_HEIGHT_PX, VISIBLE_ROWS } from '../../lib/pvp/pvp-table-rows';
 import { usePvpFilters } from '../../lib/pvp/use-pvp-filters';
+import { scrollportHeightPx, useRowWindow } from '../../lib/row-window';
+import { RowWindowSpacer } from '../../lib/row-window-spacer';
 
-/** Twelve rows under the sticky header before the table scrolls: a session's quota several
- *  times over, and the screen still keeps its footnote in view. */
-const TABLE_MAX_ROWS = 12;
+const COLUMNS = 8;
+const SCROLLPORT_HEIGHT_PX = scrollportHeightPx(VISIBLE_ROWS, DUEL_ROW_HEIGHT_PX, HEADER_HEIGHT_PX);
 
 type HeroById = ReadonlyMap<string, HeroRecord>;
 
@@ -63,6 +65,7 @@ export function DuelHistoryPanel({
     () => (chosenOpponent === ALL_OPPONENTS ? null : headToHead(rows, chosenOpponent)),
     [rows, chosenOpponent],
   );
+  const windowed = useRowWindow(shown, VISIBLE_ROWS, DUEL_ROW_HEIGHT_PX);
 
   const resultOptions = [
     { id: 'all', label: t.pvpFilterResultAll },
@@ -147,8 +150,13 @@ export function DuelHistoryPanel({
               {t.pvpFilterEmpty}
             </p>
           ) : (
-            <DataTable.Root scrollable maxRows={TABLE_MAX_ROWS}>
-              <DataTable.Table>
+            <DataTable.Root
+              scrollable
+              style={{ maxHeight: SCROLLPORT_HEIGHT_PX }}
+              onScroll={windowed.onScroll}
+              data-testid="pvp-history-scroll"
+            >
+              <DataTable.Table aria-rowcount={windowed.total}>
                 <DataTable.Caption>{t.pvpCaption}</DataTable.Caption>
                 <DataTable.Head>
                   <DataTable.Row>
@@ -180,15 +188,32 @@ export function DuelHistoryPanel({
                   </DataTable.Row>
                 </DataTable.Head>
                 <DataTable.Body data-testid="pvp-history-body">
-                  {shown.map((row) => (
+                  {windowed.start > 0 ? (
+                    <RowWindowSpacer
+                      testId="pvp-history-spacer-top"
+                      rows={windowed.start}
+                      rowHeightPx={DUEL_ROW_HEIGHT_PX}
+                      colSpan={COLUMNS}
+                    />
+                  ) : null}
+                  {windowed.rows.map((row, index) => (
                     <DuelRow
                       key={row.id}
                       row={row}
                       heroById={heroById}
                       onOpenReplay={onOpenReplay}
                       open={openFilmId !== null && row.filmId === openFilmId}
+                      ariaRowIndex={windowed.start + index + 1}
                     />
                   ))}
+                  {windowed.end < windowed.total ? (
+                    <RowWindowSpacer
+                      testId="pvp-history-spacer-bottom"
+                      rows={windowed.total - windowed.end}
+                      rowHeightPx={DUEL_ROW_HEIGHT_PX}
+                      colSpan={COLUMNS}
+                    />
+                  ) : null}
                 </DataTable.Body>
               </DataTable.Table>
             </DataTable.Root>
@@ -207,17 +232,25 @@ function DuelRow({
   heroById,
   onOpenReplay,
   open,
+  ariaRowIndex,
 }: {
   row: PvpDuelRow;
   heroById: HeroById;
   onOpenReplay: ((row: PvpDuelRow) => void) | undefined;
   open: boolean;
+  ariaRowIndex: number;
 }) {
   const t = useCopy();
   const { locale } = useLocale();
 
   return (
-    <DataTable.Row data-testid="pvp-duel-row" data-duel-id={row.id} data-film-stored={row.filmStored ? 'true' : 'false'}>
+    <DataTable.Row
+      data-testid="pvp-duel-row"
+      data-duel-id={row.id}
+      data-film-stored={row.filmStored ? 'true' : 'false'}
+      aria-rowindex={ariaRowIndex}
+      style={{ height: DUEL_ROW_HEIGHT_PX }}
+    >
       <DataTable.RowHeader>{formatCapturedAt(row.recordedAt, t)}</DataTable.RowHeader>
       <DataTable.Cell data-testid="pvp-squad" data-count={row.squadHeroIds.length}>
         <SquadStack heroIds={row.squadHeroIds} heroById={heroById} />

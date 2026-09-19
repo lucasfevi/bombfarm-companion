@@ -5,15 +5,15 @@
  * the committed fixture — but it held by ACCIDENT, not by enforcement, and passed for months
  * while the code had no such guarantee:
  *
- * - five of the six seeds build `attack + energy` FROM the budget, so they satisfy it by
- *   construction;
- * - the sixth, `'current'`, seeded straight from `basis.pts` with no clamp;
+ * - every seed builds `attack + energy` FROM the budget, so the seeds satisfy it by construction;
+ * - the incumbent — the player's own build, which the search falls back to — was taken straight
+ *   from `basis.pts` with no clamp;
  * - and every one of the 260 local-search moves is a TRANSFER, so the total never changes again.
  *
- * An over-spent hero therefore carried its excess through the whole search and out into the
- * recommendation — but only if a `'current'`-derived candidate won, and on the committed corpus a
- * budget-built seed happened to win instead. Changing the objective (the FIFO field queue) moved
- * the winner and the violation appeared with no change to the budget code at all.
+ * An over-spent hero therefore carried its excess out into the recommendation — but only when the
+ * incumbent won, and on the committed corpus the search happened to beat it instead. Changing the
+ * objective (the FIFO field queue) moved the winner and the violation appeared with no change to
+ * the budget code at all.
  *
  * So this file constructs the over-spent hero ITSELF rather than relying on a capture to contain
  * one. That is the whole point: the corpus is being cleaned up, the fixture that happened to
@@ -73,16 +73,15 @@ describe('no proposal exceeds the hero own reoptBudget, even from an over-spent 
   /**
    * THE DISCRIMINATING CASE, and the reason the rest of this file is not enough on its own.
    *
-   * Whether an over-spent build reaches the output depends on whether a `'current'`-derived
-   * candidate WINS, and on a healthy roster it usually does not — a budget-built seed out-scores
-   * it and the violation stays hidden. That is precisely how this shipped: the invariant was
-   * asserted, and passed, for months.
+   * Whether an over-spent build reaches the output depends on whether the incumbent WINS, and on
+   * a healthy roster it usually does not — the search beats it and the violation stays hidden.
+   * That is precisely how this shipped: the invariant was asserted, and passed, for months.
    *
-   * An evaluation budget of 1 removes the luck. `'current'` is the first of the six seeds, so one
-   * evaluation buys exactly that seed and nothing else; it wins by being the only candidate, and
-   * the search returns it unimproved. Whatever the seed carries is what comes out.
+   * An evaluation budget of 1 removes the luck. The incumbent is evaluated before any seed, so one
+   * evaluation buys exactly it and nothing else; it wins by being the only candidate, and the
+   * search returns it unimproved. Whatever the incumbent carries is what comes out.
    */
-  it('the current-build seed itself is clamped — forced to win with an evaluation budget of 1', () => {
+  it('the incumbent itself is clamped — forced to win with an evaluation budget of 1', () => {
     const roster = heroes.map((hero, index) => (index === 0 ? overSpend(hero, 12) : hero));
     const bases = computeHeroFarmBases({ heroes: roster, account });
     const budgetById = new Map(bases.map((b) => [b.heroId, reoptBudget(b.pts, b.level)] as const));

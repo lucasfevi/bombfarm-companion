@@ -685,7 +685,7 @@ export function solveFarmRespec(input: FarmRespecInput): FarmRespecResult {
   const heroEntries = buildHeroEntries(bases, currentFactsById, budgetById, search.winner.assignment);
   const keptCurrent = heroEntries.every((h) => !h.changed);
 
-  // Recomputed independently of the search's own 'current' seed so the CURRENT side of the
+  // Recomputed independently of the search's own incumbent so the CURRENT side of the
   // result never depends on internal search bookkeeping — zero pipeline calls, not counted.
   // Both sides re-run the phase argmax exhaustively: the search's thousands of in-flight picks
   // may take the screen-and-refine shortcut, but a rare screen miss must only cost a slightly

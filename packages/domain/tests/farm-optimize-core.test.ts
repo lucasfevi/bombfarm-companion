@@ -148,20 +148,31 @@ describe('the total tie-break comparator, one case per rule', () => {
     return { name, assignment, value, pick: null, squad: {} as FarmCandidate['squad'] };
   }
 
-  it('rule 2 — equal value, fewer points moved wins, EVEN AGAINST what rule 4 (lexicographic) alone would pick', () => {
-    // Deliberately adversarial to rule 4: a moves 1 point (attack 10->11) and would LOSE the
-    // lexicographic tie-break on its own (11 > b's 9 at the first-compared key, 'attack'). b
-    // moves 3 points (attack 10->9, energy 10->12) and would WIN lexicographic alone. If rule 2
-    // were dropped, both tie on heroesChanged (1 each) and the comparator would fall straight to
-    // rule 4 and pick b — the exact regression this case exists to catch.
+  it('rule 2 — equal value, fewer points refunded wins, EVEN AGAINST what rule 5 (lexicographic) alone would pick', () => {
+    // Deliberately adversarial to rule 5: a refunds nothing (attack 10->11, add-only) and would
+    // LOSE the lexicographic tie-break on its own (11 > b's 9 at the first-compared key,
+    // 'attack'). b refunds 1 point (attack 10->9, energy 10->12) and would WIN lexicographic
+    // alone. If rule 2 were dropped, both tie on heroesChanged (1 each) and the comparator would
+    // fall straight to rule 5 and pick b — the exact regression this case exists to catch.
     const bases = [fakeBasis('h1', { attack: 10, energy: 10 })];
-    const a = fakeCandidate('a', 100, new Map([['h1', { ...bases[0].pts, attack: 11 }]])); // 1 point moved
-    const b = fakeCandidate('b', 100, new Map([['h1', { ...bases[0].pts, attack: 9, energy: 12 }]])); // 3 points moved
+    const a = fakeCandidate('a', 100, new Map([['h1', { ...bases[0].pts, attack: 11 }]])); // 0 refunded
+    const b = fakeCandidate('b', 100, new Map([['h1', { ...bases[0].pts, attack: 9, energy: 12 }]])); // 1 refunded
     expect(compareFarmCandidates(a, b, bases)).toBeLessThan(0);
     expect(compareFarmCandidates(b, a, bases)).toBeGreaterThan(0);
   });
 
-  it('rule 3 — equal value, equal points moved, fewer heroes changed wins', () => {
+  it('rule 3 — equal value, nothing refunded either way, more points placed wins: a banked point spent beats one left', () => {
+    // The unchanged vector refunds nothing and neither does the add-only one; the add-only one
+    // places more. Under the old "fewer points moved" rule the unchanged vector won this tie and
+    // a hero's banked points stayed banked whenever spending them did not move the objective.
+    const bases = [fakeBasis('h1', { attack: 10, energy: 10 })];
+    const unchanged = fakeCandidate('unchanged', 100, new Map([['h1', { ...bases[0].pts }]]));
+    const addOnly = fakeCandidate('addOnly', 100, new Map([['h1', { ...bases[0].pts, attack: 12 }]]));
+    expect(compareFarmCandidates(addOnly, unchanged, bases)).toBeLessThan(0);
+    expect(compareFarmCandidates(unchanged, addOnly, bases)).toBeGreaterThan(0);
+  });
+
+  it('rule 4 — equal value, equal points refunded and placed, fewer heroes changed wins', () => {
     const bases = [fakeBasis('h1', { attack: 10 }), fakeBasis('h2', { attack: 10 })];
     // a: 2 points moved on ONE hero.
     const a = fakeCandidate('a', 100, new Map([['h1', { ...bases[0].pts, attack: 12 }]]));
@@ -178,7 +189,7 @@ describe('the total tie-break comparator, one case per rule', () => {
     expect(compareFarmCandidates(b, a, bases)).toBeGreaterThan(0);
   });
 
-  it('rule 4 — equal value, equal points moved, equal heroes changed, lexicographic by (heroId, REOPT_KEYS order) wins', () => {
+  it('rule 5 — equal value, equal points refunded and placed, equal heroes changed, lexicographic by (heroId, REOPT_KEYS order) wins', () => {
     const bases = [fakeBasis('h1', { attack: 10, energy: 10 }), fakeBasis('h2', { attack: 10, energy: 10 })];
     // a moves 1 attack->energy on h1 (the lexicographically FIRST hero id).
     const a = fakeCandidate('a', 100, new Map([['h1', { ...bases[0].pts, attack: 9, energy: 11 }]]));
@@ -189,7 +200,7 @@ describe('the total tie-break comparator, one case per rule', () => {
     expect(compareFarmCandidates(b, a, bases)).toBeGreaterThan(0);
   });
 
-  it('all four rules equal ⇒ the assignments are proven identical', () => {
+  it('all five rules equal ⇒ the assignments are proven identical', () => {
     const bases = [fakeBasis('h1', { attack: 10, energy: 5 })];
     const sharedVector = { ...bases[0].pts, attack: 8, energy: 7 };
     const a = fakeCandidate('a', 100, new Map([['h1', { ...sharedVector }]]));
