@@ -6,12 +6,14 @@ import { Button, cn, DataTable, InfoTip, Panel, PanelHeader } from '@bombfarm/ui
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { formatCapturedAt, formatCount, formatGainPct } from '../../lib/format';
 import { rivalRecords, type RivalRecord } from '../../lib/pvp/pvp-rivals';
+import { HEADER_HEIGHT_PX, RIVAL_ROW_HEIGHT_PX, VISIBLE_ROWS } from '../../lib/pvp/pvp-table-rows';
 import { usePvpFilters } from '../../lib/pvp/use-pvp-filters';
+import { scrollportHeightPx, useRowWindow } from '../../lib/row-window';
+import { RowWindowSpacer } from '../../lib/row-window-spacer';
 
-const TABLE_MAX_ROWS = 8;
-/** The same cap as `maxRows`, as a class the xl breakpoint can lift; the row height is DataTable's default. */
-const FILL_CAP_BELOW_XL = 'max-h-[calc(2rem*8)]';
 const FEWEST_RIVALS = 2;
+const COLUMNS = 4;
+const SCROLLPORT_HEIGHT_PX = scrollportHeightPx(VISIBLE_ROWS, RIVAL_ROW_HEIGHT_PX, HEADER_HEIGHT_PX);
 
 function toneOf(sign: number): string | undefined {
   if (sign > 0) return 'text-up';
@@ -19,29 +21,16 @@ function toneOf(sign: number): string | undefined {
   return undefined;
 }
 
-export function RivalsPanel({
-  history,
-  className,
-  fill = false,
-}: {
-  history: PvpHistoryResult | null;
-  className?: string;
-  /** Beside an open replay the panel takes the replay's height and its table scrolls inside it;
-   *  alone, or stacked over the replay on a narrow window, the table caps itself at
-   *  {@link TABLE_MAX_ROWS} rows. */
-  fill?: boolean;
-}) {
+/** The top {@link VISIBLE_ROWS} rivals under the header, the rest behind a scrollbar — the same
+ *  height alone, stacked over the replay, or beside it. */
+export function RivalsPanel({ history, className }: { history: PvpHistoryResult | null; className?: string }) {
   const t = useCopy();
   const rivals = useMemo(() => rivalRecords(history?.rows ?? []), [history]);
   const few = rivals.length < FEWEST_RIVALS;
+  const windowed = useRowWindow(rivals, VISIBLE_ROWS, RIVAL_ROW_HEIGHT_PX);
 
   return (
-    <Panel
-      data-testid="pvp-rivals"
-      data-state={few ? 'few' : 'rivals'}
-      data-fill={fill ? 'replay' : undefined}
-      className={cn(fill && 'xl:flex', fill && 'xl:h-full', fill && 'xl:min-h-0', fill && 'xl:flex-col', className)}
-    >
+    <Panel data-testid="pvp-rivals" data-state={few ? 'few' : 'rivals'} className={cn('xl:self-start', className)}>
       <PanelHeader title={t.pvpRivalsTitle}>
         {few ? null : <span className="text-xs text-muted">{t.pvpRivalsNote}</span>}
       </PanelHeader>
@@ -52,9 +41,11 @@ export function RivalsPanel({
       ) : (
         <DataTable.Root
           scrollable
-          {...(fill ? { className: cn(FILL_CAP_BELOW_XL, 'xl:max-h-none', 'xl:flex-1') } : { maxRows: TABLE_MAX_ROWS })}
+          style={{ maxHeight: SCROLLPORT_HEIGHT_PX }}
+          onScroll={windowed.onScroll}
+          data-testid="pvp-rivals-scroll"
         >
-          <DataTable.Table>
+          <DataTable.Table aria-rowcount={windowed.total}>
             <DataTable.Head>
               <DataTable.Row>
                 <DataTable.Header scope="col">{t.pvpColumnOpponent}</DataTable.Header>
@@ -74,9 +65,25 @@ export function RivalsPanel({
               </DataTable.Row>
             </DataTable.Head>
             <DataTable.Body data-testid="pvp-rivals-body">
-              {rivals.map((rival) => (
-                <RivalRow key={rival.name} rival={rival} />
+              {windowed.start > 0 ? (
+                <RowWindowSpacer
+                  testId="pvp-rivals-spacer-top"
+                  rows={windowed.start}
+                  rowHeightPx={RIVAL_ROW_HEIGHT_PX}
+                  colSpan={COLUMNS}
+                />
+              ) : null}
+              {windowed.rows.map((rival, index) => (
+                <RivalRow key={rival.name} rival={rival} ariaRowIndex={windowed.start + index + 1} />
               ))}
+              {windowed.end < windowed.total ? (
+                <RowWindowSpacer
+                  testId="pvp-rivals-spacer-bottom"
+                  rows={windowed.total - windowed.end}
+                  rowHeightPx={RIVAL_ROW_HEIGHT_PX}
+                  colSpan={COLUMNS}
+                />
+              ) : null}
             </DataTable.Body>
           </DataTable.Table>
         </DataTable.Root>
@@ -85,7 +92,7 @@ export function RivalsPanel({
   );
 }
 
-function RivalRow({ rival }: { rival: RivalRecord }) {
+function RivalRow({ rival, ariaRowIndex }: { rival: RivalRecord; ariaRowIndex: number }) {
   const t = useCopy();
   const { locale } = useLocale();
   const { opponent, setOpponent } = usePvpFilters();
@@ -102,6 +109,8 @@ function RivalRow({ rival }: { rival: RivalRecord }) {
       data-testid="pvp-rival-row"
       data-opponent={rival.name}
       data-chosen={chosen ? 'true' : 'false'}
+      aria-rowindex={ariaRowIndex}
+      style={{ height: RIVAL_ROW_HEIGHT_PX }}
       onClick={pick}
       className={cn('cursor-pointer', 'hover:bg-[color-mix(in_oklch,var(--line)_28%,transparent)]')}
     >

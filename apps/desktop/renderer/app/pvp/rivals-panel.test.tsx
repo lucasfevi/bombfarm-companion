@@ -50,8 +50,8 @@ function history(rows: PvpDuelRow[]): PvpHistoryResult {
   };
 }
 
-function render(rows: PvpDuelRow[] | null, fill = false): string {
-  return renderToStaticMarkup(createElement(RivalsPanel, { history: rows === null ? null : history(rows), fill }));
+function render(rows: PvpDuelRow[] | null): string {
+  return renderToStaticMarkup(createElement(RivalsPanel, { history: rows === null ? null : history(rows) }));
 }
 
 describe('RivalsPanel', () => {
@@ -99,16 +99,24 @@ describe('RivalsPanel', () => {
     expect(html).toMatch(/data-testid="pvp-rival-margin" class=""><span aria-hidden="true">—<\/span>/);
   });
 
-  it('caps the table at eight scrolling rows alone, and lets it fill the replay beside it on a wide window', () => {
-    const rows = [row(1, 'Ana', true), row(2, 'Bruno', false)];
-    const alone = render(rows);
-    expect(alone).toMatch(/class="isolate min-h-0 overflow-auto" style="max-height:calc\(2rem \* 8\)"/);
-    expect(alone).not.toContain('data-fill=');
-    const beside = render(rows, true);
-    expect(beside).toContain('data-testid="pvp-rivals" data-state="rivals" data-fill="replay"');
-    expect(beside).toMatch(/<section class="[^"]*xl:flex xl:h-full xl:min-h-0 xl:flex-col"[^>]*data-fill="replay"/);
-    expect(beside).toContain('class="isolate min-h-0 overflow-auto max-h-[calc(2rem*8)] xl:max-h-none xl:flex-1"');
-    expect(beside).not.toContain('style="max-height');
+  it('shows ten rows under the header and scrolls the rest, the same height beside the replay as alone', () => {
+    const html = render([row(1, 'Ana', true), row(2, 'Bruno', false)]);
+    expect(html).toMatch(/<section class="[^"]*xl:self-start" data-testid="pvp-rivals" data-state="rivals">/);
+    expect(html).toMatch(/class="isolate min-h-0 overflow-auto" style="max-height:339px" data-testid="pvp-rivals-scroll"/);
+    expect(html).toMatch(/data-testid="pvp-rival-row"[^>]*style="height:31px"/);
+    expect(html).not.toContain('data-fill=');
+  });
+
+  it('mounts only the first twenty of many rivals and a spacer standing in for the rest, counting them all for assistive tech', () => {
+    const rows = Array.from({ length: 40 }, (_, index) => row(index + 1, `Rival ${String(index + 1).padStart(2, '0')}`, index % 3 === 0));
+    const html = render(rows);
+    expect(html).toContain('aria-rowcount="40"');
+    expect(html.match(/data-testid="pvp-rival-row"/g)).toHaveLength(20);
+    expect(html).toContain('aria-rowindex="1"');
+    expect(html).toContain('aria-rowindex="20"');
+    expect(html).not.toContain('aria-rowindex="21"');
+    expect(html).not.toContain('data-testid="pvp-rivals-spacer-top"');
+    expect(html).toMatch(/data-testid="pvp-rivals-spacer-bottom"><td colSpan="4" style="height:620px;padding:0;border:0"><\/td>/);
   });
 
   it('says rivals need two opponents instead of drawing a one-row table, and the same with no history at all', () => {
