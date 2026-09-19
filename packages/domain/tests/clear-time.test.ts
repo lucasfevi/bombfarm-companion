@@ -160,9 +160,22 @@ describe('simulateClear', () => {
 
   it('a squad that cannot damage anything never clears', () => {
     const props = mixAt(525_000);
-    expect(simulateClear([hero({ hitNoCrit: 0 })], props, 100)).toBe(UNCLEARABLE);
     expect(simulateClear([], props, 100)).toBe(UNCLEARABLE);
-    expect(simulateClear([hero({ presence: 0 })], props, 100)).toBe(UNCLEARABLE);
+    for (const squad of [[hero({ hitNoCrit: 0 })], [hero({ presence: 0 })]]) {
+      const result = simulateClear(squad, props, 100);
+      expect(result.clearSecs).toBe(Infinity);
+      expect(result.expectedHtk).toBe(Infinity);
+      expect(result.killShareByHero).toEqual([0]);
+    }
+  });
+
+  it('kill shares follow the hit: sum to one, and the harder hitter takes the larger share', () => {
+    const props = mixAt(525_000);
+    const result = simulateClear([hero({ hitNoCrit: 100_000 }), hero({ hitNoCrit: 400_000 }), hero({ presence: 0 })], props, 100);
+    expect(result.killShareByHero).toHaveLength(3);
+    expect(result.killShareByHero[0] + result.killShareByHero[1]).toBeCloseTo(1, 12);
+    expect(result.killShareByHero[2]).toBe(0);
+    expect(result.killShareByHero[1]).toBeGreaterThan(result.killShareByHero[0]);
   });
 
   it('an empty map costs only the head', () => {

@@ -21,6 +21,8 @@ import {
 import { wikiPhaseLine, WIKI_PROPS, LOOT_ABILITY_VALUES, DROP_RATES } from '@bombfarm/domain/phase-wiki';
 import { hitsToKill, propHp } from '@bombfarm/domain/phases';
 import { mitigationFactor, EFF_IA, FUSE_FLOOR, STAT_CAPS } from '@bombfarm/domain/model';
+import { simulateClear } from '@bombfarm/domain/model/clear-time';
+import { propCountForAto } from '@bombfarm/domain/phase-wiki';
 import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
 import { loadFarmRateFixture, withAbilityLevels } from './helpers/farm-rate-fixtures';
 
@@ -35,16 +37,23 @@ function handEHtk(stoneHp: number, avgHit: number): number {
     0,
   );
 }
-function heroShare(heroFacts: readonly HeroFarmFacts[], targetId: string, line: { hp: number; mitig: number }): number {
-  const terms = heroFacts.map((hero) => {
-    const avgHit = hero.avgHitBase * mitigationFactor(line.mitig, hero.penetrationPct);
-    const eHtk = handEHtk(line.hp, avgHit);
-    const hps = hero.plantsPerSec * hero.blocksPerBomb * EFF_IA;
-    return { id: hero.heroId, term: (hps * hero.uptime) / eHtk };
-  });
-  const denom = terms.reduce((sum, t) => sum + t.term, 0);
-  const targetTerm = terms.find((t) => t.id === targetId)!.term;
-  return denom > 0 ? targetTerm / denom : 0;
+/** The hero's share of the clear's kills — what its Veia de Ouro reaches — from the same integral
+ *  the row runs, fed the unconstrained presences (the House and field are held open here). */
+function heroShare(heroFacts: readonly HeroFarmFacts[], targetId: string, line: { hp: number; mitig: number; ato: number }): number {
+  const clear = simulateClear(
+    heroFacts.map((hero) => ({
+      presence: hero.uptime,
+      fuseSecs: hero.fuseSecs,
+      walkSpeedCells: hero.walkSpeedCells,
+      blastCells: hero.blastCells!,
+      hitNoCrit: hero.hitNoCritBase! * mitigationFactor(line.mitig, hero.penetrationPct),
+      critChance: Math.min(hero.critChancePct!, STAT_CAPS.critChance) / 100,
+      critMult: 1 + hero.critDmgPct! / 100,
+    })),
+    WIKI_PROPS.map((prop) => ({ hp: propHp(line.hp, prop.hpMult), weight: prop.weight })),
+    propCountForAto(line.ato),
+  );
+  return clear.killShareByHero[heroFacts.findIndex((hero) => hero.heroId === targetId)];
 }
 
 /**

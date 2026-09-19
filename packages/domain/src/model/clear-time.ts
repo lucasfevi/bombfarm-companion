@@ -73,6 +73,9 @@ export const HEAD_HOP_CELLS = 10;
 export const ACTIVE_PER_PROP = 1.9;
 export const ACTIVE_EXTRA = 1.5;
 
+/** Standing props per prop killed in one integration step; under this many, one prop per step. */
+const COARSE_STEP_ABOVE = 20;
+
 /** Above this many hits the crit-averaged hit is exact to under 1% (central limit) and cheaper. */
 const CRIT_ROLL_MAX_HITS = 60;
 
@@ -103,9 +106,19 @@ export type ClearResult = {
   clearSecs: number;
   /** Hits landed per prop killed, over the whole clear. `Infinity` with `clearSecs`. */
   expectedHtk: number;
+  /** Each hero's share of the kills, in `heroes` order, summing to 1; all zero with `clearSecs`. */
+  killShareByHero: readonly number[];
 };
 
-export const UNCLEARABLE: ClearResult = Object.freeze({ clearSecs: Infinity, expectedHtk: Infinity });
+export const UNCLEARABLE: ClearResult = Object.freeze({
+  clearSecs: Infinity,
+  expectedHtk: Infinity,
+  killShareByHero: Object.freeze([]),
+});
+
+function unclearable(heroCount: number): ClearResult {
+  return heroCount === 0 ? UNCLEARABLE : { clearSecs: Infinity, expectedHtk: Infinity, killShareByHero: new Array<number>(heroCount).fill(0) };
+}
 
 /**
  * Expected hits until accumulated damage reaches `hp`, rolling the crit on every hit.
@@ -162,103 +175,154 @@ export function simulateClear(
   props: readonly ClearPropType[],
   propCount: number,
 ): ClearResult {
-  if (!(propCount > 0) || props.length === 0) return { clearSecs: FIRST_KILL_SEC, expectedHtk: 0 };
+  if (!(propCount > 0) || props.length === 0) {
+    return { clearSecs: FIRST_KILL_SEC, expectedHtk: 0, killShareByHero: new Array<number>(heroes.length).fill(0) };
+  }
   const weightSum = props.reduce((sum, prop) => sum + Math.max(0, prop.weight), 0);
-  if (!(weightSum > 0)) return UNCLEARABLE;
+  if (!(weightSum > 0)) return unclearable(heroes.length);
 
-  const active = heroes.filter((hero) => hero.presence > 0 && hero.hitNoCrit > 0 && hero.walkSpeedCells > 0);
-  if (active.length === 0) return UNCLEARABLE;
+  const activeIndex: number[] = [];
+  heroes.forEach((hero, index) => {
+    if (hero.presence > 0 && hero.hitNoCrit > 0 && hero.walkSpeedCells > 0) activeIndex.push(index);
+  });
+  const active = activeIndex.map((index) => heroes[index]);
+  if (active.length === 0) return unclearable(heroes.length);
   const squad = active.reduce((sum, hero) => sum + hero.presence, 0);
 
   const hitsToKill = active.map((hero) =>
     props.map((prop) => expectedHitsToKill(prop.hp, hero.hitNoCrit, hero.critChance, hero.critMult)),
   );
-  if (hitsToKill.every((row) => row.every((hits) => !Number.isFinite(hits)))) return UNCLEARABLE;
+  if (hitsToKill.every((row) => row.every((hits) => !Number.isFinite(hits)))) return unclearable(heroes.length);
 
   const counts = props.map((prop) => (propCount * Math.max(0, prop.weight)) / weightSum);
-  const killShare = new Array<number>(props.length).fill(0);
+  const heroCount = active.length;
+  const typeCount = props.length;
+  // Per-hero scratch, allocated once: the plant rate, the density part of hits per plant, the
+  // hit-per-plant cap, and `killsPerHit[h] = Σ_t share_t / hits[h][t]` for the standing mix.
+  const plantRate = new Array<number>(heroCount).fill(0);
+  const hitsPerPlantFull = new Array<number>(heroCount).fill(0);
+  const hitsPerPlantCap = active.map((hero) => HITS_PER_PLANT_CAP_BASE + HITS_PER_PLANT_CAP_PER_CELL * hero.blastCells);
+  const fuseBound = active.map((hero) => hero.fuseSecs + FUSE_CYCLE_OVERHEAD_SEC);
+  const replantCycle = active.map((hero, h) =>
+    Math.max(fuseBound[h], REPLANT_HOP_CELLS / hero.walkSpeedCells + WALK_CYCLE_OVERHEAD_SEC),
+  );
+  const killsPerHit = new Array<number>(heroCount).fill(0);
+  const heroHits = new Array<number>(heroCount).fill(0);
+  const killsByHero = new Array<number>(heroCount).fill(0);
+  const meanFuse = active.reduce((sum, hero) => sum + hero.presence * hero.fuseSecs, 0) / squad;
+  const killShare = new Array<number>(typeCount).fill(0);
+  const share = new Array<number>(typeCount).fill(0);
+  // The types still standing, so the tail — where only a few tough types remain — loops over
+  // those alone.
+  const standingTypes = new Array<number>(typeCount).fill(0);
+  let standingCount = 0;
+  // `1 / hits`, once: the inner loops multiply, they never divide. A type this hero cannot kill
+  // reads 0 kills per hit, which is what `1 / Infinity` says.
+  const killsPerHitByType = hitsToKill.map((row) => row.map((hits) => 1 / hits));
   let seconds = FIRST_KILL_SEC;
   let hitsLanded = 0;
   let killed = 0;
   let killRatePrev = 0;
 
-  // One prop per step; the loop bound only guards a pathological mix that never reaches zero.
+  // One prop per step under `COARSE_STEP_ABOVE` standing, where the rates move fastest and the
+  // last prop must be priced at the `n = 1` rate; `n / COARSE_STEP_ABOVE` props per step on a
+  // fuller map, with the rates read at the step's midpoint. The step is continuous in the count
+  // (never rounded), so the clear is a smooth function of every input. The bound only guards a
+  // mix that never empties.
   for (let step = 0; step < 2 * propCount + 10; step++) {
-    const standing = counts.reduce((sum, count) => sum + count, 0);
+    let standing = 0;
+    for (let t = 0; t < typeCount; t++) standing += counts[t];
     if (standing < 0.5) break;
-    const n = Math.max(1, standing);
-    const propsKilled = propCount - standing;
+    standingCount = 0;
+    for (let t = 0; t < typeCount; t++) {
+      share[t] = counts[t] / standing;
+      if (counts[t] > 0) standingTypes[standingCount++] = t;
+    }
+    const chunk = Math.min(standing, Math.max(1, standing / COARSE_STEP_ABOVE));
+    const n = Math.max(1, standing - (chunk - 1) / 2);
+    const propsKilled = propCount - n;
 
     let freeHop = FREE_HOP_BASE_CELLS + FREE_HOP_SQRT_CELLS / Math.sqrt(n);
     let activeShare = Math.min(1, (ACTIVE_PER_PROP * n + ACTIVE_EXTRA) / squad);
     if (propsKilled < HEAD_RAMP_PROPS) {
-      const ramp = propsKilled / HEAD_RAMP_PROPS;
+      const ramp = Math.max(0, propsKilled) / HEAD_RAMP_PROPS;
       freeHop = Math.max(freeHop, HEAD_HOP_CELLS * (1 - ramp) + freeHop * ramp);
       activeShare *= HEAD_RAMP_START + (1 - HEAD_RAMP_START) * ramp;
     }
+    const densityHits = (HITS_PER_PLANT_CLUSTER * n) / GRID_CELLS;
 
     // Per-hero cadence at this density; only the miss term depends on the kill rate itself.
-    const plantRate = new Array<number>(active.length).fill(0);
-    const hitsPerPlantFull = new Array<number>(active.length).fill(0);
-    for (let h = 0; h < active.length; h++) {
+    for (let h = 0; h < heroCount; h++) {
       const hero = active[h];
       const hits = hitsToKill[h];
+      const perTypeKills = killsPerHitByType[h];
       let mixHits = 0;
-      for (let t = 0; t < props.length; t++) {
-        if (counts[t] > 0) mixHits += (counts[t] / standing) * hits[t];
+      let perHit = 0;
+      for (let i = 0; i < standingCount; i++) {
+        const t = standingTypes[i];
+        mixHits += share[t] * hits[t];
+        perHit += share[t] * perTypeKills[t];
       }
+      killsPerHit[h] = perHit;
       const replantShare = Number.isFinite(mixHits) ? Math.max(0, 1 - 1 / mixHits) : 1;
       // The mean of the two cycles, not the cycle of the mean hop: a prop that needs `E` hits
       // costs one free-hop cycle and `E − 1` re-plant cycles, so the time per kill is
       // `C_free + (E − 1) × C_replant`, which never falls as the hit grows.
-      const fuseBound = hero.fuseSecs + FUSE_CYCLE_OVERHEAD_SEC;
-      const freeCycle = Math.max(fuseBound, freeHop / hero.walkSpeedCells + WALK_CYCLE_OVERHEAD_SEC);
-      const replantCycle = Math.max(fuseBound, REPLANT_HOP_CELLS / hero.walkSpeedCells + WALK_CYCLE_OVERHEAD_SEC);
-      const cycle = (1 - replantShare) * freeCycle + replantShare * replantCycle;
+      const freeCycle = Math.max(fuseBound[h], freeHop / hero.walkSpeedCells + WALK_CYCLE_OVERHEAD_SEC);
+      const cycle = (1 - replantShare) * freeCycle + replantShare * replantCycle[h];
       plantRate[h] = (hero.presence * activeShare) / cycle;
-      hitsPerPlantFull[h] = (HITS_PER_PLANT_CLUSTER * (hero.blastCells - 1) * n) / GRID_CELLS;
+      hitsPerPlantFull[h] = densityHits * (hero.blastCells - 1);
     }
 
     // The miss term is a fixed point — plants miss because of the kill rate the plants produce.
-    // Solved by damped iteration from the previous prop's rate: three passes put it within 0.1%
-    // and keep the rate monotone in damage, which a lagged reading alone does not.
+    // Solved by damped iteration from the previous step's rate: three passes put it within 0.1%
+    // and keep the rate monotone in damage, which a lagged reading alone does not. One
+    // exponential per pass, at the squad's mean fuse, with a first-order correction per hero —
+    // fuses sit within ~0.2 s of each other, so the correction is under 0.1%.
     let killRate = 0;
     let hitRate = 0;
     let missBasis = killRatePrev;
     for (let pass = 0; pass < 3; pass++) {
-      killShare.fill(0);
       killRate = 0;
       hitRate = 0;
-      for (let h = 0; h < active.length; h++) {
-        const hero = active[h];
-        const hits = hitsToKill[h];
-        const miss = 1 - Math.exp(-(missBasis / n) * hero.fuseSecs);
-        const hitsPerPlant = Math.min(
-          HITS_PER_PLANT_BASE * (1 - miss) + hitsPerPlantFull[h],
-          HITS_PER_PLANT_CAP_BASE + HITS_PER_PLANT_CAP_PER_CELL * hero.blastCells,
-        );
-        const heroHits = plantRate[h] * hitsPerPlant;
-        hitRate += heroHits;
-        for (let t = 0; t < props.length; t++) {
-          if (counts[t] <= 0 || !Number.isFinite(hits[t])) continue;
-          const kills = (heroHits * (counts[t] / standing)) / hits[t];
-          killShare[t] += kills;
-          killRate += kills;
-        }
+      const perProp = missBasis / n;
+      const surviveMean = Math.exp(-perProp * meanFuse);
+      for (let h = 0; h < heroCount; h++) {
+        const miss = 1 - surviveMean * (1 - perProp * (active[h].fuseSecs - meanFuse));
+        const hitsPerPlant = Math.min(HITS_PER_PLANT_BASE * (1 - miss) + hitsPerPlantFull[h], hitsPerPlantCap[h]);
+        heroHits[h] = plantRate[h] * hitsPerPlant;
+        hitRate += heroHits[h];
+        killRate += heroHits[h] * killsPerHit[h];
       }
       missBasis = (missBasis + killRate) / 2;
     }
-    if (!(killRate > 0)) return UNCLEARABLE;
+    if (!(killRate > 0)) return unclearable(heroes.length);
 
-    const dt = 1 / killRate;
+    killShare.fill(0);
+    for (let h = 0; h < heroCount; h++) {
+      const perTypeKills = killsPerHitByType[h];
+      const hitsNow = heroHits[h];
+      for (let i = 0; i < standingCount; i++) {
+        const t = standingTypes[i];
+        killShare[t] += hitsNow * share[t] * perTypeKills[t];
+      }
+    }
+
+    const dt = chunk / killRate;
     seconds += dt;
     hitsLanded += hitRate * dt;
-    killed += 1;
-    for (let t = 0; t < props.length; t++) {
-      counts[t] = Math.max(0, counts[t] - killShare[t] / killRate);
+    killed += chunk;
+    for (let h = 0; h < heroCount; h++) killsByHero[h] += heroHits[h] * killsPerHit[h] * dt;
+    for (let t = 0; t < typeCount; t++) {
+      counts[t] = Math.max(0, counts[t] - (chunk * killShare[t]) / killRate);
     }
     killRatePrev = killRate;
   }
 
-  return { clearSecs: seconds, expectedHtk: killed > 0 ? hitsLanded / killed : Infinity };
+  const killShareByHero = new Array<number>(heroes.length).fill(0);
+  if (killed > 0) {
+    const total = killsByHero.reduce((sum, kills) => sum + kills, 0);
+    for (let h = 0; h < heroCount; h++) killShareByHero[activeIndex[h]] = total > 0 ? killsByHero[h] / total : 0;
+  }
+  return { clearSecs: seconds, expectedHtk: killed > 0 ? hitsLanded / killed : Infinity, killShareByHero };
 }

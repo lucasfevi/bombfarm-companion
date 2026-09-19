@@ -204,29 +204,29 @@ describe('the resulting rates', () => {
   // constant kill rate from a crit-averaged hit but integrates over the props left standing,
   // with the crit rolled per hit. Before that change this row read 27.7041s and 17,997,272 gold/h
   // (clear +0.8%, gold -5.4%) — right by cancellation, its own note said. It now reads slower.
-  it('clearSecs is 29.98s — ~9.1% above the measured arithmetic mean of 27.483s', () => {
-    expect(row.clearSecs).toBeCloseTo(29.9791, 3);
+  it('clearSecs is 29.70s — ~8.1% above the measured arithmetic mean of 27.483s', () => {
+    expect(row.clearSecs).toBeCloseTo(29.6997, 3);
 
     const residual = row.clearSecs / OBSERVED_CLEAR_SECS - 1;
-    expect(residual).toBeCloseTo(0.0908, 3);
+    expect(residual).toBeCloseTo(0.0807, 3);
     expect(row.clearSecs).toBeGreaterThan(OBSERVED_CLEAR_SECS);
   });
 
-  it('goldPerHour is ~16.63M — ~12.6% BELOW the measured 19,033,500', () => {
+  it('goldPerHour is ~16.79M — ~11.8% BELOW the measured 19,033,500', () => {
     // Left as a point comparison rather than a tolerance band, so that any UNRELATED move (a wiki
     // refresh, a sheet-math change) shows up as a change to THIS number, distinct from the
     // tracked residual itself.
-    expect(row.goldPerHour).toBeCloseTo(16_631_491, -3);
+    expect(row.goldPerHour).toBeCloseTo(16_787_949, -3);
 
     const residual = row.goldPerHour / OBSERVED_GOLD_PER_HOUR - 1;
-    expect(residual).toBeCloseTo(-0.1262, 3);
+    expect(residual).toBeCloseTo(-0.1180, 3);
   });
 
   it('the gold residual is presence × cadence, both reading low — no cancellation hides either', () => {
     // The two factors whose product IS the gold residual. `presence` is the heroes-on-field
     // residual asserted above; `cadence` is everything else. Under the retired row cadence read
     // 1.155 against presence 0.931 and the top line looked like +7.5%; with the head charged it
-    // read 1.016; the standing-props clear reads 0.939 on this pair — 6% slow on an early-game
+    // read 1.016; the standing-props clear reads 0.948 on this pair — 5% slow on an early-game
     // roster of slow, reach-1 heroes, the regime the model's constants were least measured on
     // (they come from frames of a mid-game field at two densities). Recorded, not fitted away:
     // the same model sits within 2% of this capture's clear once the measured presence is fed
@@ -236,7 +236,7 @@ describe('the resulting rates', () => {
     const cadence = goldFactor / presence;
 
     expect(presence).toBeCloseTo(0.93072, 4);
-    expect(cadence).toBeCloseTo(0.93884, 4);
+    expect(cadence).toBeCloseTo(0.94767, 4);
     expect(presence * cadence).toBeCloseTo(goldFactor, 12);
   });
 });

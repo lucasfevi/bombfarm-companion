@@ -118,8 +118,8 @@ describe('the fixture reports a bounded, correctly-shaped plateau', () => {
     // of 2026-09-18 moved the winning build). The single-point collapse has held through every
     // re-measurement on every roster; only the winning BUILD ever moved it.
     // RE-PINNED 2026-09-19 for the standing-props clear (ADR-017); the previous figure is in the git history.
-    expect(plateau.minEnergyShare).toBeCloseTo(0.5262172284644194, 4);
-    expect(plateau.maxEnergyShare).toBeCloseTo(0.5262172284644194, 4);
+    expect(plateau.minEnergyShare).toBeCloseTo(0.5714285714285714, 4);
+    expect(plateau.maxEnergyShare).toBeCloseTo(0.5714285714285714, 4);
     expect(plateau.minEnergyShare).toBe(plateau.maxEnergyShare);
   });
 

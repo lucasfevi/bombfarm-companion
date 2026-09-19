@@ -1307,18 +1307,14 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
     squad.houseSlots,
   );
 
-  let shareDenom = 0;
   let bossRateSum = 0;
   let heroesOnField = 0;
   let fortunaWeightedSum = 0;
-  const terms = new Array<number>(perHero.length).fill(0);
   const effectiveUptime = new Array<number>(perHero.length).fill(0);
   for (let i = 0; i < perHero.length; i++) {
     const hero = squad.heroes[i];
     const onField = hero.uptime * activity[i];
-    terms[i] = perHero[i].fullTerm * activity[i];
     effectiveUptime[i] = onField;
-    shareDenom += terms[i];
     bossRateSum += perHero[i].fullBossTerm * activity[i];
     heroesOnField += onField;
     // House-allocated, not unconstrained: an aura a hero cannot keep on the field cannot stack.
@@ -1337,26 +1333,23 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
 
   const bossPerSec = concurrencyScale * bossRateSum;
 
-  const veiaOuroPerLevel = LOOT_ABILITY_VALUES.veia_ouro.perLevel;
-  let goldSelfMixSum = 0;
-  for (let i = 0; i < perHero.length; i++) {
-    const hero = squad.heroes[i];
-    // The House-allocated term, not the unconstrained one: a hero the House cannot keep fed
-    // contributes proportionally less to the squad's gold mix, exactly as it does to its rate.
-    const share = shareDenom > 0 ? terms[i] / shareDenom : 0;
-    const goldSelf = 1 + veiaOuroPerLevel * hero.veiaOuroLevel;
-    goldSelfMixSum += share * goldSelf;
-  }
-  const goldSelfMix = shareDenom > 0 ? goldSelfMixSum : 1;
-
   // The clear itself: the standing-props integral (`model/clear-time.ts`), once per level the
   // entry pulse holds the field at, the levels' RATES blended by their share of wall clock. Each
   // hero enters with the presence the House and the field queue granted it, and the non-crit hit
   // it lands at this phase's mitigation — the simulation rolls the crits.
   const propCount = propCountForAto(line.ato);
-  const propTypes: ClearPropType[] = PROP_SHARES.map((prop) => ({ hp: propHp(line.hp, prop.hpMult), weight: prop.share }));
+  // Types with the same HP are one type to the clear (they take the same hits), merged here so
+  // the integral loops over nine, not ten.
+  const propTypes: ClearPropType[] = [];
+  for (const prop of PROP_SHARES) {
+    const hp = propHp(line.hp, prop.hpMult);
+    const same = propTypes.find((type) => type.hp === hp);
+    if (same) same.weight += prop.share;
+    else propTypes.push({ hp, weight: prop.share });
+  }
   let clearRateSum = 0;
   let clearHtkSum = 0;
+  const killShareSum = new Array<number>(squad.heroes.length).fill(0);
   for (const level of pulse.levels) {
     const clearHeroes: ClearHero[] = squad.heroes.map((hero, i) => {
       const hitNoCritBase = hero.hitNoCritBase ?? hero.avgHitBase;
@@ -1376,6 +1369,17 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
       const rate = (level.probability * propCount) / clear.clearSecs;
       clearRateSum += rate;
       clearHtkSum += rate * clear.expectedHtk;
+      for (let i = 0; i < killShareSum.length; i++) killShareSum[i] += rate * clear.killShareByHero[i];
+    }
+  }
+  // Each hero's Veia de Ouro reaches the gold of the props IT kills, so the squad's mix follows
+  // the kill shares the clear itself attributed.
+  const veiaOuroPerLevel = LOOT_ABILITY_VALUES.veia_ouro.perLevel;
+  let goldSelfMix = 1;
+  if (clearRateSum > 0) {
+    goldSelfMix = 0;
+    for (let i = 0; i < squad.heroes.length; i++) {
+      goldSelfMix += (killShareSum[i] / clearRateSum) * (1 + veiaOuroPerLevel * squad.heroes[i].veiaOuroLevel);
     }
   }
   /** Props per second over the whole cycle, head included — `0` when the squad cannot clear. */

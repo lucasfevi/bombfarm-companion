@@ -9,4 +9,5 @@ saturated nine-hero field ~15% fast with the Baton Pass held at its cap and a da
 ~30% slow at the same phase. The new model tracks hits per plant against density, plants that
 miss a target that already died, the starved tail under ten props and the walk-in at a wave's
 start, and depletes easy props first. Measured on two accounts across phases 51–151 it sits
-within ±10% of the clears they logged.
+within ±10% of the clears they logged. Each hero's Veia de Ouro now reaches the gold of the
+props the clear attributes to that hero.
