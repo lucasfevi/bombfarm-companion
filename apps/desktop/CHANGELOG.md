@@ -1,5 +1,40 @@
 # @bombfarm/desktop
 
+## 0.18.1
+
+### Patch Changes
+
+- 27fcd11: The PVP tab's Rivals and Duel History tables show ten rows and scroll the rest.
+
+  The Rivals table grew with every new opponent — beside an open replay it took the replay's whole
+  height — and the history table showed nine. Both now show their top ten rows under the header
+  and scroll the rest, at the same height alone or beside the replay. Each mounts only the rows
+  around the visible band, so a long history costs the screen the same as a short one.
+
+- 0365b0c: The live tap no longer loses a duel — or any response — to a connection it attached to mid-body.
+
+  **A PVP duel fought while the app was hooked could leave the PVP tab empty**, with nothing in the
+  log to say why. The tap keys what it knows about each game connection on an address the client
+  reuses as soon as it closes one, and it only recognised a response at the very front of a
+  connection's bytes: attach while a body was still streaming, or have the client abandon a body by
+  closing, and every later response on that connection — or on the next one at the same address —
+  was buried behind the leftover, silently, until the connection was given up on. The `/pvp/state`
+  poll came through a clean connection; the duel result a second later, and its film, did not.
+
+  The tap now scans forward for the next complete response header and resumes there, the same way
+  it already re-finds a combat frame mid-stream, and says so in the log with the number of bytes it
+  discarded. Giving up on a connection is logged too, and no longer happens while a later response
+  can be resumed from.
+
+- Updated dependencies [fdc8b8e]
+  - @bombfarm/domain@1.3.1
+  - @bombfarm/account@0.3.1
+  - @bombfarm/farm@1.2.3
+  - @bombfarm/game-api@0.5.3
+  - @bombfarm/game-art@0.6.3
+  - @bombfarm/hero@0.3.3
+  - @bombfarm/team-plan@0.2.3
+
 ## 0.18.0
 
 ### Minor Changes
