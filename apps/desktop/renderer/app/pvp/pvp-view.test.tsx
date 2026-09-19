@@ -261,6 +261,26 @@ describe('PvpView', () => {
     expect(html).not.toContain('<img');
   });
 
+  it('shows ten duels under the header and scrolls the rest, mounting a window of twenty over a spacer for the others', () => {
+    const rows = Array.from({ length: 35 }, (_, index) => row({ id: 100 - index, filmId: 0, filmStored: false }));
+    const html = render(ready(rows));
+    expect(html).toMatch(/class="isolate min-h-0 overflow-auto" style="max-height:419px" data-testid="pvp-history-scroll"/);
+    expect(html).toContain('aria-rowcount="35"');
+    expect(html.match(/data-testid="pvp-duel-row"/g)).toHaveLength(20);
+    expect(html).toMatch(/data-testid="pvp-duel-row"[^>]*aria-rowindex="1" style="height:39px"/);
+    expect(html).toContain('aria-rowindex="20"');
+    expect(html).not.toContain('aria-rowindex="21"');
+    expect(html).not.toContain('data-testid="pvp-history-spacer-top"');
+    expect(html).toMatch(/data-testid="pvp-history-spacer-bottom"><td colSpan="8" style="height:585px;padding:0;border:0"><\/td>/);
+  });
+
+  it('mounts every duel of a short list with no spacer either side', () => {
+    const html = render(ready([row({ id: 2 }), row({ id: 1 })]));
+    expect(html).toContain('aria-rowcount="2"');
+    expect(html.match(/data-testid="pvp-duel-row"/g)).toHaveLength(2);
+    expect(html).not.toContain('spacer-');
+  });
+
   it('lists the rows in the order the history serves them — newest first', () => {
     const html = render(ready([row({ id: 9, defender: { name: 'Newest', heroes: 5, score: 1 } }), row({ id: 8, defender: { name: 'Older', heroes: 5, score: 1 } })]));
     expect(html.indexOf('Newest')).toBeLessThan(html.indexOf('Older'));

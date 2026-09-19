@@ -160,9 +160,12 @@ bridge. Nothing per hero: see the section above on why. The chart's axis prints 
 (`100k`), and the pointer over the plot names the second under it — a hairline, a dot on each
 series, and the legend swapping its final totals for that second's. The SVG keeps its aspect
 ratio, so the pointer maps back through one scale (`secondAtPointer`, pure and tested). The
-panel's close is the corner icon, not a word. Beside the open replay the rivals panel takes its
-height and scrolls inside it (`fill`); alone, the rivals table caps at eight rows and the duel
-list at twelve.
+panel's close is the corner icon, not a word. The rivals table and the duel list each show ten
+rows under a sticky header and scroll the rest, at the same height alone or beside the replay,
+and each mounts only a window of rows around the visible band over spacer rows that hold the
+scroll height (`renderer/lib/row-window.ts`; the pinned row heights are in
+`renderer/lib/pvp/pvp-table-rows.ts`, measured in the running app). `aria-rowcount` on the table
+and `aria-rowindex` on each mounted row carry the count a DOM row count no longer can.
 
 ## The list's filters
 
