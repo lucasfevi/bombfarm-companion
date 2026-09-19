@@ -11,7 +11,7 @@ import { FORGE_MAX, FORGE_SAFE, forgeChance } from '@bombfarm/domain/forge';
 import { upgradeMult } from '@bombfarm/domain/gear';
 import { itemRarityLabel, itemStatLabel, slotLabel } from '@bombfarm/domain/game-labels';
 import type { ItemIdentityLabels } from '@bombfarm/game-art';
-import type { InventoryViewItem, InventoryViewStat } from '@bombfarm/domain/inventory-view';
+import type { InventorySetGroup, InventoryViewItem, InventoryViewStat } from '@bombfarm/domain/inventory-view';
 import { sub, type Copy } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
 import { FORGE_BAND_RANGE, type ForgeBand } from '../../lib/forge/forge-rows';
@@ -246,6 +246,9 @@ export interface ForgeLabels extends ItemIdentityLabels<InventoryViewItem> {
   searchText: (item: InventoryViewItem) => string;
   slotName: (slot: string | null) => string;
   rarityName: (rarityIdx: number) => string;
+  /** A set as the inventory's picker names it — `Level 120 · Glacier` — and its piece count. */
+  setOption: (group: InventorySetGroup) => string;
+  setOptionCount: (group: InventorySetGroup) => string;
   gold: (amount: number) => string;
   count: (value: number) => string;
   rolls: (value: number) => string;
@@ -281,6 +284,8 @@ export function forgeLabels(t: Copy, lang: DomainLang, locale: AppLocale): Forge
     searchText: inventory.searchText,
     slotName: (slot) => (slot === null ? BLANK : slotLabel(slot, lang)),
     rarityName: (rarityIdx) => itemRarityLabel(rarityIdx, lang),
+    setOption: inventory.setOption,
+    setOptionCount: inventory.setOptionCount,
     gold,
     count: (value) => formatCount(value, locale),
     rolls: (value) => decimals(value, 1, locale),

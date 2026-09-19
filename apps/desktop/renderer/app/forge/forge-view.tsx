@@ -41,6 +41,7 @@ import {
   forgeAnyEquipped,
   forgeHeroIds,
   forgeRarities,
+  forgeSets,
   forgeSlots,
   gearOf,
   isEmptyForgeFilter,
@@ -174,6 +175,7 @@ export function ForgeView({
       }),
     [gear, heroes, inField, heroName, t],
   );
+  const sets = useMemo(() => forgeSets(gear), [gear]);
   const slots = useMemo(() => forgeSlots(gear, SLOTS), [gear]);
   const rarities = useMemo(() => forgeRarities(gear), [gear]);
   const anyEquipped = useMemo(() => forgeAnyEquipped(gear), [gear]);
@@ -344,6 +346,7 @@ export function ForgeView({
           heroes={heroOptions}
           filter={filter}
           onFilterChange={setForgeFilter}
+          sets={sets}
           slots={slots}
           rarities={rarities}
           anyEquipped={anyEquipped}

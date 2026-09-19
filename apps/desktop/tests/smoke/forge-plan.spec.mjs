@@ -216,6 +216,45 @@ test.describe('forge plan smoke', () => {
       await expect(forgeBand).toHaveText('Any forge');
       await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBe(before);
 
+      // The inventory's set picker, and the same one: a set is a gear level, so the list is
+      // level-ordered and every box starts ticked. Unticking one narrows the bag to the pieces the
+      // other rows count, Select all puts every box back, and Clear is a filter like any other.
+      const setPicker = view.getByRole('combobox', { name: 'Filter by set' });
+      await expect(setPicker).toHaveText('All sets');
+      await setPicker.click();
+      const setOptions = page.getByRole('option');
+      await expect(setOptions.first()).toBeVisible({ timeout: 10_000 });
+      const setTotal = await setOptions.count();
+      expect(setTotal).toBeGreaterThan(1);
+      const setLabels = await setOptions.allInnerTexts();
+      expect(setLabels[0]).toMatch(/^Level \d+ · /);
+      const setLevels = setLabels.map((text) => Number(/Level (\d+)/.exec(text)?.[1] ?? 0));
+      expect([...setLevels].sort((a, b) => a - b)).toEqual(setLevels);
+      await expect(page.getByTestId('select-popup-header')).toContainText('Sets you own');
+      const setCounts = (await page.getByTestId('select-item-trailing').allInnerTexts()).map((text) => Number(text.trim()));
+      expect(setCounts).toHaveLength(setTotal);
+      expect(setCounts.reduce((sum, value) => sum + value, 0)).toBe(before);
+      for (let index = 0; index < setTotal; index += 1) {
+        await expect(setOptions.nth(index)).toHaveAttribute('data-selected', '');
+      }
+      await setOptions.first().click();
+      await expect(setOptions.first()).not.toHaveAttribute('data-selected', '');
+      await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBe(before - setCounts[0]);
+      await expect(page.getByTestId('select-popup-action')).toHaveText('Select all');
+      await page.getByTestId('select-popup-action').click();
+      await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBe(before);
+      await page.keyboard.press('Escape');
+      await expect(setPicker).toHaveText('All sets');
+      await expect(view.getByTestId('forge-clear-filter')).toHaveCount(0);
+      await setPicker.click();
+      await expect(setOptions.first()).toBeVisible({ timeout: 10_000 });
+      await setOptions.first().click();
+      await page.keyboard.press('Escape');
+      await expect(setPicker).toHaveText(`${setTotal - 1} of ${setTotal} sets`);
+      await view.getByTestId('forge-clear-filter').click();
+      await expect(setPicker).toHaveText('All sets');
+      await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBe(before);
+
       // Who wears it is one chip now, not a three-state dropdown: pressed narrows to the worn
       // pieces, and letting it go is the whole bag again rather than the rest of it.
       await expect(page.getByRole('combobox', { name: 'Filter by who wears it' })).toHaveCount(0);

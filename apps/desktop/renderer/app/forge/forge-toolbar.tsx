@@ -8,7 +8,9 @@ import {
   rarityTextClass,
 } from '@bombfarm/game-art';
 import { heroRankToneClass } from '@bombfarm/game-art';
-import { Button, cn, Select } from '@bombfarm/ui';
+import type { InventorySetGroup } from '@bombfarm/domain/inventory-view';
+import { Button, cn, Select, SelectMultiple } from '@bombfarm/ui';
+import { useMemo } from 'react';
 import { sub, useCopy } from '../../lib/copy';
 import { EMPTY_FORGE_FILTER, FORGE_BANDS, isEmptyForgeFilter, type ForgeBand, type ForgeFilter } from '../../lib/forge/forge-rows';
 import type { ForgeLabels } from './forge-labels';
@@ -52,6 +54,7 @@ export function ForgeToolbar({
   heroes,
   filter,
   onFilterChange,
+  sets,
   slots,
   rarities,
   anyEquipped,
@@ -63,6 +66,8 @@ export function ForgeToolbar({
   heroes: readonly ForgeHeroOption[];
   filter: ForgeFilter;
   onFilterChange: (next: ForgeFilter) => void;
+  /** The sets in the bag, level-ordered — the picker's options, one box each. */
+  sets: readonly InventorySetGroup[];
   slots: readonly string[];
   rarities: readonly number[];
   /** Whether any piece in the bag is on a hero — the Equipped chip has nothing to offer otherwise. */
@@ -80,6 +85,13 @@ export function ForgeToolbar({
   // hero has already made. It goes away entirely rather than standing there pressed and inert —
   // the sentence at the end of the row is what says the bag is already narrowed to one wearer.
   const showEquipped = anyEquipped && filter.heroId === null;
+
+  // A `null` `sets` means every set, so the boxes start ticked. Ticking the last one collapses
+  // back to `null` rather than listing every set, which keeps the filter from reading as dirty
+  // while it shows everything. Unticking the last one is the empty list, and stays that way.
+  const allSetIds = useMemo(() => sets.map((group) => group.set), [sets]);
+  const selectedSets = filter.sets ?? allSetIds;
+  const setsAreNarrowed = filter.sets !== null;
 
   return (
     <div data-testid="forge-toolbar" className="flex flex-col gap-2">
@@ -111,6 +123,39 @@ export function ForgeToolbar({
               </option>
             ))}
           </Select>
+        ) : null}
+
+        {sets.length > 1 ? (
+          <SelectMultiple
+            size="compact"
+            value={selectedSets}
+            onValueChange={(next) => { onFilterChange({ ...filter, sets: next.length === allSetIds.length ? null : next }); }}
+            aria-label={t.inventoryFilterSetsLabel}
+            className={cn(inventoryFieldHeightClass, 'w-40', 'shrink-0')}
+            renderValue={() =>
+              filter.sets
+                ? sub(t.inventoryFilterSetsSelected, { chosen: filter.sets.length, total: allSetIds.length })
+                : t.inventoryFilterAllSets
+            }
+            header={{
+              label: t.inventoryFilterSetsOwned,
+              // One action, whichever of the two would move: everything ticked can only be
+              // cleared, anything less can only be filled back in.
+              action: setsAreNarrowed
+                ? { label: t.inventoryFilterSelectAllSets, onAction: () => { onFilterChange({ ...filter, sets: null }); } }
+                : { label: t.inventoryFilterClear, onAction: () => { onFilterChange({ ...filter, sets: [] }); } },
+            }}
+            optionTrailing={(value) => {
+              const group = sets.find((entry) => entry.set === value);
+              return group ? labels.setOptionCount(group) : null;
+            }}
+          >
+            {sets.map((group) => (
+              <option key={group.set} value={group.set}>
+                {labels.setOption(group)}
+              </option>
+            ))}
+          </SelectMultiple>
         ) : null}
 
         <Select
