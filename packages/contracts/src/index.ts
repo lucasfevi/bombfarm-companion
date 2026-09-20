@@ -363,8 +363,9 @@ export interface AppSettings {
   locale: 'en' | 'pt-BR';
   alwaysOnTopMain: boolean;
   alwaysOnTopMini: boolean;
-  /** "Let Forge spend gold" — off until the player turns it on; the only thing that lets the
-   *  Forge tab send a forge roll. */
+  /** "Let the app forge, equip and reset points" — off until the player turns it on; the only
+   *  thing that lets the app send a forge roll, equip or unequip an item, or refund and re-place
+   *  a hero's stat points. */
   forgeWritesEnabled: boolean;
   /** Off until the player turns it on. While on, a game process this app already saw running and
    *  which then disappears is asked back through Steam. Nothing here ever stops a living game. */
