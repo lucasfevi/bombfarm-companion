@@ -181,6 +181,21 @@ describe('a start refusal', () => {
     expect(queue.resumeCalls).toBe(1);
     expect(store.getState().steps.equip).toMatchObject({ status: 'stopped', reason: { kind: 'start', reason: 'busy' } });
   });
+
+  it('a bridge that rejects apply:start lands the step on the unavailable refusal, the same as no bridge at all', async () => {
+    const bridge = {
+      invoke: () => Promise.reject(new Error('preload channel gone')),
+      on: () => () => undefined,
+    } as unknown as Bridge;
+    const queue = fakeQueue({ pieces: [], status: 'idle', active: null, halt: null, forged: 0 });
+    const store = createApplyStore({ bridge, queue, now: () => 0 });
+    store.bind('plan-1');
+    store.confirm('equip', [unit(0)], request());
+    await flush();
+
+    expect(store.getState().modal).toBeNull();
+    expect(store.getState().steps.equip).toMatchObject({ status: 'stopped', reason: { kind: 'start', reason: 'unavailable' } });
+  });
 });
 
 describe('done resumes the queue whatever it stopped on', () => {
