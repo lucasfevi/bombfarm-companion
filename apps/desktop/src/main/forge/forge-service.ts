@@ -204,7 +204,7 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
         const route = step.kind === 'safe' ? FORGE_ROUTES.forgeToSafe : FORGE_ROUTES.forge;
         let outcome: RequestOutcome;
         try {
-          outcome = await deps.gate.runWrite(`forge:${item.id}`, () => requestPost(session, deps.transport, route, item.id, requestIds.next()));
+          outcome = await deps.gate.runWrite(`forge:${item.id}`, () => requestPost(session, deps.transport, { route, item: item.id }, requestIds.next()));
         } catch (err) {
           stop = err instanceof PacingRefusedError && err.gateState !== 'halted' ? 'cooldown' : 'error';
           deps.log.warn({ scope: 'forge', event: 'run.refused_by_gate', runId, error: String(err) });

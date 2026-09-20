@@ -23,8 +23,18 @@ export { companionUserAgent } from './request.js';
 export type { HttpRequest, HttpResponse, HttpTransport, RequestOptions, RequestOutcome } from './request.js';
 export { WriteNotEnabledError, WriteSessionRequiredError, grantWriteSession, isWriteSession } from './write-session.js';
 export type { WriteSession } from './write-session.js';
-export { FORGE_ROUTES, createRequestIdSource, requestPost, type RequestIdSource } from './forge-request.js';
-export type { ForgeRoute, HttpWriteRequest } from './forge-request.js';
+export {
+  FORGE_ROUTES,
+  WRITE_ROUTES,
+  InvalidWriteCallError,
+  buildWriteRequest,
+  createRequestIdSource,
+  isTrustedWriteRequest,
+  requestPost,
+  sendPost,
+  type RequestIdSource,
+} from './write-request.js';
+export type { ForgeRoute, HttpWriteRequest, WriteCall, WriteRoute } from './write-request.js';
 export { PacingRefusedError, READ_PACING, createPacingGate } from './pacing.js';
 export type { PacingClock, PacingGate, PacingState } from './pacing.js';
 export { ROUTE_FINGERPRINTS, SECTION_FINGERPRINTS, checkSectionShape } from './fingerprints.js';
@@ -35,6 +45,8 @@ export { identifyObservedBody } from './identify-observed-body.js';
 export type { ObservedBodyIdentification } from './identify-observed-body.js';
 export { ROUTES, readSection } from './routes.js';
 export type { RouteDescriptor, SectionFailureReason, SectionOutcome } from './routes.js';
+export { HERO_DETAIL_PATH, heroDetailPath, readHeroDetail } from './hero-detail.js';
+export type { HeroDetailFailureReason, HeroDetailReading } from './hero-detail.js';
 export { createGameApiClient } from './client.js';
 export type { GameApiClient } from './client.js';
 export { assembleAccountPayload } from './assemble.js';

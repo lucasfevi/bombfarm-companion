@@ -1,4 +1,4 @@
-import type { HttpWriteRequest } from './forge-request.js';
+import type { HttpWriteRequest } from './write-request.js';
 import { ConsentedSessionRequiredError, RAW, isConsentedSession, type ConsentedSession } from './session.js';
 
 /**
