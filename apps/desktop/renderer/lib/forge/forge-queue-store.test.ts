@@ -65,6 +65,20 @@ function memory(initial: readonly ForgeQueuePiece[] = []) {
   return { load: () => saved, save: (pieces: readonly ForgeQueuePiece[]) => (saved = pieces), read: () => saved };
 }
 
+function countingMemory(initial: readonly ForgeQueuePiece[] = []) {
+  let saved: readonly ForgeQueuePiece[] = initial;
+  let calls = 0;
+  return {
+    load: () => saved,
+    save: (pieces: readonly ForgeQueuePiece[]) => {
+      calls += 1;
+      saved = pieces;
+    },
+    read: () => saved,
+    saveCalls: () => calls,
+  };
+}
+
 describe('the forge queue store drives main one piece at a time', () => {
   it('asks for the head piece on Start, and for the next one only once the first run is done', async () => {
     let sequence = 0;
@@ -228,5 +242,123 @@ describe('the forge queue store drives main one piece at a time', () => {
     store.pause();
     expect(store.getState()).toBe(before);
     expect(starts).toEqual([]);
+  });
+});
+
+describe('adding a batch at once (addMany)', () => {
+  it('dispatches once, saves once and notifies subscribers once for a batch that changes the queue', () => {
+    const saved = countingMemory();
+    const store = createForgeQueueStore({ bridge: null, ...saved });
+    let notifications = 0;
+    store.subscribe(() => {
+      notifications += 1;
+    });
+
+    store.addMany([
+      { itemId: 'a', target: 12 },
+      { itemId: 'b', target: 10 },
+      { itemId: 'c', target: 8 },
+    ]);
+
+    expect(store.getState().pieces.map((piece) => piece.itemId)).toEqual(['a', 'b', 'c']);
+    expect(notifications).toBe(1);
+    expect(saved.saveCalls()).toBe(1);
+    expect(saved.read()).toEqual([
+      { itemId: 'a', target: 12 },
+      { itemId: 'b', target: 10 },
+      { itemId: 'c', target: 8 },
+    ]);
+  });
+
+  it('a batch that only repeats what is already queued at the same targets saves nothing and notifies nothing', () => {
+    const saved = countingMemory();
+    const store = createForgeQueueStore({ bridge: null, ...saved });
+    store.add('a', 12);
+    store.add('b', 10);
+    const before = store.getState();
+    const savesBeforeBatch = saved.saveCalls();
+    let notifications = 0;
+    store.subscribe(() => {
+      notifications += 1;
+    });
+
+    store.addMany([
+      { itemId: 'a', target: 12 },
+      { itemId: 'b', target: 10 },
+    ]);
+
+    expect(store.getState()).toBe(before);
+    expect(notifications).toBe(0);
+    expect(saved.saveCalls()).toBe(savesBeforeBatch);
+  });
+
+  it('an empty batch saves nothing and notifies nothing', () => {
+    const saved = countingMemory();
+    const store = createForgeQueueStore({ bridge: null, ...saved });
+    let notifications = 0;
+    store.subscribe(() => {
+      notifications += 1;
+    });
+
+    store.addMany([]);
+
+    expect(notifications).toBe(0);
+    expect(saved.saveCalls()).toBe(0);
+  });
+
+  it('never dispatches start: idle, running and halted queues keep their exact status', async () => {
+    const { bridge } = fakeBridge(() => ({ ok: true, runId: 'r1' }));
+
+    const idleStore = createForgeQueueStore({ bridge, ...memory() });
+    idleStore.addMany([{ itemId: 'a', target: 12 }]);
+    expect(idleStore.getState().status).toBe('idle');
+
+    const runningStore = createForgeQueueStore({ bridge: null, ...memory() });
+    runningStore.add('a', 12);
+    runningStore.startQueue();
+    expect(runningStore.getState()).toMatchObject({ status: 'running', active: null });
+    runningStore.addMany([{ itemId: 'b', target: 10 }, { itemId: 'c', target: 8 }]);
+    expect(runningStore.getState()).toMatchObject({ status: 'running', active: null });
+    expect(runningStore.getState().pieces.map((piece) => piece.itemId)).toEqual(['a', 'b', 'c']);
+
+    const { bridge: refusingBridge } = fakeBridge(() => ({ ok: false, reason: 'game_not_running' }));
+    const haltedStore = createForgeQueueStore({ bridge: refusingBridge, ...memory() });
+    haltedStore.add('a', 12);
+    haltedStore.startQueue();
+    await flush();
+    expect(haltedStore.getState().status).toBe('halted');
+    haltedStore.addMany([{ itemId: 'b', target: 10 }]);
+    expect(haltedStore.getState().status).toBe('halted');
+  });
+
+  it('a paused queue stays paused, with the piece in flight untouched, and the batch queued behind it', async () => {
+    const { bridge } = fakeBridge(() => ({ ok: true, runId: 'r1' }));
+    const store = createForgeQueueStore({ bridge, ...memory() });
+    store.add('a', 12);
+    store.startQueue();
+    await flush();
+    store.pause();
+    const activeBefore = store.getState().active;
+
+    store.addMany([{ itemId: 'b', target: 10 }]);
+
+    expect(store.getState().status).toBe('paused');
+    expect(store.getState().active).toEqual(activeBefore);
+    expect(store.getState().pieces.map((piece) => piece.itemId)).toEqual(['a', 'b']);
+  });
+
+  it('a running queue with its head already in flight does not request a second start for the batch', async () => {
+    const { bridge, starts } = fakeBridge(() => ({ ok: true, runId: 'r1' }));
+    const store = createForgeQueueStore({ bridge, ...memory() });
+    store.add('a', 12);
+    store.startQueue();
+    await flush();
+    expect(starts).toHaveLength(1);
+
+    store.addMany([{ itemId: 'b', target: 10 }, { itemId: 'c', target: 8 }]);
+    await flush();
+
+    expect(starts).toHaveLength(1);
+    expect(store.getState().pieces.map((piece) => piece.itemId)).toEqual(['a', 'b', 'c']);
   });
 });

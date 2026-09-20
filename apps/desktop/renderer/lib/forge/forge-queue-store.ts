@@ -31,6 +31,7 @@ export interface ForgeQueueStore {
   readonly subscribe: (listener: (state: ForgeQueueState) => void) => () => void;
   readonly start: () => void;
   readonly add: (itemId: string, target: number) => void;
+  readonly addMany: (pieces: readonly ForgeQueuePiece[]) => void;
   readonly remove: (itemId: string) => void;
   readonly clear: () => void;
   readonly startQueue: () => void;
@@ -109,6 +110,9 @@ export function createForgeQueueStore(deps: ForgeQueueStoreDeps): ForgeQueueStor
     add: (itemId, target) => {
       apply({ kind: 'add', itemId, target });
     },
+    addMany: (pieces) => {
+      apply({ kind: 'addMany', pieces });
+    },
     remove: (itemId) => {
       apply({ kind: 'remove', itemId });
     },
@@ -159,6 +163,10 @@ export function useForgeQueue(): ForgeQueueState {
 
 export function addToForgeQueue(itemId: string, target: number): void {
   sharedForgeQueueStore().add(itemId, target);
+}
+
+export function addManyToForgeQueue(pieces: readonly ForgeQueuePiece[]): void {
+  sharedForgeQueueStore().addMany(pieces);
 }
 
 export function removeFromForgeQueue(itemId: string): void {
