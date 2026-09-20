@@ -36,7 +36,14 @@ describe('goldGainPct / chestsGainPct — signed, never clamped', () => {
   // account's 2026-08-19 capture. The finding is the SIGN, not the magnitude, and the sign
   // survives the change of capture.
   it('a LOSS: the chests objective trades gold away — goldGainPct is NEGATIVE, not clamped to 0', () => {
-    const result = solveFarmRespec({ heroes, account, objective: { kind: 'chests' }, maxPhase });
+    // From the gold-optimal build (see farm-optimize-degenerate for why the current build no
+    // longer carries this trade on its own under the standing-props clear).
+    const goldSolve = solveFarmRespec({ heroes, account, maxPhase });
+    const goldBuilt = heroes.map((hero) => {
+      const entry = goldSolve.heroes.find((h) => h.heroId === hero.id);
+      return entry ? { ...hero, pts: entry.proposedPts } : hero;
+    });
+    const result = solveFarmRespec({ heroes: goldBuilt, account, objective: { kind: 'chests' }, maxPhase });
     expect(result.proposedGoldPerHour).toBeLessThan(result.currentGoldPerHour);
 
     expect(result.goldGainPct).toBeCloseTo(

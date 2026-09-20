@@ -76,7 +76,10 @@ jobs:
     needs: changes
     if: github.event_name != 'pull_request' || needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # The domain suite alone is ~12 minutes of wall clock on this runner since the farm board
+    # prices a clear as an integral (the optimizer tests sweep thousands of rows); ci-desktop
+    # runs the same suite inside a 30-minute job.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 

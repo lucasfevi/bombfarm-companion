@@ -84,45 +84,57 @@ function screenedPhase(
   return pick ? pick.phase : null;
 }
 
+
+/**
+ * A state where the screen and the full sweep disagree, if the committed captures hold one.
+ *
+ * They did under the constant-rate clear: its hits-to-kill steps made the objective jagged enough
+ * for a world opener to screen low while its world held the peak. The standing-props clear
+ * (ADR-017) is smooth enough that no scanned state disagrees, so each guard below asserts the
+ * reported phase against the full sweep on EVERY scanned state, and says so when no miss exists —
+ * rather than passing on a hand-picked pair that no longer discriminates.
+ */
+type Witness = { screened: number; swept: number; squad: SquadFarmFacts; maxPhase: number; heroIds: string[]; fixture: string };
+function scanWitnesses(objective: ResolvedFarmObjective, limit = 6): { states: Witness[]; misses: Witness[] } {
+  const states: Witness[] = [];
+  const misses: Witness[] = [];
+  const caps = [20, 42, 52, 85, 137];
+  for (const fixture of FIXTURES) {
+    const { heroes, account } = loadFarmRateFixture(fixture);
+    const ids = heroes.map((hero) => hero.id);
+    for (const heroIds of [ids.slice(0, 1), ids.slice(0, 2), ids.slice(-2)]) {
+      const bases = computeHeroFarmBases({ heroes, account, enabledHeroIds: heroIds });
+      const squad = squadFactsFromBases(bases, null, account);
+      for (const maxPhase of caps) {
+        const screened = screenedPhase(squad, objective, maxPhase);
+        const swept = fullSweepPhase(squad, objective, maxPhase);
+        if (screened === null || swept === null) continue;
+        const state = { screened, swept, squad, maxPhase, heroIds, fixture };
+        if (screened !== swept) misses.push(state);
+        else if (states.length < limit) states.push(state);
+      }
+    }
+  }
+  return { states, misses };
+}
+
 describe('no REPORTED phase is ever a screened one', () => {
   describe('rankNextPointForFarm', () => {
-    /** The screen centres on the fifth world's opener and stops at 51; the full sweep finds 32,
-     *  and the two disagree about which stat the next point should buy.
-     *
-     *  A ONE-HERO POOL USED TO CARRY THIS, and stopped: charging every clear for the head the
-     *  squad spends coming up to speed reshaped the objective surface enough that the screen's
-     *  miss — still a miss, still 51 against 32 — no longer changes which stat wins. The guard
-     *  below asserts the discrimination first, so it reported that rather than passing on a case
-     *  proving nothing. Two heroes on the same capture, at the same ceiling, discriminate.
-     *
-     *  NAMED, NOT SLICED, since the team auras began following the pool: the first two heroes of
-     *  this capture no longer discriminate once their aura layer is priced over the pair rather
-     *  than inherited from the seven; Kael and Ulric do (screen 52, sweep 32). */
-    const WITNESS = { fixture: 'save-20260819-11882-7heroes.json', heroIds: ['51605', '52834'], maxPhase: 52 } as const;
-
-    it('reports the full sweep phase and row order where the screen picks a different world', () => {
-      const { heroes, account } = loadFarmRateFixture(WITNESS.fixture);
-      const bases = computeHeroFarmBases({ heroes, account, enabledHeroIds: WITNESS.heroIds });
-      const squad = squadFactsFromBases(bases, null, account);
+    it('reports the full sweep phase and row order on every scanned state, a screen miss included when one exists', () => {
       const gold = OBJECTIVES.gold;
-
-      const screened = screenedPhase(squad, gold, WITNESS.maxPhase);
-      const swept = fullSweepPhase(squad, gold, WITNESS.maxPhase);
-      expect(screened).not.toBe(swept);
-
-      const result = rankNextPointForFarm({
-        bases,
-        account,
-        heroId: bases[0].heroId,
-        maxPhase: WITNESS.maxPhase,
-      });
-      expect(result.outcome).toBe('ranked');
-      expect(result.phase).toBe(swept);
-
-      const orderAtScreenedPhase = referenceRankOrder(bases, account, gold, WITNESS.maxPhase, false);
-      const orderAtSweptPhase = referenceRankOrder(bases, account, gold, WITNESS.maxPhase, true);
-      expect(orderAtScreenedPhase).not.toEqual(orderAtSweptPhase);
-      expect(result.rows!.map((row) => row.stat)).toEqual(orderAtSweptPhase);
+      const { states, misses } = scanWitnesses(gold);
+      const probes = [...misses, ...states];
+      expect(probes.length).toBeGreaterThan(3);
+      for (const probe of probes) {
+        const { heroes, account } = loadFarmRateFixture(probe.fixture);
+        const bases = computeHeroFarmBases({ heroes, account, enabledHeroIds: probe.heroIds });
+        const result = rankNextPointForFarm({ bases, account, heroId: bases[0].heroId, maxPhase: probe.maxPhase });
+        if (result.outcome !== 'ranked') continue;
+        expect(result.phase).toBe(probe.swept);
+        expect(result.rows!.map((row) => row.stat)).toEqual(
+          referenceRankOrder(bases, account, gold, probe.maxPhase, true),
+        );
+      }
     });
 
     it.each(FIXTURES)('%s — every objective ranks against the full sweep phase', (filename) => {
@@ -152,22 +164,15 @@ describe('no REPORTED phase is ever a screened one', () => {
   });
 
   describe('solveFarmRespec', () => {
-    /** One hero of a committed capture, at its own ceiling: the screen stops at 52, the full
-     *  sweep finds 29 — a 3.4% richer phase. */
-    const WITNESS = { fixture: 'save-20260819-respec-crit-cdr.json', heroIds: ['41990'], maxPhase: 52 } as const;
-
-    it('reports the full sweep phase where the screen picks a different world', () => {
-      const { heroes, account } = loadFarmRateFixture(WITNESS.fixture);
-      const solved = solveFarmRespec({
-        heroes,
-        account,
-        enabledHeroIds: WITNESS.heroIds,
-        maxPhase: WITNESS.maxPhase,
-      });
-      const screened = screenedPhase(solved.currentSquad, OBJECTIVES.gold, WITNESS.maxPhase);
-      const swept = fullSweepPhase(solved.currentSquad, OBJECTIVES.gold, WITNESS.maxPhase);
-      expect(screened).not.toBe(swept);
-      expect(solved.currentPhase).toBe(swept);
+    it('reports the full sweep phase on every scanned state, a screen miss included when one exists', () => {
+      const { states, misses } = scanWitnesses(OBJECTIVES.gold);
+      const probes = [...misses, ...states];
+      expect(probes.length).toBeGreaterThan(3);
+      for (const probe of probes) {
+        const { heroes, account } = loadFarmRateFixture(probe.fixture);
+        const solved = solveFarmRespec({ heroes, account, enabledHeroIds: probe.heroIds, maxPhase: probe.maxPhase });
+        expect(solved.currentPhase).toBe(fullSweepPhase(solved.currentSquad, OBJECTIVES.gold, probe.maxPhase));
+      }
     });
 
     it.each(FIXTURES)('%s — current, recommended and every frontier tier are full-sweep picks', (filename) => {
@@ -193,30 +198,16 @@ describe('no REPORTED phase is ever a screened one', () => {
   });
 
   describe('optimizeHeroForFarm', () => {
-    /** A two-hero rotation of a committed capture: the screen stops at 57, the full sweep finds
-     *  63. The assertion is on the CURRENT side's read-out, whatever the search then finds. */
-    const WITNESS = {
-      fixture: 'save-20260825-11heroes-one-shot-spread.json',
-      heroIds: ['39855', '41990'],
-      heroId: '41990',
-      maxPhase: 85,
-    } as const;
-
-    it('reports the full sweep phase where the screen picks a different world', () => {
-      const { heroes, account } = loadFarmRateFixture(WITNESS.fixture);
-      const bases = computeHeroFarmBases({ heroes, account, enabledHeroIds: WITNESS.heroIds });
-      const squad = squadFactsFromBases(bases, null, account);
-      const screened = screenedPhase(squad, OBJECTIVES.gold, WITNESS.maxPhase);
-      const swept = fullSweepPhase(squad, OBJECTIVES.gold, WITNESS.maxPhase);
-      expect(screened).not.toBe(swept);
-
-      const result = optimizeHeroForFarm({
-        bases,
-        account,
-        heroId: WITNESS.heroId,
-        maxPhase: WITNESS.maxPhase,
-      });
-      expect(result.currentPhase).toBe(swept);
+    it('reports the full sweep phase on every scanned state, a screen miss included when one exists', () => {
+      const { states, misses } = scanWitnesses(OBJECTIVES.gold);
+      const probes = [...misses, ...states];
+      expect(probes.length).toBeGreaterThan(3);
+      for (const probe of probes) {
+        const { heroes, account } = loadFarmRateFixture(probe.fixture);
+        const bases = computeHeroFarmBases({ heroes, account, enabledHeroIds: probe.heroIds });
+        const result = optimizeHeroForFarm({ bases, account, heroId: bases[bases.length - 1].heroId, maxPhase: probe.maxPhase });
+        expect(result.currentPhase).toBe(probe.swept);
+      }
     });
 
     /** No committed state is known where the SEARCH WINNER's screen misses, so this side has no

@@ -93,6 +93,7 @@ import {
   type PassagemBastaoFieldPulse,
 } from './model';
 import { atoIndex } from './model/cadence';
+import { simulateClear, type ClearHero, type ClearPropType } from './model/clear-time';
 export {
   HOP_DISTRIBUTION,
   CYCLE_LATENCY_SEC,
@@ -233,6 +234,19 @@ export type HeroFarmFacts = {
   plantsPerSecByAto?: readonly number[];
   /** `1 + 0.5 × context.blastRange`, blocks hit per bomb. Note: `blastRange` is already `1 + rangeCells`. */
   blocksPerBomb: number;
+  /**
+   * The NON-CRIT hit before phase mitigation, with `dmgMult` (second blast, execute) — what the
+   * clear simulation rolls crits on. OPTIONAL: a hand-built `HeroFarmFacts` without it is priced
+   * from {@link avgHitBase} as a hero that never crits. `computeHeroFarmFacts` always sets it.
+   */
+  hitNoCritBase?: number;
+  /** Effective sheet crit chance, PERCENT, unclamped; the row clamps at the stat cap. */
+  critChancePct?: number;
+  /** Effective sheet crit damage, PERCENT — a crit deals `1 + critDmgPct / 100` times the hit. */
+  critDmgPct?: number;
+  /** Cells a blast covers, `1 + 4 × context.blastRange` for the plus-shaped cross. OPTIONAL: derived
+   *  from {@link blocksPerBomb} when absent. */
+  blastCells?: number;
   /** House duty cycle as a FRACTION 0..1 (the pipeline reports this as a percent). */
   uptime: number;
   /**
@@ -654,8 +668,8 @@ export function computeHeroFarmBases(input: FarmFactsInput): HeroFarmBasis[] {
 export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, number>): HeroFarmFacts {
   const sheet = buildCandidateSheet(basis.effective, basis.pts, basis.effectiveDelta, pts);
 
-  const avgHitBase =
-    predictHitDamage(sheet.attack, 0, sheet.penetration, basis.dmgMult) * critFactor(sheet.critChance, sheet.critDmg);
+  const hitNoCritBase = predictHitDamage(sheet.attack, 0, sheet.penetration, basis.dmgMult);
+  const avgHitBase = hitNoCritBase * critFactor(sheet.critChance, sheet.critDmg);
   const penetrationPct = sheet.penetration;
   const fuseSecs = fuseSeconds(sheet.cdr);
   const walkSpeedCells = sheet.speed * GRID_SPEED_COEF;
@@ -688,6 +702,10 @@ export function heroFactsFromBasis(basis: HeroFarmBasis, pts: Record<SheetKey, n
     plantsPerSec,
     plantsPerSecByAto,
     blocksPerBomb: basis.blocksPerBomb,
+    hitNoCritBase,
+    critChancePct: sheet.critChance,
+    critDmgPct: sheet.critDmg,
+    blastCells: 1 + 4 * basis.context.blastRange,
     uptime,
     heroLuckPct: basis.heroLuckPct,
     veiaOuroLevel: basis.veiaOuroLevel,
@@ -1171,8 +1189,9 @@ export type FarmRateRow = {
    *  `cyclesPerHour × propsPerMap`. */
   propsPerHour: number;
   cyclesPerHour: number; // 0 when clearSecs is not finite
-  /** Seconds to clear the map, from the wave starting: {@link clearHeadSeconds} + the props
-   *  + a gate's boss. `Infinity` when the squad cannot clear it. */
+  /** Seconds to clear the map, from the wave starting: the standing-props integral of
+   *  `model/clear-time.ts` (head included) + a gate's boss. `Infinity` when the squad cannot
+   *  clear it. */
   clearSecs: number;
   gateTimerSecs: number | null; // null on non-gate
   /** Every enabled hero one-shots every prop type. `false` for an empty pool. */
@@ -1288,18 +1307,14 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
     squad.houseSlots,
   );
 
-  let shareDenom = 0;
   let bossRateSum = 0;
   let heroesOnField = 0;
   let fortunaWeightedSum = 0;
-  const terms = new Array<number>(perHero.length).fill(0);
   const effectiveUptime = new Array<number>(perHero.length).fill(0);
   for (let i = 0; i < perHero.length; i++) {
     const hero = squad.heroes[i];
     const onField = hero.uptime * activity[i];
-    terms[i] = perHero[i].fullTerm * activity[i];
     effectiveUptime[i] = onField;
-    shareDenom += terms[i];
     bossRateSum += perHero[i].fullBossTerm * activity[i];
     heroesOnField += onField;
     // House-allocated, not unconstrained: an aura a hero cannot keep on the field cannot stack.
@@ -1316,40 +1331,66 @@ function buildRow(line: WikiPhaseLine, squad: SquadFarmFacts, options: FarmRateO
   const concurrencyScale = fieldQueue.servedFraction;
   const fieldContention = fieldQueue.contention;
 
-  const propsPerSec = concurrencyScale * shareDenom;
   const bossPerSec = concurrencyScale * bossRateSum;
 
-  const veiaOuroPerLevel = LOOT_ABILITY_VALUES.veia_ouro.perLevel;
-  let goldSelfMixSum = 0;
-  let expectedHtkSum = 0;
-  for (let i = 0; i < perHero.length; i++) {
-    const hero = squad.heroes[i];
-    const { eHtk } = perHero[i];
-    // The House-allocated term, not the unconstrained one: a hero the House cannot keep fed
-    // contributes proportionally less to the squad's gold mix, exactly as it does to its rate.
-    const share = shareDenom > 0 ? terms[i] / shareDenom : 0;
-    const goldSelf = 1 + veiaOuroPerLevel * hero.veiaOuroLevel;
-    goldSelfMixSum += share * goldSelf;
-    // Guard `0 × Infinity = NaN`: a degenerate hero (eHtk === Infinity) with a genuinely zero
-    // share must contribute exactly 0 here, not NaN. `share === 0` already means "this hero adds
-    // nothing to the squad's throughput" regardless of what its own (unreachable) eHtk is.
-    if (share > 0) expectedHtkSum += share * eHtk;
-  }
-  const goldSelfMix = shareDenom > 0 ? goldSelfMixSum : 1;
-  const expectedHtk = shareDenom > 0 ? expectedHtkSum : Infinity;
-
+  // The clear itself: the standing-props integral (`model/clear-time.ts`), once per level the
+  // entry pulse holds the field at, the levels' RATES blended by their share of wall clock. Each
+  // hero enters with the presence the House and the field queue granted it, and the non-crit hit
+  // it lands at this phase's mitigation — the simulation rolls the crits.
   const propCount = propCountForAto(line.ato);
-  const clearSecs =
-    clearHeadSeconds(heroesOnField, squad.meanFuseSecs) +
-    propCount / propsPerSec +
-    (line.gate ? 1 / bossPerSec : 0);
+  // Types with the same HP are one type to the clear (they take the same hits), merged here so
+  // the integral loops over nine, not ten.
+  const propTypes: ClearPropType[] = [];
+  for (const prop of PROP_SHARES) {
+    const hp = propHp(line.hp, prop.hpMult);
+    const same = propTypes.find((type) => type.hp === hp);
+    if (same) same.weight += prop.share;
+    else propTypes.push({ hp, weight: prop.share });
+  }
+  let clearRateSum = 0;
+  let clearHtkSum = 0;
+  const killShareSum = new Array<number>(squad.heroes.length).fill(0);
+  for (const level of pulse.levels) {
+    const clearHeroes: ClearHero[] = squad.heroes.map((hero, i) => {
+      const hitNoCritBase = hero.hitNoCritBase ?? hero.avgHitBase;
+      const critChancePct = hero.hitNoCritBase === undefined ? 0 : Math.min(hero.critChancePct ?? 0, STAT_CAPS.critChance);
+      return {
+        presence: hero.degenerate ? 0 : effectiveUptime[i] * concurrencyScale,
+        fuseSecs: hero.fuseSecs,
+        walkSpeedCells: hero.walkSpeedCells,
+        blastCells: hero.blastCells ?? 1 + 8 * (hero.blocksPerBomb - 1),
+        hitNoCrit: hitNoCritBase * mitigationFactor(line.mitig, hero.penetrationPct) * level.mult,
+        critChance: Math.max(0, critChancePct) / 100,
+        critMult: 1 + Math.max(0, hero.critDmgPct ?? 0) / 100,
+      };
+    });
+    const clear = simulateClear(clearHeroes, propTypes, propCount);
+    if (Number.isFinite(clear.clearSecs) && clear.clearSecs > 0) {
+      const rate = (level.probability * propCount) / clear.clearSecs;
+      clearRateSum += rate;
+      clearHtkSum += rate * clear.expectedHtk;
+      for (let i = 0; i < killShareSum.length; i++) killShareSum[i] += rate * clear.killShareByHero[i];
+    }
+  }
+  // Each hero's Veia de Ouro reaches the gold of the props IT kills, so the squad's mix follows
+  // the kill shares the clear itself attributed.
+  const veiaOuroPerLevel = LOOT_ABILITY_VALUES.veia_ouro.perLevel;
+  let goldSelfMix = 1;
+  if (clearRateSum > 0) {
+    goldSelfMix = 0;
+    for (let i = 0; i < squad.heroes.length; i++) {
+      goldSelfMix += (killShareSum[i] / clearRateSum) * (1 + veiaOuroPerLevel * squad.heroes[i].veiaOuroLevel);
+    }
+  }
+  /** Props per second over the whole cycle, head included — `0` when the squad cannot clear. */
+  const propsPerSec = clearRateSum;
+  /** Hits per kill over wall clock: each level's figure weighted by the kills it delivers. */
+  const expectedHtk = clearRateSum > 0 ? clearHtkSum / clearRateSum : Infinity;
+  const clearSecs = clearRateSum > 0 ? propCount / clearRateSum + (line.gate ? 1 / bossPerSec : 0) : Infinity;
   const cyclesPerHour = Number.isFinite(clearSecs) && clearSecs > 0 ? 3600 / clearSecs : 0;
 
-  // Every hourly rate is derived from the CYCLE, never from the steady-state `propsPerSec`. Two
-  // parts of a cycle drop no props — the head the squad spends coming up to speed, and a gate's
-  // boss — and `3600 × propsPerSec` bills neither. The gap grows as clears get shorter (the head
-  // is a fixed cost against a shrinking map), which is exactly where a farm board's
-  // recommendations live.
+  // Every hourly rate is derived from the CYCLE. The simulation already bills the head the squad
+  // spends coming up to speed; a gate's boss is added above and drops nothing either.
   const propsPerHour = cyclesPerHour * propCount;
 
   const eGold = line.goldComum * GOLD_SHARE_FACTOR;
