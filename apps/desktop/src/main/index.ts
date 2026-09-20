@@ -41,6 +41,8 @@ import {
 } from '@bombfarm/contracts';
 import { createPacingGate, initialConsent, isGranted, summarizePvpFilm, trayTextFor } from '@bombfarm/game-api';
 import { createAccountNotifier, resolveAccountView, resolveCachedAccountView } from './account-view.js';
+import { createApplyInjector, type ApplyInjector } from './apply/apply-inject.js';
+import { createApplyService, type ApplyService } from './apply/apply-service.js';
 import { createWriterLock, type WriterLock } from './apply/writer-lock.js';
 import { patchAccountAfterForge } from './forge/forge-account-patch.js';
 import { createForgeHistory, type ForgeHistory } from './forge/forge-history.js';
@@ -160,6 +162,8 @@ let triggeredRefresh: TriggeredRefresh | null = null;
 let marketService: MarketService | null = null;
 let forgeService: ForgeService | null = null;
 let forgeHistory: ForgeHistory | null = null;
+let applyService: ApplyService | null = null;
+let applyInjector: ApplyInjector | null = null;
 let pvpHistory: PvpHistory | null = null;
 let pvpRecorder: PvpRecorder | null = null;
 let pvpReader: PvpReader | null = null;
@@ -310,19 +314,16 @@ function startForgeRun(request: ForgeStartRequest): ForgeStartResult {
   return forgeService?.start(request) ?? { ok: false, reason: 'unavailable' };
 }
 
-// Pre-service form: no apply service exists yet, so every call answers the same refusal a
-// not-yet-constructed forge service would. The real service replaces these bodies once it is
-// wired (see the apply-run service task).
-function startApplyRun(_request: ApplyStartRequest): ApplyStartResult {
-  return { ok: false, reason: 'unavailable' };
+function startApplyRun(request: ApplyStartRequest): ApplyStartResult {
+  return applyService?.start(request) ?? { ok: false, reason: 'unavailable' };
 }
 
-function stopApplyRun(_runId: string): boolean {
-  return false;
+function stopApplyRun(runId: string): boolean {
+  return applyService?.stop(runId) ?? false;
 }
 
-function injectApplyScript(_payload: unknown): { ok: boolean } {
-  return { ok: false };
+function injectApplyScript(payload: unknown): { ok: boolean } {
+  return applyInjector?.arm(payload) ?? { ok: false };
 }
 
 // Threads Electron's real `app.isPackaged` (via `resolveAppEnv()`) so `sessionCfgPath`'s
@@ -1124,6 +1125,12 @@ async function bootstrap(): Promise<void> {
   // and transport as the cycle above, and lands its result through the cycle's own commit seam
   // so the notifier is what announces the patched bag and wallet.
   const cachedAccount = (): AccountView | null => resolveCachedAccountView({ gameReader, consentStore, accountRefresh });
+  const currentItems = (): readonly unknown[] | null => cachedAccount()?.payload.items ?? null;
+  const currentGold = (): number | null => {
+    const gold = cachedAccount()?.payload.account?.gold;
+    const parsed = typeof gold === 'string' ? Number(gold) : gold;
+    return typeof parsed === 'number' && Number.isFinite(parsed) ? parsed : null;
+  };
   pvpReader = createPvpReader({
     consentStore: { read: () => consentStore?.read() ?? initialConsent() },
     accountSource: currentAccountSource,
@@ -1144,12 +1151,8 @@ async function bootstrap(): Promise<void> {
     gate,
     accountSource: currentAccountSource,
     isGameRunning: () => gameReader?.isGameProcessRunning() ?? false,
-    currentItems: () => cachedAccount()?.payload.items ?? null,
-    currentGold: () => {
-      const gold = cachedAccount()?.payload.account?.gold;
-      const parsed = typeof gold === 'string' ? Number(gold) : gold;
-      return typeof parsed === 'number' && Number.isFinite(parsed) ? parsed : null;
-    },
+    currentItems,
+    currentGold,
     applyResult: (patch) => {
       accountRefresh?.applyPatch((payload) => patchAccountAfterForge(payload, patch, new Date().toISOString()));
     },
@@ -1167,6 +1170,32 @@ async function bootstrap(): Promise<void> {
     emit: (event) => {
       emitEvent('forge:event', event);
     },
+  });
+
+  // Constructed before the service so it can be passed in as the service's `scripted` dep.
+  applyInjector = createApplyInjector({
+    honoured: () => shouldHonourForgeInject(process.env, resolveAppEnv().isPackaged),
+  });
+  applyService = createApplyService({
+    consentStore,
+    readToken,
+    settings: () => currentSettings,
+    transport: gameApiTransport,
+    gate,
+    accountSource: currentAccountSource,
+    isGameRunning: () => gameReader?.isGameProcessRunning() ?? false,
+    currentItems,
+    currentHeroes: () => cachedAccount()?.payload.heroes ?? null,
+    currentGold,
+    writerLock,
+    requestReadNow: requestAccountReadNow,
+    emit: (event) => {
+      emitEvent('apply:event', event);
+    },
+    scripted: applyInjector,
+    log,
+    now: () => Date.now(),
+    sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   });
 
   // Fixture mode's ~20×/s ticker is the second producer that can
@@ -1342,6 +1371,8 @@ if (!gotLock) {
     marketService = null;
     forgeService = null;
     forgeInjector = null;
+    applyService = null;
+    applyInjector = null;
     // forgeHistory borrows accountOpen.db the way settingsStore does; accountStore.close()
     // below owns the handle, so it gains no close() of its own.
     forgeHistory = null;
