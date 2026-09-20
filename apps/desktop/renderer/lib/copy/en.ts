@@ -13,15 +13,49 @@
  */
 export const en = {
   // shell* — AppShell navigation and status chrome
-  shellStatusConnected: 'Connected',
-  shellStatusNotRunning: 'Game not running',
-  shellStatusStale: 'Stale',
   shellLoadingLabel: 'Loading…',
+  // game* — the game connection at the status strip's left: a word beside a dot, and the sentence
+  // the tooltip and the Live tab's dot say for it. `liveStatusLiveLabel` below is the live one.
+  gameConnected: 'Connected',
+  gameStale: 'Stale',
+  gameNotRunning: 'Not running',
+  gameConnecting: 'Connecting',
+  gameFeedStaleTip: 'The game is open, but nothing has arrived from it for {age}',
+  gameFeedStaleNoAgeTip: 'The game is open, but nothing is arriving from it',
+  gameFeedNotRunningTip: 'No game process found — the app keeps looking on its own',
   shellUpdateAvailable: 'Update available',
   shellUpdateDownloading: 'Updating… {percent}%',
   shellUpdateReady: 'Restart to update',
   shellUpdateOpenSettings: 'Open the Updates settings',
   shellCoffeeLabel: 'Buy me a coffee',
+  // feeds* — the status strip's rail of the four things the app keeps asking for, each with its
+  // own age and press, and the one press that runs all four in turn.
+  feedsAccount: 'Account',
+  feedsPvp: 'PVP',
+  feedsPrices: 'Prices',
+  feedsUpdates: 'Updates',
+  feedsRefreshAll: 'Refresh every feed, one after another',
+  feedsRefreshAllStep: '{step}/{total}',
+  feedsRefreshOne: 'Refresh {feed} now',
+  // The tooltip, top to bottom: what the feed is, where it stands, how it keeps itself fresh,
+  // why a press was refused, and — muted, last — what a click does.
+  feedsWhatAccount: 'Your heroes, bag, skill tree and house, read from the game',
+  feedsWhatPvp: 'Your PVP standing and the points ranking',
+  feedsWhatPrices: 'The market price list',
+  feedsWhatUpdates: 'Whether a newer version of this app is out',
+  feedsLastRead: 'Last read {age}',
+  feedsNeverRead: 'Not read yet',
+  feedsReadingNow: 'Reading now…',
+  feedsOutOfDate: 'Out of date — this screen was computed from an older copy of the account',
+  feedsNoClock: 'Read when its tab opens, and by every duel',
+  feedsClickToUpdate: 'Click to update now',
+  feedsUpdatesOff: 'This build does not check for updates — installed Beta and stable builds do',
+  feedsUpdatesBusy: 'An update is already on its way — see Settings',
+  feedsNextIn: 'next in {age}',
+  feedsNextDue: 'due now',
+  feedsEvery: 'every {cycle}',
+  feedsRefused: 'refused',
+  feedsCycleMinutes: '{n} min',
   // The top bar's overflow button, and the referral row inside it — a menu row is read on its own
   // line, so it says what the click does rather than repeating the chip's whole sentence.
   shellMoreActionsLabel: 'More actions',

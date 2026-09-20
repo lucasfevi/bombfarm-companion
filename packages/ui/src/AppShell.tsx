@@ -1,5 +1,5 @@
 import type { CSSProperties, PropsWithChildren, ReactNode, Ref } from 'react';
-import { AppNav } from './app-nav';
+import { AppNav, type AppNavItemMark } from './app-nav';
 import type { IconName } from './icon';
 import type { ShellDensity } from './shell-density';
 import { WINDOW_CONTROLS_WIDTH } from './window-controls.recipe';
@@ -29,6 +29,8 @@ export interface AppShellNavItem {
   /** Drawn in place of the label once the bar is too narrow to spell every tab; an item without
    *  one keeps its words. */
   icon?: IconName;
+  /** A dot at the item's corner for a live thing behind the screen — see `AppNavItemMark`. */
+  mark?: AppNavItemMark | undefined;
 }
 
 export interface AppShellProps extends PropsWithChildren {
@@ -139,6 +141,7 @@ export function AppShell({
     label: item.label,
     active: item.id === activeId,
     ...(item.icon === undefined ? {} : { icon: item.icon }),
+    ...(item.mark === undefined ? {} : { mark: item.mark }),
   }));
   const iconTabs = density !== 'full';
   const brandMarkOnly = density === 'brand-mark' || density === 'actions-collapsed';

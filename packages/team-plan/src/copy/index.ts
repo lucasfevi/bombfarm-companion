@@ -1,7 +1,7 @@
 /**
  * `@bombfarm/team-plan/copy` — user-facing strings for the optimizer screen.
  *
- * Three part dictionaries, one per language, merged here. Never widen a dictionary's type with
+ * Four part dictionaries, one per language, merged here. Never widen a dictionary's type with
  * `as`, `satisfies`, or an index signature: each of those defeats the "a missing key is a compile
  * error naming the key" guarantee the plain value-widening annotation gives — see `pt-BR.ts`'s
  * header comment for the full argument.
@@ -12,6 +12,8 @@ import { teamPlanObjectivePairsEn } from './objective-en';
 import { teamPlanObjectivePairsPtBR } from './objective-pt-BR';
 import { teamPlanGearFlowEn } from './gear-flow-en';
 import { teamPlanGearFlowPtBR } from './gear-flow-pt-BR';
+import { teamPlanChangesEn } from './changes-en';
+import { teamPlanChangesPtBR } from './changes-pt-BR';
 import type { Lang, RosterCopy, StatPanelCopy } from '@bombfarm/hero/copy';
 import type { TeamPlanHostCopy } from './host-copy';
 
@@ -21,6 +23,8 @@ export { teamPlanObjectivePairsEn } from './objective-en';
 export { teamPlanObjectivePairsPtBR } from './objective-pt-BR';
 export { teamPlanGearFlowEn } from './gear-flow-en';
 export { teamPlanGearFlowPtBR } from './gear-flow-pt-BR';
+export { teamPlanChangesEn } from './changes-en';
+export { teamPlanChangesPtBR } from './changes-pt-BR';
 export type { TeamPlanHostCopy } from './host-copy';
 export { parseEmphasis } from './format';
 
@@ -29,17 +33,20 @@ export type TeamPlanObjectivePairsCopy = {
   readonly [K in keyof typeof teamPlanObjectivePairsEn]: string;
 };
 export type TeamPlanGearFlowCopy = { readonly [K in keyof typeof teamPlanGearFlowEn]: string };
+export type TeamPlanChangesCopy = { readonly [K in keyof typeof teamPlanChangesEn]: string };
 
 export const teamPlanEn = {
   ...teamPlanPageEn,
   ...teamPlanObjectivePairsEn,
   ...teamPlanGearFlowEn,
+  ...teamPlanChangesEn,
 } as const;
 
 export const teamPlanPtBR: TeamPlanCopy = {
   ...teamPlanPagePtBR,
   ...teamPlanObjectivePairsPtBR,
   ...teamPlanGearFlowPtBR,
+  ...teamPlanChangesPtBR,
 };
 
 export type TeamPlanCopy = { readonly [K in keyof typeof teamPlanEn]: string };

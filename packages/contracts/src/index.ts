@@ -49,7 +49,7 @@ export { migrateStoredSettings } from './settings-migration.js';
  *  body, never at either module's top level, so the two modules finish initialising before either
  *  is actually called. */
 export * from './locale.js';
-export { disabledUpdateStatus, idleUpdateStatus, initialUpdateStatus } from './update.js';
+export { disabledUpdateStatus, idleUpdateStatus, initialUpdateStatus, UPDATE_CHECK_INTERVAL_MS } from './update.js';
 export type { UpdateErrorReason, UpdatePhase, UpdateStatus } from './update.js';
 export { isTrustworthySection } from './account-payload.js';
 export type {
@@ -101,6 +101,7 @@ export type {
 } from './market.js';
 export {
   DEFAULT_MARKET_QUOTE_CURRENCY,
+  MARKET_SNAPSHOT_CHECK_MS,
   MARKET_QUOTE_CURRENCIES,
   emptyMarketSnapshotView,
   isMarketQuoteCurrency,
@@ -385,6 +386,10 @@ export type AccountReadRefusal =
  *  `account:changed`, and only if it changed something. */
 export type AccountReadResult = { ok: true } | { ok: false; reason: AccountReadRefusal };
 
+/** `ok` means the check ran; the view says what it found. The refusal reasons are the account
+ *  read's own, so one dictionary of words covers every feed's press. */
+export type MarketCheckResult = { ok: true; view: MarketSnapshotView } | { ok: false; reason: AccountReadRefusal };
+
 export interface AppEnvironmentInfo {
   flavor: AppFlavor;
   productName: string;
@@ -464,6 +469,10 @@ export interface IpcChannels {
    *  `isMarketQuoteTarget` before anything acts on it — the renderer is not trusted to have sent
    *  a well-formed one. */
   'market:refreshItem': { args: [MarketQuoteTarget]; result: MarketQuoteResult };
+  /** Asks main to check the published price list now — the same conditional request its own
+   *  clock makes every fifteen minutes. `ok` carries the view the check left behind, whether or
+   *  not it found anything new; a press inside the floor is refused rather than queued. */
+  'market:check': { args: []; result: MarketCheckResult };
   /** The one channel that spends the player's gold. Main re-validates the request against the
    *  account it holds and refuses with a named reason rather than trusting the renderer. */
   'forge:start': { args: [ForgeStartRequest]; result: ForgeStartResult };
@@ -529,6 +538,7 @@ export const IPC_CHANNELS = [
   'updates:installOnRestart',
   'market:getSnapshot',
   'market:refreshItem',
+  'market:check',
   'forge:start',
   'forge:cancel',
   'forge:history',

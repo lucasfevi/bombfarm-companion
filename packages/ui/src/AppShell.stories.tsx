@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { useState, type ComponentProps } from 'react';
 import { AppShell, type AppShellNavItem } from './AppShell';
 import { SegmentedToggle } from './segmented-toggle';
-import { StatusChip } from './status-chip';
 import { EmptyState } from './empty-state';
 
 const NAV_ITEMS: AppShellNavItem[] = [
@@ -40,7 +39,7 @@ function AppShellDemo(props: Partial<ComponentProps<typeof AppShell>>) {
           ariaLabel="Language"
         />
       }
-      status={<StatusChip status="connected" label="Connected" />}
+      status={<span className="text-[11px] text-muted">Game · live</span>}
       version={<span className="font-mono text-xs text-muted">v0.1.0</span>}
       {...props}
     >
@@ -74,7 +73,7 @@ export const NoNav: Story = {
     <AppShell
       title="Bomb Farm Companion"
       items={[]}
-      status={<StatusChip status="not_running" label="Game not running" />}
+      status={<span className="text-[11px] text-muted">Game · not running</span>}
       version={<span className="font-mono text-xs text-muted">v0.1.0</span>}
     >
       <DemoContent />

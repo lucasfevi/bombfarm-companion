@@ -68,7 +68,7 @@ test.describe('Team plan objective', () => {
     // Not a stale banner over gold numbers under a damage heading — the section is gone.
     await expect(results).toHaveCount(0);
     await expect(page.getByText(GOLD_HEADER)).toHaveCount(0);
-    await expect(page.getByText(/Inputs changed since this plan was computed/i)).toHaveCount(0);
+    await expect(page.getByText(/Since this plan was computed/i)).toHaveCount(0);
   });
 });
 

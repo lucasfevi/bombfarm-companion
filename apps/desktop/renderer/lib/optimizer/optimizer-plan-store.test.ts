@@ -1,29 +1,33 @@
 import { describe, expect, it } from 'vitest';
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import type { PlanBasis } from '@bombfarm/team-plan/core';
 import { acceptPlan, initialOptimizerPlanState, type OptimizerPlanState } from './optimizer-plan-store';
 
 const PLAN = { gain: 1 } as unknown as TeamPlan;
 const OTHER_PLAN = { gain: 2 } as unknown as TeamPlan;
 const HEROES = [{ id: 'h1', name: 'Alpha' }] as unknown as readonly HeroRecord[];
 const LATER_HEROES = [{ id: 'h2', name: 'Beta' }] as unknown as readonly HeroRecord[];
+const BASIS = { inputs: { heroes: HEROES }, controls: {} } as unknown as PlanBasis;
+const LATER_BASIS = { inputs: { heroes: LATER_HEROES }, controls: {} } as unknown as PlanBasis;
 
 describe('startRun', () => {
   it('starts a new run, clearing any previous plan and recording the signature it was built from', () => {
-    const state = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES });
+    const state = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES, basis: BASIS });
     expect(state).toEqual({
       runStatus: 'running',
       runId: 'r1',
       plan: null,
       signature: 'sig-1',
       heroes: HEROES,
+      basis: BASIS,
       openHeroIds: null,
     });
   });
 
   it('is a no-op for the run already in flight', () => {
-    const state = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES });
-    expect(acceptPlan(state, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES })).toBe(state);
+    const state = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES, basis: BASIS });
+    expect(acceptPlan(state, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES, basis: BASIS })).toBe(state);
   });
 
   it('a new Optimize supersedes — starting run r2 drops the plan and signature r1 left', () => {
@@ -33,21 +37,23 @@ describe('startRun', () => {
       plan: PLAN,
       signature: 'sig-1',
       heroes: HEROES,
+      basis: BASIS,
       openHeroIds: ['h1'],
     };
-    const state = acceptPlan(applied, { kind: 'startRun', runId: 'r2', signature: 'sig-2', heroes: LATER_HEROES });
+    const state = acceptPlan(applied, { kind: 'startRun', runId: 'r2', signature: 'sig-2', heroes: LATER_HEROES, basis: LATER_BASIS });
     expect(state).toEqual({
       runStatus: 'running',
       runId: 'r2',
       plan: null,
       signature: 'sig-2',
       heroes: LATER_HEROES,
+      basis: LATER_BASIS,
       openHeroIds: null,
     });
   });
 
   it('records the roster the run was solved from, so the result rows outlive a re-taken snapshot', () => {
-    const state = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES });
+    const state = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES, basis: BASIS });
     const applied = acceptPlan(state, { kind: 'applyPlan', runId: 'r1', plan: PLAN });
     expect(applied.heroes).toBe(HEROES);
   });
@@ -55,20 +61,20 @@ describe('startRun', () => {
 
 describe('resolveRun', () => {
   it('sets the run status for the run currently in flight', () => {
-    const running = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES });
+    const running = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES, basis: BASIS });
     const state = acceptPlan(running, { kind: 'resolveRun', runId: 'r1', status: 'blocked' });
     expect(state.runStatus).toBe('blocked');
     expect(state.runId).toBe('r1');
   });
 
   it('is ignored for a run that has already been superseded', () => {
-    const running = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r2', signature: 'sig-2', heroes: HEROES });
+    const running = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r2', signature: 'sig-2', heroes: HEROES, basis: BASIS });
     const state = acceptPlan(running, { kind: 'resolveRun', runId: 'r1', status: 'error' });
     expect(state).toBe(running);
   });
 
   it('is a no-op when the status did not actually move', () => {
-    const running = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES });
+    const running = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES, basis: BASIS });
     const blocked = acceptPlan(running, { kind: 'resolveRun', runId: 'r1', status: 'blocked' });
     expect(acceptPlan(blocked, { kind: 'resolveRun', runId: 'r1', status: 'blocked' })).toBe(blocked);
   });
@@ -76,7 +82,7 @@ describe('resolveRun', () => {
 
 describe('applyPlan', () => {
   it('applies the plan for the run currently in flight, keeping the recorded signature', () => {
-    const running = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES });
+    const running = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES, basis: BASIS });
     const state = acceptPlan(running, { kind: 'applyPlan', runId: 'r1', plan: PLAN });
     expect(state).toEqual({
       runStatus: 'done',
@@ -84,31 +90,32 @@ describe('applyPlan', () => {
       plan: PLAN,
       signature: 'sig-1',
       heroes: HEROES,
+      basis: BASIS,
       openHeroIds: null,
     });
   });
 
   it('a new plan opens the default rows again, whatever the previous plan had open', () => {
-    const running = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES });
+    const running = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES, basis: BASIS });
     const opened = acceptPlan(running, { kind: 'openHeroes', heroIds: ['h1', 'h2'] });
     expect(acceptPlan(opened, { kind: 'applyPlan', runId: 'r1', plan: PLAN }).openHeroIds).toBeNull();
   });
 
   it('a late applyPlan for a superseded runId is discarded — a run finished after Cancel or a control change cannot land', () => {
-    const running = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r2', signature: 'sig-2', heroes: HEROES });
+    const running = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r2', signature: 'sig-2', heroes: HEROES, basis: BASIS });
     const state = acceptPlan(running, { kind: 'applyPlan', runId: 'r1', plan: PLAN });
     expect(state).toBe(running);
   });
 
   it('a re-reported applyPlan for the same run and the same plan reference returns the same state', () => {
-    const running = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES });
+    const running = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES, basis: BASIS });
     const applied = acceptPlan(running, { kind: 'applyPlan', runId: 'r1', plan: PLAN });
     const reReported = acceptPlan(applied, { kind: 'applyPlan', runId: 'r1', plan: PLAN });
     expect(reReported).toBe(applied);
   });
 
   it('a different plan reference for the same run still applies (the runner resolved a fresh result)', () => {
-    const running = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES });
+    const running = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES, basis: BASIS });
     const applied = acceptPlan(running, { kind: 'applyPlan', runId: 'r1', plan: PLAN });
     const reapplied = acceptPlan(applied, { kind: 'applyPlan', runId: 'r1', plan: OTHER_PLAN });
     expect(reapplied.plan).toBe(OTHER_PLAN);
@@ -117,7 +124,7 @@ describe('applyPlan', () => {
 
 describe('clearPlan', () => {
   it('resets runStatus, runId, plan, signature, roster and open rows to idle/null', () => {
-    const running = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES });
+    const running = acceptPlan(initialOptimizerPlanState, { kind: 'startRun', runId: 'r1', signature: 'sig-1', heroes: HEROES, basis: BASIS });
     const applied = acceptPlan(running, { kind: 'applyPlan', runId: 'r1', plan: PLAN });
     const opened = acceptPlan(applied, { kind: 'openHeroes', heroIds: ['h1'] });
     expect(acceptPlan(opened, { kind: 'clearPlan' })).toEqual(initialOptimizerPlanState);

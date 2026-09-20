@@ -6,11 +6,13 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { buildTeamPlanInput, DEFAULT_TEAM_PLAN_CONTROLS } from '@bombfarm/team-plan/core';
+import { buildTeamPlanInput, DEFAULT_TEAM_PLAN_CONTROLS, type PlanBasis } from '@bombfarm/team-plan/core';
 import type { AccountFidelity, AccountPayload, AccountView } from '@bombfarm/contracts';
 import { accountChangeKey } from '@bombfarm/contracts';
 import { buildOptimizerInputs } from './optimizer-inputs';
 import { createOptimizerStore, optimizerSnapshotStale } from './use-optimizer-snapshot';
+
+const EMPTY_BASIS = { inputs: { heroes: [] }, controls: {} } as unknown as PlanBasis;
 
 function fidelityAt(capturedAt: string): AccountFidelity {
   return {
@@ -164,7 +166,7 @@ describe('the snapshot store computes once and does not follow the live account'
     const later = viewAtLevel(80);
 
     open(first.view, first.key, null);
-    startRun('r1', 'sig-1', []);
+    startRun('r1', 'sig-1', [], EMPTY_BASIS);
     applyPlan('r1', { gain: 1 } as never);
     const planBeforeRefresh = planStore.getState();
 
@@ -182,8 +184,8 @@ describe('the lifecycle actions reach the plan store', () => {
   it('startRun, resolveRun, applyPlan, openHeroes and clearPlan each dispatch into it', () => {
     const { planStore, startRun, resolveRun, applyPlan, openHeroes, clearPlan } = createOptimizerStore();
 
-    startRun('r1', 'sig-1', []);
-    expect(planStore.getState()).toMatchObject({ runStatus: 'running', runId: 'r1', signature: 'sig-1', heroes: [] });
+    startRun('r1', 'sig-1', [], EMPTY_BASIS);
+    expect(planStore.getState()).toMatchObject({ runStatus: 'running', runId: 'r1', signature: 'sig-1', heroes: [], basis: EMPTY_BASIS });
 
     resolveRun('r1', 'blocked');
     expect(planStore.getState().runStatus).toBe('blocked');
@@ -201,6 +203,7 @@ describe('the lifecycle actions reach the plan store', () => {
       plan: null,
       signature: null,
       heroes: null,
+      basis: null,
       openHeroIds: null,
     });
   });

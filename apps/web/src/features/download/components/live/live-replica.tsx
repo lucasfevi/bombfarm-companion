@@ -32,7 +32,7 @@ export function LiveReplica({ lang }: { lang: Lang }) {
   return (
     <div className="w-full overflow-hidden rounded-xl border border-line bg-bg-2 shadow-[0_40px_90px_-44px_rgba(0,0,0,1)]">
       <div aria-hidden="true">
-        <ReplicaChrome lang={lang} />
+        <ReplicaChrome />
         <div className="flex flex-col gap-3 p-3 sm:p-4">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <EarningsCard lang={lang} earnings={frame.earnings} measured={frame.measured} />

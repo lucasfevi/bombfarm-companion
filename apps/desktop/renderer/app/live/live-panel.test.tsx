@@ -26,13 +26,20 @@ function slowModel(overrides: Partial<LiveSlowModel> = {}): LiveSlowModel {
 const emptyFast: LiveFastModel = { field: {}, recovery: {}, energy: {} };
 
 describe('LivePanel — composition', () => {
-  it('carries the panel root testid, the freshness line, and the field occupancy count', () => {
+  it('carries the panel root testid and the field occupancy count; live needs no line of its own', () => {
     const html = renderToStaticMarkup(
       createElement(LivePanel, { freshness: { kind: 'live' }, slow: slowModel(), fast: emptyFast }),
     );
     expect(html).toContain('data-testid="live-panel"');
-    expect(html).toContain('data-testid="live-freshness"');
+    expect(html).not.toContain('data-testid="live-freshness"');
     expect(html).toContain('data-testid="live-state-summary-on-field-count"');
+  });
+
+  it('a gap draws the freshness line, as words in the warn tone rather than a chip', () => {
+    const html = renderToStaticMarkup(
+      createElement(LivePanel, { freshness: { kind: 'gap', reason: 'clientNotStreaming', actionable: false, sinceAt: 't' }, slow: slowModel(), fast: emptyFast }),
+    );
+    expect(html).toContain('data-testid="live-freshness"');
   });
 
   it('puts the earnings panel in the first column of a page-level two-column grid, with the heroes panel spanning full width outside it', () => {

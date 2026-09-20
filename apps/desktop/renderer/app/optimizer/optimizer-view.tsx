@@ -28,6 +28,7 @@ import { useAccountReadRequest } from '../../lib/account/use-account-read-reques
 import { settledSnapshot } from '../../lib/optimizer/optimizer-snapshot-store';
 import { useOptimizerSnapshot } from '../../lib/optimizer/use-optimizer-snapshot';
 import { DEFAULT_OPTIMIZER_VIEW, loadOptimizerView, saveOptimizerView, type OptimizerView } from '../../lib/optimizer/optimizer-view-storage';
+import { useScreenRefreshRegistration } from '../../lib/refresh/screen-refresh-store';
 import { OptimizerScreen } from './optimizer-screen';
 
 export function OptimizerView() {
@@ -91,6 +92,7 @@ export function OptimizerView() {
 
   const settled = settledSnapshot(state);
   const busy = state.status === 'computing';
+  useScreenRefreshRegistration('optimizer', { capturedAt: settled?.capturedAt ?? null, stale, busy, readState, onRefresh });
 
   if (account.status === 'bridge-unavailable') {
     return (
@@ -151,7 +153,6 @@ export function OptimizerView() {
         setControls={setControls}
         planState={planState}
         runner={runner}
-        refresh={{ stale, busy, readState, onRefresh }}
         actions={{ startRun, resolveRun, applyPlan, clearPlan, openHeroes }}
       />
     </div>

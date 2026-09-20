@@ -21,6 +21,7 @@ import * as breakdown from '@/shared/i18n/namespaces/breakdown';
 import * as phases from '@/shared/i18n/namespaces/phases';
 import * as teamPlan from '@/shared/i18n/namespaces/team-plan';
 import * as teamPlanGearFlow from '@/shared/i18n/namespaces/team-plan-gear-flow';
+import * as teamPlanChanges from '@/shared/i18n/namespaces/team-plan-changes';
 import * as teamPlanObjective from '@/shared/i18n/namespaces/team-plan-objective';
 import * as importNs from '@/shared/i18n/namespaces/import';
 import * as stats from '@/shared/i18n/namespaces/stats';
@@ -189,6 +190,9 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as { en: Strings; 
  */
 const KEYS_REMOVED: readonly string[] = [
   'navTeamPlan',
+  // The Optimizer screen lost its own title line (2026-09-20): the tab and the nav already name
+  // it, and its region keeps `teamPlanPageLandmark` as its accessible name.
+  'teamPlanPageTitle',
   // The Planner page is the Heroes page (2026-09-15), the name the desktop app gives the same
   // screen; `navHeroes` (in `KEYS_ADDED`) carries the label in both languages.
   'navPlanner',
@@ -502,6 +506,75 @@ const KEYS_REMOVED: readonly string[] = [
  */
 const KEYS_ADDED: readonly string[] = [
   'navHeroes',
+  // The Optimizer's ledger of what changed since the plan (2026-09-19): the notice that only
+  // said inputs had changed now lists each change with before, after and a verdict, and the
+  // field names, group titles and control labels it prints are these.
+  'teamPlanChangesTitle',
+  'teamPlanChangesCountOne',
+  'teamPlanChangesCountMany',
+  'teamPlanChangesRecompute',
+  'teamPlanChangesKeep',
+  'teamPlanChangesGroupPlan',
+  'teamPlanChangesGroupProgress',
+  'teamPlanChangesGroupNoise',
+  'teamPlanChangesRotationOne',
+  'teamPlanChangesRotationMany',
+  'teamPlanChangesColWhat',
+  'teamPlanChangesColChange',
+  'teamPlanChangesColBeforeNow',
+  'teamPlanChangesColVerdict',
+  'teamPlanChangesAsked',
+  'teamPlanChangesAskedDone',
+  'teamPlanChangesNobody',
+  'teamPlanChangesOn',
+  'teamPlanChangesOff',
+  'teamPlanChangesSubjectAccount',
+  'teamPlanChangesSubjectSetup',
+  'teamPlanChangesHeroAdded',
+  'teamPlanChangesHeroRemoved',
+  'teamPlanChangesLevel',
+  'teamPlanChangesStars',
+  'teamPlanChangesPoints',
+  'teamPlanChangesPointsAvailable',
+  'teamPlanChangesAbility',
+  'teamPlanChangesRuneGained',
+  'teamPlanChangesRuneLost',
+  'teamPlanChangesHeroOther',
+  'teamPlanChangesItemAdded',
+  'teamPlanChangesItemRemoved',
+  'teamPlanChangesForge',
+  'teamPlanChangesEquippedBy',
+  'teamPlanChangesItemOther',
+  'teamPlanChangesTree',
+  'teamPlanChangesTreeTeamCoin',
+  'teamPlanChangesXp',
+  'teamPlanChangesRuneAxisGold',
+  'teamPlanChangesFieldHouseIdx',
+  'teamPlanChangesFieldHouseLevel',
+  'teamPlanChangesFieldPhase',
+  'teamPlanChangesFieldMaxPhase',
+  'teamPlanChangesFieldSlots',
+  'teamPlanChangesFieldFieldSlots',
+  'teamPlanChangesFieldHouseCycleSecs',
+  'teamPlanChangesControlForgeFloor',
+  'teamPlanChangesControlObjective',
+  'teamPlanChangesControlAllowedChanges',
+  'teamPlanChangesControlIgnoreFieldCrowding',
+  'teamPlanChangesControlAurasAtCap',
+  'teamPlanChangesControlTargetPhase',
+  'teamPlanChangesScope',
+  'teamPlanChangesGroupBreaks',
+  'teamPlanChangesAlso',
+  'teamPlanChangesKindPoints',
+  'teamPlanChangesKindAbilities',
+  'teamPlanChangesKindForge',
+  'teamPlanChangesKindGear',
+  'teamPlanChangesKindBag',
+  'teamPlanChangesKindAccount',
+  'teamPlanChangesKindSetup',
+  'teamPlanChangesKindSheet',
+  'teamPlanChangesHeroRemovedUsed',
+  'teamPlanChangesItemRemovedUsed',
   // The inventory names a hero cage by its act (2026-09-17) instead of printing `chest_hero_3`.
   'inventoryChestHero',
   // The Farm page's Optimize button opens the Optimizer (2026-09-14) instead of solving a
@@ -1081,7 +1154,6 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   // their text. The explain section is retitled to match and its opening sentence no longer says
   // the search scores for DPS, which stopped being the only objective.
   'teamPlanPageLandmark',
-  'teamPlanPageTitle',
   'explainSections.8.h',
   'explainSections.8.p.0',
   // Team auras get their own switches on the Combat tab (2026-09-11), and the Account page
@@ -1174,6 +1246,7 @@ const namespaces = [
   ['phases', phases],
   ['teamPlan', teamPlan],
   ['teamPlanGearFlow', teamPlanGearFlow],
+  ['teamPlanChanges', teamPlanChanges],
   ['teamPlanObjective', teamPlanObjective],
   ['import', importNs],
   ['stats', stats],

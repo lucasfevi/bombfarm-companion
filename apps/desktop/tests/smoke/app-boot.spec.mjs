@@ -37,7 +37,8 @@ test.describe('app boot smoke', () => {
     try {
       const page = await app.firstWindow();
       await page.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
-      await expect(page.getByTestId('game-status-chip')).toHaveText('Connected', { timeout: 15_000 });
+      await expect(page.getByTestId('game-feed')).toHaveAttribute('data-game', 'connected', { timeout: 15_000 });
+      await expect(page.getByTestId('game-feed-value')).toHaveText('Connected');
 
       // Both directions of `BFC_HIDE_WINDOWS`, from whichever run is happening. Without this the
       // hidden run would be green whether or not the flag was honoured, and the flag could rot

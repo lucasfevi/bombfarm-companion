@@ -204,7 +204,8 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
     await expect(page.locator('[data-scope-column="leaveAlone"] article')).toHaveCount(0);
 
     await expect(page.getByTestId('optimizer-left-out')).toBeVisible();
-    await expect(page.getByTestId('account-refresh-age')).toContainText('account read');
+    // The fixture's capture is weeks old, and age alone is never amber: read, and not out of date.
+    await expect(page.getByTestId('account-refresh')).toHaveAttribute('data-state', 'fresh');
   });
 
   test('Optimize renders results off the main thread', async () => {
@@ -295,9 +296,9 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
   });
 
   test('a live tick changes nothing; Refresh labels the plan stale', async () => {
-    // The package's own stale-plan sentence — inlined the same way the main-thread-fallback
-    // sentence above is, since the package's copy module lives outside what a `.mjs` spec reads.
-    const STALE_NOTICE_TEXT = /Inputs changed since this plan was computed/i;
+    // The package's own ledger heading — inlined the same way the main-thread-fallback sentence
+    // above is, since the package's copy module lives outside what a `.mjs` spec reads.
+    const STALE_NOTICE_TEXT = /Since this plan was computed/i;
 
     bumpFirstHeroLevelAtomically(fixtureFile);
     // Twelve 50ms fixture ticks — long enough for the reader to pick up the rewrite, per the
@@ -306,12 +307,19 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
 
     await expect(page.getByRole('heading', { name: /^Plan results$/i, level: 2 })).toBeVisible();
     await expect(page.getByText(STALE_NOTICE_TEXT)).toHaveCount(0);
-    await expect(page.getByTestId('account-refresh-age')).toContainText('out of date');
+    await expect(page.getByTestId('account-refresh')).toHaveAttribute('data-state', 'late');
 
     await page.getByTestId('account-refresh').click();
 
     await expect(page.getByText(STALE_NOTICE_TEXT)).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('heading', { name: /^Plan results$/i, level: 2 })).toBeVisible();
+    // The ledger names the change, not just that there was one: the bumped hero, levelled, as a
+    // row the plan cares about — and the refresh that re-took the snapshot is not itself a change.
+    const ledger = page.getByTestId('team-plan-changes');
+    const levelRow = ledger.locator('[data-testid="team-plan-change"][data-field="level"]');
+    await expect(levelRow).toHaveCount(1);
+    await expect(levelRow).toHaveAttribute('data-verdict', 'plan');
+    await expect(ledger.getByTestId('team-plan-changes-recompute')).toBeEnabled();
   });
 
   test('Portuguese, per-card scope change clears the plan, and the choice survives a relaunch', async () => {

@@ -64,6 +64,15 @@ export function isMarketQuoteCurrency(value: unknown): value is MarketQuoteCurre
   return typeof value === 'string' && (MARKET_QUOTE_CURRENCIES as readonly string[]).includes(value);
 }
 
+/**
+ * How stale an idle desktop's prices are allowed to get — main's own check clock, and the cycle
+ * the renderer's feed meter fills against. It does not track how often the snapshot is published
+ * (far more often than a planner needs); checking is cheap, because a check that finds nothing
+ * new is a conditional request answered 304. Below the five-minute `max-age` the published file
+ * is served with, a check could not see anything newer anyway; that is the floor, not this.
+ */
+export const MARKET_SNAPSHOT_CHECK_MS = 15 * 60 * 1000;
+
 export type MarketSnapshotSource = 'none' | 'cache' | 'network';
 
 export type MarketSnapshotError = 'network' | 'rate-limited' | 'malformed';

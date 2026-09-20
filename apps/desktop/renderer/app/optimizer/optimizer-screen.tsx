@@ -20,6 +20,7 @@ import {
   computeTeamPlanInputSignature,
   isTeamPlanStale,
   mergeScopeForRoster,
+  type PlanBasis,
   type ScopeState,
   type TeamPlanControlChange,
 } from '@bombfarm/team-plan/core';
@@ -30,23 +31,14 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { TeamAuraId } from '@bombfarm/domain/team-buffs';
 import { itemName } from '@bombfarm/domain/game-labels';
 import { useCopy, useLocale } from '../../lib/copy';
-import type { AccountReadRequestState } from '../../lib/account/use-account-read-request';
 import type { OptimizerSettledSnapshot } from '../../lib/optimizer/optimizer-snapshot-store';
 import type { OptimizerPlanState } from '../../lib/optimizer/optimizer-plan-store';
 import type { OptimizerView } from '../../lib/optimizer/optimizer-view-storage';
 import { optimizerScreenCopy, useTeamPlanCopy } from '../screen-copy';
-import { AccountRefreshControl } from '../account-refresh-control';
 import { ForgeQueueAdd } from '../forge/forge-queue-add';
 
-type OptimizerScreenRefresh = {
-  stale: boolean;
-  busy: boolean;
-  readState: AccountReadRequestState;
-  onRefresh: () => void;
-};
-
 type OptimizerScreenActionsIn = {
-  startRun: (runId: string, signature: string, heroes: readonly HeroRecord[]) => void;
+  startRun: (runId: string, signature: string, heroes: readonly HeroRecord[], basis: PlanBasis) => void;
   resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
   applyPlan: (runId: string, plan: TeamPlan) => void;
   clearPlan: () => void;
@@ -59,7 +51,6 @@ export function OptimizerScreen({
   setControls,
   planState,
   runner,
-  refresh,
   actions,
 }: {
   snapshot: OptimizerSettledSnapshot;
@@ -67,7 +58,6 @@ export function OptimizerScreen({
   setControls: (next: OptimizerView) => void;
   planState: OptimizerPlanState;
   runner: TeamPlanRunnerHandle;
-  refresh: OptimizerScreenRefresh;
   actions: OptimizerScreenActionsIn;
 }) {
   const t = useCopy();
@@ -110,6 +100,10 @@ export function OptimizerScreen({
   liveSignatureRef.current = liveSignature;
   const heroesRef = useRef(inputs.heroes);
   heroesRef.current = inputs.heroes;
+  // Frozen whole at startRun, the same way the heroes are: the ledger of what changed since the
+  // plan is read against these, not against whatever the snapshot holds when the plan lands.
+  const basisRef = useRef<PlanBasis>({ inputs, controls: mergedControls });
+  basisRef.current = { inputs, controls: mergedControls };
 
   const isStale = isTeamPlanStale(planState.signature, liveSignature);
 
@@ -119,6 +113,7 @@ export function OptimizerScreen({
       controls: mergedControls,
       plan: planState.plan,
       planHeroes: planState.heroes,
+      planBasis: planState.basis,
       runStatus: planState.runStatus,
       runId: planState.runId,
       isStale,
@@ -129,6 +124,7 @@ export function OptimizerScreen({
       mergedControls,
       planState.plan,
       planState.heroes,
+      planState.basis,
       planState.runStatus,
       planState.runId,
       isStale,
@@ -157,7 +153,7 @@ export function OptimizerScreen({
         onControlChange({ kind: 'targetPhase', value });
       },
       startRun: (runId: string) => {
-        actions.startRun(runId, liveSignatureRef.current, heroesRef.current);
+        actions.startRun(runId, liveSignatureRef.current, heroesRef.current, basisRef.current);
       },
       resolveRun: actions.resolveRun,
       applyPlan: actions.applyPlan,
@@ -204,22 +200,13 @@ export function OptimizerScreen({
           testId="optimizer-auras-at-cap"
         />
       ),
-      headerOverlay: (
-        <AccountRefreshControl
-          capturedAt={snapshot.capturedAt}
-          stale={refresh.stale}
-          busy={refresh.busy}
-          readState={refresh.readState}
-          onRefresh={refresh.onRefresh}
-        />
-      ),
       emptyState: (kind: TeamPlanEmptyStateKind) => {
         const [title, body] = emptyTitleBody[kind];
         return <TeamPlanEmptyPanel title={title} body={body} />;
       },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- emptyTitleBody is derived from t each render
-    [snapshot.capturedAt, refresh, t, lang, forgeQueueAction, aurasAtCap, setAuraAtCap],
+    [t, lang, forgeQueueAction, aurasAtCap, setAuraAtCap],
   );
 
   return <TeamPlanScreenView t={screenCopy} lang={lang} data={data} actions={screenActions} slots={slots} runner={runner} />;

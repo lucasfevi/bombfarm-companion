@@ -35,7 +35,7 @@ async function launchTrayApp(userDataDir) {
 
   const page = await app.firstWindow();
   await page.waitForSelector('[data-testid="app-ready"]', { timeout: 60_000 });
-  await expect(page.getByTestId('game-status-chip')).toHaveText('Connected', { timeout: 15_000 });
+  await expect(page.getByTestId('game-feed')).toHaveAttribute('data-game', 'connected', { timeout: 15_000 });
 
   const consentModal = page.getByTestId('consent-modal');
   await expect(consentModal).toBeVisible({ timeout: 30_000 });
@@ -98,7 +98,7 @@ test.describe('tray hide smoke', () => {
       await expect.poll(() => isMainWindowVisible(app), { timeout: 15_000 }).toBe(false);
 
       const page = await app.firstWindow();
-      await expect(page.getByTestId('game-status-chip')).toHaveText('Connected', { timeout: 15_000 });
+      await expect(page.getByTestId('game-feed')).toHaveAttribute('data-game', 'connected', { timeout: 15_000 });
 
       await trayShow(app);
       await expect.poll(() => isMainWindowVisible(app), { timeout: 15_000 }).toBe(true);

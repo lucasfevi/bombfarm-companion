@@ -1,7 +1,6 @@
 export const teamPlanPageEn = {
   navOptimizer: 'Optimizer',
   teamPlanPageLandmark: 'Optimizer',
-  teamPlanPageTitle: 'Optimizer',
   teamPlanOptimize: 'Build team plan',
   teamPlanOptimizeAriaBoth: 'Build a team plan of gear moves and point resets',
   teamPlanOptimizeAriaPoints: 'Build a team plan of point resets',

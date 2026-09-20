@@ -14,7 +14,6 @@ import { DEFAULT_SETTINGS, idleUpdateStatus } from '@bombfarm/contracts';
 import {
   AppShell,
   BrandMark,
-  StatusChip,
   useShellDensity,
   WINDOW_CONTROLS_WIDTH,
 } from '@bombfarm/ui';
@@ -24,8 +23,7 @@ import {
 // second purpose: proving the LANGUAGE reaches the domain edge, not just a value.
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import type { ConsentRecord } from '@bombfarm/game-api';
-import { CopyProvider, useCopy, useLocale, type Copy } from '../lib/copy';
-import { formatAge } from '../lib/format';
+import { CopyProvider, useCopy, useLocale } from '../lib/copy';
 import { useTabScrollMemory } from '../lib/use-tab-scroll-memory';
 import { navItemsFor } from './nav-items';
 import { ShellActions } from './shell-actions';
@@ -38,6 +36,9 @@ import { FarmView } from './farm/farm-view';
 import { HeroesView } from './heroes/heroes-view';
 import { InventoryView } from './inventory/inventory-view';
 import { ForgeQueueBar, isForgeQueueShown } from './forge/forge-queue-bar';
+import { FeedsRail } from './feeds-rail';
+import { GameFeed, liveTabMark } from './game-feed';
+import { useFeeds } from '../lib/feeds/use-feeds';
 import { useForgeQueue } from '../lib/forge/forge-queue-store';
 import { ForgeView } from './forge/forge-view';
 import { OptimizerView } from './optimizer/optimizer-view';
@@ -55,19 +56,6 @@ import { UpdatesSection } from './settings/updates-section';
 import { WindowSection } from './settings/window-section';
 
 const DEFAULT_NAV_ID = 'live';
-
-function statusLabel(status: GameStatusInfo['status'], t: Copy): string {
-  switch (status) {
-    case 'connected':
-      return t.shellStatusConnected;
-    case 'not_running':
-      return t.shellStatusNotRunning;
-    case 'stale':
-      return t.shellStatusStale;
-    default:
-      return status;
-  }
-}
 
 function getBridge(): NonNullable<Window['bfc']> | null {
   return (window as unknown as { bfc?: NonNullable<Window['bfc']> }).bfc ?? null;
@@ -320,11 +308,14 @@ function HomePageContent({
     return bridge.on('updates:changed', setUpdateStatus);
   }, []);
 
-  const onUpdateCheck = () => {
+  // Stable, because the status strip's rail keys its refresh-all sequence on the presses it holds.
+  const onUpdateCheck = useCallback(async (): Promise<UpdateStatus | null> => {
     const bridge = getBridge();
-    if (!bridge) return;
-    void bridge.invoke('updates:check').then(setUpdateStatus);
-  };
+    if (!bridge) return null;
+    const status = await bridge.invoke('updates:check');
+    setUpdateStatus(status);
+    return status;
+  }, []);
 
   const onUpdateDownload = () => {
     const bridge = getBridge();
@@ -367,6 +358,12 @@ function HomePageContent({
   // The shell draws the band only while there is a queue to show: an element that renders null
   // would still claim the strip's height on every screen.
   const forgeQueueShown = isForgeQueueShown(useForgeQueue());
+  // The status strip's rail: every feed the app keeps asking for, with the account item speaking
+  // for the screen on show when that screen computes from a copy of its own.
+  const feeds = useFeeds({ activeTabId: activeNavId, updateStatus, onUpdateCheck });
+  // The Live tab wears the game's state at its corner — the same words the strip's game cell says.
+  const liveMark = liveTabMark(status, t);
+  const navItems = navItemsFor(t).map((item) => (item.id === 'live' ? { ...item, mark: liveMark } : item));
 
   return (
     <>
@@ -374,7 +371,7 @@ function HomePageContent({
       <AppShell
         badge={environment?.badgeLabel ?? null}
         density={density}
-        items={granted ? navItemsFor(t) : []}
+        items={granted ? navItems : []}
         activeId={activeNavId}
         onNavigate={setActiveNavId}
         brand={<BrandMark />}
@@ -389,19 +386,7 @@ function HomePageContent({
             onLocaleChange={onLocaleChange}
           />
         }
-        status={
-          <span data-testid="game-status-chip">
-            {status ? (
-              <StatusChip
-                status={status.status}
-                label={statusLabel(status.status, t)}
-                ageLabel={status.staleAgeMs != null ? formatAge(status.staleAgeMs, t) : undefined}
-              />
-            ) : (
-              t.shellLoadingLabel
-            )}
-          </span>
-        }
+        status={<GameFeed status={status} />}
         banner={
           granted && forgeQueueShown ? (
             <ForgeQueueBar
@@ -416,8 +401,10 @@ function HomePageContent({
         version={
           environment ? (
             <>
-              {/* Left of the version, and only while consent is granted: the chip's whole action
-                  is reaching Settings, and the nav it would reach does not exist until then. */}
+              {/* The feeds rail and the update chip sit at the right, beside the version, and only
+                  while consent is granted: the chip's whole action is reaching Settings, and the
+                  nav it would reach does not exist until then. */}
+              {granted ? <FeedsRail {...feeds} activeTabId={activeNavId} /> : null}
               {granted ? (
                 <UpdateChip
                   status={updateStatus}
@@ -480,7 +467,9 @@ function HomePageContent({
               <DiagnosticsSection onSave={onSaveDiagnostics} result={diagnosticsDumpResult} />
               <UpdatesSection
                 status={updateStatus}
-                onCheck={onUpdateCheck}
+                onCheck={() => {
+                  void onUpdateCheck();
+                }}
                 onDownload={onUpdateDownload}
                 onInstall={onUpdateInstall}
               />

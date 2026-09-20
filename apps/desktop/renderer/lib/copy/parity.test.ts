@@ -86,6 +86,11 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'skillsPerMillionDps',
   'skillsObjectivePvp',
   'skillsCountOf',
+  // feedsPvp: the game mode's acronym; feedsRefreshAllStep '{step}/{total}' and the cycle unit
+  // '{n} min' are figures with unit marks, not words, in either language.
+  'feedsPvp',
+  'feedsRefreshAllStep',
+  'feedsCycleMinutes',
 ];
 
 function placeholderSet(value: string): Set<string> {
@@ -103,7 +108,7 @@ describe('en/ptBR key-set parity', () => {
 
   it('red state demonstrated: removing a key from one side is caught by the same comparison the real test uses', () => {
     const withoutOneKey: Record<string, string> = { ...en };
-    delete withoutOneKey.shellStatusConnected;
+    delete withoutOneKey.shellLoadingLabel;
     expect(Object.keys(withoutOneKey).sort()).not.toEqual(Object.keys(ptBR).sort());
   });
 });
