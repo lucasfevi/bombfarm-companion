@@ -1,5 +1,12 @@
 # @bombfarm/game-api
 
+## 0.5.4
+
+### Patch Changes
+
+- Updated dependencies [87ff56b]
+  - @bombfarm/domain@1.4.0
+
 ## 0.5.3
 
 ### Patch Changes

@@ -4,7 +4,7 @@
  * have — a slot and a stretch of the forge ladder — and shows one kind only. The order is the
  * shared table's, which sorts and virtualizes the rows this hands it.
  */
-import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
+import type { InventorySetGroup, InventoryViewItem } from '@bombfarm/domain/inventory-view';
 
 /**
  * The stretches of the forge ladder the toolbar offers. The two lowest are single rungs because
@@ -48,6 +48,12 @@ export type ForgeFilter = {
   /** The stretch of the ladder a row must already stand on; `null` is every rung. */
   readonly forge: ForgeBand | null;
   readonly rarities: readonly number[];
+  /**
+   * Catalog set slugs, the inventory's own term with the inventory's own meaning: `null` is every
+   * set, and the empty list is a real state that matches nothing — what the picker holds once
+   * every box is unticked. Naming a set names a gear level, since the catalog pairs them 1:1.
+   */
+  readonly sets: readonly string[] | null;
 };
 
 export const EMPTY_FORGE_FILTER: ForgeFilter = {
@@ -57,6 +63,7 @@ export const EMPTY_FORGE_FILTER: ForgeFilter = {
   worn: false,
   forge: null,
   rarities: [],
+  sets: null,
 };
 
 export function isEmptyForgeFilter(filter: ForgeFilter): boolean {
@@ -66,7 +73,8 @@ export function isEmptyForgeFilter(filter: ForgeFilter): boolean {
     filter.slot === null &&
     !filter.worn &&
     filter.forge === null &&
-    filter.rarities.length === 0
+    filter.rarities.length === 0 &&
+    filter.sets === null
   );
 }
 
@@ -88,6 +96,7 @@ export function filterForgeItems(
 ): InventoryViewItem[] {
   const needles = fold(filter.text).split(/\s+/).filter(Boolean);
   const rarities = filter.rarities.length > 0 ? new Set(filter.rarities) : null;
+  const sets = filter.sets ? new Set(filter.sets) : null;
 
   return gear.filter((item) => {
     if (filter.heroId !== null && item.equippedBy !== filter.heroId) return false;
@@ -95,6 +104,7 @@ export function filterForgeItems(
     if (filter.slot !== null && item.slot !== filter.slot) return false;
     if (filter.forge !== null && !forgeBandHolds(filter.forge, item.upgrade)) return false;
     if (rarities && !rarities.has(item.rarityIdx)) return false;
+    if (sets && !sets.has(item.set)) return false;
     if (needles.length === 0) return true;
     const haystack = fold(searchText(item));
     return needles.every((needle) => haystack.includes(needle));
@@ -123,4 +133,17 @@ export function forgeAnyEquipped(gear: readonly InventoryViewItem[]): boolean {
 
 export function forgeRarities(gear: readonly InventoryViewItem[]): number[] {
   return [...new Set(gear.map((item) => item.rarityIdx))].sort((a, b) => a - b);
+}
+
+/** The sets present in the bag with a piece count each, in level order — the same list the
+ *  inventory's set picker offers, so a set the account does not own is never an option. */
+export function forgeSets(gear: readonly InventoryViewItem[]): InventorySetGroup[] {
+  const bySet = new Map<string, InventorySetGroup>();
+  for (const item of gear) {
+    if (!item.set) continue;
+    const existing = bySet.get(item.set);
+    if (existing) existing.count += 1;
+    else bySet.set(item.set, { set: item.set, level: item.level, count: 1 });
+  }
+  return [...bySet.values()].sort((a, b) => a.level - b.level || a.set.localeCompare(b.set));
 }

@@ -190,19 +190,25 @@ describe('every level goes through its own hits-to-kill step', () => {
   const avgHitBase = (0.7 * stoneHp) / mitF;
 
   it('a pulse up half the time blends the two RATES, not the two hits', () => {
-    const standingHtk = handEHtk(line.hp, avgHitBase * mitF);
-    const pulsedHtk = handEHtk(line.hp, avgHitBase * mitF * 1.8);
     expect(hitsToKill(avgHitBase * mitF, stoneHp)).toBe(2);
     expect(hitsToKill(avgHitBase * mitF * 1.8, stoneHp)).toBe(1);
 
-    const row = rowFor([syntheticHero({ heroId: 'half', avgHitBase, passagemBastao: { rank: 20, presence: 0.5 } })], phase);
-    expect(row.expectedHtk).toBeCloseTo(1 / (0.5 / pulsedHtk + 0.5 / standingHtk), 12);
-
+    const half = rowFor([syntheticHero({ heroId: 'half', avgHitBase, passagemBastao: { rank: 20, presence: 0.5 } })], phase);
+    const standing = rowFor([syntheticHero({ heroId: 'standing', avgHitBase })], phase);
+    const pulsed = rowFor([syntheticHero({ heroId: 'pulsed', avgHitBase: avgHitBase * 1.8 })], phase);
+    // Half the clock at each level: the props per hour are the mean of the two rates, and the
+    // hits per kill are weighted by the kills each level delivers — never a single averaged hit.
+    expect(half.propsPerHour).toBeCloseTo((standing.propsPerHour + pulsed.propsPerHour) / 2, 6);
+    expect(half.expectedHtk).toBeCloseTo(
+      (standing.propsPerHour * standing.expectedHtk + pulsed.propsPerHour * pulsed.expectedHtk) /
+        (standing.propsPerHour + pulsed.propsPerHour),
+      9,
+    );
     const averagedHit = syntheticHero({ heroId: 'avg', avgHitBase: avgHitBase * 1.4 });
-    expect(row.expectedHtk).not.toBeCloseTo(rowFor([averagedHit], phase).expectedHtk, 3);
+    expect(half.propsPerHour).not.toBeCloseTo(rowFor([averagedHit], phase).propsPerHour, 3);
   });
 
-  it('two carriers price four levels, each through its own step', () => {
+  it('two carriers price four levels, each through its own clear', () => {
     const carriers = [
       syntheticHero({ heroId: 'a', avgHitBase, passagemBastao: { rank: 5, presence: 0.5 } }),
       syntheticHero({ heroId: 'b', avgHitBase, passagemBastao: { rank: 10, presence: 0.2 } }),
@@ -211,12 +217,13 @@ describe('every level goes through its own hits-to-kill step', () => {
       { rank: 5, presence: 0.5 },
       { rank: 10, presence: 0.2 },
     ]);
+    expect(pulse.levels.length).toBe(4);
     const row = rowFor(carriers, phase);
-    const expectedRateShare = pulse.levels.reduce(
-      (sum, level) => sum + level.probability / handEHtk(line.hp, avgHitBase * mitF * level.mult),
-      0,
-    );
-    expect(row.expectedHtk).toBeCloseTo(1 / expectedRateShare, 12);
+    const expectedPropsPerHour = pulse.levels.reduce((sum, level) => {
+      const atLevel = carriers.map((hero) => ({ ...hero, passagemBastao: undefined, avgHitBase: hero.avgHitBase * level.mult }));
+      return sum + level.probability * rowFor(atLevel, phase).propsPerHour;
+    }, 0);
+    expect(row.propsPerHour).toBeCloseTo(expectedPropsPerHour, 6);
   });
 
   it('the pulse reaches the boss the same way, so a gate clear is credited too', () => {

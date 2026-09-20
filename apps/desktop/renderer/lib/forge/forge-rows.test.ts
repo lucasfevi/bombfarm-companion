@@ -8,6 +8,7 @@ import {
   forgeBandHolds,
   forgeHeroIds,
   forgeRarities,
+  forgeSets,
   forgeSlots,
   gearOf,
   isEmptyForgeFilter,
@@ -22,7 +23,8 @@ function gearRow(
 }
 
 // One piece on each of the band endpoints — +0, +8, +10, +12, +14 — and one past the top of the
-// ladder, so every option has a boundary piece to claim or refuse.
+// ladder, so every option has a boundary piece to claim or refuse. The glove is the one piece of
+// a second set, on a rung no band holds, so the set filter has two options and nothing else moves.
 const ROWS = [
   gearRow('sword', 'steel_arma', { upgrade: 12, power: 40, equipped_on: 'h1' }),
   gearRow('helm', 'steel_elmo', { upgrade: 8, power: 30, equipped_on: 'h2' }),
@@ -30,13 +32,14 @@ const ROWS = [
   gearRow('ring', 'steel_anel', { upgrade: 15, power: 5, rarity: 0, level: 20 }),
   gearRow('amulet', 'steel_amuleto', { upgrade: 10, power: 34 }),
   gearRow('chest', 'steel_peito', { upgrade: 14, power: 44 }),
+  gearRow('glove', 'ember_luva', { upgrade: 3, power: 12, level: 10 }),
   { id: 'gem', def_id: 'gem_ruby', category: 2, rarity: 3, level: 0 },
 ];
 
 const GEAR = gearOf(buildInventoryView(ROWS).items);
 const nameOf = (item: InventoryViewItem) => item.defId;
 
-const ALL_GEAR = ['sword', 'helm', 'boots', 'ring', 'amulet', 'chest'];
+const ALL_GEAR = ['sword', 'helm', 'boots', 'ring', 'amulet', 'chest', 'glove'];
 
 describe('gearOf', () => {
   it('keeps gear and nothing else', () => {
@@ -90,6 +93,13 @@ describe('filterForgeItems', () => {
     expect(ids({ heroId: 'h1', worn: true })).toEqual(['sword']);
   });
 
+  it('narrows to the named sets, and reads an empty list as nothing rather than as everything', () => {
+    expect(ids({ sets: null })).toEqual(ALL_GEAR);
+    expect(ids({ sets: ['ember'] })).toEqual(['glove']);
+    expect(ids({ sets: ['steel', 'ember'] })).toEqual(ALL_GEAR);
+    expect(ids({ sets: [] })).toEqual([]);
+  });
+
   it('matches every word of the search, ignoring case and accents', () => {
     const found = filterForgeItems(GEAR, { ...EMPTY_FORGE_FILTER, text: 'STEEL bótá' }, nameOf).map((item) => item.id);
     expect(found).toEqual(['boots']);
@@ -99,6 +109,8 @@ describe('filterForgeItems', () => {
     expect(isEmptyForgeFilter(EMPTY_FORGE_FILTER)).toBe(true);
     expect(isEmptyForgeFilter({ ...EMPTY_FORGE_FILTER, forge: '12to14' })).toBe(false);
     expect(isEmptyForgeFilter({ ...EMPTY_FORGE_FILTER, worn: true })).toBe(false);
+    expect(isEmptyForgeFilter({ ...EMPTY_FORGE_FILTER, sets: [] })).toBe(false);
+    expect(isEmptyForgeFilter({ ...EMPTY_FORGE_FILTER, sets: ['steel', 'ember'] })).toBe(false);
   });
 });
 
@@ -117,9 +129,18 @@ describe('the toolbar\'s own options', () => {
       'anel',
       'amuleto',
       'peito',
+      'luva',
       'bota',
     ]);
     expect(forgeRarities(GEAR)).toEqual([0, 2, 4]);
+  });
+
+  it('lists the sets in the bag in level order, each with its piece count', () => {
+    expect(forgeSets(GEAR)).toEqual([
+      { set: 'ember', level: 10, count: 1 },
+      { set: 'steel', level: 20, count: 6 },
+    ]);
+    expect(forgeSets([])).toEqual([]);
   });
 
   it('offers the equipped chip only for a bag that holds a piece somebody is wearing', () => {

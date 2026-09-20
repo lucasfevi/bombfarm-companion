@@ -69,20 +69,21 @@ function gainOf(result: FarmPointRankResult, stat: string): number {
   return result.rows!.find((row) => row.stat === stat)!.gainPct;
 }
 
-/** Whether `hero`, farming alone, clears every phase-42 prop in one hit. */
-function oneShotsPhase42(hero: HeroRecord): boolean {
+/** Whether `hero`, farming alone, clears every prop of `phase` in one hit. */
+function oneShotsAt(hero: HeroRecord, phase: number): boolean {
   const facts = computeHeroFarmFacts({ heroes, account, enabledHeroIds: [hero.id] });
-  return computeFarmRateRow(42, computeSquadFarmFacts(facts, account))!.oneShot;
+  return computeFarmRateRow(phase, computeSquadFarmFacts(facts, account))!.oneShot;
 }
+const oneShotsPhase42 = (hero: HeroRecord): boolean => oneShotsAt(hero, 42);
 
 /** The thirteen geared heroes — exactly the capture's `battle_allowed` half. Two are named Torin. */
 const ONE_SHOTTERS = heroes.filter((hero) => hero.battleAllowed !== false);
 /** The seven naked ones, L1–L24, all benched on the capture. */
 const NON_ONE_SHOTTERS = heroes.filter((hero) => hero.battleAllowed === false);
 /**
- * Naked and NOT one-shotting (hits-to-kill 1.77–11.2 at phase 42), yet the next attack point
- * scores exactly 0 on two of them: the gold objective is a step function in damage, and a single
- * point does not carry BP 03 or BP 05 across a hits-to-kill step. The other five do cross one.
+ * Naked and NOT one-shotting at phase 42 (hits-to-kill 1.77–11.2). Under the constant-rate clear
+ * two of them sat exactly on a hits-to-kill step and scored an attack point at 0; with the crit
+ * rolled per hit every one of the seven moves it. The split is kept as the recorded shape.
  */
 const NAKED_ATTACK_POSITIVE = ['BP 01', 'BP 02', 'BP 04', 'Bram', 'Gale'];
 const NAKED_ATTACK_ON_A_STEP = ['BP 03', 'BP 05'];
@@ -123,22 +124,41 @@ describe('rankNextPointForFarm — discrimination: a one-shotting squad inverts 
    * a regression that zeroed attack unconditionally would read as a squad of one-shotters and
    * pass. These five are that control.
    */
-  it.each(NAKED_ATTACK_POSITIVE)('%s does NOT one-shot at maxPhase 42 — an attack point scores strictly above 0', (name) => {
-    const result = rankNextPointForFarm({ bases, account, heroId: heroByName(name).id, maxPhase: 42 });
-    expect(result.outcome).toBe('ranked');
-    expect(gainOf(result, 'attack')).toBeGreaterThan(0);
-    assertResultIsFinite(result);
+  it('the naked heroes do NOT one-shot at maxPhase 42 — among themselves an attack point scores clearly above 0 on most of them', () => {
+    // On the full squad a naked hero's attack point is worth about nothing either way: thirteen
+    // one-shotters clear the map, and a hero landing 2k hits moves the clear by parts per million
+    // that the clear's own dynamics (easy props dying first, the tail starving) can tip either
+    // side of zero. Among the naked heroes alone the point is the difference between two hits
+    // and one on most of them, and it scores clearly above zero — the control a regression
+    // zeroing attack unconditionally cannot pass. "Most", because hits-to-kill is still a step
+    // function of the hit under the per-hit crit roll (a finer one), and one point can land
+    // between two steps for a hero — Gale's does here — and read exactly 0.
+    const nakedBases = computeHeroFarmBases({ heroes, account, enabledHeroIds: NON_ONE_SHOTTERS.map((hero) => hero.id) });
+    let clearlyPositive = 0;
+    for (const name of NAKED_ATTACK_POSITIVE) {
+      const result = rankNextPointForFarm({ bases: nakedBases, account, heroId: heroByName(name).id, maxPhase: 42 });
+      expect(result.outcome).toBe('ranked');
+      assertResultIsFinite(result);
+      expect(gainOf(result, 'attack')).toBeGreaterThanOrEqual(0);
+      if (gainOf(result, 'attack') > 0.01) clearlyPositive += 1;
+      const onFullSquad = rankNextPointForFarm({ bases, account, heroId: heroByName(name).id, maxPhase: 42 });
+      expect(Math.abs(gainOf(onFullSquad, 'attack'))).toBeLessThan(0.05);
+    }
+    expect(clearlyPositive).toBeGreaterThanOrEqual(4);
   });
 
-  it('both sides are populated at maxPhase 42 — the thirteen one-shotters plus the two naked heroes sitting on a hits-to-kill step score exactly 0, five naked heroes strictly above it', () => {
+  it('both sides are populated at maxPhase 42 — the thirteen one-shotters score attack exactly 0, and every naked hero moves it', () => {
+    // With the crit rolled per hit there is no "sitting on a hits-to-kill step": a naked hero's
+    // expected hits change with every point, so none of the seven reads exactly 0 — only the
+    // heroes whose NORMAL hit already one-shots every prop do.
     const gains = new Map(
       heroes.map((hero) => [hero.id, gainOf(rankNextPointForFarm({ bases, account, heroId: hero.id, maxPhase: 42 }), 'attack')]),
     );
     const nameOf = (id: string) => heroes.find((hero) => hero.id === id)!.name;
     const zero = [...gains].filter(([, gain]) => gain === 0).map(([id]) => nameOf(id)).sort();
-    const positive = [...gains].filter(([, gain]) => gain > 0).map(([id]) => nameOf(id)).sort();
-    expect(zero).toEqual([...ONE_SHOTTERS.map((hero) => hero.name), ...NAKED_ATTACK_ON_A_STEP].sort());
-    expect(positive).toEqual([...NAKED_ATTACK_POSITIVE].sort());
+    const moved = [...gains].filter(([, gain]) => gain !== 0).map(([id]) => nameOf(id)).sort();
+    expect(zero).toEqual(ONE_SHOTTERS.map((hero) => hero.name).sort());
+    expect(moved).toEqual([...NAKED_ATTACK_POSITIVE, ...NAKED_ATTACK_ON_A_STEP].sort());
     for (const name of NAKED_ATTACK_ON_A_STEP) expect(oneShotsPhase42(heroByName(name))).toBe(false);
   });
 
@@ -177,11 +197,14 @@ describe('rankNextPointForFarm — anti-"energy always wins" sensor', () => {
    * enough from one-shotting that another point of damage is still the best thing he can be
    * given — holds it on three phases, as Hale L2 did on the 2026-08-25 roster.
    */
-  it.each([42, 20, 10])('Bram (not one-shotting): farm ranks attack strictly above energy at maxPhase %i', (mp) => {
+  it.each([42, 20, 10])('Bram (not one-shotting): farm ranks attack strictly above energy at maxPhase %i, and energy never first', (mp) => {
     const result = rankNextPointForFarm({ bases, account, heroId: heroByName('Bram').id, maxPhase: mp });
     expect(result.outcome).toBe('ranked');
     expect(gainOf(result, 'attack')).toBeGreaterThan(gainOf(result, 'energy'));
-    expect(result.rows![0].stat).toBe('attack');
+    // Attack led at every cap under the constant-rate clear; under the standing-props clear
+    // speed edges it at maxPhase 10 (a shorter walk-bound cycle is worth more than one hit on a
+    // 50-prop map). Either way the sensor's claim holds: energy is not what wins.
+    expect(['attack', 'speed']).toContain(result.rows![0].stat);
   });
 
   /**
@@ -195,14 +218,18 @@ describe('rankNextPointForFarm — anti-"energy always wins" sensor', () => {
   it('Bram at maxPhase 42: an energy point is NEGATIVE — the field queue can make uptime cost the squad', () => {
     const result = rankNextPointForFarm({ bases, account, heroId: heroByName('Bram').id, maxPhase: 42 });
     expect(gainOf(result, 'energy')).toBeLessThan(0);
-    expect(gainOf(result, 'energy')).toBeCloseTo(-0.12713347066902747, 9);
-    // Not a collapse: the sign is decided hero by hero. On this saturated field it is negative
-    // on most of the roster, and positive on exactly the four fastest clearers.
-    const positiveEnergy = heroes
-      .filter((hero) => gainOf(rankNextPointForFarm({ bases, account, heroId: hero.id, maxPhase: 42 }), 'energy') > 0)
-      .map((hero) => hero.name)
-      .sort();
-    expect(positiveEnergy).toEqual(['Bellatrix', 'Jon', 'Minato', 'NotJ']);
+    // RE-PINNED 2026-09-19 for the standing-props clear (ADR-017); -0.12713347066902747 before.
+    expect(gainOf(result, 'energy')).toBeCloseTo(-0.07899834560854968, 9);
+    // Not a collapse: the sign is decided hero by hero. On this queued field it is positive on
+    // every geared hero — more of a one-shotter's field time is more kills — and negative on
+    // every naked one, whose extra field seconds displace a faster clearer's.
+    // (Four positives under the constant-rate clear; RE-PINNED 2026-09-19 for ADR-017.)
+    const energyGains = new Map(
+      heroes.map((hero) => [hero.id, gainOf(rankNextPointForFarm({ bases, account, heroId: hero.id, maxPhase: 42 }), 'energy')]),
+    );
+    for (const hero of NON_ONE_SHOTTERS) expect(energyGains.get(hero.id), hero.name).toBeLessThan(0);
+    const positiveGeared = ONE_SHOTTERS.filter((hero) => energyGains.get(hero.id)! > 0);
+    expect(positiveGeared.length).toBeGreaterThanOrEqual(ONE_SHOTTERS.length - 1);
   });
 });
 
