@@ -376,11 +376,15 @@ describe('the things each holdings component is made of', () => {
     expect(only).toContain('>—<');
   });
 
-  it('lists a bought skin by the listing it appears under, and depicts nothing for it', () => {
+  it('lists a bought skin by the listing it appears under, drawn with the avatar a hero wearing it shows', () => {
     const markup = openRow('skins');
-    expect(slots(markup, 'account-holdings-skins-entry-name')).toEqual(['Forest Warden Skin']);
+    const [forestWarden] = entryChunks(markup, 'skins');
+
+    expect(forestWarden).toContain('alt="Forest Warden Skin"');
+    expect(forestWarden).toContain('>Forest Warden Skin<');
+    expect(forestWarden).not.toContain('data-peek=');
+    expect(slots(markup, 'account-holdings-skins-entry-leading')).toHaveLength(1);
     expect(slots(markup, 'account-holdings-skins-entry-detail')).toEqual([]);
-    expect(slots(markup, 'account-holdings-skins-entry-leading')).toEqual([]);
     expect(slots(markup, 'account-holdings-skins-entry-amount')).toEqual(['R$7.00']);
   });
 

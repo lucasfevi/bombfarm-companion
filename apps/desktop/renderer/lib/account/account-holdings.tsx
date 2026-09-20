@@ -5,7 +5,7 @@
  * so the inventory figure the two print is the same figure rather than two sums that agree by luck.
  */
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
-import { HeroIdentity } from '@bombfarm/game-art';
+import { HeroIdentity, SkinIdentity } from '@bombfarm/game-art';
 import type { DomainLang, MarketQuoteCurrency } from '@bombfarm/contracts';
 import type {
   HoldingsComponentView,
@@ -79,8 +79,9 @@ function heroEntries(
 }
 
 /**
- * One entry per distinct bought skin, named by the market listing it appears under. A skin index
- * the table cannot name has no name to print and no price to print either, so it is left out.
+ * One entry per distinct bought skin, named by the market listing it appears under and drawn with
+ * the avatar a hero wearing it shows. A skin index the table cannot name has no name to print and
+ * no price to print either, so it is left out.
  */
 function skinEntries(skins: SkinsTally): HoldingsEntry[] {
   const entries: HoldingsEntry[] = [];
@@ -88,7 +89,11 @@ function skinEntries(skins: SkinsTally): HoldingsEntry[] {
     const price = skins.prices[position];
     const name = boughtSkinHashFor(skinIndex);
     if (price == null || name == null) return;
-    entries.push({ name, amount: price.amount });
+    entries.push({
+      name,
+      leading: <SkinIdentity skin={skinIndex} name={name} />,
+      amount: price.amount,
+    });
   });
   return entries;
 }
