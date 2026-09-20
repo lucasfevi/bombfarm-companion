@@ -105,12 +105,7 @@ describe('computeTeamPlanInputSignature', () => {
 
   it.each<[string, TeamPlanInputs]>([
     ['roster id', { ...base, heroes: [minimalHero({ id: 'b', updatedAt: 1, battleAllowed: true })] }],
-    ['hero updatedAt', { ...base, heroes: [minimalHero({ id: 'a', updatedAt: 2, battleAllowed: true })] }],
-    [
-      'hero battleAllowed',
-      { ...base, heroes: [minimalHero({ id: 'a', updatedAt: 1, battleAllowed: false })] },
-    ],
-    ['inventory importedAt', { ...base, inventory: { version: 1, importedAt: 9, items: [] } }],
+    ['hero level', { ...base, heroes: [{ ...minimalHero({ id: 'a', updatedAt: 1, battleAllowed: true }), level: 2 }] }],
     [
       'inventory item ids',
       {
@@ -141,6 +136,29 @@ describe('computeTeamPlanInputSignature', () => {
   ])('differs when %s changes', (_label, patched) => {
     expect(computeTeamPlanInputSignature(base, baseControls)).not.toBe(
       computeTeamPlanInputSignature(patched, baseControls),
+    );
+  });
+
+  // The game flips these on every field rotation, ticks a rune's seconds down on every read and
+  // re-derives power from the rest; a storage timestamp and an import stamp say when a record
+  // was written, not what it holds. None of them is anything the solver reads.
+  it.each<[string, TeamPlanInputs]>([
+    ['hero updatedAt', { ...base, heroes: [minimalHero({ id: 'a', updatedAt: 2, battleAllowed: true })] }],
+    ['hero deployed', { ...base, heroes: [{ ...minimalHero({ id: 'a', updatedAt: 1, battleAllowed: true }), deployed: true }] }],
+    ['hero power', { ...base, heroes: [{ ...minimalHero({ id: 'a', updatedAt: 1, battleAllowed: true }), power: 999 }] }],
+    [
+      'hero battleAllowed under an explicit scope',
+      { ...base, heroes: [minimalHero({ id: 'a', updatedAt: 1, battleAllowed: false })] },
+    ],
+    ['inventory importedAt', { ...base, inventory: { version: 1, importedAt: 9, items: [] } }],
+  ])('is unmoved when %s changes', (_label, patched) => {
+    expect(computeTeamPlanInputSignature(patched, baseControls)).toBe(computeTeamPlanInputSignature(base, baseControls));
+  });
+
+  it("differs when battleAllowed flips a hero's DEFAULT scope — the one way it reaches the plan", () => {
+    const unscoped = controls({ ...baseControls, scopeByHeroId: {} });
+    expect(computeTeamPlanInputSignature(base, unscoped)).not.toBe(
+      computeTeamPlanInputSignature({ ...base, heroes: [minimalHero({ id: 'a', updatedAt: 1, battleAllowed: false })] }, unscoped),
     );
   });
 

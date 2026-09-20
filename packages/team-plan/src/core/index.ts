@@ -40,3 +40,15 @@ export {
   applyTeamPlanControlChange,
 } from './plan-lifecycle';
 export type { TeamPlanRunStatus } from './run-status';
+export type {
+  PlanBasis,
+  PlanChange,
+  PlanChangeDetail,
+  PlanChangeLedger,
+  PlanChangeSubject,
+  PlanChangeVerdict,
+  TreeAxis,
+  AccountField,
+  ControlField,
+} from './plan-changes';
+export { describePlanChanges, planBasisSignature, planInputsSignature, planningHeroView, planningItemView } from './plan-changes';

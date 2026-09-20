@@ -4,22 +4,11 @@ import type { ScopeState } from './hero-scope';
 import { clampForgeFloor, clampTargetPhase, withAuraAtCap } from './team-plan-controls';
 import type { TeamAuraId } from '@bombfarm/domain/team-buffs';
 import { mergeScopeForRoster } from './hero-scope';
+import { planBasisSignature } from './plan-changes';
 
-/**
- * The phase the team plan actually scores at.
- *
- * Until the player picks one, this tracks what they were already looking at: the host's own
- * farm-phase choice when it made one ({@link TeamPlanInputs.farmChosenPhase}), else the phase
- * the save says the account is on. `null` means neither exists, or the player picked None.
- */
-export function resolveTeamPlanTargetPhase(
-  inputs: Pick<TeamPlanInputs, 'farmChosenPhase' | 'phase'>,
-  controls: Pick<TeamPlanControls, 'targetPhase' | 'targetPhaseChosen'>,
-): number | null {
-  if (controls.targetPhaseChosen) return controls.targetPhase;
-  if (inputs.farmChosenPhase != null) return inputs.farmChosenPhase;
-  return inputs.phase;
-}
+import { resolveTeamPlanTargetPhase } from './target-phase';
+
+export { resolveTeamPlanTargetPhase };
 
 /**
  * A gold plan left to find its own phase sweeps the phases the account has unlocked, and
@@ -34,30 +23,14 @@ export function isFarmObjectiveUnavailable(
   return maxPhase == null && resolvedTargetPhase == null;
 }
 
-export function computeTeamPlanInputSignature(
-  inputs: TeamPlanInputs,
-  controls: TeamPlanControls,
-): string {
-  return JSON.stringify({
-    heroIds: inputs.heroes.map((hero) => hero.id).sort(),
-    heroUpdatedAt: inputs.heroes.map((hero) => `${hero.id}:${hero.updatedAt}`).sort(),
-    battleAllowed: inputs.heroes
-      .map((hero) => `${hero.id}:${hero.battleAllowed !== false}`)
-      .sort(),
-    importedAt: inputs.inventory.importedAt,
-    itemIds: inputs.inventory.items.map((item) => item.id).sort(),
-    scopeByHeroId: controls.scopeByHeroId,
-    forgeFloor: controls.forgeFloor,
-    slots: inputs.slots,
-    treeDanoTotal: inputs.treeDanoTotal,
-    houseIdx: inputs.houseIdx,
-    houseCycleSecs: inputs.houseCycleSecs,
-    objective: controls.objective,
-    targetPhase: resolveTeamPlanTargetPhase(inputs, controls),
-    allowedChanges: controls.allowedChanges,
-    ignoreFieldCrowding: controls.ignoreFieldCrowding,
-    aurasAtCap: controls.aurasAtCap,
-  });
+/**
+ * The identity of everything the plan depends on — {@link planBasisSignature}, kept under the
+ * name the hosts call it by. It moves exactly when {@link describePlanChanges} would list a
+ * counted change, and never on a field rotation, a rune's seconds ticking down or a re-derived
+ * power figure: those used to mark every plan stale a minute after it was built.
+ */
+export function computeTeamPlanInputSignature(inputs: TeamPlanInputs, controls: TeamPlanControls): string {
+  return planBasisSignature(inputs, controls);
 }
 
 export function isTeamPlanStale(appliedSignature: string | null, liveSignature: string): boolean {

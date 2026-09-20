@@ -45,7 +45,7 @@ test.describe('Team plan min forge', () => {
     await clickOptimize(page);
     await waitForOptimizeDone(page);
     await page.getByRole('button', { name: /Min forge \(\+\) \+/i }).click();
-    await expect(page.getByText(/Inputs changed since this plan/i)).toBeVisible();
+    await expect(page.getByText(/Since this plan was computed/i)).toBeVisible();
   });
 
   test('import does not reset min forge', async ({ page }) => {

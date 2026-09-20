@@ -21,6 +21,7 @@ import * as breakdown from '@/shared/i18n/namespaces/breakdown';
 import * as phases from '@/shared/i18n/namespaces/phases';
 import * as teamPlan from '@/shared/i18n/namespaces/team-plan';
 import * as teamPlanGearFlow from '@/shared/i18n/namespaces/team-plan-gear-flow';
+import * as teamPlanChanges from '@/shared/i18n/namespaces/team-plan-changes';
 import * as teamPlanObjective from '@/shared/i18n/namespaces/team-plan-objective';
 import * as importNs from '@/shared/i18n/namespaces/import';
 import * as stats from '@/shared/i18n/namespaces/stats';
@@ -502,6 +503,63 @@ const KEYS_REMOVED: readonly string[] = [
  */
 const KEYS_ADDED: readonly string[] = [
   'navHeroes',
+  // The Optimizer's ledger of what changed since the plan (2026-09-19): the notice that only
+  // said inputs had changed now lists each change with before, after and a verdict, and the
+  // field names, group titles and control labels it prints are these.
+  'teamPlanChangesTitle',
+  'teamPlanChangesCountOne',
+  'teamPlanChangesCountMany',
+  'teamPlanChangesRecompute',
+  'teamPlanChangesKeep',
+  'teamPlanChangesGroupPlan',
+  'teamPlanChangesGroupProgress',
+  'teamPlanChangesGroupNoise',
+  'teamPlanChangesRotationOne',
+  'teamPlanChangesRotationMany',
+  'teamPlanChangesColWhat',
+  'teamPlanChangesColChange',
+  'teamPlanChangesColBeforeNow',
+  'teamPlanChangesColVerdict',
+  'teamPlanChangesAsked',
+  'teamPlanChangesAskedDone',
+  'teamPlanChangesNobody',
+  'teamPlanChangesOn',
+  'teamPlanChangesOff',
+  'teamPlanChangesSubjectAccount',
+  'teamPlanChangesSubjectSetup',
+  'teamPlanChangesHeroAdded',
+  'teamPlanChangesHeroRemoved',
+  'teamPlanChangesLevel',
+  'teamPlanChangesStars',
+  'teamPlanChangesPoints',
+  'teamPlanChangesPointsAvailable',
+  'teamPlanChangesAbility',
+  'teamPlanChangesRuneGained',
+  'teamPlanChangesRuneLost',
+  'teamPlanChangesHeroOther',
+  'teamPlanChangesItemAdded',
+  'teamPlanChangesItemRemoved',
+  'teamPlanChangesForge',
+  'teamPlanChangesEquippedBy',
+  'teamPlanChangesItemOther',
+  'teamPlanChangesTree',
+  'teamPlanChangesTreeTeamCoin',
+  'teamPlanChangesXp',
+  'teamPlanChangesRuneAxisGold',
+  'teamPlanChangesFieldHouseIdx',
+  'teamPlanChangesFieldHouseLevel',
+  'teamPlanChangesFieldPhase',
+  'teamPlanChangesFieldMaxPhase',
+  'teamPlanChangesFieldSlots',
+  'teamPlanChangesFieldFieldSlots',
+  'teamPlanChangesFieldHouseCycleSecs',
+  'teamPlanChangesControlForgeFloor',
+  'teamPlanChangesControlObjective',
+  'teamPlanChangesControlAllowedChanges',
+  'teamPlanChangesControlIgnoreFieldCrowding',
+  'teamPlanChangesControlAurasAtCap',
+  'teamPlanChangesControlTargetPhase',
+  'teamPlanChangesScope',
   // The inventory names a hero cage by its act (2026-09-17) instead of printing `chest_hero_3`.
   'inventoryChestHero',
   // The Farm page's Optimize button opens the Optimizer (2026-09-14) instead of solving a
@@ -1174,6 +1232,7 @@ const namespaces = [
   ['phases', phases],
   ['teamPlan', teamPlan],
   ['teamPlanGearFlow', teamPlanGearFlow],
+  ['teamPlanChanges', teamPlanChanges],
   ['teamPlanObjective', teamPlanObjective],
   ['import', importNs],
   ['stats', stats],
