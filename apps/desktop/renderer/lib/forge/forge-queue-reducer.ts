@@ -30,6 +30,8 @@ export type ForgeQueueState = {
 
 export type ForgeQueueAction =
   | { kind: 'add'; itemId: string; target: number }
+  /** A batch of `add`s folded through one dispatch. */
+  | { kind: 'addMany'; pieces: readonly ForgeQueuePiece[] }
   | { kind: 'remove'; itemId: string }
   /** Every waiting piece leaves; the one in flight, if any, finishes on its own. */
   | { kind: 'clear' }
@@ -84,6 +86,11 @@ export function forgeQueueReducer(state: ForgeQueueState, action: ForgeQueueActi
         pieces: state.pieces.map((piece) => (piece === existing ? { ...piece, target: action.target } : piece)),
       };
     }
+    case 'addMany':
+      return action.pieces.reduce(
+        (folded, piece) => forgeQueueReducer(folded, { kind: 'add', itemId: piece.itemId, target: piece.target }),
+        state,
+      );
     case 'remove': {
       if (state.active?.itemId === action.itemId) return state;
       const pieces = without(state.pieces, action.itemId);

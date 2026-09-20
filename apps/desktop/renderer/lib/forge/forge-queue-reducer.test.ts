@@ -199,6 +199,76 @@ describe('syncing with the bag', () => {
   });
 });
 
+describe('adding a batch at once (addMany)', () => {
+  it('appends a piece the queue does not hold yet, in the batch order given', () => {
+    const batched = forgeQueueReducer(EMPTY_FORGE_QUEUE, {
+      kind: 'addMany',
+      pieces: [
+        { itemId: 'a', target: 12 },
+        { itemId: 'b', target: 8 },
+      ],
+    });
+    expect(batched.pieces).toEqual([
+      { itemId: 'a', target: 12 },
+      { itemId: 'b', target: 8 },
+    ]);
+  });
+
+  it('leaves a piece already queued at the same target unchanged, at its own position', () => {
+    const batched = forgeQueueReducer(twoWaiting, { kind: 'addMany', pieces: [{ itemId: 'a', target: 12 }] });
+    expect(batched).toBe(twoWaiting);
+  });
+
+  it('retargets a piece already queued at another target, in place', () => {
+    const batched = forgeQueueReducer(twoWaiting, { kind: 'addMany', pieces: [{ itemId: 'b', target: 10 }] });
+    expect(batched.pieces).toEqual([
+      { itemId: 'a', target: 12 },
+      { itemId: 'b', target: 10 },
+    ]);
+  });
+
+  it('leaves the piece in flight alone regardless of the target the batch carries for it', () => {
+    const batched = forgeQueueReducer(aInFlight, { kind: 'addMany', pieces: [{ itemId: 'a', target: 20 }] });
+    expect(batched).toBe(aInFlight);
+  });
+
+  it('returns the same state reference when every piece in the batch resolves to unchanged', () => {
+    const batched = forgeQueueReducer(twoWaiting, {
+      kind: 'addMany',
+      pieces: [
+        { itemId: 'a', target: 12 },
+        { itemId: 'b', target: 8 },
+      ],
+    });
+    expect(batched).toBe(twoWaiting);
+  });
+
+  it('an empty batch changes nothing', () => {
+    expect(forgeQueueReducer(twoWaiting, { kind: 'addMany', pieces: [] })).toBe(twoWaiting);
+    expect(forgeQueueReducer(EMPTY_FORGE_QUEUE, { kind: 'addMany', pieces: [] })).toBe(EMPTY_FORGE_QUEUE);
+  });
+
+  it('a halted queue keeps its halt and its halted piece at the head; the batch queues behind it', () => {
+    const requested = fold([{ kind: 'start' }, { kind: 'requested', itemId: 'a' }], twoWaiting);
+    const halted = forgeQueueReducer(requested, { kind: 'refused', itemId: 'a', reason: 'game_not_running' });
+    const batched = forgeQueueReducer(halted, { kind: 'addMany', pieces: [{ itemId: 'c', target: 5 }] });
+    expect(batched.status).toBe('halted');
+    expect(batched.halt).toEqual({ kind: 'refused', itemId: 'a', reason: 'game_not_running' });
+    expect(batched.pieces.map((piece) => piece.itemId)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('the same item id twice in one batch resolves as successive adds — the second wins, never two entries', () => {
+    const batched = forgeQueueReducer(EMPTY_FORGE_QUEUE, {
+      kind: 'addMany',
+      pieces: [
+        { itemId: 'a', target: 8 },
+        { itemId: 'a', target: 12 },
+      ],
+    });
+    expect(batched.pieces).toEqual([{ itemId: 'a', target: 12 }]);
+  });
+});
+
 describe('restore', () => {
   it('seeds an untouched queue, paused, and never overwrites one the player has already used', () => {
     const restored = forgeQueueReducer(EMPTY_FORGE_QUEUE, { kind: 'restore', pieces: [{ itemId: 'x', target: 10 }] });
