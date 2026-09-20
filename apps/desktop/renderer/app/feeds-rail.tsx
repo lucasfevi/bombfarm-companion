@@ -123,6 +123,7 @@ export function feedWords(feed: FeedView, t: Copy, now: number): FeedTip {
 
 function Ring({ state, left, landed, tone }: { state: RingState; left: number | null; landed: boolean; tone?: 'accent' | 'up' }) {
   const arcClass = state === 'late' ? 'stroke-warn' : state === 'refused' ? 'stroke-line' : tone === 'accent' ? 'stroke-accent' : tone === 'up' ? 'stroke-up' : 'stroke-muted';
+  const centre = state === 'late' ? { r: 2.5, className: 'fill-warn' } : landed ? { r: 2, className: 'fill-up' } : null;
   return (
     <svg aria-hidden viewBox="0 0 16 16" className={cn('size-4', 'shrink-0', state === 'working' && 'motion-safe:animate-spin')} data-ring={state}>
       <circle cx="8" cy="8" r={RING_R} className="fill-none stroke-line" strokeWidth="2.2" />
@@ -142,7 +143,7 @@ function Ring({ state, left, landed, tone }: { state: RingState; left: number | 
           transform="rotate(-90 8 8)"
         />
       )}
-      {state === 'late' ? <circle cx="8" cy="8" r="2.5" className="fill-warn" /> : landed ? <circle cx="8" cy="8" r="2" className="fill-up" /> : null}
+      {centre ? <circle cx="8" cy="8" r={centre.r} className={centre.className} /> : null}
     </svg>
   );
 }
@@ -233,7 +234,12 @@ function FeedItem({ feed, t, now, muted }: { feed: FeedView; t: Copy; now: numbe
             {tip.action ? (
               <p className="m-0 text-[11px] text-muted">
                 {tip.action}
-                {tip.next ? <span className="font-mono tabular-nums"> · {tip.next}</span> : null}
+                {tip.next ? (
+                  <span className={cn('font-mono', 'tabular-nums')}>
+                    {' · '}
+                    {tip.next}
+                  </span>
+                ) : null}
               </p>
             ) : null}
             <p className="m-0 mt-1.5">{tip.what}</p>

@@ -44,12 +44,7 @@ export function liveTabMark(status: GameStatusInfo | null, t: Copy): AppNavItemM
 export function GameFeed({ status }: { status: GameStatusInfo | null }) {
   const t = useCopy();
   const { word, age, tip, tone } = gameWords(status, t);
-  const dotClass =
-    tone === 'up'
-      ? 'bg-up motion-safe:animate-pulse'
-      : tone === 'warn'
-        ? 'bg-warn'
-        : 'bg-transparent shadow-[inset_0_0_0_1.5px_var(--line)]';
+  const dotClass = tone === 'up' ? cn('bg-up', 'motion-safe:animate-pulse') : tone === 'warn' ? 'bg-warn' : cn('bg-transparent', 'shadow-[inset_0_0_0_1.5px_var(--line)]');
   const wordClass = tone === 'up' ? 'text-ink' : tone === 'warn' ? 'text-warn' : 'text-muted';
 
   return (
