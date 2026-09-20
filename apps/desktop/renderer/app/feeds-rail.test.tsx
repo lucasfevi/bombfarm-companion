@@ -26,8 +26,8 @@ const FRESH: FeedView[] = [
   feed({ id: 'updates', capturedAt: ago(12 * 60_000) }),
 ];
 
-function render(feeds: FeedView[] = FRESH, all: RefreshAllState = { running: false }): string {
-  return renderToStaticMarkup(createElement(FeedsRail, { feeds, refreshAll: () => {}, all }));
+function render(feeds: FeedView[] = FRESH, all: RefreshAllState = { running: false }, activeTabId = 'farm'): string {
+  return renderToStaticMarkup(createElement(FeedsRail, { feeds, refreshAll: () => {}, all, activeTabId }));
 }
 
 function tagOf(html: string, testId: string): string {
@@ -60,9 +60,10 @@ describe('FeedsRail — four names over four ages, and one press for all of them
     expect(tagOf(html, 'account-refresh')).toContain('data-state="late"');
   });
 
-  it('a refused press prints its reason in the age\'s place, and the item stays pressable', () => {
+  it('a refused press prints its reason in the age\'s place, muted like an age, and the item stays pressable', () => {
     const html = render([feed({ id: 'account', readState: { kind: 'refused', reason: 'game_not_running' } }), ...FRESH.slice(1)]);
     expect(textOf(html, 'account-refresh-age')).toBe(en.accountReadGameNotRunning);
+    expect(tagOf(html, 'account-refresh')).toContain('data-state="fresh"');
     expect(tagOf(html, 'account-refresh')).not.toContain('disabled=""');
   });
 
@@ -73,12 +74,29 @@ describe('FeedsRail — four names over four ages, and one press for all of them
     expect(tagOf(html, 'feed-pvp-refresh')).toContain('data-state="working"');
   });
 
-  it('while refresh-all runs, the steps still to come are dimmed and the button counts the steps', () => {
-    const html = render(FRESH, { running: true, step: 1, total: 4 });
-    expect(tagOf(html, 'account-refresh')).not.toContain('opacity-55');
-    expect(tagOf(html, 'feed-pvp-refresh')).not.toContain('opacity-55');
-    expect(tagOf(html, 'feed-market-refresh')).toContain('opacity-55');
-    expect(tagOf(html, 'feed-updates-refresh')).toContain('opacity-55');
+  it('the feeds the tab on show does not read are muted; the ones it reads are not', () => {
+    const farm = render(FRESH, { running: false }, 'farm');
+    expect(tagOf(farm, 'account-refresh')).toContain('data-muted="false"');
+    expect(tagOf(farm, 'feed-pvp-refresh')).toContain('data-muted="true"');
+    expect(tagOf(farm, 'feed-market-refresh')).toContain('data-muted="true"');
+    const inventory = render(FRESH, { running: false }, 'inventory');
+    expect(tagOf(inventory, 'account-refresh')).toContain('data-muted="false"');
+    expect(tagOf(inventory, 'feed-market-refresh')).toContain('data-muted="false"');
+    expect(tagOf(inventory, 'feed-pvp-refresh')).toContain('data-muted="true"');
+    const pvp = render(FRESH, { running: false }, 'pvp');
+    expect(tagOf(pvp, 'feed-pvp-refresh')).toContain('data-muted="false"');
+    expect(tagOf(pvp, 'account-refresh')).toContain('data-muted="true"');
+    const settings = render(FRESH, { running: false }, 'settings');
+    expect(tagOf(settings, 'feed-updates-refresh')).toContain('data-muted="false"');
+    expect(tagOf(settings, 'account-refresh')).toContain('data-muted="true"');
+  });
+
+  it('while refresh-all runs, the steps still to come are muted too, and the button counts the steps', () => {
+    const html = render(FRESH, { running: true, step: 1, total: 4 }, 'skills');
+    expect(tagOf(html, 'account-refresh')).toContain('data-muted="false"');
+    expect(tagOf(html, 'feed-pvp-refresh')).toContain('data-muted="false"');
+    expect(tagOf(html, 'feed-market-refresh')).toContain('data-muted="true"');
+    expect(tagOf(html, 'feed-updates-refresh')).toContain('data-muted="true"');
     expect(textOf(html, 'feeds-refresh-all-step')).toBe(sub(en.feedsRefreshAllStep, { step: 2, total: 4 }));
     expect(tagOf(html, 'feeds-refresh-all')).toContain('disabled=""');
   });
@@ -109,10 +127,10 @@ describe('feedWords — the tooltip says how the feed keeps itself fresh', () =>
     expect(words.tip).toEqual([sub(en.feedsRefreshOne, { feed: en.feedsPvp }), en.feedsNoClock]);
   });
 
-  it('age alone is never amber — a feed hours past its clock is only a full meter; "out of date" and a refusal are', () => {
+  it('only "out of date" is amber — never age, however old, and never a refused press', () => {
     expect(feedWords(feed({ id: 'market', capturedAt: ago(6 * 3_600_000) }), en, NOW).late).toBe(false);
     expect(feedWords(feed({ id: 'account', capturedAt: ago(27 * 86_400_000) }), en, NOW).late).toBe(false);
+    expect(feedWords(feed({ id: 'pvp', readState: { kind: 'refused', reason: 'rate_limited' } }), en, NOW).late).toBe(false);
     expect(feedWords(feed({ id: 'account', outOfDate: true }), en, NOW).late).toBe(true);
-    expect(feedWords(feed({ id: 'pvp', readState: { kind: 'refused', reason: 'rate_limited' } }), en, NOW).late).toBe(true);
   });
 });

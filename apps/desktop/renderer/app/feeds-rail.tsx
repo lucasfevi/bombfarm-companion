@@ -9,14 +9,15 @@
  * dotted line instead.
  *
  * Each item is its own press. The button at the rail's end presses all four, one after another,
- * and counts the steps while it runs.
+ * and counts the steps while it runs. The feeds the tab on show does not read are drawn muted —
+ * present and pressable, but not what that screen's numbers came from.
  */
 import { useEffect, useState } from 'react';
 import { Button, cn, Icon, Tooltip } from '@bombfarm/ui';
 import { sub, useCopy, type Copy } from '../lib/copy';
 import { accountReadRefusalText } from '../lib/account-read-labels';
 import { formatAge, formatCapturedAt } from '../lib/format';
-import { FEED_CYCLE_MS, feedAgeMs, feedMeter, feedNextInMs, type FeedId } from '../lib/feeds/feed-clock';
+import { FEED_CYCLE_MS, feedAgeMs, feedMeter, feedNextInMs, feedsReadBy, type FeedId } from '../lib/feeds/feed-clock';
 import type { FeedView, FeedsHook } from '../lib/feeds/use-feeds';
 
 /** The meter fills over a minute on the account feed, so a five-second tick keeps it moving
@@ -56,10 +57,10 @@ export function feedWords(feed: FeedView, t: Copy, now: number): { line: string;
         : feed.capturedAt === null
           ? t.feedsNotYet
           : formatCapturedAt(feed.capturedAt, t, now);
-  // Age alone is never amber: a feed that has run past its clock is drawn with a full meter, in
-  // the same muted tone — only a screen computed from a copy the live account has moved past, or
-  // a press that started nothing, is a state worth the warn tone.
-  const late = feed.outOfDate || feed.readState.kind === 'refused';
+  // Age alone is never amber, and neither is a press that started nothing — its reason is printed
+  // and that is enough. The one state worth the warn tone is a screen computed from a copy the
+  // live account has moved past: numbers on screen that are no longer the account's.
+  const late = feed.outOfDate;
   const tip = [sub(t.feedsRefreshOne, { feed: feedName(feed.id, t) })];
   const cycle = cycleText(feed.id, t);
   if (cycle === null) tip.push(t.feedsNoClock);
@@ -71,7 +72,7 @@ export function feedWords(feed: FeedView, t: Copy, now: number): { line: string;
   return { line, late, tip };
 }
 
-function FeedItem({ feed, t, now, waiting }: { feed: FeedView; t: Copy; now: number; waiting: boolean }) {
+function FeedItem({ feed, t, now, muted }: { feed: FeedView; t: Copy; now: number; muted: boolean }) {
   const { line, late, tip } = feedWords(feed, t, now);
   const working = feed.busy || feed.readState.kind === 'working';
   const meter = feedMeter(feed.id, feedAgeMs(feed.capturedAt, now));
@@ -87,6 +88,7 @@ function FeedItem({ feed, t, now, waiting }: { feed: FeedView; t: Copy; now: num
             data-testid={testIds.button}
             data-feed={feed.id}
             data-state={working ? 'working' : late ? 'late' : 'fresh'}
+            data-muted={muted}
             aria-label={tip[0]}
             aria-busy={working}
             disabled={working}
@@ -112,7 +114,7 @@ function FeedItem({ feed, t, now, waiting }: { feed: FeedView; t: Copy; now: num
               'focus-visible:outline-2',
               'focus-visible:outline-offset-1',
               'focus-visible:outline-accent',
-              waiting && 'opacity-55',
+              muted && 'opacity-45',
             )}
           >
             <span className="flex items-baseline justify-between gap-2.5 leading-none">
@@ -149,7 +151,8 @@ function FeedItem({ feed, t, now, waiting }: { feed: FeedView; t: Copy; now: num
   );
 }
 
-export function FeedsRail({ feeds, refreshAll, all }: FeedsHook) {
+export function FeedsRail({ feeds, refreshAll, all, activeTabId }: FeedsHook & { activeTabId: string }) {
+  const relevant = feedsReadBy(activeTabId);
   const t = useCopy();
   const [now, setNow] = useState(() => Date.now());
 
@@ -166,8 +169,9 @@ export function FeedsRail({ feeds, refreshAll, all }: FeedsHook) {
     <Tooltip.Provider delay={200} closeDelay={80}>
       <div data-testid="feeds-rail" data-running={all.running} className="flex items-center gap-2">
         <div className="flex items-stretch">
+          {/* Muted: a feed this tab does not read, or a step the running sequence has not reached. */}
           {feeds.map((feed, index) => (
-            <FeedItem key={feed.id} feed={feed} t={t} now={now} waiting={all.running && index > all.step} />
+            <FeedItem key={feed.id} feed={feed} t={t} now={now} muted={(all.running && index > all.step) || !relevant.includes(feed.id)} />
           ))}
         </div>
         <Tooltip.Root>

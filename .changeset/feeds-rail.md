@@ -1,6 +1,8 @@
 ---
 "@bombfarm/desktop": minor
 "@bombfarm/contracts": minor
+"@bombfarm/ui": minor
+"@bombfarm/web": patch
 "@bombfarm/farm": patch
 "@bombfarm/team-plan": patch
 ---
@@ -33,3 +35,13 @@ screen follows the live account, so the item shows the last account read and a p
 read it again.
 
 The Optimizer screen loses its title line: the tab and the nav already name it.
+
+**The game is the zeroth feed, and the Live tab wears it.** The "Connected" chip at the strip's
+left becomes a `GAME` cell in the rail's own grammar — `live`, `stale 3m`, `not running` — with no
+meter, because the game is not polled: it is what every other feed is read from. The Live tab in
+the top bar carries a small dot at its corner in the same state (green, amber, grey), and hovering
+either says the same sentence. The "Streaming live from the game" pill leaves the Live screen —
+a live screen is its own evidence — and a gap is now a sentence in the warn tone, not a chip. The
+web download page's replica of the Live screen follows: the dot on its Live tab, no pill. The
+design system's `StatusChip` is retired with no reader left; `AppNav` items take an optional
+corner mark.

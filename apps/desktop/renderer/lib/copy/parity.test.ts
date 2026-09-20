@@ -108,7 +108,7 @@ describe('en/ptBR key-set parity', () => {
 
   it('red state demonstrated: removing a key from one side is caught by the same comparison the real test uses', () => {
     const withoutOneKey: Record<string, string> = { ...en };
-    delete withoutOneKey.shellStatusConnected;
+    delete withoutOneKey.shellLoadingLabel;
     expect(Object.keys(withoutOneKey).sort()).not.toEqual(Object.keys(ptBR).sort());
   });
 });

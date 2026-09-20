@@ -32,9 +32,16 @@ describe('the shell draws the press once, in its status strip', () => {
     }
   });
 
-  it('the shell mounts the rail in the strip, fed by the feeds hook keyed on the tab on show', () => {
+  it('the game is the zeroth feed at the strip\'s left, and the Live tab wears its state as a dot', () => {
+    expect(page).toContain('status={<GameFeed status={status} />}');
+    expect(page).toContain("item.id === 'live' ? { ...item, mark: liveMark } : item");
+    expect(page).not.toContain('StatusChip');
+  });
+
+  it("the shell mounts the rail at the strip's right, beside the version, fed by the feeds hook keyed on the tab on show", () => {
     expect(page).toContain('useFeeds({ activeTabId: activeNavId, updateStatus, onUpdateCheck })');
-    expect(page).toContain('progress={granted ? <FeedsRail {...feeds} /> : null}');
+    expect(page).toContain('<FeedsRail {...feeds} activeTabId={activeNavId} />');
+    expect(page.indexOf('<FeedsRail')).toBeLessThan(page.indexOf('data-testid="app-version"'));
   });
 });
 

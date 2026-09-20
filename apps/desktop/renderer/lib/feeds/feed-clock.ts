@@ -19,6 +19,28 @@ export const FEED_CYCLE_MS: Record<FeedId, number | null> = {
   updates: UPDATE_CHECK_INTERVAL_MS,
 };
 
+/**
+ * Which feeds a tab actually reads. The rest are drawn muted while that tab is showing — still
+ * there, still pressable, but not what the screen's numbers came from. A tab not listed here reads
+ * the account, which is what every screen but PVP and Settings does.
+ */
+const FEEDS_BY_TAB: Record<string, readonly FeedId[]> = {
+  live: ['account'],
+  farm: ['account'],
+  heroes: ['account'],
+  inventory: ['account', 'market'],
+  forge: ['account'],
+  optimizer: ['account'],
+  pvp: ['pvp'],
+  skills: ['account', 'pvp'],
+  account: ['account'],
+  settings: ['updates'],
+};
+
+export function feedsReadBy(tabId: string): readonly FeedId[] {
+  return FEEDS_BY_TAB[tabId] ?? ['account'];
+}
+
 export function feedAgeMs(capturedAt: string | null, now: number): number | null {
   if (capturedAt === null) return null;
   const at = Date.parse(capturedAt);

@@ -17,7 +17,7 @@ const TONE_VARIANT: Record<ActionChipTone, ChipVariant> = {
 };
 
 /**
- * ActionChip — `StatusChip`'s pill, as a control. Same `chipRecipe` tones and the same decorative
+ * ActionChip — the small status pill, as a control. Same `chipRecipe` tones and the same decorative
  * dot, so a clickable chip and a reported one sit in the same strip without looking like two
  * different systems.
  *

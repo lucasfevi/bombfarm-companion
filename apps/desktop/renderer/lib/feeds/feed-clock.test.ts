@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MARKET_SNAPSHOT_CHECK_MS, UPDATE_CHECK_INTERVAL_MS } from '@bombfarm/contracts';
 import { READ_PACING } from '@bombfarm/game-api';
-import { FEED_CYCLE_MS, FEED_IDS, feedAgeMs, feedMeter, feedNextInMs } from './feed-clock';
+import { FEED_CYCLE_MS, FEED_IDS, feedAgeMs, feedMeter, feedNextInMs, feedsReadBy } from './feed-clock';
 import { sequenceDecision } from './use-feeds';
 
 const NOW = Date.parse('2026-09-20T12:00:00.000Z');
@@ -17,6 +17,20 @@ describe('the four feeds and the clock each runs on', () => {
     expect(FEED_CYCLE_MS.market).toBe(MARKET_SNAPSHOT_CHECK_MS);
     expect(FEED_CYCLE_MS.updates).toBe(UPDATE_CHECK_INTERVAL_MS);
     expect(FEED_CYCLE_MS.pvp).toBeNull();
+  });
+});
+
+describe('which feeds a tab reads — the rest are muted while it shows', () => {
+  it('every tab but PVP and Settings reads the account; Inventory adds prices, Skill Tree adds the PVP ranking', () => {
+    for (const tab of ['live', 'farm', 'heroes', 'forge', 'optimizer', 'account']) expect(feedsReadBy(tab)).toEqual(['account']);
+    expect(feedsReadBy('inventory')).toEqual(['account', 'market']);
+    expect(feedsReadBy('skills')).toEqual(['account', 'pvp']);
+    expect(feedsReadBy('pvp')).toEqual(['pvp']);
+    expect(feedsReadBy('settings')).toEqual(['updates']);
+  });
+
+  it('a tab this map has never heard of reads the account, which is what a new screen almost always does', () => {
+    expect(feedsReadBy('something-new')).toEqual(['account']);
   });
 });
 

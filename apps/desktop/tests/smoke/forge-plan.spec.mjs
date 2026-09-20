@@ -203,7 +203,8 @@ test.describe('forge plan smoke', () => {
       // refusal takes the age's place for as long as it stands.
       await refreshButton.click();
       await expect(rail.getByTestId('account-refresh-age')).toHaveText('No server to read from');
-      await expect(refreshButton).toHaveAttribute('data-state', 'late');
+      // A refusal is printed, not coloured: only "out of date" takes the warn tone.
+      await expect(refreshButton).toHaveAttribute('data-state', 'fresh');
       // Refused is not working: nothing is in flight, so the button is pressable again.
       await expect(refreshButton).toBeEnabled();
 

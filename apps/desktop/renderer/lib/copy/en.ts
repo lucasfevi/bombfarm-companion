@@ -13,10 +13,17 @@
  */
 export const en = {
   // shell* — AppShell navigation and status chrome
-  shellStatusConnected: 'Connected',
-  shellStatusNotRunning: 'Game not running',
-  shellStatusStale: 'Stale',
   shellLoadingLabel: 'Loading…',
+  // gameFeed* — the game as the status strip's zeroth feed: a word for its state, and the sentence
+  // the tooltip and the Live tab's dot say for it. `liveStatusLiveLabel` below is the live one.
+  gameFeedLabel: 'Game',
+  gameFeedLive: 'live',
+  gameFeedStale: 'stale {age}',
+  gameFeedStaleNoAge: 'stale',
+  gameFeedNotRunning: 'not running',
+  gameFeedStaleTip: 'The game is open, but nothing has arrived from it for {age}',
+  gameFeedStaleNoAgeTip: 'The game is open, but nothing is arriving from it',
+  gameFeedNotRunningTip: 'No game process found — the app keeps looking on its own',
   shellUpdateAvailable: 'Update available',
   shellUpdateDownloading: 'Updating… {percent}%',
   shellUpdateReady: 'Restart to update',
