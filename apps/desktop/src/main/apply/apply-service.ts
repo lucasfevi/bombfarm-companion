@@ -207,84 +207,90 @@ export function createApplyService(deps: ApplyServiceDeps): ApplyService {
     const step = request.step;
     const units: readonly (ApplyEquipUnit | ApplyPointsUnit)[] = request.units;
 
-    for (const unit of units) {
-      if (stopRequested) {
-        stop = 'stopped';
+    try {
+      for (const unit of units) {
+        if (stopRequested) {
+          stop = 'stopped';
+          break;
+        }
+        if (!isGranted(deps.consentStore.read())) {
+          stop = 'consent_revoked';
+          break;
+        }
+        if (!deps.isGameRunning()) {
+          stop = 'game_not_running';
+          break;
+        }
+
+        const verdict =
+          step === 'equip'
+            ? preflightEquipUnits(request.units, liveGear() ?? { wearerByItemId: new Map(), heroIds: new Set() }, settled)[unit.index]
+            : preflightPointsUnitsOffline([unit as ApplyPointsUnit], heroIdsFromRows(deps.currentHeroes()))[0];
+
+        if (verdict?.status === 'done') {
+          deps.emit({ type: 'unit', runId, step, index: unit.index, status: 'skipped', reason: 'alreadyDone' });
+          skipped.push({ index: unit.index, reason: 'alreadyDone' });
+          settled.set(unit.index, 'skipped');
+          continue;
+        }
+        if (verdict?.status === 'conflict') {
+          const reason = verdict.reason ?? 'itemMoved';
+          deps.emit({ type: 'unit', runId, step, index: unit.index, status: 'skipped', reason });
+          skipped.push({ index: unit.index, reason });
+          settled.set(unit.index, 'skipped');
+          continue;
+        }
+
+        const ctx = contextFor(runId, step, session, unit.index, callsMade, wallet);
+        const result: UnitResult =
+          step === 'equip' ? await runEquipUnit(unit as ApplyEquipUnit, ctx) : await runPointsUnit(unit as ApplyPointsUnit, ctx);
+
+        if (result.kind === 'ok') {
+          made += 1;
+          goldSpent += result.goldSpent;
+          if (wallet.value !== null) wallet.value -= result.goldSpent;
+          deps.emit({ type: 'unit', runId, step, index: unit.index, status: 'ok', goldSpent: result.goldSpent, walletAfter: wallet.value });
+          settled.set(unit.index, 'ok');
+          continue;
+        }
+        if (result.kind === 'skip') {
+          const skip: ApplySkip =
+            result.code === undefined
+              ? { index: unit.index, reason: result.reason }
+              : { index: unit.index, reason: result.reason, code: result.code };
+          deps.emit({ type: 'unit', runId, step, index: unit.index, status: 'skipped', reason: skip.reason, ...(skip.code === undefined ? {} : { code: skip.code }) });
+          skipped.push(skip);
+          settled.set(unit.index, 'skipped');
+          continue;
+        }
+
+        // A stop that came from a call actually answered (network/refused) always names it as a
+        // failed unit; a stop that came from the pause/resend path (Stop pressed, an auth halt, a
+        // consent or game-running flip) does too only when a respec already landed and the commit
+        // that followed it is what stopped — every other pause-driven stop is an environmental halt,
+        // not a failure, and carries no `failed` entry.
+        const isFailure = result.stop === 'network' || result.stop === 'refused' || (result.call === 'commit' && result.resetDone);
+        if (isFailure && result.call !== null) {
+          deps.emit({
+            type: 'unit',
+            runId,
+            step,
+            index: unit.index,
+            status: 'failed',
+            call: result.call,
+            ...(result.code === null ? {} : { code: result.code }),
+            ...(result.resetDone ? { reason: 'resetNotPlaced' as const } : {}),
+          });
+          failed = { index: unit.index, call: result.call, code: result.code, resetDone: result.resetDone };
+        }
+        stop = result.stop;
+        stopCode = result.code;
         break;
       }
-      if (!isGranted(deps.consentStore.read())) {
-        stop = 'consent_revoked';
-        break;
-      }
-      if (!deps.isGameRunning()) {
-        stop = 'game_not_running';
-        break;
-      }
-
-      const verdict =
-        step === 'equip'
-          ? preflightEquipUnits(request.units, liveGear() ?? { wearerByItemId: new Map(), heroIds: new Set() }, settled)[unit.index]
-          : preflightPointsUnitsOffline([unit as ApplyPointsUnit], heroIdsFromRows(deps.currentHeroes()))[0];
-
-      if (verdict?.status === 'done') {
-        deps.emit({ type: 'unit', runId, step, index: unit.index, status: 'skipped', reason: 'alreadyDone' });
-        skipped.push({ index: unit.index, reason: 'alreadyDone' });
-        settled.set(unit.index, 'skipped');
-        continue;
-      }
-      if (verdict?.status === 'conflict') {
-        const reason = verdict.reason ?? 'itemMoved';
-        deps.emit({ type: 'unit', runId, step, index: unit.index, status: 'skipped', reason });
-        skipped.push({ index: unit.index, reason });
-        settled.set(unit.index, 'skipped');
-        continue;
-      }
-
-      const ctx = contextFor(runId, step, session, unit.index, callsMade, wallet);
-      const result: UnitResult =
-        step === 'equip' ? await runEquipUnit(unit as ApplyEquipUnit, ctx) : await runPointsUnit(unit as ApplyPointsUnit, ctx);
-
-      if (result.kind === 'ok') {
-        made += 1;
-        goldSpent += result.goldSpent;
-        if (wallet.value !== null) wallet.value -= result.goldSpent;
-        deps.emit({ type: 'unit', runId, step, index: unit.index, status: 'ok', goldSpent: result.goldSpent, walletAfter: wallet.value });
-        settled.set(unit.index, 'ok');
-        continue;
-      }
-      if (result.kind === 'skip') {
-        const skip: ApplySkip =
-          result.code === undefined
-            ? { index: unit.index, reason: result.reason }
-            : { index: unit.index, reason: result.reason, code: result.code };
-        deps.emit({ type: 'unit', runId, step, index: unit.index, status: 'skipped', reason: skip.reason, ...(skip.code === undefined ? {} : { code: skip.code }) });
-        skipped.push(skip);
-        settled.set(unit.index, 'skipped');
-        continue;
-      }
-
-      // A stop that came from a call actually answered (network/refused) always names it as a
-      // failed unit; a stop that came from the pause/resend path (Stop pressed, an auth halt, a
-      // consent or game-running flip) does too only when a respec already landed and the commit
-      // that followed it is what stopped — every other pause-driven stop is an environmental halt,
-      // not a failure, and carries no `failed` entry.
-      const isFailure = result.stop === 'network' || result.stop === 'refused' || (result.call === 'commit' && result.resetDone);
-      if (isFailure && result.call !== null) {
-        deps.emit({
-          type: 'unit',
-          runId,
-          step,
-          index: unit.index,
-          status: 'failed',
-          call: result.call,
-          ...(result.code === null ? {} : { code: result.code }),
-          ...(result.resetDone ? { reason: 'resetNotPlaced' as const } : {}),
-        });
-        failed = { index: unit.index, call: result.call, code: result.code, resetDone: result.resetDone };
-      }
-      stop = result.stop;
-      stopCode = result.code;
-      break;
+    } catch (err) {
+      stop = 'error';
+      stopCode = err instanceof Error ? err.message : String(err);
+      deps.log.error({ scope: 'apply', event: 'run.failed', runId, error: String(err) });
     }
 
     deps.writerLock.release('apply');
@@ -317,7 +323,14 @@ export function createApplyService(deps: ApplyServiceDeps): ApplyService {
     return { ok: false, reason };
   }
 
-  function synthesisedDone(script: ApplyInjectRequest, step: ApplyStep, replayed: readonly ApplyUnitEvent[], stop: 'finished' | 'stopped', durationMs: number): ApplyDoneEvent {
+  function synthesisedDone(
+    script: ApplyInjectRequest,
+    step: ApplyStep,
+    replayed: readonly ApplyUnitEvent[],
+    stop: 'finished' | 'stopped' | 'error',
+    durationMs: number,
+    stopCode: string | null = null,
+  ): ApplyDoneEvent {
     const made = replayed.filter((event) => event.status === 'ok').length;
     const skipped: ApplySkip[] = replayed
       .filter((event) => event.status === 'skipped')
@@ -328,7 +341,7 @@ export function createApplyService(deps: ApplyServiceDeps): ApplyService {
       );
     const total = new Set(script.events.filter((event) => event.type === 'unit').map((event) => event.index)).size;
     const goldSpent = replayed.reduce((sum, event) => sum + (event.goldSpent ?? 0), 0);
-    const result: ApplyRunResult = { step, total, made, skipped, failed: null, stop, stopCode: null, goldSpent, durationMs };
+    const result: ApplyRunResult = { step, total, made, skipped, failed: null, stop, stopCode, goldSpent, durationMs };
     return { runId: script.runId, step, result };
   }
 
@@ -339,23 +352,30 @@ export function createApplyService(deps: ApplyServiceDeps): ApplyService {
     const startedAt = deps.now();
     const replayed: ApplyUnitEvent[] = [];
     let ended = false;
-    for (let index = 0; index < script.events.length; index++) {
-      // Always yields at least once, even for the first event with gapMs 0 — so the replay
-      // (including its first emit) never runs synchronously inside start()'s own call stack.
-      await deps.sleep(index > 0 ? script.gapMs : 0);
-      if (stopRequested) break;
-      const event = script.events[index];
-      if (!event) continue;
-      deps.emit(event);
-      if (event.type === 'unit') replayed.push(event);
-      if (event.type === 'done') {
-        ended = true;
-        break;
+    let failure: string | null = null;
+    try {
+      for (let index = 0; index < script.events.length; index++) {
+        // Always yields at least once, even for the first event with gapMs 0 — so the replay
+        // (including its first emit) never runs synchronously inside start()'s own call stack.
+        await deps.sleep(index > 0 ? script.gapMs : 0);
+        if (stopRequested) break;
+        const event = script.events[index];
+        if (!event) continue;
+        deps.emit(event);
+        if (event.type === 'unit') replayed.push(event);
+        if (event.type === 'done') {
+          ended = true;
+          break;
+        }
       }
+    } catch (err) {
+      failure = err instanceof Error ? err.message : String(err);
+      deps.log.error({ scope: 'apply', event: 'run.failed', runId: script.runId, error: String(err) });
     }
     if (!ended) {
       const durationMs = Math.max(0, deps.now() - startedAt);
-      deps.emit({ type: 'done', ...synthesisedDone(script, step, replayed, stopRequested ? 'stopped' : 'finished', durationMs) });
+      const stop = failure !== null ? 'error' : stopRequested ? 'stopped' : 'finished';
+      deps.emit({ type: 'done', ...synthesisedDone(script, step, replayed, stop, durationMs, failure) });
     }
     deps.writerLock.release('apply');
     activeRunId = null;
@@ -401,7 +421,15 @@ export function createApplyService(deps: ApplyServiceDeps): ApplyService {
       activeRunId = runId;
       stopRequested = false;
       deps.log.info({ scope: 'apply', event: 'run.started', runId, step: request.step, planRunId: request.planRunId, units: request.units.length });
-      void run(runId, session, request);
+      // `run()` catches every throw from its own body and always emits `done`; this is the last
+      // resort for a throw from outside that body (before its own try, or from the promise
+      // machinery itself), so the lock is never left held by a run nothing is still driving.
+      void run(runId, session, request).catch((err: unknown) => {
+        deps.log.error({ scope: 'apply', event: 'run.failed', runId, error: String(err) });
+        deps.writerLock.release('apply');
+        activeRunId = null;
+        stopRequested = false;
+      });
       return { ok: true, runId };
     },
 

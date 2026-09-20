@@ -99,7 +99,7 @@ describe('ApplyModalBody — running phase', () => {
 
 describe('ApplyModalBody — done phase', () => {
   function doneState(
-    overrides: Partial<{ made: number; total: number; skipped: readonly { index: number; reason: 'heroLevel' }[]; stop: 'finished' | 'stopped' }> = {},
+    overrides: Partial<{ made: number; total: number; skipped: readonly { index: number; reason: 'heroLevel' }[]; stop: 'finished' | 'stopped' | 'error' }> = {},
   ): ApplyModalState {
     const run = beginRun('equip', 'r1', UNITS, 0);
     return {
@@ -136,6 +136,12 @@ describe('ApplyModalBody — done phase', () => {
     const html = render(doneState({ stop: 'stopped' }));
     expect(html).toContain('data-testid="apply-modal-stop-reason"');
     expect(html).toContain(en.applyStopStopped);
+  });
+
+  it('shows the plain-language error sentence when a run ends on an unexpected throw', () => {
+    const html = render(doneState({ stop: 'error' }));
+    expect(html).toContain('data-testid="apply-modal-stop-reason"');
+    expect(html).toContain(en.applyStopError);
   });
 
   it('offers Close always, and Continue only with hasNext', () => {

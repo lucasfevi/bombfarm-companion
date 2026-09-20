@@ -205,11 +205,16 @@ describe('isApplyEvent', () => {
     expect(isApplyEvent(withoutIndex)).toBe(false);
   });
 
-  it('rejects a done event missing result.stop, or carrying a stop value outside the closed seven', () => {
+  it('rejects a done event missing result.stop, or carrying a stop value outside the closed eight', () => {
     const badStop = { ...VALID_DONE_EVENT, result: { ...(VALID_DONE_EVENT as { result: object }).result, stop: 'exploded' } };
     expect(isApplyEvent(badStop)).toBe(false);
     const badMade = { ...VALID_DONE_EVENT, result: { ...(VALID_DONE_EVENT as { result: object }).result, made: 1.5 } };
     expect(isApplyEvent(badMade)).toBe(false);
+  });
+
+  it('accepts a done event whose stop is error, carrying the failure message as stopCode', () => {
+    const errorStop = { ...VALID_DONE_EVENT, result: { ...(VALID_DONE_EVENT as { result: object }).result, stop: 'error', stopCode: 'boom' } };
+    expect(isApplyEvent(errorStop)).toBe(true);
   });
 
   it('rejects an unknown event type', () => {

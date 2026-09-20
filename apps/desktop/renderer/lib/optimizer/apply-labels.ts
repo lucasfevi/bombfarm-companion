@@ -56,6 +56,7 @@ export const APPLY_STOP_REASON_COPY_KEY = {
   game_not_running: 'applyStopGameNotRunning',
   consent_revoked: 'applyStopConsentRevoked',
   refused: 'applyStopRefused',
+  error: 'applyStopError',
 } as const satisfies Record<Exclude<ApplyStopReason, 'finished'>, CopyKey>;
 
 /** Main's refusal to start a step, in the player's terms — the fixture and the switch reuse the

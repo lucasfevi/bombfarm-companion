@@ -109,7 +109,8 @@ export type ApplyStopReason =
   | 'network'
   | 'game_not_running'
   | 'consent_revoked'
-  | 'refused';
+  | 'refused'
+  | 'error';
 
 export interface ApplySkip {
   index: number;
@@ -165,6 +166,7 @@ const APPLY_STOP_REASONS: readonly ApplyStopReason[] = [
   'game_not_running',
   'consent_revoked',
   'refused',
+  'error',
 ];
 
 function isRecord(value: unknown): value is Record<string, unknown> {

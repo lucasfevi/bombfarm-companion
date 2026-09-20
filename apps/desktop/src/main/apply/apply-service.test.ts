@@ -661,6 +661,27 @@ describe('every run, on done', () => {
     expect(warnings).toEqual([expect.objectContaining({ scope: 'apply', event: 'run.read_now_refused', reason: 'rate_limited' })]);
   });
 
+  it('an unexpected throw mid-run ends with stop: error, releases the lock, and leaves the next start free', async () => {
+    let calls = 0;
+    const h = harness({
+      currentItems: () => {
+        calls += 1;
+        if (calls === 2) throw new Error('cache exploded');
+        return [itemRow('g0', null)];
+      },
+      script: [ok()],
+    });
+    h.service.start(equipRequest([equipUnit(0)]));
+    const done = await untilDone(h.events);
+    expect(done.result).toMatchObject({ stop: 'error', stopCode: 'cache exploded', made: 0 });
+    expect(h.wire.requests).toHaveLength(0);
+    expect(h.writerLock.holder).toBeNull();
+    expect(h.service.isRunning()).toBe(false);
+
+    const second = h.service.start(equipRequest([equipUnit(0)]));
+    expect(second).toEqual(expect.objectContaining({ ok: true }));
+  });
+
   it('run.finished names the plan and step alongside the counts', async () => {
     const infos: unknown[] = [];
     const h = harness({
@@ -833,6 +854,27 @@ describe('a scripted run, armed through the inject seam', () => {
     const done = await untilDone(h.events);
     expect(h.events).toHaveLength(2); // UNIT_OK, then the synthesised done — UNIT_SKIP and SCRIPT_DONE never emitted
     expect(done.result).toMatchObject({ made: 1, skipped: [], total: 2, stop: 'stopped', stopCode: null, failed: null });
+  });
+
+  it('an emit that throws mid-replay ends the scripted run with stop: error, releases the lock, and leaves the next start free', async () => {
+    let emitCalls = 0;
+    const h = harness({
+      scripted: scriptedDep({ runId: 'scripted-err', events: [UNIT_OK, UNIT_SKIP, SCRIPT_DONE], gapMs: 0 }),
+      emit: (event) => {
+        emitCalls += 1;
+        if (emitCalls === 1) throw new Error('replay exploded');
+        h.events.push(event);
+      },
+    });
+    h.service.start('anything');
+    const done = await untilDone(h.events);
+    expect(done.result).toMatchObject({ stop: 'error', stopCode: 'replay exploded' });
+    expect(h.writerLock.holder).toBeNull();
+    expect(h.service.isRunning()).toBe(false);
+
+    const second = h.service.start('anything');
+    expect(second).toEqual(expect.objectContaining({ ok: false, reason: 'bad_request' }));
+    expect(h.writerLock.holder).toBeNull();
   });
 
   it('busy when the forge holds the lock, and the script stays armed for the next start', () => {

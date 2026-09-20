@@ -829,6 +829,7 @@ export const en = {
   applyStopGameNotRunning: 'the game closed',
   applyStopConsentRevoked: 'account access was switched off',
   applyStopRefused: 'the server refused: {code}',
+  applyStopError: 'something went wrong on our side — nothing more was sent',
   // applyStart* — refusals only an Equip or Reset press can hit; the rest reuse forgeStart*.
   applyStartNothing: 'Nothing left to apply — build the plan again',
   applyStartOffline: 'No server to apply on',

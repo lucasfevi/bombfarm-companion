@@ -778,6 +778,7 @@ export const ptBR: Copy = {
   applyStopGameNotRunning: 'o jogo fechou',
   applyStopConsentRevoked: 'o acesso à conta foi desligado',
   applyStopRefused: 'o servidor recusou: {code}',
+  applyStopError: 'algo deu errado do nosso lado — nada mais foi enviado',
   applyStartNothing: 'Nada mais para aplicar — monte o plano de novo',
   applyStartOffline: 'Sem servidor para aplicar',
   applyStartBadRequest: 'O app enviou um pedido que o jogo não entendeu — monte o plano de novo',
