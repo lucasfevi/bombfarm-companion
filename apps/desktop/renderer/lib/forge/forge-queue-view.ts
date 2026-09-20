@@ -5,7 +5,7 @@
  * `resolveForgeScreen` settles the Forge screen's own piece.
  */
 import { FORGE_ITEM_LEVELS, forgeForecast, type ForgeForecast } from '@bombfarm/domain/forge';
-import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
+import { mapInventoryViewItem, type InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import type { ForgeQueuePiece } from './forge-queue-reducer';
 
 export type ForgeQueueRow = {
@@ -43,4 +43,11 @@ export function forgeQueueExpectedGold(rows: readonly ForgeQueueRow[]): number |
 /** Where every piece in the bag stands, for the queue's sync. */
 export function bagUpgrades(gear: readonly InventoryViewItem[]): Map<string, number> {
   return new Map(gear.map((item) => [item.id, item.upgrade]));
+}
+
+/** Where one piece stands in the bag as the account payload carries it now — decoded the way the
+ *  bag itself is — or null once the piece has left it. */
+export function bagUpgradeOf(rawItems: readonly unknown[] | undefined, itemId: string): number | null {
+  const raw = rawItems?.find((candidate) => (candidate as { id?: unknown } | null)?.id === itemId);
+  return raw === undefined ? null : (mapInventoryViewItem(raw)?.upgrade ?? null);
 }
