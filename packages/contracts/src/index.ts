@@ -6,8 +6,43 @@ import type { MarketQuoteCurrency, MarketQuoteResult, MarketQuoteTarget, MarketS
 import { DEFAULT_MARKET_QUOTE_CURRENCY } from './market.js';
 import type { ForgeEvent, ForgeHistoryResult, ForgeStartRequest, ForgeStartResult } from './forge.js';
 import type { PvpFilmView, PvpHistoryResult } from './pvp.js';
+import type { ApplyEvent, ApplyStartRequest, ApplyStartResult } from './apply.js';
 
 export { accountChangeKey, canonicalStringify } from './account-change-key.js';
+export {
+  isApplyEquipUnit,
+  isApplyEvent,
+  isApplyInjectRequest,
+  isApplyPointsUnit,
+  isApplyStartRequest,
+  isCommitVector,
+} from './apply.js';
+export type {
+  ApplyCallKind,
+  ApplyConflictReason,
+  ApplyCooldownEvent,
+  ApplyDoneEvent,
+  ApplyEquipUnit,
+  ApplyEvent,
+  ApplyFailed,
+  ApplyInjectRequest,
+  ApplyLocation,
+  ApplyPointsUnit,
+  ApplyResumedEvent,
+  ApplyRunResult,
+  ApplySkip,
+  ApplySkipReason,
+  ApplyStartReason,
+  ApplyStartRequest,
+  ApplyStartResult,
+  ApplyStep,
+  ApplyStopReason,
+  ApplyUnitEvent,
+  ApplyUnitStatus,
+  ApplyUnitVerdict,
+  ApplyVerdictStatus,
+  CommitVector,
+} from './apply.js';
 export { EMPTY_FORGE_HISTORY } from './forge.js';
 export type {
   ForgeCallKind,
@@ -484,6 +519,18 @@ export interface IpcChannels {
   /** Test-only: replays a scripted event sequence through the real `forge:event` seam. Main
    *  honours it only unpackaged on the fixture reader; anywhere else it answers `{ ok: false }`. */
   'forge:inject': { args: [unknown]; result: { ok: boolean } };
+  /** Starts an Equip or Reset-points step from the units the renderer's own preflight found
+   *  pending. Main re-validates and re-derives against its own cache rather than trusting the
+   *  renderer's counts. There is no `apply:preflight` channel — the renderer runs the pure domain
+   *  preflight itself over its live account view. */
+  'apply:start': { args: [ApplyStartRequest]; result: ApplyStartResult };
+  /** `true` iff a run with that id was still active to stop. Honoured between calls, and during a
+   *  cooldown pause. */
+  'apply:stop': { args: [string]; result: boolean };
+  /** Test-only: arms a scripted run that the next `apply:start` replays through the real
+   *  `apply:event` seam. Main honours it only unpackaged on the fixture reader; anywhere else it
+   *  answers `{ ok: false }` and arms nothing. */
+  'apply:inject': { args: [unknown]; result: { ok: boolean } };
   /** Every duel the tap has seen settle, newest first, with whether each one's film is held. */
   'pvp:history': { args: []; result: PvpHistoryResult };
   /** Asks main to read the PVP state and the points ranking now, the way `account:readNow` asks
@@ -544,6 +591,9 @@ export const IPC_CHANNELS = [
   'forge:history',
   'forge:clearHistory',
   'forge:inject',
+  'apply:start',
+  'apply:stop',
+  'apply:inject',
   'pvp:history',
   'pvp:refresh',
   'pvp:film',
@@ -558,6 +608,7 @@ export type IpcEventChannel =
   | 'market:changed'
   | 'settings:changed'
   | 'forge:event'
+  | 'apply:event'
   | 'pvp:changed'
   | 'window:changed';
 
@@ -587,6 +638,9 @@ export interface IpcEvents {
   /** Every call a forge run makes, as it settles, then one `done`. The step's `to` is the
    *  server's answer, never an inference from the odds. */
   'forge:event': ForgeEvent;
+  /** Every event an apply run pushes: a call sent/settled, a cooldown pause and its resume, then
+   *  one `done`. */
+  'apply:event': ApplyEvent;
   /** Fired when a duel result or a film has just been kept — the same list `pvp:history` serves,
    *  so a screen already open sees the duel without polling. */
   'pvp:changed': PvpHistoryResult;
@@ -605,6 +659,7 @@ export const IPC_EVENT_CHANNELS = [
   'market:changed',
   'settings:changed',
   'forge:event',
+  'apply:event',
   'pvp:changed',
   'window:changed',
 ] as const satisfies readonly IpcEventChannel[];

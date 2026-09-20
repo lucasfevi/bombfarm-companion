@@ -12,6 +12,72 @@ import {
   type ConsentRecord,
 } from './index.js';
 
+const IPC_CHANNEL_LIST = [
+  'app:getFlavor',
+  'app:getEnvironment',
+  'app:ping',
+  'settings:get',
+  'settings:useEnglish',
+  'settings:usePortuguese',
+  'settings:setAlwaysOnTopMain',
+  'settings:setAlwaysOnTopMini',
+  'settings:setForgeWritesEnabled',
+  'settings:setRestartGameOnExit',
+  'settings:setMarketQuoteCurrency',
+  'window:minimize',
+  'window:toggleMaximize',
+  'window:close',
+  'window:getState',
+  'miniLive:open',
+  'miniLive:close',
+  'miniLive:getLayout',
+  'miniLive:setLayout',
+  'miniLive:fitGrowthAxis',
+  'storage:health',
+  'game:getStatus',
+  'account:get',
+  'account:readNow',
+  'consent:get',
+  'consent:accept',
+  'consent:decline',
+  'consent:revoke',
+  'live:get',
+  'live:dumpDiagnostics',
+  'live:resetEarnings',
+  'updates:get',
+  'updates:check',
+  'updates:download',
+  'updates:installOnRestart',
+  'market:getSnapshot',
+  'market:refreshItem',
+  'market:check',
+  'forge:start',
+  'forge:cancel',
+  'forge:history',
+  'forge:clearHistory',
+  'forge:inject',
+  'apply:start',
+  'apply:stop',
+  'apply:inject',
+  'pvp:history',
+  'pvp:refresh',
+  'pvp:film',
+] as const;
+
+const IPC_EVENT_CHANNEL_LIST = [
+  'game:status',
+  'consent:changed',
+  'account:changed',
+  'live:event',
+  'updates:changed',
+  'market:changed',
+  'settings:changed',
+  'forge:event',
+  'apply:event',
+  'pvp:changed',
+  'window:changed',
+] as const;
+
 /** Compile-time-only: fails `tsc -p tsconfig.typecheck.json` if a member is ever added to
  *  `IpcInvokeChannel` without also adding it to the runtime `IPC_CHANNELS` array — the
  *  `satisfies` clause on `IPC_CHANNELS` only catches the opposite direction (an extra/wrong
@@ -21,70 +87,12 @@ type _AllInvokeChannelsListed = AssertNever<Exclude<import('./index.js').IpcInvo
 type _AllEventChannelsListed = AssertNever<Exclude<import('./index.js').IpcEventChannel, (typeof IPC_EVENT_CHANNELS)[number]>>;
 
 describe('contracts IPC surface', () => {
-  it('lists stable invoke channels, including the four consent channels', () => {
-    expect(IPC_CHANNELS).toEqual([
-      'app:getFlavor',
-      'app:getEnvironment',
-      'app:ping',
-      'settings:get',
-      'settings:useEnglish',
-      'settings:usePortuguese',
-      'settings:setAlwaysOnTopMain',
-      'settings:setAlwaysOnTopMini',
-      'settings:setForgeWritesEnabled',
-      'settings:setRestartGameOnExit',
-      'settings:setMarketQuoteCurrency',
-      'window:minimize',
-      'window:toggleMaximize',
-      'window:close',
-      'window:getState',
-      'miniLive:open',
-      'miniLive:close',
-      'miniLive:getLayout',
-      'miniLive:setLayout',
-      'miniLive:fitGrowthAxis',
-      'storage:health',
-      'game:getStatus',
-      'account:get',
-      'account:readNow',
-      'consent:get',
-      'consent:accept',
-      'consent:decline',
-      'consent:revoke',
-      'live:get',
-      'live:dumpDiagnostics',
-      'live:resetEarnings',
-      'updates:get',
-      'updates:check',
-      'updates:download',
-      'updates:installOnRestart',
-      'market:getSnapshot',
-      'market:refreshItem',
-      'market:check',
-      'forge:start',
-      'forge:cancel',
-      'forge:history',
-      'forge:clearHistory',
-      'forge:inject',
-      'pvp:history',
-      'pvp:refresh',
-      'pvp:film',
-    ]);
+  it('lists stable invoke channels, including the four consent channels and the three apply channels (right after forge:inject, before pvp:history)', () => {
+    expect(IPC_CHANNELS).toEqual(IPC_CHANNEL_LIST);
   });
 
-  it('lists stable event channels, including consent:changed and account:changed', () => {
-    expect(IPC_EVENT_CHANNELS).toEqual([
-      'game:status',
-      'consent:changed',
-      'account:changed',
-      'live:event',
-      'updates:changed',
-      'market:changed',
-      'settings:changed',
-      'forge:event',
-      'pvp:changed',
-      'window:changed',
-    ]);
+  it('lists stable event channels, including consent:changed, account:changed and apply:event (right after forge:event)', () => {
+    expect(IPC_EVENT_CHANNELS).toEqual(IPC_EVENT_CHANNEL_LIST);
   });
 
   it('guards unknown channel names', () => {
@@ -96,6 +104,10 @@ describe('contracts IPC surface', () => {
     expect(isIpcChannel('consent:accept')).toBe(true);
     expect(isIpcChannel('consent:decline')).toBe(true);
     expect(isIpcChannel('consent:revoke')).toBe(true);
+    expect(isIpcChannel('apply:start')).toBe(true);
+    expect(isIpcChannel('apply:stop')).toBe(true);
+    expect(isIpcChannel('apply:inject')).toBe(true);
+    expect(isIpcChannel('apply:preflight')).toBe(false);
     expect(isIpcChannel('not-a-channel')).toBe(false);
   });
 
@@ -103,6 +115,7 @@ describe('contracts IPC surface', () => {
     expect(isIpcEventChannel('game:status')).toBe(true);
     expect(isIpcEventChannel('consent:changed')).toBe(true);
     expect(isIpcEventChannel('account:changed')).toBe(true);
+    expect(isIpcEventChannel('apply:event')).toBe(true);
     expect(isIpcEventChannel('not-an-event')).toBe(false);
   });
 

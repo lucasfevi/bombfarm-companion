@@ -14,6 +14,8 @@ import {
   type AccountReadResult,
   type AccountSource,
   type AccountView,
+  type ApplyStartRequest,
+  type ApplyStartResult,
   type AppLocale,
   type AppSettings,
   type ConsentRecord,
@@ -307,6 +309,21 @@ function startForgeRun(request: ForgeStartRequest): ForgeStartResult {
   return forgeService?.start(request) ?? { ok: false, reason: 'unavailable' };
 }
 
+// Pre-service form: no apply service exists yet, so every call answers the same refusal a
+// not-yet-constructed forge service would. The real service replaces these bodies once it is
+// wired (see the apply-run service task).
+function startApplyRun(_request: ApplyStartRequest): ApplyStartResult {
+  return { ok: false, reason: 'unavailable' };
+}
+
+function stopApplyRun(_runId: string): boolean {
+  return false;
+}
+
+function injectApplyScript(_payload: unknown): { ok: boolean } {
+  return { ok: false };
+}
+
 // Threads Electron's real `app.isPackaged` (via `resolveAppEnv()`) so `sessionCfgPath`'s
 // `BFC_TOKEN_PATH_OVERRIDE` escape hatch can ever apply — and, symmetrically, cannot apply in
 // a packaged build no matter what is set in its environment. See `session-token-file.ts`'s
@@ -482,6 +499,9 @@ function registerIpcHandlers(): void {
       return listForgeHistory();
     },
     'forge:inject': (events: unknown) => forgeInjector?.inject(events) ?? { ok: false },
+    'apply:start': startApplyRun,
+    'apply:stop': stopApplyRun,
+    'apply:inject': injectApplyScript,
     'pvp:history': listPvpHistory,
     'pvp:refresh': (): AccountReadResult => pvpReader?.refresh() ?? { ok: false, reason: 'unavailable' },
     'pvp:film': readPvpFilm,
