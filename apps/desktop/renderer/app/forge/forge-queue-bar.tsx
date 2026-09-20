@@ -111,7 +111,11 @@ export function ForgeQueueBar({
           <span className="font-mono tabular-nums text-ink">
             {forgeLevel(inFlight?.upgrade ?? head.item?.upgrade ?? 0)} → {forgeLevel(head.piece.target)}
           </span>
-          {queue.active !== null ? (
+          {queue.status === 'paused' ? (
+            <span data-testid="forge-queue-paused" className="text-muted">
+              {t.forgeQueuePausedForApply}
+            </span>
+          ) : queue.active !== null ? (
             <span className="text-muted">
               {inFlight === null
                 ? t.forgeQueueRolling

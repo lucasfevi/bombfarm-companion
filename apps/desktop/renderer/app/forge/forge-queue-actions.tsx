@@ -58,8 +58,12 @@ export function ForgeQueueActions({
   }, []);
 
   const running = queue.status === 'running';
+  // A paused queue holds the same Cancel-only footing as a running one — it is standing aside for
+  // the Optimizer's apply step, not stopped, and Start would contend with that step over the one
+  // write gate.
+  const holds = running || queue.status === 'paused';
   const reason = forgeButtonReason({ upgrade: 0, accountSource, forgeWritesEnabled, running: false, cancelRequested: false });
-  const canStart = reason === 'ready' && !running && queue.pieces.length > 0;
+  const canStart = reason === 'ready' && !holds && queue.pieces.length > 0;
 
   const haltText =
     queue.halt === null
@@ -101,12 +105,12 @@ export function ForgeQueueActions({
           {sub(t.forgeQueueStopped, { reason: haltText })}
         </span>
       ) : null}
-      {!running && reason !== 'ready' ? (
+      {!holds && reason !== 'ready' ? (
         <span data-testid="forge-queue-reason" className="text-[11px] text-muted">
           {forgeReasonText(reason, t)}
         </span>
       ) : null}
-      {running ? (
+      {holds ? (
         <Button type="button" variant="default" className={buttonClass} data-testid="forge-queue-cancel" onClick={onCancel}>
           {t.forgeQueueCancel}
         </Button>
