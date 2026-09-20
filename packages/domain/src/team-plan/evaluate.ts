@@ -1,9 +1,11 @@
 import type { Loadout } from '../gear/types';
 import {
   alliesOverRotation,
+  fieldTimeInWindow,
   PASSAGEM_BASTAO_CAPPED_PULSE,
   passagemBastaoFieldPulse,
   passagemBastaoPresence,
+  passagemBastaoWindowPresence,
   type PassagemBastaoCarrier,
   type PassagemBastaoFieldPulse,
 } from '../model';
@@ -58,7 +60,21 @@ export function scoringLoadoutsFor(
   return out;
 }
 
-type Stint = { fieldSeconds: number; duty: number };
+type Stint = { fieldSeconds: number; duty: number; restSeconds: number };
+
+/**
+ * The share of wall clock a hero's stints are weighted by: its rotation duty, or, over a timed
+ * combat window (`EvaluateRosterInput.windowSecs`), the share of that window it fields.
+ */
+function stintPresence(stint: Stint, windowSecs: number | undefined): number {
+  if (windowSecs === undefined) return stint.duty;
+  return fieldTimeInWindow(stint.fieldSeconds, stint.restSeconds, windowSecs) / windowSecs;
+}
+
+function pulsePresence(stint: Stint, windowSecs: number | undefined): number {
+  if (windowSecs === undefined) return passagemBastaoPresence(stint.fieldSeconds, stint.duty);
+  return passagemBastaoWindowPresence(stint.fieldSeconds, stint.restSeconds, windowSecs);
+}
 
 /**
  * Matilha's allies for every hero on the rotation, from the duties the auras are weighted by:
@@ -93,6 +109,7 @@ function computeFieldPulse(
   contexts: readonly HeroPlanContext[],
   stints: Readonly<Record<string, Stint>>,
   aurasAtCap: AurasAtCap | undefined,
+  windowSecs: number | undefined,
 ): PassagemBastaoFieldPulse {
   if (pulseHeldAtCap(aurasAtCap)) return PASSAGEM_BASTAO_CAPPED_PULSE;
   const carriers: PassagemBastaoCarrier[] = [];
@@ -100,7 +117,7 @@ function computeFieldPulse(
     const rank = ctx.abilities.passagem_bastao ?? 0;
     const stint = stints[ctx.heroId];
     if (!isSquadScope(ctx.scope) || !(rank > 0) || !stint) continue;
-    carriers.push({ rank, presence: passagemBastaoPresence(stint.fieldSeconds, stint.duty) });
+    carriers.push({ rank, presence: pulsePresence(stint, windowSecs) });
   }
   return passagemBastaoFieldPulse(carriers);
 }
@@ -237,7 +254,7 @@ function leaveAloneStint(
 ): Stint {
   const loadout = input.loadoutsByHeroId[ctx.heroId] ?? {};
   const score = scoreHeroLoadout(ctx, loadout, ctx.pts, auras, input.farm, memo, fieldAllies);
-  return { fieldSeconds: score.fieldSeconds, duty: score.duty };
+  return { fieldSeconds: score.fieldSeconds, duty: score.duty, restSeconds: score.context.restSeconds };
 }
 
 export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
@@ -275,8 +292,9 @@ export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
       const pts = input.ptsByHeroId[ctx.heroId] ?? ctx.pts;
       const raw = scoreHeroLoadout(ctx, loadout, pts, roundAuras, input.farm, memo, roundAllies[ctx.heroId]);
       roundScores[ctx.heroId] = raw;
-      stints[ctx.heroId] = raw;
-      nextDuties[ctx.heroId] = raw.duty;
+      const stint: Stint = { fieldSeconds: raw.fieldSeconds, duty: raw.duty, restSeconds: raw.context.restSeconds };
+      stints[ctx.heroId] = stint;
+      nextDuties[ctx.heroId] = stintPresence(stint, input.windowSecs);
       sumDuty += raw.duty;
     }
 
@@ -285,12 +303,12 @@ export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
     for (const ctx of leaveAloneContexts) {
       const stint = leaveAloneStint(ctx, input, roundAuras, memo, roundAllies[ctx.heroId]);
       stints[ctx.heroId] = stint;
-      nextDuties[ctx.heroId] = stint.duty;
+      nextDuties[ctx.heroId] = stintPresence(stint, input.windowSecs);
     }
 
     // Unlike the auras, which each hero's sheet needs BEFORE it is scored and so read the previous
     // round's duties, the pulse scales a finished score, so it reads this round's stints.
-    entryPulseMult = computeFieldPulse(input.contexts, stints, input.aurasAtCap).expectedMult;
+    entryPulseMult = computeFieldPulse(input.contexts, stints, input.aurasAtCap, input.windowSecs).expectedMult;
     for (const heroId of Object.keys(roundScores)) {
       roundScores[heroId] = applyFieldPulse(roundScores[heroId], entryPulseMult);
     }

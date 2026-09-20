@@ -599,3 +599,60 @@ describe('Passagem de Bastão is a field-wide pulse, priced like the auras', () 
     expect(held.objective).toBeGreaterThan(plain.objective);
   });
 });
+
+describe('a timed combat window weights presence by the share of the window fielded, not by duty', () => {
+  const input = fixtureEvaluation('payload-20260812-8heroes.json');
+  const carrierId = input.contexts[0]!.heroId;
+  const withCarrier = (rank: number, windowSecs?: number): EvaluateRosterInput => ({
+    ...input,
+    windowSecs,
+    contexts: input.contexts.map((c) =>
+      c.heroId === carrierId
+        ? { ...c, abilities: { ...c.abilities, passagem_bastao: rank } }
+        : { ...c, abilities: { ...c.abilities, passagem_bastao: 0 } },
+    ),
+  });
+
+  it('every hero whose stint outlasts the window is present throughout', () => {
+    const duel = evaluateRoster(withCarrier(0, 60));
+    for (const score of Object.values(duel.perHero)) expect(score.fieldSeconds).toBeGreaterThan(60);
+    for (const presence of Object.values(duel.dutyByHeroId)) expect(presence).toBe(1);
+    const rotation = evaluateRoster(withCarrier(0));
+    for (const presence of Object.values(rotation.dutyByHeroId)) expect(presence).toBeLessThan(1);
+  });
+
+  it('the auras and every ally count in full, so each hero scores above its rotation figure', () => {
+    const duel = evaluateRoster(withCarrier(0, 60));
+    const rotation = evaluateRoster(withCarrier(0));
+    for (const id of ['grito_guerra', 'pressagio_mortal', 'marcha_acelerada', 'folego_mineiro', 'brecha'] as const) {
+      expect(duel.auras[id]).toBeGreaterThanOrEqual(rotation.auras[id]);
+    }
+    expect(Object.values(duel.auras).some((value) => value > 0)).toBe(true);
+    for (const [heroId, score] of Object.entries(duel.perHero)) {
+      expect(score.active).toBeGreaterThan(rotation.perHero[heroId]!.active);
+    }
+  });
+
+  it('a Baton Pass carrier pulses once at the open and lights the whole minute', () => {
+    const duel = evaluateRoster(withCarrier(20, 60));
+    expect(duel.entryPulseMult).toBeCloseTo(1.8, 9);
+    const gate = evaluateRoster(withCarrier(20, 600));
+    expect(gate.entryPulseMult).toBeCloseTo(1 + 0.8 * (120 / 600), 9);
+  });
+
+  it('more energy moves nothing once every stint covers the window', () => {
+    const duel = evaluateRoster(withCarrier(20, 60));
+    const longer = evaluateRoster({
+      ...withCarrier(20, 60),
+      contexts: withCarrier(20, 60).contexts.map((c) => ({
+        ...c,
+        treeSheet: { ...c.treeSheet, energyPct: c.treeSheet.energyPct + 50 },
+      })),
+    });
+    for (const [heroId, score] of Object.entries(longer.perHero)) {
+      expect(score.fieldSeconds).toBeGreaterThan(duel.perHero[heroId]!.fieldSeconds);
+      expect(score.active).toBe(duel.perHero[heroId]!.active);
+    }
+    expect(longer.entryPulseMult).toBe(duel.entryPulseMult);
+  });
+});
