@@ -123,6 +123,13 @@ function templateRegex(template) {
   return new RegExp(`^${escaped.replace(/\\\{(\w+)\\\}/g, '[\\d,]+')}$`);
 }
 
+/** The band's own "{done}/{total} forged" text, read back into numbers. */
+function parseForgeQueueCounts(text) {
+  const match = /([\d,]+)\/([\d,]+) forged/.exec(text);
+  if (!match) return null;
+  return { done: Number(match[1].replace(/,/g, '')), total: Number(match[2].replace(/,/g, '')) };
+}
+
 function armInject(page, script) {
   return page.evaluate((req) => window.bfc.invoke('apply:inject', req), script);
 }
@@ -330,6 +337,51 @@ test.describe('the Apply panel, solved, switched, confirmed and run through the 
     // The "Stopped — …" sentence is the row's note line — the facts line above it keeps
     // describing the plan's own step, unchanged by the outcome.
     await expect(page.getByTestId('apply-step-points-note')).toContainText('Stopped —');
+  });
+
+  test('the forge row adds the plan’s forges to the queue in one press, agreeing with the band and every per-entry control, and stays Done across a tab change', async () => {
+    await openOptimizer(page);
+    const forgeRow = page.getByTestId('apply-step-forge');
+    await expect(forgeRow).toBeVisible();
+    const factsText = await forgeRow.getByTestId('apply-step-forge-facts').innerText();
+    const piecesMatch = /^([\d,]+) pieces/.exec(factsText);
+    expect(piecesMatch).not.toBeNull();
+    const addable = Number(piecesMatch[1].replace(/,/g, ''));
+    expect(addable).toBeGreaterThan(0);
+
+    const bandCount = page.getByTestId('forge-queue-count');
+    const before = (await bandCount.count()) > 0 ? parseForgeQueueCounts(await bandCount.innerText()) : { done: 0, total: 0 };
+
+    const press = forgeRow.getByTestId('apply-step-forge-press');
+    await expect(press).toBeEnabled();
+    await press.click();
+
+    const forgeConfirm = page.getByRole('dialog').filter({ hasText: en('applyConfirmForgeTitle') });
+    await expect(forgeConfirm).toBeVisible({ timeout: 10_000 });
+    await expect(forgeConfirm.getByRole('button').last()).toHaveText(templateRegex(en('applyConfirmForge')));
+    await forgeConfirm.getByRole('button').last().click();
+    await expect(forgeConfirm).toBeHidden();
+
+    await expect(forgeRow).toContainText('in the queue');
+    await expect(forgeRow.getByTestId('apply-step-forge-press')).toHaveCount(0);
+
+    await expect(bandCount).toBeVisible();
+    const after = parseForgeQueueCounts(await bandCount.innerText());
+    expect(after).not.toBeNull();
+    expect(after.done).toBe(before.done);
+    expect(after.total - before.total).toBe(addable);
+
+    const closedRows = page.getByRole('button', { name: /^Detailed breakdown for/, expanded: false });
+    for (let guard = 0; guard < 20 && (await closedRows.count()) > 0; guard += 1) await closedRows.first().click();
+    const addControls = page.getByTestId('forge-queue-add');
+    const addControlCount = await addControls.count();
+    for (let i = 0; i < addControlCount; i += 1) {
+      await expect(addControls.nth(i)).toHaveAttribute('data-queued', 'true');
+    }
+
+    await navButton(page, SETTINGS_TAB_INDEX).click();
+    await openOptimizer(page);
+    await expect(page.getByTestId('apply-step-forge')).toContainText('in the queue');
   });
 
   // The fixture refuses `forge:start` outright (`accountSource === 'fixture'` disables the band's

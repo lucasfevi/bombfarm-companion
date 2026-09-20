@@ -7,4 +7,6 @@ with a gold ledger and one row per step; Equip and Reset points each open a conf
 they spend, then a window that shows every call as it goes out and can be stopped between calls.
 A rolling forge queue steps aside while a step runs and picks back up on its own, showing
 "Paused for the Optimizer" while it waits. The account-writes switch in Settings is relabelled to
-cover forging, equipping and resetting points, with its key and default unchanged.
+cover forging, equipping and resetting points, with its key and default unchanged. The panel's
+third row puts every applicable forge from the plan on the queue in one press, without touching
+pieces already queued or ones the bag no longer holds.
