@@ -69,6 +69,9 @@ export type TeamPlanScreenSlots = {
   /** Drawn after the setup bar's own fields — a host's own search controls, on the same grid
    *  (`SetupAuraCapField`). Undefined renders nothing at all, so the web's DOM is unchanged. */
   setupFields?: ReactNode;
+  /** Drawn between the run summary and the per-hero table — the desktop's Apply this plan panel.
+   *  Undefined renders nothing at all, so the web's DOM is unchanged. */
+  applyPanel?: ReactNode;
 };
 
 export function TeamPlanScreenView({
@@ -227,6 +230,7 @@ export function TeamPlanScreenView({
                     ranOnMainThread={runnerState.ranOnMainThread}
                     copy={objectiveCopy}
                   />
+                  {slots.applyPanel ?? null}
                   <HeroDeltaTable
                     t={t}
                     lang={lang}
