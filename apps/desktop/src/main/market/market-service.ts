@@ -1,5 +1,6 @@
 import {
   emptyMarketSnapshotView,
+  MARKET_SNAPSHOT_CHECK_MS,
   type MarketQuoteCurrency,
   type MarketQuoteFailureReason,
   type MarketQuoteResult,
@@ -55,14 +56,7 @@ export interface MarketService {
   refreshItem(target: MarketQuoteTarget): Promise<MarketQuoteResult>;
 }
 
-/**
- * How stale an idle desktop's prices are allowed to get. It does not track how often the snapshot
- * is published — that is far more often than a planner needs — and checking often is cheap,
- * because a check that finds nothing new is a conditional request answered 304, which adopts
- * nothing and announces nothing. Below the five-minute `max-age` the published file is served
- * with, a check could not see anything newer anyway; that is the floor, not this.
- */
-const SNAPSHOT_REFRESH_MS = 15 * 60 * 1000;
+const SNAPSHOT_REFRESH_MS = MARKET_SNAPSHOT_CHECK_MS;
 
 interface QuoteSubject {
   readonly key: string | null;

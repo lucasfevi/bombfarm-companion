@@ -1,5 +1,5 @@
 import type { UpdateChannel, UpdateStatus } from '@bombfarm/contracts';
-import { initialUpdateStatus } from '@bombfarm/contracts';
+import { initialUpdateStatus, UPDATE_CHECK_INTERVAL_MS } from '@bombfarm/contracts';
 import type { LogPort } from '../live-source/log-port.js';
 import { classifyUpdateError, updateErrorMessage } from './update-error.js';
 
@@ -7,12 +7,8 @@ import { classifyUpdateError, updateErrorMessage } from './update-error.js';
  *  storage open and the first game poll for the same few seconds. */
 export const FIRST_CHECK_DELAY_MS = 30_000;
 
-/** How long an app left open can sit on a version that has already shipped. The release feed is
- *  an unauthenticated CDN read of a few kilobytes, so the cost of asking is not what sets this —
- *  what does is that nothing downstream is automatic: the player still chooses to download and
- *  still chooses to restart. Minutes of notice are therefore worth having and seconds are not,
- *  and a tighter interval would only buy latency no one can act on any sooner. */
-export const CHECK_INTERVAL_MS = 20 * 60 * 1000;
+/** The contract's clock, under the name this module's tests and index read it by. */
+export const CHECK_INTERVAL_MS = UPDATE_CHECK_INTERVAL_MS;
 
 /** The slice of `electron-updater`'s `autoUpdater` this service uses, so the state machine can be
  *  driven by a fake in tests without an Electron process. */

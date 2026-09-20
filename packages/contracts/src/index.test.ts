@@ -60,6 +60,7 @@ describe('contracts IPC surface', () => {
       'updates:installOnRestart',
       'market:getSnapshot',
       'market:refreshItem',
+      'market:check',
       'forge:start',
       'forge:cancel',
       'forge:history',

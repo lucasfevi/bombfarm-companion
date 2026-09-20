@@ -7,9 +7,12 @@
  * predicted, and a duel the app was closed for is not on it, because the tap was not there to
  * see it.
  */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { cn, colClass, Tooltip } from '@bombfarm/ui';
+import { sub, useCopy } from '../../lib/copy';
 import { refreshPvpStanding, usePvpHistory } from '../../lib/pvp/use-pvp-history';
+import { usePvpRefresh } from '../../lib/pvp/use-pvp-refresh';
+import { useScreenRefreshRegistration } from '../../lib/refresh/screen-refresh-store';
 import { DuelHistoryPanel } from './duel-history-panel';
 import { ReplayPanel } from './replay-panel';
 import { RivalsPanel } from './rivals-panel';
@@ -24,6 +27,20 @@ export function PvpView() {
   useEffect(() => {
     refreshPvpStanding();
   }, []);
+
+  // The standing is its own read, not the account's, so the shell's refresh bar asks for it and
+  // dates its line by when the standing was taken.
+  const t = useCopy();
+  const refresh = usePvpRefresh();
+  const standingAge = useCallback((age: string) => sub(t.pvpStandingAge, { age }), [t]);
+  useScreenRefreshRegistration('pvp', {
+    capturedAt: history?.standing?.capturedAt ?? null,
+    stale: false,
+    busy: false,
+    readState: refresh.state,
+    onRefresh: refresh.request,
+    ageLine: standingAge,
+  });
 
   return (
     <Tooltip.Provider>

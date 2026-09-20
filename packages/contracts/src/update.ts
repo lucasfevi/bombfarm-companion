@@ -18,6 +18,13 @@ export type UpdatePhase =
  */
 export type UpdateErrorReason = 'offline' | 'rate-limited' | 'no-release' | 'unknown';
 
+/** How long an app left open can sit on a version that has already shipped — main's own check
+ *  clock, and the cycle the renderer's feed meter fills against. The release feed is an
+ *  unauthenticated CDN read of a few kilobytes, so the cost of asking is not what sets this —
+ *  what does is that nothing downstream is automatic: the player still chooses to download and
+ *  still chooses to restart. Minutes of notice are therefore worth having and seconds are not. */
+export const UPDATE_CHECK_INTERVAL_MS = 20 * 60 * 1000;
+
 export interface UpdateStatus {
   phase: UpdatePhase;
   currentVersion: string;

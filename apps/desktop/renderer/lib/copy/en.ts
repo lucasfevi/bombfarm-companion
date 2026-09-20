@@ -22,6 +22,22 @@ export const en = {
   shellUpdateReady: 'Restart to update',
   shellUpdateOpenSettings: 'Open the Updates settings',
   shellCoffeeLabel: 'Buy me a coffee',
+  // feeds* — the status strip's rail of the four things the app keeps asking for, each with its
+  // own age and press, and the one press that runs all four in turn.
+  feedsAccount: 'Account',
+  feedsPvp: 'PVP',
+  feedsPrices: 'Prices',
+  feedsUpdates: 'Updates',
+  feedsRefreshAll: 'Refresh every feed, one after another',
+  feedsRefreshAllStep: '{step}/{total}',
+  feedsRefreshOne: 'Refresh {feed} now',
+  feedsEvery: 'refreshes itself every {cycle}',
+  feedsNoClock: 'no clock of its own — read when its tab opens, and by every duel',
+  feedsNextIn: 'next automatic refresh in {age}',
+  feedsNextDue: 'automatic refresh due',
+  feedsNotYet: 'not yet',
+  feedsReading: 'reading…',
+  feedsCycleMinutes: '{n} min',
   // The top bar's overflow button, and the referral row inside it — a menu row is read on its own
   // line, so it says what the click does rather than repeating the chip's whole sentence.
   shellMoreActionsLabel: 'More actions',
