@@ -154,10 +154,6 @@ export function TeamPlanScreenView({
         }}
       />
       <section role="region" aria-label={t.teamPlanPageLandmark}>
-        <header className="mb-4">
-          <h1 className="m-0 text-lg font-bold text-ink">{t.teamPlanPageTitle}</h1>
-        </header>
-
         {emptyStateKind === 'noRoster' || emptyStateKind === 'noInventory' ? (
           slots.emptyState(emptyStateKind)
         ) : allLeaveAlone ? (

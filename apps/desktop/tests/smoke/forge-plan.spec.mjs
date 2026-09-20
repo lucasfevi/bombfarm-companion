@@ -191,7 +191,7 @@ test.describe('forge plan smoke', () => {
       const rail = page.getByTestId('feeds-rail');
       const refreshButton = rail.getByTestId('account-refresh');
       await expect(refreshButton).toBeVisible();
-      await expect(refreshButton).toHaveAttribute('data-state', /^(fresh|late)$/);
+      await expect(refreshButton).toHaveAttribute('data-state', 'fresh');
       await expect(rail.getByTestId('account-refresh-age')).not.toContainText('out of date');
       await expect(page.getByTestId('feed-account-tip')).toHaveCount(0);
       await refreshButton.hover();

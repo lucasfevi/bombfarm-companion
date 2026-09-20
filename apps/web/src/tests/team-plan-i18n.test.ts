@@ -58,7 +58,7 @@ describe('team-plan i18n namespace', () => {
 
   it('PT copy is not a byte-identical echo of EN for representative keys', () => {
     const keys = [
-      'teamPlanPageTitle',
+      'teamPlanPageLandmark',
       'teamPlanOptimize',
       'teamPlanScopeDonate',
       'teamPlanResultsHeaderDps',

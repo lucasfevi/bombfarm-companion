@@ -16,7 +16,7 @@ import { Button, cn, Icon, Tooltip } from '@bombfarm/ui';
 import { sub, useCopy, type Copy } from '../lib/copy';
 import { accountReadRefusalText } from '../lib/account-read-labels';
 import { formatAge, formatCapturedAt } from '../lib/format';
-import { FEED_CYCLE_MS, feedAgeMs, feedIsLate, feedMeter, feedNextInMs, type FeedId } from '../lib/feeds/feed-clock';
+import { FEED_CYCLE_MS, feedAgeMs, feedMeter, feedNextInMs, type FeedId } from '../lib/feeds/feed-clock';
 import type { FeedView, FeedsHook } from '../lib/feeds/use-feeds';
 
 /** The meter fills over a minute on the account feed, so a five-second tick keeps it moving
@@ -56,7 +56,10 @@ export function feedWords(feed: FeedView, t: Copy, now: number): { line: string;
         : feed.capturedAt === null
           ? t.feedsNotYet
           : formatCapturedAt(feed.capturedAt, t, now);
-  const late = feed.outOfDate || feed.readState.kind === 'refused' || feedIsLate(feed.id, ageMs);
+  // Age alone is never amber: a feed that has run past its clock is drawn with a full meter, in
+  // the same muted tone — only a screen computed from a copy the live account has moved past, or
+  // a press that started nothing, is a state worth the warn tone.
+  const late = feed.outOfDate || feed.readState.kind === 'refused';
   const tip = [sub(t.feedsRefreshOne, { feed: feedName(feed.id, t) })];
   const cycle = cycleText(feed.id, t);
   if (cycle === null) tip.push(t.feedsNoClock);

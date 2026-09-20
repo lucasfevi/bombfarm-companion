@@ -109,8 +109,10 @@ describe('feedWords — the tooltip says how the feed keeps itself fresh', () =>
     expect(words.tip).toEqual([sub(en.feedsRefreshOne, { feed: en.feedsPvp }), en.feedsNoClock]);
   });
 
-  it('an age past the feed\'s own limit is late; a fresh one is not', () => {
-    expect(feedWords(feed({ id: 'market', capturedAt: ago(31 * 60_000) }), en, NOW).late).toBe(true);
-    expect(feedWords(feed({ id: 'market', capturedAt: ago(14 * 60_000) }), en, NOW).late).toBe(false);
+  it('age alone is never amber — a feed hours past its clock is only a full meter; "out of date" and a refusal are', () => {
+    expect(feedWords(feed({ id: 'market', capturedAt: ago(6 * 3_600_000) }), en, NOW).late).toBe(false);
+    expect(feedWords(feed({ id: 'account', capturedAt: ago(27 * 86_400_000) }), en, NOW).late).toBe(false);
+    expect(feedWords(feed({ id: 'account', outOfDate: true }), en, NOW).late).toBe(true);
+    expect(feedWords(feed({ id: 'pvp', readState: { kind: 'refused', reason: 'rate_limited' } }), en, NOW).late).toBe(true);
   });
 });

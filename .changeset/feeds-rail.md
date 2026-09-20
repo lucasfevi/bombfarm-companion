@@ -16,7 +16,8 @@ under it that fills towards the feed's next automatic refresh. That line is the 
 timestamp cannot tell you: whether pressing is even worth it. The PVP standing, which has no clock
 of its own, draws a dotted line instead. Each item is a button; the tooltip says how the feed
 keeps itself fresh and how long until it does. A press that starts nothing — the game closed, a
-second press inside the floor, no server behind a fixture — says why in the age's place.
+second press inside the floor, no server behind a fixture — says why in the age's place. Age alone
+is never amber: only "out of date" and a refused press take the warn tone.
 
 **Refresh all, one after another.** The button at the rail's end presses all four in turn,
 Account → PVP → Prices → Updates, counting the steps, and moves on past a refusal instead of
@@ -30,3 +31,5 @@ date" once the live account has moved past the copy the screen computed from, an
 recomputes over the account in hand and then asks for a new read, as those buttons did. Every other
 screen follows the live account, so the item shows the last account read and a press asks main to
 read it again.
+
+The Optimizer screen loses its title line: the tab and the nav already name it.

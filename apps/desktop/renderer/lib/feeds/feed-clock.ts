@@ -19,16 +19,6 @@ export const FEED_CYCLE_MS: Record<FeedId, number | null> = {
   updates: UPDATE_CHECK_INTERVAL_MS,
 };
 
-/** Past this age the feed's line turns to the warn tone: the account's is its backgrounded cycle
- *  (a window behind the game legitimately waits that long); the others twice their own cycle,
- *  which is one missed check. The PVP standing has no clock to be late against. */
-export const FEED_STALE_AFTER_MS: Record<FeedId, number | null> = {
-  account: READ_PACING.cycleBackgroundMs,
-  pvp: null,
-  market: 2 * MARKET_SNAPSHOT_CHECK_MS,
-  updates: 2 * UPDATE_CHECK_INTERVAL_MS,
-};
-
 export function feedAgeMs(capturedAt: string | null, now: number): number | null {
   if (capturedAt === null) return null;
   const at = Date.parse(capturedAt);
@@ -42,11 +32,6 @@ export function feedMeter(feed: FeedId, ageMs: number | null): number | null {
   const cycle = FEED_CYCLE_MS[feed];
   if (cycle === null || ageMs === null) return null;
   return Math.min(1, ageMs / cycle);
-}
-
-export function feedIsLate(feed: FeedId, ageMs: number | null): boolean {
-  const limit = FEED_STALE_AFTER_MS[feed];
-  return limit !== null && ageMs !== null && ageMs > limit;
 }
 
 /** Milliseconds until the feed's own clock fires again, floored at zero; `null` with no clock. */

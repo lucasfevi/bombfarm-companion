@@ -190,6 +190,9 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as { en: Strings; 
  */
 const KEYS_REMOVED: readonly string[] = [
   'navTeamPlan',
+  // The Optimizer screen lost its own title line (2026-09-20): the tab and the nav already name
+  // it, and its region keeps `teamPlanPageLandmark` as its accessible name.
+  'teamPlanPageTitle',
   // The Planner page is the Heroes page (2026-09-15), the name the desktop app gives the same
   // screen; `navHeroes` (in `KEYS_ADDED`) carries the label in both languages.
   'navPlanner',
@@ -1139,7 +1142,6 @@ const PROSE_EDITED_PATHS: readonly string[] = [
   // their text. The explain section is retitled to match and its opening sentence no longer says
   // the search scores for DPS, which stopped being the only objective.
   'teamPlanPageLandmark',
-  'teamPlanPageTitle',
   'explainSections.8.h',
   'explainSections.8.p.0',
   // Team auras get their own switches on the Combat tab (2026-09-11), and the Account page

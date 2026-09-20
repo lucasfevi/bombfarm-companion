@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MARKET_SNAPSHOT_CHECK_MS, UPDATE_CHECK_INTERVAL_MS } from '@bombfarm/contracts';
 import { READ_PACING } from '@bombfarm/game-api';
-import { FEED_CYCLE_MS, FEED_IDS, feedAgeMs, feedIsLate, feedMeter, feedNextInMs } from './feed-clock';
+import { FEED_CYCLE_MS, FEED_IDS, feedAgeMs, feedMeter, feedNextInMs } from './feed-clock';
 import { sequenceDecision } from './use-feeds';
 
 const NOW = Date.parse('2026-09-20T12:00:00.000Z');
@@ -37,27 +37,6 @@ describe('the meter — how far a feed is towards refreshing itself', () => {
     expect(feedNextInMs('market', 5 * 60_000)).toBe(10 * 60_000);
     expect(feedNextInMs('market', 40 * 60_000)).toBe(0);
     expect(feedNextInMs('pvp', 5 * 60_000)).toBeNull();
-  });
-});
-
-describe('late — when the age turns to the warn tone', () => {
-  it("the account is late past its BACKGROUNDED cycle, not its foreground one: a window behind the game waits that long by design", () => {
-    expect(feedIsLate('account', READ_PACING.cycleForegroundMs * 2)).toBe(false);
-    expect(feedIsLate('account', READ_PACING.cycleBackgroundMs + 1)).toBe(true);
-  });
-
-  it('prices and updates are late after one missed check — twice their own cycle', () => {
-    expect(feedIsLate('market', MARKET_SNAPSHOT_CHECK_MS + 1)).toBe(false);
-    expect(feedIsLate('market', 2 * MARKET_SNAPSHOT_CHECK_MS + 1)).toBe(true);
-    expect(feedIsLate('updates', 2 * UPDATE_CHECK_INTERVAL_MS + 1)).toBe(true);
-  });
-
-  it('the PVP standing is never late — it has no clock to be late against', () => {
-    expect(feedIsLate('pvp', 48 * 3_600_000)).toBe(false);
-  });
-
-  it('an unread feed is not late either; it is unread', () => {
-    expect(feedIsLate('market', null)).toBe(false);
   });
 });
 

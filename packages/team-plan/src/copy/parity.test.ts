@@ -44,7 +44,7 @@ describe('teamPlanEn/teamPlanPtBR key-set parity', () => {
 
   it('red state demonstrated: removing a key from one side is caught by the same comparison the real test uses', () => {
     const withoutOneKey: Record<string, string> = { ...teamPlanEn };
-    delete withoutOneKey.teamPlanPageTitle;
+    delete withoutOneKey.teamPlanPageLandmark;
     expect(Object.keys(withoutOneKey).sort()).not.toEqual(Object.keys(teamPlanPtBR).sort());
   });
 });

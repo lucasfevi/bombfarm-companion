@@ -3,7 +3,6 @@ import type { TeamPlanPageCopy } from './index';
 export const teamPlanPagePtBR: TeamPlanPageCopy = {
   navOptimizer: 'Otimizador',
   teamPlanPageLandmark: 'Otimizador',
-  teamPlanPageTitle: 'Otimizador',
   teamPlanOptimize: 'Montar plano do time',
   teamPlanOptimizeAriaBoth:
     'Montar um plano do time com movimentações de itens e resets de pontos',
