@@ -241,6 +241,7 @@ function windowedTeamDpsOf(model: DpsModel, input: SkillTreePricingInput, totals
     },
     forgeFloor: 0,
     aurasAtCap: base.aurasAtCap,
+    windowSecs: model.windowSecs,
   });
   let damage = 0;
   for (const score of Object.values(evaluation.perHero)) {

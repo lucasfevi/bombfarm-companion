@@ -13,7 +13,6 @@ import {
   totalsFromLevels,
   type SkillTreeState,
 } from '@bombfarm/domain/skill-tree';
-import { TEAM_AURA_SWITCH_IDS } from '@bombfarm/domain/team-buffs';
 import { loadFixtureJson } from './helpers/sheet-math-fixtures';
 import { FARM_OPTIMIZE_FIXTURE, loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
@@ -122,12 +121,12 @@ describe('priceSkillTree', () => {
     expect(pricing.gains.map((gain) => gain.id)).toEqual(state.levels.H01 === 10 ? [] : ['H01']);
   });
 
-  it('leaves energy near zero on a window the roster already covers, while a damage node still moves', () => {
-    const pricing = price({
-      gate: { windowSecs: 1, heroIds: gateHeroIds.slice(0, 1), phase: gatePhase },
-      pvp: null,
-      account: { ...account, aurasAtCap: TEAM_AURA_SWITCH_IDS },
-    });
+  it('prices energy at exactly nothing on a window every squad hero already covers, while a damage node still moves', () => {
+    // The squad deploys full when the window opens, and nobody on it runs out inside 60 s — so
+    // more max energy changes nothing a duel can see. The auras, Matilha's allies and the Baton
+    // Pass pulse are weighted by presence in the window, not by rotation duty, or a longer stint
+    // would lift every ally's damage through them and price energy as if it fought.
+    const pricing = price();
     const energy = pricing.gains.find((gain) => {
       const node = skillNode(gain.id);
       return node !== undefined && node.effects.length > 0 && node.effects.every((effect) => effect.kind === 'team_energia');
@@ -135,8 +134,19 @@ describe('priceSkillTree', () => {
     const damage = pricing.gains.find((gain) => skillNode(gain.id)!.effects.some((effect) => effect.kind === 'team_dmg' || effect.kind === 'team_geo'));
     expect(energy, 'a buyable energy-only node').toBeDefined();
     expect(damage, 'a buyable damage node').toBeDefined();
-    expect(Math.abs(energy!.gateDpsDelta ?? 0)).toBeLessThan(1e-6);
+    expect(energy!.pvpDpsDelta).toBe(0);
+    expect(energy!.gateDpsDelta).toBe(0);
+    expect(damage!.pvpDpsDelta).toBeGreaterThan(0);
     expect(damage!.gateDpsDelta).toBeGreaterThan(0);
+  });
+
+  it('prices energy once a squad hero runs out inside the window', () => {
+    const pricing = price({ pvp: { ...pvp, windowSecs: 1e6 } });
+    const energy = pricing.gains.find((gain) => {
+      const node = skillNode(gain.id);
+      return node !== undefined && node.effects.length > 0 && node.effects.every((effect) => effect.kind === 'team_energia');
+    });
+    expect(energy!.pvpDpsDelta).toBeGreaterThan(0);
   });
 
   it('uses the ranked gate roster, not the full farm pool, for the combat figure', () => {

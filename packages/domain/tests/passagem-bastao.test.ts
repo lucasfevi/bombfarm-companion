@@ -10,6 +10,7 @@ import {
   PASSAGEM_BASTAO_WINDOW_SEC,
   passagemBastaoFieldPulse,
   passagemBastaoPresence,
+  passagemBastaoWindowPresence,
 } from '@bombfarm/domain/model';
 
 describe('passagemBastaoPresence — the share of wall clock one carrier keeps the field lit', () => {
@@ -138,6 +139,38 @@ describe('passagemBastaoFieldPulse — priced like the other team auras', () => 
       { rank: 20, presence: 0.1 },
     ]);
     expect(pulse.levels[0]).toEqual({ mult: 1.12, probability: 0.9 });
+  });
+});
+
+describe('passagemBastaoWindowPresence — the share of a timed window one carrier keeps the field lit', () => {
+  it('is 0 without a window or without field time', () => {
+    expect(passagemBastaoWindowPresence(3000, 600, 0)).toBe(0);
+    expect(passagemBastaoWindowPresence(0, 600, 60)).toBe(0);
+    expect(passagemBastaoWindowPresence(NaN, 600, 60)).toBe(0);
+  });
+
+  it('a carrier whose stint outlasts the window pulses once at the open: min(W, T) / T', () => {
+    expect(passagemBastaoWindowPresence(3000, 600, 60)).toBe(1);
+    expect(passagemBastaoWindowPresence(3000, 600, 600)).toBeCloseTo(0.2, 12);
+  });
+
+  it('does not move with energy once the stint covers the window', () => {
+    expect(passagemBastaoWindowPresence(3140, 600, 60)).toBe(passagemBastaoWindowPresence(3000, 600, 60));
+    expect(passagemBastaoWindowPresence(3140, 600, 600)).toBe(passagemBastaoWindowPresence(3000, 600, 600));
+  });
+
+  it('re-enters after each rest and pulses again once the cooldown has elapsed', () => {
+    // Entries at 0 s and 700 s, both past the 600 s cooldown: 120 s lit, then 120 of the last 300.
+    expect(passagemBastaoWindowPresence(100, 600, 1000)).toBeCloseTo(0.24, 12);
+    // Entries every 300 s; the cooldown lets only the 0 s and 600 s entries pulse.
+    expect(passagemBastaoWindowPresence(100, 200, 1000)).toBeCloseTo(0.24, 12);
+    // The last pulse is cut by the window's end.
+    expect(passagemBastaoWindowPresence(100, 600, 760)).toBeCloseTo((120 + 60) / 760, 12);
+  });
+
+  it('rest of 0 is one stint, as fieldTimeInWindow reads it', () => {
+    expect(passagemBastaoWindowPresence(10, 0, 600)).toBeCloseTo(0.2, 12);
+    expect(passagemBastaoWindowPresence(10, 0, 60)).toBe(1);
   });
 });
 

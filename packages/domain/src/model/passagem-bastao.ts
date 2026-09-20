@@ -60,6 +60,32 @@ export function passagemBastaoPresence(fieldSecondsValue: number, dutyValue: num
   );
 }
 
+/**
+ * Share of a timed combat window one carrier's pulse keeps the field lit, the hero entering at
+ * full energy when the window opens and re-entering after each House rest until it closes. Each
+ * entry pulses when the cooldown has elapsed since the last one, and a pulse lights the field
+ * until it runs out or the window ends. A hero whose stint outlasts the window pulses once, at
+ * the open — the pulse's share is then `min(W, T) / T` and does not move with energy. Rest of 0
+ * is one stint, as `fieldTimeInWindow` reads it.
+ */
+export function passagemBastaoWindowPresence(
+  fieldSecondsValue: number,
+  restSeconds: number,
+  windowSeconds: number,
+): number {
+  if (!(windowSeconds > 0) || !(fieldSecondsValue > 0)) return 0;
+  if (!(restSeconds > 0)) return Math.min(PASSAGEM_BASTAO_WINDOW_SEC, windowSeconds) / windowSeconds;
+  const cycleSeconds = fieldSecondsValue + restSeconds;
+  let lit = 0;
+  let lastPulseAt = -Infinity;
+  for (let entryAt = 0; entryAt < windowSeconds; entryAt += cycleSeconds) {
+    if (entryAt - lastPulseAt < PASSAGEM_BASTAO_COOLDOWN_SEC) continue;
+    lastPulseAt = entryAt;
+    lit += Math.min(PASSAGEM_BASTAO_WINDOW_SEC, windowSeconds - entryAt);
+  }
+  return Math.min(1, lit / windowSeconds);
+}
+
 export type PassagemBastaoCarrier = {
   rank: number;
   /** Share of wall clock this carrier's pulse lights the field — {@link passagemBastaoPresence}. */

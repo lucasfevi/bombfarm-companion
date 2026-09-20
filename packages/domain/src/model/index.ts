@@ -93,6 +93,7 @@ export {
   PASSAGEM_BASTAO_CAP,
   PASSAGEM_BASTAO_CAPPED_PULSE,
   passagemBastaoPresence,
+  passagemBastaoWindowPresence,
   passagemBastaoFieldPulse,
 } from './passagem-bastao';
 
