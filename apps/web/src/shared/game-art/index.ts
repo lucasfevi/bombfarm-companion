@@ -6,6 +6,7 @@ export {
   HeroIdentity,
   type HeroIdentityVariant,
   HeroIdentityChip,
+  SkinIdentity,
   HeroPeek,
   heroPeekData,
   ItemIcon,

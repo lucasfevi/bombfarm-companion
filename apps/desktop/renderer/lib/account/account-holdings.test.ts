@@ -261,10 +261,11 @@ describe('the things each column lists under its figure', () => {
     expect(nim.level).toBeUndefined();
   });
 
-  it('draws no depiction of its own for a skin, which has nothing but a listing name', () => {
-    for (const skin of columnsOf().skins.entries) {
-      expect(skin.leading).toBeUndefined();
-    }
+  it('hands each bought skin over drawn with the avatar a hero wearing it shows', () => {
+    const [forestWarden] = columnsOf().skins.entries;
+
+    expect(identityOf(forestWarden)).toEqual({ skin: BOUGHT_SKIN, name: 'Forest Warden Skin' });
+    expect(renderToStaticMarkup(forestWarden?.leading)).toContain('alt="Forest Warden Skin"');
   });
 
   it('follows the language the rest of the screen speaks', () => {
@@ -302,7 +303,7 @@ describe('the things each column lists under its figure', () => {
     expect(columns.heroes.eligible).toBe(2);
     expect(columns.skins.priced).toBe(1);
     expect(columns.skins.eligible).toBe(2);
-    expect(columns.skins.entries).toEqual([
+    expect(columns.skins.entries.map(({ name, amount }) => ({ name, amount }))).toEqual([
       { name: 'Forest Warden Skin', amount: 7 },
       { name: 'Shadow Hunter Skin', amount: null },
     ]);
@@ -316,7 +317,9 @@ describe('the things each column lists under its figure', () => {
 
   it('drops a worn skin index the table cannot name, which no price could exist for', () => {
     const columns = columnsOf({ skinsWorn: [BOUGHT_SKIN, 99] });
-    expect(columns.skins.entries).toEqual([{ name: 'Forest Warden Skin', amount: 7 }]);
+    expect(columns.skins.entries.map(({ name, amount }) => ({ name, amount }))).toEqual([
+      { name: 'Forest Warden Skin', amount: 7 },
+    ]);
     expect(columns.skins.eligible).toBe(1);
   });
 

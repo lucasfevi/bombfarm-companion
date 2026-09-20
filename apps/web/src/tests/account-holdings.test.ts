@@ -8,6 +8,7 @@ import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import type { RarityKey } from '@bombfarm/domain/model';
 import { ZERO_PTS } from '@bombfarm/domain/planner-constants';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import { heroAvatarSrc } from '@bombfarm/domain/wiki-assets';
 import type { CatalogView, HoldingsTally, MarketEntry, MarketSnapshot } from '@bombfarm/pricing';
 import {
   buildSnapshot,
@@ -464,20 +465,24 @@ describe('account holdings — what each component is made of', () => {
     expect(slot(html, 'account-holdings-skins-coverage')).toBe('1 of 2 bought skins priced');
   });
 
-  it('lists a skin by the listing it appears under, and depicts nothing for it', () => {
-    expect(slots(openSkins, 'account-holdings-skins-entry-name')).toEqual([
-      'Forest Warden Skin',
-      'Royal Sentinel Skin',
-    ]);
+  it('lists a skin by the listing it appears under, drawn with the avatar a hero wearing it shows', () => {
+    const [forestWarden, royalSentinel] = entryChunks(openSkins, 'skins');
+
+    expect(forestWarden).toContain('alt="Forest Warden Skin"');
+    expect(forestWarden).toContain(`src="${heroAvatarSrc(FOREST_WARDEN)}"`);
+    expect(royalSentinel).toContain('alt="Royal Sentinel Skin"');
+    expect(royalSentinel).toContain(`src="${heroAvatarSrc(ROYAL_SENTINEL)}"`);
+    expect(royalSentinel).not.toContain('data-peek=');
+    expect(slots(openSkins, 'account-holdings-skins-entry-leading')).toHaveLength(2);
     expect(slots(openSkins, 'account-holdings-skins-entry-detail')).toEqual([]);
-    expect(slots(openSkins, 'account-holdings-skins-entry-leading')).toEqual([]);
     expect(slots(openSkins, 'account-holdings-skins-entry-amount')).toEqual(['R$30.00']);
   });
 
   it('drops a worn skin index the table cannot name, which no price could exist for', () => {
     const unnamed = openRow('skins', INVENTORY, [ROYAL_SENTINEL, 99], heroes);
 
-    expect(slots(unnamed, 'account-holdings-skins-entry-name')).toEqual(['Royal Sentinel Skin']);
+    expect(entryChunks(unnamed, 'skins')).toHaveLength(1);
+    expect(unnamed).toContain('alt="Royal Sentinel Skin"');
     expect(slot(unnamed, 'account-holdings-skins-coverage')).toBe('1 of 1 bought skins priced');
   });
 

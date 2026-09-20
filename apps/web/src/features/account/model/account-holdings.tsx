@@ -18,7 +18,7 @@ import type {
   SkinsTally,
 } from '@bombfarm/pricing';
 import { accountHoldings, boughtSkinHashFor } from '@bombfarm/pricing';
-import { HeroIdentity, heroPeekData, type HeroPeekData } from '@/shared/game-art';
+import { HeroIdentity, SkinIdentity, heroPeekData, type HeroPeekData } from '@/shared/game-art';
 import { formatMoney, sub, type Lang, type Strings } from '@/shared/i18n';
 import type { StoredInventoryView } from '@/shared/lib/inventory-view-storage';
 
@@ -178,8 +178,9 @@ function heroEntries(
 }
 
 /**
- * One entry per distinct bought skin, named by the market listing it appears under. A skin index
- * the table cannot name has no name to print and no price to print either, so it is left out.
+ * One entry per distinct bought skin, named by the market listing it appears under and drawn with
+ * the avatar a hero wearing it shows. A skin index the table cannot name has no name to print and
+ * no price to print either, so it is left out.
  */
 function skinEntries(skins: SkinsTally): HoldingsEntry[] {
   const entries: HoldingsEntry[] = [];
@@ -187,7 +188,11 @@ function skinEntries(skins: SkinsTally): HoldingsEntry[] {
     const price = skins.prices[position];
     const name = boughtSkinHashFor(skinIndex);
     if (price == null || name == null) return;
-    entries.push({ name, amount: price.amount });
+    entries.push({
+      name,
+      leading: <SkinIdentity skin={skinIndex} name={name} />,
+      amount: price.amount,
+    });
   });
   return entries;
 }
