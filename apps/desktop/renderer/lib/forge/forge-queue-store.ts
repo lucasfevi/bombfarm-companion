@@ -37,6 +37,20 @@ export interface ForgeQueueStore {
   /** Stops the queue and cancels the run in flight, if the queue started one. */
   readonly cancel: () => void;
   readonly sync: (upgrades: ReadonlyMap<string, number>) => void;
+  /** Stands the queue aside between pieces, for an outside caller (the Optimizer's Apply steps)
+   *  that needs the one write gate to itself. The piece in flight, if any, finishes on its own. */
+  readonly pause: () => void;
+  /** Returns a paused queue to running and asks for its head piece again. */
+  readonly resume: () => void;
+}
+
+/** The narrow surface an outside caller needs from the queue, without reaching for the rest of
+ *  its store — filled by `forgeQueuePort()` over the shared singleton. */
+export interface ForgeQueuePort {
+  readonly getState: () => ForgeQueueState;
+  readonly subscribe: (listener: (state: ForgeQueueState) => void) => () => void;
+  readonly pause: () => void;
+  readonly resume: () => void;
 }
 
 export function createForgeQueueStore(deps: ForgeQueueStoreDeps): ForgeQueueStore {
@@ -112,6 +126,12 @@ export function createForgeQueueStore(deps: ForgeQueueStoreDeps): ForgeQueueStor
     sync: (upgrades) => {
       apply({ kind: 'sync', upgrades });
     },
+    pause: () => {
+      apply({ kind: 'pause' });
+    },
+    resume: () => {
+      apply({ kind: 'resume' });
+    },
   };
 }
 
@@ -159,4 +179,30 @@ export function cancelForgeQueue(): void {
 
 export function syncForgeQueue(upgrades: ReadonlyMap<string, number>): void {
   sharedForgeQueueStore().sync(upgrades);
+}
+
+export function pauseForgeQueue(): void {
+  sharedForgeQueueStore().pause();
+}
+
+export function resumeForgeQueue(): void {
+  sharedForgeQueueStore().resume();
+}
+
+export function subscribeForgeQueue(listener: (state: ForgeQueueState) => void): () => void {
+  return sharedForgeQueueStore().subscribe(listener);
+}
+
+/** The port the apply store's singleton takes over the forge queue — see `ForgeQueuePort`. */
+export function forgeQueuePort(): ForgeQueuePort {
+  return {
+    getState: () => sharedForgeQueueStore().getState(),
+    subscribe: (listener) => sharedForgeQueueStore().subscribe(listener),
+    pause: () => {
+      sharedForgeQueueStore().pause();
+    },
+    resume: () => {
+      sharedForgeQueueStore().resume();
+    },
+  };
 }

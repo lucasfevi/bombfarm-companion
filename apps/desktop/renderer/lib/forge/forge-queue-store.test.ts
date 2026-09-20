@@ -196,4 +196,37 @@ describe('the forge queue store drives main one piece at a time', () => {
     expect(store.getState().pieces).toEqual([{ itemId: 'b', target: 10 }]);
     expect(saved.read()).toEqual([{ itemId: 'b', target: 10 }]);
   });
+
+  it('pause folds the run in flight without asking for the next piece, and resume asks for it', async () => {
+    let sequence = 0;
+    const { bridge, starts, push } = fakeBridge(() => ({ ok: true, runId: `r${String(++sequence)}` }));
+    const store = createForgeQueueStore({ bridge, ...memory() });
+    store.add('a', 12);
+    store.add('b', 10);
+    store.startQueue();
+    await flush();
+    expect(starts).toHaveLength(1);
+
+    store.pause();
+    expect(store.getState().status).toBe('paused');
+    push(done('r1', 'a', 'target'));
+    await flush();
+    expect(store.getState()).toMatchObject({ status: 'paused', active: null });
+    expect(store.getState().pieces.map((piece) => piece.itemId)).toEqual(['b']);
+    expect(starts).toHaveLength(1);
+
+    store.resume();
+    await flush();
+    expect(store.getState().status).toBe('running');
+    expect(starts.map((request) => request.itemId)).toEqual(['a', 'b']);
+  });
+
+  it('pause on an idle queue changes nothing and invokes nothing', () => {
+    const { bridge, starts } = fakeBridge(() => ({ ok: true, runId: 'r1' }));
+    const store = createForgeQueueStore({ bridge, ...memory() });
+    const before = store.getState();
+    store.pause();
+    expect(store.getState()).toBe(before);
+    expect(starts).toEqual([]);
+  });
 });
