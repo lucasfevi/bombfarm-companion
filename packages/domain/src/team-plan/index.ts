@@ -34,6 +34,12 @@ export {
   type ApplyVerdictCounts,
   type LiveGearState,
 } from './apply-equip';
+export {
+  derivePointsUnits,
+  preflightPointsUnit,
+  preflightPointsUnitsOffline,
+  type HeroAllocationReading,
+} from './apply-points';
 export { computeRosterAuras } from './auras';
 export { AURA_FIXED_POINT_ROUNDS, evaluateRoster } from './evaluate';
 export {
