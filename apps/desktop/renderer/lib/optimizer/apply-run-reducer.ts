@@ -87,8 +87,11 @@ export function applyRunReducer(run: ApplyRunView, event: ApplyEvent): ApplyRunV
     }
     case 'done':
       return { ...run, result: event.result, goldSpent: event.result.goldSpent, cooldown: null };
+    default: {
+      const exhaustive: never = event;
+      return exhaustive;
+    }
   }
-  return run;
 }
 
 export function runCounts(run: ApplyRunView): { readonly done: number; readonly skipped: number; readonly left: number; readonly total: number; readonly current: number | null } {
