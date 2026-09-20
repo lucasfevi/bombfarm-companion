@@ -40,8 +40,8 @@ import {
 // description of today's shape.
 
 describe('compound namespace shape (frozen)', () => {
-  it('Dialog exposes exactly Root, Portal, Backdrop, Popup, Head, Title, Close, in order', () => {
-    expect(Object.keys(Dialog)).toEqual(['Root', 'Portal', 'Backdrop', 'Popup', 'Head', 'Title', 'Close']);
+  it('Dialog exposes exactly Root, Portal, Backdrop, Popup, Head, Title, Close, Body, Footer, in order', () => {
+    expect(Object.keys(Dialog)).toEqual(['Root', 'Portal', 'Backdrop', 'Popup', 'Head', 'Title', 'Close', 'Body', 'Footer']);
     for (const value of Object.values(Dialog)) expect(typeof value).toBe('function');
   });
 
