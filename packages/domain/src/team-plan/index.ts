@@ -26,6 +26,14 @@ export type {
 
 export { mayMoveGear, mayRespendPoints } from './allowed-changes';
 export { COMMIT_INDEX, COMMIT_ORDER, commitVectorEquals, pointsToCommitVector } from './apply-commit-vector';
+export {
+  deriveEquipUnits,
+  liveGearStateFromRows,
+  preflightEquipUnits,
+  summarizeApplyVerdicts,
+  type ApplyVerdictCounts,
+  type LiveGearState,
+} from './apply-equip';
 export { computeRosterAuras } from './auras';
 export { AURA_FIXED_POINT_ROUNDS, evaluateRoster } from './evaluate';
 export {
