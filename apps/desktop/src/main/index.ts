@@ -28,6 +28,7 @@ import {
   type LiveDiagnosticsDumpOutcome,
   type LiveView,
   type MarketQuoteCurrency,
+  type MarketCheckResult,
   type MarketQuoteResult,
   type MarketQuoteTarget,
   type PvpFilmView,
@@ -365,6 +366,24 @@ function readPvpFilm(filmId: number): PvpFilmView | null {
   }
 }
 
+/** A manual check is the clock's own conditional request, taken early. The floor keeps a held
+ *  button from becoming a stream of them: below the five-minute `max-age` the published file is
+ *  served with, a second check could not see anything newer anyway. */
+const MARKET_CHECK_FLOOR_MS = 30_000;
+let lastMarketCheckAt = 0;
+
+async function checkMarketNow(): Promise<MarketCheckResult> {
+  if (marketService === null) return { ok: false, reason: 'unavailable' };
+  const now = Date.now();
+  if (now - lastMarketCheckAt < MARKET_CHECK_FLOOR_MS) return { ok: false, reason: 'rate_limited' };
+  lastMarketCheckAt = now;
+  const view = await marketService.refreshSnapshot();
+  // A check that found nothing new adopts nothing and so announces nothing on its own; the press
+  // still moved the checked-at clock, and every window showing it should see that.
+  emitEvent('market:changed', view);
+  return { ok: true, view };
+}
+
 function refreshMarketItem(target: MarketQuoteTarget): Promise<MarketQuoteResult> {
   if (!isMarketQuoteTarget(target) || marketService === null) {
     return Promise.resolve({
@@ -454,6 +473,7 @@ function registerIpcHandlers(): void {
       updateService?.installOnRestart() ?? preServiceUpdateStatus(),
     'market:getSnapshot': () => marketService?.getView() ?? emptyMarketSnapshotView(),
     'market:refreshItem': refreshMarketItem,
+    'market:check': checkMarketNow,
     'forge:start': startForgeRun,
     'forge:cancel': (runId: string) => forgeService?.cancel(runId) ?? false,
     'forge:history': listForgeHistory,

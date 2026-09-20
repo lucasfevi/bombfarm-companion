@@ -40,17 +40,14 @@ import { withAuraAtCap } from '@bombfarm/team-plan/core';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
 import { buildAccountRoster } from '../../lib/account/account-roster';
-import {
-  useAccountReadRequest,
-  type AccountReadRequestState,
-} from '../../lib/account/use-account-read-request';
+import { useAccountReadRequest } from '../../lib/account/use-account-read-request';
 import { DEFAULT_FARM_CONTROLS, type FarmControls } from '../../lib/farm/farm-inputs';
 import { loadFarmView, saveFarmView } from '../../lib/farm/farm-view-storage';
 import { settledBoard, type FarmSettledBoard } from '../../lib/farm/farm-snapshot-store';
 import { useFarmSnapshot } from '../../lib/farm/use-farm-snapshot';
 import { useFarmTableHeight } from '../../lib/farm/use-farm-table-height';
 import { farmScreenCopy, useFarmCopy } from '../screen-copy';
-import { AccountRefreshControl } from '../account-refresh-control';
+import { useScreenRefreshRegistration } from '../../lib/refresh/screen-refresh-store';
 
 const DEFAULT_PHASE = 1;
 
@@ -191,10 +188,7 @@ export function FarmView({ onOpenOptimizer }: { onOpenOptimizer: () => void }) {
   const tableScrollportHeightPx = useFarmTableHeight();
   const settled = useMemo(() => settledBoard(state), [state]);
   const busy = state.status === 'computing';
-  const refreshBag = useMemo<FarmScreenRefresh>(
-    () => ({ stale, busy, readState, onRefresh }),
-    [stale, busy, readState, onRefresh],
-  );
+  useScreenRefreshRegistration('farm', { capturedAt: settled?.capturedAt ?? null, stale, busy, readState, onRefresh });
 
   if (account.status === 'bridge-unavailable') {
     return (
@@ -258,20 +252,11 @@ export function FarmView({ onOpenOptimizer }: { onOpenOptimizer: () => void }) {
       <FarmScreen
         snapshot={settled}
         view={{ phase, phaseChosen, activeHeroId, tableScrollportHeightPx }}
-        refresh={refreshBag}
         actions={screenActions}
       />
     </div>
   );
 }
-
-/** What the board's refresh control reads and writes — the screen's only recompute path. */
-type FarmScreenRefresh = {
-  stale: boolean;
-  busy: boolean;
-  readState: AccountReadRequestState;
-  onRefresh: () => void;
-};
 
 type FarmScreenActions = {
   setPhasesViewPhase: (phase: number) => void;
@@ -291,7 +276,6 @@ type FarmScreenActions = {
 function FarmScreen({
   snapshot,
   view,
-  refresh,
   actions,
 }: {
   snapshot: FarmSettledBoard;
@@ -301,13 +285,12 @@ function FarmScreen({
     activeHeroId: string | null;
     tableScrollportHeightPx: number;
   };
-  refresh: FarmScreenRefresh;
   actions: FarmScreenActions;
 }) {
   const t = useCopy();
   const { lang } = useLocale();
   const farmCopy = useFarmCopy();
-  const { board, inputs, capturedAt } = snapshot;
+  const { board, inputs } = snapshot;
 
   const screenCopy = useMemo(() => farmScreenCopy(farmCopy, t), [farmCopy, t]);
 
@@ -353,15 +336,6 @@ function FarmScreen({
 
   const boardSlots = useMemo<FarmRankingBoardSlots>(
     () => ({
-      headerOverlay: (
-        <AccountRefreshControl
-          capturedAt={capturedAt}
-          stale={refresh.stale}
-          busy={refresh.busy}
-          readState={refresh.readState}
-          onRefresh={refresh.onRefresh}
-        />
-      ),
       // The board's own assumption about the auras, beside the Return Bonus it already owns.
       // Reads the settled snapshot's list, as the Return Bonus select reads its mode.
       controls: (
@@ -375,7 +349,7 @@ function FarmScreen({
         />
       ),
     }),
-    [capturedAt, refresh, t, lang, inputs.aurasAtCap, actions.setAuraAtCap],
+    [t, lang, inputs.aurasAtCap, actions.setAuraAtCap],
   );
 
   const explorerData = useMemo(

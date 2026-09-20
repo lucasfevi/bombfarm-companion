@@ -204,7 +204,9 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
     await expect(page.locator('[data-scope-column="leaveAlone"] article')).toHaveCount(0);
 
     await expect(page.getByTestId('optimizer-left-out')).toBeVisible();
-    await expect(page.getByTestId('account-refresh-age')).toContainText('account read');
+    // The fixture's capture is weeks old, so its age reads late — but read, and not out of date.
+    await expect(page.getByTestId('account-refresh')).toHaveAttribute('data-state', /^(fresh|late)$/);
+    await expect(page.getByTestId('account-refresh-age')).not.toHaveText('out of date');
   });
 
   test('Optimize renders results off the main thread', async () => {

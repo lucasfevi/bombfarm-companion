@@ -63,10 +63,6 @@ export type TeamPlanScreenActions = {
 
 export type TeamPlanScreenSlots = {
   emptyState: (kind: TeamPlanEmptyStateKind) => ReactNode;
-  /** Painted over the empty space to the right of the heading, costing the screen no height —
-   *  the desktop puts its refresh control there, as it does on the farm board. Undefined renders
-   *  nothing at all (no empty wrapper), so the web's DOM is unchanged. */
-  headerOverlay?: ReactNode;
   /** Drawn at the end of each entry of a hero's forge queue — the desktop puts its add-to-queue
    *  control there. Undefined renders nothing at all, so the web's DOM is unchanged. */
   forgeQueueAction?: ForgeQueueAction;
@@ -158,9 +154,8 @@ export function TeamPlanScreenView({
         }}
       />
       <section role="region" aria-label={t.teamPlanPageLandmark}>
-        <header className="relative mb-4">
+        <header className="mb-4">
           <h1 className="m-0 text-lg font-bold text-ink">{t.teamPlanPageTitle}</h1>
-          {slots.headerOverlay ? <div className="absolute top-0 right-0">{slots.headerOverlay}</div> : null}
         </header>
 
         {emptyStateKind === 'noRoster' || emptyStateKind === 'noInventory' ? (

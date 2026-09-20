@@ -38,6 +38,8 @@ import { FarmView } from './farm/farm-view';
 import { HeroesView } from './heroes/heroes-view';
 import { InventoryView } from './inventory/inventory-view';
 import { ForgeQueueBar, isForgeQueueShown } from './forge/forge-queue-bar';
+import { FeedsRail } from './feeds-rail';
+import { useFeeds } from '../lib/feeds/use-feeds';
 import { useForgeQueue } from '../lib/forge/forge-queue-store';
 import { ForgeView } from './forge/forge-view';
 import { OptimizerView } from './optimizer/optimizer-view';
@@ -320,11 +322,12 @@ function HomePageContent({
     return bridge.on('updates:changed', setUpdateStatus);
   }, []);
 
-  const onUpdateCheck = () => {
+  // Stable, because the status strip's rail keys its refresh-all sequence on the presses it holds.
+  const onUpdateCheck = useCallback(() => {
     const bridge = getBridge();
     if (!bridge) return;
     void bridge.invoke('updates:check').then(setUpdateStatus);
-  };
+  }, []);
 
   const onUpdateDownload = () => {
     const bridge = getBridge();
@@ -367,6 +370,9 @@ function HomePageContent({
   // The shell draws the band only while there is a queue to show: an element that renders null
   // would still claim the strip's height on every screen.
   const forgeQueueShown = isForgeQueueShown(useForgeQueue());
+  // The status strip's rail: every feed the app keeps asking for, with the account item speaking
+  // for the screen on show when that screen computes from a copy of its own.
+  const feeds = useFeeds({ activeTabId: activeNavId, updateStatus, onUpdateCheck });
 
   return (
     <>
@@ -413,6 +419,7 @@ function HomePageContent({
             />
           ) : null
         }
+        progress={granted ? <FeedsRail {...feeds} /> : null}
         version={
           environment ? (
             <>
