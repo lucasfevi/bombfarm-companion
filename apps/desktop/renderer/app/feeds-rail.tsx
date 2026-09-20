@@ -67,23 +67,39 @@ function cycleText(feed: FeedId, t: Copy): string | null {
   return cycle === null ? null : sub(t.feedsCycleMinutes, { n: Math.round(cycle / 60_000) });
 }
 
-/** The tooltip's sentences, in order: the press, the last read, the clock, and a refusal's reason. */
-export function feedWords(feed: FeedView, t: Copy, now: number): string[] {
-  const ageMs = feedAgeMs(feed.capturedAt, now);
-  const tip = [sub(t.feedsRefreshOne, { feed: feedName(feed.id, t) })];
-  if (feed.busy || feed.readState.kind === 'working') tip.push(t.feedsReading);
-  else if (feed.outOfDate) tip.push(t.farmRefreshStale);
-  else if (feed.capturedAt === null) tip.push(t.feedsNotYet);
-  else tip.push(sub(t.feedsLastRead, { age: formatCapturedAt(feed.capturedAt, t, now) }));
-  const cycle = cycleText(feed.id, t);
-  if (cycle === null) tip.push(t.feedsNoClock);
-  else {
-    tip.push(sub(t.feedsEvery, { cycle }));
-    const nextIn = feedNextInMs(feed.id, ageMs);
-    if (nextIn !== null) tip.push(nextIn === 0 ? t.feedsNextDue : sub(t.feedsNextIn, { age: formatAge(nextIn, t) }));
+function feedWhat(feed: FeedId, t: Copy): string {
+  switch (feed) {
+    case 'account':
+      return t.feedsWhatAccount;
+    case 'pvp':
+      return t.feedsWhatPvp;
+    case 'market':
+      return t.feedsWhatPrices;
+    case 'updates':
+      return t.feedsWhatUpdates;
   }
-  if (feed.readState.kind === 'refused') tip.push(accountReadRefusalText(feed.readState.reason, t));
-  return tip;
+}
+
+/** The tooltip, top to bottom: the feed's name; what it is; where it stands; how it keeps itself
+ *  fresh; why a press was refused; and, muted, what a click does — nothing while a read runs. */
+export type FeedTip = { title: string; lines: string[]; action: string | null };
+
+export function feedWords(feed: FeedView, t: Copy, now: number): FeedTip {
+  const ageMs = feedAgeMs(feed.capturedAt, now);
+  const working = feed.busy || feed.readState.kind === 'working';
+  const lines = [feedWhat(feed.id, t)];
+  if (working) lines.push(t.feedsReadingNow);
+  else if (feed.outOfDate) lines.push(t.feedsOutOfDate);
+  else if (feed.capturedAt === null) lines.push(t.feedsNeverRead);
+  else lines.push(sub(t.feedsLastRead, { age: formatCapturedAt(feed.capturedAt, t, now) }));
+  const cycle = cycleText(feed.id, t);
+  if (cycle === null) lines.push(t.feedsNoClock);
+  else {
+    const nextIn = feedNextInMs(feed.id, ageMs);
+    lines.push(nextIn === null ? sub(t.feedsEveryUnread, { cycle }) : nextIn === 0 ? sub(t.feedsEveryDue, { cycle }) : sub(t.feedsEvery, { cycle, age: formatAge(nextIn, t) }));
+  }
+  if (feed.readState.kind === 'refused') lines.push(accountReadRefusalText(feed.readState.reason, t));
+  return { title: feedName(feed.id, t), lines, action: working ? null : t.feedsClickToUpdate };
 }
 
 function Ring({ state, left, landed, tone }: { state: RingState; left: number | null; landed: boolean; tone?: 'accent' | 'up' }) {
@@ -149,7 +165,7 @@ function FeedItem({ feed, t, now, muted }: { feed: FeedView; t: Copy; now: numbe
             data-feed={feed.id}
             data-state={state}
             data-muted={muted}
-            aria-label={tip[0]}
+            aria-label={sub(t.feedsRefreshOne, { feed: tip.title })}
             aria-busy={working}
             disabled={working}
             onClick={feed.request}
@@ -177,9 +193,9 @@ function FeedItem({ feed, t, now, muted }: { feed: FeedView; t: Copy; now: numbe
             )}
           >
             <Ring state={state} left={left} landed={landed} />
-            <span className={cn('text-[10px]', 'font-semibold', 'tracking-[0.06em]', 'uppercase', state === 'late' ? 'text-warn' : 'text-muted')}>{feedName(feed.id, t)}</span>
+            <span className={cn('text-[10px]', 'leading-none', 'font-semibold', 'tracking-[0.06em]', 'uppercase', state === 'late' ? 'text-warn' : 'text-muted')}>{feedName(feed.id, t)}</span>
             {state === 'refused' ? (
-              <span data-testid={`feed-${feed.id}-word`} className={cn('font-mono', 'text-[10px]', 'text-muted', 'opacity-70')}>
+              <span data-testid={`feed-${feed.id}-word`} className={cn('font-mono', 'text-[10px]', 'leading-none', 'text-muted', 'opacity-70')}>
                 {t.feedsRefused}
               </span>
             ) : null}
@@ -189,11 +205,13 @@ function FeedItem({ feed, t, now, muted }: { feed: FeedView; t: Copy; now: numbe
       <Tooltip.Portal>
         <Tooltip.Positioner side="top" sideOffset={6}>
           <Tooltip.Popup data-testid={`feed-${feed.id}-tip`}>
-            {tip.map((sentence, index) => (
+            <p className="m-0 font-semibold">{tip.title}</p>
+            {tip.lines.map((sentence, index) => (
               <p key={index} className="m-0">
                 {sentence}
               </p>
             ))}
+            {tip.action ? <p className="m-0 mt-1 text-muted">{tip.action}</p> : null}
           </Tooltip.Popup>
         </Tooltip.Positioner>
       </Tooltip.Portal>

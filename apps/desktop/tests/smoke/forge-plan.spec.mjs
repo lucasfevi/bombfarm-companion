@@ -194,8 +194,9 @@ test.describe('forge plan smoke', () => {
       await expect(refreshButton).toHaveAttribute('data-state', 'fresh');
       await expect(page.getByTestId('feed-account-tip')).toHaveCount(0);
       await refreshButton.hover();
-      await expect(page.getByTestId('feed-account-tip')).toContainText('Refresh Account now');
-      await expect(page.getByTestId('feed-account-tip')).toContainText('last read');
+      await expect(page.getByTestId('feed-account-tip')).toContainText('Your heroes, bag, skill tree and house');
+      await expect(page.getByTestId('feed-account-tip')).toContainText('Last read');
+      await expect(page.getByTestId('feed-account-tip')).toContainText('Click to update now');
 
       // Pressing it asks main to go and read, rather than re-showing what was already in hand —
       // and a fixture has no server behind it, so the one thing the press must not do is look

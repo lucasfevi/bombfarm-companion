@@ -60,11 +60,11 @@ export function GameFeed({ status }: { status: GameStatusInfo | null }) {
               className={cn('inline-flex', 'cursor-default', 'items-center', 'gap-2', 'py-1')}
             >
               <span aria-hidden data-testid="game-feed-dot" className={cn('size-[7px]', 'shrink-0', 'rounded-full', dotClass)} />
-              <span data-testid="game-feed-value" className={cn('text-[10px]', 'font-semibold', 'tracking-[0.06em]', 'uppercase', wordClass)}>
+              <span data-testid="game-feed-value" className={cn('text-[10px]', 'leading-none', 'font-semibold', 'tracking-[0.06em]', 'uppercase', wordClass)}>
                 {word}
               </span>
               {age !== null ? (
-                <span data-testid="game-feed-age" className={cn('font-mono', 'text-[10.5px]', 'tabular-nums', 'text-warn')}>
+                <span data-testid="game-feed-age" className={cn('font-mono', 'text-[10.5px]', 'leading-none', 'tabular-nums', 'text-warn')}>
                   {age}
                 </span>
               ) : null}

@@ -129,30 +129,40 @@ describe('FeedsRail — four rings beside four names, and one ring for all of th
   });
 });
 
-describe('feedWords — the tooltip carries the figures the ring does not', () => {
-  it('the press, the last read, the cycle, and how long until the next automatic refresh', () => {
-    expect(feedWords(feed({ id: 'market', capturedAt: ago(5 * 60_000) }), en, NOW)).toEqual([
-      sub(en.feedsRefreshOne, { feed: en.feedsPrices }),
-      sub(en.feedsLastRead, { age: en.ageMinutes.replace('{n}', '5') }),
-      sub(en.feedsEvery, { cycle: sub(en.feedsCycleMinutes, { n: 15 }) }),
-      sub(en.feedsNextIn, { age: sub(en.ageShortMinutes, { n: 10 }) }),
-    ]);
+describe('feedWords — the tooltip says what the feed is, where it stands, how it keeps fresh, and what a click does', () => {
+  it('a feed with a clock: its name, what it is, the last read, its cycle with the countdown, and the click line', () => {
+    expect(feedWords(feed({ id: 'market', capturedAt: ago(5 * 60_000) }), en, NOW)).toEqual({
+      title: en.feedsPrices,
+      lines: [
+        en.feedsWhatPrices,
+        sub(en.feedsLastRead, { age: en.ageMinutes.replace('{n}', '5') }),
+        sub(en.feedsEvery, { cycle: sub(en.feedsCycleMinutes, { n: 15 }), age: sub(en.ageShortMinutes, { n: 10 }) }),
+      ],
+      action: en.feedsClickToUpdate,
+    });
   });
 
   it("the account's clock is a minute, and a due refresh is said to be due", () => {
     const words = feedWords(feed({ id: 'account', capturedAt: ago(90_000) }), en, NOW);
-    expect(words[2]).toBe(sub(en.feedsEvery, { cycle: sub(en.feedsCycleMinutes, { n: 1 }) }));
-    expect(words[3]).toBe(en.feedsNextDue);
+    expect(words.lines[2]).toBe(sub(en.feedsEveryDue, { cycle: sub(en.feedsCycleMinutes, { n: 1 }) }));
   });
 
   it('the PVP standing says it has no clock of its own', () => {
-    expect(feedWords(feed({ id: 'pvp' }), en, NOW)[2]).toBe(en.feedsNoClock);
+    expect(feedWords(feed({ id: 'pvp' }), en, NOW).lines[2]).toBe(en.feedsNoClock);
   });
 
-  it('a refusal adds its reason as the last sentence; out of date and reading replace the last-read line', () => {
-    expect(feedWords(feed({ id: 'pvp', readState: { kind: 'refused', reason: 'rate_limited' } }), en, NOW).at(-1)).toBe(en.accountReadRecent);
-    expect(feedWords(feed({ id: 'account', outOfDate: true }), en, NOW)[1]).toBe(en.farmRefreshStale);
-    expect(feedWords(feed({ id: 'account', readState: { kind: 'working' } }), en, NOW)[1]).toBe(en.feedsReading);
-    expect(feedWords(feed({ id: 'updates', capturedAt: null }), en, NOW)[1]).toBe(en.feedsNotYet);
+  it('a feed never read says so in words, and its cycle without a countdown', () => {
+    const words = feedWords(feed({ id: 'updates', capturedAt: null }), en, NOW);
+    expect(words.lines[1]).toBe(en.feedsNeverRead);
+    expect(words.lines[2]).toBe(sub(en.feedsEveryUnread, { cycle: sub(en.feedsCycleMinutes, { n: 20 }) }));
+    expect(words.action).toBe(en.feedsClickToUpdate);
+  });
+
+  it('a refusal adds its reason as the last line; out of date is a sentence; a running read has no click line', () => {
+    expect(feedWords(feed({ id: 'pvp', readState: { kind: 'refused', reason: 'rate_limited' } }), en, NOW).lines.at(-1)).toBe(en.accountReadRecent);
+    expect(feedWords(feed({ id: 'account', outOfDate: true }), en, NOW).lines[1]).toBe(en.feedsOutOfDate);
+    const reading = feedWords(feed({ id: 'account', readState: { kind: 'working' } }), en, NOW);
+    expect(reading.lines[1]).toBe(en.feedsReadingNow);
+    expect(reading.action).toBeNull();
   });
 });
