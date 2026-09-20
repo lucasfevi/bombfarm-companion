@@ -31,6 +31,7 @@ export default defineConfig({
         'forge-run.spec.mjs',
         'forge-queue.spec.mjs',
         'optimizer.spec.mjs',
+        'optimizer-apply.spec.mjs',
         'pvp.spec.mjs',
         'skills.spec.mjs',
         'heroes-combat.spec.mjs',

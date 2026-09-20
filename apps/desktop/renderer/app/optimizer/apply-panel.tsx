@@ -31,9 +31,9 @@ import { ApplyModal } from './apply-modal';
 const NO_HEROES: readonly HeroRecord[] = [];
 
 /**
- * The forge row's mount contract (spec § *Contract with the forge row*, item 1) — defined here
- * since this item ships it and `forge-queue-batch-add` mounts against it in the same PR; not yet
- * exported anywhere else in the tree.
+ * The forge row's mount contract — the fixed prop shape a forge-row component receives through
+ * the `forgeRow` seam below. Defined here since this panel ships the seam first; the row itself
+ * mounts against it from elsewhere in the same PR.
  */
 export type ApplyForgeRowProps = {
   readonly forgeList: readonly ForgeAction[];
@@ -83,8 +83,8 @@ export function ApplyPanel({
   farmChosenPhase: number | null;
   forgeWritesEnabled: boolean;
   accountSource: AccountSource | null;
-  /** The forge row's own component, mounted through this seam (spec § *Contract with the forge
-   *  row*, item 1) — absent in this item; `forge-queue-batch-add` passes it in the same PR. */
+  /** The forge row's own component, mounted through this seam — absent here; the feature that
+   *  draws the forge row passes it in the same PR. */
   forgeRow?: (props: ApplyForgeRowProps) => ReactNode;
 }) {
   const t = useCopy();
@@ -101,7 +101,7 @@ export function ApplyPanel({
   const accountLoaded = account.status === 'loaded';
 
   // Memoised on the live view's own reference — a live account tick that did not change the view
-  // recomputes nothing here (design § `ApplyPanel`'s `useMemo` note).
+  // recomputes nothing here.
   const facts = useMemo(
     () => buildApplyFacts({ plan, planHeroes, liveView, farmChosenPhase, t, locale }),
     [plan, planHeroes, liveView, farmChosenPhase, t, locale],

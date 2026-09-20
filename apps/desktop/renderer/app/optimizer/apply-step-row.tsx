@@ -41,8 +41,8 @@ function stateOf(action: ApplyStepRowAction): 'ready' | 'done' | 'nothing' {
   return 'nothing';
 }
 
-/** The shared shell — exactly the contract's props and test ids (spec § *Contract with the forge
- *  row*, item 2). The forge row (`forge-queue-batch-add`) composes over this same component. */
+/** The shared shell — exactly the contract's props and test ids. Another feature's forge row
+ *  composes over this same component. */
 export function ApplyStepRow({ index, title, facts, notes, action, testId }: ApplyStepRowProps) {
   return (
     <div
