@@ -10,7 +10,7 @@
 import { useEffect, useState } from 'react';
 import type { ApplyStopReason } from '@bombfarm/contracts';
 import { estimateApplyDurationMs } from '@bombfarm/domain/team-plan';
-import { Button, Dialog, dialogDescClass } from '@bombfarm/ui';
+import { Button, cn, Dialog, dialogDescClass } from '@bombfarm/ui';
 import { sub, useCopy, type Copy } from '../../lib/copy';
 import { APPLY_SKIP_REASON_COPY_KEY, APPLY_STOP_REASON_COPY_KEY, formatClock, unitCardText } from '../../lib/optimizer/apply-labels';
 import type { ApplyModalState } from '../../lib/optimizer/apply-progress-reducer';
@@ -83,7 +83,13 @@ export function ApplyModalBody({
                 className="h-1.5 w-full overflow-hidden rounded-sm border border-line bg-bg"
               >
                 <span
-                  className={cooldown !== null ? 'block h-full w-full animate-pulse bg-warn/70' : 'block h-full bg-accent/70'}
+                  className={cn(
+                    'block',
+                    'h-full',
+                    cooldown !== null ? 'w-full' : 'bg-accent/70',
+                    cooldown !== null && 'animate-pulse',
+                    cooldown !== null && 'bg-warn/70',
+                  )}
                   style={{
                     width:
                       cooldown !== null

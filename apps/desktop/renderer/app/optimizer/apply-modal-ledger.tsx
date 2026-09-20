@@ -7,7 +7,7 @@
  * that did not change.
  */
 import { memo } from 'react';
-import { Icon } from '@bombfarm/ui';
+import { cn, Icon } from '@bombfarm/ui';
 import { useCopy } from '../../lib/copy';
 import { unitCardText, type ApplyUnitLabel } from '../../lib/optimizer/apply-labels';
 import type { UnitStatus } from '../../lib/optimizer/apply-run-reducer';
@@ -31,7 +31,7 @@ export const ApplyModalLedgerLine = memo(function ApplyModalLedgerLine({ unit, s
   return (
     <li data-testid="apply-modal-ledger-line" data-unit-status={status} className="flex items-center gap-2 py-1 text-[12px]">
       <LedgerMark status={status} />
-      <span className={status === 'next' ? 'truncate text-muted' : 'truncate text-ink'}>{unitCardText(unit, t)}</span>
+      <span className={cn('truncate', status === 'next' ? 'text-muted' : 'text-ink')}>{unitCardText(unit, t)}</span>
     </li>
   );
 });
