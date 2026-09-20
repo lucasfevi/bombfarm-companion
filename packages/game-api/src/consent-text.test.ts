@@ -13,11 +13,13 @@ const KNOWN_BODY_DIGESTS: Readonly<Record<'en' | 'pt-BR', Readonly<Record<number
     2: '6821259f4832b5e77f0ce6f5b8d8c8ddd8dcda0f91b1887e4308df1db422aac2',
     3: '899613bee52877b8e3a66e2864500117f8cc239abf0288f0a3964acc5bca8ec4',
     4: 'bedbd31213ce49606ceadb85774b1c322fdda20fe35582fa02402295a8cb2baa',
+    5: 'af6606e267b4e3658e6f94380de76d3ba193da484f7eed966e48687e89aaafa7',
   },
   'pt-BR': {
     2: '1aa62c031159c769ae95530b147d7dc2f9eafdc3229f06e27a7d3d56ce0d886d',
     3: '2045be379089bf57ef168741f42e734de7d31e93bb17179ea97c4b5cd91d54fa',
     4: '24d67f662e7a0dcd3c7cc4aeb45d797e67b94028e9185c1a596f625a4713d3c0',
+    5: 'f7d2821ba7eb64b92afd3da592b682e36d190905378a40b7500d1a876480dd6d',
   },
 };
 
@@ -68,13 +70,17 @@ describe('CONSENT_TEXT.en — clause content', () => {
     expect(clause?.text).toMatch(/traffic that client is already exchanging/i);
   });
 
-  it('states the one write it can make, the three gates in front of it, and that nothing else can change the account, the client, or progress', () => {
+  it('states every write it can make, the three gates in front of them, and that nothing else can change the account, the client, or progress', () => {
     const clause = body.find((c) => c.heading === 'Writes only when you tell it to.');
     expect(clause).toBeDefined();
     expect(clause?.text).toMatch(/^Everything it shows is read\./);
-    expect(clause?.text).toMatch(/the same two calls the game's own forge screen makes/i);
-    expect(clause?.text).toMatch(/only from the Forge tab/i);
-    expect(clause?.text).toContain('only after you turn on "Let Forge spend gold" in Settings');
+    expect(clause?.text).toMatch(/forge roll/i);
+    expect(clause?.text).toMatch(/equip/i);
+    expect(clause?.text).toMatch(/stat points|reset points/i);
+    expect(clause?.text).toMatch(/Forge tab/);
+    expect(clause?.text).toMatch(/forge queue/i);
+    expect(clause?.text).toMatch(/Optimizer/);
+    expect(clause?.text).toContain('only after you turn on "Let the app forge, equip and reset points" in Settings');
     expect(clause?.text).toMatch(/only after you confirm each run/i);
     expect(clause?.text).toMatch(/Nothing else in it can change your account, your game client, or your progress/);
   });
@@ -113,13 +119,17 @@ describe('CONSENT_TEXT["pt-BR"] — clause content, the same facts in Portuguese
     expect(clause?.text).toMatch(/tráfego que esse cliente já troca/i);
   });
 
-  it('states the one write it can make, the three gates in front of it, and that nothing else can change the account, the client, or progress', () => {
+  it('states every write it can make, the three gates in front of them, and that nothing else can change the account, the client, or progress', () => {
     const clause = body.find((c) => c.heading === 'Escreve só quando você manda.');
     expect(clause).toBeDefined();
     expect(clause?.text).toMatch(/^Tudo o que ele mostra é leitura\./);
-    expect(clause?.text).toMatch(/as mesmas duas chamadas que a tela de forja do jogo faz/i);
-    expect(clause?.text).toMatch(/só pela aba Forja/i);
-    expect(clause?.text).toContain('só depois que você ligar "Deixar a Forja gastar ouro" nas Configurações');
+    expect(clause?.text).toMatch(/rolagem de forja/i);
+    expect(clause?.text).toMatch(/equipar/i);
+    expect(clause?.text).toMatch(/pontos de status/i);
+    expect(clause?.text).toMatch(/aba Forja/);
+    expect(clause?.text).toMatch(/fila de forja/i);
+    expect(clause?.text).toMatch(/Otimizador/);
+    expect(clause?.text).toContain('só depois que você ligar "Deixar o app forjar, equipar e redistribuir pontos" nas Configurações');
     expect(clause?.text).toMatch(/só depois de confirmar cada execução/i);
     expect(clause?.text).toMatch(/Nada mais nele pode alterar sua conta, o cliente do jogo ou seu progresso/);
   });
