@@ -38,6 +38,7 @@ import type { OptimizerView } from '../../lib/optimizer/optimizer-view-storage';
 import { optimizerScreenCopy, useTeamPlanCopy } from '../screen-copy';
 import { ForgeQueueAdd } from '../forge/forge-queue-add';
 import { ApplyPanel } from './apply-panel';
+import { ApplyForgeRow } from './apply-forge-row';
 
 type OptimizerScreenActionsIn = {
   startRun: (runId: string, signature: string, heroes: readonly HeroRecord[], basis: PlanBasis) => void;
@@ -220,6 +221,7 @@ export function OptimizerScreen({
             farmChosenPhase={inputs.farmChosenPhase}
             forgeWritesEnabled={forgeWritesEnabled}
             accountSource={accountSource}
+            forgeRow={(rowProps) => <ApplyForgeRow {...rowProps} />}
           />
         ),
     }),
