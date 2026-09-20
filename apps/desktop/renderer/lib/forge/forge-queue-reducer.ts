@@ -17,8 +17,10 @@ export type ForgeQueueHalt =
 
 export type ForgeQueueState = {
   readonly pieces: readonly ForgeQueuePiece[];
-  /** `halted` is a queue that was running and stopped on its head piece; Start resumes it. */
-  readonly status: 'idle' | 'running' | 'halted';
+  /** `halted` is a queue that was running and stopped on its head piece; Start resumes it.
+   *  `paused` is a queue an outside caller (the Optimizer's Apply steps) asked to stand aside;
+   *  the piece in flight, if any, finishes on its own and no new head is requested until resumed. */
+  readonly status: 'idle' | 'running' | 'halted' | 'paused';
   /** The piece the queue has asked main to forge; `runId` is null until main answers. */
   readonly active: { readonly itemId: string; readonly runId: string | null } | null;
   readonly halt: ForgeQueueHalt | null;
@@ -40,7 +42,11 @@ export type ForgeQueueAction =
   /** The bag as the account reads now: a waiting piece that is gone or already at its target
    *  has nothing left to forge and leaves the queue. */
   | { kind: 'sync'; upgrades: ReadonlyMap<string, number> }
-  | { kind: 'restore'; pieces: readonly ForgeQueuePiece[] };
+  | { kind: 'restore'; pieces: readonly ForgeQueuePiece[] }
+  /** An outside caller asking the queue to stand aside between pieces — the Optimizer's Apply
+   *  steps, so it never contends with them over the one write gate. */
+  | { kind: 'pause' }
+  | { kind: 'resume' };
 
 export const EMPTY_FORGE_QUEUE: ForgeQueueState = { pieces: [], status: 'idle', active: null, halt: null, forged: 0 };
 
@@ -60,8 +66,8 @@ function without(pieces: readonly ForgeQueuePiece[], itemId: string): ForgeQueue
 }
 
 function afterHeadLeaves(state: ForgeQueueState, pieces: readonly ForgeQueuePiece[], reached: boolean): ForgeQueueState {
-  const status = state.status === 'running' && pieces.length > 0 ? 'running' : 'idle';
   const forged = pieces.length === 0 ? 0 : state.forged + (reached ? 1 : 0);
+  const status = pieces.length === 0 ? 'idle' : state.status === 'running' || state.status === 'paused' ? state.status : 'idle';
   return { pieces, status, active: null, halt: null, forged };
 }
 
@@ -93,7 +99,7 @@ export function forgeQueueReducer(state: ForgeQueueState, action: ForgeQueueActi
       return { ...state, pieces, halt: null };
     }
     case 'start':
-      if (state.status === 'running' || state.pieces.length === 0) return state;
+      if (state.status === 'running' || state.status === 'paused' || state.pieces.length === 0) return state;
       return { ...state, status: 'running', halt: null };
     case 'requested':
       if (state.status !== 'running' || state.active !== null || forgeQueueHead(state)?.itemId !== action.itemId) return state;
@@ -111,14 +117,21 @@ export function forgeQueueReducer(state: ForgeQueueState, action: ForgeQueueActi
       if (state.active === null || state.active.runId !== action.runId) return state;
       const { itemId } = state.active;
       if (action.result.stop === 'target') return afterHeadLeaves(state, without(state.pieces, itemId), true);
-      if (state.status !== 'running' || action.result.stop === 'cancelled') {
-        return { ...state, status: 'idle', active: null, halt: null };
+      if (action.result.stop === 'cancelled') return { ...state, status: 'idle', active: null, halt: null };
+      if (state.status === 'running' || state.status === 'paused') {
+        return { ...state, status: 'halted', active: null, halt: { kind: 'stop', itemId, stop: action.result.stop } };
       }
-      return { ...state, status: 'halted', active: null, halt: { kind: 'stop', itemId, stop: action.result.stop } };
+      return { ...state, status: 'idle', active: null, halt: null };
     }
     case 'cancel':
       if (state.status === 'idle' && state.halt === null) return state;
       return { ...state, status: 'idle', halt: null };
+    case 'pause':
+      if (state.status !== 'running') return state;
+      return { ...state, status: 'paused' };
+    case 'resume':
+      if (state.status !== 'paused') return state;
+      return { ...state, status: state.pieces.length === 0 ? 'idle' : 'running' };
     case 'sync': {
       const pieces = state.pieces.filter((piece) => {
         if (state.active?.itemId === piece.itemId) return true;
