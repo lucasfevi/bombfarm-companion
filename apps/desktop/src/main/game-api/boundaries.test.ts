@@ -35,9 +35,10 @@ const WRITE_ROUTE_PATHS = [
   '/hero/stat/commit',
 ];
 const ACCOUNT_REFRESH_FILE = join(DESKTOP_MAIN, 'game-api/account-refresh.ts');
-/** The one caller of `requestPost()` — the forge run. Typed to a `WriteSession`, and the second
- *  root of the live-tap walk below: a write path must be as far from the tap as the read path. */
+/** The two callers of `requestPost()` — the forge run and an apply run. Both typed to a
+ *  `WriteSession`; `FORGE_SERVICE_FILE` is also the root of the live-tap walk below (Guard 4). */
 const FORGE_SERVICE_FILE = join(DESKTOP_MAIN, 'forge/forge-service.ts');
+const APPLY_SERVICE_FILE = join(DESKTOP_MAIN, 'apply/apply-service.ts');
 /** This guard file itself necessarily names the strings it checks for — excluded from every scan. */
 const BOUNDARIES_TEST_FILE = join(DESKTOP_MAIN, 'game-api/boundaries.test.ts');
 
@@ -331,18 +332,20 @@ describe('Guard 3 — no path to the network or the token file bypasses consent'
     expect(offenders, `Every write call site must be typed to a WriteSession. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
   });
 
-  it('write-request.ts is the only definer of requestPost(), and forge-service.ts is its only caller — the app\'s writes', () => {
+  it('write-request.ts is the only definer of requestPost(), and apply-service.ts/forge-service.ts are its only callers — the app\'s writes', () => {
     const definers = nonTestFiles.filter((file) => /export async function requestPost\(/.test(readFileSync(file, 'utf8')));
     expect(definers).toEqual([WRITE_REQUEST_FILE]);
 
     const callers = nonTestFiles.filter((file) => file !== WRITE_REQUEST_FILE && /\brequestPost\(/.test(readFileSync(file, 'utf8')));
-    expect(callers).toEqual([FORGE_SERVICE_FILE]);
+    expect(callers).toEqual([APPLY_SERVICE_FILE, FORGE_SERVICE_FILE]);
   });
 
-  it('forge-service.ts mints its session through grantWriteSession() and names WriteSession (sanity — the caller rule above is not vacuous)', () => {
-    const text = readFileSync(FORGE_SERVICE_FILE, 'utf8');
-    expect(text).toContain('grantWriteSession(');
-    expect(text).toContain('WriteSession');
+  it('apply-service.ts and forge-service.ts each mint their session through grantWriteSession() and name WriteSession (sanity — the caller rule above is not vacuous)', () => {
+    for (const file of [APPLY_SERVICE_FILE, FORGE_SERVICE_FILE]) {
+      const text = readFileSync(file, 'utf8');
+      expect(text).toContain('grantWriteSession(');
+      expect(text).toContain('WriteSession');
+    }
   });
 });
 
