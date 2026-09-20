@@ -1,7 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { InventoryItem } from '@bombfarm/domain/inventory';
 import { normalizeInventorySnapshot } from '@bombfarm/domain/inventory';
-import { applyTeamPlanControlChange, type TeamPlanControlChange } from '@bombfarm/team-plan/core';
+import { applyTeamPlanControlChange, type PlanBasis, type TeamPlanControlChange } from '@bombfarm/team-plan/core';
 import type { HeroRecord } from '@/shared/lib/storage';
 import { removeTeamPlanEnvelope, type TeamPlanEnvelope } from '@/shared/lib/team-plan-storage';
 import type { PlannerStore } from '@/shared/stores/planner-store';
@@ -59,6 +59,10 @@ export type TeamPlanSlice = {
   /** The roster the run was solved from, frozen at startRun: the result rows name these heroes,
    *  not whatever the roster holds by the time they are read. */
   planHeroes: readonly HeroRecord[] | null;
+  /** The inputs and controls the run was solved from, whole, frozen at startRun — what the
+   *  ledger of changes since the plan is read against. `null` for a plan restored from storage:
+   *  the envelope carries the plan and its signature, not what it was built from. */
+  planBasis: PlanBasis | null;
   /** The result rows the player has opened; `null` is the default (the first hero), which every
    *  new plan starts from. Lives here so a route change does not close them. */
   openHeroIds: readonly string[] | null;
@@ -97,6 +101,7 @@ const CLEARED_PLAN = {
   runStatus: 'idle',
   runId: null,
   planHeroes: null,
+  planBasis: null,
   openHeroIds: null,
 } as const;
 
@@ -135,6 +140,7 @@ export const createTeamPlanSlice: StateCreator<
     plan: null,
     planInputSignature: null,
     planHeroes: null,
+    planBasis: null,
     openHeroIds: null,
 
     hydrateInventory: (snapshot, forgeFloor) => {
@@ -174,6 +180,7 @@ export const createTeamPlanSlice: StateCreator<
         runStatus: 'done',
         runId: null,
         planHeroes: selectTeamPlanInputs(state).heroes,
+        planBasis: null,
         openHeroIds: null,
       });
     },
@@ -196,7 +203,8 @@ export const createTeamPlanSlice: StateCreator<
 
     startRun: (runId) => {
       if (get().runId === runId && get().runStatus === 'running') return;
-      set({ runId, runStatus: 'running', planHeroes: selectTeamPlanInputs(get()).heroes });
+      const inputs = selectTeamPlanInputs(get());
+      set({ runId, runStatus: 'running', planHeroes: inputs.heroes, planBasis: { inputs, controls: selectTeamPlanControls(get()) } });
     },
 
     resolveRun: (runId, status) => {
@@ -222,6 +230,7 @@ export const createTeamPlanSlice: StateCreator<
         get().runStatus === 'idle' &&
         get().runId === null &&
         get().planHeroes === null &&
+        get().planBasis === null &&
         get().openHeroIds === null
       ) {
         return;

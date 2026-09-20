@@ -28,6 +28,8 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof teamPlanEn)[] = [
   'teamPlanColDpsDelta',
   'teamPlanTotalGainValueDps',
   'teamPlanHeroRowLabel',
+  // "XP" is the game's own word in both languages.
+  'teamPlanChangesXp',
 ];
 
 function placeholderSet(value: string): Set<string> {

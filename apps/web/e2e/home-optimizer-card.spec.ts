@@ -6,7 +6,7 @@ import { teamPlanRichSeed } from './fixtures/team-plan-seed';
 const PLAN_KEY = 'bf-hp-team-plan-v1';
 const HEROES_KEY = 'bf-hp-heroes-v1';
 const HEADLINE = /^[+-]\d+([.,]\d)?% (gold \/ hour|DPS), whole roster$/;
-const STALE_NOTICE = /Inputs changed since this plan was computed/i;
+const STALE_NOTICE = /Since this plan was computed/i;
 
 const card = (page: Page) => page.getByRole('article', { name: 'Optimizer', exact: true });
 const headline = (page: Page) => page.getByTestId('home-optimizer-headline');

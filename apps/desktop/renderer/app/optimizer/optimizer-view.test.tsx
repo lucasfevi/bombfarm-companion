@@ -43,7 +43,7 @@ function render() {
 function idleOptimizerHook(): OptimizerSnapshotHook {
   return {
     state: { status: 'idle' },
-    planState: { runStatus: 'idle', runId: null, plan: null, signature: null, heroes: null, openHeroIds: null },
+    planState: { runStatus: 'idle', runId: null, plan: null, signature: null, heroes: null, basis: null, openHeroIds: null },
     stale: false,
     hasAccount: false,
     runner: {} as OptimizerSnapshotHook['runner'],

@@ -17,6 +17,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createTeamPlanRunner, type TeamPlanRunnerHandle, type TeamPlanRunStatus } from '@bombfarm/team-plan/runner';
+import type { PlanBasis } from '@bombfarm/team-plan/core';
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { AccountView } from '@bombfarm/contracts';
@@ -44,7 +45,7 @@ export interface OptimizerSnapshotActions {
   readonly open: (view: AccountView, sourceKey: string, farmChosenPhase: number | null) => void;
   /** The player asked for the live account. Adopts it. */
   readonly refresh: (view: AccountView, sourceKey: string, farmChosenPhase: number | null) => void;
-  readonly startRun: (runId: string, signature: string, heroes: readonly HeroRecord[]) => void;
+  readonly startRun: (runId: string, signature: string, heroes: readonly HeroRecord[], basis: PlanBasis) => void;
   readonly resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
   readonly applyPlan: (runId: string, plan: TeamPlan) => void;
   readonly clearPlan: () => void;
@@ -132,8 +133,8 @@ export function createOptimizerStore(): {
     refresh: (view, sourceKey, farmChosenPhase) => {
       adopt('refresh', view, sourceKey, farmChosenPhase);
     },
-    startRun: (runId, signature, heroes) => {
-      dispatchPlan({ kind: 'startRun', runId, signature, heroes });
+    startRun: (runId, signature, heroes, basis) => {
+      dispatchPlan({ kind: 'startRun', runId, signature, heroes, basis });
     },
     resolveRun: (runId, status) => {
       dispatchPlan({ kind: 'resolveRun', runId, status });
@@ -204,7 +205,7 @@ export interface OptimizerSnapshotHook {
   readonly runner: TeamPlanRunnerHandle;
   readonly open: () => void;
   readonly refresh: () => void;
-  readonly startRun: (runId: string, signature: string, heroes: readonly HeroRecord[]) => void;
+  readonly startRun: (runId: string, signature: string, heroes: readonly HeroRecord[], basis: PlanBasis) => void;
   readonly resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
   readonly applyPlan: (runId: string, plan: TeamPlan) => void;
   readonly clearPlan: () => void;
@@ -252,8 +253,8 @@ export function useOptimizerSnapshot(): OptimizerSnapshotHook {
     sharedOptimizerStore().refresh(liveView, liveKey, loadFarmView().selectedPhase);
   }, [liveView, liveKey]);
 
-  const startRun = useCallback((runId: string, signature: string, heroes: readonly HeroRecord[]) => {
-    sharedOptimizerStore().startRun(runId, signature, heroes);
+  const startRun = useCallback((runId: string, signature: string, heroes: readonly HeroRecord[], basis: PlanBasis) => {
+    sharedOptimizerStore().startRun(runId, signature, heroes, basis);
   }, []);
 
   const resolveRun = useCallback((runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => {

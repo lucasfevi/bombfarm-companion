@@ -1,16 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useRef, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Button, InfoTip, Panel, Tooltip, panelHClass, panelTitleClass } from '@bombfarm/ui';
 import type { Lang } from '@bombfarm/hero/copy';
-import { buildTeamPlanInput, countOptimizeScopeHeroes, isFarmObjectiveUnavailable } from '../core';
 import { resolveTeamPlanTargetPhase } from '../core/plan-lifecycle';
 import type { TeamPlanScreenCopy } from '../copy';
 import { teamPlanObjectiveCopy } from '../model/objective-copy';
 import { optimizeAriaFor } from '../model/setup-copy';
-import { runnerMarksAtMount, runnerMarksBeforeRun, runnerReports } from '../model/runner-reports';
-import type { TeamPlanRunner } from '../runner';
 import type { TeamPlanScreenActions, TeamPlanScreenData } from './team-plan-screen';
+import type { OptimizeAction } from './use-optimize-action';
 import { AllowedChangesField } from './allowed-changes-field';
 import { ForgeFloorField } from './forge-floor-field';
 import { IgnoreCrowdingField } from './ignore-crowding-field';
@@ -22,44 +20,21 @@ export function TeamPlanToolbar({
   lang,
   data,
   actions,
-  runner,
+  optimize,
   setupFields,
 }: {
   t: TeamPlanScreenCopy;
   lang: Lang;
   data: TeamPlanScreenData;
   actions: TeamPlanScreenActions;
-  runner: TeamPlanRunner;
+  /** The screen's one run trigger — shared with the ledger's "build again", so both presses are
+   *  the same press. */
+  optimize: OptimizeAction;
   setupFields?: ReactNode;
 }) {
   const copy = teamPlanObjectiveCopy(t, data.controls.objective);
+  const { busy, farmBlocked, scopeEmpty } = optimize;
   const resolvedTargetPhase = resolveTeamPlanTargetPhase(data.inputs, data.controls);
-  const farmUnavailable = isFarmObjectiveUnavailable(data.inputs.maxPhase, resolvedTargetPhase);
-  const farmBlocked = data.controls.objective === 'farm' && farmUnavailable;
-  const scopeEmpty = countOptimizeScopeHeroes(data.inputs.heroes, data.controls.scopeByHeroId) === 0;
-  // Seeded from the runner as it stands at mount, never from nothing: a host-owned runner
-  // outlives this screen, and a run it already finished was handed over on the mount that
-  // started it — see `runnerMarksAtMount`.
-  const marksRef = useRef(runnerMarksAtMount(runner));
-
-  const handleOptimize = useCallback(() => {
-    if (countOptimizeScopeHeroes(data.inputs.heroes, data.controls.scopeByHeroId) === 0) return;
-    if (data.controls.objective === 'farm' && farmUnavailable) return;
-    marksRef.current = runnerMarksBeforeRun(marksRef.current);
-    runner.run(buildTeamPlanInput(data.inputs, data.controls));
-  }, [runner, data.inputs, data.controls, farmUnavailable]);
-
-  useEffect(() => {
-    const { reports, marks } = runnerReports(runner, marksRef.current);
-    marksRef.current = marks;
-    for (const report of reports) {
-      if (report.kind === 'startRun') actions.startRun(report.runId);
-      else if (report.kind === 'applyPlan') actions.applyPlan(report.runId, report.plan);
-      else actions.resolveRun(report.runId, report.status);
-    }
-  }, [runner, actions]);
-
-  const busy = runner.status === 'running' || data.runStatus === 'running';
 
   return (
     <Panel focus>
@@ -119,7 +94,7 @@ export function TeamPlanToolbar({
             aria-busy={busy}
             aria-label={optimizeAriaFor(t, data.controls.allowedChanges)}
             className="min-h-12 w-full shrink-0 px-8 text-sm sm:w-auto sm:min-w-52"
-            onClick={handleOptimize}
+            onClick={optimize.run}
           >
             {busy ? t.teamPlanOptimizing : t.teamPlanOptimize}
           </Button>

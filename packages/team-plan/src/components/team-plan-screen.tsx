@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Button, workspaceClass } from '@bombfarm/ui';
 import { sub, type Lang } from '@bombfarm/hero/copy';
 import type { TeamPlanAllowedChanges, TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import type { TeamPlanInputs, TeamPlanControls, ScopeState, TeamPlanRunStatus } from '../core';
+import type { TeamPlanInputs, TeamPlanControls, ScopeState, TeamPlanRunStatus, PlanBasis } from '../core';
+import { describePlanChanges } from '../core';
 import type { TeamPlanScreenCopy } from '../copy';
 import { teamPlanObjectiveCopy } from '../model/objective-copy';
 import { teamPlanEmptyState, type TeamPlanEmptyStateKind } from '../model/empty-state';
@@ -16,6 +17,8 @@ import {
   type TeamPlanWorkerFactory,
 } from '../runner';
 import { TeamPlanToolbar } from './team-plan-toolbar';
+import { PlanChangesPanel } from './plan-changes-panel';
+import { useOptimizeAction } from './use-optimize-action';
 import { ScopeList } from './scope-list';
 import { TeamPlanRunSummary } from './team-plan-run-summary';
 import { TeamPlanOptimizingModal } from './team-plan-optimizing-modal';
@@ -32,6 +35,10 @@ export type TeamPlanScreenData = {
    *  no run. The result rows are drawn against this and not `inputs.heroes`: a hero the live
    *  roster has since dropped or re-keyed is still the hero the plan is about. */
   planHeroes: readonly HeroRecord[] | null;
+  /** The inputs and controls the run was solved from, frozen by the host at startRun — what the
+   *  ledger of changes is read against. `null` while there is no run, and for a plan a host
+   *  restored without them: the notice then says only that inputs changed. */
+  planBasis: PlanBasis | null;
   runStatus: TeamPlanRunStatus;
   runId: string | null;
   isStale: boolean;
@@ -96,6 +103,7 @@ export function TeamPlanScreenView({
   });
   const resultsRef = useRef<HTMLElement | null>(null);
   const wasRunningRef = useRef(false);
+  const optimize = useOptimizeAction(data, actions, runnerState);
 
   const objectiveCopy = teamPlanObjectiveCopy(t, controls.objective);
   const emptyStateKind = teamPlanEmptyState(heroes, inventoryItems, controls.scopeByHeroId);
@@ -107,6 +115,10 @@ export function TeamPlanScreenView({
   // holding a plan the host has since cleared.
   const displayPlan =
     runnerState.runId !== null && runnerState.runId === data.runId ? (runnerState.plan ?? data.plan) : data.plan;
+  const ledger = useMemo(
+    () => (data.planBasis === null ? null : describePlanChanges(data.planBasis, { inputs, controls }, displayPlan)),
+    [data.planBasis, inputs, controls, displayPlan],
+  );
   const blockedNames = runnerState.blockedHeroNames;
   const isRunning = data.runStatus === 'running' || runnerState.status === 'running';
 
@@ -128,7 +140,7 @@ export function TeamPlanScreenView({
         lang={lang}
         data={data}
         actions={actions}
-        runner={runnerState}
+        optimize={optimize}
         setupFields={slots.setupFields}
       />
       <ScopeList t={t} lang={lang} heroes={heroes} scopeByHeroId={controls.scopeByHeroId} onScope={actions.setScope} />
@@ -182,9 +194,22 @@ export function TeamPlanScreenView({
             ) : null}
 
             {data.isStale && displayPlan ? (
-              <p className="m-0 text-sm text-warn" role="status">
-                {t.teamPlanStaleNotice}
-              </p>
+              ledger !== null && data.planBasis !== null ? (
+                <PlanChangesPanel
+                  t={t}
+                  lang={lang}
+                  ledger={ledger}
+                  basis={data.planBasis}
+                  now={inputs}
+                  onRecompute={optimize.run}
+                  recomputeBlocked={optimize.blocked}
+                  busy={optimize.busy}
+                />
+              ) : (
+                <p className="m-0 text-sm text-warn" role="status">
+                  {t.teamPlanStaleNotice}
+                </p>
+              )
             ) : null}
 
             {displayPlan ? (

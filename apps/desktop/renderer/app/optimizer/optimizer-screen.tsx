@@ -20,6 +20,7 @@ import {
   computeTeamPlanInputSignature,
   isTeamPlanStale,
   mergeScopeForRoster,
+  type PlanBasis,
   type ScopeState,
   type TeamPlanControlChange,
 } from '@bombfarm/team-plan/core';
@@ -46,7 +47,7 @@ type OptimizerScreenRefresh = {
 };
 
 type OptimizerScreenActionsIn = {
-  startRun: (runId: string, signature: string, heroes: readonly HeroRecord[]) => void;
+  startRun: (runId: string, signature: string, heroes: readonly HeroRecord[], basis: PlanBasis) => void;
   resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
   applyPlan: (runId: string, plan: TeamPlan) => void;
   clearPlan: () => void;
@@ -110,6 +111,10 @@ export function OptimizerScreen({
   liveSignatureRef.current = liveSignature;
   const heroesRef = useRef(inputs.heroes);
   heroesRef.current = inputs.heroes;
+  // Frozen whole at startRun, the same way the heroes are: the ledger of what changed since the
+  // plan is read against these, not against whatever the snapshot holds when the plan lands.
+  const basisRef = useRef<PlanBasis>({ inputs, controls: mergedControls });
+  basisRef.current = { inputs, controls: mergedControls };
 
   const isStale = isTeamPlanStale(planState.signature, liveSignature);
 
@@ -119,6 +124,7 @@ export function OptimizerScreen({
       controls: mergedControls,
       plan: planState.plan,
       planHeroes: planState.heroes,
+      planBasis: planState.basis,
       runStatus: planState.runStatus,
       runId: planState.runId,
       isStale,
@@ -129,6 +135,7 @@ export function OptimizerScreen({
       mergedControls,
       planState.plan,
       planState.heroes,
+      planState.basis,
       planState.runStatus,
       planState.runId,
       isStale,
@@ -157,7 +164,7 @@ export function OptimizerScreen({
         onControlChange({ kind: 'targetPhase', value });
       },
       startRun: (runId: string) => {
-        actions.startRun(runId, liveSignatureRef.current, heroesRef.current);
+        actions.startRun(runId, liveSignatureRef.current, heroesRef.current, basisRef.current);
       },
       resolveRun: actions.resolveRun,
       applyPlan: actions.applyPlan,
