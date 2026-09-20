@@ -18,6 +18,7 @@ import { useEffect, useRef, useState } from 'react';
 import { cn, Tooltip } from '@bombfarm/ui';
 import { sub, useCopy, type Copy } from '../lib/copy';
 import { accountReadRefusalText } from '../lib/account-read-labels';
+import type { FeedRefusal } from '../lib/feeds/use-update-check';
 import { formatAge, formatCapturedAt } from '../lib/format';
 import { FEED_CYCLE_MS, feedAgeMs, feedMeter, feedNextInMs, feedsReadBy, type FeedId } from '../lib/feeds/feed-clock';
 import type { FeedView, FeedsHook, RefreshAllState } from '../lib/feeds/use-feeds';
@@ -80,26 +81,44 @@ function feedWhat(feed: FeedId, t: Copy): string {
   }
 }
 
-/** The tooltip, top to bottom: the feed's name; what it is; where it stands; how it keeps itself
- *  fresh; why a press was refused; and, muted, what a click does — nothing while a read runs. */
-export type FeedTip = { title: string; lines: string[]; action: string | null };
+/**
+ * The tooltip: the feed's name, with where it stands at the top right ("Last read 2m ago",
+ * "Not read yet", "Reading now…"); what the feed is; a note when something is wrong — the screen
+ * computed from an older copy, or why a press was refused; and, muted and last, what a click does
+ * with the countdown to the next automatic read beside it — no countdown for a feed with no
+ * clock, no click line while a read runs.
+ */
+export type FeedTip = {
+  title: string;
+  status: string;
+  what: string;
+  note: string | null;
+  action: string | null;
+  /** "next in 37s", "due now", or nothing: the countdown beside the click line. */
+  next: string | null;
+};
+
+function feedRefusalText(reason: FeedRefusal, t: Copy): string {
+  switch (reason) {
+    case 'updates_off':
+      return t.feedsUpdatesOff;
+    case 'updates_busy':
+      return t.feedsUpdatesBusy;
+    default:
+      return accountReadRefusalText(reason, t);
+  }
+}
 
 export function feedWords(feed: FeedView, t: Copy, now: number): FeedTip {
   const ageMs = feedAgeMs(feed.capturedAt, now);
   const working = feed.busy || feed.readState.kind === 'working';
-  const lines = [feedWhat(feed.id, t)];
-  if (working) lines.push(t.feedsReadingNow);
-  else if (feed.outOfDate) lines.push(t.feedsOutOfDate);
-  else if (feed.capturedAt === null) lines.push(t.feedsNeverRead);
-  else lines.push(sub(t.feedsLastRead, { age: formatCapturedAt(feed.capturedAt, t, now) }));
+  const status = working ? t.feedsReadingNow : feed.capturedAt === null ? t.feedsNeverRead : sub(t.feedsLastRead, { age: formatCapturedAt(feed.capturedAt, t, now) });
   const cycle = cycleText(feed.id, t);
-  if (cycle === null) lines.push(t.feedsNoClock);
-  else {
-    const nextIn = feedNextInMs(feed.id, ageMs);
-    lines.push(nextIn === null ? sub(t.feedsEveryUnread, { cycle }) : nextIn === 0 ? sub(t.feedsEveryDue, { cycle }) : sub(t.feedsEvery, { cycle, age: formatAge(nextIn, t) }));
-  }
-  if (feed.readState.kind === 'refused') lines.push(accountReadRefusalText(feed.readState.reason, t));
-  return { title: feedName(feed.id, t), lines, action: working ? null : t.feedsClickToUpdate };
+  const what = cycle === null ? `${feedWhat(feed.id, t)} · ${t.feedsNoClock}` : `${feedWhat(feed.id, t)} · ${sub(t.feedsEvery, { cycle })}`;
+  const note = feed.outOfDate ? t.feedsOutOfDate : feed.readState.kind === 'refused' ? feedRefusalText(feed.readState.reason, t) : null;
+  const nextIn = feedNextInMs(feed.id, ageMs);
+  const next = nextIn === null ? null : nextIn === 0 ? t.feedsNextDue : sub(t.feedsNextIn, { age: formatAge(nextIn, t) });
+  return { title: feedName(feed.id, t), status, what, note, action: working ? null : t.feedsClickToUpdate, next };
 }
 
 function Ring({ state, left, landed, tone }: { state: RingState; left: number | null; landed: boolean; tone?: 'accent' | 'up' }) {
@@ -204,14 +223,21 @@ function FeedItem({ feed, t, now, muted }: { feed: FeedView; t: Copy; now: numbe
       />
       <Tooltip.Portal>
         <Tooltip.Positioner side="top" sideOffset={6}>
-          <Tooltip.Popup data-testid={`feed-${feed.id}-tip`}>
-            <p className="m-0 font-semibold">{tip.title}</p>
-            {tip.lines.map((sentence, index) => (
-              <p key={index} className="m-0">
-                {sentence}
+          <Tooltip.Popup data-testid={`feed-${feed.id}-tip`} className="min-w-64">
+            <div className="flex items-baseline justify-between gap-4">
+              <span className="text-[13px] font-semibold text-ink">{tip.title}</span>
+              <span data-testid={`feed-${feed.id}-tip-status`} className="text-[11px] text-muted">
+                {tip.status}
+              </span>
+            </div>
+            {tip.action ? (
+              <p className="m-0 text-[11px] text-muted">
+                {tip.action}
+                {tip.next ? <span className="font-mono tabular-nums"> · {tip.next}</span> : null}
               </p>
-            ))}
-            {tip.action ? <p className="m-0 mt-1 text-muted">{tip.action}</p> : null}
+            ) : null}
+            <p className="m-0 mt-1.5">{tip.what}</p>
+            {tip.note ? <p className={cn('m-0', 'mt-1', feed.outOfDate ? 'text-warn' : 'text-muted')}>{tip.note}</p> : null}
           </Tooltip.Popup>
         </Tooltip.Positioner>
       </Tooltip.Portal>

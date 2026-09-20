@@ -15,7 +15,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { UpdateStatus } from '@bombfarm/contracts';
 import { oldestCaptureOf } from '../account/account-facts';
-import { useAccountReadRequest, type AccountReadRequestState } from '../account/use-account-read-request';
+import { useAccountReadRequest } from '../account/use-account-read-request';
 import { useAccountView } from '../account/use-account-view';
 import { usePvpHistory } from '../pvp/use-pvp-history';
 import { usePvpRefresh } from '../pvp/use-pvp-refresh';
@@ -23,6 +23,7 @@ import { useMarketSnapshot } from '../market/use-market-snapshot';
 import { useScreenRefresh } from '../refresh/screen-refresh-store';
 import { FEED_IDS, type FeedId } from './feed-clock';
 import { useMarketCheck } from './use-market-check';
+import { useUpdateCheck, type FeedPressState } from './use-update-check';
 
 export type FeedView = {
   readonly id: FeedId;
@@ -32,7 +33,7 @@ export type FeedView = {
   readonly outOfDate: boolean;
   /** The screen on show is recomputing — the account feed only. */
   readonly busy: boolean;
-  readonly readState: AccountReadRequestState;
+  readonly readState: FeedPressState;
   readonly request: () => void;
 };
 
@@ -57,7 +58,7 @@ const STEP_POLL_MS = 500;
  * refusal) settles at once; one that started settles when its push lands or its own ceiling
  * passes, and a press whose state never moved at all is left behind once overdue.
  */
-export function sequenceDecision(readState: AccountReadRequestState, pressed: boolean, overdue: boolean): 'press' | 'wait' | 'advance' {
+export function sequenceDecision(readState: FeedPressState, pressed: boolean, overdue: boolean): 'press' | 'wait' | 'advance' {
   if (!pressed) return 'press';
   if (readState.kind === 'working' && !overdue) return 'wait';
   return 'advance';
@@ -70,7 +71,7 @@ export function useFeeds({
 }: {
   activeTabId: string;
   updateStatus: UpdateStatus | null;
-  onUpdateCheck: () => void;
+  onUpdateCheck: () => Promise<UpdateStatus | null>;
 }): FeedsHook {
   const screen = useScreenRefresh(activeTabId);
   const account = useAccountView();
@@ -83,7 +84,7 @@ export function useFeeds({
   const { state: market } = useMarketSnapshot();
   const marketCheck = useMarketCheck();
 
-  const updatesWorking = updateStatus?.phase === 'checking';
+  const updateCheck = useUpdateCheck(updateStatus, onUpdateCheck);
 
   const feeds = useMemo<FeedView[]>(
     () => [
@@ -125,11 +126,11 @@ export function useFeeds({
         capturedAt: updateStatus?.lastCheckedAt ?? null,
         outOfDate: false,
         busy: false,
-        readState: updatesWorking ? { kind: 'working' } : { kind: 'idle' },
-        request: onUpdateCheck,
+        readState: updateCheck.state,
+        request: updateCheck.request,
       },
     ],
-    [screen, live, liveRead, pvp, pvpRefresh, market.view, marketCheck, updateStatus?.lastCheckedAt, updatesWorking, onUpdateCheck],
+    [screen, live, liveRead, pvp, pvpRefresh, market.view, marketCheck, updateStatus?.lastCheckedAt, updateCheck],
   );
 
   // The sequence: a step is requested once, waited on until its press settles, then the next. A

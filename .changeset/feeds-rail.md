@@ -19,8 +19,10 @@ down, so a glance says whether pressing is even worth it. A read in flight spins
 lights the ring's centre for a moment; the PVP standing, which has no clock of its own, draws a
 dotted ring. No figures at rest — the last read, the cycle and the countdown are the tooltip's.
 Each item is a button. A press that starts nothing — the game closed, a second press inside the
-floor, no server behind a fixture — shows the one word "refused" beside the ring, with the reason
-in the tooltip; only "out of date" takes the warn tone, never age and never a refusal.
+floor, no server behind a fixture, a build with no update channel — shows the one word "refused"
+beside the ring, with the reason in the tooltip; only "out of date" takes the warn tone, never
+age and never a refusal. The tooltip is the feed's name with its last read beside it, the click
+line with the countdown to its next automatic read, and what the feed is.
 
 **Refresh all, one after another.** The button at the rail's end — itself a ring that fills a
 quarter per step — presses all four in turn, Account → PVP → Prices → Updates, counting the

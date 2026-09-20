@@ -87,7 +87,7 @@ describe('FeedsRail — four rings beside four names, and one ring for all of th
     expect(tagOf(html, 'account-refresh')).not.toContain('disabled=""');
     expect(html).toContain(`data-testid="feed-account-word"`);
     expect(html).toContain(en.feedsRefused);
-    // The reason itself is the tooltip's last sentence — see feedWords below; a closed tooltip renders nothing.
+    // The reason itself is the tooltip's note — see feedWords below; a closed tooltip renders nothing.
     expect(ringOf(html, 'account-refresh')).not.toContain('stroke-warn');
   });
 
@@ -129,40 +129,42 @@ describe('FeedsRail — four rings beside four names, and one ring for all of th
   });
 });
 
-describe('feedWords — the tooltip says what the feed is, where it stands, how it keeps fresh, and what a click does', () => {
-  it('a feed with a clock: its name, what it is, the last read, its cycle with the countdown, and the click line', () => {
+describe('feedWords — the tooltip: the name with the last read beside it, the click line with the countdown, what the feed is, and a note when something is wrong', () => {
+  it('a feed with a clock: its name, the last read, the click line with the countdown, its cycle, and no note', () => {
     expect(feedWords(feed({ id: 'market', capturedAt: ago(5 * 60_000) }), en, NOW)).toEqual({
       title: en.feedsPrices,
-      lines: [
-        en.feedsWhatPrices,
-        sub(en.feedsLastRead, { age: en.ageMinutes.replace('{n}', '5') }),
-        sub(en.feedsEvery, { cycle: sub(en.feedsCycleMinutes, { n: 15 }), age: sub(en.ageShortMinutes, { n: 10 }) }),
-      ],
+      status: sub(en.feedsLastRead, { age: en.ageMinutes.replace('{n}', '5') }),
       action: en.feedsClickToUpdate,
+      next: sub(en.feedsNextIn, { age: sub(en.ageShortMinutes, { n: 10 }) }),
+      what: `${en.feedsWhatPrices} · ${sub(en.feedsEvery, { cycle: sub(en.feedsCycleMinutes, { n: 15 }) })}`,
+      note: null,
     });
   });
 
   it("the account's clock is a minute, and a due refresh is said to be due", () => {
     const words = feedWords(feed({ id: 'account', capturedAt: ago(90_000) }), en, NOW);
-    expect(words.lines[2]).toBe(sub(en.feedsEveryDue, { cycle: sub(en.feedsCycleMinutes, { n: 1 }) }));
+    expect(words.next).toBe(en.feedsNextDue);
+    expect(words.what).toContain(sub(en.feedsEvery, { cycle: sub(en.feedsCycleMinutes, { n: 1 }) }));
   });
 
-  it('the PVP standing says it has no clock of its own', () => {
-    expect(feedWords(feed({ id: 'pvp' }), en, NOW).lines[2]).toBe(en.feedsNoClock);
+  it('the PVP standing has no clock, so no countdown beside the click line', () => {
+    const words = feedWords(feed({ id: 'pvp' }), en, NOW);
+    expect(words.next).toBeNull();
+    expect(words.what).toBe(`${en.feedsWhatPvp} · ${en.feedsNoClock}`);
   });
 
-  it('a feed never read says so in words, and its cycle without a countdown', () => {
+  it('a feed never read says so where the last read would be, and has no countdown yet', () => {
     const words = feedWords(feed({ id: 'updates', capturedAt: null }), en, NOW);
-    expect(words.lines[1]).toBe(en.feedsNeverRead);
-    expect(words.lines[2]).toBe(sub(en.feedsEveryUnread, { cycle: sub(en.feedsCycleMinutes, { n: 20 }) }));
+    expect(words.status).toBe(en.feedsNeverRead);
+    expect(words.next).toBeNull();
     expect(words.action).toBe(en.feedsClickToUpdate);
   });
 
-  it('a refusal adds its reason as the last line; out of date is a sentence; a running read has no click line', () => {
-    expect(feedWords(feed({ id: 'pvp', readState: { kind: 'refused', reason: 'rate_limited' } }), en, NOW).lines.at(-1)).toBe(en.accountReadRecent);
-    expect(feedWords(feed({ id: 'account', outOfDate: true }), en, NOW).lines[1]).toBe(en.feedsOutOfDate);
+  it('a refusal is the note; out of date is the note; a running read is the status and has no click line', () => {
+    expect(feedWords(feed({ id: 'pvp', readState: { kind: 'refused', reason: 'rate_limited' } }), en, NOW).note).toBe(en.accountReadRecent);
+    expect(feedWords(feed({ id: 'account', outOfDate: true }), en, NOW).note).toBe(en.feedsOutOfDate);
     const reading = feedWords(feed({ id: 'account', readState: { kind: 'working' } }), en, NOW);
-    expect(reading.lines[1]).toBe(en.feedsReadingNow);
+    expect(reading.status).toBe(en.feedsReadingNow);
     expect(reading.action).toBeNull();
   });
 });

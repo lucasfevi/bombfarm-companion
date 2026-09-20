@@ -309,10 +309,12 @@ function HomePageContent({
   }, []);
 
   // Stable, because the status strip's rail keys its refresh-all sequence on the presses it holds.
-  const onUpdateCheck = useCallback(() => {
+  const onUpdateCheck = useCallback(async (): Promise<UpdateStatus | null> => {
     const bridge = getBridge();
-    if (!bridge) return;
-    void bridge.invoke('updates:check').then(setUpdateStatus);
+    if (!bridge) return null;
+    const status = await bridge.invoke('updates:check');
+    setUpdateStatus(status);
+    return status;
   }, []);
 
   const onUpdateDownload = () => {
@@ -465,7 +467,9 @@ function HomePageContent({
               <DiagnosticsSection onSave={onSaveDiagnostics} result={diagnosticsDumpResult} />
               <UpdatesSection
                 status={updateStatus}
-                onCheck={onUpdateCheck}
+                onCheck={() => {
+                  void onUpdateCheck();
+                }}
                 onDownload={onUpdateDownload}
                 onInstall={onUpdateInstall}
               />

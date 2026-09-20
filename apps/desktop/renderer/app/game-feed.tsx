@@ -8,6 +8,10 @@
  *
  * The Live tab's corner dot reads from the same status through {@link liveTabMark}, so the two
  * can never disagree.
+ *
+ * The dot sits a pixel above the line box's centre: the word is capitals, whose ink sits high in
+ * the box over the descender space they never use, so centring the boxes leaves the dot's ink a
+ * pixel below the letters' (measured on the launched app, 2026-09-20).
  */
 import type { AppNavItemMark } from '@bombfarm/ui';
 import { cn, Tooltip } from '@bombfarm/ui';
@@ -59,7 +63,7 @@ export function GameFeed({ status }: { status: GameStatusInfo | null }) {
               data-game={status?.status ?? 'loading'}
               className={cn('inline-flex', 'cursor-default', 'items-center', 'gap-2', 'py-1')}
             >
-              <span aria-hidden data-testid="game-feed-dot" className={cn('size-[7px]', 'shrink-0', 'rounded-full', dotClass)} />
+              <span aria-hidden data-testid="game-feed-dot" className={cn('relative', '-top-px', 'size-[7px]', 'shrink-0', 'rounded-full', dotClass)} />
               <span data-testid="game-feed-value" className={cn('text-[10px]', 'leading-none', 'font-semibold', 'tracking-[0.06em]', 'uppercase', wordClass)}>
                 {word}
               </span>

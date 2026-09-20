@@ -195,13 +195,13 @@ test.describe('forge plan smoke', () => {
       await expect(page.getByTestId('feed-account-tip')).toHaveCount(0);
       await refreshButton.hover();
       await expect(page.getByTestId('feed-account-tip')).toContainText('Your heroes, bag, skill tree and house');
-      await expect(page.getByTestId('feed-account-tip')).toContainText('Last read');
+      await expect(page.getByTestId('feed-account-tip-status')).toContainText('Last read');
       await expect(page.getByTestId('feed-account-tip')).toContainText('Click to update now');
 
       // Pressing it asks main to go and read, rather than re-showing what was already in hand —
       // and a fixture has no server behind it, so the one thing the press must not do is look
       // like it worked. This is also the state a real player reaches with the game closed. The
-      // refusal is the one word beside the ring; its reason is the tooltip's last sentence.
+      // refusal is the one word beside the ring; its reason is the tooltip's note.
       await refreshButton.click();
       await expect(refreshButton).toHaveAttribute('data-state', 'refused');
       await expect(rail.getByTestId('feed-account-word')).toHaveText('refused');
@@ -211,6 +211,15 @@ test.describe('forge plan smoke', () => {
       await expect(page.getByTestId('feed-account-tip')).toContainText('No server to read from');
       // Refused is not working: nothing is in flight, so the button is pressable again.
       await expect(refreshButton).toBeEnabled();
+
+      // The Updates press on a build with no channel to ask: main answers with the status it
+      // already had, and the press must say so rather than do nothing.
+      const updatesButton = rail.getByTestId('feed-updates-refresh');
+      await updatesButton.click();
+      await expect(updatesButton).toHaveAttribute('data-state', 'refused');
+      await page.mouse.move(0, 0);
+      await updatesButton.hover();
+      await expect(page.getByTestId('feed-updates-tip')).toContainText('This build does not check for updates');
 
       // Clearing is a button beside the fields now, not a chip, and it is there only while a
       // filter is on.
