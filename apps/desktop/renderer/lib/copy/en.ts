@@ -535,6 +535,8 @@ export const en = {
   forgeQueueAddedAria: '{item} is in the forge queue, to {target}',
   forgeQueueAlreadyForged: 'Forged',
   forgeQueueAlreadyForgedAria: '{item} is already forged to {target}',
+  forgeQueueGone: 'Not in bag',
+  forgeQueueGoneAria: '{item} is not in the bag any more',
   forgeQueueTitle: 'Forge queue',
   forgeQueueOpenForge: 'Forge queue — open the Forge tab',
   forgeQueueForged: '{done}/{total} forged',

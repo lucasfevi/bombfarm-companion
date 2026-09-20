@@ -20,10 +20,11 @@ vi.mock('../../lib/forge/forge-queue-store', () => ({
 
 const { ForgeQueueAdd } = await import('./forge-queue-add');
 
-function loadedBag(upgrade: number): AccountViewState {
+function loadedBag(upgrade: number | null): AccountViewState {
+  const items = upgrade === null ? [] : [{ id: 'ring', def_id: 'ash_ring', upgrade }];
   return {
     status: 'loaded',
-    view: { payload: { items: [{ id: 'ring', def_id: 'ash_ring', upgrade }] } } as never,
+    view: { payload: { items } } as never,
     applied: 1,
     key: 'account',
   };
@@ -69,11 +70,27 @@ describe('ForgeQueueAdd reads the piece off the live bag before it reads the que
     }
   });
 
+  it('says the piece is gone, and takes no press, once a read bag no longer holds it', () => {
+    const html = render(QUEUED, loadedBag(null));
+    expect(html).toContain(`>${en.forgeQueueGone}<`);
+    expect(html).toContain('data-gone="true"');
+    expect(html).toContain('disabled=""');
+    expect(html).toContain('Ash Ring is not in the bag any more');
+    expect(html).not.toContain('data-queued');
+    expect(html).not.toContain('data-forged');
+  });
+
   it('the bag wins over a stale queue entry for the same piece', () => {
     const html = render(QUEUED, loadedBag(12));
     expect(html).toContain(`>${en.forgeQueueAlreadyForged}<`);
     expect(html).not.toContain('data-queued');
     expect(html).not.toContain('aria-pressed');
+  });
+
+  it('a payload with no bag section says nothing about the piece', () => {
+    const noBag = { status: 'loaded', view: { payload: {} } as never, applied: 1, key: 'account' } as AccountViewState;
+    expect(render(EMPTY_FORGE_QUEUE, noBag)).toContain(`>${en.forgeQueueAdd}<`);
+    expect(render(QUEUED, noBag)).toContain(`>${en.forgeQueueAdded}<`);
   });
 
   it('without a loaded account, only the queue speaks', () => {

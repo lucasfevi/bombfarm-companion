@@ -45,9 +45,16 @@ export function bagUpgrades(gear: readonly InventoryViewItem[]): Map<string, num
   return new Map(gear.map((item) => [item.id, item.upgrade]));
 }
 
-/** Where one piece stands in the bag as the account payload carries it now — decoded the way the
- *  bag itself is — or null once the piece has left it. */
-export function bagUpgradeOf(rawItems: readonly unknown[] | undefined, itemId: string): number | null {
-  const raw = rawItems?.find((candidate) => (candidate as { id?: unknown } | null)?.id === itemId);
-  return raw === undefined ? null : (mapInventoryViewItem(raw)?.upgrade ?? null);
+/**
+ * Where one piece stands in the bag as the account payload carries it now, decoded the way the
+ * bag itself is. `gone` is a bag that was read and no longer holds the piece; `unknown` is a
+ * payload with no bag to read, which says nothing about the piece.
+ */
+export type BagStanding = { kind: 'held'; upgrade: number } | { kind: 'gone' } | { kind: 'unknown' };
+
+export function bagStandingOf(rawItems: readonly unknown[] | undefined, itemId: string): BagStanding {
+  if (rawItems === undefined) return { kind: 'unknown' };
+  const raw = rawItems.find((candidate) => (candidate as { id?: unknown } | null)?.id === itemId);
+  const upgrade = raw === undefined ? undefined : mapInventoryViewItem(raw)?.upgrade;
+  return upgrade === undefined ? { kind: 'gone' } : { kind: 'held', upgrade };
 }

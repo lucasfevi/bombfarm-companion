@@ -8,16 +8,17 @@
  * where the gold question is asked.
  *
  * The bag is the truth about where the piece stands now, so the button reads it directly: a piece
- * the live bag already holds at or past the target says "Forged" and takes no press. The Optimizer
- * draws its plan from a pinned snapshot, so without this a piece the queue has just finished came
- * back as "Add to queue" — and a press re-queued it only for the next account read to drop it.
+ * the live bag already holds at or past the target says "Forged", one the bag no longer holds says
+ * so, and neither takes a press. The Optimizer draws its plan from a pinned snapshot, so without
+ * this a piece the queue had just finished came back as "Add to queue" — and a press re-queued it
+ * only for the next account read to drop it.
  */
 import { useCallback } from 'react';
 import { Button, cn } from '@bombfarm/ui';
 import { sub, useCopy } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
 import { addToForgeQueue, useForgeQueue } from '../../lib/forge/forge-queue-store';
-import { bagUpgradeOf } from '../../lib/forge/forge-queue-view';
+import { bagStandingOf } from '../../lib/forge/forge-queue-view';
 import { forgeLevel } from './forge-labels';
 
 export function ForgeQueueAdd({
@@ -36,29 +37,38 @@ export function ForgeQueueAdd({
   const t = useCopy();
   const queue = useForgeQueue();
   const account = useAccountView();
-  const upgrade = account.status === 'loaded' ? bagUpgradeOf(account.view.payload.items, itemId) : null;
-  const forged = upgrade !== null && upgrade >= target;
-  const queued = !forged && queue.pieces.some((piece) => piece.itemId === itemId && piece.target === target);
+  const standing = account.status === 'loaded' ? bagStandingOf(account.view.payload.items, itemId) : { kind: 'unknown' as const };
+  const forged = standing.kind === 'held' && standing.upgrade >= target;
+  const gone = standing.kind === 'gone';
+  const settled = forged || gone;
+  const queued = !settled && queue.pieces.some((piece) => piece.itemId === itemId && piece.target === target);
   const level = forgeLevel(target);
 
   const onPress = useCallback(() => {
     addToForgeQueue(itemId, target);
   }, [itemId, target]);
 
-  const label = forged ? t.forgeQueueAlreadyForged : queued ? t.forgeQueueAdded : t.forgeQueueAdd;
-  const ariaLabel = forged ? t.forgeQueueAlreadyForgedAria : queued ? t.forgeQueueAddedAria : t.forgeQueueAddAria;
+  const label = forged ? t.forgeQueueAlreadyForged : gone ? t.forgeQueueGone : queued ? t.forgeQueueAdded : t.forgeQueueAdd;
+  const ariaLabel = forged
+    ? t.forgeQueueAlreadyForgedAria
+    : gone
+      ? t.forgeQueueGoneAria
+      : queued
+        ? t.forgeQueueAddedAria
+        : t.forgeQueueAddAria;
 
   return (
     <Button
       type="button"
-      variant={queued || forged ? 'ghost' : 'default'}
-      className={cn('whitespace-nowrap', (queued || forged) && 'text-up', className)}
-      aria-pressed={forged ? undefined : queued}
-      disabled={disabled || forged}
+      variant={queued || settled ? 'ghost' : 'default'}
+      className={cn('whitespace-nowrap', (queued || forged) && 'text-up', gone && 'text-muted', className)}
+      aria-pressed={settled ? undefined : queued}
+      disabled={disabled || settled}
       aria-label={sub(ariaLabel, { item: itemName, target: level })}
       data-testid="forge-queue-add"
       data-queued={queued ? 'true' : undefined}
       data-forged={forged ? 'true' : undefined}
+      data-gone={gone ? 'true' : undefined}
       onClick={onPress}
     >
       {label}

@@ -511,6 +511,8 @@ export const ptBR: Copy = {
   forgeQueueAddedAria: '{item} está na fila de forja, até {target}',
   forgeQueueAlreadyForged: 'Forjada',
   forgeQueueAlreadyForgedAria: '{item} já está forjada até {target}',
+  forgeQueueGone: 'Fora da mochila',
+  forgeQueueGoneAria: '{item} não está mais na mochila',
   forgeQueueTitle: 'Fila de forja',
   forgeQueueOpenForge: 'Fila de forja — abrir a aba Forja',
   forgeQueueForged: '{done}/{total} forjadas',
