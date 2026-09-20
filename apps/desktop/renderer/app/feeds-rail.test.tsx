@@ -10,7 +10,7 @@ vi.mock('../lib/copy', async (importOriginal) => {
   return { ...actual, useCopy: () => en };
 });
 
-const { FeedsRail, feedWords, ringGeometry, refreshAllFill } = await import('./feeds-rail');
+const { FeedsRail, feedWords, ringGeometry, ringMotion, refreshAllFill } = await import('./feeds-rail');
 
 const NOW = Date.now();
 const ago = (ms: number) => new Date(NOW - ms).toISOString();
@@ -126,6 +126,26 @@ describe('FeedsRail — four rings beside four names, and one ring for all of th
     const html = render();
     expect(html).not.toContain(' title=');
     expect(tagOf(html, 'feed-market-refresh')).toContain('data-slot="tooltip-trigger"');
+  });
+});
+
+describe("ringMotion — the ring drains on the browser's clock, so the rail never ticks at rest", () => {
+  it('runs the whole cycle as one animation, started the age already spent in', () => {
+    expect(ringMotion(feed({ id: 'account', capturedAt: ago(40_000) }), NOW)).toEqual({ kind: 'drain', cycleMs: 60_000, spentMs: 40_000 });
+    expect(ringMotion(feed({ id: 'market', capturedAt: ago(20 * 60_000) }), NOW)).toEqual({ kind: 'drain', cycleMs: 15 * 60_000, spentMs: 15 * 60_000 });
+  });
+
+  it('a feed with no clock, or never read, has no drain to run', () => {
+    expect(ringMotion(feed({ id: 'pvp' }), NOW)).toEqual({ kind: 'step' });
+    expect(ringMotion(feed({ id: 'updates', capturedAt: null }), NOW)).toEqual({ kind: 'step' });
+  });
+
+  it('the rendered arc carries the cycle as its duration and the age as a negative delay — no timer in React', () => {
+    const arc = ringOf(render(), 'account-refresh');
+    expect(arc).toContain('animation-name:feed-drain');
+    expect(arc).toContain('animation-duration:60000ms');
+    expect(arc).toMatch(/animation-delay:-40\d{3}ms/);
+    expect(ringOf(render(), 'feeds-refresh-all')).not.toContain('animation-name');
   });
 });
 

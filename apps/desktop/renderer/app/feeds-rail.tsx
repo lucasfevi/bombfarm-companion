@@ -14,7 +14,7 @@
  * and is itself a ring that fills a quarter per step. The feeds the tab on show does not read are
  * drawn muted — present and pressable, but not what that screen's numbers came from.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { cn, Tooltip } from '@bombfarm/ui';
 import { sub, useCopy, type Copy } from '../lib/copy';
 import { accountReadRefusalText } from '../lib/account-read-labels';
@@ -23,9 +23,8 @@ import { formatAge, formatCapturedAt } from '../lib/format';
 import { FEED_CYCLE_MS, feedAgeMs, feedMeter, feedNextInMs, feedsReadBy, type FeedId } from '../lib/feeds/feed-clock';
 import type { FeedView, FeedsHook, RefreshAllState } from '../lib/feeds/use-feeds';
 
-/** The ring drains over a minute on the account feed, so a two-second tick keeps it moving
- *  without costing anything. */
-const CLOCK_TICK_MS = 2_000;
+/** The tooltip's countdown ticks only while the tooltip is open; the rail itself never ticks. */
+const TIP_TICK_MS = 1_000;
 /** How long the centre stays lit after a read lands. */
 const LANDED_MS = 700;
 
@@ -121,7 +120,24 @@ export function feedWords(feed: FeedView, t: Copy, now: number): FeedTip {
   return { title: feedName(feed.id, t), status, what, note, action: working ? null : t.feedsClickToUpdate, next };
 }
 
-function Ring({ state, left, landed, tone }: { state: RingState; left: number | null; landed: boolean; tone?: 'accent' | 'up' }) {
+/** How the arc moves. A feed's ring drains on the browser's own clock — the animation runs the
+ *  feed's whole cycle, started `spentMs` in — so the rail renders once per read and never ticks.
+ *  The all-button's ring steps, so it transitions between the values it is handed. */
+type ArcMotion = { kind: 'drain'; cycleMs: number; spentMs: number } | { kind: 'step' };
+
+function arcStyle(motion: ArcMotion, left: number): CSSProperties {
+  if (motion.kind === 'step') return { strokeDashoffset: RING_C * (1 - left) };
+  return {
+    ['--feed-ring-circumference' as string]: String(RING_C),
+    animationName: 'feed-drain',
+    animationDuration: `${String(motion.cycleMs)}ms`,
+    animationDelay: `-${String(motion.spentMs)}ms`,
+    animationTimingFunction: 'linear',
+    animationFillMode: 'forwards',
+  };
+}
+
+function Ring({ state, left, landed, tone, motion }: { state: RingState; left: number | null; landed: boolean; tone?: 'accent' | 'up'; motion: ArcMotion }) {
   const arcClass = state === 'late' ? 'stroke-warn' : state === 'refused' ? 'stroke-line' : tone === 'accent' ? 'stroke-accent' : tone === 'up' ? 'stroke-up' : 'stroke-muted';
   const centre = state === 'late' ? { r: 2.5, className: 'fill-warn' } : landed ? { r: 2, className: 'fill-up' } : null;
   return (
@@ -136,10 +152,10 @@ function Ring({ state, left, landed, tone }: { state: RingState; left: number | 
           cx="8"
           cy="8"
           r={RING_R}
-          className={cn('fill-none', arcClass, 'transition-[stroke-dashoffset]', 'duration-1000', 'ease-linear')}
+          className={cn('fill-none', arcClass, motion.kind === 'step' && 'transition-[stroke-dashoffset]', 'duration-1000', 'ease-linear')}
           strokeWidth="2.2"
           strokeDasharray={RING_C}
-          strokeDashoffset={RING_C * (1 - (left ?? 1))}
+          style={arcStyle(motion, left ?? 1)}
           transform="rotate(-90 8 8)"
         />
       )}
@@ -168,10 +184,59 @@ function useLanded(capturedAt: string | null): boolean {
   return landed;
 }
 
-function FeedItem({ feed, t, now, muted }: { feed: FeedView; t: Copy; now: number; muted: boolean }) {
+/** The ring's drain, from the feed's clock and the age already spent; a step for a feed with
+ *  no arc to drain. */
+export function ringMotion(feed: FeedView, now: number): ArcMotion {
+  const cycleMs = FEED_CYCLE_MS[feed.id];
+  const ageMs = feedAgeMs(feed.capturedAt, now);
+  if (cycleMs === null || ageMs === null) return { kind: 'step' };
+  return { kind: 'drain', cycleMs, spentMs: Math.min(ageMs, cycleMs) };
+}
+
+/** The tooltip's words, re-read every second for as long as the tooltip is open — a closed
+ *  tooltip is not mounted, so nothing ticks at rest. */
+function FeedTipBody({ feed, t }: { feed: FeedView; t: Copy }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNow(Date.now());
+    }, TIP_TICK_MS);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, []);
+  const tip = feedWords(feed, t, now);
+  return (
+    <>
+      <div className="flex items-baseline justify-between gap-4">
+        <span className="text-[13px] font-semibold text-ink">{tip.title}</span>
+        <span data-testid={`feed-${feed.id}-tip-status`} className="text-[11px] text-muted">
+          {tip.status}
+        </span>
+      </div>
+      {tip.action ? (
+        <p className="m-0 text-[11px] text-muted">
+          {tip.action}
+          {tip.next ? (
+            <span className={cn('font-mono', 'tabular-nums')}>
+              {' · '}
+              {tip.next}
+            </span>
+          ) : null}
+        </p>
+      ) : null}
+      <p className="m-0 mt-1.5">{tip.what}</p>
+      {tip.note ? <p className={cn('m-0', 'mt-1', feed.outOfDate ? 'text-warn' : 'text-muted')}>{tip.note}</p> : null}
+    </>
+  );
+}
+
+function FeedItem({ feed, t, muted }: { feed: FeedView; t: Copy; muted: boolean }) {
+  // Read once per render, and the item renders only when the feed moves: the ring's drain from
+  // here on is the browser's, and the tooltip keeps its own clock while open.
+  const now = Date.now();
   const { state, left } = ringGeometry(feed, now);
   const landed = useLanded(feed.capturedAt);
-  const tip = feedWords(feed, t, now);
   const working = state === 'working';
   const testId = feed.id === 'account' ? 'account-refresh' : `feed-${feed.id}-refresh`;
 
@@ -185,7 +250,7 @@ function FeedItem({ feed, t, now, muted }: { feed: FeedView; t: Copy; now: numbe
             data-feed={feed.id}
             data-state={state}
             data-muted={muted}
-            aria-label={sub(t.feedsRefreshOne, { feed: tip.title })}
+            aria-label={sub(t.feedsRefreshOne, { feed: feedName(feed.id, t) })}
             aria-busy={working}
             disabled={working}
             onClick={feed.request}
@@ -212,7 +277,7 @@ function FeedItem({ feed, t, now, muted }: { feed: FeedView; t: Copy; now: numbe
               muted && 'opacity-40',
             )}
           >
-            <Ring state={state} left={left} landed={landed} />
+            <Ring state={state} left={left} landed={landed} motion={ringMotion(feed, now)} />
             <span className={cn('text-[10px]', 'leading-none', 'font-semibold', 'tracking-[0.06em]', 'uppercase', state === 'late' ? 'text-warn' : 'text-muted')}>{feedName(feed.id, t)}</span>
             {state === 'refused' ? (
               <span data-testid={`feed-${feed.id}-word`} className={cn('font-mono', 'text-[10px]', 'leading-none', 'text-muted', 'opacity-70')}>
@@ -225,25 +290,7 @@ function FeedItem({ feed, t, now, muted }: { feed: FeedView; t: Copy; now: numbe
       <Tooltip.Portal>
         <Tooltip.Positioner side="top" sideOffset={6}>
           <Tooltip.Popup data-testid={`feed-${feed.id}-tip`} className="min-w-64">
-            <div className="flex items-baseline justify-between gap-4">
-              <span className="text-[13px] font-semibold text-ink">{tip.title}</span>
-              <span data-testid={`feed-${feed.id}-tip-status`} className="text-[11px] text-muted">
-                {tip.status}
-              </span>
-            </div>
-            {tip.action ? (
-              <p className="m-0 text-[11px] text-muted">
-                {tip.action}
-                {tip.next ? (
-                  <span className={cn('font-mono', 'tabular-nums')}>
-                    {' · '}
-                    {tip.next}
-                  </span>
-                ) : null}
-              </p>
-            ) : null}
-            <p className="m-0 mt-1.5">{tip.what}</p>
-            {tip.note ? <p className={cn('m-0', 'mt-1', feed.outOfDate ? 'text-warn' : 'text-muted')}>{tip.note}</p> : null}
+            <FeedTipBody feed={feed} t={t} />
           </Tooltip.Popup>
         </Tooltip.Positioner>
       </Tooltip.Portal>
@@ -259,18 +306,8 @@ export function refreshAllFill(all: RefreshAllState): number {
 export function FeedsRail({ feeds, refreshAll, all, activeTabId }: FeedsHook & { activeTabId: string }) {
   const t = useCopy();
   const relevant = feedsReadBy(activeTabId);
-  const [now, setNow] = useState(() => Date.now());
   const [justFinished, setJustFinished] = useState(false);
   const wasRunning = useRef(all.running);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setNow(Date.now());
-    }, CLOCK_TICK_MS);
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, []);
 
   useEffect(() => {
     const finished = wasRunning.current && !all.running;
@@ -291,7 +328,7 @@ export function FeedsRail({ feeds, refreshAll, all, activeTabId }: FeedsHook & {
         {/* Muted: a feed this tab does not read, or a step the running sequence has not reached. */}
         <div className="flex items-stretch">
           {feeds.map((feed, index) => (
-            <FeedItem key={feed.id} feed={feed} t={t} now={now} muted={(all.running && index > all.step) || !relevant.includes(feed.id)} />
+            <FeedItem key={feed.id} feed={feed} t={t} muted={(all.running && index > all.step) || !relevant.includes(feed.id)} />
           ))}
         </div>
         <Tooltip.Root>
@@ -325,7 +362,7 @@ export function FeedsRail({ feeds, refreshAll, all, activeTabId }: FeedsHook & {
                   'focus-visible:outline-accent',
                 )}
               >
-                <Ring state="fresh" left={justFinished ? 1 : refreshAllFill(all)} landed={false} tone={justFinished ? 'up' : 'accent'} />
+                <Ring state="fresh" left={justFinished ? 1 : refreshAllFill(all)} landed={false} tone={justFinished ? 'up' : 'accent'} motion={{ kind: 'step' }} />
                 {all.running ? (
                   <span data-testid="feeds-refresh-all-step" className="font-mono text-[11px] tabular-nums">
                     {sub(t.feedsRefreshAllStep, { step: all.step + 1, total: all.total })}
