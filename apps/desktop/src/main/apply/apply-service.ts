@@ -2,16 +2,20 @@ import type {
   AccountReadResult,
   AccountSource,
   AppSettings,
+  ApplyDoneEvent,
   ApplyEquipUnit,
   ApplyEvent,
   ApplyFailed,
+  ApplyInjectRequest,
   ApplyPointsUnit,
   ApplyRunResult,
   ApplySkip,
   ApplyStartReason,
   ApplyStartRequest,
   ApplyStartResult,
+  ApplyStep,
   ApplyStopReason,
+  ApplyUnitEvent,
   ApplyUnitVerdict,
   ConsentRecord,
 } from '@bombfarm/contracts';
@@ -61,6 +65,8 @@ export interface ApplyServiceDeps {
   writerLock: WriterLock;
   requestReadNow: () => AccountReadResult;
   emit: (event: ApplyEvent) => void;
+  /** Armed by the test-only inject seam; taken at `start()`, right after the `busy` check. */
+  scripted?: { take(): ApplyInjectRequest | null };
   log: LogPort;
   /** Milliseconds. */
   now: () => number;
@@ -311,9 +317,64 @@ export function createApplyService(deps: ApplyServiceDeps): ApplyService {
     return { ok: false, reason };
   }
 
+  function synthesisedDone(script: ApplyInjectRequest, step: ApplyStep, replayed: readonly ApplyUnitEvent[], stop: 'finished' | 'stopped', durationMs: number): ApplyDoneEvent {
+    const made = replayed.filter((event) => event.status === 'ok').length;
+    const skipped: ApplySkip[] = replayed
+      .filter((event) => event.status === 'skipped')
+      .map((event) =>
+        event.code === undefined
+          ? { index: event.index, reason: event.reason as ApplySkip['reason'] }
+          : { index: event.index, reason: event.reason as ApplySkip['reason'], code: event.code },
+      );
+    const total = new Set(script.events.filter((event) => event.type === 'unit').map((event) => event.index)).size;
+    const goldSpent = replayed.reduce((sum, event) => sum + (event.goldSpent ?? 0), 0);
+    const result: ApplyRunResult = { step, total, made, skipped, failed: null, stop, stopCode: null, goldSpent, durationMs };
+    return { runId: script.runId, step, result };
+  }
+
+  async function runScripted(script: ApplyInjectRequest): Promise<void> {
+    const step: ApplyStep = script.events.find((event): event is Extract<ApplyEvent, { type: 'unit' }> => event.type === 'unit')?.step ?? 'equip';
+    deps.log.info({ scope: 'apply', event: 'run.scripted', runId: script.runId, events: script.events.length, gapMs: script.gapMs });
+
+    const startedAt = deps.now();
+    const replayed: ApplyUnitEvent[] = [];
+    let ended = false;
+    for (let index = 0; index < script.events.length; index++) {
+      // Always yields at least once, even for the first event with gapMs 0 — so the replay
+      // (including its first emit) never runs synchronously inside start()'s own call stack.
+      await deps.sleep(index > 0 ? script.gapMs : 0);
+      if (stopRequested) break;
+      const event = script.events[index];
+      if (!event) continue;
+      deps.emit(event);
+      if (event.type === 'unit') replayed.push(event);
+      if (event.type === 'done') {
+        ended = true;
+        break;
+      }
+    }
+    if (!ended) {
+      const durationMs = Math.max(0, deps.now() - startedAt);
+      deps.emit({ type: 'done', ...synthesisedDone(script, step, replayed, stopRequested ? 'stopped' : 'finished', durationMs) });
+    }
+    deps.writerLock.release('apply');
+    activeRunId = null;
+    stopRequested = false;
+  }
+
   return {
     start(request) {
       if (activeRunId !== null || deps.writerLock.holder !== null) return refuse('busy');
+
+      const script = deps.scripted?.take();
+      if (script) {
+        deps.writerLock.acquire('apply');
+        activeRunId = script.runId;
+        stopRequested = false;
+        void runScripted(script);
+        return { ok: true, runId: script.runId };
+      }
+
       if (!isApplyStartRequest(request)) return refuse('bad_request');
       if (deps.accountSource() === 'fixture') return refuse('offline');
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ApplyEquipUnit, ApplyEvent, ApplyPointsUnit, ApplyStartRequest } from '@bombfarm/contracts';
+import type { ApplyEquipUnit, ApplyEvent, ApplyInjectRequest, ApplyPointsUnit, ApplyStartRequest } from '@bombfarm/contracts';
 import { pointsToCommitVector } from '@bombfarm/domain/team-plan';
 import {
   SessionToken,
@@ -728,5 +728,130 @@ describe('the running wallet figure', () => {
     await untilDone(h.events);
     const okEvent = h.events.find((e): e is Extract<ApplyEvent, { type: 'unit' }> => e.type === 'unit' && e.status === 'ok');
     expect(okEvent).toMatchObject({ goldSpent: 0, walletAfter: 1_000 });
+  });
+});
+
+describe('a scripted run, armed through the inject seam', () => {
+  function scriptedDep(script: ApplyInjectRequest | null) {
+    let armed = script;
+    return {
+      take: () => {
+        const taken = armed;
+        armed = null;
+        return taken;
+      },
+    };
+  }
+
+  const UNIT_OK: ApplyEvent = { type: 'unit', runId: 'scripted-1', step: 'equip', index: 0, status: 'ok', goldSpent: 0, walletAfter: 1_000 };
+  const UNIT_SKIP: ApplyEvent = { type: 'unit', runId: 'scripted-1', step: 'equip', index: 1, status: 'skipped', reason: 'itemMissing' };
+  const SCRIPT_DONE: ApplyEvent = {
+    type: 'done',
+    runId: 'scripted-1',
+    step: 'equip',
+    result: { step: 'equip', total: 2, made: 1, skipped: [{ index: 1, reason: 'itemMissing' }], failed: null, stop: 'finished', stopCode: null, goldSpent: 0, durationMs: 5 },
+  };
+
+  it('answers ok with the script\'s runId, holds the lock, and isRunning() reports true', () => {
+    const h = harness({ scripted: scriptedDep({ runId: 'scripted-1', events: [UNIT_OK, SCRIPT_DONE], gapMs: 0 }) });
+    expect(h.service.start('anything at all')).toEqual({ ok: true, runId: 'scripted-1' });
+    expect(h.service.isRunning()).toBe(true);
+    expect(h.writerLock.holder).toBe('apply');
+  });
+
+  it('emits every scripted event in order, and releases the lock when the script carries its own done', async () => {
+    const h = harness({ scripted: scriptedDep({ runId: 'scripted-1', events: [UNIT_OK, UNIT_SKIP, SCRIPT_DONE], gapMs: 0 }) });
+    h.service.start('anything');
+    await untilDone(h.events);
+    expect(h.events).toEqual([UNIT_OK, UNIT_SKIP, SCRIPT_DONE]);
+    expect(h.writerLock.holder).toBeNull();
+    expect(h.service.isRunning()).toBe(false);
+  });
+
+  it('touches no transport, token, or requestReadNow', async () => {
+    let readTokenCalls = 0;
+    let readNowCalls = 0;
+    const h = harness({
+      scripted: scriptedDep({ runId: 'scripted-1', events: [UNIT_OK, SCRIPT_DONE], gapMs: 0 }),
+      readToken: () => {
+        readTokenCalls += 1;
+        return { ok: true, accountId: '486', token: SessionToken.create('sentinel-apply-do-not-leak'), mtimeMs: 1 };
+      },
+      requestReadNow: () => {
+        readNowCalls += 1;
+        return READ_OK;
+      },
+      consentStore: { read: () => consentRecord({ decision: 'declined' }) },
+      accountSource: () => 'fixture',
+    });
+    h.service.start('anything');
+    await untilDone(h.events);
+    expect(h.wire.requests).toHaveLength(0);
+    expect(readTokenCalls).toBe(0);
+    expect(readNowCalls).toBe(0);
+  });
+
+  it('sleeps gapMs between consecutive events (a 0ms sleep only defers the first past start()\'s own return)', async () => {
+    const sleeps: number[] = [];
+    const h = harness({
+      scripted: scriptedDep({ runId: 'scripted-1', events: [UNIT_OK, UNIT_SKIP, SCRIPT_DONE], gapMs: 250 }),
+      sleep: (ms) => {
+        sleeps.push(ms);
+        return Promise.resolve();
+      },
+    });
+    h.service.start('anything');
+    await untilDone(h.events);
+    expect(sleeps).toEqual([0, 250, 250]);
+  });
+
+  it('with gapMs 0, no event is emitted synchronously inside start() — the first still waits one macrotask', () => {
+    const h = harness({ scripted: scriptedDep({ runId: 'scripted-1', events: [UNIT_OK, SCRIPT_DONE], gapMs: 0 }) });
+    h.service.start('anything');
+    expect(h.events).toHaveLength(0);
+  });
+
+  it('a script with no done event gets a synthesised done { stop: "finished" }', async () => {
+    const h = harness({ scripted: scriptedDep({ runId: 'scripted-1', events: [UNIT_OK], gapMs: 0 }) });
+    h.service.start('anything');
+    const done = await untilDone(h.events);
+    expect(done.result).toMatchObject({ made: 1, total: 1, stop: 'finished', stopCode: null, failed: null });
+    expect(h.writerLock.holder).toBeNull();
+  });
+
+  it('stop(runId) mid-replay stops the remaining events and synthesises a done counting only what was replayed', async () => {
+    let runId: string | null = null;
+    const h = harness({
+      scripted: scriptedDep({ runId: 'scripted-1', events: [UNIT_OK, UNIT_SKIP, SCRIPT_DONE], gapMs: 10 }),
+      emit: (event) => {
+        h.events.push(event);
+        if (event.type === 'unit' && event.status === 'ok' && runId) h.service.stop(runId);
+      },
+    });
+    const started = h.service.start('anything');
+    if (started.ok) runId = started.runId;
+    const done = await untilDone(h.events);
+    expect(h.events).toHaveLength(2); // UNIT_OK, then the synthesised done — UNIT_SKIP and SCRIPT_DONE never emitted
+    expect(done.result).toMatchObject({ made: 1, skipped: [], total: 2, stop: 'stopped', stopCode: null, failed: null });
+  });
+
+  it('busy when the forge holds the lock, and the script stays armed for the next start', () => {
+    const lock = createWriterLock();
+    lock.acquire('forge');
+    const dep = scriptedDep({ runId: 'scripted-1', events: [UNIT_OK, SCRIPT_DONE], gapMs: 0 });
+    const h = harness({ writerLock: lock, scripted: dep });
+    expect(h.service.start('anything')).toEqual({ ok: false, reason: 'busy' });
+    lock.release('forge');
+    expect(h.service.start('anything')).toEqual({ ok: true, runId: 'scripted-1' });
+  });
+
+  it('logs one run.scripted line naming the event count and gapMs', () => {
+    const infos: unknown[] = [];
+    const h = harness({
+      scripted: scriptedDep({ runId: 'scripted-1', events: [UNIT_OK, SCRIPT_DONE], gapMs: 250 }),
+      log: { info: (entry) => infos.push(entry), warn: () => undefined, error: () => undefined },
+    });
+    h.service.start('anything');
+    expect(infos).toContainEqual(expect.objectContaining({ scope: 'apply', event: 'run.scripted', runId: 'scripted-1', events: 2, gapMs: 250 }));
   });
 });
