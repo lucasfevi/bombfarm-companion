@@ -32,6 +32,7 @@ import {
   foldForgeStep,
   nextForgeStep,
 } from '@bombfarm/domain/forge';
+import type { WriterLock } from '../apply/writer-lock.js';
 import type { SessionTokenFileResult } from '../game-api/session-token-file.js';
 import type { LogPort } from '../storage/index.js';
 import type { ForgeAccountPatch } from './forge-account-patch.js';
@@ -69,6 +70,7 @@ export interface ForgeServiceDeps {
   currentGold: () => number | null;
   applyResult: (patch: ForgeAccountPatch) => void;
   history: ForgeHistory;
+  writerLock: WriterLock;
   emit: (event: ForgeEvent) => void;
   log: LogPort;
   /** Milliseconds. */
@@ -308,6 +310,7 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
     }
 
     deps.log.info({ scope: 'forge', event: 'run.finished', runId, stop, rolls: result.rolls, spent: result.spent });
+    deps.writerLock.release('forge');
     activeRunId = null;
     cancelled = false;
     deps.emit({ type: 'done', runId, result });
@@ -320,7 +323,7 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
 
   return {
     start(request) {
-      if (activeRunId !== null) return refuse('busy');
+      if (activeRunId !== null || deps.writerLock.holder !== null) return refuse('busy');
       if (deps.accountSource() === 'fixture') return refuse('offline');
 
       const item = resolveForgeItem(deps.currentItems(), request.itemId);
@@ -344,6 +347,7 @@ export function createForgeService(deps: ForgeServiceDeps): ForgeService {
 
       sequence += 1;
       const runId = `${String(deps.now())}-${String(sequence)}`;
+      deps.writerLock.acquire('forge');
       activeRunId = runId;
       cancelled = false;
       deps.log.info({ scope: 'forge', event: 'run.started', runId, from: item.upgrade, target: request.target });

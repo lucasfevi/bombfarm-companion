@@ -11,6 +11,7 @@ import {
   type PacingGate,
 } from '@bombfarm/game-api';
 import { consentRecord, grantedConsent } from '@bombfarm/game-api/test-fixtures';
+import { createWriterLock } from '../apply/writer-lock.js';
 import type { ForgeAccountPatch } from './forge-account-patch.js';
 import type { ForgeHistory, ForgeRunRecord } from './forge-history.js';
 import { createForgeService, parseForgeReply, resolveForgeItem, type ForgeServiceDeps } from './forge-service.js';
@@ -80,6 +81,7 @@ function harness(overrides: Partial<ForgeServiceDeps> & { script?: Reply[]; cons
     clear: () => undefined,
   };
   const gate = overrides.gate ?? immediateGate();
+  const writerLock = overrides.writerLock ?? createWriterLock();
   let clock = 1_000;
   const deps: ForgeServiceDeps = {
     consentStore: { read: () => overrides.consent ?? GRANTED },
@@ -95,6 +97,7 @@ function harness(overrides: Partial<ForgeServiceDeps> & { script?: Reply[]; cons
       applied.push(patch);
     },
     history,
+    writerLock,
     emit: (event) => {
       events.push(event);
     },
@@ -108,7 +111,7 @@ function harness(overrides: Partial<ForgeServiceDeps> & { script?: Reply[]; cons
     ...overrides,
   };
   const service = createForgeService(deps);
-  return { service, wire, events, applied, appended, sleeps, gate };
+  return { service, wire, events, applied, appended, sleeps, gate, writerLock };
 }
 
 async function untilDone(events: ForgeEvent[]): Promise<Extract<ForgeEvent, { type: 'done' }>> {
@@ -315,7 +318,26 @@ describe('refusals', () => {
       expect(h.service.start(request), reason).toEqual({ ok: false, reason });
       expect(h.wire.calls, reason).toHaveLength(0);
       expect(h.service.isRunning(), reason).toBe(false);
+      expect(h.writerLock.holder, reason).toBeNull();
     }
+  });
+
+  it('answers busy through the shared writer lock when the apply run holds it, without touching the transport', () => {
+    const lock = createWriterLock();
+    lock.acquire('apply');
+    const h = harness({ writerLock: lock, script: [{ upgrade: 9 }] });
+    expect(h.service.start(REQUEST)).toEqual({ ok: false, reason: 'busy' });
+    expect(h.wire.calls).toHaveLength(0);
+    expect(h.service.isRunning()).toBe(false);
+  });
+
+  it('a completed run releases the writer lock', async () => {
+    const h = harness({ script: [{ upgrade: 9 }, { upgrade: 10 }] });
+    expect(h.writerLock.holder).toBeNull();
+    h.service.start(REQUEST);
+    expect(h.writerLock.holder).toBe('forge');
+    await untilDone(h.events);
+    expect(h.writerLock.holder).toBeNull();
   });
 });
 

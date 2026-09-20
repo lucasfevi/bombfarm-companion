@@ -41,6 +41,7 @@ import {
 } from '@bombfarm/contracts';
 import { createPacingGate, initialConsent, isGranted, summarizePvpFilm, trayTextFor } from '@bombfarm/game-api';
 import { createAccountNotifier, resolveAccountView, resolveCachedAccountView } from './account-view.js';
+import { createWriterLock, type WriterLock } from './apply/writer-lock.js';
 import { patchAccountAfterForge } from './forge/forge-account-patch.js';
 import { createForgeHistory, type ForgeHistory } from './forge/forge-history.js';
 import { createForgeInjector, shouldHonourForgeInject, type ForgeInjector } from './forge/forge-inject.js';
@@ -1075,6 +1076,10 @@ async function bootstrap(): Promise<void> {
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   });
 
+  // One writer, ever: the forge run and an apply run share this so neither can start while the
+  // other holds it.
+  const writerLock: WriterLock = createWriterLock();
+
   // One transport for both the read cycle and the forge run, so they identify themselves
   // identically. `app.getVersion()` is the packaged app's own version.
   const gameApiTransport = createNodeHttpsTransport(companionUserAgent(app.getVersion()));
@@ -1149,6 +1154,7 @@ async function bootstrap(): Promise<void> {
       accountRefresh?.applyPatch((payload) => patchAccountAfterForge(payload, patch, new Date().toISOString()));
     },
     history: forgeHistory,
+    writerLock,
     emit: (event) => {
       emitEvent('forge:event', event);
     },
