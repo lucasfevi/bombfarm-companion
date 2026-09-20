@@ -9,7 +9,15 @@
 import { describe, expect, it } from 'vitest';
 import { en } from './copy/en';
 import { ptBR } from './copy/pt-BR';
-import { formatAge, formatCapturedAt, formatCount, formatDps, formatEnergyPercent, formatGainPct } from './format';
+import {
+  finiteNumber,
+  formatAge,
+  formatCapturedAt,
+  formatCount,
+  formatDps,
+  formatEnergyPercent,
+  formatGainPct,
+} from './format';
 
 describe('formatAge (both locales)', () => {
   it('formats zero as 0s in English', () => {
@@ -147,5 +155,22 @@ describe('formatEnergyPercent (both locales)', () => {
       (i) => formatEnergyPercent(i / 100, 'en') !== `${String(i)}%`,
     );
     expect(wrong).toEqual([]);
+  });
+});
+
+describe('finiteNumber', () => {
+  it('passes a finite number through, and reads a numeric string the account payload might carry', () => {
+    expect(finiteNumber(1_250)).toBe(1_250);
+    expect(finiteNumber('1250')).toBe(1_250);
+  });
+
+  it('is null for anything that is not a finite number — NaN, Infinity, an empty string, missing', () => {
+    expect(finiteNumber(Number.NaN)).toBeNull();
+    expect(finiteNumber(Number.POSITIVE_INFINITY)).toBeNull();
+    expect(finiteNumber('')).toBeNull();
+    expect(finiteNumber('   ')).toBeNull();
+    expect(finiteNumber('not a number')).toBeNull();
+    expect(finiteNumber(null)).toBeNull();
+    expect(finiteNumber(undefined)).toBeNull();
   });
 });

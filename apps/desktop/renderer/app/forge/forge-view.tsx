@@ -32,6 +32,7 @@ import {
 import { InventoryTable } from '@bombfarm/game-art';
 import { Banner, ConfirmDialog, EmptyState, motionTokens, Panel, PanelHeader } from '@bombfarm/ui';
 import { sub, useCopy, useLocale } from '../../lib/copy';
+import { finiteNumber } from '../../lib/format';
 import { oldestCaptureOf } from '../../lib/account/account-facts';
 import { useAccountView } from '../../lib/account/use-account-view';
 import { useAccountReadRequest } from '../../lib/account/use-account-read-request';
@@ -89,15 +90,6 @@ function prefersReducedMotion(): boolean {
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
-}
-
-function finiteNumber(value: unknown): number | null {
-  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
-  if (typeof value === 'string' && value.trim() !== '') {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
 }
 
 /** Hero ids the save marks as deployed on the field. */
