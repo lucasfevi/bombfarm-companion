@@ -100,13 +100,13 @@ export function ApplyModalBody({
               </div>
 
               {cooldown !== null ? (
-                <p data-testid="apply-modal-card" className="m-0 text-[13px] text-warn">
+                <p data-testid="apply-modal-card" className="m-0 text-[13px] text-warn" role="status" aria-live="polite">
                   {sub(t.applyModalCooldown, { n: cooldown.index + 1, countdown: formatClock(Math.max(0, cooldown.resumeAtMs - nowMs)) })}
                 </p>
               ) : (() => {
                   const currentUnit = counts.current === null ? undefined : run.units[counts.current];
                   return currentUnit === undefined ? null : (
-                    <p data-testid="apply-modal-card" className="m-0 text-[13px] text-ink">
+                    <p data-testid="apply-modal-card" className="m-0 text-[13px] text-ink" role="status" aria-live="polite">
                       {unitCardText(currentUnit, t)}
                     </p>
                   );

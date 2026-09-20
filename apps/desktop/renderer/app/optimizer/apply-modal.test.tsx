@@ -68,10 +68,13 @@ describe('ApplyModalBody — running phase', () => {
     expect(html).toContain('1 done');
   });
 
-  it('prints the current unit on the in-flight card', () => {
+  it('prints the current unit on the in-flight card, announced as its own live region', () => {
     const html = render(runningState({ status: ['ok', 'sent'], current: 1 }));
     expect(html).toContain('data-testid="apply-modal-card"');
     expect(html).toContain('Old Blade +2');
+    const cardTag = /<p[^>]*data-testid="apply-modal-card"[^>]*>/.exec(html)?.[0] ?? '';
+    expect(cardTag).toContain('role="status"');
+    expect(cardTag).toContain('aria-live="polite"');
   });
 
   it('prints Forge queue paused only when the store paused it', () => {
@@ -89,11 +92,14 @@ describe('ApplyModalBody — running phase', () => {
     expect(stopTag).toContain('disabled=""');
   });
 
-  it('shows the cooldown sentence with the countdown and marks the bar with data-cooldown', () => {
+  it('shows the cooldown sentence with the countdown, marks the bar with data-cooldown, and announces the sentence as its own live region', () => {
     const state = runningState({ cooldown: { index: 1, resumeAtMs: 5_000 } });
     const html = render(state, { nowMs: 1_000 });
     expect(html).toContain('data-cooldown="true"');
     expect(html).toContain(en.applyModalCooldown.split('{')[0]);
+    const cardTag = /<p[^>]*data-testid="apply-modal-card"[^>]*>/.exec(html)?.[0] ?? '';
+    expect(cardTag).toContain('role="status"');
+    expect(cardTag).toContain('aria-live="polite"');
   });
 });
 
