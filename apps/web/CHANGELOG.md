@@ -1,5 +1,25 @@
 # @bombfarm/web
 
+## 0.21.2
+
+### Patch Changes
+
+- 87ff56b: Farm board and Optimizer clear time is now an integral over the props still standing, with crits
+  rolled per hit. The old row priced a constant kill rate from a crit-averaged hit, which read a
+  saturated nine-hero field ~15% fast with the Baton Pass held at its cap and a damage-bound field
+  ~30% slow at the same phase. The new model tracks hits per plant against density, plants that
+  miss a target that already died, the starved tail under ten props and the walk-in at a wave's
+  start, and depletes easy props first. Measured on two accounts across phases 51–151 it sits
+  within ±10% of the clears they logged. Each hero's Veia de Ouro now reaches the gold of the
+  props the clear attributes to that hero.
+- Updated dependencies [87ff56b]
+  - @bombfarm/domain@1.4.0
+  - @bombfarm/account@0.3.2
+  - @bombfarm/farm@1.2.4
+  - @bombfarm/game-art@0.6.4
+  - @bombfarm/hero@0.3.4
+  - @bombfarm/team-plan@0.2.4
+
 ## 0.21.1
 
 ### Patch Changes
