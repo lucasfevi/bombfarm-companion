@@ -188,12 +188,14 @@ export function planBasisSignature(inputs: TeamPlanInputs, controls: TeamPlanCon
  * ------------------------------------------------------------------------------------------- */
 
 /**
- * `plan` — the change moves what the optimizer would answer. `progress` — the change is one the
- * plan itself asked for (a forge step taken, points spent where it said). `noise` — the account
- * moved in a way the plan does not depend on; listed so the reader knows it was seen, never as a
- * reason to recompute.
+ * `breaks` — a hero or a piece the plan placed is gone, so the plan can no longer be carried out
+ * as written. `plan` — a change worth a row: a hero that arrived or left, a level, a star, a piece
+ * that arrived, a rune, the tree. `progress` — a step the plan itself asked for, taken. `other` —
+ * moves the answer but is not worth a row of its own (a point spent elsewhere, an ability level,
+ * a forge the plan did not ask for, a setup control): counted, and said in one line. `noise` —
+ * the account moved in a way the plan does not depend on; never a reason to recompute.
  */
-export type PlanChangeVerdict = 'plan' | 'progress' | 'noise';
+export type PlanChangeVerdict = 'breaks' | 'plan' | 'progress' | 'other' | 'noise';
 
 export type PlanChangeSubject =
   | { kind: 'hero'; id: string; name: string }
@@ -202,8 +204,8 @@ export type PlanChangeSubject =
   | { kind: 'controls' };
 
 export type PlanChangeDetail =
-  | { field: 'heroAdded' }
-  | { field: 'heroRemoved' }
+  | { field: 'heroAdded'; level: number }
+  | { field: 'heroRemoved'; used: boolean }
   | { field: 'level'; before: number; after: number }
   | { field: 'stars'; before: number; after: number }
   | { field: 'points'; stat: keyof HeroRecord['pts']; before: number; after: number; asked: number | null }
@@ -212,8 +214,8 @@ export type PlanChangeDetail =
   | { field: 'runeGained'; axis: HeroRune['axis']; strengthPct: number }
   | { field: 'runeLost'; axis: HeroRune['axis']; strengthPct: number }
   | { field: 'heroOther' }
-  | { field: 'itemAdded' }
-  | { field: 'itemRemoved' }
+  | { field: 'itemAdded'; level: number }
+  | { field: 'itemRemoved'; used: boolean }
   | { field: 'forge'; before: number; after: number; asked: number | null }
   | { field: 'equippedBy'; before: string | null; after: string | null; asked: string | null }
   | { field: 'itemOther' }
@@ -232,10 +234,14 @@ export type PlanChange = {
 };
 
 export type PlanChangeLedger = {
+  readonly breaks: readonly PlanChange[];
   readonly plan: readonly PlanChange[];
   readonly progress: readonly PlanChange[];
+  readonly other: readonly PlanChange[];
   readonly noise: readonly PlanChange[];
-  /** `plan.length + progress.length` — what "stale" means. */
+  /** The rows the ledger draws: `breaks + plan + progress`. */
+  readonly listed: number;
+  /** Everything but noise — what "stale" means. */
   readonly counted: number;
 };
 
@@ -250,6 +256,36 @@ function heroSubject(hero: HeroRecord): PlanChangeSubject {
 function itemSubject(item: InventoryItem): PlanChangeSubject {
   return { kind: 'item', id: item.id, defId: item.defId, rarityIdx: item.rarityIdx };
 }
+
+/**
+ * What the plan placed: the heroes it solved for, and the pieces those heroes end up wearing —
+ * kept, moved onto them, or forged. A hero or piece outside this set can come and go without the
+ * plan being any less carryable. With no plan yet, the scope alone says which heroes are in.
+ */
+function placedByPlan(basis: PlanBasis, plan: TeamPlan | null): { heroes: Set<string>; items: Set<string> } {
+  const scope = planningControlsView(basis.inputs, basis.controls).scopeByHeroId;
+  const heroes = new Set(Object.keys(scope).filter((id) => scope[id] === 'optimize'));
+  if (plan !== null) {
+    for (const reset of plan.pointResets) heroes.add(reset.heroId);
+    for (const move of plan.moveList) {
+      if (move.fromHeroId !== null) heroes.add(move.fromHeroId);
+      if (move.toHeroId !== null) heroes.add(move.toHeroId);
+    }
+  }
+  const unequipped = new Set(plan === null ? [] : plan.moveList.filter((move) => move.phase === 'unequip' && move.toHeroId === null).map((move) => move.itemId));
+  const items = new Set<string>();
+  for (const item of basis.inputs.inventory.items) {
+    if (item.equipped && item.equippedBy !== null && heroes.has(item.equippedBy) && !unequipped.has(item.id)) items.add(item.id);
+  }
+  if (plan !== null) {
+    for (const action of plan.forgeList) items.add(action.itemId);
+    for (const move of plan.moveList) if (move.phase === 'equip') items.add(move.itemId);
+  }
+  return { heroes, items };
+}
+
+/** The fields that earn a row of their own; every other counted change is folded into one line. */
+const LISTED_FIELDS = new Set<PlanChangeDetail['field']>(['heroAdded', 'heroRemoved', 'level', 'stars', 'itemAdded', 'itemRemoved', 'runeGained', 'runeLost', 'tree']);
 
 /** A step is progress when the value moved from where the plan started towards — or onto — where
  *  it asked, and no further. Overshooting or going the other way is a change like any other. */
@@ -351,26 +387,33 @@ function itemChanges(before: InventoryItem, after: InventoryItem, plan: TeamPlan
 export function describePlanChanges(basis: PlanBasis, now: PlanBasis, plan: TeamPlan | null): PlanChangeLedger {
   const out: PlanChange[] = [];
 
+  const placed = placedByPlan(basis, plan);
+
   const heroesBefore = byId(basis.inputs.heroes);
   const heroesAfter = byId(now.inputs.heroes);
   for (const hero of now.inputs.heroes) {
     const previous = heroesBefore.get(hero.id);
-    if (previous === undefined) out.push(change(heroSubject(hero), { field: 'heroAdded' }, 'plan'));
+    if (previous === undefined) out.push(change(heroSubject(hero), { field: 'heroAdded', level: hero.level }, 'plan'));
     else out.push(...heroChanges(previous, hero, plan));
   }
   for (const hero of basis.inputs.heroes) {
-    if (!heroesAfter.has(hero.id)) out.push(change(heroSubject(hero), { field: 'heroRemoved' }, 'plan'));
+    if (heroesAfter.has(hero.id)) continue;
+    const used = placed.heroes.has(hero.id);
+    out.push(change(heroSubject(hero), { field: 'heroRemoved', used }, used ? 'breaks' : 'plan'));
   }
 
   const itemsBefore = byId(basis.inputs.inventory.items);
   const itemsAfter = byId(now.inputs.inventory.items);
   for (const item of now.inputs.inventory.items) {
     const previous = itemsBefore.get(item.id);
-    if (previous === undefined) out.push(change(itemSubject(item), { field: 'itemAdded' }, 'plan'));
+    if (previous === undefined) out.push(change(itemSubject(item), { field: 'itemAdded', level: item.level }, 'plan'));
     else out.push(...itemChanges(previous, item, plan));
   }
+  // A piece the plan never touched leaving the bag is a fact, not a row: sold, donated, fused.
   for (const item of basis.inputs.inventory.items) {
-    if (!itemsAfter.has(item.id)) out.push(change(itemSubject(item), { field: 'itemRemoved' }, 'plan'));
+    if (itemsAfter.has(item.id)) continue;
+    const used = placed.items.has(item.id);
+    out.push(change(itemSubject(item), { field: 'itemRemoved', used }, used ? 'breaks' : 'other'));
   }
 
   const accountBefore = planningAccountView(basis.inputs);
@@ -397,8 +440,15 @@ export function describePlanChanges(basis: PlanBasis, now: PlanBasis, plan: Team
     }
   }
 
-  const plan_ = out.filter((entry) => entry.verdict === 'plan');
-  const progress = out.filter((entry) => entry.verdict === 'progress');
-  const noise = out.filter((entry) => entry.verdict === 'noise');
-  return { plan: plan_, progress, noise, counted: plan_.length + progress.length };
+  // Only the listed fields keep a row; the rest of what the plan cares about is folded into one
+  // line so seven unremarkable changes do not read as seven alarms.
+  const classified = out.map((entry) => (entry.verdict === 'plan' && !LISTED_FIELDS.has(entry.detail.field) ? { ...entry, verdict: 'other' as const } : entry));
+  const of = (verdict: PlanChangeVerdict) => classified.filter((entry) => entry.verdict === verdict);
+  const breaks = of('breaks');
+  const plan_ = of('plan');
+  const progress = of('progress');
+  const other = of('other');
+  const noise = of('noise');
+  const listed = breaks.length + plan_.length + progress.length;
+  return { breaks, plan: plan_, progress, other, noise, listed, counted: listed + other.length };
 }

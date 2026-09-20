@@ -124,7 +124,7 @@ describe('the changes the plan does not depend on are listed as noise, never cou
   it("battle permission that flips the hero's DEFAULT scope is a scope change, counted", () => {
     const ledger = describePlanChanges(basis, withHero({ battleAllowed: false }), null);
     expect(ledger.counted).toBe(1);
-    expect(ledger.plan[0]?.detail).toEqual({ field: 'scope', heroId: 'rowan', heroName: 'ROWAN', before: 'optimize', after: 'donate' });
+    expect(ledger.other[0]?.detail).toEqual({ field: 'scope', heroId: 'rowan', heroName: 'ROWAN', before: 'optimize', after: 'donate' });
     expect(fields(ledger.noise)).toEqual(['battleAllowed']);
   });
 
@@ -155,10 +155,12 @@ describe('the changes the plan depends on, each named with before and after', ()
     expect(ledger.plan).toEqual([{ subject: { kind: 'hero', id: 'rowan', name: 'ROWAN' }, detail: { field: 'level', before: 50, after: 51 }, verdict: 'plan' }]);
   });
 
-  it('points spent, per stat, with a point to spend consumed', () => {
+  it('points spent elsewhere than the plan asked count, but fold into the "also changed" line rather than a row', () => {
     const ledger = describePlanChanges(basis, withHero({ pts: { ...ZERO, attack: 41, speed: 9 }, statPointsAvailable: 0 }), null);
-    expect(fields(ledger.plan)).toEqual(['points']);
-    expect(ledger.plan[0]?.detail).toEqual({ field: 'points', stat: 'attack', before: 40, after: 41, asked: null });
+    expect(fields(ledger.other)).toEqual(['points']);
+    expect(ledger.other[0]?.detail).toEqual({ field: 'points', stat: 'attack', before: 40, after: 41, asked: null });
+    expect(ledger.listed).toBe(0);
+    expect(ledger.counted).toBe(1);
   });
 
   it('a rune that appeared, and one that expired', () => {
@@ -167,38 +169,71 @@ describe('the changes the plan depends on, each named with before and after', ()
     expect(fields(describePlanChanges(withHero({ runes: [rune] }), basis, null).plan)).toEqual(['runeLost']);
   });
 
-  it('a hero new on the roster, and one gone from it', () => {
+  it('a hero new on the roster is a row, with the level it arrived at', () => {
     const grown = { ...basis, inputs: inputs({ heroes: [...basis.inputs.heroes, hero({ id: 'kira' })] }) };
-    expect(fields(describePlanChanges(basis, grown, null).plan)).toEqual(['heroAdded']);
-    expect(fields(describePlanChanges(grown, basis, null).plan)).toEqual(['heroRemoved']);
+    expect(describePlanChanges(basis, grown, null).plan[0]?.detail).toEqual({ field: 'heroAdded', level: 50 });
   });
 
-  it('a piece forged, moved between heroes, new in the bag, gone from the bag', () => {
-    expect(fields(describePlanChanges(basis, withItem({ upgrade: 13 }), null).plan)).toEqual(['forge']);
-    expect(fields(describePlanChanges(basis, withItem({ equippedBy: 'rowan' }), null).plan)).toEqual(['equippedBy']);
+  it('a hero gone from the roster BREAKS the plan when the plan placed it, and is a plain row when it did not', () => {
+    const grown = { ...basis, inputs: inputs({ heroes: [...basis.inputs.heroes, hero({ id: 'kira' })] }) };
+    // Every hero defaults to Optimize scope, so kira was placed.
+    const placed = describePlanChanges(grown, basis, null);
+    expect(placed.breaks[0]?.detail).toEqual({ field: 'heroRemoved', used: true });
+    expect(placed.plan).toEqual([]);
+    // Scoped out by the player before the plan was built: gone, but the plan never counted on it.
+    const benched = { ...grown, controls: controls({ scopeByHeroId: { kira: 'leaveAlone' } }) };
+    const notPlaced = describePlanChanges(benched, { ...basis, controls: benched.controls }, null);
+    expect(notPlaced.plan[0]?.detail).toEqual({ field: 'heroRemoved', used: false });
+    expect(notPlaced.breaks).toEqual([]);
+  });
+
+  it('a forge the plan did not ask for, or a piece moved by hand, count but fold into the "also changed" line', () => {
+    expect(fields(describePlanChanges(basis, withItem({ upgrade: 13 }), null).other)).toEqual(['forge']);
+    expect(fields(describePlanChanges(basis, withItem({ equippedBy: 'rowan' }), null).other)).toEqual(['equippedBy']);
+  });
+
+  it('a piece new in the bag is a row, with the level it came at', () => {
     const gained = { ...basis, inputs: inputs({ inventory: { version: 1, importedAt: 0, items: [...basis.inputs.inventory.items, item({ id: 'helm', defId: 'autumn_helm', slot: 'elmo' })] } }) };
-    expect(fields(describePlanChanges(basis, gained, null).plan)).toEqual(['itemAdded']);
-    expect(fields(describePlanChanges(gained, basis, null).plan)).toEqual(['itemRemoved']);
+    expect(describePlanChanges(basis, gained, null).plan[0]?.detail).toEqual({ field: 'itemAdded', level: 50 });
+  });
+
+  it('a piece gone from the bag BREAKS the plan only when the plan used it; an unused one is folded away', () => {
+    // The boots are worn by minato, who is in scope: the plan's loadout keeps them.
+    const withoutBoots = { ...basis, inputs: inputs({ inventory: { version: 1, importedAt: 0, items: basis.inputs.inventory.items.filter((i) => i.id !== 'boots') } }) };
+    const worn = describePlanChanges(basis, withoutBoots, null);
+    expect(worn.breaks[0]?.detail).toEqual({ field: 'itemRemoved', used: true });
+    // The ring sits in the bag unworn and no plan touches it: sold, donated, fused — not a row.
+    const withoutRing = { ...basis, inputs: inputs({ inventory: { version: 1, importedAt: 0, items: basis.inputs.inventory.items.filter((i) => i.id !== 'ring') } }) };
+    const loose = describePlanChanges(basis, withoutRing, null);
+    expect(loose.breaks).toEqual([]);
+    expect(loose.plan).toEqual([]);
+    expect(loose.other[0]?.detail).toEqual({ field: 'itemRemoved', used: false });
+  });
+
+  it('a piece the plan moves onto a hero counts as used even while it still sits in the bag', () => {
+    const plan = { steps: [], forgeList: [], moveList: [{ phase: 'equip', itemId: 'ring', defId: 'autumn_ring', slot: 'anel', fromHeroId: null, toHeroId: 'rowan' }], pointResets: [] } as unknown as TeamPlan;
+    const withoutRing = { ...basis, inputs: inputs({ inventory: { version: 1, importedAt: 0, items: basis.inputs.inventory.items.filter((i) => i.id !== 'ring') } }) };
+    expect(describePlanChanges(basis, withoutRing, plan).breaks[0]?.detail).toEqual({ field: 'itemRemoved', used: true });
   });
 
   it('an unequipped piece reads as equipped by nobody, whatever stale name it still carries', () => {
     const ledger = describePlanChanges(basis, withItem({ equipped: false, equippedBy: 'minato' }), null);
-    expect(ledger.plan[0]?.detail).toEqual({ field: 'equippedBy', before: 'minato', after: null, asked: null });
+    expect(ledger.other[0]?.detail).toEqual({ field: 'equippedBy', before: 'minato', after: null, asked: null });
   });
 
-  it('the skill tree, the house, the farming phase, the slots', () => {
+  it('the skill tree is a row; the house, the farming phase and the slots fold into the "also changed" line', () => {
     expect(describePlanChanges(basis, { ...basis, inputs: inputs({ treeDanoTotal: 42 }) }, null).plan[0]?.detail).toEqual({ field: 'tree', axis: 'treeDanoTotal', before: 41, after: 42 });
-    expect(describePlanChanges(basis, { ...basis, inputs: inputs({ houseLevel: 3 }) }, null).plan[0]?.detail).toEqual({ field: 'accountField', name: 'houseLevel', before: 2, after: 3 });
+    expect(describePlanChanges(basis, { ...basis, inputs: inputs({ houseLevel: 3 }) }, null).other[0]?.detail).toEqual({ field: 'accountField', name: 'houseLevel', before: 2, after: 3 });
     // A phase change reaches the plan twice when no phase is pinned: as the account's phase and
-    // as the phase the plan scores at. Both are named; the second is the one the reader acts on.
-    expect(fields(describePlanChanges(basis, { ...basis, inputs: inputs({ phase: 92 }) }, null).plan)).toEqual(['accountField', 'control']);
+    // as the phase the plan scores at.
+    expect(fields(describePlanChanges(basis, { ...basis, inputs: inputs({ phase: 92 }) }, null).other)).toEqual(['accountField', 'control']);
   });
 
-  it('the controls: forge floor, objective, a scope the player changed', () => {
+  it('the controls count and fold: forge floor, objective, a scope the player changed', () => {
     const floor = describePlanChanges(basis, { ...basis, controls: controls({ forgeFloor: 13 }) }, null);
-    expect(floor.plan[0]?.detail).toEqual({ field: 'control', name: 'forgeFloor', before: '12', after: '13' });
+    expect(floor.other[0]?.detail).toEqual({ field: 'control', name: 'forgeFloor', before: '12', after: '13' });
     const scope = describePlanChanges(basis, { ...basis, controls: controls({ scopeByHeroId: { minato: 'leaveAlone' } }) }, null);
-    expect(scope.plan[0]?.detail).toEqual({ field: 'scope', heroId: 'minato', heroName: 'MINATO', before: 'optimize', after: 'leaveAlone' });
+    expect(scope.other[0]?.detail).toEqual({ field: 'scope', heroId: 'minato', heroName: 'MINATO', before: 'optimize', after: 'leaveAlone' });
   });
 });
 
@@ -218,7 +253,7 @@ describe('a change the plan itself asked for is progress, not a reason to recomp
   it('a forge past the target is a change, not progress', () => {
     const ledger = describePlanChanges(basis, withItem({ upgrade: 15 }), plan);
     expect(ledger.progress).toEqual([]);
-    expect(ledger.plan[0]?.detail).toEqual({ field: 'forge', before: 12, after: 15, asked: 14 });
+    expect(ledger.other[0]?.detail).toEqual({ field: 'forge', before: 12, after: 15, asked: 14 });
   });
 
   it('a point spent where the plan said, and one spent elsewhere', () => {
@@ -226,7 +261,7 @@ describe('a change the plan itself asked for is progress, not a reason to recomp
     expect(towards.progress[0]?.detail).toEqual({ field: 'points', stat: 'attack', before: 40, after: 42, asked: 45 });
     const elsewhere = describePlanChanges(basis, withHero({ pts: { ...ZERO, attack: 40, speed: 10 } }), plan);
     expect(elsewhere.progress).toEqual([]);
-    expect(elsewhere.plan[0]?.detail).toEqual({ field: 'points', stat: 'speed', before: 9, after: 10, asked: 4 });
+    expect(elsewhere.other[0]?.detail).toEqual({ field: 'points', stat: 'speed', before: 9, after: 10, asked: 4 });
   });
 
   it('a piece equipped where the plan moved it', () => {

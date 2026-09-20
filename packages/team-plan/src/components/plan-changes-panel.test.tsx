@@ -6,6 +6,7 @@ import type { InventoryItem } from '@bombfarm/domain/inventory';
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
 import { NO_AURAS_AT_CAP } from '@bombfarm/domain/team-buffs';
 import { teamPlanEn, type TeamPlanScreenCopy } from '../copy';
+import { sub } from '@bombfarm/hero/copy';
 import { describePlanChanges, type PlanBasis } from '../core/plan-changes';
 import type { TeamPlanInputs } from '../core/team-plan-inputs';
 import type { TeamPlanControls } from '../core/team-plan-controls';
@@ -121,20 +122,38 @@ describe('PlanChangesPanel — the ledger of what changed since the plan', () =>
     expect(text(html)).toContain(t.teamPlanChangesRecompute);
   });
 
-  it('a piece that has left the bag is still named by what the plan knew of it', () => {
+  it('a worn piece that has left the bag BREAKS the plan: its own group first, in the down tone, named by what the plan knew of it', () => {
     const html = render(inputs([rowan, minato], []));
-    expect(html).toMatch(/data-verdict="plan"[^>]*data-field="itemRemoved"/);
-    expect(text(html)).toContain(t.teamPlanChangesItemRemoved);
+    expect(html).toContain('data-breaks="true"');
+    expect(html).toMatch(/data-verdict="breaks"[^>]*data-field="itemRemoved"/);
+    const body = text(html);
+    expect(body).toContain(t.teamPlanChangesGroupBreaks);
+    expect(body).toContain(t.teamPlanChangesItemRemovedUsed);
+    expect(body.indexOf(t.teamPlanChangesGroupBreaks)).toBeLessThan(body.indexOf(t.teamPlanChangesColWhat) + 400);
+  });
+
+  it('a new piece says what it is, not a dash and a plus-zero', () => {
+    const html = render(inputs([rowan, minato], [boots, item({ id: 'helm', defId: 'autumn_helm', slot: 'elmo', rarityIdx: 2, upgrade: 0, equipped: false, equippedBy: null })]));
+    const body = text(html);
+    expect(body).toContain(`${t.teamPlanChangesItemAdded} · Rare · Lv 50`);
+    expect(body).not.toContain('—');
+    expect(body).not.toContain('+0');
+  });
+
+  it('changes the plan cares about but does not list are said in one line, each kind once', () => {
+    const html = render(inputs([{ ...rowan, pts: { ...ZERO, attack: 41 }, abilities: { bomba_dupla: 1 } }, minato], [boots]), null);
+    expect(html).not.toContain('data-testid="team-plan-change"');
+    expect(text(html)).toContain(sub(t.teamPlanChangesAlso, { kinds: `${t.teamPlanChangesKindPoints}, ${t.teamPlanChangesKindAbilities}` }));
+    expect(text(html)).toContain(sub(t.teamPlanChangesCountMany, { n: 2 }));
   });
 });
 
 describe('wordPlanChange — every kind of change has words, and none is a raw field name', () => {
   const names = new Map([['rowan', 'Rowan'], ['minato', 'Minato']]);
-  const items = new Map([['boots', boots]]);
 
   it('a control change prints the option labels, not the enum values', () => {
     const ledger = describePlanChanges(basis, { inputs: basis.inputs, controls: { ...controls, objective: 'dps', allowedChanges: 'points', ignoreFieldCrowding: true } }, null);
-    const words = ledger.plan.map((entry) => wordPlanChange(entry, t, 'en', names, items));
+    const words = ledger.other.map((entry) => wordPlanChange(entry, t, 'en', names));
     expect(words.map((w) => `${w.change}: ${w.before} → ${w.after}`)).toEqual([
       `${t.teamPlanChangesControlObjective}: ${t.teamPlanObjectiveOptionGold} → ${t.teamPlanObjectiveOptionDamage}`,
       `${t.teamPlanChangesControlAllowedChanges}: ${t.teamPlanAllowedChangesOptionBoth} → ${t.teamPlanAllowedChangesOptionPoints}`,
@@ -144,14 +163,14 @@ describe('wordPlanChange — every kind of change has words, and none is a raw f
 
   it('a piece moved between heroes names both heroes, and nobody when it comes off', () => {
     const moved = describePlanChanges(basis, { inputs: inputs([rowan, minato], [{ ...boots, equippedBy: 'rowan' }]), controls }, null);
-    expect(wordPlanChange(moved.plan[0]!, t, 'en', names, items)).toMatchObject({ change: t.teamPlanChangesEquippedBy, before: 'Minato', after: 'Rowan' });
+    expect(wordPlanChange(moved.other[0]!, t, 'en', names)).toMatchObject({ change: t.teamPlanChangesEquippedBy, before: 'Minato', after: 'Rowan' });
     const off = describePlanChanges(basis, { inputs: inputs([rowan, minato], [{ ...boots, equipped: false }]), controls }, null);
-    expect(wordPlanChange(off.plan[0]!, t, 'en', names, items)).toMatchObject({ before: 'Minato', after: t.teamPlanChangesNobody });
+    expect(wordPlanChange(off.other[0]!, t, 'en', names)).toMatchObject({ before: 'Minato', after: t.teamPlanChangesNobody });
   });
 
   it('a phase the account advanced through, with no phase pinned, is named twice: the farm and the scoring phase', () => {
     const ledger = describePlanChanges(basis, { inputs: inputs([rowan, minato], [boots], { phase: 92, farmChosenPhase: null }), controls }, null);
-    const words = ledger.plan.map((entry) => wordPlanChange(entry, t, 'en', names, items).change);
+    const words = ledger.other.map((entry) => wordPlanChange(entry, t, 'en', names).change);
     expect(words).toEqual([t.teamPlanChangesFieldPhase, t.teamPlanChangesControlTargetPhase]);
   });
 });

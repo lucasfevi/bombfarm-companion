@@ -563,6 +563,18 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanChangesControlAurasAtCap',
   'teamPlanChangesControlTargetPhase',
   'teamPlanChangesScope',
+  'teamPlanChangesGroupBreaks',
+  'teamPlanChangesAlso',
+  'teamPlanChangesKindPoints',
+  'teamPlanChangesKindAbilities',
+  'teamPlanChangesKindForge',
+  'teamPlanChangesKindGear',
+  'teamPlanChangesKindBag',
+  'teamPlanChangesKindAccount',
+  'teamPlanChangesKindSetup',
+  'teamPlanChangesKindSheet',
+  'teamPlanChangesHeroRemovedUsed',
+  'teamPlanChangesItemRemovedUsed',
   // The inventory names a hero cage by its act (2026-09-17) instead of printing `chest_hero_3`.
   'inventoryChestHero',
   // The Farm page's Optimize button opens the Optimizer (2026-09-14) instead of solving a

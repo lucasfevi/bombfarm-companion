@@ -14,7 +14,7 @@
 import { useMemo, useState } from 'react';
 import { Button, cn } from '@bombfarm/ui';
 import { HeroIdentityChip, ItemIcon } from '@bombfarm/game-art';
-import { abilityName, itemName } from '@bombfarm/domain/game-labels';
+import { abilityName, itemName, itemRarityLabel } from '@bombfarm/domain/game-labels';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { InventoryItem } from '@bombfarm/domain/inventory';
 import type { HeroRune } from '@bombfarm/domain/runes';
@@ -61,15 +61,15 @@ const forge = (upgrade: number) => `+${String(upgrade)}`;
  *  after them ("plan asked +14", "as planned"). Exported for the test, which reads words. */
 export type PlanChangeRow = { change: string; before: string; after: string; note: string | null };
 
-export function wordPlanChange(entry: PlanChange, t: Copy, lang: Lang, heroNames: ReadonlyMap<string, string>, items: ReadonlyMap<string, InventoryItem>): PlanChangeRow {
+export function wordPlanChange(entry: PlanChange, t: Copy, lang: Lang, heroNames: ReadonlyMap<string, string>): PlanChangeRow {
   const none = NONE;
   const who = (heroId: string | null) => (heroId === null ? t.teamPlanChangesNobody : (heroNames.get(heroId) ?? heroId));
   const d = entry.detail;
   switch (d.field) {
     case 'heroAdded':
-      return { change: t.teamPlanChangesHeroAdded, before: none, after: '', note: null };
+      return { change: `${t.teamPlanChangesHeroAdded} · ${t.rankLv} ${String(d.level)}`, before: '', after: '', note: null };
     case 'heroRemoved':
-      return { change: t.teamPlanChangesHeroRemoved, before: '', after: none, note: null };
+      return { change: d.used ? t.teamPlanChangesHeroRemovedUsed : t.teamPlanChangesHeroRemoved, before: '', after: '', note: null };
     case 'level':
       return { change: t.teamPlanChangesLevel, before: String(d.before), after: String(d.after), note: null };
     case 'stars':
@@ -89,11 +89,11 @@ export function wordPlanChange(entry: PlanChange, t: Copy, lang: Lang, heroNames
     case 'heroOther':
       return { change: t.teamPlanChangesHeroOther, before: '', after: '', note: null };
     case 'itemAdded': {
-      const item = entry.subject.kind === 'item' ? items.get(entry.subject.id) : undefined;
-      return { change: t.teamPlanChangesItemAdded, before: none, after: item ? forge(item.upgrade) : '', note: null };
+      const rarity = entry.subject.kind === 'item' ? itemRarityLabel(entry.subject.rarityIdx, lang) : '';
+      return { change: `${t.teamPlanChangesItemAdded} · ${rarity} · ${t.rankLv} ${String(d.level)}`, before: '', after: '', note: null };
     }
     case 'itemRemoved':
-      return { change: t.teamPlanChangesItemRemoved, before: '', after: none, note: null };
+      return { change: d.used ? t.teamPlanChangesItemRemovedUsed : t.teamPlanChangesItemRemoved, before: '', after: '', note: null };
     case 'forge': {
       const note = d.asked === null ? null : d.asked === d.after ? t.teamPlanChangesAskedDone : sub(t.teamPlanChangesAsked, { value: forge(d.asked) });
       return { change: t.teamPlanChangesForge, before: forge(d.before), after: forge(d.after), note };
@@ -154,6 +154,33 @@ export function wordPlanChange(entry: PlanChange, t: Copy, lang: Lang, heroNames
   }
 }
 
+/** The kinds of change folded into the "also changed" line, in the order they are said, each once. */
+function otherKinds(other: readonly PlanChange[], t: Copy): string[] {
+  const kindOf = (entry: PlanChange): string => {
+    switch (entry.detail.field) {
+      case 'points':
+      case 'pointsAvailable':
+        return t.teamPlanChangesKindPoints;
+      case 'ability':
+        return t.teamPlanChangesKindAbilities;
+      case 'forge':
+        return t.teamPlanChangesKindForge;
+      case 'equippedBy':
+        return t.teamPlanChangesKindGear;
+      case 'itemRemoved':
+        return t.teamPlanChangesKindBag;
+      case 'accountField':
+        return t.teamPlanChangesKindAccount;
+      case 'control':
+      case 'scope':
+        return t.teamPlanChangesKindSetup;
+      default:
+        return t.teamPlanChangesKindSheet;
+    }
+  };
+  return [...new Set(other.map(kindOf))];
+}
+
 const cellClass = 'px-2 py-1.5 align-middle text-[12px]';
 const headClass = 'px-2 pb-1 text-left text-[10px] font-semibold tracking-[0.06em] text-muted uppercase';
 
@@ -172,9 +199,11 @@ function Subject({ entry, t, lang, heroes, items }: { entry: PlanChange; t: Copy
   return <span className="font-semibold text-ink">{subject.kind === 'account' ? t.teamPlanChangesSubjectAccount : t.teamPlanChangesSubjectSetup}</span>;
 }
 
-function Group({ title, rows, tone, t, lang, heroes, items, heroNames }: { title: string; rows: readonly PlanChange[]; tone: 'plan' | 'progress'; t: Copy; lang: Lang; heroes: ReadonlyMap<string, HeroRecord>; items: ReadonlyMap<string, InventoryItem>; heroNames: ReadonlyMap<string, string> }) {
+const VERDICT_TONE_CLASS = { breaks: 'text-down', plan: 'text-warn', progress: 'text-up' } as const;
+
+function Group({ title, rows, tone, t, lang, heroes, items, heroNames }: { title: string; rows: readonly PlanChange[]; tone: 'breaks' | 'plan' | 'progress'; t: Copy; lang: Lang; heroes: ReadonlyMap<string, HeroRecord>; items: ReadonlyMap<string, InventoryItem>; heroNames: ReadonlyMap<string, string> }) {
   if (rows.length === 0) return null;
-  const verdict = tone === 'plan' ? t.teamPlanChangesGroupPlan : t.teamPlanChangesGroupProgress;
+  const verdict = tone === 'breaks' ? t.teamPlanChangesGroupBreaks : tone === 'plan' ? t.teamPlanChangesGroupPlan : t.teamPlanChangesGroupProgress;
   return (
     <>
       <tr>
@@ -183,7 +212,7 @@ function Group({ title, rows, tone, t, lang, heroes, items, heroNames }: { title
         </td>
       </tr>
       {rows.map((entry, index) => {
-        const words = wordPlanChange(entry, t, lang, heroNames, items);
+        const words = wordPlanChange(entry, t, lang, heroNames);
         return (
           <tr key={index} data-testid="team-plan-change" data-verdict={entry.verdict} data-field={entry.detail.field} className="border-t border-line/50">
             <td className={cn(cellClass, 'whitespace-nowrap')}>
@@ -198,7 +227,7 @@ function Group({ title, rows, tone, t, lang, heroes, items, heroNames }: { title
               {words.before !== '' && words.after !== '' ? <span className="px-1.5 text-muted">→</span> : null}
               {words.after}
             </td>
-            <td className={cn(cellClass, 'whitespace-nowrap text-[11px] font-semibold', tone === 'plan' ? 'text-warn' : 'text-up')}>{verdict}</td>
+            <td className={cn(cellClass, 'whitespace-nowrap text-[11px] font-semibold', VERDICT_TONE_CLASS[tone])}>{verdict}</td>
           </tr>
         );
       })}
@@ -231,7 +260,7 @@ export function PlanChangesPanel({
   const items = useMemo(() => new Map([...basis.inputs.inventory.items, ...now.inventory.items].map((item) => [item.id, item])), [basis, now]);
 
   // "Keep this plan" folds the table away for THESE changes; the next change unfolds it again.
-  const ledgerKey = useMemo(() => JSON.stringify([...ledger.plan, ...ledger.progress].map((entry) => [entry.subject, entry.detail])), [ledger]);
+  const ledgerKey = useMemo(() => JSON.stringify([...ledger.breaks, ...ledger.plan, ...ledger.progress, ...ledger.other].map((entry) => [entry.subject, entry.detail])), [ledger]);
   const [keptFor, setKeptFor] = useState<string | null>(null);
   const kept = keptFor === ledgerKey;
 
@@ -240,6 +269,8 @@ export function PlanChangesPanel({
   const countLine = ledger.counted === 1 ? t.teamPlanChangesCountOne : sub(t.teamPlanChangesCountMany, { n: ledger.counted });
   const rotated = ledger.noise.filter((entry) => entry.detail.field === 'fieldRotation').length;
   const rotationLine = rotated === 0 ? null : rotated === 1 ? t.teamPlanChangesRotationOne : sub(t.teamPlanChangesRotationMany, { n: rotated });
+  const alsoLine = ledger.other.length === 0 ? null : sub(t.teamPlanChangesAlso, { kinds: otherKinds(ledger.other, t).join(', ') });
+  const breaking = ledger.breaks.length > 0;
 
   return (
     <div
@@ -247,7 +278,11 @@ export function PlanChangesPanel({
       data-testid="team-plan-changes"
       data-counted={ledger.counted}
       data-kept={kept}
-      className="flex flex-col gap-2 rounded-sm border border-warn/50 bg-[color-mix(in_oklch,var(--warn)_7%,transparent)] px-4 py-3"
+      data-breaks={breaking}
+      className={cn(
+        'flex flex-col gap-2 rounded-sm border px-4 py-3',
+        breaking ? 'border-down/50 bg-[color-mix(in_oklch,var(--down)_7%,transparent)]' : 'border-warn/50 bg-[color-mix(in_oklch,var(--warn)_7%,transparent)]',
+      )}
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h2 className="m-0 text-sm font-semibold text-ink">{t.teamPlanChangesTitle}</h2>
@@ -265,7 +300,7 @@ export function PlanChangesPanel({
           </Button>
         </div>
       </div>
-      {kept ? null : (
+      {kept || ledger.listed === 0 ? null : (
         <table className="w-full border-collapse">
           <thead>
             <tr>
@@ -276,11 +311,17 @@ export function PlanChangesPanel({
             </tr>
           </thead>
           <tbody>
+            <Group title={t.teamPlanChangesGroupBreaks} rows={ledger.breaks} tone="breaks" t={t} lang={lang} heroes={heroes} items={items} heroNames={heroNames} />
             <Group title={t.teamPlanChangesGroupPlan} rows={ledger.plan} tone="plan" t={t} lang={lang} heroes={heroes} items={items} heroNames={heroNames} />
             <Group title={t.teamPlanChangesGroupProgress} rows={ledger.progress} tone="progress" t={t} lang={lang} heroes={heroes} items={items} heroNames={heroNames} />
           </tbody>
         </table>
       )}
+      {alsoLine ? (
+        <p data-testid="team-plan-changes-also" className="m-0 text-[12px] text-muted">
+          {alsoLine}
+        </p>
+      ) : null}
       {rotationLine ? (
         <p data-testid="team-plan-changes-rotation" className="m-0 text-[12px] text-muted">
           <span className="font-semibold tracking-[0.04em] uppercase">{t.teamPlanChangesGroupNoise}</span> · {rotationLine}

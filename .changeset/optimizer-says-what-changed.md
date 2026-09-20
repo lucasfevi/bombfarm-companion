@@ -21,7 +21,12 @@ change since the plan was built: what (the hero or piece, drawn), what moved ("l
 "forged", "gone from the bag", "points in Attack"), before → now, and a verdict. **Changes the
 plan** is the reason to build again. **Progress on this plan** is a step the plan itself asked
 for, taken — a piece forged towards its target, points spent where it said — with the target
-beside it. Field rotation is one muted line, "Not counted", never a row. *Keep this plan* folds
+beside it. **Breaks the plan** — a hero or piece the plan placed is gone, so the plan can no
+longer be carried out as written — stands first, in its own tone. A row is kept for what a
+player recognises: a hero arriving or leaving, a level, a star, a piece arriving, a rune, the
+tree; a point spent elsewhere, a forge the plan did not ask for, a setup control or a piece the
+plan never used leaving the bag still count, but fold into one line — "Also changed: …".
+Field rotation is one muted line, "Not counted", never a row. *Keep this plan* folds
 the table away until the next change; *Build team plan again* is the same press as the setup
 panel's.
 
