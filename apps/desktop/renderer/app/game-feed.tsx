@@ -1,11 +1,10 @@
 'use client';
 
 /**
- * The game as the zeroth feed, at the status strip's left end: a small-caps GAME over a mono
- * value — `live`, `stale 3m`, `not running` — in the same grammar as the feeds rail at the
- * right, and nothing else. No meter, because the game is not polled on a clock; it is the
- * upstream every other feed is read from. The word carries the state and colour only underlines
- * the two that want attention; the tooltip says the same thing in a sentence.
+ * The game connection at the status strip's left end: a dot and a word. Connected — a green dot
+ * that pulses, the one motion in the strip that is always on, beside the word. Stale — a steady
+ * amber dot, the word, and the age beside it. Not running — a hollow dot and a muted word. No
+ * meter, because the game is not polled on a clock; it is the upstream every feed is read from.
  *
  * The Live tab's corner dot reads from the same status through {@link liveTabMark}, so the two
  * can never disagree.
@@ -16,25 +15,19 @@ import type { GameStatusInfo } from '@bombfarm/contracts';
 import { sub, useCopy, type Copy } from '../lib/copy';
 import { formatAge } from '../lib/format';
 
-/** A value that is not there yet — before main has answered once. Punctuation, so the same in
- *  both languages. */
-const NONE = '—';
+export type GameWords = { word: string; age: string | null; tip: string; tone: AppNavItemMark['tone'] | null };
 
-export function gameWords(status: GameStatusInfo | null, t: Copy): { value: string; tip: string; tone: AppNavItemMark['tone'] | null } {
-  if (status === null) return { value: NONE, tip: t.shellLoadingLabel, tone: null };
+export function gameWords(status: GameStatusInfo | null, t: Copy): GameWords {
+  if (status === null) return { word: t.gameConnecting, age: null, tip: t.shellLoadingLabel, tone: null };
   switch (status.status) {
     case 'connected':
-      return { value: t.gameFeedLive, tip: t.liveStatusLiveLabel, tone: 'up' };
+      return { word: t.gameConnected, age: null, tip: t.liveStatusLiveLabel, tone: 'up' };
     case 'stale': {
       const age = status.staleAgeMs === undefined ? null : formatAge(status.staleAgeMs, t);
-      return {
-        value: age === null ? t.gameFeedStaleNoAge : sub(t.gameFeedStale, { age }),
-        tip: age === null ? t.gameFeedStaleNoAgeTip : sub(t.gameFeedStaleTip, { age }),
-        tone: 'warn',
-      };
+      return { word: t.gameStale, age, tip: age === null ? t.gameFeedStaleNoAgeTip : sub(t.gameFeedStaleTip, { age }), tone: 'warn' };
     }
     case 'not_running':
-      return { value: t.gameFeedNotRunning, tip: t.gameFeedNotRunningTip, tone: 'muted' };
+      return { word: t.gameNotRunning, age: null, tip: t.gameFeedNotRunningTip, tone: 'muted' };
   }
 }
 
@@ -46,8 +39,14 @@ export function liveTabMark(status: GameStatusInfo | null, t: Copy): AppNavItemM
 
 export function GameFeed({ status }: { status: GameStatusInfo | null }) {
   const t = useCopy();
-  const { value, tip, tone } = gameWords(status, t);
-  const valueTone = tone === 'warn' ? 'text-warn' : tone === 'muted' ? 'text-dim' : 'text-muted';
+  const { word, age, tip, tone } = gameWords(status, t);
+  const dotClass =
+    tone === 'up'
+      ? 'bg-up motion-safe:animate-pulse'
+      : tone === 'warn'
+        ? 'bg-warn'
+        : 'bg-transparent shadow-[inset_0_0_0_1.5px_var(--line)]';
+  const wordClass = tone === 'up' ? 'text-ink' : tone === 'warn' ? 'text-warn' : 'text-muted';
 
   return (
     <Tooltip.Provider delay={200} closeDelay={80}>
@@ -58,16 +57,17 @@ export function GameFeed({ status }: { status: GameStatusInfo | null }) {
               role="status"
               data-testid="game-feed"
               data-game={status?.status ?? 'loading'}
-              className={cn('flex', 'min-w-[88px]', 'cursor-default', 'flex-col', 'gap-[3px]', 'py-0.5', 'leading-none')}
+              className={cn('inline-flex', 'cursor-default', 'items-center', 'gap-2', 'py-1')}
             >
-              <span className="flex items-baseline justify-between gap-2.5">
-                <span className={cn('text-[10px]', 'font-semibold', 'tracking-[0.06em]', 'uppercase', 'text-muted')}>{t.gameFeedLabel}</span>
-                <span data-testid="game-feed-value" className={cn('font-mono', 'text-[11px]', 'tabular-nums', 'whitespace-nowrap', valueTone)}>
-                  {value}
-                </span>
+              <span aria-hidden data-testid="game-feed-dot" className={cn('size-[7px]', 'shrink-0', 'rounded-full', dotClass)} />
+              <span data-testid="game-feed-value" className={cn('text-[10px]', 'font-semibold', 'tracking-[0.06em]', 'uppercase', wordClass)}>
+                {word}
               </span>
-              {/* The rail's meter row, kept as height so the two ends of the strip share a baseline. */}
-              <span aria-hidden className="h-0.5" />
+              {age !== null ? (
+                <span data-testid="game-feed-age" className={cn('font-mono', 'text-[10.5px]', 'tabular-nums', 'text-warn')}>
+                  {age}
+                </span>
+              ) : null}
             </span>
           }
         />

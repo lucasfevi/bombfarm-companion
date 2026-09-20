@@ -15,11 +15,10 @@ import type { Copy } from './index';
 
 export const ptBR: Copy = {
   // shell* — AppShell navigation and status chrome
-  gameFeedLabel: 'Jogo',
-  gameFeedLive: 'ao vivo',
-  gameFeedStale: 'parado {age}',
-  gameFeedStaleNoAge: 'parado',
-  gameFeedNotRunning: 'fechado',
+  gameConnected: 'Conectado',
+  gameStale: 'Parado',
+  gameNotRunning: 'Fechado',
+  gameConnecting: 'Conectando',
   gameFeedStaleTip: 'O jogo está aberto, mas nada chega dele há {age}',
   gameFeedStaleNoAgeTip: 'O jogo está aberto, mas nada está chegando dele',
   gameFeedNotRunningTip: 'Nenhum processo do jogo encontrado — o app continua procurando sozinho',
@@ -41,6 +40,8 @@ export const ptBR: Copy = {
   feedsNextDue: 'atualização automática pendente',
   feedsNotYet: 'ainda não',
   feedsReading: 'lendo…',
+  feedsRefused: 'recusado',
+  feedsLastRead: 'última leitura {age}',
   feedsCycleMinutes: '{n} min',
   shellCoffeeLabel: 'Me pague um café',
   shellMoreActionsLabel: 'Mais ações',

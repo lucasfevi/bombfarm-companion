@@ -192,19 +192,22 @@ test.describe('forge plan smoke', () => {
       const refreshButton = rail.getByTestId('account-refresh');
       await expect(refreshButton).toBeVisible();
       await expect(refreshButton).toHaveAttribute('data-state', 'fresh');
-      await expect(rail.getByTestId('account-refresh-age')).not.toContainText('out of date');
       await expect(page.getByTestId('feed-account-tip')).toHaveCount(0);
       await refreshButton.hover();
       await expect(page.getByTestId('feed-account-tip')).toContainText('Refresh Account now');
+      await expect(page.getByTestId('feed-account-tip')).toContainText('last read');
 
       // Pressing it asks main to go and read, rather than re-showing what was already in hand —
       // and a fixture has no server behind it, so the one thing the press must not do is look
       // like it worked. This is also the state a real player reaches with the game closed. The
-      // refusal takes the age's place for as long as it stands.
+      // refusal is the one word beside the ring; its reason is the tooltip's last sentence.
       await refreshButton.click();
-      await expect(rail.getByTestId('account-refresh-age')).toHaveText('No server to read from');
-      // A refusal is printed, not coloured: only "out of date" takes the warn tone.
-      await expect(refreshButton).toHaveAttribute('data-state', 'fresh');
+      await expect(refreshButton).toHaveAttribute('data-state', 'refused');
+      await expect(rail.getByTestId('feed-account-word')).toHaveText('refused');
+      // The press closed the tooltip; leaving and coming back reopens it with the reason appended.
+      await page.mouse.move(0, 0);
+      await refreshButton.hover();
+      await expect(page.getByTestId('feed-account-tip')).toContainText('No server to read from');
       // Refused is not working: nothing is in flight, so the button is pressable again.
       await expect(refreshButton).toBeEnabled();
 

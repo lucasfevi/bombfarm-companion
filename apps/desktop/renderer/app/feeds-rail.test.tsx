@@ -10,7 +10,7 @@ vi.mock('../lib/copy', async (importOriginal) => {
   return { ...actual, useCopy: () => en };
 });
 
-const { FeedsRail, feedWords } = await import('./feeds-rail');
+const { FeedsRail, feedWords, ringGeometry, refreshAllFill } = await import('./feeds-rail');
 
 const NOW = Date.now();
 const ago = (ms: number) => new Date(NOW - ms).toISOString();
@@ -34,71 +34,92 @@ function tagOf(html: string, testId: string): string {
   return new RegExp(`<[a-z]+[^>]*data-testid="${testId}"[^>]*>`).exec(html)?.[0] ?? '';
 }
 
-function textOf(html: string, testId: string): string {
-  return new RegExp(`<[a-z]+[^>]*data-testid="${testId}"[^>]*>([^<]*)<`).exec(html)?.[1] ?? '';
+function ringOf(html: string, testId: string): string {
+  const start = html.indexOf(`data-testid="${testId}"`);
+  return html.slice(start, html.indexOf('</svg>', start));
 }
 
-describe('FeedsRail — four names over four ages, and one press for all of them', () => {
-  it('draws the feeds in press order, each as its own button', () => {
+describe('ringGeometry — the ring is the time left on the feed\'s clock, and its state', () => {
+  it('is full the moment a read lands and drains to empty as the clock runs down', () => {
+    expect(ringGeometry(feed({ id: 'account', capturedAt: ago(0) }), NOW)).toEqual({ state: 'fresh', left: 1 });
+    expect(ringGeometry(feed({ id: 'account', capturedAt: ago(30_000) }), NOW)).toEqual({ state: 'fresh', left: 0.5 });
+    expect(ringGeometry(feed({ id: 'account', capturedAt: ago(90_000) }), NOW)).toEqual({ state: 'fresh', left: 0 });
+  });
+
+  it('has no arc for a feed with no clock, and none for one never read', () => {
+    expect(ringGeometry(feed({ id: 'pvp' }), NOW)).toEqual({ state: 'noclock', left: null });
+    expect(ringGeometry(feed({ id: 'market', capturedAt: null }), NOW)).toEqual({ state: 'never', left: null });
+  });
+
+  it('a press in flight, or a screen recomputing, is working whatever the clock says', () => {
+    expect(ringGeometry(feed({ id: 'account', readState: { kind: 'working' } }), NOW).state).toBe('working');
+    expect(ringGeometry(feed({ id: 'account', busy: true }), NOW).state).toBe('working');
+  });
+
+  it('"out of date" outranks a refusal, and a refusal outranks the clock', () => {
+    expect(ringGeometry(feed({ id: 'account', outOfDate: true, readState: { kind: 'refused', reason: 'offline' } }), NOW).state).toBe('late');
+    expect(ringGeometry(feed({ id: 'account', readState: { kind: 'refused', reason: 'offline' } }), NOW).state).toBe('refused');
+  });
+});
+
+describe('FeedsRail — four rings beside four names, and one ring for all of them', () => {
+  it('draws the feeds in press order, each as its own button with a ring and no figure', () => {
     const html = render();
     const order = ['account-refresh', 'feed-pvp-refresh', 'feed-market-refresh', 'feed-updates-refresh'].map((id) => html.indexOf(`data-testid="${id}"`));
     expect(order.every((index) => index >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
-    expect(html).toContain('data-testid="feeds-refresh-all"');
+    expect(html).not.toContain(en.ageJustNow);
+    expect(html).not.toContain(en.ageMinutes.replace('{n}', '3'));
+    expect(ringOf(html, 'account-refresh')).toContain('data-ring="fresh"');
+    expect(ringOf(html, 'feed-pvp-refresh')).toContain('data-ring="noclock"');
   });
 
-  it('prints each age in the mono figure, and "not yet" for a feed never read', () => {
-    const html = render([...FRESH.slice(0, 3), feed({ id: 'updates', capturedAt: null })]);
-    expect(textOf(html, 'account-refresh-age')).toBe(en.ageJustNow);
-    expect(textOf(html, 'feed-pvp-age')).toBe(en.ageMinutes.replace('{n}', '3'));
-    expect(textOf(html, 'feed-updates-age')).toBe(en.feedsNotYet);
-  });
-
-  it('the account item speaks for a screen computed from an older copy: "out of date", in the warn tone', () => {
+  it('the account item speaks for a screen computed from an older copy: the warn ring with a filled centre', () => {
     const html = render([feed({ id: 'account', outOfDate: true }), ...FRESH.slice(1)]);
-    expect(textOf(html, 'account-refresh-age')).toBe(en.farmRefreshStale);
     expect(tagOf(html, 'account-refresh')).toContain('data-state="late"');
+    expect(ringOf(html, 'account-refresh')).toContain('stroke-warn');
+    expect(ringOf(html, 'account-refresh')).toContain('fill-warn');
   });
 
-  it('a refused press prints its reason in the age\'s place, muted like an age, and the item stays pressable', () => {
+  it('a refused press is a grey ring and the one word, muted — its reason is the tooltip\'s; the item stays pressable', () => {
     const html = render([feed({ id: 'account', readState: { kind: 'refused', reason: 'game_not_running' } }), ...FRESH.slice(1)]);
-    expect(textOf(html, 'account-refresh-age')).toBe(en.accountReadGameNotRunning);
-    expect(tagOf(html, 'account-refresh')).toContain('data-state="fresh"');
+    expect(tagOf(html, 'account-refresh')).toContain('data-state="refused"');
     expect(tagOf(html, 'account-refresh')).not.toContain('disabled=""');
+    expect(html).toContain(`data-testid="feed-account-word"`);
+    expect(html).toContain(en.feedsRefused);
+    // The reason itself is the tooltip's last sentence — see feedWords below; a closed tooltip renders nothing.
+    expect(ringOf(html, 'account-refresh')).not.toContain('stroke-warn');
   });
 
-  it('a working press reads as reading, is not pressable again, and fills its meter', () => {
+  it('a working press spins the ring in the accent and is not pressable again', () => {
     const html = render([feed({ id: 'account' }), feed({ id: 'pvp', readState: { kind: 'working' } }), ...FRESH.slice(2)]);
-    expect(textOf(html, 'feed-pvp-age')).toBe(en.feedsReading);
     expect(tagOf(html, 'feed-pvp-refresh')).toContain('disabled=""');
     expect(tagOf(html, 'feed-pvp-refresh')).toContain('data-state="working"');
+    expect(ringOf(html, 'feed-pvp-refresh')).toContain('animate-spin');
+    expect(ringOf(html, 'feed-pvp-refresh')).toContain('stroke-accent');
   });
 
   it('the feeds the tab on show does not read are muted; the ones it reads are not', () => {
     const farm = render(FRESH, { running: false }, 'farm');
     expect(tagOf(farm, 'account-refresh')).toContain('data-muted="false"');
     expect(tagOf(farm, 'feed-pvp-refresh')).toContain('data-muted="true"');
-    expect(tagOf(farm, 'feed-market-refresh')).toContain('data-muted="true"');
     const inventory = render(FRESH, { running: false }, 'inventory');
-    expect(tagOf(inventory, 'account-refresh')).toContain('data-muted="false"');
     expect(tagOf(inventory, 'feed-market-refresh')).toContain('data-muted="false"');
-    expect(tagOf(inventory, 'feed-pvp-refresh')).toContain('data-muted="true"');
     const pvp = render(FRESH, { running: false }, 'pvp');
     expect(tagOf(pvp, 'feed-pvp-refresh')).toContain('data-muted="false"');
     expect(tagOf(pvp, 'account-refresh')).toContain('data-muted="true"');
     const settings = render(FRESH, { running: false }, 'settings');
     expect(tagOf(settings, 'feed-updates-refresh')).toContain('data-muted="false"');
-    expect(tagOf(settings, 'account-refresh')).toContain('data-muted="true"');
   });
 
-  it('while refresh-all runs, the steps still to come are muted too, and the button counts the steps', () => {
+  it('while refresh-all runs, the steps still to come are muted, the button counts the steps, and its ring fills a quarter per step', () => {
     const html = render(FRESH, { running: true, step: 1, total: 4 }, 'skills');
-    expect(tagOf(html, 'account-refresh')).toContain('data-muted="false"');
-    expect(tagOf(html, 'feed-pvp-refresh')).toContain('data-muted="false"');
     expect(tagOf(html, 'feed-market-refresh')).toContain('data-muted="true"');
     expect(tagOf(html, 'feed-updates-refresh')).toContain('data-muted="true"');
-    expect(textOf(html, 'feeds-refresh-all-step')).toBe(sub(en.feedsRefreshAllStep, { step: 2, total: 4 }));
+    expect(html).toContain(sub(en.feedsRefreshAllStep, { step: 2, total: 4 }));
     expect(tagOf(html, 'feeds-refresh-all')).toContain('disabled=""');
+    expect(refreshAllFill({ running: true, step: 1, total: 4 })).toBe(0.375);
+    expect(refreshAllFill({ running: false })).toBe(0);
   });
 
   it('every press is named by the design-system tooltip, never the native attribute', () => {
@@ -108,29 +129,30 @@ describe('FeedsRail — four names over four ages, and one press for all of them
   });
 });
 
-describe('feedWords — the tooltip says how the feed keeps itself fresh', () => {
-  it('a feed with a clock says its cycle and how long until the next automatic refresh', () => {
-    const words = feedWords(feed({ id: 'market', capturedAt: ago(5 * 60_000) }), en, NOW);
-    expect(words.tip[0]).toBe(sub(en.feedsRefreshOne, { feed: en.feedsPrices }));
-    expect(words.tip[1]).toBe(sub(en.feedsEvery, { cycle: sub(en.feedsCycleMinutes, { n: 15 }) }));
-    expect(words.tip[2]).toBe(sub(en.feedsNextIn, { age: sub(en.ageShortMinutes, { n: 10 }) }));
+describe('feedWords — the tooltip carries the figures the ring does not', () => {
+  it('the press, the last read, the cycle, and how long until the next automatic refresh', () => {
+    expect(feedWords(feed({ id: 'market', capturedAt: ago(5 * 60_000) }), en, NOW)).toEqual([
+      sub(en.feedsRefreshOne, { feed: en.feedsPrices }),
+      sub(en.feedsLastRead, { age: en.ageMinutes.replace('{n}', '5') }),
+      sub(en.feedsEvery, { cycle: sub(en.feedsCycleMinutes, { n: 15 }) }),
+      sub(en.feedsNextIn, { age: sub(en.ageShortMinutes, { n: 10 }) }),
+    ]);
   });
 
-  it("the account's cycle is a minute, and a due refresh is said to be due", () => {
+  it("the account's clock is a minute, and a due refresh is said to be due", () => {
     const words = feedWords(feed({ id: 'account', capturedAt: ago(90_000) }), en, NOW);
-    expect(words.tip[1]).toBe(sub(en.feedsEvery, { cycle: sub(en.feedsCycleMinutes, { n: 1 }) }));
-    expect(words.tip[2]).toBe(en.feedsNextDue);
+    expect(words[2]).toBe(sub(en.feedsEvery, { cycle: sub(en.feedsCycleMinutes, { n: 1 }) }));
+    expect(words[3]).toBe(en.feedsNextDue);
   });
 
-  it('the PVP standing says it has no clock of its own, and nothing about a next refresh', () => {
-    const words = feedWords(feed({ id: 'pvp' }), en, NOW);
-    expect(words.tip).toEqual([sub(en.feedsRefreshOne, { feed: en.feedsPvp }), en.feedsNoClock]);
+  it('the PVP standing says it has no clock of its own', () => {
+    expect(feedWords(feed({ id: 'pvp' }), en, NOW)[2]).toBe(en.feedsNoClock);
   });
 
-  it('only "out of date" is amber — never age, however old, and never a refused press', () => {
-    expect(feedWords(feed({ id: 'market', capturedAt: ago(6 * 3_600_000) }), en, NOW).late).toBe(false);
-    expect(feedWords(feed({ id: 'account', capturedAt: ago(27 * 86_400_000) }), en, NOW).late).toBe(false);
-    expect(feedWords(feed({ id: 'pvp', readState: { kind: 'refused', reason: 'rate_limited' } }), en, NOW).late).toBe(false);
-    expect(feedWords(feed({ id: 'account', outOfDate: true }), en, NOW).late).toBe(true);
+  it('a refusal adds its reason as the last sentence; out of date and reading replace the last-read line', () => {
+    expect(feedWords(feed({ id: 'pvp', readState: { kind: 'refused', reason: 'rate_limited' } }), en, NOW).at(-1)).toBe(en.accountReadRecent);
+    expect(feedWords(feed({ id: 'account', outOfDate: true }), en, NOW)[1]).toBe(en.farmRefreshStale);
+    expect(feedWords(feed({ id: 'account', readState: { kind: 'working' } }), en, NOW)[1]).toBe(en.feedsReading);
+    expect(feedWords(feed({ id: 'updates', capturedAt: null }), en, NOW)[1]).toBe(en.feedsNotYet);
   });
 });

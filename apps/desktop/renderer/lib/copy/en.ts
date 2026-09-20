@@ -14,13 +14,12 @@
 export const en = {
   // shell* — AppShell navigation and status chrome
   shellLoadingLabel: 'Loading…',
-  // gameFeed* — the game as the status strip's zeroth feed: a word for its state, and the sentence
+  // game* — the game connection at the status strip's left: a word beside a dot, and the sentence
   // the tooltip and the Live tab's dot say for it. `liveStatusLiveLabel` below is the live one.
-  gameFeedLabel: 'Game',
-  gameFeedLive: 'live',
-  gameFeedStale: 'stale {age}',
-  gameFeedStaleNoAge: 'stale',
-  gameFeedNotRunning: 'not running',
+  gameConnected: 'Connected',
+  gameStale: 'Stale',
+  gameNotRunning: 'Not running',
+  gameConnecting: 'Connecting',
   gameFeedStaleTip: 'The game is open, but nothing has arrived from it for {age}',
   gameFeedStaleNoAgeTip: 'The game is open, but nothing is arriving from it',
   gameFeedNotRunningTip: 'No game process found — the app keeps looking on its own',
@@ -44,6 +43,8 @@ export const en = {
   feedsNextDue: 'automatic refresh due',
   feedsNotYet: 'not yet',
   feedsReading: 'reading…',
+  feedsRefused: 'refused',
+  feedsLastRead: 'last read {age}',
   feedsCycleMinutes: '{n} min',
   // The top bar's overflow button, and the referral row inside it — a menu row is read on its own
   // line, so it says what the click does rather than repeating the chip's whole sentence.

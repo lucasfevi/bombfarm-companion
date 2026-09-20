@@ -2,27 +2,51 @@
 
 /**
  * The status strip's rail of the four feeds the app keeps asking for — the account read, the PVP
- * standing, the price list, the update check — each as a name over a mono age, with a hairline
- * meter under it that fills towards the feed's next automatic refresh. The meter is the one thing
- * this strip can say that a timestamp cannot: how soon the feed will refresh itself, and so
- * whether pressing is even worth it. A feed with no clock of its own (the PVP standing) draws a
- * dotted line instead.
+ * standing, the price list, the update check — each as a small ring beside its name. The ring is
+ * the time left until the feed refreshes itself: full the moment a read lands, draining to empty
+ * as its clock runs down, so a glance says whether pressing is even worth it. A read in flight
+ * spins; a landing snaps the ring full and lights its centre for a moment; a screen computed from
+ * an older copy of the account draws the ring in the warn tone with a filled centre; a feed with
+ * no clock of its own (the PVP standing) draws a dotted ring. No figures at rest — the age and the
+ * countdown are the tooltip's.
  *
  * Each item is its own press. The button at the rail's end presses all four, one after another,
- * and counts the steps while it runs. The feeds the tab on show does not read are drawn muted —
- * present and pressable, but not what that screen's numbers came from.
+ * and is itself a ring that fills a quarter per step. The feeds the tab on show does not read are
+ * drawn muted — present and pressable, but not what that screen's numbers came from.
  */
-import { useEffect, useState } from 'react';
-import { Button, cn, Icon, Tooltip } from '@bombfarm/ui';
+import { useEffect, useRef, useState } from 'react';
+import { cn, Tooltip } from '@bombfarm/ui';
 import { sub, useCopy, type Copy } from '../lib/copy';
 import { accountReadRefusalText } from '../lib/account-read-labels';
 import { formatAge, formatCapturedAt } from '../lib/format';
 import { FEED_CYCLE_MS, feedAgeMs, feedMeter, feedNextInMs, feedsReadBy, type FeedId } from '../lib/feeds/feed-clock';
-import type { FeedView, FeedsHook } from '../lib/feeds/use-feeds';
+import type { FeedView, FeedsHook, RefreshAllState } from '../lib/feeds/use-feeds';
 
-/** The meter fills over a minute on the account feed, so a five-second tick keeps it moving
- *  without costing anything; the age text's shortest bucket is a minute anyway. */
-const CLOCK_TICK_MS = 5_000;
+/** The ring drains over a minute on the account feed, so a two-second tick keeps it moving
+ *  without costing anything. */
+const CLOCK_TICK_MS = 2_000;
+/** How long the centre stays lit after a read lands. */
+const LANDED_MS = 700;
+
+const RING_R = 6.5;
+const RING_C = 2 * Math.PI * RING_R;
+
+export type RingState = 'never' | 'fresh' | 'working' | 'late' | 'refused' | 'noclock';
+
+/** The ring's one figure and its state — pure, so the test can read it without mounting. `left`
+ *  is the fraction of the feed's clock still to run: 1 the moment a read lands, 0 when due. */
+export function ringGeometry(feed: FeedView, now: number): { state: RingState; left: number | null } {
+  const working = feed.busy || feed.readState.kind === 'working';
+  const ageMs = feedAgeMs(feed.capturedAt, now);
+  const meter = feedMeter(feed.id, ageMs);
+  const left = meter === null ? null : 1 - meter;
+  if (working) return { state: 'working', left };
+  if (feed.outOfDate) return { state: 'late', left };
+  if (feed.readState.kind === 'refused') return { state: 'refused', left };
+  if (feed.capturedAt === null) return { state: 'never', left: null };
+  if (FEED_CYCLE_MS[feed.id] === null) return { state: 'noclock', left: null };
+  return { state: 'fresh', left };
+}
 
 function feedName(feed: FeedId, t: Copy): string {
   switch (feed) {
@@ -43,25 +67,14 @@ function cycleText(feed: FeedId, t: Copy): string | null {
   return cycle === null ? null : sub(t.feedsCycleMinutes, { n: Math.round(cycle / 60_000) });
 }
 
-/** The words for one item, pure so the test can read them without mounting: the line under the
- *  name, and the tooltip's second and third sentences. */
-export function feedWords(feed: FeedView, t: Copy, now: number): { line: string; late: boolean; tip: string[] } {
+/** The tooltip's sentences, in order: the press, the last read, the clock, and a refusal's reason. */
+export function feedWords(feed: FeedView, t: Copy, now: number): string[] {
   const ageMs = feedAgeMs(feed.capturedAt, now);
-  const working = feed.busy || feed.readState.kind === 'working';
-  const line = working
-    ? t.feedsReading
-    : feed.readState.kind === 'refused'
-      ? accountReadRefusalText(feed.readState.reason, t)
-      : feed.outOfDate
-        ? t.farmRefreshStale
-        : feed.capturedAt === null
-          ? t.feedsNotYet
-          : formatCapturedAt(feed.capturedAt, t, now);
-  // Age alone is never amber, and neither is a press that started nothing — its reason is printed
-  // and that is enough. The one state worth the warn tone is a screen computed from a copy the
-  // live account has moved past: numbers on screen that are no longer the account's.
-  const late = feed.outOfDate;
   const tip = [sub(t.feedsRefreshOne, { feed: feedName(feed.id, t) })];
+  if (feed.busy || feed.readState.kind === 'working') tip.push(t.feedsReading);
+  else if (feed.outOfDate) tip.push(t.farmRefreshStale);
+  else if (feed.capturedAt === null) tip.push(t.feedsNotYet);
+  else tip.push(sub(t.feedsLastRead, { age: formatCapturedAt(feed.capturedAt, t, now) }));
   const cycle = cycleText(feed.id, t);
   if (cycle === null) tip.push(t.feedsNoClock);
   else {
@@ -69,15 +82,62 @@ export function feedWords(feed: FeedView, t: Copy, now: number): { line: string;
     const nextIn = feedNextInMs(feed.id, ageMs);
     if (nextIn !== null) tip.push(nextIn === 0 ? t.feedsNextDue : sub(t.feedsNextIn, { age: formatAge(nextIn, t) }));
   }
-  return { line, late, tip };
+  if (feed.readState.kind === 'refused') tip.push(accountReadRefusalText(feed.readState.reason, t));
+  return tip;
+}
+
+function Ring({ state, left, landed, tone }: { state: RingState; left: number | null; landed: boolean; tone?: 'accent' | 'up' }) {
+  const arcClass = state === 'late' ? 'stroke-warn' : state === 'refused' ? 'stroke-line' : tone === 'accent' ? 'stroke-accent' : tone === 'up' ? 'stroke-up' : 'stroke-muted';
+  return (
+    <svg aria-hidden viewBox="0 0 16 16" className={cn('size-4', 'shrink-0', state === 'working' && 'motion-safe:animate-spin')} data-ring={state}>
+      <circle cx="8" cy="8" r={RING_R} className="fill-none stroke-line" strokeWidth="2.2" />
+      {state === 'noclock' ? (
+        <circle cx="8" cy="8" r={RING_R} className="fill-none stroke-line" strokeWidth="2.2" strokeDasharray="2 3" />
+      ) : state === 'working' ? (
+        <circle cx="8" cy="8" r={RING_R} className="fill-none stroke-accent" strokeWidth="2.2" strokeDasharray="8 30" />
+      ) : state === 'never' ? null : (
+        <circle
+          cx="8"
+          cy="8"
+          r={RING_R}
+          className={cn('fill-none', arcClass, 'transition-[stroke-dashoffset]', 'duration-1000', 'ease-linear')}
+          strokeWidth="2.2"
+          strokeDasharray={RING_C}
+          strokeDashoffset={RING_C * (1 - (left ?? 1))}
+          transform="rotate(-90 8 8)"
+        />
+      )}
+      {state === 'late' ? <circle cx="8" cy="8" r="2.5" className="fill-warn" /> : landed ? <circle cx="8" cy="8" r="2" className="fill-up" /> : null}
+    </svg>
+  );
+}
+
+/** True for a moment after `capturedAt` moves — the landing the ring lights its centre for. */
+function useLanded(capturedAt: string | null): boolean {
+  const [landed, setLanded] = useState(false);
+  const previous = useRef(capturedAt);
+  useEffect(() => {
+    if (previous.current === capturedAt) return;
+    const wasRead = previous.current !== null;
+    previous.current = capturedAt;
+    if (!wasRead || capturedAt === null) return;
+    setLanded(true);
+    const timer = window.setTimeout(() => {
+      setLanded(false);
+    }, LANDED_MS);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [capturedAt]);
+  return landed;
 }
 
 function FeedItem({ feed, t, now, muted }: { feed: FeedView; t: Copy; now: number; muted: boolean }) {
-  const { line, late, tip } = feedWords(feed, t, now);
-  const working = feed.busy || feed.readState.kind === 'working';
-  const meter = feedMeter(feed.id, feedAgeMs(feed.capturedAt, now));
-  const lineTone = late ? 'text-warn' : working ? 'text-ink' : 'text-muted';
-  const testIds = feed.id === 'account' ? { button: 'account-refresh', line: 'account-refresh-age' } : { button: `feed-${feed.id}-refresh`, line: `feed-${feed.id}-age` };
+  const { state, left } = ringGeometry(feed, now);
+  const landed = useLanded(feed.capturedAt);
+  const tip = feedWords(feed, t, now);
+  const working = state === 'working';
+  const testId = feed.id === 'account' ? 'account-refresh' : `feed-${feed.id}-refresh`;
 
   return (
     <Tooltip.Root>
@@ -85,54 +145,44 @@ function FeedItem({ feed, t, now, muted }: { feed: FeedView; t: Copy; now: numbe
         render={
           <button
             type="button"
-            data-testid={testIds.button}
+            data-testid={testId}
             data-feed={feed.id}
-            data-state={working ? 'working' : late ? 'late' : 'fresh'}
+            data-state={state}
             data-muted={muted}
             aria-label={tip[0]}
             aria-busy={working}
             disabled={working}
             onClick={feed.request}
             className={cn(
-              'flex',
-              'min-w-[88px]',
+              'inline-flex',
               'cursor-pointer',
-              'flex-col',
-              'gap-[3px]',
+              'items-center',
+              'gap-1.5',
               'border-0',
               'border-l',
               'border-line',
               'bg-transparent',
               'px-2.5',
-              'py-0.5',
-              'text-left',
+              'py-1',
               'first:border-l-0',
-              'hover:[&_[data-feed-age]]:text-ink',
+              'transition-opacity',
+              'hover:opacity-100',
               'disabled:cursor-default',
               'focus-visible:rounded-sm',
               'focus-visible:[outline-style:solid]',
               'focus-visible:outline-2',
               'focus-visible:outline-offset-1',
               'focus-visible:outline-accent',
-              muted && 'opacity-45',
+              muted && 'opacity-40',
             )}
           >
-            <span className="flex items-baseline justify-between gap-2.5 leading-none">
-              <span className={cn('text-[10px]', 'font-semibold', 'tracking-[0.06em]', 'uppercase', late ? 'text-warn' : 'text-muted')}>{feedName(feed.id, t)}</span>
-              <span data-feed-age data-testid={testIds.line} className={cn('font-mono', 'text-[11px]', 'tabular-nums', 'whitespace-nowrap', lineTone)}>
-                {line}
+            <Ring state={state} left={left} landed={landed} />
+            <span className={cn('text-[10px]', 'font-semibold', 'tracking-[0.06em]', 'uppercase', state === 'late' ? 'text-warn' : 'text-muted')}>{feedName(feed.id, t)}</span>
+            {state === 'refused' ? (
+              <span data-testid={`feed-${feed.id}-word`} className={cn('font-mono', 'text-[10px]', 'text-muted', 'opacity-70')}>
+                {t.feedsRefused}
               </span>
-            </span>
-            {meter === null && !working ? (
-              <span aria-hidden className="h-0 border-t border-dotted border-line" />
-            ) : (
-              <span aria-hidden className="h-0.5 overflow-hidden rounded-px bg-line">
-                <span
-                  className={cn('block', 'h-full', late ? 'bg-warn' : working ? 'bg-accent' : 'bg-muted', working && 'motion-safe:animate-pulse')}
-                  style={{ width: `${String(Math.round((working ? 1 : (meter ?? 0)) * 100))}%` }}
-                />
-              </span>
-            )}
+            ) : null}
           </button>
         }
       />
@@ -151,10 +201,17 @@ function FeedItem({ feed, t, now, muted }: { feed: FeedView; t: Copy; now: numbe
   );
 }
 
+/** The all-button's ring fills a quarter per step and is full while the last step runs. */
+export function refreshAllFill(all: RefreshAllState): number {
+  return all.running ? (all.step + 0.5) / all.total : 0;
+}
+
 export function FeedsRail({ feeds, refreshAll, all, activeTabId }: FeedsHook & { activeTabId: string }) {
-  const relevant = feedsReadBy(activeTabId);
   const t = useCopy();
+  const relevant = feedsReadBy(activeTabId);
   const [now, setNow] = useState(() => Date.now());
+  const [justFinished, setJustFinished] = useState(false);
+  const wasRunning = useRef(all.running);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -165,11 +222,24 @@ export function FeedsRail({ feeds, refreshAll, all, activeTabId }: FeedsHook & {
     };
   }, []);
 
+  useEffect(() => {
+    const finished = wasRunning.current && !all.running;
+    wasRunning.current = all.running;
+    if (!finished) return undefined;
+    setJustFinished(true);
+    const timer = window.setTimeout(() => {
+      setJustFinished(false);
+    }, LANDED_MS);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [all.running]);
+
   return (
     <Tooltip.Provider delay={200} closeDelay={80}>
       <div data-testid="feeds-rail" data-running={all.running} className="flex items-center gap-2">
+        {/* Muted: a feed this tab does not read, or a step the running sequence has not reached. */}
         <div className="flex items-stretch">
-          {/* Muted: a feed this tab does not read, or a step the running sequence has not reached. */}
           {feeds.map((feed, index) => (
             <FeedItem key={feed.id} feed={feed} t={t} now={now} muted={(all.running && index > all.step) || !relevant.includes(feed.id)} />
           ))}
@@ -177,17 +247,41 @@ export function FeedsRail({ feeds, refreshAll, all, activeTabId }: FeedsHook & {
         <Tooltip.Root>
           <Tooltip.Trigger
             render={
-              <Button
+              <button
                 type="button"
-                variant="icon-action"
                 aria-label={t.feedsRefreshAll}
                 data-testid="feeds-refresh-all"
                 disabled={all.running}
                 aria-busy={all.running}
                 onClick={refreshAll}
+                className={cn(
+                  'inline-flex',
+                  'cursor-pointer',
+                  'items-center',
+                  'gap-1.5',
+                  'rounded-sm',
+                  'border',
+                  'border-line',
+                  'bg-transparent',
+                  'px-1.5',
+                  'py-0.5',
+                  'text-muted',
+                  'hover:border-accent',
+                  'hover:text-accent',
+                  'disabled:cursor-default',
+                  'focus-visible:[outline-style:solid]',
+                  'focus-visible:outline-2',
+                  'focus-visible:outline-offset-1',
+                  'focus-visible:outline-accent',
+                )}
               >
-                <Icon name="arrow-path" size="sm" data-icon="arrow-path" className={cn(all.running && 'motion-safe:animate-spin')} />
-              </Button>
+                <Ring state="fresh" left={justFinished ? 1 : refreshAllFill(all)} landed={false} tone={justFinished ? 'up' : 'accent'} />
+                {all.running ? (
+                  <span data-testid="feeds-refresh-all-step" className="font-mono text-[11px] tabular-nums">
+                    {sub(t.feedsRefreshAllStep, { step: all.step + 1, total: all.total })}
+                  </span>
+                ) : null}
+              </button>
             }
           />
           <Tooltip.Portal>
@@ -198,11 +292,6 @@ export function FeedsRail({ feeds, refreshAll, all, activeTabId }: FeedsHook & {
             </Tooltip.Positioner>
           </Tooltip.Portal>
         </Tooltip.Root>
-        {all.running ? (
-          <span data-testid="feeds-refresh-all-step" className="font-mono text-[11px] tabular-nums text-muted">
-            {sub(t.feedsRefreshAllStep, { step: all.step + 1, total: all.total })}
-          </span>
-        ) : null}
       </div>
     </Tooltip.Provider>
   );
