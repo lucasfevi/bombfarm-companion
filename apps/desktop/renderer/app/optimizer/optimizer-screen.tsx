@@ -26,6 +26,7 @@ import {
 } from '@bombfarm/team-plan/core';
 import type { TeamPlanEmptyStateKind } from '@bombfarm/team-plan/model';
 import type { TeamPlanRunnerHandle, TeamPlanRunStatus } from '@bombfarm/team-plan/runner';
+import type { AccountSource } from '@bombfarm/contracts';
 import type { TeamPlan, TeamPlanAllowedChanges, TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { TeamAuraId } from '@bombfarm/domain/team-buffs';
@@ -36,6 +37,7 @@ import type { OptimizerPlanState } from '../../lib/optimizer/optimizer-plan-stor
 import type { OptimizerView } from '../../lib/optimizer/optimizer-view-storage';
 import { optimizerScreenCopy, useTeamPlanCopy } from '../screen-copy';
 import { ForgeQueueAdd } from '../forge/forge-queue-add';
+import { ApplyPanel } from './apply-panel';
 
 type OptimizerScreenActionsIn = {
   startRun: (runId: string, signature: string, heroes: readonly HeroRecord[], basis: PlanBasis) => void;
@@ -52,6 +54,8 @@ export function OptimizerScreen({
   planState,
   runner,
   actions,
+  forgeWritesEnabled,
+  accountSource,
 }: {
   snapshot: OptimizerSettledSnapshot;
   controls: OptimizerView;
@@ -59,6 +63,8 @@ export function OptimizerScreen({
   planState: OptimizerPlanState;
   runner: TeamPlanRunnerHandle;
   actions: OptimizerScreenActionsIn;
+  forgeWritesEnabled: boolean;
+  accountSource: AccountSource | null;
 }) {
   const t = useCopy();
   const { lang } = useLocale();
@@ -204,9 +210,34 @@ export function OptimizerScreen({
         const [title, body] = emptyTitleBody[kind];
         return <TeamPlanEmptyPanel title={title} body={body} />;
       },
+      applyPanel:
+        planState.plan === null ? undefined : (
+          <ApplyPanel
+            plan={planState.plan}
+            planHeroes={planState.heroes}
+            planRunId={planState.runId ?? ''}
+            isStale={isStale}
+            farmChosenPhase={inputs.farmChosenPhase}
+            forgeWritesEnabled={forgeWritesEnabled}
+            accountSource={accountSource}
+          />
+        ),
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- emptyTitleBody is derived from t each render
-    [t, lang, forgeQueueAction, aurasAtCap, setAuraAtCap],
+    [
+      t,
+      lang,
+      forgeQueueAction,
+      aurasAtCap,
+      setAuraAtCap,
+      planState.plan,
+      planState.heroes,
+      planState.runId,
+      isStale,
+      inputs.farmChosenPhase,
+      forgeWritesEnabled,
+      accountSource,
+    ],
   );
 
   return <TeamPlanScreenView t={screenCopy} lang={lang} data={data} actions={screenActions} slots={slots} runner={runner} />;

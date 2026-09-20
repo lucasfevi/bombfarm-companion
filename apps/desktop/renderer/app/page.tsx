@@ -484,7 +484,7 @@ function HomePageContent({
           ) : activeNavId === 'forge' ? (
             <ForgeView forgeWritesEnabled={forgeWritesEnabled} accountSource={environment?.accountSource ?? null} />
           ) : activeNavId === 'optimizer' ? (
-            <OptimizerView />
+            <OptimizerView forgeWritesEnabled={forgeWritesEnabled} accountSource={environment?.accountSource ?? null} />
           ) : activeNavId === 'pvp' ? (
             <PvpView />
           ) : activeNavId === 'skills' ? (

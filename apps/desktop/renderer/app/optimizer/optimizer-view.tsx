@@ -20,6 +20,7 @@
  * enable the React Compiler, and a freshly-allocated prop bag reaches the plan's results section.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { AccountSource } from '@bombfarm/contracts';
 import { Banner, EmptyState, colClass } from '@bombfarm/ui';
 import { scheduleAfterPaint } from '@bombfarm/farm';
 import { sub, useCopy } from '../../lib/copy';
@@ -31,7 +32,13 @@ import { DEFAULT_OPTIMIZER_VIEW, loadOptimizerView, saveOptimizerView, type Opti
 import { useScreenRefreshRegistration } from '../../lib/refresh/screen-refresh-store';
 import { OptimizerScreen } from './optimizer-screen';
 
-export function OptimizerView() {
+export function OptimizerView({
+  forgeWritesEnabled,
+  accountSource,
+}: {
+  forgeWritesEnabled: boolean;
+  accountSource: AccountSource | null;
+}) {
   const t = useCopy();
   const account = useAccountView();
   const {
@@ -154,6 +161,8 @@ export function OptimizerView() {
         planState={planState}
         runner={runner}
         actions={{ startRun, resolveRun, applyPlan, clearPlan, openHeroes }}
+        forgeWritesEnabled={forgeWritesEnabled}
+        accountSource={accountSource}
       />
     </div>
   );
