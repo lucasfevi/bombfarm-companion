@@ -27,6 +27,7 @@ describe('beginRun', () => {
       units: fourUnits(),
       status: ['next', 'next', 'next', 'next'],
       current: null,
+      currentCall: null,
       skipped: [],
       goldSpent: 0,
       walletAfter: null,

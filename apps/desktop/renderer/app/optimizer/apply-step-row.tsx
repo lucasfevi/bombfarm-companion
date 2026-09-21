@@ -207,16 +207,29 @@ function buildRowAction(
   shared: RowShared,
   readyLabel: string,
   extraReadyNotes: readonly ReactNode[],
-): { action: ApplyStepRowAction; notes: ReactNode[] } {
+): { action: ApplyStepRowAction; notes: ReactNode[]; facts?: ReactNode } {
   const { t, facts, gate, record, onPress } = shared;
 
+  // A finished step is a receipt: its facts are the run's own counts, not the live account's
+  // (which by now has nothing left for this step), and the skips it recorded fold out below.
   if (record.status === 'done') {
-    const notes: ReactNode[] = [sub(t.applyStepDone, { made: record.made, total: record.total, skipped: record.skipped })];
-    if (shared.showSkips) {
-      const units = facts.kind === 'units' ? facts.units : [];
-      notes.push(...record.skips.map((skip) => skipRecordNote(skip, units, t)));
+    const notes: ReactNode[] = [];
+    if (record.skipped > 0) {
+      notes.push(
+        <Button type="button" variant="text" className="px-0 text-[12px]" onClick={shared.onShow}>
+          {shared.showSkips ? t.applyStepHideSkips : t.applyStepShowSkips}
+        </Button>,
+      );
+      if (shared.showSkips) {
+        const units = facts.kind === 'units' ? facts.units : [];
+        notes.push(...record.skips.map((skip) => skipRecordNote(skip, units, t)));
+      }
     }
-    return { action: { label: t.applyStepShowSkips, onPress: shared.onShow, disabled: false }, notes };
+    return {
+      action: { done: t.applyStepDoneLabel },
+      notes,
+      facts: sub(t.applyStepDone, { made: record.made, total: record.total, skipped: record.skipped }),
+    };
   }
   if (record.status === 'stopped') {
     const blockingGate = !gate.enabled && gate.reason === 'otherRunning' ? gate : null;
@@ -308,12 +321,14 @@ export function ApplyEquipRow({ t, facts, gate, record, otherStepTitle, onPress,
           time: strong(formatClock(facts.aboutMs)),
           gold: <strong className="!text-up">{t.applyLedgerFree}</strong>,
         });
-  const { action, notes } = buildRowAction(
+  const row = buildRowAction(
     { t, step: 'equip', facts, gate, record, otherStepTitle, onPress, onShow: () => { setShowSkips((v) => !v); }, showSkips },
     t.applyStepEquipTitle,
     [],
   );
-  return <ApplyStepRow index={1} title={t.applyStepEquipTitle} facts={factsLine} notes={notes} action={action} testId={testId} next={next} />;
+  return (
+    <ApplyStepRow index={1} title={t.applyStepEquipTitle} facts={row.facts ?? factsLine} notes={row.notes} action={row.action} testId={testId} next={next} />
+  );
 }
 
 export function ApplyPointsRow({
@@ -342,10 +357,12 @@ export function ApplyPointsRow({
   const walletNotes = walletShort.map((hero) =>
     sub(t.applyStepWalletShort, { hero: hero.name, needed: formatCount(hero.needed, locale), onhand: formatCount(hero.onHand, locale) }),
   );
-  const { action, notes } = buildRowAction(
+  const row = buildRowAction(
     { t, step: 'points', facts, gate, record, otherStepTitle, onPress, onShow: () => { setShowSkips((v) => !v); }, showSkips },
     t.applyStepPointsTitle,
     walletNotes,
   );
-  return <ApplyStepRow index={3} title={t.applyStepPointsTitle} facts={factsLine} notes={notes} action={action} testId={testId} next={next} />;
+  return (
+    <ApplyStepRow index={3} title={t.applyStepPointsTitle} facts={row.facts ?? factsLine} notes={row.notes} action={row.action} testId={testId} next={next} />
+  );
 }

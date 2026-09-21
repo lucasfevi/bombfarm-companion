@@ -22,6 +22,12 @@ export type ApplyUnitLabel = {
   readonly to: string | null;
   readonly points: number | null;
   readonly gold: number;
+  /** The hero the row is about — the wearer a piece goes to (or comes off), or the hero whose
+   *  points move — so the ledger can draw its identity. */
+  readonly heroId?: string | null;
+  /** A points unit's allocation, stat by stat: the whole placement after a refund, the added
+   *  points alone when nothing is refunded. */
+  readonly alloc?: readonly { readonly stat: string; readonly points: number }[] | null;
 };
 
 /** Every `ApplySkipReason` (`@bombfarm/contracts`) — a new reason is a compile error. Read by the

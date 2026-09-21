@@ -33,6 +33,7 @@ function render(modal: ApplyModalState, overrides: { nowMs?: number; queuePaused
         onContinue: () => {},
         hasNext: overrides.hasNext ?? false,
         nowMs: overrides.nowMs ?? 1_000,
+        heroById: new Map(),
       }),
     }),
   );
@@ -132,7 +133,8 @@ describe('ApplyModalBody — done phase', () => {
 
   it('shows the made-of-total count and the skip list keyed by unit', () => {
     const html = render(doneState());
-    expect(html).toContain('1 of 2 calls made, 1 skipped');
+    expect(html).toContain('1 of 2 calls made · 1 skipped');
+    expect(html).toContain(en.applyModalDoneEquipTitle);
     expect(html).toContain(en.applyModalSkippedTitle);
     expect(html).toContain('Old Blade +2');
     expect(html).toContain(asRenderedText(en.applySkipHeroLevel));

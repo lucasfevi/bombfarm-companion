@@ -224,6 +224,7 @@ export function ApplyPanel({
   }
 
   const hasNext = nextUndoneStep(progress.steps, progress.modal?.step ?? null) !== null;
+  const planHeroById = useMemo(() => new Map((planHeroes ?? NO_HEROES).map((hero) => [hero.id, hero])), [planHeroes]);
   const nextStep = runningStep === null ? nextUndoneStep(progress.steps, null) : null;
   const doneCount = (['equip', 'forge', 'points'] as const).filter((step) => progress.steps[step].status === 'done').length;
   const stateLabel =
@@ -324,6 +325,7 @@ export function ApplyPanel({
       />
 
       <ApplyModal
+        heroById={planHeroById}
         modal={progress.modal}
         queuePaused={progress.queuePausedByApply}
         onStop={applyActions.stop}

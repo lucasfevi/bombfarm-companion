@@ -3,7 +3,7 @@
  * events the smoke's `apply:inject` replays. The store (`apply-store.ts`) is the only dispatcher;
  * this file knows nothing of the bridge, the queue, or React.
  */
-import type { ApplyEvent, ApplyRunResult, ApplySkipReason, ApplyStep } from '@bombfarm/contracts';
+import type { ApplyEvent, ApplyRunResult, ApplySkipReason, ApplyStep, ApplyCallKind } from '@bombfarm/contracts';
 import type { ApplyUnitLabel } from './apply-labels';
 
 export type UnitStatus = 'next' | 'sent' | 'ok' | 'skipped' | 'failed';
@@ -17,6 +17,8 @@ export type ApplyRunView = {
   readonly units: readonly ApplyUnitLabel[];
   readonly status: readonly UnitStatus[];
   readonly current: number | null;
+  /** Which call of the current unit is out — a points unit sends a refund and then a commit. */
+  readonly currentCall: ApplyCallKind | null;
   readonly skipped: readonly SkipRecord[];
   readonly goldSpent: number;
   readonly walletAfter: number | null;
@@ -34,6 +36,7 @@ export function beginRun(step: ApplyStep, runId: string, units: readonly ApplyUn
     units,
     status: units.map(() => 'next'),
     current: null,
+    currentCall: null,
     skipped: [],
     goldSpent: 0,
     walletAfter: null,
@@ -58,7 +61,14 @@ export function applyRunReducer(run: ApplyRunView, event: ApplyEvent): ApplyRunV
       const walletAfter = event.walletAfter !== undefined ? event.walletAfter : run.walletAfter;
       switch (event.status) {
         case 'sent':
-          return { ...run, status: withStatus(run.status, event.index, 'sent'), current: event.index, goldSpent, walletAfter };
+          return {
+            ...run,
+            status: withStatus(run.status, event.index, 'sent'),
+            current: event.index,
+            currentCall: event.call ?? null,
+            goldSpent,
+            walletAfter,
+          };
         case 'ok':
           return { ...run, status: withStatus(run.status, event.index, 'ok'), goldSpent, walletAfter };
         case 'skipped':

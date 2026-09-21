@@ -14,6 +14,7 @@ import {
   type DomainLang,
 } from '@bombfarm/contracts';
 import {
+  COMMIT_ORDER,
   computeApplyLedger,
   derivePointsUnits,
   deriveEquipUnits,
@@ -28,7 +29,7 @@ import {
 } from '@bombfarm/domain/team-plan';
 import type { ForgeAction, TeamPlan } from '@bombfarm/domain/team-plan/types';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import { itemName } from '@bombfarm/domain/game-labels';
+import { itemName, sheetStatShortLabel } from '@bombfarm/domain/game-labels';
 import { buildInventoryView, type InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { forgeLevel, forgeLabels, type ForgeLabels } from '../../app/forge/forge-labels';
 import { gearOf } from '../forge/forge-rows';
@@ -144,13 +145,26 @@ function equipUnitLabel(
     to: unit.toHeroId === null ? null : heroName(unit.toHeroId, planHeroes, liveHeroes),
     points: null,
     gold: 0,
+    heroId: unit.toHeroId ?? unit.fromHeroId,
+    alloc: null,
   };
+}
+
+/** Stat by stat, in the sheet's order: after a refund every point is placed again, so the whole
+ *  vector is what goes on; with nothing refunded only the points added move. */
+export function pointsAllocation(unit: ApplyPointsUnit, lang: DomainLang): { readonly stat: string; readonly points: number }[] {
+  return COMMIT_ORDER.map((stat, position) => {
+    const after = unit.vector[position] ?? 0;
+    const before = unit.needsRespec ? 0 : (unit.vectorBefore[position] ?? 0);
+    return { stat: sheetStatShortLabel(stat, lang), points: after - before };
+  }).filter((entry) => entry.points > 0);
 }
 
 function pointsUnitLabel(
   unit: ApplyPointsUnit,
   planHeroes: readonly HeroRecord[],
   liveHeroes: ReadonlyMap<string, HeroRecord>,
+  lang: DomainLang,
 ): ApplyUnitLabel {
   return {
     index: unit.index,
@@ -160,6 +174,8 @@ function pointsUnitLabel(
     to: null,
     points: unit.pointsPlaced,
     gold: unit.respecGold,
+    heroId: unit.heroId,
+    alloc: pointsAllocation(unit, lang),
   };
 }
 
@@ -181,7 +197,7 @@ export function unitLabels(
   const liveHeroes = heroMap(liveInputs?.inputs.heroes ?? NO_HEROES);
   const items = liveItemsById(liveView);
   return units.map((unit) =>
-    isEquipUnit(unit) ? equipUnitLabel(unit, heroes, liveHeroes, items, lang) : pointsUnitLabel(unit, heroes, liveHeroes),
+    isEquipUnit(unit) ? equipUnitLabel(unit, heroes, liveHeroes, items, lang) : pointsUnitLabel(unit, heroes, liveHeroes, lang),
   );
 }
 
@@ -270,7 +286,7 @@ export function buildApplyFacts(input: {
   const walletShort = walletShortHeroes(pointsUnits, wallet, planHeroes, liveHeroes);
 
   const equipLabels = equipUnits.map((unit) => equipUnitLabel(unit, planHeroes, liveHeroes, items, lang));
-  const pointsLabels = pointsUnits.map((unit) => pointsUnitLabel(unit, planHeroes, liveHeroes));
+  const pointsLabels = pointsUnits.map((unit) => pointsUnitLabel(unit, planHeroes, liveHeroes, lang));
 
   const equipCounts = summarizeApplyVerdicts(equipVerdictList);
   const pointsPendingUnits = pointsUnits.filter((unit, i) => pointsVerdictList[i]?.status !== 'done');

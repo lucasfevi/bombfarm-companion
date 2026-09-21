@@ -155,12 +155,18 @@ describe('ApplyEquipRow', () => {
     expect(html).not.toContain('data-testid="apply-step-equip-press"');
   });
 
-  it('reads Done with a Show press once the run finished', () => {
-    const record: StepRecord = { status: 'done', made: 3, skipped: 1, total: 4, skips: [] };
+  it('reads as done once the run finished — the run’s own counts as its facts, no press, a reveal only when something was skipped', () => {
+    const record: StepRecord = { status: 'done', made: 3, skipped: 1, total: 4, skips: [{ index: 0, reason: 'heroLevel' }] };
     const html = wrap(createElement(ApplyEquipRow, { t, facts: unitsFacts(), gate: READY_GATE, record, otherStepTitle: null, onPress: () => {} }));
+    expect(tagOf(html, 'apply-step-equip')).toContain('data-state="done"');
     expect(html).toContain('Done — 3 of 4 calls made, 1 skipped');
+    expect(html).toContain(en.applyStepDoneLabel);
     expect(html).toContain(en.applyStepShowSkips);
-    expect(html).toContain('data-testid="apply-step-equip-press"');
+    expect(html).not.toContain('data-testid="apply-step-equip-press"');
+
+    const clean: StepRecord = { status: 'done', made: 4, skipped: 0, total: 4, skips: [] };
+    const cleanHtml = wrap(createElement(ApplyEquipRow, { t, facts: unitsFacts(), gate: READY_GATE, record: clean, otherStepTitle: null, onPress: () => {} }));
+    expect(cleanHtml).not.toContain(en.applyStepShowSkips);
   });
 
   it('reads Stopped with a Run again press once the run stopped short', () => {
