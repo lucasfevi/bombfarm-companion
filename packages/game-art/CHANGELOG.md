@@ -1,5 +1,22 @@
 # @bombfarm/game-art
 
+## 0.7.0
+
+### Minor Changes
+
+- 46f4693: Each skin listed under the Account screen's "Skins in use" row now carries the avatar a hero
+  wearing it shows, beside its listing name, on both the desktop app and the web planner.
+
+### Patch Changes
+
+- Updated dependencies [4f052fe]
+- Updated dependencies [56d8a93]
+- Updated dependencies [82d59a2]
+- Updated dependencies [4f052fe]
+- Updated dependencies [0558cca]
+  - @bombfarm/domain@1.4.1
+  - @bombfarm/ui@0.15.0
+
 ## 0.6.4
 
 ### Patch Changes
