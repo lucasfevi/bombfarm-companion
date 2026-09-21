@@ -219,7 +219,7 @@ export function ApplyModal({
     >
       <Dialog.Portal>
         <Dialog.Backdrop />
-        <Dialog.Popup data-testid="apply-modal" className="relative !max-h-[85vh] !w-[min(92vw,480px)] !p-4">
+        <Dialog.Popup data-testid="apply-modal" className="!max-h-[85vh] !w-[min(92vw,480px)] !p-4">
           <Dialog.Head>
             <Dialog.Title>{applyModalTitle(modal.step, t)}</Dialog.Title>
           </Dialog.Head>
