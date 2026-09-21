@@ -85,9 +85,9 @@ pnpm --filter @bombfarm/web test:e2e:host:smoke
 ```
 
 The **host** runner, deliberately. `test:e2e:smoke` goes through `e2e/scripts/docker-run.mjs`,
-which exits `ENOENT` with no fallback when there is no Docker daemon. Docker earns its place for
-the *visual* project, whose screenshot baselines are only stable inside one image — the
-behavioural smoke specs compare no pixels and need none of it. Every note in the root
+which exits `ENOENT` with no fallback when there is no Docker daemon. Docker reproduces CI's
+Linux Chromium stack exactly, but the smoke specs compare no pixels, so a host run answers the
+same questions. Every note in the root
 [`AGENTS.md`](../../AGENTS.md) check list applies: it is the check that catches breaks no Vitest
 run can see, `E2E_PREBUILT=1` skips the build when `out/` is current, and a stale listener on port
 4321 makes the whole run describe an old export — `E2E_PORT` moves a run off a port another

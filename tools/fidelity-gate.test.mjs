@@ -100,8 +100,8 @@ describe('fidelity-gate-required aggregator', () => {
   });
 
   it(
-    'no step treats a skipped fidelity-gate result as success when the filter matched — the exact anti-pattern ' +
-      "windows-ci/visual-ci demonstrate is not a gate (a step whose `if` branches on result == 'skipped' and " +
+    'no step treats a skipped fidelity-gate result as success when the filter matched — the self-greening ' +
+      "aggregator anti-pattern, which is not a gate (a step whose `if` branches on result == 'skipped' and " +
       'whose `run` does not fail)',
     () => {
       const selfGreeningSteps = steps.filter((step) => {

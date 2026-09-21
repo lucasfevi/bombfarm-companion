@@ -77,9 +77,8 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
-      # The ci-fidelity.yml / design-system-required idiom, deliberately NOT the
-      # ci-desktop-required one (which checks only failure/cancelled and treats skipped
-      # as pass): this must fail when the job did not run at all — skipped or cancelled —
+      # `!= 'success'`, never `== 'failure' || == 'cancelled'` (which treats skipped as
+      # pass): this must fail when the job did not run at all — skipped or cancelled —
       # not just when it actively failed. A gate that reports success for "never ran" is
       # worse than no gate, and this repo has a documented history of exactly that. There
       # is no path filter here so `line-endings` should always run;

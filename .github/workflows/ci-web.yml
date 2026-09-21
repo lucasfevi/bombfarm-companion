@@ -183,9 +183,11 @@ jobs:
         if: needs.changes.result != 'success'
         run: exit 1
 
-      - name: Require web quality
-        if: needs.quality.result == 'failure' || needs.quality.result == 'cancelled'
-        run: exit 1
+      - name: Require web quality when the filter matched
+        if: needs.changes.outputs.web == 'true' && needs.quality.result != 'success'
+        run: |
+          echo "quality: ${{ needs.quality.result }}"
+          exit 1
 
   design-system-required:
     name: design-system-required
@@ -197,11 +199,9 @@ jobs:
         if: needs.changes.result != 'success'
         run: exit 1
 
-      # Deliberately NOT the ci-web-required idiom above (which only checks
-      # failure/cancelled and treats skipped as pass unconditionally): this gate
-      # must fail when the path filter matched but the job did not run at all —
-      # skipped or cancelled — not just when it actively failed. A gate that
-      # reports success for "never ran" is worse than no gate.
+      # This gate must fail when the path filter matched but the job did not run at all —
+      # skipped or cancelled — not just when it actively failed. A gate that reports
+      # success for "never ran" is worse than no gate.
       - name: Require design-system suite when the filter matched
         if: needs.changes.outputs.web == 'true' && needs.design-system.result != 'success'
         run: |

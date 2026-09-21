@@ -5,7 +5,7 @@ import { importedRoster, seedLocalStorage } from './fixtures/seed';
 const sampleSave = path.join(process.cwd(), 'e2e/fixtures/sample-save.json');
 
 /** importedRoster's account with a known max phase — importedRoster itself stays untouched
- *  (visual baselines are expressed against it). */
+ *  (the other specs and the perf baseline are expressed against it). */
 const accountWithMaxPhase = { ...importedRoster.account!, maxPhase: 42 };
 const accountNoMaxPhase = importedRoster.account!;
 

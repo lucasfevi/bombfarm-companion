@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 /**
  * Trivial harness proof: static export boots without next dev.
- * Full flow coverage lives in smoke.spec.ts / visual.spec.ts.
+ * Full flow coverage lives in the other specs, starting with smoke.spec.ts.
  */
 test('harness serves the static export', async ({ page }) => {
   await page.goto('/heroes');

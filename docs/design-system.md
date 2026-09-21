@@ -392,8 +392,9 @@ unstyled browser defaults, rebuild and confirm the Vite Tailwind plugin is proce
 
 `.github/workflows/ci-web.yml`'s `design-system` job runs `build-storybook` then
 `test-storybook` on the existing `web` path filter (`packages/ui/**` is already in it).
-The `design-system-required` aggregator fails whenever that filter matched but the job
-didn't succeed — including `skipped` and `cancelled`, not only an active failure — so a
-suite that silently never ran cannot pass as green (see
+The `design-system-required` aggregator, a required check on both `main` and `develop`,
+fails whenever that filter matched but the job didn't succeed — including `skipped` and
+`cancelled`, not only an active failure — so a suite that silently never ran cannot pass as
+green (see
 [`tools/design-system-gate.test.mjs`](../tools/design-system-gate.test.mjs), which
 asserts the aggregator has no step that treats `skipped` as success).

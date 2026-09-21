@@ -436,10 +436,9 @@ weakened quietly:
 
 All 58 are resolved. `F8_SKIP_MANIFEST` is empty in both manifests
 (`tools/fixture-corpus-parity.test.mjs` and `packages/domain/tests/source-surface.test.ts`), and
-every skip left in the tree is a deliberate one declared in `SKIPS_NOT_F8`:
-
-- `apps/web/e2e/visual.spec.ts` (3) — a whole-suite `describe.skip`, held until its screenshot
-  baselines are reviewed. Its own header carries the re-enable step.
+so is `SKIPS_NOT_F8`: the one deliberate skip it carried, a whole-suite skip directive over the
+Playwright screenshot baselines, was deleted with that suite on 2026-09-21, so no static skip
+directive remains anywhere in the scanned roots.
 
 The last four resolutions were not re-points, and each is worth naming:
 

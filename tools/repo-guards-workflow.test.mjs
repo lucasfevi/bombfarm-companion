@@ -276,7 +276,7 @@ describe('repo-guards.yml shape guard — mutations, each turning its predicate 
     expect(runsWholeToolsProject(mutated)).toBe(false);
   });
 
-  it("(11) the aggregator's enforcing step swapped for the ci-desktop-required idiom ⇒ aggregatorFailsOnAnyNonSuccess is false", () => {
+  it("(11) the aggregator's enforcing step swapped for the skipped-tolerant idiom ⇒ aggregatorFailsOnAnyNonSuccess is false", () => {
     const mutated = mutate(realText, ENFORCING_IF, SKIPPED_TOLERANT_IF);
     expect(aggregatorFailsOnAnyNonSuccess(mutated)).toBe(false);
   });
