@@ -115,6 +115,7 @@ import {
   applyRestartGameOnExit as applyRestartGameOnExitSettings,
 } from './shell/settings-apply.js';
 import { createElectronTray } from './shell/electron-tray.js';
+import { resolveAppIconPath } from './shell/app-icon-path.js';
 import {
   clampToWorkArea,
   DEFAULT_MAIN_HEIGHT,
@@ -603,7 +604,7 @@ async function createMainWindow(): Promise<void> {
     backgroundColor: '#17100c',
     show: false,
     title: env.productName,
-    icon: path.join(__dirname, '../../assets/icon.ico'),
+    icon: resolveAppIconPath(__dirname),
     // Hidden title bar with no `titleBarOverlay`: the header draws its own caption buttons
     // (`WindowControls`), which the OS overlay cannot be asked to do — Windows fixes those
     // buttons at 47px wide and only their height and colours are configurable.
@@ -716,7 +717,7 @@ function createMiniLiveControllerInstance(env: ReturnType<typeof resolveAppEnv>)
     layoutStore: windowLayoutStore,
     resolveLoadUrl: () => resolveMiniLiveLoadUrl({ isDev: env.isDev, devBaseUrl: RENDERER_DEV_URL }),
     preloadPath: path.join(__dirname, '../preload/index.cjs'),
-    iconPath: path.join(__dirname, '../../assets/icon.ico'),
+    iconPath: resolveAppIconPath(__dirname),
     suppressReveal: isWindowRevealSuppressed(process.env, env.isPackaged),
     applyExternalNavigation: (webContents) => {
       applyExternalNavigationPolicy(webContents as WebContents, {
@@ -835,9 +836,8 @@ function setupShellLifecycle(env: ReturnType<typeof resolveAppEnv>): void {
     isDestroyed: () => mainWindow?.isDestroyed() ?? true,
   };
 
-  const iconPath = path.join(__dirname, '../../assets/icon.ico');
   const trayResult = createElectronTray({
-    iconPath,
+    iconPath: resolveAppIconPath(__dirname),
     tooltip: env.productName,
     platform: process.platform,
     fileExists: (filePath) => fs.existsSync(filePath),
