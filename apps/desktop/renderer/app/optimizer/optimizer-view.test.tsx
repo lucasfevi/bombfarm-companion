@@ -37,13 +37,13 @@ vi.mock('./optimizer-screen', () => ({
 const { OptimizerView } = await import('./optimizer-view');
 
 function render() {
-  return renderToStaticMarkup(createElement(OptimizerView));
+  return renderToStaticMarkup(createElement(OptimizerView, { forgeWritesEnabled: true, accountSource: null }));
 }
 
 function idleOptimizerHook(): OptimizerSnapshotHook {
   return {
     state: { status: 'idle' },
-    planState: { runStatus: 'idle', runId: null, plan: null, signature: null, heroes: null, openHeroIds: null },
+    planState: { runStatus: 'idle', runId: null, plan: null, signature: null, heroes: null, basis: null, openHeroIds: null },
     stale: false,
     hasAccount: false,
     runner: {} as OptimizerSnapshotHook['runner'],
@@ -191,5 +191,14 @@ describe('the connector draws nothing the package draws', () => {
 
   it('asks the app to go and read the account, not only to re-solve from the one in hand', () => {
     expect(viewSource).toContain('useAccountReadRequest(adoptLive)');
+  });
+
+  it('passes forgeWritesEnabled and accountSource down to OptimizerScreen, the way ForgeView receives them', () => {
+    expect(viewSource).toContain('forgeWritesEnabled={forgeWritesEnabled}');
+    expect(viewSource).toContain('accountSource={accountSource}');
+  });
+
+  it('builds the applyPanel slot only when a plan is settled', () => {
+    expect(screenSource).toContain("planState.plan === null ? undefined : (");
   });
 });

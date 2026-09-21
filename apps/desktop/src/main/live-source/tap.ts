@@ -1,4 +1,4 @@
-import type { LiveCurrency, LiveEvent, LiveGapReason } from '@bombfarm/contracts';
+import type { LiveCurrency, LiveEvent, LiveGapExtra, LiveGapReason } from '@bombfarm/contracts';
 import { liveGap } from '@bombfarm/contracts';
 import type { FrameCapture } from './frame-capture.js';
 import { discoverHookCandidates, parsePe, READ_HOOK_ANCHORS } from './image-scan.js';
@@ -92,6 +92,10 @@ const DISCOVERY_RETRY_BACKOFF_MS = [15_000, 60_000, 300_000, 900_000] as const;
 function discoveryBackoffMs(failures: number): number {
   const index = Math.min(Math.max(failures, 1) - 1, DISCOVERY_RETRY_BACKOFF_MS.length - 1);
   return DISCOVERY_RETRY_BACKOFF_MS[index] ?? DISCOVERY_RETRY_BACKOFF_MS[0];
+}
+
+function errorDetail(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 export interface TapDeps {
@@ -226,9 +230,14 @@ export class Tap {
     this.#deps.onEvent({ type: 'currency', currency });
   }
 
-  #reportGap(reason: LiveGapReason, extra?: { readonly likelyQuarantine?: boolean }): void {
+  #reportGap(reason: LiveGapReason, extra?: LiveGapExtra): void {
     const current = this.#currency;
-    if (current.kind === 'gap' && current.reason === reason && current.likelyQuarantine === extra?.likelyQuarantine) {
+    if (
+      current.kind === 'gap' &&
+      current.reason === reason &&
+      current.likelyQuarantine === extra?.likelyQuarantine &&
+      current.detail === extra?.detail
+    ) {
       return;
     }
     const next = liveGap(reason, this.#nowIso(), extra);
@@ -371,7 +380,7 @@ export class Tap {
       session = await resolution.runtime.attach(pid);
     } catch (error) {
       this.#log.info({ scope: 'live-source', event: 'tap.attach_failed', pid, error: String(error) });
-      this.#reportGap('attachFailed');
+      this.#reportGap('attachFailed', { detail: errorDetail(error) });
       return;
     }
     if (this.#isStopped()) {
@@ -384,17 +393,22 @@ export class Tap {
     this.#fromCache = candidateResolution.fromCache;
     this.#activeBuildId = candidateResolution.buildId;
 
-    if (!this.#installCandidates(pid, session, candidateResolution.addresses)) {
+    const install = this.#installCandidates(pid, session, candidateResolution.addresses);
+    if (!install.installed) {
       await this.#teardownSession();
       this.#activePid = null;
-      this.#reportGap('attachFailed');
+      this.#reportGap('attachFailed', { detail: install.detail });
     }
   }
 
-  /** Returns whether every candidate installed cleanly. A single throwing address leaves the
-   *  session with nothing installed rather than half-hooked — the caller tears the whole
-   *  attempt down on `false` so no interceptor or session is left dangling. */
-  #installCandidates(pid: number, session: TapSession, addresses: readonly number[]): boolean {
+  /** A single throwing address leaves the session with nothing installed rather than
+   *  half-hooked — the caller tears the whole attempt down on a failure so no interceptor or
+   *  session is left dangling. */
+  #installCandidates(
+    pid: number,
+    session: TapSession,
+    addresses: readonly number[],
+  ): { readonly installed: true } | { readonly installed: false; readonly detail: string } {
     this.#candidates.clear();
     this.#winner = null;
 
@@ -406,7 +420,7 @@ export class Tap {
         this.#log.info({ scope: 'live-source', event: 'tap.install_interceptor_failed', pid, address, error: String(error) });
         for (const candidate of this.#candidates.values()) candidate.interceptor.detach();
         this.#candidates.clear();
-        return false;
+        return { installed: false, detail: errorDetail(error) };
       }
       const stream = new TlsConnections({
         now: () => this.#deps.clock.now(),
@@ -424,7 +438,7 @@ export class Tap {
         this.#log.info({ scope: 'live-source', event: 'tap.validation_timeout_failed', pid, error: String(error) });
       });
     }, VALIDATION_WINDOW_MS);
-    return true;
+    return { installed: true };
   }
 
   #onCandidateRead(address: number, event: TapReadEvent): void {

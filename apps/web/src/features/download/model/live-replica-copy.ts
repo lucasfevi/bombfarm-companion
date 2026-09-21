@@ -13,7 +13,6 @@ import type { Lang } from '@/shared/i18n';
  * the key IS the link to the source of truth, and the guard resolves it by name.
  */
 const MIRRORED = {
-  liveStatusLiveLabel: { en: 'Streaming live from the game', pt: 'Transmitindo ao vivo do jogo' },
   liveHeroesTitle: { en: 'Heroes', pt: 'Heróis' },
   liveListOnFieldTitle: { en: 'Field', pt: 'Campo' },
   liveListRecoveringTitle: { en: 'Resting', pt: 'Descansando' },

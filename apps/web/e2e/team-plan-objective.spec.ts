@@ -21,8 +21,13 @@ async function pickObjective(page: Page, optionName: RegExp) {
   await page.getByRole('option', { name: optionName }).click();
 }
 
-const GOLD_HEADER = /Best gold per hour found by this search/i;
-const DAMAGE_HEADER = /Best roster DPS found by this search/i;
+/** The Total gain figure's own unit word is what tells gold and damage plans apart now — the
+ *  results section carries no separate objective-named caption any more. */
+function totalGain(page: Page): Locator {
+  return page.getByTestId('team-plan-total-gain');
+}
+const GOLD_UNIT = /gold\/h/i;
+const DAMAGE_UNIT = /\bdps\b/i;
 
 test.describe('Team plan objective', () => {
   test.beforeEach(async ({ page }) => {
@@ -45,16 +50,16 @@ test.describe('Team plan objective', () => {
   test('a Gold plan reports gold per hour and never roster DPS', async ({ page }) => {
     await clickOptimize(page);
     await waitForOptimizeDone(page);
-    await expect(page.getByText(GOLD_HEADER)).toBeVisible();
-    await expect(page.getByText(DAMAGE_HEADER)).toHaveCount(0);
+    await expect(totalGain(page)).toContainText(GOLD_UNIT);
+    await expect(totalGain(page)).not.toContainText(DAMAGE_UNIT);
   });
 
   test('a Damage plan reports roster DPS', async ({ page }) => {
     await pickObjective(page, /^DPS$/i);
     await clickOptimize(page);
     await waitForOptimizeDone(page);
-    await expect(page.getByText(DAMAGE_HEADER)).toBeVisible();
-    await expect(page.getByText(GOLD_HEADER)).toHaveCount(0);
+    await expect(totalGain(page)).toContainText(DAMAGE_UNIT);
+    await expect(totalGain(page)).not.toContainText(GOLD_UNIT);
   });
 
   test('switching the objective removes the plan already on screen', async ({ page }) => {
@@ -67,8 +72,8 @@ test.describe('Team plan objective', () => {
 
     // Not a stale banner over gold numbers under a damage heading — the section is gone.
     await expect(results).toHaveCount(0);
-    await expect(page.getByText(GOLD_HEADER)).toHaveCount(0);
-    await expect(page.getByText(/Inputs changed since this plan was computed/i)).toHaveCount(0);
+    await expect(totalGain(page)).toHaveCount(0);
+    await expect(page.getByText(/Your account changed since this plan was built/i)).toHaveCount(0);
   });
 });
 
@@ -120,7 +125,7 @@ test.describe('Team plan objective — a record with no furthest phase', () => {
     await expect(page.getByText(NEEDS_PHASE)).toHaveCount(0);
     await clickOptimize(page);
     await waitForOptimizeDone(page);
-    await expect(page.getByText(GOLD_HEADER)).toBeVisible();
+    await expect(totalGain(page)).toContainText(GOLD_UNIT);
   });
 
   test('DPS still runs on the same record', async ({ page }) => {
@@ -129,6 +134,6 @@ test.describe('Team plan objective — a record with no furthest phase', () => {
     await expect(page.getByText(NEEDS_PHASE)).toHaveCount(0);
     await clickOptimize(page);
     await waitForOptimizeDone(page);
-    await expect(page.getByText(DAMAGE_HEADER)).toBeVisible();
+    await expect(totalGain(page)).toContainText(DAMAGE_UNIT);
   });
 });

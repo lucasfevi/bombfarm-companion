@@ -32,6 +32,18 @@
   --animate-forge-ghost: forge-ghost 1400ms ease-in-out infinite;
 }
 
+/* The feeds rail's ring drains from full to empty over the feed's own cycle. The browser runs the
+   whole drain from one render: the item sets the duration to the cycle and a negative delay to
+   the age already spent, so nothing in React ticks while the rail sits still. */
+@keyframes feed-drain {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: var(--feed-ring-circumference);
+  }
+}
+
 /* The Forge chart's pending roll. It breathes rather than blinks, so the mark that replaces it
    reads as the shape filling in. */
 @keyframes forge-ghost {

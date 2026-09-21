@@ -11,12 +11,10 @@
  */
 import { phaseLine } from '@bombfarm/domain/phases';
 import { ACCOUNT_SECTIONS } from '@bombfarm/domain/account-fidelity';
-import { canonicalStringify } from '@bombfarm/contracts';
 import type { AccountView } from '@bombfarm/contracts';
-import type { TeamPlanInputs } from '@bombfarm/team-plan/core';
-import { isSectionUsable, sectionFidelityOf } from '../account/account-facts';
+import { planInputsSignature, type TeamPlanInputs } from '@bombfarm/team-plan/core';
+import { capturedAtOf, isSectionUsable, sectionFidelityOf } from '../account/account-facts';
 import { buildAccountRoster } from '../account/account-roster';
-import { heroContentStamp, inventoryContentStamp } from './content-stamp';
 
 // Re-exported, never redefined: the mapper's withhold gate IS that rule, and this module stays
 // the seam its own tests ask for it through.
@@ -73,15 +71,13 @@ export function buildOptimizerInputs(
   // `AccountRoster.pointsUnrecovered`), so the search must never see it — it would read as a
   // hero with nothing spent and propose spending it all over again.
   const leftOutIds = new Set(roster.pointsUnrecovered.map((hero) => hero.id));
-  const heroes = roster.heroes
-    .filter((hero) => !leftOutIds.has(hero.id))
-    .map((hero) => ({ ...hero, updatedAt: heroContentStamp(hero) }));
+  const heroes = roster.heroes.filter((hero) => !leftOutIds.has(hero.id));
 
   const inputs: TeamPlanInputs = {
     heroes,
     inventory: {
       version: 1,
-      importedAt: inventoryContentStamp(roster.inventory),
+      importedAt: Date.parse(capturedAtOf(payload, 'items') ?? '') || 0,
       items: roster.inventory,
     },
     treeDanoTotal: tree.danoTotal,
@@ -110,13 +106,11 @@ export function buildOptimizerInputs(
 
 /**
  * A value identity over everything the refresh control answers "has the live account moved past
- * the snapshot" from — the flat record with `farmChosenPhase` stripped (D-4: a Farm phase change
- * alone must not read as "the account moved", it reaches the plan through the package signature
- * instead). Heroes arrive already mapped through {@link heroContentStamp} by
- * {@link buildOptimizerInputs}, so this key moves exactly when a hero's content does, never on a
- * poll that only advanced the capture clock.
+ * the snapshot" from: the package's own planning view of the inputs, which leaves out
+ * `farmChosenPhase` (a Farm phase change alone must not read as "the account moved" — it reaches
+ * the plan through the package signature instead), the capture clock, and the fields the game
+ * moves without moving the answer — a hero walking off the field, a rune's seconds ticking down.
  */
 export function optimizerDepKey(inputs: TeamPlanInputs): string {
-  const { farmChosenPhase: _farmChosenPhase, ...rest } = inputs;
-  return canonicalStringify(rest);
+  return planInputsSignature(inputs);
 }

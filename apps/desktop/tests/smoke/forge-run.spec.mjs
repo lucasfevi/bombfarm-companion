@@ -34,6 +34,27 @@ const desktopRoot = path.join(__dirname, '..', '..');
  */
 const ACCOUNT_OFFLINE_FIXTURE = path.join(__dirname, '..', 'fixtures', 'account-offline.json');
 
+// Desktop-owned strings, read from source the same way `i18n.spec.mjs`'s `readCopyValue` does —
+// a `.mjs` smoke cannot import a `.ts` module without a build step, and hardcoding would drift
+// silently from a reword.
+const EN_COPY_PATH = path.join(desktopRoot, 'renderer', 'lib', 'copy', 'en.ts');
+const copyFileCache = new Map();
+
+function readCopyValue(filePath, key) {
+  let source = copyFileCache.get(filePath);
+  if (source === undefined) {
+    source = fs.readFileSync(filePath, 'utf8');
+    copyFileCache.set(filePath, source);
+  }
+  const match = source.match(new RegExp(`\\b${key}:\\s*'((?:[^'\\\\]|\\\\.)*)'`));
+  if (!match) {
+    throw new Error(`forge-run.spec.mjs: could not find copy key "${key}" in ${filePath}`);
+  }
+  return match[1];
+}
+
+const en = (key) => readCopyValue(EN_COPY_PATH, key);
+
 function electronExecutable() {
   return path.join(
     desktopRoot,
@@ -74,7 +95,7 @@ async function acceptConsent(page) {
  *  would: the one switch on the screen whose name is the Forge setting's label. */
 async function turnOnForgeWrites(page) {
   await page.getByRole('button', { name: 'Settings' }).click();
-  const forgeSwitch = page.getByRole('switch', { name: /Let Forge spend gold/ });
+  const forgeSwitch = page.getByRole('switch', { name: en('settingsForgeWritesLabel') });
   await expect(forgeSwitch).toBeVisible({ timeout: 15_000 });
   await forgeSwitch.click();
   await expect(forgeSwitch).toHaveAttribute('aria-checked', 'true');

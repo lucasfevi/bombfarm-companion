@@ -3,6 +3,7 @@ export { SpriteLoop, type SpriteLoopProps } from './sprite-loop';
 export { HeroAvatar } from './hero-avatar';
 export { HeroIdentity, type HeroIdentityVariant } from './hero-identity';
 export { HeroIdentityChip } from './hero-identity-chip';
+export { SkinIdentity } from './skin-identity';
 export { ItemIcon, type ItemIconItem } from './item-icon';
 export {
   ItemIdentity,

@@ -42,7 +42,7 @@ export type { WindowControlsLabels, WindowControlsProps } from './window-control
 export { WINDOW_CONTROLS_WIDTH } from './window-controls.recipe';
 export { BrandMark } from './brand-mark';
 export type { BrandMarkProps } from './brand-mark';
-export { AppNav } from './app-nav';
+export { AppNav, type AppNavItemMark } from './app-nav';
 export type { AppNavItem, AppNavProps } from './app-nav';
 export {
   useShellDensity,
@@ -54,7 +54,6 @@ export {
 } from './shell-density';
 export { SegmentedToggle } from './segmented-toggle';
 export type { SegmentedToggleOption, SegmentedToggleProps } from './segmented-toggle';
-export { StatusChip, type StatusChipProps, type GameConnectionStatus } from './status-chip';
 export { ActionChip, type ActionChipProps, type ActionChipTone } from './action-chip';
 export { EmptyState, type EmptyStateProps } from './empty-state';
 export { cssVariables, tokens, colorTokens, breakpoints, motionTokens, contrastPairs, DEFAULT_HUE } from './tokens';

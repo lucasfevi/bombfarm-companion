@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { formatItemRosterTooltip } from '@bombfarm/domain/game-labels';
 import type { ForgeForecast } from '@bombfarm/domain/forge';
-import { cn, formatCompactNumber, formatNumber, mutedClass } from '@bombfarm/ui';
+import { cn, formatCompactNumber, formatNumber, InfoTip, mutedClass } from '@bombfarm/ui';
 import { ItemIcon } from '@bombfarm/game-art';
 import { sub, type Lang } from '@bombfarm/hero/copy';
 import type { TeamPlanScreenCopy } from '../copy';
@@ -77,7 +77,10 @@ export function HeroForgeQueue({
 
   return (
     <section className="rounded-sm border border-line bg-bg px-3 py-2.5" data-testid="team-plan-forge-queue">
-      <h4 className="m-0 text-[11px] tracking-[0.03em] text-muted uppercase">{t.teamPlanForgeQueueHeading}</h4>
+      <div className="flex items-center gap-1">
+        <h4 className="m-0 text-[11px] tracking-[0.03em] text-muted uppercase">{t.teamPlanForgeQueueHeading}</h4>
+        <InfoTip label={t.teamPlanForgeQueueHeading} tip={t.teamPlanForgeQueueLegend} />
+      </div>
       <ul className="m-0 mt-2 flex list-none flex-col gap-2.5 p-0">
         {queue.entries.map(({ row, from, to, rungs, forecast }) => {
           const item = { defId: row.defId, rarityIdx: row.rarityIdx, level: row.level, upgrade: to };
@@ -108,7 +111,6 @@ export function HeroForgeQueue({
           <span className="font-semibold text-ink">{forecastLine(t, lang, queue.total)}</span>
         </p>
       ) : null}
-      <p className={cn('m-0 mt-2 leading-snug', mutedClass)}>{t.teamPlanForgeQueueLegend}</p>
     </section>
   );
 }

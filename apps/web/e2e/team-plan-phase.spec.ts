@@ -140,7 +140,7 @@ test.describe('Team plan phase picker', () => {
  * 202 / 220 / 230 px. The hints are behind a `?` now, but the row still top-aligns (a phase past
  * the account's furthest adds a warning line under one field), so the controls are still measured.
  */
-const SETUP_FIELDS = /Score for|Plan for phase|Allowed changes|Min forge/i;
+const SETUP_FIELDS = /Score for|Plan for phase|What to change|Min forge/i;
 
 function setupFieldBoxes(page: Page) {
   return page.evaluate(

@@ -31,6 +31,22 @@ import { readSessionToken, type SessionTokenFileResult } from './session-token-f
 
 const SECTIONS: readonly AccountSection[] = ['account', 'heroes', 'skills', 'casa', 'items'];
 
+/**
+ * `heroes[].stats` is only readable beside the `items[].equipped_on` it was composed with: the
+ * parser recovers a hero's spent points by inverting the sheet against the gear it wears, so a
+ * hero body from this cycle over an item body from an earlier one charges every piece that moved
+ * in between to spent points, and a hero whose gear the app itself just moved inverts over its
+ * budget and reads as blocked. A cycle that read one of the two but not the other therefore
+ * sets the one it read aside, and the store serves the last pair it committed together.
+ */
+export function holdInversionPair(outcomes: Record<AccountSection, SectionOutcome>): Record<AccountSection, SectionOutcome> {
+  const heroesRead = outcomes.heroes.kind !== 'failed';
+  const itemsRead = outcomes.items.kind !== 'failed';
+  if (heroesRead === itemsRead) return outcomes;
+  const held: AccountSection = heroesRead ? 'heroes' : 'items';
+  return { ...outcomes, [held]: { kind: 'failed', reason: 'partner_failed' } };
+}
+
 function allSectionsFailed(
   reason: 'not_consented' | 'game_not_running' | 'token_unavailable',
 ): Record<AccountSection, SectionOutcome> {
@@ -235,7 +251,13 @@ export function createAccountRefresh(deps: AccountRefreshDeps): AccountRefreshHa
       }
       currentAbort = null;
 
-      return commitIfAnyResolved(outcomes);
+      const paired = holdInversionPair(outcomes);
+      for (const section of ['heroes', 'items'] as const) {
+        if (paired[section].kind === 'failed' && outcomes[section].kind !== 'failed') {
+          deps.log.warn({ scope: 'account-refresh', event: 'section.held', section, partner: section === 'heroes' ? 'items' : 'heroes' });
+        }
+      }
+      return commitIfAnyResolved(paired);
     } finally {
       running = false;
     }

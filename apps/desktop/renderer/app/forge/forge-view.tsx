@@ -32,6 +32,7 @@ import {
 import { InventoryTable } from '@bombfarm/game-art';
 import { Banner, ConfirmDialog, EmptyState, motionTokens, Panel, PanelHeader } from '@bombfarm/ui';
 import { sub, useCopy, useLocale } from '../../lib/copy';
+import { finiteNumber } from '../../lib/format';
 import { oldestCaptureOf } from '../../lib/account/account-facts';
 import { useAccountView } from '../../lib/account/use-account-view';
 import { useAccountReadRequest } from '../../lib/account/use-account-read-request';
@@ -60,7 +61,7 @@ import {
 } from '../../lib/forge/forge-store';
 import { useContentHeight } from '../../lib/forge/use-content-height';
 import { useForgePlan } from '../../lib/forge/use-forge-plan';
-import { AccountRefreshControl } from '../account-refresh-control';
+import { useScreenRefreshRegistration } from '../../lib/refresh/screen-refresh-store';
 import { ForgeItemPanel } from './forge-item-panel';
 import { forgeButtonReason, forgeLabels } from './forge-labels';
 import { ForgeLedger } from './forge-ledger';
@@ -89,15 +90,6 @@ function prefersReducedMotion(): boolean {
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
-}
-
-function finiteNumber(value: unknown): number | null {
-  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
-  if (typeof value === 'string' && value.trim() !== '') {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
 }
 
 /** Hero ids the save marks as deployed on the field. */
@@ -310,6 +302,7 @@ export function ForgeView({
   const account = view?.payload.account;
   const walletGold = finiteNumber(account?.gold);
   const capturedAt = view === null ? null : oldestCaptureOf(view.payload);
+  useScreenRefreshRegistration('forge', { capturedAt, stale, busy: false, readState: refreshState, onRefresh: refresh });
   const heroHint = filter.heroId === null ? null : sub(t.forgeHeroHint, { hero: heroName(filter.heroId) });
 
   if (accountViewState.status === 'bridge-unavailable') {
@@ -387,11 +380,6 @@ export function ForgeView({
       >
         <div className="relative">
           <Panel data-testid="forge-bag-panel" className="absolute inset-0 flex min-h-0 flex-col">
-            {/* Refresh acts on the read behind the bag, not on what is filtered out of it, so it
-                stands over the bag rather than among the filters. */}
-            <div data-testid="forge-bag-header" className="mb-2 flex shrink-0 justify-end">
-              <AccountRefreshControl capturedAt={capturedAt} stale={stale} busy={false} readState={refreshState} onRefresh={refresh} />
-            </div>
             <InventoryTable
               view={tableView}
               labels={tableLabels}

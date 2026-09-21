@@ -164,9 +164,11 @@ export type RosterEvaluation = {
    */
   entryPulseMult: number;
   /**
-   * The duty every fielded hero's aura was weighted by in the last round — the optimize heroes'
-   * from `perHero`, plus the leave-alone heroes', which `perHero` does not carry because nothing
-   * they score reaches the objective. `screenRosterObjective` prices its candidates off this map.
+   * The presence every fielded hero's aura was weighted by in the last round — the optimize
+   * heroes' from `perHero`, plus the leave-alone heroes', which `perHero` does not carry because
+   * nothing they score reaches the objective. Rotation duty, or the share of the combat window
+   * fielded when {@link EvaluateRosterInput.windowSecs} is set. `screenRosterObjective` prices
+   * its candidates off this map.
    */
   dutyByHeroId: Record<string, number>;
   /**
@@ -512,4 +514,12 @@ export type EvaluateRosterInput = {
   ignoreFieldCrowding?: boolean;
   /** See {@link TeamPlanInput.aurasAtCap}. */
   aurasAtCap?: AurasAtCap;
+  /**
+   * A timed combat window, in seconds, the roster fights as one squad that deploys full when it
+   * opens — a gate clear, a duel. Set, every hero's presence for the auras, Matilha's allies and
+   * the Baton Pass pulse is the share of the window it fields (`fieldTimeInWindow`), not its
+   * rotation duty: a hero whose stint outlasts the window is present throughout, and its energy
+   * moves nothing. Absent, the roster is a rotation and presence is duty.
+   */
+  windowSecs?: number;
 };

@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { CopyProvider } from '../../lib/copy';
+import { en } from '../../lib/copy/en';
+import { ptBR } from '../../lib/copy/pt-BR';
 import { ForgeSection } from './forge-section';
 
 function render(locale: 'en' | 'pt-BR', props: Partial<Parameters<typeof ForgeSection>[0]> = {}): string {
@@ -29,28 +31,45 @@ describe('ForgeSection source — zero bespoke controls of its own (docs/base-ui
   });
 });
 
+// core's consent disclosure quotes these two labels byte-for-byte; a character's difference there
+// is a guard failure this repo cannot see, so this pin holds the values themselves, not just that
+// the component renders whatever copy says.
+describe('the widened switch label matches what the consent disclosure quotes', () => {
+  it('en', () => {
+    expect(en.settingsForgeWritesLabel).toBe('Let the app forge, equip and reset points');
+  });
+
+  it('pt-BR', () => {
+    expect(ptBR.settingsForgeWritesLabel).toBe('Deixar o app forjar, equipar e redistribuir pontos');
+  });
+
+  it('the section title is widened past the Forge tab alone', () => {
+    expect(en.settingsForgeSectionTitle).toBe('Changes to your account');
+  });
+});
+
 describe('ForgeSection renders SettingsSection -> SettingsRow -> Switch, both locales', () => {
   it('the label and the help differ between an English-language UI and a PT-BR-language UI', () => {
     const underEnglishUi = render('en');
     const underPtBrUi = render('pt-BR');
-    expect(underEnglishUi).toContain('Let Forge spend gold');
-    expect(underEnglishUi).toContain('Off: the Forge tab plans climbs and never rolls.');
-    expect(underPtBrUi).toContain('Deixar a Forja gastar ouro');
-    expect(underPtBrUi).toContain('Desligado: a aba Forja planeja subidas e nunca rola.');
-    expect(underEnglishUi).not.toContain('Deixar a Forja gastar ouro');
+    expect(underEnglishUi).toContain(en.settingsForgeWritesLabel);
+    expect(underEnglishUi).toContain('Off: the app plans and never changes your account.');
+    expect(underPtBrUi).toContain(ptBR.settingsForgeWritesLabel);
+    expect(underPtBrUi).toContain('Desligado: o app planeja e nunca altera sua conta.');
+    expect(underEnglishUi).not.toContain(ptBR.settingsForgeWritesLabel);
   });
 
   it('English: aria-label and switch role both come from copy, and the switch is off by default', () => {
     const html = render('en');
-    expect(html).toContain('aria-label="Let Forge spend gold"');
+    expect(html).toContain(`aria-label="${en.settingsForgeWritesLabel}"`);
     expect(html).toContain('role="switch"');
     expect(html).toContain('aria-checked="false"');
   });
 
   it('PT-BR: aria-label differs from English, and a true prop renders checked', () => {
     const html = render('pt-BR', { forgeWritesEnabled: true });
-    expect(html).toContain('aria-label="Deixar a Forja gastar ouro"');
-    expect(html).not.toContain('aria-label="Let Forge spend gold"');
+    expect(html).toContain(`aria-label="${ptBR.settingsForgeWritesLabel}"`);
+    expect(html).not.toContain(`aria-label="${en.settingsForgeWritesLabel}"`);
     expect(html).toContain('aria-checked="true"');
   });
 });

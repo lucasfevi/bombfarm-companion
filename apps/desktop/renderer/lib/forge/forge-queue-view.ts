@@ -5,7 +5,7 @@
  * `resolveForgeScreen` settles the Forge screen's own piece.
  */
 import { FORGE_ITEM_LEVELS, forgeForecast, type ForgeForecast } from '@bombfarm/domain/forge';
-import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
+import { mapInventoryViewItem, type InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import type { ForgeQueuePiece } from './forge-queue-reducer';
 
 export type ForgeQueueRow = {
@@ -43,4 +43,18 @@ export function forgeQueueExpectedGold(rows: readonly ForgeQueueRow[]): number |
 /** Where every piece in the bag stands, for the queue's sync. */
 export function bagUpgrades(gear: readonly InventoryViewItem[]): Map<string, number> {
   return new Map(gear.map((item) => [item.id, item.upgrade]));
+}
+
+/**
+ * Where one piece stands in the bag as the account payload carries it now, decoded the way the
+ * bag itself is. `gone` is a bag that was read and no longer holds the piece; `unknown` is a
+ * payload with no bag to read, which says nothing about the piece.
+ */
+export type BagStanding = { kind: 'held'; upgrade: number } | { kind: 'gone' } | { kind: 'unknown' };
+
+export function bagStandingOf(rawItems: readonly unknown[] | undefined, itemId: string): BagStanding {
+  if (rawItems === undefined) return { kind: 'unknown' };
+  const raw = rawItems.find((candidate) => (candidate as { id?: unknown } | null)?.id === itemId);
+  const upgrade = raw === undefined ? undefined : mapInventoryViewItem(raw)?.upgrade;
+  return upgrade === undefined ? { kind: 'gone' } : { kind: 'held', upgrade };
 }

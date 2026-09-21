@@ -66,6 +66,17 @@ export function formatCount(count: number, locale: AppLocale): string {
   return Math.round(count).toLocaleString(BCP47_BY_LOCALE[locale]);
 }
 
+/** A field the account payload carries as either a number or a numeric string (or not at all) —
+ *  `null` for anything that is not a finite number, never a coerced `NaN`/`Infinity`. */
+export function finiteNumber(value: unknown): number | null {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
 /** A market amount in its own currency, symbol and separators both following the chosen language. */
 export function formatMoney(amount: number, locale: AppLocale, currency: string): string {
   return new Intl.NumberFormat(BCP47_BY_LOCALE[locale], { style: 'currency', currency }).format(amount);

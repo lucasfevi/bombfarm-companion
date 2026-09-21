@@ -12,11 +12,12 @@
  * The store's lifetime is the window's, so the snapshot and any plan survive the unmount that
  * switching tabs causes: coming back shows them already in hand, not a recompute and not a lost
  * run. The runner is exposed as-is and never subscribed to here — the package screen's own
- * toolbar effect is the one place that turns runner state into lifecycle dispatches (D-19); a
+ * toolbar effect is the one place that turns runner state into lifecycle dispatches; a
  * second observer here would be a second applier.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createTeamPlanRunner, type TeamPlanRunnerHandle, type TeamPlanRunStatus } from '@bombfarm/team-plan/runner';
+import type { PlanBasis } from '@bombfarm/team-plan/core';
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { AccountView } from '@bombfarm/contracts';
@@ -44,7 +45,7 @@ export interface OptimizerSnapshotActions {
   readonly open: (view: AccountView, sourceKey: string, farmChosenPhase: number | null) => void;
   /** The player asked for the live account. Adopts it. */
   readonly refresh: (view: AccountView, sourceKey: string, farmChosenPhase: number | null) => void;
-  readonly startRun: (runId: string, signature: string, heroes: readonly HeroRecord[]) => void;
+  readonly startRun: (runId: string, signature: string, heroes: readonly HeroRecord[], basis: PlanBasis) => void;
   readonly resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
   readonly applyPlan: (runId: string, plan: TeamPlan) => void;
   readonly clearPlan: () => void;
@@ -79,7 +80,7 @@ export function createOptimizerStore(): {
   });
 
   // The window-lifetime singleton the package screen subscribes to instead of creating its own,
-  // so a solve survives the screen unmounting (D-2). The desktop calls `runner.run` nowhere —
+  // so a solve survives the screen unmounting. The desktop calls `runner.run` nowhere —
   // the package's own toolbar does, on the Optimize press.
   const runner = createTeamPlanRunner({ createWorker: createOptimizerWorker });
 
@@ -132,8 +133,8 @@ export function createOptimizerStore(): {
     refresh: (view, sourceKey, farmChosenPhase) => {
       adopt('refresh', view, sourceKey, farmChosenPhase);
     },
-    startRun: (runId, signature, heroes) => {
-      dispatchPlan({ kind: 'startRun', runId, signature, heroes });
+    startRun: (runId, signature, heroes, basis) => {
+      dispatchPlan({ kind: 'startRun', runId, signature, heroes, basis });
     },
     resolveRun: (runId, status) => {
       dispatchPlan({ kind: 'resolveRun', runId, status });
@@ -161,7 +162,7 @@ const LIVE_ACCOUNT_INCOMPLETE = '"live-account-incomplete"';
 
 /**
  * Whether the live account would give different inputs than the snapshot on screen — compared
- * over `optimizerDepKey`, which strips `farmChosenPhase` (D-4): a Farm phase change alone must
+ * over `optimizerDepKey`, which strips `farmChosenPhase`: a Farm phase change alone must
  * not read as "the account moved", it reaches the plan through the package signature instead.
  * The live record is built with the SNAPSHOT's own `farmChosenPhase`, for the same reason.
  *
@@ -204,7 +205,7 @@ export interface OptimizerSnapshotHook {
   readonly runner: TeamPlanRunnerHandle;
   readonly open: () => void;
   readonly refresh: () => void;
-  readonly startRun: (runId: string, signature: string, heroes: readonly HeroRecord[]) => void;
+  readonly startRun: (runId: string, signature: string, heroes: readonly HeroRecord[], basis: PlanBasis) => void;
   readonly resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
   readonly applyPlan: (runId: string, plan: TeamPlan) => void;
   readonly clearPlan: () => void;
@@ -252,8 +253,8 @@ export function useOptimizerSnapshot(): OptimizerSnapshotHook {
     sharedOptimizerStore().refresh(liveView, liveKey, loadFarmView().selectedPhase);
   }, [liveView, liveKey]);
 
-  const startRun = useCallback((runId: string, signature: string, heroes: readonly HeroRecord[]) => {
-    sharedOptimizerStore().startRun(runId, signature, heroes);
+  const startRun = useCallback((runId: string, signature: string, heroes: readonly HeroRecord[], basis: PlanBasis) => {
+    sharedOptimizerStore().startRun(runId, signature, heroes, basis);
   }, []);
 
   const resolveRun = useCallback((runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => {

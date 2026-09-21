@@ -50,6 +50,7 @@ import type { ObservationAppendPort, ObservationCapture } from './observation-ca
 import type { LogPort } from './log-port.js';
 import { MapFold, type MapAccountBoosts, type MapWikiFacts } from './map-fold.js';
 import { RuntimePort } from './runtime.js';
+import { ensureWritableTempDir } from './temp-dir.js';
 import {
   createHookCandidateSource,
   createSystemClock,
@@ -422,7 +423,12 @@ function createDefaultTapFactory(deps: {
   return (onEvent, onHttpBody) => {
     const tap = new Tap({
       processName: deps.processName,
-      runtime: new RuntimePort({ log: deps.log }),
+      runtime: new RuntimePort({
+        log: deps.log,
+        beforeFirstResolve: () => {
+          ensureWritableTempDir({ env: process.env, fallbackDir: path.join(deps.userDataDir, 'tmp'), log: deps.log });
+        },
+      }),
       processes: createProcessLister(deps.isPackaged),
       candidates: createHookCandidateSource({
         cacheDir: path.join(deps.userDataDir, 'live-hook-cache'),

@@ -12,6 +12,7 @@ import type { MarketState } from '../../lib/market/market-store';
 import { accountFactsFrom } from '../../lib/account/account-facts';
 import { buildAccountRoster } from '../../lib/account/account-roster';
 import { accountHoldingsFrom, holdingsComponents } from '../../lib/account/account-holdings';
+import { formatCapturedAt } from '../../lib/format';
 import { accountHoldingsLabels } from './account-labels';
 import { AccountView } from './account-view';
 
@@ -376,11 +377,15 @@ describe('the things each holdings component is made of', () => {
     expect(only).toContain('>—<');
   });
 
-  it('lists a bought skin by the listing it appears under, and depicts nothing for it', () => {
+  it('lists a bought skin by the listing it appears under, drawn with the avatar a hero wearing it shows', () => {
     const markup = openRow('skins');
-    expect(slots(markup, 'account-holdings-skins-entry-name')).toEqual(['Forest Warden Skin']);
+    const [forestWarden] = entryChunks(markup, 'skins');
+
+    expect(forestWarden).toContain('alt="Forest Warden Skin"');
+    expect(forestWarden).toContain('>Forest Warden Skin<');
+    expect(forestWarden).not.toContain('data-peek=');
+    expect(slots(markup, 'account-holdings-skins-entry-leading')).toHaveLength(1);
     expect(slots(markup, 'account-holdings-skins-entry-detail')).toEqual([]);
-    expect(slots(markup, 'account-holdings-skins-entry-leading')).toEqual([]);
     expect(slots(markup, 'account-holdings-skins-entry-amount')).toEqual(['R$7.00']);
   });
 
@@ -408,11 +413,16 @@ describe('the account-read age, which is a different clock from the price age', 
   });
 
   it('dates the line from the stalest section, not the freshest', () => {
-    accountState.current = loaded(
-      payloadOf(resolvedFidelity({ casa: { status: 'stale', capturedAt: EARLIER } })),
-    );
-    const days = Math.round((Date.now() - Date.parse(EARLIER)) / 86_400_000);
-    expect(html()).toContain(en.ageDays.replace('{n}', String(days)));
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-09-20T12:00:00.000Z'));
+      accountState.current = loaded(
+        payloadOf(resolvedFidelity({ casa: { status: 'stale', capturedAt: EARLIER } })),
+      );
+      expect(html()).toContain(formatCapturedAt(EARLIER, en));
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('prints no age line at all when nothing carries a capture time', () => {

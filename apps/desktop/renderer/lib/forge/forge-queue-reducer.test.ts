@@ -199,6 +199,76 @@ describe('syncing with the bag', () => {
   });
 });
 
+describe('adding a batch at once (addMany)', () => {
+  it('appends a piece the queue does not hold yet, in the batch order given', () => {
+    const batched = forgeQueueReducer(EMPTY_FORGE_QUEUE, {
+      kind: 'addMany',
+      pieces: [
+        { itemId: 'a', target: 12 },
+        { itemId: 'b', target: 8 },
+      ],
+    });
+    expect(batched.pieces).toEqual([
+      { itemId: 'a', target: 12 },
+      { itemId: 'b', target: 8 },
+    ]);
+  });
+
+  it('leaves a piece already queued at the same target unchanged, at its own position', () => {
+    const batched = forgeQueueReducer(twoWaiting, { kind: 'addMany', pieces: [{ itemId: 'a', target: 12 }] });
+    expect(batched).toBe(twoWaiting);
+  });
+
+  it('retargets a piece already queued at another target, in place', () => {
+    const batched = forgeQueueReducer(twoWaiting, { kind: 'addMany', pieces: [{ itemId: 'b', target: 10 }] });
+    expect(batched.pieces).toEqual([
+      { itemId: 'a', target: 12 },
+      { itemId: 'b', target: 10 },
+    ]);
+  });
+
+  it('leaves the piece in flight alone regardless of the target the batch carries for it', () => {
+    const batched = forgeQueueReducer(aInFlight, { kind: 'addMany', pieces: [{ itemId: 'a', target: 20 }] });
+    expect(batched).toBe(aInFlight);
+  });
+
+  it('returns the same state reference when every piece in the batch resolves to unchanged', () => {
+    const batched = forgeQueueReducer(twoWaiting, {
+      kind: 'addMany',
+      pieces: [
+        { itemId: 'a', target: 12 },
+        { itemId: 'b', target: 8 },
+      ],
+    });
+    expect(batched).toBe(twoWaiting);
+  });
+
+  it('an empty batch changes nothing', () => {
+    expect(forgeQueueReducer(twoWaiting, { kind: 'addMany', pieces: [] })).toBe(twoWaiting);
+    expect(forgeQueueReducer(EMPTY_FORGE_QUEUE, { kind: 'addMany', pieces: [] })).toBe(EMPTY_FORGE_QUEUE);
+  });
+
+  it('a halted queue keeps its halt and its halted piece at the head; the batch queues behind it', () => {
+    const requested = fold([{ kind: 'start' }, { kind: 'requested', itemId: 'a' }], twoWaiting);
+    const halted = forgeQueueReducer(requested, { kind: 'refused', itemId: 'a', reason: 'game_not_running' });
+    const batched = forgeQueueReducer(halted, { kind: 'addMany', pieces: [{ itemId: 'c', target: 5 }] });
+    expect(batched.status).toBe('halted');
+    expect(batched.halt).toEqual({ kind: 'refused', itemId: 'a', reason: 'game_not_running' });
+    expect(batched.pieces.map((piece) => piece.itemId)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('the same item id twice in one batch resolves as successive adds — the second wins, never two entries', () => {
+    const batched = forgeQueueReducer(EMPTY_FORGE_QUEUE, {
+      kind: 'addMany',
+      pieces: [
+        { itemId: 'a', target: 8 },
+        { itemId: 'a', target: 12 },
+      ],
+    });
+    expect(batched.pieces).toEqual([{ itemId: 'a', target: 12 }]);
+  });
+});
+
 describe('restore', () => {
   it('seeds an untouched queue, paused, and never overwrites one the player has already used', () => {
     const restored = forgeQueueReducer(EMPTY_FORGE_QUEUE, { kind: 'restore', pieces: [{ itemId: 'x', target: 10 }] });
@@ -206,5 +276,103 @@ describe('restore', () => {
     expect(restored.pieces).toEqual([{ itemId: 'x', target: 10 }]);
     expect(forgeQueueReducer(twoWaiting, { kind: 'restore', pieces: [{ itemId: 'x', target: 10 }] })).toBe(twoWaiting);
     expect(forgeQueueReducer(EMPTY_FORGE_QUEUE, { kind: 'restore', pieces: [] })).toBe(EMPTY_FORGE_QUEUE);
+  });
+});
+
+describe('pausing and resuming for an outside caller (the Optimizer steps aside)', () => {
+  const aRequested = fold([{ kind: 'start' }, { kind: 'requested', itemId: 'a' }], twoWaiting);
+  const halted = forgeQueueReducer(aInFlight, { kind: 'done', runId: 'r1', result: result('budget') });
+
+  it('pause while running: the piece in flight keeps its active, and no head is requested', () => {
+    const paused = forgeQueueReducer(aInFlight, { kind: 'pause' });
+    expect(paused.status).toBe('paused');
+    expect(paused.active).toEqual(aInFlight.active);
+    expect(paused.pieces).toEqual(aInFlight.pieces);
+  });
+
+  it('pause while idle, halted or already paused leaves the state unchanged', () => {
+    expect(forgeQueueReducer(EMPTY_FORGE_QUEUE, { kind: 'pause' })).toBe(EMPTY_FORGE_QUEUE);
+    expect(forgeQueueReducer(halted, { kind: 'pause' })).toBe(halted);
+    const paused = forgeQueueReducer(aInFlight, { kind: 'pause' });
+    expect(forgeQueueReducer(paused, { kind: 'pause' })).toBe(paused);
+  });
+
+  it('a piece reaching its target while paused drops it and keeps the queue paused, with the next head un-requested', () => {
+    const paused = forgeQueueReducer(aInFlight, { kind: 'pause' });
+    const next = forgeQueueReducer(paused, { kind: 'done', runId: 'r1', result: result('target') });
+    expect(next.status).toBe('paused');
+    expect(next.active).toBeNull();
+    expect(next.pieces).toEqual([{ itemId: 'b', target: 8 }]);
+  });
+
+  it('the last piece reaching its target while paused empties the queue to idle', () => {
+    const oneInFlight = fold(
+      [{ kind: 'add', itemId: 'a', target: 12 }, { kind: 'start' }, { kind: 'requested', itemId: 'a' }, { kind: 'started', itemId: 'a', runId: 'r9' }],
+      EMPTY_FORGE_QUEUE,
+    );
+    const paused = forgeQueueReducer(oneInFlight, { kind: 'pause' });
+    const next = forgeQueueReducer(paused, { kind: 'done', runId: 'r9', result: result('target') });
+    expect(next).toEqual({ ...EMPTY_FORGE_QUEUE, pieces: [] });
+  });
+
+  it('a piece stopping short of its target while paused halts the queue, same as while running', () => {
+    const paused = forgeQueueReducer(aInFlight, { kind: 'pause' });
+    const next = forgeQueueReducer(paused, { kind: 'done', runId: 'r1', result: result('shortfall') });
+    expect(next.status).toBe('halted');
+    expect(next.halt).toEqual({ kind: 'stop', itemId: 'a', stop: 'shortfall' });
+    expect(next.active).toBeNull();
+    expect(next.pieces.map((piece) => piece.itemId)).toEqual(['a', 'b']);
+  });
+
+  it('a refusal while paused clears active and leaves the queue paused, not halted', () => {
+    const paused = forgeQueueReducer(aRequested, { kind: 'pause' });
+    const next = forgeQueueReducer(paused, { kind: 'refused', itemId: 'a', reason: 'game_not_running' });
+    expect(next.status).toBe('paused');
+    expect(next.active).toBeNull();
+    expect(next.halt).toBeNull();
+  });
+
+  it('resume with pieces waiting returns the queue to running', () => {
+    const paused = forgeQueueReducer(aInFlight, { kind: 'pause' });
+    const resumed = forgeQueueReducer(paused, { kind: 'resume' });
+    expect(resumed.status).toBe('running');
+    expect(resumed.active).toEqual(aInFlight.active);
+    expect(resumed.pieces).toEqual(aInFlight.pieces);
+  });
+
+  it('resume on an empty paused queue lands on idle', () => {
+    const pausedEmpty: ForgeQueueState = { ...EMPTY_FORGE_QUEUE, status: 'paused' };
+    expect(forgeQueueReducer(pausedEmpty, { kind: 'resume' })).toEqual({ ...EMPTY_FORGE_QUEUE, status: 'idle' });
+  });
+
+  it('resume while idle, halted or running leaves the state unchanged', () => {
+    expect(forgeQueueReducer(EMPTY_FORGE_QUEUE, { kind: 'resume' })).toBe(EMPTY_FORGE_QUEUE);
+    expect(forgeQueueReducer(halted, { kind: 'resume' })).toBe(halted);
+    expect(forgeQueueReducer(aInFlight, { kind: 'resume' })).toBe(aInFlight);
+  });
+
+  it('start while paused is a no-op — Start belongs to the band, not to a step that paused it', () => {
+    const paused = forgeQueueReducer(aInFlight, { kind: 'pause' });
+    expect(forgeQueueReducer(paused, { kind: 'start' })).toBe(paused);
+  });
+
+  it('cancel while paused returns the queue to idle', () => {
+    const paused = forgeQueueReducer(aInFlight, { kind: 'pause' });
+    const cancelled = forgeQueueReducer(paused, { kind: 'cancel' });
+    expect(cancelled.status).toBe('idle');
+    expect(cancelled.halt).toBeNull();
+  });
+
+  it('sync dropping every remaining piece while paused empties the queue to idle', () => {
+    const pausedBeforeAnyRequest = fold([{ kind: 'start' }, { kind: 'pause' }], twoWaiting);
+    expect(pausedBeforeAnyRequest.active).toBeNull();
+    const synced = forgeQueueReducer(pausedBeforeAnyRequest, {
+      kind: 'sync',
+      upgrades: new Map([
+        ['a', 12],
+        ['b', 8],
+      ]),
+    });
+    expect(synced).toEqual({ ...EMPTY_FORGE_QUEUE, pieces: [] });
   });
 });

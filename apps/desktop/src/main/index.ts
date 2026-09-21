@@ -14,6 +14,8 @@ import {
   type AccountReadResult,
   type AccountSource,
   type AccountView,
+  type ApplyStartRequest,
+  type ApplyStartResult,
   type AppLocale,
   type AppSettings,
   type ConsentRecord,
@@ -28,6 +30,7 @@ import {
   type LiveDiagnosticsDumpOutcome,
   type LiveView,
   type MarketQuoteCurrency,
+  type MarketCheckResult,
   type MarketQuoteResult,
   type MarketQuoteTarget,
   type PvpFilmView,
@@ -38,6 +41,9 @@ import {
 } from '@bombfarm/contracts';
 import { createPacingGate, initialConsent, isGranted, summarizePvpFilm, trayTextFor } from '@bombfarm/game-api';
 import { createAccountNotifier, resolveAccountView, resolveCachedAccountView } from './account-view.js';
+import { createApplyInjector, type ApplyInjector } from './apply/apply-inject.js';
+import { createApplyService, type ApplyService } from './apply/apply-service.js';
+import { createWriterLock, type WriterLock } from './apply/writer-lock.js';
 import { patchAccountAfterForge } from './forge/forge-account-patch.js';
 import { createForgeHistory, type ForgeHistory } from './forge/forge-history.js';
 import { createForgeInjector, shouldHonourForgeInject, type ForgeInjector } from './forge/forge-inject.js';
@@ -156,6 +162,8 @@ let triggeredRefresh: TriggeredRefresh | null = null;
 let marketService: MarketService | null = null;
 let forgeService: ForgeService | null = null;
 let forgeHistory: ForgeHistory | null = null;
+let applyService: ApplyService | null = null;
+let applyInjector: ApplyInjector | null = null;
 let pvpHistory: PvpHistory | null = null;
 let pvpRecorder: PvpRecorder | null = null;
 let pvpReader: PvpReader | null = null;
@@ -306,6 +314,18 @@ function startForgeRun(request: ForgeStartRequest): ForgeStartResult {
   return forgeService?.start(request) ?? { ok: false, reason: 'unavailable' };
 }
 
+function startApplyRun(request: ApplyStartRequest): ApplyStartResult {
+  return applyService?.start(request) ?? { ok: false, reason: 'unavailable' };
+}
+
+function stopApplyRun(runId: string): boolean {
+  return applyService?.stop(runId) ?? false;
+}
+
+function injectApplyScript(payload: unknown): { ok: boolean } {
+  return applyInjector?.arm(payload) ?? { ok: false };
+}
+
 // Threads Electron's real `app.isPackaged` (via `resolveAppEnv()`) so `sessionCfgPath`'s
 // `BFC_TOKEN_PATH_OVERRIDE` escape hatch can ever apply — and, symmetrically, cannot apply in
 // a packaged build no matter what is set in its environment. See `session-token-file.ts`'s
@@ -363,6 +383,24 @@ function readPvpFilm(filmId: number): PvpFilmView | null {
     log.warn({ scope: 'pvp', event: 'film.unreadable', filmId, error: String(err) });
     return null;
   }
+}
+
+/** A manual check is the clock's own conditional request, taken early. The floor keeps a held
+ *  button from becoming a stream of them: below the five-minute `max-age` the published file is
+ *  served with, a second check could not see anything newer anyway. */
+const MARKET_CHECK_FLOOR_MS = 30_000;
+let lastMarketCheckAt = 0;
+
+async function checkMarketNow(): Promise<MarketCheckResult> {
+  if (marketService === null) return { ok: false, reason: 'unavailable' };
+  const now = Date.now();
+  if (now - lastMarketCheckAt < MARKET_CHECK_FLOOR_MS) return { ok: false, reason: 'rate_limited' };
+  lastMarketCheckAt = now;
+  const view = await marketService.refreshSnapshot();
+  // A check that found nothing new adopts nothing and so announces nothing on its own; the press
+  // still moved the checked-at clock, and every window showing it should see that.
+  emitEvent('market:changed', view);
+  return { ok: true, view };
 }
 
 function refreshMarketItem(target: MarketQuoteTarget): Promise<MarketQuoteResult> {
@@ -454,6 +492,7 @@ function registerIpcHandlers(): void {
       updateService?.installOnRestart() ?? preServiceUpdateStatus(),
     'market:getSnapshot': () => marketService?.getView() ?? emptyMarketSnapshotView(),
     'market:refreshItem': refreshMarketItem,
+    'market:check': checkMarketNow,
     'forge:start': startForgeRun,
     'forge:cancel': (runId: string) => forgeService?.cancel(runId) ?? false,
     'forge:history': listForgeHistory,
@@ -462,6 +501,9 @@ function registerIpcHandlers(): void {
       return listForgeHistory();
     },
     'forge:inject': (events: unknown) => forgeInjector?.inject(events) ?? { ok: false },
+    'apply:start': startApplyRun,
+    'apply:stop': stopApplyRun,
+    'apply:inject': injectApplyScript,
     'pvp:history': listPvpHistory,
     'pvp:refresh': (): AccountReadResult => pvpReader?.refresh() ?? { ok: false, reason: 'unavailable' },
     'pvp:film': readPvpFilm,
@@ -1035,6 +1077,10 @@ async function bootstrap(): Promise<void> {
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   });
 
+  // One writer, ever: the forge run and an apply run share this so neither can start while the
+  // other holds it.
+  const writerLock: WriterLock = createWriterLock();
+
   // One transport for both the read cycle and the forge run, so they identify themselves
   // identically. `app.getVersion()` is the packaged app's own version.
   const gameApiTransport = createNodeHttpsTransport(companionUserAgent(app.getVersion()));
@@ -1079,6 +1125,12 @@ async function bootstrap(): Promise<void> {
   // and transport as the cycle above, and lands its result through the cycle's own commit seam
   // so the notifier is what announces the patched bag and wallet.
   const cachedAccount = (): AccountView | null => resolveCachedAccountView({ gameReader, consentStore, accountRefresh });
+  const currentItems = (): readonly unknown[] | null => cachedAccount()?.payload.items ?? null;
+  const currentGold = (): number | null => {
+    const gold = cachedAccount()?.payload.account?.gold;
+    const parsed = typeof gold === 'string' ? Number(gold) : gold;
+    return typeof parsed === 'number' && Number.isFinite(parsed) ? parsed : null;
+  };
   pvpReader = createPvpReader({
     consentStore: { read: () => consentStore?.read() ?? initialConsent() },
     accountSource: currentAccountSource,
@@ -1099,16 +1151,13 @@ async function bootstrap(): Promise<void> {
     gate,
     accountSource: currentAccountSource,
     isGameRunning: () => gameReader?.isGameProcessRunning() ?? false,
-    currentItems: () => cachedAccount()?.payload.items ?? null,
-    currentGold: () => {
-      const gold = cachedAccount()?.payload.account?.gold;
-      const parsed = typeof gold === 'string' ? Number(gold) : gold;
-      return typeof parsed === 'number' && Number.isFinite(parsed) ? parsed : null;
-    },
+    currentItems,
+    currentGold,
     applyResult: (patch) => {
       accountRefresh?.applyPatch((payload) => patchAccountAfterForge(payload, patch, new Date().toISOString()));
     },
     history: forgeHistory,
+    writerLock,
     emit: (event) => {
       emitEvent('forge:event', event);
     },
@@ -1121,6 +1170,32 @@ async function bootstrap(): Promise<void> {
     emit: (event) => {
       emitEvent('forge:event', event);
     },
+  });
+
+  // Constructed before the service so it can be passed in as the service's `scripted` dep.
+  applyInjector = createApplyInjector({
+    honoured: () => shouldHonourForgeInject(process.env, resolveAppEnv().isPackaged),
+  });
+  applyService = createApplyService({
+    consentStore,
+    readToken,
+    settings: () => currentSettings,
+    transport: gameApiTransport,
+    gate,
+    accountSource: currentAccountSource,
+    isGameRunning: () => gameReader?.isGameProcessRunning() ?? false,
+    currentItems,
+    currentHeroes: () => cachedAccount()?.payload.heroes ?? null,
+    currentGold,
+    writerLock,
+    requestReadNow: requestAccountReadNow,
+    emit: (event) => {
+      emitEvent('apply:event', event);
+    },
+    scripted: applyInjector,
+    log,
+    now: () => Date.now(),
+    sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   });
 
   // Fixture mode's ~20×/s ticker is the second producer that can
@@ -1296,6 +1371,8 @@ if (!gotLock) {
     marketService = null;
     forgeService = null;
     forgeInjector = null;
+    applyService = null;
+    applyInjector = null;
     // forgeHistory borrows accountOpen.db the way settingsStore does; accountStore.close()
     // below owns the handle, so it gains no close() of its own.
     forgeHistory = null;

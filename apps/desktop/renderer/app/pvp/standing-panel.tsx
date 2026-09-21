@@ -17,8 +17,6 @@ import {
   winRate,
   winsToNextTier,
 } from '../../lib/pvp/pvp-trend';
-import { usePvpRefresh } from '../../lib/pvp/use-pvp-refresh';
-import { AccountRefreshControl } from '../account-refresh-control';
 
 const MIN_TREND_ROWS = 2;
 
@@ -29,22 +27,10 @@ export function StandingPanel({ history }: { history: PvpHistoryResult | null })
   const rank = history?.rank ?? null;
   const quota = history === null ? null : duelsLeft(history);
   const unread = t.pvpStandingUnknown;
-  const refresh = usePvpRefresh();
 
   return (
     <Panel data-testid="pvp-standing" data-state={standing === null ? 'empty' : 'read'}>
-      <PanelHeader title={t.pvpStandingTitle}>
-        <span data-testid="pvp-standing-age">
-          <AccountRefreshControl
-            capturedAt={standing?.capturedAt ?? null}
-            stale={false}
-            busy={false}
-            readState={refresh.state}
-            onRefresh={refresh.request}
-            ageLine={(age) => sub(t.pvpStandingAge, { age })}
-          />
-        </span>
-      </PanelHeader>
+      <PanelHeader title={t.pvpStandingTitle} />
       {standing === null && quota === null && rank === null ? (
         <p className="m-0 text-xs text-muted">{t.pvpStandingEmpty}</p>
       ) : (

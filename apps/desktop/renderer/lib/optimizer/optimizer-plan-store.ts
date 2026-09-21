@@ -6,24 +6,27 @@
  * The package's own screen presses Optimize and runs the search itself; this module never calls
  * a runner. It only folds the four lifecycle reports the screen's toolbar effect makes —
  * `startRun`, `resolveRun`, `applyPlan`, `clearPlan` — into one state, so there is exactly one
- * place a plan is ever applied (D-19). `startRun` records the signature the screen built its run
+ * place a plan is ever applied. `startRun` records the signature the screen built its run
  * from, not the live signature at the moment the plan lands: a Refresh that changes the snapshot
- * mid-run must not silently re-key a plan solved from the account behind it (D-16).
+ * mid-run must not silently re-key a plan solved from the account behind it.
  */
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import type { TeamPlanRunStatus } from '@bombfarm/team-plan/core';
+import type { PlanBasis, TeamPlanRunStatus } from '@bombfarm/team-plan/core';
 
 export type OptimizerPlanState = {
   readonly runStatus: TeamPlanRunStatus;
   readonly runId: string | null;
   readonly plan: TeamPlan | null;
-  /** The signature the run in flight was built from (D-16); becomes the applied plan's key. */
+  /** The signature the run in flight was built from; becomes the applied plan's key. */
   readonly signature: string | null;
   /** The roster the run was solved from, for the same reason as the signature: the tab re-takes
    *  its snapshot from the live account on every re-open, and the result rows must keep naming
    *  the heroes the plan is about even when that read no longer carries one of them. */
   readonly heroes: readonly HeroRecord[] | null;
+  /** The inputs and controls the run was solved from, whole — what the ledger of changes since
+   *  the plan is read against. Frozen for the same reason as the heroes above. */
+  readonly basis: PlanBasis | null;
   /** The result rows the player has opened; `null` is the default (the first hero), which every
    *  new plan starts from. Held here because the row set belongs to the plan it was opened on. */
   readonly openHeroIds: readonly string[] | null;
@@ -35,6 +38,7 @@ export type OptimizerPlanArrival =
       readonly runId: string;
       readonly signature: string;
       readonly heroes: readonly HeroRecord[];
+      readonly basis: PlanBasis;
     }
   | { readonly kind: 'resolveRun'; readonly runId: string; readonly status: Exclude<TeamPlanRunStatus, 'running'> }
   | { readonly kind: 'applyPlan'; readonly runId: string; readonly plan: TeamPlan }
@@ -47,6 +51,7 @@ export const initialOptimizerPlanState: OptimizerPlanState = {
   plan: null,
   signature: null,
   heroes: null,
+  basis: null,
   openHeroIds: null,
 };
 
@@ -73,6 +78,7 @@ export function acceptPlan(state: OptimizerPlanState, arrival: OptimizerPlanArri
         plan: null,
         signature: arrival.signature,
         heroes: arrival.heroes,
+        basis: arrival.basis,
         openHeroIds: null,
       };
 
@@ -93,6 +99,7 @@ export function acceptPlan(state: OptimizerPlanState, arrival: OptimizerPlanArri
         state.plan === null &&
         state.signature === null &&
         state.heroes === null &&
+        state.basis === null &&
         state.openHeroIds === null
       ) {
         return state;

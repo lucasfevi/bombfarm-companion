@@ -179,23 +179,29 @@ export type LiveCurrency =
       /** Only meaningful for `runtimeUnavailable`: the runtime loaded earlier in this session
        *  and then stopped loading, which is what a quarantine looks like from here. */
       readonly likelyQuarantine?: boolean;
+      /** Only meaningful for `attachFailed`: the runtime's own account of why, verbatim. Not
+       *  localized and not for the app to interpret — it exists so a player can read it off the
+       *  screen and pass it on, instead of a log file being the only place it is written. */
+      readonly detail?: string;
     };
+
+export interface LiveGapExtra {
+  readonly likelyQuarantine?: boolean;
+  readonly detail?: string;
+}
 
 /**
  * The one constructor for the `gap` variant — `actionable` is always derived from {@link
  * isActionableGap} here, so no caller can set the two inconsistently.
  */
-export function liveGap(
-  reason: LiveGapReason,
-  sinceAt: string,
-  extra?: { readonly likelyQuarantine?: boolean },
-): LiveCurrency {
+export function liveGap(reason: LiveGapReason, sinceAt: string, extra?: LiveGapExtra): LiveCurrency {
   return {
     kind: 'gap',
     reason,
     actionable: isActionableGap(reason),
     sinceAt,
     ...(extra?.likelyQuarantine !== undefined ? { likelyQuarantine: extra.likelyQuarantine } : {}),
+    ...(extra?.detail !== undefined ? { detail: extra.detail } : {}),
   };
 }
 

@@ -9,6 +9,7 @@ import * as breakdown from './namespaces/breakdown';
 import * as phases from './namespaces/phases';
 import * as teamPlan from './namespaces/team-plan';
 import * as teamPlanGearFlow from './namespaces/team-plan-gear-flow';
+import * as teamPlanChanges from './namespaces/team-plan-changes';
 import * as teamPlanObjective from './namespaces/team-plan-objective';
 import * as importNs from './namespaces/import';
 import * as stats from './namespaces/stats';
@@ -29,6 +30,7 @@ const en = {
   ...phases.en,
   ...teamPlan.en,
   ...teamPlanGearFlow.en,
+  ...teamPlanChanges.en,
   ...teamPlanObjective.en,
   ...importNs.en,
   ...stats.en,
@@ -49,6 +51,7 @@ const pt = {
   ...phases.pt,
   ...teamPlan.pt,
   ...teamPlanGearFlow.pt,
+  ...teamPlanChanges.pt,
   ...teamPlanObjective.pt,
   ...importNs.pt,
   ...stats.pt,

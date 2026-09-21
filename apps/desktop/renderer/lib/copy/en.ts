@@ -13,15 +13,49 @@
  */
 export const en = {
   // shell* — AppShell navigation and status chrome
-  shellStatusConnected: 'Connected',
-  shellStatusNotRunning: 'Game not running',
-  shellStatusStale: 'Stale',
   shellLoadingLabel: 'Loading…',
+  // game* — the game connection at the status strip's left: a word beside a dot, and the sentence
+  // the tooltip and the Live tab's dot say for it. `liveStatusLiveLabel` below is the live one.
+  gameConnected: 'Connected',
+  gameStale: 'Stale',
+  gameNotRunning: 'Not running',
+  gameConnecting: 'Connecting',
+  gameFeedStaleTip: 'The game is open, but nothing has arrived from it for {age}',
+  gameFeedStaleNoAgeTip: 'The game is open, but nothing is arriving from it',
+  gameFeedNotRunningTip: 'No game process found — the app keeps looking on its own',
   shellUpdateAvailable: 'Update available',
   shellUpdateDownloading: 'Updating… {percent}%',
   shellUpdateReady: 'Restart to update',
   shellUpdateOpenSettings: 'Open the Updates settings',
   shellCoffeeLabel: 'Buy me a coffee',
+  // feeds* — the status strip's rail of the four things the app keeps asking for, each with its
+  // own age and press, and the one press that runs all four in turn.
+  feedsAccount: 'Account',
+  feedsPvp: 'PVP',
+  feedsPrices: 'Prices',
+  feedsUpdates: 'Updates',
+  feedsRefreshAll: 'Refresh every feed, one after another',
+  feedsRefreshAllStep: '{step}/{total}',
+  feedsRefreshOne: 'Refresh {feed} now',
+  // The tooltip, top to bottom: what the feed is, where it stands, how it keeps itself fresh,
+  // why a press was refused, and — muted, last — what a click does.
+  feedsWhatAccount: 'Your heroes, bag, skill tree and house, read from the game',
+  feedsWhatPvp: 'Your PVP standing and the points ranking',
+  feedsWhatPrices: 'The market price list',
+  feedsWhatUpdates: 'Whether a newer version of this app is out',
+  feedsLastRead: 'Last read {age}',
+  feedsNeverRead: 'Not read yet',
+  feedsReadingNow: 'Reading now…',
+  feedsOutOfDate: 'Out of date — this screen was computed from an older copy of the account',
+  feedsNoClock: 'Read when its tab opens, and by every duel',
+  feedsClickToUpdate: 'Click to update now',
+  feedsUpdatesOff: 'This build does not check for updates — installed Beta and stable builds do',
+  feedsUpdatesBusy: 'An update is already on its way — see Settings',
+  feedsNextIn: 'next in {age}',
+  feedsNextDue: 'due now',
+  feedsEvery: 'every {cycle}',
+  feedsRefused: 'refused',
+  feedsCycleMinutes: '{n} min',
   // The top bar's overflow button, and the referral row inside it — a menu row is read on its own
   // line, so it says what the click does rather than repeating the chip's whole sentence.
   shellMoreActionsLabel: 'More actions',
@@ -76,11 +110,12 @@ export const en = {
     'The compact Live window stays above other windows while this is on. Takes effect immediately.',
   settingsAlwaysOnTopMiniNotSavedTitle: 'Mini always-on-top changed, but not saved',
 
-  // settingsForge* — the one switch that lets the Forge tab spend gold (off by default)
-  settingsForgeSectionTitle: 'Forge',
-  settingsForgeWritesLabel: 'Let Forge spend gold',
+  // settingsForge* — the one switch that lets the Forge tab, the forge queue and the Optimizer's
+  // Apply steps spend gold and move gear (off by default)
+  settingsForgeSectionTitle: 'Changes to your account',
+  settingsForgeWritesLabel: 'Let the app forge, equip and reset points',
   settingsForgeWritesHelp:
-    'Off: the Forge tab plans climbs and never rolls. On: the Forge button spends gold on your account, one confirmed run at a time.',
+    "Off: the app plans and never changes your account. On: the Forge button, the forge queue and the Optimizer's Apply steps can spend gold and move gear — one confirmed run at a time, and you can stop between calls.",
   settingsForgeWritesNotSavedTitle: 'Forge setting changed, but not saved',
 
   // settingsGame*/settingsRestartGameOnExit* — the one switch that lets Steam bring the game
@@ -212,6 +247,7 @@ export const en = {
   liveGapReasonRuntimeUnavailableQuarantine:
     'Security software likely blocked the part of the app that reads the game. It keeps trying on its own.',
   liveGapReasonConsentMissing: 'You have not allowed the app to read your account and connect to the game yet.',
+  liveGapDetailLabel: 'Last error',
 
   liveHeroesTitle: 'Heroes',
   liveListOnFieldTitle: 'Field',
@@ -533,6 +569,10 @@ export const en = {
   forgeQueueAdded: 'Queued',
   forgeQueueAddAria: 'Add {item} to the forge queue, to {target}',
   forgeQueueAddedAria: '{item} is in the forge queue, to {target}',
+  forgeQueueAlreadyForged: 'Forged',
+  forgeQueueAlreadyForgedAria: '{item} is already forged to {target}',
+  forgeQueueGone: 'Not in bag',
+  forgeQueueGoneAria: '{item} is not in the bag any more',
   forgeQueueTitle: 'Forge queue',
   forgeQueueOpenForge: 'Forge queue — open the Forge tab',
   forgeQueueForged: '{done}/{total} forged',
@@ -553,6 +593,9 @@ export const en = {
   forgeQueueConfirm: 'Start — spends gold',
   forgeQueueConfirmCancel: 'Not now',
   forgeQueuePanelCaption: 'Forged in turn from the top; a piece already at its target leaves on its own.',
+  // Printed in place of the rolling/progress span while the Optimizer has paused the queue for
+  // one of its own steps — see apply* below.
+  forgeQueuePausedForApply: 'Paused for the Optimizer',
 
   // account* — the Account screen: what the account could sell, who it belongs to, and what its
   // House and skill tree grant. The panels are shared drawings that take a label for every string
@@ -693,6 +736,133 @@ export const en = {
   optimizerFarmNeedsMaxPhase: 'Letting the search pick its own phase needs the furthest phase your account has reached, which this read did not carry. Pick a phase above, or score for damage.',
   optimizerLeftOutTitle: 'Some heroes were left out of the search',
   optimizerLeftOutBody: 'The app could not read the spent stat points of {heroes} from the account, so they are left out of this search: not on the scope board, not in the plan.',
+
+  // apply* — the Optimizer's Apply panel: the ledger, the three numbered rows, their confirms,
+  // and the blocking window that shows each call as it goes out. Every gold figure is drawn
+  // through the desktop's own coin component, never a package string; these are the words only.
+  applyPanelTitle: 'Apply this plan',
+  applyPanelStateNone: 'Nothing applied yet',
+  applyPanelStateSome: '{done} of {total} done',
+  applyPanelStateAll: 'All done',
+  applyLedgerTotal: 'Gold this plan spends',
+  applyLedgerReset: 'Reset points',
+  applyLedgerExact: 'exact',
+  applyLedgerForge: 'Forge',
+  applyLedgerForgeExpected: 'expected · can run over',
+  applyLedgerForgeNone: 'no estimate',
+  applyLedgerFree: 'free',
+  applyLedgerWalletLabel: 'You have',
+  applyLedgerWallet: '→ {after} after',
+  applyStepEquipTitle: 'Equip items',
+  applyStepCalls: '{n} calls',
+  applyStepHeroes: '{n} heroes',
+  applyStepEquipFacts:
+    '{calls} across {heroes} heroes — {puton} put on (a worn piece is swapped out in the same call), {tobag} sent back to the Inventory · about {time}',
+  applyStepForgeTitle: 'Add items to the forge queue',
+  applyStepForgeFacts: '{pieces} pieces · {queued} already queued · {gold} expected · you start the queue from its own Start',
+  applyStepForgeFactsNoEstimate:
+    '{pieces} pieces · {queued} already queued · no estimate · you start the queue from its own Start',
+  applyStepForgeTargets: 'Targets {count} pieces',
+  applyStepPointsTitle: 'Reset points',
+  applyStepPointsFacts: '{heroes} — {respecs} with a respec · {calls} calls · about {time} · {gold} exact',
+  applyStepNothing: 'Nothing to do',
+  applyStepDone: 'Done — {made} of {total} calls made, {skipped} skipped',
+  applyStepDoneForge: 'Done — {count} added to the queue',
+  applyStepForgeAllQueued: 'Every piece of this plan is already in the queue',
+  applyStepDoneLabel: 'Done',
+  applyStepShowSkips: 'Show what was skipped',
+  applyStepHideSkips: 'Hide what was skipped',
+  applyStepStopped: 'Stopped — {reason}',
+  applyStepRunAgain: 'Run again',
+  applyStepRunning: 'Running…',
+  applyStepPausesQueue: 'Pauses the forge queue while it runs',
+  applyStepWillSkip: '{count} of {total} will be skipped — {reasons}',
+  // "{n} {reason}" — placeholders only, joining an already-localised reason phrase with its
+  // count; no words of its own. Declared identical in both languages in parity.test.ts, the
+  // inventoryDetailSetSlot precedent.
+  applySkipCounted: '{n} {reason}',
+  applyStepNothingLeft: 'Nothing left to apply — build the plan again',
+  applyStepWalletShort: '{hero} will be skipped — {needed} gold needed, {onhand} on hand',
+  applyPanelSwitchOff: 'Turn on "{switch}" in Settings to apply from here',
+  applyPanelBlockedTitle: 'This plan can no longer be applied',
+  applyPanelBlockedBody:
+    'Something changed on your account since it was built. The panel above lists what broke it; build the plan again to continue.',
+  applyPanelOtherRunning: '{step} is running — the other steps wait',
+  applyConfirmEquipTitle: 'Equip items?',
+  applyConfirmEquipBody: 'This equips and unequips the items your plan expects.',
+  applyConfirmEquip: 'Equip {count} items',
+  applyConfirmForgeTitle: 'Add to the forge queue?',
+  applyConfirmForgeBody: 'Nothing rolls until you start the queue from its own Start.',
+  applyConfirmForge: 'Add {count} to queue',
+  applyConfirmPointsTitle: 'Reset points?',
+  applyConfirmPointsBody: 'A respec is charged in full even when only a few points move.',
+  applyConfirmPointsRespec: 'respec',
+  applyConfirmPointsPlace: 'place {points} unspent points',
+  applyConfirmPointsNoRespec: 'No respec needed',
+  applyConfirmPointsSkipped: 'skipped — {reason}',
+  applyConfirmPointsSelectAria: 'Reset points on {hero}',
+  applyConfirmPoints: 'Reset points — spends {gold}',
+  applyConfirmQueuePauses:
+    'The forge queue is rolling: it pauses after the piece in flight and resumes when this step ends.',
+  applyConfirmCancel: 'Not now',
+  applyModalEquipTitle: 'Equipping items',
+  applyModalPointsTitle: 'Resetting points',
+  applyModalProgress: '{elapsed} elapsed · about {left} left',
+  applyModalWaitingForge: 'Waiting for the forge piece in flight…',
+  applyModalCallEquip: '{from} → {item} → {to}',
+  applyModalCallEquipFromBag: 'Inventory → {item} → {to}',
+  applyModalCallUnequip: '{item} → Inventory',
+  applyModalInventory: 'Inventory',
+  applyModalFrom: 'from {from}',
+  applyModalCallRespec: '{hero} — respec, then {points} points',
+  applyModalCallCommit: '{hero} — place {points} points',
+  applyModalCooldown:
+    'The game server asked us to slow down — resuming in {countdown}. The call in flight was not sent; nothing is half-done.',
+  applyModalNowEquip: 'Equipping {item} on {hero}',
+  applyModalNowUnequip: 'Sending {item} back to the Inventory',
+  applyModalNowRespec: 'Refunding {hero}’s points',
+  applyModalNowCommit: 'Placing {hero}’s points',
+  applyModalNowBetween: 'Between calls',
+  applyModalFooter: '{done} done · {skipped} skipped · {left} left',
+  applyModalGoldSoFar: '{gold} spent so far',
+  applyModalQueuePaused: 'Forge queue paused',
+  applyModalStop: 'Stop after this call',
+  applyModalStopping: 'Stopping after this call…',
+  applyModalDoneEquipTitle: 'Items equipped',
+  applyModalDonePointsTitle: 'Points reset',
+  applyModalStoppedTitle: 'Stopped',
+  applyModalDoneSummary: '{made} of {total} calls made · {skipped} skipped',
+  applyModalGoldSpent: '{gold} spent',
+  applyModalDoneNext: 'The next step is ready on the panel.',
+  applyModalDoneAll: 'Every step of this plan has been applied.',
+  applyModalSkippedTitle: 'Skipped',
+  applyModalClose: 'Close',
+  applyModalContinue: 'Continue to next step',
+  applyModalProgressAria: 'Apply progress',
+  applyModalLedgerAria: 'Calls made this run',
+  // applySkip* — the modal's skip list and the row's will-skip line share these; the eight
+  // ApplySkipReason members plus the row-only forgeAtTarget reason.
+  applySkipHeroLevel: "hero can't wear it yet",
+  applySkipItemMissing: 'item left the bag since the plan',
+  applySkipItemMoved: 'item is not where the plan left it',
+  applySkipHeroMissing: 'hero is not on the roster any more',
+  applySkipAllocationChanged: "hero's points changed since the plan",
+  applySkipNotEnoughGold: 'not enough gold',
+  applySkipResetNotPlaced: 'reset done, points not placed — run the step again',
+  applySkipAlreadyDone: 'already done when the step reached it',
+  applySkipForgeAtTarget: 'already at its target',
+  // applyStop* — why a run ended short of every call, for the Done view's stop reason.
+  applyStopStopped: 'you stopped it',
+  applyStopUnauthorized: 'the game session ended…',
+  applyStopNetwork: 'no answer from the server',
+  applyStopGameNotRunning: 'the game closed',
+  applyStopConsentRevoked: 'account access was switched off',
+  applyStopRefused: 'the server refused: {code}',
+  applyStopError: 'something went wrong on our side — nothing more was sent',
+  // applyStart* — refusals only an Equip or Reset press can hit; the rest reuse forgeStart*.
+  applyStartNothing: 'Nothing left to apply — build the plan again',
+  applyStartOffline: 'No server to apply on',
+  applyStartBadRequest: 'The app sent a request the game did not understand — build the plan again',
 
   // pvp* — the PVP screen: every duel the app saw settle while it was open, and whether each
   // one's film is held. Nothing here is predicted; the rows are what the game reported.

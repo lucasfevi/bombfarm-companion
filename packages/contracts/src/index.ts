@@ -6,8 +6,43 @@ import type { MarketQuoteCurrency, MarketQuoteResult, MarketQuoteTarget, MarketS
 import { DEFAULT_MARKET_QUOTE_CURRENCY } from './market.js';
 import type { ForgeEvent, ForgeHistoryResult, ForgeStartRequest, ForgeStartResult } from './forge.js';
 import type { PvpFilmView, PvpHistoryResult } from './pvp.js';
+import type { ApplyEvent, ApplyStartRequest, ApplyStartResult } from './apply.js';
 
 export { accountChangeKey, canonicalStringify } from './account-change-key.js';
+export {
+  isApplyEquipUnit,
+  isApplyEvent,
+  isApplyInjectRequest,
+  isApplyPointsUnit,
+  isApplyStartRequest,
+  isCommitVector,
+} from './apply.js';
+export type {
+  ApplyCallKind,
+  ApplyConflictReason,
+  ApplyCooldownEvent,
+  ApplyDoneEvent,
+  ApplyEquipUnit,
+  ApplyEvent,
+  ApplyFailed,
+  ApplyInjectRequest,
+  ApplyLocation,
+  ApplyPointsUnit,
+  ApplyResumedEvent,
+  ApplyRunResult,
+  ApplySkip,
+  ApplySkipReason,
+  ApplyStartReason,
+  ApplyStartRequest,
+  ApplyStartResult,
+  ApplyStep,
+  ApplyStopReason,
+  ApplyUnitEvent,
+  ApplyUnitStatus,
+  ApplyUnitVerdict,
+  ApplyVerdictStatus,
+  CommitVector,
+} from './apply.js';
 export { EMPTY_FORGE_HISTORY } from './forge.js';
 export type {
   ForgeCallKind,
@@ -49,7 +84,7 @@ export { migrateStoredSettings } from './settings-migration.js';
  *  body, never at either module's top level, so the two modules finish initialising before either
  *  is actually called. */
 export * from './locale.js';
-export { disabledUpdateStatus, idleUpdateStatus, initialUpdateStatus } from './update.js';
+export { disabledUpdateStatus, idleUpdateStatus, initialUpdateStatus, UPDATE_CHECK_INTERVAL_MS } from './update.js';
 export type { UpdateErrorReason, UpdatePhase, UpdateStatus } from './update.js';
 export { isTrustworthySection } from './account-payload.js';
 export type {
@@ -78,6 +113,7 @@ export type {
   LiveEarnings,
   LiveEvent,
   LiveFrame,
+  LiveGapExtra,
   LiveGapReason,
   LiveHeroEnergy,
   LiveHit,
@@ -101,6 +137,7 @@ export type {
 } from './market.js';
 export {
   DEFAULT_MARKET_QUOTE_CURRENCY,
+  MARKET_SNAPSHOT_CHECK_MS,
   MARKET_QUOTE_CURRENCIES,
   emptyMarketSnapshotView,
   isMarketQuoteCurrency,
@@ -327,8 +364,9 @@ export interface AppSettings {
   locale: 'en' | 'pt-BR';
   alwaysOnTopMain: boolean;
   alwaysOnTopMini: boolean;
-  /** "Let Forge spend gold" — off until the player turns it on; the only thing that lets the
-   *  Forge tab send a forge roll. */
+  /** "Let the app forge, equip and reset points" — off until the player turns it on; the only
+   *  thing that lets the app send a forge roll, equip or unequip an item, or refund and re-place
+   *  a hero's stat points. */
   forgeWritesEnabled: boolean;
   /** Off until the player turns it on. While on, a game process this app already saw running and
    *  which then disappears is asked back through Steam. Nothing here ever stops a living game. */
@@ -384,6 +422,10 @@ export type AccountReadRefusal =
 /** `ok` means a read was *started*, never that it landed: what it found arrives separately, on
  *  `account:changed`, and only if it changed something. */
 export type AccountReadResult = { ok: true } | { ok: false; reason: AccountReadRefusal };
+
+/** `ok` means the check ran; the view says what it found. The refusal reasons are the account
+ *  read's own, so one dictionary of words covers every feed's press. */
+export type MarketCheckResult = { ok: true; view: MarketSnapshotView } | { ok: false; reason: AccountReadRefusal };
 
 export interface AppEnvironmentInfo {
   flavor: AppFlavor;
@@ -464,6 +506,10 @@ export interface IpcChannels {
    *  `isMarketQuoteTarget` before anything acts on it — the renderer is not trusted to have sent
    *  a well-formed one. */
   'market:refreshItem': { args: [MarketQuoteTarget]; result: MarketQuoteResult };
+  /** Asks main to check the published price list now — the same conditional request its own
+   *  clock makes every fifteen minutes. `ok` carries the view the check left behind, whether or
+   *  not it found anything new; a press inside the floor is refused rather than queued. */
+  'market:check': { args: []; result: MarketCheckResult };
   /** The one channel that spends the player's gold. Main re-validates the request against the
    *  account it holds and refuses with a named reason rather than trusting the renderer. */
   'forge:start': { args: [ForgeStartRequest]; result: ForgeStartResult };
@@ -475,6 +521,18 @@ export interface IpcChannels {
   /** Test-only: replays a scripted event sequence through the real `forge:event` seam. Main
    *  honours it only unpackaged on the fixture reader; anywhere else it answers `{ ok: false }`. */
   'forge:inject': { args: [unknown]; result: { ok: boolean } };
+  /** Starts an Equip or Reset-points step from the units the renderer's own preflight found
+   *  pending. Main re-validates and re-derives against its own cache rather than trusting the
+   *  renderer's counts. There is no `apply:preflight` channel — the renderer runs the pure domain
+   *  preflight itself over its live account view. */
+  'apply:start': { args: [ApplyStartRequest]; result: ApplyStartResult };
+  /** `true` iff a run with that id was still active to stop. Honoured between calls, and during a
+   *  cooldown pause. */
+  'apply:stop': { args: [string]; result: boolean };
+  /** Test-only: arms a scripted run that the next `apply:start` replays through the real
+   *  `apply:event` seam. Main honours it only unpackaged on the fixture reader; anywhere else it
+   *  answers `{ ok: false }` and arms nothing. */
+  'apply:inject': { args: [unknown]; result: { ok: boolean } };
   /** Every duel the tap has seen settle, newest first, with whether each one's film is held. */
   'pvp:history': { args: []; result: PvpHistoryResult };
   /** Asks main to read the PVP state and the points ranking now, the way `account:readNow` asks
@@ -529,11 +587,15 @@ export const IPC_CHANNELS = [
   'updates:installOnRestart',
   'market:getSnapshot',
   'market:refreshItem',
+  'market:check',
   'forge:start',
   'forge:cancel',
   'forge:history',
   'forge:clearHistory',
   'forge:inject',
+  'apply:start',
+  'apply:stop',
+  'apply:inject',
   'pvp:history',
   'pvp:refresh',
   'pvp:film',
@@ -548,6 +610,7 @@ export type IpcEventChannel =
   | 'market:changed'
   | 'settings:changed'
   | 'forge:event'
+  | 'apply:event'
   | 'pvp:changed'
   | 'window:changed';
 
@@ -577,6 +640,9 @@ export interface IpcEvents {
   /** Every call a forge run makes, as it settles, then one `done`. The step's `to` is the
    *  server's answer, never an inference from the odds. */
   'forge:event': ForgeEvent;
+  /** Every event an apply run pushes: a call sent/settled, a cooldown pause and its resume, then
+   *  one `done`. */
+  'apply:event': ApplyEvent;
   /** Fired when a duel result or a film has just been kept — the same list `pvp:history` serves,
    *  so a screen already open sees the duel without polling. */
   'pvp:changed': PvpHistoryResult;
@@ -595,6 +661,7 @@ export const IPC_EVENT_CHANNELS = [
   'market:changed',
   'settings:changed',
   'forge:event',
+  'apply:event',
   'pvp:changed',
   'window:changed',
 ] as const satisfies readonly IpcEventChannel[];

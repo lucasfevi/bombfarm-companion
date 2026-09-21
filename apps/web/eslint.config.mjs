@@ -435,14 +435,15 @@ export default tseslint.config(
   // legitimately run long (comprehensive fixture-driven assertions covering every branch
   // of the domain math they lock down). Splitting a test file is not W7 scope (no task
   // covers it) and touching assertions to "shrink" a suite is forbidden. Current max
-  // observed (ESLint count, skipBlank/skipComments): i18n-split-parity.test.ts at 670
-  // lines (2026-09-14 — retiring the Farm page's in-place respec panel declared thirty of its
-  // strings removed, each one a KEYS_REMOVED entry). Raised cap, not disabled — a genuinely
+  // observed (ESLint count, skipBlank/skipComments): i18n-split-parity.test.ts at 734
+  // lines (2026-09-19 — the Optimizer's ledger of changes since the plan added fifty-four
+  // strings, each one a KEYS_ADDED entry; 670 on 2026-09-14, when retiring the Farm page's
+  // in-place respec panel declared thirty removed). Raised cap, not disabled — a genuinely
   // runaway test file still trips this.
   {
     files: ['src/tests/**'],
     rules: {
-      'max-lines': ['error', { max: 680, skipBlankLines: true, skipComments: true }],
+      'max-lines': ['error', { max: 750, skipBlankLines: true, skipComments: true }],
     },
   },
   {

@@ -1,5 +1,24 @@
 # @bombfarm/domain
 
+## 1.4.1
+
+### Patch Changes
+
+- 4f052fe: Adds the commit vector's server index order (`COMMIT_ORDER`/`COMMIT_INDEX`) and
+  `pointsToCommitVector`, the first piece of the plan-to-calls derivation. Internal — nothing
+  shipped calls it yet.
+- 56d8a93: The Optimizer's Reset points step counts only the points it places. A hero whose plan adds points without a respec was shown placing every point it had ever earned — a level-56 hero with one free point read "place 56 unspent points" in the confirm and the step ledger; it now reads 1, matching the per-stat allocation beneath it.
+- 82d59a2: The Skill Tree's "DPS at gate" and "Duel DPS" figures no longer credit max energy when every
+  squad hero already lasts the whole window. Auras, Matilha's allies and the Baton Pass pulse are
+  now weighted by the share of the window each hero fields — the squad deploys full when it opens
+  — rather than by its farm-rotation duty, which let a longer stint lift every ally's damage and
+  price an energy node as if it fought. A Baton Pass carrier now pulses once at the open, so its
+  pulse lights the whole minute of a duel and the first 120 s of a gate clear.
+- Updated dependencies [4f052fe]
+- Updated dependencies [7c493e7]
+- Updated dependencies [0558cca]
+  - @bombfarm/contracts@0.10.0
+
 ## 1.4.0
 
 ### Minor Changes

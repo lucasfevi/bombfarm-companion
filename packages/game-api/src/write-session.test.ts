@@ -30,6 +30,12 @@ describe('grantWriteSession — the only constructor', () => {
     expect(() => grantWriteSession(consented, { forgeWritesEnabled: false })).toThrow(WriteNotEnabledError);
   });
 
+  it('names the widened switch label in the WriteNotEnabledError message', () => {
+    expect(() => grantWriteSession(consented, { forgeWritesEnabled: false })).toThrow(
+      'WriteNotEnabledError: account writes are off in Settings ("Let the app forge, equip and reset points")',
+    );
+  });
+
   it('treats a non-boolean switch value reaching it at runtime as off', () => {
     const settings = { forgeWritesEnabled: 'yes' } as unknown as { forgeWritesEnabled: boolean };
     expect(() => grantWriteSession(consented, settings)).toThrow(WriteNotEnabledError);

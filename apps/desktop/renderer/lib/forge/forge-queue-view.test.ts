@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { forgeForecast } from '@bombfarm/domain/forge';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
-import { bagUpgrades, forgeQueueExpectedGold, resolveForgeQueue } from './forge-queue-view';
+import { bagStandingOf, bagUpgrades, forgeQueueExpectedGold, resolveForgeQueue } from './forge-queue-view';
 
 function item(id: string, upgrade: number, level = 30): InventoryViewItem {
   return { id, upgrade, level, rarityIdx: 1, defId: `def-${id}` } as unknown as InventoryViewItem;
@@ -38,5 +38,18 @@ describe('resolveForgeQueue', () => {
 
   it('bagUpgrades maps every bag row to where it stands', () => {
     expect(bagUpgrades([item('a', 9), item('b', 0)])).toEqual(new Map([['a', 9], ['b', 0]]));
+  });
+
+  it('bagStandingOf reads one piece off the raw payload, and tells a bag without it from no bag at all', () => {
+    const bag = [
+      { id: 'a', def_id: 'ash_ring', upgrade: 12 },
+      { id: 'b', def_id: 'ash_helm' },
+      null,
+      { def_id: 'no-id', upgrade: 3 },
+    ];
+    expect(bagStandingOf(bag, 'a')).toEqual({ kind: 'held', upgrade: 12 });
+    expect(bagStandingOf(bag, 'b')).toEqual({ kind: 'held', upgrade: 0 });
+    expect(bagStandingOf(bag, 'gone')).toEqual({ kind: 'gone' });
+    expect(bagStandingOf(undefined, 'a')).toEqual({ kind: 'unknown' });
   });
 });

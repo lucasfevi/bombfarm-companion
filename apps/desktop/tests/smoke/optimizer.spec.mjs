@@ -114,12 +114,14 @@ async function resize(app, page, width, height = 800) {
 }
 
 /** Same idiom `auto-recompute.spec.mjs`'s `dropOneGearItemAtomically` uses: write a sibling file
- *  then rename over the original, so a tick reading mid-write can never observe a torn file. */
-function bumpFirstHeroLevelAtomically(fixtureFilePath) {
+ *  then rename over the original, so a tick reading mid-write can never observe a torn file.
+ *  Removes a piece the first hero wears rather than levelling it — a level change only changes
+ *  the plan, where a missing piece the plan used makes the plan unbuildable as written, which is
+ *  what the ledger's breaking row needs. */
+function removeFirstHeroAtomically(fixtureFilePath) {
   const payload = JSON.parse(fs.readFileSync(fixtureFilePath, 'utf8'));
-  const hero = payload.heroes?.[0];
-  if (!hero) throw new Error('optimizer.spec.mjs: fixture copy has no first hero to bump');
-  hero.level = hero.level + 1;
+  if (!payload.heroes?.[0]) throw new Error('optimizer.spec.mjs: fixture copy has no first hero to remove');
+  payload.heroes = payload.heroes.slice(1);
 
   const tmpPath = `${fixtureFilePath}.tmp`;
   fs.writeFileSync(tmpPath, JSON.stringify(payload));
@@ -204,7 +206,8 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
     await expect(page.locator('[data-scope-column="leaveAlone"] article')).toHaveCount(0);
 
     await expect(page.getByTestId('optimizer-left-out')).toBeVisible();
-    await expect(page.getByTestId('account-refresh-age')).toContainText('account read');
+    // The fixture's capture is weeks old, and age alone is never amber: read, and not out of date.
+    await expect(page.getByTestId('account-refresh')).toHaveAttribute('data-state', 'fresh');
   });
 
   test('Optimize renders results off the main thread', async () => {
@@ -216,9 +219,15 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
     await waitForOptimizeDone(page);
 
     await expect(page.getByRole('heading', { name: /^Plan results$/i, level: 2 })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /^Search summary$/i, level: 2 })).toBeVisible();
     await expect(page.getByRole('heading', { name: /^Gain breakdown$/i, level: 2 })).toBeVisible();
     await expect(page.getByRole('heading', { name: /Per-hero changes/i, level: 2 })).toBeVisible();
+
+    // The run's own figures used to sit under a "Search summary" fold; they are now a plain line
+    // at the bottom of Gain breakdown, so this checks that line rather than the retired heading.
+    const breakdown = page
+      .getByRole('heading', { name: /^Gain breakdown$/i, level: 2 })
+      .locator('xpath=ancestor::section[1]');
+    await expect(breakdown.getByText(/search passes/i)).toBeVisible();
 
     await expect(page.getByText(MAIN_THREAD_FALLBACK_TEXT)).toHaveCount(0);
   });
@@ -295,23 +304,44 @@ test.describe('the Optimizer tab, solved, held stale, remembered and relaunched'
   });
 
   test('a live tick changes nothing; Refresh labels the plan stale', async () => {
-    // The package's own stale-plan sentence — inlined the same way the main-thread-fallback
-    // sentence above is, since the package's copy module lives outside what a `.mjs` spec reads.
-    const STALE_NOTICE_TEXT = /Inputs changed since this plan was computed/i;
+    // The package's own ledger heading — inlined the same way the main-thread-fallback sentence
+    // above is, since the package's copy module lives outside what a `.mjs` spec reads. The
+    // ledger only ever draws once something BREAKS the plan (a hero it placed or a piece it used
+    // is gone) — a level change alone would leave the panel unmounted, so this removes a piece
+    // the first hero (one of the five in Optimize) wears instead.
+    const STALE_NOTICE_TEXT = /Your account changed since this plan was built/i;
 
-    bumpFirstHeroLevelAtomically(fixtureFile);
+    const fixtureBeforeBreak = fs.readFileSync(fixtureFile, 'utf8');
+    removeFirstHeroAtomically(fixtureFile);
     // Twelve 50ms fixture ticks — long enough for the reader to pick up the rewrite, per the
     // same reasoning `auto-recompute.spec.mjs` measured.
     await page.waitForTimeout(600);
 
     await expect(page.getByRole('heading', { name: /^Plan results$/i, level: 2 })).toBeVisible();
     await expect(page.getByText(STALE_NOTICE_TEXT)).toHaveCount(0);
-    await expect(page.getByTestId('account-refresh-age')).toContainText('out of date');
+    await expect(page.getByTestId('account-refresh')).toHaveAttribute('data-state', 'late');
 
     await page.getByTestId('account-refresh').click();
 
     await expect(page.getByText(STALE_NOTICE_TEXT)).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('heading', { name: /^Plan results$/i, level: 2 })).toBeVisible();
+    // The ledger names the change, not just that there was one: the worn piece the plan used is
+    // gone, a row that BREAKS the plan — and the refresh that re-took the snapshot is not itself
+    // a change.
+    const ledger = page.getByTestId('team-plan-changes');
+    // The ledger folds by default; its rows mount only once the title is pressed open.
+    await ledger.getByRole('button', { name: STALE_NOTICE_TEXT }).click();
+    const breakRow = ledger.locator('[data-testid="team-plan-change"][data-field="heroRemoved"]');
+    await expect(breakRow).toHaveCount(1);
+    await expect(breakRow).toHaveAttribute('data-verdict', 'breaks');
+    await expect(ledger.getByTestId('team-plan-changes-recompute')).toBeEnabled();
+
+    // Put the hero back so the tests after this one see the roster they were written against.
+    fs.writeFileSync(`${fixtureFile}.tmp`, fixtureBeforeBreak);
+    fs.renameSync(`${fixtureFile}.tmp`, fixtureFile);
+    await page.waitForTimeout(600);
+    await page.getByTestId('account-refresh').click();
+    await expect(page.locator('[data-scope-column="optimize"] article')).toHaveCount(5, { timeout: 15_000 });
   });
 
   test('Portuguese, per-card scope change clears the plan, and the choice survives a relaunch', async () => {

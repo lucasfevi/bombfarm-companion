@@ -1,5 +1,27 @@
 # @bombfarm/game-api
 
+## 0.6.0
+
+### Minor Changes
+
+- 4f052fe: The write surface (renamed `forge-request.ts` → `write-request.ts`) now knows six routes instead
+  of two: equipping and unequipping an item, and refunding or re-placing a hero's stat points join
+  the existing forge roll, all through the one `requestPost`/`buildWriteRequest` pair and the same
+  envelope. Nothing shipped sends any of the four new writes yet — the forge run's own call adapts
+  to the new argument shape with no behaviour change.
+
+### Patch Changes
+
+- 0d85522: The Optimizer's "Redistribute points?" dialog no longer reports a hero as "not on the roster any more" when the hero is still there. Right after the equip step, the account's hero stats could arrive one read ahead of its item list; for a hero whose gear had just moved, that read cannot recover the spent points, the hero was held out of the optimizer's own input list, and the dialog was reading roster membership from that list. Two fixes: membership now comes from the whole roster, and a hero whose points the read could not recover stays selectable (the run checks its live allocation on the server before touching it, as it always did); and the account refresh now serves hero stats and the item list only as a pair from one read — a cycle that read one but not the other keeps the last pair it read together, so a hero's spent points are never inverted against gear it no longer wears.
+- Updated dependencies [4f052fe]
+- Updated dependencies [4f052fe]
+- Updated dependencies [56d8a93]
+- Updated dependencies [7c493e7]
+- Updated dependencies [82d59a2]
+- Updated dependencies [0558cca]
+  - @bombfarm/contracts@0.10.0
+  - @bombfarm/domain@1.4.1
+
 ## 0.5.4
 
 ### Patch Changes

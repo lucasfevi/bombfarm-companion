@@ -11,16 +11,16 @@ function render(freshness: Parameters<typeof FreshnessLine>[0]['freshness'], onR
 }
 
 describe('FreshnessLine — one status line stating live or not, and why', () => {
-  it('states live when frames are arriving', () => {
-    const html = render({ kind: 'live' });
-    expect(html).toContain('data-testid="live-freshness"');
-    expect(html).toContain(en.liveStatusLiveLabel);
+  it("draws nothing while frames are arriving — the Live tab's dot and the strip say so already", () => {
+    expect(render({ kind: 'live' })).toBe('');
   });
 
   it('states not-live plus the player-language cause for a non-actionable gap', () => {
     const html = render({ kind: 'gap', reason: 'clientNotStreaming', actionable: false, sinceAt: 't' });
+    expect(html).toContain('data-testid="live-freshness"');
     expect(html).toContain(en.liveStatusNotLiveLabel);
     expect(html).toContain(en.liveGapReasonClientNotStreaming);
+    expect(html).not.toContain('chip');
   });
 
   it('says security software is the likely cause when runtimeUnavailable carries likelyQuarantine', () => {
@@ -32,6 +32,20 @@ describe('FreshnessLine — one status line stating live or not, and why', () =>
   it('uses the plain runtimeUnavailable cause when likelyQuarantine is false or absent', () => {
     const html = render({ kind: 'gap', reason: 'runtimeUnavailable', actionable: false, sinceAt: 't' });
     expect(html).toContain(en.liveGapReasonRuntimeUnavailable);
+  });
+
+  it('prints the runtime’s own error under an attachFailed gap, verbatim, so it can be read off the screen', () => {
+    const detail = 'Error creating directory C:\\PROGRA~1\\Elsewhere\\temp\\frida-1: Permission denied';
+    const html = render({ kind: 'gap', reason: 'attachFailed', actionable: true, sinceAt: 't', detail });
+    expect(html).toContain('data-testid="live-freshness-detail"');
+    expect(html).toContain(en.liveGapDetailLabel);
+    expect(html).toContain('Elsewhere\\temp\\frida-1: Permission denied');
+  });
+
+  it('prints no error line when the gap carries no detail', () => {
+    const html = render({ kind: 'gap', reason: 'attachFailed', actionable: true, sinceAt: 't' });
+    expect(html).not.toContain('data-testid="live-freshness-detail"');
+    expect(html).not.toContain(en.liveGapDetailLabel);
   });
 });
 

@@ -8,10 +8,11 @@ import * as GameArt from '@bombfarm/game-art';
 // compile-time assertion. A dropped or renamed value export while replacing a
 // module with a directory fails this test.
 // M2-icons: Icon, iconSources, isIconName added (UI-chrome only; no game glyphs).
-// M2-shell-status (2026-08-11): StatusChip, EmptyState added — StatusChip is
-// the single implementation of the game-connection states; EmptyState covers
+// M2-shell-status (2026-08-11): StatusChip, EmptyState added; EmptyState covers
 // "no game / no items / no filter matches" placeholders. AppShell's export
-// itself is unchanged (still a value export); only its props grew.
+// itself is unchanged (still a value export); only its props grew. StatusChip
+// retired 2026-09-20: the desktop strip says the game state in its feeds rail's
+// own typography, and no host drew the pill any more.
 // M2-toast-settings (2026-08-11): toastQueueReducer, initialToastQueueState,
 // nextExpiryDeadline, MAX_VISIBLE_TOASTS, NOTIFICATION_BUFFER_LIMIT (the pure
 // toast queue), ToastProvider, useToast, ToastViewport, ToastItem (the new
@@ -34,9 +35,9 @@ import * as GameArt from '@bombfarm/game-art';
 // Sparkline (2026-08-30): a trend line over a series of readings, sized by its container and
 // toned by `currentColor`. Added for the Live tab's 10-minute gold trend; the planner's own
 // history views are the obvious second caller.
-// ActionChip (2026-08-31): StatusChip's pill as a control — same chipRecipe tones and dot, but a
-// <button>. Added for the desktop footer's update indicator, which reports a state AND leads
-// somewhere; StatusChip stays the non-interactive game-connection vocabulary.
+// ActionChip (2026-08-31): the small status pill as a control — same chipRecipe tones and dot,
+// but a <button>. Added for the desktop footer's update indicator, which reports a state AND
+// leads somewhere.
 // statListMutedRowClass (2026-08-31): promoted from the `panel-field.recipe` subpath, beside the
 // other class constants already here. This package's `exports` map resolves a subpath to an
 // extensionless source path, which an app's tsconfig `paths` completes but another package's own
@@ -142,7 +143,6 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   'SortableTableHeader',
   'Sparkline',
   'StatList',
-  'StatusChip',
   'Stepper',
   'Switch',
   'TableScroller',
@@ -341,6 +341,7 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   // RuneIcon (2026-09-16): a rune's sprite on its rarity plate, for the Combat tab's runes panel
   // and the strip its folded header keeps. Same tile vocabulary as ItemIcon; one look.
   'RuneIcon',
+  'SkinIdentity',
   'SpriteLoop',
   // SteamGlyph (2026-09-10): the Steam mark was private to MarketPrice until the hero identity
   // panel's market tile became a link to the same place. One destination, one mark.

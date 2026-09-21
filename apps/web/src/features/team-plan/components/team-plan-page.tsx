@@ -32,6 +32,7 @@ export function TeamPlanPage({
   const controls = usePlannerStore(useShallow(selectTeamPlanControls));
   const plan = usePlannerStore((state) => state.plan);
   const planHeroes = usePlannerStore((state) => state.planHeroes);
+  const planBasis = usePlannerStore((state) => state.planBasis);
   const runStatus = usePlannerStore((state) => state.runStatus);
   const runId = usePlannerStore((state) => state.runId);
   const isStale = usePlannerStore(selectTeamPlanIsStale);
@@ -55,7 +56,7 @@ export function TeamPlanPage({
       t={t}
       lang={lang}
       runner={runner}
-      data={{ inputs, controls, plan, planHeroes, runStatus, runId, isStale, openHeroIds }}
+      data={{ inputs, controls, plan, planHeroes, planBasis, runStatus, runId, isStale, openHeroIds }}
       actions={{
         setScope,
         setForgeFloor,

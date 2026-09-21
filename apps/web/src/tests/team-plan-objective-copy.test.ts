@@ -57,7 +57,6 @@ describe('team plan objective copy', () => {
     it(`${lang}: the farm-mode strings that report a figure name gold`, () => {
       const copy = teamPlanObjectiveCopy(STRINGS[lang], 'farm');
       expect(copy.totalGainValue).toMatch(GOLD_WORDS[lang]);
-      expect(copy.resultsHeader).toMatch(GOLD_WORDS[lang]);
       expect(copy.gearDipNote).toMatch(GOLD_WORDS[lang]);
     });
 
@@ -83,12 +82,12 @@ describe('team plan objective copy', () => {
   /**
    * The resolver is the only reader of the suffixed keys, which is what makes the vocabulary
    * check above a guarantee about the page rather than about one function: a component that
-   * reached past it could render `teamPlanResultsHeaderDps` under a gold plan and no assertion
+   * reached past it could render `teamPlanGearDipNoteDps` under a gold plan and no assertion
    * on the bundle would notice.
    */
   it('no source file outside the namespace and the resolver reads a suffixed key', () => {
     const suffixed = Object.keys(objectiveNamespace.en).filter((key) => /(Dps|Farm)$/.test(key));
-    expect(suffixed.length).toBeGreaterThanOrEqual(14);
+    expect(suffixed.length).toBeGreaterThanOrEqual(10);
 
     const allowed = [join('shared', 'i18n', 'namespaces', 'team-plan-objective.ts')];
     const offenders: string[] = [];
@@ -154,7 +153,7 @@ describe('team plan objective copy', () => {
   }
 
   it('red state: the scan above does catch a suffixed key in a component', () => {
-    const pretendComponent = 'return <p>{t.teamPlanResultsHeaderFarm}</p>;';
+    const pretendComponent = 'return <p>{t.teamPlanGearDipNoteFarm}</p>;';
     const suffixed = Object.keys(objectiveNamespace.en).filter((key) => /(Dps|Farm)$/.test(key));
     expect(suffixed.some((key) => pretendComponent.includes(key))).toBe(true);
   });

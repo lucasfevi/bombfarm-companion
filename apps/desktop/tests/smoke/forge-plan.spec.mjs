@@ -183,29 +183,43 @@ test.describe('forge plan smoke', () => {
       await page.getByRole('option', { name: 'Any forge' }).click();
       await expect.poll(() => rowCount(page), { timeout: 10_000 }).toBe(before);
 
-      // Refresh acts on the read behind the bag, so it stands over the bag rather than among the
-      // filters. It is the app's one refresh control — an icon with the read age to its left — and
-      // a live read on this fixture never moves, so it is only ever in its current-read state here.
-      await expect(view.getByTestId('forge-toolbar').getByTestId('account-refresh')).toHaveCount(0);
-      const refreshButton = view.getByTestId('forge-bag-panel').getByRole('button', { name: 'Refresh', exact: true });
+      // Refresh acts on the read behind the bag, and it is the status strip's Account feed — the
+      // rail's first item, speaking for this screen's pinned bag — never a control of the screen's
+      // own. A live read on this fixture never moves, so it is only ever in its current-read
+      // state here.
+      await expect(view.getByTestId('account-refresh')).toHaveCount(0);
+      const rail = page.getByTestId('feeds-rail');
+      const refreshButton = rail.getByTestId('account-refresh');
       await expect(refreshButton).toBeVisible();
-      await expect(refreshButton).toHaveAttribute('data-testid', 'account-refresh');
-      await expect(view.getByTestId('account-refresh-age')).toContainText('account read');
-      await expect(view.getByTestId('account-refresh-age')).not.toContainText('out of date');
-      await expect(page.getByTestId('account-refresh-tip')).toHaveCount(0);
+      await expect(refreshButton).toHaveAttribute('data-state', 'fresh');
+      await expect(page.getByTestId('feed-account-tip')).toHaveCount(0);
       await refreshButton.hover();
-      await expect(page.getByTestId('account-refresh-tip')).toContainText('account read');
+      await expect(page.getByTestId('feed-account-tip')).toContainText('Your heroes, bag, skill tree and house');
+      await expect(page.getByTestId('feed-account-tip-status')).toContainText('Last read');
+      await expect(page.getByTestId('feed-account-tip')).toContainText('Click to update now');
 
       // Pressing it asks main to go and read, rather than re-showing what was already in hand —
       // and a fixture has no server behind it, so the one thing the press must not do is look
       // like it worked. This is also the state a real player reaches with the game closed. The
-      // refusal takes the age line's place for as long as it stands.
-      await expect(view.getByTestId('account-refresh-refusal')).toHaveCount(0);
+      // refusal is the one word beside the ring; its reason is the tooltip's note.
       await refreshButton.click();
-      await expect(view.getByTestId('account-refresh-refusal')).toHaveText('No server to read from');
-      await expect(view.getByTestId('account-refresh-age')).toHaveCount(0);
+      await expect(refreshButton).toHaveAttribute('data-state', 'refused');
+      await expect(rail.getByTestId('feed-account-word')).toHaveText('refused');
+      // The press closed the tooltip; leaving and coming back reopens it with the reason appended.
+      await page.mouse.move(0, 0);
+      await refreshButton.hover();
+      await expect(page.getByTestId('feed-account-tip')).toContainText('No server to read from');
       // Refused is not working: nothing is in flight, so the button is pressable again.
       await expect(refreshButton).toBeEnabled();
+
+      // The Updates press on a build with no channel to ask: main answers with the status it
+      // already had, and the press must say so rather than do nothing.
+      const updatesButton = rail.getByTestId('feed-updates-refresh');
+      await updatesButton.click();
+      await expect(updatesButton).toHaveAttribute('data-state', 'refused');
+      await page.mouse.move(0, 0);
+      await updatesButton.hover();
+      await expect(page.getByTestId('feed-updates-tip')).toContainText('This build does not check for updates');
 
       // Clearing is a button beside the fields now, not a chip, and it is there only while a
       // filter is on.
