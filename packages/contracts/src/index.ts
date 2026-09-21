@@ -78,6 +78,7 @@ export type {
   LiveEarnings,
   LiveEvent,
   LiveFrame,
+  LiveGapExtra,
   LiveGapReason,
   LiveHeroEnergy,
   LiveHit,

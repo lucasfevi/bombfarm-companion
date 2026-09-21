@@ -31,6 +31,11 @@ export function FreshnessLine({
           {t.consentGateReadAgainAction}
         </Button>
       ) : null}
+      {freshness.detail !== undefined ? (
+        <span data-testid="live-freshness-detail" className="basis-full font-mono text-xs break-all text-muted">
+          {t.liveGapDetailLabel}: {freshness.detail}
+        </span>
+      ) : null}
     </p>
   );
 }

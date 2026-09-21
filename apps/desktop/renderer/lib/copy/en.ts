@@ -246,6 +246,7 @@ export const en = {
   liveGapReasonRuntimeUnavailableQuarantine:
     'Security software likely blocked the part of the app that reads the game. It keeps trying on its own.',
   liveGapReasonConsentMissing: 'You have not allowed the app to read your account and connect to the game yet.',
+  liveGapDetailLabel: 'Last error',
 
   liveHeroesTitle: 'Heroes',
   liveListOnFieldTitle: 'Field',

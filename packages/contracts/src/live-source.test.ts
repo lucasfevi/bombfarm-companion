@@ -56,6 +56,13 @@ describe('liveGap', () => {
       expect(gap.likelyQuarantine).toBeUndefined();
     }
   });
+
+  it('carries the runtime detail through for attachFailed, and omits the key when not passed', () => {
+    const sinceAt = '2026-08-22T00:00:00.000Z';
+    const withDetail = liveGap('attachFailed', sinceAt, { detail: 'Error creating directory: Permission denied' });
+    expect(withDetail).toMatchObject({ kind: 'gap', detail: 'Error creating directory: Permission denied' });
+    expect(liveGap('attachFailed', sinceAt)).not.toHaveProperty('detail');
+  });
 });
 
 describe('live IPC surface', () => {

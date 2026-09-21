@@ -63,6 +63,16 @@ describe('NeverReadEmptyState — every gap reason states what is actually happe
     const out = html({ kind: 'gap', reason: 'runtimeUnavailable', actionable: false, sinceAt: 't', likelyQuarantine: true });
     expect(out).toContain(en.liveGapReasonRuntimeUnavailableQuarantine);
   });
+
+  it('appends the runtime’s own error to an attachFailed description, and nothing when there is none', () => {
+    const detail = 'Error creating directory C:\\PROGRA~1\\Elsewhere\\temp\\frida-1: Permission denied';
+    const withDetail = html({ kind: 'gap', reason: 'attachFailed', actionable: true, sinceAt: 't', detail });
+    expect(withDetail).toContain(`${en.liveGapDetailLabel}: Error creating directory`);
+    expect(withDetail).toContain('Permission denied');
+
+    const without = html({ kind: 'gap', reason: 'attachFailed', actionable: true, sinceAt: 't' });
+    expect(without).not.toContain(en.liveGapDetailLabel);
+  });
 });
 
 describe('NeverReadEmptyState — live but nothing read from the account yet', () => {

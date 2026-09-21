@@ -146,6 +146,19 @@ describe('buildLiveFreshness', () => {
     const freshness = buildLiveFreshness({ kind: 'gap', reason: 'detached', actionable: false, sinceAt: 't' });
 
     expect('likelyQuarantine' in freshness).toBe(false);
+    expect('detail' in freshness).toBe(false);
+  });
+
+  it('carries the attach detail through verbatim', () => {
+    const freshness = buildLiveFreshness({
+      kind: 'gap',
+      reason: 'attachFailed',
+      actionable: true,
+      sinceAt: 't',
+      detail: 'Error creating directory C:\\x: Permission denied',
+    });
+
+    expect(freshness).toMatchObject({ detail: 'Error creating directory C:\\x: Permission denied' });
   });
 });
 

@@ -77,6 +77,44 @@ describe('RuntimePort.resolve', () => {
     expect(infos).toHaveLength(1);
   });
 
+  it('runs beforeFirstResolve exactly once, ahead of the first resolution and never again', async () => {
+    const order: string[] = [];
+    const port = new RuntimePort({
+      beforeFirstResolve: () => order.push('prepare'),
+      resolve: () => {
+        order.push('resolve');
+        return Promise.resolve(FAKE_RUNTIME);
+      },
+    });
+
+    await port.resolve();
+    await port.resolve();
+
+    expect(order).toEqual(['prepare', 'resolve', 'resolve']);
+  });
+
+  it('treats a throwing beforeFirstResolve as that resolution failing, and does not retry it', async () => {
+    const { log, infos } = createLogSpy();
+    let resolves = 0;
+    const port = new RuntimePort({
+      beforeFirstResolve: () => {
+        throw new Error('probe exploded');
+      },
+      resolve: () => {
+        resolves += 1;
+        return Promise.resolve(FAKE_RUNTIME);
+      },
+      log,
+    });
+
+    expect(await port.resolve()).toEqual({ kind: 'unavailable', likelyQuarantine: false });
+    expect(resolves).toBe(0);
+    expect(infos).toHaveLength(1);
+
+    expect((await port.resolve()).kind).toBe('ok');
+    expect(resolves).toBe(1);
+  });
+
   it('defaults to the real module specifier when no resolver is injected', () => {
     const port = new RuntimePort();
     expect(port).toBeInstanceOf(RuntimePort);
