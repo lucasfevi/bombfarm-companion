@@ -1,5 +1,129 @@
 # @bombfarm/desktop
 
+## 0.20.0
+
+### Minor Changes
+
+- 4f052fe: The Optimizer tab can now carry out its own plan. A settled plan shows an "Apply this plan" panel
+  with a gold ledger and one row per step; Equip and Reset points each open a confirm naming what
+  they spend, then a window that shows every call as it goes out and can be stopped between calls.
+  A rolling forge queue steps aside while a step runs and picks back up on its own, showing
+  "Paused for the Optimizer" while it waits. The account-writes switch in Settings is relabelled to
+  cover forging, equipping and resetting points, with its key and default unchanged. The panel's
+  third row puts every applicable forge from the plan on the queue in one press, without touching
+  pieces already queued or ones the bag no longer holds.
+- 0558cca: One rail of refresh controls in the status strip, the same on every tab.
+
+  **Four feeds, each with its own ring and its own press.** The strip at the foot of the window
+  now lists what the app keeps asking for on your behalf — **Account** (read every minute while the
+  window is in front, every five in the background), **PVP** (the standing, read when its tab
+  opens and by every duel), **Prices** (the published price list, checked every fifteen minutes)
+  and **Updates** (every twenty) — each as a small ring beside its name. The ring is the time left
+  until the feed refreshes itself: full the moment a read lands, draining to empty as its clock runs
+  down, so a glance says whether pressing is even worth it. A read in flight spins; a landing
+  lights the ring's centre for a moment; the PVP standing, which has no clock of its own, draws a
+  dotted ring. No figures at rest — the last read, the cycle and the countdown are the tooltip's.
+  Each item is a button. A press that starts nothing — the game closed, a second press inside the
+  floor, no server behind a fixture, a build with no update channel — shows the one word "refused"
+  beside the ring, with the reason in the tooltip; only "out of date" takes the warn tone, never
+  age and never a refusal. The tooltip is the feed's name with its last read beside it, the click
+  line with the countdown to its next automatic read, and what the feed is.
+
+  **Refresh all, one after another.** The button at the rail's end — itself a ring that fills a
+  quarter per step — presses all four in turn, Account → PVP → Prices → Updates, counting the
+  steps, and moves on past a refusal instead of stopping. The feeds the tab on show does not read
+  are drawn muted. Prices can be asked for by hand for the first time: a new `market:check` runs the same
+  conditional request main's own clock makes, with a thirty-second floor.
+
+  **The screens lose their refresh buttons.** The controls that used to sit over the Farm board's
+  heading, over the Forge bag, over the Optimizer's title and inside the PVP Standing panel are gone;
+  the rail's Account item speaks for whichever of those screens is showing — its line reads "out of
+  date" once the live account has moved past the copy the screen computed from, and its press
+  recomputes over the account in hand and then asks for a new read, as those buttons did. Every other
+  screen follows the live account, so the item shows the last account read and a press asks main to
+  read it again.
+
+  The Optimizer screen loses its title line: the tab and the nav already name it.
+
+  **The connection, and the Live tab wears it.** The "Connected" chip at the strip's left becomes
+  a pulsing green dot beside the word — steady amber with the age when the stream has gone quiet,
+  hollow beside "Not running" — with no meter, because the game is not polled: it is what every
+  other feed is read from. The Live tab in the top bar carries a small dot at its corner in the same
+  state, and hovering either says the same sentence. The "Streaming live from the game" pill leaves the Live screen —
+  a live screen is its own evidence — and a gap is now a sentence in the warn tone, not a chip. The
+  web download page's replica of the Live screen follows: the dot on its Live tab, no pill. The
+  design system's `StatusChip` is retired with no reader left; `AppNav` items take an optional
+  corner mark.
+
+- 0558cca: The Optimizer says what changed since the plan — and stops calling a plan stale when nothing it depends on moved.
+
+  **Why the notice kept appearing.** The plan was keyed to a hash of each hero record, and that
+  record carries the game's field flag, its battle permission, a derived power figure and the
+  seconds left on a rune. A hero walking off the field to rest flipped the key, so on a farming
+  account "Inputs changed since this plan was computed" showed up every few minutes with nothing a
+  player would recognise behind it. None of those fields is anything the optimizer reads. The plan
+  is now keyed to the planning view of the account — levels, stars, points, abilities, runes (axis
+  and strength, not the clock), gear and its forge, the bag, the tree, the house, the phase, the
+  setup controls — and to nothing else. On the desktop the header's "out of date" reads from the
+  same view.
+
+  **When it does fire, a ledger, not a sentence.** In place of the one-line notice, a table of every
+  change since the plan was built: what (the hero or piece, drawn), what moved ("levelled",
+  "forged", "gone from the bag", "points in Attack"), before → now, and a verdict. **Changes the
+  plan** is the reason to build again. **Progress on this plan** is a step the plan itself asked
+  for, taken — a piece forged towards its target, points spent where it said — with the target
+  beside it. **Breaks the plan** — a hero or piece the plan placed is gone, so the plan can no
+  longer be carried out as written — stands first, in its own tone. A row is kept for what a
+  player recognises: a hero arriving or leaving, a level, a star, a piece arriving, a rune, the
+  tree; a point spent elsewhere, a forge the plan did not ask for, a setup control or a piece the
+  plan never used leaving the bag still count, but fold into one line — "Also changed: …".
+  Field rotation is one muted line, "Not counted", never a row. _Keep this plan_ folds
+  the table away until the next change; _Build team plan again_ is the same press as the setup
+  panel's.
+
+  A plan restored from a previous visit on the web carries no record of what it was built from, so
+  it keeps the one-line notice.
+
+### Patch Changes
+
+- 56d8a93: The Optimizer's Reset points step counts only the points it places. A hero whose plan adds points without a respec was shown placing every point it had ever earned — a level-56 hero with one free point read "place 56 unspent points" in the confirm and the step ledger; it now reads 1, matching the per-stat allocation beneath it.
+- 7c493e7: The app now connects to the game on a machine whose Windows temp folder is not writable — some installers point `TEMP`/`TMP` at a folder under Program Files, and every connection attempt used to fail there with "Permission denied" and no explanation. Before its first attempt the app checks that folder, and when it cannot write there it uses a folder of its own instead. When a connection attempt still fails, the Live screen now prints the error itself under "Last error", so it can be read off the screen instead of dug out of a log file.
+- 82d59a2: The Skill Tree's "DPS at gate" and "Duel DPS" figures no longer credit max energy when every
+  squad hero already lasts the whole window. Auras, Matilha's allies and the Baton Pass pulse are
+  now weighted by the share of the window each hero fields — the squad deploys full when it opens
+  — rather than by its farm-rotation duty, which let a longer stint lift every ally's damage and
+  price an energy node as if it fought. A Baton Pass carrier now pulses once at the open, so its
+  pulse lights the whole minute of a duel and the first 120 s of a gate clear.
+- 4f052fe: `Dialog` gains a `Body` that scrolls inside the popup and a `Footer` that pads its own actions and rules a full-width line; the consent modal is drawn with them, with its title in a header band.
+- ea88671: The Optimizer's "Add to queue" button now reads "Forged" once the bag holds the piece at its target, and "Not in bag" once the piece has left it, instead of offering to queue a piece the next account read would drop again.
+- 107f3de: Hovering the hero an item is equipped on, on the Inventory screen, now opens the same full card as everywhere else — power, the geared sheet, abilities and gear — instead of a header with nothing under it.
+- 0d85522: The Optimizer's "Redistribute points?" dialog no longer reports a hero as "not on the roster any more" when the hero is still there. Right after the equip step, the account's hero stats could arrive one read ahead of its item list; for a hero whose gear had just moved, that read cannot recover the spent points, the hero was held out of the optimizer's own input list, and the dialog was reading roster membership from that list. Two fixes: membership now comes from the whole roster, and a hero whose points the read could not recover stays selectable (the run checks its live allocation on the server before touching it, as it always did); and the account refresh now serves hero stats and the item list only as a pair from one read — a cycle that read one but not the other keeps the last pair it read together, so a hero's spent points are never inverted against gear it no longer wears.
+- 46f4693: Each skin listed under the Account screen's "Skins in use" row now carries the avatar a hero
+  wearing it shows, beside its listing name, on both the desktop app and the web planner.
+- Updated dependencies [4f052fe]
+- Updated dependencies [4f052fe]
+- Updated dependencies [4f052fe]
+- Updated dependencies [56d8a93]
+- Updated dependencies [7c493e7]
+- Updated dependencies [82d59a2]
+- Updated dependencies [4f052fe]
+- Updated dependencies [0558cca]
+- Updated dependencies [4f052fe]
+- Updated dependencies [0558cca]
+- Updated dependencies [0d85522]
+- Updated dependencies [46f4693]
+  - @bombfarm/contracts@0.10.0
+  - @bombfarm/domain@1.4.1
+  - @bombfarm/game-api@0.6.0
+  - @bombfarm/ui@0.15.0
+  - @bombfarm/farm@1.2.5
+  - @bombfarm/team-plan@0.3.0
+  - @bombfarm/game-art@0.7.0
+  - @bombfarm/game-data@0.0.18
+  - @bombfarm/pricing@0.3.3
+  - @bombfarm/account@0.3.3
+  - @bombfarm/hero@0.3.5
+
 ## 0.19.0
 
 ### Minor Changes
