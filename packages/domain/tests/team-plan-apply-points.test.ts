@@ -142,6 +142,16 @@ describe('derivePointsUnits', () => {
     expect(unit!.needsRespec).toBe(false);
   });
 
+  it('counts only the points the commit adds when nothing is refunded — a level-56 hero with one free point places 1, not 56', () => {
+    const plan: Pick<TeamPlan, 'pointResets' | 'perHero'> = {
+      perHero: [perHeroRow('hero-4', 56)],
+      pointResets: [pointReset('hero-4', { attack: 30, luck: 25 }, { attack: 30, luck: 26 }, 0)],
+    };
+    const [unit] = derivePointsUnits(plan);
+    expect(unit!.needsRespec).toBe(false);
+    expect(unit!.pointsPlaced).toBe(1);
+  });
+
   it('preserves acceptance order across multiple resets', () => {
     const plan: Pick<TeamPlan, 'pointResets' | 'perHero'> = {
       perHero: [perHeroRow('hero-a', 10), perHeroRow('hero-b', 20)],
