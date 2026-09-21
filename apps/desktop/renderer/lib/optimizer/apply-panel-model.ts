@@ -23,7 +23,6 @@ import {
   pointsToCommitVector,
   preflightEquipUnits,
   preflightPointsUnit,
-  preflightPointsUnitsOffline,
   summarizeApplyVerdicts,
   type ApplyLedger,
 } from '@bombfarm/domain/team-plan';
@@ -35,7 +34,7 @@ import { forgeLevel, forgeLabels, type ForgeLabels } from '../../app/forge/forge
 import { gearOf } from '../forge/forge-rows';
 import { finiteNumber } from '../format';
 import type { Copy } from '../copy';
-import { buildOptimizerInputs } from './optimizer-inputs';
+import { buildAccountRoster } from '../account/account-roster';
 import type { ApplyUnitLabel, RowSkipReason } from './apply-labels';
 
 export type ApplyStepId = 'equip' | 'forge' | 'points';
@@ -74,8 +73,24 @@ export type StepGate =
 
 const NO_HEROES: readonly HeroRecord[] = [];
 
-function heroMap(heroes: readonly HeroRecord[]): ReadonlyMap<string, HeroRecord> {
-  return new Map(heroes.map((hero) => [hero.id, hero]));
+/** The live roster as the points preflight reads it: every hero the account read holds, and the
+ *  ids among them whose spent points that read could not recover. Membership is the whole
+ *  roster's — the optimizer's own input list leaves an unreadable hero out, and reading absence
+ *  from THAT list is how a hero still on the roster came to be reported as gone. */
+export type LiveRoster = {
+  readonly heroes: ReadonlyMap<string, HeroRecord>;
+  readonly pointsUnreadable: ReadonlySet<string>;
+};
+
+const NO_LIVE_ROSTER: LiveRoster = { heroes: new Map(), pointsUnreadable: new Set() };
+
+export function liveRosterOf(liveView: AccountView | null): LiveRoster {
+  const roster = liveView === null ? null : buildAccountRoster(liveView);
+  if (roster === null) return NO_LIVE_ROSTER;
+  return {
+    heroes: new Map(roster.heroes.map((hero) => [hero.id, hero])),
+    pointsUnreadable: new Set(roster.pointsUnrecovered.map((hero) => hero.id)),
+  };
 }
 
 function equipVerdicts(units: readonly ApplyEquipUnit[], liveView: AccountView | null): ApplyUnitVerdict[] {
@@ -86,12 +101,14 @@ function equipVerdicts(units: readonly ApplyEquipUnit[], liveView: AccountView |
   return preflightEquipUnits(units, live);
 }
 
-function pointsVerdicts(units: readonly ApplyPointsUnit[], liveHeroes: ReadonlyMap<string, HeroRecord>): ApplyUnitVerdict[] {
-  const liveHeroIds = new Set(liveHeroes.keys());
-  const offline = preflightPointsUnitsOffline(units, liveHeroIds);
-  return units.map((unit, index) => {
-    const hero = liveHeroes.get(unit.heroId);
-    if (hero === undefined) return offline[index] ?? { index: unit.index, status: 'conflict', reason: 'heroMissing' };
+/** A hero the read holds but whose points it could not recover carries a zeroed `pts`, which
+ *  the allocation compare would misread as "nothing placed yet". Its verdict stays `pending`: the
+ *  run reads that hero's allocation from the server itself before it touches anything. */
+function pointsVerdicts(units: readonly ApplyPointsUnit[], live: LiveRoster): ApplyUnitVerdict[] {
+  return units.map((unit) => {
+    const hero = live.heroes.get(unit.heroId);
+    if (hero === undefined) return { index: unit.index, status: 'conflict', reason: 'heroMissing' };
+    if (live.pointsUnreadable.has(unit.heroId)) return { index: unit.index, status: 'pending' };
     const alloc = pointsToCommitVector(hero.pts);
     const spent = alloc.reduce((sum, value) => sum + value, 0);
     return preflightPointsUnit(unit, { alloc, spent });
@@ -99,7 +116,7 @@ function pointsVerdicts(units: readonly ApplyPointsUnit[], liveHeroes: ReadonlyM
 }
 
 /** The row's own reason set — the four conflict reasons plus `notEnoughGold`, folded in
- *  separately since it never comes from a domain verdict (A-6/AC1.6). */
+ *  separately since it never comes from a domain verdict. */
 function toRowSkips(
   verdicts: readonly ApplyUnitVerdict[],
   shortIndexes: ReadonlySet<number>,
@@ -182,10 +199,8 @@ function pointsUnitLabel(
 
 /**
  * A unit's label, resolved once and frozen — an item's name with its current `+N`, or a hero's
- * name — from the plan's own heroes first, the live roster second (A-10). Re-derives the live
- * roster from `liveView` itself, so a caller freezing labels at confirm time needs no other
- * state; `farmChosenPhase` plays no part in a hero's name or its inferred points, so this always
- * reads the roster with none pinned.
+ * name — from the plan's own heroes first, the live roster second. Re-derives the live roster
+ * from `liveView` itself, so a caller freezing labels at confirm time needs no other state.
  */
 export function unitLabels(
   units: readonly (ApplyEquipUnit | ApplyPointsUnit)[],
@@ -194,15 +209,14 @@ export function unitLabels(
   lang: DomainLang,
 ): ApplyUnitLabel[] {
   const heroes = planHeroes ?? NO_HEROES;
-  const liveInputs = liveView === null ? null : buildOptimizerInputs(liveView, null);
-  const liveHeroes = heroMap(liveInputs?.inputs.heroes ?? NO_HEROES);
+  const liveHeroes = liveRosterOf(liveView).heroes;
   const items = liveItemsById(liveView);
   return units.map((unit) =>
     isEquipUnit(unit) ? equipUnitLabel(unit, heroes, liveHeroes, items, lang) : pointsUnitLabel(unit, heroes, liveHeroes, lang),
   );
 }
 
-/** The reset row's per-hero wallet-short line (AC1.6) — a respec the live wallet cannot cover,
+/** The reset row's per-hero wallet-short line — a respec the live wallet cannot cover,
  *  named on the row and counted among its skips. `null` wallet never names a hero short: the
  *  run-time check is main's (edge case, "no finite gold"). */
 export function walletShortHeroes(
@@ -265,23 +279,22 @@ export function buildApplyFacts(input: {
   readonly plan: TeamPlan;
   readonly planHeroes: readonly HeroRecord[] | null;
   readonly liveView: AccountView | null;
-  readonly farmChosenPhase: number | null;
   readonly t: Copy;
   readonly locale: AppLocale;
 }): ApplyFacts {
-  const { plan, liveView, farmChosenPhase, t, locale } = input;
+  const { plan, liveView, t, locale } = input;
   const lang: DomainLang = toDomainLang(locale);
   const planHeroes = input.planHeroes ?? NO_HEROES;
 
   const equipUnits = deriveEquipUnits(plan.moveList);
   const pointsUnits = derivePointsUnits(plan);
 
-  const liveInputs = liveView === null ? null : buildOptimizerInputs(liveView, farmChosenPhase);
-  const liveHeroes = heroMap(liveInputs?.inputs.heroes ?? NO_HEROES);
+  const live = liveRosterOf(liveView);
+  const liveHeroes = live.heroes;
   const items = liveItemsById(liveView);
 
   const equipVerdictList = equipVerdicts(equipUnits, liveView);
-  const pointsVerdictList = pointsVerdicts(pointsUnits, liveHeroes);
+  const pointsVerdictList = pointsVerdicts(pointsUnits, live);
 
   const wallet = liveView === null ? null : finiteNumber(liveView.payload.account?.gold);
   const walletShort = walletShortHeroes(pointsUnits, wallet, planHeroes, liveHeroes);
@@ -340,7 +353,7 @@ export function buildApplyFacts(input: {
 /**
  * First reason that applies, in order: another step running → switch off (equip/points only —
  * the forge row is gated by neither the switch nor the account source, contract item 4) → stale
- * (only before any step of this plan run id has been applied, A-2) → nothing to do → all done →
+ * (only before any step of this plan run id has been applied) → nothing to do → all done →
  * nothing left to apply → ready (`pausesQueue` noted for equip/points only, while the queue runs).
  */
 export function stepGate(

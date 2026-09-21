@@ -177,7 +177,6 @@ function facts(payloadOverrides: Partial<AccountPayload> = {}, planOverrides: Pa
     plan: fixturePlan(planOverrides),
     planHeroes: null,
     liveView: viewOf(basePayload(payloadOverrides)),
-    farmChosenPhase: null,
     t: en,
     locale: 'en',
   });
@@ -259,6 +258,42 @@ describe('buildApplyFacts — step facts', () => {
     expect(changedUnit).toBeDefined();
     const skip = step.skips.find((s) => s.index === changedUnit?.index);
     expect(skip?.reason).toBe('allocationChanged');
+  });
+
+  const FUNDED_ACCOUNT = { phase: 60, max_phase: 88, gold: 100_000 };
+  const RESPEC_UNREAD_PLAN: Partial<TeamPlan> = {
+    moveList: [],
+    pointResets: [
+      {
+        heroId: 'h-respec',
+        ptsBefore: { ...ZERO_PTS(), attack: 3 },
+        pts: { ...ZERO_PTS(), luck: 3 },
+        heroGainDpsPct: 0,
+        rosterGainObjective: 0,
+        resetCostGold: 20_000,
+      },
+    ],
+  };
+
+  it('a hero still on the roster whose spent points the read could not recover is pending, never "no longer on the roster"', () => {
+    // A hero whose sheet inverts to more points than its level grants is held on the roster with a
+    // zeroed `pts` — what a stats read one equip ahead of the items read produces on every hero
+    // the gear just moved on. The optimizer leaves that hero out of its own inputs, but the plan
+    // was solved while it was readable, so its reset is still a unit here.
+    const step = facts(
+      { account: FUNDED_ACCOUNT, heroes: [rawHero('h-respec', 'Respec Hero', 5, { ...ZERO_PTS(), attack: 6 })] },
+      RESPEC_UNREAD_PLAN,
+    ).steps.points;
+    if (step.kind !== 'units') throw new Error('expected units');
+    expect(step.skips).toEqual([]);
+    expect(step.pending).toEqual([0]);
+  });
+
+  it('a hero the live roster no longer holds is the one and only heroMissing skip', () => {
+    const step = facts({ account: FUNDED_ACCOUNT, heroes: [rawHero('h1', 'Orin', 20)] }, RESPEC_UNREAD_PLAN).steps.points;
+    if (step.kind !== 'units') throw new Error('expected units');
+    expect(step.skips).toEqual([{ index: 0, reason: 'heroMissing' }]);
+    expect(step.pending).toEqual([]);
   });
 });
 

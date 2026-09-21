@@ -181,7 +181,7 @@ function willSkipNote(step: Extract<StepFacts, { kind: 'units' }>, t: Copy): Rea
 }
 
 /** One line per skip a finished run recorded, named against the row's own units by index so the
- *  reader sees the piece or hero, not a bare position — the row's "Show" reveal (AC3.8). */
+ *  reader sees the piece or hero, not a bare position — the row's "Show" reveal. */
 function skipRecordNote(skip: SkipRecord, units: readonly ApplyUnitLabel[], t: Copy): ReactNode {
   const subject = units[skip.index]?.subject ?? String(skip.index);
   const reasonText = t[APPLY_SKIP_REASON_COPY_KEY[skip.reason]];

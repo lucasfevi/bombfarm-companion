@@ -866,6 +866,57 @@ describe('account-refresh — a failed roster is served as stale with the STORED
   });
 });
 
+describe('account-refresh — heroes and items are only ever served as a pair from one cycle', () => {
+  // A hero's spent points are recovered by inverting its sheet against the gear it wears, so a
+  // fresh roster over a stale item list (or the reverse) charges every piece that moved in
+  // between to spent points and blocks the hero. Seen live right after an equip run.
+  it.each([
+    { fails: '/inventory', held: 'heroes', partner: 'items' },
+    { fails: '/roster', held: 'items', partner: 'heroes' },
+  ] as const)('when $fails fails, the $held body this cycle read is set aside and both are served from the last committed pair', async ({ fails, held, partner }) => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+
+    let now = '2026-08-12T00:01:00.000Z';
+    const refresh1 = createAccountRefresh(
+      baseDeps({ store, consentStore: fixedConsentStore(GRANTED), transport: okTransport(), readToken, now: () => now }),
+    );
+    await refresh1.refreshNow();
+
+    now = '2026-08-12T00:02:00.000Z';
+    const failingTransport: HttpTransport = (req) => {
+      if (routeOf(req.path) === fails) return Promise.resolve({ status: 500, body: 'boom' });
+      return Promise.resolve({ status: 200, body: JSON.stringify(BODIES[routeOf(req.path)] ?? {}) });
+    };
+    const { log, records } = createLogSpy();
+    const refresh2 = createAccountRefresh(
+      baseDeps({ store, consentStore: fixedConsentStore(GRANTED), transport: failingTransport, readToken, log, now: () => now }),
+    );
+    const view = await refresh2.refreshNow();
+
+    expect(fidelityOf(view)[held]).toEqual({ status: 'stale', capturedAt: '2026-08-12T00:01:00.000Z' });
+    expect(fidelityOf(view)[partner]).toEqual({ status: 'stale', capturedAt: '2026-08-12T00:01:00.000Z' });
+    expect(fidelityOf(view).casa).toEqual({ status: 'resolved', capturedAt: '2026-08-12T00:02:00.000Z' });
+
+    const heldRecords = records.filter((r) => r.record.event === 'section.held');
+    expect(heldRecords.map((r) => [r.record.section, r.record.partner])).toEqual([[held, partner]]);
+    expect(records.filter((r) => r.record.event === 'section.failed').map((r) => r.record.section)).toEqual([partner]);
+  });
+
+  it('a cycle that reads both, or neither, holds nothing', async () => {
+    const open = openTestAccountDb(firstBinding());
+    const store = createAccountStore(open);
+    const { fn: readToken } = fixedReadToken('486', SessionTokenClass.create(SENTINEL_TOKEN), 1000);
+    const { log, records } = createLogSpy();
+    const refresh = createAccountRefresh(baseDeps({ store, consentStore: fixedConsentStore(GRANTED), transport: okTransport(), readToken, log }));
+    const view = await refresh.refreshNow();
+    expect(fidelityOf(view).heroes.status).toBe('resolved');
+    expect(fidelityOf(view).items.status).toBe('resolved');
+    expect(records.some((r) => r.record.event === 'section.held')).toBe(false);
+  });
+});
+
 describe('account-refresh — a drifted section is logged with path-qualified keys and no player data', () => {
   it('a /state response missing one key and carrying one unrecognized key logs section.drift naming both, never a response value', async () => {
     const open = openTestAccountDb(firstBinding());

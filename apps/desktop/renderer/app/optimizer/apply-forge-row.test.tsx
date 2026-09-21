@@ -70,13 +70,13 @@ describe('describeForgeRow — pure state selection', () => {
     expect(describeForgeRow(batch, record)).toEqual({ kind: 'done', count: 5 });
   });
 
-  it('reads done from the batch alone when nothing is left to add but pieces are already queued (A-7)', () => {
+  it('reads done from the batch alone when nothing is left to add but pieces are already queued', () => {
     const queue: ForgeQueueState = { ...EMPTY_FORGE_QUEUE, pieces: [{ itemId: 'a', target: 12 }] };
     const batch = planForgeQueueBatch([{ itemId: 'a', to: 12 }], queue, new Map([['a', 8]]));
     expect(describeForgeRow(batch, IDLE_RECORD)).toEqual({ kind: 'done', count: 1 });
   });
 
-  it('reads exhausted when every piece is left out and none is queued (A-8)', () => {
+  it('reads exhausted when every piece is left out and none is queued', () => {
     const batch = planForgeQueueBatch([{ itemId: 'a', to: 12 }], EMPTY_FORGE_QUEUE, new Map([['a', 12]]));
     expect(describeForgeRow(batch, IDLE_RECORD)).toEqual({ kind: 'exhausted' });
   });
@@ -155,7 +155,7 @@ describe('ApplyForgeRow — done', () => {
 });
 
 describe('ApplyForgeRow — exhausted', () => {
-  it('reads Nothing left to apply when every piece is left out and none is queued (A-8)', () => {
+  it('reads Nothing left to apply when every piece is left out and none is queued', () => {
     const html = renderRow({ forgeList: [action('a', 12)], gear: [item('a', 12)] });
     expect(html).toContain(en.applyStepNothingLeft);
     expect(html).not.toContain('data-testid="apply-step-forge-press"');

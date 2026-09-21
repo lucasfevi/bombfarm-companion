@@ -89,7 +89,6 @@ function panel(overrides: Partial<Parameters<typeof ApplyPanel>[0]> = {}, forgeR
       planHeroes: null,
       planRunId: 'run-1',
       blocked: false,
-      farmChosenPhase: null,
       forgeWritesEnabled: true,
       accountSource: null,
       ...(forgeRow === undefined ? {} : { forgeRow }),
@@ -281,6 +280,6 @@ describe('ApplyPanel — source pin', () => {
     expect(source).toMatch(/useMemo\(\s*\(\)\s*=>\s*buildApplyFacts\(/);
     // The deps array directly follows the call — this file's own formatting, pinned rather than
     // re-derived, since a reformat that dropped `liveView` from the array would otherwise pass.
-    expect(source).toContain('[plan, planHeroes, liveView, farmChosenPhase, t, locale],\n  );');
+    expect(source).toContain('[plan, planHeroes, liveView, t, locale],\n  );');
   });
 });
