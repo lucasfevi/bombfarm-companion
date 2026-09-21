@@ -2,8 +2,8 @@
 /**
  * Open the merged Playwright report from a failed CI run.
  *
- * This is the only way to see a CI diff. The PR comment names the failing screenshots but cannot
- * show them, so reviewing one means pulling the artifact down.
+ * The PR comment only links the run; the traces and error context live in the `e2e-report`
+ * artifact, so reviewing a failure means pulling that artifact down.
  *
  * Default: download the single `e2e-report` artifact and open it locally.
  *
@@ -22,7 +22,6 @@ const ROOT = process.cwd();
 const PLAYWRIGHT_CLI = path.join(ROOT, 'node_modules', '@playwright', 'test', 'cli.js');
 
 const REPORT_ARTIFACT = 'e2e-report';
-const LEGACY_ARTIFACTS = ['playwright-report-visual', 'playwright-report-visual-merged'];
 const ARTIFACT_PREFIX = 'playwright-report';
 
 function usage(exitCode = 0) {
@@ -33,8 +32,7 @@ Resolves the latest failed Playwright e2e CI run for the current branch's PR
 
 --url-only  Print the PR and run URLs and stop (no download).
 
-The downloaded report holds every shard (smoke + visual) in one comparator, with
-the diff images and the traces.`;
+The downloaded report holds every smoke shard in one HTML report, with the traces.`;
   console[exitCode ? 'error' : 'log'](text);
   process.exit(exitCode);
 }
@@ -134,10 +132,6 @@ function listRunArtifacts(runId) {
 function pickReportArtifact(artifacts) {
   const merged = artifacts.find((a) => a.name === REPORT_ARTIFACT);
   if (merged) return merged;
-  for (const legacy of LEGACY_ARTIFACTS) {
-    const hit = artifacts.find((a) => a.name === legacy);
-    if (hit) return hit;
-  }
   const hits = artifacts
     .filter((a) => a.name === ARTIFACT_PREFIX || a.name.startsWith(`${ARTIFACT_PREFIX}-`))
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -167,7 +161,7 @@ function resolveRunId({ run, pr }) {
   if (failed.length === 0) {
     console.error(
       `No failed "${WORKFLOW_FILE}" runs found for PR #${prNumber} (branch ${branch}).\n` +
-        'Reports are only produced when a smoke shard or the visual job fails.',
+        'Reports are only produced when a smoke shard fails.',
     );
     process.exit(1);
   }
@@ -185,12 +179,6 @@ function downloadArtifact(runId, artifactName) {
 }
 
 function findReportPath(root) {
-  // Legacy runs uploaded a zipped report; `playwright show-report` opens either.
-  for (const legacy of LEGACY_ARTIFACTS) {
-    const zipPath = path.join(root, `${legacy}.zip`);
-    if (fs.existsSync(zipPath)) return zipPath;
-  }
-
   const direct = path.join(root, 'playwright-report');
   if (fs.existsSync(path.join(direct, 'index.html'))) return direct;
   if (fs.existsSync(path.join(root, 'index.html'))) return root;
@@ -234,7 +222,7 @@ function main() {
   const artifacts = listRunArtifacts(resolved.runId);
   const artifact = pickReportArtifact(artifacts);
   if (!artifact) {
-    console.error(`Run ${resolved.runId} has no downloadable visual report artifact.`);
+    console.error(`Run ${resolved.runId} has no downloadable e2e report artifact.`);
     process.exit(1);
   }
 

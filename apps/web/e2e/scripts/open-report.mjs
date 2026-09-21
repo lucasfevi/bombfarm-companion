@@ -26,8 +26,8 @@ function main() {
   if (!reportDir) {
     console.error(
       'No local Playwright report found.\n' +
-        'Run `pnpm test:e2e` first (visual failures write playwright-report/).\n' +
-        'To fetch a CI report instead: `pnpm test:e2e:report:ci`',
+        'Run `pnpm test:e2e` first (a failed run writes playwright-report/).\n' +
+        'To fetch a CI report instead: `node e2e/scripts/show-ci-report.mjs`',
     );
     process.exit(1);
   }

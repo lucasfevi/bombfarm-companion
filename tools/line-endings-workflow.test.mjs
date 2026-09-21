@@ -159,10 +159,9 @@ function aggregatorFailsOnAnyNonSuccess(text) {
 }
 
 /**
- * The aggregator does NOT use the `ci-desktop-required` idiom
+ * The aggregator does NOT use the skipped-tolerant idiom
  * (`result == 'failure' || result == 'cancelled'`), which reports success when the needed
- * job was *skipped* — i.e. when the gate never ran at all. That idiom is defensible in
- * `ci-desktop.yml`, where a path filter legitimately skips jobs; here nothing may skip, so
+ * job was *skipped* — i.e. when the gate never ran at all. Here nothing may skip, so
  * "never ran" must be a failure. A gate that goes green for "never ran" is worse than no
  * gate, and this repo has a documented history of exactly that.
  */
@@ -298,7 +297,7 @@ describe('line-endings.yml shape guard — 11 mutations, each turning its predic
     expect(unconditionalPullRequest(mutated)).toBe(false);
   });
 
-  it("(7) the aggregator's enforcing step swapped for the ci-desktop-required idiom ⇒ aggregatorFailsOnAnyNonSuccess is false", () => {
+  it("(7) the aggregator's enforcing step swapped for the skipped-tolerant idiom ⇒ aggregatorFailsOnAnyNonSuccess is false", () => {
     const mutated = mutate(
       realText,
       "        if: needs.line-endings.result != 'success'",

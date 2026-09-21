@@ -46,14 +46,6 @@ export default defineConfig({
   reporter: blobReporter
     ? [['list'], ['blob']]
     : [['list'], ['html', { open: 'never' }]],
-  snapshotPathTemplate: 'e2e/__screenshots__/{testFilePath}/{arg}-{projectName}{ext}',
-  expect: {
-    toHaveScreenshot: {
-      animations: 'disabled',
-      caret: 'hide',
-      maxDiffPixelRatio: 0,
-    },
-  },
   use: {
     baseURL: BASE_URL,
     viewport: { width: 1280, height: 800 },
@@ -67,13 +59,7 @@ export default defineConfig({
   projects: [
     {
       name: 'smoke',
-      testIgnore: ['**/visual.spec.ts', '**/perf/**'],
-      use: chromiumUse,
-    },
-    {
-      // Name kept as `chromium` so existing baselines stay `*-chromium.png`.
-      name: 'chromium',
-      testMatch: '**/visual.spec.ts',
+      testIgnore: ['**/perf/**'],
       use: chromiumUse,
     },
     ...(perfMode
@@ -90,7 +76,7 @@ export default defineConfig({
       : []),
   ],
   // Perf: `dev-strict` runs next:dev (webpack); `prod-profile` serves the static export
-  // from `pnpm perf:build:profile`. Smoke/visual keep the static-export server.
+  // from `pnpm perf:build:profile`. Smoke keeps the static-export server.
   webServer: perfMode
     ? perfProfile
       ? {

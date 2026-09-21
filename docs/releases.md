@@ -22,7 +22,7 @@ feature PR (changeset) → merge to develop
 1. **On a feature PR into `develop`:** ensure a changeset exists (or add the `skip-changeset` label when appropriate — see [Changeset policy](#changeset-policy)).
 2. **Merge the feature PR to `develop`.** The [Release PR workflow](../.github/workflows/release-pr.yml) runs on every `develop` push. The bump commit on `release/next` sets `HUSKY=0` so Actions is not blocked by local commit hooks.
 3. **Open the release PR** (`release/next` → `main`) if one was created or updated. Its body lists every package bump, artifact plan, head SHA, and the pre-merge soak checklist.
-4. **Review** version bumps and generated `CHANGELOG.md` entries. Confirm required CI checks are green on the release head (`ci-web-required`, `ci-desktop-required`, `e2e-smoke`, `e2e-visual`, and `beta-installer` when desktop is in the set).
+4. **Review** version bumps and generated `CHANGELOG.md` entries. Confirm required CI checks are green on the release head (the `main` set listed under [Required CI on the release PR](#required-ci-on-the-release-pr), and `beta-installer` when desktop is in the set).
 5. **When desktop is in the release set:** download the beta installer from the PR workflow artifact or the upserted PR comment. Verify the build matches the head SHA shown in the report.
 6. **Complete the [pre-merge soak checklist](#pre-merge-soak-checklist)** before merging to `main`.
 7. **Merge the release PR to `main` with a merge commit** — `gh pr merge <n> --merge`, or
@@ -157,15 +157,15 @@ that head. Do **not** use `GITHUB_TOKEN` for those steps — token-authored PRs 
 not receive check runs from other workflows.
 
 Required contexts on the release head: `ci-web-required`, `ci-desktop-required`,
-`e2e-smoke`, `e2e-visual` (and `beta-installer` when desktop is in the set).
+`repo-guards-required`, `e2e-smoke`, `fidelity-gate-required`, `line-endings-required`,
+`design-system-required` (and `beta-installer` when desktop is in the set).
 
 ### Cost notes
 
 1. **Windows smoke** runs on every feature PR matching the desktop path filter, and on
    `develop`/`main` pushes. It was opt-in until a broken spec rode the default branch for eight
    consecutive pushes without gating anything.
-2. **Visual e2e** on feature PRs is opt-in via the `visual-ci` label (always on `develop`/`main` pushes when e2e paths match).
-3. Smoke e2e uses **2** shards.
+2. Smoke e2e uses **2** shards.
 
 ## Pre-merge soak checklist
 

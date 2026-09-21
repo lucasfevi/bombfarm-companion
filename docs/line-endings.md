@@ -34,7 +34,7 @@ Before this was pinned, endings drifted per file: 532 tracked files were stored 
   **deliberately not path-filtered**, unlike every other workflow here: a line ending can
   regress from any tracked file, so narrowing it would reopen the hole it exists to close.
   Its `line-endings-required` job fails if the guard job was skipped or cancelled, not just
-  if it failed.
+  if it failed, and is a required check on both `main` and `develop`.
 
 `ci-desktop.yml` and `ci-fidelity.yml` also run the `tools` project incidentally when their
 own path filters match, and [`repo-guards.yml`](../.github/workflows/repo-guards.yml) now
@@ -44,8 +44,8 @@ runs the whole project unconditionally too — defence in depth, not the gate.
 That "not path-filtered" property is itself pinned, by
 [`tools/line-endings-workflow.test.mjs`](../tools/line-endings-workflow.test.mjs): it fails
 if the workflow ever grows a `paths:`/`paths-ignore:` key or a `dorny/paths-filter` step, if
-the `pull_request` trigger is narrowed, if the aggregator is swapped for the skipped-tolerant
-`ci-desktop-required` idiom, or if the job stops invoking the suite. Its filename starts with
+the `pull_request` trigger is narrowed, if the aggregator is swapped for a skipped-tolerant
+`== 'failure' || == 'cancelled'` idiom, or if the job stops invoking the suite. Its filename starts with
 `line-endings`, so the workflow's own `--project tools line-endings` filter runs it — the
 guard travels with the thing it guards.
 

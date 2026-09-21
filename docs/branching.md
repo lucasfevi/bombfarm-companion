@@ -80,7 +80,8 @@ Shared by both branches:
 
 - Pull requests required before merging (0 approving reviews — solo maintainer can merge)
 - Stale review dismissals enabled
-- Required status checks: `ci-web-required`, `ci-desktop-required`, `repo-guards-required`, `e2e-smoke`, `e2e-visual`
+- Required status checks (both branches): `ci-web-required`, `ci-desktop-required`, `repo-guards-required`, `e2e-smoke`, `fidelity-gate-required`, `line-endings-required`, `design-system-required`
+- `develop` additionally requires: `Require a changeset` — the changesets check; the release PR into `main` is exempt by design, and a PR labelled `skip-changeset` skips the job, which GitHub counts as passing
 - Branches do **not** need to be up to date before merge (`strict: false`)
 - Direct pushes blocked; force pushes and branch deletion blocked
 - `enforce_admins: true` — no owner bypass
@@ -95,6 +96,31 @@ Where they differ:
 Relaxing it on `main` is deliberate and load-bearing: with linear history required, the
 release PR can only be squashed, and a squash leaves `main` sharing no ancestry with the
 branch it came from. That is what made every release PR list every commit since PR #10.
+
+### Applying the JSON
+
+A verbatim `PUT` replaces the whole required set, so diff live against the file first — the
+JSON is the intended state, and [`tools/branch-protection-parity.test.mjs`](../tools/branch-protection-parity.test.mjs)
+keeps it, the workflows and this page in agreement, but it cannot see what GitHub holds.
+
+```bash
+gh api repos/lucasfevi/bombfarm-companion/branches/develop/protection/required_status_checks --jq '.contexts | sort'
+jq '[.required_status_checks.checks[].context] | sort' .github/branch-protection-develop.json
+```
+
+When the JSON contains every live context you intend to keep, apply it verbatim:
+
+```bash
+gh api -X PUT repos/lucasfevi/bombfarm-companion/branches/develop/protection --input .github/branch-protection-develop.json
+gh api -X PUT repos/lucasfevi/bombfarm-companion/branches/main/protection --input .github/branch-protection-main.json
+```
+
+When it does not, add the missing contexts instead — this form appends and removes nothing,
+one `-f` per context:
+
+```bash
+gh api -X POST repos/lucasfevi/bombfarm-companion/branches/develop/protection/required_status_checks/contexts -f 'contexts[]=line-endings-required' -f 'contexts[]=design-system-required'
+```
 
 ## Merge-method enforcement lives in a ruleset
 

@@ -120,7 +120,7 @@ function hero( partial: Partial<HeroRecord> & Pick<HeroRecord, 'id' | 'name'>): 
   };
 }
 
-/** Canonical imported roster for visual baselines (1–3 heroes + active). */
+/** Canonical imported roster the specs share (1–3 heroes + active). */
 export const importedRoster: SeededState = {
   heroes: [
     hero({
@@ -275,7 +275,7 @@ export async function seedLocalStorage(page: Page, state: SeededState): Promise<
  * `importedRoster` cannot serve here and is deliberately left alone. Its heroes carry no `birth`
  * and no `statRanges`, so `rollQualityFor` places nothing on any of them — every roll bar is empty
  * and the roll sort has nothing to order by, which would make a green spec about a board that is
- * showing dashes. Every perf and visual baseline is expressed against that roster too.
+ * showing dashes. The perf baseline is expressed against that roster too.
  *
  * The eight windows are the game's own published ranks for a common hero, in planner units
  * (`saveSheetUnits`: crit chance, CDR and luck are percent, crit damage is percent ABOVE ×1).

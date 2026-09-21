@@ -252,10 +252,14 @@ jobs:
         if: needs.changes.result != 'success'
         run: exit 1
 
-      - name: Require desktop quality
-        if: needs.quality.result == 'failure' || needs.quality.result == 'cancelled'
-        run: exit 1
+      - name: Require desktop quality when the filter matched
+        if: needs.changes.outputs.desktop == 'true' && needs.quality.result != 'success'
+        run: |
+          echo "quality: ${{ needs.quality.result }}"
+          exit 1
 
-      - name: Require Windows smoke when it ran
-        if: needs.smoke-windows.result == 'failure' || needs.smoke-windows.result == 'cancelled'
-        run: exit 1
+      - name: Require Windows smoke when the filter matched
+        if: needs.changes.outputs.desktop == 'true' && needs.smoke-windows.result != 'success'
+        run: |
+          echo "smoke-windows: ${{ needs.smoke-windows.result }}"
+          exit 1
