@@ -28,6 +28,8 @@ import type { MarketQuoteCurrency } from '@bombfarm/contracts';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
 import { inventoryTotals } from '../../lib/account/account-holdings';
+import { buildAccountRoster } from '../../lib/account/account-roster';
+import { rosterHeroPeeks } from '../../lib/live/use-live-hero-peeks';
 import { useMarketSnapshot } from '../../lib/market/use-market-snapshot';
 import { inventoryLabels, inventoryTableLabels } from './inventory-labels';
 import { marketPriceLabels } from './market-labels';
@@ -57,8 +59,17 @@ export function InventoryView({ marketQuoteCurrency }: { marketQuoteCurrency: Ma
   // identity to key on; they just move far less often than their container.
   const inventory = useMemo(() => buildInventoryView(view?.payload.items), [view?.payload.items]);
   const heroes = useMemo(() => mapInventoryHeroes(view?.payload.heroes), [view?.payload.heroes]);
-  const labels = useMemo(() => inventoryLabels(t, lang, heroes), [t, lang, heroes]);
-  const tableLabels = useMemo(() => inventoryTableLabels(t, lang, heroes), [t, lang, heroes]);
+  // The avatar's card reads the parsed roster — the one parse every hero-drawing screen shares —
+  // which reads the whole payload, so this one is keyed on the view. That costs nothing the
+  // section keys above do not already pay: an accepted push arrives as a fresh structural clone,
+  // sections included.
+  const roster = useMemo(() => (view === null ? null : buildAccountRoster(view)), [view]);
+  const heroPeeks = useMemo(() => rosterHeroPeeks(roster), [roster]);
+  const labels = useMemo(() => inventoryLabels(t, lang, heroes, heroPeeks), [t, lang, heroes, heroPeeks]);
+  const tableLabels = useMemo(
+    () => inventoryTableLabels(t, lang, heroes, heroPeeks),
+    [t, lang, heroes, heroPeeks],
+  );
 
   const { snapshot, refreshItem } = useMarketSnapshot();
   const [layout, setLayout] = useState<InventoryLayout>('cards');
