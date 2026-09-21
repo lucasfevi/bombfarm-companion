@@ -6,9 +6,9 @@
  * The package's own screen presses Optimize and runs the search itself; this module never calls
  * a runner. It only folds the four lifecycle reports the screen's toolbar effect makes —
  * `startRun`, `resolveRun`, `applyPlan`, `clearPlan` — into one state, so there is exactly one
- * place a plan is ever applied (D-19). `startRun` records the signature the screen built its run
+ * place a plan is ever applied. `startRun` records the signature the screen built its run
  * from, not the live signature at the moment the plan lands: a Refresh that changes the snapshot
- * mid-run must not silently re-key a plan solved from the account behind it (D-16).
+ * mid-run must not silently re-key a plan solved from the account behind it.
  */
 import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
@@ -18,7 +18,7 @@ export type OptimizerPlanState = {
   readonly runStatus: TeamPlanRunStatus;
   readonly runId: string | null;
   readonly plan: TeamPlan | null;
-  /** The signature the run in flight was built from (D-16); becomes the applied plan's key. */
+  /** The signature the run in flight was built from; becomes the applied plan's key. */
   readonly signature: string | null;
   /** The roster the run was solved from, for the same reason as the signature: the tab re-takes
    *  its snapshot from the live account on every re-open, and the result rows must keep naming

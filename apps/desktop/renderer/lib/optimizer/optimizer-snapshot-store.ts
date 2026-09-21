@@ -7,7 +7,7 @@
  * The account payload behind this screen refreshes from the live game every few seconds. The
  * snapshot is computed from the account as it stood when the player opened the tab and must NOT
  * follow those ticks. Only `begin` and `refresh` may replace it — both user-initiated, and both
- * carrying the Farm phase the caller wants written into the inputs (D-17): a Farm phase change
+ * carrying the Farm phase the caller wants written into the inputs: a Farm phase change
  * alone re-takes the snapshot on the next open, exactly like an account change.
  *
  * That property is structural rather than a comparison someone has to keep correct. This module
@@ -42,7 +42,7 @@ export type OptimizerSettledSnapshot = {
 /**
  * An account was read, but not one the inputs may be built from — a section whose fidelity
  * forbids trusting it, a whole-file rejection, or a required value the desktop refuses to
- * default (A-5). "No account yet" is not a reason here: until one is read there is no snapshot at
+ * default. "No account yet" is not a reason here: until one is read there is no snapshot at
  * all, and the state stays `idle` while the account seam reports its own loading or bridge
  * failure.
  */
@@ -77,7 +77,7 @@ export type OptimizerComputeOutcome =
 
 /**
  * Four arrivals; two carry a `sourceKey` — the `accountChangeKey` of the `AccountView` a snapshot
- * was taken from — and the Farm phase the mapper should be given (D-17). Both are user-initiated.
+ * was taken from — and the Farm phase the mapper should be given. Both are user-initiated.
  */
 export type OptimizerSnapshotArrival =
   /** The tab opened. */

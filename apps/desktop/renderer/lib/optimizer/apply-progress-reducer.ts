@@ -32,7 +32,7 @@ export type ApplyModalState = {
   readonly stopRequested: boolean;
   /** The plan run id this modal was opened under — so a later `bind` to a new plan can tell this
    *  run apart from the new plan's own steps and never credit (or blame) the new plan with an
-   *  outcome that belongs to the old one (A-15). */
+   *  outcome that belongs to the old one. */
   readonly planRunId: string | null;
 };
 
