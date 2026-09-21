@@ -26,7 +26,8 @@ import type { StepRecord } from '../../lib/optimizer/apply-progress-reducer';
 import type { ForgeLabels } from '../forge/forge-labels';
 import { ApplyLedgerStrip } from './apply-ledger-strip';
 import { ApplyEquipRow, ApplyPointsRow } from './apply-step-row';
-import { ApplyEquipConfirm, ApplyPointsConfirm, type ApplyPointsConfirmHero } from './apply-confirms';
+import { ApplyEquipConfirm } from './apply-confirms';
+import { ApplyPointsConfirm, type ApplyPointsConfirmHero } from './apply-points-confirm';
 import { ApplyModal } from './apply-modal';
 
 const NO_HEROES: readonly HeroRecord[] = [];
@@ -132,18 +133,30 @@ export function ApplyPanel({
     return map;
   }, [facts.steps.points]);
 
+  // Every hero the plan was solved from, in the plan's own order: the ones it resets carry
+  // their unit, the rest are listed so the reader sees them left alone rather than missing.
   const pointsConfirmHeroes = useMemo<ApplyPointsConfirmHero[]>(() => {
     const units = facts.steps.points.kind === 'units' ? facts.steps.points.units : [];
-    return pointsUnits.map((unit, index) => ({
-      index: unit.index,
-      name: units[index]?.subject ?? unit.heroId,
-      level: unit.level,
-      needsRespec: unit.needsRespec,
-      points: unit.pointsPlaced,
-      gold: unit.respecGold,
-      skipReason: pointsSkipByIndex.get(unit.index) ?? null,
-    }));
-  }, [pointsUnits, facts.steps.points, pointsSkipByIndex]);
+    const unitByHero = new Map(pointsUnits.map((unit, position) => [unit.heroId, { unit, position }]));
+    const heroById = new Map((planHeroes ?? NO_HEROES).map((hero) => [hero.id, hero]));
+    const rows: ApplyPointsConfirmHero[] = plan.perHero.map((row) => {
+      const hero = heroById.get(row.heroId);
+      const found = unitByHero.get(row.heroId);
+      if (found === undefined) {
+        return { index: null, hero, name: hero?.name ?? row.heroName, needsRespec: false, points: 0, gold: 0, skipReason: null };
+      }
+      return {
+        index: found.unit.index,
+        hero,
+        name: units[found.position]?.subject ?? hero?.name ?? row.heroName,
+        needsRespec: found.unit.needsRespec,
+        points: found.unit.pointsPlaced,
+        gold: found.unit.respecGold,
+        skipReason: pointsSkipByIndex.get(found.unit.index) ?? null,
+      };
+    });
+    return rows;
+  }, [plan.perHero, planHeroes, pointsUnits, facts.steps.points, pointsSkipByIndex]);
 
   const runningStep: ApplyStep | null =
     progress.steps.equip.status === 'running' ? 'equip' : progress.steps.points.status === 'running' ? 'points' : null;
@@ -202,8 +215,9 @@ export function ApplyPanel({
     applyActions.confirm('equip', labels, request);
   }
 
-  function confirmPoints(): void {
-    const pendingSet = facts.steps.points.kind === 'units' ? new Set(facts.steps.points.pending) : new Set<number>();
+  function confirmPoints(selected: ReadonlySet<number>): void {
+    const pending = facts.steps.points.kind === 'units' ? facts.steps.points.pending : [];
+    const pendingSet = new Set(pending.filter((index) => selected.has(index)));
     const request = buildPointsStartRequest(planRunId, pointsUnits, pendingSet);
     const labels = facts.steps.points.kind === 'units' ? facts.steps.points.units.filter((u) => pendingSet.has(u.index)) : [];
     applyActions.confirm('points', labels, request);
