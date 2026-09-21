@@ -1,4 +1,5 @@
 import type {
+  HeroPeekData,
   InventoryBadge,
   InventoryEquippedBy,
   InventoryGridLabels,
@@ -141,10 +142,15 @@ function badges(item: InventoryViewItem, t: Copy): InventoryBadge[] {
 /**
  * A hero the app has not read is still reported as equipping the item — the item plainly is
  * worn, and dropping the line would make it look loose.
+ *
+ * The avatar's card is the parsed roster's, joined on the same game hero id, so it carries the
+ * sheet, the abilities and the gear. A hero the roster did not parse still gets a card, of the
+ * identity alone — the row knows that much.
  */
 function equippedBy(
   item: InventoryViewItem,
   heroes: ReadonlyMap<string, InventoryHero>,
+  peeks: ReadonlyMap<string, HeroPeekData>,
   t: Copy,
 ): InventoryEquippedBy | null {
   if (!item.equippedBy) return null;
@@ -170,7 +176,7 @@ function equippedBy(
     stars: hero.stars,
     skin: hero.skin,
     unknown: false,
-    peek: {
+    peek: peeks.get(hero.id) ?? {
       name: hero.name,
       rank: hero.rank,
       rarityIdx: hero.rarityIdx,
@@ -215,6 +221,7 @@ export function inventoryLabels(
   t: Copy,
   lang: 'pt' | 'en',
   heroes: ReadonlyMap<string, InventoryHero> = new Map(),
+  peeks: ReadonlyMap<string, HeroPeekData> = new Map(),
 ): InventoryGridLabels {
   return {
     groupTitle: (kind) => t[GROUP_KEY[kind]],
@@ -225,7 +232,7 @@ export function inventoryLabels(
     itemForge: (item) => itemForge(item),
     itemStat: (stat) => itemStat(stat, lang),
     badges: (item) => badges(item, t),
-    equippedBy: (item) => equippedBy(item, heroes, t),
+    equippedBy: (item) => equippedBy(item, heroes, peeks, t),
     heroOption: (heroId) => heroOption(heroId, heroes, t),
     setOption: (group) => fill(t.inventorySetOption, { level: group.level, set: setName(group.set, lang) }),
     setOptionCount: (group) => number(group.count, 0),
@@ -268,8 +275,9 @@ export function inventoryTableLabels(
   t: Copy,
   lang: 'pt' | 'en',
   heroes: ReadonlyMap<string, InventoryHero> = new Map(),
+  peeks: ReadonlyMap<string, HeroPeekData> = new Map(),
 ): InventoryTableLabels {
-  const grid = inventoryLabels(t, lang, heroes);
+  const grid = inventoryLabels(t, lang, heroes, peeks);
 
   return {
     caption: t.inventoryTableCaption,

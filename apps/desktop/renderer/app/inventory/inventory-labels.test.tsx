@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildInventoryView, mapInventoryHeroes } from '@bombfarm/domain/inventory-view';
-import type { InventoryGridLabels } from '@bombfarm/game-art';
+import type { HeroPeekData, InventoryGridLabels } from '@bombfarm/game-art';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { en } from '../../lib/copy/en';
 import { ptBR } from '../../lib/copy/pt-BR';
@@ -113,6 +113,37 @@ describe('desktop inventory labels', () => {
       skin: 3,
       unknown: false,
       peek: { name: 'Kendo', rank: 'S', rarityIdx: 5, level: 157, stars: 2, skin: 3 },
+    });
+  });
+
+  /**
+   * The bug this pins: the avatar's card was built from the identity alone, so hovering a hero on
+   * the Inventory drew a header and nothing under it — no sheet, no abilities, no gear — while
+   * the same hero on the Live rows drew the whole card.
+   */
+  it('opens the roster card — sheet, abilities, gear — for the hero wearing the item, joined on the game id', () => {
+    const sheet = { attack: 10, energy: 10, speed: 10, critChance: 0, critDmg: 10, penetration: 0, cdr: 0, luck: 0 };
+    const rosterCard: HeroPeekData = {
+      name: 'Kendo',
+      rank: 'S',
+      rarityIdx: 5,
+      stars: 2,
+      level: 157,
+      skin: 3,
+      stats: sheet,
+      abilities: { fire: 3 },
+      power: 4321,
+    };
+    const peeks = new Map([['h1', rosterCard]]);
+
+    expect(equippedByOf(inventoryLabels(en, 'en', HEROES, peeks), 'g1')?.peek).toBe(rosterCard);
+    expect(equippedByOf(inventoryLabels(en, 'en', HEROES, new Map([['h9', rosterCard]])), 'g1')?.peek).toEqual({
+      name: 'Kendo',
+      rank: 'S',
+      rarityIdx: 5,
+      level: 157,
+      stars: 2,
+      skin: 3,
     });
   });
 
