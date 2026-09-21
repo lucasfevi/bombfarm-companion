@@ -101,8 +101,12 @@ function main() {
     run(`pnpm ${dependentsFilters(changedPackageDirs)} lint`);
   }
   run('pnpm lint:tools');
-  run(everything ? 'node tools/with-heavy-slot.mjs pnpm exec vitest run' : `pnpm exec vitest run --changed ${sha}`);
-  if (!everything) {
+  if (everything) {
+    run('node tools/with-heavy-slot.mjs pnpm exec vitest run');
+    run('node tools/with-heavy-slot.mjs pnpm exec vitest run --config vitest.solver.config.ts');
+  } else {
+    run(`pnpm exec vitest run --changed ${sha}`);
+    run(`pnpm exec vitest run --config vitest.solver.config.ts --changed ${sha}`);
     run('pnpm exec vitest run --project tools');
   }
 

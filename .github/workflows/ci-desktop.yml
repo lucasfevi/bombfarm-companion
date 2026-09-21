@@ -28,6 +28,8 @@ on:
       - 'tsconfig.base.json'
       - 'eslint.config.mjs'
       - 'vitest.config.ts'
+      - 'vitest.solver.config.ts'
+      - 'vitest.solver-files.mjs'
       - 'tools/**'
       - '.github/workflows/ci-desktop.yml'
       - '.github/workflows/wiki-drift.yml'
@@ -76,6 +78,8 @@ jobs:
               - 'tsconfig.base.json'
               - 'eslint.config.mjs'
               - 'vitest.config.ts'
+              - 'vitest.solver.config.ts'
+              - 'vitest.solver-files.mjs'
               - 'tools/**'
               - '.github/workflows/ci-desktop.yml'
               - '.github/workflows/wiki-drift.yml'
@@ -143,6 +147,8 @@ jobs:
       # CI-gate tests, neither of which has a package `test` script to be filtered by.
       - name: Unit tests (root vitest, excluding the web project)
         run: pnpm vitest run --project '!@bombfarm/web'
+      - name: Unit tests (solver pass)
+        run: pnpm vitest run --config vitest.solver.config.ts
 
   smoke-windows:
     name: App boot smoke (Windows)
