@@ -86,7 +86,7 @@ export function ApplyStepRow({ index, title, facts, notes, action, testId, next 
         <p data-testid={`${testId}-facts`} className="m-0 text-[12px] text-muted [&_strong]:font-medium [&_strong]:text-ink">
           {facts}
         </p>
-        {'label' in action && action.reason !== undefined ? (
+        {'label' in action && action.reason !== undefined && action.reason !== '' ? (
           <p data-testid={`${testId}-reason`} className="m-0 text-[12px] text-warn">
             {action.reason}
           </p>
@@ -134,8 +134,6 @@ function gateReasonText(gate: Extract<StepGate, { enabled: false }>, otherStepTi
   switch (gate.reason) {
     case 'switchOff':
       return sub(t.applyPanelSwitchOff, { switch: t.settingsForgeWritesLabel });
-    case 'stale':
-      return t.applyPanelStale;
     case 'otherRunning':
       return otherStepTitle === null ? undefined : sub(t.applyPanelOtherRunning, { step: otherStepTitle });
     default:
@@ -319,7 +317,6 @@ export function ApplyEquipRow({ t, facts, gate, record, otherStepTitle, onPress,
           puton: counts.putOn,
           tobag: counts.toBag,
           time: strong(formatClock(facts.aboutMs)),
-          gold: <strong className="!text-up">{t.applyLedgerFree}</strong>,
         });
   const row = buildRowAction(
     { t, step: 'equip', facts, gate, record, otherStepTitle, onPress, onShow: () => { setShowSkips((v) => !v); }, showSkips },

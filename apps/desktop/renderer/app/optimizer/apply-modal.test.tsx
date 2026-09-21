@@ -34,6 +34,7 @@ function render(modal: ApplyModalState, overrides: { nowMs?: number; queuePaused
         hasNext: overrides.hasNext ?? false,
         nowMs: overrides.nowMs ?? 1_000,
         heroById: new Map(),
+        itemById: new Map(),
       }),
     }),
   );

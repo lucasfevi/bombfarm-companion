@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import type { ApplyStopReason } from '@bombfarm/contracts';
 import { estimateApplyDurationMs } from '@bombfarm/domain/team-plan';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
 import { Button, cn, Dialog, Icon, dialogDescClass } from '@bombfarm/ui';
 import { sub, useCopy, useLocale, type Copy } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
@@ -75,6 +76,7 @@ export function ApplyModalBody({
   hasNext,
   nowMs,
   heroById,
+  itemById,
 }: {
   modal: ApplyModalState;
   queuePaused: boolean;
@@ -84,6 +86,7 @@ export function ApplyModalBody({
   hasNext: boolean;
   nowMs: number;
   heroById: ReadonlyMap<string, HeroRecord>;
+  itemById: ReadonlyMap<string, InventoryViewItem>;
 }) {
   const t = useCopy();
   const { locale } = useLocale();
@@ -91,6 +94,8 @@ export function ApplyModalBody({
   const counts = run === null ? null : runCounts(run);
   const cooldown = run?.cooldown ?? null;
   const heroOf = (unit: ApplyUnitLabel | undefined) => (unit?.heroId ? heroById.get(unit.heroId) : undefined);
+  const itemOf = (unit: ApplyUnitLabel | undefined) => (unit?.itemId ? itemById.get(unit.itemId) : undefined);
+  const spendsGold = modal.step === 'points';
 
   return (
     <>
@@ -122,23 +127,28 @@ export function ApplyModalBody({
               {`${String(progressPercent(counts))}%`}
             </span>
           </div>
-          <p data-testid="apply-modal-card" className={cn('m-0', 'text-[12px]', cooldown !== null ? 'text-warn' : 'text-muted')} role="status" aria-live="polite">
-            {cooldown !== null
-              ? sub(t.applyModalCooldown, { countdown: formatClock(Math.max(0, cooldown.resumeAtMs - nowMs)) })
-              : doingNowText(run, counts.current, t)}
+          <p data-testid="apply-modal-card" className={cn('m-0', 'flex', 'items-center', 'gap-2', 'text-[12px]', cooldown !== null ? 'text-warn' : 'text-muted')} role="status" aria-live="polite">
+            <Icon name={cooldown !== null ? 'exclamation-triangle' : 'arrow-path'} className={cn('size-3.5', 'shrink-0', cooldown === null ? 'animate-spin' : null)} />
+            <span>
+              {cooldown !== null
+                ? sub(t.applyModalCooldown, { countdown: formatClock(Math.max(0, cooldown.resumeAtMs - nowMs)) })
+                : doingNowText(run, counts.current, t)}
+            </span>
           </p>
 
-          <ul data-testid="apply-modal-ledger" aria-label={t.applyModalLedgerAria} className="m-0 max-h-56 list-none overflow-y-auto p-0">
-            {run.units.map((unit, index) => (
-              <ApplyModalLedgerLine key={unit.index} unit={unit} status={run.status[index] ?? 'next'} hero={heroOf(unit)} />
-            ))}
-          </ul>
+          <div className="rounded-sm border border-line bg-bg px-2.5">
+            <ul data-testid="apply-modal-ledger" aria-label={t.applyModalLedgerAria} className="m-0 max-h-56 list-none overflow-y-auto p-0">
+              {run.units.map((unit, index) => (
+                <ApplyModalLedgerLine key={unit.index} unit={unit} status={run.status[index] ?? 'next'} hero={heroOf(unit)} item={itemOf(unit)} />
+              ))}
+            </ul>
+          </div>
 
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-line py-2.5 text-[12px] text-muted">
             <span>{sub(t.applyModalFooter, { done: counts.done, skipped: counts.skipped, left: counts.left })}</span>
             <span className="flex items-center gap-3">
               {queuePaused ? <span>{t.applyModalQueuePaused}</span> : null}
-              <ForgeGold>{sub(t.applyModalGoldSoFar, { gold: formatCount(run.goldSpent, locale) })}</ForgeGold>
+              {spendsGold ? <ForgeGold>{sub(t.applyModalGoldSoFar, { gold: formatCount(run.goldSpent, locale) })}</ForgeGold> : null}
             </span>
           </div>
 
@@ -163,8 +173,12 @@ export function ApplyModalBody({
           </div>
           <p className="m-0 text-[13px] text-ink">
             {sub(t.applyModalDoneSummary, { made: run.result.made, total: run.result.total, skipped: run.result.skipped.length })}
-            {' · '}
-            <ForgeGold>{sub(t.applyModalGoldSpent, { gold: formatCount(run.result.goldSpent, locale) })}</ForgeGold>
+            {spendsGold ? (
+              <>
+                {' · '}
+                <ForgeGold>{sub(t.applyModalGoldSpent, { gold: formatCount(run.result.goldSpent, locale) })}</ForgeGold>
+              </>
+            ) : null}
           </p>
           {run.result.stop !== 'finished' ? (
             <p data-testid="apply-modal-stop-reason" className="m-0 text-[13px] text-warn">
@@ -172,11 +186,13 @@ export function ApplyModalBody({
             </p>
           ) : null}
 
-          <ul data-testid="apply-modal-ledger" aria-label={t.applyModalLedgerAria} className="m-0 max-h-56 list-none overflow-y-auto border-t border-line p-0 pt-1">
-            {run.units.map((unit, index) => (
-              <ApplyModalLedgerLine key={unit.index} unit={unit} status={run.status[index] ?? 'next'} hero={heroOf(unit)} />
-            ))}
-          </ul>
+          <div className="rounded-sm border border-line bg-bg px-2.5">
+            <ul data-testid="apply-modal-ledger" aria-label={t.applyModalLedgerAria} className="m-0 max-h-56 list-none overflow-y-auto p-0">
+              {run.units.map((unit, index) => (
+                <ApplyModalLedgerLine key={unit.index} unit={unit} status={run.status[index] ?? 'next'} hero={heroOf(unit)} item={itemOf(unit)} />
+              ))}
+            </ul>
+          </div>
 
           {run.result.skipped.length > 0 ? (
             <div className="border-t border-line pt-2">
@@ -215,6 +231,7 @@ export function ApplyModal({
   onContinue,
   hasNext,
   heroById,
+  itemById,
 }: {
   modal: ApplyModalState | null;
   queuePaused: boolean;
@@ -224,6 +241,8 @@ export function ApplyModal({
   hasNext: boolean;
   /** The plan's heroes by id, for the ledger's identity chips. */
   heroById: ReadonlyMap<string, HeroRecord>;
+  /** The live bag by item id, for the ledger's item icons. */
+  itemById: ReadonlyMap<string, InventoryViewItem>;
 }) {
   const t = useCopy();
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -269,6 +288,7 @@ export function ApplyModal({
             hasNext={hasNext}
             nowMs={nowMs}
             heroById={heroById}
+            itemById={itemById}
           />
         </Dialog.Popup>
       </Dialog.Portal>

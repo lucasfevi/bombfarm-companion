@@ -12,7 +12,7 @@ describe('equipConfirmCopy', () => {
   it('names the cost on the primary label, with the cancel label "Not now"', () => {
     const copy = equipConfirmCopy(4, false, en);
     expect(copy.title).toBe(en.applyConfirmEquipTitle);
-    expect(copy.confirmLabel).toBe('Equip 4 items — no gold');
+    expect(copy.confirmLabel).toBe('Equip 4 items');
     expect(copy.cancelLabel).toBe(en.applyConfirmCancel);
   });
 

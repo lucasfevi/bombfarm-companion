@@ -132,10 +132,11 @@ describe('ApplyEquipRow', () => {
     expect(tagOf(html, 'apply-step-equip-press')).toContain('disabled=""');
   });
 
-  it('reads the stale sentence when the plan has drifted and no step has applied yet', () => {
+  it('is disabled without a reason of its own when a change breaks the plan — the panel says so once, over everything', () => {
     const gate: StepGate = { enabled: false, reason: 'stale' };
     const html = wrap(createElement(ApplyEquipRow, { t, facts: unitsFacts(), gate, record: IDLE_RECORD, otherStepTitle: null, onPress: () => {} }));
-    expect(html).toContain(en.applyPanelStale);
+    expect(tagOf(html, 'apply-step-equip-press')).toContain('disabled=""');
+    expect(html).not.toContain('data-testid="apply-step-equip-reason"');
   });
 
   it('names the other step running, disabled', () => {

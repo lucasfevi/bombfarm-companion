@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * The panel's gold ledger — a gold-tinted band of five figures (`docs/use-the-width.md` rule 1:
+ * The panel's gold ledger — a gold-tinted band of four figures (`docs/use-the-width.md` rule 1:
  * each is a short label and a figure, so they sit in a row rather than stacking), the wallet
  * pinned to the right edge, wrapping whole below a narrow window rather than folding a column
  * under one it has nothing to do with (rule 4).
@@ -65,7 +65,6 @@ export function ApplyLedgerStrip({ ledger }: { ledger: ApplyLedger }) {
         value={ledger.forge.goldExpected === null ? WALLET_UNAVAILABLE : <ForgeGold>{gold(ledger.forge.goldExpected)}</ForgeGold>}
         qualifier={ledger.forge.goldExpected === null ? t.applyLedgerForgeNone : t.applyLedgerForgeExpected}
       />
-      <Figure testId="apply-ledger-equip" label={t.applyLedgerEquip} value={<span className="text-up">{t.applyLedgerFree}</span>} />
       <Figure
         testId="apply-ledger-wallet"
         label={t.applyLedgerWalletLabel}

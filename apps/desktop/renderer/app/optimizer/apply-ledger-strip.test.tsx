@@ -27,11 +27,10 @@ describe('ApplyLedgerStrip', () => {
     expect(html).toContain('data-testid="apply-ledger-total"');
     expect(html).toContain('data-testid="apply-ledger-reset"');
     expect(html).toContain('data-testid="apply-ledger-forge"');
-    expect(html).toContain('data-testid="apply-ledger-equip"');
+    expect(html).not.toContain('data-testid="apply-ledger-equip"');
     expect(html).toContain('data-testid="apply-ledger-wallet"');
     expect(html).toContain(en.applyLedgerTotal);
     expect(html).toContain(en.applyLedgerReset);
-    expect(html).toContain(en.applyLedgerEquip);
   });
 
   it('reads "can run over" when the forge list is priced, "no estimate" when it is not', () => {

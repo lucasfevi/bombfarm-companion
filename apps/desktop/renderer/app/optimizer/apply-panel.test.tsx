@@ -88,7 +88,7 @@ function panel(overrides: Partial<Parameters<typeof ApplyPanel>[0]> = {}, forgeR
       plan: PLAN,
       planHeroes: null,
       planRunId: 'run-1',
-      isStale: false,
+      blocked: false,
       farmChosenPhase: null,
       forgeWritesEnabled: true,
       accountSource: null,
@@ -159,15 +159,26 @@ describe('ApplyPanel — composition', () => {
     };
   });
 
-  it('hands the forgeRow stub a reason while the plan is stale before any step applied', () => {
+  it('covers the whole panel with one message when a change breaks the plan, and prints no per-row warning', () => {
     accountState.current = { status: 'loaded', applied: 1, key: 'k', view: LOADED_VIEW };
     const received: { current: ApplyForgeRowProps | null } = { current: null };
     const stub = (props: ApplyForgeRowProps) => {
       received.current = props;
       return null;
     };
-    panel({ isStale: true }, stub);
+    const html = panel({ blocked: true }, stub);
+    expect(html).toContain('data-testid="apply-panel-blocked"');
+    expect(html).toContain(en.applyPanelBlockedTitle);
+    expect(html).not.toContain('data-testid="apply-panel-banner"');
+    expect(html).not.toContain('data-testid="apply-step-equip-reason"');
     expect(received.current?.gate).not.toBeNull();
+    expect(received.current?.gate?.reason).toBe('');
+  });
+
+  it('draws no overlay and no warning when the plan still stands', () => {
+    accountState.current = { status: 'loaded', applied: 1, key: 'k', view: LOADED_VIEW };
+    const html = panel({ blocked: false });
+    expect(html).not.toContain('data-testid="apply-panel-blocked"');
   });
 
   it('disables the two writing rows and prints the switch sentence once, panel-wide, when the switch is off', () => {

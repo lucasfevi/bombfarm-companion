@@ -25,6 +25,8 @@ export type ApplyUnitLabel = {
   /** The hero the row is about — the wearer a piece goes to (or comes off), or the hero whose
    *  points move — so the ledger can draw its identity. */
   readonly heroId?: string | null;
+  /** The piece an equip or unequip moves, so the ledger can draw its icon. */
+  readonly itemId?: string | null;
   /** A points unit's allocation, stat by stat: the whole placement after a refund, the added
    *  points alone when nothing is refunded. */
   readonly alloc?: readonly { readonly stat: string; readonly points: number }[] | null;

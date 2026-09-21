@@ -222,13 +222,12 @@ test.describe('the Apply panel, solved, switched, confirmed and run through the 
   test('the ledger prints five figures matching a hand computation for this fixture plan', async () => {
     const ledger = page.getByTestId('apply-ledger');
     await expect(ledger).toBeVisible();
-    for (const testId of ['apply-ledger-total', 'apply-ledger-reset', 'apply-ledger-forge', 'apply-ledger-equip', 'apply-ledger-wallet']) {
+    for (const testId of ['apply-ledger-total', 'apply-ledger-reset', 'apply-ledger-forge', 'apply-ledger-wallet']) {
       await expect(ledger.getByTestId(testId)).toBeVisible();
     }
     await expect(ledger.getByTestId('apply-ledger-total')).toContainText('1,198,709');
     await expect(ledger.getByTestId('apply-ledger-reset')).toContainText('225,000');
     await expect(ledger.getByTestId('apply-ledger-forge')).toContainText('973,709');
-    await expect(ledger.getByTestId('apply-ledger-equip')).toContainText(en('applyLedgerEquip'));
     await expect(ledger.getByTestId('apply-ledger-wallet')).toContainText('222,054,630');
     await expect(ledger.getByTestId('apply-ledger-wallet')).toContainText('220,855,921');
   });

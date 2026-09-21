@@ -24,6 +24,7 @@ import {
   type ScopeState,
   type TeamPlanControlChange,
 } from '@bombfarm/team-plan/core';
+import { describePlanChanges } from '@bombfarm/team-plan/core';
 import type { TeamPlanEmptyStateKind } from '@bombfarm/team-plan/model';
 import type { TeamPlanRunnerHandle, TeamPlanRunStatus } from '@bombfarm/team-plan/runner';
 import type { AccountSource } from '@bombfarm/contracts';
@@ -113,6 +114,15 @@ export function OptimizerScreen({
   basisRef.current = { inputs, controls: mergedControls };
 
   const isStale = isTeamPlanStale(planState.signature, liveSignature);
+  // The Apply panel refuses only when a change BREAKS the plan — the same ledger the changes panel
+  // reads, so the two never disagree about whether the plan still stands.
+  const planBroken = useMemo(
+    () =>
+      isStale && planState.basis !== null && planState.plan !== null
+        ? describePlanChanges(planState.basis, { inputs, controls: mergedControls }, planState.plan).breaks.length > 0
+        : false,
+    [isStale, planState.basis, planState.plan, inputs, mergedControls],
+  );
 
   const data = useMemo<TeamPlanScreenData>(
     () => ({
@@ -217,7 +227,7 @@ export function OptimizerScreen({
             plan={planState.plan}
             planHeroes={planState.heroes}
             planRunId={planState.runId ?? ''}
-            isStale={isStale}
+            blocked={planBroken}
             farmChosenPhase={inputs.farmChosenPhase}
             forgeWritesEnabled={forgeWritesEnabled}
             accountSource={accountSource}
@@ -235,7 +245,7 @@ export function OptimizerScreen({
       planState.plan,
       planState.heroes,
       planState.runId,
-      isStale,
+      planBroken,
       inputs.farmChosenPhase,
       forgeWritesEnabled,
       accountSource,

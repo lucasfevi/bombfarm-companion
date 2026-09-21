@@ -119,7 +119,7 @@ function heroName(heroId: string, planHeroes: readonly HeroRecord[], liveHeroes:
   return planHeroes.find((hero) => hero.id === heroId)?.name ?? liveHeroes.get(heroId)?.name ?? heroId;
 }
 
-function liveItemsById(liveView: AccountView | null): ReadonlyMap<string, InventoryViewItem> {
+export function liveItemsById(liveView: AccountView | null): ReadonlyMap<string, InventoryViewItem> {
   if (liveView === null) return new Map();
   return new Map(buildInventoryView(liveView.payload.items).items.map((item) => [item.id, item]));
 }
@@ -146,6 +146,7 @@ function equipUnitLabel(
     points: null,
     gold: 0,
     heroId: unit.toHeroId ?? unit.fromHeroId,
+    itemId: unit.itemId,
     alloc: null,
   };
 }

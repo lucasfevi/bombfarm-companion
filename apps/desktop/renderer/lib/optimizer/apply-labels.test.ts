@@ -86,8 +86,8 @@ describe('unitCardText', () => {
 
   it('prints each call kind the way the modal card names it', () => {
     expect(unitCardText(unit({ call: 'equip', from: 'Orin', to: 'Bram' }), en)).toBe('Orin → Crimson Weapon +12 → Bram');
-    expect(unitCardText(unit({ call: 'equip', from: null, to: 'Bram' }), en)).toBe('bag → Crimson Weapon +12 → Bram');
-    expect(unitCardText(unit({ call: 'unequip', from: 'Orin', to: null }), en)).toBe('Crimson Weapon +12 → bag');
+    expect(unitCardText(unit({ call: 'equip', from: null, to: 'Bram' }), en)).toBe('Inventory → Crimson Weapon +12 → Bram');
+    expect(unitCardText(unit({ call: 'unequip', from: 'Orin', to: null }), en)).toBe('Crimson Weapon +12 → Inventory');
     expect(unitCardText(unit({ call: 'respec', subject: 'Bram', points: 24 }), en)).toBe('Bram — respec, then 24 points');
     expect(unitCardText(unit({ call: 'commit', subject: 'Bram', points: 24 }), en)).toBe('Bram — place 24 points');
   });

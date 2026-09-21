@@ -13,13 +13,13 @@ import { derivePointsUnits, deriveEquipUnits } from '@bombfarm/domain/team-plan'
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { TeamPlan, ForgeAction } from '@bombfarm/domain/team-plan/types';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
-import { cn } from '@bombfarm/ui';
+import { cn, Icon } from '@bombfarm/ui';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
 import { useForgeQueue } from '../../lib/forge/forge-queue-store';
 import type { ForgeQueueState } from '../../lib/forge/forge-queue-reducer';
 import { applyActions, useApplyProgress } from '../../lib/optimizer/apply-store';
-import { buildApplyFacts, nextUndoneStep, stepGate, walletShortHeroes } from '../../lib/optimizer/apply-panel-model';
+import { buildApplyFacts, liveItemsById, nextUndoneStep, stepGate, walletShortHeroes } from '../../lib/optimizer/apply-panel-model';
 import { buildOptimizerInputs } from '../../lib/optimizer/optimizer-inputs';
 import type { RowSkipReason } from '../../lib/optimizer/apply-labels';
 import type { StepRecord } from '../../lib/optimizer/apply-progress-reducer';
@@ -74,7 +74,7 @@ export function ApplyPanel({
   plan,
   planHeroes,
   planRunId,
-  isStale,
+  blocked,
   farmChosenPhase,
   forgeWritesEnabled,
   accountSource,
@@ -83,7 +83,8 @@ export function ApplyPanel({
   plan: TeamPlan;
   planHeroes: readonly HeroRecord[] | null;
   planRunId: string;
-  isStale: boolean;
+  /** The plan can no longer be applied: a change on the account breaks it. */
+  blocked: boolean;
   farmChosenPhase: number | null;
   forgeWritesEnabled: boolean;
   accountSource: AccountSource | null;
@@ -171,10 +172,10 @@ export function ApplyPanel({
 
   const equipGate = !accountLoaded
     ? ({ enabled: false, reason: 'loading' } as const)
-    : stepGate(facts.steps.equip, 'equip', { forgeWritesEnabled, isStale, anyStepApplied, running: runningStep, queueRunning });
+    : stepGate(facts.steps.equip, 'equip', { forgeWritesEnabled, isStale: blocked, anyStepApplied, running: runningStep, queueRunning });
   const pointsGate = !accountLoaded
     ? ({ enabled: false, reason: 'loading' } as const)
-    : stepGate(facts.steps.points, 'points', { forgeWritesEnabled, isStale, anyStepApplied, running: runningStep, queueRunning });
+    : stepGate(facts.steps.points, 'points', { forgeWritesEnabled, isStale: blocked, anyStepApplied, running: runningStep, queueRunning });
 
   // The forge row's own gate (contract item 4): only "another step running" and "stale before any
   // step applied" reach it — never the writes switch or the account source, since the row writes
@@ -182,8 +183,8 @@ export function ApplyPanel({
   const forgeGate: { reason: string } | null =
     runningStep !== null
       ? { reason: sub(t.applyPanelOtherRunning, { step: runningStep === 'equip' ? t.applyStepEquipTitle : t.applyStepPointsTitle }) }
-      : isStale && !anyStepApplied
-        ? { reason: t.applyPanelStale }
+      : blocked && !anyStepApplied
+        ? { reason: '' }
         : null;
 
   const otherStepTitle = runningStep === null ? null : runningStep === 'equip' ? t.applyStepEquipTitle : t.applyStepPointsTitle;
@@ -193,9 +194,7 @@ export function ApplyPanel({
       ? sub(t.applyPanelOtherRunning, { step: otherStepTitle ?? '' })
       : !forgeWritesEnabled
         ? sub(t.applyPanelSwitchOff, { switch: t.settingsForgeWritesLabel })
-        : isStale && !anyStepApplied
-          ? t.applyPanelStale
-          : null;
+        : null;
 
   const [confirmQueueRunning, setConfirmQueueRunning] = useState(false);
 
@@ -225,17 +224,34 @@ export function ApplyPanel({
 
   const hasNext = nextUndoneStep(progress.steps, progress.modal?.step ?? null) !== null;
   const planHeroById = useMemo(() => new Map((planHeroes ?? NO_HEROES).map((hero) => [hero.id, hero])), [planHeroes]);
+  const liveItemById = useMemo(() => liveItemsById(liveView), [liveView]);
   const nextStep = runningStep === null ? nextUndoneStep(progress.steps, null) : null;
   const doneCount = (['equip', 'forge', 'points'] as const).filter((step) => progress.steps[step].status === 'done').length;
   const stateLabel =
     doneCount === 0 ? t.applyPanelStateNone : doneCount === 3 ? t.applyPanelStateAll : sub(t.applyPanelStateSome, { done: doneCount, total: 3 });
 
+  const showBlocked = blocked && !anyStepApplied;
+
   return (
     <div
       data-testid="apply-panel"
       data-account-source={accountSource ?? undefined}
-      className="flex flex-col gap-3 rounded-sm border border-[color-mix(in_oklch,var(--accent)_50%,var(--line))] bg-surface px-4 py-3.5"
+      data-blocked={showBlocked ? 'true' : undefined}
+      className="relative flex flex-col gap-3 rounded-sm border border-[color-mix(in_oklch,var(--accent)_50%,var(--line))] bg-surface px-4 py-3.5"
     >
+      {showBlocked ? (
+        <div
+          data-testid="apply-panel-blocked"
+          role="status"
+          className="absolute inset-0 z-10 flex items-center justify-center rounded-sm bg-[color-mix(in_oklch,var(--surface)_82%,transparent)] p-6 backdrop-blur-[2px]"
+        >
+          <div className="flex max-w-md flex-col items-center gap-2 text-center">
+            <Icon name="exclamation-triangle" className="size-6 text-warn" />
+            <h3 className="m-0 text-sm font-semibold text-ink">{t.applyPanelBlockedTitle}</h3>
+            <p className="m-0 text-[13px] text-muted">{t.applyPanelBlockedBody}</p>
+          </div>
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
         <h2 className="m-0 flex items-center gap-2.5 text-[13px] font-bold tracking-wide text-ink uppercase">
           {t.applyPanelTitle}
@@ -326,6 +342,7 @@ export function ApplyPanel({
 
       <ApplyModal
         heroById={planHeroById}
+        itemById={liveItemById}
         modal={progress.modal}
         queuePaused={progress.queuePausedByApply}
         onStop={applyActions.stop}
