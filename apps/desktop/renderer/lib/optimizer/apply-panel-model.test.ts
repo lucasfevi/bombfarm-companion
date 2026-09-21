@@ -362,18 +362,23 @@ describe('nextUndoneStep', () => {
     forge: { status: 'idle' },
   };
 
-  it('picks points first when nothing has run yet', () => {
-    expect(nextUndoneStep(allIdle, null)).toBe('points');
+  it('picks equip first when nothing has run yet — the order the rows are drawn in', () => {
+    expect(nextUndoneStep(allIdle, null)).toBe('equip');
   });
 
-  it('skips a done step and picks the next undone one — equip, once points is done', () => {
-    const pointsDone = { ...allIdle, points: { status: 'done' } };
-    expect(nextUndoneStep(pointsDone, null)).toBe('equip');
+  it('skips a done step and picks the next undone one — forge, once equip is done', () => {
+    const equipDone = { ...allIdle, equip: { status: 'done' } };
+    expect(nextUndoneStep(equipDone, null)).toBe('forge');
   });
 
   it('the forge key counts as undone while idle', () => {
     const onlyForgeLeft = { equip: { status: 'done' }, points: { status: 'done' }, forge: { status: 'idle' } };
     expect(nextUndoneStep(onlyForgeLeft, null)).toBe('forge');
+  });
+
+  it('points comes last, once equip and forge are done', () => {
+    const onlyPointsLeft = { equip: { status: 'done' }, points: { status: 'idle' }, forge: { status: 'done' } };
+    expect(nextUndoneStep(onlyPointsLeft, null)).toBe('points');
   });
 
   it('returns null once every step is done', () => {

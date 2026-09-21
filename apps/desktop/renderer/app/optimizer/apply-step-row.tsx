@@ -6,7 +6,7 @@
  * are the mount contract between the two items; nothing here may drift from them.
  */
 import { useState, type ReactNode } from 'react';
-import { Button } from '@bombfarm/ui';
+import { Button, cn } from '@bombfarm/ui';
 import { sub, subNodes, useLocale, type Copy } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
 import {
@@ -33,6 +33,9 @@ export type ApplyStepRowProps = {
   readonly notes?: readonly ReactNode[];
   readonly action: ApplyStepRowAction;
   readonly testId: string;
+  /** The step the panel expects to be pressed next — its number is ringed in the accent and its
+   *  press is the primary button; every other row's press is plain. */
+  readonly next?: boolean;
 };
 
 function stateOf(action: ApplyStepRowAction): 'ready' | 'done' | 'nothing' {
@@ -41,21 +44,46 @@ function stateOf(action: ApplyStepRowAction): 'ready' | 'done' | 'nothing' {
   return 'nothing';
 }
 
+function StepNumber({ index, state, next }: { index: 1 | 2 | 3; state: 'ready' | 'done' | 'nothing'; next: boolean }) {
+  const done = state === 'done';
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        'flex',
+        'size-7',
+        'shrink-0',
+        'items-center',
+        'justify-center',
+        'rounded-full',
+        'border',
+        'font-mono',
+        'text-[13px]',
+        'font-bold',
+        done ? 'border-up' : next ? 'border-accent' : 'border-line',
+        done ? 'bg-up' : null,
+        done ? 'text-accent-ink' : next ? 'text-accent' : 'text-muted',
+      )}
+    >
+      {done ? '\u2713' : index}
+    </span>
+  );
+}
+
 /** The shared shell — exactly the contract's props and test ids. Another feature's forge row
  *  composes over this same component. */
-export function ApplyStepRow({ index, title, facts, notes, action, testId }: ApplyStepRowProps) {
+export function ApplyStepRow({ index, title, facts, notes, action, testId, next = false }: ApplyStepRowProps) {
+  const state = stateOf(action);
   return (
     <div
       data-testid={testId}
-      data-state={stateOf(action)}
-      className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 border-b border-line py-3 last:border-b-0"
+      data-state={state}
+      className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3.5 gap-y-1 border-t border-line py-3 first:border-t-0"
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <h3 className="m-0 text-sm font-semibold text-ink">
-          <span className="mr-1.5 text-muted">{index}.</span>
-          {title}
-        </h3>
-        <p data-testid={`${testId}-facts`} className="m-0 text-[13px] text-muted">
+      <StepNumber index={index} state={state} next={next} />
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <h3 className="m-0 text-sm font-semibold text-ink">{title}</h3>
+        <p data-testid={`${testId}-facts`} className="m-0 text-[12px] text-muted [&_strong]:font-medium [&_strong]:text-ink">
           {facts}
         </p>
         {'label' in action && action.reason !== undefined ? (
@@ -69,13 +97,19 @@ export function ApplyStepRow({ index, title, facts, notes, action, testId }: App
           </p>
         ))}
       </div>
-      <div className="shrink-0">
+      <div className="shrink-0 justify-self-end">
         {'label' in action ? (
-          <Button type="button" variant="primary" data-testid={`${testId}-press`} disabled={action.disabled} onClick={action.onPress}>
+          <Button
+            type="button"
+            variant={next ? 'primary' : 'default'}
+            data-testid={`${testId}-press`}
+            disabled={action.disabled}
+            onClick={action.onPress}
+          >
             {action.label}
           </Button>
         ) : (
-          <p data-testid={`${testId}-done`} className="m-0 text-[13px] text-ink">
+          <p data-testid={`${testId}-done`} className={cn('m-0', 'text-[13px]', state === 'done' ? 'text-up' : 'text-muted')}>
             {'done' in action ? action.done : action.nothing}
           </p>
         )}
@@ -235,19 +269,51 @@ function buildRowAction(
   return { action: { label: readyLabel, onPress, disabled: false }, notes };
 }
 
-type RowPublicProps = Omit<RowShared, 'step' | 'onShow' | 'showSkips'>;
+type RowPublicProps = Omit<RowShared, 'step' | 'onShow' | 'showSkips'> & { readonly next?: boolean };
 
-export function ApplyEquipRow({ t, facts, gate, record, otherStepTitle, onPress }: RowPublicProps) {
+function strong(value: ReactNode): ReactNode {
+  return <strong>{value}</strong>;
+}
+
+/** What the equip step's units add up to — pieces put on, pieces sent back to the bag, and the
+ *  heroes any of them touch — read off the labels the step already carries. */
+export function equipFactCounts(units: readonly ApplyUnitLabel[]): { putOn: number; toBag: number; heroes: number } {
+  const heroes = new Set<string>();
+  let putOn = 0;
+  let toBag = 0;
+  for (const unit of units) {
+    if (unit.call === 'equip') {
+      putOn += 1;
+      if (unit.to !== null) heroes.add(unit.to);
+    } else if (unit.call === 'unequip') {
+      toBag += 1;
+      if (unit.from !== null) heroes.add(unit.from);
+    }
+  }
+  return { putOn, toBag, heroes: heroes.size };
+}
+
+export function ApplyEquipRow({ t, facts, gate, record, otherStepTitle, onPress, next = false }: RowPublicProps) {
   const [showSkips, setShowSkips] = useState(false);
   const testId = 'apply-step-equip';
+  const counts = facts.kind === 'units' ? equipFactCounts(facts.units) : null;
   const factsLine =
-    facts.kind === 'nothing' ? t.applyStepNothing : sub(t.applyStepEquipFacts, { calls: facts.calls, time: formatClock(facts.aboutMs) });
+    facts.kind === 'nothing' || counts === null
+      ? t.applyStepNothing
+      : subNodes(t.applyStepEquipFacts, {
+          calls: strong(sub(t.applyStepCalls, { n: facts.calls })),
+          heroes: counts.heroes,
+          puton: counts.putOn,
+          tobag: counts.toBag,
+          time: strong(formatClock(facts.aboutMs)),
+          gold: <strong className="!text-up">{t.applyLedgerFree}</strong>,
+        });
   const { action, notes } = buildRowAction(
     { t, step: 'equip', facts, gate, record, otherStepTitle, onPress, onShow: () => { setShowSkips((v) => !v); }, showSkips },
     t.applyStepEquipTitle,
     [],
   );
-  return <ApplyStepRow index={1} title={t.applyStepEquipTitle} facts={factsLine} notes={notes} action={action} testId={testId} />;
+  return <ApplyStepRow index={1} title={t.applyStepEquipTitle} facts={factsLine} notes={notes} action={action} testId={testId} next={next} />;
 }
 
 export function ApplyPointsRow({
@@ -258,6 +324,7 @@ export function ApplyPointsRow({
   otherStepTitle,
   onPress,
   walletShort,
+  next = false,
 }: RowPublicProps & { readonly walletShort: readonly WalletShortHero[] }) {
   const [showSkips, setShowSkips] = useState(false);
   const { locale } = useLocale();
@@ -266,11 +333,11 @@ export function ApplyPointsRow({
     facts.kind === 'nothing'
       ? t.applyStepNothing
       : subNodes(t.applyStepPointsFacts, {
-          heroes: facts.heroes,
+          heroes: strong(sub(t.applyStepHeroes, { n: facts.heroes })),
           respecs: facts.respecs,
           calls: facts.calls,
-          time: formatClock(facts.aboutMs),
-          gold: <ForgeGold>{formatCount(facts.gold, locale)}</ForgeGold>,
+          time: strong(formatClock(facts.aboutMs)),
+          gold: strong(<ForgeGold>{formatCount(facts.gold, locale)}</ForgeGold>),
         });
   const walletNotes = walletShort.map((hero) =>
     sub(t.applyStepWalletShort, { hero: hero.name, needed: formatCount(hero.needed, locale), onhand: formatCount(hero.onHand, locale) }),
@@ -280,5 +347,5 @@ export function ApplyPointsRow({
     t.applyStepPointsTitle,
     walletNotes,
   );
-  return <ApplyStepRow index={3} title={t.applyStepPointsTitle} facts={factsLine} notes={notes} action={action} testId={testId} />;
+  return <ApplyStepRow index={3} title={t.applyStepPointsTitle} facts={factsLine} notes={notes} action={action} testId={testId} next={next} />;
 }

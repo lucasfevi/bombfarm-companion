@@ -7,13 +7,14 @@
  * queue's own pricing here keeps this row and the queue's own Start confirm agreeing on the same
  * pieces.
  */
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { sub, subNodes, useCopy, useLocale, type Copy } from '../../lib/copy';
 import { formatCount } from '../../lib/format';
 import { addManyToForgeQueue } from '../../lib/forge/forge-queue-store';
 import { bagUpgrades, forgeQueueExpectedGold, resolveForgeQueue } from '../../lib/forge/forge-queue-view';
 import { planForgeQueueBatch, type ForgeQueueBatch } from '../../lib/forge/forge-queue-batch';
 import type { StepRecord } from '../../lib/optimizer/apply-progress-reducer';
+import { applyActions, useApplyProgress } from '../../lib/optimizer/apply-store';
 import { ForgeGold } from '../forge/forge-gold';
 import { ApplyStepRow, type ApplyStepRowAction } from './apply-step-row';
 import { ApplyForgeConfirm } from './apply-confirms';
@@ -42,10 +43,18 @@ function forgeSkipReasons(batch: ForgeQueueBatch, t: Copy): string {
   return parts.join(', ');
 }
 
-export function ApplyForgeRow({ forgeList, queue, gear, gate, record, onDone }: ApplyForgeRowProps) {
+export function ApplyForgeRow({ forgeList, queue, gear, gate, record, onDone, next = false }: ApplyForgeRowProps) {
   const t = useCopy();
   const { locale } = useLocale();
   const [open, setOpen] = useState(false);
+  // "Continue to next step" from another step's window lands here as the store's `confirming`;
+  // the confirm is this row's own, so the store's mark is taken and cleared in one move.
+  const confirming = useApplyProgress().confirming;
+  useEffect(() => {
+    if (confirming !== 'forge') return;
+    setOpen(true);
+    applyActions.cancelConfirm();
+  }, [confirming]);
   const testId = 'apply-step-forge';
 
   const batch = useMemo(
@@ -97,12 +106,12 @@ export function ApplyForgeRow({ forgeList, queue, gear, gate, record, onDone }: 
         : state.kind === 'done'
           ? { done: sub(t.applyStepDoneForge, { count: state.count }) }
           : gate !== null
-            ? { label: t.applyStepForgeTitle, onPress: openConfirm, disabled: true, reason: gate.reason }
-            : { label: t.applyStepForgeTitle, onPress: openConfirm, disabled: false };
+            ? { label: sub(t.applyConfirmForge, { count: batch.adding }), onPress: openConfirm, disabled: true, reason: gate.reason }
+            : { label: sub(t.applyConfirmForge, { count: batch.adding }), onPress: openConfirm, disabled: false };
 
   return (
     <>
-      <ApplyStepRow index={2} title={t.applyStepForgeTitle} facts={factsLine} notes={notes} action={action} testId={testId} />
+      <ApplyStepRow index={2} title={t.applyStepForgeTitle} facts={factsLine} notes={notes} action={action} testId={testId} next={next} />
       <ApplyForgeConfirm
         open={open}
         count={batch.adding}

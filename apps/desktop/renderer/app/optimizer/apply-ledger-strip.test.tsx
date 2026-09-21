@@ -35,11 +35,15 @@ describe('ApplyLedgerStrip', () => {
   });
 
   it('reads "can run over" when the forge list is priced, "no estimate" when it is not', () => {
-    expect(render(BASE_LEDGER)).toContain(en.applyLedgerForge);
+    const priced = render(BASE_LEDGER);
+    expect(priced).toContain(en.applyLedgerForge);
+    expect(priced).toContain(en.applyLedgerForgeExpected);
+    expect(priced).not.toContain(en.applyLedgerForgeNone);
     const unpriced: ApplyLedger = { ...BASE_LEDGER, forge: { pieces: 2, goldExpected: null } };
     const html = render(unpriced);
+    expect(html).toContain(en.applyLedgerForge);
     expect(html).toContain(en.applyLedgerForgeNone);
-    expect(html).not.toContain(en.applyLedgerForge);
+    expect(html).not.toContain(en.applyLedgerForgeExpected);
   });
 
   it('prints the wallet before then after', () => {

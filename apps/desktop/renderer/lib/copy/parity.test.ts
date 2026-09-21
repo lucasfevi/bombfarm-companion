@@ -57,9 +57,8 @@ import { ptBR } from './pt-BR';
 // slash — no words in either.
 // applySkipCounted: "{n} {reason}" — two placeholders and a space, joining a count with an
 // already-localised reason phrase; no words of its own, the inventoryDetailSetSlot precedent.
-// applyLedgerWallet / applyModalCallEquip: two placeholders around an arrow, and three around two
-// arrows — no words in either, the same inventoryDetailSetSlot precedent.
-// applyLedgerTotal: "Total" is the same word, spelled the same way, in both languages.
+// applyModalCallEquip: three placeholders around two arrows — no words, the same
+// inventoryDetailSetSlot precedent.
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'ageShortSeconds',
   'liveMapXpPerPropLabel',
@@ -97,9 +96,7 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof en)[] = [
   'feedsRefreshAllStep',
   'feedsCycleMinutes',
   'applySkipCounted',
-  'applyLedgerWallet',
   'applyModalCallEquip',
-  'applyLedgerTotal',
 ];
 
 function placeholderSet(value: string): Set<string> {

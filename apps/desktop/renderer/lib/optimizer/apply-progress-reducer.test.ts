@@ -169,7 +169,7 @@ describe('stopping and closing', () => {
     };
     const next = applyProgressReducer(state, { kind: 'continueNext' });
     expect(next.modal).toBeNull();
-    expect(next.confirming).toBe('points');
+    expect(next.confirming).toBe('forge');
 
     const allDone: ApplyProgressState = {
       ...state,

@@ -13,6 +13,7 @@ import { derivePointsUnits, deriveEquipUnits } from '@bombfarm/domain/team-plan'
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { TeamPlan, ForgeAction } from '@bombfarm/domain/team-plan/types';
 import type { InventoryViewItem } from '@bombfarm/domain/inventory-view';
+import { cn } from '@bombfarm/ui';
 import { sub, useCopy, useLocale } from '../../lib/copy';
 import { useAccountView } from '../../lib/account/use-account-view';
 import { useForgeQueue } from '../../lib/forge/forge-queue-store';
@@ -44,6 +45,8 @@ export type ApplyForgeRowProps = {
   readonly gate: null | { readonly reason: string };
   readonly record: StepRecord | undefined;
   readonly onDone: (result: { made: number; skipped: number }) => void;
+  /** True when the panel expects this row to be pressed next — see `ApplyStepRowProps.next`. */
+  readonly next?: boolean;
 };
 
 /** The pending units, verbatim — a plain filter over the domain's own derived units, so the
@@ -207,16 +210,39 @@ export function ApplyPanel({
   }
 
   const hasNext = nextUndoneStep(progress.steps, progress.modal?.step ?? null) !== null;
+  const nextStep = runningStep === null ? nextUndoneStep(progress.steps, null) : null;
+  const doneCount = (['equip', 'forge', 'points'] as const).filter((step) => progress.steps[step].status === 'done').length;
+  const stateLabel =
+    doneCount === 0 ? t.applyPanelStateNone : doneCount === 3 ? t.applyPanelStateAll : sub(t.applyPanelStateSome, { done: doneCount, total: 3 });
 
   return (
     <div
       data-testid="apply-panel"
       data-account-source={accountSource ?? undefined}
-      className="flex flex-col gap-3 border-t border-line pt-3"
+      className="flex flex-col gap-3 rounded-sm border border-[color-mix(in_oklch,var(--accent)_50%,var(--line))] bg-surface px-4 py-3.5"
     >
-      <div>
-        <h2 className="m-0 text-sm font-bold tracking-wide text-ink uppercase">{t.applyPanelTitle}</h2>
-        <p className="m-0 mt-1 text-[13px] text-muted">{t.applyPanelIntro}</p>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <h2 className="m-0 flex items-center gap-2.5 text-[13px] font-bold tracking-wide text-ink uppercase">
+          {t.applyPanelTitle}
+          <span
+            data-testid="apply-panel-state"
+            className={cn(
+              'rounded-full',
+              'border',
+              'px-2',
+              'py-0.5',
+              'text-[11px]',
+              'font-semibold',
+              'tracking-normal',
+              'normal-case',
+              doneCount === 0 ? 'border-accent/60' : 'border-up/60',
+              doneCount === 0 ? 'text-accent' : 'text-up',
+            )}
+          >
+            {stateLabel}
+          </span>
+        </h2>
+        <p className="m-0 text-[12px] text-muted">{t.applyPanelIntro}</p>
       </div>
 
       {banner !== null ? (
@@ -235,6 +261,7 @@ export function ApplyPanel({
           record={progress.steps.equip}
           otherStepTitle={otherStepTitle}
           onPress={openEquipConfirm}
+          next={nextStep === 'equip'}
         />
 
         {forgeRow !== undefined
@@ -247,6 +274,7 @@ export function ApplyPanel({
               gate: forgeGate,
               record: progress.steps.forge,
               onDone: applyActions.forgeDone,
+              next: nextStep === 'forge',
             })
           : null}
 
@@ -258,6 +286,7 @@ export function ApplyPanel({
           otherStepTitle={otherStepTitle}
           onPress={openPointsConfirm}
           walletShort={walletShort}
+          next={nextStep === 'points'}
         />
       </div>
 

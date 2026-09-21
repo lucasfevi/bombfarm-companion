@@ -349,7 +349,7 @@ export function stepGate(
   return facts.done.length === facts.units.length ? { enabled: false, reason: 'allDone' } : { enabled: false, reason: 'nothingLeft' };
 }
 
-const UNDONE_ORDER: readonly ApplyStepId[] = ['points', 'equip', 'forge'];
+const UNDONE_ORDER: readonly ApplyStepId[] = ['equip', 'forge', 'points'];
 
 /** The next step of this run whose record is still `idle` (the `'forge'` key counts as undone
  *  while `idle` too), scanning a fixed priority and skipping the step just finished. `null` when
