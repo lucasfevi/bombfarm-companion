@@ -85,7 +85,12 @@ export type LiveArrival =
 function sameFreshness(a: LiveFreshness, b: LiveFreshness): boolean {
   if (a.kind !== b.kind) return false;
   if (a.kind !== 'gap' || b.kind !== 'gap') return true;
-  return a.reason === b.reason && a.actionable === b.actionable && a.likelyQuarantine === b.likelyQuarantine;
+  return (
+    a.reason === b.reason &&
+    a.actionable === b.actionable &&
+    a.likelyQuarantine === b.likelyQuarantine &&
+    a.detail === b.detail
+  );
 }
 
 function sameIdList(a: readonly string[], b: readonly string[]): boolean {

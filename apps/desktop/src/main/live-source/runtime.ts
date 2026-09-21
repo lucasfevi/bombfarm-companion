@@ -68,6 +68,10 @@ export type RuntimeResolution = RuntimeResolved | RuntimeUnavailable;
 export interface RuntimePortDeps {
   readonly resolve?: RuntimeResolver;
   readonly log?: LogPort;
+  /** Runs once, before the first resolution — the native module resolves its temp folder on its
+   *  first attach and keeps that answer for the life of the process, so anything that must be in
+   *  place for it has to happen here and not after. A throw here is the resolution's failure. */
+  readonly beforeFirstResolve?: () => void;
 }
 
 /**
@@ -79,15 +83,20 @@ export interface RuntimePortDeps {
 export class RuntimePort {
   readonly #resolve: RuntimeResolver;
   readonly #log: LogPort;
+  #beforeFirstResolve: (() => void) | undefined;
   #everResolved = false;
 
   constructor(deps: RuntimePortDeps = {}) {
     this.#log = deps.log ?? NOOP_LOG_PORT;
     this.#resolve = deps.resolve ?? (() => importRuntime({ log: this.#log }));
+    this.#beforeFirstResolve = deps.beforeFirstResolve;
   }
 
   async resolve(): Promise<RuntimeResolution> {
     try {
+      const prepare = this.#beforeFirstResolve;
+      this.#beforeFirstResolve = undefined;
+      prepare?.();
       const runtime = await this.#resolve();
       this.#everResolved = true;
       return { kind: 'ok', runtime };

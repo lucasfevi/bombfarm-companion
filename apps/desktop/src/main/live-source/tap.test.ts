@@ -549,7 +549,12 @@ describe('Tap: a throwing attach or install does not kill the poll loop', () => 
     tap.start();
     await clock.advance(0);
 
-    expect(tap.getCurrency()).toMatchObject({ kind: 'gap', reason: 'attachFailed', actionable: true });
+    expect(tap.getCurrency()).toMatchObject({
+      kind: 'gap',
+      reason: 'attachFailed',
+      actionable: true,
+      detail: 'attach: access is denied',
+    });
     expect(throwingRuntime.attachCalls).toBe(1);
 
     await clock.advance(1_000);
@@ -558,6 +563,31 @@ describe('Tap: a throwing attach or install does not kill the poll loop', () => 
 
     expect(throwingRuntime.attachCalls).toBeGreaterThan(1);
     expect(tap.getCurrency()).toMatchObject({ kind: 'gap', reason: 'attachFailed' });
+  });
+
+  it('emits the gap again when the same attachFailed comes back with a different detail, and not otherwise', async () => {
+    let message = 'attach: access is denied';
+    const runtime: TapRuntime = { attach: () => Promise.reject(new Error(message)) };
+    const { tap, clock, processes, candidates, events } = createHarness({
+      resolveRuntime: () => Promise.resolve(runtime),
+    });
+    processes.processes = [{ pid: 4_003, name: PROCESS_NAME }];
+    candidates.resolveResult = { addresses: [0x1000], fromCache: false, buildId: null };
+
+    tap.start();
+    await clock.advance(0);
+    await clock.advance(1_000);
+    const attachFailedEvents = () =>
+      events.filter(
+        (event) => event.type === 'currency' && event.currency.kind === 'gap' && event.currency.reason === 'attachFailed',
+      );
+    expect(attachFailedEvents()).toHaveLength(1);
+
+    message = 'Error creating directory C:\\tmp\\frida-1: Permission denied';
+    await clock.advance(1_000);
+
+    expect(attachFailedEvents()).toHaveLength(2);
+    expect(tap.getCurrency()).toMatchObject({ kind: 'gap', reason: 'attachFailed', detail: message });
   });
 
   it('reports attachFailed, detaches the session, and keeps polling when installInterceptor throws', async () => {
@@ -592,7 +622,12 @@ describe('Tap: a throwing attach or install does not kill the poll loop', () => 
     tap.start();
     await clock.advance(0);
 
-    expect(tap.getCurrency()).toMatchObject({ kind: 'gap', reason: 'attachFailed', actionable: true });
+    expect(tap.getCurrency()).toMatchObject({
+      kind: 'gap',
+      reason: 'attachFailed',
+      actionable: true,
+      detail: 'installInterceptor: address out of range',
+    });
     expect(sessions).toHaveLength(1);
     expect(sessions[0]?.detachCount).toBeGreaterThan(0);
 

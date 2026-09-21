@@ -14,12 +14,16 @@ export function NeverReadEmptyState({
 }) {
   const t = useCopy();
 
-  const description =
+  const reasonText =
     freshness.kind === 'live'
       ? t.liveNeverReadAccountPendingDescription
       : freshness.reason === 'runtimeUnavailable' && freshness.likelyQuarantine
         ? t.liveGapReasonRuntimeUnavailableQuarantine
         : t[LIVE_GAP_REASON_COPY_KEY[freshness.reason]];
+  const description =
+    freshness.kind === 'gap' && freshness.detail !== undefined
+      ? `${reasonText} ${t.liveGapDetailLabel}: ${freshness.detail}`
+      : reasonText;
 
   const offerReopenConsent = freshness.kind === 'gap' && freshness.reason === 'consentMissing' && onReopenConsent;
   // consentMissing is stalled on the player, not on the app — every other reached state is

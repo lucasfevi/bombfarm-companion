@@ -237,6 +237,7 @@ export const ptBR: Copy = {
   liveGapReasonRuntimeUnavailableQuarantine:
     'Um antivírus provavelmente bloqueou a parte do app que lê o jogo. Ele continua tentando por conta própria.',
   liveGapReasonConsentMissing: 'Você ainda não permitiu que o app leia sua conta e se conecte ao jogo.',
+  liveGapDetailLabel: 'Último erro',
 
   liveHeroesTitle: 'Heróis',
   liveListOnFieldTitle: 'Campo',

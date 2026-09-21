@@ -33,6 +33,20 @@ describe('FreshnessLine — one status line stating live or not, and why', () =>
     const html = render({ kind: 'gap', reason: 'runtimeUnavailable', actionable: false, sinceAt: 't' });
     expect(html).toContain(en.liveGapReasonRuntimeUnavailable);
   });
+
+  it('prints the runtime’s own error under an attachFailed gap, verbatim, so it can be read off the screen', () => {
+    const detail = 'Error creating directory C:\\PROGRA~1\\Elsewhere\\temp\\frida-1: Permission denied';
+    const html = render({ kind: 'gap', reason: 'attachFailed', actionable: true, sinceAt: 't', detail });
+    expect(html).toContain('data-testid="live-freshness-detail"');
+    expect(html).toContain(en.liveGapDetailLabel);
+    expect(html).toContain('Elsewhere\\temp\\frida-1: Permission denied');
+  });
+
+  it('prints no error line when the gap carries no detail', () => {
+    const html = render({ kind: 'gap', reason: 'attachFailed', actionable: true, sinceAt: 't' });
+    expect(html).not.toContain('data-testid="live-freshness-detail"');
+    expect(html).not.toContain(en.liveGapDetailLabel);
+  });
 });
 
 describe('FreshnessLine — no action that cannot help', () => {
