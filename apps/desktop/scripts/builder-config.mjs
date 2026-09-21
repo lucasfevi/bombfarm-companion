@@ -72,8 +72,11 @@ export function createBuilderConfig(flavor) {
     // a `.node` file from inside app.asar, and the `bindings` package's own path search would not
     // find it there either. Unpacking the whole package (not just the `.node` file) keeps it and
     // its JS loader on the same real path electron-builder would otherwise split across the asar
-    // boundary.
-    asarUnpack: ['**/node_modules/frida/**/*'],
+    // boundary. The icon is unpacked because Electron loads a `.ico` from inside the archive by
+    // copying it to the system temp folder first, and a machine whose temp folder is not writable
+    // then gets an empty image and no tray; the main process resolves it through
+    // `app.asar.unpacked` (see `src/main/shell/app-icon-path.ts`).
+    asarUnpack: ['**/node_modules/frida/**/*', 'assets/icon.ico'],
     extraMetadata,
     artifactName: '${name}-${version}-setup.${ext}',
     publish,
