@@ -32,30 +32,21 @@ function LedgerMark({ status }: { status: UnitStatus }) {
   );
 }
 
-/** "respec, then 45 points" / "place 45 points" — the call's own words, before the stat-by-stat
- *  placement that gets its own column beside it. */
-export function pointsLeadText(unit: ApplyUnitLabel, t: Copy): string {
-  return unit.call === 'respec'
-    ? sub(t.applyModalLineRespec, { points: unit.points ?? 0 })
-    : sub(t.applyModalLineCommit, { points: unit.points ?? 0 });
-}
-
 /** "from Bellatrix" / "from Inventory" — where an equip or unequip call's piece came from. */
 export function equipOriginText(unit: ApplyUnitLabel, t: Copy): string {
   return sub(t.applyModalFrom, { from: unit.from ?? t.applyModalInventory });
 }
 
-const POINTS_GRID = 'grid-cols-[16px_9rem_10.5rem_minmax(0,1fr)]';
+const POINTS_GRID = 'grid-cols-[16px_10rem_minmax(0,1fr)]';
 const EQUIP_GRID = 'grid-cols-[16px_11rem_1.25rem_minmax(0,1fr)]';
 
-function PointsRowBody({ unit, status, hero, t, lang }: { unit: ApplyUnitLabel; status: UnitStatus; hero: HeroRecord | undefined; t: Copy; lang: DomainLang }) {
+function PointsRowBody({ unit, hero, lang }: { unit: ApplyUnitLabel; hero: HeroRecord | undefined; lang: DomainLang }) {
   const alloc = unit.alloc ?? [];
   return (
     <>
       <span className="min-w-0 self-center">
         <HeroIdentityChip hero={hero} fallbackName={unit.subject} lang={lang} />
       </span>
-      <span className={cn('self-center', 'leading-snug', status === 'next' ? 'text-muted' : 'text-ink')}>{pointsLeadText(unit, t)}</span>
       <span className="flex min-w-0 flex-wrap items-center gap-1 self-center">
         {alloc.map((entry, index) => (
           <span key={`${entry.stat}-${String(index)}`} className="inline-flex items-center gap-1 rounded-sm bg-bg-2 px-1.5 py-0.5 text-[11px] leading-none">
@@ -130,7 +121,7 @@ export const ApplyModalLedgerLine = memo(function ApplyModalLedgerLine({
     >
       <LedgerMark status={status} />
       {pointsUnit ? (
-        <PointsRowBody unit={unit} status={status} hero={hero} t={t} lang={lang} />
+        <PointsRowBody unit={unit} hero={hero} lang={lang} />
       ) : (
         <EquipRowBody unit={unit} status={status} hero={hero} item={item} t={t} lang={lang} />
       )}

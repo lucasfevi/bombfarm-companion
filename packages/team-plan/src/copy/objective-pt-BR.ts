@@ -17,14 +17,8 @@ export const teamPlanObjectivePairsPtBR: TeamPlanObjectivePairsCopy = {
     'Monta um plano para os heróis marcados como Otimizar, com as mudanças que você permitir abaixo — pontuado pelo DPS de roster combinado.',
   teamPlanSetupSectionBodyFarm:
     'Monta um plano para os heróis marcados como Otimizar, com as mudanças que você permitir abaixo — pontuado pelo ouro por hora que o esquadrão rende.',
-  teamPlanRunSummaryRegimeHintSaturatedDps:
-    'Há mais demanda de campo do que slots de batalha — o DPS do roster é dividido entre quem pode lutar ao mesmo tempo.',
-  teamPlanRunSummaryRegimeHintSaturatedFarm:
-    'Há mais demanda de campo do que slots de batalha — o ganho por hora do esquadrão é dividido entre quem pode lutar ao mesmo tempo.',
   teamPlanTotalGainValueDps: '{delta} dps ({pct}%)',
   teamPlanTotalGainValueFarm: '{delta} ouro/h ({pct}%)',
-  teamPlanResultsHeaderDps: 'Melhor DPS de roster encontrado por esta busca',
-  teamPlanResultsHeaderFarm: 'Melhor ouro por hora encontrado por esta busca',
   teamPlanGearDipNoteDps:
     'Temporariamente atrás em {delta} dps — o passo Resetar pontos leva além de hoje.',
   teamPlanGearDipNoteFarm:

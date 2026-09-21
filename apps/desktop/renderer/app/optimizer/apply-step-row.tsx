@@ -108,9 +108,13 @@ export function ApplyStepRow({ index, title, facts, notes, action, testId, next 
           >
             {action.label}
           </Button>
+        ) : 'done' in action ? (
+          <span data-testid={`${testId}-done`} className="sr-only">
+            {action.done}
+          </span>
         ) : (
-          <p data-testid={`${testId}-done`} className={cn('m-0', 'text-[13px]', state === 'done' ? 'text-up' : 'text-muted')}>
-            {'done' in action ? action.done : action.nothing}
+          <p data-testid={`${testId}-done`} className="m-0 text-[13px] text-muted">
+            {action.nothing}
           </p>
         )}
       </div>

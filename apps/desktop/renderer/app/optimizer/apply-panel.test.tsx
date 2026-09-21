@@ -104,7 +104,6 @@ describe('ApplyPanel — composition', () => {
     const html = panel();
     expect(html).toContain('data-testid="apply-panel"');
     expect(html).toContain(en.applyPanelTitle);
-    expect(html).toContain(en.applyPanelIntro);
     expect(html).toContain('data-testid="apply-ledger"');
     const equipAt = html.indexOf('data-testid="apply-step-equip"');
     const pointsAt = html.indexOf('data-testid="apply-step-points"');

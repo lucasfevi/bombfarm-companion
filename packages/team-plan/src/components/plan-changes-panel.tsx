@@ -1,19 +1,14 @@
 'use client';
 
 /**
- * What changed since the plan was computed, as a ledger: one row per change with its subject,
- * what moved, before → now, and whether the plan cares. Folded by default — the title and a
- * one-line count of what changed, by group, are all that show; opening it reveals the table. The
- * "Progress on this plan" group opens its own fold inside the table, closed by default, since it
- * is usually the largest group and the least urgent to read.
- *
- * Three verdicts, three groups. "Changes the plan" is the reason to build again. "Progress on
- * this plan" is a step the plan itself asked for, taken — the plan is partly done, not stale.
- * "Not counted" is the field rotation the reader may have noticed and wondered about; it is
- * one line, never a table row.
+ * What broke the plan since it was computed: a hero it placed, or a piece it used, is gone.
+ * Folded by default — the title and a one-line count are all that show; opening it reveals the
+ * table. Everything the plan expected, made progress on, or does not care about is not this
+ * panel's business: the plan is still good until something it depended on disappears, so a host
+ * only ever mounts this panel once there is a breaking row to show.
  */
-import { useMemo, useState } from 'react';
-import { Button, Collapsible, Icon, cn, panelTitleClass } from '@bombfarm/ui';
+import { useMemo } from 'react';
+import { Button, Collapsible, cn, panelTitleClass } from '@bombfarm/ui';
 import { HeroIdentityChip, ItemIcon } from '@bombfarm/game-art';
 import { abilityName, itemName, itemRarityLabel } from '@bombfarm/domain/game-labels';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
@@ -199,33 +194,6 @@ export function wordPlanChange(entry: PlanChange, t: Copy, lang: Lang, heroNames
   }
 }
 
-/** The kinds of change folded into the "also changed" line, in the order they are said, each once. */
-function otherKinds(other: readonly PlanChange[], t: Copy): string[] {
-  const kindOf = (entry: PlanChange): string => {
-    switch (entry.detail.field) {
-      case 'points':
-      case 'pointsAvailable':
-        return t.teamPlanChangesKindPoints;
-      case 'ability':
-        return t.teamPlanChangesKindAbilities;
-      case 'forge':
-        return t.teamPlanChangesKindForge;
-      case 'equippedBy':
-        return t.teamPlanChangesKindGear;
-      case 'itemRemoved':
-        return t.teamPlanChangesKindBag;
-      case 'accountField':
-        return t.teamPlanChangesKindAccount;
-      case 'control':
-      case 'scope':
-        return t.teamPlanChangesKindSetup;
-      default:
-        return t.teamPlanChangesKindSheet;
-    }
-  };
-  return [...new Set(other.map(kindOf))];
-}
-
 const cellClass = 'px-2 py-1.5 align-middle text-[12px]';
 const headClass = 'px-2 pb-1 text-left text-[10px] font-semibold tracking-[0.06em] text-muted uppercase';
 const groupHeadClass = 'text-[10px] font-semibold tracking-[0.06em] text-muted uppercase';
@@ -256,33 +224,16 @@ function Subject({ entry, t, lang, heroes, items }: { entry: PlanChange; t: Copy
   return <span className="font-semibold text-ink">{subject.kind === 'account' ? t.teamPlanChangesSubjectAccount : t.teamPlanChangesSubjectSetup}</span>;
 }
 
-const VERDICT_TONE_CLASS = { breaks: 'text-down', plan: 'text-warn', progress: 'text-up' } as const;
+/** Every row this panel ever draws is a break — nothing else earns the down tone. */
+const VERDICT_TONE_CLASS = 'text-down';
 
-function Group({ title, rows, tone, t, lang, heroes, items, heroNames }: { title: string; rows: readonly PlanChange[]; tone: 'breaks' | 'plan' | 'progress'; t: Copy; lang: Lang; heroes: ReadonlyMap<string, HeroRecord>; items: ReadonlyMap<string, InventoryItem>; heroNames: ReadonlyMap<string, string> }) {
-  // Only "Progress on this plan" opens its own fold — it is usually the largest group and the
-  // one a reader needs least, since it is the plan's own steps taken rather than a surprise.
-  const [open, setOpen] = useState(false);
-  if (rows.length === 0) return null;
-  const verdict = tone === 'breaks' ? t.teamPlanChangesGroupBreaks : tone === 'plan' ? t.teamPlanChangesGroupPlan : t.teamPlanChangesGroupProgress;
-  const collapsible = tone === 'progress';
+function BreaksGroup({ rows, t, lang, heroes, items, heroNames }: { rows: readonly PlanChange[]; t: Copy; lang: Lang; heroes: ReadonlyMap<string, HeroRecord>; items: ReadonlyMap<string, InventoryItem>; heroNames: ReadonlyMap<string, string> }) {
+  const verdict = t.teamPlanChangesGroupBreaks;
   return (
     <>
       <tr>
         <td colSpan={4} className="px-2 pt-2.5 pb-0.5">
-          {collapsible ? (
-            <button
-              type="button"
-              onClick={() => setOpen((current) => !current)}
-              aria-expanded={open}
-              data-testid="team-plan-changes-progress-toggle"
-              className={cn(groupHeadClass, 'flex cursor-pointer items-center gap-1 hover:text-accent')}
-            >
-              <Icon name="chevron-down" className={cn('size-3 shrink-0 motion-safe:transition-transform motion-safe:duration-150', open ? 'rotate-180' : '')} />
-              {title} · {rows.length}
-            </button>
-          ) : (
-            <span className={groupHeadClass}>{title}</span>
-          )}
+          <span className={groupHeadClass}>{verdict}</span>
         </td>
       </tr>
       {rows.map((entry, index) => {
@@ -291,7 +242,6 @@ function Group({ title, rows, tone, t, lang, heroes, items, heroNames }: { title
         return (
           <tr
             key={index}
-            hidden={collapsible && !open}
             data-testid="team-plan-change"
             data-verdict={entry.verdict}
             data-field={entry.detail.field}
@@ -303,7 +253,7 @@ function Group({ title, rows, tone, t, lang, heroes, items, heroNames }: { title
             <td className={cn(cellClass, 'text-muted')}>
               {words.change}
               {words.note ? (
-                <span className={cn('ml-1.5', tone === 'progress' ? 'text-up' : 'text-muted')}>
+                <span className="ml-1.5 text-muted">
                   {' '}
                   ·{' '}
                   {words.note.kind === 'text' ? (
@@ -325,7 +275,7 @@ function Group({ title, rows, tone, t, lang, heroes, items, heroNames }: { title
                 <CellValue value={words.after} lang={lang} heroes={heroes} />
               </span>
             </td>
-            <td className={cn(cellClass, 'whitespace-nowrap text-[11px] font-semibold', VERDICT_TONE_CLASS[tone])}>{verdict}</td>
+            <td className={cn(cellClass, 'whitespace-nowrap text-[11px] font-semibold', VERDICT_TONE_CLASS)}>{verdict}</td>
           </tr>
         );
       })}
@@ -361,13 +311,9 @@ export function PlanChangesPanelBody({
   items: ReadonlyMap<string, InventoryItem>;
   heroNames: ReadonlyMap<string, string>;
 }) {
-  const rotated = ledger.noise.filter((entry) => entry.detail.field === 'fieldRotation').length;
-  const rotationLine = rotated === 0 ? null : rotated === 1 ? t.teamPlanChangesRotationOne : sub(t.teamPlanChangesRotationMany, { n: rotated });
-  const alsoLine = ledger.other.length === 0 ? null : sub(t.teamPlanChangesAlso, { kinds: otherKinds(ledger.other, t).join(', ') });
-
   return (
     <div data-testid="team-plan-changes-body" className="flex flex-col gap-2 pt-2.5">
-      {ledger.listed === 0 ? null : (
+      {ledger.breaks.length === 0 ? null : (
         <table className="w-full border-collapse">
           <thead>
             <tr>
@@ -378,22 +324,10 @@ export function PlanChangesPanelBody({
             </tr>
           </thead>
           <tbody>
-            <Group title={t.teamPlanChangesGroupBreaks} rows={ledger.breaks} tone="breaks" t={t} lang={lang} heroes={heroes} items={items} heroNames={heroNames} />
-            <Group title={t.teamPlanChangesGroupPlan} rows={ledger.plan} tone="plan" t={t} lang={lang} heroes={heroes} items={items} heroNames={heroNames} />
-            <Group title={t.teamPlanChangesGroupProgress} rows={ledger.progress} tone="progress" t={t} lang={lang} heroes={heroes} items={items} heroNames={heroNames} />
+            <BreaksGroup rows={ledger.breaks} t={t} lang={lang} heroes={heroes} items={items} heroNames={heroNames} />
           </tbody>
         </table>
       )}
-      {alsoLine ? (
-        <p data-testid="team-plan-changes-also" className="m-0 text-[12px] text-muted">
-          {alsoLine}
-        </p>
-      ) : null}
-      {rotationLine ? (
-        <p data-testid="team-plan-changes-rotation" className="m-0 text-[12px] text-muted">
-          <span className="font-semibold tracking-[0.04em] uppercase">{t.teamPlanChangesGroupNoise}</span> · {rotationLine}
-        </p>
-      ) : null}
     </div>
   );
 }
@@ -419,27 +353,17 @@ export function PlanChangesPanel({
 }) {
   const { heroes, items, heroNames } = useMemo(() => planChangesViewModel(basis, now), [basis, now]);
 
-  if (ledger.counted === 0) return null;
+  if (ledger.breaks.length === 0) return null;
 
-  const countLine = ledger.counted === 1 ? t.teamPlanChangesCountOne : sub(t.teamPlanChangesCountMany, { n: ledger.counted });
-  const breakdown = [
-    ledger.breaks.length > 0 ? sub(t.teamPlanChangesSummaryBreaks, { n: ledger.breaks.length }) : null,
-    ledger.plan.length > 0 ? sub(t.teamPlanChangesSummaryPlan, { n: ledger.plan.length }) : null,
-    ledger.progress.length > 0 ? sub(t.teamPlanChangesSummaryProgress, { n: ledger.progress.length }) : null,
-  ].filter((line): line is string => line !== null);
-  const summaryLine = [countLine, ...breakdown].join(' · ');
-  const breaking = ledger.breaks.length > 0;
+  const summaryLine = ledger.breaks.length === 1 ? t.teamPlanChangesCountOne : sub(t.teamPlanChangesCountMany, { n: ledger.breaks.length });
 
   return (
     <div
       role="status"
       data-testid="team-plan-changes"
       data-counted={ledger.counted}
-      data-breaks={breaking}
-      className={cn(
-        'rounded-sm border px-4 py-3',
-        breaking ? 'border-down/50 bg-[color-mix(in_oklch,var(--down)_7%,transparent)]' : 'border-warn/50 bg-[color-mix(in_oklch,var(--warn)_7%,transparent)]',
-      )}
+      data-breaks="true"
+      className="rounded-sm border border-down/50 bg-[color-mix(in_oklch,var(--down)_7%,transparent)] px-4 py-3"
     >
       <Collapsible.Root>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">

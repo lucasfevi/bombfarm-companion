@@ -7,7 +7,7 @@ import { CopyProvider, sub } from '../../lib/copy';
 import { en } from '../../lib/copy/en';
 import type { ApplyUnitLabel } from '../../lib/optimizer/apply-labels';
 import type { UnitStatus } from '../../lib/optimizer/apply-run-reducer';
-import { ApplyModalLedgerLine, equipOriginText, pointsLeadText } from './apply-modal-ledger';
+import { ApplyModalLedgerLine, equipOriginText } from './apply-modal-ledger';
 
 function wrap(node: React.ReactNode): string {
   return renderToStaticMarkup(createElement(CopyProvider, { locale: 'en', children: node }));
@@ -93,16 +93,6 @@ function renderLine(unit: ApplyUnitLabel, status: UnitStatus = 'ok', overrides: 
   return wrap(createElement(ApplyModalLedgerLine, { unit, status, hero: overrides.hero, item: overrides.item }));
 }
 
-describe('pointsLeadText', () => {
-  it('reads "respec, then N points" for a respec unit', () => {
-    expect(pointsLeadText(RESPEC_UNIT, en)).toBe(sub(en.applyModalLineRespec, { points: 173 }));
-  });
-
-  it('reads "place N points" for a commit unit', () => {
-    expect(pointsLeadText(COMMIT_UNIT, en)).toBe(sub(en.applyModalLineCommit, { points: 147 }));
-  });
-});
-
 describe('equipOriginText', () => {
   it('names the Inventory when the call carries no origin hero', () => {
     expect(equipOriginText(EQUIP_FROM_BAG, en)).toBe(sub(en.applyModalFrom, { from: en.applyModalInventory }));
@@ -137,10 +127,10 @@ describe('ApplyModalLedgerLine — shared shell', () => {
 });
 
 describe('ApplyModalLedgerLine — points rows', () => {
-  it('draws the hero chip, the lead sentence and one aligned token per stat, never one joined sentence', () => {
+  it('draws the hero chip and one aligned token per stat — no sentence between them, never one joined sentence', () => {
     const html = renderLine(RESPEC_UNIT, 'ok', { hero: hero({ id: 'h-orin', name: 'Orin' }) });
     expect(html).toContain('Orin');
-    expect(html).toContain(sub(en.applyModalLineRespec, { points: 173 }));
+    expect(html).not.toContain('respec');
     expect(html).toContain('73');
     expect(html).toContain('Attack');
     expect(html).toContain('2');
@@ -158,14 +148,14 @@ describe('ApplyModalLedgerLine — points rows', () => {
 
   it('renders no stat tokens when the unit carries no allocation', () => {
     const html = renderLine(COMMIT_UNIT, 'ok', { hero: hero({ id: 'h-orin', name: 'Orin' }) });
-    expect(html).toContain(sub(en.applyModalLineCommit, { points: 147 }));
+    expect(html).toContain('Orin');
     expect(html).not.toContain('bg-bg-2');
   });
 
   it('lays the row out as a real grid, not a flex row', () => {
     const tag = tagOf(renderLine(RESPEC_UNIT, 'ok'), 'apply-modal-ledger-line');
     expect(tag).toContain('grid');
-    expect(tag).toContain('grid-cols-[16px_9rem_10.5rem_minmax(0,1fr)]');
+    expect(tag).toContain('grid-cols-[16px_10rem_minmax(0,1fr)]');
   });
 });
 

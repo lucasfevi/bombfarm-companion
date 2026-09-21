@@ -20,7 +20,6 @@ import { TeamPlanToolbar } from './team-plan-toolbar';
 import { PlanChangesPanel } from './plan-changes-panel';
 import { useOptimizeAction } from './use-optimize-action';
 import { ScopeList } from './scope-list';
-import { TeamPlanRunSummary } from './team-plan-run-summary';
 import { TeamPlanOptimizingModal } from './team-plan-optimizing-modal';
 import { WaterfallPanel } from './waterfall-panel';
 import { HeroDeltaTable } from './hero-delta-table';
@@ -69,8 +68,8 @@ export type TeamPlanScreenSlots = {
   /** Drawn after the setup bar's own fields — a host's own search controls, on the same grid
    *  (`SetupAuraCapField`). Undefined renders nothing at all, so the web's DOM is unchanged. */
   setupFields?: ReactNode;
-  /** Drawn between the run summary and the per-hero table — the desktop's Apply this plan panel.
-   *  Undefined renders nothing at all, so the web's DOM is unchanged. */
+  /** Drawn between the gain breakdown and the per-hero table — the desktop's Apply this plan
+   *  panel. Undefined renders nothing at all, so the web's DOM is unchanged. */
   applyPanel?: ReactNode;
 };
 
@@ -189,17 +188,21 @@ export function TeamPlanScreenView({
 
             {data.isStale && displayPlan ? (
               ledger !== null && data.planBasis !== null ? (
-                <PlanChangesPanel
-                  t={t}
-                  lang={lang}
-                  ledger={ledger}
-                  basis={data.planBasis}
-                  now={inputs}
-                  onRecompute={optimize.run}
-                  recomputeBlocked={optimize.blocked}
-                  busy={optimize.busy}
-                />
+                ledger.breaks.length > 0 ? (
+                  <PlanChangesPanel
+                    t={t}
+                    lang={lang}
+                    ledger={ledger}
+                    basis={data.planBasis}
+                    now={inputs}
+                    onRecompute={optimize.run}
+                    recomputeBlocked={optimize.blocked}
+                    busy={optimize.busy}
+                  />
+                ) : null
               ) : (
+                // A host that kept the plan but not what it was solved from (a reload on the web)
+                // cannot tell a break from drift, so it says only that the inputs moved.
                 <p className="m-0 text-sm text-warn" role="status">
                   {t.teamPlanStaleNotice}
                 </p>
@@ -222,13 +225,7 @@ export function TeamPlanScreenView({
                     plan={displayPlan}
                     copy={objectiveCopy}
                     accountPhase={inputs.phase}
-                  />
-                  <TeamPlanRunSummary
-                    t={t}
-                    lang={lang}
-                    plan={displayPlan}
                     ranOnMainThread={runnerState.ranOnMainThread}
-                    copy={objectiveCopy}
                   />
                   {slots.applyPanel ?? null}
                   <HeroDeltaTable

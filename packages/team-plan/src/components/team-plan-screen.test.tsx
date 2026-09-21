@@ -3,15 +3,15 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { TeamPlanScreenSlots } from './team-plan-screen';
 
-describe('the applyPanel slot sits between the run summary and the hero table', () => {
+describe('the applyPanel slot sits between the gain breakdown and the hero table', () => {
   const source = readFileSync(path.join(__dirname, 'team-plan-screen.tsx'), 'utf8');
 
-  it('renders TeamPlanRunSummary, then the bare slot expression, then HeroDeltaTable, in source order', () => {
-    const summaryAt = source.indexOf('<TeamPlanRunSummary');
+  it('renders WaterfallPanel, then the bare slot expression, then HeroDeltaTable, in source order', () => {
+    const waterfallAt = source.indexOf('<WaterfallPanel');
     const slotAt = source.indexOf('{slots.applyPanel ?? null}');
     const tableAt = source.indexOf('<HeroDeltaTable');
-    expect(summaryAt).toBeGreaterThan(-1);
-    expect(slotAt).toBeGreaterThan(summaryAt);
+    expect(waterfallAt).toBeGreaterThan(-1);
+    expect(slotAt).toBeGreaterThan(waterfallAt);
     expect(tableAt).toBeGreaterThan(slotAt);
 
     const lines = source.split('\n');

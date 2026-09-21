@@ -6,7 +6,7 @@ import { teamPlanRichSeed } from './fixtures/team-plan-seed';
 const PLAN_KEY = 'bf-hp-team-plan-v1';
 const HEROES_KEY = 'bf-hp-heroes-v1';
 const HEADLINE = /^[+-]\d+([.,]\d)?% (gold \/ hour|DPS), whole roster$/;
-const STALE_NOTICE = /Since this plan was computed/i;
+const STALE_NOTICE = /Your account changed since this plan was built/i;
 
 const card = (page: Page) => page.getByRole('article', { name: 'Optimizer', exact: true });
 const headline = (page: Page) => page.getByTestId('home-optimizer-headline');
@@ -64,6 +64,16 @@ async function levelUpAHero(page: Page, name: string) {
   expect(before).not.toBeNull();
   await page.getByRole('button', { name: 'Level up', exact: true }).click();
   await expect.poll(() => storedLevelOf(page, name), { timeout: 5_000 }).toBe(before! + 1);
+}
+
+/** Unlike a level edit, which only changes the plan, deleting a hero the plan placed BREAKS it —
+ *  the ledger only ever draws once something does. */
+async function deleteHero(page: Page, name: string) {
+  await openSection(page, 'Heroes');
+  await selectSavedHero(page, name);
+  await page.getByRole('button', { name: 'Delete hero' }).click();
+  await page.getByRole('button', { name: 'Delete', exact: true }).click();
+  await expect.poll(() => storedLevelOf(page, name), { timeout: 5_000 }).toBeNull();
 }
 
 async function textOf(locator: Locator): Promise<string> {
@@ -162,12 +172,12 @@ test.describe('Home optimizer card', () => {
     expect(await workerChunkLoads(page)).toBe(2);
   });
 
-  test('a plan made stale by a hero edit stays stale when the optimizer page is opened directly', async ({
+  test('a plan broken by a hero leaving the roster stays broken when the optimizer page is opened directly', async ({
     page,
   }) => {
     await cardState(page, 'plan');
 
-    await levelUpAHero(page, heroToEdit);
+    await deleteHero(page, heroToEdit);
     await openSection(page, 'Optimizer');
 
     await expect(results(page)).toBeVisible();

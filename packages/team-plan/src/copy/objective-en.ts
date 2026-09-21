@@ -27,14 +27,8 @@ export const teamPlanObjectivePairsEn = {
     'Builds a plan for the heroes you mark Optimize, out of the changes you allow below — scored for combined roster DPS.',
   teamPlanSetupSectionBodyFarm:
     'Builds a plan for the heroes you mark Optimize, out of the changes you allow below — scored for the gold per hour the squad brings in.',
-  teamPlanRunSummaryRegimeHintSaturatedDps:
-    'More field demand than battle slots — roster DPS is shared across who can fight at once.',
-  teamPlanRunSummaryRegimeHintSaturatedFarm:
-    'More field demand than battle slots — the squad’s earning rate is shared across who can fight at once.',
   teamPlanTotalGainValueDps: '{delta} dps ({pct}%)',
   teamPlanTotalGainValueFarm: '{delta} gold/h ({pct}%)',
-  teamPlanResultsHeaderDps: 'Best roster DPS found by this search',
-  teamPlanResultsHeaderFarm: 'Best gold per hour found by this search',
   teamPlanGearDipNoteDps:
     'Temporarily behind by {delta} dps — the Reset points step brings it past today.',
   teamPlanGearDipNoteFarm:

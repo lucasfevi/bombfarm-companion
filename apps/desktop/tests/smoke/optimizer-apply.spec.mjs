@@ -361,7 +361,7 @@ test.describe('the Apply panel, solved, switched, confirmed and run through the 
     await forgeConfirm.getByRole('button').last().click();
     await expect(forgeConfirm).toBeHidden();
 
-    await expect(forgeRow).toContainText('in the queue');
+    await expect(forgeRow).toContainText('added to the queue');
     await expect(forgeRow.getByTestId('apply-step-forge-press')).toHaveCount(0);
 
     await expect(bandCount).toBeVisible();
@@ -380,7 +380,7 @@ test.describe('the Apply panel, solved, switched, confirmed and run through the 
 
     await navButton(page, SETTINGS_TAB_INDEX).click();
     await openOptimizer(page);
-    await expect(page.getByTestId('apply-step-forge')).toContainText('in the queue');
+    await expect(page.getByTestId('apply-step-forge')).toContainText('added to the queue');
   });
 
   // The fixture refuses `forge:start` outright (`accountSource === 'fixture'` disables the band's

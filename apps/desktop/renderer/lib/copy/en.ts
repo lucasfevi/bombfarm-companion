@@ -740,7 +740,6 @@ export const en = {
   // and the blocking window that shows each call as it goes out. Every gold figure is drawn
   // through the desktop's own coin component, never a package string; these are the words only.
   applyPanelTitle: 'Apply this plan',
-  applyPanelIntro: 'One press per step. Each call finishes on the server before the next; stop any time.',
   applyPanelStateNone: 'Nothing applied yet',
   applyPanelStateSome: '{done} of {total} done',
   applyPanelStateAll: 'All done',
@@ -767,7 +766,8 @@ export const en = {
   applyStepPointsFacts: '{heroes} — {respecs} with a respec · {calls} calls · about {time} · {gold} exact',
   applyStepNothing: 'Nothing to do',
   applyStepDone: 'Done — {made} of {total} calls made, {skipped} skipped',
-  applyStepDoneForge: 'Done — {count} in the queue',
+  applyStepDoneForge: 'Done — {count} added to the queue',
+  applyStepForgeAllQueued: 'Every piece of this plan is already in the queue',
   applyStepDoneLabel: 'Done',
   applyStepShowSkips: 'Show what was skipped',
   applyStepHideSkips: 'Hide what was skipped',
@@ -785,7 +785,7 @@ export const en = {
   applyPanelSwitchOff: 'Turn on "{switch}" in Settings to apply from here',
   applyPanelBlockedTitle: 'This plan can no longer be applied',
   applyPanelBlockedBody:
-    'Something changed on your account since it was built. Open “Since this plan was computed” above to see what changed, then build the plan again.',
+    'Something changed on your account since it was built. The panel above lists what broke it; build the plan again to continue.',
   applyPanelOtherRunning: '{step} is running — the other steps wait',
   applyConfirmEquipTitle: 'Equip items?',
   applyConfirmEquipBody: 'This equips and unequips the items your plan expects.',
@@ -822,8 +822,6 @@ export const en = {
   applyModalNowRespec: 'Refunding {hero}’s points',
   applyModalNowCommit: 'Placing {hero}’s points',
   applyModalNowBetween: 'Between calls',
-  applyModalLineRespec: 'respec, then {points} points',
-  applyModalLineCommit: 'place {points} points',
   applyModalFooter: '{done} done · {skipped} skipped · {left} left',
   applyModalGoldSoFar: '{gold} spent so far',
   applyModalQueuePaused: 'Forge queue paused',

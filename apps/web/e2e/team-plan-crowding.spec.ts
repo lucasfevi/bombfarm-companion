@@ -29,10 +29,10 @@ test.describe('Team plan field-crowding opt-out', () => {
     await gotoTeamPlan(page);
     await clickOptimize(page);
     await waitForOptimizeDone(page);
-    await expect(page.getByRole('heading', { name: /^Search summary$/i, level: 2 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /^Gain breakdown$/i, level: 2 })).toBeVisible();
 
     await page.getByRole('switch', { name: /Score as if the field always had room/i }).click();
 
-    await expect(page.getByRole('heading', { name: /^Search summary$/i, level: 2 })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: /^Gain breakdown$/i, level: 2 })).toHaveCount(0);
   });
 });

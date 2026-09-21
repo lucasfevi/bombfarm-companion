@@ -318,6 +318,14 @@ const KEYS_REMOVED: readonly string[] = [
   // `cycleSerial`, `cycleWiki`, `walkS` — had already lost its screen and now loses the model it
   // named. One line: this file sits at the `src/tests/**` max-lines cap.
   'resetAdviceRosterHero', 'bdFormulaBombsSerial', 'bdFormulaBombsWiki', 'bdTermSf', 'cycle', 'cycleSerial', 'cycleWiki', 'walkS',
+  // The Search summary panel is withdrawn (2026-09-21) — its heading and its two prose sentences
+  // restating the phase/battle-load cards have no reader left; see the note before `KEYS_ADDED`
+  // for what replaces the one figure worth keeping. The same pass drops the Gain breakdown's own
+  // top-right caption, whose objective-suffixed pair (`teamPlanResultsHeaderDps`/`Farm`) and the
+  // saturated-regime pair this panel also fed (`teamPlanRunSummaryRegimeHintSaturatedDps`/`Farm`)
+  // never reached a re-baseline, so both pairs simply leave `KEYS_ADDED` below instead of joining
+  // this list. One line: this file sits at its max-lines cap.
+  'teamPlanRunSummaryTitle', 'teamPlanRunSummaryDutyHint', 'teamPlanRunSummaryRegimeHintUnder',
   // The Optimizer's assumptions-and-limits panel is withdrawn (2026-09-12): its content was
   // judged technical and useless to a player, and the rest of the results section is unchanged.
   // The Dps/Farm-suffixed saturation/aura/divergence/forge-skipped/luck-frozen/allowed-changes
@@ -503,21 +511,31 @@ const KEYS_REMOVED: readonly string[] = [
  * reader a restricted plan's empty list is a restriction and not a finding
  * (`…NotePoints`/`…NoteGear`). Not objective-suffixed, for the same reason the phase strings are
  * not: the restriction is on what the plan may propose, not on how it scores.
+ *
+ * The Search summary panel is withdrawn (2026-09-21): its one figure worth keeping outside a fold
+ * — how long the search took, how many passes, how many builds — is now a plain line under the
+ * Gain breakdown's own cards, read by the same `run-summary-copy.ts` helpers as before
+ * (`teamPlanRunMetaFooter` is untouched). The panel's own heading (`teamPlanRunSummaryTitle`) and
+ * the sentence that restated the battle-load card in prose (`teamPlanRunSummaryDutyHint`,
+ * `teamPlanRunSummaryRegimeHintUnder`) have no reader left — the card already says it; both are in
+ * `KEYS_REMOVED`. The same pass drops the Gain breakdown's own top-right caption, whose
+ * objective-suffixed pair (`teamPlanResultsHeaderDps`/`Farm`) and the saturated-regime pair
+ * (`teamPlanRunSummaryRegimeHintSaturatedDps`/`Farm`) both postdate this fixture and never reached
+ * a re-baseline, so both pairs are simply dropped from `KEYS_ADDED` rather than moved to
+ * `KEYS_REMOVED` — same precedent as the drop labels and `phasesBoost*` keys above.
  */
 const KEYS_ADDED: readonly string[] = [
   'navHeroes',
-  // The Optimizer's ledger of what changed since the plan (2026-09-19): the notice that only
-  // said inputs had changed now lists each change with before, after and a verdict, and the
-  // field names, group titles and control labels it prints are these.
+  // The Optimizer's ledger of what changed since the plan (2026-09-19, narrowed to breaking
+  // changes only 2026-09-21): the notice that only said inputs had changed now lists every
+  // change that breaks the plan — a hero it placed or a piece it used is gone — and the field
+  // names and control labels it prints are these. A change the plan merely cares about, made
+  // progress on, or does not count is no longer drawn at all, so the group, rotation and
+  // "also changed" strings that once said so have no reader left.
   'teamPlanChangesTitle',
   'teamPlanChangesCountOne',
   'teamPlanChangesCountMany',
   'teamPlanChangesRecompute',
-  'teamPlanChangesGroupPlan',
-  'teamPlanChangesGroupProgress',
-  'teamPlanChangesGroupNoise',
-  'teamPlanChangesRotationOne',
-  'teamPlanChangesRotationMany',
   'teamPlanChangesColWhat',
   'teamPlanChangesColChange',
   'teamPlanChangesColBeforeNow',
@@ -526,9 +544,6 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanChangesAskedDone',
   'teamPlanChangesInventory',
   'teamPlanChangesMovedToInventory',
-  'teamPlanChangesSummaryBreaks',
-  'teamPlanChangesSummaryPlan',
-  'teamPlanChangesSummaryProgress',
   'teamPlanChangesOn',
   'teamPlanChangesOff',
   'teamPlanChangesSubjectAccount',
@@ -567,15 +582,6 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanChangesControlTargetPhase',
   'teamPlanChangesScope',
   'teamPlanChangesGroupBreaks',
-  'teamPlanChangesAlso',
-  'teamPlanChangesKindPoints',
-  'teamPlanChangesKindAbilities',
-  'teamPlanChangesKindForge',
-  'teamPlanChangesKindGear',
-  'teamPlanChangesKindBag',
-  'teamPlanChangesKindAccount',
-  'teamPlanChangesKindSetup',
-  'teamPlanChangesKindSheet',
   'teamPlanChangesHeroRemovedUsed',
   'teamPlanChangesItemRemovedUsed',
   // The inventory names a hero cage by its act (2026-09-17) instead of printing `chest_hero_3`.
@@ -681,12 +687,8 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanObjectiveFarmNeedsMaxPhase',
   'teamPlanSetupSectionBodyDps',
   'teamPlanSetupSectionBodyFarm',
-  'teamPlanRunSummaryRegimeHintSaturatedDps',
-  'teamPlanRunSummaryRegimeHintSaturatedFarm',
   'teamPlanTotalGainValueDps',
   'teamPlanTotalGainValueFarm',
-  'teamPlanResultsHeaderDps',
-  'teamPlanResultsHeaderFarm',
   'teamPlanGearDipNoteDps',
   'teamPlanGearDipNoteFarm',
   'downloadScreenForgeTitle',

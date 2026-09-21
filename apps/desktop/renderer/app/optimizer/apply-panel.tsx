@@ -273,7 +273,6 @@ export function ApplyPanel({
             {stateLabel}
           </span>
         </h2>
-        <p className="m-0 text-[12px] text-muted">{t.applyPanelIntro}</p>
       </div>
 
       {banner !== null ? (

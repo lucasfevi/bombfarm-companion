@@ -52,14 +52,6 @@ export async function openFieldHelp(page: Page, field: RegExp) {
   return help;
 }
 
-/** The search summary is folded by default; its sentences are only visible once opened. */
-export async function openSearchSummary(page: Page) {
-  const summary = page.getByTestId('team-plan-run-summary');
-  await summary.getByRole('button', { name: /^Search summary$/i }).click();
-  await expect(summary.getByTestId('team-plan-run-summary-body')).toBeVisible();
-  return summary;
-}
-
 export async function setE2eMaxEvaluations(page: Page, maxEvaluations: number | null) {
   await page.addInitScript(
     ({ key, value }) => {

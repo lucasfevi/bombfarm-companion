@@ -145,10 +145,11 @@ describe('ApplyForgeRow — done', () => {
     expect(html).not.toContain('data-testid="apply-step-forge-press"');
   });
 
-  it('reads Done from the batch when everything applicable is already queued and no press ever ran (A-7)', () => {
+  it('reads as done when everything applicable is already queued and no press ever ran', () => {
     const queue: ForgeQueueState = { ...EMPTY_FORGE_QUEUE, pieces: [{ itemId: 'a', target: 12 }] };
     const html = renderRow({ forgeList: [action('a', 12)], queue, gear: [item('a', 8)] });
-    expect(html).toContain(en.applyStepDoneForge.replace('{count}', '1'));
+    expect(html).toContain(en.applyStepForgeAllQueued);
+    expect(html).toContain('data-state="done"');
     expect(html).not.toContain('data-testid="apply-step-forge-press"');
   });
 });

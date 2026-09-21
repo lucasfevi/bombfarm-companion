@@ -66,7 +66,11 @@ export function ApplyForgeRow({ forgeList, queue, gear, gate, record, onDone, ne
   const skipCount = batch.missing + batch.atTarget;
 
   const factsLine =
-    batch.total === 0
+    record?.status === 'done'
+      ? sub(t.applyStepDoneForge, { count: record.made })
+      : state.kind === 'done'
+        ? t.applyStepForgeAllQueued
+        : batch.total === 0
       ? t.applyStepNothing
       : expectedGold === null
         ? sub(t.applyStepForgeFactsNoEstimate, { pieces: batch.adding, queued: batch.queued })
@@ -77,10 +81,12 @@ export function ApplyForgeRow({ forgeList, queue, gear, gate, record, onDone, ne
           });
 
   const notes: ReactNode[] = [];
-  if (state.kind === 'ready' && batch.retargeted > 0) {
+  if (state.kind === 'done') {
+    // a finished step is a receipt: nothing about the live queue is re-read into it
+  } else if (state.kind === 'ready' && batch.retargeted > 0) {
     notes.push(sub(t.applyStepForgeTargets, { count: batch.retargeted }));
   }
-  if (skipCount > 0) {
+  if (state.kind !== 'done' && skipCount > 0) {
     notes.push(
       <span key="skips" data-testid={`${testId}-skips`}>
         {sub(t.applyStepWillSkip, { count: skipCount, total: batch.total, reasons: forgeSkipReasons(batch, t) })}
@@ -104,7 +110,7 @@ export function ApplyForgeRow({ forgeList, queue, gear, gate, record, onDone, ne
       : state.kind === 'exhausted'
         ? { nothing: t.applyStepNothingLeft }
         : state.kind === 'done'
-          ? { done: sub(t.applyStepDoneForge, { count: state.count }) }
+          ? { done: t.applyStepDoneLabel }
           : gate !== null
             ? { label: sub(t.applyConfirmForge, { count: batch.adding }), onPress: openConfirm, disabled: true, reason: gate.reason }
             : { label: sub(t.applyConfirmForge, { count: batch.adding }), onPress: openConfirm, disabled: false };

@@ -14,9 +14,7 @@ import type { TeamPlanScreenCopy } from '../copy';
 export type TeamPlanObjectiveCopy = {
   setupSectionBody: string;
   objectiveHint: string;
-  regimeHintSaturated: string;
   totalGainValue: string;
-  resultsHeader: string;
   gearDipNote: string;
   phaseHintNone: string;
 };
@@ -29,18 +27,14 @@ export function teamPlanObjectiveCopy(
     ? {
         setupSectionBody: strings.teamPlanSetupSectionBodyFarm,
         objectiveHint: strings.teamPlanObjectiveHintFarm,
-        regimeHintSaturated: strings.teamPlanRunSummaryRegimeHintSaturatedFarm,
         totalGainValue: strings.teamPlanTotalGainValueFarm,
-        resultsHeader: strings.teamPlanResultsHeaderFarm,
         gearDipNote: strings.teamPlanGearDipNoteFarm,
         phaseHintNone: strings.teamPlanPhaseHintNoneFarm,
       }
     : {
         setupSectionBody: strings.teamPlanSetupSectionBodyDps,
         objectiveHint: strings.teamPlanObjectiveHintDps,
-        regimeHintSaturated: strings.teamPlanRunSummaryRegimeHintSaturatedDps,
         totalGainValue: strings.teamPlanTotalGainValueDps,
-        resultsHeader: strings.teamPlanResultsHeaderDps,
         gearDipNote: strings.teamPlanGearDipNoteDps,
         phaseHintNone: strings.teamPlanPhaseHintNoneDps,
       };
