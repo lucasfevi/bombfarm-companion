@@ -3,7 +3,7 @@ import { teamPlanFixtureSeed } from './fixtures/team-plan-seed';
 import { seedLocalStorage } from './fixtures/seed';
 import { gotoTeamPlan, openFieldHelp } from './fixtures/team-plan-e2e';
 
-const ALLOWED_HELP = /^Allowed changes: /i;
+const ALLOWED_HELP = /^What to change: /i;
 
 /** DS Select is a Base UI combobox — not a native `<select>`. */
 function allowedChangesCombobox(page: Page): Locator {

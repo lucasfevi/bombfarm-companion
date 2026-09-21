@@ -83,7 +83,9 @@ test.describe('Team plan hero scope', () => {
     await expect(scopePanel(page).getByRole('region', { name: /^Optimize$/i })).toBeVisible();
     await expect(scopePanel(page).getByRole('region', { name: /^Donate$/i })).toBeVisible();
     await expect(scopePanel(page).getByRole('region', { name: /^Leave alone$/i })).toBeVisible();
-    await expect(scopePanel(page).getByText(/Scored in the plan/i)).toBeVisible();
+    // The column's explanation is an info glyph now, not a printed sentence — its accessible
+    // name still carries the explanation, just behind hover/focus rather than always on screen.
+    await expect(scopePanel(page).getByRole('button', { name: /Scored in the plan/i })).toBeVisible();
   });
 
   test('mobile keeps the scope select on each card', async ({ page }) => {

@@ -2,11 +2,18 @@
 
 import type { ReactNode } from 'react';
 import type { TeamPlan as DomainTeamPlan, WaterfallStep } from '@bombfarm/domain/team-plan/types';
-import { Panel, Tooltip, cn, formatCompactNumber, formatNumber, panelHClass, panelTitleClass } from '@bombfarm/ui';
+import { Panel, Tooltip, cn, formatCompactNumber, formatNumber, mutedClass, panelHClass, panelTitleClass } from '@bombfarm/ui';
 import { sub, type Lang } from '@bombfarm/hero/copy';
 import type { TeamPlanCopy } from '../copy';
+import { parseEmphasis } from '../copy';
 import type { TeamPlanObjectiveCopy } from '../model/objective-copy';
-import { scoredPhaseHint, scoredPhaseMovedFrom, scoredPhaseValue } from '../model/run-summary-copy';
+import {
+  formatElapsedSeconds,
+  scoredPhaseHint,
+  scoredPhaseMovedFrom,
+  scoredPhaseValue,
+  seedStartLabel,
+} from '../model/run-summary-copy';
 import { AbbreviatedNumber } from './abbreviated-number';
 import { FactCell } from './fact-cell';
 import { StepCell } from './step-cell';
@@ -28,12 +35,26 @@ function withDeltaPlaceholder(template: string, delta: ReactNode) {
   );
 }
 
+/** Renders the run meta line's `<em>` spans — the only markup its template ever carries. */
+function emphasizedLine(text: string) {
+  return parseEmphasis(text).map((part, index) =>
+    part.kind === 'em' ? (
+      <strong key={index} className="font-semibold text-ink">
+        {part.value}
+      </strong>
+    ) : (
+      <span key={index}>{part.value}</span>
+    ),
+  );
+}
+
 export function WaterfallPanel({
   t,
   lang,
   plan,
   copy,
   accountPhase,
+  ranOnMainThread,
 }: {
   t: TeamPlanCopy;
   lang: Lang;
@@ -41,6 +62,9 @@ export function WaterfallPanel({
   copy: TeamPlanObjectiveCopy;
   /** The account's own phase, so the phase card can say when the plan is about another one. */
   accountPhase: number | null;
+  /** Whether this run fell back off the background worker — the notice stays outside any fold,
+   *  since a hidden warning is no warning. */
+  ranOnMainThread: boolean;
 }) {
   const saturated = plan.regime === 'saturated';
   const totalDelta = plan.planDps - plan.currentDps;
@@ -48,11 +72,17 @@ export function WaterfallPanel({
   const totalSign = totalDelta >= 0 ? '+' : '';
   const pctSign = totalPct >= 0 ? '+' : '';
 
+  const metaLine = sub(t.teamPlanRunMetaFooter, {
+    seconds: formatElapsedSeconds(plan.run.elapsedMs, lang),
+    rounds: String(plan.run.rounds),
+    evals: formatNumber(plan.run.evaluations, lang, 0),
+    seed: seedStartLabel(t, plan.run.seedUsed),
+  });
+
   return (
     <Panel>
       <div className={panelHClass}>
         <h2 className={panelTitleClass}>{t.teamPlanWaterfallTitle}</h2>
-        <p className="m-0 text-[12px] font-normal text-muted">{copy.resultsHeader}</p>
       </div>
       <Tooltip.Provider delay={200} closeDelay={80}>
         <div
@@ -68,6 +98,7 @@ export function WaterfallPanel({
               <Tooltip.Trigger
                 render={
                   <p
+                    data-testid="team-plan-total-gain"
                     className={cn(
                       'm-0 mt-2 text-[clamp(1.75rem,4vw,2.35rem)] leading-none font-black tracking-tight tabular-nums',
                       totalDelta < 0 ? 'text-down' : 'text-up',
@@ -141,6 +172,24 @@ export function WaterfallPanel({
           )}
         </p>
       ) : null}
+      <div className="mt-2 space-y-1">
+        <p className={`m-0 ${mutedClass}`}>{emphasizedLine(metaLine)}</p>
+        {plan.run.budgetExhausted ? (
+          <p className="m-0 text-[13px] text-warn" role="status">
+            {t.teamPlanBudgetExhausted}
+          </p>
+        ) : null}
+        {ranOnMainThread ? (
+          <p className={`m-0 ${mutedClass}`} role="status">
+            {t.teamPlanMainThreadFallback}
+          </p>
+        ) : null}
+        {plan.runedHeroNames.length > 0 ? (
+          <p className={`m-0 ${mutedClass}`}>
+            {sub(t.teamPlanRunedHeroes, { heroes: plan.runedHeroNames.join(', ') })}
+          </p>
+        ) : null}
+      </div>
     </Panel>
   );
 }

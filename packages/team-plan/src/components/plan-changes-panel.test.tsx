@@ -10,7 +10,7 @@ import { sub } from '@bombfarm/hero/copy';
 import { describePlanChanges, type PlanBasis } from '../core/plan-changes';
 import type { TeamPlanInputs } from '../core/team-plan-inputs';
 import type { TeamPlanControls } from '../core/team-plan-controls';
-import { PlanChangesPanel, wordPlanChange } from './plan-changes-panel';
+import { PlanChangesPanel, PlanChangesPanelBody, planChangesViewModel, wordPlanChange } from './plan-changes-panel';
 
 const t = {
   ...teamPlanEn,
@@ -75,76 +75,109 @@ function render(now: TeamPlanInputs, withPlan: TeamPlan | null = plan): string {
   );
 }
 
+/** The table, rendered directly — bypasses the panel's own fold, the way a reader only sees this
+ *  once they open it, so a test on row content does not also have to drive the disclosure. */
+function renderBody(now: TeamPlanInputs, withPlan: TeamPlan | null = plan): string {
+  const ledger = describePlanChanges(basis, { inputs: now, controls }, withPlan);
+  const { heroes, items, heroNames } = planChangesViewModel(basis, now);
+  return renderToStaticMarkup(createElement(PlanChangesPanelBody, { t, lang: 'en', ledger, heroes, items, heroNames }));
+}
+
 function text(html: string): string {
   return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-describe('PlanChangesPanel — the ledger of what changed since the plan', () => {
+describe('PlanChangesPanel — folded by default, and only ever drawn for a breaking change', () => {
   it('renders nothing at all when only field rotation moved', () => {
     const now = inputs([{ ...rowan, deployed: true }, minato], [boots]);
     expect(render(now)).toBe('');
   });
 
-  it('names a levelled hero with its before and after, under "Changes the plan"', () => {
-    const html = render(inputs([{ ...rowan, level: 96 }, minato], [boots]));
+  it('renders nothing at all when the only change is one the plan merely cares about', () => {
+    const now = inputs([{ ...rowan, level: 96 }, minato], [boots]);
+    expect(render(now)).toBe('');
+  });
+
+  it('shows the title, a summary count and the recompute button — nothing else', () => {
+    const html = render(inputs([rowan, minato], []));
     expect(html).toContain('data-testid="team-plan-changes"');
     expect(html).toContain('data-counted="1"');
     expect(text(html)).toContain(t.teamPlanChangesCountOne);
-    expect(html).toMatch(/data-verdict="plan"[^>]*data-field="level"/);
-    const body = text(html);
-    expect(body).toContain('Rowan');
-    expect(body).toContain(`${t.teamPlanChangesLevel}`);
-    expect(body).toMatch(/95\s*→\s*96/);
-    expect(body).toContain(t.teamPlanChangesGroupPlan);
-  });
-
-  it('a forge step the plan asked for is progress, with the target beside it', () => {
-    const html = render(inputs([rowan, minato], [{ ...boots, upgrade: 13 }]));
-    expect(html).toMatch(/data-verdict="progress"[^>]*data-field="forge"/);
-    const body = text(html);
-    expect(body).toContain(t.teamPlanChangesGroupProgress);
-    expect(body).toMatch(/\+12\s*→\s*\+13/);
-    expect(body).toContain('plan asked +14');
-    expect(body).not.toContain(t.teamPlanChangesGroupPlan);
-  });
-
-  it('the rotation the reader may have noticed is one muted line, never a row', () => {
-    const html = render(inputs([{ ...rowan, level: 96, deployed: true }, { ...minato, deployed: true }], [boots]));
-    expect(html).toContain('data-testid="team-plan-changes-rotation"');
-    expect(text(html)).toContain('2 heroes rotated on or off the field');
-    expect(html.match(/data-testid="team-plan-change"/g)).toHaveLength(1);
-  });
-
-  it('carries the two presses: keep this plan, and build it again through the same trigger', () => {
-    const html = render(inputs([{ ...rowan, level: 96 }, minato], [boots]));
-    expect(html).toContain('data-testid="team-plan-changes-keep"');
     expect(html).toContain('data-testid="team-plan-changes-recompute"');
     expect(text(html)).toContain(t.teamPlanChangesRecompute);
+    expect(html).not.toContain('data-testid="team-plan-changes-body"');
+    expect(html).not.toContain('data-testid="team-plan-change"');
+    expect(html).not.toContain('data-testid="team-plan-changes-keep"');
   });
 
-  it('a worn piece that has left the bag BREAKS the plan: its own group first, in the down tone, named by what the plan knew of it', () => {
+  it('the summary line counts every breaking change, plural', () => {
+    const scopedControls: TeamPlanControls = { ...controls, scopeByHeroId: { rowan: 'optimize' } };
+    const scopedBasis: PlanBasis = { inputs: inputs([rowan, minato], [boots]), controls: scopedControls };
+    const now = inputs([minato], []);
+    const ledger = describePlanChanges(scopedBasis, { inputs: now, controls: scopedControls }, plan);
+    const html = renderToStaticMarkup(
+      createElement(PlanChangesPanel, { t, lang: 'en', ledger, basis: scopedBasis, now, onRecompute: () => {}, recomputeBlocked: false, busy: false }),
+    );
+    // Rowan (placed by the plan through its scope) is gone, and the boots the plan forged left
+    // the bag too — two rows, both breaks, nothing else.
+    expect(text(html)).toContain(sub(t.teamPlanChangesCountMany, { n: 2 }));
+  });
+
+  it('a worn piece that has left the bag BREAKS the plan, shown by the outer tone even while folded', () => {
     const html = render(inputs([rowan, minato], []));
     expect(html).toContain('data-breaks="true"');
+    expect(html).not.toContain('data-testid="team-plan-change"');
+  });
+
+  it('never renders a "keep this plan" button', () => {
+    const html = render(inputs([rowan, minato], []));
+    expect(html).not.toContain('Keep this plan');
+    expect(text(html)).not.toContain('Keep this plan');
+  });
+});
+
+describe('PlanChangesPanelBody — the ledger table, opened, draws only what breaks the plan', () => {
+  it('a worn piece that has left the bag BREAKS the plan, named by what the plan knew of it', () => {
+    const html = renderBody(inputs([rowan, minato], []));
     expect(html).toMatch(/data-verdict="breaks"[^>]*data-field="itemRemoved"/);
     const body = text(html);
     expect(body).toContain(t.teamPlanChangesGroupBreaks);
     expect(body).toContain(t.teamPlanChangesItemRemovedUsed);
-    expect(body.indexOf(t.teamPlanChangesGroupBreaks)).toBeLessThan(body.indexOf(t.teamPlanChangesColWhat) + 400);
   });
 
-  it('a new piece says what it is, not a dash and a plus-zero', () => {
-    const html = render(inputs([rowan, minato], [boots, item({ id: 'helm', defId: 'autumn_helm', slot: 'elmo', rarityIdx: 2, upgrade: 0, equipped: false, equippedBy: null })]));
+  it('a hero the plan placed leaving the roster BREAKS the plan too', () => {
+    const scopedControls: TeamPlanControls = { ...controls, scopeByHeroId: { rowan: 'optimize' } };
+    const scopedBasis: PlanBasis = { inputs: inputs([rowan, minato], [boots]), controls: scopedControls };
+    const now = inputs([minato], [boots]);
+    const ledger = describePlanChanges(scopedBasis, { inputs: now, controls: scopedControls }, null);
+    const { heroes, items, heroNames } = planChangesViewModel(scopedBasis, now);
+    const html = renderToStaticMarkup(createElement(PlanChangesPanelBody, { t, lang: 'en', ledger, heroes, items, heroNames }));
+    expect(html).toMatch(/data-verdict="breaks"[^>]*data-field="heroRemoved"/);
     const body = text(html);
-    expect(body).toContain(`${t.teamPlanChangesItemAdded} · Rare · Lv 50`);
-    expect(body).not.toContain('—');
-    expect(body).not.toContain('+0');
+    expect(body).toContain('Rowan');
+    expect(body).toContain(t.teamPlanChangesHeroRemovedUsed);
   });
 
-  it('changes the plan cares about but does not list are said in one line, each kind once', () => {
-    const html = render(inputs([{ ...rowan, pts: { ...ZERO, attack: 41 }, abilities: { bomba_dupla: 1 } }, minato], [boots]), null);
+  it('only the row that breaks the plan is drawn — a level the plan merely cares about and a forge step it made progress on are both left out', () => {
+    const ring = item({ id: 'ring', defId: 'ring_of_focus', slot: 'anel', equippedBy: 'rowan', rarityIdx: 0, upgrade: 0 });
+    const basisWithRing: PlanBasis = { inputs: inputs([rowan, minato], [boots, ring]), controls };
+    const planWithRing: TeamPlan = { ...plan, forgeList: [...plan.forgeList, { itemId: 'ring', defId: 'ring_of_focus', from: 0, to: 2 }] };
+    // Rowan levels ("changes the plan"), the boots forge one step towards what the plan asked
+    // ("progress on this plan"), and the ring the plan also forged leaves the bag ("breaks it").
+    const now = inputs([{ ...rowan, level: 96 }, minato], [{ ...boots, upgrade: 13 }]);
+    const ledger = describePlanChanges(basisWithRing, { inputs: now, controls }, planWithRing);
+    const { heroes, items, heroNames } = planChangesViewModel(basisWithRing, now);
+    const html = renderToStaticMarkup(createElement(PlanChangesPanelBody, { t, lang: 'en', ledger, heroes, items, heroNames }));
+    expect(html.match(/data-testid="team-plan-change"/g)).toHaveLength(1);
+    expect(html).toMatch(/data-verdict="breaks"[^>]*data-field="itemRemoved"/);
+    expect(html).not.toContain('data-field="level"');
+    expect(html).not.toContain('data-field="forge"');
+  });
+
+  it('renders nothing when there is nothing that breaks the plan', () => {
+    const html = renderBody(inputs([{ ...rowan, level: 96 }, minato], [boots]));
     expect(html).not.toContain('data-testid="team-plan-change"');
-    expect(text(html)).toContain(sub(t.teamPlanChangesAlso, { kinds: `${t.teamPlanChangesKindPoints}, ${t.teamPlanChangesKindAbilities}` }));
-    expect(text(html)).toContain(sub(t.teamPlanChangesCountMany, { n: 2 }));
+    expect(html).not.toContain('<table');
   });
 });
 
@@ -154,23 +187,89 @@ describe('wordPlanChange — every kind of change has words, and none is a raw f
   it('a control change prints the option labels, not the enum values', () => {
     const ledger = describePlanChanges(basis, { inputs: basis.inputs, controls: { ...controls, objective: 'dps', allowedChanges: 'points', ignoreFieldCrowding: true } }, null);
     const words = ledger.other.map((entry) => wordPlanChange(entry, t, 'en', names));
-    expect(words.map((w) => `${w.change}: ${w.before} → ${w.after}`)).toEqual([
+    expect(
+      words.map((w) => `${w.change}: ${w.before.kind === 'text' ? w.before.value : w.before.name} → ${w.after.kind === 'text' ? w.after.value : w.after.name}`),
+    ).toEqual([
       `${t.teamPlanChangesControlObjective}: ${t.teamPlanObjectiveOptionGold} → ${t.teamPlanObjectiveOptionDamage}`,
       `${t.teamPlanChangesControlAllowedChanges}: ${t.teamPlanAllowedChangesOptionBoth} → ${t.teamPlanAllowedChangesOptionPoints}`,
       `${t.teamPlanChangesControlIgnoreFieldCrowding}: ${t.teamPlanChangesOff} → ${t.teamPlanChangesOn}`,
     ]);
   });
 
-  it('a piece moved between heroes names both heroes, and nobody when it comes off', () => {
+  it('a piece moved between heroes names both heroes as hero chips, and the inventory word when it comes off', () => {
     const moved = describePlanChanges(basis, { inputs: inputs([rowan, minato], [{ ...boots, equippedBy: 'rowan' }]), controls }, null);
-    expect(wordPlanChange(moved.other[0]!, t, 'en', names)).toMatchObject({ change: t.teamPlanChangesEquippedBy, before: 'Minato', after: 'Rowan' });
+    expect(wordPlanChange(moved.other[0]!, t, 'en', names)).toMatchObject({
+      change: t.teamPlanChangesEquippedBy,
+      before: { kind: 'hero', id: 'minato', name: 'Minato' },
+      after: { kind: 'hero', id: 'rowan', name: 'Rowan' },
+    });
     const off = describePlanChanges(basis, { inputs: inputs([rowan, minato], [{ ...boots, equipped: false }]), controls }, null);
-    expect(wordPlanChange(off.other[0]!, t, 'en', names)).toMatchObject({ before: 'Minato', after: t.teamPlanChangesNobody });
+    expect(wordPlanChange(off.other[0]!, t, 'en', names)).toMatchObject({
+      change: t.teamPlanChangesMovedToInventory,
+      before: { kind: 'hero', id: 'minato', name: 'Minato' },
+      after: { kind: 'text', value: t.teamPlanChangesInventory },
+    });
+  });
+
+  it('a piece equipped from the inventory keeps the "equipped by" label, Inventory before, the hero after', () => {
+    const ring = item({ id: 'ring', defId: 'ring_of_focus', slot: 'anel', equipped: false, equippedBy: null });
+    const before: PlanBasis = { inputs: inputs([rowan, minato], [boots, ring]), controls };
+    const now = inputs([rowan, minato], [boots, { ...ring, equipped: true, equippedBy: 'rowan' }]);
+    const ledger = describePlanChanges(before, { inputs: now, controls }, null);
+    const ringRow = ledger.other.find((entry) => entry.detail.field === 'equippedBy')!;
+    expect(wordPlanChange(ringRow, t, 'en', names)).toMatchObject({
+      change: t.teamPlanChangesEquippedBy,
+      before: { kind: 'text', value: t.teamPlanChangesInventory },
+      after: { kind: 'hero', id: 'rowan', name: 'Rowan' },
+    });
+  });
+
+  it('a "plan asked" note that names a hero splits the sentence around it, so a chip can sit inline', () => {
+    const askedRowan = {
+      steps: [],
+      forgeList: [],
+      pointResets: [],
+      moveList: [{ phase: 'equip', itemId: 'boots', defId: 'autumn_boots', slot: 'bota', fromHeroId: 'minato', toHeroId: 'rowan' }],
+    } as unknown as TeamPlan;
+    const now = inputs([rowan, minato], [{ ...boots, equipped: false }]);
+    const ledger = describePlanChanges(basis, { inputs: now, controls }, askedRowan);
+    const word = wordPlanChange(ledger.other[0]!, t, 'en', names);
+    expect(word.note).toMatchObject({ kind: 'askedHero', hero: { id: 'rowan', name: 'Rowan' } });
+    if (word.note?.kind === 'askedHero') {
+      expect(`${word.note.before}Rowan${word.note.after}`).toBe('plan asked Rowan');
+    }
   });
 
   it('a phase the account advanced through, with no phase pinned, is named twice: the farm and the scoring phase', () => {
     const ledger = describePlanChanges(basis, { inputs: inputs([rowan, minato], [boots], { phase: 92, farmChosenPhase: null }), controls }, null);
     const words = ledger.other.map((entry) => wordPlanChange(entry, t, 'en', names).change);
     expect(words).toEqual([t.teamPlanChangesFieldPhase, t.teamPlanChangesControlTargetPhase]);
+  });
+
+  it('a levelled hero states its before and after, plainly — this no longer draws in the panel, but the words still have to be right', () => {
+    const ledger = describePlanChanges(basis, { inputs: inputs([{ ...rowan, level: 96 }, minato], [boots]), controls }, null);
+    const row = ledger.plan.find((entry) => entry.detail.field === 'level')!;
+    expect(wordPlanChange(row, t, 'en', names)).toMatchObject({
+      change: t.teamPlanChangesLevel,
+      before: { kind: 'text', value: '95' },
+      after: { kind: 'text', value: '96' },
+    });
+  });
+
+  it('a forge step formats before/after with a "+" prefix and names what the plan asked', () => {
+    const ledger = describePlanChanges(basis, { inputs: inputs([rowan, minato], [{ ...boots, upgrade: 13 }]), controls }, plan);
+    const row = ledger.progress.find((entry) => entry.detail.field === 'forge')!;
+    const word = wordPlanChange(row, t, 'en', names);
+    expect(word).toMatchObject({ change: t.teamPlanChangesForge, before: { kind: 'text', value: '+12' }, after: { kind: 'text', value: '+13' } });
+    expect(word.note).toMatchObject({ kind: 'text', value: 'plan asked +14' });
+  });
+
+  it('a new piece says what it is, not a dash or a plus-zero', () => {
+    const ledger = describePlanChanges(basis, { inputs: inputs([rowan, minato], [boots, item({ id: 'helm', defId: 'autumn_helm', slot: 'elmo', rarityIdx: 2, upgrade: 0, equipped: false, equippedBy: null })]), controls }, null);
+    const row = ledger.plan.find((entry) => entry.detail.field === 'itemAdded')!;
+    const word = wordPlanChange(row, t, 'en', names);
+    expect(word.change).toBe(`${t.teamPlanChangesItemAdded} · Rare · Lv 50`);
+    expect(word.before).toEqual({ kind: 'text', value: '' });
+    expect(word.after).toEqual({ kind: 'text', value: '' });
   });
 });

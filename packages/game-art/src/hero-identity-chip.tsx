@@ -5,6 +5,7 @@ import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { Lang } from '@bombfarm/domain/shims/i18n';
 import { shortHeroRecordId } from '@bombfarm/domain/shims/hero-identity';
 import { HeroIdentity, type HeroIdentityVariant } from './hero-identity';
+import type { ArtFrameSize } from './art-frame';
 import { heroPeekData } from './peek';
 
 /** Compact avatar + rank/name/rarity/level·id block — the `ScopeHeroCard` identity, sized down for a row. */
@@ -13,12 +14,20 @@ export function HeroIdentityChip({
   fallbackName,
   lang,
   variant = 'inline',
+  size = 'sm',
+  showId = true,
   nameTestId,
 }: {
   hero: HeroRecord | undefined;
   fallbackName: string;
   lang: Lang;
   variant?: HeroIdentityVariant;
+  /** Avatar frame size — `sm` (the `ScopeHeroCard` size) unless a caller sits the chip beside
+   *  smaller art, e.g. an item icon, and wants to match it. */
+  size?: ArtFrameSize;
+  /** `false` drops the trailing `#<id>` — a caller identifying the hero by name and avatar alone,
+   *  with no need for the record id a reader cannot act on. */
+  showId?: boolean;
   /** `data-testid` on the element carrying the hero's own name, for a caller that needs one. */
   nameTestId?: string | undefined;
 }) {
@@ -38,8 +47,9 @@ export function HeroIdentityChip({
       stars={hero.stars}
       level={hero.level}
       skin={hero.skin}
-      shortId={shortHeroRecordId(hero)}
+      shortId={showId ? shortHeroRecordId(hero) : undefined}
       lang={lang}
+      size={size}
       variant={variant}
       nameTestId={nameTestId}
       peek={heroPeekData(hero)}

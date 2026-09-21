@@ -26,7 +26,6 @@ export const teamPlanPagePtBR: TeamPlanPageCopy = {
     'Todos os números abaixo são calculados nesta fase, e em nenhuma outra. Fixar uma também deixa a busca muito mais rápida.',
   teamPlanPhaseBeyondMax:
     'Além da fase mais distante que sua conta alcançou (#{max}) — isto responde quanto o esquadrão renderia se conseguisse sustentá-la.',
-  teamPlanRunSummaryTitle: 'Resumo da busca',
   teamPlanWaterfallPhaseLabel: 'Fase',
   teamPlanWaterfallPhaseFrom: 'era {phase}',
   teamPlanScoredPhaseChosen: 'A fase que você escolheu.',
@@ -37,10 +36,6 @@ export const teamPlanPagePtBR: TeamPlanPageCopy = {
   teamPlanScoredPhaseNoneFeasible: 'Nenhuma fase que este esquadrão consiga limpar foi encontrada.',
   teamPlanRunSummaryDuty: 'Carga de batalha',
   teamPlanRunSummaryDutyValue: '{duty} de {slots} slots',
-  teamPlanRunSummaryDutyHint:
-    'Quanto seus heróis Otimizar pedem do campo em relação a quantos podem lutar ao mesmo tempo.',
-  teamPlanRunSummaryRegimeHintUnder:
-    'Seus heróis Otimizar não estão competindo por slots de batalha — cada um mantém a fatia cheia de tempo em campo.',
   teamPlanBudgetExhausted:
     'A busca parou cedo para não demorar demais — o ganho mostrado é o melhor encontrado até aqui, sem prometer que não exista algo melhor.',
   teamPlanMainThreadFallback:
@@ -49,7 +44,7 @@ export const teamPlanPagePtBR: TeamPlanPageCopy = {
   teamPlanForgeFloorAria: 'Nível mínimo de forja assumido para cada item no pool',
   teamPlanForgeFloorHint:
     'Cada item conta como se estivesse forjado pelo menos até este nível. Itens mais baixos aparecem como tarefas de forja em cada herói.',
-  teamPlanAllowedChangesLabel: 'Mudanças permitidas',
+  teamPlanAllowedChangesLabel: 'O que mudar',
   teamPlanAllowedChangesAria: 'Que tipos de mudança este plano pode propor',
   teamPlanAllowedChangesOptionBoth: 'Itens e pontos',
   teamPlanAllowedChangesOptionPoints: 'Só pontos',

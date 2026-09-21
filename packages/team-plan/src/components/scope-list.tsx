@@ -13,7 +13,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import { Panel, Tooltip, panelHClass, panelTitleClass } from '@bombfarm/ui';
+import { InfoTip, Panel, Tooltip, panelHClass, panelTitleClass } from '@bombfarm/ui';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import type { Lang } from '@bombfarm/hero/copy';
 import type { ScopeState } from '../core/hero-scope';
@@ -84,21 +84,23 @@ export function ScopeList({
 
   return (
     <Panel>
-      <div className={panelHClass}>
-        <h2 className={panelTitleClass}>{t.teamPlanScopeSectionTitle}</h2>
-      </div>
-      <p className="m-0 mb-2 text-[12px] text-muted">{t.teamPlanScopeBoardTip}</p>
-      {optimizeCount === 0 ? (
-        <p className="m-0 mb-2 text-sm text-warn">{t.teamPlanScopeNothingInScope}</p>
-      ) : null}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={scopeCollision}
-        onDragStart={onDragStart}
-        onDragEnd={onDragEnd}
-        onDragCancel={() => setActiveId(null)}
-      >
-        <Tooltip.Provider delay={200} closeDelay={80}>
+      <Tooltip.Provider delay={200} closeDelay={80}>
+        <div className={panelHClass}>
+          <div className="flex items-center gap-1.5">
+            <h2 className={panelTitleClass}>{t.teamPlanScopeSectionTitle}</h2>
+            <InfoTip label={t.teamPlanScopeSectionTitle} tip={t.teamPlanScopeBoardTip} />
+          </div>
+        </div>
+        {optimizeCount === 0 ? (
+          <p className="m-0 mb-2 text-sm text-warn">{t.teamPlanScopeNothingInScope}</p>
+        ) : null}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={scopeCollision}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onDragCancel={() => setActiveId(null)}
+        >
           <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
             {SCOPE_COLUMNS.map((scope) => (
               <ScopeColumn
@@ -128,8 +130,8 @@ export function ScopeList({
               </div>
             ) : null}
           </DragOverlay>
-        </Tooltip.Provider>
-      </DndContext>
+        </DndContext>
+      </Tooltip.Provider>
     </Panel>
   );
 }

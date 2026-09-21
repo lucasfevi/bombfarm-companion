@@ -72,7 +72,6 @@ describe('teamPlanObjectiveCopy', () => {
     it(`${lang}: the farm-mode strings that report a figure name gold`, () => {
       const copy = teamPlanObjectiveCopy(SCREEN_COPY[lang], 'farm');
       expect(copy.totalGainValue).toMatch(GOLD_WORDS[lang]);
-      expect(copy.resultsHeader).toMatch(GOLD_WORDS[lang]);
       expect(copy.gearDipNote).toMatch(GOLD_WORDS[lang]);
     });
 

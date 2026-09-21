@@ -25,7 +25,6 @@ export const teamPlanPageEn = {
     'Every figure below is scored at this phase, and nowhere else. Pinning one also makes the search much faster.',
   teamPlanPhaseBeyondMax:
     'Past the furthest phase your account has reached (#{max}) — this answers what the squad would earn if it could hold it.',
-  teamPlanRunSummaryTitle: 'Search summary',
   teamPlanWaterfallPhaseLabel: 'Phase',
   /** Under the phase card's value, only when the plan's phase is not the account's own. */
   teamPlanWaterfallPhaseFrom: 'was {phase}',
@@ -37,10 +36,6 @@ export const teamPlanPageEn = {
   teamPlanScoredPhaseNoneFeasible: 'No phase this squad can clear was found.',
   teamPlanRunSummaryDuty: 'Battle load',
   teamPlanRunSummaryDutyValue: '{duty} of {slots} slots',
-  teamPlanRunSummaryDutyHint:
-    'How hard your Optimize heroes pull on the field versus how many can fight at once.',
-  teamPlanRunSummaryRegimeHintUnder:
-    'Your Optimize heroes aren’t competing for battle slots — each keeps their full share of field time.',
   teamPlanBudgetExhausted:
     'Search stopped early to save time — the gain shown is the best found so far, not a promise that nothing better exists.',
   teamPlanMainThreadFallback:
@@ -49,7 +44,7 @@ export const teamPlanPageEn = {
   teamPlanForgeFloorAria: 'Minimum forge level assumed for every item in the pool',
   teamPlanForgeFloorHint:
     'Every item is scored as if forged to at least this level. Anything lower shows up as a forge chore on that hero.',
-  teamPlanAllowedChangesLabel: 'Allowed changes',
+  teamPlanAllowedChangesLabel: 'What to change',
   teamPlanAllowedChangesAria: 'Which kinds of change this plan may propose',
   teamPlanAllowedChangesOptionBoth: 'Gear and points',
   teamPlanAllowedChangesOptionPoints: 'Points only',

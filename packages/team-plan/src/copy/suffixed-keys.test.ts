@@ -8,7 +8,7 @@ import { teamPlanObjectivePairsEn } from './objective-en';
  * `teamPlanObjectiveCopy` (`model/objective-copy.ts`) is the only reader of the `…Dps`/`…Farm`
  * suffixed keys — every component reads its neutrally-named bundle instead. That is what makes
  * the host-neutral vocabulary check about the whole package rather than about one function: a
- * component that reached past the resolver could render `teamPlanResultsHeaderDps` under a gold
+ * component that reached past the resolver could render `teamPlanGearDipNoteDps` under a gold
  * plan and no assertion elsewhere would notice.
  */
 const PACKAGE_SRC = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -33,8 +33,8 @@ const ALLOWED_FILES = [
 describe('no source file outside the namespace and the resolver reads a suffixed key', () => {
   const suffixed = Object.keys(teamPlanObjectivePairsEn).filter((key) => /(Dps|Farm)$/.test(key));
 
-  it('there are at least 14 suffixed keys, so this check is not vacuous', () => {
-    expect(suffixed.length).toBeGreaterThanOrEqual(14);
+  it('there are at least 10 suffixed keys, so this check is not vacuous', () => {
+    expect(suffixed.length).toBeGreaterThanOrEqual(10);
   });
 
   it('no offending file reads a suffixed key', () => {
@@ -50,7 +50,7 @@ describe('no source file outside the namespace and the resolver reads a suffixed
   });
 
   it('red state: the scan above does catch a suffixed key in a pretend component', () => {
-    const pretendComponent = 'return <p>{t.teamPlanResultsHeaderFarm}</p>;';
+    const pretendComponent = 'return <p>{t.teamPlanGearDipNoteFarm}</p>;';
     expect(suffixed.some((key) => pretendComponent.includes(key))).toBe(true);
   });
 });

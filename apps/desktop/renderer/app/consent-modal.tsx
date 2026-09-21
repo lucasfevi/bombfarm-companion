@@ -41,17 +41,14 @@ export function isConsentModalVisible(record: ConsentRecord | null, forceOpen: b
  */
 export function ConsentClauseList({ body }: { body: ConsentText['body'] }) {
   return (
-    <div
-      className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"
-      data-testid="consent-modal-body"
-    >
+    <Dialog.Body className="flex flex-col gap-3" data-testid="consent-modal-body">
       {body.map((clause) => (
         <div key={clause.heading}>
           <p className="m-0 text-sm font-semibold text-ink">{clause.heading}</p>
           <p className="m-0 text-sm text-muted">{clause.text}</p>
         </div>
       ))}
-    </div>
+    </Dialog.Body>
   );
 }
 
@@ -75,18 +72,18 @@ export function ConsentModalDialog({
       <Dialog.Portal>
         <Dialog.Backdrop />
         <Dialog.Popup className="!w-[min(92vw,34rem)]" data-testid="consent-modal">
-          <Dialog.Head>
-            <Dialog.Title>{text.title}</Dialog.Title>
+          <Dialog.Head className="-mx-4 mb-4 shrink-0 border-b border-line px-4 pb-3">
+            <Dialog.Title className="text-lg">{text.title}</Dialog.Title>
           </Dialog.Head>
           <ConsentClauseList body={text.body} />
-          <div className="flex justify-end gap-2 pt-4">
+          <Dialog.Footer>
             <Button type="button" variant="ghost" data-testid="consent-decline" onClick={onDecline}>
               {text.declineLabel}
             </Button>
             <Button type="button" variant="primary" data-testid="consent-accept" onClick={onAccept}>
               {text.acceptLabel}
             </Button>
-          </div>
+          </Dialog.Footer>
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>

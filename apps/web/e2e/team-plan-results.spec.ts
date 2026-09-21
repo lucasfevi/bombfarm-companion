@@ -22,7 +22,6 @@ test.describe('Team plan results panels', () => {
     await expect(panel.getByText(/^Today$/i)).toBeVisible();
     await expect(panel.getByText(/^Gear$/i)).toBeVisible();
     await expect(panel.getByText(/^Reset points$/i)).toBeVisible();
-    await expect(page.getByText(/Best gold per hour found by this search/i)).toBeVisible();
   });
 
   test('waterfall shows total gain above the three steps', async ({ page }) => {

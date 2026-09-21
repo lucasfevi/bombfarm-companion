@@ -25,6 +25,22 @@ export type {
 } from './types';
 
 export { mayMoveGear, mayRespendPoints } from './allowed-changes';
+export { COMMIT_INDEX, COMMIT_ORDER, commitVectorEquals, pointsToCommitVector } from './apply-commit-vector';
+export {
+  deriveEquipUnits,
+  liveGearStateFromRows,
+  preflightEquipUnits,
+  summarizeApplyVerdicts,
+  type ApplyVerdictCounts,
+  type LiveGearState,
+} from './apply-equip';
+export {
+  derivePointsUnits,
+  preflightPointsUnit,
+  preflightPointsUnitsOffline,
+  type HeroAllocationReading,
+} from './apply-points';
+export { APPLY_CALL_MEAN_MS, computeApplyLedger, estimateApplyDurationMs, type ApplyLedger } from './apply-ledger';
 export { computeRosterAuras } from './auras';
 export { AURA_FIXED_POINT_ROUNDS, evaluateRoster } from './evaluate';
 export {
