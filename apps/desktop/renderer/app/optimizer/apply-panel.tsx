@@ -19,8 +19,14 @@ import { useAccountView } from '../../lib/account/use-account-view';
 import { useForgeQueue } from '../../lib/forge/forge-queue-store';
 import type { ForgeQueueState } from '../../lib/forge/forge-queue-reducer';
 import { applyActions, useApplyProgress } from '../../lib/optimizer/apply-store';
-import { buildApplyFacts, liveItemsById, nextUndoneStep, stepGate, walletShortHeroes } from '../../lib/optimizer/apply-panel-model';
-import { buildOptimizerInputs } from '../../lib/optimizer/optimizer-inputs';
+import {
+  buildApplyFacts,
+  liveItemsById,
+  liveRosterOf,
+  nextUndoneStep,
+  stepGate,
+  walletShortHeroes,
+} from '../../lib/optimizer/apply-panel-model';
 import type { RowSkipReason } from '../../lib/optimizer/apply-labels';
 import type { StepRecord } from '../../lib/optimizer/apply-progress-reducer';
 import type { ForgeLabels } from '../forge/forge-labels';
@@ -75,7 +81,6 @@ export function ApplyPanel({
   planHeroes,
   planRunId,
   blocked,
-  farmChosenPhase,
   forgeWritesEnabled,
   accountSource,
   forgeRow,
@@ -85,7 +90,6 @@ export function ApplyPanel({
   planRunId: string;
   /** The plan can no longer be applied: a change on the account breaks it. */
   blocked: boolean;
-  farmChosenPhase: number | null;
   forgeWritesEnabled: boolean;
   accountSource: AccountSource | null;
   /** The forge row's own component, mounted through this seam — absent here; the feature that
@@ -108,18 +112,14 @@ export function ApplyPanel({
   // Memoised on the live view's own reference — a live account tick that did not change the view
   // recomputes nothing here.
   const facts = useMemo(
-    () => buildApplyFacts({ plan, planHeroes, liveView, farmChosenPhase, t, locale }),
-    [plan, planHeroes, liveView, farmChosenPhase, t, locale],
+    () => buildApplyFacts({ plan, planHeroes, liveView, t, locale }),
+    [plan, planHeroes, liveView, t, locale],
   );
 
   const equipUnits = useMemo(() => deriveEquipUnits(plan.moveList), [plan]);
   const pointsUnits = useMemo(() => derivePointsUnits(plan), [plan]);
 
-  const liveHeroes = useMemo(() => {
-    if (liveView === null) return new Map<string, HeroRecord>();
-    const built = buildOptimizerInputs(liveView, farmChosenPhase);
-    return built === null ? new Map<string, HeroRecord>() : new Map(built.inputs.heroes.map((hero) => [hero.id, hero]));
-  }, [liveView, farmChosenPhase]);
+  const liveHeroes = useMemo(() => liveRosterOf(liveView).heroes, [liveView]);
 
   const walletShort = useMemo(
     () => walletShortHeroes(pointsUnits, facts.ledger.walletBefore, planHeroes ?? NO_HEROES, liveHeroes),

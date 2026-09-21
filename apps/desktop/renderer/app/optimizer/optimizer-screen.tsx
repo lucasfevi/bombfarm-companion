@@ -228,7 +228,6 @@ export function OptimizerScreen({
             planHeroes={planState.heroes}
             planRunId={planState.runId ?? ''}
             blocked={planBroken}
-            farmChosenPhase={inputs.farmChosenPhase}
             forgeWritesEnabled={forgeWritesEnabled}
             accountSource={accountSource}
             forgeRow={(rowProps) => <ApplyForgeRow {...rowProps} />}
@@ -246,7 +245,6 @@ export function OptimizerScreen({
       planState.heroes,
       planState.runId,
       planBroken,
-      inputs.farmChosenPhase,
       forgeWritesEnabled,
       accountSource,
     ],
