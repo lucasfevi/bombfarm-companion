@@ -1,7 +1,6 @@
 import type { Loadout } from '../gear/types';
 import {
   alliesOverRotation,
-  fieldTimeInWindow,
   PASSAGEM_BASTAO_CAPPED_PULSE,
   passagemBastaoFieldPulse,
   passagemBastaoPresence,
@@ -60,17 +59,15 @@ export function scoringLoadoutsFor(
   return out;
 }
 
+/**
+ * `duty` is the share of wall clock the hero's stints are weighted by — its rotation duty, or,
+ * over a timed combat window (`FarmContext.windowSecs`), the share of that window it fields; the
+ * scorer already resolves which (`fieldPresence`).
+ */
 type Stint = { fieldSeconds: number; duty: number; restSeconds: number };
 
-/**
- * The share of wall clock a hero's stints are weighted by: its rotation duty, or, over a timed
- * combat window (`EvaluateRosterInput.windowSecs`), the share of that window it fields.
- */
-function stintPresence(stint: Stint, windowSecs: number | undefined): number {
-  if (windowSecs === undefined) return stint.duty;
-  return fieldTimeInWindow(stint.fieldSeconds, stint.restSeconds, windowSecs) / windowSecs;
-}
-
+/** The pulse fires once per stint, so its presence is the stint COUNT inside the window, not the
+ *  field-seconds — hence its own window form beside `duty`. */
 function pulsePresence(stint: Stint, windowSecs: number | undefined): number {
   if (windowSecs === undefined) return passagemBastaoPresence(stint.fieldSeconds, stint.duty);
   return passagemBastaoWindowPresence(stint.fieldSeconds, stint.restSeconds, windowSecs);
@@ -294,7 +291,7 @@ export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
       roundScores[ctx.heroId] = raw;
       const stint: Stint = { fieldSeconds: raw.fieldSeconds, duty: raw.duty, restSeconds: raw.context.restSeconds };
       stints[ctx.heroId] = stint;
-      nextDuties[ctx.heroId] = stintPresence(stint, input.windowSecs);
+      nextDuties[ctx.heroId] = stint.duty;
       sumDuty += raw.duty;
     }
 
@@ -303,12 +300,12 @@ export function evaluateRoster(input: EvaluateRosterInput): RosterEvaluation {
     for (const ctx of leaveAloneContexts) {
       const stint = leaveAloneStint(ctx, input, roundAuras, memo, roundAllies[ctx.heroId]);
       stints[ctx.heroId] = stint;
-      nextDuties[ctx.heroId] = stintPresence(stint, input.windowSecs);
+      nextDuties[ctx.heroId] = stint.duty;
     }
 
     // Unlike the auras, which each hero's sheet needs BEFORE it is scored and so read the previous
     // round's duties, the pulse scales a finished score, so it reads this round's stints.
-    entryPulseMult = computeFieldPulse(input.contexts, stints, input.aurasAtCap, input.windowSecs).expectedMult;
+    entryPulseMult = computeFieldPulse(input.contexts, stints, input.aurasAtCap, input.farm.windowSecs).expectedMult;
     for (const heroId of Object.keys(roundScores)) {
       roundScores[heroId] = applyFieldPulse(roundScores[heroId], entryPulseMult);
     }

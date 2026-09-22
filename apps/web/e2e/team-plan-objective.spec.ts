@@ -41,10 +41,32 @@ test.describe('Team plan objective', () => {
     await expect(await openFieldHelp(page, SETUP_HELP)).toContainText(/scored for the gold per hour/i);
   });
 
-  test('switching to DPS restates what the search will score', async ({ page }) => {
-    await pickObjective(page, /^DPS$/i);
-    await expect(objectiveCombobox(page)).toHaveText(/^DPS$/i);
-    await expect(await openFieldHelp(page, SETUP_HELP)).toContainText(/scored for combined roster DPS/i);
+  test('offers gold and a gate clear, and no rotation DPS — a save carries no PVP squad, so no duel either', async ({ page }) => {
+    await objectiveCombobox(page).click();
+    await expect(page.getByRole('option')).toHaveText([/^Gold \/ hr$/i, /^Gate clear$/i]);
+    await page.keyboard.press('Escape');
+  });
+
+  test('switching to Gate clear restates what the search will score, and swaps the phase control for a gate picker', async ({ page }) => {
+    await pickObjective(page, /^Gate clear$/i);
+    await expect(objectiveCombobox(page)).toHaveText(/^Gate clear$/i);
+    await expect(await openFieldHelp(page, SETUP_HELP)).toContainText(/damage they land inside the gate timer/i);
+    await expect(page.getByRole('combobox', { name: /^Which gate this search plans for$/i })).toBeVisible();
+    await expect(page.getByRole('combobox', { name: /^Which phase this search plans for$/i })).toHaveCount(0);
+  });
+
+  test('the gate picker lists gates only, and a pick sticks', async ({ page }) => {
+    await pickObjective(page, /^Gate clear$/i);
+    const gatePicker = page.getByRole('combobox', { name: /^Which gate this search plans for$/i });
+    await gatePicker.click();
+    await expect(page.getByPlaceholder('Hard, Normal 2-5, or 150')).toBeFocused();
+    await page.keyboard.type('Normal 1-1');
+    await expect(page.getByRole('option', { name: 'Normal 1-1 (#51)' })).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await gatePicker.click();
+    await page.keyboard.type('#150');
+    await page.getByRole('option', { name: /\(#150\)$/ }).click();
+    await expect(gatePicker).toHaveText(/\(#150\)$/);
   });
 
   test('a Gold plan reports gold per hour and never roster DPS', async ({ page }) => {
@@ -54,8 +76,8 @@ test.describe('Team plan objective', () => {
     await expect(totalGain(page)).not.toContainText(DAMAGE_UNIT);
   });
 
-  test('a Damage plan reports roster DPS', async ({ page }) => {
-    await pickObjective(page, /^DPS$/i);
+  test('a Gate clear plan reports DPS at the gate', async ({ page }) => {
+    await pickObjective(page, /^Gate clear$/i);
     await clickOptimize(page);
     await waitForOptimizeDone(page);
     await expect(totalGain(page)).toContainText(DAMAGE_UNIT);
@@ -68,7 +90,7 @@ test.describe('Team plan objective', () => {
     const results = page.getByRole('region', { name: /Team plan results/i });
     await expect(results).toBeVisible();
 
-    await pickObjective(page, /^DPS$/i);
+    await pickObjective(page, /^Gate clear$/i);
 
     // Not a stale banner over gold numbers under a damage heading — the section is gone.
     await expect(results).toHaveCount(0);
@@ -128,9 +150,10 @@ test.describe('Team plan objective — a record with no furthest phase', () => {
     await expect(totalGain(page)).toContainText(GOLD_UNIT);
   });
 
-  test('DPS still runs on the same record', async ({ page }) => {
-    await pickObjective(page, /^DPS$/i);
+  test('a gate clear still runs on the same record — it never sweeps', async ({ page }) => {
     await pickNoPhase(page);
+    await expect(page.getByText(NEEDS_PHASE)).toBeVisible();
+    await pickObjective(page, /^Gate clear$/i);
     await expect(page.getByText(NEEDS_PHASE)).toHaveCount(0);
     await clickOptimize(page);
     await waitForOptimizeDone(page);

@@ -1,5 +1,6 @@
 import type { TeamPlanInputs } from './team-plan-inputs';
 import type { TeamPlanControls } from './team-plan-controls';
+import { resolveTeamPlanGatePhase } from './combat-window';
 
 /**
  * The phase the team plan actually scores at.
@@ -15,4 +16,22 @@ export function resolveTeamPlanTargetPhase(
   if (controls.targetPhaseChosen) return controls.targetPhase;
   if (inputs.farmChosenPhase != null) return inputs.farmChosenPhase;
   return inputs.phase;
+}
+
+/**
+ * The phase the plan is scored at, per objective: the gate picked for a gate clear, the duel
+ * room's phase for PVP, and the shared phase control for gold.
+ */
+export function planTargetPhase(
+  inputs: Pick<TeamPlanInputs, 'farmChosenPhase' | 'phase' | 'pvpRoomPhase'>,
+  controls: Pick<TeamPlanControls, 'objective' | 'targetPhase' | 'targetPhaseChosen' | 'gatePhase'>,
+): number | null {
+  switch (controls.objective) {
+    case 'gateClear':
+      return resolveTeamPlanGatePhase(inputs, controls);
+    case 'pvp':
+      return inputs.pvpRoomPhase ?? inputs.phase;
+    default:
+      return resolveTeamPlanTargetPhase(inputs, controls);
+  }
 }

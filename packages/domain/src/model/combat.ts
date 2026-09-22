@@ -33,9 +33,7 @@ function activeDpsWithFuse(hero: HeroSheet, context: Context, fuseSec: number): 
 
 /** Exposed for `points-rank`'s marginal-fuse CDR scoring; not part of the public barrel. */
 export function sustainedDpsWithFuse(hero: HeroSheet, context: Context, fuseSec: number): number {
-  const fieldSecondsValue = fieldSeconds(hero, context);
-  const duty = fieldSecondsValue / (fieldSecondsValue + context.restSeconds);
-  return activeDpsWithFuse(hero, context, fuseSec) * duty;
+  return activeDpsWithFuse(hero, context, fuseSec) * fieldPresence(hero, context);
 }
 
 export function bombsPerSecond(hero: Pick<HeroSheet, 'speed' | 'cdr'>, context: Context): number {
@@ -94,11 +92,22 @@ export function fieldSeconds(hero: HeroSheet, context: Context): number {
   return hero.energy / context.drainMult;
 }
 
-/** Sustained farming DPS including house downtime. */
-export function sustainedDps(hero: HeroSheet, context: Context): number {
+/**
+ * The share of wall clock a hero is on the field: its rotation duty over an endless deploy/rest
+ * cycle, or, inside a timed window (`context.windowSecs`), the share of that window its stints
+ * cover — which tends to the duty as the window grows.
+ */
+export function fieldPresence(hero: HeroSheet, context: Context): number {
   const fieldSecondsValue = fieldSeconds(hero, context);
-  const duty = fieldSecondsValue / (fieldSecondsValue + context.restSeconds);
-  return activeDps(hero, context) * duty;
+  if (context.windowSecs !== undefined) {
+    return fieldTimeInWindow(fieldSecondsValue, context.restSeconds, context.windowSecs) / context.windowSecs;
+  }
+  return fieldSecondsValue / (fieldSecondsValue + context.restSeconds);
+}
+
+/** DPS averaged over the horizon: an endless rotation with house downtime, or a timed window. */
+export function sustainedDps(hero: HeroSheet, context: Context): number {
+  return activeDps(hero, context) * fieldPresence(hero, context);
 }
 
 /** Active-phase DPS while deployed (no downtime). */

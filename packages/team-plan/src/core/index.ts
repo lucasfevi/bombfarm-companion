@@ -10,6 +10,8 @@ export type { TeamPlanControls } from './team-plan-controls';
 export type { TeamPlanControlChange } from './plan-lifecycle';
 export {
   DEFAULT_TEAM_PLAN_OBJECTIVE,
+  TEAM_PLAN_OBJECTIVES,
+  TEAM_PLAN_OBJECTIVES_WITHOUT_PVP,
   isTeamPlanObjective,
   DEFAULT_TEAM_PLAN_ALLOWED_CHANGES,
   isTeamPlanAllowedChanges,
@@ -18,6 +20,7 @@ export {
   isScopeState,
   clampForgeFloor,
   clampTargetPhase,
+  normalizeGatePhase,
   isTeamAuraId,
   normalizeAurasAtCap,
   withAuraAtCap,
@@ -32,9 +35,19 @@ export {
   heroScopeKey,
 } from './hero-scope';
 export { buildTeamPlanInput } from './build-team-plan-input';
+export { planTargetPhase } from './target-phase';
+export {
+  PVP_SQUAD_SLOTS,
+  PVP_WINDOW_SECS,
+  countPvpSquadHeroes,
+  pvpSquadExcess,
+  resolveTeamPlanGatePhase,
+  teamPlanGateWindowSecs,
+} from './combat-window';
 export {
   resolveTeamPlanTargetPhase,
   isFarmObjectiveUnavailable,
+  isPvpObjectiveUnavailable,
   computeTeamPlanInputSignature,
   isTeamPlanStale,
   applyTeamPlanControlChange,

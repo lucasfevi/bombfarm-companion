@@ -477,7 +477,8 @@ const KEYS_REMOVED: readonly string[] = [
  * controls is mirrored from the desktop shell in `live-replica-copy.ts` instead, under the drift
  * guard, so only the three strings the web page says in its own voice live here.
  * The Team plan objective control (2026-09-06) adds the control itself — `teamPlanObjectiveLabel`,
- * `teamPlanObjectiveAria`, `teamPlanObjectiveOptionDamage`, `teamPlanObjectiveOptionGold`, the hint
+ * `teamPlanObjectiveAria`, `teamPlanObjectiveOptionGold` (`…OptionDamage` left with the rotation
+ * objective on 2026-09-21, when Gate clear and PVP replaced it — see that entry below), the hint
  * under it (`teamPlanObjectiveHintDps`/`Farm`) and the warning shown when a record carries no
  * furthest-phase for gold to be priced against (`teamPlanObjectiveFarmNeedsMaxPhase`) — plus the
  * `…Dps`/`…Farm` half of each string listed in `KEYS_REMOVED`.
@@ -580,6 +581,12 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanChangesControlIgnoreFieldCrowding',
   'teamPlanChangesControlAurasAtCap',
   'teamPlanChangesControlTargetPhase',
+  // The Optimizer's Gate clear and PVP objectives (2026-09-21) replace the rotation DPS option:
+  // the two option labels, each objective's set of suffixed strings (hint, intro, gain unit, dip
+  // note, scored-phase note), the gate picker that stands in for the phase control, the read-only
+  // duel facts with their over-the-cap notice, and the front-page
+  // card's two headline units. One line: this file sits at the max-lines cap.
+  'teamPlanObjectiveOptionGate', 'teamPlanObjectiveOptionPvp', 'teamPlanObjectiveHintGate', 'teamPlanObjectiveHintPvp', 'teamPlanSetupSectionBodyGate', 'teamPlanSetupSectionBodyPvp', 'teamPlanTotalGainValueGate', 'teamPlanTotalGainValuePvp', 'teamPlanGearDipNoteGate', 'teamPlanGearDipNotePvp', 'teamPlanScoredPhaseGate', 'teamPlanScoredPhasePvp', 'teamPlanGatePhaseLabel', 'teamPlanGatePhaseAria', 'teamPlanGatePhaseHint', 'teamPlanGatePhaseSearchPlaceholder', 'teamPlanPvpSquadLabel', 'teamPlanPvpSquadValue', 'teamPlanPvpSquadHint', 'teamPlanPvpRoomUnknown', 'teamPlanPvpSquadTooMany', 'homeCardOptimizerHeadlineGate', 'homeCardOptimizerHeadlinePvp',
   'teamPlanChangesScope',
   'teamPlanChangesGroupBreaks',
   'teamPlanChangesHeroRemovedUsed',
@@ -680,7 +687,6 @@ const KEYS_ADDED: readonly string[] = [
   'teamPlanAllowedChangesHintGear',
   'teamPlanObjectiveLabel',
   'teamPlanObjectiveAria',
-  'teamPlanObjectiveOptionDamage',
   'teamPlanObjectiveOptionGold',
   'teamPlanObjectiveHintDps',
   'teamPlanObjectiveHintFarm',

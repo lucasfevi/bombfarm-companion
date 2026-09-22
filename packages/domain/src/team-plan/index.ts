@@ -24,7 +24,9 @@ export type {
   WaterfallStep,
 } from './types';
 
+export { isCombatWindowObjective } from './types';
 export { mayMoveGear, mayRespendPoints } from './allowed-changes';
+export { planFieldSlots, resolveCombatWindow, type ResolvedCombatWindow } from './combat-window';
 export { COMMIT_INDEX, COMMIT_ORDER, commitVectorEquals, pointsToCommitVector } from './apply-commit-vector';
 export {
   deriveEquipUnits,

@@ -23,19 +23,38 @@ export function teamPlanObjectiveCopy(
   strings: TeamPlanScreenCopy,
   objective: TeamPlanObjective,
 ): TeamPlanObjectiveCopy {
-  return objective === 'farm'
-    ? {
+  switch (objective) {
+    case 'farm':
+      return {
         setupSectionBody: strings.teamPlanSetupSectionBodyFarm,
         objectiveHint: strings.teamPlanObjectiveHintFarm,
         totalGainValue: strings.teamPlanTotalGainValueFarm,
         gearDipNote: strings.teamPlanGearDipNoteFarm,
         phaseHintNone: strings.teamPlanPhaseHintNoneFarm,
-      }
-    : {
+      };
+    case 'gateClear':
+      return {
+        setupSectionBody: strings.teamPlanSetupSectionBodyGate,
+        objectiveHint: strings.teamPlanObjectiveHintGate,
+        totalGainValue: strings.teamPlanTotalGainValueGate,
+        gearDipNote: strings.teamPlanGearDipNoteGate,
+        phaseHintNone: strings.teamPlanScoredPhaseGate,
+      };
+    case 'pvp':
+      return {
+        setupSectionBody: strings.teamPlanSetupSectionBodyPvp,
+        objectiveHint: strings.teamPlanObjectiveHintPvp,
+        totalGainValue: strings.teamPlanTotalGainValuePvp,
+        gearDipNote: strings.teamPlanGearDipNotePvp,
+        phaseHintNone: strings.teamPlanScoredPhasePvp,
+      };
+    default:
+      return {
         setupSectionBody: strings.teamPlanSetupSectionBodyDps,
         objectiveHint: strings.teamPlanObjectiveHintDps,
         totalGainValue: strings.teamPlanTotalGainValueDps,
         gearDipNote: strings.teamPlanGearDipNoteDps,
         phaseHintNone: strings.teamPlanPhaseHintNoneDps,
       };
+  }
 }

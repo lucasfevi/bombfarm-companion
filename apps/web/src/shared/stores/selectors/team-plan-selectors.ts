@@ -3,6 +3,7 @@ import {
   countOptimizeScopeHeroes,
   isFarmObjectiveUnavailable,
   isTeamPlanStale,
+  planTargetPhase,
   resolveTeamPlanTargetPhase,
   type TeamPlanControls,
   type TeamPlanInputs,
@@ -33,6 +34,8 @@ export function selectTeamPlanInputs(state: PlannerStore): TeamPlanInputs {
     houseCycleSecsLevel: state.houseCycleSecsLevel,
     maxPhase: state.maxPhase,
     farmChosenPhase: state.phasesViewPhaseChosen ? state.phasesViewPhase : null,
+    // A save carries no PVP state, so this app never offers the duel objective.
+    pvpRoomPhase: null,
   };
 }
 
@@ -47,6 +50,7 @@ export function selectTeamPlanControls(state: PlannerStore): TeamPlanControls {
     aurasAtCap: NO_AURAS_AT_CAP,
     targetPhase: state.targetPhase,
     targetPhaseChosen: state.targetPhaseChosen,
+    gatePhase: state.gatePhase,
   };
 }
 
@@ -59,6 +63,12 @@ export function selectTeamPlanControls(state: PlannerStore): TeamPlanControls {
  */
 export function selectTeamPlanTargetPhase(state: PlannerStore): number | null {
   return resolveTeamPlanTargetPhase(selectTeamPlanInputs(state), selectTeamPlanControls(state));
+}
+
+/** The phase the plan is scored at under the objective as set — the gate for a gate clear, the
+ *  phase control's answer for gold. What a stored plan's phase is compared against. */
+export function selectTeamPlanScoredPhase(state: PlannerStore): number | null {
+  return planTargetPhase(selectTeamPlanInputs(state), selectTeamPlanControls(state));
 }
 
 export function selectTeamPlanIsStale(state: PlannerStore): boolean {

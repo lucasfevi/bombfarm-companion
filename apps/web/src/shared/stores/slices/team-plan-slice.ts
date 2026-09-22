@@ -30,7 +30,7 @@ import {
 import {
   selectTeamPlanControls,
   selectTeamPlanInputs,
-  selectTeamPlanTargetPhase,
+  selectTeamPlanScoredPhase,
 } from '@/shared/stores/selectors/team-plan-selectors';
 
 const EMPTY_INVENTORY: InventorySnapshot = { version: 1, importedAt: 0, items: [] };
@@ -52,6 +52,8 @@ export type TeamPlanSlice = {
   /** `true` once the player has picked from the phase control, None included — the same
    *  choice-vs-default split `phasesViewPhaseChosen` makes on the Farm tab. */
   targetPhaseChosen: boolean;
+  /** The gate a Gate clear plan fights; `null` resolves to the account's next gate. */
+  gatePhase: number | null;
   runStatus: TeamPlanRunStatus;
   runId: string | null;
   plan: TeamPlan;
@@ -77,6 +79,7 @@ export type TeamPlanSlice = {
   setAllowedChanges: (value: TeamPlanAllowedChanges) => void;
   setIgnoreFieldCrowding: (value: boolean) => void;
   setTargetPhase: (value: number | null) => void;
+  setGatePhase: (value: number | null) => void;
   startRun: (runId: string) => void;
   resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
   applyPlan: (runId: string, plan: DomainTeamPlan) => void;
@@ -135,6 +138,7 @@ export const createTeamPlanSlice: StateCreator<
     ignoreFieldCrowding: false,
     targetPhase: null,
     targetPhaseChosen: false,
+    gatePhase: null,
     runStatus: 'idle',
     runId: null,
     plan: null,
@@ -163,13 +167,18 @@ export const createTeamPlanSlice: StateCreator<
     },
 
     restoreTeamPlan: (envelope) => {
-      if (envelope === null) return;
+      // A stored value that did not read as a whole envelope — an objective the control no longer
+      // offers, say — is dropped the same way a plan solved under other controls is.
+      if (envelope === null) {
+        removeTeamPlanEnvelope();
+        return;
+      }
       const state = get();
       const solvedUnderLiveControls =
         envelope.objective === state.objective &&
         envelope.allowedChanges === state.allowedChanges &&
         envelope.ignoreFieldCrowding === state.ignoreFieldCrowding &&
-        envelope.targetPhase === selectTeamPlanTargetPhase(state);
+        envelope.targetPhase === selectTeamPlanScoredPhase(state);
       if (!solvedUnderLiveControls) {
         removeTeamPlanEnvelope();
         return;
@@ -200,6 +209,7 @@ export const createTeamPlanSlice: StateCreator<
     setAllowedChanges: (value) => applyChange({ kind: 'allowedChanges', value }),
     setIgnoreFieldCrowding: (value) => applyChange({ kind: 'ignoreFieldCrowding', value }),
     setTargetPhase: (value) => applyChange({ kind: 'targetPhase', value }),
+    setGatePhase: (value) => applyChange({ kind: 'gatePhase', value }),
 
     startRun: (runId) => {
       if (get().runId === runId && get().runStatus === 'running') return;

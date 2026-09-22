@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import type { TeamPlan as DomainTeamPlan, WaterfallStep } from '@bombfarm/domain/team-plan/types';
+import type { TeamPlan as DomainTeamPlan, TeamPlanObjective, WaterfallStep } from '@bombfarm/domain/team-plan/types';
 import { Panel, Tooltip, cn, formatCompactNumber, formatNumber, mutedClass, panelHClass, panelTitleClass } from '@bombfarm/ui';
 import { sub, type Lang } from '@bombfarm/hero/copy';
 import type { TeamPlanCopy } from '../copy';
@@ -53,6 +53,7 @@ export function WaterfallPanel({
   lang,
   plan,
   copy,
+  objective = 'dps',
   accountPhase,
   ranOnMainThread,
 }: {
@@ -60,6 +61,9 @@ export function WaterfallPanel({
   lang: Lang;
   plan: DomainTeamPlan;
   copy: TeamPlanObjectiveCopy;
+  /** What the plan was scored for — the phase card's note says where a phase came from in that
+   *  objective's terms. */
+  objective?: TeamPlanObjective;
   /** The account's own phase, so the phase card can say when the plan is about another one. */
   accountPhase: number | null;
   /** Whether this run fell back off the background worker — the notice stays outside any fold,
@@ -149,7 +153,7 @@ export function WaterfallPanel({
               value={scoredPhaseValue(lang, plan)}
               valueTone={plan.scoredPhaseInfeasible ? 'warn' : 'ink'}
               tag={scoredPhaseMovedFrom(t, lang, plan, accountPhase)}
-              note={scoredPhaseHint(t, plan)}
+              note={scoredPhaseHint(t, plan, objective)}
             />
             <FactCell
               testId="team-plan-battle-load-card"

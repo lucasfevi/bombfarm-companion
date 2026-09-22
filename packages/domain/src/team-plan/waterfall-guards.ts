@@ -12,6 +12,7 @@ import { SLOTS } from '../gear/catalog';
 import type { PointAlloc } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import { wikiPhaseLine } from '../phase-wiki';
+import { planFieldSlots, resolveCombatWindow } from './combat-window';
 import { dominates, statsForEntry } from './dominance';
 import { evaluateRoster } from './evaluate';
 import { eligibleForHero, poolEntryForItem } from './pool';
@@ -35,9 +36,13 @@ const EPS = 1e-9;
  * phase's wiki row rather than carried over from the save: mitigation is a property of the phase
  * being fought, so scoring damage at phase 400 with phase 151's mitigation would answer neither
  * question. Without one this is the account exactly as the save reports it.
+ *
+ * A gate clear or a duel fights at the phase {@link resolveCombatWindow} settles on, over its
+ * window — the one place the window enters the scoring context.
  */
 export function farmFromAccount(input: TeamPlanInput): FarmContext {
-  const targetPhase = input.targetPhase;
+  const window = resolveCombatWindow(input);
+  const targetPhase = window ? window.phase : input.targetPhase;
   const line = targetPhase != null && Number.isFinite(targetPhase) ? wikiPhaseLine(targetPhase) : undefined;
   return {
     houseIdx: input.account.houseIdx,
@@ -47,6 +52,7 @@ export function farmFromAccount(input: TeamPlanInput): FarmContext {
     cycleSecs: input.account.cycleSecs,
     cycleSecsHouseIdx: input.account.cycleSecsHouseIdx,
     cycleSecsLevel: input.account.cycleSecsLevel,
+    ...(window ? { windowSecs: window.windowSecs } : {}),
   };
 }
 
@@ -63,7 +69,7 @@ export function evaluateAt(
     contexts,
     loadoutsByHeroId: squadLoadouts(assignment, itemById, contexts, gearInput.heroes),
     ptsByHeroId,
-    slots: gearInput.account.fieldSlots,
+    slots: planFieldSlots(gearInput),
     farm: farmFromAccount(gearInput),
     forgeFloor,
     farmObjective,
