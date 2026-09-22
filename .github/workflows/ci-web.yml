@@ -25,6 +25,8 @@ on:
       - 'tsconfig.base.json'
       - 'eslint.config.mjs'
       - 'vitest.config.ts'
+      - 'vitest.solver.config.ts'
+      - 'vitest.solver-files.mjs'
       - '.github/workflows/ci-web.yml'
   pull_request:
 
@@ -69,6 +71,8 @@ jobs:
               - 'tsconfig.base.json'
               - 'eslint.config.mjs'
               - 'vitest.config.ts'
+              - 'vitest.solver.config.ts'
+              - 'vitest.solver-files.mjs'
               - '.github/workflows/ci-web.yml'
 
   quality:

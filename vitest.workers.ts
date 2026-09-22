@@ -26,6 +26,11 @@ import { cappedWorkers } from './tools/cpu-budget.mjs';
  * Going below 3 does cost real wall time (the 105s of CPU no longer fits under the ~41s
  * critical path), so 3 is the floor worth holding for a run that has the machine to itself.
  *
+ * `pnpm test` is now two passes that run one after the other, each capped by this constant:
+ * the workspace projects, then the solver pass (`vitest.solver.config.ts`). The solver pass's
+ * critical path is `team-plan-farm-points.test.ts`; the root pass's is
+ * `team-plan-step-monotonicity.test.ts`.
+ *
  * `cappedWorkers` is what makes "to itself" true rather than assumed. The 3 above bounds ONE
  * run; several suites running at once on one machine each took 3 and multiplied, which is the
  * load this cap was supposed to prevent. A lone run still gets 3 — the budget is wider than

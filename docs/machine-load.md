@@ -118,7 +118,7 @@ their own parent; every failure fails open to an unqueued run.
 
 | Takes the slot | Where |
 | --- | --- |
-| `pnpm test` (the unscoped Vitest suite) | root `package.json`, through [`tools/with-heavy-slot.mjs`](../tools/with-heavy-slot.mjs) |
+| `pnpm test` (the unscoped Vitest suite) | root `package.json`, through [`tools/with-heavy-slot.mjs`](../tools/with-heavy-slot.mjs) — two passes, the workspace projects and then the solver pass (`vitest.solver.config.ts`, the four solver suites whose single synchronous test bodies cross Vitest's 60 s worker RPC window), each taking the slot in turn |
 | `pnpm check:changed` when it widens to the full suite | the same wrapper, from `check-changed.mjs` |
 | The web Playwright suite | [`apps/web/playwright.config.ts`](../apps/web/playwright.config.ts) — from inside the config, because the documented `pnpm --filter @bombfarm/web exec playwright test …` never passes through a root script |
 | The Electron smoke suite | [`apps/desktop/playwright.config.ts`](../apps/desktop/playwright.config.ts), likewise |
