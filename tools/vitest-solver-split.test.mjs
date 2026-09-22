@@ -168,7 +168,7 @@ describe('the domain project yields to the event loop between tests', () => {
       read('packages/domain/vitest.config.ts'),
       `packages/domain/vitest.config.ts must set \`setupFiles: ['tests/helpers/yield-between-tests.ts']\`, ` +
         `or a domain file past 60 s in total fails the run with every test passing`,
-    ).toContain("setupFiles: ['tests/helpers/yield-between-tests.ts']");
+    ).toMatch(/^\s*setupFiles: \['tests\/helpers\/yield-between-tests\.ts'\]/m);
   });
 
   it('the helper exists and yields one macrotask after each test', () => {
