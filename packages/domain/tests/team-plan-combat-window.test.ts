@@ -26,7 +26,7 @@ function planFor(input: TeamPlanInput, objective: TeamPlanObjective, targetPhase
 }
 
 const sheet: HeroSheet = {
-  rarity: 'epic',
+  rarity: 'Épico',
   attack: 1000,
   energy: 90,
   speed: 100,
