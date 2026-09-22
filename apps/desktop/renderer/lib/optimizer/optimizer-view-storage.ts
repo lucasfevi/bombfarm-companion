@@ -16,6 +16,7 @@ import {
   clampForgeFloor,
   clampTargetPhase,
   normalizeAurasAtCap,
+  normalizeGatePhase,
   type ScopeState,
   type TeamPlanControls,
 } from '@bombfarm/team-plan/core';
@@ -80,6 +81,7 @@ function normalizeOptimizerView(value: unknown): OptimizerView {
     aurasAtCap: normalizeAurasAtCap(raw.aurasAtCap),
     targetPhase: normalizeTargetPhase(raw.targetPhase),
     targetPhaseChosen: normalizeTargetPhaseChosen(raw.targetPhaseChosen),
+    gatePhase: normalizeGatePhase(raw.gatePhase),
   };
 }
 

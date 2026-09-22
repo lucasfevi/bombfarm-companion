@@ -28,4 +28,8 @@ export type TeamPlanInputs = {
    *  null. Web: `phasesViewPhaseChosen ? phasesViewPhase : null`. Desktop: the Farm view
    *  storage's `selectedPhase`. Resolved here because the "chosen" flag is each host's own. */
   farmChosenPhase: number | null;
+  /** The phase the duel room is hardened to — the last duel's, else the tier floor — as the host
+   *  last read it, or `null` with nothing on record; a duel then falls back to the account's
+   *  phase. A host with no PVP source at all leaves the duel objective out of its control. */
+  pvpRoomPhase: number | null;
 };

@@ -78,19 +78,18 @@ test.describe('Team plan phase picker', () => {
   });
 
   /**
-   * An unpinned phase means two different things. Gold sweeps for one and reports which it chose;
-   * damage does not sweep at all and scores at the account's own phase. One hint for both told
-   * damage users the search would go and find them a phase, which it never does.
+   * An unpinned phase is gold's alone: it sweeps for one and reports which it chose. A gate clear
+   * has no phase control to unpin — its picker names a gate, and the gate's own timer with it.
    */
-  test('unpinned says what each objective actually does with it', async ({ page }) => {
+  test('unpinned says what the gold search does with it; a gate clear has a gate picker instead', async ({ page }) => {
     await pickPhase(page, 'None', /^None$/);
     await expect(await openFieldHelp(page, PHASE_HELP)).toContainText(
       /No phase pinned\. The search picks the best phase/,
     );
 
-    await pickObjective(page, /^DPS$/i);
-    const help = await openFieldHelp(page, PHASE_HELP);
-    await expect(help).toContainText(/No phase pinned\. Damage is scored at the phase your account is on now\./);
+    await pickObjective(page, /^Gate clear$/i);
+    const help = await openFieldHelp(page, /^Gate to clear: /i);
+    await expect(help).toContainText(/Scored over this act’s \d+ s gate timer/);
     await expect(help).not.toContainText(/The search picks the best phase/);
   });
 
@@ -119,17 +118,16 @@ test.describe('Team plan phase picker', () => {
     );
   });
 
-  test('a damage plan on None stays on the account’s own phase and says nothing automatic', async ({
+  test('a gate clear plan reports the gate it was scored at, and never anything automatic', async ({
     page,
   }) => {
     await page.getByRole('combobox', { name: /^What this search scores a roster on$/i }).click();
-    await page.getByRole('option', { name: /^DPS$/i }).click();
-    await pickPhase(page, 'None', /^None$/);
+    await page.getByRole('option', { name: /^Gate clear$/i }).click();
     await clickOptimize(page);
     await waitForOptimizeDone(page);
     const phaseCard = page.getByTestId('team-plan-phase-card');
-    await expect(phaseCard).toContainText('Where your account is now.');
-    await expect(phaseCard).not.toContainText('The phase you picked.');
+    await expect(phaseCard).toContainText(/\(#\d+0\)/);
+    await expect(phaseCard).toContainText('The gate you picked, scored over its timer.');
     await expect(phaseCard).not.toContainText('Picked automatically');
   });
 });

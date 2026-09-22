@@ -8,7 +8,9 @@ import { teamPlanObjectiveCopy } from '@bombfarm/team-plan/model';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
 const LANGS: Lang[] = ['en', 'pt'];
-const OBJECTIVES: TeamPlanObjective[] = ['dps', 'farm'];
+const OBJECTIVES: TeamPlanObjective[] = ['dps', 'farm', 'gateClear', 'pvp'];
+/** The objectives that score damage — every one but gold. */
+const DAMAGE_OBJECTIVES: TeamPlanObjective[] = ['dps', 'gateClear', 'pvp'];
 
 /**
  * A gold plan reports gold per hour. Any of these words in a string it renders is a wrong unit
@@ -47,11 +49,13 @@ describe('team plan objective copy', () => {
       }
     });
 
-    it(`${lang}: the dps bundle still speaks of damage, so the farm check is not vacuous`, () => {
-      const damageWorded = bundleEntries(lang, 'dps').filter(([, text]) =>
-        DAMAGE_WORDS[lang].some((pattern) => pattern.test(text)),
-      );
-      expect(damageWorded.length).toBeGreaterThanOrEqual(5);
+    it(`${lang}: every damage bundle still speaks of damage, so the farm check is not vacuous`, () => {
+      for (const objective of DAMAGE_OBJECTIVES) {
+        const damageWorded = bundleEntries(lang, objective).filter(([, text]) =>
+          DAMAGE_WORDS[lang].some((pattern) => pattern.test(text)),
+        );
+        expect(damageWorded.length, objective).toBeGreaterThanOrEqual(4);
+      }
     });
 
     it(`${lang}: the farm-mode strings that report a figure name gold`, () => {
@@ -60,7 +64,7 @@ describe('team plan objective copy', () => {
       expect(copy.gearDipNote).toMatch(GOLD_WORDS[lang]);
     });
 
-    it(`${lang}: both objectives resolve every field to a non-empty string`, () => {
+    it(`${lang}: every objective resolves every field to a non-empty string`, () => {
       for (const objective of OBJECTIVES) {
         for (const [field, text] of bundleEntries(lang, objective)) {
           expect(text, `${objective}.${field}`).toBeTruthy();
@@ -69,12 +73,14 @@ describe('team plan objective copy', () => {
     });
   }
 
-  it('the two objectives disagree on every field, in both languages', () => {
+  it('every damage objective disagrees with gold on every field, in both languages', () => {
     for (const lang of LANGS) {
-      const dps = teamPlanObjectiveCopy(STRINGS[lang], 'dps');
       const farm = teamPlanObjectiveCopy(STRINGS[lang], 'farm');
-      for (const field of Object.keys(dps) as (keyof typeof dps)[]) {
-        expect(dps[field], `${lang}.${field}`).not.toBe(farm[field]);
+      for (const objective of DAMAGE_OBJECTIVES) {
+        const damage = teamPlanObjectiveCopy(STRINGS[lang], objective);
+        for (const field of Object.keys(damage) as (keyof typeof damage)[]) {
+          expect(damage[field], `${lang}.${objective}.${field}`).not.toBe(farm[field]);
+        }
       }
     }
   });
@@ -86,7 +92,7 @@ describe('team plan objective copy', () => {
    * on the bundle would notice.
    */
   it('no source file outside the namespace and the resolver reads a suffixed key', () => {
-    const suffixed = Object.keys(objectiveNamespace.en).filter((key) => /(Dps|Farm)$/.test(key));
+    const suffixed = Object.keys(objectiveNamespace.en).filter((key) => /(Dps|Farm|Gate|Pvp)$/.test(key));
     expect(suffixed.length).toBeGreaterThanOrEqual(10);
 
     const allowed = [join('shared', 'i18n', 'namespaces', 'team-plan-objective.ts')];

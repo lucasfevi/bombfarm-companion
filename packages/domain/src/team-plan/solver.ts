@@ -1,6 +1,7 @@
 import type { Loadout } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import { mayMoveGear } from './allowed-changes';
+import { resolveCombatWindow } from './combat-window';
 import { loadoutForScoring } from './evaluate';
 import { buildFarmObjective, exhaustiveFarmObjective, isSquadScope } from './farm-objective';
 import { buildHeroPlanContexts } from './hero-context';
@@ -95,6 +96,17 @@ function scoredPhaseReport(
   finalEvaluation: RosterEvaluation,
 ): Pick<TeamPlan, 'scoredPhase' | 'scoredPhaseSource' | 'scoredPhaseInfeasible'> {
   const chosen = input.targetPhase;
+  // A gate clear fights the gate the window resolved to, which is the chosen phase only when
+  // that phase was a gate; anything else fell through to the account's next one.
+  const window = resolveCombatWindow(input);
+  if (window !== null && input.objective === 'gateClear') {
+    const chosenGate = chosen != null && Math.round(chosen) === window.phase;
+    return {
+      scoredPhase: window.phase,
+      scoredPhaseSource: chosenGate ? 'chosen' : 'account',
+      scoredPhaseInfeasible: false,
+    };
+  }
   if (chosen != null && Number.isFinite(chosen)) {
     return {
       scoredPhase: Math.round(chosen),

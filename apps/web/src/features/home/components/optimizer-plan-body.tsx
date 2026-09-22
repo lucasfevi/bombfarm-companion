@@ -12,6 +12,19 @@ function signedPct(plan: TeamPlan, lang: Lang): string {
   return value >= 0 ? `+${text}` : text;
 }
 
+function headlineFor(objective: PlannerStore['objective'], strings: Strings): string {
+  switch (objective) {
+    case 'farm':
+      return strings.homeCardOptimizerHeadlineFarm;
+    case 'gateClear':
+      return strings.homeCardOptimizerHeadlineGate;
+    case 'pvp':
+      return strings.homeCardOptimizerHeadlinePvp;
+    default:
+      return strings.homeCardOptimizerHeadlineDps;
+  }
+}
+
 export function OptimizerPlanBody({
   plan,
   objective,
@@ -23,8 +36,8 @@ export function OptimizerPlanBody({
   t: Strings;
   lang: Lang;
 }) {
-  const headline = objective === 'farm' ? t.homeCardOptimizerHeadlineFarm : t.homeCardOptimizerHeadlineDps;
-  const hint = scoredPhaseHint(t, plan);
+  const headline = headlineFor(objective, t);
+  const hint = scoredPhaseHint(t, plan, objective);
   const scoredAt = sub(t.homeCardOptimizerScoredAt, { phase: scoredPhaseValue(lang, plan) });
 
   return (

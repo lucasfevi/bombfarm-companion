@@ -688,7 +688,7 @@ export const ptBR: Copy = {
   optimizerEmptyAllLeaveAloneTitle: 'Nada no escopo',
   optimizerEmptyAllLeaveAloneBody: 'Marque pelo menos um herói como Otimizar antes de rodar um plano.',
   optimizerBlockedBody: 'A leitura da conta não trouxe o que a busca precisa de {heroes}, então ela não consegue pontuá-los.',
-  optimizerFarmNeedsMaxPhase: 'Deixar a busca escolher a própria fase exige a fase mais distante que sua conta alcançou, que esta leitura não trouxe. Escolha uma fase acima, ou pontue por dano.',
+  optimizerFarmNeedsMaxPhase: 'Deixar a busca escolher a própria fase exige a fase mais distante que sua conta alcançou, que esta leitura não trouxe. Escolha uma fase acima, ou pontue por passar o portão.',
   optimizerLeftOutTitle: 'Alguns heróis ficaram fora da busca',
   optimizerLeftOutBody: 'O app não conseguiu ler os pontos de atributo gastos de {heroes} na leitura da conta, então eles ficaram fora desta busca: não estão no quadro de escopo nem no plano.',
 

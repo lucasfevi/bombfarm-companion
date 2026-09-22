@@ -76,6 +76,8 @@ export type FarmContextForHeroInput = {
    */
   cycleSecsHouseIdx?: number | null;
   cycleSecsLevel?: number | null;
+  /** See {@link Context.windowSecs}. */
+  windowSecs?: number;
 };
 
 /** Shared per-hero farm `Context` — the one drain path for advisor + team-plan scorer. */
@@ -97,5 +99,6 @@ export function farmContextForHero(input: FarmContextForHeroInput): Context {
     blastRange: 1 + input.mods.rangeCells,
     ato: effectiveFarmAto(input.phase),
     drainMult: combineDrainRate(input.mods.drainMult, input.teamDrainMult),
+    ...(input.windowSecs !== undefined ? { windowSecs: input.windowSecs } : {}),
   };
 }

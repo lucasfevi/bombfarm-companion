@@ -14,7 +14,7 @@ import { teamPlanEn, teamPlanPtBR } from './index';
  * inferred one). Kept deliberately short and reviewed: a future addition here is a reviewed diff,
  * never a silent weakening of the "no leakage" assertion below.
  *
- * `teamPlanObjectiveOptionDamage` ('DPS'): the initialism, spelled the same in both.
+ * `teamPlanObjectiveOptionPvp` ('PVP'): the initialism, spelled the same in both.
  * `teamPlanColDelta` ('Δ'): the Greek letter, not a word.
  * `teamPlanColDpsDelta` ('Δ DPS'): the letter and the initialism.
  * `teamPlanTotalGainValueDps` ('{delta} dps ({pct}%)'): every word is already an abbreviation or a
@@ -23,7 +23,7 @@ import { teamPlanEn, teamPlanPtBR } from './index';
  * prose.
  */
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof teamPlanEn)[] = [
-  'teamPlanObjectiveOptionDamage',
+  'teamPlanObjectiveOptionPvp',
   'teamPlanColDelta',
   'teamPlanColDpsDelta',
   'teamPlanTotalGainValueDps',

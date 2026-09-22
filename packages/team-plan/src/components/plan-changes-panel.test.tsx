@@ -49,12 +49,12 @@ function inputs(heroes: HeroRecord[], items: InventoryItem[], overrides: Partial
     inventory: { version: 1, importedAt: 0, items },
     treeDanoTotal: 41, treeEnergy: 0, treeSpeed: 0, treeCritChance: 0, treeCritDmg: 0, treeLuckFlatPct: 0, treeTeamCoinPct: 0, treeXpMult: 1,
     houseIdx: 3, houseLevel: 2, phase: 91, mitigationPct: 0, slots: 5, fieldSlots: 9,
-    houseCycleSecs: 300, houseCycleSecsHouseIdx: 3, houseCycleSecsLevel: 2, maxPhase: 91, farmChosenPhase: 91,
+    houseCycleSecs: 300, houseCycleSecsHouseIdx: 3, houseCycleSecsLevel: 2, maxPhase: 91, farmChosenPhase: 91, pvpRoomPhase: null,
     ...overrides,
   };
 }
 
-const controls: TeamPlanControls = { scopeByHeroId: {}, forgeFloor: 12, objective: 'farm', allowedChanges: 'both', ignoreFieldCrowding: false, aurasAtCap: NO_AURAS_AT_CAP, targetPhase: null, targetPhaseChosen: false };
+const controls: TeamPlanControls = { scopeByHeroId: {}, forgeFloor: 12, objective: 'farm', allowedChanges: 'both', ignoreFieldCrowding: false, aurasAtCap: NO_AURAS_AT_CAP, targetPhase: null, targetPhaseChosen: false, gatePhase: null };
 
 const rowan = hero({ id: 'rowan', name: 'Rowan' });
 const minato = hero({ id: 'minato', name: 'Minato' });
@@ -185,14 +185,16 @@ describe('wordPlanChange — every kind of change has words, and none is a raw f
   const names = new Map([['rowan', 'Rowan'], ['minato', 'Minato']]);
 
   it('a control change prints the option labels, not the enum values', () => {
-    const ledger = describePlanChanges(basis, { inputs: basis.inputs, controls: { ...controls, objective: 'dps', allowedChanges: 'points', ignoreFieldCrowding: true } }, null);
+    // Switching to a gate clear also moves the phase scored at: from the account's 91 to its next gate.
+    const ledger = describePlanChanges(basis, { inputs: basis.inputs, controls: { ...controls, objective: 'gateClear', allowedChanges: 'points', ignoreFieldCrowding: true } }, null);
     const words = ledger.other.map((entry) => wordPlanChange(entry, t, 'en', names));
     expect(
       words.map((w) => `${w.change}: ${w.before.kind === 'text' ? w.before.value : w.before.name} → ${w.after.kind === 'text' ? w.after.value : w.after.name}`),
     ).toEqual([
-      `${t.teamPlanChangesControlObjective}: ${t.teamPlanObjectiveOptionGold} → ${t.teamPlanObjectiveOptionDamage}`,
+      `${t.teamPlanChangesControlObjective}: ${t.teamPlanObjectiveOptionGold} → ${t.teamPlanObjectiveOptionGate}`,
       `${t.teamPlanChangesControlAllowedChanges}: ${t.teamPlanAllowedChangesOptionBoth} → ${t.teamPlanAllowedChangesOptionPoints}`,
       `${t.teamPlanChangesControlIgnoreFieldCrowding}: ${t.teamPlanChangesOff} → ${t.teamPlanChangesOn}`,
+      `${t.teamPlanChangesControlTargetPhase}: 91 → 100`,
     ]);
   });
 

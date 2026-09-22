@@ -269,7 +269,7 @@ describe('hydratePlannerStore', () => {
   it('drops a plan solved under different controls and removes its key', () => {
     seedRosterAndAccount();
     const liveSignature = liveSignatureAfterBoot();
-    const otherObjective = DEFAULT_TEAM_PLAN_OBJECTIVE === 'dps' ? 'farm' : 'dps';
+    const otherObjective = DEFAULT_TEAM_PLAN_OBJECTIVE === 'gateClear' ? 'farm' : 'gateClear';
     localStorage.setItem(
       TEAM_PLAN_KEY,
       JSON.stringify(envelopeFor(liveSignature, { objective: otherObjective })),
@@ -280,6 +280,16 @@ describe('hydratePlannerStore', () => {
     expect(state.plan).toBeNull();
     expect(state.runStatus).toBe('idle');
     expect(localStorage.getItem('bf-hp-team-plan-v1')).toBeNull();
+  });
+
+  it('drops a plan solved for the rotation objective the control no longer offers, and removes its key', () => {
+    seedRosterAndAccount();
+    const liveSignature = liveSignatureAfterBoot();
+    localStorage.setItem(TEAM_PLAN_KEY, JSON.stringify(envelopeFor(liveSignature, { objective: 'dps' })));
+
+    hydratePlannerStore();
+    expect(usePlannerStore.getState().plan).toBeNull();
+    expect(localStorage.getItem(TEAM_PLAN_KEY)).toBeNull();
   });
 
   it('restores after the scope map, so the inventory hydration cannot clear it', () => {

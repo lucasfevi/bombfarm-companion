@@ -2,7 +2,7 @@ import type { TeamPlanInput } from '@bombfarm/domain/team-plan/types';
 import type { TeamPlanInputs } from './team-plan-inputs';
 import type { TeamPlanControls } from './team-plan-controls';
 import { resolveHeroScope } from './hero-scope';
-import { resolveTeamPlanTargetPhase } from './plan-lifecycle';
+import { planTargetPhase } from './target-phase';
 
 export function buildTeamPlanInput(
   inputs: TeamPlanInputs,
@@ -75,8 +75,7 @@ export function buildTeamPlanInput(
     ignoreFieldCrowding: controls.ignoreFieldCrowding,
     // Both objectives hold these auras at their cap under this — the same opt-in shape.
     aurasAtCap: controls.aurasAtCap,
-    // Both objectives score here. Null is the objective's own default: gold sweeps for its best
-    // phase, damage stays on the account's own.
-    targetPhase: resolveTeamPlanTargetPhase(inputs, controls),
+    // Every objective scores here. Null is gold's own default: it sweeps for its best phase.
+    targetPhase: planTargetPhase(inputs, controls),
   };
 }
