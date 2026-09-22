@@ -141,6 +141,7 @@ const BODIES: Record<string, Record<string, unknown>> = {
     chests: [],
     chest_stash: [],
     item_stash: [],
+    rune_stash: [],
     vip_until: 0,
     bag_tabs: 4,
     bag_capacity: 100,

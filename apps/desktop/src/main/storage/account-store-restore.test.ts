@@ -78,6 +78,7 @@ function cleanAccountBody(overrides: Record<string, unknown> = {}): Record<strin
     chests: 0,
     chest_stash: 0,
     item_stash: 0,
+    rune_stash: 0,
     vip_until: 0,
     bag_tabs: 1,
     bag_capacity: 100,

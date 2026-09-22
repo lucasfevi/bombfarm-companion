@@ -15,6 +15,12 @@
       "owned": true,
       "cap": 150
     },
+    "rune_stash": {
+      "owned": false,
+      "slots": 0,
+      "cap": 0,
+      "unit": 150
+    },
     "vip_until": 1789163117,
     "bag_tabs": 2,
     "bag_capacity": 50,

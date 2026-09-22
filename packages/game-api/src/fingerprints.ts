@@ -43,11 +43,11 @@ const SOURCE_ARTIFACT = 'packages/game-api/src/__fixtures__/api-bodies.json — 
  * build id, so the account fingerprint's `gameBuild` names both builds by what is known of them,
  * and its `capturedAt` is the later observation — the date the declared key set became true.
  */
-const STATE_GAME_BUILD = `${GAME_BUILD}, plus an unrecorded later build that added the sell-gate keys`;
-const STATE_CAPTURED_AT = '2026-09-10T00:00:00.000Z';
+const STATE_GAME_BUILD = `${GAME_BUILD}, plus unrecorded later builds that added the sell-gate keys and the rune stash`;
+const STATE_CAPTURED_AT = '2026-09-22T12:00:00.000Z';
 const STATE_SOURCE_ARTIFACT =
   `${SOURCE_ARTIFACT}, with client_can_sell/sell_phase/sell_mode carried over from a 2026-09-10 ` +
-  'live observation held out of band';
+  'live observation and rune_stash from a 2026-09-22 one, both held out of band';
 
 /** The account-level gate on selling to the Steam market, added by the game after the 2026-08-12
  *  anchor capture: `client_can_sell` (boolean), `sell_phase` (a phase number) and `sell_mode` (a
@@ -55,6 +55,14 @@ const STATE_SOURCE_ARTIFACT =
  *  every observed `/state` body carries all three, so an absence is a real removal to report, not
  *  variance to tolerate. Nothing reads them yet. */
 export const STATE_SELL_GATE_KEYS = ['client_can_sell', 'sell_phase', 'sell_mode'] as const;
+
+/** The rune stash, added by the game alongside timed hero runes: the same
+ *  `{owned, slots, cap, unit}` shape the chest and item stashes already use. A required key, not
+ *  `optional` — it was on all 1,005 `/state` bodies of a six-hour 2026-09-22 observation,
+ *  including while `owned` was `false`, so an absence is a real removal to report rather than
+ *  variance to tolerate. Nothing reads it yet; it is declared so the account section stops being
+ *  rejected outright. */
+export const STATE_RUNE_STASH_KEY = 'rune_stash';
 
 /** `/rotation.heroes[]` — a sixth declared element level, distinct from the export/API roster
  *  hero. One variant across 8 elements in the committed corpus. */
@@ -90,6 +98,7 @@ const STATE_LEVEL: SchemaLevel = {
     'bag_capacity',
     'items_count',
     ...STATE_SELL_GATE_KEYS,
+    STATE_RUNE_STASH_KEY,
   ],
   allowance: ['account_id', 'player_name'],
 };
