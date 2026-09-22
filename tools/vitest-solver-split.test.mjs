@@ -1,14 +1,18 @@
 /**
- * The domain test suite is split into two Vitest passes: the domain project (every file but the
- * long synchronous solver suites) and the solver pass (`vitest.solver.config.ts`, exactly those
- * suites, with unhandled errors ignored — the config's own comment says why). Three ways the
- * split silently stops working, each guarded here:
+ * The domain test suite is split into two Vitest passes: the domain project, and the solver pass
+ * (`vitest.solver.config.ts`) for the files with a SINGLE synchronous test body long enough to
+ * cross Vitest's 60 s worker RPC window, with unhandled errors ignored — the config's own comment
+ * says why. A file that is merely long in TOTAL is handled differently: the domain project yields
+ * to the event loop after every test (`tests/helpers/yield-between-tests.ts`), so the window
+ * applies per test body rather than per file. Four ways this silently stops working, each guarded
+ * here:
  *
  * 1. The partition drifts — a file listed in both, in neither, or listed but gone from disk.
  * 2. `dangerouslyIgnoreUnhandledErrors` creeps back into another config, hiding real unhandled
  *    rejections there, or leaves the solver config, where the split needs it.
  * 3. A runner (`pnpm test`, the domain package script, `check-changed`, CI) runs the first pass
  *    and never the second, so the solver files stop executing while everything stays green.
+ * 4. The per-test yield is unwired, or its behavioural guard inside the domain project is deleted.
  *
  * Deliberately dumb text slicing over the config sources and real `fs` walks, the
  * `tools/vitest-worker-cap.test.mjs` convention.
@@ -152,6 +156,33 @@ describe('dangerouslyIgnoreUnhandledErrors lives in the solver config only', () 
     const solverConfig = read(SOLVER_CONFIG);
     expect(solverConfig).toContain("import { MAX_TEST_WORKERS } from './vitest.workers'");
     expect(solverConfig).toMatch(/maxWorkers:\s*MAX_TEST_WORKERS/);
+  });
+});
+
+describe('the domain project yields to the event loop between tests', () => {
+  const YIELD_HELPER = 'packages/domain/tests/helpers/yield-between-tests.ts';
+  const YIELD_GUARD = 'packages/domain/tests/event-loop-yields-between-tests.test.ts';
+
+  it('the domain config wires the yield helper through setupFiles', () => {
+    expect(
+      read('packages/domain/vitest.config.ts'),
+      `packages/domain/vitest.config.ts must set \`setupFiles: ['tests/helpers/yield-between-tests.ts']\`, ` +
+        `or a domain file past 60 s in total fails the run with every test passing`,
+    ).toContain("setupFiles: ['tests/helpers/yield-between-tests.ts']");
+  });
+
+  it('the helper exists and yields one macrotask after each test', () => {
+    expect(existsSync(join(root, YIELD_HELPER)), `${YIELD_HELPER} is missing`).toBe(true);
+    const helper = read(YIELD_HELPER);
+    expect(helper, `${YIELD_HELPER} no longer registers an afterEach hook`).toContain('afterEach(');
+    expect(helper, `${YIELD_HELPER} no longer yields a macrotask via setImmediate`).toContain('setImmediate(');
+  });
+
+  it('the behavioural guard inside the domain project still exists', () => {
+    expect(
+      existsSync(join(root, YIELD_GUARD)),
+      `${YIELD_GUARD} is missing — it is the only check that the yield actually runs between tests`,
+    ).toBe(true);
   });
 });
 

@@ -82,9 +82,9 @@ sessions running them at once finish one after another instead of all at once, f
 with four times the memory. Tier 1 never queues. See [`docs/machine-load.md`](docs/machine-load.md).
 
 `pnpm test` is two Vitest passes, not one: the workspace projects, then the solver pass
-(`vitest.solver.config.ts` — the four long synchronous solver suites, held out of the domain
-project because a single test body past Vitest's 60 s worker RPC window fails the run with every
-test passing). `pnpm vitest run --project …` never reaches those files; run
+(`vitest.solver.config.ts` — the four solver suites whose single synchronous test bodies cross
+Vitest's 60 s worker RPC window, held out of the domain project because such a body fails the run
+with every test passing). `pnpm vitest run --project …` never reaches those files; run
 `pnpm vitest run --config vitest.solver.config.ts` for them.
 
 ### The two suites neither tier includes

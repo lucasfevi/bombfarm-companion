@@ -10,6 +10,7 @@ export default defineConfig({
   root,
   test: {
     environment: 'node',
+    setupFiles: ['tests/helpers/yield-between-tests.ts'],
     include: ['tests/**/*.test.ts'],
     exclude: [...configDefaults.exclude, ...SOLVER_TEST_FILES],
     // This package owns the CPU-bound solver tests — see vitest.workers.ts. Set here as
