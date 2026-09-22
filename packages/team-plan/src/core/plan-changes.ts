@@ -6,7 +6,7 @@ import type { TeamPlanInputs } from './team-plan-inputs';
 import type { TeamPlanControls } from './team-plan-controls';
 import type { ScopeState } from './hero-scope';
 import { resolveHeroScope } from './hero-scope';
-import { resolveTeamPlanTargetPhase } from './target-phase';
+import { planTargetPhase } from './target-phase';
 
 /**
  * What a plan was computed from: the inputs and the controls as they stood when the run began.
@@ -122,6 +122,8 @@ type ControlsView = {
   allowedChanges: TeamPlanControls['allowedChanges'];
   ignoreFieldCrowding: boolean;
   aurasAtCap: string;
+  /** The phase the plan is scored at under its objective — the gate, the duel room, or the
+   *  phase control — so a gate pick reads as a change of exactly this. */
   targetPhase: number | null;
   scopeByHeroId: Record<string, ScopeState>;
 };
@@ -135,7 +137,7 @@ function planningControlsView(inputs: TeamPlanInputs, controls: TeamPlanControls
     allowedChanges: controls.allowedChanges,
     ignoreFieldCrowding: controls.ignoreFieldCrowding,
     aurasAtCap: [...controls.aurasAtCap].sort().join(','),
-    targetPhase: resolveTeamPlanTargetPhase(inputs, controls),
+    targetPhase: planTargetPhase(inputs, controls),
     scopeByHeroId,
   };
 }

@@ -10,7 +10,7 @@ Planner/web-specific durable rules. Shared monorepo rules live at the companion 
 | [import-only-heroes.md](import-only-heroes.md) | Import-only roster — required `sourceId` |
 | [explain-math.md](explain-math.md) | Keep How-the-math-works synced with lib math |
 | [level-stars-sheet.md](level-stars-sheet.md) | Level/stars naked+geared sync |
-| [e2e-visual.md](e2e-visual.md) | Playwright e2e + visual baselines |
+| [e2e.md](e2e.md) | Playwright smoke e2e — Docker vs host runs, CI layout, the `e2e-smoke` gate |
 | [adr/013-app-shell-route-group.md](adr/013-app-shell-route-group.md) | Shared `(app)` shell + `@planner` keep-alive |
 | [adr/015-cdn-cache-headers.md](adr/015-cdn-cache-headers.md) | `vercel.json` cache windows, and why the art is 30 days and the prefetch payloads 5 minutes |
 | [adr/016-one-cadence-model.md](adr/016-one-cadence-model.md) | One measured bomb-cycle model behind every DPS figure; the advisor's serial model is retired |

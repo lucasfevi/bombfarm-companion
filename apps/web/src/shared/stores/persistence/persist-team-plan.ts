@@ -1,7 +1,7 @@
 import { shallow } from 'zustand/shallow';
 import { removeTeamPlanEnvelope, saveTeamPlanEnvelope } from '@/shared/lib/team-plan-storage';
 import { usePlannerStore } from '@/shared/stores/planner-store';
-import { selectTeamPlanTargetPhase } from '@/shared/stores/selectors/team-plan-selectors';
+import { selectTeamPlanScoredPhase } from '@/shared/stores/selectors/team-plan-selectors';
 import { AUTOSAVE_MS, createDebouncedWriter } from '@/shared/stores/persistence/debounced-writer';
 
 type Store = typeof usePlannerStore;
@@ -20,7 +20,7 @@ export function attachTeamPlanPersistence(store: Store): () => void {
       objective: state.objective,
       allowedChanges: state.allowedChanges,
       ignoreFieldCrowding: state.ignoreFieldCrowding,
-      targetPhase: selectTeamPlanTargetPhase(state),
+      targetPhase: selectTeamPlanScoredPhase(state),
       plan: state.plan,
     });
   });
@@ -33,7 +33,7 @@ export function attachTeamPlanPersistence(store: Store): () => void {
         state.objective,
         state.allowedChanges,
         state.ignoreFieldCrowding,
-        selectTeamPlanTargetPhase(state),
+        selectTeamPlanScoredPhase(state),
         state.booted,
       ] as const,
     ([, , , , , , booted]) => {

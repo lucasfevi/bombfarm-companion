@@ -5,7 +5,7 @@ import { teamPlanRichSeed } from './fixtures/team-plan-seed';
 
 const PLAN_KEY = 'bf-hp-team-plan-v1';
 const HEROES_KEY = 'bf-hp-heroes-v1';
-const HEADLINE = /^[+-]\d+([.,]\d)?% (gold \/ hour|DPS), whole roster$/;
+const HEADLINE = /^[+-]\d+([.,]\d)?% (gold \/ hour|DPS at the gate), whole roster$/;
 const STALE_NOTICE = /Your account changed since this plan was built/i;
 
 const card = (page: Page) => page.getByRole('article', { name: 'Optimizer', exact: true });
@@ -162,12 +162,12 @@ test.describe('Home optimizer card', () => {
     await expect(headline(page)).toHaveText(/gold \/ hour/);
 
     await openSection(page, 'Optimizer');
-    await pickObjective(page, /^DPS$/i);
+    await pickObjective(page, /^Gate clear$/i);
     await openSection(page, 'Home');
 
     await cardState(page, 'optimizing');
     await cardState(page, 'plan');
-    await expect(headline(page)).toHaveText(/^[+-]\d+([.,]\d)?% DPS, whole roster$/);
+    await expect(headline(page)).toHaveText(/^[+-]\d+([.,]\d)?% DPS at the gate, whole roster$/);
     await page.waitForLoadState('networkidle');
     expect(await workerChunkLoads(page)).toBe(2);
   });
@@ -192,7 +192,7 @@ test.describe('Home optimizer card', () => {
 
     await openSection(page, 'Optimizer');
     await expect(results(page)).toBeVisible();
-    await pickObjective(page, /^DPS$/i);
+    await pickObjective(page, /^Gate clear$/i);
     await expect(results(page)).toHaveCount(0);
 
     await openSection(page, 'Heroes');

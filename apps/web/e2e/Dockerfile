@@ -2,7 +2,7 @@
 # Built by `node e2e/scripts/docker-run.mjs build-image` (Playwright version from package.json).
 # syntax=docker/dockerfile:1
 ARG PLAYWRIGHT_VERSION=1.61.1
-FROM mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+FROM mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-noble
 
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 

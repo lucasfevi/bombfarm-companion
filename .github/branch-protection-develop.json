@@ -6,7 +6,10 @@
       { "context": "ci-desktop-required" },
       { "context": "repo-guards-required" },
       { "context": "e2e-smoke" },
-      { "context": "e2e-visual" }
+      { "context": "fidelity-gate-required" },
+      { "context": "line-endings-required" },
+      { "context": "design-system-required" },
+      { "context": "Require a changeset" }
     ]
   },
   "enforce_admins": true,

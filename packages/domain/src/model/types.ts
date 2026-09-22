@@ -21,6 +21,12 @@ export interface Context {
   blastRange: number; // alcance; blocos/bomba = 1 + 0.5 × range. Base 1 for every hero, raised only by Explosão Ampla.
   ato: number; // difficulty band (1..5) of the phase being priced — selects the bomb cycle's hop histogram
   drainMult: number; // energy drain multiplier (<1 with Bateria Extra / Fôlego)
+  /**
+   * A timed combat window, in seconds — a gate clear, a duel — that the hero enters at full
+   * energy. Set, `sustainedDps` averages over this window instead of over an endless rotation:
+   * energy past what the window can spend earns nothing. Absent, the horizon is infinite.
+   */
+  windowSecs?: number;
 }
 
 export type StatKey = 'energy' | 'attack' | 'critDmg' | 'speed' | 'critChance' | 'penetration' | 'cdr';

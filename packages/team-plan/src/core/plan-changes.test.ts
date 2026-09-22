@@ -68,6 +68,7 @@ function inputs(overrides: Partial<TeamPlanInputs> = {}): TeamPlanInputs {
     houseCycleSecsLevel: 2,
     maxPhase: 91,
     farmChosenPhase: null,
+    pvpRoomPhase: null,
     ...overrides,
   };
 }
@@ -82,6 +83,7 @@ function controls(overrides: Partial<TeamPlanControls> = {}): TeamPlanControls {
     aurasAtCap: NO_AURAS_AT_CAP,
     targetPhase: null,
     targetPhaseChosen: false,
+    gatePhase: null,
     ...overrides,
   };
 }

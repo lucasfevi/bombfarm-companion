@@ -60,6 +60,15 @@ export type FarmContext = {
    */
   cycleSecsHouseIdx?: number | null;
   cycleSecsLevel?: number | null;
+  /**
+   * A timed combat window, in seconds, the roster fights as one squad that deploys full when it
+   * opens — a gate clear, a duel. Set, every hero is scored over the window rather than over an
+   * endless rotation: its DPS averages over the window, and its presence for the auras, Matilha's
+   * allies and the Baton Pass pulse is the share of the window it fields (`fieldTimeInWindow`),
+   * so a hero whose stint outlasts the window is present throughout and its energy moves
+   * nothing. Absent, the roster is a rotation and presence is duty.
+   */
+  windowSecs?: number;
 };
 
 export type HeroPlanContext = {
@@ -134,8 +143,18 @@ export type RosterRegime = 'underSaturated' | 'saturated';
  * damage-mode plan that lifts roster damage by tens of percent can lower the gold the account
  * earns. The measured figures live in this change's changeset, where each carries the capture it
  * came from and that capture's date.
+ *
+ * `'gateClear'` and `'pvp'` are the damage objective over a timed window instead of a rotation
+ * ({@link FarmContext.windowSecs}): the gate timer of the act {@link TeamPlanInput.targetPhase}
+ * sits in (the account's next gate when none is named), or the one-minute duel. Energy is priced
+ * for the field-seconds it buys INSIDE the window and nothing past it, which is what separates
+ * them from `'dps'`: a rotation rewards a stint that outlasts the rest, a window does not.
  */
-export type TeamPlanObjective = 'dps' | 'farm';
+export type TeamPlanObjective = 'dps' | 'farm' | 'gateClear' | 'pvp';
+
+export function isCombatWindowObjective(objective: TeamPlanObjective | undefined): boolean {
+  return objective === 'gateClear' || objective === 'pvp';
+}
 
 /**
  * Which kinds of change the plan is allowed to propose — a different axis from
@@ -167,7 +186,7 @@ export type RosterEvaluation = {
    * The presence every fielded hero's aura was weighted by in the last round — the optimize
    * heroes' from `perHero`, plus the leave-alone heroes', which `perHero` does not carry because
    * nothing they score reaches the objective. Rotation duty, or the share of the combat window
-   * fielded when {@link EvaluateRosterInput.windowSecs} is set. `screenRosterObjective` prices
+   * fielded when {@link FarmContext.windowSecs} is set. `screenRosterObjective` prices
    * its candidates off this map.
    */
   dutyByHeroId: Record<string, number>;
@@ -306,6 +325,10 @@ export type TeamPlanInput = {
    * phase's. A phase past `account.maxPhase` is allowed on purpose: "what would I earn if I
    * could hold this" is a question worth answering, and {@link TeamPlan.scoredPhase} reports
    * back which phase the answer is about.
+   *
+   * Under `'gateClear'` it is the gate to clear, and it also picks the timer: a phase that is not
+   * a gate, or none, resolves to the account's next gate. Under `'pvp'` it is the phase the duel
+   * room is hardened to — the last duel's, or the tier floor — and the window is always a minute.
    */
   targetPhase?: number | null;
   /**
@@ -514,12 +537,4 @@ export type EvaluateRosterInput = {
   ignoreFieldCrowding?: boolean;
   /** See {@link TeamPlanInput.aurasAtCap}. */
   aurasAtCap?: AurasAtCap;
-  /**
-   * A timed combat window, in seconds, the roster fights as one squad that deploys full when it
-   * opens — a gate clear, a duel. Set, every hero's presence for the auras, Matilha's allies and
-   * the Baton Pass pulse is the share of the window it fields (`fieldTimeInWindow`), not its
-   * rotation duty: a hero whose stint outlasts the window is present throughout, and its energy
-   * moves nothing. Absent, the roster is a rotation and presence is duty.
-   */
-  windowSecs?: number;
 };

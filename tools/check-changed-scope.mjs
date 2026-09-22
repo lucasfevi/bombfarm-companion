@@ -16,6 +16,8 @@ export const WIDENS_TO_EVERYTHING = [
   'tsconfig.base.json',
   'eslint.config.mjs',
   'vitest.config.ts',
+  'vitest.solver.config.ts',
+  'vitest.solver-files.mjs',
   'vitest.workers.ts',
   'tools/cpu-budget.mjs',
   'tools/require-workspace-dist.mjs',

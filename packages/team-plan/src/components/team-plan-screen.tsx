@@ -53,6 +53,7 @@ export type TeamPlanScreenActions = {
   setAllowedChanges: (value: TeamPlanAllowedChanges) => void;
   setIgnoreFieldCrowding: (value: boolean) => void;
   setTargetPhase: (value: number | null) => void;
+  setGatePhase: (value: number | null) => void;
   startRun: (runId: string) => void;
   resolveRun: (runId: string, status: Exclude<TeamPlanRunStatus, 'running'>) => void;
   applyPlan: (runId: string, plan: TeamPlan) => void;
@@ -79,6 +80,7 @@ export function TeamPlanScreenView({
   data,
   actions,
   slots,
+  objectives,
   runner,
   createWorker,
 }: {
@@ -87,6 +89,10 @@ export function TeamPlanScreenView({
   data: TeamPlanScreenData;
   actions: TeamPlanScreenActions;
   slots: TeamPlanScreenSlots;
+  /** The objectives this host can score. Absent, the two any host can: gold and a gate clear —
+   *  a duel is fought at the phase its room is hardened to, which only a host that reads the
+   *  PVP state can supply. */
+  objectives?: readonly TeamPlanObjective[];
   /** A host-built runner (window-lifetime singleton) — the screen subscribes to it instead of
    *  creating its own, so a solve survives the screen unmounting. Absent: today's behaviour. */
   runner?: TeamPlanRunnerHandle;
@@ -140,6 +146,7 @@ export function TeamPlanScreenView({
         actions={actions}
         optimize={optimize}
         setupFields={slots.setupFields}
+        {...(objectives !== undefined ? { objectives } : {})}
       />
       <ScopeList t={t} lang={lang} heroes={heroes} scopeByHeroId={controls.scopeByHeroId} onScope={actions.setScope} />
     </>
@@ -224,6 +231,7 @@ export function TeamPlanScreenView({
                     lang={lang}
                     plan={displayPlan}
                     copy={objectiveCopy}
+                    objective={controls.objective}
                     accountPhase={inputs.phase}
                     ranOnMainThread={runnerState.ranOnMainThread}
                   />

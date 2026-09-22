@@ -16,6 +16,7 @@ import {
   type TeamPlanScreenSlots,
 } from '@bombfarm/team-plan/components';
 import {
+  TEAM_PLAN_OBJECTIVES,
   applyTeamPlanControlChange,
   computeTeamPlanInputSignature,
   isTeamPlanStale,
@@ -23,6 +24,7 @@ import {
   type PlanBasis,
   type ScopeState,
   type TeamPlanControlChange,
+  type TeamPlanInputs,
 } from '@bombfarm/team-plan/core';
 import { describePlanChanges } from '@bombfarm/team-plan/core';
 import type { TeamPlanEmptyStateKind } from '@bombfarm/team-plan/model';
@@ -51,6 +53,7 @@ type OptimizerScreenActionsIn = {
 
 export function OptimizerScreen({
   snapshot,
+  pvpRoomPhase,
   controls,
   setControls,
   planState,
@@ -60,6 +63,9 @@ export function OptimizerScreen({
   accountSource,
 }: {
   snapshot: OptimizerSettledSnapshot;
+  /** The phase the duel room is hardened to as last read, or `null` — live, not part of the
+   *  snapshot, and a change of it is a change of the phase a duel plan is scored at. */
+  pvpRoomPhase: number | null;
   controls: OptimizerView;
   setControls: (next: OptimizerView) => void;
   planState: OptimizerPlanState;
@@ -73,7 +79,7 @@ export function OptimizerScreen({
   const teamPlanCopy = useTeamPlanCopy();
   const screenCopy = useMemo(() => optimizerScreenCopy(teamPlanCopy, t, lang), [teamPlanCopy, t, lang]);
 
-  const { inputs } = snapshot;
+  const inputs = useMemo<TeamPlanInputs>(() => ({ ...snapshot.inputs, pvpRoomPhase }), [snapshot.inputs, pvpRoomPhase]);
 
   // The current controls, read through a ref so the single control handler and the actions bag
   // stay stable across a render that only changed the controls themselves.
@@ -169,6 +175,9 @@ export function OptimizerScreen({
       setTargetPhase: (value: number | null) => {
         onControlChange({ kind: 'targetPhase', value });
       },
+      setGatePhase: (value: number | null) => {
+        onControlChange({ kind: 'gatePhase', value });
+      },
       startRun: (runId: string) => {
         actions.startRun(runId, liveSignatureRef.current, heroesRef.current, basisRef.current);
       },
@@ -250,5 +259,15 @@ export function OptimizerScreen({
     ],
   );
 
-  return <TeamPlanScreenView t={screenCopy} lang={lang} data={data} actions={screenActions} slots={slots} runner={runner} />;
+  return (
+    <TeamPlanScreenView
+      t={screenCopy}
+      lang={lang}
+      data={data}
+      actions={screenActions}
+      slots={slots}
+      objectives={TEAM_PLAN_OBJECTIVES}
+      runner={runner}
+    />
+  );
 }

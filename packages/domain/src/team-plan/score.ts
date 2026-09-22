@@ -1,4 +1,4 @@
-import { fieldSeconds } from '../model';
+import { fieldPresence, fieldSeconds } from '../model';
 import { computeCombatMults, derive } from '../derive';
 import { farmContextForHero } from '../farm-context';
 import { composeSheetFromBirth, nakedFromBirth } from '../birth-sheet';
@@ -71,7 +71,7 @@ function auraSignature(auras: Record<TeamBuffId, number>): string {
  * one pass is served the other's sheet.
  */
 function farmSignature(farm: FarmContext): string {
-  return `${farm.houseIdx}:${farm.houseLevel}:${farm.phase}:${farm.mitigationPct}:${farm.cycleSecs ?? ''}:${farm.cycleSecsHouseIdx ?? ''}:${farm.cycleSecsLevel ?? ''}`;
+  return `${farm.houseIdx}:${farm.houseLevel}:${farm.phase}:${farm.mitigationPct}:${farm.cycleSecs ?? ''}:${farm.cycleSecsHouseIdx ?? ''}:${farm.cycleSecsLevel ?? ''}:${farm.windowSecs ?? ''}`;
 }
 
 /**
@@ -152,6 +152,7 @@ export function scoreHeroLoadout(
     cycleSecs: farm.cycleSecs,
     cycleSecsHouseIdx: farm.cycleSecsHouseIdx,
     cycleSecsLevel: farm.cycleSecsLevel,
+    ...(farm.windowSecs !== undefined ? { windowSecs: farm.windowSecs } : {}),
   });
 
   const deriveResult = derive({
@@ -176,10 +177,7 @@ export function scoreHeroLoadout(
   });
 
   const fieldSecondsValue = fieldSeconds(deriveResult.effective, context);
-  const duty =
-    fieldSecondsValue <= 0
-      ? 0
-      : fieldSecondsValue / (fieldSecondsValue + context.restSeconds);
+  const duty = fieldSecondsValue <= 0 ? 0 : fieldPresence(deriveResult.effective, context);
 
   const score: HeroScore = {
     sustained: deriveResult.dps,

@@ -4,9 +4,11 @@ import {
   applyTeamPlanControlChange,
   computeTeamPlanInputSignature,
   isFarmObjectiveUnavailable,
+  isPvpObjectiveUnavailable,
   isTeamPlanStale,
   resolveTeamPlanTargetPhase,
 } from './plan-lifecycle';
+import { pvpSquadExcess, resolveTeamPlanGatePhase } from './combat-window';
 import { clampForgeFloor, clampTargetPhase, DEFAULT_TEAM_PLAN_CONTROLS } from './team-plan-controls';
 import type { TeamPlanControls } from './team-plan-controls';
 import type { TeamPlanInputs } from './team-plan-inputs';
@@ -45,6 +47,7 @@ function inputs(overrides: Partial<TeamPlanInputs> = {}): TeamPlanInputs {
     houseCycleSecsLevel: null,
     maxPhase: null,
     farmChosenPhase: null,
+    pvpRoomPhase: null,
     ...overrides,
   };
 }
@@ -384,5 +387,45 @@ describe('applyTeamPlanControlChange', () => {
     expect(
       applyTeamPlanControlChange(control, { kind: 'targetPhase', value: 200 }, context),
     ).toBeNull();
+  });
+});
+
+describe('gatePhase and the duel squad', () => {
+  const context = (overrides: { phase: number | null }) => ({ heroes: [{ id: 'a', battleAllowed: true }], farmChosenPhase: null, ...overrides });
+  const heroRecord = (id: string) => minimalHero({ id, updatedAt: 1 });
+
+  it('gatePhase: a pick that is not a gate stores as null, which resolves to the account\u2019s next gate', () => {
+    const picked = applyTeamPlanControlChange(controls({ objective: 'gateClear' }), { kind: 'gatePhase', value: 150 }, context({ phase: 91 }));
+    expect(picked?.controls.gatePhase).toBe(150);
+    expect(picked?.clearsPlan).toBe(true);
+
+    const notAGate = applyTeamPlanControlChange(controls({ objective: 'gateClear', gatePhase: 150 }), { kind: 'gatePhase', value: 151 }, context({ phase: 91 }));
+    expect(notAGate?.controls.gatePhase).toBeNull();
+    expect(resolveTeamPlanGatePhase({ phase: 91 }, notAGate!.controls)).toBe(100);
+  });
+
+  it('gatePhase: clears the plan only when the plan was built for a gate, and only when the resolved gate moves', () => {
+    const underGold = applyTeamPlanControlChange(controls({ objective: 'farm' }), { kind: 'gatePhase', value: 150 }, context({ phase: 91 }));
+    expect(underGold?.controls.gatePhase).toBe(150);
+    expect(underGold?.clearsPlan).toBe(false);
+
+    // Picking the very gate the default already resolves to changes nothing the plan scored.
+    const sameGate = applyTeamPlanControlChange(controls({ objective: 'gateClear' }), { kind: 'gatePhase', value: 100 }, context({ phase: 91 }));
+    expect(sameGate?.controls.gatePhase).toBe(100);
+    expect(sameGate?.clearsPlan).toBe(false);
+
+    expect(applyTeamPlanControlChange(controls({ gatePhase: 100 }), { kind: 'gatePhase', value: 100 }, context({ phase: 91 }))).toBeNull();
+  });
+
+  it('the duel objective is unavailable while the scope board fields more than the room’s nine seats', () => {
+    const heroes = Array.from({ length: 11 }, (_, i) => heroRecord(`h${i}`));
+    const donate = (ids: string[]) => ({ scopeByHeroId: Object.fromEntries(ids.map((id) => [id, 'donate' as const])) });
+    expect(pvpSquadExcess({ heroes }, donate([]))).toBe(2);
+    expect(isPvpObjectiveUnavailable({ heroes }, donate([]))).toBe(true);
+    expect(isPvpObjectiveUnavailable({ heroes }, donate(['h0']))).toBe(true);
+    expect(isPvpObjectiveUnavailable({ heroes }, donate(['h0', 'h1']))).toBe(false);
+    // Leave alone still fields, so it counts against the seats; only Donate leaves the room.
+    expect(isPvpObjectiveUnavailable({ heroes }, { scopeByHeroId: { h0: 'donate', h1: 'leaveAlone' } })).toBe(true);
+    expect(isPvpObjectiveUnavailable({ heroes: heroes.slice(0, 9) }, donate([]))).toBe(false);
   });
 });

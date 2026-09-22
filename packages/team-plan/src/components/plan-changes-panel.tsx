@@ -48,6 +48,21 @@ function treeAxisLabel(axis: TreeAxis, t: Copy): string {
   return t.statShort[TREE_AXIS_STAT[axis]];
 }
 
+/** The control's own option labels; the rotation objective the control no longer offers, and any
+ *  value a future basis carries, print as stored. */
+function objectiveLabel(raw: string, t: Copy): string {
+  switch (raw) {
+    case 'farm':
+      return t.teamPlanObjectiveOptionGold;
+    case 'gateClear':
+      return t.teamPlanObjectiveOptionGate;
+    case 'pvp':
+      return t.teamPlanObjectiveOptionPvp;
+    default:
+      return raw;
+  }
+}
+
 function scopeLabel(scope: ScopeState, t: Copy): string {
   return scope === 'optimize' ? t.teamPlanScopeOptimize : scope === 'donate' ? t.teamPlanScopeDonate : t.teamPlanScopeLeaveAlone;
 }
@@ -172,7 +187,7 @@ export function wordPlanChange(entry: PlanChange, t: Copy, lang: Lang, heroNames
           case 'forgeFloor':
             return forge(Number(raw));
           case 'objective':
-            return raw === 'farm' ? t.teamPlanObjectiveOptionGold : t.teamPlanObjectiveOptionDamage;
+            return objectiveLabel(raw, t);
           case 'allowedChanges':
             return raw === 'both' ? t.teamPlanAllowedChangesOptionBoth : raw === 'points' ? t.teamPlanAllowedChangesOptionPoints : t.teamPlanAllowedChangesOptionGear;
           case 'ignoreFieldCrowding':

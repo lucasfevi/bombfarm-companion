@@ -3,7 +3,6 @@ name: Playwright e2e (web)
 on:
   workflow_dispatch:
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
   push:
     branches: [main, develop]
     paths:
@@ -161,98 +160,12 @@ jobs:
           if-no-files-found: ignore
           retention-days: 1
 
-      - name: Collect screenshot diffs
-        if: always() && steps.smoke-test.outcome == 'failure'
-        run: node e2e/scripts/collect-visual-diffs.mjs
-
-      - name: Upload screenshot diffs
-        if: always() && steps.smoke-test.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: diffs-smoke-${{ matrix.shard }}
-          path: apps/web/visual-diffs/
-          if-no-files-found: ignore
-          retention-days: 1
-
-  visual-e2e:
-    needs: [changes, build-e2e]
-    if: >
-      (github.event_name != 'pull_request' || needs.changes.outputs.e2e == 'true') &&
-      (
-        github.event_name != 'pull_request' ||
-        contains(join(github.event.pull_request.labels.*.name, ','), 'visual-ci')
-      )
-    runs-on: ubuntu-latest
-    # Same image as smoke-shard, same reason. When `visual.spec.ts` comes off
-    # `describe.skip`, capture the baselines in here — the committed PNGs predate
-    # the container and its font rendering differs, against `maxDiffPixelRatio: 0`.
-    container: mcr.microsoft.com/playwright:v1.61.1-noble
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: apps/web
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        working-directory: .
-        run: pnpm install --frozen-lockfile
-
-      - name: Install Playwright Chromium
-        run: pnpm exec playwright install chromium
-
-      - name: Download static export
-        uses: actions/download-artifact@v4
-        with:
-          name: e2e-static-out
-          path: apps/web/out
-
-      - name: Run visual e2e
-        id: visual-test
-        env:
-          CI: '1'
-          E2E_PREBUILT: '1'
-          PLAYWRIGHT_BLOB: '1'
-        run: pnpm exec playwright test --project=chromium
-
-      - name: Upload blob report
-        if: always() && steps.visual-test.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: blob-visual
-          path: apps/web/blob-report/
-          if-no-files-found: ignore
-          retention-days: 1
-
-      - name: Collect screenshot diffs
-        if: always() && steps.visual-test.outcome == 'failure'
-        run: node e2e/scripts/collect-visual-diffs.mjs
-
-      - name: Upload screenshot diffs
-        if: always() && steps.visual-test.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: diffs-visual
-          path: apps/web/visual-diffs/
-          if-no-files-found: ignore
-          retention-days: 1
-
   perf:
     name: perf-render-counts (advisory, non-blocking)
     needs: [changes]
     if: github.event_name != 'pull_request' || needs.changes.outputs.e2e == 'true'
     runs-on: ubuntu-latest
-    # Same image as smoke-shard/visual-e2e — pinned to match @playwright/test.
+    # Same image as smoke-shard — pinned to match @playwright/test.
     container: mcr.microsoft.com/playwright:v1.61.1-noble
     timeout-minutes: 20
     # Advisory only: componentRenders is deterministic on a dedicated host, but this has
@@ -305,10 +218,10 @@ jobs:
           retention-days: 7
 
   report:
-    needs: [changes, build-e2e, smoke-shard, visual-e2e]
+    needs: [changes, build-e2e, smoke-shard]
     if: >
       always() && needs.changes.outputs.e2e == 'true' &&
-      (needs.smoke-shard.result == 'failure' || needs.visual-e2e.result == 'failure')
+      needs.smoke-shard.result == 'failure'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -343,18 +256,10 @@ jobs:
           path: apps/web/all-blob-reports
           merge-multiple: true
 
-      - name: Download screenshot diffs
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          pattern: diffs-*
-          path: apps/web/visual-diffs
-          merge-multiple: true
-
       - name: Check merge inputs
         id: inputs
         run: |
-          mkdir -p visual-diffs all-blob-reports
+          mkdir -p all-blob-reports
           if [ -n "$(find all-blob-reports -name '*.zip' -print -quit)" ]; then
             echo "blobs=true" >> "$GITHUB_OUTPUT"
           else
@@ -371,9 +276,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-report
-          path: |
-            apps/web/playwright-report/
-            apps/web/visual-diffs/
+          path: apps/web/playwright-report/
           if-no-files-found: warn
           retention-days: 14
 
@@ -386,7 +289,7 @@ jobs:
           RUN_ID: ${{ github.run_id }}
         run: |
           ids=$(gh api "repos/${REPO}/actions/runs/${RUN_ID}/artifacts" --paginate \
-            --jq '.artifacts[] | select(.name | startswith("blob-") or startswith("diffs-")) | .id')
+            --jq '.artifacts[] | select(.name | startswith("blob-")) | .id')
           for id in $ids; do
             gh api -X DELETE "repos/${REPO}/actions/artifacts/${id}" && echo "deleted artifact ${id}"
           done
@@ -396,7 +299,6 @@ jobs:
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           SMOKE_RESULT: ${{ needs.smoke-shard.result }}
-          VISUAL_RESULT: ${{ needs.visual-e2e.result }}
         run: node e2e/scripts/build-report-comment.mjs
 
       - name: Append review summary to job summary
@@ -409,7 +311,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const marker = '<!-- e2e-visual-report -->';
+            const marker = '<!-- e2e-report -->';
             const body = `${marker}\n${fs.readFileSync('apps/web/pr-comment.md', 'utf8')}`;
             const { owner, repo } = context.repo;
             const issue_number = context.issue.number;
@@ -431,7 +333,7 @@ jobs:
                 (c) =>
                   c.user.type === 'Bot' &&
                   !c.body?.includes(marker) &&
-                  c.body?.startsWith('## Playwright visual diffs'),
+                  c.body?.includes('## Playwright e2e — review'),
               ),
             ];
             for (const c of stale) {
@@ -439,11 +341,11 @@ jobs:
             }
 
   report-resolved:
-    needs: [changes, smoke-shard, visual-e2e]
+    needs: [changes, smoke-shard]
     if: >
       always() && github.event_name == 'pull_request' &&
       needs.changes.outputs.e2e == 'true' &&
-      needs.smoke-shard.result == 'success' && needs.visual-e2e.result == 'success'
+      needs.smoke-shard.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -452,7 +354,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const marker = '<!-- e2e-visual-report -->';
+            const marker = '<!-- e2e-report -->';
             const { owner, repo } = context.repo;
             const issue_number = context.issue.number;
             const comments = await github.paginate(github.rest.issues.listComments, {
@@ -465,7 +367,7 @@ jobs:
             const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
             await github.rest.issues.updateComment({
               owner, repo, comment_id: existing.id,
-              body: `${marker}\n## Playwright e2e — review\n\n✅ Smoke and visual both pass on the latest commit ([run](${runUrl})). No diffs to review.`,
+              body: `${marker}\n## Playwright e2e — review\n\n✅ Smoke passes on the latest commit ([run](${runUrl})). Nothing left to review.`,
             });
 
   e2e-smoke:
@@ -493,40 +395,3 @@ jobs:
             echo "smoke-shard: ${{ needs.smoke-shard.result }}"
             exit 1
           fi
-
-  e2e-visual:
-    name: e2e-visual
-    needs: [changes, build-e2e, visual-e2e]
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Require path detection
-        if: needs.changes.result != 'success'
-        run: exit 1
-
-      - name: Skip — no e2e-relevant changes
-        if: needs.changes.outputs.e2e != 'true'
-        run: echo "No e2e-relevant file changes."
-
-      - name: Skip — visual gated on PRs without visual-ci
-        if: needs.visual-e2e.result == 'skipped'
-        run: echo "Visual e2e skipped (runs on develop/main, or add label visual-ci)."
-
-      - name: Require visual suite when it ran
-        if: needs.visual-e2e.result == 'failure' || needs.visual-e2e.result == 'cancelled'
-        run: |
-          if [ "${{ needs.build-e2e.result }}" != "success" ]; then
-            echo "build-e2e: ${{ needs.build-e2e.result }}"
-            exit 1
-          fi
-          echo "visual-e2e: ${{ needs.visual-e2e.result }}"
-          exit 1
-
-      - name: Require visual suite success
-        if: needs.visual-e2e.result == 'success'
-        run: |
-          if [ "${{ needs.build-e2e.result }}" != "success" ]; then
-            echo "build-e2e: ${{ needs.build-e2e.result }}"
-            exit 1
-          fi
-          echo "visual-e2e passed."

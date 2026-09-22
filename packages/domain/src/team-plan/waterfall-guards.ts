@@ -12,6 +12,7 @@ import { SLOTS } from '../gear/catalog';
 import type { PointAlloc } from '../gear/types';
 import type { InventoryItem } from '../inventory';
 import { wikiPhaseLine } from '../phase-wiki';
+import { planFieldSlots, resolveCombatWindow } from './combat-window';
 import { dominates, statsForEntry } from './dominance';
 import { evaluateRoster } from './evaluate';
 import { eligibleForHero, poolEntryForItem } from './pool';
@@ -35,9 +36,13 @@ const EPS = 1e-9;
  * phase's wiki row rather than carried over from the save: mitigation is a property of the phase
  * being fought, so scoring damage at phase 400 with phase 151's mitigation would answer neither
  * question. Without one this is the account exactly as the save reports it.
+ *
+ * A gate clear or a duel fights at the phase {@link resolveCombatWindow} settles on, over its
+ * window — the one place the window enters the scoring context.
  */
 export function farmFromAccount(input: TeamPlanInput): FarmContext {
-  const targetPhase = input.targetPhase;
+  const window = resolveCombatWindow(input);
+  const targetPhase = window ? window.phase : input.targetPhase;
   const line = targetPhase != null && Number.isFinite(targetPhase) ? wikiPhaseLine(targetPhase) : undefined;
   return {
     houseIdx: input.account.houseIdx,
@@ -47,6 +52,7 @@ export function farmFromAccount(input: TeamPlanInput): FarmContext {
     cycleSecs: input.account.cycleSecs,
     cycleSecsHouseIdx: input.account.cycleSecsHouseIdx,
     cycleSecsLevel: input.account.cycleSecsLevel,
+    ...(window ? { windowSecs: window.windowSecs } : {}),
   };
 }
 
@@ -63,7 +69,7 @@ export function evaluateAt(
     contexts,
     loadoutsByHeroId: squadLoadouts(assignment, itemById, contexts, gearInput.heroes),
     ptsByHeroId,
-    slots: gearInput.account.fieldSlots,
+    slots: planFieldSlots(gearInput),
     farm: farmFromAccount(gearInput),
     forgeFloor,
     farmObjective,
@@ -275,13 +281,19 @@ function assignmentsMatch(a: AssignmentState, b: AssignmentState): boolean {
   return JSON.stringify(itemLocationEntries(a)) === JSON.stringify(itemLocationEntries(b));
 }
 
-/** Lightweight chore count for the tie-break only — the real lists are built in `waterfall.ts`. */
-function chorCount(
+/**
+ * Lightweight tie-break figures — the real lists are built in `waterfall.ts`. Fewer `chores`
+ * wins a tie; among equal chores, more `fills` wins. A fill is a free piece going onto a slot the
+ * player has empty today. Under `ignoreFieldCrowding` it is what the player asked for, so it is
+ * counted as a fill and not as a chore; otherwise it is a chore like any other move and `fills`
+ * stays 0, so the tie-break is the plain chore count it always was.
+ */
+function tieBreakFor(
   gearInput: TeamPlanInput,
   rosterHeroIds: ReadonlySet<string>,
   baseline: AssignmentState,
   candidate: GearCandidate,
-): number {
+): { chores: number; fills: number } {
   let forgeCount = 0;
   if (candidate.floor > 0) {
     for (const item of gearInput.inventory) {
@@ -291,14 +303,27 @@ function chorCount(
       forgeCount += 1;
     }
   }
+  const fillsAreAsked = gearInput.ignoreFieldCrowding === true;
   const before = new Map(itemLocationEntries(baseline));
   const after = new Map(itemLocationEntries(candidate.assignment));
+  const filledSlots = new Set(
+    Object.entries(baseline.slots).flatMap(([heroId, slots]) =>
+      Object.entries(slots)
+        .filter(([, itemId]) => itemId)
+        .map(([slot]) => `${heroId}|${slot}`),
+    ),
+  );
   const ids = new Set([...before.keys(), ...after.keys()]);
   let moveCount = 0;
+  let fillCount = 0;
   for (const id of ids) {
-    if ((before.get(id) ?? 'pool') !== (after.get(id) ?? 'pool')) moveCount += 1;
+    const from = before.get(id) ?? 'pool';
+    const to = after.get(id) ?? 'pool';
+    if (from === to) continue;
+    if (fillsAreAsked && from === 'pool' && !filledSlots.has(to)) fillCount += 1;
+    else moveCount += 1;
   }
-  return forgeCount + moveCount;
+  return { chores: forgeCount + moveCount, fills: fillCount };
 }
 
 /**
@@ -341,6 +366,11 @@ export function chooseGearCandidate(input: ChooseGearCandidateInput): ChosenGear
   // Polished per candidate, not once: dominance is compared at `effectiveUpgrade`, which the two
   // move-bearing candidates read at different floors. The two baseline candidates are deliberately
   // left alone — they are the "change no gear" arms, and polishing one would give it chores.
+  // Under `ignoreFieldCrowding` the move-bearing arms are declared even when the search proposed
+  // nothing: a fill is routinely worth 0 to the objective (gold/hr is flat between hits-to-kill
+  // steps), so the search never accepts it, and the polish pass is the only place it can happen.
+  const fillEmptySlots = gearInput.ignoreFieldCrowding === true;
+  const declareMoves = !sameAssignment || fillEmptySlots;
   const polishedFor = (candidateFloor: number): AssignmentState =>
     polishDominatedPlacements({
       contexts,
@@ -355,8 +385,8 @@ export function chooseGearCandidate(input: ChooseGearCandidateInput): ChosenGear
 
   const declared: GearCandidate[] = [{ key: 'none', assignment: baselineAssignment, floor: 0 }];
   if (floor > 0) declared.push({ key: 'forgeOnly', assignment: baselineAssignment, floor });
-  if (!sameAssignment) declared.push({ key: 'movesOnly', assignment: polishedFor(0), floor: 0 });
-  if (floor > 0 && !sameAssignment) declared.push({ key: 'forgeMoves', assignment: polishedFor(floor), floor });
+  if (declareMoves) declared.push({ key: 'movesOnly', assignment: polishedFor(0), floor: 0 });
+  if (floor > 0 && declareMoves) declared.push({ key: 'forgeMoves', assignment: polishedFor(floor), floor });
 
   type Evaluated = { candidate: GearCandidate; gearEvaluation: RosterEvaluation; respec: AcceptedRespec };
   // Every declared candidate is scored — none is discarded on its own `gearEvaluation` (option B:
@@ -394,11 +424,12 @@ export function chooseGearCandidate(input: ChooseGearCandidateInput): ChosenGear
     if (entry.respec.objective > winner.respec.objective + EPS) {
       winner = entry;
     } else if (Math.abs(entry.respec.objective - winner.respec.objective) <= EPS) {
-      const entryChores = chorCount(gearInput, rosterHeroIds, baselineAssignment, entry.candidate);
-      const winnerChores = chorCount(gearInput, rosterHeroIds, baselineAssignment, winner.candidate);
-      // Tie-break 2 (declaration order) needs no code: ties keep `winner`, and `declared`/
+      const entryTie = tieBreakFor(gearInput, rosterHeroIds, baselineAssignment, entry.candidate);
+      const winnerTie = tieBreakFor(gearInput, rosterHeroIds, baselineAssignment, winner.candidate);
+      // Tie-break 3 (declaration order) needs no code: ties keep `winner`, and `declared`/
       // `evaluated` are already in declaration order, so the earlier candidate wins by default.
-      if (entryChores < winnerChores) winner = entry;
+      if (entryTie.chores < winnerTie.chores) winner = entry;
+      else if (entryTie.chores === winnerTie.chores && entryTie.fills > winnerTie.fills) winner = entry;
     }
   }
 

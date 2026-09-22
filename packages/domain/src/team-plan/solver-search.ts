@@ -15,6 +15,7 @@ import {
   type GearMove,
 } from './solver-assignment';
 import { generateMoves } from './solver-moves';
+import { planFieldSlots } from './combat-window';
 import { farmFromAccount } from './waterfall-guards';
 import type {
   EvaluateRosterInput,
@@ -184,7 +185,7 @@ export function evaluateAssignment(
     contexts,
     loadoutsByHeroId: loadouts,
     ptsByHeroId,
-    slots: input.account.fieldSlots,
+    slots: planFieldSlots(input),
     farm: farmFromAccount(input),
     forgeFloor: input.forgeFloor,
     scoreMemo: budget.scoreMemo,
@@ -248,7 +249,7 @@ function beamCandidates(
         contexts,
         loadoutsByHeroId,
         ptsByHeroId,
-        slots: input.account.fieldSlots,
+        slots: planFieldSlots(input),
         farm,
         forgeFloor: input.forgeFloor,
         scoreMemo: budget.scoreMemo,

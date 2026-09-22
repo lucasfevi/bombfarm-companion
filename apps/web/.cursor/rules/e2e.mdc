@@ -1,0 +1,8 @@
+---
+description: Playwright e2e hard truth
+alwaysApply: true
+---
+
+# E2E
+
+**Canonical hard truth:** [`docs/e2e.md`](../../docs/e2e.md)

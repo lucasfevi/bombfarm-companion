@@ -1,8 +1,9 @@
 import type { TeamPlanInputs } from './team-plan-inputs';
 import type { TeamPlanControls } from './team-plan-controls';
 import type { ScopeState } from './hero-scope';
-import { clampForgeFloor, clampTargetPhase, withAuraAtCap } from './team-plan-controls';
+import { clampForgeFloor, clampTargetPhase, normalizeGatePhase, withAuraAtCap } from './team-plan-controls';
 import type { TeamAuraId } from '@bombfarm/domain/team-buffs';
+import { pvpSquadExcess, resolveTeamPlanGatePhase } from './combat-window';
 import { mergeScopeForRoster } from './hero-scope';
 import { planBasisSignature } from './plan-changes';
 
@@ -21,6 +22,17 @@ export function isFarmObjectiveUnavailable(
   resolvedTargetPhase: number | null,
 ): boolean {
   return maxPhase == null && resolvedTargetPhase == null;
+}
+
+/**
+ * The duel room seats nine, and the plan never picks which nine: a scope board fielding more
+ * heroes than that is the player's to trim before a duel can be scored.
+ */
+export function isPvpObjectiveUnavailable(
+  inputs: Pick<TeamPlanInputs, 'heroes'>,
+  controls: Pick<TeamPlanControls, 'scopeByHeroId'>,
+): boolean {
+  return pvpSquadExcess(inputs, controls) > 0;
 }
 
 /**
@@ -44,7 +56,8 @@ export type TeamPlanControlChange =
   | { kind: 'allowedChanges'; value: TeamPlanControls['allowedChanges'] }
   | { kind: 'ignoreFieldCrowding'; value: boolean }
   | { kind: 'auraAtCap'; auraId: TeamAuraId; value: boolean }
-  | { kind: 'targetPhase'; value: number | null };
+  | { kind: 'targetPhase'; value: number | null }
+  | { kind: 'gatePhase'; value: number | null };
 
 function scopeMapsEqual(left: Record<string, ScopeState>, right: Record<string, ScopeState>): boolean {
   const leftKeys = Object.keys(left);
@@ -130,6 +143,20 @@ export function applyTeamPlanControlChange(
       return {
         controls: { ...controls, targetPhase: next, targetPhaseChosen: true },
         clearsPlan: wasResolved !== next,
+      };
+    }
+
+    // Clears for the same reason `targetPhase` does — a different gate is a different fight, and
+    // a different timer with it — but only when the plan was built for a gate: under any other
+    // objective the pick is remembered for later and moves nothing on screen.
+    case 'gatePhase': {
+      const next = normalizeGatePhase(change.value);
+      if (controls.gatePhase === next) return null;
+      const wasResolved = resolveTeamPlanGatePhase({ phase: context.phase }, controls);
+      const willResolve = resolveTeamPlanGatePhase({ phase: context.phase }, { gatePhase: next });
+      return {
+        controls: { ...controls, gatePhase: next },
+        clearsPlan: controls.objective === 'gateClear' && wasResolved !== willResolve,
       };
     }
 

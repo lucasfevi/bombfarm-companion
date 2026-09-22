@@ -733,7 +733,7 @@ export const en = {
   optimizerEmptyAllLeaveAloneTitle: 'Nothing in scope',
   optimizerEmptyAllLeaveAloneBody: 'Set at least one hero to Optimize before running a plan.',
   optimizerBlockedBody: 'The account read is missing what the search needs for {heroes}, so it cannot score them.',
-  optimizerFarmNeedsMaxPhase: 'Letting the search pick its own phase needs the furthest phase your account has reached, which this read did not carry. Pick a phase above, or score for damage.',
+  optimizerFarmNeedsMaxPhase: 'Letting the search pick its own phase needs the furthest phase your account has reached, which this read did not carry. Pick a phase above, or score for a gate clear.',
   optimizerLeftOutTitle: 'Some heroes were left out of the search',
   optimizerLeftOutBody: 'The app could not read the spent stat points of {heroes} from the account, so they are left out of this search: not on the scope board, not in the plan.',
 

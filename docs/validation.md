@@ -45,7 +45,7 @@ pnpm --filter @bombfarm/ui build-storybook
 pnpm --filter @bombfarm/ui test-storybook
 ```
 
-Keep `pnpm test` as the fast Vitest unit gate — do not fold Playwright or Storybook into it. See [`e2e-visual.md`](../apps/web/docs/e2e-visual.md) for the Docker e2e workflow (matches CI on any host), baselines, and **review-before-update**; [`design-system.md`](design-system.md) for the Storybook catalog.
+Keep `pnpm test` as the fast Vitest unit gate — do not fold Playwright or Storybook into it. See [`e2e.md`](../apps/web/docs/e2e.md) for the Docker e2e workflow (matches CI on any host) and how to read a CI failure; [`design-system.md`](design-system.md) for the Storybook catalog.
 
 ## `m2-storybook-ci` — M2 exit criterion restatement (2026-08-11)
 
@@ -65,7 +65,7 @@ with evidence, as amended by the deferral recorded below:
 **What that deferral covered, named explicitly so this exit is not overclaimed:**
 
 - `m2-inventory-ui`, `m2-entity-panel` — component work items deferred to M3/M4 per `DESIGN_SYSTEM.md` §3's own milestone split (`ItemCard`/`ItemRow`/`RarityBadge`/… ship in M3; `EntityLink`/`DetailPanel`/`StatsDashboard` ship in M4)
-- The visual-regression baseline artifact — deferred to M3
+- The visual-regression baseline artifact — deferred to M3, and never delivered: the screenshot suite that was built for it stayed skipped from 2026-08-03 and was deleted on 2026-09-21. Layout is covered by the Playwright smoke specs' role / accessible-name / text assertions instead
 
 **Added CI wall-clock:** the new `design-system` job runs in parallel with
 `quality` (both depend only on `changes`), so its net effect on total workflow
@@ -73,7 +73,7 @@ wall-clock is close to `max(quality, design-system)` rather than additive, on a
 GitHub-hosted runner with spare concurrency. The job's own duration, measured locally
 and extrapolated: `pnpm install` (~30-60s, cached), `playwright install --with-deps
 chromium` (~20s warm cache / ~60-90s cold — the single largest variable, already an
-accepted cost pattern in `e2e-web.yml`'s `smoke-shard`/`visual-e2e` jobs),
+accepted cost pattern in `e2e-web.yml`'s `smoke-shard` job),
 `build-storybook` (~6.5s locally, budget ~15s in CI), `test-storybook` (~15.5s
 locally across 107 stories at `--maxWorkers=2`, budget ~30s in CI). Estimated total:
 **~3-4 minutes**, well under the ~10 minute threshold — no sharding proposed.

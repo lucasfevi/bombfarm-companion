@@ -91,8 +91,8 @@ describe('design-system-required aggregator', () => {
 
   it(
     'no step treats a skipped design-system result as success when the web filter matched — ' +
-      'the exact anti-pattern e2e-web.yml\'s e2e-visual aggregator has today (a step whose `if` ' +
-      'branches on result == \'skipped\' and whose `run` does not fail)',
+      'the self-greening aggregator anti-pattern (a step whose `if` branches on ' +
+      'result == \'skipped\' and whose `run` does not fail)',
     () => {
       const selfGreeningSteps = steps.filter((step) => {
         const cond = stepIf(step);

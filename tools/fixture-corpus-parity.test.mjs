@@ -125,9 +125,7 @@ describe('cross-package fixture corpus parity', () => {
    */
   const F8_SKIP_MANIFEST = {};
 
-  const SKIPS_NOT_F8 = {
-    'apps/web/e2e/visual.spec.ts': 3,
-  };
+  const SKIPS_NOT_F8 = {};
 
   it('skip/todo directives across the test roots are exactly the declared manifests', () => {
     const SKIP_PATTERN = '\\b(describe|it|test)\\.(skip|todo)\\b|\\bxit[(]|\\bxdescribe[(]';

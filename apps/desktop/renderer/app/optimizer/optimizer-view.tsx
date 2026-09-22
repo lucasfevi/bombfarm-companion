@@ -19,7 +19,7 @@
  * The hand memoisation in `optimizer-screen.tsx` is load-bearing: the desktop renderer does not
  * enable the React Compiler, and a freshly-allocated prop bag reaches the plan's results section.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AccountSource } from '@bombfarm/contracts';
 import { Banner, EmptyState, colClass } from '@bombfarm/ui';
 import { scheduleAfterPaint } from '@bombfarm/farm';
@@ -29,6 +29,8 @@ import { useAccountReadRequest } from '../../lib/account/use-account-read-reques
 import { settledSnapshot } from '../../lib/optimizer/optimizer-snapshot-store';
 import { useOptimizerSnapshot } from '../../lib/optimizer/use-optimizer-snapshot';
 import { DEFAULT_OPTIMIZER_VIEW, loadOptimizerView, saveOptimizerView, type OptimizerView } from '../../lib/optimizer/optimizer-view-storage';
+import { pvpRoomPhaseInput } from '../../lib/optimizer/pvp-room-phase-input';
+import { refreshPvpStanding, usePvpHistory } from '../../lib/pvp/use-pvp-history';
 import { useScreenRefreshRegistration } from '../../lib/refresh/screen-refresh-store';
 import { OptimizerScreen } from './optimizer-screen';
 
@@ -58,6 +60,17 @@ export function OptimizerView({
 
   const [controls, setControls] = useState<OptimizerView>(DEFAULT_OPTIMIZER_VIEW);
   const [storageReady, setStorageReady] = useState(false);
+
+  // The duel objective fights at the phase the room is hardened to, so the standing is asked for
+  // on open the way the PVP and Skill Tree tabs ask — never guessed from the farm phase.
+  const pvpHistory = usePvpHistory();
+  useEffect(() => {
+    refreshPvpStanding();
+  }, []);
+  const pvpRoomPhase = useMemo(
+    () => pvpRoomPhaseInput(pvpHistory.status === 'ready' ? pvpHistory.history : null),
+    [pvpHistory],
+  );
 
   useEffect(() => {
     setControls(loadOptimizerView());
@@ -156,6 +169,7 @@ export function OptimizerView({
       )}
       <OptimizerScreen
         snapshot={settled}
+        pvpRoomPhase={pvpRoomPhase}
         controls={controls}
         setControls={setControls}
         planState={planState}

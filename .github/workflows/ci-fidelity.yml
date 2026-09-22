@@ -18,6 +18,8 @@ on:
       - 'packages/contracts/**'
       - 'pnpm-lock.yaml'
       - 'vitest.config.ts'
+      - 'vitest.solver.config.ts'
+      - 'vitest.solver-files.mjs'
       - '.github/workflows/ci-fidelity.yml'
   pull_request:
 
@@ -51,6 +53,8 @@ jobs:
               - 'packages/contracts/**'
               - 'pnpm-lock.yaml'
               - 'vitest.config.ts'
+              - 'vitest.solver.config.ts'
+              - 'vitest.solver-files.mjs'
               - '.github/workflows/ci-fidelity.yml'
 
   fidelity-gate:
@@ -125,10 +129,9 @@ jobs:
         if: needs.changes.result != 'success'
         run: exit 1
 
-      # Deliberately NOT the ci-desktop-required idiom (which only checks failure/cancelled and
-      # treats skipped as pass unconditionally): this gate must fail when the path filter
-      # matched but the job did not run at all — skipped or cancelled — not just when it
-      # actively failed. A gate that reports success for "never ran" is worse than no gate.
+      # `!= 'success'`, never `== 'failure' || == 'cancelled'`: this gate must fail when the
+      # path filter matched but the job did not run at all — skipped or cancelled — not just
+      # when it actively failed. A gate that reports success for "never ran" is worse than no gate.
       - name: Require the fidelity gate suite when the filter matched
         if: needs.changes.outputs.fidelity == 'true' && needs.fidelity-gate.result != 'success'
         run: |

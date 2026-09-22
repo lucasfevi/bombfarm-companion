@@ -89,7 +89,7 @@ describe('createBuilderConfig', () => {
           perMachine: false,
           allowToChangeInstallationDirectory: false,
         });
-        expect(config.asarUnpack).toEqual(['**/node_modules/frida/**/*']);
+        expect(config.asarUnpack).toEqual(['**/node_modules/frida/**/*', 'assets/icon.ico']);
       });
 
       if (descriptor.updateChannel === null) {

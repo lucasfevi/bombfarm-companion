@@ -37,13 +37,14 @@ describe('optimizer view preferences', () => {
   it('round-trips what was written', () => {
     const view: OptimizerView = {
       scopeByHeroId: { h1: 'donate' },
-      objective: 'dps',
+      objective: 'pvp',
       allowedChanges: 'gear',
       forgeFloor: 7,
       ignoreFieldCrowding: true,
       aurasAtCap: ['marcha_acelerada'],
       targetPhase: 40,
       targetPhaseChosen: true,
+      gatePhase: 150,
     };
     saveOptimizerView(view);
     expect(loadOptimizerView()).toEqual(view);
@@ -127,8 +128,22 @@ describe('optimizer view preferences', () => {
   });
 
   it('normalises a partial record into a whole one, filling every missing field with its default', () => {
+    entries.set(KEY, JSON.stringify({ objective: 'gateClear' }));
+    expect(loadOptimizerView()).toEqual({ ...DEFAULT_OPTIMIZER_VIEW, objective: 'gateClear' });
+  });
+
+  it('the rotation objective the control no longer offers reads back as the default', () => {
     entries.set(KEY, JSON.stringify({ objective: 'dps' }));
-    expect(loadOptimizerView()).toEqual({ ...DEFAULT_OPTIMIZER_VIEW, objective: 'dps' });
+    expect(loadOptimizerView().objective).toBe(DEFAULT_OPTIMIZER_VIEW.objective);
+  });
+
+  it('keeps a stored gate only while it names a gate', () => {
+    entries.set(KEY, JSON.stringify({ gatePhase: 100 }));
+    expect(loadOptimizerView().gatePhase).toBe(100);
+    entries.set(KEY, JSON.stringify({ gatePhase: 101 }));
+    expect(loadOptimizerView().gatePhase).toBeNull();
+    entries.set(KEY, JSON.stringify({ gatePhase: '100' }));
+    expect(loadOptimizerView().gatePhase).toBeNull();
   });
 
   it('ignores a stored plan-shaped value, reading it as the defaults', () => {

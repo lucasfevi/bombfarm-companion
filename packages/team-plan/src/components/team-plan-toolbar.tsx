@@ -3,6 +3,8 @@
 import type { ReactNode } from 'react';
 import { Button, InfoTip, Panel, Tooltip, panelHClass, panelTitleClass } from '@bombfarm/ui';
 import type { Lang } from '@bombfarm/hero/copy';
+import type { TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
+import { countPvpSquadHeroes, resolveTeamPlanGatePhase } from '../core/combat-window';
 import { resolveTeamPlanTargetPhase } from '../core/plan-lifecycle';
 import type { TeamPlanScreenCopy } from '../copy';
 import { teamPlanObjectiveCopy } from '../model/objective-copy';
@@ -12,8 +14,10 @@ import type { OptimizeAction } from './use-optimize-action';
 import { AllowedChangesField } from './allowed-changes-field';
 import { ForgeFloorField } from './forge-floor-field';
 import { IgnoreCrowdingField } from './ignore-crowding-field';
+import { GatePhaseField } from './gate-phase-field';
 import { ObjectiveField } from './objective-field';
 import { PhaseField } from './phase-field';
+import { PvpSquadField } from './pvp-squad-field';
 
 export function TeamPlanToolbar({
   t,
@@ -22,6 +26,7 @@ export function TeamPlanToolbar({
   actions,
   optimize,
   setupFields,
+  objectives,
 }: {
   t: TeamPlanScreenCopy;
   lang: Lang;
@@ -31,10 +36,13 @@ export function TeamPlanToolbar({
    *  the same press. */
   optimize: OptimizeAction;
   setupFields?: ReactNode;
+  /** The objectives this host can score — see `ObjectiveField`. */
+  objectives?: readonly TeamPlanObjective[];
 }) {
   const copy = teamPlanObjectiveCopy(t, data.controls.objective);
-  const { busy, farmBlocked, scopeEmpty } = optimize;
+  const { busy, farmBlocked } = optimize;
   const resolvedTargetPhase = resolveTeamPlanTargetPhase(data.inputs, data.controls);
+  const objective = data.controls.objective;
 
   return (
     <Panel focus>
@@ -62,17 +70,36 @@ export function TeamPlanToolbar({
               <ObjectiveField
                 t={t}
                 copy={copy}
-                value={data.controls.objective}
+                value={objective}
+                {...(objectives !== undefined ? { objectives } : {})}
                 onChange={actions.setObjective}
               />
-              <PhaseField
-                t={t}
-                lang={lang}
-                copy={copy}
-                value={resolvedTargetPhase}
-                maxPhase={data.inputs.maxPhase}
-                onChange={actions.setTargetPhase}
-              />
+              {/* The phase control answers a different question per objective, so each gets its
+                  own: the gate to clear, the duel the game has set up, or a phase to farm. */}
+              {objective === 'gateClear' ? (
+                <GatePhaseField
+                  t={t}
+                  lang={lang}
+                  value={resolveTeamPlanGatePhase(data.inputs, data.controls)}
+                  onChange={actions.setGatePhase}
+                />
+              ) : objective === 'pvp' ? (
+                <PvpSquadField
+                  t={t}
+                  lang={lang}
+                  roomPhase={data.inputs.pvpRoomPhase}
+                  fielded={countPvpSquadHeroes(data.inputs, data.controls)}
+                />
+              ) : (
+                <PhaseField
+                  t={t}
+                  lang={lang}
+                  copy={copy}
+                  value={resolvedTargetPhase}
+                  maxPhase={data.inputs.maxPhase}
+                  onChange={actions.setTargetPhase}
+                />
+              )}
               <AllowedChangesField t={t} value={data.controls.allowedChanges} onChange={actions.setAllowedChanges} />
               {/* A points-only plan is scored at the items' real forge levels and orders no forge
                   work, so a floor the player can still set would be a control that does nothing. */}
@@ -90,7 +117,7 @@ export function TeamPlanToolbar({
           <Button
             type="button"
             variant="primary"
-            disabled={busy || scopeEmpty || farmBlocked}
+            disabled={optimize.blocked}
             aria-busy={busy}
             aria-label={optimizeAriaFor(t, data.controls.allowedChanges)}
             className="min-h-12 w-full shrink-0 px-8 text-sm sm:w-auto sm:min-w-52"

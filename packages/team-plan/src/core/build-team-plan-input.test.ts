@@ -67,6 +67,7 @@ function inputs(overrides: Partial<TeamPlanInputs> = {}): TeamPlanInputs {
     houseCycleSecsLevel: null,
     maxPhase: null,
     farmChosenPhase: null,
+    pvpRoomPhase: null,
     ...overrides,
   };
 }
@@ -165,6 +166,7 @@ describe('buildTeamPlanInput scope defaults', () => {
       houseCycleSecsLevel: 5,
       maxPhase: 200,
       farmChosenPhase: null,
+      pvpRoomPhase: null,
     });
     const control = controls({ scopeByHeroId: { opt: 'optimize' }, forgeFloor: 7 });
 
@@ -250,5 +252,35 @@ describe('buildTeamPlanInput scope defaults', () => {
     const atCap = ['grito_guerra', 'passagem_bastao'] as const;
     expect(buildTeamPlanInput(inputs(), controls({ aurasAtCap: atCap })).aurasAtCap).toBe(atCap);
     expect(buildTeamPlanInput(inputs(), controls()).aurasAtCap).toEqual([]);
+  });
+});
+
+describe('buildTeamPlanInput under the windowed objectives', () => {
+  const roster = [hero('a'), hero('b'), hero('c'), hero('d')];
+
+  it('a gate clear scores at the picked gate, or the account\u2019s next one, never the farm phase', () => {
+    const picked = buildTeamPlanInput(inputs({ heroes: roster, phase: 91, farmChosenPhase: 30 }), controls({ objective: 'gateClear', gatePhase: 150 }));
+    expect(picked.objective).toBe('gateClear');
+    expect(picked.targetPhase).toBe(150);
+    expect(picked.heroes.map((h) => h.heroId)).toEqual(['src-a', 'src-b', 'src-c', 'src-d']);
+
+    const next = buildTeamPlanInput(inputs({ heroes: roster, phase: 91, farmChosenPhase: 30 }), controls({ objective: 'gateClear', gatePhase: null }));
+    expect(next.targetPhase).toBe(100);
+  });
+
+  it('a duel is planned over the scope board as it stands, at the phase the room is hardened to', () => {
+    const input = buildTeamPlanInput(
+      inputs({ heroes: roster, phase: 91, pvpRoomPhase: 220 }),
+      controls({ objective: 'pvp', scopeByHeroId: { c: 'leaveAlone', d: 'donate' } }),
+    );
+    expect(input.objective).toBe('pvp');
+    expect(input.targetPhase).toBe(220);
+    expect(input.heroes.map((h) => h.heroId)).toEqual(['src-a', 'src-b', 'src-c', 'src-d']);
+    expect(input.scopeByHeroId).toEqual({ 'src-a': 'optimize', 'src-b': 'optimize', 'src-c': 'leaveAlone', 'src-d': 'donate' });
+  });
+
+  it('a duel with no room phase on record falls back to the account phase, never the farm phase', () => {
+    const input = buildTeamPlanInput(inputs({ heroes: roster, phase: 91, farmChosenPhase: 30, pvpRoomPhase: null }), controls({ objective: 'pvp' }));
+    expect(input.targetPhase).toBe(91);
   });
 });

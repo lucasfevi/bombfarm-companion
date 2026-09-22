@@ -605,7 +605,7 @@ describe('a timed combat window weights presence by the share of the window fiel
   const carrierId = input.contexts[0]!.heroId;
   const withCarrier = (rank: number, windowSecs?: number): EvaluateRosterInput => ({
     ...input,
-    windowSecs,
+    farm: windowSecs === undefined ? input.farm : { ...input.farm, windowSecs },
     contexts: input.contexts.map((c) =>
       c.heroId === carrierId
         ? { ...c, abilities: { ...c.abilities, passagem_bastao: rank } }

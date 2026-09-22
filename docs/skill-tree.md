@@ -78,8 +78,8 @@ account is farming now; the header says which — so the figures here agree with
   alike. Damage nodes come out stable from ±2% to ±8%; every other axis is smooth and unchanged by
   the mean. The figure at the roster exactly as read is still computed (`goldPerHourDeltaAtRoster`)
   but not shown; only the mean is printed.
-- **Gate clear** prices damage over the gate's own timer at a gate the player picks — the same phase
-  control the Optimizer uses, listing gate phases only — by the strongest squad the field can seat
+- **Gate clear** prices damage over the gate's own timer at a gate the player picks — the same gate
+  picker the Optimizer's Gate clear objective has, listing gate phases only — by the strongest squad the field can seat
   from the Farm board's pool, each hero deploying and resting on its own cycle inside that window.
   The figure is that window's damage per second; a node's gain is the difference one level makes.
 - **PVP** prices the same window shape over the duel's 60 seconds, with the standing squad the PVP

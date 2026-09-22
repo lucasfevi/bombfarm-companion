@@ -1,4 +1,4 @@
-import type { TeamPlan } from '@bombfarm/domain/team-plan/types';
+import type { TeamPlan, TeamPlanObjective } from '@bombfarm/domain/team-plan/types';
 import { formatNumber } from '@bombfarm/ui';
 import { formatPhaseLabel } from '@bombfarm/farm';
 import { sub, type Lang } from '@bombfarm/hero/copy';
@@ -28,14 +28,16 @@ export function seedStartLabel(t: TeamPlanCopy, seedUsed: string): string {
  * say so — a figure the player did not ask for at a phase they did not pick reads as a claim
  * about their own account otherwise.
  */
-export function scoredPhaseHint(t: TeamPlanCopy, plan: TeamPlan): string | null {
+export function scoredPhaseHint(t: TeamPlanCopy, plan: TeamPlan, objective: TeamPlanObjective = 'dps'): string | null {
   if (plan.scoredPhase == null) {
     return plan.scoredPhaseSource === 'searched' ? t.teamPlanScoredPhaseNoneFeasible : null;
   }
   if (plan.scoredPhaseInfeasible) return t.teamPlanScoredPhaseUnreachable;
   if (plan.scoredPhaseSource === 'searched') return t.teamPlanScoredPhaseSearched;
+  // A duel's phase is the room's whatever the source says: the host names it, the player does not.
+  if (objective === 'pvp') return t.teamPlanScoredPhasePvp;
   if (plan.scoredPhaseSource === 'account') return t.teamPlanScoredPhaseAccount;
-  return t.teamPlanScoredPhaseChosen;
+  return objective === 'gateClear' ? t.teamPlanScoredPhaseGate : t.teamPlanScoredPhaseChosen;
 }
 
 export function scoredPhaseValue(lang: Lang, plan: TeamPlan): string {
