@@ -268,7 +268,13 @@ const ITEM_LEVEL: SchemaLevel = {
   // exports, 225 soulbound items, all `tradable: false`, none otherwise. `resolvePrice` already
   // withholds a market price on `!tradable`, so nothing downstream needs to read this flag. Same
   // reason as the hero level for `optional` over `keys`: the game emits it only on bound records.
-  optional: ['slot', 'soulbound'],
+  //
+  // `export_lock_secs` is a countdown in seconds during which a freshly acquired item cannot be
+  // exported, emitted only while that lock is running — 1 of every 50 items on a six-hour
+  // 2026-09-22 observation, the same key and the same meaning the hero level already declares.
+  // `optional`, for the same reason: requiring it would turn every unlocked item into a
+  // missing-key report. Nothing reads it.
+  optional: ['slot', 'soulbound', 'export_lock_secs'],
 };
 
 const CASA_LEVEL: SchemaLevel = {
