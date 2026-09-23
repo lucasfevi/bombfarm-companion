@@ -222,6 +222,43 @@ describe('PowerBreakdownPanel', () => {
     expect(nowLabel.dataset.anchor).toBe('start');
     expect(nowLabel.style.left).toBe('0%');
     expect(query('[data-power-chart="explosaoAmpla"] [data-testid="power-y-max"]').closest('[role="slider"]')).toBeNull();
+    expect(nowLabel.closest('[role="slider"]')).toBeNull();
+  });
+
+  it('a hero at the top of the curve and the right edge keeps its "now" label off the plot, where the curve runs', () => {
+    render(RUNED);
+    click('[data-power-row="range"]');
+    const chart = query('[data-power-chart="explosaoAmpla"]');
+    const nowDot = chart.querySelector<HTMLElement>('[role="slider"] span.bg-muted');
+    expect(nowDot?.style.left).toBe('100%');
+    expect(Number.parseFloat(nowDot?.style.top ?? '100')).toBeLessThan(25);
+    const nowLabel = query('[data-power-chart="explosaoAmpla"] [data-testid="power-now-label"]');
+    expect(nowLabel.dataset.anchor).toBe('end');
+    expect(nowLabel.closest('[role="slider"]')).toBeNull();
+  });
+
+  it('a hero whose figure matches the game carries no mismatch note', () => {
+    render(PLAIN);
+    expect(container.querySelector('[data-testid="power-mismatch-note"]')).toBeNull();
+    render(RUNED);
+    expect(container.querySelector('[data-testid="power-mismatch-note"]')).toBeNull();
+  });
+
+  it('a hero whose points were only estimated says by how much its figure differs from the game', () => {
+    render({ ...PLAIN, hero: { ...PLAIN.hero, power: STORED_POWER / 1.0033 } });
+    expect(query('[data-testid="power-mismatch-note"]').textContent).toBe(
+      "Differs from the game's figure by +0.33% (points estimated)",
+    );
+    expect(container.querySelectorAll('[data-power-row]')).toHaveLength(8);
+    render({ ...PLAIN, hero: { ...PLAIN.hero, power: STORED_POWER * 1.0105 } });
+    expect(query('[data-testid="power-mismatch-note"]').textContent).toBe(
+      "Differs from the game's figure by −1.04% (points estimated)",
+    );
+  });
+
+  it('with no stored figure there is nothing to compare against', () => {
+    render({ ...PLAIN, hero: { ...PLAIN.hero, power: undefined } });
+    expect(container.querySelector('[data-testid="power-mismatch-note"]')).toBeNull();
   });
 
   it('a hero whose points were not recovered gets the stored figure and the reason, and no breakdown', () => {
@@ -244,6 +281,7 @@ describe('PowerBreakdownPanel on a live account read', () => {
       const total = gamePower(gamePowerInputOf(factsForHero(fixture, hero).adjusted, hero.abilities));
       expect(query('[data-testid="power-total"]').textContent).toBe(formatPowerFigure(total, 'en'));
       expect(total).toBeGreaterThanOrEqual((hero.power ?? 0) * (1 - 1e-12));
+      expect(container.querySelector('[data-testid="power-mismatch-note"]')).toBeNull();
       const note = container.querySelector('[data-testid="power-rune-note"]');
       if (hasRuneOnSheet(runesOf(hero))) {
         expect(note?.textContent).toBe(`Includes active runes · ${formatPowerFigure(hero.power ?? 0, 'en')} without them`);

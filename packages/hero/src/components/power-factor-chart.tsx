@@ -136,6 +136,17 @@ export function PowerFactorChart({
       <span className="font-mono text-[10px] leading-none text-muted tabular-nums" data-testid="power-y-max">
         {formatPowerFigure(series.yMax, lang)}
       </span>
+      {/* Its own strip above the plot: inside, the curve can run under it wherever it sits. */}
+      <div className="relative h-3">
+        <span
+          data-testid="power-now-label"
+          data-anchor={nowAnchor}
+          className={cn(markLabelClass, 'top-0', NOW_LABEL_ANCHOR_CLASS[nowAnchor])}
+          style={{ left: `${String(plotX(plot, nowOnAxis))}%` }}
+        >
+          {t.heroDetailPowerNow}
+        </span>
+      </div>
       <div
         ref={plotRef}
         role="slider"
@@ -193,14 +204,6 @@ export function PowerFactorChart({
           ) : null}
           {guide !== null ? <VerticalMark x={plotX(plot, guide)} className="stroke-ink" /> : null}
         </svg>
-        <span
-          data-testid="power-now-label"
-          data-anchor={nowAnchor}
-          className={cn(markLabelClass, 'top-1', NOW_LABEL_ANCHOR_CLASS[nowAnchor])}
-          style={{ left: `${String(plotX(plot, nowOnAxis))}%` }}
-        >
-          {t.heroDetailPowerNow}
-        </span>
         {spec.cap !== null ? (
           <span
             className={cn(markLabelClass, 'bottom-1 -translate-x-full pr-1 text-down')}

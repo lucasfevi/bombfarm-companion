@@ -641,9 +641,10 @@ function HeroDetailTabs({
               />
               {/* On the record, not a figure: a still-blocked hero shows its runes all the same. */}
               <HeroRunesPanel hero={active.hero} lang={lang} statLabel={boundStatLabel} />
-              {/* Power scores the same pipeline run the Effective Stats panel below reads — its
-                  `adjusted` sheet, points and runes on, team auras not yet — so the two can never
-                  disagree. A hero whose points were not recovered gets the stored figure alone. */}
+              {/* The game's Power leaves team auras out, the hero's own included, so this panel
+                  scores the pipeline's `adjusted` sheet — points and runes on, before any aura —
+                  from the same run the Effective Stats panel reads after them. A hero whose points
+                  were not recovered gets the stored figure alone. */}
               {figures.kind === 'at' && combat ? (
                 <PowerBreakdownPanel
                   hero={active.hero}

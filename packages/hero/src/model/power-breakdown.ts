@@ -34,14 +34,49 @@ export type PowerFactorRow = {
   readonly share: number | null;
 };
 
+/**
+ * A factor below its neutral value has a negative log-share; the bar cannot draw one, so it shows
+ * as zero and the rest are renormalised to fill the bar exactly.
+ */
+function displayedShares(input: GamePowerInput): Record<GamePowerFactorId, number> {
+  const raw = gamePowerShares(input);
+  const clamped = {} as Record<GamePowerFactorId, number>;
+  let total = 0;
+  for (const id of GAME_POWER_FACTOR_IDS) {
+    clamped[id] = Math.max(0, raw[id]);
+    total += clamped[id];
+  }
+  if (total > 0) for (const id of GAME_POWER_FACTOR_IDS) clamped[id] /= total;
+  return clamped;
+}
+
 export function powerFactorRows(input: GamePowerInput): readonly PowerFactorRow[] {
   const multipliers = gamePowerMultipliers(input);
-  const shares = gamePowerShares(input);
+  const shares = displayedShares(input);
   return POWER_ROW_IDS.map((id) =>
     id === 'attack'
       ? { id, multiplier: null, share: null }
-      : { id, multiplier: multipliers[id], share: Math.max(0, shares[id]) },
+      : { id, multiplier: multipliers[id], share: shares[id] },
   );
+}
+
+/** Tighter than any rounding the game's own figure carries, looser than float noise. */
+const MATCH_TOLERANCE = 1e-6;
+
+/**
+ * How far the panel's rune-free figure sits from the game's stored one, in percent — `null` when
+ * they agree or there is no stored figure. They part only where the hero's spent points were
+ * recovered approximately.
+ */
+export function powerMismatchPct(computedRuneFree: number, stored: number | undefined): number | null {
+  if (stored === undefined || stored <= 0) return null;
+  const relative = computedRuneFree / stored - 1;
+  return Math.abs(relative) > MATCH_TOLERANCE ? relative * 100 : null;
+}
+
+export function formatSignedPct(pct: number, lang: Lang): string {
+  const text = `${formatNumber(Math.abs(pct), lang, 2)}%`;
+  return pct < 0 ? `−${text}` : `+${text}`;
 }
 
 export const POWER_ROW_AXES: Record<PowerRowId, readonly GamePowerAxis[]> = {

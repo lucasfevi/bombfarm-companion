@@ -19,7 +19,9 @@ import {
   formatMultiplier,
   formatPowerFigure,
   formatShare,
+  formatSignedPct,
   powerFactorRows,
+  powerMismatchPct,
   type PowerFactorRow,
   type PowerRowId,
 } from '../model/power-breakdown';
@@ -178,11 +180,12 @@ function PowerBreakdown({
   const input = useMemo(() => gamePowerInputOf(sheet, hero.abilities), [sheet, hero.abilities]);
   const rows = useMemo(() => powerFactorRows(input), [input]);
   const total = useMemo(() => gamePower(input), [input]);
-  const runeFree = useMemo(() => {
-    const runes = runesOf(hero);
-    if (!hasRuneOnSheet(runes)) return null;
-    return hero.power ?? gamePower(gamePowerInputWithoutRunes(input, runes, treeCritDmgPct));
-  }, [hero, input, treeCritDmgPct]);
+  const computedRuneFree = useMemo(
+    () => gamePower(gamePowerInputWithoutRunes(input, runesOf(hero), treeCritDmgPct)),
+    [hero, input, treeCritDmgPct],
+  );
+  const runeFree = hasRuneOnSheet(runesOf(hero)) ? (hero.power ?? computedRuneFree) : null;
+  const mismatchPct = powerMismatchPct(computedRuneFree, hero.power);
   const onSelect = (id: PowerRowId) => setSelected((current) => (current === id ? null : id));
 
   return (
@@ -191,6 +194,11 @@ function PowerBreakdown({
       {runeFree !== null ? (
         <p className={cn(tipClass, 'text-right')} data-testid="power-rune-note">
           {sub(t.heroDetailPowerRunesActive, { value: formatPowerFigure(runeFree, lang) })}
+        </p>
+      ) : null}
+      {mismatchPct !== null ? (
+        <p className={cn(tipClass, 'text-right text-warn')} data-testid="power-mismatch-note">
+          {sub(t.heroDetailPowerDiffers, { pct: formatSignedPct(mismatchPct, lang) })}
         </p>
       ) : null}
       <ShareBar rows={rows} selected={selected} onSelect={onSelect} t={t} lang={lang} />

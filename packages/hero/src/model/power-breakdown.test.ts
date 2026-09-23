@@ -16,7 +16,9 @@ import {
   axisValueAtFraction,
   formatAxisValue,
   formatPowerFigure,
+  formatSignedPct,
   markLabelAnchor,
+  powerMismatchPct,
   powerAxisSpec,
   powerChartSeries,
   powerFactorRows,
@@ -54,6 +56,14 @@ describe('powerFactorRows', () => {
     const rows = powerFactorRows(belowNeutral);
     expect(rows.find((row) => row.id === 'penetration')?.share).toBe(0);
     for (const row of rows) if (row.share !== null) expect(row.share, row.id).toBeGreaterThanOrEqual(0);
+  });
+
+  it('after clamping, the displayed shares are renormalised to fill the bar exactly', () => {
+    const belowNeutral = withGamePowerAxis(INPUT, 'critDmg', -20);
+    expect(gamePowerShares(belowNeutral).crit).toBeLessThan(0);
+    const rows = powerFactorRows(belowNeutral);
+    expect(rows.find((row) => row.id === 'crit')?.share).toBe(0);
+    expect(rows.reduce((sum, row) => sum + (row.share ?? 0), 0)).toBeCloseTo(1, 12);
   });
 
   it('every row opens at least one chart, and crit opens chance and damage', () => {
@@ -185,6 +195,21 @@ describe('the guide', () => {
     expect(steppedGuide(spec, 14, 'ArrowRight')).toBe(15);
     expect(axisValueAtFraction(spec, 0.73)).toBe(15);
     expect(axisValueAtFraction(spec, 1.4)).toBe(20);
+  });
+});
+
+describe('powerMismatchPct', () => {
+  it('is null when the figures agree, or there is no stored figure', () => {
+    expect(powerMismatchPct(1_000_000, 1_000_000)).toBeNull();
+    expect(powerMismatchPct(1_000_000.5, 1_000_000)).toBeNull();
+    expect(powerMismatchPct(1_000_000, undefined)).toBeNull();
+  });
+
+  it('is the signed percentage the panel figure sits from the stored one', () => {
+    expect(powerMismatchPct(171_070, 170_500)).toBeCloseTo(0.3343, 3);
+    expect(powerMismatchPct(99_000, 100_000)).toBeCloseTo(-1, 9);
+    expect(formatSignedPct(0.3343, 'en')).toBe('+0.33%');
+    expect(formatSignedPct(-1.05, 'pt')).toBe('−1,05%');
   });
 });
 
