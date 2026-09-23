@@ -7,9 +7,10 @@
  * snaps and steps, and how a value is written.
  */
 import {
-  GAME_POWER_CDR_OBSERVED_MAX_PCT,
+  GAME_POWER_CDR_CHECKED_MAX_PCT,
   GAME_POWER_FACTOR_IDS,
   gamePower,
+  gamePowerAxisValue,
   gamePowerCurve,
   gamePowerMultipliers,
   gamePowerShares,
@@ -29,7 +30,6 @@ export const POWER_ROW_IDS: readonly PowerRowId[] = [...GAME_POWER_FACTOR_IDS, '
 
 export type PowerFactorRow = {
   readonly id: PowerRowId;
-  /** `null` for attack, the anchor every factor multiplies. */
   readonly multiplier: number | null;
   readonly share: number | null;
 };
@@ -40,11 +40,10 @@ export function powerFactorRows(input: GamePowerInput): readonly PowerFactorRow[
   return POWER_ROW_IDS.map((id) =>
     id === 'attack'
       ? { id, multiplier: null, share: null }
-      : { id, multiplier: multipliers[id], share: shares[id] },
+      : { id, multiplier: multipliers[id], share: Math.max(0, shares[id]) },
   );
 }
 
-/** Crit opens two charts, stacked: the chance and the damage it multiplies. */
 export const POWER_ROW_AXES: Record<PowerRowId, readonly GamePowerAxis[]> = {
   crit: ['critChance', 'critDmg'],
   speed: ['speed'],
@@ -75,8 +74,8 @@ const CAPS: Partial<Record<GamePowerAxis, number>> = {
   cdr: STAT_CAPS.cdr,
 };
 
-const OBSERVED_MAX: Partial<Record<GamePowerAxis, number>> = {
-  cdr: GAME_POWER_CDR_OBSERVED_MAX_PCT,
+const CHECKED_MAX: Partial<Record<GamePowerAxis, number>> = {
+  cdr: GAME_POWER_CDR_CHECKED_MAX_PCT,
 };
 
 export type PowerAxisSpec = {
@@ -85,23 +84,26 @@ export type PowerAxisSpec = {
   readonly hi: number;
   readonly cap: number | null;
   /** Past this value the curve is drawn dashed and the readout says it is extrapolated. */
-  readonly observedMax: number | null;
+  readonly checkedMax: number | null;
   /** Explosão Ampla is a whole level: the guide snaps to integers and the curve is a staircase. */
   readonly integer: boolean;
   /** Crit damage also draws Power as if crit chance sat at its cap. */
   readonly cappedCritLine: boolean;
 };
 
+/** The axis always reaches the hero's own value, so the "now" mark is never off the chart. */
 export function powerAxisSpec(input: GamePowerInput, axis: GamePowerAxis): PowerAxisSpec {
-  const [lo, hi] =
+  const [fixedLo, fixedHi] =
     axis === 'attack' ? [0, Math.max(1, POWER_ATTACK_RANGE_MULTIPLE * input.sheet.attack)] : FIXED_RANGES[axis];
+  const current = gamePowerAxisValue(input, axis);
+  const integer = axis === 'explosaoAmpla';
   return {
     axis,
-    lo,
-    hi,
+    lo: Math.min(fixedLo, integer ? Math.floor(current) : current),
+    hi: Math.max(fixedHi, integer ? Math.ceil(current) : current),
     cap: CAPS[axis] ?? null,
-    observedMax: OBSERVED_MAX[axis] ?? null,
-    integer: axis === 'explosaoAmpla',
+    checkedMax: CHECKED_MAX[axis] ?? null,
+    integer,
     cappedCritLine: axis === 'critDmg',
   };
 }
@@ -118,13 +120,9 @@ function curveBetween(input: GamePowerInput, spec: PowerAxisSpec, lo: number, hi
 }
 
 export type PowerChartSeries = {
-  /** Measured territory, drawn solid. */
   readonly solid: readonly GamePowerPoint[];
-  /** Past {@link PowerAxisSpec.observedMax}, drawn dashed; empty when the axis has no such bound. */
   readonly extrapolated: readonly GamePowerPoint[];
-  /** Crit damage only: Power with crit chance at its cap, drawn dashed. */
   readonly cappedCrit: readonly GamePowerPoint[];
-  /** The top of the y axis, which always starts at zero. */
   readonly yMax: number;
 };
 
@@ -135,7 +133,7 @@ function withCappedCritChance(input: GamePowerInput): GamePowerInput {
 }
 
 export function powerChartSeries(input: GamePowerInput, spec: PowerAxisSpec): PowerChartSeries {
-  const split = spec.observedMax !== null && spec.observedMax < spec.hi ? spec.observedMax : spec.hi;
+  const split = spec.checkedMax !== null && spec.checkedMax < spec.hi ? spec.checkedMax : spec.hi;
   const solid = curveBetween(input, spec, spec.lo, split);
   const extrapolated = split < spec.hi ? curveBetween(input, spec, split, spec.hi) : [];
   const cappedCrit = spec.cappedCritLine ? curveBetween(withCappedCritChance(input), spec, spec.lo, spec.hi) : [];
@@ -147,9 +145,7 @@ export type PowerReading = {
   readonly x: number;
   readonly power: number;
   readonly delta: number;
-  /** Relative to Power now, as a percentage; 0 when Power now is 0. */
   readonly deltaPct: number;
-  /** Crit damage only: Power at this value with crit chance at its cap. */
   readonly cappedCritPower: number | null;
   readonly extrapolated: boolean;
 };
@@ -169,7 +165,7 @@ export function powerReading(input: GamePowerInput, spec: PowerAxisSpec, x: numb
     delta,
     deltaPct: now > 0 ? (delta / now) * 100 : 0,
     cappedCritPower: spec.cappedCritLine ? curvePowerAt(withCappedCritChance(input), spec.axis, x) : null,
-    extrapolated: spec.observedMax !== null && x > spec.observedMax,
+    extrapolated: spec.checkedMax !== null && x > spec.checkedMax,
   };
 }
 
@@ -185,6 +181,17 @@ export function axisValueAtFraction(spec: PowerAxisSpec, fraction: number): numb
 
 export function axisFraction(spec: PowerAxisSpec, x: number): number {
   return spec.hi === spec.lo ? 0 : (x - spec.lo) / (spec.hi - spec.lo);
+}
+
+export type MarkLabelAnchor = 'start' | 'center' | 'end';
+
+const EDGE_FRACTION = 0.1;
+
+/** A mark near either edge hangs its label inward, so the label stays inside the plot. */
+export function markLabelAnchor(fraction: number): MarkLabelAnchor {
+  if (fraction < EDGE_FRACTION) return 'start';
+  if (fraction > 1 - EDGE_FRACTION) return 'end';
+  return 'center';
 }
 
 const FINE_STEPS = 100;

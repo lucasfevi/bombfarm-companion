@@ -271,6 +271,7 @@ export {
   formatPowerFigure,
   formatShare,
   isGuideKey,
+  markLabelAnchor,
   powerAxisSpec,
   powerChartSeries,
   powerFactorRows,
@@ -280,6 +281,7 @@ export {
 } from './power-breakdown';
 export type {
   GuideKey,
+  MarkLabelAnchor,
   PowerAxisSpec,
   PowerChartSeries,
   PowerFactorRow,

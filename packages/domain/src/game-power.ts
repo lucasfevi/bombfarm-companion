@@ -11,7 +11,6 @@
 import type { SheetStats } from './gear/types';
 import { STAT_CAPS } from './model/rarity-constants';
 import { applyRuneMultipliers, runeSheetMultipliers, stripRuneMultipliers, type HeroRune } from './runes';
-import type { HeroRecord } from './shims/storage';
 
 export const GAME_POWER_SCALE = 10;
 const SPEED_BASE = 0.3;
@@ -26,8 +25,8 @@ const ENERGY_UTILITY_PER_ENERGY = 0.008;
 const ENERGY_UTILITY_CEILING = 6;
 const BLOCKS_PER_ALCANCE = 0.5;
 
-/** The highest cooldown reduction the formula has been measured against; past it, it is extrapolated. */
-export const GAME_POWER_CDR_OBSERVED_MAX_PCT = 14.3;
+/** The highest cooldown reduction the formula has been checked against; past it, it is extrapolated. */
+export const GAME_POWER_CDR_CHECKED_MAX_PCT = 17.85;
 
 export type GamePowerInput = {
   readonly sheet: SheetStats;
@@ -48,13 +47,14 @@ export function alcanceForExplosaoAmpla(level: number): number {
 
 export function gamePowerFactors({ sheet, explosaoAmplaLevel }: GamePowerInput): GamePowerFactors {
   const critChance = Math.min(sheet.critChance, STAT_CAPS.critChance) / 100;
+  const cdr = Math.min(sheet.cdr, STAT_CAPS.cdr) / 100;
   const energyUtility = Math.min(ENERGY_UTILITY_CEILING, 1 + ENERGY_UTILITY_PER_ENERGY * sheet.energy) - 1;
   return {
     attack: sheet.attack,
     crit: 1 + critChance * (sheet.critDmg / 100),
     speed: SPEED_BASE + SPEED_PER_POINT * sheet.speed,
     energy: 1 - STAMINA_DEPTH / (STAMINA_BASE + STAMINA_PER_ENERGY * sheet.energy),
-    cooldown: 1 / (1 - sheet.cdr / 100),
+    cooldown: 1 / (1 - cdr),
     range: 1 + BLOCKS_PER_ALCANCE * alcanceForExplosaoAmpla(explosaoAmplaLevel),
     // Unclamped, unlike the damage path's mitigation bypass: a sheet past 100 still scores higher.
     penetration: (1 - MITIGATION * (1 - sheet.penetration / 100)) / (1 - MITIGATION),
@@ -89,7 +89,6 @@ export const GAME_POWER_NEUTRAL_FACTORS: GamePowerFactorRecord = withoutAttack(
   gamePowerFactors({ sheet: ZERO_SHEET, explosaoAmplaLevel: 0 }),
 );
 
-/** How many times each factor lifts Power over its neutral value. */
 export function gamePowerMultipliers(input: GamePowerInput): GamePowerFactorRecord {
   const factors = gamePowerFactors(input);
   const multipliers = {} as Record<GamePowerFactorId, number>;
@@ -137,7 +136,6 @@ export function withGamePowerAxis(input: GamePowerInput, axis: GamePowerAxis, va
 
 export type GamePowerPoint = { readonly x: number; readonly power: number };
 
-/** Power at `n` evenly spaced values of one statistic from `lo` to `hi`, every other one held. */
 export function gamePowerCurve(
   input: GamePowerInput,
   axis: GamePowerAxis,
@@ -154,8 +152,16 @@ export function gamePowerCurve(
   return points;
 }
 
-export function gamePowerInputOf(hero: Pick<HeroRecord, 'gearedOverride' | 'abilities'>): GamePowerInput {
-  return { sheet: hero.gearedOverride, explosaoAmplaLevel: hero.abilities.explosao_ampla ?? 0 };
+/**
+ * The sheet to score is the one the game shows: composed from birth with gear, the skill tree,
+ * the spent points and the runes — the pipeline's `adjusted`, not the zero-points
+ * `gearedOverride` a record stores. Team auras never enter it.
+ */
+export function gamePowerInputOf(
+  sheet: SheetStats,
+  abilities: Readonly<Record<string, number>> | null | undefined,
+): GamePowerInput {
+  return { sheet, explosaoAmplaLevel: abilities?.explosao_ampla ?? 0 };
 }
 
 /**

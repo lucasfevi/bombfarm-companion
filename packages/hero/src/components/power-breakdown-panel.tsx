@@ -8,6 +8,7 @@ import {
   type GamePowerAxis,
   type GamePowerInput,
 } from '@bombfarm/domain/game-power';
+import type { SheetStats } from '@bombfarm/domain/gear';
 import type { SheetKey } from '@bombfarm/domain/planner-constants';
 import { hasRuneOnSheet, runesOf } from '@bombfarm/domain/runes';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
@@ -38,10 +39,10 @@ const ROW_LABEL_KEY: Record<PowerRowId, keyof HeroCopy> = {
 const SWATCH_CLASS: Record<PowerRowId, string> = {
   crit: 'bg-down',
   speed: 'bg-info',
-  range: 'bg-rar-5',
+  range: 'bg-gold',
   utility: 'bg-up',
   energy: 'bg-rar-3',
-  penetration: 'bg-rar-4',
+  penetration: 'bg-accent',
   cooldown: 'bg-rar-0',
   attack: 'bg-ink',
 };
@@ -51,7 +52,7 @@ const focusRingClass =
 
 type StatLabel = (key: SheetKey) => string;
 
-type PowerHero = Pick<HeroRecord, 'gearedOverride' | 'abilities' | 'runes' | 'power'>;
+type PowerHero = Pick<HeroRecord, 'abilities' | 'runes' | 'power'>;
 
 function rowLabel(id: PowerRowId, t: HeroCopy): string {
   return t[ROW_LABEL_KEY[id]];
@@ -143,31 +144,38 @@ function FactorRow({
   );
 }
 
-/**
- * The game's own Power figure, taken apart into the factors that multiply it.
- *
- * The total counts the hero's active runes, so it reads the same as the game's own screen; the
- * rune-free figure the account read stores is named beside it while a rune is on. The share bar
- * and the rows split the stack; a row, or its segment, opens Power across that statistic.
- *
- * Desktop only: a web save import carries no runes, so there the total could not match the game.
- */
-export function PowerBreakdownPanel({
+function PowerHeading({ total, t }: { total: string; t: HeroCopy }) {
+  return (
+    <div className={panelHClass}>
+      <span className="flex items-center gap-1.5">
+        <h2 className={panelTitleClass}>{t.heroDetailPowerTitle}</h2>
+        <InfoTip label={t.heroDetailPowerTitle} tip={t.heroDetailPowerTip} />
+      </span>
+      <span className="font-mono text-base font-bold text-gold tabular-nums" data-testid="power-total">
+        {total}
+      </span>
+    </div>
+  );
+}
+
+function PowerBreakdown({
   hero,
+  sheet,
   treeCritDmgPct,
   lang,
   statLabel,
+  t,
 }: {
   hero: PowerHero;
-  /** The skill tree's flat crit-damage add, planner percentage points — where the rune model puts crit damage's rune. */
+  sheet: SheetStats;
   treeCritDmgPct: number;
   lang: Lang;
   statLabel: StatLabel;
+  t: HeroCopy;
 }) {
-  const t = heroCopyFor(lang);
   const chartId = useId();
   const [selected, setSelected] = useState<PowerRowId | null>(null);
-  const input = useMemo(() => gamePowerInputOf(hero), [hero]);
+  const input = useMemo(() => gamePowerInputOf(sheet, hero.abilities), [sheet, hero.abilities]);
   const rows = useMemo(() => powerFactorRows(input), [input]);
   const total = useMemo(() => gamePower(input), [input]);
   const runeFree = useMemo(() => {
@@ -178,55 +186,94 @@ export function PowerBreakdownPanel({
   const onSelect = (id: PowerRowId) => setSelected((current) => (current === id ? null : id));
 
   return (
-    <Panel className="@container min-w-0" data-testid="power-breakdown">
-      <Tooltip.Provider delay={200} closeDelay={100}>
-        <div className={panelHClass}>
-          <span className="flex items-center gap-1.5">
-            <h2 className={panelTitleClass}>{t.heroDetailPowerTitle}</h2>
-            <InfoTip label={t.heroDetailPowerTitle} tip={t.heroDetailPowerTip} />
-          </span>
-          <span className="font-mono text-base font-bold text-gold tabular-nums" data-testid="power-total">
-            {formatPowerFigure(total, lang)}
-          </span>
-        </div>
-        {runeFree !== null ? (
-          <p className={cn(tipClass, 'text-right')} data-testid="power-rune-note">
-            {sub(t.heroDetailPowerRunesActive, { value: formatPowerFigure(runeFree, lang) })}
-          </p>
-        ) : null}
-        <ShareBar rows={rows} selected={selected} onSelect={onSelect} t={t} lang={lang} />
-        <div className="mt-3 grid grid-cols-1 gap-4 @min-[46rem]:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
-          <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
-            {rows.map((row) => (
-              <FactorRow
-                key={row.id}
-                row={row}
+    <>
+      <PowerHeading total={formatPowerFigure(total, lang)} t={t} />
+      {runeFree !== null ? (
+        <p className={cn(tipClass, 'text-right')} data-testid="power-rune-note">
+          {sub(t.heroDetailPowerRunesActive, { value: formatPowerFigure(runeFree, lang) })}
+        </p>
+      ) : null}
+      <ShareBar rows={rows} selected={selected} onSelect={onSelect} t={t} lang={lang} />
+      <div className="mt-3 grid grid-cols-1 gap-4 @min-[46rem]:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+        <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
+          {rows.map((row) => (
+            <FactorRow
+              key={row.id}
+              row={row}
+              input={input}
+              selected={selected === row.id}
+              chartId={chartId}
+              onSelect={onSelect}
+              t={t}
+              lang={lang}
+            />
+          ))}
+        </ul>
+        <div id={chartId} className="flex min-w-0 flex-col gap-4" data-testid="power-chart-region">
+          {selected === null ? (
+            <p className={tipClass}>{t.heroDetailPowerPick}</p>
+          ) : (
+            POWER_ROW_AXES[selected].map((axis) => (
+              <PowerFactorChart
+                key={axis}
                 input={input}
-                selected={selected === row.id}
-                chartId={chartId}
-                onSelect={onSelect}
+                axis={axis}
+                axisLabel={axisLabelFor(axis, t, statLabel)}
                 t={t}
                 lang={lang}
               />
-            ))}
-          </ul>
-          <div id={chartId} className="flex min-w-0 flex-col gap-4" data-testid="power-chart-region">
-            {selected === null ? (
-              <p className={tipClass}>{t.heroDetailPowerPick}</p>
-            ) : (
-              POWER_ROW_AXES[selected].map((axis) => (
-                <PowerFactorChart
-                  key={axis}
-                  input={input}
-                  axis={axis}
-                  axisLabel={axisLabelFor(axis, t, statLabel)}
-                  t={t}
-                  lang={lang}
-                />
-              ))
-            )}
-          </div>
+            ))
+          )}
         </div>
+      </div>
+    </>
+  );
+}
+
+/**
+ * The game's own Power figure, taken apart into the factors that multiply it.
+ *
+ * `sheet` is the hero's sheet as the game shows it — composed with points and runes, before any
+ * team aura — so the total reads the same as the game's own screen; the rune-free figure the
+ * account read stores is named beside it while a rune is on. A hero whose spent points could not
+ * be read has no such sheet (`null`): the panel then prints the stored figure alone and says why,
+ * rather than a breakdown built on zero points.
+ */
+export function PowerBreakdownPanel({
+  hero,
+  sheet,
+  treeCritDmgPct,
+  lang,
+  statLabel,
+}: {
+  hero: PowerHero;
+  sheet: SheetStats | null;
+  /** The skill tree's flat crit-damage add, planner percentage points — where the rune model puts crit damage's rune. */
+  treeCritDmgPct: number;
+  lang: Lang;
+  statLabel: StatLabel;
+}) {
+  const t = heroCopyFor(lang);
+  return (
+    <Panel className="@container min-w-0" data-testid="power-breakdown">
+      <Tooltip.Provider delay={200} closeDelay={100}>
+        {sheet === null ? (
+          <>
+            <PowerHeading total={hero.power == null ? '—' : formatPowerFigure(hero.power, lang)} t={t} />
+            <p className={tipClass} data-testid="power-withheld">
+              {t.heroDetailPowerWithheld}
+            </p>
+          </>
+        ) : (
+          <PowerBreakdown
+            hero={hero}
+            sheet={sheet}
+            treeCritDmgPct={treeCritDmgPct}
+            lang={lang}
+            statLabel={statLabel}
+            t={t}
+          />
+        )}
       </Tooltip.Provider>
     </Panel>
   );

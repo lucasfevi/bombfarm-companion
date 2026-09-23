@@ -3,13 +3,15 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { statLabel } from '@bombfarm/domain/game-labels';
-import { gamePower, gamePowerInputWithRunes, type GamePowerInput } from '@bombfarm/domain/game-power';
+import type { SheetStats } from '@bombfarm/domain/gear';
+import { gamePower, gamePowerInputOf, gamePowerInputWithRunes, type GamePowerInput } from '@bombfarm/domain/game-power';
 import type { SheetKey } from '@bombfarm/domain/planner-constants';
-import type { HeroRune } from '@bombfarm/domain/runes';
+import { hasRuneOnSheet, runesOf, type HeroRune } from '@bombfarm/domain/runes';
 import { saveSheetUnits } from '@bombfarm/domain/save-units';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { heroCopyFor } from '../copy';
-import { powerAxisSpec, powerReading, powerReadoutText, steppedGuide } from '../model/power-breakdown';
+import { factsForHero, loadBreakdownFixture } from '../model/combat-breakdown.test-fixture';
+import { formatPowerFigure, powerAxisSpec, powerReading, powerReadoutText, steppedGuide } from '../model/power-breakdown';
 import { PowerBreakdownPanel } from './power-breakdown-panel';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -37,21 +39,24 @@ function rune(axis: HeroRune['axis'], strengthPct: number): HeroRune {
 
 const RUNES: readonly HeroRune[] = [rune('crit', 9), rune('critdmg', 9), rune('energy', 5), rune('xp', 9)];
 
-type PanelHero = Pick<HeroRecord, 'gearedOverride' | 'abilities' | 'runes' | 'power'>;
+type PanelHero = Pick<HeroRecord, 'abilities' | 'runes' | 'power'>;
+type Shown = { readonly hero: PanelHero; readonly sheet: SheetStats | null };
+type Scored = Shown & { readonly sheet: SheetStats };
 
-/** As an account read hands the hero over: the sheet with its runes already on, the stored Power without. */
-const RUNED_HERO: PanelHero = {
-  gearedOverride: gamePowerInputWithRunes(RUNE_FREE, RUNES, TREE_CRIT_DMG_PCT).sheet,
-  abilities: { explosao_ampla: 20 },
-  runes: RUNES,
-  power: STORED_POWER,
+/**
+ * The Combat stage hands the panel the pipeline's `adjusted` sheet — composed with points and the
+ * hero's runes, before any team aura — and the record's stored Power, which the game keeps
+ * without runes. These two stand in for that pair on the rune witness; the live-read tests below
+ * build it through the real account path.
+ */
+const RUNED: Scored = {
+  hero: { abilities: { explosao_ampla: 20 }, runes: RUNES, power: STORED_POWER },
+  sheet: gamePowerInputWithRunes(RUNE_FREE, RUNES, TREE_CRIT_DMG_PCT).sheet,
 };
 
-const PLAIN_HERO: PanelHero = {
-  gearedOverride: RUNE_FREE.sheet,
-  abilities: { explosao_ampla: 20 },
-  runes: [],
-  power: STORED_POWER,
+const PLAIN: Scored = {
+  hero: { abilities: { explosao_ampla: 20 }, runes: [], power: STORED_POWER },
+  sheet: RUNE_FREE.sheet,
 };
 
 const label = (key: SheetKey) => (key === 'luck' ? 'Luck' : statLabel(key, 'en'));
@@ -73,9 +78,11 @@ afterEach(() => {
   container.remove();
 });
 
-function render(hero: PanelHero) {
+function render({ hero, sheet }: Shown, treeCritDmgPct: number = TREE_CRIT_DMG_PCT) {
   act(() => {
-    root.render(<PowerBreakdownPanel hero={hero} treeCritDmgPct={TREE_CRIT_DMG_PCT} lang="en" statLabel={label} />);
+    root.render(
+      <PowerBreakdownPanel hero={hero} sheet={sheet} treeCritDmgPct={treeCritDmgPct} lang="en" statLabel={label} />,
+    );
   });
 }
 
@@ -99,19 +106,19 @@ function press(element: HTMLElement, key: string) {
 
 describe('PowerBreakdownPanel', () => {
   it('prints the rune-inclusive total the game shows, and names the stored rune-free figure beside it', () => {
-    render(RUNED_HERO);
+    render(RUNED);
     expect(query('[data-testid="power-total"]').textContent).toBe('32.41m');
     expect(query('[data-testid="power-rune-note"]').textContent).toBe('Includes active runes · 28.03m without them');
   });
 
   it('says nothing about runes for a hero carrying none, and its total is the stored figure', () => {
-    render(PLAIN_HERO);
+    render(PLAIN);
     expect(query('[data-testid="power-total"]').textContent).toBe('28.03m');
     expect(container.querySelector('[data-testid="power-rune-note"]')).toBeNull();
   });
 
   it('lists every factor with its multiplier and share, attack last as the anchor', () => {
-    render(RUNED_HERO);
+    render(RUNED);
     const rows = [...container.querySelectorAll<HTMLButtonElement>('[data-power-row]')];
     expect(rows.map((row) => row.dataset.powerRow)).toEqual([
       'crit',
@@ -129,13 +136,13 @@ describe('PowerBreakdownPanel', () => {
   });
 
   it('opens no chart until a factor is picked', () => {
-    render(RUNED_HERO);
+    render(RUNED);
     expect(container.querySelector('[data-power-chart]')).toBeNull();
     expect(query('[data-testid="power-chart-region"]').textContent).toBe(t.heroDetailPowerPick);
   });
 
   it('picking crit highlights its row and segment and opens the chance and damage charts; picking it again closes them', () => {
-    render(RUNED_HERO);
+    render(RUNED);
     click('[data-power-row="crit"]');
     expect(query('[data-power-row="crit"]').getAttribute('aria-pressed')).toBe('true');
     expect(query('[data-power-segment="crit"]').dataset.selected).toBe('true');
@@ -151,19 +158,19 @@ describe('PowerBreakdownPanel', () => {
   });
 
   it('a share-bar segment opens the same chart as its row', () => {
-    render(RUNED_HERO);
+    render(RUNED);
     click('[data-power-segment="speed"]');
     expect(query('[data-power-row="speed"]').getAttribute('aria-pressed')).toBe('true');
     expect(query('[data-power-chart]').dataset.powerChart).toBe('speed');
   });
 
   it('the arrow keys step the guide, and the readout follows it through the formula', () => {
-    render(RUNED_HERO);
+    render(RUNED);
     click('[data-power-row="speed"]');
     const slider = query('[data-power-chart="speed"] [role="slider"]');
     const readout = () => query('[data-power-chart="speed"] [data-testid="power-readout"]').textContent;
 
-    const input: GamePowerInput = { sheet: RUNED_HERO.gearedOverride, explosaoAmplaLevel: 20 };
+    const input = gamePowerInputOf(RUNED.sheet, RUNED.hero.abilities);
     const spec = powerAxisSpec(input, 'speed');
     expect(readout()).toBe(powerReadoutText(powerReading(input, spec, input.sheet.speed), 'Speed', spec, 'en', t));
     expect(container.querySelector('[data-testid="power-guide-point"]')).toBeNull();
@@ -180,19 +187,19 @@ describe('PowerBreakdownPanel', () => {
     expect(readout()).toMatch(/^Speed 0\.0 → Power /);
   });
 
-  it('a cooldown past 14.3% says it is extrapolated', () => {
-    render(RUNED_HERO);
+  it('a cooldown past 17.85% says it is extrapolated', () => {
+    render(RUNED);
     click('[data-power-row="cooldown"]');
     expect(container.querySelector('[data-testid="power-readout-extrapolated"]')).toBeNull();
     expect(query('[data-power-chart="cdr"] [data-series="extrapolated"]')).toBeTruthy();
     press(query('[data-power-chart="cdr"] [role="slider"]'), 'End');
     expect(query('[data-testid="power-readout-extrapolated"]').textContent).toBe(
-      'Extrapolated: no hero has been measured above 14.3% cooldown.',
+      'Past the highest cooldown checked (17.85%), this is extrapolated.',
     );
   });
 
   it('the range chart steps whole Wide Blast levels', () => {
-    render(RUNED_HERO);
+    render(RUNED);
     click('[data-power-row="range"]');
     const slider = query('[data-power-chart="explosaoAmpla"] [role="slider"]');
     press(slider, 'ArrowLeft');
@@ -202,9 +209,47 @@ describe('PowerBreakdownPanel', () => {
     );
   });
 
-  it('the total is the formula on the sheet as read', () => {
-    render(RUNED_HERO);
-    const total = gamePower({ sheet: RUNED_HERO.gearedOverride, explosaoAmplaLevel: 20 });
+  it('the total is the formula on the sheet it was handed', () => {
+    render(RUNED);
+    const total = gamePower(gamePowerInputOf(RUNED.sheet, RUNED.hero.abilities));
     expect(Math.abs(total / 32_411_057.17 - 1)).toBeLessThan(1e-6);
   });
+
+  it('a hero with no Wide Blast keeps its "now" label inside the plot, clear of the axis labels', () => {
+    render({ ...PLAIN, hero: { ...PLAIN.hero, abilities: {} } });
+    click('[data-power-row="range"]');
+    const nowLabel = query('[data-power-chart="explosaoAmpla"] [data-testid="power-now-label"]');
+    expect(nowLabel.dataset.anchor).toBe('start');
+    expect(nowLabel.style.left).toBe('0%');
+    expect(query('[data-power-chart="explosaoAmpla"] [data-testid="power-y-max"]').closest('[role="slider"]')).toBeNull();
+  });
+
+  it('a hero whose points were not recovered gets the stored figure and the reason, and no breakdown', () => {
+    render({ hero: RUNED.hero, sheet: null });
+    expect(query('[data-testid="power-total"]').textContent).toBe('28.03m');
+    expect(query('[data-testid="power-withheld"]').textContent).toBe(t.heroDetailPowerWithheld);
+    expect(container.querySelector('[data-power-row]')).toBeNull();
+    expect(container.querySelector('[data-power-segment]')).toBeNull();
+  });
+});
+
+describe('PowerBreakdownPanel on a live account read', () => {
+  const fixture = loadBreakdownFixture('payload-20260913-20heroes-runes.json');
+  const shownFor = (hero: HeroRecord): Shown => ({ hero, sheet: factsForHero(fixture, hero).adjusted });
+
+  it.each(fixture.heroes.map((hero) => [hero.name, hero] as const))(
+    '%s: the total is the Combat stage’s sheet scored, and runes never lower it',
+    (_name, hero) => {
+      render(shownFor(hero), fixture.account.tree.critDmg);
+      const total = gamePower(gamePowerInputOf(factsForHero(fixture, hero).adjusted, hero.abilities));
+      expect(query('[data-testid="power-total"]').textContent).toBe(formatPowerFigure(total, 'en'));
+      expect(total).toBeGreaterThanOrEqual((hero.power ?? 0) * (1 - 1e-12));
+      const note = container.querySelector('[data-testid="power-rune-note"]');
+      if (hasRuneOnSheet(runesOf(hero))) {
+        expect(note?.textContent).toBe(`Includes active runes · ${formatPowerFigure(hero.power ?? 0, 'en')} without them`);
+      } else {
+        expect(note).toBeNull();
+      }
+    },
+  );
 });

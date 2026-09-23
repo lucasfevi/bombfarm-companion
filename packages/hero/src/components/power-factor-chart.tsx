@@ -17,11 +17,13 @@ import {
   formatAxisValue,
   formatPowerFigure,
   isGuideKey,
+  markLabelAnchor,
   powerAxisSpec,
   powerChartSeries,
   powerReading,
   powerReadoutText,
   steppedGuide,
+  type MarkLabelAnchor,
   type PowerAxisSpec,
 } from '../model/power-breakdown';
 
@@ -29,6 +31,12 @@ const markLabelClass = 'pointer-events-none absolute text-[10px] leading-none te
 const dotClass = 'pointer-events-none absolute size-2 -translate-x-1/2 -translate-y-1/2 rounded-full';
 const focusRingClass =
   'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+
+const NOW_LABEL_ANCHOR_CLASS: Record<MarkLabelAnchor, string> = {
+  start: 'pl-1',
+  center: '-translate-x-1/2',
+  end: '-translate-x-full pr-1',
+};
 
 type Plot = { readonly spec: PowerAxisSpec; readonly yMax: number };
 
@@ -101,6 +109,7 @@ export function PowerFactorChart({
   const now = gamePowerAxisValue(input, axis);
   const nowOnAxis = Math.min(spec.hi, Math.max(spec.lo, now));
   const nowPower = gamePower(input);
+  const nowAnchor = markLabelAnchor(axisFraction(spec, nowOnAxis));
   const reading = powerReading(input, spec, guide ?? now);
   const readout = powerReadoutText(reading, axisLabel, spec, lang, t);
   const path = spec.integer ? stairPath : linePath;
@@ -124,6 +133,9 @@ export function PowerFactorChart({
   return (
     <figure className="m-0 flex min-w-0 flex-col gap-1" data-power-chart={axis}>
       <figcaption className="text-[11px] font-bold tracking-[0.06em] text-muted uppercase">{axisLabel}</figcaption>
+      <span className="font-mono text-[10px] leading-none text-muted tabular-nums" data-testid="power-y-max">
+        {formatPowerFigure(series.yMax, lang)}
+      </span>
       <div
         ref={plotRef}
         role="slider"
@@ -137,7 +149,7 @@ export function PowerFactorChart({
         onPointerMove={(event) => guideAtPointer(event.clientX)}
         onPointerLeave={() => setGuide(null)}
         onKeyDown={onKeyDown}
-        className={cn('relative mt-3 h-36 w-full cursor-crosshair touch-none rounded-sm select-none', focusRingClass)}
+        className={cn('relative h-36 w-full cursor-crosshair touch-none rounded-sm select-none', focusRingClass)}
       >
         <svg
           className="absolute inset-0 size-full overflow-visible"
@@ -181,9 +193,10 @@ export function PowerFactorChart({
           ) : null}
           {guide !== null ? <VerticalMark x={plotX(plot, guide)} className="stroke-ink" /> : null}
         </svg>
-        <span className={cn(markLabelClass, 'top-0 left-0 -translate-y-full')}>{formatPowerFigure(series.yMax, lang)}</span>
         <span
-          className={cn(markLabelClass, '-top-1 -translate-x-1/2 -translate-y-full')}
+          data-testid="power-now-label"
+          data-anchor={nowAnchor}
+          className={cn(markLabelClass, 'top-1', NOW_LABEL_ANCHOR_CLASS[nowAnchor])}
           style={{ left: `${String(plotX(plot, nowOnAxis))}%` }}
         >
           {t.heroDetailPowerNow}
@@ -221,9 +234,9 @@ export function PowerFactorChart({
         </p>
       ) : null}
       {spec.cappedCritLine ? <p className="m-0 text-[10px] text-muted">{t.heroDetailPowerCappedLegend}</p> : null}
-      {reading.extrapolated && spec.observedMax !== null ? (
+      {reading.extrapolated && spec.checkedMax !== null ? (
         <p className="m-0 text-[11px] leading-snug text-warn" data-testid="power-readout-extrapolated">
-          {sub(t.heroDetailPowerExtrapolated, { pct: `${formatNumber(spec.observedMax, lang, 1)}%` })}
+          {sub(t.heroDetailPowerExtrapolated, { pct: `${formatNumber(spec.checkedMax, lang, 2)}%` })}
         </p>
       ) : null}
     </figure>

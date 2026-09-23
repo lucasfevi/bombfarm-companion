@@ -4,6 +4,7 @@ import {
   gamePower,
   gamePowerAxisValue,
   gamePowerCurve,
+  gamePowerShares,
   withGamePowerAxis,
   type GamePowerInput,
 } from '@bombfarm/domain/game-power';
@@ -15,6 +16,7 @@ import {
   axisValueAtFraction,
   formatAxisValue,
   formatPowerFigure,
+  markLabelAnchor,
   powerAxisSpec,
   powerChartSeries,
   powerFactorRows,
@@ -46,6 +48,14 @@ describe('powerFactorRows', () => {
     expect(total).toBeCloseTo(1, 12);
   });
 
+  it('a factor below its neutral value shows a zero share, never a negative one', () => {
+    const belowNeutral = withGamePowerAxis(INPUT, 'penetration', -80);
+    expect(gamePowerShares(belowNeutral).penetration).toBeLessThan(0);
+    const rows = powerFactorRows(belowNeutral);
+    expect(rows.find((row) => row.id === 'penetration')?.share).toBe(0);
+    for (const row of rows) if (row.share !== null) expect(row.share, row.id).toBeGreaterThanOrEqual(0);
+  });
+
   it('every row opens at least one chart, and crit opens chance and damage', () => {
     for (const id of POWER_ROW_IDS) expect(POWER_ROW_AXES[id].length).toBeGreaterThan(0);
     expect(POWER_ROW_AXES.crit).toEqual(['critChance', 'critDmg']);
@@ -71,10 +81,21 @@ describe('powerAxisSpec', () => {
     expect(powerAxisSpec(INPUT, 'attack').hi).toBeCloseTo(2.2 * INPUT.sheet.attack, 6);
   });
 
-  it('only cooldown carries an observed bound, at 14.3%', () => {
+  it('only cooldown carries a checked bound, at 17.85%', () => {
     for (const axis of GAME_POWER_AXES) {
-      expect(powerAxisSpec(INPUT, axis).observedMax, axis).toBe(axis === 'cdr' ? 14.3 : null);
+      expect(powerAxisSpec(INPUT, axis).checkedMax, axis).toBe(axis === 'cdr' ? 17.85 : null);
     }
+  });
+
+  it.each([
+    ['critChance', 130],
+    ['cdr', 92],
+    ['speed', 260],
+    ['penetration', -4],
+  ] as const)('%s at %d: the axis stretches to reach the hero, so the guide never reads off the chart', (axis, value) => {
+    const spec = powerAxisSpec(withGamePowerAxis(INPUT, axis, value), axis);
+    expect(spec.lo).toBeLessThanOrEqual(value);
+    expect(spec.hi).toBeGreaterThanOrEqual(value);
   });
 });
 
@@ -88,11 +109,11 @@ describe('powerChartSeries', () => {
     }
   });
 
-  it('cooldown is measured up to 14.3% and extrapolated from there to the 80% cap', () => {
+  it('cooldown is checked up to 17.85% and extrapolated from there to the 80% cap', () => {
     const series = powerChartSeries(INPUT, powerAxisSpec(INPUT, 'cdr'));
     expect(series.solid[0].x).toBe(0);
-    expect(series.solid.at(-1)?.x).toBe(14.3);
-    expect(series.extrapolated[0].x).toBe(14.3);
+    expect(series.solid.at(-1)?.x).toBe(17.85);
+    expect(series.extrapolated[0].x).toBe(17.85);
     expect(series.extrapolated.at(-1)?.x).toBe(80);
   });
 
@@ -133,10 +154,10 @@ describe('powerReading', () => {
     expect(reading.delta).toBe(point.power - gamePower(INPUT));
   });
 
-  it('says a cooldown past 14.3% is extrapolated, and one at it is not', () => {
+  it('says a cooldown past 17.85% is extrapolated, and one at it is not', () => {
     const spec = powerAxisSpec(INPUT, 'cdr');
-    expect(powerReading(INPUT, spec, 14.3).extrapolated).toBe(false);
-    expect(powerReading(INPUT, spec, 14.4).extrapolated).toBe(true);
+    expect(powerReading(INPUT, spec, 17.85).extrapolated).toBe(false);
+    expect(powerReading(INPUT, spec, 17.9).extrapolated).toBe(true);
   });
 
   it('crit damage also reads Power at capped crit chance', () => {
@@ -164,6 +185,16 @@ describe('the guide', () => {
     expect(steppedGuide(spec, 14, 'ArrowRight')).toBe(15);
     expect(axisValueAtFraction(spec, 0.73)).toBe(15);
     expect(axisValueAtFraction(spec, 1.4)).toBe(20);
+  });
+});
+
+describe('markLabelAnchor', () => {
+  it('hangs a label inward near either edge, centred elsewhere', () => {
+    expect(markLabelAnchor(0)).toBe('start');
+    expect(markLabelAnchor(0.05)).toBe('start');
+    expect(markLabelAnchor(0.5)).toBe('center');
+    expect(markLabelAnchor(0.95)).toBe('end');
+    expect(markLabelAnchor(1)).toBe('end');
   });
 });
 

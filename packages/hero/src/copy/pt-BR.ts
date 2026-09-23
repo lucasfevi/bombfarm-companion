@@ -33,10 +33,12 @@ export const heroPtBR: HeroCopy = {
     "O próprio número de Poder do jogo, desmontado. Poder é dez vezes o ataque multiplicado por um fator por atributo; a fatia de cada fator é quanto dessa pilha ele levanta, medida a partir de um herói sem nada daquele atributo.",
   heroDetailPowerPick: "Escolha um fator para ver o Poder ao longo da faixa dele.",
   heroDetailPowerRunesActive: "Com as runas ativas · {value} sem elas",
+  heroDetailPowerWithheld:
+    "Este é o número guardado pelo jogo, sem runas. O detalhamento depende dos pontos gastos do herói, que não puderam ser lidos.",
   heroDetailPowerFactorCrit: "Crítico (chance × dano)",
   heroDetailPowerFactorSpeed: "Velocidade",
   heroDetailPowerFactorRange: "Alcance (Explosão Ampla)",
-  heroDetailPowerFactorUtility: "Utilidade (sorte)",
+  heroDetailPowerFactorUtility: "Utilidade (sorte + energia)",
   heroDetailPowerFactorEnergy: "Energia",
   heroDetailPowerFactorPenetration: "Penetração",
   heroDetailPowerFactorCooldown: "Recarga",
@@ -51,7 +53,7 @@ export const heroPtBR: HeroCopy = {
   heroDetailPowerReadout: "{stat} {value} → Poder {power} ({delta}, {pct} em relação a agora)",
   heroDetailPowerReadoutCapped: "Com 100% de chance de crítico: {power}",
   heroDetailPowerCappedLegend: "Tracejado: com chance de crítico em 100%",
-  heroDetailPowerExtrapolated: "Extrapolado: nenhum herói foi medido acima de {pct} de recarga.",
+  heroDetailPowerExtrapolated: "Acima da maior recarga conferida ({pct}), isto é extrapolado.",
 
   heroDetailRollTitle: "Roll de nascimento",
   heroDetailRollQuality: "Qualidade do roll",

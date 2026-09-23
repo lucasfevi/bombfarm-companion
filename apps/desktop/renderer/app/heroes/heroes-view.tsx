@@ -641,14 +641,26 @@ function HeroDetailTabs({
               />
               {/* On the record, not a figure: a still-blocked hero shows its runes all the same. */}
               <HeroRunesPanel hero={active.hero} lang={lang} statLabel={boundStatLabel} />
-              {/* The game's own Power is a property of the sheet, not of a phase, so it is drawn
-                  whatever the figures below can or cannot be computed at. */}
-              <PowerBreakdownPanel
-                hero={active.hero}
-                treeCritDmgPct={treeCritDmgPct}
-                lang={lang}
-                statLabel={boundStatLabel}
-              />
+              {/* Power scores the same pipeline run the Effective Stats panel below reads — its
+                  `adjusted` sheet, points and runes on, team auras not yet — so the two can never
+                  disagree. A hero whose points were not recovered gets the stored figure alone. */}
+              {figures.kind === 'at' && combat ? (
+                <PowerBreakdownPanel
+                  hero={active.hero}
+                  sheet={combat.adjusted}
+                  treeCritDmgPct={treeCritDmgPct}
+                  lang={lang}
+                  statLabel={boundStatLabel}
+                />
+              ) : figures.kind === 'pointsUnread' ? (
+                <PowerBreakdownPanel
+                  hero={active.hero}
+                  sheet={null}
+                  treeCritDmgPct={treeCritDmgPct}
+                  lang={lang}
+                  statLabel={boundStatLabel}
+                />
+              ) : null}
               {figures.kind !== 'at' ? <FiguresNotice figures={figures} /> : null}
               {/* The combat sheet those figures were computed from — beside them rather than at the
                   bottom of Points, where it was the one phase-scoped panel in a stage of sheet

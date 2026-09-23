@@ -183,6 +183,15 @@ describe('gamePower', () => {
     expect(gamePower(withGamePowerAxis(input, 'critChance', 140))).toBe(atCap);
   });
 
+  it.each([85, 100, 120])('caps cooldown at 80%%: %d scores the same finite Power as the cap', (cdr) => {
+    const input = inputOf(anchor('legendary-lv160-ampla20'));
+    const atCap = gamePower(withGamePowerAxis(input, 'cdr', 80));
+    const past = gamePower(withGamePowerAxis(input, 'cdr', cdr));
+    expect(Number.isFinite(past)).toBe(true);
+    expect(past).toBe(atCap);
+    expect(gamePowerFactors(withGamePowerAxis(input, 'cdr', cdr)).cooldown).toBeCloseTo(5, 12);
+  });
+
   it('adds luck and energy inside one utility bracket, and the energy term stops growing at 625', () => {
     const input = inputOf(anchor('legendary-lv1-naked'));
     const utility = gamePowerFactors(input).utility;
@@ -298,12 +307,15 @@ describe('gamePowerCurve', () => {
 });
 
 describe('gamePowerInputOf', () => {
-  it('reads the sheet and the Explosão Ampla level off a hero record', () => {
+  it('pairs a sheet with the Explosão Ampla level from the ability list', () => {
     const sheet = lv160Input().sheet;
-    expect(gamePowerInputOf({ gearedOverride: sheet, abilities: { explosao_ampla: 20, misericordia: 20 } })).toEqual({
-      sheet,
-      explosaoAmplaLevel: 20,
-    });
-    expect(gamePowerInputOf({ gearedOverride: sheet, abilities: {} }).explosaoAmplaLevel).toBe(0);
+    expect(gamePowerInputOf(sheet, { explosao_ampla: 20, misericordia: 20 })).toEqual({ sheet, explosaoAmplaLevel: 20 });
+    expect(gamePowerInputOf(sheet, {}).explosaoAmplaLevel).toBe(0);
+  });
+
+  it('a missing ability list is no abilities', () => {
+    const sheet = lv160Input().sheet;
+    expect(gamePowerInputOf(sheet, undefined).explosaoAmplaLevel).toBe(0);
+    expect(gamePowerInputOf(sheet, null).explosaoAmplaLevel).toBe(0);
   });
 });

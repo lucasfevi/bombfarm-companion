@@ -34,10 +34,12 @@ export const heroEn = {
     "The game's own Power figure, taken apart. Power is ten times attack multiplied by one factor per statistic; each factor's share is how much of that stack it lifts, measured from a hero with none of the statistic.",
   heroDetailPowerPick: "Pick a factor to see Power across its range.",
   heroDetailPowerRunesActive: "Includes active runes · {value} without them",
+  heroDetailPowerWithheld:
+    "This is the game's stored figure, without runes. The breakdown is built on the hero's spent points, which could not be read.",
   heroDetailPowerFactorCrit: "Crit (chance × damage)",
   heroDetailPowerFactorSpeed: "Speed",
   heroDetailPowerFactorRange: "Range (Wide Blast)",
-  heroDetailPowerFactorUtility: "Utility (luck)",
+  heroDetailPowerFactorUtility: "Utility (luck + energy)",
   heroDetailPowerFactorEnergy: "Energy",
   heroDetailPowerFactorPenetration: "Penetration",
   heroDetailPowerFactorCooldown: "Cooldown",
@@ -52,7 +54,7 @@ export const heroEn = {
   heroDetailPowerReadout: "{stat} {value} → Power {power} ({delta}, {pct} from now)",
   heroDetailPowerReadoutCapped: "At 100% crit chance: {power}",
   heroDetailPowerCappedLegend: "Dashed: with crit chance at 100%",
-  heroDetailPowerExtrapolated: "Extrapolated: no hero has been measured above {pct} cooldown.",
+  heroDetailPowerExtrapolated: "Past the highest cooldown checked ({pct}), this is extrapolated.",
 
   heroDetailRollTitle: "Birth roll",
   heroDetailRollQuality: "Roll quality",
