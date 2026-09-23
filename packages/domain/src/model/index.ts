@@ -149,4 +149,5 @@ export {
   abilityPointBudget,
   abilityMods,
   critMilestones,
+  wholeRangeCells,
 } from './abilities';

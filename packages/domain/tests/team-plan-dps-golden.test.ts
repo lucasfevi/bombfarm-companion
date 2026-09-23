@@ -45,6 +45,12 @@
  * with it: 37 moves for 54, one fewer forge, two fewer point resets, and the seed that won went
  * from the greedy per-hero seed back to the roster as it stands. Same method again.
  *
+ * RE-RECORDED A FIFTH TIME 2026-09-23, when Explosão Ampla's reach became whole cells only
+ * (`wholeRangeCells`): the game banks the 0.1-per-level fraction until it makes a cell, and the
+ * model had credited it unrounded. Soulbound's WB c3 carries rank 17, priced at 2.7 cells of reach
+ * where the game gives 2; both DPS figures moved −0.31% and the plan is byte-identical. The other
+ * two captures carry the ability only at rank 0 or 20 and did not move. Same method again.
+ *
  * NOT regime-bound: the claim is "this code still plans what it planned", an identity between two
  * revisions of the same arithmetic, not a statement about what the game rewards.
  */
@@ -102,8 +108,8 @@ const GOLDENS = [
   {
     file: 'save-20260831-13heroes-soulbound.json',
     forgeFloor: 10,
-    currentDps: 5798.730447486583,
-    planDps: 6312.744998349591,
+    currentDps: 5780.927185065814,
+    planDps: 6292.881324095707,
     moves: 37,
     forges: 68,
     pointResets: 8,
