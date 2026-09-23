@@ -46,6 +46,7 @@ beside the figure.**
 | Stats sheet (`peelSheetStages`) | yes | its own `Δ rune` column, drawn only for a hero that carries one |
 | Per-statistic breakdown ledger | yes | a `× 1.05` step named "Rune", with the play time left ("22 h left") — for crit damage the step sits before the tree line, where the game puts it |
 | Combat panel (DPS, hit, fuse) | yes | nothing extra: the figures are today's |
+| Power panel (desktop Combat stage) | yes | the total reads as the game's own screen, runes on; while a rune is on, the stored rune-free figure is named beside it. A web save import carries no runes, so the panel is desktop only |
 | Runes panel (Combat tab, under the phase pick) | — | the list itself: one tile per rune with the game's sprite for its axis and rarity, the strength, and the play time left; drawn only for a carrier, folded by default to a strip of the sprites |
 | Next-point ranking, Points table | yes | a point's worth is what the game pays today |
 | Farm board (gold/hr, xp/hr) | yes, through DPS | nothing extra; the board is a snapshot of the account as read |

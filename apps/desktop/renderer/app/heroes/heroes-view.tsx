@@ -43,6 +43,7 @@ import {
   HeroPickerDialogView,
   NextPointRanking,
   PointsTable,
+  PowerBreakdownPanel,
   RosterCards,
   RosterLeaderboard,
   RosterRail,
@@ -473,6 +474,7 @@ function HeroesRoster({
                     statLabel={boundStatLabel}
                     marketPrice={marketPrice}
                     formatAmount={formatAmount}
+                    treeCritDmgPct={roster.account.tree?.critDmg ?? 0}
                   />
                 </div>
               </HeroCopyProvider>
@@ -567,6 +569,7 @@ function HeroDetailTabs({
   statLabel: boundStatLabel,
   marketPrice,
   formatAmount,
+  treeCritDmgPct,
 }: {
   active: RosterHeroRow;
   heroCopy: ReturnType<typeof useHeroDetailCopy>;
@@ -586,6 +589,7 @@ function HeroDetailTabs({
   statLabel: (key: SheetKey) => string;
   marketPrice: HeroMarketPrice | null;
   formatAmount: (value: number, currency: string) => string;
+  treeCritDmgPct: number;
 }) {
   const t = useCopy();
   const statCopy = useStatPanelCopy();
@@ -637,6 +641,14 @@ function HeroDetailTabs({
               />
               {/* On the record, not a figure: a still-blocked hero shows its runes all the same. */}
               <HeroRunesPanel hero={active.hero} lang={lang} statLabel={boundStatLabel} />
+              {/* The game's own Power is a property of the sheet, not of a phase, so it is drawn
+                  whatever the figures below can or cannot be computed at. */}
+              <PowerBreakdownPanel
+                hero={active.hero}
+                treeCritDmgPct={treeCritDmgPct}
+                lang={lang}
+                statLabel={boundStatLabel}
+              />
               {figures.kind !== 'at' ? <FiguresNotice figures={figures} /> : null}
               {/* The combat sheet those figures were computed from — beside them rather than at the
                   bottom of Points, where it was the one phase-scoped panel in a stage of sheet

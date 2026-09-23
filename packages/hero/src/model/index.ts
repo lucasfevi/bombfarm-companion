@@ -258,3 +258,31 @@ export type {
   SharePickShortcut,
   SharePickerFilter,
 } from './share-card';
+export {
+  POWER_ATTACK_RANGE_MULTIPLE,
+  POWER_ROW_AXES,
+  POWER_ROW_IDS,
+  axisFraction,
+  axisValueAtFraction,
+  clampToAxis,
+  formatAxisValue,
+  formatMultiplier,
+  formatPowerDelta,
+  formatPowerFigure,
+  formatShare,
+  isGuideKey,
+  powerAxisSpec,
+  powerChartSeries,
+  powerFactorRows,
+  powerReading,
+  powerReadoutText,
+  steppedGuide,
+} from './power-breakdown';
+export type {
+  GuideKey,
+  PowerAxisSpec,
+  PowerChartSeries,
+  PowerFactorRow,
+  PowerReading,
+  PowerRowId,
+} from './power-breakdown';
