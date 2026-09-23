@@ -102,6 +102,27 @@ function ShareBar({
   );
 }
 
+/** One grid for the header and every row, so the two number columns line up under their labels. */
+const rowColumnsClass = 'grid grid-cols-[0.625rem_minmax(0,1fr)_4.5rem_3.75rem] items-center gap-2.5 px-2';
+const columnHeadClass = 'flex items-center gap-1 text-[10px] font-bold tracking-[0.06em] text-muted uppercase';
+
+function FactorColumnsHeader({ t }: { t: HeroCopy }) {
+  return (
+    <div className={cn(rowColumnsClass, 'border border-transparent pb-1')} data-testid="power-columns-header">
+      <span aria-hidden="true" />
+      <span className={columnHeadClass}>{t.heroDetailPowerColFactor}</span>
+      <span className={cn(columnHeadClass, 'justify-end')}>
+        {t.heroDetailPowerColMultiplier}
+        <InfoTip label={t.heroDetailPowerColMultiplier} tip={t.heroDetailPowerColMultiplierTip} />
+      </span>
+      <span className={cn(columnHeadClass, 'justify-end')}>
+        {t.heroDetailPowerColShare}
+        <InfoTip label={t.heroDetailPowerColShare} tip={t.heroDetailPowerColShareTip} />
+      </span>
+    </div>
+  );
+}
+
 function FactorRow({
   row,
   input,
@@ -128,14 +149,15 @@ function FactorRow({
         data-power-row={row.id}
         onClick={() => onSelect(row.id)}
         className={cn(
-          'grid w-full cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto_3.5rem] items-center gap-2.5 rounded-sm border px-2 py-1.5 text-left text-ink',
+          rowColumnsClass,
+          'w-full cursor-pointer rounded-sm border py-1.5 text-left text-ink',
           selected ? 'border-accent bg-bg-2' : 'border-transparent bg-transparent hover:bg-bg-2',
           focusRingClass,
         )}
       >
         <span aria-hidden="true" className={cn('size-2.5 rounded-sm', SWATCH_CLASS[row.id])} />
         <span className="truncate text-xs">{rowLabel(row.id, t)}</span>
-        <span className="font-mono text-xs tabular-nums">
+        <span className="text-right font-mono text-xs tabular-nums">
           {row.multiplier === null ? formatCompactNumber(input.sheet.attack, lang, 1) : formatMultiplier(row.multiplier, lang)}
         </span>
         <span className="text-right font-mono text-xs text-muted tabular-nums">
@@ -203,20 +225,23 @@ function PowerBreakdown({
       ) : null}
       <ShareBar rows={rows} selected={selected} onSelect={onSelect} t={t} lang={lang} />
       <div className="mt-3 grid grid-cols-1 gap-4 @min-[46rem]:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
-        <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
-          {rows.map((row) => (
-            <FactorRow
-              key={row.id}
-              row={row}
-              input={input}
-              selected={selected === row.id}
-              chartId={chartId}
-              onSelect={onSelect}
-              t={t}
-              lang={lang}
-            />
-          ))}
-        </ul>
+        <div className="min-w-0">
+          <FactorColumnsHeader t={t} />
+          <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
+            {rows.map((row) => (
+              <FactorRow
+                key={row.id}
+                row={row}
+                input={input}
+                selected={selected === row.id}
+                chartId={chartId}
+                onSelect={onSelect}
+                t={t}
+                lang={lang}
+              />
+            ))}
+          </ul>
+        </div>
         <div id={chartId} className="flex min-w-0 flex-col gap-4" data-testid="power-chart-region">
           {selected === null ? (
             <p className={tipClass}>{t.heroDetailPowerPick}</p>

@@ -45,6 +45,13 @@ export const heroPtBR: HeroCopy = {
   heroDetailPowerFactorCooldown: "Recarga",
   heroDetailPowerFactorAttack: "Ataque",
   heroDetailPowerAnchor: "base",
+  heroDetailPowerColFactor: "Fator",
+  heroDetailPowerColMultiplier: "× Poder",
+  heroDetailPowerColMultiplierTip:
+    "Quantas vezes este fator multiplica o Poder em relação a um herói sem nada daquele atributo. A linha de Ataque mostra o próprio ataque: é a base que todo fator multiplica.",
+  heroDetailPowerColShare: "Parte",
+  heroDetailPowerColShareTip:
+    "A parte deste fator em todo o ganho multiplicativo acima da base de Ataque. As partes somam 100%; o Ataque, a base, não tem parte.",
   heroDetailPowerShareBar: "Fatia do Poder por fator",
   heroDetailPowerSegment: "{factor}: {share}",
   heroDetailPowerAxisAmpla: "Nível de Explosão Ampla",

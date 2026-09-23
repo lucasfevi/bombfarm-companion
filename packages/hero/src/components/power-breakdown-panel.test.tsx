@@ -135,6 +135,26 @@ describe('PowerBreakdownPanel', () => {
     expect(container.querySelectorAll('[data-power-segment]')).toHaveLength(7);
   });
 
+  it.each(['en', 'pt'] as const)('%s: a header names the columns, and each number column explains itself by keyboard', (lang) => {
+    const copy = heroCopyFor(lang);
+    act(() => {
+      root.render(
+        <PowerBreakdownPanel hero={RUNED.hero} sheet={RUNED.sheet} treeCritDmgPct={TREE_CRIT_DMG_PCT} lang={lang} statLabel={label} />,
+      );
+    });
+    const header = query('[data-testid="power-columns-header"]');
+    expect(header.textContent).toBe(`${copy.heroDetailPowerColFactor}${copy.heroDetailPowerColMultiplier}${copy.heroDetailPowerColShare}`);
+    for (const [name, tip] of [
+      [copy.heroDetailPowerColMultiplier, copy.heroDetailPowerColMultiplierTip],
+      [copy.heroDetailPowerColShare, copy.heroDetailPowerColShareTip],
+    ]) {
+      const trigger = [...header.querySelectorAll('button')].find((button) => button.getAttribute('aria-label') === `${name}: ${tip}`);
+      expect(trigger, name).toBeDefined();
+      expect(trigger?.tabIndex, name).toBe(0);
+      expect(trigger?.hasAttribute('title')).toBe(false);
+    }
+  });
+
   it('opens no chart until a factor is picked', () => {
     render(RUNED);
     expect(container.querySelector('[data-power-chart]')).toBeNull();

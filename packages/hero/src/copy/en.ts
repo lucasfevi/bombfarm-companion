@@ -46,6 +46,13 @@ export const heroEn = {
   heroDetailPowerFactorCooldown: "Cooldown",
   heroDetailPowerFactorAttack: "Attack",
   heroDetailPowerAnchor: "anchor",
+  heroDetailPowerColFactor: "Factor",
+  heroDetailPowerColMultiplier: "× Power",
+  heroDetailPowerColMultiplierTip:
+    "How many times this factor lifts Power over a hero with none of that stat. The Attack row shows the attack itself: it is the base every factor multiplies.",
+  heroDetailPowerColShare: "Share",
+  heroDetailPowerColShareTip:
+    "This factor's part of the whole multiplicative lift above the Attack base. The shares add up to 100%; Attack, the base, has none.",
   heroDetailPowerShareBar: "Share of Power by factor",
   heroDetailPowerSegment: "{factor}: {share}",
   heroDetailPowerAxisAmpla: "Wide Blast level",
