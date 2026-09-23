@@ -48,13 +48,16 @@ function rangeCellsPerLevel(): number {
 }
 
 const RANGE_CELLS_PER_LEVEL = rangeCellsPerLevel();
-/** Absorbs float error in `perLevel × level` (0.1 × 30 is 3.0000000000000004, 0.1 × 10 must be 1). */
+/**
+ * A product meant to land on a whole cell can land just under it (0.29 × 100 is 28.999999999999996),
+ * and flooring that would drop the cell. The catalog's 0.1 happens not to, but the rate is data.
+ */
 const FLOOR_EPSILON = 1e-9;
 
 /**
  * Blast reach in whole cells: the game banks Explosão Ampla's per-level fraction until it makes a
- * full cell, so the reach floors. Only levels 0 and 20 are confirmed against the game's own Power
- * figure.
+ * full cell, so the reach floors. Heroes at levels between the steps match the game's own Power
+ * figure only floored.
  */
 export function alcanceForExplosaoAmpla(level: number): number {
   return 1 + Math.floor(RANGE_CELLS_PER_LEVEL * level + FLOOR_EPSILON);

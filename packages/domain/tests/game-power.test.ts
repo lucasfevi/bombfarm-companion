@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   GAME_POWER_AXES,
@@ -18,6 +20,7 @@ import {
 } from '@bombfarm/domain/game-power';
 import type { HeroRune } from '@bombfarm/domain/runes';
 import { saveSheetUnits } from '@bombfarm/domain/save-units';
+import { requireFixture } from './helpers/require-fixture';
 
 type Anchor = {
   readonly label: string;
@@ -159,6 +162,24 @@ describe('gamePower', () => {
       expect(alcanceForExplosaoAmpla(cells * 10), `level ${String(cells * 10)}`).toBe(1 + cells);
       if (cells > 0) expect(alcanceForExplosaoAmpla(cells * 10 - 1)).toBe(cells);
     }
+  });
+
+  it.each([
+    ['payload-20260812-8heroes.json', 'Devin'],
+    ['save-20260825-11heroes-one-shot-spread.json', 'Joric'],
+    ['save-20260831-13heroes-soulbound.json', 'WB c3'],
+  ])('%s: %s, at a level between the steps, matches the game only with the reach floored', (file, name) => {
+    const path = join(__dirname, 'fixtures/sheet-math', file);
+    if (!requireFixture(path, `the floored reach matches ${name}'s stored Power`)) return;
+    const save = JSON.parse(readFileSync(path, 'utf8')) as {
+      heroes: { name: string; stats: Record<string, number>; abilities: { code: string; level: number }[] }[];
+    };
+    const hero = save.heroes.find((entry) => entry.name === name);
+    if (!hero) throw new Error(`${file} has no hero ${name}`);
+    const level = hero.abilities.find((ability) => ability.code === 'explosao_ampla')?.level ?? 0;
+    expect(alcanceForExplosaoAmpla(level)).not.toBe(1 + Math.round(0.1 * level));
+    const { power, ...stats } = hero.stats;
+    expect(relativeError(gamePower({ sheet: saveSheetUnits(stats), explosaoAmplaLevel: level }), power)).toBeLessThan(1e-12);
   });
 
   it('does not clamp penetration at 100: the hero at 108.9 matches only unclamped', () => {
