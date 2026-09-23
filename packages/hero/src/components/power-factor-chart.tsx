@@ -134,7 +134,7 @@ export function PowerFactorChart({
     <figure className="m-0 flex min-w-0 flex-col gap-1" data-power-chart={axis}>
       <figcaption className="text-[11px] font-bold tracking-[0.06em] text-muted uppercase">{axisLabel}</figcaption>
       <span className="font-mono text-[10px] leading-none text-muted tabular-nums" data-testid="power-y-max">
-        {formatPowerFigure(series.yMax, lang)}
+        {formatPowerFigure(series.yMax)}
       </span>
       {/* Its own strip above the plot: inside, the curve can run under it wherever it sits. */}
       <div className="relative h-3">
@@ -233,7 +233,7 @@ export function PowerFactorChart({
       </p>
       {reading.cappedCritPower !== null ? (
         <p className="m-0 font-mono text-[11px] leading-snug text-muted tabular-nums" data-testid="power-readout-capped">
-          {sub(t.heroDetailPowerReadoutCapped, { power: formatPowerFigure(reading.cappedCritPower, lang) })}
+          {sub(t.heroDetailPowerReadoutCapped, { power: formatPowerFigure(reading.cappedCritPower) })}
         </p>
       ) : null}
       {spec.cappedCritLine ? <p className="m-0 text-[10px] text-muted">{t.heroDetailPowerCappedLegend}</p> : null}

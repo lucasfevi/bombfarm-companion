@@ -240,9 +240,18 @@ describe('markLabelAnchor', () => {
 });
 
 describe('formatting', () => {
-  it('writes the total in two decimals, so it reads against the game’s abbreviated figure', () => {
-    expect(formatPowerFigure(32_411_057.17, 'en')).toBe('32.41m');
-    expect(formatPowerFigure(32_411_057.17, 'pt')).toBe('32,41m');
+  it.each([
+    [32_411_057.17, '32.41M'],
+    [28_031_028.06, '28.03M'],
+    [157_970, '157.97k'],
+    [4_700_000_000, '4.7B'],
+    [3_100_000, '3.1M'],
+    [3_000_000, '3M'],
+    [999, '999'],
+    [0, '0'],
+    [-660_810, '-660.81k'],
+  ])('writes %d as the game does: %s', (value, text) => {
+    expect(formatPowerFigure(value)).toBe(text);
   });
 
   it('writes each axis in its own unit', () => {
@@ -256,6 +265,6 @@ describe('formatting', () => {
     const t = heroCopyFor('en');
     const spec = powerAxisSpec(INPUT, 'cdr');
     const text = powerReadoutText(powerReading(INPUT, spec, 0), 'Cooldown', spec, 'en', t);
-    expect(text).toMatch(/^Cooldown 0\.0% → Power [\d.]+m \(−[\d.]+m, −[\d.]+% from now\)$/);
+    expect(text).toMatch(/^Cooldown 0\.0% → Power [\d.]+M \(−[\d.]+M, −[\d.]+% from now\)$/);
   });
 });

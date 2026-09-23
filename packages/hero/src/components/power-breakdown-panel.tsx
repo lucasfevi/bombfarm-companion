@@ -190,10 +190,10 @@ function PowerBreakdown({
 
   return (
     <>
-      <PowerHeading total={formatPowerFigure(total, lang)} t={t} />
+      <PowerHeading total={formatPowerFigure(total)} t={t} />
       {runeFree !== null ? (
         <p className={cn(tipClass, 'text-right')} data-testid="power-rune-note">
-          {sub(t.heroDetailPowerRunesActive, { value: formatPowerFigure(runeFree, lang) })}
+          {sub(t.heroDetailPowerRunesActive, { value: formatPowerFigure(runeFree) })}
         </p>
       ) : null}
       {mismatchPct !== null ? (
@@ -267,7 +267,7 @@ export function PowerBreakdownPanel({
       <Tooltip.Provider delay={200} closeDelay={100}>
         {sheet === null ? (
           <>
-            <PowerHeading total={hero.power == null ? '—' : formatPowerFigure(hero.power, lang)} t={t} />
+            <PowerHeading total={hero.power == null ? '—' : formatPowerFigure(hero.power)} t={t} />
             <p className={tipClass} data-testid="power-withheld">
               {t.heroDetailPowerWithheld}
             </p>

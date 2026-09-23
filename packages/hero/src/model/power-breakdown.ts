@@ -271,9 +271,25 @@ export function steppedGuide(spec: PowerAxisSpec, from: number, key: GuideKey): 
   }
 }
 
-/** Two decimals, so the total reads against the game's own abbreviated figure. */
-export function formatPowerFigure(value: number, lang: Lang): string {
-  return formatCompactNumber(value, lang, 2);
+const GAME_TIER = 1000;
+const GAME_SUFFIXES = ['', 'k', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc', 'Ud'] as const;
+
+/**
+ * Power written the way the game writes it, so the figure reads identically on both screens:
+ * thousand-tiers with the game's suffixes, at most two decimals with trailing zeros dropped, and
+ * always a dot — the game does not localise this figure.
+ */
+export function formatPowerFigure(value: number): string {
+  const sign = value < 0 ? '-' : '';
+  let scaled = Math.abs(value);
+  if (scaled < GAME_TIER) return `${sign}${String(Math.round(scaled))}`;
+  let tier = 0;
+  while (scaled >= GAME_TIER && tier < GAME_SUFFIXES.length - 1) {
+    scaled /= GAME_TIER;
+    tier += 1;
+  }
+  const digits = scaled.toFixed(2).replace(/0$/, '').replace(/0$/, '').replace(/\.$/, '');
+  return `${sign}${digits}${GAME_SUFFIXES[tier]}`;
 }
 
 export function formatMultiplier(value: number, lang: Lang): string {
@@ -310,7 +326,7 @@ function signed(text: string, value: number): string {
 
 export function formatPowerDelta(reading: PowerReading, lang: Lang): { delta: string; pct: string } {
   return {
-    delta: signed(formatPowerFigure(Math.abs(reading.delta), lang), reading.delta),
+    delta: signed(formatPowerFigure(Math.abs(reading.delta)), reading.delta),
     pct: signed(`${formatNumber(Math.abs(reading.deltaPct), lang, 1)}%`, reading.deltaPct),
   };
 }
@@ -326,7 +342,7 @@ export function powerReadoutText(
   return sub(t.heroDetailPowerReadout, {
     stat: axisLabel,
     value: formatAxisValue(spec.axis, reading.x, lang),
-    power: formatPowerFigure(reading.power, lang),
+    power: formatPowerFigure(reading.power),
     delta,
     pct,
   });
