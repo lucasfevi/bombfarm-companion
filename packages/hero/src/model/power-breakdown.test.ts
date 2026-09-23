@@ -20,7 +20,13 @@ import {
   formatSignedPct,
   markLabelAnchor,
   niceAxis,
+  placeStripLabels,
   powerMismatchPct,
+  powerPointMarkers,
+  powerPointsLegend,
+  valueAfterPoints,
+  formatPowerDelta,
+  type PointDelta,
   powerAxisSpec,
   powerChartSeries,
   powerFactorRows,
@@ -345,5 +351,112 @@ describe('niceAxis', () => {
   it('a range nothing divides nicely widens to the next round step', () => {
     expect(niceAxis(0, 246_497)).toEqual({ lo: 0, hi: 250_000, ticks: [0, 50_000, 100_000, 150_000, 200_000, 250_000] });
     expect(niceAxis(0, 7).ticks).toEqual([0, 2, 4, 6, 8]);
+  });
+});
+
+describe('stat-point markers', () => {
+  const DELTA: PointDelta = {
+    attack: 1400,
+    energy: 9,
+    speed: 1.1448,
+    critChance: 0.8,
+    critDmg: 5,
+    penetration: 3,
+    cdr: 0.3,
+    luck: 0.09,
+  };
+  const POINT_AXES = GAME_POWER_AXES.filter((axis) => axis !== 'explosaoAmpla');
+
+  it.each(POINT_AXES.map((axis) => [axis] as const))('%s: each marker scores the sheet with N points added', (axis) => {
+    const spec = powerAxisSpec(INPUT, axis, DELTA);
+    const markers = powerPointMarkers(INPUT, spec, DELTA);
+    expect(markers.map((marker) => marker.points)).toEqual([10, 50]);
+    for (const marker of markers) {
+      const sheetValue = gamePowerAxisValue(INPUT, axis) + marker.points * DELTA[axis];
+      expect(marker.reading.power, `${axis} +${String(marker.points)}`).toBe(
+        gamePower(withGamePowerAxis(INPUT, axis, sheetValue)),
+      );
+    }
+  });
+
+  it('Range takes no points: Explosão Ampla is an ability level, so it gets no markers', () => {
+    const spec = powerAxisSpec(INPUT, 'explosaoAmpla', DELTA);
+    expect(powerPointMarkers(INPUT, spec, DELTA)).toEqual([]);
+    expect(valueAfterPoints(INPUT, 'explosaoAmpla', DELTA, 10)).toBeNull();
+  });
+
+  it('no deltas, no markers', () => {
+    expect(powerPointMarkers(INPUT, powerAxisSpec(INPUT, 'speed'), null)).toEqual([]);
+  });
+
+  it('a marker past the cap is drawn at the cap, and the legend says so', () => {
+    const spec = powerAxisSpec(INPUT, 'critChance', DELTA);
+    const [ten, fifty] = powerPointMarkers(INPUT, spec, DELTA);
+    expect(ten.atCap).toBe(false);
+    expect(fifty.atCap).toBe(true);
+    expect(fifty.x).toBe(100);
+    expect(spec.hi).toBe(100);
+    expect(powerPointsLegend([ten, fifty], 'en', heroCopyFor('en'))).toMatch(/\+50 points: [\d.]+M \(\+[\d.]+%, at the cap\)$/);
+  });
+
+  it('a cooldown marker past the checked bound says it is extrapolated', () => {
+    const spec = powerAxisSpec(INPUT, 'cdr', DELTA);
+    const [, fifty] = powerPointMarkers(INPUT, spec, DELTA);
+    expect(fifty.x).toBeGreaterThan(17.85);
+    expect(fifty.reading.extrapolated).toBe(true);
+    expect(powerPointsLegend([fifty], 'pt', heroCopyFor('pt'))).toMatch(/^\+50 pontos: [\d.]+M \(\+[\d,]+%, extrapolado\)$/);
+  });
+
+  it('an uncapped axis stretches to hold the +50 marker, on round ticks', () => {
+    const spec = powerAxisSpec(INPUT, 'penetration', DELTA);
+    const furthest = INPUT.sheet.penetration + 50 * DELTA.penetration;
+    expect(furthest).toBeGreaterThan(150);
+    expect(spec.hi).toBeGreaterThanOrEqual(furthest);
+    expect(spec.ticks.at(-1)).toBe(spec.hi);
+    expect(spec.ticks).toEqual([0, 50, 100, 150, 200]);
+  });
+
+  it.each(['en', 'pt'] as const)('%s: the legend carries both markers, Power the game way and the signed change', (lang) => {
+    const spec = powerAxisSpec(INPUT, 'speed', DELTA);
+    const markers = powerPointMarkers(INPUT, spec, DELTA);
+    const word = lang === 'en' ? 'points' : 'pontos';
+    const expected = markers
+      .map((marker) => `+${String(marker.points)} ${word}: ${formatPowerFigure(marker.reading.power)} (${formatPowerDelta(marker.reading, lang).pct})`)
+      .join(' · ');
+    expect(powerPointsLegend(markers, lang, heroCopyFor(lang))).toBe(expected);
+    expect(expected).toContain(' · ');
+  });
+});
+
+describe('placeStripLabels', () => {
+  it('a marker label too close to "now" is dropped, and "now" always stays', () => {
+    const placed = placeStripLabels([
+      { id: 'now', fraction: 0.6785, text: 'now' },
+      { id: '10', fraction: 0.6865, text: '+10' },
+      { id: '50', fraction: 0.7185, text: '+50' },
+    ]);
+    expect(placed.map((label) => label.id)).toEqual(['now']);
+  });
+
+  it('labels far enough apart all show, each hanging inward at an edge', () => {
+    const placed = placeStripLabels([
+      { id: 'now', fraction: 0.02, text: 'agora' },
+      { id: '10', fraction: 0.4, text: '+10' },
+      { id: '50', fraction: 0.98, text: '+50' },
+    ]);
+    expect(placed.map((label) => [label.id, label.anchor])).toEqual([
+      ['now', 'start'],
+      ['10', 'center'],
+      ['50', 'end'],
+    ]);
+  });
+
+  it('a marker label that clears "now" but not the other marker keeps the nearer one only', () => {
+    const placed = placeStripLabels([
+      { id: 'now', fraction: 0.2, text: 'now' },
+      { id: '10', fraction: 0.5, text: '+10' },
+      { id: '50', fraction: 0.52, text: '+50' },
+    ]);
+    expect(placed.map((label) => label.id)).toEqual(['now', '10']);
   });
 });

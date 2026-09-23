@@ -21,6 +21,7 @@ import {
   type GamePowerPoint,
 } from '@bombfarm/domain/game-power';
 import { STAT_CAPS } from '@bombfarm/domain/model';
+import type { SheetKey } from '@bombfarm/domain/planner-constants';
 import { formatCompactNumber, formatNumber } from '@bombfarm/ui';
 import { sub, type HeroCopy, type Lang } from '../copy';
 
@@ -184,21 +185,55 @@ export type PowerAxisSpec = {
 };
 
 /** The axis always reaches the hero's own value, so the "now" mark is never off the chart. */
-export function powerAxisSpec(input: GamePowerInput, axis: GamePowerAxis): PowerAxisSpec {
+/** The pipeline's per-point gain on each sheet key, runes and tree already folded in. */
+export type PointDelta = Readonly<Record<SheetKey, number>>;
+
+export const POWER_MARKER_POINTS = [10, 50] as const;
+
+function pointKey(axis: GamePowerAxis): SheetKey | null {
+  return axis === 'explosaoAmpla' ? null : axis;
+}
+
+/**
+ * Where `points` more stat points on this axis would put the hero, uncapped. A point is linear
+ * on the sheet — `value + N × delta` equals recomposing the sheet with `pts + N` — so the
+ * pipeline's own per-point delta is the whole model. Explosão Ampla is an ability level, not a
+ * stat, so it takes no points.
+ */
+export function valueAfterPoints(
+  input: GamePowerInput,
+  axis: GamePowerAxis,
+  delta: PointDelta | null,
+  points: number,
+): number | null {
+  const key = pointKey(axis);
+  if (key === null || delta === null) return null;
+  return gamePowerAxisValue(input, axis) + points * delta[key];
+}
+
+/** The axis always reaches the hero's own value and its +50-points marker, so neither is off the chart. */
+export function powerAxisSpec(
+  input: GamePowerInput,
+  axis: GamePowerAxis,
+  delta: PointDelta | null = null,
+): PowerAxisSpec {
   const [fixedLo, fixedHi] =
     axis === 'attack' ? [0, Math.max(1, POWER_ATTACK_RANGE_MULTIPLE * input.sheet.attack)] : FIXED_RANGES[axis];
   const current = gamePowerAxisValue(input, axis);
   const integer = axis === 'explosaoAmpla';
+  const cap = CAPS[axis] ?? null;
+  const furthest = valueAfterPoints(input, axis, delta, Math.max(...POWER_MARKER_POINTS)) ?? current;
+  const reach = cap === null ? furthest : Math.min(furthest, cap);
   const range = niceAxis(
     Math.min(fixedLo, integer ? Math.floor(current) : current),
-    Math.max(fixedHi, integer ? Math.ceil(current) : current),
+    Math.max(fixedHi, integer ? Math.ceil(current) : current, reach),
   );
   return {
     axis,
     lo: range.lo,
     hi: range.hi,
     ticks: range.ticks,
-    cap: CAPS[axis] ?? null,
+    cap,
     checkedMax: CHECKED_MAX[axis] ?? null,
     integer,
     cappedCritLine: axis === 'critDmg',
@@ -291,6 +326,83 @@ export function markLabelAnchor(fraction: number): MarkLabelAnchor {
   if (fraction < EDGE_FRACTION) return 'start';
   if (fraction > 1 - EDGE_FRACTION) return 'end';
   return 'center';
+}
+
+export type PowerPointMarker = {
+  readonly points: number;
+  /** Where the marker is drawn: the value the points reach, or the cap when they pass it. */
+  readonly x: number;
+  readonly atCap: boolean;
+  readonly reading: PowerReading;
+};
+
+export function powerPointMarkers(
+  input: GamePowerInput,
+  spec: PowerAxisSpec,
+  delta: PointDelta | null,
+): readonly PowerPointMarker[] {
+  return POWER_MARKER_POINTS.flatMap((points) => {
+    const raw = valueAfterPoints(input, spec.axis, delta, points);
+    if (raw === null) return [];
+    const atCap = spec.cap !== null && raw > spec.cap;
+    const x = atCap && spec.cap !== null ? spec.cap : raw;
+    return [{ points, x, atCap, reading: powerReading(input, spec, x) }];
+  });
+}
+
+export type StripLabel = { readonly id: string; readonly fraction: number; readonly text: string };
+export type PlacedStripLabel = StripLabel & { readonly anchor: MarkLabelAnchor };
+
+/**
+ * The narrowest plot the chart is laid out for, and a generous per-character width for the
+ * 10px label type: labels that clear each other at this width clear each other at any wider one.
+ */
+const MIN_PLOT_WIDTH_PX = 240;
+const LABEL_CHAR_PX = 6.5;
+const LABEL_PAD_PX = 4;
+const LABEL_GAP_PX = 4;
+
+function labelExtentPx(label: StripLabel, anchor: MarkLabelAnchor): readonly [number, number] {
+  const x = label.fraction * MIN_PLOT_WIDTH_PX;
+  const width = label.text.length * LABEL_CHAR_PX + LABEL_PAD_PX;
+  if (anchor === 'start') return [x, x + width];
+  if (anchor === 'end') return [x - width, x];
+  return [x - width / 2, x + width / 2];
+}
+
+/**
+ * The labels in the strip above the plot, in priority order: each is kept only if it clears
+ * every label already kept, so the first ("now") always shows and a marker label that would
+ * touch it is dropped — the legend under the chart still carries every marker's figures.
+ */
+export function placeStripLabels(labels: readonly StripLabel[]): readonly PlacedStripLabel[] {
+  const placed: { label: PlacedStripLabel; extent: readonly [number, number] }[] = [];
+  for (const label of labels) {
+    const anchor = markLabelAnchor(label.fraction);
+    const extent = labelExtentPx(label, anchor);
+    const clear = placed.every(
+      ({ extent: other }) => extent[0] >= other[1] + LABEL_GAP_PX || other[0] >= extent[1] + LABEL_GAP_PX,
+    );
+    if (clear) placed.push({ label: { ...label, anchor }, extent });
+  }
+  return placed.map(({ label }) => label);
+}
+
+export function powerPointsLegend(markers: readonly PowerPointMarker[], lang: Lang, t: HeroCopy): string {
+  return markers
+    .map((marker) => {
+      const notes = [
+        formatPowerDelta(marker.reading, lang).pct,
+        ...(marker.atCap ? [t.heroDetailPowerAtCap] : []),
+        ...(marker.reading.extrapolated ? [t.heroDetailPowerExtrapolatedNote] : []),
+      ];
+      return sub(t.heroDetailPowerPointsMarker, {
+        points: marker.points,
+        power: formatPowerFigure(marker.reading.power),
+        change: notes.join(', '),
+      });
+    })
+    .join(' · ');
 }
 
 const FINE_STEPS = 100;

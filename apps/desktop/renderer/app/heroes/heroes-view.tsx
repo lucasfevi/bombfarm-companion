@@ -643,12 +643,14 @@ function HeroDetailTabs({
               <HeroRunesPanel hero={active.hero} lang={lang} statLabel={boundStatLabel} />
               {/* The game's Power leaves team auras out, the hero's own included, so this panel
                   scores the pipeline's `adjusted` sheet — points and runes on, before any aura —
-                  from the same run the Effective Stats panel reads after them. A hero whose points
-                  were not recovered gets the stored figure alone. */}
+                  from the same run the Effective Stats panel reads after them, and that run's
+                  per-point deltas place the +10 / +50 markers. A hero whose points were not
+                  recovered gets the stored figure alone. */}
               {figures.kind === 'at' && combat ? (
                 <PowerBreakdownPanel
                   hero={active.hero}
                   sheet={combat.adjusted}
+                  pointDelta={combat.pointDelta}
                   treeCritDmgPct={treeCritDmgPct}
                   lang={lang}
                   statLabel={boundStatLabel}
@@ -657,6 +659,7 @@ function HeroDetailTabs({
                 <PowerBreakdownPanel
                   hero={active.hero}
                   sheet={null}
+                  pointDelta={null}
                   treeCritDmgPct={treeCritDmgPct}
                   lang={lang}
                   statLabel={boundStatLabel}

@@ -22,6 +22,7 @@ import {
   formatSignedPct,
   powerFactorRows,
   powerMismatchPct,
+  type PointDelta,
   type PowerFactorRow,
   type PowerRowId,
 } from '../model/power-breakdown';
@@ -185,6 +186,7 @@ function PowerHeading({ total, t }: { total: string; t: HeroCopy }) {
 function PowerBreakdown({
   hero,
   sheet,
+  pointDelta,
   treeCritDmgPct,
   lang,
   statLabel,
@@ -192,6 +194,7 @@ function PowerBreakdown({
 }: {
   hero: PowerHero;
   sheet: SheetStats;
+  pointDelta: PointDelta | null;
   treeCritDmgPct: number;
   lang: Lang;
   statLabel: StatLabel;
@@ -252,6 +255,7 @@ function PowerBreakdown({
                 input={input}
                 axis={axis}
                 axisLabel={axisLabelFor(axis, t, statLabel)}
+                pointDelta={pointDelta}
                 t={t}
                 lang={lang}
               />
@@ -275,12 +279,15 @@ function PowerBreakdown({
 export function PowerBreakdownPanel({
   hero,
   sheet,
+  pointDelta,
   treeCritDmgPct,
   lang,
   statLabel,
 }: {
   hero: PowerHero;
   sheet: SheetStats | null;
+  /** The same pipeline run's per-point gains, for the +10 / +50 markers; `null` draws none. */
+  pointDelta: PointDelta | null;
   /** The skill tree's flat crit-damage add, planner percentage points — where the rune model puts crit damage's rune. */
   treeCritDmgPct: number;
   lang: Lang;
@@ -301,6 +308,7 @@ export function PowerBreakdownPanel({
           <PowerBreakdown
             hero={hero}
             sheet={sheet}
+            pointDelta={pointDelta}
             treeCritDmgPct={treeCritDmgPct}
             lang={lang}
             statLabel={statLabel}

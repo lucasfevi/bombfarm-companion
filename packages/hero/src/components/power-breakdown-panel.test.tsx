@@ -9,8 +9,9 @@ import type { SheetKey } from '@bombfarm/domain/planner-constants';
 import { hasRuneOnSheet, runesOf, type HeroRune } from '@bombfarm/domain/runes';
 import { saveSheetUnits } from '@bombfarm/domain/save-units';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import { heroCopyFor } from '../copy';
-import { factsForHero, loadBreakdownFixture } from '../model/combat-breakdown.test-fixture';
+import { heroCopyFor, type Lang } from '../copy';
+import { factsForHero, fixtureHero, loadBreakdownFixture } from '../model/combat-breakdown.test-fixture';
+import type { PointDelta } from '../model/power-breakdown';
 import { formatPowerFigure, powerAxisSpec, powerReading, powerReadoutText, steppedGuide } from '../model/power-breakdown';
 import { PowerBreakdownPanel } from './power-breakdown-panel';
 
@@ -40,7 +41,7 @@ function rune(axis: HeroRune['axis'], strengthPct: number): HeroRune {
 const RUNES: readonly HeroRune[] = [rune('crit', 9), rune('critdmg', 9), rune('energy', 5), rune('xp', 9)];
 
 type PanelHero = Pick<HeroRecord, 'abilities' | 'runes' | 'power'>;
-type Shown = { readonly hero: PanelHero; readonly sheet: SheetStats | null };
+type Shown = { readonly hero: PanelHero; readonly sheet: SheetStats | null; readonly pointDelta?: PointDelta | null };
 type Scored = Shown & { readonly sheet: SheetStats };
 
 /**
@@ -78,10 +79,17 @@ afterEach(() => {
   container.remove();
 });
 
-function render({ hero, sheet }: Shown, treeCritDmgPct: number = TREE_CRIT_DMG_PCT) {
+function render({ hero, sheet, pointDelta = null }: Shown, treeCritDmgPct: number = TREE_CRIT_DMG_PCT, lang: Lang = 'en') {
   act(() => {
     root.render(
-      <PowerBreakdownPanel hero={hero} sheet={sheet} treeCritDmgPct={treeCritDmgPct} lang="en" statLabel={label} />,
+      <PowerBreakdownPanel
+        hero={hero}
+        sheet={sheet}
+        pointDelta={pointDelta}
+        treeCritDmgPct={treeCritDmgPct}
+        lang={lang}
+        statLabel={lang === 'en' ? label : (key: SheetKey) => statLabel(key, 'pt')}
+      />,
     );
   });
 }
@@ -139,7 +147,14 @@ describe('PowerBreakdownPanel', () => {
     const copy = heroCopyFor(lang);
     act(() => {
       root.render(
-        <PowerBreakdownPanel hero={RUNED.hero} sheet={RUNED.sheet} treeCritDmgPct={TREE_CRIT_DMG_PCT} lang={lang} statLabel={label} />,
+        <PowerBreakdownPanel
+          hero={RUNED.hero}
+          sheet={RUNED.sheet}
+          pointDelta={null}
+          treeCritDmgPct={TREE_CRIT_DMG_PCT}
+          lang={lang}
+          statLabel={label}
+        />,
       );
     });
     const header = query('[data-testid="power-columns-header"]');
@@ -325,4 +340,74 @@ describe('PowerBreakdownPanel on a live account read', () => {
       }
     },
   );
+});
+
+describe('PowerBreakdownPanel: where +10 and +50 stat points would put the hero', () => {
+  const fixture = loadBreakdownFixture('payload-20260913-20heroes-runes.json');
+  const hero = fixtureHero(fixture, 'Bellatrix');
+  const facts = factsForHero(fixture, hero);
+  const live: Shown = { hero, sheet: facts.adjusted, pointDelta: facts.delta };
+
+  function chart(axis: string): HTMLElement {
+    return query(`[data-power-chart="${axis}"]`);
+  }
+
+  it.each(['en', 'pt'] as const)('%s: the speed chart draws both markers on the curve and a legend carrying their figures', (lang) => {
+    render(live, fixture.account.tree.critDmg, lang);
+    click('[data-power-row="speed"]');
+    const markers = [...chart('speed').querySelectorAll<HTMLElement>('[data-testid="power-marker"]')];
+    expect(markers.map((marker) => marker.dataset.points)).toEqual(['10', '50']);
+    for (const marker of markers) expect(marker.className).toContain('border-gold');
+    const legend = chart('speed').querySelector('[data-testid="power-points-legend"]')?.textContent ?? '';
+    const pattern =
+      lang === 'en'
+        ? /^\+10 points: [\d.]+[kMB]? \(\+[\d.]+%\) · \+50 points: [\d.]+[kMB]? \(\+[\d.]+%\)$/
+        : /^\+10 pontos: [\d.]+[kMB]? \(\+[\d,]+%\) · \+50 pontos: [\d.]+[kMB]? \(\+[\d,]+%\)$/;
+    expect(legend).toMatch(pattern);
+  });
+
+  it('crit chance points go on the chance chart and crit damage points on the damage chart', () => {
+    render(live, fixture.account.tree.critDmg);
+    click('[data-power-row="crit"]');
+    expect(chart('critChance').querySelectorAll('[data-testid="power-marker"]')).toHaveLength(2);
+    expect(chart('critDmg').querySelectorAll('[data-testid="power-marker"]')).toHaveLength(2);
+    const chanceMarker = chart('critChance').querySelector<HTMLElement>('[data-testid="power-marker"][data-points="10"]');
+    const damageMarker = chart('critDmg').querySelector<HTMLElement>('[data-testid="power-marker"][data-points="10"]');
+    expect(chanceMarker?.style.left).not.toBe(damageMarker?.style.left);
+  });
+
+  it('a low-rate stat keeps "now" and drops the marker labels that would touch it; the legend still names both', () => {
+    render(live, fixture.account.tree.critDmg);
+    click('[data-power-row="crit"]');
+    const strip = chart('critChance');
+    expect(strip.querySelectorAll('[data-testid="power-now-label"]')).toHaveLength(1);
+    expect(strip.querySelector('[data-testid="power-marker-label"][data-points="10"]')).toBeNull();
+    expect(strip.querySelectorAll('[data-testid="power-marker"]')).toHaveLength(2);
+    expect(strip.querySelector('[data-testid="power-points-legend"]')?.textContent).toContain('+50 points');
+  });
+
+  it('Range takes no points, so it draws no markers and no legend', () => {
+    render(live, fixture.account.tree.critDmg);
+    click('[data-power-row="range"]');
+    expect(chart('explosaoAmpla').querySelectorAll('[data-testid="power-marker"]')).toHaveLength(0);
+    expect(chart('explosaoAmpla').querySelector('[data-testid="power-points-legend"]')).toBeNull();
+  });
+
+  it('a marker past the crit-chance cap sits at the cap, and the legend says so', () => {
+    const steep: PointDelta = { ...facts.delta, critChance: 0.8 };
+    render({ ...RUNED, pointDelta: steep });
+    click('[data-power-row="crit"]');
+    const fifty = chart('critChance').querySelector<HTMLElement>('[data-testid="power-marker"][data-points="50"]');
+    expect(fifty?.dataset.atCap).toBe('true');
+    expect(fifty?.style.left).toBe('100%');
+    expect(chart('critChance').querySelector('[data-testid="power-points-legend"]')?.textContent).toMatch(
+      /\+50 points: [\d.]+M \(\+[\d.]+%, at the cap\)$/,
+    );
+  });
+
+  it('with no deltas there are no markers', () => {
+    render(RUNED);
+    click('[data-power-row="speed"]');
+    expect(chart('speed').querySelectorAll('[data-testid="power-marker"]')).toHaveLength(0);
+  });
 });

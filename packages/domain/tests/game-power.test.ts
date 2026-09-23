@@ -19,6 +19,7 @@ import {
   type GamePowerInput,
 } from '@bombfarm/domain/game-power';
 import type { HeroRune } from '@bombfarm/domain/runes';
+import { POINT_GAIN } from '@bombfarm/domain/model';
 import { saveSheetUnits } from '@bombfarm/domain/save-units';
 import { requireFixture } from './helpers/require-fixture';
 
@@ -378,5 +379,32 @@ describe('gamePowerInputOf', () => {
     const sheet = lv160Input().sheet;
     expect(gamePowerInputOf(sheet, undefined).explosaoAmplaLevel).toBe(0);
     expect(gamePowerInputOf(sheet, null).explosaoAmplaLevel).toBe(0);
+  });
+});
+
+describe('a stat point, against the game', () => {
+  const beforeSpeedPoints: GamePowerInput = {
+    sheet: saveSheetUnits({
+      dmg: 112044.45492238,
+      energia: 10819.5114519185,
+      speed: 82.240377078266,
+      luck: 1.07502543417208,
+      crit_chance: 0.678503105935927,
+      crit_dmg: 10.751104688216,
+      penetration: 25.3147485698556,
+      cooldown_reduction: 0.0773451554004449,
+    }),
+    explosaoAmplaLevel: 20,
+  };
+  const BIRTH_SPEED = 57.2403912148554;
+
+  it.each([
+    [0, 27_601_144.3234988],
+    [1, 27_816_086.193311],
+    [2, 28_031_028.0631238],
+  ])('%d speed point(s) at 2%% of the rolled base land on the game’s figure', (points, power) => {
+    const speed = beforeSpeedPoints.sheet.speed + points * POINT_GAIN.speedPctOfBase * BIRTH_SPEED;
+    const scored = gamePower(withGamePowerAxis(beforeSpeedPoints, 'speed', speed));
+    expect(relativeError(scored, power)).toBeLessThanOrEqual(1e-12);
   });
 });

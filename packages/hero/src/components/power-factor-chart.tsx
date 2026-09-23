@@ -18,12 +18,16 @@ import {
   formatPowerFigure,
   isGuideKey,
   markLabelAnchor,
+  placeStripLabels,
+  powerPointMarkers,
+  powerPointsLegend,
   powerAxisSpec,
   powerChartSeries,
   powerReading,
   powerReadoutText,
   steppedGuide,
   type MarkLabelAnchor,
+  type PointDelta,
   type PowerAxisSpec,
 } from '../model/power-breakdown';
 
@@ -92,16 +96,20 @@ export function PowerFactorChart({
   input,
   axis,
   axisLabel,
+  pointDelta,
   t,
   lang,
 }: {
   input: GamePowerInput;
   axis: GamePowerAxis;
   axisLabel: string;
+  /** The pipeline's per-point gains; `null` draws no +10 / +50 markers. */
+  pointDelta: PointDelta | null;
   t: HeroCopy;
   lang: Lang;
 }) {
-  const spec = useMemo(() => powerAxisSpec(input, axis), [input, axis]);
+  const spec = useMemo(() => powerAxisSpec(input, axis, pointDelta), [input, axis, pointDelta]);
+  const markers = useMemo(() => powerPointMarkers(input, spec, pointDelta), [input, spec, pointDelta]);
   const series = useMemo(() => powerChartSeries(input, spec), [input, spec]);
   const plot: Plot = { spec, yMax: series.yMax };
   const plotRef = useRef<HTMLDivElement | null>(null);
@@ -110,7 +118,14 @@ export function PowerFactorChart({
   const now = gamePowerAxisValue(input, axis);
   const nowOnAxis = Math.min(spec.hi, Math.max(spec.lo, now));
   const nowPower = gamePower(input);
-  const nowAnchor = markLabelAnchor(axisFraction(spec, nowOnAxis));
+  const stripLabels = placeStripLabels([
+    { id: 'now', fraction: axisFraction(spec, nowOnAxis), text: t.heroDetailPowerNow },
+    ...markers.map((marker) => ({
+      id: String(marker.points),
+      fraction: axisFraction(spec, marker.x),
+      text: `+${String(marker.points)}`,
+    })),
+  ]);
   const reading = powerReading(input, spec, guide ?? now);
   const readout = powerReadoutText(reading, axisLabel, spec, lang, t);
   const path = spec.integer ? stairPath : linePath;
@@ -138,14 +153,19 @@ export function PowerFactorChart({
         <span aria-hidden="true" />
         {/* Its own strip above the plot: inside, the curve can run under it wherever it sits. */}
         <div className="relative h-3">
-          <span
-            data-testid="power-now-label"
-            data-anchor={nowAnchor}
-            className={cn(markLabelClass, 'top-0', LABEL_ANCHOR_CLASS[nowAnchor])}
-            style={{ left: `${String(plotX(plot, nowOnAxis))}%` }}
-          >
-            {t.heroDetailPowerNow}
-          </span>
+          {stripLabels.map((label) => (
+            <span
+              key={label.id}
+              {...(label.id === 'now'
+                ? { 'data-testid': 'power-now-label' }
+                : { 'data-testid': 'power-marker-label', 'data-points': label.id })}
+              data-anchor={label.anchor}
+              className={cn(markLabelClass, 'top-0', LABEL_ANCHOR_CLASS[label.anchor], label.id !== 'now' && 'text-gold')}
+              style={{ left: `${String(label.fraction * 100)}%` }}
+            >
+              {label.text}
+            </span>
+          ))}
         </div>
         <div className="relative" aria-hidden="true" data-testid="power-y-ticks">
           {series.yTicks.map((tick) => (
@@ -251,6 +271,16 @@ export function PowerFactorChart({
             className={cn(dotClass, 'bg-muted')}
             style={{ left: `${String(plotX(plot, nowOnAxis))}%`, top: `${String(plotY(plot, nowPower))}%` }}
           />
+          {markers.map((marker) => (
+            <span
+              key={marker.points}
+              data-testid="power-marker"
+              data-points={marker.points}
+              data-at-cap={marker.atCap ? 'true' : undefined}
+              className={cn(dotClass, 'size-2.5 border-2 border-gold bg-bg')}
+              style={{ left: `${String(plotX(plot, marker.x))}%`, top: `${String(plotY(plot, marker.reading.power))}%` }}
+            />
+          ))}
           {guide !== null ? (
             <span
               data-testid="power-guide-point"
@@ -276,6 +306,11 @@ export function PowerFactorChart({
       <p className="m-0 font-mono text-[11px] leading-snug text-ink tabular-nums" aria-live="polite" data-testid="power-readout">
         {readout}
       </p>
+      {markers.length > 0 ? (
+        <p className="m-0 font-mono text-[11px] leading-snug text-muted tabular-nums" data-testid="power-points-legend">
+          {powerPointsLegend(markers, lang, t)}
+        </p>
+      ) : null}
       {reading.cappedCritPower !== null ? (
         <p className="m-0 font-mono text-[11px] leading-snug text-muted tabular-nums" data-testid="power-readout-capped">
           {sub(t.heroDetailPowerReadoutCapped, { power: formatPowerFigure(reading.cappedCritPower) })}

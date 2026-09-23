@@ -12,6 +12,8 @@ import {
   gamePowerInputOf,
   gamePowerInputWithoutRunes,
 } from '@bombfarm/domain/game-power';
+import { composeSheetFromBirth, type TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
+import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
 import { hasRuneOnSheet, runesOf } from '@bombfarm/domain/runes';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
 import { TEAM_AURA_SWITCH_IDS, type TeamAuraSwitches } from '@bombfarm/domain/team-buffs';
@@ -82,4 +84,43 @@ describe('the Power panel on a live account read', () => {
     );
     expect(Math.max(...cooldowns)).toBeCloseTo(GAME_POWER_CDR_CHECKED_MAX_PCT, 2);
   });
+
+  it.each([10, 50])(
+    'a stat point is linear: +%d points on any axis, recomposed from birth, is adjusted + N × the pipeline delta',
+    (added) => {
+      const tree: TreeSheetTotals = {
+        danoStatic: fixture.account.tree.danoTotal,
+        energyPct: fixture.account.tree.energy,
+        speedPct: fixture.account.tree.speed,
+        critChancePct: fixture.account.tree.critChance,
+        critDmgPct: fixture.account.tree.critDmg,
+        luckFlatPct: fixture.account.tree.luckFlatPct ?? 0,
+      };
+      let checked = 0;
+      for (const hero of fixture.heroes) {
+        const facts = factsForHero(fixture, hero);
+        if (!hero.birth) throw new Error(`${hero.name} has no birth roll`);
+        for (const key of SHEET_KEYS) {
+          const recomposed = composeSheetFromBirth({
+            birth: hero.birth,
+            level: hero.level,
+            stars: hero.stars,
+            sheetOther: facts.sheetOther,
+            loadout: hero.loadout,
+            pts: { ...hero.pts, [key]: hero.pts[key] + added },
+            tree,
+            runes: hero.runes,
+          });
+          const linear = facts.adjusted[key] + added * facts.delta[key];
+          expect(Math.abs(recomposed[key] - linear), `${hero.name} ${key}`).toBeLessThanOrEqual(1e-12 * Math.max(1, Math.abs(linear)));
+          for (const other of SHEET_KEYS) {
+            if (other === key) continue;
+            expect(recomposed[other], `${hero.name} ${key}→${other}`).toBeCloseTo(facts.adjusted[other], 9);
+          }
+          checked += 1;
+        }
+      }
+      expect(checked).toBe(fixture.heroes.length * SHEET_KEYS.length);
+    },
+  );
 });
