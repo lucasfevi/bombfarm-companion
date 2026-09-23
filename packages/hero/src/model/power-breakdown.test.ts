@@ -44,7 +44,7 @@ const INPUT: GamePowerInput = {
 describe('powerFactorRows', () => {
   it('lists the seven factors in display order, then attack as the anchor with no multiplier or share', () => {
     const rows = powerFactorRows(INPUT);
-    expect(rows.map((row) => row.id)).toEqual(['crit', 'speed', 'range', 'utility', 'energy', 'penetration', 'cooldown', 'attack']);
+    expect(rows.map((row) => row.id)).toEqual(['crit', 'speed', 'range', 'luck', 'energy', 'penetration', 'cooldown', 'attack']);
     expect(rows.at(-1)).toEqual({ id: 'attack', multiplier: null, share: null });
     const total = rows.reduce((sum, row) => sum + (row.share ?? 0), 0);
     expect(total).toBeCloseTo(1, 12);
@@ -130,6 +130,14 @@ describe('powerChartSeries', () => {
   it('Explosão Ampla is plotted at whole levels only', () => {
     const series = powerChartSeries(INPUT, powerAxisSpec(INPUT, 'explosaoAmpla'));
     expect(series.solid.map((point) => point.x)).toEqual(Array.from({ length: 21 }, (_, level) => level));
+  });
+
+  it('the Range staircase steps at levels 10 and 20 and nowhere else', () => {
+    const series = powerChartSeries(INPUT, powerAxisSpec(INPUT, 'explosaoAmpla'));
+    const steps = series.solid.slice(1).flatMap((point, index) =>
+      point.power === series.solid[index].power ? [] : [point.x],
+    );
+    expect(steps).toEqual([10, 20]);
   });
 
   it('crit damage carries the capped-chance line, which is the curve at 100% crit chance', () => {

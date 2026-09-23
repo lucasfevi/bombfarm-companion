@@ -39,7 +39,7 @@ export const heroPtBR: HeroCopy = {
   heroDetailPowerFactorCrit: "Crítico (chance × dano)",
   heroDetailPowerFactorSpeed: "Velocidade",
   heroDetailPowerFactorRange: "Alcance (Explosão Ampla)",
-  heroDetailPowerFactorUtility: "Utilidade (sorte + energia)",
+  heroDetailPowerFactorLuck: "Sorte",
   heroDetailPowerFactorEnergy: "Energia",
   heroDetailPowerFactorPenetration: "Penetração",
   heroDetailPowerFactorCooldown: "Recarga",

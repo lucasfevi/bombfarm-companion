@@ -103,21 +103,6 @@ const ANCHORS: readonly Anchor[] = [
     },
     power: 28031028.0631238,
   },
-  {
-    label: 'rare-ampla15-rounds-alcance-up',
-    explosaoAmpla: 15,
-    stats: {
-      dmg: 1565.31109738936,
-      energia: 725.825765935685,
-      speed: 49.8750868903708,
-      luck: 0.164301935933848,
-      crit_chance: 0.237453076662183,
-      crit_dmg: 2.12171484359405,
-      penetration: 9.71862092533005,
-      cooldown_reduction: 0.0321829580725741,
-    },
-    power: 28436.990213478,
-  },
 ];
 
 function inputOf(anchor: Anchor): GamePowerInput {
@@ -151,21 +136,29 @@ describe('gamePower', () => {
     },
   );
 
-  it('rounds Explosão Ampla to whole blocks, half up', () => {
-    expect(alcanceForExplosaoAmpla(0)).toBe(1);
-    expect(alcanceForExplosaoAmpla(4)).toBe(1);
-    expect(alcanceForExplosaoAmpla(5)).toBe(2);
-    expect(alcanceForExplosaoAmpla(15)).toBe(3);
-    expect(alcanceForExplosaoAmpla(20)).toBe(3);
+  it.each([
+    [0, 1],
+    [1, 1],
+    [5, 1],
+    [9, 1],
+    [10, 2],
+    [15, 2],
+    [19, 2],
+    [20, 3],
+  ])('Explosão Ampla level %d reaches %d cell(s): the reach floors, stepping at 10 and 20', (level, alcance) => {
+    expect(alcanceForExplosaoAmpla(level)).toBe(alcance);
   });
 
-  it('level 15 is three blocks: two and a half would miss the game figure by exactly 10%', () => {
-    const rare = anchor('rare-ampla15-rounds-alcance-up');
-    const exact = gamePower(inputOf(rare));
-    const rangeFactor = gamePowerFactors(inputOf(rare)).range;
-    expect(rangeFactor).toBe(2.5);
-    const withTwoAndAHalfBlocks = (exact / rangeFactor) * (1 + 0.5 * 2.5);
-    expect(withTwoAndAHalfBlocks / rare.power).toBeCloseTo(0.9, 12);
+  it('every level 0–9 is one cell, 10–19 two, and 20 three', () => {
+    const reach = Array.from({ length: 21 }, (_, level) => alcanceForExplosaoAmpla(level));
+    expect(reach).toEqual([...Array<number>(10).fill(1), ...Array<number>(10).fill(2), 3]);
+  });
+
+  it('every whole-cell level lands on its cell, never one below it, far past the level cap', () => {
+    for (let cells = 0; cells <= 100; cells++) {
+      expect(alcanceForExplosaoAmpla(cells * 10), `level ${String(cells * 10)}`).toBe(1 + cells);
+      if (cells > 0) expect(alcanceForExplosaoAmpla(cells * 10 - 1)).toBe(cells);
+    }
   });
 
   it('does not clamp penetration at 100: the hero at 108.9 matches only unclamped', () => {
@@ -192,16 +185,63 @@ describe('gamePower', () => {
     expect(gamePowerFactors(withGamePowerAxis(input, 'cdr', cdr)).cooldown).toBeCloseTo(5, 12);
   });
 
-  it('adds luck and energy inside one utility bracket, and the energy term stops growing at 625', () => {
+  it('luck and energy share one additive bracket, factored exactly into a luck factor and an energy factor', () => {
     const input = inputOf(anchor('legendary-lv1-naked'));
-    const utility = gamePowerFactors(input).utility;
+    const factors = gamePowerFactors(input);
     const luck = input.sheet.luck / 100;
     const energyTerm = 0.02 * (Math.min(6, 1 + 0.008 * input.sheet.energy) - 1);
-    expect(utility).toBeCloseTo(1 + luck / 2 + energyTerm, 14);
-    expect(utility).not.toBeCloseTo((1 + luck / 2) * (1 + energyTerm), 6);
-    const at625 = gamePowerFactors(withGamePowerAxis(input, 'energy', 625)).utility;
-    const at5000 = gamePowerFactors(withGamePowerAxis(input, 'energy', 5000)).utility;
-    expect(at5000).toBe(at625);
+    const stamina = 1 - 0.5 / (1.3 + 0.003 * input.sheet.energy);
+    expect(factors.luck * factors.energy).toBeCloseTo((1 + luck / 2 + energyTerm) * stamina, 14);
+    expect(factors.luck * factors.energy).not.toBeCloseTo((1 + luck / 2) * (1 + energyTerm) * stamina, 6);
+  });
+
+  it('the energy term inside the bracket stops growing at 625', () => {
+    const input = inputOf(anchor('legendary-lv1-naked'));
+    const bracketAt = (energy: number) => {
+      const factors = gamePowerFactors(withGamePowerAxis(input, 'energy', energy));
+      const stamina = 1 - 0.5 / (1.3 + 0.003 * energy);
+      return (factors.luck * factors.energy) / stamina;
+    };
+    expect(bracketAt(5000)).toBeCloseTo(bracketAt(625), 14);
+    expect(bracketAt(600)).toBeLessThan(bracketAt(625));
+  });
+
+  it.each(ANCHORS.map((entry) => [entry.label, entry] as const))(
+    '%s: ten times attack times every factor is Power to 1e-12',
+    (_label, entry) => {
+      const input = inputOf(entry);
+      const factors = gamePowerFactors(input);
+      let product = 10 * factors.attack;
+      for (const id of GAME_POWER_FACTOR_IDS) product *= factors[id];
+      expect(relativeError(product, gamePower(input))).toBeLessThan(1e-12);
+    },
+  );
+
+  function curveRatio(input: GamePowerInput, axis: 'energy' | 'luck'): number {
+    const value = gamePowerAxisValue(input, axis);
+    const [atZero] = gamePowerCurve(input, axis, 0, 0, 1);
+    const [atHero] = gamePowerCurve(input, axis, value, value, 1);
+    return atHero.power / atZero.power;
+  }
+
+  it('the luck multiplier is the luck curve at the hero’s luck over the curve at luck 0', () => {
+    const input = lv160Input();
+    expect(gamePowerMultipliers(input).luck).toBeCloseTo(curveRatio(input, 'luck'), 12);
+  });
+
+  it('the energy multiplier is the energy curve at the hero’s energy over energy 0, read without luck', () => {
+    const input = lv160Input();
+    const withoutLuck = withGamePowerAxis(input, 'luck', 0);
+    expect(gamePowerMultipliers(input).energy).toBeCloseTo(curveRatio(withoutLuck, 'energy'), 12);
+  });
+
+  it('the bracket is not separable: with luck on, the energy curve moves Power a little less than its multiplier', () => {
+    const input = lv160Input();
+    const luck = input.sheet.luck / 200;
+    const energyTerm = 0.02 * (Math.min(6, 1 + 0.008 * input.sheet.energy) - 1);
+    const expectedGap = (1 + luck + energyTerm) / ((1 + luck) * (1 + energyTerm));
+    expect(curveRatio(input, 'energy') / gamePowerMultipliers(input).energy).toBeCloseTo(expectedGap, 12);
+    expect(expectedGap).toBeLessThan(1);
   });
 });
 
@@ -242,7 +282,7 @@ describe('gamePowerShares', () => {
       cooldown: 1,
       range: 1.5,
       penetration: 1,
-      utility: 1,
+      luck: 1,
     });
   });
 

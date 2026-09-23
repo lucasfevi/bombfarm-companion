@@ -40,7 +40,7 @@ export const heroEn = {
   heroDetailPowerFactorCrit: "Crit (chance × damage)",
   heroDetailPowerFactorSpeed: "Speed",
   heroDetailPowerFactorRange: "Range (Wide Blast)",
-  heroDetailPowerFactorUtility: "Utility (luck + energy)",
+  heroDetailPowerFactorLuck: "Luck",
   heroDetailPowerFactorEnergy: "Energy",
   heroDetailPowerFactorPenetration: "Penetration",
   heroDetailPowerFactorCooldown: "Cooldown",

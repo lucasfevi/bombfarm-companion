@@ -84,7 +84,7 @@ export const POWER_ROW_AXES: Record<PowerRowId, readonly GamePowerAxis[]> = {
   crit: ['critChance', 'critDmg'],
   speed: ['speed'],
   range: ['explosaoAmpla'],
-  utility: ['luck'],
+  luck: ['luck'],
   energy: ['energy'],
   penetration: ['penetration'],
   cooldown: ['cdr'],

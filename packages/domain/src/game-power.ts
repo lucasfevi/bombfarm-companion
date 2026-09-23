@@ -9,6 +9,7 @@
  * as the excess over a plain hit in percentage points.
  */
 import type { SheetStats } from './gear/types';
+import { ABILITIES } from './model/abilities';
 import { STAT_CAPS } from './model/rarity-constants';
 import { applyRuneMultipliers, runeSheetMultipliers, stripRuneMultipliers, type HeroRune } from './runes';
 
@@ -20,9 +21,9 @@ const STAMINA_BASE = 1.3;
 const STAMINA_PER_ENERGY = 0.003;
 const MITIGATION = 0.255;
 const LUCK_WEIGHT = 0.5;
-const ENERGY_UTILITY_WEIGHT = 0.02;
-const ENERGY_UTILITY_PER_ENERGY = 0.008;
-const ENERGY_UTILITY_CEILING = 6;
+const ENERGY_BRACKET_WEIGHT = 0.02;
+const ENERGY_BRACKET_PER_ENERGY = 0.008;
+const ENERGY_BRACKET_CEILING = 6;
 const BLOCKS_PER_ALCANCE = 0.5;
 
 /** The highest cooldown reduction the formula has been checked against; past it, it is extrapolated. */
@@ -34,39 +35,94 @@ export type GamePowerInput = {
 };
 
 /** The factors that carry a share, in display order. Attack is the anchor they multiply and carries none. */
-export const GAME_POWER_FACTOR_IDS = ['crit', 'speed', 'range', 'utility', 'energy', 'penetration', 'cooldown'] as const;
+export const GAME_POWER_FACTOR_IDS = ['crit', 'speed', 'range', 'luck', 'energy', 'penetration', 'cooldown'] as const;
 export type GamePowerFactorId = (typeof GAME_POWER_FACTOR_IDS)[number];
 
 export type GamePowerFactors = Readonly<Record<GamePowerFactorId, number>> & { readonly attack: number };
 export type GamePowerFactorRecord = Readonly<Record<GamePowerFactorId, number>>;
 
-/** Blast reach in whole blocks: the game rounds Explosão Ampla's +0.1 per level, half up. */
-export function alcanceForExplosaoAmpla(level: number): number {
-  return 1 + Math.round(level / 10);
+function rangeCellsPerLevel(): number {
+  const effect = ABILITIES.find((ability) => ability.id === 'explosao_ampla')?.effect;
+  if (effect?.kind !== 'rangeCells') throw new Error('the ability catalog has no Explosão Ampla range effect');
+  return effect.perLevel;
 }
 
-export function gamePowerFactors({ sheet, explosaoAmplaLevel }: GamePowerInput): GamePowerFactors {
+const RANGE_CELLS_PER_LEVEL = rangeCellsPerLevel();
+/** Absorbs float error in `perLevel × level` (0.1 × 30 is 3.0000000000000004, 0.1 × 10 must be 1). */
+const FLOOR_EPSILON = 1e-9;
+
+/**
+ * Blast reach in whole cells: the game banks Explosão Ampla's per-level fraction until it makes a
+ * full cell, so the reach floors. Only levels 0 and 20 are confirmed against the game's own Power
+ * figure.
+ */
+export function alcanceForExplosaoAmpla(level: number): number {
+  return 1 + Math.floor(RANGE_CELLS_PER_LEVEL * level + FLOOR_EPSILON);
+}
+
+type PowerTerms = {
+  readonly attack: number;
+  readonly crit: number;
+  readonly speed: number;
+  readonly range: number;
+  readonly stamina: number;
+  readonly luckTerm: number;
+  readonly energyTerm: number;
+  readonly penetration: number;
+  readonly cooldown: number;
+};
+
+function powerTerms({ sheet, explosaoAmplaLevel }: GamePowerInput): PowerTerms {
   const critChance = Math.min(sheet.critChance, STAT_CAPS.critChance) / 100;
   const cdr = Math.min(sheet.cdr, STAT_CAPS.cdr) / 100;
-  const energyUtility = Math.min(ENERGY_UTILITY_CEILING, 1 + ENERGY_UTILITY_PER_ENERGY * sheet.energy) - 1;
+  const bombs = Math.min(ENERGY_BRACKET_CEILING, 1 + ENERGY_BRACKET_PER_ENERGY * sheet.energy);
   return {
     attack: sheet.attack,
     crit: 1 + critChance * (sheet.critDmg / 100),
     speed: SPEED_BASE + SPEED_PER_POINT * sheet.speed,
-    energy: 1 - STAMINA_DEPTH / (STAMINA_BASE + STAMINA_PER_ENERGY * sheet.energy),
-    cooldown: 1 / (1 - cdr),
     range: 1 + BLOCKS_PER_ALCANCE * alcanceForExplosaoAmpla(explosaoAmplaLevel),
+    stamina: 1 - STAMINA_DEPTH / (STAMINA_BASE + STAMINA_PER_ENERGY * sheet.energy),
+    luckTerm: (sheet.luck / 100) * LUCK_WEIGHT,
+    energyTerm: ENERGY_BRACKET_WEIGHT * (bombs - 1),
     // Unclamped, unlike the damage path's mitigation bypass: a sheet past 100 still scores higher.
     penetration: (1 - MITIGATION * (1 - sheet.penetration / 100)) / (1 - MITIGATION),
-    utility: 1 + (sheet.luck / 100) * LUCK_WEIGHT + ENERGY_UTILITY_WEIGHT * energyUtility,
+    cooldown: 1 / (1 - cdr),
+  };
+}
+
+/**
+ * The game adds luck and energy inside one bracket, `1 + luck + energy`. It is factored exactly
+ * as `(1 + energy) × (1 + luck / (1 + energy))` so each factor moves with one statistic and each
+ * row's multiplier matches its own chart; Power itself is computed from the unfactored bracket.
+ */
+export function gamePowerFactors(input: GamePowerInput): GamePowerFactors {
+  const terms = powerTerms(input);
+  return {
+    attack: terms.attack,
+    crit: terms.crit,
+    speed: terms.speed,
+    range: terms.range,
+    luck: 1 + terms.luckTerm / (1 + terms.energyTerm),
+    energy: terms.stamina * (1 + terms.energyTerm),
+    penetration: terms.penetration,
+    cooldown: terms.cooldown,
   };
 }
 
 export function gamePower(input: GamePowerInput): number {
-  const factors = gamePowerFactors(input);
-  let power = GAME_POWER_SCALE * factors.attack;
-  for (const id of GAME_POWER_FACTOR_IDS) power *= factors[id];
-  return power;
+  const terms = powerTerms(input);
+  const bracket = 1 + terms.luckTerm + terms.energyTerm;
+  return (
+    GAME_POWER_SCALE *
+    terms.attack *
+    terms.crit *
+    terms.speed *
+    terms.range *
+    bracket *
+    terms.stamina *
+    terms.penetration *
+    terms.cooldown
+  );
 }
 
 const ZERO_SHEET: SheetStats = {

@@ -124,7 +124,7 @@ describe('PowerBreakdownPanel', () => {
       'crit',
       'speed',
       'range',
-      'utility',
+      'luck',
       'energy',
       'penetration',
       'cooldown',
