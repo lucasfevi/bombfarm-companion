@@ -33,7 +33,6 @@ import type { MarketQuoteCurrency } from '@bombfarm/contracts';
 import { phaseSearchOptions } from '@bombfarm/farm';
 import { CombatPhasePanel } from '@bombfarm/farm/components';
 import {
-  AbilitiesAurasPanel,
   CombatBreakdownPanel,
   GearTab,
   HeroAbilitiesPanel,
@@ -594,6 +593,7 @@ function HeroDetailTabs({
   const t = useCopy();
   const statCopy = useStatPanelCopy();
   const [tab, setTab] = useState('hero');
+  const auraControls = useMemo(() => ({ deltas: auraDeltas, onSwitch: onAuraSwitch }), [auraDeltas, onAuraSwitch]);
 
   return (
     <Tabs.Root value={tab} onValueChange={setTab}>
@@ -673,19 +673,7 @@ function HeroDetailTabs({
                   hero={active.hero}
                   phase={figures.inputs.phase}
                   switches={auraSwitches}
-                  lang={lang}
-                />
-              ) : null}
-              {/* What those figures were priced with, last: the hero's own abilities, and every
-                  team aura the game has behind a switch. A switch is a what-if held like the
-                  phase pick above, and it reaches Gear and Points as the phase does. */}
-              {figures.kind === 'at' ? (
-                <AbilitiesAurasPanel
-                  hero={active.hero}
-                  phase={figures.inputs.phase}
-                  switches={auraSwitches}
-                  deltas={auraDeltas}
-                  onSwitch={onAuraSwitch}
+                  auras={auraControls}
                   lang={lang}
                 />
               ) : null}

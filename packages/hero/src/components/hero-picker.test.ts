@@ -97,7 +97,7 @@ describe('the components are prop-driven — no store, no host module', () => {
     expect(componentFiles).toContain('power-factor-chart.tsx');
     expect(componentFiles).toContain('aura-cap-chips.tsx');
     expect(componentFiles).toContain('hero-runes-panel.tsx');
-    expect(componentFiles).toContain('abilities-auras-panel.tsx');
+    expect(componentFiles).toContain('team-auras-section.tsx');
     expect(componentFiles).toContain('roster-board/roster-rail.tsx');
     expect(componentFiles).toContain('roster-board/roster-cards.tsx');
     expect(componentFiles).toContain('roster-board/roster-leaderboard.tsx');

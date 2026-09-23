@@ -2,8 +2,8 @@ import { test, expect, type Locator, type Page } from '@playwright/test';
 import { importedRoster, seedLocalStorage, selectSavedHero } from './fixtures/seed';
 
 /**
- * The Abilities & auras section on the Combat tab: every team aura the game has, each behind a
- * switch unless it is the hero's own; a switch prices the aura at its cap and reaches every
+ * The team-aura section inside the Combat tab's Effective stats panel: every team aura the game
+ * has, each behind a switch unless it is the hero's own; a switch prices the aura at its cap and reaches every
  * planner figure that reads the pipeline, and nothing on the Farm page.
  */
 const TEAM_AURA_IDS = ['grito_guerra', 'pressagio_mortal', 'marcha_acelerada', 'folego_mineiro', 'brecha', 'passagem_bastao'] as const;
@@ -40,7 +40,7 @@ function activePanel(page: Page) {
 }
 
 function auraSection(page: Page) {
-  return activePanel(page).getByTestId('abilities-auras');
+  return activePanel(page).getByTestId('combat-breakdown').getByTestId('team-auras');
 }
 
 /** The strip's Sustained DPS, at full precision from the figure's own tooltip (hover to reveal). */
@@ -88,7 +88,7 @@ async function energyRankingText(page: Page): Promise<string> {
   return match[1];
 }
 
-test.describe('abilities & auras section', () => {
+test.describe('team auras section', () => {
   test('lists every team aura for a hero carrying none and for one carrying War Cry, which reads at its rank with no switch', async ({
     page,
   }) => {
@@ -98,7 +98,8 @@ test.describe('abilities & auras section', () => {
     await openCombatTab(page);
 
     const section = auraSection(page);
-    await expect(section.getByRole('heading', { name: /^Abilities & auras$/i, level: 2 })).toBeVisible();
+    await expect(section.getByRole('heading', { name: /^Team auras$/i, level: 3 })).toBeVisible();
+    await expect(activePanel(page).getByTestId('team-auras')).toHaveCount(1);
     for (const id of TEAM_AURA_IDS.filter((aura) => aura !== 'passagem_bastao')) {
       const row = section.getByTestId(`team-aura-${id}`);
       await expect(row).toBeVisible();
@@ -106,14 +107,17 @@ test.describe('abilities & auras section', () => {
       await expect(row.getByTestId('team-aura-readout')).toHaveText(AURA_CAP_TEXT[id]);
     }
     await expect(section.getByTestId('team-aura-grito_guerra').getByTestId('team-aura-delta')).toHaveText(/\+\d+\.\d% if on/);
-    await expect(section.getByTestId('own-ability-detonacao_dupla')).toContainText(/15\.0% chance \(×1\.\d\d dmg\)/);
+    // Her own Double Blast is priced in: the breakdown badges it, lit, on the card it reaches.
+    const breakdown = activePanel(page).getByTestId('combat-breakdown');
+    await expect(breakdown.locator('[data-badge="detonacao_dupla"][data-on="true"]')).toHaveCount(1);
     // Baton Pass is the sixth aura row. Cora carries it at rank 10, so it is her own — no switch —
     // priced at the team damage her own entry pulse carries, rank 10 × 4%.
     const batonPass = section.getByTestId('team-aura-passagem_bastao');
     await expect(batonPass.getByRole('switch')).toHaveCount(0);
     await expect(batonPass.getByTestId('team-aura-own')).toHaveText(/^own$/i);
     await expect(batonPass.getByTestId('team-aura-readout')).toHaveText(/\+40% dmg \(pulse\)/);
-    await expect(section.getByTestId('own-ability-passagem_bastao')).toHaveCount(0);
+    // Baton Pass is an aura, not also an own ability: one badge for it, not two.
+    await expect(breakdown.locator('[data-badge="passagem_bastao"]')).toHaveCount(1);
 
     await selectSavedHero(page, 'Lorne');
     const lorneSection = auraSection(page);
