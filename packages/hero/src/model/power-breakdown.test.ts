@@ -211,6 +211,14 @@ describe('powerMismatchPct', () => {
     expect(formatSignedPct(0.3343, 'en')).toBe('+0.33%');
     expect(formatSignedPct(-1.05, 'pt')).toBe('−1,05%');
   });
+
+  it('stays silent on a gap too small to print, so it never reads "+0.00%"', () => {
+    expect(powerMismatchPct(1_000_010, 1_000_000)).toBeNull();
+    expect(powerMismatchPct(999_960, 1_000_000)).toBeNull();
+    const smallestPrintable = powerMismatchPct(1_000_100, 1_000_000);
+    expect(smallestPrintable).not.toBeNull();
+    expect(formatSignedPct(smallestPrintable ?? 0, 'en')).toBe('+0.01%');
+  });
 });
 
 describe('markLabelAnchor', () => {

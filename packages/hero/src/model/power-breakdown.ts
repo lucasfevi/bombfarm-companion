@@ -60,8 +60,9 @@ export function powerFactorRows(input: GamePowerInput): readonly PowerFactorRow[
   );
 }
 
-/** Tighter than any rounding the game's own figure carries, looser than float noise. */
-const MATCH_TOLERANCE = 1e-6;
+const MISMATCH_DECIMALS = 2;
+/** The smallest gap the note can print: anything under half its last digit would read "+0.00%". */
+const MATCH_TOLERANCE = (0.5 * 10 ** -MISMATCH_DECIMALS) / 100;
 
 /**
  * How far the panel's rune-free figure sits from the game's stored one, in percent — `null` when
@@ -75,7 +76,7 @@ export function powerMismatchPct(computedRuneFree: number, stored: number | unde
 }
 
 export function formatSignedPct(pct: number, lang: Lang): string {
-  const text = `${formatNumber(Math.abs(pct), lang, 2)}%`;
+  const text = `${formatNumber(Math.abs(pct), lang, MISMATCH_DECIMALS)}%`;
   return pct < 0 ? `−${text}` : `+${text}`;
 }
 
