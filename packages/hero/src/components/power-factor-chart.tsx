@@ -14,7 +14,7 @@ import {
   axisFraction,
   axisValueAtFraction,
   clampToAxis,
-  formatAxisValue,
+  formatAxisTick,
   formatPowerFigure,
   isGuideKey,
   markLabelAnchor,
@@ -27,12 +27,13 @@ import {
   type PowerAxisSpec,
 } from '../model/power-breakdown';
 
+const tickLabelClass = 'pointer-events-none absolute font-mono text-[10px] leading-none whitespace-nowrap text-muted tabular-nums';
 const markLabelClass = 'pointer-events-none absolute text-[10px] leading-none text-muted';
 const dotClass = 'pointer-events-none absolute size-2 -translate-x-1/2 -translate-y-1/2 rounded-full';
 const focusRingClass =
   'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
-const NOW_LABEL_ANCHOR_CLASS: Record<MarkLabelAnchor, string> = {
+const LABEL_ANCHOR_CLASS: Record<MarkLabelAnchor, string> = {
   start: 'pl-1',
   center: '-translate-x-1/2',
   end: '-translate-x-full pr-1',
@@ -133,100 +134,144 @@ export function PowerFactorChart({
   return (
     <figure className="m-0 flex min-w-0 flex-col gap-1" data-power-chart={axis}>
       <figcaption className="text-[11px] font-bold tracking-[0.06em] text-muted uppercase">{axisLabel}</figcaption>
-      <span className="font-mono text-[10px] leading-none text-muted tabular-nums" data-testid="power-y-max">
-        {formatPowerFigure(series.yMax)}
-      </span>
-      {/* Its own strip above the plot: inside, the curve can run under it wherever it sits. */}
-      <div className="relative h-3">
-        <span
-          data-testid="power-now-label"
-          data-anchor={nowAnchor}
-          className={cn(markLabelClass, 'top-0', NOW_LABEL_ANCHOR_CLASS[nowAnchor])}
-          style={{ left: `${String(plotX(plot, nowOnAxis))}%` }}
+      <div className="grid grid-cols-[3rem_minmax(0,1fr)] gap-x-1.5">
+        <span aria-hidden="true" />
+        {/* Its own strip above the plot: inside, the curve can run under it wherever it sits. */}
+        <div className="relative h-3">
+          <span
+            data-testid="power-now-label"
+            data-anchor={nowAnchor}
+            className={cn(markLabelClass, 'top-0', LABEL_ANCHOR_CLASS[nowAnchor])}
+            style={{ left: `${String(plotX(plot, nowOnAxis))}%` }}
+          >
+            {t.heroDetailPowerNow}
+          </span>
+        </div>
+        <div className="relative" aria-hidden="true" data-testid="power-y-ticks">
+          {series.yTicks.map((tick) => (
+            <span
+              key={tick}
+              data-tick={tick}
+              className={cn(tickLabelClass, 'right-0 -translate-y-1/2')}
+              style={{ top: `${String(plotY(plot, tick))}%` }}
+            >
+              {formatPowerFigure(tick)}
+            </span>
+          ))}
+        </div>
+        <div
+          ref={plotRef}
+          role="slider"
+          tabIndex={0}
+          aria-label={sub(t.heroDetailPowerChart, { stat: axisLabel })}
+          aria-valuemin={spec.lo}
+          aria-valuemax={spec.hi}
+          aria-valuenow={reading.x}
+          aria-valuetext={readout}
+          onPointerDown={onPointerDown}
+          onPointerMove={(event) => guideAtPointer(event.clientX)}
+          onPointerLeave={() => setGuide(null)}
+          onKeyDown={onKeyDown}
+          className={cn('relative h-36 w-full cursor-crosshair touch-none rounded-sm select-none', focusRingClass)}
         >
-          {t.heroDetailPowerNow}
-        </span>
-      </div>
-      <div
-        ref={plotRef}
-        role="slider"
-        tabIndex={0}
-        aria-label={sub(t.heroDetailPowerChart, { stat: axisLabel })}
-        aria-valuemin={spec.lo}
-        aria-valuemax={spec.hi}
-        aria-valuenow={reading.x}
-        aria-valuetext={readout}
-        onPointerDown={onPointerDown}
-        onPointerMove={(event) => guideAtPointer(event.clientX)}
-        onPointerLeave={() => setGuide(null)}
-        onKeyDown={onKeyDown}
-        className={cn('relative h-36 w-full cursor-crosshair touch-none rounded-sm select-none', focusRingClass)}
-      >
-        <svg
-          className="absolute inset-0 size-full overflow-visible"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-        >
-          <line x1={0} x2={100} y1={100} y2={100} className="stroke-line" strokeWidth={1} vectorEffect="non-scaling-stroke" />
-          {spec.cap !== null ? <VerticalMark x={plotX(plot, spec.cap)} className="stroke-down" dashed /> : null}
-          <VerticalMark x={plotX(plot, nowOnAxis)} className="stroke-muted" dashed />
-          {series.cappedCrit.length > 0 ? (
-            <path
-              d={path(plot, series.cappedCrit)}
-              fill="none"
-              className="stroke-gold opacity-60"
-              strokeWidth={1.5}
-              strokeDasharray="5 4"
+          <svg
+            className="absolute inset-0 size-full overflow-visible"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            {series.yTicks.map((tick) => (
+              <line
+                key={tick}
+                x1={0}
+                x2={100}
+                y1={plotY(plot, tick)}
+                y2={plotY(plot, tick)}
+                className="stroke-line opacity-40"
+                strokeWidth={1}
+                vectorEffect="non-scaling-stroke"
+                data-gridline={tick}
+              />
+            ))}
+            <line x1={0} x2={100} y1={100} y2={100} className="stroke-line" strokeWidth={1} vectorEffect="non-scaling-stroke" />
+            <line
+              x1={0}
+              x2={0}
+              y1={0}
+              y2={100}
+              className="stroke-line"
+              strokeWidth={1}
               vectorEffect="non-scaling-stroke"
-              data-series="capped-crit"
+              data-testid="power-y-axis"
             />
-          ) : null}
-          <path
-            d={path(plot, series.solid)}
-            fill="none"
-            className="stroke-gold"
-            strokeWidth={2}
-            strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
-            data-series="measured"
-          />
-          {series.extrapolated.length > 0 ? (
+            {spec.cap !== null ? <VerticalMark x={plotX(plot, spec.cap)} className="stroke-down" dashed /> : null}
+            <VerticalMark x={plotX(plot, nowOnAxis)} className="stroke-muted" dashed />
+            {series.cappedCrit.length > 0 ? (
+              <path
+                d={path(plot, series.cappedCrit)}
+                fill="none"
+                className="stroke-gold opacity-60"
+                strokeWidth={1.5}
+                strokeDasharray="5 4"
+                vectorEffect="non-scaling-stroke"
+                data-series="capped-crit"
+              />
+            ) : null}
             <path
-              d={path(plot, series.extrapolated)}
+              d={path(plot, series.solid)}
               fill="none"
               className="stroke-gold"
               strokeWidth={2}
-              strokeDasharray="5 4"
+              strokeLinejoin="round"
               vectorEffect="non-scaling-stroke"
-              data-series="extrapolated"
+              data-series="measured"
+            />
+            {series.extrapolated.length > 0 ? (
+              <path
+                d={path(plot, series.extrapolated)}
+                fill="none"
+                className="stroke-gold"
+                strokeWidth={2}
+                strokeDasharray="5 4"
+                vectorEffect="non-scaling-stroke"
+                data-series="extrapolated"
+              />
+            ) : null}
+            {guide !== null ? <VerticalMark x={plotX(plot, guide)} className="stroke-ink" /> : null}
+          </svg>
+          {spec.cap !== null ? (
+            <span
+              className={cn(markLabelClass, 'bottom-1 -translate-x-full pr-1 text-down')}
+              style={{ left: `${String(plotX(plot, spec.cap))}%` }}
+            >
+              {t.heroDetailPowerCap}
+            </span>
+          ) : null}
+          <span
+            className={cn(dotClass, 'bg-muted')}
+            style={{ left: `${String(plotX(plot, nowOnAxis))}%`, top: `${String(plotY(plot, nowPower))}%` }}
+          />
+          {guide !== null ? (
+            <span
+              data-testid="power-guide-point"
+              className={cn(dotClass, 'bg-gold ring-2 ring-bg')}
+              style={{ left: `${String(plotX(plot, guide))}%`, top: `${String(plotY(plot, reading.power))}%` }}
             />
           ) : null}
-          {guide !== null ? <VerticalMark x={plotX(plot, guide)} className="stroke-ink" /> : null}
-        </svg>
-        {spec.cap !== null ? (
-          <span
-            className={cn(markLabelClass, 'bottom-1 -translate-x-full pr-1 text-down')}
-            style={{ left: `${String(plotX(plot, spec.cap))}%` }}
-          >
-            {t.heroDetailPowerCap}
-          </span>
-        ) : null}
-        <span
-          className={cn(dotClass, 'bg-muted')}
-          style={{ left: `${String(plotX(plot, nowOnAxis))}%`, top: `${String(plotY(plot, nowPower))}%` }}
-        />
-        {guide !== null ? (
-          <span
-            data-testid="power-guide-point"
-            className={cn(dotClass, 'bg-gold ring-2 ring-bg')}
-            style={{ left: `${String(plotX(plot, guide))}%`, top: `${String(plotY(plot, reading.power))}%` }}
-          />
-        ) : null}
-      </div>
-      <div className="flex justify-between font-mono text-[10px] text-muted tabular-nums">
-        <span>{formatAxisValue(axis, spec.lo, lang)}</span>
-        <span>{formatAxisValue(axis, spec.hi, lang)}</span>
+        </div>
+        <span aria-hidden="true" />
+        <div className="relative mt-1 h-3" aria-hidden="true" data-testid="power-x-ticks">
+          {spec.ticks.map((tick) => (
+            <span
+              key={tick}
+              data-tick={tick}
+              className={cn(tickLabelClass, 'top-0', LABEL_ANCHOR_CLASS[markLabelAnchor(axisFraction(spec, tick))])}
+              style={{ left: `${String(plotX(plot, tick))}%` }}
+            >
+              {formatAxisTick(axis, tick, lang)}
+            </span>
+          ))}
+        </div>
       </div>
       <p className="m-0 font-mono text-[11px] leading-snug text-ink tabular-nums" aria-live="polite" data-testid="power-readout">
         {readout}

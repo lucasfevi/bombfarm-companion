@@ -207,6 +207,21 @@ describe('PowerBreakdownPanel', () => {
     expect(readout()).toMatch(/^Speed 0\.0 → Power /);
   });
 
+  it('a chart draws a Y axis with gridlines and labels Power and the stat at round ticks along both axes', () => {
+    render(RUNED);
+    click('[data-power-row="crit"]');
+    const chart = query('[data-power-chart="critChance"]');
+    expect(chart.querySelector('[data-testid="power-y-axis"]')).toBeTruthy();
+    const xTicks = [...chart.querySelectorAll<HTMLElement>('[data-testid="power-x-ticks"] [data-tick]')].map((tick) => tick.textContent);
+    expect(xTicks).toEqual(['0%', '25%', '50%', '75%', '100%']);
+    const yTicks = [...chart.querySelectorAll<HTMLElement>('[data-testid="power-y-ticks"] [data-tick]')];
+    expect(yTicks.length).toBeGreaterThanOrEqual(3);
+    expect(yTicks[0].textContent).toBe('0');
+    expect(chart.querySelectorAll('[data-gridline]')).toHaveLength(yTicks.length);
+    expect(chart.querySelector('[data-testid="power-x-ticks"]')?.closest('[role="slider"]')).toBeNull();
+    expect(query('[data-power-chart="critDmg"] [data-series="capped-crit"]')).toBeTruthy();
+  });
+
   it('a cooldown past 17.85% says it is extrapolated', () => {
     render(RUNED);
     click('[data-power-row="cooldown"]');
@@ -241,7 +256,7 @@ describe('PowerBreakdownPanel', () => {
     const nowLabel = query('[data-power-chart="explosaoAmpla"] [data-testid="power-now-label"]');
     expect(nowLabel.dataset.anchor).toBe('start');
     expect(nowLabel.style.left).toBe('0%');
-    expect(query('[data-power-chart="explosaoAmpla"] [data-testid="power-y-max"]').closest('[role="slider"]')).toBeNull();
+    expect(query('[data-power-chart="explosaoAmpla"] [data-testid="power-y-ticks"]').closest('[role="slider"]')).toBeNull();
     expect(nowLabel.closest('[role="slider"]')).toBeNull();
   });
 

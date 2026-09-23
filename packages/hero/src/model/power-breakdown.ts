@@ -114,10 +114,66 @@ const CHECKED_MAX: Partial<Record<GamePowerAxis, number>> = {
   cdr: GAME_POWER_CDR_CHECKED_MAX_PCT,
 };
 
+const NICE_MULTIPLIERS = [1, 2, 2.5, 3, 5] as const;
+const TICK_STEP_COUNTS = [4, 5, 6] as const;
+const MAX_FALLBACK_STEPS = 5;
+const TICK_EPSILON = 1e-9;
+
+/** Twelve significant digits: enough for any tick, few enough to drop `lo + i × step` float dust. */
+function roundTick(value: number): number {
+  return Number(value.toPrecision(12));
+}
+
+function isNiceStep(step: number): boolean {
+  if (!(step > 0)) return false;
+  const magnitude = 10 ** Math.floor(Math.log10(step));
+  const mantissa = step / magnitude;
+  return NICE_MULTIPLIERS.some((multiplier) => Math.abs(mantissa - multiplier) < 1e-6);
+}
+
+function niceStepAtLeast(minimum: number): number {
+  const magnitude = 10 ** Math.floor(Math.log10(minimum));
+  for (const scale of [1, 10]) {
+    for (const multiplier of NICE_MULTIPLIERS) {
+      const step = multiplier * magnitude * scale;
+      if (step >= minimum - TICK_EPSILON * magnitude) return step;
+    }
+  }
+  return 10 * magnitude;
+}
+
+export type NiceAxis = { readonly lo: number; readonly hi: number; readonly ticks: readonly number[] };
+
+/**
+ * Ticks for `[lo, hi]` at a nice step (1, 2, 2.5, 3 or 5 × 10ⁿ), both ends among them. A range that
+ * 4–6 nice steps already divide keeps its ends; any other is widened out to the next nice step,
+ * so a range stretched to reach an odd value still ends on a round number.
+ */
+export function niceAxis(lo: number, hi: number): NiceAxis {
+  const span = hi - lo;
+  if (!(span > 0)) return { lo, hi, ticks: [lo] };
+  for (const steps of TICK_STEP_COUNTS) {
+    const step = span / steps;
+    if (isNiceStep(step) && Math.abs(lo / step - Math.round(lo / step)) < 1e-6) {
+      return { lo, hi, ticks: Array.from({ length: steps + 1 }, (_, index) => roundTick(lo + index * step)) };
+    }
+  }
+  const step = niceStepAtLeast(span / MAX_FALLBACK_STEPS);
+  const niceLo = roundTick(Math.floor(lo / step + TICK_EPSILON) * step);
+  const niceHi = roundTick(Math.ceil(hi / step - TICK_EPSILON) * step);
+  const steps = Math.round((niceHi - niceLo) / step);
+  return {
+    lo: niceLo,
+    hi: niceHi,
+    ticks: Array.from({ length: steps + 1 }, (_, index) => roundTick(niceLo + index * step)),
+  };
+}
+
 export type PowerAxisSpec = {
   readonly axis: GamePowerAxis;
   readonly lo: number;
   readonly hi: number;
+  readonly ticks: readonly number[];
   readonly cap: number | null;
   /** Past this value the curve is drawn dashed and the readout says it is extrapolated. */
   readonly checkedMax: number | null;
@@ -133,10 +189,15 @@ export function powerAxisSpec(input: GamePowerInput, axis: GamePowerAxis): Power
     axis === 'attack' ? [0, Math.max(1, POWER_ATTACK_RANGE_MULTIPLE * input.sheet.attack)] : FIXED_RANGES[axis];
   const current = gamePowerAxisValue(input, axis);
   const integer = axis === 'explosaoAmpla';
+  const range = niceAxis(
+    Math.min(fixedLo, integer ? Math.floor(current) : current),
+    Math.max(fixedHi, integer ? Math.ceil(current) : current),
+  );
   return {
     axis,
-    lo: Math.min(fixedLo, integer ? Math.floor(current) : current),
-    hi: Math.max(fixedHi, integer ? Math.ceil(current) : current),
+    lo: range.lo,
+    hi: range.hi,
+    ticks: range.ticks,
     cap: CAPS[axis] ?? null,
     checkedMax: CHECKED_MAX[axis] ?? null,
     integer,
@@ -160,9 +221,10 @@ export type PowerChartSeries = {
   readonly extrapolated: readonly GamePowerPoint[];
   readonly cappedCrit: readonly GamePowerPoint[];
   readonly yMax: number;
+  readonly yTicks: readonly number[];
 };
 
-const Y_HEADROOM = 1.08;
+const Y_HEADROOM = 1.02;
 
 function withCappedCritChance(input: GamePowerInput): GamePowerInput {
   return withGamePowerAxis(input, 'critChance', STAT_CAPS.critChance);
@@ -174,7 +236,8 @@ export function powerChartSeries(input: GamePowerInput, spec: PowerAxisSpec): Po
   const extrapolated = split < spec.hi ? curveBetween(input, spec, split, spec.hi) : [];
   const cappedCrit = spec.cappedCritLine ? curveBetween(withCappedCritChance(input), spec, spec.lo, spec.hi) : [];
   const tallest = Math.max(gamePower(input), ...[...solid, ...extrapolated, ...cappedCrit].map((point) => point.power));
-  return { solid, extrapolated, cappedCrit, yMax: tallest > 0 ? tallest * Y_HEADROOM : 1 };
+  const yAxis = niceAxis(0, tallest > 0 ? tallest * Y_HEADROOM : 1);
+  return { solid, extrapolated, cappedCrit, yMax: yAxis.hi, yTicks: yAxis.ticks };
 }
 
 export type PowerReading = {
@@ -317,6 +380,22 @@ export function formatAxisValue(axis: GamePowerAxis, value: number, lang: Lang):
       return formatCompactNumber(value, lang, 1);
     case 'explosaoAmpla':
       return String(Math.round(value));
+  }
+}
+
+/** A whole-number tick drops the decimal a readout keeps: `25%`, not `25.0%`. */
+export function formatAxisTick(axis: GamePowerAxis, value: number, lang: Lang): string {
+  if (!Number.isInteger(value)) return formatAxisValue(axis, value, lang);
+  switch (axis) {
+    case 'critChance':
+    case 'cdr':
+    case 'luck':
+      return `${formatNumber(value, lang, 0)}%`;
+    case 'speed':
+    case 'penetration':
+      return formatNumber(value, lang, 0);
+    default:
+      return formatAxisValue(axis, value, lang);
   }
 }
 

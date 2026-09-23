@@ -265,6 +265,7 @@ export {
   axisFraction,
   axisValueAtFraction,
   clampToAxis,
+  formatAxisTick,
   formatAxisValue,
   formatMultiplier,
   formatPowerDelta,
@@ -272,6 +273,7 @@ export {
   formatShare,
   isGuideKey,
   markLabelAnchor,
+  niceAxis,
   powerAxisSpec,
   powerChartSeries,
   formatSignedPct,
@@ -284,6 +286,7 @@ export {
 export type {
   GuideKey,
   MarkLabelAnchor,
+  NiceAxis,
   PowerAxisSpec,
   PowerChartSeries,
   PowerFactorRow,

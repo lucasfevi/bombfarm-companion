@@ -14,10 +14,12 @@ import {
   POWER_ROW_AXES,
   POWER_ROW_IDS,
   axisValueAtFraction,
+  formatAxisTick,
   formatAxisValue,
   formatPowerFigure,
   formatSignedPct,
   markLabelAnchor,
+  niceAxis,
   powerMismatchPct,
   powerAxisSpec,
   powerChartSeries,
@@ -85,10 +87,6 @@ describe('powerAxisSpec', () => {
   ] as const)('%s runs %d to %d with cap %s', (axis, lo, hi, cap) => {
     const spec = powerAxisSpec(INPUT, axis);
     expect([spec.lo, spec.hi, spec.cap]).toEqual([lo, hi, cap]);
-  });
-
-  it('attack runs to 2.2 times the hero’s own attack', () => {
-    expect(powerAxisSpec(INPUT, 'attack').hi).toBeCloseTo(2.2 * INPUT.sheet.attack, 6);
   });
 
   it('only cooldown carries a checked bound, at 17.85%', () => {
@@ -266,5 +264,86 @@ describe('formatting', () => {
     const spec = powerAxisSpec(INPUT, 'cdr');
     const text = powerReadoutText(powerReading(INPUT, spec, 0), 'Cooldown', spec, 'en', t);
     expect(text).toMatch(/^Cooldown 0\.0% → Power [\d.]+M \(−[\d.]+M, −[\d.]+% from now\)$/);
+  });
+});
+
+describe('niceAxis', () => {
+  it.each([
+    ['critChance', [0, 25, 50, 75, 100]],
+    ['cdr', [0, 20, 40, 60, 80]],
+    ['speed', [0, 50, 100, 150, 200]],
+    ['energy', [0, 3000, 6000, 9000, 12_000]],
+    ['explosaoAmpla', [0, 5, 10, 15, 20]],
+    ['critDmg', [0, 500, 1000, 1500, 2000]],
+    ['penetration', [0, 30, 60, 90, 120, 150]],
+    ['luck', [0, 50, 100, 150, 200, 250, 300]],
+  ] as const)('%s ticks at round values across its fixed range', (axis, ticks) => {
+    expect(powerAxisSpec(INPUT, axis).ticks).toEqual(ticks);
+  });
+
+  it('attack runs to a round value at or past 2.2 times the hero’s attack, and ends on a tick', () => {
+    const spec = powerAxisSpec(INPUT, 'attack');
+    expect(spec.hi).toBeGreaterThanOrEqual(2.2 * INPUT.sheet.attack);
+    expect(spec.ticks.at(-1)).toBe(spec.hi);
+    expect(spec.ticks).toEqual([0, 50_000, 100_000, 150_000, 200_000, 250_000]);
+  });
+
+  it.each([
+    ['speed', 260],
+    ['energy', 15_300],
+    ['critChance', 131],
+    ['cdr', 92],
+    ['penetration', -4],
+    ['luck', 347],
+  ] as const)('%s stretched to reach %d still ticks at round values that cover it', (axis, value) => {
+    const spec = powerAxisSpec(withGamePowerAxis(INPUT, axis, value), axis);
+    expect(spec.lo).toBeLessThanOrEqual(value);
+    expect(spec.hi).toBeGreaterThanOrEqual(value);
+    expect(spec.ticks[0]).toBe(spec.lo);
+    expect(spec.ticks.at(-1)).toBe(spec.hi);
+    const step = spec.ticks[1] - spec.ticks[0];
+    const mantissa = step / 10 ** Math.floor(Math.log10(step));
+    expect([1, 2, 2.5, 3, 5].some((nice) => Math.abs(nice - mantissa) < 1e-9), `step ${String(step)}`).toBe(true);
+  });
+
+  it('every axis, and the Power axis of every chart, gets at least three distinct ticks inside its range', () => {
+    for (const axis of GAME_POWER_AXES) {
+      const spec = powerAxisSpec(INPUT, axis);
+      const { yTicks, yMax } = powerChartSeries(INPUT, spec);
+      for (const [ticks, lo, hi] of [
+        [spec.ticks, spec.lo, spec.hi],
+        [yTicks, 0, yMax],
+      ] as const) {
+        expect(ticks.length, axis).toBeGreaterThanOrEqual(3);
+        expect(new Set(ticks).size, axis).toBe(ticks.length);
+        expect([...ticks].sort((a, b) => a - b), axis).toEqual(ticks);
+        for (const tick of ticks) {
+          expect(tick, axis).toBeGreaterThanOrEqual(lo);
+          expect(tick, axis).toBeLessThanOrEqual(hi);
+        }
+        expect(ticks[0]).toBe(lo);
+        expect(ticks.at(-1)).toBe(hi);
+      }
+    }
+  });
+
+  it('the Power axis starts at zero and clears the tallest line', () => {
+    const series = powerChartSeries(INPUT, powerAxisSpec(INPUT, 'critDmg'));
+    expect(series.yTicks[0]).toBe(0);
+    expect(series.yMax).toBeGreaterThan(Math.max(...series.cappedCrit.map((point) => point.power)));
+  });
+
+  it('a whole-number tick drops the readout’s decimal, and keeps its unit', () => {
+    expect(formatAxisTick('critChance', 25, 'en')).toBe('25%');
+    expect(formatAxisTick('speed', 150, 'pt')).toBe('150');
+    expect(formatAxisTick('critDmg', 500, 'en')).toBe('+500%');
+    expect(formatAxisTick('energy', 12_000, 'en')).toBe('12,000');
+    expect(formatAxisTick('attack', 50_000, 'en')).toBe('50k');
+    expect(formatAxisTick('luck', 2.5, 'en')).toBe('2.5%');
+  });
+
+  it('a range nothing divides nicely widens to the next round step', () => {
+    expect(niceAxis(0, 246_497)).toEqual({ lo: 0, hi: 250_000, ticks: [0, 50_000, 100_000, 150_000, 200_000, 250_000] });
+    expect(niceAxis(0, 7).ticks).toEqual([0, 2, 4, 6, 8]);
   });
 });
