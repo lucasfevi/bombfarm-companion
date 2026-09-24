@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import {
   gamePower,
   gamePowerAxisValue,
@@ -16,6 +16,7 @@ import {
   clampToAxis,
   formatAxisTick,
   formatPowerFigure,
+  groupCoincidentMarkers,
   isGuideKey,
   markLabelAnchor,
   placeStripLabels,
@@ -114,18 +115,32 @@ export function PowerFactorChart({
   const plot: Plot = { spec, yMax: series.yMax };
   const plotRef = useRef<HTMLDivElement | null>(null);
   const [guide, setGuide] = useState<number | null>(null);
+  const [plotWidth, setPlotWidth] = useState<number | null>(null);
+
+  useEffect(() => {
+    const plotElement = plotRef.current;
+    if (!plotElement || typeof ResizeObserver === 'undefined') return;
+    const measure = () => setPlotWidth(plotElement.getBoundingClientRect().width);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(plotElement);
+    return () => observer.disconnect();
+  }, []);
 
   const now = gamePowerAxisValue(input, axis);
   const nowOnAxis = Math.min(spec.hi, Math.max(spec.lo, now));
   const nowPower = gamePower(input);
-  const stripLabels = placeStripLabels([
-    { id: 'now', fraction: axisFraction(spec, nowOnAxis), text: t.heroDetailPowerNow },
-    ...markers.map((marker) => ({
-      id: String(marker.points),
-      fraction: axisFraction(spec, marker.x),
-      text: `+${String(marker.points)}`,
-    })),
-  ]);
+  const stripLabels = placeStripLabels(
+    [
+      { id: 'now', fraction: axisFraction(spec, nowOnAxis), text: t.heroDetailPowerNow },
+      ...groupCoincidentMarkers(markers).map(({ marker, label }) => ({
+        id: String(marker.points),
+        fraction: axisFraction(spec, marker.x),
+        text: `+${label.split(' ').join('')}`,
+      })),
+    ],
+    plotWidth,
+  );
   const reading = powerReading(input, spec, guide ?? now);
   const readout = powerReadoutText(reading, axisLabel, spec, lang, t);
   const path = spec.integer ? stairPath : linePath;

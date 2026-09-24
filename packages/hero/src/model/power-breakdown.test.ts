@@ -18,6 +18,7 @@ import {
   formatAxisValue,
   formatPowerFigure,
   formatSignedPct,
+  groupCoincidentMarkers,
   markLabelAnchor,
   niceAxis,
   placeStripLabels,
@@ -399,6 +400,26 @@ describe('stat-point markers', () => {
     expect(powerPointsLegend([ten, fifty], 'en', heroCopyFor('en'))).toMatch(/\+50 points: [\d.]+M \(\+[\d.]+%, at the cap\)$/);
   });
 
+  it('two markers both past the cap share one spot, one label and one legend entry', () => {
+    const steep = { ...DELTA, critChance: 5 };
+    const spec = powerAxisSpec(INPUT, 'critChance', steep);
+    const markers = powerPointMarkers(INPUT, spec, steep);
+    expect(markers.map((marker) => [marker.x, marker.atCap])).toEqual([
+      [100, true],
+      [100, true],
+    ]);
+    const groups = groupCoincidentMarkers(markers);
+    expect(groups.map((group) => group.label)).toEqual(['10 / +50']);
+    expect(powerPointsLegend(markers, 'en', heroCopyFor('en'))).toMatch(/^\+10 \/ \+50 points: [\d.]+M \(\+[\d.]+%, at the cap\)$/);
+    expect(powerPointsLegend(markers, 'pt', heroCopyFor('pt'))).toMatch(/^\+10 \/ \+50 pontos: [\d.]+M \(\+[\d,]+%, no limite\)$/);
+  });
+
+  it('markers at different spots stay separate', () => {
+    const spec = powerAxisSpec(INPUT, 'speed', DELTA);
+    const groups = groupCoincidentMarkers(powerPointMarkers(INPUT, spec, DELTA));
+    expect(groups.map((group) => group.label)).toEqual(['10', '50']);
+  });
+
   it('a cooldown marker past the checked bound says it is extrapolated', () => {
     const spec = powerAxisSpec(INPUT, 'cdr', DELTA);
     const [, fifty] = powerPointMarkers(INPUT, spec, DELTA);
@@ -449,6 +470,23 @@ describe('placeStripLabels', () => {
       ['10', 'center'],
       ['50', 'end'],
     ]);
+  });
+
+  it('once the plot is measured, a label that fits there is kept even where the unmeasured width would drop it', () => {
+    const labels = [
+      { id: 'now', fraction: 0.5, text: 'now' },
+      { id: '10', fraction: 0.56, text: '+10' },
+    ];
+    expect(placeStripLabels(labels).map((label) => label.id)).toEqual(['now']);
+    expect(placeStripLabels(labels, 674).map((label) => label.id)).toEqual(['now', '10']);
+  });
+
+  it.each([0, -1, Number.NaN, null])('an unusable measured width (%s) falls back to the unmeasured one', (width) => {
+    const labels = [
+      { id: 'now', fraction: 0.5, text: 'now' },
+      { id: '10', fraction: 0.56, text: '+10' },
+    ];
+    expect(placeStripLabels(labels, width)).toEqual(placeStripLabels(labels));
   });
 
   it('a marker label that clears "now" but not the other marker keeps the nearer one only', () => {

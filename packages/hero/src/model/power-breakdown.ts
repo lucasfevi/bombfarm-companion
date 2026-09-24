@@ -354,16 +354,17 @@ export type StripLabel = { readonly id: string; readonly fraction: number; reado
 export type PlacedStripLabel = StripLabel & { readonly anchor: MarkLabelAnchor };
 
 /**
- * The narrowest plot the chart is laid out for, and a generous per-character width for the
- * 10px label type: labels that clear each other at this width clear each other at any wider one.
+ * The width assumed before the plot has been measured: narrower than any plot the layout
+ * produces, so labels that clear each other here clear each other once measured. The
+ * per-character width is generous for the 10px label type.
  */
-const MIN_PLOT_WIDTH_PX = 240;
+const UNMEASURED_PLOT_WIDTH_PX = 240;
 const LABEL_CHAR_PX = 6.5;
 const LABEL_PAD_PX = 4;
 const LABEL_GAP_PX = 4;
 
-function labelExtentPx(label: StripLabel, anchor: MarkLabelAnchor): readonly [number, number] {
-  const x = label.fraction * MIN_PLOT_WIDTH_PX;
+function labelExtentPx(label: StripLabel, anchor: MarkLabelAnchor, plotWidthPx: number): readonly [number, number] {
+  const x = label.fraction * plotWidthPx;
   const width = label.text.length * LABEL_CHAR_PX + LABEL_PAD_PX;
   if (anchor === 'start') return [x, x + width];
   if (anchor === 'end') return [x - width, x];
@@ -375,11 +376,15 @@ function labelExtentPx(label: StripLabel, anchor: MarkLabelAnchor): readonly [nu
  * every label already kept, so the first ("now") always shows and a marker label that would
  * touch it is dropped — the legend under the chart still carries every marker's figures.
  */
-export function placeStripLabels(labels: readonly StripLabel[]): readonly PlacedStripLabel[] {
+export function placeStripLabels(
+  labels: readonly StripLabel[],
+  plotWidthPx: number | null = null,
+): readonly PlacedStripLabel[] {
+  const width = plotWidthPx !== null && plotWidthPx > 0 ? plotWidthPx : UNMEASURED_PLOT_WIDTH_PX;
   const placed: { label: PlacedStripLabel; extent: readonly [number, number] }[] = [];
   for (const label of labels) {
     const anchor = markLabelAnchor(label.fraction);
-    const extent = labelExtentPx(label, anchor);
+    const extent = labelExtentPx(label, anchor, width);
     const clear = placed.every(
       ({ extent: other }) => extent[0] >= other[1] + LABEL_GAP_PX || other[0] >= extent[1] + LABEL_GAP_PX,
     );
@@ -388,16 +393,29 @@ export function placeStripLabels(labels: readonly StripLabel[]): readonly Placed
   return placed.map(({ label }) => label);
 }
 
+/** Markers drawn at the same spot — both past the cap, typically — shown as one: "+10 / +50". */
+export type PowerMarkerGroup = { readonly marker: PowerPointMarker; readonly label: string };
+
+export function groupCoincidentMarkers(markers: readonly PowerPointMarker[]): readonly PowerMarkerGroup[] {
+  const groups: { marker: PowerPointMarker; points: number[] }[] = [];
+  for (const marker of markers) {
+    const last = groups.at(-1);
+    if (last && last.marker.x === marker.x) last.points.push(marker.points);
+    else groups.push({ marker, points: [marker.points] });
+  }
+  return groups.map(({ marker, points }) => ({ marker, label: points.map(String).join(' / +') }));
+}
+
 export function powerPointsLegend(markers: readonly PowerPointMarker[], lang: Lang, t: HeroCopy): string {
-  return markers
-    .map((marker) => {
+  return groupCoincidentMarkers(markers)
+    .map(({ marker, label }) => {
       const notes = [
         formatPowerDelta(marker.reading, lang).pct,
         ...(marker.atCap ? [t.heroDetailPowerAtCap] : []),
         ...(marker.reading.extrapolated ? [t.heroDetailPowerExtrapolatedNote] : []),
       ];
       return sub(t.heroDetailPowerPointsMarker, {
-        points: marker.points,
+        points: label,
         power: formatPowerFigure(marker.reading.power),
         change: notes.join(', '),
       });
