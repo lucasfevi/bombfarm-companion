@@ -155,7 +155,14 @@ describe('the snapshot builder', () => {
   const pricingSource = (file) =>
     readFileSync(join(root, 'packages/pricing/src/market', file), 'utf-8');
   const callsFetch = (source) => /\bfetch\s*\(/.test(source);
-  const SHIPPED = ['discover.ts', 'endpoints.ts', 'reconcile.ts', 'snapshot.ts', 'resolve.ts'];
+  const SHIPPED = [
+    'discover.ts',
+    'endpoints.ts',
+    'names.ts',
+    'reconcile.ts',
+    'snapshot.ts',
+    'resolve.ts',
+  ];
 
   it('performs every network call itself, so no shipped package can reach Steam', () => {
     expect(callsFetch(builder)).toBe(true);

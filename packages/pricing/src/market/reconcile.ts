@@ -1,195 +1,108 @@
-import type { DiscoveryRow } from './discover.js';
-import {
-  LEVEL_CHEST_DEF_PREFIX,
-  actChestFamilyFor,
-  catalogSlotFor,
-  defPrefixFor,
-  isKnownCategory,
-  itemKindFor,
-  rarityIdxFor,
-  steamRarityFor,
-  steamSlotFor,
-} from './tags.js';
-import type { Anomaly, FacetName, MarketCoverage, MarketEntry } from './types.js';
-import { HERO_CATEGORY, categoryKey, heroPriceKey, priceKey } from './types.js';
-
-/** One committed catalog definition, as `catalog.json` records it. */
-export interface CatalogDef {
-  defId: string;
-  set: string;
-  slot: string;
-  level: number;
-}
-
-export interface CatalogView {
-  defs: CatalogDef[];
-  rarityIdxs: number[];
-  /**
-   * Rarity index -> the token a `def_id` spells it with. Not the catalog's rarity `code`: the
-   * fixtures carry `time_part_epico` where the code for that index is `superraro`, so the token
-   * follows the rarity's label instead. The builder derives these from the catalog's own labels
-   * rather than hardcoding them here.
-   */
-  rarityTokens: Record<number, string>;
-  /**
-   * Steam market hash -> the `def_id` an owned copy carries, for the categories no facet
-   * separates. Today that is gems only: every gem row is `category=gem` plus a rarity, and
-   * nothing else tells Sapphire from Emerald. Supplied by the caller from committed game data
-   * rather than tabled here, so a gem added by a patch needs no code change.
-   *
-   * Required rather than optional on purpose: an optional field silently reproduces an
-   * unlinkable row the moment a caller forgets it.
-   */
-  defIdByHash: Record<string, string>;
-}
+import { generateMarketNames } from './names.js';
+import type { CatalogView, MarketName } from './names.js';
+import type { Anomaly, MarketCoverage, MarketEntry, SearchRow } from './types.js';
+import { HERO_CATEGORY, SKIN_CATEGORY, categoryKey, heroPriceKey, priceKey } from './types.js';
 
 export interface Reconciliation {
   entries: MarketEntry[];
   anomalies: Anomaly[];
 }
 
-const asNumber = (value: string | undefined): number | null => {
-  if (value == null) return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-};
-
 /**
- * Turn every discovered market row into a priceable entry.
+ * Turn every enumerated market row into a priceable entry.
  *
- * Equipment resolves to a catalog `defId` from the set and slot it was queried under. Gate Keys
- * and Time Parts resolve to one too, because their `def_id`s are a fixed prefix plus the rarity.
- * Everything else — chests, hero cages, skill stones, gems, skins — has no catalog def at all, so
- * it earns a key built from the facets Steam publishes for it instead. Nothing is dropped: a row
- * the catalog cannot explain is still enumerated, still priced, and still addressable.
+ * A row's identity comes from looking its market hash up in the names the committed catalog says
+ * this app can carry. That is not parsing the name: the generator starts from an identity it
+ * already knows and builds the name that identity should be listed under, so a name form the game
+ * changes stops matching instead of being read wrong. The row then goes unkeyed and is reported —
+ * never keyed by a near miss, and never given another item's price.
+ *
+ * Nothing is dropped: a row nothing here can explain is still enumerated, still priced, and still
+ * addressable by its own hash.
  */
 export function reconcile(
-  rows: DiscoveryRow[],
+  rows: SearchRow[],
   catalog: CatalogView,
   fetchedUtc: string,
 ): Reconciliation {
+  const names = generateMarketNames(catalog);
   const anomalies: Anomaly[] = [];
-  const defsBySetSlot = new Map<string, CatalogDef>();
-  for (const def of catalog.defs) defsBySetSlot.set(`${def.set}|${def.slot}`, def);
-
   const entries: MarketEntry[] = [];
   const seenHashes = new Set<string>();
 
-  for (const discovered of rows) {
-    const { tags } = discovered;
-    const hashName = discovered.row.hashName;
-    if (seenHashes.has(hashName)) continue;
-    seenHashes.add(hashName);
+  for (const row of rows) {
+    if (seenHashes.has(row.hashName)) continue;
+    seenHashes.add(row.hashName);
 
-    const slot = tags.slot == null ? null : catalogSlotFor(tags.slot);
-    if (tags.slot != null && slot == null) {
-      anomalies.push({
-        kind: 'unknown-slot-tag',
-        detail: `no catalog slot for Steam tag "${tags.slot}"`,
-      });
-    }
+    const identity = names.get(row.hashName) ?? null;
+    const entry = entryFor(row, identity, fetchedUtc);
 
-    const rarityIdx = tags.rarity == null ? null : rarityIdxFor(tags.rarity);
-    if (tags.rarity != null && rarityIdx == null) {
-      anomalies.push({
-        kind: 'unknown-rarity-tag',
-        detail: `no catalog rarity for Steam tag "${tags.rarity}"`,
-      });
-    }
-
-    const category = tags.category ?? null;
-    // A category with no `ItemKind` is fine — the row is still keyed and still priced. Only a
-    // category nothing here has ever seen is worth raising.
-    const kind = category == null ? null : itemKindFor(category);
-    if (category != null && !isKnownCategory(category)) {
-      anomalies.push({
-        kind: 'unknown-category-tag',
-        detail: `Steam category "${category}" is new here; it is priced but has no item kind`,
-      });
-    }
-
-    const def =
-      tags.set != null && slot != null ? (defsBySetSlot.get(`${tags.set}|${slot}`) ?? null) : null;
-    if (tags.set != null && slot != null && def == null) {
-      anomalies.push({
-        kind: 'unknown-set-tag',
-        detail: `no catalog def for set "${tags.set}" slot "${slot}"`,
-      });
-    }
-
-    const act = asNumber(tags.act);
-    const level = asNumber(tags.level) ?? def?.level ?? null;
-    const defId =
-      def?.defId ?? categoryDefId(category, rarityIdx, catalog, level, act, hashName);
-
-    const keyable = { hashName, category, defId, rarityIdx, level, act };
-    const key = keyForEntry(keyable);
-    if (!isFullyIdentified(keyable)) {
+    // Asked of the entry rather than of the match, so a generated family that turns out not to
+    // produce a key an owner can reach is reported too, instead of only an outright miss.
+    if (!isFullyIdentified(entry)) {
       anomalies.push({
         kind: 'unlinkable-item',
-        detail: `${hashName} (category ${category ?? 'none'}) is priced but no owned copy can look it up`,
+        detail:
+          identity == null
+            ? `${row.hashName} matches no name the catalog can generate, so it is priced and no owned copy can look it up`
+            : `${row.hashName} generates as ${identity.category} and still earns no key an owned copy can produce`,
       });
     }
+    if (identity != null) {
+      const drift = nameFormDrift(row, identity);
+      if (drift != null) anomalies.push(drift);
+    }
 
-    entries.push({
-      hashName,
-      name: discovered.row.name,
-      key,
-      defId,
-      kind: def != null ? 'equipment' : kind,
-      category,
-      set: tags.set ?? null,
-      slot,
-      rarityIdx,
-      level,
-      act,
-      lowestNative: {},
-      nativeQuotedUtc: null,
-      lowestUsd: discovered.row.sellPriceCents == null ? null : discovered.row.sellPriceCents / 100,
-      listings: discovered.row.listings,
-      iconUrl: discovered.row.iconUrl,
-      fetchedUtc,
-    });
+    entries.push(entry);
   }
 
   return { entries, anomalies };
 }
 
+function entryFor(row: SearchRow, identity: MarketName | null, fetchedUtc: string): MarketEntry {
+  const keyable = {
+    hashName: row.hashName,
+    category: identity?.category ?? null,
+    defId: identity?.defId ?? null,
+    rarityIdx: identity?.rarityIdx ?? null,
+  };
+
+  return {
+    hashName: row.hashName,
+    name: row.name,
+    key: keyForEntry(keyable),
+    defId: keyable.defId,
+    kind: identity?.kind ?? null,
+    category: keyable.category,
+    set: identity?.set ?? null,
+    slot: identity?.slot ?? null,
+    rarityIdx: keyable.rarityIdx,
+    level: identity?.level ?? null,
+    act: identity?.act ?? null,
+    lowestNative: {},
+    nativeQuotedUtc: null,
+    lowestUsd: row.sellPriceCents == null ? null : row.sellPriceCents / 100,
+    listings: row.listings,
+    iconUrl: row.iconUrl,
+    fetchedUtc,
+  };
+}
+
 /**
- * The catalog def an owned copy of this row would carry, so a player's item finds its price.
+ * Steam's own `type` for the row against the slot the matched name implies.
  *
- * Three shapes, each read off a facet rather than the hash name: a fixed prefix plus the rarity's
- * own token (`map_key_raro`, `time_part_epico`, `skill_stone_epico`), a fixed prefix plus a level
- * (`chest_item_30`), and gems, which no facet separates and which the caller names in
- * `defIdByHash`.
- *
- * Returns null for anything whose def cannot be known — the act-scoped chests especially, where
- * an owned `chest_time_2` numbers a rarity tier and the market row numbers an act. Those stay
- * keyed by hash, priced but unreachable from an inventory, which is the truthful outcome.
+ * The enumeration returns this field for free, and it is not a source — the generated match
+ * already settled what the row is. It is the early warning: a row that still matches a generated
+ * name while Steam types it as a different slot means the name form has moved under us, and the
+ * next form change will be the one that matches nothing at all.
  */
-function categoryDefId(
-  category: string | null,
-  rarityIdx: number | null,
-  catalog: CatalogView,
-  level: number | null,
-  act: number | null,
-  hashName: string,
-): string | null {
-  if (category == null) return null;
-
-  if (category === 'gem') return catalog.defIdByHash[hashName] ?? null;
-
-  if (category === 'chest') {
-    const family = actChestFamilyFor(hashName);
-    if (family != null) return act == null ? null : `${family}_${String(act)}`;
-    return level == null ? null : `${LEVEL_CHEST_DEF_PREFIX}_${String(level)}`;
-  }
-
-  if (rarityIdx == null) return null;
-  const prefix = defPrefixFor(category);
-  const token = catalog.rarityTokens[rarityIdx];
-  if (prefix == null || token == null) return null;
-  return `${prefix}_${token}`;
+function nameFormDrift(row: SearchRow, identity: MarketName): Anomaly | null {
+  if (identity.type == null || row.type == null) return null;
+  if (row.type.trim() === identity.type) return null;
+  return {
+    kind: 'name-form-drift',
+    detail: `${row.hashName} generates as a ${identity.type} and Steam types it "${row.type}"; the name form has moved`,
+  };
 }
 
 /** The identity a key is derived from — the fields a `MarketEntry` already carries. */
@@ -198,98 +111,36 @@ export interface KeyableEntry {
   category: string | null;
   defId: string | null;
   rarityIdx: number | null;
-  level: number | null;
-  act: number | null;
 }
 
 /**
- * The key an entry is addressed by, derived from its identity and nothing else.
- *
- * Derived rather than decided once, so that an entry whose identity is completed after the fact —
- * a rate-limited run inheriting the previous snapshot's tags — ends up addressed by the same key
- * a run that tagged it itself would have produced.
+ * The key an entry is addressed by, derived from its identity and nothing else — the same key an
+ * owned copy of the item produces.
  */
 export function keyForEntry(entry: KeyableEntry): string {
   // A hero has no def and needs none: rarity is its whole identity on the market.
   if (entry.category === HERO_CATEGORY && entry.rarityIdx != null) {
     return heroPriceKey(entry.rarityIdx);
   }
-  const rarityIdx = entry.rarityIdx ?? chestRarityIdx(entry);
-  if (entry.defId != null && rarityIdx != null) {
-    return priceKey(entry.defId, rarityIdx);
+  if (entry.defId != null && entry.rarityIdx != null) {
+    return priceKey(entry.defId, entry.rarityIdx);
   }
-  // Equipment that never got a set, slot or rarity must not share a key with the def it belongs
-  // to; keying it by name keeps it addressable without letting it claim another item's price.
+  // A row whose name matched nothing must not share a key with the item it resembles; keying it by
+  // its own hash keeps it addressable without letting it claim another item's price.
   return categoryKey(entry.category ?? 'unknown', entry.hashName);
 }
 
 /**
  * True when an entry answers to a key an owned copy can produce, rather than falling back to its
- * own hash name. That fallback means the row is priced and no owned copy can reach it — either
- * because the tag passes never said what it is, or because the catalog cannot explain what they
- * said. A skin is the one row for which the hash key is the honest end state: it is a field on a
- * hero rather than an inventory item, so it has no owned counterpart to fail to reach.
+ * own hash name. That fallback means the row is priced and no owned copy can reach it, because its
+ * name matched nothing the catalog can generate. A skin is the one row for which the hash key is
+ * the honest end state: it is a field on a hero rather than an inventory item, so it has no owned
+ * counterpart to fail to reach.
  */
 export function isFullyIdentified(entry: KeyableEntry): boolean {
   if (entry.category == null) return false;
-  if (entry.category === 'skin') return true;
+  if (entry.category === SKIN_CATEGORY) return true;
   return keyForEntry(entry) !== categoryKey(entry.category, entry.hashName);
-}
-
-/**
- * The facet tags a previous run established for each row it fully identified, by market hash.
- *
- * This is what lets a sweep tell a row it already knows from one it has never seen. Item identity
- * is near-static, so asking Steam again what a hundred known rows are learns nothing and costs a
- * burst of queries at the rate that gets an address blocked.
- *
- * A row a cut-short pass left half-identified is withheld on purpose, so the next sweep asks about
- * it again rather than inheriting the gap forever — and so is one whose facets cannot be spelled
- * back as the Steam tags they came from, since stamping a partial set would key it by hash and
- * take its price with it.
- */
-export function knownTagsFrom(
-  entries: MarketEntry[],
-): Record<string, Partial<Record<FacetName, string>>> {
-  const known: Record<string, Partial<Record<FacetName, string>>> = {};
-  for (const entry of entries) {
-    if (!isFullyIdentified(entry)) continue;
-    const tags = facetTagsOf(entry);
-    if (tags != null) known[entry.hashName] = tags;
-  }
-  return known;
-}
-
-/** The queries an entry would have come back from, or null if one of them cannot be spelled. */
-function facetTagsOf(entry: MarketEntry): Partial<Record<FacetName, string>> | null {
-  const tags: Partial<Record<FacetName, string>> = {};
-  if (entry.category != null) tags.category = entry.category;
-  if (entry.set != null) tags.set = entry.set;
-  if (entry.level != null) tags.level = String(entry.level);
-  if (entry.act != null) tags.act = String(entry.act);
-
-  if (entry.slot != null) {
-    const slot = steamSlotFor(entry.slot);
-    if (slot == null) return null;
-    tags.slot = slot;
-  }
-  if (entry.rarityIdx != null) {
-    const rarity = steamRarityFor(entry.rarityIdx);
-    if (rarity == null) return null;
-    tags.rarity = rarity;
-  }
-  return tags;
-}
-
-/**
- * An item chest is tagged by level and carries no rarity at all, while an owned one is rarity 0 —
- * so keying it needs that 0 supplied here or the two never meet. An act chest carries an act, and
- * that act IS its tier: `chest_time_2` is the Raro one.
- */
-function chestRarityIdx(entry: KeyableEntry): number | null {
-  if (entry.category !== 'chest') return null;
-  if (actChestFamilyFor(entry.hashName) != null) return entry.act;
-  return entry.level == null ? null : 0;
 }
 
 /**

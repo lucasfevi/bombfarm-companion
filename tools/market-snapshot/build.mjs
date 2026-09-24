@@ -15,18 +15,14 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   MARKET_APP_ID,
-  appFiltersUrl,
   buildSnapshot,
   catalogKeysLost,
   discoverMarket,
-  knownTagsFrom,
   readMarketSnapshot,
   parsePriceOverview,
   parseSearchPage,
   quoteNative,
   reconcile,
-  steamRarityFor,
-  steamSlotFor,
 } from '@bombfarm/pricing';
 
 /**
@@ -68,14 +64,22 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const defaultLog = (message) => console.log(`[market-snapshot] ${message}`);
 
 /**
- * `Topaz` -> `Topaz Gem` -> `gem_topaz`. Steam's market hash for a gem is its display name plus
- * " Gem", which holds for every gem the market has ever listed. Derived here rather than tabled in
- * @bombfarm/pricing: pricing is imported by both shipped apps, and pulling the wiki bundle into it
- * to answer nine gem names would ship the whole file to the renderer.
+ * The anomaly that says the market's own naming has moved. It is reported per row and surfaced
+ * twice — as a run annotation here and in the sweep statistics a long-running caller logs — because
+ * it is the only warning that arrives before a rename takes every equipment price with it.
  */
-function gemDefIdsByHash() {
+const NAME_FORM_DRIFT = 'name-form-drift';
+
+/**
+ * Every gem, with the rarity that fixes it. The market lists a gem as its display name plus " Gem"
+ * and carries no rarity in that name at all, so the bundle is the only place the rarity behind
+ * `gem_emerald#2` can come from. Read here rather than tabled in @bombfarm/pricing: pricing is
+ * imported by both shipped apps, and pulling the wiki bundle into it to answer nine gem names would
+ * ship the whole file to the renderer.
+ */
+function gemsFromBundle() {
   const wiki = JSON.parse(readFileSync(WIKI_PATH, 'utf-8'));
-  return Object.fromEntries(wiki.gems.list.map((gem) => [`${gem.name} Gem`, gem.defId]));
+  return wiki.gems.list.map((gem) => ({ defId: gem.defId, name: gem.name, rarityIdx: gem.rarity }));
 }
 
 export function loadCatalog() {
@@ -91,36 +95,8 @@ export function loadCatalog() {
     rarityTokens: Object.fromEntries(
       raw.rarities.map((rarity) => [rarity.idx, defIdToken(rarity.label)]),
     ),
-    defIdByHash: gemDefIdsByHash(),
-    sets: raw.sets,
-    slots: raw.slots,
+    gems: gemsFromBundle(),
   };
-}
-
-/**
- * Fallback tags for the tagging passes, from the catalog rather than from `appfilters`, which was
- * measured omitting a slot that had a live listing.
- */
-function steamTagsFor(catalog, log) {
-  const missing = [];
-  const translate = (values, translator, label) =>
-    values
-      .map((value) => {
-        const tag = translator(value);
-        if (tag == null) missing.push(`${label} ${String(value)}`);
-        return tag;
-      })
-      .filter((tag) => tag != null);
-
-  const tags = {
-    set: catalog.sets,
-    slot: translate(catalog.slots, steamSlotFor, 'slot'),
-    rarity: translate(catalog.rarityIdxs, steamRarityFor, 'rarity'),
-  };
-  if (missing.length > 0) {
-    log(`WARNING: no Steam tag for ${missing.join(', ')} — those items cannot be priced`);
-  }
-  return tags;
 }
 
 /**
@@ -161,8 +137,6 @@ async function getJson(url) {
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   return res.json();
 }
-
-const fetchAppFilters = (appId) => getJson(appFiltersUrl(appId));
 
 async function fetchSearchPage(url) {
   let res;
@@ -236,17 +210,18 @@ export function summarise(snapshot) {
     defaultLog(`  anomaly [${anomaly.kind}] ${anomaly.detail}`);
   }
 
-  // An unmapped tag does not fail anything — it just makes every item behind it lose its price
-  // silently. Raise it to a run annotation so it is visible without opening the log.
+  // A moved name form does not fail anything yet — the row still matched and is still priced — but
+  // it is the change before the one that matches nothing. Raise it to a run annotation so it is
+  // visible without opening the log.
   //
   // Only Actions renders an annotation. Anywhere else it is a line nobody reads, so a caller off
   // CI is expected to surface the same rows itself — the sweep hands them back in its statistics.
-  const unmapped = snapshot.anomalies.filter((anomaly) => anomaly.kind.startsWith('unknown-'));
-  if (unmapped.length > 0 && process.env.GITHUB_ACTIONS === 'true') {
-    const kinds = [...new Set(unmapped.map((anomaly) => anomaly.kind))].join(', ');
+  const drifted = snapshot.anomalies.filter((anomaly) => anomaly.kind === NAME_FORM_DRIFT);
+  if (drifted.length > 0 && process.env.GITHUB_ACTIONS === 'true') {
     console.log(
-      `::warning title=Unmapped market tags::${unmapped.length} rows the catalog cannot explain (${kinds}). ` +
-        `See packages/pricing/src/market/tags.ts and docs/market-prices.md.`,
+      `::warning title=Market name form has moved::${drifted.length} rows whose Steam type ` +
+        `disagrees with the slot their generated name implies. ` +
+        `See packages/pricing/src/market/names.ts and docs/market-prices.md.`,
     );
   }
   return lines;
@@ -278,7 +253,7 @@ function countingLog(inner) {
  * The real network, as one bundle. Injectable so the sweep can be driven without touching Steam;
  * this is also the only handle through which anything else could reach it.
  */
-const STEAM_NET = { fetchAppFilters, fetchSearchPage, fetchPriceOverview, fetchFx };
+const STEAM_NET = { fetchSearchPage, fetchPriceOverview, fetchFx };
 
 /**
  * Quote every listed row, at the caller's fixed delay. What a one-shot run wants; a long-running
@@ -292,9 +267,10 @@ const QUOTE_EVERY_LISTED_ROW = ({ quotable }) => ({
 const QUOTE_NOTHING = { hashNames: [] };
 
 /**
- * Run one complete sweep: enumerate, tag, reconcile, quote the rotation, build the snapshot.
- * The only Steam-talking entry point in the repository. Returns the artifact and what a caller
- * needs to describe the pass without re-deriving it.
+ * Run one complete sweep: walk the market, reconcile what it found against the names the committed
+ * catalog can generate, quote the rotation, build the snapshot. The only Steam-talking entry point
+ * in the repository. Returns the artifact and what a caller needs to describe the pass without
+ * re-deriving it.
  *
  * Nothing here reads or writes disk state: `prior` is passed in and the snapshot is returned, so
  * the CLI and any longer-lived caller each keep their own resume path.
@@ -319,31 +295,17 @@ export async function runSweep({
   const rateLimits = countingLog(log);
   const sweepLog = rateLimits.log;
 
-  const tags = steamTagsFor(catalog, sweepLog);
   sweepLog(`catalog: ${catalog.defs.length} defs x ${catalog.rarityIdxs.length} rarities`);
 
-  // Counted rather than assumed: the facet schema is one market call per pass on top of the
-  // search pages, and a plan that paces against the total cannot be handed a number missing it.
-  let filterCalls = 0;
-
   const discovery = await discoverMarket(appId, {
-    fetchAppFilters: () => {
-      filterCalls += 1;
-      return steamNet.fetchAppFilters(appId);
-    },
     fetchSearchPage: steamNet.fetchSearchPage,
-    catalogTags: tags,
-    knownTags: knownTagsFrom(prior?.entries ?? []),
     sleep,
     baseDelayMs: searchDelayMs,
     log: sweepLog,
   });
   sweepLog(
-    (discovery.facetSweepRan
-      ? `tagged ${discovery.rows.length} rows in ${discovery.searchCalls} calls`
-      : `carried the tags of ${discovery.rows.length} known rows over ` +
-        `${discovery.searchCalls} calls`) +
-      ` (${discovery.complete ? 'complete' : 'PARTIAL — rate limited'})`,
+    `walked ${discovery.rows.length} rows in ${discovery.searchCalls} calls ` +
+      `(${discovery.complete ? 'complete' : 'PARTIAL — rate limited'})`,
   );
 
   const generatedUtc = new Date(now()).toISOString();
@@ -352,7 +314,9 @@ export async function runSweep({
   // Only rows the enumeration found a listing for: an unlisted row has nothing to quote, and the
   // per-item call is the expensive half of the sweep.
   const quotable = reconciled.entries.filter((entry) => entry.lowestUsd != null);
-  const enumerationCalls = discovery.searchCalls + filterCalls;
+  // The walk is now the whole of what the sweep spends before the rotation: there is no second
+  // endpoint to count, so this and `searchCalls` are the same number.
+  const enumerationCalls = discovery.searchCalls;
   // Every listed row falls to the enumeration when no native currency is configured.
   const plan =
     nativeCurrencies.length > 0
@@ -408,7 +372,10 @@ export async function runSweep({
   });
 
   const quotesAttempted = rotation.length * nativeCurrencies.length;
-  const unmappedTags = snapshot.anomalies.filter((anomaly) => anomaly.kind.startsWith('unknown-'));
+  // Kept under the name the collector and its run table already use. What fills it changed — there
+  // are no facet tags left to go unmapped — but what it means to a reader has not: rows whose
+  // vocabulary this repository can no longer account for, which is why items silently lose prices.
+  const unmappedTags = snapshot.anomalies.filter((anomaly) => anomaly.kind === NAME_FORM_DRIFT);
 
   // Every attempt increments `calls` and only a rate limit retries, so the difference is exactly
   // the 429s the rotation absorbed — but only on a pass that finished. Once the breaker trips,
@@ -449,7 +416,6 @@ export async function runSweep({
     rateLimitHits,
     rateLimitHitsDerived,
     enumerationComplete: discovery.enumerationComplete,
-    facetSweepRan: discovery.facetSweepRan,
     discoveryComplete: discovery.complete,
     quotesComplete: quoted.complete,
     fxOk: fx.ok,
@@ -464,7 +430,7 @@ export async function runSweep({
 async function main() {
   const catalog = loadCatalog();
   const prior = loadPrior(OUT);
-  const { snapshot, stats } = await runSweep({ catalog, prior });
+  const { snapshot } = await runSweep({ catalog, prior });
 
   // The workflow publishes whatever is on disk whether or not this step succeeded, so refusing
   // to write is what keeps the last good snapshot in place — and exiting non-zero is the only
@@ -472,10 +438,10 @@ async function main() {
   // otherwise indistinguishable from a good one: the job is green either way, and the first
   // report comes from a player watching an inventory board read zero.
   //
-  // Gated on the tagging passes, not the enumeration: the enumeration is the cheap tenth of the
-  // sweep and finishes even on a run the quota kills, which is exactly how a full row set can be
-  // published with nothing identified in it.
-  const lost = stats.discoveryComplete ? [] : catalogKeysLost(prior, snapshot, catalog);
+  // Ungated: finishing the walk buys no licence to unname a row. A key can go missing honestly only
+  // by the row leaving the market, which `catalogKeysLost` already allows for — it names a key only
+  // while this run is still carrying the very hash that used to answer to it.
+  const lost = catalogKeysLost(prior, snapshot, catalog);
   if (lost.length === 0) writeFileSync(OUT, JSON.stringify(snapshot));
 
   const lines = summarise(snapshot);
@@ -483,9 +449,9 @@ async function main() {
     lines.push(`REFUSED TO PUBLISH: would lose ${lost.length} catalog keys the last snapshot had`);
     defaultLog(`refusing to publish: ${lost.length} keys lost, e.g. ${lost.slice(0, 5).join(', ')}`);
     console.log(
-      `::error title=Market snapshot would lose coverage::A cut-short run cannot delist anything, ` +
-        `so ${lost.length} catalog keys going missing is this run mis-deriving them. Kept the ` +
-        `previous ${OUT}. See docs/market-prices.md.`,
+      `::error title=Market snapshot would lose coverage::A row still on the market cannot lose its ` +
+        `key honestly, so ${lost.length} catalog keys going missing means the market is spelling ` +
+        `those names differently now. Kept the previous ${OUT}. See docs/market-prices.md.`,
     );
     process.exitCode = 1;
   }

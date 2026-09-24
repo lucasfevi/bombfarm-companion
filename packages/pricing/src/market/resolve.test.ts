@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { CatalogView } from './reconcile.js';
+import type { CatalogView } from './names.js';
 import type { ResolvedPrice } from './resolve.js';
 import {
   oldestQuotedUtc,
@@ -16,7 +16,7 @@ const CATALOG: CatalogView = {
   defs: [{ defId: 'ember_arma', set: 'ember', slot: 'arma', level: 10 }],
   rarityIdxs: [1, 2],
   rarityTokens: { 1: 'incomum', 2: 'raro' },
-  defIdByHash: {},
+  gems: [],
 };
 
 function marketEntry(overrides: Partial<MarketEntry> & { hashName: string }): MarketEntry {

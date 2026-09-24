@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { DiscoveryRow } from './discover.js';
-import { indexEntries, knownTagsFrom, reconcile, type CatalogView } from './reconcile.js';
-import {
-  categoryKey,
-  heroPriceKey,
-  priceKey,
-  type FacetName,
-  type MarketEntry,
-} from './types.js';
+import type { CatalogView } from './names.js';
+import { indexEntries, isFullyIdentified, reconcile } from './reconcile.js';
+import { categoryKey, heroPriceKey, priceKey, type SearchRow } from './types.js';
 
 const FETCHED = '2026-08-29T00:00:00.000Z';
 
@@ -18,38 +12,34 @@ const CATALOG: CatalogView = {
   ],
   rarityIdxs: [0, 1, 2],
   rarityTokens: { 0: 'comum', 1: 'incomum', 2: 'raro' },
-  defIdByHash: { 'Emerald Gem': 'gem_emerald' },
+  gems: [{ defId: 'gem_emerald', name: 'Emerald', rarityIdx: 2 }],
 };
 
 function row(
   hashName: string,
-  tags: Partial<Record<FacetName, string>>,
-  price: { cents: number | null; listings: number } = { cents: 250, listings: 3 },
-): DiscoveryRow {
+  overrides: { cents?: number | null; listings?: number; type?: string | null } = {},
+): SearchRow {
   return {
-    row: {
-      hashName,
-      name: hashName,
-      sellPriceCents: price.cents,
-      listings: price.listings,
-      iconUrl: null,
-      type: null,
-    },
-    tags,
+    hashName,
+    name: hashName,
+    sellPriceCents: overrides.cents === undefined ? 250 : overrides.cents,
+    listings: overrides.listings ?? 3,
+    iconUrl: null,
+    type: overrides.type ?? null,
   };
 }
 
+const reconcileOne = (hashName: string, overrides?: Parameters<typeof row>[1]) =>
+  reconcile([row(hashName, overrides)], CATALOG, FETCHED);
+
 describe('reconcile', () => {
-  it('gives a row the def id of the set and slot it was queried by', () => {
-    const { entries } = reconcile(
-      [row('Ember Weapon', { category: 'equip', set: 'ember', slot: 'weapon', rarity: 'rare' })],
-      CATALOG,
-      FETCHED,
-    );
+  it('gives a row the identity behind the generated name its hash matched', () => {
+    const { entries } = reconcileOne('Ember Weapon Lv 10 (Rare)');
 
     expect(entries[0]).toMatchObject({
       defId: 'ember_arma',
       key: priceKey('ember_arma', 2),
+      set: 'ember',
       slot: 'arma',
       rarityIdx: 2,
       level: 10,
@@ -58,47 +48,53 @@ describe('reconcile', () => {
     });
   });
 
-  it('builds a def id for a category whose items are a prefix plus the rarity', () => {
-    const { entries } = reconcile(
-      [row('Gate Key (Rare)', { category: 'key', rarity: 'rare' })],
-      CATALOG,
-      FETCHED,
-    );
+  /**
+   * Ten rows were in this form on the live market on 2026-09-23. A generator that emitted only the
+   * current form would leave every one of them unpriced while every test using the current form
+   * stayed green.
+   */
+  it('keys a row still in the pre-rename form, to the same identity as the current one', () => {
+    const legacy = reconcileOne('Ember Weapon (Rare)').entries[0];
+    const current = reconcileOne('Ember Weapon Lv 10 (Rare)').entries[0];
 
-    expect(entries[0]).toMatchObject({
-      defId: 'map_key_raro',
-      key: priceKey('map_key_raro', 2),
-      kind: 'key',
-    });
+    expect(legacy?.key).toBe(priceKey('ember_arma', 2));
+    expect(legacy?.defId).toBe('ember_arma');
+    expect(legacy?.level).toBe(10);
+    expect(legacy?.key).toBe(current?.key);
   });
 
-  it('gives a gem the def id the caller supplied for its hash', () => {
-    const { entries } = reconcile(
-      [row('Emerald Gem', { category: 'gem', rarity: 'rare' })],
-      CATALOG,
-      FETCHED,
-    );
+  it.each([
+    ['Gate Key (Rare)', 'map_key_raro', 2, 'key'],
+    ['Skill Stone (Uncommon)', 'skill_stone_incomum', 1, null],
+    ['Time Part (Rare)', 'time_part_raro', 2, 'material'],
+  ])('builds %s from its prefix and the rarity token', (hashName, defId, rarityIdx, kind) => {
+    const { entries } = reconcileOne(hashName);
+
+    expect(entries[0]).toMatchObject({ defId, key: priceKey(defId, rarityIdx), kind });
+  });
+
+  it('gives a gem the def and the rarity the committed bundle fixes for it', () => {
+    const { entries } = reconcileOne('Emerald Gem');
 
     expect(entries[0]).toMatchObject({
       defId: 'gem_emerald',
+      rarityIdx: 2,
       key: priceKey('gem_emerald', 2),
       kind: 'gem',
     });
   });
 
-  it('leaves a gem the supplied map does not name keyed by hash rather than guessing one', () => {
-    const { entries } = reconcile(
-      [row('Obsidian Gem', { category: 'gem', rarity: 'rare' })],
-      CATALOG,
-      FETCHED,
-    );
+  it('leaves a gem the bundle does not name unkeyed rather than guessing one', () => {
+    const { entries, anomalies } = reconcileOne('Obsidian Gem');
 
     expect(entries[0]?.defId).toBeNull();
-    expect(entries[0]?.key).toBe(categoryKey('gem', 'Obsidian Gem'));
+    expect(entries[0]?.category).toBeNull();
+    expect(entries[0]?.key).toBe(categoryKey('unknown', 'Obsidian Gem'));
+    expect(anomalies.map((anomaly) => anomaly.kind)).toEqual(['unlinkable-item']);
   });
 
-  it('keys an item the catalog has no def for on its category and hash', () => {
-    const { entries } = reconcile([row('Royal Sentinel Skin', { category: 'skin' })], CATALOG, FETCHED);
+  it('keys a skin on its category and hash, having no owned copy to reach', () => {
+    const { entries, anomalies } = reconcileOne('Royal Sentinel Skin');
 
     expect(entries[0]).toMatchObject({
       defId: null,
@@ -106,19 +102,20 @@ describe('reconcile', () => {
       kind: null,
       category: 'skin',
     });
+    expect(anomalies).toEqual([]);
   });
 
-  it('keeps two items that share every facet apart', () => {
+  it('keeps two chests that differ only by family apart', () => {
     const { entries } = reconcile(
-      [
-        row('Hero Cage (Act 1)', { category: 'chest', act: '1' }),
-        row('Skill Stone Chest (Act 1)', { category: 'chest', act: '1' }),
-      ],
+      [row('Hero Cage (Act 1)'), row('Skill Stone Chest (Act 1)')],
       CATALOG,
       FETCHED,
     );
 
-    expect(new Set(entries.map((entry) => entry.key)).size).toBe(2);
+    expect(entries.map((entry) => entry.key)).toEqual([
+      priceKey('chest_hero_1', 1),
+      priceKey('chest_skill_1', 1),
+    ]);
     expect(entries.every((entry) => entry.act === 1)).toBe(true);
   });
 
@@ -127,114 +124,120 @@ describe('reconcile', () => {
     ['Time Chest', 'chest_time'],
     ['Gem Chest', 'chest_gem'],
     ['Skill Stone Chest', 'chest_skill'],
-  ])('reaches every act of %s, taking the act off the facet', (family, defPrefix) => {
-    for (const act of [1, 2, 3]) {
-      const hashName = `${family} (Act ${String(act)})`;
-      const { entries } = reconcile(
-        [row(hashName, { category: 'chest', act: String(act) })],
-        CATALOG,
-        FETCHED,
-      );
+  ])('reaches every act of %s, the act doubling as the rarity tier', (family, defPrefix) => {
+    for (const act of [1, 2]) {
+      const { entries } = reconcileOne(`${family} (Act ${String(act)})`);
 
       expect(entries[0]?.defId).toBe(`${defPrefix}_${String(act)}`);
       expect(entries[0]?.key).toBe(priceKey(`${defPrefix}_${String(act)}`, act));
     }
   });
 
-  it('treats a Gem Chest as a chest, not as a gem', () => {
-    const { entries } = reconcile(
-      [row('Gem Chest (Act 2)', { category: 'chest', act: '2' })],
-      CATALOG,
-      FETCHED,
-    );
+  it('keys an item chest at rarity 0, which is what an owned one carries', () => {
+    const { entries } = reconcileOne('Item Chest (Lv 10)');
 
     expect(entries[0]).toMatchObject({
-      defId: 'chest_gem_2',
-      key: priceKey('chest_gem_2', 2),
+      defId: 'chest_item_10',
+      key: priceKey('chest_item_10', 0),
+      level: 10,
       category: 'chest',
     });
   });
 
-  it('does not let a hash that merely contains a family name borrow that family price', () => {
-    const { entries } = reconcile(
-      [row('Ancient Time Chest (Act 1)', { category: 'chest', act: '1' })],
-      CATALOG,
-      FETCHED,
-    );
-
-    expect(entries[0]?.defId).toBeNull();
-    expect(entries[0]?.key).toBe(categoryKey('chest', 'Ancient Time Chest (Act 1)'));
-  });
-
-  it('leaves a row unmatched rather than guessing when Steam uses a slot tag we do not know', () => {
-    const { entries, anomalies } = reconcile(
-      [row('Ember Cape', { category: 'equip', set: 'ember', slot: 'cape', rarity: 'rare' })],
-      CATALOG,
-      FETCHED,
-    );
-
-    expect(entries[0]?.defId).toBeNull();
-    expect(anomalies.map((anomaly) => anomaly.kind)).toContain('unknown-slot-tag');
-  });
-
-  it('raises a category it has never seen, but still prices and keys the row', () => {
-    const { entries, anomalies } = reconcile([row('Warhorse Mount', { category: 'mount' })], CATALOG, FETCHED);
-
-    expect(entries[0]?.key).toBe(categoryKey('mount', 'Warhorse Mount'));
-    expect(entries[0]?.lowestUsd).toBe(2.5);
-    expect(anomalies.map((anomaly) => anomaly.kind)).toContain('unknown-category-tag');
-  });
-
-  it('reports a priced row no owned copy can look up, naming the hash and the category', () => {
-    const { anomalies } = reconcile(
-      [row('Obsidian Gem', { category: 'gem', rarity: 'rare' })],
-      CATALOG,
-      FETCHED,
-    );
-
-    expect(anomalies).toHaveLength(1);
-    expect(anomalies[0]?.kind).toBe('unlinkable-item');
-    expect(anomalies[0]?.detail).toContain('Obsidian Gem');
-    expect(anomalies[0]?.detail).toContain('gem');
-  });
-
-  it('says nothing about a skin, which is a field on a hero and has no owned copy to reach', () => {
-    const { anomalies } = reconcile([row('Royal Sentinel Skin', { category: 'skin' })], CATALOG, FETCHED);
-
-    expect(anomalies).toEqual([]);
-  });
-
-  it('says nothing about a tradable hero, whose rarity alone is the key an owner looks up', () => {
-    const { entries, anomalies } = reconcile([row('Hero (Rare)', { category: 'hero', rarity: 'rare' })], CATALOG, FETCHED);
+  it('keys a tradable hero on its rarity, which is the whole of its market identity', () => {
+    const { entries, anomalies } = reconcileOne('Hero (Rare)');
 
     expect(entries[0]?.key).toBe(heroPriceKey(2));
+    expect(entries[0]?.defId).toBeNull();
     expect(anomalies).toEqual([]);
   });
 
-  it('reports equipment the tag passes never reached, which the discovery pass separately explains', () => {
-    const { entries, anomalies } = reconcile([row('Ember Weapon', { category: 'equip' })], CATALOG, FETCHED);
+  it('does not let a hash that merely contains a family name borrow that family price', () => {
+    const { entries, anomalies } = reconcileOne('Ancient Time Chest (Act 1)');
 
-    expect(entries[0]?.key).toBe(categoryKey('equip', 'Ember Weapon'));
+    expect(entries[0]?.defId).toBeNull();
+    expect(entries[0]?.key).toBe(categoryKey('unknown', 'Ancient Time Chest (Act 1)'));
     expect(anomalies.map((anomaly) => anomaly.kind)).toEqual(['unlinkable-item']);
   });
 
-  it('says nothing about a category it knows carries no item kind', () => {
-    const { anomalies } = reconcile([row('Item Chest (Lv 10)', { category: 'chest', level: '10' })], CATALOG, FETCHED);
+  /**
+   * The failure mode a parser has and this does not. `Ember Cape (Rare)` is exactly the shape a
+   * parser would read as the ember set in a cape slot; here it matches nothing and says so.
+   */
+  it('never keys a row by a near miss, whatever its name resembles', () => {
+    const { entries, anomalies } = reconcileOne('Ember Cape (Rare)');
+
+    expect(entries[0]?.defId).toBeNull();
+    expect(entries[0]?.rarityIdx).toBeNull();
+    expect(entries[0]?.key).toBe(categoryKey('unknown', 'Ember Cape (Rare)'));
+    expect(anomalies).toHaveLength(1);
+    expect(anomalies[0]?.kind).toBe('unlinkable-item');
+    expect(anomalies[0]?.detail).toContain('Ember Cape (Rare)');
+    expect(entries[0]?.lowestUsd).toBe(2.5);
+  });
+
+  it('still prices and still addresses a row it could not identify', () => {
+    const { entries } = reconcileOne('Warhorse Mount');
+
+    expect(entries[0]?.key).toBe(categoryKey('unknown', 'Warhorse Mount'));
+    expect(entries[0]?.lowestUsd).toBe(2.5);
+  });
+});
+
+/**
+ * The predicate the anomaly is raised from, asserted directly. It is what catches a generated
+ * family that names a category and still produces no key an owner can reach — a shape no fixture
+ * can reach through `reconcile`, because every family the generator has today produces one.
+ */
+describe('isFullyIdentified', () => {
+  it.each([
+    ['a def and a rarity', { hashName: 'x', category: 'equip', defId: 'ember_arma', rarityIdx: 2 }, true],
+    ['a hero rarity alone', { hashName: 'Hero (Rare)', category: 'hero', defId: null, rarityIdx: 2 }, true],
+    ['a skin, which has no owned copy', { hashName: 'A Skin', category: 'skin', defId: null, rarityIdx: null }, true],
+    ['a category with no def', { hashName: 'Mount', category: 'mount', defId: null, rarityIdx: 2 }, false],
+    ['a def with no rarity', { hashName: 'Thing', category: 'chest', defId: 'chest_item_30', rarityIdx: null }, false],
+    ['no match at all', { hashName: 'Thing', category: null, defId: null, rarityIdx: null }, false],
+  ])('is %s: %o', (_case, keyable, expected) => {
+    expect(isFullyIdentified(keyable)).toBe(expected);
+  });
+});
+
+describe('the cross-check against Steam own type', () => {
+  it('says nothing when the type agrees with the slot the name implies', () => {
+    const { anomalies } = reconcileOne('Ember Weapon Lv 10 (Rare)', { type: 'Weapon' });
+
+    expect(anomalies).toEqual([]);
+  });
+
+  it('raises drift when the type names a different slot than the matched name does', () => {
+    const { entries, anomalies } = reconcileOne('Ember Weapon Lv 10 (Rare)', { type: 'Helmet' });
+
+    expect(anomalies).toHaveLength(1);
+    expect(anomalies[0]?.kind).toBe('name-form-drift');
+    expect(anomalies[0]?.detail).toContain('Ember Weapon Lv 10 (Rare)');
+    expect(anomalies[0]?.detail).toContain('Helmet');
+    // Still priced and still keyed: the row matched, and this is a warning about the next change.
+    expect(entries[0]?.key).toBe(priceKey('ember_arma', 2));
+  });
+
+  it('says nothing about a row Steam sent no type for', () => {
+    const { anomalies } = reconcileOne('Ember Weapon Lv 10 (Rare)', { type: null });
+
+    expect(anomalies).toEqual([]);
+  });
+
+  it('says nothing about a category whose name form implies no slot', () => {
+    const { anomalies } = reconcileOne('Item Chest (Lv 10)', { type: 'Chest' });
 
     expect(anomalies).toEqual([]);
   });
 });
 
 describe('indexEntries', () => {
-  const entriesOf = (rows: DiscoveryRow[]) => reconcile(rows, CATALOG, FETCHED).entries;
+  const entriesOf = (rows: SearchRow[]) => reconcile(rows, CATALOG, FETCHED).entries;
 
   it('reports every catalog def and rarity the market has never carried', () => {
-    const indexed = indexEntries(
-      entriesOf([
-        row('Ember Weapon', { category: 'equip', set: 'ember', slot: 'weapon', rarity: 'rare' }),
-      ]),
-      CATALOG,
-    );
+    const indexed = indexEntries(entriesOf([row('Ember Weapon Lv 10 (Rare)')]), CATALOG);
 
     expect(indexed.index[priceKey('ember_arma', 2)]).toBe(0);
     expect(indexed.unlisted).toHaveLength(5);
@@ -242,36 +245,30 @@ describe('indexEntries', () => {
     expect(indexed.coverage).toMatchObject({ catalogKeys: 6, matchedCatalogKeys: 1, pricedRows: 1 });
   });
 
-  it('quotes the cheapest of two hashes sharing a key, and keeps the other', () => {
+  /**
+   * The rename left two live order books for one item. Both name forms generate, so both land on
+   * one key — and the row that is not quoted has to be reachable as an alternate rather than
+   * dropped, because hiding it would hide real supply.
+   */
+  it('quotes the cheaper of the two name forms and records the other as an alternate', () => {
     const indexed = indexEntries(
       entriesOf([
-        row('Ember Weapon', { category: 'equip', set: 'ember', slot: 'weapon', rarity: 'rare' }, {
-          cents: 900,
-          listings: 12,
-        }),
-        row('Ember Weapon Lv 10', { category: 'equip', set: 'ember', slot: 'weapon', rarity: 'rare' }, {
-          cents: 300,
-          listings: 1,
-        }),
+        row('Ember Weapon (Rare)', { cents: 900, listings: 12 }),
+        row('Ember Weapon Lv 10 (Rare)', { cents: 300, listings: 1 }),
       ]),
       CATALOG,
     );
+    const key = priceKey('ember_arma', 2);
 
-    expect(indexed.index[priceKey('ember_arma', 2)]).toBe(1);
-    expect(indexed.alternates[priceKey('ember_arma', 2)]).toEqual([0]);
+    expect(indexed.index[key]).toBe(1);
+    expect(indexed.alternates[key]).toEqual([0]);
   });
 
   it('prefers the deeper book only when the price is a tie', () => {
     const indexed = indexEntries(
       entriesOf([
-        row('Ember Weapon', { category: 'equip', set: 'ember', slot: 'weapon', rarity: 'rare' }, {
-          cents: 300,
-          listings: 1,
-        }),
-        row('Ember Weapon Lv 10', { category: 'equip', set: 'ember', slot: 'weapon', rarity: 'rare' }, {
-          cents: 300,
-          listings: 9,
-        }),
+        row('Ember Weapon (Rare)', { cents: 300, listings: 1 }),
+        row('Ember Weapon Lv 10 (Rare)', { cents: 300, listings: 9 }),
       ]),
       CATALOG,
     );
@@ -282,14 +279,8 @@ describe('indexEntries', () => {
   it('never quotes an unlisted hash over one that has a price', () => {
     const indexed = indexEntries(
       entriesOf([
-        row('Ember Weapon', { category: 'equip', set: 'ember', slot: 'weapon', rarity: 'rare' }, {
-          cents: null,
-          listings: 0,
-        }),
-        row('Ember Weapon Lv 10', { category: 'equip', set: 'ember', slot: 'weapon', rarity: 'rare' }, {
-          cents: 800,
-          listings: 1,
-        }),
+        row('Ember Weapon (Rare)', { cents: null, listings: 0 }),
+        row('Ember Weapon Lv 10 (Rare)', { cents: 800, listings: 1 }),
       ]),
       CATALOG,
     );
@@ -297,62 +288,13 @@ describe('indexEntries', () => {
     expect(indexed.index[priceKey('ember_arma', 2)]).toBe(1);
     expect(indexed.coverage.pricedRows).toBe(1);
   });
-});
 
-describe('knownTagsFrom', () => {
-  const identityOf = (entries: MarketEntry[]) =>
-    entries.map(({ hashName, key, defId, kind, category, set, slot, rarityIdx, level, act }) => ({
-      hashName,
-      key,
-      defId,
-      kind,
-      category,
-      set,
-      slot,
-      rarityIdx,
-      level,
-      act,
-    }));
-
-  const IDENTIFIED = [
-    row('Ember Weapon', { category: 'equip', set: 'ember', slot: 'weapon', rarity: 'rare' }),
-    row('Emerald Gem', { category: 'gem', rarity: 'rare' }),
-    row('Hero Cage (Act 1)', { category: 'chest', act: '1' }),
-    row('Item Chest (Lv 30)', { category: 'chest', level: '30' }),
-    row('Hero (Rare)', { category: 'hero', rarity: 'rare' }),
-    row('Royal Sentinel Skin', { category: 'skin' }),
-  ];
-
-  it('hands back tags that reconcile to the very identity they were read off', () => {
-    const tagged = reconcile(IDENTIFIED, CATALOG, FETCHED);
-    const known = knownTagsFrom(tagged.entries);
-
-    const restamped = reconcile(
-      IDENTIFIED.map((entry) => ({ ...entry, tags: known[entry.row.hashName] ?? {} })),
+  it('counts a row it could not identify as unkeyed, rather than as understood', () => {
+    const indexed = indexEntries(
+      entriesOf([row('Ember Weapon Lv 10 (Rare)'), row('Warhorse Mount')]),
       CATALOG,
-      FETCHED,
     );
 
-    expect(Object.keys(known).sort()).toEqual(IDENTIFIED.map((entry) => entry.row.hashName).sort());
-    expect(identityOf(restamped.entries)).toEqual(identityOf(tagged.entries));
-    expect(restamped.anomalies).toEqual(tagged.anomalies);
-  });
-
-  it('withholds a row a cut-short pass left half-tagged, so the next sweep asks again', () => {
-    const { entries } = reconcile(
-      [row('Ember Weapon', { category: 'equip', set: 'ember', slot: 'weapon' })],
-      CATALOG,
-      FETCHED,
-    );
-
-    expect(entries[0]?.key).toBe(categoryKey('equip', 'Ember Weapon'));
-    expect(knownTagsFrom(entries)).toEqual({});
-  });
-
-  it('withholds a row no tag pass ever reached, which the enumeration alone produces', () => {
-    const { entries } = reconcile([row('Mystery Blade', {})], CATALOG, FETCHED);
-
-    expect(entries[0]?.category).toBeNull();
-    expect(knownTagsFrom(entries)).toEqual({});
+    expect(indexed.coverage).toMatchObject({ marketRows: 2, keyedRows: 1, unkeyedRows: 1 });
   });
 });

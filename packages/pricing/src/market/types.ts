@@ -2,13 +2,6 @@ import type { ItemKind } from '@bombfarm/contracts';
 
 export const MARKET_APP_ID = 4892010;
 
-/**
- * Steam's facet schema for the app: facet name -> the tag values that currently have market
- * matches. Read live from `market/appfilters/<appid>`. Treat it as a hint, never as the
- * authority — it has been measured omitting a tag that had a live, sellable listing.
- */
-export type AppFilters = Record<string, string[]>;
-
 /** One `market/search/render` row, narrowed to the fields the snapshot keeps. */
 export interface SearchRow {
   hashName: string;
@@ -17,6 +10,7 @@ export interface SearchRow {
   sellPriceCents: number | null;
   listings: number;
   iconUrl: string | null;
+  /** Steam's own category word for the row — `Amulet`, `Chestplate`, `Chest`, `Map Key`, `Hero`. */
   type: string | null;
 }
 
@@ -25,41 +19,30 @@ export interface SearchPage {
   rows: SearchRow[];
 }
 
-/** The facets a `search/render` call can be narrowed by. Absent keys are unfiltered. */
-export interface SearchFilters {
-  set?: string;
-  slot?: string;
-  rarity?: string;
-  category?: string;
-  level?: string;
-  act?: string;
-}
-
-export const FACET_NAMES = ['category', 'set', 'slot', 'rarity', 'level', 'act'] as const;
-export type FacetName = (typeof FACET_NAMES)[number];
-
 /**
- * A market listing reconciled against the committed catalog. Facet values are assigned by
- * construction — the row came back from a query already narrowed to that tag — never by parsing
- * `hashName`, whose format Steam does not commit to and which the game has already changed once.
+ * A market listing reconciled against the committed catalog.
+ *
+ * The identity below is assigned by generating the name a known catalog item would be listed under
+ * and finding this row's `hashName` among them — never by reading that hash and deciding what it
+ * must mean. Steam commits to no format for it and the game has already changed the one it uses, so
+ * a row whose name form has moved matches nothing and is reported, rather than being priced wrong.
  */
 export interface MarketEntry {
   hashName: string;
   name: string;
   /**
    * The stable identity an app looks a price up by, and the same one an owned copy produces.
-   * Equipment, gems, stones and chests key on a catalog def and rarity — the def read off a
-   * facet or an explicit table, never off the hash. A hero keys on its rarity alone. Only the
-   * skin still keys on its Steam category and hash, having no owned counterpart to match.
+   * Equipment, gems, stones and chests key on a catalog def and rarity. A hero keys on its rarity
+   * alone. Only the skin keys on its Steam category and hash, having no owned counterpart to match.
    */
   key: string;
-  /** The catalog def, where the catalog has one. Null for chests, cages, skins and gems. */
+  /** The catalog def, where the catalog has one. Null for heroes, skins and unmatched rows. */
   defId: string | null;
   kind: ItemKind | null;
-  /** Steam's own category tag (`equip`, `chest`, `gem`, `key`, `skin`, `stone`, `time`). */
+  /** Steam's own category tag (`equip`, `chest`, `gem`, `key`, `skin`, `stone`, `time`, `hero`). */
   category: string | null;
   set: string | null;
-  /** Catalog slot code (`arma`, `elmo`, …), translated from Steam's English slot tag. */
+  /** Catalog slot code (`arma`, `elmo`, …). */
   slot: string | null;
   rarityIdx: number | null;
   level: number | null;
@@ -91,20 +74,19 @@ export interface MarketEntry {
 }
 
 export type AnomalyKind =
-  | 'unknown-slot-tag'
-  | 'unknown-rarity-tag'
-  | 'unknown-category-tag'
-  | 'unknown-set-tag'
-  | 'untagged-equipment'
-  | 'unresolved-rarity'
-  | 'ambiguous-tag'
   | 'rate-limited'
-  | 'unlinkable-item';
+  | 'unlinkable-item'
+  /**
+   * A row whose generated name matched, and whose Steam `type` names a different slot than that
+   * name implies. The early warning that the market's naming has moved, one change before the
+   * change that matches nothing at all.
+   */
+  | 'name-form-drift';
 
 /**
  * Something the sweep saw that the catalog cannot explain. Every one of these is a reason the
- * snapshot may under-report, so the workflow surfaces them rather than letting a silently
- * mis-mapped tag price an item wrong.
+ * snapshot may under-report, so the workflow surfaces them rather than letting a row quietly go
+ * unpriced or a moved name form go unnoticed.
  */
 export interface Anomaly {
   kind: AnomalyKind;
@@ -147,7 +129,8 @@ export interface MarketSnapshot {
   /**
    * `key` -> the other entries sharing it. The game renamed its items after launch and Steam
    * hashes are immutable, so `Ember Amulet (Rare)` and `Ember Amulet Lv 10 (Rare)` are two live
-   * hashes with byte-identical facets. Both are kept: hiding one would hide real supply.
+   * hashes for one item, and both name forms are generated. Both are kept: hiding one would hide
+   * real supply.
    */
   alternates: Record<string, number[]>;
   /** Catalog def+rarity keys with no market row at all. */
@@ -165,11 +148,8 @@ export function priceKey(defId: string, rarityIdx: number): string {
  * The key for a market row nothing an owner holds can identify — today only the skin, which is a
  * field on a hero rather than an inventory row at all.
  *
- * Keyed on the hash name because the facets do not separate these: `Hero Cage (Act 1)` and
- * `Skill Stone Chest (Act 1)` are both `category=chest, act=1` and nothing else, so a key built
- * from facets alone would merge two different items into one price. Those two are reached instead
- * through an explicit hash-to-family table, which names them rather than deducing them; a Steam
- * hash never changes meaning, which is what makes such a table safe.
+ * It is also what a row whose name matched nothing falls back to: it stays priced and addressable
+ * without being allowed to claim the key of the item it resembles.
  */
 export function categoryKey(category: string, hashName: string): string {
   return `${category}#${hashName}`;
@@ -184,9 +164,9 @@ export const SKIN_CATEGORY = 'skin';
 /**
  * The key for a tradable hero, which is its rarity and nothing else.
  *
- * A hero listing carries no set, slot, level or act — `Hero (Rare)` is the whole identity, and the
- * rarity behind it comes off the facet rather than the name. So unlike the chests and gems, a
- * hero needs no def: an owned hero the game marks tradable looks its price up by rarity alone.
+ * A hero listing carries no set, slot, level or act — `Hero (Rare)` is the whole identity. So unlike
+ * the chests and gems, a hero needs no def: an owned hero the game marks tradable looks its price up
+ * by rarity alone.
  */
 export function heroPriceKey(rarityIdx: number): string {
   return categoryKey(HERO_CATEGORY, String(rarityIdx));

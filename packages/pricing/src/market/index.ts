@@ -1,5 +1,4 @@
 export {
-  FACET_NAMES,
   MARKET_APP_ID,
   HERO_CATEGORY,
   SKIN_CATEGORY,
@@ -8,21 +7,16 @@ export {
   priceKey,
   type Anomaly,
   type AnomalyKind,
-  type AppFilters,
-  type FacetName,
   type MarketCoverage,
   type MarketEntry,
   type MarketSnapshot,
-  type SearchFilters,
   type SearchPage,
   type SearchRow,
 } from './types.js';
 export { STEAM_CURRENCIES, STEAM_CURRENCY_IDS, steamCurrencyFor, type SteamCurrency } from './currencies.js';
 export {
   SEARCH_PAGE_SIZE,
-  appFiltersUrl,
   listingUrl,
-  parseAppFilters,
   parseMoneyAmount,
   parsePriceOverview,
   parseSearchPage,
@@ -32,36 +26,34 @@ export {
 } from './endpoints.js';
 export {
   BOUGHT_SKIN_HASH,
-  CATEGORY_DEF_PREFIX,
   EQUIPMENT_CATEGORY_TAG,
   FIRST_BOUGHT_SKIN_INDEX,
   STEAM_CATEGORY_TO_KIND,
-  STEAM_RARITY_TO_IDX,
-  STEAM_SLOT_TO_CATALOG,
+  actChestFamilyFor,
   boughtSkinHashFor,
-  catalogSlotFor,
-  defPrefixFor,
-  isKnownTag,
   itemKindFor,
-  rarityIdxFor,
-  steamRarityFor,
-  steamSlotFor,
 } from './tags.js';
+export {
+  MARKET_RARITY_WORD,
+  MARKET_SLOT_WORD,
+  RARITY_SUFFIXED_CATEGORIES,
+  generateMarketNames,
+  type CatalogDef,
+  type CatalogGem,
+  type CatalogView,
+  type MarketName,
+} from './names.js';
 export {
   discoverMarket,
   type DiscoverDeps,
   type DiscoveryResult,
-  type DiscoveryRow,
   type SearchFetchResult,
 } from './discover.js';
 export {
   indexEntries,
   isFullyIdentified,
   keyForEntry,
-  knownTagsFrom,
   reconcile,
-  type CatalogDef,
-  type CatalogView,
   type KeyableEntry,
   type Reconciliation,
 } from './reconcile.js';
