@@ -351,7 +351,7 @@ export function powerPointMarkers(
 }
 
 export type StripLabel = { readonly id: string; readonly fraction: number; readonly text: string };
-export type PlacedStripLabel = StripLabel & { readonly anchor: MarkLabelAnchor };
+export type PlacedStripLabel = StripLabel & { readonly anchor: MarkLabelAnchor; readonly row: number };
 
 /**
  * The width assumed before the plot has been measured: narrower than any plot the layout
@@ -371,26 +371,33 @@ function labelExtentPx(label: StripLabel, anchor: MarkLabelAnchor, plotWidthPx: 
   return [x - width / 2, x + width / 2];
 }
 
+function extentsOverlap(a: readonly [number, number], b: readonly [number, number]): boolean {
+  return !(a[0] >= b[1] + LABEL_GAP_PX || b[0] >= a[1] + LABEL_GAP_PX);
+}
+
 /**
- * The labels in the strip above the plot, in priority order: each is kept only if it clears
- * every label already kept, so the first ("now") always shows and a marker label that would
- * touch it is dropped — the legend under the chart still carries every marker's figures.
+ * The labels in the strip above the plot, stacked in rows so none is ever dropped: the first
+ * ("now") has the top row to itself, and each later label takes the first row below it where it
+ * clears the labels already there — a marker too close to another simply sits one row lower.
  */
 export function placeStripLabels(
   labels: readonly StripLabel[],
   plotWidthPx: number | null = null,
 ): readonly PlacedStripLabel[] {
   const width = plotWidthPx !== null && plotWidthPx > 0 ? plotWidthPx : UNMEASURED_PLOT_WIDTH_PX;
-  const placed: { label: PlacedStripLabel; extent: readonly [number, number] }[] = [];
-  for (const label of labels) {
+  const rows: (readonly [number, number])[][] = [];
+  return labels.map((label, index) => {
     const anchor = markLabelAnchor(label.fraction);
     const extent = labelExtentPx(label, anchor, width);
-    const clear = placed.every(
-      ({ extent: other }) => extent[0] >= other[1] + LABEL_GAP_PX || other[0] >= extent[1] + LABEL_GAP_PX,
-    );
-    if (clear) placed.push({ label: { ...label, anchor }, extent });
-  }
-  return placed.map(({ label }) => label);
+    let row = index === 0 ? 0 : 1;
+    while (index > 0 && (rows[row] ?? []).some((other) => extentsOverlap(extent, other))) row += 1;
+    rows[row] = [...(rows[row] ?? []), extent];
+    return { ...label, anchor, row };
+  });
+}
+
+export function stripRowCount(placed: readonly PlacedStripLabel[]): number {
+  return placed.reduce((most, label) => Math.max(most, label.row + 1), 1);
 }
 
 /** Markers drawn at the same spot — both past the cap, typically — shown as one: "+10 / +50". */

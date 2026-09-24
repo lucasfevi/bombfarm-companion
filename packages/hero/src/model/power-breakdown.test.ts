@@ -19,6 +19,7 @@ import {
   formatPowerFigure,
   formatSignedPct,
   groupCoincidentMarkers,
+  stripRowCount,
   markLabelAnchor,
   niceAxis,
   placeStripLabels,
@@ -450,35 +451,79 @@ describe('stat-point markers', () => {
 });
 
 describe('placeStripLabels', () => {
-  it('a marker label too close to "now" is dropped, and "now" always stays', () => {
+  const rowsOf = (placed: ReturnType<typeof placeStripLabels>) => placed.map((label) => [label.id, label.row]);
+
+  it('"now" has the top row to itself, and markers crowding it and each other stack below rather than vanish', () => {
     const placed = placeStripLabels([
       { id: 'now', fraction: 0.6785, text: 'now' },
       { id: '10', fraction: 0.6865, text: '+10' },
       { id: '50', fraction: 0.7185, text: '+50' },
     ]);
-    expect(placed.map((label) => label.id)).toEqual(['now']);
+    expect(rowsOf(placed)).toEqual([
+      ['now', 0],
+      ['10', 1],
+      ['50', 2],
+    ]);
   });
 
-  it('labels far enough apart all show, each hanging inward at an edge', () => {
+  it('markers far enough apart share the second row, each hanging inward at an edge', () => {
     const placed = placeStripLabels([
       { id: 'now', fraction: 0.02, text: 'agora' },
       { id: '10', fraction: 0.4, text: '+10' },
       { id: '50', fraction: 0.98, text: '+50' },
     ]);
-    expect(placed.map((label) => [label.id, label.anchor])).toEqual([
-      ['now', 'start'],
-      ['10', 'center'],
-      ['50', 'end'],
+    expect(placed.map((label) => [label.id, label.anchor, label.row])).toEqual([
+      ['now', 'start', 0],
+      ['10', 'center', 1],
+      ['50', 'end', 1],
     ]);
   });
 
-  it('once the plot is measured, a label that fits there is kept even where the unmeasured width would drop it', () => {
+  it('once the plot is measured, markers that fit side by side share a row they would otherwise split', () => {
     const labels = [
       { id: 'now', fraction: 0.5, text: 'now' },
       { id: '10', fraction: 0.56, text: '+10' },
+      { id: '50', fraction: 0.62, text: '+50' },
     ];
-    expect(placeStripLabels(labels).map((label) => label.id)).toEqual(['now']);
-    expect(placeStripLabels(labels, 674).map((label) => label.id)).toEqual(['now', '10']);
+    expect(rowsOf(placeStripLabels(labels))).toEqual([
+      ['now', 0],
+      ['10', 1],
+      ['50', 2],
+    ]);
+    expect(rowsOf(placeStripLabels(labels, 674))).toEqual([
+      ['now', 0],
+      ['10', 1],
+      ['50', 1],
+    ]);
+  });
+
+  it.each([
+    [0.5, 0.5, 0.5],
+    [0.001, 0.002, 0.003],
+    [0.999, 0.998, 0.997],
+    [0.3, 0.9, 0.31],
+  ])('no label is ever dropped (now %d, +10 %d, +50 %d)', (now, ten, fifty) => {
+    const placed = placeStripLabels([
+      { id: 'now', fraction: now, text: 'agora' },
+      { id: '10', fraction: ten, text: '+10' },
+      { id: '50', fraction: fifty, text: '+50' },
+    ]);
+    expect(placed.map((label) => label.id)).toEqual(['now', '10', '50']);
+    expect(placed[0].row).toBe(0);
+    expect(stripRowCount(placed)).toBeLessThanOrEqual(3);
+  });
+
+  it('the strip is as tall as its lowest row', () => {
+    expect(stripRowCount(placeStripLabels([{ id: 'now', fraction: 0.5, text: 'now' }]))).toBe(1);
+    expect(
+      stripRowCount(
+        placeStripLabels([
+          { id: 'now', fraction: 0.5, text: 'now' },
+          { id: '10', fraction: 0.5, text: '+10' },
+          { id: '50', fraction: 0.5, text: '+50' },
+        ]),
+      ),
+    ).toBe(3);
   });
 
   it.each([0, -1, Number.NaN, null])('an unusable measured width (%s) falls back to the unmeasured one', (width) => {
@@ -489,12 +534,16 @@ describe('placeStripLabels', () => {
     expect(placeStripLabels(labels, width)).toEqual(placeStripLabels(labels));
   });
 
-  it('a marker label that clears "now" but not the other marker keeps the nearer one only', () => {
+  it('two markers that crowd each other but not "now" stack: +10 above +50', () => {
     const placed = placeStripLabels([
       { id: 'now', fraction: 0.2, text: 'now' },
       { id: '10', fraction: 0.5, text: '+10' },
       { id: '50', fraction: 0.52, text: '+50' },
     ]);
-    expect(placed.map((label) => label.id)).toEqual(['now', '10']);
+    expect(rowsOf(placed)).toEqual([
+      ['now', 0],
+      ['10', 1],
+      ['50', 2],
+    ]);
   });
 });

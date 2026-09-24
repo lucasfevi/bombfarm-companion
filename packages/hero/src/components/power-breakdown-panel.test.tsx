@@ -376,12 +376,18 @@ describe('PowerBreakdownPanel: where +10 and +50 stat points would put the hero'
     expect(chanceMarker?.style.left).not.toBe(damageMarker?.style.left);
   });
 
-  it('a low-rate stat keeps "now" and drops the marker labels that would touch it; the legend still names both', () => {
+  it('a low-rate stat labels both markers anyway, on rows below "now", and the legend still names both', () => {
     render(live, fixture.account.tree.critDmg);
     click('[data-power-row="crit"]');
     const strip = chart('critChance');
-    expect(strip.querySelectorAll('[data-testid="power-now-label"]')).toHaveLength(1);
-    expect(strip.querySelector('[data-testid="power-marker-label"][data-points="10"]')).toBeNull();
+    const now = strip.querySelector<HTMLElement>('[data-testid="power-now-label"]');
+    const ten = strip.querySelector<HTMLElement>('[data-testid="power-marker-label"][data-points="10"]');
+    const fifty = strip.querySelector<HTMLElement>('[data-testid="power-marker-label"][data-points="50"]');
+    expect(now?.dataset.row).toBe('0');
+    expect(ten?.textContent).toBe('+10');
+    expect(fifty?.textContent).toBe('+50');
+    expect(Number(ten?.dataset.row)).toBeGreaterThanOrEqual(1);
+    expect(Number(fifty?.dataset.row)).toBeGreaterThanOrEqual(Number(ten?.dataset.row));
     expect(strip.querySelectorAll('[data-testid="power-marker"]')).toHaveLength(2);
     expect(strip.querySelector('[data-testid="power-points-legend"]')?.textContent).toContain('+50 points');
   });

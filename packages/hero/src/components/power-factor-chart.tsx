@@ -20,6 +20,7 @@ import {
   isGuideKey,
   markLabelAnchor,
   placeStripLabels,
+  stripRowCount,
   powerPointMarkers,
   powerPointsLegend,
   powerAxisSpec,
@@ -34,6 +35,8 @@ import {
 
 const tickLabelClass = 'pointer-events-none absolute font-mono text-[10px] leading-none whitespace-nowrap text-muted tabular-nums';
 const markLabelClass = 'pointer-events-none absolute text-[10px] leading-none text-muted';
+/** One strip row: the 10px label type set solid, with a little air below it. */
+const STRIP_ROW_PX = 12;
 const dotClass = 'pointer-events-none absolute size-2 -translate-x-1/2 -translate-y-1/2 rounded-full';
 const focusRingClass =
   'focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
@@ -167,7 +170,7 @@ export function PowerFactorChart({
       <div className="grid grid-cols-[3rem_minmax(0,1fr)] gap-x-1.5">
         <span aria-hidden="true" />
         {/* Its own strip above the plot: inside, the curve can run under it wherever it sits. */}
-        <div className="relative h-3">
+        <div className="relative" style={{ height: `${String(stripRowCount(stripLabels) * STRIP_ROW_PX)}px` }}>
           {stripLabels.map((label) => (
             <span
               key={label.id}
@@ -175,8 +178,9 @@ export function PowerFactorChart({
                 ? { 'data-testid': 'power-now-label' }
                 : { 'data-testid': 'power-marker-label', 'data-points': label.id })}
               data-anchor={label.anchor}
-              className={cn(markLabelClass, 'top-0', LABEL_ANCHOR_CLASS[label.anchor], label.id !== 'now' && 'text-gold')}
-              style={{ left: `${String(label.fraction * 100)}%` }}
+              data-row={label.row}
+              className={cn(markLabelClass, LABEL_ANCHOR_CLASS[label.anchor], label.id !== 'now' && 'text-gold')}
+              style={{ left: `${String(label.fraction * 100)}%`, top: `${String(label.row * STRIP_ROW_PX)}px` }}
             >
               {label.text}
             </span>
