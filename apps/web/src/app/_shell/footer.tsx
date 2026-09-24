@@ -1,7 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { BiCoffee, BiCopy } from 'react-icons/bi';
 import type { Strings } from '@/shared/i18n';
+import { SITE_SECTION_HREF } from '@/shared/lib/site-sections';
 import { getAppVersionLabel } from '@/shared/app-version';
 import { REFERRAL_CODE } from '@/shared/referral';
 import { WIKI_URL } from '@bombfarm/domain/wiki-assets';
@@ -62,6 +64,13 @@ export function Footer({ t }: { t: Strings }) {
           </span>
         </p>
         <div className="flex shrink-0 items-center gap-3">
+          <Link
+            data-testid="footer-privacy-link"
+            className="text-xs text-accent underline-offset-2 hover:underline"
+            href={SITE_SECTION_HREF.privacy}
+          >
+            {t.privacyNavLabel}
+          </Link>
           <span data-testid="app-version" className="min-w-38 text-right font-mono text-xs tabular-nums text-muted">
             {versionLabel}
           </span>

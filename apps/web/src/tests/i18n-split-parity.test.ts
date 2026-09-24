@@ -30,6 +30,7 @@ import * as inventory from '@/shared/i18n/namespaces/inventory';
 import * as download from '@/shared/i18n/namespaces/download';
 import * as home from '@/shared/i18n/namespaces/home';
 import * as skills from '@/shared/i18n/namespaces/skills';
+import * as privacy from '@/shared/i18n/namespaces/privacy';
 import { WEB_PACKAGE_ROOT } from './helpers/web-package-root';
 
 /**
@@ -1053,6 +1054,8 @@ const KEYS_ADDED: readonly string[] = [
   // next level is worth. One compact block — this file sits at its line cap.
   'navSkills', 'skillsTitle', 'skillsTip', 'skillsUnreadableTitle', 'skillsUnreadableDescription', 'skillsArmHub', 'skillsArmDano', 'skillsArmCrit', 'skillsArmVelocidade', 'skillsArmOuro', 'skillsArmDrop', 'skillsArmEnergia', 'skillsArmGeo', 'skillsArmNeutro', 'skillsTierStart', 'skillsTierSmall', 'skillsTierNotavel', 'skillsTierUnlock', 'skillsKindTeamDmg', 'skillsKindCritChance', 'skillsKindCritDmg', 'skillsKindSpeed', 'skillsKindCoin', 'skillsKindLuck', 'skillsKindEnergia', 'skillsKindXp', 'skillsKindGeo', 'skillsKindFieldSlot', 'skillsKindBagTab', 'skillsEffectTeamDmg', 'skillsEffectCritChance', 'skillsEffectCritDmg', 'skillsEffectSpeed', 'skillsEffectCoin', 'skillsEffectLuck', 'skillsEffectEnergia', 'skillsEffectXp', 'skillsEffectGeo', 'skillsEffectFieldSlot', 'skillsEffectBagTab', 'skillsLevel', 'skillsHubName', 'skillsHubNote', 'skillsStateOwned', 'skillsStateMaxed', 'skillsStateBuyable', 'skillsStateUnaffordable', 'skillsStateLockedPrerequisite', 'skillsStateLockedPhase', 'skillsAlwaysLit', 'skillsNextLevelCost', 'skillsCostToMax', 'skillsRefund', 'skillsRefundTip', 'skillsRefundBlocked', 'skillsWallet', 'skillsGoldAmount', 'skillsNextToBuy', 'skillsNextToBuyTip', 'skillsObjectiveGold', 'skillsObjectiveGate', 'skillsObjectivePvp', 'skillsColNode', 'skillsColCost', 'skillsColGain', 'skillsColPerMillion', 'skillsGainDps', 'skillsPerMillionGold', 'skillsPerMillionDps', 'skillsGainOutsideObjectives', 'skillsNothingToRecommend', 'skillsPvpEmpty', 'skillsPricingUnavailable', 'skillsPricedAtPhase', 'skillsPricedAtAccountPhase', 'skillsPricedAtGate', 'skillsPricedAtPvp', 'skillsGatePhaseSelect', 'skillsGatePhaseSearchPlaceholder', 'skillsGatePhaseNoMatch', 'skillsGatePhaseMoreMatches',
   'skillsNodeTitleC07', 'skillsNodeTitleC12', 'skillsNodeTitleD07', 'skillsNodeTitleD12', 'skillsNodeTitleE07', 'skillsNodeTitleE11', 'skillsNodeTitleN01', 'skillsNodeTitleN03', 'skillsNodeTitleN05', 'skillsNodeTitleN07', 'skillsNodeTitleN09', 'skillsNodeTitleN11', 'skillsNodeTitleN13', 'skillsNodeTitleN15', 'skillsNodeTitleO08', 'skillsNodeTitleO12', 'skillsNodeTitleP01', 'skillsNodeTitleP02', 'skillsNodeTitleP03', 'skillsNodeTitleP04', 'skillsNodeTitleP05', 'skillsNodeTitleP06', 'skillsNodeTitleP07', 'skillsNodeTitleS02', 'skillsNodeTitleS05', 'skillsNodeTitleS07', 'skillsNodeTitleS11', 'skillsNodeTitleT01', 'skillsNodeTitleT02', 'skillsNodeTitleT03', 'skillsNodeTitleT04', 'skillsNodeTitleT05', 'skillsNodeTitleT06', 'skillsNodeTitleV08', 'skillsNodeTitleV13', 'skillsDpsLeftOut', 'skillsAffordableNow', 'skillsCloseNode', 'skillsPreview', 'skillsPreviewTip', 'skillsPreviewGold', 'skillsPreviewGate', 'skillsPreviewPvp', 'skillsTotalNowNext', 'skillsRequires', 'skillsGate', 'skillsArm', 'skillsTier', 'skillsEffects', 'skillsTotals', 'skillsTotalsTip', 'skillsTotalTeamDmg', 'skillsTotalCritChance', 'skillsTotalCritDmg', 'skillsTotalSpeed', 'skillsTotalCoin', 'skillsTotalLuck', 'skillsTotalEnergia', 'skillsTotalDmgStatic', 'skillsTotalGeo', 'skillsTotalXp', 'skillsTotalFieldSlots', 'skillsTotalBagTabs', 'skillsLevelsBought', 'skillsCountOf', 'skillsGoldSpent', 'skillsGoldToMax', 'skillsFitToView', 'skillsZoomIn', 'skillsZoomOut', 'skillsLegend', 'skillsLegendOwned', 'skillsLegendBuyable', 'skillsLegendUnaffordable', 'skillsLegendLocked', 'skillsLegendRecommended', 'skillsCanvasAria', 'skillsNodeAria', 'skillsPaths', 'skillsNodesMaxed', 'skillsLegendPathNote',
+  // Privacy policy page (2026-09-23): what the desktop usage ping sends and how to stop it. One line for the cap.
+  'privacyNavLabel', 'privacyTitle', 'privacyUpdated', 'privacyIntro', 'privacyPingTitle', 'privacyPingIntro', 'privacyPingFields', 'privacyPingAccountFields', 'privacyPingOptOut', 'privacySections',
 ];
 
 /**
@@ -1263,7 +1266,7 @@ const namespaces = [
   ['stats', stats],
   ['market', market],
   ['inventory', inventory],
-  ['download', download], ['home', home], ['skills', skills],
+  ['download', download], ['home', home], ['skills', skills], ['privacy', privacy],
 ] as const;
 
 describe('i18n split parity', () => {

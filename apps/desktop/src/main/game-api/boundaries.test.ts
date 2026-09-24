@@ -21,6 +21,11 @@ const HTTPS_TRANSPORT_FILE = join(DESKTOP_MAIN, 'game-api/https-transport.ts');
  *  the whole tree. Everything else below still applies to it, the no-write-verb scan included. */
 const MARKET_TRANSPORT_FILE = join(DESKTOP_MAIN, 'market/market-transport.ts');
 const MARKET_SNAPSHOT_HOST = 'raw.githubusercontent.com';
+/** The usage ping's one socket. It reads nothing back and carries no session token — only the
+ *  ping body — so, like the market transport, it is exempted by file: it may POST, and only to
+ *  its one host. The account path's rules are not widened for anything else. */
+const USAGE_PING_TRANSPORT_FILE = join(DESKTOP_MAIN, 'usage-ping/usage-ping-transport.ts');
+const USAGE_PING_HOST = 'api.bombfarm-companion.app';
 const SESSION_TOKEN_FILE_FILE = join(DESKTOP_MAIN, 'game-api/session-token-file.ts');
 const REQUEST_FILE = join(GAME_API_SRC, 'request.ts');
 /** The one write surface. It may name `POST` and exactly the six write routes below, and nothing
@@ -106,7 +111,8 @@ describe('Guard 1 — one write surface, six routes wide, anywhere the network c
   it('contains no PUT/PATCH/DELETE HTTP method literal anywhere, and a POST literal only in write-request.ts — including one assembled via string concatenation', () => {
     const offenders = sourceFiles
       .map((file) => {
-        const methodPattern = file === WRITE_REQUEST_FILE ? /['"](PUT|PATCH|DELETE)['"]/ : /['"](POST|PUT|PATCH|DELETE)['"]/;
+        const mayPost = file === WRITE_REQUEST_FILE || file === USAGE_PING_TRANSPORT_FILE;
+        const methodPattern = mayPost ? /['"](PUT|PATCH|DELETE)['"]/ : /['"](POST|PUT|PATCH|DELETE)['"]/;
         return { file, match: methodPattern.exec(foldStringConcatenation(readFileSync(file, 'utf8'))) };
       })
       .filter((r) => r.match !== null);
@@ -124,13 +130,14 @@ describe('Guard 1 — one write surface, six routes wide, anywhere the network c
     expect(new Set(pathLiterals), `write-request.ts may name exactly ${JSON.stringify(WRITE_ROUTE_PATHS)}. Found: ${JSON.stringify(pathLiterals)}`).toEqual(new Set(WRITE_ROUTE_PATHS));
   });
 
-  it('no file other than write-request.ts contains a POST literal or names a write route', () => {
+  it('no file other than write-request.ts and the usage ping transport contains a POST literal, and only write-request.ts names a write route', () => {
     const offenders = sourceFiles.filter((file) => {
       if (file === WRITE_REQUEST_FILE) return false;
       const text = foldStringConcatenation(readFileSync(file, 'utf8'));
-      return /['"]POST['"]/.test(text) || WRITE_ROUTE_PATHS.some((route) => text.includes(route));
+      const posts = /['"]POST['"]/.test(text) && file !== USAGE_PING_TRANSPORT_FILE;
+      return posts || WRITE_ROUTE_PATHS.some((route) => text.includes(route));
     });
-    expect(offenders, `Only write-request.ts may POST or name a write route. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
+    expect(offenders, `Only write-request.ts may POST to the game or name a write route. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
   });
 
   it('names no host other than app.bombfarm.net, and the market snapshot host only in the market transport', () => {
@@ -140,13 +147,17 @@ describe('Guard 1 — one write surface, six routes wide, anywhere the network c
     // The bare form filters out symbol names / filenames like 'bfc.session.raw' or
     // 'api-bodies.json', which are not hosts.
     const hostPatterns = [
-      /['"]((?:[a-z0-9-]+\.)+(?:net|com|org|io|dev))['"]/gi,
-      /https?:\/\/((?:[a-z0-9-]+\.)+(?:net|com|org|io|dev))/gi,
+      /['"]((?:[a-z0-9-]+\.)+(?:net|com|org|io|dev|app))['"]/gi,
+      /https?:\/\/((?:[a-z0-9-]+\.)+(?:net|com|org|io|dev|app))/gi,
     ];
     const offenders: string[] = [];
     for (const file of sourceFiles) {
       const text = readFileSync(file, 'utf8');
-      const allowed = new Set(['app.bombfarm.net', ...(file === MARKET_TRANSPORT_FILE ? [MARKET_SNAPSHOT_HOST] : [])]);
+      const allowed = new Set([
+        'app.bombfarm.net',
+        ...(file === MARKET_TRANSPORT_FILE ? [MARKET_SNAPSHOT_HOST] : []),
+        ...(file === USAGE_PING_TRANSPORT_FILE ? [USAGE_PING_HOST] : []),
+      ]);
       for (const pattern of hostPatterns) {
         const re = new RegExp(pattern);
         let match: RegExpExecArray | null;
@@ -162,8 +173,22 @@ describe('Guard 1 — one write surface, six routes wide, anywhere the network c
   });
 
   it('red state demonstrated: a host named inside a URL literal is caught', () => {
-    const pattern = /https?:\/\/((?:[a-z0-9-]+\.)+(?:net|com|org|io|dev))/gi;
+    const pattern = /https?:\/\/((?:[a-z0-9-]+\.)+(?:net|com|org|io|dev|app))/gi;
     expect(pattern.exec("const endpoint = 'https://elsewhere.example.com/collect';")?.[1]).toBe('elsewhere.example.com');
+  });
+
+  it('red state demonstrated: a .app host is caught too — the TLD this app itself answers on', () => {
+    const pattern = /https?:\/\/((?:[a-z0-9-]+\.)+(?:net|com|org|io|dev|app))/gi;
+    expect(pattern.exec("const endpoint = 'https://collect.elsewhere.app/v1';")?.[1]).toBe('collect.elsewhere.app');
+  });
+
+  it('the usage ping transport names only its one host, POSTs, and takes nothing from the account path', () => {
+    const text = readFileSync(USAGE_PING_TRANSPORT_FILE, 'utf8');
+    expect(text, 'sanity: the usage ping transport must name the host it posts to').toContain(USAGE_PING_HOST);
+    expect(/['"]POST['"]/.test(text), 'sanity: its POST exemption is not vacuous').toBe(true);
+    expect(text, 'the usage ping must never import the game API or the session token').not.toMatch(
+      /from\s+['"](@bombfarm\/game-api|[^'"]*game-api\/[^'"]*|[^'"]*session-token[^'"]*)['"]/,
+    );
   });
 
   it('the market transport names one host and sets no HTTP method at all, so it can only ever GET', () => {
@@ -243,7 +268,7 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer'
     const fetchPattern = /\bfetch\s*\(/;
     const offenders: string[] = [];
     for (const file of scannedFiles) {
-      if (file === HTTPS_TRANSPORT_FILE || file === MARKET_TRANSPORT_FILE) continue;
+      if (file === HTTPS_TRANSPORT_FILE || file === MARKET_TRANSPORT_FILE || file === USAGE_PING_TRANSPORT_FILE) continue;
       const text = readFileSync(file, 'utf8');
       if (importPattern.test(text) || fetchPattern.test(text)) {
         offenders.push(file);
@@ -267,6 +292,17 @@ describe('Guard 2 — https-transport.ts is the sole transport-library importer'
       (file) => file !== MARKET_TRANSPORT_FILE && readFileSync(file, 'utf8').includes(MARKET_SNAPSHOT_HOST),
     );
     expect(offenders, `Only market-transport.ts names the snapshot host. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
+  });
+
+  it('usage-ping-transport.ts itself does reach the network (sanity — its exemption is not vacuous)', () => {
+    expect(readFileSync(USAGE_PING_TRANSPORT_FILE, 'utf8')).toMatch(/\bfetch\s*\(/);
+  });
+
+  it('nothing outside usage-ping-transport.ts names the usage ping host', () => {
+    const offenders = scannedFiles.filter(
+      (file) => file !== USAGE_PING_TRANSPORT_FILE && readFileSync(file, 'utf8').includes(USAGE_PING_HOST),
+    );
+    expect(offenders, `Only usage-ping-transport.ts names the usage host. Offenders: ${JSON.stringify(offenders)}`).toEqual([]);
   });
 });
 
