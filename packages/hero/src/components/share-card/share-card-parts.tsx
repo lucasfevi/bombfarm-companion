@@ -23,6 +23,7 @@ export function rarityIndexOf(hero: Pick<HeroRecord, 'rarity'>): number {
 
 export function ShareStars({ stars }: { stars: number }) {
   const { filled, empty } = shareStars(stars);
+  if (filled === 0) return null;
   return (
     <span className="shrink-0 text-[11px] leading-none tracking-[1px]" aria-hidden>
       <span className="text-gold">{'★'.repeat(filled)}</span>

@@ -185,7 +185,10 @@ describe('shareDpsText', () => {
 describe('shareStars', () => {
   it('splits a hero stars into the lit and the unlit of three', () => {
     expect(shareStars(2)).toEqual({ filled: 2, empty: 1 });
-    expect(shareStars(0)).toEqual({ filled: 0, empty: 3 });
     expect(shareStars(7)).toEqual({ filled: 3, empty: 0 });
+  });
+
+  it('draws nothing for a hero with no stars, not three unlit ones', () => {
+    expect(shareStars(0)).toEqual({ filled: 0, empty: 0 });
   });
 });

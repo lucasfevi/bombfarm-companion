@@ -157,5 +157,5 @@ export const SHARE_MAX_STARS = 3;
 
 export function shareStars(stars: number): { readonly filled: number; readonly empty: number } {
   const filled = Math.max(0, Math.min(SHARE_MAX_STARS, Math.round(stars)));
-  return { filled, empty: SHARE_MAX_STARS - filled };
+  return { filled, empty: filled === 0 ? 0 : SHARE_MAX_STARS - filled };
 }

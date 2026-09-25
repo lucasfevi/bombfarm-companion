@@ -48,8 +48,8 @@ function AuraTile({ tile, copy, lang }: { tile: AuraCoverageTile; copy: ShareCar
     >
       <AbilityIcon code={tile.auraId} size="xs" className="size-[30px]" />
       <div className="min-w-0 leading-tight">
-        <p className="m-0 truncate text-xs text-ink">{abilityName(tile.auraId, lang)}</p>
-        <p className={cn('m-0', 'truncate', 'text-[10.5px]', tile.covered ? 'font-semibold text-up' : 'text-muted')}>
+        <p className="m-0 text-xs text-ink">{abilityName(tile.auraId, lang)}</p>
+        <p className={cn('m-0', 'text-[10.5px]', tile.covered ? 'font-semibold text-up' : 'text-muted')}>
           {tile.covered ? tile.valueText : copy.auraMissing}
         </p>
         <p className="m-0 font-mono text-[10px] text-muted tabular-nums">
