@@ -215,3 +215,26 @@ export type {
   LeaderboardView,
   SortableLeaderboardColumnId,
 } from './roster-leaderboard';
+export {
+  SHARE_FEATURED_COUNT,
+  SHARE_FEATURES,
+  SHARE_MAX_STARS,
+  clampSharePhase,
+  compareByPower,
+  defaultShareCardSettings,
+  featuredRows,
+  initialSharePhase,
+  shareCardLayout,
+  shareCardTotals,
+  shareDpsText,
+  sharePicksFor,
+  shareStars,
+  togglePick,
+} from './share-card';
+export type {
+  ShareCardLayout,
+  ShareCardSettings,
+  ShareCardTotals,
+  ShareFeature,
+  SharePickShortcut,
+} from './share-card';

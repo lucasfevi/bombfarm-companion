@@ -19,6 +19,7 @@ import {
   HiMiniLockClosed,
   HiMiniSquares2X2,
   HiMiniBars3,
+  HiMiniShare,
   HiMiniTableCells,
   HiMiniWindow,
   HiMiniSparkles,
@@ -89,6 +90,8 @@ export const uiIconRegistry = {
   coffee: BiCoffee,
   // The referral-code controls in both apps' chrome — copy the code to the clipboard
   copy: BiCopy,
+  // The desktop Heroes screen's opener for the roster share card
+  share: HiMiniShare,
   // toast/notification `success` variant (m2-toast-settings)
   'check-circle': HiMiniCheckCircle,
   // toast/notification `error` variant (m2-toast-settings)

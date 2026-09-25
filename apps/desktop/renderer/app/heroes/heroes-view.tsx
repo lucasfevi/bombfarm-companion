@@ -17,6 +17,7 @@ import {
   Banner,
   Button,
   EmptyState,
+  Icon,
   Panel,
   Tabs,
   adviceSplitClass,
@@ -46,8 +47,10 @@ import {
   RosterRail,
   RosterSummaryStrip,
   RosterToolbar,
+  ShareCardDialog,
   SheetTable,
 } from '@bombfarm/hero/components';
+import type { ShareCardActions, ShareCardData } from '@bombfarm/hero/components';
 import {
   DEFAULT_LEADERBOARD_VIEW,
   DEFAULT_ROSTER_BOARD_SORT,
@@ -96,12 +99,15 @@ import {
   useFarmCopy,
   useGearPanelCopy,
   useHeroDetailCopy,
+  useShareCardCopy,
   useStatPanelCopy,
 } from '../screen-copy';
 import { heroNextPointRanking } from './hero-detail-panels';
 import { heroesScreenModel, type HeroesScreenModel } from './heroes-screen-model';
 import { resolveSelectedHeroId, selectedRow } from './hero-selection';
-import { readHeroPhase, shownHeroPhase } from './hero-phase';
+import { LAST_KNOWN_PHASE, readHeroPhase, shownHeroPhase } from './hero-phase';
+import { createShareCardDps } from './share-card-dps';
+import { copyCardImage } from './copy-card-image';
 import { useFarmSelectedPhase } from './use-farm-selected-phase';
 import { heroFigures, type HeroFigures } from './hero-figures';
 import { cachedAbilityGains, createAbilityGainCache } from './ability-gain-cache';
@@ -362,15 +368,22 @@ function HeroesRoster({
         onSelectHeroId={onSelectHeroId}
         lang={lang}
       />
-      <RosterToolbar
-        rows={rows}
-        sort={rosterSort}
-        filter={rosterFilter}
-        viewMode={viewMode}
-        actions={toolbarActions}
-        t={rosterCopy}
-        lang={lang}
-      />
+      {/* The toolbar is the web planner's too; sharing is this app's alone, so it sits beside it
+          rather than inside it. */}
+      <div className="flex min-w-0 items-start gap-2.5">
+        <div className="min-w-0 flex-1">
+          <RosterToolbar
+            rows={rows}
+            sort={rosterSort}
+            filter={rosterFilter}
+            viewMode={viewMode}
+            actions={toolbarActions}
+            t={rosterCopy}
+            lang={lang}
+          />
+        </div>
+        <RosterShare rows={rows} roster={roster} lang={lang} />
+      </div>
       {/* One presentation at a time, cross-faded: `mode="wait"` lets the outgoing one finish
           before the incoming one lays out, which is what keeps a board of twenty-two cards from
           measuring itself against a rail that is still on screen. `reducedMotion="user"` turns
@@ -481,6 +494,51 @@ function HeroesRoster({
         actions={{ onSelectHero }}
       />
     </div>
+  );
+}
+
+function writeClipboardImage(png: Uint8Array) {
+  const bridge = (window as unknown as { bfc?: NonNullable<Window['bfc']> }).bfc;
+  if (bridge === undefined) return Promise.resolve({ ok: false as const, reason: 'write-failed' as const });
+  return bridge.invoke('clipboard:writeImage', png);
+}
+
+const SHARE_ACTIONS: ShareCardActions = {
+  copyImage: (card) => copyCardImage(card, writeClipboardImage),
+};
+
+function RosterShare({ rows, roster, lang }: { rows: RosterModel['rows']; roster: RosterModel['roster']; lang: Lang }) {
+  const [open, setOpen] = useState(false);
+  const shareCopy = useShareCardCopy();
+  const data = useMemo<ShareCardData>(
+    () => ({
+      rows,
+      identity: {
+        playerName: roster.account.playerName ?? null,
+        accountId: roster.account.accountId ?? null,
+        phase: roster.account.phase,
+        maxPhase: roster.account.maxPhase ?? null,
+      },
+      lastKnownPhase: LAST_KNOWN_PHASE,
+      dpsAt: createShareCardDps(roster),
+    }),
+    [rows, roster],
+  );
+  return (
+    <>
+      <Button
+        variant="ghost"
+        className="inline-flex shrink-0 items-center gap-1.5"
+        onClick={() => {
+          setOpen(true);
+        }}
+        data-testid="heroes-share-open"
+      >
+        <Icon name="share" size="sm" />
+        {shareCopy.openButton}
+      </Button>
+      <ShareCardDialog open={open} onOpenChange={setOpen} data={data} actions={SHARE_ACTIONS} lang={lang} />
+    </>
   );
 }
 

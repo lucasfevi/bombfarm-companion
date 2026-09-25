@@ -36,6 +36,7 @@ export default defineConfig({
         'skills.spec.mjs',
         'heroes-combat.spec.mjs',
         'heroes-roster-board.spec.mjs',
+        'heroes-share-card.spec.mjs',
         'heroes-stages-and-scrollbars.spec.mjs',
         'live-earnings-no-layout-shift.spec.mjs',
         'live-hero-row-no-layout-shift.spec.mjs',

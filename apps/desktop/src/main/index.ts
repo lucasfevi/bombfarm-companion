@@ -1,6 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, shell, type WebContents } from 'electron';
+import { app, BrowserWindow, clipboard, ipcMain, Menu, nativeImage, screen, shell, type WebContents } from 'electron';
 import {
   DEFAULT_SETTINGS,
   EMPTY_FORGE_HISTORY,
@@ -135,6 +135,7 @@ import {
   type WindowPort,
 } from './shell/window-lifecycle.js';
 import { broadcastEventToWindows } from './shell/broadcast-event.js';
+import { writeClipboardImage } from './shell/clipboard-image.js';
 import { isWindowRevealSuppressed } from './shell/window-reveal.js';
 import {
   createMiniLiveController,
@@ -555,6 +556,13 @@ function registerIpcHandlers(): void {
       miniLiveController?.fitGrowthAxis(content);
       return null;
     },
+    'clipboard:writeImage': (bytes: unknown) =>
+      writeClipboardImage(bytes, {
+        decodePng: (buffer) => nativeImage.createFromBuffer(buffer),
+        writeImage: (image) => {
+          clipboard.writeImage(image);
+        },
+      }),
   };
 
   ipcMain.handle('bfc:invoke', (_event, channel: string, ...args: unknown[]) => {

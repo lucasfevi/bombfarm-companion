@@ -403,6 +403,15 @@ export interface WindowStateView {
   maximized: boolean;
 }
 
+/** Why a picture did not reach the clipboard: the bytes were not a PNG main could decode, or the
+ *  write itself threw. */
+export type ClipboardImageRefusal = 'not-an-image' | 'write-failed';
+
+/** On success, the size of the picture the clipboard now holds, in pixels. */
+export type ClipboardImageResult =
+  | { ok: true; width: number; height: number }
+  | { ok: false; reason: ClipboardImageRefusal };
+
 /** Where the account the renderer reads came from. A fixture has no server behind it, so
  *  nothing that would send a write can run against one. */
 export type AccountSource = 'server' | 'fixture';
@@ -542,6 +551,10 @@ export interface IpcChannels {
   /** A kept film, read down to one point per second and the facts the frames settle. `null` when
    *  no film with that id is held. The 2 MB body never crosses the bridge. */
   'pvp:film': { args: [number]; result: PvpFilmView | null };
+  /** Puts a PNG the renderer drew on the system clipboard as an image. The renderer has no
+   *  clipboard of its own that holds pictures reliably — the web one refuses an unfocused
+   *  window — so main writes it. Main re-checks the bytes are a PNG before writing anything. */
+  'clipboard:writeImage': { args: [Uint8Array]; result: ClipboardImageResult };
 }
 
 export type IpcInvokeChannel = keyof IpcChannels;
@@ -599,6 +612,7 @@ export const IPC_CHANNELS = [
   'pvp:history',
   'pvp:refresh',
   'pvp:film',
+  'clipboard:writeImage',
 ] as const satisfies readonly IpcInvokeChannel[];
 
 export type IpcEventChannel =

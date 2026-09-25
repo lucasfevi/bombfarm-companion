@@ -15,12 +15,14 @@ import { farmCopyFor, type FarmCopy, type FarmScreenCopy } from '@bombfarm/farm/
 import {
   gearPanelCopyFor,
   heroCopyFor,
+  shareCardCopyFor,
   statPanelCopyFor,
   type GearPanelCopy,
   type HeroCopy,
   type Lang,
   type RosterBoardCopy,
   type RosterCopy,
+  type ShareCardCopy,
   type StatPanelCopy,
 } from '@bombfarm/hero/copy';
 import {
@@ -132,6 +134,12 @@ export function useStatPanelCopy(): StatPanelCopy {
 
 export function useGearPanelCopy(): GearPanelCopy {
   return gearPanelCopyFor(useLocale().lang);
+}
+
+/** The share card prints its own words, as the stat panels do; the Heroes screen's button that
+ *  opens it borrows one of them so the button and the dialog it opens say the same thing. */
+export function useShareCardCopy(): ShareCardCopy {
+  return shareCardCopyFor(useLocale().lang);
 }
 
 /** The board's dictionary plus this app's hero-identity vocabulary — what the phase explorer

@@ -9,6 +9,10 @@
       "default": "./src/index.ts"
     },
     "./styles.css": "./src/styles.css",
+    "./site-address": {
+      "types": "./src/site-address.ts",
+      "default": "./src/site-address.ts"
+    },
     "./*": {
       "types": "./src/*",
       "default": "./src/*"

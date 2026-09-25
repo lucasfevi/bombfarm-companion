@@ -8,9 +8,13 @@ import type { StatPanelCopy } from './stat-panel-copy';
 import { showcaseEn } from './showcase-en';
 import { showcasePtBR } from './showcase-pt-BR';
 import type { ShowcaseCopy } from './showcase-copy';
+import { shareCardEn } from './share-card-en';
+import { shareCardPtBR } from './share-card-pt-BR';
+import type { ShareCardCopy } from './share-card-copy';
 
 export { sub } from './format';
 export type { ShowcaseCopy } from './showcase-copy';
+export type { ShareCardCopy } from './share-card-copy';
 export { showcaseEn } from './showcase-en';
 export { showcasePtBR } from './showcase-pt-BR';
 export type { RosterCopy } from './roster-copy';
@@ -72,4 +76,10 @@ export const SHOWCASE_STRINGS: Record<Lang, ShowcaseCopy> = { en: showcaseEn, pt
 
 export function showcaseCopyFor(lang: Lang): ShowcaseCopy {
   return SHOWCASE_STRINGS[lang];
+}
+
+export const SHARE_CARD_STRINGS: Record<Lang, ShareCardCopy> = { en: shareCardEn, pt: shareCardPtBR };
+
+export function shareCardCopyFor(lang: Lang): ShareCardCopy {
+  return SHARE_CARD_STRINGS[lang];
 }
