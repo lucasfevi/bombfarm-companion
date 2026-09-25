@@ -1,5 +1,5 @@
 ---
-'@bombfarm/pricing': minor
+"@bombfarm/pricing": minor
 ---
 
 Identify market rows by generating the names the committed catalog says each item would be listed
