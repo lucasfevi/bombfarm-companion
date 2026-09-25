@@ -171,7 +171,7 @@ export const heroPtBR: HeroCopy = {
     "O que uma explosão mostra no jogo. {names} soma dano que nenhuma explosão isolada mostra, então fica de fora aqui; o DPS ativo carrega isso como ×{mult}.",
   heroDetailBreakdownNoteFieldWithoutTeamDrain: "Sem o {name} do time isto seria {secs}s.",
   heroDetailBreakdownNoteActiveConstants:
-    "O espalhamento da explosão é 1 + 0,5 por célula de alcance ({cells} células aqui): cada célula além do epicentro alcança em média meio hit de props. A eficiência da IA é o ×0,9 fixo do jogo para o remirar e as bombas mal colocadas de um herói em campo; todo DPS ativo deste app carrega isso.",
+    "O espalhamento da explosão é 1 + 0,5 por célula de alcance ({cells} células aqui): cada célula além do epicentro alcança em média meio hit de props. O alcance é sempre em células inteiras — Explosão Ampla o sobe nos níveis 10 e 20. A eficiência da IA é o ×0,9 fixo do jogo para o remirar e as bombas mal colocadas de um herói em campo; todo DPS ativo deste app carrega isso.",
   heroDetailBreakdownNoteBatonHeld:
     "A Passagem de Bastão conta como se o pulso nunca acabasse: o tempo em campo inteiro a +{pct}%. A página Farm e o Otimizador contam só os 120 s que cada entrada acende.",
   heroDetailBreakdownPenCovers: "nada perdido para a mitigação",
