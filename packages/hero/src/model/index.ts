@@ -158,3 +158,40 @@ export type {
   MatrixRow,
   PenetrationCardReading,
 } from './combat-breakdown';
+export {
+  HERO_TYPE_IDS,
+  HERO_TYPE_VOTERS,
+  HERO_TYPE_MIN_VOTING_LEVEL,
+  SECOND_HERO_TYPE_SHARE,
+  WIDE_BLAST_ABILITY_ID,
+  heroTypeLabel,
+  heroTypeLabels,
+  heroTypeOfAbility,
+  heroTypesFor,
+  wideBlastOf,
+} from './hero-types';
+export type { HeroTypeId, WideBlastReading } from './hero-types';
+export { highestRollsFor, highestRollsText } from './highest-rolls';
+export type { HighestRoll } from './highest-rolls';
+export { equippedGearAverages, equippedItemsOf, isSquadHero, rosterSummaryFor } from './roster-summary';
+export type { EquippedGearAverages, RarityCount, RosterSummary, SummaryHero } from './roster-summary';
+export { auraCoverageFor } from './aura-coverage';
+export type { AuraCoverage, AuraCoverageTile } from './aura-coverage';
+export {
+  LEADERBOARD_COLUMNS,
+  LEADERBOARD_COLUMN_IDS,
+  LEADERBOARD_FILTERS,
+  LEADERBOARD_FILTER_LABELS,
+  filterLeaderboardRows,
+  heroStatSheet,
+  leaderboardRowsFor,
+  sortLeaderboardRows,
+} from './roster-leaderboard';
+export type {
+  LeaderboardColumn,
+  LeaderboardColumnId,
+  LeaderboardFilter,
+  LeaderboardRow,
+  LeaderboardSortDirection,
+  SortableLeaderboardColumnId,
+} from './roster-leaderboard';

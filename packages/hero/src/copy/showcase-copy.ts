@@ -1,0 +1,59 @@
+/**
+ * The strings the roster showcase prints — hero types, highest rolls, the summary strip, the
+ * team-aura grid and the leaderboard.
+ *
+ * Owned here rather than host-supplied: no host prints any of this on another screen, so making
+ * both hosts translate it would give every string two owners.
+ */
+import type { SheetKey } from '@bombfarm/domain/planner-constants';
+
+export type ShowcaseCopy = {
+  readonly typeCrit: string;
+  readonly typeHeavy: string;
+  readonly typePierce: string;
+  readonly typeFinish: string;
+  readonly typeGate: string;
+  readonly typeLoot: string;
+  readonly typeBuff: string;
+  readonly typeEndure: string;
+  readonly typeNone: string;
+  /** `{rolls}` — the stat labels and percentages, already joined. */
+  readonly highestRolls: string;
+  /** `{stat}` `{pct}` — one entry of {@link highestRolls}. */
+  readonly highestRollEntry: string;
+  readonly highestRollsSeparator: string;
+  /** Short enough for a card line; spelled as the players say them. */
+  readonly rollStat: { readonly [K in SheetKey]: string };
+  readonly summarySquadPower: string;
+  readonly summaryTopHeroes: string;
+  readonly summaryRarityMix: string;
+  readonly summaryMaxPhase: string;
+  readonly summaryAverageItemLevel: string;
+  readonly summaryAverageForge: string;
+  /** `{count}` */
+  readonly summarySquadCount: string;
+  /** `{count}` */
+  readonly summaryBenchCount: string;
+  readonly aurasTitle: string;
+  /** `{covered}` `{total}` */
+  readonly aurasCovered: string;
+  /** `{level}` `{max}` */
+  readonly auraLevel: string;
+  readonly auraNoCarrier: string;
+  readonly columnPosition: string;
+  readonly columnName: string;
+  readonly columnRarity: string;
+  readonly columnLevel: string;
+  readonly columnBirth: string;
+  readonly columnPower: string;
+  readonly columnAttack: string;
+  readonly columnCritChance: string;
+  readonly columnCritDmg: string;
+  readonly columnLuck: string;
+  readonly columnSpeed: string;
+  readonly columnAbilities: string;
+  readonly columnGear: string;
+  readonly filterEveryone: string;
+  readonly filterSquad: string;
+  readonly filterBench: string;
+};

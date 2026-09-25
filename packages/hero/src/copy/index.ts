@@ -5,8 +5,14 @@ import { gearPanelEn, statPanelEn } from './panel-en';
 import { gearPanelPtBR, statPanelPtBR } from './panel-pt-BR';
 import type { GearPanelCopy } from './gear-panel-copy';
 import type { StatPanelCopy } from './stat-panel-copy';
+import { showcaseEn } from './showcase-en';
+import { showcasePtBR } from './showcase-pt-BR';
+import type { ShowcaseCopy } from './showcase-copy';
 
 export { sub } from './format';
+export type { ShowcaseCopy } from './showcase-copy';
+export { showcaseEn } from './showcase-en';
+export { showcasePtBR } from './showcase-pt-BR';
 export type { RosterCopy } from './roster-copy';
 export type { RosterBoardCopy } from './roster-board-copy';
 export type { HeroPanelCopy } from './hero-panel-copy';
@@ -60,4 +66,10 @@ export function statPanelCopyFor(lang: Lang): StatPanelCopy {
 
 export function gearPanelCopyFor(lang: Lang): GearPanelCopy {
   return GEAR_PANEL_STRINGS[lang];
+}
+
+export const SHOWCASE_STRINGS: Record<Lang, ShowcaseCopy> = { en: showcaseEn, pt: showcasePtBR };
+
+export function showcaseCopyFor(lang: Lang): ShowcaseCopy {
+  return SHOWCASE_STRINGS[lang];
 }
