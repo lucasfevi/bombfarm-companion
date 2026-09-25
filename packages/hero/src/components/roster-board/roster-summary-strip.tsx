@@ -32,6 +32,8 @@ const WIDE_COLUMNS: Record<number, string> = {
 
 const eyebrowClass = 'm-0 text-[10px] font-bold tracking-[0.08em] text-muted uppercase';
 const figureClass = 'm-0 mt-1 font-mono text-[22px] leading-tight font-semibold tabular-nums text-ink';
+/** A figure with words in it reads in the sans face; the mono face spaces its letters apart. */
+const wordedFigureClass = 'm-0 mt-1 text-[20px] leading-tight font-semibold tabular-nums text-ink';
 
 export function RosterSummaryStrip({
   rows,
@@ -66,7 +68,7 @@ export function RosterSummaryStrip({
     rest.push(
       <SummaryCell key="gear" testId="roster-summary-gear">
         <p className={eyebrowClass}>{copy.summarySquadGear}</p>
-        <p className={figureClass}>{gearText}</p>
+        <p className={wordedFigureClass}>{gearText}</p>
         <p className="m-0 mt-1 text-[11px] text-muted">
           {sub(copy.summaryGearItems, { count: summary.squadGear.itemCount })}
         </p>
