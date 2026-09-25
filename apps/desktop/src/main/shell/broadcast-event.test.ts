@@ -66,6 +66,7 @@ describe('broadcastEventToWindows', () => {
       forgeWritesEnabled: false,
       restartGameOnExit: false,
       marketQuoteCurrency: 'BRL',
+      usagePingEnabled: true,
     };
 
     broadcastEventToWindows([first, second], 'bfc:event:settings:changed', payload);

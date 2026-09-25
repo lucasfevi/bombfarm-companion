@@ -15,6 +15,7 @@ const EN: AppSettings = {
   forgeWritesEnabled: false,
   restartGameOnExit: false,
   marketQuoteCurrency: 'BRL',
+  usagePingEnabled: true,
 };
 const PT_BR: AppSettings = {
   schemaVersion: 4,
@@ -24,6 +25,7 @@ const PT_BR: AppSettings = {
   forgeWritesEnabled: false,
   restartGameOnExit: false,
   marketQuoteCurrency: 'BRL',
+  usagePingEnabled: true,
 };
 
 describe.each(availableBindings)('createSettingsStore over the real account_meta table (%s)', (binding) => {
@@ -92,14 +94,19 @@ describe.each(availableBindings)('createSettingsStore over the real account_meta
     const store = createSettingsStore(open.db);
     const migrated = store.read();
 
-    expect(migrated).toEqual({ ...storedV3, schemaVersion: 4, marketQuoteCurrency: 'BRL' });
+    expect(migrated).toEqual({ ...storedV3, schemaVersion: 4, marketQuoteCurrency: 'BRL', usagePingEnabled: true });
     if (!migrated) throw new Error('expected the v3 row to migrate');
 
     store.write({ ...migrated, marketQuoteCurrency: 'USD' });
     const row = open.db.prepare('SELECT value FROM account_meta WHERE key = ?').get('settings_v1') as
       | { value: string }
       | undefined;
-    expect(JSON.parse(row?.value ?? '')).toEqual({ ...storedV3, schemaVersion: 4, marketQuoteCurrency: 'USD' });
+    expect(JSON.parse(row?.value ?? '')).toEqual({
+      ...storedV3,
+      schemaVersion: 4,
+      marketQuoteCurrency: 'USD',
+      usagePingEnabled: true,
+    });
     expect(store.read()?.marketQuoteCurrency).toBe('USD');
   });
 

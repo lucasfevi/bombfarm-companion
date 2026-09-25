@@ -113,7 +113,9 @@ import {
   applyLocale as applyLocaleSettings,
   applyMarketQuoteCurrency as applyMarketQuoteCurrencySettings,
   applyRestartGameOnExit as applyRestartGameOnExitSettings,
+  applyUsagePingEnabled as applyUsagePingEnabledSettings,
 } from './shell/settings-apply.js';
+import { accountIdentityOf, createElectronUsagePing, type UsagePing } from './usage-ping/index.js';
 import { createElectronTray } from './shell/electron-tray.js';
 import { resolveAppIconPath } from './shell/app-icon-path.js';
 import {
@@ -187,6 +189,7 @@ let layoutPersistTimer: ReturnType<typeof setTimeout> | null = null;
 let miniLiveController: MiniLiveController | null = null;
 let miniLayoutPersistTimer: ReturnType<typeof setTimeout> | null = null;
 let gameKeepAlive: GameKeepAlive | null = null;
+let usagePing: UsagePing | null = null;
 
 function emitEvent<C extends IpcEventChannel>(channel: C, payload: IpcEvents[C]): void {
   broadcastEventToWindows(BrowserWindow.getAllWindows(), `bfc:event:${channel}`, payload);
@@ -283,6 +286,17 @@ function applyRestartGameOnExit(enabled: unknown): SettingsWriteResult {
     enabled,
     setEnabled: (on) => {
       gameKeepAlive?.setEnabled(on);
+    },
+    persist: persistSettings,
+  });
+}
+
+function applyUsagePingEnabled(enabled: unknown): SettingsWriteResult {
+  return applyUsagePingEnabledSettings({
+    current: currentSettings,
+    enabled,
+    setEnabled: (on) => {
+      usagePing?.setEnabled(on);
     },
     persist: persistSettings,
   });
@@ -461,6 +475,7 @@ function registerIpcHandlers(): void {
     'settings:setRestartGameOnExit': (enabled: boolean): SettingsWriteResult => applyRestartGameOnExit(enabled),
     'settings:setMarketQuoteCurrency': (currency: MarketQuoteCurrency): SettingsWriteResult =>
       applyMarketQuoteCurrency(currency),
+    'settings:setUsagePingEnabled': (enabled: boolean): SettingsWriteResult => applyUsagePingEnabled(enabled),
     'storage:health': () => storage?.healthCheck() ?? { binding: 'unknown', ok: false },
     'game:getStatus': () => gameReader?.getStatus() ?? {
       status: 'not_running' as const,
@@ -1072,6 +1087,21 @@ async function bootstrap(): Promise<void> {
   gameKeepAlive.setEnabled(currentSettings.restartGameOnExit);
   gameKeepAlive.start();
 
+  usagePing = createElectronUsagePing({
+    isPackaged: resolveAppEnv().isPackaged,
+    db: accountOpen.db,
+    flavor: resolveAppEnv().flavor,
+    version: app.getVersion(),
+    isEnabled: () => currentSettings.usagePingEnabled,
+    readAccount: () =>
+      accountIdentityOf(resolveCachedAccountView({ gameReader, consentStore, accountRefresh })?.payload ?? null),
+    log: (event, detail) => {
+      log.info({ scope: 'main', event, ...detail });
+    },
+  });
+  usagePing?.setEnabled(currentSettings.usagePingEnabled);
+  usagePing?.start();
+
   const gate = createPacingGate({
     now: () => Date.now(),
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
@@ -1363,6 +1393,8 @@ if (!gotLock) {
     gameReader = null;
     gameKeepAlive?.stop();
     gameKeepAlive = null;
+    usagePing?.stop();
+    usagePing = null;
     accountRefresh?.stop();
     accountRefresh = null;
     liveFastPublisher?.stop();

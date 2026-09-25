@@ -19,6 +19,7 @@ describe('site sections', () => {
       'skills',
       'account',
       'download',
+      'privacy',
     ]);
     expect(NAV_SECTIONS).toEqual([
       'home',
@@ -52,5 +53,12 @@ describe('site sections', () => {
   it('download is a section but not a tab', () => {
     expect(SITE_SECTIONS).toContain('download');
     expect(NAV_SECTIONS).not.toContain('download');
+  });
+
+  it('privacy is a section reached from the footer, not a tab', () => {
+    expect(NAV_SECTIONS).not.toContain('privacy');
+    expect(SITE_SECTION_HREF.privacy).toBe('/privacy');
+    expect(STRINGS.en[SITE_SECTION_LABEL_KEY.privacy]).toBe('Privacy');
+    expect(STRINGS.pt[SITE_SECTION_LABEL_KEY.privacy]).toBe('Privacidade');
   });
 });
