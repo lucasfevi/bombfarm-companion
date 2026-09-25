@@ -96,6 +96,8 @@ test.describe('the Heroes screen\'s share card', () => {
   /** @type {import('@playwright/test').Page} */
   let page;
   let runDir;
+  /** The developer's own clipboard, put back after the copy test overwrites it. */
+  let savedClipboard;
 
   test.beforeAll(async () => {
     runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bfc-heroes-share-card-'));
@@ -115,6 +117,15 @@ test.describe('the Heroes screen\'s share card', () => {
   });
 
   test.afterAll(async () => {
+    if (savedClipboard) {
+      await app
+        ?.evaluate(({ clipboard, nativeImage }, saved) => {
+          clipboard.clear();
+          const image = saved.png ? nativeImage.createFromBuffer(Buffer.from(saved.png, 'base64')) : undefined;
+          clipboard.write({ text: saved.text, html: saved.html, ...(image && !image.isEmpty() ? { image } : {}) });
+        }, savedClipboard)
+        .catch(() => undefined);
+    }
     await app?.close().catch(() => undefined);
     fs.rmSync(runDir, { recursive: true, force: true });
   });
@@ -151,8 +162,15 @@ test.describe('the Heroes screen\'s share card', () => {
   });
 
   test('Copy as image leaves a PNG of the card at twice its size on the clipboard', async () => {
-    await app.evaluate(({ clipboard }) => {
+    savedClipboard = await app.evaluate(({ clipboard }) => {
+      const image = clipboard.readImage();
+      const saved = {
+        text: clipboard.readText(),
+        html: clipboard.readHTML(),
+        png: image.isEmpty() ? '' : image.toPNG().toString('base64'),
+      };
       clipboard.clear();
+      return saved;
     });
     const card = page.getByTestId('share-card');
     const size = await card.evaluate((node) => ({ width: node.offsetWidth, height: node.offsetHeight }));
