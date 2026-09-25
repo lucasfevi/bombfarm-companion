@@ -173,11 +173,15 @@ immutable, so the two are separate live order books for one item. Ten rows were 
 pre-rename form on 2026-09-23. Two hashes sharing one identity is exactly what `alternates` is for.
 
 **Steam's per-row `type` is the early warning, and it is free.** The enumeration already returns it:
-`Amulet`, `Chestplate`, `Chest`, `Map Key`, `Hero`. It is not a source — the generated match has
-already settled what the row is — but a row that still matches a generated name while Steam types it
-as a different slot means the name form has moved under us, and the next change will be the one that
-matches nothing at all. That disagreement is recorded as a `name-form-drift` anomaly and raised as a
-run annotation.
+measured live on 2026-09-25, it is the bare slot word for equipment — `Amulet`, `Boots`, `Chestplate`
+— and one word for everything else (`Chest`, `Gem`, `Map Key`, `Hero`, `Skill Stone`, `Skins`, and
+`House Part` for a Time Part, which nothing cross-checks). It is not a source — the generated match
+has already settled what the row is — but a row that still matches a generated name while Steam no
+longer names the slot that name implies means the naming has moved under us, and the next change will
+be the one that matches nothing at all. That disagreement is
+recorded as a `name-form-drift` anomaly and raised as a
+run annotation. **A blank `type` claims nothing and is not drift** — every pre-rename hash still
+listed carries `""`, so reading blank as a disagreement reported all ten of them on every run.
 
 **A full live run costs about 30 calls, all of it enumeration.** What this replaced asked one
 facet-narrowed query per tag to learn what each row was — `category_<appid>_<facet>[]=tag_<value>`,

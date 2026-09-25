@@ -93,15 +93,27 @@ function entryFor(row: SearchRow, identity: MarketName | null, fetchedUtc: strin
  *
  * The enumeration returns this field for free, and it is not a source — the generated match
  * already settled what the row is. It is the early warning: a row that still matches a generated
- * name while Steam types it as a different slot means the name form has moved under us, and the
- * next form change will be the one that matches nothing at all.
+ * name while Steam no longer calls it the slot that name implies means the naming has moved under
+ * us, and the next change will be the one that matches nothing at all.
+ *
+ * Measured against the live market on 2026-09-25: Steam sends the bare slot word, and 248 of the 258
+ * equipment rows matched it exactly. Asked as "is the slot noun among the words" anyway, because a
+ * qualifier in front of it would not be drift — the slot would still be the one the name implies —
+ * and this repository already carries a recorded `Uncommon Weapon`, so the field has either been
+ * qualified before or is written down wrong somewhere. Tolerating both costs nothing and fires on
+ * the only thing worth firing on: the slot noun changing.
+ *
+ * A blank `type` claims nothing and is not drift. The ten pre-rename hashes still listed all carry
+ * `""`, so treating blank as a disagreement reported all ten on every run — a false alarm on rows
+ * that had matched correctly and keyed correctly.
  */
 function nameFormDrift(row: SearchRow, identity: MarketName): Anomaly | null {
-  if (identity.type == null || row.type == null) return null;
-  if (row.type.trim() === identity.type) return null;
+  if (identity.slotWord == null || row.type == null) return null;
+  const words = row.type.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0 || words.includes(identity.slotWord)) return null;
   return {
     kind: 'name-form-drift',
-    detail: `${row.hashName} generates as a ${identity.type} and Steam types it "${row.type}"; the name form has moved`,
+    detail: `${row.hashName} generates as ${identity.slotWord} and Steam types it "${row.type}"; the naming has moved`,
   };
 }
 

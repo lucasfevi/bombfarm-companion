@@ -10,7 +10,10 @@ export interface SearchRow {
   sellPriceCents: number | null;
   listings: number;
   iconUrl: string | null;
-  /** Steam's own category word for the row — `Amulet`, `Chestplate`, `Chest`, `Map Key`, `Hero`. */
+  /**
+   * Steam's own one-word description of the row — `Amulet`, `Chest`, `Gem`, `Map Key`, `Hero`. Blank
+   * on the pre-rename equipment hashes, which claim nothing rather than claiming something wrong.
+   */
   type: string | null;
 }
 

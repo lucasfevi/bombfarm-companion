@@ -203,14 +203,39 @@ describe('isFullyIdentified', () => {
 });
 
 describe('the cross-check against Steam own type', () => {
-  it('says nothing when the type agrees with the slot the name implies', () => {
+  /** What the live market sends: measured 2026-09-25, the bare slot word on 248 of 258 rows. */
+  it('says nothing when the type is the bare slot word', () => {
     const { anomalies } = reconcileOne('Ember Weapon Lv 10 (Rare)', { type: 'Weapon' });
 
     expect(anomalies).toEqual([]);
   });
 
+  it('says nothing when a qualifier rides in front of it, which is not the slot changing', () => {
+    const { anomalies } = reconcileOne('Ember Weapon Lv 10 (Rare)', { type: 'Uncommon Weapon' });
+
+    expect(anomalies).toEqual([]);
+  });
+
+  /**
+   * The false alarm the live walk found. Every pre-rename hash still listed carries `""`, so a blank
+   * read as a disagreement reported ten rows on every run — rows that had matched and keyed
+   * correctly. Blank claims nothing.
+   */
+  it('says nothing about a blank type, which is what the pre-rename hashes carry', () => {
+    expect(reconcileOne('Ember Weapon (Rare)', { type: '' }).anomalies).toEqual([]);
+    expect(reconcileOne('Ember Weapon (Rare)', { type: '   ' }).anomalies).toEqual([]);
+  });
+
+  it('matches whole words, so a qualifier cannot smuggle a different slot past it', () => {
+    const { anomalies } = reconcileOne('Ember Weapon Lv 10 (Rare)', { type: 'Rare Weaponry' });
+
+    expect(anomalies.map((anomaly) => anomaly.kind)).toEqual(['name-form-drift']);
+  });
+
   it('raises drift when the type names a different slot than the matched name does', () => {
-    const { entries, anomalies } = reconcileOne('Ember Weapon Lv 10 (Rare)', { type: 'Helmet' });
+    const { entries, anomalies } = reconcileOne('Ember Weapon Lv 10 (Rare)', {
+      type: 'Helmet',
+    });
 
     expect(anomalies).toHaveLength(1);
     expect(anomalies[0]?.kind).toBe('name-form-drift');

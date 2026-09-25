@@ -113,10 +113,14 @@ export interface MarketName {
   act: number | null;
   kind: ItemKind | null;
   /**
-   * The `type` Steam's own enumeration reports for a row with this name, where the name form
-   * implies one. Null means nothing is claimed and nothing is cross-checked.
+   * The slot noun Steam's own `type` must name for a row with this name, where the name form
+   * implies a slot at all. Null means nothing is claimed and nothing is cross-checked.
+   *
+   * A noun rather than the whole field: measured live, `type` IS the bare slot word, but the check
+   * reads it as one word among possibly several so that a qualifier appearing in front of it is not
+   * mistaken for the slot having changed.
    */
-  type: string | null;
+  slotWord: string | null;
 }
 
 const titleCase = (word: string): string => word.charAt(0).toUpperCase() + word.slice(1);
@@ -157,7 +161,7 @@ export function generateMarketNames(catalog: CatalogView): Map<string, MarketNam
         level: def.level,
         act: null,
         kind: 'equipment',
-        type: slotWord,
+        slotWord,
       };
       add(`${setWord} ${slotWord} Lv ${String(def.level)} (${rarityWord})`, identity);
       add(`${setWord} ${slotWord} (${rarityWord})`, identity);
@@ -174,7 +178,7 @@ export function generateMarketNames(catalog: CatalogView): Map<string, MarketNam
       level: null,
       act: null,
       kind: itemKindFor('gem'),
-      type: null,
+      slotWord: null,
     });
   }
 
@@ -192,7 +196,7 @@ export function generateMarketNames(catalog: CatalogView): Map<string, MarketNam
         level: null,
         act: null,
         kind: itemKindFor(category),
-        type: null,
+        slotWord: null,
       });
     }
   }
@@ -208,7 +212,7 @@ export function generateMarketNames(catalog: CatalogView): Map<string, MarketNam
       level,
       act: null,
       kind: itemKindFor(CHEST_CATEGORY),
-      type: null,
+      slotWord: null,
     });
   }
 
@@ -225,7 +229,7 @@ export function generateMarketNames(catalog: CatalogView): Map<string, MarketNam
         level: null,
         act,
         kind: itemKindFor(CHEST_CATEGORY),
-        type: null,
+        slotWord: null,
       });
     }
   }
@@ -244,7 +248,7 @@ export function generateMarketNames(catalog: CatalogView): Map<string, MarketNam
       level: null,
       act: null,
       kind: itemKindFor(HERO_CATEGORY),
-      type: null,
+      slotWord: null,
     });
   }
 
@@ -261,7 +265,7 @@ export function generateMarketNames(catalog: CatalogView): Map<string, MarketNam
       level: null,
       act: null,
       kind: itemKindFor(SKIN_CATEGORY),
-      type: null,
+      slotWord: null,
     });
   }
 

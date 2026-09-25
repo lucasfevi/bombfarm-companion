@@ -41,13 +41,13 @@ describe('the equipment name forms', () => {
     expect(names.has('Ember Chest Lv 10 (Rare)')).toBe(false);
   });
 
-  it('claims the slot word as the type Steam reports, which is what the cross-check reads', () => {
-    expect(names.get('Ember Amulet Lv 10 (Rare)')?.type).toBe('Amulet');
-    expect(names.get('Ember Chestplate Lv 10 (Rare)')?.type).toBe('Chestplate');
+  it('claims the slot noun Steam must name, which is what the cross-check looks for', () => {
+    expect(names.get('Ember Amulet Lv 10 (Rare)')?.slotWord).toBe('Amulet');
+    expect(names.get('Ember Chestplate Lv 10 (Rare)')?.slotWord).toBe('Chestplate');
   });
 
-  it('claims no type for anything whose name form implies no slot', () => {
-    expect(names.get('Topaz Gem')?.type).toBeNull();
+  it('claims no slot noun for anything whose name form implies no slot', () => {
+    expect(names.get('Topaz Gem')?.slotWord).toBeNull();
   });
 });
 
