@@ -122,6 +122,16 @@ export const ptBR: Copy = {
     'Com isto ligado, se o jogo fechar enquanto o companion já está aberto, a Steam inicia-o de novo. O companion não inicia o jogo ao abrir. Desligado por padrão.',
   settingsRestartGameOnExitNotSavedTitle: 'Configuração do jogo alterada, mas não salva',
 
+  // settingsUsage* — o aviso de uso a cada hora, e o único interruptor que o torna anônimo
+  settingsUsageSectionTitle: 'Contagem de uso',
+  settingsUsagePingLabel: 'Incluir minha conta na contagem de uso',
+  settingsUsagePingHelp:
+    'Uma vez por hora o app avisa ao nosso servidor que está aberto, para sabermos quantas pessoas o usam. Com isto ligado, esse aviso inclui um código aleatório desta instalação, o id da sua conta do jogo e o seu nome de jogador. Desligado, o aviso leva só a versão do app — sem código, sem conta, sem nome — e o código desta instalação é apagado. Ligado por padrão.',
+  settingsUsagePingNotSavedTitle: 'Configuração de uso alterada, mas não salva',
+  settingsUsagePolicyLabel: 'Política de privacidade',
+  settingsUsagePolicyHelp: 'O que o app envia, por quanto tempo guardamos e como pedir a exclusão.',
+  settingsUsagePolicyAction: 'Ler',
+
   // settingsMarket* — a moeda que este app pede à Steam ao atualizar o preço de um item
   settingsMarketSectionTitle: 'Mercado',
   settingsMarketQuoteCurrencyLabel: 'Moeda dos preços atualizados',

@@ -119,6 +119,21 @@
         "Gold & XP rates",
         "Free · open source"
       ]
+    },
+    "privacy": {
+      "eyebrow": "Privacy",
+      "title": "Privacy policy — Bomb Farm Companion",
+      "description": "What the Bomb Farm Companion desktop app and website collect, why, how long it is kept, and how to turn it off or have it deleted.",
+      "cardHeadline": [
+        "What we collect,",
+        "and how to turn it off."
+      ],
+      "cardChips": [
+        "Hourly usage count",
+        "Opt out anytime",
+        "Nothing sold",
+        "LGPD rights"
+      ]
     }
   },
   "footerUrl": "bombfarm-companion.app"

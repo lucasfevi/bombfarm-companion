@@ -126,6 +126,16 @@ export const en = {
     'When this is on, if the game closes while the companion is already running, Steam starts it again. The companion will not start the game when it itself opens. Off by default.',
   settingsRestartGameOnExitNotSavedTitle: 'Game setting changed, but not saved',
 
+  // settingsUsage* — the hourly usage ping, and the one switch that makes it anonymous
+  settingsUsageSectionTitle: 'Usage count',
+  settingsUsagePingLabel: 'Include my account in the usage count',
+  settingsUsagePingHelp:
+    'Once an hour the app tells our server it is running, so we know how many people use it. While this is on, that message includes a random code for this installation, your game account id and your player name. Turn it off and the message carries only the app version — no code, no account, no name — and this installation’s code is deleted. On by default.',
+  settingsUsagePingNotSavedTitle: 'Usage setting changed, but not saved',
+  settingsUsagePolicyLabel: 'Privacy policy',
+  settingsUsagePolicyHelp: 'What the app sends, how long it is kept, and how to have it deleted.',
+  settingsUsagePolicyAction: 'Read it',
+
   // settingsMarket* — the currency this app asks Steam for when it refreshes one item's price
   settingsMarketSectionTitle: 'Market',
   settingsMarketQuoteCurrencyLabel: 'Currency for refreshed prices',

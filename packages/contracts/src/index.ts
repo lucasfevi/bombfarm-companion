@@ -84,6 +84,7 @@ export { migrateStoredSettings } from './settings-migration.js';
  *  body, never at either module's top level, so the two modules finish initialising before either
  *  is actually called. */
 export * from './locale.js';
+export * from './usage-ping.js';
 export { disabledUpdateStatus, idleUpdateStatus, initialUpdateStatus, UPDATE_CHECK_INTERVAL_MS } from './update.js';
 export type { UpdateErrorReason, UpdatePhase, UpdateStatus } from './update.js';
 export { isTrustworthySection } from './account-payload.js';
@@ -374,6 +375,9 @@ export interface AppSettings {
   /** The currency the desktop's own per-item market quotes are fetched in. The shared published
    *  snapshot stays converted from USD whatever this says. */
   marketQuoteCurrency: MarketQuoteCurrency;
+  /** On until the player turns it off. While on, the hourly usage ping names this install and
+   *  the game account; while off it names neither, and the install's id is deleted. */
+  usagePingEnabled: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -384,6 +388,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   forgeWritesEnabled: false,
   restartGameOnExit: false,
   marketQuoteCurrency: DEFAULT_MARKET_QUOTE_CURRENCY,
+  usagePingEnabled: true,
 };
 
 export type MiniLiveGrowthAxis = 'vertical' | 'horizontal';
@@ -464,6 +469,7 @@ export interface IpcChannels {
   'settings:setForgeWritesEnabled': { args: [boolean]; result: SettingsWriteResult };
   'settings:setRestartGameOnExit': { args: [boolean]; result: SettingsWriteResult };
   'settings:setMarketQuoteCurrency': { args: [MarketQuoteCurrency]; result: SettingsWriteResult };
+  'settings:setUsagePingEnabled': { args: [boolean]; result: SettingsWriteResult };
   /** The main window's caption buttons, drawn in the header rather than by the OS. Zero-arg like
    *  the consent quartet — the channel name is the verb. `window:close` asks the window to close
    *  and does not decide what that means: the shell's own close handler still answers it, so on
@@ -574,6 +580,7 @@ export const IPC_CHANNELS = [
   'settings:setForgeWritesEnabled',
   'settings:setRestartGameOnExit',
   'settings:setMarketQuoteCurrency',
+  'settings:setUsagePingEnabled',
   'window:minimize',
   'window:toggleMaximize',
   'window:close',

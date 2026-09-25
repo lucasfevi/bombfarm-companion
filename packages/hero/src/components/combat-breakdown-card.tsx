@@ -94,7 +94,7 @@ function noteText(copy: HeroCopy, note: CardNote, lang: Lang, formatNumber: (n: 
     case 'batonHeld':
       return sub(copy.heroDetailBreakdownNoteBatonHeld, { pct: formatNumber(note.pct, 0) });
     case 'activeDpsConstants':
-      return sub(copy.heroDetailBreakdownNoteActiveConstants, { cells: formatNumber(note.rangeCells, 1) });
+      return sub(copy.heroDetailBreakdownNoteActiveConstants, { cells: formatNumber(note.rangeCells, 0) });
     case 'fieldWithoutTeamDrain':
       return sub(copy.heroDetailBreakdownNoteFieldWithoutTeamDrain, { name: abilityName(note.auraId, lang), secs: formatNumber(note.seconds, 0) });
     case 'penetration':

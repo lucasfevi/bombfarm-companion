@@ -80,3 +80,18 @@ export function applyMarketQuoteCurrency(deps: {
   const applied: AppSettings = { ...deps.current, schemaVersion: 4, marketQuoteCurrency: deps.next };
   return deps.persist(applied);
 }
+
+export function applyUsagePingEnabled(deps: {
+  current: AppSettings;
+  enabled: unknown;
+  setEnabled: (enabled: boolean) => void;
+  persist: (settings: AppSettings) => SettingsWriteResult;
+}): SettingsWriteResult {
+  if (typeof deps.enabled !== 'boolean') {
+    return { settings: deps.current, persisted: true, reason: null };
+  }
+
+  const applied: AppSettings = { ...deps.current, schemaVersion: 4, usagePingEnabled: deps.enabled };
+  deps.setEnabled(deps.enabled);
+  return deps.persist(applied);
+}

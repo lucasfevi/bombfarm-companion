@@ -6,7 +6,7 @@ const HEROES_DESCRIPTION =
   "Import your Bomb Farm save and see what your next skill point is worth — every hero's geared stats, gear sets, points and DPS. Free, and the save never leaves your browser.";
 
 describe('front page metadata', () => {
-  it('the sitemap lists eight routes, the front page first at full priority and the heroes page at its own address', () => {
+  it('the sitemap lists nine routes, the front page first at full priority and the heroes page at its own address', () => {
     const entries = sitemap();
 
     expect(entries).toEqual([
@@ -18,6 +18,7 @@ describe('front page metadata', () => {
       { url: `${SITE_URL}/skills`, changeFrequency: 'weekly', priority: 0.8 },
       { url: `${SITE_URL}/account`, changeFrequency: 'weekly', priority: 0.8 },
       { url: `${SITE_URL}/download`, changeFrequency: 'weekly', priority: 0.8 },
+      { url: `${SITE_URL}/privacy`, changeFrequency: 'weekly', priority: 0.8 },
     ]);
     expect(entries.map((entry) => entry.url)).not.toContain(`${SITE_URL}/phases`);
     expect(entries.map((entry) => entry.url)).not.toContain(`${SITE_URL}/team-plan`);

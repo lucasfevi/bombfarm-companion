@@ -35,7 +35,7 @@ describe('abilityName / abilityEffectText', () => {
     }
   });
 
-  it('keeps effect-text numbers aligned with AbilityEffect.perLevel (W3 rank-20 curves)', () => {
+  it('keeps effect-text numbers aligned with AbilityEffect.perLevel', () => {
     // Spot-check modeled abilities: EN copy must mention the same perLevel figure.
     expect(abilityEffectText('ponta_diamante', 'en')).toMatch(/\+1 /);
     expect(abilityEffectText('olho_clinico', 'en')).toMatch(/\+2 crit chance points/);
@@ -44,7 +44,7 @@ describe('abilityName / abilityEffectText', () => {
     expect(abilityEffectText('marcha_acelerada', 'en')).toMatch(/0\.185%/);
     expect(abilityEffectText('pressagio_mortal', 'en')).toMatch(/\+1 TEAM crit chance point/);
     expect(abilityEffectText('misericordia', 'en')).toMatch(/0\.75%/);
-    expect(abilityEffectText('explosao_ampla', 'en')).toMatch(/0\.1 /);
+    expect(abilityEffectText('explosao_ampla', 'en')).toMatch(/\+1 cell of explosion radius every 10 levels/);
     expect(abilityEffectText('contra_relogio', 'en')).toMatch(/2%/);
     expect(abilityEffectText('detonacao_dupla', 'en')).toMatch(/1\.5%/);
     expect(abilityEffectText('folego_mineiro', 'en')).toMatch(/1%/);
