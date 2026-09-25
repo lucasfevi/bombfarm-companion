@@ -32,6 +32,7 @@ describe('heroStatSheet', () => {
       abilities: { olho_clinico: 10, golpe_brutal: 5, ponta_diamante: 3 },
       loadout: { ...emptyLoadout(), arma: item(100, 4) },
       pts: { ...ZERO_SHEET, attack: 20, critDmg: 10 },
+      runes: [{ axis: 'attack', strengthPct: 10, playSecondsLeft: 600, rarity: 1 }],
     }).hero;
     const tree = { ...NEUTRAL_TREE, danoStatic: 1.3, critChancePct: 8, luckFlatPct: 2 };
     const stages = peelSheetStages({
@@ -42,6 +43,7 @@ describe('heroStatSheet', () => {
       loadout: hero.loadout,
       pts: hero.pts,
       tree,
+      runes: hero.runes,
     });
     const sheet = heroStatSheet(hero, tree);
     for (const key of SHEET_KEYS) expect(sheet?.[key]).toBeCloseTo(stages[key].total, 9);

@@ -47,6 +47,7 @@ describe('heroTypesFor', () => {
   });
 
   it('breaks a tie in the fixed order crit, heavy, pierce, finish, gate, loot, buff, endure', () => {
+    expect(heroTypesFor({ matilha: 15, olho_clinico: 15 })).toEqual(['crit', 'heavy']);
     expect(heroTypesFor({ bateria_extra: 15, grito_guerra: 15 })).toEqual(['buff', 'endure']);
     expect(heroTypesFor({ ponta_diamante: 15, matilha: 15 })).toEqual(['heavy', 'pierce']);
     expect(heroTypesFor({ veia_ouro: 15, olho_clinico: 15, caca_hero: 15 })).toEqual([
