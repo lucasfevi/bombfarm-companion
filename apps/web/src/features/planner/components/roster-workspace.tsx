@@ -104,7 +104,7 @@ export function RosterWorkspace({ strip, children }: { strip: ReactNode; childre
             >
               <RosterLeaderboard
                 rows={view.shownRows}
-                tree={view.tree}
+                statSource={view.statSource}
                 view={view.leaderboardView}
                 onViewChange={view.onLeaderboardView}
                 selectedId={view.selectedId}

@@ -59,6 +59,7 @@ import {
 } from '@bombfarm/hero/model';
 import type {
   HeroMarketPrice,
+  LeaderboardStatSource,
   LeaderboardView,
   RosterBoardFilter,
   RosterBoardSort,
@@ -217,12 +218,14 @@ function HeroesRoster({
   // hands the pipeline these fields — read straight off the account, so the table does not wait
   // on a phase the way the per-hero figures do.
   const accountTree = roster.account.tree;
-  const leaderboardTree = useMemo(
-    () => (accountTree === null ? null : treeSheetFromAccountTree(accountTree)),
-    [accountTree],
+  // The heroes whose detail pane withholds its figures are withheld from the table for the same reason.
+  const leaderboardStats = useMemo<LeaderboardStatSource>(
+    () => ({
+      tree: accountTree === null ? null : treeSheetFromAccountTree(accountTree),
+      withheldHeroIds: unrecoveredPointsHeroIds(roster),
+    }),
+    [accountTree, roster],
   );
-  // The heroes whose detail pane withholds its figures, withheld from the table for the same reason.
-  const leaderboardWithheld = useMemo(() => unrecoveredPointsHeroIds(roster), [roster]);
   // The whole roster in the order the toolbar asks for, before any narrowing: the default
   // selection is whichever hero that order puts first, and a filter must not move it.
   const orderedRows = useMemo(() => sortRosterRows(rows, rosterSort), [rows, rosterSort]);
@@ -402,8 +405,7 @@ function HeroesRoster({
             >
               <RosterLeaderboard
                 rows={shownRows}
-                tree={leaderboardTree}
-                withheldHeroIds={leaderboardWithheld}
+                statSource={leaderboardStats}
                 view={leaderboardView}
                 onViewChange={setLeaderboardView}
                 selectedId={active.id}

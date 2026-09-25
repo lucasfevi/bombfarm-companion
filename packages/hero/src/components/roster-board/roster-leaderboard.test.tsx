@@ -40,7 +40,7 @@ function Harness({ onSelectHeroId }: { onSelectHeroId: (id: string) => void }) {
   return (
     <RosterLeaderboard
       rows={ROWS}
-      tree={TREE}
+      statSource={{ tree: TREE }}
       view={view}
       onViewChange={setView}
       selectedId="bo"

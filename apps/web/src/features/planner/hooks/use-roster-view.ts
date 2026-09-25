@@ -2,7 +2,6 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import type { TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
 import {
   DEFAULT_LEADERBOARD_VIEW,
   DEFAULT_ROSTER_BOARD_SORT,
@@ -10,6 +9,7 @@ import {
   heroPickOutcome,
   orderByRollQuality,
   rosterRowsShown,
+  type LeaderboardStatSource,
   type LeaderboardView,
   type RosterBoardFilter,
   type RosterBoardSort,
@@ -34,7 +34,7 @@ export type RosterView = {
   leaderboardView: LeaderboardView;
   onLeaderboardView: (next: LeaderboardView) => void;
   /** What the table's statistics are composed against — the tree the Stats panel reads. */
-  tree: TreeSheetTotals;
+  statSource: LeaderboardStatSource;
   onSelectHeroId: (heroId: string) => void;
 };
 
@@ -62,6 +62,7 @@ export function useRosterView(): RosterView {
   const [viewMode, setViewMode] = useState<RosterViewMode>('list');
   const [leaderboardView, setLeaderboardView] = useState<LeaderboardView>(DEFAULT_LEADERBOARD_VIEW);
   const tree = usePlannerStore(useShallow(selectTreeSheetTotals));
+  const statSource = useMemo<LeaderboardStatSource>(() => ({ tree }), [tree]);
 
   const rows = useMemo(() => orderByRollQuality(heroes), [heroes]);
   // Resolved from the WHOLE roster, never from the narrowed list: a filter is a question about
@@ -95,7 +96,7 @@ export function useRosterView(): RosterView {
     actions,
     leaderboardView,
     onLeaderboardView: setLeaderboardView,
-    tree,
+    statSource,
     onSelectHeroId,
   };
 }

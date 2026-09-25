@@ -7,7 +7,6 @@
  * Read-only, like the cards. A row selects a hero and changes nothing.
  */
 import { memo, useMemo, type KeyboardEvent } from 'react';
-import type { TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import {
@@ -46,6 +45,7 @@ import {
   type LeaderboardColumn,
   type LeaderboardFilter,
   type LeaderboardRow,
+  type LeaderboardStatSource,
   type LeaderboardView,
   type RosterHeroRow,
   type SortableLeaderboardColumnId,
@@ -60,8 +60,7 @@ const TABLE_MIN_WIDTH_CLASS = 'min-w-[980px]';
 
 export function RosterLeaderboard({
   rows,
-  tree,
-  withheldHeroIds,
+  statSource,
   view,
   onViewChange,
   selectedId,
@@ -71,10 +70,9 @@ export function RosterLeaderboard({
 }: {
   /** Already narrowed by the toolbar above this panel; the table orders them itself. */
   rows: readonly RosterHeroRow[];
-  /** The account's skill-tree totals, or `null` while unread — every statistic is then blank. */
-  tree: TreeSheetTotals | null;
-  /** Heroes whose statistics the host withholds; their cells print a dash and sort last. */
-  withheldHeroIds?: ReadonlySet<string>;
+  /** The skill tree the statistics compose against, and the heroes whose figures the host
+   *  withholds — one object so a host passes one memoised reference. */
+  statSource: LeaderboardStatSource;
   view: LeaderboardView;
   onViewChange: (next: LeaderboardView) => void;
   selectedId: string;
@@ -84,8 +82,8 @@ export function RosterLeaderboard({
 }) {
   const copy = showcaseCopyFor(lang);
   const boardRows = useMemo(
-    () => leaderboardRowsFor(rows, { tree, withheldHeroIds }),
-    [rows, tree, withheldHeroIds],
+    () => leaderboardRowsFor(rows, statSource),
+    [rows, statSource],
   );
   const topPower = useMemo(
     () => boardRows.reduce((top, row) => Math.max(top, row.hero.power ?? 0), 0),
