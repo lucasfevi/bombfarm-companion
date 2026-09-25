@@ -43,6 +43,12 @@ describe('the pipeline\'s rows and wires', () => {
     const rowOf = new Map<BreakdownStatId, number>();
     COMBAT_BREAKDOWN_ROWS.forEach((row, index) => row.cards.forEach((card) => rowOf.set(card, index)));
     const facts = factsForHero(fixture, minato);
+    const partKeyOf: Partial<Record<BreakdownStatId, string>> = {
+      attack: 'attack', energy: 'energy', speed: 'walk', critChance: 'critChance', critDmg: 'critDmg',
+      penetration: 'penetration', cdr: 'cdr', mitF: 'mitF', dmg: 'dmg', critFactor: 'critFactor',
+      fuse: 'fuse', fieldSeconds: 'field', rest: 'restSeconds', hit: 'hit', avgHit: 'avgHit',
+      bombsPerSecond: 'bombs', uptime: 'field', activeDps: 'activeDps',
+    };
     for (const edge of COMBAT_BREAKDOWN_EDGES) {
       expect(rowOf.has(edge.from), edge.from).toBe(true);
       expect(rowOf.has(edge.to), edge.to).toBe(true);
@@ -51,12 +57,7 @@ describe('the pipeline\'s rows and wires', () => {
       expect(target.kind).toBe('formula');
       if (target.kind !== 'formula') return;
       const keys = target.parts.filter((part) => typeof part !== 'string').map((part) => part.key);
-      const named = {
-        attack: 'attack', energy: 'energy', speed: 'walk', critChance: 'critChance', critDmg: 'critDmg',
-        penetration: 'penetration', cdr: 'cdr', mitF: 'mitF', dmg: 'dmg', critFactor: 'critFactor',
-        fuse: 'fuse', fieldSeconds: 'field', rest: 'restSeconds', hit: 'hit', avgHit: 'avgHit',
-        bombsPerSecond: 'bombs', uptime: 'field', activeDps: 'activeDps',
-      }[edge.from];
+      const named = partKeyOf[edge.from];
       expect(keys, `${edge.to} reads ${edge.from} as ${named}`).toContain(named);
     }
   });

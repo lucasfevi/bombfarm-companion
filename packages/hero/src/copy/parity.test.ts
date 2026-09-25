@@ -36,7 +36,7 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof heroEn)[] = [
 
 function placeholderSet(value: string): Set<string> {
   const matches = value.matchAll(/\{(\w+)\}/g);
-  return new Set(Array.from(matches, (match) => match[1]));
+  return new Set(Array.from(matches, (match) => match[1] ?? ''));
 }
 
 describe('heroEn/heroPtBR key-set parity', () => {
