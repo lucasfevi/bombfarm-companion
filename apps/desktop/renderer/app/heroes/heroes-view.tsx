@@ -42,20 +42,24 @@ import {
   NextPointRanking,
   PointsTable,
   RosterCards,
+  RosterLeaderboard,
   RosterRail,
   RosterSummaryStrip,
   RosterToolbar,
   SheetTable,
 } from '@bombfarm/hero/components';
 import {
+  DEFAULT_LEADERBOARD_VIEW,
   DEFAULT_ROSTER_BOARD_SORT,
   EMPTY_ROSTER_BOARD_FILTER,
   filterRosterRows,
   heroPickOutcome,
   sortRosterRows,
+  treeSheetFromAccountTree,
 } from '@bombfarm/hero/model';
 import type {
   HeroMarketPrice,
+  LeaderboardView,
   RosterBoardFilter,
   RosterBoardSort,
   RosterHeroRow,
@@ -188,6 +192,7 @@ function HeroesRoster({
   // so switching between them never changes which heroes are on screen.
   const [rosterSort, setRosterSort] = useState<RosterBoardSort>(DEFAULT_ROSTER_BOARD_SORT);
   const [rosterFilter, setRosterFilter] = useState<RosterBoardFilter>(EMPTY_ROSTER_BOARD_FILTER);
+  const [leaderboardView, setLeaderboardView] = useState<LeaderboardView>(DEFAULT_LEADERBOARD_VIEW);
   // View-local, and stored nowhere: leaving the screen unmounts this and the next visit opens on
   // the Farm selection again. It outlives a hero switch on purpose — comparing two heroes at one
   // phase is the reason to override at all.
@@ -207,6 +212,14 @@ function HeroesRoster({
   const farmPhase = useFarmSelectedPhase();
 
   const { rows, roster } = model;
+  // The same tree the detail pane's statistic sheet is composed against — `buildAccountBlock`
+  // hands the pipeline these fields — read straight off the account, so the table does not wait
+  // on a phase the way the per-hero figures do.
+  const accountTree = roster.account.tree;
+  const leaderboardTree = useMemo(
+    () => (accountTree === null ? null : treeSheetFromAccountTree(accountTree)),
+    [accountTree],
+  );
   // The whole roster in the order the toolbar asks for, before any narrowing: the default
   // selection is whichever hero that order puts first, and a filter must not move it.
   const orderedRows = useMemo(() => sortRosterRows(rows, rosterSort), [rows, rosterSort]);
@@ -369,6 +382,26 @@ function HeroesRoster({
             >
               <RosterCards
                 rows={shownRows}
+                selectedId={active.id}
+                onSelectHeroId={onSelectHeroId}
+                t={rosterCopy}
+                lang={lang}
+              />
+            </motion.div>
+          ) : viewMode === 'table' ? (
+            <motion.div
+              key="table"
+              className="min-w-0"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+            >
+              <RosterLeaderboard
+                rows={shownRows}
+                tree={leaderboardTree}
+                view={leaderboardView}
+                onViewChange={setLeaderboardView}
                 selectedId={active.id}
                 onSelectHeroId={onSelectHeroId}
                 t={rosterCopy}

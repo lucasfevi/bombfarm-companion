@@ -21,6 +21,7 @@ export type RosterBoardCopy = RosterCopy & {
   heroesViewLabel: string;
   heroesViewCards: string;
   heroesViewList: string;
+  heroesViewTable: string;
   heroesSortLabel: string;
   heroesSortRoll: string;
   heroesSortPower: string;

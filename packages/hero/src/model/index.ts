@@ -20,7 +20,7 @@ export type {
   RosterBoardSortDirection,
   RosterBoardSortKey,
 } from './roster-board-order';
-export { heroPickOutcome } from './roster-view-mode';
+export { ROSTER_VIEW_MODES, heroPickOutcome } from './roster-view-mode';
 export type { HeroPickOutcome, RosterViewMode } from './roster-view-mode';
 export { SHEET_STAT_CODES } from './sheet-stat-codes';
 export { formatClearTime } from './format-clear-time';
@@ -97,6 +97,7 @@ export {
   ledgerStepNote,
   ledgerStepText,
   rowValue,
+  sheetTotalText,
   sourceLabel,
 } from './breakdown-labels';
 export {
@@ -183,20 +184,33 @@ export type { ShowcaseCardReading } from './showcase-card';
 export { auraCoverageFor } from './aura-coverage';
 export type { AuraCoverage, AuraCoverageTile } from './aura-coverage';
 export {
+  DEFAULT_LEADERBOARD_SORT,
+  DEFAULT_LEADERBOARD_VIEW,
   LEADERBOARD_COLUMNS,
   LEADERBOARD_COLUMN_IDS,
   LEADERBOARD_FILTERS,
   LEADERBOARD_FILTER_LABELS,
+  LEADERBOARD_STAT_COLUMN_IDS,
   filterLeaderboardRows,
   heroStatSheet,
+  isLeaderboardStatColumn,
+  leaderboardGearText,
+  leaderboardPowerPercent,
   leaderboardRowsFor,
+  leaderboardStatValue,
+  pressLeaderboardColumn,
   sortLeaderboardRows,
+  treeSheetFromAccountTree,
 } from './roster-leaderboard';
 export type {
+  AccountTreeTotals,
   LeaderboardColumn,
   LeaderboardColumnId,
   LeaderboardFilter,
   LeaderboardRow,
+  LeaderboardSort,
   LeaderboardSortDirection,
+  LeaderboardStatColumnId,
+  LeaderboardView,
   SortableLeaderboardColumnId,
 } from './roster-leaderboard';

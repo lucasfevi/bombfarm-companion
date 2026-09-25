@@ -63,4 +63,9 @@ export const showcaseEn = {
   filterEveryone: 'Everyone',
   filterSquad: 'Squad',
   filterBench: 'Bench',
+  tableFilterLabel: 'Which heroes',
+  tableLabel: 'Hero leaderboard',
+  tableHint: 'Click a column to sort, a row to open that hero.',
+  tableEmpty: 'No heroes here.',
+  tableGear: '{count}/{slots} · Lv {level}',
 } as const;

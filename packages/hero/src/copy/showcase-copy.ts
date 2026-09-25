@@ -79,4 +79,11 @@ export type ShowcaseCopy = {
   readonly filterEveryone: string;
   readonly filterSquad: string;
   readonly filterBench: string;
+  /** Names the Everyone / Squad / Bench group for assistive technology. */
+  readonly tableFilterLabel: string;
+  readonly tableLabel: string;
+  readonly tableHint: string;
+  readonly tableEmpty: string;
+  /** `{count}` `{slots}` `{level}` — pieces worn, of how many, and their average item level. */
+  readonly tableGear: string;
 };

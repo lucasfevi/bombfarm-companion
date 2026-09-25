@@ -1,6 +1,6 @@
 /**
- * The Heroes screen's board of showcase cards and the roster summary above it, in the real app,
- * drawn from the fixture account.
+ * The Heroes screen's board of showcase cards, its leaderboard table and the roster summary above
+ * them, in the real app, drawn from the fixture account.
  *
  * Counts, never geometry: CI's screen is narrower than the window this asks for, so how many cards
  * fit a row is not a property this can assert. The board is `@bombfarm/hero`'s and carries its own
@@ -75,6 +75,21 @@ async function showBoard(page) {
   await page.waitForSelector('[data-testid^="heroes-roster-card-"]', { timeout: 20_000 });
 }
 
+async function showTable(page) {
+  await page.getByRole('button', { name: /^Leaderboard$/i }).click();
+  await page.waitForSelector('[data-testid^="heroes-leaderboard-row-"]', { timeout: 20_000 });
+}
+
+function tableIds(page) {
+  return page.locator('[data-testid^="heroes-leaderboard-row-"]').evaluateAll((nodes) =>
+    nodes.map((node) => node.getAttribute('data-testid')?.replace('heroes-leaderboard-row-', '')),
+  );
+}
+
+function tablePowers(page) {
+  return page.locator('[data-testid="heroes-leaderboard-power"]').allTextContents();
+}
+
 test.describe('the Heroes screen\'s board of cards', () => {
   test.describe.configure({ mode: 'serial' });
 
@@ -131,6 +146,27 @@ test.describe('the Heroes screen\'s board of cards', () => {
     await top.nth(1).click();
 
     await expect(page.locator('[data-testid^="heroes-roster-card-"]')).toHaveCount(0);
+    await expect(page.getByTestId(`heroes-roster-row-${pickedId}`)).toHaveAttribute('aria-current', 'true');
+  });
+
+  test('the leaderboard lists every hero, sorts by power both ways, and a row opens that hero', async () => {
+    const heroCount = await page.locator('[data-testid^="heroes-roster-row-"]').count();
+    await showTable(page);
+    expect(await tableIds(page)).toHaveLength(heroCount);
+
+    const power = page.getByTestId('heroes-leaderboard-sort-power');
+    await expect(power).toHaveAttribute('aria-sort', 'descending');
+    const strongestFirst = await tableIds(page);
+    await power.getByRole('button').click();
+    await expect(power).toHaveAttribute('aria-sort', 'ascending');
+    // A whole reversal holds only while no two powers tie, which the distinct count pins.
+    const powers = await tablePowers(page);
+    expect(new Set(powers).size).toBe(powers.length);
+    expect(await tableIds(page)).toEqual([...strongestFirst].reverse());
+
+    const pickedId = strongestFirst[1];
+    await page.getByTestId(`heroes-leaderboard-row-${pickedId}`).click();
+    await expect(page.locator('[data-testid^="heroes-leaderboard-row-"]')).toHaveCount(0);
     await expect(page.getByTestId(`heroes-roster-row-${pickedId}`)).toHaveAttribute('aria-current', 'true');
   });
 });

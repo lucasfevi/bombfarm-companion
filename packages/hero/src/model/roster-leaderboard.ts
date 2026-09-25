@@ -1,10 +1,11 @@
 import { composeSheetFromBirth, type TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
-import { emptySheetOther, type SheetStats } from '@bombfarm/domain/gear';
+import { SLOTS, emptySheetOther, type SheetStats } from '@bombfarm/domain/gear';
 import { heroAbilitySlotsUsed } from '@bombfarm/domain/hero-abilities';
 import { abilityMods } from '@bombfarm/domain/model';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
-import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import type { ShowcaseCopy } from '../copy';
+import type { HeroRecord, TreeState } from '@bombfarm/domain/shims/storage';
+import { formatNumber, type Lang } from '@bombfarm/ui';
+import { sub, type ShowcaseCopy } from '../copy';
 import { gradePlacementFor } from './birth-roll-panel';
 import { equippedGearAverages, isSquadHero } from './roster-summary';
 import type { RosterHeroRow } from './roster-rows';
@@ -34,6 +35,23 @@ export function heroStatSheet(hero: HeroRecord, tree: TreeSheetTotals): SheetSta
   });
 }
 
+/** The account's skill-tree totals as either host holds them. */
+export type AccountTreeTotals = Pick<TreeState, 'danoTotal' | 'critChance' | 'critDmg' | 'speed' | 'energy'> & {
+  readonly luckFlatPct?: number | undefined;
+};
+
+/** The same mapping the advisor pipeline makes from an account's tree to its `treeSheet`. */
+export function treeSheetFromAccountTree(tree: AccountTreeTotals): TreeSheetTotals {
+  return {
+    danoStatic: tree.danoTotal,
+    energyPct: tree.energy,
+    speedPct: tree.speed,
+    critChancePct: tree.critChance,
+    critDmgPct: tree.critDmg,
+    luckFlatPct: tree.luckFlatPct ?? 0,
+  };
+}
+
 export type LeaderboardRow = RosterHeroRow & {
   readonly sheet: SheetStats | undefined;
   /** The game's letter where it recognises one, ours where it does not — as the birth panel reads. */
@@ -43,15 +61,17 @@ export type LeaderboardRow = RosterHeroRow & {
   readonly gearAverageLevel: number | undefined;
 };
 
+/** `tree` is `null` while the account's skill tree is unread: every statistic is then absent,
+ *  never composed against a tree of zeroes. */
 export function leaderboardRowsFor(
   rows: readonly RosterHeroRow[],
-  tree: TreeSheetTotals,
+  tree: TreeSheetTotals | null,
 ): readonly LeaderboardRow[] {
   return rows.map((row) => {
     const gear = equippedGearAverages([row.hero]);
     return {
       ...row,
-      sheet: heroStatSheet(row.hero, tree),
+      sheet: tree === null ? undefined : heroStatSheet(row.hero, tree),
       gradeLetter: gradePlacementFor(row.report)?.railLetter,
       abilityCount: heroAbilitySlotsUsed(row.hero.abilities),
       gearCount: gear.itemCount,
@@ -113,9 +133,41 @@ export const LEADERBOARD_COLUMNS: readonly LeaderboardColumn[] = LEADERBOARD_COL
 
 export type SortableLeaderboardColumnId = Exclude<LeaderboardColumnId, 'position'>;
 
+export const LEADERBOARD_STAT_COLUMN_IDS = ['attack', 'critChance', 'critDmg', 'luck', 'speed'] as const;
+export type LeaderboardStatColumnId = (typeof LEADERBOARD_STAT_COLUMN_IDS)[number];
+
+export function isLeaderboardStatColumn(column: LeaderboardColumnId): column is LeaderboardStatColumnId {
+  return (LEADERBOARD_STAT_COLUMN_IDS as readonly string[]).includes(column);
+}
+
+/**
+ * The figure a statistic cell prints and sorts by — the uncapped sheet total, as the hero panel's
+ * Total column reads, so crit chance can pass 100%. Every cell and the sort read it here: reading
+ * `gameSheetView(row.sheet)[column]` instead would show the game's capped figures everywhere.
+ */
+export function leaderboardStatValue(row: LeaderboardRow, column: LeaderboardStatColumnId): number | undefined {
+  return row.sheet?.[column];
+}
+
+export type LeaderboardSort = {
+  readonly column: SortableLeaderboardColumnId;
+  readonly direction: LeaderboardSortDirection;
+};
+
+export const DEFAULT_LEADERBOARD_SORT: LeaderboardSort = { column: 'power', direction: 'desc' };
+
+/** A second press on the sorted column reverses it; a press on another sorts it best first. */
+export function pressLeaderboardColumn(current: LeaderboardSort, column: SortableLeaderboardColumnId): LeaderboardSort {
+  if (current.column === column) {
+    return { column, direction: current.direction === 'asc' ? 'desc' : 'asc' };
+  }
+  const firstDirection = LEADERBOARD_COLUMNS.find((entry) => entry.id === column)?.firstDirection ?? 'desc';
+  return { column, direction: firstDirection };
+}
+
 /** A lexicographic key: gear ranks by pieces worn, then by how high they are. */
 function figuresFor(row: LeaderboardRow, column: SortableLeaderboardColumnId): readonly number[] | undefined {
-  const { hero, sheet } = row;
+  const { hero } = row;
   switch (column) {
     case 'name':
       return undefined;
@@ -133,8 +185,10 @@ function figuresFor(row: LeaderboardRow, column: SortableLeaderboardColumnId): r
     case 'critChance':
     case 'critDmg':
     case 'luck':
-    case 'speed':
-      return sheet === undefined ? undefined : [sheet[column]];
+    case 'speed': {
+      const value = leaderboardStatValue(row, column);
+      return value === undefined ? undefined : [value];
+    }
     case 'abilities':
       return [row.abilityCount];
     case 'gear':
@@ -195,3 +249,28 @@ export const LEADERBOARD_FILTER_LABELS = {
   squad: 'filterSquad',
   bench: 'filterBench',
 } as const satisfies Record<LeaderboardFilter, keyof ShowcaseCopy>;
+
+export type LeaderboardView = {
+  readonly sort: LeaderboardSort;
+  readonly filter: LeaderboardFilter;
+};
+
+export const DEFAULT_LEADERBOARD_VIEW: LeaderboardView = { sort: DEFAULT_LEADERBOARD_SORT, filter: 'everyone' };
+
+const NOTHING_WORN = '—';
+
+/** "8/8 · Lv 124" — pieces worn of every slot, and their average item level as a whole number. */
+export function leaderboardGearText(row: LeaderboardRow, copy: ShowcaseCopy, lang: Lang): string {
+  if (row.gearCount === 0 || row.gearAverageLevel === undefined) return NOTHING_WORN;
+  return sub(copy.tableGear, {
+    count: row.gearCount,
+    slots: SLOTS.length,
+    level: formatNumber(row.gearAverageLevel, lang, 0),
+  });
+}
+
+/** How much of the strongest hero's power this one has, 0–100, for the bar under the figure. */
+export function leaderboardPowerPercent(power: number | null | undefined, topPower: number): number {
+  if (power == null || topPower <= 0) return 0;
+  return Math.max(0, Math.min(100, (power / topPower) * 100));
+}

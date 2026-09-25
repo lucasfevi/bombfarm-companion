@@ -88,6 +88,7 @@ export function rosterBoardCopyFrom(t: Copy): RosterBoardCopy {
     heroesViewLabel: t.heroesViewLabel,
     heroesViewCards: t.heroesViewCards,
     heroesViewList: t.heroesViewList,
+    heroesViewTable: t.heroesViewTable,
     heroesSortLabel: t.heroesSortLabel,
     heroesSortRoll: t.heroesSortRoll,
     heroesSortPower: t.heroesSortPower,

@@ -16,8 +16,6 @@ import {
   AbilityIcon,
   HeroAvatar,
   HeroGearIcons,
-  heroRankBandClass,
-  heroRankToneClass,
   rarityTextClass,
   rosterInactiveChromeClass,
 } from '@bombfarm/game-art';
@@ -35,6 +33,7 @@ import {
   type RosterHeroRow,
   type ShowcaseCardReading,
 } from '../../model';
+import { BirthGradeChip } from './birth-grade-chip';
 
 /** Cards arrive in order rather than all at once, so the eye is led across the board. Capped, so
  *  a large roster does not spend seconds dealing itself out. `MotionConfig reducedMotion="user"`
@@ -279,26 +278,7 @@ function BirthLines({
   return (
     <div className="flex min-w-0 flex-col gap-1" data-testid="heroes-card-birth">
       <p className="m-0 flex items-center gap-2 text-xs text-muted">
-        {grade ? (
-          <span
-            className={cn(
-              'inline-grid',
-              'h-6',
-              'min-w-6',
-              'place-items-center',
-              'rounded-sm',
-              'px-1',
-              'text-sm',
-              'font-black',
-              heroRankToneClass(grade),
-              heroRankBandClass(grade, true),
-            )}
-            aria-label={sub(copy.cardBirthGrade, { grade })}
-            data-testid="heroes-card-grade"
-          >
-            {grade}
-          </span>
-        ) : null}
+        {grade ? <BirthGradeChip grade={grade} copy={copy} testId="heroes-card-grade" /> : null}
         {reading.birthRollPct === undefined ? null : (
           <span>{sub(copy.cardBirthRoll, { pct: percentText(reading.birthRollPct, lang) })}</span>
         )}

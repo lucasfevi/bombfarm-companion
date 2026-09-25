@@ -65,4 +65,9 @@ export const showcasePtBR: ShowcaseCopy = {
   filterEveryone: 'Todos',
   filterSquad: 'Esquadrão',
   filterBench: 'Banco',
+  tableFilterLabel: 'Quais heróis',
+  tableLabel: 'Ranking de heróis',
+  tableHint: 'Clique numa coluna para ordenar e numa linha para abrir o herói.',
+  tableEmpty: 'Nenhum herói aqui.',
+  tableGear: '{count}/{slots} · Nv {level}',
 };

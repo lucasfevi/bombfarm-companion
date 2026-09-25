@@ -24,6 +24,12 @@ function cardIds(page: Page) {
   );
 }
 
+function tableIds(page: Page) {
+  return page.locator('[data-testid^="heroes-leaderboard-row-"]').evaluateAll((nodes) =>
+    nodes.map((node) => (node as HTMLElement).dataset.testid?.replace('heroes-leaderboard-row-', '')),
+  );
+}
+
 async function openPlanner(page: Page) {
   await page.setViewportSize(RAIL_VIEWPORT);
   await seedLocalStorage(page, { ...rosterBoard, lang: 'en' });
@@ -34,6 +40,11 @@ async function openPlanner(page: Page) {
 async function showBoard(page: Page) {
   await page.getByRole('button', { name: /^Cards$/i }).click();
   await expect(page.locator('[data-testid^="heroes-roster-card-"]').first()).toBeVisible();
+}
+
+async function showTable(page: Page) {
+  await page.getByRole('button', { name: /^Leaderboard$/i }).click();
+  await expect(page.locator('[data-testid^="heroes-leaderboard-row-"]').first()).toBeVisible();
 }
 
 async function showList(page: Page) {
@@ -228,5 +239,55 @@ test.describe('roster rail and board', () => {
     const strip = page.getByRole('region', { name: /^Current hero$/i });
     await strip.getByRole('button', { name: /^Switch hero$/i }).click();
     await expect(page.getByRole('dialog', { name: /^Switch hero$/i })).toBeVisible();
+  });
+
+  test('the leaderboard lists every hero, strongest first, and a power header press reverses it', async ({
+    page,
+  }) => {
+    await openPlanner(page);
+    await showTable(page);
+    const byPower = ['board-ayla', 'board-doran', 'board-shelved', 'board-nessa'];
+    expect(await tableIds(page)).toEqual(byPower);
+    // The headers order the table, so the toolbar's own sort steps aside while it is shown.
+    await expect(page.getByRole('combobox', { name: /^Sort by$/i })).toHaveCount(0);
+
+    const power = page.getByTestId('heroes-leaderboard-sort-power');
+    await expect(power).toHaveAttribute('aria-sort', 'descending');
+    await power.getByRole('button').click();
+    await expect(power).toHaveAttribute('aria-sort', 'ascending');
+    expect(await tableIds(page)).toEqual([...byPower].reverse());
+
+    await page.getByRole('button', { name: /^Bench$/ }).click();
+    expect(await tableIds(page)).toEqual(['board-shelved']);
+  });
+
+  test('picking a row returns to the rail with that hero in the planner', async ({ page }) => {
+    await openPlanner(page);
+    await showTable(page);
+    await page.getByTestId('heroes-leaderboard-row-board-nessa').click();
+
+    await expect(page.locator('[data-testid^="heroes-leaderboard-row-"]')).toHaveCount(0);
+    await expect(page.getByTestId('heroes-roster-row-board-nessa')).toHaveAttribute('aria-current', 'true');
+    await expect(
+      page.getByRole('region', { name: /^Current hero$/i }).getByText('Nessa'),
+    ).toBeVisible();
+  });
+
+  test('the leaderboard scrolls inside its own frame on a phone rather than widening the page', async ({
+    page,
+  }) => {
+    await openPlanner(page);
+    await page.setViewportSize({ width: 380, height: 800 });
+    await showTable(page);
+    const frame = await page.getByTestId('heroes-leaderboard').evaluate((panel) => {
+      const scroller = panel.querySelector('table')?.parentElement;
+      return {
+        panelRight: panel.getBoundingClientRect().right,
+        viewport: document.documentElement.clientWidth,
+        scrollerOverflows: scroller ? scroller.scrollWidth > scroller.clientWidth : false,
+      };
+    });
+    expect(frame.panelRight).toBeLessThanOrEqual(frame.viewport);
+    expect(frame.scrollerOverflows).toBe(true);
   });
 });

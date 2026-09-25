@@ -701,6 +701,7 @@ export const en = {
   heroesAbilityFilterAbsent: 'No hero here has {ability}',
   heroesViewCards: 'Cards',
   heroesViewList: 'List',
+  heroesViewTable: 'Leaderboard',
   heroesTabHero: 'Hero',
   heroesTabCombat: 'Combat',
   heroesTabGear: 'Gear',

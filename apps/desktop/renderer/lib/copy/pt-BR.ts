@@ -660,6 +660,7 @@ export const ptBR: Copy = {
   heroesAbilityFilterAbsent: 'Nenhum herói aqui tem {ability}',
   heroesViewCards: 'Cartões',
   heroesViewList: 'Lista',
+  heroesViewTable: 'Ranking',
   heroesTabHero: 'Herói',
   heroesTabCombat: 'Combate',
   heroesTabGear: 'Equipamento',

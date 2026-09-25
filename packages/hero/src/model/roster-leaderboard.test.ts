@@ -2,14 +2,21 @@ import { describe, expect, it } from 'vitest';
 import { emptyLoadout, emptySheetOther } from '@bombfarm/domain/gear';
 import { SHEET_KEYS } from '@bombfarm/domain/planner-constants';
 import { peelSheetStages } from '@bombfarm/domain/sheet-stages';
-import type { HeroRecord } from '@bombfarm/domain/shims/storage';
+import { pipelineForHero } from '@bombfarm/domain/roster-dps';
+import type { AccountShared, HeroRecord } from '@bombfarm/domain/shims/storage';
 import { showcaseEn } from '../copy';
 import {
+  DEFAULT_LEADERBOARD_SORT,
   LEADERBOARD_COLUMNS,
   filterLeaderboardRows,
   heroStatSheet,
+  leaderboardGearText,
+  leaderboardPowerPercent,
   leaderboardRowsFor,
+  leaderboardStatValue,
+  pressLeaderboardColumn,
   sortLeaderboardRows,
+  treeSheetFromAccountTree,
   type LeaderboardRow,
 } from './roster-leaderboard';
 import { NEUTRAL_TREE, ZERO_SHEET, item, rowFixture } from './showcase.test-fixture';
@@ -174,5 +181,71 @@ describe('LEADERBOARD_COLUMNS', () => {
     expect(unsortable).toEqual(['position']);
     const ascending = LEADERBOARD_COLUMNS.filter((column) => column.firstDirection === 'asc');
     expect(ascending.map((column) => column.id)).toEqual(['name']);
+  });
+});
+
+describe('treeSheetFromAccountTree', () => {
+  it('builds the tree sheet the advisor pipeline builds from the same account', () => {
+    const tree = { danoTotal: 1.42, critChance: 12, critDmg: 35, speed: 9, energy: 14, teamCoinPct: 5, luckFlatPct: 3 };
+    const account: AccountShared = {
+      tree,
+      teamBuffs: {},
+      context: { houseIdx: 0, houseLevel: 1, phase: null, mitigationPct: 1, rankMode: 'dps', targetProp: 'stone' },
+    };
+    const hero = rowFixture({ id: 'a', birth: BIRTH, level: 60 }).hero;
+    expect(treeSheetFromAccountTree(tree)).toEqual(pipelineForHero(hero, account, 10, 1).treeSheet);
+  });
+
+  it('reads an account with no luck figure as no luck from the tree', () => {
+    expect(
+      treeSheetFromAccountTree({ danoTotal: 1, critChance: 0, critDmg: 0, speed: 0, energy: 0 }).luckFlatPct,
+    ).toBe(0);
+  });
+});
+
+describe('leaderboardRowsFor with the tree unread', () => {
+  it('leaves every statistic blank rather than composing against a tree of zeroes', () => {
+    const [row] = leaderboardRowsFor([rowFixture({ id: 'a', birth: BIRTH })], null);
+    expect(row?.sheet).toBeUndefined();
+    expect(row && leaderboardStatValue(row, 'attack')).toBeUndefined();
+  });
+});
+
+describe('pressLeaderboardColumn', () => {
+  it('opens on power, strongest first', () => {
+    expect(DEFAULT_LEADERBOARD_SORT).toEqual({ column: 'power', direction: 'desc' });
+  });
+
+  it('reverses the sorted column on a second press', () => {
+    const once = pressLeaderboardColumn(DEFAULT_LEADERBOARD_SORT, 'power');
+    expect(once).toEqual({ column: 'power', direction: 'asc' });
+    expect(pressLeaderboardColumn(once, 'power')).toEqual({ column: 'power', direction: 'desc' });
+  });
+
+  it('sorts a newly pressed column best first: A to Z for a name, highest first for a figure', () => {
+    expect(pressLeaderboardColumn(DEFAULT_LEADERBOARD_SORT, 'name')).toEqual({ column: 'name', direction: 'asc' });
+    const byName = { column: 'name', direction: 'desc' } as const;
+    expect(pressLeaderboardColumn(byName, 'luck')).toEqual({ column: 'luck', direction: 'desc' });
+  });
+});
+
+describe('leaderboardGearText', () => {
+  it('prints pieces worn of every slot and their average item level', () => {
+    const [row] = board({ id: 'a', loadout: { ...emptyLoadout(), arma: item(100, 0), elmo: item(151, 0) } });
+    expect(row && leaderboardGearText(row, showcaseEn, 'en')).toBe('2/8 · Lv 126');
+  });
+
+  it('prints a dash, never 0/8, for a hero wearing nothing', () => {
+    const [row] = board({ id: 'a' });
+    expect(row && leaderboardGearText(row, showcaseEn, 'en')).toBe('—');
+  });
+});
+
+describe('leaderboardPowerPercent', () => {
+  it('measures a hero against the strongest one, and an unread power as none', () => {
+    expect(leaderboardPowerPercent(50, 200)).toBe(25);
+    expect(leaderboardPowerPercent(200, 200)).toBe(100);
+    expect(leaderboardPowerPercent(undefined, 200)).toBe(0);
+    expect(leaderboardPowerPercent(10, 0)).toBe(0);
   });
 });

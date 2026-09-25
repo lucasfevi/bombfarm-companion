@@ -19,6 +19,7 @@ import {
   HiMiniLockClosed,
   HiMiniSquares2X2,
   HiMiniBars3,
+  HiMiniTableCells,
   HiMiniWindow,
   HiMiniSparkles,
 } from 'react-icons/hi2';
@@ -71,6 +72,8 @@ export const uiIconRegistry = {
   'layout-grid': HiMiniSquares2X2,
   // Inventory layout toggle — list
   'layout-list': HiMiniBars3,
+  // Heroes roster layout toggle — leaderboard table
+  'layout-table': HiMiniTableCells,
   // select affix, num spinner, accordion/collapsible trigger, sort desc, idle sort stack
   'chevron-down': HiMiniChevronDown,
   // num spinner increment, sort asc, idle sort stack

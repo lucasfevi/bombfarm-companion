@@ -1,19 +1,23 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import type { TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
 import {
+  DEFAULT_LEADERBOARD_VIEW,
   DEFAULT_ROSTER_BOARD_SORT,
   EMPTY_ROSTER_BOARD_FILTER,
   heroPickOutcome,
   orderByRollQuality,
   rosterRowsShown,
+  type LeaderboardView,
   type RosterBoardFilter,
   type RosterBoardSort,
   type RosterHeroRow,
   type RosterViewMode,
 } from '@bombfarm/hero/model';
 import type { RosterToolbarActions } from '@bombfarm/hero/components';
-import { usePlannerStore } from '@/shared/stores';
+import { selectTreeSheetTotals, usePlannerStore } from '@/shared/stores';
 import { useHeroDraftActions } from './use-hero-draft-actions';
 
 export type RosterView = {
@@ -26,13 +30,18 @@ export type RosterView = {
   filter: RosterBoardFilter;
   viewMode: RosterViewMode;
   actions: RosterToolbarActions;
+  /** The table's own column order and squad/bench narrowing. */
+  leaderboardView: LeaderboardView;
+  onLeaderboardView: (next: LeaderboardView) => void;
+  /** What the table's statistics are composed against — the tree the Stats panel reads. */
+  tree: TreeSheetTotals;
   onSelectHeroId: (heroId: string) => void;
 };
 
 /**
  * How this app is looking at its roster right now, and what picking a hero from it does.
  *
- * All three settings are view-local and stored nowhere, exactly as the desktop's Heroes screen
+ * Every setting here is view-local and stored nowhere, exactly as the desktop's Heroes screen
  * holds them: they are ways of looking at the roster you are in front of, not preferences about
  * this account, and the planner tab — which IS about the work in hand — is the one thing here
  * that survives a reload.
@@ -51,6 +60,8 @@ export function useRosterView(): RosterView {
   const [sort, setSort] = useState<RosterBoardSort>(DEFAULT_ROSTER_BOARD_SORT);
   const [filter, setFilter] = useState<RosterBoardFilter>(EMPTY_ROSTER_BOARD_FILTER);
   const [viewMode, setViewMode] = useState<RosterViewMode>('list');
+  const [leaderboardView, setLeaderboardView] = useState<LeaderboardView>(DEFAULT_LEADERBOARD_VIEW);
+  const tree = usePlannerStore(useShallow(selectTreeSheetTotals));
 
   const rows = useMemo(() => orderByRollQuality(heroes), [heroes]);
   // Resolved from the WHOLE roster, never from the narrowed list: a filter is a question about
@@ -82,6 +93,9 @@ export function useRosterView(): RosterView {
     filter,
     viewMode,
     actions,
+    leaderboardView,
+    onLeaderboardView: setLeaderboardView,
+    tree,
     onSelectHeroId,
   };
 }

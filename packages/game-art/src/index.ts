@@ -15,6 +15,7 @@ export {
   InventoryLayoutToggle,
   type InventoryLayout,
   type InventoryLayoutToggleLabels,
+  type LayoutToggleOption,
 } from './inventory-layout-toggle';
 export {
   InventoryTotals,
