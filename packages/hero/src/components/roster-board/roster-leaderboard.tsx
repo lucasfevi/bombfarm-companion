@@ -61,6 +61,7 @@ const TABLE_MIN_WIDTH_CLASS = 'min-w-[980px]';
 export function RosterLeaderboard({
   rows,
   tree,
+  withheldHeroIds,
   view,
   onViewChange,
   selectedId,
@@ -72,6 +73,8 @@ export function RosterLeaderboard({
   rows: readonly RosterHeroRow[];
   /** The account's skill-tree totals, or `null` while unread — every statistic is then blank. */
   tree: TreeSheetTotals | null;
+  /** Heroes whose statistics the host withholds; their cells print a dash and sort last. */
+  withheldHeroIds?: ReadonlySet<string>;
   view: LeaderboardView;
   onViewChange: (next: LeaderboardView) => void;
   selectedId: string;
@@ -80,7 +83,10 @@ export function RosterLeaderboard({
   lang: Lang;
 }) {
   const copy = showcaseCopyFor(lang);
-  const boardRows = useMemo(() => leaderboardRowsFor(rows, tree), [rows, tree]);
+  const boardRows = useMemo(
+    () => leaderboardRowsFor(rows, { tree, withheldHeroIds }),
+    [rows, tree, withheldHeroIds],
+  );
   const topPower = useMemo(
     () => boardRows.reduce((top, row) => Math.max(top, row.hero.power ?? 0), 0),
     [boardRows],

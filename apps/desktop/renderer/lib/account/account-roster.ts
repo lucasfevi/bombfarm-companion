@@ -30,7 +30,12 @@ export type AccountRoster = {
 };
 
 export function hasUnrecoveredPoints(roster: AccountRoster, heroId: string): boolean {
-  return roster.pointsUnrecovered.some((hero) => hero.id === heroId);
+  return unrecoveredPointsHeroIds(roster).has(heroId);
+}
+
+/** Every hero {@link hasUnrecoveredPoints} answers yes for, for a surface that draws them all. */
+export function unrecoveredPointsHeroIds(roster: AccountRoster): ReadonlySet<string> {
+  return new Set(roster.pointsUnrecovered.map((hero) => hero.id));
 }
 
 /** `null` when the payload did not parse at all — never a partial roster over the heroes that did. */

@@ -24,7 +24,7 @@ import { NEUTRAL_TREE, ZERO_SHEET, item, rowFixture } from './showcase.test-fixt
 const BIRTH = { ...ZERO_SHEET, attack: 180, energy: 200, speed: 50, critChance: 7, critDmg: 60, cdr: 2 };
 
 function board(...heroes: (Partial<HeroRecord> & Pick<HeroRecord, 'id'>)[]): readonly LeaderboardRow[] {
-  return leaderboardRowsFor(heroes.map(rowFixture), NEUTRAL_TREE);
+  return leaderboardRowsFor(heroes.map(rowFixture), { tree: NEUTRAL_TREE });
 }
 
 const ids = (rows: readonly LeaderboardRow[]) => rows.map((row) => row.id);
@@ -124,6 +124,16 @@ describe('sortLeaderboardRows', () => {
     expect(ids(sortLeaderboardRows(rows, 'gear', 'desc'))).toEqual(['two-high', 'two-low', 'one-high']);
   });
 
+  it('sorts a hero wearing nothing last in both directions, as an absence rather than zero pieces', () => {
+    const rows = board(
+      { id: 'bare' },
+      { id: 'one', loadout: { arma: item(100, 0) } },
+      { id: 'two', loadout: { arma: item(100, 0), elmo: item(100, 0) } },
+    );
+    expect(ids(sortLeaderboardRows(rows, 'gear', 'desc'))).toEqual(['two', 'one', 'bare']);
+    expect(ids(sortLeaderboardRows(rows, 'gear', 'asc'))).toEqual(['one', 'two', 'bare']);
+  });
+
   it('sorts names alphabetically, ignoring case', () => {
     const rows = board({ id: 'a', name: 'bruno' }, { id: 'b', name: 'Ana' }, { id: 'c', name: 'Carla' });
     expect(ids(sortLeaderboardRows(rows, 'name', 'asc'))).toEqual(['b', 'a', 'c']);
@@ -205,7 +215,7 @@ describe('treeSheetFromAccountTree', () => {
 
 describe('leaderboardRowsFor with the tree unread', () => {
   it('leaves every statistic blank rather than composing against a tree of zeroes', () => {
-    const [row] = leaderboardRowsFor([rowFixture({ id: 'a', birth: BIRTH })], null);
+    const [row] = leaderboardRowsFor([rowFixture({ id: 'a', birth: BIRTH })], { tree: null });
     expect(row?.sheet).toBeUndefined();
     expect(row && leaderboardStatValue(row, 'attack')).toBeUndefined();
   });
@@ -247,5 +257,30 @@ describe('leaderboardPowerPercent', () => {
     expect(leaderboardPowerPercent(200, 200)).toBe(100);
     expect(leaderboardPowerPercent(undefined, 200)).toBe(0);
     expect(leaderboardPowerPercent(10, 0)).toBe(0);
+  });
+});
+
+describe('leaderboardRowsFor with heroes the host withholds', () => {
+  const rows = leaderboardRowsFor(
+    [
+      rowFixture({ id: 'kept-low', birth: { ...BIRTH, attack: 100 } }),
+      rowFixture({ id: 'withheld', birth: { ...BIRTH, attack: 900 } }),
+      rowFixture({ id: 'kept-high', birth: { ...BIRTH, attack: 300 } }),
+    ],
+    { tree: NEUTRAL_TREE, withheldHeroIds: new Set(['withheld']) },
+  );
+
+  it('draws no statistic for a withheld hero, and every statistic for the rest', () => {
+    const withheld = rows.find((row) => row.id === 'withheld');
+    expect(withheld?.sheet).toBeUndefined();
+    for (const key of ['attack', 'critChance', 'critDmg', 'luck', 'speed'] as const) {
+      expect(withheld && leaderboardStatValue(withheld, key)).toBeUndefined();
+    }
+    expect(rows.find((row) => row.id === 'kept-low')?.sheet).toBeDefined();
+  });
+
+  it('sorts a withheld hero last in both directions, however high its unread figure would be', () => {
+    expect(ids(sortLeaderboardRows(rows, 'attack', 'desc'))).toEqual(['kept-high', 'kept-low', 'withheld']);
+    expect(ids(sortLeaderboardRows(rows, 'attack', 'asc'))).toEqual(['kept-low', 'kept-high', 'withheld']);
   });
 });

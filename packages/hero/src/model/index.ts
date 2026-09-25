@@ -210,6 +210,7 @@ export type {
   LeaderboardRow,
   LeaderboardSort,
   LeaderboardSortDirection,
+  LeaderboardStatSource,
   LeaderboardStatColumnId,
   LeaderboardView,
   SortableLeaderboardColumnId,

@@ -86,6 +86,9 @@ function tableIds(page) {
   );
 }
 
+/** A fixture hero whose spent points the parse could not recover. */
+const WITHHELD_HERO_ID = '52562';
+
 function tablePowers(page) {
   return page.locator('[data-testid="heroes-leaderboard-power"]').allTextContents();
 }
@@ -153,6 +156,13 @@ test.describe('the Heroes screen\'s board of cards', () => {
     const heroCount = await page.locator('[data-testid^="heroes-roster-row-"]').count();
     await showTable(page);
     expect(await tableIds(page)).toHaveLength(heroCount);
+
+    // The fixture could not recover this hero's spent points, so its detail pane withholds its
+    // figures — and the table withholds its statistics for the same reason.
+    const withheld = page.getByTestId(`heroes-leaderboard-row-${WITHHELD_HERO_ID}`);
+    for (const stat of ['attack', 'critChance', 'critDmg', 'luck', 'speed']) {
+      await expect(withheld.getByTestId(`heroes-leaderboard-stat-${stat}`)).toHaveText('—');
+    }
 
     const power = page.getByTestId('heroes-leaderboard-sort-power');
     await expect(power).toHaveAttribute('aria-sort', 'descending');

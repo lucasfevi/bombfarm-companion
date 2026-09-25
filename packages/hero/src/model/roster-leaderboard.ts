@@ -61,17 +61,25 @@ export type LeaderboardRow = RosterHeroRow & {
   readonly gearAverageLevel: number | undefined;
 };
 
-/** `tree` is `null` while the account's skill tree is unread: every statistic is then absent,
- *  never composed against a tree of zeroes. */
+/** Which heroes' statistics the host will not draw, and the tree the rest are composed against. */
+export type LeaderboardStatSource = {
+  /** `null` while the account's skill tree is unread: every statistic is then absent, never
+   *  composed against a tree of zeroes. */
+  readonly tree: TreeSheetTotals | null;
+  /** Heroes whose statistics the host withholds — a hero whose spent points were not read would
+   *  otherwise be drawn as if it had spent none. */
+  readonly withheldHeroIds?: ReadonlySet<string> | undefined;
+};
+
 export function leaderboardRowsFor(
   rows: readonly RosterHeroRow[],
-  tree: TreeSheetTotals | null,
+  { tree, withheldHeroIds }: LeaderboardStatSource,
 ): readonly LeaderboardRow[] {
   return rows.map((row) => {
     const gear = equippedGearAverages([row.hero]);
     return {
       ...row,
-      sheet: tree === null ? undefined : heroStatSheet(row.hero, tree),
+      sheet: tree === null || withheldHeroIds?.has(row.id) === true ? undefined : heroStatSheet(row.hero, tree),
       gradeLetter: gradePlacementFor(row.report)?.railLetter,
       abilityCount: heroAbilitySlotsUsed(row.hero.abilities),
       gearCount: gear.itemCount,
@@ -192,7 +200,9 @@ function figuresFor(row: LeaderboardRow, column: SortableLeaderboardColumnId): r
     case 'abilities':
       return [row.abilityCount];
     case 'gear':
-      return [row.gearCount, row.gearAverageLevel ?? 0];
+      return row.gearCount === 0 || row.gearAverageLevel === undefined
+        ? undefined
+        : [row.gearCount, row.gearAverageLevel];
   }
 }
 
