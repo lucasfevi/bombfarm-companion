@@ -24,6 +24,7 @@ export type ShowcaseCopy = {
   readonly highestRollsSeparator: string;
   /** Short enough for a card line; spelled as the players say them. */
   readonly rollStat: { readonly [K in SheetKey]: string };
+  readonly summaryTitle: string;
   readonly summarySquadPower: string;
   readonly summaryTopHeroes: string;
   readonly summaryRarityMix: string;
@@ -34,6 +35,28 @@ export type ShowcaseCopy = {
   readonly summarySquadCount: string;
   /** `{count}` */
   readonly summaryBenchCount: string;
+  readonly summaryHeroes: string;
+  /** `{count}` `{rarity}` — one entry of the rarity legend. */
+  readonly summaryRarityEntry: string;
+  readonly summarySquadGear: string;
+  /** `{level}` `{forge}` */
+  readonly summaryGearAverages: string;
+  /** `{count}` */
+  readonly summaryGearItems: string;
+  /** `{position}` */
+  readonly cardPosition: string;
+  readonly cardPower: string;
+  /** `{level}` */
+  readonly cardLevel: string;
+  /** `{grade}` */
+  readonly cardBirthGrade: string;
+  /** `{pct}` */
+  readonly cardBirthRoll: string;
+  /** `{ability}` — the label row's mark for a hero that owns Wide Blast. */
+  readonly cardWideBlast: string;
+  /** `{level}` `{forge}` */
+  readonly cardAverageItemLevel: string;
+  readonly cardNothingEquipped: string;
   readonly aurasTitle: string;
   /** `{covered}` `{total}` */
   readonly aurasCovered: string;

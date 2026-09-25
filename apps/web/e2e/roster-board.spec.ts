@@ -172,43 +172,50 @@ test.describe('roster rail and board', () => {
     await expect(strip.getByText('Nessa')).toBeVisible();
   });
 
-  test('the card-detail presets change how much of a hero each card draws, never how many cards', async ({
+  test('every showcase card draws the same sections, and the board has no card-detail control', async ({
     page,
   }) => {
     await openPlanner(page);
     await showBoard(page);
     const cards = page.locator('[data-testid^="heroes-roster-card-"]');
-    const gear = page.getByTestId('heroes-card-gear');
-    const abilities = page.getByTestId('heroes-card-abilities');
-    const sheet = page.getByTestId('heroes-card-sheet');
-    const density = page.getByTestId('heroes-card-density');
     const cardCount = await cards.count();
-    expect(cardCount).toBeGreaterThan(0);
+    expect(cardCount).toBe(4);
 
-    await expect(gear).toHaveCount(cardCount);
-    await expect(abilities).toHaveCount(cardCount);
-    await expect(sheet).toHaveCount(cardCount);
-    const fullHeight = await page
-      .getByTestId('heroes-roster-card-board-ayla')
-      .evaluate((node) => node.getBoundingClientRect().height);
+    for (const section of ['types', 'birth', 'abilities', 'gear']) {
+      await expect(page.getByTestId(`heroes-card-${section}`)).toHaveCount(cardCount);
+    }
+    await expect(page.getByTestId('heroes-card-density')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^Compact$/ })).toHaveCount(0);
 
-    // The count is the property that matters: a preset changes how much of a hero a card draws,
-    // never which heroes are on the board.
-    await density.getByRole('button', { name: /^Compact$/ }).click();
-    await expect(cards).toHaveCount(cardCount);
-    await expect(abilities).toHaveCount(cardCount);
-    await expect(gear).toHaveCount(0);
-    await expect(sheet).toHaveCount(0);
-    const compactHeight = await page
-      .getByTestId('heroes-roster-card-board-ayla')
-      .evaluate((node) => node.getBoundingClientRect().height);
-    expect(compactHeight).toBeLessThan(fullHeight);
+    const ayla = page.getByTestId('heroes-roster-card-board-ayla');
+    await expect(ayla.getByTestId('heroes-card-position')).toHaveText('#1');
+    await expect(ayla.getByTestId('heroes-card-gear-average')).toHaveText(/^Average item level \d+ · \+\d+$/);
+    // The pool is icons alone: the level lives on each icon's hover card, never on the icon.
+    await expect(ayla.getByTestId('heroes-card-abilities')).not.toContainText(/\d+\/\d+/);
+    await expect(ayla.getByTestId('heroes-card-wide-blast')).toHaveCount(0);
+    await expect(
+      page.getByTestId('heroes-roster-card-board-shelved').getByTestId('heroes-card-wide-blast'),
+    ).toHaveCount(1);
+  });
 
-    await density.getByRole('button', { name: /^Combat$/ }).click();
-    await expect(cards).toHaveCount(cardCount);
-    await expect(abilities).toHaveCount(cardCount);
-    await expect(sheet).toHaveCount(cardCount);
-    await expect(gear).toHaveCount(0);
+  test('the roster summary sits above both presentations, and its top heroes pick like the roster does', async ({
+    page,
+  }) => {
+    await openPlanner(page);
+    const summary = page.getByTestId('roster-summary-strip');
+    await expect(summary).toBeVisible();
+    // The imported account carries no furthest phase, so the cell is left out rather than dashed.
+    await expect(summary.getByTestId('roster-summary-max-phase')).toHaveCount(0);
+
+    await showBoard(page);
+    await expect(summary).toBeVisible();
+    await summary.getByTestId('roster-summary-top-board-nessa').click();
+
+    await expect(page.locator('[data-testid^="heroes-roster-card-"]')).toHaveCount(0);
+    await expect(page.getByTestId('heroes-roster-row-board-nessa')).toHaveAttribute('aria-current', 'true');
+    await expect(
+      page.getByRole('region', { name: /^Current hero$/i }).getByText('Nessa'),
+    ).toBeVisible();
   });
 
   test('below the rail threshold the picker dialog is still the way to choose a hero', async ({

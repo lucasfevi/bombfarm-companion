@@ -4,7 +4,8 @@ import { showcasePtBR } from './showcase-pt-BR';
 
 /**
  * Identical in both languages on purpose: ATK, PEN and CDR are the codes players use either way,
- * the template and separator carry no words, and the position column is a bare `#`.
+ * the templates and separator carry no words, the position column and badge are a bare `#`, and
+ * the Wide Blast mark takes the ability's name from the domain's own bilingual labels.
  */
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly string[] = [
   'rollStat.attack',
@@ -13,6 +14,9 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly string[] = [
   'highestRollEntry',
   'highestRollsSeparator',
   'columnPosition',
+  'summaryRarityEntry',
+  'cardPosition',
+  'cardWideBlast',
 ];
 
 function flatten(dictionary: object): Record<string, string> {

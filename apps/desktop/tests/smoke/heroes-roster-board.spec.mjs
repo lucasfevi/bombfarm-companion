@@ -1,6 +1,6 @@
 /**
- * The Heroes screen's board of cards in the real app, drawn from the fixture account: the
- * card-detail control on the board's header, and what each of its three presets leaves on a card.
+ * The Heroes screen's board of showcase cards and the roster summary above it, in the real app,
+ * drawn from the fixture account.
  *
  * Counts, never geometry: CI's screen is narrower than the window this asks for, so how many cards
  * fit a row is not a property this can assert. The board is `@bombfarm/hero`'s and carries its own
@@ -102,43 +102,35 @@ test.describe('the Heroes screen\'s board of cards', () => {
     fs.rmSync(runDir, { recursive: true, force: true });
   });
 
-  test('the card-detail presets change what every card draws, never how many cards there are', async () => {
+  test('every showcase card draws the same sections, with no card-detail control on the board', async () => {
     await resize(app, page, 1280, 900);
     await openHeroes(page);
     await showBoard(page);
 
     const cards = page.locator('[data-testid^="heroes-roster-card-"]');
-    const birth = page.getByTestId('heroes-card-birth');
-    const sheet = page.getByTestId('heroes-card-sheet');
-    const abilities = page.getByTestId('heroes-card-abilities');
-    const gear = page.getByTestId('heroes-card-gear');
-    const density = page.getByTestId('heroes-card-density');
     const cardCount = await cards.count();
     expect(cardCount).toBeGreaterThan(0);
 
-    await expect(density.getByRole('button', { name: /^Full$/i })).toHaveAttribute('aria-pressed', 'true');
-    await expect(birth).toHaveCount(cardCount);
-    await expect(birth.locator('h3')).toHaveCount(cardCount);
-    await expect(sheet).toHaveCount(cardCount);
-    await expect(abilities).toHaveCount(cardCount);
-    await expect(gear).toHaveCount(cardCount);
+    for (const section of ['types', 'birth', 'abilities', 'gear', 'position']) {
+      await expect(page.getByTestId(`heroes-card-${section}`)).toHaveCount(cardCount);
+    }
+    await expect(page.getByTestId('heroes-card-density')).toHaveCount(0);
+    await expect(page.getByTestId('heroes-card-sheet')).toHaveCount(0);
+    await expect(page.getByTestId('heroes-card-abilities').first()).not.toContainText(/\d+\/\d+/);
+  });
 
-    await density.getByRole('button', { name: /^Compact$/i }).click();
-    await expect(cards).toHaveCount(cardCount);
-    await expect(abilities).toHaveCount(cardCount);
-    await expect(birth).toHaveCount(cardCount);
-    await expect(birth.locator('h3')).toHaveCount(0);
-    await expect(sheet).toHaveCount(0);
-    await expect(gear).toHaveCount(0);
+  test('the roster summary carries the furthest phase, and a top hero picked from it opens that hero', async () => {
+    const summary = page.getByTestId('roster-summary-strip');
+    await expect(summary).toBeVisible();
+    await expect(summary.getByTestId('roster-summary-max-phase')).toContainText('137');
 
-    await density.getByRole('button', { name: /^Combat$/i }).click();
-    await expect(cards).toHaveCount(cardCount);
-    await expect(sheet).toHaveCount(cardCount);
-    await expect(abilities).toHaveCount(cardCount);
-    await expect(gear).toHaveCount(0);
+    const top = summary.locator('[data-testid^="roster-summary-top-"]');
+    await expect(top).toHaveCount(3);
+    const pickedId = (await top.nth(1).getAttribute('data-testid'))?.replace('roster-summary-top-', '');
+    expect(pickedId).toBeTruthy();
+    await top.nth(1).click();
 
-    await density.getByRole('button', { name: /^Full$/i }).click();
-    await expect(cards).toHaveCount(cardCount);
-    await expect(gear).toHaveCount(cardCount);
+    await expect(page.locator('[data-testid^="heroes-roster-card-"]')).toHaveCount(0);
+    await expect(page.getByTestId(`heroes-roster-row-${pickedId}`)).toHaveAttribute('aria-current', 'true');
   });
 });

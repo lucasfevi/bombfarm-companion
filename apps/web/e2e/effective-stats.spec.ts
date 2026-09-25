@@ -254,6 +254,9 @@ test.describe('combat breakdown panel', () => {
     await selectSavedHero(page, 'Cora');
     await openCombatTab(page, 'en');
 
+    // The pointer is parked off the panel first: focusing scrolls the page under it, and a hover
+    // card that slides under a resting pointer opens and takes the popover's place.
+    await page.mouse.move(0, 0);
     // Keyboard focus: the badge icons are not tab stops, so Tab from Fuse's card lands on Field time's.
     await cardFace(page, 'fuse').focus();
     await page.keyboard.press('Tab');

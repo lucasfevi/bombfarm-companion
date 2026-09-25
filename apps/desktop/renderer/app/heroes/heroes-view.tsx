@@ -43,12 +43,12 @@ import {
   PointsTable,
   RosterCards,
   RosterRail,
+  RosterSummaryStrip,
   RosterToolbar,
   SheetTable,
 } from '@bombfarm/hero/components';
 import {
   DEFAULT_ROSTER_BOARD_SORT,
-  DEFAULT_ROSTER_CARD_DENSITY,
   EMPTY_ROSTER_BOARD_FILTER,
   filterRosterRows,
   heroPickOutcome,
@@ -58,7 +58,6 @@ import type {
   HeroMarketPrice,
   RosterBoardFilter,
   RosterBoardSort,
-  RosterCardDensity,
   RosterHeroRow,
   RosterViewMode,
 } from '@bombfarm/hero/model';
@@ -182,10 +181,8 @@ function HeroesRoster({
   const [pickedHeroId, setPickedHeroId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   // View-local and stored nowhere, like the phase override and the rank mode below it: the board
-  // is a way of looking at the roster you are in now, not a setting about this account — and so
-  // is how much of a hero each of its cards draws.
+  // is a way of looking at the roster you are in now, not a setting about this account.
   const [viewMode, setViewMode] = useState<RosterViewMode>('list');
-  const [cardDensity, setCardDensity] = useState<RosterCardDensity>(DEFAULT_ROSTER_CARD_DENSITY);
   // The roster's order and narrowing, view-local like the mode itself: they are ways of looking
   // at the roster you are in now, not settings about this account. Shared by both presentations,
   // so switching between them never changes which heroes are on screen.
@@ -340,6 +337,12 @@ function HeroesRoster({
 
   return (
     <div className={cn(colClass, 'min-h-0 flex-1')}>
+      <RosterSummaryStrip
+        rows={rows}
+        maxPhase={roster.account.maxPhase}
+        onSelectHeroId={onSelectHeroId}
+        lang={lang}
+      />
       <RosterToolbar
         rows={rows}
         sort={rosterSort}
@@ -368,9 +371,6 @@ function HeroesRoster({
                 rows={shownRows}
                 selectedId={active.id}
                 onSelectHeroId={onSelectHeroId}
-                statLabel={boundStatLabel}
-                density={cardDensity}
-                onDensity={setCardDensity}
                 t={rosterCopy}
                 lang={lang}
               />

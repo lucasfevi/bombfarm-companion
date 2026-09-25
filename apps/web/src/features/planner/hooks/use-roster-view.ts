@@ -3,14 +3,12 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
   DEFAULT_ROSTER_BOARD_SORT,
-  DEFAULT_ROSTER_CARD_DENSITY,
   EMPTY_ROSTER_BOARD_FILTER,
   heroPickOutcome,
   orderByRollQuality,
   rosterRowsShown,
   type RosterBoardFilter,
   type RosterBoardSort,
-  type RosterCardDensity,
   type RosterHeroRow,
   type RosterViewMode,
 } from '@bombfarm/hero/model';
@@ -27,17 +25,14 @@ export type RosterView = {
   sort: RosterBoardSort;
   filter: RosterBoardFilter;
   viewMode: RosterViewMode;
-  /** How much of a hero each card on the board draws — the board's own, since the rail has none. */
-  density: RosterCardDensity;
   actions: RosterToolbarActions;
   onSelectHeroId: (heroId: string) => void;
-  onDensity: (next: RosterCardDensity) => void;
 };
 
 /**
  * How this app is looking at its roster right now, and what picking a hero from it does.
  *
- * All four settings are view-local and stored nowhere, exactly as the desktop's Heroes screen
+ * All three settings are view-local and stored nowhere, exactly as the desktop's Heroes screen
  * holds them: they are ways of looking at the roster you are in front of, not preferences about
  * this account, and the planner tab — which IS about the work in hand — is the one thing here
  * that survives a reload.
@@ -56,7 +51,6 @@ export function useRosterView(): RosterView {
   const [sort, setSort] = useState<RosterBoardSort>(DEFAULT_ROSTER_BOARD_SORT);
   const [filter, setFilter] = useState<RosterBoardFilter>(EMPTY_ROSTER_BOARD_FILTER);
   const [viewMode, setViewMode] = useState<RosterViewMode>('list');
-  const [density, setDensity] = useState<RosterCardDensity>(DEFAULT_ROSTER_CARD_DENSITY);
 
   const rows = useMemo(() => orderByRollQuality(heroes), [heroes]);
   // Resolved from the WHOLE roster, never from the narrowed list: a filter is a question about
@@ -87,9 +81,7 @@ export function useRosterView(): RosterView {
     sort,
     filter,
     viewMode,
-    density,
     actions,
     onSelectHeroId,
-    onDensity: setDensity,
   };
 }

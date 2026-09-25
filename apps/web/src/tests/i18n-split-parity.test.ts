@@ -614,10 +614,6 @@ const KEYS_ADDED: readonly string[] = [
   'heroesViewLabel',
   'heroesViewCards',
   'heroesViewList',
-  // The board's card-detail presets (2026-09-14): the control's name, its three options and the
-  // headings over a card's sheet stats and roll bars. Six strings, on one line because this file
-  // sits at its line cap.
-  'heroesDensityLabel', 'heroesDensityCompact', 'heroesDensityCombat', 'heroesDensityFull', 'heroesCardSheetStatsLabel', 'heroesCardBirthStatsLabel',
   'heroesSortLabel',
   'heroesSortRoll',
   'heroesSortPower',

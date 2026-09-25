@@ -22,18 +22,6 @@ export type {
 } from './roster-board-order';
 export { heroPickOutcome } from './roster-view-mode';
 export type { HeroPickOutcome, RosterViewMode } from './roster-view-mode';
-export {
-  DEFAULT_ROSTER_CARD_DENSITY,
-  ROSTER_CARD_DENSITIES,
-  cardSectionsFor,
-  isRosterCardDensity,
-} from './roster-card-density';
-export type {
-  RosterCardAbilities,
-  RosterCardDensity,
-  RosterCardRoll,
-  RosterCardSections,
-} from './roster-card-density';
 export { SHEET_STAT_CODES } from './sheet-stat-codes';
 export { formatClearTime } from './format-clear-time';
 export {
@@ -175,6 +163,23 @@ export { highestRollsFor, highestRollsText } from './highest-rolls';
 export type { HighestRoll } from './highest-rolls';
 export { equippedGearAverages, equippedItemsOf, isSquadHero, rosterSummaryFor } from './roster-summary';
 export type { EquippedGearAverages, RarityCount, RosterSummary, SummaryHero } from './roster-summary';
+export {
+  SHOWCASE_ABILITY_GAP_PX,
+  SHOWCASE_ABILITY_TILE_PX,
+  SHOWCASE_CARD_MIN_WIDTH_PX,
+  SHOWCASE_CARD_PADDING_PX,
+  SHOWCASE_GEAR_GAP_PX,
+  SHOWCASE_GEAR_SLOTS,
+  SHOWCASE_GEAR_TILE_PX,
+  SHOWCASE_MAX_ABILITIES,
+  averageItemLevelText,
+  percentText,
+  rowWidthPx,
+  showcaseCardContentWidthPx,
+  showcaseCardReading,
+  squadGearAveragesText,
+} from './showcase-card';
+export type { ShowcaseCardReading } from './showcase-card';
 export { auraCoverageFor } from './aura-coverage';
 export type { AuraCoverage, AuraCoverageTile } from './aura-coverage';
 export {

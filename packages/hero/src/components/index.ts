@@ -6,6 +6,7 @@ export type { HeroPickerActions, HeroPickerData } from './hero-picker/hero-picke
 export { HeroActiveToggle } from './hero-picker/hero-active-toggle';
 export { RosterRail } from './roster-board/roster-rail';
 export { RosterCards } from './roster-board/roster-cards';
+export { RosterSummaryStrip } from './roster-board/roster-summary-strip';
 export { RosterToolbar } from './roster-board/roster-toolbar';
 export type { RosterToolbarActions } from './roster-board/roster-toolbar';
 export { PhasesHeroSwitcherView } from './phases-hero-switcher';
