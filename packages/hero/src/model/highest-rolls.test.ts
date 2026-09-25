@@ -66,7 +66,7 @@ describe('highestRollsText', () => {
     ] as const;
     expect(highestRollsText(rolls, showcaseEn, percent)).toBe('Highest rolls: CDR 97%, Crit DMG 94%');
     expect(highestRollsText(rolls, showcasePtBR, percent)).toBe(
-      'Melhores sorteios: CDR 97%, Dano crít. 94%',
+      'Melhores rolls: CDR 97%, Dano crít. 94%',
     );
   });
 

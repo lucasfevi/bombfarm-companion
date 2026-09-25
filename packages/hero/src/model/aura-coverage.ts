@@ -15,10 +15,11 @@ export type AuraCoverageTile =
       readonly auraId: TeamAbilityId;
       readonly covered: true;
       readonly maxLevel: number;
-      /** The best carrier's level — the aura the field actually gets is the strongest one. */
+      /** The highest carrier's level. Several carriers sum toward the aura's cap in the game; a
+       *  tile shows one carrier's strength, not that squad total. */
       readonly level: number;
       readonly readout: AbilityEffectReadout;
-      /** "+20% attack", "+10% gold" — the domain's own readout at {@link level}. */
+      /** "+20% attack", "+10.0% gold" — the domain's own readout at {@link level}. */
       readonly valueText: string;
     };
 
