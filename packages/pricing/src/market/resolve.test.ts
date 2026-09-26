@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 import type { CatalogView } from './names.js';
 import type { ResolvedPrice } from './resolve.js';
 import {
+  keyForItem,
   oldestQuotedUtc,
   resolveHeroPrice,
   resolveItemPrice,
   resolveKey,
   resolveSkinPrice,
+  skinPriceKey,
 } from './resolve.js';
 import { buildSnapshot } from './snapshot.js';
 import type { MarketEntry } from './types.js';
@@ -247,6 +249,53 @@ describe('resolveSkinPrice', () => {
 
   it('has no price for a birth skin, which is not something anyone bought', () => {
     expect(resolveSkinPrice(0, snapshot).amount).toBeNull();
+  });
+
+  /**
+   * A bought skin is held in one of two mutually exclusive ways: worn by a hero, or unpacked off the
+   * account as an inventory item so it can be sold. Both are the same asset and the same listing, so
+   * both have to arrive at the same price — an owner who unpacked a skin precisely in order to sell
+   * it is the one person most likely to be looking at it.
+   */
+  it('prices an unpacked skin exactly as it prices the worn one', () => {
+    const unpacked = resolveItemPrice({ defId: 'skin_8', rarity: 0, tradable: true }, snapshot);
+
+    expect(unpacked).toMatchObject({
+      state: 'priced',
+      hashName: 'Royal Sentinel Skin',
+      amount: 48.14,
+    });
+    expect(unpacked.key).toBe(resolveSkinPrice(8, snapshot).key);
+  });
+
+  it('keys an unpacked skin off its index, not off its def and rarity', () => {
+    expect(keyForItem({ defId: 'skin_8', rarity: 0, tradable: true })).toBe(skinPriceKey(8));
+    expect(keyForItem({ defId: 'skin_8', rarity: 0, tradable: true })).not.toBe(
+      priceKey('skin_8', 0),
+    );
+  });
+
+  it('leaves an unpacked skin the table cannot name unpriced, not holding a neighbour price', () => {
+    const stranger = resolveItemPrice({ defId: 'skin_99', rarity: 0, tradable: true }, snapshot);
+
+    expect(stranger.state).toBe('unknown');
+    expect(stranger.amount).toBeNull();
+    expect(stranger.key).toBe(priceKey('skin_99', 0));
+  });
+
+  it('leaves every other def keyed on its def and rarity, skins being the one exception', () => {
+    expect(keyForItem({ defId: 'ember_arma', rarity: 1, tradable: true })).toBe(
+      priceKey('ember_arma', 1),
+    );
+    expect(keyForItem({ defId: 'skill_stone_raro', rarity: 2, tradable: true })).toBe(
+      priceKey('skill_stone_raro', 2),
+    );
+  });
+
+  it('does not treat a def that merely starts with skin as an unpacked skin', () => {
+    expect(keyForItem({ defId: 'skin_sentinel', rarity: 0, tradable: true })).toBe(
+      priceKey('skin_sentinel', 0),
+    );
   });
 });
 

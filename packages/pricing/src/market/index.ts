@@ -74,6 +74,7 @@ export {
   resolveItemPrice,
   resolveKey,
   resolveSkinPrice,
+  skinPriceKey,
   type PriceBasis,
   type PriceState,
   type PriceableHero,
