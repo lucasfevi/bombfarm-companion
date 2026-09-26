@@ -1,6 +1,6 @@
 import { composeSheetFromBirth, type TreeSheetTotals } from '@bombfarm/domain/birth-sheet';
 import { SLOTS, emptySheetOther, type SheetStats } from '@bombfarm/domain/gear';
-import { heroAbilitySlotsUsed } from '@bombfarm/domain/hero-abilities';
+import { heroAbilityIconEntries } from '@bombfarm/domain/hero-abilities';
 import { abilityMods } from '@bombfarm/domain/model';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import type { HeroRecord, TreeState } from '@bombfarm/domain/shims/storage';
@@ -57,6 +57,7 @@ export type LeaderboardRow = RosterHeroRow & {
   /** The game's letter where it recognises one, ours where it does not — as the birth panel reads. */
   readonly gradeLetter: string | undefined;
   readonly abilityCount: number;
+  readonly abilityLevelTotal: number;
   readonly gearCount: number;
   readonly gearAverageLevel: number | undefined;
 };
@@ -77,11 +78,13 @@ export function leaderboardRowsFor(
 ): readonly LeaderboardRow[] {
   return rows.map((row) => {
     const gear = equippedGearAverages([row.hero]);
+    const abilities = heroAbilityIconEntries(row.hero.abilities);
     return {
       ...row,
       sheet: tree === null || withheldHeroIds?.has(row.id) === true ? undefined : heroStatSheet(row.hero, tree),
       gradeLetter: gradePlacementFor(row.report)?.railLetter,
-      abilityCount: heroAbilitySlotsUsed(row.hero.abilities),
+      abilityCount: abilities.length,
+      abilityLevelTotal: abilities.reduce((total, ability) => total + ability.level, 0),
       gearCount: gear.itemCount,
       gearAverageLevel: gear.averageLevel,
     };
@@ -188,7 +191,7 @@ export function pressLeaderboardColumn(current: LeaderboardSort, column: Sortabl
   return { column, direction: firstDirection };
 }
 
-/** A lexicographic key: gear ranks by pieces worn, then by how high they are. */
+/** A lexicographic key: abilities and gear rank by how many, then by how high they are. */
 function figuresFor(row: LeaderboardRow, column: SortableLeaderboardColumnId): readonly number[] | undefined {
   const { hero } = row;
   switch (column) {
@@ -216,7 +219,7 @@ function figuresFor(row: LeaderboardRow, column: SortableLeaderboardColumnId): r
       return value === undefined ? undefined : [value];
     }
     case 'abilities':
-      return [row.abilityCount];
+      return [row.abilityCount, row.abilityLevelTotal];
     case 'gear':
       return row.gearCount === 0 || row.gearAverageLevel === undefined
         ? undefined
@@ -315,19 +318,31 @@ export function visibleLeaderboardColumns(view: LeaderboardView): readonly Leade
 }
 
 /**
- * Shows a hidden column or hides a shown one. Hiding the column the table is sorted by drops the
- * order back to the default — an order by a column nobody can see is not one a reader can follow —
- * and to the hero's name when the default's own column is hidden too.
+ * Shows exactly the toggleable columns listed and hides the rest. Hiding the column the table is
+ * sorted by drops the order back to the default — an order by a column nobody can see is not one a
+ * reader can follow — and to the hero's name when the default's own column is hidden too.
  */
-export function toggleLeaderboardColumn(view: LeaderboardView, column: ToggleableLeaderboardColumnId): LeaderboardView {
-  const hiddenColumns = view.hiddenColumns.includes(column)
-    ? view.hiddenColumns.filter((id) => id !== column)
-    : [...view.hiddenColumns, column];
+export function withShownLeaderboardColumns(
+  view: LeaderboardView,
+  shown: readonly ToggleableLeaderboardColumnId[],
+): LeaderboardView {
+  const hiddenColumns = TOGGLEABLE_LEADERBOARD_COLUMN_IDS.filter((id) => !shown.includes(id));
   const next = { ...view, hiddenColumns };
   if (isLeaderboardColumnShown(next, view.sort.column)) return next;
   const sort = isLeaderboardColumnShown(next, DEFAULT_LEADERBOARD_SORT.column) ? DEFAULT_LEADERBOARD_SORT : NAME_SORT;
   return { ...next, sort };
 }
+
+export function shownToggleableLeaderboardColumns(view: LeaderboardView): readonly ToggleableLeaderboardColumnId[] {
+  return TOGGLEABLE_LEADERBOARD_COLUMN_IDS.filter((id) => isLeaderboardColumnShown(view, id));
+}
+
+export function isToggleableLeaderboardColumn(id: string): id is ToggleableLeaderboardColumnId {
+  return (TOGGLEABLE_LEADERBOARD_COLUMN_IDS as readonly string[]).includes(id);
+}
+
+/** Six 1.75rem icons with their 0.125rem gaps, and the cell's own padding either side. */
+const ABILITIES_COLUMN_MIN_REM = 12.5;
 
 /** Enough room per column that no header or figure is squeezed; the frame scrolls past this. */
 const COLUMN_MIN_REM: Record<LeaderboardColumnId, number> = {
@@ -345,7 +360,7 @@ const COLUMN_MIN_REM: Record<LeaderboardColumnId, number> = {
   cdr: 7,
   luck: 4,
   speed: 4,
-  abilities: 5,
+  abilities: ABILITIES_COLUMN_MIN_REM,
   gear: 5.5,
 };
 

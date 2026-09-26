@@ -2,13 +2,17 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Combobox } from '@base-ui/react/combobox';
 import { cn } from './cn';
 import { Icon } from './icon';
+import { SelectPopupHeader, type SelectMultipleHeader } from './select';
 import {
   selectAffixClass,
+  selectCheckboxClass,
+  selectCheckItemClass,
   selectFieldRecipe,
   selectItemClass,
   selectItemCompactClass,
   selectListClass,
   selectPopupClass,
+  selectPopupMultipleClass,
   selectPositionerClass,
   selectValueClass,
   type SelectSize,
@@ -176,6 +180,106 @@ export function SearchSelect({
                 {overflowLabel(visible.length, matched.length)}
               </p>
             ) : null}
+          </Combobox.Popup>
+        </Combobox.Positioner>
+      </Combobox.Portal>
+    </Combobox.Root>
+  );
+}
+
+export type SearchSelectMultipleProps = {
+  options: readonly SearchSelectOption[];
+  /** The ticked options' values. */
+  value: readonly string[];
+  onValueChange: (next: string[]) => void;
+  /** The trigger's text — a multi-select has no single label, so the caller summarises. */
+  renderValue: (selected: readonly string[]) => ReactNode;
+  size?: SelectSize;
+  disabled?: boolean;
+  'aria-label'?: string;
+  className?: string;
+  header?: SelectMultipleHeader;
+  searchPlaceholder?: string;
+  emptyLabel: ReactNode;
+};
+
+/**
+ * `SelectMultiple` with the search field of {@link SearchSelect}: the same trigger, header and
+ * checkbox rows, over a popup that narrows as the player types. Base UI's `Combobox` in its
+ * `multiple` mode does the work, since its select has no field to type into; the query clears
+ * when the popup closes, as {@link SearchSelect}'s does.
+ */
+export function SearchSelectMultiple({
+  options,
+  value,
+  onValueChange,
+  renderValue,
+  size = 'default',
+  disabled,
+  'aria-label': ariaLabel,
+  className,
+  header,
+  searchPlaceholder,
+  emptyLabel,
+}: SearchSelectMultipleProps) {
+  const [query, setQuery] = useState('');
+  const itemClass = size === 'compact' ? selectItemCompactClass : selectItemClass;
+
+  const visible = useMemo(() => options.filter((option) => searchSelectMatches(option, query)), [options, query]);
+  const selected = useMemo(() => options.filter((option) => value.includes(option.value)), [options, value]);
+
+  return (
+    <Combobox.Root<SearchSelectOption, true>
+      multiple
+      items={options as SearchSelectOption[]}
+      filteredItems={visible}
+      filter={null}
+      value={selected}
+      onValueChange={(next) => onValueChange(next.map((option) => option.value))}
+      isItemEqualToValue={(item, candidate) => item.value === candidate.value}
+      itemToStringLabel={(item) => item.label}
+      itemToStringValue={(item) => item.value}
+      inputValue={query}
+      onInputValueChange={setQuery}
+      onOpenChange={(open) => {
+        if (!open) setQuery('');
+      }}
+      disabled={disabled}
+      modal={false}
+    >
+      <Combobox.Trigger
+        data-select
+        data-select-multiple
+        data-search-select
+        aria-label={ariaLabel}
+        className={cn(selectFieldRecipe({ size }), className)}
+      >
+        <span className={selectAffixClass} aria-hidden>
+          <Icon name="chevron-down" className="size-3.5" />
+        </span>
+        <span className={selectValueClass}>{renderValue(value)}</span>
+      </Combobox.Trigger>
+
+      <Combobox.Portal>
+        <Combobox.Positioner className={selectPositionerClass} sideOffset={4} align="start">
+          <Combobox.Popup className={cn(selectPopupClass, selectPopupMultipleClass)}>
+            {header ? <SelectPopupHeader header={header} /> : null}
+            <div className={searchSelectSearchRowClass}>
+              <Combobox.Input placeholder={searchPlaceholder} className={searchSelectInputClass} />
+            </div>
+            <Combobox.Empty className={searchSelectEmptyClass}>{emptyLabel}</Combobox.Empty>
+            <Combobox.List className={selectListClass}>
+              {visible.map((option) => (
+                <Combobox.Item key={option.value} value={option} className={cn(itemClass, selectCheckItemClass)}>
+                  <span className={selectCheckboxClass} aria-hidden>
+                    <Combobox.ItemIndicator>
+                      <Icon name="check" className="size-3" />
+                    </Combobox.ItemIndicator>
+                  </span>
+                  {option.label}
+                </Combobox.Item>
+              ))}
+            </Combobox.List>
           </Combobox.Popup>
         </Combobox.Positioner>
       </Combobox.Portal>

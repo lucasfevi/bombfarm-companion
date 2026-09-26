@@ -283,23 +283,62 @@ test.describe('roster rail and board', () => {
     expect(frame.scrollerOverflows).toBe(true);
   });
 
-  test('the Columns menu shows cooldown reduction and hides luck', async ({ page }) => {
+  test('the Columns selector finds a column by name, shows cooldown reduction and hides luck', async ({ page }) => {
     await openPlanner(page);
     await showTable(page);
     await expect(page.getByTestId('heroes-leaderboard-sort-cdr')).toHaveCount(0);
 
-    await page.getByRole('button', { name: /^Columns$/ }).click();
-    const menu = page.getByTestId('heroes-leaderboard-columns-menu');
-    await menu.getByRole('menuitemcheckbox', { name: /^Cooldown reduction$/ }).click();
-    await menu.getByRole('menuitemcheckbox', { name: /^Luck$/ }).click();
-    await expect(menu.getByRole('menuitemcheckbox', { name: /^Luck$/ })).toHaveAttribute('aria-checked', 'false');
-    await page.keyboard.press('Escape');
-
+    await page.getByRole('combobox', { name: /^Columns$/ }).click();
+    const search = page.getByPlaceholder('Find a column');
+    await expect(search).toBeFocused();
+    await search.fill('cool');
+    const list = page.getByRole('listbox');
+    await expect(list.getByRole('option')).toHaveText(['Cooldown reduction']);
+    await list.getByRole('option', { name: /^Cooldown reduction$/ }).click();
     await expect(page.getByTestId('heroes-leaderboard-sort-cdr')).toHaveText(/Cooldown reduction/);
+
+    await search.fill('');
+    const luck = list.getByRole('option', { name: /^Luck$/ });
+    await expect(luck).toHaveAttribute('aria-selected', 'true');
+    await luck.click();
+    await expect(luck).toHaveAttribute('aria-selected', 'false');
+    await page.keyboard.press('Escape');
+    await expect(list).toBeHidden();
+
     await expect(
       page.getByTestId('heroes-leaderboard-row-board-ayla').getByTestId('heroes-leaderboard-stat-cdr'),
     ).toHaveText(/^\d[\d,.]*%$/);
     await expect(page.getByTestId('heroes-leaderboard-sort-luck')).toHaveCount(0);
+  });
+
+  test('the abilities column draws one bare icon per ability the hero holds', async ({ page }) => {
+    await openPlanner(page);
+    await showTable(page);
+    const cell = page.getByTestId('heroes-leaderboard-row-board-ayla').getByTestId('heroes-leaderboard-abilities');
+    await expect(cell.locator('[data-peek="ability"]')).toHaveCount(3);
+    await expect(cell).toHaveText('');
+  });
+
+  test('the how-to hint sits on an info icon by the title, opened by hover and by keyboard focus', async ({
+    page,
+  }) => {
+    await openPlanner(page);
+    await showTable(page);
+    const hint = 'Click a column to sort, a row to open that hero.';
+    const panel = page.getByTestId('heroes-leaderboard');
+    await expect(panel).not.toContainText(hint);
+    const info = panel.getByRole('button', { name: /^Your roster: / });
+
+    await info.hover();
+    await expect(page.getByText(hint)).toBeVisible();
+    await page.mouse.move(0, 0);
+    await expect(page.getByText(hint)).toBeHidden();
+
+    // A real key press: the tooltip opens on :focus-visible, which a scripted focus() never sets.
+    await panel.getByRole('button', { name: /^Everyone$/ }).focus();
+    await page.keyboard.press('Shift+Tab');
+    await expect(info).toBeFocused();
+    await expect(page.getByText(hint)).toBeVisible();
   });
 
   test('a portrait opens the hero card on hover, and clicking it picks the hero', async ({ page }) => {

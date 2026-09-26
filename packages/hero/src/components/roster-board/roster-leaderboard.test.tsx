@@ -4,6 +4,7 @@ import { act, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { emptyLoadout } from '@bombfarm/domain/gear';
 import { numberFormatterFor } from '@bombfarm/ui';
+import { showcaseEn } from '../../copy';
 import type { RosterBoardCopy } from '../../copy';
 import {
   DEFAULT_LEADERBOARD_VIEW,
@@ -35,6 +36,7 @@ const ROWS: readonly RosterHeroRow[] = [
     stars: 2,
     level: 90,
     rank: 'A',
+    abilities: { olho_clinico: 10, golpe_brutal: 5, ponta_diamante: 3 },
     statRanges: {
       attack: { min: 0, max: 200 },
       energy: { min: 0, max: 250 },
@@ -193,7 +195,31 @@ describe('RosterLeaderboard', () => {
       expect(ada.querySelector(`[data-testid="heroes-leaderboard-stat-${key}"]`)).toBeNull();
       expect(header(key)).toBeNull();
     }
-    expect(container.querySelector('[data-testid="heroes-leaderboard-columns"]')?.textContent).toBe('Columns');
+    const columns = container.querySelector('[aria-label="Columns"]');
+    expect(columns?.getAttribute('role')).toBe('combobox');
+    expect(columns?.textContent).toBe('Columns');
+  });
+
+  it('draws each hero’s abilities as bare icons, one per ability, a dash for none', () => {
+    mount();
+    const cy = container.querySelector(
+      '[data-testid="heroes-leaderboard-row-cy"] [data-testid="heroes-leaderboard-abilities"]',
+    ) as HTMLElement;
+    expect(cy.querySelectorAll('[data-peek="ability"]')).toHaveLength(3);
+    expect(cy.textContent).toBe('');
+    const ada = container.querySelector(
+      '[data-testid="heroes-leaderboard-row-ada"] [data-testid="heroes-leaderboard-abilities"]',
+    ) as HTMLElement;
+    expect(ada.querySelectorAll('[data-peek="ability"]')).toHaveLength(0);
+    expect(ada.textContent).toBe('—');
+  });
+
+  it('carries the how-to hint on an info icon beside the title, not as a line of text', () => {
+    mount();
+    const panel = container.querySelector('[data-testid="heroes-leaderboard"]') as HTMLElement;
+    const info = panel.querySelector(`[aria-label$="${showcaseEn.tableHint}"]`);
+    expect(info?.tagName).toBe('BUTTON');
+    expect(panel.textContent).not.toContain(showcaseEn.tableHint);
   });
 
   it('prints the grade as the bare letter in its tone, with no chip behind it', () => {

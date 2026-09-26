@@ -18,9 +18,11 @@ import {
   leaderboardStatValue,
   pressLeaderboardColumn,
   sortLeaderboardRows,
-  toggleLeaderboardColumn,
   treeSheetFromAccountTree,
   visibleLeaderboardColumns,
+  withShownLeaderboardColumns,
+  shownToggleableLeaderboardColumns,
+  type ToggleableLeaderboardColumnId,
   type LeaderboardRow,
   type LeaderboardView,
 } from './roster-leaderboard';
@@ -67,13 +69,13 @@ describe('heroStatSheet', () => {
 });
 
 describe('leaderboardRowsFor', () => {
-  it('counts the ability pool and the gear worn, with its average item level', () => {
+  it('counts the ability pool with its levels, and the gear worn with its average item level', () => {
     const [row] = board({
       id: 'a',
-      abilities: { olho_clinico: 20, explosao_ampla: 0 },
+      abilities: { olho_clinico: 20, explosao_ampla: 3 },
       loadout: { ...emptyLoadout(), arma: item(100, 0), elmo: item(300, 0) },
     });
-    expect(row).toMatchObject({ abilityCount: 2, gearCount: 2, gearAverageLevel: 200 });
+    expect(row).toMatchObject({ abilityCount: 2, abilityLevelTotal: 23, gearCount: 2, gearAverageLevel: 200 });
   });
 });
 
@@ -118,6 +120,15 @@ describe('sortLeaderboardRows', () => {
     const rows = board({ id: 'known', power: 1 }, { id: 'unknown' }, { id: 'high', power: 5 });
     expect(ids(sortLeaderboardRows(rows, 'power', 'desc'))).toEqual(['high', 'known', 'unknown']);
     expect(ids(sortLeaderboardRows(rows, 'power', 'asc'))).toEqual(['known', 'high', 'unknown']);
+  });
+
+  it('ranks abilities by how many the hero holds, then by their levels together', () => {
+    const rows = board(
+      { id: 'one-high', abilities: { olho_clinico: 20 } },
+      { id: 'two-low', abilities: { olho_clinico: 1, golpe_brutal: 1 } },
+      { id: 'two-high', abilities: { olho_clinico: 10, golpe_brutal: 5 } },
+    );
+    expect(ids(sortLeaderboardRows(rows, 'abilities', 'desc'))).toEqual(['two-high', 'two-low', 'one-high']);
   });
 
   it('ranks gear by pieces worn, then by their average level', () => {
@@ -342,21 +353,38 @@ describe('column visibility', () => {
     ]);
   });
 
-  it('shows a hidden column and hides a shown one, leaving the order alone', () => {
-    const withCdr = toggleLeaderboardColumn(DEFAULT_LEADERBOARD_VIEW, 'cdr');
+  const toggled = (view: LeaderboardView, column: ToggleableLeaderboardColumnId) => {
+    const current = shownToggleableLeaderboardColumns(view);
+    return withShownLeaderboardColumns(
+      view,
+      current.includes(column) ? current.filter((id) => id !== column) : [...current, column],
+    );
+  };
+
+  it('shows exactly the columns ticked, leaving the order alone', () => {
+    const withCdr = toggled(DEFAULT_LEADERBOARD_VIEW, 'cdr');
     expect(shown(withCdr)).toContain('cdr');
-    const noLuck = toggleLeaderboardColumn(withCdr, 'luck');
+    const noLuck = toggled(withCdr, 'luck');
     expect(shown(noLuck)).not.toContain('luck');
     expect(noLuck.sort).toEqual(DEFAULT_LEADERBOARD_VIEW.sort);
+    expect(shown(withShownLeaderboardColumns(DEFAULT_LEADERBOARD_VIEW, []))).toEqual(['position', 'name']);
   });
 
   it('drops the order back to power when the sorted column is hidden', () => {
     const byLuck: LeaderboardView = { ...DEFAULT_LEADERBOARD_VIEW, sort: { column: 'luck', direction: 'asc' } };
-    expect(toggleLeaderboardColumn(byLuck, 'luck').sort).toEqual({ column: 'power', direction: 'desc' });
+    expect(toggled(byLuck, 'luck').sort).toEqual({ column: 'power', direction: 'desc' });
   });
 
   it('falls to the name, which cannot be hidden, when power is the column hidden', () => {
-    expect(toggleLeaderboardColumn(DEFAULT_LEADERBOARD_VIEW, 'power').sort).toEqual({ column: 'name', direction: 'asc' });
+    expect(toggled(DEFAULT_LEADERBOARD_VIEW, 'power').sort).toEqual({ column: 'name', direction: 'asc' });
+  });
+
+  it('leaves the abilities column room for six icons', () => {
+    const [abilities] = visibleLeaderboardColumns({ ...DEFAULT_LEADERBOARD_VIEW, hiddenColumns: [] }).filter(
+      (column) => column.id === 'abilities',
+    );
+    expect(abilities).toBeDefined();
+    if (abilities !== undefined) expect(leaderboardMinWidthRem([abilities])).toBeGreaterThanOrEqual(6 * 1.75 + 5 * 0.125);
   });
 
   it('asks for less width as columns are hidden', () => {

@@ -73,4 +73,9 @@ export const showcasePtBR: ShowcaseCopy = {
   tableEmpty: 'Nenhum herói aqui.',
   tableGear: '{count}/{slots} · Nv {level}',
   tableColumns: 'Colunas',
+  tableColumnsShown: 'Colunas exibidas',
+  tableColumnsShowAll: 'Mostrar todas',
+  tableColumnsHideAll: 'Ocultar todas',
+  tableColumnsSearch: 'Buscar coluna',
+  tableColumnsEmpty: 'Nenhuma coluna corresponde.',
 };

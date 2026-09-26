@@ -71,4 +71,9 @@ export const showcaseEn = {
   tableEmpty: 'No heroes here.',
   tableGear: '{count}/{slots} · Lv {level}',
   tableColumns: 'Columns',
+  tableColumnsShown: 'Columns shown',
+  tableColumnsShowAll: 'Show all',
+  tableColumnsHideAll: 'Hide all',
+  tableColumnsSearch: 'Find a column',
+  tableColumnsEmpty: 'No column matches.',
 } as const;

@@ -89,4 +89,9 @@ export type ShowcaseCopy = {
   /** `{count}` `{slots}` `{level}` — pieces worn, of how many, and their average item level. */
   readonly tableGear: string;
   readonly tableColumns: string;
+  readonly tableColumnsShown: string;
+  readonly tableColumnsShowAll: string;
+  readonly tableColumnsHideAll: string;
+  readonly tableColumnsSearch: string;
+  readonly tableColumnsEmpty: string;
 };

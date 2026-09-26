@@ -18,7 +18,7 @@ export const menuGroupLabelClass =
 export const menuSeparatorClass = 'my-1 h-px shrink-0 bg-line';
 
 /**
- * The tick column on a radio or checkbox row. Mounted on every row and merely hidden on the unselected ones,
+ * The tick column on a radio row. Mounted on every row and merely hidden on the unselected ones,
  * so the labels stay in one column instead of stepping left as the selection moves.
  */
 export const menuRadioIndicatorClass =

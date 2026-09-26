@@ -10,6 +10,7 @@ import { memo, useMemo, type KeyboardEvent } from 'react';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import {
+  HeroAbilityIcons,
   HeroAvatar,
   heroPeekData,
   heroRankToneClass,
@@ -20,11 +21,11 @@ import {
 } from '@bombfarm/game-art';
 import {
   DataTable,
-  Icon,
-  Menu,
+  InfoTip,
   Panel,
+  SearchSelectMultiple,
   SegmentedToggle,
-  buttonRecipe,
+  Tooltip,
   cn,
   formatNumber,
   numberFormatterFor,
@@ -39,8 +40,8 @@ import {
   TOGGLEABLE_LEADERBOARD_COLUMN_IDS,
   filterLeaderboardRows,
   heroPowerText,
-  isLeaderboardColumnShown,
   isLeaderboardStatColumn,
+  isToggleableLeaderboardColumn,
   leaderboardGearText,
   leaderboardMinWidthRem,
   leaderboardPowerPercent,
@@ -49,9 +50,10 @@ import {
   percentText,
   pressLeaderboardColumn,
   sheetTotalText,
+  shownToggleableLeaderboardColumns,
   sortLeaderboardRows,
-  toggleLeaderboardColumn,
   visibleLeaderboardColumns,
+  withShownLeaderboardColumns,
   type LeaderboardColumn,
   type LeaderboardColumnId,
   type LeaderboardFilter,
@@ -115,9 +117,14 @@ export function RosterLeaderboard({
 
   return (
     <Panel className="min-w-0" data-testid="heroes-leaderboard">
-      <div className={cn(panelHClass, 'items-center')}>
-        <h2 className={panelTitleClass}>{t.heroesRosterTitle}</h2>
-      </div>
+      <Tooltip.Provider delay={200} closeDelay={100}>
+        <div className={cn(panelHClass, 'items-center')}>
+          <span className="flex items-center gap-1.5">
+            <h2 className={panelTitleClass}>{t.heroesRosterTitle}</h2>
+            <InfoTip label={t.heroesRosterTitle} tip={copy.tableHint} />
+          </span>
+        </div>
+      </Tooltip.Provider>
       <div className="mb-2.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
         <SegmentedToggle
           options={filterOptions}
@@ -127,7 +134,6 @@ export function RosterLeaderboard({
           }}
           ariaLabel={copy.tableFilterLabel}
         />
-        <span className="text-xs text-muted">{copy.tableHint}</span>
         <ColumnsMenu view={view} onViewChange={onViewChange} copy={copy} />
       </div>
       <DataTable.Root className="min-w-0 overflow-x-auto rounded-sm border border-line">
@@ -318,8 +324,8 @@ function LeaderboardCell({
       );
     case 'abilities':
       return (
-        <DataTable.Cell align="right" numeric>
-          {formatNumber(row.abilityCount, lang, 0)}
+        <DataTable.Cell align="right" data-testid="heroes-leaderboard-abilities">
+          <HeroAbilityIcons abilities={hero.abilities} lang={lang} size="xs" showLevel={false} className="flex-nowrap" />
         </DataTable.Cell>
       );
     case 'gear':
@@ -391,7 +397,8 @@ function PowerCell({ row, topPower, lang }: { row: LeaderboardRow; topPower: num
   );
 }
 
-/** Every column but the position and the hero, each a tick the player turns on or off. */
+/** Every column but the position and the hero, each a tick the player turns on or off — the
+ *  inventory's set filter with a field to find a column by name. */
 function ColumnsMenu({
   view,
   onViewChange,
@@ -401,39 +408,36 @@ function ColumnsMenu({
   onViewChange: (next: LeaderboardView) => void;
   copy: ShowcaseCopy;
 }) {
+  const options = useMemo(
+    () =>
+      TOGGLEABLE_LEADERBOARD_COLUMN_IDS.map((column) => {
+        const label = COLUMN_LABEL_BY_ID.get(column);
+        return { value: column, label: label === undefined ? column : copy[label] };
+      }),
+    [copy],
+  );
+  const shown = shownToggleableLeaderboardColumns(view);
+  const showColumns = (next: readonly string[]) => {
+    onViewChange(withShownLeaderboardColumns(view, next.filter(isToggleableLeaderboardColumn)));
+  };
+  const everythingShown = shown.length === TOGGLEABLE_LEADERBOARD_COLUMN_IDS.length;
   return (
-    <Menu.Root>
-      <Menu.Trigger
-        data-testid="heroes-leaderboard-columns"
-        className={cn(buttonRecipe({ variant: 'ghost' }), 'ml-auto', 'inline-flex', 'items-center', 'gap-1.5')}
-      >
-        <Icon name="layout-table" size="sm" />
-        {copy.tableColumns}
-      </Menu.Trigger>
-      <Menu.Portal>
-        <Menu.Positioner align="end" sideOffset={6}>
-          <Menu.Popup data-testid="heroes-leaderboard-columns-menu">
-            {TOGGLEABLE_LEADERBOARD_COLUMN_IDS.map((column) => {
-              const label = COLUMN_LABEL_BY_ID.get(column);
-              return (
-                <Menu.CheckboxItem
-                  key={column}
-                  checked={isLeaderboardColumnShown(view, column)}
-                  onCheckedChange={() => {
-                    onViewChange(toggleLeaderboardColumn(view, column));
-                  }}
-                  data-testid={`heroes-leaderboard-column-${column}`}
-                >
-                  <Menu.CheckboxItemIndicator>
-                    <Icon name="check" size="xs" />
-                  </Menu.CheckboxItemIndicator>
-                  {label === undefined ? column : copy[label]}
-                </Menu.CheckboxItem>
-              );
-            })}
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.Root>
+    <SearchSelectMultiple
+      size="compact"
+      aria-label={copy.tableColumns}
+      className="ml-auto h-[30px] w-36 shrink-0"
+      options={options}
+      value={shown}
+      onValueChange={showColumns}
+      renderValue={() => copy.tableColumns}
+      searchPlaceholder={copy.tableColumnsSearch}
+      emptyLabel={copy.tableColumnsEmpty}
+      header={{
+        label: copy.tableColumnsShown,
+        action: everythingShown
+          ? { label: copy.tableColumnsHideAll, onAction: () => showColumns([]) }
+          : { label: copy.tableColumnsShowAll, onAction: () => showColumns(TOGGLEABLE_LEADERBOARD_COLUMN_IDS) },
+      }}
+    />
   );
 }

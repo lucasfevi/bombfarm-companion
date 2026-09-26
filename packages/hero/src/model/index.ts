@@ -204,7 +204,9 @@ export {
   leaderboardStatValue,
   pressLeaderboardColumn,
   sortLeaderboardRows,
-  toggleLeaderboardColumn,
+  withShownLeaderboardColumns,
+  shownToggleableLeaderboardColumns,
+  isToggleableLeaderboardColumn,
   treeSheetFromAccountTree,
   visibleLeaderboardColumns,
 } from './roster-leaderboard';

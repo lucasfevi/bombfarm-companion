@@ -136,6 +136,10 @@ const FROZEN_BARREL_VALUE_EXPORTS = [
   // combobox does the work; the matcher is exported beside it so a caller can test the query its
   // own labels answer to without mounting the control.
   'SearchSelect',
+  // `SearchSelectMultiple` (2026-09-25): `SelectMultiple`'s header and checkbox rows under
+  // `SearchSelect`'s search field, for a tick list a player finds a row in by typing. Base UI's
+  // combobox in its multiple mode, since its select has no field to type into.
+  'SearchSelectMultiple',
   'searchSelectMatches',
   'SettingsRow',
   'SettingsSection',
