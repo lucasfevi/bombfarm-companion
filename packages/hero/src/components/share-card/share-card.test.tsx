@@ -102,10 +102,18 @@ describe('ShareCard', () => {
     expect(render({ showGear: false })).not.toContain('data-testid="share-card-gear"');
   });
 
+  it('sizes the featured gear to fill four columns of the tile, not a fixed small step', () => {
+    const html = render({ showLevels: true });
+    expect(html).toMatch(/--art-tile:calc\(\(100cqi - 9px\) \/ 4\)/);
+    expect(/<div class="([^"]*)"[^>]*data-testid="share-card-gear"/.exec(html)?.[1]).toContain('grid-cols-4');
+    expect(html).toContain('w-(--art-tile)');
+    expect(html).not.toMatch(/data-testid="share-card-gear"[^]*?\bw-8\b/);
+  });
+
   it('places the item level and the forge where, and in the colour, every item tile prints them', () => {
     const gear = render({ showLevels: true }).split('data-testid="share-card-featured-b"')[1] ?? '';
-    expect(gear).toContain(`<span class="${iconMetaGlyphRecipe({ size: 'compact', place: 'top-end' })}" aria-hidden="true" data-slot="item-level">140</span>`);
-    expect(gear).toContain(`<span class="${iconMetaGlyphRecipe({ size: 'compact', place: 'bottom-end' })}" aria-hidden="true" data-slot="item-upgrade">+13</span>`);
+    expect(gear).toContain(`<span class="${iconMetaGlyphRecipe({ size: 'fluid', place: 'top-end' })}" aria-hidden="true" data-slot="item-level">140</span>`);
+    expect(gear).toContain(`<span class="${iconMetaGlyphRecipe({ size: 'fluid', place: 'bottom-end' })}" aria-hidden="true" data-slot="item-upgrade">+13</span>`);
   });
 
   it('prints each featured ability level over its art when levels are asked for, and none on the rows below', () => {

@@ -1,6 +1,7 @@
 import { SLOTS } from '@bombfarm/domain/gear';
 import type { HeroRecord } from '@bombfarm/domain/shims/storage';
-import { HeroAvatar, ItemIcon, artFrameRadiusClass } from '@bombfarm/game-art';
+import type { CSSProperties } from 'react';
+import { ART_TILE_SIZE_VAR, HeroAvatar, ItemIcon, artFrameRadiusClass } from '@bombfarm/game-art';
 import { cn, formatCompactNumber } from '@bombfarm/ui';
 import { showcaseCopyFor, type Lang, type ShareCardCopy } from '../../copy';
 import { shareDpsText, type RosterHeroRow, type ShareCardSettings } from '../../model';
@@ -12,6 +13,13 @@ const NOT_PLACED = '—';
 /** Six abilities have to sit on one line inside a third of the card. */
 const FEATURED_ABILITY_TILE = 'size-[26px]';
 const FEATURED_ABILITY_GAP_PX = 3;
+
+const FEATURED_GEAR_COLUMNS = 4;
+const FEATURED_GEAR_GAP_PX = 3;
+/** Four gear tiles fill the featured tile's width, so the level and forge glyphs stay legible. */
+const FEATURED_GEAR_TILE_STYLE = {
+  [ART_TILE_SIZE_VAR]: `calc((100cqi - ${String((FEATURED_GEAR_COLUMNS - 1) * FEATURED_GEAR_GAP_PX)}px) / ${String(FEATURED_GEAR_COLUMNS)})`,
+} as CSSProperties;
 
 export type ShareFeaturedHero = {
   readonly row: RosterHeroRow;
@@ -91,19 +99,21 @@ export function ShareDpsLine({
 
 function ShareGearGrid({ loadout, showLevels }: { loadout: HeroRecord['loadout']; showLevels: boolean }) {
   return (
-    <div className="grid grid-cols-[repeat(4,32px)] justify-center gap-[3px]" data-testid="share-card-gear">
-      {SLOTS.map((slot) => {
-        const item = loadout[slot];
-        return item ? (
-          <ItemIcon key={slot} item={item} size="sm" showLevel={showLevels} showUpgrade={showLevels} />
-        ) : (
-          <span
-            key={slot}
-            className={cn(artFrameRadiusClass, 'aspect-[18/19]', 'w-8', 'border', 'border-dashed', 'border-line')}
-            aria-hidden
-          />
-        );
-      })}
+    <div className="@container w-full" style={FEATURED_GEAR_TILE_STYLE}>
+      <div className="grid grid-cols-4 gap-[3px]" data-testid="share-card-gear">
+        {SLOTS.map((slot) => {
+          const item = loadout[slot];
+          return item ? (
+            <ItemIcon key={slot} item={item} size="fluid" showLevel={showLevels} showUpgrade={showLevels} />
+          ) : (
+            <span
+              key={slot}
+              className={cn(artFrameRadiusClass, 'aspect-[18/19]', 'w-(--art-tile)', 'border', 'border-dashed', 'border-line')}
+              aria-hidden
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }
