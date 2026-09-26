@@ -30,7 +30,7 @@ const STAMP: FrameStamp = { capturedAt: '2026-08-13T14:26:40.000Z' };
 // field-name check (below), the exact top-level key set, and the retained raw account fields.
 // The source SHA-256 is recorded by hand in the provenance README beside the fixture corpus,
 // for anyone who wants to re-derive and diff outside the repo.
-describe('T1 — the scrubbed capture pair and the framing helper', () => {
+describe('the scrubbed capture pair and the framing helper', () => {
   const exportRaw = loadJson(join(FIXTURES_DIR, 'export-capture.json'));
   const liveRaw = loadJson(join(FIXTURES_DIR, 'live-capture.json'));
   const exportText = readFileSync(join(FIXTURES_DIR, 'export-capture.json'), 'utf8');
@@ -119,7 +119,7 @@ describe('T1 — the scrubbed capture pair and the framing helper', () => {
   });
 });
 
-describe('T2 — the fail-loud loader', () => {
+describe('the fail-loud loader', () => {
   it('throws fixtureMissing against an absent directory', () => {
     const missingDir = join(tmpdir(), 'fidelity-gate-does-not-exist-' + Date.now());
     expect(existsSync(missingDir)).toBe(false);

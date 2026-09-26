@@ -23,11 +23,11 @@
    "premio": "won",
    "estado": {
     "pontos": 123,
-    "faixa": "r3",
-    "faixa_num": 3,
+    "faixa": "r1",
+    "faixa_num": 1,
     "faixa_prox": 150,
-    "fase": 100,
-    "slots": 5,
+    "fase": 50,
+    "slots": 6,
     "squad": [
      {
       "slot": 0,
@@ -3344,11 +3344,11 @@
    "duelos_max": 5,
    "estado": {
     "pontos": 113,
-    "faixa": "r3",
-    "faixa_num": 3,
+    "faixa": "r1",
+    "faixa_num": 1,
     "faixa_prox": 150,
-    "fase": 100,
-    "slots": 5,
+    "fase": 50,
+    "slots": 6,
     "squad": [
      {
       "slot": 0,
@@ -3378,11 +3378,11 @@
   },
   {
    "pontos": 113,
-   "faixa": "r3",
-   "faixa_num": 3,
+   "faixa": "r1",
+   "faixa_num": 1,
    "faixa_prox": 150,
-   "fase": 100,
-   "slots": 5,
+   "fase": 50,
+   "slots": 6,
    "squad": [
     {
      "slot": 0,

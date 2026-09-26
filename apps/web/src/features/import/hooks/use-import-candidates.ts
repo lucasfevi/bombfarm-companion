@@ -33,12 +33,12 @@ export type UseImportCandidatesArgs = {
 
 /**
  * The dialog reviews a full roster sync; it no longer curates a
- * selection. `selected`/`toggle`/`toggleAll`/`allSelected`/`someSelected` are gone (T13):
+ * selection. `selected`/`toggle`/`toggleAll`/`allSelected`/`someSelected` are gone:
  * confirm is enabled whenever at least one candidate exists, and every non-blocked candidate
  * is written. `handleConfirm` passes the save's own `sourceId` set as `importHeroes`' third
  * argument — a blocked candidate is excluded from `records` but its `sourceId`
  * still counts toward that set, so an existing hero with that `sourceId` is preserved, not
- * removed (`W5`).
+ * removed.
  */
 export function useImportCandidates({
   existing,

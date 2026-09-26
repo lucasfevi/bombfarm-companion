@@ -97,8 +97,8 @@ function fixedReadToken(accountId: string, token: SessionToken, mtimeMs: number)
   return { fn, callCount: () => calls };
 }
 
-/** A schema-conforming `/roster` hero — `ROUTE_FINGERPRINTS.heroes`'s `hero` level (T5).
- *  These bodies predate T5's deepened, exact-key fingerprints; a missing key now makes
+/** A schema-conforming `/roster` hero — `ROUTE_FINGERPRINTS.heroes`'s `hero` level.
+ *  These bodies predate the deepened, exact-key fingerprints; a missing key now makes
  *  `checkShape` mark the whole route `drift` instead of `resolved`, which this test suite reads
  *  through `fidelityOf(...).status`. */
 function fullHero(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -245,7 +245,7 @@ function throwingTransport(): HttpTransport {
 
 /** Records every value bound into a `.run()`/`.get()`/`.all()` call, not just the SQL text —
  *  `storage/test-support.ts`'s `wrapWithRecording` only records SQL, so the token-leak guard
- *  needs its own wrapper (kept local; `apps/desktop/src/main/storage` is not touched by T8). */
+ *  needs its own wrapper (kept local; `apps/desktop/src/main/storage` is not touched by this module). */
 function wrapWithValueRecording(db: SqliteDb): { db: SqliteDb; values: unknown[] } {
   const values: unknown[] = [];
   const wrapStatement = (stmt: SqliteStatement): SqliteStatement => ({
@@ -683,7 +683,7 @@ describe('account-refresh — consent changing to granted', () => {
     });
     const refresh = createAccountRefresh(deps);
 
-    // A real caller (T9's consent:accept IPC handler) persists the decision first, then
+    // A real caller (the consent:accept IPC handler) persists the decision first, then
     // notifies the cycle — onConsentChanged is a trigger, not itself a source of the record.
     consentStore.write(GRANTED);
     // start() is never called — onConsentChanged alone must trigger the cycle.
@@ -757,7 +757,7 @@ describe('account-refresh — revoke mid-cycle', () => {
     refresh.onConsentChanged({ decision: 'revoked', textVersion: 1 });
 
     // consentStore still reports 'granted' (revoking here only clears account-refresh's own
-    // cached token; a real caller would also call consentStore.write() — T9's IPC handlers do).
+    // cached token; a real caller would also call consentStore.write() — the consent IPC handlers do).
     await refresh.refreshNow();
 
     // A second read of the token file happened — the cache was dropped on revoke, not reused.

@@ -23,7 +23,7 @@ function trackedFiles() {
 }
 
 /**
- * (T9) — cross-package, cross-repo hygiene. `tools/` is the established home for
+ * Cross-package fixture hygiene. `tools/` is the established home for
  * cross-package source scans (`design-system-gate.test.mjs`, `ci-desktop-paths.test.mjs`,
  * `web-domain-source-resolution.test.mjs`). Every red state below has been demonstrated
  * manually in a scratch state (perturb one byte, restore a deleted fixture, add one skip) — see

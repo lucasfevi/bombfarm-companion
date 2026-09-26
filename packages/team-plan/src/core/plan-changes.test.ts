@@ -69,6 +69,7 @@ function inputs(overrides: Partial<TeamPlanInputs> = {}): TeamPlanInputs {
     maxPhase: 91,
     farmChosenPhase: null,
     pvpRoomPhase: null,
+    pvpSquadSlots: null,
     ...overrides,
   };
 }
@@ -237,6 +238,13 @@ describe('the changes the plan depends on, each named with before and after', ()
     const scope = describePlanChanges(basis, { ...basis, controls: controls({ scopeByHeroId: { minato: 'leaveAlone' } }) }, null);
     expect(scope.other[0]?.detail).toEqual({ field: 'scope', heroId: 'minato', heroName: 'MINATO', before: 'optimize', after: 'leaveAlone' });
   });
+
+  it('a duel plan counts the squad slots the game reported after it was built; no other objective reads them', () => {
+    const duel: PlanBasis = { ...basis, controls: controls({ objective: 'pvp' }) };
+    const read = describePlanChanges(duel, { ...duel, inputs: inputs({ pvpSquadSlots: 6 }) }, null);
+    expect(read.other.map((c) => c.detail)).toEqual([{ field: 'control', name: 'pvpSquadSlots', before: '9', after: '6' }]);
+    expect(describePlanChanges(basis, { ...basis, inputs: inputs({ pvpSquadSlots: 6 }) }, null).counted).toBe(0);
+  });
 });
 
 describe('a change the plan itself asked for is progress, not a reason to recompute', () => {
@@ -289,6 +297,7 @@ describe('the signature and the ledger agree by construction', () => {
     ['aura at cap', { ...basis, controls: controls({ aurasAtCap: ['folego'] as never }) }],
     ['crowding', { ...basis, controls: controls({ ignoreFieldCrowding: true }) }],
     ['farm phase chosen elsewhere', { ...basis, inputs: inputs({ farmChosenPhase: 80 }) }],
+    ['duel slots under gold', { ...basis, inputs: inputs({ pvpSquadSlots: 6 }) }],
   ];
 
   it.each(cases)('%s: the signature moves iff the ledger counts a change', (_label, now) => {

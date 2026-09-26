@@ -96,7 +96,7 @@ export type HeroRecord = {
    * roster at nothing and call it an answer.
    */
   marketable?: boolean;
-  /** Cosmetic avatar skin from save `skin` (0–7; see `HERO_SKIN_COUNT`). Display-only. */
+  /** Cosmetic avatar skin from save `skin` (0 to `HERO_SKIN_COUNT - 1`). Display-only. */
   skin?: number;
   /**
    * Birth roll in planner units (from save `birth_stats`). Additive — missing on pre-persist

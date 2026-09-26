@@ -125,7 +125,7 @@ export function checkSchema(value: unknown, fingerprint: SchemaFingerprint): Sch
 
 /**
  * Anti-vacuity #1: a declared array that is empty in a committed corpus checked
- * `every element` vacuously — nothing was actually asserted. Callers (T4/T5's corpus suites) run
+ * `every element` vacuously — nothing was actually asserted. Callers (the corpus suites) run
  * this against the real fixture arrays; this file has no corpus of its own yet.
  */
 export function assertNonEmptyCorpusArray(array: readonly unknown[], path: string): void {

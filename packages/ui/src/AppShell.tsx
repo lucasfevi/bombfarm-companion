@@ -38,7 +38,7 @@ export interface AppShellProps extends PropsWithChildren {
   title?: string | undefined;
   /** The small uppercase line beneath it — the web header's own second line. */
   suiteTag?: string | undefined;
-  /** Flavor badge — kept from M0; the desktop Playwright smoke test asserts `data-testid="flavor-badge"`. */
+  /** Flavor badge — kept from the first desktop shell; the desktop Playwright smoke test asserts `data-testid="flavor-badge"`. */
   badge?: string | null;
   /**
    * How much of the bar fits. Passed in rather than measured here so this component stays a pure
@@ -57,7 +57,7 @@ export interface AppShellProps extends PropsWithChildren {
   banner?: ReactNode;
   /** Status-bar slots — absent ones render nothing (no empty boxes, no layout shift). */
   status?: ReactNode;
-  /** Reserved for M4 pricing passes; renders nothing until a caller passes it. */
+  /** Reserved for pricing passes; renders nothing until a caller passes it. */
   progress?: ReactNode;
   version?: ReactNode;
   /**

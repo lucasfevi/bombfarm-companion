@@ -245,7 +245,7 @@ describe('compareAccountResults — roster membership', () => {
 });
 
 describe('compareAccountResults — account-level equality', () => {
-  // Re-pointed from a deleted exponent-base field onto tree.danoTotal (T4/T8), a surviving
+  // Re-pointed from a deleted exponent-base field onto tree.danoTotal, a surviving
   // TreeSheetTotals member. The claim under test ("the comparator names the
   // mismatching path") is unchanged; only the field whose mismatch demonstrates it changed.
   it('accountMismatch names tree.danoTotal on a mismatch', () => {

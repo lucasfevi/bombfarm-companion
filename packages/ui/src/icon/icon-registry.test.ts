@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { iconRegistry, iconSources } from './registry';
 import { uiIconRegistry } from './ui-registry';
 
-// m2-toast-settings (2026-08-11): check-circle, x-circle, exclamation-triangle,
+// Toasts and notifications (2026-08-11): check-circle, x-circle, exclamation-triangle,
 // information-circle, arrow-path added — one fixed icon per toast/notification
 // variant (success/error/warning/info/progress).
 // DeltaTable (2026-08-20): lock-closed added — the shared stat-ledger primitive's

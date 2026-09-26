@@ -587,7 +587,7 @@ const KEYS_ADDED: readonly string[] = [
   // note, scored-phase note), the gate picker that stands in for the phase control, the read-only
   // duel facts with their over-the-cap notice, and the front-page
   // card's two headline units. One line: this file sits at the max-lines cap.
-  'teamPlanObjectiveOptionGate', 'teamPlanObjectiveOptionPvp', 'teamPlanObjectiveHintGate', 'teamPlanObjectiveHintPvp', 'teamPlanSetupSectionBodyGate', 'teamPlanSetupSectionBodyPvp', 'teamPlanTotalGainValueGate', 'teamPlanTotalGainValuePvp', 'teamPlanGearDipNoteGate', 'teamPlanGearDipNotePvp', 'teamPlanScoredPhaseGate', 'teamPlanScoredPhasePvp', 'teamPlanGatePhaseLabel', 'teamPlanGatePhaseAria', 'teamPlanGatePhaseHint', 'teamPlanGatePhaseSearchPlaceholder', 'teamPlanPvpSquadLabel', 'teamPlanPvpSquadValue', 'teamPlanPvpSquadHint', 'teamPlanPvpRoomUnknown', 'teamPlanPvpSquadTooMany', 'homeCardOptimizerHeadlineGate', 'homeCardOptimizerHeadlinePvp',
+  'teamPlanObjectiveOptionGate', 'teamPlanObjectiveOptionPvp', 'teamPlanObjectiveHintGate', 'teamPlanObjectiveHintPvp', 'teamPlanSetupSectionBodyGate', 'teamPlanSetupSectionBodyPvp', 'teamPlanTotalGainValueGate', 'teamPlanTotalGainValuePvp', 'teamPlanGearDipNoteGate', 'teamPlanGearDipNotePvp', 'teamPlanScoredPhaseGate', 'teamPlanScoredPhasePvp', 'teamPlanGatePhaseLabel', 'teamPlanGatePhaseAria', 'teamPlanGatePhaseHint', 'teamPlanGatePhaseSearchPlaceholder', 'teamPlanPvpSquadLabel', 'teamPlanPvpSquadValue', 'teamPlanPvpSquadHint', 'teamPlanPvpRoomUnknown', 'teamPlanPvpSquadTooMany', 'teamPlanChangesControlPvpSquadSlots', 'homeCardOptimizerHeadlineGate', 'homeCardOptimizerHeadlinePvp',
   'teamPlanChangesScope',
   'teamPlanChangesGroupBreaks',
   'teamPlanChangesHeroRemovedUsed',
@@ -1112,6 +1112,10 @@ const PROSE_EDITED_PATHS_PT_ONLY: readonly string[] = [
 ];
 
 const PROSE_EDITED_PATHS: readonly string[] = [
+  // The 2026-09-26 patch halved the damage of the cells Wide Blast adds, so the Active DPS
+  // explainer's spread term reads the damage-weighted reach, in prose and in its formula.
+  'explainSections.3.p.0',
+  'explainSections.3.code',
   // The Planner page is the Heroes page (2026-09-15): the Farm board's empty-roster note stops
   // naming a page — the web link beside it does that — so the shared copy stays true on both hosts.
   'phasesNoHeroes',

@@ -14,7 +14,7 @@ function fingerprint(root: string, level: SchemaLevel): SchemaFingerprint {
 }
 
 /** A valid `skills.totals` body built from the exported level's own key list (engine test only —
- * the "written down as literals" baseline rule applies to the T4/T5 corpus checks, not this generic
+ * the "written down as literals" baseline rule applies to the corpus checks, not this generic
  * mechanics suite). */
 function validSkillsTotals(): Record<string, number> {
   return Object.fromEntries(SCHEMA_LEVELS.skillsTotals.keys.map((key) => [key, 1]));

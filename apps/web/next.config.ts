@@ -122,7 +122,7 @@ const nextConfig: NextConfig = {
       // `next build --profile` swaps in React's profiling build so the Profiler API
       // reports in production, but it does not stop SWC mangling function names — and
       // the perf harness keys every row on `componentKey`, i.e. the component's name.
-      // That is exactly why W1's spike rejected production-profile and locked the
+      // That is exactly why the first perf spike rejected production-profile and locked the
       // baseline to `dev-strict`, which measures dev + StrictMode double-invoke rather
       // than production.
       //

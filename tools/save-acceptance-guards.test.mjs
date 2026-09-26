@@ -1,5 +1,5 @@
 /**
- * (T7) — source guards for the positive acceptance gate.
+ * Source guards for the positive acceptance gate.
  *
  * Two independent hard-zero checks, each comment-stripped (this repo's established convention
  * — `apps/desktop/src/main/source-guards.test.ts`'s `stripComments`) so a doc comment naming a
@@ -60,7 +60,7 @@ function walk(dir, extensions, acc = []) {
  */
 const EXPORT_VERSION_READ_PATTERN = /\.export_version\b|\bexport_version\s*(===|!==|==|!=)|['"]export_version['"]\s+in\s/;
 
-describe('save-acceptance-guards — the positive acceptance gate stays positive (T7)', () => {
+describe('save-acceptance-guards — the positive acceptance gate stays positive', () => {
   describe('export_version is never read as an acceptance signal', () => {
     it('save-schema.ts does not read export_version', () => {
       expect(EXPORT_VERSION_READ_PATTERN.test(readStripped(SAVE_SCHEMA_PATH))).toBe(false);

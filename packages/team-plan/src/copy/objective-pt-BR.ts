@@ -19,7 +19,7 @@ export const teamPlanObjectivePairsPtBR: TeamPlanObjectivePairsCopy = {
   teamPlanObjectiveHintGate:
     'Classifica builds pelo dano que o esquadrão causa dentro do tempo do portão. Energia só conta pelo tempo em campo que compra antes de o tempo acabar; o ouro por hora não é pontuado.',
   teamPlanObjectiveHintPvp:
-    'Classifica builds pelo dano que o esquadrão que você coloca em campo causa no duelo de um minuto — até nove heróis, escolhidos no quadro de escopo. Quem aguenta o minuto inteiro não precisa de mais energia; o ouro por hora não é pontuado.',
+    'Classifica builds pelo dano que o esquadrão que você coloca em campo causa no duelo de um minuto — até tantos heróis quantas vagas o seu esquadrão tem, escolhidos no quadro de escopo. Quem aguenta o minuto inteiro não precisa de mais energia; o ouro por hora não é pontuado.',
   teamPlanSetupSectionBodyDps:
     'Monta um plano para os heróis marcados como Otimizar, com as mudanças que você permitir abaixo — pontuado pelo DPS de roster combinado.',
   teamPlanSetupSectionBodyFarm:
@@ -27,7 +27,7 @@ export const teamPlanObjectivePairsPtBR: TeamPlanObjectivePairsCopy = {
   teamPlanSetupSectionBodyGate:
     'Monta um plano para os heróis marcados como Otimizar, com as mudanças que você permitir abaixo — pontuado pelo dano que causam dentro do tempo do portão.',
   teamPlanSetupSectionBodyPvp:
-    'Monta um plano para o esquadrão de duelo que você coloca em campo no quadro de escopo — até nove heróis, Otimizar e Deixar quieto igualmente — com as mudanças que você permitir abaixo, pontuado pelo dano que causa no duelo de um minuto. Doadores ficam fora da sala.',
+    'Monta um plano para o esquadrão de duelo que você coloca em campo no quadro de escopo — até tantos heróis quantas vagas o seu esquadrão tem, Otimizar e Deixar quieto igualmente — com as mudanças que você permitir abaixo, pontuado pelo dano que causa no duelo de um minuto. Doadores ficam fora da sala.',
   teamPlanTotalGainValueDps: '{delta} dps ({pct}%)',
   teamPlanTotalGainValueFarm: '{delta} ouro/h ({pct}%)',
   teamPlanTotalGainValueGate: '{delta} dps no portão ({pct}%)',
@@ -46,7 +46,7 @@ export const teamPlanObjectivePairsPtBR: TeamPlanObjectivePairsCopy = {
   teamPlanGatePhaseSearchPlaceholder: 'Difícil, Normal 2-5, ou 150',
   teamPlanPvpSquadLabel: 'Duelo',
   teamPlanPvpSquadValue: '{count} de {max} em campo · {phase} · {secs} s',
-  teamPlanPvpSquadHint: 'Quantos heróis o quadro de escopo coloca em campo contra as nove vagas da sala, e a fase em que a sala está endurecida, como lido por último.',
+  teamPlanPvpSquadHint: 'Quantos heróis o quadro de escopo coloca em campo contra as vagas do seu esquadrão, e a fase em que a sala está endurecida, como lido por último. Até o jogo informar suas vagas, o plano supõe as nove da casa de esquadrão mais alta.',
   teamPlanPvpRoomUnknown: 'fase da sala desconhecida',
-  teamPlanPvpSquadTooMany: 'A sala do duelo tem {max} vagas. Mova mais {excess} para Doar antes de montar este plano.',
+  teamPlanPvpSquadTooMany: 'Seu esquadrão tem {max} vagas. Mova mais {excess} para Doar antes de montar este plano.',
 };

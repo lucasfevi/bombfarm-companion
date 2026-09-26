@@ -2,7 +2,7 @@
  * Per-hero and squad farm facts.
  *
  * Every field, every unit, every degenerate branch of the hero- and squad-fact contracts.
- * Exhaustive degenerate/boundary sweeps live in `farm-rate-degenerate.test.ts` (T9); this file
+ * Exhaustive degenerate/boundary sweeps live in `farm-rate-degenerate.test.ts`; this file
  * proves the formulas themselves, including the luck-peel identity against `peelSheetSources`.
  */
 import { describe, expect, it } from 'vitest';

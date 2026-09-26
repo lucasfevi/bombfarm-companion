@@ -73,6 +73,9 @@ export const REGIME_BOUNDARIES = {
   '2026-09-02':
     'Ponta de Diamante was restated from a multiplier on the penetration roll (x21 at rank 20) to ' +
     'flat penetration POINTS held outside the gear/points pool',
+  '2026-09-26':
+    'the cells Explosao Ampla adds past the base reach went from the full hit to half of it ' +
+    '(`combate.extra_range_frac`); the reach itself did not move',
 } as const;
 
 export type RegimeBoundary = keyof typeof REGIME_BOUNDARIES;
@@ -91,10 +94,14 @@ export const ABILITIES_RESTATED_2026_08_23 = ['olho_clinico', 'pressagio_mortal'
  */
 export const ABILITIES_RESTATED_2026_09_02 = ['ponta_diamante'] as const;
 
+/** The one ability the 2026-09-26 patch restated. */
+export const ABILITIES_RESTATED_2026_09_26 = ['explosao_ampla'] as const;
+
 /** Every boundary a waiver may be granted against, and the abilities whose absence grants it. */
 export const ABILITIES_RESTATED_BY_BOUNDARY = {
   '2026-08-23': ABILITIES_RESTATED_2026_08_23,
   '2026-09-02': ABILITIES_RESTATED_2026_09_02,
+  '2026-09-26': ABILITIES_RESTATED_2026_09_26,
 } as const satisfies Partial<Record<RegimeBoundary, readonly string[]>>;
 
 /**
@@ -103,6 +110,12 @@ export const ABILITIES_RESTATED_BY_BOUNDARY = {
  * `sheet` is the catch-all and deliberately the strictest: a composed hero sheet folds in every
  * other mechanic, so anything derived from one — throughput, farm ranking, team plans, respec
  * advice — asks for `sheet` and gets the latest boundary of the lot.
+ *
+ * `blastDamage` is the one boundary past it, and the exception is deliberate: the 2026-09-26 patch
+ * moved no stat on any sheet, only what a Wide Blast carrier's cross does to the props past its
+ * base reach. Folding it into `sheet` would withdraw every roster with a carrier — all of them
+ * since 2026-08-18 — from the sheet-math suites it is still exactly right for. A claim measured
+ * against the live game's throughput names `blastDamage` as well.
  */
 export const MECHANICS = {
   critChance: {
@@ -128,6 +141,10 @@ export const MECHANICS = {
   penetration: {
     since: '2026-09-02',
     what: "the penetration column's ability term",
+  },
+  blastDamage: {
+    since: '2026-09-26',
+    what: 'the damage a Wide Blast cross deals past the base reach - clear time, farm rates and active DPS',
   },
   sheet: {
     since: '2026-09-02',

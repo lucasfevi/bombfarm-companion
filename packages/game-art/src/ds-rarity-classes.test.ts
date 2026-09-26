@@ -35,7 +35,7 @@ describe('rarityTextClass / rarityDotClass', () => {
   });
 
   it('is the only rarity-class-map definition left in the package', () => {
-    // Verified by T1.3's Done-when grep for the old per-file constant names: zero matches anywhere.
+    // Verified by a grep for the old per-file constant names: zero matches anywhere.
     expect(rarityTextClass(0)).toBeDefined();
   });
 });

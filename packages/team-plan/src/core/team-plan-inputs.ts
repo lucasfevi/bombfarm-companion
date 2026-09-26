@@ -32,4 +32,8 @@ export type TeamPlanInputs = {
    *  last read it, or `null` with nothing on record; a duel then falls back to the account's
    *  phase. A host with no PVP source at all leaves the duel objective out of its control. */
   pvpRoomPhase: number | null;
+  /** The squad slots the account's squad house gives a duel, as the game last reported them with
+   *  the PVP standing, or `null` with no standing read — a duel then plans for the top house's
+   *  nine. A host with no PVP source leaves this `null`. */
+  pvpSquadSlots: number | null;
 };

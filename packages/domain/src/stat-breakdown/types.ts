@@ -50,7 +50,7 @@ export type LedgerGroup = 'hero' | 'gear' | 'ability' | 'skillTree' | 'combat' |
 /**
  * Exhaustive map from every `LedgerSource` to the game line it belongs to.
  * A display **grouping** over the existing ledger steps, not a re-cut: the arithmetic already
- * matches the game's decomposition (W4) — only the naming was missing. The
+ * matches the game's decomposition — only the naming was missing. The
  * `Record` shape is exhaustive at compile time, so a future `LedgerSource` cannot be silently
  * ungrouped.
  */

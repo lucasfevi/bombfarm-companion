@@ -1,11 +1,11 @@
 /**
  * The fidelity-gate loader and the deterministic export→live framing helper.
  *
- * `frameLiveCapture` / `scrubPersonalFields` (T1) are pure, non-throwing transforms used both
- * to build the committed `live-capture.json` and, pre-F2, to prove that file is exactly what
+ * `frameLiveCapture` / `scrubPersonalFields` are pure, non-throwing transforms used both
+ * to build the committed `live-capture.json` and, originally, to prove that file is exactly what
  * the framing function produces from the committed export.
  *
- * `loadFidelityPair` (T2) is the fail-loud entry point: every failure mode throws a typed
+ * `loadFidelityPair` is the fail-loud entry point: every failure mode throws a typed
  * `FidelityGateError` — there is no "return null/undefined" branch for a
  * caller to forget to check.
  */
@@ -102,7 +102,7 @@ export interface FrameStamp {
  * out of a scrubbed export object, drops the two file-only keys (`export_version`,
  * `generated_at` — file-only concerns stay in the adapter), and attaches a five-section `fidelity` block stamped `resolved` at
  * `stamp.capturedAt`. Calling this twice on the same input produces byte-identical output
- * (T1's `Done when` — the regeneration proof for the committed `live-capture.json`).
+ * (the regeneration proof for the committed `live-capture.json`).
  */
 export function frameLiveCapture(exportObject: Record<string, unknown>, stamp: FrameStamp): AccountPayload {
   const scrubbed = scrubPersonalFields(exportObject);
@@ -126,7 +126,7 @@ export function frameLiveCapture(exportObject: Record<string, unknown>, stamp: F
 }
 
 // ---------------------------------------------------------------------------------------------
-// T2 — the fail-loud loader
+// The fail-loud loader
 // ---------------------------------------------------------------------------------------------
 
 function readJsonFile(absPath: string): unknown {

@@ -121,9 +121,9 @@ export const en = {
     {
       h: "4 · Active DPS",
       p: [
-        "While the hero is on the field: average hit × bombs per second × expected blocks per bomb (1 + 0.5 × blast range) × 90% AI efficiency. Average hit includes crit chance; floating crit numbers are higher than the topbar white Hit. Detonação Dupla is in the damage multiplier, not “double every visible hit”.",
+        "While the hero is on the field: average hit × bombs per second × expected blocks per bomb (1 + 0.5 × reach) × 90% AI efficiency, where the cells Wide Blast adds past the first deal half the damage and so count at half: a rank-20 carrier’s blast reaches 3 cells but counts as 2. Average hit includes crit chance; floating crit numbers are higher than the topbar white Hit. Detonação Dupla is in the damage multiplier, not “double every visible hit”.",
       ],
-      code: "activeDPS = avg × bombs/s × (1 + 0.5 × range) × 0.9",
+      code: "activeDPS = avg × bombs/s × (1 + 0.5 × reach) × 0.9\nreach     = 1 + 0.5 × (range − 1)",
     },
     {
       h: "5 · Sustained DPS (uptime)",
@@ -156,7 +156,7 @@ export const en = {
     {
       h: "9 · Optimizer",
       p: [
-        "The Optimizer page searches forge upgrades, gear moves, and point resets across a scoped roster, scored for whichever objective you pick. Gold per hour reads the Farm model at one phase. Gate clear is the damage the squad lands inside the gate timer at the gate you pick — each hero counted for the share of that window it is on the field, so energy pays only for field time inside the timer — summed over every hero you mark Optimize. PVP is the same window over the one-minute duel, for the squad you field — at most nine, since the duel room seats nine — at the phase its room is hardened to. Donate puts a hero's items in the shared pool without changing their build; Leave alone removes them from the search.",
+        "The Optimizer page searches forge upgrades, gear moves, and point resets across a scoped roster, scored for whichever objective you pick. Gold per hour reads the Farm model at one phase. Gate clear is the damage the squad lands inside the gate timer at the gate you pick — each hero counted for the share of that window it is on the field, so energy pays only for field time inside the timer — summed over every hero you mark Optimize. PVP is the same window over the one-minute duel, for the squad you field — at most as many heroes as your squad has slots, from two up to nine as its squad house grows — at the phase its room is hardened to. Donate puts a hero's items in the shared pool without changing their build; Leave alone removes them from the search.",
         "Each in-scope hero carries a duty weight (drainMult) from energy drain and house rest time. Team auras on that page are recomputed from the scoped roster, every carrier’s own rank included and weighted by its predicted uptime — the Combat tab’s aura switches do not reach that page, though the Planner still follows them. When Σ duty exceeds field slots, throughput uses the fair-share saturated regime; otherwise heroes keep their full active DPS.",
         "The search treats every pool item as forged up to at least your minimum forge. Results are shown as three steps — today, gear, optional point resets — with forge and move details on each hero. The final result and the point-reset step never lose ground compared to today; the gear step can dip below today for a moment before the point resets catch it back up, and the page tells you plainly when that happens. A hero can still personally lose DPS when that trade grows the roster total. Copy always says the best roster DPS found by this search, never a claim of true optimality.",
       ],
@@ -264,9 +264,9 @@ export const pt: typeof en = {
     {
       h: "4 · DPS ativo",
       p: [
-        "Com o herói em campo: acerto médio × bombas por segundo × blocos esperados por bomba (1 + 0.5 × alcance) × 90% de eficiência da IA. O acerto médio inclui chance de crítico; números flutuantes de crítico ficam acima do Hit branco da barra. Detonação Dupla entra no multiplicador de dano, não em “dobrar cada acerto visível”.",
+        "Com o herói em campo: acerto médio × bombas por segundo × blocos esperados por bomba (1 + 0.5 × alcance efetivo) × 90% de eficiência da IA, onde as células que a Explosão Ampla soma além da primeira causam metade do dano e por isso contam pela metade: a explosão de um herói com ela no nível 20 alcança 3 células, mas conta como 2. O acerto médio inclui chance de crítico; números flutuantes de crítico ficam acima do Hit branco da barra. Detonação Dupla entra no multiplicador de dano, não em “dobrar cada acerto visível”.",
       ],
-      code: "DPSativo = médio × bombas/s × (1 + 0.5 × alcance) × 0.9",
+      code: "DPSativo = médio × bombas/s × (1 + 0.5 × efetivo) × 0.9\nefetivo  = 1 + 0.5 × (alcance − 1)",
     },
     {
       h: "5 · DPS efetivo (tempo ativo)",
@@ -299,7 +299,7 @@ export const pt: typeof en = {
     {
       h: "9 · Otimizador",
       p: [
-        "A página Otimizador busca upgrades de forja, movimentações de itens e resets de pontos num roster com escopo, pontuando pelo objetivo que você escolher. Ouro por hora lê o modelo de Farm numa fase. Passar o portão é o dano que o esquadrão causa dentro do tempo do portão que você escolher — cada herói contado pela fração da janela em que está em campo, então energia só paga pelo tempo em campo dentro do cronômetro — somado sobre cada herói marcado como Otimizar. PVP é a mesma janela no duelo de um minuto, para o esquadrão que você coloca em campo — até nove, já que a sala do duelo tem nove vagas — na fase em que a sala está endurecida. Doar coloca os itens do herói no pool compartilhado sem mudar a build; Deixar quieto remove o herói da busca.",
+        "A página Otimizador busca upgrades de forja, movimentações de itens e resets de pontos num roster com escopo, pontuando pelo objetivo que você escolher. Ouro por hora lê o modelo de Farm numa fase. Passar o portão é o dano que o esquadrão causa dentro do tempo do portão que você escolher — cada herói contado pela fração da janela em que está em campo, então energia só paga pelo tempo em campo dentro do cronômetro — somado sobre cada herói marcado como Otimizar. PVP é a mesma janela no duelo de um minuto, para o esquadrão que você coloca em campo — até tantos heróis quantas vagas o seu esquadrão tem, de duas a nove conforme a casa de esquadrão cresce — na fase em que a sala está endurecida. Doar coloca os itens do herói no pool compartilhado sem mudar a build; Deixar quieto remove o herói da busca.",
         "Cada herói no escopo carrega um peso de duty (drainMult) a partir do gasto de energia e do tempo de descanso da casa. As auras de time nessa página são recalculadas a partir do roster em escopo, incluindo o próprio rank de cada portador, ponderadas pelo tempo ativo previsto — os interruptores de aura da aba Combate não chegam a essa página, mas o Planner continua seguindo eles. Quando Σ duty passa dos slots de campo, o throughput usa o regime saturado de DPS ativo justo; caso contrário, cada herói mantém o DPS ativo integral.",
         "A busca trata cada item do pool como forjado pelo menos até a forja mínima. O resultado aparece em três passos — hoje, itens, resets de pontos opcionais — com detalhes de forja e movimento em cada herói. O resultado final e o passo de reset de pontos nunca ficam abaixo de hoje; o passo de itens pode cair por um momento antes que os resets de pontos recuperem, e a página avisa claramente quando isso acontece. Um herói ainda pode perder DPS pessoalmente quando essa troca aumenta o total do roster. O texto sempre diz o melhor DPS de roster encontrado por essa busca, nunca uma garantia de ótimo verdadeiro.",
       ],

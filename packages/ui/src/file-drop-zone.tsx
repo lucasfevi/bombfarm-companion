@@ -13,7 +13,7 @@ export type FileDropZoneProps = {
 };
 
 /**
- * Click / keyboard / drag-drop JSON file target. Promoted from import dialog (W6).
+ * Click / keyboard / drag-drop JSON file target. Promoted from import dialog.
  * Keeps `role="button"`, `tabIndex={0}`, Enter/Space, and `event.target.value = ''` reset.
  */
 export function FileDropZone({

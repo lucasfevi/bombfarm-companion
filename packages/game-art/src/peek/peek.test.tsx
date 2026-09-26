@@ -195,7 +195,7 @@ describe('AbilityPeekCard', () => {
 
   it('a second blast reads as a chance and the multiplier it works out to; crit and penetration read in %', () => {
     expect(render(createElement(AbilityPeekCard, { id: 'detonacao_dupla', level: 20, lang: 'en' }))).toContain(
-      '30.0% chance (×1.15 dmg)',
+      '50.0% chance (×1.25 dmg)',
     );
     expect(render(createElement(AbilityPeekCard, { id: 'olho_clinico', level: 20, lang: 'en' }))).toContain('+40% crit');
     expect(render(createElement(AbilityPeekCard, { id: 'brecha', level: 20, lang: 'en' }))).toContain('+20% penetration');

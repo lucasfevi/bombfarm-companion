@@ -5,7 +5,7 @@
  * `next build --profile` swaps in React's profiling build so the Profiler API reports in
  * production. On its own that is not enough for this harness: SWC still mangles function
  * names, and every row of the capture is keyed on `componentKey` (the component's name).
- * That is precisely why W1's spike rejected production-profile and locked the baseline to
+ * That is precisely why the first perf spike rejected production-profile and locked the baseline to
  * `dev-strict`, which measures dev + StrictMode double-invoke rather than production.
  *
  * `PERF_PROFILE=1` makes `next.config.ts` disable minification for this build only, which

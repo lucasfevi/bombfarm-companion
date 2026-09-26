@@ -332,6 +332,12 @@ export type TeamPlanInput = {
    */
   targetPhase?: number | null;
   /**
+   * Under `'pvp'` only: the squad slots the account's squad house gives a duel, as the game last
+   * reported them. The duel room seats exactly that many at once. Absent/`null` — nothing read,
+   * or a host with no PVP source — plans for the top house's nine (`PVP_TOP_HOUSE_SQUAD_SLOTS`).
+   */
+  pvpSquadSlots?: number | null;
+  /**
    * Score as if the field always had room, and keep every hero geared.
    *
    * Omitted ⇒ `false`, the honest model. On a field that cannot seat the whole roster at once,

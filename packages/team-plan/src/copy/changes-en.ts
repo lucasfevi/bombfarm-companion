@@ -56,5 +56,6 @@ export const teamPlanChangesEn = {
   teamPlanChangesControlIgnoreFieldCrowding: 'keep every hero geared',
   teamPlanChangesControlAurasAtCap: 'auras at cap',
   teamPlanChangesControlTargetPhase: 'phase scored at',
+  teamPlanChangesControlPvpSquadSlots: 'duel squad slots',
   teamPlanChangesScope: 'scope of {hero}',
 } as const;

@@ -14,11 +14,11 @@ const BASE_URL = `http://localhost:${PORT}`;
 const prebuilt = process.env.E2E_PREBUILT === '1';
 const blobReporter = process.env.PLAYWRIGHT_BLOB === '1';
 /**
- * Perf harness captureMode. W1's spike locked `dev-strict` because production builds
+ * Perf harness captureMode. The first perf spike locked `dev-strict` because production builds
  * minified component names; that was solved (`PERF_PROFILE=1 next build --profile`
  * with minification disabled), so `prod-profile` is now available and is the mode any
  * claim about production behavior must use. `dev-strict` is retained unchanged — the
- * W1/W8 baselines are expressed in it and must stay comparable.
+ * recorded baselines are expressed in it and must stay comparable.
  */
 const perfMode = process.env.PERF === '1';
 const perfProfile = process.env.PERF_PROFILE === '1';

@@ -281,7 +281,7 @@ test.describe('points panel preview / apply', () => {
     // Draft persistence is debounced (AUTOSAVE_MS = 700). Hydrate may flush a
     // normalize-on-load rewrite (battleAllowed/skin/updatedAt) on first settle —
     // wait for that BEFORE the baseline so the byte compare is about Optimize,
-    // not about the hydrate flush racing the assertion (Verifier M1 / round-2).
+    // not about the hydrate flush racing the assertion.
     await page.waitForTimeout(900);
     const storageBefore = await page.evaluate((key) => localStorage.getItem(key), HEROES_KEY);
 

@@ -8,7 +8,7 @@ export default defineConfig({
     include: [
       'src/**/*.test.ts',
       'scripts/**/*.test.mjs',
-      // (design hazard 9, T2) — renderer pure modules and presentational components,
+      // Renderer pure modules and presentational components,
       // run node-env with `renderToStaticMarkup` (the `packages/ui/vitest.config.ts` precedent).
       'renderer/lib/**/*.test.ts',
       'renderer/lib/**/*.test.tsx',

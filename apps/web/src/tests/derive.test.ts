@@ -358,12 +358,12 @@ describe('derive', () => {
 
     // Pin `fixed.dps` directly to an INDEPENDENT computation (`sustainedDps` called directly,
     // not through a second `derive()`), so a uniform internal double-count inside `derive`
-    // itself cannot cancel out of a same-function-pair ratio the way M1 would if both sides
+    // itself cannot cancel out of a same-function-pair ratio the way the double-count bug would if both sides
     // of a comparison routed back through `derive`.
     const correctDps = sustainedDps(fixed.effective, deriveArgs.context) * mults.dmgMult;
     expect(fixed.dps).toBeCloseTo(correctDps, 6);
 
-    // M1, simulated directly: the pre-wave bug re-multiplied `dmgMult` (hence `dps`/`hit`) by
+    // The double-count bug, simulated directly: the earlier code re-multiplied `dmgMult` (hence `dps`/`hit`) by
     // `danoStatic` on top of the already tree-inclusive sheet. Reproduce that exact "old code"
     // value from the SAME independent `sustainedDps` call, not from a second `derive()` pass.
     const doubleCountedDps = sustainedDps(fixed.effective, deriveArgs.context) * mults.dmgMult * danoStatic;
@@ -401,7 +401,7 @@ describe('derive', () => {
   });
 
   it('delta.energy needs NO explicit tree factor — gem already carries energia_add once naked is tree-free', () => {
-    // Rebuilt for Wave 5 (was a pre-tree `geared` shape — `{...naked, energy: naked.energy
+    // Rebuilt for the tree-free naked sheet (was a pre-tree `geared` shape — `{...naked, energy: naked.energy
     // * 1.2}` — that cannot occur once import is birth-backed; L-05: the INPUT
     // changes, the assertion rigour does not). `naked` here already stands in for
     // `nakedFromBirth`'s genuinely tree-free output; `geared` must therefore be
@@ -438,7 +438,7 @@ describe('derive', () => {
     const expected = 8 * gem * star;
     expect(result.delta.energy).toBeCloseTo(expected, 9);
 
-    // M1 discrimination companion: the pre-wave bug re-multiplied by (1 + energyPct/100)
+    // Double-count discrimination companion: the earlier code re-multiplied by (1 + energyPct/100)
     // a second time on top of `gem` (which, for a tree-inclusive `geared`, already carries
     // it once) — prove the fixed result is NOT that 1.81x-overstated value.
     const doubleCountedEnergyPct = 8 * (geared.energy / naked.energy) * star * (1 + energyPct / 100);

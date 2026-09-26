@@ -66,6 +66,7 @@ const TOP_LEVEL_KEYS = [
   'gems',
   'lootAbilities',
   'runes',
+  'combat',
   'itemPorFase',
   'xpFaseIni',
   'xpFaseFim',
@@ -103,6 +104,9 @@ const RUNES_KEYS = [
   'capRunes',
   'marketMinRarity',
 ];
+// Combat shares the domain reads off the bundle rather than carrying as constants (live wiki
+// `combate.extra_range_frac` and `combate.shatter_frac`): each is the share of a hit, in (0, 1].
+const COMBAT_KEYS = ['extraRangeFrac', 'shatterFrac'];
 const RUNES_AXES = ['attack', 'energy', 'speed', 'crit', 'critdmg', 'cdr', 'xp', 'gold'];
 const RUNES_SHEET_AXES = ['attack', 'energy', 'speed', 'crit', 'critdmg', 'cdr'];
 const JAULA_KEYS = ['adiantaProbPorAto', 'janelaSecs', 'janelaSecsVip', 'hpMult'];
@@ -233,6 +237,11 @@ function validateBundle(bundle) {
     addedKeys.push(...statIndex.added);
     removedKeys.push(...statIndex.removed);
   }
+  if (bundle?.combat) {
+    const r = keySetErrors(bundle.combat, COMBAT_KEYS, 'combat');
+    addedKeys.push(...r.added);
+    removedKeys.push(...r.removed);
+  }
   if (bundle?.jaula) {
     const r = keySetErrors(bundle.jaula, JAULA_KEYS, 'jaula');
     addedKeys.push(...r.added);
@@ -302,6 +311,12 @@ function validateBundle(bundle) {
   }
   if (bundle?.runes && JSON.stringify(bundle.runes.axes) !== JSON.stringify(RUNES_AXES)) {
     dimensionErrors.push(`runes.axes: expected ${JSON.stringify(RUNES_AXES)}, got ${JSON.stringify(bundle.runes.axes)}`);
+  }
+  for (const key of COMBAT_KEYS) {
+    const share = bundle?.combat?.[key];
+    if (typeof share === 'number' && !(share > 0 && share <= 1)) {
+      dimensionErrors.push(`combat.${key}: expected a share of a hit in (0, 1], got ${share}`);
+    }
   }
   if (Array.isArray(bundle?.runes?.strengthByRarity) && bundle.runes.strengthByRarity.length !== 6) {
     dimensionErrors.push(`runes.strengthByRarity.length: expected 6, got ${bundle.runes.strengthByRarity.length}`);

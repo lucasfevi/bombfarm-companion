@@ -1,7 +1,7 @@
 /**
  * Toast queue — pure reducer (no React, no timers, no `Date.now()`).
  *
- * This module owns every policy decision DESIGN_SYSTEM.md §11 specifies for
+ * This module owns every policy decision the design system specifies for
  * the toast system: key-based coalescing, the 3-visible/"+N more" overflow
  * split, severity-dependent auto-dismiss, and threshold-gated progress
  * announcements. `packages/ui`'s Vitest runs in `environment: 'node'` with no

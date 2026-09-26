@@ -5,7 +5,7 @@ import {
   type PlannerStore,
 } from '@/shared/stores';
 
-describe('planner store scaffold (W4 T2)', () => {
+describe('planner store scaffold', () => {
   beforeEach(() => {
     resetPlannerStoreForTests();
   });
@@ -16,7 +16,7 @@ describe('planner store scaffold (W4 T2)', () => {
 
   it('composes session, account, roster, and phases slice keys', () => {
     const state = usePlannerStore.getState();
-    // Session (T6) — other slices still placeholders until T7–T9
+    // Session
     expect(state.lang).toBe('pt');
     expect(typeof state.setLang).toBe('function');
     expect(state.treeDanoTotal).toBe(1);

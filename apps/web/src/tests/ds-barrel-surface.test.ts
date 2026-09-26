@@ -2,18 +2,18 @@ import { describe, it, expect } from 'vitest';
 import * as DesignSystem from '@bombfarm/ui';
 import * as GameArt from '@bombfarm/game-art';
 
-// Frozen at T1.1 (pre-Phase-2 split) — every VALUE the design-system barrel
+// Frozen before the directory split — every VALUE the design-system barrel
 // exports today. Type-only exports are erased at runtime and are not part of
 // this list; they are covered separately by ds-compound-namespaces.test.ts's
 // compile-time assertion. A dropped or renamed value export while replacing a
 // module with a directory fails this test.
-// M2-icons: Icon, iconSources, isIconName added (UI-chrome only; no game glyphs).
-// M2-shell-status (2026-08-11): StatusChip, EmptyState added; EmptyState covers
+// Icons: Icon, iconSources, isIconName added (UI-chrome only; no game glyphs).
+// Shell status (2026-08-11): StatusChip, EmptyState added; EmptyState covers
 // "no game / no items / no filter matches" placeholders. AppShell's export
 // itself is unchanged (still a value export); only its props grew. StatusChip
 // retired 2026-09-20: the desktop strip says the game state in its feeds rail's
 // own typography, and no host drew the pill any more.
-// M2-toast-settings (2026-08-11): toastQueueReducer, initialToastQueueState,
+// Toasts and settings (2026-08-11): toastQueueReducer, initialToastQueueState,
 // nextExpiryDeadline, MAX_VISIBLE_TOASTS, NOTIFICATION_BUFFER_LIMIT (the pure
 // toast queue), ToastProvider, useToast, ToastViewport, ToastItem (the new
 // toast system — deliberately NOT named `Toast`, which stays the legacy

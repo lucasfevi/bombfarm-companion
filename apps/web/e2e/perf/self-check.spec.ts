@@ -4,7 +4,7 @@
  * for counted fiber tags (FunctionComponent / ClassComponent / ForwardRef / Memo / SimpleMemo).
  *
  * Spike (2026-07-29): `next build --profile` still minified ~49% of component keys →
- * captureMode locked to `dev-strict` (`next:dev` webpack). W8 must re-measure in that mode.
+ * captureMode locked to `dev-strict` (`next:dev` webpack). Later re-measurements must use that mode.
  *
  * Run: PERF=1 pnpm exec playwright test --project=perf e2e/perf/self-check.spec.ts
  * Prefer: pnpm perf:capture (Docker).
@@ -118,7 +118,7 @@ test.describe('perf harness self-check', () => {
         result: 'resolved-2026-07-30',
         w1SpikeMinifiedRatio: 0.487,
         note:
-          'W1 spike (2026-07-29) rejected prod-profile: `next build --profile` still mangled ~49% ' +
+          'The 2026-07-29 spike rejected prod-profile: `next build --profile` still mangled ~49% ' +
           'of component keys. The perf-profile build flag resolved it — pairing that flag with PERF_PROFILE=1, which ' +
           'disables minification for the measurement build only, retains the names. Both modes ' +
           'are now supported; see apps/web docs and e2e/perf harness notes.',
@@ -130,7 +130,7 @@ test.describe('perf harness self-check', () => {
         performedWorkFlag: PERFORMED_WORK,
         sampleKeys: crossCheck.collectorKeys.slice(0, 30),
       },
-      note: 'captureMode=dev-strict (next:dev webpack). StrictMode double-invoke is a property of this mode; W8 must match.',
+      note: 'captureMode=dev-strict (next:dev webpack). StrictMode double-invoke is a property of this mode; later captures must match.',
     }
 
     fs.mkdirSync(path.dirname(EVIDENCE_PATH), { recursive: true })

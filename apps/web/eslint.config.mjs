@@ -101,10 +101,10 @@ export default tseslint.config(
       // Prefer named Tailwind utilities over equivalent arbitrary values
       // (e.g. tracking-[0.05em] → tracking-wider). Autofixable.
       'tailwindcss/no-unnecessary-arbitrary-value': 'error',
-      // W6: no component defined inside another component's render.
+      // No component defined inside another component's render.
       'react/no-unstable-nested-components': 'error',
       'react/forbid-dom-props': nativeTooltipRule,
-      // W4: bare usePlannerStore() subscribes to the entire store — always pass a selector.
+      // Bare usePlannerStore() subscribes to the entire store — always pass a selector.
       // selectAdvisorPipeline is intentionally used WITHOUT useShallow — it returns
       // stable identity on cache hits; shallow compare would defeat it.
       'no-restricted-syntax': [
@@ -115,10 +115,8 @@ export default tseslint.config(
             'Bare usePlannerStore() is forbidden. Pass a selector, e.g. usePlannerStore(selectHeroes).',
         },
       ],
-      // W1 guardrail — warn in W1; W7 flips to error.
       'unicorn/filename-case': ['error', { case: 'kebabCase' }],
-      // W1 guardrail — warn in W1; W7 flips to error.
-      // W7 id-length exceptions (reviewed, minimal — see size-ledger/spec):
+      // id-length exceptions (reviewed, minimal):
       //   'cn'  — classnames-merge helper (@/shared/lib/cn); clsx/tailwind-merge-ecosystem
       //           convention, imported at 60+ call sites across every component tree level.
       //           Renaming the export is pure mechanical churn with no readability gain and
@@ -184,14 +182,13 @@ export default tseslint.config(
         'dst',
         'buf',
       ],
-      // W1 guardrail — warn in W1; W7 flips to error (residuals allowlisted below).
+      // Residuals are allowlisted below.
       'max-lines': [
         'error',
         { max: 300, skipBlankLines: true, skipComments: true },
       ],
-      // W5: ≤8 props — enforced by src/tests/mod-17-max-props.test.ts
-      // (warn-equivalent allowlist for DS Switch/Select; W7 burns allowlist).
-      // Cross-feature allowlist is six dated edges only (Approach A / Q-1).
+      // ≤8 props — enforced by src/tests/mod-17-max-props.test.ts, whose allowlist is empty.
+      // Cross-feature allowlist is six dated edges only.
       'boundaries/element-types': [
         'error',
         {
@@ -235,21 +232,21 @@ export default tseslint.config(
                 },
               },
             },
-            // Allowlisted cross-feature edge — retires in W5/W6 (build-column → SlotEditor)
+            // Allowlisted cross-feature edge — retires with the build-column split (build-column → SlotEditor)
             {
               from: { element: { type: 'feature', captured: { feature: 'planner' } } },
               allow: {
                 to: { element: { type: 'feature', captured: { feature: 'gear' } } },
               },
             },
-            // Allowlisted cross-feature edge — retires in W5/W6 (build-column/tabs → AccountColumn)
+            // Allowlisted cross-feature edge — retires with the build-column split (build-column/tabs → AccountColumn)
             {
               from: { element: { type: 'feature', captured: { feature: 'planner' } } },
               allow: {
                 to: { element: { type: 'feature', captured: { feature: 'account' } } },
               },
             },
-            // Allowlisted cross-feature edge — retires in W6 (hero-strip → HeroPickerDialog)
+            // Allowlisted cross-feature edge — retires with the component split (hero-strip → HeroPickerDialog)
             {
               from: { element: { type: 'feature', captured: { feature: 'planner' } } },
               allow: {
@@ -429,12 +426,12 @@ export default tseslint.config(
       ],
     },
   },
-  // W7 max-lines allowlist (error-flip residual, reviewed historically):
+  // max-lines allowlist (error-flip residual, reviewed historically):
   //
   // src/tests/** — Vitest suites for gear/import-save/model/stat-breakdown/storage-i18n
   // legitimately run long (comprehensive fixture-driven assertions covering every branch
-  // of the domain math they lock down). Splitting a test file is not W7 scope (no task
-  // covers it) and touching assertions to "shrink" a suite is forbidden. Current max
+  // of the domain math they lock down). Splitting a test file was out of the error flip's scope
+  // and touching assertions to "shrink" a suite is forbidden. Current max
   // observed (ESLint count, skipBlank/skipComments): i18n-split-parity.test.ts at 734
   // lines (2026-09-19 — the Optimizer's ledger of changes since the plan added fifty-four
   // strings, each one a KEYS_ADDED entry; 670 on 2026-09-14, when retiring the Farm page's

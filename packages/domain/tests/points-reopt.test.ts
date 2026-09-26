@@ -502,7 +502,7 @@ describe('optimizeBuild — Tier 2', () => {
 
   it('optimizeBuild ships unwired — computeAdvisorPipeline is not imported by this module', () => {
     // Structural: points-reopt.ts has zero dependency on advisor-pipeline.ts (verified by the
-    // module graph typechecking without one); Wave 6 wires Tier 2 to the Points tab.
+    // module graph typechecking without one); the Points tab wires Tier 2 separately.
     expect(typeof optimizeBuild).toBe('function');
   });
 

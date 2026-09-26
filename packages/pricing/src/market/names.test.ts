@@ -107,7 +107,8 @@ describe('the generated set as a whole', () => {
     const actChests = 4 * 5;
     const rankChests = 5;
     const heroes = 6;
-    const skins = 5;
+    // Every bought skin: indices 4-15 since the 2026-09-26 patch took the game to sixteen.
+    const skins = 12;
 
     expect(generated.size).toBe(
       equipment + gems + raritySuffixed + itemChests + actChests + rankChests + heroes + skins,

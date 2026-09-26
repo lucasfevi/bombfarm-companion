@@ -23,8 +23,8 @@ describe('two solves on deep-equal, non-identical inputs are deep-equal, under a
       const resultA = solveFarmRespec({ heroes: first.heroes, account: first.account, objective, maxPhase: first.maxPhase });
       const resultB = solveFarmRespec({ heroes: second.heroes, account: second.account, objective, maxPhase: second.maxPhase });
       expect(resultB).toEqual(resultA);
-      // Explicitly re-asserted on the plateau field too, per the task's own emphasis — even
-      // though T5 always reports it as null, a future T8 regression must still be caught here.
+      // Explicitly re-asserted on the plateau field too — even when it is null, a future
+      // plateau regression must still be caught here.
       expect(resultB.plateau).toEqual(resultA.plateau);
     });
   }

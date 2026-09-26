@@ -22,7 +22,7 @@ export type HeroTypeId = (typeof HERO_TYPE_IDS)[number];
 
 export const HERO_TYPE_VOTERS: Readonly<Record<HeroTypeId, readonly string[]>> = {
   crit: ['olho_clinico', 'golpe_brutal'],
-  heavy: ['detonacao_dupla', 'matilha'],
+  heavy: ['detonacao_dupla', 'matilha', 'estilhacos'],
   pierce: ['ponta_diamante'],
   finish: ['misericordia'],
   gate: ['contra_relogio', 'caca_hero'],

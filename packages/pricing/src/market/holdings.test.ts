@@ -186,7 +186,7 @@ describe('accountHoldings', () => {
   });
 
   it('counts a skin index the table cannot name nowhere at all', () => {
-    const unnamed = holdingsOf([], [], [ROYAL_SENTINEL, 9]);
+    const unnamed = holdingsOf([], [], [ROYAL_SENTINEL, 16]);
     const named = holdingsOf([], [], [ROYAL_SENTINEL]);
 
     expect(unnamed.skins.eligible).toBe(1);

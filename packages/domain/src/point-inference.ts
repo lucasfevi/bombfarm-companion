@@ -25,7 +25,7 @@ export type PointInferenceIssue =
       recovered: number;
       budget: number;
       difference: number;
-      /** Cap-saturated stats, for Wave 5's copy. Empty when none. */
+      /** Cap-saturated stats, for the player-facing copy. Empty when none. */
       saturatedStats: ('critChance' | 'cdr')[];
     };
 

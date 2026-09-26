@@ -1,6 +1,6 @@
 /**
  * Mechanical, behaviour-free extraction of the prop-HTK and gate-window row tables out of
- * `advisor-pipeline.ts`, to buy line budget before T5 and T11 add to that file.
+ * `advisor-pipeline.ts`, to buy line budget before later work added to that file.
  * No literal or formula changed — see `advisor-pipeline.test.ts` for the discrimination
  * check proving this is a pure move.
  */

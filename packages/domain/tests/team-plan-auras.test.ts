@@ -32,6 +32,7 @@ function ctx(
       packDmgPctPerAlly: 0,
       rangeCells: 0,
       dmgMult: 1,
+      shatterChancePct: 0,
       gateAttackMult: 1,
       sheetCritChanceFlat: 0,
       sheetPenetrationFlat: 0,

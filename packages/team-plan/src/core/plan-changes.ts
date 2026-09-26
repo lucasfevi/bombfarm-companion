@@ -7,6 +7,7 @@ import type { TeamPlanControls } from './team-plan-controls';
 import type { ScopeState } from './hero-scope';
 import { resolveHeroScope } from './hero-scope';
 import { planTargetPhase } from './target-phase';
+import { teamPlanPvpSquadSlots } from './combat-window';
 
 /**
  * What a plan was computed from: the inputs and the controls as they stood when the run began.
@@ -113,7 +114,7 @@ function planningAccountView(inputs: TeamPlanInputs): AccountView {
   return view;
 }
 
-export const CONTROL_FIELDS = ['forgeFloor', 'objective', 'allowedChanges', 'ignoreFieldCrowding', 'aurasAtCap', 'targetPhase'] as const;
+export const CONTROL_FIELDS = ['forgeFloor', 'objective', 'allowedChanges', 'ignoreFieldCrowding', 'aurasAtCap', 'targetPhase', 'pvpSquadSlots'] as const;
 export type ControlField = (typeof CONTROL_FIELDS)[number];
 
 type ControlsView = {
@@ -125,6 +126,8 @@ type ControlsView = {
   /** The phase the plan is scored at under its objective — the gate, the duel room, or the
    *  phase control — so a gate pick reads as a change of exactly this. */
   targetPhase: number | null;
+  /** The slots the duel squad is planned for — `null` under every other objective. */
+  pvpSquadSlots: number | null;
   scopeByHeroId: Record<string, ScopeState>;
 };
 
@@ -138,6 +141,7 @@ function planningControlsView(inputs: TeamPlanInputs, controls: TeamPlanControls
     ignoreFieldCrowding: controls.ignoreFieldCrowding,
     aurasAtCap: [...controls.aurasAtCap].sort().join(','),
     targetPhase: planTargetPhase(inputs, controls),
+    pvpSquadSlots: controls.objective === 'pvp' ? teamPlanPvpSquadSlots(inputs) : null,
     scopeByHeroId,
   };
 }

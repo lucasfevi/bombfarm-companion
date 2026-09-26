@@ -21,8 +21,8 @@ const DEFINITE_GAIN_PATTERNS: Record<Lang, RegExp[]> = {
 
 /**
  * Bare percentage gain forms that must never appear in Tier 1 — including the badge.
- * M2: rewriting the badge to `"+{pct}% DPS"` must fail this contract without relying on
- * fixture parity alone (Verifier discrimination sensor).
+ * Rewriting the badge to `"+{pct}% DPS"` must fail this contract without relying on
+ * fixture parity alone.
  */
 const BARE_PERCENTAGE_GAIN: Record<Lang, RegExp[]> = {
   en: [

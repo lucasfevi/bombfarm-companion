@@ -11,6 +11,7 @@ import { type Slot } from './gear';
 import type { SheetKey } from './planner-constants';
 import type { TeamBuffId } from './team-buffs';
 import catalog from './data/catalog.json' with { type: 'json' };
+import { EXTRA_RANGE_FRAC, SHATTER_FRAC } from './phase-wiki';
 
 type Bilingual = { pt: string; en: string };
 
@@ -95,6 +96,10 @@ export function abilityReadoutText(
       return template
         .replace('{value}', formatNumber(readout.thresholdPct, decimals))
         .replace('{mult}', formatNumber(readout.dmgMult, 2));
+    case 'shatter':
+      return template
+        .replace('{value}', formatNumber(readout.chancePct, decimals))
+        .replace('{share}', formatNumber(readout.shardHitPct, 0));
     default:
       return template.replace('{value}', formatNumber(readout.value, decimals));
   }
@@ -200,6 +205,7 @@ const ABILITY_NAMES: Record<string, Bilingual> = {
   matilha: { pt: 'Matilha', en: 'Pack' },
   fortuna: { pt: 'Fortuna', en: 'Fortune' },
   brecha: { pt: 'Brecha', en: 'Breach' },
+  estilhacos: { pt: 'Estilhaços', en: 'Shrapnel' },
 };
 
 const ABILITY_EFFECTS: Record<string, Bilingual> = {
@@ -232,8 +238,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: 'executes rock < 0.75%/level',
   },
   explosao_ampla: {
-    pt: '+1 célula de raio da explosão a cada 10 níveis (sobe nos níveis 10 e 20)',
-    en: '+1 cell of explosion radius every 10 levels (steps at levels 10 and 20)',
+    pt: `+1 célula de raio da explosão a cada 10 níveis (sobe nos níveis 10 e 20); as células extras causam ${EXTRA_RANGE_FRAC * 100}% do dano`,
+    en: `+1 cell of explosion radius every 10 levels (steps at levels 10 and 20); the extra cells deal ${EXTRA_RANGE_FRAC * 100}% of the damage`,
   },
   contra_relogio: {
     pt: '+2% Ataque em fase de tempo/nível',
@@ -244,8 +250,8 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     en: '+2 crit chance points/level (flat, affects stats)',
   },
   detonacao_dupla: {
-    pt: '+1.5% chance de 2ª explosão (50% dano)/nível',
-    en: '+1.5% chance of 2nd blast (50% damage)/level',
+    pt: '+2.5% chance de 2ª explosão (50% dano)/nível',
+    en: '+2.5% chance of 2nd blast (50% damage)/level',
   },
   folego_mineiro: {
     pt: '−1% energia gasta do TIME/nível',
@@ -283,6 +289,10 @@ const ABILITY_EFFECTS: Record<string, Bilingual> = {
     pt: '+1 ponto de Penetração do TIME/nível, +20 no teto',
     en: '+1 TEAM Penetration point/level, +20 at cap',
   },
+  estilhacos: {
+    pt: `+2.5% de chance de a rocha destruída estilhaçar: cada rocha nos 4 lados leva ${SHATTER_FRAC * 100}% do golpe/nível`,
+    en: `+2.5% chance for a destroyed rock to shatter: each rock on its 4 sides takes ${SHATTER_FRAC * 100}% of the hit/level`,
+  },
 };
 
 const LEVEL_PREFIX: Bilingual = { pt: 'Nv', en: 'Lv' };
@@ -315,6 +325,7 @@ const ABILITY_READOUT_DECIMALS: Record<AbilityReadoutKind, number> = {
   rangeCells: 0,
   secondBlast: 1,
   execute: 1,
+  shatter: 1,
   gateAttackPct: 0,
   packDmgPctPerAlly: 1,
   teamPulseDmgPct: 0,
@@ -336,6 +347,7 @@ const ABILITY_READOUT_UNITS: Record<AbilityReadoutKind, Bilingual> = {
   rangeCells: { pt: '+{value} de alcance', en: '+{value} range' },
   secondBlast: { pt: '{value}% de chance (×{mult} dano)', en: '{value}% chance (×{mult} dmg)' },
   execute: { pt: 'executa < {value}% HP (×{mult} dano)', en: 'executes < {value}% HP (×{mult} dmg)' },
+  shatter: { pt: '{value}% de chance de estilhaçar ({share}% do golpe nos 4 lados)', en: '{value}% chance to shatter ({share}% of the hit to 4 sides)' },
   gateAttackPct: { pt: '+{value}% em portões', en: '+{value}% on gates' },
   packDmgPctPerAlly: { pt: '+{value}% de dano por aliado', en: '+{value}% dmg per ally' },
   teamPulseDmgPct: { pt: '+{value}% de dano (pulso)', en: '+{value}% dmg (pulse)' },

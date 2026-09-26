@@ -135,7 +135,7 @@ function isNotWritableError(err: unknown): boolean {
   return false;
 }
 
-/** Try better-sqlite3 first (the fallback shape decided for the SQLite binding at M0); fall back to node:sqlite. */
+/** Try better-sqlite3 first (the fallback shape decided for the SQLite binding at the start); fall back to node:sqlite. */
 function defaultSqliteOpener(dbPath: string): { db: SqliteDb; binding: SqliteBinding } {
   const betterDb = tryOpenRawBetterSqlite3(dbPath);
   if (betterDb) {

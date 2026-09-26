@@ -1,7 +1,7 @@
 /**
- * Proves the API-assembled payload (mp2-live-account-read, T7) parses through F1's UNCHANGED
+ * Proves the API-assembled payload parses through the UNCHANGED
  * `parseAccountPayload` at full sheet depth, that a change between two cycles is
- * reflected, that the grade is F1's own `deriveAccountFidelity` and never recomputed
+ * reflected, that the grade is the parser's own `deriveAccountFidelity` and never recomputed
  * here, that a partial payload still delivers and parses every section that resolved,
  * and that an absent `skills` section is refused rather than parsed as a zeroed tree
  * (D24's specific failure).
@@ -168,7 +168,7 @@ describe('a partial payload (one section missing) still grades degraded and stil
   // block above records. What it was really guarding — that a MISSING section degrades honestly
   // rather than fabricating a value, and that the sections which did resolve still populate — is
   // untouched by that, and is what remains asserted.
-  it('every resolved section in the partial payload still parses through F1 unchanged', () => {
+  it('every resolved section in the partial payload still parses through the unchanged parser', () => {
     const result = parseAccountPayload(partial, []);
     expect(result.rejected).toBeNull();
     expect(result.candidates.length).toBeGreaterThan(0);
@@ -195,7 +195,7 @@ describe('an all-missing payload grades unavailable (spec edge case: declined / 
   });
 });
 
-describe('the drift payload grades degraded, names skills, and carries no skills body (confirms T6 end to end)', () => {
+describe('the drift payload grades degraded, names skills, and carries no skills body (confirmed end to end)', () => {
   it('deriveAccountFidelity grades it degraded and names skills', () => {
     const report = deriveAccountFidelity(drift.fidelity as AccountFidelity);
     expect(report.grade).toBe('degraded');

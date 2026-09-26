@@ -1,5 +1,5 @@
 /**
- * (T5) — the deepened route fingerprint corpus check and its three named red states.
+ * The deepened route fingerprint corpus check and its three named red states.
  *
  * Replaces the previous subset assertion (`for (const key of fingerprint's flat required-key
  * list) expect(bodyKeys.has(key)).toBe(true)`) — unfalsifiable on either an addition or a

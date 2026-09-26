@@ -9,7 +9,7 @@
 // is real evidence. The blocker is the one the domain-edge asymmetry finding does not name.
 //
 // Re-measured the floor below (56 -> 54): deleting the 20 quarantined test files
-// (mp5-fixture-rebaseline, unrelated to the dist-exports change) removed the repo's only usages of two
+// (in the post-patch fixture rebaseline, unrelated to the dist-exports change) removed the repo's only usages of two
 // `@bombfarm/domain[/subpath]` specifiers, so the true count of distinct specifiers in the
 // repo genuinely shrank. This is a floor derived from the live repo tree, not a fixture value
 // — re-measuring it is not a fixture re-point.

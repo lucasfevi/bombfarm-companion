@@ -110,7 +110,7 @@ export default function HomePage() {
     if (!locale) return;
     // layout.tsx ships lang="en" as the static-export default — a prebuilt static export
     // cannot know the locale at build time. This is where the RUNTIME value is set. Not
-    // unit-observable (renderToStaticMarkup never runs useEffect) — asserted in T7's smoke.
+    // unit-observable (renderToStaticMarkup never runs useEffect) — asserted in the desktop smoke suite.
     document.documentElement.lang = locale;
   }, [locale]);
 

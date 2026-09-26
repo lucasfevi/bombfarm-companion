@@ -46,7 +46,7 @@ describe('abilityName / abilityEffectText', () => {
     expect(abilityEffectText('misericordia', 'en')).toMatch(/0\.75%/);
     expect(abilityEffectText('explosao_ampla', 'en')).toMatch(/\+1 cell of explosion radius every 10 levels/);
     expect(abilityEffectText('contra_relogio', 'en')).toMatch(/2%/);
-    expect(abilityEffectText('detonacao_dupla', 'en')).toMatch(/1\.5%/);
+    expect(abilityEffectText('detonacao_dupla', 'en')).toMatch(/2\.5%/);
     expect(abilityEffectText('folego_mineiro', 'en')).toMatch(/1%/);
     expect(abilityEffectText('grito_guerra', 'en')).toMatch(/1%/);
     expect(abilityEffectText('golpe_brutal', 'en')).toMatch(/4%/);
@@ -83,6 +83,7 @@ describe('abilityName / abilityEffectText', () => {
       'matilha',
       'fortuna',
       'brecha',
+      'estilhacos',
     ]);
   });
 });

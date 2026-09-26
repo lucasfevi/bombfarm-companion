@@ -242,7 +242,7 @@ describe('readSection — every SectionFailureReason producible from routes.ts i
 
     expect(outcome.kind).toBe('drift');
     if (outcome.kind === 'drift') {
-      // T5: missingKeys is now path-qualified from the fingerprint's root
+      // missingKeys is now path-qualified from the fingerprint's root
       // ('account.gold', not bare 'gold') — the path-qualified-missing-keys requirement.
       expect(outcome.missingKeys).toContain('account.gold');
     }
@@ -257,8 +257,8 @@ describe('readSection — every SectionFailureReason producible from routes.ts i
 
   it(
     'the remaining three SectionFailureReason members — not_consented, token_unavailable, aborted — are ' +
-      'desktop-produced (apps/desktop/src/main/game-api/account-refresh.ts, session-token-file.ts, T8) and ' +
-      'covered by T8s suite; they describe states that never reach a route, so routes.ts cannot be their producer',
+      'desktop-produced (apps/desktop/src/main/game-api/account-refresh.ts, session-token-file.ts) and ' +
+      'covered by their own suites; they describe states that never reach a route, so routes.ts cannot be their producer',
     () => {
       const desktopProducedReasons: SectionFailureReason[] = ['not_consented', 'token_unavailable', 'aborted'];
       // Type-only proof these are still valid members of the union this module defines.

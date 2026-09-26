@@ -17,7 +17,7 @@
 // `(0.3 + 0.12 × velocidade_grid) × sf` rate and the later serial
 // `1 / (fuse + walk)` model are both retired (apps/web/docs/adr/016).
 
-// Public barrel for shared/domain/model — split by concern (W7). Every
+// Public barrel for shared/domain/model — split by concern. Every
 // pre-split export is re-exported here so `@/shared/domain/model` keeps
 // resolving to the same public surface (module-scope private helpers stay
 // inside their concern module).
@@ -68,6 +68,9 @@ export {
   gateDamage,
   GRID_SPEED_COEF,
   EFF_IA,
+  BASE_BLAST_RANGE,
+  damageWeightedBlastRange,
+  blastDamageSpread,
 } from './combat';
 
 export {

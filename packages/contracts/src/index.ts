@@ -456,7 +456,7 @@ export interface IpcChannels {
   'app:getEnvironment': { args: []; result: AppEnvironmentInfo };
   'app:ping': { args: []; result: { ok: true; from: 'main' } };
   /** The resolved settings: a stored override, else OS detection, else
-   *  `DEFAULT_SETTINGS.locale`. No longer the constant it returned since MP1. */
+   *  `DEFAULT_SETTINGS.locale`. No longer the constant it used to return. */
   'settings:get': { args: []; result: AppSettings };
   /** Verb-shaped, following the consent quartet's shape: the existing
    *  `bfc:invoke` bridge forwards no arguments (`preload/index.ts:18`), so the channel name
