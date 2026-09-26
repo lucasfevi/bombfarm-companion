@@ -1,8 +1,8 @@
 import type { ShowcaseCopy } from './showcase-copy';
 
 export const showcasePtBR: ShowcaseCopy = {
-  typeCrit: 'Crítico',
-  typeHeavy: 'Pesado',
+  typeCrit: 'Atacante crítico',
+  typeHeavy: 'Dano pesado',
   typePierce: 'Perfurador',
   typeFinish: 'Finalizador',
   typeGate: 'Caçador de portões',
