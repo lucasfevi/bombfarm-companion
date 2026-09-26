@@ -139,7 +139,7 @@ describe('LanguageSection — the not-persisted Banner is an always-mounted slot
       }),
     );
     // This IS the defect: no warning text anywhere, even though (in the rejected shape) a write
-    // just failed. The real page.tsx (T5) always threads result.reason through instead.
+    // just failed. The real page.tsx always threads result.reason through instead.
     expect(html).not.toContain('Your save location');
   });
 });

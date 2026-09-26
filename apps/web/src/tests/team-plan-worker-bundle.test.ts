@@ -26,7 +26,7 @@ function walkJsFiles(dir: string): string[] {
 type ChunkEntry = { path: string; content: string };
 
 /**
- * The discriminator the T1 spike found: on the chosen worker path, webpack keeps the magic chunk
+ * The discriminator the worker-bundling spike found: on the chosen worker path, webpack keeps the magic chunk
  * name (`webpackChunkName: "team-plan-worker"`) on the emitted file, so a real worker chunk's
  * basename matches this — the main bundle's basename never does. A marker-string-only check
  * cannot tell the two apart: the main bundle imports the solver for the main-thread fallback, so

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
  * Generates the assembled-payload fixtures `packages/domain/tests` uses to prove full-depth
- * parsing, change reflection, and honest partial/grade delivery (T7). Committed here so the
+ * parsing, change reflection, and honest partial/grade delivery. Committed here so the
  * fixtures can be regenerated and diffed rather than hand-written —
  * run `pnpm --filter @bombfarm/game-api build` first, then `node scripts/generate-domain-fixtures.mjs`
  * from `packages/game-api`.
  *
- * Drives the real `assembleAccountPayload` (T6) over the real `ROUTES` projections (T5) against
+ * Drives the real `assembleAccountPayload` over the real `ROUTES` projections against
  * the committed, scrubbed 2026-08-12 calibration bodies — never hand-authored JSON.
  *
  * `buildFixtures()` is exported separately from the write loop below so a guard can import this
@@ -61,8 +61,8 @@ export function buildFixtures() {
 
   // Drift: `/skill/state` answered but its shape no longer matches the fingerprint (missing
   // `totals`) — grades `degraded`, names `skills`, and carries no `skills` body at all. This is
-  // the exact D24 failure (a zeroed skill tree parsed from an absent one) this rewrite exists to
-  // prevent, confirmed end-to-end through F1's parser in T7's own test.
+  // the exact failure (a zeroed skill tree parsed from an absent one) this rewrite exists to
+  // prevent, confirmed end-to-end through the domain's payload parser in its own test.
   const driftOutcomes = okOutcomesFromBodies(before);
   driftOutcomes.skills = { kind: 'drift', missingKeys: ['totals'] };
   fixtures.push({ name: 'assembled-payload-drift.json', payload: assembleAccountPayload(driftOutcomes, NOW) });

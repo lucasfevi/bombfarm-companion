@@ -3,8 +3,8 @@
  *
  * Table shape (600 rows, ascending, purity, finite sweep, gate/non-gate column rules, the
  * leaf-helper cross-check against `computePhaseIntelGlobal`, the jaula-window constancy, and
- * out-of-range → `null`). Hand-derived per-field values live in `farm-rate-hand-values.test.ts`
- * (T7); this file proves shape and structure, not magnitude.
+ * out-of-range → `null`). Hand-derived per-field values live in `farm-rate-hand-values.test.ts`;
+ * this file proves shape and structure, not magnitude.
  */
 import { describe, expect, it } from 'vitest';
 import {

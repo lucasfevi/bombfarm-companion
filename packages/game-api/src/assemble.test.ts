@@ -26,7 +26,7 @@ const DRIFT_MISSING_TOTALS: SectionOutcome = {
   missingKeys: ['totals'],
   addedKeys: [],
 };
-// T6: a drift outcome whose ONLY finding is an added key — proves addedKeys threads
+// A drift outcome whose ONLY finding is an added key — proves addedKeys threads
 // through assembleAccountPayload independently of missingKeys, not merely alongside it.
 const DRIFT_ADDED_REFUNDS: SectionOutcome = {
   kind: 'drift',

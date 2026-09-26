@@ -1,5 +1,5 @@
 /**
- * Storage round-trip tripwire — must pass unmodified at every W4/W5+ commit.
+ * Storage round-trip tripwire — must pass unmodified at every commit.
  * Fixture: as `writeJson` serializes after normalizeHero/Account (build 35fe328).
  */
 import { readFileSync } from 'node:fs';

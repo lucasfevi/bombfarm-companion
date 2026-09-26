@@ -1,6 +1,6 @@
 /**
  * The fidelity gate's one error type. A `code` and not only a message: the
- * discrimination suite (T6) asserts on both, so a mutant that dies for the wrong reason cannot
+ * discrimination suite asserts on both, so a mutant that dies for the wrong reason cannot
  * pass — the fourth-instance failure this repo already paid for.
  */
 

@@ -1,5 +1,5 @@
 // Pure grade derivation over an account's per-section provenance. No I/O, no
-// payload access — F3/F4 (and MP3) import this without dragging in the 1 MB catalog that
+// payload access — callers that only need the grade import this without dragging in the 1 MB catalog that
 // import-save.ts pulls in.
 
 import type { AccountFidelity, AccountFidelityReport, AccountPayload, AccountSection } from '@bombfarm/contracts';

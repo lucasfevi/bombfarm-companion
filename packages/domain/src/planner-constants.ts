@@ -55,7 +55,7 @@ export const SHEET_PCT_KEYS: ReadonlySet<SheetPanelKey> = new Set<SheetPanelKey>
 /**
  * The seven sheet stats scored for DPS and consumed by `sheetsClose` and the
  * mismatch tab-status predicate. Equals `SHEET_KEYS` minus `luck`, which is modelled
- * and stored but excluded from combat scoring. Wave 6
+ * and stored but excluded from combat scoring. A later change
  * added `SHEET_PANEL_KEYS` above for the eight-key display surfaces — this list stays
  * scoped to the combat / mismatch consumers named above.
  */

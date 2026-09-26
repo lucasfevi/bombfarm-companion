@@ -1,9 +1,9 @@
 # Architecture
 
 **Status:** hard truth
-**Sources:** modular-architecture programme W1–W7 (`app/` + `features/` + `shared/` layered tree, lint-enforced boundaries, Zustand root store); app shell ADR [`adr/013-app-shell-route-group.md`](adr/013-app-shell-route-group.md); performance rules in [`react-performance.md`](../../../docs/react-performance.md); design-system layout in [`design-system.md`](../../../docs/design-system.md); state rules in [`state-management.md`](state-management.md); naming rules in [`naming.md`](../../../docs/naming.md)
+**Sources:** the modular-architecture programme (`app/` + `features/` + `shared/` layered tree, lint-enforced boundaries, Zustand root store); app shell ADR [`adr/013-app-shell-route-group.md`](adr/013-app-shell-route-group.md); performance rules in [`react-performance.md`](../../../docs/react-performance.md); design-system layout in [`design-system.md`](../../../docs/design-system.md); state rules in [`state-management.md`](state-management.md); naming rules in [`naming.md`](../../../docs/naming.md)
 
-Rewritten for the post-W7 tree. Every path below was verified against the shipped repo, not carried forward from an earlier draft.
+Rewritten for the tree that programme left. Every path below was verified against the shipped repo, not carried forward from an earlier draft.
 
 ## The three layers
 
@@ -90,9 +90,9 @@ Persistence is `localStorage` only, via `src/shared/lib/storage.ts`, driven by e
 
 **Residual finding (recorded, not fixed here — out of scope for a docs-only wave):** the `devtools` production guard does not actually tree-shake. `planner-store.ts` imports `devtools` unconditionally at module top and only skips *calling* it under `NODE_ENV === 'production'`; webpack's tree-shaking decides module inclusion from the unminified import graph before Terser folds that now-constant branch, so the whole `devtools` module still ships to production (confirmed present in the shipped bundle). Byte cost is small (≈1.5 kB gzip) and does not blow any bundle budget, but the guard should eventually become a real conditional import.
 
-## Package extraction (landed in MP1)
+## Package extraction
 
-`shared/design-system/` and pure domain math now live as workspace packages `@bombfarm/ui` and `@bombfarm/domain`. Web imports them via `workspace:*`; desktop continues to consume `@bombfarm/ui` (`AppShell`). Layering rules for package paths are still being re-wired in ESLint (tracked under `mp1-ci-vercel-rebrand`).
+`shared/design-system/` and pure domain math now live as workspace packages `@bombfarm/ui` and `@bombfarm/domain`. Web imports them via `workspace:*`; desktop continues to consume `@bombfarm/ui` (`AppShell`). Layering rules for package paths are still being re-wired in ESLint.
 
 ## Ownership rules
 

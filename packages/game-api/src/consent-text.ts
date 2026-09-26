@@ -7,8 +7,7 @@ import type { AppLocale } from '@bombfarm/contracts';
  * no jsdom anywhere — see `apps/desktop/renderer/app/consent-modal.tsx`, which binds to this text
  * and holds no logic of its own).
  *
- * Bumping a locale's `body` without bumping `CONSENT_TEXT_VERSION` is a test failure (T1
- * Done-when) — a future change to what the player was told must not ride on an old agreement
+ * Bumping a locale's `body` without bumping `CONSENT_TEXT_VERSION` is a test failure — a future change to what the player was told must not ride on an old agreement
  * (`shouldShowConsentModal`).
  */
 export interface ConsentClause {

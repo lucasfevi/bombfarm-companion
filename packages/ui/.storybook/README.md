@@ -5,7 +5,7 @@ See [`docs/design-system.md`](../../../docs/design-system.md) for variant tables
 the reuse boundary.
 
 `packages/ui` used to be consumed-only by `apps/web`'s Storybook (`@storybook/nextjs`);
-the catalog now lives with the package it documents (m2-storybook-ci).
+the catalog now lives with the package it documents.
 
 ## Run
 

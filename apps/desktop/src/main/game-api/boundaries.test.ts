@@ -1,11 +1,11 @@
 /**
- * The four architectural guards this feature rests on (mp2-live-account-read T10). Each reads
+ * The four architectural guards the live account read rests on. Each reads
  * source, not `dist`, and never depends on build output — a guard that found zero files would
  * pass vacuously, which is exactly the shape this repo has been bitten by before, so every guard
  * below also asserts it found a non-empty file set.
  *
  * Every guard's red state was demonstrated once against a temporary violating line (recorded
- * verbatim in the T10 commit's task notes) and reverted before this file was committed.
+ * verbatim in the commit's notes) and reverted before this file was committed.
  */
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';

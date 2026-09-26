@@ -23,7 +23,7 @@ import {
 } from '@bombfarm/domain/gear';
 import { BASE_ROLLS, POINT_GAIN, STAT_LABELS, rankNextPoint, type Context, type HeroSheet } from '@bombfarm/domain/model';
 
-// Wave 6 rewrites this block's SHEET_DISPLAY_KEYS assertion: SHEET_DISPLAY_KEYS
+// This block's SHEET_DISPLAY_KEYS assertion was rewritten: SHEET_DISPLAY_KEYS
 // (7, combat/mismatch) no longer stands alone — SHEET_PANEL_KEYS (8, display surfaces) now
 // exists beside it, and Luck displays via the latter, not the former.
 describe('SHEET_PANEL_KEYS / SHEET_DISPLAY_KEYS — the 8/7 split', () => {
@@ -163,13 +163,13 @@ describe('POINT_GAIN.luckPctOfBase', () => {
 });
 
 // RECORDED LOSS ("deleted, not weakened"): the deleted
-// `luck per-point value against Wave 0 fixtures` describe block (2 tests, Vera ★0 and
+// luck per-point value describe block against the original fixtures (2 tests, Vera ★0 and
 // Bellatrix ★1) compared two REAL observations of the SAME hero before/after spending exactly
 // one Luck point (`vera-01` -> `vera-02`, `bellatrix-01` -> `bellatrix-02`). This is the
 // point-delta before/after family that is
 // unreproducible: every post-wipe corpus hero has `stat_points_available: 0` (every point is
 // already spent), so no zero-point "before" state exists to pair with a "+1 point" state.
-// `point-roundtrip.test.ts` (T4) is the replacement — a stronger, corpus-anchored
+// `point-roundtrip.test.ts` is the replacement — a stronger, corpus-anchored
 // claim that the forward per-point math reproduces the game's own observed sheet — but it
 // cannot isolate a single point's marginal value the way this deleted pair could. See
 // docs/fixture-corpus.md.

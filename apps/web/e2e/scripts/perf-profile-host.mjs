@@ -6,7 +6,7 @@
  * The two instruments answer different questions and their numbers are NOT comparable:
  *
  *   dev-strict    `next dev` + StrictMode. Renders are double-invoked and dev-only work
- *                 is included. This is the instrument the W1 baseline and every W5/W8
+ *                 is included. This is the instrument every recorded baseline
  *                 number is expressed in, so it is kept for continuity.
  *   prod-profile  Production React with component names retained. The only instrument
  *                 that may back a claim about production behavior.

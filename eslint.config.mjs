@@ -25,11 +25,11 @@ const plannerOriginPackages = [
 ];
 
 /**
- * `game-art` was extracted verbatim from `apps/web/src/shared/game-art/` (T5), which lints under
+ * `game-art` was extracted verbatim from `apps/web/src/shared/game-art/`, which lints under
  * `recommendedTypeChecked` (`apps/web/eslint.config.mjs`) and never carried
  * `exactOptionalPropertyTypes`/`noUncheckedIndexedAccess` (`apps/web/tsconfig.json`). Same tier as
  * `plannerOriginPackages`, kept as its own list rather than folded in — that array is the literal
- * scope `docs/typescript-planner-origin.md` documents as exactly `domain`+`ui`, unchanged by T5.
+ * scope `docs/typescript-planner-origin.md` documents as exactly `domain`+`ui`, unchanged by that extraction.
  */
 const gameArtPackage = ['packages/game-art/**/*.{ts,tsx}'];
 

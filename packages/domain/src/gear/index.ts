@@ -1,4 +1,4 @@
-// Public barrel for shared/domain/gear — split by concern (W7). Every
+// Public barrel for shared/domain/gear — split by concern. Every
 // pre-split export is re-exported here so `@/shared/domain/gear` keeps
 // resolving to the same public surface (module-scope private helpers stay
 // inside their concern module).

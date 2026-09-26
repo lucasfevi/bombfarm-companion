@@ -455,7 +455,7 @@ export function parseSaveFile(raw: unknown, existing: HeroRecord[]): ParseResult
     if (missingKeys.length > 0) {
       return {
         candidates: [],
-        // The diagnosis is not lost to the generic player-facing copy (T8) — it lives
+        // The diagnosis is not lost to the generic player-facing copy — it lives
         // here, in `warnings` (data, never rendered by the desktop), naming exactly
         // which path-qualified keys were absent.
         warnings: [
@@ -711,7 +711,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
     // Stats: the save's `stats` block is the hero's final (geared + spent-points, tree-
     // inclusive) sheet — invert it against the birth-backed naked/gearedOverride above to
     // recover the integer spent-points vector. A hero with no `stats`
-    // block cannot be point-inferred (T5 turns this into a blocking candidate).
+    // block cannot be point-inferred (the import turns this into a blocking candidate).
     const statsRaw = isObject(rawHero.stats) ? rawHero.stats : null;
     // Read regardless of whether `stats` is present — a blocked (no-`stats`) hero still carries
     // this through to `record` below, so a later re-import that recovers `stats` isn't the first
@@ -727,7 +727,7 @@ export function parseAccountPayload(payload: AccountPayload, existing: HeroRecor
       pointIssues = inferred.issues;
       if (inferred.issues.length > 0) {
         // One neutral English string on issues[]; the typed pointIssues[] above is
-        // what Wave 6's copy actually names a saturated stat from.
+        // what the player-facing copy actually names a saturated stat from.
         issues.push('Spent stat points could not be exactly matched to this save — the closest integer allocation was used.');
       }
       // The game grants exactly one point per level and `stat_points_available` is what is left

@@ -128,7 +128,7 @@ export function ledgerPenetration(facts: PipelineFacts): StatBreakdown {
 /**
  * Luck's ledger — the shortest of the eight stats, and the one that makes
  * the four lines legible in a single stat: Hero (birth roll, already star-scaled — `naked`
- * is tree-free per Wave 5's `nakedFromBirth`), Gear (`gearSortePct`), Ability — always 0 since
+ * is tree-free per `nakedFromBirth`), Gear (`gearSortePct`), Ability — always 0 since
  * Olho Lapidador is `{ kind: 'none' }` but pushed explicitly (unlike `pushAdd`'s
  * near-zero skip) so the line renders, Points (`pts.luck × luckPctOfBase × naked.luck`,
  * `derive.ts`'s own `delta.luck` formula) and Skill tree (`luck_add`, a FLAT percentage-point

@@ -1,6 +1,6 @@
 'use client';
 
-// Store-backed compat hook — provider removed in W4.
+// Store-backed compat hook — the provider was removed when the store took over lang.
 import { usePlannerStore, selectLang, selectStrings } from '@/shared/stores';
 import type { Lang, Strings } from '@/shared/i18n';
 

@@ -3,7 +3,7 @@
 /**
  * Toast system — provider, hook, viewport, item.
  *
- * ## Why this isn't a base-ui `Toast` wrap (T1 finding)
+ * ## Why this isn't a base-ui `Toast` wrap
  *
  * `docs/base-ui-first.md` requires checking base-ui before rolling a custom
  * primitive, so this was read before writing any of this file:
@@ -34,7 +34,7 @@
  * toast turns out to be unusable headlessly, fall back to a plain portal +
  * our reducer and document why"), this file uses `createPortal` instead and
  * keeps `role="status"`/`aria-live` semantics inline — the same manual a11y
- * approach the legacy `Toast` (`toast.tsx`) already uses. `Slider` (T7) has
+ * approach the legacy `Toast` (`toast.tsx`) already uses. `Slider` has
  * no such conflict and wraps `@base-ui/react/slider` directly.
  */
 

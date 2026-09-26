@@ -1,5 +1,5 @@
 /**
- * (T4) — the export corpus check and its three named red states.
+ * The export corpus check and its three named red states.
  *
  * The sharpest finding is that the PREVIOUS route fingerprint
  * was authored from an already-drifted capture and its only cross-check was a subset assertion —

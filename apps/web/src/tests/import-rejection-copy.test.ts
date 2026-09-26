@@ -1,5 +1,5 @@
 /**
- * (T8) — `importRejectedUnsupportedShape`: the generic invalid-save message,
+ * `importRejectedUnsupportedShape`: the generic invalid-save message,
  * asserted in EN and PT-BR through `rejectionText`, and guarded against every forbidden token so
  * it stays accurate — and reusable unchanged — after the next patch.
  */

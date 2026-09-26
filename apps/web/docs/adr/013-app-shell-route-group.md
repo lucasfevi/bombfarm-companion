@@ -1,6 +1,6 @@
 # ADR-013: Shared app shell (route group)
 
-**Status:** accepted (Wave 1)  
+**Status:** accepted  
 **Date:** 2026-07-27
 
 ## Context
@@ -21,11 +21,11 @@ Introduce `src/app/(app)/` route group with:
 ## Consequences
 
 - Chrome mounts once per session.
-- Lang lives in the planner store session slice; `useAppLang()` (`app-lang.tsx`) is a store-backed compat hook (W4).
+- Lang lives in the planner store session slice; `useAppLang()` (`app-lang.tsx`) is a store-backed compat hook.
 - Import/guide dialog lifted to shell; roster + active hero come from Zustand selectors (no imperative planner bridge).
 - Phases feature branch rebased onto this layout; `/phases` renders `PhasesExplorer`.
 
 ## Follow-ups
 
 - ADR-014: parallel slot visibility (`hidden` + `inert` on `/phases`)
-- ~~Wave 2: Zustand replaces bridge + direct `localStorage` reads~~ **done (W5)** — `AppShellBridgeProvider` removed; import dialog + phases use store selectors.
+- ~~Zustand replaces bridge + direct `localStorage` reads~~ **done** — `AppShellBridgeProvider` removed; import dialog + phases use store selectors.

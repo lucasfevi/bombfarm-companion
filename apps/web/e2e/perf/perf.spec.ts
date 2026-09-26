@@ -47,7 +47,7 @@ const USE_LARGE_ROSTER = process.env.PERF_FIXTURE === 'large'
 const FIXTURE_NAME = USE_LARGE_ROSTER ? 'largeRoster' : 'importedRoster'
 const FIXTURE = USE_LARGE_ROSTER ? largeRoster : importedRoster
 /**
- * `dev-strict` is the W1/W8 baseline instrument: `next dev` + StrictMode, which
+ * `dev-strict` is the recorded baselines' instrument: `next dev` + StrictMode, which
  * double-invokes render and is *not* production. `prod-profile` runs against
  * `pnpm perf:build:profile` output — production React with component names retained —
  * and is the instrument any claim about production behavior must use. The two are not

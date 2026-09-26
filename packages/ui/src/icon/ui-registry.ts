@@ -92,15 +92,15 @@ export const uiIconRegistry = {
   copy: BiCopy,
   // The desktop Heroes screen's opener for the roster share card
   share: HiMiniShare,
-  // toast/notification `success` variant (m2-toast-settings)
+  // toast/notification `success` variant
   'check-circle': HiMiniCheckCircle,
-  // toast/notification `error` variant (m2-toast-settings)
+  // toast/notification `error` variant
   'x-circle': HiMiniXCircle,
-  // toast/notification `warning` variant (m2-toast-settings)
+  // toast/notification `warning` variant
   'exclamation-triangle': HiMiniExclamationTriangle,
-  // toast/notification `info` variant (m2-toast-settings)
+  // toast/notification `info` variant
   'information-circle': HiMiniInformationCircle,
-  // toast/notification `progress` variant spinner (m2-toast-settings)
+  // toast/notification `progress` variant spinner
   'arrow-path': HiMiniArrowPath,
   // DeltaTable locked-row glyph — replaces a Chip + HelpTip pair on a row a table can't change
   'lock-closed': HiMiniLockClosed,

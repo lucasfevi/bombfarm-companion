@@ -1,5 +1,5 @@
 /**
- * Consent decision state (mp2-live-account-read). Owned here — not in
+ * Consent decision state for the live account read. Owned here — not in
  * `@bombfarm/game-api`, where the reducer that operates on it lives — because it crosses the
  * `apps/desktop` main↔renderer IPC boundary (`consent:get`/`accept`/`decline`/`revoke` results,
  * `consent:changed` events) and `AGENTS.md` makes `@bombfarm/contracts` the one home for IPC

@@ -88,7 +88,7 @@ export type SaveBarProps = {
 };
 
 /**
- * SaveBar — presentational only (Out of Scope: auto-save policy is M5's).
+ * SaveBar — presentational only (auto-save policy belongs to the host).
  * Both actions disable when there is nothing to save (`!dirty`) or while a
  * save is already in flight (`saving`); the Save button reflects `saving`
  * via `aria-busy` and swaps its label to `savingLabel`.

@@ -1,5 +1,5 @@
 /**
- * T7 — the positive acceptance gate in `parseSaveFile`.
+ * The positive acceptance gate in `parseSaveFile`.
  *
  * The core claim here: a discriminator keyed off the ABSENCE of the old keys would
  * accept a truncated/hand-edited file (which also lacks them). This suite proves the real

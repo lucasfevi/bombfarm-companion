@@ -1,7 +1,7 @@
 # The fidelity gate
 
-**Status (2026-08-13, MP5 F1):** the committed pair was re-captured from the post-patch
-2026-08-13 export after `mp5-fixture-rebaseline` deleted the pre-wipe corpus the old pair was
+**Status (2026-08-13):** the committed pair was re-captured from the post-patch
+2026-08-13 export after the post-patch fixture rebaseline deleted the pre-wipe corpus the old pair was
 built from (the 2026-08-13 patch wiped every account). The
 reference account is now **5 heroes**, `account 486`, phase 24 / max_phase 42 — the same account
 `sheet-math/save-20260813-5heroes.json` documents; `export-capture.json` is byte-identical to
@@ -151,7 +151,7 @@ What remains is blocked on a **maintainer capture**, not on code:
 >
 > - The existing API fixtures under `packages/domain/tests/fixtures/api/` are a **different
 >   account** (8 heroes / phase 21 / disjoint hero ids, versus the reference pair's 5 heroes /
->   phase 24). They cannot be used here. (MP5 F1 committed a byte copy of one of those API
+>   phase 24). They cannot be used here. (The fixture rebaseline also committed a byte copy of one of those API
 >   fixtures under `sheet-math/` as `payload-20260812-8heroes.json`, for the domain/web test
 >   suites that need a richer, disjoint-account roster — that is a second, independently-checked
 >   test subject, not a second half of this pair, and does not relax this constraint.)

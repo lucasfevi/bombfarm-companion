@@ -20,7 +20,7 @@ const BRAM_ID = '20402';
 const BRAM_ITEM_DEF_ID = 'wooden_arma';
 
 function mutatedPair(mutate: (pair: FidelityPair) => void): FidelityPair {
-  // structuredClone, never mutate the loaded fixture in place (T6's Done-when).
+  // structuredClone, never mutate the loaded fixture in place.
   const pair = structuredClone(loadFidelityPair());
   mutate(pair);
   return pair;

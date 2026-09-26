@@ -466,7 +466,7 @@ function registerIpcHandlers(): void {
     },
     'app:ping': () => ({ ok: true as const, from: 'main' as const }),
     // The resolved settings (stored override, else OS detection, else
-    // DEFAULT_SETTINGS.locale), not the constant this has returned since MP1.
+    // DEFAULT_SETTINGS.locale), not the constant this used to return.
     'settings:get': (): AppSettings => currentSettings,
     'settings:useEnglish': (): SettingsWriteResult => applyLocale('en'),
     'settings:usePortuguese': (): SettingsWriteResult => applyLocale('pt-BR'),
@@ -935,7 +935,7 @@ async function bootstrap(): Promise<void> {
 
   // The consented game-API account reader. Independent of the game reader's own
   // memory/fixture ticking: consent gates every request structurally,
-  // so this cycle issues nothing at all until the player has accepted the first-run modal (T9).
+  // so this cycle issues nothing at all until the player has accepted the first-run modal.
   // Constructed before registerIpcHandlers() so the consent:* handlers never see a null store,
   // and before the game reader so its own live-mode process lookups can be gated by the same
   // predicate the live tap already checks.
@@ -1141,7 +1141,7 @@ async function bootstrap(): Promise<void> {
     now: () => new Date().toISOString(),
     isGameRunning: () => gameReader?.isGameProcessRunning() ?? false,
     readToken,
-    // account-refresh.ts itself is unmodified (MP2 owns that file's commit semantics) —
+    // account-refresh.ts itself is unmodified (its commit semantics are its own) —
     // only what the listener does changed: it used to emit unconditionally on every commit;
     // it now asks the notifier, which emits only on a real change.
     onView: (view) => {

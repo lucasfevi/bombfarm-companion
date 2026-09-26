@@ -196,7 +196,7 @@ describe('RequestOutcome classification — every response class maps to its own
   });
 });
 
-describe('no forbidden transport imports in this module (re-checked by T10s guard)', () => {
+describe('no forbidden transport imports in this module (re-checked by the boundaries guard)', () => {
   it('request.ts does not import node:https, node:http, undici, axios, or name fetch', () => {
     const source = readFileSync(fileURLToPath(new URL('./request.ts', import.meta.url)), 'utf8');
     expect(source).not.toMatch(/from ['"]node:https['"]/);

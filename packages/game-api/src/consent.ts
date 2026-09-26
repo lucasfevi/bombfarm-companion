@@ -6,13 +6,13 @@ import { CONSENT_TEXT_VERSION } from './consent-text.js';
  * the caller (`account-refresh.ts` in `apps/desktop`), never read here.
  *
  * `ConsentDecision`/`ConsentRecord` are defined in `@bombfarm/contracts`, not here — they cross
- * the desktop main<->renderer IPC boundary (T9), and `AGENTS.md` makes contracts the one home
+ * the desktop main<->renderer IPC boundary, and `AGENTS.md` makes contracts the one home
  * for IPC types. See `packages/contracts/src/consent.ts`'s doc comment for why the dependency
  * runs this direction (game-api -> contracts, type-only) and not the reverse.
  */
 export type { ConsentDecision, ConsentRecord };
 
-/** The narrowed record `grantSession` (T2) accepts — `grantedAt` is required, not optional. */
+/** The narrowed record `grantSession` accepts — `grantedAt` is required, not optional. */
 export interface GrantedConsent extends ConsentRecord {
   readonly decision: 'granted';
   readonly grantedAt: string;
@@ -66,7 +66,7 @@ export function shouldShowConsentModal(record: ConsentRecord): boolean {
 }
 
 /**
- * The type guard `grantSession` (T2) requires before it can even attempt a runtime construction.
+ * The type guard `grantSession` requires before it can even attempt a runtime construction.
  * Strict equality on `textVersion`, not `>=`: a record stamped with a version newer than this
  * build understands must also fail, so a downgraded build re-prompts instead of assuming a grant
  * it cannot have shown.

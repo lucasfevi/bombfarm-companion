@@ -4,7 +4,7 @@
  * Two blocks: phase 42 (non-gate) and phase 10 (gate), each ato 1 on the 5-hero fixture. Every
  * expectation below is built from PUBLISHED INPUTS ONLY — the wiki line's own fields, the raw
  * `WIKI_PROPS` table, the exported constants, and the fixture's own `HeroFarmFacts` (obtained via
- * `computeHeroFarmFacts`/`computeSquadFarmFacts`, which T5 already proved independently). No
+ * `computeHeroFarmFacts`/`computeSquadFarmFacts`, which their own suite proves independently). No
  * expectation here is built by calling `computeFarmRateRow` or `computeFarmRateTable` — only the
  * row under test is.
  *
@@ -15,7 +15,7 @@
  * those two phases and a live `Σ share × goldRarityMult` of `1.57` — hp and mitig match the
  * design's figures exactly, only goldComum/the gold-share factor differ, consistent with the
  * wiki-bundle changeset's own note that "Phase gold is about 25% lower... the committed bundle
- * was simply stale." T7's own instruction is to derive expectations from PUBLISHED (i.e. live)
+ * was simply stale." The rule here is to derive expectations from PUBLISHED (i.e. live)
  * inputs, never from the design's now-stale illustrative figures — so every number below is read
  * live off `wikiPhaseLine` / `WIKI_PROPS`, never typed from the design's table.
  */
@@ -44,7 +44,7 @@ import { mitigationFactor, EFF_IA, STAT_CAPS } from '@bombfarm/domain/model';
 import { simulateClear } from '@bombfarm/domain/model/clear-time';
 import { loadFarmRateFixture } from './helpers/farm-rate-fixtures';
 
-const TOL = 1e-9; // relative tolerance — every input is an exact double (stated once, per T7).
+const TOL = 1e-9; // relative tolerance — every input is an exact double (stated once).
 
 const { heroes, account } = loadFarmRateFixture();
 const heroFacts = computeHeroFarmFacts({ heroes, account });

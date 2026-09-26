@@ -46,7 +46,7 @@ describe('account slice', () => {
     expect(usePlannerStore.getState().treeLuckFlatPct).toBe(5.3);
   });
 
-  it('normalizeAccount defaults tree.luckFlatPct to 0 when the field is absent (pre-Wave-5 record)', () => {
+  it('normalizeAccount defaults tree.luckFlatPct to 0 when the field is absent (a record from before the field existed)', () => {
     const preWave5Tree = {
       danoTotal: 1.2,
       critChance: 5,

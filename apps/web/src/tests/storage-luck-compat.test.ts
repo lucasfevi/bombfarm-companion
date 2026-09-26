@@ -1,7 +1,7 @@
 /**
  * The rule-3/rule-4 backward-compat proof for `luck`.
  *
- * This is deliberately NOT the tripwire fixture (Wave 1 L-03): a byte-identity
+ * This is deliberately NOT the tripwire fixture: a byte-identity
  * fixture asserts output ≡ input under the current (eight-key) schema; this suite asserts
  * the opposite property — that a genuine STALE seven-key payload loads with `luck` filled
  * to 0, and that no derived value ever becomes NaN.
@@ -29,9 +29,9 @@ function memoryLocalStorage() {
   };
 }
 
-// Real pre-BSPW2 bytes for `hero-2` — seven-key naked / gearedOverride / pts, no `luck`.
-// Rarity corrected to the valid RarityKey "Épico" (the shared W1 fixture literal stores the
-// unaccented "Epico", which is not a BASE_ROLLS key and is unrelated to this wave's scope —
+// Real pre-luck bytes for `hero-2` — seven-key naked / gearedOverride / pts, no `luck`.
+// Rarity corrected to the valid RarityKey "Épico" (the shared fixture literal stores the
+// unaccented "Epico", which is not a BASE_ROLLS key and is unrelated to this test's scope —
 // this test exercises rankNextPoint via BASE_ROLLS[hero.rarity] and would throw on that typo).
 const LEGACY_HERO_2_JSON =
   '{"id":"hero-2","name":"Brick","updatedAt":1700000000002,"rarity":"Épico","level":30,"stars":2,' +

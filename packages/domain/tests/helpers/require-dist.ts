@@ -13,7 +13,7 @@ export const DIST_ROOT = join(DOMAIN_ROOT, 'dist');
  * (`pnpm --filter @bombfarm/domain build`) — so there is deliberately **no** local-skip
  * branch. A silent skip on this test would defeat the whole point of the feature: this file
  * is the only thing that proves the new `exports` map resolves correctly, in CI and locally
- * alike (T1 Done-when).
+ * alike.
  */
 export function requireDomainDist(): void {
   if (existsSync(DIST_ROOT)) return;

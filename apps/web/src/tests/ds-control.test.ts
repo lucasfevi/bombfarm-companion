@@ -7,8 +7,8 @@ import * as stepper from '@bombfarm/ui/stepper.recipe';
  * `control-chrome.ts` (chips + stepper + rank control + check). Legacy strings
  * captured here as the parity source of truth.
  *
- * `small-warn` is the one deliberate exception to that parity: m2-storybook-ci
- * (T7) lightened its text color because plain `text-warn` on `bg-surface`
+ * `small-warn` is the one deliberate exception to that parity: the Storybook a11y
+ * pass lightened its text color because plain `text-warn` on `bg-surface`
  * measured 3.31:1 contrast, below WCAG AA's 4.5:1 floor for this 10px text — see
  * `packages/ui/src/chip.recipe.ts` for the computation.
  */

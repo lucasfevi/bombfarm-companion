@@ -34,7 +34,7 @@ export type StatRanges = {
 
 /**
  * `skills.totals` in the units the planner store already uses. `luckFlatPct` is wired from
- * the account slice as of Wave 5 (`skills.totals.luck_add × 100`).
+ * the account slice (`skills.totals.luck_add × 100`).
  */
 export type TreeSheetTotals = {
   /** `dmg_static` — raw multiplier on the attack subtotal. Store: `treeDanoTotal`. */

@@ -5,7 +5,7 @@
  * fallback, normalizes to an integer in `[1, WIKI_PHASE_LINES.length]`, and reports `null` when
  * neither source is a finite number > 0 or when the whole file is rejected. This suite proves
  * every branch named in the design's acceptance criteria; the `locked`
- * row-mapping half is added at T6 once `computeFarmRateTable` exists.
+ * row-mapping half follows, over `computeFarmRateTable`.
  */
 import { join } from 'node:path';
 import { readFileSync } from 'node:fs';
@@ -137,7 +137,7 @@ describe('account.max_phase — rejection paths yield null', () => {
   });
 });
 
-describe('FarmRateRow.locked — the maxPhase → row mapping (added at T6)', () => {
+describe('FarmRateRow.locked — the maxPhase → row mapping', () => {
   const { heroes, account } = loadFarmRateFixture();
   const heroFacts = computeHeroFarmFacts({ heroes, account });
   const squad = computeSquadFarmFacts(heroFacts, account);

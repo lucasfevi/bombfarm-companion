@@ -83,7 +83,7 @@ const IPC_EVENT_CHANNEL_LIST = [
 /** Compile-time-only: fails `tsc -p tsconfig.typecheck.json` if a member is ever added to
  *  `IpcInvokeChannel` without also adding it to the runtime `IPC_CHANNELS` array — the
  *  `satisfies` clause on `IPC_CHANNELS` only catches the opposite direction (an extra/wrong
- *  runtime entry), so this closes the other half (T9 Done-when). */
+ *  runtime entry), so this closes the other half. */
 type AssertNever<T extends never> = T;
 type _AllInvokeChannelsListed = AssertNever<Exclude<import('./index.js').IpcInvokeChannel, (typeof IPC_CHANNELS)[number]>>;
 type _AllEventChannelsListed = AssertNever<Exclude<import('./index.js').IpcEventChannel, (typeof IPC_EVENT_CHANNELS)[number]>>;
@@ -210,7 +210,7 @@ describe('contracts IPC surface', () => {
 });
 
 // --- Compile-time-only assertions below: no runtime behaviour, enforced by `tsc` only. ---
-// No IPC channel carries a token (T9 Done-when). `@bombfarm/contracts` never imports
+// No IPC channel carries a token. `@bombfarm/contracts` never imports
 // `SessionToken` from `@bombfarm/game-api` (that edge runs the other way — see consent.ts's
 // doc comment), so this proves the weaker, sufficient claim structurally instead: neither
 // `ConsentRecord` (every consent:* channel's result) nor `AccountView` (account:get's result,

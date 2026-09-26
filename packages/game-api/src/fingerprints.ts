@@ -171,7 +171,7 @@ export const ROUTE_FINGERPRINTS: Readonly<Record<AccountSection, RouteFingerprin
 // identity — `casa`'s route, `/rotation`, used to unwrap to its nested `casa` child only; it now
 // yields the whole rotation body, so its section fingerprint is the whole `ROTATION_LEVEL` too).
 // Needed because stored rows hold the PROJECTED shape, not the route body — apps/desktop's
-// `AccountStore.restore()` (T10) checks against these, never against `ROUTE_FINGERPRINTS`.
+// `AccountStore.restore()` checks against these, never against `ROUTE_FINGERPRINTS`.
 
 /** A section fingerprint is either object-rooted (checked via `checkSchema` directly) or
  *  array-rooted (each element checked via `checkSchema`, indexed `root[i]…` — `heroes[3].in_market`,

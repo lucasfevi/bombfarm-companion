@@ -47,25 +47,25 @@ pnpm --filter @bombfarm/ui test-storybook
 
 Keep `pnpm test` as the fast Vitest unit gate — do not fold Playwright or Storybook into it. See [`e2e.md`](../apps/web/docs/e2e.md) for the Docker e2e workflow (matches CI on any host) and how to read a CI failure; [`design-system.md`](design-system.md) for the Storybook catalog.
 
-## `m2-storybook-ci` — M2 exit criterion restatement (2026-08-11)
+## Storybook in CI — exit criterion restatement (2026-08-11)
 
-M2's exit criterion (`plan/M2.md` in the spec repo) reads: *"Storybook builds in CI
-with every §3 component represented, zero a11y-addon violations, contrast-token unit
+The design-system milestone's exit criterion reads: *"Storybook builds in CI
+with every [catalogued] component represented, zero a11y-addon violations, contrast-token unit
 test green; visual-regression baseline artifact stored."* Restated clause by clause,
 with evidence, as amended by the deferral recorded below:
 
 | Clause | Status | Evidence |
 | --- | --- | --- |
 | Storybook builds in CI | **PASS** | `.github/workflows/ci-web.yml`'s `design-system` job runs `pnpm --filter @bombfarm/ui build-storybook` on the `web` path filter; `design-system-required` fails the whole check if that job doesn't succeed (including `skipped`/`cancelled`) |
-| Every §3 component represented | **PASS for M2's slice** | `DESIGN_SYSTEM.md` §3's own table scopes M2 to `AppShell`, `StatusChip`, `EmptyState`, `Toast`/`ProgressToast`/`NotificationCenter`, `SettingsForm` primitives, `Slider`, `Icon`, `Dialog`, `Tooltip` — every one has a story in `packages/ui/src` (`AppShell.stories.tsx`, `status-chip.stories.tsx`, `empty-state.stories.tsx`, `toast.stories.tsx` + `toast-system.stories.tsx`, `notification-center.stories.tsx`, `settings-form.stories.tsx`, `slider.stories.tsx`, `icon.stories.tsx`, `dialog.stories.tsx`, `tooltip.stories.tsx`) |
+| Every catalogued component represented | **PASS for this milestone's slice** | The design-system component table scopes this milestone to `AppShell`, `StatusChip`, `EmptyState`, `Toast`/`ProgressToast`/`NotificationCenter`, `SettingsForm` primitives, `Slider`, `Icon`, `Dialog`, `Tooltip` — every one has a story in `packages/ui/src` (`AppShell.stories.tsx`, `status-chip.stories.tsx`, `empty-state.stories.tsx`, `toast.stories.tsx` + `toast-system.stories.tsx`, `notification-center.stories.tsx`, `settings-form.stories.tsx`, `slider.stories.tsx`, `icon.stories.tsx`, `dialog.stories.tsx`, `tooltip.stories.tsx`) |
 | Zero a11y-addon violations | **PASS** | `@storybook/addon-a11y` registered; `pnpm --filter @bombfarm/ui test-storybook` — 29 story suites / 107 story tests, 0 violations. 16 real violations found on first run were fixed at the root (component/recipe/story), not allowlisted — see the `fix(ui): resolve every a11y violation…` commit |
 | Contrast-token unit test green | **PASS (pre-existing, reconfirmed)** | `packages/ui/src/tokens.contrast.test.ts` — 7 tests, all passing under `pnpm --filter @bombfarm/ui test`. This is a distinct, narrower check than the a11y-addon violations above: it asserts fixed token *pairs* (e.g. `ink` on `bg`) meet their declared minimum ratio, not every component/state combination a story renders |
-| Visual-regression baseline artifact stored | **DEFERRED — not this feature** | Explicit decision, 2026-08-11: cross-platform baselines (Windows dev vs Linux CI) would fail on first run, and M3 is when there are real screens worth diffing. No visual-regression work was done here |
+| Visual-regression baseline artifact stored | **DEFERRED — not this feature** | Explicit decision, 2026-08-11: cross-platform baselines (Windows dev vs Linux CI) would fail on first run, and real screens worth diffing only arrive with the inventory screens. No visual-regression work was done here |
 
 **What that deferral covered, named explicitly so this exit is not overclaimed:**
 
-- `m2-inventory-ui`, `m2-entity-panel` — component work items deferred to M3/M4 per `DESIGN_SYSTEM.md` §3's own milestone split (`ItemCard`/`ItemRow`/`RarityBadge`/… ship in M3; `EntityLink`/`DetailPanel`/`StatsDashboard` ship in M4)
-- The visual-regression baseline artifact — deferred to M3, and never delivered: the screenshot suite that was built for it stayed skipped from 2026-08-03 and was deleted on 2026-09-21. Layout is covered by the Playwright smoke specs' role / accessible-name / text assertions instead
+- The inventory and entity-panel component work — deferred to later milestones per the design-system component table's own split (`ItemCard`/`ItemRow`/`RarityBadge`/… ship with the inventory screens; `EntityLink`/`DetailPanel`/`StatsDashboard` with the entity panels)
+- The visual-regression baseline artifact — deferred to the inventory screens, and never delivered: the screenshot suite that was built for it stayed skipped from 2026-08-03 and was deleted on 2026-09-21. Layout is covered by the Playwright smoke specs' role / accessible-name / text assertions instead
 
 **Added CI wall-clock:** the new `design-system` job runs in parallel with
 `quality` (both depend only on `changes`), so its net effect on total workflow

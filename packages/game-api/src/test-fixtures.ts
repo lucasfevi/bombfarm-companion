@@ -7,8 +7,8 @@ export type FixtureName = 'api-bodies.json' | 'api-bodies-after.json';
 
 /**
  * Resolves a committed `src/__fixtures__/*.json` fixture to an absolute filesystem path — never
- * `import`ed, so nothing under `src/__fixtures__/**` lands in `dist` (T5 Done-when). Exposed
- * separately from {@link loadFixtureJson} so callers (T5's `fingerprints.test.ts`/`shape.test.ts`)
+ * `import`ed, so nothing under `src/__fixtures__/**` lands in `dist`. Exposed
+ * separately from {@link loadFixtureJson} so callers (`fingerprints.test.ts`/`shape.test.ts`)
  * can run it through {@link requireFixture} BEFORE reading it.
  */
 export function fixturePath(name: FixtureName): string {

@@ -10,7 +10,7 @@ const CI_DESKTOP_PATH = resolve(root, '.github/workflows/ci-desktop.yml');
  * `ci-desktop.yml` keeps two copies of the same path-filter list — `on.push.paths` (what
  * triggers a push-driven run at all) and the `dorny/paths-filter` `desktop:` filter (what the
  * `quality`/`smoke-windows` jobs treat as "this PR touches desktop"). The file's own comments
- * say "keep in sync"; nothing enforced it until this guard (T1 Done-when, `mp2-live-account-read`).
+ * say "keep in sync"; nothing enforced it until this guard.
  * One list alone means the package gets no CI on some triggers — the same shape as the failure
  * that once broke the web typecheck.
  *

@@ -110,12 +110,12 @@ describe('exactly one searchable hero', () => {
 });
 
 describe('two searchable heroes — the frontier is capped by |S|', () => {
-  it('frontier stays within bounds for a 2-hero pool (T5/T7: always []; T9 adds the 1-hero tier)', () => {
+  it('frontier stays within bounds for a 2-hero pool (at most a 1-hero tier)', () => {
     const twoIds = heroes.slice(0, 2).map((h) => h.id);
     const result = solveFarmRespec({ heroes, account, maxPhase, enabledHeroIds: twoIds });
     expect(result.heroes).toHaveLength(2);
     // Every frontier tier must have fewer heroes than |S| — trivially true while frontier is
-    // empty, and the invariant T9 must preserve once it starts populating this array.
+    // empty, and the invariant anything populating this array must preserve.
     for (const entry of result.frontier) {
       expect(entry.heroCount).toBeLessThan(2);
     }

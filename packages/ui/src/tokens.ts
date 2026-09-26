@@ -52,7 +52,7 @@ export type ContrastPair = {
   minRatio: number;
 };
 
-/** DESIGN_SYSTEM §6 — AA normal text pairs. Rarity hues excluded (badges always pair color + text/glyph; rar-2 on bg ≈4.2:1). */
+/** AA normal text pairs. Rarity hues excluded (badges always pair color + text/glyph; rar-2 on bg ≈4.2:1). */
 export const contrastPairs: readonly ContrastPair[] = [
   { fg: 'ink', bg: 'bg', minRatio: 4.5 },
   { fg: 'ink', bg: 'surface', minRatio: 4.5 },

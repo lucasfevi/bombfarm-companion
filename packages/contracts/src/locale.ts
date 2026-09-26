@@ -43,7 +43,7 @@ export const BCP47_BY_LOCALE = {
   'pt-BR': 'pt-BR',
 } as const satisfies Record<AppLocale, string>;
 
-/** The validator a malformed persisted `settings_v1` row meets (`settings-store.ts`, T3). */
+/** The validator a malformed persisted `settings_v1` row meets (`settings-store.ts`). */
 export function isAppLocale(value: unknown): value is AppLocale {
   return typeof value === 'string' && (APP_LOCALES as readonly string[]).includes(value);
 }
