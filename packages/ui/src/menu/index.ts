@@ -6,6 +6,8 @@
  */
 
 import {
+  MenuCheckboxItem,
+  MenuCheckboxItemIndicator,
   MenuGroup,
   MenuGroupLabel,
   MenuItem,
@@ -33,4 +35,6 @@ export const Menu = {
   RadioGroup: MenuRadioGroup,
   RadioItem: MenuRadioItem,
   RadioItemIndicator: MenuRadioItemIndicator,
+  CheckboxItem: MenuCheckboxItem,
+  CheckboxItemIndicator: MenuCheckboxItemIndicator,
 };

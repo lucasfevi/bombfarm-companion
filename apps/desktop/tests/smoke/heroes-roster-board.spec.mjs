@@ -145,6 +145,8 @@ test.describe('the Heroes screen\'s board of cards', () => {
   });
 
   test('the leaderboard lists every hero, sorts by power both ways, and a row opens that hero', async () => {
+    await page.getByRole('button', { name: /^List$/i }).click();
+    await page.waitForSelector('[data-testid^="heroes-roster-row-"]', { state: 'attached', timeout: 20_000 });
     const heroCount = await page.locator('[data-testid^="heroes-roster-row-"]').count();
     await showTable(page);
     expect(await tableIds(page)).toHaveLength(heroCount);
@@ -170,5 +172,32 @@ test.describe('the Heroes screen\'s board of cards', () => {
     await page.getByTestId(`heroes-leaderboard-row-${pickedId}`).click();
     await expect(page.locator('[data-testid^="heroes-leaderboard-row-"]')).toHaveCount(0);
     await expect(page.getByTestId(`heroes-roster-row-${pickedId}`)).toHaveAttribute('aria-current', 'true');
+  });
+
+  test('the Columns menu shows cooldown reduction and hides luck, and a portrait peeks and picks', async () => {
+    await showTable(page);
+    await expect(page.getByTestId('heroes-leaderboard-sort-cdr')).toHaveCount(0);
+
+    await page.getByTestId('heroes-leaderboard-columns').click();
+    const menu = page.getByTestId('heroes-leaderboard-columns-menu');
+    await menu.getByRole('menuitemcheckbox', { name: /^Cooldown reduction$/ }).click();
+    await menu.getByRole('menuitemcheckbox', { name: /^Luck$/ }).click();
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+
+    await expect(page.getByTestId('heroes-leaderboard-sort-cdr')).toHaveText(/Cooldown reduction/);
+    const firstId = (await tableIds(page))[0];
+    const first = page.getByTestId(`heroes-leaderboard-row-${firstId}`);
+    await expect(first.getByTestId('heroes-leaderboard-stat-cdr')).toHaveText(/^(\d[\d,.]*%|—)$/);
+    await expect(page.getByTestId('heroes-leaderboard-sort-luck')).toHaveCount(0);
+
+    const portrait = first.locator('[data-peek="hero"]');
+    await portrait.hover();
+    await portrait.hover({ position: { x: 4, y: 4 } });
+    await expect(page.locator('[data-peek-card="hero"]')).toBeVisible();
+
+    await portrait.click();
+    await expect(page.locator('[data-testid^="heroes-leaderboard-row-"]')).toHaveCount(0);
+    await expect(page.getByTestId(`heroes-roster-row-${firstId}`)).toHaveAttribute('aria-current', 'true');
   });
 });

@@ -13,7 +13,11 @@ import {
   type RosterHeroRow,
 } from '../../model';
 import { NEUTRAL_TREE, ZERO_SHEET, item, rowFixture } from '../../model/showcase.test-fixture';
+import { heroRankToneClass } from '@bombfarm/game-art';
+import { gradePlacementFor } from '../../model/birth-roll-panel';
 import { RosterLeaderboard } from './roster-leaderboard';
+
+const gradeOf = (row: RosterHeroRow) => gradePlacementFor(row.report)?.railLetter;
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -23,7 +27,22 @@ const BIRTH = { ...ZERO_SHEET, attack: 180, energy: 200, speed: 50, critChance: 
 const TREE = { ...NEUTRAL_TREE, danoStatic: 1.3, critChancePct: 8, luckFlatPct: 2 };
 
 const ROWS: readonly RosterHeroRow[] = [
-  rowFixture({ id: 'cy', name: 'Cy', power: 300, birth: BIRTH, stars: 2, level: 90 }),
+  rowFixture({
+    id: 'cy',
+    name: 'Cy',
+    power: 300,
+    birth: BIRTH,
+    stars: 2,
+    level: 90,
+    rank: 'A',
+    statRanges: {
+      attack: { min: 0, max: 200 },
+      energy: { min: 0, max: 250 },
+      speed: { min: 0, max: 60 },
+      critChance: { min: 0, max: 10 },
+      critDmg: { min: 0, max: 80 },
+    },
+  }),
   rowFixture({ id: 'ada', name: 'Ada', power: 100, birth: { ...BIRTH, critChance: 20 } }),
   rowFixture({
     id: 'bo',
@@ -165,5 +184,47 @@ describe('RosterLeaderboard', () => {
     expect(ed.className).toContain('grayscale');
     expect(ed.querySelector('[data-testid="heroes-leaderboard-gear"]')?.textContent).toBe('—');
     expect(ed.querySelector('[data-testid="heroes-leaderboard-stat-attack"]')?.textContent).toBe('—');
+  });
+
+  it('hides energy, penetration and cooldown reduction until the player shows them', () => {
+    mount();
+    const ada = container.querySelector('[data-testid="heroes-leaderboard-row-ada"]') as HTMLElement;
+    for (const key of ['energy', 'penetration', 'cdr'] as const) {
+      expect(ada.querySelector(`[data-testid="heroes-leaderboard-stat-${key}"]`)).toBeNull();
+      expect(header(key)).toBeNull();
+    }
+    expect(container.querySelector('[data-testid="heroes-leaderboard-columns"]')?.textContent).toBe('Columns');
+  });
+
+  it('prints the grade as the bare letter in its tone, with no chip behind it', () => {
+    mount();
+    const grade = container.querySelector(
+      '[data-testid="heroes-leaderboard-row-cy"] [data-testid="heroes-leaderboard-grade"]',
+    ) as HTMLElement;
+    expect(grade.textContent).toBe(ROWS[0] && gradeOf(ROWS[0]));
+    expect(grade.className).toContain(heroRankToneClass(grade.textContent ?? ''));
+    expect(grade.className.split(' ').filter((name) => /^(bg-|border|rounded)/.test(name))).toEqual([]);
+  });
+
+  it('wraps each portrait in the hero peek trigger without naming it a second time', () => {
+    mount();
+    const cy = container.querySelector('[data-testid="heroes-leaderboard-row-cy"]') as HTMLElement;
+    const trigger = cy.querySelector('[data-peek="hero"]') as HTMLElement;
+    expect(trigger).not.toBeNull();
+    expect(trigger.getAttribute('aria-label')).toBeNull();
+    expect(trigger.querySelector('img')?.getAttribute('alt')).toBe('Cy');
+  });
+
+  it('selects the hero exactly once when its portrait is clicked', () => {
+    const onSelectHeroId = vi.fn();
+    mount(onSelectHeroId);
+    const trigger = container.querySelector(
+      '[data-testid="heroes-leaderboard-row-cy"] [data-peek="hero"]',
+    ) as HTMLElement;
+    act(() => {
+      trigger.click();
+    });
+    expect(onSelectHeroId).toHaveBeenCalledTimes(1);
+    expect(onSelectHeroId).toHaveBeenCalledWith('cy');
   });
 });

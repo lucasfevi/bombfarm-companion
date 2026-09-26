@@ -2,7 +2,7 @@
 
 /**
  * The roster as a leaderboard: one row per hero, every column sortable, so a player can line the
- * whole account up by any one figure and read who leads it.
+ * whole account up by any one figure and read who leads it. The player picks which columns show.
  *
  * Read-only, like the cards. A row selects a hero and changes nothing.
  */
@@ -11,6 +11,8 @@ import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import {
   HeroAvatar,
+  heroPeekData,
+  heroRankToneClass,
   inventoryTableRowClass,
   inventoryTableSelectedRowClass,
   rarityTextClass,
@@ -18,23 +20,29 @@ import {
 } from '@bombfarm/game-art';
 import {
   DataTable,
+  Icon,
+  Menu,
   Panel,
   SegmentedToggle,
+  buttonRecipe,
   cn,
   formatNumber,
   numberFormatterFor,
   panelHClass,
   panelTitleClass,
 } from '@bombfarm/ui';
-import { showcaseCopyFor, type Lang, type RosterBoardCopy, type ShowcaseCopy } from '../../copy';
+import { showcaseCopyFor, sub, type Lang, type RosterBoardCopy, type ShowcaseCopy } from '../../copy';
 import {
   LEADERBOARD_COLUMNS,
   LEADERBOARD_FILTERS,
   LEADERBOARD_FILTER_LABELS,
-  LEADERBOARD_STAT_COLUMN_IDS,
+  TOGGLEABLE_LEADERBOARD_COLUMN_IDS,
   filterLeaderboardRows,
   heroPowerText,
+  isLeaderboardColumnShown,
+  isLeaderboardStatColumn,
   leaderboardGearText,
+  leaderboardMinWidthRem,
   leaderboardPowerPercent,
   leaderboardRowsFor,
   leaderboardStatValue,
@@ -42,7 +50,10 @@ import {
   pressLeaderboardColumn,
   sheetTotalText,
   sortLeaderboardRows,
+  toggleLeaderboardColumn,
+  visibleLeaderboardColumns,
   type LeaderboardColumn,
+  type LeaderboardColumnId,
   type LeaderboardFilter,
   type LeaderboardRow,
   type LeaderboardStatSource,
@@ -50,13 +61,12 @@ import {
   type RosterHeroRow,
   type SortableLeaderboardColumnId,
 } from '../../model';
-import { BirthGradeChip } from './birth-grade-chip';
 
 const NOT_PLACED = '—';
 
 const LEFT_ALIGNED_COLUMNS: ReadonlySet<LeaderboardColumn['id']> = new Set(['name', 'rarity']);
 
-const TABLE_MIN_WIDTH_CLASS = 'min-w-[980px]';
+const COLUMN_LABEL_BY_ID = new Map(LEADERBOARD_COLUMNS.map((column) => [column.id, column.label]));
 
 export function RosterLeaderboard({
   rows,
@@ -93,6 +103,7 @@ export function RosterLeaderboard({
     () => sortLeaderboardRows(filterLeaderboardRows(boardRows, view.filter), view.sort.column, view.sort.direction),
     [boardRows, view],
   );
+  const columns = useMemo(() => visibleLeaderboardColumns(view), [view]);
   const filterOptions = useMemo(
     () => LEADERBOARD_FILTERS.map((id) => ({ id, label: copy[LEADERBOARD_FILTER_LABELS[id]] })),
     [copy],
@@ -117,12 +128,16 @@ export function RosterLeaderboard({
           ariaLabel={copy.tableFilterLabel}
         />
         <span className="text-xs text-muted">{copy.tableHint}</span>
+        <ColumnsMenu view={view} onViewChange={onViewChange} copy={copy} />
       </div>
       <DataTable.Root className="min-w-0 overflow-x-auto rounded-sm border border-line">
-        <DataTable.Table className={TABLE_MIN_WIDTH_CLASS} aria-label={copy.tableLabel}>
+        <DataTable.Table
+          aria-label={copy.tableLabel}
+          style={{ minWidth: `${String(leaderboardMinWidthRem(columns))}rem` }}
+        >
           <DataTable.Head>
             <DataTable.Row>
-              {LEADERBOARD_COLUMNS.map((column) => {
+              {columns.map((column) => {
                 const align = LEFT_ALIGNED_COLUMNS.has(column.id) ? 'left' : 'right';
                 const label = copy[column.label];
                 if (column.id === 'position') {
@@ -152,7 +167,7 @@ export function RosterLeaderboard({
           <DataTable.Body>
             {shownRows.length === 0 ? (
               <DataTable.Row>
-                <DataTable.Cell colSpan={LEADERBOARD_COLUMNS.length} className="text-muted">
+                <DataTable.Cell colSpan={columns.length} className="text-muted">
                   {copy.tableEmpty}
                 </DataTable.Cell>
               </DataTable.Row>
@@ -161,6 +176,7 @@ export function RosterLeaderboard({
                 <LeaderboardTableRow
                   key={row.id}
                   row={row}
+                  columns={columns}
                   position={index + 1}
                   topPower={topPower}
                   selected={row.id === selectedId}
@@ -181,6 +197,7 @@ export function RosterLeaderboard({
  *  a host lists in `transpilePackages`. */
 const LeaderboardTableRow = memo(function LeaderboardTableRow({
   row,
+  columns,
   position,
   topPower,
   selected,
@@ -189,6 +206,7 @@ const LeaderboardTableRow = memo(function LeaderboardTableRow({
   onSelectHeroId,
 }: {
   row: LeaderboardRow;
+  columns: readonly LeaderboardColumn[];
   position: number;
   topPower: number;
   selected: boolean;
@@ -196,8 +214,6 @@ const LeaderboardTableRow = memo(function LeaderboardTableRow({
   lang: Lang;
   onSelectHeroId: (heroId: string) => void;
 }) {
-  const { hero } = row;
-  const format = numberFormatterFor(lang);
   const onKeyDown = (event: KeyboardEvent<HTMLTableRowElement>) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
@@ -219,48 +235,107 @@ const LeaderboardTableRow = memo(function LeaderboardTableRow({
         'cursor-pointer',
         'focus-visible:[outline:2px_solid_var(--accent)] focus-visible:[outline-offset:-2px]',
         selected ? inventoryTableSelectedRowClass : undefined,
-        hero.battleAllowed === false ? rosterInactiveChromeClass : undefined,
+        row.hero.battleAllowed === false ? rosterInactiveChromeClass : undefined,
       )}
     >
-      <DataTable.Cell align="right" numeric className="text-muted" data-testid="heroes-leaderboard-position">
-        {position}
-      </DataTable.Cell>
-      <DataTable.Cell>
-        <HeroCell row={row} />
-      </DataTable.Cell>
-      <DataTable.Cell>
-        <span className={cn('font-bold', rarityTextClass(Math.max(0, RARITIES.indexOf(hero.rarity))))}>
-          {rarityLabel(hero.rarity, lang)}
-        </span>
-      </DataTable.Cell>
-      <DataTable.Cell align="right" numeric>
-        {formatNumber(hero.level, lang, 0)}
-      </DataTable.Cell>
-      <DataTable.Cell align="right">
-        <BirthCell row={row} copy={copy} lang={lang} />
-      </DataTable.Cell>
-      <DataTable.Cell align="right">
-        <PowerCell row={row} topPower={topPower} lang={lang} />
-      </DataTable.Cell>
-      {LEADERBOARD_STAT_COLUMN_IDS.map((column) => {
-        const value = leaderboardStatValue(row, column);
-        return (
-          <DataTable.Cell key={column} align="right" numeric data-testid={`heroes-leaderboard-stat-${column}`}>
-            {value === undefined ? NOT_PLACED : sheetTotalText(column, value, format)}
-          </DataTable.Cell>
-        );
-      })}
-      <DataTable.Cell align="right" numeric>
-        {formatNumber(row.abilityCount, lang, 0)}
-      </DataTable.Cell>
-      <DataTable.Cell align="right" numeric data-testid="heroes-leaderboard-gear">
-        {leaderboardGearText(row, copy, lang)}
-      </DataTable.Cell>
+      {columns.map((column) => (
+        <LeaderboardCell
+          key={column.id}
+          column={column.id}
+          row={row}
+          position={position}
+          topPower={topPower}
+          copy={copy}
+          lang={lang}
+        />
+      ))}
     </DataTable.Row>
   );
 });
 
-function HeroCell({ row }: { row: LeaderboardRow }) {
+function LeaderboardCell({
+  column,
+  row,
+  position,
+  topPower,
+  copy,
+  lang,
+}: {
+  column: LeaderboardColumnId;
+  row: LeaderboardRow;
+  position: number;
+  topPower: number;
+  copy: ShowcaseCopy;
+  lang: Lang;
+}) {
+  const { hero } = row;
+  if (isLeaderboardStatColumn(column)) {
+    const value = leaderboardStatValue(row, column);
+    return (
+      <DataTable.Cell align="right" numeric data-testid={`heroes-leaderboard-stat-${column}`}>
+        {value === undefined ? NOT_PLACED : sheetTotalText(column, value, numberFormatterFor(lang))}
+      </DataTable.Cell>
+    );
+  }
+  switch (column) {
+    case 'position':
+      return (
+        <DataTable.Cell align="right" numeric className="text-muted" data-testid="heroes-leaderboard-position">
+          {position}
+        </DataTable.Cell>
+      );
+    case 'name':
+      return (
+        <DataTable.Cell>
+          <HeroCell row={row} lang={lang} />
+        </DataTable.Cell>
+      );
+    case 'rarity':
+      return (
+        <DataTable.Cell>
+          <span className={cn('font-bold', rarityTextClass(Math.max(0, RARITIES.indexOf(hero.rarity))))}>
+            {rarityLabel(hero.rarity, lang)}
+          </span>
+        </DataTable.Cell>
+      );
+    case 'level':
+      return (
+        <DataTable.Cell align="right" numeric>
+          {formatNumber(hero.level, lang, 0)}
+        </DataTable.Cell>
+      );
+    case 'birth':
+      return (
+        <DataTable.Cell align="right">
+          <BirthCell row={row} copy={copy} lang={lang} />
+        </DataTable.Cell>
+      );
+    case 'power':
+      return (
+        <DataTable.Cell align="right">
+          <PowerCell row={row} topPower={topPower} lang={lang} />
+        </DataTable.Cell>
+      );
+    case 'abilities':
+      return (
+        <DataTable.Cell align="right" numeric>
+          {formatNumber(row.abilityCount, lang, 0)}
+        </DataTable.Cell>
+      );
+    case 'gear':
+      return (
+        <DataTable.Cell align="right" numeric data-testid="heroes-leaderboard-gear">
+          {leaderboardGearText(row, copy, lang)}
+        </DataTable.Cell>
+      );
+  }
+}
+
+/**
+ * The avatar opens the hero's card, as a picker row's does. Its click is left to reach the row,
+ * so picking by the portrait picks exactly as picking by the row does.
+ */
+function HeroCell({ row, lang }: { row: LeaderboardRow; lang: Lang }) {
   const { hero } = row;
   const stars = Math.max(0, Math.min(3, Math.round(hero.stars)));
   return (
@@ -270,6 +345,7 @@ function HeroCell({ row }: { row: LeaderboardRow }) {
         rarityIdx={Math.max(0, RARITIES.indexOf(hero.rarity))}
         size="sm"
         name={hero.name}
+        peek={{ hero: heroPeekData(hero), lang }}
       />
       <span className="truncate font-semibold text-ink">{hero.name}</span>
       {stars > 0 ? (
@@ -281,13 +357,21 @@ function HeroCell({ row }: { row: LeaderboardRow }) {
   );
 }
 
+/** The roll beside the grade letter in the colour the game prints it — no chip, as the hero
+ *  identity block draws a grade. */
 function BirthCell({ row, copy, lang }: { row: LeaderboardRow; copy: ShowcaseCopy; lang: Lang }) {
   if (row.report === undefined) return <span className="text-muted">{NOT_PLACED}</span>;
   return (
     <span className="inline-flex items-center gap-1.5" data-testid="heroes-leaderboard-birth">
       <span className="font-mono tabular-nums">{percentText(row.report.mean, lang)}</span>
       {row.gradeLetter === undefined ? null : (
-        <BirthGradeChip grade={row.gradeLetter} copy={copy} size="sm" testId="heroes-leaderboard-grade" />
+        <span
+          className={cn('font-black', 'tracking-tight', heroRankToneClass(row.gradeLetter))}
+          aria-label={sub(copy.cardBirthGrade, { grade: row.gradeLetter })}
+          data-testid="heroes-leaderboard-grade"
+        >
+          {row.gradeLetter}
+        </span>
       )}
     </span>
   );
@@ -304,5 +388,52 @@ function PowerCell({ row, topPower, lang }: { row: LeaderboardRow; topPower: num
         <span className="block h-full rounded-full bg-accent" style={{ width: `${String(percent)}%` }} />
       </span>
     </span>
+  );
+}
+
+/** Every column but the position and the hero, each a tick the player turns on or off. */
+function ColumnsMenu({
+  view,
+  onViewChange,
+  copy,
+}: {
+  view: LeaderboardView;
+  onViewChange: (next: LeaderboardView) => void;
+  copy: ShowcaseCopy;
+}) {
+  return (
+    <Menu.Root>
+      <Menu.Trigger
+        data-testid="heroes-leaderboard-columns"
+        className={cn(buttonRecipe({ variant: 'ghost' }), 'ml-auto', 'inline-flex', 'items-center', 'gap-1.5')}
+      >
+        <Icon name="layout-table" size="sm" />
+        {copy.tableColumns}
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Positioner align="end" sideOffset={6}>
+          <Menu.Popup data-testid="heroes-leaderboard-columns-menu">
+            {TOGGLEABLE_LEADERBOARD_COLUMN_IDS.map((column) => {
+              const label = COLUMN_LABEL_BY_ID.get(column);
+              return (
+                <Menu.CheckboxItem
+                  key={column}
+                  checked={isLeaderboardColumnShown(view, column)}
+                  onCheckedChange={() => {
+                    onViewChange(toggleLeaderboardColumn(view, column));
+                  }}
+                  data-testid={`heroes-leaderboard-column-${column}`}
+                >
+                  <Menu.CheckboxItemIndicator>
+                    <Icon name="check" size="xs" />
+                  </Menu.CheckboxItemIndicator>
+                  {label === undefined ? column : copy[label]}
+                </Menu.CheckboxItem>
+              );
+            })}
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }

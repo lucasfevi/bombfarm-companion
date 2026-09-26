@@ -7,7 +7,7 @@ const SIZE_CLASSES = {
   sm: cn('h-5', 'min-w-5', 'text-xs'),
 } as const;
 
-/** A hero's birth grade as the game's letter on its band colour — the card's and the table's. */
+/** A hero's birth grade as the game's letter on its band colour — the showcase and share cards'. */
 export function BirthGradeChip({
   grade,
   copy,

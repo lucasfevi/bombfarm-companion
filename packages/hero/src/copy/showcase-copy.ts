@@ -69,6 +69,9 @@ export type ShowcaseCopy = {
   readonly columnBirth: string;
   readonly columnPower: string;
   readonly columnAttack: string;
+  readonly columnEnergy: string;
+  readonly columnPenetration: string;
+  readonly columnCdr: string;
   readonly columnCritChance: string;
   readonly columnCritDmg: string;
   readonly columnLuck: string;
@@ -85,4 +88,5 @@ export type ShowcaseCopy = {
   readonly tableEmpty: string;
   /** `{count}` `{slots}` `{level}` — pieces worn, of how many, and their average item level. */
   readonly tableGear: string;
+  readonly tableColumns: string;
 };

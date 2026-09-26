@@ -48,6 +48,23 @@ export function MenuSeparator({ className, ...props }: ComponentProps<typeof Men
   return <MenuPrimitive.Separator className={cn(menuSeparatorClass, className)} {...props} />;
 }
 
+export function MenuCheckboxItem({ className, ...props }: ComponentProps<typeof MenuPrimitive.CheckboxItem>) {
+  return <MenuPrimitive.CheckboxItem className={cn(menuItemClass, className)} {...props} />;
+}
+
+export function MenuCheckboxItemIndicator({
+  className,
+  ...props
+}: ComponentProps<typeof MenuPrimitive.CheckboxItemIndicator>) {
+  return (
+    <MenuPrimitive.CheckboxItemIndicator
+      keepMounted
+      className={cn(menuRadioIndicatorClass, className)}
+      {...props}
+    />
+  );
+}
+
 export function MenuRadioGroup(props: ComponentProps<typeof MenuPrimitive.RadioGroup>) {
   return <MenuPrimitive.RadioGroup {...props} />;
 }

@@ -55,6 +55,9 @@ export const showcasePtBR: ShowcaseCopy = {
   columnBirth: 'Nascimento',
   columnPower: 'Poder',
   columnAttack: 'Ataque',
+  columnEnergy: 'Energia',
+  columnPenetration: 'Penetração',
+  columnCdr: 'Redução de recarga',
   columnCritChance: 'Chance crít.',
   columnCritDmg: 'Dano crít.',
   columnLuck: 'Sorte',
@@ -69,4 +72,5 @@ export const showcasePtBR: ShowcaseCopy = {
   tableHint: 'Clique numa coluna para ordenar e numa linha para abrir o herói.',
   tableEmpty: 'Nenhum herói aqui.',
   tableGear: '{count}/{slots} · Nv {level}',
+  tableColumns: 'Colunas',
 };

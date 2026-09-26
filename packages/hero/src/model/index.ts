@@ -184,6 +184,7 @@ export type { ShowcaseCardReading } from './showcase-card';
 export { auraCoverageFor } from './aura-coverage';
 export type { AuraCoverage, AuraCoverageTile } from './aura-coverage';
 export {
+  DEFAULT_HIDDEN_LEADERBOARD_COLUMNS,
   DEFAULT_LEADERBOARD_SORT,
   DEFAULT_LEADERBOARD_VIEW,
   LEADERBOARD_COLUMNS,
@@ -191,16 +192,21 @@ export {
   LEADERBOARD_FILTERS,
   LEADERBOARD_FILTER_LABELS,
   LEADERBOARD_STAT_COLUMN_IDS,
+  TOGGLEABLE_LEADERBOARD_COLUMN_IDS,
   filterLeaderboardRows,
   heroStatSheet,
+  isLeaderboardColumnShown,
   isLeaderboardStatColumn,
   leaderboardGearText,
+  leaderboardMinWidthRem,
   leaderboardPowerPercent,
   leaderboardRowsFor,
   leaderboardStatValue,
   pressLeaderboardColumn,
   sortLeaderboardRows,
+  toggleLeaderboardColumn,
   treeSheetFromAccountTree,
+  visibleLeaderboardColumns,
 } from './roster-leaderboard';
 export type {
   AccountTreeTotals,
@@ -214,6 +220,7 @@ export type {
   LeaderboardStatColumnId,
   LeaderboardView,
   SortableLeaderboardColumnId,
+  ToggleableLeaderboardColumnId,
 } from './roster-leaderboard';
 export {
   SHARE_FEATURED_COUNT,

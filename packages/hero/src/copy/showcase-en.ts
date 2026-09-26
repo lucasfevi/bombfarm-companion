@@ -53,6 +53,9 @@ export const showcaseEn = {
   columnBirth: 'Birth',
   columnPower: 'Power',
   columnAttack: 'Attack',
+  columnEnergy: 'Energy',
+  columnPenetration: 'Penetration',
+  columnCdr: 'Cooldown reduction',
   columnCritChance: 'Crit chance',
   columnCritDmg: 'Crit damage',
   columnLuck: 'Luck',
@@ -67,4 +70,5 @@ export const showcaseEn = {
   tableHint: 'Click a column to sort, a row to open that hero.',
   tableEmpty: 'No heroes here.',
   tableGear: '{count}/{slots} · Lv {level}',
+  tableColumns: 'Columns',
 } as const;

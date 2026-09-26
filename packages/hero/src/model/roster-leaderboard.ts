@@ -96,8 +96,11 @@ export const LEADERBOARD_COLUMN_IDS = [
   'birth',
   'power',
   'attack',
+  'energy',
   'critChance',
   'critDmg',
+  'penetration',
+  'cdr',
   'luck',
   'speed',
   'abilities',
@@ -124,8 +127,11 @@ const LABEL_BY_COLUMN = {
   birth: 'columnBirth',
   power: 'columnPower',
   attack: 'columnAttack',
+  energy: 'columnEnergy',
   critChance: 'columnCritChance',
   critDmg: 'columnCritDmg',
+  penetration: 'columnPenetration',
+  cdr: 'columnCdr',
   luck: 'columnLuck',
   speed: 'columnSpeed',
   abilities: 'columnAbilities',
@@ -141,7 +147,16 @@ export const LEADERBOARD_COLUMNS: readonly LeaderboardColumn[] = LEADERBOARD_COL
 
 export type SortableLeaderboardColumnId = Exclude<LeaderboardColumnId, 'position'>;
 
-export const LEADERBOARD_STAT_COLUMN_IDS = ['attack', 'critChance', 'critDmg', 'luck', 'speed'] as const;
+export const LEADERBOARD_STAT_COLUMN_IDS = [
+  'attack',
+  'energy',
+  'critChance',
+  'critDmg',
+  'penetration',
+  'cdr',
+  'luck',
+  'speed',
+] as const;
 export type LeaderboardStatColumnId = (typeof LEADERBOARD_STAT_COLUMN_IDS)[number];
 
 export function isLeaderboardStatColumn(column: LeaderboardColumnId): column is LeaderboardStatColumnId {
@@ -190,8 +205,11 @@ function figuresFor(row: LeaderboardRow, column: SortableLeaderboardColumnId): r
     case 'power':
       return hero.power == null ? undefined : [hero.power];
     case 'attack':
+    case 'energy':
     case 'critChance':
     case 'critDmg':
+    case 'penetration':
+    case 'cdr':
     case 'luck':
     case 'speed': {
       const value = leaderboardStatValue(row, column);
@@ -260,12 +278,80 @@ export const LEADERBOARD_FILTER_LABELS = {
   bench: 'filterBench',
 } as const satisfies Record<LeaderboardFilter, keyof ShowcaseCopy>;
 
+/** The position and the hero say which row is which, so they cannot be hidden. */
+export type ToggleableLeaderboardColumnId = Exclude<LeaderboardColumnId, 'position' | 'name'>;
+
+export const TOGGLEABLE_LEADERBOARD_COLUMN_IDS: readonly ToggleableLeaderboardColumnId[] = LEADERBOARD_COLUMN_IDS.filter(
+  (id): id is ToggleableLeaderboardColumnId => id !== 'position' && id !== 'name',
+);
+
 export type LeaderboardView = {
   readonly sort: LeaderboardSort;
   readonly filter: LeaderboardFilter;
+  readonly hiddenColumns: readonly ToggleableLeaderboardColumnId[];
 };
 
-export const DEFAULT_LEADERBOARD_VIEW: LeaderboardView = { sort: DEFAULT_LEADERBOARD_SORT, filter: 'everyone' };
+/** The three statistics nobody ranks a roster by start hidden; the rest of the sheet shows. */
+export const DEFAULT_HIDDEN_LEADERBOARD_COLUMNS: readonly ToggleableLeaderboardColumnId[] = [
+  'energy',
+  'penetration',
+  'cdr',
+];
+
+export const DEFAULT_LEADERBOARD_VIEW: LeaderboardView = {
+  sort: DEFAULT_LEADERBOARD_SORT,
+  filter: 'everyone',
+  hiddenColumns: DEFAULT_HIDDEN_LEADERBOARD_COLUMNS,
+};
+
+const NAME_SORT: LeaderboardSort = { column: 'name', direction: 'asc' };
+
+export function isLeaderboardColumnShown(view: LeaderboardView, column: LeaderboardColumnId): boolean {
+  return !(view.hiddenColumns as readonly LeaderboardColumnId[]).includes(column);
+}
+
+export function visibleLeaderboardColumns(view: LeaderboardView): readonly LeaderboardColumn[] {
+  return LEADERBOARD_COLUMNS.filter((column) => isLeaderboardColumnShown(view, column.id));
+}
+
+/**
+ * Shows a hidden column or hides a shown one. Hiding the column the table is sorted by drops the
+ * order back to the default — an order by a column nobody can see is not one a reader can follow —
+ * and to the hero's name when the default's own column is hidden too.
+ */
+export function toggleLeaderboardColumn(view: LeaderboardView, column: ToggleableLeaderboardColumnId): LeaderboardView {
+  const hiddenColumns = view.hiddenColumns.includes(column)
+    ? view.hiddenColumns.filter((id) => id !== column)
+    : [...view.hiddenColumns, column];
+  const next = { ...view, hiddenColumns };
+  if (isLeaderboardColumnShown(next, view.sort.column)) return next;
+  const sort = isLeaderboardColumnShown(next, DEFAULT_LEADERBOARD_SORT.column) ? DEFAULT_LEADERBOARD_SORT : NAME_SORT;
+  return { ...next, sort };
+}
+
+/** Enough room per column that no header or figure is squeezed; the frame scrolls past this. */
+const COLUMN_MIN_REM: Record<LeaderboardColumnId, number> = {
+  position: 2,
+  name: 9,
+  rarity: 5,
+  level: 3.5,
+  birth: 5,
+  power: 9,
+  attack: 5.5,
+  energy: 4.5,
+  critChance: 5,
+  critDmg: 5.5,
+  penetration: 5.5,
+  cdr: 7,
+  luck: 4,
+  speed: 4,
+  abilities: 5,
+  gear: 5.5,
+};
+
+export function leaderboardMinWidthRem(columns: readonly LeaderboardColumn[]): number {
+  return columns.reduce((total, column) => total + COLUMN_MIN_REM[column.id], 0);
+}
 
 const NOTHING_WORN = '—';
 

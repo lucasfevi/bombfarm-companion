@@ -282,4 +282,38 @@ test.describe('roster rail and board', () => {
     expect(frame.panelRight).toBeLessThanOrEqual(frame.viewport);
     expect(frame.scrollerOverflows).toBe(true);
   });
+
+  test('the Columns menu shows cooldown reduction and hides luck', async ({ page }) => {
+    await openPlanner(page);
+    await showTable(page);
+    await expect(page.getByTestId('heroes-leaderboard-sort-cdr')).toHaveCount(0);
+
+    await page.getByRole('button', { name: /^Columns$/ }).click();
+    const menu = page.getByTestId('heroes-leaderboard-columns-menu');
+    await menu.getByRole('menuitemcheckbox', { name: /^Cooldown reduction$/ }).click();
+    await menu.getByRole('menuitemcheckbox', { name: /^Luck$/ }).click();
+    await expect(menu.getByRole('menuitemcheckbox', { name: /^Luck$/ })).toHaveAttribute('aria-checked', 'false');
+    await page.keyboard.press('Escape');
+
+    await expect(page.getByTestId('heroes-leaderboard-sort-cdr')).toHaveText(/Cooldown reduction/);
+    await expect(
+      page.getByTestId('heroes-leaderboard-row-board-ayla').getByTestId('heroes-leaderboard-stat-cdr'),
+    ).toHaveText(/^\d[\d,.]*%$/);
+    await expect(page.getByTestId('heroes-leaderboard-sort-luck')).toHaveCount(0);
+  });
+
+  test('a portrait opens the hero card on hover, and clicking it picks the hero', async ({ page }) => {
+    await openPlanner(page);
+    await showTable(page);
+    const portrait = page.getByTestId('heroes-leaderboard-row-board-nessa').locator('[data-peek="hero"]');
+    await portrait.hover();
+    await page.mouse.move(0, 0, { steps: 1 });
+    await portrait.hover({ position: { x: 4, y: 4 } });
+    await expect(page.locator('[data-peek-card="hero"]')).toBeVisible();
+    await expect(page.locator('[data-peek-card="hero"]')).toContainText('Nessa');
+
+    await portrait.click();
+    await expect(page.locator('[data-testid^="heroes-leaderboard-row-"]')).toHaveCount(0);
+    await expect(page.getByTestId('heroes-roster-row-board-nessa')).toHaveAttribute('aria-current', 'true');
+  });
 });

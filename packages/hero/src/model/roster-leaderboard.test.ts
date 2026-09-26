@@ -12,12 +12,17 @@ import {
   heroStatSheet,
   leaderboardGearText,
   leaderboardPowerPercent,
+  DEFAULT_LEADERBOARD_VIEW,
+  leaderboardMinWidthRem,
   leaderboardRowsFor,
   leaderboardStatValue,
   pressLeaderboardColumn,
   sortLeaderboardRows,
+  toggleLeaderboardColumn,
   treeSheetFromAccountTree,
+  visibleLeaderboardColumns,
   type LeaderboardRow,
+  type LeaderboardView,
 } from './roster-leaderboard';
 import { NEUTRAL_TREE, ZERO_SHEET, item, rowFixture } from './showcase.test-fixture';
 
@@ -177,8 +182,11 @@ describe('LEADERBOARD_COLUMNS', () => {
       'Birth',
       'Power',
       'Attack',
+      'Energy',
       'Crit chance',
       'Crit damage',
+      'Penetration',
+      'Cooldown reduction',
       'Luck',
       'Speed',
       'Abilities',
@@ -282,5 +290,81 @@ describe('leaderboardRowsFor with heroes the host withholds', () => {
   it('sorts a withheld hero last in both directions, however high its unread figure would be', () => {
     expect(ids(sortLeaderboardRows(rows, 'attack', 'desc'))).toEqual(['kept-high', 'kept-low', 'withheld']);
     expect(ids(sortLeaderboardRows(rows, 'attack', 'asc'))).toEqual(['kept-low', 'kept-high', 'withheld']);
+  });
+});
+
+describe('the statistic columns', () => {
+  it('prints every one of the eight sheet statistics as the hero panel’s Total column reads it', () => {
+    const tree = { ...NEUTRAL_TREE, danoStatic: 1.3, energyPct: 12, critChancePct: 8, luckFlatPct: 2 };
+    const hero = rowFixture({
+      id: 'a',
+      birth: BIRTH,
+      level: 80,
+      stars: 2,
+      loadout: { ...emptyLoadout(), arma: item(100, 4) },
+      pts: { ...ZERO_SHEET, energy: 15, cdr: 6, penetration: 4 },
+    });
+    const [row] = leaderboardRowsFor([hero], { tree });
+    const stages = peelSheetStages({
+      birth: BIRTH,
+      level: 80,
+      stars: 2,
+      sheetOther: emptySheetOther(),
+      loadout: hero.hero.loadout,
+      pts: hero.hero.pts,
+      tree,
+      runes: undefined,
+    });
+    for (const key of ['energy', 'penetration', 'cdr'] as const) {
+      expect(row && leaderboardStatValue(row, key)).toBeCloseTo(stages[key].total, 9);
+    }
+  });
+});
+
+describe('column visibility', () => {
+  const shown = (view: LeaderboardView) => visibleLeaderboardColumns(view).map((column) => column.id);
+
+  it('opens with energy, penetration and cooldown reduction hidden and everything else shown', () => {
+    expect(shown(DEFAULT_LEADERBOARD_VIEW)).toEqual([
+      'position',
+      'name',
+      'rarity',
+      'level',
+      'birth',
+      'power',
+      'attack',
+      'critChance',
+      'critDmg',
+      'luck',
+      'speed',
+      'abilities',
+      'gear',
+    ]);
+  });
+
+  it('shows a hidden column and hides a shown one, leaving the order alone', () => {
+    const withCdr = toggleLeaderboardColumn(DEFAULT_LEADERBOARD_VIEW, 'cdr');
+    expect(shown(withCdr)).toContain('cdr');
+    const noLuck = toggleLeaderboardColumn(withCdr, 'luck');
+    expect(shown(noLuck)).not.toContain('luck');
+    expect(noLuck.sort).toEqual(DEFAULT_LEADERBOARD_VIEW.sort);
+  });
+
+  it('drops the order back to power when the sorted column is hidden', () => {
+    const byLuck: LeaderboardView = { ...DEFAULT_LEADERBOARD_VIEW, sort: { column: 'luck', direction: 'asc' } };
+    expect(toggleLeaderboardColumn(byLuck, 'luck').sort).toEqual({ column: 'power', direction: 'desc' });
+  });
+
+  it('falls to the name, which cannot be hidden, when power is the column hidden', () => {
+    expect(toggleLeaderboardColumn(DEFAULT_LEADERBOARD_VIEW, 'power').sort).toEqual({ column: 'name', direction: 'asc' });
+  });
+
+  it('asks for less width as columns are hidden', () => {
+    const all = visibleLeaderboardColumns({ ...DEFAULT_LEADERBOARD_VIEW, hiddenColumns: [] });
+    const few = visibleLeaderboardColumns({
+      ...DEFAULT_LEADERBOARD_VIEW,
+      hiddenColumns: ['rarity', 'level', 'birth', 'attack', 'critChance', 'critDmg', 'luck', 'speed'],
+    });
+    expect(leaderboardMinWidthRem(few)).toBeLessThan(leaderboardMinWidthRem(all));
   });
 });
