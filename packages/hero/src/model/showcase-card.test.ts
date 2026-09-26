@@ -1,17 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { emptyLoadout } from '@bombfarm/domain/gear';
-import { showcaseEn, showcasePtBR } from '../copy';
+import { abilityIconRecipe, artFrameRecipe } from '@bombfarm/game-art';
+import { showcaseEn } from '../copy';
 import {
   SHOWCASE_ABILITY_GAP_PX,
-  SHOWCASE_ABILITY_TILE_PX,
   SHOWCASE_GEAR_GAP_PX,
   SHOWCASE_GEAR_SLOTS,
-  SHOWCASE_GEAR_TILE_PX,
   SHOWCASE_MAX_ABILITIES,
-  averageItemLevelText,
+  SHOWCASE_TILE_SIZE,
+  gearAverageFigures,
   rowWidthPx,
   showcaseCardContentWidthPx,
   showcaseCardReading,
+  showcaseTileWidthCss,
+  showcaseTileWidthPx,
   squadGearAveragesText,
 } from './showcase-card';
 import { ZERO_SHEET, item, rowFixture } from './showcase.test-fixture';
@@ -29,38 +31,46 @@ const RANGES = {
 };
 
 describe('showcaseCardReading', () => {
-  it('reads the type, the birth roll and the highest rolls off one hero', () => {
+  it('reads the type, the birth grade placement and the two highest rolls off one hero', () => {
     const row = rowFixture({
       id: 'h',
       abilities: { olho_clinico: 20, golpe_brutal: 12, explosao_ampla: 3 },
       birth: { ...ZERO_SHEET, attack: 40, cdr: 97, critDmg: 94, luck: 50 },
       statRanges: RANGES,
     });
-    const reading = showcaseCardReading(row, showcaseEn, 'en');
+    const reading = showcaseCardReading(row);
     expect(reading.types).toEqual(['crit']);
-    expect(reading.birthRollPct).toBeCloseTo((40 + 97 + 94 + 50) / 8, 6);
-    expect(reading.highestRolls).toBe('Highest rolls: CDR 97%, Crit DMG 94%');
+    expect(reading.birth?.mean).toBeCloseTo((40 + 97 + 94 + 50) / 8, 6);
+    expect(reading.birth?.railLetter).toBe(row.report?.computedLetter);
+    expect(reading.highestRolls).toEqual([
+      { key: 'cdr', percentile: 97 },
+      { key: 'critDmg', percentile: 94 },
+    ]);
   });
 
-  it('leaves the birth roll and highest rolls out for a hero nothing can be placed for', () => {
-    const reading = showcaseCardReading(rowFixture({ id: 'bare' }), showcaseEn, 'en');
-    expect(reading.birthRollPct).toBeUndefined();
-    expect(reading.highestRolls).toBeUndefined();
+  it('reads the ladder against the stored grade the game gave the hero', () => {
+    const row = rowFixture({ id: 's', rank: 'S', birth: { ...ZERO_SHEET, attack: 40 }, statRanges: RANGES });
+    expect(showcaseCardReading(row).birth?.railLetter).toBe('S');
+  });
+
+  it('leaves the birth placement and highest rolls out for a hero nothing can be placed for', () => {
+    const reading = showcaseCardReading(rowFixture({ id: 'bare' }));
+    expect(reading.birth).toBeUndefined();
+    expect(reading.highestRolls).toEqual([]);
     expect(reading.types).toEqual([]);
   });
 });
 
-describe('averageItemLevelText', () => {
-  it('prints the average level and forge of what the hero wears, as whole numbers', () => {
+describe('gearAverageFigures', () => {
+  it('reads the average level and forge of what the hero wears, as whole numbers', () => {
     const loadout = { ...emptyLoadout(), arma: item(120, 12), elmo: item(129, 15, 'ember_elmo') };
-    const { gear } = showcaseCardReading(rowFixture({ id: 'g', loadout }), showcaseEn, 'en');
-    expect(averageItemLevelText(gear, showcaseEn, 'en')).toBe('Average item level 125 · +14');
-    expect(averageItemLevelText(gear, showcasePtBR, 'pt')).toBe('Nível médio dos itens 125 · +14');
+    const { gear } = showcaseCardReading(rowFixture({ id: 'g', loadout }));
+    expect(gearAverageFigures(gear, 'en')).toEqual({ level: '125', forge: '14' });
   });
 
-  it('says nothing is equipped rather than averaging nothing to zero', () => {
-    const { gear } = showcaseCardReading(rowFixture({ id: 'naked' }), showcaseEn, 'en');
-    expect(averageItemLevelText(gear, showcaseEn, 'en')).toBe('Nothing equipped');
+  it('has no figures for a hero wearing nothing, rather than averaging nothing to zero', () => {
+    const { gear } = showcaseCardReading(rowFixture({ id: 'naked' }));
+    expect(gearAverageFigures(gear, 'en')).toBeUndefined();
   });
 });
 
@@ -74,15 +84,30 @@ describe('squadGearAveragesText', () => {
 });
 
 describe('showcase card layout', () => {
-  it('fits the largest ability pool on one row at the narrowest card width', () => {
-    expect(rowWidthPx(SHOWCASE_MAX_ABILITIES, SHOWCASE_ABILITY_TILE_PX, SHOWCASE_ABILITY_GAP_PX)).toBeLessThanOrEqual(
-      showcaseCardContentWidthPx(),
+  const narrowest = showcaseCardContentWidthPx();
+
+  it('draws both icon rows at one size step, and that step takes its width from the card', () => {
+    expect(SHOWCASE_TILE_SIZE).toBe('fluid');
+    expect(artFrameRecipe({ size: SHOWCASE_TILE_SIZE, rarity: 2 })).toContain('w-(--art-tile)');
+    expect(abilityIconRecipe({ size: SHOWCASE_TILE_SIZE })).toContain('size-(--art-tile)');
+    expect(showcaseTileWidthCss()).toBe(
+      `calc((100cqi - ${String((SHOWCASE_GEAR_SLOTS - 1) * SHOWCASE_GEAR_GAP_PX)}px) / ${String(SHOWCASE_GEAR_SLOTS)})`,
     );
   });
 
-  it('fits all eight gear slots on one row at the narrowest card width', () => {
-    expect(rowWidthPx(SHOWCASE_GEAR_SLOTS, SHOWCASE_GEAR_TILE_PX, SHOWCASE_GEAR_GAP_PX)).toBeLessThanOrEqual(
-      showcaseCardContentWidthPx(),
-    );
+  it('fills the content width exactly with eight gear slots, at the narrowest card and a wide one', () => {
+    for (const content of [narrowest, showcaseCardContentWidthPx(420)]) {
+      expect(rowWidthPx(SHOWCASE_GEAR_SLOTS, showcaseTileWidthPx(content), SHOWCASE_GEAR_GAP_PX)).toBeCloseTo(content, 9);
+    }
+  });
+
+  it('never draws a tile smaller than the fixed 32px one the card drew before it grew with its width', () => {
+    expect(showcaseTileWidthPx(narrowest)).toBeGreaterThanOrEqual(32);
+  });
+
+  it('fits the largest ability pool on one row at the gear tile size, with room for the Wide Blast ring', () => {
+    expect(
+      rowWidthPx(SHOWCASE_MAX_ABILITIES, showcaseTileWidthPx(narrowest), SHOWCASE_ABILITY_GAP_PX),
+    ).toBeLessThanOrEqual(narrowest);
   });
 });

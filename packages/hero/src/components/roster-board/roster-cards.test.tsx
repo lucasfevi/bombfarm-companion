@@ -1,9 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { emptyLoadout } from '@bombfarm/domain/gear';
-import { heroRankToneClass } from '@bombfarm/game-art';
+import { ART_TILE_SIZE_VAR, abilityIconRecipe, artFrameRecipe, heroRankFillClass, heroRankToneClass } from '@bombfarm/game-art';
 import type { RosterBoardCopy } from '../../copy';
-import { DEFAULT_SHOWCASE_VIEW, type RosterHeroRow, type ShowcaseView } from '../../model';
+import {
+  DEFAULT_SHOWCASE_VIEW,
+  SHOWCASE_TILE_SIZE,
+  gradeRailFor,
+  railTintFor,
+  showcaseTileWidthCss,
+  type RosterHeroRow,
+  type ShowcaseView,
+} from '../../model';
 import { ZERO_SHEET, item, rowFixture } from '../../model/showcase.test-fixture';
 import { RosterCards } from './roster-cards';
 
@@ -37,6 +45,39 @@ function render(
 }
 
 const WORN = { ...emptyLoadout(), arma: item(124, 13) };
+
+const WINDOW = { min: 0, max: 100 };
+const RANGES = {
+  attack: WINDOW,
+  energy: WINDOW,
+  speed: WINDOW,
+  luck: WINDOW,
+  critChance: WINDOW,
+  critDmg: WINDOW,
+  penetration: WINDOW,
+  cdr: WINDOW,
+};
+
+/** A mean of 44.5, which prints as 45%: CDR and Crit DMG rolled highest. */
+const ROLLED = rowFixture({
+  id: 'rolled',
+  rank: 'C',
+  birth: { ...ZERO_SHEET, attack: 80, cdr: 97, critDmg: 94, luck: 85 },
+  statRanges: RANGES,
+});
+
+const CARD_SECTION_IDS = ['heroes-card-types', 'heroes-card-birth', 'heroes-card-abilities', 'heroes-card-gear'];
+
+function textOf(html: string): string {
+  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/** The markup inside one of a card's sections, up to the section drawn after it. */
+function sectionOf(html: string, testId: string): string {
+  const start = html.indexOf('>', html.indexOf(`data-testid="${testId}"`)) + 1;
+  const next = CARD_SECTION_IDS.map((id) => html.indexOf(`data-testid="${id}"`, start)).filter((at) => at !== -1);
+  return html.slice(start, next.length === 0 ? undefined : html.lastIndexOf('<', Math.min(...next)));
+}
 
 /** The markup of the element the hover lift moves: the peek trigger's one child. */
 function liftedArtOf(html: string, marker: string): string {
@@ -111,36 +152,79 @@ describe('RosterCards', () => {
     expect(cardOf(html, 'b')).toContain('>#2<');
   });
 
-  it('prints the power headline, the type, the grade and birth roll, and the gear average in words', () => {
-    const window = { min: 0, max: 100 };
+  it('prints the power headline, the type and the level in words', () => {
     const html = render([
-      rowFixture({
-        id: 'full',
-        name: 'Ayla',
-        rank: 'A',
-        level: 166,
-        power: 35_600_000,
-        abilities: { olho_clinico: 20 },
-        birth: { ...ZERO_SHEET, attack: 80, cdr: 97, critDmg: 94, luck: 85 },
-        statRanges: {
-          attack: window,
-          energy: window,
-          speed: window,
-          luck: window,
-          critChance: window,
-          critDmg: window,
-          penetration: window,
-          cdr: window,
-        },
-      }),
+      rowFixture({ id: 'full', name: 'Ayla', rank: 'A', level: 166, power: 35_600_000, abilities: { olho_clinico: 20 } }),
     ]);
     expect(html).toContain('35.6m');
     expect(html).toContain('Level 166');
     expect(html).toContain('Crit striker');
     expect(html).toContain('aria-label="Birth grade A"');
-    expect(html).toContain('Birth roll 45%');
-    expect(html).toContain('Highest rolls: CDR 97%, Crit DMG 94%');
-    expect(html).toContain('Nothing equipped');
+  });
+
+  it('draws the birth roll as a section of meters: the overall mean on a ladder, then the two highest rolls', () => {
+    const birth = sectionOf(render([ROLLED]), 'heroes-card-birth');
+    expect(textOf(birth)).toBe('Birth roll Highest rolls · % of range C Overall 45% CDR 97% Crit DMG 94%');
+    expect(birth.match(/data-slot="grade-ladder"/g)).toHaveLength(1);
+    expect(birth.match(/data-testid="heroes-card-roll-stat"/g)).toHaveLength(2);
+    expect(birth).toContain('grid-cols-[max-content_1fr_4ch]');
+  });
+
+  it('prints the same section in Portuguese', () => {
+    const birth = sectionOf(render([ROLLED], 'pt'), 'heroes-card-birth');
+    expect(textOf(birth)).toBe('Nascimento Pontos fortes · % da faixa C Geral 45% CDR 97% Dano crít. 94%');
+  });
+
+  it('puts the ladder marker at the mean, and lifts the grade the hero holds out of the washes', () => {
+    const birth = sectionOf(render([ROLLED]), 'heroes-card-birth');
+    const marker = /style="left:([\d.]+)%"[^>]*data-slot="grade-ladder-marker"/.exec(birth)?.[1];
+    expect(Number(marker)).toBeCloseTo(gradeRailFor(44.5).markerPct, 6);
+    const own = /<span data-letter="C" class="([^"]*)"/.exec(birth)?.[1] ?? '';
+    expect(own).toContain(heroRankFillClass('C'));
+    const other = /<span data-letter="E" class="([^"]*)"/.exec(birth)?.[1] ?? '';
+    expect(other).toContain('/30');
+  });
+
+  it('tints each highest-roll rail by the same thirds the detail panel uses, on the card track', () => {
+    const tinted = rowFixture({
+      id: 'tinted',
+      birth: { ...ZERO_SHEET, cdr: 97, critDmg: 50 },
+      statRanges: RANGES,
+    });
+    const birth = sectionOf(render([tinted]), 'heroes-card-birth');
+    const fills = Array.from(birth.matchAll(/<span class="block h-1 w-full overflow-hidden ([^"]*)"[^>]*><span class="block h-full ([^"]*)" style="width:([\d.]+)%"/g));
+    expect(fills.map((fill) => [fill[1], fill[2], fill[3]])).toEqual([
+      ['bg-line/60', 'bg-up', '97'],
+      ['bg-line/60', 'bg-warn', '50'],
+    ]);
+    expect(railTintFor(97)).toBe('high');
+    expect(railTintFor(50)).toBe('mid');
+  });
+
+  it('keeps the section for a hero nothing can be placed for, with a dash rather than a zero', () => {
+    const birth = sectionOf(render([rowFixture({ id: 'bare', rank: 'E' })]), 'heroes-card-birth');
+    expect(textOf(birth)).toBe('Birth roll E Overall —');
+    expect(birth).not.toContain('grade-ladder');
+  });
+
+  it('prints the gear average as words and figures, and says so when nothing is worn', () => {
+    const loadout = { ...emptyLoadout(), arma: item(120, 12), elmo: item(129, 15, 'ember_elmo') };
+    const worn = rowFixture({ id: 'worn', loadout });
+    expect(textOf(sectionOf(render([worn]), 'heroes-card-gear-average'))).toBe('Avg Lv 125 · Forge +14');
+    expect(textOf(sectionOf(render([worn], 'pt'), 'heroes-card-gear-average'))).toBe('Média Nv 125 · Forja +14');
+    expect(textOf(sectionOf(render([rowFixture({ id: 'naked' })]), 'heroes-card-gear-average'))).toBe('Nothing equipped');
+  });
+
+  it('draws every gear tile and ability icon at the one size step the card measures from its width', () => {
+    const html = render([rowFixture({ id: 'tiles', abilities: SIX_ABILITIES, loadout: WORN })]);
+    const gearClass = artFrameRecipe({ size: SHOWCASE_TILE_SIZE, rarity: 2 }).split(' ').find((token) => token.startsWith('w-'));
+    const abilityClass = abilityIconRecipe({ size: SHOWCASE_TILE_SIZE }).split(' ').find((token) => token.startsWith('size-'));
+    const gear = sectionOf(html, 'heroes-card-gear-average');
+    expect(gear.split(gearClass ?? '?').length - 1).toBe(8);
+    expect(sectionOf(html, 'heroes-card-abilities').split(abilityClass ?? '?').length - 1).toBe(6);
+    expect(html).toContain(`style="${ART_TILE_SIZE_VAR}:${showcaseTileWidthCss()}"`);
+    expect(html).toContain('class="@container min-w-0" data-testid="heroes-card-abilities"');
+    expect(html).toContain('class="@container mt-auto min-w-0" data-testid="heroes-card-gear"');
   });
 
   it('prints the grade as a bare coloured letter, with no chip behind it', () => {

@@ -66,6 +66,7 @@ export { ChestIcon } from './chest-icon';
 export { ClockIcon } from './clock-icon';
 export { HouseIcon } from './house-icon';
 export {
+  ART_TILE_SIZE_VAR,
   artFrameRecipe,
   artFrameRadiusClass,
   abilityIconRecipe,
@@ -75,6 +76,7 @@ export {
   rosterIconTooltipTriggerClass,
   heroRankTextClass,
   heroRankBandClass,
+  heroRankFillClass,
   heroRankToneClass,
   rarityTextClass,
   rarityDotClass,

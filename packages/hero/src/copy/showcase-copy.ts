@@ -17,11 +17,6 @@ export type ShowcaseCopy = {
   readonly typeBuff: string;
   readonly typeEndure: string;
   readonly typeNone: string;
-  /** `{rolls}` — the stat labels and percentages, already joined. */
-  readonly highestRolls: string;
-  /** `{stat}` `{pct}` — one entry of {@link highestRolls}. */
-  readonly highestRollEntry: string;
-  readonly highestRollsSeparator: string;
   /** Short enough for a card line; spelled as the players say them. */
   readonly rollStat: { readonly [K in SheetKey]: string };
   readonly summaryTitle: string;
@@ -50,12 +45,18 @@ export type ShowcaseCopy = {
   readonly cardLevel: string;
   /** `{grade}` */
   readonly cardBirthGrade: string;
-  /** `{pct}` */
-  readonly cardBirthRoll: string;
+  readonly cardBirthSection: string;
+  /** Beside the grade letter: the mean of every rolled statistic. */
+  readonly cardBirthOverall: string;
+  readonly cardHighestRollsHeading: string;
+  /** What the percentages mean: where each roll landed in the window it was rolled from. */
+  readonly cardRollRangeHint: string;
   /** The board's one switch for every item level, forge `+N` and ability level on its cards. */
   readonly cardShowLevels: string;
-  /** `{level}` `{forge}` */
-  readonly cardAverageItemLevel: string;
+  readonly cardGearAverage: string;
+  /** `{level}` */
+  readonly cardGearLevel: string;
+  readonly cardGearForge: string;
   readonly cardNothingEquipped: string;
   readonly aurasTitle: string;
   /** `{covered}` `{total}` */

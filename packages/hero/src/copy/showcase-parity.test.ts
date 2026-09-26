@@ -4,14 +4,12 @@ import { showcasePtBR } from './showcase-pt-BR';
 
 /**
  * Identical in both languages on purpose: ATK, PEN and CDR are the codes players use either way,
- * the templates and separator carry no words, and the position column and badge are a bare `#`.
+ * the rarity entry template carries no words, and the position column and badge are a bare `#`.
  */
 const IDENTICAL_IN_BOTH_LANGUAGES: readonly string[] = [
   'rollStat.attack',
   'rollStat.penetration',
   'rollStat.cdr',
-  'highestRollEntry',
-  'highestRollsSeparator',
   'columnPosition',
   'summaryRarityEntry',
   'cardPosition',

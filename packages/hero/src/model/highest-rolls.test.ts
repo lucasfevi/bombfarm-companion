@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { showcaseEn, showcasePtBR } from '../copy';
 import { statRollRowsFor } from './birth-roll-panel';
-import { highestRollsFor, highestRollsText } from './highest-rolls';
+import { highestRollsFor } from './highest-rolls';
 import { ZERO_SHEET, heroFixture } from './showcase.test-fixture';
 
 const WINDOW = { min: 0, max: 100 };
@@ -20,8 +19,6 @@ const RANGES = {
 function rolled(birth: Partial<typeof ZERO_SHEET>, ranges: Partial<typeof RANGES> = RANGES) {
   return heroFixture({ id: 'h', birth: { ...ZERO_SHEET, ...birth }, statRanges: ranges });
 }
-
-const percent = (value: number) => `${Math.round(value)}%`;
 
 describe('highestRollsFor', () => {
   it('names the two statistics that rolled closest to the top of their window, best first', () => {
@@ -55,22 +52,5 @@ describe('highestRollsFor', () => {
 
   it('places nothing for a hero without a birth roll', () => {
     expect(highestRollsFor(heroFixture({ id: 'bare' }))).toEqual([]);
-  });
-});
-
-describe('highestRollsText', () => {
-  it('prints the line the card carries, with the short stat names', () => {
-    const rolls = [
-      { key: 'cdr', percentile: 97 },
-      { key: 'critDmg', percentile: 94 },
-    ] as const;
-    expect(highestRollsText(rolls, showcaseEn, percent)).toBe('Highest rolls: CDR 97%, Crit DMG 94%');
-    expect(highestRollsText(rolls, showcasePtBR, percent)).toBe(
-      'Melhores rolls: CDR 97%, Dano crít. 94%',
-    );
-  });
-
-  it('prints nothing when no roll was placed', () => {
-    expect(highestRollsText([], showcaseEn, percent)).toBeUndefined();
   });
 });

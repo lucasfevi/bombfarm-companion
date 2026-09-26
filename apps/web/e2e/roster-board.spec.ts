@@ -12,6 +12,9 @@ import { rosterBoard, seedLocalStorage } from './fixtures/seed';
  */
 const RAIL_VIEWPORT = { width: 1440, height: 900 };
 
+/** The board's narrowest card: the minimum its `auto-fill` grid draws a card at. */
+const NARROWEST_CARD_PX = 296;
+
 function railIds(page: Page) {
   return page.locator('[data-testid^="heroes-roster-row-"]').evaluateAll((nodes) =>
     nodes.map((node) => (node as HTMLElement).dataset.testid?.replace('heroes-roster-row-', '')),
@@ -200,7 +203,11 @@ test.describe('roster rail and board', () => {
 
     const ayla = page.getByTestId('heroes-roster-card-board-ayla');
     await expect(ayla.getByTestId('heroes-card-position')).toHaveText('#1');
-    await expect(ayla.getByTestId('heroes-card-gear-average')).toHaveText(/^Average item level \d+ · \+\d+$/);
+    await expect(ayla.getByTestId('heroes-card-gear-average')).toHaveText(/^Avg Lv \d+ · Forge \+\d+$/);
+    const birth = ayla.getByTestId('heroes-card-birth');
+    await expect(birth).toContainText('Birth roll');
+    await expect(birth).toContainText('Overall');
+    await expect(birth.getByTestId('heroes-card-birth-mean')).toHaveText(/^\d+%$/);
     // The pool is icons alone: the level lives on each icon's hover card, never on the icon.
     await expect(ayla.getByTestId('heroes-card-abilities')).not.toContainText(/\d+\/\d+/);
     await expect(ayla.getByTestId('heroes-card-wide-blast')).toHaveCount(0);
@@ -226,6 +233,46 @@ test.describe('roster rail and board', () => {
 
     await showTable(page);
     await expect(page.getByTestId('heroes-card-show-levels')).toHaveCount(0);
+  });
+
+  test('at the narrowest card, the eight gear tiles fill one row and the ability pool shares their size', async ({
+    page,
+  }) => {
+    await openPlanner(page);
+    await showBoard(page);
+    await page.getByTestId('heroes-card-show-levels').getByRole('switch').click();
+    const rows = await page.locator('[data-testid^="heroes-roster-card-"]').evaluateAll((cards, narrowest) =>
+      cards.map((card) => {
+        const element = card as HTMLElement;
+        element.style.width = `${String(narrowest)}px`;
+        element.style.justifySelf = 'start';
+        const gear = element.querySelector('[data-testid="heroes-card-gear"]');
+        const strip = gear?.lastElementChild;
+        const tiles = Array.from(strip?.children ?? []).map((tile) => tile.getBoundingClientRect());
+        const abilities = Array.from(
+          element.querySelectorAll('[data-testid="heroes-card-abilities"] [data-peek="ability"]'),
+        ).map((icon) => icon.getBoundingClientRect());
+        const content = gear?.getBoundingClientRect();
+        return {
+          width: element.getBoundingClientRect().width,
+          tops: new Set(tiles.map((tile) => Math.round(tile.top))).size,
+          count: tiles.length,
+          slack: (content?.right ?? 0) - (tiles.at(-1)?.right ?? 0),
+          tileWidth: tiles[0]?.width ?? 0,
+          abilityWidths: abilities.map((icon) => icon.width),
+          abilityTops: new Set(abilities.map((icon) => Math.round(icon.top))).size,
+        };
+      }),
+    NARROWEST_CARD_PX);
+    for (const row of rows) {
+      expect(row.width).toBe(NARROWEST_CARD_PX);
+      expect(row.count).toBe(8);
+      expect(row.tops).toBe(1);
+      expect(Math.abs(row.slack)).toBeLessThan(1);
+      expect(row.tileWidth).toBeGreaterThanOrEqual(32);
+      for (const width of row.abilityWidths) expect(width).toBeCloseTo(row.tileWidth, 0);
+      expect(row.abilityTops).toBeLessThanOrEqual(1);
+    }
   });
 
   test('the roster summary sits above both presentations', async ({ page }) => {

@@ -350,6 +350,9 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   // SteamGlyph (2026-09-10): the Steam mark was private to MarketPrice until the hero identity
   // panel's market tile became a link to the same place. One destination, one mark.
   'SteamGlyph',
+  // ART_TILE_SIZE_VAR (2026-09-26): the custom property a `fluid` tile reads its width from, so a
+  // row of item and ability tiles can fill the width its layout gives it — the showcase card's.
+  'ART_TILE_SIZE_VAR',
   'abilityIconRecipe',
   'artFrameRadiusClass',
   'artFrameRecipe',
@@ -357,6 +360,9 @@ const FROZEN_GAME_ART_BARREL_VALUE_EXPORTS = [
   // the Optimizer's proposed-items grid started drawing the slots the plan leaves bare. One look.
   'emptyGearSlotClass',
   'heroRankBandClass',
+  // heroRankFillClass (2026-09-26): a grade's colour at full strength, for the one grade a small
+  // ladder lifts out of the washes heroRankBandClass paints the others in.
+  'heroRankFillClass',
   'heroRankTextClass',
   'heroRankToneClass',
   'iconMetaGlyphRecipe',

@@ -7,12 +7,13 @@
  *
  * Read-only. A card selects a hero and changes nothing.
  */
-import { memo, useMemo, type SyntheticEvent } from 'react';
+import { Fragment, memo, useMemo, type CSSProperties, type SyntheticEvent } from 'react';
 import { motion } from 'motion/react';
 import { rarityLabel } from '@bombfarm/domain/game-labels';
 import { heroAbilityIconEntries } from '@bombfarm/domain/hero-abilities';
 import { RARITIES } from '@bombfarm/domain/planner-constants';
 import {
+  ART_TILE_SIZE_VAR,
   AbilityIcon,
   HeroAvatar,
   HeroGearIcons,
@@ -25,15 +26,20 @@ import {
   SHOWCASE_ABILITY_GAP_PX,
   SHOWCASE_CARD_MIN_WIDTH_PX,
   SHOWCASE_CARD_PADDING_PX,
+  SHOWCASE_TILE_SIZE,
   WIDE_BLAST_ABILITY_ID,
-  averageItemLevelText,
+  gearAverageFigures,
   heroTypeLabel,
   percentText,
   showcaseCardReading,
+  showcaseTileWidthCss,
+  type EquippedGearAverages,
   type RosterHeroRow,
   type ShowcaseCardReading,
   type ShowcaseView,
 } from '../../model';
+import { GradeLadder } from '../grade-rail';
+import { RollRail } from '../roll-rail';
 import { BirthGradeLetter } from './birth-grade-letter';
 
 /** Cards arrive in order rather than all at once, so the eye is led across the board. Capped, so
@@ -45,6 +51,12 @@ const CARD_STAGGER_CAP = 12;
 const NOT_PLACED = '—';
 
 const sectionLabelClass = 'mb-1.5 flex min-w-0 items-baseline justify-between gap-2 text-[11px] text-muted';
+
+const figureClass = 'font-mono text-xs font-semibold tabular-nums';
+
+/** Both icon rows measure their tiles against their own width, so a wider card grows its tiles
+ *  rather than leaving the rows short. */
+const TILE_WIDTH_STYLE = { [ART_TILE_SIZE_VAR]: showcaseTileWidthCss() } as CSSProperties;
 
 /** The icon groups inside a card carry their own hover cards. A click on one is about that icon,
  *  not about picking the hero. */
@@ -140,7 +152,7 @@ const HeroCard = memo(function HeroCard({
   onSelectHeroId: (heroId: string) => void;
 }) {
   const { hero } = row;
-  const reading = useMemo(() => showcaseCardReading(row, copy, lang), [row, copy, lang]);
+  const reading = useMemo(() => showcaseCardReading(row), [row]);
   // Muted on the contents, never on the card's own border, which is what says which is selected.
   const inactiveChrome = hero.battleAllowed === false ? rosterInactiveChromeClass : undefined;
 
@@ -189,7 +201,7 @@ const HeroCard = memo(function HeroCard({
       )}
       style={{ padding: SHOWCASE_CARD_PADDING_PX }}
     >
-      <div className={cn('flex', 'min-w-0', 'flex-1', 'flex-col', 'gap-3', inactiveChrome)}>
+      <div className={cn('flex', 'min-w-0', 'flex-1', 'flex-col', 'gap-3', inactiveChrome)} style={TILE_WIDTH_STYLE}>
         <span
           className="absolute top-2.5 right-3 font-mono text-xs font-semibold text-muted"
           data-testid="heroes-card-position"
@@ -204,8 +216,8 @@ const HeroCard = memo(function HeroCard({
           <span className="text-[10px] font-bold tracking-[0.12em] text-muted uppercase">{copy.cardPower}</span>
         </p>
         <HeroTypeChips reading={reading} copy={copy} />
-        <BirthLines row={row} reading={reading} copy={copy} lang={lang} />
-        <div className="min-w-0" data-testid="heroes-card-abilities">
+        <BirthSection row={row} reading={reading} copy={copy} lang={lang} />
+        <div className="@container min-w-0" data-testid="heroes-card-abilities">
           <div className={sectionLabelClass}>
             <span>{copy.columnAbilities}</span>
           </div>
@@ -213,17 +225,15 @@ const HeroCard = memo(function HeroCard({
         </div>
         {/* Pushed to the floor of the card, so cards in one row line their gear up however many
             lines the sections above took. */}
-        <div className="mt-auto min-w-0" data-testid="heroes-card-gear">
+        <div className="@container mt-auto min-w-0" data-testid="heroes-card-gear">
           <div className={sectionLabelClass}>
             <span>{copy.columnGear}</span>
-            <span className="truncate" data-testid="heroes-card-gear-average">
-              {averageItemLevelText(reading.gear, copy, lang)}
-            </span>
+            <GearAverage gear={reading.gear} copy={copy} lang={lang} />
           </div>
           <HeroGearIcons
             loadout={hero.loadout}
             lang={lang}
-            size="sm"
+            size={SHOWCASE_TILE_SIZE}
             showLevels={showLevels}
             emptySlotAriaLabel={(slotName) => sub(t.gearSlotEmptyAria, { slot: slotName })}
             emptySlotTip={t.gearSlotEmptyTip}
@@ -280,7 +290,11 @@ function HeroTypeChips({ reading, copy }: { reading: ShowcaseCardReading; copy: 
   );
 }
 
-function BirthLines({
+/**
+ * How the hero was born, as meters: the grade and the mean roll on a small grade ladder, then the
+ * two statistics that rolled closest to the top of their windows, each on the detail panel's rail.
+ */
+function BirthSection({
   row,
   reading,
   copy,
@@ -292,18 +306,59 @@ function BirthLines({
   lang: Lang;
 }) {
   const grade = row.hero.rank?.trim();
+  const { birth, highestRolls } = reading;
   return (
-    <div className="flex min-w-0 flex-col gap-1" data-testid="heroes-card-birth">
-      <p className="m-0 flex items-center gap-2 text-xs text-muted">
-        {grade ? <BirthGradeLetter grade={grade} copy={copy} testId="heroes-card-grade" /> : null}
-        {reading.birthRollPct === undefined ? null : (
-          <span>{sub(copy.cardBirthRoll, { pct: percentText(reading.birthRollPct, lang) })}</span>
+    <div className="min-w-0" data-testid="heroes-card-birth">
+      <div className={sectionLabelClass}>
+        <span>{copy.cardBirthSection}</span>
+        {highestRolls.length === 0 ? null : (
+          <span className="truncate">
+            {copy.cardHighestRollsHeading} · {copy.cardRollRangeHint}
+          </span>
         )}
-      </p>
-      {reading.highestRolls === undefined ? null : (
-        <p className="m-0 text-xs text-muted">{reading.highestRolls}</p>
-      )}
+      </div>
+      <div className="grid grid-cols-[max-content_1fr_4ch] items-center gap-x-2 gap-y-1.5">
+        <span className="flex items-baseline gap-1.5 text-[11px] whitespace-nowrap text-muted">
+          {grade ? <BirthGradeLetter grade={grade} copy={copy} testId="heroes-card-grade" /> : null}
+          <span>{copy.cardBirthOverall}</span>
+        </span>
+        {birth === undefined ? <span /> : <GradeLadder mean={birth.mean} railLetter={birth.railLetter} />}
+        <span className={cn(figureClass, 'text-right', 'text-ink')} data-testid="heroes-card-birth-mean">
+          {birth === undefined ? NOT_PLACED : percentText(birth.mean, lang)}
+        </span>
+        {highestRolls.map((roll) => (
+          <Fragment key={roll.key}>
+            <span className="text-xs whitespace-nowrap text-ink" data-testid="heroes-card-roll-stat">
+              {copy.rollStat[roll.key]}
+            </span>
+            <RollRail percentile={roll.percentile} trackClassName="bg-line/60" />
+            <span className={cn(figureClass, 'text-right', 'text-ink')}>{percentText(roll.percentile, lang)}</span>
+          </Fragment>
+        ))}
+      </div>
     </div>
+  );
+}
+
+/** "Avg Lv 124 · Forge +13": the words muted, the figures in the mono face — the level in ink and
+ *  the forge in the accent, as the item tiles print a forge. */
+function GearAverage({ gear, copy, lang }: { gear: EquippedGearAverages; copy: ShowcaseCopy; lang: Lang }) {
+  const figures = gearAverageFigures(gear, lang);
+  if (figures === undefined) {
+    return (
+      <span className="truncate" data-testid="heroes-card-gear-average">
+        {copy.cardNothingEquipped}
+      </span>
+    );
+  }
+  return (
+    <span className="flex min-w-0 items-baseline gap-1 whitespace-nowrap" data-testid="heroes-card-gear-average">
+      <span>{copy.cardGearAverage}</span>{' '}
+      <span className={cn(figureClass, 'text-ink')}>{sub(copy.cardGearLevel, { level: figures.level })}</span>{' '}
+      <span aria-hidden>·</span>{' '}
+      <span>{copy.cardGearForge}</span>{' '}
+      <span className={cn(figureClass, 'text-accent')}>+{figures.forge}</span>
+    </span>
   );
 }
 
@@ -334,7 +389,7 @@ function ShowcaseAbilityIcons({
         <AbilityIcon
           key={id}
           code={id}
-          size="sm"
+          size={SHOWCASE_TILE_SIZE}
           {...(showLevels ? { level, max } : {})}
           levelPlacement="over-art"
           adornment={id === WIDE_BLAST_ABILITY_ID ? WIDE_BLAST_MARK : undefined}

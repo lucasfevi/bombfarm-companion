@@ -160,28 +160,30 @@ export {
   wideBlastOf,
 } from './hero-types';
 export type { HeroTypeId, WideBlastReading } from './hero-types';
-export { highestRollsFor, highestRollsText } from './highest-rolls';
+export { highestRollsFor } from './highest-rolls';
 export type { HighestRoll } from './highest-rolls';
 export { equippedGearAverages, equippedItemsOf, isSquadHero, rosterSummaryFor } from './roster-summary';
 export type { EquippedGearAverages, RarityCount, RosterSummary } from './roster-summary';
 export {
   DEFAULT_SHOWCASE_VIEW,
   SHOWCASE_ABILITY_GAP_PX,
-  SHOWCASE_ABILITY_TILE_PX,
+  SHOWCASE_CARD_BORDER_PX,
   SHOWCASE_CARD_MIN_WIDTH_PX,
   SHOWCASE_CARD_PADDING_PX,
   SHOWCASE_GEAR_GAP_PX,
   SHOWCASE_GEAR_SLOTS,
-  SHOWCASE_GEAR_TILE_PX,
   SHOWCASE_MAX_ABILITIES,
-  averageItemLevelText,
+  SHOWCASE_TILE_SIZE,
+  gearAverageFigures,
   percentText,
   rowWidthPx,
   showcaseCardContentWidthPx,
   showcaseCardReading,
+  showcaseTileWidthCss,
+  showcaseTileWidthPx,
   squadGearAveragesText,
 } from './showcase-card';
-export type { ShowcaseCardReading, ShowcaseView } from './showcase-card';
+export type { GearAverageFigures, ShowcaseBirthReading, ShowcaseCardReading, ShowcaseView } from './showcase-card';
 export { auraCoverageFor } from './aura-coverage';
 export type { AuraCoverage, AuraCoverageTile } from './aura-coverage';
 export {

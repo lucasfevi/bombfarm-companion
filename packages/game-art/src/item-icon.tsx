@@ -2,7 +2,7 @@ import type { ItemKind } from '@bombfarm/domain/inventory-view';
 import { itemIconSrc, itemKindIconSrc, raritySlotPlateSrc } from '@bombfarm/domain/wiki-assets';
 import { cn } from '@bombfarm/ui';
 import { ArtFrame, type ArtFrameSize } from './art-frame';
-import { iconMetaGlyphRecipe } from './game-art.recipe';
+import { iconMetaGlyphRecipe, type IconMetaGlyphSize } from './game-art.recipe';
 import { itemPeekSpec, type ItemIconPeek, type ItemPeekItem } from './peek/item-peek';
 import { usePeek } from './peek/use-peek';
 
@@ -45,12 +45,18 @@ type Props = {
  * Level and forge are gear's glyphs alone: a gem or a key arrives with both at 0 on the wire, so
  * drawing them would print a "0" on every stack.
  */
+function glyphSizeFor(size: ArtFrameSize): IconMetaGlyphSize {
+  if (size === 'xs') return 'tiny';
+  if (size === 'sm') return 'compact';
+  return size === 'fluid' ? 'fluid' : 'roomy';
+}
+
 export function ItemIcon({ item, size = 'md', className, showUpgrade, showLevel, peek }: Props) {
   const isGear = item.kind === undefined || item.kind === 'equipment';
   const plate = raritySlotPlateSrc(item.rarityIdx);
   const iconUrl = isGear ? itemIconSrc(item.defId) : itemKindIconSrc(item.defId, item.rarityIdx);
 
-  const glyphSize = size === 'xs' ? 'tiny' : size === 'sm' ? 'compact' : 'roomy';
+  const glyphSize = glyphSizeFor(size);
   const imgPad = size === 'xs' || size === 'sm' ? 'p-px' : 'p-0.5';
   const upgrade = Math.max(0, Math.round(item.upgrade));
   const withLevel = (showLevel ?? true) && isGear;

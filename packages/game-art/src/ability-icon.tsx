@@ -59,7 +59,8 @@ type TileOptions = {
 
 function overArtGlyphSize(size: AbilityIconRecipeSize): IconMetaGlyphSize {
   if (size === 'xs') return 'tiny';
-  return size === 'sm' ? 'compact' : 'roomy';
+  if (size === 'sm') return 'compact';
+  return size === 'fluid' ? 'fluid' : 'roomy';
 }
 
 function renderTile(iconUrl: string, { size, className, level, max, levelPlacement }: TileOptions) {
