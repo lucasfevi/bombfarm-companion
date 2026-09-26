@@ -11,7 +11,7 @@ import { ImportHeroesDialog } from '@/features/import';
 import { Footer } from './footer';
 import { PlannerHeroPeekStats } from './planner-hero-peek-stats';
 import type { HeroRecord } from '@/shared/lib/storage';
-import { pickHeroAfterImport } from '@bombfarm/domain/pick-hero-after-import';
+import { pickHeroAfterImportOrStrongest } from '@/shared/lib/pick-hero-or-strongest';
 import type { AccountImportData } from '@bombfarm/domain/import-save';
 import type { RequiredAccountField } from '@bombfarm/domain/account-required-fields';
 import { AccountMissingFieldsBanner } from '@/features/account';
@@ -19,26 +19,6 @@ import { sub } from '@/shared/i18n';
 import { Toast } from '@bombfarm/ui';
 import { workspaceShellClass } from '@bombfarm/ui/panel-field.recipe';
 import { usePlannerStore, selectStrings, commitActiveHero, selectToast } from '@/shared/stores';
-
-/**
- * Who the editor should be pointed at after an import, never `null` for a non-empty roster.
- *
- * `pickHeroAfterImport` answers `null` when the hero being edited is absent from the imported
- * roster — which is every import of a DIFFERENT account. Left unhandled, `activeHeroId` stayed on
- * a hero the roster no longer holds, and the draft autosave then had nothing valid to write: it
- * used to append that stranded hero back into the new roster, and now declines the write
- * instead, silently. `reconcileActiveHero` repairs the same state, but only on the next
- * `loadHeroes()`, so in-session the editor stayed stranded until the player clicked a hero.
- *
- * Falling back to the rule a FIRST import already uses — the roster's strongest hero — keeps one
- * policy for "no hero to carry over" instead of two.
- */
-export function pickHeroAfterImportOrStrongest(
-  merged: HeroRecord[],
-  activeHeroId: string | null,
-): HeroRecord | null {
-  return pickHeroAfterImport(merged, activeHeroId) ?? pickHeroAfterImport(merged, null);
-}
 
 export function AppShellInner({
   children,

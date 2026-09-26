@@ -163,6 +163,32 @@ test.describe('roster rail and board', () => {
     );
   });
 
+  for (const [situation, activeHeroId] of [
+    ['no hero was stored', undefined],
+    ['the stored hero is no longer on the roster', 'board-sold'],
+  ] as const) {
+    test(`when ${situation}, the planner opens on the strongest hero and marks its row`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(RAIL_VIEWPORT);
+      await seedLocalStorage(page, { ...rosterBoard, activeHeroId, lang: 'en' });
+      await page.goto('/heroes');
+
+      await expect(page.getByRole('region', { name: /^Current hero$/i }).getByText('Ayla')).toBeVisible();
+      await expect(page.getByTestId('heroes-roster-row-board-ayla')).toHaveAttribute('aria-current', 'true');
+      await expect(page.locator('[data-testid^="heroes-roster-row-"][aria-current="true"]')).toHaveCount(1);
+
+      await showTable(page);
+      await expect(page.getByTestId('heroes-leaderboard-row-board-ayla')).toHaveAttribute(
+        'aria-current',
+        'true',
+      );
+      await expect(
+        page.locator('[data-testid^="heroes-leaderboard-row-"][aria-current="true"]'),
+      ).toHaveCount(1);
+    });
+  }
+
   test('picking from the rail changes the hero the planner is editing and stays on the rail', async ({
     page,
   }) => {
