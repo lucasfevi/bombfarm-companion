@@ -32,6 +32,8 @@ const IDENTICAL_IN_BOTH_LANGUAGES: readonly (keyof typeof heroEn)[] = [
   'heroDetailBreakdownRowDps',
   'heroDetailBreakdownTermHit',
   'heroDetailBreakdownTermExtra',
+  // A factor name and its share, both substituted — the template itself carries no words.
+  'heroDetailPowerSegment',
 ];
 
 function placeholderSet(value: string): Set<string> {

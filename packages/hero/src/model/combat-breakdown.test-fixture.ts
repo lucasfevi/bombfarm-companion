@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEFAULT_TARGET_PROP } from '@bombfarm/domain/farm-context';
+import { alcanceForExplosaoAmpla, effectiveReachForExplosaoAmpla } from '@bombfarm/domain/game-power';
 import { parseAccountPayload } from '@bombfarm/domain/import-save';
 import { phaseLine } from '@bombfarm/domain/phases';
 import { pipelineForHero } from '@bombfarm/domain/roster-dps';
@@ -72,6 +73,18 @@ export function loadBreakdownFixture(filename: string = BREAKDOWN_FIXTURE): Brea
     maxPhase: data.maxPhase ?? null,
   };
   return { heroes, account, phase, mitigationPct: line.mitig * 100 };
+}
+
+/**
+ * The fixtures were captured before the 2026-09-26 patch that halved Wide Blast's extra cells, so
+ * their stored Power counts those cells whole. This is the same figure as the game scores it now.
+ */
+export function storedPowerAfterWideBlastNerf(hero: Pick<HeroRecord, 'name' | 'power' | 'abilities'>): number {
+  if (hero.power === undefined) throw new Error(`${hero.name} carries no stored power`);
+  const level = hero.abilities?.explosao_ampla ?? 0;
+  const wholeCellRange = 1 + 0.5 * alcanceForExplosaoAmpla(level);
+  const halvedCellRange = 1 + 0.5 * effectiveReachForExplosaoAmpla(level);
+  return hero.power * (halvedCellRange / wholeCellRange);
 }
 
 export function fixtureHero(fixture: BreakdownFixture, name: string): HeroRecord {

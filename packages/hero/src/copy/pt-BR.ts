@@ -28,6 +28,44 @@ export const heroPtBR: HeroCopy = {
   heroDetailRuneAxisXp: "XP",
   heroDetailRuneAxisGold: "Ouro",
 
+  heroDetailPowerTitle: "Poder",
+  heroDetailPowerTip:
+    "O próprio número de Poder do jogo, desmontado. Poder é dez vezes o ataque multiplicado por um fator por atributo; a fatia de cada fator é quanto dessa pilha ele levanta, medida a partir de um herói sem nada daquele atributo. O Poder é calculado antes das auras do time, então um atributo aqui pode aparecer menor que no painel de atributos efetivos.",
+  heroDetailPowerPick: "Escolha um fator para ver o Poder ao longo da faixa dele.",
+  heroDetailPowerDiffers: "Difere do número do jogo em {pct}",
+  heroDetailPowerRunesActive: "Com as runas ativas · {value} sem elas",
+  heroDetailPowerWithheld:
+    "Este é o número guardado pelo jogo, sem runas. O detalhamento depende dos pontos gastos do herói, que não puderam ser lidos.",
+  heroDetailPowerFactorCrit: "Crítico (chance × dano)",
+  heroDetailPowerFactorSpeed: "Velocidade",
+  heroDetailPowerFactorRange: "Alcance (Explosão Ampla)",
+  heroDetailPowerFactorLuck: "Sorte",
+  heroDetailPowerFactorEnergy: "Energia",
+  heroDetailPowerFactorPenetration: "Penetração",
+  heroDetailPowerFactorCooldown: "Recarga",
+  heroDetailPowerFactorAttack: "Ataque",
+  heroDetailPowerAnchor: "base",
+  heroDetailPowerColFactor: "Fator",
+  heroDetailPowerColMultiplier: "× Poder",
+  heroDetailPowerColMultiplierTip:
+    "Quantas vezes este fator multiplica o Poder em relação a um herói sem nada daquele atributo. A linha de Ataque mostra o próprio ataque: é a base que todo fator multiplica.",
+  heroDetailPowerColShare: "Parte",
+  heroDetailPowerColShareTip:
+    "A parte deste fator em todo o ganho multiplicativo acima da base de Ataque. As partes somam 100%; o Ataque, a base, não tem parte.",
+  heroDetailPowerShareBar: "Fatia do Poder por fator",
+  heroDetailPowerSegment: "{factor}: {share}",
+  heroDetailPowerAxisAmpla: "Nível de Explosão Ampla",
+  heroDetailPowerChart: "Poder em função de {stat}",
+  heroDetailPowerNow: "agora",
+  heroDetailPowerCap: "limite",
+  heroDetailPowerPointsMarker: "+{points} pontos: {power} ({change})",
+  heroDetailPowerAtCap: "no limite",
+  heroDetailPowerExtrapolatedNote: "extrapolado",
+  heroDetailPowerReadout: "{stat} {value} → Poder {power} ({delta}, {pct} em relação a agora)",
+  heroDetailPowerReadoutCapped: "Com 100% de chance de crítico: {power}",
+  heroDetailPowerCappedLegend: "Tracejado: com chance de crítico em 100%",
+  heroDetailPowerExtrapolated: "Acima da maior recarga conferida ({pct}), isto é extrapolado.",
+
   heroDetailRollTitle: "Roll de nascimento",
   heroDetailRollQuality: "Qualidade do roll",
   heroDetailRollQualityNote:
@@ -102,18 +140,13 @@ export const heroPtBR: HeroCopy = {
   heroDetailPhaseNoMatch: "Nenhuma fase corresponde.",
   heroDetailPhaseMoreMatches: "Mostrando {shown} de {matched} — continue digitando para filtrar.",
 
-  heroDetailAurasTitle: "Habilidades e auras",
   heroDetailAurasTip:
     "Com o que os números desta etapa são precificados. Uma aura de time é uma propriedade do campo: todo mundo que está nele recebe o mesmo total, com teto por aura. A aura do próprio herói conta no rank dele e não pode ser desligada; qualquer outra aura fica desligada até você ligar, e então conta no teto, seja quem for o portador. A tela Farm e o Otimizador precificam as mesmas auras pelo tempo ativo previsto de cada portador, então os números deles podem diferir destes. A Passagem de Bastão conta aqui como se o pulso nunca acabasse — o tempo em campo inteiro no nível dela, +80% no teto — enquanto a tela Farm e o Otimizador contam só os 120 s que cada entrada acende.",
   heroDetailAurasTeamGroup: "Auras de time",
-  heroDetailAurasOwnGroup: "Habilidades próprias",
   heroDetailAuraOwnTag: "própria",
-  heroDetailAuraNotHereTag: "não nesta fase",
-  heroDetailAuraNotModelledTag: "não modelada",
   heroDetailAuraSwitchAria: "Contar {name} no teto",
   heroDetailAuraDeltaIfOn: "+{value}% se ligada",
   heroDetailAuraDeltaIfOff: "−{value}% se desligada",
-  heroDetailAurasNoOwnAbilities: "Este herói não tem nenhuma habilidade própria em vigor.",
 
   heroDetailBreakdownHint: 'Passe o mouse ou foque um quadro para ver a fórmula por trás dele e o que ele lê; os quadros ligados a ele ficam acesos.',
   heroDetailBreakdownRowSheet: "Ficha",

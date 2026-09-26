@@ -29,6 +29,44 @@ export const heroEn = {
   heroDetailRuneAxisXp: "XP",
   heroDetailRuneAxisGold: "Gold",
 
+  heroDetailPowerTitle: "Power",
+  heroDetailPowerTip:
+    "The game's own Power figure, taken apart. Power is ten times attack multiplied by one factor per statistic; each factor's share is how much of that stack it lifts, measured from a hero with none of the statistic. Power is scored before team auras, so a stat here can read lower than on the Effective stats panel.",
+  heroDetailPowerPick: "Pick a factor to see Power across its range.",
+  heroDetailPowerDiffers: "Differs from the game's figure by {pct}",
+  heroDetailPowerRunesActive: "Includes active runes · {value} without them",
+  heroDetailPowerWithheld:
+    "This is the game's stored figure, without runes. The breakdown is built on the hero's spent points, which could not be read.",
+  heroDetailPowerFactorCrit: "Crit (chance × damage)",
+  heroDetailPowerFactorSpeed: "Speed",
+  heroDetailPowerFactorRange: "Range (Wide Blast)",
+  heroDetailPowerFactorLuck: "Luck",
+  heroDetailPowerFactorEnergy: "Energy",
+  heroDetailPowerFactorPenetration: "Penetration",
+  heroDetailPowerFactorCooldown: "Cooldown",
+  heroDetailPowerFactorAttack: "Attack",
+  heroDetailPowerAnchor: "anchor",
+  heroDetailPowerColFactor: "Factor",
+  heroDetailPowerColMultiplier: "× Power",
+  heroDetailPowerColMultiplierTip:
+    "How many times this factor lifts Power over a hero with none of that stat. The Attack row shows the attack itself: it is the base every factor multiplies.",
+  heroDetailPowerColShare: "Share",
+  heroDetailPowerColShareTip:
+    "This factor's part of the whole multiplicative lift above the Attack base. The shares add up to 100%; Attack, the base, has none.",
+  heroDetailPowerShareBar: "Share of Power by factor",
+  heroDetailPowerSegment: "{factor}: {share}",
+  heroDetailPowerAxisAmpla: "Wide Blast level",
+  heroDetailPowerChart: "Power against {stat}",
+  heroDetailPowerNow: "now",
+  heroDetailPowerCap: "cap",
+  heroDetailPowerPointsMarker: "+{points} points: {power} ({change})",
+  heroDetailPowerAtCap: "at the cap",
+  heroDetailPowerExtrapolatedNote: "extrapolated",
+  heroDetailPowerReadout: "{stat} {value} → Power {power} ({delta}, {pct} from now)",
+  heroDetailPowerReadoutCapped: "At 100% crit chance: {power}",
+  heroDetailPowerCappedLegend: "Dashed: with crit chance at 100%",
+  heroDetailPowerExtrapolated: "Past the highest cooldown checked ({pct}), this is extrapolated.",
+
   heroDetailRollTitle: "Birth roll",
   heroDetailRollQuality: "Roll quality",
   heroDetailRollQualityNote:
@@ -101,18 +139,13 @@ export const heroEn = {
   heroDetailPhaseNoMatch: "No phase matches that.",
   heroDetailPhaseMoreMatches: "Showing {shown} of {matched} — keep typing to narrow.",
 
-  heroDetailAurasTitle: "Abilities & auras",
   heroDetailAurasTip:
     "What the figures on this stage are priced with. A team aura is a property of the field, so everyone standing in it gets the same total, capped per aura. This hero's own aura counts at its rank and cannot be switched off; any other aura is off until you switch it on, and then counts at its cap, whoever carries it. The Farm screen and the Optimizer price the same auras by each carrier's predicted uptime instead, so their figures can differ from these. Baton Pass is counted here as if its pulse never lapsed — the whole stint at its level, +80% at the cap — while the Farm screen and the Optimizer count only the 120 s each entry lights.",
   heroDetailAurasTeamGroup: "Team auras",
-  heroDetailAurasOwnGroup: "Own abilities",
   heroDetailAuraOwnTag: "own",
-  heroDetailAuraNotHereTag: "not here",
-  heroDetailAuraNotModelledTag: "not modelled",
   heroDetailAuraSwitchAria: "Count {name} at its cap",
   heroDetailAuraDeltaIfOn: "+{value}% if on",
   heroDetailAuraDeltaIfOff: "−{value}% if off",
-  heroDetailAurasNoOwnAbilities: "This hero has no ability of its own in force.",
 
   heroDetailBreakdownHint: 'Hover or focus a card for the formula behind it and what it reads; the cards it is wired to stay lit.',
   heroDetailBreakdownRowSheet: "Sheet",

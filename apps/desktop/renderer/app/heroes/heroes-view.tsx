@@ -33,7 +33,6 @@ import type { MarketQuoteCurrency } from '@bombfarm/contracts';
 import { phaseSearchOptions } from '@bombfarm/farm';
 import { CombatPhasePanel } from '@bombfarm/farm/components';
 import {
-  AbilitiesAurasPanel,
   CombatBreakdownPanel,
   GearTab,
   HeroAbilitiesPanel,
@@ -43,6 +42,7 @@ import {
   HeroPickerDialogView,
   NextPointRanking,
   PointsTable,
+  PowerBreakdownPanel,
   RosterCards,
   RosterLeaderboard,
   RosterRail,
@@ -473,6 +473,7 @@ function HeroesRoster({
                     statLabel={boundStatLabel}
                     marketPrice={marketPrice}
                     formatAmount={formatAmount}
+                    treeCritDmgPct={roster.account.tree?.critDmg ?? 0}
                   />
                 </div>
               </HeroCopyProvider>
@@ -567,6 +568,7 @@ function HeroDetailTabs({
   statLabel: boundStatLabel,
   marketPrice,
   formatAmount,
+  treeCritDmgPct,
 }: {
   active: RosterHeroRow;
   heroCopy: ReturnType<typeof useHeroDetailCopy>;
@@ -586,10 +588,12 @@ function HeroDetailTabs({
   statLabel: (key: SheetKey) => string;
   marketPrice: HeroMarketPrice | null;
   formatAmount: (value: number, currency: string) => string;
+  treeCritDmgPct: number;
 }) {
   const t = useCopy();
   const statCopy = useStatPanelCopy();
   const [tab, setTab] = useState('hero');
+  const auraControls = useMemo(() => ({ deltas: auraDeltas, onSwitch: onAuraSwitch }), [auraDeltas, onAuraSwitch]);
 
   return (
     <Tabs.Root value={tab} onValueChange={setTab}>
@@ -637,6 +641,30 @@ function HeroDetailTabs({
               />
               {/* On the record, not a figure: a still-blocked hero shows its runes all the same. */}
               <HeroRunesPanel hero={active.hero} lang={lang} statLabel={boundStatLabel} />
+              {/* The game's Power leaves team auras out, the hero's own included, so this panel
+                  scores the pipeline's `adjusted` sheet — points and runes on, before any aura —
+                  from the same run the Effective Stats panel reads after them, and that run's
+                  per-point deltas place the +10 / +50 markers. A hero whose points were not
+                  recovered gets the stored figure alone. */}
+              {figures.kind === 'at' && combat ? (
+                <PowerBreakdownPanel
+                  hero={active.hero}
+                  sheet={combat.adjusted}
+                  pointDelta={combat.pointDelta}
+                  treeCritDmgPct={treeCritDmgPct}
+                  lang={lang}
+                  statLabel={boundStatLabel}
+                />
+              ) : figures.kind === 'pointsUnread' ? (
+                <PowerBreakdownPanel
+                  hero={active.hero}
+                  sheet={null}
+                  pointDelta={null}
+                  treeCritDmgPct={treeCritDmgPct}
+                  lang={lang}
+                  statLabel={boundStatLabel}
+                />
+              ) : null}
               {figures.kind !== 'at' ? <FiguresNotice figures={figures} /> : null}
               {/* The combat sheet those figures were computed from — beside them rather than at the
                   bottom of Points, where it was the one phase-scoped panel in a stage of sheet
@@ -648,19 +676,7 @@ function HeroDetailTabs({
                   hero={active.hero}
                   phase={figures.inputs.phase}
                   switches={auraSwitches}
-                  lang={lang}
-                />
-              ) : null}
-              {/* What those figures were priced with, last: the hero's own abilities, and every
-                  team aura the game has behind a switch. A switch is a what-if held like the
-                  phase pick above, and it reaches Gear and Points as the phase does. */}
-              {figures.kind === 'at' ? (
-                <AbilitiesAurasPanel
-                  hero={active.hero}
-                  phase={figures.inputs.phase}
-                  switches={auraSwitches}
-                  deltas={auraDeltas}
-                  onSwitch={onAuraSwitch}
+                  auras={auraControls}
                   lang={lang}
                 />
               ) : null}
