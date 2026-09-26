@@ -13,7 +13,6 @@ import {
   HeroAbilityIcons,
   HeroAvatar,
   heroPeekData,
-  heroRankToneClass,
   inventoryTableRowClass,
   inventoryTableSelectedRowClass,
   rarityTextClass,
@@ -32,7 +31,7 @@ import {
   panelHClass,
   panelTitleClass,
 } from '@bombfarm/ui';
-import { showcaseCopyFor, sub, type Lang, type RosterBoardCopy, type ShowcaseCopy } from '../../copy';
+import { showcaseCopyFor, type Lang, type RosterBoardCopy, type ShowcaseCopy } from '../../copy';
 import {
   LEADERBOARD_COLUMNS,
   LEADERBOARD_FILTERS,
@@ -63,6 +62,7 @@ import {
   type RosterHeroRow,
   type SortableLeaderboardColumnId,
 } from '../../model';
+import { BirthGradeLetter } from './birth-grade-letter';
 
 const NOT_PLACED = '—';
 
@@ -371,13 +371,7 @@ function BirthCell({ row, copy, lang }: { row: LeaderboardRow; copy: ShowcaseCop
     <span className="inline-flex items-center gap-1.5" data-testid="heroes-leaderboard-birth">
       <span className="font-mono tabular-nums">{percentText(row.report.mean, lang)}</span>
       {row.gradeLetter === undefined ? null : (
-        <span
-          className={cn('font-black', 'tracking-tight', heroRankToneClass(row.gradeLetter))}
-          aria-label={sub(copy.cardBirthGrade, { grade: row.gradeLetter })}
-          data-testid="heroes-leaderboard-grade"
-        >
-          {row.gradeLetter}
-        </span>
+        <BirthGradeLetter grade={row.gradeLetter} copy={copy} testId="heroes-leaderboard-grade" />
       )}
     </span>
   );
