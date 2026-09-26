@@ -50,6 +50,18 @@ async function acceptConsent(page) {
   await expect(modal).toBeHidden({ timeout: 15_000 });
 }
 
+/** CI's Windows runner has a 1024px screen, below which the Heroes rail is hidden — size the window
+ *  the way the other Heroes specs do, so the rail is on screen wherever this runs. */
+async function resize(app, page, width, height) {
+  await app.evaluate(({ BrowserWindow }, size) => {
+    const win = BrowserWindow.getAllWindows()[0];
+    win?.setMinimumSize(200, 200);
+    win?.setSize(size.width, size.height);
+  }, { width, height });
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await page.waitForTimeout(180);
+}
+
 /** The card's compact figure, as `formatCompactNumber` prints it in English. */
 function compactEn(value) {
   const oneDecimal = (n) =>
@@ -97,6 +109,7 @@ test.describe('the hero hover card\'s statistics', () => {
       BFC_USER_DATA_DIR: path.join(runDir, 'user-data'),
     }));
     await acceptConsent(page);
+    await resize(app, page, 1400, 1000);
     await page.locator('nav[aria-label="Main"] button').nth(HEROES_TAB_INDEX).click();
     await page.waitForSelector('[data-testid^="heroes-roster-row-"]', { timeout: 60_000 });
   });
