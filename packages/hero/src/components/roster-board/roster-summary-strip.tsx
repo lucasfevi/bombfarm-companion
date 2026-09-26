@@ -24,7 +24,7 @@ const WIDE_COLUMNS: Record<number, string> = {
 
 const eyebrowClass = 'm-0 text-[10px] font-bold tracking-[0.08em] text-muted uppercase';
 const figureClass = 'm-0 mt-1 font-mono text-[22px] leading-tight font-semibold tabular-nums text-ink';
-const headlineFigureClass = 'm-0 mt-1 font-mono text-[34px] leading-none font-bold tabular-nums text-ink';
+const headlineFigureClass = 'm-0 mt-1 font-mono text-[34px] leading-none font-bold tabular-nums text-accent';
 /** A figure with words in it reads in the sans face; the mono face spaces its letters apart. */
 const wordedFigureClass = 'm-0 mt-1 text-[20px] leading-tight font-semibold tabular-nums text-ink';
 

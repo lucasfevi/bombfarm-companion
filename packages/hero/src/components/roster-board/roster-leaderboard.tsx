@@ -381,7 +381,7 @@ function PowerCell({ row, topPower, lang }: { row: LeaderboardRow; topPower: num
   const percent = leaderboardPowerPercent(row.hero.power, topPower);
   return (
     <span className="inline-grid grid-cols-[auto_4.5rem] items-center justify-end gap-2">
-      <span className="font-mono font-semibold tabular-nums text-ink" data-testid="heroes-leaderboard-power">
+      <span className="font-mono font-semibold tabular-nums text-accent" data-testid="heroes-leaderboard-power">
         {heroPowerText(row, lang)}
       </span>
       <span className="h-1.5 overflow-hidden rounded-full bg-[color-mix(in_oklch,var(--line)_70%,transparent)]" aria-hidden>

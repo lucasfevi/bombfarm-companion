@@ -177,7 +177,7 @@ const HeroCard = memo(function HeroCard({
         </span>
         <CardHeader row={row} copy={copy} lang={lang} />
         <p className="m-0 flex items-baseline gap-1.5">
-          <span className="font-mono text-[26px] leading-none font-bold tracking-tight tabular-nums text-ink">
+          <span className="font-mono text-[26px] leading-none font-bold tracking-tight tabular-nums text-accent">
             {hero.power == null ? NOT_PLACED : formatCompactNumber(hero.power, lang)}
           </span>
           <span className="text-[10px] font-bold tracking-[0.12em] text-muted uppercase">{copy.cardPower}</span>

@@ -146,7 +146,7 @@ function ShareCardHeader({
         </p>
       </div>
       <div className="shrink-0 text-right">
-        <p className="m-0 font-mono text-[34px] leading-none font-bold tabular-nums text-ink" data-testid="share-card-total-power">
+        <p className="m-0 font-mono text-[34px] leading-none font-bold tabular-nums text-accent" data-testid="share-card-total-power">
           {formatCompactNumber(totals.totalPower, lang)}
         </p>
         <p className="m-0 mt-1 text-[11px] tracking-widest text-muted uppercase">{copy.totalPower}</p>

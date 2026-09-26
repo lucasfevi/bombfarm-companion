@@ -46,7 +46,7 @@ export function ShareRestRow({
           <ShareStars stars={hero.stars} />
         </p>
         <p className="m-0 flex shrink-0 items-baseline gap-1.5 whitespace-nowrap">
-          <span className="font-mono text-[15px] font-bold tabular-nums text-ink">
+          <span className="font-mono text-[15px] font-bold tabular-nums text-accent">
             {hero.power == null ? NOT_PLACED : formatCompactNumber(hero.power, lang)}
           </span>
           <ShareDpsLine dps={dps} copy={copy} lang={lang} heroId={row.id} className="text-[11px]" />

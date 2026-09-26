@@ -43,7 +43,7 @@ export function ShareFeaturedTile({
         <span className="truncate text-[15px] leading-tight font-bold text-ink">{hero.name}</span>
         <ShareStars stars={hero.stars} />
       </p>
-      <p className="m-0 font-mono text-[22px] leading-none font-bold tabular-nums text-ink">
+      <p className="m-0 font-mono text-[22px] leading-none font-bold tabular-nums text-accent">
         {hero.power == null ? NOT_PLACED : formatCompactNumber(hero.power, lang)}
       </p>
       <ShareDpsLine dps={featured.dps} copy={copy} lang={lang} heroId={featured.row.id} className="-mt-1 text-xs" />
